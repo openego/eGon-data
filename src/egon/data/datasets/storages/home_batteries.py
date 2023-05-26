@@ -40,7 +40,7 @@ import numpy as np
 import pandas as pd
 
 from egon.data import config, db
-
+from egon.data.datasets.scenario_parameters import get_sector_parameters
 Base = declarative_base()
 
 
@@ -73,11 +73,10 @@ def allocate_home_batteries_to_buildings():
     """
     # get constants
     constants = config.datasets()["home_batteries"]["constants"]
-    scenarios = constants["scenarios"]
+    scenarios = config.settings()["egon-data"]["--scenarios"]
     cbat_ppv_ratio = constants["cbat_ppv_ratio"]
     rtol = constants["rtol"]
     max_it = constants["max_it"]
-    cbat_pbat_ratio = get_cbat_pbat_ratio()
 
     sources = config.datasets()["home_batteries"]["sources"]
 
@@ -92,7 +91,10 @@ def allocate_home_batteries_to_buildings():
         WHERE carrier = 'home_battery'
         AND scenario = '{scenario}';
         """
-
+        cbat_pbat_ratio = get_sector_parameters(
+            "electricity", scenario
+        )["efficiency"]["battery"]["max_hours"]
+        
         home_batteries_df = db.select_dataframe(sql)
 
         home_batteries_df = home_batteries_df.assign(

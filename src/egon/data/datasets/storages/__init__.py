@@ -46,14 +46,13 @@ class Storages(Dataset):
     def __init__(self, dependencies):
         super().__init__(
             name="Storages",
-            version="0.0.4",
+            version="0.0.6",
             dependencies=dependencies,
             tasks=(
                 create_tables,
-                allocate_pumped_hydro_eGon2035,
-                allocate_pumped_hydro_eGon100RE,
+                allocate_pumped_hydro_scn,
                 allocate_pv_home_batteries_to_grids,
-                allocate_home_batteries_to_buildings,
+                #allocate_home_batteries_to_buildings,
             ),
         )
 
@@ -77,9 +76,9 @@ def create_tables():
     EgonStorages.__table__.create(bind=engine, checkfirst=True)
 
 
-def allocate_pumped_hydro_eGon2035(export=True):
-    """Allocates pumped_hydro plants for eGon2035 scenario and either exports
-    results to data base or returns as a dataframe
+def allocate_pumped_hydro(scn, export=True):
+    """Allocates pumped_hydro plants for eGon2035 and scenario2019 scenarios 
+    and either exports results to data base or returns as a dataframe
 
     Parameters
     ----------
@@ -91,14 +90,14 @@ def allocate_pumped_hydro_eGon2035(export=True):
     Returns
     -------
     power_plants : pandas.DataFrame
-        List of pumped hydro plants in 'eGon2035' scenario
+        List of pumped hydro plants in 'eGon2035' and 'scenario2019' scenarios
     """
 
     carrier = "pumped_hydro"
 
     cfg = config.datasets()["power_plants"]
 
-    nep = select_nep_pumped_hydro()
+    nep = select_nep_pumped_hydro(scn= scn)
     mastr = select_mastr_pumped_hydro()
 
     # Assign voltage level to MaStR
@@ -124,7 +123,12 @@ def allocate_pumped_hydro_eGon2035(export=True):
     # Match pumped_hydro units from NEP list
     # using PLZ and capacity
     matched, mastr, nep = match_storage_units(
-        nep, mastr, matched, buffer_capacity=0.1, consider_carrier=False
+        nep,
+        mastr,
+        matched,
+        buffer_capacity=0.1,
+        consider_carrier=False,
+        scn=scn
     )
 
     # Match plants from NEP list using plz,
@@ -136,6 +140,7 @@ def allocate_pumped_hydro_eGon2035(export=True):
         consider_location="plz",
         consider_carrier=False,
         consider_capacity=False,
+        scn=scn,
     )
 
     # Match plants from NEP list using city,
@@ -147,6 +152,7 @@ def allocate_pumped_hydro_eGon2035(export=True):
         consider_location="city",
         consider_carrier=False,
         consider_capacity=False,
+        scn=scn,
     )
 
     # Match remaining plants from NEP using the federal state
@@ -157,6 +163,7 @@ def allocate_pumped_hydro_eGon2035(export=True):
         buffer_capacity=0.1,
         consider_location="federal_state",
         consider_carrier=False,
+        scn=scn,
     )
 
     # Match remaining plants from NEP using the federal state
@@ -167,12 +174,13 @@ def allocate_pumped_hydro_eGon2035(export=True):
         buffer_capacity=0.7,
         consider_location="federal_state",
         consider_carrier=False,
+        scn=scn,
     )
 
     print(f"{matched.el_capacity.sum()} MW of {carrier} matched")
-    print(f"{nep.c2035_capacity.sum()} MW of {carrier} not matched")
+    print(f"{nep.elec_capacity.sum()} MW of {carrier} not matched")
 
-    if nep.c2035_capacity.sum() > 0:
+    if nep.elec_capacity.sum() > 0:
 
         # Get location using geolocator and city information
         located, unmatched = get_location(nep)
@@ -231,9 +239,9 @@ def allocate_pumped_hydro_eGon2035(export=True):
 
     # Delete existing units in the target table
     db.execute_sql(
-        f""" DELETE FROM {cfg ['target']['schema']}.{cfg ['target']['table']}
+        f""" DELETE FROM {cfg ['sources']['storages']}
         WHERE carrier IN ('pumped_hydro')
-        AND scenario='eGon2035';"""
+        AND scenario='{scn}';"""
     )
 
     # If export = True export pumped_hydro plants to data base
@@ -301,7 +309,7 @@ def allocate_pumped_hydro_eGon100RE():
 
     # Get allocation of pumped_hydro plants in eGon2035 scenario as the
     # reference for the distribution in eGon100RE scenario
-    allocation = allocate_pumped_hydro_eGon2035(export=False)
+    allocation =allocate_pumped_hydro(scn="status2019", export=False)
 
     scaling_factor = capacity_phes / allocation.el_capacity.sum()
 
@@ -394,7 +402,7 @@ def home_batteries_per_scenario(scenario):
     battery["carrier"] = "home_battery"
     battery["scenario"] = scenario
 
-    if scenario == "eGon2035":
+    if ((scenario == "eGon2035") | (scenario == "status2019")):
         source = "NEP"
 
     else:
@@ -420,6 +428,22 @@ def home_batteries_per_scenario(scenario):
 
 
 def allocate_pv_home_batteries_to_grids():
+    
+    for scn in config.settings()["egon-data"]["--scenarios"]:
+        home_batteries_per_scenario(scn)
 
-    home_batteries_per_scenario("eGon2035")
-    home_batteries_per_scenario("eGon100RE")
+def allocate_pumped_hydro_scn():
+    
+    if "eGon2035" in config.settings()["egon-data"]["--scenarios"]:
+        allocate_pumped_hydro(scn="eGon2035")
+
+    if "status2019" in config.settings()["egon-data"]["--scenarios"]:
+        allocate_pumped_hydro(scn="status2019")
+        
+    if "eGon100RE" in config.settings()["egon-data"]["--scenarios"]:
+        allocate_pumped_hydro_eGon100RE()
+
+
+    
+    
+    

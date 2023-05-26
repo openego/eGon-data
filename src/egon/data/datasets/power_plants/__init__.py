@@ -7,6 +7,7 @@ from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.orm import sessionmaker
 import geopandas as gpd
 import numpy as np
+import logging
 import pandas as pd
 
 from egon.data import db
@@ -940,12 +941,12 @@ def power_plants_status_quo(scn_name="status2019"):
         new_geom = gens["capacity"][
             (gens.geom.is_empty) & (gens.city.isin(geom_municipalities.index))
         ]
-        print(
+        logging.info(
             f"""{len(drop_id)} {carrier} generator(s) ({gens.loc[drop_id, 'capacity']
               .sum()}MW) were drop"""
         )
 
-        print(
+        logging.info(
             f"""{len(new_geom)} {carrier} generator(s) ({new_geom
               .sum()}MW) received a geom based on city
               """
@@ -999,7 +1000,7 @@ def power_plants_status_quo(scn_name="status2019"):
         session.add(entry)
     session.commit()
 
-    print(
+    logging.info(
         f"""
           {len(hydro)} hydro generators with a total installed capacity of
           {hydro.capacity.sum()}MW were inserted in db
@@ -1027,7 +1028,7 @@ def power_plants_status_quo(scn_name="status2019"):
         session.add(entry)
     session.commit()
 
-    print(
+    logging.info(
         f"""
           {len(biomass)} biomass generators with a total installed capacity of
           {biomass.capacity.sum()}MW were inserted in db
@@ -1065,7 +1066,7 @@ def power_plants_status_quo(scn_name="status2019"):
         session.add(entry)
     session.commit()
 
-    print(
+    logging.info(
         f"""
           {len(solar)} solar generators with a total installed capacity of
           {solar.capacity.sum()}MW were inserted in db
@@ -1095,7 +1096,7 @@ def power_plants_status_quo(scn_name="status2019"):
         session.add(entry)
     session.commit()
 
-    print(
+    logging.info(
         f"""
           {len(wind_onshore)} wind_onshore generators with a total installed capacity of
           {wind_onshore.capacity.sum()}MW were inserted in db

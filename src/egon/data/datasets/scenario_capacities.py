@@ -139,6 +139,27 @@ def insert_capacities_status2019():
             )
         """
     )
+    
+    # Include small storages for scenario2019
+    small_storages = 600 #MW for Germany
+    
+    db.execute_sql(
+        f"""
+        INSERT INTO 
+        {targets['scenario_capacities']['schema']}.
+        {targets['scenario_capacities']['table']}
+        (component, carrier, capacity, nuts, scenario_name)
+        VALUES (
+            'storage_units',
+            'battery',
+            {small_storages},
+            'DE',
+            'status2019'         
+            )
+        """
+    )
+    
+    
 
 
 def insert_capacities_per_federal_state_nep():
@@ -790,7 +811,7 @@ def eGon100_capacities():
 tasks = (create_table,)
 
 if "status2019" in egon.data.config.settings()["egon-data"]["--scenarios"]:
-    tasks = tasks + (insert_capacities_status2019,)
+    tasks = tasks + (insert_capacities_status2019, insert_data_nep)
 
 if "eGon2035" in egon.data.config.settings()["egon-data"]["--scenarios"]:
     tasks = tasks + (insert_data_nep,)
