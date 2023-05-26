@@ -1232,7 +1232,6 @@ home_batteries:
       - "eGon100RE"
     # Mean ratio between the storage capacity and the power of the pv rooftop system
     cbat_ppv_ratio: 1
-    cbat_pbat_ratio: 6
     rtol: 0.05
     max_it: 100
   sources:
