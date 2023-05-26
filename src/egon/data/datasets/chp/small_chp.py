@@ -95,7 +95,7 @@ def existing_chp_smaller_10mw(sources, MaStR_konv, EgonChp):
             mastr_chp, config.datasets()["chp_location"]
         ).bus_id
 
-        mastr_chp = assign_use_case(mastr_chp, sources)
+        mastr_chp = assign_use_case(mastr_chp, sources, "eGon2035")
 
         insert_mastr_chp(mastr_chp, EgonChp)
 
@@ -631,7 +631,7 @@ def extension_per_federal_state(federal_state, EgonChp):
         print("Decommissioning of CHP plants is not implemented.")
 
 
-def assign_use_case(chp, sources):
+def assign_use_case(chp, sources, scenario):
     """Identifies CHPs used in district heating areas.
 
     A CHP plant is assigned to a district heating area if
@@ -699,7 +699,7 @@ def assign_use_case(chp, sources):
         SELECT area_id, ST_Buffer(geom_polygon, 1000) as geom
         FROM {sources['district_heating_areas']['schema']}.
         {sources['district_heating_areas']['table']}
-        WHERE scenario = 'eGon2035'
+        WHERE scenario = '{scenario}'
         """,
         epsg=4326,
     )
