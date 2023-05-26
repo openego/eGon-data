@@ -73,11 +73,11 @@ def allocate_home_batteries_to_buildings():
     """
     # get constants
     constants = config.datasets()["home_batteries"]["constants"]
-    scenarios = constants["scenarios"]
+    scenarios = config.settings()["egon-data"]["--scenarios"]
     cbat_ppv_ratio = constants["cbat_ppv_ratio"]
     rtol = constants["rtol"]
     max_it = constants["max_it"]
-    cbat_pbat_ratio = get_cbat_pbat_ratio()
+    cbat_pbat_ratio = constants["cbat_pbat_ratio"]
 
     sources = config.datasets()["home_batteries"]["sources"]
 
