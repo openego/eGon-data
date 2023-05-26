@@ -158,7 +158,7 @@ Q = 5
 
 # Scenario Data
 CARRIER = "solar_rooftop"
-SCENARIOS = ["eGon2035", "eGon100RE"]
+SCENARIOS = config.settings()["egon-data"]["--scenarios"]
 SCENARIO_TIMESTAMP = {
     "eGon2035": pd.Timestamp("2035-01-01", tz="UTC"),
     "eGon100RE": pd.Timestamp("2050-01-01", tz="UTC"),
@@ -1183,7 +1183,6 @@ def allocate_pv(
     t0 = perf_counter()
 
     for count, ags in enumerate(ags_list):
-
         buildings = q_buildings_gdf.loc[q_buildings_gdf.ags == ags]
         gens = q_mastr_gdf.loc[q_mastr_gdf.ags == ags]
 
@@ -2748,7 +2747,9 @@ def add_weather_cell_id(buildings_gdf: gpd.GeoDataFrame) -> gpd.GeoDataFrame:
     return buildings_gdf
 
 
-def add_bus_ids_sq(buildings_gdf: gpd.GeoDataFrame,) -> gpd.GeoDataFrame:
+def add_bus_ids_sq(
+    buildings_gdf: gpd.GeoDataFrame,
+) -> gpd.GeoDataFrame:
     """Add bus ids for status_quo units
 
     Parameters

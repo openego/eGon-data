@@ -1111,7 +1111,11 @@ tasks = (
 )
 
 if "status2019" in egon.data.config.settings()["egon-data"]["--scenarios"]:
-    tasks = tasks + (power_plants_status_quo,)
+    tasks = tasks + (
+        power_plants_status_quo,
+        geocode_mastr_data,
+        pv_rooftop_to_buildings,
+    )
 
 if (
     "eGon2035" in egon.data.config.settings()["egon-data"]["--scenarios"]
