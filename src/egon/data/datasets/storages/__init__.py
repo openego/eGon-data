@@ -403,7 +403,7 @@ def home_batteries_per_scenario(scenario):
     battery["carrier"] = "home_battery"
     battery["scenario"] = scenario
 
-    if scenario == "eGon2035":
+    if ((scenario == "eGon2035") | (scenario == "status2019")):
         source = "NEP"
 
     else:
@@ -429,10 +429,10 @@ def home_batteries_per_scenario(scenario):
 
 
 def allocate_pv_home_batteries_to_grids():
-
-    home_batteries_per_scenario("eGon2035")
-    home_batteries_per_scenario("eGon100RE")
     
+    for scn in config.settings()["egon-data"]["--scenarios"]:
+        home_batteries_per_scenario(scn)
+
 def allocate_pumped_hydro_2035_sq():
     
     allocate_pumped_hydro(scn="eGon2035")
