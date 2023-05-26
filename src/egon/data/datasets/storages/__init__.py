@@ -46,14 +46,13 @@ class Storages(Dataset):
     def __init__(self, dependencies):
         super().__init__(
             name="Storages",
-            version="0.0.5",
+            version="0.0.6",
             dependencies=dependencies,
             tasks=(
                 create_tables,
-                allocate_pumped_hydro_2035_sq,
-                allocate_pumped_hydro_eGon100RE,
+                allocate_pumped_hydro_scn,
                 allocate_pv_home_batteries_to_grids,
-                allocate_home_batteries_to_buildings,
+                #allocate_home_batteries_to_buildings,
             ),
         )
 
@@ -310,7 +309,7 @@ def allocate_pumped_hydro_eGon100RE():
 
     # Get allocation of pumped_hydro plants in eGon2035 scenario as the
     # reference for the distribution in eGon100RE scenario
-    allocation = allocate_pumped_hydro_eGon2035(export=False)
+    allocation =allocate_pumped_hydro(scn="status2019", export=False)
 
     scaling_factor = capacity_phes / allocation.el_capacity.sum()
 
@@ -433,8 +432,18 @@ def allocate_pv_home_batteries_to_grids():
     for scn in config.settings()["egon-data"]["--scenarios"]:
         home_batteries_per_scenario(scn)
 
-def allocate_pumped_hydro_2035_sq():
+def allocate_pumped_hydro_scn():
     
-    allocate_pumped_hydro(scn="eGon2035")
-    allocate_pumped_hydro(scn="status2019")
+    if "eGon2035" in config.settings()["egon-data"]["--scenarios"]:
+        allocate_pumped_hydro(scn="eGon2035")
+
+    if "status2019" in config.settings()["egon-data"]["--scenarios"]:
+        allocate_pumped_hydro(scn="status2019")
+        
+    if "eGon100RE" in config.settings()["egon-data"]["--scenarios"]:
+        allocate_pumped_hydro_eGon100RE()
+
+
+    
+    
     
