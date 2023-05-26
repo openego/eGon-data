@@ -56,34 +56,6 @@ class EgonPowerPlants(Base):
     geom = Column(Geometry("POINT", 4326), index=True)
 
 
-class PowerPlants(Dataset):
-    def __init__(self, dependencies):
-        super().__init__(
-            name="PowerPlants",
-            version="0.0.18",
-            dependencies=dependencies,
-            tasks=(
-                create_tables,
-                import_mastr,
-                power_plants_status_quo,
-                insert_hydro_biomass,
-                allocate_conventional_non_chp_power_plants,
-                allocate_other_power_plants,
-                {
-                    wind_onshore.insert,
-                    pv_ground_mounted.insert,
-                    (
-                        pv_rooftop_per_mv_grid,
-                        geocode_mastr_data,
-                        pv_rooftop_to_buildings,
-                    ),
-                },
-                wind_offshore.insert,
-                assign_weather_data.weatherId_and_busId,
-            ),
-        )
-
-
 def create_tables():
     """Create tables for power plant data
     Returns
@@ -1131,3 +1103,44 @@ def power_plants_status_quo(scn_name="status2019"):
     )
 
     return
+
+
+tasks = (
+    create_tables,
+    import_mastr,
+)
+
+if "status2019" in egon.data.config.settings()["egon-data"]["--scenarios"]:
+    tasks = tasks + (power_plants_status_quo,)
+
+if (
+    "eGon2035" in egon.data.config.settings()["egon-data"]["--scenarios"]
+    or "eGon100RE" in egon.data.config.settings()["egon-data"]["--scenarios"]
+):
+    tasks = tasks + (
+        insert_hydro_biomass,
+        allocate_conventional_non_chp_power_plants,
+        allocate_other_power_plants,
+        {
+            wind_onshore.insert,
+            pv_ground_mounted.insert,
+            (
+                pv_rooftop_per_mv_grid,
+                geocode_mastr_data,
+                pv_rooftop_to_buildings,
+            ),
+        },
+        wind_offshore.insert,
+    )
+
+tasks = tasks + (assign_weather_data.weatherId_and_busId,)
+
+
+class PowerPlants(Dataset):
+    def __init__(self, dependencies):
+        super().__init__(
+            name="PowerPlants",
+            version="0.0.18",
+            dependencies=dependencies,
+            tasks=tasks,
+        )
