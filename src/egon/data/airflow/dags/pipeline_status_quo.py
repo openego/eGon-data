@@ -455,7 +455,7 @@ with airflow.DAG(
             DistrictHeatingAreas,
             heat_supply,
             heat_time_series,
-            tasks["power_plants.pv_rooftop_buildings.pv-rooftop-to-buildings"],
+            power_plants,
         ]
     )
 
