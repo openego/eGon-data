@@ -92,7 +92,6 @@ setup(
         "geovoronoi==0.3.0",
         "importlib-resources",
         "loguru",
-        "logging",
         "markupsafe<2.1.0",  # MarkupSafe>=2.1.0 breaks WTForms<3
         "matplotlib",
         "netcdf4",
