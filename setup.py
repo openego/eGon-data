@@ -98,7 +98,7 @@ setup(
         # See: https://stackoverflow.com/a/73354885/12460232
         "oedialect==0.0.8",
         "omi",
-        "openpyxl",
+        "openpyxl!=3.1.1",  # 3.1.1 breaks "demandregio.insert-cts-ind-demands"
         "pandas>1.2.0,<1.4",  # pandas>=1.4 needs SQLAlchemy>=1.4
         "psycopg2",
         "pyaml",
