@@ -2781,8 +2781,11 @@ def pv_rooftop_to_buildings():
     """Main script, executed as task"""
 
     mastr_gdf = load_mastr_data()
-
-    mastr_gdf = mastr_gdf[mastr_gdf.Inbetriebnahmedatum < "2020-01-01"]
+    
+    ts = pd.Timestamp(
+            egon.data.config.datasets()["mastr_new"]["status2019_date_max"]
+    
+    mastr_gdf = mastr_gdf.loc[pd.to_datetime(mastr_gdf.Inbetriebnahmedatum) <= ts]
 
     buildings_gdf = load_building_data()
 
@@ -2802,11 +2805,11 @@ def pv_rooftop_to_buildings():
 
     for scenario in SCENARIOS:
         if scenario == "status2019":
-            desagg_mastr_gdf = desagg_mastr_gdf[
-                desagg_mastr_gdf.Inbetriebnahmedatum < "2020-01-01"
+            desagg_mastr_gdf = desagg_mastr_gdf.loc[
+                pd.to_datetime(desagg_mastr_gdf.Inbetriebnahmedatum) <= ts
             ]
-            scenario_buildings_gdf = scenario_buildings_gdf[
-                scenario_buildings_gdf.Inbetriebnahmedatum < "2020-01-01"
+            scenario_buildings_gdf = scenario_buildings_gdf.loc[
+                pd.to_datetime(scenario_buildings_gdf.Inbetriebnahmedatum) <= ts
             ]
 
         logger.debug(f"Desaggregating scenario {scenario}.")
