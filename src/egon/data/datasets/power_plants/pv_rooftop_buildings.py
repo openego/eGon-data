@@ -160,6 +160,7 @@ Q = 5
 CARRIER = "solar_rooftop"
 SCENARIOS = config.settings()["egon-data"]["--scenarios"]
 SCENARIO_TIMESTAMP = {
+    "status2019": pd.Timestamp("2020-01-01", tz="UTC"),
     "eGon2035": pd.Timestamp("2035-01-01", tz="UTC"),
     "eGon100RE": pd.Timestamp("2050-01-01", tz="UTC"),
 }
@@ -1634,19 +1635,19 @@ def cap_per_bus_id(
     pandas.DataFrame
         DataFrame with total rooftop capacity per mv grid.
     """
-    targets = config.datasets()["solar_rooftop"]["targets"]
+    sources = config.datasets()["solar_rooftop"]["sources"]
 
     sql = f"""
-    SELECT bus as bus_id, control, p_nom as capacity
-    FROM {targets['generators']['schema']}.{targets['generators']['table']}
+    SELECT bus_id, SUM(el_capacity) as capacity
+    FROM {sources['power_plants']['schema']}.{sources['power_plants']['table']}
     WHERE carrier = 'solar_rooftop'
-    AND scn_name = '{scenario}'
+    AND scenario = '{scenario}'
+    GROUP BY bus_id
     """
-    # TODO: woher kommen die Slack rows???
 
     df = db.select_dataframe(sql, index_col="bus_id")
 
-    return df.loc[df.control != "Slack"]
+    return df
 
     # overlay_gdf = overlay_gdf.assign(capacity=np.nan)
     #
@@ -2527,6 +2528,7 @@ def add_start_up_date(
     geopandas.GeoDataFrame
         GeoDataFrame containing OSM buildings data with start-up date added.
     """
+
     rng = default_rng(seed=seed)
 
     date_range = pd.date_range(start=start, end=end, freq="1D")
@@ -2780,6 +2782,12 @@ def pv_rooftop_to_buildings():
 
     mastr_gdf = load_mastr_data()
 
+    ts = pd.Timestamp(config.datasets()["mastr_new"]["status2019_date_max"])
+
+    mastr_gdf = mastr_gdf.loc[
+        pd.to_datetime(mastr_gdf.Inbetriebnahmedatum) <= ts
+    ]
+
     buildings_gdf = load_building_data()
 
     desagg_mastr_gdf, desagg_buildings_gdf = allocate_to_buildings(
@@ -2797,6 +2805,15 @@ def pv_rooftop_to_buildings():
     cap_per_bus_id_df = pd.DataFrame()
 
     for scenario in SCENARIOS:
+        if scenario == "status2019":
+            desagg_mastr_gdf = desagg_mastr_gdf.loc[
+                pd.to_datetime(desagg_mastr_gdf.Inbetriebnahmedatum) <= ts
+            ]
+            scenario_buildings_gdf = scenario_buildings_gdf.loc[
+                pd.to_datetime(scenario_buildings_gdf.Inbetriebnahmedatum)
+                <= ts
+            ]
+
         logger.debug(f"Desaggregating scenario {scenario}.")
         (
             scenario_buildings_gdf,

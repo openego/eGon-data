@@ -527,10 +527,10 @@ solar_rooftop:
     federal_states:
       schema: 'boundaries'
       table: 'vg250_lan'
+    power_plants:
+      schema: 'supply'
+      table: 'egon_power_plants'
   targets:
-    generators:
-      schema: 'grid'
-      table: 'egon_etrago_generator'
     generator_timeseries:
       schema: 'grid'
       table: 'egon_etrago_generator_timeseries'
