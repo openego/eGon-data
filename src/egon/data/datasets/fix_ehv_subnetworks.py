@@ -4,7 +4,7 @@ import geopandas as gpd
 import numpy as np
 import pandas as pd
 
-from egon.data import db
+from egon.data import db, config
 from egon.data.config import settings
 from egon.data.datasets import Dataset
 from egon.data.datasets.etrago_setup import link_geom_from_buses
@@ -235,6 +235,6 @@ def fix_subnetworks(scn_name):
         )
 
 def run():
-    fix_subnetworks("eGon2035")
-    fix_subnetworks("eGon100RE")
-    fix_subnetworks("status2019")
+    for scenario in config.settings()["egon-data"]["--scenarios"]:
+        fix_subnetworks(scenario)
+
