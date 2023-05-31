@@ -288,7 +288,7 @@ def insert_biomass_chp(scenario):
             mastr_loc, cfg, WORKING_DIR_MASTR_OLD
         )
         mastr_loc = assign_bus_id(mastr_loc, cfg)
-    mastr_loc = assign_use_case(mastr_loc, cfg["sources"])
+    mastr_loc = assign_use_case(mastr_loc, cfg["sources"], scenario)
 
     # Insert entries with location
     session = sessionmaker(bind=db.engine())()
@@ -419,7 +419,7 @@ def insert_chp_statusquo():
 
         mastr["gas_bus_id"] = gas_bus_id
 
-    mastr = assign_use_case(mastr, cfg["sources"])
+    mastr = assign_use_case(mastr, cfg["sources"], "status2019")
 
     # Insert entries with location
     session = sessionmaker(bind=db.engine())()
@@ -636,7 +636,8 @@ def insert_chp_egon100re():
         scenario="eGon100RE",
     )
 
-tasks = (create_tables, )
+
+tasks = (create_tables,)
 
 insert_per_scenario = set()
 
