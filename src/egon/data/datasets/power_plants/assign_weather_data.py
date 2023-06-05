@@ -1,3 +1,5 @@
+import json
+
 import geopandas as gpd
 import pandas as pd
 
@@ -204,6 +206,9 @@ def write_power_plants_table(power_plants, cfg, con):
     power_plants.index = pd.RangeIndex(
         start=ini_id, stop=ini_id + len(power_plants), name="id"
     )
+
+    for i in power_plants.index:
+        power_plants.sources[i] = json.dumps(power_plants.sources[i])
 
     # Insert into database
     power_plants.reset_index().to_postgis(
