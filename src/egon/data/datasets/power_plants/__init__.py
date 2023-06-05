@@ -906,12 +906,17 @@ def power_plants_status_quo(scn_name="status2019"):
     con = db.engine()
     session = sessionmaker(bind=db.engine())()
     cfg = egon.data.config.datasets()["power_plants"]
+    TESTMODE = (
+        egon.data.config.settings()["egon-data"]["--dataset-boundary"]
+        != "Everything"
+    )
 
     db.execute_sql(
         f"""
         DELETE FROM {cfg['target']['schema']}.{cfg['target']['table']}
         WHERE carrier IN ('wind_onshore', 'solar', 'biomass',
-                          'run_of_river', 'reservoir', 'solar_rooftop')
+                          'run_of_river', 'reservoir', 'solar_rooftop',
+                          'wind_offshore')
         AND scenario = '{scn_name}'
         """
     )
@@ -1006,7 +1011,7 @@ def power_plants_status_quo(scn_name="status2019"):
     logging.info(
         f"""
           {len(hydro)} hydro generators with a total installed capacity of
-          {hydro.capacity.sum()}MW were inserted in db
+          {hydro.capacity.sum()}MW were inserted into the db
           """
     )
 
@@ -1034,7 +1039,7 @@ def power_plants_status_quo(scn_name="status2019"):
     logging.info(
         f"""
           {len(biomass)} biomass generators with a total installed capacity of
-          {biomass.capacity.sum()}MW were inserted in db
+          {biomass.capacity.sum()}MW were inserted into the db
           """
     )
 
@@ -1072,7 +1077,7 @@ def power_plants_status_quo(scn_name="status2019"):
     logging.info(
         f"""
           {len(solar)} solar generators with a total installed capacity of
-          {solar.capacity.sum()}MW were inserted in db
+          {solar.capacity.sum()}MW were inserted into the db
           """
     )
 
@@ -1102,13 +1107,14 @@ def power_plants_status_quo(scn_name="status2019"):
     logging.info(
         f"""
           {len(wind_onshore)} wind_onshore generators with a total installed capacity of
-          {wind_onshore.capacity.sum()}MW were inserted in db
+          {wind_onshore.capacity.sum()}MW were inserted into the db
           """
     )
 
     # Write wind_offshore power plants in supply.egon_power_plants
     raw_wind = pd.read_csv("/home/carlos/powerd-data-exc/bnetza_mastr/dump_2022-11-17/bnetza_mastr_wind_cleaned.csv",
-                           index_col = "EinheitMastrNummer", usecols=["EinheitMastrNummer", "LokationMastrNummer"])
+                           index_col = "EinheitMastrNummer",
+                           usecols=["EinheitMastrNummer", "LokationMastrNummer"])
         
     wind_offshore = gpd.GeoDataFrame.from_postgis(
         f"""SELECT * FROM {cfg['sources']['wind']}
@@ -1116,7 +1122,7 @@ def power_plants_status_quo(scn_name="status2019"):
         con, geom_col="geom"
     )
     
-    # Import table with all the buses of the grid
+    # Import table with all the buses of the grid  
     sql = f"""
         SELECT bus_i as bus_id, geom as point, CAST(osm_substation_id AS text)
         as osm_id, cast(base_kv AS int) as voltage FROM {cfg["sources"]["buses_data"]}
@@ -1125,26 +1131,69 @@ def power_plants_status_quo(scn_name="status2019"):
     buses = gpd.GeoDataFrame.from_postgis(
         sql, con, crs="EPSG:4326", geom_col="point", index_col= "bus_id"
     )
+    #for testing purposes
+    # # Import table with all the buses of the grid
+    # import psycopg2
+    # conn = psycopg2.connect(dbname="powerd-data",
+    #                         user="egon",
+    #                         password="data",
+    #                         host="127.0.0.1",
+    #                         port= "8083"
+    #                         )
+    
+    
+    # sql = f"""
+    #     SELECT bus_i as bus_id, geom as point, CAST(osm_substation_id AS text)
+    #     as osm_id, cast(base_kv AS int) as voltage FROM {cfg["sources"]["buses_data"]}
+    #     """
+
+    # buses = gpd.GeoDataFrame.from_postgis(
+    #     sql, conn, crs="EPSG:4326", geom_col="point", index_col= "bus_id"
+    # )
   
     wind_offshore["LokationMastrNummer"] = wind_offshore.gens_id.map(raw_wind["LokationMastrNummer"])
     wind_offshore["city"] = wind_offshore.LokationMastrNummer.map(map_to_city())
     wind_offshore["osm_id"] = wind_offshore.city.map(map_id_bus())
     
     for wt in wind_offshore.index:
-        sub_sta = buses[buses["osm_id"] == wind_offshore.at[wt, "osm_id"]]
-        sub_sta.at[wt, "bus_id"] = sub_sta["voltage"].idxmax()
+        if TESTMODE:
+            try:
+                sub_sta = buses[buses["osm_id"] == wind_offshore.at[wt, "osm_id"]]
+                wind_offshore.loc[wt, "bus_id"] = sub_sta["voltage"].idxmax()
+            except:
+                wind_offshore.loc[wt, "bus_id"] = None
+        else:
+            sub_sta = buses[buses["osm_id"] == wind_offshore.at[wt, "osm_id"]]
+            wind_offshore.loc[wt, "bus_id"] = sub_sta["voltage"].idxmax()
+            
+    wind_offshore.dropna(subset=["bus_id"], inplace=True)
     
-    wind_offshore["weather_cell_id"] = wind_offshore["city"].map(map_w_id())
-    wind_offshore["weather_cell_id"] = wind_offshore["weather_cell_id"].apply(int)
-        
+    wind_offshore["geom"] = wind_offshore["geom"].to_wkt()
+    for i, row in wind_offshore.iterrows():
+        entry = EgonPowerPlants(
+            sources={"el_capacity": "MaStR"},
+            source_id={"MastrNummer": row.gens_id},
+            carrier="wind_offshore",
+            el_capacity=row.capacity,
+            scenario=scn_name,
+            bus_id=row.bus_id,
+            voltage_level=row.voltage_level,
+            weather_cell_id=-1,
+            geom=row.geom,
+        )
+        session.add(entry)
+    session.commit()
 
-
-    
-    wind_offshore.to_file("/home/carlos/git/powerd-data/off_shore/wind_off.geojson", driver='GeoJSON')
-
-    
+    logging.info(
+        f"""
+          {len(wind_offshore)} wind_offshore generators with a total installed capacity of
+          {wind_offshore.capacity.sum()}MW were inserted into the db
+          """
+    )
 
     return
+
+
 
 
 tasks = (
