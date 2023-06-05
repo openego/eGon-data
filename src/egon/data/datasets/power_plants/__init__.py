@@ -33,6 +33,9 @@ from egon.data.datasets.power_plants.pv_rooftop_buildings import (
     geocode_mastr_data,
     pv_rooftop_to_buildings,
 )
+from egon.data.datasets.power_plants.wind_offshore import (map_to_city,
+                                                           map_id_bus,
+                                                           map_w_id)
 import egon.data.config
 import egon.data.datasets.power_plants.assign_weather_data as assign_weather_data  # noqa: E501
 import egon.data.datasets.power_plants.pv_ground_mounted as pv_ground_mounted
@@ -1077,7 +1080,7 @@ def power_plants_status_quo(scn_name="status2019"):
     wind_onshore = gpd.GeoDataFrame.from_postgis(
         f"""SELECT * FROM {cfg['sources']['wind']}""", con, geom_col="geom"
     )
-
+    
     wind_onshore = fill_missing_bus_and_geom(
         wind_onshore, carrier="wind_onshore"
     )
@@ -1102,6 +1105,44 @@ def power_plants_status_quo(scn_name="status2019"):
           {wind_onshore.capacity.sum()}MW were inserted in db
           """
     )
+
+    # Write wind_offshore power plants in supply.egon_power_plants
+    raw_wind = pd.read_csv("/home/carlos/powerd-data-exc/bnetza_mastr/dump_2022-11-17/bnetza_mastr_wind_cleaned.csv",
+                           index_col = "EinheitMastrNummer", usecols=["EinheitMastrNummer", "LokationMastrNummer"])
+        
+    wind_offshore = gpd.GeoDataFrame.from_postgis(
+        f"""SELECT * FROM {cfg['sources']['wind']}
+        WHERE site_type = 'Windkraft auf See'""",
+        con, geom_col="geom"
+    )
+    
+    # Import table with all the buses of the grid
+    sql = f"""
+        SELECT bus_i as bus_id, geom as point, CAST(osm_substation_id AS text)
+        as osm_id, cast(base_kv AS int) as voltage FROM {cfg["sources"]["buses_data"]}
+        """
+
+    buses = gpd.GeoDataFrame.from_postgis(
+        sql, con, crs="EPSG:4326", geom_col="point", index_col= "bus_id"
+    )
+  
+    wind_offshore["LokationMastrNummer"] = wind_offshore.gens_id.map(raw_wind["LokationMastrNummer"])
+    wind_offshore["city"] = wind_offshore.LokationMastrNummer.map(map_to_city())
+    wind_offshore["osm_id"] = wind_offshore.city.map(map_id_bus())
+    
+    for wt in wind_offshore.index:
+        sub_sta = buses[buses["osm_id"] == wind_offshore.at[wt, "osm_id"]]
+        sub_sta.at[wt, "bus_id"] = sub_sta["voltage"].idxmax()
+    
+    wind_offshore["weather_cell_id"] = wind_offshore["city"].map(map_w_id())
+    wind_offshore["weather_cell_id"] = wind_offshore["weather_cell_id"].apply(int)
+        
+
+
+    
+    wind_offshore.to_file("/home/carlos/git/powerd-data/off_shore/wind_off.geojson", driver='GeoJSON')
+
+    
 
     return
 

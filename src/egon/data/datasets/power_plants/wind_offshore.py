@@ -8,6 +8,98 @@ import pandas as pd
 from egon.data import db
 import egon.data.config
 
+def map_to_city():
+    # map from connection point to city
+    to_city = {
+        'SEL900790170542': 'Dörpen/West',
+        'SEL903815302577': 'Dörpen/West',
+        'SEL906065107428': 'Büttel',
+        'SEL919433257267': 'Büttel',
+        'SEL919746983181': 'Lubmin',
+        'SEL919786394244': 'Emden/Ost',
+        'SEL922199100944': 'Büttel',
+        'SEL925169438559': 'Dörpen/West',
+        'SEL928599601562': 'Büttel',
+        'SEL929196129428': 'Cloppenburg',
+        'SEL932958083050': 'Emden/Ost',
+        'SEL933375144706': 'inhausen',
+        'SEL941255164959': 'Emden/Borßum',
+        'SEL943058624104': 'Bentwisch',
+        'SEL943629000788': 'Emden/Ost',
+        'SEL947312274135': 'Dörpen/West',
+        'SEL947778987563': 'Dörpen/West',
+        'SEL953673961584': 'Cloppenburg',
+        'SEL960138676303': 'Büttel',
+        'SEL964485571465': 'Cloppenburg',
+        'SEL964827249373': 'Emden/Ost',
+        'SEL969972182469': 'Büttel',
+        'SEL988334563685': 'Dörpen/West',
+        'SEL990492206410': 'Bentwisch',
+        'SEL997728577467': 'Lubmin',
+        'SEL998582120202': 'Emden/Ost',
+        }
+    return to_city
+
+def map_id_bus():
+    # Import manually generated list of wind offshore farms with their
+    # connection points (OSM_id)
+    id_bus = {
+        "Büttel": "136034396",
+        "Heide/West": "603661085",
+        "Suchraum Gemeinden Ibbenbüren/Mettingen/Westerkappeln": "114319248",
+        "Suchraum Zensenbusch": "76185022",
+        "Rommerskirchen": "24839976",
+        "Oberzier": "26593929",
+        "Garrel/Ost": "23837631",
+        "Diele": "177829920",
+        "Dörpen/West": "142487746",
+        "Emden/Borßum": "34835258",
+        "Emden/Ost": "34835258",
+        "Hagermarsch": "79316833",
+        "Hanekenfähr": "61918154",
+        "Inhausen": "29420322",
+        "Unterweser": "32076853",
+        "Wehrendorf": "33411203",
+        "Wilhelmshaven 2": "23744346",
+        "Rastede": "23837631",
+        "Bentwisch": "32063539",
+        "Lubmin": "460134233",
+        "Suchraum Gemeinde Papendorf": "32063539",
+        "Suchraum Gemeinden Brünzow/Kemnitz": "460134233",
+        "inhausen": "29420322",
+        "Cloppenburg": "50643382"
+    }
+    return id_bus
+
+def map_w_id():
+    w_id = {
+        "Büttel": "16331",
+        "Heide/West": "16516",
+        "Suchraum Gemeinden Ibbenbüren/Mettingen/Westerkappeln": "16326",
+        "Suchraum Zensenbusch": "16139",
+        "Rommerskirchen": "16139",
+        "Oberzier": "16139",
+        "Garrel/Ost": "16139",
+        "Diele": "16138",
+        "Dörpen/West": "15952",
+        "Emden/Borßum": "15762",
+        "Emden/Ost": "16140",
+        "Hagermarsch": "15951",
+        "Hanekenfähr": "16139",
+        "Inhausen": "15769",
+        "Unterweser": "16517",
+        "Wehrendorf": "16139",
+        "Wilhelmshaven 2": "16517",
+        "Rastede": "16139",
+        "Bentwisch": "16734",
+        "Lubmin": "16548",
+        "Suchraum Gemeinde Papendorf": "16352",
+        "Suchraum Gemeinden Brünzow/Kemnitz": "16548",
+        "inhausen": "15769",
+        "Cloppenburg": "16334"
+    }
+    return w_id
+
 
 def insert():
     """
@@ -40,57 +132,9 @@ def insert():
         ],
     )
     offshore.dropna(subset=["Netzverknuepfungspunkt"], inplace=True)
-
-    # Import manually generated list of wind offshore farms with their
-    # connection points (OSM_id)
-    id_bus = {
-        "Büttel": "136034396",
-        "Heide/West": "603661085",
-        "Suchraum Gemeinden Ibbenbüren/Mettingen/Westerkappeln": "114319248",
-        "Suchraum Zensenbusch": "76185022",
-        "Rommerskirchen": "24839976",
-        "Oberzier": "26593929",
-        "Garrel/Ost": "23837631",
-        "Diele": "177829920",
-        "Dörpen/West": "142487746",
-        "Emden/Borßum": "34835258",
-        "Emden/Ost": "34835258",
-        "Hagermarsch": "79316833",
-        "Hanekenfähr": "61918154",
-        "Inhausen": "29420322",
-        "Unterweser": "32076853",
-        "Wehrendorf": "33411203",
-        "Wilhelmshaven 2": "23744346",
-        "Rastede": "23837631",
-        "Bentwisch": "32063539",
-        "Lubmin": "460134233",
-        "Suchraum Gemeinde Papendorf": "32063539",
-        "Suchraum Gemeinden Brünzow/Kemnitz": "460134233",
-    }
-    w_id = {
-        "Büttel": "16331",
-        "Heide/West": "16516",
-        "Suchraum Gemeinden Ibbenbüren/Mettingen/Westerkappeln": "16326",
-        "Suchraum Zensenbusch": "16139",
-        "Rommerskirchen": "16139",
-        "Oberzier": "16139",
-        "Garrel/Ost": "16139",
-        "Diele": "16138",
-        "Dörpen/West": "15952",
-        "Emden/Borßum": "15762",
-        "Emden/Ost": "16140",
-        "Hagermarsch": "15951",
-        "Hanekenfähr": "16139",
-        "Inhausen": "15769",
-        "Unterweser": "16517",
-        "Wehrendorf": "16139",
-        "Wilhelmshaven 2": "16517",
-        "Rastede": "16139",
-        "Bentwisch": "16734",
-        "Lubmin": "16548",
-        "Suchraum Gemeinde Papendorf": "16352",
-        "Suchraum Gemeinden Brünzow/Kemnitz": "16548",
-    }
+    
+    id_bus = map_id_bus()
+    w_id = map_w_id()
 
     # Match wind offshore table with the corresponding OSM_id
     offshore["osm_id"] = offshore["Netzverknuepfungspunkt"].map(id_bus)
