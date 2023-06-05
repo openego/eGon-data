@@ -207,8 +207,10 @@ def write_power_plants_table(power_plants, cfg, con):
         start=ini_id, stop=ini_id + len(power_plants), name="id"
     )
 
+    # Set json format
     for i in power_plants.index:
         power_plants.sources[i] = json.dumps(power_plants.sources[i])
+        power_plants.source_id[i] = json.dumps(power_plants.source_id[i])
 
     # Insert into database
     power_plants.reset_index().to_postgis(
