@@ -211,17 +211,22 @@ def fix_subnetworks(scn_name):
             scn_name,
             6,
         )
-
-        # Missing line from Umspannwerk Plottling to Gänsdorf UW
-        add_line(
-            12.85381530378627,  # Umspannwerk Plottling
-            48.764209444817745,
-            12.769768646403532,  # Gänsdorf UW
-            48.80533685376445,
-            380,
-            scn_name,
-            3,
-        )
+        if (select_bus_id(12.85381530378627,
+                    48.764209444817745,
+                    380,
+                    scn_name,
+                    "AC") != None):
+            
+            # Missing line from Umspannwerk Plottling to Gänsdorf UW
+            add_line(
+                12.85381530378627,  # Umspannwerk Plottling
+                48.764209444817745,
+                12.769768646403532,  # Gänsdorf UW
+                48.80533685376445,
+                380,
+                scn_name,
+                3,
+            )
 
         # Missing line inside Ottstedt
         add_line(
