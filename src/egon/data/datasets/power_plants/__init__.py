@@ -1177,22 +1177,23 @@ def power_plants_status_quo(scn_name="status2019"):
             wind_offshore.loc[wt, "bus_id"] = sub_sta["voltage"].idxmax()
 
     wind_offshore.dropna(subset=["bus_id"], inplace=True)
-
-    wind_offshore["geom"] = wind_offshore["geom"].to_wkt()
-    for i, row in wind_offshore.iterrows():
-        entry = EgonPowerPlants(
-            sources={"el_capacity": "MaStR"},
-            source_id={"MastrNummer": row.gens_id},
-            carrier="wind_offshore",
-            el_capacity=row.capacity,
-            scenario=scn_name,
-            bus_id=row.bus_id,
-            voltage_level=row.voltage_level,
-            weather_cell_id=-1,
-            geom=row.geom,
-        )
-        session.add(entry)
-    session.commit()
+    
+    if len(wind_offshore) > 0:
+        wind_offshore["geom"] = wind_offshore["geom"].to_wkt()
+        for i, row in wind_offshore.iterrows():
+            entry = EgonPowerPlants(
+                sources={"el_capacity": "MaStR"},
+                source_id={"MastrNummer": row.gens_id},
+                carrier="wind_offshore",
+                el_capacity=row.capacity,
+                scenario=scn_name,
+                bus_id=row.bus_id,
+                voltage_level=1,
+                weather_cell_id=-1,
+                geom=row.geom,
+            )
+            session.add(entry)
+        session.commit()
 
     logging.info(
         f"""
