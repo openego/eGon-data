@@ -123,8 +123,10 @@ def find_weather_id():
     power_plants = power_plants[
         (power_plants["carrier"] == "solar")
         | (power_plants["carrier"] == "wind_onshore")
-        | ((power_plants["carrier"] == "wind_offshore") &
-           (power_plants["weather_cell_id"] == -1))
+        | (
+            (power_plants["carrier"] == "wind_offshore")
+            & (power_plants["weather_cell_id"] == -1)
+        )
     ]
     power_plants.set_index("id", inplace=True)
 
