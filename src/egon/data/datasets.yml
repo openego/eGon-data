@@ -1133,6 +1133,7 @@ emobility_mit:
   scenario:
     # used scenario variation (available scenarios see parameters.py)
     variation:
+      status2019: "status2019"
       eGon2035: "NEP C 2035"
       eGon100RE: "Reference 2050"
     # name of low-flex scenario
