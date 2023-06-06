@@ -1136,24 +1136,6 @@ def power_plants_status_quo(scn_name="status2019"):
     buses = gpd.GeoDataFrame.from_postgis(
         sql, con, crs="EPSG:4326", geom_col="point", index_col="bus_id"
     )
-    # for testing purposes
-    # # Import table with all the buses of the grid
-    # import psycopg2
-    # conn = psycopg2.connect(dbname="powerd-data",
-    #                         user="egon",
-    #                         password="data",
-    #                         host="127.0.0.1",
-    #                         port= "8083"
-    #                         )
-
-    # sql = f"""
-    #     SELECT bus_i as bus_id, geom as point, CAST(osm_substation_id AS text)
-    #     as osm_id, cast(base_kv AS int) as voltage FROM {cfg["sources"]["buses_data"]}
-    #     """
-
-    # buses = gpd.GeoDataFrame.from_postgis(
-    #     sql, conn, crs="EPSG:4326", geom_col="point", index_col= "bus_id"
-    # )
 
     wind_offshore["LokationMastrNummer"] = wind_offshore.gens_id.map(
         raw_wind["LokationMastrNummer"]
@@ -1177,7 +1159,7 @@ def power_plants_status_quo(scn_name="status2019"):
             wind_offshore.loc[wt, "bus_id"] = sub_sta["voltage"].idxmax()
 
     wind_offshore.dropna(subset=["bus_id"], inplace=True)
-    
+
     if len(wind_offshore) > 0:
         wind_offshore["geom"] = wind_offshore["geom"].to_wkt()
         for i, row in wind_offshore.iterrows():
