@@ -24,7 +24,6 @@ import egon.data.subprocess as subproc
 
 
 def run_pypsa_eur_sec():
-
     cwd = Path(".")
     filepath = cwd / "run-pypsa-eur-sec"
     filepath.mkdir(parents=True, exist_ok=True)
@@ -132,7 +131,6 @@ def run_pypsa_eur_sec():
 
 
 def read_network():
-
     # Set execute_pypsa_eur_sec to False until optional task is implemented
     execute_pypsa_eur_sec = False
     cwd = Path(".")
@@ -266,7 +264,6 @@ def clean_database():
 
 
 def neighbor_reduction():
-
     network = read_network()
 
     network.links.drop("pipe_retrofit", axis="columns", inplace=True)
@@ -669,7 +666,7 @@ def neighbor_reduction():
             index=True,
             index_label="line_id",
         )
-    
+
     for scn in config.settings()["egon-data"]["--scenarios"]:
         lines_to_etrago(neighbor_lines=neighbor_lines, scn=scn)
 
@@ -820,7 +817,11 @@ def neighbor_reduction():
         extendable=False,
     )
 
-    links_to_etrago(neighbor_links[neighbor_links.carrier == "DC"], "eGon2035")
+    for scn in config.settings()["egon-data"]["--scenarios"]:
+        if scn != "eGon100RE":
+            links_to_etrago(
+                neighbor_links[neighbor_links.carrier == "DC"], scn
+            )
 
     # prepare neighboring generators for etrago tables
     neighbor_gens["scn_name"] = "eGon100RE"
