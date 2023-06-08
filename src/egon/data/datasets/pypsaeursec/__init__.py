@@ -16,7 +16,7 @@ import pandas as pd
 import pypsa
 import yaml
 
-from egon.data import __path__, db, logger
+from egon.data import __path__, db, logger, config
 from egon.data.datasets import Dataset
 from egon.data.datasets.scenario_parameters import get_sector_parameters
 import egon.data.config
@@ -669,9 +669,9 @@ def neighbor_reduction():
             index=True,
             index_label="line_id",
         )
-
-    lines_to_etrago(neighbor_lines=neighbor_lines, scn="eGon100RE")
-    lines_to_etrago(neighbor_lines=neighbor_lines, scn="eGon2035")
+    
+    for scn in config.settings()["egon-data"]["--scenarios"]:
+        lines_to_etrago(neighbor_lines=neighbor_lines, scn=scn)
 
     def links_to_etrago(neighbor_links, scn="eGon100RE", extendable=True):
         """Prepare and write neighboring crossborder links to eTraGo table
