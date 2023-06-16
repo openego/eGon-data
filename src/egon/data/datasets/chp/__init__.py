@@ -415,7 +415,7 @@ def insert_chp_statusquo():
 
         gas_bus_id = db.assign_gas_bus_id(mastr, "status2019", "CH4").bus
 
-        mastr = assign_bus_id(mastr, cfg)
+        mastr = assign_bus_id(mastr, cfg, drop_missing=True)
 
         mastr["gas_bus_id"] = gas_bus_id
 
@@ -684,11 +684,9 @@ if "eGon2035" in config.settings()["egon-data"]["--scenarios"]:
 if extension != set():
     tasks = tasks + (extension,)
 
+
 class Chp(Dataset):
     def __init__(self, dependencies):
         super().__init__(
-            name="Chp",
-            version="0.0.7",
-            dependencies=dependencies,
-            tasks=tasks
+            name="Chp", version="0.0.7", dependencies=dependencies, tasks=tasks
         )
