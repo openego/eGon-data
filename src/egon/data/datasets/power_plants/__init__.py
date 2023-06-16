@@ -493,7 +493,7 @@ def assign_voltage_level_by_capacity(mastr_loc):
     return mastr_loc.voltage_level
 
 
-def assign_bus_id(power_plants, cfg):
+def assign_bus_id(power_plants, cfg, drop_missing=False):
     """Assigns bus_ids to power plants according to location and voltage level
 
     Parameters
@@ -550,6 +550,9 @@ def assign_bus_id(power_plants, cfg):
                 power_plants[power_plants.index.isin(power_plants_ehv)],
                 ehv_grid_districts,
             ).bus_id
+
+    if drop_missing:
+        power_plants = power_plants[~power_plants.bus_id.isnull()]
 
     # Assert that all power plants have a bus_id
     assert power_plants.bus_id.notnull().all(), f"""Some power plants are
