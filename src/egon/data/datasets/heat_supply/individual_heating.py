@@ -1863,15 +1863,16 @@ def determine_hp_cap_peak_load_mvgd_ts_2035(mvgd_ids):
         df_hp_cap_per_building_2035_db.duplicated("building_id", keep=False)
     ]
 
-    logger.info(
-        f"Dropped duplicated buildings: "
-        f"{duplicates.loc[:,['building_id', 'hp_capacity']]}"
-    )
+    if not duplicates.empty:
+        logger.info(
+            f"Dropped duplicated buildings: "
+            f"{duplicates.loc[:,['building_id', 'hp_capacity']]}"
+        )
 
     df_hp_cap_per_building_2035_db.drop_duplicates("building_id", inplace=True)
 
-    df_hp_cap_per_building_2019_db.building_id = (
-        df_hp_cap_per_building_2019_db.building_id.astype(int)
+    df_hp_cap_per_building_2035_db.building_id = (
+        df_hp_cap_per_building_2035_db.building_id.astype(int)
     )
 
     write_table_to_postgres(
@@ -1988,17 +1989,23 @@ def determine_hp_cap_peak_load_mvgd_ts_2019(mvgd_ids):
 
     df_hp_cap_per_building_2019_db["scenario"] = "status2019"
 
+
     # TODO debug duplicated building_ids
     duplicates = df_hp_cap_per_building_2019_db.loc[
         df_hp_cap_per_building_2019_db.duplicated("building_id", keep=False)
     ]
 
-    logger.info(
-        f"Dropped duplicated buildings: "
-        f"{duplicates.loc[:,['building_id', 'hp_capacity']]}"
-    )
+    if not duplicates.empty:
+        logger.info(
+            f"Dropped duplicated buildings: "
+            f"{duplicates.loc[:,['building_id', 'hp_capacity']]}"
+        )
 
     df_hp_cap_per_building_2019_db.drop_duplicates("building_id", inplace=True)
+
+    df_hp_cap_per_building_2019_db.building_id = (
+        df_hp_cap_per_building_2019_db.building_id.astype(int)
+    )
 
     write_table_to_postgres(
         df_hp_cap_per_building_2019_db,
