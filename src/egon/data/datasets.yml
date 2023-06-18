@@ -379,6 +379,7 @@ power_plants:
       pv: 'supply.egon_power_plants_pv'
       wind: 'supply.egon_power_plants_wind'
       nep_2035: "NEP2035_V2021_scnC2035.xlsx"
+      nep_2019: "NEP_scn_status2019.xlsx"
       storages: 'supply.egon_storages'
   target:
       table: 'egon_power_plants'

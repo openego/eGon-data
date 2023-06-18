@@ -40,35 +40,52 @@ def map_to_city():
         }
     return to_city
 
-def map_id_bus():
+def map_id_bus(scenario="eGon2035"):
     # Import manually generated list of wind offshore farms with their
     # connection points (OSM_id)
-    id_bus = {
-        "Büttel": "136034396",
-        "Heide/West": "603661085",
-        "Suchraum Gemeinden Ibbenbüren/Mettingen/Westerkappeln": "114319248",
-        "Suchraum Zensenbusch": "76185022",
-        "Rommerskirchen": "24839976",
-        "Oberzier": "26593929",
-        "Garrel/Ost": "23837631",
-        "Diele": "177829920",
-        "Dörpen/West": "142487746",
-        "Emden/Borßum": "34835258",
-        "Emden/Ost": "34835258",
-        "Hagermarsch": "79316833",
-        "Hanekenfähr": "61918154",
-        "Inhausen": "29420322",
-        "Unterweser": "32076853",
-        "Wehrendorf": "33411203",
-        "Wilhelmshaven 2": "23744346",
-        "Rastede": "23837631",
-        "Bentwisch": "32063539",
-        "Lubmin": "460134233",
-        "Suchraum Gemeinde Papendorf": "32063539",
-        "Suchraum Gemeinden Brünzow/Kemnitz": "460134233",
-        "inhausen": "29420322",
-        "Cloppenburg": "50643382"
-    }
+    if scenario=="eGon2035":
+        id_bus = {
+            "Büttel": "136034396",
+            "Heide/West": "603661085",
+            "Suchraum Gemeinden Ibbenbüren/Mettingen/Westerkappeln": "114319248",
+            "Suchraum Zensenbusch": "76185022",
+            "Rommerskirchen": "24839976",
+            "Oberzier": "26593929",
+            "Garrel/Ost": "23837631",
+            "Diele": "177829920",
+            "Dörpen/West": "142487746",
+            "Emden/Borßum": "34835258",
+            "Emden/Ost": "34835258",
+            "Hagermarsch": "79316833",
+            "Hanekenfähr": "61918154",
+            "Inhausen": "29420322",
+            "Unterweser": "32076853",
+            "Wehrendorf": "33411203",
+            "Wilhelmshaven 2": "23744346",
+            "Rastede": "23837631",
+            "Bentwisch": "32063539",
+            "Lubmin": "460134233",
+            "Suchraum Gemeinde Papendorf": "32063539",
+            "Suchraum Gemeinden Brünzow/Kemnitz": "460134233",
+            "inhausen": "29420322",
+            "Cloppenburg": "50643382"
+        }
+    elif scenario=="status2019":
+        id_bus = {
+        'UW Inhausen':'29420322',
+        'UW Bentwisch':'32063539',
+        'UW Emden / Borssum':'34835258',
+        'UW Emden Ost':'34835258',
+        'UW Cloppenburg':'50643382',
+        'UW Hagermarsch':'79316833',
+        'UW Büttel':'136034396',
+        'UW Dörpen West':'142487746',
+        'UW Diele':'177829920',
+        'UW Lubmin':'460134233',
+        }
+    else:
+        id_bus = {}
+        
     return id_bus
 
 def map_w_id():
@@ -99,6 +116,31 @@ def map_w_id():
         "Cloppenburg": "16334"
     }
     return w_id
+
+def map_ONEP_areas():
+    onep = {
+        "NOR-0-1": Point(6.5,53.6),
+        "NOR-0-2": Point(8.07,53.76),
+        "NOR-1": Point(6.21,54.06),
+        "NOR-2-1": Point(6.54,53.99),
+        "NOR-2-2": Point(6.54,53.99),
+        "NOR-2-3": Point(6.54,53.99),
+        "NOR-3-1": Point(6.95,54.02),
+        "NOR-4-1": Point(7.70,54.44),
+        "NOR-4-2": Point(7.70,54.44),
+        "NOR-5-1": Point(7.21,55.14),
+        "NOR-6-1": Point(5.92,54.30),
+        "NOR-6-2": Point(5.92,54.30),
+        "NOR-7": Point(6.22,54.32),
+        "NOR-8-1": Point(6.35,54.48),
+        "OST-1-1": Point(14.09,54.82),
+        "OST-1-2": Point(14.09,54.82),
+        "OST-1-3": Point(14.09,54.82),
+        "OST-2": Point(13.86,54.83),
+        "OST-3-1": Point(13.16,54.98),
+        "OST-3-2": Point(13.16,54.98),
+        }
+    return onep
 
 
 def insert():
