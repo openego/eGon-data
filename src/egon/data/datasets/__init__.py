@@ -186,7 +186,11 @@ class Dataset:
                 datasets = session.query(Model).filter_by(name=self.name).all()
                 if (
                     self.version in [ds.version for ds in datasets]
-                    and scenario_names in [ds.scenarios for ds in datasets]
+                    and scenario_names
+                    == [
+                        ds.scenarios.replace("{", "").replace("}", "")
+                        for ds in datasets
+                    ]
                     and not re.search(r"\.dev$", self.version)
                 ):
                     logger.info(
