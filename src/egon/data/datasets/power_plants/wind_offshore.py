@@ -3,7 +3,6 @@ import logging
 
 from shapely.geometry import Point
 import geopandas as gpd
-import numpy as np
 import pandas as pd
 
 from egon.data import db
