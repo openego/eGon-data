@@ -9,39 +9,6 @@ from egon.data import db
 import egon.data.config
 
 
-def map_to_city():
-    # map from connection point to city
-    to_city = {
-        "SEL900790170542": "Dörpen/West",
-        "SEL903815302577": "Dörpen/West",
-        "SEL906065107428": "Büttel",
-        "SEL919433257267": "Büttel",
-        "SEL919746983181": "Lubmin",
-        "SEL919786394244": "Emden/Ost",
-        "SEL922199100944": "Büttel",
-        "SEL925169438559": "Dörpen/West",
-        "SEL928599601562": "Büttel",
-        "SEL929196129428": "Cloppenburg",
-        "SEL932958083050": "Emden/Ost",
-        "SEL933375144706": "inhausen",
-        "SEL941255164959": "Emden/Borßum",
-        "SEL943058624104": "Bentwisch",
-        "SEL943629000788": "Emden/Ost",
-        "SEL947312274135": "Dörpen/West",
-        "SEL947778987563": "Dörpen/West",
-        "SEL953673961584": "Cloppenburg",
-        "SEL960138676303": "Büttel",
-        "SEL964485571465": "Cloppenburg",
-        "SEL964827249373": "Emden/Ost",
-        "SEL969972182469": "Büttel",
-        "SEL988334563685": "Dörpen/West",
-        "SEL990492206410": "Bentwisch",
-        "SEL997728577467": "Lubmin",
-        "SEL998582120202": "Emden/Ost",
-    }
-    return to_city
-
-
 def map_id_bus(scenario):
     # Import manually generated list of wind offshore farms with their
     # connection points (OSM_id)
