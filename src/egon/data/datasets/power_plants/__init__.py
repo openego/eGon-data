@@ -1111,95 +1111,6 @@ def power_plants_status_quo(scn_name="status2019"):
           """
     )
 
-    # Write wind_offshore power plants in supply.egon_power_plants
-    offshore_path = (
-        Path(".")
-        / "data_bundle_egon_data"
-        / "nep2035_version2021"
-        / cfg["sources"]["nep_2019"]
-    )
-    offshore = pd.read_excel(
-        offshore_path,
-        sheet_name="wind_offshore",
-        usecols=[
-            "Name ONEP/NEP",
-            "NVP",
-            "Spannung [kV]",
-            "Inbetriebnahme",
-            "Kapazität Gesamtsystem [MW]",
-        ],
-    )
-    offshore.dropna(subset=["Name ONEP/NEP"], inplace=True)
-    offshore.rename(
-        columns={
-            "NVP": "Netzverknuepfungspunkt",
-            "Spannung [kV]": "Spannungsebene in kV",
-        },
-        inplace=True,
-    )
-    offshore = offshore[offshore["Inbetriebnahme"] <= 2019]
-
-    id_bus = map_id_bus(scenario=scn_name)
-
-    # Match wind offshore table with the corresponding OSM_id
-    offshore["osm_id"] = offshore["Netzverknuepfungspunkt"].map(id_bus)
-
-    # Import table with all the busses of the grid
-    sql = f"""
-        SELECT bus_i as bus_id, geom as point, CAST(osm_substation_id AS text)
-        as osm_id, CAST(base_kv AS int) FROM {cfg["sources"]["buses_data"]}
-        """
-
-    busses = gpd.GeoDataFrame.from_postgis(
-        sql, con, crs="EPSG:4326", geom_col="point"
-    )
-
-    # Drop NANs in column osm_id
-    busses.dropna(subset=["osm_id"], inplace=True)
-
-    # Create columns for bus_id and geometry in the offshore df
-    offshore["bus_id"] = np.nan
-
-    # Match bus_id
-    for index, wind_park in offshore.iterrows():
-        if not busses[
-            (busses["osm_id"] == wind_park["osm_id"])
-            & (busses["base_kv"] == wind_park["Spannungsebene in kV"])
-        ].empty:
-            bus_ind = busses[busses["osm_id"] == wind_park["osm_id"]].index[0]
-            offshore.at[index, "bus_id"] = busses.at[bus_ind, "bus_id"]
-        else:
-            print(f'Wind offshore farm not found: {wind_park["osm_id"]}')
-
-    offshore.dropna(subset=["bus_id"], inplace=True)
-
-    offshore["geom"] = offshore["Name ONEP/NEP"].map(map_ONEP_areas())
-    offshore = gpd.GeoDataFrame(offshore, geometry="geom")
-
-    if len(offshore) > 0:
-        offshore["geom"] = offshore["geom"].to_wkt()
-        for i, row in offshore.iterrows():
-            entry = EgonPowerPlants(
-                sources={"el_capacity": "MaStR"},
-                source_id={"MastrNummer": row["Name ONEP/NEP"]},
-                carrier="wind_offshore",
-                el_capacity=row["Kapazität Gesamtsystem [MW]"],
-                scenario=scn_name,
-                bus_id=row.bus_id,
-                voltage_level=1,
-                weather_cell_id=-1,
-                geom=row.geom,
-            )
-            session.add(entry)
-        session.commit()
-
-    logging.info(
-        f"""
-          {len(offshore)} wind_offshore generators with a total installed capacity of
-          {offshore['Kapazität Gesamtsystem [MW]'].sum()}MW were inserted into the db
-          """
-    )
-
     return
 
 
@@ -1232,17 +1143,16 @@ if (
                 pv_rooftop_to_buildings,
             ),
         },
-        wind_offshore.insert,
     )
 
-tasks = tasks + (assign_weather_data.weatherId_and_busId,)
+tasks = tasks + (wind_offshore.insert, assign_weather_data.weatherId_and_busId,)
 
 
 class PowerPlants(Dataset):
     def __init__(self, dependencies):
         super().__init__(
             name="PowerPlants",
-            version="0.0.18",
+            version="0.0.19",
             dependencies=dependencies,
             tasks=tasks,
         )
