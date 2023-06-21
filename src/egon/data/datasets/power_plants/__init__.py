@@ -34,12 +34,6 @@ from egon.data.datasets.power_plants.pv_rooftop_buildings import (
     geocode_mastr_data,
     pv_rooftop_to_buildings,
 )
-from egon.data.datasets.power_plants.wind_offshore import (
-    map_to_city,
-    map_id_bus,
-    map_w_id,
-    map_ONEP_areas,
-)
 import egon.data.config
 import egon.data.datasets.power_plants.assign_weather_data as assign_weather_data  # noqa: E501
 import egon.data.datasets.power_plants.pv_ground_mounted as pv_ground_mounted
