@@ -1,6 +1,7 @@
 """The central module containing all code dealing with power plant data.
 """
 from geoalchemy2 import Geometry
+from pathlib import Path
 from sqlalchemy import BigInteger, Column, Float, Integer, Sequence, String
 from sqlalchemy.dialects.postgresql import JSONB
 from sqlalchemy.ext.declarative import declarative_base
@@ -911,7 +912,8 @@ def power_plants_status_quo(scn_name="status2019"):
         f"""
         DELETE FROM {cfg['target']['schema']}.{cfg['target']['table']}
         WHERE carrier IN ('wind_onshore', 'solar', 'biomass',
-                          'run_of_river', 'reservoir', 'solar_rooftop')
+                          'run_of_river', 'reservoir', 'solar_rooftop',
+                          'wind_offshore')
         AND scenario = '{scn_name}'
         """
     )
@@ -1006,7 +1008,7 @@ def power_plants_status_quo(scn_name="status2019"):
     logging.info(
         f"""
           {len(hydro)} hydro generators with a total installed capacity of
-          {hydro.capacity.sum()}MW were inserted in db
+          {hydro.capacity.sum()}MW were inserted into the db
           """
     )
 
@@ -1034,7 +1036,7 @@ def power_plants_status_quo(scn_name="status2019"):
     logging.info(
         f"""
           {len(biomass)} biomass generators with a total installed capacity of
-          {biomass.capacity.sum()}MW were inserted in db
+          {biomass.capacity.sum()}MW were inserted into the db
           """
     )
 
@@ -1072,7 +1074,7 @@ def power_plants_status_quo(scn_name="status2019"):
     logging.info(
         f"""
           {len(solar)} solar generators with a total installed capacity of
-          {solar.capacity.sum()}MW were inserted in db
+          {solar.capacity.sum()}MW were inserted into the db
           """
     )
 
@@ -1102,7 +1104,7 @@ def power_plants_status_quo(scn_name="status2019"):
     logging.info(
         f"""
           {len(wind_onshore)} wind_onshore generators with a total installed capacity of
-          {wind_onshore.capacity.sum()}MW were inserted in db
+          {wind_onshore.capacity.sum()}MW were inserted into the db
           """
     )
 
@@ -1138,10 +1140,9 @@ if (
                 pv_rooftop_to_buildings,
             ),
         },
-        wind_offshore.insert,
     )
 
-tasks = tasks + (assign_weather_data.weatherId_and_busId,)
+tasks = tasks + (wind_offshore.insert, assign_weather_data.weatherId_and_busId,)
 
 
 class PowerPlants(Dataset):
