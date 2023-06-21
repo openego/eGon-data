@@ -1281,7 +1281,7 @@ def entsoe_historic_generation_capacities(entsoe_token=None, year_start="2019010
     end = pd.Timestamp(year_end, tz="Europe/Brussels")
     start_gb = pd.Timestamp(year_start, tz="Europe/London")
     end_gb = pd.Timestamp(year_end, tz="Europe/London")
-    countries= ["LU", "AT", "FR", "NL", 
+    countries= ["LU", "AT", "FR", "NL", "CZ",
                 "DK_1", "DK_2", "PL", "CH", "NO", "BE", "SE", "GB"]
     
      # todo: define wanted countries
@@ -1321,7 +1321,7 @@ def entsoe_historic_demand(entsoe_token=None, year_start="20190101", year_end="2
     start_gb = start.tz_convert("Europe/London")
     end_gb = end.tz_convert("Europe/London")
 
-    countries= ["LU", "AT", "FR", "NL", 
+    countries= ["LU", "AT", "FR", "NL", "CZ",
                 "DK_1", "DK_2", "PL", "CH", "NO", "BE", "SE", "GB"]
     
     
@@ -1398,7 +1398,8 @@ def entsoe_to_bus_etrago():
                  "NO": "NO00",
                  "BE": "BE00",
                  "SE": "SE00",
-                 "GB": "UK00"})
+                 "GB": "UK00",
+                 "CZ": "CZ00"})
 
     for_bus = get_foreign_bus_id(scenario='status2019')
 
