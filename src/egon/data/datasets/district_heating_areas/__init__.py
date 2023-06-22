@@ -46,7 +46,7 @@ class DistrictHeatingAreas(Dataset):
         super().__init__(
             name="district-heating-areas",
             # version=self.target_files + "_0.0",
-            version="0.0.2",  # maybe rethink the naming
+            version="0.0.3",  # maybe rethink the naming
             dependencies=dependencies,
             tasks=(create_tables, demarcation),
         )
@@ -560,7 +560,7 @@ def district_heating_areas(scenario_name, plotting=False):
     # ASSUMPTION HERE: 2035 HD defined the PSDs
     min_hd = 10000 / 3.6
     PSDs = area_grouping(
-        select_high_heat_demands(load_heat_demands("eGon2035")),
+        select_high_heat_demands(load_heat_demands(scenario_name)),
         distance=200,
         minimum_total_demand=min_hd,
     )
