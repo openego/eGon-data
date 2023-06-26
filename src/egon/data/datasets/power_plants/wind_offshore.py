@@ -146,7 +146,7 @@ def insert():
             AND scenario = '{scenario}'
             """
         )
-        
+
         # load file
         if scenario == "eGon2035":
             offshore_path = (
@@ -166,7 +166,7 @@ def insert():
                 ],
             )
             offshore.dropna(subset=["Netzverknuepfungspunkt"], inplace=True)
-            offshore.rename(columns={"C 2035": "el_capacity"}, inplace= True)
+            offshore.rename(columns={"C 2035": "el_capacity"}, inplace=True)
 
         elif scenario == "eGon100RE":
             offshore_path = (
@@ -220,8 +220,7 @@ def insert():
 
         # Match wind offshore table with the corresponding OSM_id
         offshore["osm_id"] = offshore["Netzverknuepfungspunkt"].map(id_bus)
-        
-       
+
         buses = db.select_geodataframe(
             f"""
                 SELECT bus_i as bus_id, base_kv, geom as point, CAST(osm_substation_id AS text)
@@ -237,38 +236,35 @@ def insert():
         # Create columns for bus_id and geometry in the offshore df
         offshore["bus_id"] = pd.NA
         offshore["geom"] = Point(0, 0)
-        
+
         # Match bus_id
         for index, wind_park in offshore.iterrows():
             if not buses[
                 (buses["osm_id"] == wind_park["osm_id"])
                 & (buses["base_kv"] == wind_park["Spannungsebene in kV"])
             ].empty:
-                bus_ind = buses[
-                    buses["osm_id"] == wind_park["osm_id"]
-                ].index[0]
+                bus_ind = buses[buses["osm_id"] == wind_park["osm_id"]].index[
+                    0
+                ]
                 offshore.at[index, "bus_id"] = buses.at[bus_ind, "bus_id"]
             else:
                 print(f'Wind offshore farm not found: {wind_park["osm_id"]}')
 
         offshore.dropna(subset=["bus_id"], inplace=True)
-        
+
         # Overwrite geom for status2019 parks
         if scenario in ["eGon2035", "eGon100RE"]:
-            offshore["Name ONEP/NEP"] = offshore["Netzverknuepfungspunkt"].map(assign_ONEP_areas())
+            offshore["Name ONEP/NEP"] = offshore["Netzverknuepfungspunkt"].map(
+                assign_ONEP_areas()
+            )
 
         offshore["geom"] = offshore["Name ONEP/NEP"].map(map_ONEP_areas())
         offshore["weather_cell_id"] = pd.NA
-        
-        offshore.drop(
-            ["Name ONEP/NEP"], axis=1, inplace=True
-        )
-        
-        if scenario == "status2019":
-            offshore.drop(
-                ["Inbetriebnahme"], axis=1, inplace=True
-            )
 
+        offshore.drop(["Name ONEP/NEP"], axis=1, inplace=True)
+
+        if scenario == "status2019":
+            offshore.drop(["Inbetriebnahme"], axis=1, inplace=True)
 
         # Scale capacities for eGon100RE
         if scenario == "eGon100RE":
