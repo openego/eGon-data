@@ -58,34 +58,34 @@ def map_id_bus(scenario):
     return id_bus
 
 
-def map_w_id():
+def assign_ONEP_areas():
     w_id = {
-        "Büttel": "16331",
-        "Heide/West": "16516",
-        "Suchraum Gemeinden Ibbenbüren/Mettingen/Westerkappeln": "16326",
-        "Suchraum Zensenbusch": "16139",
-        "Rommerskirchen": "16139",
-        "Oberzier": "16139",
-        "Garrel/Ost": "16139",
-        "Diele": "16138",
-        "Dörpen/West": "15952",
-        "Emden/Borßum": "15762",
-        "Emden/Ost": "16140",
-        "Hagermarsch": "15951",
-        "Hanekenfähr": "16139",
-        "Inhausen": "15769",
-        "Unterweser": "16517",
-        "Wehrendorf": "16139",
-        "Wilhelmshaven 2": "16517",
-        "Rastede": "16139",
-        "Bentwisch": "16734",
-        "Lubmin": "16548",
-        "Suchraum Gemeinde Papendorf": "16352",
-        "Suchraum Gemeinden Brünzow/Kemnitz": "16548",
-        "inhausen": "15769",
-        "Cloppenburg": "16334",
+        "Büttel": "NOR-4-1",
+        "Heide/West": "NOR-10-2",
+        "Suchraum Gemeinden Ibbenbüren/Mettingen/Westerkappeln": "NOR-9-2",
+        "Suchraum Zensenbusch": "NOR-7-1",
+        "Rommerskirchen": "NOR-7-1",
+        "Oberzier": "NOR-7-1",
+        "Garrel/Ost": "NOR-7-1",
+        "Diele": "NOR-6-1",
+        "Dörpen/West": "NOR-2-2",
+        "Emden/Borßum": "NOR-0-1",
+        "Emden/Ost": "NOR-3-3",
+        "Hagermarsch": "NOR-2-1",
+        "Hanekenfähr": "NOR-6-3",
+        "Inhausen": "NOR-0-2",
+        "Unterweser": "NOR-9-1",
+        "Wehrendorf": "NOR-7-1",
+        "Wilhelmshaven 2": "NOR-11-1",
+        "Rastede": "NOR-7-1",
+        "Bentwisch": "OST-3-1",
+        "Lubmin": "OST-1-1",
+        "Suchraum Gemeinde Papendorf": "OST-7-1",
+        "Suchraum Gemeinden Brünzow/Kemnitz": "OST-1-4",
+        "inhausen": "NOR-0-2",
+        "Cloppenburg": "NOR-4-1",
     }
-    return w_id
+    return assign_onep
 
 
 def map_ONEP_areas():
@@ -93,6 +93,7 @@ def map_ONEP_areas():
         "NOR-0-1": Point(6.5, 53.6),
         "NOR-0-2": Point(8.07, 53.76),
         "NOR-1": Point(6.21, 54.06),
+        "NOR-1-1": Point(6.21, 54.06),
         "NOR-2-1": Point(6.54, 53.99),
         "NOR-2-2": Point(6.54, 53.99),
         "NOR-2-3": Point(6.54, 53.99),
@@ -102,14 +103,22 @@ def map_ONEP_areas():
         "NOR-5-1": Point(7.21, 55.14),
         "NOR-6-1": Point(5.92, 54.30),
         "NOR-6-2": Point(5.92, 54.30),
+        "NOR-6-3": Point(5.92, 54.30),
         "NOR-7": Point(6.22, 54.32),
+        "NOR-7-1": Point(6.22, 54.32),
         "NOR-8-1": Point(6.35, 54.48),
+        "NOR-9-1": Point(5.75, 54.5),
+        "NOR-9-2": Point(5.75, 54.5),
+        "NOR-10-2": Point(6, 54.75),
+        "NOR-11-1": Point(6.5, 54.75),
         "OST-1-1": Point(14.09, 54.82),
         "OST-1-2": Point(14.09, 54.82),
         "OST-1-3": Point(14.09, 54.82),
+        "OST-1-4": Point(14.09, 54.82),
         "OST-2": Point(13.86, 54.83),
         "OST-3-1": Point(13.16, 54.98),
         "OST-3-2": Point(13.16, 54.98),
+        "OST-7-1": Point(12.25, 54.5),
     }
     return onep
 
