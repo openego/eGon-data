@@ -362,7 +362,7 @@ def create():
     return idp_df
 
 
-def annual_demand_generator():
+def annual_demand_generator(scenario):
     """
 
     Description: Create dataframe with annual demand and household count for each zensus cell
@@ -374,7 +374,6 @@ def annual_demand_generator():
 
     """
 
-    scenario = "eGon2035"
     demand_zone = db.select_dataframe(
         f"""
         SELECT a.demand, a.zensus_population_id, a.scenario, c.climate_zone
@@ -463,7 +462,9 @@ def select():
     )
 
     # Calculate annual heat demand per census cell
-    annual_demand = annual_demand_generator()
+    annual_demand = annual_demand_generator(
+        scenario = egon.data.config.settings()["egon-data"]["--scenarios"][0]
+        )
 
     # Count number of SFH and MFH per climate zone
     houses_per_climate_zone = (
