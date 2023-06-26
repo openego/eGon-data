@@ -59,7 +59,7 @@ def map_id_bus(scenario):
 
 
 def assign_ONEP_areas():
-    w_id = {
+    assign_onep = {
         "Büttel": "NOR-4-1",
         "Heide/West": "NOR-10-2",
         "Suchraum Gemeinden Ibbenbüren/Mettingen/Westerkappeln": "NOR-9-2",
@@ -98,6 +98,7 @@ def map_ONEP_areas():
         "NOR-2-2": Point(6.54, 53.99),
         "NOR-2-3": Point(6.54, 53.99),
         "NOR-3-1": Point(6.95, 54.02),
+        "NOR-3-3": Point(6.95, 54.02),
         "NOR-4-1": Point(7.70, 54.44),
         "NOR-4-2": Point(7.70, 54.44),
         "NOR-5-1": Point(7.21, 55.14),
@@ -156,6 +157,7 @@ def insert():
                 ],
             )
             offshore.dropna(subset=["Netzverknuepfungspunkt"], inplace=True)
+            offshore.rename(columns={"C 2035": "el_capacity"}, inplace= True)
 
         elif scenario == "eGon100RE":
             offshore_path = (
@@ -206,56 +208,82 @@ def insert():
             offshore = offshore[offshore["Inbetriebnahme"] <= 2019]
 
         id_bus = map_id_bus(scenario)
-        w_id = map_w_id()
 
         # Match wind offshore table with the corresponding OSM_id
         offshore["osm_id"] = offshore["Netzverknuepfungspunkt"].map(id_bus)
-
-        busses = db.select_geodataframe(
-            f"""
-                SELECT bus_i as bus_id, base_kv, geom as point, CAST(osm_substation_id AS text)
-                as osm_id FROM {cfg["sources"]["buses_data"]}
-                """,
-            epsg=4326,
-            geom_col="point",
+        
+        ######################################################################
+        # for testing purposes
+        # # Import table with all the buses of the grid
+        import psycopg2
+        conn = psycopg2.connect(dbname="powerd-data",
+                                user="egon",
+                                password="data",
+                                host="127.0.0.1",
+                                port= "8083"
+                                )
+        
+        sql = f"""
+            SELECT bus_i as bus_id, base_kv, geom as point, CAST(osm_substation_id AS text)
+            as osm_id FROM {cfg["sources"]["buses_data"]}
+            """
+        
+        buses = gpd.GeoDataFrame.from_postgis(
+            sql, conn, crs="EPSG:4326", geom_col="point",
         )
+        ######################################################################
+        
+        
+        
+        
+        
+        # buses = db.select_geodataframe(
+        #     f"""
+        #         SELECT bus_i as bus_id, base_kv, geom as point, CAST(osm_substation_id AS text)
+        #         as osm_id FROM {cfg["sources"]["buses_data"]}
+        #         """,
+        #     epsg=4326,
+        #     geom_col="point",
+        # )
 
         # Drop NANs in column osm_id
-        busses.dropna(subset=["osm_id"], inplace=True)
+        buses.dropna(subset=["osm_id"], inplace=True)
 
         # Create columns for bus_id and geometry in the offshore df
         offshore["bus_id"] = 0
         offshore["geom"] = Point(0, 0)
-
+        
         # Match bus_id
         for index, wind_park in offshore.iterrows():
-            if not busses[
-                (busses["osm_id"] == wind_park["osm_id"])
-                & (busses["base_kv"] == wind_park["Spannungsebene in kV"])
+            if not buses[
+                (buses["osm_id"] == wind_park["osm_id"])
+                & (buses["base_kv"] == wind_park["Spannungsebene in kV"])
             ].empty:
-                bus_ind = busses[
-                    busses["osm_id"] == wind_park["osm_id"]
+                bus_ind = buses[
+                    buses["osm_id"] == wind_park["osm_id"]
                 ].index[0]
-                offshore.at[index, "bus_id"] = busses.at[bus_ind, "bus_id"]
+                offshore.at[index, "bus_id"] = buses.at[bus_ind, "bus_id"]
             else:
                 print(f'Wind offshore farm not found: {wind_park["osm_id"]}')
 
         offshore.dropna(subset=["bus_id"], inplace=True)
-
+        
         # Overwrite geom for status2019 parks
+        if scenario in ["eGon2035", "eGon100RE"]:
+            offshore["Name ONEP/NEP"] = offshore["Netzverknuepfungspunkt"].map(assign_ONEP_areas())
+
+        offshore["geom"] = offshore["Name ONEP/NEP"].map(map_ONEP_areas())
+        offshore["weather_cell_id"] = pd.NA
+        
+        offshore.drop(
+            ["Name ONEP/NEP"], axis=1, inplace=True
+        )
+        
         if scenario == "status2019":
-            offshore["geom"] = offshore["Name ONEP/NEP"].map(map_ONEP_areas())
-            offshore["weather_cell_id"] = -1
             offshore.drop(
-                ["Name ONEP/NEP", "Inbetriebnahme"], axis=1, inplace=True
+                ["Inbetriebnahme"], axis=1, inplace=True
             )
-        else:
-            offshore["weather_cell_id"] = offshore[
-                "Netzverknuepfungspunkt"
-            ].map(w_id)
-            offshore["weather_cell_id"] = offshore["weather_cell_id"].apply(
-                int
-            )
+
 
         # Scale capacities for eGon100RE
         if scenario == "eGon100RE":
@@ -328,6 +356,6 @@ def insert():
         logging.info(
             f"""
               {len(offshore)} wind_offshore generators with a total installed capacity of
-              {offshore['Kapazität Gesamtsystem [MW]'].sum()}MW were inserted into the db
+              {offshore['el_capacity'].sum()}MW were inserted into the db
               """
         )
