@@ -221,45 +221,21 @@ def insert():
         # Match wind offshore table with the corresponding OSM_id
         offshore["osm_id"] = offshore["Netzverknuepfungspunkt"].map(id_bus)
         
-        ######################################################################
-        # for testing purposes
-        # # Import table with all the buses of the grid
-        import psycopg2
-        conn = psycopg2.connect(dbname="powerd-data",
-                                user="egon",
-                                password="data",
-                                host="127.0.0.1",
-                                port= "8083"
-                                )
-        
-        sql = f"""
-            SELECT bus_i as bus_id, base_kv, geom as point, CAST(osm_substation_id AS text)
-            as osm_id FROM {cfg["sources"]["buses_data"]}
-            """
-        
-        buses = gpd.GeoDataFrame.from_postgis(
-            sql, conn, crs="EPSG:4326", geom_col="point",
+       
+        buses = db.select_geodataframe(
+            f"""
+                SELECT bus_i as bus_id, base_kv, geom as point, CAST(osm_substation_id AS text)
+                as osm_id FROM {cfg["sources"]["buses_data"]}
+                """,
+            epsg=4326,
+            geom_col="point",
         )
-        ######################################################################
-        
-        
-        
-        
-        
-        # buses = db.select_geodataframe(
-        #     f"""
-        #         SELECT bus_i as bus_id, base_kv, geom as point, CAST(osm_substation_id AS text)
-        #         as osm_id FROM {cfg["sources"]["buses_data"]}
-        #         """,
-        #     epsg=4326,
-        #     geom_col="point",
-        # )
 
         # Drop NANs in column osm_id
         buses.dropna(subset=["osm_id"], inplace=True)
 
         # Create columns for bus_id and geometry in the offshore df
-        offshore["bus_id"] = 0
+        offshore["bus_id"] = pd.NA
         offshore["geom"] = Point(0, 0)
         
         # Match bus_id
