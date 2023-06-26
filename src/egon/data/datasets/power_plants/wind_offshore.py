@@ -138,6 +138,15 @@ def insert():
     scenarios = egon.data.config.settings()["egon-data"]["--scenarios"]
 
     for scenario in scenarios:
+        # Delete previous generators
+        db.execute_sql(
+            f"""
+            DELETE FROM {cfg['target']['schema']}.{cfg['target']['table']}
+            WHERE carrier = 'wind_offshore'
+            AND scenario = '{scenario}'
+            """
+        )
+        
         # load file
         if scenario == "eGon2035":
             offshore_path = (
