@@ -12,6 +12,8 @@ The resulting data set serves as an input for the optimization tools `eTraGo <ht
 
 Objectives of the project
 =========================
+Driven by the expansion of renewable generation capacity and the progressing electrification of other energy sectors, the electrical grid increasingly faces new challenges: fluctuating supply of renewable energy and simultaneously a changing demand pattern caused by sector coupling. However, the integration of non-electric sectors such as gas, heat, and e-mobility enables more flexibility options. The eGo_n project aims to investigate the effects of sector coupling on the electrical grid and the benefits of new flexibility options. This requires the creation of a high spatial and temporal resolution data model of all sectors considered. 
+
 
 eGon-data as one element of the eGo-Toolchain
 =============================================
