@@ -89,9 +89,3 @@ Heat stores
 -------------
 
 .. include:: data/heat_stores.rst
-
-
-Data sets documentation
------------------------
-
-API Reference: egon.data <reference/egon.data>
