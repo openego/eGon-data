@@ -14,6 +14,7 @@ Contents
    contributing
    authors
    changelog
+   API Reference: egon.data <reference/egon.data>
 
 Indices and tables
 ==================
