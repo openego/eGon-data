@@ -74,10 +74,14 @@ from egon.data.datasets.zensus_vg250 import ZensusVg250
 # Set number of threads used by numpy and pandas
 set_numexpr_threads()
 
+
+
 with airflow.DAG(
     "powerd-status-quo-processing-pipeline",
     description="The PoWerD Status Quo data processing DAG.",
-    default_args={"start_date": days_ago(1)},
+    default_args={"start_date": days_ago(1),
+                  "email_on_failure": True,
+                  "email":"ulf.p.mueller@hs-flensburg.de"},
     template_searchpath=[
         os.path.abspath(
             os.path.join(
@@ -523,3 +527,5 @@ with airflow.DAG(
             demand_curves_industry,
         ]
     )
+
+
