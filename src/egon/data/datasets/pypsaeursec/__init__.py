@@ -16,7 +16,7 @@ import pandas as pd
 import pypsa
 import yaml
 
-from egon.data import __path__, db, logger
+from egon.data import __path__, config, db, logger
 from egon.data.datasets import Dataset
 from egon.data.datasets.scenario_parameters import get_sector_parameters
 import egon.data.config
@@ -259,9 +259,11 @@ def clean_database():
         )
 
     db.execute_sql(
-        "DELETE FROM grid.egon_etrago_bus "
-        "WHERE scn_name = '{scn_name}' "
-        "AND country <> 'DE'"
+        f"""
+        DELETE FROM grid.egon_etrago_bus
+        WHERE scn_name = '{scn_name}'
+        AND country != 'DE'
+        """
     )
 
 
@@ -574,7 +576,9 @@ def neighbor_reduction():
 
     # Correct geometry for non AC buses
     carriers = set(neighbors.carrier.to_list())
-    carriers = [e for e in carriers if e not in ("AC", "biogas")]
+    carriers = [
+        e for e in carriers if e not in ("AC", "biogas", "gas for industry")
+    ]
     non_AC_neighbors = pd.DataFrame()
     for c in carriers:
         c_neighbors = neighbors[neighbors.carrier == c].set_index(
@@ -608,7 +612,6 @@ def neighbor_reduction():
     neighbors.carrier.replace(
         {
             "gas": "CH4",
-            "gas_for_industry": "CH4_for_industry",
         },
         inplace=True,
     )
@@ -779,7 +782,6 @@ def neighbor_reduction():
                 "H2_pipeline_retrofitted": "H2_retrofit",
                 "SMR": "CH4_to_H2",
                 "Sabatier": "H2_to_CH4",
-                "gas_for_industry": "CH4_for_industry",
                 "gas_pipeline": "CH4",
             },
             inplace=True,
@@ -797,11 +799,22 @@ def neighbor_reduction():
     non_extendable_links_carriers = [
         "H2 pipeline retrofitted",
         "gas pipeline",
-        "biogas to gas",
     ]
 
+    map_CH4_for_ind_buses = neighbor_links[
+        neighbor_links.carrier == "gas for industry"
+    ].set_index("bus1")["bus0"]
+    map_biogas_to_gas = neighbor_links[
+        neighbor_links.carrier == "biogas to gas"
+    ].set_index("bus0")["bus1"]
+
     # delete unwanted carriers for eTraGo
-    excluded_carriers = ["gas for industry CC", "SMR CC", "biogas to gas"]
+    excluded_carriers = [
+        "gas for industry",
+        "gas for industry CC",
+        "SMR CC",
+        "biogas to gas",
+    ]
     neighbor_links = neighbor_links[
         ~neighbor_links.carrier.isin(excluded_carriers)
     ]
@@ -873,6 +886,11 @@ def neighbor_reduction():
         inplace=True,
     )
 
+    # Attribute CH4 bus to CH4_for_industry loads
+    neighbor_loads["bus"] = neighbor_loads["bus"].replace(
+        map_CH4_for_ind_buses
+    )
+
     neighbor_loads = neighbor_loads.drop(
         columns=["index"],
         errors="ignore",
@@ -917,6 +935,9 @@ def neighbor_reduction():
 
     for i in ["name", "p_set", "q_set", "e_nom_opt", "lifetime"]:
         neighbor_stores = neighbor_stores.drop(i, axis=1)
+
+    # Attribute CH4 bus to CH4_for_industry loads
+    neighbor_stores["bus"] = neighbor_stores["bus"].replace(map_biogas_to_gas)
 
     neighbor_stores.to_sql(
         "egon_etrago_store",
@@ -1106,6 +1127,47 @@ def overwrite_H2_pipeline_share():
     )
 
 
+def overwrite_max_gas_generation_overtheyear():
+    """Overwrite max_gas_generation_overtheyear in scenario parameter table
+
+    Overwrite max_gas_generation_overtheyear in scenario parameter
+    table if p-e-s is run.
+    This function write in the database and has no return.
+
+    """
+    scn_name = "eGon100RE"
+
+    # Select source and target from dataset configuration
+    target = config.datasets()["gas_prod"]["target"]
+
+    if execute_pypsa_eur_sec:
+        n = read_network()
+        max_value = n.stores[n.stores["carrier"] == "biogas"].loc[
+            "DE0 0 biogas", "e_initial"
+        ]
+
+        parameters = db.select_dataframe(
+            f"""
+            SELECT *
+            FROM {target['scenario_parameters']['schema']}.{target['scenario_parameters']['table']}
+            WHERE name = '{scn_name}'
+            """
+        )
+
+        gas_param = parameters.loc[0, "gas_parameters"]
+        gas_param["max_gas_generation_overtheyear"] = {"biogas": max_value}
+        gas_param = json.dumps(gas_param)
+
+        # Update data in db
+        db.execute_sql(
+            f"""
+        UPDATE {target['scenario_parameters']['schema']}.{target['scenario_parameters']['table']}
+        SET gas_parameters = '{gas_param}'
+        WHERE name = '{scn_name}';
+        """
+        )
+
+
 # Skip execution of pypsa-eur-sec by default until optional task is implemented
 execute_pypsa_eur_sec = False
 
@@ -1115,6 +1177,7 @@ if execute_pypsa_eur_sec:
         clean_database,
         neighbor_reduction,
         overwrite_H2_pipeline_share,
+        overwrite_max_gas_generation_overtheyear,
     )
 else:
     tasks = (
@@ -1127,7 +1190,7 @@ class PypsaEurSec(Dataset):
     def __init__(self, dependencies):
         super().__init__(
             name="PypsaEurSec",
-            version="0.0.9",
+            version="0.0.11",
             dependencies=dependencies,
             tasks=tasks,
         )

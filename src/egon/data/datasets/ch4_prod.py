@@ -45,18 +45,18 @@ class CH4Production(Dataset):
     name: str = "CH4Production"
     #:
 
-    version: str = "0.0.7"
+    version: str = "0.0.8"
 
     def __init__(self, dependencies):
         super().__init__(
             name=self.name,
             version=self.version,
             dependencies=dependencies,
-            tasks=(import_gas_generators),
+            tasks=(download_biogas_data, insert_ch4_generators),
         )
 
 
-def load_NG_generators(scn_name):
+def load_NG_generators(scn_name="eGon2035"):
     """
     Define the fossil CH4 production units in Germany
 
@@ -165,6 +165,28 @@ def load_NG_generators(scn_name):
     return NG_generators_list
 
 
+def download_biogas_data():
+    """Download the biogas production units data in Germany
+
+    Parameters
+    ----------
+    None
+
+    Returns
+    -------
+    None
+
+    """
+    basename = "Biogaspartner_Einspeiseatlas_Deutschland_2021.xlsx"
+    url = (
+        "https://www.biogaspartner.de/fileadmin/Biogaspartner/Dokumente/Einspeiseatlas/"
+        + basename
+    )
+    target_file = Path(".") / "datasets" / "gas_data" / basename
+
+    urlretrieve(url, target_file)
+
+
 def load_biogas_generators(scn_name):
     """
     Define the biogas production units in Germany
@@ -190,15 +212,8 @@ def load_biogas_generators(scn_name):
     # read carrier information from scnario parameter data
     scn_params = get_sector_parameters("gas", scn_name)
 
-    # Download file
     basename = "Biogaspartner_Einspeiseatlas_Deutschland_2021.xlsx"
-    url = (
-        "https://www.biogaspartner.de/fileadmin/Biogaspartner/Dokumente/Einspeiseatlas/"
-        + basename
-    )
     target_file = Path(".") / "datasets" / "gas_data" / basename
-
-    urlretrieve(url, target_file)
 
     # Read-in data from csv-file
     biogas_generators_list = pd.read_excel(
@@ -245,7 +260,7 @@ def load_biogas_generators(scn_name):
         )
 
         sql = """SELECT *
-            FROM grid.egon_biogas_generator, boundaries.vg250_sta_union  as vg
+            FROM grid.egon_biogas_generator, boundaries.vg250_sta_union as vg
             WHERE ST_Transform(vg.geometry,4326) && egon_biogas_generator.geom
             AND ST_Contains(ST_Transform(vg.geometry,4326), egon_biogas_generator.geom)"""
 
@@ -280,7 +295,7 @@ def load_biogas_generators(scn_name):
     return biogas_generators_list
 
 
-def import_gas_generators(scn_name="eGon2035"):
+def import_gas_generators(scn_name):
     """
     Insert list of gas production units into the database
 
@@ -317,6 +332,8 @@ def import_gas_generators(scn_name="eGon2035"):
     None
 
     """
+    carrier = "CH4"
+
     # Connect to local database
     engine = db.engine()
 
@@ -328,7 +345,7 @@ def import_gas_generators(scn_name="eGon2035"):
     db.execute_sql(
         f"""
         DELETE FROM {target['stores']['schema']}.{target['stores']['table']}
-        WHERE "carrier" = 'CH4' AND
+        WHERE "carrier" = '{carrier}' AND
         scn_name = '{scn_name}' AND bus not IN (
             SELECT bus_id FROM {source['buses']['schema']}.{source['buses']['table']}
             WHERE scn_name = '{scn_name}' AND country != 'DE'
@@ -336,17 +353,21 @@ def import_gas_generators(scn_name="eGon2035"):
         """
     )
 
-    CH4_generators_list = pd.concat(
-        [load_NG_generators(scn_name), load_biogas_generators(scn_name)]
-    )
+    if scn_name == "eGon2035":
+        CH4_generators_list = pd.concat(
+            [load_NG_generators(scn_name), load_biogas_generators(scn_name)]
+        )
+
+    elif scn_name == "eGon100RE":
+        CH4_generators_list = load_biogas_generators(scn_name)
 
     # Add missing columns
-    c = {"scn_name": scn_name, "carrier": "CH4"}
+    c = {"scn_name": scn_name, "carrier": carrier}
     CH4_generators_list = CH4_generators_list.assign(**c)
 
     # Match to associated CH4 bus
     CH4_generators_list = db.assign_gas_bus_id(
-        CH4_generators_list, scn_name, "CH4"
+        CH4_generators_list, scn_name, carrier
     )
 
     # Remove useless columns
@@ -374,3 +395,18 @@ def import_gas_generators(scn_name="eGon2035"):
         index=False,
         if_exists="append",
     )
+
+
+def insert_ch4_generators():
+    """Insert gas production units in database for both scenarios
+
+    Parameters
+    ----------
+    None
+
+    Returns
+    -------
+    None
+    """
+    import_gas_generators("eGon2035")
+    import_gas_generators("eGon100RE")

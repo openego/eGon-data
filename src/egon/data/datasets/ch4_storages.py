@@ -272,7 +272,6 @@ def insert_ch4_stores(scn_name):
     None
 
     """
-
     # Connect to local database
     engine = db.engine()
 
