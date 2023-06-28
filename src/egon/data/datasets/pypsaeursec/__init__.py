@@ -609,6 +609,7 @@ def neighbor_reduction():
         {
             "gas": "CH4",
             "gas_for_industry": "CH4_for_industry",
+            "H2": "H2_grid",
         },
         inplace=True,
     )
