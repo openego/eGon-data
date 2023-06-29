@@ -15,6 +15,20 @@ Objectives of the project
 
 Driven by the expansion of renewable generation capacity and the progressing electrification of other energy sectors, the electrical grid increasingly faces new challenges: fluctuating supply of renewable energy and simultaneously a changing demand pattern caused by sector coupling. However, the integration of non-electric sectors such as gas, heat, and e-mobility enables more flexibility options. The eGo_n project aims to investigate the effects of sector coupling on the electrical grid and the benefits of new flexibility options. This requires the creation of a spatially and temporally highly resolved database for all sectors considered. 
 
+Project consortium and funding
+==================================
+
+The following universities and research institutes were involved in the creation of eGon-data: 
+
+* University of Applied Sciences Flensburg
+* Reiner Lemoine Institut
+* Otto von Guericke University Magdeburg
+* DLR Institute of Networked Energy Systems
+* Europa-Universität Flensburg 
+
+The research project eGo_n (FKZ: 03EI1002) received funding within the 7th Energy Research Programme by the German Federal Ministry for Economic Affairs and Climate Action from December 2019 until July 2023
+
+
 eGon-data as one element of the eGo-Toolchain
 =============================================
 
