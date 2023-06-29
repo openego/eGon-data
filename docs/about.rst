@@ -26,7 +26,11 @@ The following universities and research institutes were involved in the creation
 * DLR Institute of Networked Energy Systems
 * Europa-Universität Flensburg 
 
-The research project eGo_n (FKZ: 03EI1002) received funding within the 7th Energy Research Programme by the German Federal Ministry for Economic Affairs and Climate Action from December 2019 until July 2023.
+The eGo_n project (FKZ: 03EI1002) is supported by the Federal Ministry for Economic Affairs and Climate Action (BMWK) on the basis of a decision by the German Bundestag.
+
+.. image:: images/Logos_Projektpartner_egon_data.png
+  :width: 800
+  :alt: Components of the data models
 
 
 eGon-data as one element of the eGo-Toolchain
