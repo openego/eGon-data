@@ -170,9 +170,9 @@ def insert():
         elif scenario == "status2019":
             offshore_path = (
                 Path(".")
-                / "data_bundle_egon_data"
-                / "nep2035_version2021"
-                / cfg["sources"]["nep_2019"]
+                / "data_bundle_powerd_data"
+                / "wind_offshore_status2019"
+                / cfg["sources"]["wind_offshore_status2019"]
             )
             offshore = pd.read_excel(
                 offshore_path,
