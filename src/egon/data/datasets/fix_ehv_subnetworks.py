@@ -20,7 +20,7 @@ class FixEhvSubnetworks(Dataset):
         )
 
 
-def select_bus_id(x, y, v_nom, scn_name, carrier):
+def select_bus_id(x, y, v_nom, scn_name, carrier, find_closest=False):
     bus_id = db.select_dataframe(
         f"""
         SELECT bus_id
@@ -34,7 +34,23 @@ def select_bus_id(x, y, v_nom, scn_name, carrier):
     )
 
     if bus_id.empty:
-        return None
+        if find_closest:
+            buses = db.select_dataframe(
+                f"""
+                SELECT bus_id, x, y
+                FROM grid.egon_etrago_bus
+                WHERE v_nom = {v_nom}
+                AND scn_name = '{scn_name}'
+                AND carrier = '{carrier}'
+                """,
+                index_col="bus_id",
+            )
+            buses["distance"] = buses.apply(
+                lambda b: ((b.x - x) ** 2 + (b.y - y) ** 2) ** (1 / 2), axis=1
+            )
+            return buses["distance"].idxmin()
+        else:
+            return None
     else:
         return bus_id.bus_id[0]
 
@@ -78,8 +94,8 @@ def drop_bus(x, y, v_nom, scn_name):
 
 
 def add_line(x0, y0, x1, y1, v_nom, scn_name, cables):
-    bus0 = select_bus_id(x0, y0, v_nom, scn_name, carrier="AC")
-    bus1 = select_bus_id(x1, y1, v_nom, scn_name, carrier="AC")
+    bus0 = select_bus_id(x0, y0, v_nom, scn_name, carrier="AC", find_closest= True)
+    bus1 = select_bus_id(x1, y1, v_nom, scn_name, carrier="AC", find_closest= True)
 
     df = pd.DataFrame(
         index=[db.next_etrago_id("line")],
@@ -134,8 +150,8 @@ def drop_line(x0, y0, x1, y1, v_nom, scn_name):
 
 
 def add_trafo(x, y, v_nom0, v_nom1, scn_name, n=1):
-    bus0 = select_bus_id(x, y, v_nom0, scn_name, carrier="AC")
-    bus1 = select_bus_id(x, y, v_nom1, scn_name, carrier="AC")
+    bus0 = select_bus_id(x, y, v_nom0, scn_name, carrier="AC", find_closest= True)
+    bus1 = select_bus_id(x, y, v_nom1, scn_name, carrier="AC", find_closest= True)
 
     df = pd.DataFrame(
         index=[db.next_etrago_id("line")],
@@ -211,12 +227,12 @@ def fix_subnetworks(scn_name):
             scn_name,
             6,
         )
-        if (select_bus_id(12.85381530378627,
-                    48.764209444817745,
-                    380,
-                    scn_name,
-                    "AC") != None):
-            
+        if (
+            select_bus_id(
+                12.85381530378627, 48.764209444817745, 380, scn_name, "AC"
+            )
+            != None
+        ):
             # Missing line from Umspannwerk Plottling to Gänsdorf UW
             add_line(
                 12.85381530378627,  # Umspannwerk Plottling
@@ -239,7 +255,7 @@ def fix_subnetworks(scn_name):
             3,
         )
 
+
 def run():
     for scenario in config.settings()["egon-data"]["--scenarios"]:
         fix_subnetworks(scenario)
-
