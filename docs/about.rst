@@ -26,7 +26,7 @@ The following universities and research institutes were involved in the creation
 * DLR Institute of Networked Energy Systems
 * Europa-Universität Flensburg 
 
-The research project eGo_n (FKZ: 03EI1002) received funding within the 7th Energy Research Programme by the German Federal Ministry for Economic Affairs and Climate Action from December 2019 until July 2023
+The research project eGo_n (FKZ: 03EI1002) received funding within the 7th Energy Research Programme by the German Federal Ministry for Economic Affairs and Climate Action from December 2019 until July 2023.
 
 
 eGon-data as one element of the eGo-Toolchain
@@ -39,6 +39,13 @@ The figure below visualizes the interdependencies between the different tools.
 
 Modeling concept and scenarios
 ===============================
+
+eGon-data provides a data model suitable for calculations and optimizations with the tools eTraGo, eDisGo and eGo and therefore aims to satisfy all requirements regarding the scope and temporal as well as spatial granularity of the resulting data model.
+The following image visualizes the different components considered in scenario ``eGon2035``.
+
+.. image:: images/egon-modell-szenario-egon2035.png
+  :width: 400
+  :alt: Components of the data models
 
 
 
