@@ -30,7 +30,7 @@ The eGo_n project (FKZ: 03EI1002) is supported by the Federal Ministry for Econo
 
 .. image:: images/Logos_Projektpartner_egon_data.png
   :width: 800
-  :alt: Components of the data models
+  :alt: Logos of project partners
 
 
 eGon-data as one element of the eGo-Toolchain
