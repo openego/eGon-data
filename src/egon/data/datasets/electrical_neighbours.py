@@ -1423,7 +1423,7 @@ def insert_generators_sq(gen_sq=None, scn_name = "status2019"):
 
     """
     ################# TEMPORAL ####################
-    gen_sq = pd.read_csv("data_bundle_egon_data/gen_entsoe.csv", index_col="Index")
+    gen_sq = pd.read_csv("data_bundle_powerd_data/entsoe/gen_entsoe.csv", index_col="Index")
     ################# TEMPORAL ####################
 
     targets = config.datasets()["electrical_neighbours"]["targets"]
@@ -1581,7 +1581,7 @@ def insert_loads_sq(load_sq=None, scn_name = "status2019"):
     targets = config.datasets()["electrical_neighbours"]["targets"]
 
     ################# TEMPORAL ####################
-    load_sq = pd.read_csv("data_bundle_egon_data/load_entsoe.csv", index_col="Index")
+    load_sq = pd.read_csv("data_bundle_powerd_data/entsoe/load_entsoe.csv", index_col="Index")
     ################# TEMPORAL ####################
 
     # Delete existing data
