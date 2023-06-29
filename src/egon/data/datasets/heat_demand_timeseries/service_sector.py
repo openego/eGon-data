@@ -5,7 +5,7 @@ from sqlalchemy.ext.declarative import declarative_base
 
 import pandas as pd
 
-from egon.data import db
+from egon.data import config, db
 
 
 try:
@@ -215,7 +215,7 @@ def CTS_demand_scale(aggregation_level):
            Profiles scaled up to annual demand
 
     """
-    scenarios = ["status2019", "eGon2035", "eGon100RE"]
+    scenarios = config.settings()["egon-data"]["--scenarios"]
 
     CTS_district = pd.DataFrame()
     CTS_grid = pd.DataFrame()
