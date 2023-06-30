@@ -112,7 +112,7 @@ def insert_H2_saltcavern_storage(scn_name="eGon2035"):
         f"""
         SELECT *
         FROM {sources['H2_AC_map']['schema']}.
-        {sources['H2_AC_map']['table']}""",
+        {sources['H2_AC_map']['table']}"""
     )
 
     storage_potentials["storage_potential"] = (
@@ -188,7 +188,6 @@ def calculate_and_map_saltcavern_storage_potential():
 
     # select onshore vg250 data
     sources = config.datasets()["bgr"]["sources"]
-    targets = config.datasets()["bgr"]["targets"]
     vg250_data = db.select_geodataframe(
         f"""SELECT * FROM
                 {sources['vg250_federal_states']['schema']}.
@@ -366,7 +365,15 @@ def calculate_and_map_saltcavern_storage_potential():
         epsg=25832
     ).area / potential_areas.groupby("gen")["shape_star"].transform("sum")
 
+    return potential_areas
+
+
+def write_saltcavern_potential():
+    """Write saltcavern potentials in the database"""
+    potential_areas = calculate_and_map_saltcavern_storage_potential()
+
     # write information to saltcavern data
+    targets = config.datasets()["bgr"]["targets"]
     potential_areas.to_crs(epsg=4326).to_postgis(
         targets["storage_potential"]["table"],
         db.engine(),
