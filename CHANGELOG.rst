@@ -252,6 +252,8 @@ Added
   `PR #903 <https://github.com/openego/eGon-data/pull/903>`_
 * Add low flex scenario 'eGon2035_lowflex'
   `#822 <https://github.com/openego/eGon-data/issues/822>`_
+* Add MaStR geocoding and handling of conventional generators
+  `#1095 <https://github.com/openego/eGon-data/issues/1095>`_
 
 .. _PR #159: https://github.com/openego/eGon-data/pull/159
 .. _PR #703: https://github.com/openego/eGon-data/pull/703
@@ -456,6 +458,8 @@ Changed
   `#882 <https://github.com/openego/eGon-data/issues/882>`_
 * Insert crossboarding gas pipeline with Germany in eGon100RE
   `#881 <https://github.com/openego/eGon-data/issues/881>`_
+* Harmonize H2 carrier names in eGon100RE
+  `#929 <https://github.com/openego/eGon-data/issues/929>`_
 * Rename noflex to lowflex scenario for motorized individual travel
   `#921 <https://github.com/openego/eGon-data/issues/921>`_
 * Update creation of heat demand timeseries
@@ -486,12 +490,19 @@ Changed
   created for a single process. This fixes issue `#799`_.
 * Insert rural heat per supply technology
   `#1026 <https://github.com/openego/eGon-data/issues/1026>`_
+* Insert lifetime for components from p-e-s in eGon100RE
+  `#1073 <https://github.com/openego/eGon-data/issues/1073>`_
 * Change hgv data source to use database
   `#1086 <https://github.com/openego/eGon-data/issues/1086>`_
+* Change desposit ID for data_bundle download from zenodo sandbox
+  `#1110 <https://github.com/openego/eGon-data/issues/1110>`_
+* Use MaStR geocoding results for pv rooftop to buildings mapping workflow
+  `#1095 <https://github.com/openego/eGon-data/issues/1095>`_
 * Rename eMob MIT carrier names (use underscores)
   `#1105 <https://github.com/openego/eGon-data/issues/1105>`_
 
 .. _#799: https://github.com/openego/eGon-data/issues/799
+
 
 Bug Fixes
 ---------
@@ -726,6 +737,8 @@ Bug Fixes
 * Fix URL of TYNDP scenario dataset
 * Automatically generated tasks now get unique :code:`task_id`\s.
   Fixes issue `#985`_ via PR `#986`_.
+* Adjust capcities of German CH4 stores
+  `#1096 <https://github.com/openego/eGon-data/issues/1096>`_
 * Fix faulty DSM time series
   `#1088 <https://github.com/openego/eGon-data/issues/1088>`_
 * Set upper limit on commissioning date for units from MaStR
