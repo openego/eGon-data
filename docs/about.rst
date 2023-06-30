@@ -102,9 +102,9 @@ eGon-data aims to create different scenarios, which differ in terms of RE penetr
    * - Methane industry
      - 196.0 TWh :subscript:`CH4`
    * - Hydrogen industry
-     - 16.1 TWh :subscript: `H2`
+     - 16.1 TWh :subscript:`H2`
    * - Hydrogen transport
-     - 26.5 TWh :subscript: `H2`
+     - 26.5 TWh :subscript:`H2`
 
 
 
