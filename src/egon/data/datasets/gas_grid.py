@@ -293,6 +293,7 @@ def insert_CH4_nodes_list(gas_nodes_list):
         dtype={"geom": Geometry()},
     )
 
+
 def define_gas_buses_abroad(scn_name="eGon2035"):
     """
     Define central CH4 buses in foreign countries for eGon2035
@@ -833,10 +834,7 @@ def insert_gas_pipeline_list(gas_pipelines_list, scn_name="eGon2035"):
     ]
     engine = db.engine()
     gas_pipelines_list = gas_pipelines_list.drop(
-        columns=[
-            "country_0",
-            "country_1",
-        ]
+        columns=["country_0", "country_1"]
     )
 
     # Clean db

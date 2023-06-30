@@ -112,7 +112,7 @@ def insert_H2_saltcavern_storage(scn_name="eGon2035"):
         f"""
         SELECT *
         FROM {sources['H2_AC_map']['schema']}.
-        {sources['H2_AC_map']['table']}""",
+        {sources['H2_AC_map']['table']}"""
     )
 
     storage_potentials["storage_potential"] = (
@@ -366,6 +366,7 @@ def calculate_and_map_saltcavern_storage_potential():
     ).area / potential_areas.groupby("gen")["shape_star"].transform("sum")
 
     return potential_areas
+
 
 def write_saltcavern_potential():
     """Write saltcavern potentials in the database"""
