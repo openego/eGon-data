@@ -488,6 +488,8 @@ Changed
   created for a single process. This fixes issue `#799`_.
 * Insert rural heat per supply technology
   `#1026 <https://github.com/openego/eGon-data/issues/1026>`_
+* Insert lifetime for components from p-e-s in eGon100RE
+  `#1073 <https://github.com/openego/eGon-data/issues/1073>`_
 * Change hgv data source to use database
   `#1086 <https://github.com/openego/eGon-data/issues/1086>`_
 * Change desposit ID for data_bundle download from zenodo sandbox
