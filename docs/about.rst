@@ -29,7 +29,7 @@ The following universities and research institutes were involved in the creation
 The eGo_n project (FKZ: 03EI1002) is supported by the Federal Ministry for Economic Affairs and Climate Action (BMWK) on the basis of a decision by the German Bundestag.
 
 .. image:: images/Logos_Projektpartner_egon_data.png
-  :width: 800
+  :width: 400
   :alt: Logos of project partners
 
 
@@ -52,7 +52,7 @@ eGon-data provides a data model suitable for calculations and optimizations with
 The following image visualizes the different components considered in scenario ``eGon2035``.
 
 .. image:: images/egon-modell-szenario-egon2035.png
-  :width: 400
+  :width: 800
   :alt: Components of the data models
   
 eGon-data aims to create different scenarios, which differ in terms of RE penetration or the availability of flexibility options. Currently, the following scenarios are available or in progress. 
@@ -61,7 +61,7 @@ eGon-data aims to create different scenarios, which differ in terms of RE penetr
 * ``eGon2035_lowflex`` Mid-termin scenario similar to 'eGon2035', but with a limited availability of flexibility options
 * ``eGon100RE`` Long-term scenario with a 100% RE penetration, based on optimization results with PyPSA-Eur-Sec and additional data inputs (work-in-progress)
 
-.. list-table:: Installed capacities of German power park in scenario ``eGon2035``
+.. list-table:: Installed capacities of German power park in scenario ``eGon2035`` and ``eGon2035_lowflex``
    :widths: 50 50
    :header-rows: 1
 
@@ -85,27 +85,26 @@ eGon-data aims to create different scenarios, which differ in terms of RE penetr
      - 5.4 GW
 
 
-.. list-table:: German energy demands in scenario ``eGon2035``
+.. list-table:: German energy demands in scenarios ``eGon2035`` and ``eGon2035_lowflex``
    :widths: 50 50
    :header-rows: 1
 
    * - Demand sector
      - Energy demand
    * - MIT transport
-     - 41.4 TWh:sub:`el`
+     - 41.4 TWh :subscript:`el`
    * - central heat
-     - 68.9 TWh:sub:`th`
+     - 68.9 TWh :subscript:`th`
    * - rural heat
-     - 423.2 TWh:sub:`th`
+     - 423.2 TWh :subscript:`th`
    * - electricity
-     - 498.1 TWh:sub:`el`
-   * - CH:sub:`4` industry
-     - 196.0 TWh:sub:`CH:sub:`4``
-   * - H:sub:`2` industry
-     - 16.1 TWh:sub:`H:sub:`2``
-   * - H:sub:`2` transport
-     - 26.5 TWh:sub:`H:sub:`2``
- 
+     - 498.1 TWh :subscript:`el`
+   * - CH :subscript:`4` industry
+     - 196.0 TWh :subscript:`CH :subscript`4`
+   * - Hydrogen industry
+     - 16.1 TWh :subscript: `H :subscript: `2``
+   * - Hydrogen transport
+     - 26.5 TWh :subscript: `H :subscript: `2``
 
 
 
