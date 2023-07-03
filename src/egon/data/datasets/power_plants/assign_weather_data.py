@@ -124,10 +124,7 @@ def find_weather_id():
         (power_plants["carrier"] == "solar")
         | (power_plants["carrier"] == "wind_onshore")
         | (power_plants["carrier"] == "solar_rooftop")
-        | (
-            (power_plants["carrier"] == "wind_offshore")
-            & (power_plants["weather_cell_id"] == -1)
-        )
+        | (power_plants["carrier"] == "wind_offshore")
     ]
     power_plants.set_index("id", inplace=True)
 
@@ -186,8 +183,7 @@ def write_power_plants_table(power_plants, cfg, con):
         f"""
     DELETE FROM {cfg['sources']['power_plants']['schema']}.
     {cfg['sources']['power_plants']['table']}
-    WHERE carrier IN ('wind_onshore', 'solar', 'solar_rooftop')
-    OR ((carrier = 'wind_offshore') AND (weather_cell_id = '-1'))
+    WHERE carrier IN ('wind_onshore', 'solar', 'solar_rooftop', 'wind_offshore')
     """
     )
 

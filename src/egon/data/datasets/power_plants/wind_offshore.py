@@ -58,34 +58,34 @@ def map_id_bus(scenario):
     return id_bus
 
 
-def map_w_id():
-    w_id = {
-        "Büttel": "16331",
-        "Heide/West": "16516",
-        "Suchraum Gemeinden Ibbenbüren/Mettingen/Westerkappeln": "16326",
-        "Suchraum Zensenbusch": "16139",
-        "Rommerskirchen": "16139",
-        "Oberzier": "16139",
-        "Garrel/Ost": "16139",
-        "Diele": "16138",
-        "Dörpen/West": "15952",
-        "Emden/Borßum": "15762",
-        "Emden/Ost": "16140",
-        "Hagermarsch": "15951",
-        "Hanekenfähr": "16139",
-        "Inhausen": "15769",
-        "Unterweser": "16517",
-        "Wehrendorf": "16139",
-        "Wilhelmshaven 2": "16517",
-        "Rastede": "16139",
-        "Bentwisch": "16734",
-        "Lubmin": "16548",
-        "Suchraum Gemeinde Papendorf": "16352",
-        "Suchraum Gemeinden Brünzow/Kemnitz": "16548",
-        "inhausen": "15769",
-        "Cloppenburg": "16334",
+def assign_ONEP_areas():
+    assign_onep = {
+        "Büttel": "NOR-4-1",
+        "Heide/West": "NOR-10-2",
+        "Suchraum Gemeinden Ibbenbüren/Mettingen/Westerkappeln": "NOR-9-2",
+        "Suchraum Zensenbusch": "NOR-7-1",
+        "Rommerskirchen": "NOR-7-1",
+        "Oberzier": "NOR-7-1",
+        "Garrel/Ost": "NOR-7-1",
+        "Diele": "NOR-6-1",
+        "Dörpen/West": "NOR-2-2",
+        "Emden/Borßum": "NOR-0-1",
+        "Emden/Ost": "NOR-3-3",
+        "Hagermarsch": "NOR-2-1",
+        "Hanekenfähr": "NOR-6-3",
+        "Inhausen": "NOR-0-2",
+        "Unterweser": "NOR-9-1",
+        "Wehrendorf": "NOR-7-1",
+        "Wilhelmshaven 2": "NOR-11-1",
+        "Rastede": "NOR-7-1",
+        "Bentwisch": "OST-3-1",
+        "Lubmin": "OST-1-1",
+        "Suchraum Gemeinde Papendorf": "OST-7-1",
+        "Suchraum Gemeinden Brünzow/Kemnitz": "OST-1-4",
+        "inhausen": "NOR-0-2",
+        "Cloppenburg": "NOR-4-1",
     }
-    return w_id
+    return assign_onep
 
 
 def map_ONEP_areas():
@@ -93,23 +93,33 @@ def map_ONEP_areas():
         "NOR-0-1": Point(6.5, 53.6),
         "NOR-0-2": Point(8.07, 53.76),
         "NOR-1": Point(6.21, 54.06),
+        "NOR-1-1": Point(6.21, 54.06),
         "NOR-2-1": Point(6.54, 53.99),
         "NOR-2-2": Point(6.54, 53.99),
         "NOR-2-3": Point(6.54, 53.99),
         "NOR-3-1": Point(6.95, 54.02),
+        "NOR-3-3": Point(6.95, 54.02),
         "NOR-4-1": Point(7.70, 54.44),
         "NOR-4-2": Point(7.70, 54.44),
         "NOR-5-1": Point(7.21, 55.14),
         "NOR-6-1": Point(5.92, 54.30),
         "NOR-6-2": Point(5.92, 54.30),
+        "NOR-6-3": Point(5.92, 54.30),
         "NOR-7": Point(6.22, 54.32),
+        "NOR-7-1": Point(6.22, 54.32),
         "NOR-8-1": Point(6.35, 54.48),
+        "NOR-9-1": Point(5.75, 54.5),
+        "NOR-9-2": Point(5.75, 54.5),
+        "NOR-10-2": Point(6, 54.75),
+        "NOR-11-1": Point(6.5, 54.75),
         "OST-1-1": Point(14.09, 54.82),
         "OST-1-2": Point(14.09, 54.82),
         "OST-1-3": Point(14.09, 54.82),
+        "OST-1-4": Point(14.09, 54.82),
         "OST-2": Point(13.86, 54.83),
         "OST-3-1": Point(13.16, 54.98),
         "OST-3-2": Point(13.16, 54.98),
+        "OST-7-1": Point(12.25, 54.5),
     }
     return onep
 
@@ -128,6 +138,15 @@ def insert():
     scenarios = egon.data.config.settings()["egon-data"]["--scenarios"]
 
     for scenario in scenarios:
+        # Delete previous generators
+        db.execute_sql(
+            f"""
+            DELETE FROM {cfg['target']['schema']}.{cfg['target']['table']}
+            WHERE carrier = 'wind_offshore'
+            AND scenario = '{scenario}'
+            """
+        )
+
         # load file
         if scenario == "eGon2035":
             offshore_path = (
@@ -147,6 +166,7 @@ def insert():
                 ],
             )
             offshore.dropna(subset=["Netzverknuepfungspunkt"], inplace=True)
+            offshore.rename(columns={"C 2035": "el_capacity"}, inplace=True)
 
         elif scenario == "eGon100RE":
             offshore_path = (
@@ -170,9 +190,9 @@ def insert():
         elif scenario == "status2019":
             offshore_path = (
                 Path(".")
-                / "data_bundle_egon_data"
-                / "nep2035_version2021"
-                / cfg["sources"]["nep_2019"]
+                / "data_bundle_powerd_data"
+                / "wind_offshore_status2019"
+                / cfg["sources"]["wind_offshore_status2019"]
             )
             offshore = pd.read_excel(
                 offshore_path,
@@ -197,12 +217,11 @@ def insert():
             offshore = offshore[offshore["Inbetriebnahme"] <= 2019]
 
         id_bus = map_id_bus(scenario)
-        w_id = map_w_id()
 
         # Match wind offshore table with the corresponding OSM_id
         offshore["osm_id"] = offshore["Netzverknuepfungspunkt"].map(id_bus)
 
-        busses = db.select_geodataframe(
+        buses = db.select_geodataframe(
             f"""
                 SELECT bus_i as bus_id, base_kv, geom as point, CAST(osm_substation_id AS text)
                 as osm_id FROM {cfg["sources"]["buses_data"]}
@@ -212,41 +231,40 @@ def insert():
         )
 
         # Drop NANs in column osm_id
-        busses.dropna(subset=["osm_id"], inplace=True)
+        buses.dropna(subset=["osm_id"], inplace=True)
 
         # Create columns for bus_id and geometry in the offshore df
-        offshore["bus_id"] = 0
+        offshore["bus_id"] = pd.NA
         offshore["geom"] = Point(0, 0)
 
         # Match bus_id
         for index, wind_park in offshore.iterrows():
-            if not busses[
-                (busses["osm_id"] == wind_park["osm_id"])
-                & (busses["base_kv"] == wind_park["Spannungsebene in kV"])
+            if not buses[
+                (buses["osm_id"] == wind_park["osm_id"])
+                & (buses["base_kv"] == wind_park["Spannungsebene in kV"])
             ].empty:
-                bus_ind = busses[
-                    busses["osm_id"] == wind_park["osm_id"]
-                ].index[0]
-                offshore.at[index, "bus_id"] = busses.at[bus_ind, "bus_id"]
+                bus_ind = buses[buses["osm_id"] == wind_park["osm_id"]].index[
+                    0
+                ]
+                offshore.at[index, "bus_id"] = buses.at[bus_ind, "bus_id"]
             else:
                 print(f'Wind offshore farm not found: {wind_park["osm_id"]}')
 
         offshore.dropna(subset=["bus_id"], inplace=True)
 
         # Overwrite geom for status2019 parks
+        if scenario in ["eGon2035", "eGon100RE"]:
+            offshore["Name ONEP/NEP"] = offshore["Netzverknuepfungspunkt"].map(
+                assign_ONEP_areas()
+            )
+
+        offshore["geom"] = offshore["Name ONEP/NEP"].map(map_ONEP_areas())
+        offshore["weather_cell_id"] = pd.NA
+
+        offshore.drop(["Name ONEP/NEP"], axis=1, inplace=True)
+
         if scenario == "status2019":
-            offshore["geom"] = offshore["Name ONEP/NEP"].map(map_ONEP_areas())
-            offshore["weather_cell_id"] = -1
-            offshore.drop(
-                ["Name ONEP/NEP", "Inbetriebnahme"], axis=1, inplace=True
-            )
-        else:
-            offshore["weather_cell_id"] = offshore[
-                "Netzverknuepfungspunkt"
-            ].map(w_id)
-            offshore["weather_cell_id"] = offshore["weather_cell_id"].apply(
-                int
-            )
+            offshore.drop(["Inbetriebnahme"], axis=1, inplace=True)
 
         # Scale capacities for eGon100RE
         if scenario == "eGon100RE":
@@ -319,6 +337,6 @@ def insert():
         logging.info(
             f"""
               {len(offshore)} wind_offshore generators with a total installed capacity of
-              {offshore['Kapazität Gesamtsystem [MW]'].sum()}MW were inserted into the db
+              {offshore['el_capacity'].sum()}MW were inserted into the db
               """
         )
