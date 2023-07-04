@@ -8,7 +8,7 @@ from functools import reduce
 from typing import Callable, Iterable, Set, Tuple, Union
 import re
 
-from airflow.operators import BaseOperator as Operator
+from airflow.models.baseoperator import BaseOperator as Operator
 from airflow.operators.python_operator import PythonOperator
 from sqlalchemy import Column, ForeignKey, Integer, String, Table, orm, tuple_
 from sqlalchemy.ext.declarative import declarative_base
