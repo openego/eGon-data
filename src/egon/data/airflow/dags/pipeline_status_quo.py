@@ -499,15 +499,6 @@ with airflow.DAG(
         dependencies=[mv_grid_districts, hh_demand_buildings_setup]
     )
 
-    cts_demand_buildings = CtsDemandBuildings(
-        dependencies=[
-            osm_buildings_streets,
-            cts_electricity_demand_annual,
-            hh_demand_buildings_setup,
-            tasks["heat_demand_timeseries.export-etrago-cts-heat-profiles"],
-        ]
-    )
-
     # Create load areas
     load_areas = LoadArea(
         dependencies=[
