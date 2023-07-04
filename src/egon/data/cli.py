@@ -277,16 +277,19 @@ def egon_data(context, **kwargs):
         with open(config.paths(pid="*")[0]) as f:
             options = yaml.load(f, Loader=yaml.SafeLoader)
     else:  # len(config.paths(pid="*")) == 0, so need to create one.
+
         with open(config.paths()[0]) as f:
             options["file"] = yaml.load(f, Loader=yaml.SafeLoader)
+
         options = dict(
             options.get("file", {}),
             **{
-                flag: options["cli"][flag]
+                flag: options["file"][flag]
                 for flag in options["cli"]
                 if options["cli"][flag] != options["defaults"][flag]
             },
         )
+
         with open(config.paths(pid="current")[0], "w") as f:
             f.write(yaml.safe_dump(options))
 
