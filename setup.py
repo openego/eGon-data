@@ -82,25 +82,23 @@ setup(
     python_requires=">=3.7",
     install_requires=[
         # eg: 'aspectlib==1.1.1', 'six>=1.7',
-        "apache-airflow>=1.10.14,<2.0",  # See accompanying commit message
+        "apache-airflow>2.0", 
         "atlite==0.2.5",
         "cdsapi",
         "click",
         #"entsoe-py >=0.3.1",
-        "geopandas>=0.10.0,<0.11.0",
+        "geopandas>=0.10.0",
         "geopy",
-        "geovoronoi==0.3.0",
+        "geovoronoi",
         "importlib-resources",
         "loguru",
-        "markupsafe<2.1.0",  # MarkupSafe>=2.1.0 breaks WTForms<3
+        "markupsafe", 
         "matplotlib",
         "netcdf4",
-        "numpy<1.23",  # incompatibilities with shapely 1.7.
-        # See: https://stackoverflow.com/a/73354885/12460232
-        "oedialect==0.0.8",
+        "numpy",
         "omi",
         "openpyxl",
-        "pandas>1.2.0,<1.4",  # pandas>=1.4 needs SQLAlchemy>=1.4
+        "pandas>1.2.0",
         "psycopg2",
         "pyaml",
         "pypsa==0.17.1",
@@ -112,8 +110,8 @@ setup(
         "seaborn",
         "shapely",
         "snakemake<7",
-        "sqlalchemy<1.4",  # Airflow<2.0 is not compatible with SQLAlchemy>=1.4
-        "wtforms<3",  # WTForms>=3.0 breaks Airflow<2.0
+        "sqlalchemy",
+        "wtforms",
         "xarray",
         "xlrd",
     ],
