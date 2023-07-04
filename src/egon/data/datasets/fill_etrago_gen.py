@@ -12,7 +12,7 @@ class Egon_etrago_gen(Dataset):
     def __init__(self, dependencies):
         super().__init__(
             name="etrago_generators",
-            version="0.0.8",
+            version="0.0.9",
             dependencies=dependencies,
             tasks=(fill_etrago_generators,),
         )
@@ -155,6 +155,7 @@ def fill_etrago_gen_time_table(
 
     etrago_pp_time = etrago_pp_time[
         (etrago_pp_time["carrier"] == "solar")
+        | (etrago_pp_time["carrier"] == "solar_rooftop")
         | (etrago_pp_time["carrier"] == "wind_onshore")
         | (etrago_pp_time["carrier"] == "wind_offshore")
     ]
@@ -247,6 +248,11 @@ def adjust_renew_feedin_table(renew_feedin, cfg):
     # Define carrier 'pv' as 'solar'
     carrier_pv_mask = renew_feedin["carrier"] == "pv"
     renew_feedin.loc[carrier_pv_mask, "carrier"] = "solar"
+
+    # Copy solar timeseries for solar_rooftop
+    feedin_solar_rooftop = renew_feedin.loc[renew_feedin["carrier"]=="solar"]
+    feedin_solar_rooftop.loc[:, "carrier"] = "solar_rooftop"
+    renew_feedin = pd.concat([renew_feedin, feedin_solar_rooftop], ignore_index=True)
 
     # convert renewable feedin lists to arrays
     renew_feedin["feedin"] = renew_feedin["feedin"].apply(np.array)
