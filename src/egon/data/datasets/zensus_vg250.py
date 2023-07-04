@@ -15,6 +15,7 @@ from sqlalchemy import (
 )
 from sqlalchemy.ext.declarative import declarative_base
 import geopandas as gpd
+import pandas as pd
 
 from egon.data import db
 from egon.data.datasets import Dataset
@@ -213,7 +214,7 @@ def map_zensus_vg250():
         join_missing = gpd.sjoin(
             missing_cells, boundaries_buffer, how="inner", op="intersects"
         )
-        join = join.append(join_missing)
+        join = pd.concat([join, join_missing])
         missing_cells = gdf[
             (~gdf.id.isin(join.id_left)) & (gdf.population > 0)
         ]
