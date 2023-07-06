@@ -170,7 +170,7 @@ def calc_load_curves_cts(scenario):
     )
 
     # Calculate shares of cts branches per nuts3-region
-    nuts3_share_wz = demands_nuts.groupby("nuts3").apply(
+    nuts3_share_wz = demands_nuts.groupby("nuts3", as_index=False).apply(
         lambda grp: grp / grp.sum()
     )
 
