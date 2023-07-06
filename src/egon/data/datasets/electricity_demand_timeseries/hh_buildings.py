@@ -683,9 +683,11 @@ def get_building_peak_loads():
                 names=("profile_id", "building_id"),
             )
             df_building_peak_load_nuts3.columns = m_index
-            df_building_peak_load_nuts3 = df_building_peak_load_nuts3.sum(
-                level="building_id", axis=1
-            ).max()
+            df_building_peak_load_nuts3 = (
+                df_building_peak_load_nuts3.groupby("building_id", axis=1)
+                .sum()
+                .max()
+            )
 
             df_building_peak_load_nuts3 = pd.DataFrame(
                 [
