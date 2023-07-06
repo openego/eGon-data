@@ -2,6 +2,7 @@
 """
 from geoalchemy2 import Geometry
 from pathlib import Path
+from shapely.geometry import Point
 from sqlalchemy import BigInteger, Column, Float, Integer, Sequence, String
 from sqlalchemy.dialects.postgresql import JSONB
 from sqlalchemy.ext.declarative import declarative_base
@@ -913,7 +914,7 @@ def power_plants_status_quo(scn_name="status2019"):
         DELETE FROM {cfg['target']['schema']}.{cfg['target']['table']}
         WHERE carrier IN ('wind_onshore', 'solar', 'biomass',
                           'run_of_river', 'reservoir', 'solar_rooftop',
-                          'wind_offshore')
+                          'wind_offshore', 'nuclear', 'coal', 'lignite', 'oil')
         AND scenario = '{scn_name}'
         """
     )
@@ -975,6 +976,85 @@ def power_plants_status_quo(scn_name="status2019"):
         gens["geom"] = gens["geom"].to_wkt()
 
         return gens
+
+    # Write conventional power plants in supply.egon_power_plants
+    conv = pd.read_csv(
+        cfg["sources"]["mastr_combustion"],
+        usecols=[
+            "EinheitMastrNummer",
+            "Energietraeger",
+            "Nettonennleistung",
+            "ThermischeNutzleistung",
+            "Laengengrad",
+            "Breitengrad",
+            "Gemeinde",
+            "Inbetriebnahmedatum",
+        ],
+    )
+    # drop chp generators
+    conv = conv[conv.ThermischeNutzleistung == 0]
+    # drop generators installed after 2019
+    conv["Inbetriebnahmedatum"] = pd.to_datetime(conv["Inbetriebnahmedatum"])
+    conv = conv[conv["Inbetriebnahmedatum"] < "2020-01-01"]
+    # filter just necessary carriers
+    conv = conv[
+        conv.Energietraeger.isin(
+            ["Braunkohle", "Mineralölprodukte", "Steinkohle"]
+        )
+    ]
+    # rename carriers
+    conv.loc[conv.Energietraeger == "Braunkohle", "Energietraeger"] = "lignite"
+    conv.loc[conv.Energietraeger == "Steinkohle", "Energietraeger"] = "coal"
+    conv.loc[
+        conv.Energietraeger == "Mineralölprodukte", "Energietraeger"
+    ] = "oil"
+    # rename columns
+    conv.rename(
+        columns={
+            "EinheitMastrNummer": "gens_id",
+            "Energietraeger": "carrier",
+            "Nettonennleistung": "capacity",
+            "Gemeinde": "city",
+        },
+        inplace=True,
+    )
+    conv["bus_id"] = np.nan
+
+    conv["geom"] = gpd.points_from_xy(
+        conv.Laengengrad, conv.Breitengrad, crs=4326
+    )
+    conv.loc[
+        (conv.Laengengrad.isna() | conv.Breitengrad.isna()), "geom"
+    ] = Point()
+    conv = gpd.GeoDataFrame(conv, geometry="geom")
+
+    conv = fill_missing_bus_and_geom(conv, carrier="conventional")
+    conv["voltage_level"] = np.nan
+
+    conv["voltage_level"] = assign_voltage_level_by_capacity(
+        conv.rename(columns={"capacity": "Nettonennleistung"})
+    )
+
+    for i, row in conv.iterrows():
+        entry = EgonPowerPlants(
+            sources={"el_capacity": "MaStR"},
+            source_id={"MastrNummer": row.gens_id},
+            carrier=row.carrier,
+            el_capacity=row.capacity,
+            scenario=scn_name,
+            bus_id=row.bus_id,
+            voltage_level=row.voltage_level,
+            geom=row.geom,
+        )
+        session.add(entry)
+    session.commit()
+
+    logging.info(
+        f"""
+          {len(conv)} conventional generators with a total installed capacity of
+          {conv.capacity.sum()}MW were inserted into the db
+          """
+    )
 
     # Write hydro power plants in supply.egon_power_plants
     map_hydro = {
@@ -1142,7 +1222,10 @@ if (
         },
     )
 
-tasks = tasks + (wind_offshore.insert, assign_weather_data.weatherId_and_busId,)
+tasks = tasks + (
+    wind_offshore.insert,
+    assign_weather_data.weatherId_and_busId,
+)
 
 
 class PowerPlants(Dataset):
