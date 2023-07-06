@@ -211,7 +211,7 @@ def feedin_per_turbine():
     # Select weather data for Germany
     cutout = import_cutout(boundary="Germany")
 
-    gdf = gpd.GeoDataFrame(geometry=cutout.grid_cells(), crs=4326)
+    gdf = gpd.GeoDataFrame(geometry=cutout.grid.geometry, crs=4326)
 
     # Calculate feedin-timeseries for E-141
     # source:
