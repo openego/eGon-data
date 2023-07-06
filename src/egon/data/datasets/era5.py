@@ -176,7 +176,7 @@ def insert_weather_cells():
     cutout = import_cutout()
 
     df = gpd.GeoDataFrame(
-        {"geom": cutout.grid_cells()}, geometry="geom", crs=4326
+        {"geom": cutout.grid.geometry}, geometry="geom", crs=4326
     )
 
     df.to_postgis(
