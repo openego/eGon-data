@@ -10,6 +10,7 @@
 from sqlalchemy import ARRAY, Column, Float, Integer, String
 from sqlalchemy.ext.declarative import declarative_base
 import geopandas as gpd
+import pandas as pd
 
 from egon.data import db
 from egon.data.datasets import Dataset
@@ -351,8 +352,8 @@ def industrial_demand_distr():
 
         # Create df containing all demand per wz which will be allocated to
         # osm areas
-        demand_nuts3_osm_wz = demand_nuts3_a.append(
-            demand_nuts3_b_osm, ignore_index=True
+        demand_nuts3_osm_wz = pd.concat(
+            [demand_nuts3_a, demand_nuts3_b_osm], ignore_index=True
         )
         demand_nuts3_osm_wz = (
             demand_nuts3_osm_wz.groupby(["nuts3", "wz"]).sum().reset_index()
