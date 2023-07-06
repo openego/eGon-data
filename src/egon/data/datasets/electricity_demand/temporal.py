@@ -72,7 +72,7 @@ def calc_load_curve(share_wz, annual_demand=1):
             start=f"01/01/{year}",
             end=f"01/01/{year+1}",
             freq="H",
-            closed="left",
+            inclusive="left",
         )
     )
 
