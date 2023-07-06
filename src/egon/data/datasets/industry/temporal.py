@@ -16,7 +16,6 @@ Base = declarative_base()
 
 
 def identify_voltage_level(df):
-
     """Identify the voltage_level of a grid component based on its peak load
     and defined thresholds.
 
@@ -260,7 +259,6 @@ def insert_osm_ind_load():
     ]
 
     for scenario in egon.data.config.settings()["egon-data"]["--scenarios"]:
-
         # Delete existing data from database
         db.execute_sql(
             f"""
@@ -429,7 +427,6 @@ def insert_sites_ind_load():
     ]
 
     for scenario in egon.data.config.settings()["egon-data"]["--scenarios"]:
-
         # Delete existing data from database
         db.execute_sql(
             f"""
