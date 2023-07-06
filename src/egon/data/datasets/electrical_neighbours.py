@@ -1281,7 +1281,7 @@ def entsoe_historic_generation_capacities(entsoe_token=None, year_start="2019010
     end = pd.Timestamp(year_end, tz="Europe/Brussels")
     start_gb = pd.Timestamp(year_start, tz="Europe/London")
     end_gb = pd.Timestamp(year_end, tz="Europe/London")
-    countries= ["LU", "AT", "FR", "NL", 
+    countries= ["LU", "AT", "FR", "NL", "CZ",
                 "DK_1", "DK_2", "PL", "CH", "NO", "BE", "SE", "GB"]
     
      # todo: define wanted countries
@@ -1321,7 +1321,7 @@ def entsoe_historic_demand(entsoe_token=None, year_start="20190101", year_end="2
     start_gb = start.tz_convert("Europe/London")
     end_gb = end.tz_convert("Europe/London")
 
-    countries= ["LU", "AT", "FR", "NL", 
+    countries= ["LU", "AT", "FR", "NL", "CZ",
                 "DK_1", "DK_2", "PL", "CH", "NO", "BE", "SE", "GB"]
     
     
@@ -1398,7 +1398,8 @@ def entsoe_to_bus_etrago():
                  "NO": "NO00",
                  "BE": "BE00",
                  "SE": "SE00",
-                 "GB": "UK00"})
+                 "GB": "UK00",
+                 "CZ": "CZ00"})
 
     for_bus = get_foreign_bus_id(scenario='status2019')
 
@@ -1422,7 +1423,7 @@ def insert_generators_sq(gen_sq=None, scn_name = "status2019"):
 
     """
     ################# TEMPORAL ####################
-    gen_sq = pd.read_csv("data_bundle_egon_data/gen_entsoe.csv", index_col="Index")
+    gen_sq = pd.read_csv("data_bundle_powerd_data/entsoe/gen_entsoe.csv", index_col="Index")
     ################# TEMPORAL ####################
 
     targets = config.datasets()["electrical_neighbours"]["targets"]
@@ -1580,7 +1581,7 @@ def insert_loads_sq(load_sq=None, scn_name = "status2019"):
     targets = config.datasets()["electrical_neighbours"]["targets"]
 
     ################# TEMPORAL ####################
-    load_sq = pd.read_csv("data_bundle_egon_data/load_entsoe.csv", index_col="Index")
+    load_sq = pd.read_csv("data_bundle_powerd_data/entsoe/load_entsoe.csv", index_col="Index")
     ################# TEMPORAL ####################
 
     # Delete existing data
@@ -1663,7 +1664,7 @@ class ElectricalNeighbours(Dataset):
     def __init__(self, dependencies):
         super().__init__(
             name="ElectricalNeighbours",
-            version="0.0.8",
+            version="0.0.9",
             dependencies=dependencies,
             tasks=tasks,
         )

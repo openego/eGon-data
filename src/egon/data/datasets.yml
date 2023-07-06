@@ -21,7 +21,7 @@ openstreetmap:
 vg250:
   original_data:
     source:
-      url: "https://daten.gdz.bkg.bund.de/produkte/vg/vg250_ebenen_0101/2020/vg250_01-01.geo84.shape.ebenen.zip"
+      url: "https://datenX.gdz.bkg.bund.de/produkte/vg/vg250_ebenen_0101/2020/vg250_01-01.geo84.shape.ebenen.zip"
     target:
       file: "vg250_01-01.geo84.shape.ebenen.zip"
   processed:
@@ -379,6 +379,7 @@ power_plants:
       pv: 'supply.egon_power_plants_pv'
       wind: 'supply.egon_power_plants_wind'
       nep_2035: "NEP2035_V2021_scnC2035.xlsx"
+      wind_offshore_status2019: "windoffshore_status2019.xlsx"
       storages: 'supply.egon_storages'
   target:
       table: 'egon_power_plants'
@@ -539,9 +540,12 @@ data-bundle:
   sources:
     zenodo:
       deposit_id: 1095882
+      deposit_id_powerd: 1214744
   targets:
     file:
       'data_bundle_egon_data.zip'
+    file_powerd:
+      'data_bundle_powerd_data.zip'
 
 pypsa-technology-data:
   sources:
@@ -1133,6 +1137,7 @@ emobility_mit:
   scenario:
     # used scenario variation (available scenarios see parameters.py)
     variation:
+      status2019: "status2019"
       eGon2035: "NEP C 2035"
       eGon100RE: "Reference 2050"
     # name of low-flex scenario

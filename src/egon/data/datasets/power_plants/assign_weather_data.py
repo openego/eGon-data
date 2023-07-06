@@ -1,5 +1,8 @@
+import json
+
 import geopandas as gpd
 import pandas as pd
+from shapely.geometry import Polygon
 
 from egon.data import db
 import egon.data.config
@@ -120,6 +123,8 @@ def find_weather_id():
     power_plants = power_plants[
         (power_plants["carrier"] == "solar")
         | (power_plants["carrier"] == "wind_onshore")
+        | (power_plants["carrier"] == "solar_rooftop")
+        | (power_plants["carrier"] == "wind_offshore")
     ]
     power_plants.set_index("id", inplace=True)
 
@@ -153,6 +158,12 @@ def find_weather_id():
         sql, con, crs="EPSG:4326", geom_col="geometry"
     )
 
+    baltic_sea = Polygon([(11, 56), (11, 53), (15, 53), (15, 56)])
+    north_sea = Polygon([(5, 56), (5, 53), (9, 53), (9, 56)])
+
+    boundaries.loc["baltic_sea", "geometry"] = baltic_sea
+    boundaries.loc["north_sea", "geometry"] = north_sea
+
     # Clip weater data cells using the German boundaries
     weather_cells = gpd.clip(weather_cells, boundaries)
 
@@ -172,7 +183,7 @@ def write_power_plants_table(power_plants, cfg, con):
         f"""
     DELETE FROM {cfg['sources']['power_plants']['schema']}.
     {cfg['sources']['power_plants']['table']}
-    WHERE carrier IN ('wind_onshore', 'solar')
+    WHERE carrier IN ('wind_onshore', 'solar', 'solar_rooftop', 'wind_offshore')
     """
     )
 
@@ -204,6 +215,11 @@ def write_power_plants_table(power_plants, cfg, con):
     power_plants.index = pd.RangeIndex(
         start=ini_id, stop=ini_id + len(power_plants), name="id"
     )
+
+    # Set json format
+    for i in power_plants.index:
+        power_plants.sources[i] = json.dumps(power_plants.sources[i])
+        power_plants.source_id[i] = json.dumps(power_plants.source_id[i])
 
     # Insert into database
     power_plants.reset_index().to_postgis(

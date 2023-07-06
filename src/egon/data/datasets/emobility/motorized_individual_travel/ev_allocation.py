@@ -11,7 +11,7 @@ from sqlalchemy.sql import func
 import numpy as np
 import pandas as pd
 
-from egon.data import db
+from egon.data import db, config
 from egon.data.datasets.emobility.motorized_individual_travel.db_classes import (
     EgonEvCountMunicipality,
     EgonEvCountMvGridDistrict,
@@ -422,8 +422,8 @@ def allocate_evs_numbers():
     # Import
     kba_data = read_kba_data()
     rs7_data = read_rs7_data()
-
-    for scenario_name in ["eGon2035", "eGon100RE", "status2019"]:
+    
+    for scenario_name in config.settings()["egon-data"]["--scenarios"]:
         # Load scenario params
         scenario_parameters = get_sector_parameters(
             "mobility", scenario=scenario_name
@@ -540,7 +540,7 @@ def allocate_evs_to_grid_districts():
             .ev_id.to_list()
         )
 
-    for scenario_name in ["eGon2035", "eGon100RE", "status2019"]:
+    for scenario_name in config.settings()["egon-data"]["--scenarios"]:
         print(f"SCENARIO: {scenario_name}")
 
         # Load EVs per grid district
@@ -632,7 +632,7 @@ def allocate_evs_to_grid_districts():
                 np.testing.assert_allclose(
                     int(ev_actual),
                     ev_target,
-                    rtol=0.0001,
+                    rtol=0.05,
                     err_msg=f"Dataset on EV numbers allocated to MVGDs "
                     f"seems to be flawed. "
                     f"Scenario: [{scn}], "

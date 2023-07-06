@@ -28,7 +28,7 @@ class HouseholdElectricityDemand(Dataset):
     def __init__(self, dependencies):
         super().__init__(
             name="HouseholdElectricityDemand",
-            version="0.0.3",
+            version="0.0.4",
             dependencies=dependencies,
             tasks=(create_tables, get_annual_household_el_demand_cells),
         )
@@ -92,6 +92,7 @@ def get_annual_household_el_demand_cells():
             session.query(
                 HouseholdElectricityProfilesOfBuildings,
                 HouseholdElectricityProfilesInCensusCells.nuts3,
+                HouseholdElectricityProfilesInCensusCells.factor_2019,
                 HouseholdElectricityProfilesInCensusCells.factor_2035,
                 HouseholdElectricityProfilesInCensusCells.factor_2050,
             )
@@ -113,6 +114,8 @@ def get_annual_household_el_demand_cells():
         raise (ValueError(s))
 
     dataset = egon.data.config.settings()["egon-data"]["--dataset-boundary"]
+    scenarios = egon.data.config.settings()["egon-data"]["--scenarios"]
+
     iterate_over = (
         "nuts3"
         if dataset == "Everything"
@@ -122,21 +125,29 @@ def get_annual_household_el_demand_cells():
     )
 
     df_annual_demand = pd.DataFrame(
-        columns=["eGon2035", "eGon100RE", "zensus_population_id"]
+        columns=scenarios + ["zensus_population_id"]
     )
 
     for _, df in df_buildings_and_profiles.groupby(by=iterate_over):
         df_annual_demand_iter = pd.DataFrame(
-            columns=["eGon2035", "eGon100RE", "zensus_population_id"]
+            columns=scenarios + ["zensus_population_id"]
         )
-        df_annual_demand_iter["eGon2035"] = (
-            df_profiles.loc[:, df["profile_id"]].sum(axis=0)
-            * df["factor_2035"].values
-        )
-        df_annual_demand_iter["eGon100RE"] = (
-            df_profiles.loc[:, df["profile_id"]].sum(axis=0)
-            * df["factor_2050"].values
-        )
+
+        if "eGon2035" in scenarios:
+            df_annual_demand_iter["eGon2035"] = (
+                df_profiles.loc[:, df["profile_id"]].sum(axis=0)
+                * df["factor_2035"].values
+            )
+        if "eGon100RE" in scenarios:
+            df_annual_demand_iter["eGon100RE"] = (
+                df_profiles.loc[:, df["profile_id"]].sum(axis=0)
+                * df["factor_2050"].values
+            )
+        if "status2019" in scenarios:
+            df_annual_demand_iter["status2019"] = (
+                df_profiles.loc[:, df["profile_id"]].sum(axis=0)
+                * df["factor_2019"].values
+            )
         df_annual_demand_iter["zensus_population_id"] = df["cell_id"].values
         df_annual_demand = df_annual_demand.append(df_annual_demand_iter)
 

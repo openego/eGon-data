@@ -1,6 +1,7 @@
 """The central module containing all code dealing with power plant data.
 """
 from geoalchemy2 import Geometry
+from pathlib import Path
 from sqlalchemy import BigInteger, Column, Float, Integer, Sequence, String
 from sqlalchemy.dialects.postgresql import JSONB
 from sqlalchemy.ext.declarative import declarative_base
@@ -493,7 +494,7 @@ def assign_voltage_level_by_capacity(mastr_loc):
     return mastr_loc.voltage_level
 
 
-def assign_bus_id(power_plants, cfg):
+def assign_bus_id(power_plants, cfg, drop_missing=False):
     """Assigns bus_ids to power plants according to location and voltage level
 
     Parameters
@@ -550,6 +551,9 @@ def assign_bus_id(power_plants, cfg):
                 power_plants[power_plants.index.isin(power_plants_ehv)],
                 ehv_grid_districts,
             ).bus_id
+
+    if drop_missing:
+        power_plants = power_plants[~power_plants.bus_id.isnull()]
 
     # Assert that all power plants have a bus_id
     assert power_plants.bus_id.notnull().all(), f"""Some power plants are
@@ -908,7 +912,8 @@ def power_plants_status_quo(scn_name="status2019"):
         f"""
         DELETE FROM {cfg['target']['schema']}.{cfg['target']['table']}
         WHERE carrier IN ('wind_onshore', 'solar', 'biomass',
-                          'run_of_river', 'reservoir', 'solar_rooftop')
+                          'run_of_river', 'reservoir', 'solar_rooftop',
+                          'wind_offshore')
         AND scenario = '{scn_name}'
         """
     )
@@ -1003,7 +1008,7 @@ def power_plants_status_quo(scn_name="status2019"):
     logging.info(
         f"""
           {len(hydro)} hydro generators with a total installed capacity of
-          {hydro.capacity.sum()}MW were inserted in db
+          {hydro.capacity.sum()}MW were inserted into the db
           """
     )
 
@@ -1031,7 +1036,7 @@ def power_plants_status_quo(scn_name="status2019"):
     logging.info(
         f"""
           {len(biomass)} biomass generators with a total installed capacity of
-          {biomass.capacity.sum()}MW were inserted in db
+          {biomass.capacity.sum()}MW were inserted into the db
           """
     )
 
@@ -1069,7 +1074,7 @@ def power_plants_status_quo(scn_name="status2019"):
     logging.info(
         f"""
           {len(solar)} solar generators with a total installed capacity of
-          {solar.capacity.sum()}MW were inserted in db
+          {solar.capacity.sum()}MW were inserted into the db
           """
     )
 
@@ -1099,7 +1104,7 @@ def power_plants_status_quo(scn_name="status2019"):
     logging.info(
         f"""
           {len(wind_onshore)} wind_onshore generators with a total installed capacity of
-          {wind_onshore.capacity.sum()}MW were inserted in db
+          {wind_onshore.capacity.sum()}MW were inserted into the db
           """
     )
 
@@ -1135,17 +1140,16 @@ if (
                 pv_rooftop_to_buildings,
             ),
         },
-        wind_offshore.insert,
     )
 
-tasks = tasks + (assign_weather_data.weatherId_and_busId,)
+tasks = tasks + (wind_offshore.insert, assign_weather_data.weatherId_and_busId,)
 
 
 class PowerPlants(Dataset):
     def __init__(self, dependencies):
         super().__init__(
             name="PowerPlants",
-            version="0.0.18",
+            version="0.0.21",
             dependencies=dependencies,
             tasks=tasks,
         )

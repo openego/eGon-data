@@ -215,7 +215,7 @@ def insert_cts_load():
 
     create_table()
 
-    for scenario in ["eGon2035", "eGon100RE"]:
+    for scenario in egon.data.config.settings()["egon-data"]["--scenarios"]:
 
         # Delete existing data from database
         db.execute_sql(

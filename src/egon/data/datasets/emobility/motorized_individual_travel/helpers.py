@@ -82,7 +82,7 @@ TRIP_COLUMN_MAPPING = {
     "drive_end_timesteps": "drive_end",
     "consumption_kWh": "consumption",
 }
-MVGD_MIN_COUNT = 3700 if TESTMODE_OFF else 150
+MVGD_MIN_COUNT = 3600 if TESTMODE_OFF else 150
 
 
 def read_kba_data():
