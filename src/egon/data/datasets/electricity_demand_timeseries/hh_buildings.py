@@ -364,7 +364,7 @@ def generate_synthetic_buildings(missing_buildings, edge_length):
         columns={
             "building_count": "building_id",
             "cell_profile_ids": "profiles",
-            "index": "cell_id",
+            "id": "cell_id",
         }
     )
 
