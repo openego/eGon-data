@@ -36,7 +36,7 @@ def create_table():
 
 
 def calc_load_curve(share_wz, annual_demand=1):
-    """ Create aggregated demand curve for service sector
+    """Create aggregated demand curve for service sector
 
     Parameters
     ----------
@@ -86,7 +86,6 @@ def calc_load_curve(share_wz, annual_demand=1):
     # If shares per cts branch is a DataFrame (e.g. shares per substation)
     # demand curves are created for each row
     if type(share_wz) == pd.core.frame.DataFrame:
-
         # Replace NaN values with 0
         share_wz = share_wz.fillna(0.0)
 
@@ -218,7 +217,6 @@ def insert_cts_load():
     create_table()
 
     for scenario in egon.data.config.settings()["egon-data"]["--scenarios"]:
-
         # Delete existing data from database
         db.execute_sql(
             f"""
