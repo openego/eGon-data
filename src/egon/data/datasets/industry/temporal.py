@@ -190,7 +190,7 @@ def calc_load_curves_ind_osm(scenario):
     )
 
     # Calculate shares of industrial branches per osm area
-    osm_share_wz = demands_osm_area.groupby("osm_id").apply(
+    osm_share_wz = demands_osm_area.groupby(["osm_id"], as_index=False).apply(
         lambda grp: grp / grp.sum()
     )
 
