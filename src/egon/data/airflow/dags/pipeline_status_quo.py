@@ -80,8 +80,8 @@ with airflow.DAG(
     "powerd-status-quo-processing-pipeline",
     description="The PoWerD Status Quo data processing DAG.",
     default_args={"start_date": days_ago(1),
-                  "email_on_failure": True,
-                  "email":"ulf.p.mueller@hs-flensburg.de"},
+                  "email_on_failure": False,
+                  "email":"clara.buettner@hs-flensburg.de"},
     template_searchpath=[
         os.path.abspath(
             os.path.join(
