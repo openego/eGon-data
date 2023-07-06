@@ -346,9 +346,8 @@ def area_grouping(
         buffer_distance
     )
     # print(cell_buffers.area)
-
     # create a shapely Multipolygon which is split into a list
-    buffer_polygons = list(cell_buffers["geom_polygon"].unary_union)
+    buffer_polygons = list(cell_buffers["geom_polygon"].unary_union.geoms)
 
     # change the data type into geopandas geodataframe
     buffer_polygons_gdf = gpd.GeoDataFrame(geometry=buffer_polygons, crs=3035)
@@ -423,10 +422,9 @@ def area_grouping(
 
         join_2["area_id"] = join_2.index_right + max_area_id + 1
 
-        join = join.append(
-            join_2[
-                ["residential_and_service_demand", "geom_polygon", "area_id"]
-            ]
+        join = pd.concat([join,
+                           join_2[["residential_and_service_demand", "geom_polygon", "area_id"]]],
+                           ignore_index=True
         )
 
     return join
@@ -598,11 +596,10 @@ def district_heating_areas(scenario_name, plotting=False):
 
     # group the resulting scenario specific district heating areas
     scenario_dh_area = area_grouping(
-        gpd.GeoDataFrame(
-            cells[["residential_and_service_demand", "geom_polygon"]].append(
-                new_areas[["residential_and_service_demand", "geom_polygon"]]
-            ),
-            geometry="geom_polygon",
+        pd.concat(
+            [cells[["residential_and_service_demand", "geom_polygon"]],
+             new_areas[["residential_and_service_demand", "geom_polygon"]]
+            ], ignore_index=True
         ),
         distance=500,
         maximum_total_demand=4e6,
@@ -626,6 +623,7 @@ def district_heating_areas(scenario_name, plotting=False):
         schema="demand",
         con=db.engine(),
         if_exists="append",
+        index=False
     )
 
     # Create polygons around the grouped cells and store them in the database
