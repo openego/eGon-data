@@ -112,7 +112,7 @@ def identify_bus(load_curves, demand_area):
     ).drop_duplicates(subset=["id"])
 
     # Bring both dataframes together
-    peak_bus = peak_hv_c.append(peak_hv_p, ignore_index=True)
+    peak_bus = pd.concat([peak_hv_c, peak_hv_p], ignore_index=True)
 
     # Select ehv voronoi
     ehv_voronoi = db.select_geodataframe(
@@ -133,7 +133,7 @@ def identify_bus(load_curves, demand_area):
     peak_ehv = gpd.sjoin(peak_ehv, ehv_voronoi, how="inner", op="intersects")
 
     # Bring both dataframes together
-    peak_bus = peak_bus.append(peak_ehv, ignore_index=True)
+    peak_bus = pd.concat([peak_bus, peak_ehv], ignore_index=True)
 
     # Combine dataframes to bring loadcurves and bus id together
     curves_da = pd.merge(
