@@ -73,8 +73,9 @@ def demands_per_bus(scenario):
 
     # Create one df by appending all imported dataframes
 
-    demand_curves = cts_curves.append(
-        [ind_curves_osm, ind_curves_sites, hh_curves]
+    demand_curves = pd.concat(
+        [cts_curves, ind_curves_osm, ind_curves_sites, hh_curves],
+        ignore_index=True,
     )
 
     # Split array to single columns in the dataframe
