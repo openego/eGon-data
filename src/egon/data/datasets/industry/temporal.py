@@ -219,7 +219,10 @@ def calc_load_curves_ind_osm(scenario):
 
     # Group all load curves per bus
     curves_bus = (
-        curves_da.drop(["id"], axis=1).fillna(0).groupby("bus_id").sum()
+        curves_da.drop(["id", "geom"], axis=1)
+        .fillna(0)
+        .groupby("bus_id")
+        .sum()
     )
 
     # Initalize pandas.DataFrame for export to database
