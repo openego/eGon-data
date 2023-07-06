@@ -909,7 +909,7 @@ def impute_missing_hh_in_populated_cells(df_census_households_grid):
             * df_wo_hh_population_i.shape[0]
         ).values
         # append new cells
-        df_w_hh = df_w_hh.append(df_repeated, ignore_index=True)
+        df_w_hh = pd.concat([df_w_hh, df_repeated], ignore_index=True)
 
     return df_w_hh
 
@@ -1167,12 +1167,13 @@ def refine_census_data_at_cell_level(
                 df_group, dist_households_nuts1, hh_10types_cluster
             )
             df_distribution_group["characteristics_code"] = hh_5type_cluster
-            df_distribution_nuts1 = df_distribution_nuts1.append(
-                df_distribution_group
+            df_distribution_nuts1 = pd.concat(
+                [df_distribution_nuts1, df_distribution_group],
+                ignore_index=True,
             )
 
-        df_distribution_nuts0 = df_distribution_nuts0.append(
-            df_distribution_nuts1
+        df_distribution_nuts0 = pd.concat(
+            [df_distribution_nuts0, df_distribution_nuts1], ignore_index=True
         )
 
     df_census_households_grid_refined = df_census_households_grid.merge(
