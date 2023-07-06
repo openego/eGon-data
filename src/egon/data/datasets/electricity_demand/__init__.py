@@ -149,7 +149,7 @@ def get_annual_household_el_demand_cells():
                 * df["factor_2019"].values
             )
         df_annual_demand_iter["zensus_population_id"] = df["cell_id"].values
-        df_annual_demand = df_annual_demand.append(df_annual_demand_iter)
+        df_annual_demand = pd.concat([df_annual_demand, df_annual_demand_iter])
 
     df_annual_demand = (
         df_annual_demand.groupby("zensus_population_id").sum().reset_index()
@@ -212,7 +212,6 @@ def distribute_cts_demands():
 
     # Insert data per scenario
     for scn in egon.data.config.settings()["egon-data"]["--scenarios"]:
-
         # Select heat_demand per zensus cell
         peta = db.select_dataframe(
             f"""SELECT zensus_population_id, demand as heat_demand,
