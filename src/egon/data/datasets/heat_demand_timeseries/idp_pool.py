@@ -324,20 +324,23 @@ def create():
     idp_df = pd.DataFrame(columns=["idp", "house", "temperature_class"])
     for s in stock:
         for m in class_list:
-
             if s == "SFH":
                 i = class_list.index(m)
             if s == "MFH":
                 i = class_list.index(m) + 9
             current_pool = idp_list[i]
-            idp_df = idp_df.append(
-                pd.DataFrame(
-                    data={
-                        "idp": current_pool.transpose().values.tolist(),
-                        "house": s,
-                        "temperature_class": m,
-                    }
-                )
+            idp_df = pd.concat(
+                [
+                    idp_df,
+                    pd.DataFrame(
+                        data={
+                            "idp": current_pool.transpose().values.tolist(),
+                            "house": s,
+                            "temperature_class": m,
+                        }
+                    ),
+                ],
+                ignore_index=True,
             )
     idp_df = idp_df.reset_index(drop=True)
 
