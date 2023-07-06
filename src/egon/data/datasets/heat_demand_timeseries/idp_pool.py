@@ -466,8 +466,8 @@ def select():
 
     # Calculate annual heat demand per census cell
     annual_demand = annual_demand_generator(
-        scenario = egon.data.config.settings()["egon-data"]["--scenarios"][0]
-        )
+        scenario=egon.data.config.settings()["egon-data"]["--scenarios"][0]
+    )
 
     # Count number of SFH and MFH per climate zone
     houses_per_climate_zone = (
@@ -480,7 +480,6 @@ def select():
     )
 
     for station in houses_per_climate_zone.index:
-
         result_SFH = pd.DataFrame(columns=range(1, 366))
         result_MFH = pd.DataFrame(columns=range(1, 366))
 
