@@ -242,7 +242,6 @@ def CTS_demand_scale(aggregation_level):
         )
 
         if aggregation_level == "district":
-
             district_heating = db.select_dataframe(
                 f"""
                 SELECT area_id, zensus_population_id
