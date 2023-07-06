@@ -103,7 +103,7 @@ setup(
         "psycopg2",
         "pyaml",
         "pypsa==0.17.1",
-        "pydantic<2.0"
+        "pydantic<2.0",
         "rasterio",
         "requests",
         "rioxarray",
