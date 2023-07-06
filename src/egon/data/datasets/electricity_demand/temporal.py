@@ -190,7 +190,9 @@ def calc_load_curves_cts(scenario):
 
     # Calculate shares of cts branches per hvmv substation
     share_subst = (
-        demands_zensus.drop("demand", axis=1).groupby("bus_id").mean()
+        demands_zensus.drop(["nuts3", "demand"], axis=1)
+        .groupby("bus_id")
+        .mean()
     )
 
     # Calculate cts annual demand per hvmv substation
