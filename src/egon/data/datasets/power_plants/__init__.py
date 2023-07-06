@@ -977,6 +977,77 @@ def power_plants_status_quo(scn_name="status2019"):
 
         return gens
 
+    # Write nuclear power plants in supply.egon_power_plants
+    nuclear = pd.read_csv(
+        cfg["sources"]["mastr_nuclear"],
+        usecols=[
+            "EinheitMastrNummer",
+            "Energietraeger",
+            "Nettonennleistung",
+            "Laengengrad",
+            "Breitengrad",
+            "Gemeinde",
+            "Inbetriebnahmedatum",
+        ],
+    )
+    # drop generators installed after 2019
+    nuclear["Inbetriebnahmedatum"] = pd.to_datetime(
+        nuclear["Inbetriebnahmedatum"]
+    )
+    nuclear = nuclear[nuclear["Inbetriebnahmedatum"] < "2020-01-01"]
+
+    # rename carriers
+    nuclear.loc[
+        nuclear.Energietraeger == "Kernenergie", "Energietraeger"
+    ] = "nuclear"
+    # rename columns
+    nuclear.rename(
+        columns={
+            "EinheitMastrNummer": "gens_id",
+            "Energietraeger": "carrier",
+            "Nettonennleistung": "capacity",
+            "Gemeinde": "city",
+        },
+        inplace=True,
+    )
+    nuclear["bus_id"] = np.nan
+
+    nuclear["geom"] = gpd.points_from_xy(
+        nuclear.Laengengrad, nuclear.Breitengrad, crs=4326
+    )
+    nuclear.loc[
+        (nuclear.Laengengrad.isna() | nuclear.Breitengrad.isna()), "geom"
+    ] = Point()
+    nuclear = gpd.GeoDataFrame(nuclear, geometry="geom")
+
+    nuclear = fill_missing_bus_and_geom(nuclear, carrier="nuclear")
+    nuclear["voltage_level"] = np.nan
+
+    nuclear["voltage_level"] = assign_voltage_level_by_capacity(
+        nuclear.rename(columns={"capacity": "Nettonennleistung"})
+    )
+
+    for i, row in nuclear.iterrows():
+        entry = EgonPowerPlants(
+            sources={"el_capacity": "MaStR"},
+            source_id={"MastrNummer": row.gens_id},
+            carrier=row.carrier,
+            el_capacity=row.capacity,
+            scenario=scn_name,
+            bus_id=row.bus_id,
+            voltage_level=row.voltage_level,
+            geom=row.geom,
+        )
+        session.add(entry)
+    session.commit()
+
+    logging.info(
+        f"""
+          {len(nuclear)} nuclear generators with a total installed capacity of
+          {nuclear.capacity.sum()}MW were inserted into the db
+          """
+    )
+
     # Write conventional power plants in supply.egon_power_plants
     conv = pd.read_csv(
         cfg["sources"]["mastr_combustion"],
