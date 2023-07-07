@@ -35,20 +35,17 @@ def select_bus_id(x, y, v_nom, scn_name, carrier, find_closest=False):
 
     if bus_id.empty:
         if find_closest:
-            buses = db.select_dataframe(
-                f"""
-                SELECT bus_id, x, y
-                FROM grid.egon_etrago_bus
-                WHERE v_nom = {v_nom}
-                AND scn_name = '{scn_name}'
-                AND carrier = '{carrier}'
-                """,
-                index_col="bus_id",
-            )
-            buses["distance"] = buses.apply(
-                lambda b: ((b.x - x) ** 2 + (b.y - y) ** 2) ** (1 / 2), axis=1
-            )
-            return buses["distance"].idxmin()
+            bus_id = db.select_dataframe(
+            f"""
+            SELECT bus_id, st_distance(geom, 'SRID=4326;POINT({x} {y})'::geometry)
+            FROM grid.egon_etrago_bus
+            WHERE v_nom = {v_nom}
+            AND scn_name = '{scn_name}'
+            AND carrier = '{carrier}'
+            ORDER BY st_distance
+            Limit 1
+            """)
+            return bus_id.bus_id[0]
         else:
             return None
     else:
