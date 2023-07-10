@@ -1011,11 +1011,10 @@ def power_plants_status_quo(scn_name="status2019"):
     # drop generators installed after 2019
     conv["Inbetriebnahmedatum"] = pd.to_datetime(conv["Inbetriebnahmedatum"])
     conv = conv[conv["Inbetriebnahmedatum"] < "2020-01-01"]
-    
+
     # drop chp generators
     conv["ThermischeNutzleistung"] = conv["ThermischeNutzleistung"].fillna(0)
     conv = conv[conv.ThermischeNutzleistung == 0]
-
 
     # rename carriers
     conv.loc[conv.Energietraeger == "Braunkohle", "Energietraeger"] = "lignite"
@@ -1117,7 +1116,11 @@ def power_plants_status_quo(scn_name="status2019"):
         con,
         geom_col="geom",
     )
-
+    
+    # drop chp generators
+    biomass["th_capacity"] = biomass["th_capacity"].fillna(0)
+    biomass = biomass[biomass.th_capacity == 0]
+    
     biomass = fill_missing_bus_and_geom(biomass, carrier="biomass")
 
     for i, row in biomass.iterrows():
