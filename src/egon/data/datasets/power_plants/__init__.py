@@ -908,7 +908,6 @@ def power_plants_status_quo(scn_name="status2019"):
     con = db.engine()
     session = sessionmaker(bind=db.engine())()
     cfg = egon.data.config.datasets()["power_plants"]
-
     db.execute_sql(
         f"""
         DELETE FROM {cfg['target']['schema']}.{cfg['target']['table']}
@@ -1010,7 +1009,10 @@ def power_plants_status_quo(scn_name="status2019"):
 
     # drop generators installed after 2019
     conv["Inbetriebnahmedatum"] = pd.to_datetime(conv["Inbetriebnahmedatum"])
-    conv = conv[conv["Inbetriebnahmedatum"] < "2020-01-01"]
+    conv = conv[
+        conv["Inbetriebnahmedatum"]
+        < egon.data.config.datasets()["mastr_new"]["status2019_date_max"]
+    ]
 
     # drop chp generators
     conv["ThermischeNutzleistung"] = conv["ThermischeNutzleistung"].fillna(0)
@@ -1116,11 +1118,11 @@ def power_plants_status_quo(scn_name="status2019"):
         con,
         geom_col="geom",
     )
-    
+
     # drop chp generators
     biomass["th_capacity"] = biomass["th_capacity"].fillna(0)
     biomass = biomass[biomass.th_capacity == 0]
-    
+
     biomass = fill_missing_bus_and_geom(biomass, carrier="biomass")
 
     for i, row in biomass.iterrows():
