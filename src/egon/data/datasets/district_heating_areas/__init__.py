@@ -422,9 +422,18 @@ def area_grouping(
 
         join_2["area_id"] = join_2.index_right + max_area_id + 1
 
-        join = pd.concat([join,
-                           join_2[["residential_and_service_demand", "geom_polygon", "area_id"]]],
-                           ignore_index=True
+        join = pd.concat(
+            [
+                join,
+                join_2[
+                    [
+                        "residential_and_service_demand",
+                        "geom_polygon",
+                        "area_id",
+                    ]
+                ],
+            ],
+            ignore_index=True,
         )
 
     return join
