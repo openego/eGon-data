@@ -46,7 +46,9 @@ def select_nep_pumped_hydro(scn):
             AND postcode != 'None';
             """
         )
-        nep_ph.rename(columns={"c2035_capacity": "elec_capacity"}, inplace=True)
+        nep_ph.rename(
+            columns={"c2035_capacity": "elec_capacity"}, inplace=True
+        )
     elif scn == "status2019":
         # Select plants with geolocation from list of conventional power plants
         nep_ph = db.select_dataframe(
@@ -63,7 +65,7 @@ def select_nep_pumped_hydro(scn):
         nep_ph["elec_capacity"] = nep_ph["capacity"]
     else:
         raise SystemExit(f"{scn} not recognised")
-    
+
     # Removing plants out of Germany
     nep_ph["postcode"] = nep_ph["postcode"].astype(str)
     nep_ph = nep_ph[~nep_ph["postcode"].str.contains("A")]
@@ -213,7 +215,6 @@ def match_storage_units(
     for index, row in nep[
         (nep["carrier"] == carrier) & (nep["postcode"] != "None")
     ].iterrows():
-
         # Select plants from MaStR that match carrier, PLZ
         # and have a similar capacity
         # Create a copy of all power plants from MaStR
