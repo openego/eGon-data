@@ -164,7 +164,6 @@ def extension_to_areas(
 
     # Add new CHP as long as the additional capacity is not reached
     while additional_capacity > existing_chp.el_capacity.min():
-
         if district_heating:
             selected_areas = areas.loc[
                 areas.demand > existing_chp.th_capacity.min() * flh, :
@@ -175,7 +174,6 @@ def extension_to_areas(
             ]
 
         if len(selected_areas) > 0:
-
             selected_areas = selected_areas.to_crs(4326)
             # Assign gas bus_id
             selected_areas["gas_bus_id"] = db.assign_gas_bus_id(
@@ -577,7 +575,6 @@ def extension_per_federal_state(federal_state, EgonChp):
     )
 
     if additional_capacity > 0:
-
         share_dh = (
             existing_capacity[
                 existing_capacity.district_heating
@@ -734,8 +731,11 @@ def assign_use_case(chp, sources, scenario):
 
     # Chp which are close to a district heating area and not close to an
     # industrial location are assigned as district_heating_chp
-    district_heating_chp = district_heating_chp.append(
-        close_to_dh[~close_to_dh.index.isin(close_to_industry.index)]
+    district_heating_chp = pd.concat(
+        [
+            district_heating_chp,
+            close_to_dh[~close_to_dh.index.isin(close_to_industry.index)],
+        ]
     )
 
     # Set district_heating = True for all district heating chp
