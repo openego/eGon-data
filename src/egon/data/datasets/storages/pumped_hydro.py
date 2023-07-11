@@ -252,18 +252,21 @@ def match_storage_units(
 
         # If a plant could be matched, add this to matched
         if len(selected) > 0:
-            matched = matched.append(
-                gpd.GeoDataFrame(
-                    data={
-                        "source": "MaStR scaled with NEP 2021 list",
-                        "MaStRNummer": selected.EinheitMastrNummer.head(1),
-                        "carrier": carrier,
-                        "el_capacity": row.elec_capacity,
-                        "scenario": scn,
-                        "geometry": selected.geometry.head(1),
-                        "voltage_level": selected.voltage_level.head(1),
-                    }
-                )
+            matched = pd.concat(
+                [
+                    matched,
+                    gpd.GeoDataFrame(
+                        data={
+                            "source": "MaStR scaled with NEP 2021 list",
+                            "MaStRNummer": selected.EinheitMastrNummer.head(1),
+                            "carrier": carrier,
+                            "el_capacity": row.elec_capacity,
+                            "scenario": scn,
+                            "geometry": selected.geometry.head(1),
+                            "voltage_level": selected.voltage_level.head(1),
+                        }
+                    ),
+                ]
             )
 
             # Drop matched storage units from nep
