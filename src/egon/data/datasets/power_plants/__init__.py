@@ -822,7 +822,7 @@ def allocate_other_power_plants():
         "and Technologie == 'ORCOrganicRankineCycleAnlage'"
     )
 
-    mastr_sg = mastr_sludge.append(mastr_geothermal)
+    mastr_sg = pd.concat([mastr_sludge, mastr_geothermal])
 
     # Insert geometry column
     mastr_sg = mastr_sg[~(mastr_sg["Laengengrad"].isnull())]
@@ -856,7 +856,7 @@ def allocate_other_power_plants():
     mastr_sg.loc[:, "Nettonennleistung"] *= 1e-3
 
     # Merge different sources to one df
-    mastr_others = mastr_sg.append(mastr_combustion).reset_index()
+    mastr_others = pd.concat([mastr_sg, mastr_combustion]).reset_index()
 
     # Delete entries outside Schleswig-Holstein for test mode
     if boundary == "Schleswig-Holstein":
