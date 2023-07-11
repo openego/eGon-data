@@ -89,7 +89,7 @@ def find_bus_id(power_plants, cfg):
     if len(power_plants_no_busId) > 0:
         power_plants_no_busId = assign_bus_id(power_plants_no_busId, cfg)
 
-    power_plants = power_plants.append(power_plants_no_busId)
+    power_plants = pd.concat([power_plants, power_plants_no_busId])
 
     return power_plants
 
