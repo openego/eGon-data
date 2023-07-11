@@ -1241,8 +1241,8 @@ def cts_buildings():
         )
         df_lost_cells = df_lost_cells.explode("amenities")
         df_lost_cells.drop(columns="amenities", inplace=True)
-        df_amenities_without_buildings = df_amenities_without_buildings.append(
-            df_lost_cells, ignore_index=True
+        df_amenities_without_buildings = pd.concat(
+            [df_amenities_without_buildings, df_lost_cells], ignore_index=True
         )
         log.info(
             f"{df_lost_cells.shape[0]} lost cells due to substation "
