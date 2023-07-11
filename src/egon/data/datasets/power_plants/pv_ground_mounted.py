@@ -435,7 +435,7 @@ def insert():
                 pv_pot_mv_to_hv["dist_to_HV"] <= max_dist_hv
             ]
             pv_pot_mv_to_hv = pv_pot_mv_to_hv.drop(columns=["dist_to_HV"])
-            pv_pot_hv = pv_pot_hv.append(pv_pot_mv_to_hv)
+            pv_pot_hv = pd.concat([pv_pot_hv, pv_pot_mv_to_hv])
 
             # delete PVs which are now HV from MV dataframe
             for index, pot in pv_pot_mv_to_hv.iterrows():
@@ -711,8 +711,8 @@ def insert():
                         "and 'Agriculture'."
                     )
 
-                pv_per_distr_i = pv_per_distr_i.append(
-                    pv_per_distr_i_2, ignore_index=True
+                pv_per_distr_i = pd.concat(
+                    [pv_per_distr_i, pv_per_distr_i_2], ignore_index=True
                 )
 
             # assign grid level to pv_per_distr
@@ -984,7 +984,7 @@ def insert():
             pv_agri = pv_agri.append(agri_i)
             pv_exist = pv_exist.append(exist_i)
             if len(distr_i) > 0:
-                pv_per_distr = pv_per_distr.append(distr_i)
+                pv_per_distr = pd.concat([pv_per_distr, distr_i])
 
         # 2) scenario: eGon100RE
 
@@ -1176,8 +1176,8 @@ def insert():
 
         # prepare dataframe for integration in supply.egon_power_plants
 
-        pv_parks = pv_rora.append(
-            [pv_agri, pv_exist, pv_per_distr], ignore_index=True
+        pv_parks = pd.concat(
+            [pv_rora, pv_agri, pv_exist, pv_per_distr], ignore_index=True
         )
         pv_parks["el_capacity"] = pv_parks["installed capacity in kW"] / 1000
         pv_parks.rename(columns={"centroid": "geometry"}, inplace=True)
