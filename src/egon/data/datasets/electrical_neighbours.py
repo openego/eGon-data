@@ -3,7 +3,7 @@
 
 import zipfile
 
-#import entsoe
+# import entsoe
 import requests
 import logging
 
@@ -500,7 +500,6 @@ def central_transformer(scenario, sources, targets, central_buses, new_lines):
 
     # Add one transformer per central foreign bus with v_nom != 380
     for i, row in central_buses[central_buses.v_nom != 380].iterrows():
-
         s_nom_0 = new_lines[new_lines.bus0 == row.bus_id].s_nom.sum()
         s_nom_1 = new_lines[new_lines.bus1 == row.bus_id].s_nom.sum()
         if s_nom_0 == 0.0:
@@ -695,7 +694,6 @@ def grid():
     targets = config.datasets()["electrical_neighbours"]["targets"]
 
     for scenario in config.settings()["egon-data"]["--scenarios"]:
-
         central_buses = buses(scenario, sources, targets)
 
         foreign_lines = cross_border_lines(
@@ -959,7 +957,9 @@ def insert_generators(capacities):
     )
 
     gen.loc[:, "bus"] = (
-        get_foreign_bus_id(scenario='eGon2035').loc[gen.loc[:, "Node/Line"]].values
+        get_foreign_bus_id(scenario="eGon2035")
+        .loc[gen.loc[:, "Node/Line"]]
+        .values
     )
 
     # Add scenario column
@@ -1095,7 +1095,9 @@ def insert_storage(capacities):
     )
 
     store.loc[:, "bus"] = (
-        get_foreign_bus_id(scenario='eGon2035').loc[store.loc[:, "Node/Line"]].values
+        get_foreign_bus_id(scenario="eGon2035")
+        .loc[store.loc[:, "Node/Line"]]
+        .values
     )
 
     # Add columns for additional parameters to df
@@ -1239,7 +1241,9 @@ def tyndp_demand():
         buses[buses.nodes.isin(map_buses.keys())].index, "nodes"
     ] = buses[buses.nodes.isin(map_buses.keys())].nodes.map(map_buses)
     buses.loc[:, "bus"] = (
-        get_foreign_bus_id(scenario='eGon2035').loc[buses.loc[:, "nodes"]].values
+        get_foreign_bus_id(scenario="eGon2035")
+        .loc[buses.loc[:, "nodes"]]
+        .values
     )
     buses.set_index("nodes", inplace=True)
     buses = buses[~buses.index.duplicated(keep="first")]
@@ -1300,24 +1304,39 @@ def tyndp_demand():
         session.add(entry)
         session.add(entry_ts)
         session.commit()
-        
-def entsoe_historic_generation_capacities(entsoe_token=None, year_start="20190101", year_end="20200101"):
+
+
+def entsoe_historic_generation_capacities(
+    entsoe_token=None, year_start="20190101", year_end="20200101"
+):
     client = entsoe.EntsoePandasClient(api_key=entsoe_token)
 
     start = pd.Timestamp(year_start, tz="Europe/Brussels")
     end = pd.Timestamp(year_end, tz="Europe/Brussels")
     start_gb = pd.Timestamp(year_start, tz="Europe/London")
     end_gb = pd.Timestamp(year_end, tz="Europe/London")
-    countries= ["LU", "AT", "FR", "NL", "CZ",
-                "DK_1", "DK_2", "PL", "CH", "NO", "BE", "SE", "GB"]
-    
-     # todo: define wanted countries
+    countries = [
+        "LU",
+        "AT",
+        "FR",
+        "NL",
+        "CZ",
+        "DK_1",
+        "DK_2",
+        "PL",
+        "CH",
+        "NO",
+        "BE",
+        "SE",
+        "GB",
+    ]
 
+    # todo: define wanted countries
 
     not_retrieved = []
     dfs = []
     for country in countries:
-        if country == 'GB':
+        if country == "GB":
             kwargs = dict(start=start_gb, end=end_gb)
         else:
             kwargs = dict(start=start, end=end)
@@ -1325,7 +1344,7 @@ def entsoe_historic_generation_capacities(entsoe_token=None, year_start="2019010
             dfs.append(
                 client.query_installed_generation_capacity(country, **kwargs)
             )
-            
+
         except (entsoe.exceptions.NoMatchingDataError, requests.HTTPError):
             not_retrieved.append(country)
             pass
@@ -1335,39 +1354,58 @@ def entsoe_historic_generation_capacities(entsoe_token=None, year_start="2019010
             f"Data for country (-ies) {', '.join(not_retrieved)} could not be retrieved."
         )
     df = pd.concat(dfs)
-    df['country']=countries
-    df.set_index('country', inplace=True)
+    df["country"] = countries
+    df.set_index("country", inplace=True)
     df.fillna(0, inplace=True)
     return df
 
-def entsoe_historic_demand(entsoe_token=None, year_start="20190101", year_end="20200101"):
+
+def entsoe_historic_demand(
+    entsoe_token=None, year_start="20190101", year_end="20200101"
+):
     client = entsoe.EntsoePandasClient(api_key=entsoe_token)
-    
+
     start = pd.Timestamp(year_start, tz="Europe/Brussels")
     end = pd.Timestamp(year_end, tz="Europe/Brussels")
     start_gb = start.tz_convert("Europe/London")
     end_gb = end.tz_convert("Europe/London")
 
-    countries= ["LU", "AT", "FR", "NL", "CZ",
-                "DK_1", "DK_2", "PL", "CH", "NO", "BE", "SE", "GB"]
-    
-    
+    countries = [
+        "LU",
+        "AT",
+        "FR",
+        "NL",
+        "CZ",
+        "DK_1",
+        "DK_2",
+        "PL",
+        "CH",
+        "NO",
+        "BE",
+        "SE",
+        "GB",
+    ]
 
     # todo: define wanted countries
-
 
     not_retrieved = []
     dfs = []
 
     for country in countries:
-        if country == 'GB':
+        if country == "GB":
             kwargs = dict(start=start_gb, end=end_gb)
         else:
             kwargs = dict(start=start, end=end)
         try:
-            country_data = client.query_load(country, **kwargs).resample("H")["Actual Load"].mean()
-            if country == 'GB':
-                country_data.index = country_data.index.tz_convert("Europe/Brussels")
+            country_data = (
+                client.query_load(country, **kwargs)
+                .resample("H")["Actual Load"]
+                .mean()
+            )
+            if country == "GB":
+                country_data.index = country_data.index.tz_convert(
+                    "Europe/Brussels"
+                )
             dfs.append(country_data)
         except (entsoe.exceptions.NoMatchingDataError, requests.HTTPError):
             not_retrieved.append(country)
@@ -1379,9 +1417,10 @@ def entsoe_historic_demand(entsoe_token=None, year_start="20190101", year_end="2
 
     df = pd.concat(dfs, axis=1)
     df.columns = countries
-    df.index = pd.date_range(year_start, periods=8760 , freq="H")
+    df.index = pd.date_range(year_start, periods=8760, freq="H")
 
     return df
+
 
 def map_carriers_entsoe():
     """Map carriers from entsoe-data to carriers used in eGon
@@ -1391,48 +1430,54 @@ def map_carriers_entsoe():
         Carrier from entsoe to eGon
     """
     return {
-            'Biomass': "biomass",
-            'Fossil Brown coal/Lignite': "lignite",
-            'Fossil Coal-derived gas': "coal",
-            'Fossil Gas': "CH4_NG",
-            'Fossil Hard coal': "coal",
-            'Fossil Oil': "oil",
-            'Fossil Oil shale': "oil",
-            'Fossil Peat': "biomass",
-            'Geothermal': "geo_thermal",
-            'Hydro Pumped Storage': "Hydro Pumped Storage",
-            'Hydro Run-of-river and poundage': "run_of_river",
-            'Hydro Water Reservoir': "reservoir",
-            'Marine': "marine",
-            'Nuclear': "nuclear",
-            'Other': "others",
-            'Other renewable': "others",
-            'Solar': "solar",
-            'Waste': "others",
-            'Wind Offshore': "wind_offshore",
-            'Wind Onshore': "wind_onshore",
-        }
+        "Biomass": "biomass",
+        "Fossil Brown coal/Lignite": "lignite",
+        "Fossil Coal-derived gas": "coal",
+        "Fossil Gas": "CH4_NG",
+        "Fossil Hard coal": "coal",
+        "Fossil Oil": "oil",
+        "Fossil Oil shale": "oil",
+        "Fossil Peat": "biomass",
+        "Geothermal": "geo_thermal",
+        "Hydro Pumped Storage": "Hydro Pumped Storage",
+        "Hydro Run-of-river and poundage": "run_of_river",
+        "Hydro Water Reservoir": "reservoir",
+        "Marine": "marine",
+        "Nuclear": "nuclear",
+        "Other": "others",
+        "Other renewable": "others",
+        "Solar": "solar",
+        "Waste": "others",
+        "Wind Offshore": "wind_offshore",
+        "Wind Onshore": "wind_onshore",
+    }
+
 
 def entsoe_to_bus_etrago():
-    map_entsoe= pd.Series({"LU": "LU00",
-                 "AT": "AT00",
-                 "FR": "FR00",
-                 "NL": "NL00",
-                 "DK_1": "DK00",
-                 "DK_2": "DKE1",
-                 "PL": "PL00",
-                 "CH": "CH00",
-                 "NO": "NO00",
-                 "BE": "BE00",
-                 "SE": "SE00",
-                 "GB": "UK00",
-                 "CZ": "CZ00"})
+    map_entsoe = pd.Series(
+        {
+            "LU": "LU00",
+            "AT": "AT00",
+            "FR": "FR00",
+            "NL": "NL00",
+            "DK_1": "DK00",
+            "DK_2": "DKE1",
+            "PL": "PL00",
+            "CH": "CH00",
+            "NO": "NO00",
+            "BE": "BE00",
+            "SE": "SE00",
+            "GB": "UK00",
+            "CZ": "CZ00",
+        }
+    )
 
-    for_bus = get_foreign_bus_id(scenario='status2019')
+    for_bus = get_foreign_bus_id(scenario="status2019")
 
     return map_entsoe.map(for_bus)
 
-def insert_generators_sq(gen_sq=None, scn_name = "status2019"):
+
+def insert_generators_sq(gen_sq=None, scn_name="status2019"):
     """
     Insert generators for foreign countries based on ENTSO-E data
 
@@ -1450,7 +1495,9 @@ def insert_generators_sq(gen_sq=None, scn_name = "status2019"):
 
     """
     ################# TEMPORAL ####################
-    gen_sq = pd.read_csv("data_bundle_powerd_data/entsoe/gen_entsoe.csv", index_col="Index")
+    gen_sq = pd.read_csv(
+        "data_bundle_powerd_data/entsoe/gen_entsoe.csv", index_col="Index"
+    )
     ################# TEMPORAL ####################
 
     targets = config.datasets()["electrical_neighbours"]["targets"]
@@ -1486,7 +1533,9 @@ def insert_generators_sq(gen_sq=None, scn_name = "status2019"):
 
     carrier_entsoe = map_carriers_entsoe()
     gen_sq = gen_sq.groupby(axis=1, by=carrier_entsoe).sum()
-    gen_sq = gen_sq.iloc[:, gen_sq.columns.isin(
+    gen_sq = gen_sq.iloc[
+        :,
+        gen_sq.columns.isin(
             [
                 "others",
                 "wind_offshore",
@@ -1499,15 +1548,20 @@ def insert_generators_sq(gen_sq=None, scn_name = "status2019"):
                 "oil",
                 "nuclear",
             ]
-        )
+        ),
     ]
 
-    list_gen_sq = pd.DataFrame(dtype=int, columns=["carrier", "country", "capacity"])
+    list_gen_sq = pd.DataFrame(
+        dtype=int, columns=["carrier", "country", "capacity"]
+    )
     for carrier in gen_sq.columns:
         gen_carry = gen_sq[carrier]
-        for country, cap in gen_carry.iteritems():
-            gen = pd.DataFrame({"carrier": carrier, "country": country, "capacity": cap}, index=[1])
-            #print(gen)
+        for country, cap in gen_carry.items():
+            gen = pd.DataFrame(
+                {"carrier": carrier, "country": country, "capacity": cap},
+                index=[1],
+            )
+            # print(gen)
             list_gen_sq = pd.concat([list_gen_sq, gen], ignore_index=True)
 
     list_gen_sq = list_gen_sq[list_gen_sq.capacity > 0]
@@ -1595,7 +1649,8 @@ def insert_generators_sq(gen_sq=None, scn_name = "status2019"):
 
     return
 
-def insert_loads_sq(load_sq=None, scn_name = "status2019"):
+
+def insert_loads_sq(load_sq=None, scn_name="status2019"):
     """
     Copy load timeseries data from entso-e.
 
@@ -1608,7 +1663,9 @@ def insert_loads_sq(load_sq=None, scn_name = "status2019"):
     targets = config.datasets()["electrical_neighbours"]["targets"]
 
     ################# TEMPORAL ####################
-    load_sq = pd.read_csv("data_bundle_powerd_data/entsoe/load_entsoe.csv", index_col="Index")
+    load_sq = pd.read_csv(
+        "data_bundle_powerd_data/entsoe/load_entsoe.csv", index_col="Index"
+    )
     ################# TEMPORAL ####################
 
     # Delete existing data
@@ -1654,7 +1711,6 @@ def insert_loads_sq(load_sq=None, scn_name = "status2019"):
 
     # Calculate and insert demand timeseries per etrago bus_id
     for country in load_sq.columns:
-
         load_id = db.next_etrago_id("load")
 
         entry = etrago.EgonPfHvLoad(
@@ -1675,7 +1731,8 @@ def insert_loads_sq(load_sq=None, scn_name = "status2019"):
         session.add(entry_ts)
         session.commit()
 
-tasks = (grid, )
+
+tasks = (grid,)
 
 insert_per_scenario = set()
 
@@ -1685,7 +1742,8 @@ if "eGon2035" in config.settings()["egon-data"]["--scenarios"]:
 if "status2019" in config.settings()["egon-data"]["--scenarios"]:
     insert_per_scenario.update([insert_generators_sq, insert_loads_sq])
 
-tasks = tasks + (insert_per_scenario, )
+tasks = tasks + (insert_per_scenario,)
+
 
 class ElectricalNeighbours(Dataset):
     def __init__(self, dependencies):
