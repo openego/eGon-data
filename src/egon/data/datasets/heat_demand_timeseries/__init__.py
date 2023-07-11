@@ -795,12 +795,12 @@ def district_heating(method="python"):
     )
 
     if method == "python":
-        create_district_heating_profile_python_like("status2019")
-        create_district_heating_profile_python_like("eGon2035")
-        create_district_heating_profile_python_like("eGon100RE")
+        for scenario in egon.data.config.settings()["egon-data"][
+            "--scenarios"
+        ]:
+            create_district_heating_profile_python_like(scenario)
 
     else:
-
         CTS_demand_dist, CTS_demand_grid, CTS_demand_zensus = CTS_demand_scale(
             aggregation_level="district"
         )
