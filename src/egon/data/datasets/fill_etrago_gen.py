@@ -106,25 +106,30 @@ def add_marginal_costs(power_plants):
         for carrier in pp_scn.carrier.unique():
             if carrier not in (marginal_costs.index):
                 warning.append(carrier)
-                marginal_costs = marginal_costs.append(
-                    pd.Series(name=carrier, data={"marginal_cost": 0})
+                marginal_costs = pd.concat(
+                    [
+                        marginal_costs,
+                        pd.Series(name=carrier, data={"marginal_cost": 0}),
+                    ]
                 )
         if warning:
             print(
                 f"""There are not marginal_cost values for: \n{warning}
         in the scenario {scenario}. Missing values set to 0"""
             )
-        pp = pp.append(
-            pp_scn.merge(
-                right=marginal_costs, left_on="carrier", right_index=True
-            )
+        pp = pd.concat(
+            [
+                pp,
+                pp_scn.merge(
+                    right=marginal_costs, left_on="carrier", right_index=True
+                ),
+            ]
         )
 
     return pp
 
 
 def fill_etrago_gen_table(etrago_pp2, etrago_gen_orig, cfg, con):
-
     etrago_pp = etrago_pp2[
         ["carrier", "el_capacity", "bus_id", "scenario", "marginal_cost"]
     ]
