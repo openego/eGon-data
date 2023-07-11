@@ -354,7 +354,7 @@ def create_district_heating_profile_python_like(scenario="eGon2035"):
                 )
 
             diff = (
-                slice_df.groupby("day").sum()[range(24)].sum().sum()
+                slice_df[range(24)].sum().sum()
                 - annual_demand[
                     annual_demand.area_id == area
                 ].demand_total.sum()
@@ -368,7 +368,21 @@ def create_district_heating_profile_python_like(scenario="eGon2035"):
             series for district heating grid {str(area)} is {diff}"""
 
             hh = np.concatenate(
-                slice_df.groupby("day").sum()[range(24)].values
+                slice_df.drop(
+                    [
+                        "zensus_population_id",
+                        "building_id",
+                        "climate_zone",
+                        "selected_idp",
+                        "area_id",
+                        "daily_demand_share",
+                        "idp",
+                    ],
+                    axis="columns",
+                )
+                .groupby("day")
+                .sum()[range(24)]
+                .values
             ).ravel()
 
         cts = CTS_demand_dist[
