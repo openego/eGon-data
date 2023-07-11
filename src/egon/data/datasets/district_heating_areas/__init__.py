@@ -597,13 +597,17 @@ def district_heating_areas(scenario_name, plotting=False):
     # group the resulting scenario specific district heating areas
     scenario_dh_area = area_grouping(
         pd.concat(
-            [cells[["residential_and_service_demand", "geom_polygon"]],
-             new_areas[["residential_and_service_demand", "geom_polygon"]]
-            ], ignore_index=True
-        ),
+            [
+                cells[["residential_and_service_demand", "geom_polygon"]],
+                new_areas[["residential_and_service_demand", "geom_polygon"]],
+            ]
+        ).reset_index(),
         distance=500,
         maximum_total_demand=4e6,
     )
+    scenario_dh_area.loc[:, "zensus_population_id"] = scenario_dh_area.loc[
+        :, "zensus_population_id"
+    ].astype(int)
     # scenario_dh_area.plot(column = "area_id")
 
     scenario_dh_area.groupby("area_id").size().sort_values()
@@ -618,12 +622,12 @@ def district_heating_areas(scenario_name, plotting=False):
         f"""DELETE FROM demand.egon_map_zensus_district_heating_areas
                    WHERE scenario = '{scenario_name}'"""
     )
-    scenario_dh_area[["scenario", "area_id"]].to_sql(
+    scenario_dh_area[["scenario", "area_id", "zensus_population_id"]].to_sql(
         "egon_map_zensus_district_heating_areas",
         schema="demand",
         con=db.engine(),
         if_exists="append",
-        index=False
+        index=False,
     )
 
     # Create polygons around the grouped cells and store them in the database
