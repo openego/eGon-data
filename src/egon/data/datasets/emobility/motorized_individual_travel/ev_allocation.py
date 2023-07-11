@@ -422,7 +422,7 @@ def allocate_evs_numbers():
     # Import
     kba_data = read_kba_data()
     rs7_data = read_rs7_data()
-    
+
     for scenario_name in config.settings()["egon-data"]["--scenarios"]:
         # Load scenario params
         scenario_parameters = get_sector_parameters(
@@ -436,7 +436,6 @@ def allocate_evs_numbers():
             scenario_variation_name,
             scenario_variation_parameters,
         ) in scenario_parameters.items():
-
             print(f"  SCENARIO VARIATION: {scenario_variation_name}")
             # Get EV target
             ev_target = scenario_variation_parameters["ev_count"]
