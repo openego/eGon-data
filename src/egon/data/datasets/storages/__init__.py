@@ -181,21 +181,23 @@ def allocate_pumped_hydro(scn, export=True):
     print(f"{nep.elec_capacity.sum()} MW of {carrier} not matched")
 
     if nep.elec_capacity.sum() > 0:
-
         # Get location using geolocator and city information
         located, unmatched = get_location(nep)
 
         # Bring both dataframes together
-        matched = matched.append(
-            located[
-                [
-                    "carrier",
-                    "el_capacity",
-                    "scenario",
-                    "geometry",
-                    "source",
-                    "MaStRNummer",
-                ]
+        matched = pd.concat(
+            [
+                matched,
+                located[
+                    [
+                        "carrier",
+                        "el_capacity",
+                        "scenario",
+                        "geometry",
+                        "source",
+                        "MaStRNummer",
+                    ]
+                ],
             ],
             ignore_index=True,
         )
