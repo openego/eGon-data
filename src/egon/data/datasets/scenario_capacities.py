@@ -139,10 +139,10 @@ def insert_capacities_status2019():
             )
         """
     )
-    
+
     # Include small storages for scenario2019
-    small_storages = 600 #MW for Germany
-    
+    small_storages = 600  # MW for Germany
+
     db.execute_sql(
         f"""
         INSERT INTO 
@@ -158,8 +158,6 @@ def insert_capacities_status2019():
             )
         """
     )
-    
-    
 
 
 def insert_capacities_per_federal_state_nep():
