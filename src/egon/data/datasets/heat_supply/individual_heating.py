@@ -1989,7 +1989,6 @@ def determine_hp_cap_peak_load_mvgd_ts_2019(mvgd_ids):
 
     df_hp_cap_per_building_2019_db["scenario"] = "status2019"
 
-
     # TODO debug duplicated building_ids
     duplicates = df_hp_cap_per_building_2019_db.loc[
         df_hp_cap_per_building_2019_db.duplicated("building_id", keep=False)
