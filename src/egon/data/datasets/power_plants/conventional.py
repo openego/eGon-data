@@ -144,11 +144,9 @@ def match_nep_no_chp(
     )
 
     for ET in nep["carrier"].unique():
-
         for index, row in nep[
             (nep["carrier"] == ET) & (nep["postcode"] != "None")
         ].iterrows():
-
             # Select plants from MaStR that match carrier, PLZ
             # and have a similar capacity
             # Create a copy of all power plants from MaStR
