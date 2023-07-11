@@ -331,10 +331,11 @@ def cross_border_lines(scenario, sources, targets, central_buses):
     lines.loc[:, "foreign_bus"] = lines.loc[:, "foreign_bus"].astype(int)
 
     # Copy all parameters from border-crossing lines
-    new_lines = lines.copy()
+    new_lines = lines.copy().set_crs(4326)
 
     # Set bus0 as foreign_bus from osmtgmod
     new_lines.bus0 = new_lines.foreign_bus.copy()
+    new_lines.bus0 = new_lines.bus0.astype(int)
 
     # Add country tag and set index
     new_lines["country"] = (
@@ -369,8 +370,7 @@ def cross_border_lines(scenario, sources, targets, central_buses):
     )
 
     # Set topo as geometry column
-    new_lines = new_lines.set_geometry("topo")
-
+    new_lines = new_lines.set_geometry("topo").set_crs(4326)
     # Calcultae length of lines based on topology
     old_length = new_lines["length"].copy()
     new_lines["length"] = new_lines.to_crs(3035).length / 1000
