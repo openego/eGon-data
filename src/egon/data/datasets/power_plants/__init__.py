@@ -1142,7 +1142,10 @@ if (
         },
     )
 
-tasks = tasks + (wind_offshore.insert, assign_weather_data.weatherId_and_busId,)
+tasks = tasks + (
+    wind_offshore.insert,
+    assign_weather_data.weatherId_and_busId,
+)
 
 
 class PowerPlants(Dataset):
