@@ -101,8 +101,8 @@ def insert():
             source,
             fed_state,
         )
-        summary_t = summary_t.append(summary_state)
-        farms = farms.append(wind_farms_state)
+        summary_t = pd.concat([summary_t, summary_state])
+        farms = pd.concat([farms, wind_farms_state])
 
     generate_map()
 
@@ -347,7 +347,7 @@ def wind_power_states(
     wf_mv_to_hv = wf_mv_to_hv.drop(columns=["dist_to_HV"])
     wf_mv_to_hv["voltage"] = "Hochspannung"
 
-    wf_hv = wf_hv.append(wf_mv_to_hv)
+    wf_hv = pd.concat([wf_hv, wf_mv_to_hv])
     wf_mv = wf_mv[
         (wf_mv["dist_to_HV"] > max_dist_hv)
         | (wf_mv["inst capacity [MW]"] < max_power_mv)
@@ -362,7 +362,7 @@ def wind_power_states(
         lambda x: x if x < max_power_mv else max_power_mv
     )
 
-    wind_farms = wf_hv.append(wf_mv)
+    wind_farms = pd.concat([wf_hv, wf_mv])
 
     # Adjust the total installed capacity to the scenario
     total_wind_power = (
@@ -376,14 +376,22 @@ def wind_power_states(
         wf_hv["inst capacity [MW]"] = (
             wf_hv["inst capacity [MW]"] * scale_factor
         )
-        wind_farms = wf_hv.append(wf_mv)
-        summary = summary.append(
-            {
-                "state": fed_state,
-                "target": target_power,
-                "from existin WF": wind_farms["inst capacity [MW]"].sum(),
-                "MV districts": 0,
-            },
+        wind_farms = pd.concat([wf_hv, wf_mv])
+        summary = pd.concat(
+            [
+                summary,
+                pd.DataFrame(
+                    index=[summary.index.max() + 1],
+                    data={
+                        "state": fed_state,
+                        "target": target_power,
+                        "from existin WF": wind_farms[
+                            "inst capacity [MW]"
+                        ].sum(),
+                        "MV districts": 0,
+                    },
+                ),
+            ],
             ignore_index=True,
         )
     else:
@@ -409,16 +417,24 @@ def wind_power_states(
         scale_factor = (target_power - total_wind_power) / total_new_area
         extra_wf["inst capacity [MW]"] = extra_wf["area [km²]"] * scale_factor
         extra_wf["voltage"] = "Hochspannung"
-        summary = summary.append(
-            {
-                "state": fed_state,
-                "target": target_power,
-                "from existin WF": wind_farms["inst capacity [MW]"].sum(),
-                "MV districts": extra_wf["inst capacity [MW]"].sum(),
-            },
+        summary = pd.concat(
+            [
+                summary,
+                pd.DataFrame(
+                    index=[summary.index.max() + 1],
+                    data={
+                        "state": fed_state,
+                        "target": target_power,
+                        "from existin WF": wind_farms[
+                            "inst capacity [MW]"
+                        ].sum(),
+                        "MV districts": extra_wf["inst capacity [MW]"].sum(),
+                    },
+                ),
+            ],
             ignore_index=True,
         )
-        wind_farms = wind_farms.append(extra_wf, ignore_index=True)
+        wind_farms = pd.concat([wind_farms, extra_wf], ignore_index=True)
 
     # Use Definition of thresholds for voltage level assignment
     wind_farms["voltage_level"] = 0
