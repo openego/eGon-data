@@ -313,7 +313,7 @@ def insert_capacities_per_federal_state_nep():
         # convert GW to MW
         data.capacity *= 1e3
 
-        insert_data = insert_data.append(data)
+        insert_data = pd.concat([insert_data, data])
 
     # Get aggregated capacities from nep's power plant list for certain carrier
 
@@ -722,14 +722,17 @@ def eGon100_capacities():
     df.index = df.index.str.replace(" ", "_")
 
     # Aggregate offshore wind
-    df = df.append(
-        pd.DataFrame(
-            index=["wind_offshore"],
-            data={
-                "p_nom": (df.p_nom["offwind-ac"] + df.p_nom["offwind-dc"]),
-                "component": df.component["offwind-ac"],
-            },
-        )
+    df = pd.concat(
+        [
+            df,
+            pd.DataFrame(
+                index=["wind_offshore"],
+                data={
+                    "p_nom": (df.p_nom["offwind-ac"] + df.p_nom["offwind-dc"]),
+                    "component": df.component["offwind-ac"],
+                },
+            ),
+        ]
     )
     df = df.drop(["offwind-ac", "offwind-dc"])
 
@@ -746,19 +749,22 @@ def eGon100_capacities():
         "rural_solar_thermal",
     ]:
         if f"residential_{merge_carrier}" in df.index:
-            df = df.append(
-                pd.DataFrame(
-                    index=[merge_carrier],
-                    data={
-                        "p_nom": (
-                            df.p_nom[f"residential_{merge_carrier}"]
-                            + df.p_nom[f"services_{merge_carrier}"]
-                        ),
-                        "component": df.component[
-                            f"residential_{merge_carrier}"
-                        ],
-                    },
-                )
+            df = pd.concat(
+                [
+                    df,
+                    pd.DataFrame(
+                        index=[merge_carrier],
+                        data={
+                            "p_nom": (
+                                df.p_nom[f"residential_{merge_carrier}"]
+                                + df.p_nom[f"services_{merge_carrier}"]
+                            ),
+                            "component": df.component[
+                                f"residential_{merge_carrier}"
+                            ],
+                        },
+                    ),
+                ]
             )
             df = df.drop(
                 [f"residential_{merge_carrier}", f"services_{merge_carrier}"]
