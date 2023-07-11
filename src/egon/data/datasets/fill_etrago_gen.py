@@ -65,7 +65,6 @@ def fill_etrago_generators():
 
 
 def group_power_plants(power_plants, renew_feedin, etrago_gen_orig, cfg):
-
     # group power plants by bus and carrier
 
     agg_func = {
@@ -89,7 +88,6 @@ def group_power_plants(power_plants, renew_feedin, etrago_gen_orig, cfg):
 
 
 def add_marginal_costs(power_plants):
-
     scenarios = power_plants.scenario.unique()
     pp = pd.DataFrame()
 
@@ -248,7 +246,6 @@ def power_timeser(weather_data):
 
 
 def adjust_renew_feedin_table(renew_feedin, cfg):
-
     # Define carrier 'pv' as 'solar'
     carrier_pv_mask = renew_feedin["carrier"] == "pv"
     renew_feedin.loc[carrier_pv_mask, "carrier"] = "solar"
