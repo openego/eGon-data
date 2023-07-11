@@ -105,7 +105,7 @@ def fix_missing_ags_municipality_regiostar(muns, rs7_data):
                                 f"based upon AGS {ags}."
                             )
                             similar_entry.ags = ags
-                            rs7_data = rs7_data.append(similar_entry)
+                            rs7_data = pd.concat([rs7_data, similar_entry])
                         print("Consider to update RS7.")
                 # VG250 entries missing:
                 elif name == "VG250":
