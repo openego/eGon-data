@@ -157,16 +157,22 @@ def buses(scenario, sources, targets):
 
     # if in test mode, add bus in center of Germany
     if config.settings()["egon-data"]["--dataset-boundary"] != "Everything":
-        central_buses = central_buses.append(
-            {
-                "scn_name": scenario,
-                "bus_id": next_bus_id,
-                "x": 10.4234469,
-                "y": 51.0834196,
-                "country": "DE",
-                "carrier": "AC",
-                "v_nom": 380.0,
-            },
+        central_buses = pd.concat(
+            [
+                central_buses,
+                pd.DataFrame(
+                    index=[central_buses.index.max() + 1],
+                    data={
+                        "scn_name": scenario,
+                        "bus_id": next_bus_id,
+                        "x": 10.4234469,
+                        "y": 51.0834196,
+                        "country": "DE",
+                        "carrier": "AC",
+                        "v_nom": 380.0,
+                    },
+                ),
+            ],
             ignore_index=True,
         )
         next_bus_id += 1
@@ -179,38 +185,50 @@ def buses(scenario, sources, targets):
     for cntr in vnom_per_country.index:
         print(cntr)
         if 110.0 in vnom_per_country[cntr]:
-            central_buses = central_buses.append(
-                {
-                    "scn_name": scenario,
-                    "bus_id": next_bus_id,
-                    "x": central_buses[
-                        central_buses.country == cntr
-                    ].x.unique()[0],
-                    "y": central_buses[
-                        central_buses.country == cntr
-                    ].y.unique()[0],
-                    "country": cntr,
-                    "carrier": "AC",
-                    "v_nom": 110.0,
-                },
+            central_buses = pd.concat(
+                [
+                    central_buses,
+                    pd.DataFrame(
+                        index=[central_buses.index.max() + 1],
+                        data={
+                            "scn_name": scenario,
+                            "bus_id": next_bus_id,
+                            "x": central_buses[
+                                central_buses.country == cntr
+                            ].x.unique()[0],
+                            "y": central_buses[
+                                central_buses.country == cntr
+                            ].y.unique()[0],
+                            "country": cntr,
+                            "carrier": "AC",
+                            "v_nom": 110.0,
+                        },
+                    ),
+                ],
                 ignore_index=True,
             )
             next_bus_id += 1
         if 220.0 in vnom_per_country[cntr]:
-            central_buses = central_buses.append(
-                {
-                    "scn_name": scenario,
-                    "bus_id": next_bus_id,
-                    "x": central_buses[
-                        central_buses.country == cntr
-                    ].x.unique()[0],
-                    "y": central_buses[
-                        central_buses.country == cntr
-                    ].y.unique()[0],
-                    "country": cntr,
-                    "carrier": "AC",
-                    "v_nom": 220.0,
-                },
+            central_buses = pd.concat(
+                [
+                    central_buses,
+                    pd.DataFrame(
+                        index=[central_buses.index.max() + 1],
+                        data={
+                            "scn_name": scenario,
+                            "bus_id": next_bus_id,
+                            "x": central_buses[
+                                central_buses.country == cntr
+                            ].x.unique()[0],
+                            "y": central_buses[
+                                central_buses.country == cntr
+                            ].y.unique()[0],
+                            "country": cntr,
+                            "carrier": "AC",
+                            "v_nom": 220.0,
+                        },
+                    ),
+                ],
                 ignore_index=True,
             )
             next_bus_id += 1
@@ -494,17 +512,23 @@ def central_transformer(scenario, sources, targets, central_buses, new_lines):
 
         s_nom, x = choose_transformer(s_nom)
 
-        trafo = trafo.append(
-            {
-                "trafo_id": trafo_id,
-                "bus0": row.bus_id,
-                "bus1": central_buses[
-                    (central_buses.v_nom == 380)
-                    & (central_buses.country == row.country)
-                ].bus_id.values[0],
-                "s_nom": s_nom,
-                "x": x,
-            },
+        trafo = pd.concat(
+            [
+                trafo,
+                pd.DataFrame(
+                    index=[trafo.index.max() + 1],
+                    data={
+                        "trafo_id": trafo_id,
+                        "bus0": row.bus_id,
+                        "bus1": central_buses[
+                            (central_buses.v_nom == 380)
+                            & (central_buses.country == row.country)
+                        ].bus_id.values[0],
+                        "s_nom": s_nom,
+                        "x": x,
+                    },
+                ),
+            ],
             ignore_index=True,
         )
         trafo_id += 1
@@ -611,23 +635,26 @@ def foreign_dc_lines(scenario, sources, targets, central_buses):
             """
         ).squeeze()
 
-        foreign_links = foreign_links.append(
-            pd.DataFrame(
-                index=[1],
-                data={
-                    "link_id": db.next_etrago_id("link") + 1,
-                    "bus0": converter_bentwisch,
-                    "bus1": central_buses[
-                        (central_buses.country == "DK")
-                        & (central_buses.v_nom == 380)
-                        & (central_buses.x > 10)
-                    ]
-                    .squeeze()
-                    .bus_id,
-                    "p_nom": 600,
-                    "length": 170,
-                },
-            )
+        foreign_links = pd.concat(
+            [
+                foreign_links,
+                pd.DataFrame(
+                    index=[1],
+                    data={
+                        "link_id": db.next_etrago_id("link") + 1,
+                        "bus0": converter_bentwisch,
+                        "bus1": central_buses[
+                            (central_buses.country == "DK")
+                            & (central_buses.v_nom == 380)
+                            & (central_buses.x > 10)
+                        ]
+                        .squeeze()
+                        .bus_id,
+                        "p_nom": 600,
+                        "length": 170,
+                    },
+                ),
+            ]
         )
 
     # Set parameters for all DC lines
