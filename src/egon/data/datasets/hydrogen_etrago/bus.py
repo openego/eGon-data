@@ -6,11 +6,11 @@ for eTraGo are to be found.
 The H2 buses in the neighbouring countries (only present in eGon100RE)
 are defined in :py:mod:`pypsaeursec <egon.data.datasets.pypsaeursec>`.
 In both scenarios, there are two types of H2 buses in Germany:
-  * H2_grid buses: defined in :py:func:`insert_H2_buses_from_CH4_grid`,
-    these buses are located at the places than the CH4 buses.
-  * H2_saltcavern buses: defined in :py:func:`insert_H2_buses_from_saltcavern`,
+  * H2_grid buses: defined in :py:func:`insert_H2_buses_from_CH4_grid`;
+    these buses are located at the places of the CH4 buses.
+  * H2_saltcavern buses: defined in :py:func:`insert_H2_buses_from_saltcavern`;
     these buses are located at the intersection of AC buses and
-    potential for H2 saltcavern.
+    potential H2 saltcaverns.
 
 """
 
@@ -37,6 +37,10 @@ def insert_hydrogen_buses(scenario="eGon2035"):
     ----------
     scenario : str, optional
         Name of the scenario, the default is 'eGon2035'.
+        
+    Returns
+    -------
+    None
 
     """
     sources = config.datasets()["etrago_hydrogen"]["sources"]
@@ -59,10 +63,10 @@ def insert_hydrogen_buses(scenario="eGon2035"):
 
 def insert_H2_buses_from_saltcavern(gdf, carrier, sources, target, scn_name):
     """
-    Insert the H2 buses based saltcavern locations into the database.
+    Insert the H2 buses based on saltcavern locations into the database.
 
     These buses are located at the intersection of AC buses and
-    potential for H2 saltcavern.
+    potential H2 saltcaverns.
 
     Parameters
     ----------
@@ -76,6 +80,11 @@ def insert_H2_buses_from_saltcavern(gdf, carrier, sources, target, scn_name):
         Target schema and table information.
     scn_name : str
         Name of the scenario.
+
+    Returns
+    -------
+    None
+
     """
     # electrical buses related to saltcavern storage
     el_buses = db.select_dataframe(
@@ -128,7 +137,7 @@ def insert_H2_buses_from_CH4_grid(gdf, carrier, target, scn_name):
     """
     Insert the H2 buses based on CH4 grid into the database.
 
-    At each CH4 location, in other words at each intersection of the CH4
+    At each CH4 location, respectively at each intersection of the CH4
     grid, a H2 bus is created.
 
     Parameters
@@ -141,7 +150,11 @@ def insert_H2_buses_from_CH4_grid(gdf, carrier, target, scn_name):
         Target schema and table information.
     scn_name : str
         Name of the scenario.
-
+        
+    Returns
+    -------
+    None
+        
     """
     # Connect to local database
     engine = db.engine()
@@ -176,7 +189,13 @@ def insert_H2_buses_from_CH4_grid(gdf, carrier, target, scn_name):
 
 
 def insert_hydrogen_buses_eGon100RE():
-    """Copy H2 buses from the eGon2035 to the eGon100RE scenario."""
+    """Copy H2 buses from the eGon2035 to the eGon100RE scenario.
+    
+    Returns
+    -------
+    None 
+    
+    """
     copy_and_modify_buses(
         "eGon2035", "eGon100RE", {"carrier": ["H2_grid", "H2_saltcavern"]},
     )

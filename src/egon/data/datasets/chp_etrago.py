@@ -22,6 +22,15 @@ class ChpEtrago(Dataset):
 
 
 def insert_egon100re():
+    """Insert combined heat and power plants into eTraGo tables
+    for the eGon100RE scenario.
+
+    Returns
+    -------
+    None.
+
+    """
+
     sources = config.datasets()["chp_etrago"]["sources"]
 
     targets = config.datasets()["chp_etrago"]["targets"]

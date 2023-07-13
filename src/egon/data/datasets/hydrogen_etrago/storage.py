@@ -25,7 +25,11 @@ def insert_H2_overground_storage(scn_name="eGon2035"):
     Insert H2_overground stores into the database.
 
     Insert extendable H2_overground stores (steel tanks) at each H2_grid
-    bus. This function inserts data into the database and has no return.
+    bus. 
+
+    Returns
+    -------
+    None
 
     """
     # The targets of etrago_hydrogen also serve as source here ಠ_ಠ
@@ -90,8 +94,11 @@ def insert_H2_saltcavern_storage(scn_name="eGon2035"):
     Insert H2_underground stores into the database.
 
     Insert extendable H2_underground stores (saltcavern potentials) at
-    every H2_saltcavern bus.This function inserts data into the database
-    and has no return.
+    every H2_saltcavern bus.
+    
+    Returns
+    -------
+    None
 
     """
 
@@ -182,7 +189,9 @@ def calculate_and_map_saltcavern_storage_potential():
     """
     Calculate site specific storage potential based on InSpEE-DS report.
 
-    This function inserts data into the database and has no return.
+    Returns
+    -------
+    None
 
     """
 
@@ -369,7 +378,13 @@ def calculate_and_map_saltcavern_storage_potential():
 
 
 def write_saltcavern_potential():
-    """Write saltcavern potentials in the database"""
+    """Write saltcavern potentials into the database
+    
+    Returns
+    -------
+    None
+    
+    """
     potential_areas = calculate_and_map_saltcavern_storage_potential()
 
     # write information to saltcavern data
@@ -385,7 +400,13 @@ def write_saltcavern_potential():
 
 
 def insert_H2_storage_eGon100RE():
-    """Copy H2 storage from the eGon2035 to the eGon100RE scenario."""
+    """Copy H2 storage from the eGon2035 to the eGon100RE scenario.
+    
+    Returns
+    -------
+    None
+    
+    """
     copy_and_modify_stores(
         "eGon2035", "eGon100RE", ["H2_underground", "H2_overground"], "gas"
     )
