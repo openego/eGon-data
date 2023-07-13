@@ -333,7 +333,7 @@ def calc_evs_per_grid_district(ev_data_muns):
     # * pop_mun_in_mvgd_of_mun_total: relative pop share of mun which
     #   intersects with MVGD in relation to total pop of mun
     mvgd_pop_per_mun_in_mvgd = (
-        mvgd_pop_per_mun_in_mvgd.groupby(level=0)
+        mvgd_pop_per_mun_in_mvgd.groupby(level=0, as_index=False)
         .apply(lambda x: x / float(x.sum()))
         .reset_index()
         .rename(columns={"pop": "pop_share_mun_in_mvgd"})
