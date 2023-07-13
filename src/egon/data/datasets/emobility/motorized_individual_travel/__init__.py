@@ -455,31 +455,34 @@ class MotorizedIndividualTravel(Dataset):
             return tasks
 
         tasks = (
-                create_tables,
-                {
-                    (
-                        download_and_preprocess,
-                        allocate_evs_numbers,
-                    ),
-                    (
-                        extract_trip_file,
-                        write_metadata_to_db,
-                        write_evs_trips_to_db,
-                    ),
-                },
-                allocate_evs_to_grid_districts,
-                delete_model_data_from_db, )
-    
+            create_tables,
+            {
+                (
+                    download_and_preprocess,
+                    allocate_evs_numbers,
+                ),
+                (
+                    extract_trip_file,
+                    write_metadata_to_db,
+                    write_evs_trips_to_db,
+                ),
+            },
+            allocate_evs_to_grid_districts,
+            delete_model_data_from_db,
+        )
+
         tasks_per_scenario = set()
-        
+
         for scenario_name in config.settings()["egon-data"]["--scenarios"]:
-            tasks_per_scenario.update(generate_model_data_tasks(scenario_name=scenario_name))
-            
-        tasks = tasks +  (tasks_per_scenario,)
-        
+            tasks_per_scenario.update(
+                generate_model_data_tasks(scenario_name=scenario_name)
+            )
+
+        tasks = tasks + (tasks_per_scenario,)
+
         super().__init__(
             name="MotorizedIndividualTravel",
             version="0.0.7",
             dependencies=dependencies,
-            tasks=tasks
+            tasks=tasks,
         )
