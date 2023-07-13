@@ -1145,8 +1145,8 @@ def get_buildings_with_decentral_heat_demand_in_mv_grid(mvgd, scenario):
     )
 
     # merge residential and CTS buildings
-    buildings_decentral_heating = pd.concat(
-        [buildings_decentral_heating_res, buildings_decentral_heating_cts]
+    buildings_decentral_heating = buildings_decentral_heating_res.union(
+        buildings_decentral_heating_cts
     ).unique()
 
     return buildings_decentral_heating
@@ -1330,8 +1330,8 @@ def determine_buildings_with_hp_in_mv_grid(
         random.seed(db.credentials()["--random-seed"])
         new_hp_building = random.choice(possible_buildings)
         # add new building to building with HP
-        buildings_with_hp = pd.concat(
-            [buildings_with_hp, pd.Index([new_hp_building])]
+        buildings_with_hp = buildings_with_hp.union(
+            pd.Index([new_hp_building])
         )
         # determine if there are still possible buildings
         remaining_hp_cap = (
