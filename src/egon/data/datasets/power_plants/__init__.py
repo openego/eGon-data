@@ -1006,7 +1006,9 @@ def power_plants_status_quo(scn_name="status2019"):
             ["Braunkohle", "Mineralölprodukte", "Steinkohle", "Kernenergie"]
         )
     ]
-
+    
+    # convert from KW to MW
+    conv["Nettonennleistung"] = conv["Nettonennleistung"]/1000 
     # drop generators installed after 2019
     conv["Inbetriebnahmedatum"] = pd.to_datetime(conv["Inbetriebnahmedatum"])
     conv = conv[
