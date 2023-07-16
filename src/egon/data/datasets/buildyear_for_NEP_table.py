@@ -1,6 +1,7 @@
 import pandas as pd
 
 
+
 lines_df = pd.read_csv("/home/student/Documents/Powerd/egon_etrago_line_new.csv")
 buildyear_df = pd.read_csv("/home/student/Documents/Powerd/NEP_tables_finalVersion.csv")
 buildyear_df['anvisierte Inbetriebnahme'] = buildyear_df["anvisierte Inbetriebnahme"].fillna('').str.split(r'[,/-]').apply(lambda x: x[1].strip() if len(x) > 1 else x[0].strip())
