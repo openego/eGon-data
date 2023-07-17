@@ -39,7 +39,13 @@ substation_df = gpd.read_postgis(
 
 
 # Read the Destination file from CSV
-lines_df = pd.read_csv("./egon_etrago_line_new.csv")
+lines_df = pd.read_csv("/home/student/Documents/Powerd/egon_etrago_line_new.csv")
+
+existing_lines_df=pd.read_sql(
+    """
+    SELECT line_id FROM grid.egon_etrago_line   
+    """
+    , engine)
 
 
 # # Read the Destination file from pgAdmin4
@@ -111,6 +117,8 @@ for index, row in lines_df.iterrows():
 
 
 # Save the updated file
-lines_df.to_csv('./egon_etrago_line_new.csv', index=False)
+lines_df.to_csv('/home/student/Documents/Powerd/egon_etrago_line_new.csv', index=False)
+
+
 
 print("Operation successful")
