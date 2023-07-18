@@ -11,7 +11,6 @@ engine = create_engine(
     f"5432/etrago",
     echo=False,
 )
-#for test
 
 # Read the Source file
 substation_df = pd.read_sql(
@@ -37,9 +36,9 @@ substation_df = gpd.read_postgis(
 
 
 # Read the Destination file from CSV
-lines_df = pd.read_csv("/home/student/Documents/Powerd/egon_etrago_line_new.csv")
+lines_df = pd.read_csv("./egon_etrago_line_new.csv")
 
-existing_lines_df=pd.read_sql(
+existing_lines_df = pd.read_sql(
     """
     SELECT line_id FROM grid.egon_etrago_line   
     """
@@ -69,11 +68,17 @@ existing_lines_df=pd.read_sql(
 # Match Similarity of Source & Destination files 
 best_match_start=None
 best_match_end=None
+unique_line_id = 29300
 
 for index, row in lines_df.iterrows():
+    # Add Unique line id
+    unique_line_id += 1
+    lines_df.at[index, 'line_id'] = unique_line_id
+    
+    
     Startpunkt = str(row['Startpoint'])
     Endpunkt = str(row['Endpoint'])
-
+    
     for r in [1.0, 0.9, 0.8, 0.7, 0.6, 0.5]:
         if best_match_start is None:
             matching_rows_start = substation_df[substation_df['subst_name'].apply(
@@ -81,13 +86,15 @@ for index, row in lines_df.iterrows():
             if not matching_rows_start.empty:
                 best_match_start = 1
                 lines_df.at[index, 'bus0'] = matching_rows_start.iloc[0]['bus_id']
+                
+                # Find coordinate for first point
                 point_1 = matching_rows_start.iloc[0]['point']
                 formatted_point_1 = f"{point_1.x} {point_1.y}"
                 lines_df.at[index, 'Coordinate0'] = formatted_point_1
 
                 # Calculate the matching percentage
                 matching_percentage_start = difflib.SequenceMatcher(None, Startpunkt, matching_rows_start.iloc[0]['subst_name']).ratio() * 100
-                lines_df.at[index, 'matching1%'] = round(matching_percentage_start,2)
+                lines_df.at[index, 'matching1%'] = round(matching_percentage_start,2) 
                 
         if best_match_end is None:
             matching_rows_end = substation_df[substation_df['subst_name'].apply(
@@ -96,6 +103,8 @@ for index, row in lines_df.iterrows():
             if not matching_rows_end.empty:
                 best_match_end = 1
                 lines_df.at[index, 'bus1'] = matching_rows_end.iloc[0]['bus_id']
+                
+                # Find coordinate for Second point
                 point_2 = matching_rows_end.iloc[0]['point']
                 formatted_point_2 = f"{point_2.x} {point_2.y}"
                 lines_df.at[index, 'Coordinate1'] = formatted_point_2
@@ -109,13 +118,13 @@ for index, row in lines_df.iterrows():
                     lon2, lat2 = map(float, formatted_point_2.split(' '))
                     distance = geodesic((lat1, lon1), (lat2, lon2)).kilometers
                     lines_df.at[index, 'length'] = distance
-
+                    
     best_match_end = None
     best_match_start = None
 
 
 # Save the updated file
-lines_df.to_csv('/home/student/Documents/Powerd/egon_etrago_line_new.csv', index=False)
+lines_df.to_csv('./egon_etrago_line_new.csv', index=False)
 
 
 
