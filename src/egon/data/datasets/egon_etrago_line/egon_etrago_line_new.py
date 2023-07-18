@@ -5,6 +5,7 @@ from geopy.distance import geodesic
 import difflib
 
 
+
 # Create connection with pgAdmin4 - Offline
 engine = create_engine(
     f"postgresql+psycopg2://postgres:"
