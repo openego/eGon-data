@@ -304,6 +304,7 @@ mastr_new:
     - "solar"
     - "biomass"
     - "combustion"
+    - "nuclear"
   file_basename: "bnetza_mastr"
   deposit_id: 1132987
   egon2021_date_max: "2021-12-31 23:59:00"
@@ -364,6 +365,8 @@ power_plants:
       mastr_hydro: "bnetza_mastr_hydro_cleaned.csv"
       mastr_location: "location_elec_generation_raw.csv"
       mastr_combustion_without_chp: "supply.egon_mastr_conventional_without_chp"
+      mastr_combustion: "bnetza_mastr/dump_2022-11-17/bnetza_mastr_combustion_cleaned.csv"
+      mastr_nuclear: "bnetza_mastr/dump_2022-11-17/bnetza_mastr_nuclear_cleaned.csv"
       mastr_storage: "bnetza_mastr_storage_cleaned.csv"
       mastr_gsgk: "bnetza_mastr_gsgk_cleaned.csv"
       capacities: "supply.egon_scenario_capacities"

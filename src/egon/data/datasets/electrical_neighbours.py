@@ -16,6 +16,7 @@ import egon.data.datasets.etrago_setup as etrago
 import egon.data.datasets.scenario_parameters.parameters as scenario_parameters
 from egon.data import config, db
 from egon.data.datasets import Dataset
+from egon.data.datasets.fix_ehv_subnetworks import select_bus_id
 from egon.data.datasets.fill_etrago_gen import add_marginal_costs
 from egon.data.datasets.scenario_parameters import get_sector_parameters
 
@@ -591,18 +592,14 @@ def foreign_dc_lines(scenario, sources, targets, central_buses):
     ]
 
     # Add DC line from Lübeck to Sweden
-    converter_luebeck = db.select_dataframe(
-        f"""
-        SELECT bus_id FROM
-        {sources['electricity_buses']['schema']}.
-        {sources['electricity_buses']['table']}
-        WHERE x = 10.802358024202768
-        AND y = 53.897547401787
-        AND v_nom = 380
-        AND scn_name = '{scenario}'
-        AND carrier = 'AC'
-        """
-    ).squeeze()
+    converter_luebeck = select_bus_id(
+        10.802358024202768,
+        53.897547401787,
+        380,
+        scenario,
+        "AC",
+        find_closest=True,
+    )
 
     foreign_links = pd.DataFrame(
         index=[0],
@@ -621,18 +618,14 @@ def foreign_dc_lines(scenario, sources, targets, central_buses):
 
     # When not in test-mode, add DC line from Bentwisch to Denmark
     if config.settings()["egon-data"]["--dataset-boundary"] == "Everything":
-        converter_bentwisch = db.select_dataframe(
-            f"""
-            SELECT bus_id FROM
-            {sources['electricity_buses']['schema']}.
-            {sources['electricity_buses']['table']}
-            WHERE x = 12.213671694775988
-            AND y = 54.09974494662279
-            AND v_nom = 380
-            AND scn_name = '{scenario}'
-            AND carrier = 'AC'
-            """
-        ).squeeze()
+        converter_bentwisch = select_bus_id(
+            12.213671694775988,
+            54.09974494662279,
+            380,
+            scenario,
+            "AC",
+            find_closest=True,
+        )
 
         foreign_links = pd.concat(
             [

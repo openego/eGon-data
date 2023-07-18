@@ -24,7 +24,7 @@ from jinja2 import Template
 from rasterio.mask import mask
 
 # packages for ORM class definition
-from sqlalchemy import Column, Float, ForeignKey, Integer, Sequence, String
+from sqlalchemy import Column, Float, Integer, Sequence, String
 from sqlalchemy.ext.declarative import declarative_base
 import geopandas as gpd
 
@@ -34,7 +34,6 @@ import rasterio
 from egon.data import db, subprocess
 from egon.data.datasets import Dataset
 from egon.data.datasets.scenario_parameters import (
-    EgonScenario,
     get_sector_parameters,
 )
 import egon.data.config
@@ -48,7 +47,7 @@ class HeatDemandImport(Dataset):
         super().__init__(
             name="heat-demands",
             # version=self.target_files + "_0.0",
-            version="0.0.2",  # maybe rethink the naming
+            version="0.0.3",  # maybe rethink the naming
             dependencies=dependencies,
             tasks=(scenario_data_import),
         )
@@ -71,7 +70,7 @@ class EgonPetaHeat(Base):
     )
     demand = Column(Float)
     sector = Column(String)
-    scenario = Column(String, ForeignKey(EgonScenario.name))
+    scenario = Column(String)
     zensus_population_id = Column(Integer)
 
 
