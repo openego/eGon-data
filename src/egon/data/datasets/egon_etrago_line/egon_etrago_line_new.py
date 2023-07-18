@@ -1,9 +1,6 @@
 import pandas as pd
 import geopandas as gpd
-import psycopg2
 from sqlalchemy import create_engine
-from turtle import home
-from shapely.geometry import Point
 from geopy.distance import geodesic
 import difflib
 
