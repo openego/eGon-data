@@ -1006,9 +1006,9 @@ def power_plants_status_quo(scn_name="status2019"):
             ["Braunkohle", "Mineralölprodukte", "Steinkohle", "Kernenergie"]
         )
     ]
-    
+
     # convert from KW to MW
-    conv["Nettonennleistung"] = conv["Nettonennleistung"]/1000 
+    conv["Nettonennleistung"] = conv["Nettonennleistung"] / 1000
     # drop generators installed after 2019
     conv["Inbetriebnahmedatum"] = pd.to_datetime(conv["Inbetriebnahmedatum"])
     conv = conv[
@@ -1227,11 +1227,7 @@ tasks = (
 )
 
 if "status2019" in egon.data.config.settings()["egon-data"]["--scenarios"]:
-    tasks = tasks + (
-        power_plants_status_quo,
-        geocode_mastr_data,
-        pv_rooftop_to_buildings,
-    )
+    tasks = tasks + (power_plants_status_quo,)
 
 if (
     "eGon2035" in egon.data.config.settings()["egon-data"]["--scenarios"]
@@ -1244,15 +1240,13 @@ if (
         {
             wind_onshore.insert,
             pv_ground_mounted.insert,
-            (
-                pv_rooftop_per_mv_grid,
-                geocode_mastr_data,
-                pv_rooftop_to_buildings,
-            ),
+            pv_rooftop_per_mv_grid,
         },
     )
 
 tasks = tasks + (
+    geocode_mastr_data,
+    pv_rooftop_to_buildings,
     wind_offshore.insert,
     assign_weather_data.weatherId_and_busId,
 )
