@@ -1,14 +1,14 @@
 """
 Motorized Individual Travel (MIT) Charging Infrastructure
 
-Main module for preparation of static model data for cahrging infrastructure for
-motorized individual travel.
+Main module for preparation of static model data for cahrging infrastructure
+for motorized individual travel.
 
 **Contents of this module**
 * Creation of DB tables
 * Download and preprocessing of vehicle registration data from zenodo
-* Determination of all potential charging locations for the four charging use cases
-  home, work, public and hpc per mv grid district
+* Determination of all potential charging locations for the four charging use
+  cases home, work, public and hpc per mv grid district
 * Write results to DB
 
 **Configuration**
@@ -19,10 +19,11 @@ The config of this dataset can be found in *datasets.yml* in section
 **Charging Infrastructure**
 
 The charging infrastructure allocation is based on [TracBEV[(
-https://github.com/rl-institut/tracbev). TracBEV is a tool for the regional allocation
-of charging infrastructure. In practice this allows users to use results generated via
-[SimBEV](https://github.com/rl-institut/simbev) and place the corresponding charging
-points on a map. These are split into the four use cases home, work, public and hpc.
+https://github.com/rl-institut/tracbev). TracBEV is a tool for the regional
+allocation of charging infrastructure. In practice this allows users to use
+results generated via [SimBEV](https://github.com/rl-institut/simbev) and place
+the corresponding charging points on a map. These are split into the four use
+cases home, work, public and hpc.
 """
 from __future__ import annotations
 
@@ -36,6 +37,7 @@ from egon.data import config, db
 from egon.data.datasets import Dataset
 from egon.data.datasets.emobility.motorized_individual_travel_charging_infrastructure.db_classes import (  # noqa: E501
     EgonEmobChargingInfrastructure,
+    add_metadata,
 )
 from egon.data.datasets.emobility.motorized_individual_travel_charging_infrastructure.infrastructure_allocation import (  # noqa: E501
     run_tracbev,
@@ -117,7 +119,7 @@ class MITChargingInfrastructure(Dataset):
     def __init__(self, dependencies):
         super().__init__(
             name="MITChargingInfrastructure",
-            version="0.0.1",
+            version="0.0.2",
             dependencies=dependencies,
             tasks=(
                 {
@@ -125,5 +127,6 @@ class MITChargingInfrastructure(Dataset):
                     get_tracbev_data,
                 },
                 run_tracbev,
+                add_metadata,
             ),
         )

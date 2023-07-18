@@ -28,6 +28,15 @@ from egon.data.datasets.district_heating_areas.plot import (
 )
 
 # for metadata creation
+import time
+import datetime
+from egon.data.metadata import (
+    context,
+    meta_metadata,
+    license_ccby,
+    sources,
+    generate_resource_fields_from_sqla_model,
+)
 import json
 
 # import time
@@ -45,7 +54,7 @@ class DistrictHeatingAreas(Dataset):
         super().__init__(
             name="district-heating-areas",
             # version=self.target_files + "_0.0",
-            version="0.0.1",  # maybe rethink the naming
+            version="0.0.2",  # maybe rethink the naming
             dependencies=dependencies,
             tasks=(create_tables, demarcation),
         )
@@ -687,29 +696,12 @@ def add_metadata():
     """
     Writes metadata JSON string into table comment.
 
-    TODO
-    ----
-
-        Meta data must be check and adjusted to the egon_data standard:
-            - Add context
-            - authors and institutions
 
     """
 
     # Prepare variables
     license_district_heating_areas = [
-        {
-            # this could be the license of the "district_heating_areas"
-            "name": "Creative Commons Attribution 4.0 International",
-            "title": "CC BY 4.0",
-            "path": "https://creativecommons.org/licenses/by/4.0/",
-            "instruction": (
-                "You are free: To Share, To Adapt;"
-                " As long as you: Attribute!"
-            ),
-            "attribution": "© Europa-Universität Flensburg",  # if all agree
-            # "attribution": "© ZNES Flensburg",  # alternative
-        }
+        license_ccby("© Europa-Universität Flensburg")
     ]
 
     # Metadata creation for district heating areas (polygons)
@@ -719,25 +711,14 @@ def add_metadata():
         "description": "Modelled future district heating areas for "
         "the supply of residential and service-sector heat demands",
         "language": ["EN"],
+        "publicationDate": datetime.date.today().isoformat(),
+        "context": context(),
         "spatial": {"location": "", "extent": "Germany", "resolution": ""},
-        "temporal": {
-            "referenceDate": "scenario-specific",
-            "timeseries": {
-                "start": "",
-                "end": "",
-                "resolution": "",
-                "alignment": "",
-                "aggregationType": "",
-            },
-        },
         "sources": [
-            {
-                # eGon scenario specific heat demand distribution based
-                # on Peta5_0_1, using vg250 boundaries
-            },
-            {
-                # Census gridded apartment data
-            },
+            sources()["peta"],
+            sources()["egon-data"],
+            sources()["zensus"],
+            sources()["vg250"],
         ],
         "resources": [
             {
@@ -796,21 +777,21 @@ def add_metadata():
         "licenses": license_district_heating_areas,
         "contributors": [
             {
-                "title": "Eva, Clara",
-                "email": "",
-                "date": "2021-05-07",
-                "object": "",
-                "comment": "Processed data",
-            }
-        ],
-        "metaMetadata": {  # https://github.com/OpenEnergyPlatform/oemetadata
-            "metadataVersion": "OEP-1.4.0",
-            "metadataLicense": {
-                "name": "CC0-1.0",
-                "title": "Creative Commons Zero v1.0 Universal",
-                "path": ("https://creativecommons.org/publicdomain/zero/1.0/"),
+                "title": "EvaWie",
+                "email": "http://github.com/EvaWie",
+                "date": time.strftime("%Y-%m-%d"),
+                "object": None,
+                "comment": "Imported data",
             },
-        },
+            {
+                "title": "Clara Büttner",
+                "email": "http://github.com/ClaraBuettner",
+                "date": time.strftime("%Y-%m-%d"),
+                "object": None,
+                "comment": "Updated metadata",
+            },
+        ],
+        "metaMetadata": meta_metadata(),
     }
     meta_json = "'" + json.dumps(meta) + "'"
 
@@ -824,25 +805,14 @@ def add_metadata():
         " for supply of residential and service-sector heat demands"
         " assigned to zensus_population_ids",
         "language": ["EN"],
+        "publicationDate": datetime.date.today().isoformat(),
+        "context": context(),
         "spatial": {"location": "", "extent": "Germany", "resolution": ""},
-        "temporal": {
-            "referenceDate": "scenario-specific",
-            "timeseries": {
-                "start": "",
-                "end": "",
-                "resolution": "",
-                "alignment": "",
-                "aggregationType": "",
-            },
-        },
         "sources": [
-            {
-                # eGon scenario specific heat demand distribution based
-                # on Peta5_0_1, using vg250 boundaries
-            },
-            {
-                # Census gridded apartment data
-            },
+            sources()["peta"],
+            sources()["egon-data"],
+            sources()["zensus"],
+            sources()["vg250"],
         ],
         # Add the license for the map table
         "resources": [
@@ -897,21 +867,21 @@ def add_metadata():
         "licenses": license_district_heating_areas,
         "contributors": [
             {
-                "title": "Eva, Clara",
-                "email": "",
-                "date": "2021-05-07",
-                "object": "",
-                "comment": "Processed data",
-            }
-        ],
-        "metaMetadata": {  # https://github.com/OpenEnergyPlatform/oemetadata
-            "metadataVersion": "OEP-1.4.0",
-            "metadataLicense": {
-                "name": "CC0-1.0",
-                "title": "Creative Commons Zero v1.0 Universal",
-                "path": ("https://creativecommons.org/publicdomain/zero/1.0/"),
+                "title": "EvaWie",
+                "email": "http://github.com/EvaWie",
+                "date": time.strftime("%Y-%m-%d"),
+                "object": None,
+                "comment": "Imported data",
             },
-        },
+            {
+                "title": "Clara Büttner",
+                "email": "http://github.com/ClaraBuettner",
+                "date": time.strftime("%Y-%m-%d"),
+                "object": None,
+                "comment": "Updated metadata",
+            },
+        ],
+        "metaMetadata": meta_metadata(),
     }
     meta_json = "'" + json.dumps(meta) + "'"
 
