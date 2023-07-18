@@ -88,6 +88,7 @@ setup(
         "cdsapi",
         "click",
         #"entsoe-py >=0.3.1",
+        "GeoAlchemy2",
         "geopandas>=0.10.0",
         "geopy",
         "geovoronoi",
