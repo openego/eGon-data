@@ -86,7 +86,7 @@ setup(
         "apache-airflow-providers-sendgrid",
         "atlite==0.2.5",
         "cdsapi",
-        "click",
+        "click<8.1",
         #"entsoe-py >=0.3.1",
         "GeoAlchemy2",
         "geopandas>=0.10.0",
