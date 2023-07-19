@@ -695,7 +695,11 @@ def insert_ch4_demand(global_demand, normalized_ch4_demandTS):
     db.execute_sql(
         f"""
         DELETE FROM
-        {targets['load_time series']['schema']}.{targets['load_time series']['table']}
+        {
+            targets['load_time series']['schema']
+        }.{
+            targets['load_time series']['table']
+        }
         WHERE "load_id" IN (
             SELECT load_id FROM
             {targets['loads']['schema']}.{targets['loads']['table']}
