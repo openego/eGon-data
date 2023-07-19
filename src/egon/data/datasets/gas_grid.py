@@ -294,26 +294,28 @@ def insert_CH4_nodes_list(gas_nodes_list):
     )
 
 
-def insert_gas_buses_abroad(scn_name="eGon2035"):
+def define_gas_buses_abroad(scn_name="eGon2035"):
     """
-    Insert CH4 buses in neighbouring countries to database for eGon2035
+    Define central CH4 buses in foreign countries for eGon2035
 
-    For the scenario eGon2035, insert central CH4 buses in foreign
-    countries to the database. The considered foreign countries are the
-    direct neighbouring countries, with the addition of Russia that is
+    For the scenario eGon2035, define central CH4 buses in foreign
+    countries. The considered foreign countries are the direct 
+    neighbouring countries, with the addition of Russia that is
     considered as a source of fossil CH4.
     Therefore, the following steps are executed:
       * Definition of the foreign buses with the function
-        :py:func:`import_central_buses_egon100 <egon.data.datasets.electrical_neighbours.central_buses_egon100>` from
+        :py:func:`central_buses_egon100 <egon.data.datasets.electrical_neighbours.central_buses_egon100>` from
         the module :py:mod:`electrical_neighbours <egon.data.datasets.electrical_neighbours>`
       * Removal of the superfluous buses in order to have only one bus
         in each neighbouring country
       * Removal of the the irrelevant columns
       * Addition of the missing information: scn_name and carrier
       * Attribution of an id to each bus
-      * Cleaning of the database table grid.egon_etrago_bus of the
-        CH4 buses of the specific scenario (eGon2035) out of Germany
-      * Insertion of the neighbouring buses in the table grid.egon_etrago_bus.
+
+    Parameters
+    ----------
+    scn_name : str
+        Name of the scenario
 
     Returns
     -------
@@ -328,15 +330,6 @@ def insert_gas_buses_abroad(scn_name="eGon2035"):
     main_gas_carrier = get_sector_parameters("gas", scenario=scn_name)[
         "main_gas_carrier"
     ]
-
-    # Connect to local database
-    engine = db.engine()
-    db.execute_sql(
-        f"""
-    DELETE FROM grid.egon_etrago_bus WHERE "carrier" = '{main_gas_carrier}' AND
-    scn_name = '{scn_name}' AND country != 'DE';
-    """
-    )
 
     # Select the foreign buses
     gdf_abroad_buses = central_buses_egon100(sources)
@@ -396,6 +389,46 @@ def insert_gas_buses_abroad(scn_name="eGon2035"):
         columns={"geometry": "geom"}
     ).set_geometry("geom", crs=4326)
 
+    return gdf_abroad_buses
+
+
+def insert_gas_buses_abroad(scn_name="eGon2035"):
+    """
+    Insert CH4 buses in neighbouring countries to database for eGon2035
+
+      * Definition of the CH4 buses abroad with the function 
+        :py:func:`define_gas_buses_abroad`
+      * Cleaning of the data base table grid.egon_etrago_bus of the
+        CH4 buses of the specific scenario (eGon2035) out of Germany
+      * Insertion of the neighbouring buses in the table grid.egon_etrago_bus.   
+
+    Parameters
+    ----------
+    scn_name : str
+        Name of the scenario
+
+    Returns
+    -------
+    gdf_abroad_buses : dataframe
+        Dataframe containing the CH4 buses in the neighbouring countries
+        and one in the center of Germany in test mode
+
+    """
+    main_gas_carrier = get_sector_parameters("gas", scenario=scn_name)[
+        "main_gas_carrier"
+    ]
+
+    # Connect to local database
+    engine = db.engine()
+    db.execute_sql(
+        f"""
+    DELETE FROM grid.egon_etrago_bus WHERE "carrier" = '{main_gas_carrier}' AND
+    scn_name = '{scn_name}' AND country != 'DE';
+    """
+    )
+
+    gdf_abroad_buses = define_gas_buses_abroad(scn_name)
+
     # Insert to db
     print(gdf_abroad_buses)
     gdf_abroad_buses.to_postgis(
@@ -409,20 +442,14 @@ def insert_gas_buses_abroad(scn_name="eGon2035"):
     return gdf_abroad_buses
 
 
-def insert_gas_pipeline_list(
+def define_gas_pipeline_list(
     gas_nodes_list, abroad_gas_nodes_list, scn_name="eGon2035"
 ):
     """
-    Insert list of gas pipelines into the database
+    Define gas pipelines in Germany from SciGRID_gas IGGIELGN data
 
     The gas pipelines, modelled as Pypsa links are red from the IGGIELGN_PipeSegments
-    csv file previously downloded in the function :py:func:`download_SciGRID_gas_data`,
-    adapted and inserted in the database for the eGon2035 scenario.
-    The manual corrections allows to:
-      * Delete gas pipelines disconnected of the rest of the gas grid
-      * Connect one pipeline (also connected to Norway) disconnected of
-        the rest of the gas grid
-      * Correct erroneous country of some pipelines
+    csv file previously downloded in the function :py:func:`download_SciGRID_gas_data`.
 
     The capacities of the pipelines are determined by the correspondance
     table given by the Parameters for the classification of gas pipelines
@@ -430,7 +457,11 @@ def insert_gas_pipeline_list(
     <https://www.econstor.eu/bitstream/10419/173388/1/1011162628.pdf>`_
     related to the pipeline diameter given in the SciGRID_gas dataset.
 
-    The database is cleaned before the insertion of the pipelines.
+    The manual corrections allows to:
+      * Delete gas pipelines disconnected of the rest of the gas grid
+      * Connect one pipeline (also connected to Norway) disconnected of
+        the rest of the gas grid
+      * Correct erroneous country of some pipelines
 
     Parameters
     ----------
@@ -444,7 +475,8 @@ def insert_gas_pipeline_list(
 
     Returns
     -------
-    None
+    gas_pipelines_list : pandas.DataFrame
+        Dataframe containing the gas pipelines in Germany
 
     """
     abroad_gas_nodes_list = abroad_gas_nodes_list.set_index("country")
@@ -452,8 +484,6 @@ def insert_gas_pipeline_list(
     main_gas_carrier = get_sector_parameters("gas", scenario=scn_name)[
         "main_gas_carrier"
     ]
-
-    engine = db.engine()
 
     # Select next id value
     new_id = db.next_etrago_id("link")
@@ -771,8 +801,6 @@ def insert_gas_pipeline_list(
             "NUTS1_0",
             "NUTS1_1",
             "country_code",
-            "country_0",
-            "country_1",
             "diameter",
             "pipe_class",
             "classification",
@@ -781,6 +809,32 @@ def insert_gas_pipeline_list(
             "long",
             "length_km",
         ]
+    )
+
+    return gas_pipelines_list
+
+
+def insert_gas_pipeline_list(gas_pipelines_list, scn_name="eGon2035"):
+    """
+    Insert list of gas pipelines into the database
+
+    Receive as argument a list of gas pipelines and insert them into the
+    data base after cleaning it.
+
+    Parameters
+    ----------
+    gas_pipelines_list : pandas.DataFrame
+        Dataframe containing the gas pipelines in Germany
+    scn_name : str
+        Name of the scenario
+
+    """
+    main_gas_carrier = get_sector_parameters("gas", scenario=scn_name)[
+        "main_gas_carrier"
+    ]
+    engine = db.engine()
+    gas_pipelines_list = gas_pipelines_list.drop(
+        columns=["country_0", "country_1"]
     )
 
     # Clean db
@@ -878,7 +932,10 @@ def insert_gas_data():
     insert_CH4_nodes_list(gas_nodes_list)
     abroad_gas_nodes_list = insert_gas_buses_abroad()
 
-    insert_gas_pipeline_list(gas_nodes_list, abroad_gas_nodes_list)
+    gas_pipeline_list = define_gas_pipeline_list(
+        gas_nodes_list, abroad_gas_nodes_list
+    )
+    insert_gas_pipeline_list(gas_pipeline_list)
     remove_isolated_gas_buses()
 
 

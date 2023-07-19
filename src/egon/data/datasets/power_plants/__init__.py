@@ -29,7 +29,6 @@ from egon.data.datasets.power_plants.mastr import (
 )
 from egon.data.datasets.power_plants.pv_rooftop import pv_rooftop_per_mv_grid
 from egon.data.datasets.power_plants.pv_rooftop_buildings import (
-    geocode_mastr_data,
     pv_rooftop_to_buildings,
 )
 import egon.data.config
@@ -60,7 +59,7 @@ class PowerPlants(Dataset):
     def __init__(self, dependencies):
         super().__init__(
             name="PowerPlants",
-            version="0.0.17",
+            version="0.0.18",
             dependencies=dependencies,
             tasks=(
                 create_tables,
@@ -73,7 +72,6 @@ class PowerPlants(Dataset):
                     pv_ground_mounted.insert,
                     (
                         pv_rooftop_per_mv_grid,
-                        geocode_mastr_data,
                         pv_rooftop_to_buildings,
                     ),
                 },
@@ -111,7 +109,10 @@ def create_tables():
     ]
     for t in tables:
         db.execute_sql(
-            f"DROP TABLE IF EXISTS {t.__table_args__['schema']}.{t.__tablename__} CASCADE;"
+            f"""
+            DROP TABLE IF EXISTS {t.__table_args__['schema']}.
+            {t.__tablename__} CASCADE;
+            """
         )
         t.__table__.create(bind=engine, checkfirst=True)
 

@@ -192,7 +192,7 @@ def define_DE_crossbording_pipes_geom_eGon100RE(scn_name="eGon100RE"):
             f"""
             SELECT * FROM grid.egon_etrago_bus
             WHERE scn_name = 'eGon100RE'
-            AND carrier = '{carrier}'
+            AND carrier = '{carrier_bus_DE}'
             AND country != 'DE'
             """,
             epsg=4326,
