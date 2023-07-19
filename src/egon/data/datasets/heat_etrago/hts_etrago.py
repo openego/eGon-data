@@ -1,3 +1,6 @@
+"""
+The central module creating heat demand time series for the eTraGo tool
+"""
 from egon.data import config, db
 from egon.data.db import next_etrago_id
 from egon.data.datasets import Dataset
@@ -211,10 +214,39 @@ def hts_to_etrago():
 
 
 class HtsEtragoTable(Dataset):
+    """
+    Collect heat demand time series for the eTraGo tool
+
+    This dataset collects data for individual and district heating demands
+    and writes that into the tables that can be read by the eTraGo tool.
+
+            district_heating_areas,
+            heat_etrago,
+            heat_time_series,
+            mv_grid_districts,
+            heat_pumps_2035,
+    *Dependencies*
+      * :py:class:`DistrictHeatingAreas <egon.data.datasets.district_heating_areas.DistrictHeatingAreas>`
+      * :py:class:`HeatEtrago <egon.data.datasets.heat_etrago.HeatEtrago>`
+      * :py:func:`mv_grid_districts_setup <egon.data.datasets.mv_grid_districts.mv_grid_districts_setup>`
+      * :py:class:`HeatPumps2035 <egon.data.datasets.heat_supply.individual_heating.HeatPumps2035>`
+      * :py:class:`HeatTimeSeries <egon.data.datasets.heat_demand_timeseries.HeatTimeSeries>`
+
+    *Resulting tables*
+      * :py:class:`grid.egon_etrago_load <egon.data.datasets.etrago_setup.EgonPfHvLoad>` is extended
+      * :py:class:`grid.egon_etrago_load_timeseries <egon.data.datasets.etrago_setup.EgonPfHvLoadTimeseries>` is extended
+
+    """
+
+    #:
+    name: str = "HtsEtragoTable"
+    #:
+    version: str = "0.0.6"
+
     def __init__(self, dependencies):
         super().__init__(
-            name="HtsEtragoTable",
-            version="0.0.6",
+            name=self.name,
+            version=self.version,
             dependencies=dependencies,
             tasks=(hts_to_etrago,),
         )
