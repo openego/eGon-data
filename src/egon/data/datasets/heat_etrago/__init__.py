@@ -102,7 +102,6 @@ def insert_buses(carrier, scenario):
 
 
 def insert_store(scenario, carrier):
-
     sources = config.datasets()["etrago_heat"]["sources"]
     targets = config.datasets()["etrago_heat"]["targets"]
 
@@ -615,10 +614,42 @@ def supply():
 
 
 class HeatEtrago(Dataset):
+    """
+    Collect data related to the heat sector for the eTraGo tool
+
+    This dataset collects data from the heat sector and puts it into a format that
+    is needed for the transmission grid optimisation within the tool eTraGo.
+    It includes the creation of inidvidual and central heat nodes, aggregates the
+    heat supply technologies (apart from CHP) per medium voltage grid district and
+    adds extendable heat stores to each bus. This data is then writting into the
+    corresponding tables that are read by eTraGo.
+
+
+    *Dependencies*
+      * :py:class:`HeatSupply <egon.data.datasets.heat_supply.HeatSupply>`
+      * :py:func:`mv_grid_districts_setup <egon.data.datasets.mv_grid_districts.mv_grid_districts_setup>`
+      * :py:class:`EtragoSetup <egon.data.datasets.etrago_setup.EtragoSetup>`
+      * :py:class:`RenewableFeedin <egon.data.datasets.renewable_feedin.RenewableFeedin>`
+      * :py:class:`HeatTimeSeries <egon.data.datasets.heat_demand_timeseries.HeatTimeSeries>`
+
+    *Resulting tables*
+      * :py:class:`grid.egon_etrago_bus <egon.data.datasets.etrago_setup.EgonPfHvBus>` is extended
+      * :py:class:`grid.egon_etrago_link <egon.data.datasets.etrago_setup.EgonPfHvLink>` is extended
+      * :py:class:`grid.egon_etrago_link_timeseries <egon.data.datasets.etrago_setup.EgonPfHvLinkTimeseries>` is extended
+      * :py:class:`grid.egon_etrago_store <egon.data.datasets.etrago_setup.EgonPfHvStore>` is extended
+      * :py:class:`grid.egon_etrago_generator <egon.data.datasets.etrago_setup.EgonPfHvGenerator>` is extended
+
+    """
+
+    #:
+    name: str = "HeatEtrago"
+    #:
+    version: str = "0.0.10"
+
     def __init__(self, dependencies):
         super().__init__(
-            name="HeatEtrago",
-            version="0.0.10",
+            name=self.name,
+            version=self.version,
             dependencies=dependencies,
             tasks=(buses, supply, store),
         )
