@@ -14,10 +14,26 @@ import egon.data.config
 
 
 class ZensusMvGridDistricts(Dataset):
+    """
+    Maps zensus cells to MV grid districts and writes it to database.
+
+    *Dependencies*
+      * :py:class:`ZensusPopulation <egon.data.datasets.zensus.ZensusPopulation>`
+      * :py:mod:`mv_grid_districts_setup <egon.data.datasets.mv_grid_districts>`
+
+    *Resulting tables*
+      * :py:class:`boundaries.egon_map_zensus_grid_districts <MapZensusGridDistricts>`
+        is created and filled
+
+    """
+    #:
+    name: str = "ZensusMvGridDistricts"
+    #:
+    version: str = "0.0.1"
     def __init__(self, dependencies):
         super().__init__(
-            name="ZensusMvGridDistricts",
-            version="0.0.1",
+            name=self.name,
+            version=self.version,
             dependencies=dependencies,
             tasks=(mapping),
         )
@@ -28,6 +44,9 @@ Base = declarative_base()
 
 
 class MapZensusGridDistricts(Base):
+    """
+    Class definition of table boundaries.egon_map_zensus_grid_districts.
+    """
     __tablename__ = "egon_map_zensus_grid_districts"
     __table_args__ = {"schema": "boundaries"}
 
@@ -41,7 +60,12 @@ class MapZensusGridDistricts(Base):
 
 
 def mapping():
-    """Perform mapping between mv grid districts and zensus grid"""
+    """
+    Map zensus cells and MV grid districts and write to database.
+
+    Newly creates and fills table boundaries.egon_map_zensus_grid_districts.
+
+    """
 
     MapZensusGridDistricts.__table__.drop(bind=db.engine(), checkfirst=True)
     MapZensusGridDistricts.__table__.create(bind=db.engine(), checkfirst=True)
