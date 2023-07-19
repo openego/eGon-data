@@ -794,7 +794,7 @@ def insert_ch4_demand(global_demand, normalized_ch4_demandTS):
 
 def calc_ch4_storage_capacities():
     """Calculate CH4 storage capacities for neighboring countries
-    
+
     Returns
     -------
         ch4_storage_capacities: pandas.DataFrame
@@ -1045,7 +1045,7 @@ def insert_power_to_h2_demand(global_power_to_h2_demand):
     ----------
     global_power_to_h2_demand : pandas.DataFrame
         Global hourly power-to-h2 demand per foreign node
-    
+
     Returns
     -------
     None
@@ -1300,7 +1300,6 @@ def calculate_ch4_grid_capacities():
     schema = sources["buses"]["schema"]
     table = sources["buses"]["table"]
     for country_code in [e for e in countries if e not in ("GB", "SE", "UK")]:
-
         # Select cross-bording links
         cap_DE = db.select_dataframe(
             f"""SELECT link_id, bus0, bus1
@@ -1432,7 +1431,7 @@ def tyndp_gas_demand():
             :py:func:`calc_global_power_to_h2_demand`
           * Insertion of these loads in the database by executing the
             function :py:func:`insert_power_to_h2_demand`
-    
+
     Returns
     -------
     None
@@ -1525,7 +1524,7 @@ def insert_ocgt_abroad():
     ----------
     df_ocgt: pandas.DataFrame
         Gas turbine capacities per foreign node
-    
+
     Returns
     -------
     None
