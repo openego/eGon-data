@@ -1063,10 +1063,51 @@ def export_etrago_cts_heat_profiles():
 
 
 class HeatTimeSeries(Dataset):
+    """
+    Chooses heat demand profiles for each residential and CTS building
+
+    This dataset creates heat demand profiles in an hourly resoultion.    
+    Time series for CTS buildings are created using the SLP-gas method implemented 
+    in the demandregio disagregator with the function :py:func:`export_etrago_cts_heat_profiles`
+    and stored in the database. 
+    Time series for residential buildings are created based on a variety of synthetical created 
+    individual demand profiles that are part of :py:class:`DataBundle <egon.data.datasets.data_bundle.DataBundle>`. 
+    This method is desribed within the functions and in this publication: 
+        C. Büttner, J. Amme, J. Endres, A. Malla, B. Schachler, I. Cußmann,
+        Open modeling of electricity and heat demand curves for all
+        residential buildings in Germany, Energy Informatics 5 (1) (2022) 21.
+        doi:10.1186/s42162-022-00201-y.
+    
+
+    *Dependencies*
+      * :py:class:`DataBundle <egon.data.datasets.data_bundle.DataBundle>`
+      * :py:class:`DemandRegio <egon.data.datasets.demandregio.DemandRegio>`
+      * :py:class:`HeatDemandImport <egon.data.datasets.heat_demand.HeatDemandImport>`
+      * :py:class:`DistrictHeatingAreas <egon.data.datasets.district_heating_areas.DistrictHeatingAreas>`
+      * :py:class:`VG250 <egon.data.datasets.vg250.VG250>`
+      * :py:class:`ZensusMvGridDistricts <egon.data.datasets.zensus_mv_grid_districts.ZensusMvGridDistricts>`
+      * :py:func:`hh_demand_buildings_setup <egon.data.datasets.electricity_demand_timeseries.hh_buildings.setup>`
+      * :py:class:`WeatherData <egon.data.datasets.era5.WeatherData>`
+
+
+    *Resulting tables*
+      * :py:class:`demand.egon_timeseries_district_heating <egon.data.datasets.heat_demand_timeseries.EgonTimeseriesDistrictHeating>` is created and filled
+      * :py:class:`demand.egon_etrago_heat_cts <egon.data.datasets.heat_demand_timeseries.EgonEtragoHeatCts>` is created and filled
+      * :py:class:`demand.egon_heat_timeseries_selected_profiles <egon.data.datasets.heat_demand_timeseries.idp_pool.EgonHeatTimeseries>` is created and filled
+      * :py:class:`demand.egon_daily_heat_demand_per_climate_zone <egon.data.datasets.heat_demand_timeseries.daily.EgonDailyHeatDemandPerClimateZone>` is created and filled
+      * :py:class:`boundaries.egon_map_zensus_climate_zones <egon.data.datasets.heat_demand_timeseries.daily.EgonMapZensusClimateZones>` is created and filled
+
+    """
+
+    #:
+    name: str = "HeatTimeSeries"
+    #:
+    version: str = "0.0.7"
+
     def __init__(self, dependencies):
         super().__init__(
-            name="HeatTimeSeries",
-            version="0.0.7",
+            name=self.name,
+            version=self.version,
             dependencies=dependencies,
             tasks=(
                 {
