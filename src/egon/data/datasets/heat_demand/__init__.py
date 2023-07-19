@@ -1,15 +1,11 @@
 # -*- coding: utf-8 -*-
-
-# This script is part of eGon-data.
-
-# license text - to be added.
-
 """
 Central module containing all code dealing with the future heat demand import.
 
 This module obtains the residential and service-sector heat demand data for
 2015 from Peta5.0.1, calculates future heat demands and saves them in the
 database with assigned census cell IDs.
+
 """
 
 from pathlib import Path  # for database import
@@ -42,7 +38,6 @@ import egon.data.config
 # import time
 
 
-# class for airflow task management (and version control)
 class HeatDemandImport(Dataset):
 
     """
@@ -65,6 +60,7 @@ class HeatDemandImport(Dataset):
       * :py:class:`demand.egon_peta_heat <egon.data.datasets.heat_demand.EgonPetaHeat>` is created and filled
 
     """
+
     
     #:
     name: str = "heat-demands"
@@ -82,6 +78,7 @@ class HeatDemandImport(Dataset):
 
 
 Base = declarative_base()
+
 
 # class for the final dataset in the database
 class EgonPetaHeat(Base):
@@ -490,7 +487,6 @@ def heat_demand_to_db_table():
     db.execute_sql("DELETE FROM demand.egon_peta_heat;")
 
     for source in sources:
-
         if not "2015" in source.stem:
             # Create a temporary table and fill the final table using the sql script
             rasters = f"heat_demand_rasters_{source.stem.lower()}"
