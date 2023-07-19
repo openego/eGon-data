@@ -1,9 +1,4 @@
 # -*- coding: utf-8 -*-
-
-# This script is part of eGon-data.
-
-# license text - to be added.
-
 """
 Central module containing all code creating with district heating areas.
 
@@ -38,6 +33,7 @@ from sqlalchemy.ext.declarative import declarative_base
 from geoalchemy2.types import Geometry
 
 from egon.data.datasets import Dataset
+
 
 # class for airflow task management (and version control)
 class DistrictHeatingAreas(Dataset):
@@ -81,6 +77,8 @@ class DistrictHeatingAreas(Dataset):
 
 
 Base = declarative_base()
+
+
 # definition of classes for saving data in the database
 class MapZensusDistrictHeatingAreas(Base):
     __tablename__ = "egon_map_zensus_district_heating_areas"
@@ -423,7 +421,6 @@ def area_grouping(
         maximum_total_demand
         and "residential_and_service_demand" in join.columns
     ):
-
         huge_areas_index = (
             join.groupby("area_id").residential_and_service_demand.sum()
             > maximum_total_demand
