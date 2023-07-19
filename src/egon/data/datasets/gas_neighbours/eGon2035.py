@@ -1516,7 +1516,7 @@ def calculate_ocgt_capacities():
     df_ocgt = df_ocgt.groupby(by=["bus0", "bus1"], as_index=False).sum()
 
     return df_ocgt
-node
+
 
 def insert_ocgt_abroad():
     """Insert gas turbine capacities abroad for eGon2035 in the database
