@@ -1,4 +1,5 @@
-"""The central module containing code to create CH4 and H2 voronoi polygones
+"""
+The central module containing code to create voronoi polygons
 
 """
 from geoalchemy2.types import Geometry
