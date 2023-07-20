@@ -234,7 +234,7 @@ class ScenarioParameters(Dataset):
 
 
     *Dependencies*
-      * :py:class:`Setup <egon.data.datasets.database.Setup>`
+      * :py:func:`Setup <egon.data.datasets.database.setup>`
 
 
     *Resulting tables*
