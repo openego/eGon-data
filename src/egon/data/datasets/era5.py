@@ -72,7 +72,6 @@ class EgonRenewableFeedIn(Base):
 
 
 def create_tables():
-
     db.execute_sql("CREATE SCHEMA IF NOT EXISTS supply;")
     engine = db.engine()
     db.execute_sql(
@@ -159,25 +158,21 @@ def download_era5():
     )
 
     if not os.path.exists(directory):
-
         os.mkdir(directory)
 
     cutout = import_cutout()
 
     if not cutout.prepared:
-
         cutout.prepare()
 
     cutout = import_cutout("Germany")
 
     if not cutout.prepared:
-
         cutout.prepare()
 
     cutout = import_cutout("Germany-offshore")
 
     if not cutout.prepared:
-
         cutout.prepare()
 
 
