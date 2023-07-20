@@ -521,7 +521,6 @@ def central_transformer(scenario, sources, targets, central_buses, new_lines):
 
     # Add one transformer per central foreign bus with v_nom != 380
     for i, row in central_buses[central_buses.v_nom != 380].iterrows():
-
         s_nom_0 = new_lines[new_lines.bus0 == row.bus_id].s_nom.sum()
         s_nom_1 = new_lines[new_lines.bus1 == row.bus_id].s_nom.sum()
         if s_nom_0 == 0.0:
@@ -707,7 +706,6 @@ def grid():
     targets = config.datasets()["electrical_neighbours"]["targets"]
 
     for scenario in ["eGon2035"]:
-
         central_buses = buses(scenario, sources, targets)
 
         foreign_lines = cross_border_lines(
@@ -1111,9 +1109,12 @@ def insert_storage(capacities):
     )
 
     # Add columns for additional parameters to df
-    store["dispatch"], store["store"], store["standing_loss"], store[
-        "max_hours"
-    ] = (None, None, None, None)
+    (
+        store["dispatch"],
+        store["store"],
+        store["standing_loss"],
+        store["max_hours"],
+    ) = (None, None, None, None)
 
     # Insert carrier specific parameters
 
