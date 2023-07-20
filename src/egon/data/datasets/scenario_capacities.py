@@ -68,9 +68,9 @@ class ScenarioCapacities(Dataset):
 
 
     *Dependencies*
-      * :py:class:`Setup <egon.data.datasets.database.Setup>`
+      * :py:func:`Setup <egon.data.datasets.database.setup>`
       * :py:class:`PypsaEurSec <egon.data.datasets.pypsaeursec.PypsaEurSec>`
-      * :py:class:`VG250 <egon.data.datasets.vg250.VG250>`
+      * :py:class:`Vg250 <egon.data.datasets.vg250.Vg250>`
       * :py:class:`DataBundle <egon.data.datasets.data_bundle.DataBundle>`
       * :py:class:`ZensusPopulation <egon.data.datasets.zensus.ZensusPopulation>`
 
