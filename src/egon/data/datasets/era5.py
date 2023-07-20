@@ -20,10 +20,35 @@ Base = declarative_base()
 
 
 class WeatherData(Dataset):
+    """
+    Download weather data from ERA5 using atlie
+
+    This dataset dowonloads weather data for the selected representative
+    weather year and calculated possible feedin time series for fluctuation renewable energy generators.
+    This is done by applying functions from the atlite-tool.The downloaded wetaher data is stored into
+    files within the subfolder 'cutouts'. Feedin timeseries are stored into tables in the database.
+
+
+    *Dependencies*
+      * :py:class:`ScenarioParameters <egon.data.datasets.scenario_parameters.ScenarioParameters>`
+      * :py:class:`VG250 <egon.data.datasets.vg250.VG250>`
+      * :py:class:`Setup <egon.data.datasets.database.Setup>`
+
+    *Resulting tables*
+      * :py:class:`supply.egon_era5_weather_cells <egon.data.datasets.era5.EgonEra5Cells>` is created and filled
+      * :py:class:`supply.egon_era5_renewable_feedin <egon.data.datasets.era5.EgonRenewableFeedIn>` is created and filled
+
+    """
+
+    #:
+    name: str = "Era5"
+    #:
+    version: str = "0.0.2"
+
     def __init__(self, dependencies):
         super().__init__(
-            name="Era5",
-            version="0.0.2",
+            name=self.name,
+            version=self.version,
             dependencies=dependencies,
             tasks=({create_tables, download_era5}, insert_weather_cells),
         )
