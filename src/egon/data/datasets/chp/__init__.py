@@ -546,8 +546,8 @@ class Chp(Dataset):
       * :py:class:`DistrictHeatingAreas <egon.data.datasets.district_heating_areas.DistrictHeatingAreas>`
       * :py:class:`IndustrialDemandCurves <egon.data.datasets.industry.IndustrialDemandCurves>`
       * :py:class:`OsmLanduse <egon.data.datasets.loadarea.OsmLanduse>`
-      * :py:func:`mastr_data_setup <egon.data.datasets.mastr.mastr_data_setup>`
-      * :py:func:`mv_grid_districts_setup <egon.data.datasets.mv_grid_districts.mv_grid_districts_setup>`
+      * :py:func:`download_mastr_data <egon.data.datasets.mastr.download_mastr_data>`
+      * :py:func:`define_mv_grid_districts <egon.data.datasets.mv_grid_districts.define_mv_grid_districts>`
       * :py:class:`ScenarioCapacities <egon.data.datasets.scenario_capacities.ScenarioCapacities>`
 
 

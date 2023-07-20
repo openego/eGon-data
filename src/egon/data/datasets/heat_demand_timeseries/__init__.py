@@ -1086,7 +1086,7 @@ class HeatTimeSeries(Dataset):
       * :py:class:`DistrictHeatingAreas <egon.data.datasets.district_heating_areas.DistrictHeatingAreas>`
       * :py:class:`VG250 <egon.data.datasets.vg250.VG250>`
       * :py:class:`ZensusMvGridDistricts <egon.data.datasets.zensus_mv_grid_districts.ZensusMvGridDistricts>`
-      * :py:func:`hh_demand_buildings_setup <egon.data.datasets.electricity_demand_timeseries.hh_buildings.setup>`
+      * :py:func:`hh_demand_buildings_setup <egon.data.datasets.electricity_demand_timeseries.hh_buildings.map_houseprofiles_to_buildings>`
       * :py:class:`WeatherData <egon.data.datasets.era5.WeatherData>`
 
 
