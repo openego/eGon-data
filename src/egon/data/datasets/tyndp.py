@@ -47,11 +47,10 @@ def download():
     sources = config.datasets()["tyndp"]["sources"]
     targets = config.datasets()["tyndp"]["targets"]
 
-    if not os.path.exists('tyndp'):
-        os.mkdir('tyndp')
+    if not os.path.exists("tyndp"):
+        os.mkdir("tyndp")
 
-    for dataset in ['capacities', 'demand_2030', 'demand_2040']:
-
+    for dataset in ["capacities", "demand_2030", "demand_2040"]:
         target_file = targets[dataset]
 
         urlretrieve(sources[dataset], f"tyndp/{target_file}")
