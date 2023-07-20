@@ -217,11 +217,6 @@ class HtsEtragoTable(Dataset):
     This dataset collects data for individual and district heating demands
     and writes that into the tables that can be read by the eTraGo tool.
 
-            district_heating_areas,
-            heat_etrago,
-            heat_time_series,
-            mv_grid_districts,
-            heat_pumps_2035,
     *Dependencies*
       * :py:class:`DistrictHeatingAreas <egon.data.datasets.district_heating_areas.DistrictHeatingAreas>`
       * :py:class:`HeatEtrago <egon.data.datasets.heat_etrago.HeatEtrago>`
