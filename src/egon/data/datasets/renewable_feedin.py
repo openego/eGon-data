@@ -160,7 +160,6 @@ def federal_states_per_weather_cell():
     while (buffer < 30000) & (
         len(weather_cells[weather_cells["federal_state"].isnull()]) > 0
     ):
-
         cells = weather_cells[weather_cells["federal_state"].isnull()]
 
         cells.loc[:, "geom_point"] = cells.geom_point.buffer(buffer)
