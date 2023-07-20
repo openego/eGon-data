@@ -17,10 +17,35 @@ import egon.data.config
 
 
 class RenewableFeedin(Dataset):
+    """
+    Calculate possible feedin time series for renewable energy generators
+
+    This dataset calculates possible feedin timeseries for fluctuation renewable generators
+    and coefficient of performance time series for heat pumps. Relevant input is the
+    downloaded weather data. Parameters for the time series calcultaion are also defined by
+    representative types of pv plants and wind turbines that are selected within this dataset.
+    The resulting profiles are stored in the database.
+
+
+    *Dependencies*
+      * :py:class:`WeatherData <egon.data.datasets.era5.WeatherData>`
+      * :py:class:`VG250 <egon.data.datasets.vg250.VG250>`
+      * :py:class:`ZensusVg250 <egon.data.datasets.zensus_vg250.ZensusVg250>`
+
+    *Resulting tables*
+      * :py:class:`supply.egon_era5_renewable_feedin <egon.data.datasets.era5.EgonRenewableFeedIn>` is filled
+
+    """
+
+    #:
+    name: str = "RenewableFeedin"
+    #:
+    version: str = "0.0.7"
+
     def __init__(self, dependencies):
         super().__init__(
-            name="RenewableFeedin",
-            version="0.0.7",
+            name=self.name,
+            version=self.version,
             dependencies=dependencies,
             tasks={
                 wind,
