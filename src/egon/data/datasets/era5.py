@@ -30,8 +30,8 @@ class WeatherData(Dataset):
 
     *Dependencies*
       * :py:class:`ScenarioParameters <egon.data.datasets.scenario_parameters.ScenarioParameters>`
-      * :py:class:`VG250 <egon.data.datasets.vg250.VG250>`
-      * :py:class:`Setup <egon.data.datasets.database.Setup>`
+      * :py:class:`Vg250 <egon.data.datasets.vg250.Vg250>`
+      * :py:func:`Setup <egon.data.datasets.database.setup>`
 
     *Resulting tables*
       * :py:class:`supply.egon_era5_weather_cells <egon.data.datasets.era5.EgonEra5Cells>` is created and filled
