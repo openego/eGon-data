@@ -58,10 +58,38 @@ class NEP2021ConvPowerPlants(Base):
 
 
 class ScenarioCapacities(Dataset):
+    """
+    Create and fill table with installed generation capacities in Germany
+
+    This dataset creates and fills a table with the installed generation capacities in
+    Germany in a lower spatial resolution (either per federal state or on national level).
+    This data is coming from external sources (e.g. German grid developement plan for scenario eGon2035).
+    The table is in downstream datasets used to define target values for the installed capacities.
+
+
+    *Dependencies*
+      * :py:class:`Setup <egon.data.datasets.database.Setup>`
+      * :py:class:`PypsaEurSec <egon.data.datasets.pypsaeursec.PypsaEurSec>`
+      * :py:class:`VG250 <egon.data.datasets.vg250.VG250>`
+      * :py:class:`DataBundle <egon.data.datasets.data_bundle.DataBundle>`
+      * :py:class:`ZensusPopulation <egon.data.datasets.zensus.ZensusPopulation>`
+
+
+    *Resulting tables*
+      * :py:class:`supply.egon_scenario_capacities <egon.data.datasets.scenario_capacities.EgonScenarioCapacities>` is created and filled
+      * :py:class:`supply.egon_nep_2021_conventional_powerplants <egon.data.datasets.scenario_capacities.NEP2021ConvPowerPlants>` is created and filled
+
+    """
+
+    #:
+    name: str = "ScenarioCapacities"
+    #:
+    version: str = "0.0.13"
+
     def __init__(self, dependencies):
         super().__init__(
-            name="ScenarioCapacities",
-            version="0.0.13",
+            name=self.name,
+            version=self.version,
             dependencies=dependencies,
             tasks=(create_table, insert_data_nep, eGon100_capacities),
         )
