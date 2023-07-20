@@ -56,7 +56,8 @@ class DistrictHeatingAreas(Dataset):
       * :py:class:`ScenarioParameters <egon.data.datasets.scenario_parameters.ScenarioParameters>`
 
     *Resulting tables*
-      * :py:class:`demand.egon_map_zensus_district_heating_areas <egon.data.datasets.district_heating_areas.MapZensusDistrictHeatingAreas>` is created and filled
+      * :py:class:`demand.egon_map_zensus_district_heating_areas <egon.data.datasets.district_heating_areas.MapZensusDistrictHeatingAreas>` 
+      is created and filled
       * :py:class:`demand.egon_district_heating_areas <egon.data.datasets.district_heating_areas.EgonDistrictHeatingAreas>` is created and filled
 
     """

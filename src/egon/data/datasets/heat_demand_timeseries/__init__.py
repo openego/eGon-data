@@ -1094,7 +1094,8 @@ class HeatTimeSeries(Dataset):
       * :py:class:`demand.egon_timeseries_district_heating <egon.data.datasets.heat_demand_timeseries.EgonTimeseriesDistrictHeating>` is created and filled
       * :py:class:`demand.egon_etrago_heat_cts <egon.data.datasets.heat_demand_timeseries.EgonEtragoHeatCts>` is created and filled
       * :py:class:`demand.egon_heat_timeseries_selected_profiles <egon.data.datasets.heat_demand_timeseries.idp_pool.EgonHeatTimeseries>` is created and filled
-      * :py:class:`demand.egon_daily_heat_demand_per_climate_zone <egon.data.datasets.heat_demand_timeseries.daily.EgonDailyHeatDemandPerClimateZone>` is created and filled
+      * :py:class:`demand.egon_daily_heat_demand_per_climate_zone <egon.data.datasets.heat_demand_timeseries.daily.EgonDailyHeatDemandPerClimateZone>` 
+      is created and filled
       * :py:class:`boundaries.egon_map_zensus_climate_zones <egon.data.datasets.heat_demand_timeseries.daily.EgonMapZensusClimateZones>` is created and filled
 
     """
