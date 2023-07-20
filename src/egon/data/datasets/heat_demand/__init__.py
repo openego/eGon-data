@@ -53,7 +53,7 @@ class HeatDemandImport(Dataset):
 
     *Dependencies*
       * :py:class:`ScenarioParameters <egon.data.datasets.scenario_parameters.ScenarioParameters>`
-      * :py:class:`VG250 <egon.data.datasets.vg250.VG250>`
+      * :py:class:`Vg250 <egon.data.datasets.vg250.Vg250>`
       * :py:class:`ZensusVg250 <egon.data.datasets.zensus_vg250.ZensusVg250>`
 
     *Resulting tables*
