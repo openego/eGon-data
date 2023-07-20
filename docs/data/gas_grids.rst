@@ -1,4 +1,4 @@
-The gas grid data stems from the SciGRID_gas project and covers the European Gas
+The gas grid data stems from the SciGRID_gas project (https://www.gas.scigrid.de/) which covers the European Gas
 Transmission Grid. All data generated in the SciGRID_gas project is licenced under 
 *Creative Commons Attribution 4.0 International Public License*.
 The specific dataset version is IGGIELGN and can be downloaded at https://zenodo.org/record/4767098.
