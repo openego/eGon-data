@@ -113,7 +113,6 @@ def create_table():
 
 
 def nuts_mapping():
-
     nuts_mapping = {
         "BW": "DE1",
         "NW": "DEA",
@@ -204,7 +203,6 @@ def insert_capacities_per_federal_state_nep():
     # df_windoff_fs
 
     for state in index_list:
-
         df.at["Wind offshore", state] = (
             df_windoff_fs.at[state, "C 2035"] / 1000
         )
@@ -249,7 +247,6 @@ def insert_capacities_per_federal_state_nep():
     ]
 
     for bl in map_nuts.index:
-
         data = pd.DataFrame(df[bl])
 
         # if distribution to federal states is not provided,
