@@ -17,10 +17,43 @@ from egon.data.datasets.scenario_parameters import get_sector_parameters
 
 
 class ElectricalNeighbours(Dataset):
+    """
+    Add lines, loads, generation and storage for electrical neighbours
+
+    This dataset creates data for modelling the considered foreign countries and writes
+    that data into the database tables that can be read by the eTraGo tool.
+    Neighbouring countries are modelled in a lower spatial resolution, in general one node per
+    country is considered.
+    Defined load timeseries as well as generatrion and storage capacities are connected to these nodes.
+    The nodes are connected by AC and DC transmission lines with the German grid and other neighbouring countries
+    considering the grid topology from ENTSO-E.
+
+
+    *Dependencies*
+      * :py:class:`TYNDP <egon.data.datasets.tyndp.TYNDP>`
+      * :py:class:`VG250 <egon.data.datasets.pypsaeursec.PypsaEurSec>`
+
+
+    *Resulting tables*
+      * :py:class:`grid.egon_etrago_bus <egon.data.datasets.etrago_setup.EgonPfHvBus>` is extended
+      * :py:class:`grid.egon_etrago_link <egon.data.datasets.etrago_setup.EgonPfHvLink>` is extended
+      * :py:class:`grid.egon_etrago_load <egon.data.datasets.etrago_setup.EgonPfHvLoad>` is extended
+      * :py:class:`grid.egon_etrago_load_timeseries <egon.data.datasets.etrago_setup.EgonPfHvLoadTimeseries>` is extended
+      * :py:class:`grid.egon_etrago_storage <egon.data.datasets.etrago_setup.EgonPfHvStorageUnit>` is extended
+      * :py:class:`grid.egon_etrago_generator <egon.data.datasets.etrago_setup.EgonPfHvGenerator>` is extended
+      * :py:class:`grid.egon_etrago_generator_timeseries <egon.data.datasets.etrago_setup.EgonPfHvGeneratorTimeseries>` is extended
+
+    """
+
+    #:
+    name: str = "ElectricalNeighbours"
+    #:
+    version: str = "0.0.7"
+
     def __init__(self, dependencies):
         super().__init__(
-            name="ElectricalNeighbours",
-            version="0.0.7",
+            name=self.name,
+            version=self.version,
             dependencies=dependencies,
             tasks=(grid, {tyndp_generation, tyndp_demand}),
         )
