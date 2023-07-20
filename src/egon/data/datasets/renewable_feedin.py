@@ -29,7 +29,7 @@ class RenewableFeedin(Dataset):
 
     *Dependencies*
       * :py:class:`WeatherData <egon.data.datasets.era5.WeatherData>`
-      * :py:class:`VG250 <egon.data.datasets.vg250.VG250>`
+      * :py:class:`Vg250 <egon.data.datasets.vg250.Vg250>`
       * :py:class:`ZensusVg250 <egon.data.datasets.zensus_vg250.ZensusVg250>`
 
     *Resulting tables*
