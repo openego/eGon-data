@@ -30,7 +30,7 @@ class ElectricalNeighbours(Dataset):
 
 
     *Dependencies*
-      * :py:class:`TYNDP <egon.data.datasets.tyndp.TYNDP>`
+      * :py:class:`Tyndp <egon.data.datasets.tyndp.Tyndp>`
       * :py:class:`PypsaEurSec <egon.data.datasets.pypsaeursec.PypsaEurSec>`
 
 
