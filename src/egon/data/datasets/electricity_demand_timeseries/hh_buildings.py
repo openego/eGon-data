@@ -150,6 +150,11 @@ class HouseholdElectricityProfilesOfBuildings(Base):
 
 
 class OsmBuildingsSynthetic(Base):
+    """
+    Lists generated synthetic building with id, zensus_population_id and
+    building type. This table is created within
+    :func:`hh_buildings.map_houseprofiles_to_buildings()`
+    """
     __tablename__ = "osm_buildings_synthetic"
     __table_args__ = {"schema": "openstreetmap"}
 
@@ -163,6 +168,11 @@ class OsmBuildingsSynthetic(Base):
 
 
 class BuildingElectricityPeakLoads(Base):
+    """
+    Mapping of electricity demand time series and buildings including cell_id,
+    building area and peak load. This table is created within
+    :func:`hh_buildings.get_building_peak_loads()`
+    """
     __tablename__ = "egon_building_electricity_peak_loads"
     __table_args__ = {"schema": "demand"}
 
