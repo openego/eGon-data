@@ -194,6 +194,16 @@ class EgonEtragoElectricityHouseholds(Base):
 
 
 class HouseholdDemands(Dataset):
+    """
+    todo: description short
+
+    todo: description long
+
+    *Dependencies*
+      * :py:class:` <>`
+
+    """
+
     def __init__(self, dependencies):
         mv_hh_electricity_load_2035 = PythonOperator(
             task_id="MV-hh-electricity-load-2035",

@@ -125,18 +125,18 @@ class CtsDemandBuildings(Dataset):
 
 
     *Dependencies*
-      * :py.class:`OsmBuildingsStreets <egon.data.datasets.osm_buildings_streets.OsmBuildingsStreets>`
-      * :py.class:`CtsElectricityDemand <egon.data.datasets.electricity_demand.CtsElectricityDemand>`
-      * :py.class:`hh_buildings <egon.data.datasets.electricity_demand_timeseries.hh_buildings>`
-      * :py.class:`HeatTimeSeries <egon.data.datasets.heat_demand_timeseries.HeatTimeSeries>` (more specifically the :func:`export_etrago_cts_heat_profiles <egon.data.datasets.heat_demand_timeseries.export_etrago_cts_heat_profiles>` task)
+      * :py:class:`OsmBuildingsStreets <egon.data.datasets.osm_buildings_streets.OsmBuildingsStreets>`
+      * :py:class:`CtsElectricityDemand <egon.data.datasets.electricity_demand.CtsElectricityDemand>`
+      * :py:class:`hh_buildings <egon.data.datasets.electricity_demand_timeseries.hh_buildings>`
+      * :py:class:`HeatTimeSeries <egon.data.datasets.heat_demand_timeseries.HeatTimeSeries>` (more specifically the :func:`export_etrago_cts_heat_profiles <egon.data.datasets.heat_demand_timeseries.export_etrago_cts_heat_profiles>` task)
 
     *Resulting tables*
-      * :py.class:`openstreetmap.osm_buildings_synthetic <egon.data.datasets.electricity_demand_timeseries.hh_buildings.OsmBuildingsSynthetic>` is extended
-      * :py.class:`openstreetmap.egon_cts_buildings <egon.data.datasets.electricity_demand_timeseries.cts_buildings.CtsBuildings> is created
-      * :py.class:`demand.egon_cts_electricity_demand_building_share <egon.data.datasets.electricity_demand_timeseries.cts_buildings.EgonCtsElectricityDemandBuildingShare>` is created
-      * :py.class:`demand.egon_cts_heat_demand_building_share <egon.data.datasets.electricity_demand_timeseries.cts_buildings.EgonCtsHeatDemandBuildingShare>` is created
-      * :py.class:`demand.egon_building_electricity_peak_loads <egon.data.datasets.electricity_demand_timeseries.hh_buildings.BuildingElectricityPeakLoads>` is extended
-      * :py.class:`boundaries.egon_map_zensus_mvgd_buildings <egon.data.datasets.electricity_demand_timeseries.mapping.EgonMapZensusMvgdBuildings>` is extended.
+      * :py:class:`openstreetmap.osm_buildings_synthetic <egon.data.datasets.electricity_demand_timeseries.hh_buildings.OsmBuildingsSynthetic>` is extended
+      * :py:class:`openstreetmap.egon_cts_buildings <egon.data.datasets.electricity_demand_timeseries.cts_buildings.CtsBuildings> is created
+      * :py:class:`demand.egon_cts_electricity_demand_building_share <egon.data.datasets.electricity_demand_timeseries.cts_buildings.EgonCtsElectricityDemandBuildingShare>` is created
+      * :py:class:`demand.egon_cts_heat_demand_building_share <egon.data.datasets.electricity_demand_timeseries.cts_buildings.EgonCtsHeatDemandBuildingShare>` is created
+      * :py:class:`demand.egon_building_electricity_peak_loads <egon.data.datasets.electricity_demand_timeseries.hh_buildings.BuildingElectricityPeakLoads>` is extended
+      * :py:class:`boundaries.egon_map_zensus_mvgd_buildings <egon.data.datasets.electricity_demand_timeseries.mapping.EgonMapZensusMvgdBuildings>` is extended.
 
 
     **The following datasets from the database are mainly used for creation:**
