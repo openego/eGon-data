@@ -1,8 +1,8 @@
 """
 CTS electricity and heat demand time series for scenarios in 2035 and 2050
-assigned to OSM-buildings.
+assigned to OSM-buildings are generated.
 
-Disaggregation of cts heat & electricity demand time series from MV Substation
+Disaggregation of CTS heat & electricity demand time series from MV substation
 to census cells via annual demand and then to OSM buildings via
 amenity tags or randomly if no sufficient OSM-data is available in the
 respective census cell. If no OSM-buildings or synthetic residential buildings
@@ -57,9 +57,11 @@ saio.register_schema("boundaries", engine=engine)
 
 class EgonCtsElectricityDemandBuildingShare(Base):
     """
-    Table including the mv substation electricity profile share of all selected
-    cts buildings for scenario eGon2035 and eGon100RE. This table is created
-    within :func:`cts_electricity()`
+    Class definition of table demand.egon_cts_electricity_demand_building_share.
+
+    Table including the MV substation electricity profile share of all selected
+    CTS buildings for scenario eGon2035 and eGon100RE. This table is created
+    within :func:`cts_electricity()`.
     """
     __tablename__ = "egon_cts_electricity_demand_building_share"
     __table_args__ = {"schema": "demand"}
@@ -72,9 +74,11 @@ class EgonCtsElectricityDemandBuildingShare(Base):
 
 class EgonCtsHeatDemandBuildingShare(Base):
     """
-    Table including the mv substation heat profile share of all selected
-    cts buildings for scenario eGon2035 and eGon100RE. This table is created
-    within :func:`cts_heat()`
+    Class definition of table demand.egon_cts_heat_demand_building_share.
+
+    Table including the MV substation heat profile share of all selected
+    CTS buildings for scenario eGon2035 and eGon100RE. This table is created
+    within :func:`cts_heat()`.
     """
     __tablename__ = "egon_cts_heat_demand_building_share"
     __table_args__ = {"schema": "demand"}
@@ -87,9 +91,11 @@ class EgonCtsHeatDemandBuildingShare(Base):
 
 class CtsBuildings(Base):
     """
-    Table of all selected cts buildings with id, census cell id, geometry and
+    Class definition of table openstreetmap.egon_cts_buildings.
+
+    Table of all selected CTS buildings with id, census cell id, geometry and
     amenity count in building. This table is created within
-    :func:`cts_buildings()`
+    :func:`cts_buildings()`.
     """
     __tablename__ = "egon_cts_buildings"
     __table_args__ = {"schema": "openstreetmap"}
@@ -103,6 +109,10 @@ class CtsBuildings(Base):
 
 
 class BuildingHeatPeakLoads(Base):
+    """
+    Class definition of table demand.egon_building_heat_peak_loads.
+
+    """
     __tablename__ = "egon_building_heat_peak_loads"
     __table_args__ = {"schema": "demand"}
 
@@ -114,10 +124,10 @@ class BuildingHeatPeakLoads(Base):
 
 class CtsDemandBuildings(Dataset):
     """
-    CTS electricity and heat demand time series for scenarios in 2035 and 2050
+    Generates CTS electricity and heat demand time series for scenarios in 2035 and 2050
     assigned to OSM-buildings.
 
-    Disaggregation of cts heat & electricity demand time series from MV Substation
+    Disaggregation of CTS heat & electricity demand time series from MV Substation
     to census cells via annual demand and then to OSM buildings via
     amenity tags or randomly if no sufficient OSM-data is available in the
     respective census cell. If no OSM-buildings or synthetic residential buildings
@@ -239,23 +249,22 @@ class CtsDemandBuildings(Dataset):
     **Drawbacks and limitations of the data**
 
     * Shape of profiles for each building is similar within a MVGD and only scaled
-    with a different factor.
+      with a different factor.
     * MVGDs are generated dynamically. In case of buildings with amenities
-    exceeding MVGD borders, amenities which are assigned to a different MVGD than
-    the assigned building centroid, the amenities are dropped for sake of
-    simplicity. One building should not have a connection to two MVGDs.
+      exceeding MVGD borders, amenities which are assigned to a different MVGD than
+      the assigned building centroid, the amenities are dropped for sake of
+      simplicity. One building should not have a connection to two MVGDs.
     * The completeness of the OSM data depends on community contribution and is
-    crucial to the quality of our results.
+      crucial to the quality of our results.
     * Randomly selected buildings and generated amenities may inadequately reflect
-    reality, but are chosen for sake of simplicity as a measure to fill data gaps.
+      reality, but are chosen for sake of simplicity as a measure to fill data gaps.
     * Since this dataset is a cascade after generation of synthetic residential
-    buildings also check drawbacks and limitations in hh_buildings.py.
+      buildings also check drawbacks and limitations in hh_buildings.py.
     * Synthetic buildings may be placed within osm buildings which exceed multiple
-    census cells. This is currently accepted but may be solved in  #953
+      census cells. This is currently accepted but may be solved in #953.
     * Scattered high peak loads occur and might lead to single MV grid connections
-    in ding0. In some cases this might not be viable. Postprocessing is needed and
-    may be solved in #954.
-
+      in ding0. In some cases this might not be viable. Postprocessing is needed and
+      may be solved in #954.
 
     """
 

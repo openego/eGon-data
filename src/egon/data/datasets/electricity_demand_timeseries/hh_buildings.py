@@ -153,7 +153,7 @@ class OsmBuildingsSynthetic(Base):
     """
     Lists generated synthetic building with id, zensus_population_id and
     building type. This table is created within
-    :func:`hh_buildings.map_houseprofiles_to_buildings()`
+    :py:func:`hh_buildings.map_houseprofiles_to_buildings()`
     """
     __tablename__ = "osm_buildings_synthetic"
     __table_args__ = {"schema": "openstreetmap"}
