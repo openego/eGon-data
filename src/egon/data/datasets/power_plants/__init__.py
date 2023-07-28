@@ -913,7 +913,8 @@ def power_plants_status_quo(scn_name="status2019"):
         DELETE FROM {cfg['target']['schema']}.{cfg['target']['table']}
         WHERE carrier IN ('wind_onshore', 'solar', 'biomass',
                           'run_of_river', 'reservoir', 'solar_rooftop',
-                          'wind_offshore', 'nuclear', 'coal', 'lignite', 'oil')
+                          'wind_offshore', 'nuclear', 'coal', 'lignite', 'oil',
+                          'gas')
         AND scenario = '{scn_name}'
         """
     )
@@ -1003,7 +1004,8 @@ def power_plants_status_quo(scn_name="status2019"):
 
     conv = conv[
         conv.Energietraeger.isin(
-            ["Braunkohle", "Mineralölprodukte", "Steinkohle", "Kernenergie"]
+            ["Braunkohle", "Mineralölprodukte", "Steinkohle", "Kernenergie",
+             "Erdgas"]
         )
     ]
     
@@ -1023,12 +1025,14 @@ def power_plants_status_quo(scn_name="status2019"):
     # rename carriers
     conv.loc[conv.Energietraeger == "Braunkohle", "Energietraeger"] = "lignite"
     conv.loc[conv.Energietraeger == "Steinkohle", "Energietraeger"] = "coal"
+    conv.loc[conv.Energietraeger == "Erdgas", "Energietraeger"] = "gas"
     conv.loc[
         conv.Energietraeger == "Mineralölprodukte", "Energietraeger"
     ] = "oil"
     conv.loc[
         conv.Energietraeger == "Kernenergie", "Energietraeger"
     ] = "nuclear"
+    
 
     # rename columns
     conv.rename(
@@ -1056,7 +1060,7 @@ def power_plants_status_quo(scn_name="status2019"):
     conv["voltage_level"] = assign_voltage_level_by_capacity(
         conv.rename(columns={"capacity": "Nettonennleistung"})
     )
-
+    
     for i, row in conv.iterrows():
         entry = EgonPowerPlants(
             sources={"el_capacity": "MaStR"},

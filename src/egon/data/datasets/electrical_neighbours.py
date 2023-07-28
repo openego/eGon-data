@@ -1399,7 +1399,7 @@ def map_carriers_entsoe():
         "Biomass": "biomass",
         "Fossil Brown coal/Lignite": "lignite",
         "Fossil Coal-derived gas": "coal",
-        "Fossil Gas": "OCGT",
+        "Fossil Gas": "gas",
         "Fossil Hard coal": "coal",
         "Fossil Oil": "oil",
         "Fossil Oil shale": "oil",
