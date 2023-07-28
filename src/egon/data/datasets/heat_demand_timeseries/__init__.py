@@ -320,9 +320,9 @@ def create_district_heating_profile_python_like(scenario="eGon2035"):
                 WHERE scenario = '{scenario}'
                 AND area_id = '{area}'
             ) b ON a.zensus_population_id = b.zensus_population_id        ,
-    
+
             UNNEST (selected_idp_profiles) WITH ORDINALITY as selected_idp
-    
+
             """
         )
 
@@ -364,7 +364,7 @@ def create_district_heating_profile_python_like(scenario="eGon2035"):
 
             assert (
                 abs(diff) < 0.03
-            ), f"""Deviation of residential heat demand time 
+            ), f"""Deviation of residential heat demand time
             series for district heating grid {str(area)} is {diff}"""
 
             hh = np.concatenate(
@@ -740,7 +740,7 @@ def create_individual_heating_profile_python_like(scenario="eGon2035"):
 
         assert (
             abs(diff) < 0.03
-        ), f"""Deviation of residential heat demand time 
+        ), f"""Deviation of residential heat demand time
         series for mv grid {str(grid)} is {diff}"""
 
         if not (slice_df[hour].empty or cts.empty):
@@ -1066,18 +1066,18 @@ class HeatTimeSeries(Dataset):
     """
     Chooses heat demand profiles for each residential and CTS building
 
-    This dataset creates heat demand profiles in an hourly resoultion.    
-    Time series for CTS buildings are created using the SLP-gas method implemented 
+    This dataset creates heat demand profiles in an hourly resoultion.
+    Time series for CTS buildings are created using the SLP-gas method implemented
     in the demandregio disagregator with the function :py:func:`export_etrago_cts_heat_profiles`
-    and stored in the database. 
-    Time series for residential buildings are created based on a variety of synthetical created 
-    individual demand profiles that are part of :py:class:`DataBundle <egon.data.datasets.data_bundle.DataBundle>`. 
-    This method is desribed within the functions and in this publication: 
+    and stored in the database.
+    Time series for residential buildings are created based on a variety of synthetical created
+    individual demand profiles that are part of :py:class:`DataBundle <egon.data.datasets.data_bundle.DataBundle>`.
+    This method is desribed within the functions and in this publication:
         C. Büttner, J. Amme, J. Endres, A. Malla, B. Schachler, I. Cußmann,
         Open modeling of electricity and heat demand curves for all
         residential buildings in Germany, Energy Informatics 5 (1) (2022) 21.
         doi:10.1186/s42162-022-00201-y.
-    
+
 
     *Dependencies*
       * :py:class:`DataBundle <egon.data.datasets.data_bundle.DataBundle>`
@@ -1094,8 +1094,8 @@ class HeatTimeSeries(Dataset):
       * :py:class:`demand.egon_timeseries_district_heating <egon.data.datasets.heat_demand_timeseries.EgonTimeseriesDistrictHeating>` is created and filled
       * :py:class:`demand.egon_etrago_heat_cts <egon.data.datasets.heat_demand_timeseries.EgonEtragoHeatCts>` is created and filled
       * :py:class:`demand.egon_heat_timeseries_selected_profiles <egon.data.datasets.heat_demand_timeseries.idp_pool.EgonHeatTimeseries>` is created and filled
-      * :py:class:`demand.egon_daily_heat_demand_per_climate_zone <egon.data.datasets.heat_demand_timeseries.daily.EgonDailyHeatDemandPerClimateZone>` 
-      is created and filled
+      * :py:class:`demand.egon_daily_heat_demand_per_climate_zone <egon.data.datasets.heat_demand_timeseries.daily.EgonDailyHeatDemandPerClimateZone>`
+        is created and filled
       * :py:class:`boundaries.egon_map_zensus_climate_zones <egon.data.datasets.heat_demand_timeseries.daily.EgonMapZensusClimateZones>` is created and filled
 
     """
