@@ -44,8 +44,8 @@ class HeatDemandImport(Dataset):
     Insert the annual heat demand per census cell for each scenario
 
     This dataset downloads the heat demand raster data for private households
-    and CTS from Peta 5.0.1 (https://s-eenergies-open-data-euf.hub.arcgis.com/maps/
-    d7d18b63250240a49eb81db972aa573e/about) and stores it into files in the working directory.
+    and CTS from Peta 5.0.1 (https://s-eenergies-open-data-euf.hub.arcgis.com/maps/d7d18b63250240a49eb81db972aa573e/about)
+    and stores it into files in the working directory.
     The data from Peta 5.0.1 represents the status quo of the year 2015.
     To model future heat demands, the data is scaled to meet target values
     from external sources. These target values are defined for each scenario
@@ -61,7 +61,7 @@ class HeatDemandImport(Dataset):
 
     """
 
-    
+
     #:
     name: str = "heat-demands"
     #:
