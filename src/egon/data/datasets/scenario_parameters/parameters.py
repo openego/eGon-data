@@ -873,6 +873,10 @@ def gas(scenario):
             "biogas": global_settings(scenario)["fuel_costs"]["gas"],
             "chp_gas": read_costs(costs, "central gas CHP", "VOM"),
         }
+        # Insert effciencies in p.u.
+        parameters["efficiency"] = {
+            "OCGT": read_costs(costs, "OCGT", "efficiency"),
+        }
 
     else:
         print(f"Scenario name {scenario} is not valid.")
