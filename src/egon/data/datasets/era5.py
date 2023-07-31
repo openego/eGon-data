@@ -20,10 +20,34 @@ Base = declarative_base()
 
 
 class WeatherData(Dataset):
+    """
+    Download weather data from ERA5 using atlite
+
+    This dataset downloads weather data for the selected representative weather year.
+    This is done by applying functions from the atlite-tool.The downloaded wetaher data is stored into
+    files within the subfolder 'cutouts'.
+
+
+    *Dependencies*
+      * :py:class:`ScenarioParameters <egon.data.datasets.scenario_parameters.ScenarioParameters>`
+      * :py:class:`Vg250 <egon.data.datasets.vg250.Vg250>`
+      * :py:func:`Setup <egon.data.datasets.database.setup>`
+
+    *Resulting tables*
+      * :py:class:`supply.egon_era5_weather_cells <egon.data.datasets.era5.EgonEra5Cells>` is created and filled
+      * :py:class:`supply.egon_era5_renewable_feedin <egon.data.datasets.era5.EgonRenewableFeedIn>` is created
+
+    """
+
+    #:
+    name: str = "Era5"
+    #:
+    version: str = "0.0.2"
+
     def __init__(self, dependencies):
         super().__init__(
-            name="Era5",
-            version="0.0.2",
+            name=self.name,
+            version=self.version,
             dependencies=dependencies,
             tasks=({create_tables, download_era5}, insert_weather_cells),
         )
@@ -47,7 +71,6 @@ class EgonRenewableFeedIn(Base):
 
 
 def create_tables():
-
     db.execute_sql("CREATE SCHEMA IF NOT EXISTS supply;")
     engine = db.engine()
     db.execute_sql(
@@ -134,25 +157,21 @@ def download_era5():
     )
 
     if not os.path.exists(directory):
-
         os.mkdir(directory)
 
     cutout = import_cutout()
 
     if not cutout.prepared:
-
         cutout.prepare()
 
     cutout = import_cutout("Germany")
 
     if not cutout.prepared:
-
         cutout.prepare()
 
     cutout = import_cutout("Germany-offshore")
 
     if not cutout.prepared:
-
         cutout.prepare()
 
 
