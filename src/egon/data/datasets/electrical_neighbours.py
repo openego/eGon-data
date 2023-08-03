@@ -1399,18 +1399,18 @@ def map_carriers_entsoe():
         "Biomass": "biomass",
         "Fossil Brown coal/Lignite": "lignite",
         "Fossil Coal-derived gas": "coal",
-        "Fossil Gas": "gas",
+        "Fossil Gas": "OCGT",
         "Fossil Hard coal": "coal",
         "Fossil Oil": "oil",
         "Fossil Oil shale": "oil",
-        "Fossil Peat": "others",
+        "Fossil Peat": "other_non_renewable",
         "Geothermal": "geo_thermal",
         "Hydro Pumped Storage": "Hydro Pumped Storage",
         "Hydro Run-of-river and poundage": "run_of_river",
         "Hydro Water Reservoir": "reservoir",
         "Marine": "Other RES",
         "Nuclear": "nuclear",
-        "Other": "others",
+        "Other": "other_non_renewable",
         "Other renewable": "Other RES",
         "Solar": "solar",
         "Waste": "Other RES",
@@ -1494,11 +1494,12 @@ def insert_generators_sq(gen_sq=None, scn_name="status2019"):
         AND scn_name = '{scn_name}'
         """
     )
-
     entsoe_to_bus = entsoe_to_bus_etrago()
-
     carrier_entsoe = map_carriers_entsoe()
     gen_sq = gen_sq.groupby(axis=1, by=carrier_entsoe).sum()
+
+    # Filter generators modeled as storage and geothermal
+    gen_sq = gen_sq.loc[:,~gen_sq.columns.isin(["Hydro Pumped Storage", "reservoir", "geo_thermal"])]
 
     list_gen_sq = pd.DataFrame(
         dtype=int, columns=["carrier", "country", "capacity"]
@@ -1518,6 +1519,14 @@ def insert_generators_sq(gen_sq=None, scn_name="status2019"):
 
     # Add marginal costs
     list_gen_sq = add_marginal_costs(list_gen_sq)
+
+    # assign marginal cost for OCGTs
+    scn_params_gas = get_sector_parameters("gas", scn_name)
+    efficiency_ocgt = scn_params_gas["efficiency"]["OCGT"]
+    list_gen_sq.loc[list_gen_sq.carrier=="OCGT","marginal_cost"] = (
+        scn_params_gas["marginal_cost"]["OCGT"]
+        / efficiency_ocgt
+    )
 
     # Find foreign bus to assign the generator
     list_gen_sq["bus"] = list_gen_sq.country.map(entsoe_to_bus)
