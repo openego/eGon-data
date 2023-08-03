@@ -15,8 +15,6 @@ from egon.data import config, db
 from egon.data.datasets.electrical_neighbours import (
     get_foreign_bus_id,
     get_map_buses,
-    entsoe_to_bus_etrago,
-    map_carriers_entsoe,
 )
 from egon.data.datasets.gas_neighbours.gas_abroad import (
     insert_gas_grid_capacities,
@@ -41,7 +39,7 @@ countries = [
 ]
 
 
-def get_foreign_gas_bus_id(carrier="CH4", scn_name="eGon2035"):
+def get_foreign_gas_bus_id(carrier="CH4"):
     """Calculate the etrago bus id based on the geometry
 
     Map node_ids from TYNDP and etragos bus_id
@@ -58,6 +56,7 @@ def get_foreign_gas_bus_id(carrier="CH4", scn_name="eGon2035"):
 
     """
     sources = config.datasets()["gas_neighbours"]["sources"]
+    scn_name = "eGon2035"
 
     bus_id = db.select_geodataframe(
         f"""
@@ -1491,84 +1490,13 @@ def calculate_ocgt_capacities():
 
     # Choose capacities for considered countries
     df_ocgt = df_ocgt[df_ocgt.index.str[:2].isin(countries)]
+
     # Attribute bus0 and bus1
-    df_ocgt["bus0"] = get_foreign_gas_bus_id(scn_name="status2019")[
-        df_ocgt.index
-    ]
-    df_ocgt["bus1"] = get_foreign_bus_id(scenario="status2019")[df_ocgt.index]
+    df_ocgt["bus0"] = get_foreign_gas_bus_id()[df_ocgt.index]
+    df_ocgt["bus1"] = get_foreign_bus_id()[df_ocgt.index]
     df_ocgt = df_ocgt.groupby(by=["bus0", "bus1"], as_index=False).sum()
 
     return df_ocgt
-
-
-def calculate_ocgt_capacities_scenario2019(scn_name="status2019"):
-    """
-    Insert OCGT generators for foreign countries based on ENTSO-E data
-
-    Parameters
-    ----------
-    scn_name : str
-        The default is "status2019".
-
-    Returns
-    -------
-    None.
-
-    """
-    scn_name = "status2019"
-    con = db.engine()
-
-    carrier_entsoe = map_carriers_entsoe()
-    entsoe_to_bus = entsoe_to_bus_etrago()
-    gen_sq = pd.read_csv(
-        "data_bundle_powerd_data/entsoe/gen_entsoe.csv", index_col="Index"
-    )
-    gen_sq = gen_sq.groupby(axis=1, by=carrier_entsoe).sum()
-
-    ocgt = (
-        gen_sq["gas"]
-        .reset_index()
-        .rename(columns={"Index": "country", "gas": "p_nom"})
-    )
-
-    # delete OCGT with p_nom = 0
-    ocgt = ocgt[ocgt["p_nom"] > 0]
-
-    # Find foreign bus to assign the generator
-    ocgt["bus1"] = ocgt.country.map(entsoe_to_bus)
-
-    gas_foreign = gpd.read_postgis(
-        f"""SELECT * FROM grid.egon_etrago_bus
-        WHERE scn_name = '{scn_name}'
-        AND country <> 'DE'
-        AND carrier = 'CH4'
-        """,
-        con=con,
-        geom_col="geom",
-        index_col="bus_id",
-    )
-
-    ac_foreign = gpd.read_postgis(
-        f"""SELECT * FROM grid.egon_etrago_bus
-        WHERE scn_name = '{scn_name}'
-        AND country <> 'DE'
-        AND carrier = 'AC'
-        """,
-        con=con,
-        geom_col="geom",
-        index_col="bus_id",
-    )
-
-    ocgt["ac_geom"] = ocgt.apply(
-        lambda x: ac_foreign.at[x.bus1, "geom"], axis=1
-    )
-
-    for index, df in ocgt.iterrows():
-        distance = gas_foreign.distance(df["ac_geom"])
-        ocgt.loc[index, "bus0"] = str(distance.idxmin())
-
-    return ocgt[["bus0", "bus1", "p_nom"]]
-
 
 def insert_ocgt_abroad():
     """Insert gas turbine capicities abroad for eGon2035 in the database
@@ -1581,61 +1509,55 @@ def insert_ocgt_abroad():
         Gas turbine capacities per foreign node
 
     """
-    scenarios = config.settings()["egon-data"]["--scenarios"]
+    scn_name = "eGon2035"
     carrier = "OCGT"
 
-    for scn_name in scenarios:
-        # Connect to local database
-        engine = db.engine()
-        scn_name = "status2019"
-        if scn_name == "status2019":
-            df_ocgt = calculate_ocgt_capacities_scenario2019()
-        else:
-            df_ocgt = calculate_ocgt_capacities()
-        df_ocgt["p_nom_extendable"] = False
-        df_ocgt["carrier"] = carrier
-        df_ocgt["scn_name"] = scn_name
+    # Connect to local database
+    engine = db.engine()
 
-        buses = tuple(
-            db.select_dataframe(
-                f"""SELECT bus_id FROM grid.egon_etrago_bus
-                WHERE scn_name = '{scn_name}' AND country != 'DE';
-            """
-            )["bus_id"]
-        )
+    df_ocgt = calculate_ocgt_capacities()
 
-        # Delete old entries
-        db.execute_sql(
-            f"""
-            DELETE FROM grid.egon_etrago_link WHERE "carrier" = '{carrier}'
-            AND scn_name = '{scn_name}'
-            AND bus0 IN {buses} AND bus1 IN {buses};
-            """
-        )
+    df_ocgt["p_nom_extendable"] = False
+    df_ocgt["carrier"] = carrier
+    df_ocgt["scn_name"] = scn_name
 
-        # read carrier information from scnario parameter data
-        scn_params = get_sector_parameters("gas", scn_name)
-        df_ocgt["efficiency"] = scn_params["efficiency"][carrier]
-        df_ocgt["marginal_cost"] = (
-            scn_params["marginal_cost"][carrier]
-            / scn_params["efficiency"][carrier]
-        )
+    buses = tuple(
+        db.select_dataframe(
+            f"""SELECT bus_id FROM grid.egon_etrago_bus
+            WHERE scn_name = '{scn_name}' AND country != 'DE';
+        """
+        )["bus_id"]
+    )
 
-        # Adjust p_nom
-        if scn_name != "status2019":
-            df_ocgt["p_nom"] = (
-                df_ocgt["p_nom"] / scn_params["efficiency"][carrier]
-            )
+    # Delete old entries
+    db.execute_sql(
+        f"""
+        DELETE FROM grid.egon_etrago_link WHERE "carrier" = '{carrier}'
+        AND scn_name = '{scn_name}'
+        AND bus0 IN {buses} AND bus1 IN {buses};
+        """
+    )
 
-        # Select next id value
-        new_id = db.next_etrago_id("link")
-        df_ocgt["link_id"] = range(new_id, new_id + len(df_ocgt))
+    # read carrier information from scnario parameter data
+    scn_params = get_sector_parameters("gas", scn_name)
+    df_ocgt["efficiency"] = scn_params["efficiency"][carrier]
+    df_ocgt["marginal_cost"] = (
+        scn_params["marginal_cost"][carrier]
+        / scn_params["efficiency"][carrier]
+    )
 
-        # Insert data to db
-        df_ocgt.to_sql(
-            "egon_etrago_link",
-            engine,
-            schema="grid",
-            index=False,
-            if_exists="append",
-        )
+    # Adjust p_nom
+    df_ocgt["p_nom"] = df_ocgt["p_nom"] / scn_params["efficiency"][carrier]
+
+    # Select next id value
+    new_id = db.next_etrago_id("link")
+    df_ocgt["link_id"] = range(new_id, new_id + len(df_ocgt))
+
+    # Insert data to db
+    df_ocgt.to_sql(
+        "egon_etrago_link",
+        engine,
+        schema="grid",
+        index=False,
+        if_exists="append",
+    )

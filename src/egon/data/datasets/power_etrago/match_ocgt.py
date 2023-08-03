@@ -17,7 +17,7 @@ def insert_open_cycle_gas_turbines():
         insert_open_cycle_gas_turbines_per_scenario(scenario)
 
 
-def insert_open_cycle_gas_turbines_per_scenario(scn_name="eGon2035"):
+def insert_open_cycle_gas_turbines_per_scenario(scn_name):
     """Insert gas turbine links in egon_etrago_link table.
 
     Parameters
