@@ -3,6 +3,19 @@ Information about our electricity grids and how they were created
 High and extra-high voltage grids 
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
+The model of the German extra-high (eHV) and high voltage (HV) grid is based 
+on data retrieved from OpenStreetMap (status January 2021) [OSM]_ and additional 
+parameters for standard transmission lines from [Brakelmann2004]_. To gather all 
+required information, such as line topology, voltage level, substation locations, 
+and electrical parameters, to create a calculable power system model, the `osmTGmod 
+tool <https://github.com/openego/osmTGmod>`_was used. The corresponding dataset 
+:py:class:`Osmtgmod <egon.data.datasets..osmtgmod.Osmtgmod>` executes osmTGmod 
+and writes the resulting data to the database.
+
+The resulting grid model includes the voltage levels 380, 220 and 110 kV and
+all substations interconnecting these grid levels. For further information on the 
+generation of the grid topology please refer to [Mueller2018]_.
+
 MV grid districts
 ~~~~~~~~~~~~~~~~~
 Medium-voltage (MV) grid districts describe the area supplied by one MV grid.

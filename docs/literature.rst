@@ -2,6 +2,8 @@
 Literature
 **********
 
+.. [Brakelmann2004] H. Brakelmann, Netzverstärkungs-Trassen zur Übertragung von Windenergie: Freileitung oder Kabel? (2004). URL http://www.ets.uni-duisburg-essen.de/download/public/Freileitung_Kabel.pdf
+
 .. [Buettner2022] C. Büttner, J. Amme, J. Endres, A. Malla, B. Schachler, I. Cußmann, Open modeling of electricity and heat demand curves for all residential buildings in Germany, Energy Informatics 5 (1) (2022) 21. doi:10.1186/s42162-022-00201-y. URL https://doi.org/10.1186/s42162-022-00201-y
 
 .. [Census] S. B. (Destatis), Datensatzbeschreibung ”Haushalte im 100 Meter-Gitter” (2018). URL https://www.zensus2011.de/SharedDocs/Downloads/DE/Pressemitteilung/DemografischeGrunddaten/Datensatzbeschreibung_Haushalt_100m_Gitter.html
@@ -14,9 +16,11 @@ Literature
 
 .. [Hotmaps] S. Pezzutto, S. Zambotti, S. Croce, P. Zambelli, G. Garegnani, C. Scaramuzzino, R. P. Pascuas, A. Zubaryeva, F. Haas, D. Exner, A. Mueller, M. Hartner, T. Fleiter, A.-L. Klingler, M. Kuehnbach, P. Manz, S. Marwitz, M. Rehfeldt, J. Steinbach, E. Popovski, Hotmaps project, d2.3 wp2 report – open data set for the eu28 (2018). URL www.hotmaps-project.eu
 
+.. [Mueller2018] U. Mueller, L. Wienholt, D. Kleinhans, I. Cussmann, W.-D. Bunke, G. Pleßmann, J. Wendiggensen 2018 J. Phys.: Conf. Ser. 977 012003, DOI 10.1088/1742-6596/977/1/012003
+
 .. [NEP2021] Übertragungsnetzbetreiber Deutschland (2021):  *Netzentwicklungsplan Strom 2035*, Version 2021, 1. Entwurf. 2021.
 
-.. [OSM] Geofabrik GmbH and OpenStreetMap-Mitwirkende, OpenStreetMap Data Extracts, Stand 01.01.2021 (2021). URL https://download.geofabrik.de/europe/germany-210101.osm.pbf
+.. [OSM] Geofabrik GmbH and OpenStreetMap-Contributors, OpenStreetMap Data Extracts, Stand 01.01.2021 (2021). URL https://download.geofabrik.de/europe/germany-210101.osm.pbf
 
 .. [Peta] Europa-Universität Flensburg, Halmstad University and Aalborg University, Pan-European Thermal Atlas - Residential heat demand (2021). URL https://s-eenergies-open-data-euf.hub.arcgis.com/maps/d7d18b63250240a49eb81db972aa573e/about
 
