@@ -627,19 +627,19 @@ def to_pypsa():
             WHERE a.line_id = result.line_id
             AND scn_name = {scenario_name};
 
-            -- set capital costs for eHV-lines 
+            -- set capital costs for eHV-lines
             UPDATE grid.egon_etrago_line
             SET capital_cost = {capital_cost['ac_ehv_overhead_line']} * length
             WHERE v_nom > 110
             AND scn_name = {scenario_name};
 
-            -- set capital costs for HV-lines 
+            -- set capital costs for HV-lines
             UPDATE grid.egon_etrago_line
             SET capital_cost = {capital_cost['ac_hv_overhead_line']} * length
             WHERE v_nom = 110
             AND scn_name = {scenario_name};
-            
-            -- set capital costs for transformers 
+
+            -- set capital costs for transformers
             UPDATE grid.egon_etrago_transformer a
             SET capital_cost = {capital_cost['transformer_380_220']}
             WHERE (a.bus0 IN (
@@ -687,20 +687,20 @@ def to_pypsa():
                 SELECT bus_id FROM grid.egon_etrago_bus
                 WHERE v_nom = 220))
             AND scn_name = {scenario_name};
-            
-            -- set lifetime for eHV-lines 
+
+            -- set lifetime for eHV-lines
             UPDATE grid.egon_etrago_line
-            SET lifetime = {lifetime['ac_ehv_overhead_line']} 
+            SET lifetime = {lifetime['ac_ehv_overhead_line']}
             WHERE v_nom > 110
             AND scn_name = {scenario_name};
 
-            -- set capital costs for HV-lines 
+            -- set capital costs for HV-lines
             UPDATE grid.egon_etrago_line
             SET lifetime = {lifetime['ac_hv_overhead_line']}
             WHERE v_nom = 110
             AND scn_name = {scenario_name};
-            
-            -- set capital costs for transformers 
+
+            -- set capital costs for transformers
             UPDATE grid.egon_etrago_transformer a
             SET lifetime = {lifetime['transformer_380_220']}
             WHERE (a.bus0 IN (
@@ -748,7 +748,7 @@ def to_pypsa():
                 SELECT bus_id FROM grid.egon_etrago_bus
                 WHERE v_nom = 220))
             AND scn_name = {scenario_name};
-            
+
             -- delete buses without connection to AC grid and generation or
             -- load assigned
 
@@ -772,10 +772,38 @@ def to_pypsa():
 
 
 class Osmtgmod(Dataset):
+    """
+    Run the tool osmtgmod to generate transmission grid topology
+
+    Executes the tool osmtgmod which create a electricity grid topology based
+    on OSM data for the voltage levels 110 - 380 kV. For further information
+    on osmtgmod please refer our `osmtgmod fork. <https://github.com/openego/osmTGmod>`_
+    Standard electrical line parameters are added to the grid topology and
+    resulting data on buses, lines and transformers are exported to the data
+    base.
+
+    *Dependencies*
+      * :py:class:`ScenarioParameters <egon.data.datasets.scenario_parameters.ScenarioParameters>`
+      * :py:class:`EtragoSetup <egon.data.datasets.etrago_setup.EtragoSetup>`
+      * :py:class:`SubstationExtraction <egon.data.datasets.substation.SubstationExtraction>`
+      * :py:class:`OpenStreetMap <egon.data.datasets.osm.OpenStreetMap>`
+
+    *Resulting tables*
+      * :py:class:`grid.egon_etrago_bus <egon.data.datasets.etrago_setup.EgonPfHvBus>` is extended
+      * :py:class:`grid.egon_etrago_line <egon.data.datasets.etrago_setup.EgonPfHvLine>` is extended
+      * :py:class:`grid.egon_etrago_transformer <egon.data.datasets.etrago_setup.EgonPfHvTransformer>` is extended
+
+    """
+
+    #:
+    name: str = "Osmtgmod"
+    #:
+    version: str = "0.0.5"
+
     def __init__(self, dependencies):
         super().__init__(
-            name="Osmtgmod",
-            version="0.0.5",
+            name=self.name,
+            version=self.version,
             dependencies=dependencies,
             tasks=(
                 import_osm_data,

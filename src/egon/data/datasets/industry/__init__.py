@@ -407,10 +407,43 @@ def industrial_demand_distr():
 
 
 class IndustrialDemandCurves(Dataset):
+    """
+    Distribute industrial electricity demands to industrial sites and OSM
+    landuse areas
+
+    Creates different tables to store industrial electricity demand curves on
+    different aggregation levels. In a first step industrial demands taken from
+    DemandRegio are distributed to industrial sites and OSM polygons which are
+    tagged as industrial areas. This method takes information on the different
+    industrial sectors into account and allocates the annual demand as well as
+    load curves accordingly.
+
+    *Dependencies*
+      * :py:class:`DemandRegio <egon.data.datasets.demandregio.DemandRegio>`
+      * :py:class:`MergeIndustrialSites <egon.data.datasets.industrial_sites.MergeIndustrialSites>`
+      * :py:class:`OsmLanduse <egon.data.datasets.loadarea.OsmLanduse>`
+      * :py:func:`define_mv_grid_districts <egon.data.datasets.mv_grid_districts.define_mv_grid_districts>`
+      * :py:class:`OpenStreetMap <egon.data.datasets.osm.OpenStreetMap>`
+
+    *Resulting tables*
+      * :py:class:`demand.egon_demandregio_osm_ind_electricity <egon.data.datasets.industry.EgonDemandRegioOsmIndElectricity>` is created and filled
+      * :py:class:`demand.egon_demandregio_sites_ind_electricity <egon.data.datasets.industry.EgonDemandRegioSitesIndElectricity>` is created and filled
+      * :py:class:`demand.egon_osm_ind_load_curves <egon.data.datasets.industry.DemandCurvesOsmIndustry>` is created and filled
+      * :py:class:`demand.egon_osm_ind_load_curves_individual <egon.data.datasets.industry.DemandCurvesOsmIndustryIndividual>` is created and filled
+      * :py:class:`demand.egon_sites_ind_load_curves <egon.data.datasets.industry.DemandCurvesSitesIndustry>` is created and filled
+      * :py:class:`demand.egon_sites_ind_load_curves_individual <egon.data.datasets.industry.DemandCurvesSitesIndustryIndividual>` is created and filled
+
+    """
+
+    #:
+    name: str = "Industrial_demand_curves"
+    #:
+    version: str = "0.0.5"
+
     def __init__(self, dependencies):
         super().__init__(
-            name="Industrial_demand_curves",
-            version="0.0.5",
+            name=self.name,
+            version=self.version,
             dependencies=dependencies,
             tasks=(
                 create_tables,

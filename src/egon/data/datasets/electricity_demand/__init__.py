@@ -25,20 +25,74 @@ engine = db.engine()
 
 
 class HouseholdElectricityDemand(Dataset):
+    """
+    Create table and store data on household electricity demands per census cell
+
+    Create a table to store the annual electricity demand for households on census cell level.
+    In a next step the annual electricity demand per cell is determined by
+    executing function :py:func:`get_annual_household_el_demand_cells`
+
+    *Dependencies*
+      * :py:class:`DemandRegio <egon.data.datasets.demandregio>`
+      * :py:class:`DataBundle <egon.data.datasets.data_bundle.DataBundle>`
+
+    *Resulting tables*
+      * :py:class:`demand.egon_demandregio_zensus_electricity <egon.data.datasets.electricity_demand.EgonDemandRegioZensusElectricity>` is created and filled
+
+    """
+
+    #:
+    name: str = "HouseholdElectricityDemand"
+    #:
+    version: str = "0.0.3"
+
     def __init__(self, dependencies):
         super().__init__(
-            name="HouseholdElectricityDemand",
-            version="0.0.3",
+            name=self.name,
+            version=self.version,
             dependencies=dependencies,
             tasks=(create_tables, get_annual_household_el_demand_cells),
         )
 
 
 class CtsElectricityDemand(Dataset):
+    """
+    Create table and store data on cts electricity demands per census cell
+
+    Creates a table to store data on electricity demands from the cts sector on
+    census cell level. For a spatial distribution of electricity demands data
+    from DemandRegio, which provides the data on NUT3-level, is used and
+    distributed to census cells according to heat demand data from Peta.
+    Annual demands are then aggregated per MV grid district and a corresponding
+    time series is created taking the shares of different cts branches and their
+    specific standard load profiles into account.
+
+
+    *Dependencies*
+      * :py:class:`MapZensusGridDistricts <egon.data.datasets.zensus_mv_grid_districts.MapZensusGridDistricts>`
+      * :py:class:`DemandRegio <egon.data.datasets.demandregio.DemandRegio>`
+      * :py:class:`HeatDemandImport <egon.data.datasets.heat_demand.HeatDemandImport>`
+      * :py:class:`HouseholdElectricityDemand <egon.data.datasets.electricity_demand.HouseholdElectricityDemand>`
+      * :py:class:`EtragoSetup <egon.data.datasets.etrago_setup.EtragoSetup>`
+      * :py:class:`ZensusMvGridDistricts <egon.data.datasets.zensus_mv_grid_districts.ZensusMvGridDistricts>`
+      * :py:class:`ZensusVg250 <egon.data.datasets.zensus_vg250.ZensusVg250>`
+
+
+    *Resulting tables*
+      * :py:class:`demand.egon_etrago_electricity_cts <egon.data.datasets.electricity_demand.temporal.EgonEtragoElectricityCts>` is created and filled
+
+
+    """
+
+    #:
+    name: str = "CtsElectricityDemand"
+    #:
+    version: str = "0.0.2"
+
     def __init__(self, dependencies):
         super().__init__(
-            name="CtsElectricityDemand",
-            version="0.0.2",
+            name=self.name,
+            version=self.version,
             dependencies=dependencies,
             tasks=(distribute_cts_demands, insert_cts_load),
         )
