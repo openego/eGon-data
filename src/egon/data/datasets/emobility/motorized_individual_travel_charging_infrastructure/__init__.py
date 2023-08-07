@@ -121,10 +121,12 @@ class MITChargingInfrastructure(Dataset):
     points on a map. These are split into the four use cases home, work, public and hpc.
 
     *Dependencies*
-      * :py:func:`<egon.data.datasets.mv_grid_districts.define_mv_grid_districts>`
+      * :py:func:`define_mv_grid_districts <egon.data.datasets.mv_grid_districts.define_mv_grid_districts>`
+      * :py:func:`map_houseprofiles_to_buildings <egon.data.datasets.electricity_demand_timeseries.hh_buildings.map_houseprofiles_to_buildings>`
+      * :py:func:`get_building_peak_loads <egon.data.datasets.electricity_demand_timeseries.hh_buildings.get_building_peak_loads>`
 
     *Resulting tables*
-      * :py:class:`<>`
+      * :py:class:`<>`  todo: grid.egon_emob_charging_infrastructure in egon.data.datasets.emobility.motorized_individual_travel_charging_infrastructure.infrastructure_allocation.write_to_db?
 
     """
 
