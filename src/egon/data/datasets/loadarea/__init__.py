@@ -1,21 +1,6 @@
 """
 OSM landuse extraction and load areas creation.
 
-**Landuse**
-
-* Landuse data is extracted from OpenStreetMap: residential, retail,
-  industrial, Agricultural
-* Data is cut with German borders (VG 250), data outside is dropped
-* Invalid geometries are fixed
-* Results are stored in table `openstreetmap.osm_landuse`
-
-**Load Areas**
-
-TBD
-
-Note: industrial demand contains:
-* voltage levels 4-7
-* only demand from ind. sites+osm located in LA!
 """
 
 import os
@@ -50,10 +35,30 @@ class OsmPolygonUrban(Base):
 
 
 class OsmLanduse(Dataset):
+    """
+    OSM landuse extraction.
+
+    * Landuse data is extracted from OpenStreetMap: residential, retail,
+      industrial, Agricultural
+    * Data is cut with German borders (VG 250), data outside is dropped
+    * Invalid geometries are fixed
+    * Results are stored in table `openstreetmap.osm_landuse`
+
+    Note: industrial demand contains:
+      * voltage levels 4-7
+      * only demand from ind. sites+osm located in LA!
+
+    """
+
+    #:
+    name: str = "OsmLanduse"
+    #:
+    version: str = "0.0.0"
+
     def __init__(self, dependencies):
         super().__init__(
-            name="OsmLanduse",
-            version="0.0.0",
+            name=self.name,
+            version=self.version,
             dependencies=dependencies,
             tasks=(
                 create_landuse_table,
@@ -70,10 +75,39 @@ class OsmLanduse(Dataset):
 
 
 class LoadArea(Dataset):
+    """
+    Create `demand.egon_loadarea` table based on OSM and census data.
+
+    Create and update the `demand.egon_loadarea` table with new data, based on OSM and census data. Among
+    other things, area updates are carried out, smaller load areas are removed, center calculations are performed, and
+    census data are added. Statistics for various OSM sectors are also calculated and inserted.
+
+    *Dependencies*
+      * :py:class:`OsmLanduse <egon.data.datasets.loadarea.OsmLanduse>`
+      * :py:class:`ZensusVg250 <egon.data.datasets.zensus_vg250.ZensusVg250>`
+      * :py:class:`HouseholdElectricityDemand <egon.data.datasets.electricity_demand.HouseholdElectricityDemand>`
+      * :py:func:`get_building_peak_loads <egon.data.datasets.electricity_demand_timeseries.hh_buildings.get_building_peak_loads>`
+      * :py:class:`CtsDemandBuildings <egon.data.datasets.electricity_demand_timeseries.cts_buildings.CtsDemandBuildings>`
+      * :py:class:`IndustrialDemandCurves <egon.data.datasets.industry.IndustrialDemandCurves>`
+
+    *Resulting tables*
+      * :class:`demand.egon_loadarea` (no associated Python class)
+
+    Note: industrial demand contains:
+      * voltage levels 4-7
+      * only demand from ind. sites+osm located in LA!
+
+    """
+
+    #:
+    name: str = "LoadArea"
+    #:
+    version: str = "0.0.1"
+
     def __init__(self, dependencies):
         super().__init__(
-            name="LoadArea",
-            version="0.0.1",
+            name=self.name,
+            version=self.version,
             dependencies=dependencies,
             tasks=(
                 osm_landuse_melt,
