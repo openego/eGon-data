@@ -1,4 +1,5 @@
-"""The central module containing all code dealing with power plant data.
+"""The central module containing all code dealing with tge distribution and
+allocation of data on conventional and renewable power plants.
 """
 from geoalchemy2 import Geometry
 from sqlalchemy import BigInteger, Column, Float, Integer, Sequence, String
@@ -56,10 +57,65 @@ class EgonPowerPlants(Base):
 
 
 class PowerPlants(Dataset):
+    """
+    This dataset deals with the distribution and allocation of power plants
+
+    For the distribution and allocation of power plants to their corresponding
+    grid connection point different technology-specific methods are applied.
+    In a first step separate tables are created for wind, pv, hydro and biomass
+    based power plants by running :py:func:`create_tables`.
+    Different methods rely on the locations of existing power plants retrieved
+    from the official power plant registry 'Marktstammdatenregister' applying
+    function :py:func:`ìmport_mastr`.
+
+    *Hydro and Biomass*
+    Hydro and biomass power plants are distributed based on the status quo
+    locations of existing power plants assuming that no further expansion of
+    these technologies is to be expected in Germany. Hydro power plants include
+    reservoir and run-of-river plants.
+    Power plants without a correct geolocation are not taken into account.
+    To compensate this, the installed capacities of the suitable plants are
+    scaled up to meet the target value using function :py:func:`scale_prox2now`
+
+    *Conventional power plants without CHP*
+    The distribution of conventional plants, excluding CHPs, takes place in
+    function :py:func:`allocate_conventional_non_chp_power_plants`. Therefore
+    information about future power plants from the grid development plan
+    function as the target value and are matched with actual existing power
+    plants with correct geolocations from MaStR registry.
+
+    *Wind onshore*
+
+
+    *Wind offshore*
+
+    *PV ground-mounted*
+
+    *PV rooftop*
+
+    *others*
+
+
+
+
+
+    *Dependencies*
+      * :py:class:` <>`
+
+    *Resulting tables*
+      * :py:class:` <>` is extended
+
+    """
+
+    #:
+    name: str = "PowerPlants"
+    #:
+    version: str = "0.0.18"
+
     def __init__(self, dependencies):
         super().__init__(
-            name="PowerPlants",
-            version="0.0.18",
+            name=self.name,
+            version=self.version,
             dependencies=dependencies,
             tasks=(
                 create_tables,
@@ -610,6 +666,15 @@ def insert_hydro_biomass():
 
 
 def allocate_conventional_non_chp_power_plants():
+    """Allocate conventional power plants without CHPs based on the NEP target
+    values and data from power plant registry (MaStR) by assigning them in a
+    cascaded manner.
+
+    Returns
+    -------
+    None.
+
+    """
 
     carrier = ["oil", "gas"]
 
