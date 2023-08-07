@@ -2,6 +2,11 @@
 Data
 ****
 
+Main input data and their processing
+====================================
+
+.. include:: data/input_data.rst
+
 Grid models
 ===========
 
