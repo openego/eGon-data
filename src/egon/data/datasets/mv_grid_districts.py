@@ -793,6 +793,7 @@ mv_grid_districts_setup = partial(
     name="MvGridDistricts",
     version="0.0.2",
     dependencies=[],
+    tasks=(define_mv_grid_districts)
 )
 mv_grid_districts_setup.__doc__ = (
     """

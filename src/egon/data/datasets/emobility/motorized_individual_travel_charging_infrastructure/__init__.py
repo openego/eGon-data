@@ -1,28 +1,9 @@
 """
 Motorized Individual Travel (MIT) Charging Infrastructure
 
-Main module for preparation of static model data for cahrging infrastructure for
+Main module for preparation of static model data for charging infrastructure for
 motorized individual travel.
 
-**Contents of this module**
-* Creation of DB tables
-* Download and preprocessing of vehicle registration data from zenodo
-* Determination of all potential charging locations for the four charging use cases
-  home, work, public and hpc per mv grid district
-* Write results to DB
-
-**Configuration**
-
-The config of this dataset can be found in *datasets.yml* in section
-*charging_infrastructure*.
-
-**Charging Infrastructure**
-
-The charging infrastructure allocation is based on [TracBEV[(
-https://github.com/rl-institut/tracbev). TracBEV is a tool for the regional allocation
-of charging infrastructure. In practice this allows users to use results generated via
-[SimBEV](https://github.com/rl-institut/simbev) and place the corresponding charging
-points on a map. These are split into the four use cases home, work, public and hpc.
 """
 from __future__ import annotations
 
@@ -114,10 +95,48 @@ def get_tracbev_data() -> None:
 
 
 class MITChargingInfrastructure(Dataset):
+    """
+    Motorized Individual Travel (MIT) Charging Infrastructure
+
+    Main module for preparation of static model data for charging infrastructure for
+    motorized individual travel.
+
+    * Creation of DB tables
+    * Download and preprocessing of vehicle registration data from zenodo
+    * Determination of all potential charging locations for the four charging use cases
+      home, work, public and hpc per mv grid district
+    * Write results to DB
+
+    **Configuration**
+
+    The config of this dataset can be found in *datasets.yml* in section
+    *charging_infrastructure*.
+
+    **Charging Infrastructure**
+
+    The charging infrastructure allocation is based on [TracBEV[(
+    https://github.com/rl-institut/tracbev). TracBEV is a tool for the regional allocation
+    of charging infrastructure. In practice this allows users to use results generated via
+    [SimBEV](https://github.com/rl-institut/simbev) and place the corresponding charging
+    points on a map. These are split into the four use cases home, work, public and hpc.
+
+    *Dependencies*
+      * :py:func:`<egon.data.datasets.mv_grid_districts.define_mv_grid_districts>`
+
+    *Resulting tables*
+      * :py:class:`<>`
+
+    """
+
+    #:
+    name: str = "MITChargingInfrastructure"
+    #:
+    version: str = "0.0.1"
+
     def __init__(self, dependencies):
         super().__init__(
-            name="MITChargingInfrastructure",
-            version="0.0.1",
+            name=self.name,
+            version=self.version,
             dependencies=dependencies,
             tasks=(
                 {
