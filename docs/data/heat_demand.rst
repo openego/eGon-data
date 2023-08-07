@@ -34,12 +34,14 @@ The following national demands are taken for the selected scenarios:
 The resulting data is stored in the database table :py:class:`demand.egon_peta_heat <egon.data.datasets.heat_demand.EgonPetaHeat>`.
 The implementation of these dataprocessing steps can be found in :py:class:`HeatDemandImport <egon.data.datasets.heat_demand.HeatDemandImport>`. 
 
-Figure 1 shows the distribution of residential heat demands for scenario ``eGon2035``, 
+Figure :numref:`residential-heat-demand-annual` shows the distribution of residential heat demands for scenario ``eGon2035``, 
 categorized for different levels of annual demands.
 
-.. image:: images/residential_heat_demand.png
+.. figure:: images/residential_heat_demand.png
+  :name: residential-heat-demand-annual
   :width: 400
-  :alt: Spatial distribution of residential heat demand in scenario ``eGon2035``
+  
+  Spatial distribution of residential heat demand in scenario ``eGon2035``
 
 
 Afterwards, the annual heat demands are used to create hourly heat demand profiles. 
@@ -76,15 +78,19 @@ have to be combined, e.g. like this:
 
 
 Exemplary resulting residential heat demand time series for a selected day in winter and 
-summer considering different aggregation levels are visualized in figures 2 and 3.
+summer considering different aggregation levels are visualized in figures :numref:`residential-heat-demand-timeseries-winter` and :numref:`residential-heat-demand-timeseries-summer`.
 
-.. image:: images/residential_heat_demand_profile_winter.png
+.. figure:: images/residential_heat_demand_profile_winter.png
+  :name: residential-heat-demand-timeseries-winter
   :width: 400
-  :alt: Temporal distribution of residential heat demand for a selected day in winter
   
-.. image:: images/residential_heat_demand_profile_summer.png
+  Temporal distribution of residential heat demand for a selected day in winter
+  
+.. figure:: images/residential_heat_demand_profile_summer.png
+  :name: residential-heat-demand-timeseries-summer
   :width: 400
-  :alt: Temporal distribution of residential heat demand for a selected day in summer
+  
+  Temporal distribution of residential heat demand for a selected day in summer
 
 The temporal disaggregation of CTS heat demand is done using Standard Load Profiles Gas
 from ``demandregio`` [demandregio]_ considering different profiles per CTS branch. 
