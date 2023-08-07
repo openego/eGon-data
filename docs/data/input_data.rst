@@ -1,7 +1,7 @@
 Information about the main input data and how they were processed and adjusted. 
 
 Data bundle
-~~~~~~~~~~~
+-----------
 
 The data bundle is published on
 `zenodo <https://sandbox.zenodo.org/record/1167119>`_. It contains several data
@@ -24,7 +24,7 @@ For further description of the data including licenses and references please ref
 
 
 Marktstammdatenregister
-~~~~~~~~~~~~~~~~~~~~~~~
+-----------------------
 
 One such data set is the geocoding
 for the `MaStR data set <https://sandbox.zenodo.org/record/1132987>`_ which is
@@ -34,7 +34,7 @@ bundle accordingly. The geocoding can be done based on the
 `mastr-geocoding repository <https://github.com/RLI-sandbox/mastr-geocoding>`_.
 
 OpenStreetMap
-~~~~~~~~~~~~~
+-------------
 
 Others...
-~~~~~~~~~
+---------
