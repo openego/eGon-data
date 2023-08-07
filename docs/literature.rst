@@ -14,6 +14,8 @@ Literature
 
 .. [eXtremOS] A. Guminski, C. Fiedler, S. Kigle, C. Pellinger, P. Dossow, K. Ganz, F. Jetter, T. Kern, T. Limmer, A. Murmann, J. Reinhard, T. Schmid, T. Schmidt-Achert, S. von Roon, eXtremOS Summary Report (2021). doi:https://doi.org/10.34805/ffe-24-21.
 
+.. [FfE2017] Flexibilisierung der Kraft-Wärme-Kopplung; 2017; Forschungsstelle für Energiewirtschaft e.V. (FfE)
+    
 .. [Hotmaps] S. Pezzutto, S. Zambotti, S. Croce, P. Zambelli, G. Garegnani, C. Scaramuzzino, R. P. Pascuas, A. Zubaryeva, F. Haas, D. Exner, A. Mueller, M. Hartner, T. Fleiter, A.-L. Klingler, M. Kuehnbach, P. Manz, S. Marwitz, M. Rehfeldt, J. Steinbach, E. Popovski, Hotmaps project, d2.3 wp2 report – open data set for the eu28 (2018). URL www.hotmaps-project.eu
 
 .. [Mueller2018] U. Mueller, L. Wienholt, D. Kleinhans, I. Cussmann, W.-D. Bunke, G. Pleßmann, J. Wendiggensen 2018 J. Phys.: Conf. Ser. 977 012003, DOI 10.1088/1742-6596/977/1/012003
