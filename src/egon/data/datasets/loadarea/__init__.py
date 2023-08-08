@@ -21,6 +21,9 @@ Base = declarative_base()
 
 
 class OsmPolygonUrban(Base):
+    """
+    Class definition of table openstreetmap.osm_landuse.
+    """
     __tablename__ = "osm_landuse"
     __table_args__ = {"schema": "openstreetmap"}
     id = Column(Integer, primary_key=True)
@@ -76,11 +79,12 @@ class OsmLanduse(Dataset):
 
 class LoadArea(Dataset):
     """
-    Create `demand.egon_loadarea` table based on OSM and census data.
+    Creates load area data based on OSM and census data.
 
-    Create and update the `demand.egon_loadarea` table with new data, based on OSM and census data. Among
-    other things, area updates are carried out, smaller load areas are removed, center calculations are performed, and
-    census data are added. Statistics for various OSM sectors are also calculated and inserted.
+    Create and update the `demand.egon_loadarea` table with new data, based on OSM and
+    census data. Among other things, area updates are carried out, smaller load areas
+    are removed, center calculations are performed, and census data are added.
+    Statistics for various OSM sectors are also calculated and inserted.
 
     *Dependencies*
       * :py:class:`OsmLanduse <egon.data.datasets.loadarea.OsmLanduse>`
@@ -91,7 +95,7 @@ class LoadArea(Dataset):
       * :py:class:`IndustrialDemandCurves <egon.data.datasets.industry.IndustrialDemandCurves>`
 
     *Resulting tables*
-      * :class:`demand.egon_loadarea` (no associated Python class)
+      * :class:`demand.egon_loadarea` is created and filled (no associated Python class)
 
     Note: industrial demand contains:
       * voltage levels 4-7
