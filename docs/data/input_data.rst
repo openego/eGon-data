@@ -29,12 +29,18 @@ For further description of the data including licenses and references please ref
 Marktstammdatenregister
 -----------------------
 
-One such data set is the geocoding
-for the `MaStR data set <https://sandbox.zenodo.org/record/1132987>`_ which is
-used for eGon-data as well. Whenever the MaStR data set is updated it is
-necessary to redo the geocoding with the new data set and update the data
-bundle accordingly. The geocoding can be done based on the
-`mastr-geocoding repository <https://github.com/RLI-sandbox/mastr-geocoding>`_.
+The `Marktstammdatenregister <https://www.marktstammdatenregister.de/MaStR>`_ (MaStR)
+is the register for the German electricity and gas
+market holding, among others, data on electricity and gas generation plants. In eGon-data
+it is used for status quo data on PV plants, wind turbines, biomass, hydro power plants,
+combustion power plants, nuclear power plants, geo- and solarthermal power plants, and storage units.
+The data are obtained from zenodo, where raw MaStR data, downloaded with the tool
+`open-MaStR <https://github.com/OpenEnergyPlatform/open-MaStR>`_ using the MaStR webservice,
+is provided. It contains all data from the MaStR, including possible duplicates.
+Currently, two versions are used:
+
+* `2021-05-03 <https://sandbox.zenodo.org/record/1167119>`_
+* `2022-11-17 <https://sandbox.zenodo.org/record/1132839>`_
 
 OpenStreetMap
 -------------
