@@ -36,9 +36,9 @@ Second, additional Census cells are assigned to district heating areas consideri
 To avoid unrealistic large district heating grids in areas with many cities close to each other (e.g. the Ruhr Area), district heating areas with an annual demand > 4 TWh are split by NUTS3 boundaries.
 
 The implementation of the district heating area demarcation is done in :py:class:`DistrictHeatingAreas <egon.data.datasets.district_heating_areas.DistrictHeatingAreas>`, the resulting data is stored in the tables :py:class:`demand.egon_map_zensus_district_heating_areas <egon.data.datasets.district_heating_areas.MapZensusDistrictHeatingAreas>` and  :py:class:`demand.egon_district_heating_areas <egon.data.datasets.district_heating_areas.EgonDistrictHeatingAreas>`. 
-The resulting district heating grids for the scenario eGon2035 are visualized in figure :numref:`district-heating-areas`, which also includes a zoom on the district heating grid in Berlin. 
+The resulting district heating grids for the scenario eGon2035 are visualized in figure :ref:`district-heating-areas`, which also includes a zoom on the district heating grid in Berlin. 
 
-.. figure:: images/district_heating_areas.png
+.. figure:: /images/district_heating_areas.png
   :name: district-heating-areas
   :width: 800
   
@@ -54,9 +54,9 @@ The national capacities for each supply technology are taken from the Grid Devel
 
 #. In the last step, gas boilers are assigned to every district heating grid regardless of the remaining demand. In the optimization, this can be used as a fall-back option to not run into infeasibilities. 
 
-The distribution of CHP plants for different carriers is shown in figure :numref:`chp-plants`. 
+The distribution of CHP plants for different carriers is shown in figure :ref:`chp-plants`. 
 
-.. figure:: images/combined_heat_and_power_plants.png
+.. figure:: /images/combined_heat_and_power_plants.png
   :name: chp-plants
   :width: 400
   
