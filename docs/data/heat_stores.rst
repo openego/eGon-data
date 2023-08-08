@@ -7,7 +7,7 @@ Individual heat stores can be built in every building with an individual heat pu
 Central cost assumptions for central and decentral heat stores are listed in the table below. The parameters can differ for each scenario in order to include technology updates and learning curves. The table focuses on the scenario ``eGon2035``.
 
 .. list-table:: Parameters of heat stores
-   :widths: 40 20 20 20
+   :widths: 16 16 16 16 16 16
    :header-rows: 1
 
    * - 
