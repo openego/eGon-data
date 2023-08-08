@@ -8,6 +8,8 @@ Literature
 
 .. [Census] S. B. (Destatis), Datensatzbeschreibung ”Haushalte im 100 Meter-Gitter” (2018). URL https://www.zensus2011.de/SharedDocs/Downloads/DE/Pressemitteilung/DemografischeGrunddaten/Datensatzbeschreibung_Haushalt_100m_Gitter.html
 
+.. [DAE_store] Danish Energy Agency, Technology Data – Energy storage, First published 2018 by the Danish Energy Agency and Energinet, URL https://ens.dk/en/our-services/projections-and-models/technology-data/technology-data-energy-storage
+
 .. [demandregio] F. Gotzens, B. Gillessen, S. Burges, W. Hennings, J. Müller-Kirchenbauer, S. Seim, P. Verwiebe, S. Tobias, F. Jetter, T. Limmer, 	DemandRegio - Harmonisierung und Entwicklung von Verfahren zur regionalen und zeitlichen Auflösung von Energienachfragen (2020). URL https://openaccess.ffe.de/10.34805/ffe-119-20
 
 .. [Energiereferenzprognose] Prognos AG, Energiewirtschaftliches Institut an der Universität zu Köln, Gesellschaft für Wirtschaftliche Strukturforschung mbH: Entwicklung der Energiemärkte – Energiereferenzprognose (2014)
@@ -22,7 +24,7 @@ Literature
 
 .. [NEP2021] Übertragungsnetzbetreiber Deutschland (2021):  *Netzentwicklungsplan Strom 2035*, Version 2021, 1. Entwurf. 2021.
 
-.. [OSM] Geofabrik GmbH and OpenStreetMap-Contributors, OpenStreetMap Data Extracts, Stand 01.01.2021 (2021). URL https://download.geofabrik.de/europe/germany-210101.osm.pbf
+.. [OSM] Geofabrik GmbH and OpenStreetMap-Contributors, OpenStreetMap Data Extracts, Stand 01.01.2022 (2022). URL https://download.geofabrik.de/europe/germany-220101.osm.pbf
 
 .. [Peta] Europa-Universität Flensburg, Halmstad University and Aalborg University, Pan-European Thermal Atlas - Residential heat demand (2021). URL https://s-eenergies-open-data-euf.hub.arcgis.com/maps/d7d18b63250240a49eb81db972aa573e/about
 
