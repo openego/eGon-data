@@ -1004,13 +1004,18 @@ def power_plants_status_quo(scn_name="status2019"):
 
     conv = conv[
         conv.Energietraeger.isin(
-            ["Braunkohle", "Mineralölprodukte", "Steinkohle", "Kernenergie",
-             "Erdgas"]
+            [
+                "Braunkohle",
+                "Mineralölprodukte",
+                "Steinkohle",
+                "Kernenergie",
+                "Erdgas",
+            ]
         )
     ]
-    
+
     # convert from KW to MW
-    conv["Nettonennleistung"] = conv["Nettonennleistung"]/1000 
+    conv["Nettonennleistung"] = conv["Nettonennleistung"] / 1000
     # drop generators installed after 2019
     conv["Inbetriebnahmedatum"] = pd.to_datetime(conv["Inbetriebnahmedatum"])
     conv = conv[
@@ -1032,7 +1037,6 @@ def power_plants_status_quo(scn_name="status2019"):
     conv.loc[
         conv.Energietraeger == "Kernenergie", "Energietraeger"
     ] = "nuclear"
-    
 
     # rename columns
     conv.rename(
@@ -1060,7 +1064,7 @@ def power_plants_status_quo(scn_name="status2019"):
     conv["voltage_level"] = assign_voltage_level_by_capacity(
         conv.rename(columns={"capacity": "Nettonennleistung"})
     )
-    
+
     for i, row in conv.iterrows():
         entry = EgonPowerPlants(
             sources={"el_capacity": "MaStR"},
