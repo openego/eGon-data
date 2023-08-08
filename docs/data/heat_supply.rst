@@ -26,6 +26,8 @@ In general, heat supply can be divided into three categories which include speci
 
 The following subsections describe the heat supply methodology for each category. 
 
+.. _district-heating:
+
 District heating
 ~~~~~~~~~~~~~~~~
 
@@ -77,3 +79,5 @@ Individual gas boilers
 ~~~~~~~~~~~~~~~~~~~~~~
 
 All residential and CTS buildings that are neither supplied by a district heating grid nor an individual heat pump are supplied by gas boilers. The demand time series of these buildings are multiplied by the efficiency of gas boilers and aggregated per methane grid node.
+
+All heat supply categories are implemented in the dataset :py:class:`HeatSupply <egon.data.datasets.heat_supply.HeatSupply>`. The data is stored in the tables :py:class:`demand.egon_district_heating <egon.data.datasets.heat_supply.EgonDistrictHeatingSupply>` and  :py:class:`demand.egon_individual_heating <egon.data.datasets.heat_supply.EgonIndividualHeatingSupply>`.
