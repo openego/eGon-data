@@ -3,7 +3,7 @@ Heat demand of residential as well as commercial, trade and service (CTS) buildi
 In general, heat supply can be divided into three categories which include specific technologies: residential and CTS buildings in a district heating area, buildings supplied by individual heat pumps, and buildings supplied by conventional gas boilers. The shares of these categories are taken from external sources for each scenario. 
 
 .. list-table:: Heat demands of different supply categories
-   :widths: 20 20 20 20 20
+   :widths: 20 20 20 20
    :header-rows: 1
 
    * - 
