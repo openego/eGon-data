@@ -10,19 +10,16 @@ In general, heat supply can be divided into three categories which include speci
      - District heating
      - Individual heat pumps
      - Individual gas boilers
-     - Sources
 
    * - eGon2035
      - 69 TWh
-     -  TWh
-     - 
-     - [Energiereferenzprognose]_
+     - 27.24 TWh
+     - 390.78 TWh
 
    * - eGon100RE
-     -  TWh
-     -  TWh
+     - 61.5 TWh
+     - 311.5 TWh
      - 0 TWh 
-     - [Energiereferenzprognose]_
 
 The following subsections describe the heat supply methodology for each category. 
 
