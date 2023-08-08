@@ -5,7 +5,8 @@ Data bundle
 
 The data bundle is published on
 `zenodo <https://sandbox.zenodo.org/record/1167119>`_. It contains several data
-sets, which serve as a basis for egon-data:  
+sets, which serve as a basis for egon-data:
+
 * Climate zones in Germany
 * Data on eMobility individual trips of electric vehicles
 * Spatial distribution of deep geothermal potentials in Germany
@@ -20,7 +21,9 @@ sets, which serve as a basis for egon-data:
 * Eligible areas for wind turbines and ground-mounted PV systems
 * Definitions of industrial and commercial branches
 * Zensus data on households
-For further description of the data including licenses and references please refer to the Zenodo repository. 
+* Geocoding of all unique combinations of ZIP code and municipality within the Marktstammdatenregister
+
+For further description of the data including licenses and references please refer to the Zenodo repository.
 
 
 Marktstammdatenregister
