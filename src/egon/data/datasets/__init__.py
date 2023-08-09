@@ -98,6 +98,10 @@ Task = Union[Callable[[], None], Operator]
 #: a :class:`tuple` of :class:`TaskGraphs <TaskGraph>` will be executed
 #: sequentially in the given order.
 TaskGraph = Union[Task, Set["TaskGraph"], Tuple["TaskGraph", ...]]
+#: A type alias to help specifying that something can be an explicit
+#: :class:`Tasks_` object or a :class:`TaskGraph`, i.e. something that
+#: can be converted to :class:`Tasks_`.
+Tasks = Union["Tasks_", TaskGraph]
 
 
 def prefix(o):
@@ -107,7 +111,7 @@ def prefix(o):
 
 
 @dataclass
-class Tasks(dict):
+class Tasks_(dict):
     first: Set[Task]
     last: Set[Task]
     graph: TaskGraph = ()
@@ -115,7 +119,7 @@ class Tasks(dict):
     def __init__(self, graph: TaskGraph):
         """Connect multiple tasks into a potentially complex graph.
 
-        Parses a :class:`TaskGraph` into a :class:`Tasks` object.
+        Parses a :class:`TaskGraph` into a :class:`Tasks_` object.
         """
         if isinstance(graph, Callable):
             graph = PythonOperator(
@@ -131,13 +135,13 @@ class Tasks(dict):
             self.first = {}
             self.last = {}
         elif isinstance(graph, abc.Set):
-            results = [Tasks(subtasks) for subtasks in graph]
+            results = [Tasks_(subtasks) for subtasks in graph]
             self.first = {task for result in results for task in result.first}
             self.last = {task for result in results for task in result.last}
             self.update(reduce(lambda d1, d2: dict(d1, **d2), results, {}))
             self.graph = set(tasks.graph for tasks in results)
         elif isinstance(graph, tuple):
-            results = [Tasks(subtasks) for subtasks in graph]
+            results = [Tasks_(subtasks) for subtasks in graph]
             for left, right in zip(results[:-1], results[1:]):
                 for last in left.last:
                     for first in right.first:
@@ -149,7 +153,7 @@ class Tasks(dict):
         else:
             raise (
                 TypeError(
-                    "`egon.data.datasets.Tasks` got an argument of type:\n\n"
+                    "`egon.data.datasets.Tasks_` got an argument of type:\n\n"
                     f"  {type(graph)}\n\n"
                     "where only `Task`s, `Set`s and `Tuple`s are allowed."
                 )
@@ -174,8 +178,8 @@ class Dataset:
     #: :class:`Dataset` the link will be made to all of its last tasks.
     dependencies: Iterable[Union[Dataset, Task]] = ()
     #: The tasks of this :class:`Dataset`. A :class:`TaskGraph` will
-    #: automatically be converted to :class:`Tasks`.
-    tasks: Union[Tasks, TaskGraph] = ()
+    #: automatically be converted to :class:`Tasks_`.
+    tasks: Tasks = ()
 
     def check_version(self, after_execution=()):
         def skip_task(task, *xs, **ks):
@@ -224,8 +228,8 @@ class Dataset:
 
     def __post_init__(self):
         self.dependencies = list(self.dependencies)
-        if not isinstance(self.tasks, Tasks):
-            self.tasks = Tasks(self.tasks)
+        if not isinstance(self.tasks, Tasks_):
+            self.tasks = Tasks_(self.tasks)
         if len(self.tasks.last) > 1:
             # Explicitly create single final task, because we can't know
             # which of the multiple tasks finishes last.
@@ -236,7 +240,7 @@ class Dataset:
                 # Do nothing, because updating will be added later.
                 python_callable=lambda *xs, **ks: None,
             )
-            self.tasks = Tasks((self.tasks.graph, update_version))
+            self.tasks = Tasks_((self.tasks.graph, update_version))
         # Due to the `if`-block above, there'll now always be exactly
         # one task in `self.tasks.last` which the next line just
         # selects.
