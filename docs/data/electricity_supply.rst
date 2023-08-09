@@ -1,4 +1,13 @@
-Information on electricity supply by carrier etc. 
+The electrical power plants park, including data on geolocations, installed capacities, etc.
+for the different scenarios is set up in the dataset
+:class:`PowerPlants<egon.data.datasets.power_plants.PowerPlants>`.
+
+Main inputs into the dataset are target capacities per technology and federal state
+in each scenario (see :ref:`concept-and-scenarios-ref`) as well as the MaStR (see :ref:`mastr-ref`),
+OpenStreetMap (see :ref:`osm-ref`) and potential areas (provided through the data bundle,
+see :ref:`data-bundle-ref`) to distribute the generator capacities within each federal state region.
+The approach taken to distribute the target capacities within each federal state differs for
+the different technologies and is described in the following.
 
 Onshore wind
 ~~~~~~~~~~~~
