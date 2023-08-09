@@ -34,6 +34,8 @@ Demand
 Electricity, heat and gas demands from different consumption sectors are taken into account in eGon-data. The related methods to distribute and 
 process the demand data are described in the following chapters for the different consumption sectors separately. 
 
+.. _electricity-demand-ref:
+
 Electricity
 -----------
 

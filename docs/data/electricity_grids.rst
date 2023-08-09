@@ -1,4 +1,4 @@
-Information about our electricity grids and how they were created
+.. _ehv-hv-grids:
 
 High and extra-high voltage grids
 ++++++++++++++++++++++++++++++++++
@@ -15,6 +15,8 @@ and writes the resulting data to the database.
 The resulting grid model includes the voltage levels 380, 220 and 110 kV and
 all substations interconnecting these grid levels. For further information on the
 generation of the grid topology please refer to [Mueller2018]_.
+
+.. _mv-grid-districts:
 
 MV grid districts
 ++++++++++++++++++
@@ -80,6 +82,8 @@ The second step is required in order to cover edge cases, such as islands.
 
 For understanding how this is implemented into separate functions, please
 see :func:`define_mv_grid_districts<egon.data.datasets.mv_grid_districts.define_mv_grid_districts>`.
+
+.. _ding0-grids:
 
 Medium and low-voltage grids
 ++++++++++++++++++++++++++++

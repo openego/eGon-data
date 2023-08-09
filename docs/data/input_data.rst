@@ -67,6 +67,8 @@ raw OSM data using tags listed in script `osm_amenities_shops_preprocessing.sql`
 shops and restaurants. The filtered data is written to database table
 `openstreetmap.osm_amenities_shops_filtered`.
 
+.. _building-data-ref:
+
 Building data
 ++++++++++++++
 
