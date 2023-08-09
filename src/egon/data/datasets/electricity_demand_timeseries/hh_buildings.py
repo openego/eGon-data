@@ -829,6 +829,7 @@ def map_houseprofiles_to_buildings():
     OsmBuildingsSynthetic.__table__.create(bind=engine, checkfirst=True)
 
     # Write new buildings incl coord into db
+    n_amenities_inside_type = OsmBuildingsSynthetic.n_amenities_inside.type
     synthetic_buildings.to_postgis(
         "osm_buildings_synthetic",
         con=engine,
@@ -839,7 +840,7 @@ def map_houseprofiles_to_buildings():
             "cell_id": OsmBuildingsSynthetic.cell_id.type,
             "geom_building": OsmBuildingsSynthetic.geom_building.type,
             "geom_point": OsmBuildingsSynthetic.geom_point.type,
-            "n_amenities_inside": OsmBuildingsSynthetic.n_amenities_inside.type,
+            "n_amenities_inside": n_amenities_inside_type,
             "building": OsmBuildingsSynthetic.building.type,
             "area": OsmBuildingsSynthetic.area.type,
         },
