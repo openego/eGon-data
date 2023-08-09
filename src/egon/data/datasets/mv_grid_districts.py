@@ -36,6 +36,7 @@ class Vg250GemClean(Base):
     """
     Class definition of table boundaries.vg250_gem_clean.
     """
+
     __tablename__ = "vg250_gem_clean"
     __table_args__ = {"schema": "boundaries"}
 
@@ -58,6 +59,7 @@ class HvmvSubstPerMunicipality(Base):
     """
     Class definition of temporary table grid.hvmv_subst_per_municipality.
     """
+
     __tablename__ = "hvmv_subst_per_municipality"
     __table_args__ = {"schema": "grid"}
 
@@ -91,6 +93,7 @@ class VoronoiMunicipalityCuts(VoronoiMunicipalityCutsBase, Base):
     """
     Class definition of temporary table grid.voronoi_municipality_cuts.
     """
+
     __tablename__ = "voronoi_municipality_cuts"
     __table_args__ = {"schema": "grid"}
 
@@ -122,6 +125,7 @@ class MvGridDistrictsDissolved(Base):
     """
     Class definition of temporary table grid.egon_mv_grid_district_dissolved.
     """
+
     __tablename__ = "egon_mv_grid_district_dissolved"
     __table_args__ = {"schema": "grid"}
 
@@ -139,6 +143,7 @@ class MvGridDistricts(Base):
     """
     Class definition of table grid.egon_mv_grid_district.
     """
+
     __tablename__ = "egon_mv_grid_district"
     __table_args__ = {"schema": "grid"}
 
@@ -349,7 +354,7 @@ def split_multi_substation_municipalities():
         # without any space in between (aka. polygons touch each other)
 
         # Initialize with very large number
-        remaining_polygons = [10 ** 10]
+        remaining_polygons = [10**10]
 
         while True:
             # This loop runs until all polygon that inital haven't had a

@@ -138,7 +138,7 @@ class Tasks(dict):
             self.graph = set(tasks.graph for tasks in results)
         elif isinstance(graph, tuple):
             results = [Tasks(subtasks) for subtasks in graph]
-            for (left, right) in zip(results[:-1], results[1:]):
+            for left, right in zip(results[:-1], results[1:]):
                 for last in left.last:
                     for first in right.first:
                         last.set_downstream(first)

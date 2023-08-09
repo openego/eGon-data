@@ -167,6 +167,7 @@ class OsmBuildingsSynthetic(Base):
     building type. This table is created within
     :py:func:`hh_buildings.map_houseprofiles_to_buildings()`
     """
+
     __tablename__ = "osm_buildings_synthetic"
     __table_args__ = {"schema": "openstreetmap"}
 
@@ -185,6 +186,7 @@ class BuildingElectricityPeakLoads(Base):
     building area and peak load. This table is created within
     :func:`hh_buildings.get_building_peak_loads()`
     """
+
     __tablename__ = "egon_building_electricity_peak_loads"
     __table_args__ = {"schema": "demand"}
 
@@ -468,7 +470,6 @@ def generate_mapping_table(
     """
 
     def create_pool(buildings, profiles):
-
         if profiles > buildings:
             surplus = profiles - buildings
             surplus = rng.integers(0, buildings, surplus)
