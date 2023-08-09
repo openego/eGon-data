@@ -16,21 +16,47 @@ The resulting grid model includes the voltage levels 380, 220 and 110 kV and
 all substations interconnecting these grid levels. For further information on the
 generation of the grid topology please refer to [Mueller2018]_.
 
+.. _ding0-grids:
+
+Medium and low-voltage grids
+++++++++++++++++++++++++++++
+
+Medium (MV) and low (LV) voltage grid topologies for entire Germany are generated using
+the python tool ding0 `ding0 <https://github.com/openego/ding0>`_.
+ding0 generates synthetic grid topologies based on high-resolution geodata and routing
+algorithms as well as typical network planning principles.
+The generation of the
+grid topologies is not part of eGon_data, but ding0 solely uses data generated with eGon_data,
+such as locations of HV/MV stations (see :ref:`ehv-hv-grids`), locations and peak demands
+of buildings in the grid (see :ref:`building-data-ref` respectively :ref:`electricity-demand-ref`),
+as well as locations of generators from MaStR (see :ref:`mastr-ref`). A full list
+of tables used in ding0 can be found in its `config <https://github.com/openego/ding0/blob/dev/ding0/config/config_db_tables.cfg>`_.
+An exemplary MV grid with one underlying LV grid is shown in figure :ref:`ding0-mv-grid`.
+The grid data of all over 3.800 MV grids is published on `zenodo <https://zenodo.org/record/890479>`_.
+
+.. figure:: /images/ding0_mv_lv_grid.png
+  :name: ding0-mv-grid
+  :width: 600
+
+  Exemplary synthetic medium-voltage grid with underlying low-voltage grid generated with ding0
+
+Besides data on buildings and generators, ding0 requires data on the supplied areas
+by each grid. This is as well done in eGon_data and described in the following.
+
 .. _mv-grid-districts:
 
 MV grid districts
-++++++++++++++++++
+~~~~~~~~~~~~~~~~~~
 
 Medium-voltage (MV) grid districts describe the area supplied by one MV grid.
 They are defined by one polygon that represents the
 supply area. Each MV grid district is connected to the HV grid via a single
-substation.
+substation. An exemplary MV grid district is shown in figure :ref:`ding0-mv-grid` (orange line).
 
-The MV grid districts are generated in the module
-:py:mod:`mv_grid_districts<egon.data.datasets.mv_grid_districts>`.
+The MV grid districts are generated in the dataset
+:class:`MvGridDistricts<egon.data.datasets.mv_grid_districts.MvGridDistricts>`.
 The methods used for identifying the MV grid districts are heavily inspired
-by `Hülk et al. (2017)
-<https://somaesthetics.aau.dk/index.php/sepm/article/view/1833/1531>`_
+by Hülk et al. (2017) [Huelk2017]_
 (section 2.3), but the implementation differs in detail.
 The main difference is that direct adjacency is preferred over proximity.
 For polygons of municipalities
@@ -83,8 +109,17 @@ The second step is required in order to cover edge cases, such as islands.
 For understanding how this is implemented into separate functions, please
 see :func:`define_mv_grid_districts<egon.data.datasets.mv_grid_districts.define_mv_grid_districts>`.
 
-.. _ding0-grids:
+.. _load-areas-ref:
 
-Medium and low-voltage grids
-++++++++++++++++++++++++++++
+Load areas
+~~~~~~~~~~~~
 
+Load areas (LAs) are defined as geographic clusters where electricity is consumed.
+They are used in ding0 to determine the extent and number of LV grids. Thus, within
+each LA there are one or multiple MV-LV substations, each supplying one LV grid.
+Exemplary load areas are shown in figure :ref:`ding0-mv-grid` (grey and orange areas).
+
+The load areas are set up in the
+:class:`LoadArea<egon.data.datasets.loadarea.LoadArea>` dataset.
+The methods used for identifying the load areas are heavily inspired
+by Hülk et al. (2017) [Huelk2017]_ (section 2.4).
