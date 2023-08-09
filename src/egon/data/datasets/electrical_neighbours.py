@@ -1408,12 +1408,12 @@ def map_carriers_entsoe():
         "Hydro Pumped Storage": "Hydro Pumped Storage",
         "Hydro Run-of-river and poundage": "run_of_river",
         "Hydro Water Reservoir": "reservoir",
-        "Marine": "Others",
+        "Marine": "others",
         "Nuclear": "nuclear",
         "Other": "others",
-        "Other renewable": "Others",
+        "Other renewable": "others",
         "Solar": "solar",
-        "Waste": "Others",
+        "Waste": "others",
         "Wind Offshore": "wind_offshore",
         "Wind Onshore": "wind_onshore",
     }
@@ -1521,13 +1521,6 @@ def insert_generators_sq(gen_sq=None, scn_name="status2019"):
 
     # Add marginal costs
     list_gen_sq = add_marginal_costs(list_gen_sq)
-
-    # assign marginal cost for OCGTs
-    scn_params_gas = get_sector_parameters("gas", scn_name)
-    list_gen_sq.loc[list_gen_sq.carrier == "OCGT", "marginal_cost"] = (
-        scn_params_gas["marginal_cost"]["CH4"]
-        + scn_params_gas["marginal_cost"]["OCGT"]
-    )
 
     # Find foreign bus to assign the generator
     list_gen_sq["bus"] = list_gen_sq.country.map(entsoe_to_bus)
