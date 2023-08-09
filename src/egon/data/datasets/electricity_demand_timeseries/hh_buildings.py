@@ -640,7 +640,9 @@ def reduce_synthetic_buildings(
     # )
 
     # time expensive because of regex
-    # mapping_profiles_to_buildings['building_id'] = mapping_profiles_to_buildings['building_id'].replace(id_mapping)
+    # mapping_profiles_to_buildings['building_id'] = (
+    #     mapping_profiles_to_buildings['building_id'].replace(id_mapping)
+    # )
     return synthetic_buildings
 
 
