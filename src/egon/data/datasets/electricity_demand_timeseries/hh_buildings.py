@@ -122,7 +122,7 @@ decision is made in ... the content of this module docstring needs to be
 moved to the docs attribute of the respective dataset class.
 
 """
-from functools import partial
+from dataclasses import dataclass
 import random
 
 from geoalchemy2 import Geometry
@@ -133,7 +133,7 @@ import numpy as np
 import pandas as pd
 
 from egon.data import db
-from egon.data.datasets import Dataset
+from egon.data.datasets import Dataset, Tasks
 from egon.data.datasets.electricity_demand_timeseries.hh_profiles import (
     HouseholdElectricityProfilesInCensusCells,
     get_iee_hh_demand_profiles_raw,
@@ -862,10 +862,11 @@ def map_houseprofiles_to_buildings():
         )
 
 
-setup = partial(
-    Dataset,
-    name="Demand_Building_Assignment",
-    version="0.0.5",
-    dependencies=[],
-    tasks=(map_houseprofiles_to_buildings, get_building_peak_loads),
-)
+@dataclass
+class setup(Dataset):
+    #:
+    name: str = "Demand_Building_Assignment"
+    #:
+    version: str = "0.0.5"
+    #:
+    tasks: Tasks = (map_houseprofiles_to_buildings, get_building_peak_loads)
