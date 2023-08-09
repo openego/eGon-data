@@ -1,5 +1,3 @@
-Information about the main input data and how they were processed and adjusted. 
-
 Data bundle
 -----------
 
@@ -25,6 +23,7 @@ sets, which serve as a basis for egon-data:
 
 For further description of the data including licenses and references please refer to the Zenodo repository.
 
+.. _mastr-ref:
 
 Marktstammdatenregister
 -----------------------
