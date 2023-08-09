@@ -1,7 +1,7 @@
 Information about the gas grids and how they were created
 
-Methane grid 
-~~~~~~~~~~~~
+Methane grid
+++++++++++++++
 
 Hydrogen grid
-~~~~~~~~~~~~~
+++++++++++++++

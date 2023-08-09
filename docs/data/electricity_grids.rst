@@ -1,7 +1,7 @@
 Information about our electricity grids and how they were created
 
-High and extra-high voltage grids 
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+High and extra-high voltage grids
+++++++++++++++++++++++++++++++++++
 
 The model of the German extra-high (eHV) and high voltage (HV) grid is based 
 on data retrieved from OpenStreetMap (status January 2021) [OSM]_ and additional 
@@ -17,7 +17,8 @@ all substations interconnecting these grid levels. For further information on th
 generation of the grid topology please refer to [Mueller2018]_.
 
 MV grid districts
-~~~~~~~~~~~~~~~~~
+++++++++++++++++++
+
 Medium-voltage (MV) grid districts describe the area supplied by one MV grid.
 They are defined by one polygon that represents the
 supply area. Each MV grid district is connected to the HV grid via a single
@@ -81,4 +82,5 @@ For understanding how this is implemented into separate functions, please
 see :func:`define_mv_grid_districts<egon.data.datasets.mv_grid_districts.define_mv_grid_districts>`.
 
 Medium and low-voltage grids
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+++++++++++++++++++++++++++++
+
