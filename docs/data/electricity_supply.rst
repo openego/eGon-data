@@ -8,6 +8,13 @@ OpenStreetMap (see :ref:`osm-ref`) and potential areas (provided through the dat
 see :ref:`data-bundle-ref`) to distribute the generator capacities within each federal state region.
 The approach taken to distribute the target capacities within each federal state differs for
 the different technologies and is described in the following.
+The final distribution in the eGon2035 scenario is shown in figure :ref:`generator-park-egon-2035`.
+
+.. figure:: /images/Erzeugerpark.png
+  :name: generator-park-egon-2035
+  :width: 400
+
+  Generator park in the eGon2035 scenario
 
 Onshore wind
 ~~~~~~~~~~~~
