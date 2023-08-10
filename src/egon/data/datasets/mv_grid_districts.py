@@ -6,7 +6,7 @@ are defined by one polygon that represents the supply area.
 
 """
 
-from functools import partial
+from dataclasses import dataclass
 
 from geoalchemy2.types import Geometry
 from sqlalchemy import (
@@ -23,7 +23,7 @@ from sqlalchemy import (
 from sqlalchemy.ext.declarative import declarative_base
 
 from egon.data import db
-from egon.data.datasets import Dataset
+from egon.data.datasets import Dataset, Tasks
 from egon.data.datasets.osmtgmod.substation import EgonHvmvSubstation
 from egon.data.datasets.substation_voronoi import EgonHvmvSubstationVoronoi
 from egon.data.db import session_scope
@@ -36,6 +36,7 @@ class Vg250GemClean(Base):
     """
     Class definition of table boundaries.vg250_gem_clean.
     """
+
     __tablename__ = "vg250_gem_clean"
     __table_args__ = {"schema": "boundaries"}
 
@@ -58,6 +59,7 @@ class HvmvSubstPerMunicipality(Base):
     """
     Class definition of temporary table grid.hvmv_subst_per_municipality.
     """
+
     __tablename__ = "hvmv_subst_per_municipality"
     __table_args__ = {"schema": "grid"}
 
@@ -91,6 +93,7 @@ class VoronoiMunicipalityCuts(VoronoiMunicipalityCutsBase, Base):
     """
     Class definition of temporary table grid.voronoi_municipality_cuts.
     """
+
     __tablename__ = "voronoi_municipality_cuts"
     __table_args__ = {"schema": "grid"}
 
@@ -103,8 +106,10 @@ class VoronoiMunicipalityCuts(VoronoiMunicipalityCutsBase, Base):
 
 class VoronoiMunicipalityCutsAssigned(VoronoiMunicipalityCutsBase, Base):
     """
-    Class definition of temporary table grid.voronoi_municipality_cuts_assigned.
+    Class definition of temporary table
+    grid.voronoi_municipality_cuts_assigned.
     """
+
     __tablename__ = "voronoi_municipality_cuts_assigned"
     __table_args__ = {"schema": "grid"}
 
@@ -120,6 +125,7 @@ class MvGridDistrictsDissolved(Base):
     """
     Class definition of temporary table grid.egon_mv_grid_district_dissolved.
     """
+
     __tablename__ = "egon_mv_grid_district_dissolved"
     __table_args__ = {"schema": "grid"}
 
@@ -137,6 +143,7 @@ class MvGridDistricts(Base):
     """
     Class definition of table grid.egon_mv_grid_district.
     """
+
     __tablename__ = "egon_mv_grid_district"
     __table_args__ = {"schema": "grid"}
 
@@ -347,7 +354,7 @@ def split_multi_substation_municipalities():
         # without any space in between (aka. polygons touch each other)
 
         # Initialize with very large number
-        remaining_polygons = [10 ** 10]
+        remaining_polygons = [10**10]
 
         while True:
             # This loop runs until all polygon that inital haven't had a
@@ -437,8 +444,8 @@ def assign_substation_municipality_fragments(
 
     Notes
     --------
-    The function :py:func:`nearest_polygon_with_substation` is very similar, but
-    different in detail.
+    The function :py:func:`nearest_polygon_with_substation` is very similar,
+    but different in detail.
 
     """
     # Determine nearest neighboring polygon that has a substation
@@ -524,7 +531,8 @@ def merge_polygons_to_grid_district():
     assignment of cut polygons parts is used as well as proximity of entire
     municipality polygons to polygons with a substation inside.
 
-    * Step 1: Merge municipality parts that are assigned to the same substation.
+    * Step 1: Merge municipality parts that are assigned to the same
+      substation.
     * Step 2: Insert municipality polygons with exactly one substation.
     * Step 3: Assign municipality polygons without a substation and insert
       to table.
@@ -788,83 +796,91 @@ def define_mv_grid_districts():
     MvGridDistrictsDissolved.__table__.drop(bind=engine, checkfirst=True)
 
 
-mv_grid_districts_setup = partial(
-    Dataset,
-    name="MvGridDistricts",
-    version="0.0.2",
-    dependencies=[],
-    tasks=(define_mv_grid_districts)
-)
-mv_grid_districts_setup.__doc__ = (
+@dataclass
+class mv_grid_districts_setup(Dataset):
     """
     Maps MV grid districts to federal states and writes it to database.
 
     Medium-voltage grid districts describe the area supplied by one MV grid.
 
-    Medium-voltage grid districts are defined by one polygon that represents the
-    supply area. Each MV grid district is connected to the HV grid via a single
-    substation.
+    Medium-voltage grid districts are defined by one polygon that represents
+    the supply area. Each MV grid district is connected to the HV grid via a
+    single substation.
 
-    The methods used for identifying the MV grid districts are heavily inspired
-    by `Hülk et al. (2017)
+    The methods used for identifying the MV grid districts are heavily
+    inspired by `Hülk et al. (2017)
     <https://somaesthetics.aau.dk/index.php/sepm/article/view/1833/1531>`_
-    (section 2.3), but the implementation differs in detail.
-    The main difference is that direct adjacency is preferred over proximity.
-    For polygons of municipalities
-    without a substation inside, it is iteratively checked for direct adjacent
-    other polygons that have a substation inside. Speaking visually, a MV grid
-    district grows around a polygon with a substation inside.
+    (section 2.3), but the implementation differs in detail. The main
+    difference is that direct adjacency is preferred over proximity. For
+    polygons of municipalities without a substation inside, it is
+    iteratively checked for direct adjacent other polygons that have a
+    substation inside. Speaking visually, a MV grid district grows around a
+    polygon with a substation inside.
 
     The grid districts are identified using three data sources
 
     1. Polygons of municipalities (:class:`Vg250GemClean`)
     2. HV-MV substations (:class:`EgonHvmvSubstation`)
-    3. HV-MV substation voronoi polygons (:class:`EgonHvmvSubstationVoronoi`)
+    3. HV-MV substation voronoi polygons
+       (:class:`EgonHvmvSubstationVoronoi`)
 
     Fundamentally, it is assumed that grid districts (supply areas) often go
-    along borders of administrative units, in particular along the borders of
-    municipalities due to the concession levy.
-    Furthermore, it is assumed that one grid district is supplied via a single
-    substation and that locations of substations and grid districts are designed
-    for aiming least lengths of grid line and cables.
+    along borders of administrative units, in particular along the borders
+    of municipalities due to the concession levy.
+    Furthermore, it is assumed that one grid district is supplied via a
+    single substation and that locations of substations and grid districts
+    are designed for aiming least lengths of grid line and cables.
 
-    With these assumptions, the three data sources from above are processed as
-    follows:
+    With these assumptions, the three data sources from above are processed
+    as follows:
 
     * Find the number of substations inside each municipality.
     * Split municipalities with more than one substation inside.
 
-      * Cut polygons of municipalities with voronoi polygons of respective substations.
-      * Assign resulting municipality polygon fragments to nearest substation.
-    * Assign municipalities without a single substation to nearest substation in
-      the neighborhood.
-    * Merge all municipality polygons and parts of municipality polygons to a
-      single polygon grouped by the assigned substation.
+      * Cut polygons of municipalities with voronoi polygons of respective
+        substations.
+      * Assign resulting municipality polygon fragments to nearest
+        substation.
+    * Assign municipalities without a single substation to nearest
+      substation in the neighborhood.
+    * Merge all municipality polygons and parts of municipality polygons to
+      a single polygon grouped by the assigned substation.
 
     For finding the nearest substation, as already said, direct adjacency is
-    preferred over closest distance. This means, the nearest substation does not
-    necessarily have to be the closest substation in the sense of beeline distance.
-    But it is the substation definitely located in a neighboring polygon. This
-    prevents the algorithm to find solutions where a MV grid districts consists of
-    multi-polygons with some space in between.
-    Nevertheless, beeline distance still plays an important role, as the algorithm
-    acts in two steps
+    preferred over closest distance. This means, the nearest substation does
+    not necessarily have to be the closest substation in the sense of
+    beeline distance. But it is the substation definitely located in a
+    neighboring polygon. This prevents the algorithm to find solutions where
+    a MV grid districts consists of multi-polygons with some space in
+    between.
+    Nevertheless, beeline distance still plays an important role, as the
+    algorithm acts in two steps
 
     1. Iteratively look for neighboring polygons until there are no further
        polygons.
     2. Find a polygon to assign to by minimum beeline distance.
 
-    The second step is required in order to cover edge cases, such as islands.
+    The second step is required in order to cover edge cases, such as
+    islands.
 
-    For understanding how this is implemented into separate functions, please
-    see :func:`define_mv_grid_districts`.
+    For understanding how this is implemented into separate functions,
+    please see :func:`define_mv_grid_districts`.
 
     *Dependencies*
-      * :py:class:`SubstationVoronoi <egon.data.datasets.substation_voronoi.SubstationVoronoi>`
+      * :py:class:`SubstationVoronoi
+        <egon.data.datasets.substation_voronoi.SubstationVoronoi>`
 
     *Resulting tables*
-      * :py:class:`grid.egon_mv_grid_district <MvGridDistricts>` is created and filled
-      * :py:class:`boundaries.vg250_gem_clean <Vg250GemClean>` is created and filled
+      * :py:class:`grid.egon_mv_grid_district <MvGridDistricts>`
+        is created and filled
+      * :py:class:`boundaries.vg250_gem_clean <Vg250GemClean>`
+        is created and filled
 
     """
-)
+
+    #:
+    name: str = "MvGridDistricts"
+    #:
+    version: str = "0.0.2"
+    #:
+    tasks: Tasks = define_mv_grid_districts

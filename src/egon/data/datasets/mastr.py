@@ -19,12 +19,12 @@ Todo: Finish docstring
 TBD
 """
 
-from functools import partial
+from dataclasses import dataclass
 from pathlib import Path
 from urllib.request import urlretrieve
 import os
 
-from egon.data.datasets import Dataset
+from egon.data.datasets import Dataset, Tasks
 import egon.data.config
 
 WORKING_DIR_MASTR_OLD = Path(".", "bnetza_mastr", "dump_2021-05-03")
@@ -66,10 +66,11 @@ def download_mastr_data():
     download(dataset_name="mastr_new", download_dir=WORKING_DIR_MASTR_NEW)
 
 
-mastr_data_setup = partial(
-    Dataset,
-    name="MastrData",
-    version="0.0.1",
-    dependencies=[],
-    tasks=(download_mastr_data,),
-)
+@dataclass
+class mastr_data_setup(Dataset):
+    #:
+    name: str = "MastrData"
+    #:
+    version: str = "0.0.1"
+    #:
+    tasks: Tasks = (download_mastr_data,)

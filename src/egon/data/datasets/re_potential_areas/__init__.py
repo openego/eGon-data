@@ -2,7 +2,7 @@
 potential areas for wind onshore and ground-mounted PV.
 """
 
-from functools import partial
+from dataclasses import dataclass
 from pathlib import Path
 
 from geoalchemy2 import Geometry
@@ -11,7 +11,7 @@ from sqlalchemy.ext.declarative import declarative_base
 import geopandas as gpd
 
 from egon.data import db
-from egon.data.datasets import Dataset
+from egon.data.datasets import Dataset, Tasks
 import egon.data.config
 
 Base = declarative_base()
@@ -109,11 +109,11 @@ def insert_data():
         )
 
 
-# create re_potential_areas dataset partial object
-re_potential_area_setup = partial(
-    Dataset,
-    name="RePotentialAreas",
-    version="0.0.1",
-    dependencies=[],
-    tasks=(create_tables, insert_data),
-)
+@dataclass
+class re_potential_area_setup(Dataset):
+    #:
+    name: str = "RePotentialAreas"
+    #:
+    version: str = "0.0.1"
+    #:
+    tasks: Tasks = (create_tables, insert_data)
