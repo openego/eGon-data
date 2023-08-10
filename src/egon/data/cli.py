@@ -15,6 +15,7 @@ Why does this file exist, and why not put this in __main__?
   Also see (1) from http://click.pocoo.org/5/setuptools/#setuptools-integration
 """
 import os
+import shutil
 import socket
 import subprocess
 import sys
@@ -327,6 +328,12 @@ def egon_data(context, **kwargs):
         uid=os.getuid(),
     )
     (Path(".") / "docker" / "database-data").mkdir(parents=True, exist_ok=True)
+
+    # Copy webserver_config.py to disable authentification on webinterface
+    shutil.copy2(
+        os.path.dirname(egon.data.airflow.__file__) + "/webserver_config.py",
+        Path(".") / "airflow/webserver_config.py",
+    )
 
     with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
         code = s.connect_ex(
