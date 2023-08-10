@@ -17,7 +17,7 @@ class Vg250MvGridDistricts(Dataset):
 
     *Dependencies*
       * :py:class:`Vg250 <egon.data.datasets.vg250.Vg250>`
-      * :py:mod:`mv_grid_districts_setup <egon.data.datasets.mv_grid_districts>`
+      * :py:class:`MvGridDistricts <egon.data.datasets.mv_grid_districts.mv_grid_districts_setup>`
 
     *Resulting tables*
       * :py:class:`boundaries.egon_map_mvgriddistrict_vg250 <MapMvgriddistrictsVg250>`

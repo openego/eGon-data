@@ -19,7 +19,7 @@ class ZensusMvGridDistricts(Dataset):
 
     *Dependencies*
       * :py:class:`ZensusPopulation <egon.data.datasets.zensus.ZensusPopulation>`
-      * :py:mod:`mv_grid_districts_setup <egon.data.datasets.mv_grid_districts>`
+      * :py:class:`MvGridDistricts <egon.data.datasets.mv_grid_districts.mv_grid_districts_setup>`
 
     *Resulting tables*
       * :py:class:`boundaries.egon_map_zensus_grid_districts <MapZensusGridDistricts>`

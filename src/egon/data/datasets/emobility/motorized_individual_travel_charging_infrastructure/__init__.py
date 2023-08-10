@@ -108,7 +108,7 @@ class MITChargingInfrastructure(Dataset):
     * Write results to DB
 
     *Dependencies*
-      * :py:func:`define_mv_grid_districts <egon.data.datasets.mv_grid_districts.define_mv_grid_districts>`
+      * :py:class:`MvGridDistricts <egon.data.datasets.mv_grid_districts.mv_grid_districts_setup>`
       * :py:func:`map_houseprofiles_to_buildings <egon.data.datasets.electricity_demand_timeseries.hh_buildings.map_houseprofiles_to_buildings>`
 
     *Resulting tables*

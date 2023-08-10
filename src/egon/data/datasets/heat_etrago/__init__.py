@@ -627,7 +627,7 @@ class HeatEtrago(Dataset):
 
     *Dependencies*
       * :py:class:`HeatSupply <egon.data.datasets.heat_supply.HeatSupply>`
-      * :py:func:`define_mv_grid_districts <egon.data.datasets.mv_grid_districts.define_mv_grid_districts>`
+      * :py:class:`MvGridDistricts <egon.data.datasets.mv_grid_districts.mv_grid_districts_setup>`
       * :py:class:`EtragoSetup <egon.data.datasets.etrago_setup.EtragoSetup>`
       * :py:class:`RenewableFeedin <egon.data.datasets.renewable_feedin.RenewableFeedin>`
       * :py:class:`HeatTimeSeries <egon.data.datasets.heat_demand_timeseries.HeatTimeSeries>`
