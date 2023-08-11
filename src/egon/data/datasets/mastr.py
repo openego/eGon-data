@@ -3,13 +3,11 @@ Download Marktstammdatenregister (MaStR) datasets unit registry.
 
 """
 
-from __future__ import annotations
-from dataclasses import dataclass
 from pathlib import Path
 from urllib.request import urlretrieve
 import os
 
-from egon.data.datasets import Dataset, Tasks
+from egon.data.datasets import Dataset
 import egon.data.config
 
 WORKING_DIR_MASTR_OLD = Path(".", "bnetza_mastr", "dump_2021-05-03")
@@ -51,7 +49,6 @@ def download_mastr_data():
     download(dataset_name="mastr_new", download_dir=WORKING_DIR_MASTR_NEW)
 
 
-@dataclass
 class mastr_data_setup(Dataset):
     """
     Download Marktstammdatenregister (MaStR) datasets unit registry.
@@ -84,4 +81,12 @@ class mastr_data_setup(Dataset):
     #:
     version: str = "0.0.1"
     #:
-    tasks: Tasks = (download_mastr_data,)
+    tasks = (download_mastr_data,)
+
+    def __init__(self, dependencies):
+        super().__init__(
+            name=self.name,
+            version=self.version,
+            dependencies=dependencies,
+            tasks=self.tasks,
+        )

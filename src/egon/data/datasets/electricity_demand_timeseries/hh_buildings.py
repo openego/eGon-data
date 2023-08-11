@@ -3,8 +3,7 @@ Household electricity demand time series for scenarios in 2035 and 2050
 assigned to OSM-buildings.
 
 """
-from __future__ import annotations
-from dataclasses import dataclass
+
 import random
 
 from geoalchemy2 import Geometry
@@ -15,7 +14,7 @@ import numpy as np
 import pandas as pd
 
 from egon.data import db
-from egon.data.datasets import Dataset, Tasks
+from egon.data.datasets import Dataset
 from egon.data.datasets.electricity_demand_timeseries.hh_profiles import (
     HouseholdElectricityProfilesInCensusCells,
     get_iee_hh_demand_profiles_raw,
@@ -750,7 +749,6 @@ def map_houseprofiles_to_buildings():
         )
 
 
-@dataclass
 class setup(Dataset):
     """
     Household electricity demand time series for scenarios in 2035 and 2050
@@ -878,4 +876,12 @@ class setup(Dataset):
     #:
     version: str = "0.0.5"
     #:
-    tasks: Tasks = (map_houseprofiles_to_buildings, get_building_peak_loads)
+    tasks = (map_houseprofiles_to_buildings, get_building_peak_loads)
+
+    def __init__(self, dependencies):
+        super().__init__(
+            name=self.name,
+            version=self.version,
+            dependencies=dependencies,
+            tasks=self.tasks,
+        )
