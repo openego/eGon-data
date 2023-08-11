@@ -39,6 +39,7 @@ class HouseholdElectricityProfilesOfBuildings(Base):
     area and peak load. This table is created within
     :py:func:`hh_buildings.map_houseprofiles_to_buildings()`
     """
+
     __tablename__ = "egon_household_electricity_profile_of_buildings"
     __table_args__ = {"schema": "demand"}
 
@@ -871,6 +872,7 @@ class setup(Dataset):
 
 
     """
+
     #:
     name: str = "Demand_Building_Assignment"
     #:
