@@ -3,7 +3,7 @@ Household electricity demand time series for scenarios in 2035 and 2050
 assigned to OSM-buildings.
 
 """
-from dataclasses import dataclass
+
 import random
 
 from geoalchemy2 import Geometry
@@ -14,7 +14,7 @@ import numpy as np
 import pandas as pd
 
 from egon.data import db
-from egon.data.datasets import Dataset, Tasks
+from egon.data.datasets import Dataset
 from egon.data.datasets.electricity_demand_timeseries.hh_profiles import (
     HouseholdElectricityProfilesInCensusCells,
     get_iee_hh_demand_profiles_raw,
@@ -38,7 +38,9 @@ class HouseholdElectricityProfilesOfBuildings(Base):
 
     Mapping of demand timeseries and buildings and cell_id. This table is created within
     :py:func:`hh_buildings.map_houseprofiles_to_buildings()`.
+
     """
+
     __tablename__ = "egon_household_electricity_profile_of_buildings"
     __table_args__ = {"schema": "demand"}
 
@@ -753,7 +755,6 @@ def map_houseprofiles_to_buildings():
         )
 
 
-@dataclass
 class setup(Dataset):
     """
     Household electricity demand time series for scenarios in 2035 and 2050
@@ -850,30 +851,38 @@ class setup(Dataset):
 
     .. code-block:: SQL
 
-        SELECT t1.cell_id, building_count, hh_count, hh_types
-            FROM (
-                SELECT
-                    cell_id,
-                    Count(distinct(building_id)) as building_count,
-                    count(profile_id) as hh_count
-                FROM demand.egon_household_electricity_profile_of_buildings
-                GROUP BY cell_id
-            ) as t1
+        SELECT t1.cell_id, building_count, hh_count, hh_types FROM (
+            SELECT
+                cell_id,
+                COUNT(DISTINCT(building_id)) AS building_count,
+                COUNT(profile_id) AS hh_count
+            FROM demand.egon_household_electricity_profile_of_buildings
+            GROUP BY cell_id
+        ) AS t1
         FULL OUTER JOIN (
             SELECT
                 cell_id,
                 array_agg(
-                    array[cast(hh_10types as char), hh_type]
-                ) as hh_types
+                    array[CAST(hh_10types AS char), hh_type]
+                ) AS hh_types
             FROM society.egon_destatis_zensus_household_per_ha_refined
             GROUP BY cell_id
-        ) as t2
+        ) AS t2
         ON t1.cell_id = t2.cell_id
 
     """
+
     #:
     name: str = "Demand_Building_Assignment"
     #:
     version: str = "0.0.5"
     #:
-    tasks: Tasks = (map_houseprofiles_to_buildings, get_building_peak_loads)
+    tasks = (map_houseprofiles_to_buildings, get_building_peak_loads)
+
+    def __init__(self, dependencies):
+        super().__init__(
+            name=self.name,
+            version=self.version,
+            dependencies=dependencies,
+            tasks=self.tasks,
+        )

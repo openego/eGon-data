@@ -6,8 +6,6 @@ are defined by one polygon that represents the supply area.
 
 """
 
-from dataclasses import dataclass
-
 from geoalchemy2.types import Geometry
 from sqlalchemy import (
     ARRAY,
@@ -23,7 +21,7 @@ from sqlalchemy import (
 from sqlalchemy.ext.declarative import declarative_base
 
 from egon.data import db
-from egon.data.datasets import Dataset, Tasks
+from egon.data.datasets import Dataset
 from egon.data.datasets.osmtgmod.substation import EgonHvmvSubstation
 from egon.data.datasets.substation_voronoi import EgonHvmvSubstationVoronoi
 from egon.data.db import session_scope
@@ -796,7 +794,6 @@ def define_mv_grid_districts():
     MvGridDistrictsDissolved.__table__.drop(bind=engine, checkfirst=True)
 
 
-@dataclass
 class mv_grid_districts_setup(Dataset):
     """
     Maps MV grid districts to federal states and writes it to database.
@@ -882,5 +879,11 @@ class mv_grid_districts_setup(Dataset):
     name: str = "MvGridDistricts"
     #:
     version: str = "0.0.2"
-    #:
-    tasks: Tasks = define_mv_grid_districts
+
+    def __init__(self, dependencies):
+        super().__init__(
+            name=self.name,
+            version=self.version,
+            dependencies=dependencies,
+            tasks=define_mv_grid_districts,
+        )
