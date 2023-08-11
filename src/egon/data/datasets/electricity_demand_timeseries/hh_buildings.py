@@ -34,9 +34,10 @@ np.random.seed(RANDOM_SEED)
 
 class HouseholdElectricityProfilesOfBuildings(Base):
     """
-    Mapping of demand timeseries and buildings including cell_id, building area and
-    peak load. This table is created within
-    :py:func:`hh_buildings.map_houseprofiles_to_buildings()`
+    Class definition of table demand.egon_household_electricity_profile_of_buildings.
+
+    Mapping of demand timeseries and buildings and cell_id. This table is created within
+    :py:func:`hh_buildings.map_houseprofiles_to_buildings()`.
     """
     __tablename__ = "egon_household_electricity_profile_of_buildings"
     __table_args__ = {"schema": "demand"}
@@ -49,9 +50,11 @@ class HouseholdElectricityProfilesOfBuildings(Base):
 
 class OsmBuildingsSynthetic(Base):
     """
+    Class definition of table demand.osm_buildings_synthetic.
+
     Lists generated synthetic building with id, zensus_population_id and
     building type. This table is created within
-    :py:func:`hh_buildings.map_houseprofiles_to_buildings()`
+    :py:func:`hh_buildings.map_houseprofiles_to_buildings()`.
     """
 
     __tablename__ = "osm_buildings_synthetic"
@@ -68,9 +71,11 @@ class OsmBuildingsSynthetic(Base):
 
 class BuildingElectricityPeakLoads(Base):
     """
+    Class definition of table demand.egon_building_electricity_peak_loads.
+
     Mapping of electricity demand time series and buildings including cell_id,
     building area and peak load. This table is created within
-    :func:`hh_buildings.get_building_peak_loads()`
+    :func:`hh_buildings.get_building_peak_loads()`.
     """
 
     __tablename__ = "egon_building_electricity_peak_loads"
@@ -769,8 +774,9 @@ class setup(Dataset):
       * :py:class:`HouseholdElectricityProfilesOfBuildings
         <egon.data.datasets.electricity_demand_timeseries.hh_buildings.HouseholdElectricityProfilesOfBuildings>`
         is created and filled
-    Both tables are created within :func:`map_houseprofiles_to_buildings`.
-
+      * :py:class:`BuildingElectricityPeakLoads
+        <egon.data.datasets.electricity_demand_timeseries.hh_buildings.BuildingElectricityPeakLoads>`
+        is created and filled
 
     **The following datasets from the database are used for creation:**
 
@@ -816,7 +822,6 @@ class setup(Dataset):
     Therefore, multiple profiles can be assigned to one building, making it a
     multi-household building.
 
-
     **What are central assumptions during the data processing?**
 
     * Mapping zensus data to OSM data is not trivial.
@@ -837,11 +842,8 @@ class setup(Dataset):
     * As this datasets is a cascade after profile assignement at census
       cells also check drawbacks and limitations in hh_profiles.py.
 
-
-
     Example Query
     -----
-
 
     * Get a list with number of houses, households and household types per
       census cell
@@ -867,8 +869,6 @@ class setup(Dataset):
             GROUP BY cell_id
         ) as t2
         ON t1.cell_id = t2.cell_id
-
-
 
     """
     #:

@@ -18,6 +18,10 @@ Base = declarative_base()
 
 
 class EgonRePotentialAreaPvAgriculture(Base):
+    """
+    Class definition of table supply.egon_re_potential_area_pv_agriculture.
+
+    """
     __tablename__ = "egon_re_potential_area_pv_agriculture"
     __table_args__ = {"schema": "supply"}
     id = Column(Integer, primary_key=True)
@@ -25,6 +29,10 @@ class EgonRePotentialAreaPvAgriculture(Base):
 
 
 class EgonRePotentialAreaPvRoadRailway(Base):
+    """
+    Class definition of table supply.egon_re_potential_area_pv_road_railway.
+
+    """
     __tablename__ = "egon_re_potential_area_pv_road_railway"
     __table_args__ = {"schema": "supply"}
     id = Column(Integer, primary_key=True)
@@ -32,6 +40,10 @@ class EgonRePotentialAreaPvRoadRailway(Base):
 
 
 class EgonRePotentialAreaWind(Base):
+    """
+    Class definition of table supply.egon_re_potential_area_wind.
+
+    """
     __tablename__ = "egon_re_potential_area_wind"
     __table_args__ = {"schema": "supply"}
     id = Column(Integer, primary_key=True)
@@ -111,6 +123,20 @@ def insert_data():
 
 @dataclass
 class re_potential_area_setup(Dataset):
+    """
+    Downloads potential areas for PV and wind power plants from data bundle and
+    writes them to the database.
+
+    *Dependencies*
+      * :py:func:`Setup <egon.data.datasets.database.setup>`
+      * :py:class:`DataBundle <egon.data.datasets.data_bundle.DataBundle>`
+
+    *Resulting Tables*
+      * :py:class:`EgonRePotentialAreaPvAgriculture <egon.data.datasets.re_potential_areas.EgonRePotentialAreaPvAgriculture>`
+      * :py:class:`EgonRePotentialAreaPvRoadRailway <egon.data.datasets.re_potential_areas.EgonRePotentialAreaPvRoadRailway>`
+      * :py:class:`EgonRePotentialAreaWind <egon.data.datasets.re_potential_areas.EgonRePotentialAreaWind>`
+
+    """
     #:
     name: str = "RePotentialAreas"
     #:

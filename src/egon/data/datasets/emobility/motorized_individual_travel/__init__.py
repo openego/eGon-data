@@ -349,7 +349,7 @@ class MotorizedIndividualTravel(Dataset):
 
     * Scenario overview
     * Change scenario variation for 2050: adjust in
-    emobility_mit->scenario->variation->eGon100RE
+      emobility_mit->scenario->variation->eGon100RE
 
     **Trip data**
 
@@ -425,7 +425,20 @@ class MotorizedIndividualTravel(Dataset):
       * :py:class:`CH4Storages <egon.data.datasets.ch4_storages.CH4Storages>`
 
     *Resulting Tables*
-      * :py:class:` <>` ToDo
+      * :py:class:`EgonEvPool <egon.data.datasets.emobility.motorized_individual_travel.db_classes.EgonEvPool>`
+        is created and filled
+      * :py:class:`EgonEvTrip <egon.data.datasets.emobility.motorized_individual_travel.db_classes.EgonEvTrip>`
+        is created and filled
+      * :py:class:`EgonEvCountRegistrationDistrict <egon.data.datasets.emobility.motorized_individual_travel.db_classes.EgonEvCountRegistrationDistrict>`
+        is created and filled
+      * :py:class:`EgonEvCountMunicipality <egon.data.datasets.emobility.motorized_individual_travel.db_classes.EgonEvCountMunicipality>`
+        is created and filled
+      * :py:class:`EgonEvCountMvGridDistrict <egon.data.datasets.emobility.motorized_individual_travel.db_classes.EgonEvCountMvGridDistrict>`
+        is created and filled
+      * :py:class:`EgonEvMvGridDistrict <egon.data.datasets.emobility.motorized_individual_travel.db_classes.EgonEvMvGridDistrict>`
+        is created and filled
+      * :py:class:`EgonEvMetadata <egon.data.datasets.emobility.motorized_individual_travel.db_classes.EgonEvMetadata>`
+        is created and filled
 
     """
 

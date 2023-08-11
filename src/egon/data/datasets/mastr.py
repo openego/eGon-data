@@ -74,8 +74,6 @@ class mastr_data_setup(Dataset):
     *Dependencies*
       * :py:func:`Setup <egon.data.datasets.database.setup>`
 
-    *Resulting Tables*
-      * :py:class:`PowerPlants <egon.data.datasets.power_plants.PowerPlants>`
     """
 
     #:
