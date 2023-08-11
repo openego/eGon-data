@@ -44,6 +44,7 @@ The figure below visualizes the interdependencies between the different tools.
   :width: 800
   :alt: eGon-data tool chain
 
+.. _concept-and-scenarios-ref:
 
 Modeling concept and scenarios
 ===============================
