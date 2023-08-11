@@ -849,15 +849,14 @@ class setup(Dataset):
 
     .. code-block:: SQL
 
-        SELECT t1.cell_id, building_count, hh_count, hh_types
-            FROM (
-                SELECT
-                    cell_id,
-                    COUNT(DISTINCT(building_id)) AS building_count,
-                    COUNT(profile_id) AS hh_count
-                FROM demand.egon_household_electricity_profile_of_buildings
-                GROUP BY cell_id
-            ) AS t1
+        SELECT t1.cell_id, building_count, hh_count, hh_types FROM (
+            SELECT
+                cell_id,
+                COUNT(DISTINCT(building_id)) AS building_count,
+                COUNT(profile_id) AS hh_count
+            FROM demand.egon_household_electricity_profile_of_buildings
+            GROUP BY cell_id
+        ) AS t1
         FULL OUTER JOIN (
             SELECT
                 cell_id,
