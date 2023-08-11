@@ -311,6 +311,8 @@ class OpenStreetMap(Dataset):
       * openstreetmap.osm_roads is created and filled (table has no associated python class)
       * openstreetmap.osm_ways is created and filled (table has no associated python class)
 
+    See documentation section :ref:`osm-ref` for more information.
+
     """
 
     #:

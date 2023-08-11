@@ -1,5 +1,5 @@
 """
-Download Marktstammdatenregister (MaStR) datasets unit registry.
+Download Marktstammdatenregister (MaStR) from Zenodo.
 
 """
 
@@ -51,7 +51,10 @@ def download_mastr_data():
 
 class mastr_data_setup(Dataset):
     """
-    Download Marktstammdatenregister (MaStR) datasets unit registry.
+    Download Marktstammdatenregister (MaStR) from Zenodo.
+
+    *Dependencies*
+      * :py:func:`Setup <egon.data.datasets.database.setup>`
 
     The downloaded data incorporates two different datasets:
 
@@ -69,8 +72,7 @@ class mastr_data_setup(Dataset):
         <egon.data.datasets.power_plants.mastr>` and :py:class:`PowerPlants
         <egon.data.datasets.power_plants.PowerPlants>`
 
-    *Dependencies*
-      * :py:func:`Setup <egon.data.datasets.database.setup>`
+    See documentation section :ref:`mastr-ref` for more information.
 
     """
 

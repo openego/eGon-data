@@ -81,11 +81,6 @@ class LoadArea(Dataset):
     """
     Creates load area data based on OSM and census data.
 
-    Create and update the `demand.egon_loadarea` table with new data, based on OSM and
-    census data. Among other things, area updates are carried out, smaller load areas
-    are removed, center calculations are performed, and census data are added.
-    Statistics for various OSM sectors are also calculated and inserted.
-
     *Dependencies*
       * :py:class:`OsmLanduse <egon.data.datasets.loadarea.OsmLanduse>`
       * :py:class:`ZensusVg250 <egon.data.datasets.zensus_vg250.ZensusVg250>`
@@ -96,6 +91,12 @@ class LoadArea(Dataset):
 
     *Resulting tables*
       * :class:`demand.egon_loadarea` is created and filled (no associated Python class)
+
+    Create and update the `demand.egon_loadarea` table with new data, based on OSM and
+    census data. Among other things, area updates are carried out, smaller load areas
+    are removed, center calculations are performed, and census data are added.
+    Statistics for various OSM sectors are also calculated and inserted.
+    See also documentation section :ref:`load-areas-ref` for more information.
 
     Note: industrial demand contains:
       * voltage levels 4-7

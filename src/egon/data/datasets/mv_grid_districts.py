@@ -796,72 +796,10 @@ def define_mv_grid_districts():
 
 class mv_grid_districts_setup(Dataset):
     """
-    Maps MV grid districts to federal states and writes it to database.
+    Sets up medium-voltage grid districts that describe the area supplied by one
+    MV grid.
 
-    Medium-voltage grid districts describe the area supplied by one MV grid.
-
-    Medium-voltage grid districts are defined by one polygon that represents
-    the supply area. Each MV grid district is connected to the HV grid via a
-    single substation.
-
-    The methods used for identifying the MV grid districts are heavily
-    inspired by `Hülk et al. (2017)
-    <https://somaesthetics.aau.dk/index.php/sepm/article/view/1833/1531>`_
-    (section 2.3), but the implementation differs in detail. The main
-    difference is that direct adjacency is preferred over proximity. For
-    polygons of municipalities without a substation inside, it is
-    iteratively checked for direct adjacent other polygons that have a
-    substation inside. Speaking visually, a MV grid district grows around a
-    polygon with a substation inside.
-
-    The grid districts are identified using three data sources
-
-    1. Polygons of municipalities (:class:`Vg250GemClean`)
-    2. HV-MV substations (:class:`EgonHvmvSubstation`)
-    3. HV-MV substation voronoi polygons
-       (:class:`EgonHvmvSubstationVoronoi`)
-
-    Fundamentally, it is assumed that grid districts (supply areas) often go
-    along borders of administrative units, in particular along the borders
-    of municipalities due to the concession levy.
-    Furthermore, it is assumed that one grid district is supplied via a
-    single substation and that locations of substations and grid districts
-    are designed for aiming least lengths of grid line and cables.
-
-    With these assumptions, the three data sources from above are processed
-    as follows:
-
-    * Find the number of substations inside each municipality.
-    * Split municipalities with more than one substation inside.
-
-      * Cut polygons of municipalities with voronoi polygons of respective
-        substations.
-      * Assign resulting municipality polygon fragments to nearest
-        substation.
-    * Assign municipalities without a single substation to nearest
-      substation in the neighborhood.
-    * Merge all municipality polygons and parts of municipality polygons to
-      a single polygon grouped by the assigned substation.
-
-    For finding the nearest substation, as already said, direct adjacency is
-    preferred over closest distance. This means, the nearest substation does
-    not necessarily have to be the closest substation in the sense of
-    beeline distance. But it is the substation definitely located in a
-    neighboring polygon. This prevents the algorithm to find solutions where
-    a MV grid districts consists of multi-polygons with some space in
-    between.
-    Nevertheless, beeline distance still plays an important role, as the
-    algorithm acts in two steps
-
-    1. Iteratively look for neighboring polygons until there are no further
-       polygons.
-    2. Find a polygon to assign to by minimum beeline distance.
-
-    The second step is required in order to cover edge cases, such as
-    islands.
-
-    For understanding how this is implemented into separate functions,
-    please see :func:`define_mv_grid_districts`.
+    See documentation section :ref:`mv-grid-districts` for more information.
 
     *Dependencies*
       * :py:class:`SubstationVoronoi
