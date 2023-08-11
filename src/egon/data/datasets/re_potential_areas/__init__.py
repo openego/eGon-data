@@ -2,6 +2,7 @@
 potential areas for wind onshore and ground-mounted PV.
 """
 
+from __future__ import annotations
 from dataclasses import dataclass
 from pathlib import Path
 

@@ -6,6 +6,7 @@ are defined by one polygon that represents the supply area.
 
 """
 
+from __future__ import annotations
 from dataclasses import dataclass
 
 from geoalchemy2.types import Geometry

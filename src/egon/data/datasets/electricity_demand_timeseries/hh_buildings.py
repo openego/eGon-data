@@ -3,6 +3,7 @@ Household electricity demand time series for scenarios in 2035 and 2050
 assigned to OSM-buildings.
 
 """
+from __future__ import annotations
 from dataclasses import dataclass
 import random
 

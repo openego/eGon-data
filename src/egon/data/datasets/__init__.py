@@ -160,6 +160,9 @@ class Tasks_(dict):
             )
 
 
+#: A dataset can depend on other datasets or the tasks of other datasets.
+Dependencies = Iterable[Union["Dataset", Task]]
+
 @dataclass
 class Dataset:
     #: The name of the Dataset
@@ -176,7 +179,7 @@ class Dataset:
     #: downstream of any of the listed dependencies. In case of bare
     #: :class:`Task`, a direct link will be created whereas for a
     #: :class:`Dataset` the link will be made to all of its last tasks.
-    dependencies: Iterable[Union[Dataset, Task]] = ()
+    dependencies: Dependencies = ()
     #: The tasks of this :class:`Dataset`. A :class:`TaskGraph` will
     #: automatically be converted to :class:`Tasks_`.
     tasks: Tasks = ()

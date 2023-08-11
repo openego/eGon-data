@@ -3,6 +3,7 @@ Download Marktstammdatenregister (MaStR) datasets unit registry.
 
 """
 
+from __future__ import annotations
 from dataclasses import dataclass
 from pathlib import Path
 from urllib.request import urlretrieve
