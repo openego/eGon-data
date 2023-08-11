@@ -853,20 +853,20 @@ class setup(Dataset):
             FROM (
                 SELECT
                     cell_id,
-                    Count(distinct(building_id)) as building_count,
-                    count(profile_id) as hh_count
+                    COUNT(DISTINCT(building_id)) AS building_count,
+                    COUNT(profile_id) AS hh_count
                 FROM demand.egon_household_electricity_profile_of_buildings
                 GROUP BY cell_id
-            ) as t1
+            ) AS t1
         FULL OUTER JOIN (
             SELECT
                 cell_id,
                 array_agg(
-                    array[cast(hh_10types as char), hh_type]
-                ) as hh_types
+                    array[CAST(hh_10types AS char), hh_type]
+                ) AS hh_types
             FROM society.egon_destatis_zensus_household_per_ha_refined
             GROUP BY cell_id
-        ) as t2
+        ) AS t2
         ON t1.cell_id = t2.cell_id
 
 
