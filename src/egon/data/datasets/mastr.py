@@ -60,8 +60,8 @@ class mastr_data_setup(Dataset):
 
     Dump 2021-05-03
       * Source: https://sandbox.zenodo.org/record/808086
-      * Used technologies: PV plants, wind turbines, biomass, hydro plants, combustion,
-        nuclear, gsgk, storage
+      * Used technologies: PV plants, wind turbines, biomass, hydro plants,
+        combustion, nuclear, gsgk, storage
       * Data is further processed in the :py:class:`PowerPlants
         <egon.data.datasets.power_plants.PowerPlants>` dataset
 

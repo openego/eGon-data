@@ -35,8 +35,8 @@ np.random.seed(RANDOM_SEED)
 
 class HouseholdElectricityProfilesOfBuildings(Base):
     """
-    Mapping of demand timeseries and buildings including cell_id, building area and
-    peak load. This table is created within
+    Mapping of demand timeseries and buildings including cell_id, building
+    area and peak load. This table is created within
     :py:func:`hh_buildings.map_houseprofiles_to_buildings()`
     """
     __tablename__ = "egon_household_electricity_profile_of_buildings"
