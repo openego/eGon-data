@@ -11,6 +11,7 @@ import numpy as np
 
 
 def hts_to_etrago():
+
     sources = config.datasets()["etrago_heat"]["sources"]
     targets = config.datasets()["etrago_heat"]["targets"]
     scenario = "eGon2035"
@@ -18,6 +19,7 @@ def hts_to_etrago():
 
     for carrier in carriers:
         if carrier == "central_heat":
+
             # Map heat buses to district heating id and area_id
             # interlinking bus_id and area_id
             bus_area = db.select_dataframe(

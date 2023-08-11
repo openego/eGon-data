@@ -102,6 +102,7 @@ def insert_buses(carrier, scenario):
 
 
 def insert_store(scenario, carrier):
+
     sources = config.datasets()["etrago_heat"]["sources"]
     targets = config.datasets()["etrago_heat"]["targets"]
 
