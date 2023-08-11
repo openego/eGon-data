@@ -1,5 +1,5 @@
 Motorized individual travel
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+++++++++++++++++++++++++++++
 
 The electricity demand data of motorized individual travel (MIT) for both the eGon2035
 and eGon100RE scenario is set up
@@ -35,7 +35,7 @@ metadata_simbev_run.json file, that is provided along with the trip data.
     "PHEV", "luxury", 11, 120, 30, 0.2138
 
 Heavy-duty transport
-~~~~~~~~~~~~~~~~~~~~~
++++++++++++++++++++++
 
 In the context of the eGon project, it is assumed that all e-trucks will be
 completely hydrogen-powered. The hydrogen demand data of all e-trucks is set up
