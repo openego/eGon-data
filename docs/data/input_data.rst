@@ -44,6 +44,7 @@ Currently, two versions are used:
 * `2022-11-17 <https://sandbox.zenodo.org/record/1132839>`_
 
 The download is implemented in :class:`MastrData<egon.data.datasets.mastr.MastrData>`.
+
 .. _osm-ref:
 
 OpenStreetMap
