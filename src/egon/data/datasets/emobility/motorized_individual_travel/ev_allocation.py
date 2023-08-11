@@ -47,9 +47,9 @@ def fix_missing_ags_municipality_regiostar(muns, rs7_data):
     """Check if all AGS of municipality dataset are included in RegioStaR7
     dataset and vice versa.
 
-    As of Dec 2021, some municipalities are not included int he RegioStaR7
+    As of Dec 2021, some municipalities are not included int the RegioStaR7
     dataset. This is mostly caused by incorporations of a municipality by
-    another municipality. This is fixed by assining a RS7 id from another
+    another municipality. This is fixed by assigning a RS7 id from another
     municipality with similar AGS (most likely a neighboured one).
 
     Missing entries in the municipality dataset is printed but not fixed

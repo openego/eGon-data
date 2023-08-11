@@ -2,6 +2,8 @@
 Literature
 **********
 
+.. [BASt] Bundesanstalt für Straßenwesen, Automatische Zählstellen 2020 (2020). URL https://www.bast.de/DE/Verkehrstechnik/Fachthemen/v2-verkehrszaehlung/Daten/2020_1/Jawe2020.cs
+
 .. [Brakelmann2004] H. Brakelmann, Netzverstärkungs-Trassen zur Übertragung von Windenergie: Freileitung oder Kabel? (2004). URL http://www.ets.uni-duisburg-essen.de/download/public/Freileitung_Kabel.pdf
 
 .. [Buettner2022] C. Büttner, J. Amme, J. Endres, A. Malla, B. Schachler, I. Cußmann, Open modeling of electricity and heat demand curves for all residential buildings in Germany, Energy Informatics 5 (1) (2022) 21. doi:10.1186/s42162-022-00201-y. URL https://doi.org/10.1186/s42162-022-00201-y
