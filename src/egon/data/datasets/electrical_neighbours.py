@@ -3,7 +3,7 @@
 
 import zipfile
 
-# import entsoe
+import entsoe
 import requests
 import logging
 
@@ -19,6 +19,7 @@ from egon.data.datasets import Dataset
 from egon.data.datasets.fix_ehv_subnetworks import select_bus_id
 from egon.data.datasets.fill_etrago_gen import add_marginal_costs
 from egon.data.datasets.scenario_parameters import get_sector_parameters
+from os import path
 
 
 def get_cross_border_buses(scenario, sources):
@@ -1272,9 +1273,9 @@ def tyndp_demand():
         session.commit()
 
 
-def entsoe_historic_generation_capacities(
-    entsoe_token=None, year_start="20190101", year_end="20200101"
-):
+def entsoe_historic_generation_capacities(year_start="20190101", year_end="20200101"):
+    
+    entsoe_token = open(path.join(path.expanduser('~'), ".entsoe-token"), "r").read(36)
     client = entsoe.EntsoePandasClient(api_key=entsoe_token)
 
     start = pd.Timestamp(year_start, tz="Europe/Brussels")
@@ -1316,7 +1317,7 @@ def entsoe_historic_generation_capacities(
             pass
 
     if not_retrieved:
-        logger.warning(
+        logging.warning(
             f"Data for country (-ies) {', '.join(not_retrieved)} could not be retrieved."
         )
     df = pd.concat(dfs)
@@ -1326,9 +1327,8 @@ def entsoe_historic_generation_capacities(
     return df
 
 
-def entsoe_historic_demand(
-    entsoe_token=None, year_start="20190101", year_end="20200101"
-):
+def entsoe_historic_demand(year_start="20190101", year_end="20200101"):
+    entsoe_token = open(path.join(path.expanduser('~'), ".entsoe-token"), "r").read(36)
     client = entsoe.EntsoePandasClient(api_key=entsoe_token)
 
     start = pd.Timestamp(year_start, tz="Europe/Brussels")
@@ -1377,7 +1377,7 @@ def entsoe_historic_demand(
             not_retrieved.append(country)
             pass
     if not_retrieved:
-        logger.warning(
+        logging.warning(
             f"Data for country (-ies) {', '.join(not_retrieved)} could not be retrieved."
         )
 
@@ -1443,7 +1443,7 @@ def entsoe_to_bus_etrago():
     return map_entsoe.map(for_bus)
 
 
-def insert_generators_sq(gen_sq=None, scn_name="status2019"):
+def insert_generators_sq(scn_name="status2019"):
     """
     Insert generators for foreign countries based on ENTSO-E data
 
@@ -1460,11 +1460,8 @@ def insert_generators_sq(gen_sq=None, scn_name="status2019"):
     None.
 
     """
-    ################# TEMPORAL ####################
-    gen_sq = pd.read_csv(
-        "data_bundle_powerd_data/entsoe/gen_entsoe.csv", index_col="Index"
-    )
-    ################# TEMPORAL ####################
+
+    gen_sq = entsoe_historic_generation_capacities()
 
     targets = config.datasets()["electrical_neighbours"]["targets"]
     # Delete existing data
@@ -1616,7 +1613,7 @@ def insert_generators_sq(gen_sq=None, scn_name="status2019"):
     return
 
 
-def insert_loads_sq(load_sq=None, scn_name="status2019"):
+def insert_loads_sq(scn_name="status2019"):
     """
     Copy load timeseries data from entso-e.
 
@@ -1628,11 +1625,7 @@ def insert_loads_sq(load_sq=None, scn_name="status2019"):
     sources = config.datasets()["electrical_neighbours"]["sources"]
     targets = config.datasets()["electrical_neighbours"]["targets"]
 
-    ################# TEMPORAL ####################
-    load_sq = pd.read_csv(
-        "data_bundle_powerd_data/entsoe/load_entsoe.csv", index_col="Index"
-    )
-    ################# TEMPORAL ####################
+    load_sq = entsoe_historic_demand()
 
     # Delete existing data
     db.execute_sql(
@@ -1715,7 +1708,7 @@ class ElectricalNeighbours(Dataset):
     def __init__(self, dependencies):
         super().__init__(
             name="ElectricalNeighbours",
-            version="0.0.9",
+            version="0.0.10",
             dependencies=dependencies,
             tasks=tasks,
         )
