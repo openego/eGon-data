@@ -1273,9 +1273,12 @@ def tyndp_demand():
         session.commit()
 
 
-def entsoe_historic_generation_capacities(year_start="20190101", year_end="20200101"):
-    
-    entsoe_token = open(path.join(path.expanduser('~'), ".entsoe-token"), "r").read(36)
+def entsoe_historic_generation_capacities(
+    year_start="20190101", year_end="20200101"
+):
+    entsoe_token = open(
+        path.join(path.expanduser("~"), ".entsoe-token"), "r"
+    ).read(36)
     client = entsoe.EntsoePandasClient(api_key=entsoe_token)
 
     start = pd.Timestamp(year_start, tz="Europe/Brussels")
@@ -1328,7 +1331,9 @@ def entsoe_historic_generation_capacities(year_start="20190101", year_end="20200
 
 
 def entsoe_historic_demand(year_start="20190101", year_end="20200101"):
-    entsoe_token = open(path.join(path.expanduser('~'), ".entsoe-token"), "r").read(36)
+    entsoe_token = open(
+        path.join(path.expanduser("~"), ".entsoe-token"), "r"
+    ).read(36)
     client = entsoe.EntsoePandasClient(api_key=entsoe_token)
 
     start = pd.Timestamp(year_start, tz="Europe/Brussels")
