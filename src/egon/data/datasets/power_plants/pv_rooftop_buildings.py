@@ -1224,7 +1224,7 @@ def allocate_pv(
                     )
                 )
 
-                chosen_buildings = q_buildings.index.append(add_buildings)
+                chosen_buildings = q_buildings.index.union(add_buildings)
 
             else:
                 chosen_buildings = rng.choice(

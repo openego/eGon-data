@@ -324,30 +324,42 @@ def insert_gas_buses_abroad(scn_name="status2019"):
     gdf_abroad_buses["bus_id"] = range(new_id, new_id + len(gdf_abroad_buses))
 
     # Add central bus in Russia
-    gdf_abroad_buses = gdf_abroad_buses.append(
-        {
-            "scn_name": scn_name,
-            "bus_id": (new_id + len(gdf_abroad_buses) + 1),
-            "x": 41,
-            "y": 55,
-            "country": "RU",
-            "carrier": main_gas_carrier,
-        },
+    gdf_abroad_buses = pd.concat(
+        [
+            gdf_abroad_buses,
+            pd.DataFrame(
+                index=[gdf_abroad_buses.index.max() + 1],
+                data={
+                    "scn_name": scn_name,
+                    "bus_id": (new_id + len(gdf_abroad_buses) + 1),
+                    "x": 41,
+                    "y": 55,
+                    "country": "RU",
+                    "carrier": main_gas_carrier,
+                },
+            ),
+        ],
         ignore_index=True,
     )
     # if in test mode, add bus in center of Germany
     boundary = settings()["egon-data"]["--dataset-boundary"]
 
     if boundary != "Everything":
-        gdf_abroad_buses = gdf_abroad_buses.append(
-            {
-                "scn_name": scn_name,
-                "bus_id": (new_id + len(gdf_abroad_buses) + 1),
-                "x": 10.4234469,
-                "y": 51.0834196,
-                "country": "DE",
-                "carrier": main_gas_carrier,
-            },
+        gdf_abroad_buses = pd.concat(
+            [
+                gdf_abroad_buses,
+                pd.DataFrame(
+                    index=[gdf_abroad_buses.index.max() + 1],
+                    data={
+                        "scn_name": scn_name,
+                        "bus_id": (new_id + len(gdf_abroad_buses) + 1),
+                        "x": 10.4234469,
+                        "y": 51.0834196,
+                        "country": "DE",
+                        "carrier": main_gas_carrier,
+                    },
+                ),
+            ],
             ignore_index=True,
         )
 

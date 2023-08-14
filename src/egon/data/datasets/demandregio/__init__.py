@@ -732,7 +732,23 @@ def insert_timeseries_per_wz(sector, year):
 
     if sector == "CTS":
         profiles = (
-            data.CTS_power_slp_generator("SH", year=year).resample("H").sum()
+            data.CTS_power_slp_generator("SH", year=year)
+            .drop(
+                [
+                    "Day",
+                    "Hour",
+                    "DayOfYear",
+                    "WD",
+                    "SA",
+                    "SU",
+                    "WIZ",
+                    "SOZ",
+                    "UEZ",
+                ],
+                axis="columns",
+            )
+            .resample("H")
+            .sum()
         )
         wz_slp = config.slp_branch_cts_power()
     elif sector == "industry":

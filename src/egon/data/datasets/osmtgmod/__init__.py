@@ -19,8 +19,9 @@ import egon.data.config
 import egon.data.subprocess as subproc
 
 
-def run():
 
+def run():
+    sys.setrecursionlimit(5000)
     # execute osmTGmod
 
     data_config = egon.data.config.datasets()
@@ -217,21 +218,21 @@ def osmtgmod(
     # ==============================================================
     # Setup logging
     # ==============================================================
-    log = logging.getLogger()
-    log.setLevel(logging.INFO)
-    logformat = logging.Formatter(
-        "%(asctime)s %(message)s", "%m/%d/%Y %H:%M:%S"
-    )
-    sh = logging.StreamHandler()
-    sh.setFormatter(logformat)
-    log.addHandler(sh)
-    logging.info("\n\n======================\nego_otg\n======================")
-    logging.info("Logging to standard output...")
-    # catch up some log messages from evaluation of command line arguments
-    logging.info("Database: {}".format(config_database))
-    logging.info(
-        "Path for configuration file and results: {}".format(config_basepath)
-    )
+    # log = logging.getLogger()
+    # log.setLevel(logging.INFO)
+    # logformat = logging.Formatter(
+    #     "%(asctime)s %(message)s", "%m/%d/%Y %H:%M:%S"
+    # )
+    # sh = logging.StreamHandler()
+    # sh.setFormatter(logformat)
+    # log.addHandler(sh)
+    # logging.info("\n\n======================\nego_otg\n======================")
+    # logging.info("Logging to standard output...")
+    # # catch up some log messages from evaluation of command line arguments
+    # logging.info("Database: {}".format(config_database))
+    # logging.info(
+    #     "Path for configuration file and results: {}".format(config_basepath)
+    # )
     # ==============================================================
     # read configuration from file and create folder structure
     # ==============================================================
@@ -260,16 +261,16 @@ def osmtgmod(
     if not os.path.exists(result_dir):
         os.makedirs(result_dir)
     # start logging to file
-    logfile = os.path.join(config_basepath, config_database + ".log")
-    fh = logging.FileHandler(logfile)
-    fh.setFormatter(logformat)
-    log.addHandler(fh)
-    logging.info("Logging to file '{0}' is set up".format(logfile))
-    logging.info(
-        "Now logging both to standard output and to file '{0}'...".format(
-            logfile
-        )
-    )
+    # logfile = os.path.join(config_basepath, config_database + ".log")
+    # fh = logging.FileHandler(logfile)
+    # fh.setFormatter(logformat)
+    # log.addHandler(fh)
+    # logging.info("Logging to file '{0}' is set up".format(logfile))
+    # logging.info(
+    #     "Now logging both to standard output and to file '{0}'...".format(
+    #         logfile
+    #     )
+    # )
     logging.info("\n\n======================\nego_otg\n======================")
     # copy config file
     logging.info(

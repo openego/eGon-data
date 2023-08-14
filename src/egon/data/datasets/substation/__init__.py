@@ -1,11 +1,10 @@
 """The central module containing code to create substation tables
 
 """
-from airflow.operators.postgres_operator import PostgresOperator
 from geoalchemy2.types import Geometry
 from sqlalchemy import Column, Float, Integer, Sequence, Text
 from sqlalchemy.ext.declarative import declarative_base
-import importlib_resources as resources
+import os
 
 from egon.data import db
 from egon.data.datasets import Dataset
@@ -80,22 +79,8 @@ class SubstationExtraction(Dataset):
                 create_tables,
                 create_sql_functions,
                 {
-                    PostgresOperator(
-                        task_id="hvmv_substation",
-                        sql=resources.read_text(
-                            __name__, "hvmv_substation.sql"
-                        ),
-                        postgres_conn_id="egon_data",
-                        autocommit=True,
-                    ),
-                    PostgresOperator(
-                        task_id="ehv_substation",
-                        sql=resources.read_text(
-                            __name__, "ehv_substation.sql"
-                        ),
-                        postgres_conn_id="egon_data",
-                        autocommit=True,
-                    ),
+                    extract_hvmv,
+                    extract_ehv,
                 },
                 transfer_busses,
             ),
@@ -237,10 +222,7 @@ def create_sql_functions():
 
 
 def transfer_busses():
-
-    targets = egon.data.config.datasets()["substation_extraction"][
-        "targets"
-    ]
+    targets = egon.data.config.datasets()["substation_extraction"]["targets"]
 
     db.execute_sql(
         f"""
@@ -254,4 +236,13 @@ def transfer_busses():
         ref, operator, dbahn, status
         FROM {targets['hvmv_substation']['schema']}.
          {targets['hvmv_substation']['table']} ORDER BY osm_id) as foo;
-        """)
+        """
+    )
+
+
+def extract_ehv():
+    db.execute_sql_script(os.path.dirname(__file__) + "/ehv_substation.sql")
+
+
+def extract_hvmv():
+    db.execute_sql_script(os.path.dirname(__file__) + "/hvmv_substation.sql")

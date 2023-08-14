@@ -204,8 +204,8 @@ def download_and_preprocess():
     kba_data[
         ["ags_reg_district", "reg_district"]
     ] = kba_data.reg_district.str.split(
-        " ",
-        1,
+        pat=" ",
+        n=1,
         expand=True,
     )
     kba_data.ags_reg_district = kba_data.ags_reg_district.astype("int")
@@ -317,7 +317,7 @@ def write_evs_trips_to_db():
         # Split simBEV id into type and id
         evs_unique[["type", "simbev_ev_id"]] = evs_unique[
             "simbev_ev_id"
-        ].str.rsplit("_", 1, expand=True)
+        ].str.rsplit(pat="_", n=1, expand=True)
         evs_unique.simbev_ev_id = evs_unique.simbev_ev_id.astype(int)
         evs_unique["scenario"] = scenario_name
 
@@ -370,8 +370,8 @@ def write_metadata_to_db():
         "scenario": str,
         "eta_cp": float,
         "stepsize": int,
-        "start_date": np.datetime64,
-        "end_date": np.datetime64,
+        "start_date": "datetime64[ns]",
+        "end_date": "datetime64[ns]",
         "soc_min": float,
         "grid_timeseries": bool,
         "grid_timeseries_by_usecase": bool,
@@ -455,31 +455,34 @@ class MotorizedIndividualTravel(Dataset):
             return tasks
 
         tasks = (
-                create_tables,
-                {
-                    (
-                        download_and_preprocess,
-                        allocate_evs_numbers,
-                    ),
-                    (
-                        extract_trip_file,
-                        write_metadata_to_db,
-                        write_evs_trips_to_db,
-                    ),
-                },
-                allocate_evs_to_grid_districts,
-                delete_model_data_from_db, )
-    
+            create_tables,
+            {
+                (
+                    download_and_preprocess,
+                    allocate_evs_numbers,
+                ),
+                (
+                    extract_trip_file,
+                    write_metadata_to_db,
+                    write_evs_trips_to_db,
+                ),
+            },
+            allocate_evs_to_grid_districts,
+            delete_model_data_from_db,
+        )
+
         tasks_per_scenario = set()
-        
+
         for scenario_name in config.settings()["egon-data"]["--scenarios"]:
-            tasks_per_scenario.update(generate_model_data_tasks(scenario_name=scenario_name))
-            
-        tasks = tasks +  (tasks_per_scenario,)
-        
+            tasks_per_scenario.update(
+                generate_model_data_tasks(scenario_name=scenario_name)
+            )
+
+        tasks = tasks + (tasks_per_scenario,)
+
         super().__init__(
             name="MotorizedIndividualTravel",
             version="0.0.7",
             dependencies=dependencies,
-            tasks=tasks
+            tasks=tasks,
         )

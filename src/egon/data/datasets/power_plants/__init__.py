@@ -823,7 +823,7 @@ def allocate_other_power_plants():
         "and Technologie == 'ORCOrganicRankineCycleAnlage'"
     )
 
-    mastr_sg = mastr_sludge.append(mastr_geothermal)
+    mastr_sg = pd.concat([mastr_sludge, mastr_geothermal])
 
     # Insert geometry column
     mastr_sg = mastr_sg[~(mastr_sg["Laengengrad"].isnull())]
@@ -857,7 +857,7 @@ def allocate_other_power_plants():
     mastr_sg.loc[:, "Nettonennleistung"] *= 1e-3
 
     # Merge different sources to one df
-    mastr_others = mastr_sg.append(mastr_combustion).reset_index()
+    mastr_others = pd.concat([mastr_sg, mastr_combustion]).reset_index()
 
     # Delete entries outside Schleswig-Holstein for test mode
     if boundary == "Schleswig-Holstein":
@@ -1235,11 +1235,7 @@ tasks = (
 )
 
 if "status2019" in egon.data.config.settings()["egon-data"]["--scenarios"]:
-    tasks = tasks + (
-        power_plants_status_quo,
-        geocode_mastr_data,
-        pv_rooftop_to_buildings,
-    )
+    tasks = tasks + (power_plants_status_quo,)
 
 if (
     "eGon2035" in egon.data.config.settings()["egon-data"]["--scenarios"]
@@ -1252,15 +1248,13 @@ if (
         {
             wind_onshore.insert,
             pv_ground_mounted.insert,
-            (
-                pv_rooftop_per_mv_grid,
-                geocode_mastr_data,
-                pv_rooftop_to_buildings,
-            ),
+            pv_rooftop_per_mv_grid,
         },
     )
 
 tasks = tasks + (
+    geocode_mastr_data,
+    pv_rooftop_to_buildings,
     wind_offshore.insert,
     assign_weather_data.weatherId_and_busId,
 )
