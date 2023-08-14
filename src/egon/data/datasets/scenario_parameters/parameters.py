@@ -314,27 +314,35 @@ def electricity(scenario):
         # marginal cost can include fuel, C02 and operation and maintenance costs
         parameters["marginal_cost"] = {
             "oil": global_settings(scenario)["fuel_costs"]["oil"]
+            / read_costs(costs, "oil", "efficiency")
             + read_costs(costs, "oil", "VOM")
             + global_settings(scenario)["co2_costs"]
-            * global_settings(scenario)["co2_emissions"]["oil"],
+            * global_settings(scenario)["co2_emissions"]["oil"]
+            / read_costs(costs, "oil", "efficiency"),
             "other_non_renewable": global_settings(scenario)["fuel_costs"][
                 "gas"
-            ]
+            ] / read_costs(costs, "OCGT", "efficiency")
             + global_settings(scenario)["co2_costs"]
             * global_settings(scenario)["co2_emissions"][
                 "other_non_renewable"
-            ],
+            ] / read_costs(costs, "OCGT", "efficiency"),
             "lignite": global_settings(scenario)["fuel_costs"]["lignite"]
+            / read_costs(costs, "lignite", "efficiency")
             + read_costs(costs, "lignite", "VOM")
             + global_settings(scenario)["co2_costs"]
-            * global_settings(scenario)["co2_emissions"]["lignite"],
+            * global_settings(scenario)["co2_emissions"]["lignite"]
+            / read_costs(costs, "lignite", "efficiency"),
             "coal": global_settings(scenario)["fuel_costs"]["coal"]
+            / read_costs(costs, "coal", "efficiency")
             + read_costs(costs, "coal", "VOM")
             + global_settings(scenario)["co2_costs"]
-            * global_settings(scenario)["co2_emissions"]["coal"],
+            * global_settings(scenario)["co2_emissions"]["coal"]
+            / read_costs(costs, "coal", "efficiency"),
             "nuclear": global_settings(scenario)["fuel_costs"]["nuclear"]
+            / read_costs(costs, "nuclear", "efficiency")
             + read_costs(costs, "nuclear", "VOM"),
             "biomass": global_settings(scenario)["fuel_costs"]["biomass"]
+            / read_costs(costs, "biomass", "efficiency")
             + read_costs(costs, "biomass CHP", "VOM"),
             "wind_offshore": read_costs(costs, "offwind", "VOM"),
             "wind_onshore": read_costs(costs, "onwind", "VOM"),
@@ -630,27 +638,41 @@ def electricity(scenario):
 
         parameters["marginal_cost"] = {
             "oil": global_settings(scenario)["fuel_costs"]["oil"]
+            / read_costs(costs, "oil", "efficiency")
             + read_costs(costs, "oil", "VOM")
             + global_settings(scenario)["co2_costs"]
-            * global_settings(scenario)["co2_emissions"]["oil"],
+            * global_settings(scenario)["co2_emissions"]["oil"]
+            / read_costs(costs, "oil", "efficiency"),
             "other_non_renewable": global_settings(scenario)["fuel_costs"][
                 "gas"
-            ]
+            ] / read_costs(costs, "OCGT", "efficiency")
             + global_settings(scenario)["co2_costs"]
             * global_settings(scenario)["co2_emissions"][
                 "other_non_renewable"
-            ],
+            ] / read_costs(costs, "OCGT", "efficiency"),
             "lignite": global_settings(scenario)["fuel_costs"]["lignite"]
+            / read_costs(costs, "lignite", "efficiency")
             + read_costs(costs, "lignite", "VOM")
             + global_settings(scenario)["co2_costs"]
-            * global_settings(scenario)["co2_emissions"]["lignite"],
+            * global_settings(scenario)["co2_emissions"]["lignite"]
+            / read_costs(costs, "lignite", "efficiency"),
             "coal": global_settings(scenario)["fuel_costs"]["coal"]
+            / read_costs(costs, "coal", "efficiency")
             + read_costs(costs, "coal", "VOM")
             + global_settings(scenario)["co2_costs"]
-            * global_settings(scenario)["co2_emissions"]["coal"],
+            * global_settings(scenario)["co2_emissions"]["coal"]
+            / read_costs(costs, "coal", "efficiency"),
+            "OCGT": global_settings(scenario)["fuel_costs"]["gas"]
+            / read_costs(costs, "OCGT", "efficiency")
+            + read_costs(costs, "OCGT", "VOM")
+            + global_settings(scenario)["co2_costs"]
+            * global_settings(scenario)["co2_emissions"]["gas"]
+            / read_costs(costs, "OCGT", "efficiency"),
             "nuclear": global_settings(scenario)["fuel_costs"]["nuclear"]
+            / read_costs(costs, "nuclear", "efficiency")
             + read_costs(costs, "nuclear", "VOM"),
             "biomass": global_settings(scenario)["fuel_costs"]["biomass"]
+            / read_costs(costs, "biomass CHP", "efficiency")
             + read_costs(costs, "biomass CHP", "VOM"),
             "wind_offshore": read_costs(costs, "offwind", "VOM"),
             "wind_onshore": read_costs(costs, "onwind", "VOM"),
@@ -872,6 +894,10 @@ def gas(scenario):
             "OCGT": read_costs(costs, "OCGT", "VOM"),
             "biogas": global_settings(scenario)["fuel_costs"]["gas"],
             "chp_gas": read_costs(costs, "central gas CHP", "VOM"),
+        }
+        # Insert effciencies in p.u.
+        parameters["efficiency"] = {
+            "OCGT": read_costs(costs, "OCGT", "efficiency"),
         }
 
     else:

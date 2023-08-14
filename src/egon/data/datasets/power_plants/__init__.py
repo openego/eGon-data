@@ -913,7 +913,8 @@ def power_plants_status_quo(scn_name="status2019"):
         DELETE FROM {cfg['target']['schema']}.{cfg['target']['table']}
         WHERE carrier IN ('wind_onshore', 'solar', 'biomass',
                           'run_of_river', 'reservoir', 'solar_rooftop',
-                          'wind_offshore', 'nuclear', 'coal', 'lignite', 'oil')
+                          'wind_offshore', 'nuclear', 'coal', 'lignite', 'oil',
+                          'gas')
         AND scenario = '{scn_name}'
         """
     )
@@ -1003,12 +1004,18 @@ def power_plants_status_quo(scn_name="status2019"):
 
     conv = conv[
         conv.Energietraeger.isin(
-            ["Braunkohle", "Mineralölprodukte", "Steinkohle", "Kernenergie"]
+            [
+                "Braunkohle",
+                "Mineralölprodukte",
+                "Steinkohle",
+                "Kernenergie",
+                "Erdgas",
+            ]
         )
     ]
-    
+
     # convert from KW to MW
-    conv["Nettonennleistung"] = conv["Nettonennleistung"]/1000 
+    conv["Nettonennleistung"] = conv["Nettonennleistung"] / 1000
     # drop generators installed after 2019
     conv["Inbetriebnahmedatum"] = pd.to_datetime(conv["Inbetriebnahmedatum"])
     conv = conv[
@@ -1023,6 +1030,7 @@ def power_plants_status_quo(scn_name="status2019"):
     # rename carriers
     conv.loc[conv.Energietraeger == "Braunkohle", "Energietraeger"] = "lignite"
     conv.loc[conv.Energietraeger == "Steinkohle", "Energietraeger"] = "coal"
+    conv.loc[conv.Energietraeger == "Erdgas", "Energietraeger"] = "gas"
     conv.loc[
         conv.Energietraeger == "Mineralölprodukte", "Energietraeger"
     ] = "oil"

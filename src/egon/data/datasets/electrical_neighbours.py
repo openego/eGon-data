@@ -1399,16 +1399,16 @@ def map_carriers_entsoe():
         "Biomass": "biomass",
         "Fossil Brown coal/Lignite": "lignite",
         "Fossil Coal-derived gas": "coal",
-        "Fossil Gas": "CH4_NG",
+        "Fossil Gas": "OCGT",
         "Fossil Hard coal": "coal",
         "Fossil Oil": "oil",
         "Fossil Oil shale": "oil",
-        "Fossil Peat": "biomass",
+        "Fossil Peat": "others",
         "Geothermal": "geo_thermal",
         "Hydro Pumped Storage": "Hydro Pumped Storage",
         "Hydro Run-of-river and poundage": "run_of_river",
         "Hydro Water Reservoir": "reservoir",
-        "Marine": "marine",
+        "Marine": "others",
         "Nuclear": "nuclear",
         "Other": "others",
         "Other renewable": "others",
@@ -1494,27 +1494,13 @@ def insert_generators_sq(gen_sq=None, scn_name="status2019"):
         AND scn_name = '{scn_name}'
         """
     )
-
     entsoe_to_bus = entsoe_to_bus_etrago()
-
     carrier_entsoe = map_carriers_entsoe()
     gen_sq = gen_sq.groupby(axis=1, by=carrier_entsoe).sum()
-    gen_sq = gen_sq.iloc[
-        :,
-        gen_sq.columns.isin(
-            [
-                "others",
-                "wind_offshore",
-                "wind_onshore",
-                "solar",
-                "reservoir",
-                "run_of_river",
-                "lignite",
-                "coal",
-                "oil",
-                "nuclear",
-            ]
-        ),
+
+    # Filter generators modeled as storage and geothermal
+    gen_sq = gen_sq.loc[
+        :, ~gen_sq.columns.isin(["Hydro Pumped Storage", "geo_thermal"])
     ]
 
     list_gen_sq = pd.DataFrame(
