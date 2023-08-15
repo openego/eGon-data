@@ -88,7 +88,7 @@ setup(
         "atlite==0.2.5",
         "cdsapi",
         "click<8.1",
-        #"entsoe-py >=0.3.1",
+        "entsoe-py >=0.5.5",
         "GeoAlchemy2",
         "geopandas>=0.10.0",
         "geopy",
