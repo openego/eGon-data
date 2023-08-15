@@ -367,8 +367,8 @@ def cascade_heat_supply(scenario, plotting=True):
                 scenario, areas, technologies, capacity_per_category, size_dh
             )
 
-            resulting_capacities = resulting_capacities.append(
-                append_df, ignore_index=True
+            resulting_capacities = pd.concat(
+                [resulting_capacities, append_df], ignore_index=True
             )
 
     # Plot results per district heating area

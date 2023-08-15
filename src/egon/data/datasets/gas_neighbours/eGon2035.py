@@ -1285,7 +1285,6 @@ def calculate_ch4_grid_capacities():
     schema = sources["buses"]["schema"]
     table = sources["buses"]["table"]
     for country_code in [e for e in countries if e not in ("GB", "SE", "UK")]:
-
         # Select cross-bording links
         cap_DE = db.select_dataframe(
             f"""SELECT link_id, bus0, bus1
@@ -1498,7 +1497,6 @@ def calculate_ocgt_capacities():
     df_ocgt = df_ocgt.groupby(by=["bus0", "bus1"], as_index=False).sum()
 
     return df_ocgt
-
 
 def insert_ocgt_abroad():
     """Insert gas turbine capicities abroad for eGon2035 in the database

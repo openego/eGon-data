@@ -105,7 +105,7 @@ def fix_missing_ags_municipality_regiostar(muns, rs7_data):
                                 f"based upon AGS {ags}."
                             )
                             similar_entry.ags = ags
-                            rs7_data = rs7_data.append(similar_entry)
+                            rs7_data = pd.concat([rs7_data, similar_entry])
                         print("Consider to update RS7.")
                 # VG250 entries missing:
                 elif name == "VG250":
@@ -333,7 +333,7 @@ def calc_evs_per_grid_district(ev_data_muns):
     # * pop_mun_in_mvgd_of_mun_total: relative pop share of mun which
     #   intersects with MVGD in relation to total pop of mun
     mvgd_pop_per_mun_in_mvgd = (
-        mvgd_pop_per_mun_in_mvgd.groupby(level=0)
+        mvgd_pop_per_mun_in_mvgd.groupby(level=0, as_index=False)
         .apply(lambda x: x / float(x.sum()))
         .reset_index()
         .rename(columns={"pop": "pop_share_mun_in_mvgd"})
@@ -422,7 +422,7 @@ def allocate_evs_numbers():
     # Import
     kba_data = read_kba_data()
     rs7_data = read_rs7_data()
-    
+
     for scenario_name in config.settings()["egon-data"]["--scenarios"]:
         # Load scenario params
         scenario_parameters = get_sector_parameters(
@@ -436,7 +436,6 @@ def allocate_evs_numbers():
             scenario_variation_name,
             scenario_variation_parameters,
         ) in scenario_parameters.items():
-
             print(f"  SCENARIO VARIATION: {scenario_variation_name}")
             # Get EV target
             ev_target = scenario_variation_parameters["ev_count"]

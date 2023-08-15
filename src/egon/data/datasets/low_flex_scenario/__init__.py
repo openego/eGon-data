@@ -3,7 +3,7 @@
 """
 from airflow.operators.postgres_operator import PostgresOperator
 from sqlalchemy.ext.declarative import declarative_base
-import importlib_resources as resources
+from importlib_resources import files
 
 from egon.data.datasets import Dataset
 
@@ -21,9 +21,9 @@ class LowFlexScenario(Dataset):
                 {
                     PostgresOperator(
                         task_id="low_flex_eGon2035",
-                        sql=resources.read_text(
-                            __name__, "low_flex_eGon2035.sql"
-                        ),
+                        sql=files(__name__)
+                        .joinpath("low_flex_eGon2035.sql")
+                        .read_text(encoding="utf-8"),
                         postgres_conn_id="egon_data",
                         autocommit=True,
                     ),

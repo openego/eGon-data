@@ -15,6 +15,7 @@ Why does this file exist, and why not put this in __main__?
   Also see (1) from http://click.pocoo.org/5/setuptools/#setuptools-integration
 """
 import os
+import shutil
 import socket
 import subprocess
 import sys
@@ -277,16 +278,19 @@ def egon_data(context, **kwargs):
         with open(config.paths(pid="*")[0]) as f:
             options = yaml.load(f, Loader=yaml.SafeLoader)
     else:  # len(config.paths(pid="*")) == 0, so need to create one.
+
         with open(config.paths()[0]) as f:
             options["file"] = yaml.load(f, Loader=yaml.SafeLoader)
+
         options = dict(
             options.get("file", {}),
             **{
-                flag: options["cli"][flag]
+                flag: options["file"][flag]
                 for flag in options["cli"]
                 if options["cli"][flag] != options["defaults"][flag]
             },
         )
+
         with open(config.paths(pid="current")[0], "w") as f:
             f.write(yaml.safe_dump(options))
 
@@ -324,6 +328,12 @@ def egon_data(context, **kwargs):
         uid=os.getuid(),
     )
     (Path(".") / "docker" / "database-data").mkdir(parents=True, exist_ok=True)
+
+    # Copy webserver_config.py to disable authentification on webinterface
+    shutil.copy2(
+        os.path.dirname(egon.data.airflow.__file__) + "/webserver_config.py",
+        Path(".") / "airflow/webserver_config.py",
+    )
 
     with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
         code = s.connect_ex(
@@ -398,6 +408,7 @@ def egon_data(context, **kwargs):
     connection.host = options["--database-host"]
     connection.port = options["--database-port"]
     connection.schema = options["--database-name"]
+    connection.conn_type = "pgsql"
     airflow.add(connection)
     airflow.commit()
 

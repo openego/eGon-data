@@ -192,16 +192,21 @@ def daily_demand_shares_per_climate_zone():
 
     # Insert data into dataframe
     for index, row in daily_demand_shares.transpose().iterrows():
-
-        df = df.append(
-            pd.DataFrame(
-                data={
-                    "climate_zone": index,
-                    "day_of_year": row.index.day_of_year,
-                    "daily_demand_share": row.values,
-                    "temperature_class": temperature_classes[index][row.index],
-                }
-            )
+        df = pd.concat(
+            [
+                df,
+                pd.DataFrame(
+                    data={
+                        "climate_zone": index,
+                        "day_of_year": row.index.day_of_year,
+                        "daily_demand_share": row.values,
+                        "temperature_class": temperature_classes[index][
+                            row.index
+                        ],
+                    }
+                ),
+            ],
+            ignore_index=True,
         )
 
     # Insert dataframe to SQL table

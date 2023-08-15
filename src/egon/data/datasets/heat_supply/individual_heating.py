@@ -629,8 +629,8 @@ def cascade_heat_supply_indiv(scenario, distribution_level, plotting=True):
             heat_per_mv, technologies, scenario, distribution_level
         )
         # Collect resulting capacities
-        resulting_capacities = resulting_capacities.append(
-            append_df, ignore_index=True
+        resulting_capacities = pd.concat(
+            [resulting_capacities, append_df], ignore_index=True
         )
 
     if plotting:
@@ -1145,7 +1145,7 @@ def get_buildings_with_decentral_heat_demand_in_mv_grid(mvgd, scenario):
     )
 
     # merge residential and CTS buildings
-    buildings_decentral_heating = buildings_decentral_heating_res.append(
+    buildings_decentral_heating = buildings_decentral_heating_res.union(
         buildings_decentral_heating_cts
     ).unique()
 
@@ -1330,7 +1330,7 @@ def determine_buildings_with_hp_in_mv_grid(
         random.seed(db.credentials()["--random-seed"])
         new_hp_building = random.choice(possible_buildings)
         # add new building to building with HP
-        buildings_with_hp = buildings_with_hp.append(
+        buildings_with_hp = buildings_with_hp.union(
             pd.Index([new_hp_building])
         )
         # determine if there are still possible buildings
@@ -1988,7 +1988,6 @@ def determine_hp_cap_peak_load_mvgd_ts_2019(mvgd_ids):
     export_to_db(df_peak_loads_db, df_heat_mvgd_ts_db, drop=False)
 
     df_hp_cap_per_building_2019_db["scenario"] = "status2019"
-
 
     # TODO debug duplicated building_ids
     duplicates = df_hp_cap_per_building_2019_db.loc[

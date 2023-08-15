@@ -55,17 +55,7 @@ class OsmLanduse(Dataset):
             name="OsmLanduse",
             version="0.0.0",
             dependencies=dependencies,
-            tasks=(
-                create_landuse_table,
-                PostgresOperator(
-                    task_id="osm_landuse_extraction",
-                    sql=resources.read_text(
-                        __name__, "osm_landuse_extraction.sql"
-                    ),
-                    postgres_conn_id="egon_data",
-                    autocommit=True,
-                ),
-            ),
+            tasks=(create_landuse_table, extract_osm_landuse),
         )
 
 
@@ -88,6 +78,12 @@ class LoadArea(Dataset):
                 drop_temp_tables,
             ),
         )
+
+
+def extract_osm_landuse():
+    db.execute_sql_script(
+        os.path.dirname(__file__) + "/osm_landuse_extraction.sql"
+    )
 
 
 def create_landuse_table():

@@ -159,16 +159,22 @@ def buses(scenario, sources, targets):
 
     # if in test mode, add bus in center of Germany
     if config.settings()["egon-data"]["--dataset-boundary"] != "Everything":
-        central_buses = central_buses.append(
-            {
-                "scn_name": scenario,
-                "bus_id": next_bus_id,
-                "x": 10.4234469,
-                "y": 51.0834196,
-                "country": "DE",
-                "carrier": "AC",
-                "v_nom": 380.0,
-            },
+        central_buses = pd.concat(
+            [
+                central_buses,
+                pd.DataFrame(
+                    index=[central_buses.index.max() + 1],
+                    data={
+                        "scn_name": scenario,
+                        "bus_id": next_bus_id,
+                        "x": 10.4234469,
+                        "y": 51.0834196,
+                        "country": "DE",
+                        "carrier": "AC",
+                        "v_nom": 380.0,
+                    },
+                ),
+            ],
             ignore_index=True,
         )
         next_bus_id += 1
@@ -181,38 +187,50 @@ def buses(scenario, sources, targets):
     for cntr in vnom_per_country.index:
         print(cntr)
         if 110.0 in vnom_per_country[cntr]:
-            central_buses = central_buses.append(
-                {
-                    "scn_name": scenario,
-                    "bus_id": next_bus_id,
-                    "x": central_buses[
-                        central_buses.country == cntr
-                    ].x.unique()[0],
-                    "y": central_buses[
-                        central_buses.country == cntr
-                    ].y.unique()[0],
-                    "country": cntr,
-                    "carrier": "AC",
-                    "v_nom": 110.0,
-                },
+            central_buses = pd.concat(
+                [
+                    central_buses,
+                    pd.DataFrame(
+                        index=[central_buses.index.max() + 1],
+                        data={
+                            "scn_name": scenario,
+                            "bus_id": next_bus_id,
+                            "x": central_buses[
+                                central_buses.country == cntr
+                            ].x.unique()[0],
+                            "y": central_buses[
+                                central_buses.country == cntr
+                            ].y.unique()[0],
+                            "country": cntr,
+                            "carrier": "AC",
+                            "v_nom": 110.0,
+                        },
+                    ),
+                ],
                 ignore_index=True,
             )
             next_bus_id += 1
         if 220.0 in vnom_per_country[cntr]:
-            central_buses = central_buses.append(
-                {
-                    "scn_name": scenario,
-                    "bus_id": next_bus_id,
-                    "x": central_buses[
-                        central_buses.country == cntr
-                    ].x.unique()[0],
-                    "y": central_buses[
-                        central_buses.country == cntr
-                    ].y.unique()[0],
-                    "country": cntr,
-                    "carrier": "AC",
-                    "v_nom": 220.0,
-                },
+            central_buses = pd.concat(
+                [
+                    central_buses,
+                    pd.DataFrame(
+                        index=[central_buses.index.max() + 1],
+                        data={
+                            "scn_name": scenario,
+                            "bus_id": next_bus_id,
+                            "x": central_buses[
+                                central_buses.country == cntr
+                            ].x.unique()[0],
+                            "y": central_buses[
+                                central_buses.country == cntr
+                            ].y.unique()[0],
+                            "country": cntr,
+                            "carrier": "AC",
+                            "v_nom": 220.0,
+                        },
+                    ),
+                ],
                 ignore_index=True,
             )
             next_bus_id += 1
@@ -315,10 +333,11 @@ def cross_border_lines(scenario, sources, targets, central_buses):
     lines.loc[:, "foreign_bus"] = lines.loc[:, "foreign_bus"].astype(int)
 
     # Copy all parameters from border-crossing lines
-    new_lines = lines.copy()
+    new_lines = lines.copy().set_crs(4326)
 
     # Set bus0 as foreign_bus from osmtgmod
     new_lines.bus0 = new_lines.foreign_bus.copy()
+    new_lines.bus0 = new_lines.bus0.astype(int)
 
     # Add country tag and set index
     new_lines["country"] = (
@@ -353,8 +372,7 @@ def cross_border_lines(scenario, sources, targets, central_buses):
     )
 
     # Set topo as geometry column
-    new_lines = new_lines.set_geometry("topo")
-
+    new_lines = new_lines.set_geometry("topo").set_crs(4326)
     # Calcultae length of lines based on topology
     old_length = new_lines["length"].copy()
     new_lines["length"] = new_lines.to_crs(3035).length / 1000
@@ -495,17 +513,23 @@ def central_transformer(scenario, sources, targets, central_buses, new_lines):
 
         s_nom, x = choose_transformer(s_nom)
 
-        trafo = trafo.append(
-            {
-                "trafo_id": trafo_id,
-                "bus0": row.bus_id,
-                "bus1": central_buses[
-                    (central_buses.v_nom == 380)
-                    & (central_buses.country == row.country)
-                ].bus_id.values[0],
-                "s_nom": s_nom,
-                "x": x,
-            },
+        trafo = pd.concat(
+            [
+                trafo,
+                pd.DataFrame(
+                    index=[trafo.index.max() + 1],
+                    data={
+                        "trafo_id": trafo_id,
+                        "bus0": row.bus_id,
+                        "bus1": central_buses[
+                            (central_buses.v_nom == 380)
+                            & (central_buses.country == row.country)
+                        ].bus_id.values[0],
+                        "s_nom": s_nom,
+                        "x": x,
+                    },
+                ),
+            ],
             ignore_index=True,
         )
         trafo_id += 1
@@ -604,23 +628,26 @@ def foreign_dc_lines(scenario, sources, targets, central_buses):
             find_closest=True,
         )
 
-        foreign_links = foreign_links.append(
-            pd.DataFrame(
-                index=[1],
-                data={
-                    "link_id": db.next_etrago_id("link") + 1,
-                    "bus0": converter_bentwisch,
-                    "bus1": central_buses[
-                        (central_buses.country == "DK")
-                        & (central_buses.v_nom == 380)
-                        & (central_buses.x > 10)
-                    ]
-                    .squeeze()
-                    .bus_id,
-                    "p_nom": 600,
-                    "length": 170,
-                },
-            )
+        foreign_links = pd.concat(
+            [
+                foreign_links,
+                pd.DataFrame(
+                    index=[1],
+                    data={
+                        "link_id": db.next_etrago_id("link") + 1,
+                        "bus0": converter_bentwisch,
+                        "bus1": central_buses[
+                            (central_buses.country == "DK")
+                            & (central_buses.v_nom == 380)
+                            & (central_buses.x > 10)
+                        ]
+                        .squeeze()
+                        .bus_id,
+                        "p_nom": 600,
+                        "length": 170,
+                    },
+                ),
+            ]
         )
 
     # Set parameters for all DC lines
@@ -1404,16 +1431,16 @@ def map_carriers_entsoe():
         "Biomass": "biomass",
         "Fossil Brown coal/Lignite": "lignite",
         "Fossil Coal-derived gas": "coal",
-        "Fossil Gas": "CH4_NG",
+        "Fossil Gas": "OCGT",
         "Fossil Hard coal": "coal",
         "Fossil Oil": "oil",
         "Fossil Oil shale": "oil",
-        "Fossil Peat": "biomass",
+        "Fossil Peat": "others",
         "Geothermal": "geo_thermal",
         "Hydro Pumped Storage": "Hydro Pumped Storage",
         "Hydro Run-of-river and poundage": "run_of_river",
         "Hydro Water Reservoir": "reservoir",
-        "Marine": "marine",
+        "Marine": "others",
         "Nuclear": "nuclear",
         "Other": "others",
         "Other renewable": "others",
@@ -1496,27 +1523,13 @@ def insert_generators_sq(scn_name="status2019"):
         AND scn_name = '{scn_name}'
         """
     )
-
     entsoe_to_bus = entsoe_to_bus_etrago()
-
     carrier_entsoe = map_carriers_entsoe()
     gen_sq = gen_sq.groupby(axis=1, by=carrier_entsoe).sum()
-    gen_sq = gen_sq.iloc[
-        :,
-        gen_sq.columns.isin(
-            [
-                "others",
-                "wind_offshore",
-                "wind_onshore",
-                "solar",
-                "reservoir",
-                "run_of_river",
-                "lignite",
-                "coal",
-                "oil",
-                "nuclear",
-            ]
-        ),
+
+    # Filter generators modeled as storage and geothermal
+    gen_sq = gen_sq.loc[
+        :, ~gen_sq.columns.isin(["Hydro Pumped Storage", "geo_thermal"])
     ]
 
     list_gen_sq = pd.DataFrame(
@@ -1524,7 +1537,7 @@ def insert_generators_sq(scn_name="status2019"):
     )
     for carrier in gen_sq.columns:
         gen_carry = gen_sq[carrier]
-        for country, cap in gen_carry.iteritems():
+        for country, cap in gen_carry.items():
             gen = pd.DataFrame(
                 {"carrier": carrier, "country": country, "capacity": cap},
                 index=[1],

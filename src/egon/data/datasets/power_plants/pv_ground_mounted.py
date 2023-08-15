@@ -9,7 +9,6 @@ import egon.data.config
 
 def insert():
     def mastr_existing_pv(pow_per_area):
-
         """Import MaStR data from csv-files.
 
         Parameters
@@ -141,7 +140,6 @@ def insert():
         return mastr
 
     def potential_areas(con, join_buffer):
-
         """Import potential areas and choose and prepare areas suitable for PV
         ground mounted.
 
@@ -293,7 +291,6 @@ def insert():
         return potentials_rora, potentials_agri
 
     def select_pot_areas(mastr, potentials_pot):
-
         """Select potential areas where there are existing pv parks
         (MaStR-data).
 
@@ -343,7 +340,6 @@ def insert():
         return (pot_sel, mastr)
 
     def build_pv(pv_pot, pow_per_area):
-
         """Build new pv parks in selected potential areas.
 
         Parameters
@@ -374,7 +370,6 @@ def insert():
         return pv_pot
 
     def adapt_grid_level(pv_pot, max_dist_hv, con):
-
         """Check and if needed adapt grid level of newly built pv parks.
 
         Parameters
@@ -403,7 +398,6 @@ def insert():
         ]
 
         if len(pv_pot_mv_to_hv) > 0:
-
             # import data for HV substations
 
             sql = "SELECT point, voltage FROM grid.egon_hvmv_substation"
@@ -435,7 +429,7 @@ def insert():
                 pv_pot_mv_to_hv["dist_to_HV"] <= max_dist_hv
             ]
             pv_pot_mv_to_hv = pv_pot_mv_to_hv.drop(columns=["dist_to_HV"])
-            pv_pot_hv = pv_pot_hv.append(pv_pot_mv_to_hv)
+            pv_pot_hv = pd.concat([pv_pot_hv, pv_pot_mv_to_hv])
 
             # delete PVs which are now HV from MV dataframe
             for index, pot in pv_pot_mv_to_hv.iterrows():
@@ -449,12 +443,11 @@ def insert():
             ].apply(lambda x: x if x < max_cap_mv else max_cap_mv)
             pv_pot_mv["voltage_level"] = 5
 
-            pv_pot = pv_pot_mv.append(pv_pot_hv)
+            pv_pot = pd.concat([pv_pot_mv, pv_pot_hv])
 
         return pv_pot
 
     def build_additional_pv(potentials, pv, pow_per_area, con):
-
         """Build additional pv parks if pv parks on selected potential areas
         do not hit the target value.
 
@@ -535,7 +528,6 @@ def insert():
         pow_per_area,
         con,
     ):
-
         """Check target value per scenario and per state.
 
          Parameters
@@ -585,7 +577,6 @@ def insert():
         # linear scale farms to meet target if sum of installed capacity is
         # too high
         if total_pv_power >= target_power:
-
             scale_factor = target_power / total_pv_power
             pv_rora_i["installed capacity in kW"] = (
                 pv_rora_i["installed capacity in kW"] * scale_factor
@@ -614,7 +605,6 @@ def insert():
         # build new pv parks if sum of installed capacity is below target
         # value
         elif total_pv_power < target_power:
-
             rest_cap = target_power - total_pv_power
 
             ###
@@ -658,7 +648,6 @@ def insert():
 
             # build pv parks on potential areas agriculture if still necessary
             elif pv_per_distr_i["installed capacity in kW"].sum() < rest_cap:
-
                 rest_cap = (
                     target_power
                     - total_pv_power
@@ -711,8 +700,8 @@ def insert():
                         "and 'Agriculture'."
                     )
 
-                pv_per_distr_i = pv_per_distr_i.append(
-                    pv_per_distr_i_2, ignore_index=True
+                pv_per_distr_i = pd.concat(
+                    [pv_per_distr_i, pv_per_distr_i_2], ignore_index=True
                 )
 
             # assign grid level to pv_per_distr
@@ -776,7 +765,6 @@ def insert():
         max_dist_hv=20000,
         show_map=False,
     ):
-
         """Execute methodology to distribute pv ground mounted.
 
          Parameters
@@ -889,7 +877,6 @@ def insert():
 
         # check target value per state
         for i in nuts:
-
             target_power = (
                 target[target["nuts"] == i]["capacity"].iloc[0] * 1000
             )
@@ -984,7 +971,7 @@ def insert():
             pv_agri = pv_agri.append(agri_i)
             pv_exist = pv_exist.append(exist_i)
             if len(distr_i) > 0:
-                pv_per_distr = pv_per_distr.append(distr_i)
+                pv_per_distr = pd.concat([pv_per_distr, distr_i])
 
         # 2) scenario: eGon100RE
 
@@ -1025,7 +1012,6 @@ def insert():
 
         # ### create map to show distribution of installed capacity
         if show_map == True:
-
             # 1) eGon2035
 
             # get MV grid districts
@@ -1155,7 +1141,6 @@ def insert():
     def insert_pv_parks(
         pv_rora, pv_agri, pv_exist, pv_per_distr, scenario_name
     ):
-
         """Write to database.
 
         Parameters
@@ -1176,8 +1161,8 @@ def insert():
 
         # prepare dataframe for integration in supply.egon_power_plants
 
-        pv_parks = pv_rora.append(
-            [pv_agri, pv_exist, pv_per_distr], ignore_index=True
+        pv_parks = pd.concat(
+            [pv_rora, pv_agri, pv_exist, pv_per_distr], ignore_index=True
         )
         pv_parks["el_capacity"] = pv_parks["installed capacity in kW"] / 1000
         pv_parks.rename(columns={"centroid": "geometry"}, inplace=True)
@@ -1307,13 +1292,11 @@ def insert():
         or pv_per_distr["installed capacity in kW"].sum() > 0
         or pv_exist["installed capacity in kW"].sum() > 0
     ):
-
         pv_parks = insert_pv_parks(
             pv_rora, pv_agri, pv_exist, pv_per_distr, "eGon2035"
         )
 
     else:
-
         pv_parks = gpd.GeoDataFrame()
 
     if (
@@ -1322,7 +1305,6 @@ def insert():
         or pv_per_distr_100RE["installed capacity in kW"].sum() > 0
         or pv_exist_100RE["installed capacity in kW"].sum() > 0
     ):
-
         pv_parks_100RE = insert_pv_parks(
             pv_rora_100RE,
             pv_agri_100RE,
@@ -1332,7 +1314,6 @@ def insert():
         )
 
     else:
-
         pv_parks_100RE = gpd.GeoDataFrame()
 
     return pv_parks, pv_parks_100RE
