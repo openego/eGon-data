@@ -1492,8 +1492,16 @@ def insert_generators_sq(scn_name="status2019"):
     None.
 
     """
-
-    gen_sq = entsoe_historic_generation_capacities()
+    try:
+        gen_sq = entsoe_historic_generation_capacities()
+    except:
+        logging.warning(
+            """Generation data from entsoe could not be retrieved.
+                        Backup data is used instead"""
+        )
+        gen_sq = pd.read_csv(
+            "data_bundle_powerd_data/entsoe/gen_entsoe.csv", index_col="Index"
+        )
 
     targets = config.datasets()["electrical_neighbours"]["targets"]
     # Delete existing data
@@ -1642,8 +1650,16 @@ def insert_loads_sq(scn_name="status2019"):
     """
     sources = config.datasets()["electrical_neighbours"]["sources"]
     targets = config.datasets()["electrical_neighbours"]["targets"]
-
-    load_sq = entsoe_historic_demand()
+    try:
+        load_sq = entsoe_historic_demand()
+    except:
+        logging.warning(
+            """Demand data from entsoe could not be retrieved.
+                        Backup data is used instead"""
+        )
+    load_sq = pd.read_csv(
+        "data_bundle_powerd_data/entsoe/load_entsoe.csv", index_col="Index"
+    )
 
     # Delete existing data
     db.execute_sql(
