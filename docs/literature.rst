@@ -30,6 +30,8 @@ Literature
 
 .. [Kleinhans] D. Kleinhans, Towards a systematic characterization of the potential of demand side management, arXiv (2014), doi: 10.48550/ARXIV.1401.4121. URL https://arxiv.org/abs/1401.4121
 
+.. [MaStR] Bundesnetzagentur für Elektrizität, Gas, Telekommunikation, Post und Eisenbahnen, Marktstammdatenregister - Datendownload (Nov. 2022). URL https://www.marktstammdatenregister.de/MaStR/Datendownload
+
 .. [MiD2017] Bundesministerium für Digitales und Verkehr, Mobilität in Deutschland 2017 (2017). URL https://daten.clearingstelle-verkehr.de/279/
 
 .. [Mueller2018] U. Mueller, L. Wienholt, D. Kleinhans, I. Cussmann, W.-D. Bunke, G. Pleßmann, J. Wendiggensen 2018 J. Phys.: Conf. Ser. 977 012003, DOI 10.1088/1742-6596/977/1/012003
@@ -47,3 +49,5 @@ Literature
 .. [Schmidt2018] D. Schmidt, Supplementary material to the masters thesis: NUTS-3 Regionalization of Industrial Load Shifting Potential in Germany using a Time-Resolved Model (Nov. 2019). doi:10.5281/zenodo.3613767. URL https://doi.org/10.5281/zenodo.3613767
 
 .. [sEEnergies] T. Fleiter, P. Manz, N. Neuwirth, F. Mildner, K. Persson, U.AND Kermeli, W. Crijns-Graus, C. Rutten, seenergies d5.1 dataset web-app.seenergies arcgis online web-apps hosted by europa-universität flensburg (2020). URL https://tinyurl.com/sEEnergies-D5-1
+
+.. [TYNDP] European Network of Transmission System Operators for Electricity, European Network of Transmission System Operators for Gas, Ten-Year Network Development Plans - “TYNDP 2020 Scenarios” (2020)

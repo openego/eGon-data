@@ -19,6 +19,8 @@ The final distribution in the eGon2035 scenario is shown in figure :ref:`generat
 Onshore wind
 +++++++++++++
 
+
+
 Offshore wind
 ++++++++++++++
 
@@ -87,6 +89,45 @@ Disaggregation of PV rooftop scenario capacities:
   using MaStR data as basis.
 
 Hydro
-++++++
++++++
+
+In the case of hydropower plants, a distinction is made between the carrier run-of-river 
+and reservoir. 
+The methods to distribute and allocate are the same for both carriers.
+In a first step all suitable power plants (correct carrier, valid geolocation, information 
+about federal state) are selected and their installed capacity is scaled to meet the target
+values for the respective federal state and scenario. 
+Information about the voltage level the power plants are connected to is obtained. In case 
+no information is availabe the voltage level is identified using threshold values for the 
+installed capacity (see :func:`assign_voltage_level <egon.data.datasets.power_plants.assign_voltage_level>`). 
+In a next step the correct grid connection point is identified based on the voltage level
+and geolocation of the power plants (see :func:`assign_bus_id <egon.data.datasets.power_plants.assign_bus_id>`)
+The resulting list of power plants it added to table 
+:py:class:`EgonPowerPlants <egon.data.datasets.power_plants.EgonPowerPlants>`.
+
+Biomass
++++++++
+
+The allocation of biomass-based power plants follows the same method as the one for hydro
+power plants and is performed in function :func:`insert_biomass_plants <egon.data.datasets.power_plants.insert_biomass_plants>`
+
+
+
+Conventional
+++++++++++++
+
+**CHP**
+
+
+**non-chp**
+
+
+In function :func:`allocate_conventional_non_chp_power_plants <egon.data.datasets.power_plants.allocate_conventional_non_chp_power_plants>`
+capacities for conventional power plants, which are no chp plants, with carrier *oil* and 
+*gas* are allocated.
+  
+
+
+
 
 
