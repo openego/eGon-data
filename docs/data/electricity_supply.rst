@@ -25,6 +25,12 @@ Offshore wind
 PV ground mounted
 ++++++++++++++++++
 
+.. figure:: /images/PV_freiflaeche.png
+  :name: pv_ground_mounted-example
+  :width: 400 
+  
+  Example: potential areas for ground mounted PVs and locations of existing ground mounted PVs
+
 PV rooftop
 +++++++++++
 
