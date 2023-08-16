@@ -85,7 +85,7 @@ Different flexibility options are part of the model and can be utilized in the o
 flexibility potentials and their distribution are needed. The considered technologies described in the following chapters range from different storage units, 
 through dynamic line rating to Demand-Side-Management measures. 
 
-Demand-Side-Management
+Demand-Side Management
 ----------------------
 
 .. include:: data/DSM.rst

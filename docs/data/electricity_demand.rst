@@ -1,5 +1,4 @@
-.. _elec_demand-ref:
-
+.. _elec_demand_ref:
 The electricity demand considered includes demand from the residential, commercial and industrial sector. 
 The target values for scenario *eGon2035* are taken from the German grid development plan from 2021 [NEP2021]_,
 whereas the distribution on NUTS3-levels corresponds to the data from the research project *DemandRegio* [demandregio]_. 

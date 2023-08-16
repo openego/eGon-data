@@ -4,7 +4,7 @@ potentials within the medium- and low-voltage grids are determined within the fu
 in a higher spatial resolution. All this is part of the dataset :py:class:`DsmPotential <egon.data.datasets.DsmPotential>`.
 
 Loads eligible to be shifted are assumed within industrial loads and loads from Commercial, Trade and Service (CTS). 
-Therefore, load time series from these sectors are used as input data (see :ref:`elec_demand-ref`).
+Therefore, load time series from these sectors are used as input data (see section ref:`elec_demand-ref`).
 Shiftable shares of loads mainly derive from heating and cooling processes and selected energy-intensive 
 industrial processes (cement production, wood pulp, paper production, recycling paper). Technical and sociotechnical 
 constraints are considered using the parametrization elaborated in [Heitkoetter]_. An overview over the 
@@ -12,7 +12,7 @@ resulting potentials can be seen in figure :ref:`dsm_potential`. The table summa
 
 .. figure:: /images/DSM_potential.png
   :name: dsm_potential
-  :width: 400 
+  :width: 600 
   
   Aggregated DSM potential in Germany
   
@@ -33,14 +33,14 @@ resulting potentials can be seen in figure :ref:`dsm_potential`. The table summa
      - 150 MW
 
 DSM is modelled following the approach of [Kleinhans]_. DSM components are created wherever 
-respective loads are seen. A minimum and maximum shiftable power per time step depict time-dependent 
+respective loads are seen. Minimum and maximum shiftable power per time step depict time-dependent 
 charging and discharging power of a storage-equivalent buffer. Time-dependent capacities 
 of the storage-equivalent buffer account for the time frame of management bounding the period within which 
 the shifting can be conducted. Figure :ref:`dsm_shifted_p-example` shows the resulting potential at one exemplary bus.
 
 .. figure:: /images/shifted_dsm-example.png
   :name: dsm_shifted_p-example
-  :width: 400 
+  :width: 600 
   
   Time-dependent DSM potential at one exemplary bus
 
