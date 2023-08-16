@@ -111,10 +111,10 @@ class DsmPotential(Dataset):
       * :py:class:`grid.egon_etrago_link_timeseries <egon.data.datasets.etrago_setup.EgonPfHvLinkTimeseries>` is extended
       * :py:class:`grid.egon_etrago_store <egon.data.datasets.etrago_setup.EgonPfHvStore>` is extended
       * :py:class:`grid.egon_etrago_store_timeseries <egon.data.datasets.etrago_setup.EgonPfHvStoreTimeseries>` is extended
-      * :py:class:`demand.egon_etrago_electricity_cts_dsm_timeseries <egon.data.datasets.DsmPotential.EgonEtragoElectricityCtsDsmTimeseries>` is created and filled
-      * :py:class:`demand.egon_osm_ind_load_curves_individual_dsm_timeseries <egon.data.datasets.DsmPotential.EgonOsmIndLoadCurvesIndividualDsmTimeseries>` is created and filled
-      * :py:class:`demand.egon_demandregio_sites_ind_electricity_dsm_timeseries <egon.data.datasets.DsmPotential.EgonDemandregioSitesIndElectricityDsmTimeseries>` is created and filled
-      * :py:class:`demand.egon_sites_ind_load_curves_individual_dsm_timeseries <egon.data.datasets.DsmPotential.EgonSitesIndLoadCurvesIndividualDsmTimeseries>` is created and filled
+      * :py:class:`demand.egon_etrago_electricity_cts_dsm_timeseries <egon.data.datasets.DsmPotential.EgonEtragoElectricityCtsDsmTimeseries>` is created and filled # noqa: E501
+      * :py:class:`demand.egon_osm_ind_load_curves_individual_dsm_timeseries <egon.data.datasets.DsmPotential.EgonOsmIndLoadCurvesIndividualDsmTimeseries>` is created and filled # noqa: E501
+      * :py:class:`demand.egon_demandregio_sites_ind_electricity_dsm_timeseries <egon.data.datasets.DsmPotential.EgonDemandregioSitesIndElectricityDsmTimeseries>` is created and filled # noqa: E501
+      * :py:class:`demand.egon_sites_ind_load_curves_individual_dsm_timeseries <egon.data.datasets.DsmPotential.EgonSitesIndLoadCurvesIndividualDsmTimeseries>` is created and filled # noqa: E501
 
     """
 
