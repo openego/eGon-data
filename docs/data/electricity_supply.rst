@@ -28,7 +28,7 @@ PV ground mounted
 ++++++++++++++++++
 
 The distribution of PV ground mounted is implemented in function :func:`run_methodology<egon.data.datasets.power_plants.pv_ground_mounted.run_methodology>`
-which is part of the dataset :py:class:`DsmPotential <egon.data.datasets.PowerPlants>`.
+which is part of the dataset :py:class:`PowerPlants<egon.data.datasets.PowerPlants>`.
 The following steps are conducted:
 
 #. The sites and capacities of exisitng PV parks are imported using MaStR data (see :ref:`mastr-ref`).
@@ -37,15 +37,15 @@ The following steps are conducted:
 
 #. The locations of existing parks and the potential areas are intersected with each other while considering a buffer around the locations of existing parks to find out where there already are parks at or close to potential areas. This results in a selection of potential areas.
 
-#. If there is expansion necessary, the capacities of the existing parks are considered and compared to the target values for the specific scenario per federal state. The required expansion capacity is derived.
+#. The capacities of the existing parks are considered and compared to the target values for the specific scenario per federal state. The required expansion capacity is derived.
 
-#. Depending on the area size, capacities are calculated which can be built on those selected potential areas. 
+#. If there expansion of PV ground mounted capacity is required, capacities are calculated depending on the area size of the formerly selected potential areas. The resulting parks are therefore located on the selected potential areas.
 
-#. The resulting capacities are compared to the target values for the specific scenario per federal state. If the target value is exceeded, a linear downscaling is conducted.
+#. The resulting capacities are compared to the target values for the specific scenario per federal state. If the target value is exceeded, a linear downscaling is conducted. If the target value is not reached yet, the rest capacity is distributed linearly among the rest of the potential areas within the state. 
 
 .. figure:: /images/PV_freiflaeche.png
   :name: pv_ground_mounted-example
-  :width: 400 
+  :width: 500 
   
   Example: sites of existing PV ground mounted parks and potential areas
 
