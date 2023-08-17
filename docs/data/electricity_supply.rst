@@ -27,25 +27,25 @@ Offshore wind
 PV ground mounted
 ++++++++++++++++++
 
-The distribution of PV ground mounted is implemented in function :func:`run_methodology<egon.data.datasets.power_plants.pv_ground_mounted.run_methodology>`
-which is part of the dataset :py:class:`PowerPlants<egon.data.datasets.PowerPlants>`.
+The distribution of PV ground mounted is implemented in function :func:`insert<egon.data.datasets.power_plants.pv_ground_mounted.insert>`
+which is part of the dataset :class:`PowerPlants<egon.data.datasets.PowerPlants>`.
 The following steps are conducted:
 
 #. The sites and capacities of exisitng PV parks are imported using MaStR data (see :ref:`mastr-ref`).
 
-#. Potential areas for PV ground mounted are assumed to be areas next to highways and railways as well as on agricultural land with a low degree of utilisation (see :ref:`data-bundle-ref`). Those areas are imported while merging or disgarding small areas.
+#. Potential areas for PV ground mounted are assumed to be areas next to highways and railways as well as on agricultural land with a low degree of utilisation, as it can be seen in figure :ref:`pv_ground_mounted-example`. Those areas (provided through the data bundle, see :ref:`data-bundle-ref`) are imported while merging or disgarding small areas.
 
 #. The locations of existing parks and the potential areas are intersected with each other while considering a buffer around the locations of existing parks to find out where there already are parks at or close to potential areas. This results in a selection of potential areas.
 
-#. The capacities of the existing parks are considered and compared to the target values for the specific scenario per federal state. The required expansion capacity is derived.
+#. The capacities of the existing parks are considered and compared to the target values for the specific scenario per federal state (see :ref:`concept-and-scenarios-ref`). The required expansion capacity is derived.
 
-#. If there expansion of PV ground mounted capacity is required, capacities are calculated depending on the area size of the formerly selected potential areas. The resulting parks are therefore located on the selected potential areas.
+#. If expansion of PV ground mounted capacity is required, capacities are calculated depending on the area size of the formerly selected potential areas. The resulting parks are therefore located on the selected potential areas.
 
-#. The resulting capacities are compared to the target values for the specific scenario per federal state. If the target value is exceeded, a linear downscaling is conducted. If the target value is not reached yet, the rest capacity is distributed linearly among the rest of the potential areas within the state. 
+#. The resulting capacities are compared to the target values for the specific scenario per federal state. If the target value is exceeded, a linear downscaling is conducted. If the target value is not reached yet, the remaining capacity is distributed linearly among the rest of the potential areas within the state. 
 
 .. figure:: /images/PV_freiflaeche.png
   :name: pv_ground_mounted-example
-  :width: 500 
+  :width: 400 
   
   Example: sites of existing PV ground mounted parks and potential areas
 
