@@ -1,15 +1,17 @@
 Demand-side management (DSM) potentials are calculated in function :func:`dsm_cts_ind_processing<egon.data.datasets.DSM_cts_ind.dsm_cts_ind_processing>`. 
 Potentials relevant for the high and extra-high voltage grid are identified in the function :func:`dsm_cts_ind<egon.data.datasets.DSM_cts_ind.dsm_cts_ind>`, 
 potentials within the medium- and low-voltage grids are determined within the function :func:`dsm_cts_ind_individual<egon.data.datasets.DSM_cts_ind.dsm_cts_ind_individual>` 
-in a higher spatial resolution. All this is part of the dataset :py:class:`DsmPotential <egon.data.datasets.DsmPotential>`.
+in a higher spatial resolution. All this is part of the dataset :py:class:`DsmPotential <egon.data.datasets.DsmPotential>`. 
+The implementation is documented in detail within the following student work (in German): [EsterlDentzien]_.
 
 Loads eligible to be shifted are assumed within industrial loads and loads from Commercial, Trade and Service (CTS). 
 Therefore, load time series from these sectors are used as input data (see section ref:`elec_demand-ref`).
 Shiftable shares of loads mainly derive from heating and cooling processes and selected energy-intensive 
 industrial processes (cement production, wood pulp, paper production, recycling paper). Technical and sociotechnical 
 constraints are considered using the parametrization elaborated in [Heitkoetter]_. An overview over the 
-resulting potentials can be seen in figure :ref:`dsm_potential`. The table below summarizes the aggregated potential 
-for Germany per scenario. 
+resulting potentials for scenario ``eGon2035`` can be seen in figure :ref:`dsm_potential`. The table below summarizes the 
+aggregated potential for Germany per scenario. As the annual conventional electrical loads are assumed to be lower in the 
+scenario ``eGon100RE``, also the DSM potential decreases compared to the scenario ``eGon2035``.
 
 .. figure:: /images/DSM_potential.png
   :name: dsm_potential

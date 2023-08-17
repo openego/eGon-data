@@ -16,6 +16,8 @@ Literature
 
 .. [Energiereferenzprognose] Prognos AG, Energiewirtschaftliches Institut an der Universität zu Köln, Gesellschaft für Wirtschaftliche Strukturforschung mbH: Entwicklung der Energiemärkte – Energiereferenzprognose (2014)
 
+.. [EsterlDentzien] Katharina Esterl, Hannah Dentzien, Integration von Demand Side Management in eTraGo, Student Work, Hochschule Flensburg, URL https://ego-n.org/theses/2021_SP_Esterl_Dentzien_DSM-eTraGo.pdf
+
 .. [eXtremOS] A. Guminski, C. Fiedler, S. Kigle, C. Pellinger, P. Dossow, K. Ganz, F. Jetter, T. Kern, T. Limmer, A. Murmann, J. Reinhard, T. Schmid, T. Schmidt-Achert, S. von Roon, eXtremOS Summary Report (2021). doi:https://doi.org/10.34805/ffe-24-21.
 
 .. [FfE2017] Flexibilisierung der Kraft-Wärme-Kopplung; 2017; Forschungsstelle für Energiewirtschaft e.V. (FfE)
