@@ -27,11 +27,27 @@ Offshore wind
 PV ground mounted
 ++++++++++++++++++
 
+The distribution of PV ground mounted is implemented in function :func:`run_methodology<egon.data.datasets.power_plants.pv_ground_mounted.run_methodology>`
+which is part of the dataset :py:class:`DsmPotential <egon.data.datasets.PowerPlants>`.
+The following steps are conducted:
+
+#. The sites and capacities of exisitng PV parks are imported using MaStR data (see :ref:`mastr-ref`).
+
+#. Potential areas for PV ground mounted are assumed to be areas next to highways and railways as well as on agricultural land with a low degree of utilisation (see :ref:`data-bundle-ref`). Those areas are imported while merging or disgarding small areas.
+
+#. The locations of existing parks and the potential areas are intersected with each other while considering a buffer around the locations of existing parks to find out where there already are parks at or close to potential areas. This results in a selection of potential areas.
+
+#. If there is expansion necessary, the capacities of the existing parks are considered and compared to the target values for the specific scenario per federal state. The required expansion capacity is derived.
+
+#. Depending on the area size, capacities are calculated which can be built on those selected potential areas. 
+
+#. The resulting capacities are compared to the target values for the specific scenario per federal state. If the target value is exceeded, a linear downscaling is conducted.
+
 .. figure:: /images/PV_freiflaeche.png
   :name: pv_ground_mounted-example
   :width: 400 
   
-  Example: potential areas for ground mounted PVs and locations of existing ground mounted PVs
+  Example: sites of existing PV ground mounted parks and potential areas
 
 PV rooftop
 +++++++++++
