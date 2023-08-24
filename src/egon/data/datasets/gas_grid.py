@@ -31,7 +31,7 @@ import pandas as pd
 from egon.data import config, db
 from egon.data.config import settings
 from egon.data.datasets import Dataset
-from egon.data.datasets.electrical_neighbours import central_buses_egon100
+from egon.data.datasets.electrical_neighbours import central_buses_pypsaeur
 from egon.data.datasets.etrago_helpers import copy_and_modify_buses
 from egon.data.datasets.scenario_parameters import get_sector_parameters
 
@@ -304,7 +304,7 @@ def insert_gas_buses_abroad(scn_name="status2019"):
     )
 
     # Select the foreign buses
-    gdf_abroad_buses = central_buses_egon100(sources)
+    gdf_abroad_buses = central_buses_pypsaeur(sources)
     gdf_abroad_buses = gdf_abroad_buses.drop_duplicates(subset=["country"])
 
     # Select next id value
