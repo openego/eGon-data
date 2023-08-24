@@ -1102,30 +1102,3 @@ def overwrite_H2_pipeline_share():
     WHERE name = '{scn_name}';
     """
     )
-
-
-# Skip execution of pypsa-eur-sec by default until optional task is implemented
-execute_pypsa_eur_sec = False
-
-if execute_pypsa_eur_sec:
-    tasks = (
-        run_pypsa_eur_sec,
-        clean_database,
-        neighbor_reduction,
-        overwrite_H2_pipeline_share,
-    )
-else:
-    tasks = (
-        clean_database,
-        neighbor_reduction,
-    )
-
-
-class PypsaEurSec(Dataset):
-    def __init__(self, dependencies):
-        super().__init__(
-            name="PypsaEurSec",
-            version="0.0.9",
-            dependencies=dependencies,
-            tasks=tasks,
-        )
