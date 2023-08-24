@@ -3,17 +3,14 @@ the pysa-eur-sec scenario parameter creation
 """
 
 from pathlib import Path
-from urllib.request import urlretrieve
 import json
-import os
-import tarfile
 
 from shapely.geometry import LineString
 import geopandas as gpd
-import importlib_resources as resources
 import numpy as np
 import pandas as pd
 import pypsa
+import shutil
 import yaml
 
 from egon.data import __path__, db, logger, config
@@ -22,6 +19,7 @@ from egon.data.datasets.manipulate_network import execute
 from egon.data.datasets.scenario_parameters import get_sector_parameters
 import egon.data.config
 import egon.data.subprocess as subproc
+
 
 
 
