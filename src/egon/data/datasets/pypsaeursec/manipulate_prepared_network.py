@@ -1,6 +1,11 @@
 import pypsa
 import pandas as pd
 import numpy as np
+import yaml
+
+from pathlib import Path
+
+from egon.data import __path__
 from egon.data.datasets.scenario_parameters.parameters import (
     annualize_capital_costs,
 )
@@ -226,9 +231,26 @@ def rual_heat_technologies(network):
 
 
 def execute():
-    NETWORK_PATH = "/home/clara/test-powerd-data/run-pypsa-eur/pypsa-eur/results/prenetworks/elec_s_37_lv1.5__Co2L0-1H-T-H-B-I-A-solar+p3_2050.nc"
+    with open(
+        __path__[0] + "/datasets/pypsaeursec/config.yaml", "r"
+    ) as stream:
+        data_config = yaml.safe_load(stream)
 
-    network = pypsa.Network(NETWORK_PATH)
+    network_path = (
+        Path(".")
+        / "run-pypsa-eur"
+        / "pypsa-eur"
+        / "results"
+        / data_config["run"]["name"]
+        / "prenetworks"
+        / f"elec_s_{data_config['scenario']['clusters'][0]}"
+        f"_l{data_config['scenario']['ll'][0]}"
+        f"_{data_config['scenario']['opts'][0]}"
+        f"_{data_config['scenario']['sector_opts'][0]}"
+        f"_{data_config['scenario']['planning_horizons'][0]}.nc"
+    )
+
+    network = pypsa.Network(network_path)
 
     network = drop_biomass(network)
 
@@ -248,4 +270,4 @@ def execute():
 
     network = drop_fossil_gas(network)
 
-    network.export_to_netcdf(NETWORK_PATH)
+    network.export_to_netcdf(network_path)
