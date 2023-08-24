@@ -226,6 +226,14 @@ def clean_database():
         "AND country <> 'DE'"
     )
 
+def electrical_neighbours_egon100():
+    if "eGon100RE" in egon.data.config.settings()["egon-data"]["--scenarios"]:
+        neighbor_reduction()
+
+    else:
+        print(
+            "eGon100RE is not in the list of created scenarios, this task is skipped."
+        )
 
 def neighbor_reduction():
     network = read_network()
