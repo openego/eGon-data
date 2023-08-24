@@ -21,6 +21,33 @@ import egon.data.config
 import egon.data.subprocess as subproc
 
 
+class PreparePypsaEur(Dataset):
+    def __init__(self, dependencies):
+        super().__init__(
+            name="PreparePypsaEur",
+            version="0.0.1",
+            dependencies=dependencies,
+            tasks=(
+                download,
+                prepare_network,
+            ),
+        )
+
+
+class RunPypsaEur(Dataset):
+    def __init__(self, dependencies):
+        super().__init__(
+            name="SolvePypsaEur",
+            version="0.0.1",
+            dependencies=dependencies,
+            tasks=(
+                execute,
+                solve_network,
+                clean_database,
+                electrical_neighbours_egon100,
+                overwrite_H2_pipeline_share,
+            ),
+        )
 
 
 def download():
