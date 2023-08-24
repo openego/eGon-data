@@ -242,7 +242,6 @@ def CTS_demand_scale(aggregation_level):
         )
 
         if aggregation_level == "district":
-
             district_heating = db.select_dataframe(
                 f"""
                 SELECT area_id, zensus_population_id
@@ -283,7 +282,9 @@ def CTS_demand_scale(aggregation_level):
 
             CTS_per_district.insert(0, "scenario", scenario)
 
-            CTS_district = CTS_district.append(CTS_per_district)
+            CTS_district = pd.concat(
+                [CTS_district, CTS_per_district], ignore_index=True
+            )
             CTS_district = CTS_district.sort_index()
 
             mv_grid_ind = db.select_dataframe(
@@ -332,7 +333,7 @@ def CTS_demand_scale(aggregation_level):
 
             CTS_per_grid.insert(0, "scenario", scenario)
 
-            CTS_grid = CTS_grid.append(CTS_per_grid)
+            CTS_grid = pd.concat([CTS_grid, CTS_per_grid])
             CTS_grid = CTS_grid.sort_index()
 
             CTS_per_zensus = 0
@@ -358,7 +359,7 @@ def CTS_demand_scale(aggregation_level):
 
             CTS_per_zensus.reset_index(inplace=True)
 
-            CTS_zensus = CTS_zensus.append(CTS_per_grid)
+            CTS_zensus = pd.concat([CTS_zensus, CTS_per_grid])
             CTS_zensus = CTS_zensus.set_index("bus_id")
             CTS_zensus = CTS_zensus.sort_index()
 

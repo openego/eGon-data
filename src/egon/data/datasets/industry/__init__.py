@@ -10,6 +10,7 @@
 from sqlalchemy import ARRAY, Column, Float, Integer, String
 from sqlalchemy.ext.declarative import declarative_base
 import geopandas as gpd
+import pandas as pd
 
 from egon.data import db
 from egon.data.datasets import Dataset
@@ -200,7 +201,6 @@ def industrial_demand_distr():
     )
 
     for scn in egon.data.config.settings()["egon-data"]["--scenarios"]:
-
         # Select spatial information from local database
         # Select administrative districts (Landkreise) including its boundaries
         boundaries = db.select_geodataframe(
@@ -251,7 +251,7 @@ def industrial_demand_distr():
         landuse = landuse.rename({"index_right": "nuts3"}, axis=1)
 
         landuse_nuts3 = landuse[["area_ha", "nuts3"]]
-        landuse_nuts3 = landuse.groupby(["nuts3"]).sum().reset_index()
+        landuse_nuts3 = landuse_nuts3.groupby(["nuts3"]).sum().reset_index()
 
         # Select data on industrial sites
         sites = db.select_dataframe(
@@ -351,8 +351,8 @@ def industrial_demand_distr():
 
         # Create df containing all demand per wz which will be allocated to
         # osm areas
-        demand_nuts3_osm_wz = demand_nuts3_a.append(
-            demand_nuts3_b_osm, ignore_index=True
+        demand_nuts3_osm_wz = pd.concat(
+            [demand_nuts3_a, demand_nuts3_b_osm], ignore_index=True
         )
         demand_nuts3_osm_wz = (
             demand_nuts3_osm_wz.groupby(["nuts3", "wz"]).sum().reset_index()
@@ -385,7 +385,12 @@ def industrial_demand_distr():
         landuse = landuse.rename({"id": "osm_id"}, axis=1)
 
         # Remove duplicates and adjust index
-        landuse = landuse.groupby(["osm_id", "wz"]).sum().reset_index()
+        landuse = (
+            landuse.drop("geom", axis="columns")
+            .groupby(["osm_id", "wz"])
+            .sum()
+            .reset_index()
+        )
         landuse.index.rename("id", inplace=True)
         landuse["scenario"] = scn
 

@@ -36,7 +36,7 @@ def create_table():
 
 
 def calc_load_curve(share_wz, annual_demand=1):
-    """ Create aggregated demand curve for service sector
+    """Create aggregated demand curve for service sector
 
     Parameters
     ----------
@@ -72,7 +72,7 @@ def calc_load_curve(share_wz, annual_demand=1):
             start=f"01/01/{year}",
             end=f"01/01/{year+1}",
             freq="H",
-            closed="left",
+            inclusive="left",
         )
     )
 
@@ -86,7 +86,6 @@ def calc_load_curve(share_wz, annual_demand=1):
     # If shares per cts branch is a DataFrame (e.g. shares per substation)
     # demand curves are created for each row
     if type(share_wz) == pd.core.frame.DataFrame:
-
         # Replace NaN values with 0
         share_wz = share_wz.fillna(0.0)
 
@@ -170,7 +169,7 @@ def calc_load_curves_cts(scenario):
     )
 
     # Calculate shares of cts branches per nuts3-region
-    nuts3_share_wz = demands_nuts.groupby("nuts3").apply(
+    nuts3_share_wz = demands_nuts.groupby("nuts3", as_index=False).apply(
         lambda grp: grp / grp.sum()
     )
 
@@ -190,7 +189,9 @@ def calc_load_curves_cts(scenario):
 
     # Calculate shares of cts branches per hvmv substation
     share_subst = (
-        demands_zensus.drop("demand", axis=1).groupby("bus_id").mean()
+        demands_zensus.drop(["nuts3", "demand"], axis=1)
+        .groupby("bus_id")
+        .mean()
     )
 
     # Calculate cts annual demand per hvmv substation
@@ -216,7 +217,6 @@ def insert_cts_load():
     create_table()
 
     for scenario in egon.data.config.settings()["egon-data"]["--scenarios"]:
-
         # Delete existing data from database
         db.execute_sql(
             f"""

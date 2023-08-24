@@ -135,7 +135,6 @@ def federal_states_per_weather_cell():
     while (buffer < 30000) & (
         len(weather_cells[weather_cells["federal_state"].isnull()]) > 0
     ):
-
         cells = weather_cells[weather_cells["federal_state"].isnull()]
 
         cells.loc[:, "geom_point"] = cells.geom_point.buffer(buffer)
@@ -211,7 +210,7 @@ def feedin_per_turbine():
     # Select weather data for Germany
     cutout = import_cutout(boundary="Germany")
 
-    gdf = gpd.GeoDataFrame(geometry=cutout.grid_cells(), crs=4326)
+    gdf = gpd.GeoDataFrame(geometry=cutout.grid.geometry, crs=4326)
 
     # Calculate feedin-timeseries for E-141
     # source:
@@ -252,7 +251,7 @@ def feedin_per_turbine():
         ),
     }
     ts_e141 = cutout.wind(
-        turbine_e141, per_unit=True, shapes=cutout.grid_cells()
+        turbine_e141, per_unit=True, shapes=cutout.grid.geometry
     )
 
     gdf["E-141"] = ts_e141.to_pandas().transpose().values.tolist()
@@ -296,7 +295,7 @@ def feedin_per_turbine():
         ),
     }
     ts_e126 = cutout.wind(
-        turbine_e126, per_unit=True, shapes=cutout.grid_cells()
+        turbine_e126, per_unit=True, shapes=cutout.grid.geometry
     )
 
     gdf["E-126"] = ts_e126.to_pandas().transpose().values.tolist()

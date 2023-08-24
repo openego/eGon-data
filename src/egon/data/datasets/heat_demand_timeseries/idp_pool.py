@@ -324,20 +324,23 @@ def create():
     idp_df = pd.DataFrame(columns=["idp", "house", "temperature_class"])
     for s in stock:
         for m in class_list:
-
             if s == "SFH":
                 i = class_list.index(m)
             if s == "MFH":
                 i = class_list.index(m) + 9
             current_pool = idp_list[i]
-            idp_df = idp_df.append(
-                pd.DataFrame(
-                    data={
-                        "idp": current_pool.transpose().values.tolist(),
-                        "house": s,
-                        "temperature_class": m,
-                    }
-                )
+            idp_df = pd.concat(
+                [
+                    idp_df,
+                    pd.DataFrame(
+                        data={
+                            "idp": current_pool.transpose().values.tolist(),
+                            "house": s,
+                            "temperature_class": m,
+                        }
+                    ),
+                ],
+                ignore_index=True,
             )
     idp_df = idp_df.reset_index(drop=True)
 
@@ -463,8 +466,8 @@ def select():
 
     # Calculate annual heat demand per census cell
     annual_demand = annual_demand_generator(
-        scenario = egon.data.config.settings()["egon-data"]["--scenarios"][0]
-        )
+        scenario=egon.data.config.settings()["egon-data"]["--scenarios"][0]
+    )
 
     # Count number of SFH and MFH per climate zone
     houses_per_climate_zone = (
@@ -477,7 +480,6 @@ def select():
     )
 
     for station in houses_per_climate_zone.index:
-
         result_SFH = pd.DataFrame(columns=range(1, 366))
         result_MFH = pd.DataFrame(columns=range(1, 366))
 

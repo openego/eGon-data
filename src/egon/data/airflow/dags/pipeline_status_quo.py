@@ -73,10 +73,14 @@ from egon.data.datasets.zensus_vg250 import ZensusVg250
 # Set number of threads used by numpy and pandas
 set_numexpr_threads()
 
+
+
 with airflow.DAG(
     "powerd-status-quo-processing-pipeline",
     description="The PoWerD Status Quo data processing DAG.",
-    default_args={"start_date": days_ago(1)},
+    default_args={"start_date": days_ago(1),
+                  "email_on_failure": False,
+                  "email":"clara.buettner@hs-flensburg.de"},
     template_searchpath=[
         os.path.abspath(
             os.path.join(
@@ -499,15 +503,6 @@ with airflow.DAG(
         dependencies=[mv_grid_districts, hh_demand_buildings_setup]
     )
 
-    cts_demand_buildings = CtsDemandBuildings(
-        dependencies=[
-            osm_buildings_streets,
-            cts_electricity_demand_annual,
-            hh_demand_buildings_setup,
-            tasks["heat_demand_timeseries.export-etrago-cts-heat-profiles"],
-        ]
-    )
-
     # Create load areas
     load_areas = LoadArea(
         dependencies=[
@@ -523,3 +518,5 @@ with airflow.DAG(
             demand_curves_industry,
         ]
     )
+
+

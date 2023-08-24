@@ -501,7 +501,7 @@ def neighbor_reduction():
     neighbor_gens.index += db.next_etrago_id("generator")
 
     for i in neighbor_gens_t.columns:
-        new_index = neighbor_gens[neighbor_gens["name"] == i].index
+        new_index = neighbor_gens[neighbor_gens["Generator"] == i].index
         neighbor_gens_t.rename(columns={i: new_index[0]}, inplace=True)
 
     # loads
@@ -519,7 +519,7 @@ def neighbor_reduction():
     neighbor_loads.index += db.next_etrago_id("load")
 
     for i in neighbor_loads_t.columns:
-        new_index = neighbor_loads[neighbor_loads["index"] == i].index
+        new_index = neighbor_loads[neighbor_loads["Load"] == i].index
         neighbor_loads_t.rename(columns={i: new_index[0]}, inplace=True)
 
     # stores
@@ -536,7 +536,7 @@ def neighbor_reduction():
     neighbor_stores.index += db.next_etrago_id("store")
 
     for i in neighbor_stores_t.columns:
-        new_index = neighbor_stores[neighbor_stores["name"] == i].index
+        new_index = neighbor_stores[neighbor_stores["Store"] == i].index
         neighbor_stores_t.rename(columns={i: new_index[0]}, inplace=True)
 
     # storage_units
@@ -559,7 +559,9 @@ def neighbor_reduction():
     neighbor_storage.index += db.next_etrago_id("storage")
 
     for i in neighbor_storage_t.columns:
-        new_index = neighbor_storage[neighbor_storage["name"] == i].index
+        new_index = neighbor_storage[
+            neighbor_storage["StorageUnit"] == i
+        ].index
         neighbor_storage_t.rename(columns={i: new_index[0]}, inplace=True)
 
     # Connect to local database
@@ -584,10 +586,19 @@ def neighbor_reduction():
         c_neighbors = pd.concat([coordinates, c_neighbors], axis=1).set_index(
             "new_index", drop=False
         )
-        non_AC_neighbors = non_AC_neighbors.append(c_neighbors)
-    neighbors = neighbors[neighbors.carrier == "AC"].append(non_AC_neighbors)
+        non_AC_neighbors = pd.concat([non_AC_neighbors, c_neighbors])
+    neighbors = pd.concat(
+        [neighbors[neighbors.carrier == "AC"], non_AC_neighbors]
+    )
 
-    for i in ["new_index", "control", "generator", "location", "sub_network"]:
+    for i in [
+        "new_index",
+        "control",
+        "generator",
+        "location",
+        "sub_network",
+        "unit",
+    ]:
         neighbors = neighbors.drop(i, axis=1)
 
     # Add geometry column
@@ -627,7 +638,7 @@ def neighbor_reduction():
         neighbor_lines["s_nom"] = neighbor_lines["s_nom_min"]
 
         for i in [
-            "name",
+            "Line",
             "x_pu_eff",
             "r_pu_eff",
             "sub_network",
@@ -702,7 +713,7 @@ def neighbor_reduction():
         neighbor_links["scn_name"] = scn
 
         dropped_carriers = [
-            "name",
+            "Link",
             "geometry",
             "tags",
             "under_construction",
@@ -716,6 +727,17 @@ def neighbor_reduction():
             "efficiency4",
             "lifetime",
             "pipe_retrofit",
+            "committable",
+            "start_up_cost",
+            "shut_down_cost",
+            "min_up_time",
+            "min_down_time",
+            "up_time_before",
+            "down_time_before",
+            "ramp_limit_up",
+            "ramp_limit_down",
+            "ramp_limit_start_up",
+            "ramp_limit_shut_down",
         ]
 
         if extendable:
@@ -820,7 +842,14 @@ def neighbor_reduction():
         inplace=True,
     )
 
-    for i in ["name", "weight", "lifetime", "p_set", "q_set", "p_nom_opt"]:
+    for i in [
+        "Generator",
+        "weight",
+        "lifetime",
+        "p_set",
+        "q_set",
+        "p_nom_opt",
+    ]:
         neighbor_gens = neighbor_gens.drop(i, axis=1)
 
     neighbor_gens.to_sql(
@@ -851,7 +880,7 @@ def neighbor_reduction():
     )
 
     neighbor_loads = neighbor_loads.drop(
-        columns=["index"],
+        columns=["Load"],
         errors="ignore",
     )
 
@@ -892,8 +921,16 @@ def neighbor_reduction():
         "carrier",
     ] = "H2_overground"
 
-    for i in ["name", "p_set", "q_set", "e_nom_opt", "lifetime"]:
-        neighbor_stores = neighbor_stores.drop(i, axis=1)
+    for i in [
+        "Store",
+        "p_set",
+        "q_set",
+        "e_nom_opt",
+        "lifetime",
+        "e_initial_per_period",
+        "e_cyclic_per_period",
+    ]:
+        neighbor_stores = neighbor_stores.drop(i, axis=1, errors="ignore")
 
     neighbor_stores.to_sql(
         "egon_etrago_store",
@@ -914,8 +951,13 @@ def neighbor_reduction():
         {"PHS": "pumped_hydro", "hydro": "reservoir"}, inplace=True
     )
 
-    for i in ["name", "p_nom_opt"]:
-        neighbor_storage = neighbor_storage.drop(i, axis=1)
+    for i in [
+        "StorageUnit",
+        "p_nom_opt",
+        "state_of_charge_initial_per_period",
+        "cyclic_state_of_charge_per_period",
+    ]:
+        neighbor_storage = neighbor_storage.drop(i, axis=1, errors="ignore")
 
     neighbor_storage.to_sql(
         "egon_etrago_storage",
