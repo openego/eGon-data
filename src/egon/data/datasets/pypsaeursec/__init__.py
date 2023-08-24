@@ -251,6 +251,7 @@ def clean_database():
         "AND country <> 'DE'"
     )
 
+
 def electrical_neighbours_egon100():
     if "eGon100RE" in egon.data.config.settings()["egon-data"]["--scenarios"]:
         neighbor_reduction()
@@ -259,6 +260,7 @@ def electrical_neighbours_egon100():
         print(
             "eGon100RE is not in the list of created scenarios, this task is skipped."
         )
+
 
 def neighbor_reduction():
     network = read_network()
@@ -699,48 +701,32 @@ def neighbor_reduction():
         """
         neighbor_links["scn_name"] = scn
 
-        if extendable is True:
+        dropped_carriers = [
+            "name",
+            "geometry",
+            "tags",
+            "under_construction",
+            "underground",
+            "underwater_fraction",
+            "bus2",
+            "bus3",
+            "bus4",
+            "efficiency2",
+            "efficiency3",
+            "efficiency4",
+            "lifetime",
+            "pipe_retrofit",
+        ]
+
+        if extendable:
             neighbor_links = neighbor_links.drop(
-                columns=[
-                    "name",
-                    "geometry",
-                    "tags",
-                    "under_construction",
-                    "underground",
-                    "underwater_fraction",
-                    "bus2",
-                    "bus3",
-                    "bus4",
-                    "efficiency2",
-                    "efficiency3",
-                    "efficiency4",
-                    "lifetime",
-                    "p_nom_opt",
-                    "pipe_retrofit",
-                ],
+                columns=dropped_carriers.append(["p_nom_opt"]),
                 errors="ignore",
             )
 
-        elif extendable is False:
+        else:
             neighbor_links = neighbor_links.drop(
-                columns=[
-                    "name",
-                    "geometry",
-                    "tags",
-                    "under_construction",
-                    "underground",
-                    "underwater_fraction",
-                    "bus2",
-                    "bus3",
-                    "bus4",
-                    "efficiency2",
-                    "efficiency3",
-                    "efficiency4",
-                    "lifetime",
-                    "p_nom",
-                    "p_nom_extendable",
-                    "pipe_retrofit",
-                ],
+                columns=dropped_carriers.append(["p_nom", "p_nom_extendable"]),
                 errors="ignore",
             )
             neighbor_links = neighbor_links.rename(
