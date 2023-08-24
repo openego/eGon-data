@@ -9,6 +9,7 @@ import logging
 
 import geopandas as gpd
 import pandas as pd
+import pypsa
 from shapely.geometry import LineString
 from sqlalchemy.orm import sessionmaker
 
@@ -18,6 +19,7 @@ from egon.data import config, db
 from egon.data.datasets import Dataset
 from egon.data.datasets.fix_ehv_subnetworks import select_bus_id
 from egon.data.datasets.fill_etrago_gen import add_marginal_costs
+from egon.data.datasets.pypsaeursec import prepared_network
 from egon.data.datasets.scenario_parameters import get_sector_parameters
 
 
@@ -88,8 +90,8 @@ def get_cross_border_lines(scenario, sources):
     )
 
 
-def central_buses_egon100(sources):
-    """Returns buses in the middle of foreign countries based on eGon100RE
+def central_buses_pypsaeur(sources, scenario):
+    """Returns buses in the middle of foreign countries based on prepared pypsa-eur network
 
     Parameters
     ----------
@@ -102,8 +104,10 @@ def central_buses_egon100(sources):
         Buses in the center of foreign countries
 
     """
-    return db.select_dataframe(
-        f"""
+
+    if scenario in ["eGon100RE"]:
+        df = db.select_dataframe(
+            f"""
         SELECT *
         FROM {sources['electricity_buses']['schema']}.
             {sources['electricity_buses']['table']}
@@ -115,7 +119,31 @@ def central_buses_egon100(sources):
             {sources['osmtgmod_bus']['table']})
         AND carrier = 'AC'
         """
-    )
+        )
+
+    else:
+        wanted_countries = [
+            "AT",
+            "CH",
+            "CZ",
+            "PL",
+            "SE",
+            "NO",
+            "DK",
+            "GB",
+            "NL",
+            "BE",
+            "FR",
+            "LU",
+        ]
+        network = prepared_network()
+
+        df = network.buses[
+            (network.buses.carrier == "AC")
+            & (network.buses.country.isin(wanted_countries))
+        ]
+
+    return df
 
 
 def buses(scenario, sources, targets):
@@ -152,9 +180,13 @@ def buses(scenario, sources, targets):
     # Delete existing buses
     db.execute_sql(sql_delete)
 
-    central_buses = central_buses_egon100(sources)
+    central_buses = central_buses_pypsaeur(sources)
 
     next_bus_id = db.next_etrago_id("bus") + 1
+
+    central_buses["bus_id"] = central_buses.reset_index().index + next_bus_id
+
+    next_bus_id += len(central_buses)
 
     # if in test mode, add bus in center of Germany
     if config.settings()["egon-data"]["--dataset-boundary"] != "Everything":
