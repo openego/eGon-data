@@ -285,6 +285,74 @@ def buses(scenario, sources, targets):
     return central_buses
 
 
+def lines_between_foreign_countries(scenario, sorces, targets, central_buses):
+    # import network from pypsa-eur
+    network = prepared_network()
+
+    gdf_buses = gpd.GeoDataFrame(
+        network.buses,
+        geometry=gpd.points_from_xy(network.buses.x, network.buses.y),
+    )
+
+    lines_to_add = network.lines[
+        (network.lines.bus0.isin(central_buses.index))
+        & (network.lines.bus1.isin(central_buses.index))
+    ]
+
+    lines_to_add.loc[:, "lifetime"] = get_sector_parameters(
+        "electricity", scenario
+    )["lifetime"]["ac_ehv_overhead_line"]
+    lines_to_add.loc[:, "line_id"] = (
+        lines_to_add.reset_index().index.astype(int)
+        + db.next_etrago_id("line")
+        + 1
+    )
+
+    links_to_add = network.links[
+        (network.links.bus0.isin(central_buses.index))
+        & (network.links.bus1.isin(central_buses.index))
+    ]
+
+    links_to_add.loc[:, "lifetime"] = get_sector_parameters(
+        "electricity", scenario
+    )["lifetime"]["dc_overhead_line"]
+    links_to_add.loc[:, "link_id"] = (
+        links_to_add.reset_index().index.astype(int)
+        + db.next_etrago_id("link")
+        + 1
+    )
+
+    for df in [lines_to_add, links_to_add]:
+        df.loc[:, "scn_name"] = scenario
+        gdf = gpd.GeoDataFrame(df)
+        gdf["geom_bus0"] = gdf_buses.geometry[df.bus0].values
+        gdf["geom_bus1"] = gdf_buses.geometry[df.bus1].values
+        gdf["geometry"] = gdf.apply(
+            lambda x: LineString([x["geom_bus0"], x["geom_bus1"]]),
+            axis=1,
+        )
+
+        gdf = gdf.set_crs(4326).rename_geometry("topo")
+
+        gdf.loc[:, "bus0"] = df.bus0.map(central_buses.bus_id)
+        gdf.loc[:, "bus1"] = df.bus1.map(central_buses.bus_id)
+
+        gdf.drop(["geom_bus0", "geom_bus1"], inplace=True, axis="columns")
+        if "carrier" in df.columns:
+            table_name = "link"
+        else:
+            table_name = "line"
+
+        gdf.to_postgis(
+            f"egon_etrago_{table_name}",
+            db.engine(),
+            schema="grid",
+            if_exists="append",
+            index=True,
+            index_label=f"{table_name}_id",
+        )
+
+
 def cross_border_lines(scenario, sources, targets, central_buses):
     """Adds lines which connect border-crossing lines from osmtgmod
     to the central buses in the corresponding neigbouring country
