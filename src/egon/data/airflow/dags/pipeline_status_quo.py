@@ -87,7 +87,6 @@ with airflow.DAG(
     is_paused_upon_creation=False,
     schedule_interval=None,
 ) as pipeline:
-
     tasks = pipeline.task_dict
 
     setup = database.Setup()
@@ -103,7 +102,7 @@ with airflow.DAG(
     scenario_parameters = ScenarioParameters(dependencies=[setup])
 
     # Download TYNDP data
-    tyndp_data = Tyndp(dependencies=[setup]) #TODO: kick out or adjust
+    tyndp_data = Tyndp(dependencies=[setup])  # TODO: kick out or adjust
 
     # Import zensus population
     zensus_population = ZensusPopulation(dependencies=[setup, vg250])
@@ -197,7 +196,7 @@ with airflow.DAG(
     # Calculate dynamic line rating for HV (high voltage) trans lines
     # dlr = Calculate_dlr(
     #    dependencies=[data_bundle, osmtgmod, weather_data] # , fix_subnetworks]
-    #)
+    # )
 
     # Map zensus grid districts
     zensus_mv_grid_districts = ZensusMvGridDistricts(
@@ -354,9 +353,13 @@ with airflow.DAG(
     )
     # Create gas voronoi status2019
     create_gas_polygons_status2019 = GasAreasstatus2019(
-        dependencies=[setup_etrago, vg250, gas_grid_insert_data, substation_voronoi]
+        dependencies=[
+            setup_etrago,
+            vg250,
+            gas_grid_insert_data,
+            substation_voronoi,
+        ]
     )
-
 
     # Import gas production
     gas_production_insert_data = CH4Production(
@@ -418,8 +421,7 @@ with airflow.DAG(
             scenario_capacities,
         ]
     )
-    
-    
+
     # Pumped hydro units
     pumped_hydro = Storages(
         dependencies=[
