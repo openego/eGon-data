@@ -37,7 +37,6 @@ from egon.data.datasets.fill_etrago_gen import Egon_etrago_gen
 from egon.data.datasets.fix_ehv_subnetworks import FixEhvSubnetworks
 from egon.data.datasets.gas_areas import GasAreasstatus2019
 from egon.data.datasets.gas_grid import GasNodesAndPipes
-from egon.data.datasets.gas_neighbours import GasNeighbours
 from egon.data.datasets.heat_demand import HeatDemandImport
 from egon.data.datasets.heat_demand_europe import HeatDemandEurope
 from egon.data.datasets.heat_demand_timeseries import HeatTimeSeries
@@ -350,15 +349,6 @@ with airflow.DAG(
         dependencies=[setup_etrago, vg250, gas_grid_insert_data, substation_voronoi]
     )
 
-    # Gas abroad
-    gas_abroad_insert_data = GasNeighbours(
-        dependencies=[
-            gas_grid_insert_data,
-            run_pypsaeursec,
-            foreign_lines,
-            create_gas_polygons_status2019,
-        ]
-    )
 
     # Import gas production
     gas_production_insert_data = CH4Production(
