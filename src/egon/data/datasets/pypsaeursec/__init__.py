@@ -1054,6 +1054,40 @@ def neighbor_reduction():
         )
 
 
+def prepared_network():
+    if egon.data.config.settings()["egon-data"]["--run-pypsa-eur"]:
+        with open(
+            __path__[0] + "/datasets/pypsaeursec/config.yaml", "r"
+        ) as stream:
+            data_config = yaml.safe_load(stream)
+
+        target_file = (
+            Path(".")
+            / "run-pypsa-eur"
+            / "pypsa-eur"
+            / "results"
+            / data_config["run"]["name"]
+            / "prenetworks"
+            / f"elec_s_{data_config['scenario']['clusters'][0]}"
+            f"_l{data_config['scenario']['ll'][0]}"
+            f"_{data_config['scenario']['opts'][0]}"
+            f"_{data_config['scenario']['sector_opts'][0]}"
+            f"_{data_config['scenario']['planning_horizons'][0]}.nc"
+        )
+
+    else:
+        target_file = (
+            Path(".")
+            / "data_bundle_egon_data"
+            / "pypsa_eur_sec"
+            / "2022-07-26-egondata-integration"
+            / "postnetworks"
+            / "elec_s_37_lv2.0__Co2L0-1H-T-H-B-I-dist1_2050.nc"
+        )
+
+    return pypsa.Network(csv_folder_name=target_file.absolute().as_posix())
+
+
 def overwrite_H2_pipeline_share():
     """Overwrite retrofitted_CH4pipeline-to-H2pipeline_share value
 
