@@ -3,7 +3,30 @@ rule Main:
         "pypsa-eur/envs/environment.yaml"
     shell:
         ( "snakemake"
-          " --directory=pypsa-eur-sec/"
+          " --directory=pypsa-eur/"
           " --snakefile=pypsa-eur-sec/Snakefile"
           " -j1"
         )
+
+rule prepare:
+    conda:
+        "pypsa-eur/envs/environment.yaml"
+    shell:
+        ( "snakemake"
+          " --directory=pypsa-eur/"
+          " --snakefile=pypsa-eur/Snakefile"
+          " -call"
+          " prepare_sector_networks"
+        )
+
+rule solve:
+    conda:
+        "pypsa-eur/envs/environment.yaml"
+    shell:
+        ( "snakemake"
+          " --directory=pypsa-eur/"
+          " --snakefile=pypsa-eur/Snakefile"
+          " -call"
+          " solve_sector_networks"
+        )
+
