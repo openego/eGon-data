@@ -108,44 +108,29 @@ def solve_network():
 
 
 def read_network():
-    # Set execute_pypsa_eur_sec to False until optional task is implemented
-    execute_pypsa_eur_sec = False
-    cwd = Path(".")
-
-    if execute_pypsa_eur_sec:
-        filepath = cwd / "run-pypsa-eur-sec"
-        pypsa_eur_sec_repos = filepath / "pypsa-eur-sec"
-        # Read YAML file
-        pes_egonconfig = pypsa_eur_sec_repos / "config_egon.yaml"
-        with open(pes_egonconfig, "r") as stream:
+    if config.settings()["egon-data"]["--run-pypsa-eur"]:
+        with open(
+            __path__[0] + "/datasets/pypsaeursec/config.yaml", "r"
+        ) as stream:
             data_config = yaml.safe_load(stream)
 
-        simpl = data_config["scenario"]["simpl"][0]
-        clusters = data_config["scenario"]["clusters"][0]
-        lv = data_config["scenario"]["lv"][0]
-        opts = data_config["scenario"]["opts"][0]
-        sector_opts = data_config["scenario"]["sector_opts"][0]
-        planning_horizons = data_config["scenario"]["planning_horizons"][0]
-        file = "elec_s{simpl}_{clusters}_lv{lv}_{opts}_{sector_opts}_{planning_horizons}.nc".format(
-            simpl=simpl,
-            clusters=clusters,
-            opts=opts,
-            lv=lv,
-            sector_opts=sector_opts,
-            planning_horizons=planning_horizons,
-        )
-
         target_file = (
-            pypsa_eur_sec_repos
+            Path(".")
+            / "run-pypsa-eur"
+            / "pypsa-eur"
             / "results"
-            / data_config["run"]
+            / data_config["run"]["name"]
             / "postnetworks"
-            / file
+            / f"elec_s_{data_config['scenario']['clusters'][0]}"
+            f"_l{data_config['scenario']['ll'][0]}"
+            f"_{data_config['scenario']['opts'][0]}"
+            f"_{data_config['scenario']['sector_opts'][0]}"
+            f"_{data_config['scenario']['planning_horizons'][0]}.nc"
         )
 
     else:
         target_file = (
-            cwd
+            Path(".")
             / "data_bundle_egon_data"
             / "pypsa_eur_sec"
             / "2022-07-26-egondata-integration"
@@ -153,7 +138,7 @@ def read_network():
             / "elec_s_37_lv2.0__Co2L0-1H-T-H-B-I-dist1_2050.nc"
         )
 
-    return pypsa.Network(str(target_file))
+    return pypsa.Network(csv_folder_name=target_file.absolute().as_posix())
 
 
 def clean_database():
