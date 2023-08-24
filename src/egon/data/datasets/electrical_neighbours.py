@@ -1050,63 +1050,8 @@ def insert_generators(capacities):
         session.commit()
 
     # assign generators time-series data
-    renew_carriers_2035 = ["wind_onshore", "wind_offshore", "solar"]
 
-    sql = f"""SELECT * FROM
-    {targets['generators_timeseries']['schema']}.
-    {targets['generators_timeseries']['table']}
-    WHERE scn_name = 'eGon100RE'
-    """
-    series_egon100 = pd.read_sql_query(sql, db.engine())
-
-    sql = f""" SELECT * FROM
-    {targets['generators']['schema']}.{targets['generators']['table']}
-    WHERE bus IN (
-        SELECT bus_id FROM
-                {targets['buses']['schema']}.{targets['buses']['table']}
-                WHERE country != 'DE'
-                AND scn_name = 'eGon2035')
-        AND scn_name = 'eGon2035'
-    """
-    gen_2035 = pd.read_sql_query(sql, db.engine())
-    gen_2035 = gen_2035[gen_2035.carrier.isin(renew_carriers_2035)]
-
-    sql = f""" SELECT * FROM
-    {targets['generators']['schema']}.{targets['generators']['table']}
-    WHERE bus IN (
-        SELECT bus_id FROM
-                {targets['buses']['schema']}.{targets['buses']['table']}
-                WHERE country != 'DE'
-                AND scn_name = 'eGon100RE')
-        AND scn_name = 'eGon100RE'
-    """
-    gen_100 = pd.read_sql_query(sql, db.engine())
-    gen_100 = gen_100[gen_100["carrier"].isin(renew_carriers_2035)]
-
-    # egon_2035_to_100 map the timeseries used in the scenario eGon100RE
-    # to the same bus and carrier for the scenario egon2035
-    egon_2035_to_100 = {}
-    for i, gen in gen_2035.iterrows():
-        gen_id_100 = gen_100[
-            (gen_100["bus"] == gen["bus"])
-            & (gen_100["carrier"] == gen["carrier"])
-        ]["generator_id"].values[0]
-
-        egon_2035_to_100[gen["generator_id"]] = gen_id_100
-
-    # insert generators_timeseries data
-    session = sessionmaker(bind=db.engine())()
-
-    for gen_id in gen_2035.generator_id:
-        serie = series_egon100[
-            series_egon100.generator_id == egon_2035_to_100[gen_id]
-        ]["p_max_pu"].values[0]
-        entry = etrago.EgonPfHvGeneratorTimeseries(
-            scn_name="eGon2035", generator_id=gen_id, temp_id=1, p_max_pu=serie
-        )
-
-        session.add(entry)
-        session.commit()
+    renewable_timeseries_pypsaeur("eGon2035")
 
 
 def insert_storage(capacities):
@@ -1654,66 +1599,93 @@ def insert_generators_sq(gen_sq=None, scn_name="status2019"):
         session.add(entry)
         session.commit()
 
-    # assign generators time-series data
-    renew_carriers_sq = ["wind_onshore", "wind_offshore", "solar"]
+    renewable_timeseries_pypsaeur(scn_name)
 
-    sql = f"""SELECT * FROM
-    {targets['generators_timeseries']['schema']}.
-    {targets['generators_timeseries']['table']}
-    WHERE scn_name = 'eGon100RE'
-    """
-    series_egon100 = pd.read_sql_query(sql, db.engine())
 
-    sql = f""" SELECT * FROM
-    {targets['generators']['schema']}.{targets['generators']['table']}
-    WHERE bus IN (
-        SELECT bus_id FROM
-                {targets['buses']['schema']}.{targets['buses']['table']}
-                WHERE country != 'DE'
-                AND scn_name = '{scn_name}')
-        AND scn_name = '{scn_name}'
-    """
-    gen_sq = pd.read_sql_query(sql, db.engine())
-    gen_sq = gen_sq[gen_sq.carrier.isin(renew_carriers_sq)]
+def renewable_timeseries_pypsaeur(scn_name):
+    # select generators from database to get index values
+    foreign_re_generators = db.select_dataframe(
+        f"""
+        SELECT generator_id, a.carrier, country, x, y
+        FROM grid.egon_etrago_generator a
+        JOIN  grid.egon_etrago_bus b
+        ON a.bus = b.bus_id
+        WHERE a.scn_name = '{scn_name}'
+        AND  b.scn_name = '{scn_name}'
+        AND b.carrier = 'AC'
+        AND b.country != 'DE'
+        AND a.carrier IN ('wind_onshore', 'wind_offshore', 'solar')
+        """
+    )
 
-    sql = f""" SELECT * FROM
-    {targets['generators']['schema']}.{targets['generators']['table']}
-    WHERE bus IN (
-        SELECT bus_id FROM
-                {targets['buses']['schema']}.{targets['buses']['table']}
-                WHERE country != 'DE'
-                AND scn_name = 'eGon100RE')
-        AND scn_name = 'eGon100RE'
-    """
-    gen_100 = pd.read_sql_query(sql, db.engine())
-    gen_100 = gen_100[gen_100["carrier"].isin(renew_carriers_sq)]
+    # Import prepared network from pypsa-eur
+    network = prepared_network()
 
-    # egon_sq_to_100 map the timeseries used in the scenario eGon100RE
-    # to the same bus and carrier for the status quo scenario
-    egon_sq_to_100 = {}
-    for i, gen in gen_sq.iterrows():
-        gen_id_100 = gen_100[
-            (gen_100["bus"] == gen["bus"])
-            & (gen_100["carrier"] == gen["carrier"])
-        ]["generator_id"].values[0]
+    # Select fluctuating renewable generators
+    generators_pypsa_eur = network.generators.loc[
+        network.generators[
+            network.generators.carrier.isin(["onwind", "offwind-ac", "solar"])
+        ].index,
+        ["bus", "carrier"],
+    ]
 
-        egon_sq_to_100[gen["generator_id"]] = gen_id_100
+    # Align carrier names for wind turbines
+    generators_pypsa_eur.loc[
+        generators_pypsa_eur[generators_pypsa_eur.carrier == "onwind"].index,
+        "carrier",
+    ] = "wind_onshore"
+    generators_pypsa_eur.loc[
+        generators_pypsa_eur[
+            generators_pypsa_eur.carrier == "offwind-ac"
+        ].index,
+        "carrier",
+    ] = "wind_offshore"
 
-    # insert generators_timeseries data
+    # Set coordinates from bus table
+    generators_pypsa_eur["x"] = network.buses.loc[
+        generators_pypsa_eur.bus.values, "x"
+    ].values
+    generators_pypsa_eur["y"] = network.buses.loc[
+        generators_pypsa_eur.bus.values, "y"
+    ].values
+
+    # Get p_max_pu time series from pypsa-eur
+    generators_pypsa_eur["p_max_pu"] = network.generators_t.p_max_pu[
+        generators_pypsa_eur.index
+    ].T.values.tolist()
+
     session = sessionmaker(bind=db.engine())()
 
-    for gen_id in gen_sq.generator_id:
-        serie = series_egon100[
-            series_egon100.generator_id == egon_sq_to_100[gen_id]
-        ]["p_max_pu"].values[0]
+    # Insert p_max_pu timeseries based on geometry and carrier
+    for gen in foreign_re_generators.index:
         entry = etrago.EgonPfHvGeneratorTimeseries(
-            scn_name=scn_name, generator_id=gen_id, temp_id=1, p_max_pu=serie
+            scn_name=scn_name,
+            generator_id=foreign_re_generators.loc[gen, "generator_id"],
+            temp_id=1,
+            p_max_pu=generators_pypsa_eur[
+                (
+                    (
+                        generators_pypsa_eur.x.abs
+                        - foreign_re_generators.loc[gen, "x"]
+                    ).abs()
+                    < 0.01
+                )
+                & (
+                    (
+                        generators_pypsa_eur.y.abs
+                        - foreign_re_generators.loc[gen, "y"]
+                    ).abs()
+                    < 0.01
+                )
+                & (
+                    generators_pypsa_eur.carrier
+                    == foreign_re_generators.loc[gen, "carrier"]
+                )
+            ].p_max_pu.iloc[0],
         )
 
         session.add(entry)
         session.commit()
-
-    return
 
 
 def insert_loads_sq(load_sq=None, scn_name="status2019"):
