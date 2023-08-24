@@ -432,7 +432,7 @@ def cross_border_lines(scenario, sources, targets, central_buses):
         db.next_etrago_id("line"), db.next_etrago_id("line") + len(new_lines)
     )
 
-    # Set bus in center of foreogn countries as bus1
+    # Set bus in center of foreign countries as bus1
     for i, row in new_lines.iterrows():
         print(row)
         new_lines.loc[i, "bus1"] = central_buses.bus_id[
