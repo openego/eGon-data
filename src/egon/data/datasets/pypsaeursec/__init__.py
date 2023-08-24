@@ -664,8 +664,7 @@ def neighbor_reduction():
             index_label="line_id",
         )
 
-    for scn in config.settings()["egon-data"]["--scenarios"]:
-        lines_to_etrago(neighbor_lines=neighbor_lines, scn=scn)
+    lines_to_etrago(neighbor_lines=neighbor_lines, scn="eGon100RE")
 
     def links_to_etrago(neighbor_links, scn="eGon100RE", extendable=True):
         """Prepare and write neighboring crossborder links to eTraGo table
@@ -813,12 +812,6 @@ def neighbor_reduction():
         "eGon100RE",
         extendable=False,
     )
-
-    for scn in config.settings()["egon-data"]["--scenarios"]:
-        if scn != "eGon100RE":
-            links_to_etrago(
-                neighbor_links[neighbor_links.carrier == "DC"], scn
-            )
 
     # prepare neighboring generators for etrago tables
     neighbor_gens["scn_name"] = "eGon100RE"
