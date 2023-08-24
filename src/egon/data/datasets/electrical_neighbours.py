@@ -772,6 +772,11 @@ def grid():
 
         foreign_dc_lines(scenario, sources, targets, central_buses)
 
+        if scenario != "eGon100RE":
+            lines_between_foreign_countries(
+                scenario, sources, targets, central_buses
+            )
+
 
 def map_carriers_tyndp():
     """Map carriers from TYNDP-data to carriers used in eGon
