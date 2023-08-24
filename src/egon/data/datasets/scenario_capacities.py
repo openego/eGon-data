@@ -813,7 +813,8 @@ tasks = (create_table,)
 if "status2019" in egon.data.config.settings()["egon-data"]["--scenarios"]:
     tasks = tasks + (insert_capacities_status2019, insert_data_nep)
 
-if "eGon2035" in egon.data.config.settings()["egon-data"]["--scenarios"]:
+if ("eGon2035" in egon.data.config.settings()["egon-data"]["--scenarios"]
+    and not "status2019" in egon.data.config.settings()["egon-data"]["--scenarios"]):
     tasks = tasks + (insert_data_nep,)
 
 if "eGon100RE" in egon.data.config.settings()["egon-data"]["--scenarios"]:
