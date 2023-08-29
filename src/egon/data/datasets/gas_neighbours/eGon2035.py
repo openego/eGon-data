@@ -176,10 +176,10 @@ def calc_capacities():
     For each neigbouring country, this function calculates the gas
     generation capacity in 2035 using the function
     :py:func:`calc_capacity_per_year` for 2030 and 2040 and
-    interpolating the results. These capacities include LNG import, as
+    interpolates the results. These capacities include LNG import, as
     well as conventional and biogas production.
-    Two conventional gas generators for are added for Norway and Russia
-    interpolating the supply potential (min) values from the TYNPD 2020
+    Two conventional gas generators are added for Norway and Russia
+    interpolating the supply potential values from the TYNPD 2020
     for 2030 and 2040.
 
     Returns
@@ -334,13 +334,13 @@ def calc_capacity_per_year(df, lng, year):
     """Calculates gas production capacities for a specified year
 
     For a specified year and for the foreign country nodes this function
-    calculates the gas production capacity, considering the gas
-    (conventional and bio) production capacity from TYNDP data and the
-    LGN import capacity from Scigrid gas data.
+    calculates the gas production capacities, considering the gas
+    (conventional and bio) production capacities from TYNDP data and the
+    LNG import capacities from Scigrid gas data.
 
     The columns of the returned dataframe are the following:
-      * Value_bio_year: biogas capacity prodution (in GWh/d)
-      * Value_conv_year: conventional gas capacity prodution including
+      * Value_bio_year: biogas production capacity (in GWh/d)
+      * Value_conv_year: conventional gas production capacity including
         LNG imports (in GWh/d)
       * CH4_year: total gas production capacity (in GWh/d). This value
         is calculated using the peak production value from the TYNDP.
@@ -364,7 +364,7 @@ def calc_capacity_per_year(df, lng, year):
         LNG terminal capacities per foreign country node (in GWh/d)
 
     year : int
-        Year to calculate gas production capacity for.
+        Year to calculate gas production capacities for
 
     Returns
     -------
@@ -453,14 +453,14 @@ def calc_capacity_per_year(df, lng, year):
 
 
 def insert_generators(gen):
-    """Insert gas generators for foreign countries in the database
+    """Insert gas generators for foreign countries into the database
 
-    Insert gas generators for foreign countries in the data base.
+    Insert gas generators for foreign countries into the database.
     The marginal cost of the methane is calculated as the sum of the
-    imported LNG cost, of the conventional natural gas cost and of the
+    imported LNG cost, the conventional natural gas cost and the
     biomethane cost, weighted by their share in the total import/
     production capacity.
-    LNG is considerate to be 30% more expensive than the natural gas
+    LNG gas is considered to be 30% more expensive than the natural gas
     transported by pipelines (source: iwd, 2022).
 
     Parameters
@@ -470,7 +470,7 @@ def insert_generators(gen):
 
     Returns
     -------
-    None.
+    None
 
     """
     sources = config.datasets()["gas_neighbours"]["sources"]
@@ -539,7 +539,7 @@ def calc_global_ch4_demand(Norway_global_demand_1y):
     """Calculates global CH4 demands abroad for eGon2035 scenario
 
     The data comes from TYNDP 2020 according to NEP 2021 from the
-    scenario 'Distributed Energy', linear interpolate between 2030
+    scenario 'Distributed Energy'; linear interpolates between 2030
     and 2040.
 
     Returns
@@ -618,16 +618,12 @@ def calc_global_ch4_demand(Norway_global_demand_1y):
 def import_ch4_demandTS():
     """Calculate global CH4 demand in Norway and CH4 demand profile
 
-    Import from the PyPSA-eur-sec run the timeseries of residential
-    rural heat per neighbor country. This timeserie is used to
+    Import from the PyPSA-eur-sec run the time series of residential
+    rural heat per neighbor country. This time series is used to
     calculate:
       * the global (yearly) heat demand of Norway
         (that will be supplied by CH4)
       * the normalized CH4 hourly resolved demand profile
-
-    Parameters
-    ----------
-    None.
 
     Returns
     -------
@@ -674,18 +670,18 @@ def import_ch4_demandTS():
 
 
 def insert_ch4_demand(global_demand, normalized_ch4_demandTS):
-    """Insert CH4 demands abroad in the database for eGon2035
+    """Insert CH4 demands abroad into the database for eGon2035
 
     Parameters
     ----------
     global_demand : pandas.DataFrame
         Global CH4 demand per foreign node in 1 year
     gas_demandTS : pandas.DataFrame
-        Normalized time serie of the demand per foreign country
+        Normalized time series of the demand per foreign country
 
     Returns
     -------
-    None.
+    None
 
     """
     sources = config.datasets()["gas_neighbours"]["sources"]
@@ -699,7 +695,11 @@ def insert_ch4_demand(global_demand, normalized_ch4_demandTS):
     db.execute_sql(
         f"""
         DELETE FROM
-        {targets['load_timeseries']['schema']}.{targets['load_timeseries']['table']}
+        {
+            targets['load_time series']['schema']
+        }.{
+            targets['load_time series']['table']
+        }
         WHERE "load_id" IN (
             SELECT load_id FROM
             {targets['loads']['schema']}.{targets['loads']['table']}
@@ -788,15 +788,23 @@ def insert_ch4_demand(global_demand, normalized_ch4_demandTS):
 
     # Insert data to DB
     ch4_demand_TS.to_sql(
-        targets["load_timeseries"]["table"],
+        targets["load_time series"]["table"],
         db.engine(),
-        schema=targets["load_timeseries"]["schema"],
+        schema=targets["load_time series"]["schema"],
         index=False,
         if_exists="append",
     )
 
 
 def calc_ch4_storage_capacities():
+    """Calculate CH4 storage capacities for neighboring countries
+
+    Returns
+    -------
+        ch4_storage_capacities: pandas.DataFrame
+        Methane gas storage capacities per country in MWh
+
+    """
     target_file = (
         Path(".") / "datasets" / "gas_data" / "data" / "IGGIELGN_Storages.csv"
     )
@@ -885,6 +893,18 @@ def calc_ch4_storage_capacities():
 
 
 def insert_storage(ch4_storage_capacities):
+    """Insert CH4 storage capacities into the database for eGon2035
+
+    Parameters
+    ----------
+    ch4_storage_capacities : pandas.DataFrame
+        Methane gas storage capacities per country in MWh
+
+    Returns
+    -------
+    None
+
+    """
     sources = config.datasets()["gas_neighbours"]["sources"]
     targets = config.datasets()["gas_neighbours"]["targets"]
 
@@ -929,11 +949,11 @@ def insert_storage(ch4_storage_capacities):
 
 
 def calc_global_power_to_h2_demand():
-    """Calculates H2 demand abroad for eGon2035 scenario
+    """Calculate H2 demand abroad for eGon2035 scenario
 
     Calculates global power demand abroad linked to H2 production.
     The data comes from TYNDP 2020 according to NEP 2021 from the
-    scenario 'Distributed Energy', linear interpolate between 2030
+    scenario 'Distributed Energy'; linear interpolate between 2030
     and 2040.
 
     Returns
@@ -1025,13 +1045,14 @@ def calc_global_power_to_h2_demand():
 def insert_power_to_h2_demand(global_power_to_h2_demand):
     """Insert H2 demands into database for eGon2035
 
-    Detailled description
-    This function inserts data in the database and has no return.
-
     Parameters
     ----------
     global_power_to_h2_demand : pandas.DataFrame
         Global hourly power-to-h2 demand per foreign node
+
+    Returns
+    -------
+    None
 
     """
     sources = config.datasets()["gas_neighbours"]["sources"]
@@ -1106,13 +1127,11 @@ def insert_power_to_h2_demand(global_power_to_h2_demand):
 def calculate_ch4_grid_capacities():
     """Calculates CH4 grid capacities for foreign countries based on TYNDP-data
 
-    Parameters
-    ----------
-    None.
-
     Returns
     -------
     Neighbouring_pipe_capacities_list : pandas.DataFrame
+        Table containing the CH4 grid capacity for each foreign
+        country
 
     """
     sources = config.datasets()["gas_neighbours"]["sources"]
@@ -1285,7 +1304,6 @@ def calculate_ch4_grid_capacities():
     schema = sources["buses"]["schema"]
     table = sources["buses"]["table"]
     for country_code in [e for e in countries if e not in ("GB", "SE", "UK")]:
-
         # Select cross-bording links
         cap_DE = db.select_dataframe(
             f"""SELECT link_id, bus0, bus1
@@ -1383,12 +1401,12 @@ def calculate_ch4_grid_capacities():
 
 
 def tyndp_gas_generation():
-    """Insert data from TYNDP 2020 accordning to NEP 2021
-    Scenario 'Distributed Energy', linear interpolate between 2030 and 2040
+    """Insert data from TYNDP 2020 according to NEP 2021
+    Scenario 'Distributed Energy'; linear interpolate between 2030 and 2040
 
     Returns
     -------
-    None.
+    None
     """
     capacities = calc_capacities()
     insert_generators(capacities)
@@ -1403,13 +1421,13 @@ def tyndp_gas_demand():
     Insert CH4 and H2 demands abroad for eGon2035 by executing the
     following steps:
       * CH4
-          * Calculation of the global CH4 demand in Norway and of the
+          * Calculation of the global CH4 demand in Norway and the
             CH4 demand profile by executing the function
             :py:func:`import_ch4_demandTS`
           * Calculation of the global CH4 demands by executing the
             function :py:func:`calc_global_ch4_demand`
-          * Insertion the CH4 loads and their associated time series
-            in the database by executing the function
+          * Insertion of the CH4 loads and their associated time
+            series in the database by executing the function
             :py:func:`insert_ch4_demand`
       * H2
           * Calculation of the global power demand abroad linked
@@ -1417,7 +1435,10 @@ def tyndp_gas_demand():
             :py:func:`calc_global_power_to_h2_demand`
           * Insertion of these loads in the database by executing the
             function :py:func:`insert_power_to_h2_demand`
-    This function insert data in the database and has no return.
+
+    Returns
+    -------
+    None
 
     """
     Norway_global_demand_1y, normalized_ch4_demandTS = import_ch4_demandTS()
@@ -1429,12 +1450,12 @@ def tyndp_gas_demand():
 
 
 def grid():
-    """Insert data from TYNDP 2020 accordning to NEP 2021
-    Scenario 'Distributed Energy', linear interpolate between 2030 and 2040
+    """Insert data from TYNDP 2020 according to NEP 2021
+    Scenario 'Distributed Energy; linear interpolate between 2030 and 2040
 
     Returns
     -------
-    None.
+    None
     """
     Neighbouring_pipe_capacities_list = calculate_ch4_grid_capacities()
     insert_gas_grid_capacities(
@@ -1446,7 +1467,7 @@ def calculate_ocgt_capacities():
     """Calculate gas turbine capacities abroad for eGon2035
 
     Calculate gas turbine capacities abroad for eGon2035 based on TYNDP
-    2020, scenario "Distributed Energy", interpolated between 2030 and 2040
+    2020, scenario "Distributed Energy"; interpolated between 2030 and 2040
 
     Returns
     -------
@@ -1501,14 +1522,16 @@ def calculate_ocgt_capacities():
 
 
 def insert_ocgt_abroad():
-    """Insert gas turbine capicities abroad for eGon2035 in the database
-
-    This function inserts data in the database and has no return.
+    """Insert gas turbine capacities abroad for eGon2035 in the database
 
     Parameters
     ----------
     df_ocgt: pandas.DataFrame
         Gas turbine capacities per foreign node
+
+    Returns
+    -------
+    None
 
     """
     scn_name = "eGon2035"

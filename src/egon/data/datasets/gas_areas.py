@@ -92,7 +92,7 @@ class EgonPfHvGasVoronoi(Base):
 
 def create_gas_voronoi_table():
     """
-    Create voronoi gas voronoi table
+    Create gas voronoi table
     """
     engine = db.engine()
     EgonPfHvGasVoronoi.__table__.drop(bind=engine, checkfirst=True)

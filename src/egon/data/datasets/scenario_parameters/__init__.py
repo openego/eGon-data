@@ -164,33 +164,37 @@ def get_sector_parameters(sector, scenario=None):
         else:
             print(f"Scenario name {scenario} is not valid.")
     else:
-        values = pd.DataFrame(
-            db.select_dataframe(
-                f"""
+        values = (
+            pd.DataFrame(
+                db.select_dataframe(
+                    f"""
                     SELECT {sector}_parameters as val
                     FROM scenario.egon_scenario_parameters
                     WHERE name='eGon2035'"""
-            ).val[0],
-            index=["eGon2035"],
-        ).append(
-            pd.DataFrame(
-                db.select_dataframe(
-                    f"""
+                ).val[0],
+                index=["eGon2035"],
+            )
+            .append(
+                pd.DataFrame(
+                    db.select_dataframe(
+                        f"""
                         SELECT {sector}_parameters as val
                         FROM scenario.egon_scenario_parameters
                         WHERE name='eGon100RE'"""
-                ).val[0],
-                index=["eGon100RE"],
+                    ).val[0],
+                    index=["eGon100RE"],
+                )
             )
-        ).append(
-            pd.DataFrame(
-                db.select_dataframe(
-                    f"""
+            .append(
+                pd.DataFrame(
+                    db.select_dataframe(
+                        f"""
                         SELECT {sector}_parameters as val
                         FROM scenario.egon_scenario_parameters
                         WHERE name='eGon2021'"""
-                ).val[0],
-                index=["eGon2021"],
+                    ).val[0],
+                    index=["eGon2021"],
+                )
             )
         )
 
@@ -220,10 +224,34 @@ def download_pypsa_technology_data():
 
 
 class ScenarioParameters(Dataset):
+    """
+    Create and fill table with central parameters for each scenario
+
+    This dataset creates and fills a table in the database that includes central parameters
+    for each scenarios. These parameters are mostly from extrernal sources, they are defined
+    and referenced within this dataset.
+    The table is acced by various datasets to access the parameters for all sectors.
+
+
+    *Dependencies*
+      * :py:func:`Setup <egon.data.datasets.database.setup>`
+
+
+    *Resulting tables*
+      * :py:class:`scenario.egon_scenario_parameters <egon.data.datasets.scenario_parameters.EgonScenario>` is created and filled
+
+
+    """
+
+    #:
+    name: str = "ScenarioParameters"
+    #:
+    version: str = "0.0.12"
+
     def __init__(self, dependencies):
         super().__init__(
-            name="ScenarioParameters",
-            version="0.0.12",
+            name=self.name,
+            version=self.version,
             dependencies=dependencies,
             tasks=(
                 create_table,

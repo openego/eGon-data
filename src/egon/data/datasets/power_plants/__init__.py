@@ -56,10 +56,50 @@ class EgonPowerPlants(Base):
 
 
 class PowerPlants(Dataset):
+    """
+    This module creates all electrical generators for different scenarios. It
+    also calculates the weather area for each weather dependent generator.
+
+    *Dependencies*
+      * :py:class:`Chp <egon.data.datasets.chp.Chp>`
+      * :py:class:`CtsElectricityDemand
+      <egon.data.datasets.electricity_demand.CtsElectricityDemand>`
+      * :py:class:`HouseholdElectricityDemand
+      <egon.data.datasets.electricity_demand.HouseholdElectricityDemand>`
+      * :py:class:`mastr_data <egon.data.datasets.mastr.mastr_data>`
+      * :py:func:`define_mv_grid_districts
+      <egon.data.datasets.mv_grid_districts.define_mv_grid_districts>`
+      * :py:class:`RePotentialAreas
+      <egon.data.datasets.re_potential_areas.RePotentialAreas>`
+      * :py:class:`ZensusVg250
+      <egon.data.datasets.RenewableFeedin>`
+      * :py:class:`ScenarioCapacities
+      <egon.data.datasets.scenario_capacities.ScenarioCapacities>`
+      * :py:class:`ScenarioParameters
+      <egon.data.datasets.scenario_parameters.ScenarioParameters>`
+      * :py:func:`Setup <egon.data.datasets.database.setup>`
+      * :py:class:`substation_extraction
+      <egon.data.datasets.substation.substation_extraction>`
+      * :py:class:`Vg250MvGridDistricts
+      <egon.data.datasets.Vg250MvGridDistricts>`
+      * :py:class:`ZensusMvGridDistricts
+      <egon.data.datasets.zensus_mv_grid_districts.ZensusMvGridDistricts>`
+
+    *Resulting tables*
+      * :py:class:`supply.egon_power_plants
+      <egon.data.datasets.power_plants.EgonPowerPlants>` is filled
+
+    """
+
+    #:
+    name: str = "PowerPlants"
+    #:
+    version: str = "0.0.18"
+
     def __init__(self, dependencies):
         super().__init__(
-            name="PowerPlants",
-            version="0.0.18",
+            name=self.name,
+            version=self.version,
             dependencies=dependencies,
             tasks=(
                 create_tables,
@@ -347,7 +387,6 @@ def insert_hydro_plants(scenario):
     }
 
     for carrier in map_carrier.keys():
-
         # import target values
         target = select_target(carrier, scenario)
 
@@ -500,9 +539,7 @@ def assign_voltage_level(mastr_loc, cfg, mastr_working_dir):
 
 
 def assign_voltage_level_by_capacity(mastr_loc):
-
     for i, row in mastr_loc[mastr_loc.voltage_level.isnull()].iterrows():
-
         if row.Nettonennleistung > 120:
             level = 1
         elif row.Nettonennleistung > 20:
@@ -610,7 +647,6 @@ def insert_hydro_biomass():
 
 
 def allocate_conventional_non_chp_power_plants():
-
     carrier = ["oil", "gas"]
 
     cfg = egon.data.config.datasets()["power_plants"]
@@ -625,14 +661,12 @@ def allocate_conventional_non_chp_power_plants():
     )
 
     for carrier in carrier:
-
         nep = select_nep_power_plants(carrier)
 
         if nep.empty:
             print(f"DataFrame from NEP for carrier {carrier} is empty!")
 
         else:
-
             mastr = select_no_chp_combustion_mastr(carrier)
 
             # Assign voltage level to MaStR
@@ -771,7 +805,6 @@ def allocate_conventional_non_chp_power_plants():
 
 
 def allocate_other_power_plants():
-
     # Get configuration
     cfg = egon.data.config.datasets()["power_plants"]
     boundary = egon.data.config.settings()["egon-data"]["--dataset-boundary"]

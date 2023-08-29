@@ -1,15 +1,11 @@
 # -*- coding: utf-8 -*-
-
-# This script is part of eGon-data.
-
-# license text - to be added.
-
 """
 Central module containing all code dealing with the future heat demand import.
 
 This module obtains the residential and service-sector heat demand data for
 2015 from Peta5.0.1, calculates future heat demands and saves them in the
 database with assigned census cell IDs.
+
 """
 
 from pathlib import Path  # for database import
@@ -42,19 +38,47 @@ import egon.data.config
 # import time
 
 
-# class for airflow task management (and version control)
 class HeatDemandImport(Dataset):
+
+    """
+    Insert the annual heat demand per census cell for each scenario
+
+    This dataset downloads the heat demand raster data for private households
+    and CTS from Peta 5.0.1 (https://s-eenergies-open-data-euf.hub.arcgis.com/maps/d7d18b63250240a49eb81db972aa573e/about)
+    and stores it into files in the working directory.
+    The data from Peta 5.0.1 represents the status quo of the year 2015.
+    To model future heat demands, the data is scaled to meet target values
+    from external sources. These target values are defined for each scenario
+    in :py:class:`ScenarioParameters <egon.data.datasets.scenario_parameters.ScenarioParameters>`.
+
+    *Dependencies*
+      * :py:class:`ScenarioParameters <egon.data.datasets.scenario_parameters.ScenarioParameters>`
+      * :py:class:`Vg250 <egon.data.datasets.vg250.Vg250>`
+      * :py:class:`ZensusVg250 <egon.data.datasets.zensus_vg250.ZensusVg250>`
+
+    *Resulting tables*
+      * :py:class:`demand.egon_peta_heat <egon.data.datasets.heat_demand.EgonPetaHeat>` is created and filled
+
+    """
+
+
+    #:
+    name: str = "heat-demands"
+    #:
+    version: str = "0.0.1"
+
     def __init__(self, dependencies):
         super().__init__(
-            name="heat-demands",
+            name=self.name,
             # version=self.target_files + "_0.0",
-            version="0.0.1",  # maybe rethink the naming
+            version=self.version,  # maybe rethink the naming
             dependencies=dependencies,
             tasks=(scenario_data_import),
         )
 
 
 Base = declarative_base()
+
 
 # class for the final dataset in the database
 class EgonPetaHeat(Base):
@@ -463,7 +487,6 @@ def heat_demand_to_db_table():
     db.execute_sql("DELETE FROM demand.egon_peta_heat;")
 
     for source in sources:
-
         if not "2015" in source.stem:
             # Create a temporary table and fill the final table using the sql script
             rasters = f"heat_demand_rasters_{source.stem.lower()}"
