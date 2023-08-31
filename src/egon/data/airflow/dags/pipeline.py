@@ -274,7 +274,7 @@ with airflow.DAG(
         ]
     )
 
-    # Get household electrical demands for cencus cells
+    # Get household electrical demands for census cells
     household_electricity_demand_annual = HouseholdElectricityDemand(
         dependencies=[
             tasks[
@@ -285,7 +285,7 @@ with airflow.DAG(
         ]
     )
 
-    # Distribute electrical CTS demands to zensus grid
+    # Distribute electrical CTS demands to census grid
     cts_electricity_demand_annual = CtsElectricityDemand(
         dependencies=[
             demandregio,

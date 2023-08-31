@@ -1,3 +1,5 @@
+.. _mobility-demand-mit-ref:
+
 Motorized individual travel
 ++++++++++++++++++++++++++++
 

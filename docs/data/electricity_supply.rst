@@ -25,6 +25,8 @@ Offshore wind
 PV ground mounted
 ++++++++++++++++++
 
+.. _pv-rooftop-ref:
+
 PV rooftop
 +++++++++++
 

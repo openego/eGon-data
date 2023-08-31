@@ -1,14 +1,14 @@
 ****
 Data
 ****
-The description of the methods, input data and results of the eGon-data pipeline is given in the following section. 
+The description of the methods, input data and results of the eGon-data pipeline is given in the following section.
 References to datasets and functions are integrated if more detailed information is required.
 
 Main input data and their processing
 ====================================
 
 All methods in the eGon-data workflow rely on public and freely available data from different external sources. The most important data sources
-and their processing within the eGon-data pipeline are described here. 
+and their processing within the eGon-data pipeline are described here.
 
 .. include:: data/input_data.rst
 
@@ -16,7 +16,7 @@ Grid models
 ===========
 
 Power grid models of different voltage levels form a central part of the eGon data model, which is required for cross-grid-level optimization.
-In addition, sector coupling necessitates the representation of the gas grid infrastructure, which is also described in this section. 
+In addition, sector coupling necessitates the representation of the gas grid infrastructure, which is also described in this section.
 
 Electricity grid
 ----------------
@@ -31,8 +31,8 @@ Gas grid
 Demand
 ======
 
-Electricity, heat and gas demands from different consumption sectors are taken into account in eGon-data. The related methods to distribute and 
-process the demand data are described in the following chapters for the different consumption sectors separately. 
+Electricity, heat and gas demands from different consumption sectors are taken into account in eGon-data. The related methods to distribute and
+process the demand data are described in the following chapters for the different consumption sectors separately.
 
 .. _electricity-demand-ref:
 
@@ -51,6 +51,8 @@ Gas
 
 .. include:: data/gas_demand.rst
 
+.. _mobility-demand-ref:
+
 Mobility
 --------
 
@@ -60,8 +62,8 @@ Mobility
 Supply
 ======
 
-The distribution and assignment of supply capacities or potentials are carried out technology-specific. The different methods are described in the 
-following chapters. 
+The distribution and assignment of supply capacities or potentials are carried out technology-specific. The different methods are described in the
+following chapters.
 
 Electricity
 -----------
@@ -81,9 +83,9 @@ Gas
 Flexibility options
 ===================
 
-Different flexibility options are part of the model and can be utilized in the optimization of the energy system. Therefore detailed information about 
-flexibility potentials and their distribution are needed. The considered technologies described in the following chapters range from different storage units, 
-through dynamic line rating to Demand-Side-Management measures. 
+Different flexibility options are part of the model and can be utilized in the optimization of the energy system. Therefore detailed information about
+flexibility potentials and their distribution are needed. The considered technologies described in the following chapters range from different storage units,
+through dynamic line rating to Demand-Side-Management measures.
 
 Demand-Side-Management
 ----------------------
