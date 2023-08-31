@@ -51,6 +51,8 @@ Gas
 
 .. include:: data/gas_demand.rst
 
+.. _mobility-demand-ref:
+
 Mobility
 --------
 
