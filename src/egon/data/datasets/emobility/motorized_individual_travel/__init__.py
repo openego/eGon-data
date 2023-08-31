@@ -2,6 +2,13 @@
 Main module for preparation of model data (static and timeseries) for
 motorized individual travel (MIT).
 
+**Contents of this module**
+  * Creation of DB tables
+  * Download and preprocessing of vehicle registration data from KBA and BMVI
+  * Calculate number of electric vehicles and allocate on different spatial
+    levels.
+  * Extract and write pre-generated trips to DB
+
 """
 
 from pathlib import Path
@@ -330,70 +337,9 @@ def write_metadata_to_db():
 
 class MotorizedIndividualTravel(Dataset):
     """
-    Class for model data (static and timeseries) for
-    motorized individual travel (MIT).
+    Class to set up static and timeseries data for motorized individual travel (MIT).
 
-    **Contents of this module**
-      * Creation of DB tables
-      * Download and preprocessing of vehicle registration data from KBA and BMVI
-      * Calculate number of electric vehicles and allocate on different spatial \
-        levels. See :py:mod:`egon.data.metadata`
-      * Extract and write pre-generated trips to DB
-
-    **Configuration**
-
-    The config of this dataset can be found in *datasets.yml* in section
-    *emobility_mit*.
-
-    **Scenarios and variations**
-
-    * Scenario overview
-    * Change scenario variation for 2050: adjust in
-      emobility_mit->scenario->variation->eGon100RE
-
-    **Trip data**
-
-    The electric vehicles' trip data for each scenario have been generated using
-    `simBEV <https://github.com/rl-institut/simbev/>`_. The methodical background
-    is given in its `documentation <https://simbev.readthedocs.io>`_.
-
-    6 different vehicle types are used:
-      * Battery Electric Vehicle (BEV): mini, medium, luxury
-      * Plug-in Hybrid Electric Vehicle (PHEV): mini, medium, luxury
-
-    .. csv-table:: EV types
-        :header: "Technology", "Size", "Max. charging capacity slow [kW]", \
-                 "Max. charging capacity fast [kW]", "Battery capacity [kWh]", \
-                 "Energy consumption [kWh/km]"
-        :widths: 10, 10, 30, 30, 25, 30
-
-        "BEV", "mini", 11, 120, 60, 0.1397
-        "BEV", "medium", 22, 350, 90, 0.1746
-        "BEV", "luxury", 50, 350, 110, 0.2096
-        "PHEV", "mini", 3.7, 40, 14, 0.1425
-        "PHEV", "medium", 11, 40, 20, 0.1782
-        "PHEV", "luxury", 11, 120, 30, 0.2138
-
-    The complete tech data and assumptions of the run can be found in the metadata:
-    *<WORKING_DIRECTORY>/data_bundle_egon_data/emobility/mit_trip_data/<SCENARIO>/
-    metadata_simbev_run.json*.efficiency_fixed
-
-    * explain scenario parameters
-
-    * run params (all in meta file?)
-
-    **EV allocation**
-
-    The EVs per registration district (Zulassungsbezirk) is taken from KBA's
-    vehicle registration data. The numbers per EV type (BEV and PHEV)
-
-    * RegioStaR7
-    * scenario parameters: shares
-
-    **Further notes**
-
-    * Sanity checks
-
+    For more information see data documentation on :ref:`mobility-demand-mit-ref`.
 
     *Dependencies*
       * :py:class:`DataBundle <egon.data.datasets.data_bundle.DataBundle>`
@@ -439,6 +385,11 @@ class MotorizedIndividualTravel(Dataset):
         is created and filled
       * :py:class:`EgonEvMetadata <egon.data.datasets.emobility.motorized_individual_travel.db_classes.EgonEvMetadata>`
         is created and filled
+
+    *Configuration*
+
+    The config of this dataset can be found in *datasets.yml* in section
+    *emobility_mit*.
 
     """
 

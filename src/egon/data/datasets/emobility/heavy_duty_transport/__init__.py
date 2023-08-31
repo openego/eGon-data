@@ -80,7 +80,8 @@ def download_hgv_data():
 
 class HeavyDutyTransport(Dataset):
     """
-
+    Class for preparation of static and timeseries data for heavy duty transport.
+    
     *Dependencies*
       * :py:class:`Vg250 <egon.data.datasets.vg250.Vg250>`
       * :py:class:`EtragoSetup <egon.data.datasets.etrago_setup.EtragoSetup>`
