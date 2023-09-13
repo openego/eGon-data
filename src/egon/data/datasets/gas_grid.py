@@ -22,6 +22,7 @@ import ast
 import json
 import os
 
+from sqlalchemy.orm import sessionmaker
 from geoalchemy2.types import Geometry
 from shapely import geometry
 import geopandas
@@ -1008,6 +1009,65 @@ def insert_gas_data_eGon100RE():
     )
 
 
+def insert_gas_data_status2019():
+    """
+    Function to deal with the gas network for the status2019 scenario.
+    For this scenario just one CH4 bus is consider in the center of Germany.
+    Since OCGTs in the foreign countries are modelled as generators and not
+    as links between the gas and electricity sectors, CH4 foreign buses are
+    considered not necessary.
+
+    This function does not require any input.
+
+    Returns
+    -------
+    None.
+
+    """
+    scn_name = "status2019"
+
+    # delete old entries
+    db.execute_sql(
+        f"""
+        DELETE FROM grid.egon_etrago_link
+        WHERE carrier = 'CH4' AND scn_name = '{scn_name}'
+        """
+    )
+    db.execute_sql(
+        f"""
+        DELETE FROM grid.egon_etrago_bus
+        WHERE carrier = 'CH4' AND scn_name = '{scn_name}'
+        """
+    )
+
+    # Select next id value
+    new_id = db.next_etrago_id("bus")
+
+    df = pd.DataFrame(
+        index=[new_id],
+        data={
+            "scn_name": scn_name,
+            "v_nom": 1,
+            "carrier": "CH4",
+            "v_mag_pu_set": 1,
+            "v_mag_pu_min": 0,
+            "v_mag_pu_max": np.inf,
+            "x": 10,
+            "y": 51,
+            "country": "DE",
+        },
+    )
+    gdf = geopandas.GeoDataFrame(
+        df, geometry=geopandas.points_from_xy(df.x, df.y, crs=4326)
+    ).rename_geometry("geom")
+
+    gdf.index.name = "bus_id"
+
+    gdf.reset_index().to_postgis(
+        "egon_etrago_bus", schema="grid", con=db.engine(), if_exists="append"
+    )
+
+
 class GasNodesAndPipes(Dataset):
     """
     Insert the CH4 buses and links into the database.
@@ -1034,7 +1094,7 @@ class GasNodesAndPipes(Dataset):
     #:
     version: str = "0.0.9"
 
-    tasks = (insert_gas_data,)
+    tasks = (insert_gas_data_status2019,)
 
     if "eGon2035" in config.settings()["egon-data"]["--scenarios"]:
         tasks = tasks + (insert_gas_data_eGon2035,)
