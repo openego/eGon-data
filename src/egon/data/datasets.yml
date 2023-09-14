@@ -21,7 +21,7 @@ openstreetmap:
 vg250:
   original_data:
     source:
-      url: "https://datenX.gdz.bkg.bund.de/produkte/vg/vg250_ebenen_0101/2020/vg250_01-01.geo84.shape.ebenen.zip"
+      url: "https://daten.gdz.bkg.bund.de/produkte/vg/vg250_ebenen_0101/2020/vg250_01-01.geo84.shape.ebenen.zip"
     target:
       file: "vg250_01-01.geo84.shape.ebenen.zip"
   processed:
