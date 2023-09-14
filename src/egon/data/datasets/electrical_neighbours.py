@@ -1657,9 +1657,9 @@ def insert_loads_sq(scn_name="status2019"):
             """Demand data from entsoe could not be retrieved.
                         Backup data is used instead"""
         )
-    load_sq = pd.read_csv(
-        "data_bundle_powerd_data/entsoe/load_entsoe.csv", index_col="Index"
-    )
+        load_sq = pd.read_csv(
+            "data_bundle_powerd_data/entsoe/load_entsoe.csv", index_col="Index"
+        )
 
     # Delete existing data
     db.execute_sql(
