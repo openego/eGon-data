@@ -15,7 +15,7 @@ import yaml
 
 from egon.data import __path__, db, logger, config
 from egon.data.datasets import Dataset
-from egon.data.datasets.pypsa_eur_sec.manipulate_network import execute
+from egon.data.datasets.pypsaeursec.manipulate_network import execute
 from egon.data.datasets.scenario_parameters import get_sector_parameters
 import egon.data.config
 import egon.data.subprocess as subproc
