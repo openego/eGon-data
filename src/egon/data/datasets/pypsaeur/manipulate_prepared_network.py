@@ -1,3 +1,7 @@
+"""The central module containing all code dealing with importing data from
+the pysa-eur-sec scenario parameter creation
+"""
+
 import pypsa
 import pandas as pd
 import numpy as np

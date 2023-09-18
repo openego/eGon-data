@@ -19,7 +19,7 @@ from egon.data import config, db
 from egon.data.datasets import Dataset
 from egon.data.datasets.fix_ehv_subnetworks import select_bus_id
 from egon.data.datasets.fill_etrago_gen import add_marginal_costs
-from egon.data.datasets.pypsaeursec import prepared_network
+from egon.data.datasets.pypsaeur import prepared_network
 from egon.data.datasets.scenario_parameters import get_sector_parameters
 
 

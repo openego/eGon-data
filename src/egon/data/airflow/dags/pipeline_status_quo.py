@@ -54,7 +54,7 @@ from egon.data.datasets.osm_buildings_streets import OsmBuildingsStreets
 from egon.data.datasets.osmtgmod import Osmtgmod
 from egon.data.datasets.power_etrago import OpenCycleGasTurbineEtrago
 from egon.data.datasets.power_plants import PowerPlants
-from egon.data.datasets.pypsaeursec import PreparePypsaEur, RunPypsaEur
+from egon.data.datasets.pypsaeur import PreparePypsaEur, RunPypsaEur
 from egon.data.datasets.renewable_feedin import RenewableFeedin
 from egon.data.datasets.scenario_capacities import ScenarioCapacities
 from egon.data.datasets.scenario_parameters import ScenarioParameters
