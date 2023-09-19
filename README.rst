@@ -137,6 +137,15 @@ packages are required too. Right now these are:
   You also have to agree on the `terms of use
   <https://cds.climate.copernicus.eu/cdsapp/#!/terms/licence-to-use-copernicus-products>`_
 
+* To download generation and demand data from entsoe you need to register in
+  the `entsoe platform <https://transparency.entsoe.eu/>`_. Once the user is
+  created, a personal token can be generated to access the available data. This
+  token must be saved in a text file called *.entsoe-token* in the home directory.
+  In Ubuntu you can go to the home directory by typing :code:`cd ~` in a
+  terminal. To create the file execute :code:`nano ".entsoe-token"` and then
+  paste your personal token (36 characters). Finally press :code:`CRL + x` to 
+  save and exit.
+
 * Make sure you have enough free disk space (~350 GB) in your working
   directory.
 
