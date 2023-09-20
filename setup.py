@@ -84,7 +84,7 @@ setup(
         "apache-airflow>2.0",
         "apache-airflow[postgres]",
         "apache-airflow-providers-sendgrid",
-        "atlite==0.2.5",
+        "atlite==0.2.11",
         "cdsapi",
         "click<8.1",
         "entsoe-py >=0.5.5",
