@@ -5,15 +5,16 @@ Contents
 .. toctree::
    :maxdepth: 2
 
-   getting_started
+   about
    workflow
+   getting_started
    troubleshooting
    data
    literature
    contributing
    authors
    changelog
-   Module documentation <reference/index>
+   API Reference: egon.data <reference/egon.data>
 
 Indices and tables
 ==================

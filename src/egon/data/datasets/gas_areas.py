@@ -21,20 +21,58 @@ from egon.data.metadata import (
 
 
 class GasAreaseGon2035(Dataset):
+    """Create the gas voronoi table and the gas voronoi areas for eGon2035
+
+    *Dependencies*
+      * :py:class:`EtragoSetup <egon.data.datasets.etrago_setup.EtragoSetup>`
+      * :py:class:`HydrogenBusEtrago <egon.data.datasets.hydrogen_etrago.HydrogenBusEtrago>`
+      * :py:class:`Vg250 <egon.data.datasets.vg250.Vg250>`
+      * :py:class:`GasNodesAndPipes <egon.data.datasets.gas_grid.GasNodesAndPipes>`
+
+    *Resulting tables*
+      * :py:class:`EgonPfHvGasVoronoi <EgonPfHvGasVoronoi>`
+
+    """
+
+    #:
+    name: str = "GasAreaseGon2035"
+    #:
+    version: str = "0.0.2"
+
     def __init__(self, dependencies):
         super().__init__(
-            name="GasAreaseGon2035",
-            version="0.0.2",
+            name=self.name,
+            version=self.version,
             dependencies=dependencies,
             tasks=(create_gas_voronoi_table, voronoi_egon2035),
         )
 
 
 class GasAreaseGon100RE(Dataset):
+    """Create the gas voronoi table and the gas voronoi areas for eGon100RE
+
+    *Dependencies*
+      * :py:class:`EtragoSetup <egon.data.datasets.etrago_setup.EtragoSetup>`
+      * :py:class:`HydrogenBusEtrago <egon.data.datasets.hydrogen_etrago.HydrogenBusEtrago>`
+      * :py:class:`HydrogenGridEtrago <egon.data.datasets.hydrogen_etrago.HydrogenGridEtrago>`
+      * :py:class:`Vg250 <egon.data.datasets.vg250.Vg250>`
+      * :py:class:`GasNodesAndPipes <egon.data.datasets.gas_grid.GasNodesAndPipes>`
+      * :py:class:`GasAreaseGon2035 <GasAreaseGon2035>`
+
+    *Resulting tables*
+      * :py:class:`EgonPfHvGasVoronoi <EgonPfHvGasVoronoi>`
+
+    """
+
+    #:
+    name: str = "GasAreaseGon100RE"
+    #:
+    version: str = "0.0.1"
+
     def __init__(self, dependencies):
         super().__init__(
-            name="GasAreaseGon100RE",
-            version="0.0.1",
+            name=self.name,
+            version=self.version,
             dependencies=dependencies,
             tasks=(voronoi_egon100RE),
         )
@@ -44,6 +82,11 @@ Base = declarative_base()
 
 
 class EgonPfHvGasVoronoi(Base):
+    """
+    Class definition of table grid.egon_gas_voronoi
+    """
+
+
     source_list = [
         sources()["openstreetmap"],
         sources()["SciGRID_gas"],
@@ -116,13 +159,20 @@ class EgonPfHvGasVoronoi(Base):
         "comment": meta_json,
     }
 
+    #: Name of the scenario
     scn_name = Column(Text, primary_key=True, nullable=False)
+    #: Bus of the corresponding area
     bus_id = Column(BigInteger, primary_key=True, nullable=False)
+    #: Gas carrier of the voronoi area ("CH4", "H2_grid" or "H2_saltcavern")
     carrier = Column(Text)
+    #: Geometry of the corresponding area
     geom = Column(Geometry("GEOMETRY", 4326))
 
 
 def create_gas_voronoi_table():
+    """
+    Create gas voronoi table
+    """
     engine = db.engine()
     EgonPfHvGasVoronoi.__table__.drop(bind=engine, checkfirst=True)
     EgonPfHvGasVoronoi.__table__.create(bind=engine, checkfirst=True)

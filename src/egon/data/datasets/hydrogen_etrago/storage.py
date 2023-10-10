@@ -1,4 +1,15 @@
-"""The central module containing all code dealing with heat sector in etrago
+"""
+The central module containing all code dealing with H2 stores in Germany
+
+This module contains the functions used to insert the two types of H2
+store potentials in Germany:
+  * H2 overground stores (carrier: 'H2_overground'): steel tanks at
+    every H2_grid bus
+  * H2 underground stores (carrier: 'H2_underground'): saltcavern store
+    at every H2_saltcavern bus.
+    NB: the saltcavern locations define the H2_saltcavern buses locations.
+All these stores are modelled as extendable PyPSA stores.
+
 """
 from geoalchemy2 import Geometry
 import geopandas as gpd
@@ -10,7 +21,17 @@ from egon.data.datasets.scenario_parameters import get_sector_parameters
 
 
 def insert_H2_overground_storage(scn_name="eGon2035"):
-    """Insert H2 steel tank storage for every H2 bus."""
+    """
+    Insert H2_overground stores into the database.
+
+    Insert extendable H2_overground stores (steel tanks) at each H2_grid
+    bus. 
+
+    Returns
+    -------
+    None
+
+    """
     # The targets of etrago_hydrogen also serve as source here ಠ_ಠ
     sources = config.datasets()["etrago_hydrogen"]["sources"]
     targets = config.datasets()["etrago_hydrogen"]["targets"]
@@ -69,7 +90,17 @@ def insert_H2_overground_storage(scn_name="eGon2035"):
 
 
 def insert_H2_saltcavern_storage(scn_name="eGon2035"):
-    """Insert H2 saltcavern storage for every H2_saltcavern bus in the table."""
+    """
+    Insert H2_underground stores into the database.
+
+    Insert extendable H2_underground stores (saltcavern potentials) at
+    every H2_saltcavern bus.
+    
+    Returns
+    -------
+    None
+
+    """
 
     # Datatables sources and targets
     sources = config.datasets()["etrago_hydrogen"]["sources"]
@@ -88,7 +119,7 @@ def insert_H2_saltcavern_storage(scn_name="eGon2035"):
         f"""
         SELECT *
         FROM {sources['H2_AC_map']['schema']}.
-        {sources['H2_AC_map']['table']}""",
+        {sources['H2_AC_map']['table']}"""
     )
 
     storage_potentials["storage_potential"] = (
@@ -155,11 +186,17 @@ def insert_H2_saltcavern_storage(scn_name="eGon2035"):
 
 
 def calculate_and_map_saltcavern_storage_potential():
-    """Calculate site specific storage potential based on InSpEE-DS report."""
+    """
+    Calculate site specific storage potential based on InSpEE-DS report.
+
+    Returns
+    -------
+    None
+
+    """
 
     # select onshore vg250 data
     sources = config.datasets()["bgr"]["sources"]
-    targets = config.datasets()["bgr"]["targets"]
     vg250_data = db.select_geodataframe(
         f"""SELECT * FROM
                 {sources['vg250_federal_states']['schema']}.
@@ -337,7 +374,21 @@ def calculate_and_map_saltcavern_storage_potential():
         epsg=25832
     ).area / potential_areas.groupby("gen")["shape_star"].transform("sum")
 
+    return potential_areas
+
+
+def write_saltcavern_potential():
+    """Write saltcavern potentials into the database
+    
+    Returns
+    -------
+    None
+    
+    """
+    potential_areas = calculate_and_map_saltcavern_storage_potential()
+
     # write information to saltcavern data
+    targets = config.datasets()["bgr"]["targets"]
     potential_areas.to_crs(epsg=4326).to_postgis(
         targets["storage_potential"]["table"],
         db.engine(),
@@ -349,7 +400,13 @@ def calculate_and_map_saltcavern_storage_potential():
 
 
 def insert_H2_storage_eGon100RE():
-    """Copy H2 storage from the eGon2035 to the eGon100RE scenario."""
+    """Copy H2 storage from the eGon2035 to the eGon100RE scenario.
+    
+    Returns
+    -------
+    None
+    
+    """
     copy_and_modify_stores(
         "eGon2035", "eGon100RE", ["H2_underground", "H2_overground"], "gas"
     )

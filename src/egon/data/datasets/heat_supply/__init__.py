@@ -351,10 +351,39 @@ def metadata():
 
 
 class HeatSupply(Dataset):
+    """
+    Select and store heat supply technologies for inidvidual and district heating
+
+    This dataset distributes heat supply technologies to each district heating grid
+    and individual supplies buildings per medium voltage grid district.
+    National installed capacities are predefined from external sources within
+    :py:class:`ScenarioCapacities <egon.data.datasets.scenario_capacities.ScenarioCapacities>`.
+    The further distribution is done using a cascade that follows a specific order of supply technologies
+    and the heat demand.
+
+
+    *Dependencies*
+      * :py:class:`DataBundle <egon.data.datasets.data_bundle.DataBundle>`
+      * :py:class:`DistrictHeatingAreas <egon.data.datasets.district_heating_areas.DistrictHeatingAreas>`
+      * :py:class:`ZensusMvGridDistricts <egon.data.datasets.zensus_mv_grid_districts.ZensusMvGridDistricts>`
+      * :py:class:`Chp <egon.data.datasets.chp.Chp>`
+
+
+    *Resulting tables*
+      * :py:class:`demand.egon_district_heating <egon.data.datasets.heat_supply.EgonDistrictHeatingSupply>` is created and filled
+      * :py:class:`demand.egon_individual_heating <egon.data.datasets.heat_supply.EgonIndividualHeatingSupply>` is created and filled
+
+    """
+
+    #:
+    name: str = "HeatSupply"
+    #:
+    version: str = "0.0.9"
+
     def __init__(self, dependencies):
         super().__init__(
-            name="HeatSupply",
-            version="0.0.9",
+            name=self.name,
+            version=self.version,
             dependencies=dependencies,
             tasks=(
                 create_tables,

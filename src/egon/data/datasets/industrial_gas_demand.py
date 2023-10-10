@@ -1,7 +1,13 @@
 # -*- coding: utf-8 -*-
 """
-The central module containing all code dealing with importing gas industrial demand
+The central module containing code dealing with gas industrial demand
+
+In this module, the functions to import the industrial hydrogen and
+methane demands from the opendata.ffe database and to insert them into
+the database after modification are to be found.
+
 """
+
 from pathlib import Path
 import os
 
@@ -24,37 +30,103 @@ from egon.data.datasets.scenario_parameters import get_sector_parameters
 
 
 class IndustrialGasDemand(Dataset):
+    """
+    Download the industrial gas demands from the opendata.ffe database
+
+    Data is downloaded to the folder ./datasets/gas_data/demand using
+    the function :py:func:`download_industrial_gas_demand` and no dataset is resulting.
+
+    *Dependencies*
+      * :py:class:`ScenarioParameters <egon.data.datasets.scenario_parameters.ScenarioParameters>`
+
+    """
+
+    #:
+    name: str = "IndustrialGasDemand"
+    #:
+    version: str = "0.0.4"
+
     def __init__(self, dependencies):
         super().__init__(
-            name="IndustrialGasDemand",
-            version="0.0.4",
+            name=self.name,
+            version=self.version,
             dependencies=dependencies,
             tasks=(download_industrial_gas_demand),
         )
 
 
 class IndustrialGasDemandeGon2035(Dataset):
+    """Insert the hourly resolved industrial gas demands into the database for eGon2035
+
+    Insert the industrial methane and hydrogen demands and their
+    associated time series for the scenario eGon2035 by executing the
+    function :py:func:`insert_industrial_gas_demand_egon2035`.
+
+    *Dependencies*
+      * :py:class:`GasAreaseGon2035 <egon.data.datasets.gas_areas.GasAreaseGon2035>`
+      * :py:class:`GasNodesAndPipes <egon.data.datasets.gas_grid.GasNodesAndPipes>`
+      * :py:class:`HydrogenBusEtrago <egon.data.datasets.hydrogen_etrago.HydrogenBusEtrago>`
+      * :py:class:`IndustrialGasDemand <IndustrialGasDemand>`
+
+    *Resulting tables*
+      * :py:class:`grid.egon_etrago_load <egon.data.datasets.etrago_setup.EgonPfHvLoad>` is extended
+      * :py:class:`grid.egon_etrago_load_timeseries <egon.data.datasets.etrago_setup.EgonPfHvLoadTimeseries>` is extended
+
+    """
+
+    #:
+    name: str = "IndustrialGasDemandeGon2035"
+    #:
+    version: str = "0.0.3"
+
     def __init__(self, dependencies):
         super().__init__(
-            name="IndustrialGasDemandeGon2035",
-            version="0.0.3",
+            name=self.name,
+            version=self.version,
             dependencies=dependencies,
             tasks=(insert_industrial_gas_demand_egon2035),
         )
 
 
 class IndustrialGasDemandeGon100RE(Dataset):
+    """Insert the hourly resolved industrial gas demands into the database for eGon100RE
+
+    Insert the industrial methane and hydrogen demands and their
+    associated time series for the scenario eGon100RE by executing the
+    function :py:func:`insert_industrial_gas_demand_egon100RE`.
+
+    *Dependencies*
+      * :py:class:`GasAreaseGon100RE <egon.data.datasets.gas_areas.GasAreaseGon100RE>`
+      * :py:class:`GasNodesAndPipes <egon.data.datasets.gas_grid.GasNodesAndPipes>`
+      * :py:class:`HydrogenBusEtrago <egon.data.datasets.hydrogen_etrago.HydrogenBusEtrago>`
+      * :py:class:`IndustrialGasDemand <IndustrialGasDemand>`
+
+    *Resulting tables*
+      * :py:class:`grid.egon_etrago_load <egon.data.datasets.etrago_setup.EgonPfHvLoad>` is extended
+      * :py:class:`grid.egon_etrago_load_timeseries <egon.data.datasets.etrago_setup.EgonPfHvLoadTimeseries>` is extended
+
+    """
+
+    #:
+    name: str = "IndustrialGasDemandeGon100RE"
+    #:
+    version: str = "0.0.3"
+
     def __init__(self, dependencies):
         super().__init__(
-            name="IndustrialGasDemandeGon100RE",
-            version="0.0.3",
+            name=self.name,
+            version=self.version,
             dependencies=dependencies,
             tasks=(insert_industrial_gas_demand_egon100RE),
         )
 
 
 def read_industrial_demand(scn_name, carrier):
-    """Read the gas demand data
+    """Read the industrial gas demand data in Germany
+
+    This function reads the methane or hydrogen industrial demand time
+    series previously downloaded in :py:func:`download_industrial_gas_demand` for
+    the scenarios eGon2035 or eGon100RE.
 
     Parameters
     ----------
@@ -65,8 +137,8 @@ def read_industrial_demand(scn_name, carrier):
 
     Returns
     -------
-    df : pandas.core.frame.DataFrame
-        Dataframe containing the industrial demand
+    df : pandas.DataFrame
+        Dataframe containing the industrial gas demand time series
 
     """
     target_file = Path(".") / "datasets/gas_data/demand/region_corr.json"
@@ -153,22 +225,31 @@ def read_industrial_demand(scn_name, carrier):
 def read_and_process_demand(
     scn_name="eGon2035", carrier=None, grid_carrier=None
 ):
-    """Assign the industrial demand in Germany to buses
+    """Assign the industrial gas demand in Germany to buses
+
+    This function prepares and returns the industrial gas demand time
+    series for CH4 or H2 and for a specific scenario by executing the
+    following steps:
+
+      * Read the industrial demand time series in Germany with the
+        function :py:func:`read_industrial_demand`
+      * Attribute the bus_id to which each load and it associated time
+        series is associated by calling the function :py:func:`assign_gas_bus_id <egon.data.db.assign_gas_bus_id>`
+        from :py:mod:`egon.data.db <egon.data.db>`
+      * Adjust the columns: add "carrier" and remove useless ones
 
     Parameters
     ----------
     scn_name : str
         Name of the scenario
-
     carrier : str
         Name of the carrier, the demand should hold
-
     grid_carrier : str
         Carrier name of the buses, the demand should be assigned to
 
     Returns
     -------
-    industrial_demand :
+    industrial_demand : pandas.DataFrame
         Dataframe containing the industrial demand in Germany
 
     """
@@ -204,12 +285,17 @@ def read_and_process_demand(
 
 def delete_old_entries(scn_name):
     """
-    Delete loads and load timeseries.
+    Delete CH4 and H2 loads and load time series for the specified scenario
 
     Parameters
     ----------
     scn_name : str
         Name of the scenario.
+
+    Returns
+    -------
+    None
+
     """
     # Clean tables
     db.execute_sql(
@@ -243,14 +329,31 @@ def delete_old_entries(scn_name):
 
 def insert_new_entries(industrial_gas_demand, scn_name):
     """
-    Insert loads.
+    Insert industrial gas loads into the database
+
+    This function prepares and imports the industrial gas loads by
+    executing the following steps:
+
+      * Attribution of an id to each load in the list received as parameter
+      * Deletion of the column containing the time series (they will be
+        inserted in another table (grid.egon_etrago_load_timeseries) in
+        the :py:func:`insert_industrial_gas_demand_time_series`)
+      * Insertion of the loads into the database
+      * Return of the dataframe still containing the time series columns
 
     Parameters
     ----------
     industrial_gas_demand : pandas.DataFrame
-        Load data to insert.
+        Load data to insert (containing the time series)
     scn_name : str
         Name of the scenario.
+
+    Returns
+    -------
+    industrial_gas_demand : pandas.DataFrame
+        Dataframe containing the loads that have been inserted in
+        the database with their time series
+
     """
 
     new_id = db.next_etrago_id("load")
@@ -281,17 +384,25 @@ def insert_new_entries(industrial_gas_demand, scn_name):
 
 
 def insert_industrial_gas_demand_egon2035():
-    """Insert list of industrial gas demand (one per NUTS3) in database
+    """Insert industrial gas demands into the database for eGon2035
 
-    Parameters
-    ----------
-    scn_name : str
-        Name of the scenario
+    Insert the industrial CH4 and H2 demands and their associated time
+    series into the database for the eGon2035 scenario. The data
+    previously downloaded in :py:func:`download_industrial_gas_demand`
+    is adjusted by executing the following steps:
+
+      * Clean the database with the function :py:func:`delete_old_entries`
+      * Read and prepare the CH4 and the H2 industrial demands and their
+        associated time series in Germany with the function :py:func:`read_and_process_demand`
+      * Aggregate the demands with the same properties at the same gas bus
+      * Insert the loads into the database by executing :py:func:`insert_new_entries`
+      * Insert the time series associated to the loads into the database
+        by executing :py:func:`insert_industrial_gas_demand_time_series`
 
     Returns
     -------
-        industrial_gas_demand : Dataframe containing the industrial gas demand
-        in Germany
+    None
+
     """
     scn_name = "eGon2035"
     delete_old_entries(scn_name)
@@ -322,17 +433,34 @@ def insert_industrial_gas_demand_egon2035():
 
 
 def insert_industrial_gas_demand_egon100RE():
-    """Insert list of industrial gas demand (one per NUTS3) in database
+    """Insert industrial gas demands into the database for eGon100RE
 
-    Parameters
-    ----------
-    scn_name : str
-        Name of the scenario
+    Insert the industrial CH4 and H2 demands and their associated time
+    series into the database for the eGon100RE scenario. The data,
+    previously downloaded in :py:func:`download_industrial_gas_demand`
+    are adapted by executing the following steps:
+
+      * Clean the database with the function :py:func:`delete_old_entries`
+      * Read and prepare the CH4 and the H2 industrial demands and their
+        associated time series in Germany with the function :py:func:`read_and_process_demand`
+      * Identify and adjust the total industrial CH4 and H2 loads for Germany
+        generated by PyPSA-Eur-Sec
+          * For CH4, the time series used is the one from H2, because
+            the industrial CH4 demand in the opendata.ffe database is 0
+          * In test mode, the total values are obtained by
+            evaluating the share of H2 demand in the test region
+            (NUTS1: DEF, Schleswig-Holstein) with respect to the H2
+            demand in full Germany model (NUTS0: DE). This task has been
+            outsourced to save processing cost.
+      * Aggregate the demands with the same properties at the same gas bus
+      * Insert the loads into the database by executing :py:func:`insert_new_entries`
+      * Insert the time series associated to the loads into the database
+        by executing :py:func:`insert_industrial_gas_demand_time_series`
 
     Returns
     -------
-        industrial_gas_demand : Dataframe containing the industrial gas demand
-        in Germany
+    None
+
     """
     scn_name = "eGon100RE"
     delete_old_entries(scn_name)
@@ -436,7 +564,21 @@ def insert_industrial_gas_demand_egon100RE():
 
 def insert_industrial_gas_demand_time_series(egon_etrago_load_gas):
     """
-    Insert list of industrial gas demand time series (one per NUTS3)
+    Insert list of industrial gas demand time series (one per NUTS3 region)
+
+    These loads are hourly and on NUTS3 level resolved.
+
+    Parameters
+    ----------
+    industrial_gas_demand : pandas.DataFrame
+        Dataframe containing the loads that have been inserted into
+        the database and whose time series will be inserted into the
+        database.
+
+    Returns
+    -------
+    None
+
     """
     egon_etrago_load_gas_timeseries = egon_etrago_load_gas
 
@@ -460,7 +602,18 @@ def insert_industrial_gas_demand_time_series(egon_etrago_load_gas):
 
 
 def download_industrial_gas_demand():
-    """Download the industrial gas demand data from opendata.ffe database."""
+    """Download the industrial gas demand data from opendata.ffe database
+
+    The industrial demands for hydrogen and methane are downloaded in
+    the folder ./datasets/gas_data/demand
+    These loads are hourly and NUTS3-level resolved. For more
+    information on these data, refer to the `Extremos project documentation <https://opendata.ffe.de/project/extremos/>`_.
+
+    Returns
+    -------
+    None
+
+    """
     correspondance_url = (
         "http://opendata.ffe.de:3000/region?id_region_type=eq.38"
     )

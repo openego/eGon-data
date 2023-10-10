@@ -42,7 +42,7 @@ from egon.data.datasets.etrago_setup import EtragoSetup
 from egon.data.datasets.fill_etrago_gen import Egon_etrago_gen
 from egon.data.datasets.fix_ehv_subnetworks import FixEhvSubnetworks
 from egon.data.datasets.gas_areas import GasAreaseGon100RE, GasAreaseGon2035
-from egon.data.datasets.gas_grid import GasNodesandPipes
+from egon.data.datasets.gas_grid import GasNodesAndPipes
 from egon.data.datasets.gas_neighbours import GasNeighbours
 from egon.data.datasets.heat_demand import HeatDemandImport
 from egon.data.datasets.heat_demand_europe import HeatDemandEurope
@@ -274,7 +274,7 @@ with airflow.DAG(
         ]
     )
 
-    # Get household electrical demands for cencus cells
+    # Get household electrical demands for census cells
     household_electricity_demand_annual = HouseholdElectricityDemand(
         dependencies=[
             tasks[
@@ -285,7 +285,7 @@ with airflow.DAG(
         ]
     )
 
-    # Distribute electrical CTS demands to zensus grid
+    # Distribute electrical CTS demands to census grid
     cts_electricity_demand_annual = CtsElectricityDemand(
         dependencies=[
             demandregio,
@@ -384,7 +384,7 @@ with airflow.DAG(
     )
 
     # Import gas grid
-    gas_grid_insert_data = GasNodesandPipes(
+    gas_grid_insert_data = GasNodesAndPipes(
         dependencies=[
             data_bundle,
             foreign_lines,
@@ -523,7 +523,7 @@ with airflow.DAG(
         ]
     )
 
-    # DSM (demand site management)
+    # DSM (demand side management)
     components_dsm = DsmPotential(
         dependencies=[
             cts_electricity_demand_annual,

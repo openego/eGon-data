@@ -21,198 +21,179 @@ Handling of empty source data in MaStr dump:
 
 The data is used especially for the generation of status quo grids by ding0.
 """
-from geoalchemy2 import Geometry
-from sqlalchemy import (
-    Boolean,
-    Column,
-    DateTime,
-    Float,
-    Integer,
-    Sequence,
-    String,
-)
-from sqlalchemy.ext.declarative import declarative_base
+from __future__ import annotations
+
+from pathlib import Path
+
+from loguru import logger
 import geopandas as gpd
+import numpy as np
 import pandas as pd
 
-from egon.data import db
+from egon.data import config, db
 from egon.data.datasets.mastr import WORKING_DIR_MASTR_NEW
-import egon.data.config
-
-Base = declarative_base()
+from egon.data.datasets.power_plants.mastr_db_classes import (
+    EgonMastrGeocoded,
+    EgonPowerPlantsBiomass,
+    EgonPowerPlantsCombustion,
+    EgonPowerPlantsGsgk,
+    EgonPowerPlantsHydro,
+    EgonPowerPlantsNuclear,
+    EgonPowerPlantsPv,
+    EgonPowerPlantsStorage,
+    EgonPowerPlantsWind,
+)
+from egon.data.datasets.power_plants.pv_rooftop_buildings import (
+    federal_state_data,
+)
 
 TESTMODE_OFF = (
-    egon.data.config.settings()["egon-data"]["--dataset-boundary"]
-    == "Everything"
+    config.settings()["egon-data"]["--dataset-boundary"] == "Everything"
 )
 
 
-class EgonPowerPlantsPv(Base):
-    __tablename__ = "egon_power_plants_pv"
-    __table_args__ = {"schema": "supply"}
-
-    id = Column(Integer, Sequence("pp_pv_seq"), primary_key=True)
-    bus_id = Column(Integer, nullable=True)  # Grid district id
-    gens_id = Column(String, nullable=True)  # EinheitMastrNummer
-
-    status = Column(String, nullable=True)  # EinheitBetriebsstatus
-    commissioning_date = Column(DateTime, nullable=True)  # Inbetriebnahmedatum
-    postcode = Column(String(5), nullable=True)  # Postleitzahl
-    city = Column(String(50), nullable=True)  # Ort
-    federal_state = Column(String(31), nullable=True)  # Bundesland
-
-    site_type = Column(String(69), nullable=True)  # Lage
-    usage_sector = Column(String(36), nullable=True)  # Nutzungsbereich
-    orientation_primary = Column(String(11), nullable=True)  # Hauptausrichtung
-    orientation_primary_angle = Column(
-        String(18), nullable=True
-    )  # HauptausrichtungNeigungswinkel
-    orientation_secondary = Column(
-        String(11), nullable=True
-    )  # Nebenausrichtung
-    orientation_secondary_angle = Column(
-        String(18), nullable=True
-    )  # NebenausrichtungNeigungswinkel
-    orientation_uniform = Column(
-        Boolean, nullable=True
-    )  # EinheitlicheAusrichtungUndNeigungswinkel
-    module_count = Column(Float, nullable=True)  # AnzahlModule
-
-    capacity = Column(Float, nullable=True)  # Nettonennleistung
-    capacity_inverter = Column(
-        Float, nullable=True
-    )  # ZugeordneteWirkleistungWechselrichter in MW
-    feedin_type = Column(String(47), nullable=True)  # Einspeisungsart
-    voltage_level = Column(Integer, nullable=True)
-    voltage_level_inferred = Column(Boolean, nullable=True)
-
-    geom = Column(Geometry("POINT", 4326), index=True, nullable=True)
+def isfloat(num: str):
+    """
+    Determine if string can be converted to float.
+    Parameters
+    -----------
+    num : str
+        String to parse.
+    Returns
+    -------
+    bool
+        Returns True in string can be parsed to float.
+    """
+    try:
+        float(num)
+        return True
+    except ValueError:
+        return False
 
 
-class EgonPowerPlantsWind(Base):
-    __tablename__ = "egon_power_plants_wind"
-    __table_args__ = {"schema": "supply"}
+def zip_and_municipality_from_standort(
+    standort: str,
+) -> tuple[str, bool]:
+    """
+    Get zip code and municipality from Standort string split into a list.
+    Parameters
+    -----------
+    standort : str
+        Standort as given from MaStR data.
+    Returns
+    -------
+    str
+        Standort with only the zip code and municipality
+        as well a ', Germany' added.
+    """
+    standort_list = standort.split()
 
-    id = Column(Integer, Sequence("pp_wind_seq"), primary_key=True)
-    bus_id = Column(Integer, nullable=True)  # Grid district id
-    gens_id = Column(String, nullable=True)  # EinheitMastrNummer
+    found = False
+    count = 0
 
-    status = Column(String, nullable=True)  # EinheitBetriebsstatus
-    commissioning_date = Column(DateTime, nullable=True)  # Inbetriebnahmedatum
-    postcode = Column(String(5), nullable=True)  # Postleitzahl
-    city = Column(String(50), nullable=True)  # Ort
-    federal_state = Column(String(31), nullable=True)  # Bundesland
+    for count, elem in enumerate(standort_list):
+        if len(elem) != 5:
+            continue
+        if not elem.isnumeric():
+            continue
 
-    site_type = Column(String(17), nullable=True)  # Lage
-    manufacturer_name = Column(String(100), nullable=True)  # Hersteller
-    type_name = Column(String(100), nullable=True)  # Typenbezeichnung
-    hub_height = Column(Float, nullable=True)  # Nabenhoehe
-    rotor_diameter = Column(Float, nullable=True)  # Rotordurchmesser
+        found = True
 
-    capacity = Column(Float, nullable=True)  # Nettonennleistung
-    feedin_type = Column(String(47), nullable=True)  # Einspeisungsart
-    voltage_level = Column(Integer, nullable=True)
-    voltage_level_inferred = Column(Boolean, nullable=True)
+        break
 
-    geom = Column(Geometry("POINT", 4326), index=True, nullable=True)
+    if found:
+        cleaned_str = " ".join(standort_list[count:])
 
+        return cleaned_str, found
 
-class EgonPowerPlantsBiomass(Base):
-    __tablename__ = "egon_power_plants_biomass"
-    __table_args__ = {"schema": "supply"}
+    logger.warning(
+        "Couldn't identify zip code. This entry will be dropped."
+        f" Original standort: {standort}."
+    )
 
-    id = Column(Integer, Sequence("pp_biomass_seq"), primary_key=True)
-    bus_id = Column(Integer, nullable=True)  # Grid district id
-    gens_id = Column(String, nullable=True)  # EinheitMastrNummer
-
-    status = Column(String, nullable=True)  # EinheitBetriebsstatus
-    commissioning_date = Column(DateTime, nullable=True)  # Inbetriebnahmedatum
-    postcode = Column(String(5), nullable=True)  # Postleitzahl
-    city = Column(String(50), nullable=True)  # Ort
-    federal_state = Column(String(31), nullable=True)  # Bundesland
-
-    technology = Column(String(45), nullable=True)  # Technologie
-    fuel_name = Column(String(52), nullable=True)  # Hauptbrennstoff
-    fuel_type = Column(String(19), nullable=True)  # Biomasseart
-
-    capacity = Column(Float, nullable=True)  # Nettonennleistung
-    th_capacity = Column(Float, nullable=True)  # ThermischeNutzleistung
-    feedin_type = Column(String(47), nullable=True)  # Einspeisungsart
-    voltage_level = Column(Integer, nullable=True)
-    voltage_level_inferred = Column(Boolean, nullable=True)
-
-    geom = Column(Geometry("POINT", 4326), index=True, nullable=True)
+    return standort, found
 
 
-class EgonPowerPlantsHydro(Base):
-    __tablename__ = "egon_power_plants_hydro"
-    __table_args__ = {"schema": "supply"}
+def infer_voltage_level(
+    units_gdf: gpd.GeoDataFrame,
+) -> gpd.GeoDataFrame:
+    """
+    Infer nan values in voltage level derived from generator capacity to
+    the power plants.
 
-    id = Column(Integer, Sequence("pp_hydro_seq"), primary_key=True)
-    bus_id = Column(Integer, nullable=True)  # Grid district id
-    gens_id = Column(String, nullable=True)  # EinheitMastrNummer
+    Parameters
+    -----------
+    units_gdf : geopandas.GeoDataFrame
+        GeoDataFrame containing units with voltage levels from MaStR
+    Returnsunits_gdf: gpd.GeoDataFrame
+    -------
+    geopandas.GeoDataFrame
+        GeoDataFrame containing units all having assigned a voltage level.
+    """
 
-    status = Column(String, nullable=True)  # EinheitBetriebsstatus
-    commissioning_date = Column(DateTime, nullable=True)  # Inbetriebnahmedatum
-    postcode = Column(String(5), nullable=True)  # Postleitzahl
-    city = Column(String(50), nullable=True)  # Ort
-    federal_state = Column(String(31), nullable=True)  # Bundesland
+    def voltage_levels(p: float) -> int:
+        if p <= 100:
+            return 7
+        elif p <= 200:
+            return 6
+        elif p <= 5500:
+            return 5
+        elif p <= 20000:
+            return 4
+        elif p <= 120000:
+            return 3
+        return 1
 
-    plant_type = Column(String(39), nullable=True)  # ArtDerWasserkraftanlage
-    water_origin = Column(String(20), nullable=True)  # ArtDesZuflusses
+    units_gdf["voltage_level_inferred"] = False
+    mask = units_gdf.voltage_level.isna()
+    units_gdf.loc[mask, "voltage_level_inferred"] = True
+    units_gdf.loc[mask, "voltage_level"] = units_gdf.loc[
+        mask
+    ].Nettonennleistung.apply(voltage_levels)
 
-    capacity = Column(Float, nullable=True)  # Nettonennleistung
-    feedin_type = Column(String(47), nullable=True)  # Einspeisungsart
-    voltage_level = Column(Integer, nullable=True)
-    voltage_level_inferred = Column(Boolean, nullable=True)
-
-    geom = Column(Geometry("POINT", 4326), index=True, nullable=True)
+    return units_gdf
 
 
 def import_mastr() -> None:
     """Import MaStR data into database"""
-
-    def infer_voltage_level(
-        units_gdf: gpd.GeoDataFrame,
-    ) -> gpd.GeoDataFrame:
-        """
-        Infer nan values in voltage level derived from generator capacity to
-        the power plants.
-
-        Parameters
-        -----------
-        units_gdf : geopandas.GeoDataFrame
-            GeoDataFrame containing units with voltage levels from MaStR
-        Returnsunits_gdf: gpd.GeoDataFrame
-        -------
-        geopandas.GeoDataFrame
-            GeoDataFrame containing units all having assigned a voltage level.
-        """
-
-        def voltage_levels(p: float) -> int:
-            if p <= 100:
-                return 7
-            elif p <= 200:
-                return 6
-            elif p <= 5500:
-                return 5
-            elif p <= 20000:
-                return 4
-            elif p <= 120000:
-                return 3
-            return 1
-
-        units_gdf["voltage_level_inferred"] = False
-        mask = units_gdf.voltage_level.isna()
-        units_gdf.loc[mask, "voltage_level_inferred"] = True
-        units_gdf.loc[mask, "voltage_level"] = units_gdf.loc[
-            mask
-        ].Nettonennleistung.apply(voltage_levels)
-
-        return units_gdf
-
     engine = db.engine()
-    cfg = egon.data.config.datasets()["power_plants"]
+
+    # import geocoded data
+    cfg = config.datasets()["mastr_new"]
+    path_parts = cfg["geocoding_path"]
+    path = Path(*["."] + path_parts).resolve()
+    path = list(path.iterdir())[0]
+
+    deposit_id_geocoding = int(path.parts[-1].split(".")[0].split("_")[-1])
+    deposit_id_mastr = cfg["deposit_id"]
+
+    if deposit_id_geocoding != deposit_id_mastr:
+        raise AssertionError(
+            f"The zenodo (sandbox) deposit ID {deposit_id_mastr} for the MaStR"
+            f" dataset is not matching with the geocoding version "
+            f"{deposit_id_geocoding}. Make sure to hermonize the data. When "
+            f"the MaStR dataset is updated also update the geocoding and "
+            f"update the egon data bundle. The geocoding can be done using: "
+            f"https://github.com/RLI-sandbox/mastr-geocoding"
+        )
+
+    geocoding_gdf = gpd.read_file(path)
+
+    # remove failed requests
+    geocoding_gdf = geocoding_gdf.loc[geocoding_gdf.geometry.is_valid]
+
+    EgonMastrGeocoded.__table__.drop(bind=engine, checkfirst=True)
+    EgonMastrGeocoded.__table__.create(bind=engine, checkfirst=True)
+
+    geocoding_gdf.to_postgis(
+        name=EgonMastrGeocoded.__tablename__,
+        con=engine,
+        if_exists="append",
+        schema=EgonMastrGeocoded.__table_args__["schema"],
+        index=True,
+    )
+
+    cfg = config.datasets()["power_plants"]
 
     cols_mapping = {
         "all": {
@@ -221,12 +202,14 @@ def import_mastr() -> None:
             "Inbetriebnahmedatum": "commissioning_date",
             "Postleitzahl": "postcode",
             "Ort": "city",
+            "Gemeinde": "municipality",
             "Bundesland": "federal_state",
             "Nettonennleistung": "capacity",
             "Einspeisungsart": "feedin_type",
         },
         "pv": {
             "Lage": "site_type",
+            "Standort": "site",
             "Nutzungsbereich": "usage_sector",
             "Hauptausrichtung": "orientation_primary",
             "HauptausrichtungNeigungswinkel": "orientation_primary_angle",
@@ -245,13 +228,34 @@ def import_mastr() -> None:
         },
         "biomass": {
             "Technologie": "technology",
-            "Hauptbrennstoff": "fuel_name",
+            "Hauptbrennstoff": "main_fuel",
             "Biomasseart": "fuel_type",
             "ThermischeNutzleistung": "th_capacity",
         },
         "hydro": {
             "ArtDerWasserkraftanlage": "plant_type",
             "ArtDesZuflusses": "water_origin",
+        },
+        "combustion": {
+            "Energietraeger": "carrier",
+            "Hauptbrennstoff": "main_fuel",
+            "WeitererHauptbrennstoff": "other_main_fuel",
+            "Technologie": "technology",
+            "ThermischeNutzleistung": "th_capacity",
+        },
+        "gsgk": {
+            "Energietraeger": "carrier",
+            "Technologie": "technology",
+        },
+        "nuclear": {
+            "Energietraeger": "carrier",
+            "Technologie": "technology",
+        },
+        "storage": {
+            "Energietraeger": "carrier",
+            "Technologie": "technology",
+            "Batterietechnologie": "battery_type",
+            "Pumpspeichertechnologie": "pump_storage_type",
         },
     }
 
@@ -260,13 +264,24 @@ def import_mastr() -> None:
         "wind": WORKING_DIR_MASTR_NEW / cfg["sources"]["mastr_wind"],
         "biomass": WORKING_DIR_MASTR_NEW / cfg["sources"]["mastr_biomass"],
         "hydro": WORKING_DIR_MASTR_NEW / cfg["sources"]["mastr_hydro"],
+        "combustion": WORKING_DIR_MASTR_NEW
+        / cfg["sources"]["mastr_combustion"],
+        "gsgk": WORKING_DIR_MASTR_NEW / cfg["sources"]["mastr_gsgk"],
+        "nuclear": WORKING_DIR_MASTR_NEW / cfg["sources"]["mastr_nuclear"],
+        "storage": WORKING_DIR_MASTR_NEW / cfg["sources"]["mastr_storage"],
     }
+
     target_tables = {
         "pv": EgonPowerPlantsPv,
         "wind": EgonPowerPlantsWind,
         "biomass": EgonPowerPlantsBiomass,
         "hydro": EgonPowerPlantsHydro,
+        "combustion": EgonPowerPlantsCombustion,
+        "gsgk": EgonPowerPlantsGsgk,
+        "nuclear": EgonPowerPlantsNuclear,
+        "storage": EgonPowerPlantsStorage,
     }
+
     vlevel_mapping = {
         "Höchstspannung": 1,
         "UmspannungZurHochspannung": 2,
@@ -292,11 +307,21 @@ def import_mastr() -> None:
     )
 
     # import units
-    technologies = ["pv", "wind", "biomass", "hydro"]
+    technologies = [
+        "pv",
+        "wind",
+        "biomass",
+        "hydro",
+        "combustion",
+        "gsgk",
+        "nuclear",
+        "storage",
+    ]
+
     for tech in technologies:
         # read units
-        print(f"===== Importing MaStR dataset: {tech} =====")
-        print("  Reading CSV and filtering data...")
+        logger.info(f"===== Importing MaStR dataset: {tech} =====")
+        logger.debug("Reading CSV and filtering data...")
         units = pd.read_csv(
             source_files[tech],
             usecols=(
@@ -306,44 +331,48 @@ def import_mastr() -> None:
             ),
             index_col=None,
             dtype={"Postleitzahl": str},
+            low_memory=False,
         ).rename(columns=cols_mapping)
 
         # drop units outside of Germany
         len_old = len(units)
         units = units.loc[units.Land == "Deutschland"]
-        print(f"    {len_old-len(units)} units outside of Germany dropped...")
+        logger.debug(
+            f"{len_old - len(units)} units outside of Germany dropped..."
+        )
+
+        # get boundary
+        boundary = (
+            federal_state_data(geocoding_gdf.crs).dissolve().at[0, "geom"]
+        )
 
         # drop units installed after reference date from cfg
         # (eGon2021 scenario)
         len_old = len(units)
-        ts = pd.Timestamp(
-            egon.data.config.datasets()["mastr_new"]["egon2021_date_max"]
-        )
+        ts = pd.Timestamp(config.datasets()["mastr_new"]["egon2021_date_max"])
         units = units.loc[pd.to_datetime(units.Inbetriebnahmedatum) <= ts]
-        print(
-            f"    {len_old - len(units)} units installed after {ts} dropped..."
+        logger.debug(
+            f"{len_old - len(units)} units installed after {ts} dropped..."
         )
 
         # drop not operating units
         len_old = len(units)
-        units = units.loc[units.EinheitBetriebsstatus.isin(
-            ["InBetrieb", "VoruebergehendStillgelegt"]
-        )]
-        print(
-            f"    {len_old - len(units)} not operating units dropped..."
-        )
+        units = units.loc[
+            units.EinheitBetriebsstatus.isin(
+                ["InBetrieb", "VoruebergehendStillgelegt"]
+            )
+        ]
+        logger.debug(f"{len_old - len(units)} not operating units dropped...")
 
         # filter for SH units if in testmode
         if not TESTMODE_OFF:
-            print(
-                """    TESTMODE:
-                Dropping all units outside of Schleswig-Holstein...
-                """
+            logger.info(
+                "TESTMODE: Dropping all units outside of Schleswig-Holstein..."
             )
             units = units.loc[units.Bundesland == "SchleswigHolstein"]
 
         # merge and rename voltage level
-        print("  Merging with locations and allocate voltage level...")
+        logger.debug("Merging with locations and allocate voltage level...")
         units = units.merge(
             locations[["MaStRNummer", "Spannungsebene"]],
             left_on="LokationMastrNummer",
@@ -356,7 +385,7 @@ def import_mastr() -> None:
         units = infer_voltage_level(units)
 
         # add geometry
-        print("  Adding geometries...")
+        logger.debug("Adding geometries...")
         units = gpd.GeoDataFrame(
             units,
             geometry=gpd.points_from_xy(
@@ -364,15 +393,94 @@ def import_mastr() -> None:
             ),
             crs=4326,
         )
-        units_wo_geom = len(
-            units.loc[(units.Laengengrad.isna() | units.Laengengrad.isna())]
-        )
-        print(
-            f"    {units_wo_geom}/{len(units)} units do not have a geometry!"
+
+        units["geometry_geocoded"] = (
+            units.Laengengrad.isna() | units.Laengengrad.isna()
         )
 
+        units.loc[~units.geometry_geocoded, "geometry_geocoded"] = ~units.loc[
+            ~units.geometry_geocoded, "geometry"
+        ].is_valid
+
+        units_wo_geom = units["geometry_geocoded"].sum()
+
+        logger.debug(
+            f"{units_wo_geom}/{len(units)} units do not have a geometry!"
+            " Adding geocoding results."
+        )
+
+        # determine zip and municipality string
+        mask = (
+            units.Postleitzahl.apply(isfloat)
+            & ~units.Postleitzahl.isna()
+            & ~units.Gemeinde.isna()
+        )
+        units["zip_and_municipality"] = np.nan
+        ok_units = units.loc[mask]
+
+        units.loc[mask, "zip_and_municipality"] = (
+            ok_units.Postleitzahl.astype(int).astype(str).str.zfill(5)
+            + " "
+            + ok_units.Gemeinde.astype(str).str.rstrip().str.lstrip()
+            + ", Deutschland"
+        )
+
+        # get zip and municipality from Standort
+        parse_df = units.loc[~mask]
+
+        if not parse_df.empty and "Standort" in parse_df.columns:
+            init_len = len(parse_df)
+
+            logger.info(
+                f"Parsing ZIP code and municipality from Standort for "
+                f"{init_len} values for {tech}."
+            )
+
+            parse_df[["zip_and_municipality", "drop_this"]] = (
+                parse_df.Standort.astype(str)
+                .apply(zip_and_municipality_from_standort)
+                .tolist()
+            )
+
+            parse_df = parse_df.loc[parse_df.drop_this]
+
+            if not parse_df.empty:
+                units.loc[
+                    parse_df.index, "zip_and_municipality"
+                ] = parse_df.zip_and_municipality
+
+        # add geocoding to missing
+        units = units.merge(
+            right=geocoding_gdf[["zip_and_municipality", "geometry"]].rename(
+                columns={"geometry": "temp"}
+            ),
+            how="left",
+            on="zip_and_municipality",
+        )
+
+        units.loc[units.geometry_geocoded, "geometry"] = units.loc[
+            units.geometry_geocoded, "temp"
+        ]
+
+        init_len = len(units)
+
+        logger.info(
+            "Dropping units outside boundary by geometry or without geometry"
+            "..."
+        )
+
+        units.dropna(subset=["geometry"], inplace=True)
+
+        units = units.loc[units.geometry.within(boundary)]
+
+        if init_len > 0:
+            logger.debug(
+                f"{init_len - len(units)}/{init_len} "
+                f"({((init_len - len(units)) / init_len) * 100: g} %) dropped."
+            )
+
         # drop unnecessary and rename columns
-        print("  Reformatting...")
+        logger.debug("Reformatting...")
         units.drop(
             columns=[
                 "LokationMastrNummer",
@@ -381,6 +489,7 @@ def import_mastr() -> None:
                 "Breitengrad",
                 "Spannungsebene",
                 "Land",
+                "temp",
             ],
             inplace=True,
         )
@@ -391,7 +500,7 @@ def import_mastr() -> None:
         units["voltage_level"] = units.voltage_level.fillna(-1).astype(int)
 
         units.set_geometry("geom", inplace=True)
-        units["id"] = range(0, len(units))
+        units["id"] = range(len(units))
 
         # change capacity unit: kW to MW
         units["capacity"] = units["capacity"] / 1e3
@@ -401,7 +510,7 @@ def import_mastr() -> None:
             units["th_capacity"] = units["th_capacity"] / 1e3
 
         # assign bus ids
-        print("  Assigning bus ids...")
+        logger.debug("Assigning bus ids...")
         units = units.assign(
             bus_id=units.loc[~units.geom.x.isna()]
             .sjoin(mv_grid_districts[["bus_id", "geom"]], how="left")
@@ -411,7 +520,8 @@ def import_mastr() -> None:
         units["bus_id"] = units.bus_id.fillna(-1).astype(int)
 
         # write to DB
-        print(f"  Writing {len(units)} units to DB...")
+        logger.info(f"Writing {len(units)} units to DB...")
+
         units.to_postgis(
             name=target_tables[tech].__tablename__,
             con=engine,

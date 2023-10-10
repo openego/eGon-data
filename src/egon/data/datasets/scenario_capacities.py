@@ -67,10 +67,38 @@ class NEP2021ConvPowerPlants(Base):
 
 
 class ScenarioCapacities(Dataset):
+    """
+    Create and fill table with installed generation capacities in Germany
+
+    This dataset creates and fills a table with the installed generation capacities in
+    Germany in a lower spatial resolution (either per federal state or on national level).
+    This data is coming from external sources (e.g. German grid developement plan for scenario eGon2035).
+    The table is in downstream datasets used to define target values for the installed capacities.
+
+
+    *Dependencies*
+      * :py:func:`Setup <egon.data.datasets.database.setup>`
+      * :py:class:`PypsaEurSec <egon.data.datasets.pypsaeursec.PypsaEurSec>`
+      * :py:class:`Vg250 <egon.data.datasets.vg250.Vg250>`
+      * :py:class:`DataBundle <egon.data.datasets.data_bundle.DataBundle>`
+      * :py:class:`ZensusPopulation <egon.data.datasets.zensus.ZensusPopulation>`
+
+
+    *Resulting tables*
+      * :py:class:`supply.egon_scenario_capacities <egon.data.datasets.scenario_capacities.EgonScenarioCapacities>` is created and filled
+      * :py:class:`supply.egon_nep_2021_conventional_powerplants <egon.data.datasets.scenario_capacities.NEP2021ConvPowerPlants>` is created and filled
+
+    """
+
+    #:
+    name: str = "ScenarioCapacities"
+    #:
+    version: str = "0.0.13"
+
     def __init__(self, dependencies):
         super().__init__(
-            name="ScenarioCapacities",
-            version="0.0.12",
+            name=self.name,
+            version=self.version,
             dependencies=dependencies,
             tasks=(create_table, insert_data_nep, eGon100_capacities, add_metadata),
         )
@@ -95,7 +123,6 @@ def create_table():
 
 
 def nuts_mapping():
-
     nuts_mapping = {
         "BW": "DE1",
         "NW": "DEA",
@@ -186,7 +213,6 @@ def insert_capacities_per_federal_state_nep():
     # df_windoff_fs
 
     for state in index_list:
-
         df.at["Wind offshore", state] = (
             df_windoff_fs.at[state, "C 2035"] / 1000
         )
@@ -231,7 +257,6 @@ def insert_capacities_per_federal_state_nep():
     ]
 
     for bl in map_nuts.index:
-
         data = pd.DataFrame(df[bl])
 
         # if distribution to federal states is not provided,
@@ -651,14 +676,14 @@ def eGon100_capacities():
 
     # Drop copmponents which will be optimized in eGo
     unused_carrier = [
-        "BEV charger",
+        "BEV_charger",
         "DAC",
         "H2 Electrolysis",
         "electricity distribution grid",
         "home battery charger",
         "home battery discharger",
         "H2",
-        "Li ion",
+        "Li_ion",
         "home battery",
         "residential rural water tanks charger",
         "residential rural water tanks discharger",

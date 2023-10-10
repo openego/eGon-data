@@ -44,3 +44,11 @@ html_short_title = "%s-%s" % (project, version)
 napoleon_use_ivar = True
 napoleon_use_rtype = False
 napoleon_use_param = False
+
+add_module_names = False
+modindex_common_prefix = ["egon.data.", "egon.data.datasets."]
+
+autodoc_type_aliases = {
+    "Dependencies": "egon.data.datasets.Dependencies",
+    "Tasks": "egon.data.datasets.Tasks"
+}
