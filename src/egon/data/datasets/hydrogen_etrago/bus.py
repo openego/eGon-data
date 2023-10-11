@@ -14,6 +14,7 @@ In both scenarios, there are two types of H2 buses in Germany:
 
 """
 import datetime
+import json
 
 from geoalchemy2 import Geometry
 from sqlalchemy import BigInteger, Column, Text
