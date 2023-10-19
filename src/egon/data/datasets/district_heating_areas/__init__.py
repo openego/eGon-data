@@ -673,7 +673,9 @@ def district_heating_areas(scenario_name, plotting=False):
         f"""DELETE FROM demand.egon_district_heating_areas
                    WHERE scenario = '{scenario_name}'"""
     )
-    areas_dissolved.reset_index().to_postgis(
+    areas_dissolved.reset_index().drop(
+        "zensus_population_id", axis="columns"
+    ).to_postgis(
         "egon_district_heating_areas",
         schema="demand",
         con=db.engine(),
