@@ -46,7 +46,7 @@ class DistrictHeatingAreas(Dataset):
         super().__init__(
             name="district-heating-areas",
             # version=self.target_files + "_0.0",
-            version="0.0.3",  # maybe rethink the naming
+            version="0.0.4",  # maybe rethink the naming
             dependencies=dependencies,
             tasks=(create_tables, demarcation),
         )
