@@ -741,8 +741,8 @@ def write_model_data_to_db(
                 scenario_name=scenario_name,
                 connection_bus_id=etrago_bus.bus_id,
                 load_ts=hourly_load_time_series_df.load_time_series.to_list(),
-        
-        else write_lowflex_model is False:
+        else:
+            if write_lowflex_model is False:
             emob_bus_id = write_bus(scenario_name=scenario_name)
             write_link(scenario_name=scenario_name)
             write_store(scenario_name=scenario_name)
