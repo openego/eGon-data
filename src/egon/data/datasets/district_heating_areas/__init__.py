@@ -46,7 +46,7 @@ class DistrictHeatingAreas(Dataset):
         super().__init__(
             name="district-heating-areas",
             # version=self.target_files + "_0.0",
-            version="0.0.3",  # maybe rethink the naming
+            version="0.0.4",  # maybe rethink the naming
             dependencies=dependencies,
             tasks=(create_tables, demarcation),
         )
@@ -427,6 +427,7 @@ def area_grouping(
                 join,
                 join_2[
                     [
+                        "zensus_population_id",
                         "residential_and_service_demand",
                         "geom_polygon",
                         "area_id",
@@ -672,7 +673,9 @@ def district_heating_areas(scenario_name, plotting=False):
         f"""DELETE FROM demand.egon_district_heating_areas
                    WHERE scenario = '{scenario_name}'"""
     )
-    areas_dissolved.reset_index().to_postgis(
+    areas_dissolved.reset_index().drop(
+        "zensus_population_id", axis="columns"
+    ).to_postgis(
         "egon_district_heating_areas",
         schema="demand",
         con=db.engine(),
