@@ -427,6 +427,7 @@ def area_grouping(
                 join,
                 join_2[
                     [
+                        "zensus_population_id",
                         "residential_and_service_demand",
                         "geom_polygon",
                         "area_id",
