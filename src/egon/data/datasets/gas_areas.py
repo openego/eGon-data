@@ -96,7 +96,6 @@ class GasAreasstatus2019(Dataset):
         )
 
 
-
 Base = declarative_base()
 
 
@@ -141,7 +140,8 @@ def voronoi_egon100RE():
     """
     for carrier in ["CH4", "H2_grid", "H2_saltcavern"]:
         create_voronoi("eGon100RE", carrier)
-        
+
+
 def voronoi_status2019():
     """
     Create voronoi polygons for all gas carriers in status2019 scenario
@@ -191,16 +191,21 @@ def create_voronoi(scn_name, carrier):
     if len(buses) == 0:
         return
 
-    buses["x"] = buses.geometry.x
-    buses["y"] = buses.geometry.y
     # generate voronois
-    gdf = get_voronoi_geodataframe(buses, boundary.geometry.iloc[0])
-    # set scn_name
+    if len(buses) == 1:
+        gdf = buses.copy()
+        gdf.at[0, "geom"] = boundary.at[0, "geometry"]
+    else:
+        buses["x"] = buses.geometry.x
+        buses["y"] = buses.geometry.y
+        gdf = get_voronoi_geodataframe(buses, boundary.geometry.iloc[0])
+        gdf.rename_geometry("geom", inplace=True)
+        gdf.drop(columns=["id"], inplace=True)
+
+    # set scn_name and carrier
     gdf["scn_name"] = scn_name
     gdf["carrier"] = carrier
 
-    gdf.rename_geometry("geom", inplace=True)
-    gdf.drop(columns=["id"], inplace=True)
     # Insert data to db
     gdf.set_crs(epsg=4326).to_postgis(
         f"egon_gas_voronoi",
