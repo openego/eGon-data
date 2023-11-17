@@ -160,14 +160,14 @@ def ch4_nodes_number_G(gas_nodes_list):
 
 def insert_CH4_nodes_list(gas_nodes_list):
     """
-    Insert list of German CH4 nodes into the database for status2019
+    Insert list of German CH4 nodes into the database for eGon2035
 
     Insert the list of German CH4 nodes into the database by executing
     the following steps:
       * Receive the buses as parameter (from SciGRID_gas IGGIELGN data)
       * Add the missing information: scn_name and carrier
       * Clean the database table grid.egon_etrago_bus of the
-        CH4 buses of the specific scenario (status2019) in Germany
+        CH4 buses of the specific scenario (eGon2035) in Germany
       * Insert the buses in the table grid.egon_etrago_bus
 
     Parameters
@@ -222,7 +222,7 @@ def insert_CH4_nodes_list(gas_nodes_list):
         # A completer avec nodes related to pipelines which have an end in the selected area et evt deplacer ds define_gas_nodes_list
 
     # Add missing columns
-    c = {"scn_name": "status2019", "carrier": "CH4"}
+    c = {"scn_name": "eGon2035", "carrier": "CH4"}
     gas_nodes_list = gas_nodes_list.assign(**c)
 
     gas_nodes_list = geopandas.GeoDataFrame(
@@ -260,11 +260,11 @@ def insert_CH4_nodes_list(gas_nodes_list):
     )
 
 
-def insert_gas_buses_abroad(scn_name="status2019"):
+def insert_gas_buses_abroad(scn_name="eGon2035"):
     """
-    Insert CH4 buses in neighbouring countries to database for status2019
+    Insert CH4 buses in neighbouring countries to database for eGon2035
 
-    For the scenario status2019, insert central CH4 buses in foreign
+    For the scenario eGon2035, insert central CH4 buses in foreign
     countries to the database. The considered foreign countries are the
     direct neighbouring countries, with the addition of Russia that is
     considered as a source of fossil CH4.
@@ -278,7 +278,7 @@ def insert_gas_buses_abroad(scn_name="status2019"):
       * Addition of the missing information: scn_name and carrier
       * Attribution of an id to each bus
       * Cleaning of the database table grid.egon_etrago_bus of the
-        CH4 buses of the specific scenario (status2019) out of Germany
+        CH4 buses of the specific scenario (eGon2035) out of Germany
       * Insertion of the neighbouring buses in the table grid.egon_etrago_bus.
 
     Returns
@@ -320,7 +320,7 @@ def insert_gas_buses_abroad(scn_name="status2019"):
             "geom",
         ]
     )
-    gdf_abroad_buses["scn_name"] = "status2019"
+    gdf_abroad_buses["scn_name"] = "eGon2035"
     gdf_abroad_buses["carrier"] = main_gas_carrier
     gdf_abroad_buses["bus_id"] = range(new_id, new_id + len(gdf_abroad_buses))
 
@@ -388,14 +388,14 @@ def insert_gas_buses_abroad(scn_name="status2019"):
 
 
 def insert_gas_pipeline_list(
-    gas_nodes_list, abroad_gas_nodes_list, scn_name="status2019"
+    gas_nodes_list, abroad_gas_nodes_list, scn_name="eGon2035"
 ):
     """
     Insert list of gas pipelines into the database
 
     The gas pipelines, modelled as Pypsa links are red from the IGGIELGN_PipeSegments
     csv file previously downloded in the function :py:func:`download_SciGRID_gas_data`,
-    adapted and inserted in the database for the status2019 scenario.
+    adapted and inserted in the database for the eGon2035 scenario.
     The manual corrections allows to:
       * Delete gas pipelines disconnected of the rest of the gas grid
       * Connect one pipeline (also connected to Norway) disconnected of
@@ -802,7 +802,7 @@ def insert_gas_pipeline_list(
 
 def remove_isolated_gas_buses():
     """
-    Delete CH4 buses which are disconnected of the CH4 grid for the status2019 scenario
+    Delete CH4 buses which are disconnected of the CH4 grid for the eGon2035 scenario
 
     This function deletes directly in the database and has no return.
 
@@ -813,15 +813,15 @@ def remove_isolated_gas_buses():
         f"""
         DELETE FROM {targets['buses']['schema']}.{targets['buses']['table']}
         WHERE "carrier" = 'CH4'
-        AND scn_name = 'status2019'
+        AND scn_name = 'eGon2035'
         AND country = 'DE'
         AND "bus_id" NOT IN
             (SELECT bus0 FROM {targets['links']['schema']}.{targets['links']['table']}
-            WHERE scn_name = 'status2019'
+            WHERE scn_name = 'eGon2035'
             AND carrier = 'CH4')
         AND "bus_id" NOT IN
             (SELECT bus1 FROM {targets['links']['schema']}.{targets['links']['table']}
-            WHERE scn_name = 'status2019'
+            WHERE scn_name = 'eGon2035'
             AND carrier = 'CH4');
     """
     )
@@ -829,10 +829,10 @@ def remove_isolated_gas_buses():
 
 def insert_gas_data():
     """
-    Overall function for importing methane data for status2019
+    Overall function for importing methane data for eGon2035
 
     This function import the methane data (buses and pipelines) for
-    status2019, by executing the following steps:
+    eGon2035, by executing the following steps:
       * Download the SciGRID_gas datasets with the function :py:func:`download_SciGRID_gas_data`
       * Define CH4 buses with the function :py:func:`define_gas_nodes_list`
       * Insert the CH4 buses in Germany into the database with the
@@ -856,79 +856,6 @@ def insert_gas_data():
 
     insert_gas_pipeline_list(gas_nodes_list, abroad_gas_nodes_list)
     remove_isolated_gas_buses()
-
-
-def insert_gas_data_eGon2035():
-    """
-    Overall function for importing methane data for eGon100RE
-
-    This function import the methane data (buses and pipelines) for
-    eGon2035, by copying the CH4 buses from the status2019 scenario using
-    the function :py:func:`copy_and_modify_buses <egon.data.datasets.etrago_helpers.copy_and_modify_buses>`
-    from the module :py:mod:`etrago_helpers <egon.data.datasets.etrago_helpers>`. The methane
-    pipelines are also copied and their capacities are adapted: one
-    share of the methane grid is retroffited into an hydrogen grid, so
-    the methane pieplines nominal capacities are reduced from this share
-    (calculated in the pyspa-eur-sec run).
-
-    This function inserts data into the database and has no return.
-
-    """
-    # copy buses
-    copy_and_modify_buses("status2019", "eGon2035", {"carrier": ["CH4"]})
-
-    # get CH4 pipelines and modify their nominal capacity with the
-    # retrofitting factor
-    gdf = db.select_geodataframe(
-        f"""
-        SELECT * FROM grid.egon_etrago_link
-        WHERE carrier = 'CH4' AND scn_name = 'status2019' AND
-        bus0 IN (
-            SELECT bus_id FROM grid.egon_etrago_bus
-            WHERE scn_name = 'status2019' AND country = 'DE'
-        ) AND bus1 IN (
-            SELECT bus_id FROM grid.egon_etrago_bus
-            WHERE scn_name = 'status2019' AND country = 'DE'
-        );
-        """,
-        epsg=4326,
-        geom_col="topo",
-    )
-
-    # Update scenario specific information
-    scn_name = "eGon2035"
-    gdf["scn_name"] = scn_name
-    scn_params = get_sector_parameters("gas", scn_name)
-
-    for param in ["capital_cost", "marginal_cost", "efficiency"]:
-        try:
-            gdf.loc[:, param] = scn_params[param]["CH4"]
-        except KeyError:
-            pass
-
-    # delete old entries
-    db.execute_sql(
-        f"""
-        DELETE FROM grid.egon_etrago_link
-        WHERE carrier = 'CH4' AND scn_name = '{scn_name}' AND
-        bus0 NOT IN (
-            SELECT bus_id FROM grid.egon_etrago_bus
-            WHERE scn_name = '{scn_name}' AND country != 'DE'
-        ) AND bus1 NOT IN (
-            SELECT bus_id FROM grid.egon_etrago_bus
-            WHERE scn_name = '{scn_name}' AND country != 'DE'
-        );
-        """
-    )
-
-    gdf.to_postgis(
-        "egon_etrago_link",
-        schema="grid",
-        if_exists="append",
-        con=db.engine(),
-        index=False,
-        dtype={"geom": Geometry(), "topo": Geometry()},
-    )
 
 
 def insert_gas_data_eGon100RE():
@@ -1092,12 +1019,12 @@ class GasNodesAndPipes(Dataset):
     #:
     name: str = "GasNodesAndPipes"
     #:
-    version: str = "0.0.9"
+    version: str = "0.0.10"
 
     tasks = (insert_gas_data_status2019,)
 
     if "eGon2035" in config.settings()["egon-data"]["--scenarios"]:
-        tasks = tasks + (insert_gas_data_eGon2035,)
+        tasks = tasks + (insert_gas_data,)
 
     if "eGon100RE" in config.settings()["egon-data"]["--scenarios"]:
         tasks = tasks + (insert_gas_data_eGon100RE,)
