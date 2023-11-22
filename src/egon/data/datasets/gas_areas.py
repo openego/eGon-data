@@ -192,6 +192,9 @@ def create_voronoi(scn_name, carrier):
         return
 
     # generate voronois
+    # For some scenarios it is defined that there is only 1 bus (e.g. gas). It
+    # means that there will be just 1 voronoi covering the entire german
+    # territory. For other scenarios with more buses, voronois are calculated.
     if len(buses) == 1:
         gdf = buses.copy()
         gdf.at[0, "geom"] = boundary.at[0, "geometry"]
