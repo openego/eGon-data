@@ -141,6 +141,7 @@ def add_line(x0, y0, x1, y1, v_nom, scn_name, cables):
     gdf["x"] = (x_per_km * gdf["length"]) / (gdf["cables"] / 3)
     gdf["r"] = (r_per_km * gdf["length"]) / (gdf["cables"] / 3)
     gdf["b"] = (b_per_km * gdf["length"]) * (gdf["cables"] / 3)
+
     gdf["capital_cost"] = (cost_per_km * gdf["length"]) * (gdf["cables"] / 3)
     gdf.index.name = "line_id"
     gdf.reset_index().to_postgis(
