@@ -1,4 +1,5 @@
-Heat demands comprise space heating and dirinking hot water demands from 
+.. _heat_demand:
+Heat demands comprise space heating and drinking hot water demands from 
 residential and comertial trade and service (CTS) buildings.
 Process heat demands from the industry are, depending on the required temperature
 level, modelled as electrcity, hydrogen or methane demand. 

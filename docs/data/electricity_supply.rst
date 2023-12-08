@@ -25,7 +25,27 @@ Offshore wind
 PV ground mounted
 ++++++++++++++++++
 
-.. _pv-rooftop-ref:
+The distribution of PV ground mounted is implemented in function :func:`insert<egon.data.datasets.power_plants.pv_ground_mounted.insert>`
+which is part of the dataset :class:`PowerPlants<egon.data.datasets.power_plants.PowerPlants>`.
+The following steps are conducted:
+
+#. The sites and capacities of exisitng PV parks are imported using MaStR data (see :ref:`mastr-ref`).
+
+#. Potential areas for PV ground mounted are assumed to be areas next to highways and railways as well as on agricultural land with a low degree of utilisation, as it can be seen in figure :ref:`pv_ground_mounted-example`. Those areas (provided through the data bundle, see :ref:`data-bundle-ref`) are imported while merging or disgarding small areas.
+
+#. The locations of existing parks and the potential areas are intersected with each other while considering a buffer around the locations of existing parks to find out where there already are parks at or close to potential areas. This results in a selection of potential areas.
+
+#. The capacities of the existing parks are considered and compared to the target values for the specific scenario per federal state (see :ref:`concept-and-scenarios-ref`). The required expansion capacity is derived.
+
+#. If expansion of PV ground mounted capacity is required, capacities are calculated depending on the area size of the formerly selected potential areas. The resulting parks are therefore located on the selected potential areas.
+
+#. The resulting capacities are compared to the target values for the specific scenario per federal state. If the target value is exceeded, a linear downscaling is conducted. If the target value is not reached yet, the remaining capacity is distributed linearly among the rest of the potential areas within the state. 
+
+.. figure:: /images/PV_freiflaeche.png
+  :name: pv_ground_mounted-example
+  :width: 400 
+  
+  Example: sites of existing PV ground mounted parks and potential areas
 
 PV rooftop
 +++++++++++
@@ -83,6 +103,45 @@ Disaggregation of PV rooftop scenario capacities:
   using MaStR data as basis.
 
 Hydro
-++++++
++++++
+
+In the case of hydropower plants, a distinction is made between the carrier run-of-river 
+and reservoir. 
+The methods to distribute and allocate are the same for both carriers.
+In a first step all suitable power plants (correct carrier, valid geolocation, information 
+about federal state) are selected and their installed capacity is scaled to meet the target
+values for the respective federal state and scenario. 
+Information about the voltage level the power plants are connected to is obtained. In case 
+no information is availabe the voltage level is identified using threshold values for the 
+installed capacity (see :func:`assign_voltage_level <egon.data.datasets.power_plants.assign_voltage_level>`). 
+In a next step the correct grid connection point is identified based on the voltage level
+and geolocation of the power plants (see :func:`assign_bus_id <egon.data.datasets.power_plants.assign_bus_id>`)
+The resulting list of power plants it added to table 
+:py:class:`EgonPowerPlants <egon.data.datasets.power_plants.EgonPowerPlants>`.
+
+Biomass
++++++++
+
+The allocation of biomass-based power plants follows the same method as the one for hydro
+power plants and is performed in function :func:`insert_biomass_plants <egon.data.datasets.power_plants.insert_biomass_plants>`
+
+
+
+Conventional
+++++++++++++
+
+**CHP**
+
+
+**non-chp**
+
+
+In function :func:`allocate_conventional_non_chp_power_plants <egon.data.datasets.power_plants.allocate_conventional_non_chp_power_plants>`
+capacities for conventional power plants, which are no chp plants, with carrier *oil* and 
+*gas* are allocated.
+  
+
+
+
 
 
