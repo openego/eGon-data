@@ -11,6 +11,7 @@ import numpy as np
 
 
 def hts_to_etrago():
+
     sources = config.datasets()["etrago_heat"]["sources"]
     targets = config.datasets()["etrago_heat"]["targets"]
     scenario = "eGon2035"
@@ -18,6 +19,7 @@ def hts_to_etrago():
 
     for carrier in carriers:
         if carrier == "central_heat":
+
             # Map heat buses to district heating id and area_id
             # interlinking bus_id and area_id
             bus_area = db.select_dataframe(
@@ -220,7 +222,7 @@ class HtsEtragoTable(Dataset):
     *Dependencies*
       * :py:class:`DistrictHeatingAreas <egon.data.datasets.district_heating_areas.DistrictHeatingAreas>`
       * :py:class:`HeatEtrago <egon.data.datasets.heat_etrago.HeatEtrago>`
-      * :py:func:`define_mv_grid_districts <egon.data.datasets.mv_grid_districts.define_mv_grid_districts>`
+      * :py:class:`MvGridDistricts <egon.data.datasets.mv_grid_districts.mv_grid_districts_setup>`
       * :py:class:`HeatPumps2035 <egon.data.datasets.heat_supply.individual_heating.HeatPumps2035>`
       * :py:class:`HeatTimeSeries <egon.data.datasets.heat_demand_timeseries.HeatTimeSeries>`
 

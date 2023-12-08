@@ -1,66 +1,10 @@
 """
-Medium-voltage grid districts describe the area supplied by one MV grid
+The module containing all code to generate MV grid district polygons.
 
-Medium-voltage grid districts are defined by one polygon that represents the
-supply area. Each MV grid district is connected to the HV grid via a single
-substation.
+Medium-voltage grid districts describe the area supplied by one MV grid and
+are defined by one polygon that represents the supply area.
 
-The methods used for identifying the MV grid districts are heavily inspired
-by `Hülk et al. (2017)
-<https://somaesthetics.aau.dk/index.php/sepm/article/view/1833/1531>`_
-(section 2.3), but the implementation differs in detail.
-The main difference is that direct adjacency is preferred over proximity.
-For polygons of municipalities
-without a substation inside, it is iteratively checked for direct adjacent
-other polygons that have a substation inside. Speaking visually, a MV grid
-district grows around a polygon with a substation inside.
-
-The grid districts are identified using three data sources
-
-1. Polygons of municipalities (:class:`Vg250GemClean`)
-2. HV-MV substations (:class:`EgonHvmvSubstation`)
-3. HV-MV substation voronoi polygons (:class:`EgonHvmvSubstationVoronoi`)
-
-Fundamentally, it is assumed that grid districts (supply areas) often go
-along borders of administrative units, in particular along the borders of
-municipalities due to the concession levy.
-Furthermore, it is assumed that one grid district is supplied via a single
-substation and that locations of substations and grid districts are designed
-for aiming least lengths of grid line and cables.
-
-With these assumptions, the three data sources from above are processed as
-follows:
-
-* Find the number of substations inside each municipality
-* Split municipalities with more than one substation inside
-  * Cut polygons of municipalities with voronoi polygons of respective
-    substations
-  * Assign resulting municipality polygon fragments to nearest substation
-* Assign municipalities without a single substation to nearest substation in
-  the neighborhood
-* Merge all municipality polygons and parts of municipality polygons to a
-  single polygon grouped by the assigned substation
-
-For finding the nearest substation, as already said, direct adjacency is
-preferred over closest distance. This means, the nearest substation does not
-necessarily have to be the closest substation in the sense of beeline distance.
-But it is the substation definitely located in a neighboring polygon. This
-prevents the algorithm to find solutions where a MV grid districts consists of
-multi-polygons with some space in between.
-Nevertheless, beeline distance still plays an important role, as the algorithm
-acts in two steps
-
-1. Iteratively look for neighboring polygons until there are no further
-   polygons
-2. Find a polygon to assign to by minimum beeline distance
-
-The second step is required in order to cover edge cases, such as islands.
-
-For understanding how this is implemented into separate functions, please
-see :func:`define_mv_grid_districts`.
 """
-
-from functools import partial
 
 from geoalchemy2.types import Geometry
 from sqlalchemy import (
@@ -87,6 +31,10 @@ metadata = Base.metadata
 
 
 class Vg250GemClean(Base):
+    """
+    Class definition of table boundaries.vg250_gem_clean.
+    """
+
     __tablename__ = "vg250_gem_clean"
     __table_args__ = {"schema": "boundaries"}
 
@@ -106,6 +54,10 @@ class Vg250GemClean(Base):
 
 
 class HvmvSubstPerMunicipality(Base):
+    """
+    Class definition of temporary table grid.hvmv_subst_per_municipality.
+    """
+
     __tablename__ = "hvmv_subst_per_municipality"
     __table_args__ = {"schema": "grid"}
 
@@ -136,6 +88,10 @@ class VoronoiMunicipalityCutsBase(object):
 
 
 class VoronoiMunicipalityCuts(VoronoiMunicipalityCutsBase, Base):
+    """
+    Class definition of temporary table grid.voronoi_municipality_cuts.
+    """
+
     __tablename__ = "voronoi_municipality_cuts"
     __table_args__ = {"schema": "grid"}
 
@@ -147,6 +103,11 @@ class VoronoiMunicipalityCuts(VoronoiMunicipalityCutsBase, Base):
 
 
 class VoronoiMunicipalityCutsAssigned(VoronoiMunicipalityCutsBase, Base):
+    """
+    Class definition of temporary table
+    grid.voronoi_municipality_cuts_assigned.
+    """
+
     __tablename__ = "voronoi_municipality_cuts_assigned"
     __table_args__ = {"schema": "grid"}
 
@@ -159,6 +120,10 @@ class VoronoiMunicipalityCutsAssigned(VoronoiMunicipalityCutsBase, Base):
 
 
 class MvGridDistrictsDissolved(Base):
+    """
+    Class definition of temporary table grid.egon_mv_grid_district_dissolved.
+    """
+
     __tablename__ = "egon_mv_grid_district_dissolved"
     __table_args__ = {"schema": "grid"}
 
@@ -173,6 +138,10 @@ class MvGridDistrictsDissolved(Base):
 
 
 class MvGridDistricts(Base):
+    """
+    Class definition of table grid.egon_mv_grid_district.
+    """
+
     __tablename__ = "egon_mv_grid_district"
     __table_args__ = {"schema": "grid"}
 
@@ -183,14 +152,17 @@ class MvGridDistricts(Base):
 
 def substations_in_municipalities():
     """
-    Create a table that counts number of HV-MV substations in each MV grid
+    Create a table that counts number of HV-MV substations in each MV grid.
 
-    Counting is performed in two steps
+    Counting is performed in two steps:
 
     1. HV-MV substations are spatially joined on municipalities, grouped by
-       municipality and number of substations counted
+       municipality and number of substations counted.
     2. Because (1) works only for number of substations >0, all municipalities
-       not containing a substation, are added
+       not containing a substation, are added.
+
+    Data is written to temporary table grid.hvmv_subst_per_municipality.
+
     """
     engine = db.engine()
     HvmvSubstPerMunicipality.__table__.drop(bind=engine, checkfirst=True)
@@ -251,7 +223,7 @@ def substations_in_municipalities():
 
 def split_multi_substation_municipalities():
     """
-    Split municipalities that have more than one substation
+    Split municipalities that have more than one substation.
 
     Municipalities that contain more than one HV-MV substation in their
     polygon are cut by HV-MV voronoi polygons. Resulting fragments are then
@@ -259,13 +231,15 @@ def split_multi_substation_municipalities():
 
     In detail, the following steps are performed:
 
-    * Step 1: cut municipalities with voronoi polygons
-    * Step 2: Determine number of substations inside cut polygons
-    * Step 3: separate cut polygons with exactly one substation inside
+    * Step 1: Cut municipalities with voronoi polygons.
+    * Step 2: Determine number of substations inside cut polygons.
+    * Step 3: Separate cut polygons with exactly one substation inside.
     * Step 4: Assign polygon without a substation to next neighboring
-      polygon with a substation
-    * Step 5: Assign remaining polygons that are non-touching
+      polygon with a substation.
+    * Step 5: Assign remaining polygons that are non-touching.
 
+    Data is written to temporary tables grid.voronoi_municipality_cuts and
+    grid.voronoi_municipality_cuts_assigned.
 
     """
     engine = db.engine()
@@ -378,7 +352,7 @@ def split_multi_substation_municipalities():
         # without any space in between (aka. polygons touch each other)
 
         # Initialize with very large number
-        remaining_polygons = [10 ** 10]
+        remaining_polygons = [10**10]
 
         while True:
             # This loop runs until all polygon that inital haven't had a
@@ -464,12 +438,13 @@ def assign_substation_municipality_fragments(
         * "within": Only polygons within a radius of 100 km of polygons
           without substation are considered for assignment
     session: SQLAlchemy session
-        SQLAlchemy session obejct
+        SQLAlchemy session object
 
-    See Also
+    Notes
     --------
-    The function :func:`nearest_polygon_with_substation` is very similar, but
-    different in detail.
+    The function :py:func:`nearest_polygon_with_substation` is very similar,
+    but different in detail.
+
     """
     # Determine nearest neighboring polygon that has a substation
     columns_from_cut1_subst = ["bus_id", "subst_count", "geom_sub"]
@@ -547,18 +522,23 @@ def assign_substation_municipality_fragments(
 
 def merge_polygons_to_grid_district():
     """
-    Merge municipality polygon (parts) to MV grid districts
+    Merge municipality polygon (parts) to MV grid districts.
 
     Polygons of municipalities and cut parts of such polygons are merged to
     a single grid district per one HV-MV substation. Prior determined
     assignment of cut polygons parts is used as well as proximity of entire
     municipality polygons to polygons with a substation inside.
 
-    * Step 1: Merge municipality parts that are assigned to the same substation
-    * Step 2: Insert municipality polygons with exactly one substation
+    * Step 1: Merge municipality parts that are assigned to the same
+      substation.
+    * Step 2: Insert municipality polygons with exactly one substation.
     * Step 3: Assign municipality polygons without a substation and insert
-      to table
-    * Step 4: Merge MV grid district parts
+      to table.
+    * Step 4: Merge MV grid district parts.
+
+    Data is written to table grid.egon_mv_grid_district and
+    to temporary table grid.egon_mv_grid_district_dissolved.
+
     """
 
     engine = db.engine()
@@ -686,7 +666,7 @@ def nearest_polygon_with_substation(
     with_substation, without_substation, strategy, session
 ):
     """
-    Assign next neighboring polygon
+    Assign next neighboring polygon.
 
     For municipalities without a substation inside their polygon the next MV
     grid district (part) polygon is found and assigned.
@@ -708,13 +688,13 @@ def nearest_polygon_with_substation(
         * "within": Only polygons within a radius of 100 km of polygons
           without substation are considered for assignment
     session: SQLAlchemy session
-        SQLAlchemy session obejct
+        SQLAlchemy session object
 
     Returns
     -------
     list
         IDs of polygons that were already assigned to a polygon with a
-        substation
+        substation.
     """
     if strategy == "touches":
         neighboring_criterion = func.ST_Touches(
@@ -787,17 +767,17 @@ def nearest_polygon_with_substation(
 
 def define_mv_grid_districts():
     """
-    Define spatial extent of MV grid districts
+    Define spatial extent of MV grid districts.
 
     The process of identifying the boundary of medium-voltage grid districts
-    is organized in three steps
+    is organized in three steps:
 
     1. :func:`substations_in_municipalities`: The number of substations
-      located inside each municipality is calculated
+      located inside each municipality is calculated.
     2. :func:`split_multi_substation_municipalities`: The municipalities with
-      >1 substation inside are split by Voronoi polygons around substations
+      >1 substation inside are split by Voronoi polygons around substations.
     3. :func:`merge_polygons_to_grid_district`: All polygons are merged such
-      that one polygon has exactly one single substation inside
+      that one polygon has exactly one single substation inside.
 
     Finally, intermediate tables used for storing data temporarily are deleted.
     """
@@ -814,10 +794,34 @@ def define_mv_grid_districts():
     MvGridDistrictsDissolved.__table__.drop(bind=engine, checkfirst=True)
 
 
-mv_grid_districts_setup = partial(
-    Dataset,
-    name="MvGridDistricts",
-    version="0.0.2",
-    dependencies=[],
-    tasks=(define_mv_grid_districts),
-)
+class mv_grid_districts_setup(Dataset):
+    """
+    Sets up medium-voltage grid districts that describe the area supplied by one
+    MV grid.
+
+    See documentation section :ref:`mv-grid-districts` for more information.
+
+    *Dependencies*
+      * :py:class:`SubstationVoronoi
+        <egon.data.datasets.substation_voronoi.SubstationVoronoi>`
+
+    *Resulting tables*
+      * :py:class:`grid.egon_mv_grid_district <MvGridDistricts>`
+        is created and filled
+      * :py:class:`boundaries.vg250_gem_clean <Vg250GemClean>`
+        is created and filled
+
+    """
+
+    #:
+    name: str = "MvGridDistricts"
+    #:
+    version: str = "0.0.2"
+
+    def __init__(self, dependencies):
+        super().__init__(
+            name=self.name,
+            version=self.version,
+            dependencies=dependencies,
+            tasks=define_mv_grid_districts,
+        )

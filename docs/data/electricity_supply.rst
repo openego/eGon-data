@@ -27,6 +27,7 @@ Offshore wind
 PV ground mounted
 ++++++++++++++++++
 
+<<<<<<< HEAD
 The distribution of PV ground mounted is implemented in function :func:`insert<egon.data.datasets.power_plants.pv_ground_mounted.insert>`
 which is part of the dataset :class:`PowerPlants<egon.data.datasets.power_plants.PowerPlants>`.
 The following steps are conducted:
