@@ -84,11 +84,50 @@ Base = declarative_base()
 
 
 class DsmPotential(Dataset):
+    """
+    Calculate Demand-Side Management potentials and transfer to charactersitics of DSM components
+
+    DSM within this work includes the shifting of loads within the sectors of
+    industry and CTS. Therefore, the corresponding formerly prepared demand
+    time sereies are used. Shiftable potentials are calculated using the
+    parametrization elaborated in Heitkoetter et. al (doi:https://doi.org/10.1016/j.adapen.2020.100001).
+    DSM is modelled as storage-equivalent operation using the methods by Kleinhans (doi:10.48550/ARXIV.1401.4121).
+    The potentials are transferred to characterisitcs of DSM links (minimal and
+    maximal shiftable power per time step) and DSM stores (minimum and maximum
+    capacity per time step). DSM buses are created to connect DSM components with
+    the electrical network. All DSM components are added to the corresponding
+    tables for the transmission grid level. For the distribution grids, the
+    respective time series are exported to the corresponding tables (for the
+    required higher spatial resolution).
+
+    *Dependencies*
+      * :py:class:`CtsElectricityDemand <egon.data.datasets.electricity_demand>`
+      * :py:class:`IndustrialDemandCurves <from egon.data.datasets.industry>`
+      * :py:class:`Osmtgmod <egon.data.datasets.osmtgmod>`
+
+    *Resulting tables*
+      * :py:class:`grid.egon_etrago_bus <egon.data.datasets.etrago_setup.EgonPfHvBus>` is extended
+      * :py:class:`grid.egon_etrago_link <egon.data.datasets.etrago_setup.EgonPfHvLink>` is extended
+      * :py:class:`grid.egon_etrago_link_timeseries <egon.data.datasets.etrago_setup.EgonPfHvLinkTimeseries>` is extended
+      * :py:class:`grid.egon_etrago_store <egon.data.datasets.etrago_setup.EgonPfHvStore>` is extended
+      * :py:class:`grid.egon_etrago_store_timeseries <egon.data.datasets.etrago_setup.EgonPfHvStoreTimeseries>` is extended
+      * :py:class:`demand.egon_etrago_electricity_cts_dsm_timeseries <egon.data.datasets.DsmPotential.EgonEtragoElectricityCtsDsmTimeseries>` is created and filled # noqa: E501
+      * :py:class:`demand.egon_osm_ind_load_curves_individual_dsm_timeseries <egon.data.datasets.DsmPotential.EgonOsmIndLoadCurvesIndividualDsmTimeseries>` is created and filled # noqa: E501
+      * :py:class:`demand.egon_demandregio_sites_ind_electricity_dsm_timeseries <egon.data.datasets.DsmPotential.EgonDemandregioSitesIndElectricityDsmTimeseries>` is created and filled # noqa: E501
+      * :py:class:`demand.egon_sites_ind_load_curves_individual_dsm_timeseries <egon.data.datasets.DsmPotential.EgonSitesIndLoadCurvesIndividualDsmTimeseries>` is created and filled # noqa: E501
+
+    """
+
+    #:
+    name: str = "DsmPotential"
+    #:
+    version: str = "0.0.5"
+
     def __init__(self, dependencies):
         super().__init__(
-            name="DsmPotential",
-            version="0.0.5",
-            dependencies=dependencies,
+            name=self.name,
+            version=self.version,
+            dependencies=self.dependencies,
             tasks=(dsm_cts_ind_processing),
         )
 

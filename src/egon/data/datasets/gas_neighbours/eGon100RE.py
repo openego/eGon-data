@@ -1,9 +1,17 @@
-"""
-Module containing code dealing with crossbording gas pipelines for eGon100RE
+"""Module containing code dealing with cross border gas pipelines for eGon100RE
 
-In this module the crossbordering pipelines for H2 and CH4, exclusively
-between Germany and its neighbouring countries are
-defined and inserted into the database for the scenario eGon100RE.
+In this module the cross border pipelines for H2 and CH4, exclusively
+between Germany and its neighbouring countries, in eGon100RE are
+defined and inserted in the database.
+
+Dependecies (pipeline)
+======================
+  * :dataset: PypsaEurSec, GasNodesandPipes, HydrogenBusEtrago,
+    ElectricalNeighbours
+
+Resulting tables
+================
+  * grid.egon_etrago_link is completed
 
 """
 
@@ -30,25 +38,23 @@ countries = [
 
 
 def insert_gas_neigbours_eGon100RE():
-    """
-    Insert missing gas crossbordering grid capacities for eGon100RE
+    """Insert missing gas cross border grid capacities for eGon100RE
 
-    This function inserts into the database the crossbordering pipelines
-    for H2 and CH4 for the scenario eGon100RE, exclusively between
-    Germany and its neighbouring countries, by executing the following
-    steps:
-      * call of the the function
+    This function insert the cross border pipelines for H2 and CH4,
+    exclusively between Germany and its neighbouring countries,
+    for eGon100RE in the database by executing the following steps:
+      * call of the function
         :py:func:`define_DE_crossbording_pipes_geom_eGon100RE`, that
-        defines the crossbordering pipelines (H2 and CH4) between
+        defines the cross border pipelines (H2 and CH4) between
         Germany and its neighbouring countries
-      * call of the the function
+      * call of the function
         :py:func:`read_DE_crossbordering_cap_from_pes`, that calculates
-        the crossbordering total exchange capactities for H2 and CH4
+        the cross border total exchange capactities for H2 and CH4
         between Germany and its neighbouring countries based on the
         PyPSA-eur-sec results
       * call of the the function
         :py:func:`calculate_crossbordering_gas_grid_capacities_eGon100RE`,
-        that attributes to each crossbordering pipeline (H2 and CH4)
+        that attributes to each cross border pipeline (H2 and CH4)
         between Germany and its neighbouring countries its capacity
       * insertion of the H2 and CH4 pipelines between Germany and its
         neighbouring countries in the database with function
@@ -83,13 +89,12 @@ def insert_gas_neigbours_eGon100RE():
 
 
 def define_DE_crossbording_pipes_geom_eGon100RE(scn_name="eGon100RE"):
-    """
-    Define the missing crossbordering gas pipelines in eGon100RE
+    """Define the missing cross border gas pipelines in eGon100RE
 
-    This function defines the crossbordering pipelines (for H2 and CH4)
+    This function defines the cross border pipelines (for H2 and CH4)
     between Germany and its neighbouring countries. These pipelines
     are defined as links and there are copied from the corresponding
-    CH4 crossbering pipelines from eGon2035.
+    CH4 cross border pipelines from eGon2035.
 
     Parameters
     ----------
@@ -99,7 +104,7 @@ def define_DE_crossbording_pipes_geom_eGon100RE(scn_name="eGon100RE"):
     Returns
     -------
     gas_pipelines_list_DE : pandas.DataFrame
-        List of the crossbordering H2 and CH4 pipelines between
+        List of the cross border H2 and CH4 pipelines between
         Germany and its neighbouring countries in eGon100RE, with
         geometry (geom and topo) but no capacity.
 
@@ -185,7 +190,7 @@ def define_DE_crossbording_pipes_geom_eGon100RE(scn_name="eGon100RE"):
             f"""
             SELECT * FROM grid.egon_etrago_bus
             WHERE scn_name = 'eGon100RE'
-            AND carrier = '{carrier}'
+            AND carrier = '{carrier_bus_DE}'
             AND country != 'DE'
             """,
             epsg=4326,
@@ -255,10 +260,9 @@ def define_DE_crossbording_pipes_geom_eGon100RE(scn_name="eGon100RE"):
 
 
 def read_DE_crossbordering_cap_from_pes():
-    """
-    Read gas pipelines crossbordering capacities from pes run
+    """Read gas pipelines cross border capacities from pes run
 
-    This function calculates the crossbordering total exchange
+    This function calculates the cross border total exchange
     capactities for H2 and CH4 between Germany and its neighbouring
     countries based on the PyPSA-eur-sec results.
 
@@ -343,10 +347,9 @@ def read_DE_crossbordering_cap_from_pes():
 def calculate_crossbordering_gas_grid_capacities_eGon100RE(
     cap_DE, DE_pipe_capacities_list
 ):
-    """
-    Attribute gas crossbordering grid capacities for eGon100RE
+    """Attribute gas cross border grid capacities for eGon100RE
 
-    This function attributes to each crossbordering pipeline (H2 and
+    This function attributes to each cross border pipeline (H2 and
     CH4) between Germany and its neighbouring countries its capacity.
     Each global capacity (neighbouring country specific) is uniformly
     distributed between all the links connecting Germany to this
@@ -358,14 +361,14 @@ def calculate_crossbordering_gas_grid_capacities_eGon100RE(
         List of the H2 and CH4 exchange capacity for each neighbouring
         country of Germany.
     DE_pipe_capacities_list : pandas.DataFrame
-        List of the crossbordering for H2 and CH4 pipelines between
+        List of the cross border for H2 and CH4 pipelines between
         Germany and its neighbouring countries in eGon100RE, with
         geometry (geom and topo) but no capacity.
 
     Returns
     -------
     Crossbordering_pipe_capacities_list : pandas.DataFrame
-        List of the crossbordering H2 and CH4 pipelines between
+        List of the cross border H2 and CH4 pipelines between
         Germany and its neighbouring countries in eGon100RE.
 
     """

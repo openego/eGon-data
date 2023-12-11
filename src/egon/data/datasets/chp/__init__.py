@@ -529,10 +529,43 @@ else:
 
 
 class Chp(Dataset):
+    """
+    Extract combined heat and power plants for each scenario
+
+    This dataset creates combined heat and power (CHP) plants for each scenario and defines their use case.
+    The method bases on existing CHP plants from Marktstammdatenregister. For the eGon2035 scenario,
+    a list of CHP plans from the grid operator is used for new largescale CHP plants. CHP < 10MW are
+    randomly distributed.
+    Depending on the distance to a district heating grid, it is decided if the CHP is used to
+    supply a district heating grid or used by an industrial site.
+
+
+    *Dependencies*
+      * :py:class:`GasAreaseGon100RE <egon.data.datasets.gas_areas.GasAreaseGon100RE>`
+      * :py:class:`GasAreaseGon2035 <egon.data.datasets.gas_areas.GasAreaseGon2035>`
+      * :py:class:`DistrictHeatingAreas <egon.data.datasets.district_heating_areas.DistrictHeatingAreas>`
+      * :py:class:`IndustrialDemandCurves <egon.data.datasets.industry.IndustrialDemandCurves>`
+      * :py:class:`OsmLanduse <egon.data.datasets.loadarea.OsmLanduse>`
+      * :py:func:`download_mastr_data <egon.data.datasets.mastr.download_mastr_data>`
+      * :py:func:`define_mv_grid_districts <egon.data.datasets.mv_grid_districts.define_mv_grid_districts>`
+      * :py:class:`ScenarioCapacities <egon.data.datasets.scenario_capacities.ScenarioCapacities>`
+
+
+    *Resulting tables*
+      * :py:class:`supply.egon_chp_plants <egon.data.datasets.chp.EgonChp>` is created and filled
+      * :py:class:`supply.egon_mastr_conventional_without_chp <egon.data.datasets.chp.EgonMaStRConventinalWithoutChp>` is created and filled
+
+    """
+
+    #:
+    name: str = "Chp"
+    #:
+    version: str = "0.0.6"
+
     def __init__(self, dependencies):
         super().__init__(
-            name="Chp",
-            version="0.0.6",
+            name=self.name,
+            version=self.version,
             dependencies=dependencies,
             tasks=(
                 create_tables,
