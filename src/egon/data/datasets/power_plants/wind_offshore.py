@@ -190,7 +190,7 @@ def insert():
         elif scenario == "status2019":
             offshore_path = (
                 Path(".")
-                / "data_bundle_powerd_data"
+                / "data_bundle_egon_data"
                 / "wind_offshore_status2019"
                 / cfg["sources"]["wind_offshore_status2019"]
             )
