@@ -542,13 +542,10 @@ solar_rooftop:
 data-bundle:
   sources:
     zenodo:
-      deposit_id: 1095882
-      deposit_id_powerd: 1214744
+      deposit_id: 10226009
   targets:
     file:
       'data_bundle_egon_data.zip'
-    file_powerd:
-      'data_bundle_powerd_data.zip'
 
 pypsa-technology-data:
   sources:
