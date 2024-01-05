@@ -772,6 +772,25 @@ def to_pypsa():
         )
 
 
+def fix_transformer_snom():
+    db.execute_sql(
+        """
+        UPDATE grid.egon_etrago_transformer AS t
+        SET s_nom = CAST(
+            LEAST(
+                (SELECT SUM(COALESCE(l.s_nom,0))
+                 FROM grid.egon_etrago_line AS l
+                 WHERE (l.bus0 = t.bus0 OR l.bus1 = t.bus0)
+                 AND l.scn_name = t.scn_name),
+                (SELECT SUM(COALESCE(l.s_nom,0))
+                 FROM grid.egon_etrago_line AS l
+                 WHERE (l.bus0 = t.bus1 OR l.bus1 = t.bus1)
+                 AND l.scn_name = t.scn_name)
+            ) AS smallint
+        );
+        """)
+
+
 class Osmtgmod(Dataset):
     def __init__(self, dependencies):
         super().__init__(
