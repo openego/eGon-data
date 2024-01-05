@@ -1,13 +1,13 @@
 openstreetmap:
   original_data:
     source:
-      url: "https://download.geofabrik.de/europe/germany-200101.osm.pbf"
-      url_testmode: "https://download.geofabrik.de/europe/germany/schleswig-holstein-200101.osm.pbf"
+      url: "https://download.geofabrik.de/europe/germany-240101.osm.pbf"
+      url_testmode: "https://download.geofabrik.de/europe/germany/schleswig-holstein-240101.osm.pbf"
       stylefile: "oedb.style"
     target:
       table_prefix: "osm"
-      file: "germany-200101.osm.pbf"
-      file_testmode: "schleswig-holstein-200101.osm.pbf"
+      file: "germany-240101.osm.pbf"
+      file_testmode: "schleswig-holstein-240101.osm.pbf"
   processed:
     schema: "openstreetmap"
     tables:
