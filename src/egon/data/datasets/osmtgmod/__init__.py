@@ -795,7 +795,7 @@ class Osmtgmod(Dataset):
     def __init__(self, dependencies):
         super().__init__(
             name="Osmtgmod",
-            version="0.0.5",
+            version="0.0.6",
             dependencies=dependencies,
             tasks=(
                 import_osm_data,
@@ -804,5 +804,6 @@ class Osmtgmod(Dataset):
                     extract,
                     to_pypsa,
                 },
+                fix_transformer_snom,
             ),
         )
