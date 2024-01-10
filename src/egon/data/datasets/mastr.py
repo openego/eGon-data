@@ -58,15 +58,15 @@ class mastr_data_setup(Dataset):
 
     The downloaded data incorporates two different datasets:
 
-    Dump 2021-05-03
-      * Source: https://sandbox.zenodo.org/record/808086
+    Dump 2021-04-30
+      * Source: https://zenodo.org/records/10480930
       * Used technologies: PV plants, wind turbines, biomass, hydro plants,
         combustion, nuclear, gsgk, storage
       * Data is further processed in the :py:class:`PowerPlants
         <egon.data.datasets.power_plants.PowerPlants>` dataset
 
     Dump 2022-11-17
-      * Source: https://sandbox.zenodo.org/record/1132839
+      * Source: https://zenodo.org/records/10480958
       * Used technologies: PV plants, wind turbines, biomass, hydro plants
       * Data is further processed in module :py:mod:`mastr
         <egon.data.datasets.power_plants.mastr>` and :py:class:`PowerPlants
