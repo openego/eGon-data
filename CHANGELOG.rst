@@ -748,6 +748,7 @@ Bug Fixes
   `#1104 <https://github.com/openego/eGon-data/issues/1104>`_
 * Change structure of documentation in rtd
   `#11126 <https://github.com/openego/eGon-data/issues/1126>`_
+* Fix URL of eGon data-bundle dataset
 
 .. _PR #692: https://github.com/openego/eGon-data/pull/692
 .. _#343: https://github.com/openego/eGon-data/issues/343
