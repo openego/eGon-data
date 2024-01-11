@@ -729,6 +729,7 @@ Bug Fixes
   `#1098 <https://github.com/openego/eGon-data/issues/1098>`_
 * Fix conversion factor for CH4 loads abroad in eGon2035
   `#1104 <https://github.com/openego/eGon-data/issues/1104>`_
+* Fix URLs of MaStR datasets
 
 .. _PR #692: https://github.com/openego/eGon-data/pull/692
 .. _#343: https://github.com/openego/eGon-data/issues/343
