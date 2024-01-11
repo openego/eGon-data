@@ -295,7 +295,7 @@ mastr:
     - "gsgk"
     - "storage"
   file_basename: "bnetza_mastr"
-  deposit_id: 808086
+  deposit_id: 10480930
 
 mastr_new:
   technologies:
@@ -304,7 +304,7 @@ mastr_new:
     - "solar"
     - "biomass"
   file_basename: "bnetza_mastr"
-  deposit_id: 1132987
+  deposit_id: 10480958
 
 re_potential_areas:
   target:
