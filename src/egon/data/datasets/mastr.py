@@ -69,7 +69,7 @@ def download_mastr_data():
 mastr_data_setup = partial(
     Dataset,
     name="MastrData",
-    version="0.0.2",
+    version="0.0.3",
     dependencies=[],
     tasks=(download_mastr_data,),
 )
