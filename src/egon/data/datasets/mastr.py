@@ -2,15 +2,15 @@
 Download Marktstammdatenregister (MaStR) datasets unit registry.
 It incorporates two different datasets:
 
-Dump 2021-05-03
-* Source: https://sandbox.zenodo.org/record/808086
+Dump 2021-04-30
+* Source: https://zenodo.org/records/10480930
 * Used technologies: PV plants, wind turbines, biomass, hydro plants,
   combustion, nuclear, gsgk, storage
 * Data is further processed in dataset
   :py:class:`egon.data.datasets.power_plants.PowerPlants`
 
 Dump 2022-11-17
-* Source: https://sandbox.zenodo.org/record/1132839
+* Source: https://zenodo.org/records/10480958
 * Used technologies: PV plants, wind turbines, biomass, hydro plants
 * Data is further processed in module
   :py:mod:`egon.data.datasets.power_plants.mastr` `PowerPlants`
@@ -39,7 +39,7 @@ def download_mastr_data():
         # Get parameters from config and set download URL
         data_config = egon.data.config.datasets()[dataset_name]
         zenodo_files_url = (
-            f"https://sandbox.zenodo.org/record/"
+            f"https://zenodo.org/record/"
             f"{data_config['deposit_id']}/files/"
         )
 
