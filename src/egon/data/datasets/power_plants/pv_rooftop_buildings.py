@@ -2782,7 +2782,7 @@ def pv_rooftop_to_buildings():
 
     mastr_gdf = load_mastr_data()
 
-    ts = pd.Timestamp(config.datasets()["mastr_new"]["status2019_date_max"])
+    ts = pd.Timestamp(config.datasets()["mastr_new"]["status2023_date_max"])
 
     mastr_gdf = mastr_gdf.loc[
         pd.to_datetime(mastr_gdf.Inbetriebnahmedatum) <= ts

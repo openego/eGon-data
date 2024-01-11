@@ -343,13 +343,13 @@ def insert_chp_statusquo():
     )
     mastr = mastr.loc[
         mastr.Inbetriebnahmedatum
-        <= config.datasets()["mastr_new"]["status2019_date_max"]
+        <= config.datasets()["mastr_new"]["status2023_date_max"]
     ]
 
     mastr = mastr.loc[
         (
             mastr.DatumEndgueltigeStilllegung
-            >= config.datasets()["mastr_new"]["status2019_date_max"]
+            >= config.datasets()["mastr_new"]["status2023_date_max"]
         )
         | (mastr.DatumEndgueltigeStilllegung.isnull())
     ]
@@ -398,9 +398,9 @@ def insert_chp_statusquo():
         ].Nettonennleistung.sum()
 
     print(
-        f"""          
-          CHPs with a total installed electrical capacity of {dropped_capacity} kW are dropped 
-          because of missing or wrong location data          
+        f"""
+          CHPs with a total installed electrical capacity of {dropped_capacity} kW are dropped
+          because of missing or wrong location data
           """
     )
 
