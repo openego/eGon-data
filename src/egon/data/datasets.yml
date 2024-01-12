@@ -1128,6 +1128,9 @@ emobility_mit:
         status2019:
           file:  "eGon2035_RS7_min2k_2022-06-01_175429_simbev_run.tar.gz"
           file_metadata: "metadata_simbev_run.json"
+        status2023:
+          file:  "eGon2035_RS7_min2k_2022-06-01_175429_simbev_run.tar.gz"
+          file_metadata: "metadata_simbev_run.json"
         eGon2035:
           file: "eGon2035_RS7_min2k_2022-06-01_175429_simbev_run.tar.gz"
           file_metadata: "metadata_simbev_run.json"
