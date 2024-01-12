@@ -135,7 +135,7 @@ def global_settings(scenario):
                 "nuclear": 0.47*3.6,  # [EUR/MWh]
                 "biomass": read_costs(read_csv(2020), "biomass", "fuel"),
             },
-            "co2_costs": 24.7,  # [EUR/t_CO2], source: 
+            "co2_costs": 24.7,  # [EUR/t_CO2], source:
                 #https://de.statista.com/statistik/daten/studie/1304069/umfrage/preisentwicklung-von-co2-emissionsrechten-in-eu/
             "co2_emissions": {  # Netzentwicklungsplan Strom 2035, Version 2021, 1. Entwurf, p. 40, table 8
                 "waste": 0.165,  # [t_CO2/MW_th]
