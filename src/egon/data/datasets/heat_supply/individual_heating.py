@@ -184,7 +184,7 @@ from pathlib import Path
 import os
 import random
 
-from airflow.operators.python_operator import PythonOperator
+from airflow.operators.python import PythonOperator
 from psycopg2.extensions import AsIs, register_adapter
 from sqlalchemy import ARRAY, REAL, Column, Integer, String
 from sqlalchemy.ext.declarative import declarative_base
