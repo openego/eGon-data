@@ -161,6 +161,7 @@ CARRIER = "solar_rooftop"
 SCENARIOS = config.settings()["egon-data"]["--scenarios"]
 SCENARIO_TIMESTAMP = {
     "status2019": pd.Timestamp("2020-01-01", tz="UTC"),
+    "status2023": pd.Timestamp("2024-01-01", tz="UTC"),
     "eGon2035": pd.Timestamp("2035-01-01", tz="UTC"),
     "eGon100RE": pd.Timestamp("2050-01-01", tz="UTC"),
 }
