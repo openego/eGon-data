@@ -90,7 +90,7 @@ map_zensus_vg250:
 demandregio_installation:
   sources:
     git-repository: "https://github.com/openego/disaggregator.git"
-    branch: "features/pandas-update"
+    branch: "features/pandas-update-plus-master"
   targets:
     path: 'demandregio-disaggregator'
 
