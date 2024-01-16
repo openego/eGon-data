@@ -1079,7 +1079,7 @@ def generate_model_data_status2019_remaining():
     )
 
 def generate_model_data_status2023_remaining():
-    """Generates timeseries for status2019 scenario for grid districts which
+    """Generates timeseries for status2023 scenario for grid districts which
     has not been processed in the parallel tasks before.
     """
     generate_model_data_bunch(
