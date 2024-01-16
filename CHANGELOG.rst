@@ -751,6 +751,8 @@ Bug Fixes
 * Fix URL of eGon data-bundle dataset
   `#1154 <https://github.com/openego/eGon-data/issues/1154>`_
 * Fix URLs of MaStR datasets
+* Fix CRS in ERA5 transformation
+  `#1159 <https://github.com/openego/eGon-data/issues/1159>`_
 
 .. _PR #692: https://github.com/openego/eGon-data/pull/692
 .. _#343: https://github.com/openego/eGon-data/issues/343
