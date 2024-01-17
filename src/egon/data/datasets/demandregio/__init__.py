@@ -42,6 +42,7 @@ class DemandRegio(Dataset):
             dependencies=dependencies,
             tasks=(
                 clone_and_install,
+                get_cached_tables,
                 create_tables,
                 {
                     insert_household_demand,
