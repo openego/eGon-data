@@ -260,6 +260,8 @@ Added
   `#168 <https://github.com/openego/powerd-data/pull/168>`_
 * Update osm for status2023
   `#169 <https://github.com/openego/powerd-data/pull/169>`_
+* Use cached DemandRegio tables for status2023
+  `#185 <https://github.com/openego/powerd-data/pull/185>`_
 
 
 
