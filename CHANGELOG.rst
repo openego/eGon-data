@@ -252,6 +252,9 @@ Added
   `PR #903 <https://github.com/openego/eGon-data/pull/903>`_
 * Add low flex scenario 'eGon2035_lowflex'
   `#822 <https://github.com/openego/eGon-data/issues/822>`_
+* Fix depricated python-operator import
+  `#184 <https://github.com/openego/powerd-data/pull/184>`_
+
 
 .. _PR #159: https://github.com/openego/eGon-data/pull/159
 .. _PR #703: https://github.com/openego/eGon-data/pull/703
