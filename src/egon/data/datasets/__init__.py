@@ -20,9 +20,14 @@ SCHEMA = "metadata"
 
 
 def wrapped_partial(func, *args, **kwargs):
+    """Like :func:`functools.partial`, but preserves the original function's
+    name and docstring. Also allows to add a postfix to the function's name.
+    """
+    postfix = kwargs.pop("postfix", None)
     partial_func = partial(func, *args, **kwargs)
-    # update partial to look like func
     update_wrapper(partial_func, func)
+    if postfix:
+        partial_func.__name__ = f"{func.__name__}{postfix}"
     return partial_func
 
 
