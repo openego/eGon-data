@@ -11,12 +11,11 @@ import geopandas as gpd
 import pandas as pd
 from shapely.geometry import LineString
 from sqlalchemy.orm import sessionmaker
-from functools import partial
 
 import egon.data.datasets.etrago_setup as etrago
 import egon.data.datasets.scenario_parameters.parameters as scenario_parameters
 from egon.data import config, db
-from egon.data.datasets import Dataset
+from egon.data.datasets import Dataset, wrapped_partial
 from egon.data.datasets.fix_ehv_subnetworks import select_bus_id
 from egon.data.datasets.fill_etrago_gen import add_marginal_costs
 from egon.data.datasets.scenario_parameters import get_sector_parameters
@@ -1752,16 +1751,15 @@ if "eGon2035" in config.settings()["egon-data"]["--scenarios"]:
 if "status2019" in config.settings()["egon-data"]["--scenarios"]:
     insert_per_scenario.update(
         [
-            partial(insert_generators_sq(scn_name="status2019")),
-            partial(insert_loads_sq(scn_name="status2019")),
+            wrapped_partial(insert_generators_sq, scn_name="status2019"),
+            wrapped_partial(insert_loads_sq, scn_name="status2019"),
         ]
     )
-
-if "status2023" in config.settings()["egon-data"]["--scenarios"]:
+elif "status2023" in config.settings()["egon-data"]["--scenarios"]:
     insert_per_scenario.update(
         [
-            partial(insert_generators_sq(scn_name="status2023")),
-            partial(insert_loads_sq(scn_name="status2023")),
+            wrapped_partial(insert_generators_sq, scn_name="status2023"),
+            wrapped_partial(insert_loads_sq, scn_name="status2023"),
         ]
     )
 
