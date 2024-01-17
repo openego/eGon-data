@@ -4,7 +4,7 @@ from __future__ import annotations
 
 from collections import abc
 from dataclasses import dataclass
-from functools import reduce
+from functools import partial, reduce, update_wrapper
 from typing import Callable, Iterable, Set, Tuple, Union
 import re
 
@@ -17,6 +17,13 @@ from egon.data import config, db, logger
 
 Base = declarative_base()
 SCHEMA = "metadata"
+
+
+def wrapped_partial(func, *args, **kwargs):
+    partial_func = partial(func, *args, **kwargs)
+    # update partial to look like func
+    update_wrapper(partial_func, func)
+    return partial_func
 
 
 def setup():
