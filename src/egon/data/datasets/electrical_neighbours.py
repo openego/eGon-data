@@ -1777,7 +1777,7 @@ class ElectricalNeighbours(Dataset):
     def __init__(self, dependencies):
         super().__init__(
             name="ElectricalNeighbours",
-            version="0.0.10",
+            version="0.0.11",
             dependencies=dependencies,
             tasks=tasks,
         )
