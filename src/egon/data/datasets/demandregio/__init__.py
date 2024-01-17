@@ -3,6 +3,8 @@ adjusting data from demandRegio
 
 """
 from pathlib import Path
+import os
+import zipfile
 
 from sqlalchemy import ARRAY, Column, Float, ForeignKey, Integer, String
 from sqlalchemy.ext.declarative import declarative_base
@@ -18,6 +20,7 @@ from egon.data.datasets.scenario_parameters import (
     EgonScenario,
     get_sector_parameters,
 )
+from egon.data.datasets.zensus import download_and_check
 import egon.data.config
 import egon.data.datasets.scenario_parameters.parameters as scenario_parameters
 
@@ -807,3 +810,14 @@ def timeseries_per_wz():
     for year in years:
         for sector in ["CTS", "industry"]:
             insert_timeseries_per_wz(sector, int(year))
+
+
+def get_cached_tables():
+    """Get cached demandregio tabel from former runs"""
+    data_config = egon.data.config.datasets()
+    cache_url = data_config["demandregio_workaround"]["source"]["url"]
+    target_path = data_config["demandregio_workaround"]["targets"]["path"]
+    cache_path = Path(".", target_path, "__cache__.zip").resolve()
+    download_and_check(cache_url, cache_path, max_iteration=5)
+    with zipfile.ZipFile(cache_path, "r") as zip_ref:
+        zip_ref.extractall(cache_path.parent)

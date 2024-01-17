@@ -94,6 +94,12 @@ demandregio_installation:
   targets:
     path: 'demandregio-disaggregator'
 
+demandregio_workaround:
+  source:
+    url: "https://wolke.rl-institut.de/s/FqzCXNnPgGeRykk/download/__cache__.zip"
+  targets:
+    path: 'demandregio-disaggregator/disaggregator/disaggregator/data_in/'
+
 demandregio_society:
   sources:
     disaggregator:
