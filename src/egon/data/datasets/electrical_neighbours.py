@@ -1,25 +1,24 @@
 """The central module containing all code dealing with electrical neighbours
 """
 
+from os import path
+import logging
 import zipfile
 
-import entsoe
-import requests
-import logging
-
-import geopandas as gpd
-import pandas as pd
 from shapely.geometry import LineString
 from sqlalchemy.orm import sessionmaker
+import entsoe
+import geopandas as gpd
+import pandas as pd
+import requests
 
-import egon.data.datasets.etrago_setup as etrago
-import egon.data.datasets.scenario_parameters.parameters as scenario_parameters
 from egon.data import config, db
 from egon.data.datasets import Dataset, wrapped_partial
-from egon.data.datasets.fix_ehv_subnetworks import select_bus_id
 from egon.data.datasets.fill_etrago_gen import add_marginal_costs
+from egon.data.datasets.fix_ehv_subnetworks import select_bus_id
 from egon.data.datasets.scenario_parameters import get_sector_parameters
-from os import path
+import egon.data.datasets.etrago_setup as etrago
+import egon.data.datasets.scenario_parameters.parameters as scenario_parameters
 
 
 def get_cross_border_buses(scenario, sources):
@@ -1751,15 +1750,23 @@ if "eGon2035" in config.settings()["egon-data"]["--scenarios"]:
 if "status2019" in config.settings()["egon-data"]["--scenarios"]:
     insert_per_scenario.update(
         [
-            wrapped_partial(insert_generators_sq, scn_name="status2019", postfix="_19"),
-            wrapped_partial(insert_loads_sq, scn_name="status2019", postfix="_19"),
+            wrapped_partial(
+                insert_generators_sq, scn_name="status2019", postfix="_19"
+            ),
+            wrapped_partial(
+                insert_loads_sq, scn_name="status2019", postfix="_19"
+            ),
         ]
     )
 elif "status2023" in config.settings()["egon-data"]["--scenarios"]:
     insert_per_scenario.update(
         [
-            wrapped_partial(insert_generators_sq, scn_name="status2023", postfix="_23"),
-            wrapped_partial(insert_loads_sq, scn_name="status2023", postfix="_23"),
+            wrapped_partial(
+                insert_generators_sq, scn_name="status2023", postfix="_23"
+            ),
+            wrapped_partial(
+                insert_loads_sq, scn_name="status2023", postfix="_23"
+            ),
         ]
     )
 
