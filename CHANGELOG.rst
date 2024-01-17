@@ -258,6 +258,10 @@ Added
   `#182 <https://github.com/openego/powerd-data/pull/182>`_
 * Fix transformer s_nom
   `#168 <https://github.com/openego/powerd-data/pull/168>`_
+* Update osm for status2023
+  `#169 <https://github.com/openego/powerd-data/pull/169>`_
+
+
 
 .. _PR #159: https://github.com/openego/eGon-data/pull/159
 .. _PR #703: https://github.com/openego/eGon-data/pull/703
