@@ -1751,15 +1751,15 @@ if "eGon2035" in config.settings()["egon-data"]["--scenarios"]:
 if "status2019" in config.settings()["egon-data"]["--scenarios"]:
     insert_per_scenario.update(
         [
-            wrapped_partial(insert_generators_sq, scn_name="status2019"),
-            wrapped_partial(insert_loads_sq, scn_name="status2019"),
+            wrapped_partial(insert_generators_sq, scn_name="status2019", postfix="_19"),
+            wrapped_partial(insert_loads_sq, scn_name="status2019", postfix="_19"),
         ]
     )
 elif "status2023" in config.settings()["egon-data"]["--scenarios"]:
     insert_per_scenario.update(
         [
-            wrapped_partial(insert_generators_sq, scn_name="status2023"),
-            wrapped_partial(insert_loads_sq, scn_name="status2023"),
+            wrapped_partial(insert_generators_sq, scn_name="status2023", postfix="_23"),
+            wrapped_partial(insert_loads_sq, scn_name="status2023", postfix="_23"),
         ]
     )
 
