@@ -1758,7 +1758,7 @@ if "status2019" in config.settings()["egon-data"]["--scenarios"]:
             ),
         ]
     )
-elif "status2023" in config.settings()["egon-data"]["--scenarios"]:
+if "status2023" in config.settings()["egon-data"]["--scenarios"]:
     insert_per_scenario.update(
         [
             wrapped_partial(
