@@ -423,18 +423,38 @@ def disagg_households_power(
     pd.DataFrame or pd.Series
     """
     # source: survey of energieAgenturNRW
+    # with/without direct water heating (DHW), and weighted average
+    # https://1-stromvergleich.com/wp-content/uploads/erhebung_wo_bleibt_der_strom.pdf
     demand_per_hh_size = pd.DataFrame(
         index=range(1, 7),
         data={
-            "weighted DWH": [2290, 3202, 4193, 4955, 5928, 5928],
-            "without DHW": [1714, 2812, 3704, 4432, 5317, 5317],
+            # "weighted DWH": [2290, 3202, 4193, 4955, 5928, 5928],
+            # "without DHW": [1714, 2812, 3704, 4432, 5317, 5317],
+            "with_DHW": [2181, 3843, 5151, 6189, 7494, 8465],
+            "without_DHW": [1798, 2850, 3733, 4480, 5311, 5816],
+            "weighted": [2256, 3248, 4246, 5009, 5969, 6579],
         },
     )
+
+    if scenario == "eGon100RE":
+        # chose demand per household size from survey without DHW
+        power_per_HH = demand_per_hh_size["without_DHW"] / 1e3 # TODO why without?
+
+        # calculate demand per nuts3 in 2011
+        df_2011 = data.households_per_size(year=2011) * power_per_HH
+
+        # scale demand per hh-size to meet demand without heat
+        # according to JRC in 2011 (136.6-(20.14+9.41) TWh)
+        # TODO check source and method
+        power_per_HH *= (136.6 - (20.14 + 9.41)) * 1e6 / df_2011.sum().sum()
+
+        # calculate demand per nuts3 in 2050
+        df = data.households_per_size(year=year) * power_per_HH
 
     # Bottom-Up: Power demand by household sizes in [MWh/a] for each scenario
     if scenario in ["status2019", "eGon2021", "eGon2035"]:
         # chose demand per household size from survey including weighted DHW
-        power_per_HH = demand_per_hh_size["weighted DWH"] / 1e3
+        power_per_HH = demand_per_hh_size["weighted"] / 1e3
 
         # calculate demand per nuts3
         df = (
@@ -444,21 +464,10 @@ def disagg_households_power(
 
         if scenario == "eGon2035":
             # scale to fit demand of NEP 2021 scebario C 2035 (119TWh)
-            df *= 119000000 / df.sum().sum()
+            df *= 119 * 1e6 / df.sum().sum()
 
-    elif scenario == "eGon100RE":
-        # chose demand per household size from survey without DHW
-        power_per_HH = demand_per_hh_size["without DHW"] / 1e3
 
-        # calculate demand per nuts3 in 2011
-        df_2011 = data.households_per_size(year=2011) * power_per_HH
 
-        # scale demand per hh-size to meet demand without heat
-        # according to JRC in 2011 (136.6-(20.14+9.41) TWh)
-        power_per_HH *= (136.6 - (20.14 + 9.41)) * 1e6 / df_2011.sum().sum()
-
-        # calculate demand per nuts3 in 2050
-        df = data.households_per_size(year=year) * power_per_HH
 
     else:
         print(
@@ -479,7 +488,7 @@ def insert_hh_demand(scenario, year, engine):
     Parameters
     ----------
     scenario : str
-        Name of the corresponing scenario.
+        Name of the corresponding scenario.
     year : int
         The number of households per region is taken from this year.
 
@@ -595,7 +604,7 @@ def insert_household_demand():
 
     scenarios = egon.data.config.settings()["egon-data"]["--scenarios"]
 
-    scenarios.append("eGon2021")
+    scenarios.append("eGon2021") # TODO why is this always appended?
 
     for t in targets:
         db.execute_sql(
