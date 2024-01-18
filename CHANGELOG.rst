@@ -260,6 +260,8 @@ Added
   `#168 <https://github.com/openego/powerd-data/pull/168>`_
 * Update osm for status2023
   `#169 <https://github.com/openego/powerd-data/pull/169>`_
+* Add status2023 scenario of demandregio households
+  `#186 <https://github.com/openego/powerd-data/pull/186>`_
 
 
 
