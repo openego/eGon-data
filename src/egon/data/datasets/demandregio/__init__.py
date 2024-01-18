@@ -37,19 +37,36 @@ Base = declarative_base()
 
 class DemandRegio(Dataset):
     def __init__(self, dependencies):
+        scale_sq19_cts_status2023 = wrapped_partial(  # adhoc workaround #180
+            scale_sq19,
+            annual_sum=121160 * 1e3,  # BDEW2023 Stromverbrauch vorläufig
+            sector="'CTS'",
+            scn="'status2023'",
+            postfix="_cts_status2023")
+        scale_sq19_ind_status2023 = wrapped_partial(
+            scale_sq19,
+            annual_sum=200380 * 1e3,
+            sector="'industry'",
+            scn="'status2023'",
+            postfix="_ind_status2023")
+
         super().__init__(
             name="DemandRegio",
             version="0.0.7",
             dependencies=dependencies,
             tasks=(
                 clone_and_install,
-                get_cached_tables,
+                get_cached_tables,  # adhoc workaround #180
                 create_tables,
                 {
                     insert_household_demand,
                     insert_society_data,
-                    insert_cts_ind_demands,
+                    # insert_cts_ind_demands,
+                    (backup_tables_to_db,  # adhoc workaround #180
+                     scale_sq19_cts_status2023,
+                     scale_sq19_ind_status2023,)
                 },
+
             ),
         )
 
