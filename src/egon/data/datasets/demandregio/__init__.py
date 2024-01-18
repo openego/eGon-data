@@ -679,6 +679,10 @@ def insert_cts_ind_demands():
             # no adjustments for status quo
             "eGon2021": {},
             "status2019": {},
+            # "status2023": {
+            # "CTS": 121160 * 1e3,
+            # "industry": 200380 * 1e3
+            # }, # TODO status2023
         }
 
         insert_cts_ind(scn, year, engine, target_values)
