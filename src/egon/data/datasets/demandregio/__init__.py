@@ -3,6 +3,7 @@ adjusting data from demandRegio
 
 """
 from pathlib import Path
+import subprocess
 import os
 import zipfile
 
@@ -12,7 +13,7 @@ import numpy as np
 import pandas as pd
 
 from egon.data import db
-from egon.data.datasets import Dataset
+from egon.data.datasets import Dataset, wrapped_partial
 from egon.data.datasets.demandregio.install_disaggregator import (
     clone_and_install,
 )
@@ -814,11 +815,16 @@ def timeseries_per_wz():
 
 
 def get_cached_tables():
-    """Get cached demandregio tabel from former runs"""
+    """Get cached demandregio tables and db-dump from former runs"""
     data_config = egon.data.config.datasets()
-    cache_url = data_config["demandregio_workaround"]["source"]["url"]
-    target_path = data_config["demandregio_workaround"]["targets"]["path"]
-    cache_path = Path(".", target_path, "__cache__.zip").resolve()
-    download_and_check(cache_url, cache_path, max_iteration=5)
-    with zipfile.ZipFile(cache_path, "r") as zip_ref:
-        zip_ref.extractall(cache_path.parent)
+    for s in ["cache", "dbdump"]:
+        url = data_config["demandregio_workaround"]["source"][s]["url"]
+        target_path = data_config["demandregio_workaround"]["targets"][s]["path"]
+        filename = os.path.basename(url)
+        file_path = Path(".", target_path, filename).resolve()
+        os.makedirs(file_path.parent, exist_ok=True)
+        download_and_check(url, file_path, max_iteration=5)
+        with zipfile.ZipFile(file_path, "r") as zip_ref:
+            zip_ref.extractall(file_path.parent)
+
+    data_config = egon.data.config.datasets()

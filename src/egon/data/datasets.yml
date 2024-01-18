@@ -96,10 +96,15 @@ demandregio_installation:
 
 demandregio_workaround:
   source:
-    url: "https://wolke.rl-institut.de/s/FqzCXNnPgGeRykk/download/__cache__.zip"
+    cache:
+      url: "https://wolke.rl-institut.de/s/FqzCXNnPgGeRykk/download/__cache__.zip"
+    dbdump:
+      url: "https://wolke.rl-institut.de/s/7Z9m9q7JiP6HC6k/download/status2019-egon_demandregio_cts_ind.zip"
   targets:
-    path: 'demandregio-disaggregator/disaggregator/disaggregator/data_in/'
-
+    cache:
+      path: 'demandregio-disaggregator/disaggregator/disaggregator/data_in/'
+    dbdump:
+      path: "demandregio_dbdump"
 demandregio_society:
   sources:
     disaggregator:
