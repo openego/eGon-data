@@ -12,7 +12,7 @@ from sqlalchemy.ext.declarative import declarative_base
 import numpy as np
 import pandas as pd
 
-from egon.data import db
+from egon.data import db, logger
 from egon.data.datasets import Dataset, wrapped_partial
 from egon.data.datasets.demandregio.install_disaggregator import (
     clone_and_install,
@@ -827,4 +827,41 @@ def get_cached_tables():
         with zipfile.ZipFile(file_path, "r") as zip_ref:
             zip_ref.extractall(file_path.parent)
 
+def backup_tables_to_db():
+    """Get demandregio tables from former db-backup"""
+    # Read database configuration from docker-compose.yml
+    docker_db_config = db.credentials()
     data_config = egon.data.config.datasets()
+
+    # Specify the path to the pgAdmin 4 backup file
+    backup_path = data_config["demandregio_workaround"]["targets"]["dbdump"]["path"]
+    backup_files = [file for file in os.listdir(backup_path) if
+                    file.endswith(".backup")]
+
+    for file in backup_files:
+
+        # Construct the pg_restore command
+        pg_restore_cmd = [
+            "pg_restore",
+            "-h", f"{docker_db_config['HOST']}",
+            "-p", f"{docker_db_config['PORT']}",
+            "-d", f"{docker_db_config['POSTGRES_DB']}",
+            "-U", f"{docker_db_config['POSTGRES_USER']}",
+            "--no-owner",  # Optional: Prevent restoring ownership information
+            "--no-comments",  # Optional: Exclude comments during restore
+            "--clean",  # Optional: Drop existing objects before restore
+            "--verbose",
+            Path(".", backup_path, file).resolve(),
+        ]
+
+        # Execute the pg_restore command
+        try:
+            subprocess.run(pg_restore_cmd, env={
+                "PGPASSWORD": docker_db_config["POSTGRES_PASSWORD"]}, check=True)
+            logger.info(
+                f"Table {file} restored successfully to "
+                f"{docker_db_config['POSTGRES_DB']}.")
+        except subprocess.CalledProcessError as e:
+            logger.warning(f"Restore failed for table: {file} with: {e}")
+
+
