@@ -438,7 +438,9 @@ def disagg_households_power(
 
     if scenario == "eGon100RE":
         # chose demand per household size from survey without DHW
-        power_per_HH = demand_per_hh_size["without_DHW"] / 1e3 # TODO why without?
+        power_per_HH = (
+            demand_per_hh_size["without_DHW"] / 1e3
+        )  # TODO why without?
 
         # calculate demand per nuts3 in 2011
         df_2011 = data.households_per_size(year=2011) * power_per_HH
@@ -474,7 +476,6 @@ def disagg_households_power(
         #     # scale to fit demand of AGEB 2021 (138.6 TWh)
         #     # https://ag-energiebilanzen.de/wp-content/uploads/2023/01/AGEB_22p2_rev-1.pdf#page=10
         #     df *= 138.6 * 1e6 / df.sum().sum()
-
 
     else:
         print(
@@ -611,7 +612,7 @@ def insert_household_demand():
 
     scenarios = egon.data.config.settings()["egon-data"]["--scenarios"]
 
-    scenarios.append("eGon2021") # TODO why is this always appended?
+    scenarios.append("eGon2021")  # TODO why is this always appended?
 
     for t in targets:
         db.execute_sql(
