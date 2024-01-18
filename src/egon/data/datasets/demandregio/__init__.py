@@ -865,3 +865,38 @@ def backup_tables_to_db():
             logger.warning(f"Restore failed for table: {file} with: {e}")
 
 
+def scale_sq19(annual_sum, sector, scn):
+    """Scales the annual demand of all nuts3 status2019 for selected sector
+     to the annual sum of the scenario.
+    """
+    sql = f"""
+        DELETE FROM demand.egon_demandregio_cts_ind
+        WHERE scenario = {scn}
+        AND wz IN (SELECT wz
+                   FROM demand.egon_demandregio_wz
+                   WHERE sector = {sector});
+
+        """
+    db.execute_sql(sql)
+    logger.info(f"Removed demand for {sector} in scenario {scn} .")
+
+    sql = f"""
+        INSERT INTO demand.egon_demandregio_cts_ind (nuts3, wz, scenario, year, demand)
+        SELECT nuts3, wz, {scn}, year, demand * {annual_sum} / total_demand
+--         SELECT nuts3, wz, {scn}, year, demand
+--         FROM demand.egon_demandregio_cts_ind
+        FROM demand.egon_demandregio_cts_ind,
+             (SELECT SUM(demand) AS total_demand
+              FROM demand.egon_demandregio_cts_ind
+              WHERE scenario = 'status2019'
+              AND wz IN (SELECT wz
+                            FROM demand.egon_demandregio_wz
+                            WHERE sector = {sector})
+            ) AS subquery
+        WHERE scenario = 'status2019'
+        AND wz IN (SELECT wz
+                    FROM demand.egon_demandregio_wz
+                    WHERE sector = {sector})
+        """
+    db.execute_sql(sql)
+    logger.info(f"Demand scaled successfully for {sector} in scenario {scn} .")
