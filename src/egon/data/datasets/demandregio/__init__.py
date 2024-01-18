@@ -452,7 +452,7 @@ def disagg_households_power(
         df = data.households_per_size(year=year) * power_per_HH
 
     # Bottom-Up: Power demand by household sizes in [MWh/a] for each scenario
-    if scenario in ["status2019", "eGon2021", "eGon2035"]:
+    elif scenario in ["status2019", "status2023", "eGon2021", "eGon2035"]:
         # chose demand per household size from survey including weighted DHW
         power_per_HH = demand_per_hh_size["weighted"] / 1e3
 
@@ -466,7 +466,14 @@ def disagg_households_power(
             # scale to fit demand of NEP 2021 scebario C 2035 (119TWh)
             df *= 119 * 1e6 / df.sum().sum()
 
+        if scenario == "status2023":
+            # scale to fit demand of BDEW 2023 (130.48 TWh) see issue #180
+            df *= 130.48 * 1e6 / df.sum().sum()
 
+        # if scenario == "status2021": # TODO status2021
+        #     # scale to fit demand of AGEB 2021 (138.6 TWh)
+        #     # https://ag-energiebilanzen.de/wp-content/uploads/2023/01/AGEB_22p2_rev-1.pdf#page=10
+        #     df *= 138.6 * 1e6 / df.sum().sum()
 
 
     else:

@@ -123,6 +123,35 @@ def global_settings(scenario):
             "weather_year": 2011,
             "population_year": 2021,
         }
+    elif scenario == "status2023":
+        parameters = {
+            "weather_year": 2021, # TODO check if possible for 2023
+            "population_year": 2021,  # TODO check maybe possible for 2023 if
+                                        # ffe.opendata is online
+            # "fuel_costs": {
+            #     # TYNDP 2020, data for 2020 (https://2020.entsos-tyndp-scenarios.eu/fuel-commodities-and-carbon-prices/)
+            #     "oil": 12.9 * 3.6,  # [EUR/MWh]
+            #     "gas": 5.6 * 3.6,  # [EUR/MWh]
+            #     "coal": 3.0 * 3.6,  # [EUR/MWh]
+            #     "lignite": 1.1 * 3.6,  # [EUR/MWh]
+            #     "nuclear": 0.47 * 3.6,  # [EUR/MWh]
+            #     "biomass": read_costs(read_csv(2020), "biomass", "fuel"),
+            # },
+            # "co2_costs": 24.7,  # [EUR/t_CO2], source:
+            # # https://de.statista.com/statistik/daten/studie/1304069/umfrage/preisentwicklung-von-co2-emissionsrechten-in-eu/
+            # "co2_emissions": {
+            #     # Netzentwicklungsplan Strom 2035, Version 2021, 1. Entwurf, p. 40, table 8
+            #     "waste": 0.165,  # [t_CO2/MW_th]
+            #     "lignite": 0.393,  # [t_CO2/MW_th]
+            #     "gas": 0.201,  # [t_CO2/MW_th]
+            #     "nuclear": 0.0,  # [t_CO2/MW_th]
+            #     "oil": 0.288,  # [t_CO2/MW_th]
+            #     "coal": 0.335,  # [t_CO2/MW_th]
+            #     "other_non_renewable": 0.268,  # [t_CO2/MW_th]
+            # },
+            # "interest_rate": 0.05,  # [p.u.]
+        }
+
     elif scenario == "status2019":
         parameters = {
             "weather_year": 2019,
@@ -135,7 +164,7 @@ def global_settings(scenario):
                 "nuclear": 0.47*3.6,  # [EUR/MWh]
                 "biomass": read_costs(read_csv(2020), "biomass", "fuel"),
             },
-            "co2_costs": 24.7,  # [EUR/t_CO2], source: 
+            "co2_costs": 24.7,  # [EUR/t_CO2], source:
                 #https://de.statista.com/statistik/daten/studie/1304069/umfrage/preisentwicklung-von-co2-emissionsrechten-in-eu/
             "co2_emissions": {  # Netzentwicklungsplan Strom 2035, Version 2021, 1. Entwurf, p. 40, table 8
                 "waste": 0.165,  # [t_CO2/MW_th]
