@@ -262,6 +262,8 @@ Added
   `#169 <https://github.com/openego/powerd-data/pull/169>`_
 * Use cached DemandRegio tables and scale status2023 cts & ind
   `#185 <https://github.com/openego/powerd-data/pull/185>`_
+* Add status2023 scenario of demandregio households
+  `#186 <https://github.com/openego/powerd-data/pull/186>`_
 
 
 
