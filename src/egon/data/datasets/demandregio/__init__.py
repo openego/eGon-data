@@ -865,6 +865,7 @@ def get_cached_tables():
         filename = os.path.basename(url)
         file_path = Path(".", target_path, filename).resolve()
         os.makedirs(file_path.parent, exist_ok=True)
+        logger.info(f"Downloading: {filename} from {url}.")
         download_and_check(url, file_path, max_iteration=5)
         with zipfile.ZipFile(file_path, "r") as zip_ref:
             zip_ref.extractall(file_path.parent)
