@@ -1,13 +1,13 @@
 openstreetmap:
   original_data:
     source:
-      url: "https://download.geofabrik.de/europe/germany-200101.osm.pbf"
-      url_testmode: "https://download.geofabrik.de/europe/germany/schleswig-holstein-200101.osm.pbf"
+      url: "https://download.geofabrik.de/europe/germany-240101.osm.pbf"
+      url_testmode: "https://download.geofabrik.de/europe/germany/schleswig-holstein-240101.osm.pbf"
       stylefile: "oedb.style"
     target:
       table_prefix: "osm"
-      file: "germany-200101.osm.pbf"
-      file_testmode: "schleswig-holstein-200101.osm.pbf"
+      file: "germany-240101.osm.pbf"
+      file_testmode: "schleswig-holstein-240101.osm.pbf"
   processed:
     schema: "openstreetmap"
     tables:
@@ -94,6 +94,17 @@ demandregio_installation:
   targets:
     path: 'demandregio-disaggregator'
 
+demandregio_workaround:
+  source:
+    cache:
+      url: "https://wolke.rl-institut.de/s/GXrKmTkFygJcsqt/download/cache.zip"
+    dbdump:
+      url: "https://wolke.rl-institut.de/s/7Z9m9q7JiP6HC6k/download/status2019-egon-demandregio-cts-ind.zip"
+  targets:
+    cache:
+      path: 'demandregio-disaggregator/disaggregator/disaggregator/data_in/'
+    dbdump:
+      path: "demandregio_dbdump"
 demandregio_society:
   sources:
     disaggregator:
