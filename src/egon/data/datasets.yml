@@ -97,7 +97,7 @@ demandregio_installation:
 demandregio_workaround:
   source:
     cache:
-      url: "https://wolke.rl-institut.de/s/FqzCXNnPgGeRykk/download/__cache__.zip"
+      url: "https://wolke.rl-institut.de/s/GXrKmTkFygJcsqt/download/cache.zip"
     dbdump:
       url: "https://wolke.rl-institut.de/s/7Z9m9q7JiP6HC6k/download/status2019-egon_demandregio_cts_ind.zip"
   targets:
