@@ -267,6 +267,7 @@ Added
 
 
 
+
 .. _PR #159: https://github.com/openego/eGon-data/pull/159
 .. _PR #703: https://github.com/openego/eGon-data/pull/703
 .. _#702: https://github.com/openego/eGon-data/issues/702
@@ -500,6 +501,9 @@ Changed
   `#1026 <https://github.com/openego/eGon-data/issues/1026>`_
 * Change hgv data source to use database
   `#1086 <https://github.com/openego/eGon-data/issues/1086>`_
+* Try except for demandregio clone and install
+  `#195 <https://github.com/openego/powerd-data/pull/195>`_
+
 
 .. _#799: https://github.com/openego/eGon-data/issues/799
 
@@ -743,6 +747,9 @@ Bug Fixes
   `#1098 <https://github.com/openego/eGon-data/issues/1098>`_
 * Fix conversion factor for CH4 loads abroad in eGon2035
   `#1104 <https://github.com/openego/eGon-data/issues/1104>`_
+* Fix URLs of MaStR datasets
+* Fix CRS in ERA5 transformation
+  `#179 <https://github.com/openego/powerd-data/issues/179>`_
 
 .. _PR #692: https://github.com/openego/eGon-data/pull/692
 .. _#343: https://github.com/openego/eGon-data/issues/343
