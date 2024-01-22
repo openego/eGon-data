@@ -252,9 +252,6 @@ Added
   `PR #903 <https://github.com/openego/eGon-data/pull/903>`_
 * Add low flex scenario 'eGon2035_lowflex'
   `#822 <https://github.com/openego/eGon-data/issues/822>`_
-* Try except for demandregio clone and install
-  `#195 <https://github.com/openego/powerd-data/pull/195>`_
-
 
 
 .. _PR #159: https://github.com/openego/eGon-data/pull/159
@@ -490,6 +487,9 @@ Changed
   `#1026 <https://github.com/openego/eGon-data/issues/1026>`_
 * Change hgv data source to use database
   `#1086 <https://github.com/openego/eGon-data/issues/1086>`_
+* Try except for demandregio clone and install
+  `#195 <https://github.com/openego/powerd-data/pull/195>`_
+
 
 .. _#799: https://github.com/openego/eGon-data/issues/799
 
