@@ -99,7 +99,7 @@ demandregio_workaround:
     cache:
       url: "https://wolke.rl-institut.de/s/GXrKmTkFygJcsqt/download/cache.zip"
     dbdump:
-      url: "https://wolke.rl-institut.de/s/7Z9m9q7JiP6HC6k/download/status2019-egon_demandregio_cts_ind.zip"
+      url: "https://wolke.rl-institut.de/s/7Z9m9q7JiP6HC6k/download/status2019-egon-demandregio-cts-ind.zip"
   targets:
     cache:
       path: 'demandregio-disaggregator/disaggregator/disaggregator/data_in/'
