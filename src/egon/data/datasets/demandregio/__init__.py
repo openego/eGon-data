@@ -62,11 +62,10 @@ class DemandRegio(Dataset):
                     insert_household_demand,
                     insert_society_data,
                     # insert_cts_ind_demands,
-                    (backup_tables_to_db,  # adhoc workaround #180
-                     scale_sq19_cts_status2023,
-                     scale_sq19_ind_status2023,)
                 },
-
+                backup_tables_to_db,  # adhoc workaround #180
+                scale_sq19_cts_status2023,
+                scale_sq19_ind_status2023
             ),
         )
 
