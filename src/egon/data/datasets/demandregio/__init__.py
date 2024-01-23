@@ -22,7 +22,7 @@ import egon.data.config
 import egon.data.datasets.scenario_parameters.parameters as scenario_parameters
 
 try:
-    from disaggregator import config, data, spatial
+    from disaggregator import config, data, spatial, temporal
 
 except ImportError as e:
     pass
@@ -48,6 +48,14 @@ class DemandRegio(Dataset):
             ),
         )
 
+class DemandRegioLoadProfiles(Base):
+    __tablename__ = "demandregio_household_load_profiles"
+    __table_args__ = {"schema": "demand"}
+
+    id = Column(Integer, primary_key=True)
+    year = Column(Integer)
+    nuts3 = Column(String)
+    load_in_mwh = Column(ARRAY(Float()))
 
 class EgonDemandRegioHH(Base):
     __tablename__ = "egon_demandregio_hh"
@@ -471,6 +479,56 @@ def disagg_households_power(
 
     return df
 
+def write_demandregio_hh_profiles_to_db(hh_profiles):
+    """Write HH demand profiles from demand regio into db. One row per
+    year and nuts3. The annual load profile timeseries is an array.
+
+    schema: demand
+    tablename: demandregio_household_load_profiles
+
+
+
+    Parameters
+    ----------
+    hh_profiles: pd.DataFrame
+
+    Returns
+    -------
+    """
+    years = hh_profiles.index.year.unique().values
+    df_to_db = pd.DataFrame(columns=["id", "year", "nuts3", "load_in_mwh"]).set_index("id")
+    dataset = egon.data.config.settings()["egon-data"]["--dataset-boundary"]
+
+    if dataset == "Schleswig-Holstein":
+        hh_profiles = hh_profiles.loc[
+            :, hh_profiles.columns.str.contains("DEF0")]
+
+    id = 0
+    for year in years:
+        df = hh_profiles[hh_profiles.index.year == year]
+        for nuts3 in hh_profiles.columns:
+            id+=1
+            df_to_db.at[id, "year"] = year
+            df_to_db.at[id, "nuts3"] = nuts3
+            df_to_db.at[id, "load_in_mwh"] = df[nuts3].to_list()
+
+    df_to_db["year"] = df_to_db["year"].apply(int)
+    df_to_db["nuts3"] = df_to_db["nuts3"].astype(str)
+    df_to_db["load_in_mwh"] = df_to_db["load_in_mwh"].apply(list)
+    df_to_db = df_to_db.reset_index()
+
+    DemandRegioLoadProfiles.__table__.drop(bind=db.engine(), checkfirst=True)
+    DemandRegioLoadProfiles.__table__.create(bind=db.engine())
+
+    df_to_db.to_sql(
+        name=DemandRegioLoadProfiles.__table__.name,
+        schema=DemandRegioLoadProfiles.__table__.schema,
+        con=db.engine(),
+        if_exists="append",
+        index=-False,
+    )
+
+    return
 
 def insert_hh_demand(scenario, year, engine):
     """Calculates electrical demands of private households using demandregio's
@@ -510,6 +568,26 @@ def insert_hh_demand(scenario, year, engine):
             schema=targets["schema"],
             if_exists="append",
         )
+
+    # insert housholds demand timeseries
+    try:
+        hh_load_timeseries = (
+            temporal.disagg_temporal_power_housholds_slp(
+                use_nuts3code=True,
+                by="households",
+                weight_by_income=False,
+                year=year,
+            )
+            .resample("h")
+            .sum()
+        )
+    except:
+        logger.info("HH demand timeseries could not be imported. Using BK")
+        hh_load_timeseries = pd.read_pickle(
+            "demandregio_dbdump/df_load_profiles.pkl"
+        )
+
+    write_demandregio_hh_profiles_to_db(hh_load_timeseries)
 
 
 def insert_cts_ind(scenario, year, engine, target_values):
