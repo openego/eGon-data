@@ -1834,7 +1834,7 @@ def mv_grid_district_HH_electricity_load(
         "--household-demand-source"
     ]
 
-    if method == "demand_regio":
+    if method == "demand-regio":
         #Import demand regio timeseries demand per nuts3 area
         dr_series = pd.read_sql_query("""
             SELECT year, nuts3, load_in_mwh FROM demand.demandregio_household_load_profiles
@@ -1917,6 +1917,7 @@ def mv_grid_district_HH_electricity_load(
     EgonEtragoElectricityHouseholds.__table__.create(
         bind=engine, checkfirst=True
     )
+
     # Insert data into respective database table
     mvgd_profiles.to_sql(
         name=EgonEtragoElectricityHouseholds.__table__.name,
