@@ -584,7 +584,7 @@ def insert_hh_demand(scenario, year, engine):
     except:
         logger.info("HH demand timeseries could not be imported. Using BK")
         hh_load_timeseries = pd.read_pickle(
-            "demandregio_dbdump/df_load_profiles.pkl"
+            "df_load_profiles.pkl"
         )
 
     write_demandregio_hh_profiles_to_db(hh_load_timeseries)
