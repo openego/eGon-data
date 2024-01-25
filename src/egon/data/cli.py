@@ -109,6 +109,15 @@ from sqlalchemy.orm import Session
     show_default=True,
 )
 @click.option(
+    "--household-demand-source",
+    type=click.Choice(["IEE", "demand-regio"]),
+    default="demand-regio",
+    help=(
+        "Choose the source to calculate and allocate household demands."
+    ),
+    show_default=True,
+)
+@click.option(
     "--jobs",
     default=1,
     metavar="N",
