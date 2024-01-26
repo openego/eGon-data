@@ -1,4 +1,4 @@
-"""The central module containing all code dealing with small scale inpu-data
+"""The central module containing all code dealing with small scale input-data
 """
 
 
@@ -13,7 +13,7 @@ import shutil
 
 def download():
     """
-    Download small scale imput data from Zenodo
+    Download small scale input data from Zenodo
     Parameters
     ----------
 
@@ -27,8 +27,10 @@ def download():
     url = f"""https://zenodo.org/record/{sources['deposit_id']}/files/data_bundle_egon_data.zip"""
     target_file = egon.data.config.datasets()["data-bundle"]["targets"]["file"]
 
-    # Retrieve files
-    urlretrieve(url, target_file)
+    # check if file exists
+    if not Path(target_file).exists():
+        # Retrieve files
+        urlretrieve(url, target_file)
 
     with zipfile.ZipFile(target_file, "r") as zip_ref:
         zip_ref.extractall(".")
