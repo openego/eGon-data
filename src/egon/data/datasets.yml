@@ -94,6 +94,18 @@ demandregio_installation:
   targets:
     path: 'demandregio-disaggregator'
 
+demandregio_workaround:
+  source:
+    cache:
+      url: "https://wolke.rl-institut.de/s/BPMMCdKcjZGidrE/download/cache.zip"
+    dbdump:
+      url: "https://wolke.rl-institut.de/s/NCyWssr2yRHYZsZ/download/status2019-egon-demandregio-cts-ind.zip"
+  targets:
+    cache:
+      path: 'demandregio-disaggregator/disaggregator/disaggregator/data_in/'
+    dbdump:
+      path: "demandregio_dbdump"
+
 demandregio_society:
   sources:
     disaggregator:
