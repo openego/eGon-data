@@ -146,6 +146,28 @@ def insert_scenarios():
 
     session.commit()
 
+    # Scenario status2023
+    status2023 = EgonScenario(name="status2023")
+
+    status2023.description = """
+        Status quo ante scenario for 2023.
+        """
+    status2023.global_parameters = parameters.global_settings(status2019.name)
+
+    status2023.electricity_parameters = parameters.electricity(status2019.name)
+
+    # TODO status2023 which parameters are needed at all?
+    # status2023.gas_parameters = parameters.gas(status2019.name)
+
+    # status2023.heat_parameters = parameters.heat(status2019.name)
+
+    # status2023.mobility_parameters = parameters.mobility(status2019.name)
+
+    session.add(status2023)
+
+    session.commit()
+
+
 
 def get_sector_parameters(sector, scenario=None):
     """Returns parameters for each sector as dictionary.
