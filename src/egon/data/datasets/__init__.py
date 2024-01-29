@@ -4,12 +4,12 @@ from __future__ import annotations
 
 from collections import abc
 from dataclasses import dataclass
-from functools import reduce
+from functools import partial, reduce, update_wrapper
 from typing import Callable, Iterable, Set, Tuple, Union
 import re
 
 from airflow.models.baseoperator import BaseOperator as Operator
-from airflow.operators.python_operator import PythonOperator
+from airflow.operators.python import PythonOperator
 from sqlalchemy import Column, ForeignKey, Integer, String, Table, orm, tuple_
 from sqlalchemy.ext.declarative import declarative_base
 
@@ -17,6 +17,18 @@ from egon.data import config, db, logger
 
 Base = declarative_base()
 SCHEMA = "metadata"
+
+
+def wrapped_partial(func, *args, **kwargs):
+    """Like :func:`functools.partial`, but preserves the original function's
+    name and docstring. Also allows to add a postfix to the function's name.
+    """
+    postfix = kwargs.pop("postfix", None)
+    partial_func = partial(func, *args, **kwargs)
+    update_wrapper(partial_func, func)
+    if postfix:
+        partial_func.__name__ = f"{func.__name__}{postfix}"
+    return partial_func
 
 
 def setup():
