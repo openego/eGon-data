@@ -357,6 +357,16 @@ def future_heat_demand_germany(scenario_name):
         ser_hd_reduction = (
             heat_parameters["DE_demand_service_TJ"] / 3600 / 226.588158
         )
+    elif scenario_name == "status2023":
+        heat_parameters = get_sector_parameters("heat", scenario=scenario_name)
+
+        # Calculate reduction share based on final energy demand and overall demand from Peta for 2015
+        res_hd_reduction = (
+            heat_parameters["DE_demand_residential_TJ"] / 3600 / 443.788483  # TODO status2023 can values stay same?
+        )
+        ser_hd_reduction = (
+            heat_parameters["DE_demand_service_TJ"] / 3600 / 226.588158  # TODO status2023 can values stay same?
+        )
     else:
         heat_parameters = get_sector_parameters("heat", scenario=scenario_name)
 
