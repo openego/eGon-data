@@ -1,5 +1,6 @@
 """The central module containing all code dealing with scenario table.
 """
+
 from pathlib import Path
 from urllib.request import urlretrieve
 import shutil
@@ -168,7 +169,6 @@ def insert_scenarios():
     session.commit()
 
 
-
 def get_sector_parameters(sector, scenario=None):
     """Returns parameters for each sector as dictionary.
 
@@ -206,36 +206,38 @@ def get_sector_parameters(sector, scenario=None):
         else:
             print(f"Scenario name {scenario} is not valid.")
     else:
-        values = pd.concat([
-            pd.DataFrame(
-            db.select_dataframe(
-                f"""
+        values = pd.concat(
+            [
+                pd.DataFrame(
+                    db.select_dataframe(
+                        f"""
                     SELECT {sector}_parameters as val
                     FROM scenario.egon_scenario_parameters
                     WHERE name='eGon2035'"""
-            ).val[0],
-            index=["eGon2035"]),
-            pd.DataFrame(
-                db.select_dataframe(
-                    f"""
+                    ).val[0],
+                    index=["eGon2035"],
+                ),
+                pd.DataFrame(
+                    db.select_dataframe(
+                        f"""
                         SELECT {sector}_parameters as val
                         FROM scenario.egon_scenario_parameters
                         WHERE name='eGon100RE'"""
-                ).val[0],
-                index=["eGon100RE"],
-            ),
-
-            pd.DataFrame(
-                db.select_dataframe(
-                    f"""
+                    ).val[0],
+                    index=["eGon100RE"],
+                ),
+                pd.DataFrame(
+                    db.select_dataframe(
+                        f"""
                         SELECT {sector}_parameters as val
                         FROM scenario.egon_scenario_parameters
                         WHERE name='eGon2021'"""
-                ).val[0],
-                index=["eGon2021"],
-            )
-            ], ignore_index=True)
-
+                    ).val[0],
+                    index=["eGon2021"],
+                ),
+            ],
+            ignore_index=True,
+        )
 
     return values
 
