@@ -1155,6 +1155,44 @@ def heat(scenario):
             ),
         }
 
+    elif scenario == "status2023":
+        parameters = {
+            #  source: AG Energiebilanzen 2022  https://ag-energiebilanzen.de/wp-content/uploads/2023/01/AGEB_22p2_rev-1.pdf
+            "DE_demand_residential_TJ": 1754.2 * 1e3
+            + 407.5 * 1e3,  # [TJ], Endenergieverbrauch Haushalte 2.1 Raumwärme + Warmwasser
+            "DE_demand_service_TJ": 668.4 * 1e3
+            + 44.3 * 1e3 ,  # [TJ], Endenergieverbrauch GHD 3.1 Raumwärme + Warmwasser
+            "DE_district_heating_share": (189760 + 38248)
+            / (
+                1658400 + 383300 + 567300 + 71500
+            ),  # [TJ], source: AG Energiebilanzen 2019 (https://ag-energiebilanzen.de/wp-content/uploads/2021/11/bilanz19d.xlsx)
+        } # TODO status2023 needs update
+
+        costs = read_csv(2020)
+
+        # Insert marginal_costs in EUR/MWh
+        # marginal cost can include fuel, C02 and operation and maintenance costs
+        parameters["marginal_cost"] = {
+            "central_heat_pump": read_costs(
+                costs, "central air-sourced heat pump", "VOM"
+            ),
+            "central_gas_chp": read_costs(costs, "central gas CHP", "VOM"),
+            "central_gas_boiler": read_costs(
+                costs, "central gas boiler", "VOM"
+            ),
+            "central_resistive_heater": read_costs(
+                costs, "central resistive heater", "VOM"
+            ),
+            "rural_heat_pump": 0,  # Danish Energy Agency, Technology Data for Individual Heating Plants
+        }
+
+        # Insert efficiency in p.u.
+        parameters["efficiency"] = {
+            "central_gas_boiler": read_costs(
+                costs, "central gas boiler", "efficiency"
+            ),
+        }
+
     else:
         print(f"Scenario name {scenario} is not valid.")
 
