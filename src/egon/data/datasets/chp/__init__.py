@@ -16,7 +16,7 @@ import pandas as pd
 import pypsa
 
 from egon.data import config, db
-from egon.data.datasets import Dataset
+from egon.data.datasets import Dataset, wrapped_partial
 from egon.data.datasets.chp.match_nep import insert_large_chp, map_carrier
 from egon.data.datasets.chp.small_chp import (
     assign_use_case,
@@ -314,7 +314,7 @@ def insert_biomass_chp(scenario):
     session.commit()
 
 
-def insert_chp_statusquo():
+def insert_chp_statusquo(scn="status2019"):
     cfg = config.datasets()["chp_location"]
 
     # import data for MaStR
@@ -343,13 +343,13 @@ def insert_chp_statusquo():
     )
     mastr = mastr.loc[
         mastr.Inbetriebnahmedatum
-        <= config.datasets()["mastr_new"]["status2023_date_max"]
+        <= config.datasets()["mastr_new"][f"{scn}_date_max"]
     ]
 
     mastr = mastr.loc[
         (
             mastr.DatumEndgueltigeStilllegung
-            >= config.datasets()["mastr_new"]["status2023_date_max"]
+            >= config.datasets()["mastr_new"][f"{scn}_date_max"]
         )
         | (mastr.DatumEndgueltigeStilllegung.isnull())
     ]
@@ -413,13 +413,13 @@ def insert_chp_statusquo():
             mastr, cfg, WORKING_DIR_MASTR_NEW
         )
 
-        gas_bus_id = db.assign_gas_bus_id(mastr, "status2019", "CH4").bus
+        gas_bus_id = db.assign_gas_bus_id(mastr, "status2019", "CH4").bus  # fixed to status2019, no other data avail.
 
         mastr = assign_bus_id(mastr, cfg, drop_missing=True)
 
         mastr["gas_bus_id"] = gas_bus_id
 
-    mastr = assign_use_case(mastr, cfg["sources"], "status2019")
+    mastr = assign_use_case(mastr, cfg["sources"], "status2019")  # fixed to status2019, no other data avail.
 
     # Insert entries with location
     session = sessionmaker(bind=db.engine())()
@@ -435,7 +435,7 @@ def insert_chp_statusquo():
                 carrier=map_carrier().loc[row.Energietraeger],
                 el_capacity=row.Nettonennleistung / 1000,
                 th_capacity=row.ThermischeNutzleistung / 1000,
-                scenario="status2019",
+                scenario=scn,
                 district_heating=row.district_heating,
                 electrical_bus_id=row.bus_id,
                 ch4_bus_id=row.gas_bus_id,
@@ -642,7 +642,14 @@ tasks = (create_tables,)
 insert_per_scenario = set()
 
 if "status2019" in config.settings()["egon-data"]["--scenarios"]:
-    insert_per_scenario.add(insert_chp_statusquo)
+    insert_per_scenario.add(
+        wrapped_partial(insert_chp_statusquo, scn="status2019", postfix="_2019")
+    )
+
+if "status2023" in config.settings()["egon-data"]["--scenarios"]:
+    insert_per_scenario.add(
+        wrapped_partial(insert_chp_statusquo, scn="status2023", postfix="_2023")
+    )
 
 if "eGon2035" in config.settings()["egon-data"]["--scenarios"]:
     insert_per_scenario.add(insert_chp_egon2035)
