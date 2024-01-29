@@ -123,9 +123,9 @@ def insert_scenarios():
     eGon2021.mobility_parameters = parameters.mobility(eGon2021.name)
 
     session.add(eGon2021)
-    
-    session.commit()    
-    
+
+    session.commit()
+
     # Scenario status2019
     status2019 = EgonScenario(name="status2019")
 
@@ -152,16 +152,16 @@ def insert_scenarios():
     status2023.description = """
         Status quo ante scenario for 2023.
         """
+    # TODO status2023 all settings from 2019 are used
     status2023.global_parameters = parameters.global_settings(status2019.name)
 
     status2023.electricity_parameters = parameters.electricity(status2019.name)
 
-    # TODO status2023 which parameters are needed at all?
-    # status2023.gas_parameters = parameters.gas(status2019.name)
+    status2023.gas_parameters = parameters.gas(status2019.name)
 
-    # status2023.heat_parameters = parameters.heat(status2019.name)
+    status2023.heat_parameters = parameters.heat(status2019.name)
 
-    # status2023.mobility_parameters = parameters.mobility(status2019.name)
+    status2023.mobility_parameters = parameters.mobility(status2019.name)
 
     session.add(status2023)
 
@@ -224,7 +224,7 @@ def get_sector_parameters(sector, scenario=None):
                 ).val[0],
                 index=["eGon100RE"],
             ),
-        
+
             pd.DataFrame(
                 db.select_dataframe(
                     f"""
@@ -235,7 +235,7 @@ def get_sector_parameters(sector, scenario=None):
                 index=["eGon2021"],
             )
             ], ignore_index=True)
-        
+
 
     return values
 
