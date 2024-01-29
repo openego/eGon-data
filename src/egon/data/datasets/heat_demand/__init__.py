@@ -47,7 +47,7 @@ class HeatDemandImport(Dataset):
         super().__init__(
             name="heat-demands",
             # version=self.target_files + "_0.0",
-            version="0.0.3",  # maybe rethink the naming
+            version="0.0.4",  # maybe rethink the naming
             dependencies=dependencies,
             tasks=(scenario_data_import),
         )
