@@ -165,6 +165,7 @@ class HouseholdElectricityProfilesInCensusCells(Base):
     nuts3 = Column(String)
     nuts1 = Column(String)
     factor_2019 = Column(Float)
+    factor_2023 = Column(Float)
     factor_2035 = Column(Float)
     factor_2050 = Column(Float)
 
@@ -1373,6 +1374,18 @@ def adjust_to_demand_regio_nuts3_annual(
                 nuts3_cell_ids, "factor_2019"
             ] = (
                 df_demand_regio.loc[(2019, nuts3_id), "demand_mwha"]
+                * 1e3
+                / (nuts3_profiles_sum_annual / 1e3)
+            )
+
+        if (
+            "status2023"
+            in egon.data.config.settings()["egon-data"]["--scenarios"]
+        ):
+            df_hh_profiles_in_census_cells.loc[
+                nuts3_cell_ids, "factor_2023"
+            ] = (
+                df_demand_regio.loc[(2023, nuts3_id), "demand_mwha"]
                 * 1e3
                 / (nuts3_profiles_sum_annual / 1e3)
             )
