@@ -97,9 +97,9 @@ demandregio_installation:
 demandregio_workaround:
   source:
     cache:
-      url: "https://wolke.rl-institut.de/s/GXrKmTkFygJcsqt/download/cache.zip"
+      url: "https://tubcloud.tu-berlin.de/s/dKqF6wKJnLRyDws/download/cache.zip"
     dbdump:
-      url: "https://wolke.rl-institut.de/s/7Z9m9q7JiP6HC6k/download/status2019-egon-demandregio-cts-ind.zip"
+      url: "https://tubcloud.tu-berlin.de/s/ktaxyo8kSTK8w3f/download/status2019-egon-demandregio-cts-ind.zip"
   targets:
     cache:
       path: 'demandregio-disaggregator/disaggregator/disaggregator/data_in/'
