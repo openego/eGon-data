@@ -251,7 +251,7 @@ class HouseholdDemands(Dataset):
 
         super().__init__(
             name="Household Demands",
-            version="0.0.11",
+            version="0.0.12",
             dependencies=dependencies,
             tasks=tasks,
         )
