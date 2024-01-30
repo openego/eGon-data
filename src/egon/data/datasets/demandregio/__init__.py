@@ -581,6 +581,8 @@ def insert_hh_demand(scenario, year, engine):
             .resample("h")
             .sum()
         )
+        hh_load_timeseries.rename(
+            columns={"DEB16": "DEB1C", "DEB19": "DEB1D"}, inplace = True)
     except:
         logger.info("HH demand timeseries could not be imported. Using BK")
         hh_load_timeseries = pd.read_pickle(
