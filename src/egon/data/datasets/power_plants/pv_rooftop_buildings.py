@@ -161,6 +161,7 @@ CARRIER = "solar_rooftop"
 SCENARIOS = config.settings()["egon-data"]["--scenarios"]
 SCENARIO_TIMESTAMP = {
     "status2019": pd.Timestamp("2020-01-01", tz="UTC"),
+    "status2023": pd.Timestamp("2024-01-01", tz="UTC"),
     "eGon2035": pd.Timestamp("2035-01-01", tz="UTC"),
     "eGon100RE": pd.Timestamp("2050-01-01", tz="UTC"),
 }
@@ -2782,7 +2783,7 @@ def pv_rooftop_to_buildings():
 
     mastr_gdf = load_mastr_data()
 
-    ts = pd.Timestamp(config.datasets()["mastr_new"]["status2019_date_max"])
+    ts = pd.Timestamp(config.datasets()["mastr_new"]["status2023_date_max"])
 
     mastr_gdf = mastr_gdf.loc[
         pd.to_datetime(mastr_gdf.Inbetriebnahmedatum) <= ts

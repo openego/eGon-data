@@ -1020,7 +1020,7 @@ def power_plants_status_quo(scn_name="status2019"):
     conv["Inbetriebnahmedatum"] = pd.to_datetime(conv["Inbetriebnahmedatum"])
     conv = conv[
         conv["Inbetriebnahmedatum"]
-        < egon.data.config.datasets()["mastr_new"]["status2019_date_max"]
+        < egon.data.config.datasets()["mastr_new"]["status2023_date_max"]
     ]
 
     # drop chp generators
