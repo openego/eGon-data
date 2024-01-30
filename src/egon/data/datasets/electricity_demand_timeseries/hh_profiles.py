@@ -213,6 +213,19 @@ class HouseholdDemands(Dataset):
             tasks = tasks + (mv_hh_electricity_load_2035,)
 
         if (
+            "status2023"
+            in egon.data.config.settings()["egon-data"]["--scenarios"]
+        ):
+            mv_hh_electricity_load_2035 = PythonOperator(
+                task_id="MV-hh-electricity-load-2023",
+                python_callable=mv_grid_district_HH_electricity_load,
+                op_args=["status2023", 2023],
+                op_kwargs={"drop_table": True},
+            )
+
+            tasks = tasks + (mv_hh_electricity_load_2035,)
+
+        if (
             "eGon2035"
             in egon.data.config.settings()["egon-data"]["--scenarios"]
         ):
