@@ -154,7 +154,7 @@ def insert_scenarios():
         Status quo ante scenario for 2023.
         """
     # TODO status2023 all settings from 2019 are used
-    status2023.global_parameters = parameters.global_settings(status2019.name)
+    status2023.global_parameters = parameters.global_settings(status2023.name)
 
     status2023.electricity_parameters = parameters.electricity(status2019.name)
 
