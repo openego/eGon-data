@@ -489,6 +489,7 @@ Changed
 * Try except for demandregio clone and install
   `#195 <https://github.com/openego/powerd-data/pull/195>`_
 * Add new MaStR dataset for SQ2023 scenario
+  `#175 <https://github.com/openego/powerd-data/pull/175>`_
 
 .. _#799: https://github.com/openego/eGon-data/issues/799
 
