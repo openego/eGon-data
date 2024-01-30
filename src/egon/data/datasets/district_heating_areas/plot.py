@@ -62,6 +62,8 @@ def plot_heat_density_sorted(heat_denisty_per_scenario, scenario_name=None):
     colors["curve"]["eGon100RE"] = "orange"
     colors["share"]["status2019"] = "darkgreen"
     colors["curve"]["status2019"] = "green"
+    colors["share"]["status2023"] = "darkgrey"
+    colors["curve"]["status2023"] = "grey"
 
     for scenario in heat_denisty_per_scenario.keys():
 
