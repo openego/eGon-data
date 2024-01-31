@@ -126,7 +126,7 @@ def global_settings(scenario):
 
     elif scenario == "status2023":
         parameters = {
-            "weather_year": 20123,
+            "weather_year": 2023,
             "population_year": 2019,  # TODO: check if possible for 2023
             "fuel_costs": {
                 # TODO status2023 update values
