@@ -83,7 +83,7 @@ assumed to be 6.68 kgH2 per 100 km with an additional supply chain leakage rate 
 (see `here <https://www.energy.gov/eere/fuelcells/doe-technical-targets-hydrogen-delivery>`_).
 
 For the eGon2035 scenario the ramp-up figures are taken from the
-`network development plan (version 2021) <https://www.netzentwicklungsplan.de/sites/default/files/paragraphs-files/NEP_2035_V2021_2_Entwurf_Teil1.pdf>`_
+network development plan [NEP2021]_
 (Scenario C 2035). According to this, 100,000 e-trucks are
 expected in Germany in 2035, each covering an average of 100,000 km per year.
 In total this means 10 Billion km.
