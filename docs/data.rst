@@ -97,8 +97,10 @@ Dynamic line rating
 
 .. include:: data/DLR.rst
 
-E-Mobility
-----------
+.. _flexible-charging-ref:
+
+Flexible charging of EVs
+---------------------------
 
 .. include:: data/e-mobility.rst
 
