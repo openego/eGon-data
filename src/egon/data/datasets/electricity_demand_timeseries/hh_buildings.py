@@ -657,6 +657,9 @@ def get_building_peak_loads():
             cells_query.statement, cells_query.session.bind, index_col="id"
         )
 
+        # fill columns with None with np.nan to allow multiplication with emtpy columns
+        df_buildings_and_profiles = df_buildings_and_profiles.fillna(np.nan)
+
         # Read demand profiles from egon-data-bundle
         df_profiles = get_iee_hh_demand_profiles_raw()
 
