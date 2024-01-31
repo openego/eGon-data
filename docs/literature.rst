@@ -26,6 +26,8 @@ Literature
 
 .. [Huelk2017]  L. Hülk, L. Wienholt, I. Cußmann, U.P. Müller, C. Matke, E. Kötter, Allocation of annual electricity consumption and power generation capacities across multiple voltage levels in a high spatial resolution, International Journal of Sustainable Energy Planning and Management Vol. 13 2017 79–92. URL https://journals.aau.dk/index.php/sepm/article/view/1833
 
+.. [KBA] Kraftfahrt-Bundesamt, Fahrzeugzulassungen (FZ) - Bestand an Kraftfahrzeugen und Kraftfahrzeuganhängern nach Zulassungsbezirken (2021). URL https://www.kba.de/SharedDocs/Downloads/DE/Statistik/Fahrzeuge/FZ1/fz1_2021.xlsx?__blob=publicationFile&v=2
+
 .. [MiD2017] Bundesministerium für Digitales und Verkehr, Mobilität in Deutschland 2017 (2017). URL https://daten.clearingstelle-verkehr.de/279/
 
 .. [Mueller2018] U. Mueller, L. Wienholt, D. Kleinhans, I. Cussmann, W.-D. Bunke, G. Pleßmann, J. Wendiggensen 2018 J. Phys.: Conf. Ser. 977 012003, DOI 10.1088/1742-6596/977/1/012003
