@@ -521,7 +521,8 @@ def to_pypsa():
             """
     )
 
-    for scenario_name in ["'eGon2035'", "'eGon100RE'", "'status2019'"]:
+    # for scenario_name in ["'eGon2035'", "'eGon100RE'", "'status2019'"]:
+    for scenario_name in egon.data.config.settings()["egon-data"]["--scenarios"]:
 
         capital_cost = get_sector_parameters(
             "electricity", scenario_name.replace("'", "")
@@ -628,19 +629,19 @@ def to_pypsa():
             WHERE a.line_id = result.line_id
             AND scn_name = {scenario_name};
 
-            -- set capital costs for eHV-lines 
+            -- set capital costs for eHV-lines
             UPDATE grid.egon_etrago_line
             SET capital_cost = {capital_cost['ac_ehv_overhead_line']} * length
             WHERE v_nom > 110
             AND scn_name = {scenario_name};
 
-            -- set capital costs for HV-lines 
+            -- set capital costs for HV-lines
             UPDATE grid.egon_etrago_line
             SET capital_cost = {capital_cost['ac_hv_overhead_line']} * length
             WHERE v_nom = 110
             AND scn_name = {scenario_name};
-            
-            -- set capital costs for transformers 
+
+            -- set capital costs for transformers
             UPDATE grid.egon_etrago_transformer a
             SET capital_cost = {capital_cost['transformer_380_220']}
             WHERE (a.bus0 IN (
@@ -688,20 +689,20 @@ def to_pypsa():
                 SELECT bus_id FROM grid.egon_etrago_bus
                 WHERE v_nom = 220))
             AND scn_name = {scenario_name};
-            
-            -- set lifetime for eHV-lines 
+
+            -- set lifetime for eHV-lines
             UPDATE grid.egon_etrago_line
-            SET lifetime = {lifetime['ac_ehv_overhead_line']} 
+            SET lifetime = {lifetime['ac_ehv_overhead_line']}
             WHERE v_nom > 110
             AND scn_name = {scenario_name};
 
-            -- set capital costs for HV-lines 
+            -- set capital costs for HV-lines
             UPDATE grid.egon_etrago_line
             SET lifetime = {lifetime['ac_hv_overhead_line']}
             WHERE v_nom = 110
             AND scn_name = {scenario_name};
-            
-            -- set capital costs for transformers 
+
+            -- set capital costs for transformers
             UPDATE grid.egon_etrago_transformer a
             SET lifetime = {lifetime['transformer_380_220']}
             WHERE (a.bus0 IN (
@@ -749,7 +750,7 @@ def to_pypsa():
                 SELECT bus_id FROM grid.egon_etrago_bus
                 WHERE v_nom = 220))
             AND scn_name = {scenario_name};
-            
+
             -- delete buses without connection to AC grid and generation or
             -- load assigned
 
@@ -776,7 +777,7 @@ class Osmtgmod(Dataset):
     def __init__(self, dependencies):
         super().__init__(
             name="Osmtgmod",
-            version="0.0.5",
+            version="0.0.7",
             dependencies=dependencies,
             tasks=(
                 import_osm_data,
