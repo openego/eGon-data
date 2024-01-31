@@ -45,6 +45,19 @@ def create_table():
     EgonScenario.__table__.create(bind=engine, checkfirst=True)
 
 
+def get_scenario_year(scenario_name):
+    """Derives scenarios year from scenario name. Scenario
+    eGon100RE is an exception as year is not in the name."""
+    try:
+        year = int(scenario_name[-4:])
+    except ValueError as e:
+        if e.args[0] == "invalid literal for int() with base 10: '00RE'":
+            year = 2050  # eGon100RE
+        else:
+            raise ValueError("The names of the scenarios do not end with the year!")
+    return year
+
+
 def insert_scenarios():
     """Insert scenarios and their parameters to scenario table
 
