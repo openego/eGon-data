@@ -135,6 +135,7 @@ import pandas as pd
 
 from egon.data import db
 from egon.data.datasets import Dataset
+from egon.data.datasets.scenario_parameters import get_scenario_year
 from egon.data.datasets.zensus_mv_grid_districts import MapZensusGridDistricts
 import egon.data.config
 
@@ -1379,50 +1380,12 @@ def adjust_to_demand_regio_nuts3_annual(
         # demand regio in MWh
         # profiles in Wh
 
-        if (
-            "status2019"
-            in egon.data.config.settings()["egon-data"]["--scenarios"]
-        ):
+        for scn in egon.data.config.settings()["egon-data"]["--scenarios"]:
+            year = get_scenario_year(scn)
             df_hh_profiles_in_census_cells.loc[
-                nuts3_cell_ids, "factor_2019"
+                nuts3_cell_ids, f"factor_{year}"
             ] = (
-                df_demand_regio.loc[(2019, nuts3_id), "demand_mwha"]
-                * 1e3
-                / (nuts3_profiles_sum_annual / 1e3)
-            )
-
-        if (
-            "status2023"
-            in egon.data.config.settings()["egon-data"]["--scenarios"]
-        ):
-            df_hh_profiles_in_census_cells.loc[
-                nuts3_cell_ids, "factor_2023"
-            ] = (
-                df_demand_regio.loc[(2023, nuts3_id), "demand_mwha"]
-                * 1e3
-                / (nuts3_profiles_sum_annual / 1e3)
-            )
-
-        if (
-            "eGon2035"
-            in egon.data.config.settings()["egon-data"]["--scenarios"]
-        ):
-            df_hh_profiles_in_census_cells.loc[
-                nuts3_cell_ids, "factor_2035"
-            ] = (
-                df_demand_regio.loc[(2035, nuts3_id), "demand_mwha"]
-                * 1e3
-                / (nuts3_profiles_sum_annual / 1e3)
-            )
-
-        if (
-            "eGon100RE"
-            in egon.data.config.settings()["egon-data"]["--scenarios"]
-        ):
-            df_hh_profiles_in_census_cells.loc[
-                nuts3_cell_ids, "factor_2050"
-            ] = (
-                df_demand_regio.loc[(2050, nuts3_id), "demand_mwha"]
+                df_demand_regio.loc[(year, nuts3_id), "demand_mwha"]
                 * 1e3
                 / (nuts3_profiles_sum_annual / 1e3)
             )
