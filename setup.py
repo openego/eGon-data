@@ -88,6 +88,7 @@ setup(
         "cdsapi",
         "click<8.1",
         "entsoe-py >=0.5.5",
+        "Flask-Session<0.6.0",
         "GeoAlchemy2",
         "geopandas>=0.10.0",
         "geopy",
