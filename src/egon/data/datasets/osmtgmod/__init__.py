@@ -522,7 +522,9 @@ def to_pypsa():
     )
 
     # for scenario_name in ["'eGon2035'", "'eGon100RE'", "'status2019'"]:
-    for scenario_name in egon.data.config.settings()["egon-data"]["--scenarios"]:
+    scenario_list = egon.data.config.settings()["egon-data"]["--scenarios"]
+    scenario_list = [f"'{scn}'" if not scn[1] == "'" else scn for scn in scenario_list]
+    for scenario_name in scenario_list:
 
         # TODO maybe not needed anymore?
         capital_cost = get_sector_parameters(
