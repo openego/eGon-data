@@ -37,19 +37,6 @@ Base = declarative_base()
 
 class DemandRegio(Dataset):
     def __init__(self, dependencies):
-        scale_sq19_cts_status2023 = wrapped_partial(  # adhoc workaround #180
-            scale_sq19,
-            annual_sum=121160 * 1e3,  # BDEW2023 Stromverbrauch vorläufig
-            sector="'CTS'",
-            scn="'status2023'",
-            postfix="_cts_status2023")
-        scale_sq19_ind_status2023 = wrapped_partial(
-            scale_sq19,
-            annual_sum=200380 * 1e3,
-            sector="'industry'",
-            scn="'status2023'",
-            postfix="_ind_status2023")
-
         super().__init__(
             name="DemandRegio",
             version="0.0.7",
@@ -61,11 +48,8 @@ class DemandRegio(Dataset):
                 {
                     insert_household_demand,
                     insert_society_data,
-                    # insert_cts_ind_demands,
+                    insert_cts_ind_demands,
                 },
-                backup_tables_to_db,  # adhoc workaround #180
-                scale_sq19_cts_status2023,
-                scale_sq19_ind_status2023
             ),
         )
 
@@ -695,10 +679,10 @@ def insert_cts_ind_demands():
             # no adjustments for status quo
             "eGon2021": {},
             "status2019": {},
-            # "status2023": {
-            # "CTS": 121160 * 1e3,
-            # "industry": 200380 * 1e3
-            # }, # TODO status2023
+            "status2023": {
+                "CTS": 121160 * 1e3,
+                "industry": 200380 * 1e3
+            },
         }
 
         insert_cts_ind(scn, year, engine, target_values)
@@ -870,76 +854,3 @@ def get_cached_tables():
         with zipfile.ZipFile(file_path, "r") as zip_ref:
             zip_ref.extractall(file_path.parent)
 
-def backup_tables_to_db():
-    """Get demandregio tables from former db-backup"""
-    # Read database configuration from docker-compose.yml
-    docker_db_config = db.credentials()
-    data_config = egon.data.config.datasets()
-
-    # Specify the path to the pgAdmin 4 backup file
-    backup_path = data_config["demandregio_workaround"]["targets"]["dbdump"]["path"]
-    backup_files = [file for file in os.listdir(backup_path) if
-                    file.endswith(".backup")]
-
-    for file in backup_files:
-
-        # Construct the pg_restore command
-        pg_restore_cmd = [
-            "pg_restore",
-            "-h", f"{docker_db_config['HOST']}",
-            "-p", f"{docker_db_config['PORT']}",
-            "-d", f"{docker_db_config['POSTGRES_DB']}",
-            "-U", f"{docker_db_config['POSTGRES_USER']}",
-            "--no-owner",  # Optional: Prevent restoring ownership information
-            "--no-comments",  # Optional: Exclude comments during restore
-            "--clean",  # Optional: Drop existing objects before restore
-            "--verbose",
-            Path(".", backup_path, file).resolve(),
-        ]
-
-        # Execute the pg_restore command
-        try:
-            subprocess.run(pg_restore_cmd, env={
-                "PGPASSWORD": docker_db_config["POSTGRES_PASSWORD"]}, check=True)
-            logger.info(
-                f"Table {file} restored successfully to "
-                f"{docker_db_config['POSTGRES_DB']}.")
-        except subprocess.CalledProcessError as e:
-            logger.warning(f"Restore failed for table: {file} with: {e}")
-
-
-def scale_sq19(annual_sum, sector, scn):
-    """Scales the annual demand of all nuts3 status2019 for selected sector
-     to the annual sum of the scenario.
-    """
-    sql = f"""
-        DELETE FROM demand.egon_demandregio_cts_ind
-        WHERE scenario = {scn}
-        AND wz IN (SELECT wz
-                   FROM demand.egon_demandregio_wz
-                   WHERE sector = {sector});
-
-        """
-    db.execute_sql(sql)
-    logger.info(f"Removed demand for {sector} in scenario {scn} .")
-
-    sql = f"""
-        INSERT INTO demand.egon_demandregio_cts_ind (nuts3, wz, scenario, year, demand)
-        SELECT nuts3, wz, {scn}, year, demand * {annual_sum} / total_demand
---         SELECT nuts3, wz, {scn}, year, demand
---         FROM demand.egon_demandregio_cts_ind
-        FROM demand.egon_demandregio_cts_ind,
-             (SELECT SUM(demand) AS total_demand
-              FROM demand.egon_demandregio_cts_ind
-              WHERE scenario = 'status2019'
-              AND wz IN (SELECT wz
-                            FROM demand.egon_demandregio_wz
-                            WHERE sector = {sector})
-            ) AS subquery
-        WHERE scenario = 'status2019'
-        AND wz IN (SELECT wz
-                    FROM demand.egon_demandregio_wz
-                    WHERE sector = {sector})
-        """
-    db.execute_sql(sql)
-    logger.info(f"Demand scaled successfully for {sector} in scenario {scn} .")
