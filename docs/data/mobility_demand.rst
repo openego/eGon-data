@@ -7,18 +7,33 @@ The electricity demand data of motorized individual travel (MIT) for both the eG
 and eGon100RE scenario is set up in the
 :py:class:`MotorizedIndividualTravel<egon.data.datasets.emobility.motorized_individual_travel.MotorizedIndividualTravel>`
 dataset.
-In a first step, pre-generated trip data, including information on driving, parking and
-(user-oriented) charging times is downloaded and written to the database.
+For the eGon2035, the workflow is visualised in figure :ref:`mit-model`. The workflow
+for the eGon100RE scenario is analogous to the workflow for the eGon2035 scenario.
+In a first step, pre-generated SimBEV trip data, including information on driving, parking and
+(user-oriented) charging times is downloaded.
 In the second step, the number of EVs in each MV grid district in the future scenarios is determined.
 Last, based on the trip data and the EV numbers, charging time series as well as
 time series to model the flexibility of EVs are set up.
 In the following, these steps are explained in more detail.
 
+.. figure:: /images/eGon_emob_MIT_model.png
+  :name: mit-model
+  :width: 800
+
+  Workflow to set up charging demand data for MIT in the eGon2035 scenario
+
+
 The trip data are generated using a modified version of
 `SimBEV v0.1.3 <https://github.com/rl-institut/simbev/tree/1f87c716d14ccc4a658b8d2b01fd12b88a4334d5>`_.
-SimBEV generates driving profiles for battery electric vehicles (BEVs) and
+SimBEV generates driving and parking profiles for battery electric vehicles (BEVs) and
 plug-in hybrid electric vehicles (PHEVs) based on MID survey data [MiD2017]_ per
 RegioStaR7 region type [RegioStaR7_2020]_.
+The data contain information on energy consumption during the drive, as well as on
+the availability of charging points at the parking
+location and in case of an available charging point the corresponding charging demand,
+charging power and charging point use case
+(home charging point, workplace charging point, public charging point and fast charging
+point).
 Different vehicle classes are taken
 into account whose assumed technical data is given in table :ref:`ev-types-data`.
 Moreover, charging probabilities for multiple types of charging
@@ -62,13 +77,15 @@ The results are written to table
 :py:class:`EgonEvMvGridDistrict<egon.data.datasets.emobility.motorized_individual_travel.db_classes.EgonEvMvGridDistrict>`.
 
 On the basis of the assigned EVs per MV grid district and the trip data, charging demand
-time series in each MV grid district can be determined. For inflexible charging it is
+time series in each MV grid district can be determined. For inflexible charging
+(see lower right in figure :ref:`mit-model`) it is
 assumed that the EVs are charged with full power as soon as they arrive at a charging
 station until they are fully charged. The respective charging power and demand is obtained
 from the trip data. The individual charging demand time series per EV are summed up
 to obtain the charging time series per MV grid district.
-The generation of time series to model flexible charging of EVs is described in section
-:ref:`flexible-charging-ref`.
+The generation of time series to model flexible charging of EVs (upper right in figure
+:ref:`mit-model`) is described in section :ref:`flexible-charging-ref`.
+
 
 Heavy-duty transport
 +++++++++++++++++++++
