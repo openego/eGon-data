@@ -87,6 +87,8 @@ The generation of time series to model flexible charging of EVs (upper right in 
 :ref:`mit-model`) is described in section :ref:`flexible-charging-ref`.
 
 
+.. _mobility-demand-hdt-ref:
+
 Heavy-duty transport
 +++++++++++++++++++++
 
