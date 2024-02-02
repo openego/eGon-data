@@ -8,6 +8,8 @@ Literature
 
 .. [Buettner2022] C. Büttner, J. Amme, J. Endres, A. Malla, B. Schachler, I. Cußmann, Open modeling of electricity and heat demand curves for all residential buildings in Germany, Energy Informatics 5 (1) (2022) 21. doi:10.1186/s42162-022-00201-y. URL https://doi.org/10.1186/s42162-022-00201-y
 
+.. [Brown2018] T. Brown, D. Schlachtenberger, A. Kies, S. Schramm, M. Greiner, Synergies of sector coupling and transmission reinforcement in a cost-optimised, highly renewable European energy system, Energy Volume 160 (2018). URL https://doi.org/10.1016/j.energy.2018.06.222
+
 .. [Census] S. B. (Destatis), Datensatzbeschreibung ”Haushalte im 100 Meter-Gitter” (2018). URL https://www.zensus2011.de/SharedDocs/Downloads/DE/Pressemitteilung/DemografischeGrunddaten/Datensatzbeschreibung_Haushalt_100m_Gitter.html
 
 .. [DAE_store] Danish Energy Agency, Technology Data – Energy storage, First published 2018 by the Danish Energy Agency and Energinet, URL https://ens.dk/en/our-services/projections-and-models/technology-data/technology-data-energy-storage
@@ -45,3 +47,5 @@ Literature
 .. [Schmidt2018] D. Schmidt, Supplementary material to the masters thesis: NUTS-3 Regionalization of Industrial Load Shifting Potential in Germany using a Time-Resolved Model (Nov. 2019). doi:10.5281/zenodo.3613767. URL https://doi.org/10.5281/zenodo.3613767
 
 .. [sEEnergies] T. Fleiter, P. Manz, N. Neuwirth, F. Mildner, K. Persson, U.AND Kermeli, W. Crijns-Graus, C. Rutten, seenergies d5.1 dataset web-app.seenergies arcgis online web-apps hosted by europa-universität flensburg (2020). URL https://tinyurl.com/sEEnergies-D5-1
+
+.. [Wulff2020]  N. Wulff, F. Steck, H. C. Gils, C. Hoyer-Klick, B. van den Adel, J. E. Anderson, Comparing Power-System and User-Oriented Battery Electric Vehicle Charging Representation and Its Implications on Energy System Modeling, Energies (2020), 13, URL https://doi.org/10.3390/en13051093
