@@ -212,10 +212,10 @@ class CtsDemandBuildings(Dataset):
     to the cts sector. Amenities are mapped to intersecting buildings and then
     intersected with the annual demand which exists at census cell level. We obtain
     census cells with demand and amenities and without amenities. If there is no
-    data on amenities, n synthetic ones are assigned to existing buildings. We use
+    data on amenities, synthetic ones are assigned to existing buildings. We use
     the median value of amenities/census cell for n and all filtered buildings +
     synthetic residential buildings. If no building data is available a synthetic
-    buildings is randomly generated. This also happens for amenities which couldn't
+    building is randomly generated. This also happens for amenities which couldn't
     be assigned to any osm building. All census cells with an annual demand are
     covered this way, and we obtain four different categories of buildings with
     amenities:
