@@ -6,18 +6,18 @@ import datetime
 import logging
 import os
 import shutil
+import subprocess
 import sys
 
 import psycopg2
 
-from egon.data import db
+from egon.data import db, logger
 from egon.data.config import settings
 from egon.data.datasets import Dataset
 from egon.data.datasets.osmtgmod.substation import extract
 from egon.data.datasets.scenario_parameters import get_sector_parameters
 import egon.data.config
 import egon.data.subprocess as subproc
-
 
 
 def run():
@@ -52,18 +52,47 @@ def import_osm_data():
 
     # Delete repository if it already exists
     if osmtgmod_repos.exists() and osmtgmod_repos.is_dir():
-        shutil.rmtree(osmtgmod_repos)
+        try:
+            status = subprocess.check_output(
+                ["git", "status"], cwd=(osmtgmod_repos).absolute()
+            )
+            if status.startswith(
+                b"Auf Branch features/egon"
+            ) or status.startswith(b"On branch features/egon"):
+                logger.info("OsmTGmod cloned and right branch checked out.")
 
-    subproc.run(
-        [
-            "git",
-            "clone",
-            "--single-branch",
-            "--branch",
-            "features/egon",
-            "https://github.com/openego/osmTGmod.git",
-        ]
-    )
+            else:
+                subproc.run(
+                    [
+                        "git",
+                        "checkout",
+                        "features/egon",
+                    ]
+                )
+        except subprocess.CalledProcessError:
+            shutil.rmtree(osmtgmod_repos)
+            subproc.run(
+                [
+                    "git",
+                    "clone",
+                    "--single-branch",
+                    "--branch",
+                    "features/egon",
+                    "https://github.com/openego/osmTGmod.git",
+                ]
+            )
+    else:
+
+        subproc.run(
+            [
+                "git",
+                "clone",
+                "--single-branch",
+                "--branch",
+                "features/egon",
+                "https://github.com/openego/osmTGmod.git",
+            ]
+        )
 
     data_config = egon.data.config.datasets()
     osm_config = data_config["openstreetmap"]["original_data"]
