@@ -441,9 +441,11 @@ def osmtgmod(
     # beware: comments in C-like style (such as /* comment */) arn't parsed!
     sqlfile_without_comments = "".join(
         [
-            line.lstrip().split("--")[0] + "\n"
-            if not line.lstrip().split("--")[0] == ""
-            else ""
+            (
+                line.lstrip().split("--")[0] + "\n"
+                if not line.lstrip().split("--")[0] == ""
+                else ""
+            )
             for line in sqlfile.split("\n")
         ]
     )
@@ -552,7 +554,9 @@ def to_pypsa():
 
     # for scenario_name in ["'eGon2035'", "'eGon100RE'", "'status2019'"]:
     scenario_list = egon.data.config.settings()["egon-data"]["--scenarios"]
-    scenario_list = [f"'{scn}'" if not scn[1] == "'" else scn for scn in scenario_list]
+    scenario_list = [
+        f"'{scn}'" if not scn[1] == "'" else scn for scn in scenario_list
+    ]
     for scenario_name in scenario_list:
 
         # TODO maybe not needed anymore?
