@@ -8,3 +8,8 @@ python:
     - requirements: docs/requirements.txt
     - method: pip
       path: .
+# Set the version of Python
+build:
+  os: ubuntu-22.04
+  tools:
+    python: "3.9"
