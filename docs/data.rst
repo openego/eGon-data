@@ -41,6 +41,8 @@ Electricity
 
 .. include:: data/electricity_demand.rst
 
+.. _heat-demand-ref:
+
 Heat
 ----
 
