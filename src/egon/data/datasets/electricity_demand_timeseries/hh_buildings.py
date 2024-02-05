@@ -757,12 +757,14 @@ def map_houseprofiles_to_buildings():
 
 class setup(Dataset):
     """
-    Household electricity demand time series for scenarios in 2035 and 2050
-    assigned to OSM-buildings.
+    Household electricity demand profiles for scenarios in 2035 and 2050
+    assigned to buildings.
 
     Assignment of household electricity demand timeseries to OSM buildings
     and generation of randomly placed synthetic 5x5m buildings if no
     sufficient OSM-data available in the respective census cell.
+
+    For more information see data documentation on :ref:`electricity-demand-ref`.
 
     *Dependencies*
       * :py:func:`houseprofiles_in_census_cells
@@ -798,30 +800,18 @@ class setup(Dataset):
 
     **What is the goal?**
 
-    To assign every household demand timeseries, which already exist at cell
-    level, to a specific OSM building.
+    To assign every household demand profile allocated each census cell to a
+    specific building.
 
     **What is the challenge?**
 
     The census and the OSM dataset differ from each other. The census uses
     statistical methods and therefore lacks accuracy at high spatial
-    resolution. The OSM datasets is community based dataset which is
+    resolution. The OSM dataset is a community based dataset which is
     extended throughout and does not claim to be complete. By merging these
     datasets inconsistencies need to be addressed. For example: not yet
     tagged buildings in OSM or new building areas not considered in census
     2011.
-
-    **How are these datasets combined?**
-
-    The assignment of household demand timeseries to buildings takes place
-    at cell level. Within each cell a pool of profiles exists, produced by
-    the 'HH Demand" module. These profiles are randomly assigned to a
-    filtered list of OSM buildings within this cell. Every profile is
-    assigned to a building and every building get a profile assigned if
-    there is enough households by the census data. If there are more
-    profiles than buildings, all additional profiles are randomly assigned.
-    Therefore, multiple profiles can be assigned to one building, making it a
-    multi-household building.
 
     **What are central assumptions during the data processing?**
 
@@ -840,11 +830,11 @@ class setup(Dataset):
       is ceiled to the next higher integer. Ceiling is applied to avoid
       rounding to amount of 0 buildings.
 
-    * As this datasets is a cascade after profile assignement at census
-      cells also check drawbacks and limitations in hh_profiles.py.
+    * As this dataset uses the load profile assignment at census cell level
+      conducted in hh_profiles.py, also check drawbacks and limitations in that module.
 
     Example Query
-    -----
+    ----------------
 
     * Get a list with number of houses, households and household types per
       census cell

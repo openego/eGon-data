@@ -1,4 +1,35 @@
-Information about electricity demands and their spatial and temporal aggregation 
+Information about electricity demands and their spatial and temporal aggregation
+
+
+.. figure:: /images/workflow_household_demand.png
+  :name: workflow-res-profiles-buildings
+  :width: 800
+
+  Workflow to setup residential demand profiles per building in hourly resolution
+
+
+The allocation of the chosen electricity profiles in each census cell to buildings
+is conducted in the dataset
+:py:class:`Demand_Building_Assignment <egon.data.datasets.electricity_demand_timeseries.hh_buildings.setup>`.
+For each cell, the profiles are randomly assigned to an OSM building within this cell.
+If there are more profiles than buildings, all additional profiles are further randomly
+allocated to buildings within the cell.
+Therefore, multiple profiles can be assigned to one building, making it a
+multi-household building.
+In case there are no OSM buildings that profiles can be assigned to, synthetic buildings
+are generated with a dimension of 5m x 5m.
+The number of synthetically created buildings per census cell is determined using
+the Germany-wide average of profiles per building (value is rounded up and only
+census cells with buildings are considered).
+The profile ID each building is assigned is written to data base table
+:py:class:`demand.egon_household_electricity_profile_of_buildings <egon.data.datasets.electricity_demand_timeseries.hh_buildings.HouseholdElectricityProfilesOfBuildings>`.
+Synthetically created buildings are written to data base table
+:py:class:`openstreetmap.osm_buildings_synthetic <egon.data.datasets.electricity_demand_timeseries.hh_buildings.OsmBuildingsSynthetic>`.
+The household electricity peak load per building is written to database table
+:py:class:`demand.egon_building_electricity_peak_loads <egon.data.datasets.electricity_demand_timeseries.hh_buildings.BuildingElectricityPeakLoads>`.
+Drawbacks and limitations of the allocation to specific buildings
+are discussed in the dataset docstring of
+:py:class:`Demand_Building_Assignment <egon.data.datasets.electricity_demand_timeseries.hh_buildings.setup>`.
 
 .. _disagg-cts-elec-ref:
 
@@ -37,7 +68,7 @@ don't have amenities within.
 If there is no data on amenities, synthetic ones are assigned to existing buildings. We use
 the median value of amenities per census cell in the respective MV grid district
 to determine the number of synthetic amenities.
-If no building data is available, a synthetic building with a dimension of 5x5 m is randomly generated.
+If no building data is available, a synthetic building with a dimension of 5m x 5m is randomly generated.
 This also happens for amenities that couldn't be assigned to any OSM building.
 We obtain four different categories of buildings with amenities:
 
@@ -46,8 +77,10 @@ We obtain four different categories of buildings with amenities:
 * Buildings with synthetic amenities
 * Synthetic buildings with synthetic amenities
 
-All buildings with CTS, comprising OSM buildings and synthetic buildings, including
-the number of amenities within the building are written to database table
+Synthetically created buildings are written to data base table
+:py:class:`openstreetmap.osm_buildings_synthetic <egon.data.datasets.electricity_demand_timeseries.hh_buildings.OsmBuildingsSynthetic>`.
+Information on the number of amenities within each building with CTS, comprising OSM
+buildings and synthetic buildings, is written to database table
 :py:class:`openstreetmap.egon_cts_buildings <egon.data.datasets.electricity_demand_timeseries.cts_buildings.CtsBuildings>`.
 
 To determine each building's share of the HV-MV substation demand profile,

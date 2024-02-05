@@ -15,7 +15,7 @@ and their processing within the eGon-data pipeline are described here.
 Grid models
 ===========
 
-Power grid models of different voltage levels form a central part of the eGon data model, which is required for cross-grid-level optimization.
+Power grid models of different voltage levels form a central part of the eGon-data model, which is required for cross-grid-level optimization.
 In addition, sector coupling necessitates the representation of the gas grid infrastructure, which is also described in this section.
 
 Electricity grid
