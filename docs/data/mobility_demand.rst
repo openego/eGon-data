@@ -86,6 +86,47 @@ to obtain the charging time series per MV grid district.
 The generation of time series to model flexible charging of EVs (upper right in figure
 :ref:`mit-model`) is described in section :ref:`flexible-charging-ref`.
 
+For grid analyses of the MV and LV level, the charging demand needs to be further disaggregated
+within the MV grid districts. To this end, potential charging sites are determined.
+These potential charging sites are then used to allocate the charging demand of the
+EVs in each MV grid district to specific charging points. This allocation is not done in
+eGon-data but in the `eDisGo <https://github.com/openego/eDisGo>`_ tool and further
+described in the
+`eDisGo documentation <https://edisgo.readthedocs.io/en/dev/features_in_detail.html#allocation-of-charging-demand>`_.
+
+The determination of potential charging sites is conducted in class
+:py:class:`MITChargingInfrastructure<egon.data.datasets.emobility.motorized_individual_travel_charging_infrastructure.MITChargingInfrastructure>`.
+The results are written to database table
+:py:class:`EgonEmobChargingInfrastructure<egon.data.datasets.emobility.motorized_individual_travel_charging_infrastructure.db_classes.EgonEmobChargingInfrastructure>`.
+The approach used to determine potential charging sites is based on the method implemented in
+`TracBEV <https://github.com/rl-institut/tracbev>`_.
+Four use cases for charging points are differentiated - home, work, public and high-power charging (hpc).
+The potential charging sites are determined based on geographical data. Each
+possible charging site is assigned an attractivity that represents the likelihood that a
+charging point is installed at that site.
+The used approach is for each use case shortly described in the following:
+
+* Home charging: The allocation of home charging stations is based on the number of apartments in each
+  100 x 100 m grid given by the Census 2011 [Census]_. The cell with the highest
+  number of apartments receives the highest attractivity.
+* Work charging: The allocation of work charging stations is based on the area classification obtained from
+  OpenStreetMap [OSM]_ using the landuse key. Work charging stations are allocated to areas
+  tagged with commercial, retail or industrial. The attractivity of each area
+  depends on the size of the area as well as the classification.
+  Commercial areas receive the highest attractivity, followed
+  by retail areas. Industrial areas are ranked lowest.
+* Public charging (slow): The basis for the allocation
+  of public charging stations are points of interest (POI) from
+  OSM [OSM]_. POI can be schools, shopping malls, supermarkets,
+  etc. The attractivity of each POI is determined by empirical
+  studies conducted in previous projects.
+* High-power charging: The basis for the allocation of fast
+  charging stations are the locations of existing petrol stations
+  obtained from OSM [OSM]_. The locations are ranked by the traffic
+  volume of streets within a 900 m radius.
+
+The necessary input data is downloaded from `zenodo <https://zenodo.org/records/6466480>`_.
+
 
 .. _mobility-demand-hdt-ref:
 
