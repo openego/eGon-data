@@ -523,7 +523,7 @@ with airflow.DAG(
         ]
     )
 
-    # DSM (demand site management)
+    # DSM (demand side management)
     components_dsm = DsmPotential(
         dependencies=[
             cts_electricity_demand_annual,
