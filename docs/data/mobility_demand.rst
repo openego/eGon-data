@@ -122,8 +122,7 @@ The used approach is for each use case shortly described in the following:
   studies conducted in previous projects.
 * High-power charging: The basis for the allocation of fast
   charging stations are the locations of existing petrol stations
-  obtained from OSM [OSM]_. The locations are ranked by the traffic
-  volume of streets within a 900 m radius.
+  obtained from OSM [OSM]_. The locations are ranked randomly at the moment.
 
 The necessary input data is downloaded from `zenodo <https://zenodo.org/records/6466480>`_.
 
