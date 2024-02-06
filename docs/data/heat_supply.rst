@@ -70,15 +70,81 @@ The distribution of CHP plants for different carriers is shown in figure :ref:`c
 
   Spatial distribution of CHP plants in scenario ``eGon2035``
 
+.. _dec-heat-pumps-ref:
 
 Individual heat pumps
 +++++++++++++++++++++++++
 
-Heat pumps supplying individual buildings are first distributed to each medium-voltage grid district, these capacities are later on further disaggregated to single buildings. Similar to central heat pumps they are modeled with a time-dependent coefficient of performance depending on the temperature data. 
+Heat pumps supplying individual buildings are first distributed to each medium-voltage grid district.
+These capacities are later on further disaggregated to single buildings. Similar to central heat pumps,
+individual heat pumps are modeled with a time-dependent coefficient of performance
+depending on the temperature data.
 
-The distribution of the national capacities to each medium-voltage grid district is proportional to the heat demand outside of district heating grids. 
+The distribution of the national capacities to each medium-voltage grid district is
+proportional to the heat demand outside of district heating grids.
 
-@RLI: Distribution on building level
+The heat pump capacity per MV grid district is further disaggregated to individual
+buildings based on the building's peak heat demand.
+For the eGon2035 scenario this is conducted in the dataset
+:py:class:`HeatPumps2035 <egon.data.datasets.heat_supply.individual_heating.HeatPumps2035>`
+and for the eGon100RE scenario in the dataset
+:py:class:`HeatPumps2050 <egon.data.datasets.heat_supply.individual_heating.HeatPumps2050>`.
+The heat pump capacity per building is for both scenarios written to database table
+:py:class:`demand.egon_hp_capacity_buildings
+<egon.data.datasets.heat_supply.individual_heating.EgonHpCapacityBuildings>`.
+The peak heat demand per building is written to database table
+:py:class:`demand.egon_building_heat_peak_loads
+<egon.data.datasets.heat_supply.individual_heating.BuildingHeatPeakLoads>`.
+
+To disaggregate the total heat pump capacity per MV grid, first, the minimum required
+heat pump capacity per building is determined. To this end, an approach from the
+`network development plan <https://www.netzentwicklungsplan.de/sites/default/files/paragraphs-files/Szenariorahmenentwurf_NEP2035_2021_1.pdf>`_
+(pp.46-47) is used where the heat pump capacity of a building is calculated by multiplying the peak heat
+demand of the building by a minimum assumed COP of 1.7 and a flexibility factor of
+24/18 that is taking into account that power supply of heat pumps can be interrupted for up
+to six hours by the local distribution grid operator.
+
+After the determination of the minimum required heat pump capacity per building, the
+total heat pump capacity per MV grid district is distributed to buildings inside the
+grid district based on the minimum required heat pump capacity.
+In the eGon2035 scenario, heat pumps and gas boilers can be
+used for individual heating. Therefore, it needs to be chosen which buildings
+are assigned a heat pump and which are assigned a gas boiler. To this end,
+buildings are randomly chosen until the MV grid's total
+heat pump capacity is reached (see
+:py:func:`determine_buildings_with_hp_in_mv_grid
+<egon.data.datasets.heat_supply.individual_heating.determine_buildings_with_hp_in_mv_grid>`).
+Buildings with PV rooftop plants are set to be more likely to be assigned a heat pump. In case
+the minimum heat pump capacity of all chosen buildings is smaller than the total
+heat pump capacity of the MV grid but adding another building would exceed the total
+heat pump capacity of the MV grid, the remaining capacity is distributed to all
+buildings with heat pumps proportionally to their respective minimum required
+heat pump capacity.
+
+In the eGon100RE scenario, heat pumps are assumed to be the only technology for
+individual heating, wherefore all buildings outside of district heating areas are
+assigned a heat pump. The total heat pump capacity in the MV grid district is distributed
+to all buildings with individual heating proportionally to the minimum required heat pump
+capacity.
+To assure that the heat pump capacity per MV grid district, that is in case
+of the eGon100RE scenario optimised using PyPSA-EUR, is sufficient to meet the
+minimum required heat pump capacity of each building, the minimum required heat pump capacity per
+MV grid district is given as an input to the PyPSA-EUR optimisation.
+Therefore, the minimum heat pump capacity per
+building in the eGon100RE scenario is calculated and aggregated per grid district in the dataset
+:py:class:`HeatPumpsPypsaEurSec <egon.data.datasets.heat_supply.individual_heating.HeatPumpsPypsaEurSec>`
+and written to csv file ``input-pypsa-eur-sec/minimum_hp_capacity_mv_grid_100RE.csv``.
+
+Drawbacks and limitations as well as challenges of the determination of the minimum
+required heat pump capacity and the disaggregation to individual buildings
+are discussed in the respective dataset docstrings of
+:py:class:`HeatPumps2035 <egon.data.datasets.heat_supply.individual_heating.HeatPumps2035>`,
+:py:class:`HeatPumps2050 <egon.data.datasets.heat_supply.individual_heating.HeatPumps2050>` and
+:py:class:`HeatPumpsPypsaEurSec <egon.data.datasets.heat_supply.individual_heating.HeatPumpsPypsaEurSec>`.
+
+
+
+
 
 Individual gas boilers
 +++++++++++++++++++++++
