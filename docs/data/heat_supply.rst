@@ -26,7 +26,7 @@ The following subsections describe the heat supply methodology for each category
 .. _district-heating:
 
 District heating
-~~~~~~~~~~~~~~~~
++++++++++++++++++
 
 First, district heating areas are defined for each scenario based on existing district heating areas and an overall district heating share per scenario. To reduce the model complexity, district heating areas are defined per Census cell, either all buildings within a cell are supplied by district heat or none. The first step of the extraction of district heating areas is the identification of Census cells with buildings that are currently supplied by district heating using the ``building`` dataset of Census. All Census cells where more than 30% of the buildings are currently supplied by district heat are defined as cells inside a district heating area.
 The identified cells are then summarized by combining cells that have a maximum distance of 500m.
@@ -64,7 +64,7 @@ The distribution of CHP plants for different carriers is shown in figure :ref:`c
 
 
 Individual heat pumps
-~~~~~~~~~~~~~~~~~~~~~
++++++++++++++++++++++++++
 
 Heat pumps supplying individual buildings are first distributed to each medium-voltage grid district, these capacities are later on further disaggregated to single buildings. Similar to central heat pumps they are modeled with a time-dependent coefficient of performance depending on the temperature data. 
 
@@ -73,7 +73,7 @@ The distribution of the national capacities to each medium-voltage grid district
 @RLI: Distribution on building level
 
 Individual gas boilers
-~~~~~~~~~~~~~~~~~~~~~~
++++++++++++++++++++++++
 
 All residential and CTS buildings that are neither supplied by a district heating grid nor an individual heat pump are supplied by gas boilers. The demand time series of these buildings are multiplied by the efficiency of gas boilers and aggregated per methane grid node.
 
