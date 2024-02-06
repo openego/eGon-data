@@ -50,7 +50,15 @@ The national capacities for each supply technology are taken from the Grid Devel
 
 #. Large district heating grids with an annual demand that is higher than 96GWh can be supplied by geothermal plants, in case of an intersection of geothermal potential areas and the district heating grid.  Smaller district heating grids can be supplied by solar thermal power plants. The national capacities are distributed proportionally to the remaining heat demands. After assigning these plants, the remaining heat demands are reduced by the thermal output and assumed full load hours.
 
-#. Next, the national capacities for central heat pumps and resistive heaters are distributed to all district heating areas proportionally to their remaining demands. Heat pumps are modeled with a time-dependent coefficient of performance depending on the temperature data. 
+#. Next, the national capacities for central heat pumps and resistive heaters are
+   distributed to all district heating areas proportionally to their remaining demands.
+   Heat pumps are modeled with a time-dependent coefficient of performance (COP) depending on the temperature data.
+   The COP is determined in function
+   :py:func:`heat_pump_cop <egon.data.datasets.renewable_feedin.heat_pump_cop>`
+   as part of the
+   :py:class:`RenewableFeedin <egon.data.datasets.renewable_feedin.RenewableFeedin>`
+   dataset and written to database table
+   :py:class:`supply.egon_era5_renewable_feedin <egon.data.datasets.era5.EgonRenewableFeedIn>`.
 
 #. In the last step, gas boilers are assigned to every district heating grid regardless of the remaining demand. In the optimization, this can be used as a fall-back option to not run into infeasibilities.
 
