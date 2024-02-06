@@ -227,6 +227,10 @@ Base = declarative_base()
 
 
 class EgonEtragoTimeseriesIndividualHeating(Base):
+    """
+    Class definition of table demand.egon_etrago_timeseries_individual_heating.
+
+    """
     __tablename__ = "egon_etrago_timeseries_individual_heating"
     __table_args__ = {"schema": "demand"}
     bus_id = Column(Integer, primary_key=True)
@@ -236,6 +240,10 @@ class EgonEtragoTimeseriesIndividualHeating(Base):
 
 
 class EgonHpCapacityBuildings(Base):
+    """
+    Class definition of table demand.egon_hp_capacity_buildings.
+
+    """
     __tablename__ = "egon_hp_capacity_buildings"
     __table_args__ = {"schema": "demand"}
     building_id = Column(Integer, primary_key=True)
@@ -361,6 +369,10 @@ class HeatPumps2050(Dataset):
 
 
 class BuildingHeatPeakLoads(Base):
+    """
+    Class definition of table demand.egon_building_heat_peak_loads.
+
+    """
     __tablename__ = "egon_building_heat_peak_loads"
     __table_args__ = {"schema": "demand"}
 
