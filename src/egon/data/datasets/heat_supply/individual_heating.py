@@ -218,6 +218,17 @@ class HeatPumps2035(Dataset):
 
     For more information see data documentation on :ref:`dec-heat-pumps-ref`.
 
+    Heat pump capacity per building in the eGon100RE scenario is set up in a separate
+    dataset, :py:class:`HeatPumps2050 <HeatPumps2050>`, as for one reason in case of the
+    eGon100RE scenario the minimum required heat pump capacity per building can directly
+    be determined using the peak heat demand per building determined in the dataset
+    :py:class:`HeatPumpsPypsaEurSec <HeatPumpsPypsaEurSec>`, whereas peak heat
+    demand data does not yet exist for the eGon2035 scenario. Another reason is,
+    that in case of the eGon100RE scenario all buildings with individual heating have a
+    heat pump whereas in the eGon2035 scenario buildings are randomly selected until the
+    installed heat pump capacity per MV grid is met. All other buildings with individual
+    heating but no heat pump are assigned a gas boiler.
+
     *Dependencies*
       * :py:class:`CtsDemandBuildings
         <egon.data.datasets.electricity_demand_timeseries.cts_buildings.CtsDemandBuildings>`
@@ -339,6 +350,10 @@ class HeatPumps2050(Dataset):
     :py:class:`PypsaEurSec <egon.data.datasets.pypsaeursec.PypsaEurSec>` dataset.
 
     For more information see data documentation on :ref:`dec-heat-pumps-ref`.
+
+    Heat pump capacity per building for the eGon2035 scenario is set up in a separate
+    dataset, :py:class:`HeatPumps2035 <HeatPumps2035>`. See there for further
+    information as to why.
 
     *Dependencies*
       * :py:class:`PypsaEurSec <egon.data.datasets.pypsaeursec.PypsaEurSec>`
