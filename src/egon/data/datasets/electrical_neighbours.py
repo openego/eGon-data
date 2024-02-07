@@ -587,7 +587,7 @@ def foreign_dc_lines(scenario, sources, targets, central_buses):
               AND country != 'DE')
         """
     )
-    capital_cost = get_sector_parameters("electricity", "eGon2035")[
+    capital_cost = get_sector_parameters("electricity", scenario)[
         "capital_cost"
     ]
 
