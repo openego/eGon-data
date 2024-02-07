@@ -44,6 +44,8 @@ Literature
 
 .. [NEP2021] Übertragungsnetzbetreiber Deutschland (2021):  *Netzentwicklungsplan Strom 2035*, Version 2021, 1. Entwurf. 2021.
 
+.. [NEP2021a] Principles for the Expansion Planning of the German Transmission Network https://www.netzentwicklungsplan.de/
+
 .. [NOW2020] Nationale Leitstelle Ladeinfrastruktur, Ladeinfrastruktur nach 2025/2030: Szenarien für den Markthochlauf (2020). URL https://www.now-gmbh.de/wp-content/uploads/2020/11/Studie_Ladeinfrastruktur-nach-2025-2.pdf
 
 .. [OSM] Geofabrik GmbH and OpenStreetMap-Contributors, OpenStreetMap Data Extracts, Stand 01.01.2022 (2022). URL https://download.geofabrik.de/europe/germany-220101.osm.pbf

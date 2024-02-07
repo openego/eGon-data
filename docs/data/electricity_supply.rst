@@ -33,7 +33,7 @@ The following steps are conducted:
 
 #. If expansion of wind onshore capacity is required, capacities are calculated depending on the area size of the formerly selected potential areas. 21.05 MW/km² and 16.81 MW/km² are used for federal states in the north and in the south of the country respectively. The resulting parks are therefore located on the selected potential areas.
 
-#. The resulting capacities are compared to the target values for the specific scenario per federal state. If the target value is exceeded, a linear downscaling is conducted. If the target value is not reached yet, the remaining capacity is distributed linearly among the rest of the potential areas within the state. 
+#. The resulting capacities are compared to the target values for the specific scenario per federal state. If the target value is exceeded, a linear downscaling is conducted. If the target value is not reached yet, the remaining capacity is distributed linearly among the rest of the potential areas within the state.
 
 Offshore wind
 ++++++++++++++
@@ -52,10 +52,11 @@ The following steps are conducted:
 
 .. figure:: /images/offshore_power_plants_areas.png
   :name: offshore_power_plants_areas
-  :width: 400 
-  
+  :width: 400
+
   Areas for offshore wind park in North and Baltic sea. Source: NEP
 
+.. _pv-rooftop-ref:
 
 PV ground mounted
 ++++++++++++++++++
@@ -74,12 +75,12 @@ The following steps are conducted:
 
 #. If expansion of PV ground mounted capacity is required, capacities are calculated depending on the area size of the formerly selected potential areas. The resulting parks are therefore located on the selected potential areas.
 
-#. The resulting capacities are compared to the target values for the specific scenario per federal state. If the target value is exceeded, a linear downscaling is conducted. If the target value is not reached yet, the remaining capacity is distributed linearly among the rest of the potential areas within the state. 
+#. The resulting capacities are compared to the target values for the specific scenario per federal state. If the target value is exceeded, a linear downscaling is conducted. If the target value is not reached yet, the remaining capacity is distributed linearly among the rest of the potential areas within the state.
 
 .. figure:: /images/PV_freiflaeche.png
   :name: pv_ground_mounted-example
-  :width: 400 
-  
+  :width: 400
+
   Example: sites of existing PV ground mounted parks and potential areas
 
 PV rooftop
@@ -140,18 +141,18 @@ Disaggregation of PV rooftop scenario capacities:
 Hydro
 +++++
 
-In the case of hydropower plants, a distinction is made between the carrier run-of-river 
-and reservoir. 
+In the case of hydropower plants, a distinction is made between the carrier run-of-river
+and reservoir.
 The methods to distribute and allocate are the same for both carriers.
-In a first step all suitable power plants (correct carrier, valid geolocation, information 
+In a first step all suitable power plants (correct carrier, valid geolocation, information
 about federal state) are selected and their installed capacity is scaled to meet the target
-values for the respective federal state and scenario. 
-Information about the voltage level the power plants are connected to is obtained. In case 
-no information is availabe the voltage level is identified using threshold values for the 
-installed capacity (see :func:`assign_voltage_level <egon.data.datasets.power_plants.assign_voltage_level>`). 
+values for the respective federal state and scenario.
+Information about the voltage level the power plants are connected to is obtained. In case
+no information is availabe the voltage level is identified using threshold values for the
+installed capacity (see :func:`assign_voltage_level <egon.data.datasets.power_plants.assign_voltage_level>`).
 In a next step the correct grid connection point is identified based on the voltage level
 and geolocation of the power plants (see :func:`assign_bus_id <egon.data.datasets.power_plants.assign_bus_id>`)
-The resulting list of power plants it added to table 
+The resulting list of power plants it added to table
 :py:class:`EgonPowerPlants <egon.data.datasets.power_plants.EgonPowerPlants>`.
 
 Biomass
@@ -172,9 +173,9 @@ Conventional
 
 
 In function :func:`allocate_conventional_non_chp_power_plants <egon.data.datasets.power_plants.allocate_conventional_non_chp_power_plants>`
-capacities for conventional power plants, which are no chp plants, with carrier *oil* and 
+capacities for conventional power plants, which are no chp plants, with carrier *oil* and
 *gas* are allocated.
-  
+
 
 
 
