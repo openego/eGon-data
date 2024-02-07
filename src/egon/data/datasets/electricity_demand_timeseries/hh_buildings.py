@@ -651,8 +651,8 @@ def map_houseprofiles_to_buildings():
     buildings and supplementary data as well as the mapping table is stored
     in the db.
 
-    Tables:
-    ----------
+    **Tables**
+
     synthetic_buildings:
         schema: openstreetmap
         tablename: osm_buildings_synthetic
@@ -661,8 +661,6 @@ def map_houseprofiles_to_buildings():
         schema: demand
         tablename: egon_household_electricity_profile_of_buildings
 
-    Notes
-    -----
     """
     #
     egon_map_zensus_buildings_residential = Table(
@@ -833,8 +831,7 @@ class setup(Dataset):
     * As this dataset uses the load profile assignment at census cell level
       conducted in hh_profiles.py, also check drawbacks and limitations in that module.
 
-    Example Query
-    ----------------
+    **Example Query**
 
     * Get a list with number of houses, households and household types per
       census cell

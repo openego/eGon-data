@@ -143,44 +143,43 @@ class CtsDemandBuildings(Dataset):
 
     *Resulting tables*
       * :py:class:`openstreetmap.osm_buildings_synthetic <egon.data.datasets.electricity_demand_timeseries.hh_buildings.OsmBuildingsSynthetic>` is extended
-      * :py:class:`openstreetmap.egon_cts_buildings <egon.data.datasets.electricity_demand_timeseries.cts_buildings.CtsBuildings> is created
+      * :py:class:`openstreetmap.egon_cts_buildings <egon.data.datasets.electricity_demand_timeseries.cts_buildings.CtsBuildings>` is created
       * :py:class:`demand.egon_cts_electricity_demand_building_share <egon.data.datasets.electricity_demand_timeseries.cts_buildings.EgonCtsElectricityDemandBuildingShare>` is created
       * :py:class:`demand.egon_cts_heat_demand_building_share <egon.data.datasets.electricity_demand_timeseries.cts_buildings.EgonCtsHeatDemandBuildingShare>` is created
       * :py:class:`demand.egon_building_electricity_peak_loads <egon.data.datasets.electricity_demand_timeseries.hh_buildings.BuildingElectricityPeakLoads>` is extended
       * :py:class:`boundaries.egon_map_zensus_mvgd_buildings <egon.data.datasets.electricity_demand_timeseries.mapping.EgonMapZensusMvgdBuildings>` is extended.
 
-
     **The following datasets from the database are mainly used for creation:**
 
     * `openstreetmap.osm_buildings_filtered`:
-        Table of OSM-buildings filtered by tags to selecting residential and cts
-        buildings only.
+       Table of OSM-buildings filtered by tags to selecting residential and cts
+       buildings only.
     * `openstreetmap.osm_amenities_shops_filtered`:
-        Table of OSM-amenities filtered by tags to select cts only.
+       Table of OSM-amenities filtered by tags to select cts only.
     * `openstreetmap.osm_amenities_not_in_buildings_filtered`:
-        Table of amenities which do not intersect with any building from
-        `openstreetmap.osm_buildings_filtered`
+       Table of amenities which do not intersect with any building from
+       `openstreetmap.osm_buildings_filtered`
     * `openstreetmap.osm_buildings_synthetic`:
-        Table of synthetic residential buildings
+       Table of synthetic residential buildings
     * `boundaries.egon_map_zensus_buildings_filtered_all`:
-        Mapping table of census cells and buildings filtered even if population
-        in census cell = 0.
+       Mapping table of census cells and buildings filtered even if population
+       in census cell = 0.
     * `demand.egon_demandregio_zensus_electricity`:
-        Table of annual electricity load demand for residential and cts at census
-        cell level. Residential load demand is derived from aggregated residential
-        building profiles. DemandRegio CTS load demand at NUTS3 is distributed to
-        census cells linearly to heat demand from peta5.
+       Table of annual electricity load demand for residential and cts at census
+       cell level. Residential load demand is derived from aggregated residential
+       building profiles. DemandRegio CTS load demand at NUTS3 is distributed to
+       census cells linearly to heat demand from peta5.
     * `demand.egon_peta_heat`:
-        Table of annual heat load demand for residential and cts at census cell
-        level from peta5.
+       Table of annual heat load demand for residential and cts at census cell
+       level from peta5.
     * `demand.egon_etrago_electricity_cts`:
-        Scaled cts electricity time series for every MV substation. Derived from
-        DemandRegio SLP for selected economic sectors at nuts3. Scaled with annual
-        demand from `demand.egon_demandregio_zensus_electricity`
+       Scaled cts electricity time series for every MV substation. Derived from
+       DemandRegio SLP for selected economic sectors at nuts3. Scaled with annual
+       demand from `demand.egon_demandregio_zensus_electricity`
     * `demand.egon_etrago_heat_cts`:
-        Scaled cts heat time series for every MV substation. Derived from
-        DemandRegio SLP Gas for selected economic sectors at nuts3. Scaled with
-        annual demand from `demand.egon_peta_heat`.
+       Scaled cts heat time series for every MV substation. Derived from
+       DemandRegio SLP Gas for selected economic sectors at nuts3. Scaled with
+       annual demand from `demand.egon_peta_heat`.
 
     **What is the challenge?**
 
@@ -1166,7 +1165,7 @@ def cts_buildings():
     building nor amenity is available, random synthetic buildings are
     generated. The demand share is stored in the database.
 
-    Note:
+    Note
     -----
     Cells with CTS demand, amenities and buildings do not change within
     the scenarios, only the demand itself. Therefore scenario eGon2035

@@ -2,7 +2,7 @@
 
 The following main things are done in this module:
 
-* ...
+* ??
 * Desaggregation of heat pump capacities to individual buildings
 * Determination of minimum required heat pump capacity for pypsa-eur-sec
 
@@ -542,12 +542,12 @@ def cascade_per_technology(
 def cascade_heat_supply_indiv(scenario, distribution_level, plotting=True):
     """Assigns supply strategy for individual heating in four steps.
 
-    1.) all small scale CHP are connected.
-    2.) If the supply can not  meet the heat demand, solar thermal collectors
-        are attached. This is not implemented yet, since individual
-        solar thermal plants are not considered in eGon2035 scenario.
-    3.) If this is not suitable, the mv grid is also supplied by heat pumps.
-    4.) The last option are individual gas boilers.
+    1. all small scale CHP are connected.
+    2. If the supply can not  meet the heat demand, solar thermal collectors
+       are attached. This is not implemented yet, since individual
+       solar thermal plants are not considered in eGon2035 scenario.
+    3. If this is not suitable, the mv grid is also supplied by heat pumps.
+    4. The last option are individual gas boilers.
 
     Parameters
     ----------
@@ -1610,7 +1610,7 @@ def export_to_db(df_peak_loads_db, df_heat_mvgd_ts_db, drop=False):
     """
     Function to export the collected results of all MVGDs per bulk to DB.
 
-        Parameters
+    Parameters
     ----------
     df_peak_loads_db : pd.DataFrame
         Table of building peak loads of all MVGDs per bulk
