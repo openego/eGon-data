@@ -247,7 +247,7 @@ def buses(scenario, sources, targets):
     central_buses.scn_name = scenario
 
     # Insert all central buses for eGon2035
-    if scenario in ["eGon2035", "status2019"]:
+    if scenario in ["eGon2035", "status2019", "status2023"]: # TODO: status2023 this is hardcoded shit
         central_buses.to_postgis(
             targets["buses"]["table"],
             schema=targets["buses"]["schema"],
