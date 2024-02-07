@@ -654,7 +654,6 @@ def insert_cts_ind_demands():
 
     scenarios = egon.data.config.settings()["egon-data"]["--scenarios"]
 
-    scenarios.append("eGon2021")
 
     for scn in scenarios:
         year = scenario_parameters.global_settings(scn)["population_year"]
@@ -708,9 +707,12 @@ def insert_society_data():
             f"DELETE FROM {targets[t]['schema']}.{targets[t]['table']};"
         )
 
-    target_years = np.append(
-        get_sector_parameters("global").population_year.values, 2018
-    )
+    target_years = [
+        get_sector_parameters("global", scn)["population_year"]
+        for scn in egon.data.config.settings()["egon-data"]["--scenarios"]
+    ]
+
+    target_years = np.unique(np.append(np.array(target_years), 2018))
 
     for year in target_years:
         df_pop = pd.DataFrame(data.population(year=year))
