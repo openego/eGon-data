@@ -649,7 +649,6 @@ def insert_cts_ind_demands():
 
     scenarios = egon.data.config.settings()["egon-data"]["--scenarios"]
 
-    scenarios.append("eGon2021")
 
     for scn in scenarios:
         year = scenario_parameters.global_settings(scn)["population_year"]
