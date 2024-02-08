@@ -1026,7 +1026,7 @@ class GasNodesAndPipes(Dataset):
         if "status" in scn_name:
             tasks += (wrapped_partial(
                 insert_gas_data_status, scn_name=scn_name, postfix=f"_{scn_name[-4:]}"
-            ))
+            ),)
     # tasks = (insert_gas_data_status,)
 
     if "eGon2035" in config.settings()["egon-data"]["--scenarios"]:
