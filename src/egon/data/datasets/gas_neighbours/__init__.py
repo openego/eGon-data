@@ -25,5 +25,10 @@ class GasNeighbours(Dataset):
                 # grid,
                 # insert_ocgt_abroad,
                 # insert_gas_neigbours_eGon100RE,
+                notasks,
             ),
         )
+
+
+def notasks():
+    return None
