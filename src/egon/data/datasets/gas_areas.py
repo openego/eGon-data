@@ -88,15 +88,13 @@ class GasAreasStatusQuo(Dataset):
     version: str = "0.0.2"
 
     def __init__(self, dependencies):
-        tasks = ()
+        tasks = (create_gas_voronoi_table,)
 
         for scn_name in config.settings()["egon-data"]["--scenarios"]:
             if "status" in scn_name:
                 tasks += (wrapped_partial(
                     voronoi_status, scn_name=scn_name, postfix=f"_{scn_name[-4:]}"
                 ),)
-
-        tasks += (create_gas_voronoi_table,)
 
         super().__init__(
             name=self.name,
