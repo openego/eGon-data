@@ -368,13 +368,13 @@ def import_gas_generators():
                 .reset_index(drop=False)
             )
 
-        elif scn_name == "status2019":
+        elif "status" in scn_name:
             # Add one large CH4 generator at each CH4 bus
             CH4_generators_list = db.select_dataframe(
-                """
+                f"""
                 SELECT bus_id as bus, scn_name, carrier
                 FROM grid.egon_gas_voronoi
-                WHERE scn_name = 'status2019'
+                WHERE scn_name = {scn_name}
                 AND carrier = 'CH4'
                 """
             )
