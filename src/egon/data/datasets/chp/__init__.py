@@ -413,13 +413,13 @@ def insert_chp_statusquo(scn="status2019"):
             mastr, cfg, WORKING_DIR_MASTR_NEW
         )
 
-        gas_bus_id = db.assign_gas_bus_id(mastr, "status2019", "CH4").bus  # fixed to status2019, no other data avail.
+        gas_bus_id = db.assign_gas_bus_id(mastr, scn, "CH4").bus
 
         mastr = assign_bus_id(mastr, cfg, drop_missing=True)
 
         mastr["gas_bus_id"] = gas_bus_id
 
-    mastr = assign_use_case(mastr, cfg["sources"], "status2019")  # fixed to status2019, no other data avail.
+    mastr = assign_use_case(mastr, cfg["sources"], scn)
 
     # Insert entries with location
     session = sessionmaker(bind=db.engine())()
