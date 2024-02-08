@@ -17,13 +17,13 @@ class GasNeighbours(Dataset):
     def __init__(self, dependencies):
         super().__init__(
             name="GasNeighbours",
-            version="0.0.4",
+            version="0.0.5",
             dependencies=dependencies,
             tasks=(
-                tyndp_gas_generation,
-                tyndp_gas_demand,
-                grid,
-                insert_ocgt_abroad,
-                insert_gas_neigbours_eGon100RE,
+                # tyndp_gas_generation,
+                # tyndp_gas_demand,
+                # grid,
+                # insert_ocgt_abroad,
+                # insert_gas_neigbours_eGon100RE,
             ),
         )
