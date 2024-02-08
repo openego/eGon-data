@@ -374,7 +374,7 @@ def import_gas_generators():
                 f"""
                 SELECT bus_id as bus, scn_name, carrier
                 FROM grid.egon_gas_voronoi
-                WHERE scn_name = {scn_name}
+                WHERE scn_name = '{scn_name}'
                 AND carrier = 'CH4'
                 """
             )
