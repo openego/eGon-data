@@ -522,7 +522,9 @@ def insert_hh_demand(scenario, year, engine):
     # insert into database
     for hh_size in ec_hh.columns:
         df = pd.DataFrame(ec_hh[hh_size])
-        df["year"] = year
+        df["year"] = 2023 if scenario == "status2023" else year # TODO status2023
+        # adhoc fix until ffeopendata servers are up and population_year can be set
+
         df["scenario"] = scenario
         df["hh_size"] = hh_size
         df = df.rename({hh_size: "demand"}, axis="columns")
