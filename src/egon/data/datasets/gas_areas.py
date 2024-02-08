@@ -7,7 +7,7 @@ from sqlalchemy import BigInteger, Column, Text
 from sqlalchemy.ext.declarative import declarative_base
 
 from egon.data import db, config
-from egon.data.datasets import Dataset
+from egon.data.datasets import Dataset, wrapped_partial
 from egon.data.datasets.generate_voronoi import get_voronoi_geodataframe
 
 
@@ -87,17 +87,17 @@ class GasAreasStatusQuo(Dataset):
     #:
     version: str = "0.0.2"
 
-    tasks = ()
-
-    for scn_name in config.settings()["egon-data"]["--scenarios"]:
-        if "status" in scn_name:
-            tasks += (wrapped_partial(
-                voronoi_status, scn_name=scn_name, postfix=f"_{scn_name[-4:]}"
-            ),)
-
-    tasks += (create_gas_voronoi_table,)
-
     def __init__(self, dependencies):
+        tasks = ()
+
+        for scn_name in config.settings()["egon-data"]["--scenarios"]:
+            if "status" in scn_name:
+                tasks += (wrapped_partial(
+                    voronoi_status, scn_name=scn_name, postfix=f"_{scn_name[-4:]}"
+                ),)
+
+        tasks += (create_gas_voronoi_table,)
+
         super().__init__(
             name=self.name,
             version=self.version,
