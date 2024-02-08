@@ -85,7 +85,7 @@ class GasAreasStatusQuo(Dataset):
     #:
     name: str = "GasAreasStatusQuo"
     #:
-    version: str = "0.0.1"
+    version: str = "0.0.2"
 
     tasks = ()
 
