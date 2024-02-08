@@ -1450,7 +1450,7 @@ def map_carriers_entsoe():
     }
 
 
-def entsoe_to_bus_etrago():
+def entsoe_to_bus_etrago(scn_name):
     map_entsoe = pd.Series(
         {
             "LU": "LU00",
@@ -1469,7 +1469,7 @@ def entsoe_to_bus_etrago():
         }
     )
 
-    for_bus = get_foreign_bus_id(scenario="status2019")
+    for_bus = get_foreign_bus_id(scenario=scn_name)
 
     return map_entsoe.map(for_bus)
 
@@ -1538,7 +1538,7 @@ def insert_generators_sq(scn_name="status2019"):
         AND scn_name = '{scn_name}'
         """
     )
-    entsoe_to_bus = entsoe_to_bus_etrago()
+    entsoe_to_bus = entsoe_to_bus_etrago(scn_name)
     carrier_entsoe = map_carriers_entsoe()
     gen_sq = gen_sq.groupby(axis=1, by=carrier_entsoe).sum()
 
@@ -1715,7 +1715,7 @@ def insert_loads_sq(scn_name="status2019"):
     session = sessionmaker(bind=engine)()
 
     # get the corresponding bus per foreign country
-    entsoe_to_bus = entsoe_to_bus_etrago()
+    entsoe_to_bus = entsoe_to_bus_etrago(scn_name)
 
     # Calculate and insert demand timeseries per etrago bus_id
     for country in load_sq.columns:
