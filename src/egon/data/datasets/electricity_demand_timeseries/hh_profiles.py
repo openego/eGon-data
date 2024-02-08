@@ -121,7 +121,6 @@ This module docstring is rather a dataset documentation. Once, a decision
 is made in ... the content of this module docstring needs to be moved to
 docs attribute of the respective dataset class.
 """
-
 from itertools import cycle, product
 from pathlib import Path
 import os
@@ -136,10 +135,7 @@ import pandas as pd
 
 from egon.data import db
 from egon.data.datasets import Dataset
-from egon.data.datasets.scenario_parameters import (
-    get_scenario_year,
-    get_sector_parameters,
-)
+from egon.data.datasets.scenario_parameters import get_scenario_year
 from egon.data.datasets.zensus_mv_grid_districts import MapZensusGridDistricts
 import egon.data.config
 
@@ -378,11 +374,9 @@ def get_iee_hh_demand_profiles_raw():
     file_section = (
         "path"
         if dataset == "Everything"
-        else (
-            "path_testmode"
-            if dataset == "Schleswig-Holstein"
-            else ve(f"'{dataset}' is not a valid dataset boundary.")
-        )
+        else "path_testmode"
+        if dataset == "Schleswig-Holstein"
+        else ve(f"'{dataset}' is not a valid dataset boundary.")
     )
 
     file_path = pa_config["sources"]["household_electricity_demand_profiles"][
@@ -1204,15 +1198,15 @@ def refine_census_data_at_cell_level(
         right_on=["cell_id", "characteristics_code"],
     )
 
-    df_census_households_grid_refined["characteristics_code"] = (
-        df_census_households_grid_refined["characteristics_code"].astype(int)
-    )
-    df_census_households_grid_refined["hh_5types"] = (
-        df_census_households_grid_refined["hh_5types"].astype(int)
-    )
-    df_census_households_grid_refined["hh_10types"] = (
-        df_census_households_grid_refined["hh_10types"].astype(int)
-    )
+    df_census_households_grid_refined[
+        "characteristics_code"
+    ] = df_census_households_grid_refined["characteristics_code"].astype(int)
+    df_census_households_grid_refined[
+        "hh_5types"
+    ] = df_census_households_grid_refined["hh_5types"].astype(int)
+    df_census_households_grid_refined[
+        "hh_10types"
+    ] = df_census_households_grid_refined["hh_10types"].astype(int)
 
     return df_census_households_grid_refined
 
@@ -1244,11 +1238,9 @@ def get_cell_demand_profile_ids(df_cell, pool_size):
     # instead of random.sample use random.choices() if with replacement
     # list of sample ids per hh_type in cell
     cell_profile_ids = [
-        (
-            (hh_type, random.sample(range(pool_size[hh_type]), k=sq))
-            if pool_size[hh_type] >= sq
-            else (hh_type, random.choices(range(pool_size[hh_type]), k=sq))
-        )
+        (hh_type, random.sample(range(pool_size[hh_type]), k=sq))
+        if pool_size[hh_type] >= sq
+        else (hh_type, random.choices(range(pool_size[hh_type]), k=sq))
         for hh_type, sq in zip(
             df_cell["hh_type"],
             df_cell["hh_10types"],
@@ -1327,9 +1319,9 @@ def assign_hh_demand_profiles_to_cells(df_zensus_cells, df_iee_profiles):
         df_hh_profiles_in_census_cells.at[grid_id, "cell_id"] = df_cell.loc[
             :, "cell_id"
         ].unique()[0]
-        df_hh_profiles_in_census_cells.at[grid_id, "cell_profile_ids"] = (
-            cell_profile_ids
-        )
+        df_hh_profiles_in_census_cells.at[
+            grid_id, "cell_profile_ids"
+        ] = cell_profile_ids
         df_hh_profiles_in_census_cells.at[grid_id, "nuts3"] = df_cell.loc[
             :, "nuts3"
         ].unique()[0]
@@ -1390,14 +1382,10 @@ def adjust_to_demand_regio_nuts3_annual(
 
         for scn in egon.data.config.settings()["egon-data"]["--scenarios"]:
             year = get_scenario_year(scn)
-            population_year = get_sector_parameters("global", scn)[
-                "population_year"
-            ]
-
             df_hh_profiles_in_census_cells.loc[
                 nuts3_cell_ids, f"factor_{year}"
             ] = (
-                df_demand_regio.loc[(population_year, nuts3_id), "demand_mwha"]
+                df_demand_regio.loc[(year, nuts3_id), "demand_mwha"]
                 * 1e3
                 / (nuts3_profiles_sum_annual / 1e3)
             )
@@ -1599,10 +1587,10 @@ def houseprofiles_in_census_cells():
     ].astype(int)
 
     # Cast profile ids back to initial str format
-    df_hh_profiles_in_census_cells["cell_profile_ids"] = (
-        df_hh_profiles_in_census_cells["cell_profile_ids"].apply(
-            lambda x: list(map(gen_profile_names, x))
-        )
+    df_hh_profiles_in_census_cells[
+        "cell_profile_ids"
+    ] = df_hh_profiles_in_census_cells["cell_profile_ids"].apply(
+        lambda x: list(map(gen_profile_names, x))
     )
 
     # Write allocation table into database
