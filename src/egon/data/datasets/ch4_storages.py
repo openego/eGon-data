@@ -47,14 +47,14 @@ class CH4Storages(Dataset):
     #:
     name: str = "CH4Storages"
     #:
-    version: str = "0.0.2"
+    version: str = "0.0.3"
 
     def __init__(self, dependencies):
         super().__init__(
             name=self.name,
             version=self.version,
             dependencies=dependencies,
-            tasks=(insert_ch4_storages),
+            # tasks=(insert_ch4_storages),
         )
 
 
