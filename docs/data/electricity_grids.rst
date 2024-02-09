@@ -23,7 +23,7 @@ country in dataset
 :py:class:`ElectricalNeighbours <egon.data.datasets.ElectricalNeighbours>`. The 
 resulting grid topology is shown in the following figure.
 
-.. figure:: /images/Stromnetz.png
+.. figure:: /images/grid_topology_ehv_hv.png
   :name: gridtopology_ehv_hv
   :width: 600
   
