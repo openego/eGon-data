@@ -121,7 +121,7 @@ def insert_capacities_status_quo(scenario: str) -> None:
     rural_heat_capacity = {
         # Rural heat capacity for 2019 according to NEP 2035, version 2021
         "status2019": 1e6 * 5e-3,
-        # TODO: Replace placeholder
+        # TODO: status2023 replace placeholder
         "status2023": 1e6 * 5e-3,
     }[scenario]
 
@@ -148,7 +148,7 @@ def insert_capacities_status_quo(scenario: str) -> None:
     small_storages = {
         # MW for Germany
         "status2019": 600,
-        # TODO: Replace placeholder
+        # TODO: status2023 replace placeholder
         "status2023": 600,
     }[scenario]
 
