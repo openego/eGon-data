@@ -486,6 +486,8 @@ Changed
   `#1026 <https://github.com/openego/eGon-data/issues/1026>`_
 * Change hgv data source to use database
   `#1086 <https://github.com/openego/eGon-data/issues/1086>`_
+* Skip osmTGmod repo cloning if existing
+  `#202 <https://github.com/openego/powerd-data/pull/202>`_
 
 .. _#799: https://github.com/openego/eGon-data/issues/799
 
