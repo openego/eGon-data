@@ -28,7 +28,7 @@ class HouseholdElectricityDemand(Dataset):
     def __init__(self, dependencies):
         super().__init__(
             name="HouseholdElectricityDemand",
-            version="0.0.4",
+            version="0.0.5",
             dependencies=dependencies,
             tasks=(create_tables, get_annual_household_el_demand_cells),
         )
@@ -93,6 +93,7 @@ def get_annual_household_el_demand_cells():
                 HouseholdElectricityProfilesOfBuildings,
                 HouseholdElectricityProfilesInCensusCells.nuts3,
                 HouseholdElectricityProfilesInCensusCells.factor_2019,
+                HouseholdElectricityProfilesInCensusCells.factor_2023,
                 HouseholdElectricityProfilesInCensusCells.factor_2035,
                 HouseholdElectricityProfilesInCensusCells.factor_2050,
             )
@@ -147,6 +148,12 @@ def get_annual_household_el_demand_cells():
             df_annual_demand_iter["status2019"] = (
                 df_profiles.loc[:, df["profile_id"]].sum(axis=0)
                 * df["factor_2019"].values
+            )
+
+        if "status2023" in scenarios:
+            df_annual_demand_iter["status2023"] = (
+                df_profiles.loc[:, df["profile_id"]].sum(axis=0)
+                * df["factor_2023"].values
             )
         df_annual_demand_iter["zensus_population_id"] = df["cell_id"].values
         df_annual_demand = pd.concat([df_annual_demand, df_annual_demand_iter])

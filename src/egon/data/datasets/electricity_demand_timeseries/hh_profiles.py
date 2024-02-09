@@ -126,7 +126,7 @@ from pathlib import Path
 import os
 import random
 
-from airflow.operators.python_operator import PythonOperator
+from airflow.operators.python import PythonOperator
 from sqlalchemy import ARRAY, Column, Float, Integer, String
 from sqlalchemy.dialects.postgresql import CHAR, INTEGER, REAL
 from sqlalchemy.ext.declarative import declarative_base
@@ -135,6 +135,7 @@ import pandas as pd
 
 from egon.data import db
 from egon.data.datasets import Dataset
+from egon.data.datasets.scenario_parameters import get_scenario_year
 from egon.data.datasets.zensus_mv_grid_districts import MapZensusGridDistricts
 import egon.data.config
 
@@ -165,6 +166,7 @@ class HouseholdElectricityProfilesInCensusCells(Base):
     nuts3 = Column(String)
     nuts1 = Column(String)
     factor_2019 = Column(Float)
+    factor_2023 = Column(Float)
     factor_2035 = Column(Float)
     factor_2050 = Column(Float)
 
@@ -212,6 +214,19 @@ class HouseholdDemands(Dataset):
             tasks = tasks + (mv_hh_electricity_load_2035,)
 
         if (
+            "status2023"
+            in egon.data.config.settings()["egon-data"]["--scenarios"]
+        ):
+            mv_hh_electricity_load_2035 = PythonOperator(
+                task_id="MV-hh-electricity-load-2023",
+                python_callable=mv_grid_district_HH_electricity_load,
+                op_args=["status2023", 2023],
+                op_kwargs={"drop_table": True},
+            )
+
+            tasks = tasks + (mv_hh_electricity_load_2035,)
+
+        if (
             "eGon2035"
             in egon.data.config.settings()["egon-data"]["--scenarios"]
         ):
@@ -237,7 +252,7 @@ class HouseholdDemands(Dataset):
 
         super().__init__(
             name="Household Demands",
-            version="0.0.11",
+            version="0.0.12",
             dependencies=dependencies,
             tasks=tasks,
         )
@@ -1365,38 +1380,12 @@ def adjust_to_demand_regio_nuts3_annual(
         # demand regio in MWh
         # profiles in Wh
 
-        if (
-            "status2019"
-            in egon.data.config.settings()["egon-data"]["--scenarios"]
-        ):
+        for scn in egon.data.config.settings()["egon-data"]["--scenarios"]:
+            year = get_scenario_year(scn)
             df_hh_profiles_in_census_cells.loc[
-                nuts3_cell_ids, "factor_2019"
+                nuts3_cell_ids, f"factor_{year}"
             ] = (
-                df_demand_regio.loc[(2019, nuts3_id), "demand_mwha"]
-                * 1e3
-                / (nuts3_profiles_sum_annual / 1e3)
-            )
-
-        if (
-            "eGon2035"
-            in egon.data.config.settings()["egon-data"]["--scenarios"]
-        ):
-            df_hh_profiles_in_census_cells.loc[
-                nuts3_cell_ids, "factor_2035"
-            ] = (
-                df_demand_regio.loc[(2035, nuts3_id), "demand_mwha"]
-                * 1e3
-                / (nuts3_profiles_sum_annual / 1e3)
-            )
-
-        if (
-            "eGon100RE"
-            in egon.data.config.settings()["egon-data"]["--scenarios"]
-        ):
-            df_hh_profiles_in_census_cells.loc[
-                nuts3_cell_ids, "factor_2050"
-            ] = (
-                df_demand_regio.loc[(2050, nuts3_id), "demand_mwha"]
+                df_demand_regio.loc[(year, nuts3_id), "demand_mwha"]
                 * 1e3
                 / (nuts3_profiles_sum_annual / 1e3)
             )

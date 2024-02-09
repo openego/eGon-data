@@ -521,9 +521,10 @@ def district_heating_areas(scenario_name, plotting=False):
 
     minimum_connection_rate = 0.3
 
-    # Adjust minimum connection rate for status2019,
+    # Adjust minimum connection rate for status2019, and other statusquo scn
     # otherwise the existing district heating grids would have too much demand
-    if scenario_name == "status2019":
+    # if scenario_name == "status2019":
+    if "status" in scenario_name:
         minimum_connection_rate = 0.6
 
     # heat_demand is scenario specific
