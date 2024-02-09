@@ -252,6 +252,8 @@ Added
   `PR #903 <https://github.com/openego/eGon-data/pull/903>`_
 * Add low flex scenario 'eGon2035_lowflex'
   `#822 <https://github.com/openego/eGon-data/issues/822>`_
+* Add Status2023 update heat demand
+  `#199 <https://github.com/openego/powerd-data/pull/199>`_
 * Add status2023 electrical neighbours
   `#182 <https://github.com/openego/powerd-data/pull/182>`_
 
