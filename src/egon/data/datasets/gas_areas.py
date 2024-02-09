@@ -6,8 +6,8 @@ from geoalchemy2.types import Geometry
 from sqlalchemy import BigInteger, Column, Text
 from sqlalchemy.ext.declarative import declarative_base
 
-from egon.data import db
-from egon.data.datasets import Dataset
+from egon.data import db, config
+from egon.data.datasets import Dataset, wrapped_partial
 from egon.data.datasets.generate_voronoi import get_voronoi_geodataframe
 
 
@@ -69,7 +69,7 @@ class GasAreaseGon100RE(Dataset):
         )
 
 
-class GasAreasstatus2019(Dataset):
+class GasAreasStatusQuo(Dataset):
     """Create the gas voronoi table and the gas voronoi areas for status2019
 
     *Dependencies*
@@ -83,16 +83,24 @@ class GasAreasstatus2019(Dataset):
     """
 
     #:
-    name: str = "GasAreasstatus2019"
+    name: str = "GasAreasStatusQuo"
     #:
-    version: str = "0.0.1"
+    version: str = "0.0.2"
 
     def __init__(self, dependencies):
+        tasks = (create_gas_voronoi_table,)
+
+        for scn_name in config.settings()["egon-data"]["--scenarios"]:
+            if "status" in scn_name:
+                tasks += (wrapped_partial(
+                    voronoi_status, scn_name=scn_name, postfix=f"_{scn_name[-4:]}"
+                ),)
+
         super().__init__(
             name=self.name,
             version=self.version,
             dependencies=dependencies,
-            tasks=(create_gas_voronoi_table, voronoi_status2019),
+            tasks=tasks,
         )
 
 
@@ -142,12 +150,12 @@ def voronoi_egon100RE():
         create_voronoi("eGon100RE", carrier)
 
 
-def voronoi_status2019():
+def voronoi_status(scn_name):
     """
-    Create voronoi polygons for all gas carriers in status2019 scenario
+    Create voronoi polygons for all gas carriers in status_x scenario
     """
     for carrier in ["CH4"]:
-        create_voronoi("status2019", carrier)
+        create_voronoi(scn_name, carrier)
 
 
 def create_voronoi(scn_name, carrier):

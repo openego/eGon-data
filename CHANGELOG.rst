@@ -256,6 +256,8 @@ Added
   `#199 <https://github.com/openego/powerd-data/pull/199>`_
 * Add status2023 electrical neighbours
   `#182 <https://github.com/openego/powerd-data/pull/182>`_
+* Add Status2023 to gas nodes
+  `#205 <https://github.com/openego/powerd-data/pull/205>`_
 
 .. _PR #159: https://github.com/openego/eGon-data/pull/159
 .. _PR #703: https://github.com/openego/eGon-data/pull/703
