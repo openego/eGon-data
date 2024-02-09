@@ -13,7 +13,7 @@ import yaml
 
 from egon.data import db
 from egon.data.config import settings
-from egon.data.datasets import Dataset
+from egon.data.datasets import Dataset, wrapped_partial
 import egon.data.config
 
 # will be later imported from another file
@@ -97,8 +97,8 @@ def nuts_mapping():
     return nuts_mapping
 
 
-def insert_capacities_status2019():
-    """Insert capacity of rural heat pumps for status2019
+def insert_capacities_status_quo(scenario: str) -> None:
+    """Insert capacity of rural heat pumps for status quo
 
     Returns
     -------
@@ -114,19 +114,23 @@ def insert_capacities_status2019():
         DELETE FROM
         {targets['scenario_capacities']['schema']}.
         {targets['scenario_capacities']['table']}
-        WHERE scenario_name = 'status2019'
+        WHERE scenario_name = '{scenario}'
         """
     )
 
-    # Rural heat capacity for 2019 according to NEP 2035, version 2021
-    rural_heat_capacity = 1e6 * 5e-3
+    rural_heat_capacity = {
+        # Rural heat capacity for 2019 according to NEP 2035, version 2021
+        "status2019": 1e6 * 5e-3,
+        # TODO: Replace placeholder
+        "status2023": 1e6 * 5e-3,
+    }[scenario]
 
     if settings()["egon-data"]["--dataset-boundary"] != "Everything":
         rural_heat_capacity *= population_share()
 
     db.execute_sql(
         f"""
-        INSERT INTO 
+        INSERT INTO
         {targets['scenario_capacities']['schema']}.
         {targets['scenario_capacities']['table']}
         (component, carrier, capacity, nuts, scenario_name)
@@ -135,17 +139,22 @@ def insert_capacities_status2019():
             'residential_rural_heat_pump',
             {rural_heat_capacity},
             'DE',
-            'status2019'            
+            '{scenario}'
             )
         """
     )
 
     # Include small storages for scenario2019
-    small_storages = 600  # MW for Germany
+    small_storages = {
+        # MW for Germany
+        "status2019": 600,
+        # TODO: Replace placeholder
+        "status2023": 600,
+    }[scenario]
 
     db.execute_sql(
         f"""
-        INSERT INTO 
+        INSERT INTO
         {targets['scenario_capacities']['schema']}.
         {targets['scenario_capacities']['table']}
         (component, carrier, capacity, nuts, scenario_name)
@@ -154,7 +163,7 @@ def insert_capacities_status2019():
             'battery',
             {small_storages},
             'DE',
-            'status2019'         
+            '{scenario}'
             )
         """
     )
@@ -814,25 +823,32 @@ def eGon100_capacities():
 
 tasks = (create_table,)
 
-if "status2019" in egon.data.config.settings()["egon-data"]["--scenarios"]:
-    tasks = tasks + (insert_capacities_status2019, insert_data_nep)
+scenarios = egon.data.config.settings()["egon-data"]["--scenarios"]
 
-if (
-    "eGon2035" in egon.data.config.settings()["egon-data"]["--scenarios"]
-) and not (
-    "status2019" in egon.data.config.settings()["egon-data"]["--scenarios"]
-):
-    tasks = tasks + (insert_data_nep,)
+status_quo = False
 
-if "eGon100RE" in egon.data.config.settings()["egon-data"]["--scenarios"]:
-    tasks = tasks + (eGon100_capacities,)
+for scenario in scenarios:
+    if "status" in scenario:
+        tasks += (
+            wrapped_partial(
+                insert_capacities_status_quo, scenario=scenario,
+                postfix=f"_{scenario[-2:]}"
+            ),
+        )
+        status_quo = True
+
+if status_quo or ("eGon2035" in scenarios):
+    tasks += (insert_data_nep,)
+
+if "eGon100RE" in scenarios:
+    tasks += (eGon100_capacities,)
 
 
 class ScenarioCapacities(Dataset):
     def __init__(self, dependencies):
         super().__init__(
             name="ScenarioCapacities",
-            version="0.0.14",
+            version="0.0.15",
             dependencies=dependencies,
             tasks=tasks,
         )
