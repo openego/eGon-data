@@ -77,7 +77,7 @@ from urllib.request import urlretrieve
 import os
 import tarfile
 
-from airflow.operators.python_operator import PythonOperator
+from airflow.operators.python import PythonOperator
 from psycopg2.extensions import AsIs, register_adapter
 import numpy as np
 import pandas as pd

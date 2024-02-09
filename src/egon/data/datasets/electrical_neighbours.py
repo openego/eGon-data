@@ -1,25 +1,24 @@
 """The central module containing all code dealing with electrical neighbours
 """
 
+from os import path
+import logging
 import zipfile
 
-import entsoe
-import requests
-import logging
-
-import geopandas as gpd
-import pandas as pd
 from shapely.geometry import LineString
 from sqlalchemy.orm import sessionmaker
+import entsoe
+import geopandas as gpd
+import pandas as pd
+import requests
 
+from egon.data import config, db
+from egon.data.datasets import Dataset, wrapped_partial
+from egon.data.datasets.fill_etrago_gen import add_marginal_costs
+from egon.data.datasets.fix_ehv_subnetworks import select_bus_id
+from egon.data.datasets.scenario_parameters import get_sector_parameters
 import egon.data.datasets.etrago_setup as etrago
 import egon.data.datasets.scenario_parameters.parameters as scenario_parameters
-from egon.data import config, db
-from egon.data.datasets import Dataset
-from egon.data.datasets.fix_ehv_subnetworks import select_bus_id
-from egon.data.datasets.fill_etrago_gen import add_marginal_costs
-from egon.data.datasets.scenario_parameters import get_sector_parameters
-from os import path
 
 
 def get_cross_border_buses(scenario, sources):
@@ -248,7 +247,7 @@ def buses(scenario, sources, targets):
     central_buses.scn_name = scenario
 
     # Insert all central buses for eGon2035
-    if scenario in ["eGon2035", "status2019"]:
+    if scenario in ["eGon2035", "status2019", "status2023"]: # TODO: status2023 this is hardcoded shit
         central_buses.to_postgis(
             targets["buses"]["table"],
             schema=targets["buses"]["schema"],
@@ -588,7 +587,7 @@ def foreign_dc_lines(scenario, sources, targets, central_buses):
               AND country != 'DE')
         """
     )
-    capital_cost = get_sector_parameters("electricity", "eGon2035")[
+    capital_cost = get_sector_parameters("electricity", scenario)[
         "capital_cost"
     ]
 
@@ -1451,7 +1450,7 @@ def map_carriers_entsoe():
     }
 
 
-def entsoe_to_bus_etrago():
+def entsoe_to_bus_etrago(scn_name):
     map_entsoe = pd.Series(
         {
             "LU": "LU00",
@@ -1470,7 +1469,7 @@ def entsoe_to_bus_etrago():
         }
     )
 
-    for_bus = get_foreign_bus_id(scenario="status2019")
+    for_bus = get_foreign_bus_id(scenario=scn_name)
 
     return map_entsoe.map(for_bus)
 
@@ -1492,8 +1491,16 @@ def insert_generators_sq(scn_name="status2019"):
     None.
 
     """
+
+    if scn_name == "status2019":
+        year_start_end = {"year_start": "20190101", "year_end": "20200101"}
+    elif scn_name == "status2023":
+        year_start_end = {"year_start": "20230101", "year_end": "20240101"}
+    else:
+        raise ValueError("No valid scenario name!")
+
     try:
-        gen_sq = entsoe_historic_generation_capacities()
+        gen_sq = entsoe_historic_generation_capacities(**year_start_end)
     except:
         logging.warning(
             """Generation data from entsoe could not be retrieved.
@@ -1531,7 +1538,7 @@ def insert_generators_sq(scn_name="status2019"):
         AND scn_name = '{scn_name}'
         """
     )
-    entsoe_to_bus = entsoe_to_bus_etrago()
+    entsoe_to_bus = entsoe_to_bus_etrago(scn_name)
     carrier_entsoe = map_carriers_entsoe()
     gen_sq = gen_sq.groupby(axis=1, by=carrier_entsoe).sum()
 
@@ -1650,8 +1657,16 @@ def insert_loads_sq(scn_name="status2019"):
     """
     sources = config.datasets()["electrical_neighbours"]["sources"]
     targets = config.datasets()["electrical_neighbours"]["targets"]
+
+    if scn_name == "status2019":
+        year_start_end = {"year_start": "20190101", "year_end": "20200101"}
+    elif scn_name == "status2023":
+        year_start_end = {"year_start": "20230101", "year_end": "20240101"}
+    else:
+        raise ValueError("No valid scenario name!")
+
     try:
-        load_sq = entsoe_historic_demand()
+        load_sq = entsoe_historic_demand(**year_start_end)
     except:
         logging.warning(
             """Demand data from entsoe could not be retrieved.
@@ -1700,7 +1715,7 @@ def insert_loads_sq(scn_name="status2019"):
     session = sessionmaker(bind=engine)()
 
     # get the corresponding bus per foreign country
-    entsoe_to_bus = entsoe_to_bus_etrago()
+    entsoe_to_bus = entsoe_to_bus_etrago(scn_name)
 
     # Calculate and insert demand timeseries per etrago bus_id
     for country in load_sq.columns:
@@ -1733,7 +1748,27 @@ if "eGon2035" in config.settings()["egon-data"]["--scenarios"]:
     insert_per_scenario.update([tyndp_generation, tyndp_demand])
 
 if "status2019" in config.settings()["egon-data"]["--scenarios"]:
-    insert_per_scenario.update([insert_generators_sq, insert_loads_sq])
+    insert_per_scenario.update(
+        [
+            wrapped_partial(
+                insert_generators_sq, scn_name="status2019", postfix="_19"
+            ),
+            wrapped_partial(
+                insert_loads_sq, scn_name="status2019", postfix="_19"
+            ),
+        ]
+    )
+if "status2023" in config.settings()["egon-data"]["--scenarios"]:
+    insert_per_scenario.update(
+        [
+            wrapped_partial(
+                insert_generators_sq, scn_name="status2023", postfix="_23"
+            ),
+            wrapped_partial(
+                insert_loads_sq, scn_name="status2023", postfix="_23"
+            ),
+        ]
+    )
 
 tasks = tasks + (insert_per_scenario,)
 
@@ -1742,7 +1777,7 @@ class ElectricalNeighbours(Dataset):
     def __init__(self, dependencies):
         super().__init__(
             name="ElectricalNeighbours",
-            version="0.0.10",
+            version="0.0.11",
             dependencies=dependencies,
             tasks=tasks,
         )

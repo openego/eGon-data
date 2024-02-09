@@ -74,7 +74,7 @@ def cts_demand_per_aggregation_level(aggregation_level, scenario):
         df_CTS_gas_2011 = df_CTS_gas_2011.asfreq("H")
     else:
         df_CTS_gas_2011 = temporal.disagg_temporal_gas_CTS(
-            use_nuts3code=True, year=2019
+            use_nuts3code=True, year=2017
         )
         df_CTS_gas_2011.to_csv("CTS_heat_demand_profile_nuts3.csv")
 
