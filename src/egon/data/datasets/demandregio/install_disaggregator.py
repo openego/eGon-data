@@ -1,16 +1,18 @@
 """This module downloads and installs demandregio's disaggregator from GitHub
 
 """
+from pathlib import Path
+from subprocess import check_output
+import importlib.util
 import os
 import shutil
-from pathlib import Path
 
+from egon.data import logger, subprocess
 import egon.data.config
-from egon.data import subprocess
 
 
 def clone_and_install():
-    """ Clone and install repository of demandregio's disaggregator
+    """Clone and install repository of demandregio's disaggregator
 
     Returns
     -------
@@ -26,27 +28,48 @@ def clone_and_install():
         ]
     )
 
-    # Delete repository if it already exists
-    if repo_path.exists() and repo_path.is_dir():
-        shutil.rmtree(repo_path)
+    try:
+        status = check_output(
+            ["git", "status"], cwd=(repo_path / "disaggregator").absolute()
+        )
+        if status.startswith(b"Auf Branch features/pandas-update"):
+            logger.info("Demandregio cloned and right branch checked out.")
+        else:
+            raise ImportError(
+                "Demandregio cloned but wrong branch checked "
+                "out. Please checkout features/pandas-update"
+            )
+        spec = importlib.util.find_spec("disaggregator")
+        if spec is not None:
+            logger.info("Demandregio is not installed. Installing now.")
+            # Install disaggregator from path
+            subprocess.run(
+                [
+                    "pip",
+                    "install",
+                    "-e",
+                    (repo_path / "disaggregator").absolute(),
+                ]
+            )
 
-    # Create subfolder
-    os.mkdir(repo_path)
+    except subprocess.CalledProcessError and FileNotFoundError:
+        # Create subfolder
+        os.makedirs(repo_path, exist_ok=True)
 
-    # Clone from GitHub repository
-    subprocess.run(
-        [
-            "git",
-            "clone",
-            "--single-branch",
-            "--branch",
-            source["branch"],
-            source["git-repository"],
-        ],
-        cwd=repo_path,
-    )
+        # Clone from GitHub repository
+        subprocess.run(
+            [
+                "git",
+                "clone",
+                "--single-branch",
+                "--branch",
+                source["branch"],
+                source["git-repository"],
+            ],
+            cwd=repo_path,
+        )
 
-    # Install disaggregator from path
-    subprocess.run(
-        ["pip", "install", "-e", (repo_path / "disaggregator").absolute()]
-    )
+        # Install disaggregator from path
+        subprocess.run(
+            ["pip", "install", "-e", (repo_path / "disaggregator").absolute()]
+        )

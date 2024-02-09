@@ -139,11 +139,14 @@ packages are required too. Right now these are:
 
 * To download generation and demand data from entsoe you need to register in
   the `entsoe platform <https://transparency.entsoe.eu/>`_. Once the user is
-  created, a personal token can be generated to access the available data. This
-  token must be saved in a text file called *.entsoe-token* in the home directory.
+  created, send an email to transparency@entsoe.eu with “Restful API access” in
+  the subject line. Indicate the email address you entered during registration
+  in the email body. After authorisation a personal token can be generated in
+  'My Account Settings'to access the available data. This token must be saved
+  in a text file called *.entsoe-token* in the home directory.
   In Ubuntu you can go to the home directory by typing :code:`cd ~` in a
   terminal. To create the file execute :code:`nano ".entsoe-token"` and then
-  paste your personal token (36 characters). Finally press :code:`CRL + x` to 
+  paste your personal token (36 characters). Finally press :code:`CRL + x` to
   save and exit.
 
 * Make sure you have enough free disk space (~350 GB) in your working
