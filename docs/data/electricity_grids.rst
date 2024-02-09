@@ -25,7 +25,7 @@ resulting grid topology is shown in the following figure.
 
 .. figure:: /images/grid_topology_ehv_hv.png
   :name: gridtopology_ehv_hv
-  :width: 600
+  :width: 400
   
 
 
