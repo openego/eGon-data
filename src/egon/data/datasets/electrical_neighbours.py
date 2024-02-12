@@ -1514,10 +1514,10 @@ def insert_generators_sq(scn_name="status2019"):
 
     try:
         gen_sq = entsoe_historic_generation_capacities(**year_start_end)
-    except:
+    except Exception as e:
         logging.warning(
-            """Generation data from entsoe could not be retrieved.
-                        Backup data is used instead"""
+            f"""Generation data from entsoe could not be retrieved.
+                        Backup data is used instead \n {e}"""
         )
         gen_sq = pd.read_csv(
             "data_bundle_egon_data/entsoe/gen_entsoe.csv", index_col="Index"
