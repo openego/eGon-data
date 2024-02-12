@@ -1346,7 +1346,10 @@ def entsoe_historic_generation_capacities(
         "SE",
         "GB",
     ]
-
+    # No GB data after Brexit
+    if int(year_start[:3]) > 2021:
+        logger.warning("No GB data after Brexit. GB is dropped from entsoe query!")
+        countries = [c for c in countries if c != "GB"]
     # todo: define wanted countries
 
     not_retrieved = []
@@ -1372,6 +1375,25 @@ def entsoe_historic_generation_capacities(
     df = pd.concat(dfs)
     df["country"] = countries
     df.set_index("country", inplace=True)
+    if int(year_start[:3]) == 2023:
+        # https://www.bmreports.com/bmrs/?q=foregeneration/capacityaggregated
+        # could probably somehow be automised
+        # https://www.elexonportal.co.uk/category/view/178
+        # in MW
+        installed_capacity_gb = pd.Series({
+            'Biomass': 4438,
+            'Fossil Gas': 37047,
+            'Fossil Hard coal': 1491,
+            'Hydro Pumped Storage': 5603,
+            'Hydro Run-of-river and poundage': 2063,
+            'Nuclear': 4950,
+            'Other': 3313,
+            'Other renewable': 1462,
+            'Solar': 14518,
+            'Wind Offshore': 13038,
+            'Wind Onshore': 13907,
+        }, name="GB")
+        df = pd.concat([df.T, installed_capacity_gb], axis=1).T
     df.fillna(0, inplace=True)
     return df
 
