@@ -1394,6 +1394,7 @@ def entsoe_historic_generation_capacities(
             'Wind Onshore': 13907,
         }, name="GB")
         df = pd.concat([df.T, installed_capacity_gb], axis=1).T
+        logger.info("Manually added generation capacities for GB 2023.")
     df.fillna(0, inplace=True)
     return df
 
