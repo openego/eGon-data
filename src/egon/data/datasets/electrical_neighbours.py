@@ -1360,10 +1360,8 @@ def entsoe_historic_generation_capacities(
         else:
             kwargs = dict(start=start, end=end)
         try:
-            dfs.append(
-                client.query_installed_generation_capacity(country, **kwargs)
-            )
-
+            country_data = client.query_installed_generation_capacity(country, **kwargs)
+            dfs.append(country_data)
         except (entsoe.exceptions.NoMatchingDataError, requests.HTTPError):
             not_retrieved.append(country)
             pass
@@ -1395,8 +1393,9 @@ def entsoe_historic_generation_capacities(
         }, name="GB")
         df = pd.concat([df.T, installed_capacity_gb], axis=1).T
         logger.info("Manually added generation capacities for GB 2023.")
+        not_retrieved = [c for c in not_retrieved if c != "GB"]
     df.fillna(0, inplace=True)
-    return df
+    return df, not_retrieved
 
 
 def entsoe_historic_demand(year_start="20190101", year_end="20200101"):
@@ -1449,15 +1448,15 @@ def entsoe_historic_demand(year_start="20190101", year_end="20200101"):
             not_retrieved.append(country)
             pass
     if not_retrieved:
-        logging.warning(
+        logger.warning(
             f"Data for country (-ies) {', '.join(not_retrieved)} could not be retrieved."
         )
 
     df = pd.concat(dfs, axis=1)
-    df.columns = countries
+    df.columns = [c for c in countries if c not in not_retrieved]
     df.index = pd.date_range(year_start, periods=8760, freq="H")
 
-    return df
+    return df, not_retrieved
 
 
 def map_carriers_entsoe():
@@ -1540,16 +1539,17 @@ def insert_generators_sq(scn_name="status2019"):
     else:
         raise ValueError("No valid scenario name!")
 
-    try:
-        gen_sq = entsoe_historic_generation_capacities(**year_start_end)
-    except Exception as e:
-        logging.warning(
-            f"""Generation data from entsoe could not be retrieved.
-                        Backup data is used instead \n {e}"""
+    gen_sq, not_retrieved = entsoe_historic_generation_capacities(**year_start_end)
+    if not_retrieved:
+        logger.warning(
+            "Generation data from entsoe could not be retrieved."
+            "Backup data from 2019 is used instead."
         )
-        gen_sq = pd.read_csv(
+        gen_sq_backup = pd.read_csv(
             "data_bundle_egon_data/entsoe/gen_entsoe.csv", index_col="Index"
         )
+
+        gen_sq = pd.concat([gen_sq, gen_sq_backup.loc[not_retrieved]], axis=1)
 
     targets = config.datasets()["electrical_neighbours"]["targets"]
     # Delete existing data
@@ -1706,16 +1706,19 @@ def insert_loads_sq(scn_name="status2019"):
     else:
         raise ValueError("No valid scenario name!")
 
-    try:
-        load_sq = entsoe_historic_demand(**year_start_end)
-    except:
-        logging.warning(
-            """Demand data from entsoe could not be retrieved.
-                        Backup data is used instead"""
+    load_sq, not_retrieved = entsoe_historic_demand(**year_start_end)
+
+    if not_retrieved:
+
+        logger.warning(
+            "Demand data from entsoe could not be retrieved."
+            f"Backup data of 2019 is used instead for {not_retrieved}"""
         )
-        load_sq = pd.read_csv(
+        load_sq_backup = pd.read_csv(
             "data_bundle_egon_data/entsoe/load_entsoe.csv", index_col="Index"
         )
+        load_sq_backup.index = load_sq.index
+        load_sq = pd.concat([load_sq, load_sq_backup.loc[:,not_retrieved]], axis=1)
 
     # Delete existing data
     db.execute_sql(
