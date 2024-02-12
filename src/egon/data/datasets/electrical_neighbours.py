@@ -1,10 +1,11 @@
 """The central module containing all code dealing with electrical neighbours
 """
-
+import os.path
 from os import path
 import logging
 import zipfile
 
+from pathlib import Path
 from shapely.geometry import LineString
 from sqlalchemy.orm import sessionmaker
 import entsoe
@@ -12,7 +13,7 @@ import geopandas as gpd
 import pandas as pd
 import requests
 
-from egon.data import config, db
+from egon.data import config, db, logger
 from egon.data.datasets import Dataset, wrapped_partial
 from egon.data.datasets.fill_etrago_gen import add_marginal_costs
 from egon.data.datasets.fix_ehv_subnetworks import select_bus_id
@@ -1299,12 +1300,26 @@ def tyndp_demand():
         session.commit()
 
 
+def get_entsoe_token():
+    """Check for token in home dir. If not exists, check in working dir"""
+    token_path = path.join(path.expanduser("~"), ".entsoe-token")
+    if not os.path.isfile(token_path):
+        logger.info(f"Token file not found at {token_path}. Will check in working directory.")
+        token_path = Path(".entsoe-token")
+        if os.path.isfile(token_path):
+            logger.info(f"Token found at {token_path}")
+        else:
+            raise FileNotFoundError("No entsoe-token found.")
+    entsoe_token = open(
+        token_path.resolve(), "r"
+    ).read(36)
+    return entsoe_token
+
+
 def entsoe_historic_generation_capacities(
     year_start="20190101", year_end="20200101"
 ):
-    entsoe_token = open(
-        path.join(path.expanduser("~"), ".entsoe-token"), "r"
-    ).read(36)
+    entsoe_token = get_entsoe_token()
     client = entsoe.EntsoePandasClient(api_key=entsoe_token)
 
     start = pd.Timestamp(year_start, tz="Europe/Brussels")
@@ -1357,9 +1372,7 @@ def entsoe_historic_generation_capacities(
 
 
 def entsoe_historic_demand(year_start="20190101", year_end="20200101"):
-    entsoe_token = open(
-        path.join(path.expanduser("~"), ".entsoe-token"), "r"
-    ).read(36)
+    entsoe_token = get_entsoe_token()
     client = entsoe.EntsoePandasClient(api_key=entsoe_token)
 
     start = pd.Timestamp(year_start, tz="Europe/Brussels")
