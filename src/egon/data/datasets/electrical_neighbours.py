@@ -1,11 +1,12 @@
 """The central module containing all code dealing with electrical neighbours
 """
-import os.path
+
 from os import path
+from pathlib import Path
 import logging
+import os.path
 import zipfile
 
-from pathlib import Path
 from shapely.geometry import LineString
 from sqlalchemy.orm import sessionmaker
 import entsoe
@@ -248,7 +249,11 @@ def buses(scenario, sources, targets):
     central_buses.scn_name = scenario
 
     # Insert all central buses for eGon2035
-    if scenario in ["eGon2035", "status2019", "status2023"]: # TODO: status2023 this is hardcoded shit
+    if scenario in [
+        "eGon2035",
+        "status2019",
+        "status2023",
+    ]:  # TODO: status2023 this is hardcoded shit
         central_buses.to_postgis(
             targets["buses"]["table"],
             schema=targets["buses"]["schema"],
@@ -1108,9 +1113,9 @@ def insert_storage(capacities):
 
     for x in parameters:
         store.loc[store["carrier"] == "battery", x] = parameters_battery[x]
-        store.loc[
-            store["carrier"] == "pumped_hydro", x
-        ] = parameters_pumped_hydro[x]
+        store.loc[store["carrier"] == "pumped_hydro", x] = (
+            parameters_pumped_hydro[x]
+        )
 
     # insert data
     session = sessionmaker(bind=db.engine())()
@@ -1231,9 +1236,9 @@ def tyndp_demand():
     ]
     # Assign etrago bus_id to TYNDP nodes
     buses = pd.DataFrame({"nodes": nodes})
-    buses.loc[
-        buses[buses.nodes.isin(map_buses.keys())].index, "nodes"
-    ] = buses[buses.nodes.isin(map_buses.keys())].nodes.map(map_buses)
+    buses.loc[buses[buses.nodes.isin(map_buses.keys())].index, "nodes"] = (
+        buses[buses.nodes.isin(map_buses.keys())].nodes.map(map_buses)
+    )
     buses.loc[:, "bus"] = (
         get_foreign_bus_id(scenario="eGon2035")
         .loc[buses.loc[:, "nodes"]]
