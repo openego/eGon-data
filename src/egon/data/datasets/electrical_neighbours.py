@@ -1347,7 +1347,7 @@ def entsoe_historic_generation_capacities(
         "GB",
     ]
     # No GB data after Brexit
-    if int(year_start[:3]) > 2021:
+    if int(year_start[:4]) > 2021:
         logger.warning("No GB data after Brexit. GB is dropped from entsoe query!")
         countries = [c for c in countries if c != "GB"]
     # todo: define wanted countries
@@ -1375,7 +1375,7 @@ def entsoe_historic_generation_capacities(
     df = pd.concat(dfs)
     df["country"] = countries
     df.set_index("country", inplace=True)
-    if int(year_start[:3]) == 2023:
+    if int(year_start[:4]) == 2023:
         # https://www.bmreports.com/bmrs/?q=foregeneration/capacityaggregated
         # could probably somehow be automised
         # https://www.elexonportal.co.uk/category/view/178
