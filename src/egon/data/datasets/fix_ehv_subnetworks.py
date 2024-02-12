@@ -4,7 +4,7 @@ import geopandas as gpd
 import numpy as np
 import pandas as pd
 
-from egon.data import config, db
+from egon.data import config, db, logger
 from egon.data.config import settings
 from egon.data.datasets import Dataset
 from egon.data.datasets.etrago_setup import link_geom_from_buses
@@ -35,7 +35,9 @@ def select_bus_id(x, y, v_nom, scn_name, carrier, find_closest=False):
     )
 
     if bus_id.empty:
+        logger.info("No bus found")
         if find_closest:
+            logger.info(f"Finding closest to x = {x}, y = {y}")
             bus_id = db.select_dataframe(
                 f"""
             SELECT bus_id, st_distance(geom, 'SRID=4326;POINT({x} {y})'::geometry)
@@ -47,10 +49,13 @@ def select_bus_id(x, y, v_nom, scn_name, carrier, find_closest=False):
             Limit 1
             """
             )
+            logger.info(f"Bus ID = {bus_id.bus_id[0]} selected")
             return bus_id.bus_id[0]
         else:
+            logger.info("Find closest == False.")
             return None
     else:
+        logger.info(f"Exact match with bus ID = {bus_id.bus_id[0]} found.")
         return bus_id.bus_id[0]
 
 
