@@ -1309,15 +1309,15 @@ def get_entsoe_token():
     """Check for token in home dir. If not exists, check in working dir"""
     token_path = path.join(path.expanduser("~"), ".entsoe-token")
     if not os.path.isfile(token_path):
-        logger.info(f"Token file not found at {token_path}. Will check in working directory.")
+        logger.info(
+            f"Token file not found at {token_path}. Will check in working directory."
+        )
         token_path = Path(".entsoe-token")
         if os.path.isfile(token_path):
             logger.info(f"Token found at {token_path}")
         else:
             raise FileNotFoundError("No entsoe-token found.")
-    entsoe_token = open(
-        token_path.resolve(), "r"
-    ).read(36)
+    entsoe_token = open(token_path, "r").read(36)
     return entsoe_token
 
 
