@@ -1315,9 +1315,9 @@ def get_entsoe_token():
         token_path = Path(".entsoe-token")
         if os.path.isfile(token_path):
             logger.info(f"Token found at {token_path}")
-        else:
-            raise FileNotFoundError("No entsoe-token found.")
     entsoe_token = open(token_path, "r").read(36)
+    if entsoe_token is None:
+            raise FileNotFoundError("No entsoe-token found.")
     return entsoe_token
 
 
