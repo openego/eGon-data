@@ -1265,7 +1265,7 @@ class PowerPlants(Dataset):
     def __init__(self, dependencies):
         super().__init__(
             name="PowerPlants",
-            version="0.0.24",
+            version="0.0.25",
             dependencies=dependencies,
             tasks=tasks,
         )
