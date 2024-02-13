@@ -1542,7 +1542,7 @@ def insert_generators_sq(scn_name="status2019"):
     gen_sq, not_retrieved = entsoe_historic_generation_capacities(**year_start_end)
     if not_retrieved:
         logger.warning(
-            "Generation data from entsoe could not be retrieved."
+            "Generation data from entsoe could not be retrieved. "
             "Backup data from 2019 is used instead."
         )
         gen_sq_backup = pd.read_csv(
