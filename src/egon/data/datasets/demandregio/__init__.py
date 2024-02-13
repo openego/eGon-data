@@ -3,6 +3,8 @@ adjusting data from demandRegio
 
 """
 from pathlib import Path
+import os
+import zipfile
 
 from sqlalchemy import ARRAY, Column, Float, ForeignKey, Integer, String
 from sqlalchemy.ext.declarative import declarative_base
@@ -18,6 +20,7 @@ from egon.data.datasets.scenario_parameters import (
     EgonScenario,
     get_sector_parameters,
 )
+from egon.data.datasets.zensus import download_and_check
 import egon.data.config
 import egon.data.datasets.scenario_parameters.parameters as scenario_parameters
 
@@ -39,6 +42,7 @@ class DemandRegio(Dataset):
             dependencies=dependencies,
             tasks=(
                 #clone_and_install, demandregio must be previously installed
+                get_cached_tables,  # adhoc workaround #180
                 create_tables,
                 {
                     insert_household_demand,
@@ -901,3 +905,17 @@ def timeseries_per_wz():
     for year in years:
         for sector in ["CTS", "industry"]:
             insert_timeseries_per_wz(sector, int(year))
+
+def get_cached_tables():
+    """Get cached demandregio tables and db-dump from former runs"""
+    data_config = egon.data.config.datasets()
+    for s in ["cache", "dbdump"]:
+        url = data_config["demandregio_workaround"]["source"][s]["url"]
+        target_path = data_config["demandregio_workaround"]["targets"][s]["path"]
+        filename = os.path.basename(url)
+        file_path = Path(".", target_path, filename).resolve()
+        os.makedirs(file_path.parent, exist_ok=True)
+        logger.info(f"Downloading: {filename} from {url}.")
+        download_and_check(url, file_path, max_iteration=5)
+        with zipfile.ZipFile(file_path, "r") as zip_ref:
+            zip_ref.extractall(file_path.parent)
