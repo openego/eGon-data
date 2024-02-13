@@ -1712,7 +1712,7 @@ def insert_loads_sq(scn_name="status2019"):
 
         logger.warning(
             "Demand data from entsoe could not be retrieved."
-            f"Backup data of 2019 is used instead for {not_retrieved}"""
+            f"Backup data of 2019 is used instead for {not_retrieved}"
         )
         load_sq_backup = pd.read_csv(
             "data_bundle_egon_data/entsoe/load_entsoe.csv", index_col="Index"
