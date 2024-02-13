@@ -1363,13 +1363,10 @@ def entsoe_historic_generation_capacities(
             country_data = client.query_installed_generation_capacity(country, **kwargs)
             dfs.append(country_data)
         except (entsoe.exceptions.NoMatchingDataError, requests.HTTPError):
+            logger.warning(f"Data for country: {country} could not be retrieved.")
             not_retrieved.append(country)
             pass
 
-    if not_retrieved:
-        logging.warning(
-            f"Data for country (-ies) {', '.join(not_retrieved)} could not be retrieved."
-        )
     df = pd.concat(dfs)
     df["country"] = countries
     df.set_index("country", inplace=True)
@@ -1446,11 +1443,8 @@ def entsoe_historic_demand(year_start="20190101", year_end="20200101"):
             dfs.append(country_data)
         except (entsoe.exceptions.NoMatchingDataError, requests.HTTPError):
             not_retrieved.append(country)
+            logger.warning(f"Data for country: {country} could not be retrieved.")
             pass
-    if not_retrieved:
-        logger.warning(
-            f"Data for country (-ies) {', '.join(not_retrieved)} could not be retrieved."
-        )
 
     df = pd.concat(dfs, axis=1)
     df.columns = [c for c in countries if c not in not_retrieved]
