@@ -6,11 +6,9 @@ eTraGo.
 import geopandas as gpd
 import pandas as pd
 from egon.data import db, config
-import egon.data.datasets.scenario_parameters.parameters as scenario_parameters
 from egon.data.datasets import Dataset
 from egon.data.datasets.scenario_parameters import (
     get_sector_parameters,
-    EgonScenario,
 )
 
 
@@ -18,7 +16,7 @@ class StorageEtrago(Dataset):
     def __init__(self, dependencies):
         super().__init__(
             name="StorageEtrago",
-            version="0.0.8",
+            version="0.0.9.dev",
             dependencies=dependencies,
             tasks=(insert_PHES, extendable_batteries),
         )
@@ -58,9 +56,9 @@ def insert_PHES():
         next_bus_id = db.next_etrago_id("storage")
 
         # Add missing PHES specific information suitable for eTraGo selected from scenario_parameter table
-        parameters = scenario_parameters.electricity(scn)["efficiency"][
-            "pumped_hydro"
-        ]
+        parameters = get_sector_parameters(
+            "electricity", scn
+        )["efficiency"]["pumped_hydro"]
         phes["storage_id"] = range(next_bus_id, next_bus_id + len(phes))
         phes["max_hours"] = parameters["max_hours"]
         phes["efficiency_store"] = parameters["store"]
