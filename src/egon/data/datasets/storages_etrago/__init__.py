@@ -25,7 +25,6 @@ class StorageEtrago(Dataset):
 
 
 def insert_PHES():
-
     # Get datasets configuration
     sources = config.datasets()["storage_etrago"]["sources"]
     targets = config.datasets()["storage_etrago"]["targets"]
@@ -67,6 +66,7 @@ def insert_PHES():
         phes["efficiency_store"] = parameters["store"]
         phes["efficiency_dispatch"] = parameters["dispatch"]
         phes["standing_loss"] = parameters["standing_loss"]
+        phes["cyclic_state_of_charge"] = parameters["cyclic_state_of_charge"]
 
         # Write data to db
         phes.to_sql(
@@ -79,7 +79,6 @@ def insert_PHES():
 
 
 def extendable_batteries_per_scenario(scenario):
-
     # Get datasets configuration
     sources = config.datasets()["storage_etrago"]["sources"]
     targets = config.datasets()["storage_etrago"]["targets"]
@@ -155,6 +154,10 @@ def extendable_batteries_per_scenario(scenario):
     extendable_batteries["standing_loss"] = get_sector_parameters(
         "electricity", scenario
     )["efficiency"]["battery"]["standing_loss"]
+
+    extendable_batteries["cyclic_state_of_charge"] = get_sector_parameters(
+        "electricity", scenario
+    )["efficiency"]["battery"]["cyclic_state_of_charge"]
 
     extendable_batteries["carrier"] = "battery"
 

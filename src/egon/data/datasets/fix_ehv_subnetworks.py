@@ -4,10 +4,11 @@ import geopandas as gpd
 import numpy as np
 import pandas as pd
 
-from egon.data import db, config
+from egon.data import config, db
 from egon.data.config import settings
 from egon.data.datasets import Dataset
 from egon.data.datasets.etrago_setup import link_geom_from_buses
+from egon.data.datasets.scenario_parameters import get_sector_parameters
 
 
 class FixEhvSubnetworks(Dataset):
@@ -36,7 +37,7 @@ def select_bus_id(x, y, v_nom, scn_name, carrier, find_closest=False):
     if bus_id.empty:
         if find_closest:
             bus_id = db.select_dataframe(
-            f"""
+                f"""
             SELECT bus_id, st_distance(geom, 'SRID=4326;POINT({x} {y})'::geometry)
             FROM grid.egon_etrago_bus
             WHERE v_nom = {v_nom}
@@ -44,7 +45,8 @@ def select_bus_id(x, y, v_nom, scn_name, carrier, find_closest=False):
             AND carrier = '{carrier}'
             ORDER BY st_distance
             Limit 1
-            """)
+            """
+            )
             return bus_id.bus_id[0]
         else:
             return None
@@ -91,8 +93,13 @@ def drop_bus(x, y, v_nom, scn_name):
 
 
 def add_line(x0, y0, x1, y1, v_nom, scn_name, cables):
-    bus0 = select_bus_id(x0, y0, v_nom, scn_name, carrier="AC", find_closest= True)
-    bus1 = select_bus_id(x1, y1, v_nom, scn_name, carrier="AC", find_closest= True)
+    parameters = get_sector_parameters("electricity", scenario=scn_name)
+    bus0 = select_bus_id(
+        x0, y0, v_nom, scn_name, carrier="AC", find_closest=True
+    )
+    bus1 = select_bus_id(
+        x1, y1, v_nom, scn_name, carrier="AC", find_closest=True
+    )
 
     df = pd.DataFrame(
         index=[db.next_etrago_id("line")],
@@ -110,20 +117,33 @@ def add_line(x0, y0, x1, y1, v_nom, scn_name, cables):
 
     gdf["length"] = gdf.to_crs(3035).topo.length.mul(1e-3)
 
+    # all the values used for x, r and b are taken from the electrical values
+    # reference table from oemtgmod: github.com/wupperinst/osmTGmod
     if v_nom == 220:
         s_nom = 520
         x_per_km = 0.001 * 2 * np.pi * 50
+        r_per_km = 0.05475
+        b_per_km = 11 * 2 * np.pi * 50 * 1e-9
+        cost_per_km = parameters["capital_cost"]["ac_ehv_overhead_line"]
 
     elif v_nom == 380:
         s_nom = 1790
         x_per_km = 0.0008 * 2 * np.pi * 50
+        r_per_km = 0.027375
+        b_per_km = 14 * 2 * np.pi * 50 * 1e-9
+        cost_per_km = parameters["capital_cost"]["ac_ehv_overhead_line"]
 
     gdf["s_nom"] = s_nom * gdf["cables"] / 3
+    gdf["s_nom_extendable"] = True
+    gdf["lifetime"] = parameters["lifetime"]["ac_ehv_overhead_line"]
+    gdf["s_nom_min"] = s_nom * gdf["cables"] / 3
 
     gdf["x"] = (x_per_km * gdf["length"]) / (gdf["cables"] / 3)
+    gdf["r"] = (r_per_km * gdf["length"]) / (gdf["cables"] / 3)
+    gdf["b"] = (b_per_km * gdf["length"]) * (gdf["cables"] / 3)
 
+    gdf["capital_cost"] = (cost_per_km * gdf["length"]) * (gdf["cables"] / 3)
     gdf.index.name = "line_id"
-
     gdf.reset_index().to_postgis(
         "egon_etrago_line", schema="grid", con=db.engine(), if_exists="append"
     )
@@ -147,8 +167,12 @@ def drop_line(x0, y0, x1, y1, v_nom, scn_name):
 
 
 def add_trafo(x, y, v_nom0, v_nom1, scn_name, n=1):
-    bus0 = select_bus_id(x, y, v_nom0, scn_name, carrier="AC", find_closest= True)
-    bus1 = select_bus_id(x, y, v_nom1, scn_name, carrier="AC", find_closest= True)
+    bus0 = select_bus_id(
+        x, y, v_nom0, scn_name, carrier="AC", find_closest=True
+    )
+    bus1 = select_bus_id(
+        x, y, v_nom1, scn_name, carrier="AC", find_closest=True
+    )
 
     df = pd.DataFrame(
         index=[db.next_etrago_id("line")],

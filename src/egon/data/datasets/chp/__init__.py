@@ -433,7 +433,7 @@ def insert_chp_statusquo():
                 },
                 source_id={"MastrNummer": row.EinheitMastrNummer},
                 carrier=map_carrier().loc[row.Energietraeger],
-                el_capacity=row.Nettonennleistung,
+                el_capacity=row.Nettonennleistung / 1000,
                 th_capacity=row.ThermischeNutzleistung / 1000,
                 scenario="status2019",
                 district_heating=row.district_heating,
@@ -688,5 +688,5 @@ if extension != set():
 class Chp(Dataset):
     def __init__(self, dependencies):
         super().__init__(
-            name="Chp", version="0.0.7", dependencies=dependencies, tasks=tasks
+            name="Chp", version="0.0.8", dependencies=dependencies, tasks=tasks
         )

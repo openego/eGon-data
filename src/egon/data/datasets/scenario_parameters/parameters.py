@@ -184,12 +184,14 @@ def electricity(scenario):
                 ** 0.5,
                 "standing_loss": 0,
                 "max_hours": 6,
+                "cyclic_state_of_charge": True,
             },
             "pumped_hydro": {
                 "store": read_costs(costs, "PHS", "efficiency") ** 0.5,
                 "dispatch": read_costs(costs, "PHS", "efficiency") ** 0.5,
                 "standing_loss": 0,
                 "max_hours": 6,
+                "cyclic_state_of_charge": True,
             },
         }
         # Warning: Electrical parameters are set in osmTGmod, editing these values will not change the data!
@@ -363,12 +365,14 @@ def electricity(scenario):
                 ** 0.5,
                 "standing_loss": 0,
                 "max_hours": 6,
+                "cyclic_state_of_charge": True,
             },
             "pumped_hydro": {
                 "store": read_costs(costs, "PHS", "efficiency") ** 0.5,
                 "dispatch": read_costs(costs, "PHS", "efficiency") ** 0.5,
                 "standing_loss": 0,
                 "max_hours": 6,
+                "cyclic_state_of_charge": True,
             },
         }
         # Warning: Electrical parameters are set in osmTGmod, editing these values will not change the data!
@@ -510,12 +514,14 @@ def electricity(scenario):
                 ** 0.5,
                 "standing_loss": 0,
                 "max_hours": 6,
+                "cyclic_state_of_charge": True,
             },
             "pumped_hydro": {
                 "store": read_costs(costs, "PHS", "efficiency") ** 0.5,
                 "dispatch": read_costs(costs, "PHS", "efficiency") ** 0.5,
                 "standing_loss": 0,
                 "max_hours": 6,
+                "cyclic_state_of_charge": True,
             },
         }
         # Warning: Electrical parameters are set in osmTGmod, editing these values will not change the data!

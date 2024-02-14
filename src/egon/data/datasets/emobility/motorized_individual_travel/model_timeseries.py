@@ -734,33 +734,37 @@ def write_model_data_to_db(
         # * load timeseries:
         #   * regular (flex): use driving load
         #   * lowflex: use dumb charging load
-        if write_lowflex_model is False:
-            emob_bus_id = write_bus(scenario_name=scenario_name)
-            write_link(scenario_name=scenario_name)
-            write_store(scenario_name=scenario_name)
-            write_load(
-                scenario_name=scenario_name,
-                connection_bus_id=emob_bus_id,
-                load_ts=(
-                    hourly_load_time_series_df.driving_load_time_series.to_list()  # noqa: E501
-                ),
-            )
-        elif scenario_name=='status2019':
+        #   * status2019: also dumb charging
+
+        if scenario_name=='status2019':
             write_load(
                 scenario_name=scenario_name,
                 connection_bus_id=etrago_bus.bus_id,
                 load_ts=hourly_load_time_series_df.load_time_series.to_list(),
-            )
+                )
         else:
-            # Get lowflex scenario name
-            lowflex_scenario_name = DATASET_CFG["scenario"]["lowflex"][
-                "names"
-            ][scenario_name]
-            write_load(
-                scenario_name=lowflex_scenario_name,
-                connection_bus_id=etrago_bus.bus_id,
-                load_ts=hourly_load_time_series_df.load_time_series.to_list(),
-            )
+            if write_lowflex_model is False:
+                emob_bus_id = write_bus(scenario_name=scenario_name)
+                write_link(scenario_name=scenario_name)
+                write_store(scenario_name=scenario_name)
+                write_load(
+                    scenario_name=scenario_name,
+                    connection_bus_id=emob_bus_id,
+                    load_ts=(
+                        hourly_load_time_series_df.driving_load_time_series.to_list()  # noqa: E501
+                    ),
+                )
+
+            else:
+                # Get lowflex scenario name
+                lowflex_scenario_name = DATASET_CFG["scenario"]["lowflex"][
+                    "names"
+                ][scenario_name]
+                write_load(
+                    scenario_name=lowflex_scenario_name,
+                    connection_bus_id=etrago_bus.bus_id,
+                    load_ts=hourly_load_time_series_df.load_time_series.to_list(),
+                )
 
     def write_to_file():
         """Write model data to file (for debugging purposes)"""
