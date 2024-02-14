@@ -1,6 +1,6 @@
 """The central module containing all code dealing with electrical neighbours
 """
-
+import datetime
 from os import path
 from pathlib import Path
 import logging
@@ -1513,6 +1513,14 @@ def entsoe_to_bus_etrago(scn_name):
     return map_entsoe.map(for_bus)
 
 
+def save_entsoe_data(df: pd.DataFrame, file_path: Path):
+    os.makedirs(file_path.parent, exist_ok=True)
+    if not df.empty:
+        df.to_csv(file_path, index_label="Index")
+        logger.info(f"Saved entsoe data for {file_path.stem} "
+                    f"to {file_path.parent} for countries: {df.index}")
+
+
 def insert_generators_sq(scn_name="status2019"):
     """
     Insert generators for foreign countries based on ENTSO-E data
@@ -1539,11 +1547,24 @@ def insert_generators_sq(scn_name="status2019"):
         raise ValueError("No valid scenario name!")
 
     gen_sq, not_retrieved = entsoe_historic_generation_capacities(**year_start_end)
+
     if not_retrieved:
-        logger.warning(
-            "Generation data from entsoe could not be retrieved. "
-            "Backup data from 2019 is used instead."
-        )
+        logger.warning("Generation data from entsoe could not be retrieved.")
+        # check for generation backup from former runs
+        file_path = Path("./", "entsoe_data", f"gen_entsoe_{scn_name}.csv").resolve()
+        if os.path.isfile(file_path):
+            gen_sq_backup = pd.read_csv(file_path, index_col="Index")
+            # check for missing columns in backup (former runs)
+            c_backup = [c for c in gen_sq_backup.columns if c in not_retrieved]
+            # remove columns, if found in backup
+            not_retrieved = [c for c in not_retrieved if c not in c_backup]
+            if c_backup:
+                gen_sq = pd.concat([gen_sq, gen_sq_backup.loc[:, c_backup]], axis=1)
+                logger.info(f"Appended data from former runs for {c_backup}")
+        save_entsoe_data(gen_sq, file_path=file_path)
+
+    if not_retrieved:
+        logger.warning("Backup data from 2019 is used instead.")
         gen_sq_backup = pd.read_csv(
             "data_bundle_egon_data/entsoe/gen_entsoe.csv", index_col="Index"
         )
@@ -1708,11 +1729,22 @@ def insert_loads_sq(scn_name="status2019"):
     load_sq, not_retrieved = entsoe_historic_demand(**year_start_end)
 
     if not_retrieved:
+        logger.warning("Demand data from entsoe could not be retrieved.")
+        # check for generation backup from former runs
+        file_path = Path("./", "entsoe_data", f"load_entsoe_{scn_name}.csv").resolve()
+        if os.path.isfile(file_path):
+            load_sq_backup = pd.read_csv(file_path, index_col="Index")
+            # check for missing columns in backup (former runs)
+            c_backup = [c for c in load_sq_backup.columns if c in not_retrieved]
+            # remove columns, if found in backup
+            not_retrieved = [c for c in not_retrieved if c not in c_backup]
+            if c_backup:
+                load_sq = pd.concat([load_sq, load_sq_backup.loc[:, c_backup]], axis=1)
+                logger.info(f"Appended data from former runs for {c_backup}")
+        save_entsoe_data(load_sq, file_path=file_path)
 
-        logger.warning(
-            "Demand data from entsoe could not be retrieved."
-            f"Backup data of 2019 is used instead for {not_retrieved}"
-        )
+    if not_retrieved:
+        logger.warning(f"Backup data of 2019 is used instead for {not_retrieved}")
         load_sq_backup = pd.read_csv(
             "data_bundle_egon_data/entsoe/load_entsoe.csv", index_col="Index"
         )
