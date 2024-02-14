@@ -80,14 +80,15 @@ class HydrogenStoreEtrago(Dataset):
 
     Insert the H2 stores in Germany into the database for the scenarios
     eGon2035 and eGon100RE:
-      * H2 overground stores or steel tanks at each H2_grid bus with the
-        function :py:func:`insert_H2_overground_storage <egon.data.datasets.hydrogen_etrago.storage.insert_H2_overground_storage>`
-        for the scenario eGon2035,
-      * H2 underground stores or saltcavern stores at each H2_saltcavern
-        bus with the function :py:func:`insert_H2_saltcavern_storage <egon.data.datasets.hydrogen_etrago.storage.insert_H2_saltcavern_storage>`
-        for the scenario eGon2035,
-      * H2 stores (overground and underground) for the scenario eGon100RE
-        with the function :py:func:`insert_H2_storage_eGon100RE <egon.data.datasets.hydrogen_etrago.storage.insert_H2_storage_eGon100RE>`.
+
+    * H2 overground stores or steel tanks at each H2_grid bus with the
+      function :py:func:`insert_H2_overground_storage <egon.data.datasets.hydrogen_etrago.storage.insert_H2_overground_storage>`
+      for the scenario eGon2035,
+    * H2 underground stores or saltcavern stores at each H2_saltcavern
+      bus with the function :py:func:`insert_H2_saltcavern_storage <egon.data.datasets.hydrogen_etrago.storage.insert_H2_saltcavern_storage>`
+      for the scenario eGon2035,
+    * H2 stores (overground and underground) for the scenario eGon100RE
+      with the function :py:func:`insert_H2_storage_eGon100RE <egon.data.datasets.hydrogen_etrago.storage.insert_H2_storage_eGon100RE>`.
 
     *Dependencies*
       * :py:class:`SaltcavernData <egon.data.datasets.saltcavern.SaltcavernData>`

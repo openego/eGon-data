@@ -3,8 +3,7 @@
 airflow
 =======
 
+.. toctree::
+   :maxdepth: 1
 
-.. automodule:: egon.data.airflow
-   :members:
-   :undoc-members:
-   :show-inheritance:
+   egon.data.airflow.dags

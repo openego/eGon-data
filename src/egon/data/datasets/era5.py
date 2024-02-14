@@ -54,6 +54,10 @@ class WeatherData(Dataset):
 
 
 class EgonEra5Cells(Base):
+    """
+    Class definition of table supply.egon_era5_weather_cells.
+
+    """
     __tablename__ = "egon_era5_weather_cells"
     __table_args__ = {"schema": "supply"}
     w_id = Column(Integer, primary_key=True)
@@ -62,6 +66,10 @@ class EgonEra5Cells(Base):
 
 
 class EgonRenewableFeedIn(Base):
+    """
+    Class definition of table supply.egon_era5_renewable_feedin.
+
+    """
     __tablename__ = "egon_era5_renewable_feedin"
     __table_args__ = {"schema": "supply"}
     w_id = Column(Integer, primary_key=True)

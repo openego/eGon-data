@@ -353,14 +353,6 @@ def area_grouping(
     join: geopandas.geodataframe.GeoDataFrame
         cell polygons with area id
 
-    Notes
-    -----
-        None
-
-    TODO
-    ----
-
-
     """
 
     buffer_distance = distance + 1

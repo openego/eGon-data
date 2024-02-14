@@ -10,7 +10,6 @@ egon.data
    egon.data.airflow
    egon.data.cli
    egon.data.config
-   egon.data.dataset_configuration
    egon.data.datasets
    egon.data.db
    egon.data.metadata

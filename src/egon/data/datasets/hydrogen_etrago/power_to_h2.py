@@ -2,13 +2,12 @@
 """
 Module containing the definition of the AC grid to H2 links
 
-In this module the functions used to define and insert the links 
+In this module the functions used to define and insert the links
 between H2 and AC buses into the database are to be found.
 These links are modelling:
-  * Electrolysis (carrier name: 'power_to_H2'): technology to produce H2
-    from AC
-  * Fuel cells (carrier name: 'H2_to_power'): techonology to produce
-    power from H2
+
+* Electrolysis (carrier name: 'power_to_H2'): technology to produce H2 from AC
+* Fuel cells (carrier name: 'H2_to_power'): techonology to produce power from H2
 
 """
 from geoalchemy2.types import Geometry
@@ -232,11 +231,11 @@ def map_buses(scn_name):
 
 def insert_power_to_h2_to_power_eGon100RE():
     """Copy H2/power links from the eGon2035 to the eGon100RE scenario.
-    
+
     Returns
     -------
     None
-    
+
     """
     copy_and_modify_links(
         "eGon2035", "eGon100RE", ["H2_to_power", "power_to_H2"], "gas"

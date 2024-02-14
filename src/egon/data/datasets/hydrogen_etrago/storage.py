@@ -3,11 +3,13 @@ The central module containing all code dealing with H2 stores in Germany
 
 This module contains the functions used to insert the two types of H2
 store potentials in Germany:
-  * H2 overground stores (carrier: 'H2_overground'): steel tanks at
-    every H2_grid bus
-  * H2 underground stores (carrier: 'H2_underground'): saltcavern store
-    at every H2_saltcavern bus.
-    NB: the saltcavern locations define the H2_saltcavern buses locations.
+
+* H2 overground stores (carrier: 'H2_overground'): steel tanks at
+  every H2_grid bus
+* H2 underground stores (carrier: 'H2_underground'): saltcavern store
+  at every H2_saltcavern bus.
+  NB: the saltcavern locations define the H2_saltcavern buses locations.
+
 All these stores are modelled as extendable PyPSA stores.
 
 """
@@ -25,7 +27,7 @@ def insert_H2_overground_storage(scn_name="eGon2035"):
     Insert H2_overground stores into the database.
 
     Insert extendable H2_overground stores (steel tanks) at each H2_grid
-    bus. 
+    bus.
 
     Returns
     -------
@@ -95,7 +97,7 @@ def insert_H2_saltcavern_storage(scn_name="eGon2035"):
 
     Insert extendable H2_underground stores (saltcavern potentials) at
     every H2_saltcavern bus.
-    
+
     Returns
     -------
     None
@@ -379,11 +381,11 @@ def calculate_and_map_saltcavern_storage_potential():
 
 def write_saltcavern_potential():
     """Write saltcavern potentials into the database
-    
+
     Returns
     -------
     None
-    
+
     """
     potential_areas = calculate_and_map_saltcavern_storage_potential()
 
@@ -401,11 +403,11 @@ def write_saltcavern_potential():
 
 def insert_H2_storage_eGon100RE():
     """Copy H2 storage from the eGon2035 to the eGon100RE scenario.
-    
+
     Returns
     -------
     None
-    
+
     """
     copy_and_modify_stores(
         "eGon2035", "eGon100RE", ["H2_underground", "H2_overground"], "gas"

@@ -8,6 +8,8 @@ Literature
 
 .. [Buettner2022] C. Büttner, J. Amme, J. Endres, A. Malla, B. Schachler, I. Cußmann, Open modeling of electricity and heat demand curves for all residential buildings in Germany, Energy Informatics 5 (1) (2022) 21. doi:10.1186/s42162-022-00201-y. URL https://doi.org/10.1186/s42162-022-00201-y
 
+.. [Brown2018] T. Brown, D. Schlachtenberger, A. Kies, S. Schramm, M. Greiner, Synergies of sector coupling and transmission reinforcement in a cost-optimised, highly renewable European energy system, Energy Volume 160 (2018). URL https://doi.org/10.1016/j.energy.2018.06.222
+
 .. [Census] S. B. (Destatis), Datensatzbeschreibung ”Haushalte im 100 Meter-Gitter” (2018). URL https://www.zensus2011.de/SharedDocs/Downloads/DE/Pressemitteilung/DemografischeGrunddaten/Datensatzbeschreibung_Haushalt_100m_Gitter.html
 
 .. [DAE_store] Danish Energy Agency, Technology Data – Energy storage, First published 2018 by the Danish Energy Agency and Energinet, URL https://ens.dk/en/our-services/projections-and-models/technology-data/technology-data-energy-storage
@@ -30,6 +32,8 @@ Literature
 
 .. [Huelk2017]  L. Hülk, L. Wienholt, I. Cußmann, U.P. Müller, C. Matke, E. Kötter, Allocation of annual electricity consumption and power generation capacities across multiple voltage levels in a high spatial resolution, International Journal of Sustainable Energy Planning and Management Vol. 13 2017 79–92. URL https://journals.aau.dk/index.php/sepm/article/view/1833
 
+.. [KBA] Kraftfahrt-Bundesamt, Fahrzeugzulassungen (FZ) - Bestand an Kraftfahrzeugen und Kraftfahrzeuganhängern nach Zulassungsbezirken (2021). URL https://www.kba.de/SharedDocs/Downloads/DE/Statistik/Fahrzeuge/FZ1/fz1_2021.xlsx?__blob=publicationFile&v=2
+
 .. [Kleinhans] D. Kleinhans, Towards a systematic characterization of the potential of demand side management, arXiv (2014), doi: 10.48550/ARXIV.1401.4121. URL https://arxiv.org/abs/1401.4121
 
 .. [MaStR] Bundesnetzagentur für Elektrizität, Gas, Telekommunikation, Post und Eisenbahnen, Marktstammdatenregister - Datendownload (Nov. 2022). URL https://www.marktstammdatenregister.de/MaStR/Datendownload
@@ -39,6 +43,8 @@ Literature
 .. [Mueller2018] U. Mueller, L. Wienholt, D. Kleinhans, I. Cussmann, W.-D. Bunke, G. Pleßmann, J. Wendiggensen 2018 J. Phys.: Conf. Ser. 977 012003, DOI 10.1088/1742-6596/977/1/012003
 
 .. [NEP2021] Übertragungsnetzbetreiber Deutschland (2021):  *Netzentwicklungsplan Strom 2035*, Version 2021, 1. Entwurf. 2021.
+
+.. [NEP2021a] Principles for the Expansion Planning of the German Transmission Network https://www.netzentwicklungsplan.de/
 
 .. [NOW2020] Nationale Leitstelle Ladeinfrastruktur, Ladeinfrastruktur nach 2025/2030: Szenarien für den Markthochlauf (2020). URL https://www.now-gmbh.de/wp-content/uploads/2020/11/Studie_Ladeinfrastruktur-nach-2025-2.pdf
 
@@ -53,3 +59,5 @@ Literature
 .. [sEEnergies] T. Fleiter, P. Manz, N. Neuwirth, F. Mildner, K. Persson, U.AND Kermeli, W. Crijns-Graus, C. Rutten, seenergies d5.1 dataset web-app.seenergies arcgis online web-apps hosted by europa-universität flensburg (2020). URL https://tinyurl.com/sEEnergies-D5-1
 
 .. [TYNDP] European Network of Transmission System Operators for Electricity, European Network of Transmission System Operators for Gas, Ten-Year Network Development Plans - “TYNDP 2020 Scenarios” (2020)
+
+.. [Wulff2020]  N. Wulff, F. Steck, H. C. Gils, C. Hoyer-Klick, B. van den Adel, J. E. Anderson, Comparing Power-System and User-Oriented Battery Electric Vehicle Charging Representation and Its Implications on Energy System Modeling, Energies (2020), 13, URL https://doi.org/10.3390/en13051093

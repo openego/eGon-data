@@ -137,6 +137,7 @@ class HouseholdDemands(Dataset):
       (see :func:`get_iee_hh_demand_profiles_raw`)
     * Spatial information about people living in households by Zensus 2011 at
       federal state level
+
         * Type of household (family status)
         * Age
         * Number of people
@@ -165,6 +166,7 @@ class HouseholdDemands(Dataset):
     * Spatial information about people living in households by zensus (2011) at
       federal state NUTS1 level `df_zensus` is aggregated to be compatible
       to IEE household profile specifications.
+
         * exclude kids and reduce to adults and seniors
         * group as defined in `HH_TYPES`
         * convert data from people living in households to number of households
@@ -217,6 +219,7 @@ class HouseholdDemands(Dataset):
       specific population value.
 
     *Helper functions*
+
     * To access the DB, select specific profiles at various aggregation levels
       use :py:func:`get_hh_profiles_from_db`
     * To access the DB, select specific profiles at various aggregation levels
@@ -447,7 +450,7 @@ def get_census_households_nuts1_raw():
     * Choose table code: "1000A-3016" with title "Personen: Alter
       (11 Altersklassen) - Größe des privaten Haushalts - Typ des privaten
       Haushalts (nach Familien/Lebensform)"
-    - Change setting "GEOLK1" to "Bundesländer (16)"
+    * Change setting "GEOLK1" to "Bundesländer (16)"
 
     Data would be available in higher resolution
     ("Landkreise und kreisfreie Städte (412)"), but only after registration.
@@ -1135,15 +1138,27 @@ def refine_census_data_at_cell_level(
     IEE profiles specifications. To do this, proportionate allocation is
     applied at nuts1 level and within household type clusters.
 
-    .. csv-table:: Mapping table
-    :header: "characteristics_code", "characteristics_text", "mapping"
+    .. list-table:: Mapping table
+       :header-rows: 1
 
-    "1", "Einpersonenhaushalte (Singlehaushalte)", "SR; SO"
-    "2", "Paare ohne Kind(er)", "PR; PO"
-    "3", "Paare mit Kind(ern)", "P1; P2; P3"
-    "4", "Alleinerziehende Elternteile", "SK"
-    "5", "Mehrpersonenhaushalte ohne Kernfamilie", "OR; OO"
-
+       * - characteristics_code
+         - characteristics_text
+         - mapping
+       * - 1
+         - Einpersonenhaushalte (Singlehaushalte)
+         - SR; SO
+       * - 2
+         - Paare ohne Kind(er)
+         - PR; PO
+       * - 3
+         - Paare mit Kind(ern)
+         - P1; P2; P3
+       * - 4
+         - Alleinerziehende Elternteile
+         - SK
+       * - 5
+         - Mehrpersonenhaushalte ohne Kernfamilie
+         - OR; OO
 
     Parameters
     ----------

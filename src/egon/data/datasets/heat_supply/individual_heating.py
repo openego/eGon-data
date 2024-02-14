@@ -2,181 +2,10 @@
 
 The following main things are done in this module:
 
-* ..
+* ??
 * Desaggregation of heat pump capacities to individual buildings
 * Determination of minimum required heat pump capacity for pypsa-eur-sec
 
-The determination of the minimum required heat pump capacity for pypsa-eur-sec takes
-place in the dataset 'HeatPumpsPypsaEurSec'. The goal is to ensure that the heat pump
-capacities determined in pypsa-eur-sec are large enough to serve the heat demand of
-individual buildings after the desaggregation from a few nodes in pypsa-eur-sec to the
-individual buildings.
-To determine minimum required heat pump capacity per building the buildings heat peak
-load in the eGon100RE scenario is used (as pypsa-eur-sec serves as the scenario
-generator for the eGon100RE scenario; see
-:func:`determine_minimum_hp_capacity_per_building` for information on how minimum
-required heat pump capacity is determined). As the heat peak load is not previously
-determined, it is as well done in the course of this task.
-Further, as determining heat peak load requires heat load
-profiles of the buildings to be set up, this task is also utilised to set up
-heat load profiles of all buildings with heat pumps within a grid in the eGon100RE
-scenario used in eTraGo.
-The resulting data is stored in separate tables respectively a csv file:
-
-* `input-pypsa-eur-sec/minimum_hp_capacity_mv_grid_100RE.csv`:
-    This csv file contains minimum required heat pump capacity per MV grid in MW as
-    input for pypsa-eur-sec. It is created within :func:`export_min_cap_to_csv`.
-* `demand.egon_etrago_timeseries_individual_heating`:
-    This table contains aggregated heat load profiles of all buildings with heat pumps
-    within an MV grid in the eGon100RE scenario used in eTraGo. It is created within
-    :func:`individual_heating_per_mv_grid_tables`.
-* `demand.egon_building_heat_peak_loads`:
-    Mapping of peak heat demand and buildings including cell_id,
-    building, area and peak load. This table is created in
-    :func:`delete_heat_peak_loads_100RE`.
-
-The desaggregation of heat pump capcacities to individual buildings takes place in two
-separate datasets: 'HeatPumps2035' for eGon2035 scenario and 'HeatPumps2050' for
-eGon100RE.
-It is done separately because for one reason in case of the eGon100RE scenario the
-minimum required heat pump capacity per building can directly be determined using the
-heat peak load per building determined in the dataset 'HeatPumpsPypsaEurSec', whereas
-heat peak load data does not yet exist for the eGon2035 scenario. Another reason is,
-that in case of the eGon100RE scenario all buildings with individual heating have a
-heat pump whereas in the eGon2035 scenario buildings are randomly selected until the
-installed heat pump capacity per MV grid is met. All other buildings with individual
-heating but no heat pump are assigned a gas boiler.
-
-In the 'HeatPumps2035' dataset the following things are done.
-First, the building's heat peak load in the eGon2035 scenario is determined for sizing
-the heat pumps. To this end, heat load profiles per building are set up.
-Using the heat peak load per building the minimum required heat pump capacity per
-building is determined (see :func:`determine_minimum_hp_capacity_per_building`).
-Afterwards, the total heat pump capacity per MV grid is desaggregated to individual
-buildings in the MV grid, wherefore buildings are randomly chosen until the MV grid's total
-heat pump capacity is reached (see :func:`determine_buildings_with_hp_in_mv_grid`).
-Buildings with PV rooftop plants are more likely to be assigned a heat pump. In case
-the minimum heat pump capacity of all chosen buildings is smaller than the total
-heat pump capacity of the MV grid but adding another building would exceed the total
-heat pump capacity of the MV grid, the remaining capacity is distributed to all
-buildings with heat pumps proportionally to the size of their respective minimum
-heat pump capacity. Therefore, the heat pump capacity of a building can be larger
-than the minimum required heat pump capacity.
-The generated heat load profiles per building are in a last step utilised to set up
-heat load profiles of all buildings with heat pumps within a grid as well as for all
-buildings with a gas boiler (i.e. all buildings with decentral heating system minus
-buildings with heat pump) needed in eTraGo.
-The resulting data is stored in the following tables:
-
-* `demand.egon_hp_capacity_buildings`:
-    This table contains the heat pump capacity of all buildings with a heat pump.
-    It is created within :func:`delete_hp_capacity_2035`.
-* `demand.egon_etrago_timeseries_individual_heating`:
-    This table contains aggregated heat load profiles of all buildings with heat pumps
-    within an MV grid as well as of all buildings with gas boilers within an MV grid in
-    the eGon100RE scenario used in eTraGo. It is created within
-    :func:`individual_heating_per_mv_grid_tables`.
-* `demand.egon_building_heat_peak_loads`:
-    Mapping of heat demand time series and buildings including cell_id,
-    building, area and peak load. This table is created in
-    :func:`delete_heat_peak_loads_2035`.
-
-In the 'HeatPumps2050' dataset the total heat pump capacity in each MV grid can be
-directly desaggregated to individual buildings, as the building's heat peak load was
-already determined in the 'HeatPumpsPypsaEurSec' dataset. Also in contrast to the
-'HeatPumps2035' dataset, all buildings with decentral heating system are assigned a
-heat pump, wherefore no random sampling of buildings needs to be conducted.
-The resulting data is stored in the following table:
-
-* `demand.egon_hp_capacity_buildings`:
-    This table contains the heat pump capacity of all buildings with a heat pump.
-    It is created within :func:`delete_hp_capacity_2035`.
-
-**The following datasets from the database are mainly used for creation:**
-
-* `boundaries.egon_map_zensus_grid_districts`:
-
-
-* `boundaries.egon_map_zensus_district_heating_areas`:
-
-
-* `demand.egon_peta_heat`:
-    Table of annual heat load demand for residential and cts at census cell
-    level from peta5.
-* `demand.egon_heat_timeseries_selected_profiles`:
-
-
-* `demand.egon_heat_idp_pool`:
-
-
-* `demand.egon_daily_heat_demand_per_climate_zone`:
-
-
-* `boundaries.egon_map_zensus_mvgd_buildings`:
-    A final mapping table including all buildings used for residential and
-    cts, heat and electricity timeseries. Including census cells, mvgd bus_id,
-    building type (osm or synthetic)
-
-* `supply.egon_individual_heating`:
-
-
-* `demand.egon_cts_heat_demand_building_share`:
-    Table including the mv substation heat profile share of all selected
-    cts buildings for scenario eGon2035 and eGon100RE. This table is created
-    within :func:`cts_heat()`
-
-
-**What is the goal?**
-
-The goal is threefold. Primarily, heat pump capacity of individual buildings is
-determined as it is necessary for distribution grid analysis. Secondly, as heat
-demand profiles need to be set up during the process, the heat demand profiles of all
-buildings with individual heat pumps respectively gas boilers per MV grid are set up
-to be used in eTraGo. Thirdly, minimum heat pump capacity is determined as input for
-pypsa-eur-sec to avoid that heat pump capacity per building is too little to meet
-the heat demand after desaggregation to individual buildings.
-
-**What is the challenge?**
-
-The main challenge lies in the set up of heat demand profiles per building in
-:func:`aggregate_residential_and_cts_profiles()` as it takes alot of time and
-in grids with a high number of buildings requires alot of RAM. Both runtime and
-RAM usage needed to be improved several times. To speed up the process, tasks are set
-up to run in parallel. This currently leads to alot of connections being opened and
-at a certain point to a runtime error due to too many open connections.
-
-**What are central assumptions during the data processing?**
-
-Central assumption for determining minimum heat pump capacity and desaggregating
-heat pump capacity to individual buildings is that the required heat pump capacity
-is determined using an approach from the
-`network development plan <https://www.netzentwicklungsplan.de/sites/default/files/paragraphs-files/Szenariorahmenentwurf_NEP2035_2021_1.pdf>`_
-(pp.46-47) (see :func:`determine_minimum_hp_capacity_per_building()`). There, the heat
-pump capacity is determined by multiplying the heat peak
-demand of the building by a minimum assumed COP of 1.7 and a flexibility factor of
-24/18, taking into account that power supply of heat pumps can be interrupted for up
-to six hours by the local distribution grid operator.
-Another central assumption is, that buildings with PV rooftop plants are more likely
-to have a heat pump than other buildings (see
-:func:`determine_buildings_with_hp_in_mv_grid()` for details)
-
-**Drawbacks and limitations of the data**
-
-In the eGon2035 scenario buildings with heat pumps are selected randomly with a higher
-probability for a heat pump for buildings with PV rooftop (see
-:func:`determine_buildings_with_hp_in_mv_grid()` for details).
-Another limitation may be the sizing of the heat pumps, as in the eGon2035 scenario
-their size rigidly depends on the heat peak load and a fixed flexibility factor. During
-the coldest days of the year, heat pump flexibility strongly depends on this
-assumption and cannot be dynamically enlarged to provide more flexibility (or only
-slightly through larger heat storage units).
-
-Notes
------
-
-This module docstring is rather a dataset documentation. Once, a decision
-is made in ... the content of this module docstring needs to be moved to
-docs attribute of the respective dataset class.
 """
 
 
@@ -227,6 +56,14 @@ Base = declarative_base()
 
 
 class EgonEtragoTimeseriesIndividualHeating(Base):
+    """
+    Class definition of table demand.egon_etrago_timeseries_individual_heating.
+
+    This table contains aggregated heat load profiles of all buildings with heat pumps
+    within an MV grid as well as of all buildings with gas boilers within an MV grid for
+    the different scenarios. The data is used in eTraGo.
+
+    """
     __tablename__ = "egon_etrago_timeseries_individual_heating"
     __table_args__ = {"schema": "demand"}
     bus_id = Column(Integer, primary_key=True)
@@ -236,6 +73,12 @@ class EgonEtragoTimeseriesIndividualHeating(Base):
 
 
 class EgonHpCapacityBuildings(Base):
+    """
+    Class definition of table demand.egon_hp_capacity_buildings.
+
+    This table contains the heat pump capacity of all buildings with a heat pump.
+
+    """
     __tablename__ = "egon_hp_capacity_buildings"
     __table_args__ = {"schema": "demand"}
     building_id = Column(Integer, primary_key=True)
@@ -244,6 +87,68 @@ class EgonHpCapacityBuildings(Base):
 
 
 class HeatPumpsPypsaEurSec(Dataset):
+    """
+    Class to determine minimum heat pump capcacities per building for the PyPSA-EUR run.
+
+    The goal is to ensure that the heat pump capacities determined in PyPSA-EUR are
+    sufficient to serve the heat demand of individual buildings after the
+    desaggregation from a few nodes in PyPSA-EUR to the individual buildings.
+    As the heat peak load is not previously determined, it is as well done in this
+    dataset. Further, as determining heat peak load requires heat load
+    profiles of the buildings to be set up, this task is also utilised to set up
+    heat load profiles of all buildings with heat pumps within a grid in the eGon100RE
+    scenario used in eTraGo.
+
+    For more information see data documentation on :ref:`dec-heat-pumps-ref`.
+
+    *Dependencies*
+      * :py:class:`CtsDemandBuildings
+        <egon.data.datasets.electricity_demand_timeseries.cts_buildings.CtsDemandBuildings>`
+      * :py:class:`DistrictHeatingAreas
+        <egon.data.datasets.district_heating_areas.DistrictHeatingAreas>`
+      * :py:class:`HeatTimeSeries
+        <egon.data.datasets.heat_demand_timeseries.HeatTimeSeries>`
+
+    *Resulting tables*
+      * `input-pypsa-eur-sec/minimum_hp_capacity_mv_grid_100RE.csv` file is created,
+        containing the minimum required heat pump capacity per MV grid in MW as
+        input for PyPSA-EUR (created within :func:`export_min_cap_to_csv`)
+      * :py:class:`demand.egon_etrago_timeseries_individual_heating
+        <egon.data.datasets.heat_supply.individual_heating.EgonEtragoTimeseriesIndividualHeating>`
+        is created and filled
+      * :py:class:`demand.egon_building_heat_peak_loads
+        <egon.data.datasets.heat_supply.individual_heating.BuildingHeatPeakLoads>`
+        is created and filled
+
+    **What is the challenge?**
+
+    The main challenge lies in the set up of heat demand profiles per building in
+    :func:`aggregate_residential_and_cts_profiles()` as it takes alot of time and
+    in grids with a high number of buildings requires alot of RAM. Both runtime and RAM
+    usage needed to be improved several times. To speed up the process, tasks are set
+    up to run in parallel. This currently leads to alot of connections being opened and
+    at a certain point to a runtime error due to too many open connections.
+
+    **What are central assumptions during the data processing?**
+
+    Central assumption for determining the minimum required heat pump capacity
+    is that heat pumps can be dimensioned using an approach from the network development
+    plan that uses the building's peak heat demand and a fixed COP (see
+    data documentation on :ref:`dec-heat-pumps-ref`).
+
+    **Drawbacks and limitations of the data**
+
+    The heat demand profiles used here to determine the heat peak load have very few
+    very high peaks that lead to large heat pump capacities. This should be solved
+    somehow. Cutting off the peak is not possible, as the time series of each building
+    is not saved but generated on the fly. Also, just using smaller heat pumps would
+    lead to infeasibilities in eDisGo.
+
+    """
+    #:
+    name: str = "HeatPumpsPypsaEurSec"
+    #:
+    version: str = "0.0.2"
     def __init__(self, dependencies):
         def dyn_parallel_tasks_pypsa_eur_sec():
             """Dynamically generate tasks
@@ -283,8 +188,8 @@ class HeatPumpsPypsaEurSec(Dataset):
             return tasks
 
         super().__init__(
-            name="HeatPumpsPypsaEurSec",
-            version="0.0.2",
+            name=self.name,
+            version=self.version,
             dependencies=dependencies,
             tasks=(
                 delete_pypsa_eur_sec_csv_file,
@@ -296,6 +201,90 @@ class HeatPumpsPypsaEurSec(Dataset):
 
 
 class HeatPumps2035(Dataset):
+    """
+    Class for desaggregation of heat pump capcacities per MV grid district to individual
+    buildings for eGon2035 scenario.
+
+    The heat pump capacity per MV grid district is disaggregated to buildings
+    with individual heating based on the buildings heat peak demand. The buildings are
+    chosen randomly until the target capacity per MV grid district is reached. Buildings
+    with PV rooftop have a higher probability to be assigned a heat pump. As the
+    building's heat peak load is not previously determined, it is as well done in this
+    dataset. Further, as determining heat peak load requires heat load
+    profiles of the buildings to be set up, this task is also utilised to set up
+    aggregated heat load profiles of all buildings with heat pumps within a grid as
+    well as for all buildings with a gas boiler (i.e. all buildings with decentral
+    heating system minus buildings with heat pump) needed in eTraGo.
+
+    For more information see data documentation on :ref:`dec-heat-pumps-ref`.
+
+    Heat pump capacity per building in the eGon100RE scenario is set up in a separate
+    dataset, :py:class:`HeatPumps2050 <HeatPumps2050>`, as for one reason in case of the
+    eGon100RE scenario the minimum required heat pump capacity per building can directly
+    be determined using the peak heat demand per building determined in the dataset
+    :py:class:`HeatPumpsPypsaEurSec <HeatPumpsPypsaEurSec>`, whereas peak heat
+    demand data does not yet exist for the eGon2035 scenario. Another reason is,
+    that in case of the eGon100RE scenario all buildings with individual heating have a
+    heat pump whereas in the eGon2035 scenario buildings are randomly selected until the
+    installed heat pump capacity per MV grid is met. All other buildings with individual
+    heating but no heat pump are assigned a gas boiler.
+
+    *Dependencies*
+      * :py:class:`CtsDemandBuildings
+        <egon.data.datasets.electricity_demand_timeseries.cts_buildings.CtsDemandBuildings>`
+      * :py:class:`DistrictHeatingAreas
+        <egon.data.datasets.district_heating_areas.DistrictHeatingAreas>`
+      * :py:class:`HeatSupply <egon.data.datasets.heat_supply.HeatSupply>`
+      * :py:class:`HeatTimeSeries
+        <egon.data.datasets.heat_demand_timeseries.HeatTimeSeries>`
+      * :py:class:`HeatPumpsPypsaEurSec
+        <egon.data.datasets.heat_supply.individual_heating.HeatPumpsPypsaEurSec>`
+      * :py:func:`pv_rooftop_to_buildings
+        <egon.data.datasets.power_plants.pv_rooftop_buildings.pv_rooftop_to_buildings>`
+
+    *Resulting tables*
+      * :py:class:`demand.egon_hp_capacity_buildings
+        <egon.data.datasets.heat_supply.individual_heating.EgonHpCapacityBuildings>`
+        is created (if it doesn't yet exist) and filled
+      * :py:class:`demand.egon_etrago_timeseries_individual_heating
+        <egon.data.datasets.heat_supply.individual_heating.EgonEtragoTimeseriesIndividualHeating>`
+        is created (if it doesn't yet exist) and filled
+      * :py:class:`demand.egon_building_heat_peak_loads
+        <egon.data.datasets.heat_supply.individual_heating.BuildingHeatPeakLoads>`
+        is created (if it doesn't yet exist) and filled
+
+    **What is the challenge?**
+
+    The main challenge lies in the set up of heat demand profiles per building in
+    :func:`aggregate_residential_and_cts_profiles()` as it takes alot of time and
+    in grids with a high number of buildings requires alot of RAM. Both runtime and RAM
+    usage needed to be improved several times. To speed up the process, tasks are set
+    up to run in parallel. This currently leads to alot of connections being opened and
+    at a certain point to a runtime error due to too many open connections.
+
+    **What are central assumptions during the data processing?**
+
+    Central assumption for desaggregating the heat pump capacity to individual buildings
+    is that heat pumps can be dimensioned using an approach from the network development
+    plan that uses the building's peak heat demand and a fixed COP (see
+    data documentation on :ref:`dec-heat-pumps-ref`).
+    Another central assumption is, that buildings with PV rooftop plants are more likely
+    to have a heat pump than other buildings (see
+    :func:`determine_buildings_with_hp_in_mv_grid()` for details).
+
+    **Drawbacks and limitations of the data**
+
+    The heat demand profiles used here to determine the heat peak load have very few
+    very high peaks that lead to large heat pump capacities. This should be solved
+    somehow. Cutting off the peak is not possible, as the time series of each building
+    is not saved but generated on the fly. Also, just using smaller heat pumps would
+    lead to infeasibilities in eDisGo.
+
+    """
+    #:
+    name: str = "HeatPumps2035"
+    #:
+    version: str = "0.0.2"
     def __init__(self, dependencies):
         def dyn_parallel_tasks_2035():
             """Dynamically generate tasks
@@ -335,8 +324,8 @@ class HeatPumps2035(Dataset):
             return tasks
 
         super().__init__(
-            name="HeatPumps2035",
-            version="0.0.2",
+            name=self.name,
+            version=self.version,
             dependencies=dependencies,
             tasks=(
                 delete_heat_peak_loads_2035,
@@ -348,10 +337,59 @@ class HeatPumps2035(Dataset):
 
 
 class HeatPumps2050(Dataset):
+    """
+    Class for desaggregation of heat pump capcacities per MV grid district to individual
+    buildings for eGon100RE scenario.
+
+    Optimised heat pump capacity from PyPSA-EUR run is disaggregated to all buildings
+    with individual heating (as heat pumps are the only option for individual heating
+    in the eGon100RE scenario) based on buildings heat peak demand. The heat peak demand
+    per building does in this dataset, in contrast to the
+    :py:class:`HeatPumps2035 <egon.data.datasets.pypsaeursec.HeatPumps2035>` dataset,
+    not need to be determined, as it was already determined in the
+    :py:class:`PypsaEurSec <egon.data.datasets.pypsaeursec.PypsaEurSec>` dataset.
+
+    For more information see data documentation on :ref:`dec-heat-pumps-ref`.
+
+    Heat pump capacity per building for the eGon2035 scenario is set up in a separate
+    dataset, :py:class:`HeatPumps2035 <HeatPumps2035>`. See there for further
+    information as to why.
+
+    *Dependencies*
+      * :py:class:`PypsaEurSec <egon.data.datasets.pypsaeursec.PypsaEurSec>`
+      * :py:class:`HeatPumpsPypsaEurSec
+        <egon.data.datasets.heat_supply.individual_heating.HeatPumpsPypsaEurSec>`
+      * :py:class:`HeatSupply <egon.data.datasets.heat_supply.HeatSupply>`
+
+    *Resulting tables*
+      * :py:class:`demand.egon_hp_capacity_buildings
+        <egon.data.datasets.heat_supply.individual_heating.EgonHpCapacityBuildings>`
+        is created (if it doesn't yet exist) and filled
+
+    **What are central assumptions during the data processing?**
+
+    Central assumption for desaggregating the heat pump capacity to individual buildings
+    is that heat pumps can be dimensioned using an approach from the network development
+    plan that uses the building's peak heat demand and a fixed COP (see
+    data documentation on :ref:`dec-heat-pumps-ref`).
+
+    **Drawbacks and limitations of the data**
+
+    The heat demand profiles used here to determine the heat peak load have very few
+    very high peaks that lead to large heat pump capacities. This should be solved
+    somehow. Cutting off the peak is not possible, as the time series of each building
+    is not saved but generated on the fly. Also, just using smaller heat pumps would
+    lead to infeasibilities in eDisGo.
+
+    """
+    #:
+    name: str = "HeatPumps2050"
+    #:
+    version: str = "0.0.2"
     def __init__(self, dependencies):
         super().__init__(
-            name="HeatPumps2050",
-            version="0.0.2",
+            name=self.name,
+            version=self.version,
             dependencies=dependencies,
             tasks=(
                 delete_hp_capacity_100RE,
@@ -361,6 +399,13 @@ class HeatPumps2050(Dataset):
 
 
 class BuildingHeatPeakLoads(Base):
+    """
+    Class definition of table demand.egon_building_heat_peak_loads.
+
+    Table with peak heat demand of residential and CTS heat demand combined for
+    each building.
+
+    """
     __tablename__ = "egon_building_heat_peak_loads"
     __table_args__ = {"schema": "demand"}
 
@@ -497,12 +542,12 @@ def cascade_per_technology(
 def cascade_heat_supply_indiv(scenario, distribution_level, plotting=True):
     """Assigns supply strategy for individual heating in four steps.
 
-    1.) all small scale CHP are connected.
-    2.) If the supply can not  meet the heat demand, solar thermal collectors
-        are attached. This is not implemented yet, since individual
-        solar thermal plants are not considered in eGon2035 scenario.
-    3.) If this is not suitable, the mv grid is also supplied by heat pumps.
-    4.) The last option are individual gas boilers.
+    1. all small scale CHP are connected.
+    2. If the supply can not  meet the heat demand, solar thermal collectors
+       are attached. This is not implemented yet, since individual
+       solar thermal plants are not considered in eGon2035 scenario.
+    3. If this is not suitable, the mv grid is also supplied by heat pumps.
+    4. The last option are individual gas boilers.
 
     Parameters
     ----------
@@ -1565,7 +1610,7 @@ def export_to_db(df_peak_loads_db, df_heat_mvgd_ts_db, drop=False):
     """
     Function to export the collected results of all MVGDs per bulk to DB.
 
-        Parameters
+    Parameters
     ----------
     df_peak_loads_db : pd.DataFrame
         Table of building peak loads of all MVGDs per bulk

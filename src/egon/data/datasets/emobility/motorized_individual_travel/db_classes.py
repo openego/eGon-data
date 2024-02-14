@@ -31,8 +31,8 @@ class EgonEvPool(Base):
     Each row is one EV, uniquely defined by either (`ev_id`) or
     (`rs7_id`, `type`, `simbev_id`).
 
-    Columns
-    -------
+    **Columns**
+
     ev_id:
         Unique id of EV
     rs7_id:
@@ -73,8 +73,8 @@ class EgonEvTrip(Base):
     Each row is one event of a specific electric vehicle which is
     uniquely defined by `rs7_id`, `ev_id` and `event_id`.
 
-    Columns
-    -------
+    **Columns**
+
     scenario:
         Scenario
     event_id:

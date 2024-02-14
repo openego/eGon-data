@@ -835,9 +835,10 @@ def sanitycheck_emobility_mit():
 
     Checks data integrity for eGon2035, eGon2035_lowflex and eGon100RE scenario
     using assertions:
-      1. Allocated EV numbers and EVs allocated to grid districts
-      2. Trip data (original inout data from simBEV)
-      3. Model data in eTraGo PF tables (grid.egon_etrago_*)
+
+    1. Allocated EV numbers and EVs allocated to grid districts
+    2. Trip data (original inout data from simBEV)
+    3. Model data in eTraGo PF tables (grid.egon_etrago_*)
 
     Parameters
     ----------
@@ -1437,10 +1438,11 @@ def sanity_check_gas_buses(scn):
 
     Returns print statements as sanity checks for the CH4, H2_grid and
     H2_saltcavern buses.
-      * For all of them, it is checked if they are not isolated.
-      * For the grid buses, the deviation is calculated between the
-        number of gas grid buses in the database and the original
-        Scigrid_gas number of gas buses in Germany.
+
+    * For all of them, it is checked if they are not isolated.
+    * For the grid buses, the deviation is calculated between the
+      number of gas grid buses in the database and the original
+      Scigrid_gas number of gas buses in Germany.
 
     Parameters
     ----------
@@ -1534,13 +1536,15 @@ def sanity_check_CH4_stores(scn):
 
     Returns print statements as sanity checks for the CH4 stores
     capacity in Germany. The deviation is calculated between:
+
       * the sum of the capacities of the stores with carrier 'CH4'
         in the database (for one scenario) and
       * the sum of:
-          * the capacity the gas grid allocated to CH4 (total capacity
-            in eGon2035 and capacity reduced the share of the grid
-            allocated to H2 in eGon100RE)
-          * the total capacity of the CH4 stores in Germany (source: GIE)
+
+        * the capacity the gas grid allocated to CH4 (total capacity
+          in eGon2035 and capacity reduced the share of the grid
+          allocated to H2 in eGon100RE)
+        * the total capacity of the CH4 stores in Germany (source: GIE)
 
     Parameters
     ----------
@@ -1592,13 +1596,15 @@ def sanity_check_H2_saltcavern_stores(scn):
 
     Returns print as sanity checks for the H2 saltcavern potential
     storage capacity in Germany. The deviation is calculated between:
-      * the sum of the of the H2 saltcavern potential storage capacity
-        (e_nom_max) in the database and
-      * the sum of the H2 saltcavern potential storage capacity
-        assumed to be the ratio of the areas of 500 m radius around
-        substations in each german federal state and the estimated
-        total hydrogen storage potential of the corresponding federal
-        state (data from InSpEE-DS report).
+
+    * the sum of the of the H2 saltcavern potential storage capacity
+      (e_nom_max) in the database and
+    * the sum of the H2 saltcavern potential storage capacity
+      assumed to be the ratio of the areas of 500 m radius around
+      substations in each german federal state and the estimated
+      total hydrogen storage potential of the corresponding federal
+      state (data from InSpEE-DS report).
+
     This test works also in test mode.
 
     Parameters
@@ -1932,6 +1938,7 @@ def etrago_eGon2035_gas_DE():
 
     Returns print statements as sanity checks for the gas sector in
     the eGon2035 scenario for the following components in Germany:
+
       * Buses: with the function :py:func:`sanity_check_gas_buses`
       * Loads: for the carriers 'CH4_for_industry' and 'H2_for_industry'
         the deviation is calculated between the sum of the loads in the
@@ -1944,16 +1951,18 @@ def etrago_eGon2035_gas_DE():
         data)
       * Stores: deviations for stores with following carriers are
         calculated:
+
           * 'CH4': with the function :py:func:`sanity_check_CH4_stores`
           * 'H2_underground': with the function :py:func:`sanity_check_H2_saltcavern_stores`
       * One-port components (loads, generators, stores): verification
         that they are all connected to a bus present in the data base
         with the function :py:func:`sanity_check_gas_one_port`
       * Links: verification:
-          * that the gas links are all connected to buses present in
-            the data base with the function :py:func:`sanity_check_gas_links`
-          * of the capacity of the gas grid with the function
-            :py:func:`sanity_check_CH4_grid`
+
+        * that the gas links are all connected to buses present in
+          the data base with the function :py:func:`sanity_check_gas_links`
+        * of the capacity of the gas grid with the function
+          :py:func:`sanity_check_CH4_grid`
 
     """
     scn = "eGon2035"
@@ -2110,6 +2119,7 @@ def etrago_eGon2035_gas_abroad():
 
     Returns print statements as sanity checks for the gas sector in
     the eGon2035 scenario for the following components in Germany:
+
       * Buses
       * Loads: for the carriers 'CH4' and 'H2_for_industry'
         the deviation is calculated between the sum of the loads in the

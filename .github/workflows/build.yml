@@ -25,12 +25,9 @@ jobs:
     strategy:
       matrix:
         python-version:
-          - "3.7"
           - "3.8"
         platform: [ubuntu-latest, macos-latest]
         exclude:
-          - platform: macos-latest
-            python-version: "3.7"
           - platform: macos-latest
             python-version: "3.8"
       max-parallel: 4

@@ -2,13 +2,16 @@
 Generate timeseries for eTraGo and pypsa-eur-sec
 
 Call order
-  * generate_model_data_eGon2035() / generate_model_data_eGon100RE()
-    * generate_model_data()
-      * generate_model_data_grid_district()
-        * load_evs_trips()
-        * data_preprocessing()
-        * generate_load_time_series()
-        * write_model_data_to_db()
+* generate_model_data_eGon2035() / generate_model_data_eGon100RE()
+
+  * generate_model_data()
+
+    * generate_model_data_grid_district()
+
+      * load_evs_trips()
+      * data_preprocessing()
+      * generate_load_time_series()
+      * write_model_data_to_db()
 
 Notes
 -----
@@ -23,6 +26,7 @@ Values (cf. `flex_share` in scenario parameters
 linearly extrapolated based upon
 https://nationale-leitstelle.de/wp-content/pdf/broschuere-lis-2025-2030-final.pdf
 (p.92):
+
 * eGon2035: home=0.8, work=1.0
 * eGon100RE: home=1.0, work=1.0
 """
