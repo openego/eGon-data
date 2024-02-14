@@ -1367,31 +1367,34 @@ def entsoe_historic_generation_capacities(
             not_retrieved.append(country)
             pass
 
-    df = pd.concat(dfs)
-    df["country"] = countries
-    df.set_index("country", inplace=True)
-    if int(year_start[:4]) == 2023:
-        # https://www.bmreports.com/bmrs/?q=foregeneration/capacityaggregated
-        # could probably somehow be automised
-        # https://www.elexonportal.co.uk/category/view/178
-        # in MW
-        installed_capacity_gb = pd.Series({
-            'Biomass': 4438,
-            'Fossil Gas': 37047,
-            'Fossil Hard coal': 1491,
-            'Hydro Pumped Storage': 5603,
-            'Hydro Run-of-river and poundage': 2063,
-            'Nuclear': 4950,
-            'Other': 3313,
-            'Other renewable': 1462,
-            'Solar': 14518,
-            'Wind Offshore': 13038,
-            'Wind Onshore': 13907,
-        }, name="GB")
-        df = pd.concat([df.T, installed_capacity_gb], axis=1).T
-        logger.info("Manually added generation capacities for GB 2023.")
-        not_retrieved = [c for c in not_retrieved if c != "GB"]
-    df.fillna(0, inplace=True)
+    if dfs:
+        df = pd.concat(dfs)
+        df["country"] = countries
+        df.set_index("country", inplace=True)
+        if int(year_start[:4]) == 2023:
+            # https://www.bmreports.com/bmrs/?q=foregeneration/capacityaggregated
+            # could probably somehow be automised
+            # https://www.elexonportal.co.uk/category/view/178
+            # in MW
+            installed_capacity_gb = pd.Series({
+                'Biomass': 4438,
+                'Fossil Gas': 37047,
+                'Fossil Hard coal': 1491,
+                'Hydro Pumped Storage': 5603,
+                'Hydro Run-of-river and poundage': 2063,
+                'Nuclear': 4950,
+                'Other': 3313,
+                'Other renewable': 1462,
+                'Solar': 14518,
+                'Wind Offshore': 13038,
+                'Wind Onshore': 13907,
+            }, name="GB")
+            df = pd.concat([df.T, installed_capacity_gb], axis=1).T
+            logger.info("Manually added generation capacities for GB 2023.")
+            not_retrieved = [c for c in not_retrieved if c != "GB"]
+        df.fillna(0, inplace=True)
+    else:
+        df = pd.DataFrame()
     return df, not_retrieved
 
 
@@ -1446,10 +1449,12 @@ def entsoe_historic_demand(year_start="20190101", year_end="20200101"):
             logger.warning(f"Data for country: {country} could not be retrieved.")
             pass
 
-    df = pd.concat(dfs, axis=1)
-    df.columns = [c for c in countries if c not in not_retrieved]
-    df.index = pd.date_range(year_start, periods=8760, freq="H")
-
+    if dfs:
+        df = pd.concat(dfs, axis=1)
+        df.columns = [c for c in countries if c not in not_retrieved]
+        df.index = pd.date_range(year_start, periods=8760, freq="H")
+    else:
+        df = pd.DataFrame()
     return df, not_retrieved
 
 
