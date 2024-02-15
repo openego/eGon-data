@@ -343,7 +343,7 @@ def generate_synthetic_buildings(missing_buildings, edge_length):
             destatis_zensus_population_per_ha_inside_germany
         ).filter(
             destatis_zensus_population_per_ha_inside_germany.c.id.in_(
-                missing_buildings.index
+                missing_buildings.index.unique()
             )
         )
 
