@@ -1376,7 +1376,7 @@ def entsoe_historic_generation_capacities(
 
     if dfs:
         df = pd.concat(dfs)
-        df["country"] = countries
+        df["country"] = [c for c in countries if not in not_retrieved]
         df.set_index("country", inplace=True)
         if int(year_start[:4]) == 2023:
             # https://www.bmreports.com/bmrs/?q=foregeneration/capacityaggregated
