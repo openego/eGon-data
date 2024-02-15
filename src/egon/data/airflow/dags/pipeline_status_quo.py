@@ -3,6 +3,7 @@ import os
 from airflow.utils.dates import days_ago
 import airflow
 
+from egon.data.config import settings as egon_settings
 from egon.data.config import set_numexpr_threads
 from egon.data.datasets import database
 from egon.data.datasets.ch4_prod import CH4Production
@@ -74,10 +75,10 @@ from egon.data.datasets.zensus_vg250 import ZensusVg250
 # Set number of threads used by numpy and pandas
 set_numexpr_threads()
 
-
+prefix = egon_settings()["egon-data"].get("--prefix")
 
 with airflow.DAG(
-    "powerd-status-quo-processing-pipeline",
+    f"{prefix}-powerd-status-quo-processing-pipeline",
     description="The PoWerD Status Quo data processing DAG.",
     default_args={"start_date": days_ago(1),
                   "email_on_failure": False,
