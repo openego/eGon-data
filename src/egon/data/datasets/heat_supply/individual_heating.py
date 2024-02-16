@@ -331,6 +331,7 @@ class HeatPumpsStatusQuo(Dataset):
                         op_kwargs={
                             "n": i,
                             "max_n": parallel_tasks,
+                            "scenario": scenario,
                             "func": determine_hp_cap_peak_load_mvgd_ts_status_quo,
                         },
                     )
@@ -368,7 +369,7 @@ class HeatPumpsStatusQuo(Dataset):
 
         super().__init__(
             name="HeatPumpsStatusQuo",
-            version="0.0.3",
+            version="0.0.4",
             dependencies=dependencies,
             tasks=tasks,
         )
@@ -2146,7 +2147,7 @@ def determine_hp_cap_peak_load_mvgd_ts_pypsa_eur_sec(mvgd_ids):
     export_min_cap_to_csv(df_hp_min_cap_mv_grid_pypsa_eur_sec)
 
 
-def split_mvgds_into_bulks(n, max_n, func):
+def split_mvgds_into_bulks(n, max_n, func, scenario=None):
     """
     Generic function to split task into multiple parallel tasks,
     dividing the number of MVGDs into even bulks.
@@ -2184,7 +2185,11 @@ def split_mvgds_into_bulks(n, max_n, func):
     mvgd_ids = mvgd_ids[n]
 
     logger.info(f"Bulk takes care of MVGD: {min(mvgd_ids)} : {max(mvgd_ids)}")
-    func(mvgd_ids)
+
+    if scenario is not None:
+        func(mvgd_ids, scenario=scenario)
+    else:
+        func(mvgd_ids)
 
 
 def delete_hp_capacity(scenario):
