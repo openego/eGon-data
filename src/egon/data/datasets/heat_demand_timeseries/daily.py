@@ -333,7 +333,9 @@ def temp_interval(temp_profile):
         Hourly temperature intrerval of all 15 TRY Climate station#s temperature profile
 
     """
-    index = pd.date_range(datetime(2019, 1, 1, 0), periods=8760, freq="H")
+    weather_year = get_sector_parameters("global", "status2023")["weather_year"]
+    # TODO" status2023 this is currenlty fixed to one scenario possible as only one weather year is possible
+    index = pd.date_range(datetime(weather_year, 1, 1, 0), periods=8760, freq="H")
     temperature_interval = pd.DataFrame()
 
     for x in range(len(temp_profile.columns)):
