@@ -9,6 +9,7 @@ import pandas as pd
 
 from egon.data import db
 import egon.data.datasets.era5 as era
+from egon.data.datasets.scenario_parameters import get_sector_parameters
 
 
 from math import ceil
@@ -360,7 +361,10 @@ def h_value(temp_profile):
         Extracted from demandlib.
 
     """
-    index = pd.date_range(datetime(2019, 1, 1, 0), periods=8760, freq="H")
+
+    weather_year = get_sector_parameters("global", "status2023")["weather_year"]
+    # TODO status2023: this is fixed to 2023 as only one weather year is currently possible
+    index = pd.date_range(datetime(weather_year, 1, 1, 0), periods=8760, freq="H")
 
     a = 3.0469695
 
