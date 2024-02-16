@@ -168,7 +168,7 @@ docs attribute of the respective dataset class.
 from geoalchemy2 import Geometry
 from geoalchemy2.shape import to_shape
 from psycopg2.extensions import AsIs, register_adapter
-from sqlalchemy import REAL, Column, Integer, String, func
+from sqlalchemy import REAL, Column, Integer, String, func, cast
 from sqlalchemy.ext.declarative import declarative_base
 import geopandas as gpd
 import numpy as np
@@ -400,7 +400,7 @@ def create_synthetic_buildings(df, points=None, crs="EPSG:3035"):
     # get max number of building ids from synthetic residential table
     with db.session_scope() as session:
         max_synth_residential_id = session.execute(
-            func.max(OsmBuildingsSynthetic.id)
+            func.max(cast(OsmBuildingsSynthetic.id, Integer))
         ).scalar()
     max_synth_residential_id = int(max_synth_residential_id)
 
