@@ -306,8 +306,7 @@ def create_district_heating_profile_python_like(scenario="eGon2035"):
 
         with db.session_scope() as session:
 
-            selected_profiles = db.select_dataframe(
-                f"""
+            sql = f"""
                 SELECT a.zensus_population_id, building_id, c.climate_zone,
                 selected_idp, ordinality as day, b.area_id
                 FROM demand.egon_heat_timeseries_selected_profiles a
@@ -322,7 +321,7 @@ def create_district_heating_profile_python_like(scenario="eGon2035"):
                 UNNEST (selected_idp_profiles) WITH ORDINALITY as selected_idp
 
                 """
-            )
+            selected_profiles = db.select_dataframe(sql)
 
             if not selected_profiles.empty:
                 df = pd.merge(
