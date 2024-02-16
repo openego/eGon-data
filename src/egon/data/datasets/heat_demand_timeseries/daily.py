@@ -155,7 +155,7 @@ def map_climate_zones_to_zensus():
 
 
 def daily_demand_shares_per_climate_zone():
-    """Calculates shares of heat demand per day for each cliamte zone
+    """Calculates shares of heat demand per day for each climate zone
 
     Returns
     -------
@@ -171,14 +171,17 @@ def daily_demand_shares_per_climate_zone():
         bind=engine, checkfirst=True
     )
 
+    # Get temperature profiles of all TRY Climate Zones 2011
+    temp_profile = temperature_profile_extract()
+
     # Calulate daily demand shares
-    h = h_value()
+    h = h_value(temp_profile)
 
     # Normalize data to sum()=1
     daily_demand_shares = h.resample("d").sum() / h.sum()
 
     # Extract temperature class for each day and climate zone
-    temperature_classes = temp_interval().resample("D").max()
+    temperature_classes = temp_interval(temp_profile).resample("D").max()
 
     # Initilize dataframe
     df = pd.DataFrame(
@@ -317,9 +320,12 @@ def temperature_profile_extract():
     return temperature_profile
 
 
-def temp_interval():
+def temp_interval(temp_profile):
     """
     Description: Create Dataframe with temperature data for TRY Climate Zones
+
+    temp_profile: pandas.DataFrame
+        temperature profiles of all TRY Climate Zones 2011
     Returns
     -------
     temperature_interval : pandas.DataFrame
@@ -328,7 +334,6 @@ def temp_interval():
     """
     index = pd.date_range(datetime(2019, 1, 1, 0), periods=8760, freq="H")
     temperature_interval = pd.DataFrame()
-    temp_profile = temperature_profile_extract()
 
     for x in range(len(temp_profile.columns)):
         name_station = temp_profile.columns[x]
@@ -342,10 +347,12 @@ def temp_interval():
     return temperature_interval
 
 
-def h_value():
+def h_value(temp_profile):
     """
     Description: Assignment of daily demand scaling factor to each day of all TRY Climate Zones
 
+    temp_profile: pandas.DataFrame
+        temperature profiles of all TRY Climate Zones 2011
     Returns
     -------
     h : pandas.DataFrame
@@ -363,7 +370,6 @@ def h_value():
 
     d = 0.1163157
 
-    temp_profile = temperature_profile_extract()
     temperature_profile_res = (
         temp_profile.resample("D")
         .mean()
