@@ -130,8 +130,8 @@ def insert_capacities_status_quo(scenario: str) -> None:
         # NEP_2035_V2021_2_Entwurf_Teil1.pdf#page=33
         # plus 0.15 Mio. 2021 and 0.24 Mio. in 2022
         # https://www.enercity.de/magazin/unsere-welt/waermepumpen-boom
-        # Assumption: 0.3 Mio. in 2023
-        "status2023": (1.2 + 0.15 + 0.24 + 0.3) * 1e6 * 3e-3,
+        # plus 0.2 Mio. in H1 2023 -> Assumption 2023: 2 * 0.2 Mio = 0.4 Mio.
+        "status2023": (1.2 + 0.15 + 0.24 + 0.4) * 1e6 * 3e-3,
     }[scenario]
 
     if settings()["egon-data"]["--dataset-boundary"] != "Everything":
