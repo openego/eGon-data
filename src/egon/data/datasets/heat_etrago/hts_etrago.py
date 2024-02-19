@@ -12,7 +12,7 @@ def hts_to_etrago(scenario):
     targets = config.datasets()["etrago_heat"]["targets"]
     carriers = ["central_heat", "rural_heat", "rural_gas_boiler"]
 
-    if scenario == "status2019":
+    if "status" in scenario:
         carriers = ["central_heat", "rural_heat"]
 
     for carrier in carriers:
