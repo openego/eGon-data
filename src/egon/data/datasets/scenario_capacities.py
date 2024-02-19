@@ -157,7 +157,7 @@ def insert_capacities_status_quo(scenario: str) -> None:
     small_storages = {
         # MW for Germany
         "status2019": 600,
-        # 1.3 GW in 2020
+        # 1.3 GW in 2020/2021
         # https://www.netzentwicklungsplan.de/sites/default/files/2023-07/
         # NEP_2037_2045_V2023_2_Entwurf_Teil1_1.pdf#page=25
         # Installed quantity 2020: 272,000
@@ -863,7 +863,7 @@ class ScenarioCapacities(Dataset):
     def __init__(self, dependencies):
         super().__init__(
             name="ScenarioCapacities",
-            version="0.0.16",
+            version="0.0.17",
             dependencies=dependencies,
             tasks=tasks,
         )
