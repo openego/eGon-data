@@ -1117,6 +1117,10 @@ def sort_and_qcut_df(
     """
     Determine the quantile of a given attribute in a (Geo)DataFrame.
     Sort the (Geo)DataFrame in ascending order for the given attribute.
+    If edges of quantiles are same, edges are droped. Which would result
+    in less bins than specified, and some larger (with more elements)
+    than others.
+
     Parameters
     -----------
     df : pandas.DataFrame or geopandas.GeoDataFrame
@@ -1137,6 +1141,7 @@ def sort_and_qcut_df(
             df[col],
             q=q,
             labels=range(q),
+            duplicates="drop"
         )
     )
 
