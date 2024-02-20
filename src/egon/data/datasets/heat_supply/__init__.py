@@ -94,8 +94,8 @@ def district_heating():
             if_exists="append",
         )
 
-        # Do not check data for status2019 as is it not listed in the table
-        if scenario != "status2019":
+        # Do not check data for status quo as is it not listed in the table
+        if "status" not in scenario:
             # Compare target value with sum of distributed heat supply
             df_check = db.select_dataframe(
                 f"""
@@ -128,8 +128,8 @@ def district_heating():
             if_exists="append",
         )
 
-        # Insert resistive heaters which are not available in status2019
-        if scenario != "status2019":
+        # Insert resistive heaters which are not available in status quo
+        if "status" not in scenario:
             backup_rh = backup_resistive_heaters(scenario)
 
             if not backup_rh.empty:
@@ -182,7 +182,7 @@ class HeatSupply(Dataset):
     def __init__(self, dependencies):
         super().__init__(
             name="HeatSupply",
-            version="0.0.9",
+            version="0.0.10",
             dependencies=dependencies,
             tasks=(
                 create_tables,

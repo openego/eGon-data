@@ -260,7 +260,8 @@ Added
   `#205 <https://github.com/openego/powerd-data/pull/205>`_
 * Update osm for status2023
   `#169 <https://github.com/openego/powerd-data/pull/169>`_
-
+* Add wrapped_partial to dynamise task generation
+  `#207 <https://github.com/openego/powerd-data/pull/207>`_
 
 
 .. _PR #159: https://github.com/openego/eGon-data/pull/159

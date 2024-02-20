@@ -44,7 +44,7 @@ from egon.data.datasets.heat_demand_timeseries import HeatTimeSeries
 from egon.data.datasets.heat_etrago import HeatEtrago
 from egon.data.datasets.heat_etrago.hts_etrago import HtsEtragoTable
 from egon.data.datasets.heat_supply import HeatSupply
-from egon.data.datasets.heat_supply.individual_heating import HeatPumps2019
+from egon.data.datasets.heat_supply.individual_heating import HeatPumpsStatusQuo
 from egon.data.datasets.industrial_sites import MergeIndustrialSites
 from egon.data.datasets.industry import IndustrialDemandCurves
 from egon.data.datasets.loadarea import LoadArea, OsmLanduse
@@ -453,7 +453,7 @@ with airflow.DAG(
     chp_etrago = ChpEtrago(dependencies=[chp, heat_etrago])
 
     # Heat pump disaggregation for status2019
-    heat_pumps_2019 = HeatPumps2019(
+    heat_pumps_2019 = HeatPumpsStatusQuo(
         dependencies=[
             cts_demand_buildings,
             DistrictHeatingAreas,
