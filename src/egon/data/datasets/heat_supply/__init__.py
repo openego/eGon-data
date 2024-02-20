@@ -94,6 +94,7 @@ def district_heating():
             if_exists="append",
         )
 
+
         # Do not check data for status quo as is it not listed in the table
         if "status" not in scenario:
             # Compare target value with sum of distributed heat supply
@@ -127,6 +128,7 @@ def district_heating():
             con=db.engine(),
             if_exists="append",
         )
+
 
         # Insert resistive heaters which are not available in status quo
         if "status" not in scenario:

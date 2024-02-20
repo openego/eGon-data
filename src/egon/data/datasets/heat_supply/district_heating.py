@@ -307,7 +307,7 @@ def cascade_heat_supply(scenario, plotting=True):
     district_heating_areas = select_district_heating_areas(scenario)
 
     # Select technolgies per district heating size
-    if scenario != "status2019":
+    if "status" not in scenario:
         map_dh_technologies = {
             "small": [
                 "CHP",
