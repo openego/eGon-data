@@ -31,7 +31,7 @@ import pandas as pd
 
 from egon.data import config, db
 from egon.data.config import settings
-from egon.data.datasets import Dataset
+from egon.data.datasets import Dataset, wrapped_partial
 from egon.data.datasets.electrical_neighbours import central_buses_egon100
 from egon.data.datasets.etrago_helpers import copy_and_modify_buses
 from egon.data.datasets.scenario_parameters import get_sector_parameters
@@ -936,7 +936,7 @@ def insert_gas_data_eGon100RE():
     )
 
 
-def insert_gas_data_status2019():
+def insert_gas_data_status(scn_name):
     """
     Function to deal with the gas network for the status2019 scenario.
     For this scenario just one CH4 bus is consider in the center of Germany.
@@ -951,7 +951,6 @@ def insert_gas_data_status2019():
     None.
 
     """
-    scn_name = "status2019"
 
     # delete old entries
     db.execute_sql(
@@ -1019,9 +1018,16 @@ class GasNodesAndPipes(Dataset):
     #:
     name: str = "GasNodesAndPipes"
     #:
-    version: str = "0.0.10"
+    version: str = "0.0.11"
 
-    tasks = (insert_gas_data_status2019,)
+    tasks = ()
+
+    for scn_name in config.settings()["egon-data"]["--scenarios"]:
+        if "status" in scn_name:
+            tasks += (wrapped_partial(
+                insert_gas_data_status, scn_name=scn_name, postfix=f"_{scn_name[-4:]}"
+            ),)
+    # tasks = (insert_gas_data_status,)
 
     if "eGon2035" in config.settings()["egon-data"]["--scenarios"]:
         tasks = tasks + (insert_gas_data,)

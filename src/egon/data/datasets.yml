@@ -1,13 +1,13 @@
 openstreetmap:
   original_data:
     source:
-      url: "https://download.geofabrik.de/europe/germany-200101.osm.pbf"
-      url_testmode: "https://download.geofabrik.de/europe/germany/schleswig-holstein-200101.osm.pbf"
+      url: "https://download.geofabrik.de/europe/germany-240101.osm.pbf"
+      url_testmode: "https://download.geofabrik.de/europe/germany/schleswig-holstein-240101.osm.pbf"
       stylefile: "oedb.style"
     target:
       table_prefix: "osm"
-      file: "germany-200101.osm.pbf"
-      file_testmode: "schleswig-holstein-200101.osm.pbf"
+      file: "germany-240101.osm.pbf"
+      file_testmode: "schleswig-holstein-240101.osm.pbf"
   processed:
     schema: "openstreetmap"
     tables:
@@ -94,6 +94,17 @@ demandregio_installation:
   targets:
     path: 'demandregio-disaggregator'
 
+demandregio_workaround:
+  source:
+    cache:
+      url: "https://tubcloud.tu-berlin.de/s/dKqF6wKJnLRyDws/download/cache.zip"
+    dbdump:
+      url: "https://tubcloud.tu-berlin.de/s/ktaxyo8kSTK8w3f/download/status2019-egon-demandregio-cts-ind.zip"
+  targets:
+    cache:
+      path: 'demandregio-disaggregator/disaggregator/disaggregator/data_in/'
+    dbdump:
+      path: "demandregio_dbdump"
 demandregio_society:
   sources:
     disaggregator:
@@ -306,9 +317,10 @@ mastr_new:
     - "combustion"
     - "nuclear"
   file_basename: "bnetza_mastr"
-  deposit_id: 10480958
+  deposit_id: 10491882
   egon2021_date_max: "2021-12-31 23:59:00"
   status2019_date_max: "2019-12-31 23:59:00"
+  status2023_date_max: "2023-12-31 23:59:00"
 
 re_potential_areas:
   target:
@@ -1118,14 +1130,17 @@ emobility_mit:
         file_processed: "regiostar-referenzdateien_preprocessed.csv"
         sheet: "ReferenzGebietsstand2020"
       KBA:
-        url: "https://www.kba.de/SharedDocs/Downloads/DE/Statistik/Fahrzeuge/FZ1/fz1_2020_xlsx.xlsx?__blob=publicationFile&v=2"
-        file: "fz1_2020_xlsx.xlsx"
-        file_processed: "fz1_2020_preprocessed.csv"
+        url: "https://www.kba.de/SharedDocs/Downloads/DE/Statistik/Fahrzeuge/FZ1/fz1_2023.xlsx?__blob=publicationFile&v=2"
+        file: "fz1_2023.xlsx"
+        file_processed: "fz1_2023_preprocessed.csv"
         sheet: "FZ1.1"
         columns: "D, J:N"
         skiprows: 8
       trips:
         status2019:
+          file:  "eGon2035_RS7_min2k_2022-06-01_175429_simbev_run.tar.gz"
+          file_metadata: "metadata_simbev_run.json"
+        status2023:
           file:  "eGon2035_RS7_min2k_2022-06-01_175429_simbev_run.tar.gz"
           file_metadata: "metadata_simbev_run.json"
         eGon2035:
@@ -1138,6 +1153,7 @@ emobility_mit:
     # used scenario variation (available scenarios see parameters.py)
     variation:
       status2019: "status2019"
+      status2023: "status2023"
       eGon2035: "NEP C 2035"
       eGon100RE: "Reference 2050"
     # name of low-flex scenario

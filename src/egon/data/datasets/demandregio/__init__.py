@@ -3,14 +3,17 @@ adjusting data from demandRegio
 
 """
 from pathlib import Path
+import subprocess
+import os
+import zipfile
 
 from sqlalchemy import ARRAY, Column, Float, ForeignKey, Integer, String
 from sqlalchemy.ext.declarative import declarative_base
 import numpy as np
 import pandas as pd
 
-from egon.data import db
-from egon.data.datasets import Dataset
+from egon.data import db, logger
+from egon.data.datasets import Dataset, wrapped_partial
 from egon.data.datasets.demandregio.install_disaggregator import (
     clone_and_install,
 )
@@ -18,6 +21,7 @@ from egon.data.datasets.scenario_parameters import (
     EgonScenario,
     get_sector_parameters,
 )
+from egon.data.datasets.zensus import download_and_check
 import egon.data.config
 import egon.data.datasets.scenario_parameters.parameters as scenario_parameters
 
@@ -35,10 +39,11 @@ class DemandRegio(Dataset):
     def __init__(self, dependencies):
         super().__init__(
             name="DemandRegio",
-            version="0.0.6",
+            version="0.0.7",
             dependencies=dependencies,
             tasks=(
                 clone_and_install,
+                get_cached_tables,  # adhoc workaround #180
                 create_tables,
                 {
                     insert_household_demand,
@@ -423,18 +428,40 @@ def disagg_households_power(
     pd.DataFrame or pd.Series
     """
     # source: survey of energieAgenturNRW
+    # with/without direct water heating (DHW), and weighted average
+    # https://1-stromvergleich.com/wp-content/uploads/erhebung_wo_bleibt_der_strom.pdf
     demand_per_hh_size = pd.DataFrame(
         index=range(1, 7),
         data={
-            "weighted DWH": [2290, 3202, 4193, 4955, 5928, 5928],
-            "without DHW": [1714, 2812, 3704, 4432, 5317, 5317],
+            # "weighted DWH": [2290, 3202, 4193, 4955, 5928, 5928],
+            # "without DHW": [1714, 2812, 3704, 4432, 5317, 5317],
+            "with_DHW": [2181, 3843, 5151, 6189, 7494, 8465],
+            "without_DHW": [1798, 2850, 3733, 4480, 5311, 5816],
+            "weighted": [2256, 3248, 4246, 5009, 5969, 6579],
         },
     )
 
+    if scenario == "eGon100RE":
+        # chose demand per household size from survey without DHW
+        power_per_HH = (
+            demand_per_hh_size["without_DHW"] / 1e3
+        )  # TODO why without?
+
+        # calculate demand per nuts3 in 2011
+        df_2011 = data.households_per_size(year=2011) * power_per_HH
+
+        # scale demand per hh-size to meet demand without heat
+        # according to JRC in 2011 (136.6-(20.14+9.41) TWh)
+        # TODO check source and method
+        power_per_HH *= (136.6 - (20.14 + 9.41)) * 1e6 / df_2011.sum().sum()
+
+        # calculate demand per nuts3 in 2050
+        df = data.households_per_size(year=year) * power_per_HH
+
     # Bottom-Up: Power demand by household sizes in [MWh/a] for each scenario
-    if scenario in ["status2019", "eGon2021", "eGon2035"]:
+    elif scenario in ["status2019", "status2023", "eGon2021", "eGon2035"]:
         # chose demand per household size from survey including weighted DHW
-        power_per_HH = demand_per_hh_size["weighted DWH"] / 1e3
+        power_per_HH = demand_per_hh_size["weighted"] / 1e3
 
         # calculate demand per nuts3
         df = (
@@ -444,21 +471,16 @@ def disagg_households_power(
 
         if scenario == "eGon2035":
             # scale to fit demand of NEP 2021 scebario C 2035 (119TWh)
-            df *= 119000000 / df.sum().sum()
+            df *= 119 * 1e6 / df.sum().sum()
 
-    elif scenario == "eGon100RE":
-        # chose demand per household size from survey without DHW
-        power_per_HH = demand_per_hh_size["without DHW"] / 1e3
+        if scenario == "status2023":
+            # scale to fit demand of BDEW 2023 (130.48 TWh) see issue #180
+            df *= 130.48 * 1e6 / df.sum().sum()
 
-        # calculate demand per nuts3 in 2011
-        df_2011 = data.households_per_size(year=2011) * power_per_HH
-
-        # scale demand per hh-size to meet demand without heat
-        # according to JRC in 2011 (136.6-(20.14+9.41) TWh)
-        power_per_HH *= (136.6 - (20.14 + 9.41)) * 1e6 / df_2011.sum().sum()
-
-        # calculate demand per nuts3 in 2050
-        df = data.households_per_size(year=year) * power_per_HH
+        # if scenario == "status2021": # TODO status2021
+        #     # scale to fit demand of AGEB 2021 (138.6 TWh)
+        #     # https://ag-energiebilanzen.de/wp-content/uploads/2023/01/AGEB_22p2_rev-1.pdf#page=10
+        #     df *= 138.6 * 1e6 / df.sum().sum()
 
     else:
         print(
@@ -479,7 +501,7 @@ def insert_hh_demand(scenario, year, engine):
     Parameters
     ----------
     scenario : str
-        Name of the corresponing scenario.
+        Name of the corresponding scenario.
     year : int
         The number of households per region is taken from this year.
 
@@ -500,7 +522,9 @@ def insert_hh_demand(scenario, year, engine):
     # insert into database
     for hh_size in ec_hh.columns:
         df = pd.DataFrame(ec_hh[hh_size])
-        df["year"] = year
+        df["year"] = 2023 if scenario == "status2023" else year # TODO status2023
+        # adhoc fix until ffeopendata servers are up and population_year can be set
+
         df["scenario"] = scenario
         df["hh_size"] = hh_size
         df = df.rename({hh_size: "demand"}, axis="columns")
@@ -550,7 +574,7 @@ def insert_cts_ind(scenario, year, engine, target_values):
         # scale values according to target_values
         if sector in target_values[scenario].keys():
             ec_cts_ind *= (
-                target_values[scenario][sector] * 1e3 / ec_cts_ind.sum().sum()
+                target_values[scenario][sector] / ec_cts_ind.sum().sum()
             )
 
         # include new largescale consumers according to NEP 2021
@@ -595,7 +619,7 @@ def insert_household_demand():
 
     scenarios = egon.data.config.settings()["egon-data"]["--scenarios"]
 
-    scenarios.append("eGon2021")
+    scenarios.append("eGon2021")  # TODO why is this always appended?
 
     for t in targets:
         db.execute_sql(
@@ -632,7 +656,6 @@ def insert_cts_ind_demands():
 
     scenarios = egon.data.config.settings()["egon-data"]["--scenarios"]
 
-    scenarios.append("eGon2021")
 
     for scn in scenarios:
         year = scenario_parameters.global_settings(scn)["population_year"]
@@ -644,14 +667,23 @@ def insert_cts_ind_demands():
         target_values = {
             # according to NEP 2021
             # new consumers will be added seperatly
-            "eGon2035": {"CTS": 135300, "industry": 225400},
+            "eGon2035": {
+                "CTS": 135300 * 1e3,
+                "industry": 225400 * 1e3
+            },
             # CTS: reduce overall demand from demandregio (without traffic)
             # by share of heat according to JRC IDEES, data from 2011
             # industry: no specific heat demand, use data from demandregio
-            "eGon100RE": {"CTS": (1 - (5.96 + 6.13) / 154.64) * 125183.403},
+            "eGon100RE": {
+                "CTS": ((1 - (5.96 + 6.13) / 154.64) * 125183.403) * 1e3
+            },
             # no adjustments for status quo
             "eGon2021": {},
             "status2019": {},
+            "status2023": {
+                "CTS": 121160 * 1e3,
+                "industry": 200380 * 1e3
+            },
         }
 
         insert_cts_ind(scn, year, engine, target_values)
@@ -807,3 +839,19 @@ def timeseries_per_wz():
     for year in years:
         for sector in ["CTS", "industry"]:
             insert_timeseries_per_wz(sector, int(year))
+
+
+def get_cached_tables():
+    """Get cached demandregio tables and db-dump from former runs"""
+    data_config = egon.data.config.datasets()
+    for s in ["cache", "dbdump"]:
+        url = data_config["demandregio_workaround"]["source"][s]["url"]
+        target_path = data_config["demandregio_workaround"]["targets"][s]["path"]
+        filename = os.path.basename(url)
+        file_path = Path(".", target_path, filename).resolve()
+        os.makedirs(file_path.parent, exist_ok=True)
+        logger.info(f"Downloading: {filename} from {url}.")
+        download_and_check(url, file_path, max_iteration=5)
+        with zipfile.ZipFile(file_path, "r") as zip_ref:
+            zip_ref.extractall(file_path.parent)
+

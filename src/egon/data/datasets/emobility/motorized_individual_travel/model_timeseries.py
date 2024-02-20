@@ -735,8 +735,9 @@ def write_model_data_to_db(
         #   * regular (flex): use driving load
         #   * lowflex: use dumb charging load
         #   * status2019: also dumb charging
+        #   * status2023: also dumb charging
 
-        if scenario_name=='status2019':
+        if scenario_name in ["status2019", "status2023"]:
             write_load(
                 scenario_name=scenario_name,
                 connection_bus_id=etrago_bus.bus_id,
@@ -1074,6 +1075,15 @@ def generate_model_data_status2019_remaining():
     """
     generate_model_data_bunch(
         scenario_name="status2019",
+        bunch=range(MVGD_MIN_COUNT, len(load_grid_district_ids())),
+    )
+
+def generate_model_data_status2023_remaining():
+    """Generates timeseries for status2023 scenario for grid districts which
+    has not been processed in the parallel tasks before.
+    """
+    generate_model_data_bunch(
+        scenario_name="status2023",
         bunch=range(MVGD_MIN_COUNT, len(load_grid_district_ids())),
     )
 

@@ -49,8 +49,10 @@ def select_nep_pumped_hydro(scn):
         nep_ph.rename(
             columns={"c2035_capacity": "elec_capacity"}, inplace=True
         )
-    elif scn == "status2019":
+    elif "status" in scn:
         # Select plants with geolocation from list of conventional power plants
+        year = int(scn[-4:])
+
         nep_ph = db.select_dataframe(
             f"""
             SELECT bnetza_id, name, carrier, postcode, capacity, city,
@@ -59,7 +61,7 @@ def select_nep_pumped_hydro(scn):
             WHERE carrier = '{carrier}'
             AND capacity > 0
             AND postcode != 'None'
-            AND commissioned < '2020';
+            AND commissioned < '{year+1}';
             """
         )
         nep_ph["elec_capacity"] = nep_ph["capacity"]
@@ -355,7 +357,7 @@ def apply_voltage_level_thresholds(power_plants):
     # account which were defined in the eGon project. Existing entries on voltage
     # will be overwritten
 
-    power_plants.loc[power_plants["el_capacity"] < 0.1, "voltage_level"] = 7
+    power_plants.loc[power_plants["el_capacity"] <= 0.1, "voltage_level"] = 7
     power_plants.loc[power_plants["el_capacity"] > 0.1, "voltage_level"] = 6
     power_plants.loc[power_plants["el_capacity"] > 0.2, "voltage_level"] = 5
     power_plants.loc[power_plants["el_capacity"] > 5.5, "voltage_level"] = 4

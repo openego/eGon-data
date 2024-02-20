@@ -168,7 +168,7 @@ docs attribute of the respective dataset class.
 from geoalchemy2 import Geometry
 from geoalchemy2.shape import to_shape
 from psycopg2.extensions import AsIs, register_adapter
-from sqlalchemy import REAL, Column, Integer, String, func
+from sqlalchemy import REAL, Column, Integer, String, func, cast
 from sqlalchemy.ext.declarative import declarative_base
 import geopandas as gpd
 import numpy as np
@@ -260,7 +260,7 @@ class CtsDemandBuildings(Dataset):
             version="0.0.4",
             dependencies=dependencies,
             tasks=(
-                cts_buildings,
+                cts_buildings,  # TODO: status2023, currently fixed for only 2023
                 {cts_electricity, cts_heat},
                 get_cts_electricity_peak_load,
                 map_all_used_buildings,
@@ -397,17 +397,17 @@ def create_synthetic_buildings(df, points=None, crs="EPSG:3035"):
     # TODO remove after #772 implementation of egon_building_id
     df.rename(columns={"id": "egon_building_id"}, inplace=True)
 
-    # get max number of building ids from synthetic residential table
+    # get max number of building ids from synthetic table
     with db.session_scope() as session:
-        max_synth_residential_id = session.execute(
-            func.max(OsmBuildingsSynthetic.id)
+        max_synth_building_id = session.execute(
+            func.max(cast(OsmBuildingsSynthetic.id, Integer))
         ).scalar()
-    max_synth_residential_id = int(max_synth_residential_id)
+    max_synth_building_id = int(max_synth_building_id)
 
     # create sequential ids
     df["egon_building_id"] = range(
-        max_synth_residential_id + 1,
-        max_synth_residential_id + df.shape[0] + 1,
+        max_synth_building_id + 1,
+        max_synth_building_id + df.shape[0] + 1,
     )
 
     df["area"] = df["geom_building"].area
@@ -442,6 +442,7 @@ def buildings_with_amenities():
         Contains synthetic amenities in lost cells. Might be empty
     """
 
+
     from saio.boundaries import egon_map_zensus_buildings_filtered_all
     from saio.openstreetmap import osm_amenities_in_buildings_filtered
 
@@ -461,7 +462,7 @@ def buildings_with_amenities():
             )
             .filter(
                 EgonDemandRegioZensusElectricity.sector == "service",
-                EgonDemandRegioZensusElectricity.scenario == "status2019",
+                EgonDemandRegioZensusElectricity.scenario == "status2023",  # TODO: status2023
             )
         )
         df_amenities_in_buildings = pd.read_sql(
@@ -1210,7 +1211,7 @@ def cts_buildings():
 
     log.info("Start logging!")
     # Buildings with amenities
-    df_buildings_with_amenities, df_lost_cells = buildings_with_amenities()
+    df_buildings_with_amenities, df_lost_cells = buildings_with_amenities()  # TODO: status2023 this is fixed to 2023
     log.info("Buildings with amenities selected!")
 
     # Median number of amenities per cell
@@ -1229,7 +1230,7 @@ def cts_buildings():
 
     # Amenities not assigned to buildings
     df_amenities_without_buildings = amenities_without_buildings()
-    log.info("Amenities without buildlings selected!")
+    log.info("Amenities without buildings selected!")
 
     # Append lost cells due to duplicated ids, to cover all demand cells
     if not df_lost_cells.empty:
@@ -1256,7 +1257,7 @@ def cts_buildings():
         df_amenities_without_buildings, points="geom_amenity"
     )
     log.info("Synthetic buildings created!")
-
+    # df_synthetic_buildings_with_amenities["scn_name"] = scn_name # TODO: status 2023, add eventually
     # TODO remove renaming after #722
     write_table_to_postgis(
         df_synthetic_buildings_with_amenities.rename(

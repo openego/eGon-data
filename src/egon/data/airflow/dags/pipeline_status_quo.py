@@ -35,7 +35,7 @@ from egon.data.datasets.era5 import WeatherData
 from egon.data.datasets.etrago_setup import EtragoSetup
 from egon.data.datasets.fill_etrago_gen import Egon_etrago_gen
 from egon.data.datasets.fix_ehv_subnetworks import FixEhvSubnetworks
-from egon.data.datasets.gas_areas import GasAreasstatus2019
+from egon.data.datasets.gas_areas import GasAreasStatusQuo
 from egon.data.datasets.gas_grid import GasNodesAndPipes
 from egon.data.datasets.gas_neighbours import GasNeighbours
 from egon.data.datasets.heat_demand import HeatDemandImport
@@ -44,7 +44,7 @@ from egon.data.datasets.heat_demand_timeseries import HeatTimeSeries
 from egon.data.datasets.heat_etrago import HeatEtrago
 from egon.data.datasets.heat_etrago.hts_etrago import HtsEtragoTable
 from egon.data.datasets.heat_supply import HeatSupply
-from egon.data.datasets.heat_supply.individual_heating import HeatPumps2019
+from egon.data.datasets.heat_supply.individual_heating import HeatPumpsStatusQuo
 from egon.data.datasets.industrial_sites import MergeIndustrialSites
 from egon.data.datasets.industry import IndustrialDemandCurves
 from egon.data.datasets.loadarea import LoadArea, OsmLanduse
@@ -350,7 +350,7 @@ with airflow.DAG(
         ]
     )
     # Create gas voronoi status2019
-    create_gas_polygons_status2019 = GasAreasstatus2019(
+    create_gas_polygons_status2019 = GasAreasStatusQuo(
         dependencies=[setup_etrago, vg250, gas_grid_insert_data, substation_voronoi]
     )
 
@@ -424,8 +424,8 @@ with airflow.DAG(
             scenario_capacities,
         ]
     )
-    
-    
+
+
     # Pumped hydro units
     pumped_hydro = Storages(
         dependencies=[
@@ -453,7 +453,7 @@ with airflow.DAG(
     chp_etrago = ChpEtrago(dependencies=[chp, heat_etrago])
 
     # Heat pump disaggregation for status2019
-    heat_pumps_2019 = HeatPumps2019(
+    heat_pumps_2019 = HeatPumpsStatusQuo(
         dependencies=[
             cts_demand_buildings,
             DistrictHeatingAreas,

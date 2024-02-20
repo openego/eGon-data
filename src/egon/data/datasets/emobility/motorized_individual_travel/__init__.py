@@ -77,7 +77,7 @@ from urllib.request import urlretrieve
 import os
 import tarfile
 
-from airflow.operators.python_operator import PythonOperator
+from airflow.operators.python import PythonOperator
 from psycopg2.extensions import AsIs, register_adapter
 import numpy as np
 import pandas as pd
@@ -110,6 +110,7 @@ from egon.data.datasets.emobility.motorized_individual_travel.model_timeseries i
     delete_model_data_from_db,
     generate_model_data_bunch,
     generate_model_data_status2019_remaining,
+    generate_model_data_status2023_remaining,
     generate_model_data_eGon100RE_remaining,
     generate_model_data_eGon2035_remaining,
     read_simbev_metadata_file,
@@ -448,6 +449,8 @@ class MotorizedIndividualTravel(Dataset):
 
             if scenario_name == "status2019":
                 tasks.add(generate_model_data_status2019_remaining)
+            if scenario_name == "status2023":
+                tasks.add(generate_model_data_status2023_remaining)
             elif scenario_name == "eGon2035":
                 tasks.add(generate_model_data_eGon2035_remaining)
             elif scenario_name == "eGon100RE":
@@ -482,7 +485,7 @@ class MotorizedIndividualTravel(Dataset):
 
         super().__init__(
             name="MotorizedIndividualTravel",
-            version="0.0.8",
+            version="0.0.9",
             dependencies=dependencies,
             tasks=tasks,
         )
