@@ -23,7 +23,7 @@ class WeatherData(Dataset):
     def __init__(self, dependencies):
         super().__init__(
             name="Era5",
-            version="0.0.2",
+            version="0.0.3",
             dependencies=dependencies,
             tasks=({create_tables, download_era5}, insert_weather_cells),
         )
@@ -69,7 +69,8 @@ def import_cutout(boundary="Europe"):
         Weather data stored in cutout
 
     """
-    weather_year = get_sector_parameters("global", "status2019")["weather_year"]
+    weather_year = get_sector_parameters("global", "status2023")["weather_year"]
+    # This is fixed to one scenario as its currently not possible to have multiple weather-years
 
     if boundary == "Europe":
         xs = slice(-12.0, 35.1)
