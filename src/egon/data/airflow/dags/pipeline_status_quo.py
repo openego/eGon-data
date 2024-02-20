@@ -349,8 +349,8 @@ with airflow.DAG(
             tasks["etrago_setup.create-tables"],
         ]
     )
-    # Create gas voronoi status2019
-    create_gas_polygons_status2019 = GasAreasStatusQuo(
+    # Create gas voronoi status quo
+    create_gas_polygons_statusquo = GasAreasStatusQuo(
         dependencies=[setup_etrago, vg250, gas_grid_insert_data, substation_voronoi]
     )
 
@@ -360,24 +360,24 @@ with airflow.DAG(
             gas_grid_insert_data,
             run_pypsaeursec,
             foreign_lines,
-            create_gas_polygons_status2019,
+            create_gas_polygons_statusquo,
         ]
     )
 
     # Import gas production
     gas_production_insert_data = CH4Production(
-        dependencies=[create_gas_polygons_status2019]
+        dependencies=[create_gas_polygons_statusquo]
     )
 
     # Import CH4 storages
     insert_data_ch4_storages = CH4Storages(
-        dependencies=[create_gas_polygons_status2019]
+        dependencies=[create_gas_polygons_statusquo]
     )
 
     # CHP locations
     chp = Chp(
         dependencies=[
-            create_gas_polygons_status2019,
+            create_gas_polygons_statusquo,
             demand_curves_industry,
             district_heating_areas,
             industrial_sites,
@@ -406,7 +406,7 @@ with airflow.DAG(
     )
 
     create_ocgt = OpenCycleGasTurbineEtrago(
-        dependencies=[create_gas_polygons_status2019, power_plants]
+        dependencies=[create_gas_polygons_statusquo, power_plants]
     )
 
     # Fill eTraGo generators tables
