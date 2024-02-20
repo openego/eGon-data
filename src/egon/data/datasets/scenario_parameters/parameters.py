@@ -529,8 +529,7 @@ def electricity(scenario):
     elif scenario == "eGon2021":
         parameters = {}
 
-    elif scenario == "status2019":
-
+    elif (scenario == "status2019") or (scenario == "status2023"):
         costs = read_csv(2020)
 
         parameters = {"grid_topology": "Status Quo"}
