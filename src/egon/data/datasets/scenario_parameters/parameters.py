@@ -129,11 +129,10 @@ def global_settings(scenario):
             "weather_year": 2019, # TODO fixed to 2019 as long as FFE is down
             "population_year": 2019,  # TODO check if possible for 2023
             "fuel_costs": {
-                # TODO status2023 update values
-                # TYNDP 2020, data for 2020 (https://2020.entsos-tyndp-scenarios.eu/fuel-commodities-and-carbon-prices/)
-                "oil": 12.9 * 3.6,  # [EUR/MWh]
-                "gas": 5.6 * 3.6,  # [EUR/MWh]
-                "coal": 3.0 * 3.6,  # [EUR/MWh]
+                # TYNDP 2020, data for 2023 (https://2020.entsos-tyndp-scenarios.eu/fuel-commodities-and-carbon-prices/)
+                "oil": 16.4 * 3.6,  # [EUR/MWh]
+                "gas": 6.1 * 3.6,  # [EUR/MWh]
+                "coal": 3.4 * 3.6,  # [EUR/MWh]
                 "lignite": 1.1 * 3.6,  # [EUR/MWh]
                 "nuclear": 0.47 * 3.6,  # [EUR/MWh]
                 "biomass": read_costs(read_csv(2020), "biomass", "fuel"),
