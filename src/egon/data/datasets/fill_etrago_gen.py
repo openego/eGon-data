@@ -112,7 +112,7 @@ def add_marginal_costs(power_plants):
                 )
         if warning:
             print(
-                f"""There are not marginal_cost values for: \n{warning}
+                f"""There are no marginal_cost values for: \n{warning}
         in the scenario {scenario}. Missing values set to 0"""
             )
         pp = pd.concat(

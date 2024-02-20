@@ -2,7 +2,10 @@
 """
 
 from os import path
+from pathlib import Path
+import datetime
 import logging
+import os.path
 import zipfile
 
 from shapely.geometry import LineString
@@ -12,7 +15,7 @@ import geopandas as gpd
 import pandas as pd
 import requests
 
-from egon.data import config, db
+from egon.data import config, db, logger
 from egon.data.datasets import Dataset, wrapped_partial
 from egon.data.datasets.fill_etrago_gen import add_marginal_costs
 from egon.data.datasets.fix_ehv_subnetworks import select_bus_id
@@ -247,7 +250,11 @@ def buses(scenario, sources, targets):
     central_buses.scn_name = scenario
 
     # Insert all central buses for eGon2035
-    if scenario in ["eGon2035", "status2019", "status2023"]: # TODO: status2023 this is hardcoded shit
+    if scenario in [
+        "eGon2035",
+        "status2019",
+        "status2023",
+    ]:  # TODO: status2023 this is hardcoded shit
         central_buses.to_postgis(
             targets["buses"]["table"],
             schema=targets["buses"]["schema"],
@@ -1107,9 +1114,9 @@ def insert_storage(capacities):
 
     for x in parameters:
         store.loc[store["carrier"] == "battery", x] = parameters_battery[x]
-        store.loc[
-            store["carrier"] == "pumped_hydro", x
-        ] = parameters_pumped_hydro[x]
+        store.loc[store["carrier"] == "pumped_hydro", x] = (
+            parameters_pumped_hydro[x]
+        )
 
     # insert data
     session = sessionmaker(bind=db.engine())()
@@ -1230,9 +1237,9 @@ def tyndp_demand():
     ]
     # Assign etrago bus_id to TYNDP nodes
     buses = pd.DataFrame({"nodes": nodes})
-    buses.loc[
-        buses[buses.nodes.isin(map_buses.keys())].index, "nodes"
-    ] = buses[buses.nodes.isin(map_buses.keys())].nodes.map(map_buses)
+    buses.loc[buses[buses.nodes.isin(map_buses.keys())].index, "nodes"] = (
+        buses[buses.nodes.isin(map_buses.keys())].nodes.map(map_buses)
+    )
     buses.loc[:, "bus"] = (
         get_foreign_bus_id(scenario="eGon2035")
         .loc[buses.loc[:, "nodes"]]
@@ -1299,12 +1306,26 @@ def tyndp_demand():
         session.commit()
 
 
+def get_entsoe_token():
+    """Check for token in home dir. If not exists, check in working dir"""
+    token_path = path.join(path.expanduser("~"), ".entsoe-token")
+    if not os.path.isfile(token_path):
+        logger.info(
+            f"Token file not found at {token_path}. Will check in working directory."
+        )
+        token_path = Path(".entsoe-token")
+        if os.path.isfile(token_path):
+            logger.info(f"Token found at {token_path}")
+    entsoe_token = open(token_path, "r").read(36)
+    if entsoe_token is None:
+        raise FileNotFoundError("No entsoe-token found.")
+    return entsoe_token
+
+
 def entsoe_historic_generation_capacities(
     year_start="20190101", year_end="20200101"
 ):
-    entsoe_token = open(
-        path.join(path.expanduser("~"), ".entsoe-token"), "r"
-    ).read(36)
+    entsoe_token = get_entsoe_token()
     client = entsoe.EntsoePandasClient(api_key=entsoe_token)
 
     start = pd.Timestamp(year_start, tz="Europe/Brussels")
@@ -1326,7 +1347,12 @@ def entsoe_historic_generation_capacities(
         "SE",
         "GB",
     ]
-
+    # No GB data after Brexit
+    if int(year_start[:4]) > 2021:
+        logger.warning(
+            "No GB data after Brexit. GB is dropped from entsoe query!"
+        )
+        countries = [c for c in countries if c != "GB"]
     # todo: define wanted countries
 
     not_retrieved = []
@@ -1337,29 +1363,53 @@ def entsoe_historic_generation_capacities(
         else:
             kwargs = dict(start=start, end=end)
         try:
-            dfs.append(
-                client.query_installed_generation_capacity(country, **kwargs)
+            country_data = client.query_installed_generation_capacity(
+                country, **kwargs
             )
-
+            dfs.append(country_data)
         except (entsoe.exceptions.NoMatchingDataError, requests.HTTPError):
+            logger.warning(
+                f"Data for country: {country} could not be retrieved."
+            )
             not_retrieved.append(country)
             pass
 
-    if not_retrieved:
-        logging.warning(
-            f"Data for country (-ies) {', '.join(not_retrieved)} could not be retrieved."
-        )
-    df = pd.concat(dfs)
-    df["country"] = countries
-    df.set_index("country", inplace=True)
-    df.fillna(0, inplace=True)
-    return df
+    if dfs:
+        df = pd.concat(dfs)
+        df["country"] = [c for c in countries if c not in not_retrieved]
+        df.set_index("country", inplace=True)
+        if int(year_start[:4]) == 2023:
+            # https://www.bmreports.com/bmrs/?q=foregeneration/capacityaggregated
+            # could probably somehow be automised
+            # https://www.elexonportal.co.uk/category/view/178
+            # in MW
+            installed_capacity_gb = pd.Series(
+                {
+                    "Biomass": 4438,
+                    "Fossil Gas": 37047,
+                    "Fossil Hard coal": 1491,
+                    "Hydro Pumped Storage": 5603,
+                    "Hydro Run-of-river and poundage": 2063,
+                    "Nuclear": 4950,
+                    "Other": 3313,
+                    "Other renewable": 1462,
+                    "Solar": 14518,
+                    "Wind Offshore": 13038,
+                    "Wind Onshore": 13907,
+                },
+                name="GB",
+            )
+            df = pd.concat([df.T, installed_capacity_gb], axis=1).T
+            logger.info("Manually added generation capacities for GB 2023.")
+            not_retrieved = [c for c in not_retrieved if c != "GB"]
+        df.fillna(0, inplace=True)
+    else:
+        df = pd.DataFrame()
+    return df, not_retrieved
 
 
 def entsoe_historic_demand(year_start="20190101", year_end="20200101"):
-    entsoe_token = open(
-        path.join(path.expanduser("~"), ".entsoe-token"), "r"
-    ).read(36)
+    entsoe_token = get_entsoe_token()
     client = entsoe.EntsoePandasClient(api_key=entsoe_token)
 
     start = pd.Timestamp(year_start, tz="Europe/Brussels")
@@ -1406,17 +1456,18 @@ def entsoe_historic_demand(year_start="20190101", year_end="20200101"):
             dfs.append(country_data)
         except (entsoe.exceptions.NoMatchingDataError, requests.HTTPError):
             not_retrieved.append(country)
+            logger.warning(
+                f"Data for country: {country} could not be retrieved."
+            )
             pass
-    if not_retrieved:
-        logging.warning(
-            f"Data for country (-ies) {', '.join(not_retrieved)} could not be retrieved."
-        )
 
-    df = pd.concat(dfs, axis=1)
-    df.columns = countries
-    df.index = pd.date_range(year_start, periods=8760, freq="H")
-
-    return df
+    if dfs:
+        df = pd.concat(dfs, axis=1)
+        df.columns = [c for c in countries if c not in not_retrieved]
+        df.index = pd.date_range(year_start, periods=8760, freq="H")
+    else:
+        df = pd.DataFrame()
+    return df, not_retrieved
 
 
 def map_carriers_entsoe():
@@ -1474,6 +1525,16 @@ def entsoe_to_bus_etrago(scn_name):
     return map_entsoe.map(for_bus)
 
 
+def save_entsoe_data(df: pd.DataFrame, file_path: Path):
+    os.makedirs(file_path.parent, exist_ok=True)
+    if not df.empty:
+        df.to_csv(file_path, index_label="Index")
+        logger.info(
+            f"Saved entsoe data for {file_path.stem} "
+            f"to {file_path.parent} for countries: {df.index}"
+        )
+
+
 def insert_generators_sq(scn_name="status2019"):
     """
     Insert generators for foreign countries based on ENTSO-E data
@@ -1499,16 +1560,36 @@ def insert_generators_sq(scn_name="status2019"):
     else:
         raise ValueError("No valid scenario name!")
 
-    try:
-        gen_sq = entsoe_historic_generation_capacities(**year_start_end)
-    except:
-        logging.warning(
-            """Generation data from entsoe could not be retrieved.
-                        Backup data is used instead"""
-        )
-        gen_sq = pd.read_csv(
+    gen_sq, not_retrieved = entsoe_historic_generation_capacities(
+        **year_start_end
+    )
+
+    if not_retrieved:
+        logger.warning("Generation data from entsoe could not be retrieved.")
+        # check for generation backup from former runs
+        file_path = Path(
+            "./", "entsoe_data", f"gen_entsoe_{scn_name}.csv"
+        ).resolve()
+        if os.path.isfile(file_path):
+            gen_sq_backup = pd.read_csv(file_path, index_col="Index")
+            # check for missing columns in backup (former runs)
+            c_backup = [c for c in gen_sq_backup.columns if c in not_retrieved]
+            # remove columns, if found in backup
+            not_retrieved = [c for c in not_retrieved if c not in c_backup]
+            if c_backup:
+                gen_sq = pd.concat(
+                    [gen_sq, gen_sq_backup.loc[:, c_backup]], axis=1
+                )
+                logger.info(f"Appended data from former runs for {c_backup}")
+        save_entsoe_data(gen_sq, file_path=file_path)
+
+    if not_retrieved:
+        logger.warning("Backup data from 2019 is used instead.")
+        gen_sq_backup = pd.read_csv(
             "data_bundle_egon_data/entsoe/gen_entsoe.csv", index_col="Index"
         )
+
+        gen_sq = pd.concat([gen_sq, gen_sq_backup.loc[not_retrieved]], axis=1)
 
     targets = config.datasets()["electrical_neighbours"]["targets"]
     # Delete existing data
@@ -1665,15 +1746,39 @@ def insert_loads_sq(scn_name="status2019"):
     else:
         raise ValueError("No valid scenario name!")
 
-    try:
-        load_sq = entsoe_historic_demand(**year_start_end)
-    except:
-        logging.warning(
-            """Demand data from entsoe could not be retrieved.
-                        Backup data is used instead"""
+    load_sq, not_retrieved = entsoe_historic_demand(**year_start_end)
+
+    if not_retrieved:
+        logger.warning("Demand data from entsoe could not be retrieved.")
+        # check for generation backup from former runs
+        file_path = Path(
+            "./", "entsoe_data", f"load_entsoe_{scn_name}.csv"
+        ).resolve()
+        if os.path.isfile(file_path):
+            load_sq_backup = pd.read_csv(file_path, index_col="Index")
+            # check for missing columns in backup (former runs)
+            c_backup = [
+                c for c in load_sq_backup.columns if c in not_retrieved
+            ]
+            # remove columns, if found in backup
+            not_retrieved = [c for c in not_retrieved if c not in c_backup]
+            if c_backup:
+                load_sq = pd.concat(
+                    [load_sq, load_sq_backup.loc[:, c_backup]], axis=1
+                )
+                logger.info(f"Appended data from former runs for {c_backup}")
+        save_entsoe_data(load_sq, file_path=file_path)
+
+    if not_retrieved:
+        logger.warning(
+            f"Backup data of 2019 is used instead for {not_retrieved}"
         )
-        load_sq = pd.read_csv(
+        load_sq_backup = pd.read_csv(
             "data_bundle_egon_data/entsoe/load_entsoe.csv", index_col="Index"
+        )
+        load_sq_backup.index = load_sq.index
+        load_sq = pd.concat(
+            [load_sq, load_sq_backup.loc[:, not_retrieved]], axis=1
         )
 
     # Delete existing data
