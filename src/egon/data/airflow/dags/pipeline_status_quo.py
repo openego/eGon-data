@@ -452,8 +452,8 @@ with airflow.DAG(
     # CHP to eTraGo
     chp_etrago = ChpEtrago(dependencies=[chp, heat_etrago])
 
-    # Heat pump disaggregation for status2019
-    heat_pumps_2019 = HeatPumpsStatusQuo(
+    # Heat pump disaggregation for status quo
+    heat_pumps_sq = HeatPumpsStatusQuo(
         dependencies=[
             cts_demand_buildings,
             DistrictHeatingAreas,
@@ -470,7 +470,7 @@ with airflow.DAG(
             heat_etrago,
             heat_time_series,
             mv_grid_districts,
-            heat_pumps_2019,
+            heat_pumps_sq,
         ]
     )
 
