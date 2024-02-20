@@ -312,6 +312,7 @@ def allocate_pumped_hydro_eGon100RE():
     # Get allocation of pumped_hydro plants in eGon2035 scenario as the
     # reference for the distribution in eGon100RE scenario
     allocation = allocate_pumped_hydro(scn="status2019", export=False)
+    # TODO status2023 leave same as status2019
 
     scaling_factor = capacity_phes / allocation.el_capacity.sum()
 
