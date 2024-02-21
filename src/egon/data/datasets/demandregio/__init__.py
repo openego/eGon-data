@@ -570,22 +570,16 @@ def insert_hh_demand(scenario, year, engine):
         )
 
     # insert housholds demand timeseries
-    try:
-        hh_load_timeseries = (
-            temporal.disagg_temporal_power_housholds_slp(
-                use_nuts3code=True,
-                by="households",
-                weight_by_income=False,
-                year=year,
-            )
-            .resample("h")
-            .sum()
+    hh_load_timeseries = (
+        temporal.disagg_temporal_power_housholds_slp(
+            use_nuts3code=True,
+            by="households",
+            weight_by_income=False,
+            year=year,
         )
-    except:
-        logger.info("HH demand timeseries could not be imported. Using BK")
-        hh_load_timeseries = pd.read_pickle(
-            "demandregio_dbdump/df_load_profiles.pkl"
-        )
+        .resample("h")
+        .sum()
+    )
 
     write_demandregio_hh_profiles_to_db(hh_load_timeseries)
 
