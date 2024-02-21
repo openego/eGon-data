@@ -1,4 +1,3 @@
-<<<<<<< HEAD
 """
 The central module containing all code dealing with combined heat and power
 (CHP) plants.
