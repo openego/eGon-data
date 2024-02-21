@@ -9,7 +9,7 @@ from sqlalchemy.ext.declarative import declarative_base
 import numpy as np
 import pandas as pd
 
-from egon.data import db
+from egon.data import db, logger
 from egon.data.datasets import Dataset
 from egon.data.datasets.demandregio.install_disaggregator import (
     clone_and_install,
