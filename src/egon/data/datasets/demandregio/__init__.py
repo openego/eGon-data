@@ -669,8 +669,6 @@ def insert_household_demand():
 
     scenarios = egon.data.config.settings()["egon-data"]["--scenarios"]
 
-    scenarios.append("eGon2021")
-
     for t in targets:
         db.execute_sql(
             f"DELETE FROM {targets[t]['schema']}.{targets[t]['table']};"
