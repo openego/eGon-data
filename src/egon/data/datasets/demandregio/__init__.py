@@ -613,6 +613,8 @@ def insert_hh_demand(scenario, year, engine):
 
         def change_year(dt, year):
             return dt.replace(year=year)
+
+        year = 2023 if scenario == "status2023" else year  # TODO status2023
         hh_load_timeseries.index = hh_load_timeseries.index.map(lambda dt: change_year(dt, year))
 
     write_demandregio_hh_profiles_to_db(hh_load_timeseries)
