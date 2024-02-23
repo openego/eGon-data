@@ -594,18 +594,26 @@ def insert_hh_demand(scenario, year, engine):
         )
 
     # insert housholds demand timeseries
-    hh_load_timeseries = (
-        temporal.disagg_temporal_power_housholds_slp(
-            use_nuts3code=True,
-            by="households",
-            weight_by_income=False,
-            year=year,
+    try:
+        hh_load_timeseries = (
+            temporal.disagg_temporal_power_housholds_slp(
+                use_nuts3code=True,
+                by="households",
+                weight_by_income=False,
+                year=year,
+            )
+            .resample("h")
+            .sum()
         )
-        .resample("h")
-        .sum()
-    )
-    hh_load_timeseries.rename(
-        columns={"DEB16": "DEB1C", "DEB19": "DEB1D"}, inplace=True)
+        hh_load_timeseries.rename(
+            columns={"DEB16": "DEB1C", "DEB19": "DEB1D"}, inplace=True)
+    except Exception as e:
+        logger.warning(f"Couldnt get profiles from FFE, will use pickeld fallback! \n {e}")
+        hh_load_timeseries = pd.read_pickle(Path(".", "df_load_profiles.pkl").resolve())
+
+        def change_year(dt, year):
+            return dt.replace(year=year)
+        hh_load_timeseries.index = hh_load_timeseries.index.map(lambda dt: change_year(dt, year))
 
     write_demandregio_hh_profiles_to_db(hh_load_timeseries)
 
