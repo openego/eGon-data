@@ -94,7 +94,7 @@ def add_missing_bus_ids(scn_name):
 
                 -- Assign missing buses to EHV buses for EHV
                 UPDATE supply.egon_power_plants AS epp
-                SET bus_id2 = (
+                SET bus_id = (
                     SELECT eesv.bus_id
                     FROM grid.egon_ehv_substation_voronoi AS eesv
                     WHERE ST_Intersects(epp.geom, eesv.geom)
