@@ -68,5 +68,46 @@ def assign_bus_id(power_plants, cfg):
     return power_plants
 
 
+def add_missing_bus_ids(scn_name):
+    """Assign busses by spatal intersection of mvgrid districts or ehv voronois."""
 
     sql = f"""
+                -- Assign missing buses to mv grid district buses for HV and below
+                UPDATE supply.egon_power_plants AS epp
+                SET bus_id = (
+                    SELECT emgd.bus_id
+                    FROM grid.egon_mv_grid_district AS emgd
+                    WHERE ST_Intersects(epp.geom, emgd.geom)
+                    ORDER BY emgd.geom <-> epp.geom
+                    LIMIT 1
+                )
+                WHERE (epp.carrier = 'solar'
+                    OR epp.carrier = 'wind_onshore'
+                    OR epp.carrier = 'solar_rooftop'
+                    OR epp.carrier = 'wind_offshore')
+                AND epp.scenario = '{scn_name}'
+                AND epp.bus_id is null
+                AND epp.voltage_level >= 3; -- HV and below
+
+
+                -- Assign missing buses to EHV buses for EHV
+                UPDATE supply.egon_power_plants AS epp
+                SET bus_id2 = (
+                    SELECT eesv.bus_id
+                    FROM grid.egon_ehv_substation_voronoi AS eesv
+                    WHERE ST_Intersects(epp.geom, eesv.geom)
+                    ORDER BY eesv.geom <-> epp.geom
+                    LIMIT 1
+                )
+                WHERE (epp.carrier = 'solar'
+                    OR epp.carrier = 'wind_onshore'
+                    OR epp.carrier = 'solar_rooftop'
+                    OR epp.carrier = 'wind_offshore')
+                AND epp.scenario = '{scn_name}'
+                AND epp.bus_id is null
+                AND epp.voltage_level < 3; --EHV
+
+
+        """
+
+    db.execute_sql(sql)
