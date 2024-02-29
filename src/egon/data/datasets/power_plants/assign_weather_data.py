@@ -111,3 +111,25 @@ def add_missing_bus_ids(scn_name):
         """
 
     db.execute_sql(sql)
+
+
+def find_weather_id(scn_name):
+
+    sql = f"""UPDATE supply.egon_power_plants AS epp
+                SET weather_cell_id = (
+                    SELECT eewc.w_id
+                    FROM supply.egon_era5_weather_cells AS eewc
+                    WHERE ST_Intersects(epp.geom, eewc.geom)
+                    ORDER BY eewc.geom <-> epp.geom
+                    LIMIT 1
+                )
+                WHERE (epp.carrier = 'solar'
+                    OR epp.carrier = 'solar_rooftop'
+                    OR epp.carrier = 'wind_onshore'
+                    OR epp.carrier = 'wind_offshore')
+                AND epp.scenario = '{scn_name}';
+        """
+
+    db.execute_sql(sql)
+
+
