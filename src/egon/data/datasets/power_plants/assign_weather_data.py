@@ -1,6 +1,7 @@
 import geopandas as gpd
 
 from egon.data import db
+from egon.data.datasets.power_plants.pv_rooftop_buildings import timer_func
 
 
 def assign_bus_id(power_plants, cfg):
@@ -68,6 +69,7 @@ def assign_bus_id(power_plants, cfg):
     return power_plants
 
 
+@timer_func
 def add_missing_bus_ids(scn_name):
     """Assign busses by spatal intersection of mvgrid districts or ehv voronois."""
 
@@ -113,6 +115,7 @@ def add_missing_bus_ids(scn_name):
     db.execute_sql(sql)
 
 
+@timer_func
 def find_weather_id(scn_name):
 
     sql = f"""UPDATE supply.egon_power_plants AS epp
