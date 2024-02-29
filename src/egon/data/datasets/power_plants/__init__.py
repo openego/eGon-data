@@ -13,7 +13,7 @@ import logging
 import pandas as pd
 
 from egon.data import db
-from egon.data.datasets import Dataset
+from egon.data.datasets import Dataset, wrapped_partial
 from egon.data.datasets.mastr import (
     WORKING_DIR_MASTR_NEW,
     WORKING_DIR_MASTR_OLD,
@@ -1256,8 +1256,12 @@ tasks = tasks + (
     geocode_mastr_data,
     pv_rooftop_to_buildings,
     wind_offshore.insert,
-    assign_weather_data.weatherId_and_busId,
 )
+
+for scn_name in egon.data.config.settings()["egon-data"]["--scenarios"]:
+    tasks += (wrapped_partial(assign_weather_data.weatherId_and_busId,
+                              scn_name=scn_name,
+                              postfix=f"_{scn_name}"),)
 
 
 class PowerPlants(Dataset):
