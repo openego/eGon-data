@@ -1261,7 +1261,8 @@ tasks = tasks + (
 for scn_name in egon.data.config.settings()["egon-data"]["--scenarios"]:
     tasks += (wrapped_partial(assign_weather_data.weatherId_and_busId,
                               scn_name=scn_name,
-                              postfix=f"_{scn_name}"),)
+                              # postfix=f"_{scn_name}"
+                              ),)
 
 
 class PowerPlants(Dataset):
