@@ -12,7 +12,7 @@ class Egon_etrago_gen(Dataset):
     def __init__(self, dependencies):
         super().__init__(
             name="etrago_generators",
-            version="0.0.9",
+            version="0.0.10",
             dependencies=dependencies,
             tasks=(fill_etrago_generators,),
         )
