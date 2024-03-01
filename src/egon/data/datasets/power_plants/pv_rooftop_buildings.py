@@ -67,6 +67,7 @@ from egon.data.datasets.electricity_demand_timeseries.hh_buildings import (
 from egon.data.datasets.mastr import WORKING_DIR_MASTR_NEW
 from egon.data.datasets.power_plants.mastr import EgonPowerPlantsPv
 from egon.data.datasets.scenario_capacities import EgonScenarioCapacities
+from egon.data.datasets.scenario_parameters import get_scenario_year
 from egon.data.datasets.zensus_vg250 import Vg250Gem
 
 engine = db.engine()
@@ -980,10 +981,14 @@ def drop_buildings_outside_muns(
 
 
 def egon_building_peak_loads():
-    sql = """
+
+    # use active scenario wich is closest to today
+    scenario = sorted(SCENARIOS, key=get_scenario_year)[0]
+
+    sql = f"""
     SELECT building_id
     FROM demand.egon_building_electricity_peak_loads
-    WHERE scenario = 'eGon2035'
+    WHERE scenario = '{scenario}'
     """
 
     return (
