@@ -30,6 +30,6 @@ def validate_electric_vehicles_numbers(dataset_name, ev_data, ev_target):
     assert_allclose(
         ev_data[[_ for _ in CONFIG_EV.keys()]].sum().sum(),
         ev_target,
-        rtol=0.05,
+        rtol=0.001,
         err_msg=f"Dataset on EV numbers [{dataset_name}] seems to be flawed.",
     )
