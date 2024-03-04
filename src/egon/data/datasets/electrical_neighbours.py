@@ -1108,9 +1108,9 @@ def insert_storage(capacities):
 
     for x in parameters:
         store.loc[store["carrier"] == "battery", x] = parameters_battery[x]
-        store.loc[
-            store["carrier"] == "pumped_hydro", x
-        ] = parameters_pumped_hydro[x]
+        store.loc[store["carrier"] == "pumped_hydro", x] = (
+            parameters_pumped_hydro[x]
+        )
 
     # insert data
     session = sessionmaker(bind=db.engine())()
@@ -1231,9 +1231,9 @@ def tyndp_demand():
     ]
     # Assign etrago bus_id to TYNDP nodes
     buses = pd.DataFrame({"nodes": nodes})
-    buses.loc[
-        buses[buses.nodes.isin(map_buses.keys())].index, "nodes"
-    ] = buses[buses.nodes.isin(map_buses.keys())].nodes.map(map_buses)
+    buses.loc[buses[buses.nodes.isin(map_buses.keys())].index, "nodes"] = (
+        buses[buses.nodes.isin(map_buses.keys())].nodes.map(map_buses)
+    )
     buses.loc[:, "bus"] = (
         get_foreign_bus_id(scenario="eGon2035")
         .loc[buses.loc[:, "nodes"]]
@@ -1500,14 +1500,14 @@ def insert_storage_units_sq(scn_name="status2019"):
                             Backup data is used instead"""
             )
             sto_sq = pd.read_csv(
-                "data_bundle_egon_data/entsoe/gen_entsoe.csv", index_col="Index"
+                "data_bundle_egon_data/entsoe/gen_entsoe.csv",
+                index_col="Index",
             )
         else:
             raise ConnectionError("Data could not be retreived from entsoe")
 
-    sto_sq = sto_sq.loc[:,sto_sq.columns == "Hydro Pumped Storage"]
-    sto_sq.rename(columns={"Hydro Pumped Storage":"p_nom"}, inplace=True)
-
+    sto_sq = sto_sq.loc[:, sto_sq.columns == "Hydro Pumped Storage"]
+    sto_sq.rename(columns={"Hydro Pumped Storage": "p_nom"}, inplace=True)
 
     targets = config.datasets()["electrical_neighbours"]["targets"]
 
@@ -1532,7 +1532,7 @@ def insert_storage_units_sq(scn_name="status2019"):
     # Set bus_id
     entsoe_to_bus = entsoe_to_bus_etrago()
     sto_sq["bus"] = sto_sq.index.map(entsoe_to_bus)
- 
+
     # Insert carrier specific parameters
     sto_sq["carrier"] = "pumped_hydro"
     sto_sq["scn_name"] = scn_name
@@ -1540,10 +1540,10 @@ def insert_storage_units_sq(scn_name="status2019"):
     sto_sq["store"] = parameters_pumped_hydro["store"]
     sto_sq["standing_loss"] = parameters_pumped_hydro["standing_loss"]
     sto_sq["max_hours"] = parameters_pumped_hydro["max_hours"]
-    
+
     # Delete entrances without any installed capacity
     sto_sq = sto_sq[sto_sq["p_nom"] > 0]
-    
+
     # insert data pumped_hydro storage
     session = sessionmaker(bind=db.engine())()
     for i, row in sto_sq.iterrows():
@@ -1823,7 +1823,7 @@ if "eGon2035" in config.settings()["egon-data"]["--scenarios"]:
 if "status2019" in config.settings()["egon-data"]["--scenarios"]:
     insert_per_scenario.update(
         [insert_generators_sq, insert_generators_sq, insert_loads_sq]
-        )
+    )
 
 tasks = tasks + (insert_per_scenario,)
 
