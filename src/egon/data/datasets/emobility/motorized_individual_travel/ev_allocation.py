@@ -631,7 +631,7 @@ def allocate_evs_to_grid_districts():
                 np.testing.assert_allclose(
                     int(ev_actual),
                     ev_target,
-                    rtol=0.05,
+                    rtol=0.001,
                     err_msg=f"Dataset on EV numbers allocated to MVGDs "
                     f"seems to be flawed. "
                     f"Scenario: [{scn}], "

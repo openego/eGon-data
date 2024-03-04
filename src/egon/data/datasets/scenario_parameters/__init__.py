@@ -175,7 +175,7 @@ def insert_scenarios():
 
     status2023.heat_parameters = parameters.heat(status2019.name)
 
-    status2023.mobility_parameters = parameters.mobility(status2019.name)
+    status2023.mobility_parameters = parameters.mobility(status2023.name)
 
     session.add(status2023)
 
@@ -281,7 +281,7 @@ class ScenarioParameters(Dataset):
     def __init__(self, dependencies):
         super().__init__(
             name="ScenarioParameters",
-            version="0.0.16",
+            version="0.0.17",
             dependencies=dependencies,
             tasks=(
                 create_table,
