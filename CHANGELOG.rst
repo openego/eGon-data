@@ -252,6 +252,17 @@ Added
   `PR #903 <https://github.com/openego/eGon-data/pull/903>`_
 * Add low flex scenario 'eGon2035_lowflex'
   `#822 <https://github.com/openego/eGon-data/issues/822>`_
+* Add Status2023 update heat demand
+  `#199 <https://github.com/openego/powerd-data/pull/199>`_
+* Add status2023 electrical neighbours
+  `#182 <https://github.com/openego/powerd-data/pull/182>`_
+* Add Status2023 to gas nodes
+  `#205 <https://github.com/openego/powerd-data/pull/205>`_
+* Update osm for status2023
+  `#169 <https://github.com/openego/powerd-data/pull/169>`_
+* Add wrapped_partial to dynamise task generation
+  `#207 <https://github.com/openego/powerd-data/pull/207>`_
+
 
 .. _PR #159: https://github.com/openego/eGon-data/pull/159
 .. _PR #703: https://github.com/openego/eGon-data/pull/703
@@ -731,7 +742,6 @@ Bug Fixes
   `#1098 <https://github.com/openego/eGon-data/issues/1098>`_
 * Fix conversion factor for CH4 loads abroad in eGon2035
   `#1104 <https://github.com/openego/eGon-data/issues/1104>`_
-* Fix URLs of MaStR datasets
 
 .. _PR #692: https://github.com/openego/eGon-data/pull/692
 .. _#343: https://github.com/openego/eGon-data/issues/343

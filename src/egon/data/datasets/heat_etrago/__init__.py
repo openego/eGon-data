@@ -69,14 +69,14 @@ def insert_buses(carrier, scenario):
             SELECT ST_Centroid(geom) AS geom
             FROM {sources['mv_grids']['schema']}.
             {sources['mv_grids']['table']}
-            WHERE bus_id IN 
-                (SELECT DISTINCT bus_id 
+            WHERE bus_id IN
+                (SELECT DISTINCT bus_id
                 FROM boundaries.egon_map_zensus_grid_districts a
-                JOIN demand.egon_peta_heat b 
+                JOIN demand.egon_peta_heat b
                 ON a.zensus_population_id = b.zensus_population_id
                 WHERE b.scenario = '{scenario}'
                 AND b.zensus_population_id NOT IN (
-                SELECT zensus_population_id FROM 
+                SELECT zensus_population_id FROM
                 	demand.egon_map_zensus_district_heating_areas
                 	WHERE scenario = '{scenario}'
                 )
@@ -263,7 +263,7 @@ def insert_store(scenario, carrier):
 
 def store():
     for scenario in config.settings()["egon-data"]["--scenarios"]:
-        if scenario != "status2019":
+        if "status" not in scenario:
             insert_store(scenario, "central_heat")
             insert_store(scenario, "rural_heat")
 
@@ -290,8 +290,8 @@ def insert_central_direct_heat(scenario):
         {targets['heat_generators']['table']}
         WHERE carrier IN ('solar_thermal_collector', 'geo_thermal')
         AND scn_name = '{scenario}'
-        AND bus IN 
-        (SELECT bus_id 
+        AND bus IN
+        (SELECT bus_id
          FROM {targets['heat_buses']['schema']}.
          {targets['heat_buses']['table']}
          WHERE scn_name = '{scenario}'
@@ -368,13 +368,15 @@ def insert_central_direct_heat(scenario):
     # Map solar thermal collectors to weather cells
     join = gpd.sjoin(weather_cells, solar_thermal)[["index_right"]]
 
+    weather_year = get_sector_parameters("global", scenario)["weather_year"]
+
     feedin = db.select_dataframe(
         f"""
         SELECT w_id, feedin
         FROM {sources['feedin_timeseries']['schema']}.
             {sources['feedin_timeseries']['table']}
         WHERE carrier = 'solar_thermal'
-        AND weather_year = 2019
+        AND weather_year = {weather_year}
         """,
         index_col="w_id",
     )
@@ -511,14 +513,14 @@ def insert_rural_gas_boilers(scenario):
         {targets['heat_links']['table']}
         WHERE carrier  = 'rural_gas_boiler'
         AND scn_name = '{scenario}'
-        AND bus0 IN 
-        (SELECT bus_id 
+        AND bus0 IN
+        (SELECT bus_id
          FROM {targets['heat_buses']['schema']}.
          {targets['heat_buses']['table']}
          WHERE scn_name = '{scenario}'
          AND country = 'DE')
-        AND bus1 IN 
-        (SELECT bus_id 
+        AND bus1 IN
+        (SELECT bus_id
          FROM {targets['heat_buses']['schema']}.
          {targets['heat_buses']['table']}
          WHERE scn_name = '{scenario}'
@@ -607,8 +609,8 @@ def supply():
     """
 
     for scenario in config.settings()["egon-data"]["--scenarios"]:
-        # There is no direct heat in status2019 scenario
-        if scenario != "status2019":
+        # There is no direct heat in status quo scenario
+        if "status" not in scenario:
             insert_central_direct_heat(scenario)
             insert_central_power_to_heat(scenario)
         insert_individual_power_to_heat(scenario)
@@ -619,7 +621,7 @@ class HeatEtrago(Dataset):
     def __init__(self, dependencies):
         super().__init__(
             name="HeatEtrago",
-            version="0.0.11",
+            version="0.0.12",
             dependencies=dependencies,
             tasks=(buses, supply, store),
         )

@@ -13,7 +13,7 @@ import logging
 import pandas as pd
 
 from egon.data import db
-from egon.data.datasets import Dataset
+from egon.data.datasets import Dataset, wrapped_partial
 from egon.data.datasets.mastr import (
     WORKING_DIR_MASTR_NEW,
     WORKING_DIR_MASTR_OLD,
@@ -1020,7 +1020,7 @@ def power_plants_status_quo(scn_name="status2019"):
     conv["Inbetriebnahmedatum"] = pd.to_datetime(conv["Inbetriebnahmedatum"])
     conv = conv[
         conv["Inbetriebnahmedatum"]
-        < egon.data.config.datasets()["mastr_new"]["status2019_date_max"]
+        < egon.data.config.datasets()["mastr_new"]["status2023_date_max"]
     ]
 
     # drop chp generators
@@ -1233,9 +1233,10 @@ tasks = (
     create_tables,
     import_mastr,
 )
-
-if "status2019" in egon.data.config.settings()["egon-data"]["--scenarios"]:
-    tasks = tasks + (power_plants_status_quo,)
+for scn_name in egon.data.config.settings()["egon-data"]["--scenarios"]:
+    if "status" in scn_name:
+        tasks += (wrapped_partial(
+            power_plants_status_quo, scn_name=scn_name, postfix=f"_{scn_name[-4:]}"),)
 
 if (
     "eGon2035" in egon.data.config.settings()["egon-data"]["--scenarios"]
@@ -1264,7 +1265,7 @@ class PowerPlants(Dataset):
     def __init__(self, dependencies):
         super().__init__(
             name="PowerPlants",
-            version="0.0.22",
+            version="0.0.25",
             dependencies=dependencies,
             tasks=tasks,
         )

@@ -38,6 +38,7 @@ Desegregation of pv rooftop scenarios:
 * Plant metadata (e.g. plant orientation) is also added random and weighted
   from MaStR data as basis.
 """
+
 from __future__ import annotations
 
 from collections import Counter
@@ -66,6 +67,7 @@ from egon.data.datasets.electricity_demand_timeseries.hh_buildings import (
 from egon.data.datasets.mastr import WORKING_DIR_MASTR_NEW
 from egon.data.datasets.power_plants.mastr import EgonPowerPlantsPv
 from egon.data.datasets.scenario_capacities import EgonScenarioCapacities
+from egon.data.datasets.scenario_parameters import get_scenario_year
 from egon.data.datasets.zensus_vg250 import Vg250Gem
 
 engine = db.engine()
@@ -161,6 +163,7 @@ CARRIER = "solar_rooftop"
 SCENARIOS = config.settings()["egon-data"]["--scenarios"]
 SCENARIO_TIMESTAMP = {
     "status2019": pd.Timestamp("2020-01-01", tz="UTC"),
+    "status2023": pd.Timestamp("2024-01-01", tz="UTC"),
     "eGon2035": pd.Timestamp("2035-01-01", tz="UTC"),
     "eGon100RE": pd.Timestamp("2050-01-01", tz="UTC"),
 }
@@ -978,10 +981,14 @@ def drop_buildings_outside_muns(
 
 
 def egon_building_peak_loads():
-    sql = """
+
+    # use active scenario wich is closest to today
+    scenario = sorted(SCENARIOS, key=get_scenario_year)[0]
+
+    sql = f"""
     SELECT building_id
     FROM demand.egon_building_electricity_peak_loads
-    WHERE scenario = 'eGon2035'
+    WHERE scenario = '{scenario}'
     """
 
     return (
@@ -1248,9 +1255,9 @@ def allocate_pv(
 
     assert len(assigned_buildings) == len(assigned_buildings.gens_id.unique())
 
-    q_mastr_gdf.loc[
-        assigned_buildings.gens_id, "building_id"
-    ] = assigned_buildings.index
+    q_mastr_gdf.loc[assigned_buildings.gens_id, "building_id"] = (
+        assigned_buildings.index
+    )
 
     assigned_gens = q_mastr_gdf.loc[~q_mastr_gdf.building_id.isna()]
 
@@ -2768,6 +2775,7 @@ def add_bus_ids_sq(
     grid_districts_gdf = grid_districts(EPSG)
 
     mask = buildings_gdf.scenario == "status_quo"
+
     buildings_gdf.loc[mask, "bus_id"] = (
         buildings_gdf.loc[mask]
         .sjoin(grid_districts_gdf, how="left")
@@ -2782,7 +2790,9 @@ def pv_rooftop_to_buildings():
 
     mastr_gdf = load_mastr_data()
 
-    ts = pd.Timestamp(config.datasets()["mastr_new"]["status2019_date_max"])
+    status_quo = "status2023"
+
+    ts = pd.Timestamp(config.datasets()["mastr_new"][f"{status_quo}_date_max"])
 
     mastr_gdf = mastr_gdf.loc[
         pd.to_datetime(mastr_gdf.Inbetriebnahmedatum) <= ts
@@ -2795,9 +2805,10 @@ def pv_rooftop_to_buildings():
     )
 
     all_buildings_gdf = (
-        desagg_mastr_gdf.assign(scenario="status_quo")
+        desagg_mastr_gdf.assign(scenario=status_quo)
         .reset_index()
         .rename(columns={"geometry": "geom", "EinheitMastrNummer": "gens_id"})
+        .set_geometry("geom")
     )
 
     scenario_buildings_gdf = all_buildings_gdf.copy()
@@ -2805,25 +2816,34 @@ def pv_rooftop_to_buildings():
     cap_per_bus_id_df = pd.DataFrame()
 
     for scenario in SCENARIOS:
-        if scenario == "status2019":
-            desagg_mastr_gdf = desagg_mastr_gdf.loc[
-                pd.to_datetime(desagg_mastr_gdf.Inbetriebnahmedatum) <= ts
-            ]
+        if scenario == status_quo:
+            continue
+        elif "status" in scenario:
+            ts = pd.Timestamp(
+                config.datasets()["mastr_new"][f"{scenario}_date_max"]
+            )
+
             scenario_buildings_gdf = scenario_buildings_gdf.loc[
                 pd.to_datetime(scenario_buildings_gdf.Inbetriebnahmedatum)
                 <= ts
             ]
 
-        logger.debug(f"Desaggregating scenario {scenario}.")
-        (
-            scenario_buildings_gdf,
-            cap_per_bus_id_scenario_df,
-        ) = allocate_scenarios(  # noqa: F841
-            desagg_mastr_gdf,
-            desagg_buildings_gdf,
-            scenario_buildings_gdf,
-            scenario,
-        )
+        else:
+            logger.debug(f"Desaggregating scenario {scenario}.")
+
+            (
+                scenario_buildings_gdf,
+                cap_per_bus_id_scenario_df,
+            ) = allocate_scenarios(  # noqa: F841
+                desagg_mastr_gdf,
+                desagg_buildings_gdf,
+                scenario_buildings_gdf,
+                scenario,
+            )
+
+            cap_per_bus_id_df = pd.concat(
+                [cap_per_bus_id_df, cap_per_bus_id_scenario_df]
+            )
 
         all_buildings_gdf = gpd.GeoDataFrame(
             pd.concat(
@@ -2831,10 +2851,6 @@ def pv_rooftop_to_buildings():
             ),
             crs=scenario_buildings_gdf.crs,
             geometry="geom",
-        )
-
-        cap_per_bus_id_df = pd.concat(
-            [cap_per_bus_id_df, cap_per_bus_id_scenario_df]
         )
 
     # add weather cell

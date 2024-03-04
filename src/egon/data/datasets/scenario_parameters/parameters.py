@@ -123,6 +123,36 @@ def global_settings(scenario):
             "weather_year": 2011,
             "population_year": 2021,
         }
+
+    elif scenario == "status2023":
+        parameters = {
+            "weather_year": 2023,
+            "population_year": 2019,  # TODO: check if possible for 2023
+            "fuel_costs": {
+                # TYNDP 2020, data for 2023 (https://2020.entsos-tyndp-scenarios.eu/fuel-commodities-and-carbon-prices/)
+                "oil": 16.4 * 3.6,  # [EUR/MWh]
+                "gas": 6.1 * 3.6,  # [EUR/MWh]
+                "coal": 3.4 * 3.6,  # [EUR/MWh]
+                "lignite": 1.1 * 3.6,  # [EUR/MWh]
+                "nuclear": 0.47 * 3.6,  # [EUR/MWh]
+                "biomass": read_costs(read_csv(2020), "biomass", "fuel"),
+            },
+            "co2_costs": 83.66,  # [EUR/t_CO2], source:
+            # https://www.iwr.de/news/co2-emissionshandel-deutschland-erzielt-2023-rekordeinnahmen-von-ueber-18-mrd-euro-news38528
+            "co2_emissions": {
+                # Netzentwicklungsplan Strom 2037, Genehmigtr Scenariorahmen, p. 66, table 21
+                # https://www.netzentwicklungsplan.de/sites/default/files/2023-01/Szenariorahmen_2037_Genehmigung.pdf
+                "waste": 0.165,  # [t_CO2/MW_th]
+                "lignite": 0.393,  # [t_CO2/MW_th]
+                "gas": 0.201,  # [t_CO2/MW_th]
+                "nuclear": 0.0,  # [t_CO2/MW_th]
+                "oil": 0.288,  # [t_CO2/MW_th]
+                "coal": 0.337,  # [t_CO2/MW_th]
+                "other_non_renewable": 0.268,  # [t_CO2/MW_th]
+            },
+            "interest_rate": 0.05,  # [p.u.]
+        }
+
     elif scenario == "status2019":
         parameters = {
             "weather_year": 2019,
@@ -499,8 +529,7 @@ def electricity(scenario):
     elif scenario == "eGon2021":
         parameters = {}
 
-    elif scenario == "status2019":
-
+    elif (scenario == "status2019") or (scenario == "status2023"):
         costs = read_csv(2020)
 
         parameters = {"grid_topology": "Status Quo"}
@@ -1170,6 +1199,44 @@ def heat(scenario):
                 costs, "central gas boiler", "efficiency"
             ),
         }
+
+    # elif scenario == "status2023":
+    #     parameters = {
+    #         #  source: AG Energiebilanzen 2022  https://ag-energiebilanzen.de/wp-content/uploads/2023/01/AGEB_22p2_rev-1.pdf
+    #         "DE_demand_residential_TJ": 1754.2 * 1e3
+    #         + 407.5 * 1e3,  # [TJ], Endenergieverbrauch Haushalte 2.1 Raumwärme + Warmwasser
+    #         "DE_demand_service_TJ": 668.4 * 1e3
+    #         + 44.3 * 1e3 ,  # [TJ], Endenergieverbrauch GHD 3.1 Raumwärme + Warmwasser
+    #         "DE_district_heating_share": (189760 + 38248)
+    #         / (
+    #             1658400 + 383300 + 567300 + 71500
+    #         ),  # [TJ], source: AG Energiebilanzen 2019 (https://ag-energiebilanzen.de/wp-content/uploads/2021/11/bilanz19d.xlsx)
+    #     } # TODO status2023 needs update
+    #
+    #     costs = read_csv(2020)
+    #
+    #     # Insert marginal_costs in EUR/MWh
+    #     # marginal cost can include fuel, C02 and operation and maintenance costs
+    #     parameters["marginal_cost"] = {
+    #         "central_heat_pump": read_costs(
+    #             costs, "central air-sourced heat pump", "VOM"
+    #         ),
+    #         "central_gas_chp": read_costs(costs, "central gas CHP", "VOM"),
+    #         "central_gas_boiler": read_costs(
+    #             costs, "central gas boiler", "VOM"
+    #         ),
+    #         "central_resistive_heater": read_costs(
+    #             costs, "central resistive heater", "VOM"
+    #         ),
+    #         "rural_heat_pump": 0,  # Danish Energy Agency, Technology Data for Individual Heating Plants
+    #     }
+    #
+    #     # Insert efficiency in p.u.
+    #     parameters["efficiency"] = {
+    #         "central_gas_boiler": read_costs(
+    #             costs, "central gas boiler", "efficiency"
+    #         ),
+    #     }
 
     else:
         print(f"Scenario name {scenario} is not valid.")

@@ -46,7 +46,7 @@ class Storages(Dataset):
     def __init__(self, dependencies):
         super().__init__(
             name="Storages",
-            version="0.0.6",
+            version="0.0.7",
             dependencies=dependencies,
             tasks=(
                 create_tables,
@@ -312,6 +312,7 @@ def allocate_pumped_hydro_eGon100RE():
     # Get allocation of pumped_hydro plants in eGon2035 scenario as the
     # reference for the distribution in eGon100RE scenario
     allocation = allocate_pumped_hydro(scn="status2019", export=False)
+    # TODO status2023 leave same as status2019
 
     scaling_factor = capacity_phes / allocation.el_capacity.sum()
 
@@ -403,7 +404,7 @@ def home_batteries_per_scenario(scenario):
     battery["carrier"] = "home_battery"
     battery["scenario"] = scenario
 
-    if (scenario == "eGon2035") | (scenario == "status2019"):
+    if (scenario == "eGon2035") | ("status" in scenario):
         source = "NEP"
 
     else:
@@ -434,11 +435,10 @@ def allocate_pv_home_batteries_to_grids():
 
 
 def allocate_pumped_hydro_scn():
-    if "eGon2035" in config.settings()["egon-data"]["--scenarios"]:
-        allocate_pumped_hydro(scn="eGon2035")
-
-    if "status2019" in config.settings()["egon-data"]["--scenarios"]:
-        allocate_pumped_hydro(scn="status2019")
-
-    if "eGon100RE" in config.settings()["egon-data"]["--scenarios"]:
-        allocate_pumped_hydro_eGon100RE()
+    for scn in config.settings()["egon-data"]["--scenarios"]:
+        if scn == "eGon2035":
+            allocate_pumped_hydro(scn="eGon2035")
+        elif scn == "eGon100RE":
+            allocate_pumped_hydro_eGon100RE()
+        elif "status" in scn:
+            allocate_pumped_hydro(scn=scn)

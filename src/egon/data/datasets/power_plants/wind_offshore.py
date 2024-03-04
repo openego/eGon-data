@@ -39,7 +39,9 @@ def map_id_bus(scenario):
             "inhausen": "29420322",
             "Cloppenburg": "50643382",
         }
-    elif scenario == "status2019":
+    elif "status" in scenario:
+        year = int(scenario[-4:])
+
         id_bus = {
             "UW Inhausen": "29420322",
             "UW Bentwisch": "32063539",
@@ -52,6 +54,14 @@ def map_id_bus(scenario):
             "UW Diele": "177829920",
             "UW Lubmin": "460134233",
         }
+
+        if year >= 2023:
+            # No update needed as no new stations used for offshore wind
+            # between 2019 and 2023
+            pass
+
+        # TODO: If necessary add new stations when generating status quo > 2023
+
     else:
         id_bus = {}
 
@@ -59,7 +69,7 @@ def map_id_bus(scenario):
 
 
 def assign_ONEP_areas():
-    assign_onep = {
+    return {
         "Büttel": "NOR-4-1",
         "Heide/West": "NOR-10-2",
         "Suchraum Gemeinden Ibbenbüren/Mettingen/Westerkappeln": "NOR-9-2",
@@ -85,11 +95,10 @@ def assign_ONEP_areas():
         "inhausen": "NOR-0-2",
         "Cloppenburg": "NOR-4-1",
     }
-    return assign_onep
 
 
 def map_ONEP_areas():
-    onep = {
+    return {
         "NOR-0-1": Point(6.5, 53.6),
         "NOR-0-2": Point(8.07, 53.76),
         "NOR-1": Point(6.21, 54.06),
@@ -121,7 +130,6 @@ def map_ONEP_areas():
         "OST-3-2": Point(13.16, 54.98),
         "OST-7-1": Point(12.25, 54.5),
     }
-    return onep
 
 
 def insert():
@@ -187,7 +195,9 @@ def insert():
             )
             offshore.dropna(subset=["Netzverknuepfungspunkt"], inplace=True)
 
-        elif scenario == "status2019":
+        elif "status" in scenario:
+            year = int(scenario[-4:])
+
             offshore_path = (
                 Path(".")
                 / "data_bundle_egon_data"
@@ -214,7 +224,10 @@ def insert():
                 },
                 inplace=True,
             )
-            offshore = offshore[offshore["Inbetriebnahme"] <= 2019]
+            offshore = offshore[offshore["Inbetriebnahme"] <= year]
+
+        else:
+            raise ValueError(f"{scenario=} is not valid.")
 
         id_bus = map_id_bus(scenario)
 
@@ -263,7 +276,7 @@ def insert():
 
         offshore.drop(["Name ONEP/NEP"], axis=1, inplace=True)
 
-        if scenario == "status2019":
+        if "status" in scenario:
             offshore.drop(["Inbetriebnahme"], axis=1, inplace=True)
 
         # Scale capacities for eGon100RE
