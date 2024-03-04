@@ -175,7 +175,7 @@ def insert_scenarios():
 
     status2023.heat_parameters = parameters.heat(status2019.name)
 
-    status2023.mobility_parameters = parameters.mobility(status2019.name)
+    status2023.mobility_parameters = parameters.mobility(status2023.name)
 
     session.add(status2023)
 
