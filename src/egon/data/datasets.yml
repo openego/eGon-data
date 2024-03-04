@@ -1130,9 +1130,9 @@ emobility_mit:
         file_processed: "regiostar-referenzdateien_preprocessed.csv"
         sheet: "ReferenzGebietsstand2020"
       KBA:
-        url: "https://www.kba.de/SharedDocs/Downloads/DE/Statistik/Fahrzeuge/FZ1/fz1_2023.xlsx?__blob=publicationFile&v=2"
-        file: "fz1_2023.xlsx"
-        file_processed: "fz1_2023_preprocessed.csv"
+        url: "https://www.kba.de/SharedDocs/Downloads/DE/Statistik/Fahrzeuge/FZ1/fz1_2021.xlsx?__blob=publicationFile&v=2"
+        file: "fz1_2021.xlsx"
+        file_processed: "fz1_2021_preprocessed.csv"
         sheet: "FZ1.1"
         columns: "D, J:N"
         skiprows: 8
