@@ -1475,6 +1475,94 @@ def entsoe_to_bus_etrago():
     return map_entsoe.map(for_bus)
 
 
+def insert_storage_units_sq(scn_name="status2019"):
+    """
+    Insert storage_units for foreign countries based on ENTSO-E data
+
+    Parameters
+    ----------
+    scn_name : str
+        Scenario to which the foreign storage units will be assigned.
+        The default is "status2019".
+
+    Returns
+    -------
+    None.
+
+    """
+    year = scn_name[-4:]
+    try:
+        sto_sq = entsoe_historic_generation_capacities()
+    except:
+        if year == "2019":
+            logging.warning(
+                """Generation data from entsoe could not be retrieved.
+                            Backup data is used instead"""
+            )
+            sto_sq = pd.read_csv(
+                "data_bundle_egon_data/entsoe/gen_entsoe.csv", index_col="Index"
+            )
+        else:
+            raise ConnectionError("Data could not be retreived from entsoe")
+
+    sto_sq = sto_sq.loc[:,sto_sq.columns == "Hydro Pumped Storage"]
+    sto_sq.rename(columns={"Hydro Pumped Storage":"p_nom"}, inplace=True)
+
+
+    targets = config.datasets()["electrical_neighbours"]["targets"]
+
+    # Delete existing data
+    db.execute_sql(
+        f"""
+        DELETE FROM {targets['storage']['schema']}.{targets['storage']['table']}
+        WHERE bus IN (
+            SELECT bus_id FROM
+            {targets['buses']['schema']}.{targets['buses']['table']}
+            WHERE country != 'DE'
+            AND scn_name = '{scn_name}')
+        AND scn_name = '{scn_name}'
+        """
+    )
+
+    # Add missing information suitable for eTraGo selected from scenario_parameter table
+    parameters_pumped_hydro = scenario_parameters.electricity(scn_name)[
+        "efficiency"
+    ]["pumped_hydro"]
+
+    # Set bus_id
+    entsoe_to_bus = entsoe_to_bus_etrago()
+    sto_sq["bus"] = sto_sq.index.map(entsoe_to_bus)
+ 
+    # Insert carrier specific parameters
+    sto_sq["carrier"] = "pumped_hydro"
+    sto_sq["scn_name"] = scn_name
+    sto_sq["dispatch"] = parameters_pumped_hydro["dispatch"]
+    sto_sq["store"] = parameters_pumped_hydro["store"]
+    sto_sq["standing_loss"] = parameters_pumped_hydro["standing_loss"]
+    sto_sq["max_hours"] = parameters_pumped_hydro["max_hours"]
+    
+    # Delete entrances without any installed capacity
+    sto_sq = sto_sq[sto_sq["p_nom"] > 0]
+    
+    # insert data pumped_hydro storage
+    session = sessionmaker(bind=db.engine())()
+    for i, row in sto_sq.iterrows():
+        entry = etrago.EgonPfHvStorage(
+            scn_name=scn_name,
+            storage_id=int(db.next_etrago_id("storage")),
+            bus=row.bus,
+            max_hours=row.max_hours,
+            efficiency_store=row.store,
+            efficiency_dispatch=row.dispatch,
+            standing_loss=row.standing_loss,
+            carrier=row.carrier,
+            p_nom=row.p_nom,
+        )
+
+        session.add(entry)
+        session.commit()
+
+
 def insert_generators_sq(scn_name="status2019"):
     """
     Insert generators for foreign countries based on ENTSO-E data
@@ -1733,7 +1821,9 @@ if "eGon2035" in config.settings()["egon-data"]["--scenarios"]:
     insert_per_scenario.update([tyndp_generation, tyndp_demand])
 
 if "status2019" in config.settings()["egon-data"]["--scenarios"]:
-    insert_per_scenario.update([insert_generators_sq, insert_loads_sq])
+    insert_per_scenario.update(
+        [insert_generators_sq, insert_generators_sq, insert_loads_sq]
+        )
 
 tasks = tasks + (insert_per_scenario,)
 
