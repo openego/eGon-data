@@ -723,35 +723,35 @@ def insert_cts_ind_demands():
     # since demand-regio is not available, the data retreived from cached files
     # is producing extream peaks that were not there before. This workaround
     # MUST be deleted as soon as the disaggregator is available again.
-    bk_cts_ind = pd.read_pickle("cts_ind_demand")
-    bk_cts_ind.to_sql(
-        targets["cts_ind_demand"]["table"],
-        engine,
-        schema=targets["cts_ind_demand"]["schema"],
-        index= False,
-        if_exists= "append")
+    # bk_cts_ind = pd.read_pickle("cts_ind_demand")
+    # bk_cts_ind.to_sql(
+    #     targets["cts_ind_demand"]["table"],
+    #     engine,
+    #     schema=targets["cts_ind_demand"]["schema"],
+    #     index= False,
+    #     if_exists= "append")
 
-    # for scn in scenarios:
-    #     year = scenario_parameters.global_settings(scn)["population_year"]
+    for scn in scenarios:
+        year = scenario_parameters.global_settings(scn)["population_year"]
 
-    #     if year > 2035:
-    #         year = 2035
+        if year > 2035:
+            year = 2035
 
-    #     # target values per scenario in MWh
-    #     target_values = {
-    #         # according to NEP 2021
-    #         # new consumers will be added seperatly
-    #         "eGon2035": {"CTS": 135300, "industry": 225400},
-    #         # CTS: reduce overall demand from demandregio (without traffic)
-    #         # by share of heat according to JRC IDEES, data from 2011
-    #         # industry: no specific heat demand, use data from demandregio
-    #         "eGon100RE": {"CTS": (1 - (5.96 + 6.13) / 154.64) * 125183.403},
-    #         # no adjustments for status quo
-    #         "eGon2021": {},
-    #         "status2019": {},
-    #     }
+        # target values per scenario in MWh
+        target_values = {
+            # according to NEP 2021
+            # new consumers will be added seperatly
+            "eGon2035": {"CTS": 135300, "industry": 225400},
+            # CTS: reduce overall demand from demandregio (without traffic)
+            # by share of heat according to JRC IDEES, data from 2011
+            # industry: no specific heat demand, use data from demandregio
+            "eGon100RE": {"CTS": (1 - (5.96 + 6.13) / 154.64) * 125183.403},
+            # no adjustments for status quo
+            "eGon2021": {},
+            "status2019": {},
+        }
 
-    #     insert_cts_ind(scn, year, engine, target_values)
+        insert_cts_ind(scn, year, engine, target_values)
     ###########################################################################
 
     # Insert load curves per wz
