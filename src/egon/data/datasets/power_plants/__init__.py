@@ -1259,6 +1259,14 @@ tasks = tasks + (
     assign_weather_data.weatherId_and_busId,
 )
 
+<<<<<<< HEAD
+=======
+for scn_name in egon.data.config.settings()["egon-data"]["--scenarios"]:
+    tasks += (wrapped_partial(assign_weather_data.weatherId_and_busId,
+                              scn_name=scn_name,
+                              postfix=f"_{scn_name}"),)
+
+>>>>>>> parent of 040d6cb6 (Adhoc remove postfix)
 
 class PowerPlants(Dataset):
     def __init__(self, dependencies):
