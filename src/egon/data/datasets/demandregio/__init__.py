@@ -508,7 +508,18 @@ def write_demandregio_hh_profiles_to_db(hh_profiles, year):
         hh_profiles = hh_profiles.loc[
             :, hh_profiles.columns.str.contains("DEF0")]
 
-    id = 0
+    id = pd.read_sql_query(f"""
+                           SELECT MAX(id)
+                           FROM {DemandRegioLoadProfiles.__table__.schema}.
+                           {DemandRegioLoadProfiles.__table__.name}
+                           """,
+                           con = db.engine()).iat[0,0]
+
+    if id is None:
+        id = 0
+    else:
+        id = id + 1
+
     for nuts3 in hh_profiles.columns:
         id+=1
         df_to_db.at[id, "year"] = year
