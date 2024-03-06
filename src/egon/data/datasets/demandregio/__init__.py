@@ -129,6 +129,7 @@ def create_tables():
     EgonDemandRegioPopulation.__table__.create(bind=engine, checkfirst=True)
     EgonDemandRegioHouseholds.__table__.create(bind=engine, checkfirst=True)
     EgonDemandRegioWz.__table__.create(bind=engine, checkfirst=True)
+    DemandRegioLoadProfiles.__table__.create(bind=db.engine(), checkfirst=True)
     EgonDemandRegioTimeseriesCtsInd.__table__.drop(
         bind=engine, checkfirst=True
     )
@@ -483,7 +484,7 @@ def disagg_households_power(
 
     return df
 
-def write_demandregio_hh_profiles_to_db(hh_profiles):
+def write_demandregio_hh_profiles_to_db(hh_profiles, year):
     """Write HH demand profiles from demand regio into db. One row per
     year and nuts3. The annual load profile timeseries is an array.
 
@@ -495,11 +496,11 @@ def write_demandregio_hh_profiles_to_db(hh_profiles):
     Parameters
     ----------
     hh_profiles: pd.DataFrame
+    year: int
 
     Returns
     -------
     """
-    years = hh_profiles.index.year.unique().values
     df_to_db = pd.DataFrame(columns=["id", "year", "nuts3", "load_in_mwh"]).set_index("id")
     dataset = egon.data.config.settings()["egon-data"]["--dataset-boundary"]
 
@@ -508,21 +509,16 @@ def write_demandregio_hh_profiles_to_db(hh_profiles):
             :, hh_profiles.columns.str.contains("DEF0")]
 
     id = 0
-    for year in years:
-        df = hh_profiles[hh_profiles.index.year == year]
-        for nuts3 in hh_profiles.columns:
-            id+=1
-            df_to_db.at[id, "year"] = year
-            df_to_db.at[id, "nuts3"] = nuts3
-            df_to_db.at[id, "load_in_mwh"] = df[nuts3].to_list()
+    for nuts3 in hh_profiles.columns:
+        id+=1
+        df_to_db.at[id, "year"] = year
+        df_to_db.at[id, "nuts3"] = nuts3
+        df_to_db.at[id, "load_in_mwh"] = hh_profiles[nuts3].to_list()
 
     df_to_db["year"] = df_to_db["year"].apply(int)
     df_to_db["nuts3"] = df_to_db["nuts3"].astype(str)
     df_to_db["load_in_mwh"] = df_to_db["load_in_mwh"].apply(list)
     df_to_db = df_to_db.reset_index()
-
-    DemandRegioLoadProfiles.__table__.drop(bind=db.engine(), checkfirst=True)
-    DemandRegioLoadProfiles.__table__.create(bind=db.engine())
 
     df_to_db.to_sql(
         name=DemandRegioLoadProfiles.__table__.name,
@@ -593,7 +589,7 @@ def insert_hh_demand(scenario, year, engine):
             "df_load_profiles.pkl"
         )
 
-    write_demandregio_hh_profiles_to_db(hh_load_timeseries)
+    write_demandregio_hh_profiles_to_db(hh_load_timeseries, year)
 
 
 def insert_cts_ind(scenario, year, engine, target_values):

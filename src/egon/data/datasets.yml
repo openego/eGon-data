@@ -139,6 +139,9 @@ demandregio_household_demand:
     household_demand:
       schema: 'demand'
       table: 'egon_demandregio_hh'
+    household_demand_load_profiles:
+      schema: 'demand'
+      table: 'demandregio_household_load_profiles'
 
 demandregio_cts_ind_demand:
   sources:
