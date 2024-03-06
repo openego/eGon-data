@@ -285,6 +285,7 @@ with airflow.DAG(
             demand_curves_industry,
             hh_demand_buildings_setup,
             household_electricity_demand_annual,
+            hh_demand_profiles_setup,
         ]
     )
 
