@@ -146,14 +146,16 @@ def select_mastr_pumped_hydro():
 
     mastr_ph = mastr_ph.set_crs(4326)
 
+    # drop hydropower without federal state
+    # Obervermunterwerk II in Austria
+    mastr_ph = mastr_ph[~(mastr_ph["federal_state"].isnull())]
+
     if (
         config.settings()["egon-data"]["--dataset-boundary"]
         == "Schleswig-Holstein"
     ):
 
-        mastr_ph = mastr_ph[~(mastr_ph["federal_state"].isnull())]
-
-        # Drop hydropower outside of Germany/ outside the test mode area
+        # Drop hydropower outside the test mode area
         mastr_ph = filter_mastr_geometry(mastr_ph, federal_state=None)
 
     return mastr_ph
