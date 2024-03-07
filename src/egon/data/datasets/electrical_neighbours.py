@@ -1541,26 +1541,27 @@ def insert_storage_units_sq(scn_name="status2019"):
     sto_sq["standing_loss"] = parameters_pumped_hydro["standing_loss"]
     sto_sq["max_hours"] = parameters_pumped_hydro["max_hours"]
 
+    next_id = int(db.next_etrago_id("storage"))
+    sto_sq["storage_id"] = range(next_id, next_id + len(sto_sq))
+
     # Delete entrances without any installed capacity
     sto_sq = sto_sq[sto_sq["p_nom"] > 0]
 
     # insert data pumped_hydro storage
-    session = sessionmaker(bind=db.engine())()
-    for i, row in sto_sq.iterrows():
-        entry = etrago.EgonPfHvStorage(
-            scn_name=scn_name,
-            storage_id=int(db.next_etrago_id("storage")),
-            bus=row.bus,
-            max_hours=row.max_hours,
-            efficiency_store=row.store,
-            efficiency_dispatch=row.dispatch,
-            standing_loss=row.standing_loss,
-            carrier=row.carrier,
-            p_nom=row.p_nom,
-        )
-
-        session.add(entry)
-        session.commit()
+    with db.session_scope() as session:
+        for i, row in sto_sq.iterrows():
+            entry = etrago.EgonPfHvStorage(
+                scn_name=scn_name,
+                storage_id=row.storage_id,
+                bus=row.bus,
+                max_hours=row.max_hours,
+                efficiency_store=row.store,
+                efficiency_dispatch=row.dispatch,
+                standing_loss=row.standing_loss,
+                carrier=row.carrier,
+                p_nom=row.p_nom,
+            )
+            session.add(entry)
 
 
 def insert_generators_sq(scn_name="status2019"):
