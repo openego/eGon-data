@@ -885,7 +885,7 @@ def calc_capacities():
     ]
 
 
-def insert_generators(capacities):
+def insert_generators_tyndp(capacities):
     """Insert generators for foreign countries based on TYNDP-data
 
     Parameters
@@ -1043,7 +1043,7 @@ def insert_generators(capacities):
         session.commit()
 
 
-def insert_storage(capacities):
+def insert_storage_tyndp(capacities):
     """Insert storage units for foreign countries based on TYNDP-data
 
     Parameters
@@ -1174,9 +1174,9 @@ def tyndp_generation():
 
     capacities = calc_capacities()
 
-    insert_generators(capacities)
+    insert_generators_tyndp(capacities)
 
-    insert_storage(capacities)
+    insert_storage_tyndp(capacities)
 
 
 def tyndp_demand():
