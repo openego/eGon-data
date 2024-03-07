@@ -1552,11 +1552,9 @@ def insert_generators_sq(scn_name="status2019"):
     None.
 
     """
-
-    if scn_name == "status2019":
-        year_start_end = {"year_start": "20190101", "year_end": "20200101"}
-    elif scn_name == "status2023":
-        year_start_end = {"year_start": "20230101", "year_end": "20240101"}
+    if "status" in scn_name:
+        year = int(scn_name.split('status')[-1])
+        year_start_end = {"year_start": f"{year}0101", "year_end": f"{year+1}0101"}
     else:
         raise ValueError("No valid scenario name!")
 
