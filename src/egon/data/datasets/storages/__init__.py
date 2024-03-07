@@ -11,6 +11,7 @@ import geopandas as gpd
 import pandas as pd
 
 from egon.data import config, db
+from egon.data.db import session_scope
 from egon.data.datasets import Dataset
 from egon.data.datasets.mastr import WORKING_DIR_MASTR_OLD
 from egon.data.datasets.power_plants import assign_voltage_level
@@ -251,19 +252,20 @@ def allocate_pumped_hydro(scn, export=True):
     if export:
         # Insert into target table
         session = sessionmaker(bind=db.engine())()
-        for i, row in power_plants.iterrows():
-            entry = EgonStorages(
-                sources={"el_capacity": row.source},
-                source_id={"MastrNummer": row.MaStRNummer},
-                carrier=row.carrier,
-                el_capacity=row.el_capacity,
-                voltage_level=row.voltage_level,
-                bus_id=row.bus_id,
-                scenario=row.scenario,
-                geom=f"SRID=4326;POINT({row.geometry.x} {row.geometry.y})",
-            )
-            session.add(entry)
-        session.commit()
+        with session_scope() as session:
+            for i, row in power_plants.iterrows():
+                entry = EgonStorages(
+                    sources={"el_capacity": row.source},
+                    source_id={"MastrNummer": row.MaStRNummer},
+                    carrier=row.carrier,
+                    el_capacity=row.el_capacity,
+                    voltage_level=row.voltage_level,
+                    bus_id=row.bus_id,
+                    scenario=row.scenario,
+                    geom=f"SRID=4326;POINT({row.geometry.x} {row.geometry.y})",
+                )
+                session.add(entry)
+            session.commit()
 
     else:
         return power_plants
