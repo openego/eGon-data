@@ -1831,10 +1831,10 @@ def mv_grid_district_HH_electricity_load(
     )
 
     method = egon.data.config.settings()["egon-data"][
-        "--household-demand-source"
+        "--household-electrical-demand-source"
     ]
 
-    if method == "demand-regio":
+    if method == "slp":
         #Import demand regio timeseries demand per nuts3 area
         dr_series = pd.read_sql_query("""
             SELECT year, nuts3, load_in_mwh FROM demand.demandregio_household_load_profiles
@@ -1878,7 +1878,7 @@ def mv_grid_district_HH_electricity_load(
 
         mvgd_profiles.reset_index(inplace=True)
 
-    elif method == "IEE":
+    elif method == "bottom-up-profiles":
         # convert profile ids to tuple (type, id) format
         cells["cell_profile_ids"] = cells["cell_profile_ids"].apply(
             lambda x: list(map(tuple_format, x))

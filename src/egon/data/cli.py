@@ -100,11 +100,13 @@ from sqlalchemy.orm import Session
     show_default=True,
 )
 @click.option(
-    "--household-demand-source",
-    type=click.Choice(["IEE", "demand-regio"]),
-    default="demand-regio",
+    "--household-electrical-demand-source",
+    type=click.Choice(["bottom-up-profiles", "slp"]),
+    default="slp",
     help=(
-        "Choose the source to calculate and allocate household demands."
+        "Choose the source to calculate and allocate household electrical"
+        "demands. There are currently two options:"
+        "'bottom-up-profiles' and 'slp' (Standard Load Profiles)"
     ),
     show_default=True,
 )
