@@ -1525,9 +1525,9 @@ def insert_storage_units_sq(scn_name="status2019"):
     )
 
     # Add missing information suitable for eTraGo selected from scenario_parameter table
-    parameters_pumped_hydro = scenario_parameters.electricity(scn_name)[
-        "efficiency"
-    ]["pumped_hydro"]
+    parameters_pumped_hydro = get_sector_parameters(
+        sector="electricity", scenario=scn_name
+    )["efficiency"]["pumped_hydro"]
 
     # Set bus_id
     entsoe_to_bus = entsoe_to_bus_etrago()
