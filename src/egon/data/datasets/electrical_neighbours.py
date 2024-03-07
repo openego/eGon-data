@@ -1536,6 +1536,19 @@ def save_entsoe_data(df: pd.DataFrame, file_path: Path):
 
 
 def fill_by_backup_data_from_former_runs(df_sq, file_path, not_retrieved):
+    """
+    Fills missing data from former runs
+    Parameters
+    ----------
+    df_sq: pd.DataFrame
+    file_path: str, Path
+    not_retrieved: list
+
+    Returns
+    -------
+    df_sq, not_retrieved
+
+    """
     sq_backup = pd.read_csv(file_path, index_col="Index")
     # check for missing columns in backup (former runs)
     c_backup = [c for c in sq_backup.columns if c in not_retrieved]
