@@ -372,9 +372,9 @@ with airflow.DAG(
     )
 
     # Import CH4 storages
-    insert_data_ch4_storages = CH4Storages(
-        dependencies=[create_gas_polygons_status2019]
-    )
+    # insert_data_ch4_storages = CH4Storages(
+    #     dependencies=[create_gas_polygons_status2019]
+    # )
 
     # CHP locations
     chp = Chp(
@@ -497,7 +497,7 @@ with airflow.DAG(
             fill_etrago_generators,
             create_ocgt,
             gas_production_insert_data,
-            insert_data_ch4_storages,
+            #insert_data_ch4_storages,
         ]
     )
 
