@@ -1734,8 +1734,8 @@ def insert_generators_sq(scn_name="status2019"):
         egon_sq_to_100[gen["generator_id"]] = gen_id_100
 
     # insert generators_timeseries data
-    for gen_id in df_gen_sq.generator_id:
-        with session_scope() as session:
+    with session_scope() as session:
+        for gen_id in df_gen_sq.generator_id:
             serie = series_egon100[
                 series_egon100.generator_id == egon_sq_to_100[gen_id]
             ]["p_max_pu"].values[0]
@@ -1744,6 +1744,7 @@ def insert_generators_sq(scn_name="status2019"):
             )
 
             session.add(entry)
+            session.commit()
 
     return
 
@@ -1852,6 +1853,7 @@ def insert_storage_units_sq(scn_name="status2019"):
             )
 
             session.add(entry)
+            session.commit()
 
 
 def insert_loads_sq(scn_name="status2019"):
@@ -1937,8 +1939,8 @@ def insert_loads_sq(scn_name="status2019"):
     entsoe_to_bus = entsoe_to_bus_etrago(scn_name)
 
     # Calculate and insert demand timeseries per etrago bus_id
-    for country in df_load_sq.columns:
-        with session_scope() as session:
+    with session_scope() as session:
+        for country in df_load_sq.columns:
             load_id = db.next_etrago_id("load")
 
             entry = etrago.EgonPfHvLoad(
@@ -1957,6 +1959,7 @@ def insert_loads_sq(scn_name="status2019"):
 
             session.add(entry)
             session.add(entry_ts)
+            session.commit()
 
 
 tasks = (grid,)
