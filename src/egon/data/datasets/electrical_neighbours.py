@@ -1849,31 +1849,23 @@ tasks = (grid,)
 
 insert_per_scenario = set()
 
-if "eGon2035" in config.settings()["egon-data"]["--scenarios"]:
-    insert_per_scenario.update([tyndp_generation, tyndp_demand])
+for scn_name in config.settings()["egon-data"]["--scenarios"]:
 
-if "status2019" in config.settings()["egon-data"]["--scenarios"]:
-    insert_per_scenario.update(
-        [
-            wrapped_partial(
-                insert_generators_sq, scn_name="status2019", postfix="_19"
-            ),
-            wrapped_partial(
-                insert_loads_sq, scn_name="status2019", postfix="_19"
-            ),
-        ]
-    )
-if "status2023" in config.settings()["egon-data"]["--scenarios"]:
-    insert_per_scenario.update(
-        [
-            wrapped_partial(
-                insert_generators_sq, scn_name="status2023", postfix="_23"
-            ),
-            wrapped_partial(
-                insert_loads_sq, scn_name="status2023", postfix="_23"
-            ),
-        ]
-    )
+    if scn_name == "eGon2035":
+        insert_per_scenario.update([tyndp_generation, tyndp_demand])
+
+    if "status" in scn_name:
+        postfix = f"_{scn_name.split('status')[-1]}"
+        insert_per_scenario.update(
+            [
+                wrapped_partial(
+                    insert_generators_sq, scn_name=scn_name, postfix=postfix
+                ),
+                wrapped_partial(
+                    insert_loads_sq, scn_name=scn_name, postfix=postfix
+                ),
+            ]
+        )
 
 tasks = tasks + (insert_per_scenario,)
 
