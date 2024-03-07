@@ -1553,8 +1553,11 @@ def insert_generators_sq(scn_name="status2019"):
 
     """
     if "status" in scn_name:
-        year = int(scn_name.split('status')[-1])
-        year_start_end = {"year_start": f"{year}0101", "year_end": f"{year+1}0101"}
+        year = int(scn_name.split("status")[-1])
+        year_start_end = {
+            "year_start": f"{year}0101",
+            "year_end": f"{year+1}0101",
+        }
     else:
         raise ValueError("No valid scenario name!")
 
@@ -1570,7 +1573,8 @@ def insert_generators_sq(scn_name="status2019"):
         ).resolve()
         if os.path.isfile(file_path):
             df_gen_sq, not_retrieved = fill_by_backup_data_from_former_runs(
-                df_gen_sq, file_path, not_retrieved)
+                df_gen_sq, file_path, not_retrieved
+            )
         save_entsoe_data(df_gen_sq, file_path=file_path)
 
     if not_retrieved:
@@ -1719,6 +1723,7 @@ def insert_generators_sq(scn_name="status2019"):
 
     return
 
+
 def fill_by_backup_data_from_former_runs(df_sq, file_path, not_retrieved):
     sq_backup = pd.read_csv(file_path, index_col="Index")
     # check for missing columns in backup (former runs)
@@ -1726,9 +1731,7 @@ def fill_by_backup_data_from_former_runs(df_sq, file_path, not_retrieved):
     # remove columns, if found in backup
     not_retrieved = [c for c in not_retrieved if c not in c_backup]
     if c_backup:
-        df_sq = pd.concat(
-            [df_sq, sq_backup.loc[:, c_backup]], axis=1
-        )
+        df_sq = pd.concat([df_sq, sq_backup.loc[:, c_backup]], axis=1)
         logger.info(f"Appended data from former runs for {c_backup}")
     return df_sq, not_retrieved
 
@@ -1762,7 +1765,8 @@ def insert_loads_sq(scn_name="status2019"):
         ).resolve()
         if os.path.isfile(file_path):
             df_load_sq, not_retrieved = fill_by_backup_data_from_former_runs(
-                df_load_sq, file_path, not_retrieved)
+                df_load_sq, file_path, not_retrieved
+            )
         save_entsoe_data(df_load_sq, file_path=file_path)
 
     if not_retrieved:
