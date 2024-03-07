@@ -1535,6 +1535,18 @@ def save_entsoe_data(df: pd.DataFrame, file_path: Path):
         )
 
 
+def fill_by_backup_data_from_former_runs(df_sq, file_path, not_retrieved):
+    sq_backup = pd.read_csv(file_path, index_col="Index")
+    # check for missing columns in backup (former runs)
+    c_backup = [c for c in sq_backup.columns if c in not_retrieved]
+    # remove columns, if found in backup
+    not_retrieved = [c for c in not_retrieved if c not in c_backup]
+    if c_backup:
+        df_sq = pd.concat([df_sq, sq_backup.loc[:, c_backup]], axis=1)
+        logger.info(f"Appended data from former runs for {c_backup}")
+    return df_sq, not_retrieved
+
+
 def insert_generators_sq(scn_name="status2019"):
     """
     Insert generators for foreign countries based on ENTSO-E data
@@ -1724,16 +1736,6 @@ def insert_generators_sq(scn_name="status2019"):
     return
 
 
-def fill_by_backup_data_from_former_runs(df_sq, file_path, not_retrieved):
-    sq_backup = pd.read_csv(file_path, index_col="Index")
-    # check for missing columns in backup (former runs)
-    c_backup = [c for c in sq_backup.columns if c in not_retrieved]
-    # remove columns, if found in backup
-    not_retrieved = [c for c in not_retrieved if c not in c_backup]
-    if c_backup:
-        df_sq = pd.concat([df_sq, sq_backup.loc[:, c_backup]], axis=1)
-        logger.info(f"Appended data from former runs for {c_backup}")
-    return df_sq, not_retrieved
 
 
 def insert_loads_sq(scn_name="status2019"):
