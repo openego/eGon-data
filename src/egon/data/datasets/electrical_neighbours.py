@@ -16,6 +16,7 @@ import pandas as pd
 import requests
 
 from egon.data import config, db, logger
+from egon.data.db import session_scope
 from egon.data.datasets import Dataset, wrapped_partial
 from egon.data.datasets.fill_etrago_gen import add_marginal_costs
 from egon.data.datasets.fix_ehv_subnetworks import select_bus_id
@@ -1749,6 +1750,110 @@ def insert_generators_sq(scn_name="status2019"):
     return
 
 
+def insert_storage_units_sq(scn_name="status2019"):
+    """
+    Insert storage_units for foreign countries based on ENTSO-E data
+
+    Parameters
+    ----------
+    scn_name : str
+        Scenario to which the foreign storage units will be assigned.
+        The default is "status2019".
+
+    Returns
+    -------
+    None.
+
+    """
+    if "status" in scn_name:
+        year = int(scn_name.split("status")[-1])
+        year_start_end = {
+            "year_start": f"{year}0101",
+            "year_end": f"{year+1}0101",
+        }
+    else:
+        raise ValueError("No valid scenario name!")
+
+    df_gen_sq, not_retrieved = entsoe_historic_generation_capacities(
+        **year_start_end
+    )
+
+    if not_retrieved:
+        logger.warning("Generation data from entsoe could not be retrieved.")
+        # check for generation backup from former runs
+        file_path = Path(
+            "./", "entsoe_data", f"gen_entsoe_{scn_name}.csv"
+        ).resolve()
+        if os.path.isfile(file_path):
+            df_gen_sq, not_retrieved = fill_by_backup_data_from_former_runs(
+                df_gen_sq, file_path, not_retrieved
+            )
+        save_entsoe_data(df_gen_sq, file_path=file_path)
+
+    if not_retrieved:
+        logger.warning(
+            f"Backup data of 2019 is used instead for {not_retrieved}"
+        )
+        df_gen_sq_backup = pd.read_csv(
+            "data_bundle_egon_data/entsoe/gen_entsoe.csv", index_col="Index"
+        )
+        df_gen_sq = pd.concat(
+            [df_gen_sq, df_gen_sq_backup.loc[not_retrieved]], axis=1
+        )
+
+    sto_sq = df_gen_sq.loc[:, df_gen_sq.columns == "Hydro Pumped Storage"]
+    sto_sq.rename(columns={"Hydro Pumped Storage": "p_nom"}, inplace=True)
+
+    targets = config.datasets()["electrical_neighbours"]["targets"]
+
+    # Delete existing data
+    db.execute_sql(
+        f"""
+        DELETE FROM {targets['storage']['schema']}.{targets['storage']['table']}
+        WHERE bus IN (
+            SELECT bus_id FROM
+            {targets['buses']['schema']}.{targets['buses']['table']}
+            WHERE country != 'DE'
+            AND scn_name = '{scn_name}')
+        AND scn_name = '{scn_name}'
+        """
+    )
+
+    # Add missing information suitable for eTraGo selected from scenario_parameter table
+    parameters_pumped_hydro = get_sector_parameters(sector="electricity", scenario=scn_name)["efficiency"]["pumped_hydro"]
+
+    # Set bus_id
+    entsoe_to_bus = entsoe_to_bus_etrago()
+    sto_sq["bus"] = sto_sq.index.map(entsoe_to_bus)
+
+    # Insert carrier specific parameters
+    sto_sq["carrier"] = "pumped_hydro"
+    sto_sq["scn_name"] = scn_name
+    sto_sq["dispatch"] = parameters_pumped_hydro["dispatch"]
+    sto_sq["store"] = parameters_pumped_hydro["store"]
+    sto_sq["standing_loss"] = parameters_pumped_hydro["standing_loss"]
+    sto_sq["max_hours"] = parameters_pumped_hydro["max_hours"]
+
+    # Delete entrances without any installed capacity
+    sto_sq = sto_sq[sto_sq["p_nom"] > 0]
+
+    # insert data pumped_hydro storage
+
+    with session_scope() as session:
+        for i, row in sto_sq.iterrows():
+            entry = etrago.EgonPfHvStorage(
+                scn_name=scn_name,
+                storage_id=int(db.next_etrago_id("storage")),
+                bus=row.bus,
+                max_hours=row.max_hours,
+                efficiency_store=row.store,
+                efficiency_dispatch=row.dispatch,
+                standing_loss=row.standing_loss,
+                carrier=row.carrier,
+                p_nom=row.p_nom,
+            )
+
+            session.add(entry)
 
 
 def insert_loads_sq(scn_name="status2019"):
@@ -1878,6 +1983,9 @@ for scn_name in config.settings()["egon-data"]["--scenarios"]:
                 ),
                 wrapped_partial(
                     insert_loads_sq, scn_name=scn_name, postfix=postfix
+                ),
+                wrapped_partial(
+                    insert_storage_units_sq, scn_name=scn_name, postfix=postfix
                 ),
             ]
         )
