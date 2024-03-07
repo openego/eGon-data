@@ -1821,7 +1821,7 @@ def insert_storage_units_sq(scn_name="status2019"):
     parameters_pumped_hydro = get_sector_parameters(sector="electricity", scenario=scn_name)["efficiency"]["pumped_hydro"]
 
     # Set bus_id
-    entsoe_to_bus = entsoe_to_bus_etrago()
+    entsoe_to_bus = entsoe_to_bus_etrago(scn_name=scn_name)
     sto_sq["bus"] = sto_sq.index.map(entsoe_to_bus)
 
     # Insert carrier specific parameters
