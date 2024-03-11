@@ -154,8 +154,10 @@ def select_mastr_pumped_hydro():
         config.settings()["egon-data"]["--dataset-boundary"]
         == "Schleswig-Holstein"
     ):
-
         # Drop hydropower outside the test mode area
+        mastr_ph = filter_mastr_geometry(mastr_ph, federal_state="Schleswig-Holstein")
+    else:
+        # Drop hydropower outside of germany
         mastr_ph = filter_mastr_geometry(mastr_ph, federal_state=None)
 
     return mastr_ph
