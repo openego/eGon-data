@@ -137,13 +137,6 @@ def select_mastr_pumped_hydro():
         ),
     )
 
-    # Drop rows without post code and update datatype of postcode
-    mastr_ph = mastr_ph[~mastr_ph["plz"].isnull()]
-    mastr_ph["plz"] = mastr_ph["plz"].astype(int)
-
-    # Calculate power in MW
-    mastr_ph.loc[:, "el_capacity"] *= 1e-3
-
     mastr_ph = mastr_ph.set_crs(4326)
 
     # drop hydropower without federal state
@@ -159,6 +152,14 @@ def select_mastr_pumped_hydro():
     else:
         # Drop hydropower outside of germany
         mastr_ph = filter_mastr_geometry(mastr_ph, federal_state=None)
+
+    # Drop rows without post code and update datatype of postcode
+    mastr_ph = mastr_ph[~mastr_ph["plz"].isnull()]
+    mastr_ph["plz"] = mastr_ph["plz"].astype(int)
+
+    # Calculate power in MW
+    mastr_ph.loc[:, "el_capacity"] *= 1e-3
+
 
     return mastr_ph
 
