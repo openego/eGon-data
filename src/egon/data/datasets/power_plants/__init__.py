@@ -990,6 +990,8 @@ def power_plants_status_quo(scn_name="status2019"):
         "Breitengrad",
         "Gemeinde",
         "Inbetriebnahmedatum",
+        "EinheitBetriebsstatus",
+        "DatumEndgueltigeStilllegung",
     ]
     # import nuclear power plants
     nuclear = pd.read_csv(
@@ -1015,6 +1017,24 @@ def power_plants_status_quo(scn_name="status2019"):
             ]
         )
     ]
+
+    # drop plants that are decommissioned
+    conv["DatumEndgueltigeStilllegung"] = pd.to_datetime(
+        conv["DatumEndgueltigeStilllegung"]
+    )
+
+    # keep plants that were decommissioned after the max date
+    conv.loc[
+        (
+            conv.DatumEndgueltigeStilllegung >
+            egon.data.config.datasets()["mastr_new"]["status2023_date_max"]
+        ),
+        "EinheitBetriebsstatus",
+    ] = "InBetrieb"
+
+    conv = conv.loc[conv.EinheitBetriebsstatus == "InBetrieb"]
+
+    conv = conv.drop(columns=["EinheitBetriebsstatus", "DatumEndgueltigeStilllegung"])
 
     # convert from KW to MW
     conv["Nettonennleistung"] = conv["Nettonennleistung"] / 1000
@@ -1263,7 +1283,7 @@ class PowerPlants(Dataset):
     def __init__(self, dependencies):
         super().__init__(
             name="PowerPlants",
-            version="0.0.22",
+            version="0.0.26",
             dependencies=dependencies,
             tasks=tasks,
         )
