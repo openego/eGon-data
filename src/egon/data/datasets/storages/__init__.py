@@ -654,4 +654,4 @@ def allocate_pumped_hydro_scn():
         elif scn == "eGon100RE":
             allocate_pumped_hydro_eGon100RE()
         elif "status" in scn:
-            allocate_pumped_hydro(scn=scn)
+            allocate_pumped_hydro_sq(scn_name=scn)
