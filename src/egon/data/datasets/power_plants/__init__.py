@@ -13,7 +13,7 @@ import logging
 import pandas as pd
 
 from egon.data import db
-from egon.data.datasets import Dataset, wrapped_partial
+from egon.data.datasets import Dataset
 from egon.data.datasets.mastr import (
     WORKING_DIR_MASTR_NEW,
     WORKING_DIR_MASTR_OLD,
@@ -988,8 +988,6 @@ def power_plants_status_quo(scn_name="status2019"):
         "Breitengrad",
         "Gemeinde",
         "Inbetriebnahmedatum",
-        "EinheitBetriebsstatus",
-        "DatumEndgueltigeStilllegung",
     ]
     # import nuclear power plants
     nuclear = pd.read_csv(
@@ -1016,31 +1014,13 @@ def power_plants_status_quo(scn_name="status2019"):
         )
     ]
 
-    # drop plants that are decommissioned
-    conv["DatumEndgueltigeStilllegung"] = pd.to_datetime(
-        conv["DatumEndgueltigeStilllegung"]
-    )
-
-    # keep plants that were decommissioned after the max date
-    conv.loc[
-        (
-            conv.DatumEndgueltigeStilllegung >
-            egon.data.config.datasets()["mastr_new"]["status2023_date_max"]
-        ),
-        "EinheitBetriebsstatus",
-    ] = "InBetrieb"
-
-    conv = conv.loc[conv.EinheitBetriebsstatus == "InBetrieb"]
-
-    conv = conv.drop(columns=["EinheitBetriebsstatus", "DatumEndgueltigeStilllegung"])
-
     # convert from KW to MW
     conv["Nettonennleistung"] = conv["Nettonennleistung"] / 1000
     # drop generators installed after 2019
     conv["Inbetriebnahmedatum"] = pd.to_datetime(conv["Inbetriebnahmedatum"])
     conv = conv[
         conv["Inbetriebnahmedatum"]
-        < egon.data.config.datasets()["mastr_new"]["status2023_date_max"]
+        < egon.data.config.datasets()["mastr_new"]["status2019_date_max"]
     ]
 
     # drop chp generators
@@ -1253,10 +1233,9 @@ tasks = (
     create_tables,
     import_mastr,
 )
-for scn_name in egon.data.config.settings()["egon-data"]["--scenarios"]:
-    if "status" in scn_name:
-        tasks += (wrapped_partial(
-            power_plants_status_quo, scn_name=scn_name, postfix=f"_{scn_name[-4:]}"),)
+
+if "status2019" in egon.data.config.settings()["egon-data"]["--scenarios"]:
+    tasks = tasks + (power_plants_status_quo,)
 
 if (
     "eGon2035" in egon.data.config.settings()["egon-data"]["--scenarios"]
