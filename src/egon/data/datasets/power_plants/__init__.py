@@ -908,6 +908,8 @@ def power_plants_status_quo(scn_name="status2019"):
     con = db.engine()
     session = sessionmaker(bind=db.engine())()
     cfg = egon.data.config.datasets()["power_plants"]
+    year = int(scn_name[-4:])
+    scenario_date_max = str(year) + "-12-31 23:59:00"
     db.execute_sql(
         f"""
         DELETE FROM {cfg['target']['schema']}.{cfg['target']['table']}
@@ -1018,10 +1020,7 @@ def power_plants_status_quo(scn_name="status2019"):
     conv["Nettonennleistung"] = conv["Nettonennleistung"] / 1000
     # drop generators installed after 2019
     conv["Inbetriebnahmedatum"] = pd.to_datetime(conv["Inbetriebnahmedatum"])
-    conv = conv[
-        conv["Inbetriebnahmedatum"]
-        < egon.data.config.datasets()["mastr_new"]["status2019_date_max"]
-    ]
+    conv = conv[conv["Inbetriebnahmedatum"] < scenario_date_max]
 
     # drop chp generators
     conv["ThermischeNutzleistung"] = conv["ThermischeNutzleistung"].fillna(0)
