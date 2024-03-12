@@ -11,7 +11,7 @@ import pandas as pd
 from egon.data import config, db
 from egon.data.datasets.chp.match_nep import match_nep_chp
 from egon.data.datasets.chp.small_chp import assign_use_case
-from egon.data.datasets.mastr import WORKING_DIR_MASTR_OLD
+from egon.data.datasets.mastr import WORKING_DIR_MASTR_NEW
 from egon.data.datasets.power_plants import (
     assign_bus_id,
     assign_voltage_level,
@@ -93,7 +93,7 @@ def select_mastr_pumped_hydro():
 
     # Read-in data from MaStR
     mastr_ph = pd.read_csv(
-        WORKING_DIR_MASTR_OLD / sources["mastr_storage"],
+        WORKING_DIR_MASTR_NEW / sources["mastr_storage"],
         delimiter=",",
         usecols=[
             "Nettonennleistung",
@@ -137,6 +137,22 @@ def select_mastr_pumped_hydro():
         ),
     )
 
+    mastr_ph = mastr_ph.set_crs(4326)
+
+    # drop hydropower without federal state
+    # Obervermunterwerk II in Austria
+    mastr_ph = mastr_ph[~(mastr_ph["federal_state"].isnull())]
+
+    if (
+        config.settings()["egon-data"]["--dataset-boundary"]
+        == "Schleswig-Holstein"
+    ):
+        # Drop hydropower outside the test mode area
+        mastr_ph = filter_mastr_geometry(mastr_ph, federal_state="Schleswig-Holstein")
+    else:
+        # Drop hydropower outside of germany
+        mastr_ph = filter_mastr_geometry(mastr_ph, federal_state=None)
+
     # Drop rows without post code and update datatype of postcode
     mastr_ph = mastr_ph[~mastr_ph["plz"].isnull()]
     mastr_ph["plz"] = mastr_ph["plz"].astype(int)
@@ -144,12 +160,6 @@ def select_mastr_pumped_hydro():
     # Calculate power in MW
     mastr_ph.loc[:, "el_capacity"] *= 1e-3
 
-    mastr_ph = mastr_ph.set_crs(4326)
-
-    mastr_ph = mastr_ph[~(mastr_ph["federal_state"].isnull())]
-
-    # Drop CHP outside of Germany/ outside the test mode area
-    mastr_ph = filter_mastr_geometry(mastr_ph, federal_state=None)
 
     return mastr_ph
 
