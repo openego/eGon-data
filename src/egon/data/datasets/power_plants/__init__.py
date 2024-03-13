@@ -1066,11 +1066,14 @@ def power_plants_status_quo(scn_name="status2019"):
     conv = conv[conv.ThermischeNutzleistung == 0]
 
     # rename carriers
-    conv.loc[conv.carrier == "Braunkohle", "carrier"] = "lignite"
-    conv.loc[conv.carrier == "Steinkohle", "carrier"] = "coal"
-    conv.loc[conv.carrier == "Erdgas", "carrier"] = "gas"
-    conv.loc[conv.carrier == "Mineralölprodukte", "carrier"] = "oil"
-    conv.loc[conv.carrier == "Kernenergie", "carrier"] = "nuclear"
+    map_carrier_conv = {
+        "Braunkohle": "lignite",
+        "Steinkohle": "coal",
+        "Erdgas": "gas",
+        "Mineralölprodukte": "oil",
+        "Kernenergie": "nuclear",
+    }
+    conv["carrier"] = conv["carrier"].map(map_carrier_conv)
 
     conv["bus_id"] = np.nan
 
