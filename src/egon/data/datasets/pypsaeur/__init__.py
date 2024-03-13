@@ -65,7 +65,7 @@ def download():
                 "git",
                 "clone",
                 "--branch",
-                "v0.8.1",
+                "v0.10.0",
                 "https://github.com/PyPSA/pypsa-eur.git",
                 pypsa_eur_repos,
             ]
@@ -89,7 +89,7 @@ def download():
         shutil.copy(
             __path__[0],
             "datasets",
-            "pypsaeursec",
+            "pypsaeur",
             "config.yaml",
             pypsa_eur_repos / "config",
         )
@@ -1080,7 +1080,7 @@ def neighbor_reduction():
 def prepared_network():
     if egon.data.config.settings()["egon-data"]["--run-pypsa-eur"]:
         with open(
-            __path__[0] + "/datasets/pypsaeursec/config.yaml", "r"
+            __path__[0] + "/datasets/pypsaeur/config.yaml", "r"
         ) as stream:
             data_config = yaml.safe_load(stream)
 
