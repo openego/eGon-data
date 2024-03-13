@@ -909,8 +909,7 @@ def power_plants_status_quo(scn_name="status2019"):
     con = db.engine()
     session = sessionmaker(bind=db.engine())()
     cfg = egon.data.config.datasets()["power_plants"]
-    year = int(scn_name[-4:])
-    scenario_date_max = str(year) + "-12-31 23:59:00"
+    scenario_date_max = f"{scn_name[-4:]}-12-31 23:59:00"
     db.execute_sql(
         f"""
         DELETE FROM {cfg['target']['schema']}.{cfg['target']['table']}
