@@ -289,6 +289,7 @@ def allocate_pumped_hydro_sq(scn_name):
 
     """
     sources = config.datasets()["power_plants"]["sources"]
+    scenario_date_max = scn_name[-4:] + "-12-31 23:59:00"
 
     # Read-in data from MaStR
     mastr_ph = pd.read_csv(
@@ -306,6 +307,7 @@ def allocate_pumped_hydro_sq(scn_name):
             "LokationMastrNummer",
             "Ort",
             "Bundesland",
+            "DatumEndgueltigeStilllegung"
         ],
         dtype={"Postleitzahl": str},
     )
@@ -319,6 +321,7 @@ def allocate_pumped_hydro_sq(scn_name):
             "Ort": "city",
             "Bundesland": "federal_state",
             "Nettonennleistung": "el_capacity",
+            "DatumEndgueltigeStilllegung": "decommissioning_date"
         }
     )
 
@@ -326,6 +329,10 @@ def allocate_pumped_hydro_sq(scn_name):
     mastr_ph = mastr_ph.loc[mastr_ph.carrier == "Pumpspeicher"]
 
     # Select only pumped hydro units which are in operation
+    mastr_ph.loc[
+        mastr_ph["decommissioning_date"] > scenario_date_max,
+        "EinheitBetriebsstatus",
+    ] = "InBetrieb"
     mastr_ph = mastr_ph.loc[mastr_ph.EinheitBetriebsstatus == "InBetrieb"]
 
     # Calculate power in MW
