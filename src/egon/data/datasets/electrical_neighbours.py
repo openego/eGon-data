@@ -181,7 +181,7 @@ def buses(scenario, sources, targets):
     # Delete existing buses
     db.execute_sql(sql_delete)
 
-    central_buses = central_buses_pypsaeur(sources)
+    central_buses = central_buses_pypsaeur(sources, scenario)
 
     next_bus_id = db.next_etrago_id("bus") + 1
 
@@ -195,7 +195,7 @@ def buses(scenario, sources, targets):
             [
                 central_buses,
                 pd.DataFrame(
-                    index=[central_buses.index.max() + 1],
+                    index=[central_buses.bus_id.max() + 1],
                     data={
                         "scn_name": scenario,
                         "bus_id": next_bus_id,
@@ -278,6 +278,8 @@ def buses(scenario, sources, targets):
         "geometry", axis="columns"
     )
     central_buses.scn_name = scenario
+    
+    central_buses.drop(["control", "generator", "location", "unit", "sub_network"], axis="columns", inplace=True)
 
     # Insert all central buses for eGon2035
     if scenario in ["eGon2035", "status2019"]:
@@ -312,10 +314,14 @@ def lines_between_foreign_countries(scenario, sorces, targets, central_buses):
         network.buses,
         geometry=gpd.points_from_xy(network.buses.x, network.buses.y),
     )
+    
+    central_buses_pypsaeur = gpd.sjoin(gdf_buses[gdf_buses.carrier=="AC"], central_buses)
+    
+    central_buses_pypsaeur = central_buses_pypsaeur[central_buses_pypsaeur.v_nom_right==380]
 
     lines_to_add = network.lines[
-        (network.lines.bus0.isin(central_buses.index))
-        & (network.lines.bus1.isin(central_buses.index))
+        (network.lines.bus0.isin(central_buses_pypsaeur.index))
+        & (network.lines.bus1.isin(central_buses_pypsaeur.index))
     ]
 
     lines_to_add.loc[:, "lifetime"] = get_sector_parameters(
@@ -328,8 +334,8 @@ def lines_between_foreign_countries(scenario, sorces, targets, central_buses):
     )
 
     links_to_add = network.links[
-        (network.links.bus0.isin(central_buses.index))
-        & (network.links.bus1.isin(central_buses.index))
+        (network.links.bus0.isin(central_buses_pypsaeur.index))
+        & (network.links.bus1.isin(central_buses_pypsaeur.index))
     ]
 
     links_to_add.loc[:, "lifetime"] = get_sector_parameters(
@@ -351,17 +357,30 @@ def lines_between_foreign_countries(scenario, sorces, targets, central_buses):
             axis=1,
         )
 
-        gdf = gdf.set_crs(4326).rename_geometry("topo")
+        gdf = gdf.set_geometry("geometry")
+        gdf = gdf.set_crs(4326)
+        
+        gdf = gdf.rename_geometry("topo")
+        
 
-        gdf.loc[:, "bus0"] = df.bus0.map(central_buses.bus_id)
-        gdf.loc[:, "bus1"] = df.bus1.map(central_buses.bus_id)
+
+        gdf.loc[:, "bus0"] = central_buses_pypsaeur.bus_id.loc[df.bus0].values
+        gdf.loc[:, "bus1"] = central_buses_pypsaeur.bus_id.loc[df.bus1].values
 
         gdf.drop(["geom_bus0", "geom_bus1"], inplace=True, axis="columns")
-        if "carrier" in df.columns:
+        if "link_id" in df.columns:
             table_name = "link"
+            gdf.drop(["tags", "under_construction", "underground",
+                      "underwater_fraction",
+                      "bus2", "efficiency2","length_original",
+                      "bus4", "efficiency4", "reversed",
+                      "ramp_limit_up", "ramp_limit_down", "p_nom_opt",
+                      "bus3", "efficiency3"], axis="columns", inplace=True)
         else:
             table_name = "line"
-
+            gdf.drop(["i_nom", "sub_network", "x_pu", "r_pu", "g_pu", "b_pu", "x_pu_eff", "r_pu_eff", "s_nom_opt"], axis="columns", inplace=True)
+        
+        gdf = gdf.set_index(f"{table_name}_id")
         gdf.to_postgis(
             f"egon_etrago_{table_name}",
             db.engine(),
@@ -1693,14 +1712,14 @@ def renewable_timeseries_pypsaeur(scn_name):
             p_max_pu=generators_pypsa_eur[
                 (
                     (
-                        generators_pypsa_eur.x.abs
+                        generators_pypsa_eur.x
                         - foreign_re_generators.loc[gen, "x"]
                     ).abs()
                     < 0.01
                 )
                 & (
                     (
-                        generators_pypsa_eur.y.abs
+                        generators_pypsa_eur.y
                         - foreign_re_generators.loc[gen, "y"]
                     ).abs()
                     < 0.01
