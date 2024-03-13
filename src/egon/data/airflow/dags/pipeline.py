@@ -77,7 +77,7 @@ from egon.data.datasets.osm_buildings_streets import OsmBuildingsStreets
 from egon.data.datasets.osmtgmod import Osmtgmod
 from egon.data.datasets.power_etrago import OpenCycleGasTurbineEtrago
 from egon.data.datasets.power_plants import PowerPlants
-from egon.data.datasets.pypsaeursec import PypsaEurSec
+from egon.data.datasets.pypsaeur import PreparePypsaEur, RunPypsaEur
 from egon.data.datasets.re_potential_areas import re_potential_area_setup
 from egon.data.datasets.renewable_feedin import RenewableFeedin
 from egon.data.datasets.saltcavern import SaltcavernData
@@ -352,9 +352,17 @@ with airflow.DAG(
         ]
     )
 
-    # run pypsa-eur-sec
-    run_pypsaeursec = PypsaEurSec(
+    prepare_pypsa_eur = PreparePypsaEur(
         dependencies=[
+            weather_data,
+            data_bundle,
+        ]
+    )
+
+    # run pypsa-eur-sec
+    run_pypsaeur = RunPypsaEur(
+        dependencies=[
+            prepare_pypsa_eur,
             weather_data,
             hd_abroad,
             osmtgmod,
@@ -362,20 +370,20 @@ with airflow.DAG(
             data_bundle,
             electrical_load_etrago,
             heat_time_series,
-            heat_pumps_pypsa_eur_sec,
         ]
     )
 
+
     # Deal with electrical neighbours
     foreign_lines = ElectricalNeighbours(
-        dependencies=[run_pypsaeursec, tyndp_data]
+        dependencies=[prepare_pypsa_eur, tyndp_data]
     )
 
     # Import NEP (Netzentwicklungsplan) data
     scenario_capacities = ScenarioCapacities(
         dependencies=[
             data_bundle,
-            run_pypsaeursec,
+            run_pypsaeur,
             setup,
             vg250,
             zensus_population,
@@ -413,7 +421,7 @@ with airflow.DAG(
             create_gas_polygons_egon2035,
             gas_grid_insert_data,
             insert_hydrogen_buses,
-            run_pypsaeursec,
+            run_pypsaeur,
         ]
     )
 
@@ -441,7 +449,7 @@ with airflow.DAG(
     gas_abroad_insert_data = GasNeighbours(
         dependencies=[
             gas_grid_insert_data,
-            run_pypsaeursec,
+            prepare_pypsa_eur,
             foreign_lines,
             insert_hydrogen_buses,
             create_gas_polygons_egon100RE,
@@ -598,7 +606,7 @@ with airflow.DAG(
     # Heat pump disaggregation for eGon100RE
     heat_pumps_2050 = HeatPumps2050(
         dependencies=[
-            run_pypsaeursec,
+            run_pypsaeur,
             heat_pumps_pypsa_eur_sec,
             heat_supply,
         ]
