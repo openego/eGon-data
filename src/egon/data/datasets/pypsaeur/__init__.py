@@ -313,9 +313,9 @@ def neighbor_reduction():
             bus=i,
             p_set=network.lines_t.p1[k],
         )
-        network.loads.carrier.loc[
-            "slack_fix " + i + " " + k
-        ] = lines_cb_1.carrier[k]
+        network.loads.carrier.loc["slack_fix " + i + " " + k] = (
+            lines_cb_1.carrier[k]
+        )
 
     # select all lines which have at bus0 the bus which is kept
     lines_cb_0 = network.lines[
@@ -330,9 +330,9 @@ def neighbor_reduction():
             bus=i,
             p_set=network.lines_t.p0[k],
         )
-        network.loads.carrier.loc[
-            "slack_fix " + i + " " + k
-        ] = lines_cb_0.carrier[k]
+        network.loads.carrier.loc["slack_fix " + i + " " + k] = (
+            lines_cb_0.carrier[k]
+        )
 
     # do the same for links
 
@@ -356,9 +356,9 @@ def neighbor_reduction():
             bus=i,
             p_set=network.links_t.p1[k],
         )
-        network.loads.carrier.loc[
-            "slack_fix_links " + i + " " + k
-        ] = links_cb_1.carrier[k]
+        network.loads.carrier.loc["slack_fix_links " + i + " " + k] = (
+            links_cb_1.carrier[k]
+        )
 
     # select all links which have at bus0 the bus which is kept
     links_cb_0 = network.links[
@@ -373,9 +373,9 @@ def neighbor_reduction():
             bus=i,
             p_set=network.links_t.p0[k],
         )
-        network.loads.carrier.loc[
-            "slack_fix_links " + i + " " + k
-        ] = links_cb_0.carrier[k]
+        network.loads.carrier.loc["slack_fix_links " + i + " " + k] = (
+            links_cb_0.carrier[k]
+        )
 
     # drop remaining foreign components
 
@@ -1282,17 +1282,17 @@ def update_heat_timeseries_germany(network):
     )
 
     # Replace heat demand curves in Germany with values from eGon-data
-    network.loads_t.p_set.loc[
-        :, "DE1 0 residential rural heat"
-    ] = df_egon_heat_demand.loc[:, "residential rural"]
+    network.loads_t.p_set.loc[:, "DE1 0 residential rural heat"] = (
+        df_egon_heat_demand.loc[:, "residential rural"]
+    )
 
-    network.loads_t.p_set.loc[
-        :, "DE1 0 services rural heat"
-    ] = df_egon_heat_demand.loc[:, "services rural"]
+    network.loads_t.p_set.loc[:, "DE1 0 services rural heat"] = (
+        df_egon_heat_demand.loc[:, "services rural"]
+    )
 
-    network.loads_t.p_set.loc[
-        :, "DE1 0 urban central heat"
-    ] = df_egon_heat_demand.loc[:, "urban central"]
+    network.loads_t.p_set.loc[:, "DE1 0 urban central heat"] = (
+        df_egon_heat_demand.loc[:, "urban central"]
+    )
 
     return network
 
@@ -1330,15 +1330,15 @@ def district_heating_shares(network):
     )
 
     for country in heat_demand_per_country.columns:
-        network.loads_t.p_set[
-            f"{country} urban central heat"
-        ] = heat_demand_per_country.loc[:, country].mul(
-            df.loc[country[:2]].values[0]
+        network.loads_t.p_set[f"{country} urban central heat"] = (
+            heat_demand_per_country.loc[:, country].mul(
+                df.loc[country[:2]].values[0]
+            )
         )
-        network.loads_t.p_set[
-            f"{country} residential rural heat"
-        ] = heat_demand_per_country.loc[:, country].mul(
-            (1 - df.loc[country[:2]].values[0])
+        network.loads_t.p_set[f"{country} residential rural heat"] = (
+            heat_demand_per_country.loc[:, country].mul(
+                (1 - df.loc[country[:2]].values[0])
+            )
         )
     return network
 
@@ -1421,4 +1421,3 @@ def execute():
     network = drop_fossil_gas(network)
 
     network.export_to_netcdf(network_path)
-

@@ -278,8 +278,12 @@ def buses(scenario, sources, targets):
         "geometry", axis="columns"
     )
     central_buses.scn_name = scenario
-    
-    central_buses.drop(["control", "generator", "location", "unit", "sub_network"], axis="columns", inplace=True)
+
+    central_buses.drop(
+        ["control", "generator", "location", "unit", "sub_network"],
+        axis="columns",
+        inplace=True,
+    )
 
     # Insert all central buses for eGon2035
     if scenario in ["eGon2035", "status2019"]:
@@ -314,10 +318,14 @@ def lines_between_foreign_countries(scenario, sorces, targets, central_buses):
         network.buses,
         geometry=gpd.points_from_xy(network.buses.x, network.buses.y),
     )
-    
-    central_buses_pypsaeur = gpd.sjoin(gdf_buses[gdf_buses.carrier=="AC"], central_buses)
-    
-    central_buses_pypsaeur = central_buses_pypsaeur[central_buses_pypsaeur.v_nom_right==380]
+
+    central_buses_pypsaeur = gpd.sjoin(
+        gdf_buses[gdf_buses.carrier == "AC"], central_buses
+    )
+
+    central_buses_pypsaeur = central_buses_pypsaeur[
+        central_buses_pypsaeur.v_nom_right == 380
+    ]
 
     lines_to_add = network.lines[
         (network.lines.bus0.isin(central_buses_pypsaeur.index))
@@ -359,10 +367,8 @@ def lines_between_foreign_countries(scenario, sorces, targets, central_buses):
 
         gdf = gdf.set_geometry("geometry")
         gdf = gdf.set_crs(4326)
-        
-        gdf = gdf.rename_geometry("topo")
-        
 
+        gdf = gdf.rename_geometry("topo")
 
         gdf.loc[:, "bus0"] = central_buses_pypsaeur.bus_id.loc[df.bus0].values
         gdf.loc[:, "bus1"] = central_buses_pypsaeur.bus_id.loc[df.bus1].values
@@ -370,16 +376,45 @@ def lines_between_foreign_countries(scenario, sorces, targets, central_buses):
         gdf.drop(["geom_bus0", "geom_bus1"], inplace=True, axis="columns")
         if "link_id" in df.columns:
             table_name = "link"
-            gdf.drop(["tags", "under_construction", "underground",
-                      "underwater_fraction",
-                      "bus2", "efficiency2","length_original",
-                      "bus4", "efficiency4", "reversed",
-                      "ramp_limit_up", "ramp_limit_down", "p_nom_opt",
-                      "bus3", "efficiency3"], axis="columns", inplace=True)
+            gdf.drop(
+                [
+                    "tags",
+                    "under_construction",
+                    "underground",
+                    "underwater_fraction",
+                    "bus2",
+                    "efficiency2",
+                    "length_original",
+                    "bus4",
+                    "efficiency4",
+                    "reversed",
+                    "ramp_limit_up",
+                    "ramp_limit_down",
+                    "p_nom_opt",
+                    "bus3",
+                    "efficiency3",
+                ],
+                axis="columns",
+                inplace=True,
+            )
         else:
             table_name = "line"
-            gdf.drop(["i_nom", "sub_network", "x_pu", "r_pu", "g_pu", "b_pu", "x_pu_eff", "r_pu_eff", "s_nom_opt"], axis="columns", inplace=True)
-        
+            gdf.drop(
+                [
+                    "i_nom",
+                    "sub_network",
+                    "x_pu",
+                    "r_pu",
+                    "g_pu",
+                    "b_pu",
+                    "x_pu_eff",
+                    "r_pu_eff",
+                    "s_nom_opt",
+                ],
+                axis="columns",
+                inplace=True,
+            )
+
         gdf = gdf.set_index(f"{table_name}_id")
         gdf.to_postgis(
             f"egon_etrago_{table_name}",
@@ -1177,9 +1212,9 @@ def insert_storage(capacities):
 
     for x in parameters:
         store.loc[store["carrier"] == "battery", x] = parameters_battery[x]
-        store.loc[
-            store["carrier"] == "pumped_hydro", x
-        ] = parameters_pumped_hydro[x]
+        store.loc[store["carrier"] == "pumped_hydro", x] = (
+            parameters_pumped_hydro[x]
+        )
 
     # insert data
     session = sessionmaker(bind=db.engine())()
@@ -1300,9 +1335,9 @@ def tyndp_demand():
     ]
     # Assign etrago bus_id to TYNDP nodes
     buses = pd.DataFrame({"nodes": nodes})
-    buses.loc[
-        buses[buses.nodes.isin(map_buses.keys())].index, "nodes"
-    ] = buses[buses.nodes.isin(map_buses.keys())].nodes.map(map_buses)
+    buses.loc[buses[buses.nodes.isin(map_buses.keys())].index, "nodes"] = (
+        buses[buses.nodes.isin(map_buses.keys())].nodes.map(map_buses)
+    )
     buses.loc[:, "bus"] = (
         get_foreign_bus_id(scenario="eGon2035")
         .loc[buses.loc[:, "nodes"]]
