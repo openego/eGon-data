@@ -57,6 +57,7 @@ class EgonPowerPlantsPv(Base):
 
     status = Column(String, nullable=True)  # EinheitBetriebsstatus
     commissioning_date = Column(DateTime, nullable=True)  # Inbetriebnahmedatum
+    decommissioning_date = Column(DateTime, nullable=True)  # DatumEndgueltigeStilllegung
     postcode = Column(String(5), nullable=True)  # Postleitzahl
     city = Column(String(50), nullable=True)  # Ort
     federal_state = Column(String(31), nullable=True)  # Bundesland
@@ -99,6 +100,7 @@ class EgonPowerPlantsWind(Base):
 
     status = Column(String, nullable=True)  # EinheitBetriebsstatus
     commissioning_date = Column(DateTime, nullable=True)  # Inbetriebnahmedatum
+    decommissioning_date = Column(DateTime, nullable=True)  # DatumEndgueltigeStilllegung
     postcode = Column(String(5), nullable=True)  # Postleitzahl
     city = Column(String(50), nullable=True)  # Ort
     federal_state = Column(String(31), nullable=True)  # Bundesland
@@ -127,6 +129,7 @@ class EgonPowerPlantsBiomass(Base):
 
     status = Column(String, nullable=True)  # EinheitBetriebsstatus
     commissioning_date = Column(DateTime, nullable=True)  # Inbetriebnahmedatum
+    decommissioning_date = Column(DateTime, nullable=True)  # DatumEndgueltigeStilllegung
     postcode = Column(String(5), nullable=True)  # Postleitzahl
     city = Column(String(50), nullable=True)  # Ort
     federal_state = Column(String(31), nullable=True)  # Bundesland
@@ -154,6 +157,7 @@ class EgonPowerPlantsHydro(Base):
 
     status = Column(String, nullable=True)  # EinheitBetriebsstatus
     commissioning_date = Column(DateTime, nullable=True)  # Inbetriebnahmedatum
+    decommissioning_date = Column(DateTime, nullable=True)  # DatumEndgueltigeStilllegung
     postcode = Column(String(5), nullable=True)  # Postleitzahl
     city = Column(String(50), nullable=True)  # Ort
     federal_state = Column(String(31), nullable=True)  # Bundesland
@@ -224,6 +228,7 @@ def import_mastr() -> None:
             "Bundesland": "federal_state",
             "Nettonennleistung": "capacity",
             "Einspeisungsart": "feedin_type",
+            "DatumEndgueltigeStilllegung": "decommissioning_date"
         },
         "pv": {
             "Lage": "site_type",
