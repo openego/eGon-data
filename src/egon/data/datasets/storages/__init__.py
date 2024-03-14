@@ -666,7 +666,7 @@ def allocate_pumped_hydro_scn():
         allocate_pumped_hydro(scn="eGon2035")
 
     if "status2019" in config.settings()["egon-data"]["--scenarios"]:
-        allocate_pumped_hydro(scn="status2019")
+        allocate_pumped_hydro_sq(scn_name="status2019")
 
     if "eGon100RE" in config.settings()["egon-data"]["--scenarios"]:
         allocate_pumped_hydro_eGon100RE()
