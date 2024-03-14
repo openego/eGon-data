@@ -309,6 +309,7 @@ def allocate_pumped_hydro_sq(scn_name):
             "Ort",
             "Bundesland",
             "DatumEndgueltigeStilllegung",
+            "Inbetriebnahmedatum",
         ],
         dtype={"Postleitzahl": str},
     )
@@ -335,6 +336,11 @@ def allocate_pumped_hydro_sq(scn_name):
         "EinheitBetriebsstatus",
     ] = "InBetrieb"
     mastr_ph = mastr_ph.loc[mastr_ph.EinheitBetriebsstatus == "InBetrieb"]
+
+    # Select only pumped hydro installed before scenario_date_max
+    mastr_ph = mastr_ph[
+        pd.to_datetime(mastr_ph["Inbetriebnahmedatum"]) < scenario_date_max
+    ]
 
     # Calculate power in MW
     mastr_ph.loc[:, "el_capacity"] *= 1e-3
