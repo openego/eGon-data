@@ -308,7 +308,7 @@ def allocate_pumped_hydro_sq(scn_name):
             "LokationMastrNummer",
             "Ort",
             "Bundesland",
-            "DatumEndgueltigeStilllegung"
+            "DatumEndgueltigeStilllegung",
         ],
         dtype={"Postleitzahl": str},
     )
@@ -322,7 +322,7 @@ def allocate_pumped_hydro_sq(scn_name):
             "Ort": "city",
             "Bundesland": "federal_state",
             "Nettonennleistung": "el_capacity",
-            "DatumEndgueltigeStilllegung": "decommissioning_date"
+            "DatumEndgueltigeStilllegung": "decommissioning_date",
         }
     )
 
@@ -437,7 +437,7 @@ def allocate_pumped_hydro_sq(scn_name):
     df_foreign_buses = df_foreign_buses[
         df_foreign_buses["geom"].isin(central_bus["geom"])
     ]
-    
+
     # Assign closest bus at voltage level to foreign pp
     nearest_neighbors = []
     for vl, v_nom in {1: 380, 2: 220, 3: 110}.items():
@@ -637,9 +637,9 @@ def home_batteries_per_scenario(scenario):
     else:
         source = "p-e-s"
 
-    battery[
-        "source"
-    ] = f"{source} capacity allocated based in installed PV rooftop capacity"
+    battery["source"] = (
+        f"{source} capacity allocated based in installed PV rooftop capacity"
+    )
 
     # Insert into target table
     session = sessionmaker(bind=db.engine())()
