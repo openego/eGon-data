@@ -470,7 +470,7 @@ def allocate_pumped_hydro_sq(scn_name):
     )
     mastr_ph = mastr_ph.set_geometry("geom")
     mastr_ph["geom"] = mastr_ph["geom"].apply(lambda x: x.wkb_hex)
-    mastr_ph["scenario"] = "status2023"
+    mastr_ph["scenario"] = scn_name
     mastr_ph["sources"] = [
         {"el_capacity": "MaStR aggregated by location"}
     ] * mastr_ph.shape[0]
