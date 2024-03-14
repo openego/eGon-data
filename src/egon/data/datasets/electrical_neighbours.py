@@ -1451,7 +1451,7 @@ def map_carriers_entsoe():
     }
 
 
-def entsoe_to_bus_etrago():
+def entsoe_to_bus_etrago(scenario="status2019"):
     map_entsoe = pd.Series(
         {
             "LU": "LU00",
@@ -1470,7 +1470,7 @@ def entsoe_to_bus_etrago():
         }
     )
 
-    for_bus = get_foreign_bus_id(scenario="status2019")
+    for_bus = get_foreign_bus_id(scenario=scenario)
 
     return map_entsoe.map(for_bus)
 
