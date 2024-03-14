@@ -17,6 +17,7 @@ from egon.data.datasets.mastr import (
     WORKING_DIR_MASTR_NEW,
     WORKING_DIR_MASTR_OLD,
 )
+from egon.data.datasets.electrical_neighbours import entsoe_to_bus_etrago
 from egon.data.datasets.mv_grid_districts import Vg250GemClean
 from egon.data.datasets.power_plants import assign_bus_id, assign_voltage_level
 from egon.data.datasets.storages.home_batteries import (
@@ -420,7 +421,7 @@ def allocate_pumped_hydro_sq(scn_name):
     mastr_ph = assign_bus_id(mastr_ph, cfg=config.datasets()["power_plants"])
     mastr_ph["bus_id"] = mastr_ph["bus_id"].astype(int)
 
-    # Get foreign buses
+    # Get foreign central buses
     sql = f"""
     SELECT * FROM grid.egon_etrago_bus
     WHERE scn_name = '{scn_name}'
@@ -429,7 +430,14 @@ def allocate_pumped_hydro_sq(scn_name):
     df_foreign_buses = db.select_geodataframe(
         sql, geom_col="geom", epsg="4326"
     )
-
+    central_bus = entsoe_to_bus_etrago(scn_name).to_frame()
+    central_bus["geom"] = (
+        df_foreign_buses.set_index("bus_id").loc[central_bus[0], "geom"].values
+    )
+    df_foreign_buses = df_foreign_buses[
+        df_foreign_buses["geom"].isin(central_bus["geom"])
+    ]
+    
     # Assign closest bus at voltage level to foreign pp
     nearest_neighbors = []
     for vl, v_nom in {1: 380, 2: 220, 3: 110}.items():
