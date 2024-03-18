@@ -57,6 +57,7 @@ class EgonPowerPlantsPv(Base):
 
     status = Column(String, nullable=True)  # EinheitBetriebsstatus
     commissioning_date = Column(DateTime, nullable=True)  # Inbetriebnahmedatum
+    decommissioning_date = Column(DateTime, nullable=True)  # DatumEndgueltigeStilllegung
     postcode = Column(String(5), nullable=True)  # Postleitzahl
     city = Column(String(50), nullable=True)  # Ort
     federal_state = Column(String(31), nullable=True)  # Bundesland
@@ -99,6 +100,7 @@ class EgonPowerPlantsWind(Base):
 
     status = Column(String, nullable=True)  # EinheitBetriebsstatus
     commissioning_date = Column(DateTime, nullable=True)  # Inbetriebnahmedatum
+    decommissioning_date = Column(DateTime, nullable=True)  # DatumEndgueltigeStilllegung
     postcode = Column(String(5), nullable=True)  # Postleitzahl
     city = Column(String(50), nullable=True)  # Ort
     federal_state = Column(String(31), nullable=True)  # Bundesland
@@ -127,6 +129,7 @@ class EgonPowerPlantsBiomass(Base):
 
     status = Column(String, nullable=True)  # EinheitBetriebsstatus
     commissioning_date = Column(DateTime, nullable=True)  # Inbetriebnahmedatum
+    decommissioning_date = Column(DateTime, nullable=True)  # DatumEndgueltigeStilllegung
     postcode = Column(String(5), nullable=True)  # Postleitzahl
     city = Column(String(50), nullable=True)  # Ort
     federal_state = Column(String(31), nullable=True)  # Bundesland
@@ -154,6 +157,7 @@ class EgonPowerPlantsHydro(Base):
 
     status = Column(String, nullable=True)  # EinheitBetriebsstatus
     commissioning_date = Column(DateTime, nullable=True)  # Inbetriebnahmedatum
+    decommissioning_date = Column(DateTime, nullable=True)  # DatumEndgueltigeStilllegung
     postcode = Column(String(5), nullable=True)  # Postleitzahl
     city = Column(String(50), nullable=True)  # Ort
     federal_state = Column(String(31), nullable=True)  # Bundesland
@@ -224,6 +228,7 @@ def import_mastr() -> None:
             "Bundesland": "federal_state",
             "Nettonennleistung": "capacity",
             "Einspeisungsart": "feedin_type",
+            "DatumEndgueltigeStilllegung": "decommissioning_date"
         },
         "pv": {
             "Lage": "site_type",
@@ -312,17 +317,6 @@ def import_mastr() -> None:
         len_old = len(units)
         units = units.loc[units.Land == "Deutschland"]
         print(f"    {len_old-len(units)} units outside of Germany dropped...")
-
-        # drop units installed after reference date from cfg
-        # (eGon2021 scenario)
-        len_old = len(units)
-        ts = pd.Timestamp(
-            egon.data.config.datasets()["mastr_new"]["status2019_date_max"]
-        )
-        units = units.loc[pd.to_datetime(units.Inbetriebnahmedatum) <= ts]
-        print(
-            f"    {len_old - len(units)} units installed after {ts} dropped..."
-        )
 
         # drop not operating units
         len_old = len(units)
