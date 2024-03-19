@@ -1216,6 +1216,7 @@ def power_plants_status_quo(scn_name="status2019"):
     solar = convert_master_info(solar)
     solar["scenario"] = scn_name
     solar = solar.rename(columns={"capacity": "el_capacity"})
+    solar = solar.drop(columns="id")
 
     # Write into DB
     with db.session_scope() as session:
@@ -1241,6 +1242,7 @@ def power_plants_status_quo(scn_name="status2019"):
     wind_onshore["scenario"] = scn_name
     wind_onshore = wind_onshore.rename(columns={"capacity": "el_capacity"})
     wind_onshore["carrier"] = "wind_onshore"
+    wind_onshore = wind_onshore.drop(columns="id")
 
     # Write into DB
     with db.session_scope() as session:
