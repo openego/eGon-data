@@ -1005,7 +1005,7 @@ def get_conventional_power_plants_non_chp(scn_name):
         columns={
             "EinheitMastrNummer": "gens_id",
             "Energietraeger": "carrier",
-            "Nettonennleistung": "el_capacity",
+            "Nettonennleistung": "capacity",
             "Gemeinde": "location",
         },
         inplace=True,
@@ -1022,7 +1022,7 @@ def get_conventional_power_plants_non_chp(scn_name):
     # assign voltage level by capacity
     conv["voltage_level"] = np.nan
     conv["voltage_level"] = assign_voltage_level_by_capacity(
-        conv.rename(columns={"el_capacity": "Nettonennleistung"})
+        conv.rename(columns={"capacity": "Nettonennleistung"})
     )
     # Add further information
     conv["sources"] = [{"el_capacity": "MaStR"}] * conv.shape[0]
@@ -1127,6 +1127,7 @@ def power_plants_status_quo(scn_name="status2019"):
     #  ###################
     conv = get_conventional_power_plants_non_chp(scn_name)
     conv = fill_missing_bus_and_geom(conv, carrier="conventional")
+    conv=  conv.rename(columns={"capacity": "el_capacity"})
 
     # Write into DB
     with db.session_scope() as session:
