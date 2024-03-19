@@ -1084,8 +1084,8 @@ def power_plants_status_quo(scn_name="status2019"):
     def log_insert_capacity(df, tech):
         logger.info(
             f"""
-              {len(df)} {tech} generators with a total installed capacity of
-              {int(df.capacity.sum())}MW were inserted into the db
+            {len(df)} {tech} generators with a total installed capacity of
+            {int(df.capacity.sum())} MW were inserted into the db
               """
         )
 
