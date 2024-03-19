@@ -1044,13 +1044,13 @@ def power_plants_status_quo(scn_name="status2019"):
             & (gens.location.isin(geom_municipalities.index))
         ]
         logger.info(
-            f"""{len(drop_id)} {carrier} generator(s) ({gens.loc[drop_id, 'capacity']
-            .sum()}MW) were drop"""
+            f"""{len(drop_id)} {carrier} generator(s) ({int(gens.loc[drop_id, 'capacity']
+            .sum())}MW) were drop"""
         )
 
         logger.info(
-            f"""{len(new_geom)} {carrier} generator(s) ({new_geom
-            .sum()}MW) received a geom based on location
+            f"""{len(new_geom)} {carrier} generator(s) ({int(new_geom
+            .sum())}MW) received a geom based on location
               """
         )
         gens.drop(index=drop_id, inplace=True)
@@ -1080,6 +1080,15 @@ def power_plants_status_quo(scn_name="status2019"):
         df["sources"] = [{"el_capacity": "MaStR"}] * df.shape[0]
         df["source_id"] = df["gens_id"].apply(lambda x: {"MastrNummer": x})
         return df
+
+    def log_insert_capacity(df, tech):
+        logger.info(
+            f"""
+              {len(df)} {tech} generators with a total installed capacity of
+              {int(df.capacity.sum())}MW were inserted into the db
+              """
+        )
+
 
     con = db.engine()
     cfg = egon.data.config.datasets()["power_plants"]
@@ -1127,12 +1136,7 @@ def power_plants_status_quo(scn_name="status2019"):
             conv.to_dict(orient="records"),
         )
 
-    logger.info(
-        f"""
-          {len(conv)} conventional generators with a total installed capacity of
-          {int(conv.capacity.sum())} MW were inserted into the db
-          """
-    )
+    log_insert_capacity(conv, tech="conventional non chp")
 
     # Hydro Power Plants
     #  ###################
@@ -1160,12 +1164,7 @@ def power_plants_status_quo(scn_name="status2019"):
             hydro.to_dict(orient="records"),
         )
 
-    logger.info(
-        f"""
-          {len(hydro)} hydro generators with a total installed capacity of
-          {hydro.capacity.sum()}MW were inserted into the db
-          """
-    )
+    log_insert_capacity(hydro, tech="hydro")
 
     # Biomass
     #  ###################
@@ -1193,12 +1192,7 @@ def power_plants_status_quo(scn_name="status2019"):
             biomass.to_dict(orient="records"),
         )
 
-    logger.info(
-        f"""
-          {len(biomass)} biomass generators with a total installed capacity of
-          {biomass.capacity.sum()}MW were inserted into the db
-          """
-    )
+    log_insert_capacity(biomass, tech="biomass")
 
     # Solar
     #  ###################
@@ -1227,12 +1221,7 @@ def power_plants_status_quo(scn_name="status2019"):
             solar.to_dict(orient="records"),
         )
 
-    logger.info(
-        f"""
-          {len(solar)} solar generators with a total installed capacity of
-          {solar.capacity.sum()}MW were inserted into the db
-          """
-    )
+    log_insert_capacity(solar, tech="solar")
 
     # Wind
     #  ###################
@@ -1257,14 +1246,8 @@ def power_plants_status_quo(scn_name="status2019"):
             wind_onshore.to_dict(orient="records"),
         )
 
-    logger.info(
-        f"""
-          {len(wind_onshore)} wind_onshore generators with a total installed capacity of
-          {wind_onshore.capacity.sum()}MW were inserted into the db
-          """
-    )
+    log_insert_capacity(wind_onshore, tech="wind_onshore")
 
-    return
 
 
 tasks = (
