@@ -382,17 +382,17 @@ def allocate_pumped_hydro_sq(scn_name):
     # list mastr number by location
     agg_mastr = mastr_ph.groupby("geometry")["EinheitMastrNummer"].apply(list)
 
-    # remove duplicates by location
+    # remove duplicates by location and keep only first
     mastr_ph = mastr_ph.drop_duplicates(subset="geometry", keep="first").drop(
         ["el_capacity", "EinheitMastrNummer"], axis=1
     )
 
-    # Adjust capacity
+    # Add aggregated capacity by location
     mastr_ph = pd.merge(
         left=mastr_ph, right=agg_cap, left_on="geometry", right_on="geometry"
     )
 
-    # Adjust capacity
+    # Add list of mastr nr by location
     mastr_ph = pd.merge(
         left=mastr_ph, right=agg_mastr, left_on="geometry", right_on="geometry"
     )
@@ -410,7 +410,7 @@ def allocate_pumped_hydro_sq(scn_name):
     # Keep only capacities within germany
     mastr_ph = mastr_ph.dropna(subset="federal_state")
 
-    # Asign buses within germany
+    # Assign buses within germany
     mastr_ph = assign_bus_id(mastr_ph, cfg=config.datasets()["power_plants"])
     mastr_ph["bus_id"] = mastr_ph["bus_id"].astype(int)
 
@@ -424,7 +424,7 @@ def allocate_pumped_hydro_sq(scn_name):
         sql, geom_col="geom", epsg="4326"
     )
 
-    # Assign closest bus at voltage level to foreign pp
+    # Assign closest foreign bus at voltage level to foreign pp
     nearest_neighbors = []
     for vl, v_nom in {1: 380, 2: 220, 3: 110}.items():
         ph = mastr_ph_foreign.loc[mastr_ph_foreign["voltage_level"] == vl]
