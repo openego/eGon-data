@@ -1042,9 +1042,14 @@ def power_plants_status_quo(scn_name="status2019"):
         < egon.data.config.datasets()["mastr_new"]["status2019_date_max"]
     ]
 
+    conv_cap_chp = conv.groupby("Energietraeger")["Nettonennleistung"].sum() / 1e3
     # drop chp generators
     conv["ThermischeNutzleistung"] = conv["ThermischeNutzleistung"].fillna(0)
     conv = conv[conv.ThermischeNutzleistung == 0]
+    conv_cap_no_chp = conv.groupby("Energietraeger")["Nettonennleistung"].sum() / 1e3
+
+    logger.info("Dropped CHP generators in GW")
+    logger.info(conv_cap_chp-conv_cap_no_chp)
 
     # rename carriers
     conv.loc[conv.Energietraeger == "Braunkohle", "Energietraeger"] = "lignite"
