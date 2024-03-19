@@ -1115,7 +1115,8 @@ def power_plants_status_quo(scn_name="status2019"):
     )
     mv_grid_districts.geom = mv_grid_districts.geom.to_crs(4326)
 
-    # get con
+    # Conventional non CHP
+    #  ###################
     conv = get_conventional_power_plants_non_chp(scn_name)
     conv = fill_missing_bus_and_geom(conv, carrier="conventional")
 
