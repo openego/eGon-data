@@ -9,10 +9,9 @@ from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.orm import sessionmaker
 import geopandas as gpd
 import numpy as np
-import logging
 import pandas as pd
 
-from egon.data import db
+from egon.data import db, logger
 from egon.data.datasets import Dataset, wrapped_partial
 from egon.data.datasets.mastr import (
     WORKING_DIR_MASTR_NEW,
@@ -949,12 +948,12 @@ def power_plants_status_quo(scn_name="status2019"):
             (gens.geom.is_empty)
             & (gens.location.isin(geom_municipalities.index))
         ]
-        logging.info(
+        logger.info(
             f"""{len(drop_id)} {carrier} generator(s) ({gens.loc[drop_id, 'capacity']
               .sum()}MW) were drop"""
         )
 
-        logging.info(
+        logger.info(
             f"""{len(new_geom)} {carrier} generator(s) ({new_geom
               .sum()}MW) received a geom based on location
               """
@@ -1099,7 +1098,7 @@ def power_plants_status_quo(scn_name="status2019"):
         session.add(entry)
     session.commit()
 
-    logging.info(
+    logger.info(
         f"""
           {len(conv)} conventional generators with a total installed capacity of
           {conv.capacity.sum()}MW were inserted into the db
@@ -1135,7 +1134,7 @@ def power_plants_status_quo(scn_name="status2019"):
         session.add(entry)
     session.commit()
 
-    logging.info(
+    logger.info(
         f"""
           {len(hydro)} hydro generators with a total installed capacity of
           {hydro.capacity.sum()}MW were inserted into the db
@@ -1169,7 +1168,7 @@ def power_plants_status_quo(scn_name="status2019"):
         session.add(entry)
     session.commit()
 
-    logging.info(
+    logger.info(
         f"""
           {len(biomass)} biomass generators with a total installed capacity of
           {biomass.capacity.sum()}MW were inserted into the db
@@ -1207,7 +1206,7 @@ def power_plants_status_quo(scn_name="status2019"):
         session.add(entry)
     session.commit()
 
-    logging.info(
+    logger.info(
         f"""
           {len(solar)} solar generators with a total installed capacity of
           {solar.capacity.sum()}MW were inserted into the db
@@ -1239,7 +1238,7 @@ def power_plants_status_quo(scn_name="status2019"):
         session.add(entry)
     session.commit()
 
-    logging.info(
+    logger.info(
         f"""
           {len(wind_onshore)} wind_onshore generators with a total installed capacity of
           {wind_onshore.capacity.sum()}MW were inserted into the db
