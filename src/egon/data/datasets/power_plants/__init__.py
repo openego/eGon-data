@@ -1024,7 +1024,7 @@ def power_plants_status_quo(scn_name="status2019"):
     conv.loc[
         (
             conv.DatumEndgueltigeStilllegung >
-            egon.data.config.datasets()["mastr_new"]["status2023_date_max"]
+            egon.data.config.datasets()["mastr_new"][f"{scn_name}_date_max"]
         ),
         "EinheitBetriebsstatus",
     ] = "InBetrieb"
@@ -1035,11 +1035,12 @@ def power_plants_status_quo(scn_name="status2019"):
 
     # convert from KW to MW
     conv["Nettonennleistung"] = conv["Nettonennleistung"] / 1000
+
     # drop generators installed after 2019
     conv["Inbetriebnahmedatum"] = pd.to_datetime(conv["Inbetriebnahmedatum"])
     conv = conv[
         conv["Inbetriebnahmedatum"]
-        < egon.data.config.datasets()["mastr_new"]["status2019_date_max"]
+        < egon.data.config.datasets()["mastr_new"][f"{scn_name}_date_max"]
     ]
 
     conv_cap_chp = conv.groupby("Energietraeger")["Nettonennleistung"].sum() / 1e3
