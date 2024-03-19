@@ -1,7 +1,9 @@
 """The central module containing all code dealing with power plant data.
 """
-from geoalchemy2 import Geometry
+
 from pathlib import Path
+
+from geoalchemy2 import Geometry
 from shapely.geometry import Point
 from sqlalchemy import BigInteger, Column, Float, Integer, Sequence, String
 from sqlalchemy.dialects.postgresql import JSONB
@@ -951,15 +953,17 @@ def get_conventional_power_plants_non_chp(scn_name):
     # keep plants that were decommissioned after the max date
     conv.loc[
         (
-            conv.DatumEndgueltigeStilllegung >
-            egon.data.config.datasets()["mastr_new"][f"{scn_name}_date_max"]
+            conv.DatumEndgueltigeStilllegung
+            > egon.data.config.datasets()["mastr_new"][f"{scn_name}_date_max"]
         ),
         "EinheitBetriebsstatus",
     ] = "InBetrieb"
 
     conv = conv.loc[conv.EinheitBetriebsstatus == "InBetrieb"]
 
-    conv = conv.drop(columns=["EinheitBetriebsstatus", "DatumEndgueltigeStilllegung"])
+    conv = conv.drop(
+        columns=["EinheitBetriebsstatus", "DatumEndgueltigeStilllegung"]
+    )
 
     # convert from KW to MW
     conv["Nettonennleistung"] = conv["Nettonennleistung"] / 1000
@@ -971,24 +975,30 @@ def get_conventional_power_plants_non_chp(scn_name):
         < egon.data.config.datasets()["mastr_new"][f"{scn_name}_date_max"]
     ]
 
-    conv_cap_chp = conv.groupby("Energietraeger")["Nettonennleistung"].sum() / 1e3
+    conv_cap_chp = (
+        conv.groupby("Energietraeger")["Nettonennleistung"].sum() / 1e3
+    )
     # drop chp generators
     conv["ThermischeNutzleistung"] = conv["ThermischeNutzleistung"].fillna(0)
     conv = conv[conv.ThermischeNutzleistung == 0]
-    conv_cap_no_chp = conv.groupby("Energietraeger")["Nettonennleistung"].sum() / 1e3
+    conv_cap_no_chp = (
+        conv.groupby("Energietraeger")["Nettonennleistung"].sum() / 1e3
+    )
 
     logger.info("Dropped CHP generators in GW")
-    logger.info(conv_cap_chp-conv_cap_no_chp)
+    logger.info(conv_cap_chp - conv_cap_no_chp)
 
     # rename carriers
     # rename carriers
     conv["Energietraeger"] = conv["Energietraeger"].replace(
-        to_replace={"Braunkohle": "lignite",
-                    "Steinkohle": "coal",
-                    "Erdgas": "gas",
-                    "Mineralölprodukte": "oil",
-                    "Kernenergie": "nuclear"
-                    })
+        to_replace={
+            "Braunkohle": "lignite",
+            "Steinkohle": "coal",
+            "Erdgas": "gas",
+            "Mineralölprodukte": "oil",
+            "Kernenergie": "nuclear",
+        }
+    )
 
     # rename columns
     conv.rename(
@@ -1004,9 +1014,9 @@ def get_conventional_power_plants_non_chp(scn_name):
     conv["geom"] = gpd.points_from_xy(
         conv.Laengengrad, conv.Breitengrad, crs=4326
     )
-    conv.loc[
-        (conv.Laengengrad.isna() | conv.Breitengrad.isna()), "geom"
-    ] = Point()
+    conv.loc[(conv.Laengengrad.isna() | conv.Breitengrad.isna()), "geom"] = (
+        Point()
+    )
     conv = gpd.GeoDataFrame(conv, geometry="geom")
 
     # assign voltage level by capacity
@@ -1016,12 +1026,11 @@ def get_conventional_power_plants_non_chp(scn_name):
     )
     # Add further information
     conv["sources"] = [{"el_capacity": "MaStR"}] * conv.shape[0]
-    conv["source_id"] = conv["gens_id"].apply(
-        lambda x: {"MastrNummer": x}
-    )
+    conv["source_id"] = conv["gens_id"].apply(lambda x: {"MastrNummer": x})
     conv["scenario"] = scn_name
 
     return conv
+
 
 def power_plants_status_quo(scn_name="status2019"):
     def fill_missing_bus_and_geom(gens, carrier):
@@ -1029,11 +1038,11 @@ def power_plants_status_quo(scn_name="status2019"):
         drop_id = gens[
             (gens.geom.is_empty)
             & ~(gens.location.isin(geom_municipalities.index))
-            ].index
+        ].index
         new_geom = gens["capacity"][
             (gens.geom.is_empty)
             & (gens.location.isin(geom_municipalities.index))
-            ]
+        ]
         logger.info(
             f"""{len(drop_id)} {carrier} generator(s) ({gens.loc[drop_id, 'capacity']
             .sum()}MW) were drop"""
@@ -1049,9 +1058,11 @@ def power_plants_status_quo(scn_name="status2019"):
         # assign missing geometries based on location and buses based on geom
 
         gens["geom"] = gens.apply(
-            lambda x: geom_municipalities.at[x["location"], "geom"]
-            if x["geom"].is_empty
-            else x["geom"],
+            lambda x: (
+                geom_municipalities.at[x["location"], "geom"]
+                if x["geom"].is_empty
+                else x["geom"]
+            ),
             axis=1,
         )
         gens["bus_id"] = gens.sjoin(
@@ -1067,9 +1078,7 @@ def power_plants_status_quo(scn_name="status2019"):
     def convert_master_info(df):
         # Add further information
         df["sources"] = [{"el_capacity": "MaStR"}] * df.shape[0]
-        df["source_id"] = df["gens_id"].apply(
-            lambda x: {"MastrNummer": x}
-        )
+        df["source_id"] = df["gens_id"].apply(lambda x: {"MastrNummer": x})
         return df
 
     con = db.engine()
@@ -1138,9 +1147,10 @@ def power_plants_status_quo(scn_name="status2019"):
     hydro = convert_master_info(hydro)
     hydro["carrier"] = hydro["plant_type"].replace(
         to_replace={
-        "Laufwasseranlage": "run_of_river",
-        "Speicherwasseranlage": "reservoir",
-    })
+            "Laufwasseranlage": "run_of_river",
+            "Speicherwasseranlage": "reservoir",
+        }
+    )
 
     # Write into DB
     with db.session_scope() as session:
@@ -1173,7 +1183,7 @@ def power_plants_status_quo(scn_name="status2019"):
     biomass = convert_master_info(biomass)
     biomass["scenario"] = scn_name
     biomass["carrier"] = "biomass"
-    biomass= biomass.rename(columns={"capacity": "el_capacity"})
+    biomass = biomass.rename(columns={"capacity": "el_capacity"})
 
     # Write into DB
     with db.session_scope() as session:
@@ -1202,8 +1212,7 @@ def power_plants_status_quo(scn_name="status2019"):
         "Freifläche": "solar",
         "Bauliche Anlagen (Hausdach, Gebäude und Fassade)": "solar_rooftop",
     }
-    solar["carrier"] = solar["site_type"].replace(
-        to_replace=map_solar)
+    solar["carrier"] = solar["site_type"].replace(to_replace=map_solar)
 
     solar = fill_missing_bus_and_geom(solar, carrier="solar")
     solar = convert_master_info(solar)
@@ -1238,7 +1247,7 @@ def power_plants_status_quo(scn_name="status2019"):
     wind_onshore = convert_master_info(wind_onshore)
     wind_onshore["scenario"] = scn_name
     wind_onshore = wind_onshore.rename(columns={"capacity": "el_capacity"})
-    wind_onshore["carrier"] = ("wind_onshore")
+    wind_onshore["carrier"] = "wind_onshore"
 
     # Write into DB
     with db.session_scope() as session:
@@ -1264,8 +1273,13 @@ tasks = (
 
 for scn_name in egon.data.config.settings()["egon-data"]["--scenarios"]:
     if "status" in scn_name:
-        tasks += (wrapped_partial(
-            power_plants_status_quo, scn_name=scn_name, postfix=f"_{scn_name[-4:]}"),)
+        tasks += (
+            wrapped_partial(
+                power_plants_status_quo,
+                scn_name=scn_name,
+                postfix=f"_{scn_name[-4:]}",
+            ),
+        )
 
 if (
     "eGon2035" in egon.data.config.settings()["egon-data"]["--scenarios"]
