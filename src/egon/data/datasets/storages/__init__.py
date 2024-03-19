@@ -276,14 +276,17 @@ def allocate_pumped_hydro(scn, export=True):
         return power_plants
 
 
-def allocate_pumped_hydro_sq(scn_name):
+def allocate_storage_units_sq(scn_name, storage_types):
     """
-    Allocate pumped hydro by mastr data only. Capacities outside
-    germany are assigned to foreign buses. Mastr dump 2024 is used.
-    No filter for commissioning is applied.
+    Allocate storage units by mastr data only. Capacities outside
+    germany are assigned to foreign buses.
+
     Parameters
     ----------
-    scn_name
+    scn_name: str
+        Scenario name
+    storage_types: list
+        contains all the required storage units carriers to be imported
 
     Returns
     -------
@@ -292,215 +295,231 @@ def allocate_pumped_hydro_sq(scn_name):
     sources = config.datasets()["power_plants"]["sources"]
     scenario_date_max = scn_name[-4:] + "-12-31 23:59:00"
 
-    # Read-in data from MaStR
-    mastr_ph = pd.read_csv(
-        WORKING_DIR_MASTR_NEW / sources["mastr_storage"],
-        delimiter=",",
-        usecols=[
-            "Nettonennleistung",
-            "EinheitMastrNummer",
-            "Kraftwerksnummer",
-            "Technologie",
-            "Postleitzahl",
-            "Laengengrad",
-            "Breitengrad",
+    map_storage = {"battery": "Batterie",
+                   "pumped_hydro": "Pumpspeicher",
+                   "compressed_air": "Druckluft",
+                   "flywheel": "Schwungrad",
+                   "other": "Sonstige"}
+
+    for storage_type in storage_types:    
+        # Read-in data from MaStR
+        mastr_ph = pd.read_csv(
+            WORKING_DIR_MASTR_NEW / sources["mastr_storage"],
+            delimiter=",",
+            usecols=[
+                "Nettonennleistung",
+                "EinheitMastrNummer",
+                "Kraftwerksnummer",
+                "Technologie",
+                "Postleitzahl",
+                "Laengengrad",
+                "Breitengrad",
+                "EinheitBetriebsstatus",
+                "LokationMastrNummer",
+                "Ort",
+                "Bundesland",
+                "DatumEndgueltigeStilllegung",
+                "Inbetriebnahmedatum",
+            ],
+            dtype={"Postleitzahl": str},
+        )
+    
+        # Rename columns
+        mastr_ph = mastr_ph.rename(
+            columns={
+                "Kraftwerksnummer": "bnetza_id",
+                "Technologie": "carrier",
+                "Postleitzahl": "plz",
+                "Ort": "city",
+                "Bundesland": "federal_state",
+                "Nettonennleistung": "el_capacity",
+                "DatumEndgueltigeStilllegung": "decommissioning_date",
+            }
+        )
+    
+        # Select only the required type of storage
+        mastr_ph = mastr_ph.loc[mastr_ph.carrier == map_storage[storage_type]]
+    
+        # Select only storage units in operation
+        mastr_ph.loc[
+            mastr_ph["decommissioning_date"] > scenario_date_max,
             "EinheitBetriebsstatus",
-            "LokationMastrNummer",
-            "Ort",
-            "Bundesland",
-            "DatumEndgueltigeStilllegung",
-            "Inbetriebnahmedatum",
-        ],
-        dtype={"Postleitzahl": str},
-    )
-
-    # Rename columns
-    mastr_ph = mastr_ph.rename(
-        columns={
-            "Kraftwerksnummer": "bnetza_id",
-            "Technologie": "carrier",
-            "Postleitzahl": "plz",
-            "Ort": "city",
-            "Bundesland": "federal_state",
-            "Nettonennleistung": "el_capacity",
-            "DatumEndgueltigeStilllegung": "decommissioning_date",
-        }
-    )
-
-    # Select only pumped hydro units
-    mastr_ph = mastr_ph.loc[mastr_ph.carrier == "Pumpspeicher"]
-
-    # Select only pumped hydro units which are in operation
-    mastr_ph.loc[
-        mastr_ph["decommissioning_date"] > scenario_date_max,
-        "EinheitBetriebsstatus",
-    ] = "InBetrieb"
-    mastr_ph = mastr_ph.loc[mastr_ph.EinheitBetriebsstatus == "InBetrieb"]
-
-    # Select only pumped hydro installed before scenario_date_max
-    mastr_ph = mastr_ph[
-        pd.to_datetime(mastr_ph["Inbetriebnahmedatum"]) < scenario_date_max
-    ]
-
-    # Calculate power in MW
-    mastr_ph.loc[:, "el_capacity"] *= 1e-3
-
-    # Create geodataframe from long, lat
-    mastr_ph = gpd.GeoDataFrame(
-        mastr_ph,
-        geometry=gpd.points_from_xy(
-            mastr_ph["Laengengrad"], mastr_ph["Breitengrad"]
-        ),
-        crs="4326",
-    )
-
-    # Identify pp without geocord
-    mastr_ph_nogeo = mastr_ph.loc[mastr_ph["Laengengrad"].isna()]
-
-    # Remove all PP without geocord (PP<= 30kW)
-    mastr_ph = mastr_ph.dropna(subset="Laengengrad")
-
-    # Get geometry of villages/cities with same name of pp with missing geocord
-    with session_scope() as session:
-        query = session.query(
-            Vg250GemClean.gen, Vg250GemClean.geometry
-        ).filter(Vg250GemClean.gen.in_(mastr_ph_nogeo.loc[:, "city"].unique()))
-        df_cities = gpd.read_postgis(
-            query.statement,
-            query.session.bind,
-            geom_col="geometry",
+        ] = "InBetrieb"
+        mastr_ph = mastr_ph.loc[mastr_ph.EinheitBetriebsstatus == "InBetrieb"]
+    
+        # Select only storage units installed before scenario_date_max
+        mastr_ph = mastr_ph[
+            pd.to_datetime(mastr_ph["Inbetriebnahmedatum"]) < scenario_date_max
+        ]
+    
+        # Calculate power in MW
+        mastr_ph.loc[:, "el_capacity"] *= 1e-3
+    
+        # Create geodataframe from long, lat
+        mastr_ph = gpd.GeoDataFrame(
+            mastr_ph,
+            geometry=gpd.points_from_xy(
+                mastr_ph["Laengengrad"], mastr_ph["Breitengrad"]
+            ),
             crs="4326",
         )
-
-    # Just take the first entry, inaccuracy is negligible as centroid is taken afterwards
-    df_cities = df_cities.drop_duplicates("gen", keep="first")
-
-    # Use the centroid instead of polygon of region
-    df_cities.loc[:, "geometry"] = df_cities["geometry"].centroid
-
-    # Add centroid geometry to pp without geometry
-    mastr_ph_nogeo = pd.merge(
-        left=df_cities,
-        right=mastr_ph_nogeo,
-        right_on="city",
-        left_on="gen",
-        how="inner",
-    ).drop("gen", axis=1)
-
-    mastr_ph = pd.concat([mastr_ph, mastr_ph_nogeo], axis=0)
-
-    # aggregate capacity per location
-    agg_cap = mastr_ph.groupby("geometry")["el_capacity"].sum()
-
-    # list mastr number by location
-    agg_mastr = mastr_ph.groupby("geometry")["EinheitMastrNummer"].apply(list)
-
-    # remove duplicates by location
-    mastr_ph = mastr_ph.drop_duplicates(subset="geometry", keep="first").drop(
-        ["el_capacity", "EinheitMastrNummer"], axis=1
-    )
-
-    # Adjust capacity
-    mastr_ph = pd.merge(
-        left=mastr_ph, right=agg_cap, left_on="geometry", right_on="geometry"
-    )
-
-    # Adjust capacity
-    mastr_ph = pd.merge(
-        left=mastr_ph, right=agg_mastr, left_on="geometry", right_on="geometry"
-    )
-
-    # Drop small pp <= 03 kW
-    mastr_ph = mastr_ph.loc[mastr_ph["el_capacity"] > 30]
-
-    # Apply voltage level by capacity
-    mastr_ph = apply_voltage_level_thresholds(mastr_ph)
-    mastr_ph["voltage_level"] = mastr_ph["voltage_level"].astype(int)
-
-    # Capacity located outside germany -> will be assigned to foreign buses
-    mastr_ph_foreign = mastr_ph.loc[mastr_ph["federal_state"].isna()]
-
-    # Keep only capacities within germany
-    mastr_ph = mastr_ph.dropna(subset="federal_state")
-
-    # Asign buses within germany
-    mastr_ph = assign_bus_id(mastr_ph, cfg=config.datasets()["power_plants"])
-    mastr_ph["bus_id"] = mastr_ph["bus_id"].astype(int)
-
-    # Get foreign central buses
-    sql = f"""
-    SELECT * FROM grid.egon_etrago_bus
-    WHERE scn_name = '{scn_name}'
-    and country != 'DE'
-    """
-    df_foreign_buses = db.select_geodataframe(
-        sql, geom_col="geom", epsg="4326"
-    )
-    central_bus = entsoe_to_bus_etrago(scn_name).to_frame()
-    central_bus["geom"] = (
-        df_foreign_buses.set_index("bus_id").loc[central_bus[0], "geom"].values
-    )
-    df_foreign_buses = df_foreign_buses[
-        df_foreign_buses["geom"].isin(central_bus["geom"])
-    ]
-
-    # Assign closest bus at voltage level to foreign pp
-    nearest_neighbors = []
-    for vl, v_nom in {1: 380, 2: 220, 3: 110}.items():
-        ph = mastr_ph_foreign.loc[mastr_ph_foreign["voltage_level"] == vl]
-        if ph.empty:
-            continue
-        bus = df_foreign_buses.loc[
-            df_foreign_buses["v_nom"] == v_nom,
-            ["v_nom", "country", "bus_id", "geom"],
-        ]
-        results = gpd.sjoin_nearest(
-            left_df=ph, right_df=bus, how="left", distance_col="distance"
+    
+        # Identify pp without geocord
+        mastr_ph_nogeo = mastr_ph.loc[mastr_ph["Laengengrad"].isna()]
+    
+        # Remove all PP without geocord
+        mastr_ph = mastr_ph.dropna(subset="Laengengrad")
+    
+        # Get geometry of villages/cities with same name of pp with missing geocord
+        with session_scope() as session:
+            query = session.query(
+                Vg250GemClean.gen, Vg250GemClean.geometry
+            )
+            df_cities = gpd.read_postgis(
+                query.statement,
+                query.session.bind,
+                geom_col="geometry",
+                crs="3035",
+            )
+    
+        # Keep only useful cities
+        df_cities = df_cities[df_cities["gen"].isin(mastr_ph_nogeo["city"])]
+    
+        # Just take the first entry, inaccuracy is negligible as centroid is taken afterwards
+        df_cities = df_cities.drop_duplicates("gen", keep="first")
+    
+        # Use the centroid instead of polygon of region
+        df_cities.loc[:, "geometry"] = df_cities["geometry"].centroid
+    
+        # Change coordinate system
+        df_cities.to_crs("4326", inplace=True)
+    
+        # Add centroid geometry to pp without geometry
+        mastr_ph_nogeo = pd.merge(
+            left=df_cities,
+            right=mastr_ph_nogeo,
+            right_on="city",
+            left_on="gen",
+            suffixes=("", "_no-geo"),
+            how="inner",
+        ).drop("gen", axis=1)
+    
+        mastr_ph = pd.concat([mastr_ph, mastr_ph_nogeo], axis=0)
+    
+        # aggregate capacity per location
+        agg_cap = mastr_ph.groupby("geometry")["el_capacity"].sum()
+    
+        # list mastr number by location
+        agg_mastr = mastr_ph.groupby("geometry")["EinheitMastrNummer"].apply(list)
+    
+        # remove duplicates by location
+        mastr_ph = mastr_ph.drop_duplicates(subset="geometry", keep="first").drop(
+            ["el_capacity", "EinheitMastrNummer"], axis=1
         )
-        nearest_neighbors.append(results)
-    mastr_ph_foreign = pd.concat(nearest_neighbors)
-
-    # Merge foreign pp
-    mastr_ph = pd.concat([mastr_ph, mastr_ph_foreign])
-
-    # Reduce to necessary columns
-    mastr_ph = mastr_ph[
-        [
-            "el_capacity",
-            "voltage_level",
-            "bus_id",
-            "geometry",
-            "EinheitMastrNummer",
-        ]
-    ]
-
-    # Rename and format columns
-    mastr_ph["carrier"] = "pumped_hydro"
-    mastr_ph = mastr_ph.rename(
-        columns={"EinheitMastrNummer": "source_id", "geometry": "geom"}
-    )
-    mastr_ph["source_id"] = mastr_ph["source_id"].apply(
-        lambda x: {"MastrNummer": ", ".join(x)}
-    )
-    mastr_ph = mastr_ph.set_geometry("geom")
-    mastr_ph["geom"] = mastr_ph["geom"].apply(lambda x: x.wkb_hex)
-    mastr_ph["scenario"] = scn_name
-    mastr_ph["sources"] = [
-        {"el_capacity": "MaStR aggregated by location"}
-    ] * mastr_ph.shape[0]
-
-    # Delete existing units in the target table
-    db.execute_sql(
-        f""" DELETE FROM supply.egon_storages
-        WHERE carrier = 'pumped_hydro'
-        AND scenario= '{scn_name}';"""
-    )
-
-    with db.session_scope() as session:
-        session.bulk_insert_mappings(
-            EgonStorages,
-            mastr_ph.to_dict(orient="records"),
+    
+        # Adjust capacity
+        mastr_ph = pd.merge(
+            left=mastr_ph, right=agg_cap, left_on="geometry", right_on="geometry"
         )
+    
+        # Adjust capacity
+        mastr_ph = pd.merge(
+            left=mastr_ph, right=agg_mastr, left_on="geometry", right_on="geometry"
+        )
+    
+        # Drop small pp <= 30 kW
+        mastr_ph = mastr_ph.loc[mastr_ph["el_capacity"] > 0.03]
+    
+        # Apply voltage level by capacity
+        mastr_ph = apply_voltage_level_thresholds(mastr_ph)
+        mastr_ph["voltage_level"] = mastr_ph["voltage_level"].astype(int)
+    
+        # Capacity located outside germany -> will be assigned to foreign buses
+        mastr_ph_foreign = mastr_ph.loc[mastr_ph["federal_state"].isna()]
+    
+        # Keep only capacities within germany
+        mastr_ph = mastr_ph.dropna(subset="federal_state")
+    
+        # Asign buses within germany
+        mastr_ph = assign_bus_id(
+            mastr_ph, cfg=config.datasets()["power_plants"], drop_missing= True)
+        mastr_ph["bus_id"] = mastr_ph["bus_id"].astype(int)
+    
+        # Get foreign central buses
+        sql = f"""
+        SELECT * FROM grid.egon_etrago_bus
+        WHERE scn_name = '{scn_name}'
+        and country != 'DE'
+        """
+        df_foreign_buses = db.select_geodataframe(
+            sql, geom_col="geom", epsg="4326"
+        )
+        central_bus = entsoe_to_bus_etrago(scn_name).to_frame()
+        central_bus["geom"] = (
+            df_foreign_buses.set_index("bus_id").loc[central_bus[0], "geom"].values
+        )
+        df_foreign_buses = df_foreign_buses[
+            df_foreign_buses["geom"].isin(central_bus["geom"])
+        ]
+    
+        if len(mastr_ph_foreign) > 0:
+            # Assign closest bus at voltage level to foreign pp
+            nearest_neighbors = []
+            for vl, v_nom in {1: 380, 2: 220, 3: 110}.items():
+                ph = mastr_ph_foreign.loc[mastr_ph_foreign["voltage_level"] == vl]
+                if ph.empty:
+                    continue
+                bus = df_foreign_buses.loc[
+                    df_foreign_buses["v_nom"] == v_nom,
+                    ["v_nom", "country", "bus_id", "geom"],
+                ]
+                results = gpd.sjoin_nearest(
+                    left_df=ph, right_df=bus, how="left", distance_col="distance"
+                )
+                nearest_neighbors.append(results)
+            mastr_ph_foreign = pd.concat(nearest_neighbors)
+    
+            # Merge foreign pp
+            mastr_ph = pd.concat([mastr_ph, mastr_ph_foreign])
+    
+        # Reduce to necessary columns
+        mastr_ph = mastr_ph[
+            [
+                "el_capacity",
+                "voltage_level",
+                "bus_id",
+                "geometry",
+                "EinheitMastrNummer",
+            ]
+        ]
+    
+        # Rename and format columns
+        mastr_ph["carrier"] = storage_type
+        mastr_ph = mastr_ph.rename(
+            columns={"EinheitMastrNummer": "source_id", "geometry": "geom"}
+        )
+        mastr_ph["source_id"] = mastr_ph["source_id"].apply(
+            lambda x: {"MastrNummer": ", ".join(x)}
+        )
+        mastr_ph = mastr_ph.set_geometry("geom")
+        mastr_ph["geom"] = mastr_ph["geom"].apply(lambda x: x.wkb_hex)
+        mastr_ph["scenario"] = scn_name
+        mastr_ph["sources"] = [
+            {"el_capacity": "MaStR aggregated by location"}
+        ] * mastr_ph.shape[0]
+    
+        # Delete existing units in the target table
+        db.execute_sql(
+            f""" DELETE FROM supply.egon_storages
+            WHERE carrier = '{storage_type}'
+            AND scenario= '{scn_name}';"""
+        )
+    
+        with db.session_scope() as session:
+            session.bulk_insert_mappings(
+                EgonStorages,
+                mastr_ph.to_dict(orient="records"),
+            )
 
 
 def allocate_pumped_hydro_eGon100RE():
