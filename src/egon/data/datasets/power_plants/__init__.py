@@ -1156,6 +1156,7 @@ def power_plants_status_quo(scn_name="status2019"):
             "Speicherwasseranlage": "reservoir",
         }
     )
+    hydro["scenario"] = scn_name
 
     # Write into DB
     with db.session_scope() as session:
