@@ -53,12 +53,13 @@ class Storages(Dataset):
     def __init__(self, dependencies):
         super().__init__(
             name="Storages",
-            version="0.0.6",
+            version="0.0.7",
             dependencies=dependencies,
             tasks=(
                 create_tables,
                 allocate_pumped_hydro_scn,
                 allocate_pv_home_batteries_to_grids,
+                allocate_other_storage_units,
                 # allocate_home_batteries_to_buildings,
             ),
         )
@@ -691,7 +692,13 @@ def allocate_pumped_hydro_scn():
         allocate_pumped_hydro(scn="eGon2035")
 
     if "status2019" in config.settings()["egon-data"]["--scenarios"]:
-        allocate_pumped_hydro_sq(scn_name="status2019")
+        allocate_storage_units_sq(scn_name="status2019",
+                                  storage_types = ["pumped_hydro"])
 
     if "eGon100RE" in config.settings()["egon-data"]["--scenarios"]:
         allocate_pumped_hydro_eGon100RE()
+
+def allocate_other_storage_units():
+    if "status2019" in config.settings()["egon-data"]["--scenarios"]:
+        allocate_storage_units_sq(scn_name="status2019",
+                                  storage_types = ["battery"])
