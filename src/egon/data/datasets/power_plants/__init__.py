@@ -1005,7 +1005,7 @@ def get_conventional_power_plants_non_chp(scn_name):
         columns={
             "EinheitMastrNummer": "gens_id",
             "Energietraeger": "carrier",
-            "Nettonennleistung": "capacity",
+            "Nettonennleistung": "el_capacity",
             "Gemeinde": "location",
         },
         inplace=True,
@@ -1022,7 +1022,7 @@ def get_conventional_power_plants_non_chp(scn_name):
     # assign voltage level by capacity
     conv["voltage_level"] = np.nan
     conv["voltage_level"] = assign_voltage_level_by_capacity(
-        conv.rename(columns={"capacity": "Nettonennleistung"})
+        conv.rename(columns={"el_capacity": "Nettonennleistung"})
     )
     # Add further information
     conv["sources"] = [{"el_capacity": "MaStR"}] * conv.shape[0]
@@ -1085,10 +1085,9 @@ def power_plants_status_quo(scn_name="status2019"):
         logger.info(
             f"""
             {len(df)} {tech} generators with a total installed capacity of
-            {int(df.capacity.sum())} MW were inserted into the db
+            {int(df["el_capacity"].sum())} MW were inserted into the db
               """
         )
-
 
     con = db.engine()
     cfg = egon.data.config.datasets()["power_plants"]
@@ -1157,6 +1156,7 @@ def power_plants_status_quo(scn_name="status2019"):
         }
     )
     hydro["scenario"] = scn_name
+    hydro = hydro.rename(columns={"capacity": "el_capacity"})
 
     # Write into DB
     with db.session_scope() as session:
@@ -1185,6 +1185,7 @@ def power_plants_status_quo(scn_name="status2019"):
     biomass["scenario"] = scn_name
     biomass["carrier"] = "biomass"
     biomass = biomass.rename(columns={"capacity": "el_capacity"})
+    biomass = biomass.drop(columns="id")
 
     # Write into DB
     with db.session_scope() as session:
