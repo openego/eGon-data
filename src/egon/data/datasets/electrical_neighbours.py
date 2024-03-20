@@ -1823,7 +1823,7 @@ if "eGon2035" in config.settings()["egon-data"]["--scenarios"]:
 
 if "status2019" in config.settings()["egon-data"]["--scenarios"]:
     insert_per_scenario.update(
-        [insert_generators_sq, insert_generators_sq, insert_loads_sq]
+        [insert_generators_sq, insert_storage_units_sq, insert_loads_sq]
     )
 
 tasks = tasks + (insert_per_scenario,)
