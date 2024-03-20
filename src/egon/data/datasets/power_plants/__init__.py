@@ -1158,6 +1158,7 @@ def power_plants_status_quo(scn_name="status2019"):
     )
     hydro["scenario"] = scn_name
     hydro = hydro.rename(columns={"capacity": "el_capacity"})
+    hydro = hydro.drop(columns="id")
 
     # Write into DB
     with db.session_scope() as session:
