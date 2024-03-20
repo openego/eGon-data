@@ -529,7 +529,8 @@ def allocate_storage_units_sq(scn_name, storage_types):
         db.execute_sql(
             f""" DELETE FROM supply.egon_storages
             WHERE carrier = '{storage_type}'
-            AND scenario= '{scn_name}';"""
+            AND scenario = '{scn_name}'
+            AND sources ->> 'el_capacity' = 'MaStR aggregated by location';"""
         )
 
         with db.session_scope() as session:
