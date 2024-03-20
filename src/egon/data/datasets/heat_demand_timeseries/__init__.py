@@ -1075,7 +1075,7 @@ class HeatTimeSeries(Dataset):
     def __init__(self, dependencies):
         super().__init__(
             name="HeatTimeSeries",
-            version="0.0.7",
+            version="0.0.8",
             dependencies=dependencies,
             tasks=(
                 {
