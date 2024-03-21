@@ -58,8 +58,8 @@ class Storages(Dataset):
             tasks=(
                 create_tables,
                 allocate_pumped_hydro_scn,
-                allocate_pv_home_batteries_to_grids,
                 allocate_other_storage_units,
+                # allocate_pv_home_batteries_to_grids,
                 # allocate_home_batteries_to_buildings,
             ),
         )
