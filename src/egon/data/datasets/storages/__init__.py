@@ -348,7 +348,11 @@ def allocate_storage_units_sq(scn_name, storage_types):
             mastr_ph["decommissioning_date"] > scenario_date_max,
             "EinheitBetriebsstatus",
         ] = "InBetrieb"
-        mastr_ph = mastr_ph.loc[mastr_ph.EinheitBetriebsstatus == "InBetrieb"]
+        mastr_ph = mastr_ph.loc[
+            mastr_ph.EinheitBetriebsstatus.isin(
+                ["InBetrieb", "VoruebergehendStillgelegt"]
+            )
+        ]
 
         # Select only storage units installed before scenario_date_max
         mastr_ph = mastr_ph[
