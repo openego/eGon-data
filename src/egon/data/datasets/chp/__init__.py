@@ -695,5 +695,5 @@ if extension != set():
 class Chp(Dataset):
     def __init__(self, dependencies):
         super().__init__(
-            name="Chp", version="0.0.8", dependencies=dependencies, tasks=tasks
+            name="Chp", version="0.0.9", dependencies=dependencies, tasks=tasks
         )
