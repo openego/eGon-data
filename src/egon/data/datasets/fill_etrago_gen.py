@@ -235,10 +235,10 @@ def numpy_nan(data):
 
 
 def power_timeser(weather_data):
-    if len(set(weather_data)) <= 1:
-        return weather_data.iloc[0]
-    else:
+    if weather_data.isna().any():
         return -1
+    else:
+        return weather_data.iloc[0]
 
 
 def adjust_renew_feedin_table(renew_feedin, cfg):

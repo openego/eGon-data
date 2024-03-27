@@ -322,6 +322,12 @@ def insert_chp_statusquo(scn="status2019"):
         WORKING_DIR_MASTR_NEW / "bnetza_mastr_combustion_cleaned.csv"
     )
 
+    mastr_biomass = pd.read_csv(
+        WORKING_DIR_MASTR_NEW / "bnetza_mastr_biomass_cleaned.csv"
+    )
+
+    mastr = pd.concat([mastr, mastr_biomass]).reset_index(drop=True)
+
     mastr = mastr.loc[mastr.ThermischeNutzleistung > 0]
 
     mastr = mastr.loc[
@@ -333,6 +339,7 @@ def insert_chp_statusquo(scn="status2019"):
                 "nicht biogener Abfall",
                 "Braunkohle",
                 "Steinkohle",
+                "Biomasse",
             ]
         )
     ]
