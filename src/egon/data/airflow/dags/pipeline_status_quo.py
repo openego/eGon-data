@@ -426,8 +426,8 @@ with airflow.DAG(
     )
 
 
-    # Pumped hydro units
-    pumped_hydro = Storages(
+    # Pumped hydro and home storage units
+    storage_units = Storages(
         dependencies=[
             mastr_data,
             mv_grid_districts,
@@ -435,6 +435,7 @@ with airflow.DAG(
             scenario_parameters,
             setup,
             vg250_mv_grid_districts,
+            fill_etrago_generators,
         ]
     )
 
@@ -476,7 +477,7 @@ with airflow.DAG(
 
     # Storages to eTraGo
     storage_etrago = StorageEtrago(
-        dependencies=[pumped_hydro, scenario_parameters, setup_etrago]
+        dependencies=[storage_units, scenario_parameters, setup_etrago]
     )
 
     # eMobility: motorized individual travel TODO: adjust for SQ
