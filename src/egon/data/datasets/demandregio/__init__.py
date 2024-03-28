@@ -897,14 +897,12 @@ def timeseries_per_wz():
     None.
 
     """
-    # TODO: make it work for more than 1 year? This would require an additional
-    # column in the table demand.egon_demandregio_wz
-    scenario = egon.data.config.settings()["egon-data"]["--scenarios"]
-    year = scenario[0][-4:]
-
-    for sector in ["CTS", "industry"]:
-        insert_timeseries_per_wz(sector, int(year))
-
+    scenarios = egon.data.config.settings()["egon-data"]["--scenarios"]
+    for scn in scenarios:
+        year = int(scenario_parameters.global_settings(scn)["weather_year"])
+        print (year)
+        for sector in ["CTS", "industry"]:
+            insert_timeseries_per_wz(sector, int(year))
 
 def get_cached_tables():
     """Get cached demandregio tables and db-dump from former runs"""
