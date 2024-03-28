@@ -51,7 +51,8 @@ def calc_load_curve(share_wz, annual_demand=1):
         Annual load curve of combindes cts branches
 
     """
-    year = 2011
+    scenario = egon.data.config.settings()["egon-data"]["--scenarios"]
+    year = int(scenario[0][-4:])
 
     sources = egon.data.config.datasets()["electrical_load_curves_cts"][
         "sources"
