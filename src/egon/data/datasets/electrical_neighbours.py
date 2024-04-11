@@ -1490,11 +1490,11 @@ def insert_storage_units_sq(scn_name="status2019"):
     None.
 
     """
-    year = scn_name[-4:]
+    year = int(get_sector_parameters("global", scn_name)["weather_year"])
     try:
         sto_sq = entsoe_historic_generation_capacities()
     except:
-        if year == "2019":
+        if year == 2019:
             logging.warning(
                 """Generation data from entsoe could not be retrieved.
                             Backup data is used instead"""

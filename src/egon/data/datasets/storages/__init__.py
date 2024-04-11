@@ -13,6 +13,7 @@ import pandas as pd
 
 from egon.data import config, db
 from egon.data.datasets import Dataset
+from egon.data.datasets.scenario_parameters import get_sector_parameters
 from egon.data.datasets.electrical_neighbours import entsoe_to_bus_etrago
 from egon.data.datasets.mastr import (
     WORKING_DIR_MASTR_NEW,
@@ -294,7 +295,8 @@ def allocate_storage_units_sq(scn_name, storage_types):
 
     """
     sources = config.datasets()["power_plants"]["sources"]
-    scenario_date_max = scn_name[-4:] + "-12-31 23:59:00"
+    scn_parameters = get_sector_parameters("global", scn_name)
+    scenario_date_max = str(scn_parameters["weather_year"]) + "-12-31 23:59:00"
 
     map_storage = {
         "battery": "Batterie",
