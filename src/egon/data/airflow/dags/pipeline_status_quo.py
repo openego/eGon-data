@@ -284,6 +284,8 @@ with airflow.DAG(
             cts_electricity_demand_annual,
             demand_curves_industry,
             hh_demand_buildings_setup,
+            household_electricity_demand_annual,
+            hh_demand_profiles_setup,
         ]
     )
 
@@ -366,11 +368,6 @@ with airflow.DAG(
 
     # Import gas production
     gas_production_insert_data = CH4Production(
-        dependencies=[create_gas_polygons_status2019]
-    )
-
-    # Import CH4 storages
-    insert_data_ch4_storages = CH4Storages(
         dependencies=[create_gas_polygons_status2019]
     )
 
@@ -495,7 +492,6 @@ with airflow.DAG(
             fill_etrago_generators,
             create_ocgt,
             gas_production_insert_data,
-            insert_data_ch4_storages,
         ]
     )
 

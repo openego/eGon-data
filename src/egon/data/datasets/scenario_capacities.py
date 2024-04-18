@@ -442,6 +442,7 @@ def map_carrier():
             "Kernenergie": "nuclear",
             "Pumpspeicher": "pumped_hydro",
             "Mineralöl-\nProdukte": "oil",
+            "Biomasse": "biomass",
         }
     )
 
