@@ -90,9 +90,21 @@ map_zensus_vg250:
 demandregio_installation:
   sources:
     git-repository: "https://github.com/openego/disaggregator.git"
-    branch: "features/pandas-update"
+    branch: "features/pandas-update-plus-master"
   targets:
     path: 'demandregio-disaggregator'
+
+demandregio_workaround:
+  source:
+    cache:
+      url: "https://tubcloud.tu-berlin.de/s/dKqF6wKJnLRyDws/download/cache.zip"
+    dbdump:
+      url: "https://tubcloud.tu-berlin.de/s/ktaxyo8kSTK8w3f/download/status2019-egon-demandregio-cts-ind.zip"
+  targets:
+    cache:
+      path: 'demandregio-disaggregator/disaggregator/disaggregator/data_in/'
+    dbdump:
+      path: "demandregio_dbdump"
 
 demandregio_society:
   sources:
@@ -127,6 +139,9 @@ demandregio_household_demand:
     household_demand:
       schema: 'demand'
       table: 'egon_demandregio_hh'
+    household_demand_load_profiles:
+      schema: 'demand'
+      table: 'demandregio_household_load_profiles'
 
 demandregio_cts_ind_demand:
   sources:

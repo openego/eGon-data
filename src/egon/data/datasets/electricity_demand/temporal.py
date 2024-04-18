@@ -10,6 +10,8 @@ from egon.data import db
 from sqlalchemy import ARRAY, Column, Float, Integer, String
 from sqlalchemy.ext.declarative import declarative_base
 
+import egon.data.datasets.scenario_parameters.parameters as scenario_parameters
+
 Base = declarative_base()
 
 
@@ -35,13 +37,15 @@ def create_table():
     EgonEtragoElectricityCts.__table__.create(bind=engine, checkfirst=True)
 
 
-def calc_load_curve(share_wz, annual_demand=1):
+def calc_load_curve(share_wz, scn, annual_demand=1):
     """Create aggregated demand curve for service sector
 
     Parameters
     ----------
     share_wz : pandas.Series or pandas.DataFrame
         Share of annual demand per cts branch
+    scn : str
+        Scenario name
     annual_demand : float or pandas.Series, optional
         Annual demand in MWh. The default is 1.
 
@@ -51,7 +55,7 @@ def calc_load_curve(share_wz, annual_demand=1):
         Annual load curve of combindes cts branches
 
     """
-    year = 2011
+    year = int(scenario_parameters.global_settings(scn)["weather_year"])
 
     sources = egon.data.config.datasets()["electrical_load_curves_cts"][
         "sources"
@@ -198,7 +202,7 @@ def calc_load_curves_cts(scenario):
     annual_demand_subst = demands_zensus.groupby("bus_id").demand.sum()
 
     # Return electrical load curves per hvmv substation
-    return calc_load_curve(share_subst, annual_demand_subst)
+    return calc_load_curve(share_subst, scenario, annual_demand_subst)
 
 
 def insert_cts_load():

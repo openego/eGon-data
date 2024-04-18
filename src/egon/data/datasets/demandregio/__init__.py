@@ -2,14 +2,17 @@
 adjusting data from demandRegio
 
 """
+
 from pathlib import Path
+import os
+import zipfile
 
 from sqlalchemy import ARRAY, Column, Float, ForeignKey, Integer, String
 from sqlalchemy.ext.declarative import declarative_base
 import numpy as np
 import pandas as pd
 
-from egon.data import db
+from egon.data import db, logger
 from egon.data.datasets import Dataset
 from egon.data.datasets.demandregio.install_disaggregator import (
     clone_and_install,
@@ -18,11 +21,12 @@ from egon.data.datasets.scenario_parameters import (
     EgonScenario,
     get_sector_parameters,
 )
+from egon.data.datasets.zensus import download_and_check
 import egon.data.config
 import egon.data.datasets.scenario_parameters.parameters as scenario_parameters
 
 try:
-    from disaggregator import config, data, spatial
+    from disaggregator import config, data, spatial, temporal
 
 except ImportError as e:
     pass
@@ -35,10 +39,11 @@ class DemandRegio(Dataset):
     def __init__(self, dependencies):
         super().__init__(
             name="DemandRegio",
-            version="0.0.6",
+            version="0.0.7",
             dependencies=dependencies,
             tasks=(
-                clone_and_install,
+                # clone_and_install, demandregio must be previously installed
+                get_cached_tables,  # adhoc workaround #180
                 create_tables,
                 {
                     insert_household_demand,
@@ -47,6 +52,16 @@ class DemandRegio(Dataset):
                 },
             ),
         )
+
+
+class DemandRegioLoadProfiles(Base):
+    __tablename__ = "demandregio_household_load_profiles"
+    __table_args__ = {"schema": "demand"}
+
+    id = Column(Integer, primary_key=True)
+    year = Column(Integer)
+    nuts3 = Column(String)
+    load_in_mwh = Column(ARRAY(Float()))
 
 
 class EgonDemandRegioHH(Base):
@@ -117,6 +132,7 @@ def create_tables():
     EgonDemandRegioPopulation.__table__.create(bind=engine, checkfirst=True)
     EgonDemandRegioHouseholds.__table__.create(bind=engine, checkfirst=True)
     EgonDemandRegioWz.__table__.create(bind=engine, checkfirst=True)
+    DemandRegioLoadProfiles.__table__.create(bind=db.engine(), checkfirst=True)
     EgonDemandRegioTimeseriesCtsInd.__table__.drop(
         bind=engine, checkfirst=True
     )
@@ -472,6 +488,69 @@ def disagg_households_power(
     return df
 
 
+def write_demandregio_hh_profiles_to_db(hh_profiles, year):
+    """Write HH demand profiles from demand regio into db. One row per
+    year and nuts3. The annual load profile timeseries is an array.
+
+    schema: demand
+    tablename: demandregio_household_load_profiles
+
+
+
+    Parameters
+    ----------
+    hh_profiles: pd.DataFrame
+    year: int
+
+    Returns
+    -------
+    """
+    df_to_db = pd.DataFrame(
+        columns=["id", "year", "nuts3", "load_in_mwh"]
+    ).set_index("id")
+    dataset = egon.data.config.settings()["egon-data"]["--dataset-boundary"]
+
+    if dataset == "Schleswig-Holstein":
+        hh_profiles = hh_profiles.loc[
+            :, hh_profiles.columns.str.contains("DEF0")
+        ]
+
+    id = pd.read_sql_query(
+        f"""
+                           SELECT MAX(id)
+                           FROM {DemandRegioLoadProfiles.__table__.schema}.
+                           {DemandRegioLoadProfiles.__table__.name}
+                           """,
+        con=db.engine(),
+    ).iat[0, 0]
+
+    if id is None:
+        id = 0
+    else:
+        id = id + 1
+
+    for nuts3 in hh_profiles.columns:
+        id += 1
+        df_to_db.at[id, "year"] = year
+        df_to_db.at[id, "nuts3"] = nuts3
+        df_to_db.at[id, "load_in_mwh"] = hh_profiles[nuts3].to_list()
+
+    df_to_db["year"] = df_to_db["year"].apply(int)
+    df_to_db["nuts3"] = df_to_db["nuts3"].astype(str)
+    df_to_db["load_in_mwh"] = df_to_db["load_in_mwh"].apply(list)
+    df_to_db = df_to_db.reset_index()
+
+    df_to_db.to_sql(
+        name=DemandRegioLoadProfiles.__table__.name,
+        schema=DemandRegioLoadProfiles.__table__.schema,
+        con=db.engine(),
+        if_exists="append",
+        index=-False,
+    )
+
+    return
+
+
 def insert_hh_demand(scenario, year, engine):
     """Calculates electrical demands of private households using demandregio's
     disaggregator and insert results into the database.
@@ -510,6 +589,23 @@ def insert_hh_demand(scenario, year, engine):
             schema=targets["schema"],
             if_exists="append",
         )
+
+    # insert housholds demand timeseries
+    hh_load_timeseries = (
+        temporal.disagg_temporal_power_housholds_slp(
+            use_nuts3code=True,
+            by="households",
+            weight_by_income=False,
+            year=year,
+        )
+        .resample("h")
+        .sum()
+    )
+    hh_load_timeseries.rename(
+        columns={"DEB16": "DEB1C", "DEB19": "DEB1D"}, inplace=True
+    )
+
+    write_demandregio_hh_profiles_to_db(hh_load_timeseries, year)
 
 
 def insert_cts_ind(scenario, year, engine, target_values):
@@ -801,9 +897,25 @@ def timeseries_per_wz():
     None.
 
     """
-
-    years = get_sector_parameters("global").weather_year.unique()
-
-    for year in years:
+    scenarios = egon.data.config.settings()["egon-data"]["--scenarios"]
+    for scn in scenarios:
+        year = int(scenario_parameters.global_settings(scn)["weather_year"])
+        print(year)
         for sector in ["CTS", "industry"]:
             insert_timeseries_per_wz(sector, int(year))
+
+def get_cached_tables():
+    """Get cached demandregio tables and db-dump from former runs"""
+    data_config = egon.data.config.datasets()
+    for s in ["cache", "dbdump"]:
+        url = data_config["demandregio_workaround"]["source"][s]["url"]
+        target_path = data_config["demandregio_workaround"]["targets"][s][
+            "path"
+        ]
+        filename = os.path.basename(url)
+        file_path = Path(".", target_path, filename).resolve()
+        os.makedirs(file_path.parent, exist_ok=True)
+        logger.info(f"Downloading: {filename} from {url}.")
+        download_and_check(url, file_path, max_iteration=5)
+        with zipfile.ZipFile(file_path, "r") as zip_ref:
+            zip_ref.extractall(file_path.parent)
