@@ -900,7 +900,7 @@ def timeseries_per_wz():
     scenarios = egon.data.config.settings()["egon-data"]["--scenarios"]
     for scn in scenarios:
         year = int(scenario_parameters.global_settings(scn)["weather_year"])
-        print (year)
+        print(year)
         for sector in ["CTS", "industry"]:
             insert_timeseries_per_wz(sector, int(year))
 
