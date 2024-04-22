@@ -1,5 +1,6 @@
 """The central module containing all code dealing with power plant data.
 """
+
 from geoalchemy2 import Geometry
 from pathlib import Path
 from shapely.geometry import Point
@@ -13,7 +14,7 @@ import logging
 import pandas as pd
 
 from egon.data import db
-from egon.data.datasets import Dataset
+from egon.data.datasets import Dataset, wrapped_partial
 from egon.data.datasets.mastr import (
     WORKING_DIR_MASTR_NEW,
     WORKING_DIR_MASTR_OLD,
@@ -908,6 +909,7 @@ def power_plants_status_quo(scn_name="status2019"):
     con = db.engine()
     session = sessionmaker(bind=db.engine())()
     cfg = egon.data.config.datasets()["power_plants"]
+    scenario_date_max = f"{scn_name[-4:]}-12-31 23:59:00"
     db.execute_sql(
         f"""
         DELETE FROM {cfg['target']['schema']}.{cfg['target']['table']}
@@ -964,9 +966,11 @@ def power_plants_status_quo(scn_name="status2019"):
         # assign missing geometries based on location and buses based on geom
 
         gens["geom"] = gens.apply(
-            lambda x: geom_municipalities.at[x["location"], "geom"]
-            if x["geom"].is_empty
-            else x["geom"],
+            lambda x: (
+                geom_municipalities.at[x["location"], "geom"]
+                if x["geom"].is_empty
+                else x["geom"]
+            ),
             axis=1,
         )
         gens["bus_id"] = gens.sjoin(
@@ -979,6 +983,29 @@ def power_plants_status_quo(scn_name="status2019"):
 
         return gens
 
+    def discard_not_available_generators(gen, max_date):
+        gen["decommissioning_date"] = pd.to_datetime(
+            gen["decommissioning_date"]
+        )
+        gen["commissioning_date"] = pd.to_datetime(gen["commissioning_date"])
+        # drop plants that are commissioned after the max date
+        gen = gen[gen["commissioning_date"] < max_date]
+
+        # drop decommissioned plants while keeping the ones decommissioned
+        # after the max date
+        gen.loc[(gen["decommissioning_date"] > max_date), "status"] = (
+            "InBetrieb"
+        )
+
+        gen = gen.loc[
+            gen["status"].isin(["InBetrieb", "VoruebergehendStillgelegt"])
+        ]
+
+        # drop unnecessary columns
+        gen = gen.drop(columns=["commissioning_date", "decommissioning_date"])
+
+        return gen
+
     # Write conventional power plants in supply.egon_power_plants
     common_columns = [
         "EinheitMastrNummer",
@@ -988,6 +1015,8 @@ def power_plants_status_quo(scn_name="status2019"):
         "Breitengrad",
         "Gemeinde",
         "Inbetriebnahmedatum",
+        "EinheitBetriebsstatus",
+        "DatumEndgueltigeStilllegung",
     ]
     # import nuclear power plants
     nuclear = pd.read_csv(
@@ -1014,33 +1043,11 @@ def power_plants_status_quo(scn_name="status2019"):
         )
     ]
 
-    # convert from KW to MW
-    conv["Nettonennleistung"] = conv["Nettonennleistung"] / 1000
-    # drop generators installed after 2019
-    conv["Inbetriebnahmedatum"] = pd.to_datetime(conv["Inbetriebnahmedatum"])
-    conv = conv[
-        conv["Inbetriebnahmedatum"]
-        < egon.data.config.datasets()["mastr_new"]["status2019_date_max"]
-    ]
-
-    # drop chp generators
-    conv["ThermischeNutzleistung"] = conv["ThermischeNutzleistung"].fillna(0)
-    conv = conv[conv.ThermischeNutzleistung == 0]
-
-    # rename carriers
-    conv.loc[conv.Energietraeger == "Braunkohle", "Energietraeger"] = "lignite"
-    conv.loc[conv.Energietraeger == "Steinkohle", "Energietraeger"] = "coal"
-    conv.loc[conv.Energietraeger == "Erdgas", "Energietraeger"] = "gas"
-    conv.loc[
-        conv.Energietraeger == "Mineralölprodukte", "Energietraeger"
-    ] = "oil"
-    conv.loc[
-        conv.Energietraeger == "Kernenergie", "Energietraeger"
-    ] = "nuclear"
-
-    # rename columns
     conv.rename(
         columns={
+            "Inbetriebnahmedatum": "commissioning_date",
+            "EinheitBetriebsstatus": "status",
+            "DatumEndgueltigeStilllegung": "decommissioning_date",
             "EinheitMastrNummer": "gens_id",
             "Energietraeger": "carrier",
             "Nettonennleistung": "capacity",
@@ -1048,14 +1055,34 @@ def power_plants_status_quo(scn_name="status2019"):
         },
         inplace=True,
     )
+
+    conv = discard_not_available_generators(conv, scenario_date_max)
+
+    # convert from KW to MW
+    conv["capacity"] = conv["capacity"] / 1000
+
+    # drop chp generators
+    conv["ThermischeNutzleistung"] = conv["ThermischeNutzleistung"].fillna(0)
+    conv = conv[conv.ThermischeNutzleistung == 0]
+
+    # rename carriers
+    map_carrier_conv = {
+        "Braunkohle": "lignite",
+        "Steinkohle": "coal",
+        "Erdgas": "gas",
+        "Mineralölprodukte": "oil",
+        "Kernenergie": "nuclear",
+    }
+    conv["carrier"] = conv["carrier"].map(map_carrier_conv)
+
     conv["bus_id"] = np.nan
 
     conv["geom"] = gpd.points_from_xy(
         conv.Laengengrad, conv.Breitengrad, crs=4326
     )
-    conv.loc[
-        (conv.Laengengrad.isna() | conv.Breitengrad.isna()), "geom"
-    ] = Point()
+    conv.loc[(conv.Laengengrad.isna() | conv.Breitengrad.isna()), "geom"] = (
+        Point()
+    )
     conv = gpd.GeoDataFrame(conv, geometry="geom")
 
     conv = fill_missing_bus_and_geom(conv, carrier="conventional")
@@ -1098,7 +1125,7 @@ def power_plants_status_quo(scn_name="status2019"):
         con,
         geom_col="geom",
     )
-
+    hydro = discard_not_available_generators(hydro, scenario_date_max)
     hydro = fill_missing_bus_and_geom(hydro, carrier="hydro")
 
     for i, row in hydro.iterrows():
@@ -1133,6 +1160,7 @@ def power_plants_status_quo(scn_name="status2019"):
     biomass["th_capacity"] = biomass["th_capacity"].fillna(0)
     biomass = biomass[biomass.th_capacity == 0]
 
+    biomass = discard_not_available_generators(biomass, scenario_date_max)
     biomass = fill_missing_bus_and_geom(biomass, carrier="biomass")
 
     for i, row in biomass.iterrows():
@@ -1170,6 +1198,7 @@ def power_plants_status_quo(scn_name="status2019"):
     }
     solar["site_type"] = solar["site_type"].map(map_solar)
 
+    solar = discard_not_available_generators(solar, scenario_date_max)
     solar = fill_missing_bus_and_geom(solar, carrier="solar")
 
     solar = pd.DataFrame(solar, index=solar.index)
@@ -1201,6 +1230,9 @@ def power_plants_status_quo(scn_name="status2019"):
         geom_col="geom",
     )
 
+    wind_onshore = discard_not_available_generators(
+        wind_onshore, scenario_date_max
+    )
     wind_onshore = fill_missing_bus_and_geom(
         wind_onshore, carrier="wind_onshore"
     )
@@ -1256,15 +1288,19 @@ tasks = tasks + (
     geocode_mastr_data,
     pv_rooftop_to_buildings,
     wind_offshore.insert,
-    assign_weather_data.weatherId_and_busId,
 )
+
+for scn_name in egon.data.config.settings()["egon-data"]["--scenarios"]:
+    tasks += (wrapped_partial(assign_weather_data.weatherId_and_busId,
+                              scn_name=scn_name,
+                              postfix=f"_{scn_name}"),)
 
 
 class PowerPlants(Dataset):
     def __init__(self, dependencies):
         super().__init__(
             name="PowerPlants",
-            version="0.0.22",
+            version="0.0.26",
             dependencies=dependencies,
             tasks=tasks,
         )

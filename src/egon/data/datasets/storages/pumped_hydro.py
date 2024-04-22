@@ -356,7 +356,7 @@ def apply_voltage_level_thresholds(power_plants):
     # will be overwritten
 
     power_plants.loc[power_plants["el_capacity"] < 0.1, "voltage_level"] = 7
-    power_plants.loc[power_plants["el_capacity"] > 0.1, "voltage_level"] = 6
+    power_plants.loc[power_plants["el_capacity"] >= 0.1, "voltage_level"] = 6
     power_plants.loc[power_plants["el_capacity"] > 0.2, "voltage_level"] = 5
     power_plants.loc[power_plants["el_capacity"] > 5.5, "voltage_level"] = 4
     power_plants.loc[power_plants["el_capacity"] > 20, "voltage_level"] = 3

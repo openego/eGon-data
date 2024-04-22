@@ -12,7 +12,7 @@ class Egon_etrago_gen(Dataset):
     def __init__(self, dependencies):
         super().__init__(
             name="etrago_generators",
-            version="0.0.9",
+            version="0.0.10",
             dependencies=dependencies,
             tasks=(fill_etrago_generators,),
         )
@@ -104,12 +104,7 @@ def add_marginal_costs(power_plants):
         for carrier in pp_scn.carrier.unique():
             if carrier not in (marginal_costs.index):
                 warning.append(carrier)
-                marginal_costs = pd.concat(
-                    [
-                        marginal_costs,
-                        pd.Series(name=carrier, data={"marginal_cost": 0}),
-                    ]
-                )
+                marginal_costs.at[carrier, "marginal_cost"] = 0
         if warning:
             print(
                 f"""There are not marginal_cost values for: \n{warning}
@@ -240,10 +235,10 @@ def numpy_nan(data):
 
 
 def power_timeser(weather_data):
-    if len(set(weather_data)) <= 1:
-        return weather_data.iloc[0]
-    else:
+    if weather_data.isna().any():
         return -1
+    else:
+        return weather_data.iloc[0]
 
 
 def adjust_renew_feedin_table(renew_feedin, cfg):

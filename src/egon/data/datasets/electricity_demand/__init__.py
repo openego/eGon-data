@@ -227,11 +227,10 @@ def distribute_cts_demands():
         peta["nuts3"] = map_nuts3.nuts3
 
         # Calculate share of nuts3 heat demand per zensus cell
-        peta["share"] = (
-            peta.heat_demand.groupby(peta.nuts3)
-            .apply(lambda grp: grp / grp.sum())
-            .values
-        )
+        for nuts3, df in peta.groupby("nuts3"):
+            peta.loc[df.index, "share"] = (
+                df["heat_demand"] / df["heat_demand"].sum()
+            )
 
         # Select forecasted electrical demands from demandregio table
         demand_nuts3 = db.select_dataframe(
