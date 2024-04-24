@@ -312,15 +312,17 @@ def insert():
         offshore = gpd.GeoDataFrame(offshore, geometry="geom", crs=4326)
 
         # Look for the maximum id in the table egon_power_plants
-        next_id = (
-            db.select_dataframe(
+        next_id = db.select_dataframe(
                 "SELECT MAX(id) FROM "
                 + cfg["target"]["schema"]
                 + "."
                 + cfg["target"]["table"]
-            ).iloc[0, 0]
-            + 1
-        )
+                ).iloc[0, 0]
+
+        if next_id:
+            next_id+=1
+        else:
+            next_id = 1
 
         # Reset index
         offshore.index = pd.RangeIndex(
