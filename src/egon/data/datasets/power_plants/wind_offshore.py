@@ -277,7 +277,7 @@ def insert():
                     WHERE scenario_name = 'eGon100RE' AND
                     carrier = 'wind_offshore'
                     """
-            ).iloc[0,0]
+            ).iloc[0, 0]
 
             # Scale capacities to match  target
             scale_factor = cap_100RE / offshore.el_capacity.sum()
@@ -313,14 +313,14 @@ def insert():
 
         # Look for the maximum id in the table egon_power_plants
         next_id = db.select_dataframe(
-                "SELECT MAX(id) FROM "
-                + cfg["target"]["schema"]
-                + "."
-                + cfg["target"]["table"]
-                ).iloc[0, 0]
+            "SELECT MAX(id) FROM "
+            + cfg["target"]["schema"]
+            + "."
+            + cfg["target"]["table"]
+        ).iloc[0, 0]
 
         if next_id:
-            next_id+=1
+            next_id += 1
         else:
             next_id = 1
 
