@@ -627,10 +627,20 @@ def insert_cts_ind(scenario, year, engine, target_values):
     None.
 
     """
-
     targets = egon.data.config.datasets()["demandregio_cts_ind_demand"][
         "targets"
     ]
+
+    if scenario == "eGon100RE":
+        ec_cts_ind2 = pd.read_csv("/home/carlos/Documents/PowerD/eGon100RE/egon_demandregio_cts_ind.csv")
+        ec_cts_ind2.to_sql(
+            targets["cts_ind_demand"]["table"],
+            engine,
+            targets["cts_ind_demand"]["schema"],
+            if_exists="append",
+            index=False,
+        )
+        return
 
     for sector in ["CTS", "industry"]:
         # get demands per nuts3 and wz of demandregio
@@ -900,7 +910,6 @@ def timeseries_per_wz():
     scenarios = egon.data.config.settings()["egon-data"]["--scenarios"]
     for scn in scenarios:
         year = int(scenario_parameters.global_settings(scn)["weather_year"])
-        print(year)
         for sector in ["CTS", "industry"]:
             insert_timeseries_per_wz(sector, int(year))
 
