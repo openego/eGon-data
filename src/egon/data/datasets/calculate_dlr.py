@@ -5,6 +5,7 @@ Inspired mainly on Planungsgrundsaetze-2020
 Available at:
 <https://www.transnetbw.de/files/pdf/netzentwicklung/netzplanungsgrundsaetze/UENB_PlGrS_Juli2020.pdf>
 """
+
 from pathlib import Path
 
 from shapely.geometry import Point
@@ -39,25 +40,25 @@ def dlr():
     cfg = config.datasets()["dlr"]
     for scn in set(config.settings()["egon-data"]["--scenarios"]):
         weather_year = get_sector_parameters("global", scn)["weather_year"]
-    
+
         regions_shape_path = (
             Path(".")
             / "data_bundle_egon_data"
             / "regions_dynamic_line_rating"
             / "Germany_regions.shp"
         )
-    
+
         # Calculate hourly DLR per region
         dlr_hourly_dic, dlr_hourly = DLR_Regions(
             weather_year, regions_shape_path
         )
-    
+
         regions = gpd.read_file(regions_shape_path)
         regions = regions.sort_values(by=["Region"])
-    
+
         # Connect to the data base
         con = db.engine()
-    
+
         sql = f"""
         SELECT scn_name, line_id, topo, s_nom FROM
         {cfg['sources']['trans_lines']['schema']}.
@@ -66,14 +67,14 @@ def dlr():
         df = gpd.GeoDataFrame.from_postgis(
             sql, con, crs="EPSG:4326", geom_col="topo"
         )
-    
+
         trans_lines_R = {}
         for i in regions.Region:
             shape_area = regions[regions["Region"] == i]
             trans_lines_R[i] = gpd.clip(df, shape_area)
         trans_lines = df[["s_nom"]]
         trans_lines["in_regions"] = [[] for i in range(len(df))]
-    
+
         trans_lines[["line_id", "geometry", "scn_name"]] = df[
             ["line_id", "topo", "scn_name"]
         ]
@@ -83,9 +84,9 @@ def dlr():
             for j in trans_lines_R[i].index:
                 trans_lines.loc[j][1] = trans_lines.loc[j][1].append(i)
         trans_lines["crossborder"] = ~trans_lines.within(regions.unary_union)
-    
+
         DLR = []
-    
+
         # Assign to each transmision line the final values of DLR based on location
         # and type of line (overhead or underground)
         for i in trans_lines.index:
@@ -114,21 +115,21 @@ def dlr():
                     reg.append("Reg_" + str(j))
                 min_DLR_reg = dlr_hourly[reg].min(axis=1)
                 DLR.append(list(min_DLR_reg))
-    
+
         trans_lines["s_max_pu"] = DLR
-    
+
         # delete unnecessary columns
         trans_lines.drop(
             columns=["in_regions", "s_nom", "geometry", "crossborder"],
             inplace=True,
         )
-    
+
         # Modify column "s_max_pu" to fit the requirement of the table
         trans_lines["s_max_pu"] = trans_lines.apply(
             lambda x: list(x["s_max_pu"]), axis=1
         )
         trans_lines["temp_id"] = 1
-    
+
         # Delete existing data
         db.execute_sql(
             f"""
@@ -136,7 +137,7 @@ def dlr():
             {cfg['sources']['line_timeseries']['table']};
             """
         )
-    
+
         # Insert into database
         trans_lines.to_sql(
             f"{cfg['targets']['line_timeseries']['table']}",
@@ -222,7 +223,9 @@ def DLR_Regions(weather_year, regions_shape_path):
     weather_data = weather_data[weather_data["region"] != 0]
 
     # Create data frame to save results(Min wind speed, max temperature and %DLR per region along 8760h in a year)
-    time = pd.date_range(f"{weather_year}-01-01", f"{weather_year}-12-31 23:00:00", freq="H")
+    time = pd.date_range(
+        f"{weather_year}-01-01", f"{weather_year}-12-31 23:00:00", freq="H"
+    )
     # time = time.transpose()
     dlr = pd.DataFrame(
         0,
