@@ -23,7 +23,7 @@ class Calculate_dlr(Dataset):
     def __init__(self, dependencies):
         super().__init__(
             name="dlr",
-            version="0.0.1",
+            version="0.0.2",
             dependencies=dependencies,
             tasks=(dlr,),
         )
