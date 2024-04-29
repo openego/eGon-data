@@ -11,13 +11,11 @@ from shapely.geometry import Point
 import geopandas as gpd
 import numpy as np
 import pandas as pd
-import psycopg2
-import rioxarray
 import xarray as xr
 
-from egon.data import db
+from egon.data import db, config
 from egon.data.datasets import Dataset
-import egon.data.config
+from egon.data.datasets.scenario_parameters import get_sector_parameters
 
 
 class Calculate_dlr(Dataset):
@@ -38,118 +36,119 @@ def dlr():
     *No parameters required
 
     """
-    cfg = egon.data.config.datasets()["dlr"]
-    weather_info_path = Path(".") / "cutouts" / "germany-2011-era5.nc"
-
-    regions_shape_path = (
-        Path(".")
-        / "data_bundle_egon_data"
-        / "regions_dynamic_line_rating"
-        / "Germany_regions.shp"
-    )
-
-    # Calculate hourly DLR per region
-    dlr_hourly_dic, dlr_hourly = DLR_Regions(
-        weather_info_path, regions_shape_path
-    )
-
-    regions = gpd.read_file(regions_shape_path)
-    regions = regions.sort_values(by=["Region"])
-
-    # Connect to the data base
-    con = db.engine()
-
-    sql = f"""
-    SELECT scn_name, line_id, topo, s_nom FROM
-    {cfg['sources']['trans_lines']['schema']}.
-    {cfg['sources']['trans_lines']['table']}
-    """
-    df = gpd.GeoDataFrame.from_postgis(
-        sql, con, crs="EPSG:4326", geom_col="topo"
-    )
-
-    trans_lines_R = {}
-    for i in regions.Region:
-        shape_area = regions[regions["Region"] == i]
-        trans_lines_R[i] = gpd.clip(df, shape_area)
-    trans_lines = df[["s_nom"]]
-    trans_lines["in_regions"] = [[] for i in range(len(df))]
-
-    trans_lines[["line_id", "geometry", "scn_name"]] = df[
-        ["line_id", "topo", "scn_name"]
-    ]
-    trans_lines = gpd.GeoDataFrame(trans_lines)
-    # Assign to each transmission line the region to which it belongs
-    for i in trans_lines_R:
-        for j in trans_lines_R[i].index:
-            trans_lines.loc[j][1] = trans_lines.loc[j][1].append(i)
-    trans_lines["crossborder"] = ~trans_lines.within(regions.unary_union)
-
-    DLR = []
-
-    # Assign to each transmision line the final values of DLR based on location
-    # and type of line (overhead or underground)
-    for i in trans_lines.index:
-        # The concept of DLR does not apply to crossborder lines
-        if trans_lines.loc[i, "crossborder"] == True:
-            DLR.append([1] * 8760)
-            continue
-        # Underground lines have DLR = 1
-        if (
-            trans_lines.loc[i][0] % 280 == 0
-            or trans_lines.loc[i][0] % 550 == 0
-            or trans_lines.loc[i][0] % 925 == 0
-        ):
-            DLR.append([1] * 8760)
-            continue
-        # Lines completely in one of the regions, have the DLR of the region
-        if len(trans_lines.loc[i][1]) == 1:
-            region = int(trans_lines.loc[i][1][0])
-            DLR.append(dlr_hourly_dic["R" + str(region) + "-DLR"])
-            continue
-        # For lines crossing 2 or more regions, the lowest DLR between the
-        # different regions per hour is assigned.
-        if len(trans_lines.loc[i][1]) > 1:
-            reg = []
-            for j in trans_lines.loc[i][1]:
-                reg.append("Reg_" + str(j))
-            min_DLR_reg = dlr_hourly[reg].min(axis=1)
-            DLR.append(list(min_DLR_reg))
-
-    trans_lines["s_max_pu"] = DLR
-
-    # delete unnecessary columns
-    trans_lines.drop(
-        columns=["in_regions", "s_nom", "geometry", "crossborder"],
-        inplace=True,
-    )
-
-    # Modify column "s_max_pu" to fit the requirement of the table
-    trans_lines["s_max_pu"] = trans_lines.apply(
-        lambda x: list(x["s_max_pu"]), axis=1
-    )
-    trans_lines["temp_id"] = 1
-
-    # Delete existing data
-    db.execute_sql(
-        f"""
-        DELETE FROM {cfg['sources']['line_timeseries']['schema']}.
-        {cfg['sources']['line_timeseries']['table']};
+    cfg = config.datasets()["dlr"]
+    for scn in set(config.settings()["egon-data"]["--scenarios"]):
+        weather_year = get_sector_parameters("global", scn)["weather_year"]
+    
+        regions_shape_path = (
+            Path(".")
+            / "data_bundle_egon_data"
+            / "regions_dynamic_line_rating"
+            / "Germany_regions.shp"
+        )
+    
+        # Calculate hourly DLR per region
+        dlr_hourly_dic, dlr_hourly = DLR_Regions(
+            weather_year, regions_shape_path
+        )
+    
+        regions = gpd.read_file(regions_shape_path)
+        regions = regions.sort_values(by=["Region"])
+    
+        # Connect to the data base
+        con = db.engine()
+    
+        sql = f"""
+        SELECT scn_name, line_id, topo, s_nom FROM
+        {cfg['sources']['trans_lines']['schema']}.
+        {cfg['sources']['trans_lines']['table']}
         """
-    )
+        df = gpd.GeoDataFrame.from_postgis(
+            sql, con, crs="EPSG:4326", geom_col="topo"
+        )
+    
+        trans_lines_R = {}
+        for i in regions.Region:
+            shape_area = regions[regions["Region"] == i]
+            trans_lines_R[i] = gpd.clip(df, shape_area)
+        trans_lines = df[["s_nom"]]
+        trans_lines["in_regions"] = [[] for i in range(len(df))]
+    
+        trans_lines[["line_id", "geometry", "scn_name"]] = df[
+            ["line_id", "topo", "scn_name"]
+        ]
+        trans_lines = gpd.GeoDataFrame(trans_lines)
+        # Assign to each transmission line the region to which it belongs
+        for i in trans_lines_R:
+            for j in trans_lines_R[i].index:
+                trans_lines.loc[j][1] = trans_lines.loc[j][1].append(i)
+        trans_lines["crossborder"] = ~trans_lines.within(regions.unary_union)
+    
+        DLR = []
+    
+        # Assign to each transmision line the final values of DLR based on location
+        # and type of line (overhead or underground)
+        for i in trans_lines.index:
+            # The concept of DLR does not apply to crossborder lines
+            if trans_lines.loc[i, "crossborder"] == True:
+                DLR.append([1] * 8760)
+                continue
+            # Underground lines have DLR = 1
+            if (
+                trans_lines.loc[i][0] % 280 == 0
+                or trans_lines.loc[i][0] % 550 == 0
+                or trans_lines.loc[i][0] % 925 == 0
+            ):
+                DLR.append([1] * 8760)
+                continue
+            # Lines completely in one of the regions, have the DLR of the region
+            if len(trans_lines.loc[i][1]) == 1:
+                region = int(trans_lines.loc[i][1][0])
+                DLR.append(dlr_hourly_dic["R" + str(region) + "-DLR"])
+                continue
+            # For lines crossing 2 or more regions, the lowest DLR between the
+            # different regions per hour is assigned.
+            if len(trans_lines.loc[i][1]) > 1:
+                reg = []
+                for j in trans_lines.loc[i][1]:
+                    reg.append("Reg_" + str(j))
+                min_DLR_reg = dlr_hourly[reg].min(axis=1)
+                DLR.append(list(min_DLR_reg))
+    
+        trans_lines["s_max_pu"] = DLR
+    
+        # delete unnecessary columns
+        trans_lines.drop(
+            columns=["in_regions", "s_nom", "geometry", "crossborder"],
+            inplace=True,
+        )
+    
+        # Modify column "s_max_pu" to fit the requirement of the table
+        trans_lines["s_max_pu"] = trans_lines.apply(
+            lambda x: list(x["s_max_pu"]), axis=1
+        )
+        trans_lines["temp_id"] = 1
+    
+        # Delete existing data
+        db.execute_sql(
+            f"""
+            DELETE FROM {cfg['sources']['line_timeseries']['schema']}.
+            {cfg['sources']['line_timeseries']['table']};
+            """
+        )
+    
+        # Insert into database
+        trans_lines.to_sql(
+            f"{cfg['targets']['line_timeseries']['table']}",
+            schema=f"{cfg['targets']['line_timeseries']['schema']}",
+            con=db.engine(),
+            if_exists="append",
+            index=False,
+        )
+        return 0
 
-    # Insert into database
-    trans_lines.to_sql(
-        f"{cfg['targets']['line_timeseries']['table']}",
-        schema=f"{cfg['targets']['line_timeseries']['schema']}",
-        con=db.engine(),
-        if_exists="append",
-        index=False,
-    )
-    return 0
 
-
-def DLR_Regions(weather_info_path, regions_shape_path):
+def DLR_Regions(weather_year, regions_shape_path):
     """Calculate DLR values for the given regions
 
     Parameters
@@ -160,15 +159,15 @@ def DLR_Regions(weather_info_path, regions_shape_path):
         path to the shape file with the shape of the regions to analyze
 
     """
-
     # load, index and sort shapefile with the 9 regions defined by NEP 2020
     regions = gpd.read_file(regions_shape_path)
     regions = regions.set_index(["Region"])
     regions = regions.sort_values(by=["Region"])
 
     # The data downloaded using Atlite is loaded in 'weather_data_raw'.
-    path = Path(".") / "cutouts" / "germany-2011-era5.nc"
-    weather_data_raw = xr.open_mfdataset(str(path))
+    file_name = f"germany-{weather_year}-era5.nc"
+    weather_info_path = Path(".") / "cutouts" / file_name
+    weather_data_raw = xr.open_mfdataset(str(weather_info_path))
     weather_data_raw = weather_data_raw.rio.write_crs(4326)
     weather_data_raw = weather_data_raw.rio.clip_box(
         minx=5.5, miny=47, maxx=15.5, maxy=55.5
@@ -223,7 +222,7 @@ def DLR_Regions(weather_info_path, regions_shape_path):
     weather_data = weather_data[weather_data["region"] != 0]
 
     # Create data frame to save results(Min wind speed, max temperature and %DLR per region along 8760h in a year)
-    time = pd.date_range("2011-01-01", "2011-12-31 23:00:00", freq="H")
+    time = pd.date_range(f"{weather_year}-01-01", f"{weather_year}-12-31 23:00:00", freq="H")
     # time = time.transpose()
     dlr = pd.DataFrame(
         0,
@@ -263,7 +262,7 @@ def DLR_Regions(weather_info_path, regions_shape_path):
     # Since the dataframe generated by the function era5.weather_df_from_era5() is sorted by date,
     # it is faster to calculate the hourly results using blocks of data defined by "step", instead of
     # using a filter or a search function.
-    for reg, df in weather_data.groupby(["region"]):
+    for reg, df in weather_data.groupby("region"):
         for t in range(0, len(time)):
             step = df.shape[0] / len(time)
             low_limit = int(t * step)
