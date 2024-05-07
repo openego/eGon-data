@@ -656,6 +656,8 @@ def get_building_peak_loads():
             cells_query.statement, cells_query.session.bind, index_col="id"
         )
 
+        df_buildings_and_profiles.replace({None: np.nan}, inplace=True)
+
         # Read demand profiles from egon-data-bundle
         df_profiles = get_iee_hh_demand_profiles_raw()
 
