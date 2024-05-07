@@ -219,6 +219,7 @@ class HouseholdDemands(Dataset):
                 task_id="MV-hh-electricity-load-2035",
                 python_callable=mv_grid_district_HH_electricity_load,
                 op_args=["eGon2035", 2035],
+                op_kwargs={"drop_table": True},
             )
 
             tasks = tasks + (mv_hh_electricity_load_2035,)
@@ -231,6 +232,7 @@ class HouseholdDemands(Dataset):
                 task_id="MV-hh-electricity-load-2050",
                 python_callable=mv_grid_district_HH_electricity_load,
                 op_args=["eGon100RE", 2050],
+                op_kwargs={"drop_table": True},
             )
 
             tasks = tasks + (mv_hh_electricity_load_2050,)
