@@ -212,7 +212,8 @@ def calc_load_curves_ind_osm(scenario):
     annual_demand_osm = demands_osm_area.groupby("osm_id").demand.sum()
 
     # Return electrical load curves per osm industrial landuse area
-    load_curves = calc_load_curve(share_wz_transpose, annual_demand_osm)
+
+    load_curves = calc_load_curve(share_wz_transpose, scenario, annual_demand_osm)
 
     curves_da = identify_bus(load_curves, demand_area)
 
