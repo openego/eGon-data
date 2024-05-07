@@ -374,7 +374,7 @@ def calc_load_curves_ind_sites(scenario):
             .demand
         )
 
-    load_curves = calc_load_curve(share_transpose, demands_ind_sites["demand"])
+    load_curves = calc_load_curve(share_transpose, scenario, demands_ind_sites["demand"])
 
     curves_da = identify_bus(load_curves, demand_area)
 
