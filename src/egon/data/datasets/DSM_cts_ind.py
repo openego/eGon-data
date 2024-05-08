@@ -1155,7 +1155,7 @@ def dsm_cts_ind(
 
     df_dsm_buses = gpd.GeoDataFrame(
         pd.concat([df_dsm_buses, dsm_buses], ignore_index=True),
-        crs="EPSG:4326",
+        crs="EPSG:4326", geometry = "geom",
     )
     df_dsm_links = pd.DataFrame(
         pd.concat([df_dsm_links, dsm_links], ignore_index=True)
@@ -1189,7 +1189,7 @@ def dsm_cts_ind(
 
     df_dsm_buses = gpd.GeoDataFrame(
         pd.concat([df_dsm_buses, dsm_buses], ignore_index=True),
-        crs="EPSG:4326",
+        crs="EPSG:4326", geometry = "geom",
     )
     df_dsm_links = pd.DataFrame(
         pd.concat([df_dsm_links, dsm_links], ignore_index=True)
@@ -1221,7 +1221,7 @@ def dsm_cts_ind(
 
     df_dsm_buses = gpd.GeoDataFrame(
         pd.concat([df_dsm_buses, dsm_buses], ignore_index=True),
-        crs="EPSG:4326",
+        crs="EPSG:4326", geometry = "geom",
     )
     df_dsm_links = pd.DataFrame(
         pd.concat([df_dsm_links, dsm_links], ignore_index=True)
@@ -1255,7 +1255,7 @@ def dsm_cts_ind(
 
     df_dsm_buses = gpd.GeoDataFrame(
         pd.concat([df_dsm_buses, dsm_buses], ignore_index=True),
-        crs="EPSG:4326",
+        crs="EPSG:4326", geometry = "geom",
     )
     df_dsm_links = pd.DataFrame(
         pd.concat([df_dsm_links, dsm_links], ignore_index=True)
@@ -1295,7 +1295,7 @@ def dsm_cts_ind(
 
     df_dsm_buses = gpd.GeoDataFrame(
         pd.concat([df_dsm_buses, dsm_buses], ignore_index=True),
-        crs="EPSG:4326",
+        crs="EPSG:4326", geometry = "geom",
     )
     df_dsm_links = pd.DataFrame(
         pd.concat([df_dsm_links, dsm_links], ignore_index=True)
