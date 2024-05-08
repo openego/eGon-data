@@ -16,6 +16,7 @@ import pandas as pd
 
 from egon.data import config, db
 from egon.data.datasets import Dataset
+
 from egon.data.datasets.electricity_demand.temporal import calc_load_curve
 from egon.data.datasets.industry.temporal import identify_bus
 
@@ -407,7 +408,7 @@ def calc_ind_site_timeseries(scenario):
         )
 
     # calculate load curves
-    load_curves = calc_load_curve(share_transpose, demands_ind_sites["demand"])
+    load_curves = calc_load_curve(share_transpose, scenario, demands_ind_sites["demand"])
 
     # identify bus per industrial site
     curves_bus = identify_bus(load_curves, demand_area)
@@ -460,16 +461,24 @@ def ind_sites_data_import():
     Import industry sites data necessary to identify DSM-potential.
     """
     # calculate timeseries per site
+    scenarios = config.settings()["egon-data"]["--scenarios"]
 
     # scenario eGon2035
-    dsm_2035 = calc_ind_site_timeseries("eGon2035")
-    dsm_2035.reset_index(inplace=True)
+    if "eGon2035" in scenarios:
+        dsm_2035 = calc_ind_site_timeseries("eGon2035")
+        dsm_2035.reset_index(inplace=True)
     # scenario eGon100RE
-    dsm_100 = calc_ind_site_timeseries("eGon100RE")
-    dsm_100.reset_index(inplace=True)
-    # bring df for both scenarios together
-    dsm_100.index = range(len(dsm_2035), (len(dsm_2035) + len((dsm_100))))
-    dsm = dsm_2035.append(dsm_100)
+    if "eGon100RE" in scenarios:
+        dsm_100 = calc_ind_site_timeseries("eGon100RE")
+        dsm_100.reset_index(inplace=True)
+
+    if ("eGon2035" in scenarios) & ("eGon100RE" in scenarios):
+        dsm_100.index = range(len(dsm_2035), (len(dsm_2035) + len((dsm_100))))
+        dsm = dsm_2035.append(dsm_100)
+    elif "eGon2035" in scenarios:
+        dsm = dsm_2035
+    elif "eGon100RE" in scenarios:
+        dsm = dsm_100
 
     # relate calculated timeseries to Schmidt's industrial sites
 
