@@ -865,7 +865,7 @@ def data_export(dsm_buses, dsm_links, dsm_stores, carrier):
         index=dsm_buses.index,
         data=dsm_buses["geom"],
         geometry="geom",
-        crs=dsm_buses.crs,
+        crs="EPSG:4326",
     )
     insert_buses["scn_name"] = dsm_buses["scn_name"]
     insert_buses["bus_id"] = dsm_buses["bus_id"]
