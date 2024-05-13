@@ -445,28 +445,31 @@ def buildings_with_amenities():
     from saio.boundaries import egon_map_zensus_buildings_filtered_all
     from saio.openstreetmap import osm_amenities_in_buildings_filtered
 
-    with db.session_scope() as session:
-        cells_query = (
-            session.query(
-                osm_amenities_in_buildings_filtered,
-                MapZensusGridDistricts.bus_id,
+    for scn in config.settings()["egon-data"]["--scenarios"]:
+        with db.session_scope() as session:
+            cells_query = (
+                session.query(
+                    osm_amenities_in_buildings_filtered,
+                    MapZensusGridDistricts.bus_id,
+                )
+                .filter(
+                    MapZensusGridDistricts.zensus_population_id
+                    == osm_amenities_in_buildings_filtered.zensus_population_id
+                )
+                .filter(
+                    EgonDemandRegioZensusElectricity.zensus_population_id
+                    == osm_amenities_in_buildings_filtered.zensus_population_id
+                )
+                .filter(
+                    EgonDemandRegioZensusElectricity.sector == "service",
+                    EgonDemandRegioZensusElectricity.scenario == scn,
+                )
             )
-            .filter(
-                MapZensusGridDistricts.zensus_population_id
-                == osm_amenities_in_buildings_filtered.zensus_population_id
+            df_amenities_in_buildings = pd.read_sql(
+                cells_query.statement, con=session.connection(), index_col=None
             )
-            .filter(
-                EgonDemandRegioZensusElectricity.zensus_population_id
-                == osm_amenities_in_buildings_filtered.zensus_population_id
-            )
-            .filter(
-                EgonDemandRegioZensusElectricity.sector == "service",
-                EgonDemandRegioZensusElectricity.scenario == "status2019",
-            )
-        )
-        df_amenities_in_buildings = pd.read_sql(
-            cells_query.statement, con=session.connection(), index_col=None
-        )
+        if not df_amenities_in_buildings.empty:
+            break
 
     df_amenities_in_buildings["geom_building"] = df_amenities_in_buildings[
         "geom_building"
