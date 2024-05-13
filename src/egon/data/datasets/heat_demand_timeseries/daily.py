@@ -7,7 +7,8 @@ import geopandas as gpd
 import numpy as np
 import pandas as pd
 
-from egon.data import db
+from egon.data import db, config
+from egon.data.datasets.scenario_parameters import get_sector_parameters
 import egon.data.datasets.era5 as era
 
 
@@ -353,7 +354,11 @@ def h_value():
         Extracted from demandlib.
 
     """
-    index = pd.date_range(datetime(2019, 1, 1, 0), periods=8760, freq="H")
+    #ToDo: Make this function scenario friendly
+    scenario = config.settings()["egon-data"]["--scenarios"][0]
+
+    year = get_sector_parameters("global", scenario)["weather_year"]
+    index = pd.date_range(datetime(year, 1, 1, 0), periods=8760, freq="H")
 
     a = 3.0469695
 
