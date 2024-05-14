@@ -299,11 +299,6 @@ def create_district_heating_profile_python_like(scenario="eGon2035"):
     CTS_demand_dist, CTS_demand_grid, CTS_demand_zensus = CTS_demand_scale(
         aggregation_level="district"
     )
-    ########### export to debug purposes #####################
-    CTS_demand_dist.to_pickle("./CTS_demand_dist.pkl")
-    CTS_demand_grid.to_pickle("./CTS_demand_grid.pkl")
-    CTS_demand_zensus.to_pickle("./CTS_demand_zensus.pkl")
-    ########### export to debug purposes #####################
 
     # TODO: use session_scope!
     from sqlalchemy.orm import sessionmaker
