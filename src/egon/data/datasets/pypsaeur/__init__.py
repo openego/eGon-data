@@ -86,11 +86,11 @@ def download():
             )
 
         # Copy config file for egon-data to pypsa-eur directory
-        shutil.copy(
+        shutil.copy(Path(
             __path__[0],
             "datasets",
             "pypsaeur",
-            "config.yaml",
+            "config.yaml"),
             pypsa_eur_repos / "config",
         )
 
