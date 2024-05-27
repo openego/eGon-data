@@ -283,6 +283,7 @@ def buses(scenario, sources, targets):
         ["control", "generator", "location", "unit", "sub_network"],
         axis="columns",
         inplace=True,
+        errors="ignore"
     )
 
     # Insert all central buses for eGon2035
@@ -470,6 +471,8 @@ def cross_border_lines(scenario, sources, targets, central_buses):
 
     # Calculate cross-border busses and lines from osmtgmod
     foreign_buses = get_cross_border_buses(scenario, sources)
+    foreign_buses.dropna(subset="country", inplace=True)
+
     if config.settings()["egon-data"]["--dataset-boundary"] == "Everything":
         foreign_buses = foreign_buses[foreign_buses.country != "DE"]
     lines = get_cross_border_lines(scenario, sources)
@@ -531,6 +534,12 @@ def cross_border_lines(scenario, sources, targets, central_buses):
     old_length = new_lines["length"].copy()
     new_lines["length"] = new_lines.to_crs(3035).length / 1000
 
+    if (new_lines["length"] == 0).any():
+        print("WARNING! THERE ARE LINES WITH LENGTH = 0")
+        condition = new_lines["length"] != 0
+        new_lines["length"] = new_lines["length"].where(condition, 1)
+        
+
     # Set electrical parameters based on lines from osmtgmod
     for parameter in ["x", "r"]:
         new_lines[parameter] = (
@@ -541,6 +550,7 @@ def cross_border_lines(scenario, sources, targets, central_buses):
             new_lines[parameter] * old_length / new_lines["length"]
         )
 
+
     # Drop intermediate columns
     new_lines.drop(
         ["foreign_bus", "country", "geom_bus0", "geom_bus1", "geom"],
@@ -550,7 +560,6 @@ def cross_border_lines(scenario, sources, targets, central_buses):
 
     new_lines = new_lines[new_lines.bus0 != new_lines.bus1]
 
-    # Set scn_name
 
     # Insert lines to the database
     new_lines.to_postgis(
