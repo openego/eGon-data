@@ -751,7 +751,7 @@ def foreign_dc_lines(scenario, sources, targets, central_buses):
               AND country != 'DE')
         """
     )
-    capital_cost = get_sector_parameters("electricity", "eGon2035")[
+    capital_cost = get_sector_parameters("electricity", scenario)[
         "capital_cost"
     ]
 
@@ -772,7 +772,7 @@ def foreign_dc_lines(scenario, sources, targets, central_buses):
             "bus0": converter_luebeck,
             "bus1": central_buses[
                 (central_buses.country == "SE") & (central_buses.v_nom == 380)
-            ]
+            ].iloc[0]
             .squeeze()
             .bus_id,
             "p_nom": 600,
@@ -803,7 +803,7 @@ def foreign_dc_lines(scenario, sources, targets, central_buses):
                             (central_buses.country == "DK")
                             & (central_buses.v_nom == 380)
                             & (central_buses.x > 10)
-                        ]
+                        ].iloc[0]
                         .squeeze()
                         .bus_id,
                         "p_nom": 600,
