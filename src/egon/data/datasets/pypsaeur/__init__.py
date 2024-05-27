@@ -1382,7 +1382,7 @@ def rual_heat_technologies(network):
 
 def execute():
     with open(
-        __path__[0] + "/datasets/pypsaeursec/config.yaml", "r"
+        __path__[0] + "/datasets/pypsaeur/config.yaml", "r"
     ) as stream:
         data_config = yaml.safe_load(stream)
 
