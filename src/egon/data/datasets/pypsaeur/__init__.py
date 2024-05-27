@@ -167,7 +167,7 @@ def read_network():
             / "elec_s_37_lv2.0__Co2L0-1H-T-H-B-I-dist1_2050.nc"
         )
 
-    return pypsa.Network(csv_folder_name=target_file.absolute().as_posix())
+    return pypsa.Network(target_file)
 
 
 def clean_database():
@@ -267,7 +267,7 @@ def electrical_neighbours_egon100():
 def neighbor_reduction():
     network = read_network()
 
-    network.links.drop("pipe_retrofit", axis="columns", inplace=True)
+    #network.links.drop("pipe_retrofit", axis="columns", inplace=True)
 
     wanted_countries = [
         "DE",
@@ -743,14 +743,17 @@ def neighbor_reduction():
         ]
 
         if extendable:
+            dropped_carriers.append("p_nom_opt")
             neighbor_links = neighbor_links.drop(
-                columns=dropped_carriers.append(["p_nom_opt"]),
+                columns=dropped_carriers,
                 errors="ignore",
             )
 
         else:
+            dropped_carriers.append("p_nom")
+            dropped_carriers.append("p_nom_extendable")
             neighbor_links = neighbor_links.drop(
-                columns=dropped_carriers.append(["p_nom", "p_nom_extendable"]),
+                columns=dropped_carriers,
                 errors="ignore",
             )
             neighbor_links = neighbor_links.rename(
