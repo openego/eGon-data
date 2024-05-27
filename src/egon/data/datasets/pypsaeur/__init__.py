@@ -97,7 +97,7 @@ def download():
 
 def prepare_network():
     cwd = Path(".")
-    filepath = cwd / "run-pypsa-eur" / "pypsa-eur"
+    filepath = cwd / "run-pypsa-eur"
 
     subproc.run(
         [
