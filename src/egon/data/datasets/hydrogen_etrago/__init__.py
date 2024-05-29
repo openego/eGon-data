@@ -15,10 +15,7 @@ related components abroad.
 
 """
 from egon.data.datasets import Dataset
-from egon.data.datasets.hydrogen_etrago.bus import (
-    insert_hydrogen_buses,
-    insert_hydrogen_buses_eGon100RE,
-)
+from egon.data.datasets.hydrogen_etrago.bus import insert_hydrogen_buses
 from egon.data.datasets.hydrogen_etrago.h2_grid import insert_h2_pipelines
 from egon.data.datasets.hydrogen_etrago.h2_to_ch4 import (
     insert_h2_to_ch4_eGon100RE,
