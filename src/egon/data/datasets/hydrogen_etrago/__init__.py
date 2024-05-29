@@ -69,7 +69,6 @@ class HydrogenBusEtrago(Dataset):
             tasks=(
                 calculate_and_map_saltcavern_storage_potential,
                 insert_hydrogen_buses,
-                insert_hydrogen_buses_eGon100RE,
             ),
         )
 

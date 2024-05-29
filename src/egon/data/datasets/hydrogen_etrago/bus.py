@@ -182,9 +182,3 @@ def insert_H2_buses_from_CH4_grid(gdf, carrier, target, scn_name):
         if_exists="replace",
     )
 
-
-def insert_hydrogen_buses_eGon100RE():
-    """Copy H2 buses from the eGon2035 to the eGon100RE scenario."""
-    copy_and_modify_buses(
-        "eGon2035", "eGon100RE", {"carrier": ["H2_grid", "H2_saltcavern"]},
-    )
