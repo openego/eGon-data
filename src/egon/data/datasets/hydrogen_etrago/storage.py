@@ -280,8 +280,13 @@ def calculate_and_map_saltcavern_storage_potential():
 
         # skip if federal state not available (e.g. local testing)
         if federal_state_data.size > 0:
-            saltcaverns_in_fed_state = saltcaverns_in_fed_state.append(
-                saltcavern_data.overlay(federal_state_data, how="intersection")
+            saltcaverns_in_fed_state = pd.concat(
+                [
+                    saltcaverns_in_fed_state,
+                    saltcavern_data.overlay(
+                        federal_state_data, how="intersection"
+                    ),
+                ]
             )
             # write total potential in column, will be overwritten by actual
             # value later
