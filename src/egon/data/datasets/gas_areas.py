@@ -2,6 +2,8 @@
 The central module containing code to create CH4 and H2 voronoi polygons
 
 """
+import pandas as pd
+
 from geoalchemy2.types import Geometry
 from sqlalchemy import BigInteger, Column, Text
 from sqlalchemy.ext.declarative import declarative_base
@@ -161,15 +163,29 @@ def create_voronoi(scn_name, carrier):
     carrier : str
         Name of the carrier
     """
+
+    engine = db.engine()
+
+    table_exist = len(pd.read_sql(
+        """
+    SELECT *
+    FROM information_schema.tables
+    WHERE table_schema = 'grid'
+        AND table_name = 'egon_gas_voronoi'
+    LIMIT 1;
+        """,
+        engine)) > 0
+
+    if not table_exist:
+        create_gas_voronoi_table()
+
     boundary = db.select_geodataframe(
-        f"""
+        """
             SELECT id, geometry
             FROM boundaries.vg250_sta_union;
         """,
         geom_col="geometry",
     ).to_crs(epsg=4326)
-
-    engine = db.engine()
 
     db.execute_sql(
         f"""
