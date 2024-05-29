@@ -24,7 +24,7 @@ from egon.data.datasets.etrago_helpers import (
 )
 
 
-def insert_hydrogen_buses(scenario="eGon2035"):
+def insert_hydrogen_buses():
     """
     Insert hydrogen buses into the database (in etrago table)
 
@@ -39,22 +39,30 @@ def insert_hydrogen_buses(scenario="eGon2035"):
         Name of the scenario, the default is 'eGon2035'.
 
     """
-    sources = config.datasets()["etrago_hydrogen"]["sources"]
-    target = config.datasets()["etrago_hydrogen"]["targets"]["hydrogen_buses"]
-    # initalize dataframe for hydrogen buses
-    carrier = "H2_saltcavern"
-    hydrogen_buses = initialise_bus_insertion(
-        carrier, target, scenario=scenario
-    )
-    insert_H2_buses_from_saltcavern(
-        hydrogen_buses, carrier, sources, target, scenario
-    )
+    s = config.settings()["egon-data"]["--scenarios"]
+    scn = []
+    if "eGon2035" in s:
+        scn.append("eGon2035")
+    if "eGon100RE" in s:
+        scn.append("eGon100RE")
 
-    carrier = "H2_grid"
-    hydrogen_buses = initialise_bus_insertion(
-        carrier, target, scenario=scenario
-    )
-    insert_H2_buses_from_CH4_grid(hydrogen_buses, carrier, target, scenario)
+    for scenario in s:
+        sources = config.datasets()["etrago_hydrogen"]["sources"]
+        target = config.datasets()["etrago_hydrogen"]["targets"]["hydrogen_buses"]
+        # initalize dataframe for hydrogen buses
+        carrier = "H2_saltcavern"
+        hydrogen_buses = initialise_bus_insertion(
+            carrier, target, scenario=scenario
+        )
+        insert_H2_buses_from_saltcavern(
+            hydrogen_buses, carrier, sources, target, scenario
+        )
+
+        carrier = "H2_grid"
+        hydrogen_buses = initialise_bus_insertion(
+            carrier, target, scenario=scenario
+        )
+        insert_H2_buses_from_CH4_grid(hydrogen_buses, carrier, target, scenario)
 
 
 def insert_H2_buses_from_saltcavern(gdf, carrier, sources, target, scn_name):
