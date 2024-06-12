@@ -216,7 +216,7 @@ def potential_germany():
 
     The investment costs for geothermal district heating highly depend on
     the location because of different mass flows and drilling depths.
-    Thsi functions calcultaes the geothermal potentials close to germany
+    This functions calcultaes the geothermal potentials close to germany
     for five different costs ranges.
     This data can be used in pypsa-eur-sec to optimise the share of
     geothermal district heating by considering different investment costs.
