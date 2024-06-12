@@ -9,6 +9,7 @@ Februar 2017
 from pathlib import Path
 
 import numpy as np
+import os
 
 import geopandas as gpd
 import pandas as pd
@@ -248,6 +249,9 @@ def potential_germany():
         max_costs=10, min_costs=5
     )
 
+    if not os.path.isdir("input-pypsa-eur-sec"):
+        os.mkdir("input-pypsa-eur-sec")
+
     pd.DataFrame(geothermal_costs_and_potentials).reset_index().rename(
         {"index": "cost [EUR/kW]", 0: "potential [MW]"}, axis=1
-    ).to_csv("geothermal_potential_germany.csv")
+    ).to_csv("input-pypsa-eur-sec/geothermal_potential_germany.csv")
