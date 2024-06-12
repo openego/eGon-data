@@ -632,7 +632,8 @@ def insert_cts_ind(scenario, year, engine, target_values):
     ]
 
     if scenario == "eGon100RE":
-        ec_cts_ind2 = pd.read_csv("egon_demandregio_cts_ind.csv")
+        ec_cts_ind2 = pd.read_csv(
+            "data_bundle_powerd_data/egon_demandregio_cts_ind.csv")
         ec_cts_ind2.to_sql(
             targets["cts_ind_demand"]["table"],
             engine,
