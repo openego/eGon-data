@@ -21,8 +21,11 @@ from egon.data.datasets import Dataset
 from egon.data.datasets.vg250 import vg250_metadata_resources_fields
 from egon.data.metadata import (
     context,
+    generate_resource_fields_from_sqla_model,
+    license_ccby,
     licenses_datenlizenz_deutschland,
     meta_metadata,
+    sources,
 )
 import egon.data.config
 
@@ -33,7 +36,7 @@ class ZensusVg250(Dataset):
     def __init__(self, dependencies):
         super().__init__(
             name="ZensusVg250",
-            version="0.0.2",
+            version="0.0.3",
             dependencies=dependencies,
             tasks=(
                 map_zensus_vg250,
@@ -41,6 +44,7 @@ class ZensusVg250(Dataset):
                 add_metadata_zensus_inside_ger,
                 population_in_municipalities,
                 add_metadata_vg250_gem_pop,
+                add_metadata_vg250_zensus,
             ),
         )
 
@@ -652,4 +656,96 @@ def add_metadata_vg250_gem_pop():
         meta_json,
         Vg250GemPopulation.__table__.schema,
         Vg250GemPopulation.__table__.name,
+    )
+
+
+def add_metadata_vg250_zensus():
+    # Import column names and datatypes
+    fields = [
+        {
+            "name": "zensus_population_id",
+            "description": "Index of zensus population cell",
+            "type": "integer",
+            "unit": "none",
+        },
+        {
+            "name": "zensus_geom",
+            "description": "Gemetry of zensus cell",
+            "type": "geometry(point,3035)",
+            "unit": "none",
+        },
+        {
+            "name": "vg250_municipality_id",
+            "description": "Index of municipality",
+            "type": "integer",
+            "unit": "none",
+        },
+        {
+            "name": "vg250_nuts3",
+            "description": "NUTS3 region-code",
+            "type": "varchar",
+            "unit": "none",
+        },
+    ]
+
+    meta = {
+        "name": "boundaries.egon_map_zensus_vg250",
+        "title": "eGon feedin timeseries for RES",
+        "id": "WILL_BE_SET_AT_PUBLICATION",
+        "description": "Weather-dependent feedin timeseries for RES",
+        "language": ["EN"],
+        "publicationDate": datetime.date.today().isoformat(),
+        "context": context(),
+        "spatial": {
+            "location": None,
+            "extent": "Germany",
+            "resolution": "100mx100m",
+        },
+        "sources": [
+            sources()["zensus"],
+            sources()["vg250"],
+            sources()["egon-data"],
+        ],
+        "licenses": [
+            license_ccby(
+                "© Bundesamt für Kartographie und Geodäsie 2020 (Daten verändert); "
+                "© Statistische Ämter des Bundes und der Länder 2014 "
+                "© Jonathan Amme, Clara Büttner, Ilka Cußmann, Julian Endres, Carlos Epia, Stephan Günther, Ulf Müller, Amélia Nadal, Guido Pleßmann, Francesco Witte",
+            )
+        ],
+        "contributors": [
+            {
+                "title": "Clara Büttner",
+                "email": "http://github.com/ClaraBuettner",
+                "date": time.strftime("%Y-%m-%d"),
+                "object": None,
+                "comment": "Added metadata",
+            },
+        ],
+        "resources": [
+            {
+                "profile": "tabular-data-resource",
+                "name": "boundaries.egon_map_zensus_vg250",
+                "path": None,
+                "format": "PostgreSQL",
+                "encoding": "UTF-8",
+                "schema": {
+                    "fields": fields,
+                    "primaryKey": ["index"],
+                    "foreignKeys": [],
+                },
+                "dialect": {"delimiter": None, "decimalSeparator": "."},
+            }
+        ],
+        "metaMetadata": meta_metadata(),
+    }
+
+    # Create json dump
+    meta_json = "'" + json.dumps(meta) + "'"
+
+    # Add metadata as a comment to the table
+    db.submit_comment(
+        meta_json,
+        MapZensusVg250.__table__.schema,
+        MapZensusVg250.__table__.name,
     )
