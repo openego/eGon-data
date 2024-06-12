@@ -48,7 +48,10 @@ from egon.data.datasets.heat_demand_europe import HeatDemandEurope
 from egon.data.datasets.heat_demand_timeseries import HeatTimeSeries
 from egon.data.datasets.heat_etrago import HeatEtrago
 from egon.data.datasets.heat_etrago.hts_etrago import HtsEtragoTable
-from egon.data.datasets.heat_supply import HeatSupply
+from egon.data.datasets.heat_supply import (
+    GeothermalPotentialGermany,
+    HeatSupply,
+)
 from egon.data.datasets.heat_supply.individual_heating import (
     HeatPumps2035,
     HeatPumps2050,
@@ -359,6 +362,14 @@ with airflow.DAG(
         ]
     )
 
+
+    geothermal_potential_germany = GeothermalPotentialGermany(
+        dependencies=[
+            data_bundle,
+            district_heating_areas,
+        ]
+        )
+
     # run pypsa-eur-sec
     run_pypsaeur = RunPypsaEur(
         dependencies=[
@@ -370,6 +381,7 @@ with airflow.DAG(
             data_bundle,
             electrical_load_etrago,
             heat_time_series,
+            geothermal_potential_germany,
         ]
     )
 
@@ -527,6 +539,7 @@ with airflow.DAG(
             data_bundle,
             district_heating_areas,
             zensus_mv_grid_districts,
+            geothermal_potential_germany,
         ]
     )
 
