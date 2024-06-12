@@ -196,7 +196,7 @@ class EgonEtragoElectricityHouseholds(Base):
 
 class HouseholdDemands(Dataset):
     def __init__(self, dependencies):
-        tasks = (houseprofiles_in_census_cells,)
+        tasks = (create_table, houseprofiles_in_census_cells,)
 
         if (
             "status2019"
@@ -244,6 +244,13 @@ class HouseholdDemands(Dataset):
             tasks=tasks,
         )
 
+def create_table():
+    EgonEtragoElectricityHouseholds.__table__.drop(
+        bind=engine, checkfirst=True
+    )
+    EgonEtragoElectricityHouseholds.__table__.create(
+        bind=engine, checkfirst=True
+    )
 
 def clean(x):
     """Clean zensus household data row-wise
