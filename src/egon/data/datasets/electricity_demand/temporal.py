@@ -10,7 +10,7 @@ from egon.data import db
 from sqlalchemy import ARRAY, Column, Float, Integer, String
 from sqlalchemy.ext.declarative import declarative_base
 
-import egon.data.datasets.scenario_parameters.parameters as scenario_parameters
+from egon.data.datasets.scenario_parameters import get_sector_parameters
 
 Base = declarative_base()
 
@@ -55,7 +55,7 @@ def calc_load_curve(share_wz, scn, annual_demand=1):
         Annual load curve of combindes cts branches
 
     """
-    year = int(scenario_parameters.global_settings(scn)["weather_year"])
+    year = int(get_sector_parameters("global", scn)["weather_year"])
 
     sources = egon.data.config.datasets()["electrical_load_curves_cts"][
         "sources"
