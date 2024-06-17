@@ -52,7 +52,7 @@ countries: ['AL', 'AT', 'BA', 'BE', 'BG', 'CH', 'CZ', 'DE', 'DK', 'EE', 'ES', 'F
 
 # docs in https://pypsa-eur.readthedocs.io/en/latest/configuration.html#snapshots
 snapshots:
-  start: "2019-01-01"
+  start: "2011-01-01"
   end: "2020-01-01"
   inclusive: 'left'
   resolution: false
@@ -133,25 +133,25 @@ electricity:
 
 # docs in https://pypsa-eur.readthedocs.io/en/latest/configuration.html#atlite
 atlite:
-  default_cutout: europe-2019-era5
+  default_cutout: europe-2011-era5
   nprocesses: 4
   show_progress: false
   cutouts:
     # use 'base' to determine geographical bounds and time span from config
     # base:
       # module: era5
-    europe-2019-era5:
+    europe-2011-era5:
       module: era5 # in priority order
       x: [-12., 42.]
       y: [33., 72]
       dx: 0.3
       dy: 0.3
-      time: ['2019', '2019']
+      time: ['2011', '2011']
 
 # docs in https://pypsa-eur.readthedocs.io/en/latest/configuration.html#renewable
 renewable:
   onwind:
-    cutout: europe-2019-era5
+    cutout: europe-2011-era5
     resource:
       method: wind
       turbine: Vestas_V112_3MW
@@ -170,7 +170,7 @@ renewable:
     excluder_resolution: 100
     clip_p_max_pu: 1.e-2
   offwind-ac:
-    cutout: europe-2019-era5
+    cutout: europe-2011-era5
     resource:
       method: wind
       turbine: NREL_ReferenceTurbine_2020ATB_5.5MW
@@ -186,7 +186,7 @@ renewable:
     excluder_resolution: 200
     clip_p_max_pu: 1.e-2
   offwind-dc:
-    cutout: europe-2019-era5
+    cutout: europe-2011-era5
     resource:
       method: wind
       turbine: NREL_ReferenceTurbine_2020ATB_5.5MW
@@ -202,7 +202,7 @@ renewable:
     excluder_resolution: 200
     clip_p_max_pu: 1.e-2
   solar:
-    cutout: europe-2019-era5
+    cutout: europe-2011-era5
     resource:
       method: pv
       panel: CSi
@@ -217,7 +217,7 @@ renewable:
     excluder_resolution: 100
     clip_p_max_pu: 1.e-2
   hydro:
-    cutout: europe-2019-era5
+    cutout: europe-2011-era5
     carriers: [ror, PHS, hydro]
     PHS_max_hours: 6
     hydro_max_hours: "energy_capacity_totals_by_country" # one of energy_capacity_totals_by_country, estimate_by_large_installations or a float
@@ -248,7 +248,7 @@ lines:
   under_construction: 'zero' # 'zero': set capacity to zero, 'remove': remove, 'keep': with full capacity
   dynamic_line_rating:
     activate: false
-    cutout: europe-2019-era5
+    cutout: europe-2011-era5
     correction_factor: 0.95
     max_voltage_difference: false
     max_line_rating: false
@@ -300,7 +300,7 @@ pypsa_eur:
 
 # docs in https://pypsa-eur.readthedocs.io/en/latest/configuration.html#energy
 energy:
-  energy_totals_year: 2019
+  energy_totals_year: 2011
   base_emissions_year: 1990
   eurostat_report_year: 2016
   emissions: CO2
