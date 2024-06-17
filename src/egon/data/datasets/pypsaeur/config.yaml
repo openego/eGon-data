@@ -53,7 +53,7 @@ countries: ['AL', 'AT', 'BA', 'BE', 'BG', 'CH', 'CZ', 'DE', 'DK', 'EE', 'ES', 'F
 # docs in https://pypsa-eur.readthedocs.io/en/latest/configuration.html#snapshots
 snapshots:
   start: "2011-01-01"
-  end: "2020-01-01"
+  end: "2012-01-01"
   inclusive: 'left'
   resolution: false
   segmentation: false
@@ -120,7 +120,7 @@ electricity:
   estimate_renewable_capacities:
     enable: true
     from_opsd: true
-    year: 2020
+    year: 2050
     expansion_limit: false
     technology_mapping:
       Offshore: [offwind-ac, offwind-dc]
