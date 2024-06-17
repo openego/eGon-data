@@ -35,7 +35,7 @@ from egon.data.datasets.era5 import WeatherData
 from egon.data.datasets.etrago_setup import EtragoSetup
 from egon.data.datasets.fill_etrago_gen import Egon_etrago_gen
 from egon.data.datasets.fix_ehv_subnetworks import FixEhvSubnetworks
-from egon.data.datasets.gas_areas import GasAreasstatus2019
+from egon.data.datasets.gas_areas import GasAreas
 from egon.data.datasets.gas_grid import GasNodesAndPipes
 from egon.data.datasets.gas_neighbours import GasNeighbours
 from egon.data.datasets.heat_demand import HeatDemandImport
@@ -352,7 +352,7 @@ with airflow.DAG(
         ]
     )
     # Create gas voronoi status2019
-    create_gas_polygons_status2019 = GasAreasstatus2019(
+    create_gas_polygons_status2019 = GasAreas(
         dependencies=[setup_etrago, vg250, gas_grid_insert_data, substation_voronoi]
     )
 
