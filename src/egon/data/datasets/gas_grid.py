@@ -158,7 +158,7 @@ def ch4_nodes_number_G(gas_nodes_list):
     return N_ch4_nodes_G
 
 
-def insert_CH4_nodes_list(gas_nodes_list):
+def insert_CH4_nodes_list(gas_nodes_list, scn_name="eGon2035"):
     """
     Insert list of German CH4 nodes into the database for eGon2035
 
@@ -222,7 +222,7 @@ def insert_CH4_nodes_list(gas_nodes_list):
         # A completer avec nodes related to pipelines which have an end in the selected area et evt deplacer ds define_gas_nodes_list
 
     # Add missing columns
-    c = {"scn_name": "eGon2035", "carrier": "CH4"}
+    c = {"scn_name": scn_name, "carrier": "CH4"}
     gas_nodes_list = gas_nodes_list.assign(**c)
 
     gas_nodes_list = geopandas.GeoDataFrame(
@@ -305,7 +305,7 @@ def insert_gas_buses_abroad(scn_name="eGon2035"):
     )
 
     # Select the foreign buses
-    gdf_abroad_buses = central_buses_pypsaeur(sources)
+    gdf_abroad_buses = central_buses_pypsaeur(sources, scenario=scn_name)
     gdf_abroad_buses = gdf_abroad_buses.drop_duplicates(subset=["country"])
 
     # Select next id value
@@ -800,7 +800,7 @@ def insert_gas_pipeline_list(
     )
 
 
-def remove_isolated_gas_buses():
+def remove_isolated_gas_buses(scn_name="eGon2035"):
     """
     Delete CH4 buses which are disconnected of the CH4 grid for the eGon2035 scenario
 
@@ -813,15 +813,15 @@ def remove_isolated_gas_buses():
         f"""
         DELETE FROM {targets['buses']['schema']}.{targets['buses']['table']}
         WHERE "carrier" = 'CH4'
-        AND scn_name = 'eGon2035'
+        AND scn_name = '{scn_name}'
         AND country = 'DE'
         AND "bus_id" NOT IN
             (SELECT bus0 FROM {targets['links']['schema']}.{targets['links']['table']}
-            WHERE scn_name = 'eGon2035'
+            WHERE scn_name = '{scn_name}'
             AND carrier = 'CH4')
         AND "bus_id" NOT IN
             (SELECT bus1 FROM {targets['links']['schema']}.{targets['links']['table']}
-            WHERE scn_name = 'eGon2035'
+            WHERE scn_name = '{scn_name}'
             AND carrier = 'CH4');
     """
     )
@@ -847,15 +847,23 @@ def insert_gas_data():
     This function inserts data into the database and has no return.
 
     """
-    download_SciGRID_gas_data()
-
-    gas_nodes_list = define_gas_nodes_list()
-
-    insert_CH4_nodes_list(gas_nodes_list)
-    abroad_gas_nodes_list = insert_gas_buses_abroad()
-
-    insert_gas_pipeline_list(gas_nodes_list, abroad_gas_nodes_list)
-    remove_isolated_gas_buses()
+    s = config.settings()["egon-data"]["--scenarios"]
+    scenarios = []     
+    if "eGon2035" in s:
+        scenarios.append("eGon2035")
+    if "eGon100RE" in s:
+        scenarios.append("eGon100RE")
+    
+    for scn_name in scenarios:
+        download_SciGRID_gas_data()
+    
+        gas_nodes_list = define_gas_nodes_list()
+    
+        insert_CH4_nodes_list(gas_nodes_list, scn_name=scn_name)
+        abroad_gas_nodes_list = insert_gas_buses_abroad(scn_name=scn_name)
+    
+        insert_gas_pipeline_list(gas_nodes_list, abroad_gas_nodes_list, scn_name=scn_name)
+        remove_isolated_gas_buses(scn_name=scn_name)
 
 
 def insert_gas_data_eGon100RE():
@@ -952,47 +960,49 @@ def insert_gas_data_status2019():
 
     """
     scn_name = "status2019"
-
-    # delete old entries
-    db.execute_sql(
-        f"""
-        DELETE FROM grid.egon_etrago_link
-        WHERE carrier = 'CH4' AND scn_name = '{scn_name}'
-        """
-    )
-    db.execute_sql(
-        f"""
-        DELETE FROM grid.egon_etrago_bus
-        WHERE carrier = 'CH4' AND scn_name = '{scn_name}'
-        """
-    )
-
-    # Select next id value
-    new_id = db.next_etrago_id("bus")
-
-    df = pd.DataFrame(
-        index=[new_id],
-        data={
-            "scn_name": scn_name,
-            "v_nom": 1,
-            "carrier": "CH4",
-            "v_mag_pu_set": 1,
-            "v_mag_pu_min": 0,
-            "v_mag_pu_max": np.inf,
-            "x": 10,
-            "y": 51,
-            "country": "DE",
-        },
-    )
-    gdf = geopandas.GeoDataFrame(
-        df, geometry=geopandas.points_from_xy(df.x, df.y, crs=4326)
-    ).rename_geometry("geom")
-
-    gdf.index.name = "bus_id"
-
-    gdf.reset_index().to_postgis(
-        "egon_etrago_bus", schema="grid", con=db.engine(), if_exists="append"
-    )
+    if "status2019" in config.settings()["egon-data"]["--scenarios"]:
+        
+        # delete old entries
+        db.execute_sql(
+            f"""
+            DELETE FROM grid.egon_etrago_link
+            WHERE carrier = 'CH4' AND scn_name = '{scn_name}'
+            """
+        )
+        db.execute_sql(
+            f"""
+            DELETE FROM grid.egon_etrago_bus
+            WHERE carrier = 'CH4' AND scn_name = '{scn_name}'
+            """
+        )
+    
+        # Select next id value
+        new_id = db.next_etrago_id("bus")
+    
+        df = pd.DataFrame(
+            index=[new_id],
+            data={
+                "scn_name": scn_name,
+                "v_nom": 1,
+                "carrier": "CH4",
+                "v_mag_pu_set": 1,
+                "v_mag_pu_min": 0,
+                "v_mag_pu_max": np.inf,
+                "x": 10,
+                "y": 51,
+                "country": "DE",
+            },
+        )
+        gdf = geopandas.GeoDataFrame(
+            df, geometry=geopandas.points_from_xy(df.x, df.y, crs=4326)
+        ).rename_geometry("geom")
+    
+        gdf.index.name = "bus_id"
+    
+        gdf.reset_index().to_postgis(
+            "egon_etrago_bus", schema="grid", con=db.engine(), if_exists="append"
+        )
+    return
 
 
 class GasNodesAndPipes(Dataset):
@@ -1021,13 +1031,8 @@ class GasNodesAndPipes(Dataset):
     #:
     version: str = "0.0.10"
 
-    tasks = (insert_gas_data_status2019,)
+    tasks = (insert_gas_data_status2019, insert_gas_data)
 
-    if "eGon2035" in config.settings()["egon-data"]["--scenarios"]:
-        tasks = tasks + (insert_gas_data,)
-
-    if "eGon100RE" in config.settings()["egon-data"]["--scenarios"]:
-        tasks = tasks + (insert_gas_data_eGon100RE,)
 
     def __init__(self, dependencies):
         super().__init__(
