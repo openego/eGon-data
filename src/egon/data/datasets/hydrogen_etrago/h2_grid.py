@@ -53,20 +53,20 @@ def insert_h2_pipelines():
     pipelines = db.select_geodataframe(
         f"""
         SELECT * FROM grid.egon_etrago_link
-        WHERE scn_name = 'eGon2035' AND carrier = 'CH4'
+        WHERE scn_name = 'eGon100RE' AND carrier = 'CH4'
         AND bus0 IN (
             SELECT bus_id FROM grid.egon_etrago_bus
-            WHERE scn_name = 'eGon2035' AND country = 'DE'
+            WHERE scn_name = 'eGon100RE' AND country = 'DE'
         ) AND bus1 IN (
             SELECT bus_id FROM grid.egon_etrago_bus
-            WHERE scn_name = 'eGon2035' AND country = 'DE'
+            WHERE scn_name = 'eGon100RE' AND country = 'DE'
         );
         """
     )
 
     CH4_H2_busmap = db.select_dataframe(
         f"""
-        SELECT * FROM grid.egon_etrago_ch4_h2 WHERE scn_name = 'eGon2035'
+        SELECT * FROM grid.egon_etrago_ch4_h2 WHERE scn_name = 'eGon100RE'
         """,
         index_col="bus_CH4",
     )
