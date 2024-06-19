@@ -185,7 +185,8 @@ def buses(scenario, sources, targets):
 
     next_bus_id = db.next_etrago_id("bus") + 1
 
-    central_buses["bus_id"] = central_buses.reset_index().index + next_bus_id
+    if scenario != "eGon100RE":
+        central_buses["bus_id"] = central_buses.reset_index().index + next_bus_id
 
     next_bus_id += len(central_buses)
 
