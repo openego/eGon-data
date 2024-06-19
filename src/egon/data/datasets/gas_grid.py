@@ -320,7 +320,7 @@ def insert_gas_buses_abroad(scn_name="eGon2035"):
             "geom",
         ]
     )
-    gdf_abroad_buses["scn_name"] = "eGon2035"
+    gdf_abroad_buses["scn_name"] = scn_name
     gdf_abroad_buses["carrier"] = main_gas_carrier
     gdf_abroad_buses["bus_id"] = range(new_id, new_id + len(gdf_abroad_buses))
 
