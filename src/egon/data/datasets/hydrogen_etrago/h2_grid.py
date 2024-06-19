@@ -25,7 +25,7 @@ def insert_h2_pipelines():
     Insert hydrogen grid (H2 links) into the database for eGon100RE.
 
     Insert the H2 grid by executing the following steps:
-      * Copy the CH4 links in Germany from eGon2035
+      * Copy the CH4 links in Germany from eGon100RE
       * Overwrite the followings columns:
           * bus0 and bus1 using the grid.egon_etrago_ch4_h2 table
           * carrier, scn_name
@@ -99,14 +99,14 @@ def insert_h2_pipelines():
     new_pipelines.set_crs(epsg=4326, inplace=True)
 
     # find bus in H2_grid voronoi
-    new_pipelines = db.assign_gas_bus_id(new_pipelines, "eGon2035", "H2_grid")
+    new_pipelines = db.assign_gas_bus_id(new_pipelines, "eGon100RE", "H2_grid")
     new_pipelines = new_pipelines.rename(columns={"bus_id": "bus1"}).drop(
         columns=["bus"]
     )
 
     # create link geometries
     new_pipelines = link_geom_from_buses(
-        new_pipelines[["bus0", "bus1"]], "eGon2035"
+        new_pipelines[["bus0", "bus1"]], "eGon100RE"
     )
     new_pipelines["geom"] = new_pipelines.apply(
         lambda row: MultiLineString([row["topo"]]), axis=1
