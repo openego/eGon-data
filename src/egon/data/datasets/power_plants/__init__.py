@@ -595,6 +595,10 @@ def insert_hydro_biomass():
 
 
 def allocate_conventional_non_chp_power_plants():
+    # This function is only designed to work for the eGon2035 scenario
+    if "eGon2035" not in egon.data.config.settings()["egon-data"]["--scenarios"]:
+        return
+
     carrier = ["oil", "gas"]
 
     cfg = egon.data.config.datasets()["power_plants"]
@@ -753,6 +757,10 @@ def allocate_conventional_non_chp_power_plants():
 
 
 def allocate_other_power_plants():
+    # This function is only designed to work for the eGon2035 scenario
+    if "eGon2035" not in egon.data.config.settings()["egon-data"]["--scenarios"]:
+        return
+
     # Get configuration
     cfg = egon.data.config.datasets()["power_plants"]
     boundary = egon.data.config.settings()["egon-data"]["--dataset-boundary"]
