@@ -105,6 +105,7 @@ def global_settings(scenario):
                 "coal": 20.2,  # [EUR/MWh]
                 "lignite": 4.0,  # [EUR/MWh]
                 "nuclear": 1.7,  # [EUR/MWh]
+                "biomass": 40,  # Dummyvalue, ToDo: Find a suitable source. To be fix in #268
             },
             "co2_costs": 76.5,  # [EUR/t_CO2]
             "co2_emissions": {  # Netzentwicklungsplan Strom 2035, Version 2021, 1. Entwurf, p. 40, table 8

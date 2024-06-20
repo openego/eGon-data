@@ -111,7 +111,6 @@ def scale_prox2now(df, target, level="federal_state"):
         Future power plants
 
     """
-
     if level == "federal_state":
         df.loc[:, "Nettonennleistung"] = (
             df.groupby(df.Bundesland)
@@ -119,9 +118,9 @@ def scale_prox2now(df, target, level="federal_state"):
             .mul(target[df.Bundesland.values].values)
         )
     else:
-        df.loc[:, "Nettonennleistung"] = df.Nettonennleistung.apply(
-            lambda x: x / x.sum()
-        ).mul(target.values)
+        df.loc[:, "Nettonennleistung"] = df.Nettonennleistung * (
+            target / df.Nettonennleistung.sum()
+        )
 
     df = df[df.Nettonennleistung > 0]
 
@@ -237,8 +236,11 @@ def insert_biomass_plants(scenario):
     """
     cfg = egon.data.config.datasets()["power_plants"]
 
-    # import target values from NEP 2021, scneario C 2035
-    target = select_target("biomass", scenario)
+    # import target values
+    if scenario != "eGon100RE":
+        target = select_target("biomass", scenario)
+    else:
+        target = 20000 #dummy value. Muss be fix with issue #268
 
     # import data for MaStR
     mastr = pd.read_csv(
@@ -580,7 +582,14 @@ def insert_hydro_biomass():
         """
     )
 
-    for scenario in ["eGon2035"]:
+    s = egon.data.config.settings()["egon-data"]["--scenarios"]
+    scenarios = []
+    if "eGon2035" in s:
+        scenarios.append("eGon2035")
+    if "eGon100RE" in s:
+        scenarios.append("eGon100RE")
+
+    for scenario in scenarios:
         insert_biomass_plants(scenario)
         insert_hydro_plants(scenario)
 
