@@ -1114,8 +1114,6 @@ def insert():
             )
             plt.savefig("pv_per_distr_map_eGon100RE.png", dpi=300)
 
-        pv_rora = pv_rora[pv_rora["installed capacity in kW"] > 0]
-        pv_agri = pv_agri[pv_agri["installed capacity in kW"] > 0]
         pv_rora_100RE = pv_rora_100RE[
             pv_rora_100RE["installed capacity in kW"] > 0
         ]
