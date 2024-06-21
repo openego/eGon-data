@@ -309,10 +309,12 @@ def insert():
         # prepare dataframes to check intersection
         pvs = gpd.GeoDataFrame()
         pvs["geom"] = mastr["buffer"].copy()
+        pvs.set_geometry("geom", inplace=True)
         pvs.crs = 3035
         pvs = pvs.set_geometry("geom")
         potentials = gpd.GeoDataFrame()
         potentials["geom"] = potentials_pot["geom"].copy()
+        potentials.set_geometry("geom", inplace=True)
         potentials.crs = 3035
         potentials = potentials.set_geometry("geom")
 
