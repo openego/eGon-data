@@ -311,6 +311,10 @@ def allocate_pumped_hydro_sq(scn_name):
         dtype={"Postleitzahl": str},
     )
 
+    if config.settings()["egon-data"]["--dataset-boundary"] == "Schleswig-Holstein":
+        # Filter for Schleswig-Holstein
+        mastr_ph = mastr_ph.loc[mastr_ph.Bundesland == "SchleswigHolstein"]
+
     # Rename columns
     mastr_ph = mastr_ph.rename(
         columns={
@@ -407,6 +411,33 @@ def allocate_pumped_hydro_sq(scn_name):
     # Capacity located outside germany -> will be assigned to foreign buses
     mastr_ph_foreign = mastr_ph.loc[mastr_ph["federal_state"].isna()]
 
+    if not mastr_ph_foreign.empty:
+        # Get foreign buses
+        sql = f"""
+        SELECT * FROM grid.egon_etrago_bus
+        WHERE scn_name = '{scn_name}'
+        and country != 'DE'
+        """
+        df_foreign_buses = db.select_geodataframe(
+            sql, geom_col="geom", epsg="4326"
+        )
+
+        # Assign closest foreign bus at voltage level to foreign pp
+        nearest_neighbors = []
+        for vl, v_nom in {1: 380, 2: 220, 3: 110}.items():
+            ph = mastr_ph_foreign.loc[mastr_ph_foreign["voltage_level"] == vl]
+            if ph.empty:
+                continue
+            bus = df_foreign_buses.loc[
+                df_foreign_buses["v_nom"] == v_nom,
+                ["v_nom", "country", "bus_id", "geom"],
+            ]
+            results = gpd.sjoin_nearest(
+                left_df=ph, right_df=bus, how="left", distance_col="distance"
+            )
+            nearest_neighbors.append(results)
+        mastr_ph_foreign = pd.concat(nearest_neighbors)
+
     # Keep only capacities within germany
     mastr_ph = mastr_ph.dropna(subset="federal_state")
 
@@ -414,34 +445,9 @@ def allocate_pumped_hydro_sq(scn_name):
     mastr_ph = assign_bus_id(mastr_ph, cfg=config.datasets()["power_plants"])
     mastr_ph["bus_id"] = mastr_ph["bus_id"].astype(int)
 
-    # Get foreign buses
-    sql = f"""
-    SELECT * FROM grid.egon_etrago_bus
-    WHERE scn_name = '{scn_name}'
-    and country != 'DE'
-    """
-    df_foreign_buses = db.select_geodataframe(
-        sql, geom_col="geom", epsg="4326"
-    )
-
-    # Assign closest foreign bus at voltage level to foreign pp
-    nearest_neighbors = []
-    for vl, v_nom in {1: 380, 2: 220, 3: 110}.items():
-        ph = mastr_ph_foreign.loc[mastr_ph_foreign["voltage_level"] == vl]
-        if ph.empty:
-            continue
-        bus = df_foreign_buses.loc[
-            df_foreign_buses["v_nom"] == v_nom,
-            ["v_nom", "country", "bus_id", "geom"],
-        ]
-        results = gpd.sjoin_nearest(
-            left_df=ph, right_df=bus, how="left", distance_col="distance"
-        )
-        nearest_neighbors.append(results)
-    mastr_ph_foreign = pd.concat(nearest_neighbors)
-
-    # Merge foreign pp
-    mastr_ph = pd.concat([mastr_ph, mastr_ph_foreign])
+    if not mastr_ph_foreign.empty:
+        # Merge foreign pp
+        mastr_ph = pd.concat([mastr_ph, mastr_ph_foreign])
 
     # Reduce to necessary columns
     mastr_ph = mastr_ph[

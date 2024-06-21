@@ -39,7 +39,7 @@ class DemandRegio(Dataset):
     def __init__(self, dependencies):
         super().__init__(
             name="DemandRegio",
-            version="0.0.7",
+            version="0.0.8",
             dependencies=dependencies,
             tasks=(
                 clone_and_install,
@@ -916,9 +916,11 @@ def timeseries_per_wz():
 
     """
 
-    years = get_sector_parameters("global").weather_year.unique()
+    scenarios = egon.data.config.settings()["egon-data"]["--scenarios"]
 
-    for year in years:
+    for scn in scenarios:
+        year = int(scenario_parameters.global_settings(scn)["weather_year"])
+
         for sector in ["CTS", "industry"]:
             insert_timeseries_per_wz(sector, int(year))
 
