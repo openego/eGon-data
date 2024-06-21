@@ -89,8 +89,10 @@ def insert():
             "wind_onshore",
             "DE",
         )
-        target_power_df = target_power_df[target_power_df["scenario_name"] != "eGon100RE"]
-        
+        target_power_df = target_power_df[
+            target_power_df["scenario_name"] != "eGon100RE"
+        ]
+
     if "eGon2035" in target_power_df["scenario_name"].values:
         # Fit wind farms scenarions for each one of the states
         for scenario in target_power_df.index:
@@ -119,7 +121,7 @@ def insert():
 
     generate_map()
 
-    return (summary_t, farms)
+    return
 
 
 def generate_wind_farms():
@@ -188,9 +190,7 @@ def generate_wind_farms():
     wea["connection point"] = wea["LokationMastrNummer"].map(
         bus["NetzanschlusspunktMastrNummer"]
     )
-    wea["voltage"] = wea["LokationMastrNummer"].map(
-        bus["Spannungsebene"]
-    )
+    wea["voltage"] = wea["LokationMastrNummer"].map(bus["Spannungsebene"])
 
     # Create the columns 'geometry' which will have location of each WT in a
     # point type
@@ -326,7 +326,9 @@ def wind_power_states(
     if fed_state in north:
         state_wf["inst capacity [MW]"] = power_north * state_wf["area [km²]"]
     else:
-        state_wf["inst capacity [MW]"] = power_south * state_wf["area [km²]"] # ToDo: fix this when scn eGon100RE
+        state_wf["inst capacity [MW]"] = (
+            power_south * state_wf["area [km²]"]
+        )  # ToDo: fix this when scn eGon100RE
 
     # Divide selected areas based on voltage of connection points
     wf_mv = state_wf[
@@ -444,7 +446,7 @@ def wind_power_states(
             ],
             ignore_index=True,
         )
-        extra_wf.to_crs(4326, inplace= True)
+        extra_wf.to_crs(4326, inplace=True)
         wind_farms = pd.concat([wind_farms, extra_wf], ignore_index=True)
 
     # Use Definition of thresholds for voltage level assignment
