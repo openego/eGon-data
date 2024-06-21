@@ -612,6 +612,12 @@ def cascade_heat_supply_indiv(scenario, distribution_level, plotting=True):
             columns=["estimated_flh", "priority"],
             data={"estimated_flh": [4000, 8000], "priority": [2, 1]},
         )
+    elif scenario == "eGon100RE":
+        technologies = pd.DataFrame(
+            index=["heat_pump", "gas_boiler"],
+            columns=["estimated_flh", "priority"],
+            data={"estimated_flh": [4000, 8000], "priority": [2, 1]},
+        )
     elif scenario == "status2019":
         technologies = pd.DataFrame(
             index=["heat_pump"],
