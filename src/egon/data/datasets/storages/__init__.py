@@ -311,7 +311,7 @@ def allocate_pumped_hydro_sq(scn_name):
         dtype={"Postleitzahl": str},
     )
 
-    if egon.data.config.settings()["egon-data"]["--dataset-boundary"] == "Schleswig-Holstein":
+    if config.settings()["egon-data"]["--dataset-boundary"] == "Schleswig-Holstein":
         # Filter for Schleswig-Holstein
         mastr_ph = mastr_ph.loc[mastr_ph.Bundesland == "SchleswigHolstein"]
 
