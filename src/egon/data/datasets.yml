@@ -553,6 +553,9 @@ solar_rooftop:
     generator_timeseries:
       schema: 'grid'
       table: 'egon_etrago_generator_timeseries'
+    generators:
+      schema: 'grid'
+      table: 'egon_etrago_generator'
 
 data-bundle:
   sources:
