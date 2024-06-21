@@ -844,6 +844,12 @@ def insert():
         )
         print(" ")
 
+        # initialize final dataframe
+        pv_rora = gpd.GeoDataFrame()
+        pv_agri = gpd.GeoDataFrame()
+        pv_exist = gpd.GeoDataFrame()
+        pv_per_distr = gpd.GeoDataFrame()
+
         # 1) scenario: eGon2035
         if "eGon2035" in egon.data.config.settings()["egon-data"]["--scenarios"]:
             ###
@@ -863,13 +869,7 @@ def insert():
             target = pd.read_sql(sql, con)
             target = target[target["scenario_name"] == "eGon2035"]
             nuts = np.unique(target["nuts"])
-    
-            # initialize final dataframe
-            pv_rora = gpd.GeoDataFrame()
-            pv_agri = gpd.GeoDataFrame()
-            pv_exist = gpd.GeoDataFrame()
-            pv_per_distr = gpd.GeoDataFrame()
-    
+     
             # prepare selection per state
             rora = rora.set_geometry("centroid")
             agri = agri.set_geometry("centroid")
@@ -1116,7 +1116,6 @@ def insert():
 
         pv_rora = pv_rora[pv_rora["installed capacity in kW"] > 0]
         pv_agri = pv_agri[pv_agri["installed capacity in kW"] > 0]
-        pv_per_distr = gpd.GeoDataFrame()
         pv_rora_100RE = pv_rora_100RE[
             pv_rora_100RE["installed capacity in kW"] > 0
         ]
