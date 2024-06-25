@@ -1297,6 +1297,8 @@ def insert():
     
         else:
             pv_parks = gpd.GeoDataFrame()
+    else:
+        pv_parks = gpd.GeoDataFrame()
 
     if "eGon100RE" in egon.data.config.settings()["egon-data"]["--scenarios"]:
         if (
@@ -1315,5 +1317,7 @@ def insert():
 
         else:
             pv_parks_100RE = gpd.GeoDataFrame()
+    else:
+        pv_parks_100RE = gpd.GeoDataFrame()
 
     return pv_parks, pv_parks_100RE
