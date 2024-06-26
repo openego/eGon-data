@@ -1635,17 +1635,31 @@ def cap_per_bus_id(
     pandas.DataFrame
         DataFrame with total rooftop capacity per mv grid.
     """
-    sources = config.datasets()["solar_rooftop"]["sources"]
+    if scenario == "status2019":
+        sources = config.datasets()["solar_rooftop"]["sources"]
 
-    sql = f"""
-    SELECT bus_id, SUM(el_capacity) as capacity
-    FROM {sources['power_plants']['schema']}.{sources['power_plants']['table']}
-    WHERE carrier = 'solar_rooftop'
-    AND scenario = '{scenario}'
-    GROUP BY bus_id
-    """
+        sql = f"""
+        SELECT bus_id, SUM(el_capacity) as capacity
+        FROM {sources['power_plants']['schema']}.{sources['power_plants']['table']}
+        WHERE carrier = 'solar_rooftop'
+        AND scenario = '{scenario}'
+        GROUP BY bus_id
+        """
 
-    df = db.select_dataframe(sql, index_col="bus_id")
+        df = db.select_dataframe(sql, index_col="bus_id")
+
+    else:
+        targets = config.datasets()["solar_rooftop"]["targets"]
+
+        sql = f"""
+        SELECT bus as bus_id, control, p_nom as capacity
+        FROM {targets['generators']['schema']}.{targets['generators']['table']}
+        WHERE carrier = 'solar_rooftop'
+        AND scn_name = '{scenario}'
+        """
+
+        df = db.select_dataframe(sql, index_col="bus_id")
+        df = df.loc[df.control != "Slack"]
 
     return df
 
@@ -2782,11 +2796,13 @@ def pv_rooftop_to_buildings():
 
     mastr_gdf = load_mastr_data()
 
-    ts = pd.Timestamp(config.datasets()["mastr_new"]["status2019_date_max"])
-
-    mastr_gdf = mastr_gdf.loc[
-        pd.to_datetime(mastr_gdf.Inbetriebnahmedatum) <= ts
-    ]
+    if "status2019" in config.settings()["egon-data"]["--scenarios"]:
+        ts = pd.Timestamp(
+            config.datasets()["mastr_new"]["status2019_date_max"]
+        )
+        mastr_gdf = mastr_gdf.loc[
+            pd.to_datetime(mastr_gdf.Inbetriebnahmedatum) <= ts
+        ]
 
     buildings_gdf = load_building_data()
 
