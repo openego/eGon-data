@@ -18,7 +18,6 @@ from egon.data.datasets import Dataset
 from egon.data.datasets.hydrogen_etrago.bus import insert_hydrogen_buses
 from egon.data.datasets.hydrogen_etrago.h2_grid import insert_h2_pipelines
 from egon.data.datasets.hydrogen_etrago.h2_to_ch4 import (
-    insert_h2_to_ch4_eGon100RE,
     insert_h2_to_ch4_to_h2,
 )
 from egon.data.datasets.hydrogen_etrago.power_to_h2 import (
