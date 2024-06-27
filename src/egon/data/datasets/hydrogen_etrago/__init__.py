@@ -149,7 +149,6 @@ class HydrogenPowerLinkEtrago(Dataset):
             dependencies=dependencies,
             tasks=(
                 insert_power_to_h2_to_power,
-                insert_power_to_h2_to_power_eGon100RE,
             ),
         )
 
