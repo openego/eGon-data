@@ -184,7 +184,7 @@ class HydrogenMethaneLinkEtrago(Dataset):
             name=self.name,
             version=self.version,
             dependencies=dependencies,
-            tasks=(insert_h2_to_ch4_to_h2, insert_h2_to_ch4_eGon100RE),
+            tasks=(insert_h2_to_ch4_to_h2),
         )
 
 
