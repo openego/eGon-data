@@ -42,41 +42,41 @@ def insert_power_to_h2_to_power():
 
     """
     scenarios = config.settings()["egon-data"]["--scenarios"]
-    
+
     for scn_name in scenarios:
 
         # Connect to local database
         engine = db.engine()
-    
+
         # create bus connections
         gdf = map_buses(scn_name)
-    
+
         bus_ids = {
             "PtH2": gdf[["bus0", "bus1"]],
             "H2tP": gdf[["bus0", "bus1"]].rename(
                 columns={"bus0": "bus1", "bus1": "bus0"}
             ),
         }
-    
+
         geom = {"PtH2": [], "H2tP": []}
         topo = {"PtH2": [], "H2tP": []}
         p_nom_max = {"PtH2": [], "H2tP": []}
         length = []
-    
+
         geod = Geod(ellps="WGS84")
-    
+
         # Add missing columns
         for index, row in gdf.iterrows():
             # Connect AC to gas
             line = geometry.LineString([row["geom_AC"], row["geom_gas"]])
             geom["PtH2"].append(geometry.MultiLineString([line]))
             topo["PtH2"].append(line)
-    
+
             # Connect gas to AC
             line = geometry.LineString([row["geom_gas"], row["geom_AC"]])
             geom["H2tP"].append(geometry.MultiLineString([line]))
             topo["H2tP"].append(line)
-    
+
             lenght_km = (
                 geod.geometry_length(line) / 1000
             )  # Calculate the distance between the power and the gas buses (lenght of the link)
@@ -89,10 +89,10 @@ def insert_power_to_h2_to_power():
             else:
                 p_nom_max["PtH2"].append(float("Inf"))
                 p_nom_max["H2tP"].append(float("Inf"))
-    
+
         # read carrier information from scnario parameter data
         scn_params = get_sector_parameters("gas", scn_name)
-    
+
         carrier = {"PtH2": "power_to_H2", "H2tP": "H2_to_power"}
         efficiency = {
             "PtH2": scn_params["efficiency"]["power_to_H2"],
@@ -102,41 +102,41 @@ def insert_power_to_h2_to_power():
             "PtH2": scn_params["capital_cost"]["power_to_H2"],
             "H2tP": scn_params["capital_cost"]["H2_to_power"],
         }
-    
+
         lifetime = {
             "PtH2": scn_params["lifetime"]["power_to_H2"],
             "H2tP": scn_params["lifetime"]["H2_to_power"],
         }
-    
+
         # Drop unused columns
         gdf.drop(columns=["geom_gas", "geom_AC", "dist"], inplace=True)
-    
+
         # Iterate over carriers
         for key in geom:
-    
+
             gdf["geom"] = geom[key]
             gdf = gdf.set_geometry("geom", crs=4326)
-    
+
             gdf["topo"] = topo[key]
-    
+
             # Adjust bus id column naming
             gdf["bus0"] = bus_ids[key]["bus0"]
             gdf["bus1"] = bus_ids[key]["bus1"]
-    
+
             gdf["p_nom_max"] = p_nom_max[key]
             gdf["carrier"] = carrier[key]
             gdf["efficiency"] = efficiency[key]
-    
+
             gdf["capital_cost"] = capital_cost[key]
             gdf["lifetime"] = lifetime[key]
-    
+
             gdf["length"] = 0
-    
+
             gdf["p_nom"] = 0
             gdf["p_nom_extendable"] = True
-    
+
             print("Minimal length (in km): " + str(gdf["length"].min()))
-    
+
             # Select next id value
             new_id = db.next_etrago_id("link")
             gdf["link_id"] = range(new_id, new_id + len(gdf))
@@ -150,7 +150,7 @@ def insert_power_to_h2_to_power():
                 if_exists="replace",
                 dtype={"geom": Geometry(), "topo": Geometry()},
             )
-    
+
             db.execute_sql(
                 f"""
             DELETE FROM grid.egon_etrago_link WHERE "carrier" = '{carrier[key]}'
