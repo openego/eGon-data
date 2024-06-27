@@ -23,7 +23,6 @@ from egon.data.datasets.hydrogen_etrago.h2_to_ch4 import (
 )
 from egon.data.datasets.hydrogen_etrago.power_to_h2 import (
     insert_power_to_h2_to_power,
-    insert_power_to_h2_to_power_eGon100RE,
 )
 from egon.data.datasets.hydrogen_etrago.storage import (
     calculate_and_map_saltcavern_storage_potential,
