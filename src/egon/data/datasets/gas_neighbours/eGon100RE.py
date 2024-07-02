@@ -93,10 +93,10 @@ def insert_gas_neigbours_eGon100RE():
 def define_DE_crossbording_pipes_geom_eGon100RE(scn_name="eGon100RE"):
     """Define the missing crossbordering gas pipelines in eGon100RE
 
-    This function defines the crossbordering pipelines (for H2 and CH4)
+    This function defines the crossbordering pipelines (for H2)
     between Germany and its neighbouring countries. These pipelines
     are defined as links and there are copied from the corresponding
-    CH4 crossbering pipelines from eGon2035.
+    CH4 crossbering pipelines.
 
     Parameters
     ----------
@@ -111,9 +111,32 @@ def define_DE_crossbording_pipes_geom_eGon100RE(scn_name="eGon100RE"):
         geometry (geom and topo) but no capacity.
 
     """
+
+    def find_equivalent_H2(df):
+        equivalent = {}
+        H2 = df[df["carrier"].isin(["H2", "H2_grid"])].set_index("bus_id")
+        CH4 = df[df["carrier"] == "CH4"].set_index("bus_id")
+
+        for bus in CH4.index:
+            bus_h2 = H2[
+                (H2.x == CH4.at[bus, "x"]) & (H2.y == CH4.at[bus, "y"])
+            ].index[0]
+            equivalent[bus] = bus_h2
+        return equivalent
+
+    def set_foreign_country(link, foreign):
+        if link["bus0"] in (foreign.index):
+            country = foreign.at[link["bus0"], "country"]
+        elif link["bus1"] in (foreign.index):
+            country = foreign.at[link["bus1"], "country"]
+        else:
+            print(f"{link['link_id']} is has not foreign bus")
+
+        return country
+
     sources = config.datasets()["gas_neighbours"]["sources"]
 
-    gas_pipelines_list = db.select_geodataframe(
+    gas_pipelines_list_CH4 = db.select_geodataframe(
         f"""
         SELECT * FROM grid.egon_etrago_link
         WHERE ("bus0" IN (
@@ -122,50 +145,46 @@ def define_DE_crossbording_pipes_geom_eGon100RE(scn_name="eGon100RE"):
                         WHERE country != 'DE'
                         AND country != 'RU'
                         AND carrier = 'CH4'
-                        AND scn_name = 'eGon2035')
+                        AND scn_name = 'eGon100RE')
                     AND "bus1" IN (SELECT bus_id FROM 
                         {sources['buses']['schema']}.{sources['buses']['table']}
                         WHERE country = 'DE'
                         AND carrier = 'CH4' 
-                        AND scn_name = 'eGon2035'))
+                        AND scn_name = 'eGon100RE'))
                 OR ("bus0" IN (
                         SELECT bus_id FROM 
                         {sources['buses']['schema']}.{sources['buses']['table']}
                         WHERE country = 'DE'
                         AND carrier = 'CH4'
-                        AND scn_name = 'eGon2035')
+                        AND scn_name = 'eGon100RE')
                 AND "bus1" IN (
                         SELECT bus_id FROM 
                         {sources['buses']['schema']}.{sources['buses']['table']}
                         WHERE country != 'DE'
                         AND country != 'RU'
                         AND carrier = 'CH4' 
-                        AND scn_name = 'eGon2035'))
-        AND scn_name = 'eGon2035'
+                        AND scn_name = 'eGon100RE'))
+        AND scn_name = 'eGon100RE'
         AND carrier = 'CH4'
         """,
         epsg=4326,
     )
 
-    # Insert bus0 and bus1
-    gas_pipelines_list = gas_pipelines_list[
-        ["bus0", "bus1", "length", "p_min_pu", "geom", "topo"]
-    ].rename(columns={"bus0": "bus0_2035", "bus1": "bus1_2035"})
-
-    gas_nodes_list_2035 = db.select_geodataframe(
+    gas_nodes_list_100 = db.select_geodataframe(
         f"""
         SELECT * FROM {sources['buses']['schema']}.{sources['buses']['table']}
-        WHERE scn_name = 'eGon2035'
-        AND carrier = 'CH4'
+        WHERE scn_name = 'eGon100RE'
+        AND ((carrier = 'CH4') OR (carrier = 'H2') OR (carrier = 'H2_grid'))
+        AND country <> 'RU'
         """,
         epsg=4326,
     )
 
-    busID_table = gas_nodes_list_2035[["geom", "bus_id", "country"]].rename(
-        columns={"bus_id": "bus_id_CH4_2035"}
-    )
-    gas_pipelines_list_DE = pd.DataFrame(
-        columns=[
+    foreign_bus = gas_nodes_list_100[
+        gas_nodes_list_100.country != "DE"
+    ].set_index("bus_id")
+    gas_pipelines_list_CH4 = gas_pipelines_list_CH4[
+        [
             "length",
             "geom",
             "topo",
@@ -173,89 +192,38 @@ def define_DE_crossbording_pipes_geom_eGon100RE(scn_name="eGon100RE"):
             "bus1",
             "p_min_pu",
             "carrier",
+            "scn_name",
+            "link_id",
         ]
+    ]
+
+    gas_pipelines_list_CH4["country"] = gas_pipelines_list_CH4.apply(
+        lambda x: set_foreign_country(x, foreign=foreign_bus), axis=1
     )
 
-    for carrier in ["H2", "CH4"]:
-        if carrier == "CH4":
-            carrier_bus_DE = carrier
-        elif carrier == "H2":
-            carrier_bus_DE = "H2_grid"
+    gas_pipelines_list_H2 = gas_pipelines_list_CH4.copy()
+    gas_pipelines_list_H2["carrier"] = "H2_retrofit"
+    gas_pipelines_list_H2["scn_name"] = scn_name
 
-        busID_table_DE = db.assign_gas_bus_id(
-            busID_table[busID_table["country"] == "DE"],
-            scn_name,
-            carrier_bus_DE,
-        ).set_index("bus_id_CH4_2035")
-
-        gas_nodes_abroad_100RE = db.select_geodataframe(
-            f"""
-            SELECT * FROM grid.egon_etrago_bus
-            WHERE scn_name = 'eGon100RE'
-            AND carrier = '{carrier}'
-            AND country != 'DE'
-            """,
-            epsg=4326,
-        )
-
-        buses = busID_table[busID_table["country"] != "DE"]
-        buses["bus_id"] = 0
-
-        # Select bus_id from db
-        for i, row in buses.iterrows():
-            distance = gas_nodes_abroad_100RE.set_index(
-                "bus_id"
-            ).geom.distance(row.geom)
-            buses.loc[i, "bus_id"] = distance[
-                distance == distance.min()
-            ].index.values[0]
-
-        buses = buses.set_index("bus_id_CH4_2035")
-
-        bus0 = []
-        bus1 = []
-        country = []
-
-        for b0 in gas_pipelines_list["bus0_2035"].to_list():
-            if b0 in busID_table_DE.index.to_list():
-                bus0.append(int(busID_table_DE.loc[b0, "bus_id"]))
-            else:
-                bus0.append(int(buses.loc[b0, "bus_id"]))
-                country.append(buses.loc[b0, "country"])
-        for b1 in gas_pipelines_list["bus1_2035"].to_list():
-            if b1 in busID_table_DE.index.to_list():
-                bus1.append(int(busID_table_DE.loc[b1, "bus_id"]))
-            else:
-                bus1.append(int(buses.loc[b1, "bus_id"]))
-                country.append(buses.loc[b1, "country"])
-
-        gas_pipelines_list["bus0"] = bus0
-        gas_pipelines_list["bus1"] = bus1
-        gas_pipelines_list["country"] = country
-
-        # Insert carrier
-        if carrier == "CH4":
-            carrier_pipes = carrier
-        elif carrier == "H2":
-            carrier_pipes = "H2_retrofit"
-        gas_pipelines_list["carrier"] = carrier_pipes
-
-        gas_pipelines_list_DE = gas_pipelines_list_DE.append(
-            gas_pipelines_list, ignore_index=True
-        )
-
-    gas_pipelines_list_DE["scn_name"] = scn_name
+    CH4_to_H2 = find_equivalent_H2(gas_nodes_list_100)
+    gas_pipelines_list_H2["bus0"] = gas_pipelines_list_H2["bus0"].map(
+        CH4_to_H2
+    )
+    gas_pipelines_list_H2["bus1"] = gas_pipelines_list_H2["bus1"].map(
+        CH4_to_H2
+    )
 
     # Select next id value
     new_id = db.next_etrago_id("link")
-    gas_pipelines_list_DE["link_id"] = range(
-        new_id, new_id + len(gas_pipelines_list_DE)
+    gas_pipelines_list_H2["link_id"] = range(
+        new_id, new_id + len(gas_pipelines_list_H2)
     )
-    gas_pipelines_list_DE["link_id"] = gas_pipelines_list_DE["link_id"].astype(
+    gas_pipelines_list_H2["link_id"] = gas_pipelines_list_H2["link_id"].apply(
         int
     )
-    gas_pipelines_list_DE = gas_pipelines_list_DE.drop(
-        columns={"bus0_2035", "bus1_2035"}
+
+    gas_pipelines_list_DE = pd.concat(
+        [gas_pipelines_list_H2, gas_pipelines_list_CH4], ignore_index=True
     )
 
     return gas_pipelines_list_DE
@@ -299,10 +267,10 @@ def read_DE_crossbordering_cap_from_pes():
             ["bus0", "bus1", "p_nom_opt", "carrier"]
         ].rename(columns={"p_nom_opt": "p_nom"})
 
-        DE_pipe_capacities_list[
-            "country_code"
-        ] = DE_pipe_capacities_list.apply(
-            lambda row: str(sorted([row.bus0[:2], row.bus1[:2]])), axis=1
+        DE_pipe_capacities_list["country_code"] = (
+            DE_pipe_capacities_list.apply(
+                lambda row: str(sorted([row.bus0[:2], row.bus1[:2]])), axis=1
+            )
         )
 
         DE_pipe_capacities_list = DE_pipe_capacities_list.drop(
@@ -316,8 +284,8 @@ def read_DE_crossbordering_cap_from_pes():
             ["country_code"], as_index=False
         ).agg({"p_nom": "sum", "carrier": "first"})
 
-        pipe_capacities_list = pipe_capacities_list.append(
-            DE_pipe_capacities_list, ignore_index=True
+        pipe_capacities_list = pd.concat(
+            [pipe_capacities_list, DE_pipe_capacities_list]
         )
 
     map_countries = {
@@ -371,7 +339,6 @@ def calculate_crossbordering_gas_grid_capacities_eGon100RE(
         Germany and its neighbouring countries in eGon100RE.
 
     """
-
     Crossbordering_pipe_capacities_list = pd.DataFrame(
         columns=[
             "length",
@@ -403,8 +370,8 @@ def calculate_crossbordering_gas_grid_capacities_eGon100RE(
 
         pipe_capacities_list["p_nom"] = p_nom
         pipe_capacities_list = pipe_capacities_list.drop(columns={"country"})
-        Crossbordering_pipe_capacities_list = (
-            Crossbordering_pipe_capacities_list.append(pipe_capacities_list)
+        Crossbordering_pipe_capacities_list = pd.concat(
+            [Crossbordering_pipe_capacities_list, pipe_capacities_list]
         )
 
     return Crossbordering_pipe_capacities_list

@@ -98,7 +98,7 @@ def insert_gas_grid_capacities(Neighbouring_pipe_capacities_list, scn_name):
                         AND carrier = '{carriers[c]["bus_abroad"]}' 
                         AND scn_name = '{scn_name}'))
                 AND scn_name = '{scn_name}'
-                AND carrier = '{c.index}'            
+                AND carrier = '{carriers[c]["bus_abroad"]}'
                 ;
                 """
             )
