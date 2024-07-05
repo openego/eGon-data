@@ -557,12 +557,10 @@ def buildings_with_amenities():
     df_amenities_in_buildings["n_amenities_inside"] = 1
 
     # sum amenities per building and cell
-    df_amenities_in_buildings[
-        "n_amenities_inside"
-    ] = df_amenities_in_buildings.groupby(["zensus_population_id", "id"])[
-        "n_amenities_inside"
-    ].transform(
-        "sum"
+    df_amenities_in_buildings["n_amenities_inside"] = (
+        df_amenities_in_buildings.groupby(["zensus_population_id", "id"])[
+            "n_amenities_inside"
+        ].transform("sum")
     )
     # drop duplicated buildings
     df_buildings_with_amenities = df_amenities_in_buildings.drop_duplicates(
