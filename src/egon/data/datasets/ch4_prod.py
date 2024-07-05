@@ -45,7 +45,7 @@ class CH4Production(Dataset):
     name: str = "CH4Production"
     #:
 
-    version: str = "0.0.8"
+    version: str = "0.0.9"
 
     def __init__(self, dependencies):
         super().__init__(
