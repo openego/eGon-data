@@ -368,8 +368,10 @@ def create_district_heating_profile_python_like(scenario="eGon2035"):
             series for district heating grid {str(area)} is {diff}"""
 
             if abs(diff) > 0.03:
-                warnings.warn(f"""Deviation of residential heat demand time
-                series for district heating grid {str(area)} is {diff}""")
+                warnings.warn(
+                    f"""Deviation of residential heat demand time
+                series for district heating grid {str(area)} is {diff}"""
+                )
 
             hh = np.concatenate(
                 slice_df.drop(
