@@ -23,7 +23,7 @@ class WeatherData(Dataset):
     def __init__(self, dependencies):
         super().__init__(
             name="Era5",
-            version="0.0.2",
+            version="0.0.3",
             dependencies=dependencies,
             tasks=({create_tables, download_era5}, insert_weather_cells),
         )
