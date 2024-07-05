@@ -459,7 +459,7 @@ with airflow.DAG(
 
     # Assign industrial gas demand eGon100RE
     IndustrialGasDemandeGon100RE(
-        dependencies=[industrial_gas_demand]
+        dependencies=[create_gas_polygons, industrial_gas_demand]
     )
 
     # CHP locations
