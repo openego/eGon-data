@@ -290,62 +290,56 @@ def insert_gas_buses_abroad(scn_name="eGon2035"):
     """
     # Select sources and targets from dataset configuration
     sources = config.datasets()["electrical_neighbours"]["sources"]
-
     main_gas_carrier = get_sector_parameters("gas", scenario=scn_name)[
         "main_gas_carrier"
     ]
-
     # Connect to local database
     engine = db.engine()
-    db.execute_sql(
-        f"""
-    DELETE FROM grid.egon_etrago_bus WHERE "carrier" = '{main_gas_carrier}' AND
-    scn_name = '{scn_name}' AND country != 'DE';
-    """
-    )
+    
+    if scn_name == "eGon100RE":
+        query = f"""
+        SELECT scn_name, bus_id, type, carrier, x, y, country, geom
+        FROM grid.egon_etrago_bus WHERE "carrier" = '{main_gas_carrier}' AND
+        scn_name = '{scn_name}' AND country != 'DE';
+        """
+        gdf_abroad_buses = pd.read_sql_query(query, engine)
+        gdf_abroad_buses["geom"] = gdf_abroad_buses["geom"].apply(str)
+        gdf_abroad_buses["geom"] = geopandas.GeoSeries.from_wkb(
+            gdf_abroad_buses["geom"]
+        )
+        gdf_abroad_buses = geopandas.GeoDataFrame(
+            gdf_abroad_buses, geometry="geom", crs=4326
+        )
 
-    # Select the foreign buses
-    gdf_abroad_buses = central_buses_pypsaeur(sources, scenario=scn_name)
-    gdf_abroad_buses = gdf_abroad_buses.drop_duplicates(subset=["country"])
-
-    # Select next id value
-    new_id = db.next_etrago_id("bus")
-
-    gdf_abroad_buses = gdf_abroad_buses.drop(
-        columns=[
-            "v_nom",
-            "v_mag_pu_set",
-            "v_mag_pu_min",
-            "v_mag_pu_max",
-            "geom",
-        ]
-    )
-    gdf_abroad_buses["scn_name"] = scn_name
-    gdf_abroad_buses["carrier"] = main_gas_carrier
-    gdf_abroad_buses["bus_id"] = range(new_id, new_id + len(gdf_abroad_buses))
-
-    # Add central bus in Russia
-    gdf_abroad_buses = pd.concat(
-        [
-            gdf_abroad_buses,
-            pd.DataFrame(
-                index=[gdf_abroad_buses.index.max() + 1],
-                data={
-                    "scn_name": scn_name,
-                    "bus_id": (new_id + len(gdf_abroad_buses) + 1),
-                    "x": 41,
-                    "y": 55,
-                    "country": "RU",
-                    "carrier": main_gas_carrier,
-                },
-            ),
-        ],
-        ignore_index=True,
-    )
-    # if in test mode, add bus in center of Germany
-    boundary = settings()["egon-data"]["--dataset-boundary"]
-
-    if boundary != "Everything":
+    else:
+        db.execute_sql(
+            f"""
+        DELETE FROM grid.egon_etrago_bus WHERE "carrier" = '{main_gas_carrier}' AND
+        scn_name = '{scn_name}' AND country != 'DE';
+        """
+        )
+    
+        # Select the foreign buses
+        gdf_abroad_buses = central_buses_pypsaeur(sources, scenario=scn_name)
+        gdf_abroad_buses = gdf_abroad_buses.drop_duplicates(subset=["country"])
+    
+        # Select next id value
+        new_id = db.next_etrago_id("bus")
+    
+        gdf_abroad_buses = gdf_abroad_buses.drop(
+            columns=[
+                "v_nom",
+                "v_mag_pu_set",
+                "v_mag_pu_min",
+                "v_mag_pu_max",
+                "geom",
+            ]
+        )
+        gdf_abroad_buses["scn_name"] = scn_name
+        gdf_abroad_buses["carrier"] = main_gas_carrier
+        gdf_abroad_buses["bus_id"] = range(new_id, new_id + len(gdf_abroad_buses))
+    
+        # Add central bus in Russia
         gdf_abroad_buses = pd.concat(
             [
                 gdf_abroad_buses,
@@ -354,36 +348,57 @@ def insert_gas_buses_abroad(scn_name="eGon2035"):
                     data={
                         "scn_name": scn_name,
                         "bus_id": (new_id + len(gdf_abroad_buses) + 1),
-                        "x": 10.4234469,
-                        "y": 51.0834196,
-                        "country": "DE",
+                        "x": 41,
+                        "y": 55,
+                        "country": "RU",
                         "carrier": main_gas_carrier,
                     },
                 ),
             ],
             ignore_index=True,
         )
+        # if in test mode, add bus in center of Germany
+        boundary = settings()["egon-data"]["--dataset-boundary"]
+    
+        if boundary != "Everything":
+            gdf_abroad_buses = pd.concat(
+                [
+                    gdf_abroad_buses,
+                    pd.DataFrame(
+                        index=[gdf_abroad_buses.index.max() + 1],
+                        data={
+                            "scn_name": scn_name,
+                            "bus_id": (new_id + len(gdf_abroad_buses) + 1),
+                            "x": 10.4234469,
+                            "y": 51.0834196,
+                            "country": "DE",
+                            "carrier": main_gas_carrier,
+                        },
+                    ),
+                ],
+                ignore_index=True,
+            )
+    
+        gdf_abroad_buses = geopandas.GeoDataFrame(
+            gdf_abroad_buses,
+            geometry=geopandas.points_from_xy(
+                gdf_abroad_buses["x"], gdf_abroad_buses["y"]
+            ),
+        )
+        gdf_abroad_buses = gdf_abroad_buses.rename(
+            columns={"geometry": "geom"}
+        ).set_geometry("geom", crs=4326)
 
-    gdf_abroad_buses = geopandas.GeoDataFrame(
-        gdf_abroad_buses,
-        geometry=geopandas.points_from_xy(
-            gdf_abroad_buses["x"], gdf_abroad_buses["y"]
-        ),
-    )
-    gdf_abroad_buses = gdf_abroad_buses.rename(
-        columns={"geometry": "geom"}
-    ).set_geometry("geom", crs=4326)
-
-    # Insert to db
-    print(gdf_abroad_buses)
-    gdf_abroad_buses.to_postgis(
-        "egon_etrago_bus",
-        engine,
-        schema="grid",
-        index=False,
-        if_exists="append",
-        dtype={"geom": Geometry()},
-    )
+        # Insert to db
+        print(gdf_abroad_buses)
+        gdf_abroad_buses.to_postgis(
+            "egon_etrago_bus",
+            engine,
+            schema="grid",
+            index=False,
+            if_exists="append",
+            dtype={"geom": Geometry()},
+        )
     return gdf_abroad_buses
 
 
