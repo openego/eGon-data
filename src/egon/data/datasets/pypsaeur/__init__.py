@@ -7,6 +7,7 @@ import json
 
 from shapely.geometry import LineString
 import geopandas as gpd
+import importlib_resources as resources
 import numpy as np
 import pandas as pd
 import pypsa
@@ -27,7 +28,7 @@ class PreparePypsaEur(Dataset):
     def __init__(self, dependencies):
         super().__init__(
             name="PreparePypsaEur",
-            version="0.0.1",
+            version="0.0.5",
             dependencies=dependencies,
             tasks=(
                 download,
@@ -40,7 +41,7 @@ class RunPypsaEur(Dataset):
     def __init__(self, dependencies):
         super().__init__(
             name="SolvePypsaEur",
-            version="0.0.1",
+            version="0.0.5",
             dependencies=dependencies,
             tasks=(
                 execute,
@@ -77,7 +78,7 @@ def download():
         with open(path_to_env, "r") as stream:
             env = yaml.safe_load(stream)
 
-        env["dependencies"][-1]["pip"].append("gurobipy")
+        env["dependencies"][-1]["pip"].append("gurobipy==10.0.0")
 
         # Write YAML file
         with open(path_to_env, "w", encoding="utf8") as outfile:
@@ -94,7 +95,10 @@ def download():
             pypsa_eur_repos / "config",
         )
 
-
+        with open(filepath / "Snakefile", "w") as snakefile:
+            snakefile.write(
+                resources.read_text("egon.data.datasets.pypsaeur", "Snakefile")
+        )
 def prepare_network():
     cwd = Path(".")
     filepath = cwd / "run-pypsa-eur"
