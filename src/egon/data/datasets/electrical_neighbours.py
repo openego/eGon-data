@@ -1890,18 +1890,13 @@ def insert_loads_sq(scn_name="status2019"):
 
 tasks = (grid,)
 
-insert_per_scenario = set()
-
 if "eGon2035" in config.settings()["egon-data"]["--scenarios"]:
-    insert_per_scenario.update([tyndp_generation, tyndp_demand])
+    tasks = tasks + (tyndp_generation, tyndp_demand)
 
 if "status2019" in config.settings()["egon-data"]["--scenarios"]:
-    insert_per_scenario.update(
-        [insert_generators_sq, insert_storage_units_sq, insert_loads_sq]
-    )
-
-tasks = tasks + (insert_per_scenario,)
-
+    tasks = tasks + (insert_generators_sq,
+                     insert_storage_units_sq,
+                     insert_loads_sq)
 
 class ElectricalNeighbours(Dataset):
     def __init__(self, dependencies):
