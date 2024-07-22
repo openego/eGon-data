@@ -35,8 +35,7 @@ def insert_hydrogen_buses():
 
     Parameters
     ----------
-    scenario : str, optional
-        Name of the scenario, the default is 'eGon2035'.
+    No parameter is required.
 
     """
     s = config.settings()["egon-data"]["--scenarios"]
