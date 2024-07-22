@@ -31,7 +31,7 @@ class GasNeighbours(Dataset):
     def __init__(self, dependencies):
         super().__init__(
             name="GasNeighbours",
-            version="0.0.4",
+            version="0.0.5",
             dependencies=dependencies,
             tasks=tasks,
         )
