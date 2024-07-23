@@ -465,25 +465,21 @@ def ind_sites_data_import():
     # calculate timeseries per site
     scenarios = config.settings()["egon-data"]["--scenarios"]
 
+    dsm = pd.DataFrame(
+        columns=["bus_id", "scenario_name", "p_set", "application", "id"]
+    )
+
     # scenario eGon2035
     if "eGon2035" in scenarios:
-        dsm_2035 = calc_ind_site_timeseries("eGon2035")
-        dsm_2035.reset_index(inplace=True)
+        dsm_2035 = calc_ind_site_timeseries("eGon2035").reset_index()
+        dsm = pd.concat([dsm, dsm_2035], ignore_index=True)
     # scenario eGon100RE
     if "eGon100RE" in scenarios:
-        dsm_100 = calc_ind_site_timeseries("eGon100RE")
-        dsm_100.reset_index(inplace=True)
+        dsm_100 = calc_ind_site_timeseries("eGon100RE").reset_index()
+        dsm = pd.concat([dsm, dsm_100], ignore_index=True)
 
-    if ("eGon2035" in scenarios) & ("eGon100RE" in scenarios):
-        dsm_100.index = range(len(dsm_2035), (len(dsm_2035) + len((dsm_100))))
-        dsm = dsm_2035.append(dsm_100)
-    elif "eGon2035" in scenarios:
-        dsm = dsm_2035
-    elif "eGon100RE" in scenarios:
-        dsm = dsm_100
-
+    dsm.index = range(len(dsm))
     # relate calculated timeseries to Schmidt's industrial sites
-
     dsm = relate_to_schmidt_sites(dsm)
 
     return dsm[["application", "id", "bus", "scn_name", "p_set"]]
