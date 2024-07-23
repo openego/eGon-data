@@ -310,6 +310,9 @@ def insert_gas_buses_abroad(scn_name="eGon2035"):
         gdf_abroad_buses = geopandas.GeoDataFrame(
             gdf_abroad_buses, geometry="geom", crs=4326
         )
+        gdf_abroad_buses.drop_duplicates(subset="country",
+                                         keep="first",
+                                         inplace=True)
 
     else:
         db.execute_sql(
@@ -608,6 +611,11 @@ def insert_gas_pipeline_list(
     gas_pipelines_list.loc[
         gas_pipelines_list["id"] == "LKD_PS_0_Seg_0_Seg_3", "country_0"
     ] = "NL"  # bus "SEQ_10608_p" DE -> NL
+    
+    if scn_name == "eGon100RE":
+        gas_pipelines_list = gas_pipelines_list[
+            gas_pipelines_list["country_1"] != "RU"
+        ]
 
     # Remove uncorrect pipelines
     gas_pipelines_list = gas_pipelines_list[
