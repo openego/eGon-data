@@ -75,10 +75,16 @@ def download():
         # Add gurobi solver to environment:
         # Read YAML file
         path_to_env = pypsa_eur_repos / "envs" / "environment.yaml"
-        with open(path_to_env, "r") as stream:
+        with open("/home/clara/powerd-data-36/run-pypsa-eur/pypsa-eur/envs/environment.yaml", "r") as stream:
             env = yaml.safe_load(stream)
 
         env["dependencies"][-1]["pip"].append("gurobipy==10.0.0")
+
+        # Limit geopandas version
+        # our pypsa-eur version is not compatible to geopandas>1
+        env = ["geopandas>=0.11.0, <1" if
+               x=="geopandas>=0.11.0" else x for x in env["dependencies"]]
+
 
         # Write YAML file
         with open(path_to_env, "w", encoding="utf8") as outfile:
