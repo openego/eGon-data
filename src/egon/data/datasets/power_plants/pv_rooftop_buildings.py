@@ -38,6 +38,7 @@ Desegregation of pv rooftop scenarios:
 * Plant metadata (e.g. plant orientation) is also added random and weighted
   from MaStR data as basis.
 """
+
 from __future__ import annotations
 
 from collections import Counter
@@ -1248,9 +1249,9 @@ def allocate_pv(
 
     assert len(assigned_buildings) == len(assigned_buildings.gens_id.unique())
 
-    q_mastr_gdf.loc[
-        assigned_buildings.gens_id, "building_id"
-    ] = assigned_buildings.index
+    q_mastr_gdf.loc[assigned_buildings.gens_id, "building_id"] = (
+        assigned_buildings.index
+    )
 
     assigned_gens = q_mastr_gdf.loc[~q_mastr_gdf.building_id.isna()]
 

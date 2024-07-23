@@ -241,7 +241,7 @@ def insert_biomass_plants(scenario):
     if scenario != "eGon100RE":
         target = select_target("biomass", scenario)
     else:
-        target = 20000 #dummy value. Muss be fix with issue #268
+        target = 20000  # dummy value. Muss be fix with issue #268
 
     # import data for MaStR
     mastr = pd.read_csv(
@@ -597,7 +597,10 @@ def insert_hydro_biomass():
 
 def allocate_conventional_non_chp_power_plants():
     # This function is only designed to work for the eGon2035 scenario
-    if "eGon2035" not in egon.data.config.settings()["egon-data"]["--scenarios"]:
+    if (
+        "eGon2035"
+        not in egon.data.config.settings()["egon-data"]["--scenarios"]
+    ):
         return
 
     carrier = ["oil", "gas"]
@@ -759,7 +762,10 @@ def allocate_conventional_non_chp_power_plants():
 
 def allocate_other_power_plants():
     # This function is only designed to work for the eGon2035 scenario
-    if "eGon2035" not in egon.data.config.settings()["egon-data"]["--scenarios"]:
+    if (
+        "eGon2035"
+        not in egon.data.config.settings()["egon-data"]["--scenarios"]
+    ):
         return
 
     # Get configuration
@@ -1309,9 +1315,13 @@ tasks = tasks + (
 )
 
 for scn_name in egon.data.config.settings()["egon-data"]["--scenarios"]:
-    tasks += (wrapped_partial(assign_weather_data.weatherId_and_busId,
-                              scn_name=scn_name,
-                              postfix=f"_{scn_name}"),)
+    tasks += (
+        wrapped_partial(
+            assign_weather_data.weatherId_and_busId,
+            scn_name=scn_name,
+            postfix=f"_{scn_name}",
+        ),
+    )
 
 
 class PowerPlants(Dataset):
