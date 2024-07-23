@@ -1,8 +1,10 @@
 """The central module containing all code dealing with power plant data.
 """
 
-from geoalchemy2 import Geometry
 from pathlib import Path
+import logging
+
+from geoalchemy2 import Geometry
 from shapely.geometry import Point
 from sqlalchemy import BigInteger, Column, Float, Integer, Sequence, String
 from sqlalchemy.dialects.postgresql import JSONB
@@ -10,7 +12,6 @@ from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.orm import sessionmaker
 import geopandas as gpd
 import numpy as np
-import logging
 import pandas as pd
 
 from egon.data import db
