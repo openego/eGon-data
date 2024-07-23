@@ -1294,7 +1294,7 @@ def update_heat_timeseries_germany(network):
     )
 
     network.loads_t.p_set.loc[:, "DE1 0 services rural heat"] = (
-        df_egon_heat_demand.loc[:, "services rural"]
+        df_egon_heat_demand.loc[:, "service rural"]
     )
 
     network.loads_t.p_set.loc[:, "DE1 0 urban central heat"] = (
