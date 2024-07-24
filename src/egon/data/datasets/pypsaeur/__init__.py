@@ -458,6 +458,21 @@ def neighbor_reduction():
         db.next_etrago_id("bus") + neighbors.reset_index().index
     )
 
+    # Use index of AC buses created by electrical_neigbors
+    foreign_ac_buses = db.select_dataframe(
+        """
+        SELECT * FROM grid.egon_etrago_bus
+        WHERE carrier = 'AC' AND v_nom = 380
+        AND country!= 'DE' AND scn_name ='eGon100RE'
+        AND bus_id NOT IN (SELECT bus_i FROM osmtgmod_results.bus_data"
+        """)
+    buses_with_defined_id = neighbors[
+        (neighbors.carrier=="AC")
+        &(neighbors.country.isin(foreign_ac_buses.country.values))].index
+    neighbors.loc[
+        buses_with_defined_id, "new_index"] = foreign_ac_buses.set_index(
+            "x").loc[neighbors.loc[buses_with_defined_id, "x"]].bus_id.values
+
     # lines, the foreign crossborder lines
     # (without crossborder lines to Germany!)
 
