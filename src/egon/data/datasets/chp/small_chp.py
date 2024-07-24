@@ -177,7 +177,7 @@ def extension_to_areas(
             selected_areas = selected_areas.to_crs(4326)
             # Assign gas bus_id
             selected_areas["gas_bus_id"] = db.assign_gas_bus_id(
-                selected_areas.copy(), "eGon2035", "CH4"
+                selected_areas.copy(), scenario, "CH4"
             ).bus
 
             # Select randomly one area from the list of possible areas

@@ -26,8 +26,8 @@ from egon.data.datasets.chp.small_chp import (
     select_target,
 )
 from egon.data.datasets.mastr import (
-    WORKING_DIR_MASTR_OLD,
     WORKING_DIR_MASTR_NEW,
+    WORKING_DIR_MASTR_OLD,
 )
 from egon.data.datasets.power_plants import (
     assign_bus_id,
@@ -695,5 +695,8 @@ if extension != set():
 class Chp(Dataset):
     def __init__(self, dependencies):
         super().__init__(
-            name="Chp", version="0.0.9", dependencies=dependencies, tasks=tasks
+            name="Chp",
+            version="0.0.10",
+            dependencies=dependencies,
+            tasks=tasks,
         )
