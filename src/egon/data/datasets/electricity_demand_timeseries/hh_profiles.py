@@ -126,7 +126,7 @@ from pathlib import Path
 import os
 import random
 
-from airflow.operators.python_operator import PythonOperator
+from airflow.operators.python import PythonOperator
 from sqlalchemy import ARRAY, Column, Float, Integer, String
 from sqlalchemy.dialects.postgresql import CHAR, INTEGER, REAL
 from sqlalchemy.ext.declarative import declarative_base

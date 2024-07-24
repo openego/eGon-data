@@ -256,6 +256,7 @@ Added
   `#207 <https://github.com/openego/powerd-data/pull/207>`_
 
 
+
 .. _PR #159: https://github.com/openego/eGon-data/pull/159
 .. _PR #703: https://github.com/openego/eGon-data/pull/703
 .. _#702: https://github.com/openego/eGon-data/issues/702
@@ -735,6 +736,9 @@ Bug Fixes
 * Fix URLs of MaStR datasets
 * Fix CRS in ERA5 transformation
   `#179 <https://github.com/openego/powerd-data/issues/179>`_
+* Fix depricated python-operator import
+  `#183 <https://github.com/openego/powerd-data/issues/183>`_
+
 
 .. _PR #692: https://github.com/openego/eGon-data/pull/692
 .. _#343: https://github.com/openego/eGon-data/issues/343
