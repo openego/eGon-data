@@ -632,7 +632,7 @@ def neighbor_reduction():
         inplace=True,
     )
 
-    neighbors.to_postgis(
+    neighbors[~neighbors.carrier.isin(["AC"])].to_postgis(
         "egon_etrago_bus",
         engine,
         schema="grid",
