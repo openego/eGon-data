@@ -1121,7 +1121,7 @@ def prepared_network():
             / "elec_s_37_lv2.0__Co2L0-1H-T-H-B-I-dist1_2050.nc"
         )
 
-    return pypsa.Network(csv_folder_name=target_file.absolute().as_posix())
+    return pypsa.Network(target_file.absolute().as_posix())
 
 
 def overwrite_H2_pipeline_share():
