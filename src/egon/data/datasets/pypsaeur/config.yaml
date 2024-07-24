@@ -381,7 +381,7 @@ sector:
   bev_charge_rate: 0.011
   bev_avail_max: 0.95
   bev_avail_mean: 0.8
-  v2g: true
+  v2g: false
   land_transport_fuel_cell_share:
     2020: 0
     2025: 0
@@ -518,7 +518,7 @@ sector:
   use_methanation_waste_heat: true
   use_fuel_cell_waste_heat: true
   use_electrolysis_waste_heat: true
-  electricity_distribution_grid: true
+  electricity_distribution_grid: false
   electricity_distribution_grid_cost_factor: 1.0
   electricity_grid_connection: true
   transmission_efficiency:
@@ -536,7 +536,7 @@ sector:
   H2_retrofit: false
   H2_retrofit_capacity_per_CH4: 0.6
   gas_network_connectivity_upgrade: 1
-  gas_distribution_grid: true
+  gas_distribution_grid: false
   gas_distribution_grid_cost_factor: 1.0
   biomass_spatial: false
   biomass_transport: false
