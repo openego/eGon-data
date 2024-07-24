@@ -824,12 +824,14 @@ def neighbor_reduction():
 
     non_extendable_links_carriers = [
         "H2 pipeline retrofitted",
+        "H2 pipeline",
         "gas pipeline",
         "biogas to gas",
     ]
 
     # delete unwanted carriers for eTraGo
-    excluded_carriers = ["gas for industry CC", "SMR CC", "biogas to gas"]
+    excluded_carriers = ["gas for industry CC", "SMR CC", "biogas to gas",
+                         "DAC", "electricity distribution grid", ]
     neighbor_links = neighbor_links[
         ~neighbor_links.carrier.isin(excluded_carriers)
     ]
