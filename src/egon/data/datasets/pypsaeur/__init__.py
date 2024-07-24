@@ -659,6 +659,7 @@ def neighbor_reduction():
             "g_pu",
             "b_pu",
             "s_nom_opt",
+            "i_nom",
         ]:
             neighbor_lines = neighbor_lines.drop(i, axis=1)
 
@@ -750,6 +751,8 @@ def neighbor_reduction():
             "ramp_limit_down",
             "ramp_limit_start_up",
             "ramp_limit_shut_down",
+            "length_original",
+            "reversed",
         ]
 
         if extendable:
@@ -944,6 +947,7 @@ def neighbor_reduction():
         "lifetime",
         "e_initial_per_period",
         "e_cyclic_per_period",
+        "location",
     ]:
         neighbor_stores = neighbor_stores.drop(i, axis=1, errors="ignore")
 
