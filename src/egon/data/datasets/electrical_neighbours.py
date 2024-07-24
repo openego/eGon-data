@@ -156,10 +156,6 @@ def buses(scenario, sources, targets):
             FROM  {sources['osmtgmod_bus']['schema']}.
             {sources['osmtgmod_bus']['table']})
         """
-    # Drop only buses with v_nom != 380 for eGon100RE
-    # to keep buses from pypsa-eur-sec
-    if scenario == "eGon100RE":
-        sql_delete += "AND v_nom < 380"
 
     # Delete existing buses
     db.execute_sql(sql_delete)
