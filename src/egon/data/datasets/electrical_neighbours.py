@@ -168,8 +168,7 @@ def buses(scenario, sources, targets):
 
     next_bus_id = db.next_etrago_id("bus") + 1
 
-    if scenario != "eGon100RE":
-        central_buses["bus_id"] = central_buses.reset_index().index + next_bus_id
+    central_buses["bus_id"] = central_buses.reset_index().index + next_bus_id
 
     next_bus_id += len(central_buses)
 
@@ -282,9 +281,7 @@ def buses(scenario, sources, targets):
     # Insert only buses for eGon100RE that are not coming from pypsa-eur-sec
     # (buses with another voltage_level or inside Germany in test mode)
     else:
-        central_buses[
-            (central_buses.v_nom != 380) | (central_buses.country == "DE")
-        ].to_postgis(
+        central_buses[central_buses.carrier=="AC"].to_postgis(
             targets["buses"]["table"],
             schema=targets["buses"]["schema"],
             if_exists="append",
