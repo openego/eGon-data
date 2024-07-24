@@ -774,10 +774,19 @@ def neighbor_reduction():
             )
             neighbor_links["p_nom_extendable"] = False
 
+        if neighbor_links.empty:
+            print("No links selected")
+            return
+
         # Define geometry and add to lines dataframe as 'topo'
-        gdf = gpd.GeoDataFrame(index=neighbor_links.index)
-        gdf["geom_bus0"] = neighbors.geom[neighbor_links.bus0].values
-        gdf["geom_bus1"] = neighbors.geom[neighbor_links.bus1].values
+        gdf = gpd.GeoDataFrame(
+            index=neighbor_links.index,
+            data = {
+                "geom_bus0":neighbors.loc[neighbor_links.bus0, "geom"].values,
+                "geom_bus1":neighbors.loc[neighbor_links.bus1, "geom"].values
+                }
+            )
+
         gdf["geometry"] = gdf.apply(
             lambda x: LineString([x["geom_bus0"], x["geom_bus1"]]), axis=1
         )
