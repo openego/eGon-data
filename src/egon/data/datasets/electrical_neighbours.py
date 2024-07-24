@@ -106,43 +106,26 @@ def central_buses_pypsaeur(sources, scenario):
 
     """
 
-    if scenario in ["eGon100RE"]:
-        df = db.select_dataframe(
-            f"""
-        SELECT *
-        FROM {sources['electricity_buses']['schema']}.
-            {sources['electricity_buses']['table']}
-        WHERE country != 'DE'
-        AND scn_name = 'eGon100RE'
-        AND bus_id NOT IN (
-            SELECT bus_i
-            FROM {sources['osmtgmod_bus']['schema']}.
-            {sources['osmtgmod_bus']['table']})
-        AND carrier = 'AC'
-        """
-        )
+    wanted_countries = [
+        "AT",
+        "CH",
+        "CZ",
+        "PL",
+        "SE",
+        "NO",
+        "DK",
+        "GB",
+        "NL",
+        "BE",
+        "FR",
+        "LU",
+    ]
+    network = prepared_network()
 
-    else:
-        wanted_countries = [
-            "AT",
-            "CH",
-            "CZ",
-            "PL",
-            "SE",
-            "NO",
-            "DK",
-            "GB",
-            "NL",
-            "BE",
-            "FR",
-            "LU",
-        ]
-        network = prepared_network()
-
-        df = network.buses[
-            (network.buses.carrier == "AC")
-            & (network.buses.country.isin(wanted_countries))
-        ]
+    df = network.buses[
+        (network.buses.carrier == "AC")
+        & (network.buses.country.isin(wanted_countries))
+    ]
 
     return df
 
