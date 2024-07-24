@@ -370,6 +370,11 @@ with airflow.DAG(
         ]
         )
 
+    # Deal with electrical neighbours
+    foreign_lines = ElectricalNeighbours(
+        dependencies=[prepare_pypsa_eur, tyndp_data]
+    )
+
     # run pypsa-eur-sec
     run_pypsaeur = RunPypsaEur(
         dependencies=[
@@ -382,13 +387,8 @@ with airflow.DAG(
             electrical_load_etrago,
             heat_time_series,
             geothermal_potential_germany,
+            foreign_lines,
         ]
-    )
-
-
-    # Deal with electrical neighbours
-    foreign_lines = ElectricalNeighbours(
-        dependencies=[prepare_pypsa_eur, tyndp_data]
     )
 
     # Import NEP (Netzentwicklungsplan) data
