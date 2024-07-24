@@ -206,7 +206,7 @@ def buses(scenario, sources, targets):
                 [
                     central_buses,
                     pd.DataFrame(
-                        index=[central_buses.index.max() + 1],
+                        index=[next_bus_id],
                         data={
                             "scn_name": scenario,
                             "bus_id": next_bus_id,
@@ -225,12 +225,13 @@ def buses(scenario, sources, targets):
                 ignore_index=True,
             )
             next_bus_id += 1
+
         if 220.0 in vnom_per_country[cntr]:
             central_buses = pd.concat(
                 [
                     central_buses,
                     pd.DataFrame(
-                        index=[central_buses.index.max() + 1],
+                        index=[next_bus_id],
                         data={
                             "scn_name": scenario,
                             "bus_id": next_bus_id,
