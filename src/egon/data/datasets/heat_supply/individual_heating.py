@@ -613,15 +613,15 @@ def cascade_heat_supply_indiv(scenario, distribution_level, plotting=True):
         )
     elif scenario == "eGon100RE":
         technologies = pd.DataFrame(
-            index=["heat_pump", "gas_boiler"],
+            index=["heat_pump"],
             columns=["estimated_flh", "priority"],
-            data={"estimated_flh": [4000, 8000], "priority": [2, 1]},
+            data={"estimated_flh": [4000], "priority": [1]},
         )
     elif scenario == "status2019":
         technologies = pd.DataFrame(
             index=["heat_pump"],
             columns=["estimated_flh", "priority"],
-            data={"estimated_flh": [4000], "priority": [2]},
+            data={"estimated_flh": [4000], "priority": [1]},
         )
 
     # In the beginning, the remaining demand equals demand
