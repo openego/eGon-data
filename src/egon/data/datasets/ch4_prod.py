@@ -45,7 +45,7 @@ class CH4Production(Dataset):
     name: str = "CH4Production"
     #:
 
-    version: str = "0.0.8"
+    version: str = "0.0.9"
 
     def __init__(self, dependencies):
         super().__init__(
@@ -383,6 +383,39 @@ def import_gas_generators():
                 "gas", scn_name
             )["marginal_cost"]["CH4"]
             CH4_generators_list["p_nom"] = 100000
+
+        elif scn_name == "eGon100RE":
+            CH4_generators_list = pd.concat(
+                [
+                    load_biogas_generators(scn_name),
+                ]
+            )
+
+            # Add missing columns
+            c = {"scn_name": scn_name, "carrier": "CH4"}
+            CH4_generators_list = CH4_generators_list.assign(**c)
+
+            # Match to associated CH4 bus
+            CH4_generators_list = db.assign_gas_bus_id(
+                CH4_generators_list, scn_name, "CH4"
+            )
+
+            # Remove useless columns
+            CH4_generators_list = CH4_generators_list.drop(
+                columns=["geom", "bus_id"]
+            )
+
+            # Aggregate ch4 productions with same properties at the same bus
+            CH4_generators_list = (
+                CH4_generators_list.groupby(
+                    ["bus", "carrier", "scn_name", "marginal_cost"]
+                )
+                .agg({"p_nom": "sum"})
+                .reset_index(drop=False)
+            )
+
+        else:
+            raise ValueError(f"{scn_name} is not a valid scenario name")
 
         new_id = db.next_etrago_id("generator")
         CH4_generators_list["generator_id"] = range(
