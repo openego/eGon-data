@@ -179,7 +179,6 @@ is made in ... the content of this module docstring needs to be moved to
 docs attribute of the respective dataset class.
 """
 
-
 from pathlib import Path
 import os
 import random
@@ -2107,9 +2106,9 @@ def determine_hp_cap_peak_load_mvgd_ts_pypsa_eur_sec(mvgd_ids):
             [df_heat_mvgd_ts_db, df_heat_mvgd_ts], axis=0, ignore_index=True
         )
 
-        df_hp_min_cap_mv_grid_pypsa_eur_sec.loc[
-            mvgd
-        ] = hp_min_cap_mv_grid_pypsa_eur_sec
+        df_hp_min_cap_mv_grid_pypsa_eur_sec.loc[mvgd] = (
+            hp_min_cap_mv_grid_pypsa_eur_sec
+        )
 
     # ################ export to db and csv ######################
     logger.info(f"MVGD={min(mvgd_ids)} : {max(mvgd_ids)} | Write data to db.")

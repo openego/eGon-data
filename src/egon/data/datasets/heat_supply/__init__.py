@@ -2,22 +2,22 @@
 
 """
 
-from egon.data import db, config
+from geoalchemy2.types import Geometry
+from sqlalchemy import Column, Float, ForeignKey, Integer, String
+from sqlalchemy.ext.declarative import declarative_base
 
+from egon.data import config, db
+from egon.data.datasets import Dataset
+from egon.data.datasets.district_heating_areas import EgonDistrictHeatingAreas
 from egon.data.datasets.heat_supply.district_heating import (
-    cascade_heat_supply,
     backup_gas_boilers,
     backup_resistive_heaters,
+    cascade_heat_supply,
 )
+from egon.data.datasets.heat_supply.geothermal import potential_germany
 from egon.data.datasets.heat_supply.individual_heating import (
     cascade_heat_supply_indiv,
 )
-from egon.data.datasets.heat_supply.geothermal import potential_germany
-from egon.data.datasets.district_heating_areas import EgonDistrictHeatingAreas
-from sqlalchemy import Column, String, Float, Integer, ForeignKey
-from sqlalchemy.ext.declarative import declarative_base
-from geoalchemy2.types import Geometry
-from egon.data.datasets import Dataset
 
 # Will later be imported from another file.
 Base = declarative_base()
