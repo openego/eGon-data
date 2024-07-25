@@ -546,11 +546,8 @@ def cascade_heat_supply_indiv(scenario, distribution_level, plotting=True):
     """Assigns supply strategy for individual heating in four steps.
 
     1.) all small scale CHP are connected.
-    2.) If the supply can not  meet the heat demand, solar thermal collectors
-        are attached. This is not implemented yet, since individual
-        solar thermal plants are not considered in eGon2035 scenario.
-    3.) If this is not suitable, the mv grid is also supplied by heat pumps.
-    4.) The last option are individual gas boilers.
+    2.) If this is not suitable, the mv grid is also supplied by heat pumps.
+    3.) The last option are individual gas boilers.
 
     Parameters
     ----------
@@ -604,7 +601,6 @@ def cascade_heat_supply_indiv(scenario, distribution_level, plotting=True):
 
     # Set technology data according to
     # http://www.wbzu.de/seminare/infopool/infopool-bhkw
-    # TODO: Add gas boilers and solar themal (eGon100RE)
     if scenario == "eGon2035":
         technologies = pd.DataFrame(
             index=["heat_pump", "gas_boiler"],
