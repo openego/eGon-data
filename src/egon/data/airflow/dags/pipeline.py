@@ -40,7 +40,7 @@ from egon.data.datasets.era5 import WeatherData
 from egon.data.datasets.etrago_setup import EtragoSetup
 from egon.data.datasets.fill_etrago_gen import Egon_etrago_gen
 from egon.data.datasets.fix_ehv_subnetworks import FixEhvSubnetworks
-from egon.data.datasets.gas_areas import GasAreaseGon100RE, GasAreaseGon2035
+from egon.data.datasets.gas_areas import GasAreas
 from egon.data.datasets.gas_grid import GasNodesAndPipes
 from egon.data.datasets.gas_neighbours import GasNeighbours
 from egon.data.datasets.heat_demand import HeatDemandImport
@@ -403,14 +403,14 @@ with airflow.DAG(
     )
 
     # Create gas voronoi eGon2035
-    create_gas_polygons_egon2035 = GasAreaseGon2035(
+    create_gas_polygons = GasAreas(
         dependencies=[setup_etrago, insert_hydrogen_buses, vg250]
     )
 
     # Insert hydrogen grid
     insert_h2_grid = HydrogenGridEtrago(
         dependencies=[
-            create_gas_polygons_egon2035,
+            create_gas_polygons,
             gas_grid_insert_data,
             insert_hydrogen_buses,
             run_pypsaeursec,
@@ -432,11 +432,6 @@ with airflow.DAG(
         dependencies=[h2_infrastructure, insert_power_to_h2_installations]
     )
 
-    # Create gas voronoi eGon100RE
-    create_gas_polygons_egon100RE = GasAreaseGon100RE(
-        dependencies=[create_gas_polygons_egon2035, insert_h2_grid, vg250]
-    )
-
     # Gas abroad
     gas_abroad_insert_data = GasNeighbours(
         dependencies=[
@@ -444,35 +439,33 @@ with airflow.DAG(
             run_pypsaeursec,
             foreign_lines,
             insert_hydrogen_buses,
-            create_gas_polygons_egon100RE,
         ]
     )
 
     # Import gas production
     gas_production_insert_data = CH4Production(
-        dependencies=[create_gas_polygons_egon2035]
+        dependencies=[create_gas_polygons]
     )
 
     # Import CH4 storages
     insert_data_ch4_storages = CH4Storages(
-        dependencies=[create_gas_polygons_egon2035]
+        dependencies=[create_gas_polygons]
     )
 
     # Assign industrial gas demand eGon2035
     IndustrialGasDemandeGon2035(
-        dependencies=[create_gas_polygons_egon2035, industrial_gas_demand]
+        dependencies=[create_gas_polygons, industrial_gas_demand]
     )
 
     # Assign industrial gas demand eGon100RE
     IndustrialGasDemandeGon100RE(
-        dependencies=[create_gas_polygons_egon100RE, industrial_gas_demand]
+        dependencies=[create_gas_polygons, industrial_gas_demand]
     )
 
     # CHP locations
     chp = Chp(
         dependencies=[
-            create_gas_polygons_egon100RE,
-            create_gas_polygons_egon2035,
+            create_gas_polygons,
             demand_curves_industry,
             district_heating_areas,
             industrial_sites,
@@ -504,7 +497,7 @@ with airflow.DAG(
     )
 
     create_ocgt = OpenCycleGasTurbineEtrago(
-        dependencies=[create_gas_polygons_egon2035, power_plants]
+        dependencies=[create_gas_polygons, power_plants]
     )
 
     # Fill eTraGo generators tables
@@ -569,7 +562,7 @@ with airflow.DAG(
 
     # eMobility: heavy duty transport
     heavy_duty_transport = HeavyDutyTransport(
-        dependencies=[vg250, setup_etrago, create_gas_polygons_egon2035]
+        dependencies=[vg250, setup_etrago, create_gas_polygons]
     )
 
     # Heat pump disaggregation for eGon2035
@@ -623,7 +616,6 @@ with airflow.DAG(
             insert_H2_storage,
             insert_power_to_h2_installations,
             insert_h2_to_ch4_grid_links,
-            create_gas_polygons_egon100RE,
             gas_production_insert_data,
             insert_data_ch4_storages,
         ]
