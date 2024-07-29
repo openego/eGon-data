@@ -39,7 +39,7 @@ class DemandRegio(Dataset):
     def __init__(self, dependencies):
         super().__init__(
             name="DemandRegio",
-            version="0.0.8",
+            version="0.0.9",
             dependencies=dependencies,
             tasks=(
                 clone_and_install,
@@ -616,6 +616,11 @@ def insert_hh_demand(scenario, year, engine):
 
         year = 2023 if scenario == "status2023" else year  # TODO status2023
         hh_load_timeseries.index = hh_load_timeseries.index.map(lambda dt: change_year(dt, year))
+
+        if scenario == "status2023":
+            hh_load_timeseries = hh_load_timeseries.shift(24 * 2)
+
+            hh_load_timeseries.iloc[:24 * 7] = hh_load_timeseries.iloc[24 * 7:24 * 7 * 2].values
 
     write_demandregio_hh_profiles_to_db(hh_load_timeseries)
 

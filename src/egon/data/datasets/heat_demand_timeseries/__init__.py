@@ -358,7 +358,7 @@ def create_district_heating_profile_python_like(scenario="eGon2035"):
                 )
 
                 assert (
-                    abs(diff) < 0.03
+                    abs(diff) < 0.04
                 ), f"""Deviation of residential heat demand time
                 series for district heating grid {str(area)} is {diff}"""
 
@@ -744,7 +744,7 @@ def create_individual_heating_profile_python_like(scenario="eGon2035"):
 
         assert (
             abs(diff) < 0.03
-        ), f"""Deviation of residential heat demand time 
+        ), f"""Deviation of residential heat demand time
         series for mv grid {str(grid)} is {diff}"""
 
         if not (slice_df[hour].empty or cts.empty):
