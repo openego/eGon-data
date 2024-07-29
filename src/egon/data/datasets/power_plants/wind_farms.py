@@ -323,12 +323,31 @@ def wind_power_states(
         "Hamburg",
     ]
 
-    if fed_state in north:
-        state_wf["inst capacity [MW]"] = power_north * state_wf["area [km²]"]
+    if fed_state == "DE":
+        sql = f"""SELECT * FROM boundaries.vg250_lan
+        WHERE gen in {tuple(north)}
+        """
+        north_states = gpd.GeoDataFrame.from_postgis(
+            sql, con, geom_col="geometry"
+        )
+        north_states.to_crs(3035, inplace=True)
+        state_wf["nord"] = state_wf.within(north_states.unary_union)
+        state_wf["inst capacity [MW]"] = state_wf.apply(
+            lambda x: (
+                power_north * x["area [km²]"]
+                if x["nord"]
+                else power_south * x["area [km²]"]),
+            axis=1,
+        )
     else:
-        state_wf["inst capacity [MW]"] = (
-            power_south * state_wf["area [km²]"]
-        )  # ToDo: fix this when scn eGon100RE
+        if fed_state in north:
+            state_wf["inst capacity [MW]"] = (
+                power_north * state_wf["area [km²]"]
+            )
+        else:
+            state_wf["inst capacity [MW]"] = (
+                power_south * state_wf["area [km²]"]
+            )
 
     # Divide selected areas based on voltage of connection points
     wf_mv = state_wf[
