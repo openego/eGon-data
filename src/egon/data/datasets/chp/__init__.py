@@ -26,8 +26,8 @@ from egon.data.datasets.chp.small_chp import (
     select_target,
 )
 from egon.data.datasets.mastr import (
-    WORKING_DIR_MASTR_OLD,
     WORKING_DIR_MASTR_NEW,
+    WORKING_DIR_MASTR_OLD,
 )
 from egon.data.datasets.power_plants import (
     assign_bus_id,
@@ -322,6 +322,12 @@ def insert_chp_statusquo():
         WORKING_DIR_MASTR_NEW / "bnetza_mastr_combustion_cleaned.csv"
     )
 
+    mastr_biomass = pd.read_csv(
+        WORKING_DIR_MASTR_NEW / "bnetza_mastr_biomass_cleaned.csv"
+    )
+
+    mastr = pd.concat([mastr, mastr_biomass]).reset_index(drop=True)
+
     mastr = mastr.loc[mastr.ThermischeNutzleistung > 0]
 
     mastr = mastr.loc[
@@ -333,6 +339,7 @@ def insert_chp_statusquo():
                 "nicht biogener Abfall",
                 "Braunkohle",
                 "Steinkohle",
+                "Biomasse",
             ]
         )
     ]
@@ -688,5 +695,8 @@ if extension != set():
 class Chp(Dataset):
     def __init__(self, dependencies):
         super().__init__(
-            name="Chp", version="0.0.8", dependencies=dependencies, tasks=tasks
+            name="Chp",
+            version="0.0.10",
+            dependencies=dependencies,
+            tasks=tasks,
         )
