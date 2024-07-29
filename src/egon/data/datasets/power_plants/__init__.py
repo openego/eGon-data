@@ -238,10 +238,7 @@ def insert_biomass_plants(scenario):
     cfg = egon.data.config.datasets()["power_plants"]
 
     # import target values
-    if scenario != "eGon100RE":
-        target = select_target("biomass", scenario)
-    else:
-        target = 20000  # dummy value. Muss be fix with issue #268
+    target = select_target("biomass", scenario)
 
     # import data for MaStR
     mastr = pd.read_csv(
@@ -587,11 +584,11 @@ def insert_hydro_biomass():
     scenarios = []
     if "eGon2035" in s:
         scenarios.append("eGon2035")
+        insert_biomass_plants("eGon2035")
     if "eGon100RE" in s:
         scenarios.append("eGon100RE")
 
     for scenario in scenarios:
-        insert_biomass_plants(scenario)
         insert_hydro_plants(scenario)
 
 
