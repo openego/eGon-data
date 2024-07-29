@@ -1327,15 +1327,15 @@ def update_heat_timeseries_germany(network):
 
     # Replace heat demand curves in Germany with values from eGon-data
     network.loads_t.p_set.loc[:, "DE1 0 residential rural heat"] = (
-        df_egon_heat_demand.loc[:, "residential rural"]
+        df_egon_heat_demand.loc[:, "residential rural"].values
     )
 
     network.loads_t.p_set.loc[:, "DE1 0 services rural heat"] = (
-        df_egon_heat_demand.loc[:, "service rural"]
+        df_egon_heat_demand.loc[:, "service rural"].values
     )
 
     network.loads_t.p_set.loc[:, "DE1 0 urban central heat"] = (
-        df_egon_heat_demand.loc[:, "urban central"]
+        df_egon_heat_demand.loc[:, "urban central"].values
     )
 
     return network
