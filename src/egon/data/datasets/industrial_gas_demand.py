@@ -9,7 +9,9 @@ the database after modification are to be found.
 """
 
 from pathlib import Path
+import logging
 import os
+import shutil
 
 from geoalchemy2.types import Geometry
 from shapely import wkt
@@ -27,6 +29,8 @@ from egon.data.datasets.etrago_helpers import (
 from egon.data.datasets.etrago_setup import link_geom_from_buses
 from egon.data.datasets.pypsaeursec import read_network
 from egon.data.datasets.scenario_parameters import get_sector_parameters
+
+logger = logging.getLogger(__name__)
 
 
 class IndustrialGasDemand(Dataset):
@@ -609,34 +613,46 @@ def download_industrial_gas_demand():
     information on these data, refer to the `Extremos project documentation <https://opendata.ffe.de/project/extremos/>`_.
 
     """
-    correspondance_url = (
-        "http://opendata.ffe.de:3000/region?id_region_type=eq.38"
-    )
-
-    # Read and save data
-    result_corr = requests.get(correspondance_url)
-    target_file = Path(".") / "datasets/gas_data/demand/region_corr.json"
-    os.makedirs(os.path.dirname(target_file), exist_ok=True)
-    pd.read_json(result_corr.content).to_json(target_file)
-
-    carriers = {"H2_for_industry": "2,162", "CH4_for_industry": "2,11"}
-    url = "http://opendata.ffe.de:3000/opendata?id_opendata=eq.66&&year=eq."
-
-    for scn_name in ["eGon2035", "eGon100RE"]:
-        year = str(
-            get_sector_parameters("global", scn_name)["population_year"]
+    try:
+        correspondance_url = (
+            "http://opendata.ffe.de:3000/region?id_region_type=eq.38"
         )
 
-        for carrier, internal_id in carriers.items():
-            # Download the data
-            datafilter = "&&internal_id=eq.{" + internal_id + "}"
-            request = url + year + datafilter
+        # Read and save data
+        result_corr = requests.get(correspondance_url)
+        target_file = Path(".") / "datasets/gas_data/demand/region_corr.json"
+        os.makedirs(os.path.dirname(target_file), exist_ok=True)
+        pd.read_json(result_corr.content).to_json(target_file)
 
-            # Read and save data
-            result = requests.get(request)
-            target_file = (
-                Path(".")
-                / "datasets/gas_data/demand"
-                / (carrier + "_" + scn_name + ".json")
+        carriers = {"H2_for_industry": "2,162", "CH4_for_industry": "2,11"}
+        url = "http://opendata.ffe.de:3000/opendata?id_opendata=eq.66&&year=eq."
+
+        for scn_name in ["eGon2035", "eGon100RE"]:
+            year = str(
+                get_sector_parameters("global", scn_name)["population_year"]
             )
-            pd.read_json(result.content).to_json(target_file)
+
+            for carrier, internal_id in carriers.items():
+                # Download the data
+                datafilter = "&&internal_id=eq.{" + internal_id + "}"
+                request = url + year + datafilter
+
+                # Read and save data
+                result = requests.get(request)
+                target_file = (
+                    Path(".")
+                    / "datasets/gas_data/demand"
+                    / (carrier + "_" + scn_name + ".json")
+                )
+                pd.read_json(result.content).to_json(target_file)
+    except:
+        logger.warning(
+            """
+        Due to temporal problems in the FFE platform, data for the scenarios
+        eGon2035 and eGon100RE are imported lately from csv files. Data for
+        other scenarios is unfortunately unavailable.
+            """
+        )
+        shutil.copytree('data_bundle_powerd_data/demand',
+                        'datasets/gas_data/demand',
+                        dirs_exist_ok=True)
