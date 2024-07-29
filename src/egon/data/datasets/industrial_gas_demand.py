@@ -625,7 +625,9 @@ def download_industrial_gas_demand():
         pd.read_json(result_corr.content).to_json(target_file)
 
         carriers = {"H2_for_industry": "2,162", "CH4_for_industry": "2,11"}
-        url = "http://opendata.ffe.de:3000/opendata?id_opendata=eq.66&&year=eq."
+        url = (
+            "http://opendata.ffe.de:3000/opendata?id_opendata=eq.66&&year=eq."
+        )
 
         for scn_name in ["eGon2035", "eGon100RE"]:
             year = str(
@@ -653,6 +655,8 @@ def download_industrial_gas_demand():
         other scenarios is unfortunately unavailable.
             """
         )
-        shutil.copytree('data_bundle_powerd_data/demand',
-                        'datasets/gas_data/demand',
-                        dirs_exist_ok=True)
+        shutil.copytree(
+            "data_bundle_powerd_data/demand",
+            "datasets/gas_data/demand",
+            dirs_exist_ok=True,
+        )
