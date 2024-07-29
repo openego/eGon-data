@@ -1423,6 +1423,8 @@ def rual_heat_technologies(network):
 
     network.links.loc["DE1 0 services rural ground heat pump", "p_nom_min"] = 0
 
+    return network
+
 
 def execute():
     with open(
@@ -1463,5 +1465,7 @@ def execute():
     network = drop_new_gas_pipelines(network)
 
     network = drop_fossil_gas(network)
+
+    network = rual_heat_technologies(network)
 
     network.export_to_netcdf(network_path)
