@@ -520,6 +520,14 @@ def wind_power_states(
         name="id",
     )
 
+    # Delete old wind_onshore generators
+    db.execute_sql(
+        f"""DELETE FROM supply.egon_power_plants
+        WHERE carrier = 'wind_onshore'
+        AND scenario = '{scenario_year}'
+        """
+    )
+
     # Insert into database
     insert_wind_farms.reset_index().to_postgis(
         "egon_power_plants",
