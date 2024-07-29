@@ -112,9 +112,9 @@ electricity:
 
   powerplants_filter: (DateOut >= 2023 or DateOut != DateOut) and not (Country == 'Germany' and Fueltype == 'Nuclear')
   custom_powerplants: false
-  everywhere_powerplants: [nuclear, oil, OCGT, CCGT, coal, lignite, geothermal, biomass]
+  everywhere_powerplants: [oil, OCGT, CCGT, coal, lignite, geothermal, biomass]
 
-  conventional_carriers: [nuclear, oil, OCGT, CCGT, coal, lignite, geothermal, biomass]
+  conventional_carriers: [oil, OCGT, CCGT, coal, lignite, geothermal, biomass]
   renewable_carriers: [solar, onwind, offwind-ac, offwind-dc, hydro]
 
   estimate_renewable_capacities:
@@ -292,7 +292,6 @@ pypsa_eur:
   - offwind-dc
   - solar
   - ror
-  - nuclear
   StorageUnit:
   - PHS
   - hydro
