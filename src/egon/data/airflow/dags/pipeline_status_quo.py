@@ -368,7 +368,7 @@ with airflow.DAG(
     gas_abroad_insert_data = GasNeighbours(
         dependencies=[
             gas_grid_insert_data,
-            run_pypsaeursec,
+            run_pypsaeur,
             foreign_lines,
             create_gas_polygons_status2019,
         ]
