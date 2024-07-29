@@ -1021,7 +1021,7 @@ def store_national_profiles():
 
         df["urban central"] = db.select_dataframe(
             f"""
-            SELECT sum(demand) as "urban central"
+            SELECT sum(nullif(demand, 'NaN')) as "urban central"
     
             FROM demand.egon_timeseries_district_heating,
             UNNEST (dist_aggregated_mw) WITH ORDINALITY as demand
@@ -1079,7 +1079,7 @@ class HeatTimeSeries(Dataset):
     def __init__(self, dependencies):
         super().__init__(
             name="HeatTimeSeries",
-            version="0.0.9",
+            version="0.0.10",
             dependencies=dependencies,
             tasks=(
                 {
