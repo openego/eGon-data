@@ -75,7 +75,7 @@ def download():
         # Add gurobi solver to environment:
         # Read YAML file
         path_to_env = pypsa_eur_repos / "envs" / "environment.yaml"
-        with open("/home/clara/powerd-data-36/run-pypsa-eur/pypsa-eur/envs/environment.yaml", "r") as stream:
+        with open(path_to_env, "r") as stream:
             env = yaml.safe_load(stream)
 
         env["dependencies"][-1]["pip"].append("gurobipy==10.0.0")
