@@ -656,7 +656,7 @@ def download_industrial_gas_demand():
             """
         )
         shutil.copytree(
-            "data_bundle_powerd_data/demand",
+            "data_bundle_powerd_data/industrial_gas_demand",
             "datasets/gas_data/demand",
             dirs_exist_ok=True,
         )
