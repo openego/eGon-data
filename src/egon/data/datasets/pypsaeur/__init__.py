@@ -105,6 +105,17 @@ def download():
             snakefile.write(
                 resources.read_text("egon.data.datasets.pypsaeur", "Snakefile")
         )
+
+    # Copy era5 weather data to folder for pypsaeur
+    era5_pypsaeur_path = filepath / "pypsa-eur" / "cutouts"
+
+    if not era5_pypsaeur_path.exists():
+        era5_pypsaeur_path.mkdir(parents=True, exist_ok=True)
+        copy_from = config.datasets()[
+            "era5_weather_data"]["targets"]["weather_data"]["path"]
+        filename = "europe-2011-era5.nc"
+        shutil.copy(copy_from + "/" + filename, era5_pypsaeur_path / filename)
+
 def prepare_network():
     cwd = Path(".")
     filepath = cwd / "run-pypsa-eur"
