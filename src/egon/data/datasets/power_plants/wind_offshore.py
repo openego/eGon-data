@@ -12,10 +12,13 @@ import egon.data.config
 def map_id_bus(scenario):
     # Import manually generated list of wind offshore farms with their
     # connection points (OSM_id)
+    osm_year = egon.data.config.datasets()["openstreetmap"]["original_data"][
+        "source"
+    ]["url"]
+
     if scenario in ["eGon2035", "eGon100RE"]:
         id_bus = {
             "Büttel": "136034396",
-            "Heide/West": "289836713",
             "Suchraum Gemeinden Ibbenbüren/Mettingen/Westerkappeln": "114319248",
             "Suchraum Zensenbusch": "76185022",
             "Rommerskirchen": "24839976",
@@ -24,13 +27,11 @@ def map_id_bus(scenario):
             "Diele": "177829920",
             "Dörpen/West": "142487746",
             "Emden/Borßum": "34835258",
-            "Emden/Ost": "177829920",
             "Hagermarsch": "79316833",
             "Hanekenfähr": "61918154",
             "Inhausen": "29420322",
             "Unterweser": "32076853",
             "Wehrendorf": "33411203",
-            "Wilhelmshaven 2": "23837631",
             "Rastede": "23837631",
             "Bentwisch": "32063539",
             "Lubmin": "460134233",
@@ -39,6 +40,25 @@ def map_id_bus(scenario):
             "inhausen": "29420322",
             "Cloppenburg": "50643382",
         }
+        if "200101" in osm_year:
+            id_bus2 = {
+                "Heide/West": "289836713",
+                "Emden/Ost": "177829920",
+                "Wilhelmshaven 2": "23837631",
+            }
+        elif "220101" in osm_year:
+            id_bus2 = {
+                "Heide/West": "603661085",
+                "Emden/Ost": "34835258",
+                "Wilhelmshaven 2": "23744346",
+            }
+        else:
+            raise Exception(
+                """The OSM year used is not yet compatible with
+                            this function"""
+            )
+        id_bus = {**id_bus, **id_bus2}
+
     elif scenario == "status2019":
         id_bus = {
             "UW Inhausen": "29420322",
