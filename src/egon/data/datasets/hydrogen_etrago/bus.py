@@ -45,7 +45,7 @@ def insert_hydrogen_buses():
     if "eGon100RE" in s:
         scn.append("eGon100RE")
 
-    for scenario in s:
+    for scenario in scn:
         sources = config.datasets()["etrago_hydrogen"]["sources"]
         target = config.datasets()["etrago_hydrogen"]["targets"]["hydrogen_buses"]
         # initalize dataframe for hydrogen buses
