@@ -13,6 +13,7 @@ import pandas as pd
 import pypsa
 import shutil
 import yaml
+from urllib.request import urlretrieve
 
 from egon.data import __path__, db, logger, config
 from egon.data.datasets import Dataset
@@ -28,7 +29,7 @@ class PreparePypsaEur(Dataset):
     def __init__(self, dependencies):
         super().__init__(
             name="PreparePypsaEur",
-            version="0.0.5",
+            version="0.0.6",
             dependencies=dependencies,
             tasks=(
                 download,
@@ -115,6 +116,26 @@ def download():
             "era5_weather_data"]["targets"]["weather_data"]["path"]
         filename = "europe-2011-era5.nc"
         shutil.copy(copy_from + "/" + filename, era5_pypsaeur_path / filename)
+
+    # Workaround to download natura and shipdensity data, which is not working
+    # in the regular snakemake workflow.
+    # The same files are downloaded from the same directory as in pypsa-eur
+    # version 0.10 here. Is is stored in the folders from pypsa-eur.
+    if not (filepath / "pypsa-eur" / "resources").exists():
+        (filepath / "pypsa-eur" / "resources"
+         ).mkdir(parents=True, exist_ok=True)
+    urlretrieve(
+        "https://zenodo.org/record/4706686/files/natura.tiff",
+        filepath / "pypsa-eur" / "resources" / "natura.tiff",
+        )
+
+    if not (filepath / "pypsa-eur" / "data").exists():
+        (filepath / "pypsa-eur" / "data"
+         ).mkdir(parents=True, exist_ok=True)
+    urlretrieve(
+        "https://zenodo.org/record/6953563/files/shipdensity_global.zip",
+        filepath / "pypsa-eur" / "data" / "shipdensity_global.zip",
+        )
 
 def prepare_network():
     cwd = Path(".")
