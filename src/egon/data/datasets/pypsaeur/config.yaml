@@ -310,9 +310,8 @@ biomass:
   scenario: ENS_Low
   classes:
     solid biomass:
-
-    not included:
     - Agricultural waste
+    not included:
     - Fuelwood residues
     - Secondary Forestry residues - woodchips
     - Sawdust
