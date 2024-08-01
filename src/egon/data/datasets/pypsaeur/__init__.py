@@ -1258,7 +1258,7 @@ def update_electrical_timeseries_germany(network):
 
     network.loads_t.p_set.loc[:, "DE1 0"] = (
         df["residential_and_service"] + df["industry"]
-    )
+    ).values
 
     return network
 
