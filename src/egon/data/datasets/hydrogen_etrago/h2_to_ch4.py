@@ -28,7 +28,7 @@ def insert_h2_to_ch4_to_h2():
     (SMR) modelled as extendable links as well as the H2 feedin
     capacities modelled as non extendable links and insert all of them
     into the database.
-    These tree technologies are connecting CH4 and H2_grid buses only.
+    These tree technologies are connecting CH4 and H2 buses only.
 
     The capacity of the H2_feedin links is considerated as constant and
     calculated as the sum of the capacities of the CH4 links connected

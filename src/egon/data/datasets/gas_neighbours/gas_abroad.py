@@ -65,7 +65,7 @@ def insert_gas_grid_capacities(Neighbouring_pipe_capacities_list, scn_name):
 
     carriers = {
         "CH4": {"bus_inDE": "CH4", "bus_abroad": "CH4"},
-        "H2_retrofit": {"bus_inDE": "H2_grid", "bus_abroad": "H2"},
+        "H2_retrofit": {"bus_inDE": "H2", "bus_abroad": "H2"},
     }
 
     if scn_name == "eGon100RE":

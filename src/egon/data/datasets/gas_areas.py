@@ -111,7 +111,7 @@ class EgonPfHvGasVoronoi(Base):
     scn_name = Column(Text, primary_key=True, nullable=False)
     #: Bus of the corresponding area
     bus_id = Column(BigInteger, primary_key=True, nullable=False)
-    #: Gas carrier of the voronoi area ("CH4", "H2_grid" or "H2_saltcavern")
+    #: Gas carrier of the voronoi area ("CH4", "H2" or "H2_saltcavern")
     carrier = Column(Text)
     #: Geometry of the corresponding area
     geom = Column(Geometry("GEOMETRY", 4326))
@@ -130,7 +130,7 @@ def voronoi_egon2035():
     """
     Create voronoi polygons for all gas carriers in eGon2035 scenario
     """
-    for carrier in ["CH4", "H2_grid", "H2_saltcavern"]:
+    for carrier in ["CH4", "H2", "H2_saltcavern"]:
         create_voronoi("eGon2035", carrier)
 
 
@@ -138,7 +138,7 @@ def voronoi_egon100RE():
     """
     Create voronoi polygons for all gas carriers in eGon100RE scenario
     """
-    for carrier in ["CH4", "H2_grid", "H2_saltcavern"]:
+    for carrier in ["CH4", "H2", "H2_saltcavern"]:
         create_voronoi("eGon100RE", carrier)
 
 

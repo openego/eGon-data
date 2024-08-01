@@ -72,7 +72,7 @@ class HydrogenStoreEtrago(Dataset):
     Insert the H2 stores into the database for Germany
 
     Insert the H2 stores in Germany into the database for all scenarios:
-      * H2 overground stores or steel tanks at each H2_grid bus with the
+      * H2 overground stores or steel tanks at each H2 bus with the
         function :py:func:`insert_H2_overground_storage <egon.data.datasets.hydrogen_etrago.storage.insert_H2_overground_storage>`
         for all scenarios,
       * H2 underground stores or saltcavern stores at each H2_saltcavern

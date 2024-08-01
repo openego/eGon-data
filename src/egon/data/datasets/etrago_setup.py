@@ -573,7 +573,6 @@ def insert_carriers():
                 "H2",
                 "H2_feedin",
                 "H2_for_industry",
-                "H2_grid",
                 "H2_gridextension",
                 "H2_hgv_load",
                 "H2_overground",

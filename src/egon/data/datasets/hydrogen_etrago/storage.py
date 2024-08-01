@@ -4,7 +4,7 @@ The central module containing all code dealing with H2 stores in Germany
 This module contains the functions used to insert the two types of H2
 store potentials in Germany:
   * H2 overground stores (carrier: 'H2_overground'): steel tanks at
-    every H2_grid bus
+    every H2 bus
   * H2 underground stores (carrier: 'H2_underground'): saltcavern store
     at every H2_saltcavern bus.
     NB: the saltcavern locations define the H2_saltcavern buses locations.
@@ -24,7 +24,7 @@ def insert_H2_overground_storage():
     """
     Insert H2_overground stores into the database.
 
-    Insert extendable H2_overground stores (steel tanks) at each H2_grid
+    Insert extendable H2_overground stores (steel tanks) at each H2
     bus. This function inserts data into the database and has no return.
 
     """
@@ -45,7 +45,7 @@ def insert_H2_overground_storage():
             f"""
             SELECT bus_id, scn_name, geom
             FROM {sources['buses']['schema']}.
-            {sources['buses']['table']} WHERE carrier = 'H2_grid'
+            {sources['buses']['table']} WHERE carrier = 'H2'
             AND scn_name = '{scn_name}' AND country = 'DE'""",
             index_col="bus_id",
         )

@@ -27,7 +27,7 @@ def insert_power_to_h2_to_power():
     Insert electrolysis and fuel cells capacities into the database.
 
     The potentials for power-to-H2 in electrolysis and H2-to-power in
-    fuel cells are created between each H2 bus (H2_grid and
+    fuel cells are created between each H2 bus (H2 and
     H2_saltcavern) and its closest HV power bus.
     These links are extendable. For the electrolysis, if the distance
     between the AC and the H2 bus is > 500m, the maximum capacity of

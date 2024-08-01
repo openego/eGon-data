@@ -415,7 +415,7 @@ def insert_industrial_gas_demand_egon2035():
             read_and_process_demand(
                 scn_name=scn_name,
                 carrier="H2_for_industry",
-                grid_carrier="H2_grid",
+                grid_carrier="H2",
             ),
         ]
     )
@@ -468,7 +468,7 @@ def insert_industrial_gas_demand_egon100RE():
         scn_name=scn_name, carrier="CH4_for_industry", grid_carrier="CH4"
     )
     industrial_gas_demand_H2 = read_and_process_demand(
-        scn_name=scn_name, carrier="H2_for_industry", grid_carrier="H2_grid"
+        scn_name=scn_name, carrier="H2_for_industry", grid_carrier="H2"
     )
 
     # adjust H2 and CH4 total demands (values from PES)

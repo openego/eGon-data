@@ -6,7 +6,7 @@ The H2 grid, present only in eGon100RE, is composed of two parts:
     carrier 'H2_retrofit' corresponding to the retrofiting of a share of
     the CH4 grid into an hydrogen grid,
   * an extendable part with carrier 'H2_gridextension', linking each
-    H2_salcavern bus to the closest H2_grid bus: this part as no
+    H2_salcavern bus to the closest H2 bus: this part as no
     capacity (p_nom = 0) but it could be extended.
 As the CH4 grid, the H2 pipelines are modelled by PyPSA links.
 
@@ -45,7 +45,7 @@ def insert_h2_pipelines():
     H2_buses = db.select_geodataframe(
         f"""
         SELECT * FROM grid.egon_etrago_bus WHERE scn_name = 'eGon100RE' AND
-        carrier IN ('H2_grid', 'H2_saltcavern') and country = 'DE'
+        carrier IN ('H2', 'H2_saltcavern') and country = 'DE'
         """,
         epsg=4326,
     )
@@ -99,7 +99,7 @@ def insert_h2_pipelines():
     new_pipelines.set_crs(epsg=4326, inplace=True)
 
     # find bus in H2_grid voronoi
-    new_pipelines = db.assign_gas_bus_id(new_pipelines, "eGon100RE", "H2_grid")
+    new_pipelines = db.assign_gas_bus_id(new_pipelines, "eGon100RE", "H2")
     new_pipelines = new_pipelines.rename(columns={"bus_id": "bus1"}).drop(
         columns=["bus"]
     )
