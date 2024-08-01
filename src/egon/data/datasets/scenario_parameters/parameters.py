@@ -788,7 +788,6 @@ def gas(scenario):
         parameters = {
             "main_gas_carrier": "H2",
             "retrofitted_CH4pipeline-to-H2pipeline_share": 0.23,
-            "H2_feedin_volumetric_fraction": 0.15,
             # p-e-s result, this value is overwritten if p-e-s is run
         }
         # Insert effciencies in p.u.
@@ -798,7 +797,6 @@ def gas(scenario):
             "CH4_to_H2": read_costs(costs, "SMR", "efficiency"),
             "H2_to_CH4": read_costs(costs, "methanation", "efficiency"),
             "OCGT": read_costs(costs, "OCGT", "efficiency"),
-            "H2_feedin": 1,
         }
 
         # Insert FOM in %
