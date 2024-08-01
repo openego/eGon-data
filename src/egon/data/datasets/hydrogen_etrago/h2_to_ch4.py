@@ -56,7 +56,6 @@ def insert_h2_to_ch4_to_h2():
             columns={"bus_H2": "bus0", "bus_CH4": "bus1"}
         )
         SMR = buses.copy().rename(columns={"bus_H2": "bus1", "bus_CH4": "bus0"})
-        feed_in = methanation.copy()
     
         # Delete old entries
         db.execute_sql(
@@ -74,48 +73,52 @@ def insert_h2_to_ch4_to_h2():
         )
     
         scn_params = get_sector_parameters("gas", scn_name)
-    
-        pipeline_capacities = db.select_dataframe(
-            f"""
-            SELECT bus0, bus1, p_nom FROM grid.egon_etrago_link
-            WHERE scn_name = '{scn_name}' AND carrier = 'CH4'
-            AND (
-                bus0 IN (
-                    SELECT bus_id FROM grid.egon_etrago_bus
-                    WHERE scn_name = '{scn_name}' AND country = 'DE'
-                ) OR bus1 IN (
-                    SELECT bus_id FROM grid.egon_etrago_bus
-                    WHERE scn_name = '{scn_name}' AND country = 'DE'
-                )
-            );
-            """
-        )
-    
-        feed_in["p_nom"] = 0
-        feed_in["p_nom_extendable"] = False
-        # calculation of H2 energy share via volumetric share outsourced
-        # in a mixture of H2 and CH4 with 15 %vol share
-        H2_share = scn_params["H2_feedin_volumetric_fraction"]
-        H2_energy_share = H2_CH4_mix_energy_fractions(H2_share)
-    
-        for bus in feed_in["bus1"].values:
-            # calculate the total pipeline capacity connected to a specific bus
-            nodal_capacity = pipeline_capacities.loc[
-                (pipeline_capacities["bus0"] == bus)
-                | (pipeline_capacities["bus1"] == bus),
-                "p_nom",
-            ].sum()
-            # multiply total pipeline capacity with H2 energy share corresponding
-            # to volumetric share
-            feed_in.loc[feed_in["bus1"] == bus, "p_nom"] = (
-                nodal_capacity * H2_energy_share
+        
+        technology = [methanation, SMR]
+        links_names = ["H2_to_CH4", "CH4_to_H2"]
+        
+        if scn_name == "eGon2035":
+            feed_in = methanation.copy()
+            pipeline_capacities = db.select_dataframe(
+                f"""
+                SELECT bus0, bus1, p_nom FROM grid.egon_etrago_link
+                WHERE scn_name = '{scn_name}' AND carrier = 'CH4'
+                AND (
+                    bus0 IN (
+                        SELECT bus_id FROM grid.egon_etrago_bus
+                        WHERE scn_name = '{scn_name}' AND country = 'DE'
+                    ) OR bus1 IN (
+                        SELECT bus_id FROM grid.egon_etrago_bus
+                        WHERE scn_name = '{scn_name}' AND country = 'DE'
+                    )
+                );
+                """
             )
-    
+        
+            feed_in["p_nom"] = 0
+            feed_in["p_nom_extendable"] = False
+            # calculation of H2 energy share via volumetric share outsourced
+            # in a mixture of H2 and CH4 with 15 %vol share
+            H2_share = scn_params["H2_feedin_volumetric_fraction"]
+            H2_energy_share = H2_CH4_mix_energy_fractions(H2_share)
+        
+            for bus in feed_in["bus1"].values:
+                # calculate the total pipeline capacity connected to a specific bus
+                nodal_capacity = pipeline_capacities.loc[
+                    (pipeline_capacities["bus0"] == bus)
+                    | (pipeline_capacities["bus1"] == bus),
+                    "p_nom",
+                ].sum()
+                # multiply total pipeline capacity with H2 energy share corresponding
+                # to volumetric share
+                feed_in.loc[feed_in["bus1"] == bus, "p_nom"] = (
+                    nodal_capacity * H2_energy_share
+                )
+            technology.append(feed_in)
+            links_names.append("H2_feedin")
+
         # Write new entries
-        for table, carrier in zip(
-            [methanation, SMR, feed_in], ["H2_to_CH4", "CH4_to_H2", "H2_feedin"]
-        ):
-    
+        for table, carrier in zip(technology, links_names):
             # set parameters according to carrier name
             table["carrier"] = carrier
             table["efficiency"] = scn_params["efficiency"][carrier]
@@ -125,9 +128,9 @@ def insert_h2_to_ch4_to_h2():
                 table["lifetime"] = scn_params["lifetime"][carrier]
             new_id = db.next_etrago_id("link")
             table["link_id"] = range(new_id, new_id + len(table))
-    
+
             table = link_geom_from_buses(table, scn_name)
-    
+
             table.to_postgis(
                 "egon_etrago_link",
                 engine,
