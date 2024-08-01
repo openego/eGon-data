@@ -43,7 +43,7 @@ def insert_h2_to_ch4_to_h2():
     for scn_name in scenarios:
         # Connect to local database
         engine = db.engine()
-    
+
         # Select CH4 and corresponding H2 buses
         # No geometry required in this case!
         buses = db.select_dataframe(
@@ -51,12 +51,14 @@ def insert_h2_to_ch4_to_h2():
             SELECT * FROM grid.egon_etrago_ch4_h2 WHERE scn_name = '{scn_name}'
             """
         )
-    
+
         methanation = buses.copy().rename(
             columns={"bus_H2": "bus0", "bus_CH4": "bus1"}
         )
-        SMR = buses.copy().rename(columns={"bus_H2": "bus1", "bus_CH4": "bus0"})
-    
+        SMR = buses.copy().rename(
+            columns={"bus_H2": "bus1", "bus_CH4": "bus0"}
+        )
+
         # Delete old entries
         db.execute_sql(
             f"""
@@ -71,12 +73,12 @@ def insert_h2_to_ch4_to_h2():
                 );
             """
         )
-    
+
         scn_params = get_sector_parameters("gas", scn_name)
-        
+
         technology = [methanation, SMR]
         links_names = ["H2_to_CH4", "CH4_to_H2"]
-        
+
         if scn_name == "eGon2035":
             feed_in = methanation.copy()
             pipeline_capacities = db.select_dataframe(
@@ -94,14 +96,14 @@ def insert_h2_to_ch4_to_h2():
                 );
                 """
             )
-        
+
             feed_in["p_nom"] = 0
             feed_in["p_nom_extendable"] = False
             # calculation of H2 energy share via volumetric share outsourced
             # in a mixture of H2 and CH4 with 15 %vol share
             H2_share = scn_params["H2_feedin_volumetric_fraction"]
             H2_energy_share = H2_CH4_mix_energy_fractions(H2_share)
-        
+
             for bus in feed_in["bus1"].values:
                 # calculate the total pipeline capacity connected to a specific bus
                 nodal_capacity = pipeline_capacities.loc[
@@ -139,6 +141,7 @@ def insert_h2_to_ch4_to_h2():
                 if_exists="append",
                 dtype={"topo": Geometry()},
             )
+
 
 def H2_CH4_mix_energy_fractions(x, T=25, p=50):
     """
