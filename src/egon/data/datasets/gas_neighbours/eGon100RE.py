@@ -114,7 +114,7 @@ def define_DE_crossbording_pipes_geom_eGon100RE(scn_name="eGon100RE"):
 
     def find_equivalent_H2(df):
         equivalent = {}
-        H2 = df[df["carrier"].isin(["H2", "H2_grid"])].set_index("bus_id")
+        H2 = df[df["carrier"].isin(["H2"])].set_index("bus_id")
         CH4 = df[df["carrier"] == "CH4"].set_index("bus_id")
 
         for bus in CH4.index:
@@ -174,7 +174,7 @@ def define_DE_crossbording_pipes_geom_eGon100RE(scn_name="eGon100RE"):
         f"""
         SELECT * FROM {sources['buses']['schema']}.{sources['buses']['table']}
         WHERE scn_name = 'eGon100RE'
-        AND ((carrier = 'CH4') OR (carrier = 'H2') OR (carrier = 'H2_grid'))
+        AND ((carrier = 'CH4') OR (carrier = 'H2'))
         AND country <> 'RU'
         """,
         epsg=4326,
