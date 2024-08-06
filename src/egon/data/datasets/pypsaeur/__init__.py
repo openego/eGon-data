@@ -496,7 +496,7 @@ def neighbor_reduction():
         SELECT * FROM grid.egon_etrago_bus
         WHERE carrier = 'AC' AND v_nom = 380
         AND country!= 'DE' AND scn_name ='eGon100RE'
-        AND bus_id NOT IN (SELECT bus_i FROM osmtgmod_results.bus_data"
+        AND bus_id NOT IN (SELECT bus_i FROM osmtgmod_results.bus_data)
         """)
     buses_with_defined_id = neighbors[
         (neighbors.carrier=="AC")
