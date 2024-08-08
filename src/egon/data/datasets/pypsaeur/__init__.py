@@ -83,8 +83,8 @@ def download():
 
             # Limit geopandas version
             # our pypsa-eur version is not compatible to geopandas>1
-            env = [
-                "geopandas>=0.11.0, <1" if x == "geopandas>=0.11.0" else x
+            env["dependencies"] = [
+                "geopandas>=0.11.0,<1" if x == "geopandas>=0.11.0" else x
                 for x in env["dependencies"]
             ]
 
