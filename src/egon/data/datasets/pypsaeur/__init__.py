@@ -60,100 +60,111 @@ def download():
     filepath.mkdir(parents=True, exist_ok=True)
 
     pypsa_eur_repos = filepath / "pypsa-eur"
-
-    if not pypsa_eur_repos.exists():
-        subproc.run(
-            [
-                "git",
-                "clone",
-                "--branch",
-                "v0.10.0",
-                "https://github.com/PyPSA/pypsa-eur.git",
-                pypsa_eur_repos,
-            ]
-        )
-
-        # Add gurobi solver to environment:
-        # Read YAML file
-        path_to_env = pypsa_eur_repos / "envs" / "environment.yaml"
-        with open(path_to_env, "r") as stream:
-            env = yaml.safe_load(stream)
-
-        env["dependencies"][-1]["pip"].append("gurobipy==10.0.0")
-
-        # Limit geopandas version
-        # our pypsa-eur version is not compatible to geopandas>1
-        env = ["geopandas>=0.11.0, <1" if
-               x=="geopandas>=0.11.0" else x for x in env["dependencies"]]
-
-
-        # Write YAML file
-        with open(path_to_env, "w", encoding="utf8") as outfile:
-            yaml.dump(
-                env, outfile, default_flow_style=False, allow_unicode=True
+    if config.settings()["egon-data"]["--run-pypsa-eur"]:
+        if not pypsa_eur_repos.exists():
+            subproc.run(
+                [
+                    "git",
+                    "clone",
+                    "--branch",
+                    "v0.10.0",
+                    "https://github.com/PyPSA/pypsa-eur.git",
+                    pypsa_eur_repos,
+                ]
             )
 
-        # Copy config file for egon-data to pypsa-eur directory
-        shutil.copy(Path(
-            __path__[0],
-            "datasets",
-            "pypsaeur",
-            "config.yaml"),
-            pypsa_eur_repos / "config",
+            # Add gurobi solver to environment:
+            # Read YAML file
+            path_to_env = pypsa_eur_repos / "envs" / "environment.yaml"
+            with open(path_to_env, "r") as stream:
+                env = yaml.safe_load(stream)
+
+            env["dependencies"][-1]["pip"].append("gurobipy==10.0.0")
+
+            # Limit geopandas version
+            # our pypsa-eur version is not compatible to geopandas>1
+            env = [
+                "geopandas>=0.11.0, <1" if x == "geopandas>=0.11.0" else x
+                for x in env["dependencies"]
+            ]
+
+            # Write YAML file
+            with open(path_to_env, "w", encoding="utf8") as outfile:
+                yaml.dump(
+                    env, outfile, default_flow_style=False, allow_unicode=True
+                )
+
+            # Copy config file for egon-data to pypsa-eur directory
+            shutil.copy(
+                Path(__path__[0], "datasets", "pypsaeur", "config.yaml"),
+                pypsa_eur_repos / "config",
+            )
+
+            with open(filepath / "Snakefile", "w") as snakefile:
+                snakefile.write(
+                    resources.read_text(
+                        "egon.data.datasets.pypsaeur", "Snakefile"
+                    )
+                )
+
+        # Copy era5 weather data to folder for pypsaeur
+        era5_pypsaeur_path = filepath / "pypsa-eur" / "cutouts"
+
+        if not era5_pypsaeur_path.exists():
+            era5_pypsaeur_path.mkdir(parents=True, exist_ok=True)
+            copy_from = config.datasets()["era5_weather_data"]["targets"][
+                "weather_data"
+            ]["path"]
+            filename = "europe-2011-era5.nc"
+            shutil.copy(
+                copy_from + "/" + filename, era5_pypsaeur_path / filename
+            )
+
+        # Workaround to download natura and shipdensity data, which is not
+        # working in the regular snakemake workflow.
+        # The same files are downloaded from the same directory as in pypsa-eur
+        # version 0.10 here. Is is stored in the folders from pypsa-eur.
+        if not (filepath / "pypsa-eur" / "resources").exists():
+            (filepath / "pypsa-eur" / "resources").mkdir(
+                parents=True, exist_ok=True
+            )
+        urlretrieve(
+            "https://zenodo.org/record/4706686/files/natura.tiff",
+            filepath / "pypsa-eur" / "resources" / "natura.tiff",
         )
 
-        with open(filepath / "Snakefile", "w") as snakefile:
-            snakefile.write(
-                resources.read_text("egon.data.datasets.pypsaeur", "Snakefile")
+        if not (filepath / "pypsa-eur" / "data").exists():
+            (filepath / "pypsa-eur" / "data").mkdir(
+                parents=True, exist_ok=True
+            )
+        urlretrieve(
+            "https://zenodo.org/record/6953563/files/shipdensity_global.zip",
+            filepath / "pypsa-eur" / "data" / "shipdensity_global.zip",
         )
+    else:
+        print("Pypsa-eur is not executed due to the settings of egon-data")
 
-    # Copy era5 weather data to folder for pypsaeur
-    era5_pypsaeur_path = filepath / "pypsa-eur" / "cutouts"
-
-    if not era5_pypsaeur_path.exists():
-        era5_pypsaeur_path.mkdir(parents=True, exist_ok=True)
-        copy_from = config.datasets()[
-            "era5_weather_data"]["targets"]["weather_data"]["path"]
-        filename = "europe-2011-era5.nc"
-        shutil.copy(copy_from + "/" + filename, era5_pypsaeur_path / filename)
-
-    # Workaround to download natura and shipdensity data, which is not working
-    # in the regular snakemake workflow.
-    # The same files are downloaded from the same directory as in pypsa-eur
-    # version 0.10 here. Is is stored in the folders from pypsa-eur.
-    if not (filepath / "pypsa-eur" / "resources").exists():
-        (filepath / "pypsa-eur" / "resources"
-         ).mkdir(parents=True, exist_ok=True)
-    urlretrieve(
-        "https://zenodo.org/record/4706686/files/natura.tiff",
-        filepath / "pypsa-eur" / "resources" / "natura.tiff",
-        )
-
-    if not (filepath / "pypsa-eur" / "data").exists():
-        (filepath / "pypsa-eur" / "data"
-         ).mkdir(parents=True, exist_ok=True)
-    urlretrieve(
-        "https://zenodo.org/record/6953563/files/shipdensity_global.zip",
-        filepath / "pypsa-eur" / "data" / "shipdensity_global.zip",
-        )
 
 def prepare_network():
     cwd = Path(".")
     filepath = cwd / "run-pypsa-eur"
 
-    subproc.run(
-        [
-            "snakemake",
-            "-j1",
-            "--directory",
-            filepath,
-            "--snakefile",
-            filepath / "Snakefile",
-            "--use-conda",
-            "--conda-frontend=conda",
-            "prepare",
-        ]
-    )
+    if config.settings()["egon-data"]["--run-pypsa-eur"]:
+        subproc.run(
+            [
+                "snakemake",
+                "-j1",
+                "--directory",
+                filepath,
+                "--snakefile",
+                filepath / "Snakefile",
+                "--use-conda",
+                "--conda-frontend=conda",
+                "prepare",
+            ]
+        )
+    else:
+        print("Pypsa-eur is not executed due to the settings of egon-data")
 
 
 def solve_network():
@@ -310,7 +321,7 @@ def electrical_neighbours_egon100():
 def neighbor_reduction():
     network = read_network()
 
-    #network.links.drop("pipe_retrofit", axis="columns", inplace=True)
+    # network.links.drop("pipe_retrofit", axis="columns", inplace=True)
 
     wanted_countries = [
         "DE",
@@ -497,13 +508,17 @@ def neighbor_reduction():
         WHERE carrier = 'AC' AND v_nom = 380
         AND country!= 'DE' AND scn_name ='eGon100RE'
         AND bus_id NOT IN (SELECT bus_i FROM osmtgmod_results.bus_data)
-        """)
+        """
+    )
     buses_with_defined_id = neighbors[
-        (neighbors.carrier=="AC")
-        &(neighbors.country.isin(foreign_ac_buses.country.values))].index
-    neighbors.loc[
-        buses_with_defined_id, "new_index"] = foreign_ac_buses.set_index(
-            "x").loc[neighbors.loc[buses_with_defined_id, "x"]].bus_id.values
+        (neighbors.carrier == "AC")
+        & (neighbors.country.isin(foreign_ac_buses.country.values))
+    ].index
+    neighbors.loc[buses_with_defined_id, "new_index"] = (
+        foreign_ac_buses.set_index("x")
+        .loc[neighbors.loc[buses_with_defined_id, "x"]]
+        .bus_id.values
+    )
 
     # lines, the foreign crossborder lines
     # (without crossborder lines to Germany!)
@@ -829,11 +844,11 @@ def neighbor_reduction():
         # Define geometry and add to lines dataframe as 'topo'
         gdf = gpd.GeoDataFrame(
             index=neighbor_links.index,
-            data = {
-                "geom_bus0":neighbors.loc[neighbor_links.bus0, "geom"].values,
-                "geom_bus1":neighbors.loc[neighbor_links.bus1, "geom"].values
-                }
-            )
+            data={
+                "geom_bus0": neighbors.loc[neighbor_links.bus0, "geom"].values,
+                "geom_bus1": neighbors.loc[neighbor_links.bus1, "geom"].values,
+            },
+        )
 
         gdf["geometry"] = gdf.apply(
             lambda x: LineString([x["geom_bus0"], x["geom_bus1"]]), axis=1
@@ -878,8 +893,13 @@ def neighbor_reduction():
     ]
 
     # delete unwanted carriers for eTraGo
-    excluded_carriers = ["gas for industry CC", "SMR CC", "biogas to gas",
-                         "DAC", "electricity distribution grid", ]
+    excluded_carriers = [
+        "gas for industry CC",
+        "SMR CC",
+        "biogas to gas",
+        "DAC",
+        "electricity distribution grid",
+    ]
     neighbor_links = neighbor_links[
         ~neighbor_links.carrier.isin(excluded_carriers)
     ]
@@ -1459,9 +1479,7 @@ def rual_heat_technologies(network):
 
 
 def execute():
-    with open(
-        __path__[0] + "/datasets/pypsaeur/config.yaml", "r"
-    ) as stream:
+    with open(__path__[0] + "/datasets/pypsaeur/config.yaml", "r") as stream:
         data_config = yaml.safe_load(stream)
 
     network_path = (
