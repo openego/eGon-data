@@ -29,7 +29,7 @@ class PreparePypsaEur(Dataset):
     def __init__(self, dependencies):
         super().__init__(
             name="PreparePypsaEur",
-            version="0.0.6",
+            version="0.0.7",
             dependencies=dependencies,
             tasks=(
                 download,
@@ -42,7 +42,7 @@ class RunPypsaEur(Dataset):
     def __init__(self, dependencies):
         super().__init__(
             name="SolvePypsaEur",
-            version="0.0.5",
+            version="0.0.6",
             dependencies=dependencies,
             tasks=(
                 execute,
@@ -213,11 +213,12 @@ def read_network():
     else:
         target_file = (
             Path(".")
-            / "data_bundle_egon_data"
-            / "pypsa_eur_sec"
-            / "2022-07-26-egondata-integration"
+            / "data_bundle_powerd_data"
+            / "pypsa_eur"
+            / "2024-08-02-egondata-integration"
+            / "results"
             / "postnetworks"
-            / "elec_s_37_lv2.0__Co2L0-1H-T-H-B-I-dist1_2050.nc"
+            / "elec_s_37_lv1.5__Co2L0-1H-T-H-B-I-A-solar+p3_2050.nc"
         )
 
     return pypsa.Network(target_file)
@@ -1197,11 +1198,12 @@ def prepared_network():
     else:
         target_file = (
             Path(".")
-            / "data_bundle_egon_data"
-            / "pypsa_eur_sec"
-            / "2022-07-26-egondata-integration"
+            / "data_bundle_powerd_data"
+            / "pypsa_eur"
+            / "2024-08-02-egondata-integration"
+            / "results"
             / "postnetworks"
-            / "elec_s_37_lv2.0__Co2L0-1H-T-H-B-I-dist1_2050.nc"
+            / "elec_s_37_lv1.5__Co2L0-1H-T-H-B-I-A-solar+p3_2050.nc"
         )
 
     return pypsa.Network(target_file.absolute().as_posix())
