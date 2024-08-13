@@ -79,7 +79,17 @@ def download():
             with open(path_to_env, "r") as stream:
                 env = yaml.safe_load(stream)
 
+            # The version of gurobipy has to fit to the version of gurobi.
+            # Since we mainly use gurobi 10.0 this is set here.
             env["dependencies"][-1]["pip"].append("gurobipy==10.0.0")
+
+            # Set python version to <3.12
+            # Python<=3.12 needs gurobipy>=11.0, in case gurobipy is updated,
+            # this can be removed
+            env["dependencies"] = [
+                "python>=3.8,<3.12" if x == "python>=3.8" else x
+                for x in env["dependencies"]
+            ]
 
             # Limit geopandas version
             # our pypsa-eur version is not compatible to geopandas>1
