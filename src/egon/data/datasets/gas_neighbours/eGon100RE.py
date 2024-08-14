@@ -247,12 +247,12 @@ def read_DE_crossbordering_cap_from_pes():
 
     DE_pipe_capacities_list_H2 = n.links[
         (n.links["carrier"] == "H2 pipeline retrofitted")
-        & ((n.links["bus0"] == "DE0 0 H2") | (n.links["bus1"] == "DE0 0 H2"))
+        & ((n.links["bus0"] == "DE1 0 H2") | (n.links["bus1"] == "DE1 0 H2"))
     ]
 
     DE_pipe_capacities_list_CH4 = n.links[
         (n.links["carrier"] == "gas pipeline")
-        & ((n.links["bus0"] == "DE0 0 gas") | (n.links["bus1"] == "DE0 0 gas"))
+        & ((n.links["bus0"] == "DE1 0 gas") | (n.links["bus1"] == "DE1 0 gas"))
     ]
 
     pipe_capacities_list = pd.DataFrame(
