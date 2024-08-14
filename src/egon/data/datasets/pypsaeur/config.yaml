@@ -529,9 +529,9 @@ sector:
     gas pipeline:
       efficiency_per_1000km: 1 #0.977
       compression_per_1000km: 0.01
-  H2_network: true
-  gas_network: false
-  H2_retrofit: false
+  H2_network: false
+  gas_network: true
+  H2_retrofit: true
   H2_retrofit_capacity_per_CH4: 0.6
   gas_network_connectivity_upgrade: 1
   gas_distribution_grid: false
