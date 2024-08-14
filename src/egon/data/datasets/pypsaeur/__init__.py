@@ -43,14 +43,15 @@ class RunPypsaEur(Dataset):
     def __init__(self, dependencies):
         super().__init__(
             name="SolvePypsaEur",
-            version="0.0.6",
+            version="0.0.7",
             dependencies=dependencies,
             tasks=(
                 execute,
                 solve_network,
                 clean_database,
                 electrical_neighbours_egon100,
-                overwrite_H2_pipeline_share,
+                # Dropped until we decided how we deal with the H2 grid
+                # overwrite_H2_pipeline_share,
             ),
         )
 
