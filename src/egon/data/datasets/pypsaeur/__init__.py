@@ -153,19 +153,40 @@ def download():
             filepath / "pypsa-eur" / "data" / "shipdensity_global.zip",
         )
 
-        if not (filepath / "pypsa-eur" / "globalenergymonitor.org" /
-                "wp-content" / "uploads" /"2023" / "07").exists():
-            (filepath / "pypsa-eur" / "globalenergymonitor.org" / "wp-content"
-             / "uploads" /"2023" / "07").mkdir(
-                parents=True, exist_ok=True
-            )
+        if not (
+            filepath
+            / "pypsa-eur"
+            / "globalenergymonitor.org"
+            / "wp-content"
+            / "uploads"
+            / "2023"
+            / "07"
+        ).exists():
+            (
+                filepath
+                / "pypsa-eur"
+                / "globalenergymonitor.org"
+                / "wp-content"
+                / "uploads"
+                / "2023"
+                / "07"
+            ).mkdir(parents=True, exist_ok=True)
 
         r = requests.get(
             "https://globalenergymonitor.org/wp-content/uploads/2023/07/"
-            "Europe-Gas-Tracker-2023-03-v3.xlsx")
-        with open(filepath / "pypsa-eur" / "globalenergymonitor.org" /
-                  "wp-content"/ "uploads" /"2023" / "07" /
-                  "Europe-Gas-Tracker-2023-03-v3.xlsx", "wb") as outfile:
+            "Europe-Gas-Tracker-2023-03-v3.xlsx"
+        )
+        with open(
+            filepath
+            / "pypsa-eur"
+            / "globalenergymonitor.org"
+            / "wp-content"
+            / "uploads"
+            / "2023"
+            / "07"
+            / "Europe-Gas-Tracker-2023-03-v3.xlsx",
+            "wb",
+        ) as outfile:
             outfile.write(r.content)
 
     else:
@@ -1509,7 +1530,9 @@ def rual_heat_technologies(network):
 
 def execute():
     if egon.data.config.settings()["egon-data"]["--run-pypsa-eur"]:
-        with open(__path__[0] + "/datasets/pypsaeur/config.yaml", "r") as stream:
+        with open(
+            __path__[0] + "/datasets/pypsaeur/config.yaml", "r"
+        ) as stream:
             data_config = yaml.safe_load(stream)
 
         network_path = (
