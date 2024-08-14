@@ -11,6 +11,7 @@ import importlib_resources as resources
 import numpy as np
 import pandas as pd
 import pypsa
+import requests
 import shutil
 import yaml
 from urllib.request import urlretrieve
@@ -29,7 +30,7 @@ class PreparePypsaEur(Dataset):
     def __init__(self, dependencies):
         super().__init__(
             name="PreparePypsaEur",
-            version="0.0.7",
+            version="0.0.8",
             dependencies=dependencies,
             tasks=(
                 download,
@@ -130,8 +131,8 @@ def download():
                 copy_from + "/" + filename, era5_pypsaeur_path / filename
             )
 
-        # Workaround to download natura and shipdensity data, which is not
-        # working in the regular snakemake workflow.
+        # Workaround to download natura, shipdensity and globalenergymonitor
+        # data, which is not working in the regular snakemake workflow.
         # The same files are downloaded from the same directory as in pypsa-eur
         # version 0.10 here. Is is stored in the folders from pypsa-eur.
         if not (filepath / "pypsa-eur" / "resources").exists():
@@ -151,6 +152,22 @@ def download():
             "https://zenodo.org/record/6953563/files/shipdensity_global.zip",
             filepath / "pypsa-eur" / "data" / "shipdensity_global.zip",
         )
+
+        if not (filepath / "pypsa-eur" / "globalenergymonitor.org" /
+                "wp-content" / "uploads" /"2023" / "07").exists():
+            (filepath / "pypsa-eur" / "globalenergymonitor.org" / "wp-content"
+             / "uploads" /"2023" / "07").mkdir(
+                parents=True, exist_ok=True
+            )
+
+        r = requests.get(
+            "https://globalenergymonitor.org/wp-content/uploads/2023/07/"
+            "Europe-Gas-Tracker-2023-03-v3.xlsx")
+        with open(filepath / "pypsa-eur" / "globalenergymonitor.org" /
+                  "wp-content"/ "uploads" /"2023" / "07" /
+                  "Europe-Gas-Tracker-2023-03-v3.xlsx", "wb") as outfile:
+            outfile.write(r.content)
+
     else:
         print("Pypsa-eur is not executed due to the settings of egon-data")
 
