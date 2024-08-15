@@ -157,6 +157,33 @@ def download():
         if not (
             filepath
             / "pypsa-eur"
+            / "zenodo.org"
+            / "records"
+            / "10356004"
+            / "files"
+        ).exists():
+            (
+                filepath
+                / "pypsa-eur"
+                / "zenodo.org"
+                / "records"
+                / "10356004"
+                / "files"
+            )
+        urlretrieve(
+            "https://zenodo.org/records/10356004/files/ENSPRESO_BIOMASS.xlsx",
+            filepath
+            / "pypsa-eur"
+            / "zenodo.org"
+            / "records"
+            / "10356004"
+            / "files"
+            / "ENSPRESO_BIOMASS.xlsx",
+        )
+
+        if not (
+            filepath
+            / "pypsa-eur"
             / "globalenergymonitor.org"
             / "wp-content"
             / "uploads"
