@@ -684,13 +684,16 @@ def add_transformers(df):
         df.set_index("bus1")
         .loc[trafos["bus0"][trafos["bus0"].isin(df.bus1)], "s_nom"]
         .groupby("bus1")
-        .max()
+        .sum()
         .values
     )
 
     for i in trafos.index:
         trafos.loc[i, "s_nom"] = choose_transformer(trafos.loc[i, "s_nom"])[0]
         trafos.loc[i, "x"] = choose_transformer(trafos.loc[i, "s_nom"])[1]
+
+        # Adjust x of transformers to basis of pypsa
+        trafos.loc[i, "x"] *= trafos.loc[i, "s_nom"]
 
     trafos["trafo_id"] = trafos.index + max_trafo_id
 
