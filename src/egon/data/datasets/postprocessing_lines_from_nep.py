@@ -460,39 +460,78 @@ def ac_parameters(df):
     electrical_parameters = get_sector_parameters("electricity", "eGon2035")[
         "electrical_parameters"
     ]
+    capital_cost = get_sector_parameters("electricity", "eGon2035")[
+        "capital_cost"
+    ]
+
     ac_lines = df[df.carrier == "AC"].copy()
     ac_lines.loc[:, "Spannung"].fillna(380.0, inplace=True)
     ac_lines.loc[:, "num_parallel"].fillna(2.0, inplace=True)
-    ac_lines["s_nom"] = (
-        ac_lines.loc[:, "num_parallel"]
+    ac_lines.loc[:, "s_nom_min"] = 0
+    ac_lines.loc[:, "s_nom_extendable"] = True
+
+    # Overhead lines
+    ac_lines.loc[ac_lines["cable/line"] == "line", "s_nom"] = (
+        ac_lines.loc[ac_lines["cable/line"] == "line", "num_parallel"]
         * electrical_parameters["ac_line_380kV"]["s_nom"]
     )
-    ac_lines["s_nom_min"] = 0
-    ac_lines["s_nom_max"] = (
-        ac_lines.loc[:, "num_parallel"]
+
+    ac_lines.loc[ac_lines["cable/line"] == "line", "s_nom_max"] = (
+        ac_lines.loc[ac_lines["cable/line"] == "line", "num_parallel"]
         * electrical_parameters["ac_line_380kV"]["s_nom"]
     )
-    ac_lines["s_nom_extendable"] = True
-    ac_lines["x"] = (
+
+    ac_lines.loc[ac_lines["cable/line"] == "line", "x"] = (
         electrical_parameters["ac_line_380kV"]["L"]
         * 2
         * 50
         * np.pi
         * 1e-3
-        * ac_lines.loc[:, "length"]
-        / ac_lines.loc[:, "num_parallel"]
+        * ac_lines.loc[ac_lines["cable/line"] == "line", "length"]
+        / ac_lines.loc[ac_lines["cable/line"] == "line", "num_parallel"]
     )
-    ac_lines["r"] = (
+    ac_lines.loc[ac_lines["cable/line"] == "line", "r"] = (
         electrical_parameters["ac_line_380kV"]["R"]
-        * ac_lines.loc[:, "length"]
-        / ac_lines.loc[:, "num_parallel"]
+        * ac_lines.loc[ac_lines["cable/line"] == "line", "length"]
+        / ac_lines.loc[ac_lines["cable/line"] == "line", "num_parallel"]
     )
 
-    capital_cost = get_sector_parameters("electricity", "eGon2035")[
-        "capital_cost"
-    ]
-    ac_lines["capital_cost"] = ac_lines.loc[:, "length"].mul(
-        capital_cost["ac_ehv_overhead_line"]
+    ac_lines.loc[ac_lines["cable/line"] == "line", "capital_cost"] = (
+        ac_lines.loc[ac_lines["cable/line"] == "line", "length"].mul(
+            capital_cost["ac_ehv_overhead_line"]
+        )
+    )
+
+    # Underground cables
+    ac_lines.loc[ac_lines["cable/line"] == "line", "s_nom"] = (
+        ac_lines.loc[ac_lines["cable/line"] == "cable", "num_parallel"]
+        * electrical_parameters["ac_cable_380kV"]["s_nom"]
+    )
+
+    ac_lines.loc[ac_lines["cable/line"] == "cable", "s_nom_max"] = (
+        ac_lines.loc[ac_lines["cable/line"] == "cable", "num_parallel"]
+        * electrical_parameters["ac_cable_380kV"]["s_nom"]
+    )
+
+    ac_lines.loc[ac_lines["cable/line"] == "cable", "x"] = (
+        electrical_parameters["ac_cable_380kV"]["L"]
+        * 2
+        * 50
+        * np.pi
+        * 1e-3
+        * ac_lines.loc[ac_lines["cable/line"] == "cable", "length"]
+        / ac_lines.loc[ac_lines["cable/line"] == "cable", "num_parallel"]
+    )
+    ac_lines.loc[ac_lines["cable/line"] == "cable", "r"] = (
+        electrical_parameters["ac_cable_380kV"]["R"]
+        * ac_lines.loc[ac_lines["cable/line"] == "cable", "length"]
+        / ac_lines.loc[ac_lines["cable/line"] == "cable", "num_parallel"]
+    )
+
+    ac_lines.loc[ac_lines["cable/line"] == "cable", "capital_cost"] = (
+        ac_lines.loc[ac_lines["cable/line"] == "cable", "length"].mul(
+            capital_cost["ac_ehv_cable"]
+        )
     )
 
     df.loc[df.carrier == "AC", "s_nom"] = ac_lines.s_nom.values
