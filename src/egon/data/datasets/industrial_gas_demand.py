@@ -27,7 +27,7 @@ from egon.data.datasets.etrago_helpers import (
     initialise_bus_insertion,
 )
 from egon.data.datasets.etrago_setup import link_geom_from_buses
-from egon.data.datasets.pypsaeursec import read_network
+from egon.data.datasets.pypsaeur import read_network
 from egon.data.datasets.scenario_parameters import get_sector_parameters
 
 logger = logging.getLogger(__name__)

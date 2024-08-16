@@ -189,7 +189,17 @@ class HeatSupply(Dataset):
                 {
                     district_heating,
                     individual_heating,
-                    potential_germany,
                 },
+            ),
+        )
+
+class GeothermalPotentialGermany(Dataset):
+    def __init__(self, dependencies):
+        super().__init__(
+            name="GeothermalPotentialGermany",
+            version="0.0.1",
+            dependencies=dependencies,
+            tasks=(
+                potential_germany,
             ),
         )

@@ -174,17 +174,23 @@ from sqlalchemy.orm import Session
     ),
     show_default=True,
 )
-
 @click.option(
     "--scenarios",
     default=["status2019", "eGon2035"],
     metavar="SCENARIOS",
+    help=("List of scenario names for which a data model shall be created."),
+    show_default=True,
+)
+@click.option(
+    "--run-pypsa-eur",
+    default=False,
+    metavar="RUN_PYPSA_EUR",
     help=(
-        "List of scenario names for which a data model shall be created."
+        "State if pypsa-eur should be executed and installed within egon-data."
+        " If set to false, a predefined network from the data bundle is used."
     ),
     show_default=True,
 )
-
 @click.version_option(version=egon.data.__version__)
 @click.pass_context
 def egon_data(context, **kwargs):

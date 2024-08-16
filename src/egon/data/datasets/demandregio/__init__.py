@@ -39,7 +39,7 @@ class DemandRegio(Dataset):
     def __init__(self, dependencies):
         super().__init__(
             name="DemandRegio",
-            version="0.0.7",
+            version="0.0.8",
             dependencies=dependencies,
             tasks=(
                 # clone_and_install, demandregio must be previously installed
@@ -268,7 +268,7 @@ def adjust_ind_pes(ec_cts_ind):
     """
 
     pes_path = (
-        Path(".") / "data_bundle_egon_data" / "pypsa_eur_sec" / "resources"
+        Path(".") / "data_bundle_powerd_data" / "pypsa_eur" / "resources"
     )
 
     sources = egon.data.config.datasets()["demandregio_cts_ind_demand"][

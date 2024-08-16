@@ -21,7 +21,7 @@ from egon.data import config, db
 from egon.data.datasets.gas_neighbours.gas_abroad import (
     insert_gas_grid_capacities,
 )
-from egon.data.datasets.pypsaeursec import read_network
+from egon.data.datasets.pypsaeur import read_network
 
 countries = [
     "AT",
