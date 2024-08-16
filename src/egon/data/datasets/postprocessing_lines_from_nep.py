@@ -724,7 +724,7 @@ def decomissioining_create_file():
 
     """
 
-    decomissioning = pd.read_csv("decomissioning.csv")
+    decomissioning = pd.read_csv("input-data/decomissioning.csv")
 
     decomissioning = decomissioning[decomissioning.Szenario_C_2035]
 
@@ -833,9 +833,13 @@ def run():
 
     """
 
-    path_to_file_new_lines = "lines_from_nep.csv"
-    path_to_file_decomissioning_lines = "lines_to_decomission.shp"
-    path_to_file_missing_substations = "missing_substations.csv"
+    path_to_file_new_lines = "zenodo/input-data/lines_from_nep.csv"
+    path_to_file_decomissioning_lines = (
+        "zenodo/input-data/lines_to_decomission.shp"
+    )
+    path_to_file_missing_substations = (
+        "zenodo/input-data/missing_substations.csv"
+    )
 
     create_tables()
 
