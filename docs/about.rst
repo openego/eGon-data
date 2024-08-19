@@ -39,13 +39,13 @@ resolved database for all sectors considered.
 Project consortium and funding
 ==================================
 
-The following universities and research institutes were involved in the creation of eGon-data: 
+The following universities and research institutes were involved in the creation of eGon-data:
 
 * University of Applied Sciences Flensburg
 * Reiner Lemoine Institut
 * Otto von Guericke University Magdeburg
 * DLR Institute of Networked Energy Systems
-* Europa-Universität Flensburg 
+* Europa-Universität Flensburg
 
 The eGo_n project (FKZ: 03EI1002) is supported by the Federal Ministry for Economic Affairs and Climate Action (BMWK) on the basis of a decision by the German Bundestag.
 
@@ -57,9 +57,9 @@ The eGo_n project (FKZ: 03EI1002) is supported by the Federal Ministry for Econo
 eGon-data as one element of the eGo-Toolchain
 =============================================
 
-In the eGo_n project different tools were developed, which are in exchange with each other and have to serve the respective requirements on data scope, resolution, and format. The results of the data model creation have to be especially adapted to the requirements of the tools eTraGo and eDisGo for power grid optimization on different grid levels. 
+In the eGo_n project different tools were developed, which are in exchange with each other and have to serve the respective requirements on data scope, resolution, and format. The results of the data model creation have to be especially adapted to the requirements of the tools eTraGo and eDisGo for power grid optimization on different grid levels.
 A PostgreSQL database serves as an interface between the data model creation and the optimization tools.
-The figure below visualizes the interdependencies between the different tools. 
+The figure below visualizes the interdependencies between the different tools.
 
 .. image:: images/Toolchain_web_desktop.svg
   :width: 800
@@ -76,8 +76,8 @@ The following image visualizes the different components considered in scenario `
 .. image:: images/egon-modell-szenario-egon2035.png
   :width: 800
   :alt: Components of the data models
-  
-eGon-data aims to create different scenarios, which differ in terms of RE penetration or the availability of flexibility options. Currently, the following scenarios are available or in progress. 
+
+eGon-data aims to create different scenarios, which differ in terms of RE penetration or the availability of flexibility options. Currently, the following scenarios are available or in progress.
 
 * ``eGon2035`` Mid-termin scenario based on assumptions from the German network expansion plan 'scenario C2035', version 2021 and TYNDP
 * ``eGon2035_lowflex`` Mid-termin scenario similar to 'eGon2035', but with a limited availability of flexibility options
