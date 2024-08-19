@@ -27,7 +27,14 @@ The outputs of egon-data are published under open-source and open-data licenses.
 Objectives of the project
 =========================
 
-Driven by the expansion of renewable generation capacity and the progressing electrification of other energy sectors, the electrical grid increasingly faces new challenges: fluctuating supply of renewable energy and simultaneously a changing demand pattern caused by sector coupling. However, the integration of non-electric sectors such as gas, heat, and e-mobility enables more flexibility options. The eGo_n project aims to investigate the effects of sector coupling on the electrical grid and the benefits of new flexibility options. This requires the creation of a spatially and temporally highly resolved database for all sectors considered. 
+Driven by the expansion of renewable generation capacity and the progressing
+electrification of other energy sectors, the electrical grid increasingly faces new
+challenges: fluctuating supply of renewable energy and simultaneously a changing demand
+pattern caused by sector coupling. However, the integration of non-electric sectors such
+as gas, heat, and e-mobility enables more flexibility options. The eGo_n project aims to
+investigate the effects of sector coupling on the electrical grid and the benefits of
+new flexibility options. This requires the creation of a spatially and temporally highly
+resolved database for all sectors considered.
 
 Project consortium and funding
 ==================================
