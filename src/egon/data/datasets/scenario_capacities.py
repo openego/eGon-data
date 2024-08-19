@@ -658,15 +658,15 @@ def eGon100_capacities():
     cwd = Path(".")
 
     if execute_pypsa_eur_sec:
-        filepath = cwd / "run-pypsa-eur-sec"
-        pypsa_eur_sec_repos = filepath / "pypsa-eur-sec"
+        filepath = cwd / "run-pypsa-eur"
+        pypsa_eur_repos = filepath / "pypsa-eur"
         # Read YAML file
-        pes_egonconfig = pypsa_eur_sec_repos / "config_egon.yaml"
+        pes_egonconfig = pypsa_eur_repos / "config.yaml"
         with open(pes_egonconfig, "r") as stream:
             data_config = yaml.safe_load(stream)
 
         target_file = (
-            pypsa_eur_sec_repos
+            pypsa_eur_repos
             / "results"
             / data_config["run"]
             / "csvs"
@@ -676,9 +676,9 @@ def eGon100_capacities():
     else:
         target_file = (
             cwd
-            / "data_bundle_egon_data"
-            / "pypsa_eur_sec"
-            / "2022-07-26-egondata-integration"
+            / "data_bundle_powerd_data"
+            / "pypsa_eur"
+            / "2024-08-02-egondata-integration"
             / "csvs"
             / sources["eGon100RE"]["capacities"]
         )
@@ -833,7 +833,7 @@ class ScenarioCapacities(Dataset):
     def __init__(self, dependencies):
         super().__init__(
             name="ScenarioCapacities",
-            version="0.0.14",
+            version="0.0.15",
             dependencies=dependencies,
             tasks=tasks,
         )
