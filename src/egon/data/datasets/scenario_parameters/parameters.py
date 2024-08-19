@@ -1156,6 +1156,36 @@ def heat(scenario):
             ),
         }
 
+        # Insert overnight investment costs, in EUR/MWh
+        parameters["overnight_cost"] = {
+            "central_water_tank": read_costs(
+                costs, "central water tank storage", "investment"
+            ),
+            "rural_water_tank": read_costs(
+                costs, "decentral water tank storage", "investment"
+            ),
+        }
+
+        # Insert lifetime
+        parameters["lifetime"] = {
+            "central_water_tank": read_costs(
+                costs, "central water tank storage", "lifetime"
+            ),
+            "rural_water_tank": read_costs(
+                costs, "decentral water tank storage", "lifetime"
+            ),
+        }
+
+        # Insert annualized capital costs
+        parameters["capital_cost"] = {}
+
+        for comp in parameters["overnight_cost"].keys():
+            parameters["capital_cost"][comp] = annualize_capital_costs(
+                parameters["overnight_cost"][comp],
+                parameters["lifetime"][comp],
+                global_settings("eGon2035")["interest_rate"],
+            )
+
     elif scenario == "eGon2021":
         parameters = {}
 
