@@ -53,6 +53,14 @@ The eGo_n project (FKZ: 03EI1002) is supported by the Federal Ministry for Econo
   :width: 400
   :alt: Logos of project partners
 
+eGon-data is under continuous development in the course of other projects by the involved
+research institutes and universities.
+In the course of the research project `hyBit <https://hybit.org>`_
+(FKZ: 03SF0687A), funded by the Federal Ministry of Education and Research, grid
+expansion measures planned in the Network Development Plan by the German transmission
+system operators were added to the extra-high-voltage data model. Further, manual fixes
+to the high-voltage grid model in the area of Bremen were implemented based on a
+validation of the grid model in cooperation with the local grid operator.
 
 eGon-data as one element of the eGo-Toolchain
 =============================================
