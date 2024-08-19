@@ -1109,10 +1109,25 @@ def heat(scenario):
         }
 
     elif scenario == "eGon100RE":
+        costs = read_csv(2050)
+
         parameters = {
             "DE_demand_reduction_residential": 0.640720648501849,
             "DE_demand_reduction_service": 0.390895195300713,
             "DE_district_heating_share": 0.19,
+        }
+
+        parameters["marginal_cost"] = {
+            "central_heat_pump": read_costs(
+                costs, "central air-sourced heat pump", "VOM"
+            ),
+            "central_gas_chp": read_costs(costs, "central gas CHP", "VOM"),
+            "central_gas_boiler": read_costs(
+                costs, "central gas boiler", "VOM"
+            ),
+            "central_resistive_heater": read_costs(
+                costs, "central resistive heater", "VOM"
+            ),
         }
 
     elif scenario == "eGon2021":
