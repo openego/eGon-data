@@ -30,3 +30,13 @@ rule solve:
           " solve_sector_networks"
         )
 
+rule summary:
+    conda:
+        "pypsa-eur/envs/environment.yaml"
+    shell:
+        ( "snakemake"
+          " --directory=pypsa-eur/"
+          " --snakefile=pypsa-eur/Snakefile"
+          " -call"
+          " make_summary"
+        )
