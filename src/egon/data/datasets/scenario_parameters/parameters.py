@@ -1128,6 +1128,32 @@ def heat(scenario):
             "central_resistive_heater": read_costs(
                 costs, "central resistive heater", "VOM"
             ),
+            "geo_thermal": 2.9,  # Danish Energy Agency
+            "water_tank_charger": 0,  # Danish Energy Agency
+            "water_tank_discharger": 0,  # Danish Energy Agency
+            "rural_heat_pump": 0,  # Danish Energy Agency, Technology Data for Individual Heating Plants
+        }
+
+        # Insert efficiency in p.u.
+        parameters["efficiency"] = {
+            "water_tank_charger": read_costs(
+                costs, "water tank charger", "efficiency"
+            ),
+            "water_tank_discharger": read_costs(
+                costs, "water tank discharger", "efficiency"
+            ),
+            "central_resistive_heater": read_costs(
+                costs, "central resistive heater", "efficiency"
+            ),
+            "central_gas_boiler": read_costs(
+                costs, "central gas boiler", "efficiency"
+            ),
+            "rural_resistive_heater": read_costs(
+                costs, "decentral resistive heater", "efficiency"
+            ),
+            "rural_gas_boiler": read_costs(
+                costs, "decentral gas boiler", "efficiency"
+            ),
         }
 
     elif scenario == "eGon2021":
