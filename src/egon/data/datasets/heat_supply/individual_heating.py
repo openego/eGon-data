@@ -384,17 +384,28 @@ class HeatPumps2035(Dataset):
                     )
                 )
             return tasks
+        def heat_pumps_2035_skipped():
+            print("eGon2035 is not in the list of scenarios. HeatPumps2035 dataset is skipped")
+
+        tasks_HeatPumps2035 = set()
+
+        scenarios = config.settings()["egon-data"]["--scenarios"]
+
+        if "eGon2035" in scenarios:
+            tasks_HeatPumps2035=(
+                delete_heat_peak_loads_2035,
+                delete_hp_capacity_2035,
+                delete_mvgd_ts_2035,
+                {*dyn_parallel_tasks_2035()},
+            )
+        else:
+            tasks_HeatPumps2035 = (heat_pumps_2035_skipped,)
 
         super().__init__(
             name="HeatPumps2035",
             version="0.0.2",
             dependencies=dependencies,
-            tasks=(
-                delete_heat_peak_loads_2035,
-                delete_hp_capacity_2035,
-                delete_mvgd_ts_2035,
-                {*dyn_parallel_tasks_2035()},
-            ),
+            tasks=tasks_HeatPumps2035,
         )
 
 
