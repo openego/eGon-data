@@ -262,9 +262,9 @@ def insert_CH4_nodes_list(gas_nodes_list, scn_name="eGon2035"):
 
 def insert_gas_buses_abroad(scn_name="eGon2035"):
     """
-    Insert CH4 buses in neighbouring countries to database for eGon2035
+    Insert CH4 buses in neighbouring countries to database for a given scenario
 
-    For the scenario eGon2035, insert central CH4 buses in foreign
+    For the given scenario, insert central CH4/H2 buses in foreign
     countries to the database. The considered foreign countries are the
     direct neighbouring countries, with the addition of Russia that is
     considered as a source of fossil CH4.
@@ -278,7 +278,7 @@ def insert_gas_buses_abroad(scn_name="eGon2035"):
       * Addition of the missing information: scn_name and carrier
       * Attribution of an id to each bus
       * Cleaning of the database table grid.egon_etrago_bus of the
-        CH4 buses of the specific scenario (eGon2035) out of Germany
+        CH4 buses of the specific scenario out of Germany
       * Insertion of the neighbouring buses in the table grid.egon_etrago_bus.
 
     Returns
@@ -329,7 +329,7 @@ def insert_gas_buses_abroad(scn_name="eGon2035"):
     gdf_abroad_buses["carrier"] = main_gas_carrier
     gdf_abroad_buses["bus_id"] = range(new_id, new_id + len(gdf_abroad_buses))
 
-    # Add central bus in Russia
+    #Add central bus in Russia
     gdf_abroad_buses = pd.concat(
         [
             gdf_abroad_buses,
