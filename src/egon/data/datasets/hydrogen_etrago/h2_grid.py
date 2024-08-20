@@ -2,13 +2,13 @@
 The central module containing all code dealing with the H2 grid in eGon100RE
 
 The H2 grid, present only in eGon100RE, is composed of two parts:
-  * a fixed part with the same topology than the CH4 grid and with
-    carrier 'H2_retrofit' corresponding to the retrofiting of a share of
-    the CH4 grid into an hydrogen grid,
+  * a fixed part with the same topology as the CH4 grid and with
+    carrier 'H2_retrofit' corresponding to the retrofitted share of
+    the CH4 grid into a hydrogen grid,
   * an extendable part with carrier 'H2_gridextension', linking each
-    H2_salcavern bus to the closest H2_grid bus: this part as no
-    capacity (p_nom = 0) but it could be extended.
-As the CH4 grid, the H2 pipelines are modelled by PyPSA links.
+    H2_salcavern bus to the closest H2_grid bus: this part has no
+    capacity (p_nom = 0) but it can be extended.
+As for the CH4 grid, the H2 pipelines are modelled by PyPSA links.
 
 """
 from geoalchemy2.types import Geometry
@@ -30,16 +30,19 @@ def insert_h2_pipelines():
           * bus0 and bus1 using the grid.egon_etrago_ch4_h2 table
           * carrier, scn_name
           * p_nom: the value attributed there corresponds to the share
-            of p_nom of the specific pipe that could be retrofited into
-            H2 pipe. This share is the same for every pipeline and is
+            of p_nom of the specific pipeline that could be retrofited into
+            H2 pipeline. This share is the same for every pipeline and is
             calculated in the PyPSA-eur-sec run.
       * Create new extendable pipelines to link the existing grid to the
         H2_saltcavern buses
       * Clean database
       * Attribute link_id to the links
-      * Insert the into the database
+      * Insert into the database
 
-    This function inserts data into the database and has no return.
+    Returns
+    -------
+    None
+     
 
     """
     H2_buses = db.select_geodataframe(

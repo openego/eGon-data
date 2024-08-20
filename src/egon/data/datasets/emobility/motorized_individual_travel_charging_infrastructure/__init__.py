@@ -1,29 +1,9 @@
 """
 Motorized Individual Travel (MIT) Charging Infrastructure
 
-Main module for preparation of static model data for cahrging infrastructure
-for motorized individual travel.
+Main module for preparation of static model data for charging infrastructure for
+motorized individual travel.
 
-**Contents of this module**
-* Creation of DB tables
-* Download and preprocessing of vehicle registration data from zenodo
-* Determination of all potential charging locations for the four charging use
-  cases home, work, public and hpc per mv grid district
-* Write results to DB
-
-**Configuration**
-
-The config of this dataset can be found in *datasets.yml* in section
-*charging_infrastructure*.
-
-**Charging Infrastructure**
-
-The charging infrastructure allocation is based on [TracBEV[(
-https://github.com/rl-institut/tracbev). TracBEV is a tool for the regional
-allocation of charging infrastructure. In practice this allows users to use
-results generated via [SimBEV](https://github.com/rl-institut/simbev) and place
-the corresponding charging points on a map. These are split into the four use
-cases home, work, public and hpc.
 """
 from __future__ import annotations
 
@@ -116,10 +96,52 @@ def get_tracbev_data() -> None:
 
 
 class MITChargingInfrastructure(Dataset):
+    """
+    Preparation of static model data for charging infrastructure for
+    motorized individual travel.
+
+    The following is done:
+
+    * Creation of DB tables
+    * Download and preprocessing of vehicle registration data from zenodo
+    * Determination of all potential charging locations for the four charging use cases
+      home, work, public and hpc per MV grid district
+    * Write results to DB
+
+    *Dependencies*
+      * :py:class:`MvGridDistricts <egon.data.datasets.mv_grid_districts.mv_grid_districts_setup>`
+      * :py:func:`map_houseprofiles_to_buildings <egon.data.datasets.electricity_demand_timeseries.hh_buildings.map_houseprofiles_to_buildings>`
+
+    *Resulting tables*
+      * :py:class:`grid.egon_emob_charging_infrastructure
+        <egon.data.datasets.emobility.motorized_individual_travel_charging_infrastructure.db_classes.EgonEmobChargingInfrastructure>`
+        is created and filled
+
+    *Configuration*
+
+    The config of this dataset can be found in *datasets.yml* in section
+    *charging_infrastructure*.
+
+    *Charging Infrastructure*
+
+    The charging infrastructure allocation is based on
+    `TracBEV <https://github.com/rl-institut/tracbev>`_. TracBEV is a tool for the
+    regional allocation of charging infrastructure. In practice this allows users to
+    use results generated via `SimBEV <https://github.com/rl-institut/simbev>`_ and
+    place the corresponding charging
+    points on a map. These are split into the four use cases home, work, public and hpc.
+
+    """
+
+    #:
+    name: str = "MITChargingInfrastructure"
+    #:
+    version: str = "0.0.1"
+
     def __init__(self, dependencies):
         super().__init__(
-            name="MITChargingInfrastructure",
-            version="0.0.2",
+            name=self.name,
+            version=self.version,
             dependencies=dependencies,
             tasks=(
                 {
