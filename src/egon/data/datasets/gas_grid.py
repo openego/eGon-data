@@ -264,7 +264,7 @@ def insert_gas_buses_abroad(scn_name="eGon2035"):
     """
     Insert CH4 buses in neighbouring countries to database for a given scenario
 
-    For the given scenario, insert central CH4/H2 buses in foreign
+    For the given scenario, insert central CH4 buses in foreign
     countries to the database. The considered foreign countries are the
     direct neighbouring countries, with the addition of Russia that is
     considered as a source of fossil CH4.
@@ -290,15 +290,13 @@ def insert_gas_buses_abroad(scn_name="eGon2035"):
     """
     # Select sources and targets from dataset configuration
     sources = config.datasets()["electrical_neighbours"]["sources"]
-    main_gas_carrier = get_sector_parameters("gas", scenario=scn_name)[
-        "main_gas_carrier"
-    ]
+    gas_carrier = "CH4"
     # Connect to local database
     engine = db.engine()
     
     db.execute_sql(
         f"""
-    DELETE FROM grid.egon_etrago_bus WHERE "carrier" = '{main_gas_carrier}' AND
+    DELETE FROM grid.egon_etrago_bus WHERE "carrier" = '{gas_carrier}' AND
     scn_name = '{scn_name}' AND country != 'DE';
     """
     )
@@ -326,7 +324,7 @@ def insert_gas_buses_abroad(scn_name="eGon2035"):
         errors = "ignore"
     )
     gdf_abroad_buses["scn_name"] = scn_name
-    gdf_abroad_buses["carrier"] = main_gas_carrier
+    gdf_abroad_buses["carrier"] = gas_carrier
     gdf_abroad_buses["bus_id"] = range(new_id, new_id + len(gdf_abroad_buses))
 
     #Add central bus in Russia
@@ -341,7 +339,7 @@ def insert_gas_buses_abroad(scn_name="eGon2035"):
                     "x": 41,
                     "y": 55,
                     "country": "RU",
-                    "carrier": main_gas_carrier,
+                    "carrier": gas_carrier,
                 },
             ),
         ],
@@ -362,7 +360,7 @@ def insert_gas_buses_abroad(scn_name="eGon2035"):
                         "x": 10.4234469,
                         "y": 51.0834196,
                         "country": "DE",
-                        "carrier": main_gas_carrier,
+                        "carrier": gas_carrier,
                     },
                 ),
             ],
@@ -432,9 +430,7 @@ def insert_gas_pipeline_list(
     """
     abroad_gas_nodes_list = abroad_gas_nodes_list.set_index("country")
 
-    main_gas_carrier = get_sector_parameters("gas", scenario=scn_name)[
-        "main_gas_carrier"
-    ]
+    gas_carrier = "CH4"
 
     engine = db.engine()
 
@@ -537,7 +533,7 @@ def insert_gas_pipeline_list(
 
     # Add missing columns
     gas_pipelines_list["scn_name"] = scn_name
-    gas_pipelines_list["carrier"] = main_gas_carrier
+    gas_pipelines_list["carrier"] = gas_carrier
     gas_pipelines_list["p_nom_extendable"] = False
     gas_pipelines_list["p_min_pu"] = -1.0
 
@@ -772,7 +768,7 @@ def insert_gas_pipeline_list(
     # Clean db
     db.execute_sql(
         f"""DELETE FROM grid.egon_etrago_link
-        WHERE "carrier" = '{main_gas_carrier}'
+        WHERE "carrier" = '{gas_carrier}'
         AND scn_name = '{scn_name}';
         """
     )
