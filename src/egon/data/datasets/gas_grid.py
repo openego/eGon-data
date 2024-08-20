@@ -160,14 +160,14 @@ def ch4_nodes_number_G(gas_nodes_list):
 
 def insert_CH4_nodes_list(gas_nodes_list, scn_name="eGon2035"):
     """
-    Insert list of German CH4 nodes into the database for eGon2035
+    Insert list of German CH4 nodes into the database for a required scenario
 
     Insert the list of German CH4 nodes into the database by executing
     the following steps:
       * Receive the buses as parameter (from SciGRID_gas IGGIELGN data)
       * Add the missing information: scn_name and carrier
       * Clean the database table grid.egon_etrago_bus of the
-        CH4 buses of the specific scenario (eGon2035) in Germany
+        CH4 buses of the specific scenario in Germany
       * Insert the buses in the table grid.egon_etrago_bus
 
     Parameters
@@ -398,7 +398,7 @@ def insert_gas_pipeline_list(
 
     The gas pipelines, modelled as Pypsa links are red from the IGGIELGN_PipeSegments
     csv file previously downloded in the function :py:func:`download_SciGRID_gas_data`,
-    adapted and inserted in the database for the eGon2035 scenario.
+    adapted and inserted in the database for the required scenario.
     The manual corrections allows to:
       * Delete gas pipelines disconnected of the rest of the gas grid
       * Connect one pipeline (also connected to Norway) disconnected of
@@ -816,7 +816,8 @@ def insert_gas_pipeline_list(
 
 def remove_isolated_gas_buses(scn_name="eGon2035"):
     """
-    Delete CH4 buses which are disconnected of the CH4 grid for the eGon2035 scenario
+    Delete CH4 buses which are disconnected of the CH4 grid for the required
+    scenario
 
     This function deletes directly in the database and has no return.
 
@@ -843,10 +844,11 @@ def remove_isolated_gas_buses(scn_name="eGon2035"):
 
 def insert_gas_data():
     """
-    Overall function for importing methane data for eGon2035
+    Overall function for importing methane data for all the scenarios in the
+    configuration file.
 
     This function import the methane data (buses and pipelines) for
-    eGon2035, by executing the following steps:
+    each required scenario, by executing the following steps:
       * Download the SciGRID_gas datasets with the function :py:func:`download_SciGRID_gas_data`
       * Define CH4 buses with the function :py:func:`define_gas_nodes_list`
       * Insert the CH4 buses in Germany into the database with the
