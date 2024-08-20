@@ -1,5 +1,5 @@
 # NB: this name is used in the status badge
-name: "Tests, code style & coverage"
+name: "tox"
 
 on:
   push:
@@ -18,21 +18,46 @@ on:
 #    - LANG=en_US.UTF-8
 
 jobs:
-  build:
-    name: Python ${{ matrix.python-version }} (${{ matrix.platform }})
+  check:
+    name: check (${{ matrix.platform }})
+    runs-on: ${{ matrix.platform }}
+    strategy:
+      matrix:
+        platform: [ubuntu-latest, macos-latest, windows-latest]
+      max-parallel: 4
+      fail-fast: false
+    steps:
+      - uses: "actions/checkout@v2"
+      - name: "Install dependencies"
+        run: |
+          python -mpip install --progress-bar=off tox
+          tox --version
+      - name: "Build documentation"
+        run: "python -m tox -vv -e check"
+  docs:
+    name: docs (${{ matrix.platform }})
+    runs-on: ${{ matrix.platform }}
+    strategy:
+      matrix:
+        platform: [ubuntu-latest, macos-latest, windows-latest]
+      max-parallel: 4
+      fail-fast: false
+    steps:
+      - uses: "actions/checkout@v2"
+      - name: "Install dependencies"
+        run: |
+          python -mpip install --progress-bar=off tox
+          tox --version
+      - name: "Build documentation"
+        run: "python -m tox -vv -e docs"
+  tests:
+    name: tests (${{ matrix.platform }})
     runs-on: ${{ matrix.platform }}
 
     strategy:
       matrix:
-        python-version:
-          - "3.7"
-          - "3.8"
-        platform: [ubuntu-latest, macos-latest]
-        exclude:
-          - platform: macos-latest
-            python-version: "3.7"
-          - platform: macos-latest
-            python-version: "3.8"
+        platform: [ubuntu-latest, macos-latest, windows-latest]
+        python-version: ["3.7", "3.8"]
       max-parallel: 4
       fail-fast: false
 
@@ -41,13 +66,18 @@ jobs:
       - uses: "actions/setup-python@v2"
         with:
           python-version: "${{ matrix.python-version }}"
+      - name: "Create correctly named executable on Windows"
+        if: ${{ matrix.platform == 'windows-latest' }}
+        run: |
+          cd ${{ env.pythonLocation }}
+          New-Item -ItemType SymbolicLink `
+              -Path python${{ matrix.python-version }}.exe `
+              -Target ${{ env.pythonLocation }}/python.exe
       - name: "Install dependencies"
         run: |
-          python -mpip install --progress-bar=off tox tox-gh-actions -r'ci/requirements.txt'
+          python -mpip install --progress-bar=off tox -r'ci/requirements.txt'
           virtualenv --version
           pip --version
           tox --version
-      - name: "Run tox targets for ${{ matrix.python-version }}"
-        run: "python -m tox -vv"
-        env:
-          PLATFORM: ${{ matrix.platform }}
+      - name: "Run tests"
+        run: "python -m tox -vv -e py${{ matrix.python-version }}-nocov"
