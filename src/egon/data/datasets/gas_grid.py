@@ -428,6 +428,8 @@ def insert_gas_pipeline_list(
     None
 
     """
+    scn_params = get_sector_parameters("gas", scn_name)
+
     abroad_gas_nodes_list = abroad_gas_nodes_list.set_index("country")
 
     gas_carrier = "CH4"
@@ -742,6 +744,12 @@ def insert_gas_pipeline_list(
     gas_pipelines_list["p_nom"] = gas_pipelines_list[
         "max_transport_capacity_Gwh/d"
     ] * (1000 / 24)
+
+    if scn_name == "eGon100RE":
+        # remaining CH4 share is 1 - retroffited pipeline share
+        gas_pipelines_list["p_nom"] *= (
+            1 - scn_params["retrofitted_CH4pipeline-to-H2pipeline_share"]
+        )
 
     # Remove useless columns
     gas_pipelines_list = gas_pipelines_list.drop(
