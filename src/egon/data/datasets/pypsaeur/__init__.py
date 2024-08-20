@@ -30,7 +30,7 @@ class PreparePypsaEur(Dataset):
     def __init__(self, dependencies):
         super().__init__(
             name="PreparePypsaEur",
-            version="0.0.8",
+            version="0.0.9",
             dependencies=dependencies,
             tasks=(
                 download,
@@ -1470,12 +1470,9 @@ def update_heat_timeseries_germany(network):
     )
 
     # Replace heat demand curves in Germany with values from eGon-data
-    network.loads_t.p_set.loc[:, "DE1 0 residential rural heat"] = (
+    network.loads_t.p_set.loc[:, "DE1 0 rural heat"] = (
         df_egon_heat_demand.loc[:, "residential rural"].values
-    )
-
-    network.loads_t.p_set.loc[:, "DE1 0 services rural heat"] = (
-        df_egon_heat_demand.loc[:, "service rural"].values
+        + df_egon_heat_demand.loc[:, "service rural"].values
     )
 
     network.loads_t.p_set.loc[:, "DE1 0 urban central heat"] = (
@@ -1523,11 +1520,20 @@ def district_heating_shares(network):
                 df.loc[country[:2]].values[0]
             )
         )
-        network.loads_t.p_set[f"{country} residential rural heat"] = (
+        network.loads_t.p_set[f"{country} rural heat"] = (
             heat_demand_per_country.loc[:, country].mul(
                 (1 - df.loc[country[:2]].values[0])
             )
         )
+
+    # Drop links with undefined buses
+    network.mremove(
+        "Link",
+        network.links[
+            ~network.links.bus0.isin(network.buses.index.values)
+        ].index,
+    )
+
     return network
 
 
