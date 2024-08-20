@@ -786,7 +786,7 @@ def gas(scenario):
         interest_rate = 0.07  # [p.u.]
 
         parameters = {
-            "main_gas_carrier": "CH4",
+            "main_gas_carrier": "H2",
             "retrofitted_CH4pipeline-to-H2pipeline_share": 0.23,
             # p-e-s result, this value is overwritten if p-e-s is run
         }
