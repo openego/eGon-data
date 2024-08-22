@@ -503,7 +503,7 @@ def ac_parameters(df):
     )
 
     # Underground cables
-    ac_lines.loc[ac_lines["cable/line"] == "line", "s_nom"] = (
+    ac_lines.loc[ac_lines["cable/line"] == "cable", "s_nom"] = (
         ac_lines.loc[ac_lines["cable/line"] == "cable", "num_parallel"]
         * electrical_parameters["ac_cable_380kV"]["s_nom"]
     )
