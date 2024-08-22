@@ -2,41 +2,8 @@
 Distribute MaStR PV rooftop capacities to OSM and synthetic buildings. Generate
 new PV rooftop generators for scenarios eGon2035 and eGon100RE.
 
-Data cleaning and inference:
-* Drop duplicates and entries with missing critical data.
-* Determine most plausible capacity from multiple values given in MaStR data.
-* Drop generators which don't have any plausible capacity data
-  (23.5MW > P > 0.1).
-* Randomly and weighted add a start-up date if it is missing.
-* Extract zip and municipality from 'site' given in MaStR data.
-* Geocode unique zip and municipality combinations with Nominatim (1 sec
-  delay). Drop generators for which geocoding failed or which are located
-  outside the municipalities of Germany.
-* Add some visual sanity checks for cleaned data.
+See documentation section :ref:`pv-rooftop-ref` for more information.
 
-Allocation of MaStR data:
-* Allocate each generator to an existing building from OSM.
-* Determine the quantile each generator and building is in depending on the
-  capacity of the generator and the area of the polygon of the building.
-* Randomly distribute generators within each municipality preferably within
-  the same building area quantile as the generators are capacity wise.
-* If not enough buildings exists within a municipality and quantile additional
-  buildings from other quantiles are chosen randomly.
-
-Desegregation of pv rooftop scenarios:
-* The scenario data per federal state is linearly distributed to the mv grid
-  districts according to the pv rooftop potential per mv grid district.
-* The rooftop potential is estimated from the building area given from the OSM
-  buildings.
-* Grid districts, which are located in several federal states, are allocated
-  PV capacity according to their respective roof potential in the individual
-  federal states.
-* The desegregation of PV plants within a grid districts respects existing
-  plants from MaStR, which did not reach their end of life.
-* New PV plants are randomly and weighted generated using a breakdown of MaStR
-  data as generator basis.
-* Plant metadata (e.g. plant orientation) is also added random and weighted
-  from MaStR data as basis.
 """
 from __future__ import annotations
 
@@ -381,6 +348,10 @@ def load_mastr_data():
 
 
 class OsmBuildingsFiltered(Base):
+    """
+    Class definition of table openstreetmap.osm_buildings_filtered.
+
+    """
     __tablename__ = "osm_buildings_filtered"
     __table_args__ = {"schema": "openstreetmap"}
 
@@ -991,6 +962,10 @@ def scenario_data(
 
 
 class Vg250Lan(Base):
+    """
+    Class definition of table boundaries.vg250_lan.
+
+    """
     __tablename__ = "vg250_lan"
     __table_args__ = {"schema": "boundaries"}
 
@@ -2100,6 +2075,10 @@ def allocate_scenarios(
 
 
 class EgonPowerPlantPvRoofBuilding(Base):
+    """
+    Class definition of table supply.egon_power_plants_pv_roof_building.
+
+    """
     __tablename__ = "egon_power_plants_pv_roof_building"
     __table_args__ = {"schema": "supply"}
 

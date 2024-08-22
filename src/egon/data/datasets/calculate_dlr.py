@@ -21,10 +21,32 @@ import egon.data.config
 
 
 class Calculate_dlr(Dataset):
+    """Calculate DLR and assign values to each line in the db
+
+    Parameters
+    ----------
+    *No parameters required
+
+    *Dependencies*
+      * :py:class:`DataBundle <egon.data.datasets.data_bundle.DataBundle>`
+      * :py:class:`Osmtgmod <egon.data.datasets.osmtgmod.Osmtgmod>`
+      * :py:class:`WeatherData <egon.data.datasets.era5.WeatherData>`
+      * :py:class:`FixEhvSubnetworks <egon.data.datasets.FixEhvSubnetworks>`
+
+    *Resulting tables*
+      * :py:class:`grid.egon_etrago_line_timeseries
+        <egon.data.datasets.etrago_setup.EgonPfHvLineTimeseries>` is filled
+    """
+
+    #:
+    name: str = "dlr"
+    #:
+    version: str = "0.0.1"
+
     def __init__(self, dependencies):
         super().__init__(
-            name="dlr",
-            version="0.0.1",
+            name=self.name,
+            version=self.version,
             dependencies=dependencies,
             tasks=(dlr,),
         )

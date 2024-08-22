@@ -11,17 +11,41 @@ from egon.data.datasets.etrago_setup import link_geom_from_buses
 
 
 class FixEhvSubnetworks(Dataset):
+    """
+    Manually fix grid topology in the extra high voltage grid to avoid subnetworks
+
+    This dataset includes fixes for the topology of the German extra high voltage grid.
+    The initial grid topology from openstreetmap resp. osmTGmod includes some issues,  eg. because of
+    incomplete data. Thsi dataset does not fix all those issues, but deals only with subnetworks
+    in the extra high voltage grid that would result into problems in the grid optimisation.
+
+
+    *Dependencies*
+      * :py:class:`Osmtgmod <egon.data.datasets.osmtgmod.Osmtgmod>`
+
+
+    *Resulting tables*
+      * :py:class:`grid.egon_etrago_bus <egon.data.datasets.etrago_setup.EgonPfHvBus>` is updated
+      * :py:class:`grid.egon_etrago_line <egon.data.datasets.etrago_setup.EgonPfHvLine>` is updated
+      * :py:class:`grid.egon_etrago_transformer <egon.data.datasets.etrago_setup.EgonPfHvTransformer>` is updated
+
+    """
+
+    #:
+    name: str = "FixEhvSubnetworks"
+    #:
+    version: str = "0.0.2"
+
     def __init__(self, dependencies):
         super().__init__(
-            name="FixEhvSubnetworks",
-            version="0.0.2",
+            name=self.name,
+            version=self.version,
             dependencies=dependencies,
             tasks=run,
         )
 
 
 def select_bus_id(x, y, v_nom, scn_name, carrier):
-
     bus_id = db.select_dataframe(
         f"""
         SELECT bus_id
@@ -135,7 +159,6 @@ def drop_line(x0, y0, x1, y1, v_nom, scn_name):
 
 
 def add_trafo(x, y, v_nom0, v_nom1, scn_name, n=1):
-
     bus0 = select_bus_id(x, y, v_nom0, scn_name, carrier="AC")
     bus1 = select_bus_id(x, y, v_nom1, scn_name, carrier="AC")
 
@@ -169,7 +192,6 @@ def add_trafo(x, y, v_nom0, v_nom1, scn_name, n=1):
 
 
 def drop_trafo(x, y, v_nom0, v_nom1, scn_name):
-
     bus0 = select_bus_id(x, y, v_nom0, scn_name, carrier="AC")
     bus1 = select_bus_id(x, y, v_nom1, scn_name, carrier="AC")
 
@@ -186,7 +208,6 @@ def drop_trafo(x, y, v_nom0, v_nom1, scn_name):
 
 
 def fix_subnetworks(scn_name):
-
     # Missing 220kV line to Lübeck Siems
     # add 220kV bus at substation Lübeck Siems
     add_bus(10.760835327266625, 53.90974536547805, 220, scn_name)
@@ -218,7 +239,6 @@ def fix_subnetworks(scn_name):
     )
 
     if settings()["egon-data"]["--dataset-boundary"] == "Everything":
-
         # Missing line from USW Uchtelfangen to 'Kraftwerk Weiher'
         add_line(
             7.032657738999395,  # Kraftwerk Weiher
@@ -368,12 +388,10 @@ def fix_subnetworks(scn_name):
         drop_trafo(11.121774798935334, 51.00038603925895, 220, 380, scn_name)
         drop_bus(11.121774798935334, 51.00038603925895, 380, scn_name)
 
-
         # Umspannwerk Waldlaubersheim
         # delete isolated bus and trafo
         drop_trafo(7.815993836091339, 49.92211102637183, 110, 380, scn_name)
         drop_bus(7.815993836091339, 49.92211102637183, 380, scn_name)
-
 
 
 def run():
