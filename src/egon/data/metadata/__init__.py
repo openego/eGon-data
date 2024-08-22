@@ -509,7 +509,7 @@ def sources():
                 "Zenodo repository to provide several different input"
                 " data sets for eGon-data"
             ),
-            "path": "https://sandbox.zenodo.org/record/1167119",
+            "path": "https://zenodo.org/record/10226009",
             "licenses": [license_ccby("© eGon development team")],
         },
         "Einspeiseatlas": {
@@ -640,7 +640,7 @@ def sources():
                 " https://www.marktstammdatenregister.de/MaStRHilfe"
                 "/subpages/statistik.html"
             ),
-            "path": "https://sandbox.zenodo.org/record/808086",
+            "path": "https://zenodo.org/record/10480930",
             "licenses": [
                 licenses_datenlizenz_deutschland(
                     "© 2021 Bundesnetzagentur für Elektrizität, Gas,"

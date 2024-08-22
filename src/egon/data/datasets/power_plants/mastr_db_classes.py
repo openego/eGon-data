@@ -365,7 +365,7 @@ def add_metadata():
                         "system modeling"
                     ),
                     "path": (
-                        "https://sandbox.zenodo.org/record/"
+                        "https://zenodo.org/record/"
                         f"{deposit_id_data_bundle}#.Y_dWM4CZMVM"
                     ),
                     "licenses": [license_dedl(attribution="© Cußmann, Ilka")],
@@ -379,7 +379,7 @@ def add_metadata():
                         "the data dump from 2022-11-17 for eGon-data."
                     ),
                     "path": (
-                        f"https://sandbox.zenodo.org/record/{deposit_id_mastr}"
+                        f"https://zenodo.org/record/{deposit_id_mastr}"
                     ),
                     "licenses": [license_dedl(attribution="© Amme, Jonathan")],
                 },
