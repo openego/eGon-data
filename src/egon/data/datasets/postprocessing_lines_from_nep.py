@@ -302,7 +302,7 @@ def find_bus(name, missing_substations_csv):
         geom_col="point",
     )
     substation_hv.subst_name = unify_name(substation_hv.subst_name)
-
+    substation_hv.v_nom = "110000"
     substation_hv.drop_duplicates("subst_name", keep="first", inplace=True)
 
     additional_substations = pd.read_csv(missing_substations_csv)
