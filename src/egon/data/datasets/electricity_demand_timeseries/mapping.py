@@ -8,11 +8,6 @@ Base = declarative_base()
 
 
 class EgonMapZensusMvgdBuildings(Base):
-    """
-    A final mapping table including all buildings used for residential and
-    cts, heat and electricity timeseries. Including census cells, mvgd bus_id,
-    building type (osm or synthetic)
-    """
     __tablename__ = "egon_map_zensus_mvgd_buildings"
     __table_args__ = {"schema": "boundaries"}
 

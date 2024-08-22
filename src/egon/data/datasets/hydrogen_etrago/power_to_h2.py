@@ -2,8 +2,8 @@
 """
 Module containing the definition of the AC grid to H2 links
 
-In this module the functions used to define and insert the links 
-between H2 and AC buses into the database are to be found.
+In this module the functions used to define and insert into the database
+the links between H2 and AC buses are to be found.
 These links are modelling:
   * Electrolysis (carrier name: 'power_to_H2'): technology to produce H2
     from AC
@@ -34,14 +34,12 @@ def insert_power_to_h2_to_power(scn_name="eGon2035"):
     between the AC and the H2 bus is > 500m, the maximum capacity of
     the installation is limited to 1 MW.
 
+    This function inserts data into the database and has no return.
+
     Parameters
     ----------
     scn_name : str
         Name of the scenario
-
-    Returns
-    -------
-    None
 
     """
 
@@ -231,13 +229,7 @@ def map_buses(scn_name):
 
 
 def insert_power_to_h2_to_power_eGon100RE():
-    """Copy H2/power links from the eGon2035 to the eGon100RE scenario.
-    
-    Returns
-    -------
-    None
-    
-    """
+    """Copy H2/power links from the eGon2035 to the eGon100RE scenario."""
     copy_and_modify_links(
         "eGon2035", "eGon100RE", ["H2_to_power", "power_to_H2"], "gas"
     )

@@ -1,5 +1,5 @@
 """
-DB tables / SQLAlchemy ORM classes for heavy duty transport.
+DB tables / SQLAlchemy ORM classes for heavy duty transport
 """
 
 from geoalchemy2 import Geometry
@@ -14,9 +14,7 @@ DATASET_CFG = config.datasets()["mobility_hgv"]
 
 
 class EgonHeavyDutyTransportVoronoi(Base):
-    """
-    Class definition of table demand.egon_heavy_duty_transport_voronoi.
-    """
+
     __tablename__ = "egon_heavy_duty_transport_voronoi"
     __table_args__ = {"schema": "demand"}
 

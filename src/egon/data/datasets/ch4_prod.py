@@ -61,10 +61,10 @@ def load_NG_generators(scn_name):
     Define the fossil CH4 production units in Germany
 
     This function reads from the SciGRID_gas dataset the fossil CH4
-    production units in Germany, adjusts and returns them.
+    production units in Germany, adjuts and returns them.
     Natural gas production reference: SciGRID_gas dataset (datasets/gas_data/data/IGGIELGN_Production.csv
     downloaded in :func:`download_SciGRID_gas_data <egon.data.datasets.gas_grid.download_SciGRID_gas_data>`).
-    For more information on this data, refer to the
+    For more information on these data, refer to the
     `SciGRID_gas IGGIELGN documentation <https://zenodo.org/record/4767098>`_.
 
     Parameters
@@ -169,11 +169,11 @@ def load_biogas_generators(scn_name):
     """
     Define the biogas production units in Germany
 
-    This function downloads the Biogaspartner Einspeiseatlas into
+    This function download the Biogaspartner Einspeiseatlas into
     (datasets/gas_data/Biogaspartner_Einspeiseatlas_Deutschland_2021.xlsx),
-    reads the biogas production units in Germany data, adjusts and
+    reads the biogas production units in Germany data, adjuts and
     returns them.
-    For more information on this data refer to the
+    For more information on these data refer, to the
     `Einspeiseatlas website <https://www.biogaspartner.de/einspeiseatlas/>`_.
 
     Parameters
@@ -282,7 +282,7 @@ def load_biogas_generators(scn_name):
 
 def import_gas_generators(scn_name="eGon2035"):
     """
-    Inserts list of gas production units into the database
+    Insert list of gas production units into the database
 
     To insert the gas production units into the database, the following
     steps are followed:

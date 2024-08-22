@@ -1,5 +1,5 @@
 """
-Read data from DB and download.
+Read data from DB and downloads
 """
 from pathlib import Path
 

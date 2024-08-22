@@ -1,6 +1,6 @@
 """
-Calculation of hydrogen demand based on a Voronoi partition of counted truck traffic
-used to allocate it to NUTS3 regions and finally aggregate it on NUTS3 level.
+Calculation of hydrogen demand based on a Voronoi distribution of counted truck traffic
+among NUTS 3 regions
 """
 from geovoronoi import points_to_coords, voronoi_regions_from_coords
 from loguru import logger
@@ -60,7 +60,7 @@ def run_egon_truck():
 
 
 def calculate_total_hydrogen_consumption(scenario: str = "eGon2035"):
-    """Calculate the total hydrogen demand for trucking in Germany."""
+    """Calculate the total hydrogen demand for trucking in Germany"""
     constants = DATASET_CFG["constants"]
     hgv_mileage = DATASET_CFG["hgv_mileage"]
 
@@ -133,7 +133,7 @@ def voronoi(
     points: gpd.GeoDataFrame,
     boundary: gpd.GeoDataFrame,
 ):
-    """Building a Voronoi Field from points and a boundary."""
+    """Building a Voronoi Field from points and a boundary"""
     logger.info("Building Voronoi Field.")
 
     sources = DATASET_CFG["original_data"]["sources"]

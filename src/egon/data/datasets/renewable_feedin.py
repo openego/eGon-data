@@ -17,6 +17,7 @@ from egon.data.datasets.era5 import EgonEra5Cells, EgonRenewableFeedIn, import_c
 from egon.data.datasets.scenario_parameters import get_sector_parameters
 from egon.data.metadata import (
     context,
+    generate_resource_fields_from_sqla_model,
     license_ccby,
     meta_metadata,
     sources,
@@ -26,35 +27,10 @@ import egon.data.config
 
 
 class RenewableFeedin(Dataset):
-    """
-    Calculate possible feedin time series for renewable energy generators
-
-    This dataset calculates possible feedin timeseries for fluctuation renewable generators
-    and coefficient of performance time series for heat pumps. Relevant input is the
-    downloaded weather data. Parameters for the time series calcultaion are also defined by
-    representative types of pv plants and wind turbines that are selected within this dataset.
-    The resulting profiles are stored in the database.
-
-
-    *Dependencies*
-      * :py:class:`WeatherData <egon.data.datasets.era5.WeatherData>`
-      * :py:class:`Vg250 <egon.data.datasets.vg250.Vg250>`
-      * :py:class:`ZensusVg250 <egon.data.datasets.zensus_vg250.ZensusVg250>`
-
-    *Resulting tables*
-      * :py:class:`supply.egon_era5_renewable_feedin <egon.data.datasets.era5.EgonRenewableFeedIn>` is filled
-
-    """
-
-    #:
-    name: str = "RenewableFeedin"
-    #:
-    version: str = "0.0.7"
-
     def __init__(self, dependencies):
         super().__init__(
-            name=self.name,
-            version=self.version,
+            name="RenewableFeedin",
+            version="0.0.8",
             dependencies=dependencies,
             tasks={
                 wind,
@@ -169,6 +145,7 @@ def federal_states_per_weather_cell():
     while (buffer < 30000) & (
         len(weather_cells[weather_cells["federal_state"].isnull()]) > 0
     ):
+
         cells = weather_cells[weather_cells["federal_state"].isnull()]
 
         cells.loc[:, "geom_point"] = cells.geom_point.buffer(buffer)

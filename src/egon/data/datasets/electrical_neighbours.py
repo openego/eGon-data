@@ -17,45 +17,10 @@ from egon.data.datasets.scenario_parameters import get_sector_parameters
 
 
 class ElectricalNeighbours(Dataset):
-    """
-    Add lines, loads, generation and storage for electrical neighbours
-
-    This dataset creates data for modelling the considered foreign countries and writes
-    that data into the database tables that can be read by the eTraGo tool.
-    Neighbouring countries are modelled in a lower spatial resolution, in general one node per
-    country is considered.
-    Defined load timeseries as well as generatrion and storage capacities are connected to these nodes.
-    The nodes are connected by AC and DC transmission lines with the German grid and other neighbouring countries
-    considering the grid topology from ENTSO-E.
-
-
-    *Dependencies*
-      * :py:class:`Tyndp <egon.data.datasets.tyndp.Tyndp>`
-      * :py:class:`PypsaEurSec <egon.data.datasets.pypsaeursec.PypsaEurSec>`
-
-
-    *Resulting tables*
-      * :py:class:`grid.egon_etrago_bus <egon.data.datasets.etrago_setup.EgonPfHvBus>` is extended
-      * :py:class:`grid.egon_etrago_link <egon.data.datasets.etrago_setup.EgonPfHvLink>` is extended
-      * :py:class:`grid.egon_etrago_line <egon.data.datasets.etrago_setup.EgonPfHvLine>` is extended
-      * :py:class:`grid.egon_etrago_load <egon.data.datasets.etrago_setup.EgonPfHvLoad>` is extended
-      * :py:class:`grid.egon_etrago_load_timeseries <egon.data.datasets.etrago_setup.EgonPfHvLoadTimeseries>` is extended
-      * :py:class:`grid.egon_etrago_storage <egon.data.datasets.etrago_setup.EgonPfHvStorageUnit>` is extended
-      * :py:class:`grid.egon_etrago_generator <egon.data.datasets.etrago_setup.EgonPfHvGenerator>` is extended
-      * :py:class:`grid.egon_etrago_generator_timeseries <egon.data.datasets.etrago_setup.EgonPfHvGeneratorTimeseries>` is extended
-      * :py:class:`grid.egon_etrago_transformer <egon.data.datasets.etrago_setup.EgonPfHvTransformer>` is extended
-      
-    """
-
-    #:
-    name: str = "ElectricalNeighbours"
-    #:
-    version: str = "0.0.7"
-
     def __init__(self, dependencies):
         super().__init__(
-            name=self.name,
-            version=self.version,
+            name="ElectricalNeighbours",
+            version="0.0.7",
             dependencies=dependencies,
             tasks=(grid, {tyndp_generation, tyndp_demand}),
         )
@@ -523,6 +488,7 @@ def central_transformer(scenario, sources, targets, central_buses, new_lines):
 
     # Add one transformer per central foreign bus with v_nom != 380
     for i, row in central_buses[central_buses.v_nom != 380].iterrows():
+
         s_nom_0 = new_lines[new_lines.bus0 == row.bus_id].s_nom.sum()
         s_nom_1 = new_lines[new_lines.bus1 == row.bus_id].s_nom.sum()
         if s_nom_0 == 0.0:
@@ -708,6 +674,7 @@ def grid():
     targets = config.datasets()["electrical_neighbours"]["targets"]
 
     for scenario in ["eGon2035"]:
+
         central_buses = buses(scenario, sources, targets)
 
         foreign_lines = cross_border_lines(
@@ -1111,12 +1078,9 @@ def insert_storage(capacities):
     )
 
     # Add columns for additional parameters to df
-    (
-        store["dispatch"],
-        store["store"],
-        store["standing_loss"],
-        store["max_hours"],
-    ) = (None, None, None, None)
+    store["dispatch"], store["store"], store["standing_loss"], store[
+        "max_hours"
+    ] = (None, None, None, None)
 
     # Insert carrier specific parameters
 

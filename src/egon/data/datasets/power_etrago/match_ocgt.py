@@ -19,11 +19,6 @@ def insert_open_cycle_gas_turbines(scn_name="eGon2035"):
     ----------
     scn_name : str
         Name of the scenario.
-
-    Returns
-    ----------
-    None
-    
     """
 
     # Connect to local database

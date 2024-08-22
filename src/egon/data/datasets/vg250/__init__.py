@@ -32,19 +32,12 @@ from egon.data.metadata import (
 
 
 def download_files():
-    """
-    Download VG250 (Verwaltungsgebiete) shape files.
-
-    Data is downloaded from source specified in *datasets.yml* in section
-    *vg250/original_data/source/url* and saved to file specified in
-    *vg250/original_data/target/file*.
-
-    """
+    """Download VG250 (Verwaltungsgebiete) shape files."""
     data_config = egon.data.config.datasets()
     vg250_config = data_config["vg250"]["original_data"]
 
     download_directory = Path(".") / "vg250"
-    # Create the folder, if it does not exist already
+    # Create the folder, if it does not exists already
     if not os.path.exists(download_directory):
         os.mkdir(download_directory)
 
@@ -55,16 +48,8 @@ def download_files():
 
 
 def to_postgres():
-    """
-    Writes original VG250 data to database.
 
-    Creates schema boundaries if it does not yet exist.
-    Newly creates all tables specified as keys in *datasets.yml* in section
-    *vg250/processed/file_table_map*.
-
-    """
-
-    # Get information from data configuration file
+    # Get information from data configuraiton file
     data_config = egon.data.config.datasets()
     vg250_orig = data_config["vg250"]["original_data"]
     vg250_processed = data_config["vg250"]["processed"]
@@ -259,34 +244,13 @@ def add_metadata():
 
 
 def nuts_mview():
-    """
-    Creates MView boundaries.vg250_lan_nuts_id.
 
-    """
     db.execute_sql_script(
         os.path.join(os.path.dirname(__file__), "vg250_lan_nuts_id_mview.sql")
     )
 
 
 def cleaning_and_preperation():
-    """
-    Creates tables and MViews with cleaned and corrected geometry data.
-
-    The following table is created:
-      * boundaries.vg250_gem_clean where municipalities (Gemeinden) that are fragmented
-        are cleaned from ringholes
-
-    The following MViews are created:
-      * boundaries.vg250_gem_hole
-      * boundaries.vg250_gem_valid
-      * boundaries.vg250_krs_area
-      * boundaries.vg250_lan_union
-      * boundaries.vg250_sta_bbox
-      * boundaries.vg250_sta_invalid_geometry
-      * boundaries.vg250_sta_tiny_buffer
-      * boundaries.vg250_sta_union
-
-    """
 
     db.execute_sql_script(
         os.path.join(os.path.dirname(__file__), "cleaning_and_preparation.sql")
@@ -294,10 +258,6 @@ def cleaning_and_preperation():
 
 
 def vg250_metadata_resources_fields():
-    """
-    Returns metadata string for VG250 tables.
-
-    """
 
     return [
         {
@@ -472,54 +432,15 @@ def vg250_metadata_resources_fields():
 
 
 class Vg250(Dataset):
-    """
-    Obtains and processes VG250 data and writes it to database.
 
-    Original data is downloaded using :py:func:`download_files` function and written
-    to database using :py:func:`to_postgres` function.
-
-    *Dependencies*
-      No dependencies
-
-    *Resulting tables*
-      * :py:func:`boundaries.vg250_gem <to_postgres>` is created and filled
-      * :py:func:`boundaries.vg250_krs <to_postgres>` is created and filled
-      * :py:func:`boundaries.vg250_lan <to_postgres>` is created and filled
-      * :py:func:`boundaries.vg250_rbz <to_postgres>` is created and filled
-      * :py:func:`boundaries.vg250_sta <to_postgres>` is created and filled
-      * :py:func:`boundaries.vg250_vwg <to_postgres>` is created and filled
-      * :py:func:`boundaries.vg250_lan_nuts_id <nuts_mview>` is created and filled
-      * :py:func:`boundaries.vg250_gem_hole <cleaning_and_preperation>` is created and
-        filled
-      * :py:func:`boundaries.vg250_gem_valid <cleaning_and_preperation>` is created and
-        filled
-      * :py:func:`boundaries.vg250_krs_area <cleaning_and_preperation>` is created and
-        filled
-      * :py:func:`boundaries.vg250_lan_union <cleaning_and_preperation>` is created and
-        filled
-      * :py:func:`boundaries.vg250_sta_bbox <cleaning_and_preperation>` is created and
-        filled
-      * :py:func:`boundaries.vg250_sta_invalid_geometry <cleaning_and_preperation>` is
-        created and filled
-      * :py:func:`boundaries.vg250_sta_tiny_buffer <cleaning_and_preperation>` is
-        created and filled
-      * :py:func:`boundaries.vg250_sta_union <cleaning_and_preperation>` is
-        created and filled
-
-    """
     filename = egon.data.config.datasets()["vg250"]["original_data"]["source"][
         "url"
     ]
 
-    #:
-    name: str = "VG250"
-    #:
-    version: str = filename + "-0.0.4"
-
     def __init__(self, dependencies):
         super().__init__(
-            name=self.name,
-            version=self.version,
+            name="VG250",
+            version=self.filename + "-0.0.4",
             dependencies=dependencies,
             tasks=(
                 download_files,

@@ -22,35 +22,20 @@ import os
 
 
 class HeatDemandEurope(Dataset):
-    """
-    Downloads annual heat demands for European countries from hotmaps
 
-    This dataset downloads annual heat demands for all European countries for the year 2050 from
-    hotmaps and stores the results into files. These are later used by pypsa-eur-sec.
+    data_config = egon.data.config.datasets()
 
-
-    *Dependencies*
-      * :py:func:`Setup <egon.data.datasets.database.setup>`
-
-    """
-
-    #:
-    name: str = "heat-demands-europe"
-    #:
-    version: str = (
-        egon.data.config.datasets()[
-            "hotmaps_current_policy_scenario_heat_demands_buildings"
-        ]["targets"]["path"]
-        + "_hotmaps.0.1"
-    )
+    hotmapsheatdemands_config = data_config[
+        "hotmaps_current_policy_scenario_heat_demands_buildings"]
+    
+    target_file = hotmapsheatdemands_config["targets"]["path"]
 
     def __init__(self, dependencies):
         super().__init__(
-            name=self.name,
-            version=self.version,
+            name="heat-demands-europe",
+            version=self.target_file + "_hotmaps.0.1",
             dependencies=dependencies,
-            tasks=(download),
-        )
+            tasks=(download))
 
 
 def download():
@@ -74,8 +59,7 @@ def download():
 
     # heat demands
     hotmapsheatdemands_config = data_config[
-        "hotmaps_current_policy_scenario_heat_demands_buildings"
-    ]
+        "hotmaps_current_policy_scenario_heat_demands_buildings"]
 
     target_file = hotmapsheatdemands_config["targets"]["path"]
 

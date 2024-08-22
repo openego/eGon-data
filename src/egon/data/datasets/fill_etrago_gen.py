@@ -9,32 +9,10 @@ import egon.data.config
 
 
 class Egon_etrago_gen(Dataset):
-    """
-    Group generators based on Scenario, carrier and bus. Marginal costs are
-    assigned to generators without this data. Grouped generators
-    are sent to the egon_etrago_generator table and a timeseries is assigned
-    to the weather dependent ones.
-
-    *Dependencies*
-      * :py:class:`PowerPlants <egon.data.datasets.power_plants.PowerPlants>`
-      * :py:class:`WeatherData <egon.data.datasets.era5.WeatherData>`
-
-    *Resulting tables*
-      * :py:class:`grid.egon_etrago_generator
-      <egon.data.datasets.etrago_setup.EgonPfHvGenerator>` is extended
-      * :py:class:`grid.egon_etrago_generator_timeseries
-      <egon.data.datasets.etrago_setup.EgonPfHvGeneratorTimeseries>` is filled
-
-    """
-    #:
-    name: str = "etrago_generators"
-    #:
-    version: str = "0.0.8"
-
     def __init__(self, dependencies):
         super().__init__(
-            name=self.name,
-            version=self.version,
+            name="etrago_generators",
+            version="0.0.8",
             dependencies=dependencies,
             tasks=(fill_etrago_generators,),
         )
@@ -87,6 +65,7 @@ def fill_etrago_generators():
 
 
 def group_power_plants(power_plants, renew_feedin, etrago_gen_orig, cfg):
+
     # group power plants by bus and carrier
 
     agg_func = {
@@ -110,6 +89,7 @@ def group_power_plants(power_plants, renew_feedin, etrago_gen_orig, cfg):
 
 
 def add_marginal_costs(power_plants):
+
     scenarios = power_plants.scenario.unique()
     pp = pd.DataFrame()
 
@@ -144,6 +124,7 @@ def add_marginal_costs(power_plants):
 
 
 def fill_etrago_gen_table(etrago_pp2, etrago_gen_orig, cfg, con):
+
     etrago_pp = etrago_pp2[
         ["carrier", "el_capacity", "bus_id", "scenario", "marginal_cost"]
     ]
@@ -262,6 +243,7 @@ def power_timeser(weather_data):
 
 
 def adjust_renew_feedin_table(renew_feedin, cfg):
+
     # Define carrier 'pv' as 'solar'
     carrier_pv_mask = renew_feedin["carrier"] == "pv"
     renew_feedin.loc[carrier_pv_mask, "carrier"] = "solar"

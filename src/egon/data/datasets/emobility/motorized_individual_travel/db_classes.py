@@ -40,8 +40,7 @@ Base = declarative_base()
 
 
 class EgonEvPool(Base):
-    """
-    Class definition of table demand.egon_ev_pool.
+    """Motorized individual travel: EV pool
 
     Each row is one EV, uniquely defined by either (`ev_id`) or
     (`rs7_id`, `type`, `simbev_id`).
@@ -82,8 +81,7 @@ class EgonEvPool(Base):
 
 
 class EgonEvTrip(Base):
-    """
-    Class definition of table demand.egon_ev_trip.
+    """Motorized individual travel: EVs' trips
 
     Each row is one event of a specific electric vehicle which is
     uniquely defined by `rs7_id`, `ev_id` and `event_id`.
@@ -183,12 +181,7 @@ class EgonEvTrip(Base):
 
 
 class EgonEvCountRegistrationDistrict(Base):
-    """
-    Class definition of table demand.egon_ev_count_registration_district.
-
-    Contains electric vehicle counts per registration district.
-
-    """
+    """Electric vehicle counts per registration district"""
 
     __tablename__ = "egon_ev_count_registration_district"
     __table_args__ = {"schema": "demand"}
@@ -206,12 +199,7 @@ class EgonEvCountRegistrationDistrict(Base):
 
 
 class EgonEvCountMunicipality(Base):
-    """
-    Class definition of table demand.egon_ev_count_municipality.
-
-    Contains electric vehicle counts per municipality.
-
-    """
+    """Electric vehicle counts per municipality"""
 
     __tablename__ = "egon_ev_count_municipality"
     __table_args__ = {"schema": "demand"}
@@ -229,12 +217,7 @@ class EgonEvCountMunicipality(Base):
 
 
 class EgonEvCountMvGridDistrict(Base):
-    """
-    Class definition of table demand.egon_ev_count_mv_grid_district.
-
-    Contains electric vehicle counts per MV grid district.
-
-    """
+    """Electric vehicle counts per MV grid district"""
 
     __tablename__ = "egon_ev_count_mv_grid_district"
     __table_args__ = {"schema": "demand"}
@@ -254,12 +237,7 @@ class EgonEvCountMvGridDistrict(Base):
 
 
 class EgonEvMvGridDistrict(Base):
-    """
-    Class definition of table demand.egon_ev_mv_grid_district.
-
-    Contains list of electric vehicles per MV grid district.
-
-    """
+    """List of electric vehicles per MV grid district"""
 
     __tablename__ = "egon_ev_mv_grid_district"
     __table_args__ = {"schema": "demand"}
@@ -275,12 +253,7 @@ class EgonEvMvGridDistrict(Base):
 
 
 class EgonEvMetadata(Base):
-    """
-    Class definition of table demand.egon_ev_metadata.
-
-    Contains EV Pool Metadata.
-
-    """
+    """List of EV Pool Metadata"""
 
     __tablename__ = "egon_ev_metadata"
     __table_args__ = {"schema": "demand"}

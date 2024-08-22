@@ -1,6 +1,60 @@
 """
-Filtering and preprocessing of buildings, streets and amenities from OpenStreetMap
+Filtered and preprocessed buildings, streets and amenities from OpenStreetMap
+(OSM)
 
+This dataset on buildings and amenities is required by several tasks in the
+pipeline, such as the distribution of household demand profiles or PV home
+systems to buildings. This data is enriched by population and apartments from
+Zensus 2011. Those derived datasets and the data on streets will be used in the
+DIstribution Network Generat0r :ref:`ding0
+<https://github.com/openego/ding0>`_ e.g. to cluster loads and create low
+voltage grids.
+
+**Details and Steps**
+
+* Extract buildings and filter using relevant tags, e.g. residential and
+  commercial, see script `osm_buildings_filter.sql` for the full list of tags.
+  Resulting tables:
+  * All buildings: `openstreetmap.osm_buildings`
+  * Filtered buildings: `openstreetmap.osm_buildings_filtered`
+  * Residential buildings: `openstreetmap.osm_buildings_residential`
+* Extract amenities and filter using relevant tags, e.g. shops and restaurants,
+  see script `osm_amenities_shops_preprocessing.sql` for the full list of tags.
+  Resulting table: `openstreetmap.osm_amenities_shops_filtered`
+* Create a mapping table for building's osm IDs to the Zensus cells the
+  building's centroid is located in.
+  Resulting tables:
+  * `boundaries.egon_map_zensus_buildings_filtered` (filtered)
+  * `boundaries.egon_map_zensus_buildings_residential` (residential only)
+* Enrich each building by number of apartments from Zensus table
+  `society.egon_destatis_zensus_apartment_building_population_per_ha`
+  by splitting up the cell's sum equally to the buildings. In some cases, a
+  Zensus cell does not contain buildings but there's a building nearby which
+  the no. of apartments is to be allocated to. To make sure apartments are
+  allocated to at least one building, a radius of 77m is used to catch building
+  geometries.
+* Split filtered buildings into 3 datasets using the amenities' locations:
+  temporary tables are created in script `osm_buildings_temp_tables.sql` the
+  final tables in `osm_buildings_amentities_results.sql`.
+  Resulting tables:
+  * Buildings w/ amenities: `openstreetmap.osm_buildings_with_amenities`
+  * Buildings w/o amenities: `openstreetmap.osm_buildings_without_amenities`
+  * Amenities not allocated to buildings:
+    `openstreetmap.osm_amenities_not_in_buildings`
+* Extract streets (OSM ways) and filter using relevant tags, e.g.
+  highway=secondary, see script `osm_ways_preprocessing.sql` for the full list
+  of tags. Additionally, each way is split into its line segments and their
+  lengths is retained.
+  Resulting tables:
+  * Filtered streets: `openstreetmap.osm_ways_preprocessed`
+  * Filtered streets w/ segments: `openstreetmap.osm_ways_with_segments`
+
+Notes
+-----
+
+This module docstring is rather a dataset documentation. Once, a decision
+is made in ... the content of this module docstring needs to be moved to
+docs attribute of the respective dataset class.
 """
 
 import os
@@ -97,86 +151,10 @@ def add_metadata():
 
 
 class OsmBuildingsStreets(Dataset):
-    """
-    Filter and preprocess buildings, streets and amenities from OpenStreetMap (OSM).
-
-    This dataset on buildings and amenities is required by several tasks in the
-    pipeline, such as the distribution of household demand profiles or PV home
-    systems to buildings. This data is enriched by population and apartments from
-    Zensus 2011. Those derived datasets and the data on streets will be used in the
-    DIstribution Network Generat0r
-    `ding0 <https://github.com/openego/ding0>`_ e.g. to cluster loads and create low
-    voltage grids.
-
-    *Dependencies*
-      * :py:class:`OpenStreetMap <egon.data.datasets.osm.OpenStreetMap>`
-      * :py:class:`ZensusMiscellaneous <egon.data.datasets.zensus.ZensusMiscellaneous>`
-
-    *Resulting Tables*
-      * openstreetmap.osm_buildings is created and filled (table has no associated python class)
-      * openstreetmap.osm_buildings_filtered is created and filled (table has no associated python class)
-      * openstreetmap.osm_buildings_residential is created and filled (table has no associated python class)
-      * openstreetmap.osm_amenities_shops_filtered is created and filled (table has no associated python class)
-      * openstreetmap.osm_buildings_with_amenities is created and filled (table has no associated python class)
-      * openstreetmap.osm_buildings_without_amenities is created and filled (table has no associated python class)
-      * openstreetmap.osm_amenities_not_in_buildings is created and filled (table has no associated python class)
-      * openstreetmap.osm_ways_preprocessed is created and filled (table has no associated python class)
-      * openstreetmap.osm_ways_with_segments is created and filled (table has no associated python class)
-      * boundaries.egon_map_zensus_buildings_filtered is created and filled (table has no associated python class)
-      * boundaries.egon_map_zensus_buildings_residential is created and filled (table has no associated python class)
-      * openstreetmap.osm_buildings is created and filled (table has no associated python class)
-
-    **Details and Steps**
-
-    * Extract buildings and filter using relevant tags, e.g. residential and
-      commercial, see script `osm_buildings_filter.sql` for the full list of tags.
-      Resulting tables:
-      * All buildings: `openstreetmap.osm_buildings`
-      * Filtered buildings: `openstreetmap.osm_buildings_filtered`
-      * Residential buildings: `openstreetmap.osm_buildings_residential`
-    * Extract amenities and filter using relevant tags, e.g. shops and restaurants,
-      see script `osm_amenities_shops_preprocessing.sql` for the full list of tags.
-      Resulting table: `openstreetmap.osm_amenities_shops_filtered`
-    * Create a mapping table for building's osm IDs to the Zensus cells the
-      building's centroid is located in.
-      Resulting tables:
-      * `boundaries.egon_map_zensus_buildings_filtered` (filtered)
-      * `boundaries.egon_map_zensus_buildings_residential` (residential only)
-    * Enrich each building by number of apartments from Zensus table
-      `society.egon_destatis_zensus_apartment_building_population_per_ha`
-      by splitting up the cell's sum equally to the buildings. In some cases, a
-      Zensus cell does not contain buildings but there's a building nearby which
-      the no. of apartments is to be allocated to. To make sure apartments are
-      allocated to at least one building, a radius of 77m is used to catch building
-      geometries.
-    * Split filtered buildings into 3 datasets using the amenities' locations:
-      temporary tables are created in script `osm_buildings_temp_tables.sql` the
-      final tables in `osm_buildings_amentities_results.sql`.
-      Resulting tables:
-
-      * Buildings w/ amenities: `openstreetmap.osm_buildings_with_amenities`
-      * Buildings w/o amenities: `openstreetmap.osm_buildings_without_amenities`
-      * Amenities not allocated to buildings:
-        `openstreetmap.osm_amenities_not_in_buildings`
-    * Extract streets (OSM ways) and filter using relevant tags, e.g.
-      highway=secondary, see script `osm_ways_preprocessing.sql` for the full list
-      of tags. Additionally, each way is split into its line segments and their
-      lengths is retained.
-      Resulting tables:
-      * Filtered streets: `openstreetmap.osm_ways_preprocessed`
-      * Filtered streets w/ segments: `openstreetmap.osm_ways_with_segments`
-
-    """
-
-    #:
-    name: str = "OsmBuildingsStreets"
-    #:
-    version: str = "0.0.6"
-
     def __init__(self, dependencies):
         super().__init__(
-            name=self.name,
-            version=self.version,
+            name="OsmBuildingsStreets",
+            version="0.0.6",
             dependencies=dependencies,
             tasks=(
                 preprocessing,

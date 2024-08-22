@@ -25,9 +25,6 @@ DATASET_CFG = config.datasets()["charging_infrastructure"]
 
 
 class EgonEmobChargingInfrastructure(Base):
-    """
-    Class definition of table grid.egon_emob_charging_infrastructure.
-    """
 
     __tablename__ = DATASET_CFG["targets"]["charging_infrastructure"]["table"]
     __table_args__ = {

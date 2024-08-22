@@ -35,6 +35,7 @@ from egon.data.metadata import (
     meta_metadata,
     license_ccby,
     sources,
+    generate_resource_fields_from_sqla_model,
 )
 import json
 
@@ -47,52 +48,19 @@ from geoalchemy2.types import Geometry
 
 from egon.data.datasets import Dataset
 
-
 # class for airflow task management (and version control)
 class DistrictHeatingAreas(Dataset):
-    """
-    Create district heating grids for all scenarios
-
-    This dataset creates district heating grids for each scenario based on a defined
-    district heating share, annual heat demands calcultaed within
-    :py:class:`HeatDemandImport <egon.data.datasets.heat_demand.HeatDemandImport>`
-    and information on existing heating grids from census :py:class:`ZensusMiscellaneous <egon.data.datasets.zensus.ZensusMiscellaneous>`
-
-    First the tables are created using :py:func:`create_tables`. Afterwards, the
-    distict heating grids for each scenario are created and inserted into the database
-    by applying the function :py:func:`district_heating_areas`
-
-
-    *Dependencies*
-      * :py:class:`HeatDemandImport <egon.data.datasets.heat_demand.HeatDemandImport>`
-      * :py:class:`ZensusMiscellaneous <egon.data.datasets.zensus.ZensusMiscellaneous>`
-      * :py:class:`ScenarioParameters <egon.data.datasets.scenario_parameters.ScenarioParameters>`
-
-    *Resulting tables*
-      * :py:class:`demand.egon_map_zensus_district_heating_areas <egon.data.datasets.district_heating_areas.MapZensusDistrictHeatingAreas>`
-        is created and filled
-      * :py:class:`demand.egon_district_heating_areas <egon.data.datasets.district_heating_areas.EgonDistrictHeatingAreas>` is created and filled
-
-    """
-
-    #:
-    name: str = "district-heating-areas"
-    #:
-    version: str = "0.0.2"
-
     def __init__(self, dependencies):
         super().__init__(
-            name=self.name,
+            name="district-heating-areas",
             # version=self.target_files + "_0.0",
-            version=self.version,  # maybe rethink the naming
+            version="0.0.2",  # maybe rethink the naming
             dependencies=dependencies,
             tasks=(create_tables, demarcation),
         )
 
 
 Base = declarative_base()
-
-
 # definition of classes for saving data in the database
 class MapZensusDistrictHeatingAreas(Base):
     __tablename__ = "egon_map_zensus_district_heating_areas"

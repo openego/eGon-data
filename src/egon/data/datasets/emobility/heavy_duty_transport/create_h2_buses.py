@@ -1,5 +1,5 @@
 """
-Map demand to H2 buses and write to DB.
+Map demand to H2 buses and write to DB
 """
 from __future__ import annotations
 
@@ -23,7 +23,7 @@ HOURS_PER_YEAR = DATASET_CFG["constants"]["hours_per_year"]
 
 def insert_hgv_h2_demand():
     """
-    Insert list of hgv H2 demand (one per NUTS3) in database.
+    Insert list of hgv H2 demand (one per NUTS3) in database
     """
     for scenario in SCENARIOS:
         delete_old_entries(scenario)
@@ -73,12 +73,10 @@ def kg_per_year_to_mega_watt(df: pd.DataFrame | gpd.GeoDataFrame):
 def insert_new_entries(hgv_h2_demand_gdf: gpd.GeoDataFrame):
     """
     Insert loads.
-
     Parameters
     ----------
     hgv_h2_demand_gdf : geopandas.GeoDataFrame
         Load data to insert.
-
     """
     new_id = db.next_etrago_id("load")
     hgv_h2_demand_gdf["load_id"] = range(
@@ -113,12 +111,10 @@ def insert_new_entries(hgv_h2_demand_gdf: gpd.GeoDataFrame):
 def delete_old_entries(scenario: str):
     """
     Delete loads and load timeseries.
-
     Parameters
     ----------
     scenario : str
         Name of the scenario.
-
     """
     # Clean tables
     db.execute_sql(

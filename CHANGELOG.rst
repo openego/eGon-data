@@ -458,8 +458,6 @@ Changed
   `#882 <https://github.com/openego/eGon-data/issues/882>`_
 * Insert crossboarding gas pipeline with Germany in eGon100RE
   `#881 <https://github.com/openego/eGon-data/issues/881>`_
-* Harmonize H2 carrier names in eGon100RE
-  `#929 <https://github.com/openego/eGon-data/issues/929>`_
 * Rename noflex to lowflex scenario for motorized individual travel
   `#921 <https://github.com/openego/eGon-data/issues/921>`_
 * Update creation of heat demand timeseries
@@ -479,8 +477,6 @@ Changed
   `#519 <https://github.com/openego/eGon-data/issues/519>`_
 * Add missing VOM costs for heat sector components
   `#942 <https://github.com/openego/eGon-data/issues/942>`_
-* Add sanity checks for gas sector in eGon2035
-  `#864 <https://github.com/openego/eGon-data/issues/864>`_
 * Desaggregate industry demands to OSM areas and industrial sites
   `#1001 <https://github.com/openego/eGon-data/issues/1001>`_
 * Add gas generator in Norway
@@ -490,8 +486,6 @@ Changed
   created for a single process. This fixes issue `#799`_.
 * Insert rural heat per supply technology
   `#1026 <https://github.com/openego/eGon-data/issues/1026>`_
-* Insert lifetime for components from p-e-s in eGon100RE
-  `#1073 <https://github.com/openego/eGon-data/issues/1073>`_
 * Change hgv data source to use database
   `#1086 <https://github.com/openego/eGon-data/issues/1086>`_
 * Rename eMob MIT carrier names (use underscores)
@@ -737,8 +731,6 @@ Bug Fixes
 * Fix URL of TYNDP scenario dataset
 * Automatically generated tasks now get unique :code:`task_id`\s.
   Fixes issue `#985`_ via PR `#986`_.
-* Adjust capcities of German CH4 stores
-  `#1096 <https://github.com/openego/eGon-data/issues/1096>`_
 * Fix faulty DSM time series
   `#1088 <https://github.com/openego/eGon-data/issues/1088>`_
 * Set upper limit on commissioning date for units from MaStR
@@ -746,8 +738,6 @@ Bug Fixes
   `#1098 <https://github.com/openego/eGon-data/issues/1098>`_
 * Fix conversion factor for CH4 loads abroad in eGon2035
   `#1104 <https://github.com/openego/eGon-data/issues/1104>`_
-* Change structure of documentation in rtd
-  `#11126 <https://github.com/openego/eGon-data/issues/1126>`_
 
 .. _PR #692: https://github.com/openego/eGon-data/pull/692
 .. _#343: https://github.com/openego/eGon-data/issues/343

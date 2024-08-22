@@ -1,4 +1,4 @@
-"""The module containing all code dealing with pv rooftop distribution to MV grid level.
+"""The module containing all code dealing with pv rooftop distribution.
 """
 from pathlib import Path
 
