@@ -330,7 +330,7 @@ def find_bus(name, missing_substations_csv):
                 FROM grid.egon_etrago_bus
                 WHERE scn_name = 'eGon2035'
                 AND carrier = 'AC'
-        ORDER  BY geom, v_nom;
+        ORDER  BY geom, v_nom DESC;
         """,
         geom_col="point",
         epsg=4326,
