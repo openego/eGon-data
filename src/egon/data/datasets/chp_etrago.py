@@ -12,10 +12,33 @@ from egon.data.datasets.scenario_parameters import get_sector_parameters
 
 
 class ChpEtrago(Dataset):
+    """
+    Collect data related to combined heat and power plants for the eTraGo tool
+
+    This dataset collects data for combined heat and power plants and puts it into a format that
+    is needed for the transmission grid optimisation within the tool eTraGo.
+    This data is then writting into the corresponding tables that are read by eTraGo.
+
+
+    *Dependencies*
+      * :py:class:`HeatEtrago <egon.data.datasets.heat_etrago.HeatEtrago>`
+      * :py:class:`Chp <egon.data.datasets.chp.Chp>`
+
+    *Resulting tables*
+      * :py:class:`grid.egon_etrago_link <egon.data.datasets.etrago_setup.EgonPfHvLink>` is extended
+      * :py:class:`grid.egon_etrago_generator <egon.data.datasets.etrago_setup.EgonPfHvGenerator>` is extended
+
+    """
+
+    #:
+    name: str = "ChpEtrago"
+    #:
+    version: str = "0.0.6"
+
     def __init__(self, dependencies):
         super().__init__(
-            name="ChpEtrago",
-            version="0.0.7",
+            name=self.name,
+            version=self.version,
             dependencies=dependencies,
             tasks=(insert),
         )
@@ -373,6 +396,7 @@ def insert_scenario(scenario):
         db.next_etrago_id("generator"),
         len(chp_el_ind_gen) + db.next_etrago_id("generator"),
     )
+
     # Add marginal cost
     chp_el_ind_gen["marginal_cost"] = (
         pd.Series(

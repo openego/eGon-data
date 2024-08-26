@@ -3,7 +3,7 @@
 The central module containing all code dealing with importing gas stores
 
 This module contains the functions to import the existing methane stores
-in Germany and to insert them into the database. They are modelled as
+in Germany and inserting them into the database. They are modelled as
 PyPSA stores and are not extendable.
 
 """
@@ -27,15 +27,15 @@ from egon.data.datasets.scenario_parameters import get_sector_parameters
 
 class CH4Storages(Dataset):
     """
-    Insert the non extendable gas stores in Germany into the database
+    Inserts the gas stores in Germany
 
-    Insert the non extendable gas stores into the database in Germany
+    Inserts the non extendable gas stores in Germany into the database
     for the scnenarios eGon2035 and eGon100RE using the function
     :py:func:`insert_ch4_storages`.
 
     *Dependencies*
       * :py:class:`GasAreaseGon2035 <egon.data.datasets.gas_areas.GasAreaseGon2035>`
-      * :py:class:`GasAreaseGon2035 <egon.data.datasets.gas_areas.GasAreaseGon100RE>`
+      * :py:class:`GasAreaseGon100RE <egon.data.datasets.gas_areas.GasAreaseGon100RE>`
       * :py:class:`GasNodesAndPipes <egon.data.datasets.gas_grid.GasNodesAndPipes>`
 
     *Resulting tables*
@@ -65,7 +65,7 @@ def notasks():
 
 def import_installed_ch4_storages(scn_name):
     """
-    Define list of CH4 stores from the SciGRID_gas data
+    Defines list of CH4 stores from the SciGRID_gas data
 
     This function reads from the SciGRID_gas dataset the existing CH4
     cavern stores in Germany, adjusts and returns them.
@@ -82,7 +82,7 @@ def import_installed_ch4_storages(scn_name):
     Returns
     -------
     Gas_storages_list :
-        Dataframe containing the CH4 cavern stores units in Germany
+        Dataframe containing the CH4 cavern store units in Germany
 
     """
     target_file = (
@@ -93,7 +93,7 @@ def import_installed_ch4_storages(scn_name):
         target_file,
         delimiter=";",
         decimal=".",
-        usecols=["lat", "long", "country_code", "param"],
+        usecols=["lat", "long", "country_code", "param", "method"],
     )
 
     Gas_storages_list = Gas_storages_list[
@@ -104,13 +104,18 @@ def import_installed_ch4_storages(scn_name):
     max_workingGas_M_m3 = []
     NUTS1 = []
     end_year = []
+    method_cap = []
     for index, row in Gas_storages_list.iterrows():
         param = ast.literal_eval(row["param"])
         NUTS1.append(param["nuts_id_1"])
         end_year.append(param["end_year"])
         max_workingGas_M_m3.append(param["max_workingGas_M_m3"])
 
-    Gas_storages_list = Gas_storages_list.assign(NUTS1=NUTS1)
+        method = ast.literal_eval(row["method"])
+        method_cap.append(method["max_workingGas_M_m3"])
+
+    Gas_storages_list["method_cap"] = method_cap
+    Gas_storages_list = Gas_storages_list.assign(NUTS1=NUTS1).drop_duplicates()
 
     # Calculate e_nom
     conv_factor = 10830  # gross calorific value = 39 MJ/m3 (eurogas.org)
@@ -118,6 +123,19 @@ def import_installed_ch4_storages(scn_name):
 
     end_year = [float("inf") if x == None else x for x in end_year]
     Gas_storages_list = Gas_storages_list.assign(end_year=end_year)
+
+    # Adjust the storage capacities calculated by 'Median(max_workingGas_M_m3)'
+    total_german_cap = 266424202  # MWh GIE https://www.gie.eu/transparency/databases/storage-database/
+    ch4_estimated = Gas_storages_list[
+        Gas_storages_list.method_cap == "Median(max_workingGas_M_m3)"
+    ]
+    german_cap_source = Gas_storages_list[
+        Gas_storages_list.method_cap != "Median(max_workingGas_M_m3)"
+    ].e_nom.sum()
+
+    Gas_storages_list.loc[ch4_estimated.index, "e_nom"] = (
+        total_german_cap - german_cap_source
+    ) / len(ch4_estimated)
 
     # Cut data to federal state if in testmode
     boundary = settings()["egon-data"]["--dataset-boundary"]
@@ -184,6 +202,7 @@ def import_installed_ch4_storages(scn_name):
             "end_year",
             "geom",
             "bus_id",
+            "method_cap",
         ]
     )
 
@@ -192,7 +211,7 @@ def import_installed_ch4_storages(scn_name):
 
 def import_ch4_grid_capacity(scn_name):
     """
-    Define the gas stores modelling the store capacity of the grid
+    Defines the gas stores modelling the store capacity of the grid
 
     Define dataframe containing the modelling of the grid storage
     capacity. The whole storage capacity of the grid (130000 MWh,
@@ -200,7 +219,7 @@ def import_ch4_grid_capacity(scn_name):
     all the German gas nodes of the grid (without consideration of the
     capacities of the pipes).
     In eGon100RE, the storage capacity of the grid is split between H2
-    and CH4 stores, with the same share than the pipes capacity (value
+    and CH4 stores, with the same share as the pipeline capacities (value
     calculated in the p-e-s run).
 
     Parameters
@@ -253,17 +272,17 @@ def import_ch4_grid_capacity(scn_name):
 
 def insert_ch4_stores(scn_name):
     """
-    Insert gas stores for specific scenario
+    Inserts gas stores for specific scenario
 
     Insert non extendable gas stores for specific scenario in Germany
     by executing the following steps:
       * Clean the database.
-      * For CH4 stores, call the functions.
+      * For CH4 stores, call the functions
         :py:func:`import_installed_ch4_storages` to get the CH4
         cavern stores and :py:func:`import_ch4_grid_capacity` to
         get the CH4 stores modelling the storage capacity of the
         grid.
-      * Aggregate of the stores attached to the same bus.
+      * Aggregate the stores attached to the same bus.
       * Add the missing columns: store_id, scn_name, carrier, e_cyclic.
       * Insert the stores into the database.
 

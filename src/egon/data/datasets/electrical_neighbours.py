@@ -25,6 +25,51 @@ import egon.data.datasets.etrago_setup as etrago
 import egon.data.datasets.scenario_parameters.parameters as scenario_parameters
 
 
+class ElectricalNeighbours(Dataset):
+    """
+    Add lines, loads, generation and storage for electrical neighbours
+
+    This dataset creates data for modelling the considered foreign countries and writes
+    that data into the database tables that can be read by the eTraGo tool.
+    Neighbouring countries are modelled in a lower spatial resolution, in general one node per
+    country is considered.
+    Defined load timeseries as well as generatrion and storage capacities are connected to these nodes.
+    The nodes are connected by AC and DC transmission lines with the German grid and other neighbouring countries
+    considering the grid topology from ENTSO-E.
+
+
+    *Dependencies*
+      * :py:class:`Tyndp <egon.data.datasets.tyndp.Tyndp>`
+      * :py:class:`PypsaEurSec <egon.data.datasets.pypsaeursec.PypsaEurSec>`
+
+
+    *Resulting tables*
+      * :py:class:`grid.egon_etrago_bus <egon.data.datasets.etrago_setup.EgonPfHvBus>` is extended
+      * :py:class:`grid.egon_etrago_link <egon.data.datasets.etrago_setup.EgonPfHvLink>` is extended
+      * :py:class:`grid.egon_etrago_line <egon.data.datasets.etrago_setup.EgonPfHvLine>` is extended
+      * :py:class:`grid.egon_etrago_load <egon.data.datasets.etrago_setup.EgonPfHvLoad>` is extended
+      * :py:class:`grid.egon_etrago_load_timeseries <egon.data.datasets.etrago_setup.EgonPfHvLoadTimeseries>` is extended
+      * :py:class:`grid.egon_etrago_storage <egon.data.datasets.etrago_setup.EgonPfHvStorageUnit>` is extended
+      * :py:class:`grid.egon_etrago_generator <egon.data.datasets.etrago_setup.EgonPfHvGenerator>` is extended
+      * :py:class:`grid.egon_etrago_generator_timeseries <egon.data.datasets.etrago_setup.EgonPfHvGeneratorTimeseries>` is extended
+      * :py:class:`grid.egon_etrago_transformer <egon.data.datasets.etrago_setup.EgonPfHvTransformer>` is extended
+      
+    """
+
+    #:
+    name: str = "ElectricalNeighbours"
+    #:
+    version: str = "0.0.7"
+
+    def __init__(self, dependencies):
+        super().__init__(
+            name=self.name,
+            version=self.version,
+            dependencies=dependencies,
+            tasks=(grid, {tyndp_generation, tyndp_demand}),
+        )
+
+
 def get_cross_border_buses(scenario, sources):
     """Returns buses from osmTGmod which are outside of Germany.
 

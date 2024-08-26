@@ -12,10 +12,35 @@ from egon.data.datasets.scenario_parameters import get_sector_parameters
 
 
 class FixEhvSubnetworks(Dataset):
+    """
+    Manually fix grid topology in the extra high voltage grid to avoid subnetworks
+
+    This dataset includes fixes for the topology of the German extra high voltage grid.
+    The initial grid topology from openstreetmap resp. osmTGmod includes some issues,  eg. because of
+    incomplete data. Thsi dataset does not fix all those issues, but deals only with subnetworks
+    in the extra high voltage grid that would result into problems in the grid optimisation.
+
+
+    *Dependencies*
+      * :py:class:`Osmtgmod <egon.data.datasets.osmtgmod.Osmtgmod>`
+
+
+    *Resulting tables*
+      * :py:class:`grid.egon_etrago_bus <egon.data.datasets.etrago_setup.EgonPfHvBus>` is updated
+      * :py:class:`grid.egon_etrago_line <egon.data.datasets.etrago_setup.EgonPfHvLine>` is updated
+      * :py:class:`grid.egon_etrago_transformer <egon.data.datasets.etrago_setup.EgonPfHvTransformer>` is updated
+
+    """
+
+    #:
+    name: str = "FixEhvSubnetworks"
+    #:
+    version: str = "0.0.2"
+
     def __init__(self, dependencies):
         super().__init__(
-            name="FixEhvSubnetworks",
-            version="0.0.2",
+            name=self.name,
+            version=self.version,
             dependencies=dependencies,
             tasks=run,
         )

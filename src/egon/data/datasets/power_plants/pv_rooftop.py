@@ -1,4 +1,4 @@
-"""The module containing all code dealing with pv rooftop distribution.
+"""The module containing all code dealing with pv rooftop distribution to MV grid level.
 """
 from pathlib import Path
 
@@ -206,7 +206,6 @@ def pv_rooftop_per_mv_grid_and_scenario(scenario, level):
     # district than there is rooftop potential
     max_cap_per_bus_df = (
         valid_buildings_gdf[["max_cap", "bus_id"]].groupby("bus_id").sum()
-        / 1000
         * MAX_THEORETICAL_PV_OCCUPANCY
     )
 

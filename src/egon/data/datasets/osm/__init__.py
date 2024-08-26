@@ -298,10 +298,34 @@ def modify_tables():
 
 
 class OpenStreetMap(Dataset):
+    """
+    Downloads OpenStreetMap data from Geofabrik and writes it to database.
+
+    *Dependencies*
+      * :py:func:`Setup <egon.data.datasets.database.setup>`
+
+    *Resulting Tables*
+      * openstreetmap.osm_line is created and filled (table has no associated python class)
+      * openstreetmap.osm_nodes is created and filled (table has no associated python class)
+      * openstreetmap.osm_point is created and filled (table has no associated python class)
+      * openstreetmap.osm_polygon is created and filled (table has no associated python class)
+      * openstreetmap.osm_rels is created and filled (table has no associated python class)
+      * openstreetmap.osm_roads is created and filled (table has no associated python class)
+      * openstreetmap.osm_ways is created and filled (table has no associated python class)
+
+    See documentation section :ref:`osm-ref` for more information.
+
+    """
+
+    #:
+    name: str = "OpenStreetMap"
+    #:
+    version: str = "0.0.4"
+
     def __init__(self, dependencies):
         super().__init__(
-            name="OpenStreetMap",
-            version="0.0.5",
+            name=self.name,
+            version=self.version,
             dependencies=dependencies,
             tasks=(download, to_postgres, modify_tables, add_metadata),
         )

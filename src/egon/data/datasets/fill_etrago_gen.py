@@ -9,10 +9,32 @@ import egon.data.config
 
 
 class Egon_etrago_gen(Dataset):
+    """
+    Group generators based on Scenario, carrier and bus. Marginal costs are
+    assigned to generators without this data. Grouped generators
+    are sent to the egon_etrago_generator table and a timeseries is assigned
+    to the weather dependent ones.
+
+    *Dependencies*
+      * :py:class:`PowerPlants <egon.data.datasets.power_plants.PowerPlants>`
+      * :py:class:`WeatherData <egon.data.datasets.era5.WeatherData>`
+
+    *Resulting tables*
+      * :py:class:`grid.egon_etrago_generator
+      <egon.data.datasets.etrago_setup.EgonPfHvGenerator>` is extended
+      * :py:class:`grid.egon_etrago_generator_timeseries
+      <egon.data.datasets.etrago_setup.EgonPfHvGeneratorTimeseries>` is filled
+
+    """
+    #:
+    name: str = "etrago_generators"
+    #:
+    version: str = "0.0.8"
+
     def __init__(self, dependencies):
         super().__init__(
-            name="etrago_generators",
-            version="0.0.10",
+            name=self.name,
+            version=self.version,
             dependencies=dependencies,
             tasks=(fill_etrago_generators,),
         )

@@ -89,6 +89,17 @@ def to_postgres():
 
 
 class SaltcavernData(Dataset):
+    """Inserts Saltcavern shapes into database
+
+    *Dependencies*
+      * :py:class:`DataBundle <egon.data.datasets.data_bundle.DataBundle>`
+      * :py:class:`Vg250 <egon.data.datasets.vg250.Vg250>`
+
+    *Resulting tables*
+      * :py:class:`EgonPfHvGasVoronoi <EgonPfHvGasVoronoi>`
+
+    """
+
     def __init__(self, dependencies):
         super().__init__(
             name="SaltcavernData",

@@ -10,6 +10,7 @@ Central module containing all code dealing with the future heat demand import.
 This module obtains the residential and service-sector heat demand data for
 2015 from Peta5.0.1, calculates future heat demands and saves them in the
 database with assigned census cell IDs.
+
 """
 
 from pathlib import Path  # for database import
@@ -18,6 +19,7 @@ from urllib.request import urlretrieve
 # for metadata creation
 import json
 import os
+import time
 import zipfile
 
 from jinja2 import Template
@@ -36,18 +38,50 @@ from egon.data.datasets import Dataset
 from egon.data.datasets.scenario_parameters import (
     get_sector_parameters,
 )
+from egon.data.metadata import (
+    context,
+    license_ccby,
+    meta_metadata,
+    sources,
+)
 import egon.data.config
 
-# import time
 
 
-# class for airflow task management (and version control)
 class HeatDemandImport(Dataset):
+
+    """
+    Insert the annual heat demand per census cell for each scenario
+
+    This dataset downloads the heat demand raster data for private households
+    and CTS from Peta 5.0.1 (https://s-eenergies-open-data-euf.hub.arcgis.com/maps/d7d18b63250240a49eb81db972aa573e/about)
+    and stores it into files in the working directory.
+    The data from Peta 5.0.1 represents the status quo of the year 2015.
+    To model future heat demands, the data is scaled to meet target values
+    from external sources. These target values are defined for each scenario
+    in :py:class:`ScenarioParameters <egon.data.datasets.scenario_parameters.ScenarioParameters>`.
+
+    *Dependencies*
+      * :py:class:`ScenarioParameters <egon.data.datasets.scenario_parameters.ScenarioParameters>`
+      * :py:class:`Vg250 <egon.data.datasets.vg250.Vg250>`
+      * :py:class:`ZensusVg250 <egon.data.datasets.zensus_vg250.ZensusVg250>`
+
+    *Resulting tables*
+      * :py:class:`demand.egon_peta_heat <egon.data.datasets.heat_demand.EgonPetaHeat>` is created and filled
+
+    """
+
+
+    #:
+    name: str = "heat-demands"
+    #:
+    version: str = "0.0.1"
+
     def __init__(self, dependencies):
         super().__init__(
-            name="heat-demands",
+            name=self.name,
             # version=self.target_files + "_0.0",
-            version="0.0.4",  # maybe rethink the naming
+            version=self.version,  # maybe rethink the naming
             dependencies=dependencies,
             tasks=(scenario_data_import),
         )
@@ -485,7 +519,6 @@ def heat_demand_to_db_table():
     db.execute_sql("DELETE FROM demand.egon_peta_heat;")
 
     for source in sources:
-
         if not "2015" in source.stem:
             # Create a temporary table and fill the final table using the sql script
             rasters = f"heat_demand_rasters_{source.stem.lower()}"
@@ -577,166 +610,26 @@ def add_metadata():
     """
     Writes metadata JSON string into table comment.
 
-    TODO
-    ----
-        Meta data must be check and adjusted to the egon_data standard:
-            - Add context
-
-        Meta data for Census Population Table must be added.
-
-        Check how to reference the heat demand adjustment factors
     """
-
-    # Prepare variables
-    license_peta5_0_1 = [
-        {
-            "name": "Creative Commons Attribution 4.0 International",
-            "title": "CC BY 4.0",
-            "path": "https://creativecommons.org/licenses/by/4.0/",
-            "instruction": (
-                "You are free: To Share, To Adapt;"
-                " As long as you: Attribute!"
-            ),
-            "attribution": "© Flensburg, Halmstad and Aalborg universities",
-        }
-    ]
-    url_peta = (
-        "https://s-eenergies-open-data-euf.hub.arcgis.com/search?"
-        "categories=seenergies_buildings"
-    )
-
-    url_geodatenzentrum = (
-        "https://daten.gdz.bkg.bund.de/produkte/vg/"
-        "vg250_ebenen_0101/2020/vg250_01-01.geo84.shape."
-        "ebenen.zip"
-    )
-    license_heat = [
-        {
-            # this could be the license of "heat"
-            "name": "Creative Commons Attribution 4.0 International",
-            "title": "CC BY 4.0",
-            "path": "https://creativecommons.org/licenses/by/4.0/",
-            "instruction": (
-                "You are free: To Share, To Adapt;"
-                " As long as you: Attribute!"
-            ),
-            "attribution": "© Europa-Universität Flensburg",  # if all agree
-        }
-    ]
-    license_BKG = [
-        {
-            "title": "Datenlizenz Deutschland – Namensnennung – Version 2.0",
-            "path": "www.govdata.de/dl-de/by-2-0",
-            "instruction": (
-                "Jede Nutzung ist unter den Bedingungen dieser „Datenlizenz "
-                "Deutschland - Namensnennung - Version 2.0 zulässig.\nDie "
-                "bereitgestellten Daten und Metadaten dürfen für die "
-                "kommerzielle und nicht kommerzielle Nutzung insbesondere:"
-                "(1) vervielfältigt, ausgedruckt, präsentiert, verändert, "
-                "bearbeitet sowie an Dritte übermittelt werden;\n "
-                "(2) mit eigenen Daten und Daten Anderer zusammengeführt und "
-                "zu selbständigen neuen Datensätzen verbunden werden;\n "
-                "(3) in interne und externe Geschäftsprozesse, Produkte und "
-                "Anwendungen in öffentlichen und nicht öffentlichen "
-                "elektronischen Netzwerken eingebunden werden."
-            ),
-            "attribution": "© Bundesamt für Kartographie und Geodäsie",
-        }
-    ]
-
     # Metadata creation
     meta = {
         "name": "egon_peta_heat_metadata",
         "title": "eGo_n scenario-specific future heat demand data",
+        "id": "WILL_BE_SET_AT_PUBLICATION",
         "description": "Future heat demands per hectare grid cell of "
         "the residential and service sector",
         "language": ["EN"],
+        "context": context(),
         "spatial": {
-            "location": "",
+            "location": None,
             "extent": "Germany",
             "resolution": "100x100m",
         },
-        "temporal": {
-            "referenceDate": "scenario-specific",
-            "timeseries": {
-                "start": "",
-                "end": "",
-                "resolution": "",
-                "alignment": "",
-                "aggregationType": "",
-            },
-        },
         "sources": [
-            {
-                # for Peta5_0_1
-                "title": "Peta5_0_1_HD_res and Peta5 0 1 HD ser",
-                "description": "Der Datenbestand umfasst sämtliche "
-                "Verwaltungseinheiten aller hierarchischen "
-                "Verwaltungsebenen vom Staat bis zu den "
-                "Gemeinden mit ihren Verwaltungsgrenzen, "
-                "statistischen Schlüsselzahlen und dem "
-                "Namen der Verwaltungseinheit sowie der "
-                "spezifischen Bezeichnung der "
-                "Verwaltungsebene des jeweiligen "
-                "Bundeslandes.",
-                "path": url_peta,
-                "licenses": license_peta5_0_1,
-            },
-            {
-                # for the vg250_sta_union used - Please check!
-                "title": "Dienstleistungszentrum des Bundes für "
-                "Geoinformation und Geodäsie - Open Data",
-                "description": "Dieser Datenbestand steht über "
-                "Geodatendienste gemäß "
-                "Geodatenzugangsgesetz (GeoZG) "
-                "(http://www.geodatenzentrum.de/auftrag/pdf"
-                "/geodatenzugangsgesetz.pdf) für die "
-                "kommerzielle und nicht kommerzielle "
-                "Nutzung geldleistungsfrei zum Download "
-                "und zur Online-Nutzung zur Verfügung. Die "
-                "Nutzung der Geodaten und Geodatendienste "
-                "wird durch die Verordnung zur Festlegung "
-                "der Nutzungsbestimmungen für die "
-                "Bereitstellung von Geodaten des Bundes "
-                "(GeoNutzV) (http://www.geodatenzentrum.de"
-                "/auftrag/pdf/geonutz.pdf) geregelt. "
-                "Insbesondere hat jeder Nutzer den "
-                "Quellenvermerk zu allen Geodaten, "
-                "Metadaten und Geodatendiensten erkennbar "
-                "und in optischem Zusammenhang zu "
-                "platzieren. Veränderungen, Bearbeitungen, "
-                "neue Gestaltungen oder sonstige "
-                "Abwandlungen sind mit einem "
-                "Veränderungshinweis im Quellenvermerk zu "
-                "versehen. Quellenvermerk und "
-                "Veränderungshinweis sind wie folgt zu "
-                "gestalten. Bei der Darstellung auf einer "
-                "Webseite ist der Quellenvermerk mit der "
-                "URL http://www.bkg.bund.de zu verlinken. "
-                "© GeoBasis-DE / BKG <Jahr des letzten "
-                "Datenbezugs> © GeoBasis-DE / BKG "
-                "<Jahr des letzten Datenbezugs> "
-                "(Daten verändert) Beispiel: "
-                "© GeoBasis-DE / BKG 2013",
-                "path": url_geodatenzentrum,
-                "licenses": "Geodatenzugangsgesetz (GeoZG)",
-                "copyright": "© GeoBasis-DE / BKG 2016 (Daten verändert)",
-            },
-            {
-                # for the vg250_sta_union used, too - Please check!
-                "title": "BKG - Verwaltungsgebiete 1:250.000 (vg250)",
-                "description": "Der Datenbestand umfasst sämtliche "
-                "Verwaltungseinheiten aller hierarchischen "
-                "Verwaltungsebenen vom Staat bis zu den "
-                "Gemeinden mit ihren Verwaltungsgrenzen, "
-                "statistischen Schlüsselzahlen und dem "
-                "Namen der Verwaltungseinheit sowie der "
-                "spezifischen Bezeichnung der "
-                "Verwaltungsebene des jeweiligen "
-                "Bundeslandes.",
-                "path": "http://www.bkg.bund.de",
-                "licenses": license_BKG,
-            },
+            sources()["egon-data"],
+            sources()["peta"],
+            sources()["vg250"],
+            sources()["zensus"],
         ],
         "resources": [
             {
@@ -799,24 +692,24 @@ def add_metadata():
                 "dialect": {"delimiter": "none", "decimalSeparator": "."},
             }
         ],
-        "licenses": license_heat,
+        "licenses": [license_ccby("© Europa-Universität Flensburg")],
         "contributors": [
             {
-                "title": "Eva, Günni, Clara",
-                "email": "",
-                "date": "2021-03-04",
-                "object": "",
-                "comment": "Processed data",
-            }
-        ],
-        "metaMetadata": {  # https://github.com/OpenEnergyPlatform/oemetadata
-            "metadataVersion": "OEP-1.4.0",
-            "metadataLicense": {
-                "name": "CC0-1.0",
-                "title": "Creative Commons Zero v1.0 Universal",
-                "path": ("https://creativecommons.org/publicdomain/zero/1.0/"),
+                "title": "EvaWie",
+                "email": "http://github.com/EvaWie",
+                "date": time.strftime("%Y-%m-%d"),
+                "object": None,
+                "comment": "Imported data",
             },
-        },
+            {
+                "title": "Clara Büttner",
+                "email": "http://github.com/ClaraBuettner",
+                "date": time.strftime("%Y-%m-%d"),
+                "object": None,
+                "comment": "Updated metadata",
+            },
+        ],
+        "metaMetadata": meta_metadata(),
     }
     meta_json = "'" + json.dumps(meta) + "'"
 
@@ -858,14 +751,12 @@ def scenario_data_import():
     unzip_peta5_0_1_heat_demands()
     cutout_heat_demand_germany()
     # Specifiy the scenario names for loading factors from csv file
-    for scenario in egon.data.config.settings()["egon-data"]["--scenarios"]:
-        future_heat_demand_germany(scenario)
-
+    future_heat_demand_germany("eGon2035")
+    future_heat_demand_germany("eGon100RE")
     # future_heat_demand_germany("eGon2015")
     heat_demand_to_db_table()
-    for scenario in egon.data.config.settings()["egon-data"]["--scenarios"]:
-        adjust_residential_heat_to_zensus(scenario)
-
+    adjust_residential_heat_to_zensus("eGon2035")
+    adjust_residential_heat_to_zensus("eGon100RE")
     # future_heat_demand_germany("eGon2015")
     add_metadata()
 

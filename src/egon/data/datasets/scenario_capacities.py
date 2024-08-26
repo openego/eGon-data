@@ -3,6 +3,9 @@ Netzentwicklungsplan 2035, Version 2031, Szenario C
 """
 
 from pathlib import Path
+import datetime
+import json
+import time
 
 from sqlalchemy import Column, Float, Integer, String
 from sqlalchemy.ext.declarative import declarative_base
@@ -14,9 +17,15 @@ import yaml
 from egon.data import db
 from egon.data.config import settings
 from egon.data.datasets import Dataset, wrapped_partial
+from egon.data.metadata import (
+    context,
+    generate_resource_fields_from_sqla_model,
+    license_ccby,
+    meta_metadata,
+    sources,
+)
 import egon.data.config
 
-# will be later imported from another file
 Base = declarative_base()
 
 
@@ -719,14 +728,14 @@ def eGon100_capacities():
 
     # Drop copmponents which will be optimized in eGo
     unused_carrier = [
-        "BEV charger",
+        "BEV_charger",
         "DAC",
         "H2 Electrolysis",
         "electricity distribution grid",
         "home battery charger",
         "home battery discharger",
         "H2",
-        "Li ion",
+        "Li_ion",
         "home battery",
         "residential rural water tanks charger",
         "residential rural water tanks discharger",
@@ -837,6 +846,104 @@ def eGon100_capacities():
     )
 
 
+def add_metadata():
+    """Add metdata to supply.egon_scenario_capacities
+
+    Returns
+    -------
+    None.
+
+    """
+
+    # Import column names and datatypes
+    fields = pd.DataFrame(
+        generate_resource_fields_from_sqla_model(EgonScenarioCapacities)
+    ).set_index("name")
+
+    # Set descriptions and units
+    fields.loc["index", "description"] = "Index"
+    fields.loc[
+        "component", "description"
+    ] = "Name of representative PyPSA component"
+    fields.loc["carrier", "description"] = "Name of carrier"
+    fields.loc["capacity", "description"] = "Installed capacity"
+    fields.loc["capacity", "unit"] = "MW"
+    fields.loc[
+        "nuts", "description"
+    ] = "NUTS region, either federal state or Germany"
+    fields.loc[
+        "scenario_name", "description"
+    ] = "Name of corresponding eGon scenario"
+
+    # Reformat pandas.DataFrame to dict
+    fields = fields.reset_index().to_dict(orient="records")
+
+    meta = {
+        "name": "supply.egon_scenario_capacities",
+        "title": "eGon scenario capacities",
+        "id": "WILL_BE_SET_AT_PUBLICATION",
+        "description": (
+            "Installed capacities of scenarios used in the eGon project"
+        ),
+        "language": ["de-DE"],
+        "publicationDate": datetime.date.today().isoformat(),
+        "context": context(),
+        "spatial": {
+            "location": None,
+            "extent": "Germany",
+            "resolution": None,
+        },
+        "sources": [
+            sources()["nep2021"],
+            sources()["vg250"],
+            sources()["zensus"],
+            sources()["egon-data"],
+        ],
+        "licenses": [
+            license_ccby(
+                "© Übertragungsnetzbetreiber; "
+                "© Bundesamt für Kartographie und Geodäsie 2020 (Daten verändert); "
+                "© Statistische Ämter des Bundes und der Länder 2014; "
+                "© Jonathan Amme, Clara Büttner, Ilka Cußmann, Julian Endres, Carlos Epia, Stephan Günther, Ulf Müller, Amélia Nadal, Guido Pleßmann, Francesco Witte",
+            )
+        ],
+        "contributors": [
+            {
+                "title": "Clara Büttner",
+                "email": "http://github.com/ClaraBuettner",
+                "date": time.strftime("%Y-%m-%d"),
+                "object": None,
+                "comment": "Imported data",
+            },
+        ],
+        "resources": [
+            {
+                "profile": "tabular-data-resource",
+                "name": "supply.egon_scenario_capacities",
+                "path": None,
+                "format": "PostgreSQL",
+                "encoding": "UTF-8",
+                "schema": {
+                    "fields": fields,
+                    "primaryKey": ["index"],
+                    "foreignKeys": [],
+                },
+                "dialect": {"delimiter": None, "decimalSeparator": "."},
+            }
+        ],
+        "metaMetadata": meta_metadata(),
+    }
+
+    # Create json dump
+    meta_json = "'" + json.dumps(meta) + "'"
+
+    # Add metadata as a comment to the table
+    db.submit_comment(
+        meta_json,
+        EgonScenarioCapacities.__table__.schema,
+        EgonScenarioCapacities.__table__.name,
+    )
+
 tasks = (create_table,)
 
 scenarios = egon.data.config.settings()["egon-data"]["--scenarios"]
@@ -859,12 +966,43 @@ if status_quo or ("eGon2035" in scenarios):
 if "eGon100RE" in scenarios:
     tasks += (eGon100_capacities,)
 
+tasks += (add_metadata,)
+
 
 class ScenarioCapacities(Dataset):
+    """
+    Create and fill table with installed generation capacities in Germany
+
+    This dataset creates and fills a table with the installed generation capacities in
+    Germany in a lower spatial resolution (either per federal state or on national level).
+    This data is coming from external sources (e.g. German grid developement plan for scenario eGon2035).
+    The table is in downstream datasets used to define target values for the installed capacities.
+
+
+    *Dependencies*
+      * :py:func:`Setup <egon.data.datasets.database.setup>`
+      * :py:class:`PypsaEurSec <egon.data.datasets.pypsaeursec.PypsaEurSec>`
+      * :py:class:`Vg250 <egon.data.datasets.vg250.Vg250>`
+      * :py:class:`DataBundle <egon.data.datasets.data_bundle.DataBundle>`
+      * :py:class:`ZensusPopulation <egon.data.datasets.zensus.ZensusPopulation>`
+
+
+    *Resulting tables*
+      * :py:class:`supply.egon_scenario_capacities <egon.data.datasets.scenario_capacities.EgonScenarioCapacities>` is created and filled
+      * :py:class:`supply.egon_nep_2021_conventional_powerplants <egon.data.datasets.scenario_capacities.NEP2021ConvPowerPlants>` is created and filled
+
+    """
+
+    #:
+    name: str = "ScenarioCapacities"
+    #:
+    version: str = "0.0.13"
+
     def __init__(self, dependencies):
         super().__init__(
-            name="ScenarioCapacities",
-            version="0.0.17",
+            name=self.name,
+            version=self.version,
             dependencies=dependencies,
             tasks=tasks,
         )
+

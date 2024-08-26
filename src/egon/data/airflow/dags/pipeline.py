@@ -4,6 +4,7 @@ from airflow.utils.dates import days_ago
 import airflow
 
 from egon.data.config import set_numexpr_threads
+from egon.data.metadata import Json_Metadata
 from egon.data.datasets import database
 from egon.data.datasets.calculate_dlr import Calculate_dlr
 from egon.data.datasets.ch4_prod import CH4Production
@@ -95,7 +96,6 @@ from egon.data.datasets.vg250_mv_grid_districts import Vg250MvGridDistricts
 from egon.data.datasets.zensus import ZensusMiscellaneous, ZensusPopulation
 from egon.data.datasets.zensus_mv_grid_districts import ZensusMvGridDistricts
 from egon.data.datasets.zensus_vg250 import ZensusVg250
-
 # Set number of threads used by numpy and pandas
 set_numexpr_threads()
 
@@ -273,7 +273,7 @@ with airflow.DAG(
         ]
     )
 
-    # Get household electrical demands for cencus cells
+    # Get household electrical demands for census cells
     household_electricity_demand_annual = HouseholdElectricityDemand(
         dependencies=[
             tasks[
@@ -284,7 +284,7 @@ with airflow.DAG(
         ]
     )
 
-    # Distribute electrical CTS demands to zensus grid
+    # Distribute electrical CTS demands to census grid
     cts_electricity_demand_annual = CtsElectricityDemand(
         dependencies=[
             demandregio,
@@ -522,7 +522,7 @@ with airflow.DAG(
         ]
     )
 
-    # DSM (demand site management)
+    # DSM (demand side management)
     components_dsm = DsmPotential(
         dependencies=[
             cts_electricity_demand_annual,
@@ -668,5 +668,14 @@ with airflow.DAG(
             cts_demand_buildings,
             emobility_mit,
             low_flex_scenario,
+        ]
+    )
+
+    # upload json metadata at the end
+    json_metadata = Json_Metadata(
+        dependencies=[
+            load_areas,
+            cts_demand_buildings,
+            heat_pumps_2050
         ]
     )

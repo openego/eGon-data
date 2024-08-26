@@ -595,7 +595,7 @@ def write_model_data_to_db(
                         scn_name=scenario_name,
                         bus_id=emob_bus_id,
                         v_nom=1,
-                        carrier="Li ion",
+                        carrier="Li_ion",
                         x=etrago_bus.x,
                         y=etrago_bus.y,
                         geom=etrago_bus.geom,
@@ -614,7 +614,7 @@ def write_model_data_to_db(
                         link_id=emob_link_id,
                         bus0=etrago_bus.bus_id,
                         bus1=emob_bus_id,
-                        carrier="BEV charger",
+                        carrier="BEV_charger",
                         efficiency=float(run_config.eta_cp),
                         p_nom=(
                             load_time_series_df.simultaneous_plugged_in_charging_capacity.max()  # noqa: E501
@@ -654,7 +654,7 @@ def write_model_data_to_db(
                         scn_name=scenario_name,
                         store_id=emob_store_id,
                         bus=emob_bus_id,
-                        carrier="battery storage",
+                        carrier="battery_storage",
                         e_nom=static_params_dict["store_ev_battery.e_nom_MWh"],
                         e_nom_extendable=False,
                         e_nom_min=0,
@@ -693,7 +693,7 @@ def write_model_data_to_db(
                         scn_name=scenario_name,
                         load_id=emob_load_id,
                         bus=connection_bus_id,
-                        carrier="land transport EV",
+                        carrier="land_transport_EV",
                         sign=-1,
                     )
                 )
@@ -864,13 +864,13 @@ def delete_model_data_from_db():
     with db.session_scope() as session:
         # Buses
         session.query(EgonPfHvBus).filter(
-            EgonPfHvBus.carrier == "Li ion"
+            EgonPfHvBus.carrier == "Li_ion"
         ).delete(synchronize_session=False)
 
         # Link TS
         subquery = (
             session.query(EgonPfHvLink.link_id)
-            .filter(EgonPfHvLink.carrier == "BEV charger")
+            .filter(EgonPfHvLink.carrier == "BEV_charger")
             .subquery()
         )
 
@@ -879,13 +879,13 @@ def delete_model_data_from_db():
         ).delete(synchronize_session=False)
         # Links
         session.query(EgonPfHvLink).filter(
-            EgonPfHvLink.carrier == "BEV charger"
+            EgonPfHvLink.carrier == "BEV_charger"
         ).delete(synchronize_session=False)
 
         # Store TS
         subquery = (
             session.query(EgonPfHvStore.store_id)
-            .filter(EgonPfHvStore.carrier == "battery storage")
+            .filter(EgonPfHvStore.carrier == "battery_storage")
             .subquery()
         )
 
@@ -894,13 +894,13 @@ def delete_model_data_from_db():
         ).delete(synchronize_session=False)
         # Stores
         session.query(EgonPfHvStore).filter(
-            EgonPfHvStore.carrier == "battery storage"
+            EgonPfHvStore.carrier == "battery_storage"
         ).delete(synchronize_session=False)
 
         # Load TS
         subquery = (
             session.query(EgonPfHvLoad.load_id)
-            .filter(EgonPfHvLoad.carrier == "land transport EV")
+            .filter(EgonPfHvLoad.carrier == "land_transport_EV")
             .subquery()
         )
 
@@ -909,7 +909,7 @@ def delete_model_data_from_db():
         ).delete(synchronize_session=False)
         # Loads
         session.query(EgonPfHvLoad).filter(
-            EgonPfHvLoad.carrier == "land transport EV"
+            EgonPfHvLoad.carrier == "land_transport_EV"
         ).delete(synchronize_session=False)
 
 
