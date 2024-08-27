@@ -459,6 +459,7 @@ with airflow.DAG(
             prepare_pypsa_eur,
             foreign_lines,
             insert_hydrogen_buses,
+            run_pypsaeur,
         ]
     )
 
@@ -479,7 +480,7 @@ with airflow.DAG(
 
     # Assign industrial gas demand eGon100RE
     IndustrialGasDemandeGon100RE(
-        dependencies=[create_gas_polygons, industrial_gas_demand]
+        dependencies=[create_gas_polygons, industrial_gas_demand, run_pypsaeur,]
     )
 
     # CHP locations
