@@ -467,6 +467,46 @@ def insert_gas_pipeline_list(
         usecols=["id", "node_id", "lat", "long", "country_code", "param"],
     )
 
+    # Correct some country codes (also changed in define_gas_nodes_list())
+    gas_pipelines_list["bus0"] = gas_pipelines_list["node_id"].apply(
+        lambda x: x.split(",")[0]
+    )
+    gas_pipelines_list["bus1"] = gas_pipelines_list["node_id"].apply(
+        lambda x: x.split(",")[1]
+    )
+    gas_pipelines_list["country0"] = gas_pipelines_list["country_code"].apply(
+        lambda x: x.split(",")[0]
+    )
+    gas_pipelines_list["country1"] = gas_pipelines_list["country_code"].apply(
+        lambda x: x.split(",")[1]
+    )
+
+    gas_pipelines_list.loc[
+        gas_pipelines_list["bus0"].str.contains("INET_N_1182"), "country0"
+    ] = "['AT'"
+    gas_pipelines_list.loc[
+        gas_pipelines_list["bus1"].str.contains("INET_N_1182"), "country1"
+    ] = "'AT']"
+    gas_pipelines_list.loc[
+        gas_pipelines_list["bus0"].str.contains("SEQ_10608_p"), "country0"
+    ] = "['NL'"
+    gas_pipelines_list.loc[
+        gas_pipelines_list["bus1"].str.contains("SEQ_10608_p"), "country1"
+    ] = "'NL']"
+    gas_pipelines_list.loc[
+        gas_pipelines_list["bus0"].str.contains("N_88_NS_LMGN"), "country0"
+    ] = "['XX'"
+    gas_pipelines_list.loc[
+        gas_pipelines_list["bus1"].str.contains("N_88_NS_LMGN"), "country1"
+    ] = "'XX']"
+
+    gas_pipelines_list["country_code"] = gas_pipelines_list.apply(
+        lambda x: x["country0"] + "," + x["country1"], axis=1
+    )
+    gas_pipelines_list.drop(
+        columns=["bus0", "bus1", "country0", "country1"], inplace=True
+    )
+
     # Select the links having at least one bus in Germany
     gas_pipelines_list = gas_pipelines_list[
         gas_pipelines_list["country_code"].str.contains("DE")
