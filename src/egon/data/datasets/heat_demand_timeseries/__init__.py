@@ -10,7 +10,7 @@ import geopandas as gpd
 import numpy as np
 import pandas as pd
 
-from egon.data import db
+from egon.data import config, db
 import egon.data.datasets.era5 as era
 
 try:
@@ -817,7 +817,7 @@ def district_heating(method="python"):
     )
 
     if method == "python":
-        for scenario in egon.data.config.settings()["egon-data"][
+        for scenario in config.settings()["egon-data"][
             "--scenarios"
         ]:
             create_district_heating_profile_python_like(scenario)

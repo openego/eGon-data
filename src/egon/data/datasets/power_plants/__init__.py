@@ -1357,7 +1357,6 @@ if (
     )
 
 tasks = tasks + (
-    geocode_mastr_data,
     pv_rooftop_to_buildings,
     wind_offshore.insert,
 )
