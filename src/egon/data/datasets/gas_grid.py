@@ -910,9 +910,9 @@ def insert_gas_data():
     if "eGon100RE" in s:
         scenarios.append("eGon100RE")
 
-    for scn_name in scenarios:
-        download_SciGRID_gas_data()
+    download_SciGRID_gas_data()
 
+    for scn_name in scenarios:
         gas_nodes_list = define_gas_nodes_list()
 
         insert_CH4_nodes_list(gas_nodes_list, scn_name=scn_name)
