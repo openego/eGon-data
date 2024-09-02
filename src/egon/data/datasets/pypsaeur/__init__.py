@@ -1551,7 +1551,8 @@ def drop_new_gas_pipelines(network):
 
 def drop_fossil_gas(network):
     network.mremove(
-        "Store", network.stores[network.stores.carrier == "gas"].index
+        "Generator",
+        network.generators[network.generators.carrier == "gas"].index
     )
 
     return network
