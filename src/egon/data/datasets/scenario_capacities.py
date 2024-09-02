@@ -654,10 +654,9 @@ def eGon100_capacities():
     targets = egon.data.config.datasets()["scenario_input"]["targets"]
 
     # read-in installed capacities
-    execute_pypsa_eur_sec = False
     cwd = Path(".")
 
-    if execute_pypsa_eur_sec:
+    if egon.data.config.settings()["egon-data"]["--run-pypsa-eur"]:
         filepath = cwd / "run-pypsa-eur"
         pypsa_eur_repos = filepath / "pypsa-eur"
         # Read YAML file
