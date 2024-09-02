@@ -169,7 +169,8 @@ def download():
                 / "records"
                 / "10356004"
                 / "files"
-            )
+            ).mkdir(parents=True, exist_ok=True)
+
         urlretrieve(
             "https://zenodo.org/records/10356004/files/ENSPRESO_BIOMASS.xlsx",
             filepath
