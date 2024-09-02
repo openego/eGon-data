@@ -1527,11 +1527,17 @@ def district_heating_shares(network):
             )
         )
 
-    # Drop links with undefined buses
+    # Drop links with undefined buses or carrier
     network.mremove(
         "Link",
         network.links[
             ~network.links.bus0.isin(network.buses.index.values)
+        ].index,
+    )
+    network.mremove(
+        "Link",
+        network.links[
+            network.links.carrier==""
         ].index,
     )
 
