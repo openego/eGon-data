@@ -410,6 +410,7 @@ with airflow.DAG(
             osmtgmod,
             scenario_parameters,
             tasks["etrago_setup.create-tables"],
+            run_pypsaeur,
         ]
     )
 
