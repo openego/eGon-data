@@ -1579,8 +1579,6 @@ def rual_heat_technologies(network):
         ].index,
     )
 
-    network.links.loc["DE1 0 services rural ground heat pump", "p_nom_min"] = 0
-
     return network
 
 
