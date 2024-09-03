@@ -38,7 +38,7 @@ def download():
     if powerd_data_bundle_path.exists() and powerd_data_bundle_path.is_dir():
         shutil.rmtree(powerd_data_bundle_path)
 
-    url = f"""https://sandbox.zenodo.org/record/{sources['deposit_id_powerd']}/files/data_bundle_powerd_data.zip"""
+    url = f"""https://zenodo.org/record/{sources['deposit_id_powerd']}/files/data_bundle_powerd_data.zip"""
     target_file = egon.data.config.datasets()["data-bundle"]["targets"]["file_powerd"]
 
     # Retrieve files
