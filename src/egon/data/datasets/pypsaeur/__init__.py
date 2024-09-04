@@ -1595,12 +1595,12 @@ def execute():
             / "pypsa-eur"
             / "results"
             / data_config["run"]["name"]
-            / "prenetworks"
+            / "prenetworks-brownfield"
             / f"elec_s_{data_config['scenario']['clusters'][0]}"
             f"_l{data_config['scenario']['ll'][0]}"
             f"_{data_config['scenario']['opts'][0]}"
             f"_{data_config['scenario']['sector_opts'][0]}"
-            f"_{data_config['scenario']['planning_horizons'][0]}.nc"
+            f"_{data_config['scenario']['planning_horizons'][3]}.nc"
         )
 
         network = pypsa.Network(network_path)
