@@ -306,7 +306,7 @@ class HeatPumpsPypsaEurSec(Dataset):
 
         super().__init__(
             name="HeatPumpsPypsaEurSec",
-            version="0.0.2",
+            version="0.0.3",
             dependencies=dependencies,
             tasks=tasks_HeatPumpsPypsaEur,
         )
@@ -371,7 +371,7 @@ class HeatPumps2019(Dataset):
 
         super().__init__(
             name="HeatPumps2019",
-            version="0.0.2",
+            version="0.0.3",
             dependencies=dependencies,
             tasks=tasks_HeatPumps2019,
         )
@@ -436,7 +436,7 @@ class HeatPumps2035(Dataset):
 
         super().__init__(
             name="HeatPumps2035",
-            version="0.0.2",
+            version="0.0.3",
             dependencies=dependencies,
             tasks=tasks_HeatPumps2035,
         )
@@ -462,7 +462,7 @@ class HeatPumps2050(Dataset):
 
         super().__init__(
             name="HeatPumps2050",
-            version="0.0.2",
+            version="0.0.3",
             dependencies=dependencies,
             tasks=tasks_HeatPumps2050,
         )
