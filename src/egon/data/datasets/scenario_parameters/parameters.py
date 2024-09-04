@@ -116,6 +116,7 @@ def global_settings(scenario):
                 "coal": 0.335,  # [t_CO2/MW_th]
                 "other_non_renewable": 0.268,  # [t_CO2/MW_th]
             },
+            "interest_rate": 0.05,  # [p.u.]
         }
 
     elif scenario == "eGon2021":
@@ -1183,7 +1184,7 @@ def heat(scenario):
             parameters["capital_cost"][comp] = annualize_capital_costs(
                 parameters["overnight_cost"][comp],
                 parameters["lifetime"][comp],
-                global_settings("eGon2035")["interest_rate"],
+                global_settings("eGon100RE")["interest_rate"],
             )
 
     elif scenario == "eGon2021":
