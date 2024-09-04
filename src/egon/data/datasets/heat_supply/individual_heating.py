@@ -226,6 +226,7 @@ Base = declarative_base()
 
 scenarios = config.settings()["egon-data"]["--scenarios"]
 
+
 class EgonEtragoTimeseriesIndividualHeating(Base):
     __tablename__ = "egon_etrago_timeseries_individual_heating"
     __table_args__ = {"schema": "demand"}
@@ -281,20 +282,27 @@ class HeatPumpsPypsaEurSec(Dataset):
                     )
                 )
             return tasks
+
         tasks_HeatPumpsPypsaEur = set()
 
         if "eGon100RE" in scenarios:
-            tasks_HeatPumpsPypsaEur=(
+            tasks_HeatPumpsPypsaEur = (
                 delete_pypsa_eur_sec_csv_file,
                 delete_mvgd_ts_100RE,
                 delete_heat_peak_loads_100RE,
                 {*dyn_parallel_tasks_pypsa_eur_sec()},
             )
         else:
-            tasks_HeatPumpsPypsaEur = (PythonOperator(
-                task_id = "HeatPumpsPypsaEur_skipped",
-                python_callable = skip_task,
-                op_kwargs={"scn":"eGon100RE", "task":"HeatPumpsPypsaEur"}),)
+            tasks_HeatPumpsPypsaEur = (
+                PythonOperator(
+                    task_id="HeatPumpsPypsaEur_skipped",
+                    python_callable=skip_task,
+                    op_kwargs={
+                        "scn": "eGon100RE",
+                        "task": "HeatPumpsPypsaEur",
+                    },
+                ),
+            )
 
         super().__init__(
             name="HeatPumpsPypsaEurSec",
@@ -342,21 +350,24 @@ class HeatPumps2019(Dataset):
                     )
                 )
             return tasks
-        
+
         tasks_HeatPumps2019 = set()
 
         if "status2019" in scenarios:
-            tasks_HeatPumps2019=(
+            tasks_HeatPumps2019 = (
                 delete_heat_peak_loads_2019,
                 delete_hp_capacity_2019,
                 delete_mvgd_ts_2019,
                 {*dyn_parallel_tasks_2019()},
             )
         else:
-            tasks_HeatPumps2019 = (PythonOperator(
-                task_id = "HeatPumps2019_skipped",
-                python_callable = skip_task,
-                op_kwargs={"scn":"status2019", "task":"HeatPumps2019"}),)
+            tasks_HeatPumps2019 = (
+                PythonOperator(
+                    task_id="HeatPumps2019_skipped",
+                    python_callable=skip_task,
+                    op_kwargs={"scn": "status2019", "task": "HeatPumps2019"},
+                ),
+            )
 
         super().__init__(
             name="HeatPumps2019",
@@ -408,17 +419,20 @@ class HeatPumps2035(Dataset):
         tasks_HeatPumps2035 = set()
 
         if "eGon2035" in scenarios:
-            tasks_HeatPumps2035=(
+            tasks_HeatPumps2035 = (
                 delete_heat_peak_loads_2035,
                 delete_hp_capacity_2035,
                 delete_mvgd_ts_2035,
                 {*dyn_parallel_tasks_2035()},
             )
         else:
-            tasks_HeatPumps2035 = (PythonOperator(
-                task_id = "HeatPumps2035_skipped",
-                python_callable = skip_task,
-                op_kwargs={"scn":"eGon2035", "task":"HeatPumps2035"}),)
+            tasks_HeatPumps2035 = (
+                PythonOperator(
+                    task_id="HeatPumps2035_skipped",
+                    python_callable=skip_task,
+                    op_kwargs={"scn": "eGon2035", "task": "HeatPumps2035"},
+                ),
+            )
 
         super().__init__(
             name="HeatPumps2035",
@@ -433,16 +447,19 @@ class HeatPumps2050(Dataset):
         tasks_HeatPumps2050 = set()
 
         if "eGon100RE" in scenarios:
-            tasks_HeatPumps2050=(
+            tasks_HeatPumps2050 = (
                 delete_hp_capacity_100RE,
                 determine_hp_cap_buildings_eGon100RE,
             )
         else:
-            tasks_HeatPumps2050 = (PythonOperator(
-                task_id = "HeatPumps2050_skipped",
-                python_callable = skip_task,
-                op_kwargs={"scn":"eGon100RE", "task":"HeatPumps2050"}),)
-            
+            tasks_HeatPumps2050 = (
+                PythonOperator(
+                    task_id="HeatPumps2050_skipped",
+                    python_callable=skip_task,
+                    op_kwargs={"scn": "eGon100RE", "task": "HeatPumps2050"},
+                ),
+            )
+
         super().__init__(
             name="HeatPumps2050",
             version="0.0.2",
@@ -463,8 +480,12 @@ class BuildingHeatPeakLoads(Base):
 
 def skip_task(scn=str, task=str):
     def not_executed():
-        logger.info(f"{scn} is not in the list of scenarios. {task} dataset is skipped.")
+        logger.info(
+            f"{scn} is not in the list of scenarios. {task} dataset is skipped."
+        )
+
     return not_executed
+
 
 def adapt_numpy_float64(numpy_float64):
     return AsIs(numpy_float64)
