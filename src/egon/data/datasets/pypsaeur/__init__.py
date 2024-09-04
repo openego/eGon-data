@@ -30,7 +30,7 @@ class PreparePypsaEur(Dataset):
     def __init__(self, dependencies):
         super().__init__(
             name="PreparePypsaEur",
-            version="0.0.9",
+            version="0.0.10",
             dependencies=dependencies,
             tasks=(
                 download,
@@ -43,7 +43,7 @@ class RunPypsaEur(Dataset):
     def __init__(self, dependencies):
         super().__init__(
             name="SolvePypsaEur",
-            version="0.0.8",
+            version="0.0.9",
             dependencies=dependencies,
             tasks=(
                 execute,
@@ -1595,7 +1595,7 @@ def execute():
             / "pypsa-eur"
             / "results"
             / data_config["run"]["name"]
-            / "prenetworks-brownfield"
+            / "prenetworks"
             / f"elec_s_{data_config['scenario']['clusters'][0]}"
             f"_l{data_config['scenario']['ll'][0]}"
             f"_{data_config['scenario']['opts'][0]}"
