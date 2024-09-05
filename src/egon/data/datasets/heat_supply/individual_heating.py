@@ -244,9 +244,9 @@ class EgonHpCapacityBuildings(Base):
     hp_capacity = Column(REAL)
 
 
-class HeatPumpsPypsaEurSec(Dataset):
+class HeatPumpsPypsaEur(Dataset):
     def __init__(self, dependencies):
-        def dyn_parallel_tasks_pypsa_eur_sec():
+        def dyn_parallel_tasks_pypsa_eur():
             """Dynamically generate tasks
             The goal is to speed up tasks by parallelising bulks of mvgds.
 
@@ -258,7 +258,7 @@ class HeatPumpsPypsaEurSec(Dataset):
             set of airflow.PythonOperators
                 The tasks. Each element is of
                 :func:`egon.data.datasets.heat_supply.individual_heating.
-                determine_hp_cap_peak_load_mvgd_ts_pypsa_eur_sec`
+                determine_hp_cap_peak_load_mvgd_ts_pypsa_eur`
             """
             parallel_tasks = config.datasets()["demand_timeseries_mvgd"].get(
                 "parallel_tasks", 1
@@ -270,14 +270,14 @@ class HeatPumpsPypsaEurSec(Dataset):
                     PythonOperator(
                         task_id=(
                             f"individual_heating."
-                            f"determine-hp-capacity-pypsa-eur-sec-"
+                            f"determine-hp-capacity-pypsa-eur-"
                             f"mvgd-bulk{i}"
                         ),
                         python_callable=split_mvgds_into_bulks,
                         op_kwargs={
                             "n": i,
                             "max_n": parallel_tasks,
-                            "func": determine_hp_cap_peak_load_mvgd_ts_pypsa_eur_sec,  # noqa: E501
+                            "func": determine_hp_cap_peak_load_mvgd_ts_pypsa_eur,  # noqa: E501
                         },
                     )
                 )
@@ -290,7 +290,7 @@ class HeatPumpsPypsaEurSec(Dataset):
                 delete_pypsa_eur_sec_csv_file,
                 delete_mvgd_ts_100RE,
                 delete_heat_peak_loads_100RE,
-                {*dyn_parallel_tasks_pypsa_eur_sec()},
+                {*dyn_parallel_tasks_pypsa_eur()},
             )
         else:
             tasks_HeatPumpsPypsaEur = (
@@ -2080,7 +2080,7 @@ def determine_hp_cap_peak_load_mvgd_ts_2019(mvgd_ids):
     )
 
 
-def determine_hp_cap_peak_load_mvgd_ts_pypsa_eur_sec(mvgd_ids):
+def determine_hp_cap_peak_load_mvgd_ts_pypsa_eur(mvgd_ids):
     """
     Main function to determine minimum required HP capacity in MV for
     pypsa-eur-sec. Further, creates heat demand time series for all buildings
