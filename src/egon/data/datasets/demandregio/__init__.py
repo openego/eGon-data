@@ -930,6 +930,7 @@ def timeseries_per_wz():
         for sector in ["CTS", "industry"]:
             insert_timeseries_per_wz(sector, int(year))
 
+
 def get_cached_tables():
     """Get cached demandregio tables and db-dump from former runs"""
     data_config = egon.data.config.datasets()
