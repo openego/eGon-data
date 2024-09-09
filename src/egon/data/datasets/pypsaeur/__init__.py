@@ -1589,6 +1589,8 @@ def execute():
         ) as stream:
             data_config = yaml.safe_load(stream)
 
+    for i in data_config['scenario']['planning_horizons']:
+        
         network_path = (
             Path(".")
             / "run-pypsa-eur"
@@ -1600,12 +1602,10 @@ def execute():
             f"_l{data_config['scenario']['ll'][0]}"
             f"_{data_config['scenario']['opts'][0]}"
             f"_{data_config['scenario']['sector_opts'][0]}"
-            f"_{data_config['scenario']['planning_horizons'][3]}.nc"
+            f"_{data_config['scenario']['planning_horizons'][i]}.nc"
         )
 
         network = pypsa.Network(network_path)
-
-        network = drop_biomass(network)
 
         network = drop_urban_decentral_heat(network)
 
@@ -1620,11 +1620,18 @@ def execute():
         network = h2_overground_stores(network)
 
         network = drop_new_gas_pipelines(network)
-
-        network = drop_fossil_gas(network)
-
-        network = rual_heat_technologies(network)
+        
+        if data_config['scenario']['planning_horizons'] >= 2045:
+        
+            network = drop_biomass(network)
+    
+            network = drop_fossil_gas(network)
+            
+            network = rual_heat_technologies(network)
 
         network.export_to_netcdf(network_path)
+
+
+
     else:
         print("Pypsa-eur is not executed due to the settings of egon-data")
