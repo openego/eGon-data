@@ -660,7 +660,7 @@ def eGon100_capacities():
         filepath = cwd / "run-pypsa-eur"
         pypsa_eur_repos = filepath / "pypsa-eur"
         # Read YAML file
-        pes_egonconfig = pypsa_eur_repos / "config.yaml"
+        pes_egonconfig = pypsa_eur_repos / "config" / "config.yaml"
         with open(pes_egonconfig, "r") as stream:
             data_config = yaml.safe_load(stream)
 
