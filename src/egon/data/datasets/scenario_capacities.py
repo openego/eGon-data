@@ -667,7 +667,7 @@ def eGon100_capacities():
         target_file = (
             pypsa_eur_repos
             / "results"
-            / data_config["run"]
+            / data_config["run"]["name"]
             / "csvs"
             / sources["eGon100RE"]["capacities"]
         )
