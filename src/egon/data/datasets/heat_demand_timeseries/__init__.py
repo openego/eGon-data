@@ -959,7 +959,7 @@ def store_national_profiles():
         FROM
 
         (
-        SELECT demand.demand  *
+        SELECT demand.demand  / building.count *
         c.daily_demand_share * hourly_demand as building_demand_per_hour,
         ordinality + 24* (c.day_of_year-1) as hour_of_year,
         demand_profile.building_id,
@@ -1077,7 +1077,7 @@ class HeatTimeSeries(Dataset):
     def __init__(self, dependencies):
         super().__init__(
             name="HeatTimeSeries",
-            version="0.0.10",
+            version="0.0.11",
             dependencies=dependencies,
             tasks=(
                 {

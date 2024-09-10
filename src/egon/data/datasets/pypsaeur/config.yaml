@@ -1086,6 +1086,7 @@ plotting:
     waste: '#e3d37d'
     other: '#000000'
     geothermal: '#ba91b1'
+    geo thermal: '#ba91b1'
     AC: "#70af1d"
     AC-AC: "#70af1d"
     AC line: "#70af1d"
