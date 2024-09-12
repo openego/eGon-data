@@ -368,13 +368,15 @@ def insert_central_direct_heat(scenario):
     # Map solar thermal collectors to weather cells
     join = gpd.sjoin(weather_cells, solar_thermal)[["index_right"]]
 
+    weather_year = get_sector_parameters("global", scenario)["weather_year"]
+
     feedin = db.select_dataframe(
         f"""
         SELECT w_id, feedin
         FROM {sources['feedin_timeseries']['schema']}.
             {sources['feedin_timeseries']['table']}
         WHERE carrier = 'solar_thermal'
-        AND weather_year = 2019
+        AND weather_year = {weather_year}
         """,
         index_col="w_id",
     )
