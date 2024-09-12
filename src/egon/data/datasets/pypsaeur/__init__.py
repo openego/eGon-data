@@ -397,11 +397,12 @@ def clean_database():
             ;"""
         )
 
-    db.execute_sql(
-        "DELETE FROM grid.egon_etrago_bus "
-        "WHERE scn_name = '{scn_name}' "
-        "AND country <> 'DE' "
-        "AND carrier <> 'AC'"
+    db.execute_sql(f"""
+        DELETE FROM grid.egon_etrago_bus
+        WHERE scn_name = '{scn_name}'
+        AND country <> 'DE'
+        AND carrier <> 'AC'
+        """
     )
 
 
