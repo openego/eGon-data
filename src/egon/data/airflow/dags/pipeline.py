@@ -55,7 +55,7 @@ from egon.data.datasets.heat_supply import (
 from egon.data.datasets.heat_supply.individual_heating import (
     HeatPumps2035,
     HeatPumps2050,
-    HeatPumpsPypsaEurSec,
+    HeatPumpsPypsaEur,
 )
 from egon.data.datasets.hydrogen_etrago import (
     HydrogenBusEtrago,
@@ -214,7 +214,7 @@ with airflow.DAG(
 
     # Download industrial gas demand
     industrial_gas_demand = IndustrialGasDemand(
-        dependencies=[scenario_parameters]
+        dependencies=[scenario_parameters, data_bundle]
     )
 
     # Extract landuse areas from the `osm` dataset
@@ -346,8 +346,8 @@ with airflow.DAG(
         ]
     )
 
-    # Minimum heat pump capacity for pypsa-eur-sec
-    heat_pumps_pypsa_eur_sec = HeatPumpsPypsaEurSec(
+    # Minimum heat pump capacity for pypsa-eur
+    heat_pumps_pypsa_eur = HeatPumpsPypsaEur(
         dependencies=[
             cts_demand_buildings,
             DistrictHeatingAreas,
@@ -375,7 +375,7 @@ with airflow.DAG(
         dependencies=[prepare_pypsa_eur, tyndp_data, osmtgmod, fix_subnetworks]
     )
 
-    # run pypsa-eur-sec
+    # run pypsa-eur
     run_pypsaeur = RunPypsaEur(
         dependencies=[
             prepare_pypsa_eur,
@@ -595,7 +595,7 @@ with airflow.DAG(
             DistrictHeatingAreas,
             heat_supply,
             heat_time_series,
-            heat_pumps_pypsa_eur_sec,
+            heat_pumps_pypsa_eur,
             power_plants,
         ]
     )
@@ -615,7 +615,7 @@ with airflow.DAG(
     heat_pumps_2050 = HeatPumps2050(
         dependencies=[
             run_pypsaeur,
-            heat_pumps_pypsa_eur_sec,
+            heat_pumps_pypsa_eur,
             heat_supply,
         ]
     )

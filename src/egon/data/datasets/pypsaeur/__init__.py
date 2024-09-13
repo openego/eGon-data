@@ -30,7 +30,7 @@ class PreparePypsaEur(Dataset):
     def __init__(self, dependencies):
         super().__init__(
             name="PreparePypsaEur",
-            version="0.0.8",
+            version="0.0.9",
             dependencies=dependencies,
             tasks=(
                 download,
@@ -43,7 +43,7 @@ class RunPypsaEur(Dataset):
     def __init__(self, dependencies):
         super().__init__(
             name="SolvePypsaEur",
-            version="0.0.7",
+            version="0.0.8",
             dependencies=dependencies,
             tasks=(
                 execute,
@@ -169,7 +169,8 @@ def download():
                 / "records"
                 / "10356004"
                 / "files"
-            )
+            ).mkdir(parents=True, exist_ok=True)
+
         urlretrieve(
             "https://zenodo.org/records/10356004/files/ENSPRESO_BIOMASS.xlsx",
             filepath
@@ -259,6 +260,20 @@ def solve_network():
                 "--use-conda",
                 "--conda-frontend=conda",
                 "solve",
+            ]
+        )
+
+        subproc.run(
+            [
+                "snakemake",
+                "-j1",
+                "--directory",
+                filepath,
+                "--snakefile",
+                filepath / "Snakefile",
+                "--use-conda",
+                "--conda-frontend=conda",
+                "summary",
             ]
         )
     else:
@@ -357,31 +372,37 @@ def clean_database():
             WHERE "bus0" IN (
             SELECT bus_id FROM grid.egon_etrago_bus
                 WHERE country != 'DE'
-                AND scn_name = '{scn_name}')
+                AND scn_name = '{scn_name}'
+                AND bus_id NOT IN (SELECT bus_i FROM osmtgmod_results.bus_data))
             AND "bus1" IN (
             SELECT bus_id FROM grid.egon_etrago_bus
                 WHERE country != 'DE'
-                AND scn_name = '{scn_name}')
+                AND scn_name = '{scn_name}'
+                AND bus_id NOT IN (SELECT bus_i FROM osmtgmod_results.bus_data))
             );
+
 
             DELETE FROM {"grid.egon_etrago_" + comp}
             WHERE scn_name = '{scn_name}'
             AND "bus0" IN (
             SELECT bus_id FROM grid.egon_etrago_bus
                 WHERE country != 'DE'
-                AND scn_name = '{scn_name}')
+                AND scn_name = '{scn_name}'
+                AND bus_id NOT IN (SELECT bus_i FROM osmtgmod_results.bus_data))
             AND "bus1" IN (
             SELECT bus_id FROM grid.egon_etrago_bus
                 WHERE country != 'DE'
-                AND scn_name = '{scn_name}')
+                AND scn_name = '{scn_name}'
+                AND bus_id NOT IN (SELECT bus_i FROM osmtgmod_results.bus_data))
             ;"""
         )
 
-    db.execute_sql(
-        "DELETE FROM grid.egon_etrago_bus "
-        "WHERE scn_name = '{scn_name}' "
-        "AND country <> 'DE' "
-        "AND carrier <> 'AC'"
+    db.execute_sql(f"""
+        DELETE FROM grid.egon_etrago_bus
+        WHERE scn_name = '{scn_name}'
+        AND country <> 'DE'
+        AND carrier <> 'AC'
+        """
     )
 
 
@@ -1456,12 +1477,9 @@ def update_heat_timeseries_germany(network):
     )
 
     # Replace heat demand curves in Germany with values from eGon-data
-    network.loads_t.p_set.loc[:, "DE1 0 residential rural heat"] = (
+    network.loads_t.p_set.loc[:, "DE1 0 rural heat"] = (
         df_egon_heat_demand.loc[:, "residential rural"].values
-    )
-
-    network.loads_t.p_set.loc[:, "DE1 0 services rural heat"] = (
-        df_egon_heat_demand.loc[:, "service rural"].values
+        + df_egon_heat_demand.loc[:, "service rural"].values
     )
 
     network.loads_t.p_set.loc[:, "DE1 0 urban central heat"] = (
@@ -1509,11 +1527,26 @@ def district_heating_shares(network):
                 df.loc[country[:2]].values[0]
             )
         )
-        network.loads_t.p_set[f"{country} residential rural heat"] = (
+        network.loads_t.p_set[f"{country} rural heat"] = (
             heat_demand_per_country.loc[:, country].mul(
                 (1 - df.loc[country[:2]].values[0])
             )
         )
+
+    # Drop links with undefined buses or carrier
+    network.mremove(
+        "Link",
+        network.links[
+            ~network.links.bus0.isin(network.buses.index.values)
+        ].index,
+    )
+    network.mremove(
+        "Link",
+        network.links[
+            network.links.carrier==""
+        ].index,
+    )
+
     return network
 
 
@@ -1530,7 +1563,8 @@ def drop_new_gas_pipelines(network):
 
 def drop_fossil_gas(network):
     network.mremove(
-        "Store", network.stores[network.stores.carrier == "gas"].index
+        "Generator",
+        network.generators[network.generators.carrier == "gas"].index
     )
 
     return network
@@ -1550,8 +1584,6 @@ def rual_heat_technologies(network):
             network.generators.carrier.str.contains("rural solar thermal")
         ].index,
     )
-
-    network.links.loc["DE1 0 services rural ground heat pump", "p_nom_min"] = 0
 
     return network
 
