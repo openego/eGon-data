@@ -69,7 +69,7 @@ def download():
                     "git",
                     "clone",
                     "--branch",
-                    "v0.10.0",
+                    "v0.13.0",
                     "https://github.com/PyPSA/pypsa-eur.git",
                     pypsa_eur_repos,
                 ]
@@ -150,7 +150,7 @@ def download():
                 parents=True, exist_ok=True
             )
         urlretrieve(
-            "https://zenodo.org/record/6953563/files/shipdensity_global.zip",
+            "https://zenodo.org/record/13757228/files/shipdensity_global.zip",
             filepath / "pypsa-eur" / "data" / "shipdensity_global.zip",
         )
 
@@ -159,7 +159,7 @@ def download():
             / "pypsa-eur"
             / "zenodo.org"
             / "records"
-            / "10356004"
+            / "13757228"
             / "files"
         ).exists():
             (
@@ -167,7 +167,7 @@ def download():
                 / "pypsa-eur"
                 / "zenodo.org"
                 / "records"
-                / "10356004"
+                / "13757228"
                 / "files"
             ).mkdir(parents=True, exist_ok=True)
 
@@ -177,7 +177,7 @@ def download():
             / "pypsa-eur"
             / "zenodo.org"
             / "records"
-            / "10356004"
+            / "13757228"
             / "files"
             / "ENSPRESO_BIOMASS.xlsx",
         )
@@ -185,35 +185,53 @@ def download():
         if not (
             filepath
             / "pypsa-eur"
-            / "globalenergymonitor.org"
-            / "wp-content"
-            / "uploads"
-            / "2023"
-            / "07"
+            / "data"
+            / "gem"
         ).exists():
             (
                 filepath
                 / "pypsa-eur"
-                / "globalenergymonitor.org"
-                / "wp-content"
-                / "uploads"
-                / "2023"
-                / "07"
+                / "data"
+                / "gem"
             ).mkdir(parents=True, exist_ok=True)
 
         r = requests.get(
-            "https://globalenergymonitor.org/wp-content/uploads/2023/07/"
-            "Europe-Gas-Tracker-2023-03-v3.xlsx"
+            "https://tubcloud.tu-berlin.de/s/LMBJQCsN6Ez5cN2/download/"
+            "Europe-Gas-Tracker-2024-05.xlsx"
         )
         with open(
             filepath
             / "pypsa-eur"
-            / "globalenergymonitor.org"
-            / "wp-content"
-            / "uploads"
-            / "2023"
-            / "07"
+            / "data"
+            / "gem"
             / "Europe-Gas-Tracker-2023-03-v3.xlsx",
+            "wb",
+        ) as outfile:
+            outfile.write(r.content)
+
+        if not (
+            filepath
+            / "pypsa-eur"
+            / "data"
+            / "gem"
+        ).exists():
+            (
+                filepath
+                / "pypsa-eur"
+                / "data"
+                / "gem"
+            ).mkdir(parents=True, exist_ok=True)
+
+        r = requests.get(
+            "https://tubcloud.tu-berlin.de/s/Aqebo3rrQZWKGsG/download/"
+            "Global-Steel-Plant-Tracker-April-2024-Standard-Copy-V1.xlsx"
+        )
+        with open(
+            filepath
+            / "pypsa-eur"
+            / "data"
+            / "gem"
+            / "Global-Steel-Plant-Tracker-April-2024-Standard-Copy-V1.xlsx",
             "wb",
         ) as outfile:
             outfile.write(r.content)
