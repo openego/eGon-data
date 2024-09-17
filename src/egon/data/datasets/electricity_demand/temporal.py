@@ -35,7 +35,7 @@ def create_table():
     EgonEtragoElectricityCts.__table__.create(bind=engine, checkfirst=True)
 
 
-def calc_load_curve(share_wz, annual_demand=1):
+def calc_load_curve(share_wz, annual_demand=1, max_only=False):
     """ Create aggregated demand curve for service sector
 
     Parameters
@@ -44,11 +44,16 @@ def calc_load_curve(share_wz, annual_demand=1):
         Share of annual demand per cts branch
     annual_demand : float or pandas.Series, optional
         Annual demand in MWh. The default is 1.
+    max_only: bool
+        Toggle between returning a time series (False) or only the maximum
+        value (True). Can be used only when `share_wz` is of type
+        `pandas.DataFrame`.
+        Defaults to False.
 
     Returns
     -------
     pandas.Series or pandas.DataFrame
-        Annual load curve of combindes cts branches
+        Annual load curve of combined cts branches
 
     """
     year = 2011
@@ -85,12 +90,15 @@ def calc_load_curve(share_wz, annual_demand=1):
 
     # If shares per cts branch is a DataFrame (e.g. shares per substation)
     # demand curves are created for each row
-    if type(share_wz) == pd.core.frame.DataFrame:
+    if isinstance(share_wz, (pd.core.frame.DataFrame, gpd.GeoDataFrame)):
 
         # Replace NaN values with 0
         share_wz = share_wz.fillna(0.0)
 
-        result = pd.DataFrame(columns=df.index, index=share_wz.index)
+        if max_only:
+            result = pd.Series(index=share_wz.index)
+		else:
+        	result = pd.DataFrame(columns=df.index, index=share_wz.index)
 
         # Group by share_wz to reduce number of iterations
         for name, group in share_wz.groupby(share_wz.columns.tolist()):
