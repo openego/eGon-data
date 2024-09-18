@@ -1694,25 +1694,25 @@ def execute():
 
         network = update_heat_timeseries_germany(network)
 
-        network = update_electrical_timeseries_germany(network)
+        network = update_electrical_timeseries_germany(
+            network, year=data_config["scenario"]["planning_horizons"][i]
+        )
 
         network = geothermal_district_heating(network)
 
         network = h2_overground_stores(network)
 
         network = drop_new_gas_pipelines(network)
-        
-        if data_config['scenario']['planning_horizons'] >= 2045:
-        
+
+        if data_config["scenario"]["planning_horizons"] >= 2045:
+
             network = drop_biomass(network)
-    
+
             network = drop_fossil_gas(network)
-            
+
             network = rual_heat_technologies(network)
 
         network.export_to_netcdf(network_path)
-
-
 
     else:
         print("Pypsa-eur is not executed due to the settings of egon-data")
