@@ -636,7 +636,8 @@ def insert_cts_ind(scenario, year, engine, target_values):
 
     if scenario == "eGon100RE":
         ec_cts_ind2 = pd.read_csv(
-            "data_bundle_powerd_data/egon_demandregio_cts_ind.csv")
+            "data_bundle_powerd_data/egon_demandregio_cts_ind.csv"
+        )
         ec_cts_ind2.to_sql(
             targets["cts_ind_demand"]["table"],
             engine,
@@ -914,6 +915,7 @@ def timeseries_per_wz():
         year = int(scenario_parameters.global_settings(scn)["weather_year"])
         for sector in ["CTS", "industry"]:
             insert_timeseries_per_wz(sector, int(year))
+
 
 def get_cached_tables():
     """Get cached demandregio tables and db-dump from former runs"""
