@@ -1607,7 +1607,7 @@ def execute():
         ) as stream:
             data_config = yaml.safe_load(stream)
 
-    for i in data_config['scenario']['planning_horizons']:
+    for i in range(0, len(data_config['scenario']['planning_horizons'])):
         
         network_path = (
             Path(".")
