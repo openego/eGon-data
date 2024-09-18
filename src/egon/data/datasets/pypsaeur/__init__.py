@@ -95,10 +95,10 @@ def download():
 
             # Limit geopandas version
             # our pypsa-eur version is not compatible to geopandas>1
-            #env["dependencies"] = [
+            # env["dependencies"] = [
             #    "geopandas>=0.11.0,<1" if x == "geopandas>=0.11.0" else x
             #    for x in env["dependencies"]
-            #]
+            # ]
 
             # Write YAML file
             with open(path_to_env, "w", encoding="utf8") as outfile:
@@ -182,18 +182,10 @@ def download():
             / "ENSPRESO_BIOMASS.xlsx",
         )
 
-        if not (
-            filepath
-            / "pypsa-eur"
-            / "data"
-            / "gem"
-        ).exists():
-            (
-                filepath
-                / "pypsa-eur"
-                / "data"
-                / "gem"
-            ).mkdir(parents=True, exist_ok=True)
+        if not (filepath / "pypsa-eur" / "data" / "gem").exists():
+            (filepath / "pypsa-eur" / "data" / "gem").mkdir(
+                parents=True, exist_ok=True
+            )
 
         r = requests.get(
             "https://tubcloud.tu-berlin.de/s/LMBJQCsN6Ez5cN2/download/"
@@ -209,18 +201,10 @@ def download():
         ) as outfile:
             outfile.write(r.content)
 
-        if not (
-            filepath
-            / "pypsa-eur"
-            / "data"
-            / "gem"
-        ).exists():
-            (
-                filepath
-                / "pypsa-eur"
-                / "data"
-                / "gem"
-            ).mkdir(parents=True, exist_ok=True)
+        if not (filepath / "pypsa-eur" / "data" / "gem").exists():
+            (filepath / "pypsa-eur" / "data" / "gem").mkdir(
+                parents=True, exist_ok=True
+            )
 
         r = requests.get(
             "https://tubcloud.tu-berlin.de/s/Aqebo3rrQZWKGsG/download/"
@@ -1617,9 +1601,7 @@ def district_heating_shares(network):
     )
     network.mremove(
         "Link",
-        network.links[
-            network.links.carrier==""
-        ].index,
+        network.links[network.links.carrier == ""].index,
     )
 
     return network
@@ -1639,7 +1621,7 @@ def drop_new_gas_pipelines(network):
 def drop_fossil_gas(network):
     network.mremove(
         "Generator",
-        network.generators[network.generators.carrier == "gas"].index
+        network.generators[network.generators.carrier == "gas"].index,
     )
 
     return network
@@ -1670,8 +1652,8 @@ def execute():
         ) as stream:
             data_config = yaml.safe_load(stream)
 
-    for i in range(0, len(data_config['scenario']['planning_horizons'])):
-        
+    for i in range(0, len(data_config["scenario"]["planning_horizons"])):
+
         network_path = (
             Path(".")
             / "run-pypsa-eur"
