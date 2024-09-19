@@ -5,6 +5,7 @@ the pysa-eur-sec scenario parameter creation
 from pathlib import Path
 from urllib.request import urlretrieve
 import json
+import os
 import shutil
 
 from shapely.geometry import LineString
@@ -15,7 +16,6 @@ import pandas as pd
 import pypsa
 import requests
 import yaml
-import os
 
 from egon.data import __path__, config, db, logger
 from egon.data.datasets import Dataset
