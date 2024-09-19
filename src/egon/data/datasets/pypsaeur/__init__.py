@@ -398,7 +398,8 @@ def clean_database():
             ;"""
         )
 
-    db.execute_sql(f"""
+    db.execute_sql(
+        f"""
         DELETE FROM grid.egon_etrago_bus
         WHERE scn_name = '{scn_name}'
         AND country <> 'DE'
@@ -1543,9 +1544,7 @@ def district_heating_shares(network):
     )
     network.mremove(
         "Link",
-        network.links[
-            network.links.carrier==""
-        ].index,
+        network.links[network.links.carrier == ""].index,
     )
 
     return network
@@ -1565,7 +1564,7 @@ def drop_new_gas_pipelines(network):
 def drop_fossil_gas(network):
     network.mremove(
         "Generator",
-        network.generators[network.generators.carrier == "gas"].index
+        network.generators[network.generators.carrier == "gas"].index,
     )
 
     return network
@@ -1604,16 +1603,19 @@ def execute():
             / data_config["run"]["name"]
             / "prenetworks"
         )
-        
+
         networks = pd.Series(os.listdir(network_path))
-        
+
         scn_path = pd.DataFrame(
             index=["2025", "2030", "2035", "2045", "2050"],
-            columns=["prenetwork", "functions"])
-        
+            columns=["prenetwork", "functions"],
+        )
+
         for year in scn_path.index:
-            scn_path.at[year, "prenetwork"] = networks[networks.str.contains(year)].values[0]
-        
+            scn_path.at[year, "prenetwork"] = networks[
+                networks.str.contains(year)
+            ].values[0]
+
         for year in ["2025", "2030", "2035"]:
             scn_path.loc[year, "functions"] = [
                 drop_urban_decentral_heat,
@@ -1622,8 +1624,8 @@ def execute():
                 update_electrical_timeseries_germany,
                 h2_overground_stores,
                 drop_new_gas_pipelines,
-                ]
-        
+            ]
+
         scn_path.loc["2045", "functions"] = [
             drop_biomass,
             drop_urban_decentral_heat,
@@ -1634,8 +1636,8 @@ def execute():
             drop_new_gas_pipelines,
             drop_fossil_gas,
             # rual_heat_technologies, #To be defined
-            ]
-        
+        ]
+
         scn_path.loc["2050", "functions"] = [
             drop_biomass,
             drop_urban_decentral_heat,
@@ -1647,14 +1649,14 @@ def execute():
             drop_new_gas_pipelines,
             drop_fossil_gas,
             rual_heat_technologies,
-            ]
-        
+        ]
+
         for scn in scn_path.index:
             path = network_path / scn_path.at[scn, "prenetwork"]
             network = pypsa.Network(path)
             for manipulator in scn_path.at[scn, "functions"]:
                 network = manipulator(network)
             network.export_to_netcdf(path)
-            
+
     else:
         print("Pypsa-eur is not executed due to the settings of egon-data")
