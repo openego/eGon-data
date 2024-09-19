@@ -1686,7 +1686,7 @@ def execute():
 
         network = drop_new_gas_pipelines(network)
 
-        if data_config["scenario"]["planning_horizons"] >= 2045:
+        if data_config["scenario"]["planning_horizons"][i] >= 2045:
 
             network = drop_biomass(network)
 
