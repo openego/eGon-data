@@ -399,7 +399,8 @@ def clean_database():
             ;"""
         )
 
-    db.execute_sql(f"""
+    db.execute_sql(
+        f"""
         DELETE FROM grid.egon_etrago_bus
         WHERE scn_name = '{scn_name}'
         AND country <> 'DE'
@@ -1658,7 +1659,62 @@ def execute():
         ) as stream:
             data_config = yaml.safe_load(stream)
 
-    for i in range(0, len(data_config["scenario"]["planning_horizons"])):
+        networks = pd.Series()
+        
+        for i in range(0, len(data_config["scenario"]["planning_horizons"])):
+            nc_file = (
+                f"elec_s_{data_config['scenario']['clusters'][0]}"
+                f"_l{data_config['scenario']['ll'][0]}"
+                f"_{data_config['scenario']['opts'][0]}"
+                f"_{data_config['scenario']['sector_opts'][0]}"
+                f"_{data_config['scenario']['planning_horizons'][i]}.nc"
+            )
+            networks = networks.append(nc_file)
+
+        scn_path = pd.DataFrame(
+            index=["2025", "2030", "2035", "2045", "2050"],
+            columns=["prenetwork", "functions"],
+        )
+
+        for year in scn_path.index:
+            scn_path.at[year, "prenetwork"] = networks[
+                networks.str.contains(year)
+            ].values[0]
+
+        for year in ["2025", "2030", "2035"]:
+            scn_path.loc[year, "functions"] = [
+                drop_urban_decentral_heat,
+                district_heating_shares,
+                update_heat_timeseries_germany,
+                update_electrical_timeseries_germany,
+                h2_overground_stores,
+                drop_new_gas_pipelines,
+            ]
+
+        scn_path.loc["2045", "functions"] = [
+            drop_biomass,
+            drop_urban_decentral_heat,
+            district_heating_shares,
+            update_heat_timeseries_germany,
+            update_electrical_timeseries_germany,
+            h2_overground_stores,
+            drop_new_gas_pipelines,
+            drop_fossil_gas,
+            # rual_heat_technologies, #To be defined
+        ]
+
+        scn_path.loc["2050", "functions"] = [
+            drop_biomass,
+            drop_urban_decentral_heat,
+            district_heating_shares,
+            update_heat_timeseries_germany,
+            update_electrical_timeseries_germany,
+            geothermal_district_heating,
+            h2_overground_stores,
+            drop_new_gas_pipelines,
+            drop_fossil_gas,
+            rual_heat_technologies,
+        ]
 
         network_path = (
             Path(".")
@@ -1667,40 +1723,14 @@ def execute():
             / "results"
             / data_config["run"]["name"]
             / "prenetworks"
-            / f"elec_s_{data_config['scenario']['clusters'][0]}"
-            f"_l{data_config['scenario']['ll'][0]}"
-            f"_{data_config['scenario']['opts'][0]}"
-            f"_{data_config['scenario']['sector_opts'][0]}"
-            f"_{data_config['scenario']['planning_horizons'][i]}.nc"
         )
-
-        network = pypsa.Network(network_path)
-
-        network = drop_urban_decentral_heat(network)
-
-        network = district_heating_shares(network)
-
-        network = update_heat_timeseries_germany(network)
-
-        network = update_electrical_timeseries_germany(
-            network, year=data_config["scenario"]["planning_horizons"][i]
-        )
-
-        network = geothermal_district_heating(network)
-
-        network = h2_overground_stores(network)
-
-        network = drop_new_gas_pipelines(network)
-
-        if data_config["scenario"]["planning_horizons"][i] >= 2045:
-
-            network = drop_biomass(network)
-
-            network = drop_fossil_gas(network)
-
-            network = rual_heat_technologies(network)
-
-        network.export_to_netcdf(network_path)
+        
+        for scn in scn_path.index:
+            path = network_path / scn_path.at[scn, "prenetwork"]
+            network = pypsa.Network(path)
+            for manipulator in scn_path.at[scn, "functions"]:
+                network = manipulator(network)
+            network.export_to_netcdf(path)
 
     else:
         print("Pypsa-eur is not executed due to the settings of egon-data")
