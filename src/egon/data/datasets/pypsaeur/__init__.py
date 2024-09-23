@@ -5,7 +5,6 @@ the pysa-eur-sec scenario parameter creation
 from pathlib import Path
 from urllib.request import urlretrieve
 import json
-import os
 import shutil
 
 from shapely.geometry import LineString
