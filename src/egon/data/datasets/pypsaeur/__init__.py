@@ -95,10 +95,10 @@ def download():
 
             # Limit geopandas version
             # our pypsa-eur version is not compatible to geopandas>1
-            #env["dependencies"] = [
+            # env["dependencies"] = [
             #    "geopandas>=0.11.0,<1" if x == "geopandas>=0.11.0" else x
             #    for x in env["dependencies"]
-            #]
+            # ]
 
             # Write YAML file
             with open(path_to_env, "w", encoding="utf8") as outfile:
@@ -182,18 +182,10 @@ def download():
             / "ENSPRESO_BIOMASS.xlsx",
         )
 
-        if not (
-            filepath
-            / "pypsa-eur"
-            / "data"
-            / "gem"
-        ).exists():
-            (
-                filepath
-                / "pypsa-eur"
-                / "data"
-                / "gem"
-            ).mkdir(parents=True, exist_ok=True)
+        if not (filepath / "pypsa-eur" / "data" / "gem").exists():
+            (filepath / "pypsa-eur" / "data" / "gem").mkdir(
+                parents=True, exist_ok=True
+            )
 
         r = requests.get(
             "https://tubcloud.tu-berlin.de/s/LMBJQCsN6Ez5cN2/download/"
@@ -209,18 +201,10 @@ def download():
         ) as outfile:
             outfile.write(r.content)
 
-        if not (
-            filepath
-            / "pypsa-eur"
-            / "data"
-            / "gem"
-        ).exists():
-            (
-                filepath
-                / "pypsa-eur"
-                / "data"
-                / "gem"
-            ).mkdir(parents=True, exist_ok=True)
+        if not (filepath / "pypsa-eur" / "data" / "gem").exists():
+            (filepath / "pypsa-eur" / "data" / "gem").mkdir(
+                parents=True, exist_ok=True
+            )
 
         r = requests.get(
             "https://tubcloud.tu-berlin.de/s/Aqebo3rrQZWKGsG/download/"
@@ -1368,7 +1352,7 @@ def overwrite_H2_pipeline_share():
     )
 
 
-def update_electrical_timeseries_germany(network):
+def update_electrical_timeseries_germany(network, year):
     """Replace electrical demand time series in Germany with data from egon-data
 
     Parameters
@@ -1387,9 +1371,72 @@ def update_electrical_timeseries_germany(network):
         "input-pypsa-eur-sec/electrical_demand_timeseries_DE_eGon100RE.csv"
     )
 
-    network.loads_t.p_set.loc[:, "DE1 0"] = (
-        df["residential_and_service"] + df["industry"]
-    ).values
+    annual_demand = pd.Series(index=[2019, 2037])
+    annual_demand_industry = pd.Series(index=[2019, 2037])
+    # Define values from status2019 for interpolation
+    # Residential and service (in TWh)
+    annual_demand.loc[2019] = 124.71 + 143.26
+    # Industry (in TWh)
+    annual_demand_industry.loc[2019] = 241.925
+
+    # Define values from NEP 2023 scenario B 2037 for interpolation
+    # Residential and service (in TWh)
+    annual_demand.loc[2037] = 104 + 153.1
+    # Industry (in TWh)
+    annual_demand_industry.loc[2037] = 334.0
+
+    # Set interpolated demands for years between 2019 and 2045
+    if year < 2037:
+        # Calculate annual demands for year by linear interpolating between
+        # 2019 and 2037
+        # Done seperatly for industry and residential and service to fit
+        # to pypsa-eurs structure
+        annual_rate = (annual_demand.loc[2037] - annual_demand.loc[2019]) / (
+            2037 - 2019
+        )
+        annual_demand_year = annual_demand.loc[2019] + annual_rate * (
+            year - 2019
+        )
+
+        annual_rate_industry = (
+            annual_demand_industry.loc[2037] - annual_demand_industry.loc[2019]
+        ) / (2037 - 2019)
+        annual_demand_year_industry = annual_demand_industry.loc[
+            2019
+        ] + annual_rate_industry * (year - 2019)
+
+        # Scale time series for 100% scenario with the annual demands
+        # The shape of the curve is taken from the 100% scenario since the
+        # same weather and calender year is used there
+        network.loads_t.p_set.loc[:, "DE0 0"] = (
+            df["residential_and_service"]
+            / df["residential_and_service"].sum()
+            * annual_demand_year
+            * 1e6
+        ).values
+
+        network.loads_t.p_set.loc[:, "DE0 0 industry electricity"] = (
+            df["industry"]
+            / df["industry"].sum()
+            * annual_demand_year_industry
+            * 1e6
+        ).values
+
+    elif year == 2045:
+
+        network.loads_t.p_set.loc[:, "DE0 0"] = df["residential_and_service"]
+
+        network.loads_t.p_set.loc[:, "DE0 0 industry electricity"] = df[
+            "industry"
+        ].values
+
+    else:
+        print(
+            "Scaling not implemented for years between 2037 and 2045 and beyond."
+        )
+        return
+
+    network.loads.loc["DE0 0 industry electricity", "p_set"] = 0.0
 
     return network
 
@@ -1554,9 +1601,7 @@ def district_heating_shares(network):
     )
     network.mremove(
         "Link",
-        network.links[
-            network.links.carrier==""
-        ].index,
+        network.links[network.links.carrier == ""].index,
     )
 
     return network
@@ -1576,7 +1621,7 @@ def drop_new_gas_pipelines(network):
 def drop_fossil_gas(network):
     network.mremove(
         "Generator",
-        network.generators[network.generators.carrier == "gas"].index
+        network.generators[network.generators.carrier == "gas"].index,
     )
 
     return network
@@ -1607,8 +1652,8 @@ def execute():
         ) as stream:
             data_config = yaml.safe_load(stream)
 
-    for i in range(0, len(data_config['scenario']['planning_horizons'])):
-        
+    for i in range(0, len(data_config["scenario"]["planning_horizons"])):
+
         network_path = (
             Path(".")
             / "run-pypsa-eur"
@@ -1631,25 +1676,25 @@ def execute():
 
         network = update_heat_timeseries_germany(network)
 
-        network = update_electrical_timeseries_germany(network)
+        network = update_electrical_timeseries_germany(
+            network, year=data_config["scenario"]["planning_horizons"][i]
+        )
 
         network = geothermal_district_heating(network)
 
         network = h2_overground_stores(network)
 
         network = drop_new_gas_pipelines(network)
-        
-        if data_config['scenario']['planning_horizons'] >= 2045:
-        
+
+        if data_config["scenario"]["planning_horizons"][i] >= 2045:
+
             network = drop_biomass(network)
-    
+
             network = drop_fossil_gas(network)
-            
+
             network = rual_heat_technologies(network)
 
         network.export_to_netcdf(network_path)
-
-
 
     else:
         print("Pypsa-eur is not executed due to the settings of egon-data")
