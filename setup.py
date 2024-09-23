@@ -122,6 +122,7 @@ setup(
         "wtforms",
         "xarray",
         "xlrd",
+        "fuzzywuzzy",
     ],
     extras_require={
         "dev": ["black", "flake8", "isort>=5", "pre-commit", "pytest", "tox"]
