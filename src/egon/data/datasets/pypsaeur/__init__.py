@@ -1595,16 +1595,17 @@ def execute():
         ) as stream:
             data_config = yaml.safe_load(stream)
 
-        network_path = (
-            Path(".")
-            / "run-pypsa-eur"
-            / "pypsa-eur"
-            / "results"
-            / data_config["run"]["name"]
-            / "prenetworks"
-        )
-
-        networks = pd.Series(os.listdir(network_path))
+        networks = pd.Series()
+        
+        for i in range(0, len(data_config["scenario"]["planning_horizons"])):
+            nc_file = (
+                f"elec_s_{data_config['scenario']['clusters'][0]}"
+                f"_l{data_config['scenario']['ll'][0]}"
+                f"_{data_config['scenario']['opts'][0]}"
+                f"_{data_config['scenario']['sector_opts'][0]}"
+                f"_{data_config['scenario']['planning_horizons'][i]}.nc"
+            )
+            networks = networks.append(nc_file)
 
         scn_path = pd.DataFrame(
             index=["2025", "2030", "2035", "2045", "2050"],
@@ -1651,6 +1652,15 @@ def execute():
             rual_heat_technologies,
         ]
 
+        network_path = (
+            Path(".")
+            / "run-pypsa-eur"
+            / "pypsa-eur"
+            / "results"
+            / data_config["run"]["name"]
+            / "prenetworks"
+        )
+        
         for scn in scn_path.index:
             path = network_path / scn_path.at[scn, "prenetwork"]
             network = pypsa.Network(path)
