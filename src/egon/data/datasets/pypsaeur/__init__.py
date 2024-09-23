@@ -1662,14 +1662,14 @@ def execute():
         networks = pd.Series()
         
         for i in range(0, len(data_config["scenario"]["planning_horizons"])):
-            nc_file = (
+            nc_file = pd.Series(
                 f"elec_s_{data_config['scenario']['clusters'][0]}"
                 f"_l{data_config['scenario']['ll'][0]}"
                 f"_{data_config['scenario']['opts'][0]}"
                 f"_{data_config['scenario']['sector_opts'][0]}"
                 f"_{data_config['scenario']['planning_horizons'][i]}.nc"
             )
-            networks = networks.append(nc_file)
+            networks = networks._append(nc_file)
 
         scn_path = pd.DataFrame(
             index=["2025", "2030", "2035", "2045", "2050"],
@@ -1679,7 +1679,7 @@ def execute():
         for year in scn_path.index:
             scn_path.at[year, "prenetwork"] = networks[
                 networks.str.contains(year)
-            ].values[0]
+            ].values
 
         for year in ["2025", "2030", "2035"]:
             scn_path.loc[year, "functions"] = [
