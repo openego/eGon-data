@@ -374,31 +374,37 @@ def clean_database():
             WHERE "bus0" IN (
             SELECT bus_id FROM grid.egon_etrago_bus
                 WHERE country != 'DE'
-                AND scn_name = '{scn_name}')
+                AND scn_name = '{scn_name}'
+                AND bus_id NOT IN (SELECT bus_i FROM osmtgmod_results.bus_data))
             AND "bus1" IN (
             SELECT bus_id FROM grid.egon_etrago_bus
                 WHERE country != 'DE'
-                AND scn_name = '{scn_name}')
+                AND scn_name = '{scn_name}'
+                AND bus_id NOT IN (SELECT bus_i FROM osmtgmod_results.bus_data))
             );
+
 
             DELETE FROM {"grid.egon_etrago_" + comp}
             WHERE scn_name = '{scn_name}'
             AND "bus0" IN (
             SELECT bus_id FROM grid.egon_etrago_bus
                 WHERE country != 'DE'
-                AND scn_name = '{scn_name}')
+                AND scn_name = '{scn_name}'
+                AND bus_id NOT IN (SELECT bus_i FROM osmtgmod_results.bus_data))
             AND "bus1" IN (
             SELECT bus_id FROM grid.egon_etrago_bus
                 WHERE country != 'DE'
-                AND scn_name = '{scn_name}')
+                AND scn_name = '{scn_name}'
+                AND bus_id NOT IN (SELECT bus_i FROM osmtgmod_results.bus_data))
             ;"""
         )
 
-    db.execute_sql(
-        "DELETE FROM grid.egon_etrago_bus "
-        "WHERE scn_name = '{scn_name}' "
-        "AND country <> 'DE' "
-        "AND carrier <> 'AC'"
+    db.execute_sql(f"""
+        DELETE FROM grid.egon_etrago_bus
+        WHERE scn_name = '{scn_name}'
+        AND country <> 'DE'
+        AND carrier <> 'AC'
+        """
     )
 
 

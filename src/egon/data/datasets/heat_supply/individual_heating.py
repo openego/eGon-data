@@ -224,6 +224,8 @@ from egon.data.datasets.zensus_mv_grid_districts import MapZensusGridDistricts
 engine = db.engine()
 Base = declarative_base()
 
+scenarios = config.settings()["egon-data"]["--scenarios"]
+
 
 class EgonEtragoTimeseriesIndividualHeating(Base):
     __tablename__ = "egon_etrago_timeseries_individual_heating"
@@ -242,9 +244,9 @@ class EgonHpCapacityBuildings(Base):
     hp_capacity = Column(REAL)
 
 
-class HeatPumpsPypsaEurSec(Dataset):
+class HeatPumpsPypsaEur(Dataset):
     def __init__(self, dependencies):
-        def dyn_parallel_tasks_pypsa_eur_sec():
+        def dyn_parallel_tasks_pypsa_eur():
             """Dynamically generate tasks
             The goal is to speed up tasks by parallelising bulks of mvgds.
 
@@ -256,7 +258,7 @@ class HeatPumpsPypsaEurSec(Dataset):
             set of airflow.PythonOperators
                 The tasks. Each element is of
                 :func:`egon.data.datasets.heat_supply.individual_heating.
-                determine_hp_cap_peak_load_mvgd_ts_pypsa_eur_sec`
+                determine_hp_cap_peak_load_mvgd_ts_pypsa_eur`
             """
             parallel_tasks = config.datasets()["demand_timeseries_mvgd"].get(
                 "parallel_tasks", 1
@@ -268,29 +270,45 @@ class HeatPumpsPypsaEurSec(Dataset):
                     PythonOperator(
                         task_id=(
                             f"individual_heating."
-                            f"determine-hp-capacity-pypsa-eur-sec-"
+                            f"determine-hp-capacity-pypsa-eur-"
                             f"mvgd-bulk{i}"
                         ),
                         python_callable=split_mvgds_into_bulks,
                         op_kwargs={
                             "n": i,
                             "max_n": parallel_tasks,
-                            "func": determine_hp_cap_peak_load_mvgd_ts_pypsa_eur_sec,  # noqa: E501
+                            "func": determine_hp_cap_peak_load_mvgd_ts_pypsa_eur,  # noqa: E501
                         },
                     )
                 )
             return tasks
 
-        super().__init__(
-            name="HeatPumpsPypsaEurSec",
-            version="0.0.2",
-            dependencies=dependencies,
-            tasks=(
+        tasks_HeatPumpsPypsaEur = set()
+
+        if "eGon100RE" in scenarios:
+            tasks_HeatPumpsPypsaEur = (
                 delete_pypsa_eur_sec_csv_file,
                 delete_mvgd_ts_100RE,
                 delete_heat_peak_loads_100RE,
-                {*dyn_parallel_tasks_pypsa_eur_sec()},
-            ),
+                {*dyn_parallel_tasks_pypsa_eur()},
+            )
+        else:
+            tasks_HeatPumpsPypsaEur = (
+                PythonOperator(
+                    task_id="HeatPumpsPypsaEur_skipped",
+                    python_callable=skip_task,
+                    op_kwargs={
+                        "scn": "eGon100RE",
+                        "task": "HeatPumpsPypsaEur",
+                    },
+                ),
+            )
+
+        super().__init__(
+            name="HeatPumpsPypsaEurSec",
+            version="0.0.3",
+            dependencies=dependencies,
+            tasks=tasks_HeatPumpsPypsaEur,
         )
 
 
@@ -333,16 +351,29 @@ class HeatPumps2019(Dataset):
                 )
             return tasks
 
-        super().__init__(
-            name="HeatPumps2019",
-            version="0.0.2",
-            dependencies=dependencies,
-            tasks=(
+        tasks_HeatPumps2019 = set()
+
+        if "status2019" in scenarios:
+            tasks_HeatPumps2019 = (
                 delete_heat_peak_loads_2019,
                 delete_hp_capacity_2019,
                 delete_mvgd_ts_2019,
                 {*dyn_parallel_tasks_2019()},
-            ),
+            )
+        else:
+            tasks_HeatPumps2019 = (
+                PythonOperator(
+                    task_id="HeatPumps2019_skipped",
+                    python_callable=skip_task,
+                    op_kwargs={"scn": "status2019", "task": "HeatPumps2019"},
+                ),
+            )
+
+        super().__init__(
+            name="HeatPumps2019",
+            version="0.0.3",
+            dependencies=dependencies,
+            tasks=tasks_HeatPumps2019,
         )
 
 
@@ -385,29 +416,55 @@ class HeatPumps2035(Dataset):
                 )
             return tasks
 
-        super().__init__(
-            name="HeatPumps2035",
-            version="0.0.2",
-            dependencies=dependencies,
-            tasks=(
+        tasks_HeatPumps2035 = set()
+
+        if "eGon2035" in scenarios:
+            tasks_HeatPumps2035 = (
                 delete_heat_peak_loads_2035,
                 delete_hp_capacity_2035,
                 delete_mvgd_ts_2035,
                 {*dyn_parallel_tasks_2035()},
-            ),
+            )
+        else:
+            tasks_HeatPumps2035 = (
+                PythonOperator(
+                    task_id="HeatPumps2035_skipped",
+                    python_callable=skip_task,
+                    op_kwargs={"scn": "eGon2035", "task": "HeatPumps2035"},
+                ),
+            )
+
+        super().__init__(
+            name="HeatPumps2035",
+            version="0.0.3",
+            dependencies=dependencies,
+            tasks=tasks_HeatPumps2035,
         )
 
 
 class HeatPumps2050(Dataset):
     def __init__(self, dependencies):
-        super().__init__(
-            name="HeatPumps2050",
-            version="0.0.2",
-            dependencies=dependencies,
-            tasks=(
+        tasks_HeatPumps2050 = set()
+
+        if "eGon100RE" in scenarios:
+            tasks_HeatPumps2050 = (
                 delete_hp_capacity_100RE,
                 determine_hp_cap_buildings_eGon100RE,
-            ),
+            )
+        else:
+            tasks_HeatPumps2050 = (
+                PythonOperator(
+                    task_id="HeatPumps2050_skipped",
+                    python_callable=skip_task,
+                    op_kwargs={"scn": "eGon100RE", "task": "HeatPumps2050"},
+                ),
+            )
+
+        super().__init__(
+            name="HeatPumps2050",
+            version="0.0.3",
+            dependencies=dependencies,
+            tasks=tasks_HeatPumps2050,
         )
 
 
@@ -419,6 +476,15 @@ class BuildingHeatPeakLoads(Base):
     scenario = Column(String, primary_key=True)
     sector = Column(String, primary_key=True)
     peak_load_in_w = Column(REAL)
+
+
+def skip_task(scn=str, task=str):
+    def not_executed():
+        logger.info(
+            f"{scn} is not in the list of scenarios. {task} dataset is skipped."
+        )
+
+    return not_executed
 
 
 def adapt_numpy_float64(numpy_float64):
@@ -2014,7 +2080,7 @@ def determine_hp_cap_peak_load_mvgd_ts_2019(mvgd_ids):
     )
 
 
-def determine_hp_cap_peak_load_mvgd_ts_pypsa_eur_sec(mvgd_ids):
+def determine_hp_cap_peak_load_mvgd_ts_pypsa_eur(mvgd_ids):
     """
     Main function to determine minimum required HP capacity in MV for
     pypsa-eur-sec. Further, creates heat demand time series for all buildings

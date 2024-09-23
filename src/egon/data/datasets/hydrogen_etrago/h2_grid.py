@@ -6,7 +6,7 @@ The H2 grid, present only in eGon100RE, is composed of two parts:
     carrier 'H2_retrofit' corresponding to the retrofiting of a share of
     the CH4 grid into an hydrogen grid,
   * an extendable part with carrier 'H2_gridextension', linking each
-    H2_salcavern bus to the closest H2_grid bus: this part as no
+    H2_salcavern bus to the closest H2 bus: this part as no
     capacity (p_nom = 0) but it could be extended.
 As the CH4 grid, the H2 pipelines are modelled by PyPSA links.
 
@@ -25,7 +25,7 @@ def insert_h2_pipelines():
     Insert hydrogen grid (H2 links) into the database for eGon100RE.
 
     Insert the H2 grid by executing the following steps:
-      * Copy the CH4 links in Germany from eGon2035
+      * Copy the CH4 links in Germany from eGon100RE
       * Overwrite the followings columns:
           * bus0 and bus1 using the grid.egon_etrago_ch4_h2 table
           * carrier, scn_name
@@ -45,7 +45,7 @@ def insert_h2_pipelines():
     H2_buses = db.select_geodataframe(
         f"""
         SELECT * FROM grid.egon_etrago_bus WHERE scn_name = 'eGon100RE' AND
-        carrier IN ('H2_grid', 'H2_saltcavern') and country = 'DE'
+        carrier IN ('H2', 'H2_saltcavern') and country = 'DE'
         """,
         epsg=4326,
     )
@@ -53,20 +53,20 @@ def insert_h2_pipelines():
     pipelines = db.select_geodataframe(
         f"""
         SELECT * FROM grid.egon_etrago_link
-        WHERE scn_name = 'eGon2035' AND carrier = 'CH4'
+        WHERE scn_name = 'eGon100RE' AND carrier = 'CH4'
         AND bus0 IN (
             SELECT bus_id FROM grid.egon_etrago_bus
-            WHERE scn_name = 'eGon2035' AND country = 'DE'
+            WHERE scn_name = 'eGon100RE' AND country = 'DE'
         ) AND bus1 IN (
             SELECT bus_id FROM grid.egon_etrago_bus
-            WHERE scn_name = 'eGon2035' AND country = 'DE'
+            WHERE scn_name = 'eGon100RE' AND country = 'DE'
         );
         """
     )
 
     CH4_H2_busmap = db.select_dataframe(
         f"""
-        SELECT * FROM grid.egon_etrago_ch4_h2 WHERE scn_name = 'eGon2035'
+        SELECT * FROM grid.egon_etrago_ch4_h2 WHERE scn_name = 'eGon100RE'
         """,
         index_col="bus_CH4",
     )
@@ -99,14 +99,14 @@ def insert_h2_pipelines():
     new_pipelines.set_crs(epsg=4326, inplace=True)
 
     # find bus in H2_grid voronoi
-    new_pipelines = db.assign_gas_bus_id(new_pipelines, "eGon2035", "H2_grid")
+    new_pipelines = db.assign_gas_bus_id(new_pipelines, "eGon100RE", "H2")
     new_pipelines = new_pipelines.rename(columns={"bus_id": "bus1"}).drop(
         columns=["bus"]
     )
 
     # create link geometries
     new_pipelines = link_geom_from_buses(
-        new_pipelines[["bus0", "bus1"]], "eGon2035"
+        new_pipelines[["bus0", "bus1"]], "eGon100RE"
     )
     new_pipelines["geom"] = new_pipelines.apply(
         lambda row: MultiLineString([row["topo"]]), axis=1

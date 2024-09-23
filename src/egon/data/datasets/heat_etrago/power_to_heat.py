@@ -548,7 +548,8 @@ def assign_electrical_bus(heat_pumps, carrier, scenario, multiple_per_mv_grid=Fa
 
         power_to_heat["share_demand"] = power_to_heat.groupby(
             "area_id"
-        ).demand.apply(lambda grp: grp / grp.sum())
+        ).demand.apply(lambda grp: grp / grp.sum()).values
+
 
         power_to_heat["capacity"] = power_to_heat["share_demand"].mul(
             heat_pumps.capacity[power_to_heat.area_id].values
