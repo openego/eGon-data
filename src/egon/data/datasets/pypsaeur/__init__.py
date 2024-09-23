@@ -30,7 +30,7 @@ class PreparePypsaEur(Dataset):
     def __init__(self, dependencies):
         super().__init__(
             name="PreparePypsaEur",
-            version="0.0.9",
+            version="0.0.10",
             dependencies=dependencies,
             tasks=(
                 download,
@@ -43,7 +43,7 @@ class RunPypsaEur(Dataset):
     def __init__(self, dependencies):
         super().__init__(
             name="SolvePypsaEur",
-            version="0.0.8",
+            version="0.0.9",
             dependencies=dependencies,
             tasks=(
                 execute,
@@ -69,7 +69,7 @@ def download():
                     "git",
                     "clone",
                     "--branch",
-                    "v0.10.0",
+                    "v0.13.0",
                     "https://github.com/PyPSA/pypsa-eur.git",
                     pypsa_eur_repos,
                 ]
@@ -95,10 +95,10 @@ def download():
 
             # Limit geopandas version
             # our pypsa-eur version is not compatible to geopandas>1
-            env["dependencies"] = [
-                "geopandas>=0.11.0,<1" if x == "geopandas>=0.11.0" else x
-                for x in env["dependencies"]
-            ]
+            # env["dependencies"] = [
+            #    "geopandas>=0.11.0,<1" if x == "geopandas>=0.11.0" else x
+            #    for x in env["dependencies"]
+            # ]
 
             # Write YAML file
             with open(path_to_env, "w", encoding="utf8") as outfile:
@@ -150,7 +150,7 @@ def download():
                 parents=True, exist_ok=True
             )
         urlretrieve(
-            "https://zenodo.org/record/6953563/files/shipdensity_global.zip",
+            "https://zenodo.org/record/13757228/files/shipdensity_global.zip",
             filepath / "pypsa-eur" / "data" / "shipdensity_global.zip",
         )
 
@@ -159,7 +159,7 @@ def download():
             / "pypsa-eur"
             / "zenodo.org"
             / "records"
-            / "10356004"
+            / "13757228"
             / "files"
         ).exists():
             (
@@ -167,7 +167,7 @@ def download():
                 / "pypsa-eur"
                 / "zenodo.org"
                 / "records"
-                / "10356004"
+                / "13757228"
                 / "files"
             ).mkdir(parents=True, exist_ok=True)
 
@@ -177,43 +177,45 @@ def download():
             / "pypsa-eur"
             / "zenodo.org"
             / "records"
-            / "10356004"
+            / "13757228"
             / "files"
             / "ENSPRESO_BIOMASS.xlsx",
         )
 
-        if not (
-            filepath
-            / "pypsa-eur"
-            / "globalenergymonitor.org"
-            / "wp-content"
-            / "uploads"
-            / "2023"
-            / "07"
-        ).exists():
-            (
-                filepath
-                / "pypsa-eur"
-                / "globalenergymonitor.org"
-                / "wp-content"
-                / "uploads"
-                / "2023"
-                / "07"
-            ).mkdir(parents=True, exist_ok=True)
+        if not (filepath / "pypsa-eur" / "data" / "gem").exists():
+            (filepath / "pypsa-eur" / "data" / "gem").mkdir(
+                parents=True, exist_ok=True
+            )
 
         r = requests.get(
-            "https://globalenergymonitor.org/wp-content/uploads/2023/07/"
-            "Europe-Gas-Tracker-2023-03-v3.xlsx"
+            "https://tubcloud.tu-berlin.de/s/LMBJQCsN6Ez5cN2/download/"
+            "Europe-Gas-Tracker-2024-05.xlsx"
         )
         with open(
             filepath
             / "pypsa-eur"
-            / "globalenergymonitor.org"
-            / "wp-content"
-            / "uploads"
-            / "2023"
-            / "07"
+            / "data"
+            / "gem"
             / "Europe-Gas-Tracker-2023-03-v3.xlsx",
+            "wb",
+        ) as outfile:
+            outfile.write(r.content)
+
+        if not (filepath / "pypsa-eur" / "data" / "gem").exists():
+            (filepath / "pypsa-eur" / "data" / "gem").mkdir(
+                parents=True, exist_ok=True
+            )
+
+        r = requests.get(
+            "https://tubcloud.tu-berlin.de/s/Aqebo3rrQZWKGsG/download/"
+            "Global-Steel-Plant-Tracker-April-2024-Standard-Copy-V1.xlsx"
+        )
+        with open(
+            filepath
+            / "pypsa-eur"
+            / "data"
+            / "gem"
+            / "Global-Steel-Plant-Tracker-April-2024-Standard-Copy-V1.xlsx",
             "wb",
         ) as outfile:
             outfile.write(r.content)
@@ -1357,7 +1359,7 @@ def overwrite_H2_pipeline_share():
     )
 
 
-def update_electrical_timeseries_germany(network):
+def update_electrical_timeseries_germany(network, year):
     """Replace electrical demand time series in Germany with data from egon-data
 
     Parameters
@@ -1376,9 +1378,72 @@ def update_electrical_timeseries_germany(network):
         "input-pypsa-eur-sec/electrical_demand_timeseries_DE_eGon100RE.csv"
     )
 
-    network.loads_t.p_set.loc[:, "DE1 0"] = (
-        df["residential_and_service"] + df["industry"]
-    ).values
+    annual_demand = pd.Series(index=[2019, 2037])
+    annual_demand_industry = pd.Series(index=[2019, 2037])
+    # Define values from status2019 for interpolation
+    # Residential and service (in TWh)
+    annual_demand.loc[2019] = 124.71 + 143.26
+    # Industry (in TWh)
+    annual_demand_industry.loc[2019] = 241.925
+
+    # Define values from NEP 2023 scenario B 2037 for interpolation
+    # Residential and service (in TWh)
+    annual_demand.loc[2037] = 104 + 153.1
+    # Industry (in TWh)
+    annual_demand_industry.loc[2037] = 334.0
+
+    # Set interpolated demands for years between 2019 and 2045
+    if year < 2037:
+        # Calculate annual demands for year by linear interpolating between
+        # 2019 and 2037
+        # Done seperatly for industry and residential and service to fit
+        # to pypsa-eurs structure
+        annual_rate = (annual_demand.loc[2037] - annual_demand.loc[2019]) / (
+            2037 - 2019
+        )
+        annual_demand_year = annual_demand.loc[2019] + annual_rate * (
+            year - 2019
+        )
+
+        annual_rate_industry = (
+            annual_demand_industry.loc[2037] - annual_demand_industry.loc[2019]
+        ) / (2037 - 2019)
+        annual_demand_year_industry = annual_demand_industry.loc[
+            2019
+        ] + annual_rate_industry * (year - 2019)
+
+        # Scale time series for 100% scenario with the annual demands
+        # The shape of the curve is taken from the 100% scenario since the
+        # same weather and calender year is used there
+        network.loads_t.p_set.loc[:, "DE0 0"] = (
+            df["residential_and_service"]
+            / df["residential_and_service"].sum()
+            * annual_demand_year
+            * 1e6
+        ).values
+
+        network.loads_t.p_set.loc[:, "DE0 0 industry electricity"] = (
+            df["industry"]
+            / df["industry"].sum()
+            * annual_demand_year_industry
+            * 1e6
+        ).values
+
+    elif year == 2045:
+
+        network.loads_t.p_set.loc[:, "DE0 0"] = df["residential_and_service"]
+
+        network.loads_t.p_set.loc[:, "DE0 0 industry electricity"] = df[
+            "industry"
+        ].values
+
+    else:
+        print(
+            "Scaling not implemented for years between 2037 and 2045 and beyond."
+        )
+        return
+
+    network.loads.loc["DE0 0 industry electricity", "p_set"] = 0.0
 
     return network
 
