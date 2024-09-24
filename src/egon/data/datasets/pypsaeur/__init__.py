@@ -1687,6 +1687,7 @@ def execute():
                 district_heating_shares,
                 update_heat_timeseries_germany,
                 update_electrical_timeseries_germany,
+                geothermal_district_heating,
                 h2_overground_stores,
                 drop_new_gas_pipelines,
             ]
@@ -1697,6 +1698,7 @@ def execute():
             district_heating_shares,
             update_heat_timeseries_germany,
             update_electrical_timeseries_germany,
+            geothermal_district_heating,
             h2_overground_stores,
             drop_new_gas_pipelines,
             drop_fossil_gas,
