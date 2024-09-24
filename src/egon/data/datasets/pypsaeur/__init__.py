@@ -1359,7 +1359,7 @@ def overwrite_H2_pipeline_share():
     )
 
 
-def update_electrical_timeseries_germany(network, year):
+def update_electrical_timeseries_germany(network):
     """Replace electrical demand time series in Germany with data from egon-data
 
     Parameters
@@ -1373,7 +1373,7 @@ def update_electrical_timeseries_germany(network, year):
         Network including electrical demand time series in Germany from egon-data
 
     """
-
+    year = network.year
     df = pd.read_csv(
         "input-pypsa-eur-sec/electrical_demand_timeseries_DE_eGon100RE.csv"
     )
@@ -1730,6 +1730,7 @@ def execute():
         for scn in scn_path.index:
             path = network_path / scn_path.at[scn, "prenetwork"]
             network = pypsa.Network(path)
+            network.year = int(scn)
             for manipulator in scn_path.at[scn, "functions"]:
                 network = manipulator(network)
             network.export_to_netcdf(path)
