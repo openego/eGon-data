@@ -1584,7 +1584,7 @@ def drop_urban_decentral_heat(network):
 
     # Drop componentents attached to urban decentral heat
     for c in network.iterate_components():
-        network.mremove(c.name, c.df[c.df.index.str.contains(carrier)].index)
+        network.mremove(c.name, c.df[c.df.index.str.contains("urban decentral")].index)
 
     return network
 
