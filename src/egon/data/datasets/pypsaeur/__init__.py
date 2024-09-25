@@ -1564,10 +1564,20 @@ def drop_biomass(network):
 
 
 def drop_urban_decentral_heat(network):
-    carrier = "urban decentral"
+    carrier = "urban decentral heat"
 
+    # Add urban decentral heat demand to urban central heat demand
+    for country in network.loads.loc[
+            network.loads.carrier==carrier, "bus"].str[:5]:
+
+        network.loads_t.p_set[f"{country} rural heat"] += (
+            network.loads_t.p_set[f"{country} {carrier}"]
+        )
+
+    # Drop componentents attached to urban decentral heat
     for c in network.iterate_components():
         network.mremove(c.name, c.df[c.df.index.str.contains(carrier)].index)
+
     return network
 
 
