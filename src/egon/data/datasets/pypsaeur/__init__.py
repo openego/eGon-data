@@ -1478,8 +1478,8 @@ def geothermal_district_heating(network):
 
         network.add(
             "Generator",
-            f"DE1 0 urban central geo thermal {i}",
-            bus="DE1 0 urban central heat",
+            f"DE0 0 urban central geo thermal {i}",
+            bus="DE0 0 urban central heat",
             carrier="urban central geo thermal",
             p_nom_extendable=True,
             p_nom_max=row["potential [MW]"],
@@ -1564,10 +1564,28 @@ def drop_biomass(network):
 
 
 def drop_urban_decentral_heat(network):
-    carrier = "urban decentral"
+    carrier = "urban decentral heat"
 
+    # Add urban decentral heat demand to urban central heat demand
+    for country in network.loads.loc[
+            network.loads.carrier==carrier, "bus"].str[:5]:
+
+        if f"{country} {carrier}" in network.loads_t.p_set.columns:
+            network.loads_t.p_set[f"{country} rural heat"] += (
+                network.loads_t.p_set[f"{country} {carrier}"]
+            )
+        else:
+            print(f"""No time series available for {country} {carrier}.
+                  Using static p_set.""")
+
+            network.loads_t.p_set[f"{country} rural heat"] += (
+                network.loads.loc[f"{country} {carrier}", "p_set"]
+            )
+
+    # Drop componentents attached to urban decentral heat
     for c in network.iterate_components():
-        network.mremove(c.name, c.df[c.df.index.str.contains(carrier)].index)
+        network.mremove(c.name, c.df[c.df.index.str.contains("urban decentral")].index)
+
     return network
 
 
@@ -1659,81 +1677,120 @@ def execute():
         ) as stream:
             data_config = yaml.safe_load(stream)
 
-        networks = pd.Series()
-        
-        for i in range(0, len(data_config["scenario"]["planning_horizons"])):
-            nc_file = pd.Series(
-                f"elec_s_{data_config['scenario']['clusters'][0]}"
-                f"_l{data_config['scenario']['ll'][0]}"
-                f"_{data_config['scenario']['opts'][0]}"
-                f"_{data_config['scenario']['sector_opts'][0]}"
-                f"_{data_config['scenario']['planning_horizons'][i]}.nc"
+        if data_config["foresight"] == "myopic":
+
+            print("Adjusting scenarios on the myopic pathway...")
+
+            networks = pd.Series()
+
+            for i in range(0, len(data_config["scenario"]["planning_horizons"])):
+                nc_file = pd.Series(
+                    f"elec_s_{data_config['scenario']['clusters'][0]}"
+                    f"_l{data_config['scenario']['ll'][0]}"
+                    f"_{data_config['scenario']['opts'][0]}"
+                    f"_{data_config['scenario']['sector_opts'][0]}"
+                    f"_{data_config['scenario']['planning_horizons'][i]}.nc"
+                )
+                networks = networks._append(nc_file)
+
+            scn_path = pd.DataFrame(
+                index=["2025", "2030", "2035", "2045"],
+                columns=["prenetwork", "functions"],
             )
-            networks = networks._append(nc_file)
 
-        scn_path = pd.DataFrame(
-            index=["2025", "2030", "2035", "2045", "2050"],
-            columns=["prenetwork", "functions"],
-        )
+            for year in scn_path.index:
+                scn_path.at[year, "prenetwork"] = networks[
+                    networks.str.contains(year)
+                ].values
 
-        for year in scn_path.index:
-            scn_path.at[year, "prenetwork"] = networks[
-                networks.str.contains(year)
-            ].values
+            for year in ["2025", "2030", "2035"]:
+                scn_path.loc[year, "functions"] = [
+                    drop_urban_decentral_heat,
+                    update_electrical_timeseries_germany,
+                    geothermal_district_heating,
+                    h2_overground_stores,
+                    drop_new_gas_pipelines,
+                ]
 
-        for year in ["2025", "2030", "2035"]:
-            scn_path.loc[year, "functions"] = [
+            scn_path.loc["2045", "functions"] = [
+                drop_biomass,
                 drop_urban_decentral_heat,
-                district_heating_shares,
-                update_heat_timeseries_germany,
                 update_electrical_timeseries_germany,
                 geothermal_district_heating,
                 h2_overground_stores,
                 drop_new_gas_pipelines,
+                drop_fossil_gas,
+                # rual_heat_technologies, #To be defined
             ]
 
-        scn_path.loc["2045", "functions"] = [
-            drop_biomass,
-            drop_urban_decentral_heat,
-            district_heating_shares,
-            update_heat_timeseries_germany,
-            update_electrical_timeseries_germany,
-            geothermal_district_heating,
-            h2_overground_stores,
-            drop_new_gas_pipelines,
-            drop_fossil_gas,
-            # rual_heat_technologies, #To be defined
-        ]
+            network_path = (
+                Path(".")
+                / "run-pypsa-eur"
+                / "pypsa-eur"
+                / "results"
+                / data_config["run"]["name"]
+                / "prenetworks"
+            )
 
-        scn_path.loc["2050", "functions"] = [
-            drop_biomass,
-            drop_urban_decentral_heat,
-            district_heating_shares,
-            update_heat_timeseries_germany,
-            update_electrical_timeseries_germany,
-            geothermal_district_heating,
-            h2_overground_stores,
-            drop_new_gas_pipelines,
-            drop_fossil_gas,
-            rual_heat_technologies,
-        ]
+            for scn in scn_path.index:
+                path = network_path / scn_path.at[scn, "prenetwork"]
+                network = pypsa.Network(path)
+                network.year = int(scn)
+                for manipulator in scn_path.at[scn, "functions"]:
+                    network = manipulator(network)
+                network.export_to_netcdf(path)
 
-        network_path = (
-            Path(".")
-            / "run-pypsa-eur"
-            / "pypsa-eur"
-            / "results"
-            / data_config["run"]["name"]
-            / "prenetworks"
-        )
-        
-        for scn in scn_path.index:
-            path = network_path / scn_path.at[scn, "prenetwork"]
-            network = pypsa.Network(path)
-            network.year = int(scn)
-            for manipulator in scn_path.at[scn, "functions"]:
-                network = manipulator(network)
-            network.export_to_netcdf(path)
+        elif ((data_config["foresight"] == "overnight")
+              & (int(data_config['scenario']['planning_horizons'][0]) > 2040)):
+
+            print("Adjusting overnight long-term scenario...")
+
+            network_path = (
+                Path(".")
+                / "run-pypsa-eur"
+                / "pypsa-eur"
+                / "results"
+                / data_config["run"]["name"]
+                / "prenetworks"
+                / f"elec_s_{data_config['scenario']['clusters'][0]}"
+                f"_l{data_config['scenario']['ll'][0]}"
+                f"_{data_config['scenario']['opts'][0]}"
+                f"_{data_config['scenario']['sector_opts'][0]}"
+                f"_{data_config['scenario']['planning_horizons'][0]}.nc"
+            )
+
+            network = pypsa.Network(network_path)
+
+            network = drop_biomass(network)
+
+            network = drop_urban_decentral_heat(network)
+
+            network = district_heating_shares(network)
+
+            network = update_heat_timeseries_germany(network)
+
+            network = update_electrical_timeseries_germany(network)
+
+            network = geothermal_district_heating(network)
+
+            network = h2_overground_stores(network)
+
+            network = drop_new_gas_pipelines(network)
+
+            network = drop_fossil_gas(network)
+
+            network = rual_heat_technologies(network)
+
+            network.export_to_netcdf(network_path)
+
+        else:
+            print(
+                f"""Adjustments on prenetworks are not implemented for
+                foresight option {data_config['foresight']} and
+                year int(data_config['scenario']['planning_horizons'][0].
+                Please check the pypsaeur.execute function.
+                """
+                )
 
     else:
         print("Pypsa-eur is not executed due to the settings of egon-data")
