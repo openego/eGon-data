@@ -1740,7 +1740,8 @@ def execute():
                     network = manipulator(network)
                 network.export_to_netcdf(path)
 
-        else:
+        elif ((data_config["foresight"] == "overnight")
+              & (int(data_config['scenario']['planning_horizons'][0]) > 2040)):
 
             print("Adjusting overnight scenario...")
 
@@ -1781,6 +1782,15 @@ def execute():
             network = rual_heat_technologies(network)
 
             network.export_to_netcdf(network_path)
+
+        else:
+            print(
+                f"""Adjustments on prenetworks are not implemented for
+                foresight option {data_config['foresight']} and
+                year int(data_config['scenario']['planning_horizons'][0].
+                Please check the pypsaeur.execute function.
+                """
+                )
 
     else:
         print("Pypsa-eur is not executed due to the settings of egon-data")
