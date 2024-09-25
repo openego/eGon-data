@@ -1743,7 +1743,7 @@ def execute():
         elif ((data_config["foresight"] == "overnight")
               & (int(data_config['scenario']['planning_horizons'][0]) > 2040)):
 
-            print("Adjusting overnight scenario...")
+            print("Adjusting overnight long-term scenario...")
 
             network_path = (
                 Path(".")
