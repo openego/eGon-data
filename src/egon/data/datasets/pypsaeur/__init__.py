@@ -1723,19 +1723,6 @@ def execute():
                 # rual_heat_technologies, #To be defined
             ]
 
-            scn_path.loc["2050", "functions"] = [
-                drop_biomass,
-                drop_urban_decentral_heat,
-                district_heating_shares,
-                update_heat_timeseries_germany,
-                update_electrical_timeseries_germany,
-                geothermal_district_heating,
-                h2_overground_stores,
-                drop_new_gas_pipelines,
-                drop_fossil_gas,
-                rual_heat_technologies,
-            ]
-
             network_path = (
                 Path(".")
                 / "run-pypsa-eur"
