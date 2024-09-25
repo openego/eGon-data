@@ -1685,7 +1685,6 @@ def execute():
             scn_path.loc[year, "functions"] = [
                 drop_urban_decentral_heat,
                 district_heating_shares,
-                update_heat_timeseries_germany,
                 update_electrical_timeseries_germany,
                 geothermal_district_heating,
                 h2_overground_stores,
@@ -1696,7 +1695,6 @@ def execute():
             drop_biomass,
             drop_urban_decentral_heat,
             district_heating_shares,
-            update_heat_timeseries_germany,
             update_electrical_timeseries_germany,
             geothermal_district_heating,
             h2_overground_stores,
