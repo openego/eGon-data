@@ -1570,9 +1570,17 @@ def drop_urban_decentral_heat(network):
     for country in network.loads.loc[
             network.loads.carrier==carrier, "bus"].str[:5]:
 
-        network.loads_t.p_set[f"{country} rural heat"] += (
-            network.loads_t.p_set[f"{country} {carrier}"]
-        )
+        if f"{country} {carrier}" in network.loads_t.p_set.columns:
+            network.loads_t.p_set[f"{country} rural heat"] += (
+                network.loads_t.p_set[f"{country} {carrier}"]
+            )
+        else:
+            print(f"""No time series available for {country} {carrier}.
+                  Using static p_set.""")
+
+            network.loads_t.p_set[f"{country} rural heat"] += (
+                network.loads.loc[f"{country} {carrier}", "p_set"]
+            )
 
     # Drop componentents attached to urban decentral heat
     for c in network.iterate_components():
