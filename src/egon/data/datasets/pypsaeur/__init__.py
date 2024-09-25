@@ -1706,7 +1706,6 @@ def execute():
             for year in ["2025", "2030", "2035"]:
                 scn_path.loc[year, "functions"] = [
                     drop_urban_decentral_heat,
-                    district_heating_shares,
                     update_electrical_timeseries_germany,
                     geothermal_district_heating,
                     h2_overground_stores,
@@ -1716,7 +1715,6 @@ def execute():
             scn_path.loc["2045", "functions"] = [
                 drop_biomass,
                 drop_urban_decentral_heat,
-                district_heating_shares,
                 update_electrical_timeseries_germany,
                 geothermal_district_heating,
                 h2_overground_stores,
