@@ -1478,8 +1478,8 @@ def geothermal_district_heating(network):
 
         network.add(
             "Generator",
-            f"DE1 0 urban central geo thermal {i}",
-            bus="DE1 0 urban central heat",
+            f"DE0 0 urban central geo thermal {i}",
+            bus="DE0 0 urban central heat",
             carrier="urban central geo thermal",
             p_nom_extendable=True,
             p_nom_max=row["potential [MW]"],
