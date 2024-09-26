@@ -1582,6 +1582,18 @@ def drop_urban_decentral_heat(network):
                 network.loads.loc[f"{country} {carrier}", "p_set"]
             )
 
+    # In some cases low-temperature heat for industry is connected to the urban
+    # decentral heat bus since there is no urban central heat bus.
+    # These loads are connected to the representatiive rural heat bus:
+    network.loads.loc[
+        (network.loads.bus.str.contains(carrier))
+        & (~network.loads.carrier.str.contains(
+            carrier.replace(" heat", ""))), "bus"] = network.loads.loc[
+        (network.loads.bus.str.contains(carrier))
+        & (~network.loads.carrier.str.contains(
+            carrier.replace(" heat", ""))), "bus"].str.replace(
+                "urban decentral", "rural")
+
     # Drop componentents attached to urban decentral heat
     for c in network.iterate_components():
         network.mremove(c.name, c.df[c.df.index.str.contains("urban decentral")].index)
