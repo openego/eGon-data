@@ -82,7 +82,7 @@ def import_scn_status2019():
                 "-a",
                 "--single-transaction",
                 f"--table={table}",
-                "PoWerD_status2019-v2.backup",
+                "data_bundle_powerd_data/PoWerD_status2019-v2.backup",
             ],
             env=my_env,
         )
