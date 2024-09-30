@@ -2,19 +2,13 @@
 Read eTraGo tables for the status2019 and import it to db
 """
 
-from pathlib import Path
-
-from shapely.geometry import Point
-import geopandas as gpd
-import numpy as np
-import pandas as pd
-import xarray as xr
-import subprocess
 import os
+import subprocess
+
+import pandas as pd
 
 from egon.data import config, db
 from egon.data.datasets import Dataset
-from egon.data.datasets.scenario_parameters import get_sector_parameters
 
 
 class import_status2019(Dataset):
