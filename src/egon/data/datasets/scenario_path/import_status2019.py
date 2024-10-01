@@ -1,7 +1,6 @@
 """
 Read eTraGo tables for the status2019 and import it to db
 """
-
 import os
 import subprocess
 
@@ -11,7 +10,7 @@ from egon.data import config, db
 from egon.data.datasets import Dataset
 
 
-class import_status2019(Dataset):
+class Import_Status2019(Dataset):
     def __init__(self, dependencies):
         super().__init__(
             name="import_status2019",
