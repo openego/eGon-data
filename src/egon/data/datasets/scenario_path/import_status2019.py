@@ -38,7 +38,7 @@ def download_status2019():
     """
     # Get parameters from config and set download URL
     url = sources["url_status2019"]
-    status2019_path = Path(".") / "status2019.backup"
+    status2019_path = Path(".") / "PoWerD_status2019.backup"
 
     # Retrieve files
     urlretrieve(url, status2019_path)
@@ -107,7 +107,8 @@ def import_scn_status2019():
                 "-a",
                 "--single-transaction",
                 f"--table={table}",
-                "data_bundle_powerd_data/PoWerD_status2019-v2.backup",
+                "PoWerD_status2019.backup",
             ],
             env=my_env,
         )
+    return
