@@ -84,7 +84,7 @@ def import_scn_status2019():
         )
 
     my_env = os.environ.copy()
-    my_env["PGPASSWORD"] = "data"
+    my_env["PGPASSWORD"] = sources["PGPASSWORD"]
 
     config_data = config.settings()["egon-data"]
     database = config_data["--database-name"]
