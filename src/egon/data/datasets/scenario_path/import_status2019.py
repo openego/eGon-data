@@ -1,6 +1,9 @@
 """
 Read eTraGo tables for the status2019 and import it to db
 """
+
+from pathlib import Path
+from urllib.request import urlretrieve
 import os
 import subprocess
 
@@ -8,6 +11,7 @@ import pandas as pd
 
 from egon.data import config, db
 from egon.data.datasets import Dataset
+import egon.data.config
 
 
 class Import_Status2019(Dataset):
@@ -18,6 +22,28 @@ class Import_Status2019(Dataset):
             dependencies=dependencies,
             tasks=(import_scn_status2019,),
         )
+
+
+sources = egon.data.config.datasets()["scenario_path"]["sources"]
+
+
+def download_status2019():
+    """
+    Download the status2019 etrago tables from Zenodo
+
+    Returns
+    -------
+    None.
+
+    """
+    # Get parameters from config and set download URL
+    url = sources["url_status2019"]
+    status2019_path = Path(".") / "status2019.backup"
+
+    # Retrieve files
+    urlretrieve(url, status2019_path)
+
+    return
 
 
 def import_scn_status2019():
