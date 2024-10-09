@@ -21,6 +21,7 @@ from pathlib import Path
 from fuzzywuzzy import process
 from shapely import wkb
 import math
+import re
 
 from egon.data import config, db
 from egon.data.datasets.scenario_parameters import get_sector_parameters
@@ -30,6 +31,7 @@ from egon.data.datasets.scenario_parameters.parameters import annualize_capital_
 def insert_h2_pipelines(scn_name):
     "Insert H2_grid based on Input Data from FNB-Gas"
     
+    download_h2_grid_data()
     H2_grid_Neubau, H2_grid_Umstellung, H2_grid_Erweiterung = read_h2_excel_sheets()
     h2_bus_location = pd.read_csv(Path(".")/"h2_grid_nodes.csv")
     con=db.engine()
@@ -37,11 +39,20 @@ def insert_h2_pipelines(scn_name):
     h2_buses_df = pd.read_sql(
     f"""
     SELECT bus_id, x, y FROM grid.egon_etrago_bus
-    WHERE carrier in ('H2_grid')
-    AND scn_name = {scn_name}
+    WHERE carrier in ('H2')
+    AND scn_name = '{scn_name}'
     
     """
     , con)
+    
+    # Delete old entries
+    db.execute_sql(
+        f"""
+            DELETE FROM grid.egon_etrago_link 
+            WHERE "carrier" = 'H2_grid'
+            AND scn_name = '{scn_name}'
+        """
+    )
     
     
     target = config.datasets()["etrago_hydrogen"]["targets"]["hydrogen_links"]
@@ -51,7 +62,7 @@ def insert_h2_pipelines(scn_name):
         if df is H2_grid_Neubau:        
             df.rename(columns={'Planerische \nInbetriebnahme': 'Planerische Inbetriebnahme'}, inplace=True)
             df.loc[df['Endpunkt\n(Ort)'] == 'AQD Anlandung', 'Endpunkt\n(Ort)'] = 'Schillig' 
-
+            df.loc[df['Endpunkt\n(Ort)'] == 'Hallendorf', 'Endpunkt\n(Ort)'] = 'Salzgitter'
         
         if df is H2_grid_Erweiterung:
             df.rename(columns={'Umstellungsdatum/ Planerische Inbetriebnahme': 'Planerische Inbetriebnahme', 
@@ -68,21 +79,20 @@ def insert_h2_pipelines(scn_name):
         df = df[['Anfangspunkt\n(Ort)', 'Endpunkt\n(Ort)', 'Nenndurchmesser \n(DN)', 'Druckstufe (DP)\n[mind. 30 barg]', 
                               'Investitionskosten*\n(Mio. Euro)', 'Planerische Inbetriebnahme', 'Länge \n(km)']]
         
-        # manuell adjustments based in Detailmaßnahmenkarte der FNB-Gas [https://fnb-gas.de/wasserstoffnetz-wasserstoff-kernnetz/]
+        # matching start- and endpoint of each pipeline with georeferenced data
+        df['Anfangspunkt_matched'] = fuzzy_match(df, h2_bus_location, 'Anfangspunkt\n(Ort)')
+        df['Endpunkt_matched'] = fuzzy_match(df, h2_bus_location, 'Endpunkt\n(Ort)')
+        
+        # manuell adjustments based on Detailmaßnahmenkarte der FNB-Gas [https://fnb-gas.de/wasserstoffnetz-wasserstoff-kernnetz/]
         df= fix_h2_grid_infrastructure(df)
         
-        # matching start- and endpoint of each pipeline with georeferenced data
-        df['Anfangspunkt\n(Ort)_matched'] = fuzzy_match(df, h2_bus_location, 'Anfangspunkt\n(Ort)')
-        df['Endpunkt\n(Ort)_matched'] = fuzzy_match(df, h2_bus_location, 'Endpunkt\n(Ort)')
-            
         df_merged = pd.merge(df, h2_bus_location[['Ort', 'geom', 'x', 'y']], 
-                             how='left', left_on='Anfangspunkt\n(Ort)_matched', right_on='Ort').rename(
+                             how='left', left_on='Anfangspunkt_matched', right_on='Ort').rename(
                              columns={'geom': 'geom_start', 'x': 'x_start', 'y': 'y_start'})
         df_merged = pd.merge(df_merged, h2_bus_location[['Ort', 'geom', 'x', 'y']], 
-                             how='left', left_on='Endpunkt\n(Ort)_matched', right_on='Ort').rename(
+                             how='left', left_on='Endpunkt_matched', right_on='Ort').rename(
                              columns={'geom': 'geom_end', 'x': 'x_end', 'y': 'y_end'})
-        
-                                 
+                 
         H2_grid_df = df_merged.dropna(subset=['geom_start', 'geom_end'])   
         H2_grid_df = H2_grid_df[H2_grid_df['geom_start'] != H2_grid_df['geom_end']]
         H2_grid_df = pd.merge(H2_grid_df, h2_buses_df, how='left', left_on=['x_start', 'y_start'], right_on=['x','y']).rename(
@@ -98,40 +108,36 @@ def insert_h2_pipelines(scn_name):
             lambda row: LineString([row['geom_start'], row['geom_end']]), axis=1)
         H2_grid_df['geom'] = H2_grid_df.apply(
             lambda row: MultiLineString([LineString([row['geom_start'], row['geom_end']])]), axis=1)
-        
         H2_grid_gdf = gpd.GeoDataFrame(H2_grid_df, geometry='geom', crs=4326)
-        scn_params = get_sector_parameters("gas", scn_name)
         
+        scn_params = get_sector_parameters("gas", scn_name)        
         next_link_id = db.next_etrago_id('link')
+        
         H2_grid_gdf['link_id'] = range(next_link_id, next_link_id + len(H2_grid_gdf))
         H2_grid_gdf['scn_name'] = scn_name
         H2_grid_gdf['carrier'] = 'H2_grid'
-        H2_grid_gdf['Planerische Inbetriebnahme'] = H2_grid_gdf['Planerische Inbetriebnahme'].astype(str)
-        H2_grid_gdf['build_year'] = H2_grid_gdf['Planerische Inbetriebnahme'].apply(lambda x: x.split('/')[1] if '/' in x else None)
+        H2_grid_gdf['Planerische Inbetriebnahme'] = H2_grid_gdf['Planerische Inbetriebnahme'].astype(str).apply(
+                lambda x: int(re.findall(r'\d{4}', x)[-1]) if re.findall(r'\d{4}', x) else 
+                            int(re.findall(r'\d{2}\.\d{2}\.(\d{4})', x)[-1]) if re.findall(r'\d{2}\.\d{2}\.(\d{4})', x) else None)
+        H2_grid_gdf['build_year'] = H2_grid_gdf['Planerische Inbetriebnahme'].astype('Int64')
         H2_grid_gdf['p_nom'] = H2_grid_gdf.apply(lambda row:calculate_H2_capacity(row['Druckstufe (DP)\n[mind. 30 barg]'], row['Nenndurchmesser \n(DN)']), axis=1 )
         H2_grid_gdf['p_nom_min'] = H2_grid_gdf['p_nom']
         H2_grid_gdf['p_nom_max'] = float("Inf")
-        H2_grid_gdf['p_nom_extendable'] = True 
-        H2_grid_gdf['lifetime'] = scn_params["lifetime"]["H2_pipeline"],  
-        H2_grid_gdf['capital_cost'] = H2_grid_gdf.apply(lambda row: 
-            annualize_capital_costs((float(row["Investitionskosten*\n(Mio. Euro)"]) * 10**6 / row['p_nom']) 
-                                    if pd.notna(row["Investitionskosten*\n(Mio. Euro)"]) and str(row["Investitionskosten*\n(Mio. Euro)"]).replace(",", "").replace(".", "").isdigit() 
-                                    else scn_params["overnight_cost"]["H2_pipeline"]*row['Länge \n(km)'], row['lifetime'], 0.05), axis=1)  
+        H2_grid_gdf['p_nom_extendable'] = False 
+        H2_grid_gdf['lifetime'] = scn_params["lifetime"]["H2_pipeline"]
+        H2_grid_gdf['capital_cost'] = H2_grid_gdf.apply(lambda row: annualize_capital_costs(
+                    (float(row["Investitionskosten*\n(Mio. Euro)"]) * 10**6 / row['p_nom']) 
+                    if pd.notna(row["Investitionskosten*\n(Mio. Euro)"]) 
+                    and str(row["Investitionskosten*\n(Mio. Euro)"]).replace(",", "").replace(".", "").isdigit() 
+                    and float(row["Investitionskosten*\n(Mio. Euro)"]) != 0  
+                    else scn_params["overnight_cost"]["H2_pipeline"] * row['Länge \n(km)'], 
+                    row['lifetime'], 0.05), axis=1)
         H2_grid_gdf['p_min_pu'] = -1
         
         selected_columns = [
-            'scn_name', 'link_id', 'bus0', 'bus1', 'p_nom', 'p_nom_min', 
+            'scn_name', 'link_id', 'bus0', 'bus1', 'build_year', 'p_nom', 'p_nom_min', 
             'p_nom_extendable', 'capital_cost', 'geom', 'topo', 'carrier', 'p_nom_max', 'p_min_pu',
         ]
-        
-        # Delete old entries
-        db.execute_sql(
-            f"""
-                DELETE FROM grid.egon_etrago_link 
-                WHERE "carrier" = 'H2_grid'
-                AND scn_name = {scn_name}
-            """
-        )
         
         H2_grid_final=H2_grid_gdf[selected_columns]
         
@@ -143,88 +149,6 @@ def insert_h2_pipelines(scn_name):
              if_exists="append",
              dtype={"geom": Geometry()},
         )
-        
-        H2_grid_gdf = H2_grid_gdf.to_crs(epsg=32632)
-        
-        H2_grid_gdf['topo'] = gpd.GeoSeries(H2_grid_gdf['topo'], crs='EPSG:4326').to_crs(epsg=32632)
-        
-        #toDo: evtl. löschen der link_ids welche ersetzt werden und gefunden werden, methodik muss noch angepasst werden 
-        if df is H2_grid_Umstellung: 
-            deleting_ids=[]
-            for index, row in H2_grid_gdf.iterrows():
-                filtered_link_id = replace_transformed_CH4_pipelines(row['topo'], scn_name)
-                matching_link = row['link_id']
-                if not pd.isna(filtered_link_id):
-                    deleting_ids.append([filtered_link_id, matching_link])
-
-             
-def replace_transformed_CH4_pipelines(pipeline, scn_name):
-    """
-    Delete CH4_pipelines of datamodel, which will be converted to H2_pipelines
-    
-
-    Parameters
-    ----------
-    df : geopandas dataframe
-
-    Returns
-    -------
-    None.
-
-    """
-    con=db.engine()
-    
-    sql_CH4_links = f"""
-            SELECT link_id, topo::geometry AS geom 
-            FROM grid.egon_etrago_link
-            WHERE carrier = 'CH4'
-            AND scn_name = '{scn_name}'
-            """    
-    CH4_links = gpd.read_postgis(sql_CH4_links, con, geom_col='geom')
-    CH4_links = CH4_links.to_crs(epsg=32632)
-    
-    max_distance = 10000  # in Meter
-    
-    pipeline_start = Point(pipeline.coords[0])
-    pipeline_end = Point(pipeline.coords[-1])
-    
-    def calculate_distances(geom, max_distance):
-       # Extrahiere Start- und Endpunkte der Leitung
-       link_start = Point(geom.coords[0])
-       link_end = Point(geom.coords[-1])
-       
-       # calculate all distances in case of different definitions of start- and endpoint
-       dist_start_to_link_start = pipeline_start.distance(link_start)
-       dist_start_to_link_end = pipeline_start.distance(link_end)
-       dist_end_to_link_start = pipeline_end.distance(link_start)
-       dist_end_to_link_end = pipeline_end.distance(link_end)
-          
-       start_matches = [dist_start_to_link_start, dist_end_to_link_end]
-       end_matches = [dist_start_to_link_end, dist_end_to_link_start]
-       
-       if all(d <= max_distance for d in start_matches):
-              bolean_start_match = True 
-       else:
-           bolean_start_match = False
-              
-       if all(d <= max_distance for d in end_matches):
-              bolean_start_end = True
-       else:
-           bolean_start_end = False
-
-       if bolean_start_end or bolean_start_match:
-            start_match_dist = sum(start_matches)
-            end_match_dist = sum(end_matches)
-            return min(start_match_dist, end_match_dist)
-       
-    CH4_links['total_distance'] = CH4_links['geom'].apply(lambda geom: calculate_distances(geom, max_distance))
-    filtered_CH4_links = CH4_links.dropna(subset=['total_distance'])
-    # Finde den Link mit der geringsten addierten Distanz
-    if not filtered_CH4_links.empty:
-        closest_link = filtered_CH4_links.loc[filtered_CH4_links['total_distance'].idxmin()]
-        closest_link_id = closest_link['link_id']
-        return closest_link_id, 
-
 
 
 def replace_pipeline(df, start, end, intermediate):
@@ -250,19 +174,18 @@ def replace_pipeline(df, start, end, intermediate):
             
     """   
     # Find rows where the start and end points match
-    mask = ((df['Anfangspunkt\n(Ort)'] == start) & (df['Endpunkt\n(Ort)'] == end)) | \
-           ((df['Anfangspunkt\n(Ort)'] == end) & (df['Endpunkt\n(Ort)'] == start))
+    mask = ((df['Anfangspunkt_matched'] == start) & (df['Endpunkt_matched'] == end)) | \
+           ((df['Anfangspunkt_matched'] == end) & (df['Endpunkt_matched'] == start))
     
     # Separate the rows to replace
     if mask.any():
         df_replacement = df[~mask].copy()
         row_replaced = df[mask].iloc[0]
-        print('replacment:', df_replacement)
         
         # Add new rows for the split pipelines
         new_rows = pd.DataFrame({
-            'Anfangspunkt\n(Ort)': [start, intermediate],
-            'Endpunkt\n(Ort)': [intermediate, end],
+            'Anfangspunkt_matched': [start, intermediate],
+            'Endpunkt_matched': [intermediate, end],
             'Nenndurchmesser \n(DN)': [row_replaced['Nenndurchmesser \n(DN)'], row_replaced['Nenndurchmesser \n(DN)']],  
             'Druckstufe (DP)\n[mind. 30 barg]': [row_replaced['Druckstufe (DP)\n[mind. 30 barg]'], row_replaced['Druckstufe (DP)\n[mind. 30 barg]']], 
             'Investitionskosten*\n(Mio. Euro)': [row_replaced['Investitionskosten*\n(Mio. Euro)'], row_replaced['Investitionskosten*\n(Mio. Euro)']],  
@@ -369,9 +292,9 @@ def calculate_H2_capacity(pressure, diameter):
             pressure = 70 #averaqge value from data-source
             
             
-    velocity = 20
-    temperature = 20+273.15
-    density = pressure*10**5/(4.1243*10**3*temperature) #gaskonstant H2 = 4.1243 [kJ/kgK]
+    velocity = 40   #source: L.Koops (2023): GAS PIPELINE VERSUS LIQUID HYDROGEN TRANSPORT – PERSPECTIVES FOR TECHNOLOGIES, ENERGY DEMAND ANDv TRANSPORT CAPACITY, AND IMPLICATIONS FOR AVIATION
+    temperature = 10+273.15 #source: L.Koops (2023): GAS PIPELINE VERSUS LIQUID HYDROGEN TRANSPORT – PERSPECTIVES FOR TECHNOLOGIES, ENERGY DEMAND ANDv TRANSPORT CAPACITY, AND IMPLICATIONS FOR AVIATION
+    density = pressure*10**5/(4.1243*10**3*temperature) #gasconstant H2 = 4.1243 [kJ/kgK]
     mass_flow = density*math.pi*((diameter/10**3)/2)**2*velocity
     energy_flow = mass_flow * 119.988         #low_heating_value H2 = 119.988 [MJ/kg]
 
@@ -393,13 +316,13 @@ def download_h2_grid_data():
     None
 
     """
-    path = Path(".") / "datasets" / "h2_data" 
+    path = Path("datasets/h2_data") 
     os.makedirs(path, exist_ok=True)
     
     download_config = config.datasets()["etrago_hydrogen"]["sources"]["H2_grid"]
-    target_file_Um = download_config["converted_ch4_pipes"]["path"]
-    target_file_Neu = download_config["new_constructed_pipes"]["path"]
-    target_file_Erw = download_config["pipes_of_further_h2_grid_operators"]["path"]
+    target_file_Um = path / download_config["converted_ch4_pipes"]["path"]
+    target_file_Neu = path / download_config["new_constructed_pipes"]["path"]
+    target_file_Erw = path / download_config["pipes_of_further_h2_grid_operators"]["path"]
     
     for target_file in [target_file_Neu, target_file_Um, target_file_Erw]:
         if target_file is target_file_Um:
@@ -440,7 +363,8 @@ def read_h2_excel_sheets():
 
 def fix_h2_grid_infrastructure(df):
     """
-    Manuell adjustments for more accurate grid topology based on Detailmaßnahmenkarte der FNB-Gas [https://fnb-gas.de/wasserstoffnetz-wasserstoff-kernnetz/]
+    Manuell adjustments for more accurate grid topology based on Detailmaßnahmenkarte der 
+    FNB-Gas [https://fnb-gas.de/wasserstoffnetz-wasserstoff-kernnetz/]
 
     Returns
     -------
@@ -503,3 +427,6 @@ def fix_h2_grid_infrastructure(df):
     df = replace_pipeline(df, 'Glehn', 'Voigtslach', 'Dormagen')
     df = replace_pipeline(df, 'Voigtslach', 'Paffrath','Leverkusen')
     df = replace_pipeline(df, 'Glehn', 'Ludwigshafen','Wesseling')
+    df = replace_pipeline(df, 'Rothenstadt', 'Rimpar','Reutles')
+    
+    return df

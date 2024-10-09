@@ -23,7 +23,7 @@ from egon.data import db, config
 from egon.data.datasets.scenario_parameters import get_sector_parameters
 
 
-def insert_h2_to_ch4_to_h2(scn_name):
+def insert_h2_to_ch4_to_h2():
     """
     Method for implementing Methanisation as optional usage of H2-Production;
     For H2_Buses and CH4_Buses with distance < 10 km Methanisation/SMR Link will be implemented
@@ -47,7 +47,7 @@ def insert_h2_to_ch4_to_h2(scn_name):
         
         db.execute_sql(f"""
            DELETE FROM {target_links["schema"]}.{target_links["table"]} WHERE "carrier" in ('H2_to_CH4', 'CH4_to_H2')
-           AND scn_name = 'eGon2035';    
+           AND scn_name = '{scn_name}';    
            """)
          
         sql_CH4_buses = f"""
@@ -55,15 +55,14 @@ def insert_h2_to_ch4_to_h2(scn_name):
                 FROM {target_buses["schema"]}.{target_buses["table"]} 
                 WHERE carrier = 'CH4'
                 AND scn_name = '{scn_name}' AND country = 'DE'
-                """    
-        CH4_buses = gpd.read_postgis(sql_CH4_buses, con)
-        
+                """            
         sql_H2_buses = f"""
                 SELECT bus_id, x, y, ST_Transform(geom, 32632) as geom
                 FROM {target_buses["schema"]}.{target_buses["table"]} 
-                WHERE carrier = 'H2_grid'
+                WHERE carrier in ('H2','H2_saltcavern')
                 AND scn_name = '{scn_name}' AND country = 'DE'
                 """    
+        CH4_buses = gpd.read_postgis(sql_CH4_buses, con)
         H2_buses = gpd.read_postgis(sql_H2_buses, con)   
         
         CH4_to_H2_links = []
@@ -123,6 +122,7 @@ def insert_h2_to_ch4_to_h2(scn_name):
             table["lifetime"] = scn_params["lifetime"][carrier]
             new_id = db.next_etrago_id("link")
             table["link_id"] = range(new_id, new_id + len(table))
+            table["scn_name"] = scn_name
 
 
             table.to_postgis(
