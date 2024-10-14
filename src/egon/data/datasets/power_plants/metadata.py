@@ -42,7 +42,7 @@ def metadata():
             {
                 "title": '"open-MaStR power unit registry"',
                 "description": "Raw data download Marktstammdatenregister (MaStR) data using the webservice. All data from the Marktstammdatenregister is included. There are duplicates included. For further information read in the documentationg of the original data source: https://www.marktstammdatenregister.de/MaStRHilfe/subpages/statistik.html",
-                "path": "https://sandbox.zenodo.org/record/808086",
+                "path": "https://zenodo.org/record/10480958",
                 "licenses": [
                     {
                         "name": licenses_datenlizenz_deutschland(
@@ -121,7 +121,7 @@ def metadata():
             {
                 "title": '"Data bundle for egon-data"',
                 "description": "Zenodo repository to provide several different input data sets for eGon-data",
-                "path": "https://sandbox.zenodo.org/record/1167119",
+                "path": "https://zenodo.org/record/10226009",
                 "licenses": [license_ccby("© eGon development team")],
             },
         ],

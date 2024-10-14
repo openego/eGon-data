@@ -31,6 +31,7 @@ from egon.data.datasets.emobility.motorized_individual_travel.db_classes import 
     EgonEvMvGridDistrict,
     EgonEvPool,
     EgonEvTrip,
+    add_metadata,
 )
 from egon.data.datasets.emobility.motorized_individual_travel.ev_allocation import (  # noqa: E501
     allocate_evs_numbers,
@@ -475,5 +476,6 @@ class MotorizedIndividualTravel(Dataset):
                     *generate_model_data_tasks(scenario_name="eGon2035"),
                     *generate_model_data_tasks(scenario_name="eGon100RE"),
                 },
+                add_metadata,
             ),
         )

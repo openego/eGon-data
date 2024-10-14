@@ -3,18 +3,32 @@
 High and extra-high voltage grids
 ++++++++++++++++++++++++++++++++++
 
-The model of the German extra-high (eHV) and high voltage (HV) grid is based
-on data retrieved from OpenStreetMap (status January 2021) [OSM]_ and additional
-parameters for standard transmission lines from [Brakelmann2004]_. To gather all
-required information, such as line topology, voltage level, substation locations,
-and electrical parameters, to create a calculable power system model, the `osmTGmod
-tool <https://github.com/openego/osmTGmod>`_ was used. The corresponding dataset
-:py:class:`Osmtgmod <egon.data.datasets..osmtgmod.Osmtgmod>` executes osmTGmod
+The model of the German extra-high (eHV) and high voltage (HV) grid is based 
+on data retrieved from OpenStreetMap (OSM) (status January 2021) [OSM]_ and additional 
+parameters for standard transmission lines from [Brakelmann2004]_. To gather all 
+required information, such as line topology, voltage level, substation locations, 
+and electrical parameters, to create a calculable power system model, the `*osmTGmod*
+tool <https://github.com/openego/osmTGmod>`_ was used. The corresponding dataset 
+:py:class:`Osmtgmod <egon.data.datasets.osmtgmod.Osmtgmod>` executes osmTGmod 
 and writes the resulting data to the database.
 
 The resulting grid model includes the voltage levels 380, 220 and 110 kV and
-all substations interconnecting these grid levels. For further information on the
-generation of the grid topology please refer to [Mueller2018]_.
+all substations interconnecting the different grid levels. Information about
+border crossing lines are as well extracted from *OSM* data by *osmTGmod*.
+For further information on the generation of the grid topology please refer to [Mueller2018]_.
+The neighbouring countries are included in the model in a significantly lower 
+spatial resolution with one or two nodes per country. The border crossing lines 
+extracted by *osmTGmod* are extended to representative nodes of the respective
+country in dataset 
+:py:class:`ElectricalNeighbours <egon.data.datasets.ElectricalNeighbours>`. The 
+resulting grid topology is shown in the following figure.
+
+..figure:: images/Stromnetz.png
+  :scale: 50 %
+  :name: gridtopology_ehv_hv
+  :alt: Grid topology extra-high and high voltage grid
+  
+
 
 .. _ding0-grids:
 

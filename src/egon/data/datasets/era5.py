@@ -104,7 +104,7 @@ def import_cutout(boundary="Europe"):
                 "SELECT geometry as geom FROM boundaries.vg250_sta_bbox",
                 db.engine(),
             )
-            .to_crs(4623)
+            .to_crs(4326)
             .geom
         )
         xs = slice(geom_de.bounds.minx[0], geom_de.bounds.maxx[0])

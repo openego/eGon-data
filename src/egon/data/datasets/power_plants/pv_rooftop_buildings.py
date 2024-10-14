@@ -10,10 +10,13 @@ from __future__ import annotations
 from collections import Counter
 from functools import wraps
 from time import perf_counter
+import datetime
+import json
 
 from geoalchemy2 import Geometry
 from loguru import logger
 from numpy.random import RandomState, default_rng
+from omi.dialects import get_dialect
 from pyproj.crs.crs import CRS
 from sqlalchemy import BigInteger, Column, Float, Integer, String
 from sqlalchemy.dialects.postgresql import HSTORE
@@ -29,6 +32,16 @@ from egon.data.datasets.electricity_demand_timeseries.hh_buildings import (
 from egon.data.datasets.power_plants.mastr_db_classes import EgonPowerPlantsPv
 from egon.data.datasets.scenario_capacities import EgonScenarioCapacities
 from egon.data.datasets.zensus_vg250 import Vg250Gem
+from egon.data.metadata import (
+    context,
+    contributors,
+    generate_resource_fields_from_db_table,
+    license_dedl,
+    license_odbl,
+    meta_metadata,
+    meta_metadata,
+    sources,
+)
 
 engine = db.engine()
 Base = declarative_base()
@@ -2082,6 +2095,138 @@ class EgonPowerPlantPvRoofBuilding(Base):
     weather_cell_id = Column(Integer)
 
 
+def add_metadata():
+    schema = "supply"
+    table = "egon_power_plants_pv_roof_building"
+    name = f"{schema}.{table}"
+    deposit_id_mastr = config.datasets()["mastr_new"]["deposit_id"]
+    deposit_id_data_bundle = config.datasets()["data-bundle"]["sources"][
+        "zenodo"
+    ]["deposit_id"]
+
+    contris = contributors(["kh", "kh"])
+
+    contris[0]["date"] = "2023-03-16"
+
+    contris[0]["object"] = "metadata"
+    contris[1]["object"] = "dataset"
+
+    contris[0]["comment"] = "Add metadata to dataset."
+    contris[1]["comment"] = "Add workflow to generate dataset."
+
+    meta = {
+        "name": name,
+        "title": "eGon power plants rooftop solar",
+        "id": "WILL_BE_SET_AT_PUBLICATION",
+        "description": (
+            "eGon power plants rooftop solar systems allocated to buildings"
+        ),
+        "language": "en-US",
+        "keywords": ["photovoltaik", "solar", "pv", "mastr", "status quo"],
+        "publicationDate": datetime.date.today().isoformat(),
+        "context": context(),
+        "spatial": {
+            "location": "none",
+            "extent": "Germany",
+            "resolution": "building",
+        },
+        "temporal": {
+            "referenceDate": (
+                config.datasets()["mastr_new"]["egon2021_date_max"].split(" ")[
+                    0
+                ]
+            ),
+            "timeseries": {},
+        },
+        "sources": [
+            {
+                "title": "Data bundle for egon-data",
+                "description": (
+                    "Data bundle for egon-data: A transparent and "
+                    "reproducible data processing pipeline for energy "
+                    "system modeling"
+                ),
+                "path": (
+                    "https://zenodo.org/record/"
+                    f"{deposit_id_data_bundle}#.Y_dWM4CZMVM"
+                ),
+                "licenses": [license_dedl(attribution="© Cußmann, Ilka")],
+            },
+            {
+                "title": ("open-MaStR power unit registry for eGo^n project"),
+                "description": (
+                    "Data from Marktstammdatenregister (MaStR) data using "
+                    "the data dump from 2022-11-17 for eGon-data."
+                ),
+                "path": (
+                    f"https://zenodo.org/record/{deposit_id_mastr}"
+                ),
+                "licenses": [license_dedl(attribution="© Amme, Jonathan")],
+            },
+            sources()["openstreetmap"],
+            sources()["era5"],
+            sources()["vg250"],
+            sources()["egon-data"],
+        ],
+        "licenses": [license_odbl("© eGon development team")],
+        "contributors": contris,
+        "resources": [
+            {
+                "profile": "tabular-data-resource",
+                "name": name,
+                "path": "None",
+                "format": "PostgreSQL",
+                "encoding": "UTF-8",
+                "schema": {
+                    "fields": generate_resource_fields_from_db_table(
+                        schema,
+                        table,
+                    ),
+                    "primaryKey": "index",
+                },
+                "dialect": {"delimiter": "", "decimalSeparator": ""},
+            }
+        ],
+        "review": {"path": "", "badge": ""},
+        "metaMetadata": meta_metadata(),
+        "_comment": {
+            "metadata": (
+                "Metadata documentation and explanation (https://github."
+                "com/OpenEnergyPlatform/oemetadata/blob/master/metadata/"
+                "v141/metadata_key_description.md)"
+            ),
+            "dates": (
+                "Dates and time must follow the ISO8601 including time "
+                "zone (YYYY-MM-DD or YYYY-MM-DDThh:mm:ss±hh)"
+            ),
+            "units": "Use a space between numbers and units (100 m)",
+            "languages": (
+                "Languages must follow the IETF (BCP47) format (en-GB, "
+                "en-US, de-DE)"
+            ),
+            "licenses": (
+                "License name must follow the SPDX License List "
+                "(https://spdx.org/licenses/)"
+            ),
+            "review": (
+                "Following the OEP Data Review (https://github.com/"
+                "OpenEnergyPlatform/data-preprocessing/wiki)"
+            ),
+            "none": "If not applicable use (none)",
+        },
+    }
+
+    dialect = get_dialect(meta_metadata()["metadataVersion"])()
+
+    meta = dialect.compile_and_render(dialect.parse(json.dumps(meta)))
+
+    db.submit_comment(
+        f"'{json.dumps(meta)}'",
+        schema,
+        table,
+    )
+
+
 def create_scenario_table(buildings_gdf):
     """Create mapping table pv_unit <-> building for scenario"""
     EgonPowerPlantPvRoofBuilding.__table__.drop(bind=engine, checkfirst=True)
@@ -2094,6 +2239,8 @@ def create_scenario_table(buildings_gdf):
         if_exists="append",
         index=False,
     )
+
+    add_metadata()
 
 
 def add_weather_cell_id(buildings_gdf: gpd.GeoDataFrame) -> gpd.GeoDataFrame:

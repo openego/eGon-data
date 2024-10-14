@@ -25,7 +25,7 @@ def download():
     # Get parameters from config and set download URL
     sources = config.datasets()["data-bundle"]["sources"]["zenodo"]
     url = (
-        f"https://sandbox.zenodo.org/record/{sources['deposit_id']}/files/"
+        f"https://zenodo.org/record/{sources['deposit_id']}/files/"
         "data_bundle_egon_data.zip"
     )
     target_file = config.datasets()["data-bundle"]["targets"]["file"]
