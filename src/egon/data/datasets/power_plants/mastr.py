@@ -350,7 +350,7 @@ def import_mastr() -> None:
         # (eGon2021 scenario)
         len_old = len(units)
         ts = pd.Timestamp(
-            egon.data.config.datasets()["mastr_new"]["status2023_date_max"]
+            config.datasets()["mastr_new"]["status2023_date_max"]
         )
         units = units.loc[pd.to_datetime(units.Inbetriebnahmedatum) <= ts]
         logger.debug(

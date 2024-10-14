@@ -31,6 +31,7 @@ from egon.data.datasets.electricity_demand_timeseries.hh_buildings import (
 )
 from egon.data.datasets.power_plants.mastr_db_classes import EgonPowerPlantsPv
 from egon.data.datasets.scenario_capacities import EgonScenarioCapacities
+from egon.data.datasets.scenario_parameters import get_scenario_year
 from egon.data.datasets.zensus_vg250 import Vg250Gem
 from egon.data.metadata import (
     context,
@@ -2362,10 +2363,12 @@ def pv_rooftop_to_buildings():
 
     status_quo = "status2023"
 
-    ts = pd.Timestamp(config.datasets()["mastr_new"][f"{status_quo}_date_max"])
+    ts = pd.Timestamp(
+        config.datasets()["mastr_new"][f"{status_quo}_date_max"], tz="UTC"
+    )
 
     mastr_gdf = mastr_gdf.loc[
-        pd.to_datetime(mastr_gdf.Inbetriebnahmedatum) <= ts
+        mastr_gdf.commissioning_date <= ts
     ]
 
     buildings_gdf = load_building_data()
@@ -2390,12 +2393,11 @@ def pv_rooftop_to_buildings():
             continue
         elif "status" in scenario:
             ts = pd.Timestamp(
-                config.datasets()["mastr_new"][f"{scenario}_date_max"]
+                config.datasets()["mastr_new"][f"{scenario}_date_max"], tz="UTC"
             )
 
             scenario_buildings_gdf = scenario_buildings_gdf.loc[
-                pd.to_datetime(scenario_buildings_gdf.Inbetriebnahmedatum)
-                <= ts
+                scenario_buildings_gdf.commissioning_date <= ts
             ]
 
         else:
