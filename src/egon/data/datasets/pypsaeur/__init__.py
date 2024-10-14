@@ -30,7 +30,7 @@ class PreparePypsaEur(Dataset):
     def __init__(self, dependencies):
         super().__init__(
             name="PreparePypsaEur",
-            version="0.0.10",
+            version="0.0.14",
             dependencies=dependencies,
             tasks=(
                 download,
@@ -43,7 +43,7 @@ class RunPypsaEur(Dataset):
     def __init__(self, dependencies):
         super().__init__(
             name="SolvePypsaEur",
-            version="0.0.9",
+            version="0.0.12",
             dependencies=dependencies,
             tasks=(
                 execute,
@@ -69,7 +69,7 @@ def download():
                     "git",
                     "clone",
                     "--branch",
-                    "v0.13.0",
+                    "master",
                     "https://github.com/PyPSA/pypsa-eur.git",
                     pypsa_eur_repos,
                 ]
@@ -1697,7 +1697,7 @@ def execute():
 
             for i in range(0, len(data_config["scenario"]["planning_horizons"])):
                 nc_file = pd.Series(
-                    f"elec_s_{data_config['scenario']['clusters'][0]}"
+                    f"base_s_{data_config['scenario']['clusters'][0]}"
                     f"_l{data_config['scenario']['ll'][0]}"
                     f"_{data_config['scenario']['opts'][0]}"
                     f"_{data_config['scenario']['sector_opts'][0]}"
@@ -1717,7 +1717,7 @@ def execute():
 
             for year in ["2025", "2030", "2035"]:
                 scn_path.loc[year, "functions"] = [
-                    drop_urban_decentral_heat,
+                    #drop_urban_decentral_heat,
                     update_electrical_timeseries_germany,
                     geothermal_district_heating,
                     h2_overground_stores,
@@ -1726,7 +1726,7 @@ def execute():
 
             scn_path.loc["2045", "functions"] = [
                 drop_biomass,
-                drop_urban_decentral_heat,
+                #drop_urban_decentral_heat,
                 update_electrical_timeseries_germany,
                 geothermal_district_heating,
                 h2_overground_stores,
