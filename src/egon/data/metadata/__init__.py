@@ -236,7 +236,7 @@ def license_dedl(attribution=EGON_ATTRIBUTION):
         "path": "https://www.govdata.de/dl-de/by-2-0",
         "instruction": (
             "Any use will be permitted provided it fulfils the requirements of"
-            " this 'Data licence Germany – attribution – Version 2.0'. The "
+            ' this "Data licence Germany – attribution – Version 2.0". The '
             "data and meta-data provided may, for commercial and "
             "non-commercial use, in particular be copied, printed, presented, "
             "altered, processed and transmitted to third parties; be merged "
@@ -245,8 +245,8 @@ def license_dedl(attribution=EGON_ATTRIBUTION):
             "external business processes, products and applications in public "
             "and non-public electronic networks. The user must ensure that the"
             " source note contains the following information: the name of the "
-            "provider, the annotation 'Data licence Germany – attribution – "
-            "Version 2.0' or 'dl-de/by-2-0' referring to the licence text "
+            'provider, the annotation "Data licence Germany – attribution – '
+            'Version 2.0" or "dl-de/by-2-0" referring to the licence text '
             "available at www.govdata.de/dl-de/by-2-0, and a reference to the "
             "dataset (URI). This applies only if the entity keeping the data "
             "provides the pieces of information 1-3 for the source note. "
@@ -415,7 +415,7 @@ def sources():
                 " developed requirements and criteria for the"
                 " assessment of suitable sites even if their"
                 " exploration is still at an early stage and there is"
-                " little knowledge of the salinaries' structures."
+                ' little knowledge of the salinaries structures.'
                 " Scientists at DEEP.KBB GmbH in Hanover, worked"
                 " together with their project partners at the Federal"
                 " Institute for Geosciences and Natural Resources and"
@@ -691,7 +691,7 @@ def sources():
             "title": "OpenStreetMap Data Extracts (Geofabrik)",
             "description": (
                 "Full data extract of OpenStreetMap data for defined"
-                " spatial extent at ''referenceDate''"
+                ' spatial extent at "referenceDate"'
             ),
             "path": (
                 "https://download.geofabrik.de/europe/germany-210101.osm.pbf"
