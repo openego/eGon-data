@@ -10,19 +10,7 @@ import subprocess
 import pandas as pd
 
 from egon.data import config, db
-from egon.data.datasets import Dataset
 import egon.data.config
-
-
-class Import_Status2019(Dataset):
-    def __init__(self, dependencies):
-        super().__init__(
-            name="import_status2019",
-            version="0.0.1",
-            dependencies=dependencies,
-            tasks=(import_scn_status2019,),
-        )
-
 
 sources = egon.data.config.datasets()["scenario_path"]["sources"]
 
