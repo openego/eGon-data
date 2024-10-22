@@ -71,14 +71,14 @@ def import_scn_status2019():
         """
         )
 
-    my_env = os.environ.copy()
-    my_env["PGPASSWORD"] = sources["PGPASSWORD"]
-
     config_data = config.settings()["egon-data"]
     database = config_data["--database-name"]
     host = config_data["--database-host"]
     port = config_data["--database-port"]
     user = config_data["--database-user"]
+
+    my_env = os.environ.copy()
+    my_env["PGPASSWORD"] = config_data["--database-password"]
 
     for table in tables["tablename"]:
         subprocess.Popen(
