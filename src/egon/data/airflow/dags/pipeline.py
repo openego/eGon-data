@@ -443,16 +443,6 @@ with airflow.DAG(
     # H2 steel tanks and saltcavern storage
     insert_H2_storage = HydrogenStoreEtrago(dependencies=h2_infrastructure)
 
-    # Power-to-gas-to-power chain installations
-    insert_power_to_h2_installations = HydrogenPowerLinkEtrago(
-        dependencies=h2_infrastructure
-    )
-
-    # Link between methane grid and respective hydrogen buses
-    insert_h2_to_ch4_grid_links = HydrogenMethaneLinkEtrago(
-        dependencies=[h2_infrastructure, insert_power_to_h2_installations]
-    )
-
     # Gas abroad
     gas_abroad_insert_data = GasNeighbours(
         dependencies=[
@@ -573,6 +563,16 @@ with airflow.DAG(
 
     # CHP to eTraGo
     chp_etrago = ChpEtrago(dependencies=[chp, heat_etrago])
+        
+    # Power-to-H2-to-power chain installations with oxygen and waste_heat usage
+    insert_power_to_h2_installations = HydrogenPowerLinkEtrago(
+        dependencies= [h2_infrastructure, mv_grid_districts, heat_etrago, substation_extraction] 
+    )
+    
+    # Link between methane grid and respective hydrogen buses
+    insert_h2_to_ch4_grid_links = HydrogenMethaneLinkEtrago(
+        dependencies=[h2_infrastructure, insert_power_to_h2_installations]
+    )
 
     # Storages to eTraGo
     storage_etrago = StorageEtrago(

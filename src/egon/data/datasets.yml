@@ -1271,3 +1271,42 @@ home_batteries:
     home_batteries:
       schema: 'supply'
       table: 'egon_home_batteries'
+      
+PtH2_waste_heat_O2:
+  sources:
+    ehv_substation:
+      schema: 'grid'
+      table: 'egon_ehv_substation'
+    hvmv_substation:
+      schema: 'grid'
+      table: 'egon_hvmv_substation'
+    buses:
+      schema: 'grid'
+      table: 'egon_etrago_buses'
+    loads:
+      schema: 'grid'
+      table: 'egon_etrago_load'
+    load_timeseries:
+      schema: 'grid'
+      table: 'egon_etrago_load_timeseries'
+    links:	
+      schema: 'grid'
+      table: 'egon_etrago_link'
+    mv_districts:
+      schema: 'grid'
+      table: 'egon_mv_grid_district'
+  targets:
+    links:
+      schema: 'grid'
+      table: 'egon_etrago_link'
+    loads:
+      schema: 'grid'
+      table: 'egon_etrago_load'
+    generators:
+      schema: 'grid'
+      table: 'egon_etrago_generator'
+    buses: 
+      schema: 'grid'
+      table: 'egon_etrago_bus'
+    
+		
