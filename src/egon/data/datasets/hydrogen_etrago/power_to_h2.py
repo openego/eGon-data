@@ -36,7 +36,7 @@ from pathlib import Path
 
 
 
-def insert_power_to_H2_to_power():
+def insert_power_to_h2_to_power():
     """
     Insert electrolysis and fuel cells capacities into the database.
     For electrolysis potential waste_heat- and oxygen-utilisation is 
@@ -66,7 +66,7 @@ def insert_power_to_H2_to_power():
     
     scenarios = config.settings()["egon-data"]["--scenarios"]
     
-    #constant Parameters for Location_Optimization (Calculating LCOH)
+    # constant Parameters for Location_Optimization (Calculating LCOH)
     # Power to H2 (Electricity & Electrolyser)
     ELEC_COST = 60  # [EUR/MWh]
     ELZ_SEC = 50  # [kWh/kgH2] Electrolyzer Specific Energy Consumption
@@ -204,7 +204,7 @@ def insert_power_to_H2_to_power():
             H2: f"""
                     SELECT bus_id AS id, geom 
                     FROM {sources["buses"]["schema"]}.{sources["buses"]["table"]}
-                    WHERE carrier in ('H2_grid', 'H2_saltcavern')
+                    WHERE carrier in ('H2_grid')
                     AND scn_name = '{SCENARIO_NAME}'
                     AND country = 'DE'
                     """,

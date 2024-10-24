@@ -1289,7 +1289,7 @@ PtH2_waste_heat_O2:
     load_timeseries:
       schema: 'grid'
       table: 'egon_etrago_load_timeseries'
-    links:	
+    links:
       schema: 'grid'
       table: 'egon_etrago_link'
     mv_districts:
@@ -1305,8 +1305,6 @@ PtH2_waste_heat_O2:
     generators:
       schema: 'grid'
       table: 'egon_etrago_generator'
-    buses: 
+    buses:
       schema: 'grid'
       table: 'egon_etrago_bus'
-    
-		
