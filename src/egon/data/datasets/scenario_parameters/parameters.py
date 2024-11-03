@@ -839,11 +839,15 @@ def gas(scenario):
             "H2_overground": read_costs(
                 costs, "hydrogen storage tank incl. compressor", "FOM"
             ),
-            "power_to_H2": read_costs(costs, "electrolysis", "FOM"),
+            "power_to_H2_system": 3,  #3% of CAPEX, source: project internal assumption Fraunhofer ISE
+            "power_to_H2_stack": 3, #3% of CAPEX source: project internal assumption Fraunhofer ISE
             "H2_to_power": read_costs(costs, "fuel cell", "FOM"),
             "CH4_to_H2": read_costs(costs, "SMR", "FOM"),
             "H2_to_CH4": read_costs(costs, "methanation", "FOM"),
-            "H2_pipeline": read_costs(costs, "H2 (g) pipeline", "FOM"),
+            "H2_pipeline": 3, # 3% of CAPEX
+            "Heat_exchanger": 3, # 3% of CAPEX
+            "Heat_pipeline": 3, # 3% of CAPEX 
+            "O2_components": 3, # 3% of CAPEX  
             "H2_pipeline_retrofit": read_costs(
                 costs, "H2 (g) pipeline repurposed", "FOM"
             ),
@@ -853,7 +857,6 @@ def gas(scenario):
         parameters["overnight_cost"] = {
             "power_to_H2_system": 357_000,  #[EUR/MW] source: project internal assumption Fraunhofer ISE
             "power_to_H2_stack": 0.21 * 357_000, #[EUR/MW] source: project internal assumption Fraunhofer ISE
-            "power_to_H2_OPEX": 0.03 * 357_000, #[EUR/MW/a]  3% of CAPEX, source: project internal assumption Fraunhofer ISE
             "H2_to_power": read_costs(costs, "fuel cell", "investment"),
             "CH4_to_H2": read_costs(costs, "SMR", "investment"),
             "H2_to_CH4": read_costs(costs, "methanation", "investment"),
@@ -882,7 +885,6 @@ def gas(scenario):
         parameters["lifetime"] = {
             "power_to_H2_system": 30,  # source: project internal assumption Fraunhofer ISE
             "power_to_H2_stack": 20,  #110_000 hours ~ 20 years; source: project internal assumption Fraunhofer ISE
-            "power_to_H2_OPEX": 1, #given as OPEX/year
             "H2_to_power": read_costs(costs, "fuel cell", "lifetime"),
             "CH4_to_H2": read_costs(costs, "SMR", "lifetime"),
             "H2_to_CH4": read_costs(costs, "methanation", "lifetime"),
