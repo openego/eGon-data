@@ -30,7 +30,7 @@ class PreparePypsaEur(Dataset):
     def __init__(self, dependencies):
         super().__init__(
             name="PreparePypsaEur",
-            version="0.0.14",
+            version="0.0.19",
             dependencies=dependencies,
             tasks=(
                 download,
@@ -43,7 +43,7 @@ class RunPypsaEur(Dataset):
     def __init__(self, dependencies):
         super().__init__(
             name="SolvePypsaEur",
-            version="0.0.12",
+            version="0.0.16",
             dependencies=dependencies,
             tasks=(
                 execute,
@@ -239,6 +239,8 @@ def prepare_network():
                 filepath / "Snakefile",
                 "--use-conda",
                 "--conda-frontend=conda",
+                "--cores",
+                "8",
                 "prepare",
             ]
         )
@@ -255,6 +257,8 @@ def solve_network():
             [
                 "snakemake",
                 "-j1",
+                "--cores",
+                "8",
                 "--directory",
                 filepath,
                 "--snakefile",
@@ -1288,11 +1292,11 @@ def prepared_network():
             / "results"
             / data_config["run"]["name"]
             / "prenetworks"
-            / f"elec_s_{data_config['scenario']['clusters'][0]}"
+            / f"base_s_{data_config['scenario']['clusters'][0]}"
             f"_l{data_config['scenario']['ll'][0]}"
             f"_{data_config['scenario']['opts'][0]}"
             f"_{data_config['scenario']['sector_opts'][0]}"
-            f"_{data_config['scenario']['planning_horizons'][0]}.nc"
+            f"_{data_config['scenario']['planning_horizons'][3]}.nc"
         )
 
     else:
