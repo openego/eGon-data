@@ -11,7 +11,7 @@ import pandas as pd
 from egon.data import config, db
 from egon.data.datasets.chp.match_nep import match_nep_chp
 from egon.data.datasets.chp.small_chp import assign_use_case
-from egon.data.datasets.mastr import WORKING_DIR_MASTR_OLD
+from egon.data.datasets.mastr import WORKING_DIR_MASTR_NEW
 from egon.data.datasets.power_plants import (
     assign_bus_id,
     assign_voltage_level,
@@ -21,7 +21,7 @@ from egon.data.datasets.power_plants import (
 import egon.data.config
 
 
-def select_nep_pumped_hydro():
+def select_nep_pumped_hydro(scn):
     """Select pumped hydro plants from NEP power plants list
 
 
@@ -34,17 +34,39 @@ def select_nep_pumped_hydro():
 
     carrier = "pumped_hydro"
 
-    # Select plants with geolocation from list of conventional power plants
-    nep_ph = db.select_dataframe(
-        f"""
-        SELECT bnetza_id, name, carrier, postcode, capacity, city,
-        federal_state, c2035_capacity
-        FROM {cfg['sources']['nep_conv']}
-        WHERE carrier = '{carrier}'
-        AND c2035_capacity > 0
-        AND postcode != 'None';
-        """
-    )
+    if scn == "eGon2035":
+        # Select plants with geolocation from list of conventional power plants
+        nep_ph = db.select_dataframe(
+            f"""
+            SELECT bnetza_id, name, carrier, postcode, capacity, city,
+            federal_state, c2035_capacity
+            FROM {cfg['sources']['nep_conv']}
+            WHERE carrier = '{carrier}'
+            AND c2035_capacity > 0
+            AND postcode != 'None';
+            """
+        )
+        nep_ph.rename(
+            columns={"c2035_capacity": "elec_capacity"}, inplace=True
+        )
+    elif "status" in scn:
+        # Select plants with geolocation from list of conventional power plants
+        year = int(scn[-4:])
+
+        nep_ph = db.select_dataframe(
+            f"""
+            SELECT bnetza_id, name, carrier, postcode, capacity, city,
+            federal_state
+            FROM {cfg['sources']['nep_conv']}
+            WHERE carrier = '{carrier}'
+            AND capacity > 0
+            AND postcode != 'None'
+            AND commissioned < '{year+1}';
+            """
+        )
+        nep_ph["elec_capacity"] = nep_ph["capacity"]
+    else:
+        raise SystemExit(f"{scn} not recognised")
 
     # Removing plants out of Germany
     nep_ph["postcode"] = nep_ph["postcode"].astype(str)
@@ -71,7 +93,7 @@ def select_mastr_pumped_hydro():
 
     # Read-in data from MaStR
     mastr_ph = pd.read_csv(
-        WORKING_DIR_MASTR_OLD / sources["mastr_storage"],
+        WORKING_DIR_MASTR_NEW / sources["mastr_storage"],
         delimiter=",",
         usecols=[
             "Nettonennleistung",
@@ -115,6 +137,22 @@ def select_mastr_pumped_hydro():
         ),
     )
 
+    mastr_ph = mastr_ph.set_crs(4326)
+
+    # drop hydropower without federal state
+    # Obervermunterwerk II in Austria
+    mastr_ph = mastr_ph[~(mastr_ph["federal_state"].isnull())]
+
+    if (
+        config.settings()["egon-data"]["--dataset-boundary"]
+        == "Schleswig-Holstein"
+    ):
+        # Drop hydropower outside the test mode area
+        mastr_ph = filter_mastr_geometry(mastr_ph, federal_state="Schleswig-Holstein")
+    else:
+        # Drop hydropower outside of germany
+        mastr_ph = filter_mastr_geometry(mastr_ph, federal_state=None)
+
     # Drop rows without post code and update datatype of postcode
     mastr_ph = mastr_ph[~mastr_ph["plz"].isnull()]
     mastr_ph["plz"] = mastr_ph["plz"].astype(int)
@@ -122,12 +160,6 @@ def select_mastr_pumped_hydro():
     # Calculate power in MW
     mastr_ph.loc[:, "el_capacity"] *= 1e-3
 
-    mastr_ph = mastr_ph.set_crs(4326)
-
-    mastr_ph = mastr_ph[~(mastr_ph["federal_state"].isnull())]
-
-    # Drop CHP outside of Germany/ outside the test mode area
-    mastr_ph = filter_mastr_geometry(mastr_ph, federal_state=None)
 
     return mastr_ph
 
@@ -140,6 +172,7 @@ def match_storage_units(
     consider_location="plz",
     consider_carrier=True,
     consider_capacity=True,
+    scn="eGon2035",
 ):
     """Match storage_units (in this case only pumped hydro) from MaStR
     to list of power plants from NEP
@@ -154,6 +187,8 @@ def match_storage_units(
         Already matched storage_units
     buffer_capacity : float, optional
         Maximum difference in capacity in p.u. The default is 0.1.
+    scn : string, optional
+        Scenario name
 
     Returns
     -------
@@ -192,7 +227,6 @@ def match_storage_units(
     for index, row in nep[
         (nep["carrier"] == carrier) & (nep["postcode"] != "None")
     ].iterrows():
-
         # Select plants from MaStR that match carrier, PLZ
         # and have a similar capacity
         # Create a copy of all power plants from MaStR
@@ -231,18 +265,21 @@ def match_storage_units(
 
         # If a plant could be matched, add this to matched
         if len(selected) > 0:
-            matched = matched.append(
-                gpd.GeoDataFrame(
-                    data={
-                        "source": "MaStR scaled with NEP 2021 list",
-                        "MaStRNummer": selected.EinheitMastrNummer.head(1),
-                        "carrier": carrier,
-                        "el_capacity": row.c2035_capacity,
-                        "scenario": "eGon2035",
-                        "geometry": selected.geometry.head(1),
-                        "voltage_level": selected.voltage_level.head(1),
-                    }
-                )
+            matched = pd.concat(
+                [
+                    matched,
+                    gpd.GeoDataFrame(
+                        data={
+                            "source": "MaStR scaled with NEP 2021 list",
+                            "MaStRNummer": selected.EinheitMastrNummer.head(1),
+                            "carrier": carrier,
+                            "el_capacity": row.elec_capacity,
+                            "scenario": scn,
+                            "geometry": selected.geometry.head(1),
+                            "voltage_level": selected.voltage_level.head(1),
+                        }
+                    ),
+                ]
             )
 
             # Drop matched storage units from nep
@@ -296,13 +333,13 @@ def get_location(unmatched):
 
     # Copy units with lon and lat to a new dataframe
     located = unmatched[
-        ["bnetza_id", "name", "carrier", "city", "c2035_capacity", "geometry"]
+        ["bnetza_id", "name", "carrier", "city", "elec_capacity", "geometry"]
     ].copy()
     located.dropna(subset=["geometry"], inplace=True)
 
     # Rename columns for compatibility reasons
     located = located.rename(
-        columns={"c2035_capacity": "el_capacity", "bnetza_id": "MaStRNummer"}
+        columns={"elec_capacity": "el_capacity", "bnetza_id": "MaStRNummer"}
     )
     located["scenario"] = "eGon2035"
     located["source"] = "NEP power plants geolocated using city"
@@ -330,7 +367,7 @@ def apply_voltage_level_thresholds(power_plants):
     # account which were defined in the eGon project. Existing entries on voltage
     # will be overwritten
 
-    power_plants.loc[power_plants["el_capacity"] < 0.1, "voltage_level"] = 7
+    power_plants.loc[power_plants["el_capacity"] <= 0.1, "voltage_level"] = 7
     power_plants.loc[power_plants["el_capacity"] > 0.1, "voltage_level"] = 6
     power_plants.loc[power_plants["el_capacity"] > 0.2, "voltage_level"] = 5
     power_plants.loc[power_plants["el_capacity"] > 5.5, "voltage_level"] = 4

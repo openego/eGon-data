@@ -6,11 +6,9 @@ eTraGo.
 import geopandas as gpd
 import pandas as pd
 from egon.data import db, config
-import egon.data.datasets.scenario_parameters.parameters as scenario_parameters
 from egon.data.datasets import Dataset
 from egon.data.datasets.scenario_parameters import (
     get_sector_parameters,
-    EgonScenario,
 )
 
 
@@ -18,21 +16,20 @@ class StorageEtrago(Dataset):
     def __init__(self, dependencies):
         super().__init__(
             name="StorageEtrago",
-            version="0.0.8",
+            version="0.0.9",
             dependencies=dependencies,
             tasks=(insert_PHES, extendable_batteries),
         )
 
 
 def insert_PHES():
-
     # Get datasets configuration
     sources = config.datasets()["storage_etrago"]["sources"]
     targets = config.datasets()["storage_etrago"]["targets"]
 
     engine = db.engine()
 
-    scenario = ["eGon2035", "eGon100RE"]
+    scenario = config.settings()["egon-data"]["--scenarios"]
     for scn in scenario:
         # Delete outdated data on pumped hydro units (PHES) inside Germany from database
         db.execute_sql(
@@ -59,14 +56,15 @@ def insert_PHES():
         next_bus_id = db.next_etrago_id("storage")
 
         # Add missing PHES specific information suitable for eTraGo selected from scenario_parameter table
-        parameters = scenario_parameters.electricity(scn)["efficiency"][
-            "pumped_hydro"
-        ]
+        parameters = get_sector_parameters(
+            "electricity", scn
+        )["efficiency"]["pumped_hydro"]
         phes["storage_id"] = range(next_bus_id, next_bus_id + len(phes))
         phes["max_hours"] = parameters["max_hours"]
         phes["efficiency_store"] = parameters["store"]
         phes["efficiency_dispatch"] = parameters["dispatch"]
         phes["standing_loss"] = parameters["standing_loss"]
+        phes["cyclic_state_of_charge"] = parameters["cyclic_state_of_charge"]
 
         # Write data to db
         phes.to_sql(
@@ -79,7 +77,6 @@ def insert_PHES():
 
 
 def extendable_batteries_per_scenario(scenario):
-
     # Get datasets configuration
     sources = config.datasets()["storage_etrago"]["sources"]
     targets = config.datasets()["storage_etrago"]["targets"]
@@ -156,6 +153,10 @@ def extendable_batteries_per_scenario(scenario):
         "electricity", scenario
     )["efficiency"]["battery"]["standing_loss"]
 
+    extendable_batteries["cyclic_state_of_charge"] = get_sector_parameters(
+        "electricity", scenario
+    )["efficiency"]["battery"]["cyclic_state_of_charge"]
+
     extendable_batteries["carrier"] = "battery"
 
     # Merge dataframes to fill p_nom_min column
@@ -177,6 +178,5 @@ def extendable_batteries_per_scenario(scenario):
 
 
 def extendable_batteries():
-
-    extendable_batteries_per_scenario("eGon2035")
-    extendable_batteries_per_scenario("eGon100RE")
+    for scn in config.settings()["egon-data"]["--scenarios"]:
+        extendable_batteries_per_scenario(scn)

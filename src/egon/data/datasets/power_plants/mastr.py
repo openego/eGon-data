@@ -33,6 +33,7 @@ import pandas as pd
 from egon.data import config, db
 from egon.data.datasets.mastr import WORKING_DIR_MASTR_NEW
 from egon.data.datasets.power_plants.mastr_db_classes import (
+    add_metadata,
     EgonMastrGeocoded,
     EgonPowerPlantsBiomass,
     EgonPowerPlantsCombustion,
@@ -349,7 +350,9 @@ def import_mastr() -> None:
         # drop units installed after reference date from cfg
         # (eGon2021 scenario)
         len_old = len(units)
-        ts = pd.Timestamp(config.datasets()["mastr_new"]["egon2021_date_max"])
+        ts = pd.Timestamp(
+            config.datasets()["mastr_new"]["status2023_date_max"]
+        )
         units = units.loc[pd.to_datetime(units.Inbetriebnahmedatum) <= ts]
         logger.debug(
             f"{len_old - len(units)} units installed after {ts} dropped..."
@@ -528,3 +531,5 @@ def import_mastr() -> None:
             if_exists="append",
             schema=target_tables[tech].__table_args__["schema"],
         )
+
+    add_metadata()

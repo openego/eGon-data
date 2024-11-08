@@ -64,6 +64,7 @@ class OsmBuildingsSynthetic(Base):
 
     id = Column(String, primary_key=True)
     cell_id = Column(String, index=True)
+    # scn_name = Column(String, index=True)  # TODO: status2023 currently fixed to 2023
     geom_building = Column(Geometry("Polygon", 3035), index=True)
     geom_point = Column(Geometry("POINT", 3035))
     n_amenities_inside = Column(Integer)
@@ -259,7 +260,7 @@ def generate_synthetic_buildings(missing_buildings, edge_length):
             destatis_zensus_population_per_ha_inside_germany
         ).filter(
             destatis_zensus_population_per_ha_inside_germany.c.id.in_(
-                missing_buildings.index
+                missing_buildings.index.unique()
             )
         )
 
@@ -281,7 +282,7 @@ def generate_synthetic_buildings(missing_buildings, edge_length):
         columns={
             "building_count": "building_id",
             "cell_profile_ids": "profiles",
-            "index": "cell_id",
+            "id": "cell_id",
         }
     )
 
@@ -560,6 +561,8 @@ def get_building_peak_loads():
             session.query(
                 HouseholdElectricityProfilesOfBuildings,
                 HouseholdElectricityProfilesInCensusCells.nuts3,
+                HouseholdElectricityProfilesInCensusCells.factor_2019,
+                HouseholdElectricityProfilesInCensusCells.factor_2023,
                 HouseholdElectricityProfilesInCensusCells.factor_2035,
                 HouseholdElectricityProfilesInCensusCells.factor_2050,
             )
@@ -573,6 +576,9 @@ def get_building_peak_loads():
         df_buildings_and_profiles = pd.read_sql(
             cells_query.statement, cells_query.session.bind, index_col="id"
         )
+
+        # fill columns with None with np.nan to allow multiplication with emtpy columns
+        df_buildings_and_profiles = df_buildings_and_profiles.fillna(np.nan)
 
         # Read demand profiles from egon-data-bundle
         df_profiles = get_iee_hh_demand_profiles_raw()
@@ -601,16 +607,22 @@ def get_building_peak_loads():
                 names=("profile_id", "building_id"),
             )
             df_building_peak_load_nuts3.columns = m_index
-            df_building_peak_load_nuts3 = df_building_peak_load_nuts3.sum(
-                level="building_id", axis=1
-            ).max()
+            df_building_peak_load_nuts3 = (
+                df_building_peak_load_nuts3.groupby("building_id", axis=1)
+                .sum()
+                .max()
+            )
 
             df_building_peak_load_nuts3 = pd.DataFrame(
                 [
+                    df_building_peak_load_nuts3 * df["factor_2019"].unique(),
+                    df_building_peak_load_nuts3 * df["factor_2023"].unique(),
                     df_building_peak_load_nuts3 * df["factor_2035"].unique(),
                     df_building_peak_load_nuts3 * df["factor_2050"].unique(),
                 ],
                 index=[
+                    "status2019",
+                    "status2023",
                     "eGon2035",
                     "eGon100RE",
                 ],

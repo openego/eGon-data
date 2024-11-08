@@ -6,11 +6,12 @@ import datetime
 import logging
 import os
 import shutil
+import subprocess
 import sys
 
 import psycopg2
 
-from egon.data import db
+from egon.data import db, logger
 from egon.data.config import settings
 from egon.data.datasets import Dataset
 from egon.data.datasets.osmtgmod.substation import extract
@@ -20,7 +21,7 @@ import egon.data.subprocess as subproc
 
 
 def run():
-
+    sys.setrecursionlimit(5000)
     # execute osmTGmod
 
     data_config = egon.data.config.datasets()
@@ -51,18 +52,47 @@ def import_osm_data():
 
     # Delete repository if it already exists
     if osmtgmod_repos.exists() and osmtgmod_repos.is_dir():
-        shutil.rmtree(osmtgmod_repos)
+        try:
+            status = subprocess.check_output(
+                ["git", "status"], cwd=(osmtgmod_repos).absolute()
+            )
+            if status.startswith(
+                b"Auf Branch features/egon"
+            ) or status.startswith(b"On branch features/egon"):
+                logger.info("OsmTGmod cloned and right branch checked out.")
 
-    subproc.run(
-        [
-            "git",
-            "clone",
-            "--single-branch",
-            "--branch",
-            "features/egon",
-            "https://github.com/openego/osmTGmod.git",
-        ]
-    )
+            else:
+                subproc.run(
+                    [
+                        "git",
+                        "checkout",
+                        "features/egon",
+                    ]
+                )
+        except subprocess.CalledProcessError:
+            shutil.rmtree(osmtgmod_repos)
+            subproc.run(
+                [
+                    "git",
+                    "clone",
+                    "--single-branch",
+                    "--branch",
+                    "features/egon",
+                    "https://github.com/openego/osmTGmod.git",
+                ]
+            )
+    else:
+
+        subproc.run(
+            [
+                "git",
+                "clone",
+                "--single-branch",
+                "--branch",
+                "features/egon",
+                "https://github.com/openego/osmTGmod.git",
+            ]
+        )
 
     data_config = egon.data.config.datasets()
     osm_config = data_config["openstreetmap"]["original_data"]
@@ -217,21 +247,21 @@ def osmtgmod(
     # ==============================================================
     # Setup logging
     # ==============================================================
-    log = logging.getLogger()
-    log.setLevel(logging.INFO)
-    logformat = logging.Formatter(
-        "%(asctime)s %(message)s", "%m/%d/%Y %H:%M:%S"
-    )
-    sh = logging.StreamHandler()
-    sh.setFormatter(logformat)
-    log.addHandler(sh)
-    logging.info("\n\n======================\nego_otg\n======================")
-    logging.info("Logging to standard output...")
-    # catch up some log messages from evaluation of command line arguments
-    logging.info("Database: {}".format(config_database))
-    logging.info(
-        "Path for configuration file and results: {}".format(config_basepath)
-    )
+    # log = logging.getLogger()
+    # log.setLevel(logging.INFO)
+    # logformat = logging.Formatter(
+    #     "%(asctime)s %(message)s", "%m/%d/%Y %H:%M:%S"
+    # )
+    # sh = logging.StreamHandler()
+    # sh.setFormatter(logformat)
+    # log.addHandler(sh)
+    # logging.info("\n\n======================\nego_otg\n======================")
+    # logging.info("Logging to standard output...")
+    # # catch up some log messages from evaluation of command line arguments
+    # logging.info("Database: {}".format(config_database))
+    # logging.info(
+    #     "Path for configuration file and results: {}".format(config_basepath)
+    # )
     # ==============================================================
     # read configuration from file and create folder structure
     # ==============================================================
@@ -260,16 +290,16 @@ def osmtgmod(
     if not os.path.exists(result_dir):
         os.makedirs(result_dir)
     # start logging to file
-    logfile = os.path.join(config_basepath, config_database + ".log")
-    fh = logging.FileHandler(logfile)
-    fh.setFormatter(logformat)
-    log.addHandler(fh)
-    logging.info("Logging to file '{0}' is set up".format(logfile))
-    logging.info(
-        "Now logging both to standard output and to file '{0}'...".format(
-            logfile
-        )
-    )
+    # logfile = os.path.join(config_basepath, config_database + ".log")
+    # fh = logging.FileHandler(logfile)
+    # fh.setFormatter(logformat)
+    # log.addHandler(fh)
+    # logging.info("Logging to file '{0}' is set up".format(logfile))
+    # logging.info(
+    #     "Now logging both to standard output and to file '{0}'...".format(
+    #         logfile
+    #     )
+    # )
     logging.info("\n\n======================\nego_otg\n======================")
     # copy config file
     logging.info(
@@ -411,9 +441,11 @@ def osmtgmod(
     # beware: comments in C-like style (such as /* comment */) arn't parsed!
     sqlfile_without_comments = "".join(
         [
-            line.lstrip().split("--")[0] + "\n"
-            if not line.lstrip().split("--")[0] == ""
-            else ""
+            (
+                line.lstrip().split("--")[0] + "\n"
+                if not line.lstrip().split("--")[0] == ""
+                else ""
+            )
             for line in sqlfile.split("\n")
         ]
     )
@@ -520,8 +552,14 @@ def to_pypsa():
             """
     )
 
-    for scenario_name in ["'eGon2035'", "'eGon100RE'"]:
+    # for scenario_name in ["'eGon2035'", "'eGon100RE'", "'status2019'"]:
+    scenario_list = egon.data.config.settings()["egon-data"]["--scenarios"]
+    scenario_list = [
+        f"'{scn}'" if not scn[1] == "'" else scn for scn in scenario_list
+    ]
+    for scenario_name in scenario_list:
 
+        # TODO maybe not needed anymore?
         capital_cost = get_sector_parameters(
             "electricity", scenario_name.replace("'", "")
         )["capital_cost"]
@@ -627,19 +665,19 @@ def to_pypsa():
             WHERE a.line_id = result.line_id
             AND scn_name = {scenario_name};
 
-            -- set capital costs for eHV-lines 
+            -- set capital costs for eHV-lines
             UPDATE grid.egon_etrago_line
             SET capital_cost = {capital_cost['ac_ehv_overhead_line']} * length
             WHERE v_nom > 110
             AND scn_name = {scenario_name};
 
-            -- set capital costs for HV-lines 
+            -- set capital costs for HV-lines
             UPDATE grid.egon_etrago_line
             SET capital_cost = {capital_cost['ac_hv_overhead_line']} * length
             WHERE v_nom = 110
             AND scn_name = {scenario_name};
-            
-            -- set capital costs for transformers 
+
+            -- set capital costs for transformers
             UPDATE grid.egon_etrago_transformer a
             SET capital_cost = {capital_cost['transformer_380_220']}
             WHERE (a.bus0 IN (
@@ -687,20 +725,20 @@ def to_pypsa():
                 SELECT bus_id FROM grid.egon_etrago_bus
                 WHERE v_nom = 220))
             AND scn_name = {scenario_name};
-            
-            -- set lifetime for eHV-lines 
+
+            -- set lifetime for eHV-lines
             UPDATE grid.egon_etrago_line
-            SET lifetime = {lifetime['ac_ehv_overhead_line']} 
+            SET lifetime = {lifetime['ac_ehv_overhead_line']}
             WHERE v_nom > 110
             AND scn_name = {scenario_name};
 
-            -- set capital costs for HV-lines 
+            -- set capital costs for HV-lines
             UPDATE grid.egon_etrago_line
             SET lifetime = {lifetime['ac_hv_overhead_line']}
             WHERE v_nom = 110
             AND scn_name = {scenario_name};
-            
-            -- set capital costs for transformers 
+
+            -- set capital costs for transformers
             UPDATE grid.egon_etrago_transformer a
             SET lifetime = {lifetime['transformer_380_220']}
             WHERE (a.bus0 IN (
@@ -748,7 +786,7 @@ def to_pypsa():
                 SELECT bus_id FROM grid.egon_etrago_bus
                 WHERE v_nom = 220))
             AND scn_name = {scenario_name};
-            
+
             -- delete buses without connection to AC grid and generation or
             -- load assigned
 
@@ -771,11 +809,30 @@ def to_pypsa():
         )
 
 
+def fix_transformer_snom():
+    db.execute_sql(
+        """
+        UPDATE grid.egon_etrago_transformer AS t
+        SET s_nom = CAST(
+            LEAST(
+                (SELECT SUM(COALESCE(l.s_nom,0))
+                 FROM grid.egon_etrago_line AS l
+                 WHERE (l.bus0 = t.bus0 OR l.bus1 = t.bus0)
+                 AND l.scn_name = t.scn_name),
+                (SELECT SUM(COALESCE(l.s_nom,0))
+                 FROM grid.egon_etrago_line AS l
+                 WHERE (l.bus0 = t.bus1 OR l.bus1 = t.bus1)
+                 AND l.scn_name = t.scn_name)
+            ) AS smallint
+        );
+        """)
+
+
 class Osmtgmod(Dataset):
     def __init__(self, dependencies):
         super().__init__(
             name="Osmtgmod",
-            version="0.0.5",
+            version="0.0.7",
             dependencies=dependencies,
             tasks=(
                 import_osm_data,
@@ -784,5 +841,6 @@ class Osmtgmod(Dataset):
                     extract,
                     to_pypsa,
                 },
+                fix_transformer_snom,
             ),
         )

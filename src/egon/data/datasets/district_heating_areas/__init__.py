@@ -1,4 +1,9 @@
 # -*- coding: utf-8 -*-
+
+# This script is part of eGon-data.
+
+# license text - to be added.
+
 """
 Central module containing all code creating with district heating areas.
 
@@ -7,7 +12,7 @@ densities, demarcates so the current and future district heating areas. In the
 end it saves them in the database.
 """
 import os
-from egon.data import db
+from egon.data import config, db
 from egon.data.datasets.scenario_parameters import (
     get_sector_parameters,
     EgonScenario,
@@ -23,6 +28,14 @@ from egon.data.datasets.district_heating_areas.plot import (
 )
 
 # for metadata creation
+import time
+import datetime
+from egon.data.metadata import (
+    context,
+    meta_metadata,
+    license_ccby,
+    sources,
+)
 import json
 
 # import time
@@ -65,7 +78,7 @@ class DistrictHeatingAreas(Dataset):
     #:
     name: str = "district-heating-areas"
     #:
-    version: str = "0.0.1"
+    version: str = "0.0.2"
 
     def __init__(self, dependencies):
         super().__init__(
@@ -168,7 +181,7 @@ def create_tables():
 # https://geopandas.org/docs/user_guide/geometric_manipulations.html
 
 
-def load_census_data():
+def load_census_data(minimum_connection_rate=0.3):
     """
     Load the heating type information from the census database table.
 
@@ -248,7 +261,9 @@ def load_census_data():
     # district_heat.head
     # district_heat['connection_rate'].describe()
 
-    district_heat = district_heat[district_heat["connection_rate"] >= 0.3]
+    district_heat = district_heat[
+        district_heat["connection_rate"] >= minimum_connection_rate
+    ]
     # district_heat.columns
 
     return district_heat, heating_type
@@ -371,7 +386,7 @@ def area_grouping(
     # print(cell_buffers.area)
 
     # create a shapely Multipolygon which is split into a list
-    buffer_polygons = list(cell_buffers["geom_polygon"].unary_union)
+    buffer_polygons = list(cell_buffers["geom_polygon"].unary_union.geoms)
 
     # change the data type into geopandas geodataframe
     buffer_polygons_gdf = gpd.GeoDataFrame(geometry=buffer_polygons, crs=3035)
@@ -422,6 +437,7 @@ def area_grouping(
         maximum_total_demand
         and "residential_and_service_demand" in join.columns
     ):
+
         huge_areas_index = (
             join.groupby("area_id").residential_and_service_demand.sum()
             > maximum_total_demand
@@ -446,10 +462,19 @@ def area_grouping(
 
         join_2["area_id"] = join_2.index_right + max_area_id + 1
 
-        join = join.append(
-            join_2[
-                ["residential_and_service_demand", "geom_polygon", "area_id"]
-            ]
+        join = pd.concat(
+            [
+                join,
+                join_2[
+                    [
+                        "zensus_population_id",
+                        "residential_and_service_demand",
+                        "geom_polygon",
+                        "area_id",
+                    ]
+                ],
+            ],
+            ignore_index=True,
         )
 
     return join
@@ -534,6 +559,14 @@ def district_heating_areas(scenario_name, plotting=False):
 
         district_heating_share = heat_parameters["DE_district_heating_share"]
 
+    minimum_connection_rate = 0.3
+
+    # Adjust minimum connection rate for status2019, and other statusquo scn
+    # otherwise the existing district heating grids would have too much demand
+    # if scenario_name == "status2019":
+    if "status" in scenario_name:
+        minimum_connection_rate = 0.6
+
     # heat_demand is scenario specific
     heat_demand_cells = load_heat_demands(scenario_name)
 
@@ -542,7 +575,9 @@ def district_heating_areas(scenario_name, plotting=False):
     # by the area grouping function), load only the first returned result: [0]
     min_hd_census = 10000 / 3.6  # in MWh
 
-    census_plus_heat_demand = load_census_data()[0].copy()
+    census_plus_heat_demand = load_census_data(
+        minimum_connection_rate=minimum_connection_rate
+    )[0].copy()
     census_plus_heat_demand[
         "residential_and_service_demand"
     ] = heat_demand_cells.loc[
@@ -574,7 +609,7 @@ def district_heating_areas(scenario_name, plotting=False):
     # ASSUMPTION HERE: 2035 HD defined the PSDs
     min_hd = 10000 / 3.6
     PSDs = area_grouping(
-        select_high_heat_demands(load_heat_demands("eGon2035")),
+        select_high_heat_demands(load_heat_demands(scenario_name)),
         distance=200,
         minimum_total_demand=min_hd,
     )
@@ -612,15 +647,18 @@ def district_heating_areas(scenario_name, plotting=False):
 
     # group the resulting scenario specific district heating areas
     scenario_dh_area = area_grouping(
-        gpd.GeoDataFrame(
-            cells[["residential_and_service_demand", "geom_polygon"]].append(
-                new_areas[["residential_and_service_demand", "geom_polygon"]]
-            ),
-            geometry="geom_polygon",
-        ),
+        pd.concat(
+            [
+                cells[["residential_and_service_demand", "geom_polygon"]],
+                new_areas[["residential_and_service_demand", "geom_polygon"]],
+            ]
+        ).reset_index(),
         distance=500,
         maximum_total_demand=4e6,
     )
+    scenario_dh_area.loc[:, "zensus_population_id"] = scenario_dh_area.loc[
+        :, "zensus_population_id"
+    ].astype(int)
     # scenario_dh_area.plot(column = "area_id")
 
     scenario_dh_area.groupby("area_id").size().sort_values()
@@ -635,11 +673,12 @@ def district_heating_areas(scenario_name, plotting=False):
         f"""DELETE FROM demand.egon_map_zensus_district_heating_areas
                    WHERE scenario = '{scenario_name}'"""
     )
-    scenario_dh_area[["scenario", "area_id"]].to_sql(
+    scenario_dh_area[["scenario", "area_id", "zensus_population_id"]].to_sql(
         "egon_map_zensus_district_heating_areas",
         schema="demand",
         con=db.engine(),
         if_exists="append",
+        index=False,
     )
 
     # Create polygons around the grouped cells and store them in the database
@@ -675,7 +714,9 @@ def district_heating_areas(scenario_name, plotting=False):
         f"""DELETE FROM demand.egon_district_heating_areas
                    WHERE scenario = '{scenario_name}'"""
     )
-    areas_dissolved.reset_index().to_postgis(
+    areas_dissolved.reset_index().drop(
+        "zensus_population_id", axis="columns"
+    ).to_postgis(
         "egon_district_heating_areas",
         schema="demand",
         con=db.engine(),
@@ -725,18 +766,7 @@ def add_metadata():
 
     # Prepare variables
     license_district_heating_areas = [
-        {
-            # this could be the license of the "district_heating_areas"
-            "name": "Creative Commons Attribution 4.0 International",
-            "title": "CC BY 4.0",
-            "path": "https://creativecommons.org/licenses/by/4.0/",
-            "instruction": (
-                "You are free: To Share, To Adapt;"
-                " As long as you: Attribute!"
-            ),
-            "attribution": "© Europa-Universität Flensburg",  # if all agree
-            # "attribution": "© ZNES Flensburg",  # alternative
-        }
+        license_ccby("© Europa-Universität Flensburg")
     ]
 
     # Metadata creation for district heating areas (polygons)
@@ -746,25 +776,14 @@ def add_metadata():
         "description": "Modelled future district heating areas for "
         "the supply of residential and service-sector heat demands",
         "language": ["EN"],
+        "publicationDate": datetime.date.today().isoformat(),
+        "context": context(),
         "spatial": {"location": "", "extent": "Germany", "resolution": ""},
-        "temporal": {
-            "referenceDate": "scenario-specific",
-            "timeseries": {
-                "start": "",
-                "end": "",
-                "resolution": "",
-                "alignment": "",
-                "aggregationType": "",
-            },
-        },
         "sources": [
-            {
-                # eGon scenario specific heat demand distribution based
-                # on Peta5_0_1, using vg250 boundaries
-            },
-            {
-                # Census gridded apartment data
-            },
+            sources()["peta"],
+            sources()["egon-data"],
+            sources()["zensus"],
+            sources()["vg250"],
         ],
         "resources": [
             {
@@ -823,21 +842,21 @@ def add_metadata():
         "licenses": license_district_heating_areas,
         "contributors": [
             {
-                "title": "Eva, Clara",
-                "email": "",
-                "date": "2021-05-07",
-                "object": "",
-                "comment": "Processed data",
-            }
-        ],
-        "metaMetadata": {  # https://github.com/OpenEnergyPlatform/oemetadata
-            "metadataVersion": "OEP-1.4.0",
-            "metadataLicense": {
-                "name": "CC0-1.0",
-                "title": "Creative Commons Zero v1.0 Universal",
-                "path": ("https://creativecommons.org/publicdomain/zero/1.0/"),
+                "title": "EvaWie",
+                "email": "http://github.com/EvaWie",
+                "date": time.strftime("%Y-%m-%d"),
+                "object": None,
+                "comment": "Imported data",
             },
-        },
+            {
+                "title": "Clara Büttner",
+                "email": "http://github.com/ClaraBuettner",
+                "date": time.strftime("%Y-%m-%d"),
+                "object": None,
+                "comment": "Updated metadata",
+            },
+        ],
+        "metaMetadata": meta_metadata(),
     }
     meta_json = "'" + json.dumps(meta) + "'"
 
@@ -851,25 +870,14 @@ def add_metadata():
         " for supply of residential and service-sector heat demands"
         " assigned to zensus_population_ids",
         "language": ["EN"],
+        "publicationDate": datetime.date.today().isoformat(),
+        "context": context(),
         "spatial": {"location": "", "extent": "Germany", "resolution": ""},
-        "temporal": {
-            "referenceDate": "scenario-specific",
-            "timeseries": {
-                "start": "",
-                "end": "",
-                "resolution": "",
-                "alignment": "",
-                "aggregationType": "",
-            },
-        },
         "sources": [
-            {
-                # eGon scenario specific heat demand distribution based
-                # on Peta5_0_1, using vg250 boundaries
-            },
-            {
-                # Census gridded apartment data
-            },
+            sources()["peta"],
+            sources()["egon-data"],
+            sources()["zensus"],
+            sources()["vg250"],
         ],
         # Add the license for the map table
         "resources": [
@@ -924,21 +932,21 @@ def add_metadata():
         "licenses": license_district_heating_areas,
         "contributors": [
             {
-                "title": "Eva, Clara",
-                "email": "",
-                "date": "2021-05-07",
-                "object": "",
-                "comment": "Processed data",
-            }
-        ],
-        "metaMetadata": {  # https://github.com/OpenEnergyPlatform/oemetadata
-            "metadataVersion": "OEP-1.4.0",
-            "metadataLicense": {
-                "name": "CC0-1.0",
-                "title": "Creative Commons Zero v1.0 Universal",
-                "path": ("https://creativecommons.org/publicdomain/zero/1.0/"),
+                "title": "EvaWie",
+                "email": "http://github.com/EvaWie",
+                "date": time.strftime("%Y-%m-%d"),
+                "object": None,
+                "comment": "Imported data",
             },
-        },
+            {
+                "title": "Clara Büttner",
+                "email": "http://github.com/ClaraBuettner",
+                "date": time.strftime("%Y-%m-%d"),
+                "object": None,
+                "comment": "Updated metadata",
+            },
+        ],
+        "metaMetadata": meta_metadata(),
     }
     meta_json = "'" + json.dumps(meta) + "'"
 
@@ -1158,12 +1166,11 @@ def demarcation(plotting=True):
 
     heat_density_per_scenario = {}
     # scenario specific district heating areas
-    heat_density_per_scenario["eGon2035"] = district_heating_areas(
-        "eGon2035", plotting
-    )
-    heat_density_per_scenario["eGon100RE"] = district_heating_areas(
-        "eGon100RE", plotting
-    )
+
+    for scenario in config.settings()["egon-data"]["--scenarios"]:
+        heat_density_per_scenario[scenario] = district_heating_areas(
+            scenario, plotting
+        )
 
     if plotting:
         plot_heat_density_sorted(heat_density_per_scenario)

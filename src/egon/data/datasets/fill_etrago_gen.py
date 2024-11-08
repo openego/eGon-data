@@ -126,18 +126,19 @@ def add_marginal_costs(power_plants):
         for carrier in pp_scn.carrier.unique():
             if carrier not in (marginal_costs.index):
                 warning.append(carrier)
-                marginal_costs = marginal_costs.append(
-                    pd.Series(name=carrier, data={"marginal_cost": 0})
-                )
+                marginal_costs.at[carrier, "marginal_cost"] = 0
         if warning:
             print(
-                f"""There are not marginal_cost values for: \n{warning}
+                f"""There are no marginal_cost values for: \n{warning}
         in the scenario {scenario}. Missing values set to 0"""
             )
-        pp = pp.append(
-            pp_scn.merge(
-                right=marginal_costs, left_on="carrier", right_index=True
-            )
+        pp = pd.concat(
+            [
+                pp,
+                pp_scn.merge(
+                    right=marginal_costs, left_on="carrier", right_index=True
+                ),
+            ]
         )
 
     return pp
@@ -174,6 +175,7 @@ def fill_etrago_gen_time_table(
 
     etrago_pp_time = etrago_pp_time[
         (etrago_pp_time["carrier"] == "solar")
+        | (etrago_pp_time["carrier"] == "solar_rooftop")
         | (etrago_pp_time["carrier"] == "wind_onshore")
         | (etrago_pp_time["carrier"] == "wind_offshore")
     ]
@@ -255,16 +257,21 @@ def numpy_nan(data):
 
 
 def power_timeser(weather_data):
-    if len(set(weather_data)) <= 1:
-        return weather_data.iloc[0]
-    else:
+    if weather_data.isna().any():
         return -1
+    else:
+        return weather_data.iloc[0]
 
 
 def adjust_renew_feedin_table(renew_feedin, cfg):
     # Define carrier 'pv' as 'solar'
     carrier_pv_mask = renew_feedin["carrier"] == "pv"
     renew_feedin.loc[carrier_pv_mask, "carrier"] = "solar"
+
+    # Copy solar timeseries for solar_rooftop
+    feedin_solar_rooftop = renew_feedin.loc[renew_feedin["carrier"]=="solar"]
+    feedin_solar_rooftop.loc[:, "carrier"] = "solar_rooftop"
+    renew_feedin = pd.concat([renew_feedin, feedin_solar_rooftop], ignore_index=True)
 
     # convert renewable feedin lists to arrays
     renew_feedin["feedin"] = renew_feedin["feedin"].apply(np.array)
@@ -302,30 +309,56 @@ def delete_previuos_gen(cfg, con, etrago_gen_orig, power_plants):
 
 
 def set_timeseries(power_plants, renew_feedin):
+    """
+    Create a function to calculate the feed-in timeseries for power plants.
+
+    Parameters
+    ----------
+    power_plants : DataFrame
+        A DataFrame containing information about power plants, including their bus IDs,
+        carriers, weather cell IDs, and electrical capacities.
+    renew_feedin : DataFrame
+        A DataFrame containing feed-in values for different carriers and weather cell IDs.
+
+    Returns
+    -------
+    function
+        A function that takes a power plant object and returns its feed-in value based on
+        either its direct weather cell ID or the aggregated feed-in of all power plants
+        connected to the same bus and having the same carrier.
+    """
+
     def timeseries(pp):
+        """Calculate the feed-in for a given power plant based on weather cell ID or aggregation."""
         if pp.weather_cell_id != -1:
-            feedin_time = renew_feedin[
+            # Directly fetch feed-in value for power plants with an associated weather cell ID
+            return renew_feedin.loc[
                 (renew_feedin["w_id"] == pp.weather_cell_id)
-                & (renew_feedin["carrier"] == pp.carrier)
-            ].feedin.iloc[0]
-            return feedin_time
+                & (renew_feedin["carrier"] == pp.carrier),
+                "feedin",
+            ].iat[0]
         else:
-            df = power_plants[
+            # Aggregate feed-in for power plants without a direct weather cell association
+            df = power_plants.loc[
                 (power_plants["bus_id"] == pp.bus_id)
                 & (power_plants["carrier"] == pp.carrier)
-            ]
-            total_int_cap = df.el_capacity.sum()
-            df["feedin"] = 0
+            ].dropna(subset=["weather_cell_id"])
+
+            total_int_cap = df["el_capacity"].sum()
+
+            # Fetch and calculate proportional feed-in for each power plant
             df["feedin"] = df.apply(
-                lambda x: renew_feedin[
+                lambda x: renew_feedin.loc[
                     (renew_feedin["w_id"] == x.weather_cell_id)
-                    & (renew_feedin["carrier"] == x.carrier)
-                ].feedin.iloc[0],
+                    & (renew_feedin["carrier"] == x.carrier),
+                    "feedin",
+                ].iat[0],
                 axis=1,
             )
-            df["feedin"] = df.apply(
-                lambda x: x.el_capacity / total_int_cap * x.feedin, axis=1
-            )
-            return df.feedin.sum()
+
+            # Calculate and return aggregated feed-in based on electrical capacity
+            return df.apply(
+                lambda x: x["el_capacity"] / total_int_cap * x["feedin"], axis=1
+            ).sum()
 
     return timeseries

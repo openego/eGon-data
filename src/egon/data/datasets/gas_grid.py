@@ -22,6 +22,7 @@ import ast
 import json
 import os
 
+from sqlalchemy.orm import sessionmaker
 from geoalchemy2.types import Geometry
 from shapely import geometry
 import geopandas
@@ -30,45 +31,10 @@ import pandas as pd
 
 from egon.data import config, db
 from egon.data.config import settings
-from egon.data.datasets import Dataset
+from egon.data.datasets import Dataset, wrapped_partial
 from egon.data.datasets.electrical_neighbours import central_buses_egon100
 from egon.data.datasets.etrago_helpers import copy_and_modify_buses
 from egon.data.datasets.scenario_parameters import get_sector_parameters
-
-
-class GasNodesAndPipes(Dataset):
-    """
-    Insert the CH4 buses and links into the database.
-
-    Insert the CH4 buses and links, which for the case of gas represent
-    pipelines, into the database for the scenarios eGon2035 and eGon100RE
-    with the functions :py:func:`insert_gas_data` and :py:func:`insert_gas_data_eGon100RE`.
-
-    *Dependencies*
-      * :py:class:`DataBundle <egon.data.datasets.data_bundle.DataBundle>`
-      * :py:class:`ElectricalNeighbours <egon.data.datasets.electrical_neighbours.ElectricalNeighbours>`
-      * :py:class:`Osmtgmod <egon.data.datasets.osmtgmod.Osmtgmod>`
-      * :py:class:`ScenarioParameters <egon.data.datasets.scenario_parameters.ScenarioParameters>`
-      * :py:class:`EtragoSetup <egon.data.datasets.etrago_setup.EtragoSetup>` (more specifically the :func:`create_tables <egon.data.datasets.etrago_setup.create_tables>` task)
-
-    *Resulting tables*
-      * :py:class:`grid.egon_etrago_bus <egon.data.datasets.etrago_setup.EgonPfHvBus>` is extended
-      * :py:class:`grid.egon_etrago_link <egon.data.datasets.etrago_setup.EgonPfHvLink>` is extended
-
-    """
-
-    #:
-    name: str = "GasNodesAndPipes"
-    #:
-    version: str = "0.0.9"
-
-    def __init__(self, dependencies):
-        super().__init__(
-            name=self.name,
-            version=self.version,
-            dependencies=dependencies,
-            tasks=(insert_gas_data, insert_gas_data_eGon100RE),
-        )
 
 
 def download_SciGRID_gas_data():
@@ -352,30 +318,42 @@ def define_gas_buses_abroad(scn_name="eGon2035"):
     gdf_abroad_buses["bus_id"] = range(new_id, new_id + len(gdf_abroad_buses))
 
     # Add central bus in Russia
-    gdf_abroad_buses = gdf_abroad_buses.append(
-        {
-            "scn_name": scn_name,
-            "bus_id": (new_id + len(gdf_abroad_buses) + 1),
-            "x": 41,
-            "y": 55,
-            "country": "RU",
-            "carrier": main_gas_carrier,
-        },
+    gdf_abroad_buses = pd.concat(
+        [
+            gdf_abroad_buses,
+            pd.DataFrame(
+                index=[gdf_abroad_buses.index.max() + 1],
+                data={
+                    "scn_name": scn_name,
+                    "bus_id": (new_id + len(gdf_abroad_buses) + 1),
+                    "x": 41,
+                    "y": 55,
+                    "country": "RU",
+                    "carrier": main_gas_carrier,
+                },
+            ),
+        ],
         ignore_index=True,
     )
     # if in test mode, add bus in center of Germany
     boundary = settings()["egon-data"]["--dataset-boundary"]
 
     if boundary != "Everything":
-        gdf_abroad_buses = gdf_abroad_buses.append(
-            {
-                "scn_name": scn_name,
-                "bus_id": (new_id + len(gdf_abroad_buses) + 1),
-                "x": 10.4234469,
-                "y": 51.0834196,
-                "country": "DE",
-                "carrier": main_gas_carrier,
-            },
+        gdf_abroad_buses = pd.concat(
+            [
+                gdf_abroad_buses,
+                pd.DataFrame(
+                    index=[gdf_abroad_buses.index.max() + 1],
+                    data={
+                        "scn_name": scn_name,
+                        "bus_id": (new_id + len(gdf_abroad_buses) + 1),
+                        "x": 10.4234469,
+                        "y": 51.0834196,
+                        "country": "DE",
+                        "carrier": main_gas_carrier,
+                    },
+                ),
+            ],
             ignore_index=True,
         )
 
@@ -577,7 +555,6 @@ def define_gas_pipeline_list(
     boundary = settings()["egon-data"]["--dataset-boundary"]
 
     if boundary != "Everything":
-
         gas_pipelines_list = gas_pipelines_list[
             gas_pipelines_list["NUTS1_0"].str.contains(map_states[boundary])
             | gas_pipelines_list["NUTS1_1"].str.contains(map_states[boundary])
@@ -595,7 +572,6 @@ def define_gas_pipeline_list(
     length_km = []
 
     for index, row in gas_pipelines_list.iterrows():
-
         param = ast.literal_eval(row["param"])
         diameter.append(param["diameter_mm"])
         length_km.append(param["length_km"])
@@ -1025,3 +1001,111 @@ def insert_gas_data_eGon100RE():
         index=False,
         dtype={"geom": Geometry(), "topo": Geometry()},
     )
+
+
+def insert_gas_data_status(scn_name):
+    """
+    Function to deal with the gas network for the status2019 scenario.
+    For this scenario just one CH4 bus is consider in the center of Germany.
+    Since OCGTs in the foreign countries are modelled as generators and not
+    as links between the gas and electricity sectors, CH4 foreign buses are
+    considered not necessary.
+
+    This function does not require any input.
+
+    Returns
+    -------
+    None.
+
+    """
+
+    # delete old entries
+    db.execute_sql(
+        f"""
+        DELETE FROM grid.egon_etrago_link
+        WHERE carrier = 'CH4' AND scn_name = '{scn_name}'
+        """
+    )
+    db.execute_sql(
+        f"""
+        DELETE FROM grid.egon_etrago_bus
+        WHERE carrier = 'CH4' AND scn_name = '{scn_name}'
+        """
+    )
+
+    # Select next id value
+    new_id = db.next_etrago_id("bus")
+
+    df = pd.DataFrame(
+        index=[new_id],
+        data={
+            "scn_name": scn_name,
+            "v_nom": 1,
+            "carrier": "CH4",
+            "v_mag_pu_set": 1,
+            "v_mag_pu_min": 0,
+            "v_mag_pu_max": np.inf,
+            "x": 10,
+            "y": 51,
+            "country": "DE",
+        },
+    )
+    gdf = geopandas.GeoDataFrame(
+        df, geometry=geopandas.points_from_xy(df.x, df.y, crs=4326)
+    ).rename_geometry("geom")
+
+    gdf.index.name = "bus_id"
+
+    gdf.reset_index().to_postgis(
+        "egon_etrago_bus", schema="grid", con=db.engine(), if_exists="append"
+    )
+
+
+class GasNodesAndPipes(Dataset):
+    """
+    Insert the CH4 buses and links into the database.
+
+    Insert the CH4 buses and links, which for the case of gas represent
+    pipelines, into the database for the scenarios status2019, eGon2035 and eGon100RE
+    with the functions :py:func:`insert_gas_data` and :py:func:`insert_gas_data_eGon100RE`.
+
+    *Dependencies*
+      * :py:class:`DataBundle <egon.data.datasets.data_bundle.DataBundle>`
+      * :py:class:`ElectricalNeighbours <egon.data.datasets.electrical_neighbours.ElectricalNeighbours>`
+      * :py:class:`Osmtgmod <egon.data.datasets.osmtgmod.Osmtgmod>`
+      * :py:class:`ScenarioParameters <egon.data.datasets.scenario_parameters.ScenarioParameters>`
+      * :py:class:`EtragoSetup <egon.data.datasets.etrago_setup.EtragoSetup>` (more specifically the :func:`create_tables <egon.data.datasets.etrago_setup.create_tables>` task)
+
+    *Resulting tables*
+      * :py:class:`grid.egon_etrago_bus <egon.data.datasets.etrago_setup.EgonPfHvBus>` is extended
+      * :py:class:`grid.egon_etrago_link <egon.data.datasets.etrago_setup.EgonPfHvLink>` is extended
+
+    """
+
+    #:
+    name: str = "GasNodesAndPipes"
+    #:
+    version: str = "0.0.11"
+
+    tasks = ()
+
+    for scn_name in config.settings()["egon-data"]["--scenarios"]:
+        if "status" in scn_name:
+            tasks += (wrapped_partial(
+                insert_gas_data_status, scn_name=scn_name, postfix=f"_{scn_name[-4:]}"
+            ),)
+    # tasks = (insert_gas_data_status,)
+
+    if "eGon2035" in config.settings()["egon-data"]["--scenarios"]:
+        tasks = tasks + (insert_gas_data,)
+
+    if "eGon100RE" in config.settings()["egon-data"]["--scenarios"]:
+        tasks = tasks + (insert_gas_data_eGon100RE,)
+
+    def __init__(self, dependencies):
+        super().__init__(
+            name=self.name,
+            version=self.version,
+            dependencies=dependencies,
+            tasks=self.tasks,
+        )

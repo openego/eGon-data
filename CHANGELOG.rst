@@ -252,6 +252,16 @@ Added
   `PR #903 <https://github.com/openego/eGon-data/pull/903>`_
 * Add low flex scenario 'eGon2035_lowflex'
   `#822 <https://github.com/openego/eGon-data/issues/822>`_
+* Add Status2023 update heat demand
+  `#199 <https://github.com/openego/powerd-data/pull/199>`_
+* Add status2023 electrical neighbours
+  `#182 <https://github.com/openego/powerd-data/pull/182>`_
+* Add Status2023 to gas nodes
+  `#205 <https://github.com/openego/powerd-data/pull/205>`_
+* Update osm for status2023
+  `#169 <https://github.com/openego/powerd-data/pull/169>`_
+* Add wrapped_partial to dynamise task generation
+  `#207 <https://github.com/openego/powerd-data/pull/207>`_
 * Add MaStR geocoding and handling of conventional generators
   `#1095 <https://github.com/openego/eGon-data/issues/1095>`_
 
@@ -494,12 +504,14 @@ Changed
   `#1073 <https://github.com/openego/eGon-data/issues/1073>`_
 * Change hgv data source to use database
   `#1086 <https://github.com/openego/eGon-data/issues/1086>`_
+* Rename eMob MIT carrier names (use underscores)
+  `#1105 <https://github.com/openego/eGon-data/issues/1105>`_
 * Change desposit ID for data_bundle download from zenodo sandbox
   `#1110 <https://github.com/openego/eGon-data/issues/1110>`_
 * Use MaStR geocoding results for pv rooftop to buildings mapping workflow
   `#1095 <https://github.com/openego/eGon-data/issues/1095>`_
-* Rename eMob MIT carrier names (use underscores)
-  `#1105 <https://github.com/openego/eGon-data/issues/1105>`_
+* Add eMob MIT for SQ2023 scenario
+  `#176 <https://github.com/openego/powerd-data/issues/176>`_
 
 .. _#799: https://github.com/openego/eGon-data/issues/799
 

@@ -45,7 +45,7 @@ class CH4Production(Dataset):
     name: str = "CH4Production"
     #:
 
-    version: str = "0.0.7"
+    version: str = "0.0.9"
 
     def __init__(self, dependencies):
         super().__init__(
@@ -280,7 +280,7 @@ def load_biogas_generators(scn_name):
     return biogas_generators_list
 
 
-def import_gas_generators(scn_name="eGon2035"):
+def import_gas_generators():
     """
     Inserts list of gas production units into the database
 
@@ -324,53 +324,76 @@ def import_gas_generators(scn_name="eGon2035"):
     source = config.datasets()["gas_prod"]["source"]
     target = config.datasets()["gas_prod"]["target"]
 
-    # Clean table
-    db.execute_sql(
-        f"""
-        DELETE FROM {target['stores']['schema']}.{target['stores']['table']}
-        WHERE "carrier" = 'CH4' AND
-        scn_name = '{scn_name}' AND bus not IN (
-            SELECT bus_id FROM {source['buses']['schema']}.{source['buses']['table']}
-            WHERE scn_name = '{scn_name}' AND country != 'DE'
-        );
-        """
-    )
-
-    CH4_generators_list = pd.concat(
-        [load_NG_generators(scn_name), load_biogas_generators(scn_name)]
-    )
-
-    # Add missing columns
-    c = {"scn_name": scn_name, "carrier": "CH4"}
-    CH4_generators_list = CH4_generators_list.assign(**c)
-
-    # Match to associated CH4 bus
-    CH4_generators_list = db.assign_gas_bus_id(
-        CH4_generators_list, scn_name, "CH4"
-    )
-
-    # Remove useless columns
-    CH4_generators_list = CH4_generators_list.drop(columns=["geom", "bus_id"])
-
-    # Aggregate ch4 productions with same properties at the same bus
-    CH4_generators_list = (
-        CH4_generators_list.groupby(
-            ["bus", "carrier", "scn_name", "marginal_cost"]
+    for scn_name in config.settings()["egon-data"]["--scenarios"]:
+        # Clean table
+        db.execute_sql(
+            f"""
+            DELETE FROM {target['stores']['schema']}.{target['stores']['table']}
+            WHERE "carrier" = 'CH4' AND
+            scn_name = '{scn_name}' AND bus not IN (
+                SELECT bus_id FROM {source['buses']['schema']}.{source['buses']['table']}
+                WHERE scn_name = '{scn_name}' AND country != 'DE'
+            );
+            """
         )
-        .agg({"p_nom": "sum"})
-        .reset_index(drop=False)
-    )
 
-    new_id = db.next_etrago_id("generator")
-    CH4_generators_list["generator_id"] = range(
-        new_id, new_id + len(CH4_generators_list)
-    )
+        if scn_name == "eGon2035":
+            CH4_generators_list = pd.concat(
+                [
+                    load_NG_generators(scn_name),
+                    load_biogas_generators(scn_name),
+                ]
+            )
 
-    # Insert data to db
-    CH4_generators_list.to_sql(
-        target["stores"]["table"],
-        engine,
-        schema=target["stores"]["schema"],
-        index=False,
-        if_exists="append",
-    )
+            # Add missing columns
+            c = {"scn_name": scn_name, "carrier": "CH4"}
+            CH4_generators_list = CH4_generators_list.assign(**c)
+
+            # Match to associated CH4 bus
+            CH4_generators_list = db.assign_gas_bus_id(
+                CH4_generators_list, scn_name, "CH4"
+            )
+
+            # Remove useless columns
+            CH4_generators_list = CH4_generators_list.drop(
+                columns=["geom", "bus_id"]
+            )
+
+            # Aggregate ch4 productions with same properties at the same bus
+            CH4_generators_list = (
+                CH4_generators_list.groupby(
+                    ["bus", "carrier", "scn_name", "marginal_cost"]
+                )
+                .agg({"p_nom": "sum"})
+                .reset_index(drop=False)
+            )
+
+        elif "status" in scn_name:
+            # Add one large CH4 generator at each CH4 bus
+            CH4_generators_list = db.select_dataframe(
+                f"""
+                SELECT bus_id as bus, scn_name, carrier
+                FROM grid.egon_gas_voronoi
+                WHERE scn_name = '{scn_name}'
+                AND carrier = 'CH4'
+                """
+            )
+
+            CH4_generators_list["marginal_cost"] = get_sector_parameters(
+                "gas", scn_name
+            )["marginal_cost"]["CH4"]
+            CH4_generators_list["p_nom"] = 100000
+
+        new_id = db.next_etrago_id("generator")
+        CH4_generators_list["generator_id"] = range(
+            new_id, new_id + len(CH4_generators_list)
+        )
+
+        # Insert data to db
+        CH4_generators_list.to_sql(
+            target["stores"]["table"],
+            engine,
+            schema=target["stores"]["schema"],
+            index=False,
+            if_exists="append",
+        )

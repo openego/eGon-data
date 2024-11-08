@@ -92,7 +92,8 @@ def import_cutout(boundary="Europe"):
         Weather data stored in cutout
 
     """
-    weather_year = get_sector_parameters("global", "eGon2035")["weather_year"]
+    weather_year = get_sector_parameters("global", "status2023")["weather_year"]
+    # This is fixed to one scenario as its currently not possible to have multiple weather-years
 
     if boundary == "Europe":
         xs = slice(-12.0, 35.1)
@@ -195,7 +196,7 @@ def insert_weather_cells():
     cutout = import_cutout()
 
     df = gpd.GeoDataFrame(
-        {"geom": cutout.grid_cells()}, geometry="geom", crs=4326
+        {"geom": cutout.grid.geometry}, geometry="geom", crs=4326
     )
 
     df.to_postgis(

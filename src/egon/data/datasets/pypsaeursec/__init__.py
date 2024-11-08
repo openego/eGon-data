@@ -16,7 +16,7 @@ import pandas as pd
 import pypsa
 import yaml
 
-from egon.data import __path__, db, logger
+from egon.data import __path__, db, logger, config
 from egon.data.datasets import Dataset
 from egon.data.datasets.scenario_parameters import get_sector_parameters
 import egon.data.config
@@ -24,7 +24,6 @@ import egon.data.subprocess as subproc
 
 
 def run_pypsa_eur_sec():
-
     cwd = Path(".")
     filepath = cwd / "run-pypsa-eur-sec"
     filepath.mkdir(parents=True, exist_ok=True)
@@ -132,7 +131,6 @@ def run_pypsa_eur_sec():
 
 
 def read_network():
-
     # Set execute_pypsa_eur_sec to False until optional task is implemented
     execute_pypsa_eur_sec = False
     cwd = Path(".")
@@ -266,7 +264,6 @@ def clean_database():
 
 
 def neighbor_reduction():
-
     network = read_network()
 
     network.links.drop("pipe_retrofit", axis="columns", inplace=True)
@@ -505,7 +502,7 @@ def neighbor_reduction():
     neighbor_gens.index += db.next_etrago_id("generator")
 
     for i in neighbor_gens_t.columns:
-        new_index = neighbor_gens[neighbor_gens["name"] == i].index
+        new_index = neighbor_gens[neighbor_gens["Generator"] == i].index
         neighbor_gens_t.rename(columns={i: new_index[0]}, inplace=True)
 
     # loads
@@ -523,7 +520,7 @@ def neighbor_reduction():
     neighbor_loads.index += db.next_etrago_id("load")
 
     for i in neighbor_loads_t.columns:
-        new_index = neighbor_loads[neighbor_loads["index"] == i].index
+        new_index = neighbor_loads[neighbor_loads["Load"] == i].index
         neighbor_loads_t.rename(columns={i: new_index[0]}, inplace=True)
 
     # stores
@@ -540,7 +537,7 @@ def neighbor_reduction():
     neighbor_stores.index += db.next_etrago_id("store")
 
     for i in neighbor_stores_t.columns:
-        new_index = neighbor_stores[neighbor_stores["name"] == i].index
+        new_index = neighbor_stores[neighbor_stores["Store"] == i].index
         neighbor_stores_t.rename(columns={i: new_index[0]}, inplace=True)
 
     # storage_units
@@ -563,7 +560,9 @@ def neighbor_reduction():
     neighbor_storage.index += db.next_etrago_id("storage")
 
     for i in neighbor_storage_t.columns:
-        new_index = neighbor_storage[neighbor_storage["name"] == i].index
+        new_index = neighbor_storage[
+            neighbor_storage["StorageUnit"] == i
+        ].index
         neighbor_storage_t.rename(columns={i: new_index[0]}, inplace=True)
 
     # Connect to local database
@@ -588,10 +587,19 @@ def neighbor_reduction():
         c_neighbors = pd.concat([coordinates, c_neighbors], axis=1).set_index(
             "new_index", drop=False
         )
-        non_AC_neighbors = non_AC_neighbors.append(c_neighbors)
-    neighbors = neighbors[neighbors.carrier == "AC"].append(non_AC_neighbors)
+        non_AC_neighbors = pd.concat([non_AC_neighbors, c_neighbors])
+    neighbors = pd.concat(
+        [neighbors[neighbors.carrier == "AC"], non_AC_neighbors]
+    )
 
-    for i in ["new_index", "control", "generator", "location", "sub_network"]:
+    for i in [
+        "new_index",
+        "control",
+        "generator",
+        "location",
+        "sub_network",
+        "unit",
+    ]:
         neighbors = neighbors.drop(i, axis=1)
 
     # Add geometry column
@@ -632,7 +640,7 @@ def neighbor_reduction():
         neighbor_lines["s_nom"] = neighbor_lines["s_nom_min"]
 
         for i in [
-            "name",
+            "Line",
             "x_pu_eff",
             "r_pu_eff",
             "sub_network",
@@ -671,8 +679,8 @@ def neighbor_reduction():
             index_label="line_id",
         )
 
-    lines_to_etrago(neighbor_lines=neighbor_lines, scn="eGon100RE")
-    lines_to_etrago(neighbor_lines=neighbor_lines, scn="eGon2035")
+    for scn in config.settings()["egon-data"]["--scenarios"]:
+        lines_to_etrago(neighbor_lines=neighbor_lines, scn=scn)
 
     def links_to_etrago(neighbor_links, scn="eGon100RE", extendable=True):
         """Prepare and write neighboring crossborder links to eTraGo table
@@ -710,7 +718,7 @@ def neighbor_reduction():
         if extendable is True:
             neighbor_links = neighbor_links.drop(
                 columns=[
-                    "name",
+                    "Link",
                     "geometry",
                     "tags",
                     "under_construction",
@@ -725,6 +733,17 @@ def neighbor_reduction():
                     "lifetime",
                     "p_nom_opt",
                     "pipe_retrofit",
+                    "committable",
+                    "start_up_cost",
+                    "shut_down_cost",
+                    "min_up_time",
+                    "min_down_time",
+                    "up_time_before",
+                    "down_time_before",
+                    "ramp_limit_up",
+                    "ramp_limit_down",
+                    "ramp_limit_start_up",
+                    "ramp_limit_shut_down",
                 ],
                 errors="ignore",
             )
@@ -732,7 +751,7 @@ def neighbor_reduction():
         elif extendable is False:
             neighbor_links = neighbor_links.drop(
                 columns=[
-                    "name",
+                    "Link",
                     "geometry",
                     "tags",
                     "under_construction",
@@ -748,6 +767,17 @@ def neighbor_reduction():
                     "p_nom",
                     "p_nom_extendable",
                     "pipe_retrofit",
+                    "committable",
+                    "start_up_cost",
+                    "shut_down_cost",
+                    "min_up_time",
+                    "min_down_time",
+                    "up_time_before",
+                    "down_time_before",
+                    "ramp_limit_up",
+                    "ramp_limit_start_up",
+                    "ramp_limit_down",
+                    "ramp_limit_shut_down",
                 ],
                 errors="ignore",
             )
@@ -832,7 +862,11 @@ def neighbor_reduction():
         extendable=False,
     )
 
-    links_to_etrago(neighbor_links[neighbor_links.carrier == "DC"], "eGon2035")
+    for scn in config.settings()["egon-data"]["--scenarios"]:
+        if scn != "eGon100RE":
+            links_to_etrago(
+                neighbor_links[neighbor_links.carrier == "DC"], scn
+            )
 
     # prepare neighboring generators for etrago tables
     neighbor_gens["scn_name"] = "eGon100RE"
@@ -855,7 +889,14 @@ def neighbor_reduction():
         inplace=True,
     )
 
-    for i in ["name", "weight", "lifetime", "p_set", "q_set", "p_nom_opt"]:
+    for i in [
+        "Generator",
+        "weight",
+        "lifetime",
+        "p_set",
+        "q_set",
+        "p_nom_opt",
+    ]:
         neighbor_gens = neighbor_gens.drop(i, axis=1)
 
     neighbor_gens.to_sql(
@@ -886,7 +927,7 @@ def neighbor_reduction():
     )
 
     neighbor_loads = neighbor_loads.drop(
-        columns=["index"],
+        columns=["Load"],
         errors="ignore",
     )
 
@@ -927,8 +968,16 @@ def neighbor_reduction():
         "carrier",
     ] = "H2_overground"
 
-    for i in ["name", "p_set", "q_set", "e_nom_opt", "lifetime"]:
-        neighbor_stores = neighbor_stores.drop(i, axis=1)
+    for i in [
+        "Store",
+        "p_set",
+        "q_set",
+        "e_nom_opt",
+        "lifetime",
+        "e_initial_per_period",
+        "e_cyclic_per_period",
+    ]:
+        neighbor_stores = neighbor_stores.drop(i, axis=1, errors="ignore")
 
     for c in ["H2_underground", "H2_overground"]:
         neighbor_stores.loc[
@@ -955,8 +1004,13 @@ def neighbor_reduction():
         {"PHS": "pumped_hydro", "hydro": "reservoir"}, inplace=True
     )
 
-    for i in ["name", "p_nom_opt"]:
-        neighbor_storage = neighbor_storage.drop(i, axis=1)
+    for i in [
+        "StorageUnit",
+        "p_nom_opt",
+        "state_of_charge_initial_per_period",
+        "cyclic_state_of_charge_per_period",
+    ]:
+        neighbor_storage = neighbor_storage.drop(i, axis=1, errors="ignore")
 
     neighbor_storage.to_sql(
         "egon_etrago_storage",

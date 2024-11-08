@@ -1,13 +1,13 @@
 openstreetmap:
   original_data:
     source:
-      url: "https://download.geofabrik.de/europe/germany-220101.osm.pbf"
-      url_testmode: "https://download.geofabrik.de/europe/germany/schleswig-holstein-220101.osm.pbf"
+      url: "https://download.geofabrik.de/europe/germany-240101.osm.pbf"
+      url_testmode: "https://download.geofabrik.de/europe/germany/schleswig-holstein-240101.osm.pbf"
       stylefile: "oedb.style"
     target:
       table_prefix: "osm"
-      file: "germany-220101.osm.pbf"
-      file_testmode: "schleswig-holstein-220101.osm.pbf"
+      file: "germany-240101.osm.pbf"
+      file_testmode: "schleswig-holstein-240101.osm.pbf"
   processed:
     schema: "openstreetmap"
     tables:
@@ -90,10 +90,21 @@ map_zensus_vg250:
 demandregio_installation:
   sources:
     git-repository: "https://github.com/openego/disaggregator.git"
-    branch: "features/pip_install"
+    branch: "features/pandas-update"
   targets:
     path: 'demandregio-disaggregator'
 
+demandregio_workaround:
+  source:
+    cache:
+      url: "https://tubcloud.tu-berlin.de/s/dKqF6wKJnLRyDws/download/cache.zip"
+    dbdump:
+      url: "https://tubcloud.tu-berlin.de/s/ktaxyo8kSTK8w3f/download/status2019-egon-demandregio-cts-ind.zip"
+  targets:
+    cache:
+      path: 'demandregio-disaggregator/disaggregator/disaggregator/data_in/'
+    dbdump:
+      path: "demandregio_dbdump"
 demandregio_society:
   sources:
     disaggregator:
@@ -308,8 +319,10 @@ mastr_new:
     - "storage"
     - "wind"
   file_basename: "bnetza_mastr"
-  deposit_id: 10480958
+  deposit_id: 10491882
   egon2021_date_max: "2021-12-31 23:59:00"
+  status2019_date_max: "2019-12-31 23:59:00"
+  status2023_date_max: "2023-12-31 23:59:00"
   geocoding_path:
     - "data_bundle_egon_data"
     - "mastr_geocoding"
@@ -381,7 +394,13 @@ power_plants:
       nep_conv: "supply.egon_nep_2021_conventional_powerplants"
       buses_data: "osmtgmod_results.bus_data"
       power_plants: 'supply.egon_power_plants'
+      biomass: 'supply.egon_power_plants_biomass'
+      hydro: 'supply.egon_power_plants_hydro'
+      pv: 'supply.egon_power_plants_pv'
+      wind: 'supply.egon_power_plants_wind'
       nep_2035: "NEP2035_V2021_scnC2035.xlsx"
+      wind_offshore_status2019: "windoffshore_status2019.xlsx"
+      storages: 'supply.egon_storages'
   target:
       table: 'egon_power_plants'
       schema: 'supply'
@@ -529,6 +548,9 @@ solar_rooftop:
     federal_states:
       schema: 'boundaries'
       table: 'vg250_lan'
+    power_plants:
+      schema: 'supply'
+      table: 'egon_power_plants'
   targets:
     generators:
       schema: 'grid'
@@ -702,7 +724,7 @@ distributed_industrial_demand:
     demandregio:
       schema: 'demand'
       table: 'egon_demandregio_cts_ind'
-      scenarios: ["eGon2021", "eGon2035", "eGon100RE"]
+      scenarios: ["status2019","eGon2021", "eGon2035", "eGon100RE"]
     wz:
       schema: 'demand'
       table: 'egon_demandregio_wz'
@@ -1123,6 +1145,12 @@ emobility_mit:
         columns: "D, J:N"
         skiprows: 8
       trips:
+        status2019:
+          file:  "eGon2035_RS7_min2k_2022-06-01_175429_simbev_run.tar.gz"
+          file_metadata: "metadata_simbev_run.json"
+        status2023:
+          file:  "eGon2035_RS7_min2k_2022-06-01_175429_simbev_run.tar.gz"
+          file_metadata: "metadata_simbev_run.json"
         eGon2035:
           file: "eGon2035_RS7_min2k_2022-06-01_175429_simbev_run.tar.gz"
           file_metadata: "metadata_simbev_run.json"
@@ -1132,6 +1160,8 @@ emobility_mit:
   scenario:
     # used scenario variation (available scenarios see parameters.py)
     variation:
+      status2019: "status2019"
+      status2023: "status2023"
       eGon2035: "NEP C 2035"
       eGon100RE: "Reference 2050"
     # name of low-flex scenario

@@ -11,7 +11,7 @@ from egon.data.datasets import Dataset
 import egon.data.config
 
 WORKING_DIR_MASTR_OLD = Path(".", "bnetza_mastr", "dump_2021-05-03")
-WORKING_DIR_MASTR_NEW = Path(".", "bnetza_mastr", "dump_2022-11-17")
+WORKING_DIR_MASTR_NEW = Path(".", "bnetza_mastr", "dump_2024-01-08")
 
 
 def download_mastr_data():

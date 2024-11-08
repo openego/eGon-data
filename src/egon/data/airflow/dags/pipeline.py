@@ -4,6 +4,7 @@ from airflow.utils.dates import days_ago
 import airflow
 
 from egon.data.config import set_numexpr_threads
+from egon.data.metadata import Json_Metadata
 from egon.data.datasets import database
 from egon.data.datasets.calculate_dlr import Calculate_dlr
 from egon.data.datasets.ch4_prod import CH4Production
@@ -95,7 +96,6 @@ from egon.data.datasets.vg250_mv_grid_districts import Vg250MvGridDistricts
 from egon.data.datasets.zensus import ZensusMiscellaneous, ZensusPopulation
 from egon.data.datasets.zensus_mv_grid_districts import ZensusMvGridDistricts
 from egon.data.datasets.zensus_vg250 import ZensusVg250
-
 # Set number of threads used by numpy and pandas
 set_numexpr_threads()
 
@@ -113,7 +113,6 @@ with airflow.DAG(
     is_paused_upon_creation=False,
     schedule_interval=None,
 ) as pipeline:
-
     tasks = pipeline.task_dict
 
     setup = database.Setup()
@@ -581,7 +580,7 @@ with airflow.DAG(
             heat_supply,
             heat_time_series,
             heat_pumps_pypsa_eur_sec,
-            tasks["power_plants.pv_rooftop_buildings.pv-rooftop-to-buildings"],
+            power_plants,
         ]
     )
 
@@ -630,24 +629,6 @@ with airflow.DAG(
         ]
     )
 
-    mit_charging_infrastructure = MITChargingInfrastructure(
-        dependencies=[mv_grid_districts, hh_demand_buildings_setup]
-    )
-
-    # eMobility: heavy duty transport
-    heavy_duty_transport = HeavyDutyTransport(
-        dependencies=[vg250, setup_etrago, create_gas_polygons_egon2035]
-    )
-
-    cts_demand_buildings = CtsDemandBuildings(
-        dependencies=[
-            osm_buildings_streets,
-            cts_electricity_demand_annual,
-            hh_demand_buildings_setup,
-            tasks["heat_demand_timeseries.export-etrago-cts-heat-profiles"],
-        ]
-    )
-
     # Create load areas
     load_areas = LoadArea(
         dependencies=[
@@ -687,5 +668,14 @@ with airflow.DAG(
             cts_demand_buildings,
             emobility_mit,
             low_flex_scenario,
+        ]
+    )
+
+    # upload json metadata at the end
+    json_metadata = Json_Metadata(
+        dependencies=[
+            load_areas,
+            cts_demand_buildings,
+            heat_pumps_2050
         ]
     )

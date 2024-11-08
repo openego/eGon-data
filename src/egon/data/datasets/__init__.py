@@ -4,19 +4,31 @@ from __future__ import annotations
 
 from collections import abc
 from dataclasses import dataclass
-from functools import reduce
+from functools import partial, reduce, update_wrapper
 from typing import Callable, Iterable, Set, Tuple, Union
 import re
 
-from airflow.operators import BaseOperator as Operator
-from airflow.operators.python_operator import PythonOperator
+from airflow.models.baseoperator import BaseOperator as Operator
+from airflow.operators.python import PythonOperator
 from sqlalchemy import Column, ForeignKey, Integer, String, Table, orm, tuple_
 from sqlalchemy.ext.declarative import declarative_base
 
-from egon.data import db, logger
+from egon.data import config, db, logger
 
 Base = declarative_base()
 SCHEMA = "metadata"
+
+
+def wrapped_partial(func, *args, **kwargs):
+    """Like :func:`functools.partial`, but preserves the original function's
+    name and docstring. Also allows to add a postfix to the function's name.
+    """
+    postfix = kwargs.pop("postfix", None)
+    partial_func = partial(func, *args, **kwargs)
+    update_wrapper(partial_func, func)
+    if postfix:
+        partial_func.__name__ = f"{func.__name__}{postfix}"
+    return partial_func
 
 
 def setup():
@@ -66,6 +78,7 @@ class Model(Base):
     name = Column(String, unique=True, nullable=False)
     version = Column(String, nullable=False)
     epoch = Column(Integer, default=0)
+    scenarios = Column(String, nullable=False)
     dependencies = orm.relationship(
         "Model",
         secondary=DependencyGraph,
@@ -186,14 +199,23 @@ class Dataset:
     tasks: Tasks = ()
 
     def check_version(self, after_execution=()):
+        scenario_names = config.settings()["egon-data"]["--scenarios"]
+
         def skip_task(task, *xs, **ks):
             with db.session_scope() as session:
                 datasets = session.query(Model).filter_by(name=self.name).all()
-                if self.version in [
-                    ds.version for ds in datasets
-                ] and not re.search(r"\.dev$", self.version):
+                if (
+                    self.version in [ds.version for ds in datasets]
+                    and scenario_names
+                    == [
+                        ds.scenarios.replace("{", "").replace("}", "")
+                        for ds in datasets
+                    ]
+                    and not re.search(r"\.dev$", self.version)
+                ):
                     logger.info(
                         f"Dataset '{self.name}' version '{self.version}'"
+                        f" scenarios {scenario_names}"
                         f" already executed. Skipping."
                     )
                 else:
@@ -207,7 +229,11 @@ class Dataset:
         return skip_task
 
     def update(self, session):
-        dataset = Model(name=self.name, version=self.version)
+        dataset = Model(
+            name=self.name,
+            version=self.version,
+            scenarios=config.settings()["egon-data"]["--scenarios"],
+        )
         dependencies = (
             session.query(Model)
             .filter(

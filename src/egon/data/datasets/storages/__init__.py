@@ -1,5 +1,6 @@
 """The central module containing all code dealing with power plant data.
 """
+
 from pathlib import Path
 
 from geoalchemy2 import Geometry
@@ -12,8 +13,12 @@ import pandas as pd
 
 from egon.data import config, db
 from egon.data.datasets import Dataset
-from egon.data.datasets.mastr import WORKING_DIR_MASTR_OLD
-from egon.data.datasets.power_plants import assign_voltage_level
+from egon.data.datasets.mastr import (
+    WORKING_DIR_MASTR_NEW,
+    WORKING_DIR_MASTR_OLD,
+)
+from egon.data.datasets.mv_grid_districts import Vg250GemClean
+from egon.data.datasets.power_plants import assign_bus_id, assign_voltage_level
 from egon.data.datasets.storages.home_batteries import (
     allocate_home_batteries_to_buildings,
 )
@@ -24,6 +29,7 @@ from egon.data.datasets.storages.pumped_hydro import (
     select_mastr_pumped_hydro,
     select_nep_pumped_hydro,
 )
+from egon.data.db import session_scope
 
 Base = declarative_base()
 
@@ -46,14 +52,13 @@ class Storages(Dataset):
     def __init__(self, dependencies):
         super().__init__(
             name="Storages",
-            version="0.0.4",
+            version="0.0.8",
             dependencies=dependencies,
             tasks=(
                 create_tables,
-                allocate_pumped_hydro_eGon2035,
-                allocate_pumped_hydro_eGon100RE,
+                allocate_pumped_hydro_scn,
                 allocate_pv_home_batteries_to_grids,
-                allocate_home_batteries_to_buildings,
+                # allocate_home_batteries_to_buildings,
             ),
         )
 
@@ -77,9 +82,9 @@ def create_tables():
     EgonStorages.__table__.create(bind=engine, checkfirst=True)
 
 
-def allocate_pumped_hydro_eGon2035(export=True):
-    """Allocates pumped_hydro plants for eGon2035 scenario and either exports
-    results to data base or returns as a dataframe
+def allocate_pumped_hydro(scn, export=True):
+    """Allocates pumped_hydro plants for eGon2035 and scenario2019 scenarios
+    and either exports results to data base or returns as a dataframe
 
     Parameters
     ----------
@@ -91,21 +96,21 @@ def allocate_pumped_hydro_eGon2035(export=True):
     Returns
     -------
     power_plants : pandas.DataFrame
-        List of pumped hydro plants in 'eGon2035' scenario
+        List of pumped hydro plants in 'eGon2035' and 'scenario2019' scenarios
     """
 
     carrier = "pumped_hydro"
 
     cfg = config.datasets()["power_plants"]
 
-    nep = select_nep_pumped_hydro()
+    nep = select_nep_pumped_hydro(scn=scn)
     mastr = select_mastr_pumped_hydro()
 
     # Assign voltage level to MaStR
     mastr["voltage_level"] = assign_voltage_level(
         mastr.rename({"el_capacity": "Nettonennleistung"}, axis=1),
         cfg,
-        WORKING_DIR_MASTR_OLD
+        WORKING_DIR_MASTR_OLD,
     )
 
     # Initalize DataFrame for matching power plants
@@ -124,7 +129,12 @@ def allocate_pumped_hydro_eGon2035(export=True):
     # Match pumped_hydro units from NEP list
     # using PLZ and capacity
     matched, mastr, nep = match_storage_units(
-        nep, mastr, matched, buffer_capacity=0.1, consider_carrier=False
+        nep,
+        mastr,
+        matched,
+        buffer_capacity=0.1,
+        consider_carrier=False,
+        scn=scn,
     )
 
     # Match plants from NEP list using plz,
@@ -136,6 +146,7 @@ def allocate_pumped_hydro_eGon2035(export=True):
         consider_location="plz",
         consider_carrier=False,
         consider_capacity=False,
+        scn=scn,
     )
 
     # Match plants from NEP list using city,
@@ -147,6 +158,7 @@ def allocate_pumped_hydro_eGon2035(export=True):
         consider_location="city",
         consider_carrier=False,
         consider_capacity=False,
+        scn=scn,
     )
 
     # Match remaining plants from NEP using the federal state
@@ -157,6 +169,7 @@ def allocate_pumped_hydro_eGon2035(export=True):
         buffer_capacity=0.1,
         consider_location="federal_state",
         consider_carrier=False,
+        scn=scn,
     )
 
     # Match remaining plants from NEP using the federal state
@@ -167,27 +180,30 @@ def allocate_pumped_hydro_eGon2035(export=True):
         buffer_capacity=0.7,
         consider_location="federal_state",
         consider_carrier=False,
+        scn=scn,
     )
 
     print(f"{matched.el_capacity.sum()} MW of {carrier} matched")
-    print(f"{nep.c2035_capacity.sum()} MW of {carrier} not matched")
+    print(f"{nep.elec_capacity.sum()} MW of {carrier} not matched")
 
-    if nep.c2035_capacity.sum() > 0:
-
+    if nep.elec_capacity.sum() > 0:
         # Get location using geolocator and city information
         located, unmatched = get_location(nep)
 
         # Bring both dataframes together
-        matched = matched.append(
-            located[
-                [
-                    "carrier",
-                    "el_capacity",
-                    "scenario",
-                    "geometry",
-                    "source",
-                    "MaStRNummer",
-                ]
+        matched = pd.concat(
+            [
+                matched,
+                located[
+                    [
+                        "carrier",
+                        "el_capacity",
+                        "scenario",
+                        "geometry",
+                        "source",
+                        "MaStRNummer",
+                    ]
+                ],
             ],
             ignore_index=True,
         )
@@ -231,9 +247,9 @@ def allocate_pumped_hydro_eGon2035(export=True):
 
     # Delete existing units in the target table
     db.execute_sql(
-        f""" DELETE FROM {cfg ['target']['schema']}.{cfg ['target']['table']}
+        f""" DELETE FROM {cfg ['sources']['storages']}
         WHERE carrier IN ('pumped_hydro')
-        AND scenario='eGon2035';"""
+        AND scenario='{scn}';"""
     )
 
     # If export = True export pumped_hydro plants to data base
@@ -241,22 +257,236 @@ def allocate_pumped_hydro_eGon2035(export=True):
     if export:
         # Insert into target table
         session = sessionmaker(bind=db.engine())()
-        for i, row in power_plants.iterrows():
-            entry = EgonStorages(
-                sources={"el_capacity": row.source},
-                source_id={"MastrNummer": row.MaStRNummer},
-                carrier=row.carrier,
-                el_capacity=row.el_capacity,
-                voltage_level=row.voltage_level,
-                bus_id=row.bus_id,
-                scenario=row.scenario,
-                geom=f"SRID=4326;POINT({row.geometry.x} {row.geometry.y})",
-            )
-            session.add(entry)
-        session.commit()
+        with session_scope() as session:
+            for i, row in power_plants.iterrows():
+                entry = EgonStorages(
+                    sources={"el_capacity": row.source},
+                    source_id={"MastrNummer": row.MaStRNummer},
+                    carrier=row.carrier,
+                    el_capacity=row.el_capacity,
+                    voltage_level=row.voltage_level,
+                    bus_id=row.bus_id,
+                    scenario=row.scenario,
+                    geom=f"SRID=4326;POINT({row.geometry.x} {row.geometry.y})",
+                )
+                session.add(entry)
+            session.commit()
 
     else:
         return power_plants
+
+
+def allocate_pumped_hydro_sq(scn_name):
+    """
+    Allocate pumped hydro by mastr data only. Capacities outside
+    germany are assigned to foreign buses. Mastr dump 2024 is used.
+    No filter for commissioning is applied.
+    Parameters
+    ----------
+    scn_name
+
+    Returns
+    -------
+
+    """
+    sources = config.datasets()["power_plants"]["sources"]
+
+    # Read-in data from MaStR
+    mastr_ph = pd.read_csv(
+        WORKING_DIR_MASTR_NEW / sources["mastr_storage"],
+        delimiter=",",
+        usecols=[
+            "Nettonennleistung",
+            "EinheitMastrNummer",
+            "Kraftwerksnummer",
+            "Technologie",
+            "Postleitzahl",
+            "Laengengrad",
+            "Breitengrad",
+            "EinheitBetriebsstatus",
+            "LokationMastrNummer",
+            "Ort",
+            "Bundesland",
+        ],
+        dtype={"Postleitzahl": str},
+    )
+
+    if config.settings()["egon-data"]["--dataset-boundary"] == "Schleswig-Holstein":
+        # Filter for Schleswig-Holstein
+        mastr_ph = mastr_ph.loc[mastr_ph.Bundesland == "SchleswigHolstein"]
+
+    # Rename columns
+    mastr_ph = mastr_ph.rename(
+        columns={
+            "Kraftwerksnummer": "bnetza_id",
+            "Technologie": "carrier",
+            "Postleitzahl": "plz",
+            "Ort": "city",
+            "Bundesland": "federal_state",
+            "Nettonennleistung": "el_capacity",
+        }
+    )
+
+    # Select only pumped hydro units
+    mastr_ph = mastr_ph.loc[mastr_ph.carrier == "Pumpspeicher"]
+
+    # Select only pumped hydro units which are in operation
+    mastr_ph = mastr_ph.loc[mastr_ph.EinheitBetriebsstatus == "InBetrieb"]
+
+    # Calculate power in MW
+    mastr_ph.loc[:, "el_capacity"] *= 1e-3
+
+    # Create geodataframe from long, lat
+    mastr_ph = gpd.GeoDataFrame(
+        mastr_ph,
+        geometry=gpd.points_from_xy(
+            mastr_ph["Laengengrad"], mastr_ph["Breitengrad"]
+        ),
+        crs="4326",
+    )
+
+    # Identify pp without geocord
+    mastr_ph_nogeo = mastr_ph.loc[mastr_ph["Laengengrad"].isna()]
+
+    # Remove all PP without geocord (PP<= 30kW)
+    mastr_ph = mastr_ph.dropna(subset="Laengengrad")
+
+    # Get geometry of villages/cities with same name of pp with missing geocord
+    with session_scope() as session:
+        query = session.query(
+            Vg250GemClean.gen, Vg250GemClean.geometry
+        ).filter(Vg250GemClean.gen.in_(mastr_ph_nogeo.loc[:, "city"].unique()))
+        df_cities = gpd.read_postgis(
+            query.statement,
+            query.session.bind,
+            geom_col="geometry",
+            crs="4326",
+        )
+
+    # Just take the first entry, inaccuracy is negligible as centroid is taken afterwards
+    df_cities = df_cities.drop_duplicates("gen", keep="first")
+
+    # Use the centroid instead of polygon of region
+    df_cities.loc[:, "geometry"] = df_cities["geometry"].centroid
+
+    # Add centroid geometry to pp without geometry
+    mastr_ph_nogeo = pd.merge(
+        left=df_cities,
+        right=mastr_ph_nogeo,
+        right_on="city",
+        left_on="gen",
+        how="inner",
+    ).drop("gen", axis=1)
+
+    mastr_ph = pd.concat([mastr_ph, mastr_ph_nogeo], axis=0)
+
+    # aggregate capacity per location
+    agg_cap = mastr_ph.groupby("geometry")["el_capacity"].sum()
+
+    # list mastr number by location
+    agg_mastr = mastr_ph.groupby("geometry")["EinheitMastrNummer"].apply(list)
+
+    # remove duplicates by location and keep only first
+    mastr_ph = mastr_ph.drop_duplicates(subset="geometry", keep="first").drop(
+        ["el_capacity", "EinheitMastrNummer"], axis=1
+    )
+
+    # Add aggregated capacity by location
+    mastr_ph = pd.merge(
+        left=mastr_ph, right=agg_cap, left_on="geometry", right_on="geometry"
+    )
+
+    # Add list of mastr nr by location
+    mastr_ph = pd.merge(
+        left=mastr_ph, right=agg_mastr, left_on="geometry", right_on="geometry"
+    )
+
+    # Drop small pp <= 03 kW
+    mastr_ph = mastr_ph.loc[mastr_ph["el_capacity"] > 30]
+
+    # Apply voltage level by capacity
+    mastr_ph = apply_voltage_level_thresholds(mastr_ph)
+    mastr_ph["voltage_level"] = mastr_ph["voltage_level"].astype(int)
+
+    # Capacity located outside germany -> will be assigned to foreign buses
+    mastr_ph_foreign = mastr_ph.loc[mastr_ph["federal_state"].isna()]
+
+    if not mastr_ph_foreign.empty:
+        # Get foreign buses
+        sql = f"""
+        SELECT * FROM grid.egon_etrago_bus
+        WHERE scn_name = '{scn_name}'
+        and country != 'DE'
+        """
+        df_foreign_buses = db.select_geodataframe(
+            sql, geom_col="geom", epsg="4326"
+        )
+
+        # Assign closest foreign bus at voltage level to foreign pp
+        nearest_neighbors = []
+        for vl, v_nom in {1: 380, 2: 220, 3: 110}.items():
+            ph = mastr_ph_foreign.loc[mastr_ph_foreign["voltage_level"] == vl]
+            if ph.empty:
+                continue
+            bus = df_foreign_buses.loc[
+                df_foreign_buses["v_nom"] == v_nom,
+                ["v_nom", "country", "bus_id", "geom"],
+            ]
+            results = gpd.sjoin_nearest(
+                left_df=ph, right_df=bus, how="left", distance_col="distance"
+            )
+            nearest_neighbors.append(results)
+        mastr_ph_foreign = pd.concat(nearest_neighbors)
+
+    # Keep only capacities within germany
+    mastr_ph = mastr_ph.dropna(subset="federal_state")
+
+    # Assign buses within germany
+    mastr_ph = assign_bus_id(mastr_ph, cfg=config.datasets()["power_plants"])
+    mastr_ph["bus_id"] = mastr_ph["bus_id"].astype(int)
+
+    if not mastr_ph_foreign.empty:
+        # Merge foreign pp
+        mastr_ph = pd.concat([mastr_ph, mastr_ph_foreign])
+
+    # Reduce to necessary columns
+    mastr_ph = mastr_ph[
+        [
+            "el_capacity",
+            "voltage_level",
+            "bus_id",
+            "geometry",
+            "EinheitMastrNummer",
+        ]
+    ]
+
+    # Rename and format columns
+    mastr_ph["carrier"] = "pumped_hydro"
+    mastr_ph = mastr_ph.rename(
+        columns={"EinheitMastrNummer": "source_id", "geometry": "geom"}
+    )
+    mastr_ph["source_id"] = mastr_ph["source_id"].apply(
+        lambda x: {"MastrNummer": ", ".join(x)}
+    )
+    mastr_ph = mastr_ph.set_geometry("geom")
+    mastr_ph["geom"] = mastr_ph["geom"].apply(lambda x: x.wkb_hex)
+    mastr_ph["scenario"] = "status2023"
+    mastr_ph["sources"] = [
+        {"el_capacity": "MaStR aggregated by location"}
+    ] * mastr_ph.shape[0]
+
+    # Delete existing units in the target table
+    db.execute_sql(
+        f""" DELETE FROM supply.egon_storages
+        WHERE carrier = 'pumped_hydro'
+        AND scenario= '{scn_name}';"""
+    )
+
+    with db.session_scope() as session:
+        session.bulk_insert_mappings(
+            EgonStorages,
+            mastr_ph.to_dict(orient="records"),
+        )
 
 
 def allocate_pumped_hydro_eGon100RE():
@@ -301,7 +531,8 @@ def allocate_pumped_hydro_eGon100RE():
 
     # Get allocation of pumped_hydro plants in eGon2035 scenario as the
     # reference for the distribution in eGon100RE scenario
-    allocation = allocate_pumped_hydro_eGon2035(export=False)
+    allocation = allocate_pumped_hydro(scn="status2019", export=False)
+    # TODO status2023 leave same as status2019
 
     scaling_factor = capacity_phes / allocation.el_capacity.sum()
 
@@ -345,7 +576,6 @@ def home_batteries_per_scenario(scenario):
     dataset = config.settings()["egon-data"]["--dataset-boundary"]
 
     if scenario == "eGon2035":
-
         target_file = (
             Path(".")
             / "data_bundle_egon_data"
@@ -359,8 +589,8 @@ def home_batteries_per_scenario(scenario):
             index_col="Unnamed: 0",
         )
 
-    # Select target value in MW
-        target = capacities_nep.Summe["PV-Batteriespeicher"]*1000
+        # Select target value in MW
+        target = capacities_nep.Summe["PV-Batteriespeicher"] * 1000
 
     else:
         target = db.select_dataframe(
@@ -394,7 +624,7 @@ def home_batteries_per_scenario(scenario):
     battery["carrier"] = "home_battery"
     battery["scenario"] = scenario
 
-    if scenario == "eGon2035":
+    if (scenario == "eGon2035") | ("status" in scenario):
         source = "NEP"
 
     else:
@@ -420,6 +650,15 @@ def home_batteries_per_scenario(scenario):
 
 
 def allocate_pv_home_batteries_to_grids():
+    for scn in config.settings()["egon-data"]["--scenarios"]:
+        home_batteries_per_scenario(scn)
 
-    home_batteries_per_scenario("eGon2035")
-    home_batteries_per_scenario("eGon100RE")
+
+def allocate_pumped_hydro_scn():
+    for scn in config.settings()["egon-data"]["--scenarios"]:
+        if scn == "eGon2035":
+            allocate_pumped_hydro(scn="eGon2035")
+        elif scn == "eGon100RE":
+            allocate_pumped_hydro_eGon100RE()
+        elif "status" in scn:
+            allocate_pumped_hydro_sq(scn_name=scn)

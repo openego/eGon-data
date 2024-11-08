@@ -10,16 +10,16 @@ import pandas as pd
 import numpy as np
 
 
-def hts_to_etrago():
-
+def hts_to_etrago(scenario):
     sources = config.datasets()["etrago_heat"]["sources"]
     targets = config.datasets()["etrago_heat"]["targets"]
-    scenario = "eGon2035"
     carriers = ["central_heat", "rural_heat", "rural_gas_boiler"]
+
+    if "status" in scenario:
+        carriers = ["central_heat", "rural_heat"]
 
     for carrier in carriers:
         if carrier == "central_heat":
-
             # Map heat buses to district heating id and area_id
             # interlinking bus_id and area_id
             bus_area = db.select_dataframe(
@@ -92,7 +92,7 @@ def hts_to_etrago():
             bus_ts.loc[:, "bus_id"] = bus_ts.loc[:, "heat_bus_id"]
 
         else:
-            efficiency_gas_boiler = get_sector_parameters("heat", "eGon2035")[
+            efficiency_gas_boiler = get_sector_parameters("heat", scenario)[
                 "efficiency"
             ]["rural_gas_boiler"]
 
@@ -212,6 +212,18 @@ def hts_to_etrago():
         )
 
 
+def demand():
+    """Insert demand timeseries for heat into eTraGo tables
+
+    Returns
+    -------
+    None.
+
+    """
+    for scenario in config.settings()["egon-data"]["--scenarios"]:
+        hts_to_etrago(scenario)
+
+
 class HtsEtragoTable(Dataset):
     """
     Collect heat demand time series for the eTraGo tool
@@ -242,5 +254,5 @@ class HtsEtragoTable(Dataset):
             name=self.name,
             version=self.version,
             dependencies=dependencies,
-            tasks=(hts_to_etrago,),
+            tasks=(demand,),
         )

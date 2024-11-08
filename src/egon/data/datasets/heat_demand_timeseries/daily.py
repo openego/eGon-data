@@ -9,6 +9,7 @@ import pandas as pd
 
 from egon.data import db
 import egon.data.datasets.era5 as era
+from egon.data.datasets.scenario_parameters import get_sector_parameters
 
 
 from math import ceil
@@ -155,7 +156,7 @@ def map_climate_zones_to_zensus():
 
 
 def daily_demand_shares_per_climate_zone():
-    """Calculates shares of heat demand per day for each cliamte zone
+    """Calculates shares of heat demand per day for each climate zone
 
     Returns
     -------
@@ -171,14 +172,17 @@ def daily_demand_shares_per_climate_zone():
         bind=engine, checkfirst=True
     )
 
+    # Get temperature profiles of all TRY Climate Zones 2011
+    temp_profile = temperature_profile_extract()
+
     # Calulate daily demand shares
-    h = h_value()
+    h = h_value(temp_profile)
 
     # Normalize data to sum()=1
     daily_demand_shares = h.resample("d").sum() / h.sum()
 
     # Extract temperature class for each day and climate zone
-    temperature_classes = temp_interval().resample("D").max()
+    temperature_classes = temp_interval(temp_profile).resample("D").max()
 
     # Initilize dataframe
     df = pd.DataFrame(
@@ -192,16 +196,21 @@ def daily_demand_shares_per_climate_zone():
 
     # Insert data into dataframe
     for index, row in daily_demand_shares.transpose().iterrows():
-
-        df = df.append(
-            pd.DataFrame(
-                data={
-                    "climate_zone": index,
-                    "day_of_year": row.index.day_of_year,
-                    "daily_demand_share": row.values,
-                    "temperature_class": temperature_classes[index][row.index],
-                }
-            )
+        df = pd.concat(
+            [
+                df,
+                pd.DataFrame(
+                    data={
+                        "climate_zone": index,
+                        "day_of_year": row.index.day_of_year,
+                        "daily_demand_share": row.values,
+                        "temperature_class": temperature_classes[index][
+                            row.index
+                        ],
+                    }
+                ),
+            ],
+            ignore_index=True,
         )
 
     # Insert dataframe to SQL table
@@ -312,18 +321,22 @@ def temperature_profile_extract():
     return temperature_profile
 
 
-def temp_interval():
+def temp_interval(temp_profile):
     """
     Description: Create Dataframe with temperature data for TRY Climate Zones
+
+    temp_profile: pandas.DataFrame
+        temperature profiles of all TRY Climate Zones 2011
     Returns
     -------
     temperature_interval : pandas.DataFrame
         Hourly temperature intrerval of all 15 TRY Climate station#s temperature profile
 
     """
-    index = pd.date_range(datetime(2011, 1, 1, 0), periods=8760, freq="H")
+    weather_year = get_sector_parameters("global", "status2023")["weather_year"]
+    # TODO" status2023 this is currenlty fixed to one scenario possible as only one weather year is possible
+    index = pd.date_range(datetime(weather_year, 1, 1, 0), periods=8760, freq="H")
     temperature_interval = pd.DataFrame()
-    temp_profile = temperature_profile_extract()
 
     for x in range(len(temp_profile.columns)):
         name_station = temp_profile.columns[x]
@@ -337,10 +350,12 @@ def temp_interval():
     return temperature_interval
 
 
-def h_value():
+def h_value(temp_profile):
     """
     Description: Assignment of daily demand scaling factor to each day of all TRY Climate Zones
 
+    temp_profile: pandas.DataFrame
+        temperature profiles of all TRY Climate Zones 2011
     Returns
     -------
     h : pandas.DataFrame
@@ -348,7 +363,10 @@ def h_value():
         Extracted from demandlib.
 
     """
-    index = pd.date_range(datetime(2011, 1, 1, 0), periods=8760, freq="H")
+
+    weather_year = get_sector_parameters("global", "status2023")["weather_year"]
+    # TODO status2023: this is fixed to 2023 as only one weather year is currently possible
+    index = pd.date_range(datetime(weather_year, 1, 1, 0), periods=8760, freq="H")
 
     a = 3.0469695
 
@@ -358,7 +376,6 @@ def h_value():
 
     d = 0.1163157
 
-    temp_profile = temperature_profile_extract()
     temperature_profile_res = (
         temp_profile.resample("D")
         .mean()

@@ -1,5 +1,6 @@
 """The central module containing all code dealing with scenario table.
 """
+
 from pathlib import Path
 from urllib.request import urlretrieve
 import shutil
@@ -43,6 +44,19 @@ def create_table():
         "DROP TABLE IF EXISTS scenario.egon_scenario_parameters CASCADE;"
     )
     EgonScenario.__table__.create(bind=engine, checkfirst=True)
+
+
+def get_scenario_year(scenario_name):
+    """Derives scenarios year from scenario name. Scenario
+    eGon100RE is an exception as year is not in the name."""
+    try:
+        year = int(scenario_name[-4:])
+    except ValueError as e:
+        if e.args[0] == "invalid literal for int() with base 10: '00RE'":
+            year = 2050  # eGon100RE
+        else:
+            raise ValueError("The names of the scenarios do not end with the year!")
+    return year
 
 
 def insert_scenarios():
@@ -126,6 +140,47 @@ def insert_scenarios():
 
     session.commit()
 
+    # Scenario status2019
+    status2019 = EgonScenario(name="status2019")
+
+    status2019.description = """
+        Status quo ante scenario for 2019 for validation use within the project PoWerD.
+        """
+    status2019.global_parameters = parameters.global_settings(status2019.name)
+
+    status2019.electricity_parameters = parameters.electricity(status2019.name)
+
+    status2019.gas_parameters = parameters.gas(status2019.name)
+
+    status2019.heat_parameters = parameters.heat(status2019.name)
+
+    status2019.mobility_parameters = parameters.mobility(status2019.name)
+
+    session.add(status2019)
+
+    session.commit()
+
+    # Scenario status2023
+    status2023 = EgonScenario(name="status2023")
+
+    status2023.description = """
+        Status quo ante scenario for 2023.
+        """
+    # TODO status2023 all settings from 2019 are used
+    status2023.global_parameters = parameters.global_settings(status2023.name)
+
+    status2023.electricity_parameters = parameters.electricity(status2019.name)
+
+    status2023.gas_parameters = parameters.gas(status2019.name)
+
+    status2023.heat_parameters = parameters.heat(status2019.name)
+
+    status2023.mobility_parameters = parameters.mobility(status2023.name)
+
+    session.add(status2023)
+
+    session.commit()
+
 
 def get_sector_parameters(sector, scenario=None):
     """Returns parameters for each sector as dictionary.
@@ -164,17 +219,17 @@ def get_sector_parameters(sector, scenario=None):
         else:
             print(f"Scenario name {scenario} is not valid.")
     else:
-        values = (
-            pd.DataFrame(
-                db.select_dataframe(
-                    f"""
+        values = pd.concat(
+            [
+                pd.DataFrame(
+                    db.select_dataframe(
+                        f"""
                     SELECT {sector}_parameters as val
                     FROM scenario.egon_scenario_parameters
                     WHERE name='eGon2035'"""
-                ).val[0],
-                index=["eGon2035"],
-            )
-            .append(
+                    ).val[0],
+                    index=["eGon2035"],
+                ),
                 pd.DataFrame(
                     db.select_dataframe(
                         f"""
@@ -183,9 +238,7 @@ def get_sector_parameters(sector, scenario=None):
                         WHERE name='eGon100RE'"""
                     ).val[0],
                     index=["eGon100RE"],
-                )
-            )
-            .append(
+                ),
                 pd.DataFrame(
                     db.select_dataframe(
                         f"""
@@ -194,8 +247,9 @@ def get_sector_parameters(sector, scenario=None):
                         WHERE name='eGon2021'"""
                     ).val[0],
                     index=["eGon2021"],
-                )
-            )
+                ),
+            ],
+            ignore_index=True,
         )
 
     return values

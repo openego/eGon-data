@@ -734,27 +734,38 @@ def write_model_data_to_db(
         # * load timeseries:
         #   * regular (flex): use driving load
         #   * lowflex: use dumb charging load
-        if write_lowflex_model is False:
-            emob_bus_id = write_bus(scenario_name=scenario_name)
-            write_link(scenario_name=scenario_name)
-            write_store(scenario_name=scenario_name)
+        #   * status2019: also dumb charging
+        #   * status2023: also dumb charging
+
+        if scenario_name in ["status2019", "status2023"]:
             write_load(
                 scenario_name=scenario_name,
-                connection_bus_id=emob_bus_id,
-                load_ts=(
-                    hourly_load_time_series_df.driving_load_time_series.to_list()  # noqa: E501
-                ),
-            )
-        else:
-            # Get lowflex scenario name
-            lowflex_scenario_name = DATASET_CFG["scenario"]["lowflex"][
-                "names"
-            ][scenario_name]
-            write_load(
-                scenario_name=lowflex_scenario_name,
                 connection_bus_id=etrago_bus.bus_id,
                 load_ts=hourly_load_time_series_df.load_time_series.to_list(),
-            )
+                )
+        else:
+            if write_lowflex_model is False:
+                emob_bus_id = write_bus(scenario_name=scenario_name)
+                write_link(scenario_name=scenario_name)
+                write_store(scenario_name=scenario_name)
+                write_load(
+                    scenario_name=scenario_name,
+                    connection_bus_id=emob_bus_id,
+                    load_ts=(
+                        hourly_load_time_series_df.driving_load_time_series.to_list()  # noqa: E501
+                    ),
+                )
+
+            else:
+                # Get lowflex scenario name
+                lowflex_scenario_name = DATASET_CFG["scenario"]["lowflex"][
+                    "names"
+                ][scenario_name]
+                write_load(
+                    scenario_name=lowflex_scenario_name,
+                    connection_bus_id=etrago_bus.bus_id,
+                    load_ts=hourly_load_time_series_df.load_time_series.to_list(),
+                )
 
     def write_to_file():
         """Write model data to file (for debugging purposes)"""
@@ -1058,6 +1069,23 @@ def generate_model_data_bunch(scenario_name: str, bunch: range) -> None:
             bat_cap=meta_tech_data.battery_capacity,
         )
 
+def generate_model_data_status2019_remaining():
+    """Generates timeseries for status2019 scenario for grid districts which
+    has not been processed in the parallel tasks before.
+    """
+    generate_model_data_bunch(
+        scenario_name="status2019",
+        bunch=range(MVGD_MIN_COUNT, len(load_grid_district_ids())),
+    )
+
+def generate_model_data_status2023_remaining():
+    """Generates timeseries for status2023 scenario for grid districts which
+    has not been processed in the parallel tasks before.
+    """
+    generate_model_data_bunch(
+        scenario_name="status2023",
+        bunch=range(MVGD_MIN_COUNT, len(load_grid_district_ids())),
+    )
 
 def generate_model_data_eGon2035_remaining():
     """Generates timeseries for eGon2035 scenario for grid districts which

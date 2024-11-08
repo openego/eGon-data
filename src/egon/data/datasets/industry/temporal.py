@@ -16,7 +16,6 @@ Base = declarative_base()
 
 
 def identify_voltage_level(df):
-
     """Identify the voltage_level of a grid component based on its peak load
     and defined thresholds.
 
@@ -112,7 +111,7 @@ def identify_bus(load_curves, demand_area):
     ).drop_duplicates(subset=["id"])
 
     # Bring both dataframes together
-    peak_bus = peak_hv_c.append(peak_hv_p, ignore_index=True)
+    peak_bus = pd.concat([peak_hv_c, peak_hv_p], ignore_index=True)
 
     # Select ehv voronoi
     ehv_voronoi = db.select_geodataframe(
@@ -133,7 +132,7 @@ def identify_bus(load_curves, demand_area):
     peak_ehv = gpd.sjoin(peak_ehv, ehv_voronoi, how="inner", op="intersects")
 
     # Bring both dataframes together
-    peak_bus = peak_bus.append(peak_ehv, ignore_index=True)
+    peak_bus = pd.concat([peak_bus, peak_ehv], ignore_index=True)
 
     # Combine dataframes to bring loadcurves and bus id together
     curves_da = pd.merge(
@@ -190,7 +189,7 @@ def calc_load_curves_ind_osm(scenario):
     )
 
     # Calculate shares of industrial branches per osm area
-    osm_share_wz = demands_osm_area.groupby("osm_id").apply(
+    osm_share_wz = demands_osm_area.groupby(["osm_id"], as_index=False).apply(
         lambda grp: grp / grp.sum()
     )
 
@@ -213,13 +212,16 @@ def calc_load_curves_ind_osm(scenario):
     annual_demand_osm = demands_osm_area.groupby("osm_id").demand.sum()
 
     # Return electrical load curves per osm industrial landuse area
-    load_curves = calc_load_curve(share_wz_transpose, annual_demand_osm)
+    load_curves = calc_load_curve(share_wz_transpose, scenario, annual_demand_osm)
 
     curves_da = identify_bus(load_curves, demand_area)
 
     # Group all load curves per bus
     curves_bus = (
-        curves_da.drop(["id"], axis=1).fillna(0).groupby("bus_id").sum()
+        curves_da.drop(["id", "geom"], axis=1)
+        .fillna(0)
+        .groupby("bus_id")
+        .sum()
     )
 
     # Initalize pandas.DataFrame for export to database
@@ -256,8 +258,7 @@ def insert_osm_ind_load():
         "targets"
     ]
 
-    for scenario in ["eGon2021", "eGon2035", "eGon100RE"]:
-
+    for scenario in egon.data.config.settings()["egon-data"]["--scenarios"]:
         # Delete existing data from database
         db.execute_sql(
             f"""
@@ -372,7 +373,7 @@ def calc_load_curves_ind_sites(scenario):
             .demand
         )
 
-    load_curves = calc_load_curve(share_transpose, demands_ind_sites["demand"])
+    load_curves = calc_load_curve(share_transpose, scenario, demands_ind_sites["demand"])
 
     curves_da = identify_bus(load_curves, demand_area)
 
@@ -382,10 +383,10 @@ def calc_load_curves_ind_sites(scenario):
 
     # Group all load curves per bus and wz
     curves_bus = (
-        curves_da.fillna(0)
+        curves_da.drop(["id", "geom"], axis=1)
+        .fillna(0)
         .groupby(["bus_id", "wz"])
         .sum()
-        .drop(["id"], axis=1)
     )
 
     # Initalize pandas.DataFrame for pf table load timeseries
@@ -425,8 +426,7 @@ def insert_sites_ind_load():
         "targets"
     ]
 
-    for scenario in ["eGon2021", "eGon2035", "eGon100RE"]:
-
+    for scenario in egon.data.config.settings()["egon-data"]["--scenarios"]:
         # Delete existing data from database
         db.execute_sql(
             f"""
