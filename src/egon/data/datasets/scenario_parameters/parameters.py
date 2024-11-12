@@ -754,7 +754,7 @@ def gas(scenario):
             0.4: 450_000,  # EUR/km
             0.3: 400_000,  # EUR/km
             0.2: 350_000,  # EUR/km
-            0: 300_000,  # EUR/km   (costs for any other pipeline diameter)
+            0.0: 300_000,  # EUR/km   (costs for any other pipeline diameter)
         }
         
         # Insert lifetime
@@ -772,7 +772,7 @@ def gas(scenario):
             "H2_overground": read_costs(
                 costs, "hydrogen storage tank incl. compressor", "lifetime"
             ),
-            "H2_pipeline": 25,  # source toDO: ask sayed        
+            "H2_pipeline": 25,  # source toDO: ask sayed  
             "Heat_exchanger": 20, # assumption based on lifetime heat_exchanger; source: E. van der Roest, R. Bol, T. Fens und A. van Wijk, „Utilisation of waste heat from PEM electrolysers - Unlocking local optimisation, 2023
             "Heat_pipeline": 20,
             "O2_components": 25,  # source toDO: ask sayed 
@@ -867,6 +867,9 @@ def gas(scenario):
                 costs, "hydrogen storage tank incl. compressor", "investment"
             ),
             "H2_pipeline": 25_000, # [EUR/MW] ; source toDO: ask sayed 
+            "H2_pipeline_retrofit": read_costs(
+                costs, "H2 (g) pipeline repurposed", "FOM"
+            ),
             "Heat_exchanger": 25_000, # [EUR/MW_th] cost assumption for one additional heat_exchanger; source: project internal cost assumption by Fraunhofer ISE
             "Heat_pipeline": 400_000, # [EUR/MW/km]; average value for DN100-pipeline; source: L. Zimmermann, MODELLIERUNG DER ABWÄRMENUTZUNG VON ELEKTROLYSEUREN IN DEUTSCHLAND FÜR EINE TECHNO - ÖKONOMISCHE OPTIMIERUNG EINES SEKTOR - GEKOPPELTEN ENERGIESYSTEM, 2024
             "O2_components": 5000, # [EUR] ; source toDO: ask sayed 
@@ -895,7 +898,10 @@ def gas(scenario):
             "H2_overground": read_costs(
                 costs, "hydrogen storage tank incl. compressor", "lifetime"
             ),
-            "H2_pipeline": 25,  # source toDO: ask sayed        
+            "H2_pipeline": 25,  # source toDO: ask sayed   
+            "H2_pipeline_retrofit": read_costs(
+                costs, "H2 (g) pipeline repurposed", "FOM"
+            ),
             "Heat_exchanger": 20, # assumption based on lifetime heat_exchanger; source: E. van der Roest, R. Bol, T. Fens und A. van Wijk, „Utilisation of waste heat from PEM electrolysers - Unlocking local optimisation, 2023
             "Heat_pipeline": 20,
             "O2_components": 25,  # source toDO: ask sayed 

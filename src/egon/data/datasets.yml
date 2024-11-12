@@ -1282,7 +1282,7 @@ PtH2_waste_heat_O2:
       table: 'egon_hvmv_substation'
     buses:
       schema: 'grid'
-      table: 'egon_etrago_buses'
+      table: 'egon_etrago_bus'
     loads:
       schema: 'grid'
       table: 'egon_etrago_load'
@@ -1295,6 +1295,9 @@ PtH2_waste_heat_O2:
     mv_districts:
       schema: 'grid'
       table: 'egon_mv_grid_district'
+    ehv_voronoi:
+      schema: 'grid'
+      table: 'egon_ehv_substation_voronoi'
   targets:
     links:
       schema: 'grid'
@@ -1302,9 +1305,13 @@ PtH2_waste_heat_O2:
     loads:
       schema: 'grid'
       table: 'egon_etrago_load'
+    load_timeseries:
+      schema: 'grid'
+      table: 'egon_etrago_load_timeseries'
     generators:
       schema: 'grid'
       table: 'egon_etrago_generator'
     buses:
       schema: 'grid'
       table: 'egon_etrago_bus'
+      

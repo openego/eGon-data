@@ -32,6 +32,7 @@ from geoalchemy2.types import Geometry
 from egon.data import db, config
 from egon.data.datasets.scenario_parameters import get_sector_parameters
 from pathlib import Path
+import numpy as np
 
 
 
@@ -48,8 +49,9 @@ def insert_power_to_h2_to_power():
     to setting SUBSTATION) and closest H2-Bus (H2 and H2_saltcaverns) inside 
     buffer-range of 30km. 
     For oxygen-usage all WWTP within MV-district and buffer-range of 10km 
-    is connected to HVMV Substation
-    For heat-usage closest central-heat-bus is connected to relevant HVMV-Substation.
+    is connected to relevant HVMV Substation
+    For heat-usage closest central-heat-bus inner an dynamic buffer (related to Heat-demand)
+    is connected to relevant HVMV-Substation.
     
     All links are extendable. 
 
@@ -58,8 +60,8 @@ def insert_power_to_h2_to_power():
 
     """
     # General Constant Parameters for method
-    SCENARIO_NO = 2  # 2 = WWTP-based location, 2 = AC-based location
-    OPTIMIZATION = "no"  # "yes" or "no" to activate optimization for the optimal location
+    SCENARIO_NO = 2  # 1 = WWTP-based location, 2 = AC-based location; default setting: 2
+    OPTIMIZATION = "no"  # "yes" or "no" to activate optimization for the optimal location, default setting: "no"
     SUBSTATION = "yes"  # "yes" or "no" will switch between AC points and Substation points.
     DATA_CRS = 4326  # default CRS
     METRIC_CRS = 3857  # demanded CRS
@@ -103,15 +105,23 @@ def insert_power_to_h2_to_power():
     WWTP = "wwtp"
     AC = "ac"
     H2GRID = "h2_grid"
-    ACZONE = "ac_zone"
-    ACSUB = "ac_sub"
+    ACZONE_HVMV = "ac_zone_hvmv"
+    ACZONE_EHV = "ac_zone_ehv"
+    ACSUB_HVMV = "ac_sub_hvmv"
+    ACSUB_EHV = "ac_sub_ehv"
     O2 = "o2"
-    HEAT = "heat_point"
+    HEAT_BUS = "heat_point"
+    HEAT_LOAD = "heat_load"
+    HEAT_TIMESERIES = "heat_timeseries"
+    H2_BUSES_CH4 = 'h2_buses_ch4' 
+    AC_LOAD = 'ac_load'
+    
+    buffer_heat_factor= 1500  #625/3125 for worstcase/bestcase-Szeanrio , source : L.Zimmermann, MODELLIERUNG DER ABWÄRMENUTZUNG VON ELEKTROLYSEUREN IN DEUTSCHLAND FÜR EINE TECHNO-ÖKONOMISCHE OPTIMIERUNG EINES SEKTOR - GEKOPPELTEN ENERGIESYSTEMS, 2024
+    max_buffer_heat= 12000 #5000/30000 for worstcase/bestcase-Szenario 
     MAXIMUM_DISTANCE = {
         O2: 10,  # km to define the radii between O2 to AC
         H2: 30000,  # m define the distance between H2 and reference points (AC/O2)
-        HEAT: 30000,
-    }  # m define the distance betweeen Heat and reference points (AC/O2)
+    } 
     
     # connet to PostgreSQL database (to localhost)
     engine = db.engine()
@@ -158,11 +168,8 @@ def insert_power_to_h2_to_power():
             next_bus_id = count(start=max_bus_id, step=1)
             schema = targets['buses']['schema']
             table_name = targets['buses']['table']
-            with engine.connect() as conn:
-                conn.execute(
-                    text(
+            db.execute_sql(
                         f"DELETE FROM {schema}.{table_name} WHERE carrier = 'O2' AND scn_name='{SCENARIO_NAME}'"
-                    )
                 )
             df = df.copy(deep=True)
             result = []
@@ -199,7 +206,7 @@ def insert_power_to_h2_to_power():
             WWTP: f"""
                     SELECT bus_id AS id, geom, type AS ka_id
                     FROM {sources["buses"]["schema"]}.{sources["buses"]["table"]}
-                    WHERE carrier in ('O2') AND scn_name='{SCENARIO_NAME}'
+                    WHERE carrier in ('O2') AND scn_name = '{SCENARIO_NAME}'
                     """,
             H2: f"""
                     SELECT bus_id AS id, geom 
@@ -209,10 +216,9 @@ def insert_power_to_h2_to_power():
                     AND country = 'DE'
                     """,
             H2GRID: f"""
-                    SELECT link_id AS id, geom 
+                    SELECT link_id, geom, bus0, bus1
                     FROM {sources["links"]["schema"]}.{sources["links"]["table"]}
-                    WHERE carrier in ('CH4') AND scn_name  = '{SCENARIO_NAME}'
-                    LIMIT 0
+                    WHERE carrier in ('H2_grid') AND scn_name  = '{SCENARIO_NAME}'
                     """,
             AC: f"""
                     SELECT bus_id AS id, geom
@@ -221,22 +227,30 @@ def insert_power_to_h2_to_power():
                     AND scn_name = '{SCENARIO_NAME}'
                     AND v_nom = '110'
                     """,
-            ACSUB: f"""
+            ACSUB_HVMV: f"""
                     SELECT bus_id AS id, point AS geom
                     FROM {sources["hvmv_substation"]["schema"]}.{sources["hvmv_substation"]["table"]}
                     """,
-            ACZONE: f"""
+            ACSUB_EHV:f"""
+                    SELECT bus_id AS id, point AS geom
+                    FROM {sources["ehv_substation"]["schema"]}.{sources["ehv_substation"]["table"]}
+                    """,
+            ACZONE_HVMV: f"""
                     SELECT bus_id AS id, ST_Transform(geom, 4326) as geom
                     FROM {sources["mv_districts"]["schema"]}.{sources["mv_districts"]["table"]}
                     """,
-            HEAT: f"""
-            			SELECT bus_id AS id, geom
-            			FROM {sources["buses"]["schema"]}.{sources["buses"]["table"]}
-            			WHERE carrier in ('central_heat')
+            ACZONE_EHV: f"""
+                    SELECT bus_id AS id, ST_Transform(geom, 4326) as geom
+                    FROM {sources["ehv_voronoi"]["schema"]}.{sources["ehv_voronoi"]["table"]}
+                    """,
+            HEAT_BUS: f"""
+        			SELECT bus_id AS id, geom
+        			FROM {sources["buses"]["schema"]}.{sources["buses"]["table"]}
+        			WHERE carrier in ('central_heat')
                     AND scn_name = '{SCENARIO_NAME}'
                     AND country = 'DE'
                     """,
-            }
+        }
         # First Phase: Find intersection
         # Data management
         # read and convert the spatial CRS data to Metric CRS
@@ -244,22 +258,72 @@ def insert_power_to_h2_to_power():
             key: gpd.read_postgis(queries[key], engine, crs=4326).to_crs(3857)
             for key in queries.keys()
             }
+        
+        #prepare h2_links for filtering
+        h2_grid_bus_ids=tuple(dfs[H2GRID]['bus1']) + tuple(dfs[H2GRID]['bus0'])
+        
+        dfs[H2_BUSES_CH4] = dfs[H2][~dfs[H2]['id'].isin(h2_grid_bus_ids)]
+        
+        merged_df_bus0 = pd.merge(dfs[H2GRID], dfs[H2], left_on='bus0', right_on='id', how='left')
+        merged_df_bus0 = merged_df_bus0.rename(columns={'geom_y': 'geom_bus0'}).rename(columns={'geom_x': 'geom_link'})   
+        merged_df = pd.merge(merged_df_bus0, dfs[H2], left_on='bus1', right_on='id', how='left')
+        merged_df = merged_df.rename(columns={'geom': 'geom_bus1'})
+
+        
+        
+        #prepare heat_buses for filtering
+        queries[HEAT_LOAD] = f"""
+                    SELECT bus, load_id 
+        			FROM {sources["loads"]["schema"]}.{sources["loads"]["table"]}
+        			WHERE carrier in ('central_heat')
+                    AND scn_name = '{SCENARIO_NAME}'
+                    """
+        dfs[HEAT_LOAD] = pd.read_sql(queries[HEAT_LOAD], engine)
+        load_ids=tuple(dfs[HEAT_LOAD]['load_id'])
+      
+        queries[HEAT_TIMESERIES] = f"""
+            SELECT load_id, p_set
+            FROM {sources["load_timeseries"]["schema"]}.{sources["load_timeseries"]["table"]}
+            WHERE load_id IN {load_ids}
+            AND scn_name = '{SCENARIO_NAME}'
+            """  
+        dfs[HEAT_TIMESERIES] = pd.read_sql(queries[HEAT_TIMESERIES], engine)
+        dfs[HEAT_TIMESERIES]['sum_of_p_set'] = dfs[HEAT_TIMESERIES]['p_set'].apply(sum)
+        dfs[HEAT_TIMESERIES].drop('p_set', axis=1, inplace=True)
+        dfs[HEAT_TIMESERIES].dropna(subset=['sum_of_p_set'], inplace=True)
+        dfs[HEAT_LOAD] = pd.merge(dfs[HEAT_LOAD], dfs[HEAT_TIMESERIES], on='load_id')
+        dfs[HEAT_BUS] = pd.merge(dfs[HEAT_BUS], dfs[HEAT_LOAD], left_on='id', right_on='bus', how='inner')
+        dfs[HEAT_BUS]['p_mean'] = dfs[HEAT_BUS]['sum_of_p_set'].apply(lambda x: x / 8760)
+        dfs[HEAT_BUS]['buffer'] = dfs[HEAT_BUS]['p_mean'].apply(lambda x: x*buffer_heat_factor)
+        dfs[HEAT_BUS]['buffer'] = dfs[HEAT_BUS]['buffer'].apply(lambda x: x if x < max_buffer_heat else max_buffer_heat)  
+
         # First Phase: Find intersection between points
         # Perform spatial join to find points within zones (substation zones)
-        in_zone = {
-            "wwtp": sjoin(dfs[WWTP], dfs[ACZONE], how="inner", predicate="within"),
-            "ac": sjoin(
-                dfs[AC if SUBSTATION == "no" else ACSUB],
-                dfs[ACZONE],
+        in_zone_hvmv = {
+            WWTP: sjoin(dfs[WWTP], dfs[ACZONE_HVMV], how="inner", predicate="within"),
+            AC: sjoin(
+                dfs[AC if SUBSTATION == "no" else ACSUB_HVMV],
+                dfs[ACZONE_HVMV],
                 how="inner",
                 predicate="within",
             ),
-            }
+        }
+        in_zone_ehv = {
+            WWTP: sjoin(dfs[WWTP], dfs[ACZONE_EHV], how="inner", predicate="within"),
+            AC: sjoin(
+                dfs[AC if SUBSTATION == "no" else ACSUB_EHV],
+                dfs[ACZONE_EHV],
+                how="inner",
+                predicate="within",
+            ),
+        }
+
         # Create R-tree index to speedup the process based on bounding box coordinates.
-        rtree = {key: index.Index() for key in [H2, AC, ACSUB, H2GRID, HEAT]}
+        rtree = {key: index.Index() for key in [H2, AC, ACSUB_HVMV, ACSUB_EHV, H2GRID, HEAT_BUS, H2_BUSES_CH4]}
         for key in rtree.keys():
             for i in range(len(dfs[key])):
                 rtree[key].insert(i, dfs[key].iloc[i].geom.bounds)
+                
         # Find the nearest intersection relation between AC points and WWTPs
         # 1. find ACs inside same network zone as wwtp
         # 2. calculate distances betweeen those ac and wwtp within a identical zone
@@ -267,12 +331,12 @@ def insert_power_to_h2_to_power():
         # 4. distingush type of AC (point or substation)
         
         
-        def find_closest_acs(keep_empty_acs=False):
+        def find_closest_acs(sub_type, in_zone_type, keep_empty_acs=False):
             results = []
             # Iterate over the zones and calculate distances
-            for zone_id in dfs[ACZONE].index:
-                wwtp_in_zones = in_zone[WWTP][in_zone[WWTP]["index_right"] == zone_id]
-                ac_in_zones = in_zone[AC][in_zone[AC]["index_right"] == zone_id]
+            for zone_id in dfs[sub_type].index:
+                wwtp_in_zones = in_zone_type[WWTP][in_zone_type[WWTP]["index_right"] == zone_id]
+                ac_in_zones = in_zone_type[AC][in_zone_type[AC]["index_right"] == zone_id]
                 for _, ac_row in ac_in_zones.iterrows():
                     if len(wwtp_in_zones) == 0 and keep_empty_acs == True:
                         results.append(
@@ -287,52 +351,67 @@ def insert_power_to_h2_to_power():
                         )
                     else:
                         for _, wwtp_row in wwtp_in_zones.iterrows():
-                            distance = round(wwtp_row.geom.distance(ac_row.geom)) / 1000
-                            if distance <= MAXIMUM_DISTANCE[O2]:
-                                results.append(
-                                    {
-                                        "WWTP_ID": wwtp_row["id_left"],
-                                        "KA_ID": wwtp_row["ka_id"],
-                                        "AC_ID": ac_row["id_left"],
-                                        "distance_ac": distance,  # km
-                                        "point_wwtp": wwtp_row.geom,
-                                        "point_AC": ac_row.geom,
-                                    }
+                             distance = round(wwtp_row.geom.distance(ac_row.geom)) / 1000
+                             if distance <= MAXIMUM_DISTANCE[O2]:
+                                 results.append(
+                                     {
+                                         "WWTP_ID": wwtp_row["id_left"],
+                                         "KA_ID": wwtp_row["ka_id"],
+                                         "AC_ID": ac_row["id_left"],
+                                         "distance_ac": distance,  # km
+                                         "point_wwtp": wwtp_row.geom,
+                                         "point_AC": ac_row.geom,
+                                     }
                                 )
+                             else: 
+                                 results.append(
+                                     {
+                                        "WWTP_ID": "",
+                                        "KA_ID": "",
+                                        "AC_ID": ac_row["id_left"],
+                                        "distance_ac": 0,  # km
+                                        "point_wwtp": None,
+                                        "point_AC": ac_row.geom,
+                                    })
+                            
             results = pd.DataFrame(results).drop_duplicates()
             results = results.loc[results.groupby(["AC_ID", "WWTP_ID"])["distance_ac"].idxmin()]
-            results = results[results["distance_ac"] < MAXIMUM_DISTANCE[O2]]
             return results
         
-        # Creating the initial main dataframe
-        main_df = find_closest_acs(SCENARIO_NO == 2)
+        # Creating the initial main dataframes
+        main_df_hvmv = find_closest_acs(ACSUB_HVMV, in_zone_hvmv, SCENARIO_NO == 2)
+        main_df_ehv = find_closest_acs(ACSUB_EHV, in_zone_ehv, SCENARIO_NO == 2)
         
-        # merge and find the AC and Substation type for AC points
-        def find_ac_type(dataframe_with_ac):
+        def find_ac_type(sub_type, dataframe_with_ac):
             result = dataframe_with_ac.copy()
         
             def _find_ac_point(row):
-                substations = dfs[ACSUB].loc[dfs[ACSUB]["id"] == row]
+                substations = dfs[sub_type].loc[dfs[sub_type]["id"] == row]
                 points = dfs[AC].loc[dfs[AC]["id"] == row]
                 is_sub = len(substations) > 0
                 if is_sub:
                     return substations.iloc[0]["geom"]
                 else:
                     return points.iloc[0]["geom"]
-            
+        
             def _find_ac_type(row):
-                substations = dfs[ACSUB].loc[dfs[ACSUB]["id"] == row]
+                substations = dfs[sub_type].loc[dfs[sub_type]["id"] == row]
                 is_sub = len(substations) > 0
                 if is_sub:
                     return "substation"
                 else:
                     return "ac_point"
-            
-            result["point_AC"] = main_df["AC_ID"].apply(_find_ac_point)
-            result["AC_type"] = main_df["AC_ID"].apply(_find_ac_type)
-            return result
         
-        main_df = find_ac_type(main_df)
+            result["point_AC"] = result["AC_ID"].apply(_find_ac_point)
+            result["AC_type"] = result["AC_ID"].apply(_find_ac_type)
+            return result
+
+        
+        main_df_hvmv = find_ac_type(ACSUB_HVMV, main_df_hvmv)
+        main_df_ehv = find_ac_type(ACSUB_EHV, main_df_ehv)
+        main_df_hvmv['sub_type'] = 'HVMV'
+        main_df_ehv['sub_type'] = 'EHV'
+        main_df = pd.concat([main_df_hvmv, main_df_ehv], ignore_index = True)
         
         # The function find and assign the correct reference point for centrlizing as buffer for further steps
         def get_main_point():
@@ -343,86 +422,136 @@ def insert_power_to_h2_to_power():
             else:
                 raise Exception("Invalid scenario number")
             
-            # Find nearest H2 points & grid pipeline to refernce points (AC or WWTP depend on scenario no)
-            # below function support h2 points and h2_grid, by distingushing their types
+        # Find nearest H2 points & grid pipeline to refernce points (AC or WWTP depend on scenario no)
+        # below function support h2 points and h2_grid, by distingushing their types
         
         
-        def find_h2_intersections(rtree, df, buffer_factor, type):
+        def find_h2_grid_intersections(rtree, df1, df2, buffer_factor, type):
             results = []
             col, point = get_main_point()
-            for _, row in main_df.iterrows():
+            for _, row in df2.iterrows():
                 buffered = row[point].buffer(buffer_factor)
                 for idx in rtree.intersection(buffered.bounds):
-                    item = df.iloc[idx]
+                    item = df1.iloc[idx]
+                    if buffered.intersects(item.geom_link):
+                        distance = round(row[point].distance(item.geom_link))
+                        distance_to_0 = round(row[point].distance(item.geom_bus0))
+                        distance_to_1 = round(row[point].distance(item.geom_bus1))
+                        if distance_to_0 < distance_to_1:
+                            bus_H2 = item.bus0
+                            point_H2 = item.geom_bus0
+                            
+                        else:
+                            bus_H2 = item.bus1
+                            point_H2 = item.geom_bus1
+                            
+                        results.append(
+                            {
+                                col: row[col],
+                                "H2_ID": bus_H2,
+                                "distance_h2": distance / 1000,
+                                "point_H2": point_H2,
+                                "H2_type": type,
+                                "sub_type": row["sub_type"]
+                            }
+                        )
+            return pd.DataFrame(results)        
+        
+        def find_h2_intersections(rtree, df1, df2, buffer_factor, type):
+            results = []
+            col, point = get_main_point()
+            for _, row in df2.iterrows():
+                buffered = row[point].buffer(buffer_factor)
+                for idx in rtree.intersection(buffered.bounds):
+                    item = df1.iloc[idx]
                     if buffered.intersects(item.geom):
                         distance = round(row[point].distance(item.geom))
                         near_point = nearest_points(item.geom, row[point])[0]
-                        results.append(
-                            {
-                                col: row[col],
-                                "H2_ID": item.id,
-                                "distance_h2": distance / 1000,
-                                "point_H2": near_point,
-                                "H2_type": type,
-                            }
-                        )
+                        results.append({
+         					col: row[col],
+         					"H2_ID": item.id,
+         					"distance_h2": distance/1000,
+         					"point_H2": near_point,
+         					"H2_type": type,
+                            "sub_type": row["sub_type"]
+        				})
             return pd.DataFrame(results)
             
-        
-        h2_intersections = find_h2_intersections(rtree[H2], dfs[H2], MAXIMUM_DISTANCE[H2], H2)
-        h2_grid_intersections = find_h2_intersections(
-        rtree[H2GRID], dfs[H2GRID], MAXIMUM_DISTANCE[H2], H2GRID
-        )
-        
-        
-        def find_minimum_h2_intersections():
+        def find_minimum_h2_intersections(df1, df2):
             col, _ = get_main_point()
-            union = pd.concat([h2_intersections, h2_grid_intersections]).reset_index(drop=True)
-            result = union.iloc[union.groupby(col)["distance_h2"].idxmin()]
+            if not df1.empty:
+                result_1 = df1.iloc[df1.groupby(col)["distance_h2"].idxmin()]
+            else: 
+                result_1 = pd.DataFrame(columns=['AC_ID', 'H2_ID', 'distance_h2', 'point_H2', 'H2_type'])
+            result_2 = df2.iloc[df2.groupby(col)["distance_h2"].idxmin()]
+            result = pd.concat([result_1, result_2], ignore_index=True)
             return result
-            
         
-        min_h2_intersections = find_minimum_h2_intersections()
         
         
         # Find nearest Heat Points to refernce points
-        def find_heatpoint_intersections(rtree):
+        def find_heatpoint_intersections(rtree, df1, sub_type):
             col, point = get_main_point()
             results = []
-            for _, row in main_df.iterrows():
-                buffered = row[point].buffer(MAXIMUM_DISTANCE[HEAT])
-                for idx in rtree.intersection(buffered.bounds):
-                    item = dfs[HEAT].iloc[idx]
+            for idx, row in dfs[HEAT_BUS].iterrows():
+                 buffered = row['geom'].buffer(row['buffer'])
+                 for idx in rtree.intersection(buffered.bounds):
+                    item = df1.iloc[idx]
                     if buffered.intersects(item.geom):
-                        distance = round(row[point].distance(item.geom))
+                        distance = round(row['geom'].distance(item.geom))
                         results.append(
                             {
-                                col: row[col],
-                                "HEAT_ID": item.id,
+                                col: item['id'],
+                                "HEAT_ID": row['id'],
                                 "distance_heat": distance / 1000,
-                                "point_heat": item.geom,
+                                "point_heat": row['geom'],
+                                "sub_type": sub_type
                             }
                         )
             return pd.DataFrame(results)
         
         
-        heatpoint_intersections = find_heatpoint_intersections(rtree[HEAT])
-        
-        
-        def find_minimum_heatpoint_intersections():
-            col, _ = get_main_point()
-            result = heatpoint_intersections.iloc[
-                heatpoint_intersections.groupby(col)["distance_heat"].idxmin()
+        def find_minimum_heatpoint_intersections(df):
+            col = "HEAT_ID"
+            result = df.iloc[
+                df.groupby(col)["distance_heat"].idxmin()
             ]
             return result
         
+        def find_h2_heat_connection():
+            # find h2_grid/h2_bus connection for hvmv-substations
+            h2_grid_intersections = find_h2_grid_intersections(rtree[H2GRID], merged_df, main_df_hvmv, MAXIMUM_DISTANCE[H2], H2GRID)
+            if h2_grid_intersections.empty:
+                filtered_main_df_hvmv = main_df_hvmv
+            else: 
+                filtered_main_df_hvmv = main_df_hvmv[~main_df_hvmv['AC_ID'].isin(h2_grid_intersections['AC_ID'])]
+           
+            h2_intersections = find_h2_intersections(rtree[H2_BUSES_CH4], dfs[H2_BUSES_CH4], filtered_main_df_hvmv, MAXIMUM_DISTANCE[H2], H2)
+            min_h2_intersections_hvmv = find_minimum_h2_intersections(h2_grid_intersections, h2_intersections)
+            
+            # find h2_grid/h2_bus connection for ehv-substations
+            h2_grid_intersections = find_h2_grid_intersections(rtree[H2GRID], merged_df, main_df_ehv, MAXIMUM_DISTANCE[H2], H2GRID)
+            if h2_grid_intersections.empty:
+                filtered_main_df_ehv = main_df_ehv
+            else: 
+                filtered_main_df_ehv = main_df_ehv[~main_df_ehv['AC_ID'].isin(h2_grid_intersections['AC_ID'])]
+           
+            h2_intersections = find_h2_intersections(rtree[H2_BUSES_CH4], dfs[H2_BUSES_CH4], filtered_main_df_ehv, MAXIMUM_DISTANCE[H2], H2)
+            min_h2_intersections_ehv = find_minimum_h2_intersections(h2_grid_intersections, h2_intersections)
+            min_h2_intersections = pd.concat([min_h2_intersections_hvmv, min_h2_intersections_ehv], ignore_index = True)
         
-        min_heatpoint_intersections = find_minimum_heatpoint_intersections()
+        
+            heatpoint_intersections = find_heatpoint_intersections(rtree[ACSUB_HVMV], dfs[ACSUB_HVMV], "HVMV")
+            min_heatpoint_intersections_hvmv = find_minimum_heatpoint_intersections(heatpoint_intersections)
+            heatpoint_intersections = find_heatpoint_intersections(rtree[ACSUB_EHV], dfs[ACSUB_EHV], "EHV")
+            min_heatpoint_intersections_ehv = find_minimum_heatpoint_intersections(heatpoint_intersections)
+            min_heatpoint_intersections = pd.concat([min_heatpoint_intersections_hvmv, min_heatpoint_intersections_ehv], ignore_index=True)
+            
+            return min_h2_intersections, min_heatpoint_intersections
         
         # Second Phase: Data management
         o2_ac = main_df
-        ref_h2 = min_h2_intersections
-        ref_heat = min_heatpoint_intersections
+        ref_h2, ref_heat = find_h2_heat_connection()
         
         
         # Scenario nomination for the Model 1: wwtp as refernce point 2: ac as reference point
@@ -579,55 +708,15 @@ def insert_power_to_h2_to_power():
                     return (round(final_pressure, 4), round(diameter, 4))
             raise Exception("couldn't find a final pressure < min_pressure")
         
-        
-        # H2 pipeline diameter cost range
-        def get_h2_pipeline_cost(h2_pipeline_diameter):
-            if h2_pipeline_diameter >= 0.5:
-                return 900_000  # EUR/km
-            if h2_pipeline_diameter >= 0.4:
-                return 750_000  # EUR/km
-            if h2_pipeline_diameter >= 0.3:
-                return 600_000  # EUR/km
-            if h2_pipeline_diameter >= 0.2:
-                return 450_000  # EUR/km
-            return 350_000  # EUR/km
-        
+               
         def get_o2_pipeline_cost(o2_pipeline_diameter):
             for diameter in sorted(O2_PIPELINE_COSTS.keys(), reverse=True):
-                if o2_pipeline_diameter >= diameter:
+                if o2_pipeline_diameter >= float(diameter):
                     return O2_PIPELINE_COSTS[diameter]
-            return O2_PIPELINE_COSTS[0]
+
         
-        # Heat cost calculation
-        def get_heat_pipeline_cost(p_heat_mean, heat_distance):
-            if (heat_distance < 0.5) or (p_heat_mean > 5 and heat_distance < 1):
-                return 400_000  # [EUR/MW]
-            else:
-                return 400_000  # [EUR/MW]
-        
-        
-        # annualize_capital_costs [EUR/MW/YEAR or EUR/MW/KM/YEAR]
-        def annualize_capital_costs(overnight_costs, lifetime, p):
-            """
-            Parameters
-            ----------
-            overnight_costs : float
-                Overnight investment costs in EUR/MW or EUR/MW/km
-            lifetime : int
-                Number of years in which payments will be made
-            p : float
-                Interest rate in p.u.
-            Returns
-            -------
-            float
-                Annualized capital costs in EUR/MW/year or EUR/MW/km/year
-            """
-            PVA = (1 / p) - (1 / (p * (1 + p) ** lifetime))  # Present Value of Annuity
-            return overnight_costs / PVA
             
         # Calculate WWTPs capacity base on SEC depend on PE
-        
-        
         def calculate_wwtp_capacity(pe):  # [MWh/year]
             c = "c2"
             if pe > 100_000:
@@ -637,27 +726,6 @@ def insert_power_to_h2_to_power():
             elif pe > 2000 and pe <= 10_000:
                 c = "c3"
             return pe * WWTP_SEC[c] / 1000
-        
-        
-        # Create link between reference points and other points
-        def draw_lines(line_type):
-            def _draw_lines(row):
-                point_elz = from_wkt(row["point_optimal"])
-                ac = from_wkt(row["point_AC"])
-                h2 = from_wkt(row["point_H2"])
-                heat = from_wkt(row["point_heat"])
-                wwtp = from_wkt(row["point_wwtp"])
-                lines = {
-                    "AC": LineString([[point_elz.x, point_elz.y], [ac.x, ac.y]]),  # power_to_H2
-                    "H2": LineString([[point_elz.x, point_elz.y], [h2.x, h2.y]]),  # H2_to_power
-                    "HEAT": LineString(
-                        [[point_elz.x, point_elz.y], [heat.x, heat.y]]
-                    ),  # power_to_heat
-                    "O2": LineString([[point_elz.x, point_elz.y], [wwtp.x, wwtp.y]]),
-                }  # power_to_o2
-                return to_wkt(lines[line_type])
-            
-            return _draw_lines
             
         
         # Second Phase: Links values Calculations
@@ -670,15 +738,13 @@ def insert_power_to_h2_to_power():
         def add_ref_col(df):
             starting_col_id = "WWTP_ID" if SCENARIO_NO == 1 else "AC_ID"
             find_point = get_wwtp_point if SCENARIO_NO == 1 else get_ac_point
-            # df["OPTIMAL_ID"] = df[starting_col_id].map(ref_ids)
-            # df["point_optimal"] = df[starting_col_id].apply(find_point)
             return df.assign(
                 **{
                     "OPTIMAL_ID": df[starting_col_id].map(ref_ids),
                     "point_optimal": df[starting_col_id].apply(find_point),
                 }
             )
-        
+
         o2_ac = add_ref_col(o2_ac)
         ref_heat = add_ref_col(ref_heat)
         ref_h2 = add_ref_col(ref_h2)
@@ -827,10 +893,10 @@ def insert_power_to_h2_to_power():
                         bus0 = row["AC_ID"]
                         bus0_point = get_ac_point(bus0)
             
-                bus1 = get_heat_for_ref(bus0)
-                distance = bus0_point.distance(bus1["point"]) / 1000
+                bus1 = row["HEAT_ID"]
+                distance = bus0_point.distance(row['point_heat']) / 1000
                 geom = MultiLineString(
-                    [LineString([(bus0_point.x, bus0_point.y), (bus1["point"].x, bus1["point"].y)])]
+                    [LineString([(bus0_point.x, bus0_point.y), (row['point_heat'].x, row['point_heat'].y)])]
                 )
                 if f"{bus0}" not in total_h2_production_y:
                     h2_production_y = 10 * 1000 * ELZ_FLH / ELZ_SEC
@@ -961,8 +1027,9 @@ def insert_power_to_h2_to_power():
                         "diameter": h2_pipeline_diameter,
                         "ka_id": "",
                         "type": bus1["type"],
-                        "lifetime": ELZ_LIFETIME,
+                        "lifetime": HEAT_LIFETIME,
                         "geom": geom,
+                        "p_nom_max": 120 if row['sub_type'] == 'HVMV' else 5000,   #source: L. Hülk et al., Allocation of annual electricity consumption and power generation capacities across multi voltage levels in a high spatial resolution, 2017
                     }
                 )
             
@@ -1030,6 +1097,7 @@ def insert_power_to_h2_to_power():
                         "type": type,
                         "lifetime": FUEL_CELL_LIFETIME,
                         "geom": geom,
+                        "p_nom_max": 120 if row['sub_type'] == 'HVMV' else 5000,
                     }
                 )
             
@@ -1038,8 +1106,7 @@ def insert_power_to_h2_to_power():
         
         # Second Phase: Optimization function Method Nelder-Mead
         unoptimized_total = 0
-        
-        
+               
         def find_optimal_loc(o2_ac, ref_heat, ref_h2):
             global unoptimized_total
             
@@ -1112,168 +1179,169 @@ def insert_power_to_h2_to_power():
         filtered_links_df =  pd.concat([H2_links, O2_Heat_Links], ignore_index=True)
         
         #Filter out unused O2-buses
-        filtered_df = filtered_links_df[filtered_links_df['carrier'] == 'power_to_O2']
-        o2_buses = tuple(filtered_df['bus1'])
-        with engine.connect() as conn:
-                conn.execute(
-                    text(
-                        f"DELETE FROM {targets['buses']['schema']}.{targets['buses']['table']} WHERE bus_id NOT IN :bus_ids AND carrier = 'O2' AND scn_name = :scenario"
-                    ),
-                    {"bus_ids": o2_buses, "scenario": SCENARIO_NAME}
+        o2_links = filtered_links_df[filtered_links_df['carrier'] == 'power_to_O2']
+        o2_buses = tuple(o2_links['bus1'])
+        
+        db.execute_sql(
+                        f"""DELETE FROM {targets['buses']['schema']}.{targets['buses']['table']} WHERE bus_id NOT IN {o2_buses} AND carrier = 'O2' AND scn_name = '{SCENARIO_NAME}'"""
                     )
         
         # Third Phase: Export to PostgreSQL
         # export links data to PostgreSQL database
-        if OPTIMIZATION == "no":
+        def export_to_db(df):
+             df = df.copy(deep=True)
+             etrago_columns = [
+                 "scn_name",
+                 "link_id",
+                 "bus0",
+                 "bus1",
+                 "carrier",
+                 "efficiency",
+                 "build_year",
+                 "lifetime",
+                 "p_nom",
+                 "p_nom_max",
+                 "p_nom_extendable",
+                 "capital_cost",
+                 "length",
+                 "terrain_factor",
+                 "type",
+                 "geom",
+             ]
+             max_link_id = db.next_etrago_id("link")
+             next_max_link_id = count(start=max_link_id, step=1)
+     
+             df["scn_name"] = SCENARIO_NAME
+             df["p_nom_extendable"] = True
+             df["length"] = 0
+             df["link_id"] = df["bus0"].apply(lambda _: next(next_max_link_id))
+            # df["geom"] = df["geom"].apply(lambda x: wkb.dumps(x, hex=True) if x.is_valid else None)
+             #df["geom"] = df["geom"].apply(lambda x: to_wkt(x))
+             df = df.filter(items=etrago_columns, axis=1)
+             #with engine.connect() as conn:
+             db.execute_sql(
+                        f"""DELETE FROM {targets['links']['schema']}.{targets['links']['table']} 
+                        WHERE carrier IN ('power_to_H2', 'power_to_O2', 'power_to_Heat' , 'H2_to_power') 
+                        AND scn_name = '{SCENARIO_NAME}'"""
+                )
+             df.to_postgis(
+                 targets["links"]["table"], 
+                 engine, 
+                 schema="grid", 
+                 if_exists="append", 
+                 index=False,
+                 dtype={"geom": Geometry()}
+             )
+     
+        print("link data exported to: egon_etrago_link")
+        export_to_db(filtered_links_df)
         
-            def export_to_db(df):
-                 df = df.copy(deep=True)
-                 etrago_columns = [
-                     "scn_name",
-                     "link_id",
-                     "bus0",
-                     "bus1",
-                     "carrier",
-                     "efficiency",
-                     "build_year",
-                     "lifetime",
-                     "p_nom",
-                     "p_nom_extendable",
-                     "capital_cost",
-                     "length",
-                     "terrain_factor",
-                     "type",
-                     "geom",
-                 ]
-                 max_link_id = db.next_etrago_id("link")
-                 next_max_link_id = count(start=max_link_id, step=1)
-         
-                 df["scn_name"] = SCENARIO_NAME
-                 df["build_year"] = 2035
-                 df["p_nom_extendable"] = True
-                 df["length"] = 0
-                 df["link_id"] = df["bus0"].apply(lambda _: next(next_max_link_id))
-                # df["geom"] = df["geom"].apply(lambda x: wkb.dumps(x, hex=True) if x.is_valid else None)
-                 #df["geom"] = df["geom"].apply(lambda x: to_wkt(x))
-                 df = df.filter(items=etrago_columns, axis=1)
-                 with engine.connect() as conn:
-                     conn.execute(
-                         text(
-                             "DELETE FROM {targets['links']['schema']}.{targets['links']['table']} WHERE carrier IN ('power_to_H2', 'power_to_O2', 'power_to_Heat' , 'H2_to_power') AND scn_name = '{SCENARIO_NAME}'"
-                         )
-                     )
-                 df.to_postgis(
-                     targets["links"]["schema"].targets["links"]["table"], 
-                     engine, 
-                     schema="grid", 
-                     if_exists="append", 
-                     index=False,
-                     dtype={"geom": Geometry()}
-                 )
-         
-            print("link data exported to: egon_etrago_link")
-            export_to_db(filtered_links_df)
-        else:
-            print("Optimized, but link data has not been exported to PostgreSQL")
         
-        # Third Phase: Export O2 load to PostgreSQL
+        
+        #Export O2 load to PostgreSQL
         max_load_id = db.next_etrago_id("load")
         next_load_id = count(start=max_load_id, step=1)
-        if OPTIMIZATION == "no":
         
-            def insert_load_points(df):
-                schema = targets['loads']['schema']
-                table_name = targets['loads']['table']
+        
+        def insert_o2_load_points(df):
+            schema = targets['loads']['schema']
+            table_name = targets['loads']['table']
+            #with engine.connect() as conn:
+            db.execute_sql(
+                    f"DELETE FROM {schema}.{table_name} WHERE carrier IN ('O2') AND scn_name = '{SCENARIO_NAME}'"
+                )
+            df = df.copy(deep=True)
+            df = df[df["carrier"] == "power_to_O2"]
+            result = []
+            for _, row in df.iterrows():
+                load_id = next(next_load_id)
+                result.append(
+                    {
+                        "scn_name": SCENARIO_NAME,
+                        "load_id": load_id,  
+                        "bus": row["bus1"],
+                        "carrier": "O2",
+                        "type": "O2",
+                        "p_set": row["p_nom"],
+                    }
+                )
+            df = pd.DataFrame(result)
+            df.to_sql(table_name, engine, schema=schema, if_exists="append", index=False)
+        
+        print("O2 load data exported to: egon_etrago_load")
+        insert_o2_load_points(links_df)
+       
+        
+        #Reduce affected AC-loads cause of seperate implementation of O2-loads  
+        in_zone_filtered = in_zone_hvmv['wwtp'][in_zone_hvmv['wwtp']['id_left'].isin(o2_buses)]
+        df_o2 = filtered_links_df[filtered_links_df["carrier"] == "power_to_O2"]
+        o2_loads = pd.merge(in_zone_filtered, df_o2[['bus1','p_nom']], left_on='id_left', right_on='bus1')
+        o2_loads_unique = o2_loads.drop_duplicates(subset='id_left')
+        
+        queries[AC_LOAD] = f"""
+                            SELECT bus, load_id 
+                			FROM {targets['loads']['schema']}.{targets['loads']['table']}
+                            WHERE scn_name = '{SCENARIO_NAME}'
+                            """
+        dfs[AC_LOAD] = pd.read_sql(queries[AC_LOAD], engine)
+        negative_loads = pd.merge(o2_loads_unique, dfs[AC_LOAD], left_on='id_right', right_on='bus')
+        
+        def insert_negative_loads(df):
+            for _, row in df.iterrows():
                 with engine.connect() as conn:
-                    conn.execute(
-                        f"DELETE FROM {schema}.{table_name} WHERE carrier IN ('O2') AND scn_name = '{SCENARIO_NAME}'"
-                    )
-                df = df.copy(deep=True)
-                df = df[df["carrier"] == "power_to_O2"]
-                result = []
-                for _, row in df.iterrows():
-                    load_id = next(next_load_id)
-                    result.append(
-                        {
-                            "scn_name": SCENARIO_NAME,
-                            "load_id": load_id,
-                            "bus": row["bus1"],
-                            "carrier": "O2",
-                            "type": "O2",
-                            "p_set": row["p_nom"],
-                        }
-                    )
-                df = pd.DataFrame(result)
-                df.to_sql(table_name, engine, schema=schema, if_exists="append", index=False)
-            
-            print("O2 load data exported to: egon_etrago_load")
-            insert_load_points(links_df)
-        else:
-            print("Optimized, but O2 load data has not been exported")
+                    select_query = text(
+                        f"""
+                        SELECT p_set FROM grid.egon_etrago_load_timeseries
+                        WHERE load_id = {row["load_id"]} and scn_name= '{SCENARIO_NAME}'
+                    """)
+                
+                    result = conn.execute(select_query).fetchone()
+                    
+                    if result:
+                        original_p_set = result["p_set"]  
+                        p_nom_array = np.full(len(original_p_set), row["p_nom"])
+                        adjusted_p_set = (np.array(original_p_set) - p_nom_array).tolist()
+
+                        update_query = text("""
+                            UPDATE grid.egon_etrago_load_timeseries
+                            SET p_set = :adjusted_p_set
+                            WHERE load_id = :load_id and scn_name= :SCENARIO_NAME
+                        """)
+                        conn.execute(update_query, {"adjusted_p_set": adjusted_p_set, "load_id": row["load_id"], "SCENARIO_NAME": SCENARIO_NAME})
+        insert_negative_loads(negative_loads) 
+        print("Negative O2 load data exported to: egon_etrago_load")            
         
-        if OPTIMIZATION == "no" and SCENARIO_NO == 2:
         
-            def insert_neg_load_points(df):
-                schema = targets['loads']['schema']
-                table_name = targets['loads']['schema'].targets['loads']['table']
-                df = df.copy(deep=True)
-                df = df[df["carrier"] == "power_to_O2"]
-                result = []
-                for _, row in df.iterrows():
-                    load_id = next(next_load_id)
-                    result.append(
-                        {
-                            "scn_name": SCENARIO_NAME,
-                            "load_id": load_id,
-                            "bus": row["bus0"],
-                            "carrier": "AC",
-                            "type": "O2",
-                            "p_set": -row["p_nom"],
-                        }
-                    )
-                df = pd.DataFrame(result)
-            
-                df.to_sql(table_name, engine, schema=schema, if_exists="append", index=False)
-            
-            print("Negative O2 load data exported to: egon_etrago_load")
-            insert_neg_load_points(links_df)
-        else:
-            print("Optimized, but Negative O2 load data has not been exported")
+        #Export O2 generator to O2 bus points in to the PostgreSQL database       
+        def insert_generator_points(df):
+            max_generator_id = db.next_etrago_id("generator")
+            next_generator_id = count(start=max_generator_id, step=1)
+            schema = targets['generators']['schema']
+            table_name = targets['generators']['table']
+            #with engine.connect() as conn:
+            db.execute_sql(
+                f"DELETE FROM {schema}.{table_name} WHERE carrier IN ('O2') AND scn_name = '{SCENARIO_NAME}'"
+            )
+            df = df.copy(deep=True)
+            df = df[df["carrier"] == "power_to_O2"]
+            result = []
+            for _, row in df.iterrows():
+                generator_id = next(next_generator_id)
+                result.append(
+                    {
+                        "scn_name": SCENARIO_NAME,
+                        "generator_id": generator_id,
+                        "bus": row["bus1"],
+                        "carrier": "O2",
+                        "p_nom_extendable": "true",
+                        "type": "O2",
+                        "marginal_cost": ELEC_COST,  # ELEC_COST, # row["O2 sellable [Euro/kgH2]"],
+                    }
+                )
+            df = pd.DataFrame(result)
         
-        # Third Phase: Export O2 generator to O2 bus points in to the PostgreSQL database
-        if OPTIMIZATION == "no":
+            df.to_sql(table_name, engine, schema=schema, if_exists="append", index=False)
         
-            def insert_generator_points(df):
-                max_generator_id = db.next_etrago_id("generator")
-                next_generator_id = count(start=max_generator_id, step=1)
-                schema = targets['generators']['schema']
-                table_name = targets['generators']['table']
-                with engine.connect() as conn:
-                    conn.execute(
-                        f"DELETE FROM {schema}.{table_name} WHERE carrier IN ('O2') AND scn_name = '{SCENARIO_NAME}'"
-                    )
-                df = df.copy(deep=True)
-                df = df[df["carrier"] == "power_to_O2"]
-                result = []
-                for _, row in df.iterrows():
-                    generator_id = next(next_generator_id)
-                    result.append(
-                        {
-                            "scn_name": SCENARIO_NAME,
-                            "generator_id": generator_id,
-                            "bus": row["bus1"],
-                            "carrier": "O2",
-                            "p_nom_extendable": "true",
-                            "type": "O2",
-                            "marginal_cost": ELEC_COST,  # ELEC_COST, # row["O2 sellable [Euro/kgH2]"],
-                        }
-                    )
-                df = pd.DataFrame(result)
-            
-                df.to_sql(table_name, engine, schema=schema, if_exists="append", index=False)
-            
-            print("generator data exported to: egon_etrago_generator")
-            insert_generator_points(links_df)
-        else:
-            print("Optimized, but generator data has not been exported")
-        
+        print("generator data exported to: egon_etrago_generator")
+        insert_generator_points(links_df)
+       
