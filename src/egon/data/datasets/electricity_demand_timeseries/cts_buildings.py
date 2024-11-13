@@ -464,28 +464,29 @@ def buildings_with_amenities():
     from saio.boundaries import egon_map_zensus_buildings_filtered_all
     from saio.openstreetmap import osm_amenities_in_buildings_filtered
 
-    with db.session_scope() as session:
-        cells_query = (
-            session.query(
-                osm_amenities_in_buildings_filtered,
-                MapZensusGridDistricts.bus_id,
+    for scn in config.settings()["egon-data"]["--scenarios"]:
+        with db.session_scope() as session:
+            cells_query = (
+                session.query(
+                    osm_amenities_in_buildings_filtered,
+                    MapZensusGridDistricts.bus_id,
+                )
+                .filter(
+                    MapZensusGridDistricts.zensus_population_id
+                    == osm_amenities_in_buildings_filtered.zensus_population_id
+                )
+                .filter(
+                    EgonDemandRegioZensusElectricity.zensus_population_id
+                    == osm_amenities_in_buildings_filtered.zensus_population_id
+                )
+                .filter(
+                    EgonDemandRegioZensusElectricity.sector == "service",
+                    EgonDemandRegioZensusElectricity.scenario == scn,
+                )
             )
-            .filter(
-                MapZensusGridDistricts.zensus_population_id
-                == osm_amenities_in_buildings_filtered.zensus_population_id
+            df_amenities_in_buildings = pd.read_sql(
+                cells_query.statement, con=session.connection(), index_col=None
             )
-            .filter(
-                EgonDemandRegioZensusElectricity.zensus_population_id
-                == osm_amenities_in_buildings_filtered.zensus_population_id
-            )
-            .filter(
-                EgonDemandRegioZensusElectricity.sector == "service",
-                EgonDemandRegioZensusElectricity.scenario == "status2023",  # TODO: status2023
-            )
-        )
-        df_amenities_in_buildings = pd.read_sql(
-            cells_query.statement, con=session.connection(), index_col=None
-        )
 
     df_amenities_in_buildings["geom_building"] = df_amenities_in_buildings[
         "geom_building"
@@ -573,12 +574,10 @@ def buildings_with_amenities():
     df_amenities_in_buildings["n_amenities_inside"] = 1
 
     # sum amenities per building and cell
-    df_amenities_in_buildings[
-        "n_amenities_inside"
-    ] = df_amenities_in_buildings.groupby(["zensus_population_id", "id"])[
-        "n_amenities_inside"
-    ].transform(
-        "sum"
+    df_amenities_in_buildings["n_amenities_inside"] = (
+        df_amenities_in_buildings.groupby(["zensus_population_id", "id"])[
+            "n_amenities_inside"
+        ].transform("sum")
     )
     # drop duplicated buildings
     df_buildings_with_amenities = df_amenities_in_buildings.drop_duplicates(
@@ -1275,7 +1274,7 @@ def cts_buildings():
         df_amenities_without_buildings, points="geom_amenity"
     )
     log.info("Synthetic buildings created!")
-    # df_synthetic_buildings_with_amenities["scn_name"] = scn_name # TODO: status 2023, add eventually
+
     # TODO remove renaming after #722
     write_table_to_postgis(
         df_synthetic_buildings_with_amenities.rename(

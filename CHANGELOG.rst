@@ -765,6 +765,9 @@ Bug Fixes
 * Fix URLs of MaStR datasets
 * Fix CRS in ERA5 transformation
   `#1159 <https://github.com/openego/eGon-data/issues/1159>`_
+* Fix depricated python-operator import
+  `#183 <https://github.com/openego/powerd-data/issues/183>`_
+
 
 .. _PR #692: https://github.com/openego/eGon-data/pull/692
 .. _#343: https://github.com/openego/eGon-data/issues/343

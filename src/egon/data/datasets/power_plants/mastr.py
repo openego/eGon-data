@@ -207,6 +207,7 @@ def import_mastr() -> None:
             "Bundesland": "federal_state",
             "Nettonennleistung": "capacity",
             "Einspeisungsart": "feedin_type",
+            "DatumEndgueltigeStilllegung": "decommissioning_date"
         },
         "pv": {
             "Lage": "site_type",

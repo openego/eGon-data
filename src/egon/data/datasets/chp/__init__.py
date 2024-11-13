@@ -2,6 +2,7 @@
 The central module containing all code dealing with combined heat and power
 (CHP) plants.
 """
+
 from pathlib import Path
 import datetime
 import json
@@ -842,7 +843,7 @@ class Chp(Dataset):
     #:
     name: str = "Chp"
     #:
-    version: str = "0.0.7"
+    version: str = "0.0.10"
 
     def __init__(self, dependencies):
         super().__init__(

@@ -64,7 +64,6 @@ class OsmBuildingsSynthetic(Base):
 
     id = Column(String, primary_key=True)
     cell_id = Column(String, index=True)
-    # scn_name = Column(String, index=True)  # TODO: status2023 currently fixed to 2023
     geom_building = Column(Geometry("Polygon", 3035), index=True)
     geom_point = Column(Geometry("POINT", 3035))
     n_amenities_inside = Column(Integer)

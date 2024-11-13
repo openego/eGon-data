@@ -35,7 +35,7 @@ from egon.data.datasets.era5 import WeatherData
 from egon.data.datasets.etrago_setup import EtragoSetup
 from egon.data.datasets.fill_etrago_gen import Egon_etrago_gen
 from egon.data.datasets.fix_ehv_subnetworks import FixEhvSubnetworks
-from egon.data.datasets.gas_areas import GasAreasStatusQuo
+from egon.data.datasets.gas_areas import GasAreas
 from egon.data.datasets.gas_grid import GasNodesAndPipes
 from egon.data.datasets.gas_neighbours import GasNeighbours
 from egon.data.datasets.heat_demand import HeatDemandImport
@@ -55,7 +55,7 @@ from egon.data.datasets.osm_buildings_streets import OsmBuildingsStreets
 from egon.data.datasets.osmtgmod import Osmtgmod
 from egon.data.datasets.power_etrago import OpenCycleGasTurbineEtrago
 from egon.data.datasets.power_plants import PowerPlants
-from egon.data.datasets.pypsaeursec import PypsaEurSec
+from egon.data.datasets.pypsaeur import PreparePypsaEur, RunPypsaEur
 from egon.data.datasets.renewable_feedin import RenewableFeedin
 from egon.data.datasets.scenario_capacities import ScenarioCapacities
 from egon.data.datasets.scenario_parameters import ScenarioParameters
@@ -108,7 +108,7 @@ with airflow.DAG(
     scenario_parameters = ScenarioParameters(dependencies=[setup])
 
     # Download TYNDP data
-    tyndp_data = Tyndp(dependencies=[setup]) #TODO: kick out or adjust
+    tyndp_data = Tyndp(dependencies=[setup])  # TODO: kick out or adjust
 
     # Import zensus population
     zensus_population = ZensusPopulation(dependencies=[setup, vg250])
@@ -285,6 +285,7 @@ with airflow.DAG(
             demand_curves_industry,
             hh_demand_buildings_setup,
             household_electricity_demand_annual,
+            hh_demand_profiles_setup,
         ]
     )
 
@@ -311,9 +312,17 @@ with airflow.DAG(
         ]
     )
 
-    # run pypsa-eur-sec
-    run_pypsaeursec = PypsaEurSec(
+    prepare_pypsa_eur = PreparePypsaEur(
         dependencies=[
+            weather_data,
+            data_bundle,
+        ]
+    )
+
+    # run pypsa-eur-sec
+    run_pypsaeur = RunPypsaEur(
+        dependencies=[
+            prepare_pypsa_eur,
             weather_data,
             hd_abroad,
             osmtgmod,
@@ -326,14 +335,14 @@ with airflow.DAG(
 
     # Deal with electrical neighbours
     foreign_lines = ElectricalNeighbours(
-        dependencies=[run_pypsaeursec, tyndp_data]
+        dependencies=[prepare_pypsa_eur, tyndp_data]
     )
 
     # Import NEP (Netzentwicklungsplan) data
     scenario_capacities = ScenarioCapacities(
         dependencies=[
             data_bundle,
-            run_pypsaeursec,
+            run_pypsaeur,
             setup,
             vg250,
             zensus_population,
@@ -359,7 +368,7 @@ with airflow.DAG(
     gas_abroad_insert_data = GasNeighbours(
         dependencies=[
             gas_grid_insert_data,
-            run_pypsaeursec,
+            run_pypsaeur,
             foreign_lines,
             create_gas_polygons_statusquo,
         ]

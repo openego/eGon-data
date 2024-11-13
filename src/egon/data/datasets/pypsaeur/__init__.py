@@ -5,8 +5,7 @@ the pysa-eur-sec scenario parameter creation
 from pathlib import Path
 from urllib.request import urlretrieve
 import json
-import os
-import tarfile
+import shutil
 
 from shapely.geometry import LineString
 import geopandas as gpd
@@ -14,169 +13,306 @@ import importlib_resources as resources
 import numpy as np
 import pandas as pd
 import pypsa
+import requests
 import yaml
 
-from egon.data import __path__, db, logger, config
+from egon.data import __path__, config, db, logger
 from egon.data.datasets import Dataset
 from egon.data.datasets.scenario_parameters import get_sector_parameters
+from egon.data.datasets.scenario_parameters.parameters import (
+    annualize_capital_costs,
+)
 import egon.data.config
 import egon.data.subprocess as subproc
 
 
-def run_pypsa_eur_sec():
+class PreparePypsaEur(Dataset):
+    def __init__(self, dependencies):
+        super().__init__(
+            name="PreparePypsaEur",
+            version="0.0.9",
+            dependencies=dependencies,
+            tasks=(
+                download,
+                prepare_network,
+            ),
+        )
+
+
+class RunPypsaEur(Dataset):
+    def __init__(self, dependencies):
+        super().__init__(
+            name="SolvePypsaEur",
+            version="0.0.8",
+            dependencies=dependencies,
+            tasks=(
+                execute,
+                solve_network,
+                clean_database,
+                electrical_neighbours_egon100,
+                # Dropped until we decided how we deal with the H2 grid
+                # overwrite_H2_pipeline_share,
+            ),
+        )
+
+
+def download():
     cwd = Path(".")
-    filepath = cwd / "run-pypsa-eur-sec"
+    filepath = cwd / "run-pypsa-eur"
     filepath.mkdir(parents=True, exist_ok=True)
 
     pypsa_eur_repos = filepath / "pypsa-eur"
-    pypsa_eur_repos_data = pypsa_eur_repos / "data"
-    technology_data_repos = filepath / "technology-data"
-    pypsa_eur_sec_repos = filepath / "pypsa-eur-sec"
-    pypsa_eur_sec_repos_data = pypsa_eur_sec_repos / "data"
-
-    if not pypsa_eur_repos.exists():
-        subproc.run(
-            [
-                "git",
-                "clone",
-                "--branch",
-                "v0.4.0",
-                "https://github.com/PyPSA/pypsa-eur.git",
-                pypsa_eur_repos,
-            ]
-        )
-
-        # subproc.run(
-        #     ["git", "checkout", "4e44822514755cdd0289687556547100fba6218b"],
-        #     cwd=pypsa_eur_repos,
-        # )
-
-        file_to_copy = os.path.join(
-            __path__[0], "datasets", "pypsaeursec", "pypsaeur", "Snakefile"
-        )
-
-        subproc.run(["cp", file_to_copy, pypsa_eur_repos])
-
-        # Read YAML file
-        path_to_env = pypsa_eur_repos / "envs" / "environment.yaml"
-        with open(path_to_env, "r") as stream:
-            env = yaml.safe_load(stream)
-
-        env["dependencies"].append("gurobi")
-
-        # Write YAML file
-        with open(path_to_env, "w", encoding="utf8") as outfile:
-            yaml.dump(
-                env, outfile, default_flow_style=False, allow_unicode=True
+    if config.settings()["egon-data"]["--run-pypsa-eur"]:
+        if not pypsa_eur_repos.exists():
+            subproc.run(
+                [
+                    "git",
+                    "clone",
+                    "--branch",
+                    "v0.10.0",
+                    "https://github.com/PyPSA/pypsa-eur.git",
+                    pypsa_eur_repos,
+                ]
             )
 
-        datafile = "pypsa-eur-data-bundle.tar.xz"
-        datapath = pypsa_eur_repos / datafile
-        if not datapath.exists():
-            urlretrieve(
-                f"https://zenodo.org/record/3517935/files/{datafile}", datapath
+            # Add gurobi solver to environment:
+            # Read YAML file
+            path_to_env = pypsa_eur_repos / "envs" / "environment.yaml"
+            with open(path_to_env, "r") as stream:
+                env = yaml.safe_load(stream)
+
+            # The version of gurobipy has to fit to the version of gurobi.
+            # Since we mainly use gurobi 10.0 this is set here.
+            env["dependencies"][-1]["pip"].append("gurobipy==10.0.0")
+
+            # Set python version to <3.12
+            # Python<=3.12 needs gurobipy>=11.0, in case gurobipy is updated,
+            # this can be removed
+            env["dependencies"] = [
+                "python>=3.8,<3.12" if x == "python>=3.8" else x
+                for x in env["dependencies"]
+            ]
+
+            # Limit geopandas version
+            # our pypsa-eur version is not compatible to geopandas>1
+            env["dependencies"] = [
+                "geopandas>=0.11.0,<1" if x == "geopandas>=0.11.0" else x
+                for x in env["dependencies"]
+            ]
+
+            # Write YAML file
+            with open(path_to_env, "w", encoding="utf8") as outfile:
+                yaml.dump(
+                    env, outfile, default_flow_style=False, allow_unicode=True
+                )
+
+            # Copy config file for egon-data to pypsa-eur directory
+            shutil.copy(
+                Path(__path__[0], "datasets", "pypsaeur", "config.yaml"),
+                pypsa_eur_repos / "config",
             )
-            tar = tarfile.open(datapath)
-            tar.extractall(pypsa_eur_repos_data)
 
-    if not technology_data_repos.exists():
-        subproc.run(
-            [
-                "git",
-                "clone",
-                "--branch",
-                "v0.3.0",
-                "https://github.com/PyPSA/technology-data.git",
-                technology_data_repos,
-            ]
-        )
+            with open(filepath / "Snakefile", "w") as snakefile:
+                snakefile.write(
+                    resources.read_text(
+                        "egon.data.datasets.pypsaeur", "Snakefile"
+                    )
+                )
 
-    if not pypsa_eur_sec_repos.exists():
-        subproc.run(
-            [
-                "git",
-                "clone",
-                "https://github.com/openego/pypsa-eur-sec.git",
-                pypsa_eur_sec_repos,
-            ]
-        )
+        # Copy era5 weather data to folder for pypsaeur
+        era5_pypsaeur_path = filepath / "pypsa-eur" / "cutouts"
 
-    datafile = "pypsa-eur-sec-data-bundle.tar.gz"
-    datapath = pypsa_eur_sec_repos_data / datafile
-    if not datapath.exists():
+        if not era5_pypsaeur_path.exists():
+            era5_pypsaeur_path.mkdir(parents=True, exist_ok=True)
+            copy_from = config.datasets()["era5_weather_data"]["targets"][
+                "weather_data"
+            ]["path"]
+            filename = "europe-2011-era5.nc"
+            shutil.copy(
+                copy_from + "/" + filename, era5_pypsaeur_path / filename
+            )
+
+        # Workaround to download natura, shipdensity and globalenergymonitor
+        # data, which is not working in the regular snakemake workflow.
+        # The same files are downloaded from the same directory as in pypsa-eur
+        # version 0.10 here. Is is stored in the folders from pypsa-eur.
+        if not (filepath / "pypsa-eur" / "resources").exists():
+            (filepath / "pypsa-eur" / "resources").mkdir(
+                parents=True, exist_ok=True
+            )
         urlretrieve(
-            f"https://zenodo.org/record/5824485/files/{datafile}", datapath
-        )
-        tar = tarfile.open(datapath)
-        tar.extractall(pypsa_eur_sec_repos_data)
-
-    with open(filepath / "Snakefile", "w") as snakefile:
-        snakefile.write(
-            resources.read_text("egon.data.datasets.pypsaeursec", "Snakefile")
+            "https://zenodo.org/record/4706686/files/natura.tiff",
+            filepath / "pypsa-eur" / "resources" / "natura.tiff",
         )
 
-    subproc.run(
-        [
-            "snakemake",
-            "-j1",
-            "--directory",
-            filepath,
-            "--snakefile",
-            filepath / "Snakefile",
-            "--use-conda",
-            "--conda-frontend=conda",
-            "Main",
-        ]
-    )
+        if not (filepath / "pypsa-eur" / "data").exists():
+            (filepath / "pypsa-eur" / "data").mkdir(
+                parents=True, exist_ok=True
+            )
+        urlretrieve(
+            "https://zenodo.org/record/6953563/files/shipdensity_global.zip",
+            filepath / "pypsa-eur" / "data" / "shipdensity_global.zip",
+        )
+
+        if not (
+            filepath
+            / "pypsa-eur"
+            / "zenodo.org"
+            / "records"
+            / "10356004"
+            / "files"
+        ).exists():
+            (
+                filepath
+                / "pypsa-eur"
+                / "zenodo.org"
+                / "records"
+                / "10356004"
+                / "files"
+            ).mkdir(parents=True, exist_ok=True)
+
+        urlretrieve(
+            "https://zenodo.org/records/10356004/files/ENSPRESO_BIOMASS.xlsx",
+            filepath
+            / "pypsa-eur"
+            / "zenodo.org"
+            / "records"
+            / "10356004"
+            / "files"
+            / "ENSPRESO_BIOMASS.xlsx",
+        )
+
+        if not (
+            filepath
+            / "pypsa-eur"
+            / "globalenergymonitor.org"
+            / "wp-content"
+            / "uploads"
+            / "2023"
+            / "07"
+        ).exists():
+            (
+                filepath
+                / "pypsa-eur"
+                / "globalenergymonitor.org"
+                / "wp-content"
+                / "uploads"
+                / "2023"
+                / "07"
+            ).mkdir(parents=True, exist_ok=True)
+
+        r = requests.get(
+            "https://globalenergymonitor.org/wp-content/uploads/2023/07/"
+            "Europe-Gas-Tracker-2023-03-v3.xlsx"
+        )
+        with open(
+            filepath
+            / "pypsa-eur"
+            / "globalenergymonitor.org"
+            / "wp-content"
+            / "uploads"
+            / "2023"
+            / "07"
+            / "Europe-Gas-Tracker-2023-03-v3.xlsx",
+            "wb",
+        ) as outfile:
+            outfile.write(r.content)
+
+    else:
+        print("Pypsa-eur is not executed due to the settings of egon-data")
+
+
+def prepare_network():
+    cwd = Path(".")
+    filepath = cwd / "run-pypsa-eur"
+
+    if config.settings()["egon-data"]["--run-pypsa-eur"]:
+        subproc.run(
+            [
+                "snakemake",
+                "-j1",
+                "--directory",
+                filepath,
+                "--snakefile",
+                filepath / "Snakefile",
+                "--use-conda",
+                "--conda-frontend=conda",
+                "prepare",
+            ]
+        )
+    else:
+        print("Pypsa-eur is not executed due to the settings of egon-data")
+
+
+def solve_network():
+    cwd = Path(".")
+    filepath = cwd / "run-pypsa-eur"
+
+    if config.settings()["egon-data"]["--run-pypsa-eur"]:
+        subproc.run(
+            [
+                "snakemake",
+                "-j1",
+                "--directory",
+                filepath,
+                "--snakefile",
+                filepath / "Snakefile",
+                "--use-conda",
+                "--conda-frontend=conda",
+                "solve",
+            ]
+        )
+
+        subproc.run(
+            [
+                "snakemake",
+                "-j1",
+                "--directory",
+                filepath,
+                "--snakefile",
+                filepath / "Snakefile",
+                "--use-conda",
+                "--conda-frontend=conda",
+                "summary",
+            ]
+        )
+    else:
+        print("Pypsa-eur is not executed due to the settings of egon-data")
 
 
 def read_network():
-    # Set execute_pypsa_eur_sec to False until optional task is implemented
-    execute_pypsa_eur_sec = False
-    cwd = Path(".")
-
-    if execute_pypsa_eur_sec:
-        filepath = cwd / "run-pypsa-eur-sec"
-        pypsa_eur_sec_repos = filepath / "pypsa-eur-sec"
-        # Read YAML file
-        pes_egonconfig = pypsa_eur_sec_repos / "config_egon.yaml"
-        with open(pes_egonconfig, "r") as stream:
+    if config.settings()["egon-data"]["--run-pypsa-eur"]:
+        with open(
+            __path__[0] + "/datasets/pypsaeur/config.yaml", "r"
+        ) as stream:
             data_config = yaml.safe_load(stream)
 
-        simpl = data_config["scenario"]["simpl"][0]
-        clusters = data_config["scenario"]["clusters"][0]
-        lv = data_config["scenario"]["lv"][0]
-        opts = data_config["scenario"]["opts"][0]
-        sector_opts = data_config["scenario"]["sector_opts"][0]
-        planning_horizons = data_config["scenario"]["planning_horizons"][0]
-        file = "elec_s{simpl}_{clusters}_lv{lv}_{opts}_{sector_opts}_{planning_horizons}.nc".format(
-            simpl=simpl,
-            clusters=clusters,
-            opts=opts,
-            lv=lv,
-            sector_opts=sector_opts,
-            planning_horizons=planning_horizons,
-        )
-
         target_file = (
-            pypsa_eur_sec_repos
+            Path(".")
+            / "run-pypsa-eur"
+            / "pypsa-eur"
             / "results"
-            / data_config["run"]
+            / data_config["run"]["name"]
             / "postnetworks"
-            / file
+            / f"elec_s_{data_config['scenario']['clusters'][0]}"
+            f"_l{data_config['scenario']['ll'][0]}"
+            f"_{data_config['scenario']['opts'][0]}"
+            f"_{data_config['scenario']['sector_opts'][0]}"
+            f"_{data_config['scenario']['planning_horizons'][0]}.nc"
         )
 
     else:
         target_file = (
-            cwd
-            / "data_bundle_egon_data"
-            / "pypsa_eur_sec"
-            / "2022-07-26-egondata-integration"
+            Path(".")
+            / "data_bundle_powerd_data"
+            / "pypsa_eur"
+            / "2024-08-02-egondata-integration"
+            / "results"
             / "postnetworks"
-            / "elec_s_37_lv2.0__Co2L0-1H-T-H-B-I-dist1_2050.nc"
+            / "elec_s_37_lv1.5__Co2L0-1H-T-H-B-I-A-solar+p3_2050.nc"
         )
 
-    return pypsa.Network(str(target_file))
+    return pypsa.Network(target_file)
 
 
 def clean_database():
@@ -236,37 +372,54 @@ def clean_database():
             WHERE "bus0" IN (
             SELECT bus_id FROM grid.egon_etrago_bus
                 WHERE country != 'DE'
-                AND scn_name = '{scn_name}')
+                AND scn_name = '{scn_name}'
+                AND bus_id NOT IN (SELECT bus_i FROM osmtgmod_results.bus_data))
             AND "bus1" IN (
             SELECT bus_id FROM grid.egon_etrago_bus
                 WHERE country != 'DE'
-                AND scn_name = '{scn_name}')
+                AND scn_name = '{scn_name}'
+                AND bus_id NOT IN (SELECT bus_i FROM osmtgmod_results.bus_data))
             );
+
 
             DELETE FROM {"grid.egon_etrago_" + comp}
             WHERE scn_name = '{scn_name}'
             AND "bus0" IN (
             SELECT bus_id FROM grid.egon_etrago_bus
                 WHERE country != 'DE'
-                AND scn_name = '{scn_name}')
+                AND scn_name = '{scn_name}'
+                AND bus_id NOT IN (SELECT bus_i FROM osmtgmod_results.bus_data))
             AND "bus1" IN (
             SELECT bus_id FROM grid.egon_etrago_bus
                 WHERE country != 'DE'
-                AND scn_name = '{scn_name}')
+                AND scn_name = '{scn_name}'
+                AND bus_id NOT IN (SELECT bus_i FROM osmtgmod_results.bus_data))
             ;"""
         )
 
-    db.execute_sql(
-        "DELETE FROM grid.egon_etrago_bus "
-        "WHERE scn_name = '{scn_name}' "
-        "AND country <> 'DE'"
+    db.execute_sql(f"""
+        DELETE FROM grid.egon_etrago_bus
+        WHERE scn_name = '{scn_name}'
+        AND country <> 'DE'
+        AND carrier <> 'AC'
+        """
     )
+
+
+def electrical_neighbours_egon100():
+    if "eGon100RE" in egon.data.config.settings()["egon-data"]["--scenarios"]:
+        neighbor_reduction()
+
+    else:
+        print(
+            "eGon100RE is not in the list of created scenarios, this task is skipped."
+        )
 
 
 def neighbor_reduction():
     network = read_network()
 
-    network.links.drop("pipe_retrofit", axis="columns", inplace=True)
+    # network.links.drop("pipe_retrofit", axis="columns", inplace=True)
 
     wanted_countries = [
         "DE",
@@ -312,9 +465,9 @@ def neighbor_reduction():
             bus=i,
             p_set=network.lines_t.p1[k],
         )
-        network.loads.carrier.loc[
-            "slack_fix " + i + " " + k
-        ] = lines_cb_1.carrier[k]
+        network.loads.carrier.loc["slack_fix " + i + " " + k] = (
+            lines_cb_1.carrier[k]
+        )
 
     # select all lines which have at bus0 the bus which is kept
     lines_cb_0 = network.lines[
@@ -329,9 +482,9 @@ def neighbor_reduction():
             bus=i,
             p_set=network.lines_t.p0[k],
         )
-        network.loads.carrier.loc[
-            "slack_fix " + i + " " + k
-        ] = lines_cb_0.carrier[k]
+        network.loads.carrier.loc["slack_fix " + i + " " + k] = (
+            lines_cb_0.carrier[k]
+        )
 
     # do the same for links
 
@@ -355,9 +508,9 @@ def neighbor_reduction():
             bus=i,
             p_set=network.links_t.p1[k],
         )
-        network.loads.carrier.loc[
-            "slack_fix_links " + i + " " + k
-        ] = links_cb_1.carrier[k]
+        network.loads.carrier.loc["slack_fix_links " + i + " " + k] = (
+            links_cb_1.carrier[k]
+        )
 
     # select all links which have at bus0 the bus which is kept
     links_cb_0 = network.links[
@@ -372,9 +525,9 @@ def neighbor_reduction():
             bus=i,
             p_set=network.links_t.p0[k],
         )
-        network.loads.carrier.loc[
-            "slack_fix_links " + i + " " + k
-        ] = links_cb_0.carrier[k]
+        network.loads.carrier.loc["slack_fix_links " + i + " " + k] = (
+            links_cb_0.carrier[k]
+        )
 
     # drop remaining foreign components
 
@@ -444,6 +597,25 @@ def neighbor_reduction():
 
     neighbors["new_index"] = (
         db.next_etrago_id("bus") + neighbors.reset_index().index
+    )
+
+    # Use index of AC buses created by electrical_neigbors
+    foreign_ac_buses = db.select_dataframe(
+        """
+        SELECT * FROM grid.egon_etrago_bus
+        WHERE carrier = 'AC' AND v_nom = 380
+        AND country!= 'DE' AND scn_name ='eGon100RE'
+        AND bus_id NOT IN (SELECT bus_i FROM osmtgmod_results.bus_data)
+        """
+    )
+    buses_with_defined_id = neighbors[
+        (neighbors.carrier == "AC")
+        & (neighbors.country.isin(foreign_ac_buses.country.values))
+    ].index
+    neighbors.loc[buses_with_defined_id, "new_index"] = (
+        foreign_ac_buses.set_index("x")
+        .loc[neighbors.loc[buses_with_defined_id, "x"]]
+        .bus_id.values
     )
 
     # lines, the foreign crossborder lines
@@ -617,12 +789,11 @@ def neighbor_reduction():
         {
             "gas": "CH4",
             "gas_for_industry": "CH4_for_industry",
-            "H2": "H2_grid",
         },
         inplace=True,
     )
 
-    neighbors.to_postgis(
+    neighbors[~neighbors.carrier.isin(["AC"])].to_postgis(
         "egon_etrago_bus",
         engine,
         schema="grid",
@@ -649,6 +820,7 @@ def neighbor_reduction():
             "g_pu",
             "b_pu",
             "s_nom_opt",
+            "i_nom",
         ]:
             neighbor_lines = neighbor_lines.drop(i, axis=1)
 
@@ -679,8 +851,7 @@ def neighbor_reduction():
             index_label="line_id",
         )
 
-    for scn in config.settings()["egon-data"]["--scenarios"]:
-        lines_to_etrago(neighbor_lines=neighbor_lines, scn=scn)
+    lines_to_etrago(neighbor_lines=neighbor_lines, scn="eGon100RE")
 
     def links_to_etrago(neighbor_links, scn="eGon100RE", extendable=True):
         """Prepare and write neighboring crossborder links to eTraGo table
@@ -715,70 +886,48 @@ def neighbor_reduction():
         """
         neighbor_links["scn_name"] = scn
 
-        if extendable is True:
+        dropped_carriers = [
+            "Link",
+            "geometry",
+            "tags",
+            "under_construction",
+            "underground",
+            "underwater_fraction",
+            "bus2",
+            "bus3",
+            "bus4",
+            "efficiency2",
+            "efficiency3",
+            "efficiency4",
+            "lifetime",
+            "pipe_retrofit",
+            "committable",
+            "start_up_cost",
+            "shut_down_cost",
+            "min_up_time",
+            "min_down_time",
+            "up_time_before",
+            "down_time_before",
+            "ramp_limit_up",
+            "ramp_limit_down",
+            "ramp_limit_start_up",
+            "ramp_limit_shut_down",
+            "length_original",
+            "reversed",
+        ]
+
+        if extendable:
+            dropped_carriers.append("p_nom_opt")
             neighbor_links = neighbor_links.drop(
-                columns=[
-                    "Link",
-                    "geometry",
-                    "tags",
-                    "under_construction",
-                    "underground",
-                    "underwater_fraction",
-                    "bus2",
-                    "bus3",
-                    "bus4",
-                    "efficiency2",
-                    "efficiency3",
-                    "efficiency4",
-                    "lifetime",
-                    "p_nom_opt",
-                    "pipe_retrofit",
-                    "committable",
-                    "start_up_cost",
-                    "shut_down_cost",
-                    "min_up_time",
-                    "min_down_time",
-                    "up_time_before",
-                    "down_time_before",
-                    "ramp_limit_up",
-                    "ramp_limit_down",
-                    "ramp_limit_start_up",
-                    "ramp_limit_shut_down",
-                ],
+                columns=dropped_carriers,
                 errors="ignore",
             )
 
-        elif extendable is False:
+        else:
+            dropped_carriers.append("p_nom")
+            dropped_carriers.append("p_nom_extendable")
             neighbor_links = neighbor_links.drop(
-                columns=[
-                    "Link",
-                    "geometry",
-                    "tags",
-                    "under_construction",
-                    "underground",
-                    "underwater_fraction",
-                    "bus2",
-                    "bus3",
-                    "bus4",
-                    "efficiency2",
-                    "efficiency3",
-                    "efficiency4",
-                    "lifetime",
-                    "p_nom",
-                    "p_nom_extendable",
-                    "pipe_retrofit",
-                    "committable",
-                    "start_up_cost",
-                    "shut_down_cost",
-                    "min_up_time",
-                    "min_down_time",
-                    "up_time_before",
-                    "down_time_before",
-                    "ramp_limit_up",
-                    "ramp_limit_start_up",
-                    "ramp_limit_down",
-                    "ramp_limit_shut_down",
-                ],
+                columns=dropped_carriers,
                 errors="ignore",
             )
             neighbor_links = neighbor_links.rename(
@@ -786,10 +935,19 @@ def neighbor_reduction():
             )
             neighbor_links["p_nom_extendable"] = False
 
+        if neighbor_links.empty:
+            print("No links selected")
+            return
+
         # Define geometry and add to lines dataframe as 'topo'
-        gdf = gpd.GeoDataFrame(index=neighbor_links.index)
-        gdf["geom_bus0"] = neighbors.geom[neighbor_links.bus0].values
-        gdf["geom_bus1"] = neighbors.geom[neighbor_links.bus1].values
+        gdf = gpd.GeoDataFrame(
+            index=neighbor_links.index,
+            data={
+                "geom_bus0": neighbors.loc[neighbor_links.bus0, "geom"].values,
+                "geom_bus1": neighbors.loc[neighbor_links.bus1, "geom"].values,
+            },
+        )
+
         gdf["geometry"] = gdf.apply(
             lambda x: LineString([x["geom_bus0"], x["geom_bus1"]]), axis=1
         )
@@ -838,12 +996,19 @@ def neighbor_reduction():
 
     non_extendable_links_carriers = [
         "H2 pipeline retrofitted",
+        "H2 pipeline",
         "gas pipeline",
         "biogas to gas",
     ]
 
     # delete unwanted carriers for eTraGo
-    excluded_carriers = ["gas for industry CC", "SMR CC", "biogas to gas"]
+    excluded_carriers = [
+        "gas for industry CC",
+        "SMR CC",
+        "biogas to gas",
+        "DAC",
+        "electricity distribution grid",
+    ]
     neighbor_links = neighbor_links[
         ~neighbor_links.carrier.isin(excluded_carriers)
     ]
@@ -861,12 +1026,6 @@ def neighbor_reduction():
         "eGon100RE",
         extendable=False,
     )
-
-    for scn in config.settings()["egon-data"]["--scenarios"]:
-        if scn != "eGon100RE":
-            links_to_etrago(
-                neighbor_links[neighbor_links.carrier == "DC"], scn
-            )
 
     # prepare neighboring generators for etrago tables
     neighbor_gens["scn_name"] = "eGon100RE"
@@ -976,6 +1135,7 @@ def neighbor_reduction():
         "lifetime",
         "e_initial_per_period",
         "e_cyclic_per_period",
+        "location",
     ]:
         neighbor_stores = neighbor_stores.drop(i, axis=1, errors="ignore")
 
@@ -1128,6 +1288,41 @@ def neighbor_reduction():
         )
 
 
+def prepared_network():
+    if egon.data.config.settings()["egon-data"]["--run-pypsa-eur"]:
+        with open(
+            __path__[0] + "/datasets/pypsaeur/config.yaml", "r"
+        ) as stream:
+            data_config = yaml.safe_load(stream)
+
+        target_file = (
+            Path(".")
+            / "run-pypsa-eur"
+            / "pypsa-eur"
+            / "results"
+            / data_config["run"]["name"]
+            / "prenetworks"
+            / f"elec_s_{data_config['scenario']['clusters'][0]}"
+            f"_l{data_config['scenario']['ll'][0]}"
+            f"_{data_config['scenario']['opts'][0]}"
+            f"_{data_config['scenario']['sector_opts'][0]}"
+            f"_{data_config['scenario']['planning_horizons'][0]}.nc"
+        )
+
+    else:
+        target_file = (
+            Path(".")
+            / "data_bundle_powerd_data"
+            / "pypsa_eur"
+            / "2024-08-02-egondata-integration"
+            / "results"
+            / "postnetworks"
+            / "elec_s_37_lv1.5__Co2L0-1H-T-H-B-I-A-solar+p3_2050.nc"
+        )
+
+    return pypsa.Network(target_file.absolute().as_posix())
+
+
 def overwrite_H2_pipeline_share():
     """Overwrite retrofitted_CH4pipeline-to-H2pipeline_share value
 
@@ -1178,28 +1373,281 @@ def overwrite_H2_pipeline_share():
     )
 
 
-# Skip execution of pypsa-eur-sec by default until optional task is implemented
-execute_pypsa_eur_sec = False
+def update_electrical_timeseries_germany(network):
+    """Replace electrical demand time series in Germany with data from egon-data
 
-if execute_pypsa_eur_sec:
-    tasks = (
-        run_pypsa_eur_sec,
-        clean_database,
-        neighbor_reduction,
-        overwrite_H2_pipeline_share,
+    Parameters
+    ----------
+    network : pypsa.Network
+        Network including demand time series from pypsa-eur
+
+    Returns
+    -------
+    network : pypsa.Network
+        Network including electrical demand time series in Germany from egon-data
+
+    """
+
+    df = pd.read_csv(
+        "input-pypsa-eur-sec/electrical_demand_timeseries_DE_eGon100RE.csv"
     )
-else:
-    tasks = (
-        clean_database,
-        neighbor_reduction,
+
+    network.loads_t.p_set.loc[:, "DE1 0"] = (
+        df["residential_and_service"] + df["industry"]
+    ).values
+
+    return network
+
+
+def geothermal_district_heating(network):
+    """Add the option to build geothermal power plants in district heating in Germany
+
+    Parameters
+    ----------
+    network : pypsa.Network
+        Network from pypsa-eur without geothermal generators
+
+    Returns
+    -------
+    network : pypsa.Network
+        Updated network with geothermal generators
+
+    """
+
+    costs_and_potentials = pd.read_csv(
+        "input-pypsa-eur-sec/geothermal_potential_germany.csv"
     )
 
+    network.add("Carrier", "urban central geo thermal")
 
-class PypsaEurSec(Dataset):
-    def __init__(self, dependencies):
-        super().__init__(
-            name="PypsaEurSec",
-            version="0.0.10",
-            dependencies=dependencies,
-            tasks=tasks,
+    for i, row in costs_and_potentials.iterrows():
+        # Set lifetime of geothermal plant to 30 years based on:
+        # Ableitung eines Korridors für den Ausbau der erneuerbaren Wärme im Gebäudebereich,
+        # Beuth Hochschule für Technik, Berlin ifeu – Institut für Energie- und Umweltforschung Heidelberg GmbH
+        # Februar 2017
+        lifetime_geothermal = 30
+
+        network.add(
+            "Generator",
+            f"DE1 0 urban central geo thermal {i}",
+            bus="DE1 0 urban central heat",
+            carrier="urban central geo thermal",
+            p_nom_extendable=True,
+            p_nom_max=row["potential [MW]"],
+            capital_cost=annualize_capital_costs(
+                row["cost [EUR/kW]"] * 1e6, lifetime_geothermal, 0.07
+            ),
         )
+    return network
+
+
+def h2_overground_stores(network):
+    """Add hydrogen overground stores to each hydrogen node
+
+    In pypsa-eur, only countries without the potential of underground hydrogen
+    stores have to option to build overground hydrogen tanks.
+    Overground stores are more expensive, but are not resitcted by the geological
+    potential. To allow higher hydrogen store capacities in each country, optional
+    hydogen overground tanks are also added to node with a potential for
+    underground stores.
+
+    Parameters
+    ----------
+    network : pypsa.Network
+        Network without hydrogen overground stores at each hydrogen node
+
+    Returns
+    -------
+    network : pypsa.Network
+        Network with hydrogen overground stores at each hydrogen node
+
+    """
+
+    underground_h2_stores = network.stores[
+        (network.stores.carrier == "H2 Store")
+        & (network.stores.e_nom_max != np.inf)
+    ]
+
+    overground_h2_stores = network.stores[
+        (network.stores.carrier == "H2 Store")
+        & (network.stores.e_nom_max == np.inf)
+    ]
+
+    network.madd(
+        "Store",
+        underground_h2_stores.bus + " overground Store",
+        bus=underground_h2_stores.bus.values,
+        e_nom_extendable=True,
+        e_cyclic=True,
+        carrier="H2 Store",
+        capital_cost=overground_h2_stores.capital_cost.mean(),
+    )
+
+    return network
+
+
+def update_heat_timeseries_germany(network):
+    network.loads
+    # Import heat demand curves for Germany from eGon-data
+    df_egon_heat_demand = pd.read_csv(
+        "input-pypsa-eur-sec/heat_demand_timeseries_DE_eGon100RE.csv"
+    )
+
+    # Replace heat demand curves in Germany with values from eGon-data
+    network.loads_t.p_set.loc[:, "DE1 0 rural heat"] = (
+        df_egon_heat_demand.loc[:, "residential rural"].values
+        + df_egon_heat_demand.loc[:, "service rural"].values
+    )
+
+    network.loads_t.p_set.loc[:, "DE1 0 urban central heat"] = (
+        df_egon_heat_demand.loc[:, "urban central"].values
+    )
+
+    return network
+
+
+def drop_biomass(network):
+    carrier = "biomass"
+
+    for c in network.iterate_components():
+        network.mremove(c.name, c.df[c.df.index.str.contains(carrier)].index)
+    return network
+
+
+def drop_urban_decentral_heat(network):
+    carrier = "urban decentral"
+
+    for c in network.iterate_components():
+        network.mremove(c.name, c.df[c.df.index.str.contains(carrier)].index)
+    return network
+
+
+def district_heating_shares(network):
+    df = pd.read_csv(
+        "data_bundle_powerd_data/district_heating_shares_egon.csv"
+    ).set_index("country_code")
+
+    heat_demand_per_country = (
+        network.loads_t.p_set[
+            network.loads[
+                (network.loads.carrier.str.contains("heat"))
+                & network.loads.index.isin(network.loads_t.p_set.columns)
+            ].index
+        ]
+        .groupby(network.loads.bus.str[:5], axis=1)
+        .sum()
+    )
+
+    for country in heat_demand_per_country.columns:
+        network.loads_t.p_set[f"{country} urban central heat"] = (
+            heat_demand_per_country.loc[:, country].mul(
+                df.loc[country[:2]].values[0]
+            )
+        )
+        network.loads_t.p_set[f"{country} rural heat"] = (
+            heat_demand_per_country.loc[:, country].mul(
+                (1 - df.loc[country[:2]].values[0])
+            )
+        )
+
+    # Drop links with undefined buses or carrier
+    network.mremove(
+        "Link",
+        network.links[
+            ~network.links.bus0.isin(network.buses.index.values)
+        ].index,
+    )
+    network.mremove(
+        "Link",
+        network.links[
+            network.links.carrier==""
+        ].index,
+    )
+
+    return network
+
+
+def drop_new_gas_pipelines(network):
+    network.mremove(
+        "Link",
+        network.links[
+            network.links.index.str.contains("gas pipeline new")
+        ].index,
+    )
+
+    return network
+
+
+def drop_fossil_gas(network):
+    network.mremove(
+        "Generator",
+        network.generators[network.generators.carrier == "gas"].index
+    )
+
+    return network
+
+
+def rual_heat_technologies(network):
+    network.mremove(
+        "Link",
+        network.links[
+            network.links.index.str.contains("rural gas boiler")
+        ].index,
+    )
+
+    network.mremove(
+        "Generator",
+        network.generators[
+            network.generators.carrier.str.contains("rural solar thermal")
+        ].index,
+    )
+
+    return network
+
+
+def execute():
+    if egon.data.config.settings()["egon-data"]["--run-pypsa-eur"]:
+        with open(
+            __path__[0] + "/datasets/pypsaeur/config.yaml", "r"
+        ) as stream:
+            data_config = yaml.safe_load(stream)
+
+        network_path = (
+            Path(".")
+            / "run-pypsa-eur"
+            / "pypsa-eur"
+            / "results"
+            / data_config["run"]["name"]
+            / "prenetworks"
+            / f"elec_s_{data_config['scenario']['clusters'][0]}"
+            f"_l{data_config['scenario']['ll'][0]}"
+            f"_{data_config['scenario']['opts'][0]}"
+            f"_{data_config['scenario']['sector_opts'][0]}"
+            f"_{data_config['scenario']['planning_horizons'][0]}.nc"
+        )
+
+        network = pypsa.Network(network_path)
+
+        network = drop_biomass(network)
+
+        network = drop_urban_decentral_heat(network)
+
+        network = district_heating_shares(network)
+
+        network = update_heat_timeseries_germany(network)
+
+        network = update_electrical_timeseries_germany(network)
+
+        network = geothermal_district_heating(network)
+
+        network = h2_overground_stores(network)
+
+        network = drop_new_gas_pipelines(network)
+
+        network = drop_fossil_gas(network)
+
+        network = rual_heat_technologies(network)
+
+        network.export_to_netcdf(network_path)
+    else:
+        print("Pypsa-eur is not executed due to the settings of egon-data")

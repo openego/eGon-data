@@ -90,7 +90,7 @@ map_zensus_vg250:
 demandregio_installation:
   sources:
     git-repository: "https://github.com/openego/disaggregator.git"
-    branch: "features/pandas-update"
+    branch: "features/pandas-update-plus-master"
   targets:
     path: 'demandregio-disaggregator'
 
@@ -105,6 +105,7 @@ demandregio_workaround:
       path: 'demandregio-disaggregator/disaggregator/disaggregator/data_in/'
     dbdump:
       path: "demandregio_dbdump"
+
 demandregio_society:
   sources:
     disaggregator:
@@ -138,6 +139,9 @@ demandregio_household_demand:
     household_demand:
       schema: 'demand'
       table: 'egon_demandregio_hh'
+    household_demand_load_profiles:
+      schema: 'demand'
+      table: 'demandregio_household_load_profiles'
 
 demandregio_cts_ind_demand:
   sources:
@@ -563,9 +567,12 @@ data-bundle:
   sources:
     zenodo:
       deposit_id: 10226009
+      deposit_id_powerd: 11618105
   targets:
     file:
       'data_bundle_egon_data.zip'
+    file_powerd:
+      'data_bundle_powerd_data.zip'
 
 pypsa-technology-data:
   sources:
@@ -1274,3 +1281,7 @@ home_batteries:
     home_batteries:
       schema: 'supply'
       table: 'egon_home_batteries'
+
+scenario_path:
+  sources:
+    url_status2019: 'https://zenodo.org/records/13865306/files/PoWerD_status2019_v2.backup'

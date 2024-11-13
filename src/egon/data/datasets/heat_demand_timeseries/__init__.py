@@ -3,6 +3,7 @@ from pathlib import Path
 import json
 import os
 import time
+import warnings
 
 from sqlalchemy import ARRAY, Column, Float, Integer, String, Text
 from sqlalchemy.ext.declarative import declarative_base
@@ -327,10 +328,9 @@ def create_district_heating_profile_python_like(scenario="eGon2035"):
 
     start_time = datetime.now()
     for area in district_heating_grids.area_id.unique():
-
         with db.session_scope() as session:
-
-            sql = f"""
+            selected_profiles = db.select_dataframe(
+                f"""
                 SELECT a.zensus_population_id, building_id, c.climate_zone,
                 selected_idp, ordinality as day, b.area_id
                 FROM demand.egon_heat_timeseries_selected_profiles a
@@ -340,11 +340,12 @@ def create_district_heating_profile_python_like(scenario="eGon2035"):
                     SELECT * FROM demand.egon_map_zensus_district_heating_areas
                     WHERE scenario = '{scenario}'
                     AND area_id = '{area}'
-                ) b ON a.zensus_population_id = b.zensus_population_id,
+                ) b ON a.zensus_population_id = b.zensus_population_id        ,
+        
                 UNNEST (selected_idp_profiles) WITH ORDINALITY as selected_idp
+        
                 """
-
-            selected_profiles = db.select_dataframe(sql)
+            )
 
             if not selected_profiles.empty:
                 df = pd.merge(
@@ -383,8 +384,14 @@ def create_district_heating_profile_python_like(scenario="eGon2035"):
 
                 assert (
                     abs(diff) < 0.04
-                ), f"""Deviation of residential heat demand time
+                ), f"""Deviation of residential heat demand time 
                 series for district heating grid {str(area)} is {diff}"""
+
+                if abs(diff) > 0.03:
+                    warnings.warn(
+                        f"""Deviation of residential heat demand time
+                    series for district heating grid {str(area)} is {diff}"""
+                    )
 
                 hh = np.concatenate(
                     slice_df.drop(
@@ -981,7 +988,7 @@ def store_national_profiles():
         FROM
 
         (
-        SELECT demand.demand  *
+        SELECT demand.demand  / building.count *
         c.daily_demand_share * hourly_demand as building_demand_per_hour,
         ordinality + 24* (c.day_of_year-1) as hour_of_year,
         demand_profile.building_id,
@@ -1042,7 +1049,7 @@ def store_national_profiles():
 
     df["urban central"] = db.select_dataframe(
         f"""
-        SELECT sum(demand) as "urban central"
+        SELECT sum(nullif(demand, 'NaN')) as "urban central"
 
         FROM demand.egon_timeseries_district_heating,
         UNNEST (dist_aggregated_mw) WITH ORDINALITY as demand
@@ -1216,7 +1223,7 @@ class HeatTimeSeries(Dataset):
     #:
     name: str = "HeatTimeSeries"
     #:
-    version: str = "0.0.8"
+    version: str = "0.0.11"
 
     def __init__(self, dependencies):
         super().__init__(
@@ -1233,6 +1240,6 @@ class HeatTimeSeries(Dataset):
                 select,
                 district_heating,
                 metadata,
-                # store_national_profiles,
+                store_national_profiles,
             ),
         )

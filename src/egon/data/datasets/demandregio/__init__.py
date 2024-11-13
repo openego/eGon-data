@@ -2,8 +2,8 @@
 adjusting data from demandRegio
 
 """
+
 from pathlib import Path
-import subprocess
 import os
 import zipfile
 
@@ -42,7 +42,7 @@ class DemandRegio(Dataset):
             version="0.0.9",
             dependencies=dependencies,
             tasks=(
-                clone_and_install,
+                clone_and_install, # demandregio must be previously installed
                 get_cached_tables,  # adhoc workaround #180
                 create_tables,
                 {
@@ -53,6 +53,7 @@ class DemandRegio(Dataset):
             ),
         )
 
+
 class DemandRegioLoadProfiles(Base):
     __tablename__ = "demandregio_household_load_profiles"
     __table_args__ = {"schema": "demand"}
@@ -61,6 +62,7 @@ class DemandRegioLoadProfiles(Base):
     year = Column(Integer)
     nuts3 = Column(String)
     load_in_mwh = Column(ARRAY(Float()))
+
 
 class EgonDemandRegioHH(Base):
     __tablename__ = "egon_demandregio_hh"
@@ -130,6 +132,7 @@ def create_tables():
     EgonDemandRegioPopulation.__table__.create(bind=engine, checkfirst=True)
     EgonDemandRegioHouseholds.__table__.create(bind=engine, checkfirst=True)
     EgonDemandRegioWz.__table__.create(bind=engine, checkfirst=True)
+    DemandRegioLoadProfiles.__table__.create(bind=db.engine(), checkfirst=True)
     EgonDemandRegioTimeseriesCtsInd.__table__.drop(
         bind=engine, checkfirst=True
     )
@@ -265,7 +268,7 @@ def adjust_ind_pes(ec_cts_ind):
     """
 
     pes_path = (
-        Path(".") / "data_bundle_egon_data" / "pypsa_eur_sec" / "resources"
+        Path(".") / "data_bundle_powerd_data" / "pypsa_eur" / "resources"
     )
 
     sources = egon.data.config.datasets()["demandregio_cts_ind_demand"][
@@ -501,7 +504,8 @@ def disagg_households_power(
 
     return df
 
-def write_demandregio_hh_profiles_to_db(hh_profiles):
+
+def write_demandregio_hh_profiles_to_db(hh_profiles, year):
     """Write HH demand profiles from demand regio into db. One row per
     year and nuts3. The annual load profile timeseries is an array.
 
@@ -513,34 +517,45 @@ def write_demandregio_hh_profiles_to_db(hh_profiles):
     Parameters
     ----------
     hh_profiles: pd.DataFrame
+    year: int
 
     Returns
     -------
     """
-    years = hh_profiles.index.year.unique().values
-    df_to_db = pd.DataFrame(columns=["id", "year", "nuts3", "load_in_mwh"]).set_index("id")
+    df_to_db = pd.DataFrame(
+        columns=["id", "year", "nuts3", "load_in_mwh"]
+    ).set_index("id")
     dataset = egon.data.config.settings()["egon-data"]["--dataset-boundary"]
 
     if dataset == "Schleswig-Holstein":
         hh_profiles = hh_profiles.loc[
-            :, hh_profiles.columns.str.contains("DEF0")]
+            :, hh_profiles.columns.str.contains("DEF0")
+        ]
 
-    id = 0
-    for year in years:
-        df = hh_profiles[hh_profiles.index.year == year]
-        for nuts3 in hh_profiles.columns:
-            id+=1
-            df_to_db.at[id, "year"] = year
-            df_to_db.at[id, "nuts3"] = nuts3
-            df_to_db.at[id, "load_in_mwh"] = df[nuts3].to_list()
+    id = pd.read_sql_query(
+        f"""
+                           SELECT MAX(id)
+                           FROM {DemandRegioLoadProfiles.__table__.schema}.
+                           {DemandRegioLoadProfiles.__table__.name}
+                           """,
+        con=db.engine(),
+    ).iat[0, 0]
+
+    if id is None:
+        id = 0
+    else:
+        id = id + 1
+
+    for nuts3 in hh_profiles.columns:
+        id += 1
+        df_to_db.at[id, "year"] = year
+        df_to_db.at[id, "nuts3"] = nuts3
+        df_to_db.at[id, "load_in_mwh"] = hh_profiles[nuts3].to_list()
 
     df_to_db["year"] = df_to_db["year"].apply(int)
     df_to_db["nuts3"] = df_to_db["nuts3"].astype(str)
     df_to_db["load_in_mwh"] = df_to_db["load_in_mwh"].apply(list)
     df_to_db = df_to_db.reset_index()
-
-    DemandRegioLoadProfiles.__table__.drop(bind=db.engine(), checkfirst=True)
-    DemandRegioLoadProfiles.__table__.create(bind=db.engine())
 
     df_to_db.to_sql(
         name=DemandRegioLoadProfiles.__table__.name,
@@ -551,6 +566,7 @@ def write_demandregio_hh_profiles_to_db(hh_profiles):
     )
 
     return
+
 
 def insert_hh_demand(scenario, year, engine):
     """Calculates electrical demands of private households using demandregio's
@@ -644,10 +660,21 @@ def insert_cts_ind(scenario, year, engine, target_values):
     None.
 
     """
-
     targets = egon.data.config.datasets()["demandregio_cts_ind_demand"][
         "targets"
     ]
+
+    if scenario == "eGon100RE":
+        ec_cts_ind2 = pd.read_csv(
+            "data_bundle_powerd_data/egon_demandregio_cts_ind.csv")
+        ec_cts_ind2.to_sql(
+            targets["cts_ind_demand"]["table"],
+            engine,
+            targets["cts_ind_demand"]["schema"],
+            if_exists="append",
+            index=False,
+        )
+        return
 
     for sector in ["CTS", "industry"]:
         # get demands per nuts3 and wz of demandregio
@@ -708,6 +735,8 @@ def insert_household_demand():
 
     scenarios = egon.data.config.settings()["egon-data"]["--scenarios"]
 
+    scenarios.append("eGon2021")
+
     for t in targets:
         db.execute_sql(
             f"DELETE FROM {targets[t]['schema']}.{targets[t]['table']};"
@@ -743,6 +772,7 @@ def insert_cts_ind_demands():
 
     scenarios = egon.data.config.settings()["egon-data"]["--scenarios"]
 
+    scenarios.append("eGon2021")
 
     for scn in scenarios:
         year = scenario_parameters.global_settings(scn)["population_year"]
@@ -935,7 +965,9 @@ def get_cached_tables():
     data_config = egon.data.config.datasets()
     for s in ["cache", "dbdump"]:
         url = data_config["demandregio_workaround"]["source"][s]["url"]
-        target_path = data_config["demandregio_workaround"]["targets"][s]["path"]
+        target_path = data_config["demandregio_workaround"]["targets"][s][
+            "path"
+        ]
         filename = os.path.basename(url)
         file_path = Path(".", target_path, filename).resolve()
         os.makedirs(file_path.parent, exist_ok=True)

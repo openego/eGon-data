@@ -181,7 +181,6 @@ def scale_prox2now(df, target, level="federal_state"):
         Future power plants
 
     """
-
     if level == "federal_state":
         df.loc[:, "Nettonennleistung"] = (
             df.groupby(df.Bundesland)
@@ -189,9 +188,9 @@ def scale_prox2now(df, target, level="federal_state"):
             .mul(target[df.Bundesland.values].values)
         )
     else:
-        df.loc[:, "Nettonennleistung"] = df.Nettonennleistung.apply(
-            lambda x: x / x.sum()
-        ).mul(target.values)
+        df.loc[:, "Nettonennleistung"] = df.Nettonennleistung * (
+            target / df.Nettonennleistung.sum()
+        )
 
     df = df[df.Nettonennleistung > 0]
 
@@ -307,7 +306,7 @@ def insert_biomass_plants(scenario):
     """
     cfg = egon.data.config.datasets()["power_plants"]
 
-    # import target values from NEP 2021, scneario C 2035
+    # import target values
     target = select_target("biomass", scenario)
 
     # import data for MaStR
@@ -650,12 +649,26 @@ def insert_hydro_biomass():
         """
     )
 
-    for scenario in ["eGon2035"]:
-        insert_biomass_plants(scenario)
+    s = egon.data.config.settings()["egon-data"]["--scenarios"]
+    scenarios = []
+    if "eGon2035" in s:
+        scenarios.append("eGon2035")
+        insert_biomass_plants("eGon2035")
+    if "eGon100RE" in s:
+        scenarios.append("eGon100RE")
+
+    for scenario in scenarios:
         insert_hydro_plants(scenario)
 
 
 def allocate_conventional_non_chp_power_plants():
+    # This function is only designed to work for the eGon2035 scenario
+    if (
+        "eGon2035"
+        not in egon.data.config.settings()["egon-data"]["--scenarios"]
+    ):
+        return
+
     carrier = ["oil", "gas"]
 
     cfg = egon.data.config.datasets()["power_plants"]
@@ -814,6 +827,13 @@ def allocate_conventional_non_chp_power_plants():
 
 
 def allocate_other_power_plants():
+    # This function is only designed to work for the eGon2035 scenario
+    if (
+        "eGon2035"
+        not in egon.data.config.settings()["egon-data"]["--scenarios"]
+    ):
+        return
+
     # Get configuration
     cfg = egon.data.config.datasets()["power_plants"]
     boundary = egon.data.config.settings()["egon-data"]["--dataset-boundary"]
@@ -973,6 +993,30 @@ def allocate_other_power_plants():
         )
         session.add(entry)
     session.commit()
+
+
+def discard_not_available_generators(gen, max_date):
+    gen["decommissioning_date"] = pd.to_datetime(
+        gen["decommissioning_date"]
+    )
+    gen["commissioning_date"] = pd.to_datetime(gen["commissioning_date"])
+    # drop plants that are commissioned after the max date
+    gen = gen[gen["commissioning_date"] < max_date]
+
+    # drop decommissioned plants while keeping the ones decommissioned
+    # after the max date
+    gen.loc[(gen["decommissioning_date"] > max_date), "status"] = (
+        "InBetrieb"
+    )
+
+    gen = gen.loc[
+        gen["status"].isin(["InBetrieb", "VoruebergehendStillgelegt"])
+    ]
+
+    # drop unnecessary columns
+    gen = gen.drop(columns=["commissioning_date", "decommissioning_date"])
+
+    return gen
 
 
 def get_conventional_power_plants_non_chp(scn_name):

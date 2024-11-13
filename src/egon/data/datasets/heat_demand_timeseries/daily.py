@@ -7,9 +7,9 @@ import geopandas as gpd
 import numpy as np
 import pandas as pd
 
-from egon.data import db
-import egon.data.datasets.era5 as era
+from egon.data import db, config
 from egon.data.datasets.scenario_parameters import get_sector_parameters
+import egon.data.datasets.era5 as era
 
 
 from math import ceil
@@ -333,9 +333,11 @@ def temp_interval(temp_profile):
         Hourly temperature intrerval of all 15 TRY Climate station#s temperature profile
 
     """
-    weather_year = get_sector_parameters("global", "status2023")["weather_year"]
-    # TODO" status2023 this is currenlty fixed to one scenario possible as only one weather year is possible
-    index = pd.date_range(datetime(weather_year, 1, 1, 0), periods=8760, freq="H")
+    #ToDo: Make this function scenario friendly
+    scenario = config.settings()["egon-data"]["--scenarios"][0]
+    year = get_sector_parameters("global", scenario)["weather_year"]
+
+    index = pd.date_range(datetime(year, 1, 1, 0), periods=8760, freq="H")
     temperature_interval = pd.DataFrame()
 
     for x in range(len(temp_profile.columns)):
@@ -363,10 +365,11 @@ def h_value(temp_profile):
         Extracted from demandlib.
 
     """
+    #ToDo: Make this function scenario friendly
+    scenario = config.settings()["egon-data"]["--scenarios"][0]
 
-    weather_year = get_sector_parameters("global", "status2023")["weather_year"]
-    # TODO status2023: this is fixed to 2023 as only one weather year is currently possible
-    index = pd.date_range(datetime(weather_year, 1, 1, 0), periods=8760, freq="H")
+    year = get_sector_parameters("global", scenario)["weather_year"]
+    index = pd.date_range(datetime(year, 1, 1, 0), periods=8760, freq="H")
 
     a = 3.0469695
 

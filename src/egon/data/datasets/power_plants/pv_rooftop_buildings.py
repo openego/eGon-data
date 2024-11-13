@@ -1142,17 +1142,31 @@ def cap_per_bus_id(
     pandas.DataFrame
         DataFrame with total rooftop capacity per mv grid.
     """
-    sources = config.datasets()["solar_rooftop"]["sources"]
+    if "status" in scenario:
+        sources = config.datasets()["solar_rooftop"]["sources"]
 
-    sql = f"""
-    SELECT bus_id, SUM(el_capacity) as capacity
-    FROM {sources['power_plants']['schema']}.{sources['power_plants']['table']}
-    WHERE carrier = 'solar_rooftop'
-    AND scenario = '{scenario}'
-    GROUP BY bus_id
-    """
+        sql = f"""
+        SELECT bus_id, SUM(el_capacity) as capacity
+        FROM {sources['power_plants']['schema']}.{sources['power_plants']['table']}
+        WHERE carrier = 'solar_rooftop'
+        AND scenario = '{scenario}'
+        GROUP BY bus_id
+        """
 
-    df = db.select_dataframe(sql, index_col="bus_id")
+        df = db.select_dataframe(sql, index_col="bus_id")
+
+    else:
+        targets = config.datasets()["solar_rooftop"]["targets"]
+
+        sql = f"""
+        SELECT bus as bus_id, control, p_nom as capacity
+        FROM {targets['generators']['schema']}.{targets['generators']['table']}
+        WHERE carrier = 'solar_rooftop'
+        AND scn_name = '{scenario}'
+        """
+
+        df = db.select_dataframe(sql, index_col="bus_id")
+        df = df.loc[df.control != "Slack"]
 
     return df
 

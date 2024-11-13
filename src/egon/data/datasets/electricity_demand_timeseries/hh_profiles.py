@@ -231,10 +231,10 @@ class HouseholdDemands(Dataset):
     #:
     name: str = "Household Demands"
     #:
-    version: str = "0.0.10"
+    version: str = "0.0.12"
 
     def __init__(self, dependencies):
-        tasks = (houseprofiles_in_census_cells,)
+        tasks = (create_table, houseprofiles_in_census_cells,)
 
         if (
             "status2019"
@@ -244,7 +244,6 @@ class HouseholdDemands(Dataset):
                 task_id="MV-hh-electricity-load-2019",
                 python_callable=mv_grid_district_HH_electricity_load,
                 op_args=["status2019", 2019],
-                op_kwargs={"drop_table": True},
             )
 
             tasks = tasks + (mv_hh_electricity_load_2035,)
@@ -257,7 +256,6 @@ class HouseholdDemands(Dataset):
                 task_id="MV-hh-electricity-load-2023",
                 python_callable=mv_grid_district_HH_electricity_load,
                 op_args=["status2023", 2023],
-                op_kwargs={"drop_table": True},
             )
 
             tasks = tasks + (mv_hh_electricity_load_2035,)
@@ -293,6 +291,13 @@ class HouseholdDemands(Dataset):
             tasks=tasks,
         )
 
+def create_table():
+    EgonEtragoElectricityHouseholds.__table__.drop(
+        bind=engine, checkfirst=True
+    )
+    EgonEtragoElectricityHouseholds.__table__.create(
+        bind=engine, checkfirst=True
+    )
 
 def clean(x):
     """Clean zensus household data row-wise
@@ -1827,9 +1832,7 @@ def get_demand_regio_hh_profiles_from_db(year):
 
     return df_profile_loads
 
-def mv_grid_district_HH_electricity_load(
-    scenario_name, scenario_year, drop_table
-):
+def mv_grid_district_HH_electricity_load(scenario_name, scenario_year):
     """
     Aggregated household demand time series at HV/MV substation level
 
@@ -1846,9 +1849,6 @@ def mv_grid_district_HH_electricity_load(
         Scenario name identifier, i.e. "eGon2035"
     scenario_year: int
         Scenario year according to `scenario_name`
-    drop_table: bool
-        Toggle to True for dropping table at beginning of this function.
-        Be careful, delete any data.
 
     Returns
     -------
@@ -1878,10 +1878,10 @@ def mv_grid_district_HH_electricity_load(
     )
 
     method = egon.data.config.settings()["egon-data"][
-        "--household-demand-source"
+        "--household-electrical-demand-source"
     ]
 
-    if method == "demand-regio":
+    if method == "slp":
         #Import demand regio timeseries demand per nuts3 area
         dr_series = pd.read_sql_query("""
             SELECT year, nuts3, load_in_mwh FROM demand.demandregio_household_load_profiles
@@ -1925,7 +1925,7 @@ def mv_grid_district_HH_electricity_load(
 
         mvgd_profiles.reset_index(inplace=True)
 
-    elif method == "IEE":
+    elif method == "bottom-up-profiles":
         # convert profile ids to tuple (type, id) format
         cells["cell_profile_ids"] = cells["cell_profile_ids"].apply(
             lambda x: list(map(tuple_format, x))
@@ -1957,13 +1957,6 @@ def mv_grid_district_HH_electricity_load(
     # Add remaining columns
     mvgd_profiles["scn_name"] = scenario_name
 
-    if drop_table:
-        EgonEtragoElectricityHouseholds.__table__.drop(
-            bind=engine, checkfirst=True
-        )
-    EgonEtragoElectricityHouseholds.__table__.create(
-        bind=engine, checkfirst=True
-    )
     # Insert data into respective database table
     mvgd_profiles.to_sql(
         name=EgonEtragoElectricityHouseholds.__table__.name,
@@ -1974,6 +1967,7 @@ def mv_grid_district_HH_electricity_load(
         chunksize=10000,
         index=False,
     )
+
 
 def get_scaled_profiles_from_db(
     attribute, list_of_identifiers, year, aggregate=True, peak_load_only=False
