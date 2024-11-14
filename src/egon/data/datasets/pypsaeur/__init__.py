@@ -30,7 +30,7 @@ class PreparePypsaEur(Dataset):
     def __init__(self, dependencies):
         super().__init__(
             name="PreparePypsaEur",
-            version="0.0.19",
+            version="0.0.23",
             dependencies=dependencies,
             tasks=(
                 download,
@@ -43,7 +43,7 @@ class RunPypsaEur(Dataset):
     def __init__(self, dependencies):
         super().__init__(
             name="SolvePypsaEur",
-            version="0.0.16",
+            version="0.0.20",
             dependencies=dependencies,
             tasks=(
                 execute,
@@ -77,21 +77,21 @@ def download():
 
             # Add gurobi solver to environment:
             # Read YAML file
-            path_to_env = pypsa_eur_repos / "envs" / "environment.yaml"
-            with open(path_to_env, "r") as stream:
-                env = yaml.safe_load(stream)
+            #path_to_env = pypsa_eur_repos / "envs" / "environment.yaml"
+            #with open(path_to_env, "r") as stream:
+            #    env = yaml.safe_load(stream)
 
             # The version of gurobipy has to fit to the version of gurobi.
             # Since we mainly use gurobi 10.0 this is set here.
-            env["dependencies"][-1]["pip"].append("gurobipy==10.0.0")
+            #env["dependencies"][-1]["pip"].append("gurobipy==10.0.0")
 
             # Set python version to <3.12
             # Python<=3.12 needs gurobipy>=11.0, in case gurobipy is updated,
             # this can be removed
-            env["dependencies"] = [
-                "python>=3.8,<3.12" if x == "python>=3.8" else x
-                for x in env["dependencies"]
-            ]
+            #env["dependencies"] = [
+            #    "python>=3.8,<3.12" if x == "python>=3.8" else x
+            #    for x in env["dependencies"]
+            #]
 
             # Limit geopandas version
             # our pypsa-eur version is not compatible to geopandas>1
@@ -101,10 +101,10 @@ def download():
             # ]
 
             # Write YAML file
-            with open(path_to_env, "w", encoding="utf8") as outfile:
-                yaml.dump(
-                    env, outfile, default_flow_style=False, allow_unicode=True
-                )
+            #with open(path_to_env, "w", encoding="utf8") as outfile:
+            #    yaml.dump(
+            #        env, outfile, default_flow_style=False, allow_unicode=True
+            #    )
 
             # Copy config file for egon-data to pypsa-eur directory
             shutil.copy(
@@ -203,7 +203,7 @@ def download():
             / "pypsa-eur"
             / "data"
             / "gem"
-            / "Europe-Gas-Tracker-2023-03-v3.xlsx",
+            / "Europe-Gas-Tracker-2024-05.xlsx",
             "wb",
         ) as outfile:
             outfile.write(r.content)
@@ -1729,19 +1729,19 @@ def execute():
             for year in ["2025", "2030", "2035"]:
                 scn_path.loc[year, "functions"] = [
                     #drop_urban_decentral_heat,
-                    update_electrical_timeseries_germany,
-                    geothermal_district_heating,
-                    h2_overground_stores,
-                    drop_new_gas_pipelines,
+                    #update_electrical_timeseries_germany,
+                    #geothermal_district_heating,
+                    #h2_overground_stores,
+                    #drop_new_gas_pipelines,
                 ]
 
             scn_path.loc["2045", "functions"] = [
                 drop_biomass,
                 #drop_urban_decentral_heat,
-                update_electrical_timeseries_germany,
-                geothermal_district_heating,
-                h2_overground_stores,
-                drop_new_gas_pipelines,
+                #update_electrical_timeseries_germany,
+                #geothermal_district_heating,
+                #h2_overground_stores,
+                #drop_new_gas_pipelines,
                 drop_fossil_gas,
                 # rual_heat_technologies, #To be defined
             ]
