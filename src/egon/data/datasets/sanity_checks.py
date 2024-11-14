@@ -65,7 +65,7 @@ from egon.data.datasets.power_plants.pv_rooftop_buildings import (
     load_building_data,
     scenario_data,
 )
-from egon.data.datasets.pypsaeursec import read_network
+from egon.data.datasets.pypsaeur import read_network
 from egon.data.datasets.scenario_parameters import get_sector_parameters
 from egon.data.datasets.storages.home_batteries import get_cbat_pbat_ratio
 import egon.data

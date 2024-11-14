@@ -44,7 +44,7 @@ def download():
         shutil.rmtree(powerd_data_bundle_path)
 
     url = f"""https://zenodo.org/record/{sources['deposit_id_powerd']}/files/data_bundle_powerd_data.zip"""
-    target_file = egon.data.config.datasets()["data-bundle"]["targets"]["file_powerd"]
+    target_file = config.datasets()["data-bundle"]["targets"]["file_powerd"]
 
     # check if file exists
     if not Path(target_file).exists():
@@ -57,10 +57,10 @@ def download():
 
 class DataBundle(Dataset):
     def __init__(self, dependencies):
-        deposit_id = egon.data.config.datasets()["data-bundle"]["sources"][
+        deposit_id = config.datasets()["data-bundle"]["sources"][
             "zenodo"
         ]["deposit_id"]
-        deposit_id_powerd = egon.data.config.datasets()["data-bundle"]["sources"][
+        deposit_id_powerd = config.datasets()["data-bundle"]["sources"][
             "zenodo"
         ]["deposit_id"]
         super().__init__(
