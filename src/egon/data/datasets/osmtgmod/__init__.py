@@ -583,7 +583,7 @@ def to_pypsa():
               branch_id AS trafo_id,
               f_bus AS bus0,
               t_bus AS bus1,
-              br_x/100 AS x, --- change base from 100MVA (osmtgmod) to 1 MVA (pypsa)
+              br_x/(100 * rate_a) AS x, --- change base from 100MVA (osmtgmod) to the its individual s_nom (pypsa)
               rate_a as s_nom,
               rate_a as s_nom_min,
               TRUE,
