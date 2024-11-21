@@ -538,6 +538,7 @@ def cross_border_lines(scenario, sources, targets, central_buses):
 
     new_lines = new_lines[new_lines.bus0 != new_lines.bus1]
 
+    new_lines["cables"] = new_lines["cables"].apply(int)
 
     # Insert lines to the database
     new_lines.to_postgis(
