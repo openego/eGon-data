@@ -909,10 +909,13 @@ def timeseries_per_wz():
 
     """
     scenarios = egon.data.config.settings()["egon-data"]["--scenarios"]
+    year_already_in_database = []
     for scn in scenarios:
         year = int(scenario_parameters.global_settings(scn)["weather_year"])
         for sector in ["CTS", "industry"]:
-            insert_timeseries_per_wz(sector, int(year))
+            if not year in year_already_in_database:
+                insert_timeseries_per_wz(sector, int(year))
+        year_already_in_database.append(year)
 
 def get_cached_tables():
     """Get cached demandregio tables and db-dump from former runs"""
