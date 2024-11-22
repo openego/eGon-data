@@ -14,8 +14,7 @@ import numpy as np
 import pandas as pd
 import yaml
 
-from egon.data import db
-from egon.data.config import settings
+from egon.data import config, db
 from egon.data.datasets import Dataset, wrapped_partial
 from egon.data.metadata import (
     context,
@@ -24,7 +23,6 @@ from egon.data.metadata import (
     meta_metadata,
     sources,
 )
-import egon.data.config
 
 Base = declarative_base()
 
@@ -115,7 +113,7 @@ def insert_capacities_status_quo(scenario: str) -> None:
 
     """
 
-    targets = egon.data.config.datasets()["scenario_input"]["targets"]
+    targets = config.datasets()["scenario_input"]["targets"]
 
     # Delete rows if already exist
     db.execute_sql(
@@ -143,7 +141,7 @@ def insert_capacities_status_quo(scenario: str) -> None:
         "status2023": (1.2 + 0.15 + 0.24 + 0.4) * 1e6 * 3e-3,
     }[scenario]
 
-    if settings()["egon-data"]["--dataset-boundary"] != "Everything":
+    if config.settings()["egon-data"]["--dataset-boundary"] != "Everything":
         rural_heat_capacity *= population_share()
 
     db.execute_sql(
@@ -203,8 +201,8 @@ def insert_capacities_per_federal_state_nep():
 
     """
 
-    sources = egon.data.config.datasets()["scenario_input"]["sources"]
-    targets = egon.data.config.datasets()["scenario_input"]["targets"]
+    sources = config.datasets()["scenario_input"]["sources"]
+    targets = config.datasets()["scenario_input"]["targets"]
 
     # Connect to local database
     engine = db.engine()
@@ -393,7 +391,7 @@ def population_share():
 
     """
 
-    sources = egon.data.config.datasets()["scenario_input"]["sources"]
+    sources = config.datasets()["scenario_input"]["sources"]
 
     return (
         pd.read_sql(
@@ -497,8 +495,8 @@ def insert_nep_list_powerplants(export=True):
         List of conventional power plants from nep if export=False
     """
 
-    sources = egon.data.config.datasets()["scenario_input"]["sources"]
-    targets = egon.data.config.datasets()["scenario_input"]["targets"]
+    sources = config.datasets()["scenario_input"]["sources"]
+    targets = config.datasets()["scenario_input"]["targets"]
 
     # Connect to local database
     engine = db.engine()
@@ -539,7 +537,7 @@ def insert_nep_list_powerplants(export=True):
     )
 
     # Cut data to federal state if in testmode
-    boundary = settings()["egon-data"]["--dataset-boundary"]
+    boundary = config.settings()["egon-data"]["--dataset-boundary"]
     if boundary != "Everything":
         map_states = {
             "Baden-Württemberg": "BW",
@@ -598,7 +596,7 @@ def district_heating_input():
 
     """
 
-    sources = egon.data.config.datasets()["scenario_input"]["sources"]
+    sources = config.datasets()["scenario_input"]["sources"]
 
     # import data to dataframe
     file = (
@@ -613,7 +611,7 @@ def district_heating_input():
     df.set_index(["Energietraeger", "Name"], inplace=True)
 
     # Scale values to population share in testmode
-    if settings()["egon-data"]["--dataset-boundary"] != "Everything":
+    if config.settings()["egon-data"]["--dataset-boundary"] != "Everything":
         df.loc[
             pd.IndexSlice[:, "Fernwaermeerzeugung"], "Wert"
         ] *= population_share()
@@ -683,13 +681,13 @@ def eGon100_capacities():
 
     """
 
-    sources = egon.data.config.datasets()["scenario_input"]["sources"]
-    targets = egon.data.config.datasets()["scenario_input"]["targets"]
+    sources = config.datasets()["scenario_input"]["sources"]
+    targets = config.datasets()["scenario_input"]["targets"]
 
     # read-in installed capacities
     cwd = Path(".")
 
-    if egon.data.config.settings()["egon-data"]["--run-pypsa-eur"]:
+    if config.settings()["egon-data"]["--run-pypsa-eur"]:
         filepath = cwd / "run-pypsa-eur"
         pypsa_eur_repos = filepath / "pypsa-eur"
         # Read YAML file
@@ -945,7 +943,7 @@ def add_metadata():
 
 tasks = (create_table,)
 
-scenarios = egon.data.config.settings()["egon-data"]["--scenarios"]
+scenarios = config.settings()["egon-data"]["--scenarios"]
 
 status_quo = False
 

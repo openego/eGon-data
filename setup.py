@@ -124,7 +124,7 @@ setup(
         "xlrd",
     ],
     extras_require={
-        "dev": ["black", "flake8", "isort>=5", "pre-commit", "pytest", "tox"]
+        "dev": ["black", "flake8", "isort>=5", "pre-commit", "pytest", "tox", "jupyterlab"]
         # eg:
         #   'rst': ['docutils>=0.11'],
         #   ':python_version=="2.6"': ['argparse'],
