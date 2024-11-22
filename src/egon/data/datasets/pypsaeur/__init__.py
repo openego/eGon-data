@@ -113,10 +113,10 @@ def download():
             )
 
             # Copy custom_extra_functionality.py file for egon-data to pypsa-eur directory
-            shutil.copy(
-                Path(__path__[0], "datasets", "pypsaeur", "custom_extra_functionality.py"),
-                pypsa_eur_repos / "data",
-            )
+            #shutil.copy(
+            #    Path(__path__[0], "datasets", "pypsaeur", "custom_extra_functionality.py"),
+            #    pypsa_eur_repos / "data",
+            #)
 
 
             with open(filepath / "Snakefile", "w") as snakefile:
