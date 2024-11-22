@@ -767,6 +767,9 @@ Bug Fixes
   `#1159 <https://github.com/openego/eGon-data/issues/1159>`_
 * Fix depricated python-operator import
   `#183 <https://github.com/openego/powerd-data/issues/183>`_
+* Fix incorrect YAML serialization of the --scenarios CLI
+  parameter that caused broken DAGs in the pipeline.
+  `#343 <https://github.com/openego/powerd-data/issues/343>`_
 
 
 .. _PR #692: https://github.com/openego/eGon-data/pull/692

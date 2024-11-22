@@ -179,6 +179,7 @@ from sqlalchemy.orm import Session
     default=["status2023", "eGon2035"],
     metavar="SCENARIOS",
     help=("List of scenario names for which a data model shall be created."),
+    multiple=True,
     show_default=True,
 )
 @click.option(
