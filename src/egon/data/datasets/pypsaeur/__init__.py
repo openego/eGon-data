@@ -30,7 +30,7 @@ class PreparePypsaEur(Dataset):
     def __init__(self, dependencies):
         super().__init__(
             name="PreparePypsaEur",
-            version="0.0.23",
+            version="0.0.29",
             dependencies=dependencies,
             tasks=(
                 download,
@@ -43,7 +43,7 @@ class RunPypsaEur(Dataset):
     def __init__(self, dependencies):
         super().__init__(
             name="SolvePypsaEur",
-            version="0.0.20",
+            version="0.0.22",
             dependencies=dependencies,
             tasks=(
                 execute,
@@ -74,6 +74,15 @@ def download():
                     pypsa_eur_repos,
                 ]
             )
+
+            subproc.run(
+                [
+                    "git",
+                    "checkout",
+                    "2119f4cee05c256509f48d4e9fe0d8fd9e9e3632"],
+                    cwd=pypsa_eur_repos,
+            )
+
 
             # Add gurobi solver to environment:
             # Read YAML file
@@ -113,10 +122,10 @@ def download():
             )
 
             # Copy custom_extra_functionality.py file for egon-data to pypsa-eur directory
-            #shutil.copy(
-            #    Path(__path__[0], "datasets", "pypsaeur", "custom_extra_functionality.py"),
-            #    pypsa_eur_repos / "data",
-            #)
+            shutil.copy(
+                Path(__path__[0], "datasets", "pypsaeur", "custom_extra_functionality.py"),
+                pypsa_eur_repos / "data",
+            )
 
 
             with open(filepath / "Snakefile", "w") as snakefile:

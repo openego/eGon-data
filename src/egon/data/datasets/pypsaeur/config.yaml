@@ -83,9 +83,9 @@ co2_budget:
 
 # docs in https://pypsa-eur.readthedocs.io/en/latest/configuration.html#electricity
 electricity:
-  voltages: [220., 300., 330., 380., 400., 500., 750.]
+  voltages: [200., 220., 300., 380., 500., 750.]
   base_network: osm-prebuilt
-  osm-prebuilt-version: 0.5
+  osm-prebuilt-version: 0.4
   gaslimit_enable: false
   gaslimit: false
   co2limit_enable: false
@@ -277,11 +277,10 @@ conventional:
 # docs in https://pypsa-eur.readthedocs.io/en/latest/configuration.html#lines
 lines:
   types:
+    200.: "Al/St 240/40 2-bundle 200.0"
     220.: "Al/St 240/40 2-bundle 220.0"
     300.: "Al/St 240/40 3-bundle 300.0"
-    330.: "Al/St 240/40 3-bundle 300.0"
     380.: "Al/St 240/40 4-bundle 380.0"
-    400.: "Al/St 240/40 4-bundle 380.0"
     500.: "Al/St 240/40 4-bundle 380.0"
     750.: "Al/St 560/50 4-bundle 750.0"
   s_max_pu: 0.7
@@ -303,7 +302,7 @@ links:
   p_nom_max: .inf
   max_extension: 30000 #MW
   length_factor: 1.25
-  under_construction: 'keep' # 'zero': set capacity to zero, 'remove': remove, 'keep': with full capacity for lines in grid extract
+  under_construction: 'zero' # 'zero': set capacity to zero, 'remove': remove, 'keep': with full capacity for lines in grid extract
 
 # docs in https://pypsa-eur.readthedocs.io/en/latest/configuration.html#transmission_projects
 transmission_projects:
@@ -597,12 +596,8 @@ sector:
   overdimension_heat_generators:
     decentral: 1.1  #to cover demand peaks bigger than data
     central: 1.0
-  chp:
-    enable: true
-    fuel:
-    - solid biomass # For solid biomass, CHP with and without CC are added
-    - gas # For all other fuels the same techno economic data from gas CHP is taken
-    micro_chp: false # Only gas is used for micro_chp
+  chp: true
+  micro_chp: false
   solar_thermal: true
   solar_cf_correction: 0.788457  # =  >>> 1/1.2683
   marginal_cost_storage: 0. #1e-4
@@ -876,7 +871,7 @@ clustering:
       ramp_limit_down: max
   temporal:
     resolution_elec: false
-    resolution_sector: false
+    resolution_sector: 3H
 
 # docs in https://pypsa-eur.readthedocs.io/en/latest/configuration.html#adjustments
 adjustments:

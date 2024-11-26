@@ -260,7 +260,7 @@ def buses(scenario, sources, targets):
     central_buses.scn_name = scenario
 
     central_buses.drop(
-        ["control", "generator", "location", "unit", "sub_network", "substation_off"],
+        ["control", "generator", "location", "unit", "sub_network", "substation_off", "substation_lv"],
         axis="columns",
         inplace=True,
         errors="ignore"
