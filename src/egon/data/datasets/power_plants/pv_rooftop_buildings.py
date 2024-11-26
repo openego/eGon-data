@@ -2018,6 +2018,10 @@ def allocate_scenarios(
     """
     cap_per_bus_id_df = cap_per_bus_id(scenario)
 
+    if cap_per_bus_id_df.empty:
+        print(f"No PV rooftop in scenario {scenario}")
+        return
+
     logger.debug(
         f"cap_per_bus_id_df total capacity: {cap_per_bus_id_df.capacity.sum()}"
     )

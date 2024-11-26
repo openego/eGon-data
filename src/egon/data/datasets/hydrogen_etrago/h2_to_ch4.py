@@ -42,6 +42,9 @@ def insert_h2_to_ch4_to_h2():
     """
     scenarios = config.settings()["egon-data"]["--scenarios"]
 
+    if "status2019" in scenarios:
+        scenarios.remove("status2019")
+
     for scn_name in scenarios:
         # Connect to local database
         engine = db.engine()

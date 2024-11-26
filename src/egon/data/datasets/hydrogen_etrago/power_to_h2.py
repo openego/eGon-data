@@ -45,6 +45,9 @@ def insert_power_to_h2_to_power():
     """
     scenarios = config.settings()["egon-data"]["--scenarios"]
 
+    if "status2019" in scenarios:
+        scenarios.remove("status2019")
+
     for scn_name in scenarios:
 
         # Connect to local database
