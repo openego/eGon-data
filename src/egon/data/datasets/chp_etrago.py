@@ -68,6 +68,10 @@ def insert_egon100re():
         """
     )
 
+    if chp_dh.empty:
+        print("No CHP for district heating in scenario eGon100RE")
+        return
+
     # Create geodataframes for gas CHP plants
     chp_el = link_geom_from_buses(
         gpd.GeoDataFrame(
