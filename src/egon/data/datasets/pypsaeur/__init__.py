@@ -309,7 +309,7 @@ def read_network():
             / "2024-08-02-egondata-integration"
             / "results"
             / "postnetworks"
-            / "elec_s_37_lv1.5__Co2L0-1H-T-H-B-I-A-solar+p3_2050.nc"
+            / "base_s_39_lv2__cb40ex0-T-H-I-B-solar+p3-dist1_2045.nc"
         )
 
     return pypsa.Network(target_file)
@@ -1300,7 +1300,7 @@ def prepared_network():
             / "2024-08-02-egondata-integration"
             / "results"
             / "postnetworks"
-            / "elec_s_37_lv1.5__Co2L0-1H-T-H-B-I-A-solar+p3_2050.nc"
+            / "base_s_39_lv2__cb40ex0-T-H-I-B-solar+p3-dist1_2045.nc"
         )
 
     return pypsa.Network(target_file.absolute().as_posix())
