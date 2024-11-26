@@ -198,7 +198,8 @@ def load_biogas_generators(scn_name):
     )
     target_file = Path(".") / "datasets" / "gas_data" / basename
 
-    urlretrieve(url, target_file)
+    if not target_file.is_file():
+        urlretrieve(url, target_file)
 
     # Read-in data from csv-file
     biogas_generators_list = pd.read_excel(

@@ -24,6 +24,12 @@ def download_status2019():
     None.
 
     """
+
+    if "status2019" in config.settings()["egon-data"]["--scenarios"]:
+        print("Scenario status2019 was created within the pipeline. "
+              "It is not imported from zenodo.")
+        return
+
     # Get parameters from config and set download URL
     url = sources["url_status2019"]
     status2019_path = Path(".") / "PoWerD_status2019.backup"
@@ -43,6 +49,12 @@ def import_scn_status2019():
     *No parameters required
 
     """
+
+    if "status2019" in config.settings()["egon-data"]["--scenarios"]:
+        print("Scenario status2019 was created within the pipeline. "
+              "It is not imported from zenodo.")
+        return
+
     # Connect to the data base
     con = db.engine()
 
