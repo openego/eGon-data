@@ -309,7 +309,7 @@ def allocate_storage_units_sq(scn_name, storage_types):
     for storage_type in storage_types:
         # Read-in data from MaStR
         mastr_ph = pd.read_csv(
-            WORKING_DIR_MASTR_OLD / sources["mastr_storage"],
+            WORKING_DIR_MASTR_NEW / sources["mastr_storage"],
             delimiter=",",
             usecols=[
                 "Nettonennleistung",
