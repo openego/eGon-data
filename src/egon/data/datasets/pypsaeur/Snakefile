@@ -1,6 +1,6 @@
 rule Main:
     conda:
-        "pypsa-eur/envs/environment.yaml"
+        "pypsa-eur/envs/linux-pinned.yaml"
     shell:
         ( "snakemake"
           " --directory=pypsa-eur/"
@@ -10,7 +10,7 @@ rule Main:
 
 rule prepare:
     conda:
-        "pypsa-eur/envs/environment.yaml"
+        "pypsa-eur/envs/linux-pinned.yaml"
     shell:
         ( "snakemake"
           " --directory=pypsa-eur/"
@@ -21,7 +21,7 @@ rule prepare:
 
 rule solve:
     conda:
-        "pypsa-eur/envs/environment.yaml"
+        "pypsa-eur/envs/linux-pinned.yaml"
     shell:
         ( "snakemake"
           " --directory=pypsa-eur/"
@@ -32,7 +32,7 @@ rule solve:
 
 rule summary:
     conda:
-        "pypsa-eur/envs/environment.yaml"
+        "pypsa-eur/envs/linux-pinned.yaml"
     shell:
         ( "snakemake"
           " --directory=pypsa-eur/"
