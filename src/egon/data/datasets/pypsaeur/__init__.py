@@ -459,8 +459,10 @@ def neighbor_reduction():
         "FR",
         "LU",
     ]
-    foreign_buses = network.buses[
-        ~network.buses.index.str.contains("|".join(wanted_countries))
+    foreign_buses = network.buses[(
+        ~network.buses.index.str.contains("|".join(wanted_countries))) |
+        (
+            network.buses.index.str.contains("FR6"))
     ]
     network.buses = network.buses.drop(
         network.buses.loc[foreign_buses.index].index
@@ -783,6 +785,7 @@ def neighbor_reduction():
             "new_index", drop=False
         )
         non_AC_neighbors = pd.concat([non_AC_neighbors, c_neighbors])
+
     neighbors = pd.concat(
         [neighbors[neighbors.carrier == "AC"], non_AC_neighbors]
     )
@@ -794,6 +797,8 @@ def neighbor_reduction():
         "location",
         "sub_network",
         "unit",
+        "substation_lv",
+        "substation_off",
     ]:
         neighbors = neighbors.drop(i, axis=1)
 
@@ -844,6 +849,7 @@ def neighbor_reduction():
             "b_pu",
             "s_nom_opt",
             "i_nom",
+            "dc",
         ]:
             neighbor_lines = neighbor_lines.drop(i, axis=1)
 
@@ -937,6 +943,10 @@ def neighbor_reduction():
             "ramp_limit_shut_down",
             "length_original",
             "reversed",
+            "location",
+            "project_status",
+            "dc",
+            "voltage",
         ]
 
         if extendable:
