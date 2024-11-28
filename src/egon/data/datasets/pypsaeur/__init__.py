@@ -79,28 +79,28 @@ def download():
                 [
                     "git",
                     "checkout",
-                    "2119f4cee05c256509f48d4e9fe0d8fd9e9e3632"],
-                    cwd=pypsa_eur_repos,
+                    "2119f4cee05c256509f48d4e9fe0d8fd9e9e3632",
+                ],
+                cwd=pypsa_eur_repos,
             )
-
 
             # Add gurobi solver to environment:
             # Read YAML file
-            #path_to_env = pypsa_eur_repos / "envs" / "environment.yaml"
-            #with open(path_to_env, "r") as stream:
+            # path_to_env = pypsa_eur_repos / "envs" / "environment.yaml"
+            # with open(path_to_env, "r") as stream:
             #    env = yaml.safe_load(stream)
 
             # The version of gurobipy has to fit to the version of gurobi.
             # Since we mainly use gurobi 10.0 this is set here.
-            #env["dependencies"][-1]["pip"].append("gurobipy==10.0.0")
+            # env["dependencies"][-1]["pip"].append("gurobipy==10.0.0")
 
             # Set python version to <3.12
             # Python<=3.12 needs gurobipy>=11.0, in case gurobipy is updated,
             # this can be removed
-            #env["dependencies"] = [
+            # env["dependencies"] = [
             #    "python>=3.8,<3.12" if x == "python>=3.8" else x
             #    for x in env["dependencies"]
-            #]
+            # ]
 
             # Limit geopandas version
             # our pypsa-eur version is not compatible to geopandas>1
@@ -110,7 +110,7 @@ def download():
             # ]
 
             # Write YAML file
-            #with open(path_to_env, "w", encoding="utf8") as outfile:
+            # with open(path_to_env, "w", encoding="utf8") as outfile:
             #    yaml.dump(
             #        env, outfile, default_flow_style=False, allow_unicode=True
             #    )
@@ -123,10 +123,14 @@ def download():
 
             # Copy custom_extra_functionality.py file for egon-data to pypsa-eur directory
             shutil.copy(
-                Path(__path__[0], "datasets", "pypsaeur", "custom_extra_functionality.py"),
+                Path(
+                    __path__[0],
+                    "datasets",
+                    "pypsaeur",
+                    "custom_extra_functionality.py",
+                ),
                 pypsa_eur_repos / "data",
             )
-
 
             with open(filepath / "Snakefile", "w") as snakefile:
                 snakefile.write(
@@ -459,10 +463,9 @@ def neighbor_reduction():
         "FR",
         "LU",
     ]
-    foreign_buses = network.buses[(
-        ~network.buses.index.str.contains("|".join(wanted_countries))) |
-        (
-            network.buses.index.str.contains("FR6"))
+    foreign_buses = network.buses[
+        (~network.buses.index.str.contains("|".join(wanted_countries)))
+        | (network.buses.index.str.contains("FR6"))
     ]
     network.buses = network.buses.drop(
         network.buses.loc[foreign_buses.index].index
@@ -1598,35 +1601,43 @@ def drop_urban_decentral_heat(network):
 
     # Add urban decentral heat demand to urban central heat demand
     for country in network.loads.loc[
-            network.loads.carrier==carrier, "bus"].str[:5]:
+        network.loads.carrier == carrier, "bus"
+    ].str[:5]:
 
         if f"{country} {carrier}" in network.loads_t.p_set.columns:
-            network.loads_t.p_set[f"{country} rural heat"] += (
-                network.loads_t.p_set[f"{country} {carrier}"]
-            )
+            network.loads_t.p_set[
+                f"{country} rural heat"
+            ] += network.loads_t.p_set[f"{country} {carrier}"]
         else:
-            print(f"""No time series available for {country} {carrier}.
-                  Using static p_set.""")
-
-            network.loads_t.p_set[f"{country} rural heat"] += (
-                network.loads.loc[f"{country} {carrier}", "p_set"]
+            print(
+                f"""No time series available for {country} {carrier}.
+                  Using static p_set."""
             )
+
+            network.loads_t.p_set[
+                f"{country} rural heat"
+            ] += network.loads.loc[f"{country} {carrier}", "p_set"]
 
     # In some cases low-temperature heat for industry is connected to the urban
     # decentral heat bus since there is no urban central heat bus.
     # These loads are connected to the representatiive rural heat bus:
     network.loads.loc[
         (network.loads.bus.str.contains(carrier))
-        & (~network.loads.carrier.str.contains(
-            carrier.replace(" heat", ""))), "bus"] = network.loads.loc[
+        & (~network.loads.carrier.str.contains(carrier.replace(" heat", ""))),
+        "bus",
+    ] = network.loads.loc[
         (network.loads.bus.str.contains(carrier))
-        & (~network.loads.carrier.str.contains(
-            carrier.replace(" heat", ""))), "bus"].str.replace(
-                "urban decentral", "rural")
+        & (~network.loads.carrier.str.contains(carrier.replace(" heat", ""))),
+        "bus",
+    ].str.replace(
+        "urban decentral", "rural"
+    )
 
     # Drop componentents attached to urban decentral heat
     for c in network.iterate_components():
-        network.mremove(c.name, c.df[c.df.index.str.contains("urban decentral")].index)
+        network.mremove(
+            c.name, c.df[c.df.index.str.contains("urban decentral")].index
+        )
 
     return network
 
@@ -1725,7 +1736,9 @@ def execute():
 
             networks = pd.Series()
 
-            for i in range(0, len(data_config["scenario"]["planning_horizons"])):
+            for i in range(
+                0, len(data_config["scenario"]["planning_horizons"])
+            ):
                 nc_file = pd.Series(
                     f"base_s_{data_config['scenario']['clusters'][0]}"
                     f"_l{data_config['scenario']['ll'][0]}"
@@ -1747,20 +1760,20 @@ def execute():
 
             for year in ["2025", "2030", "2035"]:
                 scn_path.loc[year, "functions"] = [
-                    #drop_urban_decentral_heat,
-                    #update_electrical_timeseries_germany,
-                    #geothermal_district_heating,
-                    #h2_overground_stores,
-                    #drop_new_gas_pipelines,
+                    # drop_urban_decentral_heat,
+                    # update_electrical_timeseries_germany,
+                    # geothermal_district_heating,
+                    # h2_overground_stores,
+                    # drop_new_gas_pipelines,
                 ]
 
             scn_path.loc["2045", "functions"] = [
                 drop_biomass,
-                #drop_urban_decentral_heat,
-                #update_electrical_timeseries_germany,
-                #geothermal_district_heating,
-                #h2_overground_stores,
-                #drop_new_gas_pipelines,
+                # drop_urban_decentral_heat,
+                # update_electrical_timeseries_germany,
+                # geothermal_district_heating,
+                # h2_overground_stores,
+                # drop_new_gas_pipelines,
                 drop_fossil_gas,
                 # rual_heat_technologies, #To be defined
             ]
@@ -1782,8 +1795,9 @@ def execute():
                     network = manipulator(network)
                 network.export_to_netcdf(path)
 
-        elif ((data_config["foresight"] == "overnight")
-              & (int(data_config['scenario']['planning_horizons'][0]) > 2040)):
+        elif (data_config["foresight"] == "overnight") & (
+            int(data_config["scenario"]["planning_horizons"][0]) > 2040
+        ):
 
             print("Adjusting overnight long-term scenario...")
 
@@ -1832,7 +1846,7 @@ def execute():
                 year int(data_config['scenario']['planning_horizons'][0].
                 Please check the pypsaeur.execute function.
                 """
-                )
+            )
 
     else:
         print("Pypsa-eur is not executed due to the settings of egon-data")
