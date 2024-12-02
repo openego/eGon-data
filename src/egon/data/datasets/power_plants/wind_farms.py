@@ -84,7 +84,7 @@ def insert():
             wf_areas,
             wf_areas_ni,
             mv_districts,
-            target_power_df["capacity"].values[0],
+            target_power_df.at["DE", "capacity"],
             "eGon100RE",
             "wind_onshore",
             "DE",
