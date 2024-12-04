@@ -641,7 +641,7 @@ def insert_data_nep():
     insert_capacities_per_federal_state_nep()
 
 
-def eGon100_capacities():
+def eGon100_capacities(year="2045"):
     """Inserts installed capacities for the eGon100 scenario
 
     Returns
@@ -682,8 +682,13 @@ def eGon100_capacities():
             / sources["eGon100RE"]["capacities"]
         )
 
-    df = pd.read_csv(target_file, skiprows=5)
+    scn_path_years = ["2025", "2030", "2035", "2045"]
+    scn_path_years.remove(year)
+
+    df = pd.read_csv(target_file, skiprows=3)
+    df = df.drop(columns=scn_path_years, errors="ignore")
     df.columns = ["component", "country", "carrier", "p_nom"]
+    df = df[~df["country"].isna()]
 
     df.set_index("carrier", inplace=True)
 
@@ -794,6 +799,7 @@ def eGon100_capacities():
 
     df["scenario_name"] = "eGon100RE"
     df["nuts"] = "DE"
+    df["capacity"] = df["capacity"].fillna(0)
 
     db.execute_sql(
         f"""
