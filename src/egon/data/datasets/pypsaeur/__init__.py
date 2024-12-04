@@ -1080,6 +1080,9 @@ def neighbor_reduction():
         "p_set",
         "q_set",
         "p_nom_opt",
+        "e_sum_min",
+        "e_sum_max",
+
     ]:
         neighbor_gens = neighbor_gens.drop(i, axis=1)
 
