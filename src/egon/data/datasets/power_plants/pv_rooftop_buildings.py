@@ -2836,6 +2836,9 @@ def pv_rooftop_to_buildings():
                 pd.to_datetime(scenario_buildings_gdf_orig.Inbetriebnahmedatum)
                 <= ts
             ]
+        else:
+            desagg_mastr_gdf = desagg_mastr_gdf_orig.copy()
+            scenario_buildings_gdf = scenario_buildings_gdf_orig.copy()
 
         if cap_per_bus_id(scenario).empty:
             print(f"No PV rooftop in scenario {scenario}")
