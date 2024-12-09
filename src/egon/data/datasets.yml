@@ -1298,6 +1298,9 @@ PtH2_waste_heat_O2:
     ehv_voronoi:
       schema: 'grid'
       table: 'egon_ehv_substation_voronoi'
+    district_heating_area:
+      schema: 'demand'
+      table: 'egon_district_heating_areas'
   targets:
     links:
       schema: 'grid'
