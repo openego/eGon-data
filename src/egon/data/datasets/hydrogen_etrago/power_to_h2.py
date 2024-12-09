@@ -336,11 +336,9 @@ def insert_power_to_h2_to_power():
                     dfs[HEAT_BUS].at[nearest_bus_idx, 'area_id'] = area_id
                     dfs[HEAT_BUS].at[nearest_bus_idx, 'area_geom'] = heat_area_geom
             
-                    
-            
+                                
             dfs[HEAT_BUS]['area_geom'] = gpd.GeoSeries(dfs[HEAT_BUS]['area_geom'])
-            
-            '''
+                        
             queries[HEAT_LOAD] = """
                         SELECT bus, load_id 
             			FROM {sources["loads"]["schema"]}.{sources["loads"]["grid"]}
@@ -365,7 +363,6 @@ def insert_power_to_h2_to_power():
             dfs[HEAT_BUS]['p_mean'] = dfs[HEAT_BUS]['sum_of_p_set'].apply(lambda x: x / 8760)
             dfs[HEAT_BUS]['buffer'] = dfs[HEAT_BUS]['p_mean'].apply(lambda x: x*buffer_heat_factor)
             dfs[HEAT_BUS]['buffer'] = dfs[HEAT_BUS]['buffer'].apply(lambda x: x if x < max_buffer_heat else max_buffer_heat)  
-            '''
             
             return H2_merged_df, dfs[HEAT_BUS], dfs[H2_BUSES_CH4]
 
@@ -394,7 +391,8 @@ def insert_power_to_h2_to_power():
                         intersection = buffered_AC.intersection(h2_row['buffer'])
                         
                         if not intersection.is_empty:
-                            distance = row['geom'].distance(h2_row['geom_link'])
+                            distance_AC = row['geom'].distance(intersection.centroid)
+                            distance_H2 = h2_row['geom_link'].distance(intersection.centroid)
                             distance_to_0 = row['geom'].distance(h2_row['geom_bus0'])
                             distance_to_1 = row['geom'].distance(h2_row['geom_bus1'])
                             
@@ -405,14 +403,15 @@ def insert_power_to_h2_to_power():
                                 bus_H2 = h2_row['bus1']
                                 point_H2 = h2_row['geom_bus1']
                             
-                            if distance < nearest_distance:
-                                nearest_distance = distance
+                            if distance_H2 < nearest_distance:
+                                nearest_distance = distance_H2
                                 nearest_match = {
                                     'bus_h2': bus_H2,
                                     'bus_AC': row['id'],
                                     'geom_h2': point_H2,
                                     'geom_AC': row['geom'],
-                                    'distance_h2': distance,
+                                    'distance_h2': distance_H2,
+                                    'distance_ac': distance_AC,
                                     'intersection': intersection,
                                     'sub_type': sub_type,
                                 }
@@ -498,7 +497,7 @@ def insert_power_to_h2_to_power():
 
         def find_heat_connection(potential_locations):
 
-            dfs[HEAT_BUS]['buffered_geom'] = dfs[HEAT_BUS]['area_geom'].buffer(5000)
+            dfs[HEAT_BUS]['buffered_geom'] = dfs[HEAT_BUS]['area_geom'].buffer(dfs[HEAT_BUS]['buffer'])
             intersection_index = STRtree(potential_locations['intersection'].tolist())
 
             potential_locations['bus_heat'] = None
