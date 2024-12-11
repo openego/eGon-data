@@ -726,8 +726,12 @@ def eGon100_capacities():
     df = df.drop(df.index[df.index.str.startswith("offwind")])
 
     # Aggregate technologies with and without carbon_capture (CC)
-    for carrier in ["SMR", "urban_central_gas_CHP"]:
-        df.p_nom[carrier] += df.p_nom[f"{carrier}_CC"]
+    for carrier in ["SMR", "urban_central_gas_CHP", "urban_central_solid_biomass_CHP"]:
+        df.loc[
+            carrier,
+            ["p_nom_2025", "p_nom_2030", "p_nom_2035", "p_nom_2045"]] += df.loc[
+                f"{carrier}_CC",
+                ["p_nom_2025", "p_nom_2030", "p_nom_2035", "p_nom_2045"]]
         df = df.drop([f"{carrier}_CC"])
 
     # Aggregate urban decentral and rural heat supply
