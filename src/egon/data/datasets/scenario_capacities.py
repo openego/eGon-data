@@ -682,8 +682,9 @@ def eGon100_capacities():
             / sources["eGon100RE"]["capacities"]
         )
 
-    df = pd.read_csv(target_file, skiprows=5)
-    df.columns = ["component", "country", "carrier", "p_nom"]
+    df = pd.read_csv(target_file, delimiter=",", skiprows=3)
+    df.columns = ["component", "country", "carrier", "p_nom_2025",
+                  "p_nom_2030", "p_nom_2035", "p_nom_2045"]
 
     df.set_index("carrier", inplace=True)
 
