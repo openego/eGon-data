@@ -788,29 +788,35 @@ def eGon100_capacities():
     # Reset index
     df = df.reset_index()
 
-    # Rename columns
-    df.rename(
-        {"p_nom": "capacity", "index": "carrier"}, axis="columns", inplace=True
-    )
+    # Insert target capacities for all years
+    for year in ["2025", "2030", "2035", "2045"]:
+        df_year = df.rename(
+            {f"p_nom_{year}": "capacity", "index": "carrier"}, axis="columns"
+        )
+        df_year.drop(df_year.columns[~df_year.columns.isin(["carrier", 'component', "capacity"])], axis="columns")
 
-    df["scenario_name"] = "eGon100RE"
-    df["nuts"] = "DE"
+        if year == "2045":
+            df_year["scenario_name"] = "eGon100RE"
+        else:
+            df_year["scenario_name"] = f"powerd{year}"
 
-    db.execute_sql(
-        f"""
-        DELETE FROM
-        {targets['scenario_capacities']['schema']}.{targets['scenario_capacities']['table']}
-        WHERE scenario_name='eGon100RE'
-        """
-    )
+        df_year["nuts"] = "DE"
 
-    df.to_sql(
-        targets["scenario_capacities"]["table"],
-        schema=targets["scenario_capacities"]["schema"],
-        con=db.engine(),
-        if_exists="append",
-        index=False,
-    )
+        db.execute_sql(
+            f"""
+            DELETE FROM
+            {targets['scenario_capacities']['schema']}.{targets['scenario_capacities']['table']}
+            WHERE scenario_name='{df_year["scenario_name"].unique()[0]}'
+            """
+        )
+
+        df_year.to_sql(
+            targets["scenario_capacities"]["table"],
+            schema=targets["scenario_capacities"]["schema"],
+            con=db.engine(),
+            if_exists="append",
+            index=False,
+        )
 
 
 tasks = (create_table,)
