@@ -363,6 +363,7 @@ pypsa_eur:
   StorageUnit:
   - PHS
   - hydro
+  - battery
   Store: []
 
 # docs in https://pypsa-eur.readthedocs.io/en/latest/configuration.html#energy
@@ -730,20 +731,20 @@ sector:
 # docs in https://pypsa-eur.readthedocs.io/en/latest/configuration.html#industry
 industry:
   St_primary_fraction:
-    2020: 0.6
-    2025: 0.55
-    2030: 0.5
-    2035: 0.45
-    2040: 0.4
-    2045: 0.35
-    2050: 0.3
+    2020: 0.7
+    2025: 0.65
+    2030: 0.6
+    2035: 0.583
+    2040: 0.567
+    2045: 0.55
+    2050: 0.5
   DRI_fraction:
     2020: 0
-    2025: 0
-    2030: 0.05
-    2035: 0.2
-    2040: 0.4
-    2045: 0.7
+    2025: 0.05
+    2030: 0.348
+    2035: 0.565
+    2040: 0.7825
+    2045: 1
     2050: 1
   H2_DRI: 1.7
   elec_DRI: 0.322
@@ -871,7 +872,7 @@ clustering:
       ramp_limit_down: max
   temporal:
     resolution_elec: false
-    resolution_sector: false
+    resolution_sector: 3H
 
 # docs in https://pypsa-eur.readthedocs.io/en/latest/configuration.html#adjustments
 adjustments:
