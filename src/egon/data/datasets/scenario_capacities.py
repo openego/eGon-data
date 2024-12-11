@@ -721,19 +721,9 @@ def eGon100_capacities():
     df.index = df.index.str.replace(" ", "_")
 
     # Aggregate offshore wind
-    df = pd.concat(
-        [
-            df,
-            pd.DataFrame(
-                index=["wind_offshore"],
-                data={
-                    "p_nom": (df.p_nom["offwind-ac"] + df.p_nom["offwind-dc"]),
-                    "component": df.component["offwind-ac"],
-                },
-            ),
-        ]
-    )
-    df = df.drop(["offwind-ac", "offwind-dc"])
+    df.loc["wind_offshore"] = df[df.index.str.startswith("offwind")].sum(numeric_only=True)
+    df.loc["wind_offshore", "component"] = "generator"
+    df = df.drop(df.index[df.index.str.startswith("offwind")])
 
     # Aggregate technologies with and without carbon_capture (CC)
     for carrier in ["SMR", "urban_central_gas_CHP"]:
