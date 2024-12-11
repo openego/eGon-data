@@ -740,34 +740,23 @@ def eGon100_capacities():
         df.p_nom[carrier] += df.p_nom[f"{carrier}_CC"]
         df = df.drop([f"{carrier}_CC"])
 
-    # Aggregate residential and services rural heat supply
-    for merge_carrier in [
-        "rural_resistive_heater",
-        "rural_ground_heat_pump",
-        "rural_gas_boiler",
-        "rural_solar_thermal",
-    ]:
-        if f"residential_{merge_carrier}" in df.index:
-            df = pd.concat(
-                [
-                    df,
-                    pd.DataFrame(
-                        index=[merge_carrier],
-                        data={
-                            "p_nom": (
-                                df.p_nom[f"residential_{merge_carrier}"]
-                                + df.p_nom[f"services_{merge_carrier}"]
-                            ),
-                            "component": df.component[
-                                f"residential_{merge_carrier}"
-                            ],
-                        },
-                    ),
-                ]
-            )
-            df = df.drop(
-                [f"residential_{merge_carrier}", f"services_{merge_carrier}"]
-            )
+    # Aggregate urban decentral and rural heat supply
+    for merge_carrier in df.index[
+            df.index.str.startswith("urban_decentral")]:
+
+        # Add capacity of urban decentral to coresponding rural technology
+        df.loc[
+            merge_carrier.replace("urban_decentral", "rural")] += df.loc[
+                merge_carrier]
+
+        # Avoid summing up of component names
+        df.loc[
+            merge_carrier.replace("urban_decentral", "rural"),
+            "component"] = df.loc[
+                merge_carrier, "component"]
+
+        # Drop urban decentral technology
+        df = df.drop(merge_carrier)
 
     # Rename carriers
     df.rename(
