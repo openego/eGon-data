@@ -52,7 +52,7 @@ def insert_hydrogen_buses(scn_name):
     h2_buses.x = h2_input.x
     h2_buses.y = h2_input.y
     h2_buses.geom = h2_input.geom    
-    h2_buses.carrier = 'H2'
+    h2_buses.carrier = 'H2_grid'
     h2_buses.scn_name = scn_name
     next_bus_id = db.next_etrago_id('bus')
     h2_buses.bus_id= range(next_bus_id, next_bus_id + len(h2_input))
