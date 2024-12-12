@@ -1281,7 +1281,12 @@ home_batteries:
     home_batteries:
       schema: 'supply'
       table: 'egon_home_batteries'
+<<<<<<< HEAD
+      
+
+=======
 
 scenario_path:
   sources:
     url_status2019: 'https://zenodo.org/records/13865306/files/PoWerD_status2019_v2.backup'
+>>>>>>> dev
