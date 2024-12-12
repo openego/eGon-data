@@ -685,6 +685,9 @@ etrago_hydrogen:
     H2_AC_map:
       schema: 'grid'
       table: 'egon_etrago_ac_h2'
+    links:
+      schema: 'grid'
+      table: 'egon_etrago_link'
     H2_grid:
       new_constructed_pipes:  
         url: 'https://fnb-gas.de/wp-content/uploads/2024/07/2024_07_22_Anlage3_FNB_Massnahmenliste_Neubau.xlsx'
@@ -1335,4 +1338,3 @@ PtH2_waste_heat_O2:
 scenario_path:
   sources:
     url_status2019: 'https://zenodo.org/records/13865306/files/PoWerD_status2019_v2.backup'
-
