@@ -1281,12 +1281,58 @@ home_batteries:
     home_batteries:
       schema: 'supply'
       table: 'egon_home_batteries'
-<<<<<<< HEAD
       
-
-=======
+PtH2_waste_heat_O2:
+  sources:
+    ehv_substation:
+      schema: 'grid'
+      table: 'egon_ehv_substation'
+    hvmv_substation:
+      schema: 'grid'
+      table: 'egon_hvmv_substation'
+    buses:
+      schema: 'grid'
+      table: 'egon_etrago_bus'
+    loads:
+      schema: 'grid'
+      table: 'egon_etrago_load'
+    load_timeseries:
+      schema: 'grid'
+      table: 'egon_etrago_load_timeseries'
+    links:
+      schema: 'grid'
+      table: 'egon_etrago_link'
+    mv_districts:
+      schema: 'grid'
+      table: 'egon_mv_grid_district'
+    ehv_voronoi:
+      schema: 'grid'
+      table: 'egon_ehv_substation_voronoi'
+    district_heating_area:
+      schema: 'demand'
+      table: 'egon_district_heating_areas'
+    o2_load_profile:
+      schema: 'demand'
+      table: 'egon_demandregio_timeseries_cts_ind'
+  targets:
+    links:
+      schema: 'grid'
+      table: 'egon_etrago_link'
+    loads:
+      schema: 'grid'
+      table: 'egon_etrago_load'
+    load_timeseries:
+      schema: 'grid'
+      table: 'egon_etrago_load_timeseries'
+    generators:
+      schema: 'grid'
+      table: 'egon_etrago_generator'
+    buses:
+      schema: 'grid'
+      table: 'egon_etrago_bus'
+      
 
 scenario_path:
   sources:
     url_status2019: 'https://zenodo.org/records/13865306/files/PoWerD_status2019_v2.backup'
->>>>>>> dev
+
