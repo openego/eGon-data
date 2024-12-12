@@ -30,7 +30,7 @@ class PreparePypsaEur(Dataset):
     def __init__(self, dependencies):
         super().__init__(
             name="PreparePypsaEur",
-            version="0.0.29",
+            version="0.0.33",
             dependencies=dependencies,
             tasks=(
                 download,
@@ -43,9 +43,10 @@ class RunPypsaEur(Dataset):
     def __init__(self, dependencies):
         super().__init__(
             name="SolvePypsaEur",
-            version="0.0.22",
+            version="0.0.27",
             dependencies=dependencies,
             tasks=(
+                prepare_network_2,
                 execute,
                 solve_network,
                 clean_database,
@@ -117,8 +118,8 @@ def download():
 
             # Copy config file for egon-data to pypsa-eur directory
             shutil.copy(
-                Path(__path__[0], "datasets", "pypsaeur", "config.yaml"),
-                pypsa_eur_repos / "config",
+                Path(__path__[0], "datasets", "pypsaeur", "config_prepare.yaml"),
+                pypsa_eur_repos / "config"/ "config.yaml",
             )
 
             # Copy custom_extra_functionality.py file for egon-data to pypsa-eur directory
@@ -150,7 +151,7 @@ def download():
             filename = "europe-2011-era5.nc"
             shutil.copy(
                 copy_from + "/" + filename, era5_pypsaeur_path / filename
-            )
+                )
 
         # Workaround to download natura, shipdensity and globalenergymonitor
         # data, which is not working in the regular snakemake workflow.
@@ -264,9 +265,63 @@ def prepare_network():
                 "prepare",
             ]
         )
+        execute()
+
+        path = filepath / "pypsa-eur"/ "results"/ "prenetworks"
+
+        path_2 = path / "prenetwork_post-manipulate_pre-solve"
+        path_2.mkdir(parents=True, exist_ok=True)
+
+        with open(
+                __path__[0] + "/datasets/pypsaeur/config_prepare.yaml", "r"
+        ) as stream:
+            data_config = yaml.safe_load(stream)
+
+        for i in range(0, len(data_config["scenario"]["planning_horizons"])):
+            nc_file = (
+                f"base_s_{data_config['scenario']['clusters'][0]}"
+                f"_l{data_config['scenario']['ll'][0]}"
+                f"_{data_config['scenario']['opts'][0]}"
+                f"_{data_config['scenario']['sector_opts'][0]}"
+                f"_{data_config['scenario']['planning_horizons'][i]}.nc"
+            )
+
+            shutil.copy(
+                Path(path, nc_file),
+                path_2
+		    )
+
+
     else:
         print("Pypsa-eur is not executed due to the settings of egon-data")
 
+def prepare_network_2():
+    cwd = Path(".")
+    filepath = cwd / "run-pypsa-eur"
+
+    shutil.copy(
+        Path(__path__[0], "datasets", "pypsaeur", "config_solve.yaml"),
+        filepath / "pypsa-eur" / "config" / "config.yaml",
+    )
+
+    if config.settings()["egon-data"]["--run-pypsa-eur"]:
+        subproc.run(
+            [
+                "snakemake",
+                "-j1",
+                "--directory",
+                filepath,
+                "--snakefile",
+                filepath / "Snakefile",
+                "--use-conda",
+                "--conda-frontend=conda",
+                "--cores",
+                "8",
+                "prepare",
+            ]
+        )
+    else:
+        print("Pypsa-eur is not executed due to the settings of egon-data")
 
 def solve_network():
     cwd = Path(".")
@@ -1410,6 +1465,7 @@ def update_electrical_timeseries_germany(network):
 
     """
     year = network.year
+    skip = network.snapshot_weightings.objective.iloc[0].astype('int')
     df = pd.read_csv(
         "input-pypsa-eur-sec/electrical_demand_timeseries_DE_eGon100RE.csv"
     )
@@ -1452,26 +1508,23 @@ def update_electrical_timeseries_germany(network):
         # The shape of the curve is taken from the 100% scenario since the
         # same weather and calender year is used there
         network.loads_t.p_set.loc[:, "DE0 0"] = (
-            df["residential_and_service"]
+            df["residential_and_service"].loc[::skip]
             / df["residential_and_service"].sum()
             * annual_demand_year
             * 1e6
         ).values
 
         network.loads_t.p_set.loc[:, "DE0 0 industry electricity"] = (
-            df["industry"]
+            df["industry"].loc[::skip]
             / df["industry"].sum()
             * annual_demand_year_industry
             * 1e6
         ).values
 
     elif year == 2045:
+        network.loads_t.p_set.loc[:, "DE0 0"] = df["residential_and_service"].loc[::skip]
 
-        network.loads_t.p_set.loc[:, "DE0 0"] = df["residential_and_service"]
-
-        network.loads_t.p_set.loc[:, "DE0 0 industry electricity"] = df[
-            "industry"
-        ].values
+        network.loads_t.p_set.loc[:, "DE0 0 industry electricity"] = df["industry"].loc[::skip].values
 
     else:
         print(
@@ -1763,20 +1816,20 @@ def execute():
 
             for year in ["2025", "2030", "2035"]:
                 scn_path.loc[year, "functions"] = [
-                    # drop_urban_decentral_heat,
-                    # update_electrical_timeseries_germany,
-                    # geothermal_district_heating,
-                    # h2_overground_stores,
-                    # drop_new_gas_pipelines,
+                    #drop_urban_decentral_heat,
+                    update_electrical_timeseries_germany,
+                    geothermal_district_heating,
+                    h2_overground_stores,
+                    drop_new_gas_pipelines,
                 ]
 
             scn_path.loc["2045", "functions"] = [
                 drop_biomass,
-                # drop_urban_decentral_heat,
-                # update_electrical_timeseries_germany,
-                # geothermal_district_heating,
-                # h2_overground_stores,
-                # drop_new_gas_pipelines,
+                #drop_urban_decentral_heat,
+                update_electrical_timeseries_germany,
+                geothermal_district_heating,
+                h2_overground_stores,
+                drop_new_gas_pipelines,
                 drop_fossil_gas,
                 # rual_heat_technologies, #To be defined
             ]
@@ -1849,7 +1902,6 @@ def execute():
                 year int(data_config['scenario']['planning_horizons'][0].
                 Please check the pypsaeur.execute function.
                 """
-            )
-
+                )
     else:
         print("Pypsa-eur is not executed due to the settings of egon-data")
