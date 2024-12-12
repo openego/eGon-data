@@ -714,6 +714,23 @@ def eGon100_capacities():
         "urban central water tanks charger",
         "urban central water tanks discharger",
         "H2 Fuel Cell",
+        "gas",
+        "SMR",
+        "SMR CC",
+        "Sabatier",
+        "biogas to gas",
+        "biogas to gas CC",
+        "gas for industry",
+        "gas for industry CC",
+        "methanolisation",
+        "EV battery",
+        "H2 Store",
+        "battery",
+        "battery charger",
+        "battery discharger",
+        "unsustainable biogas",
+        "biogas",
+        "Fischer-Tropsch",
     ]
 
     df = df[~df.index.isin(unused_carrier)]
@@ -725,8 +742,18 @@ def eGon100_capacities():
     df.loc["wind_offshore", "component"] = "generator"
     df = df.drop(df.index[df.index.str.startswith("offwind")])
 
+    # Aggregate OCGT and CCGT
+    df.loc["gas"] = df[df.index.str.endswith("CGT")].sum(numeric_only=True)
+    df.loc["gas", "component"] = "link"
+    df = df.drop(df.index[df.index.str.endswith("CGT")])
+
+    # Aggregate hydro and pumped_hydro
+    df.loc["pumped_hydro"] = df.loc["PHS"] + df.loc["hydro"]
+    df.loc["pumped_hydro", "component"] = "storage_units"
+    df = df.drop(["PHS", "hydro"])
+
     # Aggregate technologies with and without carbon_capture (CC)
-    for carrier in ["SMR", "urban_central_gas_CHP", "urban_central_solid_biomass_CHP"]:
+    for carrier in ["urban_central_gas_CHP", "urban_central_solid_biomass_CHP"]:
         df.loc[
             carrier,
             ["p_nom_2025", "p_nom_2030", "p_nom_2035", "p_nom_2045"]] += df.loc[
@@ -757,9 +784,6 @@ def eGon100_capacities():
         {
             "onwind": "wind_onshore",
             "ror": "run_of_river",
-            "PHS": "pumped_hydro",
-            "OCGT": "gas",
-            "rural_ground_heat_pump": "residential_rural_heat_pump",
             "urban_central_air_heat_pump": "urban_central_heat_pump",
             "urban_central_solar_thermal": (
                 "urban_central_solar_thermal_collector"
