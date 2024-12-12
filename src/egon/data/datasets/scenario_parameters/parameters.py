@@ -723,8 +723,8 @@ def gas(scenario):
             "H2_feedin": 1,
             "H2_to_CH4": read_costs(costs, "methanation", "efficiency"),
             "OCGT": read_costs(costs, "OCGT", "efficiency"),
-            "power_to_Heat": 0.8805,     #overall efficiency (20% electrical Input converted into waste-heat); source: project internal assumption Fraunhofer ISE
-            "power_to_O2": 0.9,          #O2-transfer efficiency; source:  Sayed Sadat, Modeling Regional Utilization of the electrolysers Co-Products Oxygen and Heat in Germany, 2024
+            "power_to_Heat": 0.2,     #overall efficiency (20% electrical Input converted into waste-heat); source: project internal assumption Fraunhofer ISE
+            "power_to_O2": 0.04,          #O2-transfer efficiency; source:  Sayed Sadat, Modeling Regional Utilization of the electrolysers Co-Products Oxygen and Heat in Germany, 2024
         }
         
         # Insert overnight investment costs
@@ -742,10 +742,10 @@ def gas(scenario):
             "H2_overground": read_costs(
                 costs, "hydrogen storage tank incl. compressor", "investment"
             ),
-            "H2_pipeline": 25_000, # [EUR/MW] ; source toDO: ask sayed 
+            "H2_pipeline": read_costs(costs, "H2 (g) pipeline", "investment"), # [EUR/MW/km] 
             "Heat_exchanger": 25_000, # [EUR/MW_th] cost assumption for one additional heat_exchanger; source: project internal cost assumption by Fraunhofer ISE
             "Heat_pipeline": 400_000, # [EUR/MW/km]; average value for DN100-pipeline; source: L. Zimmermann, MODELLIERUNG DER ABWÄRMENUTZUNG VON ELEKTROLYSEUREN IN DEUTSCHLAND FÜR EINE TECHNO - ÖKONOMISCHE OPTIMIERUNG EINES SEKTOR - GEKOPPELTEN ENERGIESYSTEM, 2024
-            "O2_components": 5000, # [EUR] ; source toDO: ask sayed 
+            "O2_components": 5000, # [EUR] ; source: Sayed Sadat, Modeling Regional Utilization of the electrolysers Co-Products Oxygen and Heat in Germany, 2024 
         }
         
         #overnight_costs for O2_pipeinecosts related to pipeline_diameter
@@ -772,10 +772,10 @@ def gas(scenario):
             "H2_overground": read_costs(
                 costs, "hydrogen storage tank incl. compressor", "lifetime"
             ),
-            "H2_pipeline": 25,  # source toDO: ask sayed  
+            "H2_pipeline": read_costs(costs, "H2 (g) pipeline", "lifetime"),  
             "Heat_exchanger": 20, # assumption based on lifetime heat_exchanger; source: E. van der Roest, R. Bol, T. Fens und A. van Wijk, „Utilisation of waste heat from PEM electrolysers - Unlocking local optimisation, 2023
             "Heat_pipeline": 20,
-            "O2_components": 25,  # source toDO: ask sayed 
+            "O2_components": 25,  # source: Sayed Sadat, Modeling Regional Utilization of the electrolysers Co-Products Oxygen and Heat in Germany, 2024 
         }
 
         # Insert annualized capital costs
@@ -827,8 +827,8 @@ def gas(scenario):
             "CH4_to_H2": read_costs(costs, "SMR", "efficiency"),
             "H2_to_CH4": read_costs(costs, "methanation", "efficiency"),
             "OCGT": read_costs(costs, "OCGT", "efficiency"),
-            "power_to_Heat": 0.909,   #overall efficiency (20% electrical Input converted into waste-heat); source: project internal assumption Fraunhofer ISE
-            "power_to_O2": 0.9,   #O2-transfer efficiency; source:  Sayed Sadat, Modeling Regional Utilization of the electrolysers Co-Products Oxygen and Heat in Germany, 2024
+            "power_to_Heat": 0.2,   # source: project internal assumption Fraunhofer ISE
+            "power_to_O2": 0.04,   # source:  Sayed Sadat, Modeling Regional Utilization of the electrolysers Co-Products Oxygen and Heat in Germany, 2024
         }
 
         # Insert FOM in %
@@ -866,7 +866,7 @@ def gas(scenario):
             "H2_overground": read_costs(
                 costs, "hydrogen storage tank incl. compressor", "investment"
             ),
-            "H2_pipeline": 25_000, # [EUR/MW] ; source toDO: ask sayed 
+            "H2_pipeline": read_costs(costs, "H2 (g) pipeline", "investment"), # [EUR/MW/km] 
             "H2_pipeline_retrofit": read_costs(
                 costs, "H2 (g) pipeline repurposed", "FOM"
             ),
@@ -898,9 +898,9 @@ def gas(scenario):
             "H2_overground": read_costs(
                 costs, "hydrogen storage tank incl. compressor", "lifetime"
             ),
-            "H2_pipeline": 25,  # source toDO: ask sayed   
+            "H2_pipeline": read_costs(costs, "H2 (g) pipeline", "lifetime"),  
             "H2_pipeline_retrofit": read_costs(
-                costs, "H2 (g) pipeline repurposed", "FOM"
+                costs, "H2 (g) pipeline repurposed", "lifetime"
             ),
             "Heat_exchanger": 20, # assumption based on lifetime heat_exchanger; source: E. van der Roest, R. Bol, T. Fens und A. van Wijk, „Utilisation of waste heat from PEM electrolysers - Unlocking local optimisation, 2023
             "Heat_pipeline": 20,

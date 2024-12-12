@@ -1301,6 +1301,9 @@ PtH2_waste_heat_O2:
     district_heating_area:
       schema: 'demand'
       table: 'egon_district_heating_areas'
+    o2_load_profile:
+      schema: 'demand'
+      table: 'egon_demandregio_timeseries_cts_ind'
   targets:
     links:
       schema: 'grid'
