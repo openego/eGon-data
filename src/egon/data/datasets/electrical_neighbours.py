@@ -538,6 +538,7 @@ def cross_border_lines(scenario, sources, targets, central_buses):
 
     new_lines = new_lines[new_lines.bus0 != new_lines.bus1]
 
+    new_lines["cables"] = new_lines["cables"].apply(int)
 
     # Insert lines to the database
     new_lines.to_postgis(
@@ -1581,7 +1582,7 @@ def insert_storage_units_sq(scn_name="status2019"):
     None.
 
     """
-    year = int(get_sector_parameters("global", scn_name)["weather_year"])
+    year = int(get_sector_parameters("global", scn_name)["population_year"])
     try:
         sto_sq = entsoe_historic_generation_capacities()
     except:

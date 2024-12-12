@@ -53,6 +53,7 @@ def insert_power_to_h2_to_power():
 
 
     """
+<<<<<<< HEAD
     scenarios = config.settings()["egon-data"]["--scenarios"]  
     
     # General Constant Parameters  

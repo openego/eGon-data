@@ -53,6 +53,7 @@ from egon.data.datasets.heat_supply import (
     HeatSupply,
 )
 from egon.data.datasets.heat_supply.individual_heating import (
+    HeatPumps2019,
     HeatPumps2035,
     HeatPumps2050,
     HeatPumpsPypsaEur,
@@ -578,6 +579,17 @@ with airflow.DAG(
     # eMobility: heavy duty transport
     heavy_duty_transport = HeavyDutyTransport(
         dependencies=[vg250, setup_etrago, create_gas_polygons]
+    )
+
+    # Heat pump disaggregation for status2019
+    heat_pumps_2019 = HeatPumps2019(
+        dependencies=[
+            cts_demand_buildings,
+            DistrictHeatingAreas,
+            heat_supply,
+            heat_time_series,
+            power_plants,
+        ]
     )
 
     # Heat pump disaggregation for eGon2035

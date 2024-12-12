@@ -160,7 +160,13 @@ def pv_rooftop_per_mv_grid_and_scenario(scenario, level):
             WHERE carrier = 'solar_rooftop'
             AND scenario_name = '{scenario}'
             """
-        ).capacity[0]
+        )
+
+        if target.empty:
+            print(f"No PV rooftop in scenario {scenario}")
+            return
+        else:
+            target = target.capacity[0]
 
         dataset = config.settings()["egon-data"]["--dataset-boundary"]
 

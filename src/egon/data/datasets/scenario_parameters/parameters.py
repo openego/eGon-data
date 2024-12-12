@@ -126,7 +126,7 @@ def global_settings(scenario):
         }
     elif scenario == "status2019":
         parameters = {
-            "weather_year": 2019,
+            "weather_year": 2011,
             "population_year": 2019,
             "fuel_costs": {  # TYNDP 2020, data for 2020 (https://2020.entsos-tyndp-scenarios.eu/fuel-commodities-and-carbon-prices/)
                 "oil": 12.9*3.6,  # [EUR/MWh]

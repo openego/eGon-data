@@ -164,6 +164,10 @@ def assign_heat_bus():
             epsg=4326,
         )
 
+        if chp.empty:
+            print(f"No CHP for district heating in scenario {scenario}")
+            return
+
         # Select district heating areas and their centroid
         district_heating = db.select_geodataframe(
             f"""
