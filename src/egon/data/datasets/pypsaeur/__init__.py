@@ -30,7 +30,7 @@ class PreparePypsaEur(Dataset):
     def __init__(self, dependencies):
         super().__init__(
             name="PreparePypsaEur",
-            version="0.0.33",
+            version="0.0.34",
             dependencies=dependencies,
             tasks=(
                 download,
@@ -1737,6 +1737,19 @@ def drop_fossil_gas(network):
     return network
 
 
+def drop_conventional_power_plants(network):
+
+    # Drop lignite and coal power plants in Germany
+    network.mremove(
+        "Link",
+        network.links[
+            (network.links.carrier.isin(
+                ["coal", "lignite"]))
+            & (network.links.bus1.str.startswith("DE"))].index,
+    )
+
+    return network
+
 def rual_heat_technologies(network):
     network.mremove(
         "Link",
@@ -1805,6 +1818,7 @@ def execute():
                 h2_overground_stores,
                 drop_new_gas_pipelines,
                 drop_fossil_gas,
+                drop_conventional_power_plants,
                 # rual_heat_technologies, #To be defined
             ]
 
