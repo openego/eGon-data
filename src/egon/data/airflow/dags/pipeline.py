@@ -98,6 +98,7 @@ from egon.data.datasets.vg250_mv_grid_districts import Vg250MvGridDistricts
 from egon.data.datasets.zensus import ZensusMiscellaneous, ZensusPopulation
 from egon.data.datasets.zensus_mv_grid_districts import ZensusMvGridDistricts
 from egon.data.datasets.zensus_vg250 import ZensusVg250
+from egon.data.datasets.scenario_path import CreateIntermediateScenarios
 
 # Set number of threads used by numpy and pandas
 set_numexpr_threads()
@@ -664,6 +665,18 @@ with airflow.DAG(
 
     # Include low flex scenario(s)
     low_flex_scenario = LowFlexScenario(
+        dependencies=[
+            storage_etrago,
+            hts_etrago_table,
+            fill_etrago_generators,
+            household_electricity_demand_annual,
+            cts_demand_buildings,
+            emobility_mit,
+        ]
+    )
+
+    # Create intermediate scenarios based on status2019 and eGon100RE
+    create_intemediate_scenarios = CreateIntermediateScenarios(
         dependencies=[
             storage_etrago,
             hts_etrago_table,
