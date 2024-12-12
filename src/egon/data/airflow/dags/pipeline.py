@@ -53,6 +53,7 @@ from egon.data.datasets.heat_supply import (
     HeatSupply,
 )
 from egon.data.datasets.heat_supply.individual_heating import (
+    HeatPumps2019,
     HeatPumps2035,
     HeatPumps2050,
     HeatPumpsPypsaEur,
@@ -98,6 +99,7 @@ from egon.data.datasets.vg250_mv_grid_districts import Vg250MvGridDistricts
 from egon.data.datasets.zensus import ZensusMiscellaneous, ZensusPopulation
 from egon.data.datasets.zensus_mv_grid_districts import ZensusMvGridDistricts
 from egon.data.datasets.zensus_vg250 import ZensusVg250
+from egon.data.datasets.scenario_path import CreateIntermediateScenarios
 
 # Set number of threads used by numpy and pandas
 set_numexpr_threads()
@@ -588,6 +590,17 @@ with airflow.DAG(
         dependencies=[vg250, setup_etrago, create_gas_polygons]
     )
 
+    # Heat pump disaggregation for status2019
+    heat_pumps_2019 = HeatPumps2019(
+        dependencies=[
+            cts_demand_buildings,
+            DistrictHeatingAreas,
+            heat_supply,
+            heat_time_series,
+            power_plants,
+        ]
+    )
+
     # Heat pump disaggregation for eGon2035
     heat_pumps_2035 = HeatPumps2035(
         dependencies=[
@@ -662,6 +675,18 @@ with airflow.DAG(
 
     # Include low flex scenario(s)
     low_flex_scenario = LowFlexScenario(
+        dependencies=[
+            storage_etrago,
+            hts_etrago_table,
+            fill_etrago_generators,
+            household_electricity_demand_annual,
+            cts_demand_buildings,
+            emobility_mit,
+        ]
+    )
+
+    # Create intermediate scenarios based on status2019 and eGon100RE
+    create_intemediate_scenarios = CreateIntermediateScenarios(
         dependencies=[
             storage_etrago,
             hts_etrago_table,
