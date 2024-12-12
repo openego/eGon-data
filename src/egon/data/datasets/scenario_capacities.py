@@ -752,6 +752,11 @@ def eGon100_capacities():
     df.loc["pumped_hydro", "component"] = "storage_units"
     df = df.drop(["PHS", "hydro"])
 
+    # Aggregate solar and solar-hsat
+    df.loc["solar"] = df.loc["solar"] + df.loc["solar-hsat"]
+    df.loc["solar", "component"] = "generator"
+    df = df.drop(["solar-hsat"])
+
     # Aggregate technologies with and without carbon_capture (CC)
     for carrier in ["urban_central_gas_CHP", "urban_central_solid_biomass_CHP"]:
         df.loc[
