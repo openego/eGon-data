@@ -641,7 +641,7 @@ def insert_data_nep():
     insert_capacities_per_federal_state_nep()
 
 
-def eGon100_capacities(year="2045"):
+def eGon100_capacities():
     """Inserts installed capacities for the eGon100 scenario
 
     Returns
@@ -805,7 +805,7 @@ def eGon100_capacities(year="2045"):
         df_year = df.rename(
             {f"p_nom_{year}": "capacity", "index": "carrier"}, axis="columns"
         )
-        df_year.drop(df_year.columns[~df_year.columns.isin(["carrier", 'component', "capacity"])], axis="columns")
+        df_year.drop(df_year.columns[~df_year.columns.isin(["carrier", 'component', "capacity"])], axis="columns", inplace=True)
 
         if year == "2045":
             df_year["scenario_name"] = "eGon100RE"
