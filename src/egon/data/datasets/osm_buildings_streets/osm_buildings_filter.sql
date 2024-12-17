@@ -22,6 +22,7 @@ CREATE TABLE openstreetmap.osm_buildings_filtered as
         or bld.building like 'semidetached_house'
         or bld.building like 'static_caravan'
         or bld.building like 'terrace'
+        or bld.building like 'terraced_house'
         or bld.building like 'commercial'
         or bld.building like 'industrial'
         or bld.building like 'kiosk'
