@@ -299,12 +299,12 @@ def prepare_network_2():
     cwd = Path(".")
     filepath = cwd / "run-pypsa-eur"
 
-    shutil.copy(
-        Path(__path__[0], "datasets", "pypsaeur", "config_solve.yaml"),
-        filepath / "pypsa-eur" / "config" / "config.yaml",
-    )
-
     if config.settings()["egon-data"]["--run-pypsa-eur"]:
+        shutil.copy(
+            Path(__path__[0], "datasets", "pypsaeur", "config_solve.yaml"),
+            filepath / "pypsa-eur" / "config" / "config.yaml",
+        )
+
         subproc.run(
             [
                 "snakemake",
