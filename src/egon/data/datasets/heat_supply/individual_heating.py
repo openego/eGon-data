@@ -568,6 +568,9 @@ def cascade_per_technology(
                     """
             )
 
+            if not target.capacity[0]:
+                target.capacity[0] = 0
+
             heat_per_mv["share"] = (
                 heat_per_mv.remaining_demand
                 / heat_per_mv.remaining_demand.sum()
