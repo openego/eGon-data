@@ -972,9 +972,9 @@ class setup(Dataset):
     #:
     name: str = "Demand_Building_Assignment"
     #:
-    version: str = "0.0.5"
+    version: str = "0.0.6"
     #:
-    tasks = (map_houseprofiles_to_buildings, get_building_peak_loads)
+    tasks = (map_houseprofiles_to_buildings, create_buildings_profiles_stats, get_building_peak_loads)
 
     def __init__(self, dependencies):
         super().__init__(
