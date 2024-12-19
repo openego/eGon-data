@@ -50,6 +50,45 @@ class HouseholdElectricityProfilesOfBuildings(Base):
     profile_id = Column(String, index=True)
 
 
+class HouseholdElectricityProfilesOfBuildingsStats(Base):
+    """
+    Class definition of table `demand.egon_household_electricity_profile_of_buildings_stats`.
+    Contains number of households per building and type from table
+    `demand.egon_household_electricity_profile_of_buildings`
+
+    Columns
+    -------
+    building_id: Building id as used in tables `openstreetmap.osm_buildings_*`, index col
+    households_total: total count of households
+    SR: count of household type SR single retiree
+    SO: count of household type SA single adults
+    PR: count of household type PR pair retiree
+    PO: count of household type PA pair adults
+    SK: count of household type SK single n children
+    P1: count of household type P1 pair 1 child
+    P2: count of household type P2 pair 2 children
+    P3: count of household type P3 pair 3 children
+    OR: count of household type OR multi retiree n children
+    OO: count of household type OO multi adults n children
+    """
+
+    __tablename__ = "egon_household_electricity_profile_of_buildings_stats"
+    __table_args__ = {"schema": "demand"}
+
+    building_id = Column(Integer, primary_key=True)
+    households_total = Column(Integer, nullable=True)
+    SR = Column(Integer, nullable=True)
+    SO = Column(Integer, nullable=True)
+    PR = Column(Integer, nullable=True)
+    PO = Column(Integer, nullable=True)
+    SK = Column(Integer, nullable=True)
+    P1 = Column(Integer, nullable=True)
+    P2 = Column(Integer, nullable=True)
+    P3 = Column(Integer, nullable=True)
+    OR = Column(Integer, nullable=True)
+    OO = Column(Integer, nullable=True)
+
+
 class OsmBuildingsSynthetic(Base):
     """
     Class definition of table demand.osm_buildings_synthetic.
@@ -765,6 +804,52 @@ def map_houseprofiles_to_buildings():
             HouseholdElectricityProfilesOfBuildings,
             mapping_profiles_to_buildings.to_dict(orient="records"),
         )
+
+
+def create_buildings_profiles_stats():
+    """
+    Create DB table `demand.egon_household_electricity_profile_of_buildings_stats`
+    with household profile type counts per building
+    """
+
+    # Drop and recreate table if existing
+    HouseholdElectricityProfilesOfBuildingsStats.__table__.drop(
+        bind=engine, checkfirst=True
+    )
+    HouseholdElectricityProfilesOfBuildingsStats.__table__.create(
+        bind=engine, checkfirst=True
+    )
+
+    # Query final profile table
+    with db.session_scope() as session:
+        cells_query = (
+            session.query(
+                HouseholdElectricityProfilesOfBuildings,
+            )
+            .order_by(HouseholdElectricityProfilesOfBuildings.id)
+        )
+
+        df_buildings_and_profiles = pd.read_sql(
+            cells_query.statement, cells_query.session.bind, index_col="id"
+        )
+
+    # Extract household type prefix
+    df_buildings_and_profiles = df_buildings_and_profiles.assign(
+        household_type=df_buildings_and_profiles.profile_id.str[:2]
+    )
+
+    # Unstack and create total
+    df_buildings_and_profiles = df_buildings_and_profiles.groupby(
+        "building_id").value_counts(["household_type"]).unstack(fill_value=0)
+    df_buildings_and_profiles["households_total"] = df_buildings_and_profiles.sum(axis=1)
+
+    # Write to DB
+    df_buildings_and_profiles.to_sql(
+        name=HouseholdElectricityProfilesOfBuildingsStats.__table__.name,
+        schema=HouseholdElectricityProfilesOfBuildingsStats.__table__.schema,
+        con=engine,
+        if_exists="append",
+    )
 
 
 class setup(Dataset):
