@@ -30,7 +30,7 @@ class PreparePypsaEur(Dataset):
     def __init__(self, dependencies):
         super().__init__(
             name="PreparePypsaEur",
-            version="0.0.34",
+            version="0.0.40",
             dependencies=dependencies,
             tasks=(
                 download,
@@ -43,7 +43,7 @@ class RunPypsaEur(Dataset):
     def __init__(self, dependencies):
         super().__init__(
             name="SolvePypsaEur",
-            version="0.0.27",
+            version="0.0.38",
             dependencies=dependencies,
             tasks=(
                 prepare_network_2,
@@ -340,6 +340,8 @@ def solve_network():
             ]
         )
 
+        postprocessing_biomass_2045()
+
         subproc.run(
             [
                 "snakemake",
@@ -357,10 +359,10 @@ def solve_network():
         print("Pypsa-eur is not executed due to the settings of egon-data")
 
 
-def read_network():
+def read_network(planning_horizon=3):
     if config.settings()["egon-data"]["--run-pypsa-eur"]:
         with open(
-            __path__[0] + "/datasets/pypsaeur/config.yaml", "r"
+            __path__[0] + "/datasets/pypsaeur/config_solve.yaml", "r"
         ) as stream:
             data_config = yaml.safe_load(stream)
 
@@ -371,11 +373,11 @@ def read_network():
             / "results"
             / data_config["run"]["name"]
             / "postnetworks"
-            / f"elec_s_{data_config['scenario']['clusters'][0]}"
+            / f"base_s_{data_config['scenario']['clusters'][0]}"
             f"_l{data_config['scenario']['ll'][0]}"
             f"_{data_config['scenario']['opts'][0]}"
             f"_{data_config['scenario']['sector_opts'][0]}"
-            f"_{data_config['scenario']['planning_horizons'][0]}.nc"
+            f"_{data_config['scenario']['planning_horizons'][planning_horizon]}.nc"
         )
 
     else:
@@ -1349,10 +1351,10 @@ def neighbor_reduction():
         )
 
 
-def prepared_network():
+def prepared_network(planning_horizon=3):
     if egon.data.config.settings()["egon-data"]["--run-pypsa-eur"]:
         with open(
-            __path__[0] + "/datasets/pypsaeur/config.yaml", "r"
+            __path__[0] + "/datasets/pypsaeur/config_prepare.yaml", "r"
         ) as stream:
             data_config = yaml.safe_load(stream)
 
@@ -1367,7 +1369,7 @@ def prepared_network():
             f"_l{data_config['scenario']['ll'][0]}"
             f"_{data_config['scenario']['opts'][0]}"
             f"_{data_config['scenario']['sector_opts'][0]}"
-            f"_{data_config['scenario']['planning_horizons'][3]}.nc"
+            f"_{data_config['scenario']['planning_horizons'][planning_horizon]}.nc"
         )
 
     else:
@@ -1635,6 +1637,32 @@ def drop_biomass(network):
         network.mremove(c.name, c.df[c.df.index.str.contains(carrier)].index)
     return network
 
+def postprocessing_biomass_2045():
+
+    network = read_network()
+    network = drop_biomass(network)
+
+
+    with open(
+        __path__[0] + "/datasets/pypsaeur/config_solve.yaml", "r"
+    ) as stream:
+        data_config = yaml.safe_load(stream)
+
+    target_file = (
+        Path(".")
+        / "run-pypsa-eur"
+        / "pypsa-eur"
+        / "results"
+        / data_config["run"]["name"]
+        / "postnetworks"
+        / f"base_s_{data_config['scenario']['clusters'][0]}"
+        f"_l{data_config['scenario']['ll'][0]}"
+        f"_{data_config['scenario']['opts'][0]}"
+        f"_{data_config['scenario']['sector_opts'][0]}"
+        f"_{data_config['scenario']['planning_horizons'][3]}.nc"
+    )
+
+    network.export_to_netcdf(target_file)
 
 def drop_urban_decentral_heat(network):
     carrier = "urban decentral heat"
@@ -1767,6 +1795,34 @@ def rual_heat_technologies(network):
 
     return network
 
+def coal_exit_D():
+
+    df = pd.read_csv(
+            "run-pypsa-eur/pypsa-eur/resources/powerplants_s_39.csv", index_col=0)
+    df_de_coal = df[(df.Country == 'DE')&((df.Fueltype == 'Lignite')|(df.Fueltype == 'Hard Coal'))]
+    df_de_coal.loc[df_de_coal.DateOut.values>=2035, 'DateOut'] = 2034
+    df.loc[df_de_coal.index]=df_de_coal
+
+    df.to_csv("run-pypsa-eur/pypsa-eur/resources/powerplants_s_39.csv")
+
+def offwind_potential_D(network, capacity_per_sqkm=4):
+
+    offwind_ac_factor = 1942
+    offwind_dc_factor = 10768
+    offwind_float_factor = 134
+
+    # set p_nom_max for German offshore with respect to capacity_per_sqkm = 4 instead of default 2 (which is applied for the rest of Europe)
+    network.generators.loc[(network.generators.bus == 'DE0 0')&(network.generators.carrier =='offwind-ac'), "p_nom_max"] = offwind_ac_factor*capacity_per_sqkm
+    network.generators.loc[(network.generators.bus == 'DE0 0')&(network.generators.carrier =='offwind-dc'), "p_nom_max"] = offwind_dc_factor*capacity_per_sqkm
+    network.generators.loc[(network.generators.bus == 'DE0 0')&(network.generators.carrier =='offwind-float'), "p_nom_max"] = offwind_float_factor*capacity_per_sqkm
+
+    return network
+
+def additional_grid_expansion_2045(network):
+    
+    network.global_constraints.loc["lc_limit", 'constant'] *= 1.05
+    
+    return network
 
 def execute():
     if egon.data.config.settings()["egon-data"]["--run-pypsa-eur"]:
@@ -1808,6 +1864,7 @@ def execute():
                     geothermal_district_heating,
                     h2_overground_stores,
                     drop_new_gas_pipelines,
+                    offwind_potential_D,
                 ]
 
             scn_path.loc["2045", "functions"] = [
@@ -1818,7 +1875,9 @@ def execute():
                 h2_overground_stores,
                 drop_new_gas_pipelines,
                 drop_fossil_gas,
-                drop_conventional_power_plants,
+                offwind_potential_D,
+                additional_grid_expansion_2045,
+                #drop_conventional_power_plants,
                 # rual_heat_technologies, #To be defined
             ]
 
@@ -1838,6 +1897,9 @@ def execute():
                 for manipulator in scn_path.at[scn, "functions"]:
                     network = manipulator(network)
                 network.export_to_netcdf(path)
+                
+            coal_exit_D()
+
 
         elif ((data_config["foresight"] == "overnight")
               & (int(data_config['scenario']['planning_horizons'][0]) > 2040)):

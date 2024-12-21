@@ -26,6 +26,8 @@ rule solve:
         ( "snakemake"
           " --directory=pypsa-eur/"
           " --snakefile=pypsa-eur/Snakefile"
+          " --consider-ancient"
+          " add_existing_baseyear=powerplants"
           " -call"
           " solve_sector_networks"
         )
