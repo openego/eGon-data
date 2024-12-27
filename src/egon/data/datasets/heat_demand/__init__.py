@@ -75,7 +75,7 @@ class HeatDemandImport(Dataset):
     #:
     name: str = "heat-demands"
     #:
-    version: str = "0.0.1"
+    version: str = "0.0.2"
 
     def __init__(self, dependencies):
         super().__init__(
@@ -751,12 +751,14 @@ def scenario_data_import():
     unzip_peta5_0_1_heat_demands()
     cutout_heat_demand_germany()
     # Specifiy the scenario names for loading factors from csv file
-    future_heat_demand_germany("eGon2035")
-    future_heat_demand_germany("eGon100RE")
+    for scenario in egon.data.config.settings()["egon-data"]["--scenarios"]:
+        future_heat_demand_germany(scenario)
+
     # future_heat_demand_germany("eGon2015")
     heat_demand_to_db_table()
-    adjust_residential_heat_to_zensus("eGon2035")
-    adjust_residential_heat_to_zensus("eGon100RE")
+    for scenario in egon.data.config.settings()["egon-data"]["--scenarios"]:
+        adjust_residential_heat_to_zensus(scenario)
+
     # future_heat_demand_germany("eGon2015")
     add_metadata()
 
