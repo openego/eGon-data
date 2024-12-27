@@ -638,7 +638,7 @@ def insert_hh_demand(scenario, year, engine):
 
             hh_load_timeseries.iloc[:24 * 7] = hh_load_timeseries.iloc[24 * 7:24 * 7 * 2].values
 
-    write_demandregio_hh_profiles_to_db(hh_load_timeseries)
+    write_demandregio_hh_profiles_to_db(hh_load_timeseries, year)
 
 
 def insert_cts_ind(scenario, year, engine, target_values):

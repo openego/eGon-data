@@ -360,7 +360,7 @@ with airflow.DAG(
         ]
     )
     # Create gas voronoi status quo
-    create_gas_polygons_statusquo = GasAreasStatusQuo(
+    create_gas_polygons_statusquo = GasAreas(
         dependencies=[setup_etrago, vg250, gas_grid_insert_data, substation_voronoi]
     )
 

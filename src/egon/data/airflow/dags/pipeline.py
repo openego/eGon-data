@@ -54,7 +54,7 @@ from egon.data.datasets.heat_supply import (
     HeatSupply,
 )
 from egon.data.datasets.heat_supply.individual_heating import (
-    HeatPumps2019,
+    HeatPumpsStatusQuo,
     HeatPumps2035,
     HeatPumps2050,
     HeatPumpsPypsaEur,
@@ -592,7 +592,7 @@ with airflow.DAG(
     )
 
     # Heat pump disaggregation for status2019
-    heat_pumps_2019 = HeatPumps2019(
+    heat_pumps_2019 = HeatPumpsStatusQuo(
         dependencies=[
             cts_demand_buildings,
             DistrictHeatingAreas,
