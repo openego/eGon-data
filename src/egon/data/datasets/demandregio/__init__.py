@@ -39,7 +39,7 @@ class DemandRegio(Dataset):
     def __init__(self, dependencies):
         super().__init__(
             name="DemandRegio",
-            version="0.0.9",
+            version="0.0.10.dev",
             dependencies=dependencies,
             tasks=(
                 clone_and_install, # demandregio must be previously installed
@@ -505,7 +505,7 @@ def disagg_households_power(
     return df
 
 
-def write_demandregio_hh_profiles_to_db(hh_profiles, year):
+def write_demandregio_hh_profiles_to_db(hh_profiles):
     """Write HH demand profiles from demand regio into db. One row per
     year and nuts3. The annual load profile timeseries is an array.
 
@@ -517,11 +517,11 @@ def write_demandregio_hh_profiles_to_db(hh_profiles, year):
     Parameters
     ----------
     hh_profiles: pd.DataFrame
-    year: int
 
     Returns
     -------
     """
+    years = hh_profiles.index.year.unique().values
     df_to_db = pd.DataFrame(
         columns=["id", "year", "nuts3", "load_in_mwh"]
     ).set_index("id")
@@ -546,11 +546,13 @@ def write_demandregio_hh_profiles_to_db(hh_profiles, year):
     else:
         id = id + 1
 
-    for nuts3 in hh_profiles.columns:
-        id += 1
-        df_to_db.at[id, "year"] = year
-        df_to_db.at[id, "nuts3"] = nuts3
-        df_to_db.at[id, "load_in_mwh"] = hh_profiles[nuts3].to_list()
+    for year in years:
+        df = hh_profiles[hh_profiles.index.year == year]
+        for nuts3 in hh_profiles.columns:
+            id += 1
+            df_to_db.at[id, "year"] = year
+            df_to_db.at[id, "nuts3"] = nuts3
+            df_to_db.at[id, "load_in_mwh"] = df[nuts3].to_list()
 
     df_to_db["year"] = df_to_db["year"].apply(int)
     df_to_db["nuts3"] = df_to_db["nuts3"].astype(str)
@@ -638,7 +640,7 @@ def insert_hh_demand(scenario, year, engine):
 
             hh_load_timeseries.iloc[:24 * 7] = hh_load_timeseries.iloc[24 * 7:24 * 7 * 2].values
 
-    write_demandregio_hh_profiles_to_db(hh_load_timeseries, year)
+    write_demandregio_hh_profiles_to_db(hh_load_timeseries)
 
 
 def insert_cts_ind(scenario, year, engine, target_values):
@@ -743,7 +745,10 @@ def insert_household_demand():
         )
 
     for scn in scenarios:
-        year = scenario_parameters.global_settings(scn)["population_year"]
+        year = (
+            2023 if scn == "status2023"
+            else scenario_parameters.global_settings(scn)["population_year"]
+        )
 
         # Insert demands of private households
         insert_hh_demand(scn, year, engine)
