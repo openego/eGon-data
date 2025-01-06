@@ -53,7 +53,7 @@ def insert_power_to_h2_to_power():
 
 
     """
-<<<<<<< HEAD
+
     scenarios = config.settings()["egon-data"]["--scenarios"]  
     
     # General Constant Parameters  
@@ -154,6 +154,10 @@ def insert_power_to_h2_to_power():
     targets = data_config["PtH2_waste_heat_O2"]["targets"]
     
     for SCENARIO_NAME in scenarios:
+        
+        if SCENARIO_NAME not in ["eGon100RE", "eGon2035"]:
+            continue
+        
         scn_params_gas = get_sector_parameters("gas", SCENARIO_NAME)
         scn_params_elec = get_sector_parameters("electricity", SCENARIO_NAME)
         
@@ -161,7 +165,10 @@ def insert_power_to_h2_to_power():
         AC_COST_CABLE = scn_params_elec["capital_cost"]["ac_hv_cable"]   #[EUR/MW/km/YEAR]
         ELZ_CAPEX_SYSTEM = scn_params_gas["capital_cost"]["power_to_H2_system"]   # [EUR/MW/YEAR]
         ELZ_CAPEX_STACK = scn_params_gas["capital_cost"]["power_to_H2_stack"]  # [EUR/MW/YEAR]
-        ELZ_OPEX = scn_params_gas["capital_cost"]["power_to_H2_OPEX"]  # [EUR/MW/YEAR]
+        if SCENARIO_NAME == 'eGon2035':
+            ELZ_OPEX = scn_params_gas["capital_cost"]["power_to_H2_OPEX"]# [EUR/MW/YEAR]
+        else:
+            ELZ_OPEX = 0  # [EUR/MW/YEAR] , for eGon100RE OPEX are already included in SYSTEM and STACK costs
         H2_COST_PIPELINE = scn_params_gas["capital_cost"]["H2_pipeline"]  #[EUR/MW/km/YEAR] 
         ELZ_EFF = scn_params_gas["efficiency"]["power_to_H2"] 
         
