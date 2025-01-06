@@ -581,13 +581,13 @@ def cascade_per_technology(
             {"bus_id": "mv_grid_id", "share": "capacity"}, axis=1, inplace=True
         )
 
-    elif tech.index == "gas_boiler":
+    else:
         append_df = pd.DataFrame(
             data={
                 "capacity": heat_per_mv.remaining_demand.div(
                     tech.estimated_flh.values[0]
                 ),
-                "carrier": "residential_rural_gas_boiler",
+                "carrier": f"residential_rural_{tech.index}",
                 "mv_grid_id": heat_per_mv.index,
                 "scenario": scenario,
             }
@@ -675,9 +675,9 @@ def cascade_heat_supply_indiv(scenario, distribution_level, plotting=True):
         )
     elif scenario == "eGon100RE":
         technologies = pd.DataFrame(
-            index=["heat_pump"],
+            index=["heat_pump", "resistive_heater", "solar_thermal", "biomass_boiler", "gas_boiler", "oil_boiler"],
             columns=["estimated_flh", "priority"],
-            data={"estimated_flh": [4000], "priority": [1]},
+            data={"estimated_flh": [4000, 2000, 2000, 8000, 8000, 8000], "priority": [6,5,4,3,2,1]},
         )
     elif scenario == "status2019":
         technologies = pd.DataFrame(
