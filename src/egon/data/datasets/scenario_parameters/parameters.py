@@ -909,7 +909,8 @@ def gas(scenario):
 
         # Insert costs
         parameters["capital_cost"] = {}
-
+        parameters["O2_capital_cost"] = {}
+        
         for comp in parameters["overnight_cost"].keys():
             parameters["capital_cost"][comp] = annualize_capital_costs(
                 parameters["overnight_cost"][comp],
@@ -930,6 +931,13 @@ def gas(scenario):
                 * (parameters["FOM"][comp] / 100)
             ) * parameters["efficiency"][comp]
 
+        for diameter in parameters["O2_pipeline_costs"].keys():
+            parameters["O2_capital_cost"][diameter] = annualize_capital_costs(
+                parameters["O2_pipeline_costs"][diameter],
+                parameters["lifetime"]["O2_components"],
+                global_settings("eGon2035")["interest_rate"],
+            )
+                    
         parameters["marginal_cost"] = {
             "OCGT": read_costs(costs, "OCGT", "VOM"),
             "biogas": read_costs(costs, "biogas", "fuel"),
