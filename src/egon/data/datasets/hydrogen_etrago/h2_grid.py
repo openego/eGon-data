@@ -582,7 +582,8 @@ def connect_h2_grid_to_neighbour_countries(scn_name):
         ('AQD Offshore SEN 1', 'NO'),
         ('AQD Offshore SEN 1', 'DK'),
         ('AQD Offshore SEN 1', 'NL'),
-        ('Fessenheim', 'FR')
+        ('Fessenheim', 'FR'),
+        ('Ellund', 'DK')
     ]
     
     h2_bus_location = pd.read_csv(Path(".")/"h2_grid_nodes.csv") 
@@ -630,21 +631,21 @@ def connect_h2_grid_to_neighbour_countries(scn_name):
             relevant_buses = inland_bus[inland_bus['bus_id'] == i_bus['bus_id']]
             p_nom_value = relevant_buses['p_nom'].sum()
 
-            connection_links.append({
-                'scn_name': 'eGon2035',
-                'carrier': 'H2_grid',
-                'link_id': next(next_max_link_id),
-                'bus0': i_bus['bus_id'],
-                'bus1': nearest_abroad_bus['bus_id'],
-                'p_nom': p_nom_value,
-                'p_min_pu': -1,
-                'geom': MultiLineString(
-                    [LineString([
-                        (i_bus['geom'].x, i_bus['geom'].y),
-                        (nearest_abroad_bus['geom'].x, nearest_abroad_bus['geom'].y)
-                    ])]
-                )
-            })
+        connection_links.append({
+            'scn_name': 'eGon2035',
+            'carrier': 'H2_grid',
+            'link_id': next(next_max_link_id),
+            'bus0': i_bus['bus_id'],
+            'bus1': nearest_abroad_bus['bus_id'],
+            'p_nom': p_nom_value,
+            'p_min_pu': -1,
+            'geom': MultiLineString(
+                [LineString([
+                    (i_bus['geom'].x, i_bus['geom'].y),
+                    (nearest_abroad_bus['geom'].x, nearest_abroad_bus['geom'].y)
+                ])]
+            )
+        })
     connection_links_df = gpd.GeoDataFrame(connection_links, geometry='geom', crs="EPSG:4326")
 
     connection_links_df.to_postgis(
