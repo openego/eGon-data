@@ -42,7 +42,7 @@ def insert_h2_pipelines(scn_name):
     h2_buses_df = pd.read_sql(
     f"""
     SELECT bus_id, x, y FROM grid.egon_etrago_bus
-    WHERE carrier in ('H2')
+    WHERE carrier in ('H2_grid')
     AND scn_name = '{scn_name}'
     
     """
@@ -103,7 +103,6 @@ def insert_h2_pipelines(scn_name):
         H2_grid_df = pd.merge(H2_grid_df, h2_buses_df, how='left', left_on=['x_end', 'y_end'], right_on=['x','y']).rename(
             columns={'bus_id': 'bus1'})
         H2_grid_df[['bus0', 'bus1']] = H2_grid_df[['bus0', 'bus1']].astype('Int64')
-
         
         H2_grid_df['geom_start'] = H2_grid_df['geom_start'].apply(lambda x: wkb.loads(bytes.fromhex(x)))
         H2_grid_df['geom_end'] = H2_grid_df['geom_end'].apply(lambda x: wkb.loads(bytes.fromhex(x)))
@@ -153,11 +152,11 @@ def insert_h2_pipelines(scn_name):
              dtype={"geom": Geometry()},
         )
         
-        #connect saltcaverns to H2_grid
-        connect_saltcavern_to_h2_grid(scn_name)
-        
-        #connect neighbour countries to H2_grid
-        connect_h2_grid_to_neighbour_countries(scn_name)
+    #connect saltcaverns to H2_grid
+    connect_saltcavern_to_h2_grid(scn_name)
+    
+    #connect neighbour countries to H2_grid
+    connect_h2_grid_to_neighbour_countries(scn_name)
 
 
 def replace_pipeline(df, start, end, intermediate):
@@ -455,17 +454,17 @@ def connect_saltcavern_to_h2_grid(scn_name):
     engine = db.engine()
     
     db.execute_sql(f"""
-           DELETE FROM  {targets["hydrogen_links"]["schema"]}.{sources["hydrogen_links"]["table"]} 
+           DELETE FROM {targets["hydrogen_links"]["schema"]}.{targets["hydrogen_links"]["table"]} 
            WHERE "carrier" in ('H2_saltcavern')
            AND scn_name = '{scn_name}';    
            """)
-    h2_buses_query = """SELECT bus_id, x, y,ST_Transform(geom, 32632) as geom 
+    h2_buses_query = f"""SELECT bus_id, x, y,ST_Transform(geom, 32632) as geom 
                         FROM  {sources["buses"]["schema"]}.{sources["buses"]["table"]} 
                         WHERE carrier = 'H2_grid' AND scn_name = '{scn_name}'
                     """
     h2_buses = gpd.read_postgis(h2_buses_query, engine)
     
-    salt_caverns_query = """SELECT bus_id, x, y, ST_Transform(geom, 32632) as geom 
+    salt_caverns_query = f"""SELECT bus_id, x, y, ST_Transform(geom, 32632) as geom 
                             FROM  {sources["buses"]["schema"]}.{sources["buses"]["table"]} 
                             WHERE carrier = 'H2_saltcavern'  AND scn_name = '{scn_name}'
                         """
@@ -546,17 +545,17 @@ def connect_h2_grid_to_neighbour_countries(scn_name):
     , engine)
     
     abroad_buses_df = gpd.read_postgis(
-        """
+        f"""
         SELECT bus_id, x, y, geom, country 
         FROM {sources["buses"]["schema"]}.{sources["buses"]["table"]}
-        WHERE carrier = 'H2_grid' AND scn_name = '{scn_name}' AND country != 'DE'
+        WHERE carrier = 'H2' AND scn_name = '{scn_name}' AND country != 'DE'
         """,
         engine
     )
 
     abroad_bus_ids=tuple(abroad_buses_df['bus_id'])
     db.execute_sql(f"""
-                DELETE FROM {targets["hydrogen_links"]["schema"]}.{sources["hydrogen_links"]["table"]}
+                DELETE FROM {targets["hydrogen_links"]["schema"]}.{targets["hydrogen_links"]["table"]}
                 WHERE carrier = 'H2_grid' 
                 AND bus1 IN {abroad_bus_ids}
                 """)  
@@ -583,7 +582,8 @@ def connect_h2_grid_to_neighbour_countries(scn_name):
         ('AQD Offshore SEN 1', 'NO'),
         ('AQD Offshore SEN 1', 'DK'),
         ('AQD Offshore SEN 1', 'NL'),
-        ('Fessenheim', 'FR')
+        ('Fessenheim', 'FR'),
+        ('Ellund', 'DK')
     ]
     
     h2_bus_location = pd.read_csv(Path(".")/"h2_grid_nodes.csv") 
@@ -592,17 +592,18 @@ def connect_h2_grid_to_neighbour_countries(scn_name):
     matched_locations = h2_bus_location[h2_bus_location['Ort'].isin([name for name, _ in abroad_con_buses])]
     matched_buses = matched_locations.merge(
         h2_buses_df, 
-        left_on=['x', 'y'],# Spalte aus matched_locations
-        right_on=['x', 'y'],  # Spalte aus h2_buses_df (entspricht Ort oder Bus-ID)
+        left_on=['x', 'y'],
+        right_on=['x', 'y'],  
         how='inner'
     )
 
     final_matched_buses = matched_buses[['bus_id', 'Ort', 'x', 'y', 'geom_y']].rename(columns={'geom_y': 'geom'})
-    
+
     abroad_links = h2_links_df[(h2_links_df['bus0'].isin(final_matched_buses['bus_id'])) | (h2_links_df['bus1'].isin(final_matched_buses['bus_id']))]
     abroad_links_bus0 = abroad_links.merge(final_matched_buses, left_on= 'bus0', right_on= 'bus_id', how='inner') 
     abroad_links_bus1 = abroad_links.merge(final_matched_buses, left_on= 'bus1', right_on= 'bus_id', how='inner')
     abroad_con_df = pd.concat([abroad_links_bus1, abroad_links_bus0])
+
     
     connection_links = []        
     max_link_id = db.next_etrago_id('link')
@@ -630,21 +631,21 @@ def connect_h2_grid_to_neighbour_countries(scn_name):
             relevant_buses = inland_bus[inland_bus['bus_id'] == i_bus['bus_id']]
             p_nom_value = relevant_buses['p_nom'].sum()
 
-            connection_links.append({
-                'scn_name': 'eGon2035',
-                'carrier': 'H2_grid',
-                'link_id': next(next_max_link_id),
-                'bus0': i_bus['bus_id'],
-                'bus1': nearest_abroad_bus['bus_id'],
-                'p_nom': p_nom_value,
-                'p_min_pu': -1,
-                'geom': MultiLineString(
-                    [LineString([
-                        (i_bus['geom'].x, i_bus['geom'].y),
-                        (nearest_abroad_bus['geom'].x, nearest_abroad_bus['geom'].y)
-                    ])]
-                )
-            })
+        connection_links.append({
+            'scn_name': 'eGon2035',
+            'carrier': 'H2_grid',
+            'link_id': next(next_max_link_id),
+            'bus0': i_bus['bus_id'],
+            'bus1': nearest_abroad_bus['bus_id'],
+            'p_nom': p_nom_value,
+            'p_min_pu': -1,
+            'geom': MultiLineString(
+                [LineString([
+                    (i_bus['geom'].x, i_bus['geom'].y),
+                    (nearest_abroad_bus['geom'].x, nearest_abroad_bus['geom'].y)
+                ])]
+            )
+        })
     connection_links_df = gpd.GeoDataFrame(connection_links, geometry='geom', crs="EPSG:4326")
 
     connection_links_df.to_postgis(
@@ -655,6 +656,4 @@ def connect_h2_grid_to_neighbour_countries(scn_name):
         index=False,
     )
     print("Neighbour countries are succesfully connected to H2-grid")
-
-
 
