@@ -27,7 +27,7 @@ from egon.data.datasets.etrago_helpers import (
     initialise_bus_insertion,
 )
 from egon.data.datasets.etrago_setup import link_geom_from_buses
-from egon.data.datasets.pypsaeur import read_network
+from egon.data.datasets.pypsaeur import prepared_network
 from egon.data.datasets.scenario_parameters import get_sector_parameters
 
 logger = logging.getLogger(__name__)
@@ -487,7 +487,7 @@ def insert_industrial_gas_demand_egon100RE():
         # adjust H2 and CH4 total demands (values from PES)
         # CH4 demand = 0 in 100RE, therefore scale H2 ts
         # fallback values see https://github.com/openego/eGon-data/issues/626
-        n = read_network()
+        n = prepared_network()
 
         try:
             H2_total_PES = (
