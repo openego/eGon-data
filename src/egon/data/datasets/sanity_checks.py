@@ -74,6 +74,7 @@ class SanityChecks(Dataset):
                 sanitycheck_pv_rooftop_buildings,
                 sanitycheck_home_batteries,
                 sanitycheck_dsm,
+                etrago_timeseries_length,
             },
         )
 
@@ -1542,3 +1543,31 @@ def sanitycheck_dsm():
 
         assert np.allclose(e_max_df, individual_e_max_df)
         assert np.allclose(e_min_df, individual_e_min_df)
+
+def etrago_timeseries_length():
+
+    for component in ["generator", "load", "link", "store", "storage"]:
+
+        columns = db.select_dataframe(
+            f"""
+            SELECT *
+            FROM information_schema.columns
+            WHERE table_schema = 'grid'
+            AND table_name = 'egon_etrago_{component}_timeseries'
+            """
+            )
+        columns = columns[columns.data_type=="ARRAY"].column_name.values
+
+        for col in columns:
+            lengths = db.select_dataframe(
+                f"""
+                SELECT array_length({col}, 1)
+                FROM grid.egon_etrago_{component}_timeseries;
+                """
+                )["array_length"]
+
+            if not lengths.dropna().empty:
+                assert(lengths.dropna()==8760).all(), (
+                    f"Timeseries with a length != 8760 for {component} {col}")
+            else:
+                print(f"Empty timeseries for {component} {col}")
