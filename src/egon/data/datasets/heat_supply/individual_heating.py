@@ -564,9 +564,15 @@ def cascade_per_technology(
                     FROM {sources['scenario_capacities']['schema']}.
                     {sources['scenario_capacities']['table']} a
                     WHERE scenario_name = '{scenario}'
-                    AND carrier = 'residential_rural_heat_pump'
+                    AND carrier IN ('rural_air_heat_pump', 'rural_ground_heat_pump')
                     """
             )
+
+            if not target.capacity[0]:
+                target.capacity[0] = 0
+
+            if config.settings()["egon-data"]["--dataset-boundary"] == "Schleswig-Holstein":
+                target.capacity[0] /= 16
 
             heat_per_mv["share"] = (
                 heat_per_mv.remaining_demand
@@ -576,6 +582,34 @@ def cascade_per_technology(
             append_df = (
                 heat_per_mv["share"].mul(target.capacity[0]).reset_index()
             )
+
+        append_df.rename(
+            {"bus_id": "mv_grid_id", "share": "capacity"}, axis=1, inplace=True
+        )
+
+    elif tech.index in ("gas_boiler", "resistive_heater", "solar_thermal", "biomass_boiler"):
+        # Select target value for Germany
+        target = db.select_dataframe(
+            f"""
+                SELECT SUM(capacity) AS capacity
+                FROM {sources['scenario_capacities']['schema']}.
+                {sources['scenario_capacities']['table']} a
+                WHERE scenario_name = '{scenario}'
+                AND carrier = 'rural_{tech.index[0]}'
+                """
+        )
+
+        if config.settings()["egon-data"]["--dataset-boundary"] == "Schleswig-Holstein":
+            target.capacity[0] /= 16
+
+        heat_per_mv["share"] = (
+            heat_per_mv.remaining_demand
+            / heat_per_mv.remaining_demand.sum()
+        )
+
+        append_df = (
+            heat_per_mv["share"].mul(target.capacity[0]).reset_index()
+        )
 
         append_df.rename(
             {"bus_id": "mv_grid_id", "share": "capacity"}, axis=1, inplace=True
