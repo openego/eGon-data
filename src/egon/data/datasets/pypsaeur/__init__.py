@@ -385,10 +385,10 @@ def read_network(planning_horizon=3):
             Path(".")
             / "data_bundle_powerd_data"
             / "pypsa_eur"
-            / "2024-08-02-egondata-integration"
+            / "21122024_3h_clean_run"
             / "results"
             / "postnetworks"
-            / "elec_s_37_lv1.5__Co2L0-1H-T-H-B-I-A-solar+p3_2050.nc"
+            / "base_s_39_lc1.25__cb40ex0-T-H-I-B-solar+p3-dist1_2045.nc"
         )
 
     return pypsa.Network(target_file)
@@ -1355,10 +1355,11 @@ def prepared_network(planning_horizon=3):
             Path(".")
             / "data_bundle_powerd_data"
             / "pypsa_eur"
-            / "2024-08-02-egondata-integration"
+            / "21122024_3h_clean_run"
             / "results"
-            / "postnetworks"
-            / "elec_s_37_lv1.5__Co2L0-1H-T-H-B-I-A-solar+p3_2050.nc"
+            / "prenetworks"
+            / "prenetwork_post-manipulate_pre-solve"
+            / "base_s_39_lc1.25__cb40ex0-T-H-I-B-solar+p3-dist1_2035.nc"
         )
 
     return pypsa.Network(target_file.absolute().as_posix())
