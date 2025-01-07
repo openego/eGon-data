@@ -1835,6 +1835,8 @@ def execute():
 
             print("Adjusting scenarios on the myopic pathway...")
 
+            coal_exit_D()
+
             networks = pd.Series()
 
             for i in range(0, len(data_config["scenario"]["planning_horizons"])):
@@ -1897,8 +1899,6 @@ def execute():
                 for manipulator in scn_path.at[scn, "functions"]:
                     network = manipulator(network)
                 network.export_to_netcdf(path)
-                
-            coal_exit_D()
 
 
         elif ((data_config["foresight"] == "overnight")
