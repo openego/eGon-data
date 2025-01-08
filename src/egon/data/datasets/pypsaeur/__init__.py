@@ -524,6 +524,17 @@ def neighbor_reduction():
         network_solved.buses.loc[foreign_buses.index].index
     )
 
+    # Add H2 demand of Fischer-Tropsch process to industrial H2 demands
+    industrial_hydrogen = network_prepared.loads.loc[
+        network_prepared.loads.carrier== "H2 for industry"]
+    fischer_tropsch = network_solved.links_t.p0[
+        network_solved.links.loc[
+            network_solved.links.carrier=="Fischer-Tropsch"].index
+        ].mul(network_solved.snapshot_weightings.generators, axis=0).sum()
+    for i, row in industrial_hydrogen.iterrows():
+        network_prepared.loads.loc[i, "p_set"] += fischer_tropsch[
+            fischer_tropsch.index.str.startswith(row.bus[:5])].sum()/8760
+
     # drop foreign lines and links from the 2nd row
 
     network_solved.lines = network_solved.lines.drop(
