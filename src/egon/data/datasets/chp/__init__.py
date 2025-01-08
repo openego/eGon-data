@@ -593,7 +593,7 @@ def insert_chp_egon100re():
 
     network = read_network()
 
-    chp_index = "DE0 0 urban central gas CHP"
+    chp_index = "DE0 0 urban central gas CHP-2045"
 
     standard_chp_th = 10
     standard_chp_el = (
