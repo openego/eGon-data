@@ -204,11 +204,11 @@ def insert_power_to_h2_to_power():
                         "v_nom": "110",
                         "type": row["KA_ID"],
                         "carrier": "O2",
-                        "x": row["longitude Kläranlage_rw"],
-                        "y": row["latitdue Kläranlage_hw"],
+                        "x": row["Koord_Kläranlage_rw"],
+                        "y": row["Koord_Kläranlage_hw"],
                         "geom": dumps(
                             Point(
-                                row["longitude Kläranlage_rw"], row["latitdue Kläranlage_hw"]
+                                row["Koord_Kläranlage_rw"], row["Koord_Kläranlage_hw"]
                             ),
                             srid=DATA_CRS,
                         ),
@@ -349,8 +349,7 @@ def insert_power_to_h2_to_power():
                         """
             dfs[HEAT_LOAD] = pd.read_sql(queries[HEAT_LOAD], engine)
             load_ids=tuple(dfs[HEAT_LOAD]['load_id'])
-            print(load_ids)
-            print(dfs[HEAT_LOAD])
+
             queries[HEAT_TIMESERIES] = f"""
                 SELECT load_id, p_set
                 FROM {sources["load_timeseries"]["schema"]}.{sources["load_timeseries"]["table"]}
@@ -600,9 +599,8 @@ def insert_power_to_h2_to_power():
                 raise Exception("multiple spec for a ka_id")
             found_spec = found_spec.iloc[0]
             return {
-                "pe": found_spec["WWTP_PE"],
-                "demand_o2": found_spec["O2 Demand 2035 [tonne/year]"],
-                "demand_o3": found_spec["O3 Demand 2035 [tonne/year]"],
+                "pe": found_spec["Nominalbelastung 2020 [EW]"],
+                "demand_o2": found_spec["Sauerstoff 2035 gesamt [t/a]"],
             }
 
 
@@ -784,9 +782,7 @@ def insert_power_to_h2_to_power():
                 aeration_ec = wwtp_ec * FACTOR_AERATION_EC  # [MWh/year]
                 o2_ec = aeration_ec * FACTOR_O2_EC  # [MWh/year]
                 o2_ec_h = o2_ec / 8760  # [MWh/hour]
-                total_o2_demand = (
-                    spec["demand_o3"] + spec["demand_o2"]
-                ) * 1000  # kgO2/year pure O2 tonne* 1000
+                total_o2_demand =  spec["demand_o2"] * 1000  # kgO2/year pure O2 tonne* 1000
                 _, o2_pipeline_diameter = gas_pipeline_size(
                     total_o2_demand,
                     distance,
