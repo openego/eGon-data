@@ -65,6 +65,7 @@ CREATE TABLE openstreetmap.osm_buildings_filtered as
         or bld.building like 'transformer_tower'
         or bld.building like 'military'
         or bld.building like 'gatehouse'
+        or bld.building like 'cohousing'
         or bld.amenity like 'bar'
         or bld.amenity like 'biergarten'
         or bld.amenity like 'cafe'
@@ -91,9 +92,18 @@ CREATE TABLE openstreetmap.osm_buildings_filtered as
         or bld.amenity like 'dentist'
         or bld.amenity like 'doctors'
         or bld.amenity like 'hospital'
-        or bld.amenity like 'nursing_home'
         or bld.amenity like 'pharmacy'
-        or bld.amenity like 'social_facility'
+
+        -- retirement and assisted homes
+        or bld.amenity like 'retirement_home'
+        or (
+            bld.amenity like 'social_facility'
+			and tags::hstore -> 'social_facility' in ('nursing_home', 'assisted_living', 'group_home')
+        )
+        or bld.amenity like 'nursing_home'
+        or bld.amenity like 'assisted_living'
+        or bld.amenity like 'group_home'
+
         or bld.amenity like 'veterinary'
         or bld.amenity like 'arts_centre'
         or bld.amenity like 'brothel'
