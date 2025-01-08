@@ -677,7 +677,8 @@ def eGon100_capacities():
             cwd
             / "data_bundle_powerd_data"
             / "pypsa_eur"
-            / "2024-08-02-egondata-integration"
+            / "21122024_3h_clean_run"
+            / "results"
             / "csvs"
             / sources["eGon100RE"]["capacities"]
         )

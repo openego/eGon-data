@@ -30,7 +30,7 @@ class PreparePypsaEur(Dataset):
     def __init__(self, dependencies):
         super().__init__(
             name="PreparePypsaEur",
-            version="0.0.33",
+            version="0.0.41",
             dependencies=dependencies,
             tasks=(
                 download,
@@ -43,7 +43,7 @@ class RunPypsaEur(Dataset):
     def __init__(self, dependencies):
         super().__init__(
             name="SolvePypsaEur",
-            version="0.0.27",
+            version="0.0.39",
             dependencies=dependencies,
             tasks=(
                 prepare_network_2,
@@ -344,6 +344,8 @@ def solve_network():
             ]
         )
 
+        postprocessing_biomass_2045()
+
         subproc.run(
             [
                 "snakemake",
@@ -361,10 +363,10 @@ def solve_network():
         print("Pypsa-eur is not executed due to the settings of egon-data")
 
 
-def read_network():
+def read_network(planning_horizon=3):
     if config.settings()["egon-data"]["--run-pypsa-eur"]:
         with open(
-            __path__[0] + "/datasets/pypsaeur/config.yaml", "r"
+            __path__[0] + "/datasets/pypsaeur/config_solve.yaml", "r"
         ) as stream:
             data_config = yaml.safe_load(stream)
 
@@ -375,11 +377,11 @@ def read_network():
             / "results"
             / data_config["run"]["name"]
             / "postnetworks"
-            / f"elec_s_{data_config['scenario']['clusters'][0]}"
+            / f"base_s_{data_config['scenario']['clusters'][0]}"
             f"_l{data_config['scenario']['ll'][0]}"
             f"_{data_config['scenario']['opts'][0]}"
             f"_{data_config['scenario']['sector_opts'][0]}"
-            f"_{data_config['scenario']['planning_horizons'][0]}.nc"
+            f"_{data_config['scenario']['planning_horizons'][planning_horizon]}.nc"
         )
 
     else:
@@ -387,10 +389,10 @@ def read_network():
             Path(".")
             / "data_bundle_powerd_data"
             / "pypsa_eur"
-            / "2024-08-02-egondata-integration"
+            / "21122024_3h_clean_run"
             / "results"
             / "postnetworks"
-            / "base_s_39_lv2__cb40ex0-T-H-I-B-solar+p3-dist1_2045.nc"
+            / "base_s_39_lc1.25__cb40ex0-T-H-I-B-solar+p3-dist1_2045.nc"
         )
 
     return pypsa.Network(target_file)
@@ -499,7 +501,8 @@ def electrical_neighbours_egon100():
 
 
 def neighbor_reduction():
-    network = read_network()
+    network_solved = read_network()
+    network_prepared = prepared_network(planning_horizon="2045")
 
     # network.links.drop("pipe_retrofit", axis="columns", inplace=True)
 
@@ -518,165 +521,154 @@ def neighbor_reduction():
         "FR",
         "LU",
     ]
-    foreign_buses = network.buses[
-        (~network.buses.index.str.contains("|".join(wanted_countries)))
-        | (network.buses.index.str.contains("FR6"))
+
+    foreign_buses = network_solved.buses[
+        (~network_solved.buses.index.str.contains("|".join(wanted_countries)))
+        | (network_solved.buses.index.str.contains("FR6"))
     ]
-    network.buses = network.buses.drop(
-        network.buses.loc[foreign_buses.index].index
+    network_solved.buses = network_solved.buses.drop(
+        network_solved.buses.loc[foreign_buses.index].index
     )
+
+    # Add H2 demand of Fischer-Tropsch process to industrial H2 demands
+    industrial_hydrogen = network_prepared.loads.loc[
+        network_prepared.loads.carrier== "H2 for industry"]
+    fischer_tropsch = network_solved.links_t.p0[
+        network_solved.links.loc[
+            network_solved.links.carrier=="Fischer-Tropsch"].index
+        ].mul(network_solved.snapshot_weightings.generators, axis=0).sum()
+    for i, row in industrial_hydrogen.iterrows():
+        network_prepared.loads.loc[i, "p_set"] += fischer_tropsch[
+            fischer_tropsch.index.str.startswith(row.bus[:5])].sum()/8760
 
     # drop foreign lines and links from the 2nd row
 
-    network.lines = network.lines.drop(
-        network.lines[
-            (network.lines["bus0"].isin(network.buses.index) == False)
-            & (network.lines["bus1"].isin(network.buses.index) == False)
+    network_solved.lines = network_solved.lines.drop(
+        network_solved.lines[
+            (network_solved.lines["bus0"].isin(network_solved.buses.index) == False)
+            & (network_solved.lines["bus1"].isin(network_solved.buses.index) == False)
         ].index
     )
 
     # select all lines which have at bus1 the bus which is kept
-    lines_cb_1 = network.lines[
-        (network.lines["bus0"].isin(network.buses.index) == False)
+    lines_cb_1 = network_solved.lines[
+        (network_solved.lines["bus0"].isin(network_solved.buses.index) == False)
     ]
 
     # create a load at bus1 with the line's hourly loading
     for i, k in zip(lines_cb_1.bus1.values, lines_cb_1.index):
-        network.add(
+        
+        # Copy loading of lines into hourly resolution
+        pset = pd.Series(
+            index=network_prepared.snapshots, 
+            data = network_solved.lines_t.p1[k].resample("H").ffill())
+        pset["2011-12-31 22:00:00"] = pset["2011-12-31 21:00:00"]
+        pset["2011-12-31 23:00:00"] = pset["2011-12-31 21:00:00"]
+
+        # Loads are all imported from the prepared network in the end
+        network_prepared.add(
             "Load",
             "slack_fix " + i + " " + k,
             bus=i,
-            p_set=network.lines_t.p1[k],
-        )
-        network.loads.carrier.loc["slack_fix " + i + " " + k] = (
-            lines_cb_1.carrier[k]
+            p_set=pset,
+            carrier = lines_cb_1.loc[k, "carrier"]
         )
 
     # select all lines which have at bus0 the bus which is kept
-    lines_cb_0 = network.lines[
-        (network.lines["bus1"].isin(network.buses.index) == False)
+    lines_cb_0 = network_solved.lines[
+        (network_solved.lines["bus1"].isin(network_solved.buses.index) == False)
     ]
 
     # create a load at bus0 with the line's hourly loading
     for i, k in zip(lines_cb_0.bus0.values, lines_cb_0.index):
-        network.add(
+        # Copy loading of lines into hourly resolution
+        pset = pd.Series(
+            index=network_prepared.snapshots, 
+            data = network_solved.lines_t.p0[k].resample("H").ffill())
+        pset["2011-12-31 22:00:00"] = pset["2011-12-31 21:00:00"]
+        pset["2011-12-31 23:00:00"] = pset["2011-12-31 21:00:00"]
+
+        network_prepared.add(
             "Load",
             "slack_fix " + i + " " + k,
             bus=i,
-            p_set=network.lines_t.p0[k],
+            p_set=pset,
+            carrier = lines_cb_0.loc[k, "carrier"]
         )
-        network.loads.carrier.loc["slack_fix " + i + " " + k] = (
-            lines_cb_0.carrier[k]
-        )
+
 
     # do the same for links
-
-    network.links = network.links.drop(
-        network.links[
-            (network.links["bus0"].isin(network.buses.index) == False)
-            & (network.links["bus1"].isin(network.buses.index) == False)
-        ].index
-    )
+    network_solved.mremove(
+        "Link",
+        network_solved.links[
+            (~network_solved.links.bus0.isin(network_solved.buses.index))
+             | (~network_solved.links.bus1.isin(network_solved.buses.index))].index        
+        )
 
     # select all links which have at bus1 the bus which is kept
-    links_cb_1 = network.links[
-        (network.links["bus0"].isin(network.buses.index) == False)
+    links_cb_1 = network_solved.links[
+        (network_solved.links["bus0"].isin(network_solved.buses.index) == False)
     ]
 
     # create a load at bus1 with the link's hourly loading
     for i, k in zip(links_cb_1.bus1.values, links_cb_1.index):
-        network.add(
+        pset = pd.Series(
+            index=network_prepared.snapshots, 
+            data = network_solved.links_t.p1[k].resample("H").ffill())
+        pset["2011-12-31 22:00:00"] = pset["2011-12-31 21:00:00"]
+        pset["2011-12-31 23:00:00"] = pset["2011-12-31 21:00:00"]
+
+        network_prepared.add(
             "Load",
             "slack_fix_links " + i + " " + k,
             bus=i,
-            p_set=network.links_t.p1[k],
-        )
-        network.loads.carrier.loc["slack_fix_links " + i + " " + k] = (
-            links_cb_1.carrier[k]
+            p_set=pset,
+            carrier = links_cb_1.loc[k, "carrier"]
         )
 
     # select all links which have at bus0 the bus which is kept
-    links_cb_0 = network.links[
-        (network.links["bus1"].isin(network.buses.index) == False)
+    links_cb_0 = network_solved.links[
+        (network_solved.links["bus1"].isin(network_solved.buses.index) == False)
     ]
 
     # create a load at bus0 with the link's hourly loading
     for i, k in zip(links_cb_0.bus0.values, links_cb_0.index):
-        network.add(
+        pset = pd.Series(
+            index=network_prepared.snapshots, 
+            data = network_solved.links_t.p0[k].resample("H").ffill())
+        pset["2011-12-31 22:00:00"] = pset["2011-12-31 21:00:00"]
+        pset["2011-12-31 23:00:00"] = pset["2011-12-31 21:00:00"]
+
+        network_prepared.add(
             "Load",
             "slack_fix_links " + i + " " + k,
             bus=i,
-            p_set=network.links_t.p0[k],
-        )
-        network.loads.carrier.loc["slack_fix_links " + i + " " + k] = (
-            links_cb_0.carrier[k]
+            p_set=pset,
+            carrier = links_cb_0.carrier[k],
         )
 
     # drop remaining foreign components
-
-    network.lines = network.lines.drop(
-        network.lines[
-            (network.lines["bus0"].isin(network.buses.index) == False)
-            | (network.lines["bus1"].isin(network.buses.index) == False)
-        ].index
-    )
-
-    network.links = network.links.drop(
-        network.links[
-            (network.links["bus0"].isin(network.buses.index) == False)
-            | (network.links["bus1"].isin(network.buses.index) == False)
-        ].index
-    )
-
-    network.transformers = network.transformers.drop(
-        network.transformers[
-            (network.transformers["bus0"].isin(network.buses.index) == False)
-            | (network.transformers["bus1"].isin(network.buses.index) == False)
-        ].index
-    )
-    network.generators = network.generators.drop(
-        network.generators[
-            (network.generators["bus"].isin(network.buses.index) == False)
-        ].index
-    )
-
-    network.loads = network.loads.drop(
-        network.loads[
-            (network.loads["bus"].isin(network.buses.index) == False)
-        ].index
-    )
-
-    network.storage_units = network.storage_units.drop(
-        network.storage_units[
-            (network.storage_units["bus"].isin(network.buses.index) == False)
-        ].index
-    )
-
-    components = [
-        "loads",
-        "generators",
-        "lines",
-        "buses",
-        "transformers",
-        "links",
-    ]
-    for g in components:  # loads_t
-        h = g + "_t"
-        nw = getattr(network, h)  # network.loads_t
-        for i in nw.keys():  # network.loads_t.p
-            cols = [
-                j
-                for j in getattr(nw, i).columns
-                if j not in getattr(network, g).index
-            ]
-            for k in cols:
-                del getattr(nw, i)[k]
+    for comp in network_solved.iterate_components():
+        if "bus0" in comp.df.columns:
+            network_solved.mremove(
+                comp.name,
+                comp.df[~comp.df.bus0.isin(network_solved.buses.index)].index
+                )
+            network_solved.mremove(
+                comp.name,
+                comp.df[~comp.df.bus1.isin(network_solved.buses.index)].index
+                )
+        elif "bus" in comp.df.columns:
+            network_solved.mremove(
+                comp.name,
+                comp.df[~comp.df.bus.isin(network_solved.buses.index)].index
+                )
 
     # writing components of neighboring countries to etrago tables
 
     # Set country tag for all buses
-    network.buses.country = network.buses.index.str[:2]
-    neighbors = network.buses[network.buses.country != "DE"]
+    network_solved.buses.country = network_solved.buses.index.str[:2]
+    neighbors = network_solved.buses[network_solved.buses.country != "DE"]
 
     neighbors["new_index"] = (
         db.next_etrago_id("bus") + neighbors.reset_index().index
@@ -704,12 +696,12 @@ def neighbor_reduction():
     # lines, the foreign crossborder lines
     # (without crossborder lines to Germany!)
 
-    neighbor_lines = network.lines[
-        network.lines.bus0.isin(neighbors.index)
-        & network.lines.bus1.isin(neighbors.index)
+    neighbor_lines = network_solved.lines[
+        network_solved.lines.bus0.isin(neighbors.index)
+        & network_solved.lines.bus1.isin(neighbors.index)
     ]
-    if not network.lines_t["s_max_pu"].empty:
-        neighbor_lines_t = network.lines_t["s_max_pu"][neighbor_lines.index]
+    if not network_solved.lines_t["s_max_pu"].empty:
+        neighbor_lines_t = network_prepared.lines_t["s_max_pu"][neighbor_lines.index]
 
     neighbor_lines.reset_index(inplace=True)
     neighbor_lines.bus0 = (
@@ -720,15 +712,15 @@ def neighbor_reduction():
     )
     neighbor_lines.index += db.next_etrago_id("line")
 
-    if not network.lines_t["s_max_pu"].empty:
+    if not network_solved.lines_t["s_max_pu"].empty:
         for i in neighbor_lines_t.columns:
             new_index = neighbor_lines[neighbor_lines["name"] == i].index
             neighbor_lines_t.rename(columns={i: new_index[0]}, inplace=True)
 
     # links
-    neighbor_links = network.links[
-        network.links.bus0.isin(neighbors.index)
-        & network.links.bus1.isin(neighbors.index)
+    neighbor_links = network_solved.links[
+        network_solved.links.bus0.isin(neighbors.index)
+        & network_solved.links.bus1.isin(neighbors.index)
     ]
 
     neighbor_links.reset_index(inplace=True)
@@ -741,12 +733,12 @@ def neighbor_reduction():
     neighbor_links.index += db.next_etrago_id("link")
 
     # generators
-    neighbor_gens = network.generators[
-        network.generators.bus.isin(neighbors.index)
+    neighbor_gens = network_solved.generators[
+        network_solved.generators.bus.isin(neighbors.index)
     ]
-    neighbor_gens_t = network.generators_t["p_max_pu"][
+    neighbor_gens_t = network_prepared.generators_t["p_max_pu"][
         neighbor_gens[
-            neighbor_gens.index.isin(network.generators_t["p_max_pu"].columns)
+            neighbor_gens.index.isin(network_prepared.generators_t["p_max_pu"].columns)
         ].index
     ]
 
@@ -761,12 +753,12 @@ def neighbor_reduction():
         neighbor_gens_t.rename(columns={i: new_index[0]}, inplace=True)
 
     # loads
-
-    neighbor_loads = network.loads[network.loads.bus.isin(neighbors.index)]
+    # imported from prenetwork in 1h-resolution
+    neighbor_loads = network_prepared.loads[network_prepared.loads.bus.isin(neighbors.index)]
     neighbor_loads_t_index = neighbor_loads.index[
-        neighbor_loads.index.isin(network.loads_t.p_set.columns)
+        neighbor_loads.index.isin(network_prepared.loads_t.p_set.columns)
     ]
-    neighbor_loads_t = network.loads_t["p_set"][neighbor_loads_t_index]
+    neighbor_loads_t = network_prepared.loads_t["p_set"][neighbor_loads_t_index]
 
     neighbor_loads.reset_index(inplace=True)
     neighbor_loads.bus = (
@@ -779,11 +771,11 @@ def neighbor_reduction():
         neighbor_loads_t.rename(columns={i: new_index[0]}, inplace=True)
 
     # stores
-    neighbor_stores = network.stores[network.stores.bus.isin(neighbors.index)]
+    neighbor_stores = network_solved.stores[network_solved.stores.bus.isin(neighbors.index)]
     neighbor_stores_t_index = neighbor_stores.index[
-        neighbor_stores.index.isin(network.stores_t.e_min_pu.columns)
+        neighbor_stores.index.isin(network_solved.stores_t.e_min_pu.columns)
     ]
-    neighbor_stores_t = network.stores_t["e_min_pu"][neighbor_stores_t_index]
+    neighbor_stores_t = network_prepared.stores_t["e_min_pu"][neighbor_stores_t_index]
 
     neighbor_stores.reset_index(inplace=True)
     neighbor_stores.bus = (
@@ -796,13 +788,13 @@ def neighbor_reduction():
         neighbor_stores_t.rename(columns={i: new_index[0]}, inplace=True)
 
     # storage_units
-    neighbor_storage = network.storage_units[
-        network.storage_units.bus.isin(neighbors.index)
+    neighbor_storage = network_solved.storage_units[
+        network_solved.storage_units.bus.isin(neighbors.index)
     ]
     neighbor_storage_t_index = neighbor_storage.index[
-        neighbor_storage.index.isin(network.storage_units_t.inflow.columns)
+        neighbor_storage.index.isin(network_solved.storage_units_t.inflow.columns)
     ]
-    neighbor_storage_t = network.storage_units_t["inflow"][
+    neighbor_storage_t = network_prepared.storage_units_t["inflow"][
         neighbor_storage_t_index
     ]
 
@@ -1344,7 +1336,7 @@ def neighbor_reduction():
     )
 
     # writing neighboring lines_t s_max_pu to etrago tables
-    if not network.lines_t["s_max_pu"].empty:
+    if not network_solved.lines_t["s_max_pu"].empty:
         neighbor_lines_t_etrago = pd.DataFrame(
             columns=["scn_name", "s_max_pu"], index=neighbor_lines_t.columns
         )
@@ -1365,10 +1357,10 @@ def neighbor_reduction():
         )
 
 
-def prepared_network():
+def prepared_network(planning_horizon=3):
     if egon.data.config.settings()["egon-data"]["--run-pypsa-eur"]:
         with open(
-            __path__[0] + "/datasets/pypsaeur/config.yaml", "r"
+            __path__[0] + "/datasets/pypsaeur/config_prepare.yaml", "r"
         ) as stream:
             data_config = yaml.safe_load(stream)
 
@@ -1383,7 +1375,7 @@ def prepared_network():
             f"_l{data_config['scenario']['ll'][0]}"
             f"_{data_config['scenario']['opts'][0]}"
             f"_{data_config['scenario']['sector_opts'][0]}"
-            f"_{data_config['scenario']['planning_horizons'][3]}.nc"
+            f"_{data_config['scenario']['planning_horizons'][planning_horizon]}.nc"
         )
 
     else:
@@ -1391,10 +1383,11 @@ def prepared_network():
             Path(".")
             / "data_bundle_powerd_data"
             / "pypsa_eur"
-            / "2024-08-02-egondata-integration"
+            / "21122024_3h_clean_run"
             / "results"
-            / "postnetworks"
-            / "base_s_39_lv2__cb40ex0-T-H-I-B-solar+p3-dist1_2045.nc"
+            / "prenetworks"
+            / "prenetwork_post-manipulate_pre-solve"
+            / "base_s_39_lc1.25__cb40ex0-T-H-I-B-solar+p3-dist1_2035.nc"
         )
 
     return pypsa.Network(target_file.absolute().as_posix())
@@ -1651,6 +1644,32 @@ def drop_biomass(network):
         network.mremove(c.name, c.df[c.df.index.str.contains(carrier)].index)
     return network
 
+def postprocessing_biomass_2045():
+
+    network = read_network()
+    network = drop_biomass(network)
+
+
+    with open(
+        __path__[0] + "/datasets/pypsaeur/config_solve.yaml", "r"
+    ) as stream:
+        data_config = yaml.safe_load(stream)
+
+    target_file = (
+        Path(".")
+        / "run-pypsa-eur"
+        / "pypsa-eur"
+        / "results"
+        / data_config["run"]["name"]
+        / "postnetworks"
+        / f"base_s_{data_config['scenario']['clusters'][0]}"
+        f"_l{data_config['scenario']['ll'][0]}"
+        f"_{data_config['scenario']['opts'][0]}"
+        f"_{data_config['scenario']['sector_opts'][0]}"
+        f"_{data_config['scenario']['planning_horizons'][3]}.nc"
+    )
+
+    network.export_to_netcdf(target_file)
 
 def drop_urban_decentral_heat(network):
     carrier = "urban decentral heat"
@@ -1761,6 +1780,19 @@ def drop_fossil_gas(network):
     return network
 
 
+def drop_conventional_power_plants(network):
+
+    # Drop lignite and coal power plants in Germany
+    network.mremove(
+        "Link",
+        network.links[
+            (network.links.carrier.isin(
+                ["coal", "lignite"]))
+            & (network.links.bus1.str.startswith("DE"))].index,
+    )
+
+    return network
+
 def rual_heat_technologies(network):
     network.mremove(
         "Link",
@@ -1778,6 +1810,34 @@ def rual_heat_technologies(network):
 
     return network
 
+def coal_exit_D():
+
+    df = pd.read_csv(
+            "run-pypsa-eur/pypsa-eur/resources/powerplants_s_39.csv", index_col=0)
+    df_de_coal = df[(df.Country == 'DE')&((df.Fueltype == 'Lignite')|(df.Fueltype == 'Hard Coal'))]
+    df_de_coal.loc[df_de_coal.DateOut.values>=2035, 'DateOut'] = 2034
+    df.loc[df_de_coal.index]=df_de_coal
+
+    df.to_csv("run-pypsa-eur/pypsa-eur/resources/powerplants_s_39.csv")
+
+def offwind_potential_D(network, capacity_per_sqkm=4):
+
+    offwind_ac_factor = 1942
+    offwind_dc_factor = 10768
+    offwind_float_factor = 134
+
+    # set p_nom_max for German offshore with respect to capacity_per_sqkm = 4 instead of default 2 (which is applied for the rest of Europe)
+    network.generators.loc[(network.generators.bus == 'DE0 0')&(network.generators.carrier =='offwind-ac'), "p_nom_max"] = offwind_ac_factor*capacity_per_sqkm
+    network.generators.loc[(network.generators.bus == 'DE0 0')&(network.generators.carrier =='offwind-dc'), "p_nom_max"] = offwind_dc_factor*capacity_per_sqkm
+    network.generators.loc[(network.generators.bus == 'DE0 0')&(network.generators.carrier =='offwind-float'), "p_nom_max"] = offwind_float_factor*capacity_per_sqkm
+
+    return network
+
+def additional_grid_expansion_2045(network):
+    
+    network.global_constraints.loc["lc_limit", 'constant'] *= 1.05
+    
+    return network
 
 def execute():
     if egon.data.config.settings()["egon-data"]["--run-pypsa-eur"]:
@@ -1789,6 +1849,8 @@ def execute():
         if data_config["foresight"] == "myopic":
 
             print("Adjusting scenarios on the myopic pathway...")
+
+            coal_exit_D()
 
             networks = pd.Series()
 
@@ -1821,6 +1883,7 @@ def execute():
                     geothermal_district_heating,
                     h2_overground_stores,
                     drop_new_gas_pipelines,
+                    offwind_potential_D,
                 ]
 
             scn_path.loc["2045", "functions"] = [
@@ -1831,6 +1894,9 @@ def execute():
                 h2_overground_stores,
                 drop_new_gas_pipelines,
                 drop_fossil_gas,
+                offwind_potential_D,
+                additional_grid_expansion_2045,
+                #drop_conventional_power_plants,
                 # rual_heat_technologies, #To be defined
             ]
 
@@ -1851,9 +1917,8 @@ def execute():
                     network = manipulator(network)
                 network.export_to_netcdf(path)
 
-        elif (data_config["foresight"] == "overnight") & (
-            int(data_config["scenario"]["planning_horizons"][0]) > 2040
-        ):
+        elif ((data_config["foresight"] == "overnight")
+              & (int(data_config['scenario']['planning_horizons'][0]) > 2040)):
 
             print("Adjusting overnight long-term scenario...")
 
