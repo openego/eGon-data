@@ -564,12 +564,15 @@ def cascade_per_technology(
                     FROM {sources['scenario_capacities']['schema']}.
                     {sources['scenario_capacities']['table']} a
                     WHERE scenario_name = '{scenario}'
-                    AND carrier = 'residential_rural_heat_pump'
+                    AND carrier IN ('rural_air_heat_pump', 'rural_ground_heat_pump')
                     """
             )
 
             if not target.capacity[0]:
                 target.capacity[0] = 0
+
+            if config.settings()["egon-data"]["--dataset-boundary"] == "Schleswig-Holstein":
+                target.capacity[0] /= 16
 
             heat_per_mv["share"] = (
                 heat_per_mv.remaining_demand
@@ -584,13 +587,41 @@ def cascade_per_technology(
             {"bus_id": "mv_grid_id", "share": "capacity"}, axis=1, inplace=True
         )
 
-    elif tech.index == "gas_boiler":
+    elif tech.index in ("gas_boiler", "resistive_heater", "solar_thermal", "biomass_boiler"):
+        # Select target value for Germany
+        target = db.select_dataframe(
+            f"""
+                SELECT SUM(capacity) AS capacity
+                FROM {sources['scenario_capacities']['schema']}.
+                {sources['scenario_capacities']['table']} a
+                WHERE scenario_name = '{scenario}'
+                AND carrier = 'rural_{tech.index[0]}'
+                """
+        )
+
+        if config.settings()["egon-data"]["--dataset-boundary"] == "Schleswig-Holstein":
+            target.capacity[0] /= 16
+
+        heat_per_mv["share"] = (
+            heat_per_mv.remaining_demand
+            / heat_per_mv.remaining_demand.sum()
+        )
+
+        append_df = (
+            heat_per_mv["share"].mul(target.capacity[0]).reset_index()
+        )
+
+        append_df.rename(
+            {"bus_id": "mv_grid_id", "share": "capacity"}, axis=1, inplace=True
+        )
+
+    else:
         append_df = pd.DataFrame(
             data={
                 "capacity": heat_per_mv.remaining_demand.div(
                     tech.estimated_flh.values[0]
                 ),
-                "carrier": "residential_rural_gas_boiler",
+                "carrier": f"residential_rural_{tech.index}",
                 "mv_grid_id": heat_per_mv.index,
                 "scenario": scenario,
             }
@@ -678,9 +709,9 @@ def cascade_heat_supply_indiv(scenario, distribution_level, plotting=True):
         )
     elif scenario == "eGon100RE":
         technologies = pd.DataFrame(
-            index=["heat_pump"],
+            index=["heat_pump", "resistive_heater", "solar_thermal", "biomass_boiler", "gas_boiler", "oil_boiler"],
             columns=["estimated_flh", "priority"],
-            data={"estimated_flh": [4000], "priority": [1]},
+            data={"estimated_flh": [4000, 2000, 2000, 8000, 8000, 8000], "priority": [6,5,4,3,2,1]},
         )
     elif scenario == "status2019":
         technologies = pd.DataFrame(
