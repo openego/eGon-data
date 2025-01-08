@@ -153,6 +153,10 @@ def insert_power_to_h2_to_power():
     targets = data_config["PtH2_waste_heat_O2"]["targets"]
     
     for SCENARIO_NAME in scenarios:
+        
+        if SCENARIO_NAME not in ["eGon100RE", "eGon2035"]:
+            continue
+        
         scn_params_gas = get_sector_parameters("gas", SCENARIO_NAME)
         scn_params_elec = get_sector_parameters("electricity", SCENARIO_NAME)
         
@@ -160,7 +164,10 @@ def insert_power_to_h2_to_power():
         AC_COST_CABLE = scn_params_elec["capital_cost"]["ac_hv_cable"]   #[EUR/MW/km/YEAR]
         ELZ_CAPEX_SYSTEM = scn_params_gas["capital_cost"]["power_to_H2_system"]   # [EUR/MW/YEAR]
         ELZ_CAPEX_STACK = scn_params_gas["capital_cost"]["power_to_H2_stack"]  # [EUR/MW/YEAR]
-        ELZ_OPEX = scn_params_gas["capital_cost"]["power_to_H2_OPEX"]  # [EUR/MW/YEAR]
+        if SCENARIO_NAME == 'eGon2035':
+            ELZ_OPEX = scn_params_gas["capital_cost"]["power_to_H2_OPEX"]# [EUR/MW/YEAR]
+        else:
+            ELZ_OPEX = 0  # [EUR/MW/YEAR] , for eGon100RE OPEX are already included in SYSTEM and STACK costs
         H2_COST_PIPELINE = scn_params_gas["capital_cost"]["H2_pipeline"]  #[EUR/MW/km/YEAR] 
         ELZ_EFF = scn_params_gas["efficiency"]["power_to_H2"] 
         
@@ -196,11 +203,11 @@ def insert_power_to_h2_to_power():
                         "v_nom": "110",
                         "type": row["KA_ID"],
                         "carrier": "O2",
-                        "x": row["longitude Kläranlage_rw"],
-                        "y": row["latitdue Kläranlage_hw"],
+                        "x": row["Koord_Kläranlage_rw"],
+                        "y": row["Koord_Kläranlage_hw"],
                         "geom": dumps(
                             Point(
-                                row["longitude Kläranlage_rw"], row["latitdue Kläranlage_hw"]
+                                row["Koord_Kläranlage_rw"], row["Koord_Kläranlage_hw"]
                             ),
                             srid=DATA_CRS,
                         ),
@@ -341,8 +348,7 @@ def insert_power_to_h2_to_power():
                         """
             dfs[HEAT_LOAD] = pd.read_sql(queries[HEAT_LOAD], engine)
             load_ids=tuple(dfs[HEAT_LOAD]['load_id'])
-            print(load_ids)
-            print(dfs[HEAT_LOAD])
+
             queries[HEAT_TIMESERIES] = f"""
                 SELECT load_id, p_set
                 FROM {sources["load_timeseries"]["schema"]}.{sources["load_timeseries"]["table"]}
@@ -592,9 +598,8 @@ def insert_power_to_h2_to_power():
                 raise Exception("multiple spec for a ka_id")
             found_spec = found_spec.iloc[0]
             return {
-                "pe": found_spec["WWTP_PE"],
-                "demand_o2": found_spec["O2 Demand 2035 [tonne/year]"],
-                "demand_o3": found_spec["O3 Demand 2035 [tonne/year]"],
+                "pe": found_spec["Nominalbelastung 2020 [EW]"],
+                "demand_o2": found_spec["Sauerstoff 2035 gesamt [t/a]"],
             }
 
 
@@ -776,9 +781,7 @@ def insert_power_to_h2_to_power():
                 aeration_ec = wwtp_ec * FACTOR_AERATION_EC  # [MWh/year]
                 o2_ec = aeration_ec * FACTOR_O2_EC  # [MWh/year]
                 o2_ec_h = o2_ec / 8760  # [MWh/hour]
-                total_o2_demand = (
-                    spec["demand_o3"] + spec["demand_o2"]
-                ) * 1000  # kgO2/year pure O2 tonne* 1000
+                total_o2_demand =  spec["demand_o2"] * 1000  # kgO2/year pure O2 tonne* 1000
                 _, o2_pipeline_diameter = gas_pipeline_size(
                     total_o2_demand,
                     distance,
