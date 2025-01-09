@@ -697,13 +697,13 @@ def get_building_peak_loads():
 
 def map_houseprofiles_to_buildings():
     """
-    Cencus hh demand profiles are assigned to buildings via osm ids. If no OSM
-    ids available, synthetic buildings are generated. A list of the generated
-    buildings and supplementary data as well as the mapping table is stored
+    Census hh demand profiles are assigned to residential buildings via osm ids.
+    If no OSM ids are available, synthetic buildings are generated. A list of the
+    generated buildings and supplementary data as well as the mapping table is stored
     in the db.
 
-    Tables:
-    ----------
+    Tables
+    ------
     synthetic_buildings:
         schema: openstreetmap
         tablename: osm_buildings_synthetic
@@ -715,26 +715,77 @@ def map_houseprofiles_to_buildings():
     Notes
     -----
     """
-    #
-    egon_map_zensus_buildings_residential = Table(
-        "egon_map_zensus_buildings_residential",
+    # ========== Get census cells ==========
+    egon_census_cells = Table(
+        "egon_destatis_zensus_apartment_building_population_per_ha",
         Base.metadata,
-        schema="boundaries",
+        schema="society",
     )
-    # get table metadata from db by name and schema
-    inspect(engine).reflecttable(egon_map_zensus_buildings_residential, None)
+    inspect(engine).reflecttable(egon_census_cells, None)
 
     with db.session_scope() as session:
-        cells_query = session.query(egon_map_zensus_buildings_residential)
-    egon_map_zensus_buildings_residential = pd.read_sql(
-        cells_query.statement, cells_query.session.bind, index_col=None
-    )
+        cells_query = (
+            session.query(
+                egon_census_cells.c.zensus_population_id,
+                egon_census_cells.c.population,
+                egon_census_cells.c.geom,
+            )
+            .order_by(egon_census_cells.c.zensus_population_id)
+        )
+        gdf_egon_census_cells = gpd.read_postgis(
+            cells_query.statement, cells_query.session.bind, geom_col="geom"
+        )
 
+    # ========== Get residential buildings ==========
+    egon_osm_buildings_residential = Table(
+        "osm_buildings_residential",
+        Base.metadata,
+        schema="openstreetmap",
+    )
+    inspect(engine).reflecttable(egon_osm_buildings_residential, None)
+
+    with db.session_scope() as session:
+        cells_query = (
+            session.query(
+                egon_osm_buildings_residential.c.id.label("building_id"),
+                egon_osm_buildings_residential.c.geom_building,
+            )
+            .order_by(egon_osm_buildings_residential.c.id)
+        )
+        gdf_egon_osm_buildings = gpd.read_postgis(
+            cells_query.statement, cells_query.session.bind, geom_col="geom_building"
+        )
+
+    # ========== Clip buildings with census cells ==========
+
+    # Clip to create new build parts as buildings
+    gdf_egon_osm_buildings_census_cells = gdf_egon_census_cells.overlay(gdf_egon_osm_buildings, how="intersection")
+    # gdf_egon_osm_buildings_census_cells["population"] = gdf_egon_osm_buildings_census_cells.population.fillna(0)
+    gdf_egon_osm_buildings_census_cells["geom_point"] = gdf_egon_osm_buildings_census_cells.centroid
+
+    # Add column with unique building ids using suffixes (building parts split by clipping)
+    gdf_egon_osm_buildings_census_cells["building_id_temp"] = gdf_egon_osm_buildings_census_cells["building_id"].astype(
+        str)
+    g = gdf_egon_osm_buildings_census_cells.groupby('building_id_temp').cumcount().add(1).astype(str)
+    gdf_egon_osm_buildings_census_cells['building_id_temp'] += ('_' + g)
+
+    # Check
+    try:
+        assert len(gdf_egon_osm_buildings_census_cells.building_id_temp.unique()) == len(
+            gdf_egon_osm_buildings_census_cells)
+    except AssertionError:
+        print("The length of split buildings do not match with original count.")
+
+    egon_map_zensus_buildings_residential = gdf_egon_osm_buildings_census_cells[
+        ["zensus_population_id", "building_id_temp"]].rename(
+        columns={"zensus_population_id": "cell_id", "building_id_temp": "id"})
+
+    # Get household profile to census cells allocations
     with db.session_scope() as session:
         cells_query = session.query(HouseholdElectricityProfilesInCensusCells)
     egon_hh_profile_in_zensus_cell = pd.read_sql(
         cells_query.statement, cells_query.session.bind, index_col=None
-    )  # index_col="cell_id")
+    )
 
     # Match OSM and zensus data to define missing buildings
     missing_buildings = match_osm_and_zensus_data(
@@ -762,12 +813,15 @@ def map_houseprofiles_to_buildings():
         egon_hh_profile_in_zensus_cell,
     )
 
+    # remove suffixes from buildings split into parts before to merge them back together
+    mapping_profiles_to_buildings["building_id"] = mapping_profiles_to_buildings.building_id.astype(str).apply(
+        lambda s: s.split("_")[0] if "_" in s else s)
+    mapping_profiles_to_buildings["building_id"] = mapping_profiles_to_buildings["building_id"].astype(int)
+
     # reduce list to only used synthetic buildings
     synthetic_buildings = reduce_synthetic_buildings(
         mapping_profiles_to_buildings, synthetic_buildings
     )
-    # TODO remove unused code
-    # synthetic_buildings = synthetic_buildings.drop(columns=["grid_id"])
     synthetic_buildings["n_amenities_inside"] = 0
 
     OsmBuildingsSynthetic.__table__.drop(bind=engine, checkfirst=True)
