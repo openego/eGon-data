@@ -19,6 +19,7 @@ from egon.data.datasets.electrical_neighbours import (
 from egon.data.datasets.gas_neighbours.gas_abroad import (
     insert_gas_grid_capacities,
 )
+from egon.data.datasets.pypsaeur import prepared_network
 from egon.data.datasets.scenario_parameters import get_sector_parameters
 
 countries = [
@@ -638,17 +639,7 @@ def import_ch4_demandTS():
 
     """
 
-    cwd = Path(".")
-    target_file = (
-        cwd
-        / "data_bundle_egon_data"
-        / "pypsa_eur_sec"
-        / "2022-07-26-egondata-integration"
-        / "postnetworks"
-        / "elec_s_37_lv2.0__Co2L0-1H-T-H-B-I-dist1_2050.nc"
-    )
-
-    network = pypsa.Network(str(target_file))
+    network = prepared_network()
 
     # Set country tag for all buses
     network.buses.country = network.buses.index.str[:2]
