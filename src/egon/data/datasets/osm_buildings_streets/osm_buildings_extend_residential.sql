@@ -5,7 +5,8 @@
 --------------------------------------------------------------------------------
 -- Extend residential buildings by finding census cells with population but   --
 -- no residential buildings before in osm_buildings_filter_residential.sql .  --
--- Mark commercial and retail buildings as residential in those cells.        --
+-- Mark commercial, retail, office, hotel buildings as residential in those   --
+-- cells.                                                                     --
 --------------------------------------------------------------------------------
 
 INSERT INTO openstreetmap.osm_buildings_residential
@@ -21,7 +22,7 @@ INSERT INTO openstreetmap.osm_buildings_residential
 			FROM openstreetmap.osm_buildings_filtered bld
 			LEFT JOIN society.egon_destatis_zensus_apartment_building_population_per_ha zensus
 			ON ST_Within(bld.geom_point, zensus.geom)
-			WHERE building in ('commercial', 'retail')
+			WHERE building in ('commercial', 'retail', 'office', 'hotel')
 			AND zensus.zensus_population_id in (
 				-- census cell ids which have population but no res. buildings
 				SELECT zensus.zensus_population_id
