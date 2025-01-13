@@ -772,7 +772,7 @@ def insert_power_to_h2_to_power():
                 }
                 power_to_Heat = pd.concat([power_to_Heat, pd.DataFrame([power_to_heat_entry])], ignore_index=True)
                 
-                
+              
             ####power_to_O2   
             for idx, row in links_O2.iterrows():
                 distance = row['distance_O2']/1000 #km
@@ -892,7 +892,7 @@ def insert_power_to_h2_to_power():
                 modified_profile = base_load_profile * o2_load_el
                 
                 timeseries_list.append({
-                    'scn_name': 'eGon2035',
+                    'scn_name': SCENARIO_NAME,
                     'load_id': load_id,
                     'temp_id': 1,
                     'p_set': modified_profile,
