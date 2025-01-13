@@ -139,9 +139,12 @@ def match_osm_and_zensus_data(
     OSM building data and hh demand profiles based on census data is compared.
     Census cells with only profiles but no osm-ids are identified to generate
     synthetic buildings. Census building count is used, if available, to define
-    number of missing buildings. Otherwise, the overall mean profile/building
-    rate is used to derive the number of buildings from the number of already
-    generated demand profiles.
+    number of missing buildings. Otherwise, we use a twofold approach for the
+    rate: first, the rate is calculated using adjacent cells (function
+    `find_adjacent_cells()`), a distance of 3 cells in each direction is used
+    by default (resulting in a 7x7 lookup matrix). As fallback, the overall
+    median profile/building rate is used to derive the number of buildings
+    from the number of already generated demand profiles.
 
     Parameters
     ----------
@@ -156,6 +159,40 @@ def match_osm_and_zensus_data(
     pd.DataFrame
         Table with cell_ids and number of missing buildings
     """
+
+    def find_adjacent_cells(row, adj_cell_radius):
+        """
+        Find adjacent cells for cell by iterating over census grid ids
+        (100mN...E...).
+
+        Parameters
+        ----------
+        row : Dataframe row
+            Dataframe row
+        adj_cell_radius : int
+            distance of cells in each direction to find cells,
+            e.g. adj_cell_radius=3 -> 7x7 cell matrix
+
+        Returns
+        -------
+        tuples of int
+            N coordinates, E coordinates in format
+            [(N_cell_1, E_cell_1), ..., (N_cell_n, E_cell_n)]
+        """
+        return [
+            f"100mN{_[0]}E{_[1]}"
+            for _ in np.array(
+                np.meshgrid(
+                    np.arange(
+                        row.N - adj_cell_radius, row.N + adj_cell_radius + 1
+                    ),
+                    np.arange(
+                        row.E - adj_cell_radius, row.E + adj_cell_radius + 1
+                    ),
+                )
+            ).T.reshape(-1, 2)
+        ]
+
     # count number of profiles for each cell
     profiles_per_cell = egon_hh_profile_in_zensus_cell.cell_profile_ids.apply(
         len
@@ -249,6 +286,64 @@ def match_osm_and_zensus_data(
     missing_buildings["building_count"] = missing_buildings[
         "building_count"
     ].fillna(value=building_count_fillna)
+
+    # ========== START Update profile/building rate in cells w/o bld using adjacent cells ==========
+    missing_buildings_temp = (
+        egon_hh_profile_in_zensus_cell[["cell_id", "grid_id"]]
+        .set_index("cell_id")
+        .loc[missing_buildings.index.unique()]
+    )
+
+    # Extract coordinates
+    missing_buildings_temp = pd.concat(
+        [
+            missing_buildings_temp,
+            missing_buildings_temp.grid_id.str.extract(r"100mN(\d+)E(\d+)")
+            .astype(int)
+            .rename(columns={0: "N", 1: "E"}),
+        ],
+        axis=1,
+    )
+
+    # Find adjacent cells for cell
+    missing_buildings_temp["cell_adj"] = missing_buildings_temp.apply(
+        find_adjacent_cells, adj_cell_radius=3, axis=1
+    )
+    missing_buildings_temp = (
+        missing_buildings_temp.explode("cell_adj")
+        .drop(columns=["grid_id", "N", "E"])
+        .reset_index()
+    )
+
+    # Create mapping table cell -> adjacent cells
+    missing_buildings_temp = (
+        missing_buildings_temp.set_index("cell_adj")
+        .join(
+            egon_hh_profile_in_zensus_cell.set_index("grid_id").cell_id,
+            rsuffix="_adj",
+        )
+        .dropna()
+        .set_index("cell_id_adj")
+    )
+
+    # Calculate profile/building rate for those cells
+    profile_building_rate.name = "profile_building_rate"
+    missing_buildings_temp = missing_buildings_temp.join(
+        number_of_buildings_profiles_per_cell[["cell_id"]]
+        .join(profile_building_rate)
+        .set_index("cell_id")
+    )
+    missing_buildings_temp = (
+        missing_buildings_temp.groupby("cell_id").median().dropna()
+    )
+
+    # Update mising buildings
+    missing_buildings["building_count"] = (
+        missing_buildings.cell_profile_ids.div(
+            missing_buildings_temp.profile_building_rate
+        ).fillna(missing_buildings.building_count)
+    )
+    # ========== END Update profile/building rate in cells w/o bld using adjacent cells ==========
 
     # ceil to have at least one building each cell and make type int
     missing_buildings = missing_buildings.apply(np.ceil).astype(int)
@@ -996,7 +1091,8 @@ class setup(Dataset):
     there is enough households by the census data. If there are more
     profiles than buildings, all additional profiles are randomly assigned.
     Therefore, multiple profiles can be assigned to one building, making it a
-    multi-household building.
+    multi-household building. If there are no OSM buildings available,
+    synthetic ones are created (see below).
 
     **What are central assumptions during the data processing?**
 
@@ -1010,10 +1106,17 @@ class setup(Dataset):
     **Drawbacks and limitations of the data**
 
     * Missing OSM buildings in cells without census building count are
-      derived by an average rate of households/buildings applied to the
-      number of households. As only whole houses can exist, the substitute
-      is ceiled to the next higher integer. Ceiling is applied to avoid
-      rounding to amount of 0 buildings.
+      derived by an average (median) rate of households/buildings applied
+      to the number of households. We use a twofold approach for the rate:
+      first, the rate is calculated using adjacent cells (function
+      `find_adjacent_cells()`), a distance of 3 cells in each direction is
+      used by default (resulting in a 7x7 lookup matrix). For the remaining
+      cells, i.e. cells without any rate in the adjacent cells, the global
+      median rate is used.
+
+      As only whole houses can exist, the substitute is ceiled to the next
+      higher integer. Ceiling is applied to avoid rounding to amount of 0
+      buildings.
 
     * As this datasets is a cascade after profile assignement at census
       cells also check drawbacks and limitations in hh_profiles.py.
