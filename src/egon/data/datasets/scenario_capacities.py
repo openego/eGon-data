@@ -740,12 +740,12 @@ def eGon100_capacities():
 
     # Aggregate offshore wind
     df.loc["wind_offshore"] = df[df.index.str.startswith("offwind")].sum(numeric_only=True)
-    df.loc["wind_offshore", "component"] = "generator"
+    df.loc["wind_offshore", "component"] = "generators"
     df = df.drop(df.index[df.index.str.startswith("offwind")])
 
     # Aggregate OCGT and CCGT
     df.loc["gas"] = df[df.index.str.endswith("CGT")].sum(numeric_only=True)
-    df.loc["gas", "component"] = "link"
+    df.loc["gas", "component"] = "links"
     df = df.drop(df.index[df.index.str.endswith("CGT")])
 
     # Aggregate hydro and pumped_hydro
@@ -755,7 +755,7 @@ def eGon100_capacities():
 
     # Aggregate solar and solar-hsat
     df.loc["solar"] = df.loc["solar"] + df.loc["solar-hsat"]
-    df.loc["solar", "component"] = "generator"
+    df.loc["solar", "component"] = "generators"
     df = df.drop(["solar-hsat"])
 
     # Aggregate technologies with and without carbon_capture (CC)
@@ -784,6 +784,12 @@ def eGon100_capacities():
 
         # Drop urban decentral technology
         df = df.drop(merge_carrier)
+
+    # Aggregate rural air and rural ground heat pump
+    df.loc["rural_heat_pump"] = df.loc[
+        "rural_air_heat_pump"] + df.loc["rural_ground_heat_pump"]
+    df.loc["rural_heat_pump", "component"] = "links"
+    df = df.drop(["rural_air_heat_pump", "rural_ground_heat_pump"])
 
     # Rename carriers
     df.rename(
@@ -852,7 +858,7 @@ class ScenarioCapacities(Dataset):
     def __init__(self, dependencies):
         super().__init__(
             name="ScenarioCapacities",
-            version="0.0.15",
+            version="0.0.16",
             dependencies=dependencies,
             tasks=tasks,
         )
