@@ -784,6 +784,12 @@ def eGon100_capacities():
         # Drop urban decentral technology
         df = df.drop(merge_carrier)
 
+    # Aggregate rural air and rural ground heat pump
+    df.loc["rural_heat_pump"] = df.loc[
+        "rural_air_heat_pump"] + df.loc["rural_ground_heat_pump"]
+    df.loc["rural_heat_pump", "component"] = "links"
+    df = df.drop(["rural_air_heat_pump", "rural_ground_heat_pump"])
+
     # Rename carriers
     df.rename(
         {
