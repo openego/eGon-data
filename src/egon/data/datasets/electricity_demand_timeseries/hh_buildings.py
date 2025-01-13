@@ -50,6 +50,45 @@ class HouseholdElectricityProfilesOfBuildings(Base):
     profile_id = Column(String, index=True)
 
 
+class HouseholdElectricityProfilesOfBuildingsStats(Base):
+    """
+    Class definition of table `demand.egon_household_electricity_profile_of_buildings_stats`.
+    Contains number of households per building and type from table
+    `demand.egon_household_electricity_profile_of_buildings`
+
+    Columns
+    -------
+    building_id: Building id as used in tables `openstreetmap.osm_buildings_*`, index col
+    households_total: total count of households
+    SR: count of household type SR single retiree
+    SO: count of household type SA single adults
+    PR: count of household type PR pair retiree
+    PO: count of household type PA pair adults
+    SK: count of household type SK single n children
+    P1: count of household type P1 pair 1 child
+    P2: count of household type P2 pair 2 children
+    P3: count of household type P3 pair 3 children
+    OR: count of household type OR multi retiree n children
+    OO: count of household type OO multi adults n children
+    """
+
+    __tablename__ = "egon_household_electricity_profile_of_buildings_stats"
+    __table_args__ = {"schema": "demand"}
+
+    building_id = Column(Integer, primary_key=True)
+    households_total = Column(Integer, nullable=True)
+    SR = Column(Integer, nullable=True)
+    SO = Column(Integer, nullable=True)
+    PR = Column(Integer, nullable=True)
+    PO = Column(Integer, nullable=True)
+    SK = Column(Integer, nullable=True)
+    P1 = Column(Integer, nullable=True)
+    P2 = Column(Integer, nullable=True)
+    P3 = Column(Integer, nullable=True)
+    OR = Column(Integer, nullable=True)
+    OO = Column(Integer, nullable=True)
+
+
 class OsmBuildingsSynthetic(Base):
     """
     Class definition of table demand.osm_buildings_synthetic.
@@ -437,9 +476,9 @@ def generate_mapping_table(
         .reset_index()
     )
     # add profile position as attribute by number of entries per cell (*)
-    mapping_profiles_to_buildings[
-        "profile"
-    ] = mapping_profiles_to_buildings.groupby(["cell_id"]).cumcount()
+    mapping_profiles_to_buildings["profile"] = (
+        mapping_profiles_to_buildings.groupby(["cell_id"]).cumcount()
+    )
     # get multiindex of profiles in cells (*)
     index_profiles = mapping_profiles_to_buildings.set_index(
         ["cell_id", "profile"]
@@ -454,9 +493,9 @@ def generate_mapping_table(
         profile_ids_per_cell_reduced.explode().reset_index()
     )
     # assign profile position by order of list
-    profile_ids_per_cell_reduced[
-        "profile"
-    ] = profile_ids_per_cell_reduced.groupby(["cell_id"]).cumcount()
+    profile_ids_per_cell_reduced["profile"] = (
+        profile_ids_per_cell_reduced.groupby(["cell_id"]).cumcount()
+    )
     profile_ids_per_cell_reduced = profile_ids_per_cell_reduced.set_index(
         ["cell_id", "profile"]
     )
@@ -591,9 +630,11 @@ def get_building_peak_loads():
         iterate_over = (
             "nuts3"
             if dataset == "Everything"
-            else "cell_id"
-            if dataset == "Schleswig-Holstein"
-            else ve(f"'{dataset}' is not a valid dataset boundary.")
+            else (
+                "cell_id"
+                if dataset == "Schleswig-Holstein"
+                else ve(f"'{dataset}' is not a valid dataset boundary.")
+            )
         )
 
         df_building_peak_loads = pd.DataFrame()
@@ -657,13 +698,13 @@ def get_building_peak_loads():
 
 def map_houseprofiles_to_buildings():
     """
-    Cencus hh demand profiles are assigned to buildings via osm ids. If no OSM
-    ids available, synthetic buildings are generated. A list of the generated
-    buildings and supplementary data as well as the mapping table is stored
+    Census hh demand profiles are assigned to residential buildings via osm ids.
+    If no OSM ids are available, synthetic buildings are generated. A list of the
+    generated buildings and supplementary data as well as the mapping table is stored
     in the db.
 
-    Tables:
-    ----------
+    Tables
+    ------
     synthetic_buildings:
         schema: openstreetmap
         tablename: osm_buildings_synthetic
@@ -675,26 +716,93 @@ def map_houseprofiles_to_buildings():
     Notes
     -----
     """
-    #
-    egon_map_zensus_buildings_residential = Table(
-        "egon_map_zensus_buildings_residential",
+    # ========== Get census cells ==========
+    egon_census_cells = Table(
+        "egon_destatis_zensus_apartment_building_population_per_ha",
         Base.metadata,
-        schema="boundaries",
+        schema="society",
     )
-    # get table metadata from db by name and schema
-    inspect(engine).reflecttable(egon_map_zensus_buildings_residential, None)
+    inspect(engine).reflecttable(egon_census_cells, None)
 
     with db.session_scope() as session:
-        cells_query = session.query(egon_map_zensus_buildings_residential)
-    egon_map_zensus_buildings_residential = pd.read_sql(
-        cells_query.statement, cells_query.session.bind, index_col=None
+        cells_query = session.query(
+            egon_census_cells.c.zensus_population_id,
+            egon_census_cells.c.population,
+            egon_census_cells.c.geom,
+        ).order_by(egon_census_cells.c.zensus_population_id)
+        gdf_egon_census_cells = gpd.read_postgis(
+            cells_query.statement, cells_query.session.bind, geom_col="geom"
+        )
+
+    # ========== Get residential buildings ==========
+    egon_osm_buildings_residential = Table(
+        "osm_buildings_residential",
+        Base.metadata,
+        schema="openstreetmap",
+    )
+    inspect(engine).reflecttable(egon_osm_buildings_residential, None)
+
+    with db.session_scope() as session:
+        cells_query = session.query(
+            egon_osm_buildings_residential.c.id.label("building_id"),
+            egon_osm_buildings_residential.c.geom_building,
+        ).order_by(egon_osm_buildings_residential.c.id)
+        gdf_egon_osm_buildings = gpd.read_postgis(
+            cells_query.statement,
+            cells_query.session.bind,
+            geom_col="geom_building",
+        )
+
+    # ========== Clip buildings with census cells ==========
+
+    # Clip to create new build parts as buildings
+    gdf_egon_osm_buildings_census_cells = gdf_egon_census_cells.overlay(
+        gdf_egon_osm_buildings, how="intersection"
+    )
+    # gdf_egon_osm_buildings_census_cells["population"] = gdf_egon_osm_buildings_census_cells.population.fillna(0)
+    gdf_egon_osm_buildings_census_cells["geom_point"] = (
+        gdf_egon_osm_buildings_census_cells.centroid
     )
 
+    # Add column with unique building ids using suffixes (building parts split by clipping)
+    gdf_egon_osm_buildings_census_cells["building_id_temp"] = (
+        gdf_egon_osm_buildings_census_cells["building_id"].astype(str)
+    )
+    g = (
+        gdf_egon_osm_buildings_census_cells.groupby("building_id_temp")
+        .cumcount()
+        .add(1)
+        .astype(str)
+    )
+    gdf_egon_osm_buildings_census_cells["building_id_temp"] += "_" + g
+
+    # Check
+    try:
+        assert len(
+            gdf_egon_osm_buildings_census_cells.building_id_temp.unique()
+        ) == len(gdf_egon_osm_buildings_census_cells)
+    except AssertionError:
+        print(
+            "The length of split buildings do not match with original count."
+        )
+
+    egon_map_zensus_buildings_residential = (
+        gdf_egon_osm_buildings_census_cells[
+            ["zensus_population_id", "building_id_temp"]
+        ].rename(
+            columns={
+                "zensus_population_id": "cell_id",
+                "building_id_temp": "id",
+            }
+        )
+    )
+
+    # Get household profile to census cells allocations
     with db.session_scope() as session:
         cells_query = session.query(HouseholdElectricityProfilesInCensusCells)
     egon_hh_profile_in_zensus_cell = pd.read_sql(
         cells_query.statement, cells_query.session.bind, index_col=None
-    )  # index_col="cell_id")
+    )
 
     # Match OSM and zensus data to define missing buildings
     missing_buildings = match_osm_and_zensus_data(
@@ -722,12 +830,20 @@ def map_houseprofiles_to_buildings():
         egon_hh_profile_in_zensus_cell,
     )
 
+    # remove suffixes from buildings split into parts before to merge them back together
+    mapping_profiles_to_buildings["building_id"] = (
+        mapping_profiles_to_buildings.building_id.astype(str).apply(
+            lambda s: s.split("_")[0] if "_" in s else s
+        )
+    )
+    mapping_profiles_to_buildings["building_id"] = (
+        mapping_profiles_to_buildings["building_id"].astype(int)
+    )
+
     # reduce list to only used synthetic buildings
     synthetic_buildings = reduce_synthetic_buildings(
         mapping_profiles_to_buildings, synthetic_buildings
     )
-    # TODO remove unused code
-    # synthetic_buildings = synthetic_buildings.drop(columns=["grid_id"])
     synthetic_buildings["n_amenities_inside"] = 0
 
     OsmBuildingsSynthetic.__table__.drop(bind=engine, checkfirst=True)
@@ -764,6 +880,54 @@ def map_houseprofiles_to_buildings():
             HouseholdElectricityProfilesOfBuildings,
             mapping_profiles_to_buildings.to_dict(orient="records"),
         )
+
+
+def create_buildings_profiles_stats():
+    """
+    Create DB table `demand.egon_household_electricity_profile_of_buildings_stats`
+    with household profile type counts per building
+    """
+
+    # Drop and recreate table if existing
+    HouseholdElectricityProfilesOfBuildingsStats.__table__.drop(
+        bind=engine, checkfirst=True
+    )
+    HouseholdElectricityProfilesOfBuildingsStats.__table__.create(
+        bind=engine, checkfirst=True
+    )
+
+    # Query final profile table
+    with db.session_scope() as session:
+        cells_query = session.query(
+            HouseholdElectricityProfilesOfBuildings,
+        ).order_by(HouseholdElectricityProfilesOfBuildings.id)
+
+        df_buildings_and_profiles = pd.read_sql(
+            cells_query.statement, cells_query.session.bind, index_col="id"
+        )
+
+    # Extract household type prefix
+    df_buildings_and_profiles = df_buildings_and_profiles.assign(
+        household_type=df_buildings_and_profiles.profile_id.str[:2]
+    )
+
+    # Unstack and create total
+    df_buildings_and_profiles = (
+        df_buildings_and_profiles.groupby("building_id")
+        .value_counts(["household_type"])
+        .unstack(fill_value=0)
+    )
+    df_buildings_and_profiles["households_total"] = (
+        df_buildings_and_profiles.sum(axis=1)
+    )
+
+    # Write to DB
+    df_buildings_and_profiles.to_sql(
+        name=HouseholdElectricityProfilesOfBuildingsStats.__table__.name,
+        schema=HouseholdElectricityProfilesOfBuildingsStats.__table__.schema,
+        con=engine,
+        if_exists="append",
+    )
 
 
 class setup(Dataset):
@@ -886,9 +1050,13 @@ class setup(Dataset):
     #:
     name: str = "Demand_Building_Assignment"
     #:
-    version: str = "0.0.5"
+    version: str = "0.0.6"
     #:
-    tasks = (map_houseprofiles_to_buildings, get_building_peak_loads)
+    tasks = (
+        map_houseprofiles_to_buildings,
+        create_buildings_profiles_stats,
+        get_building_peak_loads,
+    )
 
     def __init__(self, dependencies):
         super().__init__(

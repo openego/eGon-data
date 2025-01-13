@@ -264,6 +264,8 @@ Added
   `#207 <https://github.com/openego/powerd-data/pull/207>`_
 * Add MaStR geocoding and handling of conventional generators
   `#1095 <https://github.com/openego/eGon-data/issues/1095>`_
+* Improve building household load assignment
+  `#350 <https://github.com/openego/powerd-data/issues/350>`_
 
 .. _PR #159: https://github.com/openego/eGon-data/pull/159
 .. _PR #703: https://github.com/openego/eGon-data/pull/703
