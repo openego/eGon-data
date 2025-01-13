@@ -177,11 +177,19 @@ def match_osm_and_zensus_data(
             N coordinates, E coordinates in format
             [(N_cell_1, E_cell_1), ..., (N_cell_n, E_cell_n)]
         """
-        return [f"100mN{_[0]}E{_[1]}" for _ in np.array(
-            np.meshgrid(
-                np.arange(row.N - adj_cell_radius, row.N + adj_cell_radius + 1),
-                np.arange(row.E - adj_cell_radius, row.E + adj_cell_radius + 1)
-            )).T.reshape(-1, 2)]
+        return [
+            f"100mN{_[0]}E{_[1]}"
+            for _ in np.array(
+                np.meshgrid(
+                    np.arange(
+                        row.N - adj_cell_radius, row.N + adj_cell_radius + 1
+                    ),
+                    np.arange(
+                        row.E - adj_cell_radius, row.E + adj_cell_radius + 1
+                    ),
+                )
+            ).T.reshape(-1, 2)
+        ]
 
     # count number of profiles for each cell
     profiles_per_cell = egon_hh_profile_in_zensus_cell.cell_profile_ids.apply(
@@ -278,39 +286,61 @@ def match_osm_and_zensus_data(
     ].fillna(value=building_count_fillna)
 
     # ========== START Update profile/building rate in cells w/o bld using adjacent cells ==========
-    missing_buildings_temp = egon_hh_profile_in_zensus_cell[
-        ["cell_id", "grid_id"]].set_index("cell_id").loc[
-        missing_buildings.index.unique()]
+    missing_buildings_temp = (
+        egon_hh_profile_in_zensus_cell[["cell_id", "grid_id"]]
+        .set_index("cell_id")
+        .loc[missing_buildings.index.unique()]
+    )
 
     # Extract coordinates
     missing_buildings_temp = pd.concat(
-        [missing_buildings_temp, missing_buildings_temp.grid_id.str.extract(
-            r"100mN(\d+)E(\d+)").astype(int).rename(columns={0: "N", 1: "E"})],
-        axis=1
+        [
+            missing_buildings_temp,
+            missing_buildings_temp.grid_id.str.extract(r"100mN(\d+)E(\d+)")
+            .astype(int)
+            .rename(columns={0: "N", 1: "E"}),
+        ],
+        axis=1,
     )
 
     # Find adjacent cells for cell
     missing_buildings_temp["cell_adj"] = missing_buildings_temp.apply(
-        find_adjacent_cells, adj_cell_radius=3, axis=1)
-    missing_buildings_temp = missing_buildings_temp.explode("cell_adj").drop(
-        columns=["grid_id", "N", "E"]).reset_index()
+        find_adjacent_cells, adj_cell_radius=3, axis=1
+    )
+    missing_buildings_temp = (
+        missing_buildings_temp.explode("cell_adj")
+        .drop(columns=["grid_id", "N", "E"])
+        .reset_index()
+    )
 
     # Create mapping table cell -> adjacent cells
-    missing_buildings_temp = missing_buildings_temp.set_index("cell_adj").join(
-        egon_hh_profile_in_zensus_cell.set_index("grid_id").cell_id, rsuffix="_adj"
-    ).dropna().set_index("cell_id_adj")
+    missing_buildings_temp = (
+        missing_buildings_temp.set_index("cell_adj")
+        .join(
+            egon_hh_profile_in_zensus_cell.set_index("grid_id").cell_id,
+            rsuffix="_adj",
+        )
+        .dropna()
+        .set_index("cell_id_adj")
+    )
 
     # Calculate profile/building rate for those cells
     profile_building_rate.name = "profile_building_rate"
     missing_buildings_temp = missing_buildings_temp.join(
-        number_of_buildings_profiles_per_cell[["cell_id"]].join(
-            profile_building_rate).set_index("cell_id"))
-    missing_buildings_temp = missing_buildings_temp.groupby("cell_id").median().dropna()
+        number_of_buildings_profiles_per_cell[["cell_id"]]
+        .join(profile_building_rate)
+        .set_index("cell_id")
+    )
+    missing_buildings_temp = (
+        missing_buildings_temp.groupby("cell_id").median().dropna()
+    )
 
     # Update mising buildings
-    missing_buildings["building_count"] = missing_buildings.cell_profile_ids.div(
-        missing_buildings_temp.profile_building_rate).fillna(
-        missing_buildings.building_count)
+    missing_buildings["building_count"] = (
+        missing_buildings.cell_profile_ids.div(
+            missing_buildings_temp.profile_building_rate
+        ).fillna(missing_buildings.building_count)
+    )
     # ========== END Update profile/building rate in cells w/o bld using adjacent cells ==========
 
     # ceil to have at least one building each cell and make type int
