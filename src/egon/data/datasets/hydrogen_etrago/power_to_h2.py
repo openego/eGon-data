@@ -855,7 +855,7 @@ def insert_power_to_h2_to_power():
                     f"DELETE FROM {schema}.{table_name} WHERE carrier = 'O2' AND scn_name = '{SCENARIO_NAME}'"
                 )
             df = df.copy(deep=True)
-            df = df[df["carrier"] == "power_to_O2"]
+            df = df.drop_duplicates(subset='bus1', keep='first')
             result = []
             for _, row in df.iterrows():
                 load_id = next(next_load_id)
@@ -882,6 +882,14 @@ def insert_power_to_h2_to_power():
                         
             base_load_profile = pd.read_sql(query_o2_timeseries, engine)['load_curve'].values
             base_load_profile = np.array(base_load_profile[0])
+            
+            with engine.connect() as conn:
+                conn.execute(f"""
+                    DELETE FROM {targets["load_timeseries"]["schema"].targets["load_timeseries"]["table"]} 
+                    WHERE load_id IN {tuple(df.load_id.values)} 
+                    AND scn_name = '{SCENARIO_NAME}'
+                    """
+                )
 
             timeseries_list = []
 
@@ -924,7 +932,7 @@ def insert_power_to_h2_to_power():
                     f"DELETE FROM {grid}.{table_name} WHERE carrier = 'O2' AND scn_name = '{SCENARIO_NAME}'"
                 )
             df = df.copy(deep=True)
-            df = df[df["carrier"] == "power_to_O2"]
+            df = df.drop_duplicates(subset='bus1', keep='first')
             result = []
             for _, row in df.iterrows():
                 generator_id = next(next_generator_id)
@@ -953,6 +961,7 @@ def insert_power_to_h2_to_power():
                                 WHERE scn_name = '{SCENARIO_NAME}'
                                 """
             dfs[AC_LOAD] = pd.read_sql(queries[AC_LOAD], engine)
+            df = df.drop_duplicates(subset='bus1', keep='first')
             ac_loads = pd.merge(df, dfs[AC_LOAD], left_on='bus0', right_on='bus')
             
             #reduce each affected ac_load with o2_timeseries
@@ -987,6 +996,16 @@ def insert_power_to_h2_to_power():
                          else:
                              print(f"No matching o2_timeseries entry for load_id {row['load_id']}")
                              
+        def delete_unconnected_o2_buses():
+            with engine.connect() as conn:
+                conn.execute(f"""
+                    DELETE FROM {targets['buses']['schema']}.{targets['buses']['table']} 
+                    WHERE carrier = 'O2' AND scn_name = '{SCENARIO_NAME}'
+                    AND bus_id NOT IN (SELECT bus1 FROM {targets['links']['schema']}.{targets['links']['table']} 
+                                       WHERE carrier = 'power_to_O2')
+                    """
+                )
+                             
 
         def execute_PtH2_method():
             
@@ -1004,6 +1023,7 @@ def insert_power_to_h2_to_power():
             o2_timeseries = insert_o2_load_timeseries(o2_loads_df)
             insert_o2_generators(power_to_O2)
             adjust_ac_load_timeseries(power_to_O2, o2_timeseries) 
+            delete_unconnected_o2_buses()
           
         execute_PtH2_method()
                          
