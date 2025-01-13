@@ -140,9 +140,12 @@ def match_osm_and_zensus_data(
     OSM building data and hh demand profiles based on census data is compared.
     Census cells with only profiles but no osm-ids are identified to generate
     synthetic buildings. Census building count is used, if available, to define
-    number of missing buildings. Otherwise, the overall mean profile/building
-    rate is used to derive the number of buildings from the number of already
-    generated demand profiles.
+    number of missing buildings. Otherwise, we use a twofold approach for the
+    rate: first, the rate is calculated using adjacent cells (function
+    `find_adjacent_cells()`), a distance of 3 cells in each direction is used
+    by default (resulting in a 7x7 lookup matrix). As fallback, the overall
+    median profile/building rate is used to derive the number of buildings
+    from the number of already generated demand profiles.
 
     Parameters
     ----------
@@ -1089,7 +1092,8 @@ class setup(Dataset):
     there is enough households by the census data. If there are more
     profiles than buildings, all additional profiles are randomly assigned.
     Therefore, multiple profiles can be assigned to one building, making it a
-    multi-household building.
+    multi-household building. If there are no OSM buildings available,
+    synthetic ones are created (see below).
 
     **What are central assumptions during the data processing?**
 
@@ -1103,10 +1107,17 @@ class setup(Dataset):
     **Drawbacks and limitations of the data**
 
     * Missing OSM buildings in cells without census building count are
-      derived by an average rate of households/buildings applied to the
-      number of households. As only whole houses can exist, the substitute
-      is ceiled to the next higher integer. Ceiling is applied to avoid
-      rounding to amount of 0 buildings.
+      derived by an average (median) rate of households/buildings applied
+      to the number of households. We use a twofold approach for the rate:
+      first, the rate is calculated using adjacent cells (function
+      `find_adjacent_cells()`), a distance of 3 cells in each direction is
+      used by default (resulting in a 7x7 lookup matrix). For the remaining
+      cells, i.e. cells without any rate in the adjacent cells, the global
+      median rate is used.
+
+      As only whole houses can exist, the substitute is ceiled to the next
+      higher integer. Ceiling is applied to avoid rounding to amount of 0
+      buildings.
 
     * As this datasets is a cascade after profile assignement at census
       cells also check drawbacks and limitations in hh_profiles.py.
