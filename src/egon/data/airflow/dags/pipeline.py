@@ -591,8 +591,8 @@ with airflow.DAG(
         dependencies=[vg250, setup_etrago, create_gas_polygons]
     )
 
-    # Heat pump disaggregation for status2019
-    heat_pumps_2019 = HeatPumpsStatusQuo(
+    # Heat pump disaggregation for status quo
+    heat_pumps_sq = HeatPumpsStatusQuo(
         dependencies=[
             cts_demand_buildings,
             DistrictHeatingAreas,

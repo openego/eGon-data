@@ -355,34 +355,42 @@ class HeatPumpsStatusQuo(Dataset):
                 )
             return tasks
 
-        tasks = ()
+        if any("status" in scenario for scenario in config.settings()["egon-data"]["--scenarios"]):
+            tasks = ()
 
-        for scenario in config.settings()["egon-data"]["--scenarios"]:
-            if "status" in scenario:
-                postfix = f"_{scenario[-4:]}"
+            for scenario in config.settings()["egon-data"]["--scenarios"]:
+                if "status" in scenario:
+                    postfix = f"_{scenario[-4:]}"
 
-                tasks += (
-                    wrapped_partial(
-                        delete_heat_peak_loads_status_quo,
-                        scenario=scenario,
-                        postfix=postfix,
-                    ),
-                    wrapped_partial(
-                        delete_hp_capacity_status_quo,
-                        scenario=scenario,
-                        postfix=postfix,
-                    ),
-                    wrapped_partial(
-                        delete_mvgd_ts_status_quo,
-                        scenario=scenario,
-                        postfix=postfix,
-                    ),
-                )
+                    tasks += (
+                        wrapped_partial(
+                            delete_heat_peak_loads_status_quo,
+                            scenario=scenario,
+                            postfix=postfix,
+                        ),
+                        wrapped_partial(
+                            delete_hp_capacity_status_quo,
+                            scenario=scenario,
+                            postfix=postfix,
+                        ),
+                        wrapped_partial(
+                            delete_mvgd_ts_status_quo,
+                            scenario=scenario,
+                            postfix=postfix,
+                        ),
+                    )
 
-                tasks += (
-                    {*dyn_parallel_tasks_status_quo(scenario)},
-                )
-
+                    tasks += (
+                        {*dyn_parallel_tasks_status_quo(scenario)},
+                    )
+        else:
+            tasks = (
+                PythonOperator(
+                    task_id="HeatPumpsSQ_skipped",
+                    python_callable=skip_task,
+                    op_kwargs={"scn": "sq", "task": "HeatPumpsStatusQuo"},
+                ),
+            )
 
         super().__init__(
             name="HeatPumpsStatusQuo",
@@ -432,8 +440,6 @@ class HeatPumps2035(Dataset):
                     )
                 )
             return tasks
-
-        tasks_HeatPumps2035 = set()
 
         if "eGon2035" in scenarios:
             tasks_HeatPumps2035 = (
