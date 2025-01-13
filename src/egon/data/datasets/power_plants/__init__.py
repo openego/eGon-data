@@ -60,73 +60,6 @@ class EgonPowerPlants(Base):
     geom = Column(Geometry("POINT", 4326), index=True)
 
 
-class PowerPlants(Dataset):
-    """
-    This module creates all electrical generators for different scenarios. It
-    also calculates the weather area for each weather dependent generator.
-
-    *Dependencies*
-      * :py:class:`Chp <egon.data.datasets.chp.Chp>`
-      * :py:class:`CtsElectricityDemand
-      <egon.data.datasets.electricity_demand.CtsElectricityDemand>`
-      * :py:class:`HouseholdElectricityDemand
-      <egon.data.datasets.electricity_demand.HouseholdElectricityDemand>`
-      * :py:class:`mastr_data <egon.data.datasets.mastr.mastr_data>`
-      * :py:func:`define_mv_grid_districts
-      <egon.data.datasets.mv_grid_districts.define_mv_grid_districts>`
-      * :py:class:`RePotentialAreas
-      <egon.data.datasets.re_potential_areas.RePotentialAreas>`
-      * :py:class:`ZensusVg250
-      <egon.data.datasets.RenewableFeedin>`
-      * :py:class:`ScenarioCapacities
-      <egon.data.datasets.scenario_capacities.ScenarioCapacities>`
-      * :py:class:`ScenarioParameters
-      <egon.data.datasets.scenario_parameters.ScenarioParameters>`
-      * :py:func:`Setup <egon.data.datasets.database.setup>`
-      * :py:class:`substation_extraction
-      <egon.data.datasets.substation.substation_extraction>`
-      * :py:class:`Vg250MvGridDistricts
-      <egon.data.datasets.Vg250MvGridDistricts>`
-      * :py:class:`ZensusMvGridDistricts
-      <egon.data.datasets.zensus_mv_grid_districts.ZensusMvGridDistricts>`
-
-    *Resulting tables*
-      * :py:class:`supply.egon_power_plants
-      <egon.data.datasets.power_plants.EgonPowerPlants>` is filled
-
-    """
-
-    #:
-    name: str = "PowerPlants"
-    #:
-    version: str = "0.0.19"
-
-    def __init__(self, dependencies):
-        super().__init__(
-            name=self.name,
-            version=self.version,
-            dependencies=dependencies,
-            tasks=(
-                create_tables,
-                import_mastr,
-                insert_hydro_biomass,
-                allocate_conventional_non_chp_power_plants,
-                allocate_other_power_plants,
-                {
-                    wind_onshore.insert,
-                    pv_ground_mounted.insert,
-                    (
-                        pv_rooftop_per_mv_grid,
-                        pv_rooftop_to_buildings,
-                    ),
-                },
-                wind_offshore.insert,
-                assign_weather_data.weatherId_and_busId,
-                pp_metadata.metadata,
-            ),
-        )
-
-
 def create_tables():
     """Create tables for power plant data
     Returns
@@ -1369,7 +1302,6 @@ def power_plants_status_quo(scn_name="status2019"):
     log_insert_capacity(wind_onshore, tech="wind_onshore")
 
 
-
 tasks = (
     create_tables,
     import_mastr,
@@ -1408,15 +1340,57 @@ tasks = tasks + (
 for scn_name in egon.data.config.settings()["egon-data"]["--scenarios"]:
     tasks += (wrapped_partial(assign_weather_data.weatherId_and_busId,
                               scn_name=scn_name,
-                              # postfix=f"_{scn_name}"
+                              postfix=f"_{scn_name}"
                               ),)
 
+tasks += (pp_metadata.metadata,)
 
 class PowerPlants(Dataset):
+    """
+    This module creates all electrical generators for different scenarios. It
+    also calculates the weather area for each weather dependent generator.
+
+    *Dependencies*
+      * :py:class:`Chp <egon.data.datasets.chp.Chp>`
+      * :py:class:`CtsElectricityDemand
+      <egon.data.datasets.electricity_demand.CtsElectricityDemand>`
+      * :py:class:`HouseholdElectricityDemand
+      <egon.data.datasets.electricity_demand.HouseholdElectricityDemand>`
+      * :py:class:`mastr_data <egon.data.datasets.mastr.mastr_data>`
+      * :py:func:`define_mv_grid_districts
+      <egon.data.datasets.mv_grid_districts.define_mv_grid_districts>`
+      * :py:class:`RePotentialAreas
+      <egon.data.datasets.re_potential_areas.RePotentialAreas>`
+      * :py:class:`ZensusVg250
+      <egon.data.datasets.RenewableFeedin>`
+      * :py:class:`ScenarioCapacities
+      <egon.data.datasets.scenario_capacities.ScenarioCapacities>`
+      * :py:class:`ScenarioParameters
+      <egon.data.datasets.scenario_parameters.ScenarioParameters>`
+      * :py:func:`Setup <egon.data.datasets.database.setup>`
+      * :py:class:`substation_extraction
+      <egon.data.datasets.substation.substation_extraction>`
+      * :py:class:`Vg250MvGridDistricts
+      <egon.data.datasets.Vg250MvGridDistricts>`
+      * :py:class:`ZensusMvGridDistricts
+      <egon.data.datasets.zensus_mv_grid_districts.ZensusMvGridDistricts>`
+
+    *Resulting tables*
+      * :py:class:`supply.egon_power_plants
+      <egon.data.datasets.power_plants.EgonPowerPlants>` is filled
+
+    """
+
+    #:
+    name: str = "PowerPlants"
+    #:
+    version: str = "0.0.27"
+
     def __init__(self, dependencies):
         super().__init__(
-            name="PowerPlants",
-            version="0.0.26",
+            name=self.name,
+            version=self.version,
             dependencies=dependencies,
             tasks=tasks,
         )
+
