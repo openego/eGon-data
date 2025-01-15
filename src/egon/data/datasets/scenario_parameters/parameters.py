@@ -828,7 +828,7 @@ def gas(scenario):
             "H2_to_CH4": read_costs(costs, "methanation", "efficiency"),
             "OCGT": read_costs(costs, "OCGT", "efficiency"),
             "power_to_Heat": 0.2,   # source: project internal assumption Fraunhofer ISE
-            "power_to_O2": 0.04,   # source:  Sayed Sadat, Modeling Regional Utilization of the electrolysers Co-Products Oxygen and Heat in Germany, 2024
+            "power_to_O2": 0.015,   # source:  Sayed Sadat, Modeling Regional Utilization of the electrolysers Co-Products Oxygen and Heat in Germany, 2024
         }
 
         # Insert FOM in %
@@ -935,7 +935,7 @@ def gas(scenario):
             parameters["O2_capital_cost"][diameter] = annualize_capital_costs(
                 parameters["O2_pipeline_costs"][diameter],
                 parameters["lifetime"]["O2_components"],
-                global_settings("eGon2035")["interest_rate"],
+                interest_rate,
             )
                     
         parameters["marginal_cost"] = {

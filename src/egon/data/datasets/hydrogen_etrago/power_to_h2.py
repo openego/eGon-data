@@ -9,9 +9,9 @@ These links are modelling:
     from AC
   * Fuel cells (carrier name: 'H2_to_power'): techonology to produce
     power from H2
-  * Waste_heat usage (carrier name: 'power_to_Heat'): Components to use 
+  * Waste_heat usage (carrier name: 'PtH2_waste_heat'): Components to use 
     waste heat as by-product from electrolysis
-  * Oxygen usage (carrier name: 'power_to_O2'): Components to use 
+  * Oxygen usage (carrier name: 'PtH2_O2'): Components to use 
     oxygen as by-product from elctrolysis
     
  
@@ -282,7 +282,7 @@ def insert_power_to_h2_to_power():
             conn.execute(
                         text(
                             f"""DELETE FROM {targets["links"]["schema"]}.{targets["links"]["table"]}
-                            WHERE carrier IN ('power_to_H2', 'H2_to_power', 'power_to_O2', 'power_to_Heat') 
+                            WHERE carrier IN ('power_to_H2', 'H2_to_power', 'PtH2_waste_heat', 'PtH2_O2') 
                             AND scn_name = '{SCENARIO_NAME}'
                             """
                         )
@@ -393,7 +393,8 @@ def insert_power_to_h2_to_power():
                         intersection = buffered_AC.intersection(h2_row['buffer'])
                         
                         if not intersection.is_empty:
-                            distance = row['geom'].distance(h2_row['geom_link'])
+                            distance_AC = row['geom'].distance(intersection.centroid)
+                            distance_H2 = h2_row['geom_link'].distance(intersection.centroid)
                             distance_to_0 = row['geom'].distance(h2_row['geom_bus0'])
                             distance_to_1 = row['geom'].distance(h2_row['geom_bus1'])
                             
@@ -404,14 +405,15 @@ def insert_power_to_h2_to_power():
                                 bus_H2 = h2_row['bus1']
                                 point_H2 = h2_row['geom_bus1']
                             
-                            if distance < nearest_distance:
-                                nearest_distance = distance
+                            if distance_H2 < nearest_distance:
+                                nearest_distance = distance_H2
                                 nearest_match = {
                                     'bus_h2': bus_H2,
                                     'bus_AC': row['id'],
                                     'geom_h2': point_H2,
                                     'geom_AC': row['geom'],
-                                    'distance_h2': distance,
+                                    'distance_h2': distance_H2,
+                                    'distance_ac': distance_AC,
                                     'intersection': intersection,
                                     'sub_type': sub_type,
                                 }
@@ -700,7 +702,7 @@ def insert_power_to_h2_to_power():
 
             ####poower_to_H2
             for idx, row in links_h2.iterrows():
-                capital_cost_H2 = H2_COST_PIPELINE + ELZ_CAPEX_STACK + ELZ_CAPEX_SYSTEM + ELZ_OPEX  # [EUR/MW/YEAR]
+                capital_cost_H2 = H2_COST_PIPELINE * row['distance_h2']/1000 + ELZ_CAPEX_STACK + ELZ_CAPEX_SYSTEM + ELZ_OPEX  # [EUR/MW/YEAR]
                 capital_cost_AC = AC_COST_CABLE * row['distance_ac']/1000 + AC_TRANS # [EUR/MW/YEAR]
                 capital_cost_PtH2 = capital_cost_AC + capital_cost_H2
                 
@@ -725,7 +727,7 @@ def insert_power_to_h2_to_power():
                 power_to_H2 = pd.concat([power_to_H2, pd.DataFrame([power_to_H2_entry])], ignore_index=True)
                 
                 ####H2_to_power
-                capital_cost_H2 = H2_COST_PIPELINE + FUEL_CELL_COST # [EUR/MW/YEAR]
+                capital_cost_H2 = H2_COST_PIPELINE * row['distance_h2']/1000 + FUEL_CELL_COST # [EUR/MW/YEAR]
                 capital_cost_AC = AC_COST_CABLE * row['distance_ac']/1000 + AC_TRANS # [EUR/MW/YEAR]
                 capital_cost_H2tP = capital_cost_AC + capital_cost_H2
                 H2_to_power_entry = {
@@ -757,7 +759,7 @@ def insert_power_to_h2_to_power():
                     "link_id": next(next_max_link_id),
                     "bus0": row["bus_AC"],
                     "bus1": row["bus_heat"],
-                    "carrier": "power_to_Heat",
+                    "carrier": "PtH2_waste_heat",
                     "efficiency": 1,  
                     "lifetime": 25,  
                     "p_nom": 0,  
@@ -799,7 +801,7 @@ def insert_power_to_h2_to_power():
                     "link_id": next(next_max_link_id),
                     "bus0": row["bus_AC"],
                     "bus1": row["bus_O2"],
-                    "carrier": "power_to_O2",
+                    "carrier": "PtH2_O2",
                     "efficiency": 1,  
                     "lifetime": 25,  
                     "p_nom": o2_ec_h,  
@@ -813,7 +815,7 @@ def insert_power_to_h2_to_power():
                 }
                 power_to_O2 = pd.concat([power_to_O2, pd.DataFrame([power_to_o2_entry])], ignore_index=True)
 
-            return power_to_H2, power_to_Heat, power_to_O2
+            return power_to_H2, H2_to_power, power_to_Heat, power_to_O2
 
 
 
@@ -1002,7 +1004,7 @@ def insert_power_to_h2_to_power():
                     DELETE FROM {targets['buses']['schema']}.{targets['buses']['table']} 
                     WHERE carrier = 'O2' AND scn_name = '{SCENARIO_NAME}'
                     AND bus_id NOT IN (SELECT bus1 FROM {targets['links']['schema']}.{targets['links']['table']} 
-                                       WHERE carrier = 'power_to_O2')
+                                       WHERE carrier = 'PtH2_O2')
                     """
                 )
                              
@@ -1015,10 +1017,11 @@ def insert_power_to_h2_to_power():
             o2_links_hvmv = find_o2_connections(dfs[WWTP], potential_locations[potential_locations.sub_type=='HVMV'], 'hvmv_id')
             o2_links_ehv = find_o2_connections(dfs[WWTP], potential_locations[potential_locations.sub_type=='EHV'], 'ehv_id')
             o2_links=pd.concat([o2_links_hvmv, o2_links_ehv], ignore_index=True)
-            power_to_H2, power_to_Heat, power_to_O2 = create_link_dataframes(potential_locations, heat_links, o2_links)
+            power_to_H2, H2_to_power, power_to_Heat, power_to_O2 = create_link_dataframes(potential_locations, heat_links, o2_links)
             export_links_to_db(power_to_H2,'power_to_H2')
-            export_links_to_db(power_to_Heat, 'power_to_Heat')
-            export_links_to_db(power_to_O2, 'power_to_O2')
+            export_links_to_db(power_to_Heat, 'PtH2_waste_heat')
+            export_links_to_db(power_to_O2, 'PtH2_O2')
+            export_links_to_db(H2_to_power, 'H2_to_power')
             o2_loads_df = insert_o2_load_points(power_to_O2)
             o2_timeseries = insert_o2_load_timeseries(o2_loads_df)
             insert_o2_generators(power_to_O2)
