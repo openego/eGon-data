@@ -1113,10 +1113,16 @@ def heat(scenario):
         costs = read_csv(2050)
 
         parameters = {
-            "DE_demand_reduction_residential": 0.640720648501849,
-            "DE_demand_reduction_service": 0.390895195300713,
-            "DE_district_heating_share": 0.19,
+            "DE_demand_residential_MWh": 536692489.8152325 * 0.71542,
+            # [MWh], source: pypsa-eur run from 2024/12/23:
+            # total heat demand muliplied by residential share from resources/pop_weighted_heat_totals
+            "DE_demand_service_MWh": 536692489.8152325 * (1-0.71542),
+            # [MWh], source: pypsa-eur run from 2024/12/23:
+            # total heat demand muliplied by service share from resources/pop_weighted_heat_totals
+            "DE_district_heating_share": 0.42311285313808533,
+             # [%], source: pypsa-eur run from 2024/12/23
         }
+
 
         parameters["marginal_cost"] = {
             "central_heat_pump": read_costs(
