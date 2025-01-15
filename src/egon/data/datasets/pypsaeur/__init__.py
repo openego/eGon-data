@@ -358,11 +358,10 @@ def clean_database():
 
     comp_2_ports = [
         "line",
-        "transformer",
         "link",
     ]
 
-    for comp, id in zip(comp_2_ports, ["line_id", "trafo_id", "link_id"]):
+    for comp, id in zip(comp_2_ports, ["line_id", "link_id"]):
         db.execute_sql(
             f"""
             DELETE FROM {"grid.egon_etrago_" + comp + "_timeseries"}
