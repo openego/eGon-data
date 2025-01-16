@@ -2,7 +2,7 @@ import geopandas as gpd
 
 from egon.data import db
 from egon.data.datasets.power_plants.pv_rooftop_buildings import timer_func
-
+import egon.data.config
 
 def assign_bus_id(power_plants, cfg):
     """Assigns bus_ids to power plants according to location and voltage level
@@ -136,6 +136,7 @@ def find_weather_id(scn_name):
     db.execute_sql(sql)
 
 
-def weatherId_and_busId(scn_name):
-    find_weather_id(scn_name)
-    add_missing_bus_ids(scn_name)
+def weatherId_and_busId():
+    for scn_name in egon.data.config.settings()["egon-data"]["--scenarios"]:
+        find_weather_id(scn_name)
+        add_missing_bus_ids(scn_name)
