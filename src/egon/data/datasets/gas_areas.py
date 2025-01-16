@@ -108,11 +108,23 @@ def create_voronoi(scn_name, carrier):
         """,
         geom_col="geometry",
     ).to_crs(epsg=4326)
+    
+    
+    if isinstance(carrier, str):
+            if carrier == "H2":
+                carriers = ["H2", "H2_grid"]
+            else:
+                carriers = [carrier]
+    else:
+        carriers = carrier
+            
+    carrier_strings = "', '".join(carriers)
+    
 
     db.execute_sql(
         f"""
         DELETE FROM grid.egon_gas_voronoi
-        WHERE "carrier" = '{carrier}' and "scn_name" = '{scn_name}';
+        WHERE "carrier" IN ('{carrier_strings}') and "scn_name" = '{scn_name}';
         """
     )
 
@@ -122,13 +134,14 @@ def create_voronoi(scn_name, carrier):
             FROM grid.egon_etrago_bus
             WHERE scn_name = '{scn_name}'
             AND country = 'DE'
-            AND carrier = '{carrier}';
+            AND carrier IN ('{carrier_strings}');
         """,
     ).to_crs(epsg=4326)
-
+    
+    
     if len(buses) == 0:
         return
-
+    
     # generate voronois
     # For some scenarios it is defined that there is only 1 bus (e.g. gas). It
     # means that there will be just 1 voronoi covering the entire german
