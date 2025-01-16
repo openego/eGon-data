@@ -79,8 +79,8 @@ def add_missing_bus_ids(scn_name):
                 SET bus_id = (
                     SELECT emgd.bus_id
                     FROM grid.egon_mv_grid_district AS emgd
-                    WHERE ST_Intersects(epp.geom, emgd.geom)
-                    ORDER BY emgd.geom <-> epp.geom
+                    WHERE ST_Intersects(ST_Transform(epp.geom, 4326), ST_Transform(emgd.geom, 4326))
+                    ORDER BY ST_Transform(emgd.geom, 4326) <-> ST_Transform(epp.geom, 4326)
                     LIMIT 1
                 )
                 WHERE (epp.carrier = 'solar'
@@ -97,8 +97,8 @@ def add_missing_bus_ids(scn_name):
                 SET bus_id = (
                     SELECT eesv.bus_id
                     FROM grid.egon_ehv_substation_voronoi AS eesv
-                    WHERE ST_Intersects(epp.geom, eesv.geom)
-                    ORDER BY eesv.geom <-> epp.geom
+                    WHERE ST_Intersects(ST_Transform(epp.geom, 4326), ST_Transform(eesv.geom, 4326))
+                    ORDER BY ST_Transform(eesv.geom, 4326) <-> ST_Transform(epp.geom, 4326)
                     LIMIT 1
                 )
                 WHERE (epp.carrier = 'solar'
