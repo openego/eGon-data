@@ -353,7 +353,7 @@ def calculate_crossbordering_gas_grid_capacities_eGon100RE(
         ]
     )
 
-    for carrier in ["CH4", "H2_retrofit"]:
+    for carrier in ["CH4"]:
         p_nom = []
         cap = cap_DE[cap_DE["carrier"] == carrier].set_index("country_code")
         pipe_capacities_list = DE_pipe_capacities_list[
