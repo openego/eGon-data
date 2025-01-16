@@ -341,6 +341,10 @@ def create_district_heating_profile_python_like(scenario="eGon2035"):
                 right_on="index",
             )
 
+            # Drop cells without a demand or outside of MVGD
+            slice_df = slice_df[
+                slice_df.zensus_population_id.isin(annual_demand.index)]
+
             for hour in range(24):
                 slice_df[hour] = (
                     slice_df.idp.str[hour]

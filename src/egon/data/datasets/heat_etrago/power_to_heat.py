@@ -349,7 +349,7 @@ def insert_power_to_heat_per_level(
     )
 
     # Insert values into dataframe
-    links.bus0 = gdf.power_bus.values
+    links.bus0 = gdf.power_bus.values.astype(int)
     links.bus1 = gdf.heat_bus.values
     links.p_nom = gdf.capacity.values
     links.topo = gdf.geometry.values
