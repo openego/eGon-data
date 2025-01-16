@@ -887,7 +887,7 @@ def insert_power_to_h2_to_power():
             
             with engine.connect() as conn:
                 conn.execute(f"""
-                    DELETE FROM {targets["load_timeseries"]["schema"].targets["load_timeseries"]["table"]} 
+                    DELETE FROM {targets["load_timeseries"]["schema"]}.{targets["load_timeseries"]["table"]} 
                     WHERE load_id IN {tuple(df.load_id.values)} 
                     AND scn_name = '{SCENARIO_NAME}'
                     """
@@ -954,7 +954,7 @@ def insert_power_to_h2_to_power():
             print(f"generator data exported to: {table_name}")
 
 
-
+        
         def adjust_ac_load_timeseries(df, o2_timeseries):
             #filter out affected ac_loads
             queries[AC_LOAD] = f"""
