@@ -30,7 +30,7 @@ class PreparePypsaEur(Dataset):
     def __init__(self, dependencies):
         super().__init__(
             name="PreparePypsaEur",
-            version="0.0.41",
+            version="0.0.42",
             dependencies=dependencies,
             tasks=(
                 download,
@@ -1387,7 +1387,7 @@ def prepared_network(planning_horizon=3):
             / "results"
             / "prenetworks"
             / "prenetwork_post-manipulate_pre-solve"
-            / "base_s_39_lc1.25__cb40ex0-T-H-I-B-solar+p3-dist1_2035.nc"
+            / "base_s_39_lc1.25__cb40ex0-T-H-I-B-solar+p3-dist1_2045.nc"
         )
 
     return pypsa.Network(target_file.absolute().as_posix())
