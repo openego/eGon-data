@@ -43,7 +43,7 @@ class RunPypsaEur(Dataset):
     def __init__(self, dependencies):
         super().__init__(
             name="SolvePypsaEur",
-            version="0.0.39",
+            version="0.0.40",
             dependencies=dependencies,
             tasks=(
                 prepare_network_2,
@@ -819,7 +819,7 @@ def neighbor_reduction():
 
     # Correct geometry for non AC buses
     carriers = set(neighbors.carrier.to_list())
-    carriers = [e for e in carriers if e not in ("AC", "biogas")]
+    carriers = [e for e in carriers if e not in ("AC")]
     non_AC_neighbors = pd.DataFrame()
     for c in carriers:
         c_neighbors = neighbors[neighbors.carrier == c].set_index(
