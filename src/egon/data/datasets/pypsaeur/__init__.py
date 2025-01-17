@@ -1076,7 +1076,6 @@ def neighbor_reduction():
     excluded_carriers = [
         "gas for industry CC",
         "SMR CC",
-        "biogas to gas",
         "DAC",
         "electricity distribution grid",
     ]
