@@ -1077,7 +1077,6 @@ def neighbor_reduction():
         "gas for industry CC",
         "SMR CC",
         "DAC",
-        "electricity distribution grid",
     ]
     neighbor_links = neighbor_links[
         ~neighbor_links.carrier.isin(excluded_carriers)
