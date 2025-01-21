@@ -1078,7 +1078,8 @@ def neighbor_reduction():
         "urban decentral water tanks discharger",
         "H2 Electrolysis",
         "H2 Fuel Cell",
-        
+        "SMR",
+        "Sabatier"
     ]
 
     # delete unwanted carriers for eTraGo
