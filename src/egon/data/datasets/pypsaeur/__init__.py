@@ -1079,7 +1079,7 @@ def neighbor_reduction():
         "H2 Electrolysis",
         "H2 Fuel Cell",
         "SMR",
-        "Sabatier"
+        "Sabatier",
     ]
 
     # delete unwanted carriers for eTraGo
