@@ -497,7 +497,7 @@ def connect_saltcavern_to_h2_grid(scn_name):
         }
         links.append(link)
 
-    links_df = gpd.GeoDataFrame(links, geometry='geom', crs=32632).to_crs(4326)
+    links_df = gpd.GeoDataFrame(links, geometry='geom', crs=4326)
 
     links_df.to_postgis(
         targets["hydrogen_links"]["table"],
