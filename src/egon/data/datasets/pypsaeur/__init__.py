@@ -1065,11 +1065,21 @@ def neighbor_reduction():
             index_label="link_id",
         )
 
-    non_extendable_links_carriers = [
-        "H2 pipeline retrofitted",
-        "H2 pipeline",
-        "gas pipeline",
-        "biogas to gas",
+    extendable_links_carriers = [
+        "battery charger",
+        "battery discharger",
+        "home battery charger",
+        "home battery discharger",
+        "rural water tanks charger",
+        "rural water tanks discharger",
+        "urban central water tanks charger",
+        "urban central water tanks discharger",
+        "urban decentral water tanks charger",
+        "urban decentral water tanks discharger",
+        "H2 Electrolysis",
+        "H2 Fuel Cell",
+        "SMR",
+        "Sabatier",
     ]
 
     # delete unwanted carriers for eTraGo
@@ -1084,13 +1094,13 @@ def neighbor_reduction():
 
     links_to_etrago(
         neighbor_links[
-            ~neighbor_links.carrier.isin(non_extendable_links_carriers)
+            neighbor_links.carrier.isin(extendable_links_carriers)
         ],
         "eGon100RE",
     )
     links_to_etrago(
         neighbor_links[
-            neighbor_links.carrier.isin(non_extendable_links_carriers)
+            ~neighbor_links.carrier.isin(extendable_links_carriers)
         ],
         "eGon100RE",
         extendable=False,
