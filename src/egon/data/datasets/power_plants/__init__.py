@@ -577,6 +577,7 @@ def insert_hydro_biomass():
         f"""
         DELETE FROM {cfg['target']['schema']}.{cfg['target']['table']}
         WHERE carrier IN ('biomass', 'reservoir', 'run_of_river')
+        AND scenario IN ('eGon2035', 'eGon100RE')
         """
     )
 
