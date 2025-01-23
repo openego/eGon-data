@@ -940,6 +940,7 @@ def neighbor_reduction():
             "gas": "CH4",
             "gas_for_industry": "CH4_for_industry",
             "urban_central_heat": "central_heat",
+            "EV_battery": "Li_ion",
         },
         inplace=True,
     )
@@ -1292,6 +1293,7 @@ def neighbor_reduction():
             "gas": "CH4",
             "urban_central_water_tank": "central_heat_store",
             "rural_water_tank": "rural_heat_store",
+            "EV_battery": "battery_storage",
         },
         inplace=True,
     )
