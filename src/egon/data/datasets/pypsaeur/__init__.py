@@ -1125,6 +1125,12 @@ def neighbor_reduction():
                 "Sabatier": "H2_to_CH4",
                 "gas_for_industry": "CH4_for_industry",
                 "gas_pipeline": "CH4",
+                "urban_central_gas_boiler": "central_gas_boiler",
+                "urban_central_resistive_heater": "central_resistive_heater",
+                "urban_central_water_tank_charger": "central_heat_store_charger",
+                "urban_central_water_tank_discharger": "central_heat_store_discharger",
+                "rural_water_tank_charger": "rural_heat_store_charger",
+                "rural_water_tank_discharger": "rural_heat_store_discharger",
             },
             inplace=True,
         )
@@ -1264,6 +1270,8 @@ def neighbor_reduction():
         {
             "Li_ion": "battery",
             "gas": "CH4",
+            "urban_central_water_tank": "central_heat_store",
+            "rural_water_tank": "rural_heat_store",
         },
         inplace=True,
     )
