@@ -498,6 +498,75 @@ def electrical_neighbours_egon100():
             "eGon100RE is not in the list of created scenarios, this task is skipped."
         )
 
+def combine_decentral_and_rural_heat(network_solved, network_prepared):
+
+    for comp in network_solved.iterate_components():
+
+        if comp.name in ["Bus", "Link", "Store"]:
+            urban_decentral = comp.df[
+                comp.df.carrier.str.contains("urban decentral")]
+            rural = comp.df[
+                comp.df.carrier.str.contains("rural")]
+            for i, row in urban_decentral.iterrows():
+                if not "DE" in i:
+                    if comp.name in ["Bus"]:
+                        network_solved.remove("Bus", i)
+                    if comp.name in ["Link", "Generator"]:
+                        if i.replace("urban decentral", "rural") in rural.index:
+                            rural.loc[
+                                i.replace("urban decentral", "rural"),
+                                "p_nom_opt"
+                                ] += urban_decentral.loc[
+                                    i,
+                                    "p_nom_opt"
+                                    ]
+                            rural.loc[
+                                i.replace("urban decentral", "rural"),
+                                "p_nom"
+                                ] += urban_decentral.loc[
+                                    i,
+                                    "p_nom"
+                                    ]
+                            network_solved.remove(comp.name, i)
+                        else:
+                            print(i)
+                            comp.df.loc[i, "bus0"] = comp.df.loc[i, "bus0"].replace("urban decentral", "rural")
+                            comp.df.loc[i, "bus1"] = comp.df.loc[i, "bus1"].replace("urban decentral", "rural")
+                            comp.df.loc[i, "carrier"] = comp.df.loc[i, "carrier"].replace("urban decentral", "rural") 
+                    if comp.name in ["Store"]:
+                        if i.replace("urban decentral", "rural") in rural.index:
+                            rural.loc[
+                                i.replace("urban decentral", "rural"),
+                                "e_nom_opt"
+                                ] += urban_decentral.loc[
+                                    i,
+                                    "e_nom_opt"
+                                    ]
+                            rural.loc[
+                                i.replace("urban decentral", "rural"),
+                                "e_nom"
+                                ] += urban_decentral.loc[
+                                    i,
+                                    "e_nom"
+                                    ]
+                            network_solved.remove(comp.name, i)
+
+                        else:
+                            print(i)
+                            network_solved.stores.loc[i, "bus"] = network_solved.stores.loc[
+                                i, "bus"].replace("urban decentral", "rural")
+                            network_solved.stores.loc[i, "carrier"] = "rural water tanks" 
+                    
+    urban_decentral_loads = network_prepared.loads[
+        network_prepared.loads.carrier.str.contains("urban decentral")]
+    
+    for i, row in urban_decentral_loads.iterrows():
+        if i in network_prepared.loads_t.p_set.columns:
+            network_prepared.loads_t.p_set[i.replace("urban decentral", "rural")] += network_prepared.loads_t.p_set[i]
+    network_prepared.mremove("Load", urban_decentral_loads.index)
+    
+    
+    return network_prepared, network_solved
 
 def neighbor_reduction():
     network_solved = read_network()
@@ -663,8 +732,12 @@ def neighbor_reduction():
                 comp.df[~comp.df.bus.isin(network_solved.buses.index)].index
                 )
 
-    # writing components of neighboring countries to etrago tables
+    # Combine urban decentral and rural heat
+    network_prepared, network_solved = combine_decentral_and_rural_heat(
+        network_solved, network_prepared)
 
+    # writing components of neighboring countries to etrago tables
+       
     # Set country tag for all buses
     network_solved.buses.country = network_solved.buses.index.str[:2]
     neighbors = network_solved.buses[network_solved.buses.country != "DE"]
