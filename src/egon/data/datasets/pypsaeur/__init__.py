@@ -1132,6 +1132,7 @@ def neighbor_reduction():
                 "urban_central_water_tank_discharger": "central_heat_store_discharger",
                 "rural_water_tank_charger": "rural_heat_store_charger",
                 "rural_water_tank_discharger": "rural_heat_store_discharger",
+                "urban_central_gas_CHP": "central_gas_CHP"
             },
             inplace=True,
         )
@@ -1171,6 +1172,13 @@ def neighbor_reduction():
     neighbor_links = neighbor_links[
         ~neighbor_links.carrier.isin(excluded_carriers)
     ]
+
+    # Combine CHP_CC and CHP
+    chp_cc = neighbor_links[neighbor_links.carrier=="urban central gas CHP CC"]
+    for index, row in chp_cc.iterrows():
+        neighbor_links.loc[neighbor_links.Link==row.Link.replace("CHP CC", "CHP"), "p_nom_opt"] += row.p_nom_opt
+        neighbor_links.loc[neighbor_links.Link==row.Link.replace("CHP CC", "CHP"), "p_nom"] += row.p_nom
+        neighbor_links.drop(index, inplace=True)
 
     links_to_etrago(
         neighbor_links[
