@@ -939,6 +939,7 @@ def neighbor_reduction():
         {
             "gas": "CH4",
             "gas_for_industry": "CH4_for_industry",
+            "urban_central_heat": "central_heat",
         },
         inplace=True,
     )
@@ -1242,6 +1243,7 @@ def neighbor_reduction():
             "H2_pipeline_retrofitted": "H2_system_boundary",
             "gas_pipeline": "CH4_system_boundary",
             "gas_for_industry": "CH4_for_industry",
+            "urban_central_heat": "central_heat",
         },
         inplace=True,
     )
