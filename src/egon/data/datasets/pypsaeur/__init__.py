@@ -1132,7 +1132,9 @@ def neighbor_reduction():
                 "urban_central_water_tank_discharger": "central_heat_store_discharger",
                 "rural_water_tank_charger": "rural_heat_store_charger",
                 "rural_water_tank_discharger": "rural_heat_store_discharger",
-                "urban_central_gas_CHP": "central_gas_CHP"
+                "urban_central_gas_CHP": "central_gas_CHP",
+                "urban_central_air_heat_pump": "central_heat_pump",
+                "rural_ground_heat_pump": "rural_heat_pump",
             },
             inplace=True,
         )
@@ -1180,6 +1182,14 @@ def neighbor_reduction():
         neighbor_links.loc[neighbor_links.Link==row.Link.replace("CHP CC", "CHP"), "p_nom"] += row.p_nom
         neighbor_links.drop(index, inplace=True)
 
+    # Combine heat pumps
+    # Like in Germany, there are air heat pumps in central heat grids
+    # and ground heat pumps in rural areas
+    rural_air = neighbor_links[neighbor_links.carrier=="rural air heat pump"]
+    for index, row in rural_air.iterrows():
+        neighbor_links.loc[neighbor_links.Link==row.Link.replace("air", "ground"), "p_nom_opt"] += row.p_nom_opt
+        neighbor_links.loc[neighbor_links.Link==row.Link.replace("air", "ground"), "p_nom"] += row.p_nom
+        neighbor_links.drop(index, inplace=True)
     links_to_etrago(
         neighbor_links[
             neighbor_links.carrier.isin(extendable_links_carriers)
