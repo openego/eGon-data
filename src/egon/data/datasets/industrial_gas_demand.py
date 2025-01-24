@@ -114,7 +114,7 @@ class IndustrialGasDemandeGon100RE(Dataset):
     #:
     name: str = "IndustrialGasDemandeGon100RE"
     #:
-    version: str = "0.0.3"
+    version: str = "0.0.4"
 
     def __init__(self, dependencies):
         super().__init__(
@@ -501,6 +501,13 @@ def insert_industrial_gas_demand_egon100RE():
                     solved_network.links.loc[
                         solved_network.links.index.str.contains(
                             "DE0 0 Fischer-Tropsch")].index].mul(
+                                solved_network.snapshot_weightings.generators,
+                                axis= 0).sum().sum()
+                # Add h2 demand of methanolisation process from pypsa-eur
+                + solved_network.links_t.p0[
+                    solved_network.links.loc[
+                        solved_network.links.index.str.contains(
+                            "DE0 0 methanolisation")].index].mul(
                                 solved_network.snapshot_weightings.generators,
                                 axis= 0).sum().sum()
             )
