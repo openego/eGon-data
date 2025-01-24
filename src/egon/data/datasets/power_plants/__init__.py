@@ -324,7 +324,16 @@ def insert_hydro_plants(scenario):
 
     for carrier in map_carrier.keys():
         # import target values
-        target = select_target(carrier, scenario)
+        if scenario == "eGon100RE":
+            target = pd.read_sql(
+                f"""SELECT capacity FROM supply.egon_scenario_capacities
+                        WHERE scenario_name = '{scenario}'
+                        AND carrier = '{carrier}'
+                        """,
+                con=db.engine(),
+            ).capacity[0]
+        elif scenario == "eGon2035":
+            target = select_target(carrier, scenario)
 
         # import data for MaStR
         mastr = pd.read_csv(
@@ -577,6 +586,7 @@ def insert_hydro_biomass():
         f"""
         DELETE FROM {cfg['target']['schema']}.{cfg['target']['table']}
         WHERE carrier IN ('biomass', 'reservoir', 'run_of_river')
+        AND scenario IN ('eGon2035', 'eGon100RE')
         """
     )
 
