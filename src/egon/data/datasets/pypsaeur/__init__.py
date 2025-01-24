@@ -498,6 +498,75 @@ def electrical_neighbours_egon100():
             "eGon100RE is not in the list of created scenarios, this task is skipped."
         )
 
+def combine_decentral_and_rural_heat(network_solved, network_prepared):
+
+    for comp in network_solved.iterate_components():
+
+        if comp.name in ["Bus", "Link", "Store"]:
+            urban_decentral = comp.df[
+                comp.df.carrier.str.contains("urban decentral")]
+            rural = comp.df[
+                comp.df.carrier.str.contains("rural")]
+            for i, row in urban_decentral.iterrows():
+                if not "DE" in i:
+                    if comp.name in ["Bus"]:
+                        network_solved.remove("Bus", i)
+                    if comp.name in ["Link", "Generator"]:
+                        if i.replace("urban decentral", "rural") in rural.index:
+                            rural.loc[
+                                i.replace("urban decentral", "rural"),
+                                "p_nom_opt"
+                                ] += urban_decentral.loc[
+                                    i,
+                                    "p_nom_opt"
+                                    ]
+                            rural.loc[
+                                i.replace("urban decentral", "rural"),
+                                "p_nom"
+                                ] += urban_decentral.loc[
+                                    i,
+                                    "p_nom"
+                                    ]
+                            network_solved.remove(comp.name, i)
+                        else:
+                            print(i)
+                            comp.df.loc[i, "bus0"] = comp.df.loc[i, "bus0"].replace("urban decentral", "rural")
+                            comp.df.loc[i, "bus1"] = comp.df.loc[i, "bus1"].replace("urban decentral", "rural")
+                            comp.df.loc[i, "carrier"] = comp.df.loc[i, "carrier"].replace("urban decentral", "rural") 
+                    if comp.name in ["Store"]:
+                        if i.replace("urban decentral", "rural") in rural.index:
+                            rural.loc[
+                                i.replace("urban decentral", "rural"),
+                                "e_nom_opt"
+                                ] += urban_decentral.loc[
+                                    i,
+                                    "e_nom_opt"
+                                    ]
+                            rural.loc[
+                                i.replace("urban decentral", "rural"),
+                                "e_nom"
+                                ] += urban_decentral.loc[
+                                    i,
+                                    "e_nom"
+                                    ]
+                            network_solved.remove(comp.name, i)
+
+                        else:
+                            print(i)
+                            network_solved.stores.loc[i, "bus"] = network_solved.stores.loc[
+                                i, "bus"].replace("urban decentral", "rural")
+                            network_solved.stores.loc[i, "carrier"] = "rural water tanks" 
+                    
+    urban_decentral_loads = network_prepared.loads[
+        network_prepared.loads.carrier.str.contains("urban decentral")]
+    
+    for i, row in urban_decentral_loads.iterrows():
+        if i in network_prepared.loads_t.p_set.columns:
+            network_prepared.loads_t.p_set[i.replace("urban decentral", "rural")] += network_prepared.loads_t.p_set[i]
+    network_prepared.mremove("Load", urban_decentral_loads.index)
+    
+    
+    return network_prepared, network_solved
 
 def neighbor_reduction():
     network_solved = read_network()
@@ -669,8 +738,12 @@ def neighbor_reduction():
                 comp.df[~comp.df.bus.isin(network_solved.buses.index)].index
                 )
 
-    # writing components of neighboring countries to etrago tables
+    # Combine urban decentral and rural heat
+    network_prepared, network_solved = combine_decentral_and_rural_heat(
+        network_solved, network_prepared)
 
+    # writing components of neighboring countries to etrago tables
+       
     # Set country tag for all buses
     network_solved.buses.country = network_solved.buses.index.str[:2]
     neighbors = network_solved.buses[network_solved.buses.country != "DE"]
@@ -872,6 +945,10 @@ def neighbor_reduction():
         {
             "gas": "CH4",
             "gas_for_industry": "CH4_for_industry",
+            "urban_central_heat": "central_heat",
+            "EV_battery": "Li_ion",
+            "urban_central_water_tanks": "central_heat_store",
+            "rural_water_tanks": "rural_heat_store",
         },
         inplace=True,
     )
@@ -1058,6 +1135,15 @@ def neighbor_reduction():
                 "Sabatier": "H2_to_CH4",
                 "gas_for_industry": "CH4_for_industry",
                 "gas_pipeline": "CH4",
+                "urban_central_gas_boiler": "central_gas_boiler",
+                "urban_central_resistive_heater": "central_resistive_heater",
+                "urban_central_water_tank_charger": "central_heat_store_charger",
+                "urban_central_water_tank_discharger": "central_heat_store_discharger",
+                "rural_water_tank_charger": "rural_heat_store_charger",
+                "rural_water_tank_discharger": "rural_heat_store_discharger",
+                "urban_central_gas_CHP": "central_gas_CHP",
+                "urban_central_air_heat_pump": "central_heat_pump",
+                "rural_ground_heat_pump": "rural_heat_pump",
             },
             inplace=True,
         )
@@ -1098,6 +1184,21 @@ def neighbor_reduction():
         ~neighbor_links.carrier.isin(excluded_carriers)
     ]
 
+    # Combine CHP_CC and CHP
+    chp_cc = neighbor_links[neighbor_links.carrier=="urban central gas CHP CC"]
+    for index, row in chp_cc.iterrows():
+        neighbor_links.loc[neighbor_links.Link==row.Link.replace("CHP CC", "CHP"), "p_nom_opt"] += row.p_nom_opt
+        neighbor_links.loc[neighbor_links.Link==row.Link.replace("CHP CC", "CHP"), "p_nom"] += row.p_nom
+        neighbor_links.drop(index, inplace=True)
+
+    # Combine heat pumps
+    # Like in Germany, there are air heat pumps in central heat grids
+    # and ground heat pumps in rural areas
+    rural_air = neighbor_links[neighbor_links.carrier=="rural air heat pump"]
+    for index, row in rural_air.iterrows():
+        neighbor_links.loc[neighbor_links.Link==row.Link.replace("air", "ground"), "p_nom_opt"] += row.p_nom_opt
+        neighbor_links.loc[neighbor_links.Link==row.Link.replace("air", "ground"), "p_nom"] += row.p_nom
+        neighbor_links.drop(index, inplace=True)
     links_to_etrago(
         neighbor_links[
             neighbor_links.carrier.isin(extendable_links_carriers)
@@ -1126,9 +1227,11 @@ def neighbor_reduction():
             "ror": "run_of_river",
             "offwind-ac": "wind_offshore",
             "offwind-dc": "wind_offshore",
+            "offwind-float": "wind_offshore",
             "urban_central_solar_thermal": "urban_central_solar_thermal_collector",
             "residential_rural_solar_thermal": "residential_rural_solar_thermal_collector",
             "services_rural_solar_thermal": "services_rural_solar_thermal_collector",
+            "solar-hsat": "solar",
         },
         inplace=True,
     )
@@ -1169,6 +1272,7 @@ def neighbor_reduction():
             "H2_pipeline_retrofitted": "H2_system_boundary",
             "gas_pipeline": "CH4_system_boundary",
             "gas_for_industry": "CH4_for_industry",
+            "urban_central_heat": "central_heat",
         },
         inplace=True,
     )
@@ -1197,20 +1301,23 @@ def neighbor_reduction():
         {
             "Li_ion": "battery",
             "gas": "CH4",
+            "urban_central_water_tanks": "central_heat_store",
+            "rural_water_tanks": "rural_heat_store",
+            "EV_battery": "battery_storage",
         },
         inplace=True,
     )
     neighbor_stores.loc[
         (
             (neighbor_stores.e_nom_max <= 1e9)
-            & (neighbor_stores.carrier == "H2")
+            & (neighbor_stores.carrier == "H2_Store")
         ),
         "carrier",
     ] = "H2_underground"
     neighbor_stores.loc[
         (
             (neighbor_stores.e_nom_max > 1e9)
-            & (neighbor_stores.carrier == "H2")
+            & (neighbor_stores.carrier == "H2_Store")
         ),
         "carrier",
     ] = "H2_overground"
