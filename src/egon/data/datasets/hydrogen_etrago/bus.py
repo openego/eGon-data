@@ -47,7 +47,15 @@ def insert_hydrogen_buses(scn_name):
     
     sources = config.datasets()["etrago_hydrogen"]["sources"]
     target_buses = config.datasets()["etrago_hydrogen"]["targets"]["hydrogen_buses"] 
-    h2_buses = initialise_bus_insertion('H2', target_buses, scenario = scn_name)
+    h2_buses = initialise_bus_insertion('H2_grid', target_buses, scenario = scn_name)
+    
+    db.execute_sql(
+        f"""
+        DELETE FROM {target_buses['schema']}.{target_buses['table']}
+        WHERE scn_name = '{scn_name}'
+        AND carrier = 'H2' AND country = 'DE'
+        """
+    )
        
     h2_buses.x = h2_input.x
     h2_buses.y = h2_input.y
