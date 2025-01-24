@@ -1300,14 +1300,14 @@ def neighbor_reduction():
     neighbor_stores.loc[
         (
             (neighbor_stores.e_nom_max <= 1e9)
-            & (neighbor_stores.carrier == "H2")
+            & (neighbor_stores.carrier == "H2_Store")
         ),
         "carrier",
     ] = "H2_underground"
     neighbor_stores.loc[
         (
             (neighbor_stores.e_nom_max > 1e9)
-            & (neighbor_stores.carrier == "H2")
+            & (neighbor_stores.carrier == "H2_Store")
         ),
         "carrier",
     ] = "H2_overground"
