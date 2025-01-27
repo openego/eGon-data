@@ -634,6 +634,10 @@ def insert_cts_ind(scenario, year, engine, target_values):
         "targets"
     ]
 
+    wz_table = pd.read_sql("SELECT wz, sector FROM demand.egon_demandregio_wz",
+                           con = engine,
+                           index_col = "wz")
+
     # Workaround: Since the disaggregator does not work anymore, data from
     # previous runs is used for eGon2035 and eGon100RE
     if scenario == "eGon2035":
@@ -653,6 +657,26 @@ def insert_cts_ind(scenario, year, engine, target_values):
         ec_cts_ind2 = pd.read_csv(
             "data_bundle_powerd_data/egon_demandregio_cts_ind.csv"
         )
+        ec_cts_ind2["sector"] = ec_cts_ind2["wz"].map(wz_table["sector"])
+        factor_ind = target_values[scenario]["industry"] / (
+            ec_cts_ind2[ec_cts_ind2["sector"] == "industry"]["demand"].sum()
+            / 1000
+        )
+        factor_cts = target_values[scenario]["CTS"] / (
+            ec_cts_ind2[ec_cts_ind2["sector"] == "CTS"]["demand"].sum() / 1000
+        )
+
+        ec_cts_ind2["demand"] = ec_cts_ind2.apply(
+            lambda x: (
+                x["demand"] * factor_ind
+                if x["sector"] == "industry"
+                else x["demand"] * factor_cts
+            ),
+            axis=1,
+        )
+
+        ec_cts_ind2.drop(columns=["sector"], inplace = True)
+
         ec_cts_ind2.to_sql(
             targets["cts_ind_demand"]["table"],
             engine,
