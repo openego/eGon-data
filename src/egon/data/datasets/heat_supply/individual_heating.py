@@ -479,12 +479,11 @@ class BuildingHeatPeakLoads(Base):
 
 
 def skip_task(scn=str, task=str):
-    def not_executed():
-        logger.info(
-            f"{scn} is not in the list of scenarios. {task} dataset is skipped."
-        )
+    logger.info(
+        f"{scn} is not in the list of scenarios. {task} dataset is skipped."
+    )
 
-    return not_executed
+    return
 
 
 def adapt_numpy_float64(numpy_float64):
