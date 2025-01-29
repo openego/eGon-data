@@ -14,7 +14,7 @@ import geopandas as gpd
 import numpy as np
 import pandas as pd
 
-from egon.data import db
+from egon.data import db, logger
 from egon.data.datasets import Dataset, wrapped_partial
 from egon.data.datasets.mastr import (
     WORKING_DIR_MASTR_NEW,
@@ -324,7 +324,23 @@ def insert_hydro_plants(scenario):
 
     for carrier in map_carrier.keys():
         # import target values
-        target = select_target(carrier, scenario)
+        if scenario == "eGon100RE":
+            try:
+                target = pd.read_sql(
+                    f"""SELECT capacity FROM supply.egon_scenario_capacities
+                            WHERE scenario_name = '{scenario}'
+                            AND carrier = '{carrier}'
+                            """,
+                    con=db.engine(),
+                ).capacity[0]
+            except:
+                logger.info(
+                    f"No assigned capacity for {carrier} in {scenario}"
+                )
+                continue
+
+        elif scenario == "eGon2035":
+            target = select_target(carrier, scenario)
 
         # import data for MaStR
         mastr = pd.read_csv(
@@ -577,6 +593,7 @@ def insert_hydro_biomass():
         f"""
         DELETE FROM {cfg['target']['schema']}.{cfg['target']['table']}
         WHERE carrier IN ('biomass', 'reservoir', 'run_of_river')
+        AND scenario IN ('eGon2035', 'eGon100RE')
         """
     )
 
