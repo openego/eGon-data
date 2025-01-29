@@ -632,7 +632,7 @@ def connect_h2_grid_to_neighbour_countries(scn_name):
             p_nom_value = relevant_buses['p_nom'].sum()
 
         connection_links.append({
-            'scn_name': 'eGon2035',
+            'scn_name': scn_name,
             'carrier': 'H2_grid',
             'link_id': next(next_max_link_id),
             'bus0': i_bus['bus_id'],
