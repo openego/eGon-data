@@ -113,7 +113,7 @@ def insert_h2_to_ch4_to_h2():
         
         scn_params = get_sector_parameters("gas", scn_name)
         technology = [CH4_to_H2_links, H2_to_CH4_links]
-        links_names = ["H2_to_CH4", "CH4_to_H2"]
+        links_names = ["CH4_to_H2", "CH4_to_H2"]
         
         # Write new entries
         for table, carrier in zip(technology, links_names):
