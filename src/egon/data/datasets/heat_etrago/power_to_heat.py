@@ -465,7 +465,9 @@ def assign_electrical_bus(heat_pumps, carrier, scenario, multiple_per_mv_grid=Fa
         {targets['heat_buses']['table']}
         JOIN {sources['district_heating_areas']['schema']}.
             {sources['district_heating_areas']['table']}
-        ON ST_Transform(ST_Centroid(geom_polygon), 4326) = geom
+        ON ST_Intersects(
+        ST_Transform(ST_Buffer(
+        ST_Centroid(geom_polygon), 0.0000001), 4326), geom)
         WHERE carrier = 'central_heat'
         AND scenario='{scenario}'
         AND scn_name = '{scenario}'
