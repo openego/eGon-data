@@ -34,7 +34,8 @@ def insert_individual_power_to_heat(scenario):
         WHERE link_id IN (
             SELECT link_id FROM {targets['heat_links']['schema']}.
         {targets['heat_links']['table']}
-        WHERE carrier IN ('individual_heat_pump', 'rural_heat_pump')
+        WHERE carrier IN ('individual_heat_pump', 'rural_heat_pump',
+                          'rural_resisitive_heater')
         AND scn_name = '{scenario}')
         AND scn_name = '{scenario}'
         """
@@ -43,7 +44,8 @@ def insert_individual_power_to_heat(scenario):
         f"""
         DELETE FROM {targets['heat_links']['schema']}.
         {targets['heat_links']['table']}
-        WHERE carrier IN ('individual_heat_pump', 'rural_heat_pump')
+        WHERE carrier IN ('individual_heat_pump', 'rural_heat_pump',
+                          'rural_resisitive_heater')
         AND bus0 IN 
         (SELECT bus_id 
          FROM {targets['heat_buses']['schema']}.
@@ -102,6 +104,42 @@ def insert_individual_power_to_heat(scenario):
         scenario=scenario,
     )
 
+    # Deal with rural resistive heaters
+    # Select resisitve heaters for individual heating
+    resistive_heaters = db.select_dataframe(
+        f"""
+        SELECT mv_grid_id as power_bus,
+        a.carrier, capacity, b.bus_id as heat_bus
+        FROM {sources['individual_heating_supply']['schema']}.
+            {sources['individual_heating_supply']['table']} a
+        JOIN {targets['heat_buses']['schema']}.
+        {targets['heat_buses']['table']} b
+        ON ST_Intersects(
+            ST_Buffer(ST_Transform(ST_Centroid(a.geometry), 4326), 0.00000001),
+            geom)
+        WHERE scenario = '{scenario}'
+        AND scn_name  = '{scenario}'
+        AND a.carrier = 'resistive_heater'
+        AND b.carrier = 'rural_heat'
+        """
+    )
+
+    if resistive_heaters.empty:
+        print(f"No rural resistive heaters in scenario {scenario}.")
+    else:
+        # Assign voltage level
+        resistive_heaters["voltage_level"] = 7
+
+        # Set marginal_cost
+        resistive_heaters["marginal_cost"] = 0
+
+        # Insert heatpumps
+        insert_power_to_heat_per_level(
+            resistive_heaters,
+            carrier="rural_resistive_heater",
+            multiple_per_mv_grid=False,
+            scenario=scenario,
+        )
 
 def insert_central_power_to_heat(scenario):
     """Insert power to heat in district heating areas into database
