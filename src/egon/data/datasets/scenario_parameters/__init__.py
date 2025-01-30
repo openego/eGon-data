@@ -245,7 +245,7 @@ class ScenarioParameters(Dataset):
         super().__init__(
             name="ScenarioParameters",
 
-            version="0.0.17",
+            version="0.0.18",
 
             dependencies=dependencies,
             tasks=(
