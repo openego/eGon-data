@@ -942,6 +942,70 @@ def allocate_other_power_plants():
         session.add(entry)
     session.commit()
 
+def discard_not_available_generators(gen, max_date):
+    gen["decommissioning_date"] = pd.to_datetime(
+        gen["decommissioning_date"]
+    )
+    gen["commissioning_date"] = pd.to_datetime(gen["commissioning_date"])
+    # drop plants that are commissioned after the max date
+    gen = gen[gen["commissioning_date"] < max_date]
+
+    # drop decommissioned plants while keeping the ones decommissioned
+    # after the max date
+    gen.loc[(gen["decommissioning_date"] > max_date), "status"] = (
+        "InBetrieb"
+    )
+
+    gen = gen.loc[
+        gen["status"].isin(["InBetrieb", "VoruebergehendStillgelegt"])
+    ]
+
+    # drop unnecessary columns
+    gen = gen.drop(columns=["commissioning_date", "decommissioning_date"])
+
+    return gen
+
+def fill_missing_bus_and_geom(gens, carrier, geom_municipalities, mv_grid_districts):
+    # drop generators without data to get geometry.
+    drop_id = gens[
+        (gens.geom.is_empty)
+        & ~(gens.location.isin(geom_municipalities.index))
+    ].index
+    new_geom = gens["capacity"][
+        (gens.geom.is_empty)
+        & (gens.location.isin(geom_municipalities.index))
+    ]
+    logging.info(
+        f"""{len(drop_id)} {carrier} generator(s) ({gens.loc[drop_id, 'capacity']
+          .sum()}MW) were drop"""
+    )
+
+    logging.info(
+        f"""{len(new_geom)} {carrier} generator(s) ({new_geom
+          .sum()}MW) received a geom based on location
+          """
+    )
+    gens.drop(index=drop_id, inplace=True)
+
+    # assign missing geometries based on location and buses based on geom
+
+    gens["geom"] = gens.apply(
+        lambda x: (
+            geom_municipalities.at[x["location"], "geom"]
+            if x["geom"].is_empty
+            else x["geom"]
+        ),
+        axis=1,
+    )
+    gens["bus_id"] = gens.sjoin(
+        mv_grid_districts[["bus_id", "geom"]], how="left"
+    ).bus_id_right.values
+
+    gens = gens.dropna(subset=["bus_id"])
+    # convert geom to WKB
+    gens["geom"] = gens["geom"].to_wkt()
+
+    return gens
 
 def power_plants_status_quo(scn_name="status2019"):
     con = db.engine()
@@ -978,71 +1042,6 @@ def power_plants_status_quo(scn_name="status2019"):
         con,
     )
     mv_grid_districts.geom = mv_grid_districts.geom.to_crs(4326)
-
-    def fill_missing_bus_and_geom(gens, carrier):
-        # drop generators without data to get geometry.
-        drop_id = gens[
-            (gens.geom.is_empty)
-            & ~(gens.location.isin(geom_municipalities.index))
-        ].index
-        new_geom = gens["capacity"][
-            (gens.geom.is_empty)
-            & (gens.location.isin(geom_municipalities.index))
-        ]
-        logging.info(
-            f"""{len(drop_id)} {carrier} generator(s) ({gens.loc[drop_id, 'capacity']
-              .sum()}MW) were drop"""
-        )
-
-        logging.info(
-            f"""{len(new_geom)} {carrier} generator(s) ({new_geom
-              .sum()}MW) received a geom based on location
-              """
-        )
-        gens.drop(index=drop_id, inplace=True)
-
-        # assign missing geometries based on location and buses based on geom
-
-        gens["geom"] = gens.apply(
-            lambda x: (
-                geom_municipalities.at[x["location"], "geom"]
-                if x["geom"].is_empty
-                else x["geom"]
-            ),
-            axis=1,
-        )
-        gens["bus_id"] = gens.sjoin(
-            mv_grid_districts[["bus_id", "geom"]], how="left"
-        ).bus_id_right.values
-
-        gens = gens.dropna(subset=["bus_id"])
-        # convert geom to WKB
-        gens["geom"] = gens["geom"].to_wkt()
-
-        return gens
-
-    def discard_not_available_generators(gen, max_date):
-        gen["decommissioning_date"] = pd.to_datetime(
-            gen["decommissioning_date"]
-        )
-        gen["commissioning_date"] = pd.to_datetime(gen["commissioning_date"])
-        # drop plants that are commissioned after the max date
-        gen = gen[gen["commissioning_date"] < max_date]
-
-        # drop decommissioned plants while keeping the ones decommissioned
-        # after the max date
-        gen.loc[(gen["decommissioning_date"] > max_date), "status"] = (
-            "InBetrieb"
-        )
-
-        gen = gen.loc[
-            gen["status"].isin(["InBetrieb", "VoruebergehendStillgelegt"])
-        ]
-
-        # drop unnecessary columns
-        gen = gen.drop(columns=["commissioning_date", "decommissioning_date"])
-
-        return gen
 
     # Write conventional power plants in supply.egon_power_plants
     common_columns = [
@@ -1123,7 +1122,7 @@ def power_plants_status_quo(scn_name="status2019"):
     )
     conv = gpd.GeoDataFrame(conv, geometry="geom")
 
-    conv = fill_missing_bus_and_geom(conv, carrier="conventional")
+    conv = fill_missing_bus_and_geom(conv, "conventional", geom_municipalities, mv_grid_districts)
     conv["voltage_level"] = np.nan
 
     conv["voltage_level"] = assign_voltage_level_by_capacity(
@@ -1164,7 +1163,7 @@ def power_plants_status_quo(scn_name="status2019"):
         geom_col="geom",
     )
     hydro = discard_not_available_generators(hydro, scenario_date_max)
-    hydro = fill_missing_bus_and_geom(hydro, carrier="hydro")
+    hydro = fill_missing_bus_and_geom(hydro, "hydro", geom_municipalities, mv_grid_districts)
 
     for i, row in hydro.iterrows():
         entry = EgonPowerPlants(
@@ -1199,7 +1198,7 @@ def power_plants_status_quo(scn_name="status2019"):
     biomass = biomass[biomass.th_capacity == 0]
 
     biomass = discard_not_available_generators(biomass, scenario_date_max)
-    biomass = fill_missing_bus_and_geom(biomass, carrier="biomass")
+    biomass = fill_missing_bus_and_geom(biomass, "biomass", geom_municipalities, mv_grid_districts)
 
     for i, row in biomass.iterrows():
         entry = EgonPowerPlants(
@@ -1237,7 +1236,7 @@ def power_plants_status_quo(scn_name="status2019"):
     solar["site_type"] = solar["site_type"].map(map_solar)
 
     solar = discard_not_available_generators(solar, scenario_date_max)
-    solar = fill_missing_bus_and_geom(solar, carrier="solar")
+    solar = fill_missing_bus_and_geom(solar, "solar", geom_municipalities, mv_grid_districts)
 
     solar = pd.DataFrame(solar, index=solar.index)
     for i, row in solar.iterrows():
@@ -1272,7 +1271,7 @@ def power_plants_status_quo(scn_name="status2019"):
         wind_onshore, scenario_date_max
     )
     wind_onshore = fill_missing_bus_and_geom(
-        wind_onshore, carrier="wind_onshore"
+        wind_onshore, "wind_onshore", geom_municipalities, mv_grid_districts
     )
 
     for i, row in wind_onshore.iterrows():
