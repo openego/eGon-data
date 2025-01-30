@@ -268,6 +268,137 @@ def store():
             insert_store(scenario, "rural_heat")
 
 
+def insert_rural_direct_heat(scenario):
+    """Insert renewable heating technologies (solar thermal)
+
+    Parameters
+    ----------
+    scenario : str
+        Name of the scenario
+
+    Returns
+    -------
+    None.
+
+    """
+    sources = config.datasets()["etrago_heat"]["sources"]
+    targets = config.datasets()["etrago_heat"]["targets"]
+
+    db.execute_sql(
+        f"""
+        DELETE FROM {targets['heat_generators']['schema']}.
+        {targets['heat_generators']['table']}
+        WHERE carrier IN ('rural_solar_thermal')
+        AND scn_name = '{scenario}'
+        AND bus IN
+        (SELECT bus_id
+         FROM {targets['heat_buses']['schema']}.
+         {targets['heat_buses']['table']}
+         WHERE scn_name = '{scenario}'
+         AND country = 'DE')
+        """
+    )
+
+    db.execute_sql(
+        f"""
+        DELETE FROM {targets['heat_generator_timeseries']['schema']}.
+        {targets['heat_generator_timeseries']['table']}
+        WHERE scn_name = '{scenario}'
+        AND generator_id NOT IN (
+            SELECT generator_id FROM
+            {targets['heat_generators']['schema']}.
+            {targets['heat_generators']['table']}
+            WHERE scn_name = '{scenario}')
+        """
+    )
+
+    rural_solar_thermal = db.select_geodataframe(
+        f"""
+        SELECT mv_grid_id as power_bus,
+        a.carrier, capacity, b.bus_id as heat_bus, geom as geometry
+        FROM {sources['individual_heating_supply']['schema']}.
+            {sources['individual_heating_supply']['table']} a
+        JOIN {targets['heat_buses']['schema']}.
+        {targets['heat_buses']['table']} b
+        ON ST_Intersects(
+            ST_Buffer(ST_Transform(ST_Centroid(a.geometry), 4326), 0.00000001),
+            geom)
+        WHERE scenario = '{scenario}'
+        AND scn_name  = '{scenario}'
+        AND a.carrier = 'solar_thermal'
+        AND b.carrier = 'rural_heat'
+        """,
+        geom_col="geometry",
+    )
+
+    if rural_solar_thermal.empty:
+        print(f"No rural solar thermal in scenario {scenario}.")
+        return
+
+    new_id = db.next_etrago_id("generator")
+
+    generator = pd.DataFrame(
+        data={
+            "scn_name": scenario,
+            "carrier": "rural_solar_thermal",
+            "bus": rural_solar_thermal.heat_bus,
+            "p_nom": rural_solar_thermal.capacity,
+            "generator_id": range(new_id, new_id + len(rural_solar_thermal)),
+        }
+    )
+
+    weather_cells = db.select_geodataframe(
+        f"""
+        SELECT w_id, geom
+        FROM {sources['weather_cells']['schema']}.
+            {sources['weather_cells']['table']}
+        """,
+        index_col="w_id",
+    )
+
+    # Map solar thermal collectors to weather cells
+    join = gpd.sjoin(weather_cells, rural_solar_thermal)[["index_right"]]
+
+    weather_year = get_sector_parameters("global", scenario)["weather_year"]
+
+    feedin = db.select_dataframe(
+        f"""
+        SELECT w_id, feedin
+        FROM {sources['feedin_timeseries']['schema']}.
+            {sources['feedin_timeseries']['table']}
+        WHERE carrier = 'solar_thermal'
+        AND weather_year = {weather_year}
+        """,
+        index_col="w_id",
+    )
+
+    timeseries = pd.DataFrame(
+        data={
+            "scn_name": scenario,
+            "temp_id": 1,
+            "p_max_pu": feedin.feedin[join.index].values,
+            "generator_id": generator.generator_id[
+                generator.carrier == "rural_solar_thermal"
+            ].values,
+        }
+    ).set_index("generator_id")
+
+    generator = generator.set_index("generator_id")
+
+    generator.to_sql(
+        targets["heat_generators"]["table"],
+        schema=targets["heat_generators"]["schema"],
+        if_exists="append",
+        con=db.engine(),
+    )
+
+    timeseries.to_sql(
+        targets["heat_generator_timeseries"]["table"],
+        schema=targets["heat_generator_timeseries"]["schema"],
+        if_exists="append",
+        con=db.engine(),
+    )
+
 def insert_central_direct_heat(scenario):
     """Insert renewable heating technologies (solar and geo thermal)
 
@@ -552,6 +683,10 @@ def insert_rural_gas_boilers(scenario):
         """
     )
 
+    if rural_boilers.empty:
+        print(f"No rural gas boilers in scenario {scenario}.")
+        return
+
     # Add LineString topology
     rural_boilers = link_geom_from_buses(rural_boilers, scenario)
 
@@ -618,6 +753,8 @@ def supply():
             insert_central_power_to_heat(scenario)
         insert_individual_power_to_heat(scenario)
         insert_central_gas_boilers(scenario)
+        insert_rural_gas_boilers(scenario)
+        insert_rural_direct_heat(scenario)
 
 
 class HeatEtrago(Dataset):
