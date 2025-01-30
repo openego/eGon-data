@@ -1194,7 +1194,7 @@ def heat(scenario):
             "central_resistive_heater": read_costs(
                 costs, "central resistive heater", "VOM"
             ),
-            "geo_thermal": 2.9,  # Danish Energy Agency
+            "geo_thermal": 2.7,  # Danish Energy Agency
             "water_tank_charger": 0,  # Danish Energy Agency
             "water_tank_discharger": 0,  # Danish Energy Agency
             "rural_heat_pump": 0,  # Danish Energy Agency, Technology Data for Individual Heating Plants
