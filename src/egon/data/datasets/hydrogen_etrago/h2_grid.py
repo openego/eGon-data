@@ -39,21 +39,27 @@ def insert_h2_pipelines(scn_name):
     h2_bus_location = pd.read_csv(Path(".")/"h2_grid_nodes.csv")
     con=db.engine()
     
+    sources = config.datasets()["etrago_hydrogen"]["sources"]
+    target = config.datasets()["etrago_hydrogen"]["targets"]["hydrogen_links"]
+    
     h2_buses_df = pd.read_sql(
     f"""
-    SELECT bus_id, x, y FROM grid.egon_etrago_bus
+    SELECT bus_id, x, y FROM {sources["buses"]["schema"]}.{sources["buses"]["table"]}
     WHERE carrier in ('H2_grid')
-    AND scn_name = '{scn_name}'
-    
+    AND scn_name = '{scn_name}'   
     """
     , con)
     
     # Delete old entries
     db.execute_sql(
         f"""
-            DELETE FROM grid.egon_etrago_link 
-            WHERE "carrier" = 'H2_grid'
-            AND scn_name = '{scn_name}'
+        DELETE FROM {target["schema"]}.{target["table"]}
+        WHERE "carrier" = 'H2_grid'
+        AND scn_name = '{scn_name}' AND bus0 IN (
+          SELECT bus_id
+          FROM {sources["buses"]["schema"]}.{sources["buses"]["table"]}
+          WHERE country = 'DE'
+        )
         """
     )
     
@@ -552,13 +558,6 @@ def connect_h2_grid_to_neighbour_countries(scn_name):
         """,
         engine
     )
-
-    abroad_bus_ids=tuple(abroad_buses_df['bus_id'])
-    db.execute_sql(f"""
-                DELETE FROM {targets["hydrogen_links"]["schema"]}.{targets["hydrogen_links"]["table"]}
-                WHERE carrier = 'H2_grid' 
-                AND bus1 IN {abroad_bus_ids}
-                """)  
         
     abroad_con_buses = [
         ('Greifenhagen', 'PL'),
