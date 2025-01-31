@@ -272,7 +272,9 @@ def delete_previuos_gen(cfg, con, etrago_gen_orig, power_plants):
                             SELECT bus_id FROM {cfg['sources']['bus']['schema']}.
                             {cfg['sources']['bus']['table']}
                             WHERE country = 'DE'
-                            AND carrier = 'AC')
+                            AND carrier = 'AC'
+                            AND scn_name = '{scn_name}')
+                        AND scn_name ='{scn_name}'
                         """
             )
 
@@ -284,6 +286,7 @@ def delete_previuos_gen(cfg, con, etrago_gen_orig, power_plants):
                             SELECT generator_id FROM
                             {cfg['targets']['etrago_generators']['schema']}.
                             {cfg['targets']['etrago_generators']['table']})
+                        AND scn_name ='{scn_name}'
                         """
             )
 
