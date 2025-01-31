@@ -1418,8 +1418,17 @@ def import_gas_gen_egon100():
 
     conv["capacity"] = conv["capacity"] * (target / conv["capacity"].sum())
 
+    max_id = db.select_dataframe(
+        """
+            SELECT max(id) FROM supply.egon_power_plants
+            """,
+    ).iat[0, 0]
+
+    conv["id"] = range(max_id + 1, max_id + 1 + len(conv))
+
     for i, row in conv.iterrows():
         entry = EgonPowerPlants(
+            id=row.id,
             sources={"el_capacity": "MaStR"},
             source_id={"MastrNummer": row.gens_id},
             carrier=row.carrier,
