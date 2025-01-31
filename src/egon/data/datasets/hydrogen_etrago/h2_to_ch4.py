@@ -50,7 +50,10 @@ def insert_h2_to_ch4_to_h2():
         
         db.execute_sql(f"""
            DELETE FROM {target_links["schema"]}.{target_links["table"]} WHERE "carrier" in ('H2_to_CH4', 'CH4_to_H2')
-           AND scn_name = '{scn_name}';    
+           AND scn_name = '{scn_name}' AND bus0 IN (
+             SELECT bus_id
+             FROM {target_buses["schema"]}.{target_buses["table"]}
+             WHERE country = 'DE';    
            """)
          
         sql_CH4_buses = f"""
@@ -87,7 +90,6 @@ def insert_h2_to_ch4_to_h2():
                     'link_id': None,
                     'bus0': nearest_ch4_bus['bus_id'],
                     'bus1': h2_bus['bus_id'],
-                    'carrier': 'CH4_to_H2',
                     'geom': MultiLineString([LineString([(h2_bus['x'], h2_bus['y']), (nearest_ch4_bus['x'], nearest_ch4_bus['y'])])])
                     })
             
@@ -97,7 +99,6 @@ def insert_h2_to_ch4_to_h2():
             'link_id': link['link_id'],
             'bus0': link['bus1'],  # Swap bus0 and bus1
             'bus1': link['bus0'],
-            'carrier': 'H2_to_CH4',
             'geom': link['geom']
         }
         for link in CH4_to_H2_links
@@ -107,16 +108,13 @@ def insert_h2_to_ch4_to_h2():
         CH4_to_H2_links = gpd.GeoDataFrame(CH4_to_H2_links, geometry='geom', crs=4326)
         H2_to_CH4_links = gpd.GeoDataFrame(H2_to_CH4_links, geometry='geom', crs=4326)
 
-        next_link_id = db.next_etrago_id('link')
-        CH4_to_H2_links['link_id'] = range(next_link_id, next_link_id + len(CH4_to_H2_links))
-        H2_to_CH4_links['link_id'] = range(next_link_id + len(CH4_to_H2_links), next_link_id + len(CH4_to_H2_links) + len(H2_to_CH4_links))
         
         scn_params = get_sector_parameters("gas", scn_name)
         technology = [CH4_to_H2_links, H2_to_CH4_links]
-        links_names = ["H2_to_CH4", "CH4_to_H2"]
+        links_carriers = ["CH4_to_H2", "CH4_to_H2"]
         
         # Write new entries
-        for table, carrier in zip(technology, links_names):
+        for table, carrier in zip(technology, links_carriers):
             # set parameters according to carrier name
             table["carrier"] = carrier
             table["efficiency"] = scn_params["efficiency"][carrier]   
@@ -125,7 +123,6 @@ def insert_h2_to_ch4_to_h2():
             table["lifetime"] = scn_params["lifetime"][carrier]
             new_id = db.next_etrago_id("link")
             table["link_id"] = range(new_id, new_id + len(table))
-            table["scn_name"] = scn_name
 
 
             table.to_postgis(
