@@ -53,7 +53,8 @@ def insert_h2_to_ch4_to_h2():
            AND scn_name = '{scn_name}' AND bus0 IN (
              SELECT bus_id
              FROM {target_buses["schema"]}.{target_buses["table"]}
-             WHERE country = 'DE';    
+             WHERE country = 'DE'
+             )
            """)
          
         sql_CH4_buses = f"""
