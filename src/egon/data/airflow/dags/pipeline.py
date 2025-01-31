@@ -52,12 +52,12 @@ from egon.data.datasets.heat_supply import (
     GeothermalPotentialGermany,
     HeatSupply,
 )
-# from egon.data.datasets.heat_supply.individual_heating import (
-#     HeatPumps2019,
-#     HeatPumps2035,
-#     HeatPumps2050,
-#     HeatPumpsPypsaEur,
-# )
+from egon.data.datasets.heat_supply.individual_heating import (
+    HeatPumps2019,
+    HeatPumps2035,
+    #HeatPumps2050,
+    HeatPumpsPypsaEur,
+)
 from egon.data.datasets.hydrogen_etrago import (
     HydrogenBusEtrago,
     HydrogenGridEtrago,
@@ -349,13 +349,13 @@ with airflow.DAG(
     )
 
     # Minimum heat pump capacity for pypsa-eur
-    # heat_pumps_pypsa_eur = HeatPumpsPypsaEur(
-    #     dependencies=[
-    #         cts_demand_buildings,
-    #         DistrictHeatingAreas,
-    #         heat_time_series,
-    #     ]
-    # )
+    heat_pumps_pypsa_eur = HeatPumpsPypsaEur(
+        dependencies=[
+            cts_demand_buildings,
+            DistrictHeatingAreas,
+            heat_time_series,
+        ]
+    )
 
     prepare_pypsa_eur = PreparePypsaEur(
         dependencies=[
@@ -582,17 +582,17 @@ with airflow.DAG(
     )
 
     # Heat pump disaggregation for status2019
-    # heat_pumps_2019 = HeatPumps2019(
-    #     dependencies=[
-    #         cts_demand_buildings,
-    #         DistrictHeatingAreas,
-    #         heat_supply,
-    #         heat_time_series,
-    #         power_plants,
-    #     ]
-    # )
+    heat_pumps_2019 = HeatPumps2019(
+        dependencies=[
+            cts_demand_buildings,
+            DistrictHeatingAreas,
+            heat_supply,
+            heat_time_series,
+            power_plants,
+        ]
+    )
 
-    # # Heat pump disaggregation for eGon2035
+    # Heat pump disaggregation for eGon2035
     # heat_pumps_2035 = HeatPumps2035(
     #     dependencies=[
     #         cts_demand_buildings,
@@ -611,7 +611,7 @@ with airflow.DAG(
             heat_etrago,
             heat_time_series,
             mv_grid_districts,
-            # heat_pumps_2035,
+            heat_pumps_2019,
         ]
     )
     
