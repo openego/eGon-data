@@ -301,6 +301,16 @@ def amenities_without_buildings():
     from saio.openstreetmap import osm_amenities_not_in_buildings_filtered
 
     with db.session_scope() as session:
+        scn_query = session.query(
+            func.distinct(EgonDemandRegioZensusElectricity.scenario)
+        )
+
+    # FIXME: Cells with CTS demand, amenities and buildings do not change within the
+    #  scenarios, only the demand itself. Therefore any scenario can be used
+    #  universally to determine the cts buildings but not for the demand share.
+    scn = db.select_dataframe(scn_query.statement).iat[0, 0]
+
+    with db.session_scope() as session:
         cells_query = (
             session.query(
                 DestatisZensusPopulationPerHa.id.label("zensus_population_id"),
@@ -319,7 +329,7 @@ def amenities_without_buildings():
             )
             .filter(
                 EgonDemandRegioZensusElectricity.sector == "service",
-                EgonDemandRegioZensusElectricity.scenario == "status2019",
+                EgonDemandRegioZensusElectricity.scenario == scn,
             )
         )
 
@@ -617,6 +627,16 @@ def buildings_without_amenities():
         osm_buildings_synthetic,
     )
 
+    with db.session_scope() as session:
+        scn_query = session.query(
+            func.distinct(EgonDemandRegioZensusElectricity.scenario)
+        )
+
+    # FIXME: Cells with CTS demand, amenities and buildings do not change within the
+    #  scenarios, only the demand itself. Therefore any scenario can be used
+    #  universally to determine the cts buildings but not for the demand share.
+    scn = db.select_dataframe(scn_query.statement).iat[0, 0]
+
     # buildings_filtered in cts-demand-cells without amenities
     with db.session_scope() as session:
         # Synthetic Buildings
@@ -663,7 +683,7 @@ def buildings_without_amenities():
             )
             .filter(
                 EgonDemandRegioZensusElectricity.sector == "service",
-                EgonDemandRegioZensusElectricity.scenario == "status2019",
+                EgonDemandRegioZensusElectricity.scenario == scn,
             )
             .filter(
                 EgonDemandRegioZensusElectricity.zensus_population_id.notin_(
@@ -738,6 +758,16 @@ def cells_with_cts_demand_only(df_buildings_without_amenities):
     """
     from saio.openstreetmap import osm_amenities_shops_filtered
 
+    with db.session_scope() as session:
+        scn_query = session.query(
+            func.distinct(EgonDemandRegioZensusElectricity.scenario)
+        )
+
+    # FIXME: Cells with CTS demand, amenities and buildings do not change within the
+    #  scenarios, only the demand itself. Therefore any scenario can be used
+    #  universally to determine the cts buildings but not for the demand share.
+    scn = db.select_dataframe(scn_query.statement).iat[0, 0]
+
     # cells mit amenities
     with db.session_scope() as session:
         sub_query = (
@@ -763,7 +793,7 @@ def cells_with_cts_demand_only(df_buildings_without_amenities):
             )
             .filter(
                 EgonDemandRegioZensusElectricity.sector == "service",
-                EgonDemandRegioZensusElectricity.scenario == "status2019",
+                EgonDemandRegioZensusElectricity.scenario == scn,
             )
             .filter(
                 EgonDemandRegioZensusElectricity.zensus_population_id.notin_(
@@ -1210,7 +1240,7 @@ def cts_buildings():
     Note:
     -----
     Cells with CTS demand, amenities and buildings do not change within
-    the scenarios, only the demand itself. Therefore scenario status2019
+    the scenarios, only the demand itself. Therefore any scenario
     can be used universally to determine the cts buildings but not for
     the demand share.
     """
