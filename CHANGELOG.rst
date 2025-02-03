@@ -772,6 +772,8 @@ Bug Fixes
 * Fix incorrect YAML serialization of the --scenarios CLI
   parameter that caused broken DAGs in the pipeline.
   `#343 <https://github.com/openego/powerd-data/issues/343>`_
+* Fix hard coded scenario name in CTS building generation
+  `#1180 <https://github.com/openego/eGon-data/issues/1180>`_
 
 
 .. _PR #692: https://github.com/openego/eGon-data/pull/692
