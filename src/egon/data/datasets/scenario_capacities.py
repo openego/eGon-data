@@ -744,6 +744,12 @@ def eGon100_capacities():
     df = df.drop(df.index[df.index.str.startswith("offwind")])
 
     # Aggregate OCGT and CCGT
+    df.loc["OCGT", df.columns != "component"] = (
+        df.loc["OCGT", df.columns != "component"] * 0.425
+    )
+    df.loc["CCGT", df.columns != "component"] = (
+        df.loc["CCGT", df.columns != "component"] * 0.570
+    )
     df.loc["gas"] = df[df.index.str.endswith("CGT")].sum(numeric_only=True)
     df.loc["gas", "component"] = "links"
     df = df.drop(df.index[df.index.str.endswith("CGT")])
