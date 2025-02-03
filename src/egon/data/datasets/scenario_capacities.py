@@ -132,7 +132,7 @@ def insert_capacities_status2019():
         (component, carrier, capacity, nuts, scenario_name)
         VALUES (
             'link',
-            'residential_rural_heat_pump',
+            'rural_heat_pump',
             {rural_heat_capacity},
             'DE',
             'status2019'            
@@ -858,7 +858,7 @@ class ScenarioCapacities(Dataset):
     def __init__(self, dependencies):
         super().__init__(
             name="ScenarioCapacities",
-            version="0.0.16",
+            version="0.0.17",
             dependencies=dependencies,
             tasks=tasks,
         )
