@@ -666,9 +666,25 @@ def insert_cts_ind(scenario, year, engine, target_values):
         "targets"
     ]
 
+    # Workaround: Since the disaggregator does not work anymore, data from
+    # previous runs is used for eGon2035 and eGon100RE
+    if scenario == "eGon2035":
+        ec_cts_ind2 = pd.read_csv(
+            "data_bundle_powerd_data/egon_demandregio_cts_ind_egon2035.csv"
+        )
+        ec_cts_ind2.to_sql(
+            targets["cts_ind_demand"]["table"],
+            engine,
+            targets["cts_ind_demand"]["schema"],
+            if_exists="append",
+            index=False,
+        )
+        return
+
     if scenario == "eGon100RE":
         ec_cts_ind2 = pd.read_csv(
-            "data_bundle_powerd_data/egon_demandregio_cts_ind.csv")
+            "data_bundle_powerd_data/egon_demandregio_cts_ind.csv"
+        )
         ec_cts_ind2.to_sql(
             targets["cts_ind_demand"]["table"],
             engine,
@@ -965,6 +981,7 @@ def timeseries_per_wz():
             if not year in year_already_in_database:
                 insert_timeseries_per_wz(sector, int(year))
         year_already_in_database.append(year)
+
 
 def get_cached_tables():
     """Get cached demandregio tables and db-dump from former runs"""
