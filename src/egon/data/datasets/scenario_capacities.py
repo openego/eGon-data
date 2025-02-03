@@ -739,7 +739,8 @@ def eGon100_capacities():
     df.index = df.index.str.replace(" ", "_")
 
     # Aggregate offshore wind
-    df.loc["wind_offshore"] = df[df.index.str.startswith("offwind")].sum(numeric_only=True)
+    df.loc["wind_offshore"] = df[df.index.str.startswith(
+        "offwind")].sum(numeric_only=True)
     df.loc["wind_offshore", "component"] = "generators"
     df = df.drop(df.index[df.index.str.startswith("offwind")])
 
@@ -818,7 +819,8 @@ def eGon100_capacities():
         df_year = df.rename(
             {f"p_nom_{year}": "capacity", "index": "carrier"}, axis="columns"
         )
-        df_year.drop(df_year.columns[~df_year.columns.isin(["carrier", 'component', "capacity"])], axis="columns", inplace=True)
+        df_year.drop(df_year.columns[~df_year.columns.isin(
+            ["carrier", 'component', "capacity"])], axis="columns", inplace=True)
 
         if year == "2045":
             df_year["scenario_name"] = "eGon100RE"
