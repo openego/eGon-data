@@ -604,9 +604,14 @@ def insert_hh_demand(scenario, year, engine):
         .resample("h")
         .sum()
     )
+
     hh_load_timeseries.rename(
         columns={"DEB16": "DEB1C", "DEB19": "DEB1D"}, inplace=True
     )
+
+    # scale time-series
+    factor = ec_hh.sum(axis=1)/hh_load_timeseries.sum()
+    hh_load_timeseries = hh_load_timeseries * factor
 
     write_demandregio_hh_profiles_to_db(hh_load_timeseries, year)
 
