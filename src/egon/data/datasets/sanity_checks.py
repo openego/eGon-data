@@ -57,28 +57,6 @@ TESTMODE_OFF = (
 )
 
 
-class SanityChecks(Dataset):
-    def __init__(self, dependencies):
-        super().__init__(
-            name="SanityChecks",
-            version="0.0.7",
-            dependencies=dependencies,
-            tasks={
-                etrago_eGon2035_electricity,
-                etrago_eGon2035_heat,
-                residential_electricity_annual_sum,
-                residential_electricity_hh_refinement,
-                cts_electricity_demand_share,
-                cts_heat_demand_share,
-                sanitycheck_emobility_mit,
-                sanitycheck_pv_rooftop_buildings,
-                sanitycheck_home_batteries,
-                sanitycheck_dsm,
-                etrago_timeseries_length,
-            },
-        )
-
-
 def etrago_eGon2035_electricity():
     """Execute basic sanity checks.
 
@@ -1571,3 +1549,313 @@ def etrago_timeseries_length():
                     f"Timeseries with a length != 8760 for {component} {col}")
             else:
                 print(f"Empty timeseries for {component} {col}")
+
+
+def generators_links_storages_stores_100RE(scn = "eGon100RE"):
+    # Generators
+    scn_capacities = db.select_dataframe(
+        f"""
+        SELECT * FROM supply.egon_scenario_capacities
+        WHERE scenario_name = '{scn}'
+        """,
+        index_col="index",
+    )
+
+    map_carrier = {
+        "urban_central_solar_thermal_collector": "solar_thermal_collector",
+        "urban_central_geo_thermal": "geo_thermal",
+        "urban_central_gas_boiler": "central_gas_boiler",
+        "urban_central_heat_pump": "central_heat_pump",
+        "urban_central_resistive_heater": "central_resistive_heater",
+        "gas": "OCGT"
+    }
+
+    scn_capacities["carrier"] = scn_capacities["carrier"].apply(
+        lambda x: map_carrier[x] if x in map_carrier.keys() else x
+    )
+
+    carriers_gen_from_supply = [
+        "oil",
+        "solar",
+        "solar_rooftop",
+        "wind_onshore",
+        "lignite",
+        "coal",
+        "wind_offshore",
+        "solar_thermal_collector",
+        "geo_thermal",
+        "run_of_river",
+        "rural_solar_thermal",
+        "urban_central_gas_CHP",
+        "urban_central_solid_biomass_CHP",
+    ]
+
+    gen_etrago = db.select_dataframe(
+        f"""
+        SELECT * FROM grid.egon_etrago_generator
+        WHERE scn_name = '{scn}'
+        AND bus IN (SELECT bus_id from grid.egon_etrago_bus
+                    WHERE scn_name = '{scn}'
+                    AND country = 'DE')
+        """,
+        warning=False,
+    )
+
+    carriers_gen = set(
+        carriers_gen_from_supply
+        + list(gen_etrago["carrier"])
+    )
+
+    gen_capacities = pd.DataFrame(index=list(
+        carriers_gen), columns=["supply_table", scn])
+    gen_capacities[scn] = (
+        gen_etrago.groupby("carrier").p_nom.sum()
+    )
+
+    gen_capacities["supply_table"] = scn_capacities.set_index("carrier")[
+        "capacity"]
+
+    gen_capacities.dropna(how="all", inplace=True)
+
+    print(f"\nMain results regarding generators for {scn}\n")
+    print(gen_capacities)
+
+    ###########################################################################
+    # Links
+
+    carriers_links_from_supply = [
+        "central_gas_boiler",
+        "central_heat_pump",
+        "central_resistive_heater",
+        "gas",
+        "rural_biomass_boiler",
+        "rural_gas_boiler",
+        "rural_heat_pump",
+        "rural_oil_boiler",
+        "rural_resistive_heater",
+    ]
+
+    link_etrago = db.select_dataframe(
+        f"""
+        SELECT * FROM grid.egon_etrago_link
+        WHERE scn_name = '{scn}'
+        AND (bus0 IN (SELECT bus_id from grid.egon_etrago_bus
+                    WHERE scn_name = '{scn}'
+                    AND country = 'DE')
+             OR
+             bus1 IN (SELECT bus_id from grid.egon_etrago_bus
+                    WHERE scn_name = '{scn}'
+                    AND country = 'DE')
+             )
+        """,
+        warning=False,
+    )
+
+    carriers_link = set(
+        carriers_links_from_supply
+        + list(link_etrago["carrier"])
+    )
+
+    link_capacities = pd.DataFrame(index=list(
+        carriers_link), columns=["supply_table", scn])
+
+    link_capacities["eGon100RE"] = (
+        link_etrago.groupby("carrier").p_nom.sum()
+    )
+
+    link_capacities["supply_table"] = scn_capacities.set_index("carrier")[
+        "capacity"]
+
+    link_capacities.dropna(how="all", inplace=True)
+
+    print(f"\nMain results regarding links for {scn}\n")
+    print(link_capacities)
+    ###########################################################################
+    # storage
+    storage_etrago = db.select_dataframe(
+        f"""
+        SELECT * FROM grid.egon_etrago_storage
+        WHERE scn_name = '{scn}'
+        AND bus IN (SELECT bus_id from grid.egon_etrago_bus
+                    WHERE scn_name = '{scn}'
+                    AND country = 'DE')
+        """,
+    )
+
+    carriers_storage_from_supply = ["pumped_hydro"]
+
+    carriers_storage = set(
+        carriers_storage_from_supply
+        + list(storage_etrago["carrier"])
+    )
+
+    storage_capacities = pd.DataFrame(
+        index=list(carriers_storage), columns=["supply_table", scn]
+    )
+
+    storage_capacities[scn] = (
+        storage_etrago.groupby("carrier").p_nom.sum()
+    )
+
+    storage_capacities["supply_table"] = scn_capacities.set_index("carrier")[
+        "capacity"]
+
+    print(f"\nMain results regarding storage units for {scn}\n")
+    print(storage_capacities)
+    ###########################################################################
+    # stores
+    stores_etrago = db.select_dataframe(
+        f"""
+        SELECT * FROM grid.egon_etrago_store
+        WHERE scn_name = '{scn}'
+        AND bus IN (SELECT bus_id from grid.egon_etrago_bus
+                    WHERE scn_name = '{scn}'
+                    AND country = 'DE')
+        """,
+    )
+
+    carriers_stores_from_supply = []
+
+    carriers_stores = set(
+        carriers_stores_from_supply
+        + list(stores_etrago["carrier"])
+    )
+
+    stores_capacities = pd.DataFrame(
+        index=list(carriers_stores), columns=["supply_table", scn]
+    )
+
+    stores_capacities[scn] = (
+        stores_etrago.groupby("carrier").e_nom.sum()
+    )
+
+    stores_capacities["supply_table"] = scn_capacities.set_index("carrier")[
+        "capacity"]
+
+    print(f"\nMain results regarding stores for {scn}\n")
+    print(stores_capacities)
+
+    return
+
+
+def electrical_load_100RE(scn = "eGon100RE"):
+    load_summary = pd.DataFrame(
+        index=["residential", "commercial", "industrial", "total",],
+        columns=["objective", "eGon100RE"])
+
+    # Sector	Annual electricity demand in TWh
+    load_summary.loc["residential", "objective"] = 90.4 #https://github.com/openego/powerd-data/blob/56b8215928a8dc4fe953d266c563ce0ed98e93f9/src/egon/data/datasets/demandregio/__init__.py#L480
+    load_summary.loc["commercial", "objective"] = 146.7 #https://github.com/openego/powerd-data/blob/56b8215928a8dc4fe953d266c563ce0ed98e93f9/src/egon/data/datasets/demandregio/__init__.py#L775
+    load_summary.loc["industrial", "objective"] = 382.9 #https://github.com/openego/powerd-data/blob/56b8215928a8dc4fe953d266c563ce0ed98e93f9/src/egon/data/datasets/demandregio/__init__.py#L775
+    load_summary.loc["total", "objective"] = 620.0
+
+    print(
+        "For German electricity loads the following deviations between the"
+        " input and output can be observed:"
+    )
+
+    load_summary.loc["total", "eGon100RE"] = db.select_dataframe(
+        """SELECT a.scn_name, a.carrier,  SUM((SELECT SUM(p)
+        FROM UNNEST(b.p_set) p))/1000000::numeric as load_twh
+            FROM grid.egon_etrago_load a
+            JOIN grid.egon_etrago_load_timeseries b
+            ON (a.load_id = b.load_id)
+            JOIN grid.egon_etrago_bus c
+            ON (a.bus=c.bus_id)
+            AND b.scn_name = 'eGon100RE'
+            AND a.scn_name = 'eGon100RE'
+            AND a.carrier = 'AC'
+            AND c.scn_name= 'eGon100RE'
+            AND c.country='DE'
+            GROUP BY (a.scn_name, a.carrier);
+    """,
+        warning=False,
+    )["load_twh"].values[0]
+
+    sources = egon.data.config.datasets()["etrago_electricity"]["sources"]
+    cts_curves = db.select_dataframe(
+        f"""SELECT bus_id AS bus, p_set FROM
+                {sources['cts_curves']['schema']}.
+                {sources['cts_curves']['table']}
+                WHERE scn_name = '{scn}'""",
+    )
+    sum_cts_curves = cts_curves.apply(
+        lambda x: sum(x["p_set"]), axis=1).sum()/1000000
+    load_summary.loc["commercial", "eGon100RE"] = sum_cts_curves
+
+    # Select data on industrial demands assigned to osm landuse areas
+    ind_curves_osm = db.select_dataframe(
+        f"""SELECT bus, p_set FROM
+                {sources['osm_curves']['schema']}.
+                {sources['osm_curves']['table']}
+                WHERE scn_name = '{scn}'""",
+    )
+    sum_ind_curves_osm = ind_curves_osm.apply(
+        lambda x: sum(x["p_set"]), axis=1).sum()/1000000
+
+    # Select data on industrial demands assigned to industrial sites
+
+    ind_curves_sites = db.select_dataframe(
+        f"""SELECT bus, p_set FROM
+                {sources['sites_curves']['schema']}.
+                {sources['sites_curves']['table']}
+                WHERE scn_name = '{scn}'""",
+    )
+    sum_ind_curves_sites = ind_curves_sites.apply(
+        lambda x: sum(x["p_set"]), axis=1).sum()/1000000
+
+    load_summary.loc["industrial",
+                     "eGon100RE"] = sum_ind_curves_osm + sum_ind_curves_sites
+
+    # Select data on household electricity demands per bus
+    hh_curves = db.select_dataframe(
+        f"""SELECT bus_id AS bus, p_set FROM
+                {sources['household_curves']['schema']}.
+                {sources['household_curves']['table']}
+                WHERE scn_name = '{scn}'""",
+    )
+    sum_hh_curves = hh_curves.apply(
+        lambda x: sum(x["p_set"]), axis=1).sum()/1000000
+    load_summary.loc["residential", "eGon100RE"] = sum_hh_curves
+
+    load_summary["diff"] = load_summary["eGon100RE"] - \
+        load_summary["objective"]
+    load_summary["diff[%]"] = load_summary["diff"] / \
+        load_summary["eGon100RE"] * 100
+
+    print(load_summary)
+
+    assert (load_summary["diff[%]"] < 1).all(
+    ), "electrical loads differ from objective values"
+
+    return ()
+
+
+tasks = ()
+
+if "eGon2035" in SCENARIOS:
+    tasks = tasks + (etrago_eGon2035_electricity,
+                    etrago_eGon2035_heat,
+                    residential_electricity_annual_sum,
+                    residential_electricity_hh_refinement,
+                    cts_electricity_demand_share,
+                    cts_heat_demand_share,
+                    sanitycheck_emobility_mit,
+                    sanitycheck_pv_rooftop_buildings,
+                    sanitycheck_home_batteries,
+                    sanitycheck_dsm,
+                    etrago_timeseries_length,)
+
+if "eGon100RE" in SCENARIOS:
+    tasks = tasks + (electrical_load_100RE,
+                     generators_links_storages_stores_100RE,
+                     etrago_timeseries_length,)
+
+class SanityChecks(Dataset):
+    def __init__(self, dependencies):
+        super().__init__(
+            name="SanityChecks",
+            version="0.0.8",
+            dependencies=dependencies,
+            tasks=tasks,
+        )
