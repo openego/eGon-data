@@ -50,6 +50,7 @@ from egon.data.datasets.power_plants.pv_rooftop_buildings import (
 )
 from egon.data.datasets.scenario_parameters import get_sector_parameters
 from egon.data.datasets.storages.home_batteries import get_cbat_pbat_ratio
+from egon.data.datasets.pypsaeur import read_network
 import egon.data
 
 TESTMODE_OFF = (
@@ -1835,6 +1836,133 @@ def electrical_load_100RE(scn="eGon100RE"):
     return ()
 
 
+
+def heat_gas_load_egon100RE(scn='eGon100RE'):
+    
+    #dictionary for matching pypsa_eur carrier with egon-data carriers
+    load_carrier_dict={
+        'DE0 0 land transport EV': 'land transport EV',
+        'DE0 0 rural heat': 'rural_heat',
+        'DE0 0 urban central heat': 'central_heat',
+        'DE0 0 urban decentral heat': 'rural_heat',
+        'rural heat': 'rural_heat',
+        'H2 for industry': 'H2_for_industry',
+        'gas for industry': 'CH4_for_industry',
+        'urban central heat': 'central_heat',
+        'urban decentral heat': 'rural_heat',
+        'land transport EV': 'land transport EV',
+        }
+    
+    #filter out NaN values central_heat timeseries
+    NaN_load_ids=db.select_dataframe(
+        """
+        SELECT load_id from grid.egon_etrago_load_timeseries 
+        WHERE load_id IN (Select load_id 
+            FROM grid.egon_etrago_load
+            WHERE carrier = 'central_heat') AND (SELECT 
+            bool_or(value::double precision::text = 'NaN') 
+        FROM unnest(p_set) AS value
+        )
+       """   
+    )
+    nan_load_list = tuple(NaN_load_ids["load_id"].tolist())
+    nan_load_str = ",".join(map(str, nan_load_list))  
+                           
+    #####loads for eGon100RE
+    loads_etrago_timeseries = db.select_dataframe(
+        f"""
+            SELECT 
+                l.carrier,
+                SUM(
+                    (SELECT SUM(p)
+                    FROM UNNEST(t.p_set) p)  
+                )  AS total_p_set_timeseries  
+            FROM 
+                grid.egon_etrago_load l
+            LEFT JOIN 
+                grid.egon_etrago_load_timeseries t ON l.load_id = t.load_id 
+            WHERE 
+                l.scn_name = '{scn}'
+                AND l.carrier != 'AC'
+                AND l.bus IN (
+                    SELECT bus_id
+                    FROM grid.egon_etrago_bus
+                    WHERE scn_name = '{scn}' 
+                    AND country = 'DE'
+                )
+                AND l.load_id NOT IN ({nan_load_str})
+                
+            GROUP BY 
+                l.carrier
+        """
+    )
+    
+    #####loads for pypsa_eur_network
+    n = read_network()
+    
+    #aggregate loads with values in timeseries dataframe 
+    df_load_timeseries = n.loads_t.p_set
+    filtered_columns = [col for col in df_load_timeseries.columns if col.startswith("DE") and "electricity" not in col]
+    german_loads_timeseries = df_load_timeseries[filtered_columns]
+    german_loads_timeseries = german_loads_timeseries.drop(columns=["DE0 0"])
+    german_loads_timeseries = german_loads_timeseries.mul(
+        n.snapshot_weightings.generators,axis= 0).sum()
+    german_loads_timeseries = german_loads_timeseries.rename(index=load_carrier_dict)
+    
+    
+    #sum loads with fixed p_set in loads dataframe
+    german_load_static_p_set = n.loads[n.loads.index.str.startswith('DE') & 
+                                       ~n.loads.carrier.str.contains('electricity')]
+    german_load_static_p_set = german_load_static_p_set.groupby('carrier').p_set.sum()*8760
+    german_load_static_p_set = german_load_static_p_set.rename(index=load_carrier_dict)
+    german_load_static_p_set["H2_for_industry"] =( german_load_static_p_set["H2_for_industry"]+                   
+        +n.links_t.p0[n.links.loc[
+                            n.links.index.str.contains(
+                                "DE0 0 Fischer-Tropsch")].index].mul(
+                                    n.snapshot_weightings.generators,
+                                    axis= 0).sum().sum()
+        + n.links_t.p0[n.links.loc[
+                            n.links.index.str.contains(
+                                "DE0 0 methanolisation")].index].mul(
+                                    n.snapshot_weightings.generators,
+                                    axis= 0).sum().sum())
+    
+    
+    
+    #combine p_set and timeseries dataframes from pypsa eur
+    german_loads_timeseries_df= german_loads_timeseries.to_frame()
+    german_loads_timeseries_df['carrier'] = german_loads_timeseries_df.index
+    german_loads_timeseries_df.set_index('carrier', inplace=True)
+    
+    german_load_static_p_set_df= german_load_static_p_set.to_frame()
+    german_load_static_p_set_df = german_load_static_p_set_df.groupby("carrier", as_index=True).sum()
+    german_loads_timeseries_df = german_loads_timeseries_df.groupby("carrier", as_index=True).sum()
+    combined= pd.merge( german_load_static_p_set_df,german_loads_timeseries_df , on="carrier", how="left")
+    
+    combined['p_set'] = np.where(combined['p_set'] == 0, combined[0], combined['p_set'])
+    combined = combined.drop(columns=[0])
+    
+    #carriers_for_comparison
+    carriers_loads = set(
+        german_load_static_p_set.index 
+        .union(german_loads_timeseries.index)  
+        .union(loads_etrago_timeseries["carrier"])  
+    )
+    
+    #create dataframe for comparison
+    loads_capacities = pd.DataFrame(index=list(carriers_loads), columns=["pypsa_eur", scn])
+    loads_capacities[scn] = loads_etrago_timeseries.groupby("carrier").total_p_set_timeseries.sum()
+    loads_capacities["pypsa_eur"] = combined['p_set']
+    loads_capacities["diff [%]"] = ((loads_capacities[scn] - loads_capacities["pypsa_eur"]) / 
+                                    loads_capacities["pypsa_eur"].replace(0, np.nan))*100
+    
+    print("="*50)
+    print("Comparison of Gas and Heat Loads with PyPSA-Eur Data".center(50, "="))
+    print("="*50)
+    print(loads_capacities)
+
+
+
 tasks = ()
 
 if "eGon2035" in SCENARIOS:
@@ -1853,7 +1981,8 @@ if "eGon2035" in SCENARIOS:
 if "eGon100RE" in SCENARIOS:
     tasks = tasks + (electrical_load_100RE,
                      generators_links_storages_stores_100RE,
-                     etrago_timeseries_length,)
+                     etrago_timeseries_length,
+                     heat_gas_load_egon100RE,)
 
 
 class SanityChecks(Dataset):
