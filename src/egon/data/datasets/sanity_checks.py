@@ -1522,6 +1522,7 @@ def sanitycheck_dsm():
         assert np.allclose(e_max_df, individual_e_max_df)
         assert np.allclose(e_min_df, individual_e_min_df)
 
+
 def etrago_timeseries_length():
 
     for component in ["generator", "load", "link", "store", "storage"]:
@@ -1533,8 +1534,8 @@ def etrago_timeseries_length():
             WHERE table_schema = 'grid'
             AND table_name = 'egon_etrago_{component}_timeseries'
             """
-            )
-        columns = columns[columns.data_type=="ARRAY"].column_name.values
+        )
+        columns = columns[columns.data_type == "ARRAY"].column_name.values
 
         for col in columns:
             lengths = db.select_dataframe(
@@ -1542,16 +1543,16 @@ def etrago_timeseries_length():
                 SELECT array_length({col}, 1)
                 FROM grid.egon_etrago_{component}_timeseries;
                 """
-                )["array_length"]
+            )["array_length"]
 
             if not lengths.dropna().empty:
-                assert(lengths.dropna()==8760).all(), (
+                assert (lengths.dropna() == 8760).all(), (
                     f"Timeseries with a length != 8760 for {component} {col}")
             else:
                 print(f"Empty timeseries for {component} {col}")
 
 
-def generators_links_storages_stores_100RE(scn = "eGon100RE"):
+def generators_links_storages_stores_100RE(scn="eGon100RE"):
     # Generators
     scn_capacities = db.select_dataframe(
         f"""
@@ -1738,15 +1739,18 @@ def generators_links_storages_stores_100RE(scn = "eGon100RE"):
     return
 
 
-def electrical_load_100RE(scn = "eGon100RE"):
+def electrical_load_100RE(scn="eGon100RE"):
     load_summary = pd.DataFrame(
         index=["residential", "commercial", "industrial", "total",],
         columns=["objective", "eGon100RE"])
 
     # Sector	Annual electricity demand in TWh
-    load_summary.loc["residential", "objective"] = 90.4 #https://github.com/openego/powerd-data/blob/56b8215928a8dc4fe953d266c563ce0ed98e93f9/src/egon/data/datasets/demandregio/__init__.py#L480
-    load_summary.loc["commercial", "objective"] = 146.7 #https://github.com/openego/powerd-data/blob/56b8215928a8dc4fe953d266c563ce0ed98e93f9/src/egon/data/datasets/demandregio/__init__.py#L775
-    load_summary.loc["industrial", "objective"] = 382.9 #https://github.com/openego/powerd-data/blob/56b8215928a8dc4fe953d266c563ce0ed98e93f9/src/egon/data/datasets/demandregio/__init__.py#L775
+    # https://github.com/openego/powerd-data/blob/56b8215928a8dc4fe953d266c563ce0ed98e93f9/src/egon/data/datasets/demandregio/__init__.py#L480
+    load_summary.loc["residential", "objective"] = 90.4
+    # https://github.com/openego/powerd-data/blob/56b8215928a8dc4fe953d266c563ce0ed98e93f9/src/egon/data/datasets/demandregio/__init__.py#L775
+    load_summary.loc["commercial", "objective"] = 146.7
+    # https://github.com/openego/powerd-data/blob/56b8215928a8dc4fe953d266c563ce0ed98e93f9/src/egon/data/datasets/demandregio/__init__.py#L775
+    load_summary.loc["industrial", "objective"] = 382.9
     load_summary.loc["total", "objective"] = 620.0
 
     print(
@@ -1835,21 +1839,22 @@ tasks = ()
 
 if "eGon2035" in SCENARIOS:
     tasks = tasks + (etrago_eGon2035_electricity,
-                    etrago_eGon2035_heat,
-                    residential_electricity_annual_sum,
-                    residential_electricity_hh_refinement,
-                    cts_electricity_demand_share,
-                    cts_heat_demand_share,
-                    sanitycheck_emobility_mit,
-                    sanitycheck_pv_rooftop_buildings,
-                    sanitycheck_home_batteries,
-                    sanitycheck_dsm,
-                    etrago_timeseries_length,)
+                     etrago_eGon2035_heat,
+                     residential_electricity_annual_sum,
+                     residential_electricity_hh_refinement,
+                     cts_electricity_demand_share,
+                     cts_heat_demand_share,
+                     sanitycheck_emobility_mit,
+                     sanitycheck_pv_rooftop_buildings,
+                     sanitycheck_home_batteries,
+                     sanitycheck_dsm,
+                     etrago_timeseries_length,)
 
 if "eGon100RE" in SCENARIOS:
     tasks = tasks + (electrical_load_100RE,
                      generators_links_storages_stores_100RE,
                      etrago_timeseries_length,)
+
 
 class SanityChecks(Dataset):
     def __init__(self, dependencies):
