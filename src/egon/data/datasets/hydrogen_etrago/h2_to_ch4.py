@@ -66,7 +66,7 @@ def insert_h2_to_ch4_to_h2():
         sql_H2_buses = f"""
                 SELECT bus_id, x, y, ST_Transform(geom, 32632) as geom
                 FROM {target_buses["schema"]}.{target_buses["table"]} 
-                WHERE carrier in ('H2','H2_saltcavern')
+                WHERE carrier in ('H2')
                 AND scn_name = '{scn_name}' AND country = 'DE'
                 """    
         CH4_buses = gpd.read_postgis(sql_CH4_buses, con)
@@ -112,7 +112,7 @@ def insert_h2_to_ch4_to_h2():
         
         scn_params = get_sector_parameters("gas", scn_name)
         technology = [CH4_to_H2_links, H2_to_CH4_links]
-        links_carriers = ["CH4_to_H2", "CH4_to_H2"]
+        links_carriers = ["CH4_to_H2", "H2_to_CH4"]
         
         # Write new entries
         for table, carrier in zip(technology, links_carriers):
