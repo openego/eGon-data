@@ -859,7 +859,7 @@ class ScenarioCapacities(Dataset):
     def __init__(self, dependencies):
         super().__init__(
             name="ScenarioCapacities",
-            version="0.0.17",
+            version="0.0.18",
             dependencies=dependencies,
             tasks=tasks,
         )
