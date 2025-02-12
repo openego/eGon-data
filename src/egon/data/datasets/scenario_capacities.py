@@ -846,17 +846,10 @@ def eGon100_capacities():
         )
 
 
-tasks = (create_table,)
+tasks = (create_table, insert_data_nep,)
 
 if "status2019" in egon.data.config.settings()["egon-data"]["--scenarios"]:
-    tasks = tasks + (insert_capacities_status2019, insert_data_nep)
-
-if (
-    "eGon2035" in egon.data.config.settings()["egon-data"]["--scenarios"]
-) and not (
-    "status2019" in egon.data.config.settings()["egon-data"]["--scenarios"]
-):
-    tasks = tasks + (insert_data_nep,)
+    tasks = tasks + (insert_capacities_status2019,)
 
 if "eGon100RE" in egon.data.config.settings()["egon-data"]["--scenarios"]:
     tasks = tasks + (eGon100_capacities,)
@@ -866,7 +859,7 @@ class ScenarioCapacities(Dataset):
     def __init__(self, dependencies):
         super().__init__(
             name="ScenarioCapacities",
-            version="0.0.17",
+            version="0.0.18",
             dependencies=dependencies,
             tasks=tasks,
         )
