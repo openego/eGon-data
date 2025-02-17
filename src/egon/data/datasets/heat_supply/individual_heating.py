@@ -1831,8 +1831,6 @@ def catch_missing_buidings(buildings_decentral_heating, peak_load):
     # should only happen within cutout SH
     if (
         not all(buildings_decentral_heating.isin(peak_load.index))
-        and config.settings()["egon-data"]["--dataset-boundary"]
-        == "Schleswig-Holstein"
     ):
         diff = buildings_decentral_heating.difference(peak_load.index)
         logger.warning(
