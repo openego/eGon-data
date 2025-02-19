@@ -820,6 +820,20 @@ def neighbor_reduction():
         ].index
     ]
 
+    gen_time = ["solar", "onwind", "solar rooftop", "offwind-ac", "offwind-dc",
+                "solar-hsat", "urban central solar thermal",
+                "rural solar thermal", "offwind-float"]
+
+    missing_gent = neighbor_gens[neighbor_gens["carrier"].isin(gen_time) &
+                                 ~neighbor_gens.index.isin(neighbor_gens_t.columns)].index
+
+    gen_timeseries = network_prepared.generators_t["p_max_pu"].copy()
+    for mgt in missing_gent: #mgt: missing generator timeseries
+        try:
+            neighbor_gens_t[mgt] = gen_timeseries.loc[:,mgt[0:-5]]
+        except:
+            print(f"There are not timeseries for {mgt}")
+
     neighbor_gens.reset_index(inplace=True)
     neighbor_gens.bus = (
         neighbors.loc[neighbor_gens.bus, "new_index"].reset_index().new_index
