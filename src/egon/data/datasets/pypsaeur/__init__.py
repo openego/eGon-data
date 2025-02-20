@@ -822,48 +822,6 @@ def neighbor_reduction():
     )
     neighbor_links.index += db.next_etrago_id("link")
 
-    # For heat_pumps
-    hp = neighbor_links[neighbor_links["carrier"].str.contains("heat pump")]
-
-    neighbor_eff_t = network_prepared.links_t["efficiency"][
-        hp[hp.Link.isin(network_prepared.links_t["efficiency"].columns)]
-        .index
-    ]
-
-    missing_hp = hp[~hp["Link"].isin(neighbor_eff_t.columns)].Link
-
-    eff_timeseries = network_prepared.links_t["efficiency"].copy()
-    for met in missing_hp:  # met: missing efficiency timeseries
-        try:
-            neighbor_eff_t[met] = eff_timeseries.loc[:, met[0:-5]]
-        except:
-            print(f"There are not timeseries for heat_pump {met}")
-
-    for i in neighbor_eff_t.columns:
-        new_index = neighbor_links[neighbor_links["Link"] == i].index
-        neighbor_eff_t.rename(columns={i: new_index[0]}, inplace=True)
-
-    # For ev_chargers
-    ev = neighbor_links[neighbor_links["carrier"].str.contains("BEV charger")]
-
-    ev_p_max_pu = network_prepared.links_t["p_max_pu"][
-        ev[ev.Link.isin(network_prepared.links_t["p_max_pu"].columns)]
-        .index
-    ]
-
-    missing_ev = ev[~ev["Link"].isin(ev_p_max_pu.columns)].Link
-
-    ev_p_max_pu_timeseries = network_prepared.links_t["p_max_pu"].copy()
-    for mct in missing_ev:  # evt: missing charger timeseries
-        try:
-            ev_p_max_pu[mct] = ev_p_max_pu_timeseries.loc[:, mct[0:-5]]
-        except:
-            print(f"There are not timeseries for EV charger {mct}")
-
-    for i in ev_p_max_pu.columns:
-        new_index = neighbor_links[neighbor_links["Link"] == i].index
-        ev_p_max_pu.rename(columns={i: new_index[0]}, inplace=True)
-
     # generators
     neighbor_gens = network_solved.generators[
         network_solved.generators.bus.isin(neighbors.index)
@@ -1289,6 +1247,50 @@ def neighbor_reduction():
         "eGon100RE",
         extendable=False,
     )
+    # Include links time-series
+    # For heat_pumps
+    hp = neighbor_links[neighbor_links["carrier"].str.contains("heat pump")]
+
+    neighbor_eff_t = network_prepared.links_t["efficiency"][
+        hp[hp.Link.isin(network_prepared.links_t["efficiency"].columns)]
+        .index
+    ]
+
+    missing_hp = hp[~hp["Link"].isin(neighbor_eff_t.columns)].Link
+
+    eff_timeseries = network_prepared.links_t["efficiency"].copy()
+    for met in missing_hp:  # met: missing efficiency timeseries
+        try:
+            neighbor_eff_t[met] = eff_timeseries.loc[:, met[0:-5]]
+        except:
+            print(f"There are not timeseries for heat_pump {met}")
+
+    for i in neighbor_eff_t.columns:
+        new_index = neighbor_links[neighbor_links["Link"] == i].index
+        neighbor_eff_t.rename(columns={i: new_index[0]}, inplace=True)
+
+    # Include links time-series
+    # For ev_chargers
+    ev = neighbor_links[neighbor_links["carrier"].str.contains("BEV charger")]
+
+    ev_p_max_pu = network_prepared.links_t["p_max_pu"][
+        ev[ev.Link.isin(network_prepared.links_t["p_max_pu"].columns)]
+        .index
+    ]
+
+    missing_ev = ev[~ev["Link"].isin(ev_p_max_pu.columns)].Link
+
+    ev_p_max_pu_timeseries = network_prepared.links_t["p_max_pu"].copy()
+    for mct in missing_ev:  # evt: missing charger timeseries
+        try:
+            ev_p_max_pu[mct] = ev_p_max_pu_timeseries.loc[:, mct[0:-5]]
+        except:
+            print(f"There are not timeseries for EV charger {mct}")
+
+    for i in ev_p_max_pu.columns:
+        new_index = neighbor_links[neighbor_links["Link"] == i].index
+        ev_p_max_pu.rename(columns={i: new_index[0]}, inplace=True)
+
 
     # prepare neighboring generators for etrago tables
     neighbor_gens["scn_name"] = "eGon100RE"
