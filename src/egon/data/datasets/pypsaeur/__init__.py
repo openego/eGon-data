@@ -43,7 +43,7 @@ class RunPypsaEur(Dataset):
     def __init__(self, dependencies):
         super().__init__(
             name="SolvePypsaEur",
-            version="0.0.40",
+            version="0.0.41",
             dependencies=dependencies,
             tasks=(
                 prepare_network_2,
