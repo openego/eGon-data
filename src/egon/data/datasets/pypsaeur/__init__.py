@@ -848,6 +848,10 @@ def neighbor_reduction():
         except:
             print(f"There are not timeseries for EV charger {mct}")
 
+    for i in ev_p_max_pu.columns:
+        new_index = neighbor_links[neighbor_links["Link"] == i].index
+        ev_p_max_pu.rename(columns={i: new_index[0]}, inplace=True)
+
     # generators
     neighbor_gens = network_solved.generators[
         network_solved.generators.bus.isin(neighbors.index)
@@ -1442,6 +1446,31 @@ def neighbor_reduction():
         if_exists="append",
         index=True,
         index_label="load_id",
+    )
+
+    # writing neighboring link_t efficiency and p_max_pu to etrago tables
+    neighbor_link_t_etrago = pd.DataFrame(
+        columns=["scn_name", "temp_id", "p_max_pu", "efficiency"],
+        index=neighbor_eff_t.columns.to_list() + ev_p_max_pu.columns.to_list(),
+    )
+    neighbor_link_t_etrago["scn_name"] = "eGon100RE"
+    neighbor_link_t_etrago["temp_id"] = 1
+    for i in neighbor_eff_t.columns:
+        neighbor_link_t_etrago["efficiency"][i] = neighbor_eff_t[
+            i
+        ].values.tolist()
+    for i in ev_p_max_pu.columns:
+        neighbor_link_t_etrago["p_max_pu"][i] = ev_p_max_pu[
+            i
+        ].values.tolist()
+
+    neighbor_link_t_etrago.to_sql(
+        "egon_etrago_link_timeseries",
+        engine,
+        schema="grid",
+        if_exists="append",
+        index=True,
+        index_label="link_id",
     )
 
     # writing neighboring generator_t p_max_pu to etrago tables
