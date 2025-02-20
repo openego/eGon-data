@@ -58,36 +58,17 @@ def insert_power_to_h2_to_power():
     # General Constant Parameters  
     DATA_CRS = 4326  # default CRS
     METRIC_CRS = 32632  # demanded CRS
-    DISCOUNT_RATE = 0.05  # to calculate annualized  cost
  
-    # Power to H2 (Electricity & Electrolyser)
     ELEC_COST = 60  # [EUR/MWh]
-    AC_TRANS = 17_500  # [EUR/MVA]
-    AC_LIFETIME_CABLE = 25  # [year]
-    AC_COST_CABLE = 800_000  # [EUR/km/MVA]
-    ELZ_SEC = 50  # [kWh/kgH2] Electrolyzer Specific Energy Consumption
-    ELZ_EFF = 33.33 / ELZ_SEC  # [%] H2 energy kWh/kgH2 / electricity input kWh/kgH2
-    ELZ_FLH = 8760  # [hour] full load hours 		5217
-    ELZ_LIFETIME_H = 85_000 / ELZ_FLH  # [Year] lifetime of stack [15 years]
-    ELZ_LIFETIME_Y = 25  # [Year] lifetiem of ELZ system in [year]
-    ELZ_CAPEX_SYSTEM = 504_000  # [EUR/MW]
-    ELZ_CAPEX_STACK = 180_000 * 2  # [EUR/MW] to equivalent it with system lifetime
-    ELZ_OPEX = (
-        ELZ_CAPEX_SYSTEM + ELZ_CAPEX_STACK
-    ) * 0.03  # [EUR/MW]	3% of total CAPEX per year
-    H2_TO_POWER_EFF = 0.5  # as per existing postgres database
-    H2_PRESSURE_ELZ = 30  # [bar]
     O2_PRESSURE_ELZ = 13  # [bar]
- 
-    # Power to Heat
-    HEAT_RATIO = 0.2  # % heat ratio to hydrogen production
-    HEAT_LIFETIME = 25  # [YEAR]
-    HEAT_EFFICIENCY = 0.8805  # efficiency of transferring heat
-    HEAT_COST_EXCHANGER = 25_000  # [EUR/MW/YEAR]  equipments except pipeline
-    HEAT_COST_PIPELINE = 400_000  # [EUR/MWH/KM]
-    HEAT_SELLING_PRICE = 21.6  # [EUR/MWh]
- 
- 
+    FACTOR_AERATION_EC = 0.6  # [%] aeration EC from total capacity of WWTP (PE)
+    FACTOR_O2_EC = 0.8  # [%] Oxygen EC from total aeration EC
+    O2_PRESSURE_MIN = 2  # [bar]
+    MOLAR_MASS_O2 = 0.0319988  # [kg/mol]
+    PIPELINE_DIAMETER_RANGE = [0.10, 0.15, 0.20, 0.25, 0.30, 0.40, 0.50]  # [m]
+    TEMPERATURE = 15 + 273.15  # [Kelvin] degree + 273.15
+    UNIVERSAL_GAS_CONSTANT = 8.3145  # [J/(mol·K)]
+  
     # Power to O2 (Wastewater Treatment Plants)
     WWTP_SEC = {
         "c5": 29.6,
@@ -95,30 +76,7 @@ def insert_power_to_h2_to_power():
         "c3": 39.8,
         "c2": 42.1,
     }  # [kWh/year] Specific Energy Consumption
-    O2_O3_RATIO = 1.7  # [-] conversion of O2 to O3
-    O2_H2_RATIO = 7.7  # [-] ratio of O2 to H2
-    O2_PURE_RATIO = 20.95 / 100  # [-] ratio of pure oxygen to ambient air
-    FACTOR_AERATION_EC = 0.6  # [%] aeration EC from total capacity of WWTP (PE)
-    FACTOR_O2_EC = 0.8  # [%] Oxygen EC from total aeration EC
-    O2_LIFETIME_PIPELINE = 25  # [Year]
-    O2_EFFICIENCY = 0.9
-    O2_PRESSURE_MIN = 2  # [bar]
-    O2_COST_EQUIPMENT = 5000  # [Euro] equipments except pipeline
-    O2_LIEFTIME_EQUIPMENT = 25  # [Year]
-    MOLAR_MASS_O2 = 0.0319988  # [kg/mol]
- 
-    # H2 to Power (Hydrogen Pipeline)
-    H2_PRESSURE_MIN = 29  # [bar]
-    H2_LIFETIME_PIPELINE = 25  # [YEAR]
-    H2_COST_PIPELINE = 25_000  # [EUR/MW]
-    FUEL_CELL_EFF = 0.5  # %
-    FUEL_CELL_COST = 1_084_000  # [EUR/MWe]
-    FUEL_CELL_LIFETIME = 10  # [Year]
-    PIPELINE_DIAMETER_RANGE = [0.10, 0.15, 0.20, 0.25, 0.30, 0.40, 0.50]  # [m]
-    TEMPERATURE = 15 + 273.15  # [Kelvin] degree + 273.15
-    UNIVERSAL_GAS_CONSTANT = 8.3145  # [J/(mol·K)]
-    MOLAR_MASS_H2 = 0.002016  # [kg/mol]
- 
+    
     H2 = "h2"
     WWTP = "wwtp"
     AC = "ac"
@@ -129,21 +87,22 @@ def insert_power_to_h2_to_power():
     ACSUB_EHV = "ac_sub_ehv"
     HEAT_BUS = "heat_point"
     HEAT_LOAD = "heat_load"
-    HEAT_TIMESERIES = "heat_timeseries"
+    HEAT_TIMESERIES = "heat_timeseries" 
     H2_BUSES_CH4 = 'h2_buses_ch4' 
     AC_LOAD = 'ac_load'
     HEAT_AREA = 'heat_area'
- 
-    buffer_heat_factor= 1500  #625/3125 for worstcase/bestcase-Szeanrio
-    max_buffer_heat= 12000 #5000/30000 for worstcase/bestcase-Szenario 
+    
+    #buffer_range
+    buffer_heat_factor= 625  # [m/MW_th] 625/3125 for worstcase/bestcase-Szeanrio
+    max_buffer_heat= 5000 #[m] 5000/30000 for worstcase/bestcase-Szenario 
     Buffer = {
-        "O2": 5000,  # m to define the radii between O2 to AC
-        "H2_HVMV": 5000,  # m define the distance between H2 and reference points (AC/O2)
+        "O2": 5000,  # [m] 
+        "H2_HVMV": 5000, 
         "H2_EHV": 20000,
         "HVMV": 10000,
         "EHV": 20000,
         "HEAT": 5000,
-    }  # m define the distance betweeen Heat and reference points (AC/O2)
+    }  
     
     # connet to PostgreSQL database (to localhost)
     engine = db.engine()
@@ -164,6 +123,7 @@ def insert_power_to_h2_to_power():
         AC_COST_CABLE = scn_params_elec["capital_cost"]["ac_hv_cable"]   #[EUR/MW/km/YEAR]
         ELZ_CAPEX_SYSTEM = scn_params_gas["capital_cost"]["power_to_H2_system"]   # [EUR/MW/YEAR]
         ELZ_CAPEX_STACK = scn_params_gas["capital_cost"]["power_to_H2_stack"]  # [EUR/MW/YEAR]
+        ELZ_LIFETIME_Y = scn_params_gas["lifetime"]["power_to_H2_system"]  # [Year] 
         if SCENARIO_NAME == 'eGon2035':
             ELZ_OPEX = scn_params_gas["capital_cost"]["power_to_H2_OPEX"]# [EUR/MW/YEAR]
         else:
