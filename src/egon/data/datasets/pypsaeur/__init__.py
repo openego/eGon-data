@@ -487,6 +487,8 @@ def clean_database():
         WHERE scn_name = '{scn_name}'
         AND country <> 'DE'
         AND carrier <> 'AC'
+        AND carrier <> 'CH4'
+        AND carrier <> 'H2'
         """
     )
 
