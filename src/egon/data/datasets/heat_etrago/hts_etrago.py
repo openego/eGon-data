@@ -160,6 +160,10 @@ def hts_to_etrago(scenario):
             DELETE FROM grid.egon_etrago_load
             WHERE scn_name = '{scenario}'
             AND carrier = '{carrier}'
+            AND bus NOT IN (
+                SELECT bus_id FROM grid.egon_etrago_bus
+                WHERE country <> 'DE'
+                )
             """
         )
 
