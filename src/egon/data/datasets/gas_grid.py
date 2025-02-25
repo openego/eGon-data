@@ -879,7 +879,20 @@ def insert_gas_pipeline_list(
     db.execute_sql(
         f"""DELETE FROM grid.egon_etrago_link
         WHERE "carrier" = '{gas_carrier}'
-        AND scn_name = '{scn_name}';
+        AND scn_name = '{scn_name}'
+        AND link_id IN(
+            SELECT link_id FROM grid.egon_etrago_link
+            WHERE bus0 IN (
+                SELECT bus_id FROM grid.egon_etrago_bus
+                WHERE country = 'DE'
+                AND scn_name = '{scn_name}'
+                )
+            AND bus1 IN (
+                SELECT bus_id FROM grid.egon_etrago_bus
+                WHERE country = 'DE'
+                AND scn_name = '{scn_name}'
+                )
+            )
         """
     )
 

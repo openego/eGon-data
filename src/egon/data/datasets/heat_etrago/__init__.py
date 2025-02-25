@@ -566,6 +566,19 @@ def insert_central_gas_boilers(scenario):
         {targets['heat_links']['table']}
         WHERE carrier  LIKE '%central_gas_boiler%'
         AND scn_name = '{scenario}'
+        AND link_id IN(
+            SELECT link_id FROM grid.egon_etrago_link
+            WHERE bus0 IN (
+                SELECT bus_id FROM grid.egon_etrago_bus
+                WHERE country = 'DE'
+                AND scn_name = '{scenario}'
+                )
+            AND bus1 IN (
+                SELECT bus_id FROM grid.egon_etrago_bus
+                WHERE country = 'DE'
+                AND scn_name = '{scenario}'
+                )
+            )
         """
     )
 
