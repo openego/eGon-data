@@ -90,9 +90,7 @@ def data_preprocessing(
     # calculate time necessary to fulfill the charging demand and brutto
     # charging capacity in MVA
     ev_data_df = ev_data_df.assign(
-        charging_capacity_grid_MW=(
-            ev_data_df.charging_capacity_grid / 10**3
-        ),
+        charging_capacity_grid_MW=(ev_data_df.charging_capacity_grid / 10**3),
         minimum_charging_time=(
             ev_data_df.charging_demand
             / ev_data_df.charging_capacity_nominal
@@ -132,9 +130,9 @@ def data_preprocessing(
     )
 
     ev_data_df["flex_charging_capacity_grid_MW"] = 0
-    ev_data_df.loc[
-        mask_work | mask_home, "flex_charging_capacity_grid_MW"
-    ] = ev_data_df.loc[mask_work | mask_home, "charging_capacity_grid_MW"]
+    ev_data_df.loc[mask_work | mask_home, "flex_charging_capacity_grid_MW"] = (
+        ev_data_df.loc[mask_work | mask_home, "charging_capacity_grid_MW"]
+    )
 
     ev_data_df["flex_last_timestep_charging_capacity_grid_MW"] = 0
     ev_data_df.loc[
@@ -147,9 +145,9 @@ def data_preprocessing(
     if len(ev_data_df.loc[ev_data_df.last_timestep > 35040]) > 0:
         print("    Warning: Trip data exceeds 1 year and is cropped.")
         # Correct last TS
-        ev_data_df.loc[
-            ev_data_df.last_timestep > 35040, "last_timestep"
-        ] = 35040
+        ev_data_df.loc[ev_data_df.last_timestep > 35040, "last_timestep"] = (
+            35040
+        )
 
     if DATASET_CFG["model_timeseries"]["reduce_memory"]:
         return reduce_mem_usage(ev_data_df)
@@ -568,13 +566,13 @@ def write_model_data_to_db(
             query_ev_soc.statement, query_ev_soc.session.bind, index_col="type"
         )
 
-        initial_soc_per_ev_type[
-            "battery_capacity_sum"
-        ] = initial_soc_per_ev_type.ev_count.multiply(bat_cap)
-        initial_soc_per_ev_type[
-            "ev_soc_start_abs"
-        ] = initial_soc_per_ev_type.battery_capacity_sum.multiply(
-            initial_soc_per_ev_type.ev_soc_start
+        initial_soc_per_ev_type["battery_capacity_sum"] = (
+            initial_soc_per_ev_type.ev_count.multiply(bat_cap)
+        )
+        initial_soc_per_ev_type["ev_soc_start_abs"] = (
+            initial_soc_per_ev_type.battery_capacity_sum.multiply(
+                initial_soc_per_ev_type.ev_soc_start
+            )
         )
 
         return (
@@ -736,12 +734,12 @@ def write_model_data_to_db(
         #   * lowflex: use dumb charging load
         #   * status2019: also dumb charging
 
-        if scenario_name=='status2019':
+        if scenario_name == "status2019":
             write_load(
                 scenario_name=scenario_name,
                 connection_bus_id=etrago_bus.bus_id,
                 load_ts=hourly_load_time_series_df.load_time_series.to_list(),
-                )
+            )
         else:
             if write_lowflex_model is False:
                 emob_bus_id = write_bus(scenario_name=scenario_name)
@@ -781,9 +779,9 @@ def write_model_data_to_db(
             results_dir / "ev_dsm_profile.csv"
         )
 
-        static_params_dict[
-            "load_land_transport_ev.p_set_MW"
-        ] = "ev_load_time_series.csv"
+        static_params_dict["load_land_transport_ev.p_set_MW"] = (
+            "ev_load_time_series.csv"
+        )
         static_params_dict["link_bev_charger.p_max_pu"] = "ev_availability.csv"
         static_params_dict["store_ev_battery.e_min_pu"] = "ev_dsm_profile.csv"
         static_params_dict["store_ev_battery.e_max_pu"] = "ev_dsm_profile.csv"
@@ -861,54 +859,78 @@ def write_model_data_to_db(
 def delete_model_data_from_db():
     """Delete all eMob MIT data from eTraGo PF tables"""
     with db.session_scope() as session:
-        # Buses
-        session.query(EgonPfHvBus).filter(
-            EgonPfHvBus.carrier == "Li_ion"
-        ).delete(synchronize_session=False)
+        subquery_bus_de = (
+            session.query(EgonPfHvBus.bus_id)
+            .filter(EgonPfHvBus.country == "DE")
+            .subquery()
+        )
 
         # Link TS
         subquery = (
             session.query(EgonPfHvLink.link_id)
-            .filter(EgonPfHvLink.carrier == "BEV_charger")
+            .filter(
+                EgonPfHvLink.carrier == "BEV_charger",
+                EgonPfHvLink.bus0.in_(subquery_bus_de),
+                EgonPfHvLink.bus1.in_(subquery_bus_de),
+            )
             .subquery()
         )
 
         session.query(EgonPfHvLinkTimeseries).filter(
             EgonPfHvLinkTimeseries.link_id.in_(subquery)
         ).delete(synchronize_session=False)
+
         # Links
         session.query(EgonPfHvLink).filter(
-            EgonPfHvLink.carrier == "BEV_charger"
+            EgonPfHvLink.carrier == "BEV_charger",
+            EgonPfHvLink.bus0.in_(subquery_bus_de),
+            EgonPfHvLink.bus1.in_(subquery_bus_de),
         ).delete(synchronize_session=False)
 
         # Store TS
         subquery = (
             session.query(EgonPfHvStore.store_id)
-            .filter(EgonPfHvStore.carrier == "battery_storage")
+            .filter(
+                EgonPfHvStore.carrier == "battery_storage",
+                EgonPfHvStore.bus.in_(subquery_bus_de),
+            )
             .subquery()
         )
 
         session.query(EgonPfHvStoreTimeseries).filter(
             EgonPfHvStoreTimeseries.store_id.in_(subquery)
         ).delete(synchronize_session=False)
+
         # Stores
         session.query(EgonPfHvStore).filter(
-            EgonPfHvStore.carrier == "battery_storage"
+            EgonPfHvStore.carrier == "battery_storage",
+            EgonPfHvStore.bus.in_(subquery_bus_de),
         ).delete(synchronize_session=False)
 
         # Load TS
         subquery = (
             session.query(EgonPfHvLoad.load_id)
-            .filter(EgonPfHvLoad.carrier == "land_transport_EV")
+            .filter(
+                EgonPfHvLoad.carrier == "land_transport_EV",
+                EgonPfHvLoad.bus.in_(subquery_bus_de),
+            )
             .subquery()
         )
 
         session.query(EgonPfHvLoadTimeseries).filter(
             EgonPfHvLoadTimeseries.load_id.in_(subquery)
         ).delete(synchronize_session=False)
+
         # Loads
         session.query(EgonPfHvLoad).filter(
-            EgonPfHvLoad.carrier == "land_transport_EV"
+            EgonPfHvLoad.carrier == "land_transport_EV",
+            EgonPfHvLoad.bus.in_(subquery_bus_de),
+        ).delete(synchronize_session=False)
+
+        # Buses
+        session.query(EgonPfHvBus).filter(
+            EgonPfHvBus.carrier == "Li_ion",
+            EgonPfHvBus.country == "DE",
         ).delete(synchronize_session=False)
 
 
@@ -1051,7 +1073,10 @@ def generate_model_data_bunch(scenario_name: str, bunch: range) -> None:
             f"Processing grid district: bus {bus_id}... "
             f"({ctr}/{len(mvgd_bus_ids)})"
         )
-        (static_params, load_ts,) = generate_model_data_grid_district(
+        (
+            static_params,
+            load_ts,
+        ) = generate_model_data_grid_district(
             scenario_name=scenario_name,
             evs_grid_district=evs_grid_district[
                 evs_grid_district.bus_id == bus_id
@@ -1068,6 +1093,7 @@ def generate_model_data_bunch(scenario_name: str, bunch: range) -> None:
             bat_cap=meta_tech_data.battery_capacity,
         )
 
+
 def generate_model_data_status2019_remaining():
     """Generates timeseries for status2019 scenario for grid districts which
     has not been processed in the parallel tasks before.
@@ -1076,6 +1102,7 @@ def generate_model_data_status2019_remaining():
         scenario_name="status2019",
         bunch=range(MVGD_MIN_COUNT, len(load_grid_district_ids())),
     )
+
 
 def generate_model_data_eGon2035_remaining():
     """Generates timeseries for eGon2035 scenario for grid districts which
