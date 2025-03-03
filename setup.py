@@ -96,10 +96,11 @@ setup(
         "geovoronoi",
         "importlib-resources<6.0",
         "loguru",
-        "markupsafe", 
+        "markupsafe",
         "matplotlib",
         "netcdf4",
         "numpy",
+        "oemetadata<=2.0.1"
         "omi",
         "openpyxl",
         "pandas>2.0.0",
