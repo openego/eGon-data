@@ -774,6 +774,8 @@ Bug Fixes
   `#343 <https://github.com/openego/powerd-data/issues/343>`_
 * Fix hard coded scenario name in CTS building generation
   `#1180 <https://github.com/openego/eGon-data/issues/1180>`_
+* Fix Zensus population download
+  `#1187 <https://github.com/openego/eGon-data/issues/1187>`_
 
 
 .. _PR #692: https://github.com/openego/eGon-data/pull/692
