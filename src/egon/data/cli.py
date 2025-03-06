@@ -266,6 +266,10 @@ def egon_data(context, **kwargs):
         "defaults": options(lambda o: o.default),
     }
 
+    # Fix: Convert 'scenarios' to list if it exists
+    if "scenarios" in options["cli"]:
+        options["cli"]["scenarios"] = list(options["cli"]["scenarios"])
+
     combined = merge(options["defaults"], options["cli"])
     if not config.paths()[0].exists():
         with open(config.paths()[0], "w") as f:
