@@ -1,19 +1,21 @@
 version: '3'
 services:
   egon-data-local-database-service:
-    user: {uid}:{gid}
-    image: postgres:12-postgis
-    container_name: {--docker-container-name}
+    user: "{uid}:{gid}"
+    image: postgis/postgis:16-3
+    container_name: "{--docker-container-name}"
     restart: unless-stopped
     build:
       context: .
-      dockerfile: {airflow}/Dockerfile.postgis
+      dockerfile: "{airflow}/Dockerfile.postgis"
     ports:
-    - "{--database-host}:{--database-port}:5432"
+      - "{--database-host}:{--database-port}:5432"
     environment:
-      POSTGRES_DB: {--airflow-database-name}
-      POSTGRES_USER: {--database-user}
-      POSTGRES_PASSWORD: {--database-password}
+      POSTGRES_DB: "{--airflow-database-name}"
+      POSTGRES_USER: "{--database-user}"
+      POSTGRES_PASSWORD: "{--database-password}"
+      # Use md5 authentication because of old JDBC driver in osmosis
+      POSTGRES_INITDB_ARGS: "--auth=md5"
     volumes:
-    - ./database-data/:/var/lib/postgresql/data
-    - /dev/shm:/dev/shm
+      - ./database-data/:/var/lib/postgresql/data
+      - /dev/shm:/dev/shm

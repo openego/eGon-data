@@ -4,5 +4,3 @@ RUN apt-get update
 RUN apt-get install -y postgresql-16-postgis-3
 RUN apt-get update
 RUN apt-get install -y postgresql-16-pgrouting
-
-
