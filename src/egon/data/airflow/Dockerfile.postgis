@@ -1,8 +1,6 @@
-FROM postgres:12
+FROM postgres:16
 
 RUN apt-get update
-RUN apt-get install -y postgresql-12-postgis-3
+RUN apt-get install -y postgresql-16-postgis-3
 RUN apt-get update
-RUN apt-get install -y postgresql-12-pgrouting
-
-
+RUN apt-get install -y postgresql-16-pgrouting
