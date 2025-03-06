@@ -134,13 +134,13 @@ class DsmPotential(Dataset):
     #:
     name: str = "DsmPotential"
     #:
-    version: str = "0.0.6"
+    version: str = "0.0.7"
 
     def __init__(self, dependencies):
         super().__init__(
             name=self.name,
             version=self.version,
-            dependencies=self.dependencies,
+            dependencies=dependencies,
             tasks=(dsm_cts_ind_processing,),
         )
 
