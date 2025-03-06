@@ -1,7 +1,6 @@
 """
 Central module containing all code dealing with importing era5 weather data.
 """
-
 from pathlib import Path
 import os
 
@@ -132,15 +131,13 @@ def import_cutout(boundary="Europe"):
             / f"{boundary.lower()}-{str(weather_year)}-era5.nc"
         )
 
-        cutout = atlite.Cutout(
+        return atlite.Cutout(
             path=directory.absolute(),
             module="era5",
             x=xs,
             y=ys,
             years=slice(weather_year, weather_year),
         )
-
-        return cutout
 
 
 def download_era5():

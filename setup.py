@@ -100,7 +100,7 @@ setup(
         "matplotlib",
         "netcdf4",
         "numpy",
-        "oemetadata<=2.0.1"
+        "oemetadata<=2.0.1",
         "omi",
         "openpyxl",
         "pandas>2.0.0",
