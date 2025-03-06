@@ -140,7 +140,7 @@ class DsmPotential(Dataset):
         super().__init__(
             name=self.name,
             version=self.version,
-            dependencies=self.dependencies,
+            dependencies=dependencies,
             tasks=(dsm_cts_ind_processing,),
         )
 
