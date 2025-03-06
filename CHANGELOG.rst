@@ -778,6 +778,8 @@ Bug Fixes
   `#1185 <https://github.com/openego/eGon-data/issues/1185>`_
 * Fix Zensus population download
   `#1187 <https://github.com/openego/eGon-data/issues/1187>`_
+* Fix DsmPotential dependency errors
+  `#1157 <https://github.com/openego/eGon-data/issues/1157>`_
 
 
 .. _PR #692: https://github.com/openego/eGon-data/pull/692
