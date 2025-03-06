@@ -776,6 +776,8 @@ Bug Fixes
   `#1180 <https://github.com/openego/eGon-data/issues/1180>`_
 * Update postgresql version but assure compatibility with osmosis
   `#1185 <https://github.com/openego/eGon-data/issues/1185>`_
+* Fix Zensus population download
+  `#1187 <https://github.com/openego/eGon-data/issues/1187>`_
 
 
 .. _PR #692: https://github.com/openego/eGon-data/pull/692
