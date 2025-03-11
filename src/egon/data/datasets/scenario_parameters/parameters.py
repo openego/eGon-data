@@ -69,28 +69,30 @@ def global_settings(scenario):
         List of global parameters
 
     """
-
+    # The following data for the scenario tag "eGon2035" is based on data from the
+    # NEP 2023 for the scenario C 2037. Hence, the data does not correspond to the
+    # year 2035. The correct scenatio tag should be added for future versions.
     if scenario == "eGon2035":
         parameters = {
             "weather_year": 2011,
-            "population_year": 2035,
+            "population_year": 2037,
             "fuel_costs": {  # Netzentwicklungsplan Strom 2035, Version 2021, 1. Entwurf, p. 39, table 6
-                "oil": 73.8,  # [EUR/MWh]
-                "gas": 25.6,  # [EUR/MWh]
-                "coal": 20.2,  # [EUR/MWh]
-                "lignite": 4.0,  # [EUR/MWh]
+                "oil": 24.9,  # [EUR/MWh]
+                "gas": 15.2,  # [EUR/MWh]
+                "coal": 6.1,  # [EUR/MWh]
+                "lignite": 6.5,  # [EUR/MWh]
                 "nuclear": 1.7,  # [EUR/MWh]
                 "biomass": 40,  # Dummyvalue, ToDo: Find a suitable source
             },
-            "co2_costs": 76.5,  # [EUR/t_CO2]
+            "co2_costs": 176.2,  # [EUR/t_CO2]
             "co2_emissions": {  # Netzentwicklungsplan Strom 2035, Version 2021, 1. Entwurf, p. 40, table 8
                 "waste": 0.165,  # [t_CO2/MW_th]
                 "lignite": 0.393,  # [t_CO2/MW_th]
                 "gas": 0.201,  # [t_CO2/MW_th]
                 "nuclear": 0.0,  # [t_CO2/MW_th]
-                "oil": 0.288,  # [t_CO2/MW_th]
-                "coal": 0.335,  # [t_CO2/MW_th]
-                "other_non_renewable": 0.268,  # [t_CO2/MW_th]
+                "oil": 0.286,  # [t_CO2/MW_th]
+                "coal": 0.377,  # [t_CO2/MW_th]
+                "other_non_renewable": ,  # [t_CO2/MW_th] No value found for C 2037
             },
             "interest_rate": 0.05,  # [p.u.]
         }
@@ -262,33 +264,38 @@ def electricity(scenario):
         # Insert overnight investment costs
         # Source for eHV grid costs: Netzentwicklungsplan Strom 2035, Version 2021, 2. Entwurf
         # Source for HV lines and cables: Dena Verteilnetzstudie 2021, p. 146
+
+        # The following data for the scenario tag "eGon2035" is based on data from the
+        # NEP 2023 for the scenario C 2037. Hence, the data does not correspond to the
+        # year 2035. The correct scenatio tag should be added for future versions.
         parameters["overnight_cost"] = {
-            "ac_ehv_overhead_line": 2.5e6
+            "ac_ehv_overhead_line": 4.5e6
             / (
                 2
                 * parameters["electrical_parameters"]["ac_line_380kV"]["s_nom"]
-            ),  # [EUR/km/MW]
-            "ac_ehv_cable": 11.5e6
+            ),  # [EUR/km/MW] NEP
+            "ac_ehv_cable": 16e6
             / (
                 2
                 * parameters["electrical_parameters"]["ac_cable_380kV"][
                     "s_nom"
                 ]
-            ),  # [EUR/km/MW]
+            ),  # [EUR/km/MW] NEP
             "ac_hv_overhead_line": 0.06e6
             / parameters["electrical_parameters"]["ac_line_110kV"][
                 "s_nom"
-            ],  # [EUR/km/MW]
+            ],  # [EUR/km/MW] Verteilnetzstudie (3 Freileitung-Erweiterung)
             "ac_hv_cable": 0.8e6
             / parameters["electrical_parameters"]["ac_cable_110kV"][
                 "s_nom"
-            ],  # [EUR/km/MW]
-            "dc_overhead_line": 0.5e3,  # [EUR/km/MW]
-            "dc_cable": 3.25e3,  # [EUR/km/MW]
-            "dc_inverter": 0.3e6,  # [EUR/MW]
-            "transformer_380_110": 17.33e3,  # [EUR/MVA]
-            "transformer_380_220": 13.33e3,  # [EUR/MVA]
-            "transformer_220_110": 17.5e3,  # [EUR/MVA]
+            ],  # [EUR/km/MW] Verteilnetzstudie (2 Kabel)
+            "dc_overhead_line": 0.5e3,  # [EUR/km/MW] NEP (in 2023 so nicht vorhanden)
+            "dc_cable": 3.25e3,  # [EUR/km/MW] NEP (in 2023 so nicht vorhanden)
+            "dc_inverter": 0.3e6,  # [EUR/MW] NEP (in 2023 so nicht vorhanden,
+            # Größenordnung ähnlich)
+            "transformer_380_110": 21e3,  # [EUR/MVA] NEP
+            "transformer_380_220": 15e3,  # [EUR/MVA] NEP
+            "transformer_220_110": 18e3,  # [EUR/MVA] NEP
             "battery inverter": read_costs(
                 costs, "battery inverter", "investment"
             ),
@@ -960,18 +967,20 @@ def mobility(scenario):
     For a detailed description of the parameters see module
     :mod:`egon.data.datasets.emobility.motorized_individual_travel`.
     """
-
+    # The following data for the scenario tag "eGon2035" is based on data from the
+    # NEP 2023 for the scenario C 2037. Hence, the data does not correspond to the
+    # year 2035. The correct scenatio tag should be added for future versions.
     if scenario == "eGon2035":
         parameters = {
             "motorized_individual_travel": {
                 "NEP C 2035": {
-                    "ev_count": 15100000,
-                    "bev_mini_share": 0.1589,
-                    "bev_medium_share": 0.3533,
-                    "bev_luxury_share": 0.1053,
-                    "phev_mini_share": 0.0984,
-                    "phev_medium_share": 0.2189,
-                    "phev_luxury_share": 0.0652,
+                    "ev_count": 29000000, # BEV + PHEV
+                    "bev_mini_share": 0.222, # shares from Kraftfahrtbundesamt
+                    "bev_medium_share": 0.493,
+                    "bev_luxury_share": 0.147,
+                    "phev_mini_share": 0.035,
+                    "phev_medium_share": 0.079,
+                    "phev_luxury_share": 0.024,
                     "model_parameters": {},
                 }
             }
