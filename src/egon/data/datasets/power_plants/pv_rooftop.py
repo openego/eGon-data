@@ -1,5 +1,6 @@
 """The module containing all code dealing with pv rooftop distribution to MV grid level.
 """
+
 from pathlib import Path
 
 from loguru import logger
@@ -30,12 +31,15 @@ def pv_rooftop_per_mv_grid():
     None.
 
     """
-
-    pv_rooftop_per_mv_grid_and_scenario(
-        scenario="eGon2035", level="federal_state"
-    )
-
-    pv_rooftop_per_mv_grid_and_scenario(scenario="eGon100RE", level="national")
+    s = config.settings()["egon-data"]["--scenarios"]
+    if "eGon2035" in s:
+        pv_rooftop_per_mv_grid_and_scenario(
+            scenario="eGon2035", level="federal_state"
+        )
+    if "eGon100RE" in s:
+        pv_rooftop_per_mv_grid_and_scenario(
+            scenario="eGon100RE", level="national"
+        )
 
 
 def pv_rooftop_per_mv_grid_and_scenario(scenario, level):
@@ -156,7 +160,13 @@ def pv_rooftop_per_mv_grid_and_scenario(scenario, level):
             WHERE carrier = 'solar_rooftop'
             AND scenario_name = '{scenario}'
             """
-        ).capacity[0]
+        )
+
+        if target.empty:
+            print(f"No PV rooftop in scenario {scenario}")
+            return
+        else:
+            target = target.capacity[0]
 
         dataset = config.settings()["egon-data"]["--dataset-boundary"]
 

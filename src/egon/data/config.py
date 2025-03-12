@@ -73,6 +73,7 @@ def settings() -> dict[str, dict[str, str]]:
                 "--jobs": 1,
                 "--random-seed": 42,
                 "--processes-per-task": 1,
+                "--scenarios": "status2023",
             }
         }
     with open(files[0]) as f:

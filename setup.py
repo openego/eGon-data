@@ -59,7 +59,6 @@ setup(
         "Operating System :: Microsoft :: Windows",
         "Programming Language :: Python",
         "Programming Language :: Python :: 3",
-        "Programming Language :: Python :: 3.7",
         "Programming Language :: Python :: 3.8",
         "Programming Language :: Python :: Implementation :: CPython",
         # uncomment if you test on these interpreters:
@@ -79,44 +78,54 @@ setup(
     keywords=[
         # eg: 'keyword1', 'keyword2', 'keyword3',
     ],
-    python_requires=">=3.7",
+    python_requires=">=3.8",
     install_requires=[
         # eg: 'aspectlib==1.1.1', 'six>=1.7',
-        "apache-airflow>=1.10.14,<2.0",  # See accompanying commit message
-        "atlite==0.2.5",
+        "apache-airflow>2.0",
+        "apache-airflow[postgres]",
+        "apache-airflow-providers-sendgrid",
+        "atlite==0.2.11",
         "cdsapi",
-        "click",
-        "geopandas>=0.10.0,<0.11.0",
+        "click<8.1",
+        "entsoe-py >=0.6.2",
+        "fiona==1.9.6",
+        "Flask-Session<0.6.0",
+        "GeoAlchemy2",
+        "geopandas>=0.10.0",
         "geopy",
-        "geovoronoi==0.3.0",
-        "importlib-resources",
+        "geovoronoi",
+        "importlib-resources<6.0",
         "loguru",
-        "markupsafe<2.1.0",  # MarkupSafe>=2.1.0 breaks WTForms<3
+        "markupsafe",
         "matplotlib",
         "netcdf4",
-        "numpy<1.23",  # incompatibilities with shapely 1.7.
-        # See: https://stackoverflow.com/a/73354885/12460232
-        "oedialect==0.0.8",
+        "numpy",
+        "oemetadata<=2.0.1",
         "omi",
         "openpyxl",
-        "pandas>1.2.0,<1.4",  # pandas>=1.4 needs SQLAlchemy>=1.4
+        "pandas>2.0.0",
+        "pulp<2.8.0",
         "psycopg2",
         "pyaml",
-        "pypsa==0.17.1",
+        "pypsa==0.20.1",
+        "pydantic<2.0",
         "rasterio",
+        "requests",
         "rioxarray",
         "rtree",
         "saio",
         "seaborn",
+        "setuptools>60.0",
         "shapely",
         "snakemake<7",
-        "sqlalchemy<1.4",  # Airflow<2.0 is not compatible with SQLAlchemy>=1.4
-        "wtforms<3",  # WTForms>=3.0 breaks Airflow<2.0
+        "sqlalchemy",
+        "tabulate==0.8.0",
+        "wtforms",
         "xarray",
         "xlrd",
     ],
     extras_require={
-        "dev": ["black", "flake8", "isort>=5", "pre-commit", "pytest", "tox"]
+        "dev": ["black", "flake8", "isort>=5", "pre-commit", "pytest", "tox", "jupyterlab"]
         # eg:
         #   'rst': ['docutils>=0.11'],
         #   ':python_version=="2.6"': ['argparse'],

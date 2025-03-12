@@ -20,7 +20,7 @@ import time
 
 import importlib_resources as resources
 
-from egon.data import db
+from egon.data import db, logger
 from egon.data.config import settings
 from egon.data.datasets import Dataset
 from egon.data.metadata import (
@@ -77,8 +77,10 @@ def to_postgres(cache_size=4096):
 
     if settings()["egon-data"]["--dataset-boundary"] == "Everything":
         input_filename = osm_config["target"]["file"]
+        logger.info("Using Everything DE dataset.")
     else:
         input_filename = osm_config["target"]["file_testmode"]
+        logger.info("Using testmode SH dataset.")
 
     input_file = Path(".") / "openstreetmap" / input_filename
     style_file = (

@@ -31,15 +31,11 @@ def demands_per_bus(scenario):
 
     # Select data on CTS electricity demands per bus
     cts_curves = db.select_dataframe(
-        f"""SELECT bus_id, p_set FROM
+        f"""SELECT bus_id AS bus, p_set FROM
                 {sources['cts_curves']['schema']}.
                 {sources['cts_curves']['table']}
                 WHERE scn_name = '{scenario}'""",
-        index_col="bus_id",
     )
-
-    # Rename index
-    cts_curves.index.rename("bus", inplace=True)
 
     # Select data on industrial demands assigned to osm landuse areas
 
@@ -48,7 +44,6 @@ def demands_per_bus(scenario):
                 {sources['osm_curves']['schema']}.
                 {sources['osm_curves']['table']}
                 WHERE scn_name = '{scenario}'""",
-        index_col="bus",
     )
 
     # Select data on industrial demands assigned to industrial sites
@@ -58,24 +53,23 @@ def demands_per_bus(scenario):
                 {sources['sites_curves']['schema']}.
                 {sources['sites_curves']['table']}
                 WHERE scn_name = '{scenario}'""",
-        index_col="bus",
     )
 
     # Select data on household electricity demands per bus
 
     hh_curves = db.select_dataframe(
-        f"""SELECT bus_id, p_set FROM
+        f"""SELECT bus_id AS bus, p_set FROM
                 {sources['household_curves']['schema']}.
                 {sources['household_curves']['table']}
                 WHERE scn_name = '{scenario}'""",
-        index_col="bus_id",
     )
 
     # Create one df by appending all imported dataframes
 
-    demand_curves = cts_curves.append(
-        [ind_curves_osm, ind_curves_sites, hh_curves]
-    )
+    demand_curves = pd.concat(
+        [cts_curves, ind_curves_osm, ind_curves_sites, hh_curves],
+        ignore_index=True,
+    ).set_index("bus")
 
     # Split array to single columns in the dataframe
     demand_curves_split = demand_curves
@@ -173,8 +167,7 @@ def export_to_db():
     sources = egon.data.config.datasets()["etrago_electricity"]["sources"]
     targets = egon.data.config.datasets()["etrago_electricity"]["targets"]
 
-    for scenario in ["eGon2035", "eGon100RE"]:
-
+    for scenario in egon.data.config.settings()["egon-data"]["--scenarios"]:
         # Delete existing data from database
         db.execute_sql(
             f"""
@@ -271,7 +264,7 @@ class ElectricalLoadEtrago(Dataset):
     def __init__(self, dependencies):
         super().__init__(
             name="Electrical_load_etrago",
-            version="0.0.6",
+            version="0.0.8",
             dependencies=dependencies,
             tasks=(export_to_db,),
         )

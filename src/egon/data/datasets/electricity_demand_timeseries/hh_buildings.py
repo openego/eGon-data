@@ -50,6 +50,45 @@ class HouseholdElectricityProfilesOfBuildings(Base):
     profile_id = Column(String, index=True)
 
 
+class HouseholdElectricityProfilesOfBuildingsStats(Base):
+    """
+    Class definition of table `demand.egon_household_electricity_profile_of_buildings_stats`.
+    Contains number of households per building and type from table
+    `demand.egon_household_electricity_profile_of_buildings`
+
+    Columns
+    -------
+    building_id: Building id as used in tables `openstreetmap.osm_buildings_*`, index col
+    households_total: total count of households
+    SR: count of household type SR single retiree
+    SO: count of household type SA single adults
+    PR: count of household type PR pair retiree
+    PO: count of household type PA pair adults
+    SK: count of household type SK single n children
+    P1: count of household type P1 pair 1 child
+    P2: count of household type P2 pair 2 children
+    P3: count of household type P3 pair 3 children
+    OR: count of household type OR multi retiree n children
+    OO: count of household type OO multi adults n children
+    """
+
+    __tablename__ = "egon_household_electricity_profile_of_buildings_stats"
+    __table_args__ = {"schema": "demand"}
+
+    building_id = Column(Integer, primary_key=True)
+    households_total = Column(Integer, nullable=True)
+    SR = Column(Integer, nullable=True)
+    SO = Column(Integer, nullable=True)
+    PR = Column(Integer, nullable=True)
+    PO = Column(Integer, nullable=True)
+    SK = Column(Integer, nullable=True)
+    P1 = Column(Integer, nullable=True)
+    P2 = Column(Integer, nullable=True)
+    P3 = Column(Integer, nullable=True)
+    OR = Column(Integer, nullable=True)
+    OO = Column(Integer, nullable=True)
+
+
 class OsmBuildingsSynthetic(Base):
     """
     Class definition of table demand.osm_buildings_synthetic.
@@ -100,9 +139,12 @@ def match_osm_and_zensus_data(
     OSM building data and hh demand profiles based on census data is compared.
     Census cells with only profiles but no osm-ids are identified to generate
     synthetic buildings. Census building count is used, if available, to define
-    number of missing buildings. Otherwise, the overall mean profile/building
-    rate is used to derive the number of buildings from the number of already
-    generated demand profiles.
+    number of missing buildings. Otherwise, we use a twofold approach for the
+    rate: first, the rate is calculated using adjacent cells (function
+    `find_adjacent_cells()`), a distance of 3 cells in each direction is used
+    by default (resulting in a 7x7 lookup matrix). As fallback, the overall
+    median profile/building rate is used to derive the number of buildings
+    from the number of already generated demand profiles.
 
     Parameters
     ----------
@@ -117,6 +159,40 @@ def match_osm_and_zensus_data(
     pd.DataFrame
         Table with cell_ids and number of missing buildings
     """
+
+    def find_adjacent_cells(row, adj_cell_radius):
+        """
+        Find adjacent cells for cell by iterating over census grid ids
+        (100mN...E...).
+
+        Parameters
+        ----------
+        row : Dataframe row
+            Dataframe row
+        adj_cell_radius : int
+            distance of cells in each direction to find cells,
+            e.g. adj_cell_radius=3 -> 7x7 cell matrix
+
+        Returns
+        -------
+        tuples of int
+            N coordinates, E coordinates in format
+            [(N_cell_1, E_cell_1), ..., (N_cell_n, E_cell_n)]
+        """
+        return [
+            f"100mN{_[0]}E{_[1]}"
+            for _ in np.array(
+                np.meshgrid(
+                    np.arange(
+                        row.N - adj_cell_radius, row.N + adj_cell_radius + 1
+                    ),
+                    np.arange(
+                        row.E - adj_cell_radius, row.E + adj_cell_radius + 1
+                    ),
+                )
+            ).T.reshape(-1, 2)
+        ]
+
     # count number of profiles for each cell
     profiles_per_cell = egon_hh_profile_in_zensus_cell.cell_profile_ids.apply(
         len
@@ -211,6 +287,64 @@ def match_osm_and_zensus_data(
         "building_count"
     ].fillna(value=building_count_fillna)
 
+    # ========== START Update profile/building rate in cells w/o bld using adjacent cells ==========
+    missing_buildings_temp = (
+        egon_hh_profile_in_zensus_cell[["cell_id", "grid_id"]]
+        .set_index("cell_id")
+        .loc[missing_buildings.index.unique()]
+    )
+
+    # Extract coordinates
+    missing_buildings_temp = pd.concat(
+        [
+            missing_buildings_temp,
+            missing_buildings_temp.grid_id.str.extract(r"100mN(\d+)E(\d+)")
+            .astype(int)
+            .rename(columns={0: "N", 1: "E"}),
+        ],
+        axis=1,
+    )
+
+    # Find adjacent cells for cell
+    missing_buildings_temp["cell_adj"] = missing_buildings_temp.apply(
+        find_adjacent_cells, adj_cell_radius=3, axis=1
+    )
+    missing_buildings_temp = (
+        missing_buildings_temp.explode("cell_adj")
+        .drop(columns=["grid_id", "N", "E"])
+        .reset_index()
+    )
+
+    # Create mapping table cell -> adjacent cells
+    missing_buildings_temp = (
+        missing_buildings_temp.set_index("cell_adj")
+        .join(
+            egon_hh_profile_in_zensus_cell.set_index("grid_id").cell_id,
+            rsuffix="_adj",
+        )
+        .dropna()
+        .set_index("cell_id_adj")
+    )
+
+    # Calculate profile/building rate for those cells
+    profile_building_rate.name = "profile_building_rate"
+    missing_buildings_temp = missing_buildings_temp.join(
+        number_of_buildings_profiles_per_cell[["cell_id"]]
+        .join(profile_building_rate)
+        .set_index("cell_id")
+    )
+    missing_buildings_temp = (
+        missing_buildings_temp.groupby("cell_id").median().dropna()
+    )
+
+    # Update mising buildings
+    missing_buildings["building_count"] = (
+        missing_buildings.cell_profile_ids.div(
+            missing_buildings_temp.profile_building_rate
+        ).fillna(missing_buildings.building_count)
+    )
+    # ========== END Update profile/building rate in cells w/o bld using adjacent cells ==========
+
     # ceil to have at least one building each cell and make type int
     missing_buildings = missing_buildings.apply(np.ceil).astype(int)
     # generate list of building ids for each cell
@@ -259,7 +393,7 @@ def generate_synthetic_buildings(missing_buildings, edge_length):
             destatis_zensus_population_per_ha_inside_germany
         ).filter(
             destatis_zensus_population_per_ha_inside_germany.c.id.in_(
-                missing_buildings.index
+                missing_buildings.index.unique()
             )
         )
 
@@ -281,7 +415,7 @@ def generate_synthetic_buildings(missing_buildings, edge_length):
         columns={
             "building_count": "building_id",
             "cell_profile_ids": "profiles",
-            "index": "cell_id",
+            "id": "cell_id",
         }
     )
 
@@ -437,9 +571,9 @@ def generate_mapping_table(
         .reset_index()
     )
     # add profile position as attribute by number of entries per cell (*)
-    mapping_profiles_to_buildings[
-        "profile"
-    ] = mapping_profiles_to_buildings.groupby(["cell_id"]).cumcount()
+    mapping_profiles_to_buildings["profile"] = (
+        mapping_profiles_to_buildings.groupby(["cell_id"]).cumcount()
+    )
     # get multiindex of profiles in cells (*)
     index_profiles = mapping_profiles_to_buildings.set_index(
         ["cell_id", "profile"]
@@ -454,9 +588,9 @@ def generate_mapping_table(
         profile_ids_per_cell_reduced.explode().reset_index()
     )
     # assign profile position by order of list
-    profile_ids_per_cell_reduced[
-        "profile"
-    ] = profile_ids_per_cell_reduced.groupby(["cell_id"]).cumcount()
+    profile_ids_per_cell_reduced["profile"] = (
+        profile_ids_per_cell_reduced.groupby(["cell_id"]).cumcount()
+    )
     profile_ids_per_cell_reduced = profile_ids_per_cell_reduced.set_index(
         ["cell_id", "profile"]
     )
@@ -560,6 +694,8 @@ def get_building_peak_loads():
             session.query(
                 HouseholdElectricityProfilesOfBuildings,
                 HouseholdElectricityProfilesInCensusCells.nuts3,
+                HouseholdElectricityProfilesInCensusCells.factor_2019,
+                HouseholdElectricityProfilesInCensusCells.factor_2023,
                 HouseholdElectricityProfilesInCensusCells.factor_2035,
                 HouseholdElectricityProfilesInCensusCells.factor_2050,
             )
@@ -574,6 +710,9 @@ def get_building_peak_loads():
             cells_query.statement, cells_query.session.bind, index_col="id"
         )
 
+        # fill columns with None with np.nan to allow multiplication with emtpy columns
+        df_buildings_and_profiles = df_buildings_and_profiles.fillna(np.nan)
+
         # Read demand profiles from egon-data-bundle
         df_profiles = get_iee_hh_demand_profiles_raw()
 
@@ -586,9 +725,11 @@ def get_building_peak_loads():
         iterate_over = (
             "nuts3"
             if dataset == "Everything"
-            else "cell_id"
-            if dataset == "Schleswig-Holstein"
-            else ve(f"'{dataset}' is not a valid dataset boundary.")
+            else (
+                "cell_id"
+                if dataset == "Schleswig-Holstein"
+                else ve(f"'{dataset}' is not a valid dataset boundary.")
+            )
         )
 
         df_building_peak_loads = pd.DataFrame()
@@ -601,16 +742,22 @@ def get_building_peak_loads():
                 names=("profile_id", "building_id"),
             )
             df_building_peak_load_nuts3.columns = m_index
-            df_building_peak_load_nuts3 = df_building_peak_load_nuts3.sum(
-                level="building_id", axis=1
-            ).max()
+            df_building_peak_load_nuts3 = (
+                df_building_peak_load_nuts3.groupby("building_id", axis=1)
+                .sum()
+                .max()
+            )
 
             df_building_peak_load_nuts3 = pd.DataFrame(
                 [
+                    df_building_peak_load_nuts3 * df["factor_2019"].unique(),
+                    df_building_peak_load_nuts3 * df["factor_2023"].unique(),
                     df_building_peak_load_nuts3 * df["factor_2035"].unique(),
                     df_building_peak_load_nuts3 * df["factor_2050"].unique(),
                 ],
                 index=[
+                    "status2019",
+                    "status2023",
                     "eGon2035",
                     "eGon100RE",
                 ],
@@ -646,13 +793,13 @@ def get_building_peak_loads():
 
 def map_houseprofiles_to_buildings():
     """
-    Cencus hh demand profiles are assigned to buildings via osm ids. If no OSM
-    ids available, synthetic buildings are generated. A list of the generated
-    buildings and supplementary data as well as the mapping table is stored
+    Census hh demand profiles are assigned to residential buildings via osm ids.
+    If no OSM ids are available, synthetic buildings are generated. A list of the
+    generated buildings and supplementary data as well as the mapping table is stored
     in the db.
 
-    Tables:
-    ----------
+    Tables
+    ------
     synthetic_buildings:
         schema: openstreetmap
         tablename: osm_buildings_synthetic
@@ -664,26 +811,93 @@ def map_houseprofiles_to_buildings():
     Notes
     -----
     """
-    #
-    egon_map_zensus_buildings_residential = Table(
-        "egon_map_zensus_buildings_residential",
+    # ========== Get census cells ==========
+    egon_census_cells = Table(
+        "egon_destatis_zensus_apartment_building_population_per_ha",
         Base.metadata,
-        schema="boundaries",
+        schema="society",
     )
-    # get table metadata from db by name and schema
-    inspect(engine).reflecttable(egon_map_zensus_buildings_residential, None)
+    inspect(engine).reflecttable(egon_census_cells, None)
 
     with db.session_scope() as session:
-        cells_query = session.query(egon_map_zensus_buildings_residential)
-    egon_map_zensus_buildings_residential = pd.read_sql(
-        cells_query.statement, cells_query.session.bind, index_col=None
+        cells_query = session.query(
+            egon_census_cells.c.zensus_population_id,
+            egon_census_cells.c.population,
+            egon_census_cells.c.geom,
+        ).order_by(egon_census_cells.c.zensus_population_id)
+        gdf_egon_census_cells = gpd.read_postgis(
+            cells_query.statement, cells_query.session.bind, geom_col="geom"
+        )
+
+    # ========== Get residential buildings ==========
+    egon_osm_buildings_residential = Table(
+        "osm_buildings_residential",
+        Base.metadata,
+        schema="openstreetmap",
+    )
+    inspect(engine).reflecttable(egon_osm_buildings_residential, None)
+
+    with db.session_scope() as session:
+        cells_query = session.query(
+            egon_osm_buildings_residential.c.id.label("building_id"),
+            egon_osm_buildings_residential.c.geom_building,
+        ).order_by(egon_osm_buildings_residential.c.id)
+        gdf_egon_osm_buildings = gpd.read_postgis(
+            cells_query.statement,
+            cells_query.session.bind,
+            geom_col="geom_building",
+        )
+
+    # ========== Clip buildings with census cells ==========
+
+    # Clip to create new build parts as buildings
+    gdf_egon_osm_buildings_census_cells = gdf_egon_census_cells.overlay(
+        gdf_egon_osm_buildings, how="intersection"
+    )
+    # gdf_egon_osm_buildings_census_cells["population"] = gdf_egon_osm_buildings_census_cells.population.fillna(0)
+    gdf_egon_osm_buildings_census_cells["geom_point"] = (
+        gdf_egon_osm_buildings_census_cells.centroid
     )
 
+    # Add column with unique building ids using suffixes (building parts split by clipping)
+    gdf_egon_osm_buildings_census_cells["building_id_temp"] = (
+        gdf_egon_osm_buildings_census_cells["building_id"].astype(str)
+    )
+    g = (
+        gdf_egon_osm_buildings_census_cells.groupby("building_id_temp")
+        .cumcount()
+        .add(1)
+        .astype(str)
+    )
+    gdf_egon_osm_buildings_census_cells["building_id_temp"] += "_" + g
+
+    # Check
+    try:
+        assert len(
+            gdf_egon_osm_buildings_census_cells.building_id_temp.unique()
+        ) == len(gdf_egon_osm_buildings_census_cells)
+    except AssertionError:
+        print(
+            "The length of split buildings do not match with original count."
+        )
+
+    egon_map_zensus_buildings_residential = (
+        gdf_egon_osm_buildings_census_cells[
+            ["zensus_population_id", "building_id_temp"]
+        ].rename(
+            columns={
+                "zensus_population_id": "cell_id",
+                "building_id_temp": "id",
+            }
+        )
+    )
+
+    # Get household profile to census cells allocations
     with db.session_scope() as session:
         cells_query = session.query(HouseholdElectricityProfilesInCensusCells)
     egon_hh_profile_in_zensus_cell = pd.read_sql(
         cells_query.statement, cells_query.session.bind, index_col=None
-    )  # index_col="cell_id")
+    )
 
     # Match OSM and zensus data to define missing buildings
     missing_buildings = match_osm_and_zensus_data(
@@ -711,12 +925,20 @@ def map_houseprofiles_to_buildings():
         egon_hh_profile_in_zensus_cell,
     )
 
+    # remove suffixes from buildings split into parts before to merge them back together
+    mapping_profiles_to_buildings["building_id"] = (
+        mapping_profiles_to_buildings.building_id.astype(str).apply(
+            lambda s: s.split("_")[0] if "_" in s else s
+        )
+    )
+    mapping_profiles_to_buildings["building_id"] = (
+        mapping_profiles_to_buildings["building_id"].astype(int)
+    )
+
     # reduce list to only used synthetic buildings
     synthetic_buildings = reduce_synthetic_buildings(
         mapping_profiles_to_buildings, synthetic_buildings
     )
-    # TODO remove unused code
-    # synthetic_buildings = synthetic_buildings.drop(columns=["grid_id"])
     synthetic_buildings["n_amenities_inside"] = 0
 
     OsmBuildingsSynthetic.__table__.drop(bind=engine, checkfirst=True)
@@ -753,6 +975,54 @@ def map_houseprofiles_to_buildings():
             HouseholdElectricityProfilesOfBuildings,
             mapping_profiles_to_buildings.to_dict(orient="records"),
         )
+
+
+def create_buildings_profiles_stats():
+    """
+    Create DB table `demand.egon_household_electricity_profile_of_buildings_stats`
+    with household profile type counts per building
+    """
+
+    # Drop and recreate table if existing
+    HouseholdElectricityProfilesOfBuildingsStats.__table__.drop(
+        bind=engine, checkfirst=True
+    )
+    HouseholdElectricityProfilesOfBuildingsStats.__table__.create(
+        bind=engine, checkfirst=True
+    )
+
+    # Query final profile table
+    with db.session_scope() as session:
+        cells_query = session.query(
+            HouseholdElectricityProfilesOfBuildings,
+        ).order_by(HouseholdElectricityProfilesOfBuildings.id)
+
+        df_buildings_and_profiles = pd.read_sql(
+            cells_query.statement, cells_query.session.bind, index_col="id"
+        )
+
+    # Extract household type prefix
+    df_buildings_and_profiles = df_buildings_and_profiles.assign(
+        household_type=df_buildings_and_profiles.profile_id.str[:2]
+    )
+
+    # Unstack and create total
+    df_buildings_and_profiles = (
+        df_buildings_and_profiles.groupby("building_id")
+        .value_counts(["household_type"])
+        .unstack(fill_value=0)
+    )
+    df_buildings_and_profiles["households_total"] = (
+        df_buildings_and_profiles.sum(axis=1)
+    )
+
+    # Write to DB
+    df_buildings_and_profiles.to_sql(
+        name=HouseholdElectricityProfilesOfBuildingsStats.__table__.name,
+        schema=HouseholdElectricityProfilesOfBuildingsStats.__table__.schema,
+        con=engine,
+        if_exists="append",
+    )
 
 
 class setup(Dataset):
@@ -821,7 +1091,8 @@ class setup(Dataset):
     there is enough households by the census data. If there are more
     profiles than buildings, all additional profiles are randomly assigned.
     Therefore, multiple profiles can be assigned to one building, making it a
-    multi-household building.
+    multi-household building. If there are no OSM buildings available,
+    synthetic ones are created (see below).
 
     **What are central assumptions during the data processing?**
 
@@ -835,10 +1106,17 @@ class setup(Dataset):
     **Drawbacks and limitations of the data**
 
     * Missing OSM buildings in cells without census building count are
-      derived by an average rate of households/buildings applied to the
-      number of households. As only whole houses can exist, the substitute
-      is ceiled to the next higher integer. Ceiling is applied to avoid
-      rounding to amount of 0 buildings.
+      derived by an average (median) rate of households/buildings applied
+      to the number of households. We use a twofold approach for the rate:
+      first, the rate is calculated using adjacent cells (function
+      `find_adjacent_cells()`), a distance of 3 cells in each direction is
+      used by default (resulting in a 7x7 lookup matrix). For the remaining
+      cells, i.e. cells without any rate in the adjacent cells, the global
+      median rate is used.
+
+      As only whole houses can exist, the substitute is ceiled to the next
+      higher integer. Ceiling is applied to avoid rounding to amount of 0
+      buildings.
 
     * As this datasets is a cascade after profile assignement at census
       cells also check drawbacks and limitations in hh_profiles.py.
@@ -875,9 +1153,13 @@ class setup(Dataset):
     #:
     name: str = "Demand_Building_Assignment"
     #:
-    version: str = "0.0.5"
+    version: str = "0.0.6"
     #:
-    tasks = (map_houseprofiles_to_buildings, get_building_peak_loads)
+    tasks = (
+        map_houseprofiles_to_buildings,
+        create_buildings_profiles_stats,
+        get_building_peak_loads,
+    )
 
     def __init__(self, dependencies):
         super().__init__(

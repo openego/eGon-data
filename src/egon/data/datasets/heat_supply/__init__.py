@@ -2,22 +2,35 @@
 
 """
 
-from egon.data import db, config
+import datetime
+import json
+import time
 
+from geoalchemy2.types import Geometry
+from sqlalchemy import Column, Float, ForeignKey, Integer, String
+from sqlalchemy.ext.declarative import declarative_base
+import pandas as pd
+
+from egon.data import config, db
+from egon.data.datasets import Dataset
+from egon.data.datasets.district_heating_areas import EgonDistrictHeatingAreas
 from egon.data.datasets.heat_supply.district_heating import (
-    cascade_heat_supply,
     backup_gas_boilers,
     backup_resistive_heaters,
+    cascade_heat_supply,
 )
+from egon.data.datasets.heat_supply.geothermal import potential_germany
 from egon.data.datasets.heat_supply.individual_heating import (
     cascade_heat_supply_indiv,
 )
-from egon.data.datasets.heat_supply.geothermal import potential_germany
-from egon.data.datasets.district_heating_areas import EgonDistrictHeatingAreas
-from sqlalchemy import Column, String, Float, Integer, ForeignKey
-from sqlalchemy.ext.declarative import declarative_base
-from geoalchemy2.types import Geometry
-from egon.data.datasets import Dataset
+from egon.data.metadata import (
+    context,
+    generate_resource_fields_from_sqla_model,
+    license_ccby,
+    license_egon_data_odbl,
+    meta_metadata,
+    sources,
+)
 
 # Will later be imported from another file.
 Base = declarative_base()
@@ -82,58 +95,65 @@ def district_heating():
         """
     )
 
-    supply_2035 = cascade_heat_supply("eGon2035", plotting=False)
+    for scenario in config.settings()["egon-data"]["--scenarios"]:
+        supply = cascade_heat_supply(scenario, plotting=False)
 
-    supply_2035["scenario"] = "eGon2035"
+        supply["scenario"] = scenario
 
-    supply_2035.to_postgis(
-        targets["district_heating_supply"]["table"],
-        schema=targets["district_heating_supply"]["schema"],
-        con=db.engine(),
-        if_exists="append",
-    )
-
-    # Compare target value with sum of distributed heat supply
-    df_check = db.select_dataframe(
-        f"""
-        SELECT a.carrier,
-        (SUM(a.capacity) - b.capacity) / SUM(a.capacity) as deviation
-        FROM {targets['district_heating_supply']['schema']}.
-        {targets['district_heating_supply']['table']} a,
-        {sources['scenario_capacities']['schema']}.
-        {sources['scenario_capacities']['table']} b
-        WHERE a.scenario = 'eGon2035'
-        AND b.scenario_name = 'eGon2035'
-        AND b.carrier = CONCAT('urban_central_', a.carrier)
-        GROUP BY (a.carrier,  b.capacity);
-        """
-    )
-    # If the deviation is > 1%, throw an error
-    assert (
-        df_check.deviation.abs().max() < 1
-    ), f"""Unexpected deviation between target value and distributed
-        heat supply: {df_check}
-        """
-
-    # Add gas boilers as conventional backup capacities
-    backup = backup_gas_boilers("eGon2035")
-
-    backup.to_postgis(
-        targets["district_heating_supply"]["table"],
-        schema=targets["district_heating_supply"]["schema"],
-        con=db.engine(),
-        if_exists="append",
-    )
-
-    backup_rh = backup_resistive_heaters("eGon2035")
-
-    if not backup_rh.empty:
-        backup_rh.to_postgis(
+        supply.to_postgis(
             targets["district_heating_supply"]["table"],
             schema=targets["district_heating_supply"]["schema"],
             con=db.engine(),
             if_exists="append",
         )
+
+
+        # Do not check data for status quo as is it not listed in the table
+        if "status" not in scenario:
+            # Compare target value with sum of distributed heat supply
+            df_check = db.select_dataframe(
+                f"""
+                SELECT a.carrier,
+                (SUM(a.capacity) - b.capacity) / SUM(a.capacity) as deviation
+                FROM {targets['district_heating_supply']['schema']}.
+                {targets['district_heating_supply']['table']} a,
+                {sources['scenario_capacities']['schema']}.
+                {sources['scenario_capacities']['table']} b
+                WHERE a.scenario = '{scenario}'
+                AND b.scenario_name = '{scenario}'
+                AND b.carrier = CONCAT('urban_central_', a.carrier)
+                GROUP BY (a.carrier,  b.capacity);
+                """
+            )
+            # If the deviation is > 1%, throw an error
+            assert (
+                df_check.deviation.abs().max() < 1
+            ), f"""Unexpected deviation between target value and distributed
+                heat supply: {df_check}
+            """
+
+        # Add gas boilers as conventional backup capacities
+        backup = backup_gas_boilers(scenario)
+
+        backup.to_postgis(
+            targets["district_heating_supply"]["table"],
+            schema=targets["district_heating_supply"]["schema"],
+            con=db.engine(),
+            if_exists="append",
+        )
+
+
+        # Insert resistive heaters which are not available in status quo
+        if "status" not in scenario:
+            backup_rh = backup_resistive_heaters(scenario)
+
+            if not backup_rh.empty:
+                backup_rh.to_postgis(
+                    targets["district_heating_supply"]["table"],
+                    schema=targets["district_heating_supply"]["schema"],
+                    con=db.engine(),
+                    if_exists="append",
+                )
 
 
 def individual_heating():
@@ -146,24 +166,200 @@ def individual_heating():
     """
     targets = config.datasets()["heat_supply"]["targets"]
 
-    db.execute_sql(
-        f"""
-        DELETE FROM {targets['individual_heating_supply']['schema']}.
-        {targets['individual_heating_supply']['table']}
-        """
+    for scenario in config.settings()["egon-data"]["--scenarios"]:
+        db.execute_sql(
+            f"""
+            DELETE FROM {targets['individual_heating_supply']['schema']}.
+            {targets['individual_heating_supply']['table']}
+            WHERE scenario = '{scenario}'
+            """
+        )
+        if scenario == "eGon2035":
+            distribution_level = "federal_states"
+        else:
+            distribution_level = "national"
+
+        supply = cascade_heat_supply_indiv(
+            scenario, distribution_level=distribution_level, plotting=False
+        )
+
+        supply["scenario"] = scenario
+
+        supply.to_postgis(
+            targets["individual_heating_supply"]["table"],
+            schema=targets["individual_heating_supply"]["schema"],
+            con=db.engine(),
+            if_exists="append",
+        )
+
+
+def metadata():
+    """Write metadata for heat supply tables
+
+    Returns
+    -------
+    None.
+
+    """
+
+    fields = generate_resource_fields_from_sqla_model(
+        EgonDistrictHeatingSupply
     )
 
-    supply_2035 = cascade_heat_supply_indiv(
-        "eGon2035", distribution_level="federal_states", plotting=False
+    fields_df = pd.DataFrame(data=fields).set_index("name")
+    fields_df.loc["index", "description"] = "Unique identifyer"
+    fields_df.loc[
+        "district_heating_id", "description"
+    ] = "Index of the corresponding district heating grid"
+    fields_df.loc["carrier", "description"] = "Name of energy carrier"
+    fields_df.loc[
+        "category", "description"
+    ] = "Size-category of district heating grid"
+    fields_df.loc["capacity", "description"] = "Installed heating capacity"
+    fields_df.loc[
+        "geometry", "description"
+    ] = "Location of thermal power plant"
+    fields_df.loc["scenario", "description"] = "Name of corresponing scenario"
+
+    fields_df.loc["capacity", "unit"] = "MW_th"
+    fields_df.unit.fillna("none", inplace=True)
+
+    fields = fields_df.reset_index().to_dict(orient="records")
+
+    meta_district = {
+        "name": "supply.egon_district_heating",
+        "title": "eGon heat supply for district heating grids",
+        "id": "WILL_BE_SET_AT_PUBLICATION",
+        "description": "Heat supply technologies for district heating grids",
+        "language": ["EN"],
+        "publicationDate": datetime.date.today().isoformat(),
+        "context": context(),
+        "spatial": {
+            "location": None,
+            "extent": "Germany",
+            "resolution": None,
+        },
+        "sources": [
+            sources()["era5"],
+            sources()["vg250"],
+            sources()["egon-data"],
+            sources()["egon-data_bundle"],
+            sources()["openstreetmap"],
+            sources()["mastr"],
+            sources()["peta"],
+        ],
+        "licenses": [license_egon_data_odbl()],
+        "contributors": [
+            {
+                "title": "Clara Büttner",
+                "email": "http://github.com/ClaraBuettner",
+                "date": time.strftime("%Y-%m-%d"),
+                "object": None,
+                "comment": "Imported data",
+            },
+        ],
+        "resources": [
+            {
+                "profile": "tabular-data-resource",
+                "name": "supply.egon_district_heating",
+                "path": None,
+                "format": "PostgreSQL",
+                "encoding": "UTF-8",
+                "schema": {
+                    "fields": fields,
+                    "primaryKey": ["index"],
+                    "foreignKeys": [],
+                },
+                "dialect": {"delimiter": None, "decimalSeparator": "."},
+            }
+        ],
+        "metaMetadata": meta_metadata(),
+    }
+
+    # Add metadata as a comment to the table
+    db.submit_comment(
+        "'" + json.dumps(meta_district) + "'",
+        EgonDistrictHeatingSupply.__table__.schema,
+        EgonDistrictHeatingSupply.__table__.name,
     )
 
-    supply_2035["scenario"] = "eGon2035"
+    fields = generate_resource_fields_from_sqla_model(
+        EgonIndividualHeatingSupply
+    )
 
-    supply_2035.to_postgis(
-        targets["individual_heating_supply"]["table"],
-        schema=targets["individual_heating_supply"]["schema"],
-        con=db.engine(),
-        if_exists="append",
+    fields_df = pd.DataFrame(data=fields).set_index("name")
+    fields_df.loc["index", "description"] = "Unique identifyer"
+    fields_df.loc[
+        "mv_grid_id", "description"
+    ] = "Index of the corresponding mv grid district"
+    fields_df.loc["carrier", "description"] = "Name of energy carrier"
+    fields_df.loc["category", "description"] = "Size-category"
+    fields_df.loc["capacity", "description"] = "Installed heating capacity"
+    fields_df.loc[
+        "geometry", "description"
+    ] = "Location of thermal power plant"
+    fields_df.loc["scenario", "description"] = "Name of corresponing scenario"
+
+    fields_df.loc["capacity", "unit"] = "MW_th"
+    fields_df.unit.fillna("none", inplace=True)
+
+    fields = fields_df.reset_index().to_dict(orient="records")
+
+    meta_district = {
+        "name": "supply.egon_individual_heating",
+        "title": "eGon heat supply for individual supplied buildings",
+        "id": "WILL_BE_SET_AT_PUBLICATION",
+        "description": "Heat supply technologies for individual supplied buildings",
+        "language": ["EN"],
+        "publicationDate": datetime.date.today().isoformat(),
+        "context": context(),
+        "spatial": {
+            "location": None,
+            "extent": "Germany",
+            "resolution": None,
+        },
+        "sources": [
+            sources()["era5"],
+            sources()["vg250"],
+            sources()["egon-data"],
+            sources()["egon-data_bundle"],
+            sources()["openstreetmap"],
+            sources()["mastr"],
+            sources()["peta"],
+        ],
+        "licenses": [license_egon_data_odbl()],
+        "contributors": [
+            {
+                "title": "Clara Büttner",
+                "email": "http://github.com/ClaraBuettner",
+                "date": time.strftime("%Y-%m-%d"),
+                "object": None,
+                "comment": "Imported data",
+            },
+        ],
+        "resources": [
+            {
+                "profile": "tabular-data-resource",
+                "name": "supply.egon_individual_heating",
+                "path": None,
+                "format": "PostgreSQL",
+                "encoding": "UTF-8",
+                "schema": {
+                    "fields": fields,
+                    "primaryKey": ["index"],
+                    "foreignKeys": [],
+                },
+                "dialect": {"delimiter": None, "decimalSeparator": "."},
+            }
+        ],
+        "metaMetadata": meta_metadata(),
+    }
+
+    # Add metadata as a comment to the table
+    db.submit_comment(
+        "'" + json.dumps(meta_district) + "'",
+        EgonIndividualHeatingSupply.__table__.schema,
+        EgonIndividualHeatingSupply.__table__.name,
     )
 
 
@@ -195,7 +391,7 @@ class HeatSupply(Dataset):
     #:
     name: str = "HeatSupply"
     #:
-    version: str = "0.0.8"
+    version: str = "0.0.10"
 
     def __init__(self, dependencies):
         super().__init__(
@@ -207,7 +403,18 @@ class HeatSupply(Dataset):
                 {
                     district_heating,
                     individual_heating,
-                    potential_germany,
                 },
+                metadata,
+            ),
+        )
+
+class GeothermalPotentialGermany(Dataset):
+    def __init__(self, dependencies):
+        super().__init__(
+            name="GeothermalPotentialGermany",
+            version="0.0.1",
+            dependencies=dependencies,
+            tasks=(
+                potential_germany,
             ),
         )

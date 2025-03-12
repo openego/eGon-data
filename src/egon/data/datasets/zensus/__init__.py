@@ -2,10 +2,10 @@
 """
 
 from pathlib import Path
-from urllib.request import urlretrieve
 import csv
 import json
 import os
+import requests
 import zipfile
 
 from shapely.geometry import Point, shape
@@ -22,7 +22,7 @@ class ZensusPopulation(Dataset):
     def __init__(self, dependencies):
         super().__init__(
             name="ZensusPopulation",
-            version="0.0.1",
+            version="0.0.2",
             dependencies=dependencies,
             tasks=(
                 download_zensus_pop,
@@ -58,7 +58,9 @@ def download_and_check(url, target_file, max_iteration=5):
         if not os.path.isfile(target_file):
             # check if url
             if url.lower().startswith("http"):
-                urlretrieve(url, target_file)
+                print("Downloading: ", url)
+                req = requests.get(url, headers={"User-Agent": "Mozilla/5.0"}, stream=True)
+                open(target_file, 'wb').write(req.content)
             else:
                 raise ValueError("No http url")
 

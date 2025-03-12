@@ -21,7 +21,7 @@ class OpenCycleGasTurbineEtrago(Dataset):
     def __init__(self, dependencies):
         super().__init__(
             name="OpenCycleGasTurbineEtrago",
-            version="0.0.1",
+            version="0.0.2",
             dependencies=dependencies,
             tasks=(insert_open_cycle_gas_turbines,),
         )

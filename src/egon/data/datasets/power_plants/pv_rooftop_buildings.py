@@ -10,10 +10,13 @@ from __future__ import annotations
 from collections import Counter
 from functools import wraps
 from time import perf_counter
+import datetime
+import json
 
 from geoalchemy2 import Geometry
 from loguru import logger
 from numpy.random import RandomState, default_rng
+from omi.dialects import get_dialect
 from pyproj.crs.crs import CRS
 from sqlalchemy import BigInteger, Column, Float, Integer, String
 from sqlalchemy.dialects.postgresql import HSTORE
@@ -28,7 +31,18 @@ from egon.data.datasets.electricity_demand_timeseries.hh_buildings import (
 )
 from egon.data.datasets.power_plants.mastr_db_classes import EgonPowerPlantsPv
 from egon.data.datasets.scenario_capacities import EgonScenarioCapacities
+from egon.data.datasets.scenario_parameters import get_scenario_year
 from egon.data.datasets.zensus_vg250 import Vg250Gem
+from egon.data.metadata import (
+    context,
+    contributors,
+    generate_resource_fields_from_db_table,
+    license_dedl,
+    license_odbl,
+    meta_metadata,
+    meta_metadata,
+    sources,
+)
 
 engine = db.engine()
 Base = declarative_base()
@@ -51,8 +65,10 @@ VERBOSE = False
 Q = 5
 
 # Scenario Data
-SCENARIOS = ["eGon2035", "eGon100RE"]
+SCENARIOS = config.settings()["egon-data"]["--scenarios"]
 SCENARIO_TIMESTAMP = {
+    "status2019": pd.Timestamp("2020-01-01", tz="UTC"),
+    "status2023": pd.Timestamp("2024-01-01", tz="UTC"),
     "eGon2035": pd.Timestamp("2035-01-01", tz="UTC"),
     "eGon100RE": pd.Timestamp("2050-01-01", tz="UTC"),
 }
@@ -461,10 +477,14 @@ def drop_buildings_outside_muns(
 
 
 def egon_building_peak_loads():
-    sql = """
+
+    # use active scenario wich is closest to today
+    scenario = sorted(SCENARIOS, key=get_scenario_year)[0]
+
+    sql = f"""
     SELECT building_id
     FROM demand.egon_building_electricity_peak_loads
-    WHERE scenario = 'eGon2035'
+    WHERE scenario = '{scenario}'
     """
 
     return (
@@ -667,7 +687,6 @@ def allocate_pv(
     t0 = perf_counter()
 
     for count, ags in enumerate(ags_list):
-
         buildings = q_buildings_gdf.loc[q_buildings_gdf.ags == ags]
         gens = q_mastr_gdf.loc[q_mastr_gdf.ags == ags]
 
@@ -708,7 +727,7 @@ def allocate_pv(
                     )
                 )
 
-                chosen_buildings = q_buildings.index.append(add_buildings)
+                chosen_buildings = q_buildings.index.union(add_buildings)
 
             else:
                 chosen_buildings = rng.choice(
@@ -732,9 +751,9 @@ def allocate_pv(
 
     assert len(assigned_buildings) == len(assigned_buildings.gens_id.unique())
 
-    q_mastr_gdf.loc[
-        assigned_buildings.gens_id, "building_id"
-    ] = assigned_buildings.index
+    q_mastr_gdf.loc[assigned_buildings.gens_id, "building_id"] = (
+        assigned_buildings.index
+    )
 
     assigned_gens = q_mastr_gdf.loc[~q_mastr_gdf.building_id.isna()]
 
@@ -1123,18 +1142,33 @@ def cap_per_bus_id(
     pandas.DataFrame
         DataFrame with total rooftop capacity per mv grid.
     """
-    targets = config.datasets()["solar_rooftop"]["targets"]
+    if "status" in scenario:
+        sources = config.datasets()["solar_rooftop"]["sources"]
 
-    sql = f"""
-    SELECT bus as bus_id, control, p_nom as capacity
-    FROM {targets['generators']['schema']}.{targets['generators']['table']}
-    WHERE carrier = 'solar_rooftop'
-    AND scn_name = '{scenario}'
-    """
+        sql = f"""
+        SELECT bus_id, SUM(el_capacity) as capacity
+        FROM {sources['power_plants']['schema']}.{sources['power_plants']['table']}
+        WHERE carrier = 'solar_rooftop'
+        AND scenario = '{scenario}'
+        GROUP BY bus_id
+        """
 
-    df = db.select_dataframe(sql, index_col="bus_id")
+        df = db.select_dataframe(sql, index_col="bus_id")
 
-    return df.loc[df.control != "Slack"]
+    else:
+        targets = config.datasets()["solar_rooftop"]["targets"]
+
+        sql = f"""
+        SELECT bus as bus_id, control, p_nom as capacity
+        FROM {targets['generators']['schema']}.{targets['generators']['table']}
+        WHERE carrier = 'solar_rooftop'
+        AND scn_name = '{scenario}'
+        """
+
+        df = db.select_dataframe(sql, index_col="bus_id")
+        df = df.loc[df.control != "Slack"]
+
+    return df
 
 
 def determine_end_of_life_gens(
@@ -1984,6 +2018,10 @@ def allocate_scenarios(
     """
     cap_per_bus_id_df = cap_per_bus_id(scenario)
 
+    if cap_per_bus_id_df.empty:
+        print(f"No PV rooftop in scenario {scenario}")
+        return
+
     logger.debug(
         f"cap_per_bus_id_df total capacity: {cap_per_bus_id_df.capacity.sum()}"
     )
@@ -2082,6 +2120,138 @@ class EgonPowerPlantPvRoofBuilding(Base):
     weather_cell_id = Column(Integer)
 
 
+def add_metadata():
+    schema = "supply"
+    table = "egon_power_plants_pv_roof_building"
+    name = f"{schema}.{table}"
+    deposit_id_mastr = config.datasets()["mastr_new"]["deposit_id"]
+    deposit_id_data_bundle = config.datasets()["data-bundle"]["sources"][
+        "zenodo"
+    ]["deposit_id"]
+
+    contris = contributors(["kh", "kh"])
+
+    contris[0]["date"] = "2023-03-16"
+
+    contris[0]["object"] = "metadata"
+    contris[1]["object"] = "dataset"
+
+    contris[0]["comment"] = "Add metadata to dataset."
+    contris[1]["comment"] = "Add workflow to generate dataset."
+
+    meta = {
+        "name": name,
+        "title": "eGon power plants rooftop solar",
+        "id": "WILL_BE_SET_AT_PUBLICATION",
+        "description": (
+            "eGon power plants rooftop solar systems allocated to buildings"
+        ),
+        "language": "en-US",
+        "keywords": ["photovoltaik", "solar", "pv", "mastr", "status quo"],
+        "publicationDate": datetime.date.today().isoformat(),
+        "context": context(),
+        "spatial": {
+            "location": "none",
+            "extent": "Germany",
+            "resolution": "building",
+        },
+        "temporal": {
+            "referenceDate": (
+                config.datasets()["mastr_new"]["egon2021_date_max"].split(" ")[
+                    0
+                ]
+            ),
+            "timeseries": {},
+        },
+        "sources": [
+            {
+                "title": "Data bundle for egon-data",
+                "description": (
+                    "Data bundle for egon-data: A transparent and "
+                    "reproducible data processing pipeline for energy "
+                    "system modeling"
+                ),
+                "path": (
+                    "https://zenodo.org/record/"
+                    f"{deposit_id_data_bundle}#.Y_dWM4CZMVM"
+                ),
+                "licenses": [license_dedl(attribution="© Cußmann, Ilka")],
+            },
+            {
+                "title": ("open-MaStR power unit registry for eGo^n project"),
+                "description": (
+                    "Data from Marktstammdatenregister (MaStR) data using "
+                    "the data dump from 2022-11-17 for eGon-data."
+                ),
+                "path": (
+                    f"https://zenodo.org/record/{deposit_id_mastr}"
+                ),
+                "licenses": [license_dedl(attribution="© Amme, Jonathan")],
+            },
+            sources()["openstreetmap"],
+            sources()["era5"],
+            sources()["vg250"],
+            sources()["egon-data"],
+        ],
+        "licenses": [license_odbl("© eGon development team")],
+        "contributors": contris,
+        "resources": [
+            {
+                "profile": "tabular-data-resource",
+                "name": name,
+                "path": "None",
+                "format": "PostgreSQL",
+                "encoding": "UTF-8",
+                "schema": {
+                    "fields": generate_resource_fields_from_db_table(
+                        schema,
+                        table,
+                    ),
+                    "primaryKey": "index",
+                },
+                "dialect": {"delimiter": "", "decimalSeparator": ""},
+            }
+        ],
+        "review": {"path": "", "badge": ""},
+        "metaMetadata": meta_metadata(),
+        "_comment": {
+            "metadata": (
+                "Metadata documentation and explanation (https://github."
+                "com/OpenEnergyPlatform/oemetadata/blob/master/metadata/"
+                "v141/metadata_key_description.md)"
+            ),
+            "dates": (
+                "Dates and time must follow the ISO8601 including time "
+                "zone (YYYY-MM-DD or YYYY-MM-DDThh:mm:ss±hh)"
+            ),
+            "units": "Use a space between numbers and units (100 m)",
+            "languages": (
+                "Languages must follow the IETF (BCP47) format (en-GB, "
+                "en-US, de-DE)"
+            ),
+            "licenses": (
+                "License name must follow the SPDX License List "
+                "(https://spdx.org/licenses/)"
+            ),
+            "review": (
+                "Following the OEP Data Review (https://github.com/"
+                "OpenEnergyPlatform/data-preprocessing/wiki)"
+            ),
+            "none": "If not applicable use (none)",
+        },
+    }
+
+    dialect = get_dialect(f"oep-v{meta_metadata()['metadataVersion'][4:7]}")()
+
+    meta = dialect.compile_and_render(dialect.parse(json.dumps(meta)))
+
+    db.submit_comment(
+        f"'{json.dumps(meta)}'",
+        schema,
+        table,
+    )
+
+
 def create_scenario_table(buildings_gdf):
     """Create mapping table pv_unit <-> building for scenario"""
     EgonPowerPlantPvRoofBuilding.__table__.drop(bind=engine, checkfirst=True)
@@ -2094,6 +2264,8 @@ def create_scenario_table(buildings_gdf):
         if_exists="append",
         index=False,
     )
+
+    add_metadata()
 
 
 def add_weather_cell_id(buildings_gdf: gpd.GeoDataFrame) -> gpd.GeoDataFrame:
@@ -2152,6 +2324,7 @@ def add_bus_ids_sq(
     grid_districts_gdf = grid_districts(EPSG)
 
     mask = buildings_gdf.scenario == "status_quo"
+
     buildings_gdf.loc[mask, "bus_id"] = (
         buildings_gdf.loc[mask]
         .sjoin(grid_districts_gdf, how="left")
@@ -2206,6 +2379,16 @@ def pv_rooftop_to_buildings():
 
     mastr_gdf = load_mastr_data()
 
+    status_quo = "status2023"
+
+    ts = pd.Timestamp(
+        config.datasets()["mastr_new"][f"{status_quo}_date_max"], tz="UTC"
+    )
+
+    mastr_gdf = mastr_gdf.loc[
+        mastr_gdf.commissioning_date <= ts
+    ]
+
     buildings_gdf = load_building_data()
 
     desagg_mastr_gdf, desagg_buildings_gdf = allocate_to_buildings(
@@ -2213,9 +2396,10 @@ def pv_rooftop_to_buildings():
     )
 
     all_buildings_gdf = (
-        desagg_mastr_gdf.assign(scenario="status_quo")
+        desagg_mastr_gdf.assign(scenario=status_quo)
         .reset_index()
         .rename(columns={"geometry": "geom"})
+        .set_geometry("geom")
     )
 
     scenario_buildings_gdf = all_buildings_gdf.copy()
@@ -2223,16 +2407,33 @@ def pv_rooftop_to_buildings():
     cap_per_bus_id_df = pd.DataFrame()
 
     for scenario in SCENARIOS:
-        logger.debug(f"Desaggregating scenario {scenario}.")
-        (
-            scenario_buildings_gdf,
-            cap_per_bus_id_scenario_df,
-        ) = allocate_scenarios(  # noqa: F841
-            desagg_mastr_gdf,
-            desagg_buildings_gdf,
-            scenario_buildings_gdf,
-            scenario,
-        )
+        if scenario == status_quo:
+            continue
+        elif "status" in scenario:
+            ts = pd.Timestamp(
+                config.datasets()["mastr_new"][f"{scenario}_date_max"], tz="UTC"
+            )
+
+            scenario_buildings_gdf = scenario_buildings_gdf.loc[
+                scenario_buildings_gdf.commissioning_date <= ts
+            ]
+
+        else:
+            logger.debug(f"Desaggregating scenario {scenario}.")
+
+            (
+                scenario_buildings_gdf,
+                cap_per_bus_id_scenario_df,
+            ) = allocate_scenarios(  # noqa: F841
+                desagg_mastr_gdf,
+                desagg_buildings_gdf,
+                scenario_buildings_gdf,
+                scenario,
+            )
+
+            cap_per_bus_id_df = pd.concat(
+                [cap_per_bus_id_df, cap_per_bus_id_scenario_df]
+            )
 
         all_buildings_gdf = gpd.GeoDataFrame(
             pd.concat(
@@ -2240,10 +2441,6 @@ def pv_rooftop_to_buildings():
             ),
             crs=scenario_buildings_gdf.crs,
             geometry="geom",
-        )
-
-        cap_per_bus_id_df = pd.concat(
-            [cap_per_bus_id_df, cap_per_bus_id_scenario_df]
         )
 
     # add weather cell

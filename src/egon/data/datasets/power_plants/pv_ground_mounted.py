@@ -9,7 +9,6 @@ import egon.data.config
 
 def insert():
     def mastr_existing_pv(pow_per_area):
-
         """Import MaStR data from csv-files.
 
         Parameters
@@ -141,7 +140,6 @@ def insert():
         return mastr
 
     def potential_areas(con, join_buffer):
-
         """Import potential areas and choose and prepare areas suitable for PV
         ground mounted.
 
@@ -293,7 +291,6 @@ def insert():
         return potentials_rora, potentials_agri
 
     def select_pot_areas(mastr, potentials_pot):
-
         """Select potential areas where there are existing pv parks
         (MaStR-data).
 
@@ -312,10 +309,12 @@ def insert():
         # prepare dataframes to check intersection
         pvs = gpd.GeoDataFrame()
         pvs["geom"] = mastr["buffer"].copy()
+        pvs.set_geometry("geom", inplace=True)
         pvs.crs = 3035
         pvs = pvs.set_geometry("geom")
         potentials = gpd.GeoDataFrame()
         potentials["geom"] = potentials_pot["geom"].copy()
+        potentials.set_geometry("geom", inplace=True)
         potentials.crs = 3035
         potentials = potentials.set_geometry("geom")
 
@@ -343,7 +342,6 @@ def insert():
         return (pot_sel, mastr)
 
     def build_pv(pv_pot, pow_per_area):
-
         """Build new pv parks in selected potential areas.
 
         Parameters
@@ -374,7 +372,6 @@ def insert():
         return pv_pot
 
     def adapt_grid_level(pv_pot, max_dist_hv, con):
-
         """Check and if needed adapt grid level of newly built pv parks.
 
         Parameters
@@ -403,7 +400,6 @@ def insert():
         ]
 
         if len(pv_pot_mv_to_hv) > 0:
-
             # import data for HV substations
 
             sql = "SELECT point, voltage FROM grid.egon_hvmv_substation"
@@ -435,7 +431,7 @@ def insert():
                 pv_pot_mv_to_hv["dist_to_HV"] <= max_dist_hv
             ]
             pv_pot_mv_to_hv = pv_pot_mv_to_hv.drop(columns=["dist_to_HV"])
-            pv_pot_hv = pv_pot_hv.append(pv_pot_mv_to_hv)
+            pv_pot_hv = pd.concat([pv_pot_hv, pv_pot_mv_to_hv])
 
             # delete PVs which are now HV from MV dataframe
             for index, pot in pv_pot_mv_to_hv.iterrows():
@@ -449,12 +445,11 @@ def insert():
             ].apply(lambda x: x if x < max_cap_mv else max_cap_mv)
             pv_pot_mv["voltage_level"] = 5
 
-            pv_pot = pv_pot_mv.append(pv_pot_hv)
+            pv_pot = pd.concat([pv_pot_mv, pv_pot_hv])
 
         return pv_pot
 
     def build_additional_pv(potentials, pv, pow_per_area, con):
-
         """Build additional pv parks if pv parks on selected potential areas
         do not hit the target value.
 
@@ -535,7 +530,6 @@ def insert():
         pow_per_area,
         con,
     ):
-
         """Check target value per scenario and per state.
 
          Parameters
@@ -585,7 +579,6 @@ def insert():
         # linear scale farms to meet target if sum of installed capacity is
         # too high
         if total_pv_power >= target_power:
-
             scale_factor = target_power / total_pv_power
             pv_rora_i["installed capacity in kW"] = (
                 pv_rora_i["installed capacity in kW"] * scale_factor
@@ -614,7 +607,6 @@ def insert():
         # build new pv parks if sum of installed capacity is below target
         # value
         elif total_pv_power < target_power:
-
             rest_cap = target_power - total_pv_power
 
             ###
@@ -658,7 +650,6 @@ def insert():
 
             # build pv parks on potential areas agriculture if still necessary
             elif pv_per_distr_i["installed capacity in kW"].sum() < rest_cap:
-
                 rest_cap = (
                     target_power
                     - total_pv_power
@@ -711,8 +702,8 @@ def insert():
                         "and 'Agriculture'."
                     )
 
-                pv_per_distr_i = pv_per_distr_i.append(
-                    pv_per_distr_i_2, ignore_index=True
+                pv_per_distr_i = pd.concat(
+                    [pv_per_distr_i, pv_per_distr_i_2], ignore_index=True
                 )
 
             # assign grid level to pv_per_distr
@@ -776,7 +767,6 @@ def insert():
         max_dist_hv=20000,
         show_map=False,
     ):
-
         """Execute methodology to distribute pv ground mounted.
 
          Parameters
@@ -797,7 +787,6 @@ def insert():
             capacity
 
         """
-
         ###
         print(" ")
         print("MaStR-Data")
@@ -855,177 +844,186 @@ def insert():
         )
         print(" ")
 
-        # 1) scenario: eGon2035
-
-        ###
-        print(" ")
-        print("scenario: eGon2035")
-        print(" ")
-
-        # German states
-        sql = "SELECT geometry as geom, nuts FROM boundaries.vg250_lan"
-        states = gpd.GeoDataFrame.from_postgis(sql, con)
-
-        # assumption for target value of installed capacity
-        sql = (
-            "SELECT capacity,scenario_name,nuts FROM "
-            "supply.egon_scenario_capacities WHERE carrier='solar'"
-        )
-        target = pd.read_sql(sql, con)
-        target = target[target["scenario_name"] == "eGon2035"]
-        nuts = np.unique(target["nuts"])
-
         # initialize final dataframe
         pv_rora = gpd.GeoDataFrame()
         pv_agri = gpd.GeoDataFrame()
         pv_exist = gpd.GeoDataFrame()
         pv_per_distr = gpd.GeoDataFrame()
 
-        # prepare selection per state
-        rora = rora.set_geometry("centroid")
-        agri = agri.set_geometry("centroid")
-        potentials_rora = potentials_rora.set_geometry("geom")
-        potentials_agri = potentials_agri.set_geometry("geom")
+        # 1) scenario: eGon2035
+        if (
+            "eGon2035"
+            in egon.data.config.settings()["egon-data"]["--scenarios"]
+        ):
+            ###
+            print(" ")
+            print("scenario: eGon2035")
+            print(" ")
 
-        # check target value per state
-        for i in nuts:
+            # German states
+            sql = "SELECT geometry as geom, nuts FROM boundaries.vg250_lan"
+            states = gpd.GeoDataFrame.from_postgis(sql, con)
 
-            target_power = (
-                target[target["nuts"] == i]["capacity"].iloc[0] * 1000
+            # assumption for target value of installed capacity
+            sql = (
+                "SELECT capacity,scenario_name,nuts FROM "
+                "supply.egon_scenario_capacities WHERE carrier='solar'"
             )
+            target = pd.read_sql(sql, con)
+            target = target[target["scenario_name"] == "eGon2035"]
+            nuts = np.unique(target["nuts"])
+
+            # prepare selection per state
+            rora = rora.set_geometry("centroid")
+            agri = agri.set_geometry("centroid")
+            potentials_rora = potentials_rora.set_geometry("geom")
+            potentials_agri = potentials_agri.set_geometry("geom")
+
+            # check target value per state
+            for i in nuts:
+                target_power = (
+                    target[target["nuts"] == i]["capacity"].iloc[0] * 1000
+                )
+
+                ###
+                land = target[target["nuts"] == i]["nuts"].iloc[0]
+                print(" ")
+                print("Bundesland (NUTS): " + land)
+                print("target power: " + str(target_power / 1000) + " MW")
+
+                # select state
+                state = states[states["nuts"] == i]
+                state = state.to_crs(3035)
+
+                # select PVs in state
+                rora_i = gpd.sjoin(rora, state)
+                agri_i = gpd.sjoin(agri, state)
+                exist_i = gpd.sjoin(exist, state)
+                rora_i.drop("index_right", axis=1, inplace=True)
+                agri_i.drop("index_right", axis=1, inplace=True)
+                exist_i.drop("index_right", axis=1, inplace=True)
+                rora_i.drop_duplicates(inplace=True)
+                agri_i.drop_duplicates(inplace=True)
+                exist_i.drop_duplicates(inplace=True)
+
+                # select potential areas in state
+                potentials_rora_i = gpd.sjoin(potentials_rora, state)
+                potentials_agri_i = gpd.sjoin(potentials_agri, state)
+                potentials_rora_i.drop("index_right", axis=1, inplace=True)
+                potentials_agri_i.drop("index_right", axis=1, inplace=True)
+                potentials_rora_i.drop_duplicates(inplace=True)
+                potentials_agri_i.drop_duplicates(inplace=True)
+
+                # check target value and adapt installed capacity if necessary
+                rora_i, agri_i, exist_i, distr_i = check_target(
+                    rora_i,
+                    agri_i,
+                    exist_i,
+                    potentials_rora_i,
+                    potentials_agri_i,
+                    target_power,
+                    pow_per_area,
+                    con,
+                )
+
+                if len(distr_i) > 0:
+                    distr_i["nuts"] = target[target["nuts"] == i]["nuts"].iloc[
+                        0
+                    ]
+
+                # ### examination of built PV parks per state
+                rora_i_mv = rora_i[rora_i["voltage_level"] == 5]
+                rora_i_hv = rora_i[rora_i["voltage_level"] == 4]
+                agri_i_mv = agri_i[agri_i["voltage_level"] == 5]
+                agri_i_hv = agri_i[agri_i["voltage_level"] == 4]
+                print(
+                    "eGon2035: Examination of voltage level per federal state:"
+                )
+                print("a) PVs on potential areas Road & Railway: ")
+                print(
+                    "Total installed capacity: "
+                    + str(rora_i["installed capacity in kW"].sum() / 1000)
+                    + " MW"
+                )
+                print("Number of PV farms: " + str(len(rora_i)))
+                print(" - thereof MV: " + str(len(rora_i_mv)))
+                print(" - thereof HV: " + str(len(rora_i_hv)))
+                print("b) PVs on potential areas Agriculture: ")
+                print(
+                    "Total installed capacity: "
+                    + str(agri_i["installed capacity in kW"].sum() / 1000)
+                    + " MW"
+                )
+                print("Number of PV farms: " + str(len(agri_i)))
+                print(" - thereof MV: " + str(len(agri_i_mv)))
+                print(" - dthereof HV: " + str(len(agri_i_hv)))
+                print("c) Existing PVs not in potential areas: ")
+                print("Number of PV farms: " + str(len(exist_i)))
+                print("d) PVs on additional potential areas per MV-District: ")
+                if len(distr_i) > 0:
+                    distr_i_mv = distr_i[distr_i["voltage_level"] == 5]
+                    distr_i_hv = distr_i[distr_i["voltage_level"] == 4]
+                    print(
+                        "Total installed capacity: "
+                        + str(distr_i["installed capacity in kW"].sum() / 1000)
+                        + " MW"
+                    )
+                    print("Number of PV farms: " + str(len(distr_i)))
+                    print(" - thereof MV: " + str(len(distr_i_mv)))
+                    print(" - thereof HV: " + str(len(distr_i_hv)))
+                else:
+                    print(" -> No additional expansion necessary")
+                print(" ")
+
+                pv_rora = pv_rora.append(rora_i)
+                pv_agri = pv_agri.append(agri_i)
+                pv_exist = pv_exist.append(exist_i)
+                if len(distr_i) > 0:
+                    pv_per_distr = pd.concat([pv_per_distr, distr_i])
+
+        if (
+            "eGon100RE"
+            in egon.data.config.settings()["egon-data"]["--scenarios"]
+        ):
+            # 2) scenario: eGon100RE
+
+            # assumption for target value of installed capacity in Germany per
+            # scenario
+            sql = (
+                "SELECT capacity,scenario_name FROM "
+                "supply.egon_scenario_capacities WHERE carrier='solar'"
+            )
+            target_power = pd.read_sql(sql, con)
+            target_power = target_power[
+                target_power["scenario_name"] == "eGon100RE"
+            ]
+            target_power = target_power["capacity"].sum() * 1000
 
             ###
-            land = target[target["nuts"] == i]["nuts"].iloc[0]
             print(" ")
-            print("Bundesland (NUTS): " + land)
-            print("target power: " + str(target_power / 1000) + " MW")
-
-            # select state
-            state = states[states["nuts"] == i]
-            state = state.to_crs(3035)
-
-            # select PVs in state
-            rora_i = gpd.sjoin(rora, state)
-            agri_i = gpd.sjoin(agri, state)
-            exist_i = gpd.sjoin(exist, state)
-            rora_i.drop("index_right", axis=1, inplace=True)
-            agri_i.drop("index_right", axis=1, inplace=True)
-            exist_i.drop("index_right", axis=1, inplace=True)
-            rora_i.drop_duplicates(inplace=True)
-            agri_i.drop_duplicates(inplace=True)
-            exist_i.drop_duplicates(inplace=True)
-
-            # select potential areas in state
-            potentials_rora_i = gpd.sjoin(potentials_rora, state)
-            potentials_agri_i = gpd.sjoin(potentials_agri, state)
-            potentials_rora_i.drop("index_right", axis=1, inplace=True)
-            potentials_agri_i.drop("index_right", axis=1, inplace=True)
-            potentials_rora_i.drop_duplicates(inplace=True)
-            potentials_agri_i.drop_duplicates(inplace=True)
+            print("scenario: eGon100RE")
+            print("target power: " + str(target_power) + " kW")
+            print(" ")
 
             # check target value and adapt installed capacity if necessary
-            rora_i, agri_i, exist_i, distr_i = check_target(
-                rora_i,
-                agri_i,
-                exist_i,
-                potentials_rora_i,
-                potentials_agri_i,
+            (
+                pv_rora_100RE,
+                pv_agri_100RE,
+                pv_exist_100RE,
+                pv_per_distr_100RE,
+            ) = check_target(
+                rora,
+                agri,
+                exist,
+                potentials_rora,
+                potentials_agri,
                 target_power,
                 pow_per_area,
                 con,
             )
 
-            if len(distr_i) > 0:
-                distr_i["nuts"] = target[target["nuts"] == i]["nuts"].iloc[0]
-
-            # ### examination of built PV parks per state
-            rora_i_mv = rora_i[rora_i["voltage_level"] == 5]
-            rora_i_hv = rora_i[rora_i["voltage_level"] == 4]
-            agri_i_mv = agri_i[agri_i["voltage_level"] == 5]
-            agri_i_hv = agri_i[agri_i["voltage_level"] == 4]
-            print("eGon2035: Examination of voltage level per federal state:")
-            print("a) PVs on potential areas Road & Railway: ")
-            print(
-                "Total installed capacity: "
-                + str(rora_i["installed capacity in kW"].sum() / 1000)
-                + " MW"
-            )
-            print("Number of PV farms: " + str(len(rora_i)))
-            print(" - thereof MV: " + str(len(rora_i_mv)))
-            print(" - thereof HV: " + str(len(rora_i_hv)))
-            print("b) PVs on potential areas Agriculture: ")
-            print(
-                "Total installed capacity: "
-                + str(agri_i["installed capacity in kW"].sum() / 1000)
-                + " MW"
-            )
-            print("Number of PV farms: " + str(len(agri_i)))
-            print(" - thereof MV: " + str(len(agri_i_mv)))
-            print(" - dthereof HV: " + str(len(agri_i_hv)))
-            print("c) Existing PVs not in potential areas: ")
-            print("Number of PV farms: " + str(len(exist_i)))
-            print("d) PVs on additional potential areas per MV-District: ")
-            if len(distr_i) > 0:
-                distr_i_mv = distr_i[distr_i["voltage_level"] == 5]
-                distr_i_hv = distr_i[distr_i["voltage_level"] == 4]
-                print(
-                    "Total installed capacity: "
-                    + str(distr_i["installed capacity in kW"].sum() / 1000)
-                    + " MW"
-                )
-                print("Number of PV farms: " + str(len(distr_i)))
-                print(" - thereof MV: " + str(len(distr_i_mv)))
-                print(" - thereof HV: " + str(len(distr_i_hv)))
-            else:
-                print(" -> No additional expansion necessary")
-            print(" ")
-
-            pv_rora = pv_rora.append(rora_i)
-            pv_agri = pv_agri.append(agri_i)
-            pv_exist = pv_exist.append(exist_i)
-            if len(distr_i) > 0:
-                pv_per_distr = pv_per_distr.append(distr_i)
-
-        # 2) scenario: eGon100RE
-
-        # assumption for target value of installed capacity in Germany per
-        # scenario
-        sql = (
-            "SELECT capacity,scenario_name FROM "
-            "supply.egon_scenario_capacities WHERE carrier='solar'"
-        )
-        target_power = pd.read_sql(sql, con)
-        target_power = target_power[
-            target_power["scenario_name"] == "eGon100RE"
-        ]
-        target_power = target_power["capacity"].sum() * 1000
-
-        ###
-        print(" ")
-        print("scenario: eGon100RE")
-        print("target power: " + str(target_power) + " kW")
-        print(" ")
-
-        # check target value and adapt installed capacity if necessary
-        (
-            pv_rora_100RE,
-            pv_agri_100RE,
-            pv_exist_100RE,
-            pv_per_distr_100RE,
-        ) = check_target(
-            rora,
-            agri,
-            exist,
-            potentials_rora,
-            potentials_agri,
-            target_power,
-            pow_per_area,
-            con,
-        )
-
         # ### create map to show distribution of installed capacity
         if show_map == True:
-
             # 1) eGon2035
 
             # get MV grid districts
@@ -1126,11 +1124,6 @@ def insert():
             )
             plt.savefig("pv_per_distr_map_eGon100RE.png", dpi=300)
 
-        pv_rora = pv_rora[pv_rora["installed capacity in kW"] > 0]
-        pv_agri = pv_agri[pv_agri["installed capacity in kW"] > 0]
-        pv_per_distr = pv_per_distr[
-            pv_per_distr["installed capacity in kW"] > 0
-        ]
         pv_rora_100RE = pv_rora_100RE[
             pv_rora_100RE["installed capacity in kW"] > 0
         ]
@@ -1155,7 +1148,6 @@ def insert():
     def insert_pv_parks(
         pv_rora, pv_agri, pv_exist, pv_per_distr, scenario_name
     ):
-
         """Write to database.
 
         Parameters
@@ -1176,8 +1168,8 @@ def insert():
 
         # prepare dataframe for integration in supply.egon_power_plants
 
-        pv_parks = pv_rora.append(
-            [pv_agri, pv_exist, pv_per_distr], ignore_index=True
+        pv_parks = pd.concat(
+            [pv_rora, pv_agri, pv_exist, pv_per_distr], ignore_index=True
         )
         pv_parks["el_capacity"] = pv_parks["installed capacity in kW"] / 1000
         pv_parks.rename(columns={"centroid": "geometry"}, inplace=True)
@@ -1258,81 +1250,84 @@ def insert():
     if len(pv_per_distr) > 0:
         pv_per_distr_mv = pv_per_distr[pv_per_distr["voltage_level"] == 5]
         pv_per_distr_hv = pv_per_distr[pv_per_distr["voltage_level"] == 4]
-    pv_rora_mv = pv_rora[pv_rora["voltage_level"] == 5]
-    pv_rora_hv = pv_rora[pv_rora["voltage_level"] == 4]
-    pv_agri_mv = pv_agri[pv_agri["voltage_level"] == 5]
-    pv_agri_hv = pv_agri[pv_agri["voltage_level"] == 4]
+    if len(pv_rora) > 0:
+        pv_rora_mv = pv_rora[pv_rora["voltage_level"] == 5]
+        pv_rora_hv = pv_rora[pv_rora["voltage_level"] == 4]
+        pv_agri_mv = pv_agri[pv_agri["voltage_level"] == 5]
+        pv_agri_hv = pv_agri[pv_agri["voltage_level"] == 4]
 
-    print(" ")
-    print("eGon2035: Examination of overall voltage levels:")
-    print("a) PVs on potential areas Road & Railway: ")
-    print(
-        "Total installed capacity: "
-        + str(pv_rora["installed capacity in kW"].sum() / 1000)
-        + " MW"
-    )
-    print("Number of PV farms: " + str(len(pv_rora)))
-    print(" - thereof MV: " + str(len(pv_rora_mv)))
-    print(" - thereof HV: " + str(len(pv_rora_hv)))
-    print("b) PVs on potential areas Agriculture: ")
-    print(
-        "Total installed capacity: "
-        + str(pv_agri["installed capacity in kW"].sum() / 1000)
-        + " MW"
-    )
-    print("Number of PV farms: " + str(len(pv_agri)))
-    print(" - thereof MV: " + str(len(pv_agri_mv)))
-    print(" - thereof HV: " + str(len(pv_agri_hv)))
-    print("c) Existing PVs not in potential areas: ")
-    print("Number of PV farms: " + str(len(pv_exist)))
-    print("d) PVs on additional potential areas per MV-District: ")
-    if len(pv_per_distr) > 0:
+        print(" ")
+        print("eGon2035: Examination of overall voltage levels:")
+        print("a) PVs on potential areas Road & Railway: ")
         print(
             "Total installed capacity: "
-            + str(pv_per_distr["installed capacity in kW"].sum() / 1000)
+            + str(pv_rora["installed capacity in kW"].sum() / 1000)
             + " MW"
         )
-        print("Number of PV farms: " + str(len(pv_per_distr)))
-        print(" - thereof MV: " + str(len(pv_per_distr_mv)))
-        print(" - thereof HV: " + str(len(pv_per_distr_hv)))
-    else:
-        print(" -> No additional expansion needed")
-    print(" ")
-    ###
+        print("Number of PV farms: " + str(len(pv_rora)))
+        print(" - thereof MV: " + str(len(pv_rora_mv)))
+        print(" - thereof HV: " + str(len(pv_rora_hv)))
+        print("b) PVs on potential areas Agriculture: ")
+        print(
+            "Total installed capacity: "
+            + str(pv_agri["installed capacity in kW"].sum() / 1000)
+            + " MW"
+        )
+        print("Number of PV farms: " + str(len(pv_agri)))
+        print(" - thereof MV: " + str(len(pv_agri_mv)))
+        print(" - thereof HV: " + str(len(pv_agri_hv)))
+        print("c) Existing PVs not in potential areas: ")
+        print("Number of PV farms: " + str(len(pv_exist)))
+        print("d) PVs on additional potential areas per MV-District: ")
+        if len(pv_per_distr) > 0:
+            print(
+                "Total installed capacity: "
+                + str(pv_per_distr["installed capacity in kW"].sum() / 1000)
+                + " MW"
+            )
+            print("Number of PV farms: " + str(len(pv_per_distr)))
+            print(" - thereof MV: " + str(len(pv_per_distr_mv)))
+            print(" - thereof HV: " + str(len(pv_per_distr_hv)))
+        else:
+            print(" -> No additional expansion needed")
+        print(" ")
+        ###
 
     # save to DB
-    if (
-        pv_rora["installed capacity in kW"].sum() > 0
-        or pv_agri["installed capacity in kW"].sum() > 0
-        or pv_per_distr["installed capacity in kW"].sum() > 0
-        or pv_exist["installed capacity in kW"].sum() > 0
-    ):
+    if "eGon2035" in egon.data.config.settings()["egon-data"]["--scenarios"]:
+        if (
+            pv_rora["installed capacity in kW"].sum() > 0
+            or pv_agri["installed capacity in kW"].sum() > 0
+            or pv_per_distr["installed capacity in kW"].sum() > 0
+            or pv_exist["installed capacity in kW"].sum() > 0
+        ):
+            pv_parks = insert_pv_parks(
+                pv_rora, pv_agri, pv_exist, pv_per_distr, "eGon2035"
+            )
 
-        pv_parks = insert_pv_parks(
-            pv_rora, pv_agri, pv_exist, pv_per_distr, "eGon2035"
-        )
-
+        else:
+            pv_parks = gpd.GeoDataFrame()
     else:
-
         pv_parks = gpd.GeoDataFrame()
 
-    if (
-        pv_rora_100RE["installed capacity in kW"].sum() > 0
-        or pv_agri_100RE["installed capacity in kW"].sum() > 0
-        or pv_per_distr_100RE["installed capacity in kW"].sum() > 0
-        or pv_exist_100RE["installed capacity in kW"].sum() > 0
-    ):
+    if "eGon100RE" in egon.data.config.settings()["egon-data"]["--scenarios"]:
+        if (
+            pv_rora_100RE["installed capacity in kW"].sum() > 0
+            or pv_agri_100RE["installed capacity in kW"].sum() > 0
+            or pv_per_distr_100RE["installed capacity in kW"].sum() > 0
+            or pv_exist_100RE["installed capacity in kW"].sum() > 0
+        ):
+            pv_parks_100RE = insert_pv_parks(
+                pv_rora_100RE,
+                pv_agri_100RE,
+                pv_exist_100RE,
+                pv_per_distr_100RE,
+                "eGon100RE",
+            )
 
-        pv_parks_100RE = insert_pv_parks(
-            pv_rora_100RE,
-            pv_agri_100RE,
-            pv_exist_100RE,
-            pv_per_distr_100RE,
-            "eGon100RE",
-        )
-
+        else:
+            pv_parks_100RE = gpd.GeoDataFrame()
     else:
-
         pv_parks_100RE = gpd.GeoDataFrame()
 
     return pv_parks, pv_parks_100RE

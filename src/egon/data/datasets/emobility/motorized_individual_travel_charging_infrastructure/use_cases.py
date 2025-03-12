@@ -151,7 +151,6 @@ def distribute_by_poi(region_poi: gpd.GeoDataFrame, num_points: int | float):
 def match_existing_points(
     region_points: gpd.GeoDataFrame, region_poi: gpd.GeoDataFrame
 ):
-
     region_poi = region_poi.assign(exists=False)
     poi_buffer = region_poi.buffer(region_poi["radius"].astype(int))
     region_points = region_points.assign(potential=0)
@@ -165,7 +164,7 @@ def match_existing_points(
             # decent average as fallback
             region_points.at[i, "potential"] = 5
         elif num_clusters == 1:
-            region_points.at[i, "potential"] = clusters["potential"]
+            region_points.at[i, "potential"] = clusters["potential"].values[0]
             region_poi.loc[cluster, "exists"] = True
 
         elif num_clusters > 1:

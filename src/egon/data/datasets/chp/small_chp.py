@@ -3,6 +3,7 @@ The module containing all code dealing with chp < 10MW.
 """
 from sqlalchemy.orm import sessionmaker
 import geopandas as gpd
+import pandas as pd
 import numpy as np
 
 from egon.data import config, db
@@ -95,7 +96,7 @@ def existing_chp_smaller_10mw(sources, MaStR_konv, EgonChp):
             mastr_chp, config.datasets()["chp_location"]
         ).bus_id
 
-        mastr_chp = assign_use_case(mastr_chp, sources)
+        mastr_chp = assign_use_case(mastr_chp, sources, "eGon2035")
 
         insert_mastr_chp(mastr_chp, EgonChp)
 
@@ -163,7 +164,6 @@ def extension_to_areas(
 
     # Add new CHP as long as the additional capacity is not reached
     while additional_capacity > existing_chp.el_capacity.min():
-
         if district_heating:
             selected_areas = areas.loc[
                 areas.demand > existing_chp.th_capacity.min() * flh, :
@@ -174,11 +174,10 @@ def extension_to_areas(
             ]
 
         if len(selected_areas) > 0:
-
             selected_areas = selected_areas.to_crs(4326)
             # Assign gas bus_id
             selected_areas["gas_bus_id"] = db.assign_gas_bus_id(
-                selected_areas.copy(), "eGon2035", "CH4"
+                selected_areas.copy(), scenario, "CH4"
             ).bus
 
             # Select randomly one area from the list of possible areas
@@ -378,9 +377,11 @@ def extension_district_heating(
     if not areas_without_chp_only:
         # Append district heating areas with CHP
         # assumed dispatch of existing CHP is substracted from remaining demand
-        dh_areas = dh_areas.append(
-            db.select_geodataframe(
-                f"""
+        dh_areas = pd.concat(
+            [
+                dh_areas,
+                db.select_geodataframe(
+                    f"""
                 SELECT
                 b.residential_and_service_demand - sum(a.el_capacity)*{flh_chp}
                 as demand, b.area_id,
@@ -403,8 +404,9 @@ def extension_district_heating(
                     b.residential_and_service_demand,
                     b.area_id, geom_polygon)
                 """,
-                epsg=3035,
-            ),
+                    epsg=3035,
+                ),
+            ],
             ignore_index=True,
         ).set_crs(3035, allow_override=True)
 
@@ -573,7 +575,6 @@ def extension_per_federal_state(federal_state, EgonChp):
     )
 
     if additional_capacity > 0:
-
         share_dh = (
             existing_capacity[
                 existing_capacity.district_heating
@@ -631,7 +632,7 @@ def extension_per_federal_state(federal_state, EgonChp):
         print("Decommissioning of CHP plants is not implemented.")
 
 
-def assign_use_case(chp, sources):
+def assign_use_case(chp, sources, scenario):
     """Identifies CHPs used in district heating areas.
 
     A CHP plant is assigned to a district heating area if
@@ -699,7 +700,7 @@ def assign_use_case(chp, sources):
         SELECT area_id, ST_Buffer(geom_polygon, 1000) as geom
         FROM {sources['district_heating_areas']['schema']}.
         {sources['district_heating_areas']['table']}
-        WHERE scenario = 'eGon2035'
+        WHERE scenario = '{scenario}'
         """,
         epsg=4326,
     )
@@ -730,8 +731,11 @@ def assign_use_case(chp, sources):
 
     # Chp which are close to a district heating area and not close to an
     # industrial location are assigned as district_heating_chp
-    district_heating_chp = district_heating_chp.append(
-        close_to_dh[~close_to_dh.index.isin(close_to_industry.index)]
+    district_heating_chp = pd.concat(
+        [
+            district_heating_chp,
+            close_to_dh[~close_to_dh.index.isin(close_to_industry.index)],
+        ]
     )
 
     # Set district_heating = True for all district heating chp

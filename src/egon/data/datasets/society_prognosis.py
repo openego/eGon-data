@@ -89,7 +89,7 @@ def zensus_population():
         zensus.groupby(zensus.nuts3)
         .population.apply(lambda grp: grp / grp.sum())
         .fillna(0)
-    )
+    ).values
 
     db.execute_sql(
         f"""DELETE FROM {cfg['target']['population_prognosis']['schema']}.

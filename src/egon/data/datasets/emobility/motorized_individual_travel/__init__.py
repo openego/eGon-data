@@ -16,12 +16,12 @@ from urllib.request import urlretrieve
 import os
 import tarfile
 
-from airflow.operators.python_operator import PythonOperator
+from airflow.operators.python import PythonOperator
 from psycopg2.extensions import AsIs, register_adapter
 import numpy as np
 import pandas as pd
 
-from egon.data import db, subprocess
+from egon.data import config, db, subprocess
 from egon.data.datasets import Dataset
 from egon.data.datasets.emobility.motorized_individual_travel.db_classes import (  # noqa: E501
     EgonEvCountMunicipality,
@@ -31,6 +31,7 @@ from egon.data.datasets.emobility.motorized_individual_travel.db_classes import 
     EgonEvMvGridDistrict,
     EgonEvPool,
     EgonEvTrip,
+    add_metadata,
 )
 from egon.data.datasets.emobility.motorized_individual_travel.ev_allocation import (  # noqa: E501
     allocate_evs_numbers,
@@ -48,6 +49,8 @@ from egon.data.datasets.emobility.motorized_individual_travel.helpers import (
 from egon.data.datasets.emobility.motorized_individual_travel.model_timeseries import (  # noqa: E501
     delete_model_data_from_db,
     generate_model_data_bunch,
+    generate_model_data_status2019_remaining,
+    generate_model_data_status2023_remaining,
     generate_model_data_eGon100RE_remaining,
     generate_model_data_eGon2035_remaining,
     read_simbev_metadata_file,
@@ -142,8 +145,8 @@ def download_and_preprocess():
     kba_data[
         ["ags_reg_district", "reg_district"]
     ] = kba_data.reg_district.str.split(
-        " ",
-        1,
+        pat=" ",
+        n=1,
         expand=True,
     )
     kba_data.ags_reg_district = kba_data.ags_reg_district.astype("int")
@@ -180,7 +183,7 @@ def extract_trip_file():
     """Extract trip file from data bundle"""
     trip_dir = DATA_BUNDLE_DIR / Path("mit_trip_data")
 
-    for scenario_name in ["eGon2035", "eGon100RE"]:
+    for scenario_name in config.settings()["egon-data"]["--scenarios"]:
         print(f"SCENARIO: {scenario_name}")
         trip_file = trip_dir / Path(
             DATASET_CFG["original_data"]["sources"]["trips"][scenario_name][
@@ -208,7 +211,7 @@ def write_evs_trips_to_db():
         df["simbev_ev_id"] = "_".join(f.name.split("_")[0:3])
         return df
 
-    for scenario_name in ["eGon2035", "eGon100RE"]:
+    for scenario_name in config.settings()["egon-data"]["--scenarios"]:
         print(f"SCENARIO: {scenario_name}")
         trip_dir_name = Path(
             DATASET_CFG["original_data"]["sources"]["trips"][scenario_name][
@@ -255,7 +258,7 @@ def write_evs_trips_to_db():
         # Split simBEV id into type and id
         evs_unique[["type", "simbev_ev_id"]] = evs_unique[
             "simbev_ev_id"
-        ].str.rsplit("_", 1, expand=True)
+        ].str.rsplit(pat="_", n=1, expand=True)
         evs_unique.simbev_ev_id = evs_unique.simbev_ev_id.astype(int)
         evs_unique["scenario"] = scenario_name
 
@@ -308,14 +311,14 @@ def write_metadata_to_db():
         "scenario": str,
         "eta_cp": float,
         "stepsize": int,
-        "start_date": np.datetime64,
-        "end_date": np.datetime64,
+        "start_date": "datetime64[ns]",
+        "end_date": "datetime64[ns]",
         "soc_min": float,
         "grid_timeseries": bool,
         "grid_timeseries_by_usecase": bool,
     }
 
-    for scenario_name in ["eGon2035", "eGon100RE"]:
+    for scenario_name in config.settings()["egon-data"]["--scenarios"]:
         meta_run_config = read_simbev_metadata_file(
             scenario_name, "config"
         ).loc["basic"]
@@ -446,34 +449,45 @@ class MotorizedIndividualTravel(Dataset):
                     )
                 )
 
-            if scenario_name == "eGon2035":
+            if scenario_name == "status2019":
+                tasks.add(generate_model_data_status2019_remaining)
+            if scenario_name == "status2023":
+                tasks.add(generate_model_data_status2023_remaining)
+            elif scenario_name == "eGon2035":
                 tasks.add(generate_model_data_eGon2035_remaining)
             elif scenario_name == "eGon100RE":
                 tasks.add(generate_model_data_eGon100RE_remaining)
             return tasks
 
+        tasks = (
+            create_tables,
+            {
+                (
+                    download_and_preprocess,
+                    allocate_evs_numbers,
+                ),
+                (
+                    extract_trip_file,
+                    write_metadata_to_db,
+                    write_evs_trips_to_db,
+                ),
+            },
+            allocate_evs_to_grid_districts,
+            delete_model_data_from_db,
+        )
+
+        tasks_per_scenario = set()
+
+        for scenario_name in config.settings()["egon-data"]["--scenarios"]:
+            tasks_per_scenario.update(
+                generate_model_data_tasks(scenario_name=scenario_name)
+            )
+
+        tasks = tasks + (tasks_per_scenario,)
+
         super().__init__(
             name=self.name,
             version=self.version,
             dependencies=dependencies,
-            tasks=(
-                create_tables,
-                {
-                    (
-                        download_and_preprocess,
-                        allocate_evs_numbers,
-                    ),
-                    (
-                        extract_trip_file,
-                        write_metadata_to_db,
-                        write_evs_trips_to_db,
-                    ),
-                },
-                allocate_evs_to_grid_districts,
-                delete_model_data_from_db,
-                {
-                    *generate_model_data_tasks(scenario_name="eGon2035"),
-                    *generate_model_data_tasks(scenario_name="eGon100RE"),
-                },
-            ),
+            tasks=tasks,
         )

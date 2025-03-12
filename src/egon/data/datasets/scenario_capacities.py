@@ -3,6 +3,9 @@ Netzentwicklungsplan 2035, Version 2031, Szenario C
 """
 
 from pathlib import Path
+import datetime
+import json
+import time
 
 from sqlalchemy import Column, Float, Integer, String
 from sqlalchemy.ext.declarative import declarative_base
@@ -11,12 +14,16 @@ import numpy as np
 import pandas as pd
 import yaml
 
-from egon.data import db
-from egon.data.config import settings
-from egon.data.datasets import Dataset
-import egon.data.config
+from egon.data import config, db
+from egon.data.datasets import Dataset, wrapped_partial
+from egon.data.metadata import (
+    context,
+    generate_resource_fields_from_sqla_model,
+    license_ccby,
+    meta_metadata,
+    sources,
+)
 
-# will be later imported from another file
 Base = declarative_base()
 
 
@@ -55,44 +62,6 @@ class NEP2021ConvPowerPlants(Base):
     c2035_capacity = Column(Float)
     b2040_chp = Column(String(12))
     b2040_capacity = Column(Float)
-
-
-class ScenarioCapacities(Dataset):
-    """
-    Create and fill table with installed generation capacities in Germany
-
-    This dataset creates and fills a table with the installed generation capacities in
-    Germany in a lower spatial resolution (either per federal state or on national level).
-    This data is coming from external sources (e.g. German grid developement plan for scenario eGon2035).
-    The table is in downstream datasets used to define target values for the installed capacities.
-
-
-    *Dependencies*
-      * :py:func:`Setup <egon.data.datasets.database.setup>`
-      * :py:class:`PypsaEurSec <egon.data.datasets.pypsaeursec.PypsaEurSec>`
-      * :py:class:`Vg250 <egon.data.datasets.vg250.Vg250>`
-      * :py:class:`DataBundle <egon.data.datasets.data_bundle.DataBundle>`
-      * :py:class:`ZensusPopulation <egon.data.datasets.zensus.ZensusPopulation>`
-
-
-    *Resulting tables*
-      * :py:class:`supply.egon_scenario_capacities <egon.data.datasets.scenario_capacities.EgonScenarioCapacities>` is created and filled
-      * :py:class:`supply.egon_nep_2021_conventional_powerplants <egon.data.datasets.scenario_capacities.NEP2021ConvPowerPlants>` is created and filled
-
-    """
-
-    #:
-    name: str = "ScenarioCapacities"
-    #:
-    version: str = "0.0.13"
-
-    def __init__(self, dependencies):
-        super().__init__(
-            name=self.name,
-            version=self.version,
-            dependencies=dependencies,
-            tasks=(create_table, insert_data_nep, eGon100_capacities),
-        )
 
 
 def create_table():
@@ -135,6 +104,93 @@ def nuts_mapping():
     return nuts_mapping
 
 
+def insert_capacities_status_quo(scenario: str) -> None:
+    """Insert capacity of rural heat pumps for status quo
+
+    Returns
+    -------
+    None.
+
+    """
+
+    targets = config.datasets()["scenario_input"]["targets"]
+
+    # Delete rows if already exist
+    db.execute_sql(
+        f"""
+        DELETE FROM
+        {targets['scenario_capacities']['schema']}.
+        {targets['scenario_capacities']['table']}
+        WHERE scenario_name = '{scenario}'
+        """
+    )
+
+    rural_heat_capacity = {
+        # Rural heat capacity for 2019 according to NEP 2035, version 2021
+        "status2019": 1e6 * 5e-3,
+        # Rural heat capacity for 2023 according to NEP 2037, version 2023
+        # 1.2 Mio. for 2020
+        # https://www.netzentwicklungsplan.de/sites/default/files/2023-07/
+        # NEP_2037_2045_V2023_2_Entwurf_Teil1_1.pdf#page=25
+        # and 3 kW per heat pump
+        # https://www.netzentwicklungsplan.de/sites/default/files/2022-11/
+        # NEP_2035_V2021_2_Entwurf_Teil1.pdf#page=33
+        # plus 0.15 Mio. 2021 and 0.24 Mio. in 2022
+        # https://www.enercity.de/magazin/unsere-welt/waermepumpen-boom
+        # plus 0.2 Mio. in H1 2023 -> Assumption 2023: 2 * 0.2 Mio = 0.4 Mio.
+        "status2023": (1.2 + 0.15 + 0.24 + 0.4) * 1e6 * 3e-3,
+    }[scenario]
+
+    if config.settings()["egon-data"]["--dataset-boundary"] != "Everything":
+        rural_heat_capacity *= population_share()
+
+    db.execute_sql(
+        f"""
+        INSERT INTO
+        {targets['scenario_capacities']['schema']}.
+        {targets['scenario_capacities']['table']}
+        (component, carrier, capacity, nuts, scenario_name)
+        VALUES (
+            'link',
+            'residential_rural_heat_pump',
+            {rural_heat_capacity},
+            'DE',
+            '{scenario}'
+            )
+        """
+    )
+
+    # Include small storages for scenario2019
+    small_storages = {
+        # MW for Germany
+        "status2019": 600,
+        # 1.3 GW in 2020/2021
+        # https://www.netzentwicklungsplan.de/sites/default/files/2023-07/
+        # NEP_2037_2045_V2023_2_Entwurf_Teil1_1.pdf#page=25
+        # Installed quantity 2020: 272,000
+        # Installed quantity 2023: 1,197,000
+        # https://www.photovoltaik.eu/solarspeicher/
+        # bsw-speicherkapazitaet-von-heimspeichern-2023-verdoppelt
+        "status2023": 1300 * 1197 / 272,
+    }[scenario]
+
+    db.execute_sql(
+        f"""
+        INSERT INTO
+        {targets['scenario_capacities']['schema']}.
+        {targets['scenario_capacities']['table']}
+        (component, carrier, capacity, nuts, scenario_name)
+        VALUES (
+            'storage_units',
+            'battery',
+            {small_storages},
+            'DE',
+            '{scenario}'
+            )
+        """
+    )
+
+
 def insert_capacities_per_federal_state_nep():
     """Inserts installed capacities per federal state accordning to
     NEP 2035 (version 2021), scenario 2035 C
@@ -145,8 +201,8 @@ def insert_capacities_per_federal_state_nep():
 
     """
 
-    sources = egon.data.config.datasets()["scenario_input"]["sources"]
-    targets = egon.data.config.datasets()["scenario_input"]["targets"]
+    sources = config.datasets()["scenario_input"]["sources"]
+    targets = config.datasets()["scenario_input"]["targets"]
 
     # Connect to local database
     engine = db.engine()
@@ -286,7 +342,7 @@ def insert_capacities_per_federal_state_nep():
         # convert GW to MW
         data.capacity *= 1e3
 
-        insert_data = insert_data.append(data)
+        insert_data = pd.concat([insert_data, data])
 
     # Get aggregated capacities from nep's power plant list for certain carrier
 
@@ -335,7 +391,7 @@ def population_share():
 
     """
 
-    sources = egon.data.config.datasets()["scenario_input"]["sources"]
+    sources = config.datasets()["scenario_input"]["sources"]
 
     return (
         pd.read_sql(
@@ -408,12 +464,16 @@ def map_carrier():
             "Braunkohle": "lignite",
             "Waerme": "others",
             "Mineraloelprodukte": "oil",
+            "Mineralölprodukte": "oil",
             "NichtBiogenerAbfall": "others",
+            "nicht biogener Abfall": "others",
             "AndereGase": "gas",
+            "andere Gase": "gas",
             "Sonstige_Energietraeger": "others",
             "Kernenergie": "nuclear",
             "Pumpspeicher": "pumped_hydro",
             "Mineralöl-\nProdukte": "oil",
+            "Biomasse": "biomass",
         }
     )
 
@@ -435,8 +495,8 @@ def insert_nep_list_powerplants(export=True):
         List of conventional power plants from nep if export=False
     """
 
-    sources = egon.data.config.datasets()["scenario_input"]["sources"]
-    targets = egon.data.config.datasets()["scenario_input"]["targets"]
+    sources = config.datasets()["scenario_input"]["sources"]
+    targets = config.datasets()["scenario_input"]["targets"]
 
     # Connect to local database
     engine = db.engine()
@@ -477,7 +537,7 @@ def insert_nep_list_powerplants(export=True):
     )
 
     # Cut data to federal state if in testmode
-    boundary = settings()["egon-data"]["--dataset-boundary"]
+    boundary = config.settings()["egon-data"]["--dataset-boundary"]
     if boundary != "Everything":
         map_states = {
             "Baden-Württemberg": "BW",
@@ -536,7 +596,7 @@ def district_heating_input():
 
     """
 
-    sources = egon.data.config.datasets()["scenario_input"]["sources"]
+    sources = config.datasets()["scenario_input"]["sources"]
 
     # import data to dataframe
     file = (
@@ -551,7 +611,7 @@ def district_heating_input():
     df.set_index(["Energietraeger", "Name"], inplace=True)
 
     # Scale values to population share in testmode
-    if settings()["egon-data"]["--dataset-boundary"] != "Everything":
+    if config.settings()["egon-data"]["--dataset-boundary"] != "Everything":
         df.loc[
             pd.IndexSlice[:, "Fernwaermeerzeugung"], "Wert"
         ] *= population_share()
@@ -621,25 +681,24 @@ def eGon100_capacities():
 
     """
 
-    sources = egon.data.config.datasets()["scenario_input"]["sources"]
-    targets = egon.data.config.datasets()["scenario_input"]["targets"]
+    sources = config.datasets()["scenario_input"]["sources"]
+    targets = config.datasets()["scenario_input"]["targets"]
 
     # read-in installed capacities
-    execute_pypsa_eur_sec = False
     cwd = Path(".")
 
-    if execute_pypsa_eur_sec:
-        filepath = cwd / "run-pypsa-eur-sec"
-        pypsa_eur_sec_repos = filepath / "pypsa-eur-sec"
+    if config.settings()["egon-data"]["--run-pypsa-eur"]:
+        filepath = cwd / "run-pypsa-eur"
+        pypsa_eur_repos = filepath / "pypsa-eur"
         # Read YAML file
-        pes_egonconfig = pypsa_eur_sec_repos / "config_egon.yaml"
+        pes_egonconfig = pypsa_eur_repos / "config" / "config.yaml"
         with open(pes_egonconfig, "r") as stream:
             data_config = yaml.safe_load(stream)
 
         target_file = (
-            pypsa_eur_sec_repos
+            pypsa_eur_repos
             / "results"
-            / data_config["run"]
+            / data_config["run"]["name"]
             / "csvs"
             / sources["eGon100RE"]["capacities"]
         )
@@ -647,9 +706,9 @@ def eGon100_capacities():
     else:
         target_file = (
             cwd
-            / "data_bundle_egon_data"
-            / "pypsa_eur_sec"
-            / "2022-07-26-egondata-integration"
+            / "data_bundle_powerd_data"
+            / "pypsa_eur"
+            / "2024-08-02-egondata-integration"
             / "csvs"
             / sources["eGon100RE"]["capacities"]
         )
@@ -692,14 +751,17 @@ def eGon100_capacities():
     df.index = df.index.str.replace(" ", "_")
 
     # Aggregate offshore wind
-    df = df.append(
-        pd.DataFrame(
-            index=["wind_offshore"],
-            data={
-                "p_nom": (df.p_nom["offwind-ac"] + df.p_nom["offwind-dc"]),
-                "component": df.component["offwind-ac"],
-            },
-        )
+    df = pd.concat(
+        [
+            df,
+            pd.DataFrame(
+                index=["wind_offshore"],
+                data={
+                    "p_nom": (df.p_nom["offwind-ac"] + df.p_nom["offwind-dc"]),
+                    "component": df.component["offwind-ac"],
+                },
+            ),
+        ]
     )
     df = df.drop(["offwind-ac", "offwind-dc"])
 
@@ -716,19 +778,22 @@ def eGon100_capacities():
         "rural_solar_thermal",
     ]:
         if f"residential_{merge_carrier}" in df.index:
-            df = df.append(
-                pd.DataFrame(
-                    index=[merge_carrier],
-                    data={
-                        "p_nom": (
-                            df.p_nom[f"residential_{merge_carrier}"]
-                            + df.p_nom[f"services_{merge_carrier}"]
-                        ),
-                        "component": df.component[
-                            f"residential_{merge_carrier}"
-                        ],
-                    },
-                )
+            df = pd.concat(
+                [
+                    df,
+                    pd.DataFrame(
+                        index=[merge_carrier],
+                        data={
+                            "p_nom": (
+                                df.p_nom[f"residential_{merge_carrier}"]
+                                + df.p_nom[f"services_{merge_carrier}"]
+                            ),
+                            "component": df.component[
+                                f"residential_{merge_carrier}"
+                            ],
+                        },
+                    ),
+                ]
             )
             df = df.drop(
                 [f"residential_{merge_carrier}", f"services_{merge_carrier}"]
@@ -776,3 +841,165 @@ def eGon100_capacities():
         if_exists="append",
         index=False,
     )
+
+
+def add_metadata():
+    """Add metdata to supply.egon_scenario_capacities
+
+    Returns
+    -------
+    None.
+
+    """
+
+    # Import column names and datatypes
+    fields = pd.DataFrame(
+        generate_resource_fields_from_sqla_model(EgonScenarioCapacities)
+    ).set_index("name")
+
+    # Set descriptions and units
+    fields.loc["index", "description"] = "Index"
+    fields.loc[
+        "component", "description"
+    ] = "Name of representative PyPSA component"
+    fields.loc["carrier", "description"] = "Name of carrier"
+    fields.loc["capacity", "description"] = "Installed capacity"
+    fields.loc["capacity", "unit"] = "MW"
+    fields.loc[
+        "nuts", "description"
+    ] = "NUTS region, either federal state or Germany"
+    fields.loc[
+        "scenario_name", "description"
+    ] = "Name of corresponding eGon scenario"
+
+    # Reformat pandas.DataFrame to dict
+    fields = fields.reset_index().to_dict(orient="records")
+
+    meta = {
+        "name": "supply.egon_scenario_capacities",
+        "title": "eGon scenario capacities",
+        "id": "WILL_BE_SET_AT_PUBLICATION",
+        "description": (
+            "Installed capacities of scenarios used in the eGon project"
+        ),
+        "language": ["de-DE"],
+        "publicationDate": datetime.date.today().isoformat(),
+        "context": context(),
+        "spatial": {
+            "location": None,
+            "extent": "Germany",
+            "resolution": None,
+        },
+        "sources": [
+            sources()["nep2021"],
+            sources()["vg250"],
+            sources()["zensus"],
+            sources()["egon-data"],
+        ],
+        "licenses": [
+            license_ccby(
+                "© Übertragungsnetzbetreiber; "
+                "© Bundesamt für Kartographie und Geodäsie 2020 (Daten verändert); "
+                "© Statistische Ämter des Bundes und der Länder 2014; "
+                "© Jonathan Amme, Clara Büttner, Ilka Cußmann, Julian Endres, Carlos Epia, Stephan Günther, Ulf Müller, Amélia Nadal, Guido Pleßmann, Francesco Witte",
+            )
+        ],
+        "contributors": [
+            {
+                "title": "Clara Büttner",
+                "email": "http://github.com/ClaraBuettner",
+                "date": time.strftime("%Y-%m-%d"),
+                "object": None,
+                "comment": "Imported data",
+            },
+        ],
+        "resources": [
+            {
+                "profile": "tabular-data-resource",
+                "name": "supply.egon_scenario_capacities",
+                "path": None,
+                "format": "PostgreSQL",
+                "encoding": "UTF-8",
+                "schema": {
+                    "fields": fields,
+                    "primaryKey": ["index"],
+                    "foreignKeys": [],
+                },
+                "dialect": {"delimiter": None, "decimalSeparator": "."},
+            }
+        ],
+        "metaMetadata": meta_metadata(),
+    }
+
+    # Create json dump
+    meta_json = "'" + json.dumps(meta) + "'"
+
+    # Add metadata as a comment to the table
+    db.submit_comment(
+        meta_json,
+        EgonScenarioCapacities.__table__.schema,
+        EgonScenarioCapacities.__table__.name,
+    )
+
+tasks = (create_table,)
+
+scenarios = config.settings()["egon-data"]["--scenarios"]
+
+status_quo = False
+
+for scenario in scenarios:
+    if "status" in scenario:
+        tasks += (
+            wrapped_partial(
+                insert_capacities_status_quo, scenario=scenario,
+                postfix=f"_{scenario[-2:]}"
+            ),
+        )
+        status_quo = True
+
+if status_quo or ("eGon2035" in scenarios):
+    tasks += (insert_data_nep,)
+
+if "eGon100RE" in scenarios:
+    tasks += (eGon100_capacities,)
+
+tasks += (add_metadata,)
+
+
+class ScenarioCapacities(Dataset):
+    """
+    Create and fill table with installed generation capacities in Germany
+
+    This dataset creates and fills a table with the installed generation capacities in
+    Germany in a lower spatial resolution (either per federal state or on national level).
+    This data is coming from external sources (e.g. German grid developement plan for scenario eGon2035).
+    The table is in downstream datasets used to define target values for the installed capacities.
+
+
+    *Dependencies*
+      * :py:func:`Setup <egon.data.datasets.database.setup>`
+      * :py:class:`PypsaEurSec <egon.data.datasets.pypsaeursec.PypsaEurSec>`
+      * :py:class:`Vg250 <egon.data.datasets.vg250.Vg250>`
+      * :py:class:`DataBundle <egon.data.datasets.data_bundle.DataBundle>`
+      * :py:class:`ZensusPopulation <egon.data.datasets.zensus.ZensusPopulation>`
+
+
+    *Resulting tables*
+      * :py:class:`supply.egon_scenario_capacities <egon.data.datasets.scenario_capacities.EgonScenarioCapacities>` is created and filled
+      * :py:class:`supply.egon_nep_2021_conventional_powerplants <egon.data.datasets.scenario_capacities.NEP2021ConvPowerPlants>` is created and filled
+
+    """
+
+    #:
+    name: str = "ScenarioCapacities"
+    #:
+    version: str = "0.0.14"
+
+    def __init__(self, dependencies):
+        super().__init__(
+            name=self.name,
+            version=self.version,
+            dependencies=dependencies,
+            tasks=tasks,
+        )
+

@@ -12,14 +12,14 @@ are available new synthetic 5x5m buildings are generated.
 from geoalchemy2 import Geometry
 from geoalchemy2.shape import to_shape
 from psycopg2.extensions import AsIs, register_adapter
-from sqlalchemy import REAL, Column, Integer, String, func
+from sqlalchemy import REAL, Column, Integer, String, func, cast
 from sqlalchemy.ext.declarative import declarative_base
 import geopandas as gpd
 import numpy as np
 import pandas as pd
 import saio
 
-from egon.data import db
+from egon.data import config, db
 from egon.data import logger as log
 from egon.data.datasets import Dataset
 from egon.data.datasets.electricity_demand import (
@@ -271,7 +271,7 @@ class CtsDemandBuildings(Dataset):
     #:
     name: str = "CtsDemandBuildings"
     #:
-    version: str = "0.0.3"
+    version: str = "0.0.4"
 
     def __init__(self, dependencies):
         super().__init__(
@@ -279,7 +279,7 @@ class CtsDemandBuildings(Dataset):
             version=self.version,
             dependencies=dependencies,
             tasks=(
-                cts_buildings,
+                cts_buildings,  # TODO: status2023, currently fixed for only 2023
                 {cts_electricity, cts_heat},
                 get_cts_electricity_peak_load,
                 map_all_used_buildings,
@@ -301,6 +301,16 @@ def amenities_without_buildings():
     from saio.openstreetmap import osm_amenities_not_in_buildings_filtered
 
     with db.session_scope() as session:
+        scn_query = session.query(
+            func.distinct(EgonDemandRegioZensusElectricity.scenario)
+        )
+
+    # FIXME: Cells with CTS demand, amenities and buildings do not change within the
+    #  scenarios, only the demand itself. Therefore any scenario can be used
+    #  universally to determine the cts buildings but not for the demand share.
+    scn = db.select_dataframe(scn_query.statement).iat[0, 0]
+
+    with db.session_scope() as session:
         cells_query = (
             session.query(
                 DestatisZensusPopulationPerHa.id.label("zensus_population_id"),
@@ -319,7 +329,7 @@ def amenities_without_buildings():
             )
             .filter(
                 EgonDemandRegioZensusElectricity.sector == "service",
-                EgonDemandRegioZensusElectricity.scenario == "eGon2035",
+                EgonDemandRegioZensusElectricity.scenario == scn,
             )
         )
 
@@ -416,17 +426,17 @@ def create_synthetic_buildings(df, points=None, crs="EPSG:3035"):
     # TODO remove after #772 implementation of egon_building_id
     df.rename(columns={"id": "egon_building_id"}, inplace=True)
 
-    # get max number of building ids from synthetic residential table
+    # get max number of building ids from synthetic table
     with db.session_scope() as session:
-        max_synth_residential_id = session.execute(
-            func.max(OsmBuildingsSynthetic.id)
+        max_synth_building_id = session.execute(
+            func.max(cast(OsmBuildingsSynthetic.id, Integer))
         ).scalar()
-    max_synth_residential_id = int(max_synth_residential_id)
+    max_synth_building_id = int(max_synth_building_id)
 
     # create sequential ids
     df["egon_building_id"] = range(
-        max_synth_residential_id + 1,
-        max_synth_residential_id + df.shape[0] + 1,
+        max_synth_building_id + 1,
+        max_synth_building_id + df.shape[0] + 1,
     )
 
     df["area"] = df["geom_building"].area
@@ -464,28 +474,29 @@ def buildings_with_amenities():
     from saio.boundaries import egon_map_zensus_buildings_filtered_all
     from saio.openstreetmap import osm_amenities_in_buildings_filtered
 
-    with db.session_scope() as session:
-        cells_query = (
-            session.query(
-                osm_amenities_in_buildings_filtered,
-                MapZensusGridDistricts.bus_id,
+    for scn in config.settings()["egon-data"]["--scenarios"]:
+        with db.session_scope() as session:
+            cells_query = (
+                session.query(
+                    osm_amenities_in_buildings_filtered,
+                    MapZensusGridDistricts.bus_id,
+                )
+                .filter(
+                    MapZensusGridDistricts.zensus_population_id
+                    == osm_amenities_in_buildings_filtered.zensus_population_id
+                )
+                .filter(
+                    EgonDemandRegioZensusElectricity.zensus_population_id
+                    == osm_amenities_in_buildings_filtered.zensus_population_id
+                )
+                .filter(
+                    EgonDemandRegioZensusElectricity.sector == "service",
+                    EgonDemandRegioZensusElectricity.scenario == scn,
+                )
             )
-            .filter(
-                MapZensusGridDistricts.zensus_population_id
-                == osm_amenities_in_buildings_filtered.zensus_population_id
+            df_amenities_in_buildings = pd.read_sql(
+                cells_query.statement, con=session.connection(), index_col=None
             )
-            .filter(
-                EgonDemandRegioZensusElectricity.zensus_population_id
-                == osm_amenities_in_buildings_filtered.zensus_population_id
-            )
-            .filter(
-                EgonDemandRegioZensusElectricity.sector == "service",
-                EgonDemandRegioZensusElectricity.scenario == "eGon2035",
-            )
-        )
-        df_amenities_in_buildings = pd.read_sql(
-            cells_query.statement, con=session.connection(), index_col=None
-        )
 
     df_amenities_in_buildings["geom_building"] = df_amenities_in_buildings[
         "geom_building"
@@ -496,7 +507,6 @@ def buildings_with_amenities():
 
     # retrieve building centroid bus_id
     with db.session_scope() as session:
-
         cells_query = session.query(
             egon_map_zensus_buildings_filtered_all.id,
             MapZensusGridDistricts.bus_id.label("building_bus_id"),
@@ -574,12 +584,10 @@ def buildings_with_amenities():
     df_amenities_in_buildings["n_amenities_inside"] = 1
 
     # sum amenities per building and cell
-    df_amenities_in_buildings[
-        "n_amenities_inside"
-    ] = df_amenities_in_buildings.groupby(["zensus_population_id", "id"])[
-        "n_amenities_inside"
-    ].transform(
-        "sum"
+    df_amenities_in_buildings["n_amenities_inside"] = (
+        df_amenities_in_buildings.groupby(["zensus_population_id", "id"])[
+            "n_amenities_inside"
+        ].transform("sum")
     )
     # drop duplicated buildings
     df_buildings_with_amenities = df_amenities_in_buildings.drop_duplicates(
@@ -619,9 +627,18 @@ def buildings_without_amenities():
         osm_buildings_synthetic,
     )
 
+    with db.session_scope() as session:
+        scn_query = session.query(
+            func.distinct(EgonDemandRegioZensusElectricity.scenario)
+        )
+
+    # FIXME: Cells with CTS demand, amenities and buildings do not change within the
+    #  scenarios, only the demand itself. Therefore any scenario can be used
+    #  universally to determine the cts buildings but not for the demand share.
+    scn = db.select_dataframe(scn_query.statement).iat[0, 0]
+
     # buildings_filtered in cts-demand-cells without amenities
     with db.session_scope() as session:
-
         # Synthetic Buildings
         q_synth_buildings = session.query(
             osm_buildings_synthetic.cell_id.cast(Integer).label(
@@ -666,7 +683,7 @@ def buildings_without_amenities():
             )
             .filter(
                 EgonDemandRegioZensusElectricity.sector == "service",
-                EgonDemandRegioZensusElectricity.scenario == "eGon2035",
+                EgonDemandRegioZensusElectricity.scenario == scn,
             )
             .filter(
                 EgonDemandRegioZensusElectricity.zensus_population_id.notin_(
@@ -741,6 +758,16 @@ def cells_with_cts_demand_only(df_buildings_without_amenities):
     """
     from saio.openstreetmap import osm_amenities_shops_filtered
 
+    with db.session_scope() as session:
+        scn_query = session.query(
+            func.distinct(EgonDemandRegioZensusElectricity.scenario)
+        )
+
+    # FIXME: Cells with CTS demand, amenities and buildings do not change within the
+    #  scenarios, only the demand itself. Therefore any scenario can be used
+    #  universally to determine the cts buildings but not for the demand share.
+    scn = db.select_dataframe(scn_query.statement).iat[0, 0]
+
     # cells mit amenities
     with db.session_scope() as session:
         sub_query = (
@@ -766,7 +793,7 @@ def cells_with_cts_demand_only(df_buildings_without_amenities):
             )
             .filter(
                 EgonDemandRegioZensusElectricity.sector == "service",
-                EgonDemandRegioZensusElectricity.scenario == "eGon2035",
+                EgonDemandRegioZensusElectricity.scenario == scn,
             )
             .filter(
                 EgonDemandRegioZensusElectricity.zensus_population_id.notin_(
@@ -1213,10 +1240,11 @@ def cts_buildings():
     Note:
     -----
     Cells with CTS demand, amenities and buildings do not change within
-    the scenarios, only the demand itself. Therefore scenario eGon2035
+    the scenarios, only the demand itself. Therefore any scenario
     can be used universally to determine the cts buildings but not for
     the demand share.
     """
+
     # ========== Register np datatypes with SQLA ==========
     def adapt_numpy_float64(numpy_float64):
         return AsIs(numpy_float64)
@@ -1230,7 +1258,7 @@ def cts_buildings():
 
     log.info("Start logging!")
     # Buildings with amenities
-    df_buildings_with_amenities, df_lost_cells = buildings_with_amenities()
+    df_buildings_with_amenities, df_lost_cells = buildings_with_amenities()  # TODO: status2023 this is fixed to 2023
     log.info("Buildings with amenities selected!")
 
     # Median number of amenities per cell
@@ -1249,11 +1277,10 @@ def cts_buildings():
 
     # Amenities not assigned to buildings
     df_amenities_without_buildings = amenities_without_buildings()
-    log.info("Amenities without buildlings selected!")
+    log.info("Amenities without buildings selected!")
 
     # Append lost cells due to duplicated ids, to cover all demand cells
     if not df_lost_cells.empty:
-
         # Number of synth amenities per cell
         df_lost_cells["amenities"] = median_n_amenities
         # create row for every amenity
@@ -1262,8 +1289,8 @@ def cts_buildings():
         )
         df_lost_cells = df_lost_cells.explode("amenities")
         df_lost_cells.drop(columns="amenities", inplace=True)
-        df_amenities_without_buildings = df_amenities_without_buildings.append(
-            df_lost_cells, ignore_index=True
+        df_amenities_without_buildings = pd.concat(
+            [df_amenities_without_buildings, df_lost_cells], ignore_index=True
         )
         log.info(
             f"{df_lost_cells.shape[0]} lost cells due to substation "
@@ -1417,21 +1444,21 @@ def cts_electricity():
         cells_query.statement, cells_query.session.bind, index_col=None
     )
     log.info("CTS buildings from DB imported!")
-    df_demand_share_2035 = calc_building_demand_profile_share(
-        df_cts_buildings, scenario="eGon2035", sector="electricity"
-    )
-    log.info("Profile share for egon2035 calculated!")
 
-    df_demand_share_100RE = calc_building_demand_profile_share(
-        df_cts_buildings, scenario="eGon100RE", sector="electricity"
-    )
-    log.info("Profile share for egon100RE calculated!")
+    df_demand_share = pd.DataFrame()
 
-    df_demand_share = pd.concat(
-        [df_demand_share_2035, df_demand_share_100RE],
-        axis=0,
-        ignore_index=True,
-    )
+    for scenario in config.settings()["egon-data"]["--scenarios"]:
+        df_demand_share_per_scenario = calc_building_demand_profile_share(
+            df_cts_buildings, scenario=scenario, sector="electricity"
+        )
+        log.info(f"Profile share for {scenario} calculated!")
+
+        df_demand_share = pd.concat(
+            [df_demand_share, df_demand_share_per_scenario],
+            axis=0,
+            ignore_index=True,
+        )
+
     df_demand_share.rename(columns={"id": "building_id"}, inplace=True)
 
     write_table_to_postgres(
@@ -1456,19 +1483,19 @@ def cts_heat():
     )
     log.info("CTS buildings from DB imported!")
 
-    df_demand_share_2035 = calc_building_demand_profile_share(
-        df_cts_buildings, scenario="eGon2035", sector="heat"
-    )
-    log.info("Profile share for egon2035 calculated!")
-    df_demand_share_100RE = calc_building_demand_profile_share(
-        df_cts_buildings, scenario="eGon100RE", sector="heat"
-    )
-    log.info("Profile share for egon100RE calculated!")
-    df_demand_share = pd.concat(
-        [df_demand_share_2035, df_demand_share_100RE],
-        axis=0,
-        ignore_index=True,
-    )
+    df_demand_share = pd.DataFrame()
+
+    for scenario in config.settings()["egon-data"]["--scenarios"]:
+        df_demand_share_per_scenario = calc_building_demand_profile_share(
+            df_cts_buildings, scenario=scenario, sector="heat"
+        )
+        log.info(f"Profile share for {scenario} calculated!")
+
+        df_demand_share = pd.concat(
+            [df_demand_share, df_demand_share_per_scenario],
+            axis=0,
+            ignore_index=True,
+        )
 
     df_demand_share.rename(columns={"id": "building_id"}, inplace=True)
 
@@ -1496,8 +1523,7 @@ def get_cts_electricity_peak_load():
         ).delete()
     log.info("Cts electricity peak load removed from DB!")
 
-    for scenario in ["eGon2035", "eGon100RE"]:
-
+    for scenario in config.settings()["egon-data"]["--scenarios"]:
         with db.session_scope() as session:
             cells_query = session.query(
                 EgonCtsElectricityDemandBuildingShare
@@ -1568,8 +1594,7 @@ def get_cts_heat_peak_load():
         ).delete()
     log.info("Cts heat peak load removed from DB!")
 
-    for scenario in ["eGon2035", "eGon100RE"]:
-
+    for scenario in config.settings()["egon-data"]["--scenarios"]:
         with db.session_scope() as session:
             cells_query = session.query(
                 EgonCtsElectricityDemandBuildingShare
