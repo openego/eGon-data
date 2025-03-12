@@ -71,7 +71,7 @@ def global_settings(scenario):
         List of global parameters
 
     """
-    if scenario == "eGon2037.2025":
+    if scenario == "nep2037.2025":
         parameters = {
             "weather_year": 2011,
             "population_year": 2037,
