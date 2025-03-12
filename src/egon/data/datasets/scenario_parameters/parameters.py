@@ -71,8 +71,33 @@ def global_settings(scenario):
         List of global parameters
 
     """
+    if scenario == "eGon2037.2025":
+        parameters = {
+            "weather_year": 2011,
+            "population_year": 2037,
+            "fuel_costs": {  # Szenarionrahmen zum NEP 2025, Version 2025, 1. Entwurf,
+                "oil": 21.3,  # [EUR/MWh]
+                "gas": 15.2,  # [EUR/MWh]
+                "coal": 6.1,  # [EUR/MWh]
+                "lignite": 6.4,  # [EUR/MWh]
+                "nuclear": 1.7,  # [EUR/MWh]
+                "biomass": 40,  # Dummyvalue, ToDo: Find a suitable source
+            },
+            "co2_costs": 76.5,  # [EUR/t_CO2]
+            "co2_emissions": {  # Szenarionrahmen zum NEP 2025, Version 2025, 1. Entwurf,
+                "waste": 0.165,  # [t_CO2/MW_th]
+                "lignite": 0.393,  # [t_CO2/MW_th]
+                "gas": 0.201,  # [t_CO2/MW_th]
+                "nuclear": 0.0,  # [t_CO2/MW_th]
+                "oil": 0.286,  # [t_CO2/MW_th]
+                "coal": 0.377,  # [t_CO2/MW_th]
+                "other_non_renewable": 0.268,  # [t_CO2/MW_th]
+                # hydrogen: 0
+            },
+            "interest_rate": 0.05,  # [p.u.]
+        }
 
-    if scenario == "eGon2035":
+    elif scenario == "eGon2035":
         parameters = {
             "weather_year": 2011,
             "population_year": 2035,
@@ -146,6 +171,177 @@ def electricity(scenario):
         List of parameters of electricity sector
 
     """
+    if scenario == "eGon2037.2025":
+
+        costs = read_csv(2037)
+
+        parameters = {"grid_topology": "Status Quo"}
+        # Insert effciencies in p.u.
+        parameters["efficiency"] = {
+            "oil": read_costs(costs, "oil", "efficiency"),
+            "battery": {
+                "store": read_costs(costs, "battery inverter", "efficiency")
+                ** 0.5,
+                "dispatch": read_costs(costs, "battery inverter", "efficiency")
+                ** 0.5,
+                "standing_loss": 0,
+                "max_hours": 6,
+            },
+            "pumped_hydro": {
+                "store": read_costs(costs, "PHS", "efficiency") ** 0.5,
+                "dispatch": read_costs(costs, "PHS", "efficiency") ** 0.5,
+                "standing_loss": 0,
+                "max_hours": 6,
+            },
+        }
+        # Warning: Electrical parameters are set in osmTGmod, editing these values will not change the data!
+        parameters["electrical_parameters"] = {
+            "ac_line_110kV": {
+                "s_nom": 260,  # [MVA]
+                "R": 0.109,  # [Ohm/km]
+                "L": 1.2,  # [mH/km]
+            },
+            "ac_cable_110kV": {
+                "s_nom": 280,  # [MVA]
+                "R": 0.0177,  # [Ohm/km]
+                "L": 0.3,  # [mH/km]
+            },
+            "ac_line_220kV": {
+                "s_nom": 520,  # [MVA]
+                "R": 0.109,  # [Ohm/km]
+                "L": 1.0,  # [mH/km]
+            },
+            "ac_cable_220kV": {
+                "s_nom": 550,  # [MVA]
+                "R": 0.0176,  # [Ohm/km]
+                "L": 0.3,  # [mH/km]
+            },
+            "ac_line_380kV": {
+                "s_nom": 1790,  # [MVA]
+                "R": 0.028,  # [Ohm/km]
+                "L": 0.8,  # [mH/km]
+            },
+            "ac_cable_380kV": {
+                "s_nom": 925,  # [MVA]
+                "R": 0.0175,  # [Ohm/km]
+                "L": 0.3,  # [mH/km]
+            },
+        }
+
+        # Insert overnight investment costs
+        # Source for eHV grid costs: Netzentwicklungsplan Strom 2035, Version 2021, 2. Entwurf
+        # Source for HV lines and cables: Dena Verteilnetzstudie 2021, p. 146
+        parameters["overnight_cost"] = {
+            "ac_ehv_overhead_line": 2.5e6
+            / (
+                2
+                * parameters["electrical_parameters"]["ac_line_380kV"]["s_nom"]
+            ),  # [EUR/km/MW]
+            "ac_ehv_cable": 11.5e6
+            / (
+                2
+                * parameters["electrical_parameters"]["ac_cable_380kV"][
+                    "s_nom"
+                ]
+            ),  # [EUR/km/MW]
+            "ac_hv_overhead_line": 0.06e6
+            / parameters["electrical_parameters"]["ac_line_110kV"][
+                "s_nom"
+            ],  # [EUR/km/MW]
+            "ac_hv_cable": 0.8e6
+            / parameters["electrical_parameters"]["ac_cable_110kV"][
+                "s_nom"
+            ],  # [EUR/km/MW]
+            "dc_overhead_line": 0.5e3,  # [EUR/km/MW]
+            "dc_cable": 3.25e3,  # [EUR/km/MW]
+            "dc_inverter": 0.3e6,  # [EUR/MW]
+            "transformer_380_110": 17.33e3,  # [EUR/MVA]
+            "transformer_380_220": 13.33e3,  # [EUR/MVA]
+            "transformer_220_110": 17.5e3,  # [EUR/MVA]
+            "battery inverter": read_costs(
+                costs, "battery inverter", "investment"
+            ),
+            "battery storage": read_costs(
+                costs, "battery storage", "investment"
+            ),
+        }
+
+        parameters["lifetime"] = {
+            "ac_ehv_overhead_line": read_costs(
+                costs, "HVAC overhead", "lifetime"
+            ),
+            "ac_ehv_cable": read_costs(costs, "HVAC overhead", "lifetime"),
+            "ac_hv_overhead_line": read_costs(
+                costs, "HVAC overhead", "lifetime"
+            ),
+            "ac_hv_cable": read_costs(costs, "HVAC overhead", "lifetime"),
+            "dc_overhead_line": read_costs(costs, "HVDC overhead", "lifetime"),
+            "dc_cable": read_costs(costs, "HVDC overhead", "lifetime"),
+            "dc_inverter": read_costs(costs, "HVDC inverter pair", "lifetime"),
+            "transformer_380_110": read_costs(
+                costs, "HVAC overhead", "lifetime"
+            ),
+            "transformer_380_220": read_costs(
+                costs, "HVAC overhead", "lifetime"
+            ),
+            "transformer_220_110": read_costs(
+                costs, "HVAC overhead", "lifetime"
+            ),
+            "battery inverter": read_costs(
+                costs, "battery inverter", "lifetime"
+            ),
+            "battery storage": read_costs(
+                costs, "battery storage", "lifetime"
+            ),
+        }
+        # Insert annualized capital costs
+        # lines in EUR/km/MW/a
+        # transfermer, inverter, battery in EUR/MW/a
+        parameters["capital_cost"] = {}
+
+        for comp in parameters["overnight_cost"].keys():
+            parameters["capital_cost"][comp] = annualize_capital_costs(
+                parameters["overnight_cost"][comp],
+                parameters["lifetime"][comp],
+                global_settings("eGon2035")["interest_rate"],
+            )
+
+        parameters["capital_cost"]["battery"] = (
+            parameters["capital_cost"]["battery inverter"]
+            + parameters["efficiency"]["battery"]["max_hours"]
+            * parameters["capital_cost"]["battery storage"]
+        )
+
+        # Insert marginal_costs in EUR/MWh
+        # marginal cost can include fuel, C02 and operation and maintenance costs
+        parameters["marginal_cost"] = {
+            "oil": global_settings(scenario)["fuel_costs"]["oil"]
+            + read_costs(costs, "oil", "VOM")
+            + global_settings(scenario)["co2_costs"]
+            * global_settings(scenario)["co2_emissions"]["oil"],
+            "other_non_renewable": global_settings(scenario)["fuel_costs"][
+                "gas"
+            ]
+            + global_settings(scenario)["co2_costs"]
+            * global_settings(scenario)["co2_emissions"][
+                "other_non_renewable"
+            ],
+            "lignite": global_settings(scenario)["fuel_costs"]["lignite"]
+            + read_costs(costs, "lignite", "VOM")
+            + global_settings(scenario)["co2_costs"]
+            * global_settings(scenario)["co2_emissions"]["lignite"],
+            "coal": global_settings(scenario)["fuel_costs"]["coal"]
+            + read_costs(costs, "coal", "VOM")
+            + global_settings(scenario)["co2_costs"]
+            * global_settings(scenario)["co2_emissions"]["coal"],
+            "nuclear": global_settings(scenario)["fuel_costs"]["nuclear"]
+            + read_costs(costs, "nuclear", "VOM"),
+            "biomass": global_settings(scenario)["fuel_costs"]["biomass"]
+            + read_costs(costs, "biomass CHP", "VOM"),
+            "wind_offshore": read_costs(costs, "offwind", "VOM"),
+            "wind_onshore": read_costs(costs, "onwind", "VOM"),
+            "solar": read_costs(costs, "solar", "VOM"),
+        }
 
     if scenario == "eGon2035":
 
