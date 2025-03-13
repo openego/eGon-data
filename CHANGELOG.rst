@@ -780,6 +780,8 @@ Bug Fixes
   `#1187 <https://github.com/openego/eGon-data/issues/1187>`_
 * Fix DsmPotential dependency errors
   `#1157 <https://github.com/openego/eGon-data/issues/1157>`_
+* Fix household profile allocation to buildings
+  `#1190 <https://github.com/openego/eGon-data/issues/1190>`_
 
 
 .. _PR #692: https://github.com/openego/eGon-data/pull/692
