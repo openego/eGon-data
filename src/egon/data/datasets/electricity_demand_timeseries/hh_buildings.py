@@ -1200,7 +1200,7 @@ class setup(Dataset):
     #:
     name: str = "Demand_Building_Assignment"
     #:
-    version: str = "0.0.6"
+    version: str = "0.0.7"
     #:
     tasks = (
         map_houseprofiles_to_buildings,
