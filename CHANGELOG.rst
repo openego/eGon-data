@@ -782,6 +782,9 @@ Bug Fixes
   `#1157 <https://github.com/openego/eGon-data/issues/1157>`_
 * Fix incorrect handling of `--scenarios` CLI option by converting tuple to list
   `#1192 <https://github.com/openego/eGon-data/issues/1192>`_
+* Fix household profile allocation to buildings
+  `#1190 <https://github.com/openego/eGon-data/issues/1190>`_
+
 
 .. _PR #692: https://github.com/openego/eGon-data/pull/692
 .. _#343: https://github.com/openego/eGon-data/issues/343
