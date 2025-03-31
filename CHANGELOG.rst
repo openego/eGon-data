@@ -780,6 +780,8 @@ Bug Fixes
   `#1187 <https://github.com/openego/eGon-data/issues/1187>`_
 * Fix DsmPotential dependency errors
   `#1157 <https://github.com/openego/eGon-data/issues/1157>`_
+* Fix incorrect handling of `--scenarios` CLI option by converting tuple to list
+  `#1192 <https://github.com/openego/eGon-data/issues/1192>`_
 * Fix household profile allocation to buildings
   `#1190 <https://github.com/openego/eGon-data/issues/1190>`_
 
