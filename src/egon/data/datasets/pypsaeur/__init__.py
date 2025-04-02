@@ -30,7 +30,7 @@ class PreparePypsaEur(Dataset):
     def __init__(self, dependencies):
         super().__init__(
             name="PreparePypsaEur",
-            version="0.0.9",
+            version="0.0.42",
             dependencies=dependencies,
             tasks=(
                 download,
@@ -43,9 +43,10 @@ class RunPypsaEur(Dataset):
     def __init__(self, dependencies):
         super().__init__(
             name="SolvePypsaEur",
-            version="0.0.8",
+            version="0.0.41",
             dependencies=dependencies,
             tasks=(
+                prepare_network_2,
                 execute,
                 solve_network,
                 clean_database,
@@ -69,47 +70,69 @@ def download():
                     "git",
                     "clone",
                     "--branch",
-                    "v0.10.0",
+                    "master",
                     "https://github.com/PyPSA/pypsa-eur.git",
                     pypsa_eur_repos,
                 ]
             )
 
+            subproc.run(
+                [
+                    "git",
+                    "checkout",
+                    "2119f4cee05c256509f48d4e9fe0d8fd9e9e3632",
+                ],
+                cwd=pypsa_eur_repos,
+            )
+
             # Add gurobi solver to environment:
             # Read YAML file
-            path_to_env = pypsa_eur_repos / "envs" / "environment.yaml"
-            with open(path_to_env, "r") as stream:
-                env = yaml.safe_load(stream)
+            # path_to_env = pypsa_eur_repos / "envs" / "environment.yaml"
+            # with open(path_to_env, "r") as stream:
+            #    env = yaml.safe_load(stream)
 
             # The version of gurobipy has to fit to the version of gurobi.
             # Since we mainly use gurobi 10.0 this is set here.
-            env["dependencies"][-1]["pip"].append("gurobipy==10.0.0")
+            # env["dependencies"][-1]["pip"].append("gurobipy==10.0.0")
 
             # Set python version to <3.12
             # Python<=3.12 needs gurobipy>=11.0, in case gurobipy is updated,
             # this can be removed
-            env["dependencies"] = [
-                "python>=3.8,<3.12" if x == "python>=3.8" else x
-                for x in env["dependencies"]
-            ]
+            # env["dependencies"] = [
+            #    "python>=3.8,<3.12" if x == "python>=3.8" else x
+            #    for x in env["dependencies"]
+            # ]
 
             # Limit geopandas version
             # our pypsa-eur version is not compatible to geopandas>1
-            env["dependencies"] = [
-                "geopandas>=0.11.0,<1" if x == "geopandas>=0.11.0" else x
-                for x in env["dependencies"]
-            ]
+            # env["dependencies"] = [
+            #    "geopandas>=0.11.0,<1" if x == "geopandas>=0.11.0" else x
+            #    for x in env["dependencies"]
+            # ]
 
             # Write YAML file
-            with open(path_to_env, "w", encoding="utf8") as outfile:
-                yaml.dump(
-                    env, outfile, default_flow_style=False, allow_unicode=True
-                )
+            # with open(path_to_env, "w", encoding="utf8") as outfile:
+            #    yaml.dump(
+            #        env, outfile, default_flow_style=False, allow_unicode=True
+            #    )
 
             # Copy config file for egon-data to pypsa-eur directory
             shutil.copy(
-                Path(__path__[0], "datasets", "pypsaeur", "config.yaml"),
-                pypsa_eur_repos / "config",
+                Path(
+                    __path__[0], "datasets", "pypsaeur", "config_prepare.yaml"
+                ),
+                pypsa_eur_repos / "config" / "config.yaml",
+            )
+
+            # Copy custom_extra_functionality.py file for egon-data to pypsa-eur directory
+            shutil.copy(
+                Path(
+                    __path__[0],
+                    "datasets",
+                    "pypsaeur",
+                    "custom_extra_functionality.py",
+                ),
+                pypsa_eur_repos / "data",
             )
 
             with open(filepath / "Snakefile", "w") as snakefile:
@@ -150,7 +173,7 @@ def download():
                 parents=True, exist_ok=True
             )
         urlretrieve(
-            "https://zenodo.org/record/6953563/files/shipdensity_global.zip",
+            "https://zenodo.org/record/13757228/files/shipdensity_global.zip",
             filepath / "pypsa-eur" / "data" / "shipdensity_global.zip",
         )
 
@@ -159,7 +182,7 @@ def download():
             / "pypsa-eur"
             / "zenodo.org"
             / "records"
-            / "10356004"
+            / "13757228"
             / "files"
         ).exists():
             (
@@ -167,7 +190,7 @@ def download():
                 / "pypsa-eur"
                 / "zenodo.org"
                 / "records"
-                / "10356004"
+                / "13757228"
                 / "files"
             ).mkdir(parents=True, exist_ok=True)
 
@@ -177,43 +200,45 @@ def download():
             / "pypsa-eur"
             / "zenodo.org"
             / "records"
-            / "10356004"
+            / "13757228"
             / "files"
             / "ENSPRESO_BIOMASS.xlsx",
         )
 
-        if not (
-            filepath
-            / "pypsa-eur"
-            / "globalenergymonitor.org"
-            / "wp-content"
-            / "uploads"
-            / "2023"
-            / "07"
-        ).exists():
-            (
-                filepath
-                / "pypsa-eur"
-                / "globalenergymonitor.org"
-                / "wp-content"
-                / "uploads"
-                / "2023"
-                / "07"
-            ).mkdir(parents=True, exist_ok=True)
+        if not (filepath / "pypsa-eur" / "data" / "gem").exists():
+            (filepath / "pypsa-eur" / "data" / "gem").mkdir(
+                parents=True, exist_ok=True
+            )
 
         r = requests.get(
-            "https://globalenergymonitor.org/wp-content/uploads/2023/07/"
-            "Europe-Gas-Tracker-2023-03-v3.xlsx"
+            "https://tubcloud.tu-berlin.de/s/LMBJQCsN6Ez5cN2/download/"
+            "Europe-Gas-Tracker-2024-05.xlsx"
         )
         with open(
             filepath
             / "pypsa-eur"
-            / "globalenergymonitor.org"
-            / "wp-content"
-            / "uploads"
-            / "2023"
-            / "07"
-            / "Europe-Gas-Tracker-2023-03-v3.xlsx",
+            / "data"
+            / "gem"
+            / "Europe-Gas-Tracker-2024-05.xlsx",
+            "wb",
+        ) as outfile:
+            outfile.write(r.content)
+
+        if not (filepath / "pypsa-eur" / "data" / "gem").exists():
+            (filepath / "pypsa-eur" / "data" / "gem").mkdir(
+                parents=True, exist_ok=True
+            )
+
+        r = requests.get(
+            "https://tubcloud.tu-berlin.de/s/Aqebo3rrQZWKGsG/download/"
+            "Global-Steel-Plant-Tracker-April-2024-Standard-Copy-V1.xlsx"
+        )
+        with open(
+            filepath
+            / "pypsa-eur"
+            / "data"
+            / "gem"
+            / "Global-Steel-Plant-Tracker-April-2024-Standard-Copy-V1.xlsx",
             "wb",
         ) as outfile:
             outfile.write(r.content)
@@ -237,6 +262,60 @@ def prepare_network():
                 filepath / "Snakefile",
                 "--use-conda",
                 "--conda-frontend=conda",
+                "--cores",
+                "8",
+                "prepare",
+            ]
+        )
+        execute()
+
+        path = filepath / "pypsa-eur" / "results" / "prenetworks"
+
+        path_2 = path / "prenetwork_post-manipulate_pre-solve"
+        path_2.mkdir(parents=True, exist_ok=True)
+
+        with open(
+            __path__[0] + "/datasets/pypsaeur/config_prepare.yaml", "r"
+        ) as stream:
+            data_config = yaml.safe_load(stream)
+
+        for i in range(0, len(data_config["scenario"]["planning_horizons"])):
+            nc_file = (
+                f"base_s_{data_config['scenario']['clusters'][0]}"
+                f"_l{data_config['scenario']['ll'][0]}"
+                f"_{data_config['scenario']['opts'][0]}"
+                f"_{data_config['scenario']['sector_opts'][0]}"
+                f"_{data_config['scenario']['planning_horizons'][i]}.nc"
+            )
+
+            shutil.copy(Path(path, nc_file), path_2)
+
+    else:
+        print("Pypsa-eur is not executed due to the settings of egon-data")
+
+
+def prepare_network_2():
+    cwd = Path(".")
+    filepath = cwd / "run-pypsa-eur"
+
+    if config.settings()["egon-data"]["--run-pypsa-eur"]:
+        shutil.copy(
+            Path(__path__[0], "datasets", "pypsaeur", "config_solve.yaml"),
+            filepath / "pypsa-eur" / "config" / "config.yaml",
+        )
+
+        subproc.run(
+            [
+                "snakemake",
+                "-j1",
+                "--directory",
+                filepath,
+                "--snakefile",
+                filepath / "Snakefile",
+                "--use-conda",
+                "--conda-frontend=conda",
+                "--cores",
+                "8",
                 "prepare",
             ]
         )
@@ -253,6 +332,8 @@ def solve_network():
             [
                 "snakemake",
                 "-j1",
+                "--cores",
+                "8",
                 "--directory",
                 filepath,
                 "--snakefile",
@@ -262,6 +343,8 @@ def solve_network():
                 "solve",
             ]
         )
+
+        postprocessing_biomass_2045()
 
         subproc.run(
             [
@@ -280,10 +363,10 @@ def solve_network():
         print("Pypsa-eur is not executed due to the settings of egon-data")
 
 
-def read_network():
+def read_network(planning_horizon=3):
     if config.settings()["egon-data"]["--run-pypsa-eur"]:
         with open(
-            __path__[0] + "/datasets/pypsaeur/config.yaml", "r"
+            __path__[0] + "/datasets/pypsaeur/config_solve.yaml", "r"
         ) as stream:
             data_config = yaml.safe_load(stream)
 
@@ -294,11 +377,11 @@ def read_network():
             / "results"
             / data_config["run"]["name"]
             / "postnetworks"
-            / f"elec_s_{data_config['scenario']['clusters'][0]}"
+            / f"base_s_{data_config['scenario']['clusters'][0]}"
             f"_l{data_config['scenario']['ll'][0]}"
             f"_{data_config['scenario']['opts'][0]}"
             f"_{data_config['scenario']['sector_opts'][0]}"
-            f"_{data_config['scenario']['planning_horizons'][0]}.nc"
+            f"_{data_config['scenario']['planning_horizons'][planning_horizon]}.nc"
         )
 
     else:
@@ -306,10 +389,10 @@ def read_network():
             Path(".")
             / "data_bundle_powerd_data"
             / "pypsa_eur"
-            / "2024-08-02-egondata-integration"
+            / "21122024_3h_clean_run"
             / "results"
             / "postnetworks"
-            / "elec_s_37_lv1.5__Co2L0-1H-T-H-B-I-A-solar+p3_2050.nc"
+            / "base_s_39_lc1.25__cb40ex0-T-H-I-B-solar+p3-dist1_2045.nc"
         )
 
     return pypsa.Network(target_file)
@@ -358,11 +441,10 @@ def clean_database():
 
     comp_2_ports = [
         "line",
-        "transformer",
         "link",
     ]
 
-    for comp, id in zip(comp_2_ports, ["line_id", "trafo_id", "link_id"]):
+    for comp, id in zip(comp_2_ports, ["line_id", "link_id"]):
         db.execute_sql(
             f"""
             DELETE FROM {"grid.egon_etrago_" + comp + "_timeseries"}
@@ -397,7 +479,8 @@ def clean_database():
             ;"""
         )
 
-    db.execute_sql(f"""
+    db.execute_sql(
+        f"""
         DELETE FROM grid.egon_etrago_bus
         WHERE scn_name = '{scn_name}'
         AND country <> 'DE'
@@ -416,8 +499,85 @@ def electrical_neighbours_egon100():
         )
 
 
+def combine_decentral_and_rural_heat(network_solved, network_prepared):
+
+    for comp in network_solved.iterate_components():
+
+        if comp.name in ["Bus", "Link", "Store"]:
+            urban_decentral = comp.df[
+                comp.df.carrier.str.contains("urban decentral")
+            ]
+            rural = comp.df[comp.df.carrier.str.contains("rural")]
+            for i, row in urban_decentral.iterrows():
+                if not "DE" in i:
+                    if comp.name in ["Bus"]:
+                        network_solved.remove("Bus", i)
+                    if comp.name in ["Link", "Generator"]:
+                        if (
+                            i.replace("urban decentral", "rural")
+                            in rural.index
+                        ):
+                            rural.loc[
+                                i.replace("urban decentral", "rural"),
+                                "p_nom_opt",
+                            ] += urban_decentral.loc[i, "p_nom_opt"]
+                            rural.loc[
+                                i.replace("urban decentral", "rural"), "p_nom"
+                            ] += urban_decentral.loc[i, "p_nom"]
+                            network_solved.remove(comp.name, i)
+                        else:
+                            print(i)
+                            comp.df.loc[i, "bus0"] = comp.df.loc[
+                                i, "bus0"
+                            ].replace("urban decentral", "rural")
+                            comp.df.loc[i, "bus1"] = comp.df.loc[
+                                i, "bus1"
+                            ].replace("urban decentral", "rural")
+                            comp.df.loc[i, "carrier"] = comp.df.loc[
+                                i, "carrier"
+                            ].replace("urban decentral", "rural")
+                    if comp.name in ["Store"]:
+                        if (
+                            i.replace("urban decentral", "rural")
+                            in rural.index
+                        ):
+                            rural.loc[
+                                i.replace("urban decentral", "rural"),
+                                "e_nom_opt",
+                            ] += urban_decentral.loc[i, "e_nom_opt"]
+                            rural.loc[
+                                i.replace("urban decentral", "rural"), "e_nom"
+                            ] += urban_decentral.loc[i, "e_nom"]
+                            network_solved.remove(comp.name, i)
+
+                        else:
+                            print(i)
+                            network_solved.stores.loc[i, "bus"] = (
+                                network_solved.stores.loc[i, "bus"].replace(
+                                    "urban decentral", "rural"
+                                )
+                            )
+                            network_solved.stores.loc[i, "carrier"] = (
+                                "rural water tanks"
+                            )
+
+    urban_decentral_loads = network_prepared.loads[
+        network_prepared.loads.carrier.str.contains("urban decentral")
+    ]
+
+    for i, row in urban_decentral_loads.iterrows():
+        if i in network_prepared.loads_t.p_set.columns:
+            network_prepared.loads_t.p_set[
+                i.replace("urban decentral", "rural")
+            ] += network_prepared.loads_t.p_set[i]
+    network_prepared.mremove("Load", urban_decentral_loads.index)
+
+    return network_prepared, network_solved
+
+
 def neighbor_reduction():
-    network = read_network()
+    network_solved = read_network()
+    network_prepared = prepared_network(planning_horizon="2045")
 
     # network.links.drop("pipe_retrofit", axis="columns", inplace=True)
 
@@ -436,164 +596,206 @@ def neighbor_reduction():
         "FR",
         "LU",
     ]
-    foreign_buses = network.buses[
-        ~network.buses.index.str.contains("|".join(wanted_countries))
+
+    foreign_buses = network_solved.buses[
+        (~network_solved.buses.index.str.contains("|".join(wanted_countries)))
+        | (network_solved.buses.index.str.contains("FR6"))
     ]
-    network.buses = network.buses.drop(
-        network.buses.loc[foreign_buses.index].index
+    network_solved.buses = network_solved.buses.drop(
+        network_solved.buses.loc[foreign_buses.index].index
     )
 
+    # Add H2 demand of Fischer-Tropsch process and methanolisation
+    # to industrial H2 demands
+    industrial_hydrogen = network_prepared.loads.loc[
+        network_prepared.loads.carrier == "H2 for industry"
+    ]
+    fischer_tropsch = (
+        network_solved.links_t.p0[
+            network_solved.links.loc[
+                network_solved.links.carrier == "Fischer-Tropsch"
+            ].index
+        ]
+        .mul(network_solved.snapshot_weightings.generators, axis=0)
+        .sum()
+    )
+    methanolisation = (
+        network_solved.links_t.p0[
+            network_solved.links.loc[
+                network_solved.links.carrier == "methanolisation"
+            ].index
+        ]
+        .mul(network_solved.snapshot_weightings.generators, axis=0)
+        .sum()
+    )
+    for i, row in industrial_hydrogen.iterrows():
+        network_prepared.loads.loc[i, "p_set"] += (
+            fischer_tropsch[
+                fischer_tropsch.index.str.startswith(row.bus[:5])
+            ].sum()
+            / 8760
+        )
+        network_prepared.loads.loc[i, "p_set"] += (
+            methanolisation[
+                methanolisation.index.str.startswith(row.bus[:5])
+            ].sum()
+            / 8760
+        )
     # drop foreign lines and links from the 2nd row
 
-    network.lines = network.lines.drop(
-        network.lines[
-            (network.lines["bus0"].isin(network.buses.index) == False)
-            & (network.lines["bus1"].isin(network.buses.index) == False)
+    network_solved.lines = network_solved.lines.drop(
+        network_solved.lines[
+            (
+                network_solved.lines["bus0"].isin(network_solved.buses.index)
+                == False
+            )
+            & (
+                network_solved.lines["bus1"].isin(network_solved.buses.index)
+                == False
+            )
         ].index
     )
 
     # select all lines which have at bus1 the bus which is kept
-    lines_cb_1 = network.lines[
-        (network.lines["bus0"].isin(network.buses.index) == False)
+    lines_cb_1 = network_solved.lines[
+        (
+            network_solved.lines["bus0"].isin(network_solved.buses.index)
+            == False
+        )
     ]
 
     # create a load at bus1 with the line's hourly loading
     for i, k in zip(lines_cb_1.bus1.values, lines_cb_1.index):
-        network.add(
+
+        # Copy loading of lines into hourly resolution
+        pset = pd.Series(
+            index=network_prepared.snapshots,
+            data=network_solved.lines_t.p1[k].resample("H").ffill(),
+        )
+        pset["2011-12-31 22:00:00"] = pset["2011-12-31 21:00:00"]
+        pset["2011-12-31 23:00:00"] = pset["2011-12-31 21:00:00"]
+
+        # Loads are all imported from the prepared network in the end
+        network_prepared.add(
             "Load",
             "slack_fix " + i + " " + k,
             bus=i,
-            p_set=network.lines_t.p1[k],
-        )
-        network.loads.carrier.loc["slack_fix " + i + " " + k] = (
-            lines_cb_1.carrier[k]
+            p_set=pset,
+            carrier=lines_cb_1.loc[k, "carrier"],
         )
 
     # select all lines which have at bus0 the bus which is kept
-    lines_cb_0 = network.lines[
-        (network.lines["bus1"].isin(network.buses.index) == False)
+    lines_cb_0 = network_solved.lines[
+        (
+            network_solved.lines["bus1"].isin(network_solved.buses.index)
+            == False
+        )
     ]
 
     # create a load at bus0 with the line's hourly loading
     for i, k in zip(lines_cb_0.bus0.values, lines_cb_0.index):
-        network.add(
+        # Copy loading of lines into hourly resolution
+        pset = pd.Series(
+            index=network_prepared.snapshots,
+            data=network_solved.lines_t.p0[k].resample("H").ffill(),
+        )
+        pset["2011-12-31 22:00:00"] = pset["2011-12-31 21:00:00"]
+        pset["2011-12-31 23:00:00"] = pset["2011-12-31 21:00:00"]
+
+        network_prepared.add(
             "Load",
             "slack_fix " + i + " " + k,
             bus=i,
-            p_set=network.lines_t.p0[k],
-        )
-        network.loads.carrier.loc["slack_fix " + i + " " + k] = (
-            lines_cb_0.carrier[k]
+            p_set=pset,
+            carrier=lines_cb_0.loc[k, "carrier"],
         )
 
     # do the same for links
-
-    network.links = network.links.drop(
-        network.links[
-            (network.links["bus0"].isin(network.buses.index) == False)
-            & (network.links["bus1"].isin(network.buses.index) == False)
-        ].index
+    network_solved.mremove(
+        "Link",
+        network_solved.links[
+            (~network_solved.links.bus0.isin(network_solved.buses.index))
+            | (~network_solved.links.bus1.isin(network_solved.buses.index))
+        ].index,
     )
 
     # select all links which have at bus1 the bus which is kept
-    links_cb_1 = network.links[
-        (network.links["bus0"].isin(network.buses.index) == False)
+    links_cb_1 = network_solved.links[
+        (
+            network_solved.links["bus0"].isin(network_solved.buses.index)
+            == False
+        )
     ]
 
     # create a load at bus1 with the link's hourly loading
     for i, k in zip(links_cb_1.bus1.values, links_cb_1.index):
-        network.add(
+        pset = pd.Series(
+            index=network_prepared.snapshots,
+            data=network_solved.links_t.p1[k].resample("H").ffill(),
+        )
+        pset["2011-12-31 22:00:00"] = pset["2011-12-31 21:00:00"]
+        pset["2011-12-31 23:00:00"] = pset["2011-12-31 21:00:00"]
+
+        network_prepared.add(
             "Load",
             "slack_fix_links " + i + " " + k,
             bus=i,
-            p_set=network.links_t.p1[k],
-        )
-        network.loads.carrier.loc["slack_fix_links " + i + " " + k] = (
-            links_cb_1.carrier[k]
+            p_set=pset,
+            carrier=links_cb_1.loc[k, "carrier"],
         )
 
     # select all links which have at bus0 the bus which is kept
-    links_cb_0 = network.links[
-        (network.links["bus1"].isin(network.buses.index) == False)
+    links_cb_0 = network_solved.links[
+        (
+            network_solved.links["bus1"].isin(network_solved.buses.index)
+            == False
+        )
     ]
 
     # create a load at bus0 with the link's hourly loading
     for i, k in zip(links_cb_0.bus0.values, links_cb_0.index):
-        network.add(
+        pset = pd.Series(
+            index=network_prepared.snapshots,
+            data=network_solved.links_t.p0[k].resample("H").ffill(),
+        )
+        pset["2011-12-31 22:00:00"] = pset["2011-12-31 21:00:00"]
+        pset["2011-12-31 23:00:00"] = pset["2011-12-31 21:00:00"]
+
+        network_prepared.add(
             "Load",
             "slack_fix_links " + i + " " + k,
             bus=i,
-            p_set=network.links_t.p0[k],
-        )
-        network.loads.carrier.loc["slack_fix_links " + i + " " + k] = (
-            links_cb_0.carrier[k]
+            p_set=pset,
+            carrier=links_cb_0.carrier[k],
         )
 
     # drop remaining foreign components
+    for comp in network_solved.iterate_components():
+        if "bus0" in comp.df.columns:
+            network_solved.mremove(
+                comp.name,
+                comp.df[~comp.df.bus0.isin(network_solved.buses.index)].index,
+            )
+            network_solved.mremove(
+                comp.name,
+                comp.df[~comp.df.bus1.isin(network_solved.buses.index)].index,
+            )
+        elif "bus" in comp.df.columns:
+            network_solved.mremove(
+                comp.name,
+                comp.df[~comp.df.bus.isin(network_solved.buses.index)].index,
+            )
 
-    network.lines = network.lines.drop(
-        network.lines[
-            (network.lines["bus0"].isin(network.buses.index) == False)
-            | (network.lines["bus1"].isin(network.buses.index) == False)
-        ].index
+    # Combine urban decentral and rural heat
+    network_prepared, network_solved = combine_decentral_and_rural_heat(
+        network_solved, network_prepared
     )
-
-    network.links = network.links.drop(
-        network.links[
-            (network.links["bus0"].isin(network.buses.index) == False)
-            | (network.links["bus1"].isin(network.buses.index) == False)
-        ].index
-    )
-
-    network.transformers = network.transformers.drop(
-        network.transformers[
-            (network.transformers["bus0"].isin(network.buses.index) == False)
-            | (network.transformers["bus1"].isin(network.buses.index) == False)
-        ].index
-    )
-    network.generators = network.generators.drop(
-        network.generators[
-            (network.generators["bus"].isin(network.buses.index) == False)
-        ].index
-    )
-
-    network.loads = network.loads.drop(
-        network.loads[
-            (network.loads["bus"].isin(network.buses.index) == False)
-        ].index
-    )
-
-    network.storage_units = network.storage_units.drop(
-        network.storage_units[
-            (network.storage_units["bus"].isin(network.buses.index) == False)
-        ].index
-    )
-
-    components = [
-        "loads",
-        "generators",
-        "lines",
-        "buses",
-        "transformers",
-        "links",
-    ]
-    for g in components:  # loads_t
-        h = g + "_t"
-        nw = getattr(network, h)  # network.loads_t
-        for i in nw.keys():  # network.loads_t.p
-            cols = [
-                j
-                for j in getattr(nw, i).columns
-                if j not in getattr(network, g).index
-            ]
-            for k in cols:
-                del getattr(nw, i)[k]
 
     # writing components of neighboring countries to etrago tables
 
     # Set country tag for all buses
-    network.buses.country = network.buses.index.str[:2]
-    neighbors = network.buses[network.buses.country != "DE"]
+    network_solved.buses.country = network_solved.buses.index.str[:2]
+    neighbors = network_solved.buses[network_solved.buses.country != "DE"]
 
     neighbors["new_index"] = (
         db.next_etrago_id("bus") + neighbors.reset_index().index
@@ -621,12 +823,14 @@ def neighbor_reduction():
     # lines, the foreign crossborder lines
     # (without crossborder lines to Germany!)
 
-    neighbor_lines = network.lines[
-        network.lines.bus0.isin(neighbors.index)
-        & network.lines.bus1.isin(neighbors.index)
+    neighbor_lines = network_solved.lines[
+        network_solved.lines.bus0.isin(neighbors.index)
+        & network_solved.lines.bus1.isin(neighbors.index)
     ]
-    if not network.lines_t["s_max_pu"].empty:
-        neighbor_lines_t = network.lines_t["s_max_pu"][neighbor_lines.index]
+    if not network_solved.lines_t["s_max_pu"].empty:
+        neighbor_lines_t = network_prepared.lines_t["s_max_pu"][
+            neighbor_lines.index
+        ]
 
     neighbor_lines.reset_index(inplace=True)
     neighbor_lines.bus0 = (
@@ -637,15 +841,15 @@ def neighbor_reduction():
     )
     neighbor_lines.index += db.next_etrago_id("line")
 
-    if not network.lines_t["s_max_pu"].empty:
+    if not network_solved.lines_t["s_max_pu"].empty:
         for i in neighbor_lines_t.columns:
             new_index = neighbor_lines[neighbor_lines["name"] == i].index
             neighbor_lines_t.rename(columns={i: new_index[0]}, inplace=True)
 
     # links
-    neighbor_links = network.links[
-        network.links.bus0.isin(neighbors.index)
-        & network.links.bus1.isin(neighbors.index)
+    neighbor_links = network_solved.links[
+        network_solved.links.bus0.isin(neighbors.index)
+        & network_solved.links.bus1.isin(neighbors.index)
     ]
 
     neighbor_links.reset_index(inplace=True)
@@ -658,14 +862,40 @@ def neighbor_reduction():
     neighbor_links.index += db.next_etrago_id("link")
 
     # generators
-    neighbor_gens = network.generators[
-        network.generators.bus.isin(neighbors.index)
+    neighbor_gens = network_solved.generators[
+        network_solved.generators.bus.isin(neighbors.index)
     ]
-    neighbor_gens_t = network.generators_t["p_max_pu"][
+    neighbor_gens_t = network_prepared.generators_t["p_max_pu"][
         neighbor_gens[
-            neighbor_gens.index.isin(network.generators_t["p_max_pu"].columns)
+            neighbor_gens.index.isin(
+                network_prepared.generators_t["p_max_pu"].columns
+            )
         ].index
     ]
+
+    gen_time = [
+        "solar",
+        "onwind",
+        "solar rooftop",
+        "offwind-ac",
+        "offwind-dc",
+        "solar-hsat",
+        "urban central solar thermal",
+        "rural solar thermal",
+        "offwind-float",
+    ]
+
+    missing_gent = neighbor_gens[
+        neighbor_gens["carrier"].isin(gen_time)
+        & ~neighbor_gens.index.isin(neighbor_gens_t.columns)
+    ].index
+
+    gen_timeseries = network_prepared.generators_t["p_max_pu"].copy()
+    for mgt in missing_gent:  # mgt: missing generator timeseries
+        try:
+            neighbor_gens_t[mgt] = gen_timeseries.loc[:, mgt[0:-5]]
+        except:
+            print(f"There are not timeseries for {mgt}")
 
     neighbor_gens.reset_index(inplace=True)
     neighbor_gens.bus = (
@@ -678,12 +908,16 @@ def neighbor_reduction():
         neighbor_gens_t.rename(columns={i: new_index[0]}, inplace=True)
 
     # loads
-
-    neighbor_loads = network.loads[network.loads.bus.isin(neighbors.index)]
-    neighbor_loads_t_index = neighbor_loads.index[
-        neighbor_loads.index.isin(network.loads_t.p_set.columns)
+    # imported from prenetwork in 1h-resolution
+    neighbor_loads = network_prepared.loads[
+        network_prepared.loads.bus.isin(neighbors.index)
     ]
-    neighbor_loads_t = network.loads_t["p_set"][neighbor_loads_t_index]
+    neighbor_loads_t_index = neighbor_loads.index[
+        neighbor_loads.index.isin(network_prepared.loads_t.p_set.columns)
+    ]
+    neighbor_loads_t = network_prepared.loads_t["p_set"][
+        neighbor_loads_t_index
+    ]
 
     neighbor_loads.reset_index(inplace=True)
     neighbor_loads.bus = (
@@ -696,11 +930,15 @@ def neighbor_reduction():
         neighbor_loads_t.rename(columns={i: new_index[0]}, inplace=True)
 
     # stores
-    neighbor_stores = network.stores[network.stores.bus.isin(neighbors.index)]
-    neighbor_stores_t_index = neighbor_stores.index[
-        neighbor_stores.index.isin(network.stores_t.e_min_pu.columns)
+    neighbor_stores = network_solved.stores[
+        network_solved.stores.bus.isin(neighbors.index)
     ]
-    neighbor_stores_t = network.stores_t["e_min_pu"][neighbor_stores_t_index]
+    neighbor_stores_t_index = neighbor_stores.index[
+        neighbor_stores.index.isin(network_solved.stores_t.e_min_pu.columns)
+    ]
+    neighbor_stores_t = network_prepared.stores_t["e_min_pu"][
+        neighbor_stores_t_index
+    ]
 
     neighbor_stores.reset_index(inplace=True)
     neighbor_stores.bus = (
@@ -713,13 +951,15 @@ def neighbor_reduction():
         neighbor_stores_t.rename(columns={i: new_index[0]}, inplace=True)
 
     # storage_units
-    neighbor_storage = network.storage_units[
-        network.storage_units.bus.isin(neighbors.index)
+    neighbor_storage = network_solved.storage_units[
+        network_solved.storage_units.bus.isin(neighbors.index)
     ]
     neighbor_storage_t_index = neighbor_storage.index[
-        neighbor_storage.index.isin(network.storage_units_t.inflow.columns)
+        neighbor_storage.index.isin(
+            network_solved.storage_units_t.inflow.columns
+        )
     ]
-    neighbor_storage_t = network.storage_units_t["inflow"][
+    neighbor_storage_t = network_prepared.storage_units_t["inflow"][
         neighbor_storage_t_index
     ]
 
@@ -745,7 +985,7 @@ def neighbor_reduction():
 
     # Correct geometry for non AC buses
     carriers = set(neighbors.carrier.to_list())
-    carriers = [e for e in carriers if e not in ("AC", "biogas")]
+    carriers = [e for e in carriers if e not in ("AC")]
     non_AC_neighbors = pd.DataFrame()
     for c in carriers:
         c_neighbors = neighbors[neighbors.carrier == c].set_index(
@@ -760,6 +1000,7 @@ def neighbor_reduction():
             "new_index", drop=False
         )
         non_AC_neighbors = pd.concat([non_AC_neighbors, c_neighbors])
+
     neighbors = pd.concat(
         [neighbors[neighbors.carrier == "AC"], non_AC_neighbors]
     )
@@ -771,6 +1012,8 @@ def neighbor_reduction():
         "location",
         "sub_network",
         "unit",
+        "substation_lv",
+        "substation_off",
     ]:
         neighbors = neighbors.drop(i, axis=1)
 
@@ -789,6 +1032,10 @@ def neighbor_reduction():
         {
             "gas": "CH4",
             "gas_for_industry": "CH4_for_industry",
+            "urban_central_heat": "central_heat",
+            "EV_battery": "Li_ion",
+            "urban_central_water_tanks": "central_heat_store",
+            "rural_water_tanks": "rural_heat_store",
         },
         inplace=True,
     )
@@ -821,6 +1068,7 @@ def neighbor_reduction():
             "b_pu",
             "s_nom_opt",
             "i_nom",
+            "dc",
         ]:
             neighbor_lines = neighbor_lines.drop(i, axis=1)
 
@@ -914,6 +1162,10 @@ def neighbor_reduction():
             "ramp_limit_shut_down",
             "length_original",
             "reversed",
+            "location",
+            "project_status",
+            "dc",
+            "voltage",
         ]
 
         if extendable:
@@ -970,6 +1222,15 @@ def neighbor_reduction():
                 "Sabatier": "H2_to_CH4",
                 "gas_for_industry": "CH4_for_industry",
                 "gas_pipeline": "CH4",
+                "urban_central_gas_boiler": "central_gas_boiler",
+                "urban_central_resistive_heater": "central_resistive_heater",
+                "urban_central_water_tanks_charger": "central_heat_store_charger",
+                "urban_central_water_tanks_discharger": "central_heat_store_discharger",
+                "rural_water_tanks_charger": "rural_heat_store_charger",
+                "rural_water_tanks_discharger": "rural_heat_store_discharger",
+                "urban_central_gas_CHP": "central_gas_CHP",
+                "urban_central_air_heat_pump": "central_heat_pump",
+                "rural_ground_heat_pump": "rural_heat_pump",
             },
             inplace=True,
         )
@@ -983,38 +1244,112 @@ def neighbor_reduction():
             index_label="link_id",
         )
 
-    non_extendable_links_carriers = [
-        "H2 pipeline retrofitted",
-        "H2 pipeline",
-        "gas pipeline",
-        "biogas to gas",
+    extendable_links_carriers = [
+        "battery charger",
+        "battery discharger",
+        "home battery charger",
+        "home battery discharger",
+        "rural water tanks charger",
+        "rural water tanks discharger",
+        "urban central water tanks charger",
+        "urban central water tanks discharger",
+        "urban decentral water tanks charger",
+        "urban decentral water tanks discharger",
+        "H2 Electrolysis",
+        "H2 Fuel Cell",
+        "SMR",
+        "Sabatier",
     ]
 
     # delete unwanted carriers for eTraGo
     excluded_carriers = [
         "gas for industry CC",
         "SMR CC",
-        "biogas to gas",
         "DAC",
-        "electricity distribution grid",
     ]
     neighbor_links = neighbor_links[
         ~neighbor_links.carrier.isin(excluded_carriers)
     ]
 
+    # Combine CHP_CC and CHP
+    chp_cc = neighbor_links[
+        neighbor_links.carrier == "urban central gas CHP CC"
+    ]
+    for index, row in chp_cc.iterrows():
+        neighbor_links.loc[
+            neighbor_links.Link == row.Link.replace("CHP CC", "CHP"),
+            "p_nom_opt",
+        ] += row.p_nom_opt
+        neighbor_links.loc[
+            neighbor_links.Link == row.Link.replace("CHP CC", "CHP"), "p_nom"
+        ] += row.p_nom
+        neighbor_links.drop(index, inplace=True)
+
+    # Combine heat pumps
+    # Like in Germany, there are air heat pumps in central heat grids
+    # and ground heat pumps in rural areas
+    rural_air = neighbor_links[neighbor_links.carrier == "rural air heat pump"]
+    for index, row in rural_air.iterrows():
+        neighbor_links.loc[
+            neighbor_links.Link == row.Link.replace("air", "ground"),
+            "p_nom_opt",
+        ] += row.p_nom_opt
+        neighbor_links.loc[
+            neighbor_links.Link == row.Link.replace("air", "ground"), "p_nom"
+        ] += row.p_nom
+        neighbor_links.drop(index, inplace=True)
     links_to_etrago(
-        neighbor_links[
-            ~neighbor_links.carrier.isin(non_extendable_links_carriers)
-        ],
+        neighbor_links[neighbor_links.carrier.isin(extendable_links_carriers)],
         "eGon100RE",
     )
     links_to_etrago(
         neighbor_links[
-            neighbor_links.carrier.isin(non_extendable_links_carriers)
+            ~neighbor_links.carrier.isin(extendable_links_carriers)
         ],
         "eGon100RE",
         extendable=False,
     )
+    # Include links time-series
+    # For heat_pumps
+    hp = neighbor_links[neighbor_links["carrier"].str.contains("heat pump")]
+
+    neighbor_eff_t = network_prepared.links_t["efficiency"][
+        hp[hp.Link.isin(network_prepared.links_t["efficiency"].columns)].index
+    ]
+
+    missing_hp = hp[~hp["Link"].isin(neighbor_eff_t.columns)].Link
+
+    eff_timeseries = network_prepared.links_t["efficiency"].copy()
+    for met in missing_hp:  # met: missing efficiency timeseries
+        try:
+            neighbor_eff_t[met] = eff_timeseries.loc[:, met[0:-5]]
+        except:
+            print(f"There are not timeseries for heat_pump {met}")
+
+    for i in neighbor_eff_t.columns:
+        new_index = neighbor_links[neighbor_links["Link"] == i].index
+        neighbor_eff_t.rename(columns={i: new_index[0]}, inplace=True)
+
+    # Include links time-series
+    # For ev_chargers
+    ev = neighbor_links[neighbor_links["carrier"].str.contains("BEV charger")]
+
+    ev_p_max_pu = network_prepared.links_t["p_max_pu"][
+        ev[ev.Link.isin(network_prepared.links_t["p_max_pu"].columns)].index
+    ]
+
+    missing_ev = ev[~ev["Link"].isin(ev_p_max_pu.columns)].Link
+
+    ev_p_max_pu_timeseries = network_prepared.links_t["p_max_pu"].copy()
+    for mct in missing_ev:  # evt: missing charger timeseries
+        try:
+            ev_p_max_pu[mct] = ev_p_max_pu_timeseries.loc[:, mct[0:-5]]
+        except:
+            print(f"There are not timeseries for EV charger {mct}")
+
+    for i in ev_p_max_pu.columns:
+        new_index = neighbor_links[neighbor_links["Link"] == i].index
+        ev_p_max_pu.rename(columns={i: new_index[0]}, inplace=True)
 
     # prepare neighboring generators for etrago tables
     neighbor_gens["scn_name"] = "eGon100RE"
@@ -1030,9 +1365,11 @@ def neighbor_reduction():
             "ror": "run_of_river",
             "offwind-ac": "wind_offshore",
             "offwind-dc": "wind_offshore",
+            "offwind-float": "wind_offshore",
             "urban_central_solar_thermal": "urban_central_solar_thermal_collector",
             "residential_rural_solar_thermal": "residential_rural_solar_thermal_collector",
             "services_rural_solar_thermal": "services_rural_solar_thermal_collector",
+            "solar-hsat": "solar",
         },
         inplace=True,
     )
@@ -1044,6 +1381,8 @@ def neighbor_reduction():
         "p_set",
         "q_set",
         "p_nom_opt",
+        "e_sum_min",
+        "e_sum_max",
     ]:
         neighbor_gens = neighbor_gens.drop(i, axis=1)
 
@@ -1070,6 +1409,7 @@ def neighbor_reduction():
             "H2_pipeline_retrofitted": "H2_system_boundary",
             "gas_pipeline": "CH4_system_boundary",
             "gas_for_industry": "CH4_for_industry",
+            "urban_central_heat": "central_heat",
         },
         inplace=True,
     )
@@ -1098,20 +1438,23 @@ def neighbor_reduction():
         {
             "Li_ion": "battery",
             "gas": "CH4",
+            "urban_central_water_tanks": "central_heat_store",
+            "rural_water_tanks": "rural_heat_store",
+            "EV_battery": "battery_storage",
         },
         inplace=True,
     )
     neighbor_stores.loc[
         (
             (neighbor_stores.e_nom_max <= 1e9)
-            & (neighbor_stores.carrier == "H2")
+            & (neighbor_stores.carrier == "H2_Store")
         ),
         "carrier",
     ] = "H2_underground"
     neighbor_stores.loc[
         (
             (neighbor_stores.e_nom_max > 1e9)
-            & (neighbor_stores.carrier == "H2")
+            & (neighbor_stores.carrier == "H2_Store")
         ),
         "carrier",
     ] = "H2_overground"
@@ -1186,6 +1529,29 @@ def neighbor_reduction():
         index_label="load_id",
     )
 
+    # writing neighboring link_t efficiency and p_max_pu to etrago tables
+    neighbor_link_t_etrago = pd.DataFrame(
+        columns=["scn_name", "temp_id", "p_max_pu", "efficiency"],
+        index=neighbor_eff_t.columns.to_list() + ev_p_max_pu.columns.to_list(),
+    )
+    neighbor_link_t_etrago["scn_name"] = "eGon100RE"
+    neighbor_link_t_etrago["temp_id"] = 1
+    for i in neighbor_eff_t.columns:
+        neighbor_link_t_etrago["efficiency"][i] = neighbor_eff_t[
+            i
+        ].values.tolist()
+    for i in ev_p_max_pu.columns:
+        neighbor_link_t_etrago["p_max_pu"][i] = ev_p_max_pu[i].values.tolist()
+
+    neighbor_link_t_etrago.to_sql(
+        "egon_etrago_link_timeseries",
+        engine,
+        schema="grid",
+        if_exists="append",
+        index=True,
+        index_label="link_id",
+    )
+
     # writing neighboring generator_t p_max_pu to etrago tables
     neighbor_gens_t_etrago = pd.DataFrame(
         columns=["scn_name", "temp_id", "p_max_pu"],
@@ -1250,7 +1616,7 @@ def neighbor_reduction():
     )
 
     # writing neighboring lines_t s_max_pu to etrago tables
-    if not network.lines_t["s_max_pu"].empty:
+    if not network_solved.lines_t["s_max_pu"].empty:
         neighbor_lines_t_etrago = pd.DataFrame(
             columns=["scn_name", "s_max_pu"], index=neighbor_lines_t.columns
         )
@@ -1271,10 +1637,10 @@ def neighbor_reduction():
         )
 
 
-def prepared_network():
+def prepared_network(planning_horizon=3):
     if egon.data.config.settings()["egon-data"]["--run-pypsa-eur"]:
         with open(
-            __path__[0] + "/datasets/pypsaeur/config.yaml", "r"
+            __path__[0] + "/datasets/pypsaeur/config_prepare.yaml", "r"
         ) as stream:
             data_config = yaml.safe_load(stream)
 
@@ -1285,11 +1651,11 @@ def prepared_network():
             / "results"
             / data_config["run"]["name"]
             / "prenetworks"
-            / f"elec_s_{data_config['scenario']['clusters'][0]}"
+            / f"base_s_{data_config['scenario']['clusters'][0]}"
             f"_l{data_config['scenario']['ll'][0]}"
             f"_{data_config['scenario']['opts'][0]}"
             f"_{data_config['scenario']['sector_opts'][0]}"
-            f"_{data_config['scenario']['planning_horizons'][0]}.nc"
+            f"_{data_config['scenario']['planning_horizons'][planning_horizon]}.nc"
         )
 
     else:
@@ -1297,10 +1663,11 @@ def prepared_network():
             Path(".")
             / "data_bundle_powerd_data"
             / "pypsa_eur"
-            / "2024-08-02-egondata-integration"
+            / "21122024_3h_clean_run"
             / "results"
-            / "postnetworks"
-            / "elec_s_37_lv1.5__Co2L0-1H-T-H-B-I-A-solar+p3_2050.nc"
+            / "prenetworks"
+            / "prenetwork_post-manipulate_pre-solve"
+            / "base_s_39_lc1.25__cb40ex0-T-H-I-B-solar+p3-dist1_2045.nc"
         )
 
     return pypsa.Network(target_file.absolute().as_posix())
@@ -1370,14 +1737,79 @@ def update_electrical_timeseries_germany(network):
         Network including electrical demand time series in Germany from egon-data
 
     """
-
+    year = network.year
+    skip = network.snapshot_weightings.objective.iloc[0].astype("int")
     df = pd.read_csv(
         "input-pypsa-eur-sec/electrical_demand_timeseries_DE_eGon100RE.csv"
     )
 
-    network.loads_t.p_set.loc[:, "DE1 0"] = (
-        df["residential_and_service"] + df["industry"]
-    ).values
+    annual_demand = pd.Series(index=[2019, 2037])
+    annual_demand_industry = pd.Series(index=[2019, 2037])
+    # Define values from status2019 for interpolation
+    # Residential and service (in TWh)
+    annual_demand.loc[2019] = 124.71 + 143.26
+    # Industry (in TWh)
+    annual_demand_industry.loc[2019] = 241.925
+
+    # Define values from NEP 2023 scenario B 2037 for interpolation
+    # Residential and service (in TWh)
+    annual_demand.loc[2037] = 104 + 153.1
+    # Industry (in TWh)
+    annual_demand_industry.loc[2037] = 334.0
+
+    # Set interpolated demands for years between 2019 and 2045
+    if year < 2037:
+        # Calculate annual demands for year by linear interpolating between
+        # 2019 and 2037
+        # Done seperatly for industry and residential and service to fit
+        # to pypsa-eurs structure
+        annual_rate = (annual_demand.loc[2037] - annual_demand.loc[2019]) / (
+            2037 - 2019
+        )
+        annual_demand_year = annual_demand.loc[2019] + annual_rate * (
+            year - 2019
+        )
+
+        annual_rate_industry = (
+            annual_demand_industry.loc[2037] - annual_demand_industry.loc[2019]
+        ) / (2037 - 2019)
+        annual_demand_year_industry = annual_demand_industry.loc[
+            2019
+        ] + annual_rate_industry * (year - 2019)
+
+        # Scale time series for 100% scenario with the annual demands
+        # The shape of the curve is taken from the 100% scenario since the
+        # same weather and calender year is used there
+        network.loads_t.p_set.loc[:, "DE0 0"] = (
+            df["residential_and_service"].loc[::skip]
+            / df["residential_and_service"].sum()
+            * annual_demand_year
+            * 1e6
+        ).values
+
+        network.loads_t.p_set.loc[:, "DE0 0 industry electricity"] = (
+            df["industry"].loc[::skip]
+            / df["industry"].sum()
+            * annual_demand_year_industry
+            * 1e6
+        ).values
+
+    elif year == 2045:
+        network.loads_t.p_set.loc[:, "DE0 0"] = df[
+            "residential_and_service"
+        ].loc[::skip]
+
+        network.loads_t.p_set.loc[:, "DE0 0 industry electricity"] = (
+            df["industry"].loc[::skip].values
+        )
+
+    else:
+        print(
+            "Scaling not implemented for years between 2037 and 2045 and beyond."
+        )
+        return
+
+    network.loads.loc["DE0 0 industry electricity", "p_set"] = 0.0
 
     return network
 
@@ -1412,8 +1844,8 @@ def geothermal_district_heating(network):
 
         network.add(
             "Generator",
-            f"DE1 0 urban central geo thermal {i}",
-            bus="DE1 0 urban central heat",
+            f"DE0 0 urban central geo thermal {i}",
+            bus="DE0 0 urban central heat",
             carrier="urban central geo thermal",
             p_nom_extendable=True,
             p_nom_max=row["potential [MW]"],
@@ -1497,11 +1929,76 @@ def drop_biomass(network):
     return network
 
 
-def drop_urban_decentral_heat(network):
-    carrier = "urban decentral"
+def postprocessing_biomass_2045():
 
+    network = read_network()
+    network = drop_biomass(network)
+
+    with open(
+        __path__[0] + "/datasets/pypsaeur/config_solve.yaml", "r"
+    ) as stream:
+        data_config = yaml.safe_load(stream)
+
+    target_file = (
+        Path(".")
+        / "run-pypsa-eur"
+        / "pypsa-eur"
+        / "results"
+        / data_config["run"]["name"]
+        / "postnetworks"
+        / f"base_s_{data_config['scenario']['clusters'][0]}"
+        f"_l{data_config['scenario']['ll'][0]}"
+        f"_{data_config['scenario']['opts'][0]}"
+        f"_{data_config['scenario']['sector_opts'][0]}"
+        f"_{data_config['scenario']['planning_horizons'][3]}.nc"
+    )
+
+    network.export_to_netcdf(target_file)
+
+
+def drop_urban_decentral_heat(network):
+    carrier = "urban decentral heat"
+
+    # Add urban decentral heat demand to urban central heat demand
+    for country in network.loads.loc[
+        network.loads.carrier == carrier, "bus"
+    ].str[:5]:
+
+        if f"{country} {carrier}" in network.loads_t.p_set.columns:
+            network.loads_t.p_set[
+                f"{country} rural heat"
+            ] += network.loads_t.p_set[f"{country} {carrier}"]
+        else:
+            print(
+                f"""No time series available for {country} {carrier}.
+                  Using static p_set."""
+            )
+
+            network.loads_t.p_set[
+                f"{country} rural heat"
+            ] += network.loads.loc[f"{country} {carrier}", "p_set"]
+
+    # In some cases low-temperature heat for industry is connected to the urban
+    # decentral heat bus since there is no urban central heat bus.
+    # These loads are connected to the representatiive rural heat bus:
+    network.loads.loc[
+        (network.loads.bus.str.contains(carrier))
+        & (~network.loads.carrier.str.contains(carrier.replace(" heat", ""))),
+        "bus",
+    ] = network.loads.loc[
+        (network.loads.bus.str.contains(carrier))
+        & (~network.loads.carrier.str.contains(carrier.replace(" heat", ""))),
+        "bus",
+    ].str.replace(
+        "urban decentral", "rural"
+    )
+
+    # Drop componentents attached to urban decentral heat
     for c in network.iterate_components():
-        network.mremove(c.name, c.df[c.df.index.str.contains(carrier)].index)
+        network.mremove(
+            c.name, c.df[c.df.index.str.contains("urban decentral")].index
+        )
+
     return network
 
 
@@ -1542,9 +2039,7 @@ def district_heating_shares(network):
     )
     network.mremove(
         "Link",
-        network.links[
-            network.links.carrier==""
-        ].index,
+        network.links[network.links.carrier == ""].index,
     )
 
     return network
@@ -1564,7 +2059,21 @@ def drop_new_gas_pipelines(network):
 def drop_fossil_gas(network):
     network.mremove(
         "Generator",
-        network.generators[network.generators.carrier == "gas"].index
+        network.generators[network.generators.carrier == "gas"].index,
+    )
+
+    return network
+
+
+def drop_conventional_power_plants(network):
+
+    # Drop lignite and coal power plants in Germany
+    network.mremove(
+        "Link",
+        network.links[
+            (network.links.carrier.isin(["coal", "lignite"]))
+            & (network.links.bus1.str.startswith("DE"))
+        ].index,
     )
 
     return network
@@ -1588,6 +2097,60 @@ def rual_heat_technologies(network):
     return network
 
 
+def coal_exit_D():
+
+    df = pd.read_csv(
+        "run-pypsa-eur/pypsa-eur/resources/powerplants_s_39.csv", index_col=0
+    )
+    df_de_coal = df[
+        (df.Country == "DE")
+        & ((df.Fueltype == "Lignite") | (df.Fueltype == "Hard Coal"))
+    ]
+    df_de_coal.loc[df_de_coal.DateOut.values >= 2035, "DateOut"] = 2034
+    df.loc[df_de_coal.index] = df_de_coal
+
+    df.to_csv("run-pypsa-eur/pypsa-eur/resources/powerplants_s_39.csv")
+
+
+def offwind_potential_D(network, capacity_per_sqkm=4):
+
+    offwind_ac_factor = 1942
+    offwind_dc_factor = 10768
+    offwind_float_factor = 134
+
+    # set p_nom_max for German offshore with respect to capacity_per_sqkm = 4 instead of default 2 (which is applied for the rest of Europe)
+    network.generators.loc[
+        (network.generators.bus == "DE0 0")
+        & (network.generators.carrier == "offwind-ac"),
+        "p_nom_max",
+    ] = (
+        offwind_ac_factor * capacity_per_sqkm
+    )
+    network.generators.loc[
+        (network.generators.bus == "DE0 0")
+        & (network.generators.carrier == "offwind-dc"),
+        "p_nom_max",
+    ] = (
+        offwind_dc_factor * capacity_per_sqkm
+    )
+    network.generators.loc[
+        (network.generators.bus == "DE0 0")
+        & (network.generators.carrier == "offwind-float"),
+        "p_nom_max",
+    ] = (
+        offwind_float_factor * capacity_per_sqkm
+    )
+
+    return network
+
+
+def additional_grid_expansion_2045(network):
+
+    network.global_constraints.loc["lc_limit", "constant"] *= 1.05
+
+    return network
+
+
 def execute():
     if egon.data.config.settings()["egon-data"]["--run-pypsa-eur"]:
         with open(
@@ -1595,42 +2158,128 @@ def execute():
         ) as stream:
             data_config = yaml.safe_load(stream)
 
-        network_path = (
-            Path(".")
-            / "run-pypsa-eur"
-            / "pypsa-eur"
-            / "results"
-            / data_config["run"]["name"]
-            / "prenetworks"
-            / f"elec_s_{data_config['scenario']['clusters'][0]}"
-            f"_l{data_config['scenario']['ll'][0]}"
-            f"_{data_config['scenario']['opts'][0]}"
-            f"_{data_config['scenario']['sector_opts'][0]}"
-            f"_{data_config['scenario']['planning_horizons'][0]}.nc"
-        )
+        if data_config["foresight"] == "myopic":
 
-        network = pypsa.Network(network_path)
+            print("Adjusting scenarios on the myopic pathway...")
 
-        network = drop_biomass(network)
+            coal_exit_D()
 
-        network = drop_urban_decentral_heat(network)
+            networks = pd.Series()
 
-        network = district_heating_shares(network)
+            for i in range(
+                0, len(data_config["scenario"]["planning_horizons"])
+            ):
+                nc_file = pd.Series(
+                    f"base_s_{data_config['scenario']['clusters'][0]}"
+                    f"_l{data_config['scenario']['ll'][0]}"
+                    f"_{data_config['scenario']['opts'][0]}"
+                    f"_{data_config['scenario']['sector_opts'][0]}"
+                    f"_{data_config['scenario']['planning_horizons'][i]}.nc"
+                )
+                networks = networks._append(nc_file)
 
-        network = update_heat_timeseries_germany(network)
+            scn_path = pd.DataFrame(
+                index=["2025", "2030", "2035", "2045"],
+                columns=["prenetwork", "functions"],
+            )
 
-        network = update_electrical_timeseries_germany(network)
+            for year in scn_path.index:
+                scn_path.at[year, "prenetwork"] = networks[
+                    networks.str.contains(year)
+                ].values
 
-        network = geothermal_district_heating(network)
+            for year in ["2025", "2030", "2035"]:
+                scn_path.loc[year, "functions"] = [
+                    # drop_urban_decentral_heat,
+                    update_electrical_timeseries_germany,
+                    geothermal_district_heating,
+                    h2_overground_stores,
+                    drop_new_gas_pipelines,
+                    offwind_potential_D,
+                ]
 
-        network = h2_overground_stores(network)
+            scn_path.loc["2045", "functions"] = [
+                drop_biomass,
+                # drop_urban_decentral_heat,
+                update_electrical_timeseries_germany,
+                geothermal_district_heating,
+                h2_overground_stores,
+                drop_new_gas_pipelines,
+                drop_fossil_gas,
+                offwind_potential_D,
+                additional_grid_expansion_2045,
+                # drop_conventional_power_plants,
+                # rual_heat_technologies, #To be defined
+            ]
 
-        network = drop_new_gas_pipelines(network)
+            network_path = (
+                Path(".")
+                / "run-pypsa-eur"
+                / "pypsa-eur"
+                / "results"
+                / data_config["run"]["name"]
+                / "prenetworks"
+            )
 
-        network = drop_fossil_gas(network)
+            for scn in scn_path.index:
+                path = network_path / scn_path.at[scn, "prenetwork"]
+                network = pypsa.Network(path)
+                network.year = int(scn)
+                for manipulator in scn_path.at[scn, "functions"]:
+                    network = manipulator(network)
+                network.export_to_netcdf(path)
 
-        network = rual_heat_technologies(network)
+        elif (data_config["foresight"] == "overnight") & (
+            int(data_config["scenario"]["planning_horizons"][0]) > 2040
+        ):
 
-        network.export_to_netcdf(network_path)
+            print("Adjusting overnight long-term scenario...")
+
+            network_path = (
+                Path(".")
+                / "run-pypsa-eur"
+                / "pypsa-eur"
+                / "results"
+                / data_config["run"]["name"]
+                / "prenetworks"
+                / f"elec_s_{data_config['scenario']['clusters'][0]}"
+                f"_l{data_config['scenario']['ll'][0]}"
+                f"_{data_config['scenario']['opts'][0]}"
+                f"_{data_config['scenario']['sector_opts'][0]}"
+                f"_{data_config['scenario']['planning_horizons'][0]}.nc"
+            )
+
+            network = pypsa.Network(network_path)
+
+            network = drop_biomass(network)
+
+            network = drop_urban_decentral_heat(network)
+
+            network = district_heating_shares(network)
+
+            network = update_heat_timeseries_germany(network)
+
+            network = update_electrical_timeseries_germany(network)
+
+            network = geothermal_district_heating(network)
+
+            network = h2_overground_stores(network)
+
+            network = drop_new_gas_pipelines(network)
+
+            network = drop_fossil_gas(network)
+
+            network = rual_heat_technologies(network)
+
+            network.export_to_netcdf(network_path)
+
+        else:
+            print(
+                f"""Adjustments on prenetworks are not implemented for
+                foresight option {data_config['foresight']} and
+                year int(data_config['scenario']['planning_horizons'][0].
+                Please check the pypsaeur.execute function.
+                """
+            )
     else:
         print("Pypsa-eur is not executed due to the settings of egon-data")

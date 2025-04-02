@@ -260,7 +260,7 @@ def buses(scenario, sources, targets):
     central_buses.scn_name = scenario
 
     central_buses.drop(
-        ["control", "generator", "location", "unit", "sub_network"],
+        ["control", "generator", "location", "unit", "sub_network", "substation_off", "substation_lv"],
         axis="columns",
         inplace=True,
         errors="ignore"
@@ -372,6 +372,10 @@ def lines_between_foreign_countries(scenario, sorces, targets, central_buses):
                     "p_nom_opt",
                     "bus3",
                     "efficiency3",
+                    "location",
+                    "project_status",
+                    "dc",
+                    "voltage",
                 ],
                 axis="columns",
                 inplace=True,
@@ -389,6 +393,7 @@ def lines_between_foreign_countries(scenario, sorces, targets, central_buses):
                     "x_pu_eff",
                     "r_pu_eff",
                     "s_nom_opt",
+                    "dc",
                 ],
                 axis="columns",
                 inplace=True,

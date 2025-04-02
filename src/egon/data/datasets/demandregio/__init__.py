@@ -39,7 +39,7 @@ class DemandRegio(Dataset):
     def __init__(self, dependencies):
         super().__init__(
             name="DemandRegio",
-            version="0.0.8",
+            version="0.0.9",
             dependencies=dependencies,
             tasks=(
                 # clone_and_install, demandregio must be previously installed
@@ -476,6 +476,9 @@ def disagg_households_power(
         # calculate demand per nuts3 in 2050
         df = data.households_per_size(year=year) * power_per_HH
 
+        # scale to meet annual demand from NEP 2023, scenario B 2045
+        df *= 90400000 / df.sum().sum()
+
     else:
         print(
             f"Electric demand per household size for scenario {scenario} "
@@ -601,9 +604,14 @@ def insert_hh_demand(scenario, year, engine):
         .resample("h")
         .sum()
     )
+
     hh_load_timeseries.rename(
         columns={"DEB16": "DEB1C", "DEB19": "DEB1D"}, inplace=True
     )
+
+    # scale time-series
+    factor = ec_hh.sum(axis=1)/hh_load_timeseries.sum()
+    hh_load_timeseries = hh_load_timeseries * factor
 
     write_demandregio_hh_profiles_to_db(hh_load_timeseries, year)
 
@@ -631,9 +639,49 @@ def insert_cts_ind(scenario, year, engine, target_values):
         "targets"
     ]
 
+    wz_table = pd.read_sql("SELECT wz, sector FROM demand.egon_demandregio_wz",
+                           con = engine,
+                           index_col = "wz")
+
+    # Workaround: Since the disaggregator does not work anymore, data from
+    # previous runs is used for eGon2035 and eGon100RE
+    if scenario == "eGon2035":
+        ec_cts_ind2 = pd.read_csv(
+            "data_bundle_powerd_data/egon_demandregio_cts_ind_egon2035.csv"
+        )
+        ec_cts_ind2.to_sql(
+            targets["cts_ind_demand"]["table"],
+            engine,
+            targets["cts_ind_demand"]["schema"],
+            if_exists="append",
+            index=False,
+        )
+        return
+
     if scenario == "eGon100RE":
         ec_cts_ind2 = pd.read_csv(
-            "data_bundle_powerd_data/egon_demandregio_cts_ind.csv")
+            "data_bundle_powerd_data/egon_demandregio_cts_ind.csv"
+        )
+        ec_cts_ind2["sector"] = ec_cts_ind2["wz"].map(wz_table["sector"])
+        factor_ind = target_values[scenario]["industry"] / (
+            ec_cts_ind2[ec_cts_ind2["sector"] == "industry"]["demand"].sum()
+            / 1000
+        )
+        factor_cts = target_values[scenario]["CTS"] / (
+            ec_cts_ind2[ec_cts_ind2["sector"] == "CTS"]["demand"].sum() / 1000
+        )
+
+        ec_cts_ind2["demand"] = ec_cts_ind2.apply(
+            lambda x: (
+                x["demand"] * factor_ind
+                if x["sector"] == "industry"
+                else x["demand"] * factor_cts
+            ),
+            axis=1,
+        )
+
+        ec_cts_ind2.drop(columns=["sector"], inplace = True)
+
         ec_cts_ind2.to_sql(
             targets["cts_ind_demand"]["table"],
             engine,
@@ -752,10 +800,8 @@ def insert_cts_ind_demands():
             # according to NEP 2021
             # new consumers will be added seperatly
             "eGon2035": {"CTS": 135300, "industry": 225400},
-            # CTS: reduce overall demand from demandregio (without traffic)
-            # by share of heat according to JRC IDEES, data from 2011
-            # industry: no specific heat demand, use data from demandregio
-            "eGon100RE": {"CTS": (1 - (5.96 + 6.13) / 154.64) * 125183.403},
+            # according to NEP 2023, scenario B 2045
+            "eGon100RE": {"CTS": 146700, "industry": 382900},
             # no adjustments for status quo
             "eGon2021": {},
             "status2019": {},
@@ -916,6 +962,7 @@ def timeseries_per_wz():
             if not year in year_already_in_database:
                 insert_timeseries_per_wz(sector, int(year))
         year_already_in_database.append(year)
+
 
 def get_cached_tables():
     """Get cached demandregio tables and db-dump from former runs"""

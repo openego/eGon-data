@@ -685,6 +685,19 @@ etrago_hydrogen:
     H2_AC_map:
       schema: 'grid'
       table: 'egon_etrago_ac_h2'
+    links:
+      schema: 'grid'
+      table: 'egon_etrago_link'
+    H2_grid:
+      new_constructed_pipes:  
+        url: 'https://fnb-gas.de/wp-content/uploads/2024/07/2024_07_22_Anlage3_FNB_Massnahmenliste_Neubau.xlsx'
+        path: "Anlage_3_Wasserstoffkernnetz_Neubau.xlsx"
+      converted_ch4_pipes:
+        url: 'https://fnb-gas.de/wp-content/uploads/2024/07/2024_07_22_Anlage4_FNB_Massnahmenliste_Umstellung.xlsx'
+        path: "Anlage_4_Wasserstoffkernnetz_Umstellung.xlsx"
+      pipes_of_further_h2_grid_operators:
+        url: 'https://fnb-gas.de/wp-content/uploads/2024/07/2024_07_22_Anlage2_Leitungsmeldungen_weiterer_potenzieller_Wasserstoffnetzbetreiber.xlsx'
+        path: "Anlage_2_Wasserstoffkernetz_weitere_Leitungen.xlsx"     
   targets:
     hydrogen_buses:
       schema: 'grid'
@@ -1271,6 +1284,56 @@ home_batteries:
     home_batteries:
       schema: 'supply'
       table: 'egon_home_batteries'
+      
+PtH2_waste_heat_O2:
+  sources:
+    ehv_substation:
+      schema: 'grid'
+      table: 'egon_ehv_substation'
+    hvmv_substation:
+      schema: 'grid'
+      table: 'egon_hvmv_substation'
+    buses:
+      schema: 'grid'
+      table: 'egon_etrago_bus'
+    loads:
+      schema: 'grid'
+      table: 'egon_etrago_load'
+    load_timeseries:
+      schema: 'grid'
+      table: 'egon_etrago_load_timeseries'
+    links:
+      schema: 'grid'
+      table: 'egon_etrago_link'
+    mv_districts:
+      schema: 'grid'
+      table: 'egon_mv_grid_district'
+    ehv_voronoi:
+      schema: 'grid'
+      table: 'egon_ehv_substation_voronoi'
+    district_heating_area:
+      schema: 'demand'
+      table: 'egon_district_heating_areas'
+    o2_load_profile:
+      schema: 'demand'
+      table: 'egon_demandregio_timeseries_cts_ind'
+  targets:
+    links:
+      schema: 'grid'
+      table: 'egon_etrago_link'
+    loads:
+      schema: 'grid'
+      table: 'egon_etrago_load'
+    load_timeseries:
+      schema: 'grid'
+      table: 'egon_etrago_load_timeseries'
+    generators:
+      schema: 'grid'
+      table: 'egon_etrago_generator'
+    buses:
+      schema: 'grid'
+      table: 'egon_etrago_bus'
+      
 
 scenario_path:
   sources:

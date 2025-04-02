@@ -27,7 +27,7 @@ from egon.data.datasets.etrago_helpers import (
     initialise_bus_insertion,
 )
 from egon.data.datasets.etrago_setup import link_geom_from_buses
-from egon.data.datasets.pypsaeur import read_network
+from egon.data.datasets.pypsaeur import (read_network, prepared_network)
 from egon.data.datasets.scenario_parameters import get_sector_parameters
 
 logger = logging.getLogger(__name__)
@@ -48,7 +48,7 @@ class IndustrialGasDemand(Dataset):
     #:
     name: str = "IndustrialGasDemand"
     #:
-    version: str = "0.0.5"
+    version: str = "0.0.6"
 
     def __init__(self, dependencies):
         super().__init__(
@@ -114,7 +114,7 @@ class IndustrialGasDemandeGon100RE(Dataset):
     #:
     name: str = "IndustrialGasDemandeGon100RE"
     #:
-    version: str = "0.0.3"
+    version: str = "0.0.4"
 
     def __init__(self, dependencies):
         super().__init__(
@@ -487,7 +487,8 @@ def insert_industrial_gas_demand_egon100RE():
         # adjust H2 and CH4 total demands (values from PES)
         # CH4 demand = 0 in 100RE, therefore scale H2 ts
         # fallback values see https://github.com/openego/eGon-data/issues/626
-        n = read_network()
+        n = prepared_network()
+        solved_network = read_network()
 
         try:
             H2_total_PES = (
@@ -495,6 +496,20 @@ def insert_industrial_gas_demand_egon100RE():
                     "DE0 0 H2 for industry", "p_set"
                 ]
                 * 8760
+                # Add h2 demand of Fischer-Tropsch process from pypsa-eur
+                + solved_network.links_t.p0[
+                    solved_network.links.loc[
+                        solved_network.links.index.str.contains(
+                            "DE0 0 Fischer-Tropsch")].index].mul(
+                                solved_network.snapshot_weightings.generators,
+                                axis= 0).sum().sum()
+                # Add h2 demand of methanolisation process from pypsa-eur
+                + solved_network.links_t.p0[
+                    solved_network.links.loc[
+                        solved_network.links.index.str.contains(
+                            "DE0 0 methanolisation")].index].mul(
+                                solved_network.snapshot_weightings.generators,
+                                axis= 0).sum().sum()
             )
         except KeyError:
             H2_total_PES = 42090000

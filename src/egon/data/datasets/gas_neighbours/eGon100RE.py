@@ -174,7 +174,7 @@ def define_DE_crossbording_pipes_geom_eGon100RE(scn_name="eGon100RE"):
         f"""
         SELECT * FROM {sources['buses']['schema']}.{sources['buses']['table']}
         WHERE scn_name = 'eGon100RE'
-        AND ((carrier = 'CH4') OR (carrier = 'H2'))
+        AND carrier = 'CH4'
         AND country <> 'RU'
         """,
         epsg=4326,
@@ -201,32 +201,7 @@ def define_DE_crossbording_pipes_geom_eGon100RE(scn_name="eGon100RE"):
         lambda x: set_foreign_country(x, foreign=foreign_bus), axis=1
     )
 
-    gas_pipelines_list_H2 = gas_pipelines_list_CH4.copy()
-    gas_pipelines_list_H2["carrier"] = "H2_retrofit"
-    gas_pipelines_list_H2["scn_name"] = scn_name
-
-    CH4_to_H2 = find_equivalent_H2(gas_nodes_list_100)
-    gas_pipelines_list_H2["bus0"] = gas_pipelines_list_H2["bus0"].map(
-        CH4_to_H2
-    )
-    gas_pipelines_list_H2["bus1"] = gas_pipelines_list_H2["bus1"].map(
-        CH4_to_H2
-    )
-
-    # Select next id value
-    new_id = db.next_etrago_id("link")
-    gas_pipelines_list_H2["link_id"] = range(
-        new_id, new_id + len(gas_pipelines_list_H2)
-    )
-    gas_pipelines_list_H2["link_id"] = gas_pipelines_list_H2["link_id"].apply(
-        int
-    )
-
-    gas_pipelines_list_DE = pd.concat(
-        [gas_pipelines_list_H2, gas_pipelines_list_CH4], ignore_index=True
-    )
-
-    return gas_pipelines_list_DE
+    return gas_pipelines_list_CH4
 
 
 def read_DE_crossbordering_cap_from_pes():
@@ -247,12 +222,12 @@ def read_DE_crossbordering_cap_from_pes():
 
     DE_pipe_capacities_list_H2 = n.links[
         (n.links["carrier"] == "H2 pipeline retrofitted")
-        & ((n.links["bus0"] == "DE1 0 H2") | (n.links["bus1"] == "DE1 0 H2"))
+        & ((n.links["bus0"] == "DE0 0 H2") | (n.links["bus1"] == "DE0 0 H2"))
     ]
 
     DE_pipe_capacities_list_CH4 = n.links[
         (n.links["carrier"] == "gas pipeline")
-        & ((n.links["bus0"] == "DE1 0 gas") | (n.links["bus1"] == "DE1 0 gas"))
+        & ((n.links["bus0"] == "DE0 0 gas") | (n.links["bus1"] == "DE0 0 gas"))
     ]
 
     pipe_capacities_list = pd.DataFrame(
@@ -353,7 +328,7 @@ def calculate_crossbordering_gas_grid_capacities_eGon100RE(
         ]
     )
 
-    for carrier in ["CH4", "H2_retrofit"]:
+    for carrier in ["CH4"]:
         p_nom = []
         cap = cap_DE[cap_DE["carrier"] == carrier].set_index("country_code")
         pipe_capacities_list = DE_pipe_capacities_list[

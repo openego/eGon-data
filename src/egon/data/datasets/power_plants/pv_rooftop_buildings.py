@@ -2683,12 +2683,6 @@ class EgonPowerPlantPvRoofBuildingScenario(Base):
 
 def create_scenario_table(buildings_gdf):
     """Create mapping table pv_unit <-> building for scenario"""
-    EgonPowerPlantPvRoofBuildingScenario.__table__.drop(
-        bind=engine, checkfirst=True
-    )
-    EgonPowerPlantPvRoofBuildingScenario.__table__.create(
-        bind=engine, checkfirst=True
-    )
 
     buildings_gdf.rename(columns=COLS_TO_RENAME).assign(
         capacity=buildings_gdf.capacity.div(10**3)  # kW -> MW
@@ -2799,6 +2793,13 @@ def add_bus_ids_sq(
 def pv_rooftop_to_buildings():
     """Main script, executed as task"""
 
+    EgonPowerPlantPvRoofBuildingScenario.__table__.drop(
+        bind=engine, checkfirst=True
+    )
+    EgonPowerPlantPvRoofBuildingScenario.__table__.create(
+        bind=engine, checkfirst=True
+    )
+
     mastr_gdf = load_mastr_data()
 
     if "status2019" in config.settings()["egon-data"]["--scenarios"]:
@@ -2811,36 +2812,40 @@ def pv_rooftop_to_buildings():
 
     buildings_gdf = load_building_data()
 
-    desagg_mastr_gdf, desagg_buildings_gdf = allocate_to_buildings(
+    desagg_mastr_gdf_orig, desagg_buildings_gdf = allocate_to_buildings(
         mastr_gdf, buildings_gdf
     )
+    desagg_mastr_gdf_orig.to_pickle("desagg_mastr_gdf_orig.pkl")
 
     all_buildings_gdf = (
-        desagg_mastr_gdf.assign(scenario="status_quo")
+        desagg_mastr_gdf_orig.assign(scenario="status_quo")
         .reset_index()
         .rename(columns={"geometry": "geom", "EinheitMastrNummer": "gens_id"})
     )
 
-    scenario_buildings_gdf = all_buildings_gdf.copy()
-
+    scenario_buildings_gdf_orig = all_buildings_gdf.copy()
+    scenario_buildings_gdf_orig.to_pickle("scenario_buildings_gdf_orig.pkl")
     cap_per_bus_id_df = pd.DataFrame()
 
     for scenario in SCENARIOS:
         if scenario == "status2019":
-            desagg_mastr_gdf = desagg_mastr_gdf.loc[
-                pd.to_datetime(desagg_mastr_gdf.Inbetriebnahmedatum) <= ts
+            desagg_mastr_gdf = desagg_mastr_gdf_orig.loc[
+                pd.to_datetime(desagg_mastr_gdf_orig.Inbetriebnahmedatum) <= ts
             ]
-            scenario_buildings_gdf = scenario_buildings_gdf.loc[
-                pd.to_datetime(scenario_buildings_gdf.Inbetriebnahmedatum)
+            scenario_buildings_gdf = scenario_buildings_gdf_orig.loc[
+                pd.to_datetime(scenario_buildings_gdf_orig.Inbetriebnahmedatum)
                 <= ts
             ]
+        else:
+            desagg_mastr_gdf = desagg_mastr_gdf_orig.copy()
+            scenario_buildings_gdf = scenario_buildings_gdf_orig.copy()
 
         if cap_per_bus_id(scenario).empty:
             print(f"No PV rooftop in scenario {scenario}")
             EgonPowerPlantPvRoofBuildingScenario.__table__.create(
                 bind=engine, checkfirst=True
             )
-            return
+            continue
 
         logger.debug(f"Desaggregating scenario {scenario}.")
         (

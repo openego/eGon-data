@@ -258,32 +258,37 @@ def adjust_renew_feedin_table(renew_feedin, cfg):
 
 
 def delete_previuos_gen(cfg, con, etrago_gen_orig, power_plants):
-    carrier_delete = list(power_plants.carrier.unique())
+    for scn_name in egon.data.config.settings()["egon-data"]["--scenarios"]:
+        power_plants_scn = power_plants[power_plants["scenario"] == scn_name]
+        carrier_delete = list(power_plants_scn.carrier.unique())
 
-    if carrier_delete:
-        db.execute_sql(
-            f"""DELETE FROM
-                    {cfg['targets']['etrago_generators']['schema']}.
-                    {cfg['targets']['etrago_generators']['table']}
-                    WHERE carrier IN {*carrier_delete,}
-                    AND bus IN (
-                        SELECT bus_id FROM {cfg['sources']['bus']['schema']}.
-                        {cfg['sources']['bus']['table']}
-                        WHERE country = 'DE'
-                        AND carrier = 'AC')
-                    """
-        )
-
-        db.execute_sql(
-            f"""DELETE FROM
-                    {cfg['targets']['etrago_gen_time']['schema']}.
-                    {cfg['targets']['etrago_gen_time']['table']}
-                    WHERE generator_id NOT IN (
-                        SELECT generator_id FROM
+        if carrier_delete:
+            db.execute_sql(
+                f"""DELETE FROM
                         {cfg['targets']['etrago_generators']['schema']}.
-                        {cfg['targets']['etrago_generators']['table']})
-                    """
-        )
+                        {cfg['targets']['etrago_generators']['table']}
+                        WHERE carrier IN {*carrier_delete,}
+                        AND bus IN (
+                            SELECT bus_id FROM {cfg['sources']['bus']['schema']}.
+                            {cfg['sources']['bus']['table']}
+                            WHERE country = 'DE'
+                            AND carrier = 'AC'
+                            AND scn_name = '{scn_name}')
+                        AND scn_name ='{scn_name}'
+                        """
+            )
+
+            db.execute_sql(
+                f"""DELETE FROM
+                        {cfg['targets']['etrago_gen_time']['schema']}.
+                        {cfg['targets']['etrago_gen_time']['table']}
+                        WHERE generator_id NOT IN (
+                            SELECT generator_id FROM
+                            {cfg['targets']['etrago_generators']['schema']}.
+                            {cfg['targets']['etrago_generators']['table']})
+                        AND scn_name ='{scn_name}'
+                        """
+            )
 
 
 def set_timeseries(power_plants, renew_feedin):

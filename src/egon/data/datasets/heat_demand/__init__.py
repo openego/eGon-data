@@ -47,7 +47,7 @@ class HeatDemandImport(Dataset):
         super().__init__(
             name="heat-demands",
             # version=self.target_files + "_0.0",
-            version="0.0.3",  # maybe rethink the naming
+            version="0.0.4",  # maybe rethink the naming
             dependencies=dependencies,
             tasks=(scenario_data_import),
         )
@@ -356,6 +356,17 @@ def future_heat_demand_germany(scenario_name):
         )
         ser_hd_reduction = (
             heat_parameters["DE_demand_service_TJ"] / 3600 / 226.588158
+        )
+
+    elif scenario_name == "eGon100RE":
+        heat_parameters = get_sector_parameters("heat", scenario=scenario_name)
+
+        # Calculate reduction share based on final energy demand and overall demand from Peta for 2015
+        res_hd_reduction = (
+            heat_parameters["DE_demand_residential_MWh"] / (443.788483 * 1e6)
+        )
+        ser_hd_reduction = (
+            heat_parameters["DE_demand_service_MWh"] / (226.588158 * 1e6)
         )
     else:
         heat_parameters = get_sector_parameters("heat", scenario=scenario_name)

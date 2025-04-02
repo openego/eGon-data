@@ -182,7 +182,7 @@ class HeatSupply(Dataset):
     def __init__(self, dependencies):
         super().__init__(
             name="HeatSupply",
-            version="0.0.10",
+            version="0.0.12",
             dependencies=dependencies,
             tasks=(
                 create_tables,
@@ -197,7 +197,7 @@ class GeothermalPotentialGermany(Dataset):
     def __init__(self, dependencies):
         super().__init__(
             name="GeothermalPotentialGermany",
-            version="0.0.1",
+            version="0.0.2",
             dependencies=dependencies,
             tasks=(
                 potential_germany,

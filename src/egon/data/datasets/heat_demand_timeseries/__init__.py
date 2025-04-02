@@ -341,6 +341,10 @@ def create_district_heating_profile_python_like(scenario="eGon2035"):
                 right_on="index",
             )
 
+            # Drop cells without a demand or outside of MVGD
+            slice_df = slice_df[
+                slice_df.zensus_population_id.isin(annual_demand.index)]
+
             for hour in range(24):
                 slice_df[hour] = (
                     slice_df.idp.str[hour]
@@ -414,6 +418,13 @@ def create_district_heating_profile_python_like(scenario="eGon2035"):
                 scenario=scenario,
                 dist_aggregated_mw=(cts.values[0]).tolist(),
             )
+        else:
+            entry = EgonTimeseriesDistrictHeating(
+                area_id=int(area),
+                scenario=scenario,
+                dist_aggregated_mw=np.repeat(0, 8760).tolist(),
+            )
+            print(f"Timeseries for area {area} is zero.")
 
         session.add(entry)
     session.commit()
@@ -1088,6 +1099,6 @@ class HeatTimeSeries(Dataset):
                 },
                 select,
                 district_heating,
-                store_national_profiles,
+                #store_national_profiles,
             ),
         )
