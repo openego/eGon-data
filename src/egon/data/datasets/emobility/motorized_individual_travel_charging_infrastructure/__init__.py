@@ -17,6 +17,7 @@ from egon.data import config, db
 from egon.data.datasets import Dataset
 from egon.data.datasets.emobility.motorized_individual_travel_charging_infrastructure.db_classes import (  # noqa: E501
     EgonEmobChargingInfrastructure,
+    add_metadata,
 )
 from egon.data.datasets.emobility.motorized_individual_travel_charging_infrastructure.infrastructure_allocation import (  # noqa: E501
     run_tracbev,
@@ -148,5 +149,6 @@ class MITChargingInfrastructure(Dataset):
                     get_tracbev_data,
                 },
                 run_tracbev,
+                add_metadata,
             ),
         )

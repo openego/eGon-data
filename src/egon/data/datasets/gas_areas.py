@@ -1,7 +1,9 @@
-"""
-The central module containing code to create CH4 and H2 voronoi polygons
+"""The central module containing code to create CH4 and H2 voronoi polygons
 
 """
+import datetime
+import json
+
 from geoalchemy2.types import Geometry
 from sqlalchemy import BigInteger, Column, Text
 from sqlalchemy.ext.declarative import declarative_base
@@ -9,6 +11,13 @@ from sqlalchemy.ext.declarative import declarative_base
 from egon.data import db
 from egon.data.datasets import Dataset
 from egon.data.datasets.generate_voronoi import get_voronoi_geodataframe
+from egon.data.metadata import (
+    context,
+    contributors,
+    license_egon_data_odbl,
+    meta_metadata,
+    sources,
+)
 
 
 class GasAreaseGon2035(Dataset):
@@ -77,8 +86,78 @@ class EgonPfHvGasVoronoi(Base):
     Class definition of table grid.egon_gas_voronoi
     """
 
+
+    source_list = [
+        sources()["openstreetmap"],
+        sources()["SciGRID_gas"],
+        sources()["bgr_inspeeds_data_bundle"],
+    ]
+    meta = {
+        "name": "grid.egon_gas_voronoi",
+        "title": "Gas voronoi areas",
+        "id": "WILL_BE_SET_AT_PUBLICATION",
+        "description": "H2 and CH4 voronoi cells",
+        "language": ["en-EN"],
+        "publicationDate": datetime.date.today().isoformat(),
+        "context": context(),
+        "spatial": {
+            "location": None,
+            "extent": "Germany",
+            "resolution": None,
+        },
+        "sources": source_list,
+        "licenses": [license_egon_data_odbl()],
+        "contributors": contributors(["fw"]),
+        "resources": [
+            {
+                "profile": "tabular-data-resource",
+                "name": "grid.egon_gas_voronoi",
+                "path": None,
+                "format": "PostgreSQL",
+                "encoding": "UTF-8",
+                "schema": {
+                    "fields": [
+                        {
+                            "name": "scn_name",
+                            "description": "Name of the scenario",
+                            "type": "str",
+                            "unit": None,
+                        },
+                        {
+                            "name": "bus_id",
+                            "description": "Unique identifier",
+                            "type": "integer",
+                            "unit": None,
+                        },
+                        {
+                            "name": "carrier",
+                            "description": "Carrier of the voronoi cell",
+                            "type": "str",
+                            "unit": None,
+                        },
+                        {
+                            "name": "geom",
+                            "description": "Voronoi cell geometry",
+                            "type": "Geometry(Polygon, 4326)",
+                            "unit": None,
+                        },
+                    ],
+                    "primaryKey": ["scn_name", "bus_id"],
+                    "foreignKeys": [],
+                },
+                "dialect": {"delimiter": None, "decimalSeparator": "."},
+            }
+        ],
+        "metaMetadata": meta_metadata(),
+    }
+    # Create json dump
+    meta_json = "'" + json.dumps(meta, indent=4, ensure_ascii=False) + "'"
+
     __tablename__ = "egon_gas_voronoi"
-    __table_args__ = {"schema": "grid"}
+    __table_args__ = {
+        "schema": "grid",
+        "comment": meta_json,
+    }
 
     #: Name of the scenario
     scn_name = Column(Text, primary_key=True, nullable=False)

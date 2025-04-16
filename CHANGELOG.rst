@@ -494,12 +494,12 @@ Changed
   `#1073 <https://github.com/openego/eGon-data/issues/1073>`_
 * Change hgv data source to use database
   `#1086 <https://github.com/openego/eGon-data/issues/1086>`_
+* Rename eMob MIT carrier names (use underscores)
+  `#1105 <https://github.com/openego/eGon-data/issues/1105>`_
 * Change desposit ID for data_bundle download from zenodo sandbox
   `#1110 <https://github.com/openego/eGon-data/issues/1110>`_
 * Use MaStR geocoding results for pv rooftop to buildings mapping workflow
   `#1095 <https://github.com/openego/eGon-data/issues/1095>`_
-* Rename eMob MIT carrier names (use underscores)
-  `#1105 <https://github.com/openego/eGon-data/issues/1105>`_
 
 .. _#799: https://github.com/openego/eGon-data/issues/799
 

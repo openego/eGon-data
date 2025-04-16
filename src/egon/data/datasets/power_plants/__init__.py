@@ -33,6 +33,7 @@ from egon.data.datasets.power_plants.pv_rooftop_buildings import (
 )
 import egon.data.config
 import egon.data.datasets.power_plants.assign_weather_data as assign_weather_data  # noqa: E501
+import egon.data.datasets.power_plants.metadata as pp_metadata
 import egon.data.datasets.power_plants.pv_ground_mounted as pv_ground_mounted
 import egon.data.datasets.power_plants.wind_farms as wind_onshore
 import egon.data.datasets.power_plants.wind_offshore as wind_offshore
@@ -94,7 +95,7 @@ class PowerPlants(Dataset):
     #:
     name: str = "PowerPlants"
     #:
-    version: str = "0.0.18"
+    version: str = "0.0.19"
 
     def __init__(self, dependencies):
         super().__init__(
@@ -117,6 +118,7 @@ class PowerPlants(Dataset):
                 },
                 wind_offshore.insert,
                 assign_weather_data.weatherId_and_busId,
+                pp_metadata.metadata,
             ),
         )
 
