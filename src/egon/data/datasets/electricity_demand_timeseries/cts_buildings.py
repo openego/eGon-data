@@ -127,12 +127,13 @@ class CtsDemandBuildings(Dataset):
     Generates CTS electricity and heat demand time series for scenarios in 2035 and 2050
     assigned to OSM-buildings.
 
-    Disaggregation of CTS heat & electricity demand time series from MV Substation
-    to census cells via annual demand and then to OSM buildings via
+    Disaggregation of CTS heat & electricity demand time series from HV-MV substation
+    to census cells via annual demand per census cell and then to OSM buildings via
     amenity tags or randomly if no sufficient OSM-data is available in the
     respective census cell. If no OSM-buildings or synthetic residential buildings
     are available new synthetic 5x5m buildings are generated.
 
+    For more information see data documentation on :ref:`disagg-cts-elec-ref`.
 
     *Dependencies*
       * :py:class:`OsmBuildingsStreets <egon.data.datasets.osm_buildings_streets.OsmBuildingsStreets>`
@@ -142,53 +143,43 @@ class CtsDemandBuildings(Dataset):
 
     *Resulting tables*
       * :py:class:`openstreetmap.osm_buildings_synthetic <egon.data.datasets.electricity_demand_timeseries.hh_buildings.OsmBuildingsSynthetic>` is extended
-      * :py:class:`openstreetmap.egon_cts_buildings <egon.data.datasets.electricity_demand_timeseries.cts_buildings.CtsBuildings> is created
+      * :py:class:`openstreetmap.egon_cts_buildings <egon.data.datasets.electricity_demand_timeseries.cts_buildings.CtsBuildings>` is created
       * :py:class:`demand.egon_cts_electricity_demand_building_share <egon.data.datasets.electricity_demand_timeseries.cts_buildings.EgonCtsElectricityDemandBuildingShare>` is created
       * :py:class:`demand.egon_cts_heat_demand_building_share <egon.data.datasets.electricity_demand_timeseries.cts_buildings.EgonCtsHeatDemandBuildingShare>` is created
       * :py:class:`demand.egon_building_electricity_peak_loads <egon.data.datasets.electricity_demand_timeseries.hh_buildings.BuildingElectricityPeakLoads>` is extended
       * :py:class:`boundaries.egon_map_zensus_mvgd_buildings <egon.data.datasets.electricity_demand_timeseries.mapping.EgonMapZensusMvgdBuildings>` is extended.
 
-
     **The following datasets from the database are mainly used for creation:**
 
     * `openstreetmap.osm_buildings_filtered`:
-        Table of OSM-buildings filtered by tags to selecting residential and cts
-        buildings only.
+       Table of OSM-buildings filtered by tags to selecting residential and cts
+       buildings only.
     * `openstreetmap.osm_amenities_shops_filtered`:
-        Table of OSM-amenities filtered by tags to select cts only.
+       Table of OSM-amenities filtered by tags to select cts only.
     * `openstreetmap.osm_amenities_not_in_buildings_filtered`:
-        Table of amenities which do not intersect with any building from
-        `openstreetmap.osm_buildings_filtered`
+       Table of amenities which do not intersect with any building from
+       `openstreetmap.osm_buildings_filtered`
     * `openstreetmap.osm_buildings_synthetic`:
-        Table of synthetic residential buildings
+       Table of synthetic residential buildings
     * `boundaries.egon_map_zensus_buildings_filtered_all`:
-        Mapping table of census cells and buildings filtered even if population
-        in census cell = 0.
+       Mapping table of census cells and buildings filtered even if population
+       in census cell = 0.
     * `demand.egon_demandregio_zensus_electricity`:
-        Table of annual electricity load demand for residential and cts at census
-        cell level. Residential load demand is derived from aggregated residential
-        building profiles. DemandRegio CTS load demand at NUTS3 is distributed to
-        census cells linearly to heat demand from peta5.
+       Table of annual electricity load demand for residential and cts at census
+       cell level. Residential load demand is derived from aggregated residential
+       building profiles. DemandRegio CTS load demand at NUTS3 is distributed to
+       census cells linearly to heat demand from peta5.
     * `demand.egon_peta_heat`:
-        Table of annual heat load demand for residential and cts at census cell
-        level from peta5.
+       Table of annual heat load demand for residential and cts at census cell
+       level from peta5.
     * `demand.egon_etrago_electricity_cts`:
-        Scaled cts electricity time series for every MV substation. Derived from
-        DemandRegio SLP for selected economic sectors at nuts3. Scaled with annual
-        demand from `demand.egon_demandregio_zensus_electricity`
+       Scaled cts electricity time series for every MV substation. Derived from
+       DemandRegio SLP for selected economic sectors at nuts3. Scaled with annual
+       demand from `demand.egon_demandregio_zensus_electricity`
     * `demand.egon_etrago_heat_cts`:
-        Scaled cts heat time series for every MV substation. Derived from
-        DemandRegio SLP Gas for selected economic sectors at nuts3. Scaled with
-        annual demand from `demand.egon_peta_heat`.
-
-    **What is the goal?**
-
-    To disaggregate cts heat and electricity time series from MV substation level
-    to geo-referenced buildings, the annual demand from DemandRegio and Peta5 is
-    used to identify census cells with load demand. We use Openstreetmap data and
-    filter tags to identify buildings and count the  amenities within. The number
-    of amenities and the annual demand serve to assign a demand share of the MV
-    substation profile to the building.
+       Scaled cts heat time series for every MV substation. Derived from
+       DemandRegio SLP Gas for selected economic sectors at nuts3. Scaled with
+       annual demand from `demand.egon_peta_heat`.
 
     **What is the challenge?**
 
@@ -202,41 +193,6 @@ class CtsDemandBuildings(Dataset):
     be addressed. For example: not yet tagged buildings or amenities in OSM, or
     building shapes exceeding census cells.
 
-
-    **How are these datasets combined?**
-
-
-    The methodology for heat and electricity is the same and only differs in the
-    annual demand and MV/HV Substation profile. In a previous dataset
-    (openstreetmap), we filter all OSM buildings and amenities for tags, we relate
-    to the cts sector. Amenities are mapped to intersecting buildings and then
-    intersected with the annual demand which exists at census cell level. We obtain
-    census cells with demand and amenities and without amenities. If there is no
-    data on amenities, n synthetic ones are assigned to existing buildings. We use
-    the median value of amenities/census cell for n and all filtered buildings +
-    synthetic residential buildings. If no building data is available a synthetic
-    buildings is randomly generated. This also happens for amenities which couldn't
-    be assigned to any osm building. All census cells with an annual demand are
-    covered this way, and we obtain four different categories of buildings with
-    amenities:
-
-    * Buildings with amenities
-    * Synthetic buildings with amenities
-    * Buildings with synthetic amenities
-    * Synthetics buildings with synthetic amenities
-
-    The amenities are summed per census cell (of amenity) and building to derive
-    the building amenity share per census cell. Multiplied with the annual demand,
-    we receive the profile demand share for each cell. Some buildings exceed the
-    census cell shape and have amenities in different cells although mapped to one
-    building only. To have unique buildings the demand share is summed once more
-    per building id. This factor can now be used to obtain the profile for each
-    building.
-
-    A schematic flow chart exist in the correspondent issue #671:
-    https://github.com/openego/eGon-data/issues/671#issuecomment-1260740258
-
-
     **What are central assumptions during the data processing?**
 
     * We assume OSM data to be the most reliable and complete open source dataset.
@@ -244,7 +200,6 @@ class CtsDemandBuildings(Dataset):
     * Mapping census to OSM data is not trivial. Discrepancies are substituted.
     * Missing OSM buildings are generated for each amenity.
     * Missing amenities are generated by median value of amenities/census cell.
-
 
     **Drawbacks and limitations of the data**
 
@@ -446,9 +401,9 @@ def buildings_with_amenities():
     """
     Amenities which are assigned to buildings are determined and grouped per
     building and zensus cell. Buildings covering multiple cells therefore
-    exists multiple times but in different zensus cells. This is necessary to
+    exist multiple times but in different zensus cells. This is necessary to
     cover as many cells with a cts demand as possible. If buildings exist in
-    multiple mvgds (bus_id) , only the amenities within the same as the
+    multiple mvgds (bus_id), only the amenities within the same as the
     building centroid are kept. If as a result, a census cell is uncovered
     by any buildings, a synthetic amenity is placed. The buildings are
     aggregated afterwards during the calculation of the profile_share.
@@ -1210,7 +1165,7 @@ def cts_buildings():
     building nor amenity is available, random synthetic buildings are
     generated. The demand share is stored in the database.
 
-    Note:
+    Note
     -----
     Cells with CTS demand, amenities and buildings do not change within
     the scenarios, only the demand itself. Therefore scenario eGon2035

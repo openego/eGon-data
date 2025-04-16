@@ -621,9 +621,10 @@ def import_ch4_demandTS():
     Import from the PyPSA-eur-sec run the time series of residential
     rural heat per neighbor country. This time series is used to
     calculate:
-      * the global (yearly) heat demand of Norway
-        (that will be supplied by CH4)
-      * the normalized CH4 hourly resolved demand profile
+
+    * the global (yearly) heat demand of Norway
+      (that will be supplied by CH4)
+    * the normalized CH4 hourly resolved demand profile
 
     Returns
     -------
@@ -1420,21 +1421,24 @@ def tyndp_gas_demand():
 
     Insert CH4 and H2 demands abroad for eGon2035 by executing the
     following steps:
-      * CH4
-          * Calculation of the global CH4 demand in Norway and the
-            CH4 demand profile by executing the function
-            :py:func:`import_ch4_demandTS`
-          * Calculation of the global CH4 demands by executing the
-            function :py:func:`calc_global_ch4_demand`
-          * Insertion of the CH4 loads and their associated time
-            series in the database by executing the function
-            :py:func:`insert_ch4_demand`
-      * H2
-          * Calculation of the global power demand abroad linked
-            to H2 production by executing the function
-            :py:func:`calc_global_power_to_h2_demand`
-          * Insertion of these loads in the database by executing the
-            function :py:func:`insert_power_to_h2_demand`
+
+    * CH4
+
+      * Calculation of the global CH4 demand in Norway and the
+        CH4 demand profile by executing the function
+        :py:func:`import_ch4_demandTS`
+      * Calculation of the global CH4 demands by executing the
+        function :py:func:`calc_global_ch4_demand`
+      * Insertion of the CH4 loads and their associated time
+        series in the database by executing the function
+        :py:func:`insert_ch4_demand`
+    * H2
+
+      * Calculation of the global power demand abroad linked
+        to H2 production by executing the function
+        :py:func:`calc_global_power_to_h2_demand`
+      * Insertion of these loads in the database by executing the
+        function :py:func:`insert_power_to_h2_demand`
 
     Returns
     -------

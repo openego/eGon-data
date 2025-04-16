@@ -108,6 +108,8 @@ class MITChargingInfrastructure(Dataset):
       home, work, public and hpc per MV grid district
     * Write results to DB
 
+    For more information see data documentation on :ref:`mobility-demand-mit-ref`.
+
     *Dependencies*
       * :py:class:`MvGridDistricts <egon.data.datasets.mv_grid_districts.mv_grid_districts_setup>`
       * :py:func:`map_houseprofiles_to_buildings <egon.data.datasets.electricity_demand_timeseries.hh_buildings.map_houseprofiles_to_buildings>`

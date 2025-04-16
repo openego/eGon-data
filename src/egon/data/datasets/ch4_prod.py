@@ -287,25 +287,26 @@ def import_gas_generators(scn_name="eGon2035"):
     To insert the gas production units into the database, the following
     steps are followed:
 
-      * cleaning of the database table grid.egon_etrago_generator of the
-        CH4 generators of the specific scenario (eGon2035),
-      * call of the functions :py:func:`load_NG_generators` and
-        :py:func:`load_biogas_generators` that respectively return
-        dataframes containing the natural- an bio-gas production units
-        in Germany,
-      * attribution of the bus_id to which each generator is connected
-        (call the function :func:`assign_gas_bus_id <egon.data.db.assign_gas_bus_id>`
-        from :py:mod:`egon.data.db <egon.data.db>`),
-      * aggregation of the CH4 productions with same properties at the
-        same bus. The properties that should be the same in order that
-        different generators are aggregated are:
-          * scenario
-          * carrier
-          * marginal cost: this parameter differentiates the natural gas
-            generators from the biogas generators,
-      * addition of the missing columns: scn_name, carrier and
-        generator_id,
-      * insertion of the generators into the database.
+    * cleaning of the database table grid.egon_etrago_generator of the
+      CH4 generators of the specific scenario (eGon2035),
+    * call of the functions :py:func:`load_NG_generators` and
+      :py:func:`load_biogas_generators` that respectively return
+      dataframes containing the natural- an bio-gas production units
+      in Germany,
+    * attribution of the bus_id to which each generator is connected
+      (call the function :func:`assign_gas_bus_id <egon.data.db.assign_gas_bus_id>`
+      from :py:mod:`egon.data.db <egon.data.db>`),
+    * aggregation of the CH4 productions with same properties at the
+      same bus. The properties that should be the same in order that
+      different generators are aggregated are:
+
+      * scenario
+      * carrier
+      * marginal cost: this parameter differentiates the natural gas
+        generators from the biogas generators,
+    * addition of the missing columns: scn_name, carrier and
+      generator_id,
+    * insertion of the generators into the database.
 
     Parameters
     ----------

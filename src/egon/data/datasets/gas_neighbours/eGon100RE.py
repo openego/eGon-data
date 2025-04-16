@@ -6,12 +6,13 @@ defined and inserted in the database.
 
 Dependecies (pipeline)
 ======================
-  * :dataset: PypsaEurSec, GasNodesandPipes, HydrogenBusEtrago,
-    ElectricalNeighbours
+
+* :dataset: PypsaEurSec, GasNodesandPipes, HydrogenBusEtrago, ElectricalNeighbours
 
 Resulting tables
 ================
-  * grid.egon_etrago_link is completed
+
+* grid.egon_etrago_link is completed
 
 """
 
@@ -43,22 +44,23 @@ def insert_gas_neigbours_eGon100RE():
     This function insert the cross border pipelines for H2 and CH4,
     exclusively between Germany and its neighbouring countries,
     for eGon100RE in the database by executing the following steps:
-      * call of the function
-        :py:func:`define_DE_crossbording_pipes_geom_eGon100RE`, that
-        defines the cross border pipelines (H2 and CH4) between
-        Germany and its neighbouring countries
-      * call of the function
-        :py:func:`read_DE_crossbordering_cap_from_pes`, that calculates
-        the cross border total exchange capactities for H2 and CH4
-        between Germany and its neighbouring countries based on the
-        pypsa-eur-sec results
-      * call of the function
-        :py:func:`calculate_crossbordering_gas_grid_capacities_eGon100RE`,
-        that attributes to each cross border pipeline (H2 and CH4)
-        between Germany and its neighbouring countries its capacity
-      * insertion of the H2 and CH4 pipelines between Germany and its
-        neighbouring countries in the database with function
-        :py:func:`insert_gas_grid_capacities`
+
+    * call of the function
+      :py:func:`define_DE_crossbording_pipes_geom_eGon100RE`, that
+      defines the cross border pipelines (H2 and CH4) between
+      Germany and its neighbouring countries
+    * call of the function
+      :py:func:`read_DE_crossbordering_cap_from_pes`, that calculates
+      the cross border total exchange capactities for H2 and CH4
+      between Germany and its neighbouring countries based on the
+      pypsa-eur-sec results
+    * call of the function
+      :py:func:`calculate_crossbordering_gas_grid_capacities_eGon100RE`,
+      that attributes to each cross border pipeline (H2 and CH4)
+      between Germany and its neighbouring countries its capacity
+    * insertion of the H2 and CH4 pipelines between Germany and its
+      neighbouring countries in the database with function
+      :py:func:`insert_gas_grid_capacities`
 
     Returns
     -------
@@ -117,29 +119,29 @@ def define_DE_crossbording_pipes_geom_eGon100RE(scn_name="eGon100RE"):
         f"""
         SELECT * FROM grid.egon_etrago_link
         WHERE ("bus0" IN (
-                        SELECT bus_id FROM 
+                        SELECT bus_id FROM
                         {sources['buses']['schema']}.{sources['buses']['table']}
                         WHERE country != 'DE'
                         AND country != 'RU'
                         AND carrier = 'CH4'
                         AND scn_name = 'eGon2035')
-                    AND "bus1" IN (SELECT bus_id FROM 
+                    AND "bus1" IN (SELECT bus_id FROM
                         {sources['buses']['schema']}.{sources['buses']['table']}
                         WHERE country = 'DE'
-                        AND carrier = 'CH4' 
+                        AND carrier = 'CH4'
                         AND scn_name = 'eGon2035'))
                 OR ("bus0" IN (
-                        SELECT bus_id FROM 
+                        SELECT bus_id FROM
                         {sources['buses']['schema']}.{sources['buses']['table']}
                         WHERE country = 'DE'
                         AND carrier = 'CH4'
                         AND scn_name = 'eGon2035')
                 AND "bus1" IN (
-                        SELECT bus_id FROM 
+                        SELECT bus_id FROM
                         {sources['buses']['schema']}.{sources['buses']['table']}
                         WHERE country != 'DE'
                         AND country != 'RU'
-                        AND carrier = 'CH4' 
+                        AND carrier = 'CH4'
                         AND scn_name = 'eGon2035'))
         AND scn_name = 'eGon2035'
         AND carrier = 'CH4'

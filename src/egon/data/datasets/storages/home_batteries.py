@@ -5,6 +5,7 @@ Main module for allocation of home batteries onto buildings and sizing them
 depending on pv rooftop system size.
 
 **Contents of this module**
+
 * Creation of DB tables
 * Allocate given home battery capacity per mv grid to buildings with pv rooftop
   systems. The sizing of the home battery system depends on the size of the

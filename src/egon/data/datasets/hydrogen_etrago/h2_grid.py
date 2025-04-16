@@ -2,12 +2,14 @@
 The central module containing all code dealing with the H2 grid in eGon100RE
 
 The H2 grid, present only in eGon100RE, is composed of two parts:
+
   * a fixed part with the same topology as the CH4 grid and with
     carrier 'H2_retrofit' corresponding to the retrofitted share of
     the CH4 grid into a hydrogen grid,
   * an extendable part with carrier 'H2_gridextension', linking each
     H2_salcavern bus to the closest H2_grid bus: this part has no
     capacity (p_nom = 0) but it can be extended.
+
 As for the CH4 grid, the H2 pipelines are modelled by PyPSA links.
 
 """
@@ -25,24 +27,25 @@ def insert_h2_pipelines():
     Insert hydrogen grid (H2 links) into the database for eGon100RE.
 
     Insert the H2 grid by executing the following steps:
-      * Copy the CH4 links in Germany from eGon2035
-      * Overwrite the followings columns:
-          * bus0 and bus1 using the grid.egon_etrago_ch4_h2 table
-          * carrier, scn_name
-          * p_nom: the value attributed there corresponds to the share
-            of p_nom of the specific pipeline that could be retrofited into
-            H2 pipeline. This share is the same for every pipeline and is
-            calculated in the PyPSA-eur-sec run.
-      * Create new extendable pipelines to link the existing grid to the
-        H2_saltcavern buses
-      * Clean database
-      * Attribute link_id to the links
-      * Insert into the database
+
+    * Copy the CH4 links in Germany from eGon2035
+    * Overwrite the followings columns:
+
+      * bus0 and bus1 using the grid.egon_etrago_ch4_h2 table
+      * carrier, scn_name
+      * p_nom: the value attributed there corresponds to the share
+        of p_nom of the specific pipeline that could be retrofited into
+        H2 pipeline. This share is the same for every pipeline and is
+        calculated in the PyPSA-eur-sec run.
+    * Create new extendable pipelines to link the existing grid to the
+      H2_saltcavern buses
+    * Clean database
+    * Attribute link_id to the links
+    * Insert into the database
 
     Returns
     -------
     None
-     
 
     """
     H2_buses = db.select_geodataframe(

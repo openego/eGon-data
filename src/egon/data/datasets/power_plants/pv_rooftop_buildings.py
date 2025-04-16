@@ -274,6 +274,7 @@ def add_ags_to_gens(
 ) -> gpd.GeoDataFrame:
     """
     Add information about AGS ID to generators.
+
     Parameters
     -----------
     mastr_gdf : geopandas.GeoDataFrame
@@ -298,6 +299,7 @@ def drop_gens_outside_muns(
 ) -> gpd.GeoDataFrame:
     """
     Drop all generators outside of municipalities.
+
     Parameters
     -----------
     mastr_gdf : geopandas.GeoDataFrame
@@ -324,6 +326,7 @@ def load_mastr_data():
     """Read PV rooftop data from MaStR CSV
     Note: the source will be replaced as soon as the MaStR data is available
     in DB.
+
     Returns
     -------
     geopandas.GeoDataFrame
@@ -372,6 +375,7 @@ def osm_buildings(
 ) -> gpd.GeoDataFrame:
     """
     Read OSM buildings data from eGo^n Database.
+
     Parameters
     -----------
     to_crs : pyproj.crs.crs.CRS
@@ -399,6 +403,7 @@ def synthetic_buildings(
 ) -> gpd.GeoDataFrame:
     """
     Read synthetic buildings data from eGo^n Database.
+
     Parameters
     -----------
     to_crs : pyproj.crs.crs.CRS
@@ -427,6 +432,7 @@ def add_ags_to_buildings(
 ) -> gpd.GeoDataFrame:
     """
     Add information about AGS ID to buildings.
+
     Parameters
     -----------
     buildings_gdf : geopandas.GeoDataFrame
@@ -451,6 +457,7 @@ def drop_buildings_outside_muns(
 ) -> gpd.GeoDataFrame:
     """
     Drop all buildings outside of municipalities.
+
     Parameters
     -----------
     buildings_gdf : geopandas.GeoDataFrame
@@ -611,6 +618,7 @@ def sort_and_qcut_df(
     """
     Determine the quantile of a given attribute in a (Geo)DataFrame.
     Sort the (Geo)DataFrame in ascending order for the given attribute.
+
     Parameters
     -----------
     df : pandas.DataFrame or geopandas.GeoDataFrame
@@ -647,6 +655,7 @@ def allocate_pv(
     buildings than generators within a given AGS. Primarily generators are
     distributed with the same qunatile as the buildings. Multiple assignment
     is excluded.
+
     Parameters
     -----------
     q_mastr_gdf : geopandas.GeoDataFrame
@@ -763,6 +772,7 @@ def frame_to_numeric(
 ) -> pd.DataFrame | gpd.GeoDataFrame:
     """
     Try to convert all columns of a DataFrame to numeric ignoring errors.
+
     Parameters
     ----------
     df : pandas.DataFrame or geopandas.GeoDataFrame
@@ -868,6 +878,7 @@ def allocate_to_buildings(
 ) -> tuple[gpd.GeoDataFrame, gpd.GeoDataFrame]:
     """
     Allocate status quo pv rooftop generators to buildings.
+
     Parameters
     -----------
     mastr_gdf : geopandas.GeoDataFrame
@@ -902,6 +913,7 @@ def grid_districts(
     """
     Load mv grid district geo data from eGo^n Database as
     geopandas.GeoDataFrame.
+
     Parameters
     -----------
     epsg : int
@@ -935,6 +947,7 @@ def scenario_data(
 ) -> pd.DataFrame:
     """
     Get scenario capacity data from eGo^n Database.
+
     Parameters
     -----------
     carrier : str
@@ -1002,6 +1015,7 @@ class Vg250Lan(Base):
 def federal_state_data(to_crs: CRS) -> gpd.GeoDataFrame:
     """
     Get feder state data from eGo^n Database.
+
     Parameters
     -----------
     to_crs : pyproj.crs.crs.CRS
@@ -1032,6 +1046,7 @@ def overlay_grid_districts_with_counties(
 ) -> gpd.GeoDataFrame:
     """
     Calculate the intersections of mv grid districts and counties.
+
     Parameters
     -----------
     mv_grid_district_gdf : gpd.GeoDataFrame
@@ -1067,6 +1082,7 @@ def add_overlay_id_to_buildings(
 ) -> gpd.GeoDataFrame:
     """
     Add information about overlay ID to buildings.
+
     Parameters
     -----------
     buildings_gdf : geopandas.GeoDataFrame
@@ -1099,6 +1115,7 @@ def drop_buildings_outside_grids(
 ) -> gpd.GeoDataFrame:
     """
     Drop all buildings outside of grid areas.
+
     Parameters
     -----------
     buildings_gdf : geopandas.GeoDataFrame
@@ -1157,6 +1174,7 @@ def determine_end_of_life_gens(
 ) -> gpd.GeoDataFrame:
     """
     Determine if an old PV system has reached its end of life.
+
     Parameters
     -----------
     mastr_gdf : geopandas.GeoDataFrame
@@ -1252,6 +1270,7 @@ def calculate_building_load_factor(
 ) -> gpd.GeoDataFrame:
     """
     Calculate the roof load factor from existing PV systems.
+
     Parameters
     -----------
     mastr_gdf : geopandas.GeoDataFrame
@@ -1286,6 +1305,7 @@ def get_probability_for_property(
     """
     Calculate the probability of the different options of a property of the
     existing PV plants.
+
     Parameters
     -----------
     mastr_gdf : geopandas.GeoDataFrame
@@ -1335,6 +1355,7 @@ def probabilities(
     """
     Calculate the probability of the different options of properties of the
     existing PV plants.
+
     Parameters
     -----------
     mastr_gdf : geopandas.GeoDataFrame
@@ -1438,6 +1459,7 @@ def mean_load_factor_per_cap_range(
     """
     Calculate the mean roof load factor per capacity range from existing PV
     plants.
+
     Parameters
     -----------
     mastr_gdf : geopandas.GeoDataFrame
@@ -1482,6 +1504,7 @@ def building_area_range_per_cap_range(
     Estimate normal building area range per capacity range.
     Calculate the mean roof load factor per capacity range from existing PV
     plants.
+
     Parameters
     -----------
     mastr_gdf : geopandas.GeoDataFrame
@@ -1568,6 +1591,7 @@ def desaggregate_pv_in_mv_grid(
 ) -> gpd.GeoDataFrame:
     """
     Desaggregate PV capacity on buildings within a given grid district.
+
     Parameters
     -----------
     buildings_gdf : geopandas.GeoDataFrame
@@ -1885,6 +1909,7 @@ def add_buildings_meta_data(
 ) -> gpd.GeoDataFrame:
     """
     Randomly add additional metadata to desaggregated PV plants.
+
     Parameters
     -----------
     buildings_gdf : geopandas.GeoDataFrame
@@ -1942,6 +1967,7 @@ def add_commissioning_date(
 ):
     """
     Randomly and linear add start-up date to new pv generators.
+
     Parameters
     ----------
     buildings_gdf : geopandas.GeoDataFrame
@@ -1976,6 +2002,7 @@ def allocate_scenarios(
 ):
     """
     Desaggregate and allocate scenario pv rooftop ramp-ups onto buildings.
+
     Parameters
     ----------
     mastr_gdf : geopandas.GeoDataFrame
