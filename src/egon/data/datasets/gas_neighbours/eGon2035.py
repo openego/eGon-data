@@ -1,4 +1,15 @@
-"""Central module containing code dealing with gas neighbours for eGon2035
+"""
+Central module containing code dealing with gas neighbours for eGon2035
+
+The data used to model the gas sector in the neighbouring countries for
+the eGon2035 scenario are mainly from:
+  * TYNDP 2020, scenario 'Distributed Energy' for (conventional and
+    bio) generation capacities, loads, crossbordering pipelines,
+  * the IGGIELGN SciGRID_gas dataset for CH4 stores, LNG capacities.
+For more information on these data, refer to the
+`TYNDP 2020 documentation <https://eepublicdownloads.azureedge.net/tyndp-documents/TYNDP_2020_Joint_Scenario_Report_ENTSOG_ENTSOE_200629_Final.pdf>`_
+and `SciGRID_gas IGGIELGN documentation <https://zenodo.org/record/4767098>`_.
+
 """
 
 from pathlib import Path
@@ -40,7 +51,8 @@ countries = [
 
 
 def get_foreign_gas_bus_id(carrier="CH4"):
-    """Calculate the etrago bus id based on the geometry
+    """
+    Calculate the etrago bus id based on the geometry
 
     Map node_ids from TYNDP and etragos bus_id
 
@@ -96,7 +108,8 @@ def get_foreign_gas_bus_id(carrier="CH4"):
 
 
 def read_LNG_capacities():
-    """Read LNG import capacities from Scigrid gas data
+    """
+    Read LNG import capacities from SciGRID_gas data
 
     Returns
     -------
@@ -171,7 +184,8 @@ def read_LNG_capacities():
 
 
 def calc_capacities():
-    """Calculates gas production capacities of neighbouring countries
+    """
+    Calculates gas production capacities of neighbouring countries
 
     For each neigbouring country, this function calculates the gas
     generation capacity in 2035 using the function
@@ -179,7 +193,7 @@ def calc_capacities():
     interpolates the results. These capacities include LNG import, as
     well as conventional and biogas production.
     Two conventional gas generators are added for Norway and Russia
-    interpolating the supply potential values from the TYNPD 2020
+    interpolating the supply potential (min) values from the TYNPD 2020
     for 2030 and 2040.
 
     Returns
@@ -331,7 +345,8 @@ def calc_capacities():
 
 
 def calc_capacity_per_year(df, lng, year):
-    """Calculates gas production capacities for a specified year
+    """
+    Calculates gas production capacities for a specified year
 
     For a specified year and for the foreign country nodes this function
     calculates the gas production capacities, considering the gas
@@ -536,7 +551,8 @@ def insert_generators(gen):
 
 
 def calc_global_ch4_demand(Norway_global_demand_1y):
-    """Calculates global CH4 demands abroad for eGon2035 scenario
+    """
+    Calculates global CH4 demands abroad for eGon2035 scenario
 
     The data comes from TYNDP 2020 according to NEP 2021 from the
     scenario 'Distributed Energy'; linear interpolates between 2030
@@ -616,15 +632,15 @@ def calc_global_ch4_demand(Norway_global_demand_1y):
 
 
 def import_ch4_demandTS():
-    """Calculate global CH4 demand in Norway and CH4 demand profile
+    """
+    Calculate global CH4 demand in Norway and CH4 demand profiles abroad
 
     Import from the PyPSA-eur-sec run the time series of residential
     rural heat per neighbor country. This time series is used to
     calculate:
-
-    * the global (yearly) heat demand of Norway
-      (that will be supplied by CH4)
-    * the normalized CH4 hourly resolved demand profile
+      * the global (yearly) heat demand of Norway
+        (that will be supplied by CH4)
+      * the normalized CH4 hourly resolved demand profile
 
     Returns
     -------
@@ -798,7 +814,15 @@ def insert_ch4_demand(global_demand, normalized_ch4_demandTS):
 
 
 def calc_ch4_storage_capacities():
-    """Calculate CH4 storage capacities for neighboring countries
+    """
+    Calculates gas storage capacities of neighbouring countries for eGon2035
+
+    This function reads from the SciGRID_gas dataset the existing CH4
+    cavern stores, adjusts and returns them.
+    Caverns reference: SciGRID_gas dataset (datasets/gas_data/data/IGGIELGN_Storages.csv
+    downloaded in :func:`download_SciGRID_gas_data <egon.data.datasets.gas_grid.download_SciGRID_gas_data>`).
+    For more information on these data refer, to the
+    `SciGRID_gas IGGIELGN documentation <https://zenodo.org/record/4767098>`_.
 
     Returns
     -------
@@ -894,7 +918,15 @@ def calc_ch4_storage_capacities():
 
 
 def insert_storage(ch4_storage_capacities):
-    """Insert CH4 storage capacities into the database for eGon2035
+    """
+    Inserts CH4 stores for foreign countries into the database
+
+    This function inserts the CH4 stores for foreign countries
+    with the following steps:
+      * Receive as argument the CH4 store capacities per foreign node
+      * Clean the database
+      * Add missing columns (scn_name, carrier and store_id)
+      * Insert the table into the database
 
     Parameters
     ----------
@@ -1044,7 +1076,11 @@ def calc_global_power_to_h2_demand():
 
 
 def insert_power_to_h2_demand(global_power_to_h2_demand):
-    """Insert H2 demands into database for eGon2035
+    """
+    Insert H2 demands into the database for eGon2035
+
+    These loads are considered as constant and are attributed to AC
+    buses.
 
     Parameters
     ----------
@@ -1126,7 +1162,13 @@ def insert_power_to_h2_demand(global_power_to_h2_demand):
 
 
 def calculate_ch4_grid_capacities():
-    """Calculates CH4 grid capacities for foreign countries based on TYNDP-data
+    """
+    Calculates CH4 grid capacities for foreign countries based on TYNDP-data
+
+    For the crossbordering gas pipeline with Germany, each global
+    capacity (neighbouring country specific) is uniformly distributed
+    between all the links connecting Germany to this specific
+    neighbouring country.
 
     Returns
     -------
@@ -1417,28 +1459,26 @@ def tyndp_gas_generation():
 
 
 def tyndp_gas_demand():
-    """Insert gas demands abroad for eGon2035
+    """
+    Insert gas demands abroad for eGon2035
 
-    Insert CH4 and H2 demands abroad for eGon2035 by executing the
-    following steps:
-
-    * CH4
-
-      * Calculation of the global CH4 demand in Norway and the
-        CH4 demand profile by executing the function
-        :py:func:`import_ch4_demandTS`
-      * Calculation of the global CH4 demands by executing the
-        function :py:func:`calc_global_ch4_demand`
-      * Insertion of the CH4 loads and their associated time
-        series in the database by executing the function
-        :py:func:`insert_ch4_demand`
-    * H2
-
-      * Calculation of the global power demand abroad linked
-        to H2 production by executing the function
-        :py:func:`calc_global_power_to_h2_demand`
-      * Insertion of these loads in the database by executing the
-        function :py:func:`insert_power_to_h2_demand`
+    Insert CH4 and H2 demands abroad for the scenario eGon2035 by
+    executing the following steps:
+      * CH4
+          * Calculation of the global CH4 demand in Norway and the
+            CH4 demand profile by executing the function
+            :py:func:`import_ch4_demandTS`
+          * Calculation of the global CH4 demands by executing the
+            function :py:func:`calc_global_ch4_demand`
+          * Insertion of the CH4 loads and their associated time
+            series in the database by executing the function
+            :py:func:`insert_ch4_demand`
+      * H2
+          * Calculation of the global power demand abroad linked
+            to H2 production by executing the function
+            :py:func:`calc_global_power_to_h2_demand`
+          * Insertion of these loads in the database by executing the
+            function :py:func:`insert_power_to_h2_demand`
 
     Returns
     -------
@@ -1454,8 +1494,16 @@ def tyndp_gas_demand():
 
 
 def grid():
-    """Insert data from TYNDP 2020 according to NEP 2021
-    Scenario 'Distributed Energy; linear interpolate between 2030 and 2040
+    """
+    Insert CH4 grid capacities for crossbordering pipelines in eGon2035
+
+    This function inserts CH4 grid capacities into the database for
+    crossbordering pipelines in the scenario eGon2035 by executing the
+    following steps:
+      * Calculating the crossbordering CH4 pipeline capacities with the
+        function :py:func:`calculate_ch4_grid_capacities`,
+      * Inserting them into the database by executing the function
+        :py:func:`insert_gas_grid_capacities <egon.data.datasets.gas_neighbours.gas_abroad.insert_gas_grid_capacities>`.
 
     Returns
     -------
@@ -1468,10 +1516,11 @@ def grid():
 
 
 def calculate_ocgt_capacities():
-    """Calculate gas turbine capacities abroad for eGon2035
+    """
+    Calculate gas turbine capacities abroad for eGon2035
 
     Calculate gas turbine capacities abroad for eGon2035 based on TYNDP
-    2020, scenario "Distributed Energy"; interpolated between 2030 and 2040
+    2020, scenario "Distributed Energy", interpolated between 2030 and 2040.
 
     Returns
     -------
