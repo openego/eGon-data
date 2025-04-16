@@ -94,13 +94,13 @@ def temperature_classes():
 
 def idp_pool_generator():
     """
-    Description: Create List of Dataframes for each temperature class for each household stock
+    Create List of Dataframes for each temperature class for each household stock
 
-     Returns
-     -------
-     TYPE list
-         List of dataframes with each element representing a dataframe
-         for every combination of household stock and temperature class
+    Returns
+    -------
+    list
+        List of dataframes with each element representing a dataframe
+        for every combination of household stock and temperature class
 
     """
     path = os.path.join(
@@ -364,8 +364,8 @@ def create():
 
 def annual_demand_generator():
     """
-
     Description: Create dataframe with annual demand and household count for each zensus cell
+
     Returns
     -------
     demand_count: pandas.DataFrame
@@ -389,14 +389,14 @@ def annual_demand_generator():
 
     house_count_MFH = db.select_dataframe(
         """
-        
-        SELECT cell_id as zensus_population_id, COUNT(*) as number FROM 
+
+        SELECT cell_id as zensus_population_id, COUNT(*) as number FROM
         (
         SELECT cell_id, COUNT(*), building_id
         FROM demand.egon_household_electricity_profile_of_buildings
         GROUP BY (cell_id, building_id)
         ) a
-        
+
         WHERE a.count >1
         GROUP BY cell_id
         """,
@@ -405,13 +405,13 @@ def annual_demand_generator():
 
     house_count_SFH = db.select_dataframe(
         """
-        
-        SELECT cell_id as zensus_population_id, COUNT(*) as number FROM 
+
+        SELECT cell_id as zensus_population_id, COUNT(*) as number FROM
         (
         SELECT cell_id, COUNT(*), building_id
         FROM demand.egon_household_electricity_profile_of_buildings
         GROUP BY (cell_id, building_id)
-        ) a 
+        ) a
         WHERE a.count = 1
         GROUP BY cell_id
         """,
@@ -525,13 +525,13 @@ def select():
         result_SFH["building_id"] = (
             db.select_dataframe(
                 """
-        
-            SELECT cell_id as zensus_population_id, building_id FROM 
+
+            SELECT cell_id as zensus_population_id, building_id FROM
             (
             SELECT cell_id, COUNT(*), building_id
             FROM demand.egon_household_electricity_profile_of_buildings
             GROUP BY (cell_id, building_id)
-            ) a 
+            ) a
             WHERE a.count = 1
             """,
                 index_col="zensus_population_id",
@@ -557,13 +557,13 @@ def select():
         result_MFH["building_id"] = (
             db.select_dataframe(
                 """
-        
-            SELECT cell_id as zensus_population_id, building_id FROM 
+
+            SELECT cell_id as zensus_population_id, building_id FROM
             (
             SELECT cell_id, COUNT(*), building_id
             FROM demand.egon_household_electricity_profile_of_buildings
             GROUP BY (cell_id, building_id)
-            ) a 
+            ) a
             WHERE a.count > 1
             """,
                 index_col="zensus_population_id",
@@ -593,13 +593,13 @@ def select():
                 "building_id": (
                     db.select_dataframe(
                         """
-            
-                SELECT cell_id as zensus_population_id, building_id FROM 
+
+                SELECT cell_id as zensus_population_id, building_id FROM
                 (
                 SELECT cell_id, COUNT(*), building_id
                 FROM demand.egon_household_electricity_profile_of_buildings
                 GROUP BY (cell_id, building_id)
-                ) a 
+                ) a
                 WHERE a.count = 1
                 """,
                         index_col="zensus_population_id",
@@ -645,13 +645,13 @@ def select():
                 "building_id": (
                     db.select_dataframe(
                         """
-            
-                SELECT cell_id as zensus_population_id, building_id FROM 
+
+                SELECT cell_id as zensus_population_id, building_id FROM
                 (
                 SELECT cell_id, COUNT(*), building_id
                 FROM demand.egon_household_electricity_profile_of_buildings
                 GROUP BY (cell_id, building_id)
-                ) a 
+                ) a
                 WHERE a.count > 1
                 """,
                         index_col="zensus_population_id",

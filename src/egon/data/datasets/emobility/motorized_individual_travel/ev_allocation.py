@@ -1,8 +1,9 @@
 """
 * Calculate number of electric vehicles and allocate on different spatial
-levels: :func:`allocate_evs_numbers`
+  levels: :py:func:`allocate_evs_numbers`
 * Allocate specific EVs to MV grid districts:
-:func:`allocate_evs_to_grid_districts`
+  :py:func:`allocate_evs_to_grid_districts`
+
 """
 
 from itertools import permutations
@@ -402,7 +403,7 @@ def calc_evs_per_grid_district(ev_data_muns):
 def allocate_evs_numbers():
     """Allocate electric vehicles to different spatial levels.
 
-    Accocation uses today's vehicles registration data per registration
+    Allocation uses today's vehicles registration data per registration
     district from KBA and scales scenario's EV targets (BEV and PHEV)
     linearly using population. Furthermore, a RegioStaR7 code (BMVI) is
     assigned.

@@ -12,6 +12,8 @@ Literature
 
 .. [Buettner2022] C. Büttner, J. Amme, J. Endres, A. Malla, B. Schachler, I. Cußmann, Open modeling of electricity and heat demand curves for all residential buildings in Germany, Energy Informatics 5 (1) (2022) 21. doi:10.1186/s42162-022-00201-y. URL https://doi.org/10.1186/s42162-022-00201-y
 
+.. [Brown2018] T. Brown, D. Schlachtenberger, A. Kies, S. Schramm, M. Greiner, Synergies of sector coupling and transmission reinforcement in a cost-optimised, highly renewable European energy system, Energy Volume 160 (2018). URL https://doi.org/10.1016/j.energy.2018.06.222
+
 .. [Census] S. B. (Destatis), Datensatzbeschreibung ”Haushalte im 100 Meter-Gitter” (2018). URL https://www.zensus2011.de/SharedDocs/Downloads/DE/Pressemitteilung/DemografischeGrunddaten/Datensatzbeschreibung_Haushalt_100m_Gitter.html
 
 .. [DAE_store] Danish Energy Agency, Technology Data – Energy storage, First published 2018 by the Danish Energy Agency and Energinet, URL https://ens.dk/en/our-services/projections-and-models/technology-data/technology-data-energy-storage
@@ -22,9 +24,13 @@ Literature
 
 .. [Energiereferenzprognose] Prognos AG, Energiewirtschaftliches Institut an der Universität zu Köln, Gesellschaft für Wirtschaftliche Strukturforschung mbH: Entwicklung der Energiemärkte – Energiereferenzprognose (2014)
 
+.. [EsterlDentzien] Katharina Esterl, Hannah Dentzien, Integration von Demand Side Management in eTraGo, Student Work, Hochschule Flensburg, URL https://ego-n.org/theses/2021_SP_Esterl_Dentzien_DSM-eTraGo.pdf
+
 .. [eXtremOS] A. Guminski, C. Fiedler, S. Kigle, C. Pellinger, P. Dossow, K. Ganz, F. Jetter, T. Kern, T. Limmer, A. Murmann, J. Reinhard, T. Schmid, T. Schmidt-Achert, S. von Roon, eXtremOS Summary Report (2021). doi:https://doi.org/10.34805/ffe-24-21.
 
 .. [FfE2017] Flexibilisierung der Kraft-Wärme-Kopplung; 2017; Forschungsstelle für Energiewirtschaft e.V. (FfE)
+
+.. [Heitkoetter] Wilko Heitkoetter, Bruno U. Schyska, Danielle Schmidt, Wided Medjroubi, Thomas Vogt, Carsten Agert, Assessment of the regionalised demand response potential in Germany using an open source tool and dataset, Advances in Applied Energy (2021), URL https://www.sciencedirect.com/science/article/pii/S2666792420300019
 
 .. [Helfenbein2021] K. Helfenbein, Analyse des Einflusses netzdienlicher Ladestrategien auf Verteilnetze aufgrund der zunehmenden Netzintegration von Elektrofahrzeugen, Master’s thesis, Hochschule für Technik und Wirtschaft Berlin, URL https://reiner-lemoine-institut.de/analyse-einflussesnetzdienlicher-ladestrategien-verteilnetze-zunehmender-netzintegration-elektrofahrzeugen-helfenbein-2021/
 
@@ -32,13 +38,21 @@ Literature
 
 .. [Huelk2017]  L. Hülk, L. Wienholt, I. Cußmann, U.P. Müller, C. Matke, E. Kötter, Allocation of annual electricity consumption and power generation capacities across multiple voltage levels in a high spatial resolution, International Journal of Sustainable Energy Planning and Management Vol. 13 2017 79–92. URL https://journals.aau.dk/index.php/sepm/article/view/1833
 
+.. [KBA] Kraftfahrt-Bundesamt, Fahrzeugzulassungen (FZ) - Bestand an Kraftfahrzeugen und Kraftfahrzeuganhängern nach Zulassungsbezirken (2021). URL https://www.kba.de/SharedDocs/Downloads/DE/Statistik/Fahrzeuge/FZ1/fz1_2021.xlsx?__blob=publicationFile&v=2
+
+.. [Kleinhans] D. Kleinhans, Towards a systematic characterization of the potential of demand side management, arXiv (2014), doi: 10.48550/ARXIV.1401.4121. URL https://arxiv.org/abs/1401.4121
+
 .. [Kunz] Kunz, Friedrich et al.: Electricity, heat, and gas sector data for modeling the German system, DIW Data Documentation (2017). URL https://www.diw.de/de/diw_01.c.574115.de/publikationen/data_documentation/2017_0092/electricity__heat_and_gas_sector_data_for_modelling_the_german_system.html
+
+.. [MaStR] Bundesnetzagentur für Elektrizität, Gas, Telekommunikation, Post und Eisenbahnen, Marktstammdatenregister - Datendownload (Nov. 2022). URL https://www.marktstammdatenregister.de/MaStR/Datendownload
 
 .. [MiD2017] Bundesministerium für Digitales und Verkehr, Mobilität in Deutschland 2017 (2017). URL https://daten.clearingstelle-verkehr.de/279/
 
 .. [Mueller2018] U. Mueller, L. Wienholt, D. Kleinhans, I. Cussmann, W.-D. Bunke, G. Pleßmann, J. Wendiggensen 2018 J. Phys.: Conf. Ser. 977 012003, DOI 10.1088/1742-6596/977/1/012003
 
 .. [NEP2021] Übertragungsnetzbetreiber Deutschland (2021):  *Netzentwicklungsplan Strom 2035*, Version 2021, 1. Entwurf. 2021.
+
+.. [NEP2021a] Principles for the Expansion Planning of the German Transmission Network https://www.netzentwicklungsplan.de/
 
 .. [NEP_gas] FNB Gas: Netzentwicklungsplan Gas 2020–2030 (2021). URL https://fnb-gas.de/wp-content/uploads/2021/09/fnb_gas_nep_gas_2020_de-1.pdf
 
@@ -58,4 +72,6 @@ Literature
 
 .. [technoData] Victoria, Marta: Pypsa technology data, v0.3.0 (2021). URL https://github.com/PyPSA/technology-data
 
-.. [TYNDP] Lebois, Olivier et al.: TYNDP 2020 Scenario Report (2020). URL https://2020.entsos-tyndp-scenarios.eu/wp-content/uploads/2020/06/TYNDP_2020_Joint_ScenarioReport_final.pdf
+.. [TYNDP] European Network of Transmission System Operators for Electricity, European Network of Transmission System Operators for Gas, Ten-Year Network Development Plans - “TYNDP 2020 Scenarios” (2020)
+
+.. [Wulff2020]  N. Wulff, F. Steck, H. C. Gils, C. Hoyer-Klick, B. van den Adel, J. E. Anderson, Comparing Power-System and User-Oriented Battery Electric Vehicle Charging Representation and Its Implications on Energy System Modeling, Energies (2020), 13, URL https://doi.org/10.3390/en13051093

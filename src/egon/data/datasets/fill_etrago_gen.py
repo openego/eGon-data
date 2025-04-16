@@ -21,9 +21,9 @@ class Egon_etrago_gen(Dataset):
 
     *Resulting tables*
       * :py:class:`grid.egon_etrago_generator
-      <egon.data.datasets.etrago_setup.EgonPfHvGenerator>` is extended
+        <egon.data.datasets.etrago_setup.EgonPfHvGenerator>` is extended
       * :py:class:`grid.egon_etrago_generator_timeseries
-      <egon.data.datasets.etrago_setup.EgonPfHvGeneratorTimeseries>` is filled
+        <egon.data.datasets.etrago_setup.EgonPfHvGeneratorTimeseries>` is filled
 
     """
     #:

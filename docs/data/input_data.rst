@@ -4,7 +4,7 @@ Data bundle
 -----------
 
 The data bundle is published on
-`zenodo <https://sandbox.zenodo.org/record/1167119>`_. It contains several data
+`zenodo <https://zenodo.org/records/4896526>`_. It contains several data
 sets, which serve as a basis for egon-data:
 
 * Climate zones in Germany
@@ -40,8 +40,8 @@ The data are obtained from zenodo, where raw MaStR data, downloaded with the too
 is provided. It contains all data from the MaStR, including possible duplicates.
 Currently, two versions are used:
 
-* `2021-05-03 <https://sandbox.zenodo.org/record/1167119>`_
-* `2022-11-17 <https://sandbox.zenodo.org/record/1132839>`_
+* `2021-04-30 <https://zenodo.org/records/10480930>`_
+* `2022-11-17 <https://zenodo.org/records/10480958>`_
 
 The download is implemented in :class:`MastrData<egon.data.datasets.mastr.MastrData>`.
 

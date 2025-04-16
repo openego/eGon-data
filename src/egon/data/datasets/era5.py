@@ -54,6 +54,10 @@ class WeatherData(Dataset):
 
 
 class EgonEra5Cells(Base):
+    """
+    Class definition of table supply.egon_era5_weather_cells.
+
+    """
     __tablename__ = "egon_era5_weather_cells"
     __table_args__ = {"schema": "supply"}
     w_id = Column(Integer, primary_key=True)
@@ -62,6 +66,10 @@ class EgonEra5Cells(Base):
 
 
 class EgonRenewableFeedIn(Base):
+    """
+    Class definition of table supply.egon_era5_renewable_feedin.
+
+    """
     __tablename__ = "egon_era5_renewable_feedin"
     __table_args__ = {"schema": "supply"}
     w_id = Column(Integer, primary_key=True)
@@ -104,7 +112,7 @@ def import_cutout(boundary="Europe"):
                 "SELECT geometry as geom FROM boundaries.vg250_sta_bbox",
                 db.engine(),
             )
-            .to_crs(4623)
+            .to_crs(4326)
             .geom
         )
         xs = slice(geom_de.bounds.minx[0], geom_de.bounds.maxx[0])

@@ -33,6 +33,7 @@ from egon.data.datasets.power_plants.pv_rooftop_buildings import (
 )
 import egon.data.config
 import egon.data.datasets.power_plants.assign_weather_data as assign_weather_data  # noqa: E501
+import egon.data.datasets.power_plants.metadata as pp_metadata
 import egon.data.datasets.power_plants.pv_ground_mounted as pv_ground_mounted
 import egon.data.datasets.power_plants.wind_farms as wind_onshore
 import egon.data.datasets.power_plants.wind_offshore as wind_offshore
@@ -63,38 +64,38 @@ class PowerPlants(Dataset):
     *Dependencies*
       * :py:class:`Chp <egon.data.datasets.chp.Chp>`
       * :py:class:`CtsElectricityDemand
-      <egon.data.datasets.electricity_demand.CtsElectricityDemand>`
+        <egon.data.datasets.electricity_demand.CtsElectricityDemand>`
       * :py:class:`HouseholdElectricityDemand
-      <egon.data.datasets.electricity_demand.HouseholdElectricityDemand>`
+        <egon.data.datasets.electricity_demand.HouseholdElectricityDemand>`
       * :py:class:`mastr_data <egon.data.datasets.mastr.mastr_data>`
       * :py:func:`define_mv_grid_districts
-      <egon.data.datasets.mv_grid_districts.define_mv_grid_districts>`
+        <egon.data.datasets.mv_grid_districts.define_mv_grid_districts>`
       * :py:class:`RePotentialAreas
-      <egon.data.datasets.re_potential_areas.RePotentialAreas>`
+        <egon.data.datasets.re_potential_areas.RePotentialAreas>`
       * :py:class:`ZensusVg250
-      <egon.data.datasets.RenewableFeedin>`
+        <egon.data.datasets.RenewableFeedin>`
       * :py:class:`ScenarioCapacities
-      <egon.data.datasets.scenario_capacities.ScenarioCapacities>`
+        <egon.data.datasets.scenario_capacities.ScenarioCapacities>`
       * :py:class:`ScenarioParameters
-      <egon.data.datasets.scenario_parameters.ScenarioParameters>`
+        <egon.data.datasets.scenario_parameters.ScenarioParameters>`
       * :py:func:`Setup <egon.data.datasets.database.setup>`
       * :py:class:`substation_extraction
-      <egon.data.datasets.substation.substation_extraction>`
+        <egon.data.datasets.substation.substation_extraction>`
       * :py:class:`Vg250MvGridDistricts
-      <egon.data.datasets.Vg250MvGridDistricts>`
+        <egon.data.datasets.Vg250MvGridDistricts>`
       * :py:class:`ZensusMvGridDistricts
-      <egon.data.datasets.zensus_mv_grid_districts.ZensusMvGridDistricts>`
+        <egon.data.datasets.zensus_mv_grid_districts.ZensusMvGridDistricts>`
 
     *Resulting tables*
       * :py:class:`supply.egon_power_plants
-      <egon.data.datasets.power_plants.EgonPowerPlants>` is filled
+        <egon.data.datasets.power_plants.EgonPowerPlants>` is filled
 
     """
 
     #:
     name: str = "PowerPlants"
     #:
-    version: str = "0.0.18"
+    version: str = "0.0.19"
 
     def __init__(self, dependencies):
         super().__init__(
@@ -117,6 +118,7 @@ class PowerPlants(Dataset):
                 },
                 wind_offshore.insert,
                 assign_weather_data.weatherId_and_busId,
+                pp_metadata.metadata,
             ),
         )
 

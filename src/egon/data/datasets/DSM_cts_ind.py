@@ -5,9 +5,13 @@ series. These are caused by the truncation of the values at zero.
 The sum of the individual time series is a more accurate value than the
 aggregated time series used so far and should replace it in the future. Since
 the deviations are relatively small, a tolerance is currently accepted in the
-sanity checks. See [#1120](https://github.com/openego/eGon-data/issues/1120)
+sanity checks. See `#1120 <https://github.com/openego/eGon-data/issues/1120>`_
 for updates.
 """
+import datetime
+import json
+
+from omi.dialects import get_dialect
 from sqlalchemy import ARRAY, Column, Float, Integer, String
 from sqlalchemy.ext.declarative import declarative_base
 import geopandas as gpd
@@ -18,6 +22,15 @@ from egon.data import config, db
 from egon.data.datasets import Dataset
 from egon.data.datasets.electricity_demand.temporal import calc_load_curve
 from egon.data.datasets.industry.temporal import identify_bus
+from egon.data.metadata import (
+    context,
+    contributors,
+    generate_resource_fields_from_db_table,
+    license_odbl,
+    meta_metadata,
+    meta_metadata,
+    sources,
+)
 
 # CONSTANTS
 # TODO: move to datasets.yml
@@ -128,7 +141,7 @@ class DsmPotential(Dataset):
             name=self.name,
             version=self.version,
             dependencies=self.dependencies,
-            tasks=(dsm_cts_ind_processing),
+            tasks=(dsm_cts_ind_processing,),
         )
 
 
@@ -205,11 +218,201 @@ class EgonSitesIndLoadCurvesIndividualDsmTimeseries(Base):
     e_min = Column(ARRAY(Float))
 
 
+def add_metadata_individual():
+    targets = config.datasets()["DSM_CTS_industry"]["targets"]
+
+    targets = {
+        k: v for k, v in targets.items() if "dsm_timeseries" in v["table"]
+    }
+
+    title_dict = {
+        "egon_etrago_electricity_cts_dsm_timeseries": (
+            "DSM flexibility band time series for CTS"
+        ),
+        "egon_osm_ind_load_curves_individual_dsm_timeseries": (
+            "DSM flexibility band time series for OSM industry sites"
+        ),
+        "egon_demandregio_sites_ind_electricity_dsm_timeseries": (
+            "DSM flexibility band time series for demandregio industry sites"
+        ),
+        "egon_sites_ind_load_curves_individual_dsm_timeseries": (
+            "DSM flexibility band time series for other industry sites"
+        ),
+    }
+
+    description_dict = {
+        "egon_etrago_electricity_cts_dsm_timeseries": (
+            "DSM flexibility band time series for CTS in 1 h resolution "
+            "including available store capacity and power potential"
+        ),
+        "egon_osm_ind_load_curves_individual_dsm_timeseries": (
+            "DSM flexibility band time series for OSM industry sites in 1 h "
+            "resolution including available store capacity and power potential"
+        ),
+        "egon_demandregio_sites_ind_electricity_dsm_timeseries": (
+            "DSM flexibility band time series for demandregio industry sites "
+            "in 1 h resolution including available store capacity and power "
+            "potential"
+        ),
+        "egon_sites_ind_load_curves_individual_dsm_timeseries": (
+            "DSM flexibility band time series for other industry sites in 1 h "
+            "resolution including available store capacity and power potential"
+        ),
+    }
+
+    keywords_dict = {
+        "egon_etrago_electricity_cts_dsm_timeseries": ["cts"],
+        "egon_osm_ind_load_curves_individual_dsm_timeseries": [
+            "osm",
+            "industry",
+        ],
+        "egon_demandregio_sites_ind_electricity_dsm_timeseries": [
+            "demandregio",
+            "industry",
+        ],
+        "egon_sites_ind_load_curves_individual_dsm_timeseries": ["industry"],
+    }
+
+    primaryKey_dict = {
+        "egon_etrago_electricity_cts_dsm_timeseries": ["bus"],
+        "egon_osm_ind_load_curves_individual_dsm_timeseries": ["osm_id"],
+        "egon_demandregio_sites_ind_electricity_dsm_timeseries": [
+            "industrial_sites_id",
+        ],
+        "egon_sites_ind_load_curves_individual_dsm_timeseries": ["site_id"],
+    }
+
+    sources_dict = {
+        "egon_etrago_electricity_cts_dsm_timeseries": [
+            sources()["nep2021"],
+            sources()["zensus"],
+        ],
+        "egon_osm_ind_load_curves_individual_dsm_timeseries": [
+            sources()["hotmaps_industrial_sites"],
+            sources()["schmidt"],
+            sources()["seenergies"],
+        ],
+        "egon_demandregio_sites_ind_electricity_dsm_timeseries": [
+            sources()["openstreetmap"],
+        ],
+        "egon_sites_ind_load_curves_individual_dsm_timeseries": [
+            sources()["hotmaps_industrial_sites"],
+            sources()["openstreetmap"],
+            sources()["schmidt"],
+            sources()["seenergies"],
+        ],
+    }
+
+    contris = contributors(["kh", "kh"])
+
+    contris[0]["date"] = "2023-03-17"
+
+    contris[0]["object"] = "metadata"
+    contris[1]["object"] = "dataset"
+
+    contris[0]["comment"] = "Add metadata to dataset."
+    contris[1]["comment"] = "Add workflow to generate dataset."
+
+    for t_dict in targets.values():
+        schema = t_dict["schema"]
+        table = t_dict["table"]
+        name = f"{schema}.{table}"
+
+        meta = {
+            "name": name,
+            "title": title_dict[table],
+            "id": "WILL_BE_SET_AT_PUBLICATION",
+            "description": description_dict[table],
+            "language": "en-US",
+            "keywords": ["dsm", "timeseries"] + keywords_dict[table],
+            "publicationDate": datetime.date.today().isoformat(),
+            "context": context(),
+            "spatial": {
+                "location": "none",
+                "extent": "Germany",
+                "resolution": "none",
+            },
+            "temporal": {
+                "referenceDate": "2011-01-01",
+                "timeseries": {
+                    "start": "2011-01-01",
+                    "end": "2011-12-31",
+                    "resolution": "1 h",
+                    "alignment": "left",
+                    "aggregationType": "average",
+                },
+            },
+            "sources": [
+                sources()["egon-data"],
+                sources()["vg250"],
+                sources()["demandregio"],
+            ]
+            + sources_dict[table],
+            "licenses": [license_odbl("© eGon development team")],
+            "contributors": contris,
+            "resources": [
+                {
+                    "profile": "tabular-data-resource",
+                    "name": name,
+                    "path": "None",
+                    "format": "PostgreSQL",
+                    "encoding": "UTF-8",
+                    "schema": {
+                        "fields": generate_resource_fields_from_db_table(
+                            schema,
+                            table,
+                        ),
+                        "primaryKey": ["scn_name"] + primaryKey_dict[table],
+                    },
+                    "dialect": {"delimiter": "", "decimalSeparator": ""},
+                }
+            ],
+            "review": {"path": "", "badge": ""},
+            "metaMetadata": meta_metadata(),
+            "_comment": {
+                "metadata": (
+                    "Metadata documentation and explanation (https://"
+                    "github.com/OpenEnergyPlatform/oemetadata/blob/master/"
+                    "metadata/v141/metadata_key_description.md)"
+                ),
+                "dates": (
+                    "Dates and time must follow the ISO8601 including time "
+                    "zone (YYYY-MM-DD or YYYY-MM-DDThh:mm:ss±hh)"
+                ),
+                "units": "Use a space between numbers and units (100 m)",
+                "languages": (
+                    "Languages must follow the IETF (BCP47) format (en-GB, "
+                    "en-US, de-DE)"
+                ),
+                "licenses": (
+                    "License name must follow the SPDX License List "
+                    "(https://spdx.org/licenses/)"
+                ),
+                "review": (
+                    "Following the OEP Data Review (https://github.com/"
+                    "OpenEnergyPlatform/data-preprocessing/wiki)"
+                ),
+                "none": "If not applicable use (none)",
+            },
+        }
+
+        dialect = get_dialect(meta_metadata()["metadataVersion"])()
+
+        meta = dialect.compile_and_render(dialect.parse(json.dumps(meta)))
+
+        db.submit_comment(
+            f"'{json.dumps(meta)}'",
+            schema,
+            table,
+        )
+
+
 # Code
 def cts_data_import(cts_cool_vent_ac_share):
     """
     Import CTS data necessary to identify DSM-potential.
 
+    Parameters
     ----------
     cts_share: float
         Share of cooling, ventilation and AC in CTS demand
@@ -251,7 +454,9 @@ def cts_data_import(cts_cool_vent_ac_share):
 def ind_osm_data_import(ind_vent_cool_share):
     """
     Import industry data per osm-area necessary to identify DSM-potential.
-        ----------
+
+    Parameters
+    ----------
     ind_share: float
         Share of considered application in industry demand
     """
@@ -287,7 +492,9 @@ def ind_osm_data_import(ind_vent_cool_share):
 def ind_osm_data_import_individual(ind_vent_cool_share):
     """
     Import industry data per osm-area necessary to identify DSM-potential.
-        ----------
+
+    Parameters
+    ----------
     ind_share: float
         Share of considered application in industry demand
     """
@@ -323,7 +530,9 @@ def ind_osm_data_import_individual(ind_vent_cool_share):
 def ind_sites_vent_data_import(ind_vent_share, wz):
     """
     Import industry sites necessary to identify DSM-potential.
-        ----------
+
+    Parameters
+    ----------
     ind_vent_share: float
         Share of considered application in industry demand
     wz: int
@@ -360,7 +569,9 @@ def ind_sites_vent_data_import(ind_vent_share, wz):
 def ind_sites_vent_data_import_individual(ind_vent_share, wz):
     """
     Import industry sites necessary to identify DSM-potential.
-        ----------
+
+    Parameters
+    ----------
     ind_vent_share: float
         Share of considered application in industry demand
     wz: int
@@ -520,9 +731,10 @@ def ind_sites_data_import():
 def calculate_potentials(s_flex, s_util, s_inc, s_dec, delta_t, dsm):
     """
     Calculate DSM-potential per bus using the methods by Heitkoetter et. al.:
-        https://doi.org/10.1016/j.adapen.2020.100001
+    https://doi.org/10.1016/j.adapen.2020.100001
+
     Parameters
-        ----------
+    ----------
     s_flex: float
         Feasability factor to account for socio-technical restrictions
     s_util: float
@@ -615,8 +827,9 @@ def create_dsm_components(
 ):
     """
     Create components representing DSM.
+
     Parameters
-        ----------
+    ----------
     con :
         Connection to database
     p_max: DataFrame
@@ -990,8 +1203,8 @@ def delete_dsm_entries(carrier):
     new ones.
 
     Parameters
-        ----------
-     carrier: str
+    ----------
+    carrier: str
         Remark in column 'carrier' identifying DSM-potential
     """
 
@@ -999,10 +1212,10 @@ def delete_dsm_entries(carrier):
 
     # buses
 
-    sql = f"""
-    DELETE FROM {targets["bus"]["schema"]}.{targets["bus"]["table"]} b
-    WHERE (b.carrier LIKE '{carrier}');
-    """
+    sql = (
+        f"DELETE FROM {targets['bus']['schema']}.{targets['bus']['table']} b "
+        f"WHERE (b.carrier LIKE '{carrier}');"
+    )
     db.execute_sql(sql)
 
     # links
@@ -1059,14 +1272,15 @@ def dsm_cts_ind(
 ):
     """
     Execute methodology to create and implement components for DSM considering
+
     a) CTS per osm-area: combined potentials of cooling, ventilation and air
-      conditioning
+       conditioning
     b) Industry per osm-are: combined potentials of cooling and ventilation
     c) Industrial Sites: potentials of ventilation in sites of
-      "Wirtschaftszweig" (WZ) 23
+       "Wirtschaftszweig" (WZ) 23
     d) Industrial Sites: potentials of sites specified by subsectors
-      identified by Schmidt (https://zenodo.org/record/3613767#.YTsGwVtCRhG):
-      Paper, Recycled Paper, Pulp, Cement
+       identified by Schmidt (https://zenodo.org/record/3613767#.YTsGwVtCRhG):
+       Paper, Recycled Paper, Pulp, Cement
 
     Modelled using the methods by Heitkoetter et. al.:
     https://doi.org/10.1016/j.adapen.2020.100001
@@ -1374,14 +1588,15 @@ def dsm_cts_ind_individual(
 ):
     """
     Execute methodology to create and implement components for DSM considering
+
     a) CTS per osm-area: combined potentials of cooling, ventilation and air
-      conditioning
+       conditioning
     b) Industry per osm-are: combined potentials of cooling and ventilation
     c) Industrial Sites: potentials of ventilation in sites of
-      "Wirtschaftszweig" (WZ) 23
+       "Wirtschaftszweig" (WZ) 23
     d) Industrial Sites: potentials of sites specified by subsectors
-      identified by Schmidt (https://zenodo.org/record/3613767#.YTsGwVtCRhG):
-      Paper, Recycled Paper, Pulp, Cement
+       identified by Schmidt (https://zenodo.org/record/3613767#.YTsGwVtCRhG):
+       Paper, Recycled Paper, Pulp, Cement
 
     Modelled using the methods by Heitkoetter et. al.:
     https://doi.org/10.1016/j.adapen.2020.100001
@@ -1621,3 +1836,5 @@ def dsm_cts_ind_processing():
     dsm_cts_ind()
 
     dsm_cts_ind_individual()
+
+    add_metadata_individual()

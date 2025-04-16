@@ -264,7 +264,7 @@ def read_DE_crossbordering_cap_from_pes():
 
     This function calculates the cross border total exchange
     capactities for H2 and CH4 between Germany and its neighbouring
-    countries based on the PyPSA-eur-sec results.
+    countries based on the pypsa-eur-sec results.
 
     Returns
     -------
