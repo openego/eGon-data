@@ -183,7 +183,7 @@ def export_to_db():
             WHERE scn_name = '{scenario}'
             AND carrier = 'AC'
             AND bus IN (
-                SELECT bus_id FROM 
+                SELECT bus_id FROM
                 {sources['etrago_buses']['schema']}.
                 {sources['etrago_buses']['table']}
                 WHERE country = 'DE'
@@ -268,10 +268,34 @@ def export_to_db():
 
 
 class ElectricalLoadEtrago(Dataset):
+    """
+    Aggregate annual and hourly electricity demands per substation and export
+    to eTraGo tables
+
+    All loads including time series are aggregated per corresponding substation
+    and inserted into the existing eTraGo tables. Additionally the aggregated
+    national time series are stored to function as an input for pypsa-eur-sec.
+
+
+    *Dependencies*
+      * :py:class:`CtsElectricityDemand <egon.data.datasets.electricity_demand.CtsElectricityDemand>`
+      * :py:class:`IndustrialDemandCurves <egon.data.datasets.industry.IndustrialDemandCurves>`
+      * :py:class:`hh_buildings <egon.data.datasets.electricity_demand_timeseries.hh_buildings>`
+
+    *Resulting tables*
+      * :py:class:`grid.egon_etrago_load <egon.data.datasets.etrago_setup.EgonPfHvLoad>` is extended
+      * :py:class:`grid.egon_etrago_load_timeseries <egon.data.datasets.etrago_setup.EgonPfHvLoadTimeseries>` is extended
+    """
+
+    #:
+    name: str = "Electrical_load_etrago"
+    #:
+    version: str = "0.0.6"
+
     def __init__(self, dependencies):
         super().__init__(
-            name="Electrical_load_etrago",
-            version="0.0.6",
+            name=self.name,
+            version=self.version,
             dependencies=dependencies,
             tasks=(export_to_db,),
         )
