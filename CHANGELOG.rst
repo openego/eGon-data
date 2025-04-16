@@ -494,12 +494,12 @@ Changed
   `#1073 <https://github.com/openego/eGon-data/issues/1073>`_
 * Change hgv data source to use database
   `#1086 <https://github.com/openego/eGon-data/issues/1086>`_
+* Rename eMob MIT carrier names (use underscores)
+  `#1105 <https://github.com/openego/eGon-data/issues/1105>`_
 * Change desposit ID for data_bundle download from zenodo sandbox
   `#1110 <https://github.com/openego/eGon-data/issues/1110>`_
 * Use MaStR geocoding results for pv rooftop to buildings mapping workflow
   `#1095 <https://github.com/openego/eGon-data/issues/1095>`_
-* Rename eMob MIT carrier names (use underscores)
-  `#1105 <https://github.com/openego/eGon-data/issues/1105>`_
 
 .. _#799: https://github.com/openego/eGon-data/issues/799
 
@@ -747,7 +747,12 @@ Bug Fixes
 * Fix conversion factor for CH4 loads abroad in eGon2035
   `#1104 <https://github.com/openego/eGon-data/issues/1104>`_
 * Change structure of documentation in rtd
-  `#11126 <https://github.com/openego/eGon-data/issues/1126>`_
+  `#1126 <https://github.com/openego/eGon-data/issues/1126>`_
+* Fix URL of eGon data-bundle dataset
+  `#1154 <https://github.com/openego/eGon-data/issues/1154>`_
+* Fix URLs of MaStR datasets
+* Fix CRS in ERA5 transformation
+  `#1159 <https://github.com/openego/eGon-data/issues/1159>`_
 
 .. _PR #692: https://github.com/openego/eGon-data/pull/692
 .. _#343: https://github.com/openego/eGon-data/issues/343

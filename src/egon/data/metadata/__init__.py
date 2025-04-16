@@ -8,6 +8,8 @@ from egon.data import db, logger
 from egon.data.datasets import Dataset
 from egon.data.db import engine
 
+EGON_ATTRIBUTION: str = "© eGon development team"
+
 
 def context():
     """
@@ -55,7 +57,7 @@ def meta_metadata():
     }
 
 
-def licenses_datenlizenz_deutschland(attribution):
+def licenses_datenlizenz_deutschland(attribution=EGON_ATTRIBUTION):
     """
     License information for Datenlizenz Deutschland
 
@@ -103,7 +105,7 @@ def licenses_datenlizenz_deutschland(attribution):
     }
 
 
-def license_odbl(attribution):
+def license_odbl(attribution=EGON_ATTRIBUTION):
     """
     License information for Open Data Commons Open Database License (ODbL-1.0)
 
@@ -128,7 +130,7 @@ def license_odbl(attribution):
     }
 
 
-def license_ccby(attribution):
+def license_ccby(attribution=EGON_ATTRIBUTION):
     """
     License information for Creative Commons Attribution 4.0 International
     (CC-BY-4.0)
@@ -153,7 +155,7 @@ def license_ccby(attribution):
     }
 
 
-def license_geonutzv(attribution):
+def license_geonutzv(attribution=EGON_ATTRIBUTION):
     """
     License information for GeoNutzV
 
@@ -184,7 +186,7 @@ def license_geonutzv(attribution):
     }
 
 
-def license_agpl(attribution):
+def license_agpl(attribution=EGON_ATTRIBUTION):
     """
     License information for GNU Affero General Public License v3.0
 
@@ -214,7 +216,7 @@ def license_agpl(attribution):
     }
 
 
-def license_dedl(attribution):
+def license_dedl(attribution=EGON_ATTRIBUTION):
     """
     License information for Data licence Germany – attribution – version 2.0
 
@@ -234,7 +236,7 @@ def license_dedl(attribution):
         "path": "https://www.govdata.de/dl-de/by-2-0",
         "instruction": (
             "Any use will be permitted provided it fulfils the requirements of"
-            " this 'Data licence Germany – attribution – Version 2.0'. The "
+            ' this "Data licence Germany – attribution – Version 2.0". The '
             "data and meta-data provided may, for commercial and "
             "non-commercial use, in particular be copied, printed, presented, "
             "altered, processed and transmitted to third parties; be merged "
@@ -243,8 +245,8 @@ def license_dedl(attribution):
             "external business processes, products and applications in public "
             "and non-public electronic networks. The user must ensure that the"
             " source note contains the following information: the name of the "
-            "provider, the annotation 'Data licence Germany – attribution – "
-            "Version 2.0' or 'dl-de/by-2-0' referring to the licence text "
+            'provider, the annotation "Data licence Germany – attribution – '
+            'Version 2.0" or "dl-de/by-2-0" referring to the licence text '
             "available at www.govdata.de/dl-de/by-2-0, and a reference to the "
             "dataset (URI). This applies only if the entity keeping the data "
             "provides the pieces of information 1-3 for the source note. "
@@ -413,7 +415,7 @@ def sources():
                 " developed requirements and criteria for the"
                 " assessment of suitable sites even if their"
                 " exploration is still at an early stage and there is"
-                " little knowledge of the salinaries' structures."
+                ' little knowledge of the salinaries structures.'
                 " Scientists at DEEP.KBB GmbH in Hanover, worked"
                 " together with their project partners at the Federal"
                 " Institute for Geosciences and Natural Resources and"
@@ -499,7 +501,7 @@ def sources():
                 " project eGon (https://ego-n.org/)"
             ),
             "path": "https://github.com/openego/eGon-data",
-            "licenses": [license_agpl("© eGon development team")],
+            "licenses": [license_agpl(EGON_ATTRIBUTION)],
         },
         "egon-data_bundle": {
             "title": "Data bundle for egon-data",
@@ -507,7 +509,7 @@ def sources():
                 "Zenodo repository to provide several different input"
                 " data sets for eGon-data"
             ),
-            "path": "https://sandbox.zenodo.org/record/1167119",
+            "path": "https://zenodo.org/record/10226009",
             "licenses": [license_ccby("© eGon development team")],
         },
         "Einspeiseatlas": {
@@ -638,7 +640,7 @@ def sources():
                 " https://www.marktstammdatenregister.de/MaStRHilfe"
                 "/subpages/statistik.html"
             ),
-            "path": "https://sandbox.zenodo.org/record/808086",
+            "path": "https://zenodo.org/record/10480930",
             "licenses": [
                 licenses_datenlizenz_deutschland(
                     "© 2021 Bundesnetzagentur für Elektrizität, Gas,"
@@ -689,7 +691,7 @@ def sources():
             "title": "OpenStreetMap Data Extracts (Geofabrik)",
             "description": (
                 "Full data extract of OpenStreetMap data for defined"
-                " spatial extent at ''referenceDate''"
+                ' spatial extent at "referenceDate"'
             ),
             "path": (
                 "https://download.geofabrik.de/europe/germany-210101.osm.pbf"

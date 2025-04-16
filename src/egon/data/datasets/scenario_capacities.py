@@ -788,7 +788,6 @@ def eGon100_capacities():
     )
 
 
-
 def add_metadata():
     """Add metdata to supply.egon_scenario_capacities
 
@@ -825,7 +824,9 @@ def add_metadata():
         "name": "supply.egon_scenario_capacities",
         "title": "eGon scenario capacities",
         "id": "WILL_BE_SET_AT_PUBLICATION",
-        "description": "Installed capacities of scenarios used in the eGon project",
+        "description": (
+            "Installed capacities of scenarios used in the eGon project"
+        ),
         "language": ["de-DE"],
         "publicationDate": datetime.date.today().isoformat(),
         "context": context(),
