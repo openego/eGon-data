@@ -35,7 +35,7 @@ class CH4Storages(Dataset):
 
     *Dependencies*
       * :py:class:`GasAreaseGon2035 <egon.data.datasets.gas_areas.GasAreaseGon2035>`
-      * :py:class:`GasAreaseGon2035 <egon.data.datasets.gas_areas.GasAreaseGon100RE>`
+      * :py:class:`GasAreaseGon100RE <egon.data.datasets.gas_areas.GasAreaseGon100RE>`
       * :py:class:`GasNodesAndPipes <egon.data.datasets.gas_grid.GasNodesAndPipes>`
 
     *Resulting tables*
@@ -271,15 +271,16 @@ def insert_ch4_stores(scn_name):
 
     Insert non extendable gas stores for specific scenario in Germany
     by executing the following steps:
-      * Clean the database.
-      * For CH4 stores, call the functions
-        :py:func:`import_installed_ch4_storages` to get the CH4
-        cavern stores and :py:func:`import_ch4_grid_capacity` to
-        get the CH4 stores modelling the storage capacity of the
-        grid.
-      * Aggregate the stores attached to the same bus.
-      * Add the missing columns: store_id, scn_name, carrier, e_cyclic.
-      * Insert the stores into the database.
+
+    * Clean the database.
+    * For CH4 stores, call the functions
+      :py:func:`import_installed_ch4_storages` to get the CH4
+      cavern stores and :py:func:`import_ch4_grid_capacity` to
+      get the CH4 stores modelling the storage capacity of the
+      grid.
+    * Aggregate the stores attached to the same bus.
+    * Add the missing columns: store_id, scn_name, carrier, e_cyclic.
+    * Insert the stores into the database.
 
     Parameters
     ----------
@@ -302,12 +303,12 @@ def insert_ch4_stores(scn_name):
     # Clean table
     db.execute_sql(
         f"""
-        DELETE FROM {target['stores']['schema']}.{target['stores']['table']}  
+        DELETE FROM {target['stores']['schema']}.{target['stores']['table']}
         WHERE "carrier" = 'CH4'
         AND scn_name = '{scn_name}'
         AND bus IN (
             SELECT bus_id FROM {source['buses']['schema']}.{source['buses']['table']}
-            WHERE scn_name = '{scn_name}' 
+            WHERE scn_name = '{scn_name}'
             AND country = 'DE'
             );
         """

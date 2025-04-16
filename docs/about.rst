@@ -44,16 +44,32 @@ The figure below visualizes the interdependencies between the different tools.
   :width: 800
   :alt: eGon-data tool chain
 
+.. _concept-and-scenarios-ref:
 
 Modeling concept and scenarios
 ===============================
 
 eGon-data provides a data model suitable for calculations and optimizations with the tools eTraGo, eDisGo and eGo and therefore aims to satisfy all requirements regarding the scope and temporal as well as spatial granularity of the resulting data model.
+
+
+
+System boundaries and general assumptions
+-----------------------------------------
+
+* Sectors
+* Focus on Germany
+* Neighbouring countries (which ones and why) 
+* Spatial resolution / aggregartion levels
+* Temporal resolution incl. assumptions on weather year
+
 The following image visualizes the different components considered in scenario ``eGon2035``.
 
 .. image:: images/egon-modell-szenario-egon2035.png
   :width: 800
   :alt: Components of the data models
+  
+Scenarios
+---------
   
 eGon-data aims to create different scenarios, which differ in terms of RE penetration or the availability of flexibility options. Currently, the following scenarios are available or in progress. 
 

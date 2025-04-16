@@ -10,6 +10,7 @@ following tables:
 * hydro plants: table `supply.egon_power_plants_hydro`
 
 Handling of empty source data in MaStr dump:
+
 * `voltage_level`: inferred based on nominal power (`capacity`) using the
   ranges from
   https://redmine.iks.cs.ovgu.de/oe/projects/ego-n/wiki/Definition_of_thresholds_for_voltage_level_assignment
@@ -33,6 +34,7 @@ import pandas as pd
 from egon.data import config, db
 from egon.data.datasets.mastr import WORKING_DIR_MASTR_NEW
 from egon.data.datasets.power_plants.mastr_db_classes import (
+    add_metadata,
     EgonMastrGeocoded,
     EgonPowerPlantsBiomass,
     EgonPowerPlantsCombustion,
@@ -55,6 +57,7 @@ TESTMODE_OFF = (
 def isfloat(num: str):
     """
     Determine if string can be converted to float.
+
     Parameters
     -----------
     num : str
@@ -76,6 +79,7 @@ def zip_and_municipality_from_standort(
 ) -> tuple[str, bool]:
     """
     Get zip code and municipality from Standort string split into a list.
+
     Parameters
     -----------
     standort : str
@@ -125,7 +129,7 @@ def infer_voltage_level(
     -----------
     units_gdf : geopandas.GeoDataFrame
         GeoDataFrame containing units with voltage levels from MaStR
-    Returnsunits_gdf: gpd.GeoDataFrame
+    Returns
     -------
     geopandas.GeoDataFrame
         GeoDataFrame containing units all having assigned a voltage level.
@@ -528,3 +532,5 @@ def import_mastr() -> None:
             if_exists="append",
             schema=target_tables[tech].__table_args__["schema"],
         )
+
+    add_metadata()

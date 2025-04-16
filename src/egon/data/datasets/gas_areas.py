@@ -1,7 +1,9 @@
-"""
-The central module containing code to create CH4 and H2 voronoi polygons
+"""The central module containing code to create CH4 and H2 voronoi polygons
 
 """
+import datetime
+import json
+
 from geoalchemy2.types import Geometry
 from sqlalchemy import BigInteger, Column, Text
 from sqlalchemy.ext.declarative import declarative_base
@@ -9,10 +11,22 @@ from sqlalchemy.ext.declarative import declarative_base
 from egon.data import db
 from egon.data.datasets import Dataset
 from egon.data.datasets.generate_voronoi import get_voronoi_geodataframe
+from egon.data.metadata import (
+    context,
+    contributors,
+    license_egon_data_odbl,
+    meta_metadata,
+    sources,
+)
 
 
 class GasAreaseGon2035(Dataset):
-    """Create the gas voronoi table and the gas voronoi areas for eGon2035
+    """
+    Create the gas voronoi table and the gas voronoi areas for eGon2035
+
+    Create the gas voronoi table by executing the function :py:func:`create_gas_voronoi_table`
+    and inserts the gas voronoi areas for the eGon2035 scenario with the
+    :py:func:`voronoi_egon2035` function.
 
     *Dependencies*
       * :py:class:`EtragoSetup <egon.data.datasets.etrago_setup.EtragoSetup>`
@@ -40,7 +54,10 @@ class GasAreaseGon2035(Dataset):
 
 
 class GasAreaseGon100RE(Dataset):
-    """Create the gas voronoi table and the gas voronoi areas for eGon100RE
+    """Insert the gas voronoi areas for eGon100RE
+
+    Inserts the gas voronoi areas for the eGon100RE scenario with the
+    :py:func:`voronoi_egon100RE` function.
 
     *Dependencies*
       * :py:class:`EtragoSetup <egon.data.datasets.etrago_setup.EtragoSetup>`
@@ -77,8 +94,78 @@ class EgonPfHvGasVoronoi(Base):
     Class definition of table grid.egon_gas_voronoi
     """
 
+
+    source_list = [
+        sources()["openstreetmap"],
+        sources()["SciGRID_gas"],
+        sources()["bgr_inspeeds_data_bundle"],
+    ]
+    meta = {
+        "name": "grid.egon_gas_voronoi",
+        "title": "Gas voronoi areas",
+        "id": "WILL_BE_SET_AT_PUBLICATION",
+        "description": "H2 and CH4 voronoi cells",
+        "language": ["en-EN"],
+        "publicationDate": datetime.date.today().isoformat(),
+        "context": context(),
+        "spatial": {
+            "location": None,
+            "extent": "Germany",
+            "resolution": None,
+        },
+        "sources": source_list,
+        "licenses": [license_egon_data_odbl()],
+        "contributors": contributors(["fw"]),
+        "resources": [
+            {
+                "profile": "tabular-data-resource",
+                "name": "grid.egon_gas_voronoi",
+                "path": None,
+                "format": "PostgreSQL",
+                "encoding": "UTF-8",
+                "schema": {
+                    "fields": [
+                        {
+                            "name": "scn_name",
+                            "description": "Name of the scenario",
+                            "type": "str",
+                            "unit": None,
+                        },
+                        {
+                            "name": "bus_id",
+                            "description": "Unique identifier",
+                            "type": "integer",
+                            "unit": None,
+                        },
+                        {
+                            "name": "carrier",
+                            "description": "Carrier of the voronoi cell",
+                            "type": "str",
+                            "unit": None,
+                        },
+                        {
+                            "name": "geom",
+                            "description": "Voronoi cell geometry",
+                            "type": "Geometry(Polygon, 4326)",
+                            "unit": None,
+                        },
+                    ],
+                    "primaryKey": ["scn_name", "bus_id"],
+                    "foreignKeys": [],
+                },
+                "dialect": {"delimiter": None, "decimalSeparator": "."},
+            }
+        ],
+        "metaMetadata": meta_metadata(),
+    }
+    # Create json dump
+    meta_json = "'" + json.dumps(meta, indent=4, ensure_ascii=False) + "'"
+
     __tablename__ = "egon_gas_voronoi"
-    __table_args__ = {"schema": "grid"}
+    __table_args__ = {
+        "schema": "grid",
+        "comment": meta_json,
+    }
 
     #: Name of the scenario
     scn_name = Column(Text, primary_key=True, nullable=False)
@@ -101,7 +188,12 @@ def create_gas_voronoi_table():
 
 def voronoi_egon2035():
     """
-    Create voronoi polygons for all gas carriers in eGon2035 scenario
+    Insert the gas voronoi polygons in eGon2035 into the database
+
+    This function insert the voronoi polygons for CH4, H2_grid and
+    H2_saltcavern into the database for the scenario eGon2035, making
+    use of the function :py:func:`create_voronoi`.
+
     """
     for carrier in ["CH4", "H2_grid", "H2_saltcavern"]:
         create_voronoi("eGon2035", carrier)
@@ -109,7 +201,12 @@ def voronoi_egon2035():
 
 def voronoi_egon100RE():
     """
-    Create voronoi polygons for all gas carriers in eGon100RE scenario
+    Insert the gas voronoi polygons in eGon100RE into the database
+
+    This function insert the voronoi polygons for CH4, H2_grid and
+    H2_saltcavern into the database for the scenario eGon100RE, making
+    use of the function :py:func:`create_voronoi`.
+
     """
     for carrier in ["CH4", "H2_grid", "H2_saltcavern"]:
         create_voronoi("eGon100RE", carrier)
@@ -125,6 +222,7 @@ def create_voronoi(scn_name, carrier):
         Name of the scenario
     carrier : str
         Name of the carrier
+
     """
     boundary = db.select_geodataframe(
         f"""

@@ -2,51 +2,21 @@
 Distribute MaStR PV rooftop capacities to OSM and synthetic buildings. Generate
 new PV rooftop generators for scenarios eGon2035 and eGon100RE.
 
-Data cleaning and inference:
-* Drop duplicates and entries with missing critical data.
-* Determine most plausible capacity from multiple values given in MaStR data.
-* Drop generators which don't have any plausible capacity data
-  (23.5MW > P > 0.1).
-* Randomly and weighted add a start-up date if it is missing.
-* Extract zip and municipality from 'site' given in MaStR data.
-* Geocode unique zip and municipality combinations with Nominatim (1 sec
-  delay). Drop generators for which geocoding failed or which are located
-  outside the municipalities of Germany.
-* Add some visual sanity checks for cleaned data.
+See documentation section :ref:`pv-rooftop-ref` for more information.
 
-Allocation of MaStR data:
-* Allocate each generator to an existing building from OSM.
-* Determine the quantile each generator and building is in depending on the
-  capacity of the generator and the area of the polygon of the building.
-* Randomly distribute generators within each municipality preferably within
-  the same building area quantile as the generators are capacity wise.
-* If not enough buildings exists within a municipality and quantile additional
-  buildings from other quantiles are chosen randomly.
-
-Desegregation of pv rooftop scenarios:
-* The scenario data per federal state is linearly distributed to the mv grid
-  districts according to the pv rooftop potential per mv grid district.
-* The rooftop potential is estimated from the building area given from the OSM
-  buildings.
-* Grid districts, which are located in several federal states, are allocated
-  PV capacity according to their respective roof potential in the individual
-  federal states.
-* The desegregation of PV plants within a grid districts respects existing
-  plants from MaStR, which did not reach their end of life.
-* New PV plants are randomly and weighted generated using a breakdown of MaStR
-  data as generator basis.
-* Plant metadata (e.g. plant orientation) is also added random and weighted
-  from MaStR data as basis.
 """
 from __future__ import annotations
 
 from collections import Counter
 from functools import wraps
 from time import perf_counter
+import datetime
+import json
 
 from geoalchemy2 import Geometry
 from loguru import logger
 from numpy.random import RandomState, default_rng
+from omi.dialects import get_dialect
 from pyproj.crs.crs import CRS
 from sqlalchemy import BigInteger, Column, Float, Integer, String
 from sqlalchemy.dialects.postgresql import HSTORE
@@ -62,6 +32,16 @@ from egon.data.datasets.electricity_demand_timeseries.hh_buildings import (
 from egon.data.datasets.power_plants.mastr_db_classes import EgonPowerPlantsPv
 from egon.data.datasets.scenario_capacities import EgonScenarioCapacities
 from egon.data.datasets.zensus_vg250 import Vg250Gem
+from egon.data.metadata import (
+    context,
+    contributors,
+    generate_resource_fields_from_db_table,
+    license_dedl,
+    license_odbl,
+    meta_metadata,
+    meta_metadata,
+    sources,
+)
 
 engine = db.engine()
 Base = declarative_base()
@@ -294,6 +274,7 @@ def add_ags_to_gens(
 ) -> gpd.GeoDataFrame:
     """
     Add information about AGS ID to generators.
+
     Parameters
     -----------
     mastr_gdf : geopandas.GeoDataFrame
@@ -318,6 +299,7 @@ def drop_gens_outside_muns(
 ) -> gpd.GeoDataFrame:
     """
     Drop all generators outside of municipalities.
+
     Parameters
     -----------
     mastr_gdf : geopandas.GeoDataFrame
@@ -344,6 +326,7 @@ def load_mastr_data():
     """Read PV rooftop data from MaStR CSV
     Note: the source will be replaced as soon as the MaStR data is available
     in DB.
+
     Returns
     -------
     geopandas.GeoDataFrame
@@ -368,6 +351,10 @@ def load_mastr_data():
 
 
 class OsmBuildingsFiltered(Base):
+    """
+    Class definition of table openstreetmap.osm_buildings_filtered.
+
+    """
     __tablename__ = "osm_buildings_filtered"
     __table_args__ = {"schema": "openstreetmap"}
 
@@ -388,6 +375,7 @@ def osm_buildings(
 ) -> gpd.GeoDataFrame:
     """
     Read OSM buildings data from eGo^n Database.
+
     Parameters
     -----------
     to_crs : pyproj.crs.crs.CRS
@@ -415,6 +403,7 @@ def synthetic_buildings(
 ) -> gpd.GeoDataFrame:
     """
     Read synthetic buildings data from eGo^n Database.
+
     Parameters
     -----------
     to_crs : pyproj.crs.crs.CRS
@@ -443,6 +432,7 @@ def add_ags_to_buildings(
 ) -> gpd.GeoDataFrame:
     """
     Add information about AGS ID to buildings.
+
     Parameters
     -----------
     buildings_gdf : geopandas.GeoDataFrame
@@ -467,6 +457,7 @@ def drop_buildings_outside_muns(
 ) -> gpd.GeoDataFrame:
     """
     Drop all buildings outside of municipalities.
+
     Parameters
     -----------
     buildings_gdf : geopandas.GeoDataFrame
@@ -627,6 +618,7 @@ def sort_and_qcut_df(
     """
     Determine the quantile of a given attribute in a (Geo)DataFrame.
     Sort the (Geo)DataFrame in ascending order for the given attribute.
+
     Parameters
     -----------
     df : pandas.DataFrame or geopandas.GeoDataFrame
@@ -663,6 +655,7 @@ def allocate_pv(
     buildings than generators within a given AGS. Primarily generators are
     distributed with the same qunatile as the buildings. Multiple assignment
     is excluded.
+
     Parameters
     -----------
     q_mastr_gdf : geopandas.GeoDataFrame
@@ -779,6 +772,7 @@ def frame_to_numeric(
 ) -> pd.DataFrame | gpd.GeoDataFrame:
     """
     Try to convert all columns of a DataFrame to numeric ignoring errors.
+
     Parameters
     ----------
     df : pandas.DataFrame or geopandas.GeoDataFrame
@@ -884,6 +878,7 @@ def allocate_to_buildings(
 ) -> tuple[gpd.GeoDataFrame, gpd.GeoDataFrame]:
     """
     Allocate status quo pv rooftop generators to buildings.
+
     Parameters
     -----------
     mastr_gdf : geopandas.GeoDataFrame
@@ -918,6 +913,7 @@ def grid_districts(
     """
     Load mv grid district geo data from eGo^n Database as
     geopandas.GeoDataFrame.
+
     Parameters
     -----------
     epsg : int
@@ -951,6 +947,7 @@ def scenario_data(
 ) -> pd.DataFrame:
     """
     Get scenario capacity data from eGo^n Database.
+
     Parameters
     -----------
     carrier : str
@@ -978,6 +975,10 @@ def scenario_data(
 
 
 class Vg250Lan(Base):
+    """
+    Class definition of table boundaries.vg250_lan.
+
+    """
     __tablename__ = "vg250_lan"
     __table_args__ = {"schema": "boundaries"}
 
@@ -1014,6 +1015,7 @@ class Vg250Lan(Base):
 def federal_state_data(to_crs: CRS) -> gpd.GeoDataFrame:
     """
     Get feder state data from eGo^n Database.
+
     Parameters
     -----------
     to_crs : pyproj.crs.crs.CRS
@@ -1044,6 +1046,7 @@ def overlay_grid_districts_with_counties(
 ) -> gpd.GeoDataFrame:
     """
     Calculate the intersections of mv grid districts and counties.
+
     Parameters
     -----------
     mv_grid_district_gdf : gpd.GeoDataFrame
@@ -1079,6 +1082,7 @@ def add_overlay_id_to_buildings(
 ) -> gpd.GeoDataFrame:
     """
     Add information about overlay ID to buildings.
+
     Parameters
     -----------
     buildings_gdf : geopandas.GeoDataFrame
@@ -1111,6 +1115,7 @@ def drop_buildings_outside_grids(
 ) -> gpd.GeoDataFrame:
     """
     Drop all buildings outside of grid areas.
+
     Parameters
     -----------
     buildings_gdf : geopandas.GeoDataFrame
@@ -1169,6 +1174,7 @@ def determine_end_of_life_gens(
 ) -> gpd.GeoDataFrame:
     """
     Determine if an old PV system has reached its end of life.
+
     Parameters
     -----------
     mastr_gdf : geopandas.GeoDataFrame
@@ -1264,6 +1270,7 @@ def calculate_building_load_factor(
 ) -> gpd.GeoDataFrame:
     """
     Calculate the roof load factor from existing PV systems.
+
     Parameters
     -----------
     mastr_gdf : geopandas.GeoDataFrame
@@ -1298,6 +1305,7 @@ def get_probability_for_property(
     """
     Calculate the probability of the different options of a property of the
     existing PV plants.
+
     Parameters
     -----------
     mastr_gdf : geopandas.GeoDataFrame
@@ -1347,6 +1355,7 @@ def probabilities(
     """
     Calculate the probability of the different options of properties of the
     existing PV plants.
+
     Parameters
     -----------
     mastr_gdf : geopandas.GeoDataFrame
@@ -1450,6 +1459,7 @@ def mean_load_factor_per_cap_range(
     """
     Calculate the mean roof load factor per capacity range from existing PV
     plants.
+
     Parameters
     -----------
     mastr_gdf : geopandas.GeoDataFrame
@@ -1494,6 +1504,7 @@ def building_area_range_per_cap_range(
     Estimate normal building area range per capacity range.
     Calculate the mean roof load factor per capacity range from existing PV
     plants.
+
     Parameters
     -----------
     mastr_gdf : geopandas.GeoDataFrame
@@ -1580,6 +1591,7 @@ def desaggregate_pv_in_mv_grid(
 ) -> gpd.GeoDataFrame:
     """
     Desaggregate PV capacity on buildings within a given grid district.
+
     Parameters
     -----------
     buildings_gdf : geopandas.GeoDataFrame
@@ -1897,6 +1909,7 @@ def add_buildings_meta_data(
 ) -> gpd.GeoDataFrame:
     """
     Randomly add additional metadata to desaggregated PV plants.
+
     Parameters
     -----------
     buildings_gdf : geopandas.GeoDataFrame
@@ -1954,6 +1967,7 @@ def add_commissioning_date(
 ):
     """
     Randomly and linear add start-up date to new pv generators.
+
     Parameters
     ----------
     buildings_gdf : geopandas.GeoDataFrame
@@ -1988,6 +2002,7 @@ def allocate_scenarios(
 ):
     """
     Desaggregate and allocate scenario pv rooftop ramp-ups onto buildings.
+
     Parameters
     ----------
     mastr_gdf : geopandas.GeoDataFrame
@@ -2087,6 +2102,10 @@ def allocate_scenarios(
 
 
 class EgonPowerPlantPvRoofBuilding(Base):
+    """
+    Class definition of table supply.egon_power_plants_pv_roof_building.
+
+    """
     __tablename__ = "egon_power_plants_pv_roof_building"
     __table_args__ = {"schema": "supply"}
 
@@ -2103,6 +2122,138 @@ class EgonPowerPlantPvRoofBuilding(Base):
     weather_cell_id = Column(Integer)
 
 
+def add_metadata():
+    schema = "supply"
+    table = "egon_power_plants_pv_roof_building"
+    name = f"{schema}.{table}"
+    deposit_id_mastr = config.datasets()["mastr_new"]["deposit_id"]
+    deposit_id_data_bundle = config.datasets()["data-bundle"]["sources"][
+        "zenodo"
+    ]["deposit_id"]
+
+    contris = contributors(["kh", "kh"])
+
+    contris[0]["date"] = "2023-03-16"
+
+    contris[0]["object"] = "metadata"
+    contris[1]["object"] = "dataset"
+
+    contris[0]["comment"] = "Add metadata to dataset."
+    contris[1]["comment"] = "Add workflow to generate dataset."
+
+    meta = {
+        "name": name,
+        "title": "eGon power plants rooftop solar",
+        "id": "WILL_BE_SET_AT_PUBLICATION",
+        "description": (
+            "eGon power plants rooftop solar systems allocated to buildings"
+        ),
+        "language": "en-US",
+        "keywords": ["photovoltaik", "solar", "pv", "mastr", "status quo"],
+        "publicationDate": datetime.date.today().isoformat(),
+        "context": context(),
+        "spatial": {
+            "location": "none",
+            "extent": "Germany",
+            "resolution": "building",
+        },
+        "temporal": {
+            "referenceDate": (
+                config.datasets()["mastr_new"]["egon2021_date_max"].split(" ")[
+                    0
+                ]
+            ),
+            "timeseries": {},
+        },
+        "sources": [
+            {
+                "title": "Data bundle for egon-data",
+                "description": (
+                    "Data bundle for egon-data: A transparent and "
+                    "reproducible data processing pipeline for energy "
+                    "system modeling"
+                ),
+                "path": (
+                    "https://zenodo.org/record/"
+                    f"{deposit_id_data_bundle}#.Y_dWM4CZMVM"
+                ),
+                "licenses": [license_dedl(attribution="© Cußmann, Ilka")],
+            },
+            {
+                "title": ("open-MaStR power unit registry for eGo^n project"),
+                "description": (
+                    "Data from Marktstammdatenregister (MaStR) data using "
+                    "the data dump from 2022-11-17 for eGon-data."
+                ),
+                "path": (
+                    f"https://zenodo.org/record/{deposit_id_mastr}"
+                ),
+                "licenses": [license_dedl(attribution="© Amme, Jonathan")],
+            },
+            sources()["openstreetmap"],
+            sources()["era5"],
+            sources()["vg250"],
+            sources()["egon-data"],
+        ],
+        "licenses": [license_odbl("© eGon development team")],
+        "contributors": contris,
+        "resources": [
+            {
+                "profile": "tabular-data-resource",
+                "name": name,
+                "path": "None",
+                "format": "PostgreSQL",
+                "encoding": "UTF-8",
+                "schema": {
+                    "fields": generate_resource_fields_from_db_table(
+                        schema,
+                        table,
+                    ),
+                    "primaryKey": "index",
+                },
+                "dialect": {"delimiter": "", "decimalSeparator": ""},
+            }
+        ],
+        "review": {"path": "", "badge": ""},
+        "metaMetadata": meta_metadata(),
+        "_comment": {
+            "metadata": (
+                "Metadata documentation and explanation (https://github."
+                "com/OpenEnergyPlatform/oemetadata/blob/master/metadata/"
+                "v141/metadata_key_description.md)"
+            ),
+            "dates": (
+                "Dates and time must follow the ISO8601 including time "
+                "zone (YYYY-MM-DD or YYYY-MM-DDThh:mm:ss±hh)"
+            ),
+            "units": "Use a space between numbers and units (100 m)",
+            "languages": (
+                "Languages must follow the IETF (BCP47) format (en-GB, "
+                "en-US, de-DE)"
+            ),
+            "licenses": (
+                "License name must follow the SPDX License List "
+                "(https://spdx.org/licenses/)"
+            ),
+            "review": (
+                "Following the OEP Data Review (https://github.com/"
+                "OpenEnergyPlatform/data-preprocessing/wiki)"
+            ),
+            "none": "If not applicable use (none)",
+        },
+    }
+
+    dialect = get_dialect(meta_metadata()["metadataVersion"])()
+
+    meta = dialect.compile_and_render(dialect.parse(json.dumps(meta)))
+
+    db.submit_comment(
+        f"'{json.dumps(meta)}'",
+        schema,
+        table,
+    )
+
+
 def create_scenario_table(buildings_gdf):
     """Create mapping table pv_unit <-> building for scenario"""
     EgonPowerPlantPvRoofBuilding.__table__.drop(bind=engine, checkfirst=True)
@@ -2115,6 +2266,8 @@ def create_scenario_table(buildings_gdf):
         if_exists="append",
         index=False,
     )
+
+    add_metadata()
 
 
 def add_weather_cell_id(buildings_gdf: gpd.GeoDataFrame) -> gpd.GeoDataFrame:

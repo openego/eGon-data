@@ -1,25 +1,8 @@
 """
-Download Marktstammdatenregister (MaStR) datasets unit registry.
-It incorporates two different datasets:
+Download Marktstammdatenregister (MaStR) from Zenodo.
 
-Dump 2021-05-03
-* Source: https://sandbox.zenodo.org/record/808086
-* Used technologies: PV plants, wind turbines, biomass, hydro plants,
-  combustion, nuclear, gsgk, storage
-* Data is further processed in dataset
-  :py:class:`egon.data.datasets.power_plants.PowerPlants`
-
-Dump 2022-11-17
-* Source: https://sandbox.zenodo.org/record/1132839
-* Used technologies: PV plants, wind turbines, biomass, hydro plants
-* Data is further processed in module
-  :py:mod:`egon.data.datasets.power_plants.mastr` `PowerPlants`
-
-Todo: Finish docstring
-TBD
 """
 
-from functools import partial
 from pathlib import Path
 from urllib.request import urlretrieve
 import os
@@ -32,14 +15,14 @@ WORKING_DIR_MASTR_NEW = Path(".", "bnetza_mastr", "dump_2022-11-17")
 
 
 def download_mastr_data():
-    """Download MaStR data from Zenodo"""
+    """Download MaStR data from Zenodo."""
 
     def download(dataset_name, download_dir):
         print(f"Downloading dataset {dataset_name} to {download_dir} ...")
         # Get parameters from config and set download URL
         data_config = egon.data.config.datasets()[dataset_name]
         zenodo_files_url = (
-            f"https://sandbox.zenodo.org/record/"
+            f"https://zenodo.org/record/"
             f"{data_config['deposit_id']}/files/"
         )
 
@@ -66,10 +49,44 @@ def download_mastr_data():
     download(dataset_name="mastr_new", download_dir=WORKING_DIR_MASTR_NEW)
 
 
-mastr_data_setup = partial(
-    Dataset,
-    name="MastrData",
-    version="0.0.1",
-    dependencies=[],
-    tasks=(download_mastr_data,),
-)
+class mastr_data_setup(Dataset):
+    """
+    Download Marktstammdatenregister (MaStR) from Zenodo.
+
+    *Dependencies*
+      * :py:func:`Setup <egon.data.datasets.database.setup>`
+
+    The downloaded data incorporates two different datasets:
+
+    Dump 2021-04-30
+      * Source: https://zenodo.org/records/10480930
+      * Used technologies: PV plants, wind turbines, biomass, hydro plants,
+        combustion, nuclear, gsgk, storage
+      * Data is further processed in the :py:class:`PowerPlants
+        <egon.data.datasets.power_plants.PowerPlants>` dataset
+
+    Dump 2022-11-17
+      * Source: https://zenodo.org/records/10480958
+      * Used technologies: PV plants, wind turbines, biomass, hydro plants
+      * Data is further processed in module :py:mod:`mastr
+        <egon.data.datasets.power_plants.mastr>` and :py:class:`PowerPlants
+        <egon.data.datasets.power_plants.PowerPlants>`
+
+    See documentation section :ref:`mastr-ref` for more information.
+
+    """
+
+    #:
+    name: str = "MastrData"
+    #:
+    version: str = "0.0.2"
+    #:
+    tasks = (download_mastr_data,)
+
+    def __init__(self, dependencies):
+        super().__init__(
+            name=self.name,
+            version=self.version,
+            dependencies=dependencies,
+            tasks=self.tasks,
+        )

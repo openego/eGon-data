@@ -51,8 +51,8 @@ def insert_gas_neigbours_eGon100RE():
         :py:func:`read_DE_crossbordering_cap_from_pes`, that calculates
         the cross border total exchange capactities for H2 and CH4
         between Germany and its neighbouring countries based on the
-        pypsa-eur-sec results
-      * call of the function
+        PyPSA-eur-sec results
+      * call of the the function
         :py:func:`calculate_crossbordering_gas_grid_capacities_eGon100RE`,
         that attributes to each cross border pipeline (H2 and CH4)
         between Germany and its neighbouring countries its capacity
@@ -60,9 +60,7 @@ def insert_gas_neigbours_eGon100RE():
         neighbouring countries in the database with function
         :py:func:`insert_gas_grid_capacities`
 
-    Returns
-    -------
-    None
+    This function inserts data in the database and has no return.
 
     """
 
@@ -353,6 +351,9 @@ def calculate_crossbordering_gas_grid_capacities_eGon100RE(
 
     This function attributes to each cross border pipeline (H2 and
     CH4) between Germany and its neighbouring countries its capacity.
+    Each global capacity (neighbouring country specific) is uniformly
+    distributed between all the links connecting Germany to this
+    specific neighbouring country.
 
     Parameters
     ----------
