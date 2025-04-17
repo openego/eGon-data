@@ -5,7 +5,7 @@ series. These are caused by the truncation of the values at zero.
 The sum of the individual time series is a more accurate value than the
 aggregated time series used so far and should replace it in the future. Since
 the deviations are relatively small, a tolerance is currently accepted in the
-sanity checks. See [#1120](https://github.com/openego/eGon-data/issues/1120)
+sanity checks. See `#1120 <https://github.com/openego/eGon-data/issues/1120>`_
 for updates.
 """
 import datetime
@@ -412,6 +412,7 @@ def cts_data_import(cts_cool_vent_ac_share):
     """
     Import CTS data necessary to identify DSM-potential.
 
+    Parameters
     ----------
     cts_share: float
         Share of cooling, ventilation and AC in CTS demand
@@ -453,7 +454,9 @@ def cts_data_import(cts_cool_vent_ac_share):
 def ind_osm_data_import(ind_vent_cool_share):
     """
     Import industry data per osm-area necessary to identify DSM-potential.
-        ----------
+
+    Parameters
+    ----------
     ind_share: float
         Share of considered application in industry demand
     """
@@ -489,7 +492,9 @@ def ind_osm_data_import(ind_vent_cool_share):
 def ind_osm_data_import_individual(ind_vent_cool_share):
     """
     Import industry data per osm-area necessary to identify DSM-potential.
-        ----------
+
+    Parameters
+    ----------
     ind_share: float
         Share of considered application in industry demand
     """
@@ -525,7 +530,9 @@ def ind_osm_data_import_individual(ind_vent_cool_share):
 def ind_sites_vent_data_import(ind_vent_share, wz):
     """
     Import industry sites necessary to identify DSM-potential.
-        ----------
+
+    Parameters
+    ----------
     ind_vent_share: float
         Share of considered application in industry demand
     wz: int
@@ -562,7 +569,9 @@ def ind_sites_vent_data_import(ind_vent_share, wz):
 def ind_sites_vent_data_import_individual(ind_vent_share, wz):
     """
     Import industry sites necessary to identify DSM-potential.
-        ----------
+
+    Parameters
+    ----------
     ind_vent_share: float
         Share of considered application in industry demand
     wz: int
@@ -729,9 +738,10 @@ def ind_sites_data_import():
 def calculate_potentials(s_flex, s_util, s_inc, s_dec, delta_t, dsm):
     """
     Calculate DSM-potential per bus using the methods by Heitkoetter et. al.:
-        https://doi.org/10.1016/j.adapen.2020.100001
+    https://doi.org/10.1016/j.adapen.2020.100001
+
     Parameters
-        ----------
+    ----------
     s_flex: float
         Feasability factor to account for socio-technical restrictions
     s_util: float
@@ -824,8 +834,9 @@ def create_dsm_components(
 ):
     """
     Create components representing DSM.
+
     Parameters
-        ----------
+    ----------
     con :
         Connection to database
     p_max: DataFrame
@@ -1199,8 +1210,8 @@ def delete_dsm_entries(carrier):
     new ones.
 
     Parameters
-        ----------
-     carrier: str
+    ----------
+    carrier: str
         Remark in column 'carrier' identifying DSM-potential
     """
 
@@ -1268,14 +1279,15 @@ def dsm_cts_ind(
 ):
     """
     Execute methodology to create and implement components for DSM considering
+
     a) CTS per osm-area: combined potentials of cooling, ventilation and air
-      conditioning
+       conditioning
     b) Industry per osm-are: combined potentials of cooling and ventilation
     c) Industrial Sites: potentials of ventilation in sites of
-      "Wirtschaftszweig" (WZ) 23
+       "Wirtschaftszweig" (WZ) 23
     d) Industrial Sites: potentials of sites specified by subsectors
-      identified by Schmidt (https://zenodo.org/record/3613767#.YTsGwVtCRhG):
-      Paper, Recycled Paper, Pulp, Cement
+       identified by Schmidt (https://zenodo.org/record/3613767#.YTsGwVtCRhG):
+       Paper, Recycled Paper, Pulp, Cement
 
     Modelled using the methods by Heitkoetter et. al.:
     https://doi.org/10.1016/j.adapen.2020.100001
@@ -1589,14 +1601,15 @@ def dsm_cts_ind_individual(
 ):
     """
     Execute methodology to create and implement components for DSM considering
+
     a) CTS per osm-area: combined potentials of cooling, ventilation and air
-      conditioning
+       conditioning
     b) Industry per osm-are: combined potentials of cooling and ventilation
     c) Industrial Sites: potentials of ventilation in sites of
-      "Wirtschaftszweig" (WZ) 23
+       "Wirtschaftszweig" (WZ) 23
     d) Industrial Sites: potentials of sites specified by subsectors
-      identified by Schmidt (https://zenodo.org/record/3613767#.YTsGwVtCRhG):
-      Paper, Recycled Paper, Pulp, Cement
+       identified by Schmidt (https://zenodo.org/record/3613767#.YTsGwVtCRhG):
+       Paper, Recycled Paper, Pulp, Cement
 
     Modelled using the methods by Heitkoetter et. al.:
     https://doi.org/10.1016/j.adapen.2020.100001

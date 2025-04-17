@@ -1,12 +1,10 @@
-"""The central module containing all code dealing with bgr data.
+"""
+The central module containing all code dealing with BGR data.
 
-This module either directly contains the code dealing with importing bgr
-data, or it re-exports everything needed to handle it. Please refrain
-from importing code from any modules below this one, because it might
-lead to unwanted behaviour.
+This module directly contains the code dealing with importing data of
+Bundesanstalt für Geowissenschaften und Rohstoffe (BGR) from the
+databundle into the database.
 
-If you have to import code from a module below this one because the code
-isn't exported from this module, please file a bug, so we can fix this.
 """
 
 from pathlib import Path
@@ -20,7 +18,12 @@ import egon.data.config
 
 
 def to_postgres():
-    """Write BGR saline structures to database."""
+    """
+    Write BGR saline structures to database.
+
+    This function inserts data into the database and has no return.
+
+    """
 
     # Get information from data configuraiton file
     data_config = egon.data.config.datasets()
@@ -89,21 +92,30 @@ def to_postgres():
 
 
 class SaltcavernData(Dataset):
-    """Inserts Saltcavern shapes into database
+    """
+    Insert the BGR saline structures into the database.
+
+    Insert the BGR saline structures into the database by executing the
+    function :py:func:`to_postgres`.
 
     *Dependencies*
       * :py:class:`DataBundle <egon.data.datasets.data_bundle.DataBundle>`
       * :py:class:`Vg250 <egon.data.datasets.vg250.Vg250>`
 
     *Resulting tables*
-      * :py:class:`EgonPfHvGasVoronoi <EgonPfHvGasVoronoi>`
+      * boundaries.inspee_saltstructures is created
 
     """
 
+    #:
+    name: str = "SaltcavernData"
+    #:
+    version: str = "0.0.1"
+
     def __init__(self, dependencies):
         super().__init__(
-            name="SaltcavernData",
-            version="0.0.1",
+            name=self.name,
+            version=self.version,
             dependencies=dependencies,
             tasks=(to_postgres,),
         )

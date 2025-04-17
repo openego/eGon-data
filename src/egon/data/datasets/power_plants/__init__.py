@@ -1,4 +1,5 @@
-"""The central module containing all code dealing with power plant data.
+"""The central module containing all code dealing with the distribution and
+allocation of data on conventional and renewable power plants.
 """
 
 from pathlib import Path
@@ -58,6 +59,111 @@ class EgonPowerPlants(Base):
     weather_cell_id = Column(Integer)
     scenario = Column(String)
     geom = Column(Geometry("POINT", 4326), index=True)
+
+
+class PowerPlants(Dataset):
+    """
+    This dataset deals with the distribution and allocation of power plants
+
+    For the distribution and allocation of power plants to their corresponding
+    grid connection point different technology-specific methods are applied.
+    In a first step separate tables are created for wind, pv, hydro and biomass
+    based power plants by running :py:func:`create_tables`.
+    Different methods rely on the locations of existing power plants retrieved
+    from the official power plant registry 'Marktstammdatenregister' applying
+    function :py:func:`ìmport_mastr`.
+
+    *Hydro and Biomass*
+    Hydro and biomass power plants are distributed based on the status quo
+    locations of existing power plants assuming that no further expansion of
+    these technologies is to be expected in Germany. Hydro power plants include
+    reservoir and run-of-river plants.
+    Power plants without a correct geolocation are not taken into account.
+    To compensate this, the installed capacities of the suitable plants are
+    scaled up to meet the target value using function :py:func:`scale_prox2now`
+
+    *Conventional power plants without CHP*
+    The distribution of conventional plants, excluding CHPs, takes place in
+    function :py:func:`allocate_conventional_non_chp_power_plants`. Therefore
+    information about future power plants from the grid development plan
+    function as the target value and are matched with actual existing power
+    plants with correct geolocations from MaStR registry.
+
+    *Wind onshore*
+
+
+    *Wind offshore*
+
+    *PV ground-mounted*
+
+    *PV rooftop*
+
+    *others*
+
+
+
+
+
+    *Dependencies*
+      * :py:class:`Chp <egon.data.datasets.chp.Chp>`
+      * :py:class:`CtsElectricityDemand
+        <egon.data.datasets.electricity_demand.CtsElectricityDemand>`
+      * :py:class:`HouseholdElectricityDemand
+        <egon.data.datasets.electricity_demand.HouseholdElectricityDemand>`
+      * :py:class:`mastr_data <egon.data.datasets.mastr.mastr_data>`
+      * :py:func:`define_mv_grid_districts
+        <egon.data.datasets.mv_grid_districts.define_mv_grid_districts>`
+      * :py:class:`RePotentialAreas
+        <egon.data.datasets.re_potential_areas.RePotentialAreas>`
+      * :py:class:`ZensusVg250
+        <egon.data.datasets.RenewableFeedin>`
+      * :py:class:`ScenarioCapacities
+        <egon.data.datasets.scenario_capacities.ScenarioCapacities>`
+      * :py:class:`ScenarioParameters
+        <egon.data.datasets.scenario_parameters.ScenarioParameters>`
+      * :py:func:`Setup <egon.data.datasets.database.setup>`
+      * :py:class:`substation_extraction
+        <egon.data.datasets.substation.substation_extraction>`
+      * :py:class:`Vg250MvGridDistricts
+        <egon.data.datasets.Vg250MvGridDistricts>`
+      * :py:class:`ZensusMvGridDistricts
+        <egon.data.datasets.zensus_mv_grid_districts.ZensusMvGridDistricts>`
+
+    *Resulting tables*
+      * :py:class:`supply.egon_power_plants
+        <egon.data.datasets.power_plants.EgonPowerPlants>` is filled
+
+    """
+
+    #:
+    name: str = "PowerPlants"
+    #:
+    version: str = "0.0.19"
+
+    def __init__(self, dependencies):
+        super().__init__(
+            name=self.name,
+            version=self.version,
+            dependencies=dependencies,
+            tasks=(
+                create_tables,
+                import_mastr,
+                insert_hydro_biomass,
+                allocate_conventional_non_chp_power_plants,
+                allocate_other_power_plants,
+                {
+                    wind_onshore.insert,
+                    pv_ground_mounted.insert,
+                    (
+                        pv_rooftop_per_mv_grid,
+                        pv_rooftop_to_buildings,
+                    ),
+                },
+                wind_offshore.insert,
+                assign_weather_data.weatherId_and_busId,
+                pp_metadata.metadata,
+            ),
+        )
 
 
 def create_tables():
@@ -493,7 +599,9 @@ def assign_voltage_level(mastr_loc, cfg, mastr_working_dir):
 
 
 def assign_voltage_level_by_capacity(mastr_loc):
+
     for i, row in mastr_loc[mastr_loc.voltage_level.isnull()].iterrows():
+
         if row.Nettonennleistung > 120:
             level = 1
         elif row.Nettonennleistung > 20:
@@ -612,6 +720,15 @@ def insert_hydro_biomass():
 
 
 def allocate_conventional_non_chp_power_plants():
+    """Allocate conventional power plants without CHPs based on the NEP target
+    values and data from power plant registry (MaStR) by assigning them in a
+    cascaded manner.
+
+    Returns
+    -------
+    None.
+
+    """
     # This function is only designed to work for the eGon2035 scenario
     if (
         "eGon2035"
@@ -633,12 +750,14 @@ def allocate_conventional_non_chp_power_plants():
     )
 
     for carrier in carrier:
+
         nep = select_nep_power_plants(carrier)
 
         if nep.empty:
             print(f"DataFrame from NEP for carrier {carrier} is empty!")
 
         else:
+
             mastr = select_no_chp_combustion_mastr(carrier)
 
             # Assign voltage level to MaStR

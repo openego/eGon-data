@@ -3,11 +3,12 @@ The central module containing all code dealing with H2 stores in Germany
 
 This module contains the functions used to insert the two types of H2
 store potentials in Germany:
-  * H2 overground stores (carrier: 'H2_overground'): steel tanks at
-    every H2 bus
-  * H2 underground stores (carrier: 'H2_underground'): saltcavern store
-    at every H2_saltcavern bus.
-    NB: the saltcavern locations define the H2_saltcavern buses locations.
+* H2 overground stores (carrier: 'H2_overground'): steel tanks at
+  every H2_grid bus
+* H2 underground stores (carrier: 'H2_underground'): saltcavern store
+  at every H2_saltcavern bus.
+  NB: the saltcavern locations define the H2_saltcavern buses locations.
+
 All these stores are modelled as extendable PyPSA stores.
 
 """
@@ -16,7 +17,6 @@ import geopandas as gpd
 import pandas as pd
 
 from egon.data import config, db
-from egon.data.datasets.etrago_helpers import copy_and_modify_stores
 from egon.data.datasets.scenario_parameters import get_sector_parameters
 
 
@@ -103,7 +103,7 @@ def insert_H2_saltcavern_storage():
 
     Insert extendable H2_underground stores (saltcavern potentials) at
     every H2_saltcavern bus.
-    
+
     Returns
     -------
     None
@@ -400,11 +400,11 @@ def calculate_and_map_saltcavern_storage_potential():
 
 def write_saltcavern_potential():
     """Write saltcavern potentials into the database
-    
+
     Returns
     -------
     None
-    
+
     """
     potential_areas = calculate_and_map_saltcavern_storage_potential()
 
@@ -418,4 +418,3 @@ def write_saltcavern_potential():
         if_exists="replace",
         dtype={"geometry": Geometry()},
     )
-

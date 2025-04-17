@@ -6,11 +6,11 @@ for eTraGo are to be found.
 The H2 buses in the neighbouring countries (only present in eGon100RE)
 are defined in :py:mod:`pypsaeursec <egon.data.datasets.pypsaeursec>`.
 In both scenarios, there are two types of H2 buses in Germany:
-  * H2 buses: defined in :py:func:`insert_H2_buses_from_CH4_grid`,
-    these buses are located at the places of the CH4 buses.
-  * H2_saltcavern buses: defined in :py:func:`insert_H2_buses_from_saltcavern`,
-    these buses are located at the intersection of AC buses and
-    potential H2 saltcaverns.
+* H2_grid buses: defined in :py:func:`insert_H2_buses_from_CH4_grid`;
+  these buses are located at the places of the CH4 buses.
+* H2_saltcavern buses: defined in :py:func:`insert_H2_buses_from_saltcavern`;
+  these buses are located at the intersection of AC buses and
+  potential H2 saltcaverns.
 
 """
 import datetime
@@ -40,9 +40,13 @@ def insert_hydrogen_buses():
     Insert hydrogen buses into the database (in etrago table)
 
     Hydrogen buses are inserted into the database using the functions:
-      * :py:func:`insert_H2_buses_from_CH4_grid` for H2 buses
-      * :py:func:`insert_H2_buses_from_saltcavern` for the H2_saltcavern
-        buses
+    * :py:func:`insert_H2_buses_from_CH4_grid` for H2_grid buses
+    * :py:func:`insert_H2_buses_from_saltcavern` for the H2_saltcavern buses
+
+    Parameters
+    ----------
+    scenario : str, optional
+        Name of the scenario, the default is 'eGon2035'.
 
     Returns
     -------
@@ -330,11 +334,11 @@ def insert_H2_buses_from_CH4_grid(gdf, carrier, target, scn_name):
         Target schema and table information.
     scn_name : str
         Name of the scenario.
-        
+
     Returns
     -------
     None
-        
+
     """
     # Connect to local database
     engine = db.engine()
@@ -369,3 +373,17 @@ def insert_H2_buses_from_CH4_grid(gdf, carrier, target, scn_name):
         if_exists="append",
     )
 
+
+def insert_hydrogen_buses_eGon100RE():
+    """Copy H2 buses from the eGon2035 to the eGon100RE scenario.
+
+    Returns
+    -------
+    None
+
+    """
+    copy_and_modify_buses(
+        "eGon2035",
+        "eGon100RE",
+        {"carrier": ["H2_grid", "H2_saltcavern"]},
+    )

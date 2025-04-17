@@ -90,7 +90,8 @@ def insert_open_cycle_gas_turbines_per_scenario(scn_name):
 
 
 def map_buses(scn_name):
-    """Map OCGT AC buses to nearest CH4 bus.
+    """
+    Map OCGT AC buses to nearest CH4 bus.
 
     Parameters
     ----------
@@ -101,6 +102,7 @@ def map_buses(scn_name):
     -------
     gdf : geopandas.GeoDataFrame
         GeoDataFrame with connected buses.
+
     """
     # Create dataframes containing all gas buses and all the HV power buses
     sql_AC = f"""SELECT bus_id, el_capacity as p_nom, geom

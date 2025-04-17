@@ -51,10 +51,46 @@ class EgonStorages(Base):
 
 
 class Storages(Dataset):
+    """
+    Allocates storage units such as pumped hydro and home batteries
+
+    This data set creates interim tables to store information on storage units.
+    In addition the target value for the installed capacity of pumped hydro
+    storage units are spatially allocated using information of existing plants
+    from the official registry Markstammdatenregister. After allocating the
+    plants missing information such as the voltage level and the correct grid
+    connection point are added.
+    This data set also allocates the target value of home batteries spatially
+    on different aggregation levels. In a first step function
+    :py:func:`allocate_pv_home_batteries_to_grids` spatially distributes the
+    installed battery capacities to all mv grid districts based on their
+    installed pv rooftop capacity.
+    Function :py:func:`allocate_home_batteries_to_buildings` further
+    distributes the home battery storage systems to buildings with pv
+    rooftop systems.
+
+    *Dependencies*
+      * :py:func:`download_mastr_data <egon.data.datasets.mastr.download_mastr_data>`
+      * :py:func:`define_mv_grid_districts <egon.data.datasets.mv_grid_districts.define_mv_grid_districts>`
+      * :py:class: `PowerPlants <egon.data.datasets.power_plants.PowerPlants>`
+      * :py:class:`ScenarioCapacities <egon.data.datasets.scenario_capacities.ScenarioCapacities>`
+      * :py:class:`ScenarioParameters <egon.data.datasets.scenario_parameters.ScenarioParameters>`
+      * :py:class:`Vg250MvGridDistricts <egon.data.datasets.vg250_mv_grid_districts.Vg250MvGridDistricts>`
+
+    *Resulting tables*
+      * :py:class:`supply.egon_storages <egon.data.datasets.storages.EgonStorages>`
+
+    """
+
+    #:
+    name: str = "Storages"
+    #:
+    version: str = "0.0.8"
+
     def __init__(self, dependencies):
         super().__init__(
-            name="Storages",
-            version="0.0.8",
+            name=self.name,
+            version=self.version,
             dependencies=dependencies,
             tasks=(
                 create_tables,

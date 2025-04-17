@@ -13,14 +13,45 @@ from egon.data.datasets.scenario_parameters import (
 
 
 class StorageEtrago(Dataset):
+    """
+    Adds pumped hydro storage units and extendable batteries to the data base
+
+    This data sets adds storage unit to the data base used for transmission
+    grid optimisation with the tool eTraGo. In a first step pumped hydro
+    storage units for Germany are taken from an interim table and technical
+    parameters such as standing losses, efficiency and max_hours are added.
+    Afterwards the data is written to the correct tables which are accessed by
+    eTraGo.
+    In a next step batteries are added. On the one hand these are home
+    batteries, assumptions on their capacity and distribution is taken from an
+    other interim table. In addition extendable batteries with an installed
+    capacity of 0 are added to every substation to allow a battery expansion in
+    eTraGo. For all batteries assumptions on technical parameters are added.
+    The resulting data is written to the corresponding tables in the data base.
+
+    *Dependencies*
+    * :py:class:`Storages <egon.data.datasets.storages.Storages>`
+    * :py:class:`ScenarioParameters <egon.data.datasets.scenario_parameters.ScenarioParameters>`
+    * :py:class:`EtragoSetup <egon.data.datasets.etrago_setup.EtragoSetup>`
+
+    *Resulting tables*
+    * :py:class:`grid.egon_etrago_storage <egon.data.datasets.etrago_setup.EgonPfHvStorage>` is extended
+
+    """
+
+    #:
+    name: str = "StorageEtrago"
+    #:
+    version: str = "0.0.9"
+
+
     def __init__(self, dependencies):
         super().__init__(
-            name="StorageEtrago",
-            version="0.0.9",
+            name=self.name,
+            version=self.version,
             dependencies=dependencies,
             tasks=(insert_PHES, extendable_batteries),
         )
-
 
 def insert_PHES():
     # Get datasets configuration

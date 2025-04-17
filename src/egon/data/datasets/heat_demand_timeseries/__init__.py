@@ -1193,10 +1193,11 @@ class HeatTimeSeries(Dataset):
     Time series for residential buildings are created based on a variety of synthetical created
     individual demand profiles that are part of :py:class:`DataBundle <egon.data.datasets.data_bundle.DataBundle>`.
     This method is desribed within the functions and in this publication:
-        C. Büttner, J. Amme, J. Endres, A. Malla, B. Schachler, I. Cußmann,
-        Open modeling of electricity and heat demand curves for all
-        residential buildings in Germany, Energy Informatics 5 (1) (2022) 21.
-        doi:10.1186/s42162-022-00201-y.
+
+    C. Büttner, J. Amme, J. Endres, A. Malla, B. Schachler, I. Cußmann,
+    Open modeling of electricity and heat demand curves for all
+    residential buildings in Germany, Energy Informatics 5 (1) (2022) 21.
+    doi:10.1186/s42162-022-00201-y.
 
 
     *Dependencies*

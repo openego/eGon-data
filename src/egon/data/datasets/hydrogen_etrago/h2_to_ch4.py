@@ -5,11 +5,11 @@ Module containing the definition of the links between H2 and CH4 buses
 In this module the functions used to define and insert the links between
 H2 and CH4 buses into the database are to be found.
 These links are modelling:
-  * Methanisation (carrier name: 'H2_to_CH4'): technology to produce CH4
-    from H2
-  * H2_feedin: Injection of H2 into the CH4 grid
-  * Steam Methane Reaction (SMR, carrier name: 'CH4_to_H2'): techonology
-    to produce CH4 from H2
+
+* Methanisation (carrier name: 'H2_to_CH4'): technology to produce CH4 from H2
+* H2_feedin: Injection of H2 into the CH4 grid
+* Steam Methane Reaction (SMR, carrier name: 'CH4_to_H2'): techonology
+  to produce CH4 from H2
 
 """
 

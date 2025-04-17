@@ -36,10 +36,40 @@ Base = declarative_base()
 
 
 class DemandRegio(Dataset):
+    """
+    Extract and adjust data from DemandRegio
+
+    Demand data for the sectors households, CTS and industry are calculated
+    using DemandRegio's diaggregator and input data. To bring the resulting
+    data in line with other data used in eGon-data and the eGon project in
+    general some data needed to be adjusted or extended, e.g. in function
+    :py:func:`adjust_ind_pes` or function :py:func:`adjust_cts_ind_nep`. The
+    resulting data is written into newly created tables.
+
+    *Dependencies*
+      * :py:class:`DataBundle <egon.data.datasets.data_bundle.DataBundle>`
+      * :py:class:`ScenarioParameters <egon.data.datasets.scenario_parameters.ScenarioParameters>`
+      * :py:class:`ZensusVg250 <egon.data.datasets.zensus_vg250.ZensusVg250>`
+
+    *Resulting tables*
+      * :py:class:`demand.egon_demandregio_hh <egon.data.datasets.demandregio.EgonDemandRegioHH>` is created and filled
+      * :py:class:`demand.egon_demandregio_cts_ind <egon.data.datasets.demandregio.EgonDemandRegioCtsInd>` is created and filled
+      * :py:class:`society.egon_demandregio_population <egon.data.datasets.demandregio.EgonDemandRegioPopulation>` is created and filled
+      * :py:class:`society.egon_demandregio_household <egon.data.datasets.demandregio.EgonDemandRegioHouseholds>` is created and filled
+      * :py:class:`demand.egon_demandregio_wz <egon.data.datasets.demandregio.EgonDemandRegioWz>` is created and filled
+      * :py:class:`demand.egon_demandregio_timeseries_cts_ind <egon.data.datasets.demandregio.EgonDemandRegioTimeseriesCtsInd>` is created and filled
+
+    """
+
+    #:
+    name: str = "DemandRegio"
+    #:
+    version: str = "0.0.10"
+
     def __init__(self, dependencies):
         super().__init__(
-            name="DemandRegio",
-            version="0.0.10",
+            name=self.name,
+            version=self.version,
             dependencies=dependencies,
             tasks=(
                 clone_and_install, # demandregio must be previously installed

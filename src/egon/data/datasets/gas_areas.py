@@ -22,6 +22,72 @@ from egon.data.metadata import (
 )
 
 
+class GasAreaseGon2035(Dataset):
+    """
+    Create the gas voronoi table and the gas voronoi areas for eGon2035
+
+    Create the gas voronoi table by executing the function :py:func:`create_gas_voronoi_table`
+    and inserts the gas voronoi areas for the eGon2035 scenario with the
+    :py:func:`voronoi_egon2035` function.
+
+    *Dependencies*
+      * :py:class:`EtragoSetup <egon.data.datasets.etrago_setup.EtragoSetup>`
+      * :py:class:`HydrogenBusEtrago <egon.data.datasets.hydrogen_etrago.HydrogenBusEtrago>`
+      * :py:class:`Vg250 <egon.data.datasets.vg250.Vg250>`
+      * :py:class:`GasNodesAndPipes <egon.data.datasets.gas_grid.GasNodesAndPipes>`
+
+    *Resulting tables*
+      * :py:class:`EgonPfHvGasVoronoi <EgonPfHvGasVoronoi>`
+
+    """
+
+    #:
+    name: str = "GasAreaseGon2035"
+    #:
+    version: str = "0.0.2"
+
+    def __init__(self, dependencies):
+        super().__init__(
+            name=self.name,
+            version=self.version,
+            dependencies=dependencies,
+            tasks=(create_gas_voronoi_table, voronoi_egon2035),
+        )
+
+
+class GasAreaseGon100RE(Dataset):
+    """Insert the gas voronoi areas for eGon100RE
+
+    Inserts the gas voronoi areas for the eGon100RE scenario with the
+    :py:func:`voronoi_egon100RE` function.
+
+    *Dependencies*
+      * :py:class:`EtragoSetup <egon.data.datasets.etrago_setup.EtragoSetup>`
+      * :py:class:`HydrogenBusEtrago <egon.data.datasets.hydrogen_etrago.HydrogenBusEtrago>`
+      * :py:class:`HydrogenGridEtrago <egon.data.datasets.hydrogen_etrago.HydrogenGridEtrago>`
+      * :py:class:`Vg250 <egon.data.datasets.vg250.Vg250>`
+      * :py:class:`GasNodesAndPipes <egon.data.datasets.gas_grid.GasNodesAndPipes>`
+      * :py:class:`GasAreaseGon2035 <GasAreaseGon2035>`
+
+    *Resulting tables*
+      * :py:class:`EgonPfHvGasVoronoi <EgonPfHvGasVoronoi>`
+
+    """
+
+    #:
+    name: str = "GasAreaseGon100RE"
+    #:
+    version: str = "0.0.1"
+
+    def __init__(self, dependencies):
+        super().__init__(
+            name=self.name,
+            version=self.version,
+            dependencies=dependencies,
+            tasks=(voronoi_egon100RE),
+        )
+
+
 Base = declarative_base()
 
 
@@ -124,7 +190,12 @@ def create_gas_voronoi_table():
 
 def voronoi_egon2035():
     """
-    Create voronoi polygons for all gas carriers in eGon2035 scenario
+    Insert the gas voronoi polygons in eGon2035 into the database
+
+    This function insert the voronoi polygons for CH4, H2_grid and
+    H2_saltcavern into the database for the scenario eGon2035, making
+    use of the function :py:func:`create_voronoi`.
+
     """
     for carrier in ["CH4", "H2", "H2_saltcavern"]:
         create_voronoi("eGon2035", carrier)
@@ -132,7 +203,12 @@ def voronoi_egon2035():
 
 def voronoi_egon100RE():
     """
-    Create voronoi polygons for all gas carriers in eGon100RE scenario
+    Insert the gas voronoi polygons in eGon100RE into the database
+
+    This function insert the voronoi polygons for CH4, H2_grid and
+    H2_saltcavern into the database for the scenario eGon100RE, making
+    use of the function :py:func:`create_voronoi`.
+
     """
     for carrier in ["CH4", "H2", "H2_saltcavern"]:
         create_voronoi("eGon100RE", carrier)
@@ -156,6 +232,7 @@ def create_voronoi(scn_name, carrier):
         Name of the scenario
     carrier : str
         Name of the carrier
+
     """
 
     engine = db.engine()

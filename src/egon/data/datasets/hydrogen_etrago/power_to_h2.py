@@ -2,13 +2,12 @@
 """
 Module containing the definition of the AC grid to H2 links
 
-In this module the functions used to define and insert the links 
+In this module the functions used to define and insert the links
 between H2 and AC buses into the database are to be found.
 These links are modelling:
-  * Electrolysis (carrier name: 'power_to_H2'): technology to produce H2
-    from AC
-  * Fuel cells (carrier name: 'H2_to_power'): techonology to produce
-    power from H2
+
+* Electrolysis (carrier name: 'power_to_H2'): technology to produce H2 from AC
+* Fuel cells (carrier name: 'H2_to_power'): techonology to produce power from H2
 
 """
 from geoalchemy2.types import Geometry
@@ -233,4 +232,3 @@ def map_buses(scn_name):
     )
 
     return gdf.rename(columns={"bus_id": "bus1", "geom": "geom_gas"})
-
