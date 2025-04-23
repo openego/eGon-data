@@ -1,7 +1,7 @@
 ---
 name: Bug report
 about: Create a report to help us improve
-title: "[BUG]"
+title: "[BUG] "
 labels: ":bug: bug"
 assignees: ''
 
@@ -31,9 +31,10 @@ If applicable, add screenshots to help explain your problem.
 
 ---
 
-**Environment (please complete the following information):**
+**Environment:**
 - OS: [e.g. Windows 11, Ubuntu 22.04]
-- Python version: [e.g. Chrome 120, Python 3.11]
+- Python version: [e.g. Python 3.10, Python 3.11]
+- Dataset Boundary: [Everything or Schleswig-Holstein]
 
 ---
 
