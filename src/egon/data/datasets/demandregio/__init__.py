@@ -526,6 +526,9 @@ def disagg_households_power(
         # scale to meet annual demand from NEP 2023, scenario B 2045
         df *= 90400000 / df.sum().sum()
 
+        # scale to meet annual demand from NEP 2023, scenario B 2045
+        df *= 90400000 / df.sum().sum()
+
     else:
         print(
             f"Electric demand per household size for scenario {scenario} "

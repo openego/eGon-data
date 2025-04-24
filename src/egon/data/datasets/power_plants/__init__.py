@@ -1420,7 +1420,7 @@ def power_plants_status_quo(scn_name="status2019"):
     )
 
     wind_onshore = fill_missing_bus_and_geom(
-        wind_onshore, carrier="wind_onshore"
+        wind_onshore, "wind_onshore", geom_municipalities, mv_grid_districts
     )
     wind_onshore = convert_master_info(wind_onshore)
     wind_onshore["scenario"] = scn_name
@@ -1436,6 +1436,152 @@ def power_plants_status_quo(scn_name="status2019"):
         )
 
     log_insert_capacity(wind_onshore, tech="wind_onshore")
+
+
+def import_gas_gen_egon100():
+    scn_name = "eGon100RE"
+    if scn_name not in egon.data.config.settings()["egon-data"]["--scenarios"]:
+        return
+    con = db.engine()
+    session = sessionmaker(bind=db.engine())()
+    cfg = egon.data.config.datasets()["power_plants"]
+    scenario_date_max = "2045-12-31 23:59:00"
+
+    db.execute_sql(
+        f"""
+        DELETE FROM {cfg['target']['schema']}.{cfg['target']['table']}
+        WHERE carrier = 'gas'
+        AND bus_id IN (SELECT bus_id from grid.egon_etrago_bus
+                WHERE scn_name = '{scn_name}'
+                AND country = 'DE')
+        AND scenario = '{scn_name}'
+        """
+    )
+
+    # import municipalities to assign missing geom and bus_id
+    geom_municipalities = gpd.GeoDataFrame.from_postgis(
+        """
+        SELECT gen, ST_UNION(geometry) as geom
+        FROM boundaries.vg250_gem
+        GROUP BY gen
+        """,
+        con,
+        geom_col="geom",
+    ).set_index("gen")
+    geom_municipalities["geom"] = geom_municipalities["geom"].centroid
+
+    mv_grid_districts = gpd.GeoDataFrame.from_postgis(
+        f"""
+        SELECT * FROM {cfg['sources']['egon_mv_grid_district']}
+        """,
+        con,
+    )
+    mv_grid_districts.geom = mv_grid_districts.geom.to_crs(4326)
+
+    target = db.select_dataframe(
+        f"""
+        SELECT capacity FROM supply.egon_scenario_capacities
+        WHERE scenario_name = '{scn_name}'
+        AND carrier = 'gas'
+        """,
+    ).iat[0, 0]
+
+    conv = pd.read_csv(
+        cfg["sources"]["mastr_combustion"],
+        usecols=[
+            "EinheitMastrNummer",
+            "Energietraeger",
+            "Nettonennleistung",
+            "Laengengrad",
+            "Breitengrad",
+            "Gemeinde",
+            "Inbetriebnahmedatum",
+            "EinheitBetriebsstatus",
+            "DatumEndgueltigeStilllegung",
+            "ThermischeNutzleistung",
+        ],
+    )
+
+    conv = conv[conv.Energietraeger == "Erdgas"]
+
+    conv.rename(
+        columns={
+            "Inbetriebnahmedatum": "commissioning_date",
+            "EinheitBetriebsstatus": "status",
+            "DatumEndgueltigeStilllegung": "decommissioning_date",
+            "EinheitMastrNummer": "gens_id",
+            "Energietraeger": "carrier",
+            "Nettonennleistung": "capacity",
+            "Gemeinde": "location",
+        },
+        inplace=True,
+    )
+
+    conv = discard_not_available_generators(conv, scenario_date_max)
+
+    # convert from KW to MW
+    conv["capacity"] = conv["capacity"] / 1000
+
+    # drop chp generators
+    conv["ThermischeNutzleistung"] = conv["ThermischeNutzleistung"].fillna(0)
+    conv = conv[conv.ThermischeNutzleistung == 0]
+
+    # rename carriers
+    map_carrier_conv = {"Erdgas": "gas"}
+    conv["carrier"] = conv["carrier"].map(map_carrier_conv)
+
+    conv["bus_id"] = np.nan
+
+    conv["geom"] = gpd.points_from_xy(
+        conv.Laengengrad, conv.Breitengrad, crs=4326
+    )
+    conv.loc[(conv.Laengengrad.isna() | conv.Breitengrad.isna()), "geom"] = (
+        Point()
+    )
+    conv = gpd.GeoDataFrame(conv, geometry="geom")
+
+    conv = fill_missing_bus_and_geom(
+        conv, "conventional", geom_municipalities, mv_grid_districts
+    )
+    conv["voltage_level"] = np.nan
+
+    conv["voltage_level"] = assign_voltage_level_by_capacity(
+        conv.rename(columns={"capacity": "Nettonennleistung"})
+    )
+
+    conv["capacity"] = conv["capacity"] * (target / conv["capacity"].sum())
+
+    max_id = db.select_dataframe(
+        """
+            SELECT max(id) FROM supply.egon_power_plants
+            """,
+    ).iat[0, 0]
+
+    conv["id"] = range(max_id + 1, max_id + 1 + len(conv))
+
+    for i, row in conv.iterrows():
+        entry = EgonPowerPlants(
+            id=row.id,
+            sources={"el_capacity": "MaStR"},
+            source_id={"MastrNummer": row.gens_id},
+            carrier=row.carrier,
+            el_capacity=row.capacity,
+            scenario=scn_name,
+            bus_id=row.bus_id,
+            voltage_level=row.voltage_level,
+            geom=row.geom,
+        )
+        session.add(entry)
+    session.commit()
+
+    logging.info(
+        f"""
+          {len(conv)} gas generators with a total installed capacity of
+          {conv.capacity.sum()}MW were inserted into the db
+          """
+    )
+
+    return
 
 
 tasks = (
@@ -1468,9 +1614,13 @@ if (
         },
     )
 
+if "eGon100RE" in egon.data.config.settings()["egon-data"]["--scenarios"]:
+    tasks = tasks + (import_gas_gen_egon100,)
+
 tasks = tasks + (
     pv_rooftop_to_buildings,
     wind_offshore.insert,
+    assign_weather_data.weatherId_and_busId,
 )
 
 for scn_name in egon.data.config.settings()["egon-data"]["--scenarios"]:

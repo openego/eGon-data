@@ -2404,6 +2404,13 @@ def infer_voltage_level(
 def pv_rooftop_to_buildings():
     """Main script, executed as task"""
 
+    EgonPowerPlantPvRoofBuildingScenario.__table__.drop(
+        bind=engine, checkfirst=True
+    )
+    EgonPowerPlantPvRoofBuildingScenario.__table__.create(
+        bind=engine, checkfirst=True
+    )
+
     mastr_gdf = load_mastr_data()
 
     status_quo = "status2023"
@@ -2418,9 +2425,10 @@ def pv_rooftop_to_buildings():
 
     buildings_gdf = load_building_data()
 
-    desagg_mastr_gdf, desagg_buildings_gdf = allocate_to_buildings(
+    desagg_mastr_gdf_orig, desagg_buildings_gdf = allocate_to_buildings(
         mastr_gdf, buildings_gdf
     )
+    desagg_mastr_gdf_orig.to_pickle("desagg_mastr_gdf_orig.pkl")
 
     all_buildings_gdf = (
         desagg_mastr_gdf.assign(scenario=status_quo)
@@ -2429,8 +2437,8 @@ def pv_rooftop_to_buildings():
         .set_geometry("geom")
     )
 
-    scenario_buildings_gdf = all_buildings_gdf.copy()
-
+    scenario_buildings_gdf_orig = all_buildings_gdf.copy()
+    scenario_buildings_gdf_orig.to_pickle("scenario_buildings_gdf_orig.pkl")
     cap_per_bus_id_df = pd.DataFrame()
 
     for scenario in SCENARIOS:
@@ -2444,6 +2452,9 @@ def pv_rooftop_to_buildings():
             scenario_buildings_gdf = scenario_buildings_gdf.loc[
                 scenario_buildings_gdf.commissioning_date <= ts
             ]
+        else:
+            desagg_mastr_gdf = desagg_mastr_gdf_orig.copy()
+            scenario_buildings_gdf = scenario_buildings_gdf_orig.copy()
 
         else:
             logger.debug(f"Desaggregating scenario {scenario}.")

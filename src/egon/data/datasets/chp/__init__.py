@@ -46,6 +46,8 @@ from egon.data.metadata import (
     sources,
 )
 
+from egon.data.datasets.pypsaeur import read_network
+
 Base = declarative_base()
 
 
@@ -276,7 +278,7 @@ def assign_heat_bus():
 
         if chp.empty:
             print(f"No CHP for district heating in scenario {scenario}")
-            return
+            continue
 
         # Select district heating areas and their centroid
         district_heating = db.select_geodataframe(
@@ -702,17 +704,10 @@ def insert_chp_egon100re():
 
     if config.settings()["egon-data"]["--dataset-boundary"] != "Everything":
         additional_capacity /= 16
-    target_file = (
-        Path(".")
-        / "data_bundle_egon_data"
-        / "pypsa_eur_sec"
-        / "2022-07-26-egondata-integration"
-        / "postnetworks"
-        / "elec_s_37_lv2.0__Co2L0-1H-T-H-B-I-dist1_2050.nc"
-    )
 
-    network = pypsa.Network(str(target_file))
-    chp_index = "DE0 0 urban central gas CHP"
+    network = read_network()
+
+    chp_index = "DE0 0 urban central gas CHP-2045"
 
     standard_chp_th = 10
     standard_chp_el = (

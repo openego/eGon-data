@@ -26,7 +26,6 @@ from scipy.spatial import cKDTree
 
 from egon.data import config, db
 from egon.data.datasets.etrago_helpers import (
-    copy_and_modify_buses,
     finalize_bus_insertion,
     initialise_bus_insertion,
 )
@@ -39,7 +38,7 @@ from egon.data.metadata import (
 )
 
 
-def insert_hydrogen_buses():
+def insert_hydrogen_buses(scn_name):
     """
     Insert hydrogen buses into the database (in etrago table)
 
@@ -57,30 +56,91 @@ def insert_hydrogen_buses():
     None
 
     """
-    s = config.settings()["egon-data"]["--scenarios"]
-    scn = []
-    if "eGon2035" in s:
-        scn.append("eGon2035")
-    if "eGon100RE" in s:
-        scn.append("eGon100RE")
+    
+    h2_input= pd.read_csv(Path(".")/"h2_grid_nodes.csv")   
+    h2_input.geom = h2_input.geom.apply(lambda wkb_hex: loads(bytes.fromhex(wkb_hex)))
+    
+    sources = config.datasets()["etrago_hydrogen"]["sources"]
+    target_buses = config.datasets()["etrago_hydrogen"]["targets"]["hydrogen_buses"] 
+    h2_buses = initialise_bus_insertion('H2_grid', target_buses, scenario = scn_name)
+    
+    db.execute_sql(
+        f"""
+        DELETE FROM {target_buses['schema']}.{target_buses['table']}
+        WHERE scn_name = '{scn_name}'
+        AND carrier = 'H2' AND country = 'DE'
+        """
+    )
+       
+    h2_buses.x = h2_input.x
+    h2_buses.y = h2_input.y
+    h2_buses.geom = h2_input.geom    
+    h2_buses.carrier = 'H2_grid'
+    h2_buses.scn_name = scn_name
+    next_bus_id = db.next_etrago_id('bus')
+    h2_buses.bus_id= range(next_bus_id, next_bus_id + len(h2_input))
 
-    for scenario in scn:
-        sources = config.datasets()["etrago_hydrogen"]["sources"]
-        target = config.datasets()["etrago_hydrogen"]["targets"]["hydrogen_buses"]
-        # initalize dataframe for hydrogen buses
-        carrier = "H2_saltcavern"
-        hydrogen_buses = initialise_bus_insertion(
-            carrier, target, scenario=scenario
-        )
-        insert_H2_buses_from_saltcavern(
-            hydrogen_buses, carrier, sources, target, scenario
-        )
+    h2_buses.to_postgis(
+        target_buses["table"],
+        schema=target_buses["schema"],
+        if_exists="append",
+        con=db.engine(),
+        dtype={"geom": Geometry()}
+    )
 
-        carrier = "H2"
-        hydrogen_buses = initialise_bus_insertion(
-            carrier, target, scenario=scenario
+    #insert additional_buses for potential Methanisation to CH4_buses nearby:   
+    h2_buses = h2_buses.to_crs(epsg=32632)
+    
+    sql_CH4_buses = f"""
+            SELECT bus_id, x, y, ST_Transform(geom, 32632) as geom
+            FROM {target_buses["schema"]}.{target_buses["table"]}
+            WHERE carrier = 'CH4'
+            AND scn_name = '{scn_name}' AND country = 'DE'
+            """    
+    CH4_buses = gpd.read_postgis(sql_CH4_buses, con=db.engine())
+    
+    additional_H2_buses = []
+    H2_coords = np.array([(point.x, point.y) for point in h2_buses.geometry])
+    H2_tree = cKDTree(H2_coords)
+    for idx, ch4_bus in CH4_buses.iterrows():
+        ch4_coords = [ch4_bus['geom'].x, ch4_bus['geom'].y]
+        
+        # filter nearest h2_bus
+        dist, nearest_idx = H2_tree.query(ch4_coords, k=1)
+        # critcical distance assumed with 10km based on former ammount of h2_buses
+        if dist > 10000:   
+             # Neuen H2-Bus hinzufügen
+             additional_H2_buses.append({
+                 'scn_name': scn_name, 
+                 'bus_id': None,
+                 'x': ch4_bus['x'],
+                 'y': ch4_bus['y'],
+                 'carrier': 'H2',
+                 'geom': ch4_bus['geom']
+             })
+
+    if additional_H2_buses:
+        additional_H2_buses = gpd.GeoDataFrame(additional_H2_buses, geometry='geom', crs=CH4_buses.crs)
+    additional_H2_buses =additional_H2_buses.to_crs(epsg=4326)
+
+    next_bus_id = db.next_etrago_id('bus')
+    additional_H2_buses['bus_id'] = range(next_bus_id, next_bus_id + len(additional_H2_buses))
+    # Insert data to db
+    additional_H2_buses.to_postgis(
+         target_buses["table"],
+         schema= target_buses["schema"],
+         con=db.engine(),
+         if_exists="append",
+         dtype={"geom": Geometry()}
+     )
+    
+    #insert h2_buses_from_saltcaverns
+    hydrogen_buses = initialise_bus_insertion( 
+            "H2_saltcavern", target_buses, scenario=scn_name
         )
-        insert_H2_buses_from_CH4_grid(hydrogen_buses, carrier, target, scenario)
+    insert_H2_buses_from_saltcavern(
+            hydrogen_buses, "H2_saltcavern", sources, target_buses, scn_name
+        )
 
 
 Base = declarative_base()
