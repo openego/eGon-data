@@ -6,19 +6,23 @@ for eTraGo are to be found.
 The H2 buses in the neighbouring countries (only present in eGon100RE)
 are defined in :py:mod:`pypsaeursec <egon.data.datasets.pypsaeursec>`.
 In both scenarios, there are two types of H2 buses in Germany:
-* H2_grid buses: defined in :py:func:`insert_H2_buses_from_CH4_grid`;
-  these buses are located at the places of the CH4 buses.
-* H2_saltcavern buses: defined in :py:func:`insert_H2_buses_from_saltcavern`;
-  these buses are located at the intersection of AC buses and
-  potential H2 saltcaverns.
+  * H2 buses: defined in :py:func:`insert_H2_buses_from_CH4_grid`,
+    these buses are located at the places than the CH4 buses.
+  * H2_saltcavern buses: defined in :py:func:`insert_H2_buses_from_saltcavern`,
+    these buses are located at the intersection of AC buses and
+    potential for H2 saltcavern.
 
 """
 import datetime
 import json
 
 from geoalchemy2 import Geometry
-from sqlalchemy import BigInteger, Column, Text
-from sqlalchemy.ext.declarative import declarative_base
+from pathlib import Path
+import pandas as pd
+import geopandas as gpd
+from shapely.wkb import loads
+import numpy as np
+from scipy.spatial import cKDTree
 
 from egon.data import config, db
 from egon.data.datasets.etrago_helpers import (
@@ -164,10 +168,10 @@ def create_AC_H2_table():
 
 def insert_H2_buses_from_saltcavern(gdf, carrier, sources, target, scn_name):
     """
-    Insert the H2 buses based on saltcavern locations into the database.
+    Insert the H2 buses based saltcavern locations into the database.
 
     These buses are located at the intersection of AC buses and
-    potential H2 saltcaverns.
+    potential for H2 saltcavern.
 
     Parameters
     ----------
@@ -232,7 +236,7 @@ def insert_H2_buses_from_saltcavern(gdf, carrier, sources, target, scn_name):
         db.engine(),
         schema="grid",
         index=False,
-        if_exists="append",
+        if_exists="replace",
     )
 
 
