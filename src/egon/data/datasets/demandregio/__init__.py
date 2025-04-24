@@ -373,7 +373,7 @@ def adjust_ind_pes(ec_cts_ind):
 
 def adjust_cts_ind_nep(ec_cts_ind, sector):
     """Add electrical demand of new largescale CTS und industrial consumers
-    according to NEP 2021, scneario C 2035. Values per federal state are
+    according to NEP 2025, scneario C 2037. Values per federal state are
     linear distributed over all CTS branches and nuts3 regions.
 
     Parameters
@@ -394,8 +394,8 @@ def adjust_cts_ind_nep(ec_cts_ind, sector):
     file_path = (
         Path(".")
         / "data_bundle_egon_data"
-        / "nep2035_version2021"
-        / sources["new_consumers_2035"]
+        / "nep2037_version2025"
+        / sources["new_largescale_consumers_nep"]
     )
 
     # get data from NEP per federal state
@@ -470,7 +470,8 @@ def disagg_households_power(
         df = data.households_per_size(year=year) * power_per_HH
 
     # Bottom-Up: Power demand by household sizes in [MWh/a] for each scenario
-    elif scenario in ["status2019", "status2023", "eGon2021", "eGon2035"]:
+    elif scenario in ["status2019", "status2023", "eGon2021", "eGon2035",
+                      "nep2037_2025"]:
         # chose demand per household size from survey including weighted DHW
         power_per_HH = demand_per_hh_size["weighted"] / 1e3
 
@@ -480,8 +481,12 @@ def disagg_households_power(
             * power_per_HH
         )
 
+        if scenario == "nep2037_2025":
+            # scale to fit demand of NEP 2025 scenario C 2037 (166TWh)
+            df *= 166 * 1e6 / df.sum().sum()
+
         if scenario == "eGon2035":
-            # scale to fit demand of NEP 2021 scebario C 2035 (119TWh)
+            # scale to fit demand of NEP 2021 scenario C 2035 (119TWh)
             df *= 119 * 1e6 / df.sum().sum()
 
         if scenario == "status2023":
@@ -667,7 +672,20 @@ def insert_cts_ind(scenario, year, engine, target_values):
     ]
 
     # Workaround: Since the disaggregator does not work anymore, data from
-    # previous runs is used for eGon2035 and eGon100RE
+    # previous runs is used for nep2037_2025, eGon2035 and eGon100RE
+    if scenario == "nep2037_2025":
+        ec_cts_ind2 = pd.read_csv(
+            "data_bundle_powerd_data/egon_demandregio_cts_ind_egon2035.csv"
+        )
+        ec_cts_ind2.to_sql(
+            targets["cts_ind_demand"]["table"],
+            engine,
+            targets["cts_ind_demand"]["schema"],
+            if_exists="append",
+            index=False,
+        )
+        return
+
     if scenario == "eGon2035":
         ec_cts_ind2 = pd.read_csv(
             "data_bundle_powerd_data/egon_demandregio_cts_ind_egon2035.csv"
@@ -711,8 +729,9 @@ def insert_cts_ind(scenario, year, engine, target_values):
                 target_values[scenario][sector] / ec_cts_ind.sum().sum()
             )
 
-        # include new largescale consumers according to NEP 2021
-        if scenario == "eGon2035":
+
+        # include new largescale consumers according to NEP
+        if scenario == "eGon2035" or scenario == "nep2037_2025":
             ec_cts_ind = adjust_cts_ind_nep(ec_cts_ind, sector)
         # include new industrial demands due to sector coupling
         if (scenario == "eGon100RE") & (sector == "industry"):
@@ -803,8 +822,14 @@ def insert_cts_ind_demands():
 
         # target values per scenario in MWh
         target_values = {
+            # according to NEP 2025
+            # new consumers will be added separately (reference year 2022)
+            "nep2037_2025": {
+                "CTS": 122500 * 1e3,
+                "industry": 202500 * 1e3
+            },
             # according to NEP 2021
-            # new consumers will be added seperatly
+            # new consumers will be added separately
             "eGon2035": {
                 "CTS": 135300 * 1e3,
                 "industry": 225400 * 1e3

@@ -269,9 +269,10 @@ def buses(scenario, sources, targets):
         errors="ignore"
     )
 
-    # Insert all central buses for eGon2035
+    # Insert all central buses for eGon2035 and nep2037_2025
     if scenario in [
         "eGon2035",
+        "nep2037_2025",
         "status2019",
         "status2023",
     ]:  # TODO: status2023 this is hardcoded shit
@@ -523,7 +524,7 @@ def cross_border_lines(scenario, sources, targets, central_buses):
         print("WARNING! THERE ARE LINES WITH LENGTH = 0")
         condition = new_lines["length"] != 0
         new_lines["length"] = new_lines["length"].where(condition, 1)
-        
+
 
     # Set electrical parameters based on lines from osmtgmod
     for parameter in ["x", "r"]:
@@ -957,7 +958,7 @@ def get_foreign_bus_id(scenario):
     return buses.set_index("node_id").bus_id
 
 
-def calc_capacities():
+def calc_capacities(scn_name):
     """Calculates installed capacities from TYNDP data
 
     Returns
@@ -1010,22 +1011,40 @@ def calc_capacities():
         .set_index(["Node/Line", "Generator_ID"])
     )
 
-    # interpolate linear between 2030 and 2040 for 2035 accordning to
-    # scenario report of TSO's and the approval by BNetzA
-    df_2035 = pd.DataFrame(index=df_2030.index)
-    df_2035["cap_2030"] = df_2030.Value
-    df_2035["cap_2040"] = df_2040.Value
-    df_2035.fillna(0.0, inplace=True)
-    df_2035["cap_2035"] = (
-        df_2035["cap_2030"] + (df_2035["cap_2040"] - df_2035["cap_2030"]) / 2
-    )
-    df_2035 = df_2035.reset_index()
-    df_2035["carrier"] = df_2035.Generator_ID.map(map_carriers_tyndp())
+    if scn_name == "eGon2035"
+        # interpolate linear between 2030 and 2040 for 2035 accordning to
+        # scenario report of TSO's and the approval by BNetzA
+        df_2035 = pd.DataFrame(index=df_2030.index)
+        df_2035["cap_2030"] = df_2030.Value
+        df_2035["cap_2040"] = df_2040.Value
+        df_2035.fillna(0.0, inplace=True)
+        df_2035["cap_2035"] = (
+            df_2035["cap_2030"] + (df_2035["cap_2040"] - df_2035["cap_2030"]) / 2
+        )
+        df_2035 = df_2035.reset_index()
+        df_2035["carrier"] = df_2035.Generator_ID.map(map_carriers_tyndp())
 
-    # group capacities by new carriers
-    grouped_capacities = (
-        df_2035.groupby(["carrier", "Node/Line"]).cap_2035.sum().reset_index()
-    )
+        # group capacities by new carriers
+        grouped_capacities = (
+            df_2035.groupby(["carrier", "Node/Line"]).cap_2035.sum().reset_index()
+        )
+    elif scn_name == "nep2035_2025"
+        # interpolate linear between 2030 and 2040 for 2037 accordning to
+        # scenario report of TSO's and the approval by BNetzA
+        df_2037 = pd.DataFrame(index=df_2030.index)
+        df_2037["cap_2030"] = df_2030.Value
+        df_2037["cap_2040"] = df_2040.Value
+        df_2037.fillna(0.0, inplace=True)
+        df_2037["cap_2037"] = (
+            df_2037["cap_2030"] + (df_2037["cap_2040"] - df_2037["cap_2030"]) / 2
+        )
+        df_2037 = df_2037.reset_index()
+        df_2037["carrier"] = df_2037.Generator_ID.map(map_carriers_tyndp())
+
+        # group capacities by new carriers
+        grouped_capacities = (
+            df_2037.groupby(["carrier", "Node/Line"]).cap_2037.sum().reset_index()
+        )
 
     # choose capacities for considered countries
     return grouped_capacities[
@@ -1033,7 +1052,7 @@ def calc_capacities():
     ]
 
 
-def insert_generators_tyndp(capacities):
+def insert_generators_tyndp(capacities, scn_name):
     """Insert generators for foreign countries based on TYNDP-data
 
     Parameters
@@ -1058,8 +1077,8 @@ def insert_generators_tyndp(capacities):
             SELECT bus_id FROM
             {targets['buses']['schema']}.{targets['buses']['table']}
             WHERE country != 'DE'
-            AND scn_name = 'eGon2035')
-        AND scn_name = 'eGon2035'
+            AND scn_name = '{scn_name}')
+        AND scn_name = '{scn_name}'
         AND carrier != 'CH4'
         """
     )
@@ -1073,7 +1092,7 @@ def insert_generators_tyndp(capacities):
             SELECT generator_id FROM
             {targets['generators']['schema']}.{targets['generators']['table']}
         )
-        AND scn_name = 'eGon2035'
+        AND scn_name = '{scn_name}'
         """
     )
 
@@ -1105,38 +1124,52 @@ def insert_generators_tyndp(capacities):
     )
 
     gen.loc[:, "bus"] = (
-        get_foreign_bus_id(scenario="eGon2035")
+        get_foreign_bus_id(scenario=f"{scn_name}")
         .loc[gen.loc[:, "Node/Line"]]
         .values
     )
 
     # Add scenario column
-    gen["scenario"] = "eGon2035"
+    gen["scenario"] = f"{scn_name}"
 
     # Add marginal costs
     gen = add_marginal_costs(gen)
 
     # insert generators data
     session = sessionmaker(bind=db.engine())()
-    for i, row in gen.iterrows():
-        entry = etrago.EgonPfHvGenerator(
-            scn_name=row.scenario,
-            generator_id=int(db.next_etrago_id("generator")),
-            bus=row.bus,
-            carrier=row.carrier,
-            p_nom=row.cap_2035,
-            marginal_cost=row.marginal_cost,
-        )
+    if scn_name = "eGon2035":
+        for i, row in gen.iterrows():
+            entry = etrago.EgonPfHvGenerator(
+                scn_name=row.scenario,
+                generator_id=int(db.next_etrago_id("generator")),
+                bus=row.bus,
+                carrier=row.carrier,
+                p_nom=row.cap_2035,
+                marginal_cost=row.marginal_cost,
+            )
 
-        session.add(entry)
-        session.commit()
+            session.add(entry)
+            session.commit()
+    elif scn_name = "nep2037_2025":
+        for i, row in gen.iterrows():
+            entry = etrago.EgonPfHvGenerator(
+                scn_name=row.scenario,
+                generator_id=int(db.next_etrago_id("generator")),
+                bus=row.bus,
+                carrier=row.carrier,
+                p_nom=row.cap_2037,
+                marginal_cost=row.marginal_cost,
+            )
+
+            session.add(entry)
+            session.commit()
 
     # assign generators time-series data
 
-    renewable_timeseries_pypsaeur("eGon2035")
+    renewable_timeseries_pypsaeur(f"{scn_name}")
 
 
-def insert_storage_tyndp(capacities):
+def insert_storage_tyndp(capacities, scn_name):
     """Insert storage units for foreign countries based on TYNDP-data
 
     Parameters
@@ -1161,17 +1194,17 @@ def insert_storage_tyndp(capacities):
             SELECT bus_id FROM
             {targets['buses']['schema']}.{targets['buses']['table']}
             WHERE country != 'DE'
-            AND scn_name = 'eGon2035')
-        AND scn_name = 'eGon2035'
+            AND scn_name = '{scn_name}')
+        AND scn_name = '{scn_name}'
         """
     )
 
     # Add missing information suitable for eTraGo selected from scenario_parameter table
-    parameters_pumped_hydro = scenario_parameters.electricity("eGon2035")[
+    parameters_pumped_hydro = scenario_parameters.electricity("{scn_name}")[
         "efficiency"
     ]["pumped_hydro"]
 
-    parameters_battery = scenario_parameters.electricity("eGon2035")[
+    parameters_battery = scenario_parameters.electricity("{scn_name}")[
         "efficiency"
     ]["battery"]
 
@@ -1188,7 +1221,7 @@ def insert_storage_tyndp(capacities):
     )
 
     store.loc[:, "bus"] = (
-        get_foreign_bus_id(scenario="eGon2035")
+        get_foreign_bus_id(scenario="{scn_name}")
         .loc[store.loc[:, "Node/Line"]]
         .values
     )
@@ -1213,9 +1246,25 @@ def insert_storage_tyndp(capacities):
 
     # insert data
     session = sessionmaker(bind=db.engine())()
-    for i, row in store.iterrows():
+    if scn_name == "eGon2035":
+        for i, row in store.iterrows():
+            entry = etrago.EgonPfHvStorage(
+                scn_name=f"{scn_name}",
+                storage_id=int(db.next_etrago_id("storage")),
+                bus=row.bus,
+                max_hours=row.max_hours,
+                efficiency_store=row.store,
+                efficiency_dispatch=row.dispatch,
+                standing_loss=row.standing_loss,
+                carrier=row.carrier,
+                p_nom=row.cap_2035,
+            )
+
+            session.add(entry)
+            session.commit()
+    elif scn_name == "nep2037_2025"
         entry = etrago.EgonPfHvStorage(
-            scn_name="eGon2035",
+            scn_name=f"{scn_name}",
             storage_id=int(db.next_etrago_id("storage")),
             bus=row.bus,
             max_hours=row.max_hours,
@@ -1223,7 +1272,7 @@ def insert_storage_tyndp(capacities):
             efficiency_dispatch=row.dispatch,
             standing_loss=row.standing_loss,
             carrier=row.carrier,
-            p_nom=row.cap_2035,
+            p_nom=row.cap_2037,
         )
 
         session.add(entry)
@@ -1256,7 +1305,7 @@ def get_map_buses():
     }
 
 
-def tyndp_generation():
+def tyndp_generation(scn_name):
     """Insert data from TYNDP 2020 accordning to NEP 2021
     Scenario 'Distributed Energy', linear interpolate between 2030 and 2040
 
@@ -1265,14 +1314,14 @@ def tyndp_generation():
     None.
     """
 
-    capacities = calc_capacities()
+    capacities = calc_capacities(scn_name)
 
-    insert_generators_tyndp(capacities)
+    insert_generators_tyndp(capacities, scn_name)
 
-    insert_storage_tyndp(capacities)
+    insert_storage_tyndp(capacities, scn_name)
 
 
-def tyndp_demand():
+def tyndp_demand(scn_name):
     """Copy load timeseries data from TYNDP 2020.
     According to NEP 2021, the data for 2030 and 2040 is interpolated linearly.
 
@@ -1292,7 +1341,7 @@ def tyndp_demand():
         DELETE FROM {targets['loads']['schema']}.
         {targets['loads']['table']}
         WHERE
-        scn_name = 'eGon2035'
+        scn_name = '{scn_name}'
         AND carrier = 'AC'
         AND bus NOT IN (
             SELECT bus_i
@@ -1334,7 +1383,7 @@ def tyndp_demand():
         buses[buses.nodes.isin(map_buses.keys())].nodes.map(map_buses)
     )
     buses.loc[:, "bus"] = (
-        get_foreign_bus_id(scenario="eGon2035")
+        get_foreign_bus_id(scenario=f"{scn_name}")
         .loc[buses.loc[:, "nodes"]]
         .values
     )
@@ -1378,21 +1427,32 @@ def tyndp_demand():
             data_2040 = data_2030
 
         # According to the NEP, data for 2030 and 2040 is linear interpolated
-        data_2035 = ((data_2030 + data_2040) / 2)[:8760]
+        if scn_name == "eGon2035":
+            data_2035 = ((data_2030 + data_2040) / 2)[:8760]
+        elif scn_name == "nep2037_2025"
+            data_2037 = ((data_2030 + data_2040) / 2)[:8760]
 
         entry = etrago.EgonPfHvLoad(
-            scn_name="eGon2035",
+            scn_name=f"{scn_name}",
             load_id=int(load_id),
             carrier="AC",
             bus=int(buses.bus[bus]),
         )
 
-        entry_ts = etrago.EgonPfHvLoadTimeseries(
-            scn_name="eGon2035",
-            load_id=int(load_id),
-            temp_id=1,
-            p_set=list(data_2035.values),
-        )
+        if scn_name == "eGon2035":
+            entry_ts = etrago.EgonPfHvLoadTimeseries(
+                scn_name=f"{scn_name}",
+                load_id=int(load_id),
+                temp_id=1,
+                p_set=list(data_2035.values),
+            )
+        elif scn_name == "nep2037_2025"
+            entry_ts = etrago.EgonPfHvLoadTimeseries(
+                scn_name=f"{scn_name}",
+                load_id=int(load_id),
+                temp_id=1,
+                p_set=list(data_2037.values),
+            )
 
         session.add(entry)
         session.add(entry_ts)
@@ -2168,8 +2228,8 @@ insert_per_scenario = set()
 
 for scn_name in config.settings()["egon-data"]["--scenarios"]:
 
-    if scn_name == "eGon2035":
-        insert_per_scenario.update([tyndp_generation, tyndp_demand])
+    if scn_name == "eGon2035" or scn_name == "nep2037_2025":
+        insert_per_scenario.update([partial(tyndp_generation, scn_name) , tyndp_demand])
 
     if "status" in scn_name:
         postfix = f"_{scn_name.split('status')[-1]}"
@@ -2218,7 +2278,7 @@ class ElectricalNeighbours(Dataset):
       * :py:class:`grid.egon_etrago_generator <egon.data.datasets.etrago_setup.EgonPfHvGenerator>` is extended
       * :py:class:`grid.egon_etrago_generator_timeseries <egon.data.datasets.etrago_setup.EgonPfHvGeneratorTimeseries>` is extended
       * :py:class:`grid.egon_etrago_transformer <egon.data.datasets.etrago_setup.EgonPfHvTransformer>` is extended
-      
+
     """
 
     #:

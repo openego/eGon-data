@@ -713,6 +713,10 @@ def ind_sites_data_import():
     if "eGon2035" in scenarios:
         dsm_2035 = calc_ind_site_timeseries("eGon2035").reset_index()
         dsm = pd.concat([dsm, dsm_2035], ignore_index=True)
+    # scenario nep2037_2025
+    if "nep2037_2025" in scenarios:
+        dsm_2037_2025 = calc_ind_site_timeseries("nep2037_2025").reset_index()
+        dsm = pd.concat([dsm, dsm_2037_2025], ignore_index=True)
     # scenario eGon100RE
     if "eGon100RE" in scenarios:
         dsm_100 = calc_ind_site_timeseries("eGon100RE").reset_index()
@@ -904,12 +908,18 @@ def create_dsm_components(
         dsm_id, dsm_id + rows_per_scenario.get("eGon2035", 0)
     )
 
-    bus_id.iloc[
-        rows_per_scenario.get("eGon2035", 0) : rows_per_scenario.get(
-            "eGon2035", 0
-        )
-        + rows_per_scenario.get("eGon100RE", 0)
-    ] = range(dsm_id, dsm_id + rows_per_scenario.get("eGon100RE", 0))
+    bus_id.iloc[rows_per_scenario.get("eGon2035", 0) : rows_per_scenario.get(
+        "eGon2035", 0) + rows_per_scenario.get("nep2037_2025", 0)] = range(
+        dsm_id, dsm_id + rows_per_scenario.get("nep2037_2025", 0)
+    )
+
+    bus_id.iloc[rows_per_scenario.get("eGon2035", 0) + rows_per_scenario.get(
+        "nep2037_2025", 0) : rows_per_scenario.get(
+        "eGon2035", 0) + rows_per_scenario.get("nep2037_2025",
+                                               0) + rows_per_scenario.get("eGon100RE",
+                                                                          0)] = range(
+        dsm_id, dsm_id + rows_per_scenario.get("eGon100RE", 0)
+    )
 
     dsm_buses["bus_id"] = bus_id
 
@@ -935,12 +945,18 @@ def create_dsm_components(
         dsm_id, dsm_id + rows_per_scenario.get("eGon2035", 0)
     )
 
-    link_id.iloc[
-        rows_per_scenario.get("eGon2035", 0) : rows_per_scenario.get(
-            "eGon2035", 0
-        )
-        + rows_per_scenario.get("eGon100RE", 0)
-    ] = range(dsm_id, dsm_id + rows_per_scenario.get("eGon100RE", 0))
+    link_id.iloc[rows_per_scenario.get("eGon2035", 0): rows_per_scenario.get(
+        "eGon2035", 0) + rows_per_scenario.get("nep2037_2025", 0)] = range(
+        dsm_id, dsm_id + rows_per_scenario.get("nep2037_2025", 0)
+    )
+
+    link_id.iloc[rows_per_scenario.get("eGon2035", 0) + rows_per_scenario.get(
+        "nep2037_2025", 0): rows_per_scenario.get(
+        "eGon2035", 0) + rows_per_scenario.get("nep2037_2025",
+                                               0) + rows_per_scenario.get("eGon100RE",
+                                                                          0)] = range(
+        dsm_id, dsm_id + rows_per_scenario.get("eGon100RE", 0)
+    )
 
     dsm_links["link_id"] = link_id
 
@@ -972,12 +988,18 @@ def create_dsm_components(
         dsm_id, dsm_id + rows_per_scenario.get("eGon2035", 0)
     )
 
-    store_id.iloc[
-        rows_per_scenario.get("eGon2035", 0) : rows_per_scenario.get(
-            "eGon2035", 0
-        )
-        + rows_per_scenario.get("eGon100RE", 0)
-    ] = range(dsm_id, dsm_id + rows_per_scenario.get("eGon100RE", 0))
+    store_id.iloc[rows_per_scenario.get("eGon2035", 0): rows_per_scenario.get(
+        "eGon2035", 0) + rows_per_scenario.get("nep2037_2025", 0)] = range(
+        dsm_id, dsm_id + rows_per_scenario.get("nep2037_2025", 0)
+    )
+
+    store_id.iloc[rows_per_scenario.get("eGon2035", 0) + rows_per_scenario.get(
+        "nep2037_2025", 0): rows_per_scenario.get(
+        "eGon2035", 0) + rows_per_scenario.get("nep2037_2025",
+                                               0) + rows_per_scenario.get("eGon100RE",
+                                                                          0)] = range(
+        dsm_id, dsm_id + rows_per_scenario.get("eGon100RE", 0)
+    )
 
     dsm_stores["store_id"] = store_id
 

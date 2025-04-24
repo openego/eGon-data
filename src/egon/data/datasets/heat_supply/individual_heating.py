@@ -36,7 +36,8 @@ The resulting data is stored in separate tables respectively a csv file:
     :func:`delete_heat_peak_loads_100RE`.
 
 The desaggregation of heat pump capcacities to individual buildings takes place in two
-separate datasets: 'HeatPumps2035' for eGon2035 scenario and 'HeatPumps2050' for
+separate datasets: 'HeatPumps2035' for eGon2035, 'HeatPumps2037' for nep2037_2025
+scenario and 'HeatPumps2050' for
 eGon100RE.
 It is done separately because for one reason in case of the eGon100RE scenario the
 minimum required heat pump capacity per building can directly be determined using the

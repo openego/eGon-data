@@ -337,7 +337,7 @@ def feedin_per_turbine():
     return gdf
 
 
-def wind():
+def wind(scn):
     """Insert feed-in timeseries for wind onshore turbines to database
 
     Returns
@@ -360,7 +360,7 @@ def wind():
         ["E-141", "E-126"]
     ]
 
-    weather_year = get_sector_parameters("global", "eGon2035")["weather_year"]
+    weather_year = get_sector_parameters("global", scn)["weather_year"]
 
     df = pd.DataFrame(
         index=weather_cells.index,

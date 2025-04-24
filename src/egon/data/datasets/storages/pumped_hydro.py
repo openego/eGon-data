@@ -49,6 +49,21 @@ def select_nep_pumped_hydro(scn):
         nep_ph.rename(
             columns={"c2035_capacity": "elec_capacity"}, inplace=True
         )
+    elif scn == "nep2037_2025":
+        # Select plants with geolocation from list of conventional power plants
+        nep_ph = db.select_dataframe(
+            f"""
+            SELECT bnetza_id, name, carrier, postcode, capacity, city,
+            federal_state, c2037_capacity
+            FROM {cfg['sources']['nep_conv']}
+            WHERE carrier = '{carrier}'
+            AND c2037_capacity > 0
+            AND postcode != 'None';
+            """
+        )
+        nep_ph.rename(
+            columns={"c2037_capacity": "elec_capacity"}, inplace=True
+        )
     elif "status" in scn:
         # Select plants with geolocation from list of conventional power plants
         year = int(scn[-4:])
@@ -292,7 +307,7 @@ def match_storage_units(
     return matched, mastr, nep
 
 
-def get_location(unmatched):
+def get_location(unmatched, scn):
     """Gets a geolocation for units which couldn't be matched using MaStR data.
     Uses geolocator and the city name from NEP data to create longitude and
     latitude for a list of unmatched units.
@@ -341,7 +356,7 @@ def get_location(unmatched):
     located = located.rename(
         columns={"elec_capacity": "el_capacity", "bnetza_id": "MaStRNummer"}
     )
-    located["scenario"] = "eGon2035"
+    located["scenario"] = scn
     located["source"] = "NEP power plants geolocated using city"
 
     unmatched = unmatched.drop(located.index.values)

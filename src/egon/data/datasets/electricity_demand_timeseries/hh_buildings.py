@@ -1,5 +1,5 @@
 """
-Household electricity demand time series for scenarios in 2035 and 2050
+Household electricity demand time series for scenarios in 2035, 2037 and 2050
 assigned to OSM-buildings.
 
 """
@@ -679,7 +679,7 @@ def get_building_peak_loads():
     Peak loads of buildings are determined.
 
     Timeseries for every building are accumulated, the maximum value
-    determined and with the respective nuts3 factor scaled for 2035 and 2050
+    determined and with the respective nuts3 factor scaled for 2035, 2037 and 2050
     scenario.
 
     Note
@@ -697,6 +697,7 @@ def get_building_peak_loads():
                 HouseholdElectricityProfilesInCensusCells.factor_2019,
                 HouseholdElectricityProfilesInCensusCells.factor_2023,
                 HouseholdElectricityProfilesInCensusCells.factor_2035,
+                HouseholdElectricityProfilesInCensusCells.factor_2037,
                 HouseholdElectricityProfilesInCensusCells.factor_2050,
             )
             .filter(
@@ -753,12 +754,14 @@ def get_building_peak_loads():
                     df_building_peak_load_nuts3 * df["factor_2019"].unique(),
                     df_building_peak_load_nuts3 * df["factor_2023"].unique(),
                     df_building_peak_load_nuts3 * df["factor_2035"].unique(),
+                    df_building_peak_load_nuts3 * df["factor_2037"].unique(),
                     df_building_peak_load_nuts3 * df["factor_2050"].unique(),
                 ],
                 index=[
                     "status2019",
                     "status2023",
                     "eGon2035",
+                    "nep2037_2025",
                     "eGon100RE",
                 ],
             ).T

@@ -373,7 +373,7 @@ def cascade_heat_supply(scenario, plotting=True):
 
     # Plot results per district heating area
     if plotting:
-        plot_heat_supply(resulting_capacities)
+        plot_heat_supply(resulting_capacities, scenario)
 
     return gpd.GeoDataFrame(
         resulting_capacities,
@@ -471,10 +471,10 @@ def backup_resistive_heaters(scenario):
     return df
 
 
-def plot_heat_supply(resulting_capacities):
+def plot_heat_supply(resulting_capacities, scenario):
     from matplotlib import pyplot as plt
 
-    district_heating_areas = select_district_heating_areas("eGon2035")
+    district_heating_areas = select_district_heating_areas(scenario)
 
     for c in ["CHP", "solar_thermal_collector", "geo_thermal", "heat_pump"]:
         district_heating_areas[c] = (

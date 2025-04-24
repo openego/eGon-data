@@ -1,5 +1,5 @@
 """
-This module does sanity checks for both the eGon2035 and the eGon100RE scenario
+This module does sanity checks for the eGon2035, nep2037_2025 and the eGon100RE scenario
 separately where a percentage error is given to showcase difference in output
 and input values. Please note that there are missing input technologies in the
 supply tables.
@@ -87,8 +87,10 @@ class SanityChecks(Dataset):
             version=self.version,
             dependencies=dependencies,
             tasks={
-                etrago_eGon2035_electricity,
-                etrago_eGon2035_heat,
+                etrago_electricity('eGon2035'),
+                etrago_heat('eGon2035'),
+                etrago_electricity('nep2037_2025'),
+                etrago_heat('nep2037_2025'),
                 residential_electricity_annual_sum,
                 residential_electricity_hh_refinement,
                 cts_electricity_demand_share,
@@ -96,18 +98,20 @@ class SanityChecks(Dataset):
                 sanitycheck_emobility_mit,
                 sanitycheck_pv_rooftop_buildings,
                 sanitycheck_home_batteries,
-                etrago_eGon2035_gas_DE,
-                etrago_eGon2035_gas_abroad,
+                etrago_gas_DE('eGon2035'),
+                etrago_gas_abroad('eGon2035'),
+                etrago_gas_DE('nep2037_2025'),
+                etrago_gas_abroad('nep2037_2025'),
                 sanitycheck_dsm,
             },
         )
 
 
-def etrago_eGon2035_electricity():
+def etrago_electricity(scn):
     """Execute basic sanity checks.
 
     Returns print statements as sanity checks for the electricity sector in
-    the eGon2035 scenario.
+    the eGon2035 or nep2037_2025 scenario.
 
     Parameters
     ----------
@@ -118,7 +122,11 @@ def etrago_eGon2035_electricity():
     None
     """
 
-    scn = "eGon2035"
+    if scn == "eGon2035"
+        year = "2035"
+    elif scn == "nep2037_2025"
+        year = "2037"
+
 
     # Section to check generator capacities
     logger.info(f"Sanity checks for scenario {scn}")
@@ -147,12 +155,13 @@ def etrago_eGon2035_electricity():
                     FROM grid.egon_etrago_generator
                     WHERE bus IN (
                         SELECT bus_id FROM grid.egon_etrago_bus
-                        WHERE scn_name = 'eGon2035'
+                        WHERE scn_name = '%s'
                         AND country = 'DE')
                     AND carrier IN ('biomass', 'industrial_biomass_CHP',
                     'central_biomass_CHP')
                     GROUP BY (scn_name);
                 """,
+                params = [scn],
                 warning=False,
             )
 
@@ -166,10 +175,11 @@ def etrago_eGon2035_electricity():
                          AND bus IN
                              (SELECT bus_id
                                FROM grid.egon_etrago_bus
-                               WHERE scn_name = 'eGon2035'
+                               WHERE scn_name = '%s'
                                AND country = 'DE')
                          GROUP BY (scn_name);
                     """,
+                params=[scn],
                 warning=False,
             )
 
@@ -239,10 +249,11 @@ def etrago_eGon2035_electricity():
                          AND bus IN
                              (SELECT bus_id
                                FROM grid.egon_etrago_bus
-                               WHERE scn_name = 'eGon2035'
+                               WHERE scn_name = '%s'
                                AND country = 'DE')
                          GROUP BY (scn_name);
                     """,
+            params=[scn],
             warning=False,
         )
 
@@ -307,14 +318,15 @@ def etrago_eGon2035_electricity():
             ON (a.load_id = b.load_id)
             JOIN grid.egon_etrago_bus c
             ON (a.bus=c.bus_id)
-            AND b.scn_name = 'eGon2035'
-            AND a.scn_name = 'eGon2035'
+            AND b.scn_name = '%s'
+            AND a.scn_name = '%s'
             AND a.carrier = 'AC'
-            AND c.scn_name= 'eGon2035'
+            AND c.scn_name= '%s'
             AND c.country='DE'
             GROUP BY (a.scn_name, a.carrier);
 
     """,
+        params=[scn, scn, scn],
         warning=False,
     )["load_twh"].values[0]
 
@@ -322,21 +334,23 @@ def etrago_eGon2035_electricity():
         """SELECT scenario,
          SUM(demand::numeric/1000000) as demand_mw_regio_cts_ind
             FROM demand.egon_demandregio_cts_ind
-            WHERE scenario= 'eGon2035'
-            AND year IN ('2035')
+            WHERE scenario= '%s'
+            AND year IN ('%s')
             GROUP BY (scenario);
 
         """,
+        params=[scn, year],
         warning=False,
     )["demand_mw_regio_cts_ind"].values[0]
 
     input_hh = db.select_dataframe(
         """SELECT scenario, SUM(demand::numeric/1000000) as demand_mw_regio_hh
             FROM demand.egon_demandregio_hh
-            WHERE scenario= 'eGon2035'
-            AND year IN ('2035')
+            WHERE scenario= '%s'
+            AND year IN ('%s')
             GROUP BY (scenario);
         """,
+        params=[scn, year],
         warning=False,
     )["demand_mw_regio_hh"].values[0]
 
@@ -346,8 +360,7 @@ def etrago_eGon2035_electricity():
 
     print(f"electricity demand: {e} %")
 
-
-def etrago_eGon2035_heat():
+def etrago_heat(scn):
     """Execute basic sanity checks.
 
     Returns print statements as sanity checks for the heat sector in
@@ -365,7 +378,6 @@ def etrago_eGon2035_heat():
     # Check input and output values for the carriers "others",
     # "reservoir", "run_of_river" and "oil"
 
-    scn = "eGon2035"
 
     # Section to check generator capacities
     print(f"Sanity checks for scenario {scn}")
@@ -385,22 +397,24 @@ def etrago_eGon2035_heat():
             ON (a.load_id = b.load_id)
             JOIN grid.egon_etrago_bus c
             ON (a.bus=c.bus_id)
-            AND b.scn_name = 'eGon2035'
-            AND a.scn_name = 'eGon2035'
-            AND c.scn_name= 'eGon2035'
+            AND b.scn_name = '%s'
+            AND a.scn_name = '%s'
+            AND c.scn_name= '%s'
             AND c.country='DE'
             AND a.carrier IN ('rural_heat', 'central_heat')
             GROUP BY (a.scn_name);
         """,
+        params = [scn, scn, scn],
         warning=False,
     )["load_twh"].values[0]
 
     input_heat_demand = db.select_dataframe(
         """SELECT scenario, SUM(demand::numeric/1000000) as demand_mw_peta_heat
             FROM demand.egon_peta_heat
-            WHERE scenario= 'eGon2035'
+            WHERE scenario= '%s'
             GROUP BY (scenario);
         """,
+        params=[scn],
         warning=False,
     )["demand_mw_peta_heat"].values[0]
 
@@ -423,9 +437,10 @@ def etrago_eGon2035_heat():
         """SELECT carrier, SUM(capacity::numeric) as Urban_central_heat_pump_mw
             FROM supply.egon_scenario_capacities
             WHERE carrier= 'urban_central_heat_pump'
-            AND scenario_name IN ('eGon2035')
+            AND scenario_name IN ('%s)
             GROUP BY (carrier);
         """,
+        params = [scn],
         warning=False,
     )["urban_central_heat_pump_mw"].values[0]
 
@@ -433,9 +448,10 @@ def etrago_eGon2035_heat():
         """SELECT carrier, SUM(p_nom::numeric) as Central_heat_pump_mw
             FROM grid.egon_etrago_link
             WHERE carrier= 'central_heat_pump'
-            AND scn_name IN ('eGon2035')
+            AND scn_name IN ('%s')
             GROUP BY (carrier);
     """,
+        params=[scn],
         warning=False,
     )["central_heat_pump_mw"].values[0]
 
@@ -451,9 +467,10 @@ def etrago_eGon2035_heat():
         """SELECT carrier, SUM(capacity::numeric) as residential_heat_pump_mw
             FROM supply.egon_scenario_capacities
             WHERE carrier= 'residential_rural_heat_pump'
-            AND scenario_name IN ('eGon2035')
+            AND scenario_name IN ('%s')
             GROUP BY (carrier);
         """,
+        params=[scn],
         warning=False,
     )["residential_heat_pump_mw"].values[0]
 
@@ -461,9 +478,10 @@ def etrago_eGon2035_heat():
         """SELECT carrier, SUM(p_nom::numeric) as rural_heat_pump_mw
             FROM grid.egon_etrago_link
             WHERE carrier= 'rural_heat_pump'
-            AND scn_name IN ('eGon2035')
+            AND scn_name IN ('%s')
             GROUP BY (carrier);
     """,
+        params=[scn],
         warning=False,
     )["rural_heat_pump_mw"].values[0]
 
@@ -483,9 +501,10 @@ def etrago_eGon2035_heat():
          SUM(capacity::numeric) as Urban_central_resistive_heater_MW
             FROM supply.egon_scenario_capacities
             WHERE carrier= 'urban_central_resistive_heater'
-            AND scenario_name IN ('eGon2035')
+            AND scenario_name IN ('%s')
             GROUP BY (carrier);
         """,
+        params=[scn],
         warning=False,
     )["urban_central_resistive_heater_mw"].values[0]
 
@@ -493,9 +512,10 @@ def etrago_eGon2035_heat():
         """SELECT carrier, SUM(p_nom::numeric) as central_resistive_heater_MW
             FROM grid.egon_etrago_link
             WHERE carrier= 'central_resistive_heater'
-            AND scn_name IN ('eGon2035')
+            AND scn_name IN ('%s')
             GROUP BY (carrier);
         """,
+        params=[scn],
         warning=False,
     )["central_resistive_heater_mw"].values[0]
 
@@ -516,9 +536,10 @@ def etrago_eGon2035_heat():
         """SELECT carrier, SUM(capacity::numeric) as solar_thermal_collector_mw
             FROM supply.egon_scenario_capacities
             WHERE carrier= 'urban_central_solar_thermal_collector'
-            AND scenario_name IN ('eGon2035')
+            AND scenario_name IN ('%s')
             GROUP BY (carrier);
         """,
+        params=[scn],
         warning=False,
     )["solar_thermal_collector_mw"].values[0]
 
@@ -526,9 +547,10 @@ def etrago_eGon2035_heat():
         """SELECT carrier, SUM(p_nom::numeric) as solar_thermal_collector_mw
             FROM grid.egon_etrago_generator
             WHERE carrier= 'solar_thermal_collector'
-            AND scn_name IN ('eGon2035')
+            AND scn_name IN ('%s')
             GROUP BY (carrier);
         """,
+        params=[scn],
         warning=False,
     )["solar_thermal_collector_mw"].values[0]
 
@@ -548,9 +570,10 @@ def etrago_eGon2035_heat():
          SUM(capacity::numeric) as Urban_central_geo_thermal_MW
             FROM supply.egon_scenario_capacities
             WHERE carrier= 'urban_central_geo_thermal'
-            AND scenario_name IN ('eGon2035')
+            AND scenario_name IN ('%s')
             GROUP BY (carrier);
         """,
+        params=[scn],
         warning=False,
     )["urban_central_geo_thermal_mw"].values[0]
 
@@ -558,9 +581,10 @@ def etrago_eGon2035_heat():
         """SELECT carrier, SUM(p_nom::numeric) as geo_thermal_MW
             FROM grid.egon_etrago_generator
             WHERE carrier= 'geo_thermal'
-            AND scn_name IN ('eGon2035')
+            AND scn_name IN ('%s')
             GROUP BY (carrier);
     """,
+        params=[scn],
         warning=False,
     )["geo_thermal_mw"].values[0]
 
@@ -737,7 +761,7 @@ def sanitycheck_pv_rooftop_buildings():
         len(merge_df.loc[merge_df.building_area.isna()]) == 0
     ), f"{len(merge_df.loc[merge_df.building_area.isna()])} != 0"
 
-    scenarios = ["status_quo", "eGon2035"]
+    scenarios = ["status_quo", "eGon2035", "nep2037_2025"]
 
     base_path = Path(egon.data.__path__[0]).resolve()
 
@@ -772,7 +796,7 @@ def sanitycheck_pv_rooftop_buildings():
         )
 
     for scenario in SCENARIOS:
-        if scenario == "eGon2035":
+        if scenario == "eGon2035" or scenario == "nep2037_2025":
             assert isclose(
                 scenario_data(scenario=scenario).capacity.sum(),
                 merge_df.loc[merge_df.scenario == scenario].capacity.sum(),
@@ -781,6 +805,7 @@ def sanitycheck_pv_rooftop_buildings():
                 f"{scenario_data(scenario=scenario).capacity.sum()} != "
                 f"{merge_df.loc[merge_df.scenario == scenario].capacity.sum()}"
             )
+
         elif scenario == "eGon100RE":
             sources = config.datasets()["solar_rooftop"]["sources"]
 
@@ -833,7 +858,8 @@ def sanitycheck_pv_rooftop_buildings():
 def sanitycheck_emobility_mit():
     """Execute sanity checks for eMobility: motorized individual travel
 
-    Checks data integrity for eGon2035, eGon2035_lowflex and eGon100RE scenario
+    Checks data integrity for eGon2035, eGon2035_lowflex, nep2037_2025,
+    nep2037_2025_lowflex and eGon100RE scenario
     using assertions:
       1. Allocated EV numbers and EVs allocated to grid districts
       2. Trip data (original inout data from simBEV)
@@ -1270,13 +1296,13 @@ def sanitycheck_emobility_mit():
             ),
         )
 
-    def check_model_data_lowflex_eGon2035():
+    def check_model_data_lowflex(scn):
         # TODO: Add eGon100RE_lowflex
         print("")
-        print("SCENARIO: eGon2035_lowflex")
+        print(f"SCENARIO: {scn}_lowflex")
 
         # Compare driving load and charging load
-        print("  Loading eGon2035 model timeseries: driving load...")
+        print(f"  Loading {scn} model timeseries: driving load...")
         with db.session_scope() as session:
             query = (
                 session.query(
@@ -1289,8 +1315,8 @@ def sanitycheck_emobility_mit():
                 )
                 .filter(
                     EgonPfHvLoad.carrier == "land_transport_EV",
-                    EgonPfHvLoad.scn_name == "eGon2035",
-                    EgonPfHvLoadTimeseries.scn_name == "eGon2035",
+                    EgonPfHvLoad.scn_name == scn,
+                    EgonPfHvLoadTimeseries.scn_name == scn,
                 )
             )
         model_driving_load = pd.read_sql(
@@ -1299,7 +1325,7 @@ def sanitycheck_emobility_mit():
         driving_load = np.array(model_driving_load.p_set.to_list()).sum(axis=0)
 
         print(
-            "  Loading eGon2035_lowflex model timeseries: dumb charging "
+            f"  Loading {scn}_lowflex model timeseries: dumb charging "
             "load..."
         )
         with db.session_scope() as session:
@@ -1314,8 +1340,8 @@ def sanitycheck_emobility_mit():
                 )
                 .filter(
                     EgonPfHvLoad.carrier == "land_transport_EV",
-                    EgonPfHvLoad.scn_name == "eGon2035_lowflex",
-                    EgonPfHvLoadTimeseries.scn_name == "eGon2035_lowflex",
+                    EgonPfHvLoad.scn_name == f"{scn}_lowflex",
+                    EgonPfHvLoadTimeseries.scn_name == f"{scn}_lowflex",
                 )
             )
         model_charging_load_lowflex = pd.read_sql(
@@ -1328,9 +1354,9 @@ def sanitycheck_emobility_mit():
         # Ratio of driving and charging load should be 0.9 due to charging
         # efficiency
         print("  Compare cumulative loads...")
-        print(f"    Driving load (eGon2035): {driving_load.sum() / 1e6} TWh")
+        print(f"    Driving load ({scn}): {driving_load.sum() / 1e6} TWh")
         print(
-            f"    Dumb charging load (eGon2035_lowflex): "
+            f"    Dumb charging load ({scn}_lowflex): "
             f"{charging_load.sum() / 1e6} TWh"
         )
         driving_load_theoretical = (
@@ -1341,18 +1367,19 @@ def sanitycheck_emobility_mit():
             driving_load_theoretical,
             rtol=0.01,
             err_msg=(
-                f"The driving load (eGon2035) deviates by more than 1% "
+                f"The driving load ({scn}) deviates by more than 1% "
                 f"from the theoretical driving load calculated from charging "
-                f"load (eGon2035_lowflex) with an efficiency of "
+                f"load ({scn}_lowflex) with an efficiency of "
                 f"{float(meta_run_config.eta_cp)}."
             ),
         )
+
 
     print("=====================================================")
     print("=== SANITY CHECKS FOR MOTORIZED INDIVIDUAL TRAVEL ===")
     print("=====================================================")
 
-    for scenario_name in ["eGon2035", "eGon100RE"]:
+    for scenario_name in ["eGon2035", "nep2037_2025", "eGon100RE"]:
         scenario_var_name = DATASET_CFG["scenario"]["variation"][scenario_name]
 
         print("")
@@ -1382,7 +1409,8 @@ def sanitycheck_emobility_mit():
         check_model_data()
 
     print("")
-    check_model_data_lowflex_eGon2035()
+    check_model_data_lowflex("eGon2035")
+    check_model_data_lowflex("nep2037_2025")
 
     print("=====================================================")
 
@@ -1453,6 +1481,11 @@ def sanity_check_gas_buses(scn):
     # Are gas buses isolated?
     corresponding_carriers = {
         "eGon2035": {
+            "CH4": "CH4",
+            "H2_grid": "H2_feedin",
+            "H2_saltcavern": "power_to_H2",
+        },
+        "nep2037_2025": {
             "CH4": "CH4",
             "H2_grid": "H2_feedin",
             "H2_saltcavern": "power_to_H2",
@@ -1538,7 +1571,7 @@ def sanity_check_CH4_stores(scn):
         in the database (for one scenario) and
       * the sum of:
           * the capacity the gas grid allocated to CH4 (total capacity
-            in eGon2035 and capacity reduced the share of the grid
+            in eGon2035, and nep2037_2025 and capacity reduced the share of the grid
             allocated to H2 in eGon100RE)
           * the total capacity of the CH4 stores in Germany (source: GIE)
 
@@ -1564,6 +1597,8 @@ def sanity_check_CH4_stores(scn):
     )["e_nom_germany"].values[0]
 
     if scn == "eGon2035":
+        grid_cap = 130000
+    elif scn == "nep2037_2025":
         grid_cap = 130000
     elif scn == "eGon100RE":
         grid_cap = 13000 * (
@@ -1653,7 +1688,7 @@ def sanity_check_gas_one_port(scn):
         Name of the scenario
 
     """
-    if scn == "eGon2035":
+    if scn == "eGon2035" or scn == "nep2037_2025":
         # Loads
         ## CH4_for_industry Germany
         isolated_one_port_c = db.select_dataframe(
@@ -1854,7 +1889,7 @@ def sanity_check_CH4_grid(scn):
     ]
     p_nom_total = sum(gas_grid_germany["p_nom"].to_list())
 
-    if scn == "eGon2035":
+    if scn == "eGon2035" or scn == "nep2037_2025":
         input_gas_grid = p_nom_total
     if scn == "eGon100RE":
         input_gas_grid = p_nom_total * (
@@ -1927,11 +1962,11 @@ def sanity_check_gas_links(scn):
             logger.info(link_with_missing_bus)
 
 
-def etrago_eGon2035_gas_DE():
-    """Execute basic sanity checks for the gas sector in eGon2035
+def etrago_gas_DE(scn):
+    """Execute basic sanity checks for the gas sector in eGon2035 or nep2037_2025
 
     Returns print statements as sanity checks for the gas sector in
-    the eGon2035 scenario for the following components in Germany:
+    the eGon2035 or nep2037_2025 scenario for the following components in Germany:
       * Buses: with the function :py:func:`sanity_check_gas_buses`
       * Loads: for the carriers 'CH4_for_industry' and 'H2_for_industry'
         the deviation is calculated between the sum of the loads in the
@@ -1956,7 +1991,6 @@ def etrago_eGon2035_gas_DE():
             :py:func:`sanity_check_CH4_grid`
 
     """
-    scn = "eGon2035"
 
     if TESTMODE_OFF:
         logger.info(f"Gas sanity checks for scenario {scn}")
@@ -1994,7 +2028,7 @@ def etrago_eGon2035_gas_DE():
             )["load_twh"].values[0]
 
             input_gas_demand = pd.read_json(
-                path / (carrier + "_eGon2035.json")
+                path / (carrier + scn + ".json")
             )
             input_gas_demand = input_gas_demand.loc[:, ["id_region", "value"]]
             input_gas_demand.set_index("id_region", inplace=True)
@@ -2105,11 +2139,12 @@ def etrago_eGon2035_gas_DE():
         print("Testmode is on, skipping sanity check.")
 
 
-def etrago_eGon2035_gas_abroad():
-    """Execute basic sanity checks for the gas sector in eGon2035 abroad
+
+def etrago_gas_abroad(scn):
+    """Execute basic sanity checks for the gas sector in eGon2035 or nep2037_2025 abroad
 
     Returns print statements as sanity checks for the gas sector in
-    the eGon2035 scenario for the following components in Germany:
+    the eGon2035 or nep2037_2025 scenario for the following components in Germany:
       * Buses
       * Loads: for the carriers 'CH4' and 'H2_for_industry'
         the deviation is calculated between the sum of the loads in the
@@ -2124,7 +2159,10 @@ def etrago_eGon2035_gas_abroad():
         grid pipelines.
 
     """
-    scn = "eGon2035"
+    if scn == "eGon2035"
+        year = "2035"
+    elif scn == "nep2037_2025"
+        year = "2037"
 
     if TESTMODE_OFF:
         logger.info(f"Gas sanity checks abroad for scenario {scn}")
@@ -2134,7 +2172,7 @@ def etrago_eGon2035_gas_abroad():
 
         # Are gas buses isolated?
         corresponding_carriers = {
-            "eGon2035": {
+            scn: {
                 "CH4": "CH4",
             },
             # "eGon100RE": {
@@ -2178,7 +2216,7 @@ def etrago_eGon2035_gas_abroad():
         input_CH4_demand_abroad = calc_global_ch4_demand(
             Norway_global_demand_1y
         )
-        input_CH4_demand = input_CH4_demand_abroad["GlobD_2035"].sum()
+        input_CH4_demand = input_CH4_demand_abroad[f"GlobD_{year}"].sum()
 
         ## CH4
         output_CH4_demand = db.select_dataframe(
@@ -2210,7 +2248,7 @@ def etrago_eGon2035_gas_abroad():
 
         ## H2_for_industry
         input_power_to_h2_demand_abroad = calc_global_power_to_h2_demand()
-        input_H2_demand = input_power_to_h2_demand_abroad["GlobD_2035"].sum()
+        input_H2_demand = input_power_to_h2_demand_abroad[f"GlobD_{year}"].sum()
 
         output_H2_demand = db.select_dataframe(
             f"""SELECT SUM(p_set::numeric) as p_set_abroad
@@ -2239,7 +2277,7 @@ def etrago_eGon2035_gas_abroad():
         # Generators
         logger.info("GENERATORS ")
         CH4_gen = calc_capacities()
-        input_CH4_gen = CH4_gen["cap_2035"].sum()
+        input_CH4_gen = CH4_gen[f"cap_{year}"].sum()
 
         output_CH4_gen = db.select_dataframe(
             f"""SELECT SUM(p_nom::numeric) as p_nom_abroad
@@ -2341,7 +2379,7 @@ def sanitycheck_dsm():
     def df_from_series(s: pd.Series):
         return pd.DataFrame.from_dict(dict(zip(s.index, s.values)))
 
-    for scenario in ["eGon2035", "eGon100RE"]:
+    for scenario in ["eGon2035", "nep2037_2025", "eGon100RE"]:
         # p_min and p_max
         sql = f"""
         SELECT link_id, bus0 as bus, p_nom FROM grid.egon_etrago_link

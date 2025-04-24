@@ -341,9 +341,9 @@ def create_district_heating_profile_python_like(scenario="eGon2035"):
                     WHERE scenario = '{scenario}'
                     AND area_id = '{area}'
                 ) b ON a.zensus_population_id = b.zensus_population_id        ,
-        
+
                 UNNEST (selected_idp_profiles) WITH ORDINALITY as selected_idp
-        
+
                 """
             )
 
@@ -384,7 +384,7 @@ def create_district_heating_profile_python_like(scenario="eGon2035"):
 
                 assert (
                     abs(diff) < 0.04
-                ), f"""Deviation of residential heat demand time 
+                ), f"""Deviation of residential heat demand time
                 series for district heating grid {str(area)} is {diff}"""
 
                 if abs(diff) > 0.03:
@@ -895,6 +895,8 @@ def individual_heating_per_mv_grid_tables(method="python"):
         bind=engine, checkfirst=True
     )
 
+def individual_heating_per_mv_grid_2037_2025(method="python"):
+    create_individual_heating_profile_python_like("nep2037_2025")
 
 def individual_heating_per_mv_grid_2035(method="python"):
     create_individual_heating_profile_python_like("eGon2035")
@@ -914,6 +916,7 @@ def individual_heating_per_mv_grid(method="python"):
             bind=engine, checkfirst=True
         )
 
+        create_individual_heating_profile_python_like("nep2037_2025")
         create_individual_heating_profile_python_like("eGon2035")
         create_individual_heating_profile_python_like("eGon100RE")
 
@@ -939,7 +942,7 @@ def individual_heating_per_mv_grid(method="python"):
         )
 
         for index, row in ids.iterrows():
-            for scenario in ["eGon2035", "eGon100RE"]:
+            for scenario in ["nep2037_2025", "eGon2035", "eGon100RE"]:
                 series = create_individual_heat_per_mv_grid(
                     scenario, row.bus_id
                 )

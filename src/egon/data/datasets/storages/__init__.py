@@ -86,7 +86,8 @@ def create_tables():
 
 
 def allocate_pumped_hydro(scn, export=True):
-    """Allocates pumped_hydro plants for eGon2035 and scenario2019 scenarios
+    """Allocates pumped_hydro plants for nep2037_2025, eGon2035 and scenario2019
+    scenarios
     and either exports results to data base or returns as a dataframe
 
     Parameters
@@ -99,7 +100,7 @@ def allocate_pumped_hydro(scn, export=True):
     Returns
     -------
     power_plants : pandas.DataFrame
-        List of pumped hydro plants in 'eGon2035' and 'scenario2019' scenarios
+        List of pumped hydro plants in 'eGon2035', 'nep2037_2025' and 'scenario2019' scenarios
     """
 
     carrier = "pumped_hydro"
@@ -191,7 +192,7 @@ def allocate_pumped_hydro(scn, export=True):
 
     if nep.elec_capacity.sum() > 0:
         # Get location using geolocator and city information
-        located, unmatched = get_location(nep)
+        located, unmatched = get_location(nep, scn)
 
         # Bring both dataframes together
         matched = pd.concat(
@@ -616,7 +617,8 @@ def allocate_pumped_hydro_eGon100RE():
 def home_batteries_per_scenario(scenario):
     """Allocates home batteries which define a lower boundary for extendable
     battery storage units. The overall installed capacity is taken from NEP
-    for eGon2035 scenario. The spatial distribution of installed battery
+    for eGon2035 and nep2037_2025 scenario. The spatial distribution of installed
+    battery
     capacities is based on the installed pv rooftop capacity.
 
     Parameters
@@ -631,7 +633,24 @@ def home_batteries_per_scenario(scenario):
     cfg = config.datasets()["storages"]
     dataset = config.settings()["egon-data"]["--dataset-boundary"]
 
-    if scenario == "eGon2035":
+    if scenario == "nep2037_2025":
+        target_file = (
+            Path(".")
+            / "data_bundle_egon_data"
+            / "nep2037_version2025"
+            / cfg["sources"]["nep_capacities"]
+        )
+
+        capacities_nep = pd.read_excel(
+            target_file,
+            sheet_name="1.Entwurf_NEP2037_V2025",
+            index_col="Unnamed: 0",
+        )
+
+        # Select target value in MW
+        target = capacities_nep.Summe["PV-Batteriespeicher"] * 1000
+
+    elif scenario == "eGon2035":
         target_file = (
             Path(".")
             / "data_bundle_egon_data"
@@ -680,7 +699,7 @@ def home_batteries_per_scenario(scenario):
     battery["carrier"] = "home_battery"
     battery["scenario"] = scenario
 
-    if (scenario == "eGon2035") | ("status" in scenario):
+    if (scenario == "eGon2035" or scenario == "nep2037_2025") | ("status" in scenario):
         source = "NEP"
 
     else:
@@ -712,7 +731,9 @@ def allocate_pv_home_batteries_to_grids():
 
 def allocate_pumped_hydro_scn():
     for scn in config.settings()["egon-data"]["--scenarios"]:
-        if scn == "eGon2035":
+        if scn == "nep2037_2025":
+            allocate_pumped_hydro(scn="nep2037_2025")
+        elif scn == "eGon2035":
             allocate_pumped_hydro(scn="eGon2035")
         elif scn == "eGon100RE":
             allocate_pumped_hydro_eGon100RE()

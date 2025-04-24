@@ -12,12 +12,9 @@ Base = declarative_base()
 
 
 class LowFlexScenario(Dataset):
-    def __init__(self, dependencies):
-        super().__init__(
-            name="low_flex_scenario",
-            version="0.0.1",
-            dependencies=dependencies,
-            tasks=(
+    def __init__(self, dependencies, name = "low_flex_scenario", version = "0.0.1"):
+        if tasks is None
+            tasks = (
                 {
                     PostgresOperator(
                         task_id="low_flex_eGon2035",
@@ -28,5 +25,10 @@ class LowFlexScenario(Dataset):
                         autocommit=True,
                     ),
                 },
-            ),
+            )
+        super().__init__(
+            name=name,
+            version=version,
+            dependencies=dependencies,
+            tasks=tasks,
         )

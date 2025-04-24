@@ -174,7 +174,7 @@ def individual_heating():
             WHERE scenario = '{scenario}'
             """
         )
-        if scenario == "eGon2035":
+        if scenario == "eGon2035" or scenario == "nep2037_2025":
             distribution_level = "federal_states"
         else:
             distribution_level = "national"

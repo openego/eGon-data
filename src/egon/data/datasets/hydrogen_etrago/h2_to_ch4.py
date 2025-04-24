@@ -84,7 +84,7 @@ def insert_h2_to_ch4_to_h2():
         technology = [methanation, SMR]
         links_names = ["H2_to_CH4", "CH4_to_H2"]
 
-        if scn_name == "eGon2035":
+        if scn_name == "eGon2035" or scn_name == "nep2037_2025":
             feed_in = methanation.copy()
             pipeline_capacities = db.select_dataframe(
                 f"""

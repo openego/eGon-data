@@ -2,7 +2,7 @@
   "name": "demand.egon_household_electricity_profile_in_census_cell",
   "title": "eGon household electricity profiles in census cells",
   "id": "WILL_BE_SET_AT_PUBLICATION",
-  "description": "Mapping table for residential electricity profiles to census cell including scaling factors for two scenarios  (eGon2035, eGon100RE).",
+  "description": "Mapping table for residential electricity profiles to census cell including scaling factors for two scenarios  (eGon2035, nep2037_2025, eGon100RE).",
   "language": [
     "en-EN",
     "de-DE"
@@ -176,6 +176,12 @@
           {
             "name": "factor_2035",
             "description": "Scaling factor for all profiles in the respective census cell for scenario eGon2035",
+            "type": "double precision",
+            "unit": "none"
+          },
+          {
+            "name": "factor_2037_2025",
+            "description": "Scaling factor for all profiles in the respective census cell for scenario nep2037_2025",
             "type": "double precision",
             "unit": "none"
           },

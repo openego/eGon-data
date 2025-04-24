@@ -56,6 +56,7 @@ from egon.data.datasets.heat_supply import (
 from egon.data.datasets.heat_supply.individual_heating import (
     HeatPumpsStatusQuo,
     HeatPumps2035,
+    HeatPumps2037_2025,
     HeatPumps2050,
     HeatPumpsPypsaEur,
 )
@@ -70,6 +71,7 @@ from egon.data.datasets.industrial_gas_demand import (
     IndustrialGasDemand,
     IndustrialGasDemandeGon100RE,
     IndustrialGasDemandeGon2035,
+    IndustrialGasDemandeGon2037_2025,
 )
 from egon.data.datasets.industrial_sites import MergeIndustrialSites
 from egon.data.datasets.industry import IndustrialDemandCurves
@@ -431,6 +433,7 @@ with airflow.DAG(
         dependencies=[setup_etrago, insert_hydrogen_buses, vg250]
     )
 
+
     # Insert hydrogen grid
     insert_h2_grid = HydrogenGridEtrago(
         dependencies=[
@@ -479,6 +482,11 @@ with airflow.DAG(
 
     # Assign industrial gas demand eGon2035
     IndustrialGasDemandeGon2035(
+        dependencies=[create_gas_polygons, industrial_gas_demand]
+    )
+
+    # Assign industrial gas demand nep2037_2025
+    IndustrialGasDemandeGon2037_2025(
         dependencies=[create_gas_polygons, industrial_gas_demand]
     )
 
@@ -604,6 +612,18 @@ with airflow.DAG(
 
     # Heat pump disaggregation for eGon2035
     heat_pumps_2035 = HeatPumps2035(
+        dependencies=[
+            cts_demand_buildings,
+            DistrictHeatingAreas,
+            heat_supply,
+            heat_time_series,
+            heat_pumps_pypsa_eur,
+            power_plants,
+        ]
+    )
+
+    # Heat pump disaggregation for nep2037_2025
+    heat_pumps_2037_2025 = HeatPumps2037_2025(
         dependencies=[
             cts_demand_buildings,
             DistrictHeatingAreas,

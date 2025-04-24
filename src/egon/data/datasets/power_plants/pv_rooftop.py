@@ -36,6 +36,10 @@ def pv_rooftop_per_mv_grid():
         pv_rooftop_per_mv_grid_and_scenario(
             scenario="eGon2035", level="federal_state"
         )
+    if "nep2037_2025" in s:
+        pv_rooftop_per_mv_grid_and_scenario(
+            scenario="nep2037_2025", level="federal_state"
+        )
     if "eGon100RE" in s:
         pv_rooftop_per_mv_grid_and_scenario(
             scenario="eGon100RE", level="national"
@@ -170,7 +174,7 @@ def pv_rooftop_per_mv_grid_and_scenario(scenario, level):
 
         dataset = config.settings()["egon-data"]["--dataset-boundary"]
 
-        if dataset == "Schleswig-Holstein":
+        if dataset == "Schleswig-Holstein" and scenario == "eGon2035":
             sources_scn = config.datasets()["scenario_input"]["sources"]
 
             path = Path(
@@ -189,6 +193,28 @@ def pv_rooftop_per_mv_grid_and_scenario(scenario, level):
             sh_2035 = scenario_data(scenario="eGon2035").capacity.sum()
 
             share = sh_2035 / total_2035
+
+            target *= share
+
+        if dataset == "Schleswig-Holstein" and scenario == "nep2037_2025":
+            sources_scn = config.datasets()["scenario_input"]["sources"]
+
+            path = Path(
+                f"./data_bundle_egon_data/nep2037_version2025/"
+                f"{sources_scn['nep2037_2025']['capacities']}"
+            ).resolve()
+
+            total_2037 = (
+                pd.read_excel(
+                    path,
+                    sheet_name="1.Entwurf_NEP2037_V2025",
+                    index_col="Unnamed: 0",
+                ).at["PV (Aufdach)", "Summe"]
+                * 1000
+            )
+            sh_2037 = scenario_data(scenario="nep2037_2025").capacity.sum()
+
+            share = sh_2037 / total_2037
 
             target *= share
 

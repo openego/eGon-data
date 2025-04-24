@@ -16,7 +16,7 @@ def map_id_bus(scenario):
         "source"
     ]["url"]
 
-    if scenario in ["eGon2035", "eGon100RE"]:
+    if scenario in ["eGon2035", "nep2037_2025", "eGon100RE"]:
         id_bus = {
             "Büttel": "136034396",
             "Suchraum Gemeinden Ibbenbüren/Mettingen/Westerkappeln": "114319248",
@@ -196,6 +196,26 @@ def insert():
             offshore.dropna(subset=["Netzverknuepfungspunkt"], inplace=True)
             offshore.rename(columns={"C 2035": "el_capacity"}, inplace=True)
 
+        elif scenario == "nep2037_2025":
+            offshore_path = (
+                Path(".")
+                / "data_bundle_egon_data"
+                / "nep2037_version2025"
+                / cfg["sources"]["nep_2037"]
+            )
+
+            offshore = pd.read_excel(
+                offshore_path,
+                sheet_name="Wind_Offshore_NEP",
+                usecols=[
+                    "Netzverknuepfungspunkt",
+                    "Spannungsebene in kV",
+                    "C 2037",
+                ],
+            )
+            offshore.dropna(subset=["Netzverknuepfungspunkt"], inplace=True)
+            offshore.rename(columns={"C 2037": "el_capacity"}, inplace=True)
+
         elif scenario == "eGon100RE":
             offshore_path = (
                 Path(".")
@@ -287,7 +307,7 @@ def insert():
         offshore.dropna(subset=["bus_id"], inplace=True)
 
         # Overwrite geom for status2019 parks
-        if scenario in ["eGon2035", "eGon100RE"]:
+        if scenario in ["eGon2035", "nep2037_2025","eGon100RE"]:
             offshore["Name ONEP/NEP"] = offshore["Netzverknuepfungspunkt"].map(
                 assign_ONEP_areas()
             )

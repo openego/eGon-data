@@ -3,8 +3,8 @@
 The module contains code used to insert the methane grid into the database
 
 The central module contains all code dealing with the import of data
-from SciGRID_gas (IGGIELGN dataset) and inserting the CH4 buses and links 
-into the database for the scenarios eGon2035 and eGon100RE.
+from SciGRID_gas (IGGIELGN dataset) and inserting the CH4 buses and links
+into the database for the scenarios eGon2035, nep2037_2025 and eGon100RE.
 
 The SciGRID_gas data downloaded with :py:func:`download_SciGRID_gas_data`
 into the folder ./datasets/gas_data/data is also used by other modules.
@@ -222,7 +222,7 @@ def insert_CH4_nodes_list(gas_nodes_list, scn_name="eGon2035"):
         # A completer avec nodes related to pipelines which have an end in the selected area et evt deplacer ds define_gas_nodes_list
 
     # Add missing columns
-    c = {"scn_name": "eGon2035", "carrier": "CH4"}
+    c = {"scn_name": scn_name, "carrier": "CH4"}
     gas_nodes_list = gas_nodes_list.assign(**c)
 
     gas_nodes_list = geopandas.GeoDataFrame(
@@ -265,7 +265,7 @@ def define_gas_buses_abroad(scn_name="eGon2035"):
     Define central CH4 buses in foreign countries for eGon2035
 
     For the scenario eGon2035, define central CH4 buses in foreign
-    countries. The considered foreign countries are the direct 
+    countries. The considered foreign countries are the direct
     neighbouring countries, with the addition of Russia that is
     considered as a source of fossil CH4.
     Therefore, the following steps are executed:
@@ -448,11 +448,11 @@ def insert_gas_buses_abroad(scn_name="eGon2035"):
     """
     Insert CH4 buses in neighbouring countries into database for eGon2035
 
-      * Definition of the CH4 buses abroad with the function 
+      * Definition of the CH4 buses abroad with the function
         :py:func:`define_gas_buses_abroad`
       * Cleaning of the database table grid.egon_etrago_bus of the
         foreign CH4 buses of the specific scenario (eGon2035)
-      * Insertion of the neighbouring buses into the table grid.egon_etrago_bus.   
+      * Insertion of the neighbouring buses into the table grid.egon_etrago_bus.
 
     Parameters
     ----------
@@ -926,7 +926,7 @@ def insert_gas_pipeline_list(gas_pipelines_list, scn_name="eGon2035"):
         Dataframe containing the gas pipelines in Germany
     scn_name : str
         Name of the scenario
-        
+
     Returns
     -------
     None
@@ -1037,6 +1037,8 @@ def insert_gas_data():
     scenarios = []
     if "eGon2035" in s:
         scenarios.append("eGon2035")
+    if "nep2037_2025" in s:
+        scenarios.append("nep2037_2025")
     if "eGon100RE" in s:
         scenarios.append("eGon100RE")
 
