@@ -95,6 +95,7 @@ def get_annual_household_el_demand_cells():
                 HouseholdElectricityProfilesInCensusCells.factor_2019,
                 HouseholdElectricityProfilesInCensusCells.factor_2023,
                 HouseholdElectricityProfilesInCensusCells.factor_2035,
+                HouseholdElectricityProfilesInCensusCells.factor_2037_2025,
                 HouseholdElectricityProfilesInCensusCells.factor_2050,
             )
             .filter(
@@ -128,12 +129,16 @@ def get_annual_household_el_demand_cells():
     df_annual_demand = pd.DataFrame(
         columns=scenarios + ["zensus_population_id"]
     )
-
     for _, df in df_buildings_and_profiles.groupby(by=iterate_over):
         df_annual_demand_iter = pd.DataFrame(
             columns=scenarios + ["zensus_population_id"]
         )
 
+        if "nep2037_2025" in scenarios:
+            df_annual_demand_iter["nep2037_2025"] = (
+                df_profiles.loc[:, df["profile_id"]].sum(axis=0)
+                * df["factor_2037_2025"].values
+            )
         if "eGon2035" in scenarios:
             df_annual_demand_iter["eGon2035"] = (
                 df_profiles.loc[:, df["profile_id"]].sum(axis=0)

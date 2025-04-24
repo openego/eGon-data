@@ -30,11 +30,12 @@ class CH4Storages(Dataset):
     Inserts the gas stores in Germany
 
     Inserts the non extendable gas stores in Germany into the database
-    for the scnenarios eGon2035 and eGon100RE using the function
+    for the scnenarios nep2037_2025, eGon2035 and eGon100RE using the function
     :py:func:`insert_ch4_storages`.
 
     *Dependencies*
       * :py:class:`GasAreaseGon2035 <egon.data.datasets.gas_areas.GasAreaseGon2035>`
+      * :py:class:`GasAreasnep2037_2025 <egon.data.datasets.gas_areas.GasAreasnep2037_2025>`
       * :py:class:`GasAreaseGon100RE <egon.data.datasets.gas_areas.GasAreaseGon100RE>`
       * :py:class:`GasNodesAndPipes <egon.data.datasets.gas_grid.GasNodesAndPipes>`
 
@@ -164,9 +165,14 @@ def import_installed_ch4_storages(scn_name):
         ]
 
     # Remove unused storage units
-    Gas_storages_list = Gas_storages_list[
-        Gas_storages_list["end_year"] >= 2035
-    ]
+    if scn_name == "eGon2035":
+        Gas_storages_list = Gas_storages_list[
+            Gas_storages_list["end_year"] >= 2035
+        ]
+    elif scn_name == "nep2037_2025":
+        Gas_storages_list = Gas_storages_list[
+            Gas_storages_list["end_year"] >= 2037
+            ]
 
     Gas_storages_list = Gas_storages_list.rename(
         columns={"lat": "y", "long": "x"}
@@ -307,12 +313,12 @@ def insert_ch4_stores(scn_name):
     # Clean table
     db.execute_sql(
         f"""
-        DELETE FROM {target['stores']['schema']}.{target['stores']['table']}  
+        DELETE FROM {target['stores']['schema']}.{target['stores']['table']}
         WHERE "carrier" = 'CH4'
         AND scn_name = '{scn_name}'
         AND bus IN (
             SELECT bus_id FROM {source['buses']['schema']}.{source['buses']['table']}
-            WHERE scn_name = '{scn_name}' 
+            WHERE scn_name = '{scn_name}'
             AND country = 'DE'
             );
         """
@@ -352,9 +358,10 @@ def insert_ch4_storages():
     Overall function to import non extendable gas stores in Germany
 
     This function inserts the methane stores in Germany for the
-    scenarios eGon2035 and eGon100RE by using the function
+    scenarios nep2037_2025, eGon2035 and eGon100RE by using the function
     :py:func:`insert_ch4_stores` and has no return.
 
     """
+    insert_ch4_stores("nep2037_2025")
     insert_ch4_stores("eGon2035")
     insert_ch4_stores("eGon100RE")

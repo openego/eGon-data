@@ -12,8 +12,10 @@ class OpenCycleGasTurbineEtrago(Dataset):
 
     *Dependencies*
       * :py:class:`GasAreaseGon2035 <egon.data.datasets.gas_areas.GasAreaseGon2035>`
+      * :py:class:`GasAreasnep2037_2025
+      <egon.data.datasets.gas_areas.GasAreaseGon2037_2025>`
       * :py:class:`PowerPlants <egon.data.datasets.power_plants.PowerPlants>`
-      
+
     *Resulting tables*
       * :py:class:`grid.egon_etrago_link <egon.data.datasets.etrago_setup.EgonPfHvLink>` is extended
 

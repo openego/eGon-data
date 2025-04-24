@@ -966,7 +966,7 @@ def study_prospective_district_heating_areas():
     resulting Prospective Supply Districts (PSDs) for district heating. This
     functions saves local shapefiles, because these data are not written into
     database. Moreover, heat density curves are drawn.
-    This function is tailor-made and includes the scenarios eGon2035 and
+    This function is tailor-made and includes the scenarios nep2037_2025, eGon2035 and
     eGon100RE.
 
     Parameters
@@ -1003,11 +1003,13 @@ def study_prospective_district_heating_areas():
     # INSERT INTO scenario.egon_scenario_parameters (name)
     # VALUES ('eGon2015');
     # because egon2015 is not part of the regular EgonScenario table!
+    HD_2037_2025 = load_heat_demands("nep2037_2025")
     HD_2035 = load_heat_demands("eGon2035")
     HD_2050 = load_heat_demands("eGon100RE")
 
     # select only cells with heat demands > 100 GJ / (ha a)
     # HD_2015_above_100GJ = select_high_heat_demands(HD_2015)
+    HD_2037_2025_above_100GJ = select_high_heat_demands(HD_2037_2025)
     HD_2035_above_100GJ = select_high_heat_demands(HD_2035)
     HD_2050_above_100GJ = select_high_heat_demands(HD_2050)
 
@@ -1021,6 +1023,10 @@ def study_prospective_district_heating_areas():
     #                               minimum_total_demand=(10000/3.6)
     #                                ).dissolve('area_id', aggfunc='sum')
     # PSD_2015_201m.to_file(results_path+"PSDs_2015based.shp")
+    PSD_2037_2025_201m = area_grouping(
+        HD_2037_2025_above_100GJ, distance=200, minimum_total_demand=(10000 / 3.6)
+    ).dissolve("area_id", aggfunc="sum")
+    PSD_2037_2025_201m.to_file(results_path + "PSDs_2037_2025based.shp")
     PSD_2035_201m = area_grouping(
         HD_2035_above_100GJ, distance=200, minimum_total_demand=(10000 / 3.6)
     ).dissolve("area_id", aggfunc="sum")
@@ -1043,6 +1049,18 @@ def study_prospective_district_heating_areas():
     #                              cumsum()) / 1000000
     # ax.plot(HD_2015.Cumulative_Sum,
     #         HD_2015.residential_and_service_demand, label='eGon2015')
+
+    HD_2037_2025 = HD_2037_2025.sort_values(
+        "residential_and_service_demand", ascending=False
+    ).reset_index()
+    HD_2037_2025["Cumulative_Sum"] = (
+                                    HD_2037_2025.residential_and_service_demand.cumsum()
+                                ) / 1000000
+    ax.plot(
+        HD_2037_2025.Cumulative_Sum,
+        HD_2037_2025.residential_and_service_demand,
+        label="nep2037_2025",
+    )
 
     HD_2035 = HD_2035.sort_values(
         "residential_and_service_demand", ascending=False
@@ -1069,7 +1087,17 @@ def study_prospective_district_heating_areas():
     )
 
     # add the district heating shares
-
+    heat_parameters = get_sector_parameters("heat", "nep2037_2025")
+    district_heating_share_2037_2025 = heat_parameters["DE_district_heating_share"]
+    plt.axvline(
+        x=HD_2037_2025.residential_and_service_demand.sum()
+          / 1000000
+          * district_heating_share_2037_2025,
+        ls=":",
+        lw=0.5,
+        label="72TWh DH in 2037 in Germany => 14% DH", # modify to according value
+        color="black",
+    )
     heat_parameters = get_sector_parameters("heat", "eGon2035")
     district_heating_share_2035 = heat_parameters["DE_district_heating_share"]
     plt.axvline(

@@ -2,7 +2,8 @@
 Generate timeseries for eTraGo and pypsa-eur-sec
 
 Call order
-  * generate_model_data_eGon2035() / generate_model_data_eGon100RE()
+  * generate_model_data_eGon2035() / generate_model_data_nep2037_2025() /
+  generate_model_data_eGon100RE()
     * generate_model_data()
       * generate_model_data_grid_district()
         * load_evs_trips()
@@ -24,6 +25,7 @@ linearly extrapolated based upon
 https://nationale-leitstelle.de/wp-content/pdf/broschuere-lis-2025-2030-final.pdf
 (p.92):
 * eGon2035: home=0.8, work=1.0
+* nep2037_2025: home=0.86, work=1.0
 * eGon100RE: home=1.0, work=1.0
 """
 
@@ -1093,6 +1095,15 @@ def generate_model_data_eGon2035_remaining():
     """
     generate_model_data_bunch(
         scenario_name="eGon2035",
+        bunch=range(MVGD_MIN_COUNT, len(load_grid_district_ids())),
+    )
+
+def generate_model_data_nep2037_2025_remaining():
+    """Generates timeseries for nep2037_2025 scenario for grid districts which
+    has not been processed in the parallel tasks before.
+    """
+    generate_model_data_bunch(
+        scenario_name="nep2037_2025",
         bunch=range(MVGD_MIN_COUNT, len(load_grid_district_ids())),
     )
 

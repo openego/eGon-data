@@ -69,37 +69,13 @@ def global_settings(scenario):
         List of global parameters
 
     """
-    if scenario == "nep2037.2025":
-        parameters = {
-            "weather_year": 2011,
-            "population_year": 2037,
-            "fuel_costs": {  # Szenarionrahmen zum NEP 2025, Version 2025, 1. Entwurf,
-                "oil": 21.3,  # [EUR/MWh]
-                "gas": 15.2,  # [EUR/MWh]
-                "coal": 6.1,  # [EUR/MWh]
-                "lignite": 6.4,  # [EUR/MWh]
-                "nuclear": 1.7,  # [EUR/MWh]
-                "biomass": 40,  # Dummyvalue, ToDo: Find a suitable source
-            },
-            "co2_costs": 76.5,  # [EUR/t_CO2]
-            "co2_emissions": {  # Szenarionrahmen zum NEP 2025, Version 2025, 1. Entwurf,
-                "waste": 0.165,  # [t_CO2/MW_th]
-                "lignite": 0.393,  # [t_CO2/MW_th]
-                "gas": 0.201,  # [t_CO2/MW_th]
-                "nuclear": 0.0,  # [t_CO2/MW_th]
-                "oil": 0.286,  # [t_CO2/MW_th]
-                "coal": 0.377,  # [t_CO2/MW_th]
-                "other_non_renewable": 0.268,  # [t_CO2/MW_th]
-                # hydrogen: 0
-            },
-            "interest_rate": 0.05,  # [p.u.]
-        }
 
-    elif scenario == "eGon2035":
+    if scenario == "eGon2035":
         parameters = {
             "weather_year": 2011,
             "population_year": 2035,
-            "fuel_costs": {  # Netzentwicklungsplan Strom 2035, Version 2021, 1. Entwurf, p. 39, table 6
+            "fuel_costs": {
+                # Netzentwicklungsplan Strom 2035, Version 2021, 1. Entwurf, p. 39, table 6
                 "oil": 73.8,  # [EUR/MWh]
                 "gas": 25.6,  # [EUR/MWh]
                 "coal": 20.2,  # [EUR/MWh]
@@ -108,7 +84,8 @@ def global_settings(scenario):
                 "biomass": 40,  # Dummyvalue, ToDo: Find a suitable source
             },
             "co2_costs": 76.5,  # [EUR/t_CO2]
-            "co2_emissions": {  # Netzentwicklungsplan Strom 2035, Version 2021, 1. Entwurf, p. 40, table 8
+            "co2_emissions": {
+                # Netzentwicklungsplan Strom 2035, Version 2021, 1. Entwurf, p. 40, table 8
                 "waste": 0.165,  # [t_CO2/MW_th]
                 "lignite": 0.393,  # [t_CO2/MW_th]
                 "gas": 0.201,  # [t_CO2/MW_th]
@@ -116,6 +93,32 @@ def global_settings(scenario):
                 "oil": 0.288,  # [t_CO2/MW_th]
                 "coal": 0.335,  # [t_CO2/MW_th]
                 "other_non_renewable": 0.268,  # [t_CO2/MW_th]
+            },
+            "interest_rate": 0.05,  # [p.u.]
+        }
+
+    elif scenario == "nep2037_2025":
+        parameters = {
+            "weather_year": 2011,
+            "population_year": 2037,
+            "fuel_costs": {  # Szenarionrahmen zum NEP 2037, Version 2025, 1. Entwurf,
+                "oil": 21.3,  # [EUR/MWh]
+                "gas": 15.2,  # [EUR/MWh]
+                "coal": 6.1,  # [EUR/MWh]
+                "lignite": 6.4,  # [EUR/MWh]
+                "nuclear": 1.7,  # [EUR/MWh]
+                "biomass": 40,  # Dummyvalue, ToDo: Find a suitable source
+            },
+            "co2_costs": 176.2,  # [EUR/t_CO2]
+            "co2_emissions": {  # Szenarionrahmen zum NEP 2025, Version 2025, 1. Entwurf,
+                "waste": 0.165,  # [t_CO2/MW_th]
+                "lignite": 0.393,  # [t_CO2/MW_th]
+                "gas": 0.201,  # [t_CO2/MW_th]
+                "nuclear": 0.0,  # [t_CO2/MW_th]
+                "oil": 0.286,  # [t_CO2/MW_th]
+                "coal": 0.377,  # [t_CO2/MW_th]
+                "other_non_renewable": 0.268,  # [t_CO2/MW_th] NEP 2035
+                # hydrogen: 0
             },
             "interest_rate": 0.05,  # [p.u.]
         }
@@ -225,7 +228,7 @@ def electricity(scenario):
         List of parameters of electricity sector
 
     """
-    if scenario == "eGon2037.2025":
+    if scenario == "nep2037_2025":
 
         costs = read_csv(2037)
 
@@ -283,35 +286,36 @@ def electricity(scenario):
         }
 
         # Insert overnight investment costs
-        # Source for eHV grid costs: Netzentwicklungsplan Strom 2035, Version 2021, 2. Entwurf
-        # Source for HV lines and cables: Dena Verteilnetzstudie 2021, p. 146
+        # Source for eHV grid costs: Netzentwicklungsplan Strom 2037, Version 2023,
+        # 1. Entwurf
+        # Source for HV lines and cables: Dena Verteilnetzstudie 2012, p. 146
         parameters["overnight_cost"] = {
-            "ac_ehv_overhead_line": 2.5e6
+            "ac_ehv_overhead_line": 4.5e6 # NEP
             / (
                 2
                 * parameters["electrical_parameters"]["ac_line_380kV"]["s_nom"]
             ),  # [EUR/km/MW]
-            "ac_ehv_cable": 11.5e6
+            "ac_ehv_cable": 16e6 # NEP
             / (
                 2
                 * parameters["electrical_parameters"]["ac_cable_380kV"][
                     "s_nom"
                 ]
             ),  # [EUR/km/MW]
-            "ac_hv_overhead_line": 0.06e6
+            "ac_hv_overhead_line": 0.06e6 # Verteilnetzstudie
             / parameters["electrical_parameters"]["ac_line_110kV"][
                 "s_nom"
             ],  # [EUR/km/MW]
-            "ac_hv_cable": 0.8e6
+            "ac_hv_cable": 0.8e6  # Verteilnetzstudie
             / parameters["electrical_parameters"]["ac_cable_110kV"][
                 "s_nom"
             ],  # [EUR/km/MW]
-            "dc_overhead_line": 0.5e3,  # [EUR/km/MW]
-            "dc_cable": 3.25e3,  # [EUR/km/MW]
-            "dc_inverter": 0.3e6,  # [EUR/MW]
-            "transformer_380_110": 17.33e3,  # [EUR/MVA]
-            "transformer_380_220": 13.33e3,  # [EUR/MVA]
-            "transformer_220_110": 17.5e3,  # [EUR/MVA]
+            "dc_overhead_line": 0.5e3,  # [EUR/km/MW] # NEP 2021 (na in 2023)
+            "dc_cable": 3.5e3,  # [EUR/km/MW] # NEP 2023 for 320kV
+            "dc_inverter": 0.35e6,  # [EUR/MW] # NEP 2023 for 320kV
+            "transformer_380_110": 21e3,  # [EUR/MVA] # NEP
+            "transformer_380_220": 15e3,  # [EUR/MVA] # NEP
+            "transformer_220_110": 18e3,  # [EUR/MVA] # NEP
             "battery inverter": read_costs(
                 costs, "battery inverter", "investment"
             ),
@@ -357,7 +361,7 @@ def electricity(scenario):
             parameters["capital_cost"][comp] = annualize_capital_costs(
                 parameters["overnight_cost"][comp],
                 parameters["lifetime"][comp],
-                global_settings("eGon2035")["interest_rate"],
+                global_settings("nep2037_2025")["interest_rate"],
             )
 
         parameters["capital_cost"]["battery"] = (
@@ -1007,6 +1011,81 @@ def gas(scenario):
             "biogas": 10000000,  # [MWh] Netzentwicklungsplan Gas 2020–2030
         }
 
+    elif scenario == "nep2037_2025":
+        costs = read_csv(2037)
+
+        parameters = {
+            "main_gas_carrier": "CH4",
+            "H2_feedin_volumetric_fraction": 0.15,
+        }
+        # Insert effciencies in p.u.
+        parameters["efficiency"] = {
+            "power_to_H2": read_costs(costs, "electrolysis", "efficiency"),
+            "H2_to_power": read_costs(costs, "fuel cell", "efficiency"),
+            "CH4_to_H2": read_costs(costs, "SMR", "efficiency"),
+            "H2_feedin": 1,
+            "H2_to_CH4": read_costs(costs, "methanation", "efficiency"),
+            "OCGT": read_costs(costs, "OCGT", "efficiency"),
+        }
+        # Insert overnight investment costs
+        parameters["overnight_cost"] = {
+            "power_to_H2": read_costs(costs, "electrolysis", "investment"),
+            "H2_to_power": read_costs(costs, "fuel cell", "investment"),
+            "CH4_to_H2": read_costs(costs, "SMR", "investment"),
+            "H2_to_CH4": read_costs(costs, "methanation", "investment"),
+            "H2_feedin": 0,
+            "H2_underground": read_costs(
+                costs, "hydrogen storage underground", "investment"
+            ),
+            "H2_overground": read_costs(
+                costs, "hydrogen storage tank incl. compressor", "investment"
+            ),
+            "H2_pipeline": read_costs(
+                costs, "H2 (g) pipeline", "investment"
+            ),  # [EUR/MW/km]
+        }
+
+        # Insert lifetime
+        parameters["lifetime"] = {
+            "power_to_H2": read_costs(costs, "electrolysis", "lifetime"),
+            "H2_to_power": read_costs(costs, "fuel cell", "lifetime"),
+            "CH4_to_H2": read_costs(costs, "SMR", "lifetime"),
+            "H2_to_CH4": read_costs(costs, "methanation", "lifetime"),
+            "H2_underground": read_costs(
+                costs, "hydrogen storage underground", "lifetime"
+            ),
+            "H2_overground": read_costs(
+                costs, "hydrogen storage tank incl. compressor", "lifetime"
+            ),
+            "H2_pipeline": read_costs(costs, "H2 (g) pipeline", "lifetime"),
+            "H2_feedin": read_costs(costs, "CH4 (g) pipeline", "lifetime"),
+        }
+
+        # Insert annualized capital costs
+        parameters["capital_cost"] = {}
+
+        for comp in parameters["overnight_cost"].keys():
+            parameters["capital_cost"][comp] = annualize_capital_costs(
+                parameters["overnight_cost"][comp],
+                parameters["lifetime"][comp],
+                global_settings("nep2037_2025")["interest_rate"],
+            )
+
+        parameters["marginal_cost"] = {
+            "CH4": global_settings(scenario)["fuel_costs"]["gas"]
+            + global_settings(scenario)["co2_costs"]
+            * global_settings(scenario)["co2_emissions"]["gas"],
+            "OCGT": read_costs(costs, "OCGT", "VOM"),
+            "biogas": global_settings(scenario)["fuel_costs"]["gas"],
+            "chp_gas": read_costs(costs, "central gas CHP", "VOM"),
+        }
+
+        # Insert max gas production (generator) over the year
+        parameters["max_gas_generation_overtheyear"] = {
+            "CH4": 36000000,  # [MWh] Netzentwicklungsplan Gas 2020–2030
+            "biogas": 10000000,  # [MWh] Netzentwicklungsplan Gas 2020–2030
+        }
+
     elif scenario == "eGon100RE":
         costs = read_csv(2050)
         interest_rate = 0.07  # [p.u.]
@@ -1173,6 +1252,25 @@ def mobility(scenario):
             }
         }
 
+    elif scenario == "nep2037_2025":
+        parameters = {
+            "motorized_individual_travel": {
+                "NEP C 2037": { # amount of vehicles NEP 2023 (30.9 Mio EV,
+                    # 3.2 Mio PHEV); share for
+                    # vehicle
+                    # categories (mini, mesdium, luxury) form MA Helfenbein
+                    "ev_count": 34100000,
+                    "bev_mini_share": 0.233,
+                    "bev_medium_share": 0.518,
+                    "bev_luxury_share": 0.155,
+                    "phev_mini_share": 0.024,
+                    "phev_medium_share": 0.054,
+                    "phev_luxury_share": 0.016,
+                    "model_parameters": {},
+                }
+            }
+        }
+
     elif scenario == "eGon100RE":
         # eGon100RE has 3 Scenario variations
         #   * allocation will always be done for all scenarios
@@ -1329,6 +1427,86 @@ def heat(scenario):
                 parameters["overnight_cost"][comp],
                 parameters["lifetime"][comp],
                 global_settings("eGon2035")["interest_rate"],
+            )
+
+        # Insert marginal_costs in EUR/MWh
+        # marginal cost can include fuel, C02 and operation and maintenance costs
+        parameters["marginal_cost"] = {
+            "central_heat_pump": read_costs(
+                costs, "central air-sourced heat pump", "VOM"
+            ),
+            "central_gas_chp": read_costs(costs, "central gas CHP", "VOM"),
+            "central_gas_boiler": read_costs(
+                costs, "central gas boiler", "VOM"
+            ),
+            "central_resistive_heater": read_costs(
+                costs, "central resistive heater", "VOM"
+            ),
+            "geo_thermal": 2.9,  # Danish Energy Agency
+            "water_tank_charger": 0,  # Danish Energy Agency
+            "water_tank_discharger": 0,  # Danish Energy Agency
+            "rural_heat_pump": 0,  # Danish Energy Agency, Technology Data for Individual Heating Plants
+        }
+
+    if scenario == "nep2037_2025":
+        costs = read_csv(2037)
+
+        parameters = {
+            "DE_demand_reduction_residential": 0.854314018923104,
+            "DE_demand_reduction_service": 0.498286864771128,
+            "DE_district_heating_share": 0.14,
+        }
+
+        # Insert efficiency in p.u.
+        parameters["efficiency"] = {
+            "water_tank_charger": read_costs(
+                costs, "water tank charger", "efficiency"
+            ),
+            "water_tank_discharger": read_costs(
+                costs, "water tank discharger", "efficiency"
+            ),
+            "central_resistive_heater": read_costs(
+                costs, "central resistive heater", "efficiency"
+            ),
+            "central_gas_boiler": read_costs(
+                costs, "central gas boiler", "efficiency"
+            ),
+            "rural_resistive_heater": read_costs(
+                costs, "decentral resistive heater", "efficiency"
+            ),
+            "rural_gas_boiler": read_costs(
+                costs, "decentral gas boiler", "efficiency"
+            ),
+        }
+
+        # Insert overnight investment costs, in EUR/MWh
+        parameters["overnight_cost"] = {
+            "central_water_tank": read_costs(
+                costs, "central water tank storage", "investment"
+            ),
+            "rural_water_tank": read_costs(
+                costs, "decentral water tank storage", "investment"
+            ),
+        }
+
+        # Insert lifetime
+        parameters["lifetime"] = {
+            "central_water_tank": read_costs(
+                costs, "central water tank storage", "lifetime"
+            ),
+            "rural_water_tank": read_costs(
+                costs, "decentral water tank storage", "lifetime"
+            ),
+        }
+
+        # Insert annualized capital costs
+        parameters["capital_cost"] = {}
+
+        for comp in parameters["overnight_cost"].keys():
+            parameters["capital_cost"][comp] = annualize_capital_costs(
+                parameters["overnight_cost"][comp],
+                parameters["lifetime"][comp],
+                global_settings("nep2037_2025")["interest_rate"],
             )
 
         # Insert marginal_costs in EUR/MWh

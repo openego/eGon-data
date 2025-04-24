@@ -1,8 +1,9 @@
 # -*- coding: utf-8 -*-
 """
-The central module containing code dealing with importing CH4 production data for eGon2035.
+The central module containing code dealing with importing CH4 production data for
+nep2037_2025 and eGon2035.
 
-For eGon2035, the gas produced in Germany can be natural gas or biogas.
+For nep2037_2025 and eGon2035, the gas produced in Germany can be natural gas or biogas.
 The source productions are geolocalised potentials described as PyPSA
 generators. These generators are not extendable and their overall
 production over the year is limited directly in eTraGo by values from
@@ -27,12 +28,13 @@ from egon.data.datasets.scenario_parameters import get_sector_parameters
 
 class CH4Production(Dataset):
     """
-    Insert the CH4 productions into the database for eGon2035
+    Insert the CH4 productions into the database for nep2037_2025 and eGon2035
 
-    Insert the CH4 productions into the database for eGon2035 by using
+    Insert the CH4 productions into the database for nep2037_2025 and eGon2035 by using
     the function :py:func:`import_gas_generators`.
 
     *Dependencies*
+      * :py:class:`GasAreasnep2037_2025 <egon.data.datasets.gas_areas.GasAreasnep2037_2025>`
       * :py:class:`GasAreaseGon2035 <egon.data.datasets.gas_areas.GasAreaseGon2035>`
       * :py:class:`GasNodesAndPipes <egon.data.datasets.gas_grid.GasNodesAndPipes>`
 
@@ -289,7 +291,7 @@ def import_gas_generators():
     steps are followed:
 
       * cleaning of the database table grid.egon_etrago_generator of the
-        CH4 generators of the specific scenario (eGon2035),
+        CH4 generators of the specific scenario (nep2037_2025, eGon2035),
       * call of the functions :py:func:`load_NG_generators` and
         :py:func:`load_biogas_generators` that respectively return
         dataframes containing the natural- an bio-gas production units
@@ -338,7 +340,7 @@ def import_gas_generators():
             """
         )
 
-        if scn_name == "eGon2035":
+        if scn_name == "nep2037_2025" or scn_name == "eGon2035":
             CH4_generators_list = pd.concat(
                 [
                     load_NG_generators(scn_name),

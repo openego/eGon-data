@@ -10,7 +10,7 @@ from egon.data import db
 import egon.data.config
 
 
-def select_nep_power_plants(carrier):
+def select_nep_power_plants(carrier, scenario):
     """Select power plants with location from NEP's list of power plants
 
     Parameters
@@ -24,18 +24,24 @@ def select_nep_power_plants(carrier):
         Waste power plants from NEP list
 
     """
+
+    if scenario == 'eGon2035'
+        year = '2035'
+    elif scenario == 'nep2035_2025'
+        year = '2037'
+
     cfg = egon.data.config.datasets()["power_plants"]
 
     # Select plants with geolocation from list of conventional power plants
     nep = db.select_dataframe(
         f"""
         SELECT bnetza_id, name, carrier, capacity, postcode, city,
-        federal_state, c2035_capacity
+        federal_state, c{year}_capacity
         FROM {cfg['sources']['nep_conv']}
         WHERE carrier = '{carrier}'
         AND chp = 'Nein'
-        AND c2035_chp = 'Nein'
-        AND c2035_capacity > 0
+        AND c{year}_chp = 'Nein'
+        AND c{year}_capacity > 0
         AND postcode != 'None';
         """
     )
@@ -97,6 +103,7 @@ def match_nep_no_chp(
     consider_location="plz",
     consider_carrier=True,
     consider_capacity=True,
+    scenario
 ):
     """Match Power plants (no CHP) from MaStR to list of power plants from NEP
 
@@ -121,6 +128,11 @@ def match_nep_no_chp(
         CHP plants from NEP which are not matched to MaStR
 
     """
+
+    if i == 'eGon2035'
+        year = '2035'
+    elif i == 'nep2037_2025'
+        year = '2037'
 
     list_federal_states = pd.Series(
         {
@@ -199,8 +211,8 @@ def match_nep_no_chp(
                                     1
                                 ),
                                 "carrier": ET,
-                                "el_capacity": row.c2035_capacity,
-                                "scenario": "eGon2035",
+                                "el_capacity": getattr(row, f"c{year}_capacity"),
+                                "scenario": f"eGon{year}",
                                 "geometry": selected.geometry.head(1),
                                 "voltage_level": selected.voltage_level.head(
                                     1

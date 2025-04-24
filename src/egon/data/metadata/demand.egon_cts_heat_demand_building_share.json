@@ -132,7 +132,7 @@
           },
           {
             "name": "scenario",
-            "description": "Scenario (eGon100RE, eGon2035)",
+            "description": "Scenario (eGon100RE, nep2037_2025, eGon2035)",
             "type": "character varying",
             "unit": "none"
           },

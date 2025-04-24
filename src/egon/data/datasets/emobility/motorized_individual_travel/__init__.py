@@ -53,6 +53,7 @@ from egon.data.datasets.emobility.motorized_individual_travel.model_timeseries i
     generate_model_data_status2023_remaining,
     generate_model_data_eGon100RE_remaining,
     generate_model_data_eGon2035_remaining,
+    generate_model_data_nep2037_2025_remaining,
     read_simbev_metadata_file,
 )
 
@@ -453,6 +454,8 @@ class MotorizedIndividualTravel(Dataset):
                 tasks.add(generate_model_data_status2019_remaining)
             if scenario_name == "status2023":
                 tasks.add(generate_model_data_status2023_remaining)
+            elif scenario_name == "nep2037_2025":
+                tasks.add(generate_model_data_nep2037_2025_remaining)
             elif scenario_name == "eGon2035":
                 tasks.add(generate_model_data_eGon2035_remaining)
             elif scenario_name == "eGon100RE":

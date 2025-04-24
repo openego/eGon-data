@@ -96,7 +96,7 @@ def zensus_population():
         {cfg['target']['population_prognosis']['table']}"""
     )
     # Scale to pogosis values from demandregio
-    for year in [2035, 2050]:
+    for year in [2035, 2037, 2050]:
         # Input: dataset on population prognosis on district-level (NUTS3)
         prognosis = db.select_dataframe(
             f"""SELECT nuts3, population
@@ -203,7 +203,7 @@ def zensus_household():
     )
 
     # Apply prognosis function
-    for year in [2035, 2050]:
+    for year in [2035, 2037, 2050]:
         print(f"start prognosis for year {year}")
         # Input: dataset on household prognosis on district-level (NUTS3)
         prognosis_nuts3 = db.select_dataframe(

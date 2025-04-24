@@ -35,7 +35,7 @@ class HydrogenBusEtrago(Dataset):
     Insert the H2 buses into the database for Germany
 
     Insert the H2 buses in Germany into the database for the scenarios
-    eGon2035 and eGon100RE by executing successively the functions
+    nep2037_2025, eGon2035 and eGon100RE by executing successively the functions
     :py:func:`calculate_and_map_saltcavern_storage_potential <egon.data.datasets.hydrogen_etrago.storage.calculate_and_map_saltcavern_storage_potential>`,
     :py:func:`insert_hydrogen_buses <egon.data.datasets.hydrogen_etrago.bus.insert_hydrogen_buses>` and
     :py:func:`insert_hydrogen_buses_eGon100RE <egon.data.datasets.hydrogen_etrago.bus.insert_hydrogen_buses_eGon100RE>`.
@@ -114,7 +114,7 @@ class HydrogenPowerLinkEtrago(Dataset):
     Insert the electrolysis and the fuel cells into the database
 
     Insert the the electrolysis and the fuel cell links in Germany into
-    the database for the scenarios eGon2035 and eGon100RE by executing
+    the database for the scenarios nep2037_2025, eGon2035 and eGon100RE by executing
     successively the functions :py:func:`insert_power_to_h2_to_power <egon.data.datasets.hydrogen_etrago.power_to_h2.insert_power_to_h2_to_power>`
     and :py:func:`insert_power_to_h2_to_power_eGon100RE <egon.data.datasets.hydrogen_etrago.power_to_h2.insert_power_to_h2_to_power_eGon100RE>`.
 
@@ -150,9 +150,9 @@ class HydrogenMethaneLinkEtrago(Dataset):
     """
     Insert the methanisation, feed in and SMR into the database
 
-    Insert the the methanisation, feed in (only in eGon2035) and Steam
+    Insert the the methanisation, feed in (only in eGon2035,nep2037_2025) and Steam
     Methane Reaction (SMR) links in Germany into the database for the
-    scenarios eGon2035 and eGon100RE by executing successively the
+    scenarios eGon2035, nep2037_2025 and eGon100RE by executing successively the
     functions :py:func:`insert_h2_to_ch4_to_h2 <egon.data.datasets.hydrogen_etrago.h2_to_ch4.insert_h2_to_ch4_to_h2>`
     and :py:func:`insert_h2_to_ch4_eGon100RE <egon.data.datasets.hydrogen_etrago.h2_to_ch4.insert_h2_to_ch4_eGon100RE>`.
 
@@ -196,6 +196,8 @@ class HydrogenGridEtrago(Dataset):
       * :py:class:`GasNodesAndPipes <egon.data.datasets.gas_grid.GasNodesAndPipes>`
       * :py:class:`SubstationVoronoi <egon.data.datasets.substation_voronoi.SubstationVoronoi>`
       * :py:class:`GasAreaseGon2035 <egon.data.datasets.gas_areas.GasAreaseGon2035>`
+      * :py:class:`GasAreaseGon2037_2025
+      <egon.data.datasets.gas_areas.GasAreaseGon2037_2025>`
       * :py:class:`PypsaEurSec <egon.data.datasets.pypsaeursec>`
       * :py:class:`HydrogenBusEtrago <HydrogenBusEtrago>`
 

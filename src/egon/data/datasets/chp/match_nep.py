@@ -19,7 +19,7 @@ from egon.data.datasets.scenario_capacities import map_carrier
 
 
 #####################################   NEP treatment   #################################
-def select_chp_from_nep(sources):
+def select_chp_from_nep(sources, scn):
     """Select CHP plants with location from NEP's list of power plants
 
     Returns
@@ -28,17 +28,21 @@ def select_chp_from_nep(sources):
         CHP plants from NEP list
 
     """
+    if scn = "eGon2035"
+        year = "2035"
+    if scn = "nep2037_2025"
+        year = "2037"
 
     # Select CHP plants with geolocation from list of conventional power plants
     chp_NEP_data = db.select_dataframe(
         f"""
         SELECT bnetza_id, name, carrier, chp, postcode, capacity, city,
-        federal_state, c2035_chp, c2035_capacity
+        federal_state, c{year}_chp, c{year}_capacity
         FROM {sources['list_conv_pp']['schema']}.
         {sources['list_conv_pp']['table']}
         WHERE bnetza_id != 'KW<10 MW'
-        AND (chp = 'Ja' OR c2035_chp = 'Ja')
-        AND c2035_capacity > 0
+        AND (chp = 'Ja' OR c{year}_chp = 'Ja')
+        AND c{year}_capacity > 0
         AND postcode != 'None'
         """
     )
@@ -59,8 +63,8 @@ def select_chp_from_nep(sources):
             "postcode",
             "carrier",
             "capacity",
-            "c2035_capacity",
-            "c2035_chp",
+            f"c{year}_capacity",
+            f"c{year}_chp",
             "city",
         ]
     )
@@ -74,8 +78,8 @@ def select_chp_from_nep(sources):
                 "postcode",
                 "carrier",
                 "capacity",
-                "c2035_capacity",
-                "c2035_chp",
+                f"c{year}_capacity",
+                f"c{year}_chp",
                 "city",
                 "federal_state",
             ],
@@ -88,11 +92,11 @@ def select_chp_from_nep(sources):
                 "carrier",
                 "name",
                 "postcode",
-                "c2035_chp",
+                f"{year}_chp",
                 "city",
                 "federal_state",
             ]
-        )["capacity", "c2035_capacity", "city", "federal_state"]
+        )["capacity", f"c{year}_capacity", "city", "federal_state"]
         .sum()
         .reset_index()
     ).reset_index()
@@ -190,6 +194,7 @@ def match_nep_chp(
     consider_location="plz",
     consider_carrier=True,
     consider_capacity=True,
+    scn
 ):
     """Match CHP plants from MaStR to list of power plants from NEP
 
@@ -214,6 +219,12 @@ def match_nep_chp(
         CHP plants from NEP which are not matched to MaStR
 
     """
+    if scn == "eGon2035":
+        year = "2035"
+        nep_release = "2021"
+    elif scn == "nep2037_2025":
+        year = "2037"
+        nep_release = "2025"
 
     list_federal_states = pd.Series(
         {
@@ -287,15 +298,18 @@ def match_nep_chp(
                 chp_NEP_matched = chp_NEP_matched.append(
                     geopandas.GeoDataFrame(
                         data={
-                            "source": "MaStR scaled with NEP 2021 list",
+                            "source": f"MaStR scaled with NEP {nep_release} list",
                             "MaStRNummer": selected.EinheitMastrNummer.head(1),
                             "carrier": (
-                                ET if row.c2035_chp == "Nein" else "gas"
+                                ET if getattr(row, f"c{year}_chp") ==
+                                                                 "Nein"
+                            else
+                            "gas"
                             ),
                             "chp": True,
-                            "el_capacity": row.c2035_capacity,
+                            "el_capacity": getattr(row, f"c{year}_capacity"),
                             "th_capacity": selected.th_capacity.head(1),
-                            "scenario": "eGon2035",
+                            "scenario": f"{scn}",
                             "geometry": selected.geometry.head(1),
                             "voltage_level": selected.voltage_level.head(1),
                         }
@@ -313,9 +327,9 @@ def match_nep_chp(
 
 
 ################################################### Final table ###################################################
-def insert_large_chp(sources, target, EgonChp):
+def insert_large_chp(sources, target, EgonChp, scn):
     # Select CHP from NEP list
-    chp_NEP = select_chp_from_nep(sources)
+    chp_NEP = select_chp_from_nep(sources, scn)
 
     # Select CHP from MaStR
     MaStR_konv = select_chp_from_mastr(sources)
@@ -344,7 +358,7 @@ def insert_large_chp(sources, target, EgonChp):
 
     # Match CHP from NEP list using PLZ, carrier and capacity
     chp_NEP_matched, MaStR_konv, chp_NEP = match_nep_chp(
-        chp_NEP, MaStR_konv, chp_NEP_matched, buffer_capacity=0.1
+        chp_NEP, MaStR_konv, chp_NEP_matched, buffer_capacity=0.1,scn
     )
 
     # Match CHP from NEP list using first 4 numbers of PLZ,
@@ -355,6 +369,7 @@ def insert_large_chp(sources, target, EgonChp):
         chp_NEP_matched,
         buffer_capacity=0.1,
         consider_location="city",
+        scn
     )
 
     # Aggregate units from MaStR to one power plant
@@ -383,7 +398,7 @@ def insert_large_chp(sources, target, EgonChp):
 
     # Match CHP from NEP list with aggregated MaStR units
     chp_NEP_matched, MaStR_konv, chp_NEP = match_nep_chp(
-        chp_NEP, MaStR_konv, chp_NEP_matched, buffer_capacity=0.1
+        chp_NEP, MaStR_konv, chp_NEP_matched, buffer_capacity=0.1, scn
     )
 
     # Match CHP from NEP list with aggregated MaStR units
@@ -393,20 +408,21 @@ def insert_large_chp(sources, target, EgonChp):
         chp_NEP_matched,
         buffer_capacity=0.1,
         consider_location="city",
+        scn
     )
 
     # Aggregate units from NEP to one power plant
     chp_NEP = (
         chp_NEP.groupby(
-            ["postcode", "carrier", "city", "c2035_chp", "federal_state"]
-        )[["capacity", "c2035_capacity"]]
+            ["postcode", "carrier", "city", f"c{year}_chp", "federal_state"]
+        )[["capacity", f"c{year}_capacity"]]
         .sum()
         .reset_index()
     )
 
     # Match CHP from NEP list with aggregated MaStR units
     chp_NEP_matched, MaStR_konv, chp_NEP = match_nep_chp(
-        chp_NEP, MaStR_konv, chp_NEP_matched, buffer_capacity=0.1
+        chp_NEP, MaStR_konv, chp_NEP_matched, buffer_capacity=0.1, scn
     )
 
     # Match CHP from NEP list with aggregated MaStR units
@@ -416,6 +432,7 @@ def insert_large_chp(sources, target, EgonChp):
         chp_NEP_matched,
         buffer_capacity=0.1,
         consider_location="city",
+        scn
     )
 
     chp_NEP_matched, MaStR_konv, chp_NEP = match_nep_chp(
@@ -424,6 +441,7 @@ def insert_large_chp(sources, target, EgonChp):
         chp_NEP_matched,
         buffer_capacity=0.3,
         consider_location="city",
+        scn
     )
 
     chp_NEP_matched, MaStR_konv, chp_NEP = match_nep_chp(
@@ -433,6 +451,7 @@ def insert_large_chp(sources, target, EgonChp):
         buffer_capacity=0.3,
         consider_location="city",
         consider_carrier=False,
+        scn
     )
 
     chp_NEP_matched, MaStR_konv, chp_NEP = match_nep_chp(
@@ -443,6 +462,7 @@ def insert_large_chp(sources, target, EgonChp):
         consider_location="city",
         consider_carrier=True,
         consider_capacity=False,
+        scn
     )
 
     chp_NEP_matched, MaStR_konv, chp_NEP = match_nep_chp(
@@ -452,6 +472,7 @@ def insert_large_chp(sources, target, EgonChp):
         consider_location="city",
         consider_carrier=True,
         consider_capacity=False,
+        scn
     )
 
     chp_NEP_matched, MaStR_konv, chp_NEP = match_nep_chp(
@@ -461,6 +482,7 @@ def insert_large_chp(sources, target, EgonChp):
         consider_location="city",
         consider_carrier=False,
         consider_capacity=False,
+        scn
     )
 
     chp_NEP_matched, MaStR_konv, chp_NEP = match_nep_chp(
@@ -470,6 +492,7 @@ def insert_large_chp(sources, target, EgonChp):
         consider_location="federal_state",
         consider_carrier=False,
         consider_capacity=False,
+        scn
     )
 
     # Prepare geometry for database import
@@ -478,7 +501,8 @@ def insert_large_chp(sources, target, EgonChp):
     )
 
     print(f"{chp_NEP_matched.el_capacity.sum()} MW matched")
-    print(f"{chp_NEP.c2035_capacity.sum()} MW not matched")
+    print(f"{getattr(chp_NEP, f"c{year}_capacity").sum()} MW not "
+          f"matched")
 
     chp_NEP.to_csv("not_matched_chp.csv")
 
@@ -506,7 +530,7 @@ def insert_large_chp(sources, target, EgonChp):
 
     # Assign gas bus_id
     insert_chp["gas_bus_id"] = db.assign_gas_bus_id(
-        insert_chp_c, "eGon2035", "CH4"
+        insert_chp_c, f"{scn}", "CH4"
     ).bus
 
     insert_chp = assign_use_case(insert_chp, sources)
@@ -515,7 +539,7 @@ def insert_large_chp(sources, target, EgonChp):
     db.execute_sql(
         f""" DELETE FROM {target['schema']}.{target['table']}
         WHERE carrier IN ('gas', 'other_non_renewable', 'oil')
-        AND scenario='eGon2035';"""
+        AND scenario='{scn}';"""
     )
 
     # Insert into target table
@@ -535,7 +559,7 @@ def insert_large_chp(sources, target, EgonChp):
             electrical_bus_id=row.bus_id,
             ch4_bus_id=row.gas_bus_id,
             district_heating=row.district_heating,
-            scenario="eGon2035",
+            scenario=f"{scn}",
             geom=f"SRID=4326;POINT({row.geometry.x} {row.geometry.y})",
         )
         session.add(entry)

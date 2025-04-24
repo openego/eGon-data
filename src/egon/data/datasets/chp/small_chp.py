@@ -14,7 +14,7 @@ from egon.data.datasets.power_plants import (
 )
 
 
-def insert_mastr_chp(mastr_chp, EgonChp):
+def insert_mastr_chp(mastr_chp, EgonChp, scn):
     """Insert MaStR data from exising CHPs into database table
 
     Parameters
@@ -23,6 +23,8 @@ def insert_mastr_chp(mastr_chp, EgonChp):
         List of existing CHPs in MaStR.
     EgonChp : class
         Class definition of daabase table for CHPs
+    scn : str
+        Name of the scenario
 
     Returns
     -------
@@ -46,14 +48,14 @@ def insert_mastr_chp(mastr_chp, EgonChp):
             ch4_bus_id=row.gas_bus_id,
             district_heating=row.district_heating,
             voltage_level=row.voltage_level,
-            scenario="eGon2035",
+            scenario=scn,
             geom=f"SRID=4326;POINT({row.geometry.x} {row.geometry.y})",
         )
         session.add(entry)
     session.commit()
 
 
-def existing_chp_smaller_10mw(sources, MaStR_konv, EgonChp):
+def existing_chp_smaller_10mw(sources, MaStR_konv, EgonChp, scn):
     """Insert existing small CHPs based on MaStR and target values
 
     Parameters
@@ -62,6 +64,8 @@ def existing_chp_smaller_10mw(sources, MaStR_konv, EgonChp):
         List of conevntional CHPs in MaStR whoes locateion is not used
     EgonChp : class
         Class definition of daabase table for CHPs
+    scn : str
+        Name of the scenario
 
     Returns
     -------
@@ -76,7 +80,7 @@ def existing_chp_smaller_10mw(sources, MaStR_konv, EgonChp):
         & (MaStR_konv.th_capacity > 0)
     ]
 
-    targets = select_target("small_chp", "eGon2035")
+    targets = select_target("small_chp", scn)
 
     for federal_state in targets.index:
         mastr_chp = gpd.GeoDataFrame(
@@ -88,7 +92,7 @@ def existing_chp_smaller_10mw(sources, MaStR_konv, EgonChp):
         # Assign gas bus_id
         mastr_chp_c = mastr_chp.copy()
         mastr_chp["gas_bus_id"] = db.assign_gas_bus_id(
-            mastr_chp_c, "eGon2035", "CH4"
+            mastr_chp_c, scn, "CH4"
         ).bus
 
         # Assign bus_id
@@ -96,9 +100,9 @@ def existing_chp_smaller_10mw(sources, MaStR_konv, EgonChp):
             mastr_chp, config.datasets()["chp_location"]
         ).bus_id
 
-        mastr_chp = assign_use_case(mastr_chp, sources, "eGon2035")
+        mastr_chp = assign_use_case(mastr_chp, sources, scn)
 
-        insert_mastr_chp(mastr_chp, EgonChp)
+        insert_mastr_chp(mastr_chp, EgonChp, scn)
 
 
 def extension_to_areas(
@@ -289,6 +293,7 @@ def extension_district_heating(
     flh_chp,
     EgonChp,
     areas_without_chp_only=False,
+    scn
 ):
     """Build new CHP < 10 MW for district areas considering existing CHP
     and the heat demand.
@@ -327,8 +332,8 @@ def extension_district_heating(
         {targets['chp_table']['table']} a,
         {sources['district_heating_areas']['schema']}.
         {sources['district_heating_areas']['table']} b
-        WHERE a.scenario = 'eGon2035'
-        AND b.scenario = 'eGon2035'
+        WHERE a.scenario = '{scn}'
+        AND b.scenario = '{scn}'
         AND district_heating = True
         AND ST_Intersects(
             ST_Transform(
@@ -354,7 +359,7 @@ def extension_district_heating(
             FROM
             {sources['district_heating_areas']['schema']}.
             {sources['district_heating_areas']['table']}
-            WHERE scenario = 'eGon2035'
+            WHERE scenario = '{scn}'
             AND ST_Intersects(ST_Transform(ST_Centroid(geom_polygon), 4326), (
                 SELECT ST_Union(d.geometry)
                 FROM
@@ -364,7 +369,7 @@ def extension_district_heating(
                 SELECT district_heating_area_id
                 FROM {targets['chp_table']['schema']}.
                 {targets['chp_table']['table']}
-                WHERE scenario = 'eGon2035'
+                WHERE scenario = '{scn}'
                 AND district_heating = TRUE)
             """
         )
@@ -391,8 +396,8 @@ def extension_district_heating(
                 {targets['chp_table']['table']} a,
                 {sources['district_heating_areas']['schema']}.
                 {sources['district_heating_areas']['table']} b
-                WHERE b.scenario = 'eGon2035'
-                AND a.scenario = 'eGon2035'
+                WHERE b.scenario = '{scn}'
+                AND a.scenario = '{scn}'
                 AND ST_Intersects(
                     ST_Transform(ST_Centroid(geom_polygon), 4326),
                     (SELECT ST_Union(d.geometry)
@@ -422,7 +427,7 @@ def extension_district_heating(
     return not_distributed_capacity
 
 
-def extension_industrial(federal_state, additional_capacity, flh_chp, EgonChp):
+def extension_industrial(federal_state, additional_capacity, flh_chp, EgonChp, scn):
     """Build new CHP < 10 MW for industry considering existing CHP,
     osm landuse areas and electricity demands.
 
@@ -439,6 +444,8 @@ def extension_industrial(federal_state, additional_capacity, flh_chp, EgonChp):
         Assumed number of full load hours of electricity output.
     EgonChp : class
         ORM-class definition of CHP database-table.
+    scn : str
+        Name of the scenario
 
     Returns
     -------
@@ -455,7 +462,7 @@ def extension_industrial(federal_state, additional_capacity, flh_chp, EgonChp):
         FROM
         {targets['chp_table']['schema']}.
         {targets['chp_table']['table']} a
-        WHERE a.scenario = 'eGon2035'
+        WHERE a.scenario = '{scn}'
         AND district_heating = False
         AND el_capacity < 10
         ORDER BY el_capacity
@@ -473,7 +480,7 @@ def extension_industrial(federal_state, additional_capacity, flh_chp, EgonChp):
         {sources['industrial_demand_osm']['table']} a,
         {sources['osm_landuse']['schema']}.
         {sources['osm_landuse']['table']} b
-        WHERE a.scenario = 'eGon2035'
+        WHERE a.scenario = '{scn}'
         AND b.id = a.osm_id
         AND NOT ST_Intersects(
             ST_Transform(b.geom, 4326),
@@ -517,7 +524,7 @@ def extension_industrial(federal_state, additional_capacity, flh_chp, EgonChp):
     return not_distributed_capacity
 
 
-def extension_per_federal_state(federal_state, EgonChp):
+def extension_per_federal_state(federal_state, EgonChp, scn):
     """Adds new CHP plants to meet target value per federal state.
 
     The additional capacity for CHPs < 10 MW is distributed discretly.
@@ -537,6 +544,8 @@ def extension_per_federal_state(federal_state, EgonChp):
         Name of the federal state
     EgonChp : class
         ORM-class definition of CHP table
+    scn : str
+        Name of the scenario
 
     Returns
     -------
@@ -547,7 +556,7 @@ def extension_per_federal_state(federal_state, EgonChp):
     sources = config.datasets()["chp_location"]["sources"]
     target_table = config.datasets()["chp_location"]["targets"]["chp_table"]
 
-    targets = select_target("small_chp", "eGon2035")
+    targets = select_target("small_chp", scn)
 
     existing_capacity = db.select_dataframe(
         f"""
@@ -556,7 +565,7 @@ def extension_per_federal_state(federal_state, EgonChp):
             {target_table['table']}
             WHERE sources::json->>'el_capacity' = 'MaStR'
             AND carrier != 'biomass'
-            AND scenario = 'eGon2035'
+            AND scenario = '{scn}'
             AND ST_Intersects(geom, (
             SELECT ST_Union(geometry) FROM
             {sources['vg250_lan']['schema']}.{sources['vg250_lan']['table']} b
@@ -592,7 +601,7 @@ def extension_per_federal_state(federal_state, EgonChp):
             f"Distributing {capacity_district_heating} MW_el to district heating"
         )
         not_distributed_capacity_dh = extension_district_heating(
-            federal_state, capacity_district_heating, flh_chp, EgonChp
+            federal_state, capacity_district_heating, flh_chp, EgonChp, scn
         )
 
         if not_distributed_capacity_dh > 1:
@@ -608,6 +617,7 @@ def extension_per_federal_state(federal_state, EgonChp):
             additional_capacity * (1 - share_dh),
             flh_chp,
             EgonChp,
+            scn
         )
 
         print(
@@ -626,6 +636,7 @@ def extension_per_federal_state(federal_state, EgonChp):
                 not_distributed_capacity_industry,
                 flh_chp,
                 EgonChp,
+                scn
             )
 
     else:

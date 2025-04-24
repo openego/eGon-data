@@ -1,5 +1,5 @@
 """
-CTS electricity and heat demand time series for scenarios in 2035 and 2050
+CTS electricity and heat demand time series for scenarios in 2035, 2037 and 2050
 assigned to OSM-buildings are generated.
 
 Disaggregation of CTS heat & electricity demand time series from MV substation
@@ -60,7 +60,8 @@ class EgonCtsElectricityDemandBuildingShare(Base):
     Class definition of table demand.egon_cts_electricity_demand_building_share.
 
     Table including the MV substation electricity profile share of all selected
-    CTS buildings for scenario eGon2035 and eGon100RE. This table is created
+    CTS buildings for scenario nep2037_2025, eGon2035 and eGon100RE. This table is
+    created
     within :func:`cts_electricity()`.
     """
     __tablename__ = "egon_cts_electricity_demand_building_share"
@@ -77,7 +78,8 @@ class EgonCtsHeatDemandBuildingShare(Base):
     Class definition of table demand.egon_cts_heat_demand_building_share.
 
     Table including the MV substation heat profile share of all selected
-    CTS buildings for scenario eGon2035 and eGon100RE. This table is created
+    CTS buildings for scenario eGon2035, nep2037_2025 and eGon100RE. This table is
+    created
     within :func:`cts_heat()`.
     """
     __tablename__ = "egon_cts_heat_demand_building_share"
@@ -124,7 +126,8 @@ class BuildingHeatPeakLoads(Base):
 
 class CtsDemandBuildings(Dataset):
     """
-    Generates CTS electricity and heat demand time series for scenarios in 2035 and 2050
+    Generates CTS electricity and heat demand time series for scenarios in 2035, 2037
+    and 2050
     assigned to OSM-buildings.
 
     Disaggregation of CTS heat & electricity demand time series from MV Substation
@@ -840,7 +843,8 @@ def calc_census_cell_share(scenario, sector):
     Parameters
     ----------
     scenario: str
-        Scenario for which the share is calculated: "eGon2035" or "eGon100RE"
+        Scenario for which the share is calculated: "eGon2035", "nep2037_2025" or
+        "eGon100RE"
     sector: str
         Scenario for which the share is calculated: "electricity" or "heat"
 
@@ -985,14 +989,14 @@ def calc_building_demand_profile_share(
 def get_peta_demand(mvgd, scenario):
     """
     Retrieve annual peta heat demand for CTS for either
-    eGon2035 or eGon100RE scenario.
+    eGon2035, nep2037_2025 or eGon100RE scenario.
 
     Parameters
     ----------
     mvgd : int
         ID of substation for which to get CTS demand.
     scenario : str
-        Possible options are eGon2035 or eGon100RE
+        Possible options are eGon2035, nep2037_2025 or eGon100RE
 
     Returns
     -------
@@ -1041,7 +1045,8 @@ def calc_cts_building_profiles(
         Ids of the substation for which selected building profiles are
         calculated.
     scenario: str
-        Scenario for which the share is calculated: "eGon2035" or "eGon100RE"
+        Scenario for which the share is calculated: "eGon2035", "nep2037_2025" or
+        "eGon100RE"
     sector: str
         Sector for which the share is calculated: "electricity" or "heat"
 

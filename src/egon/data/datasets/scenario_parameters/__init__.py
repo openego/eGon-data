@@ -48,12 +48,15 @@ def create_table():
 
 def get_scenario_year(scenario_name):
     """Derives scenarios year from scenario name. Scenario
-    eGon100RE is an exception as year is not in the name."""
+    eGon100RE is an exception as year is not in the name. And nep2037_2025 since end
+    number is the data release date"""
     try:
         year = int(scenario_name[-4:])
     except ValueError as e:
         if e.args[0] == "invalid literal for int() with base 10: '00RE'":
             year = 2050  # eGon100RE
+        elif scenario_name == "nep2037_2025"
+            year = 2037
         else:
             raise ValueError("The names of the scenarios do not end with the year!")
     return year
@@ -71,6 +74,31 @@ def insert_scenarios():
     db.execute_sql("DELETE FROM scenario.egon_scenario_parameters CASCADE;")
 
     session = sessionmaker(bind=db.engine())()
+
+    # Scenario nep2037_2025
+    nep2037_2025 = EgonScenario(name="nep2037_2025")
+
+    nep2037_2025.description = """
+            The scenario nep2037_2025 is based on scenario C 2037 of the
+            Netzentwicklungsplan Strom 2037, Version 2025.
+            Scenario C 2037 is characretized by an ambitious expansion of
+            renewable energies and a higher share of sector coupling.
+            Analogous to the Netzentwicklungsplan, the countries bordering germany
+            are modeled based on Ten-Year Network Development Plan, Version 2020.
+            """
+    nep2037_2025.global_parameters = parameters.global_settings(nep2037_2025.name)
+
+    nep2037_2025.electricity_parameters = parameters.electricity(nep2037_2025.name)
+
+    nep2037_2025.gas_parameters = parameters.gas(nep2037_2025.name)
+
+    nep2037_2025.heat_parameters = parameters.heat(nep2037_2025.name)
+
+    nep2037_2025.mobility_parameters = parameters.mobility(nep2037_2025.name)
+
+    session.add(nep2037_2025)
+
+    session.commit()
 
     # Scenario eGon2035
     egon2035 = EgonScenario(name="eGon2035")
@@ -221,6 +249,15 @@ def get_sector_parameters(sector, scenario=None):
     else:
         values = pd.concat(
             [
+                pd.DataFrame(
+                    db.select_dataframe(
+                        f"""
+                            SELECT {sector}_parameters as val
+                            FROM scenario.egon_scenario_parameters
+                            WHERE name='nep2037_2025'"""
+                    ).val[0],
+                    index=["nep2037_2025"],
+                ),
                 pd.DataFrame(
                     db.select_dataframe(
                         f"""

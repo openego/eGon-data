@@ -385,8 +385,9 @@ def insert_biomass_chp(scenario):
         )
     ]
 
-    # Scaling will be done per federal state in case of eGon2035 scenario.
-    if scenario == "eGon2035":
+    # Scaling will be done per federal state in case of eGon2035 and
+    # nep2037_2025 scenario.
+    if scenario == "eGon2035" or scenario == "nep2037_2025":
         level = "federal_state"
     else:
         level = "country"
@@ -566,6 +567,46 @@ def insert_chp_statusquo(scn="status2019"):
             session.add(entry)
     session.commit()
 
+def insert_chp_nep2037_2025():
+    """Insert CHP plants for nep2037_2025 considering NEP and MaStR data
+
+    Returns
+    -------
+    None.
+
+    """
+
+    sources = config.datasets()["chp_location"]["sources"]
+
+    targets = config.datasets()["chp_location"]["targets"]
+
+    insert_biomass_chp("nep2037_2025")
+
+    # Insert large CHPs based on NEP's list of conventional power plants
+    MaStR_konv = insert_large_chp(sources, targets["chp_table"], EgonChp,
+                                  scn = "nep2037_2025")
+
+    # Insert smaller CHPs (< 10MW) based on existing locations from MaStR
+    existing_chp_smaller_10mw(sources, MaStR_konv, EgonChp, "nep2037_2025")
+
+    gpd.GeoDataFrame(
+        MaStR_konv[
+            [
+                "EinheitMastrNummer",
+                "el_capacity",
+                "geometry",
+                "carrier",
+                "plz",
+                "city",
+                "federal_state",
+            ]
+        ]
+    ).to_postgis(
+        targets["mastr_conventional_without_chp"]["table"],
+        schema=targets["mastr_conventional_without_chp"]["schema"],
+        con=db.engine(),
+        if_exists="replace",
+    )
 
 def insert_chp_egon2035():
     """Insert CHP plants for eGon2035 considering NEP and MaStR data
@@ -583,10 +624,11 @@ def insert_chp_egon2035():
     insert_biomass_chp("eGon2035")
 
     # Insert large CHPs based on NEP's list of conventional power plants
-    MaStR_konv = insert_large_chp(sources, targets["chp_table"], EgonChp)
+    MaStR_konv = insert_large_chp(sources, targets["chp_table"], EgonChp,
+                                  scn = "eGon2035")
 
     # Insert smaller CHPs (< 10MW) based on existing locations from MaStR
-    existing_chp_smaller_10mw(sources, MaStR_konv, EgonChp)
+    existing_chp_smaller_10mw(sources, MaStR_konv, EgonChp, "eGon2035")
 
     gpd.GeoDataFrame(
         MaStR_konv[
@@ -608,68 +650,68 @@ def insert_chp_egon2035():
     )
 
 
-def extension_BW():
-    extension_per_federal_state("BadenWuerttemberg", EgonChp)
+def extension_BW(scn):
+    extension_per_federal_state("BadenWuerttemberg", EgonChp, scn)
 
 
-def extension_BY():
-    extension_per_federal_state("Bayern", EgonChp)
+def extension_BY(scn):
+    extension_per_federal_state("Bayern", EgonChp, scn)
 
 
-def extension_HB():
-    extension_per_federal_state("Bremen", EgonChp)
+def extension_HB(scn):
+    extension_per_federal_state("Bremen", EgonChp, scn)
 
 
-def extension_BB():
-    extension_per_federal_state("Brandenburg", EgonChp)
+def extension_BB(scn):
+    extension_per_federal_state("Brandenburg", EgonChp, scn)
 
 
-def extension_HH():
-    extension_per_federal_state("Hamburg", EgonChp)
+def extension_HH(scn):
+    extension_per_federal_state("Hamburg", EgonChp, scn)
 
 
-def extension_HE():
-    extension_per_federal_state("Hessen", EgonChp)
+def extension_HE(scn):
+    extension_per_federal_state("Hessen", EgonChp, scn)
 
 
-def extension_MV():
-    extension_per_federal_state("MecklenburgVorpommern", EgonChp)
+def extension_MV(scn):
+    extension_per_federal_state("MecklenburgVorpommern", EgonChp, scn)
 
 
-def extension_NS():
-    extension_per_federal_state("Niedersachsen", EgonChp)
+def extension_NS(scn):
+    extension_per_federal_state("Niedersachsen", EgonChp, scn)
 
 
-def extension_NW():
-    extension_per_federal_state("NordrheinWestfalen", EgonChp)
+def extension_NW(scn):
+    extension_per_federal_state("NordrheinWestfalen", EgonChp, scn)
 
 
-def extension_SN():
-    extension_per_federal_state("Sachsen", EgonChp)
+def extension_SN(scn):
+    extension_per_federal_state("Sachsen", EgonChp, scn)
 
 
-def extension_TH():
-    extension_per_federal_state("Thueringen", EgonChp)
+def extension_TH(scn):
+    extension_per_federal_state("Thueringen", EgonChp, scn)
 
 
-def extension_SL():
-    extension_per_federal_state("Saarland", EgonChp)
+def extension_SL(scn):
+    extension_per_federal_state("Saarland", EgonChp, scn)
 
 
-def extension_ST():
-    extension_per_federal_state("SachsenAnhalt", EgonChp)
+def extension_ST(scn):
+    extension_per_federal_state("SachsenAnhalt", EgonChp, scn)
 
 
-def extension_RP():
-    extension_per_federal_state("RheinlandPfalz", EgonChp)
+def extension_RP(scn):
+    extension_per_federal_state("RheinlandPfalz", EgonChp, scn)
 
 
-def extension_BE():
-    extension_per_federal_state("Berlin", EgonChp)
+def extension_BE(scn):
+    extension_per_federal_state("Berlin", EgonChp, scn)
 
 
-def extension_SH():
-    extension_per_federal_state("SchleswigHolstein", EgonChp)
+def extension_SH(scn):
+    extension_per_federal_state("SchleswigHolstein", EgonChp, scn)
 
 
 def insert_chp_egon100re():
@@ -772,6 +814,9 @@ if "status2023" in config.settings()["egon-data"]["--scenarios"]:
         wrapped_partial(insert_chp_statusquo, scn="status2023", postfix="_2023")
     )
 
+if "nep037_2025" in config.settings()["egon-data"]["--scenarios"]:
+    insert_per_scenario.add(insert_chp_nep037_2025)
+
 if "eGon2035" in config.settings()["egon-data"]["--scenarios"]:
     insert_per_scenario.add(insert_chp_egon2035)
 
@@ -781,6 +826,33 @@ if "eGon100RE" in config.settings()["egon-data"]["--scenarios"]:
 tasks = tasks + (insert_per_scenario, assign_heat_bus)
 
 extension = set()
+
+if "nep2037_2025" in config.settings()["egon-data"]["--scenarios"]:
+    # Add one task per federal state for small CHP extension
+    if (
+        config.settings()["egon-data"]["--dataset-boundary"]
+        == "Schleswig-Holstein"
+    ):
+        extension = extension_SH
+    else:
+        extension = {
+            extension_BW,
+            extension_BY,
+            extension_HB,
+            extension_BB,
+            extension_HE,
+            extension_MV,
+            extension_NS,
+            extension_NW,
+            extension_SH,
+            extension_HH,
+            extension_RP,
+            extension_SL,
+            extension_SN,
+            extension_ST,
+            extension_TH,
+            extension_BE,
+        }
 
 if "eGon2035" in config.settings()["egon-data"]["--scenarios"]:
     # Add one task per federal state for small CHP extension
@@ -820,7 +892,8 @@ class Chp(Dataset):
     Extract combined heat and power plants for each scenario
 
     This dataset creates combined heat and power (CHP) plants for each scenario and defines their use case.
-    The method bases on existing CHP plants from Marktstammdatenregister. For the eGon2035 scenario,
+    The method bases on existing CHP plants from Marktstammdatenregister. For the
+    eGon2035 and nep2037_2025 scenario,
     a list of CHP plans from the grid operator is used for new largescale CHP plants. CHP < 10MW are
     randomly distributed.
     Depending on the distance to a district heating grid, it is decided if the CHP is used to
@@ -830,6 +903,8 @@ class Chp(Dataset):
     *Dependencies*
       * :py:class:`GasAreaseGon100RE <egon.data.datasets.gas_areas.GasAreaseGon100RE>`
       * :py:class:`GasAreaseGon2035 <egon.data.datasets.gas_areas.GasAreaseGon2035>`
+      * :py:class:`GasAreasnep2037_2025
+      <egon.data.datasets.gas_areas.GasAreasnep2037_2025>`
       * :py:class:`DistrictHeatingAreas <egon.data.datasets.district_heating_areas.DistrictHeatingAreas>`
       * :py:class:`IndustrialDemandCurves <egon.data.datasets.industry.IndustrialDemandCurves>`
       * :py:class:`OsmLanduse <egon.data.datasets.loadarea.OsmLanduse>`

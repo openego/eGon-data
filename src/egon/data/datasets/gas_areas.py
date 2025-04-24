@@ -129,6 +129,13 @@ def voronoi_egon2035():
     for carrier in ["CH4", "H2", "H2_saltcavern"]:
         create_voronoi("eGon2035", carrier)
 
+def voronoi_egon2037_2025():
+    """
+    Create voronoi polygons for all gas carriers in nep2037_2025 scenario
+    """
+    for carrier in ["CH4", "H2", "H2_saltcavern"]:
+        create_voronoi("nep2037_2025", carrier)
+
 
 def voronoi_egon100RE():
     """
@@ -260,6 +267,9 @@ class GasAreas(Dataset):
 
     if "eGon2035" in config.settings()["egon-data"]["--scenarios"]:
         tasks = tasks + (voronoi_egon2035,)
+
+    if "nep2037_2025" in config.settings()["egon-data"]["--scenarios"]:
+        tasks = tasks + (voronoi_egon2037_2025,)
 
     if "eGon100RE" in config.settings()["egon-data"]["--scenarios"]:
         tasks = tasks + (voronoi_egon100RE,)

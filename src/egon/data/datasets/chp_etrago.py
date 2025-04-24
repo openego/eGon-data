@@ -426,7 +426,7 @@ def insert():
     """Insert combined heat and power plants into eTraGo tables.
 
     Gas CHP plants are modeled as links to the gas grid,
-    biomass CHP plants (only in eGon2035) are modeled as generators
+    biomass CHP plants (only in nep22037_2025 and eGon2035) are modeled as generators
 
     Returns
     -------

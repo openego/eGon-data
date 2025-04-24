@@ -1,5 +1,6 @@
 """
-Household electricity demand time series for scenarios eGon2035 and eGon100RE at
+Household electricity demand time series for scenarios eGon2035, nep2037_2025 and
+eGon100RE at
 census cell level are set up.
 
 Electricity demand data for households in Germany in 1-hourly resolution for
@@ -67,6 +68,7 @@ class HouseholdElectricityProfilesInCensusCells(Base):
     factor_2019 = Column(Float)
     factor_2023 = Column(Float)
     factor_2035 = Column(Float)
+    factor_2037_2025 = Column(Float)
     factor_2050 = Column(Float)
 
 
@@ -106,7 +108,8 @@ class EgonEtragoElectricityHouseholds(Base):
 
 class HouseholdDemands(Dataset):
     """
-    Household electricity demand time series for scenarios eGon2035 and eGon100RE at
+    Household electricity demand time series for scenarios eGon2035, nep2037_2025 and
+    eGon100RE at
     census cell level are set up.
 
     Electricity demand data for households in Germany in 1-hourly resolution for
@@ -180,7 +183,7 @@ class HouseholdDemands(Dataset):
       `df_dist_households` to `df_census_households_grid_refined`.
     * Enriched 100 x 100 m household dataset is used to sample and aggregate
       household profiles. A table including individual profile id's for each cell
-      and scaling factor to match Demand-Regio annual sum projections for 2035
+      and scaling factor to match Demand-Regio annual sum projections for 2035, 2037
       and 2050 at NUTS3 level is created in the database as
       `demand.household_electricity_profiles_in_census_cells`.
 
@@ -271,6 +274,18 @@ class HouseholdDemands(Dataset):
             )
 
             tasks = tasks + (mv_hh_electricity_load_2035,)
+
+        if (
+            "nep2037_2025"
+            in egon.data.config.settings()["egon-data"]["--scenarios"]
+        ):
+            mv_hh_electricity_load_2037 = PythonOperator(
+                task_id="MV-hh-electricity-load-2037",
+                python_callable=mv_grid_district_HH_electricity_load,
+                op_args=["eGon2037", 2037],
+            )
+
+            tasks = tasks + (mv_hh_electricity_load_2037,)
 
         if (
             "eGon100RE"
@@ -1353,6 +1368,7 @@ def assign_hh_demand_profiles_to_cells(df_zensus_cells, df_iee_profiles):
             "nuts3",
             "nuts1",
             "factor_2035",
+            "factor_2037_2025",
             "factor_2050",
         ],
     )
@@ -1418,7 +1434,7 @@ def adjust_to_demand_regio_nuts3_annual(
     -------
     pd.DataFrame
         Returns the same data as :func:`assign_hh_demand_profiles_to_cells`,
-        but with filled columns `factor_2035` and `factor_2050`.
+        but with filled columns `factor_2035`, `factor_2037_2025` and `factor_2050`.
     """
     for nuts3_id, df_nuts3 in df_hh_profiles_in_census_cells.groupby(
         by="nuts3"
@@ -1733,6 +1749,7 @@ def get_cell_demand_metadata_from_db(attribute, list_of_identifiers):
                 HouseholdElectricityProfilesInCensusCells.nuts3,
                 HouseholdElectricityProfilesInCensusCells.nuts1,
                 HouseholdElectricityProfilesInCensusCells.factor_2035,
+                HouseholdElectricityProfilesInCensusCells.factor_2037_2025,
                 HouseholdElectricityProfilesInCensusCells.factor_2050,
             ).filter(
                 HouseholdElectricityProfilesInCensusCells.nuts3.in_(
@@ -1746,6 +1763,7 @@ def get_cell_demand_metadata_from_db(attribute, list_of_identifiers):
                 HouseholdElectricityProfilesInCensusCells.nuts3,
                 HouseholdElectricityProfilesInCensusCells.nuts1,
                 HouseholdElectricityProfilesInCensusCells.factor_2035,
+                HouseholdElectricityProfilesInCensusCells.factor_2037_2025,
                 HouseholdElectricityProfilesInCensusCells.factor_2050,
             ).filter(
                 HouseholdElectricityProfilesInCensusCells.nuts1.in_(
@@ -1759,6 +1777,7 @@ def get_cell_demand_metadata_from_db(attribute, list_of_identifiers):
                 HouseholdElectricityProfilesInCensusCells.nuts3,
                 HouseholdElectricityProfilesInCensusCells.nuts1,
                 HouseholdElectricityProfilesInCensusCells.factor_2035,
+                HouseholdElectricityProfilesInCensusCells.factor_2037_2025,
                 HouseholdElectricityProfilesInCensusCells.factor_2050,
             ).filter(
                 HouseholdElectricityProfilesInCensusCells.cell_id.in_(
@@ -1989,6 +2008,7 @@ def get_scaled_profiles_from_db(
 
     year: int
          * 2035
+         * 2037
          * 2050
 
     aggregate: bool

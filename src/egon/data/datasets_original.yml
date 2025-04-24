@@ -136,6 +136,7 @@ demandregio_cts_ind_demand:
       schema: 'boundaries'
       table: 'vg250_krs'
     new_consumers_2035: 'new_largescale_consumers_nep.csv'
+    new_consumers_2037_2025: 'new_largescale_consumers_nep.csv'
     new_consumers_2050:
       "pes-demand-today": "industrial_energy_demand_per_country_today.csv"
       "pes-production-tomorrow": "industrial_production_per_country_tomorrow_2050.csv"
@@ -162,7 +163,7 @@ electrical_demands_households:
     demandregio:
       schema: 'demand'
       table: 'egon_demandregio_hh'
-      scenarios: ["eGon2035", "eGon100RE"]
+      scenarios: ["eGon2035", "nep2037_2025", "eGon100RE"]
     population_prognosis_zensus:
       schema: 'society'
       table: 'egon_population_prognosis'
@@ -179,7 +180,7 @@ electrical_demands_cts:
     demandregio:
       schema: 'demand'
       table: 'egon_demandregio_cts_ind'
-      scenarios: ["eGon2035", "eGon100RE"]
+      scenarios: ["eGon2035", "nep2037_2025", "eGon100RE"]
     demandregio_wz:
       schema: 'demand'
       table: 'egon_demandregio_wz'
@@ -267,6 +268,9 @@ scenario_input:
   sources:
     eGon2035:
       capacities: "NEP2035_V2021_scnC2035.xlsx"
+      list_conv_pp: "Kraftwerksliste_NEP_2021_konv.csv"
+    nep2037_2025:
+      capacities: "NEP2037_V2025_scnC2037.xlsx"
       list_conv_pp: "Kraftwerksliste_NEP_2021_konv.csv"
     eGon100RE:
       capacities: "nodal_capacities.csv"
@@ -372,6 +376,7 @@ power_plants:
       buses_data: "osmtgmod_results.bus_data"
       power_plants: 'supply.egon_power_plants'
       nep_2035: "NEP2035_V2021_scnC2035.xlsx"
+      nep_2037_2025: "NEP2037_V2025_scnC2037.xlsx"
   target:
       table: 'egon_power_plants'
       schema: 'supply'
@@ -386,6 +391,7 @@ storages:
       ehv_voronoi: "grid.egon_ehv_substation_voronoi"
       nep_conv: "supply.egon_nep_2021_conventional_powerplants"
       nep_capacities: "NEP2035_V2021_scnC2035.xlsx"
+      nep_capacities: "NEP2037_V2025_scnC2037.xlsx"
       generators: "grid.egon_etrago_generator"
       bus: "grid.egon_etrago_bus"
   target:
@@ -692,7 +698,7 @@ distributed_industrial_demand:
     demandregio:
       schema: 'demand'
       table: 'egon_demandregio_cts_ind'
-      scenarios: ["eGon2021", "eGon2035", "eGon100RE"]
+      scenarios: ["eGon2021", "eGon2035", "nep2037_2025", "eGon100RE"]
     wz:
       schema: 'demand'
       table: 'egon_demandregio_wz'
@@ -1110,6 +1116,9 @@ emobility_mit:
         eGon2035:
           file: "eGon2035_RS7_min2k_2022-06-01_175429_simbev_run.tar.gz"
           file_metadata: "metadata_simbev_run.json"
+        nep2037_2025:
+          file: "eGon2035_RS7_min2k_2022-06-01_175429_simbev_run.tar.gz"
+          file_metadata: "metadata_simbev_run.json"
         eGon100RE:
           file: "eGon100RE_RS7_min2k_2022-06-01_175444_simbev_run.tar.gz"
           file_metadata: "metadata_simbev_run.json"
@@ -1117,12 +1126,14 @@ emobility_mit:
     # used scenario variation (available scenarios see parameters.py)
     variation:
       eGon2035: "NEP C 2035"
+      nep2037_2025: "NEP C 2037"
       eGon100RE: "Reference 2050"
     # name of low-flex scenario
     lowflex:
       create_lowflex_scenario: True
       names:
         eGon2035: "eGon2035_lowflex"
+        nep2037_2025: "nep2037_2025_lowflex"
         eGon100RE: "eGon100RE_lowflex"
 
   model_timeseries:
@@ -1194,6 +1205,7 @@ mobility_hgv:
       fcev_share: 1.
       scenarios:
         - "eGon2035"
+        - "nep2037_2025"
         - "eGon100RE"
       carrier: "H2_hgv_load"
       energy_value_h2: 39.4  # kWh/kg
@@ -1208,6 +1220,14 @@ mobility_hgv:
       # hgv_mean_mileage = 100000
       # Total mileage
       eGon2035: 10000000000
+      # NEP data
+      # https://www.netzentwicklungsplan.de/sites/default/files/paragraphs-files/NEP_2035_V2021_2_Entwurf_Teil1.pdf
+      # total amount of HGVs  - Scenario C 2037
+      # hgv_amount = 100000
+      # HGV traffic annual mileage per vehicle
+      # hgv_mean_mileage = 100000
+      # Total mileage
+      nep2037_2025: 10000000000
       # Langfristszenarien
       # https://www.langfristszenarien.de/enertile-explorer-wAssets/docs/LFS3_Langbericht_Verkehr_final.pdf#page=17
       eGon100RE: 40000000000
@@ -1216,6 +1236,7 @@ home_batteries:
   constants:
     scenarios:
       - "eGon2035"
+      - "nep2037_2025"
       - "eGon100RE"
     # Mean ratio between the storage capacity and the power of the pv rooftop system
     cbat_ppv_ratio: 1

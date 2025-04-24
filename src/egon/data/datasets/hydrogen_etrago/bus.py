@@ -51,7 +51,10 @@ def insert_hydrogen_buses():
     """
     s = config.settings()["egon-data"]["--scenarios"]
     scn = []
-    if "eGon2035" in s:
+
+    if "nep2037_2025" in s:
+        scn.append("nep2037_2025")
+    elif "eGon2035" in s:
         scn.append("eGon2035")
     if "eGon100RE" in s:
         scn.append("eGon100RE")
@@ -330,11 +333,11 @@ def insert_H2_buses_from_CH4_grid(gdf, carrier, target, scn_name):
         Target schema and table information.
     scn_name : str
         Name of the scenario.
-        
+
     Returns
     -------
     None
-        
+
     """
     # Connect to local database
     engine = db.engine()

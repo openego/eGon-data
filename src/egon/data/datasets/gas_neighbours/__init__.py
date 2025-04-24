@@ -6,6 +6,12 @@ from egon.data import config
 from egon.data.datasets.gas_neighbours.eGon100RE import (
     insert_gas_neigbours_eGon100RE,
 )
+from egon.data.datasets.gas_neighbours.nep2037_2025 import (
+    grid,
+    insert_ocgt_abroad,
+    tyndp_gas_demand,
+    tyndp_gas_generation,
+)
 from egon.data.datasets.gas_neighbours.eGon2035 import (
     grid,
     insert_ocgt_abroad,
@@ -25,6 +31,14 @@ def no_gas_neighbours_required():
 
 
 tasks = ()
+
+if "nep2037_2025" in config.settings()["egon-data"]["--scenarios"]:
+    tasks = tasks + (
+        tyndp_gas_generation,
+        tyndp_gas_demand,
+        grid,
+        insert_ocgt_abroad,
+    )
 
 if "eGon2035" in config.settings()["egon-data"]["--scenarios"]:
     tasks = tasks + (
@@ -56,7 +70,7 @@ class GasNeighbours(Dataset):
       * :py:class:`grid.egon_etrago_link <egon.data.datasets.etrago_setup.EgonPfHvLink>` is extended
       * :py:class:`grid.egon_etrago_load <egon.data.datasets.etrago_setup.EgonPfHvLoad>` is extended
       * :py:class:`grid.egon_etrago_generator <egon.data.datasets.etrago_setup.EgonPfHvGenerator>` is extended
-      
+
     """
     def __init__(self, dependencies):
         super().__init__(

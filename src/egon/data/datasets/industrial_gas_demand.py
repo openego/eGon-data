@@ -91,6 +91,38 @@ class IndustrialGasDemandeGon2035(Dataset):
             tasks=(insert_industrial_gas_demand_egon2035),
         )
 
+class IndustrialGasDemandeGon2037_2025(Dataset):
+    """Insert the hourly resolved industrial gas demands into the database for
+    nep2037_2025
+
+    Insert the industrial methane and hydrogen demands and their
+    associated time series for the scenario nep2037_2025 by executing the
+    function :py:func:`insert_industrial_gas_demand_nep2037_2025`.
+
+    *Dependencies*
+      * :py:class:`GasAreasnep2037_2025 <egon.data.datasets.gas_areas.GasAreasnep2037_2025>`
+      * :py:class:`GasNodesAndPipes <egon.data.datasets.gas_grid.GasNodesAndPipes>`
+      * :py:class:`HydrogenBusEtrago <egon.data.datasets.hydrogen_etrago.HydrogenBusEtrago>`
+      * :py:class:`IndustrialGasDemand <IndustrialGasDemand>`
+
+    *Resulting tables*
+      * :py:class:`grid.egon_etrago_load <egon.data.datasets.etrago_setup.EgonPfHvLoad>` is extended
+      * :py:class:`grid.egon_etrago_load_timeseries <egon.data.datasets.etrago_setup.EgonPfHvLoadTimeseries>` is extended
+
+    """
+
+    #:
+    name: str = "IndustrialGasDemandnep2037_2025"
+    #:
+    version: str = "0.0.3"
+
+    def __init__(self, dependencies):
+        super().__init__(
+            name=self.name,
+            version=self.version,
+            dependencies=dependencies,
+            tasks=(insert_industrial_gas_demand_nep2037_2025),
+        )
 
 class IndustrialGasDemandeGon100RE(Dataset):
     """Insert the hourly resolved industrial gas demands into the database for eGon100RE
@@ -130,7 +162,7 @@ def read_industrial_demand(scn_name, carrier):
 
     This function reads the methane or hydrogen industrial demand time
     series previously downloaded in :py:func:`download_industrial_gas_demand` for
-    the scenarios eGon2035 or eGon100RE.
+    the scenarios eGon2035, nep2037_2025 or eGon100RE.
 
     Parameters
     ----------
@@ -387,11 +419,11 @@ def insert_new_entries(industrial_gas_demand, scn_name):
     return industrial_gas_demand
 
 
-def insert_industrial_gas_demand_egon2035():
-    """Insert industrial gas demands into the database for eGon2035
+def insert_industrial_gas_demand_nep2037_2025():
+    """Insert industrial gas demands into the database for nep2037_2025
 
     Insert the industrial CH4 and H2 demands and their associated time
-    series into the database for the eGon2035 scenario. The data
+    series into the database for the nep2037_2025 scenario. The data
     previously downloaded in :py:func:`download_industrial_gas_demand`
     is adjusted by executing the following steps:
 
@@ -408,8 +440,8 @@ def insert_industrial_gas_demand_egon2035():
     None
 
     """
-    if "eGon2035" in config.settings()["egon-data"]["--scenarios"]:
-        scn_name = "eGon2035"
+    if "nep2037_2025" in config.settings()["egon-data"]["--scenarios"]:
+        scn_name = "nep2037_2025"
         delete_old_entries(scn_name)
 
         industrial_gas_demand = pd.concat(
@@ -439,10 +471,44 @@ def insert_industrial_gas_demand_egon2035():
         insert_industrial_gas_demand_time_series(industrial_gas_demand)
     else:
         print(
-            """eGon2035 is not part of the scenario list. This task is not
+            """nep2037_2025 is not part of the scenario list. This task is not
               executed"""
         )
 
+    if "nep2037_2025" in config.settings()["egon-data"]["--scenarios"]:
+        scn_name = "nep2037_2025"
+        delete_old_entries(scn_name)
+
+        industrial_gas_demand = pd.concat(
+            [
+                read_and_process_demand(
+                    scn_name=scn_name,
+                    carrier="CH4_for_industry",
+                    grid_carrier="CH4",
+                ),
+                read_and_process_demand(
+                    scn_name=scn_name,
+                    carrier="H2_for_industry",
+                    grid_carrier="H2",
+                ),
+            ]
+        )
+
+        industrial_gas_demand = (
+            industrial_gas_demand.groupby(["bus", "carrier"])["p_set"]
+            .apply(lambda x: [sum(y) for y in zip(*x)])
+            .reset_index(drop=False)
+        )
+
+        industrial_gas_demand = insert_new_entries(
+            industrial_gas_demand, scn_name
+        )
+        insert_industrial_gas_demand_time_series(industrial_gas_demand)
+    else:
+        print(
+            """nep2037_2025 is not part of the scenario list. This task is not
+              executed"""
+        )
 
 def insert_industrial_gas_demand_egon100RE():
     """Insert industrial gas demands into the database for eGon100RE
@@ -656,7 +722,7 @@ def download_industrial_gas_demand():
             "http://opendata.ffe.de:3000/opendata?id_opendata=eq.66&&year=eq."
         )
 
-        for scn_name in ["eGon2035", "eGon100RE"]:
+        for scn_name in ["eGon2035", "nep2037_2025", "eGon100RE"]:
             year = str(
                 get_sector_parameters("global", scn_name)["population_year"]
             )
@@ -678,7 +744,7 @@ def download_industrial_gas_demand():
         logger.warning(
             """
         Due to temporal problems in the FFE platform, data for the scenarios
-        eGon2035 and eGon100RE are imported lately from csv files. Data for
+        eGon2035, nep2037_2025 and eGon100RE are imported lately from csv files. Data for
         other scenarios is unfortunately unavailable.
             """
         )
