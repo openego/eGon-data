@@ -245,12 +245,11 @@ def get_sector_parameters(sector, scenario=None):
                         SELECT {sector}_parameters as val
                         FROM scenario.egon_scenario_parameters
                         WHERE name='eGon2021'"""
-                    ).val[0],
-                    index=["eGon2021"],
-                ),
-            ],
-            ignore_index=True,
-        )
+                ).val[0],
+                index=["eGon2021"],
+            )
+            ], ignore_index=True)
+        
 
     return values
 
