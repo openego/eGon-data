@@ -452,6 +452,8 @@ def buildings_with_amenities():
             df_amenities_in_buildings = pd.read_sql(
                 cells_query.statement, con=session.connection(), index_col=None
             )
+        if df_amenities_in_buildings.empty:
+            break
 
     df_amenities_in_buildings["geom_building"] = df_amenities_in_buildings[
         "geom_building"

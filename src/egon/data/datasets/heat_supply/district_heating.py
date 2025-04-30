@@ -451,6 +451,9 @@ def backup_resistive_heaters(scenario):
         """
     ).capacity[0]
 
+    if not distributed:
+        distributed = 0
+
     if target_value > distributed:
         df = gpd.GeoDataFrame(
             data={

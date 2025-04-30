@@ -45,6 +45,9 @@ def insert():
     target_power_df = target_power_df[
         target_power_df["carrier"] == "wind_onshore"
     ]
+    target_power_df = target_power_df[
+        target_power_df["scenario_name"].isin(["eGon2035", "eGon100RE"])
+    ]
     target_power_df.set_index("nuts", inplace=True)
     target_power_df["geom"] = Point(0, 0)
 
@@ -84,7 +87,7 @@ def insert():
             wf_areas,
             wf_areas_ni,
             mv_districts,
-            target_power_df["capacity"].values[0],
+            target_power_df.at["DE", "capacity"],
             "eGon100RE",
             "wind_onshore",
             "DE",

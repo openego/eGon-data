@@ -300,7 +300,7 @@ class ScenarioParameters(Dataset):
     #:
     name: str = "ScenarioParameters"
     #:
-    version: str = "0.0.17"
+    version: str = "0.0.18"
 
     def __init__(self, dependencies):
         super().__init__(

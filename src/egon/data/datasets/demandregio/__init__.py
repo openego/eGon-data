@@ -72,7 +72,7 @@ class DemandRegio(Dataset):
             version=self.version,
             dependencies=dependencies,
             tasks=(
-                clone_and_install, # demandregio must be previously installed
+                # clone_and_install, demandregio must be previously installed
                 get_cached_tables,  # adhoc workaround #180
                 create_tables,
                 {
@@ -523,6 +523,23 @@ def disagg_households_power(
         #     # https://ag-energiebilanzen.de/wp-content/uploads/2023/01/AGEB_22p2_rev-1.pdf#page=10
         #     df *= 138.6 * 1e6 / df.sum().sum()
 
+    elif scenario == "eGon100RE":
+        # chose demand per household size from survey without DHW
+        power_per_HH = demand_per_hh_size["without DHW"] / 1e3
+
+        # calculate demand per nuts3 in 2011
+        df_2011 = data.households_per_size(year=2011) * power_per_HH
+
+        # scale demand per hh-size to meet demand without heat
+        # according to JRC in 2011 (136.6-(20.14+9.41) TWh)
+        power_per_HH *= (136.6 - (20.14 + 9.41)) * 1e6 / df_2011.sum().sum()
+
+        # calculate demand per nuts3 in 2050
+        df = data.households_per_size(year=year) * power_per_HH
+
+        # scale to meet annual demand from NEP 2023, scenario B 2045
+        df *= 90400000 / df.sum().sum()
+
     else:
         print(
             f"Electric demand per household size for scenario {scenario} "
@@ -535,7 +552,7 @@ def disagg_households_power(
     return df
 
 
-def write_demandregio_hh_profiles_to_db(hh_profiles):
+def write_demandregio_hh_profiles_to_db(hh_profiles, year):
     """Write HH demand profiles from demand regio into db. One row per
     year and nuts3. The annual load profile timeseries is an array.
 
@@ -547,6 +564,7 @@ def write_demandregio_hh_profiles_to_db(hh_profiles):
     Parameters
     ----------
     hh_profiles: pd.DataFrame
+    year: int
 
     Returns
     -------
@@ -576,13 +594,11 @@ def write_demandregio_hh_profiles_to_db(hh_profiles):
     else:
         id = id + 1
 
-    for year in years:
-        df = hh_profiles[hh_profiles.index.year == year]
-        for nuts3 in hh_profiles.columns:
-            id += 1
-            df_to_db.at[id, "year"] = year
-            df_to_db.at[id, "nuts3"] = nuts3
-            df_to_db.at[id, "load_in_mwh"] = df[nuts3].to_list()
+    for nuts3 in hh_profiles.columns:
+        id += 1
+        df_to_db.at[id, "year"] = year
+        df_to_db.at[id, "nuts3"] = nuts3
+        df_to_db.at[id, "load_in_mwh"] = hh_profiles[nuts3].to_list()
 
     df_to_db["year"] = df_to_db["year"].apply(int)
     df_to_db["nuts3"] = df_to_db["nuts3"].astype(str)
@@ -696,6 +712,10 @@ def insert_cts_ind(scenario, year, engine, target_values):
         "targets"
     ]
 
+    wz_table = pd.read_sql("SELECT wz, sector FROM demand.egon_demandregio_wz",
+                           con = engine,
+                           index_col = "wz")
+
     # Workaround: Since the disaggregator does not work anymore, data from
     # previous runs is used for eGon2035 and eGon100RE
     if scenario == "eGon2035":
@@ -715,6 +735,26 @@ def insert_cts_ind(scenario, year, engine, target_values):
         ec_cts_ind2 = pd.read_csv(
             "data_bundle_powerd_data/egon_demandregio_cts_ind.csv"
         )
+        ec_cts_ind2["sector"] = ec_cts_ind2["wz"].map(wz_table["sector"])
+        factor_ind = target_values[scenario]["industry"] / (
+            ec_cts_ind2[ec_cts_ind2["sector"] == "industry"]["demand"].sum()
+            / 1000
+        )
+        factor_cts = target_values[scenario]["CTS"] / (
+            ec_cts_ind2[ec_cts_ind2["sector"] == "CTS"]["demand"].sum() / 1000
+        )
+
+        ec_cts_ind2["demand"] = ec_cts_ind2.apply(
+            lambda x: (
+                x["demand"] * factor_ind
+                if x["sector"] == "industry"
+                else x["demand"] * factor_cts
+            ),
+            axis=1,
+        )
+
+        ec_cts_ind2.drop(columns=["sector"], inplace = True)
+
         ec_cts_ind2.to_sql(
             targets["cts_ind_demand"]["table"],
             engine,
@@ -738,7 +778,7 @@ def insert_cts_ind(scenario, year, engine, target_values):
         # scale values according to target_values
         if sector in target_values[scenario].keys():
             ec_cts_ind *= (
-                target_values[scenario][sector] / ec_cts_ind.sum().sum()
+                target_values[scenario][sector] * 1e3 / ec_cts_ind.sum().sum()
             )
 
         # include new largescale consumers according to NEP 2021
@@ -835,16 +875,11 @@ def insert_cts_ind_demands():
         target_values = {
             # according to NEP 2021
             # new consumers will be added seperatly
-            "eGon2035": {
-                "CTS": 135300 * 1e3,
-                "industry": 225400 * 1e3
-            },
+            "eGon2035": {"CTS": 135300, "industry": 225400},
             # CTS: reduce overall demand from demandregio (without traffic)
             # by share of heat according to JRC IDEES, data from 2011
             # industry: no specific heat demand, use data from demandregio
-            "eGon100RE": {
-                "CTS": ((1 - (5.96 + 6.13) / 154.64) * 125183.403) * 1e3
-            },
+            "eGon100RE": {"CTS": 146700, "industry": 382900},
             # no adjustments for status quo
             "eGon2021": {},
             "status2019": {},

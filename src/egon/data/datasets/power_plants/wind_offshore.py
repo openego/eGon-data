@@ -195,6 +195,7 @@ def insert():
             )
             offshore.dropna(subset=["Netzverknuepfungspunkt"], inplace=True)
             offshore.rename(columns={"C 2035": "el_capacity"}, inplace=True)
+            offshore = offshore[offshore["el_capacity"] > 0]
 
         elif scenario == "eGon100RE":
             offshore_path = (
@@ -215,6 +216,7 @@ def insert():
             )
             offshore.dropna(subset=["Netzverknuepfungspunkt"], inplace=True)
             offshore.rename(columns={"B 2040 ": "el_capacity"}, inplace=True)
+            offshore = offshore[offshore["el_capacity"] > 0]
 
         elif "status" in scenario:
             year = int(scenario[-4:])

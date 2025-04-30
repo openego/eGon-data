@@ -354,6 +354,12 @@ def create_district_heating_profile_python_like(scenario="eGon2035"):
                     on=["day", "climate_zone"],
                 )
 
+
+            # Drop cells without a demand or outside of MVGD
+            slice_df = slice_df[
+                slice_df.zensus_population_id.isin(annual_demand.index)]
+
+
                 slice_df = pd.merge(
                     df[df.area_id == area],
                     idp_df,
@@ -433,6 +439,12 @@ def create_district_heating_profile_python_like(scenario="eGon2035"):
                     area_id=int(area),
                     scenario=scenario,
                     dist_aggregated_mw=(cts.values[0]).tolist(),
+                )
+            else:
+                entry = EgonTimeseriesDistrictHeating(
+                    area_id=int(area),
+                    scenario=scenario,
+                    dist_aggregated_mw=np.repeat(0, 8760).tolist(),
                 )
 
             session.add(entry)

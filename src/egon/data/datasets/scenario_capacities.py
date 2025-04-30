@@ -152,7 +152,7 @@ def insert_capacities_status_quo(scenario: str) -> None:
         (component, carrier, capacity, nuts, scenario_name)
         VALUES (
             'link',
-            'residential_rural_heat_pump',
+            'rural_heat_pump',
             {rural_heat_capacity},
             'DE',
             '{scenario}'
@@ -708,13 +708,15 @@ def eGon100_capacities():
             cwd
             / "data_bundle_powerd_data"
             / "pypsa_eur"
-            / "2024-08-02-egondata-integration"
+            / "21122024_3h_clean_run"
+            / "results"
             / "csvs"
             / sources["eGon100RE"]["capacities"]
         )
 
-    df = pd.read_csv(target_file, skiprows=5)
-    df.columns = ["component", "country", "carrier", "p_nom"]
+    df = pd.read_csv(target_file, delimiter=",", skiprows=3)
+    df.columns = ["component", "country", "carrier", "p_nom_2025",
+                  "p_nom_2030", "p_nom_2035", "p_nom_2045"]
 
     df.set_index("carrier", inplace=True)
 
@@ -725,25 +727,42 @@ def eGon100_capacities():
 
     # Drop copmponents which will be optimized in eGo
     unused_carrier = [
-        "BEV_charger",
+        "BEV charger",
         "DAC",
         "H2 Electrolysis",
         "electricity distribution grid",
         "home battery charger",
         "home battery discharger",
         "H2",
-        "Li_ion",
+        "Li ion",
         "home battery",
-        "residential rural water tanks charger",
-        "residential rural water tanks discharger",
-        "services rural water tanks charger",
-        "services rural water tanks discharger",
-        "residential rural water tanks",
-        "services rural water tanks",
+        "rural water tanks charger",
+        "rural water tanks discharger",
+        "urban decentral water tanks charger",
+        "urban decentral water tanks discharger",
+        "rural water tanks",
+        "urban decentral water tanks",
         "urban central water tanks",
         "urban central water tanks charger",
         "urban central water tanks discharger",
         "H2 Fuel Cell",
+        "gas",
+        "SMR",
+        "SMR CC",
+        "Sabatier",
+        "biogas to gas",
+        "biogas to gas CC",
+        "gas for industry",
+        "gas for industry CC",
+        "methanolisation",
+        "EV battery",
+        "H2 Store",
+        "battery",
+        "battery charger",
+        "battery discharger",
+        "unsustainable biogas",
+        "biogas",
+        "Fischer-Tropsch",
     ]
 
     df = df[~df.index.isin(unused_carrier)]
@@ -751,62 +770,70 @@ def eGon100_capacities():
     df.index = df.index.str.replace(" ", "_")
 
     # Aggregate offshore wind
-    df = pd.concat(
-        [
-            df,
-            pd.DataFrame(
-                index=["wind_offshore"],
-                data={
-                    "p_nom": (df.p_nom["offwind-ac"] + df.p_nom["offwind-dc"]),
-                    "component": df.component["offwind-ac"],
-                },
-            ),
-        ]
+    df.loc["wind_offshore"] = df[df.index.str.startswith(
+        "offwind")].sum(numeric_only=True)
+    df.loc["wind_offshore", "component"] = "generators"
+    df = df.drop(df.index[df.index.str.startswith("offwind")])
+
+    # Aggregate OCGT and CCGT
+    df.loc["OCGT", df.columns != "component"] = (
+        df.loc["OCGT", df.columns != "component"] * 0.425
     )
-    df = df.drop(["offwind-ac", "offwind-dc"])
+    df.loc["CCGT", df.columns != "component"] = (
+        df.loc["CCGT", df.columns != "component"] * 0.570
+    )
+    df.loc["gas"] = df[df.index.str.endswith("CGT")].sum(numeric_only=True)
+    df.loc["gas", "component"] = "links"
+    df = df.drop(df.index[df.index.str.endswith("CGT")])
+
+    # Aggregate hydro and pumped_hydro
+    df.loc["pumped_hydro"] = df.loc["PHS"] + df.loc["hydro"]
+    df.loc["pumped_hydro", "component"] = "storage_units"
+    df = df.drop(["PHS", "hydro"])
+
+    # Aggregate solar and solar-hsat
+    df.loc["solar"] = df.loc["solar"] + df.loc["solar-hsat"]
+    df.loc["solar", "component"] = "generators"
+    df = df.drop(["solar-hsat"])
 
     # Aggregate technologies with and without carbon_capture (CC)
-    for carrier in ["SMR", "urban_central_gas_CHP"]:
-        df.p_nom[carrier] += df.p_nom[f"{carrier}_CC"]
+    for carrier in ["urban_central_gas_CHP", "urban_central_solid_biomass_CHP"]:
+        df.loc[
+            carrier,
+            ["p_nom_2025", "p_nom_2030", "p_nom_2035", "p_nom_2045"]] += df.loc[
+                f"{carrier}_CC",
+                ["p_nom_2025", "p_nom_2030", "p_nom_2035", "p_nom_2045"]]
         df = df.drop([f"{carrier}_CC"])
 
-    # Aggregate residential and services rural heat supply
-    for merge_carrier in [
-        "rural_resistive_heater",
-        "rural_ground_heat_pump",
-        "rural_gas_boiler",
-        "rural_solar_thermal",
-    ]:
-        if f"residential_{merge_carrier}" in df.index:
-            df = pd.concat(
-                [
-                    df,
-                    pd.DataFrame(
-                        index=[merge_carrier],
-                        data={
-                            "p_nom": (
-                                df.p_nom[f"residential_{merge_carrier}"]
-                                + df.p_nom[f"services_{merge_carrier}"]
-                            ),
-                            "component": df.component[
-                                f"residential_{merge_carrier}"
-                            ],
-                        },
-                    ),
-                ]
-            )
-            df = df.drop(
-                [f"residential_{merge_carrier}", f"services_{merge_carrier}"]
-            )
+    # Aggregate urban decentral and rural heat supply
+    for merge_carrier in df.index[
+            df.index.str.startswith("urban_decentral")]:
+
+        # Add capacity of urban decentral to coresponding rural technology
+        df.loc[
+            merge_carrier.replace("urban_decentral", "rural")] += df.loc[
+                merge_carrier]
+
+        # Avoid summing up of component names
+        df.loc[
+            merge_carrier.replace("urban_decentral", "rural"),
+            "component"] = df.loc[
+                merge_carrier, "component"]
+
+        # Drop urban decentral technology
+        df = df.drop(merge_carrier)
+
+    # Aggregate rural air and rural ground heat pump
+    df.loc["rural_heat_pump"] = df.loc[
+        "rural_air_heat_pump"] + df.loc["rural_ground_heat_pump"]
+    df.loc["rural_heat_pump", "component"] = "links"
+    df = df.drop(["rural_air_heat_pump", "rural_ground_heat_pump"])
 
     # Rename carriers
     df.rename(
         {
             "onwind": "wind_onshore",
             "ror": "run_of_river",
-            "PHS": "pumped_hydro",
-            "OCGT": "gas",
-            "rural_ground_heat_pump": "residential_rural_heat_pump",
             "urban_central_air_heat_pump": "urban_central_heat_pump",
             "urban_central_solar_thermal": (
                 "urban_central_solar_thermal_collector"
@@ -818,30 +845,36 @@ def eGon100_capacities():
     # Reset index
     df = df.reset_index()
 
-    # Rename columns
-    df.rename(
-        {"p_nom": "capacity", "index": "carrier"}, axis="columns", inplace=True
-    )
+    # Insert target capacities for all years
+    for year in ["2025", "2030", "2035", "2045"]:
+        df_year = df.rename(
+            {f"p_nom_{year}": "capacity", "index": "carrier"}, axis="columns"
+        )
+        df_year.drop(df_year.columns[~df_year.columns.isin(
+            ["carrier", 'component', "capacity"])], axis="columns", inplace=True)
 
-    df["scenario_name"] = "eGon100RE"
-    df["nuts"] = "DE"
+        if year == "2045":
+            df_year["scenario_name"] = "eGon100RE"
+        else:
+            df_year["scenario_name"] = f"powerd{year}"
 
-    db.execute_sql(
-        f"""
-        DELETE FROM
-        {targets['scenario_capacities']['schema']}.{targets['scenario_capacities']['table']}
-        WHERE scenario_name='eGon100RE'
-        """
-    )
+        df_year["nuts"] = "DE"
 
-    df.to_sql(
-        targets["scenario_capacities"]["table"],
-        schema=targets["scenario_capacities"]["schema"],
-        con=db.engine(),
-        if_exists="append",
-        index=False,
-    )
+        db.execute_sql(
+            f"""
+            DELETE FROM
+            {targets['scenario_capacities']['schema']}.{targets['scenario_capacities']['table']}
+            WHERE scenario_name='{df_year["scenario_name"].unique()[0]}'
+            """
+        )
 
+        df_year.to_sql(
+            targets["scenario_capacities"]["table"],
+            schema=targets["scenario_capacities"]["schema"],
+            con=db.engine(),
+            if_exists="append",
+            index=False,
+        )
 
 def add_metadata():
     """Add metdata to supply.egon_scenario_capacities
@@ -941,7 +974,7 @@ def add_metadata():
         EgonScenarioCapacities.__table__.name,
     )
 
-tasks = (create_table,)
+tasks = (create_table, insert_data_nep,)
 
 scenarios = config.settings()["egon-data"]["--scenarios"]
 
@@ -993,7 +1026,7 @@ class ScenarioCapacities(Dataset):
     #:
     name: str = "ScenarioCapacities"
     #:
-    version: str = "0.0.14"
+    version: str = "0.0.18"
 
     def __init__(self, dependencies):
         super().__init__(

@@ -2406,7 +2406,7 @@ def pv_rooftop_to_buildings():
 
     mastr_gdf = load_mastr_data()
 
-    status_quo = "status2023"
+    status_quo = "status2023" # FIXME: Hard coded
 
     ts = pd.Timestamp(
         config.datasets()["mastr_new"][f"{status_quo}_date_max"], tz="UTC"

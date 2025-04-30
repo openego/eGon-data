@@ -391,7 +391,7 @@ class HeatSupply(Dataset):
     #:
     name: str = "HeatSupply"
     #:
-    version: str = "0.0.10"
+    version: str = "0.0.12"
 
     def __init__(self, dependencies):
         super().__init__(
@@ -412,7 +412,7 @@ class GeothermalPotentialGermany(Dataset):
     def __init__(self, dependencies):
         super().__init__(
             name="GeothermalPotentialGermany",
-            version="0.0.1",
+            version="0.0.2",
             dependencies=dependencies,
             tasks=(
                 potential_germany,

@@ -866,54 +866,78 @@ def write_model_data_to_db(
 def delete_model_data_from_db():
     """Delete all eMob MIT data from eTraGo PF tables"""
     with db.session_scope() as session:
-        # Buses
-        session.query(EgonPfHvBus).filter(
-            EgonPfHvBus.carrier == "Li_ion"
-        ).delete(synchronize_session=False)
+        subquery_bus_de = (
+            session.query(EgonPfHvBus.bus_id)
+            .filter(EgonPfHvBus.country == "DE")
+            .subquery()
+        )
 
         # Link TS
         subquery = (
             session.query(EgonPfHvLink.link_id)
-            .filter(EgonPfHvLink.carrier == "BEV_charger")
+            .filter(
+                EgonPfHvLink.carrier == "BEV_charger",
+                EgonPfHvLink.bus0.in_(subquery_bus_de),
+                EgonPfHvLink.bus1.in_(subquery_bus_de),
+            )
             .subquery()
         )
 
         session.query(EgonPfHvLinkTimeseries).filter(
             EgonPfHvLinkTimeseries.link_id.in_(subquery)
         ).delete(synchronize_session=False)
+
         # Links
         session.query(EgonPfHvLink).filter(
-            EgonPfHvLink.carrier == "BEV_charger"
+            EgonPfHvLink.carrier == "BEV_charger",
+            EgonPfHvLink.bus0.in_(subquery_bus_de),
+            EgonPfHvLink.bus1.in_(subquery_bus_de),
         ).delete(synchronize_session=False)
 
         # Store TS
         subquery = (
             session.query(EgonPfHvStore.store_id)
-            .filter(EgonPfHvStore.carrier == "battery_storage")
+            .filter(
+                EgonPfHvStore.carrier == "battery_storage",
+                EgonPfHvStore.bus.in_(subquery_bus_de),
+            )
             .subquery()
         )
 
         session.query(EgonPfHvStoreTimeseries).filter(
             EgonPfHvStoreTimeseries.store_id.in_(subquery)
         ).delete(synchronize_session=False)
+
         # Stores
         session.query(EgonPfHvStore).filter(
-            EgonPfHvStore.carrier == "battery_storage"
+            EgonPfHvStore.carrier == "battery_storage",
+            EgonPfHvStore.bus.in_(subquery_bus_de),
         ).delete(synchronize_session=False)
 
         # Load TS
         subquery = (
             session.query(EgonPfHvLoad.load_id)
-            .filter(EgonPfHvLoad.carrier == "land_transport_EV")
+            .filter(
+                EgonPfHvLoad.carrier == "land_transport_EV",
+                EgonPfHvLoad.bus.in_(subquery_bus_de),
+            )
             .subquery()
         )
 
         session.query(EgonPfHvLoadTimeseries).filter(
             EgonPfHvLoadTimeseries.load_id.in_(subquery)
         ).delete(synchronize_session=False)
+
         # Loads
         session.query(EgonPfHvLoad).filter(
-            EgonPfHvLoad.carrier == "land_transport_EV"
+            EgonPfHvLoad.carrier == "land_transport_EV",
+            EgonPfHvLoad.bus.in_(subquery_bus_de),
+        ).delete(synchronize_session=False)
+
+        # Buses
+        session.query(EgonPfHvBus).filter(
+            EgonPfHvBus.carrier == "Li_ion",
+            EgonPfHvBus.country == "DE",
         ).delete(synchronize_session=False)
 
 
@@ -1072,6 +1096,7 @@ def generate_model_data_bunch(scenario_name: str, bunch: range) -> None:
             run_config=meta_run_config,
             bat_cap=meta_tech_data.battery_capacity,
         )
+
 
 def generate_model_data_status2019_remaining():
     """Generates timeseries for status2019 scenario for grid districts which

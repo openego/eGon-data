@@ -49,7 +49,7 @@ def insert_H2_overground_storage():
             f"""
             SELECT bus_id, scn_name, geom
             FROM {sources['buses']['schema']}.
-            {sources['buses']['table']} WHERE carrier = 'H2'
+            {sources['buses']['table']} WHERE carrier IN ('H2', 'H2_grid')
             AND scn_name = '{scn_name}' AND country = 'DE'""",
             index_col="bus_id",
         )

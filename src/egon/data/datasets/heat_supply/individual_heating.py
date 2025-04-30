@@ -549,12 +549,11 @@ class BuildingHeatPeakLoads(Base):
 
 
 def skip_task(scn=str, task=str):
-    def not_executed():
-        logger.info(
-            f"{scn} is not in the list of scenarios. {task} dataset is skipped."
-        )
+    logger.info(
+        f"{scn} is not in the list of scenarios. {task} dataset is skipped."
+    )
 
-    return not_executed
+    return
 
 
 def adapt_numpy_float64(numpy_float64):
@@ -634,9 +633,15 @@ def cascade_per_technology(
                     FROM {sources['scenario_capacities']['schema']}.
                     {sources['scenario_capacities']['table']} a
                     WHERE scenario_name = '{scenario}'
-                    AND carrier = 'residential_rural_heat_pump'
+                    AND carrier = 'rural_heat_pump'
                     """
             )
+
+            if not target.capacity[0]:
+                target.capacity[0] = 0
+
+            if config.settings()["egon-data"]["--dataset-boundary"] == "Schleswig-Holstein":
+                target.capacity[0] /= 16
 
             heat_per_mv["share"] = (
                 heat_per_mv.remaining_demand
@@ -651,13 +656,41 @@ def cascade_per_technology(
             {"bus_id": "mv_grid_id", "share": "capacity"}, axis=1, inplace=True
         )
 
-    elif tech.index == "gas_boiler":
+    elif tech.index in ("gas_boiler", "resistive_heater", "solar_thermal"):
+        # Select target value for Germany
+        target = db.select_dataframe(
+            f"""
+                SELECT SUM(capacity) AS capacity
+                FROM {sources['scenario_capacities']['schema']}.
+                {sources['scenario_capacities']['table']} a
+                WHERE scenario_name = '{scenario}'
+                AND carrier = 'rural_{tech.index[0]}'
+                """
+        )
+
+        if config.settings()["egon-data"]["--dataset-boundary"] == "Schleswig-Holstein":
+            target.capacity[0] /= 16
+
+        heat_per_mv["share"] = (
+            heat_per_mv.remaining_demand
+            / heat_per_mv.remaining_demand.sum()
+        )
+
+        append_df = (
+            heat_per_mv["share"].mul(target.capacity[0]).reset_index()
+        )
+
+        append_df.rename(
+            {"bus_id": "mv_grid_id", "share": "capacity"}, axis=1, inplace=True
+        )
+
+    else:
         append_df = pd.DataFrame(
             data={
                 "capacity": heat_per_mv.remaining_demand.div(
                     tech.estimated_flh.values[0]
                 ),
-                "carrier": "residential_rural_gas_boiler",
+                "carrier": f"residential_rural_{tech.index}",
                 "mv_grid_id": heat_per_mv.index,
                 "scenario": scenario,
             }
@@ -747,9 +780,9 @@ def cascade_heat_supply_indiv(scenario, distribution_level, plotting=True):
         )
     elif scenario == "eGon100RE":
         technologies = pd.DataFrame(
-            index=["heat_pump"],
+            index=["heat_pump", "resistive_heater", "solar_thermal", "gas_boiler", "oil_boiler"],
             columns=["estimated_flh", "priority"],
-            data={"estimated_flh": [4000], "priority": [1]},
+            data={"estimated_flh": [4000, 2000, 2000, 8000,  8000], "priority": [5,4,3,2,1]},
         )
     elif "status" in scenario:
         technologies = pd.DataFrame(
@@ -1872,8 +1905,6 @@ def catch_missing_buidings(buildings_decentral_heating, peak_load):
     # should only happen within cutout SH
     if (
         not all(buildings_decentral_heating.isin(peak_load.index))
-        and config.settings()["egon-data"]["--dataset-boundary"]
-        == "Schleswig-Holstein"
     ):
         diff = buildings_decentral_heating.difference(peak_load.index)
         logger.warning(
