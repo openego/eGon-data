@@ -8,8 +8,16 @@ from functools import reduce
 from typing import Callable, Iterable, Set, Tuple, Union
 import re
 
-from airflow.operators import BaseOperator as Operator
-from airflow.operators.python_operator import PythonOperator
+try:
+    import os
+    os.environ["_AIRFLOW__AS_LIBRARY"] = "1"
+
+    # Encapsulate Airflow imports
+    from airflow.models.baseoperator import BaseOperator as Operator
+    from airflow.operators.python import PythonOperator
+except Exception:
+    Operator = object
+    PythonOperator = object
 from sqlalchemy import Column, ForeignKey, Integer, String, Table, orm, tuple_
 from sqlalchemy.ext.declarative import declarative_base
 
