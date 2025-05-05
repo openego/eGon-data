@@ -1232,7 +1232,7 @@ class HeatTimeSeries(Dataset):
     #:
     name: str = "HeatTimeSeries"
     #:
-    version: str = "0.0.12.dev"
+    version: str = "0.0.12"
 
     def __init__(self, dependencies):
         super().__init__(
