@@ -563,10 +563,10 @@ with airflow.DAG(
             heat_time_series,
         ]
     )
-    
+
     # CHP to eTraGo
     chp_etrago = ChpEtrago(dependencies=[chp, heat_etrago])
-       
+
 
     # Storages to eTraGo
     storage_etrago = StorageEtrago(
@@ -612,15 +612,15 @@ with airflow.DAG(
             heat_etrago,
             heat_time_series,
             mv_grid_districts,
-            heat_pumps_2019,
+            heat_pumps_sq,
         ]
     )
-    
+
     # Power-to-H2-to-power chain installations with oxygen and waste_heat usage
     insert_power_to_h2_installations = HydrogenPowerLinkEtrago(
-        dependencies= [h2_infrastructure, mv_grid_districts, heat_etrago, substation_extraction, hts_etrago_table] 
+        dependencies= [h2_infrastructure, mv_grid_districts, heat_etrago, substation_extraction, hts_etrago_table]
     )
-    
+
     # Link between methane grid and respective hydrogen buses
     insert_h2_to_ch4_grid_links = HydrogenMethaneLinkEtrago(
         dependencies=[h2_infrastructure, insert_power_to_h2_installations]
@@ -719,6 +719,7 @@ with airflow.DAG(
         dependencies=[
             load_areas,
             cts_demand_buildings,
-            heat_pumps_2050
+            sanity_checks,
+            # heat_pumps_2050,
         ]
     )
