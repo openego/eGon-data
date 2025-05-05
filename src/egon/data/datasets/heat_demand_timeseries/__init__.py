@@ -366,13 +366,6 @@ def create_district_heating_profile_python_like(scenario="eGon2035"):
                     slice_df.zensus_population_id.isin(annual_demand.index)
                 ]
 
-                slice_df = pd.merge(
-                    df[df.area_id == area],
-                    idp_df,
-                    left_on="selected_idp",
-                    right_on="index",
-                )
-
                 for hour in range(24):
                     slice_df[hour] = (
                         slice_df.idp.str[hour]
