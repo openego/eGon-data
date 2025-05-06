@@ -96,8 +96,8 @@ class Storages(Dataset):
                 create_tables,
                 allocate_pumped_hydro_scn,
                 allocate_other_storage_units,
-                # allocate_pv_home_batteries_to_grids,
-                # allocate_home_batteries_to_buildings,
+                allocate_pv_home_batteries_to_grids,
+                allocate_home_batteries_to_buildings,
             ),
         )
 

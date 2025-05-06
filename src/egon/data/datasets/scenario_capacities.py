@@ -974,7 +974,7 @@ def add_metadata():
         EgonScenarioCapacities.__table__.name,
     )
 
-tasks = (create_table, insert_data_nep,)
+tasks = (create_table,)
 
 scenarios = config.settings()["egon-data"]["--scenarios"]
 

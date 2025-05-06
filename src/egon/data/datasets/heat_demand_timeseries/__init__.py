@@ -341,9 +341,9 @@ def create_district_heating_profile_python_like(scenario="eGon2035"):
                     WHERE scenario = '{scenario}'
                     AND area_id = '{area}'
                 ) b ON a.zensus_population_id = b.zensus_population_id        ,
-        
+
                 UNNEST (selected_idp_profiles) WITH ORDINALITY as selected_idp
-        
+
                 """
             )
 
@@ -354,18 +354,17 @@ def create_district_heating_profile_python_like(scenario="eGon2035"):
                     on=["day", "climate_zone"],
                 )
 
-
-            # Drop cells without a demand or outside of MVGD
-            slice_df = slice_df[
-                slice_df.zensus_population_id.isin(annual_demand.index)]
-
-
                 slice_df = pd.merge(
                     df[df.area_id == area],
                     idp_df,
                     left_on="selected_idp",
                     right_on="index",
                 )
+
+                # Drop cells without a demand or outside of MVGD
+                slice_df = slice_df[
+                    slice_df.zensus_population_id.isin(annual_demand.index)
+                ]
 
                 for hour in range(24):
                     slice_df[hour] = (
@@ -390,7 +389,7 @@ def create_district_heating_profile_python_like(scenario="eGon2035"):
 
                 assert (
                     abs(diff) < 0.04
-                ), f"""Deviation of residential heat demand time 
+                ), f"""Deviation of residential heat demand time
                 series for district heating grid {str(area)} is {diff}"""
 
                 if abs(diff) > 0.03:
@@ -836,9 +835,7 @@ def district_heating(method="python"):
     )
 
     if method == "python":
-        for scenario in config.settings()["egon-data"][
-            "--scenarios"
-        ]:
+        for scenario in config.settings()["egon-data"]["--scenarios"]:
             create_district_heating_profile_python_like(scenario)
 
     else:
@@ -1193,7 +1190,6 @@ def metadata():
     )
 
 
-
 class HeatTimeSeries(Dataset):
     """
     Chooses heat demand profiles for each residential and CTS building
@@ -1236,7 +1232,7 @@ class HeatTimeSeries(Dataset):
     #:
     name: str = "HeatTimeSeries"
     #:
-    version: str = "0.0.11"
+    version: str = "0.0.12"
 
     def __init__(self, dependencies):
         super().__init__(

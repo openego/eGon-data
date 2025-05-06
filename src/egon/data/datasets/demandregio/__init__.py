@@ -64,7 +64,7 @@ class DemandRegio(Dataset):
     #:
     name: str = "DemandRegio"
     #:
-    version: str = "0.0.10"
+    version: str = "0.0.11"
 
     def __init__(self, dependencies):
         super().__init__(
@@ -72,7 +72,7 @@ class DemandRegio(Dataset):
             version=self.version,
             dependencies=dependencies,
             tasks=(
-                # clone_and_install, demandregio must be previously installed
+                # clone_and_install,  # demandregio must be previously installed
                 get_cached_tables,  # adhoc workaround #180
                 create_tables,
                 {
@@ -552,7 +552,7 @@ def disagg_households_power(
     return df
 
 
-def write_demandregio_hh_profiles_to_db(hh_profiles, year):
+def write_demandregio_hh_profiles_to_db(hh_profiles):
     """Write HH demand profiles from demand regio into db. One row per
     year and nuts3. The annual load profile timeseries is an array.
 
@@ -564,7 +564,6 @@ def write_demandregio_hh_profiles_to_db(hh_profiles, year):
     Parameters
     ----------
     hh_profiles: pd.DataFrame
-    year: int
 
     Returns
     -------
@@ -580,7 +579,7 @@ def write_demandregio_hh_profiles_to_db(hh_profiles, year):
             :, hh_profiles.columns.str.contains("DEF0")
         ]
 
-    id = pd.read_sql_query(
+    idx = pd.read_sql_query(
         f"""
                            SELECT MAX(id)
                            FROM {DemandRegioLoadProfiles.__table__.schema}.
@@ -589,16 +588,16 @@ def write_demandregio_hh_profiles_to_db(hh_profiles, year):
         con=db.engine(),
     ).iat[0, 0]
 
-    if id is None:
-        id = 0
-    else:
-        id = id + 1
+    idx = 0 if idx is None else idx + 1
 
-    for nuts3 in hh_profiles.columns:
-        id += 1
-        df_to_db.at[id, "year"] = year
-        df_to_db.at[id, "nuts3"] = nuts3
-        df_to_db.at[id, "load_in_mwh"] = hh_profiles[nuts3].to_list()
+    for year in years:
+        df = hh_profiles[hh_profiles.index.year == year]
+
+        for nuts3 in hh_profiles.columns:
+            idx+=1
+            df_to_db.at[idx, "year"] = year
+            df_to_db.at[idx, "nuts3"] = nuts3
+            df_to_db.at[idx, "load_in_mwh"] = df[nuts3].to_list()
 
     df_to_db["year"] = df_to_db["year"].apply(int)
     df_to_db["nuts3"] = df_to_db["nuts3"].astype(str)
@@ -612,8 +611,6 @@ def write_demandregio_hh_profiles_to_db(hh_profiles, year):
         if_exists="append",
         index=-False,
     )
-
-    return
 
 
 def insert_hh_demand(scenario, year, engine):
