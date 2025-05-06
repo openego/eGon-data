@@ -56,7 +56,7 @@ from egon.data.datasets.heat_supply import (
 from egon.data.datasets.heat_supply.individual_heating import (
     HeatPumpsStatusQuo,
     HeatPumps2035,
-    #HeatPumps2050,
+    HeatPumps2050,
     HeatPumpsPypsaEur,
 )
 from egon.data.datasets.hydrogen_etrago import (
@@ -594,16 +594,16 @@ with airflow.DAG(
     )
 
     # Heat pump disaggregation for eGon2035
-    # heat_pumps_2035 = HeatPumps2035(
-    #     dependencies=[
-    #         cts_demand_buildings,
-    #         DistrictHeatingAreas,
-    #         heat_supply,
-    #         heat_time_series,
-    #         heat_pumps_pypsa_eur,
-    #         power_plants,
-    #     ]
-    # )
+    heat_pumps_2035 = HeatPumps2035(
+        dependencies=[
+            cts_demand_buildings,
+            DistrictHeatingAreas,
+            heat_supply,
+            heat_time_series,
+            heat_pumps_pypsa_eur,
+            power_plants,
+        ]
+    )
 
     # HTS to eTraGo table
     hts_etrago_table = HtsEtragoTable(
@@ -628,13 +628,13 @@ with airflow.DAG(
 
 
     # Heat pump disaggregation for eGon100RE
-    # heat_pumps_2050 = HeatPumps2050(
-    #     dependencies=[
-    #         run_pypsaeur,
-    #         heat_pumps_pypsa_eur,
-    #         heat_supply,
-    #     ]
-    # )
+    heat_pumps_2050 = HeatPumps2050(
+        dependencies=[
+            run_pypsaeur,
+            heat_pumps_pypsa_eur,
+            heat_supply,
+        ]
+    )
 
     # eMobility: motorized individual travel
     emobility_mit = MotorizedIndividualTravel(
@@ -720,6 +720,6 @@ with airflow.DAG(
             load_areas,
             cts_demand_buildings,
             sanity_checks,
-            # heat_pumps_2050,
+            heat_pumps_2050,
         ]
     )
