@@ -3,6 +3,7 @@ import os
 from airflow.utils.dates import days_ago
 import airflow
 
+from egon.data.config import settings as egon_settings
 from egon.data.config import set_numexpr_threads
 from egon.data.metadata import Json_Metadata
 from egon.data.datasets import database
