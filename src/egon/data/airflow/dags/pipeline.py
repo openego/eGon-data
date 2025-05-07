@@ -105,8 +105,11 @@ from egon.data.datasets.scenario_path import CreateIntermediateScenarios
 # Set number of threads used by numpy and pandas
 set_numexpr_threads()
 
+prefix = egon_settings()["egon-data"].get("--prefix")
+prefix = "" if prefix is None else f"{prefix}-"
+
 with airflow.DAG(
-    "egon-data-processing-pipeline",
+    f"{prefix}egon-data-processing-pipeline",
     description="The eGo^N data processing DAG.",
     default_args={"start_date": days_ago(1)},
     template_searchpath=[

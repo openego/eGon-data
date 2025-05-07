@@ -76,9 +76,10 @@ from egon.data.datasets.zensus_vg250 import ZensusVg250
 set_numexpr_threads()
 
 prefix = egon_settings()["egon-data"].get("--prefix")
+prefix = "" if prefix is None else f"{prefix}-"
 
 with airflow.DAG(
-    f"{prefix}-powerd-status-quo-processing-pipeline",
+    f"{prefix}powerd-status-quo-processing-pipeline",
     description="The PoWerD Status Quo data processing DAG.",
     default_args={"start_date": days_ago(1),
                   "email_on_failure": False,
