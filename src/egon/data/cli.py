@@ -194,7 +194,7 @@ from sqlalchemy.orm import Session
 )
 @click.option(
     "--prefix",
-    default="",
+    default=None,
     metavar="PREFIX",
     help=(
         "Add optional prefix to the DAG name in the Airflow config. "
