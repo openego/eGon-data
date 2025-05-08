@@ -380,6 +380,8 @@ def electricity(scenario):
             "wind_offshore": read_costs(costs, "offwind", "VOM"),
             "wind_onshore": read_costs(costs, "onwind", "VOM"),
             "solar": read_costs(costs, "solar", "VOM"),
+            "run_of_river": 0,
+            "reservoir": 0,
         }
 
     elif scenario == "eGon100RE":
@@ -525,6 +527,8 @@ def electricity(scenario):
             "wind_offshore": read_costs(costs, "offwind", "VOM"),
             "wind_onshore": read_costs(costs, "onwind", "VOM"),
             "solar": read_costs(costs, "solar", "VOM"),
+            "run_of_river": 0,
+            "reservoir": 0,
         }
 
     elif scenario == "eGon2021":
@@ -713,6 +717,8 @@ def electricity(scenario):
             "wind_offshore": read_costs(costs, "offwind", "VOM"),
             "wind_onshore": read_costs(costs, "onwind", "VOM"),
             "solar": read_costs(costs, "solar", "VOM"),
+            "run_of_river": 0,
+            "reservoir": 0,
         }
 
     else:
