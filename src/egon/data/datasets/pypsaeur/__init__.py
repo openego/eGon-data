@@ -1235,16 +1235,21 @@ def neighbor_reduction():
             inplace=True,
         )
 
-        for c in [
-            "H2_to_CH4",
-            "H2_to_power",
-            "power_to_H2",
-            "CH4_to_H2",
-        ]:
+        H2_links = {
+            "H2_to_CH4": "H2_to_CH4",
+            "H2_to_power": "H2_to_power",
+            "power_to_H2": "power_to_H2_system",
+            "CH4_to_H2": "CH4_to_H2",
+        }
+
+        for c in H2_links.keys():
+
             neighbor_links.loc[
                 (neighbor_links.carrier == c),
                 "lifetime",
-            ] = get_sector_parameters("gas", "eGon100RE")["lifetime"][c]
+            ] = get_sector_parameters("gas", "eGon100RE")["lifetime"][
+                H2_links[c]
+            ]
 
         neighbor_links.to_postgis(
             "egon_etrago_link",
