@@ -1733,7 +1733,7 @@ def insert_storage_units_sq(scn_name="status2019"):
     )["efficiency"]["pumped_hydro"]
 
     # Set bus_id
-    entsoe_to_bus = entsoe_to_bus_etrago(scn_name=scn_name)
+    entsoe_to_bus = entsoe_to_bus_etrago(scenario=scn_name)
     sto_sq["bus"] = sto_sq.index.map(entsoe_to_bus)
 
     # Insert carrier specific parameters
