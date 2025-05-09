@@ -223,7 +223,7 @@ def insert_CH4_nodes_list(gas_nodes_list, scn_name="eGon2035"):
         # A completer avec nodes related to pipelines which have an end in the selected area et evt deplacer ds define_gas_nodes_list
 
     # Add missing columns
-    c = {"scn_name": "eGon2035", "carrier": "CH4"}
+    c = {"scn_name": scn_name, "carrier": "CH4"}
     gas_nodes_list = gas_nodes_list.assign(**c)
 
     gas_nodes_list = geopandas.GeoDataFrame(
