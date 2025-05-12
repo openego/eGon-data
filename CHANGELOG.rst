@@ -267,6 +267,8 @@ Added
   `#1095 <https://github.com/openego/eGon-data/issues/1095>`_
 * Improve building household load assignment
   `#350 <https://github.com/openego/powerd-data/issues/350>`_
+* Add CLI option to prefix DAG name in Airflow config
+  `#1252 <https://github.com/openego/eGon-data/pull/1252>`_
 
 .. _PR #159: https://github.com/openego/eGon-data/pull/159
 .. _PR #703: https://github.com/openego/eGon-data/pull/703

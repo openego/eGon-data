@@ -192,6 +192,16 @@ from sqlalchemy.orm import Session
     ),
     show_default=True,
 )
+@click.option(
+    "--prefix",
+    default=None,
+    metavar="PREFIX",
+    help=(
+        "Add optional prefix to the DAG name in the Airflow config. "
+    ),
+    show_default=True,
+)
+
 @click.version_option(version=egon.data.__version__)
 @click.pass_context
 def egon_data(context, **kwargs):
