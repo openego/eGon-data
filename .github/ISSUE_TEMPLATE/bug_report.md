@@ -34,6 +34,7 @@ If applicable, add screenshots to help explain your problem.
 **Environment:**
 - OS: [e.g. Windows 11, Ubuntu 22.04]
 - Python version: [e.g. Python 3.10, Python 3.11]
+- Scenario: [e.g. eGon2035, eGon100RE]
 - Dataset Boundary: [Everything or Schleswig-Holstein]
 
 ---
