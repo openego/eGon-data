@@ -20,7 +20,7 @@ def read(*names, **kwargs):
 
 setup(
     name="egon.data",
-    version="0.0.0",
+    version="1.0.0",
     license="AGPL-3.0-or-later",
     description=(
         "The data used in the eGo^N project along with the code importing, "

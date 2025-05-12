@@ -21,7 +21,7 @@ project = "eGo^N Data"
 year = "2020-2022"
 author = "Guido Pleßmann, Ilka Cußman, Stephan Günther"
 copyright = "{0}, {1}".format(year, author)
-version = release = "0.0.0"
+version = release = "1.0.0"
 
 pygments_style = "trac"
 templates_path = ["."]
