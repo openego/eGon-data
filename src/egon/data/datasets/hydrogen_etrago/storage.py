@@ -3,12 +3,11 @@ The central module containing all code dealing with H2 stores in Germany
 
 This module contains the functions used to insert the two types of H2
 store potentials in Germany:
-* H2 overground stores (carrier: 'H2_overground'): steel tanks at
-  every H2_grid bus
-* H2 underground stores (carrier: 'H2_underground'): saltcavern store
-  at every H2_saltcavern bus.
-  NB: the saltcavern locations define the H2_saltcavern buses locations.
-
+  * H2 overground stores (carrier: 'H2_overground'): steel tanks at
+    every H2 bus
+  * H2 underground stores (carrier: 'H2_underground'): saltcavern store
+    at every H2_saltcavern bus.
+    NB: the saltcavern locations define the H2_saltcavern buses locations.
 All these stores are modelled as extendable PyPSA stores.
 
 """
@@ -17,6 +16,7 @@ import geopandas as gpd
 import pandas as pd
 
 from egon.data import config, db
+from egon.data.datasets.etrago_helpers import copy_and_modify_stores
 from egon.data.datasets.scenario_parameters import get_sector_parameters
 
 
@@ -25,11 +25,7 @@ def insert_H2_overground_storage():
     Insert H2_overground stores into the database.
 
     Insert extendable H2_overground stores (steel tanks) at each H2
-    bus. 
-
-    Returns
-    -------
-    None
+    bus. This function inserts data into the database and has no return.
 
     """
     # The targets of etrago_hydrogen also serve as source here ಠ_ಠ
@@ -102,11 +98,8 @@ def insert_H2_saltcavern_storage():
     Insert H2_underground stores into the database.
 
     Insert extendable H2_underground stores (saltcavern potentials) at
-    every H2_saltcavern bus.
-
-    Returns
-    -------
-    None
+    every H2_saltcavern bus.This function inserts data into the database
+    and has no return.
 
     """
 
@@ -135,7 +128,7 @@ def insert_H2_saltcavern_storage():
             f"""
             SELECT *
             FROM {sources['H2_AC_map']['schema']}.
-            {sources['H2_AC_map']['table']}"""
+            {sources['H2_AC_map']['table']}""",
         )
     
         storage_potentials["storage_potential"] = (
@@ -205,14 +198,13 @@ def calculate_and_map_saltcavern_storage_potential():
     """
     Calculate site specific storage potential based on InSpEE-DS report.
 
-    Returns
-    -------
-    None
+    This function inserts data into the database and has no return.
 
     """
 
     # select onshore vg250 data
     sources = config.datasets()["bgr"]["sources"]
+    targets = config.datasets()["bgr"]["targets"]
     vg250_data = db.select_geodataframe(
         f"""SELECT * FROM
                 {sources['vg250_federal_states']['schema']}.
@@ -395,21 +387,7 @@ def calculate_and_map_saltcavern_storage_potential():
         epsg=25832
     ).area / potential_areas.groupby("gen")["shape_star"].transform("sum")
 
-    return potential_areas
-
-
-def write_saltcavern_potential():
-    """Write saltcavern potentials into the database
-
-    Returns
-    -------
-    None
-
-    """
-    potential_areas = calculate_and_map_saltcavern_storage_potential()
-
     # write information to saltcavern data
-    targets = config.datasets()["bgr"]["targets"]
     potential_areas.to_crs(epsg=4326).to_postgis(
         targets["storage_potential"]["table"],
         db.engine(),
