@@ -1,6 +1,15 @@
 """
 The central module containing all code dealing with the H2 grid in eGon100RE
 
+The H2 grid, present only in eGon100RE, is composed of two parts:
+  * a fixed part with the same topology than the CH4 grid and with
+    carrier 'H2_retrofit' corresponding to the retrofiting of a share of
+    the CH4 grid into an hydrogen grid,
+  * an extendable part with carrier 'H2_gridextension', linking each
+    H2_salcavern bus to the closest H2 bus: this part as no
+    capacity (p_nom = 0) but it could be extended.
+As the CH4 grid, the H2 pipelines are modelled by PyPSA links.
+
 """
 from geoalchemy2.types import Geometry
 from shapely.geometry import LineString, MultiLineString, Point
@@ -646,4 +655,3 @@ def connect_h2_grid_to_neighbour_countries(scn_name):
         index=False,
     )
     print("Neighbour countries are succesfully connected to H2-grid")
-
