@@ -1,7 +1,22 @@
 # -*- coding: utf-8 -*-
 from __future__ import unicode_literals
 
+from pathlib import Path
+import io
 import os
+
+
+def read_authors(**kwargs):
+    with io.open(
+        Path(__file__).parent.parent / "AUTHORS.rst",
+        encoding=kwargs.get("encoding", "utf8"),
+    ) as fh:
+        return (
+            fh.read()
+            .replace("\nAuthors\n=======\n\n* ", "")
+            .replace("  - https://github.com/openego/eGon-data\n", "")
+        )
+
 
 extensions = [
     "sphinx.ext.autodoc",
@@ -19,7 +34,7 @@ source_suffix = ".rst"
 master_doc = "index"
 project = "eGo^N Data"
 year = "2020-2022"
-author = "Guido Pleßmann, Ilka Cußman, Stephan Günther"
+author = read_authors()
 copyright = "{0}, {1}".format(year, author)
 version = release = "1.0.0"
 
