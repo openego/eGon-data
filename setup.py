@@ -33,11 +33,12 @@ setup(
         ),
         re.sub(":[a-z]+:`~?(.*?)`", r"``\1``", read("CHANGELOG.rst")),
     ),
-    author="Guido Pleßmann, Ilka Cußman, Stephan Günther",
+    author=read("AUTHORS.rst"),
     author_email=(
-        "guido.plessmann@rl-institut.de, "
-        "ilka.cussmann@hs-flensburg.de, "
-        "stephan.guenther@ovgu.de"
+        "jonathan.amme@rl-institut.de, "
+        "clara.buettner@hs-flensburg.de, "
+        "carlos.epia@hs-flensburg.de, "
+        "kilian.helfenbein@rl-institut.de"
     ),
     url="https://github.com/openego/eGon-data",
     packages=["egon"] + ["egon." + p for p in find_packages("src/egon")],
