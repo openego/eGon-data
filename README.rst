@@ -159,11 +159,12 @@ and installing it in editable mode via
 are recommended.
 
 In order to keep the package installation isolated, we recommend
-installing the package in a dedicated virtual environment. There's both,
-an `external tool`_ and a `builtin module`_ which help in doing so. I
-also highly recommend spending the time to set up `virtualenvwrapper`_
-to manage your virtual environments if you start having to keep multiple
-ones around.
+installing the package in a dedicated virtual environment with
+Python 3.8, as eGon-data works currently only with that Python version.
+There's both, an `external tool`_ and a `builtin module`_ which help in
+doing so. I also highly recommend spending the time to set up
+`virtualenvwrapper`_ to manage your virtual environments if you start
+having to keep multiple ones around.
 
 If you run into any problems during the installation of ``egon.data``,
 try looking into the list of `known installation problems`_ we have
