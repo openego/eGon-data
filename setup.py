@@ -96,6 +96,7 @@ setup(
         "numpy<1.23",  # incompatibilities with shapely 1.7.
         # See: https://stackoverflow.com/a/73354885/12460232
         "oedialect==0.0.8",
+        "oemetadata<=2.0.1", # incompatibilities with metadata 1.3
         "omi",
         "openpyxl",
         "pandas>1.2.0,<1.4",  # pandas>=1.4 needs SQLAlchemy>=1.4
