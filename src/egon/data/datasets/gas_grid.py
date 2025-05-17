@@ -460,12 +460,6 @@ def insert_gas_buses_abroad(scn_name="eGon2035"):
 
     # Connect to local database
     engine = db.engine()
-    db.execute_sql(
-        f"""
-    DELETE FROM grid.egon_etrago_bus WHERE "carrier" = '{gas_carrier}' AND
-    scn_name = '{scn_name}' AND country != 'DE';
-    """
-    )
 
     gdf_abroad_buses = define_gas_buses_abroad(scn_name)
 
@@ -483,6 +477,12 @@ def insert_gas_buses_abroad(scn_name="eGon2035"):
         )
 
     else:
+        db.execute_sql(
+            f"""
+        DELETE FROM grid.egon_etrago_bus WHERE "carrier" = '{gas_carrier}' AND
+        scn_name = '{scn_name}' AND country != 'DE';
+        """
+        )
         gdf_abroad_buses.to_postgis(
             "egon_etrago_bus",
             engine,
@@ -903,6 +903,8 @@ def define_gas_pipeline_list(
             "NUTS1_0",
             "NUTS1_1",
             "country_code",
+            "country_0",
+            "country_1",
             "diameter",
             "pipe_class",
             "classification",
@@ -938,9 +940,6 @@ def insert_gas_pipeline_list(gas_pipelines_list, scn_name="eGon2035"):
     gas_carrier = "CH4"
 
     engine = db.engine()
-    gas_pipelines_list = gas_pipelines_list.drop(
-        columns=["country_0", "country_1"]
-    )
 
     # Clean db
     db.execute_sql(
@@ -1064,9 +1063,11 @@ def insert_gas_data():
         insert_CH4_nodes_list(gas_nodes_list, scn_name=scn_name)
         abroad_gas_nodes_list = insert_gas_buses_abroad(scn_name=scn_name)
 
-        insert_gas_pipeline_list(
+        gas_pipeline_list = define_gas_pipeline_list(
             gas_nodes_list, abroad_gas_nodes_list, scn_name=scn_name
-        )
+            )
+        insert_gas_pipeline_list(gas_pipeline_list, scn_name=scn_name)
+
         remove_isolated_gas_buses(scn_name=scn_name)
 
 
