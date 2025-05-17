@@ -335,17 +335,6 @@ def define_gas_buses_abroad(scn_name="eGon2035"):
                 columns={"geometry": "geom"}
             ).set_geometry("geom", crs=4326)
 
-            # Insert to db
-            print(gdf_abroad_buses_insert)
-            gdf_abroad_buses_insert.to_postgis(
-                "egon_etrago_bus",
-                engine,
-                schema="grid",
-                index=False,
-                if_exists="append",
-                dtype={"geom": Geometry()},
-            )
-
             gdf_abroad_buses = pd.concat(
                 [
                     gdf_abroad_buses,
@@ -480,16 +469,28 @@ def insert_gas_buses_abroad(scn_name="eGon2035"):
 
     gdf_abroad_buses = define_gas_buses_abroad(scn_name)
 
-    # Insert to db
     print(gdf_abroad_buses)
-    gdf_abroad_buses.to_postgis(
-        "egon_etrago_bus",
-        engine,
-        schema="grid",
-        index=False,
-        if_exists="append",
-        dtype={"geom": Geometry()},
-    )
+
+    # Insert to db
+    if scn_name == "eGon100RE":
+        gdf_abroad_buses[gdf_abroad_buses["country"] == "DE"].to_postgis(
+            "egon_etrago_bus",
+            engine,
+            schema="grid",
+            index=False,
+            if_exists="append",
+            dtype={"geom": Geometry()},
+        )
+
+    else:
+        gdf_abroad_buses.to_postgis(
+            "egon_etrago_bus",
+            engine,
+            schema="grid",
+            index=False,
+            if_exists="append",
+            dtype={"geom": Geometry()},
+        )
     return gdf_abroad_buses
 
 
