@@ -314,16 +314,18 @@ def define_gas_buses_abroad(scn_name="eGon2035"):
 
         if settings()["egon-data"]["--dataset-boundary"] != "Everything":
             gdf_abroad_buses_insert = pd.DataFrame(
-                        index=[gdf_abroad_buses.index.max() + 1],
-                        data={
-                            "scn_name": scn_name,
-                            "bus_id": (db.next_etrago_id("bus") + len(gdf_abroad_buses) + 1),
-                            "x": 10.4234469,
-                            "y": 51.0834196,
-                            "country": "DE",
-                            "carrier": gas_carrier,
-                        },
-                    )
+                index=[gdf_abroad_buses.index.max() + 1],
+                data={
+                    "scn_name": scn_name,
+                    "bus_id": (
+                        db.next_etrago_id("bus") + len(gdf_abroad_buses) + 1
+                    ),
+                    "x": 10.4234469,
+                    "y": 51.0834196,
+                    "country": "DE",
+                    "carrier": gas_carrier,
+                },
+            )
 
             gdf_abroad_buses_insert = geopandas.GeoDataFrame(
                 gdf_abroad_buses_insert,
@@ -336,10 +338,7 @@ def define_gas_buses_abroad(scn_name="eGon2035"):
             ).set_geometry("geom", crs=4326)
 
             gdf_abroad_buses = pd.concat(
-                [
-                    gdf_abroad_buses,
-                    gdf_abroad_buses_insert
-                ],
+                [gdf_abroad_buses, gdf_abroad_buses_insert],
                 ignore_index=True,
             )
 
@@ -1065,7 +1064,7 @@ def insert_gas_data():
 
         gas_pipeline_list = define_gas_pipeline_list(
             gas_nodes_list, abroad_gas_nodes_list, scn_name=scn_name
-            )
+        )
         insert_gas_pipeline_list(gas_pipeline_list, scn_name=scn_name)
 
         remove_isolated_gas_buses(scn_name=scn_name)
@@ -1159,9 +1158,13 @@ class GasNodesAndPipes(Dataset):
 
     for scn_name in config.settings()["egon-data"]["--scenarios"]:
         if "status" in scn_name:
-            tasks += (wrapped_partial(
-                insert_gas_data_status, scn_name=scn_name, postfix=f"_{scn_name[-4:]}"
-            ),)
+            tasks += (
+                wrapped_partial(
+                    insert_gas_data_status,
+                    scn_name=scn_name,
+                    postfix=f"_{scn_name[-4:]}",
+                ),
+            )
 
     tasks += (insert_gas_data,)
 
