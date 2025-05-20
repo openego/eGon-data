@@ -136,7 +136,6 @@ def find_weather_id(scn_name):
     db.execute_sql(sql)
 
 
-def weatherId_and_busId():
-    for scn_name in egon.data.config.settings()["egon-data"]["--scenarios"]:
-        find_weather_id(scn_name)
-        add_missing_bus_ids(scn_name)
+def weatherId_and_busId(scn_name):
+    find_weather_id(scn_name)
+    add_missing_bus_ids(scn_name)
