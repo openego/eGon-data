@@ -305,7 +305,7 @@ def add_metadata():
     technologies = config.datasets()["mastr_new"]["technologies"]
 
     target_tables = {
-        "pv": EgonPowerPlantsPv,
+        "solar": EgonPowerPlantsPv,
         "wind": EgonPowerPlantsWind,
         "biomass": EgonPowerPlantsBiomass,
         "hydro": EgonPowerPlantsHydro,
