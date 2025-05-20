@@ -1396,7 +1396,7 @@ def import_gas_gen_egon100():
     ).iat[0, 0]
 
     conv = pd.read_csv(
-        cfg["sources"]["mastr_combustion"],
+            WORKING_DIR_MASTR_OLD / cfg["sources"]["mastr_combustion"],
         usecols=[
             "EinheitMastrNummer",
             "Energietraeger",
