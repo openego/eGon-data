@@ -88,6 +88,7 @@ setup(
         "atlite==0.2.11",
         "cdsapi",
         "click<8.1",
+        "disaggregator @ git+https://github.com/openego/disaggregator.git@features/pandas-update-plus-master#egg=disaggregator",
         "entsoe-py >=0.6.2",
         "fiona==1.9.6",
         "Flask-Session<0.6.0",
