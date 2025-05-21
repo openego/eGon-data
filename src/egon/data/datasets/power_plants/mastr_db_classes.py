@@ -52,6 +52,7 @@ class EgonPowerPlantsPv(Base):
 
     status = Column(String, nullable=True)  # EinheitBetriebsstatus
     commissioning_date = Column(DateTime, nullable=True)  # Inbetriebnahmedatum
+    decommissioning_date = Column(DateTime, nullable=True)  # DatumEndgueltigeStilllegung
     postcode = Column(String(5), nullable=True)  # Postleitzahl
     city = Column(String(50), nullable=True)  # Ort
     municipality = Column(String, nullable=True)  # Gemeinde
@@ -98,6 +99,7 @@ class EgonPowerPlantsWind(Base):
 
     status = Column(String, nullable=True)  # EinheitBetriebsstatus
     commissioning_date = Column(DateTime, nullable=True)  # Inbetriebnahmedatum
+    decommissioning_date = Column(DateTime, nullable=True)  # DatumEndgueltigeStilllegung
     postcode = Column(String(5), nullable=True)  # Postleitzahl
     city = Column(String(50), nullable=True)  # Ort
     municipality = Column(String, nullable=True)  # Gemeinde
@@ -129,6 +131,7 @@ class EgonPowerPlantsBiomass(Base):
 
     status = Column(String, nullable=True)  # EinheitBetriebsstatus
     commissioning_date = Column(DateTime, nullable=True)  # Inbetriebnahmedatum
+    decommissioning_date = Column(DateTime, nullable=True)  # DatumEndgueltigeStilllegung
     postcode = Column(String(5), nullable=True)  # Postleitzahl
     city = Column(String(50), nullable=True)  # Ort
     municipality = Column(String, nullable=True)  # Gemeinde
@@ -159,6 +162,7 @@ class EgonPowerPlantsHydro(Base):
 
     status = Column(String, nullable=True)  # EinheitBetriebsstatus
     commissioning_date = Column(DateTime, nullable=True)  # Inbetriebnahmedatum
+    decommissioning_date = Column(DateTime, nullable=True)  # DatumEndgueltigeStilllegung
     postcode = Column(String(5), nullable=True)  # Postleitzahl
     city = Column(String(50), nullable=True)  # Ort
     municipality = Column(String, nullable=True)  # Gemeinde
@@ -301,7 +305,7 @@ def add_metadata():
     technologies = config.datasets()["mastr_new"]["technologies"]
 
     target_tables = {
-        "pv": EgonPowerPlantsPv,
+        "solar": EgonPowerPlantsPv,
         "wind": EgonPowerPlantsWind,
         "biomass": EgonPowerPlantsBiomass,
         "hydro": EgonPowerPlantsHydro,
