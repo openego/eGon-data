@@ -148,7 +148,7 @@ def select_mastr_pumped_hydro():
         == "Schleswig-Holstein"
     ):
         # Drop hydropower outside the test mode area
-        mastr_ph = filter_mastr_geometry(mastr_ph, federal_state="Schleswig-Holstein")
+        mastr_ph = filter_mastr_geometry(mastr_ph, federal_state="SchleswigHolstein")
     else:
         # Drop hydropower outside of germany
         mastr_ph = filter_mastr_geometry(mastr_ph, federal_state=None)
