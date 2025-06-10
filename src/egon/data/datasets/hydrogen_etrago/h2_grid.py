@@ -27,7 +27,12 @@ def insert_h2_pipelines(scn_name):
     
     download_h2_grid_data()
     H2_grid_Neubau, H2_grid_Umstellung, H2_grid_Erweiterung = read_h2_excel_sheets()
-    h2_bus_location = pd.read_csv(Path(".")/"h2_grid_nodes.csv")
+    h2_bus_location = pd.read_csv(
+        Path(".")
+        / "data_bundle_egon_data"
+        / "hydrogen_network"
+        / "h2_grid_nodes.csv"
+    )
     con=db.engine()
     
     sources = config.datasets()["etrago_hydrogen"]["sources"]
@@ -575,9 +580,14 @@ def connect_h2_grid_to_neighbour_countries(scn_name):
         ('Fessenheim', 'FR'),
         ('Ellund', 'DK')
     ]
-    
-    h2_bus_location = pd.read_csv(Path(".")/"h2_grid_nodes.csv") 
-     
+
+    h2_bus_location = pd.read_csv(
+        Path(".")
+        / "data_bundle_egon_data"
+        / "hydrogen_network"
+        / "h2_grid_nodes.csv"
+    )
+
     ### prepare data for connecting abroad_buses
     matched_locations = h2_bus_location[h2_bus_location['Ort'].isin([name for name, _ in abroad_con_buses])]
     matched_buses = matched_locations.merge(
