@@ -1690,7 +1690,7 @@ def insert_storage_units_sq(scn_name="status2019"):
         logger.warning("Generation data from entsoe could not be retrieved.")
         # check for generation backup from former runs
         file_path = Path(
-            "./", "entsoe_data", f"gen_entsoe_{scn_name}.csv"
+            "./", "data_bundle_egon_data", "entsoe", f"gen_entsoe_{scn_name}.csv"
         ).resolve()
         if os.path.isfile(file_path):
             df_gen_sq, not_retrieved = fill_by_backup_data_from_former_runs(
@@ -1868,7 +1868,7 @@ def insert_generators_sq(scn_name="status2019"):
         logger.warning("Generation data from entsoe could not be retrieved.")
         # check for generation backup from former runs
         file_path = Path(
-            "./", "entsoe_data", f"gen_entsoe_{scn_name}.csv"
+            "./", "data_bundle_egon_data", "entsoe", f"gen_entsoe_{scn_name}.csv"
         ).resolve()
         if os.path.isfile(file_path):
             df_gen_sq, not_retrieved = fill_by_backup_data_from_former_runs(
@@ -2064,7 +2064,7 @@ def insert_loads_sq(scn_name="status2019"):
         logger.warning("Demand data from entsoe could not be retrieved.")
         # check for generation backup from former runs
         file_path = Path(
-            "./", "entsoe_data", f"load_entsoe_{scn_name}.csv"
+            "./", "data_bundle_egon_data", "entsoe", f"load_entsoe_{scn_name}.csv"
         ).resolve()
         if os.path.isfile(file_path):
             df_load_sq, not_retrieved = fill_by_backup_data_from_former_runs(
