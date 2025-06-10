@@ -706,10 +706,8 @@ def eGon100_capacities():
     else:
         target_file = (
             cwd
-            / "data_bundle_powerd_data"
+            / "data_bundle_egon_data"
             / "pypsa_eur"
-            / "21122024_3h_clean_run"
-            / "results"
             / "csvs"
             / sources["eGon100RE"]["capacities"]
         )
