@@ -1,5 +1,4 @@
-"""The central module containing all code dealing with electrical neighbours
-"""
+"""The central module containing all code dealing with electrical neighbours"""
 
 from os import path
 from pathlib import Path
@@ -263,10 +262,18 @@ def buses(scenario, sources, targets):
     central_buses.scn_name = scenario
 
     central_buses.drop(
-        ["control", "generator", "location", "unit", "sub_network", "substation_off", "substation_lv"],
+        [
+            "control",
+            "generator",
+            "location",
+            "unit",
+            "sub_network",
+            "substation_off",
+            "substation_lv",
+        ],
         axis="columns",
         inplace=True,
-        errors="ignore"
+        errors="ignore",
     )
 
     # Insert all central buses for eGon2035
@@ -285,7 +292,7 @@ def buses(scenario, sources, targets):
     # Insert only buses for eGon100RE that are not coming from pypsa-eur-sec
     # (buses with another voltage_level or inside Germany in test mode)
     else:
-        central_buses[central_buses.carrier=="AC"].to_postgis(
+        central_buses[central_buses.carrier == "AC"].to_postgis(
             targets["buses"]["table"],
             schema=targets["buses"]["schema"],
             if_exists="append",
@@ -528,7 +535,6 @@ def cross_border_lines(scenario, sources, targets, central_buses):
         print("WARNING! THERE ARE LINES WITH LENGTH = 0")
         condition = new_lines["length"] != 0
         new_lines["length"] = new_lines["length"].where(condition, 1)
-        
 
     # Set electrical parameters based on lines from osmtgmod
     for parameter in ["x", "r"]:
@@ -539,7 +545,6 @@ def cross_border_lines(scenario, sources, targets, central_buses):
         new_lines[parameter] = (
             new_lines[parameter] * old_length / new_lines["length"]
         )
-
 
     # Drop intermediate columns
     new_lines.drop(
@@ -763,7 +768,8 @@ def foreign_dc_lines(scenario, sources, targets, central_buses):
             "bus0": converter_luebeck,
             "bus1": central_buses[
                 (central_buses.country == "SE") & (central_buses.v_nom == 380)
-            ].iloc[0]
+            ]
+            .iloc[0]
             .squeeze()
             .bus_id,
             "p_nom": 600,
@@ -794,7 +800,8 @@ def foreign_dc_lines(scenario, sources, targets, central_buses):
                             (central_buses.country == "DK")
                             & (central_buses.v_nom == 380)
                             & (central_buses.x > 10)
-                        ].iloc[0]
+                        ]
+                        .iloc[0]
                         .squeeze()
                         .bus_id,
                         "p_nom": 600,
@@ -1690,7 +1697,10 @@ def insert_storage_units_sq(scn_name="status2019"):
         logger.warning("Generation data from entsoe could not be retrieved.")
         # check for generation backup from former runs
         file_path = Path(
-            "./", "data_bundle_egon_data", "entsoe", f"gen_entsoe_{scn_name}.csv"
+            "./",
+            "data_bundle_egon_data",
+            "entsoe",
+            f"gen_entsoe_{scn_name}.csv",
         ).resolve()
         if os.path.isfile(file_path):
             df_gen_sq, not_retrieved = fill_by_backup_data_from_former_runs(
@@ -1787,7 +1797,7 @@ def insert_storage_units_sq(scn_name="status2019"):
 
     # Select year of interest
     bat_sq = bat_sq[[str(year)]]
-    bat_sq.rename(columns={str(year): "p_nom"}, inplace= True)
+    bat_sq.rename(columns={str(year): "p_nom"}, inplace=True)
 
     # Add missing information suitable for eTraGo selected from scenario_parameter table
     parameters_batteries = get_sector_parameters(
@@ -1868,7 +1878,10 @@ def insert_generators_sq(scn_name="status2019"):
         logger.warning("Generation data from entsoe could not be retrieved.")
         # check for generation backup from former runs
         file_path = Path(
-            "./", "data_bundle_egon_data", "entsoe", f"gen_entsoe_{scn_name}.csv"
+            "./",
+            "data_bundle_egon_data",
+            "entsoe",
+            f"gen_entsoe_{scn_name}.csv",
         ).resolve()
         if os.path.isfile(file_path):
             df_gen_sq, not_retrieved = fill_by_backup_data_from_former_runs(
@@ -2064,7 +2077,10 @@ def insert_loads_sq(scn_name="status2019"):
         logger.warning("Demand data from entsoe could not be retrieved.")
         # check for generation backup from former runs
         file_path = Path(
-            "./", "data_bundle_egon_data", "entsoe", f"load_entsoe_{scn_name}.csv"
+            "./",
+            "data_bundle_egon_data",
+            "entsoe",
+            f"load_entsoe_{scn_name}.csv",
         ).resolve()
         if os.path.isfile(file_path):
             df_load_sq, not_retrieved = fill_by_backup_data_from_former_runs(
@@ -2189,7 +2205,7 @@ class ElectricalNeighbours(Dataset):
       * :py:class:`grid.egon_etrago_generator <egon.data.datasets.etrago_setup.EgonPfHvGenerator>` is extended
       * :py:class:`grid.egon_etrago_generator_timeseries <egon.data.datasets.etrago_setup.EgonPfHvGeneratorTimeseries>` is extended
       * :py:class:`grid.egon_etrago_transformer <egon.data.datasets.etrago_setup.EgonPfHvTransformer>` is extended
-      
+
     """
 
     #:
