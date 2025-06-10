@@ -1876,17 +1876,6 @@ def insert_generators_sq(scn_name="status2019"):
             )
         save_entsoe_data(df_gen_sq, file_path=file_path)
 
-    if not_retrieved:
-        logger.warning(
-            f"Backup data of 2019 is used instead for {not_retrieved}"
-        )
-        df_gen_sq_backup = pd.read_csv(
-            "data_bundle_egon_data/entsoe/gen_entsoe.csv", index_col="Index"
-        )
-        df_gen_sq = pd.concat(
-            [df_gen_sq, df_gen_sq_backup.loc[not_retrieved]], axis=1
-        )
-
     targets = config.datasets()["electrical_neighbours"]["targets"]
     # Delete existing data
     db.execute_sql(
@@ -2082,18 +2071,6 @@ def insert_loads_sq(scn_name="status2019"):
                 df_load_sq, file_path, not_retrieved
             )
         save_entsoe_data(df_load_sq, file_path=file_path)
-
-    if not_retrieved:
-        logger.warning(
-            f"Backup data of 2019 is used instead for {not_retrieved}"
-        )
-        df_load_sq_backup = pd.read_csv(
-            "data_bundle_egon_data/entsoe/load_entsoe.csv", index_col="Index"
-        )
-        df_load_sq_backup.index = df_load_sq.index
-        df_load_sq = pd.concat(
-            [df_load_sq, df_load_sq_backup.loc[:, not_retrieved]], axis=1
-        )
 
     # Delete existing data
     db.execute_sql(
