@@ -734,7 +734,7 @@ def insert_cts_ind(scenario, year, engine, target_values):
 
     if scenario == "eGon100RE":
         ec_cts_ind2 = pd.read_csv(
-            "data_bundle_egon_data/egon_demandregio_cts_ind.csv"
+            "data_bundle_egon_data/demand_regio_backup/egon_demandregio_cts_ind.csv"
         )
         ec_cts_ind2["sector"] = ec_cts_ind2["wz"].map(wz_table["sector"])
         factor_ind = target_values[scenario]["industry"] / (
