@@ -1053,15 +1053,14 @@ def get_cached_tables():
     """Get cached demandregio tables and db-dump from former runs"""
     data_config = egon.data.config.datasets()
     for s in ["cache", "dbdump"]:
-        url = data_config["demandregio_workaround"]["source"][s]["url"]
-        target_path = data_config["demandregio_workaround"]["targets"][s][
+        source_path = data_config["demandregio_workaround"]["source"][s][
             "path"
         ]
-        filename = os.path.basename(url)
-        file_path = Path(".", target_path, filename).resolve()
-        os.makedirs(file_path.parent, exist_ok=True)
-        logger.info(f"Downloading: {filename} from {url}.")
-        download_and_check(url, file_path, max_iteration=5)
-        with zipfile.ZipFile(file_path, "r") as zip_ref:
-            zip_ref.extractall(file_path.parent)
+        target_path = Path(
+            ".", data_config["demandregio_workaround"]["targets"][s]["path"]
+        )
+        os.makedirs(target_path, exist_ok=True)
+
+        with zipfile.ZipFile(source_path, "r") as zip_ref:
+            zip_ref.extractall(path=target_path)
 
