@@ -673,7 +673,8 @@ def insert_hh_demand(scenario, year, engine):
             f"Couldnt get profiles from FFE, will use pickeld fallback! \n {e}"
         )
         hh_load_timeseries = pd.read_csv(
-            "df_load_profiles.csv", index_col="time"
+            "data_bundle_egon_data/demand_regio_backup/df_load_profiles.csv",
+            index_col="time"
         )
         hh_load_timeseries.index = pd.to_datetime(
             hh_load_timeseries.index, format="%Y-%m-%d %H:%M:%S"
