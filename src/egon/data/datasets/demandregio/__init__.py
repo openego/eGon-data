@@ -669,19 +669,30 @@ def insert_hh_demand(scenario, year, engine):
         hh_load_timeseries.rename(
             columns={"DEB16": "DEB1C", "DEB19": "DEB1D"}, inplace=True)
     except Exception as e:
-        logger.warning(f"Couldnt get profiles from FFE, will use pickeld fallback! \n {e}")
-        hh_load_timeseries = pd.read_pickle(Path(".", "df_load_profiles.pkl").resolve())
+        logger.warning(
+            f"Couldnt get profiles from FFE, will use pickeld fallback! \n {e}"
+        )
+        hh_load_timeseries = pd.read_csv(
+            "df_load_profiles.csv", index_col="time"
+        )
+        hh_load_timeseries.index = pd.to_datetime(
+            hh_load_timeseries.index, format="%Y-%m-%d %H:%M:%S"
+        )
 
         def change_year(dt, year):
             return dt.replace(year=year)
 
         year = 2023 if scenario == "status2023" else year  # TODO status2023
-        hh_load_timeseries.index = hh_load_timeseries.index.map(lambda dt: change_year(dt, year))
+        hh_load_timeseries.index = hh_load_timeseries.index.map(
+            lambda dt: change_year(dt, year)
+        )
 
         if scenario == "status2023":
             hh_load_timeseries = hh_load_timeseries.shift(24 * 2)
 
-            hh_load_timeseries.iloc[:24 * 7] = hh_load_timeseries.iloc[24 * 7:24 * 7 * 2].values
+            hh_load_timeseries.iloc[: 24 * 7] = hh_load_timeseries.iloc[
+                24 * 7 : 24 * 7 * 2
+            ].values
 
     write_demandregio_hh_profiles_to_db(hh_load_timeseries)
 
