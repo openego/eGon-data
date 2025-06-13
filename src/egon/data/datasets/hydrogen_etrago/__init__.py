@@ -24,7 +24,7 @@ from egon.data.datasets.hydrogen_etrago.power_to_h2 import (
     insert_power_to_h2_to_power,
 )
 from egon.data.datasets.hydrogen_etrago.storage import (
-    calculate_and_map_saltcavern_storage_potential,
+    write_saltcavern_potential,
     insert_H2_overground_storage,
     insert_H2_saltcavern_storage,
 )
@@ -62,7 +62,7 @@ class HydrogenBusEtrago(Dataset):
             version=self.version,
             dependencies=dependencies,
             tasks=(
-                calculate_and_map_saltcavern_storage_potential,
+                write_saltcavern_potential,
                 insert_h2_buses_for_scn,
             ),
         )
