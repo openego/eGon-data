@@ -25,7 +25,11 @@ def insert_H2_overground_storage():
     Insert H2_overground stores into the database.
 
     Insert extendable H2_overground stores (steel tanks) at each H2
-    bus. This function inserts data into the database and has no return.
+    bus.
+
+    Returns
+    -------
+    None
 
     """
     # The targets of etrago_hydrogen also serve as source here ಠ_ಠ
@@ -99,10 +103,12 @@ def insert_H2_saltcavern_storage():
 
     Insert extendable H2_underground stores (saltcavern potentials) at
     every H2_saltcavern bus.This function inserts data into the database
-    and has no return.
+
+    Returns
+    -------
+    None
 
     """
-
     # Data tables sources and targets
     sources = config.datasets()["etrago_hydrogen"]["sources"]
     targets = config.datasets()["etrago_hydrogen"]["targets"]
