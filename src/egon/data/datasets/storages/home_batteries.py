@@ -53,7 +53,6 @@ from egon.data.metadata import (
     license_dedl,
     license_odbl,
     meta_metadata,
-    meta_metadata,
     sources,
 )
 
@@ -90,6 +89,8 @@ def allocate_home_batteries_to_buildings():
     # get constants
     constants = config.datasets()["home_batteries"]["constants"]
     scenarios = config.settings()["egon-data"]["--scenarios"]
+    if "status2019" in scenarios:
+        scenarios.remove("status2019")
     cbat_ppv_ratio = constants["cbat_ppv_ratio"]
     rtol = constants["rtol"]
     max_it = constants["max_it"]
