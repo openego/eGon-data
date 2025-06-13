@@ -733,7 +733,6 @@ def eGon100_capacities():
         "home battery discharger",
         "H2",
         "Li ion",
-        "home battery",
         "rural water tanks charger",
         "rural water tanks discharger",
         "urban decentral water tanks charger",
@@ -836,6 +835,7 @@ def eGon100_capacities():
             "urban_central_solar_thermal": (
                 "urban_central_solar_thermal_collector"
             ),
+            "home_battery": "battery"
         },
         inplace=True,
     )
@@ -1024,7 +1024,7 @@ class ScenarioCapacities(Dataset):
     #:
     name: str = "ScenarioCapacities"
     #:
-    version: str = "0.0.18"
+    version: str = "0.0.19"
 
     def __init__(self, dependencies):
         super().__init__(
