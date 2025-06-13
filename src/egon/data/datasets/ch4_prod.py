@@ -170,7 +170,7 @@ def load_biogas_generators(scn_name):
     Define the biogas production units in Germany
 
     This function downloads the Biogaspartner Einspeiseatlas into
-    (datasets/gas_data/Biogaspartner_Einspeiseatlas_Deutschland_2021.xlsx),
+    (data_bundle_egon_data/gas_data/Biogaspartner_Einspeiseatlas_Deutschland_2021.xlsx),
     reads the biogas production units in Germany data, adjusts and
     returns them.
     For more information on this data refer to the
@@ -196,7 +196,7 @@ def load_biogas_generators(scn_name):
         "https://www.biogaspartner.de/fileadmin/Biogaspartner/Dokumente/Einspeiseatlas/"
         + basename
     )
-    target_file = Path(".") / "datasets" / "gas_data" / basename
+    target_file = Path(".") / "data_bundle_egon_data" / "gas_data" / basename
 
     if not target_file.is_file():
         urlretrieve(url, target_file)

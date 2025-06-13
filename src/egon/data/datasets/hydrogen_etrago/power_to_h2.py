@@ -186,7 +186,12 @@ def insert_power_to_h2_to_power():
             result_df.to_sql(table_name, engine, schema=schema, if_exists="append", index=False)
         
         
-        wwtp_spec = pd.read_csv(Path(".")/"WWTP_spec.csv")
+        wwtp_spec = pd.read_csv(
+            Path(".")
+            / "data_bundle_egon_data"
+            / "hydrogen_network"
+            / "WWTP_spec.csv"
+        )
         export_o2_buses_to_db(wwtp_spec)  # Call the function with the dataframe
         
         # dictionary of SQL queries

@@ -669,19 +669,31 @@ def insert_hh_demand(scenario, year, engine):
         hh_load_timeseries.rename(
             columns={"DEB16": "DEB1C", "DEB19": "DEB1D"}, inplace=True)
     except Exception as e:
-        logger.warning(f"Couldnt get profiles from FFE, will use pickeld fallback! \n {e}")
-        hh_load_timeseries = pd.read_pickle(Path(".", "df_load_profiles.pkl").resolve())
+        logger.warning(
+            f"Couldnt get profiles from FFE, will use pickeld fallback! \n {e}"
+        )
+        hh_load_timeseries = pd.read_csv(
+            "data_bundle_egon_data/demand_regio_backup/df_load_profiles.csv",
+            index_col="time"
+        )
+        hh_load_timeseries.index = pd.to_datetime(
+            hh_load_timeseries.index, format="%Y-%m-%d %H:%M:%S"
+        )
 
         def change_year(dt, year):
             return dt.replace(year=year)
 
         year = 2023 if scenario == "status2023" else year  # TODO status2023
-        hh_load_timeseries.index = hh_load_timeseries.index.map(lambda dt: change_year(dt, year))
+        hh_load_timeseries.index = hh_load_timeseries.index.map(
+            lambda dt: change_year(dt, year)
+        )
 
         if scenario == "status2023":
             hh_load_timeseries = hh_load_timeseries.shift(24 * 2)
 
-            hh_load_timeseries.iloc[:24 * 7] = hh_load_timeseries.iloc[24 * 7:24 * 7 * 2].values
+            hh_load_timeseries.iloc[: 24 * 7] = hh_load_timeseries.iloc[
+                24 * 7 : 24 * 7 * 2
+            ].values
 
     write_demandregio_hh_profiles_to_db(hh_load_timeseries)
 
@@ -716,9 +728,13 @@ def insert_cts_ind(scenario, year, engine, target_values):
     # Workaround: Since the disaggregator does not work anymore, data from
     # previous runs is used for eGon2035 and eGon100RE
     if scenario == "eGon2035":
-        ec_cts_ind2 = pd.read_csv(
-            "data_bundle_powerd_data/egon_demandregio_cts_ind_egon2035.csv"
+        file2035_path = (
+            Path(".")
+            / "data_bundle_egon_data"
+            / "demand_regio_backup"
+            / "egon_demandregio_cts_ind_egon2035.csv"
         )
+        ec_cts_ind2 = pd.read_csv(file2035_path)
         ec_cts_ind2.to_sql(
             targets["cts_ind_demand"]["table"],
             engine,
@@ -730,7 +746,7 @@ def insert_cts_ind(scenario, year, engine, target_values):
 
     if scenario == "eGon100RE":
         ec_cts_ind2 = pd.read_csv(
-            "data_bundle_powerd_data/egon_demandregio_cts_ind.csv"
+            "data_bundle_egon_data/demand_regio_backup/egon_demandregio_cts_ind.csv"
         )
         ec_cts_ind2["sector"] = ec_cts_ind2["wz"].map(wz_table["sector"])
         factor_ind = target_values[scenario]["industry"] / (
@@ -1049,15 +1065,14 @@ def get_cached_tables():
     """Get cached demandregio tables and db-dump from former runs"""
     data_config = egon.data.config.datasets()
     for s in ["cache", "dbdump"]:
-        url = data_config["demandregio_workaround"]["source"][s]["url"]
-        target_path = data_config["demandregio_workaround"]["targets"][s][
+        source_path = data_config["demandregio_workaround"]["source"][s][
             "path"
         ]
-        filename = os.path.basename(url)
-        file_path = Path(".", target_path, filename).resolve()
-        os.makedirs(file_path.parent, exist_ok=True)
-        logger.info(f"Downloading: {filename} from {url}.")
-        download_and_check(url, file_path, max_iteration=5)
-        with zipfile.ZipFile(file_path, "r") as zip_ref:
-            zip_ref.extractall(file_path.parent)
+        target_path = Path(
+            ".", data_config["demandregio_workaround"]["targets"][s]["path"]
+        )
+        os.makedirs(target_path, exist_ok=True)
+
+        with zipfile.ZipFile(source_path, "r") as zip_ref:
+            zip_ref.extractall(path=target_path)
 
