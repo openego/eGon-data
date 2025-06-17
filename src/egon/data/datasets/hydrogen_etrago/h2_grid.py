@@ -656,4 +656,3 @@ def connect_h2_grid_to_neighbour_countries(scn_name):
         index=False,
     )
     print("Neighbour countries are succesfully connected to H2-grid")
-
