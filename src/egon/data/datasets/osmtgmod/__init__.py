@@ -809,6 +809,55 @@ def to_pypsa():
         )
 
 
+def reset_etrago_sequences_to_max_id():
+    """
+    Resets all grid.etrago_* sequences so that their next value is one more than
+    the maximum ID currently stored in their corresponding table.
+
+    Example:
+    - If grid.egon_etrago_line.line_id has max value 123,
+      then grid.etrago_line_id_seq will be set to start at 124.
+
+    Notes
+    -----
+    - Assumes each table has an ID column named {component}_id or 'trafo_id' for 'transformer'.
+    - If a table is empty, sequence is reset to 1.
+    """
+    components = [
+        "bus",
+        "line",
+        "transformer",
+        "load",
+        "storage",
+        "generator",
+        "link",
+        "store",
+    ]
+
+    for component in components:
+        # Table and column naming
+        table_name = f"grid.egon_etrago_{component}"
+        id_column = (
+            "trafo_id" if component == "transformer" else f"{component}_id"
+        )
+        sequence_name = f"grid.etrago_{component}_id_seq"
+
+        # Get max ID from table
+        query = f"SELECT MAX({id_column}) AS max_id FROM {table_name}"
+        result = db.select_dataframe(query)
+        max_id = result["max_id"].iloc[0]
+
+        # Determine next value
+        next_val = int(max_id) + 1 if max_id is not None else 1
+
+        # Create and run ALTER SEQUENCE query
+        alter_query = (
+            f"ALTER SEQUENCE {sequence_name} RESTART WITH {next_val};"
+        )
+        print(f"Resetting {sequence_name} to {next_val}")
+        db.execute_sql(alter_query)
+
+
 def fix_transformer_snom():
     db.execute_sql(
         """
@@ -869,6 +918,7 @@ class Osmtgmod(Dataset):
                     extract,
                     to_pypsa,
                 },
+                reset_etrago_sequences_to_max_id,
                 fix_transformer_snom,
             ),
         )
