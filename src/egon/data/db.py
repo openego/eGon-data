@@ -229,8 +229,8 @@ def select_geodataframe(sql, index_col=None, geom_col="geom", epsg=3035):
 
 def next_etrago_id(component, count=1):
     """
-    Reserve one or more unique IDs from a PostgreSQL sequence specific to the given component.
-    Automatically creates the sequence if it does not exist.
+    Reserve one or more unique IDs from a PostgreSQL sequence specific to the
+    given component.
 
     Parameters
     ----------
@@ -238,8 +238,6 @@ def next_etrago_id(component, count=1):
         Name of the component (e.g., 'line', 'transformer', etc.).
     count : int, optional
         Number of IDs to reserve. Defaults to 1.
-    start_at : int, optional
-        If the sequence does not exist, it will be created to start at this value.
 
     Returns
     -------
