@@ -419,10 +419,9 @@ def import_gas_generators():
         else:
             raise ValueError(f"{scn_name} is not a valid scenario name")
 
-        new_id = db.next_etrago_id("generator")
-        CH4_generators_list["generator_id"] = range(
-            new_id, new_id + len(CH4_generators_list)
-        )
+        CH4_generators_list["generator_id"] = db.next_etrago_id(
+            "generator",  len(CH4_generators_list)
+            )
 
         # Insert data to db
         CH4_generators_list.to_sql(

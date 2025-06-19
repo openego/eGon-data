@@ -37,9 +37,6 @@ def insert_buses(carrier, scenario):
         """
     )
 
-    # Select unused index of buses
-    next_bus_id = db.next_etrago_id("bus")
-
     # initalize dataframe for heat buses
     heat_buses = (
         gpd.GeoDataFrame(
@@ -90,7 +87,7 @@ def insert_buses(carrier, scenario):
     heat_buses.carrier = carrier
     heat_buses.x = heat_buses.geom.x
     heat_buses.y = heat_buses.geom.y
-    heat_buses.bus_id = range(next_bus_id, next_bus_id + len(heat_buses))
+    heat_buses.bus_id = db.next_etrago_id("bus", len(heat_buses.index))
 
     # Insert data into database
     heat_buses.to_postgis(
@@ -164,10 +161,7 @@ def insert_store(scenario, carrier):
 
     water_tank_bus = dh_bus.copy()
     water_tank_bus.carrier = carrier + "_store"
-    water_tank_bus.bus_id = range(
-        db.next_etrago_id("bus"),
-        db.next_etrago_id("bus") + len(water_tank_bus),
-    )
+    water_tank_bus.bus_id = db.next_etrago_id("bus", len(water_tank_bus.index))
 
     water_tank_bus.to_postgis(
         targets["heat_buses"]["table"],
@@ -190,10 +184,7 @@ def insert_store(scenario, carrier):
                 "marginal_cost"
             ]["water_tank_charger"],
             "p_nom_extendable": True,
-            "link_id": range(
-                db.next_etrago_id("link"),
-                db.next_etrago_id("link") + len(water_tank_bus),
-            ),
+            "link_id": db.next_etrago_id("link", len(water_tank_bus.index)),
         }
     )
 
@@ -218,10 +209,7 @@ def insert_store(scenario, carrier):
                 "marginal_cost"
             ]["water_tank_discharger"],
             "p_nom_extendable": True,
-            "link_id": range(
-                db.next_etrago_id("link"),
-                db.next_etrago_id("link") + len(water_tank_bus),
-            ),
+            "link_id": db.next_etrago_id("link", len(water_tank_bus.index)),
         }
     )
 
@@ -245,9 +233,7 @@ def insert_store(scenario, carrier):
                 f"{carrier.split('_')[0]}_water_tank"
             ],
             "e_nom_extendable": True,
-            "store_id": range(
-                db.next_etrago_id("store"),
-                db.next_etrago_id("store") + len(water_tank_bus),
+            "store_id": db.next_etrago_id("store", len(water_tank_bus.index)
             ),
         }
     )
@@ -335,15 +321,13 @@ def insert_rural_direct_heat(scenario):
         print(f"No rural solar thermal in scenario {scenario}.")
         return
 
-    new_id = db.next_etrago_id("generator")
-
     generator = pd.DataFrame(
         data={
             "scn_name": scenario,
             "carrier": "rural_solar_thermal",
             "bus": rural_solar_thermal.heat_bus,
             "p_nom": rural_solar_thermal.capacity,
-            "generator_id": range(new_id, new_id + len(rural_solar_thermal)),
+            "generator_id": db.next_etrago_id("generator", len(rural_solar_thermal.index)),
         }
     )
 
@@ -474,7 +458,6 @@ def insert_central_direct_heat(scenario):
         index_col="id",
     )
 
-    new_id = db.next_etrago_id("generator")
 
     generator = pd.DataFrame(
         data={
@@ -482,7 +465,7 @@ def insert_central_direct_heat(scenario):
             "carrier": central_thermal.carrier,
             "bus": map_dh_id_bus_id.bus_id[central_thermal.index],
             "p_nom": central_thermal.capacity,
-            "generator_id": range(new_id, new_id + len(central_thermal)),
+            "generator_id": db.next_etrago_id("generator", len(central_thermal.index)),
         }
     )
 
@@ -623,7 +606,7 @@ def insert_central_gas_boilers(scenario):
     central_boilers.drop(["capacity"], axis=1, inplace=True)
 
     # Set index
-    central_boilers.index += db.next_etrago_id("link")
+    central_boilers.index = db.next_etrago_id("link", len(central_boilers.index))
     central_boilers.index.name = "link_id"
 
     # Set carrier name
@@ -717,7 +700,7 @@ def insert_rural_gas_boilers(scenario):
     rural_boilers.drop(["capacity"], axis=1, inplace=True)
 
     # Set index
-    rural_boilers.index += db.next_etrago_id("link")
+    rural_boilers.index = db.next_etrago_id("link", len(rural_boilers.index))
     rural_boilers.index.name = "link_id"
 
     # Set carrier name

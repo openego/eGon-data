@@ -364,9 +364,6 @@ def insert_power_to_heat_per_level(
         lambda x: LineString([x["geom_power"], x["geom_heat"]]), axis=1
     )
 
-    # Choose next unused link id
-    next_link_id = db.next_etrago_id("link")
-
     # Initilize dataframe of links
     links = (
         gpd.GeoDataFrame(
@@ -391,7 +388,7 @@ def insert_power_to_heat_per_level(
     links.bus1 = gdf.heat_bus.values
     links.p_nom = gdf.capacity.values
     links.topo = gdf.geometry.values
-    links.link_id = range(next_link_id, next_link_id + len(links))
+    links.link_id = db.next_etrago_id("link", len(links))
 
     # Insert data into database
     links.to_postgis(
