@@ -1,3 +1,5 @@
+import re
+
 from matplotlib import pyplot as plt
 from shapely.geometry import MultiPoint, Point
 import geopandas as gpd
@@ -370,7 +372,7 @@ def wind_power_states(
     # installed capacity is bigger than max_power_mv
     hvmv_substation = hvmv_substation.to_crs(3035)
     hvmv_substation["voltage"] = hvmv_substation["voltage"].apply(
-        lambda x: int(x.split(";")[0])
+        lambda x: int(re.split(";|:", x)[0])
     )
     hv_substations = hvmv_substation[hvmv_substation["voltage"] >= 110000]
     hv_substations = hv_substations.unary_union  # join all the hv_substations
