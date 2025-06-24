@@ -164,11 +164,7 @@ def buses(scenario, sources, targets):
 
     central_buses = central_buses_pypsaeur(sources, scenario)
 
-    next_bus_id = db.next_etrago_id("bus")
-
-    central_buses["bus_id"] = central_buses.reset_index().index + next_bus_id
-
-    next_bus_id += len(central_buses)
+    central_buses["bus_id"] = db.next_etrago_id("bus", len(central_buses))
 
     # if in test mode, add bus in center of Germany
     if config.settings()["egon-data"]["--dataset-boundary"] != "Everything":
@@ -176,10 +172,10 @@ def buses(scenario, sources, targets):
             [
                 central_buses,
                 pd.DataFrame(
-                    index=[central_buses.bus_id.max() + 1],
+                    index=[db.next_etrago_id("bus")],
                     data={
                         "scn_name": scenario,
-                        "bus_id": next_bus_id,
+                        "bus_id": db.next_etrago_id("bus"),
                         "x": 10.4234469,
                         "y": 51.0834196,
                         "country": "DE",
@@ -190,7 +186,6 @@ def buses(scenario, sources, targets):
             ],
             ignore_index=True,
         )
-        next_bus_id += 1
 
     # Add buses for other voltage levels
     foreign_buses = get_cross_border_buses(scenario, sources)
@@ -204,10 +199,10 @@ def buses(scenario, sources, targets):
                 [
                     central_buses,
                     pd.DataFrame(
-                        index=[next_bus_id],
+                        index=[db.next_etrago_id("bus")],
                         data={
                             "scn_name": scenario,
-                            "bus_id": next_bus_id,
+                            "bus_id": db.next_etrago_id("bus"),
                             "x": central_buses[
                                 central_buses.country == cntr
                             ].x.unique()[0],
@@ -222,17 +217,16 @@ def buses(scenario, sources, targets):
                 ],
                 ignore_index=True,
             )
-            next_bus_id += 1
 
         if 220.0 in vnom_per_country[cntr]:
             central_buses = pd.concat(
                 [
                     central_buses,
                     pd.DataFrame(
-                        index=[next_bus_id],
+                        index=[db.next_etrago_id("bus")],
                         data={
                             "scn_name": scenario,
-                            "bus_id": next_bus_id,
+                            "bus_id": db.next_etrago_id("bus"),
                             "x": central_buses[
                                 central_buses.country == cntr
                             ].x.unique()[0],
@@ -247,7 +241,6 @@ def buses(scenario, sources, targets):
                 ],
                 ignore_index=True,
             )
-            next_bus_id += 1
 
     # Add geometry column
     central_buses = gpd.GeoDataFrame(

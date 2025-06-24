@@ -521,8 +521,7 @@ def insert_generators(gen):
     c = {"scn_name": "eGon2035", "carrier": "CH4"}
     gen = gen.assign(**c)
 
-    new_id = db.next_etrago_id("generator")
-    gen["generator_id"] = range(new_id, new_id + len(gen))
+    gen["generator_id"] = db.next_etrago_id("generator", len(gen))
     gen["p_nom"] = gen["cap_2035"]
     gen["marginal_cost"] = (
         gen["share_LNG_2035"] * scn_params["marginal_cost"]["CH4"] * 1.3
@@ -754,8 +753,7 @@ def insert_ch4_demand(global_demand, normalized_ch4_demandTS):
     c = {"scn_name": scn_name, "carrier": carrier}
     global_demand = global_demand.assign(**c)
 
-    new_id = db.next_etrago_id("load")
-    global_demand["load_id"] = range(new_id, new_id + len(global_demand))
+    global_demand["load_id"] = db.next_etrago_id("load", len(global_demand))
 
     ch4_demand_TS = global_demand.copy()
     # Remove useless columns
@@ -950,11 +948,8 @@ def insert_storage(ch4_storage_capacities):
     c = {"scn_name": "eGon2035", "carrier": "CH4"}
     ch4_storage_capacities = ch4_storage_capacities.assign(**c)
 
-    new_id = db.next_etrago_id("store")
-    ch4_storage_capacities["store_id"] = range(
-        new_id, new_id + len(ch4_storage_capacities)
-    )
-
+    ch4_storage_capacities["store_id"] = db.next_etrago_id(
+        "store", len(ch4_storage_capacities))
     ch4_storage_capacities.drop(
         ["Country"],
         axis=1,
@@ -1128,10 +1123,8 @@ def insert_power_to_h2_demand(global_power_to_h2_demand):
     c = {"scn_name": scn_name, "carrier": carrier}
     global_power_to_h2_demand = global_power_to_h2_demand.assign(**c)
 
-    new_id = db.next_etrago_id("load")
-    global_power_to_h2_demand["load_id"] = range(
-        new_id, new_id + len(global_power_to_h2_demand)
-    )
+    global_power_to_h2_demand["load_id"] = db.next_etrago_id(
+        "load", len(global_power_to_h2_demand))
 
     global_power_to_h2_demand = global_power_to_h2_demand.rename(
         columns={"GlobD_2035": "p_set"}
@@ -1305,10 +1298,8 @@ def calculate_ch4_grid_capacities():
         ]
     )
 
-    new_id = db.next_etrago_id("link")
-    Neighbouring_pipe_capacities_list["link_id"] = range(
-        new_id, new_id + len(Neighbouring_pipe_capacities_list)
-    )
+    Neighbouring_pipe_capacities_list["link_id"] = db.next_etrago_id(
+        "link", len(Neighbouring_pipe_capacities_list))
 
     # Border crossing CH4 pipelines between DE and neighbouring countries
     DE_pipe_capacities_list = pipe_capacities_list[
@@ -1618,8 +1609,7 @@ def insert_ocgt_abroad():
     df_ocgt["p_nom"] = df_ocgt["p_nom"] / scn_params["efficiency"][carrier]
 
     # Select next id value
-    new_id = db.next_etrago_id("link")
-    df_ocgt["link_id"] = range(new_id, new_id + len(df_ocgt))
+    df_ocgt["link_id"] = db.next_etrago_id("link", len(df_ocgt))
 
     # Insert data to db
     df_ocgt.to_sql(

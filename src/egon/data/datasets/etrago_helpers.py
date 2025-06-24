@@ -63,15 +63,12 @@ def finalize_bus_insertion(bus_data, carrier, target, scenario="eGon2035"):
     bus_data : geopandas.GeoDataFrame
         GeoDataFrame containing the inserted bus data.
     """
-    # Select unused index of buses
-    next_bus_id = db.next_etrago_id("bus")
-
     # Insert values into dataframe
     bus_data["scn_name"] = scenario
     bus_data["carrier"] = carrier
     bus_data["x"] = bus_data.geom.x
     bus_data["y"] = bus_data.geom.y
-    bus_data["bus_id"] = range(next_bus_id, next_bus_id + len(bus_data))
+    bus_data["bus_id"] = db.next_etrago_id("bus", len(bus_data))
 
     # Insert data into database
     bus_data.to_postgis(

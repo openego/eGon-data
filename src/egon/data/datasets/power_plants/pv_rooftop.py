@@ -198,9 +198,6 @@ def pv_rooftop_per_mv_grid_and_scenario(scenario, level):
 
         capacities = demand["share_country"].mul(target)
 
-    # Select next id value
-    new_id = db.next_etrago_id("generator")
-
     # Store data in dataframe
     pv_rooftop = pd.DataFrame(
         data={
@@ -208,7 +205,7 @@ def pv_rooftop_per_mv_grid_and_scenario(scenario, level):
             "carrier": "solar_rooftop",
             "bus": demand.index,
             "p_nom": capacities,
-            "generator_id": range(new_id, new_id + len(demand)),
+            "generator_id": db.next_etrago_id("generator", len(demand)),
         }
     )
 

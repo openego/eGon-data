@@ -122,8 +122,7 @@ def insert_h2_to_ch4_to_h2():
             table["p_nom_extendable"] = True
             table["capital_cost"] = scn_params["capital_cost"][carrier]
             table["lifetime"] = scn_params["lifetime"][carrier]
-            new_id = db.next_etrago_id("link")
-            table["link_id"] = range(new_id, new_id + len(table))
+            table["link_id"] = db.next_etrago_id("link", len(table))
 
 
             table.to_postgis(

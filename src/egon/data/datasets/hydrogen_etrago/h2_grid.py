@@ -115,9 +115,8 @@ def insert_h2_pipelines(scn_name):
         H2_grid_gdf = gpd.GeoDataFrame(H2_grid_df, geometry='geom', crs=4326)
         
         scn_params = get_sector_parameters("gas", scn_name)        
-        next_link_id = db.next_etrago_id('link')
         
-        H2_grid_gdf['link_id'] = range(next_link_id, next_link_id + len(H2_grid_gdf))
+        H2_grid_gdf['link_id'] = db.next_etrago_id('link', len(H2_grid_gdf))
         H2_grid_gdf['scn_name'] = scn_name
         H2_grid_gdf['carrier'] = 'H2_grid'
         H2_grid_gdf['Planerische Inbetriebnahme'] = H2_grid_gdf['Planerische Inbetriebnahme'].astype(str).apply(
@@ -472,8 +471,6 @@ def connect_saltcavern_to_h2_grid(scn_name):
                         """
     salt_caverns = gpd.read_postgis(salt_caverns_query, engine)
 
-    max_link_id = db.next_etrago_id('link')
-    next_link_id = count(start=max_link_id, step=1) 
     scn_params = get_sector_parameters("gas", scn_name) 
                 
     H2_coords = np.array([(point.x, point.y) for point in h2_buses.geometry])
@@ -489,7 +486,7 @@ def connect_saltcavern_to_h2_grid(scn_name):
             'scn_name': scn_name,
             'bus0': nearest_h2_bus['bus_id'],
             'bus1': bus_saltcavern['bus_id'],
-            'link_id': next(next_link_id),
+            'link_id': db.next_etrago_id('link'),
             'carrier': 'H2_saltcavern',
             'lifetime':25,
             'p_nom_extendable': True,
@@ -606,8 +603,6 @@ def connect_h2_grid_to_neighbour_countries(scn_name):
 
     
     connection_links = []        
-    max_link_id = db.next_etrago_id('link')
-    next_max_link_id = count(start=max_link_id, step=1)
 
     for inland_name, country_code in abroad_con_buses:
         # filter out germand h2_buses for connecting neighbour-countries
@@ -634,7 +629,7 @@ def connect_h2_grid_to_neighbour_countries(scn_name):
         connection_links.append({
             'scn_name': scn_name,
             'carrier': 'H2_grid',
-            'link_id': next(next_max_link_id),
+            'link_id': db.next_etrago_id('link'),
             'bus0': i_bus['bus_id'],
             'bus1': nearest_abroad_bus['bus_id'],
             'p_nom': p_nom_value,
