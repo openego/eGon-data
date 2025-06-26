@@ -178,7 +178,11 @@ from sqlalchemy.orm import Session
     "--scenarios",
     default=["status2023", "eGon2035"],
     metavar="SCENARIOS",
-    help=("List of scenario names for which a data model shall be created."),
+    help=(
+        "Scenario name for which a data model shall be created."
+        " If you want to create multiple scenarios, set the parameter multiple"
+        " times, e.g. --scenarios eGon2035 --scenarios status2023"
+        ),
     multiple=True,
     show_default=True,
 )
