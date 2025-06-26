@@ -387,10 +387,8 @@ def read_network(planning_horizon=3):
     else:
         target_file = (
             Path(".")
-            / "data_bundle_powerd_data"
+            / "data_bundle_egon_data"
             / "pypsa_eur"
-            / "21122024_3h_clean_run"
-            / "results"
             / "postnetworks"
             / "base_s_39_lc1.25__cb40ex0-T-H-I-B-solar+p3-dist1_2045.nc"
         )
@@ -1683,10 +1681,8 @@ def prepared_network(planning_horizon=3):
     else:
         target_file = (
             Path(".")
-            / "data_bundle_powerd_data"
+            / "data_bundle_egon_data"
             / "pypsa_eur"
-            / "21122024_3h_clean_run"
-            / "results"
             / "prenetworks"
             / "prenetwork_post-manipulate_pre-solve"
             / "base_s_39_lc1.25__cb40ex0-T-H-I-B-solar+p3-dist1_2045.nc"

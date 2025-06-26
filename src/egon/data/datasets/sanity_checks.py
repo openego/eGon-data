@@ -2046,7 +2046,7 @@ def etrago_eGon2035_gas_DE():
         p_NG = p_NG * conversion_factor
 
         basename = "Biogaspartner_Einspeiseatlas_Deutschland_2021.xlsx"
-        target_file = Path(".") / "datasets" / "gas_data" / basename
+        target_file = Path(".") / "data_bundle_egon_data" / "gas_data" / basename
 
         conversion_factor_b = 0.01083  # m^3/h to MWh/h
         p_biogas = (

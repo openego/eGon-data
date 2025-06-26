@@ -700,7 +700,7 @@ def download_industrial_gas_demand():
             """
         )
         shutil.copytree(
-            "data_bundle_powerd_data/industrial_gas_demand",
+            "data_bundle_egon_data/industrial_gas_demand",
             "datasets/gas_data/demand",
             dirs_exist_ok=True,
         )

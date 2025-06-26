@@ -42,7 +42,12 @@ def insert_hydrogen_buses(scn_name):
 
     """
     
-    h2_input= pd.read_csv(Path(".")/"h2_grid_nodes.csv")   
+    h2_input= pd.read_csv(
+        Path(".")
+        / "data_bundle_egon_data"
+        / "hydrogen_network"
+        / "h2_grid_nodes.csv"
+    )
     h2_input.geom = h2_input.geom.apply(lambda wkb_hex: loads(bytes.fromhex(wkb_hex)))
     
     sources = config.datasets()["etrago_hydrogen"]["sources"]
