@@ -659,7 +659,7 @@ def import_ch4_demandTS():
     neighbors = network.buses[network.buses.country != "DE"]
     neighbors = neighbors[
         (neighbors["country"].isin(countries))
-        & (neighbors["carrier"] == "residential rural heat")
+        & (neighbors["carrier"].str.contains("rural heat"))
     ].drop_duplicates(subset="country")
 
     neighbor_loads = network.loads[network.loads.bus.isin(neighbors.index)]
@@ -667,8 +667,8 @@ def import_ch4_demandTS():
         neighbor_loads.index.isin(network.loads_t.p_set.columns)
     ]
     neighbor_loads_t = network.loads_t["p_set"][neighbor_loads_t_index]
-    Norway_global_demand = neighbor_loads_t[
-        "NO3 0 residential rural heat"
+    Norway_global_demand = neighbor_loads_t.loc[
+        :, neighbor_loads[(neighbor_loads.index.str.startswith("NO"))].index
     ].sum()
 
     for i in neighbor_loads_t.columns:
