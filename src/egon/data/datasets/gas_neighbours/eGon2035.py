@@ -704,9 +704,9 @@ def insert_ch4_demand(global_demand, normalized_ch4_demandTS):
         f"""
         DELETE FROM
         {
-            targets['load_time series']['schema']
+            targets['load_timeseries']['schema']
         }.{
-            targets['load_time series']['table']
+            targets['load_timeseries']['table']
         }
         WHERE "load_id" IN (
             SELECT load_id FROM
@@ -796,9 +796,9 @@ def insert_ch4_demand(global_demand, normalized_ch4_demandTS):
 
     # Insert data to DB
     ch4_demand_TS.to_sql(
-        targets["load_time series"]["table"],
+        targets["load_timeseries"]["table"],
         db.engine(),
-        schema=targets["load_time series"]["schema"],
+        schema=targets["load_timeseries"]["schema"],
         index=False,
         if_exists="append",
     )
