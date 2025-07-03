@@ -1119,7 +1119,7 @@ def insert_power_to_h2_demand(global_power_to_h2_demand):
         map_buses
     )
     global_power_to_h2_demand.loc[:, "bus"] = (
-        get_foreign_bus_id()
+        get_foreign_bus_id(scenario="eGon2035")
         .loc[global_power_to_h2_demand.loc[:, "Node/Line"]]
         .values
     )
@@ -1559,7 +1559,7 @@ def calculate_ocgt_capacities():
 
     # Attribute bus0 and bus1
     df_ocgt["bus0"] = get_foreign_gas_bus_id()[df_ocgt.index]
-    df_ocgt["bus1"] = get_foreign_bus_id()[df_ocgt.index]
+    df_ocgt["bus1"] = get_foreign_bus_id(scenario="eGon2035")[df_ocgt.index]
     df_ocgt = df_ocgt.groupby(by=["bus0", "bus1"], as_index=False).sum()
 
     return df_ocgt
