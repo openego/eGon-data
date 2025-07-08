@@ -443,13 +443,11 @@ def load_sources_and_targets(
     Parameters
     ----------
         name (str): Name of the dataset.
-        version (str): Version of the dataset.
 
     Returns
     -------
         Tuple[DatasetSources, DatasetTargets]
     """
-
     with db.session_scope() as session:
         dataset_entry = (
             session.query(Model)
@@ -457,13 +455,14 @@ def load_sources_and_targets(
             .first()
         )
 
-    if dataset_entry is None:
-        raise ValueError(f"Dataset '{name}' not found in the database.")
+        if dataset_entry is None:
+            raise ValueError(f"Dataset '{name}' not found in the database.")
 
-    raw_sources = dataset_entry.sources or {}
-    raw_targets = dataset_entry.targets or {}
+        # Extract raw JSON dicts within the session
+        raw_sources = dict(dataset_entry.sources or {})
+        raw_targets = dict(dataset_entry.targets or {})
 
-    # Recreate DatasetSources and DatasetTargets from dictionaries
+    # Recreate objects *outside the session* (now safe)
     sources = DatasetSources(**raw_sources)
     targets = DatasetTargets(**raw_targets)
 
