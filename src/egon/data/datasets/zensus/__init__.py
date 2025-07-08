@@ -14,11 +14,22 @@ import pandas as pd
 
 from egon.data import db, subprocess
 from egon.data.config import settings
-from egon.data.datasets import Dataset
+from egon.data.datasets import Dataset, DatasetSources, DatasetTargets
 import egon.data.config
 
 
 class ZensusPopulation(Dataset):
+    sources = DatasetSources(
+        urls={
+            "original_data":
+                "https://www.zensus2011.de/SharedDocs/Downloads/DE/Pressemitteilung/DemografischeGrunddaten/csv_Bevoelkerung_100m_Gitter.zip?__blob=publicationFile&v=3"}
+    )
+
+    targets = DatasetTargets(
+        files = {"zensus_population": "zensus_population/csv_Bevoelkerung_100m_Gitter.zip"},
+        tables= {"zensus_population": "society.destatis_zensus_population_per_ha"}
+        )
+
     def __init__(self, dependencies):
         super().__init__(
             name="ZensusPopulation",
@@ -28,11 +39,38 @@ class ZensusPopulation(Dataset):
                 download_zensus_pop,
                 create_zensus_pop_table,
                 population_to_postgres,
-            ),
+            )
         )
 
 
 class ZensusMiscellaneous(Dataset):
+    sources = DatasetSources(
+        urls={
+            "zensus_households":
+                'https://www.zensus2011.de/SharedDocs/Downloads/DE/Pressemitteilung/DemografischeGrunddaten/csv_Haushalte_100m_Gitter.zip?__blob=publicationFile&v=2',
+            "zensus_buildings":
+                'https://www.zensus2011.de/SharedDocs/Downloads/DE/Pressemitteilung/DemografischeGrunddaten/csv_Gebaeude_100m_Gitter.zip?__blob=publicationFile&v=2',
+            "zensus_apartments":
+                'https://www.zensus2011.de/SharedDocs/Downloads/DE/Pressemitteilung/DemografischeGrunddaten/csv_Wohnungen_100m_Gitter.zip?__blob=publicationFile&v=5'
+            })
+    targets = DatasetTargets(
+        files = {
+            "zensus_households":
+                "zensus_population/csv_Haushalte_100m_Gitter.zip",
+            "zensus_buildings":
+                "zensus_population/csv_Gebaeude_100m_Gitter.zip",
+            "zensus_apartments":
+                "zensus_population/csv_Wohnungen_100m_Gitter.zip"
+            },
+        tables = {
+            "zensus_households":
+                "society.egon_destatis_zensus_household_per_ha",
+            "zensus_buildings":
+                "society.egon_destatis_zensus_building_per_ha",
+            "zensus_apartments":
+                "society.egon_destatis_zensus_apartment_per_ha",
+            }
+        )
     def __init__(self, dependencies):
         super().__init__(
             name="ZensusMiscellaneous",
