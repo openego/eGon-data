@@ -12,7 +12,7 @@ from sqlalchemy.ext.declarative import declarative_base
 import pandas as pd
 
 from egon.data import config, db
-from egon.data.datasets import Dataset
+from egon.data.datasets import Dataset, DatasetSources, DatasetTargets
 from egon.data.datasets.district_heating_areas import EgonDistrictHeatingAreas
 from egon.data.datasets.heat_supply.district_heating import (
     backup_gas_boilers,
@@ -85,13 +85,12 @@ def district_heating():
     None.
 
     """
-    sources = config.datasets()["heat_supply"]["sources"]
-    targets = config.datasets()["heat_supply"]["targets"]
+    sources = HeatSupply.sources
+    targets = HeatSupply.targets
 
     db.execute_sql(
         f"""
-        DELETE FROM {targets['district_heating_supply']['schema']}.
-        {targets['district_heating_supply']['table']}
+        DELETE FROM {HeatSupply.targets.tables["district_heating_supply"]}
         """
     )
 
@@ -101,12 +100,13 @@ def district_heating():
         supply["scenario"] = scenario
 
         supply.to_postgis(
-            targets["district_heating_supply"]["table"],
-            schema=targets["district_heating_supply"]["schema"],
+            HeatSupply.targets.get_table_name("district_heating_supply"),
+            schema=HeatSupply.targets.get_table_schema(
+                "district_heating_supply"
+            ),
             con=db.engine(),
             if_exists="append",
         )
-
 
         # Do not check data for status quo as is it not listed in the table
         if "status" not in scenario:
@@ -115,10 +115,8 @@ def district_heating():
                 f"""
                 SELECT a.carrier,
                 (SUM(a.capacity) - b.capacity) / SUM(a.capacity) as deviation
-                FROM {targets['district_heating_supply']['schema']}.
-                {targets['district_heating_supply']['table']} a,
-                {sources['scenario_capacities']['schema']}.
-                {sources['scenario_capacities']['table']} b
+                FROM {targets.tables['district_heating_supply']} a,
+                {sources.tables['scenario_capacities']} b
                 WHERE a.scenario = '{scenario}'
                 AND b.scenario_name = '{scenario}'
                 AND b.carrier = CONCAT('urban_central_', a.carrier)
@@ -136,12 +134,11 @@ def district_heating():
         backup = backup_gas_boilers(scenario)
 
         backup.to_postgis(
-            targets["district_heating_supply"]["table"],
-            schema=targets["district_heating_supply"]["schema"],
+            targets.get_table_name("district_heating_supply"),
+            schema=targets.get_table_schema("district_heating_supply"),
             con=db.engine(),
             if_exists="append",
         )
-
 
         # Insert resistive heaters which are not available in status quo
         if "status" not in scenario:
@@ -149,8 +146,8 @@ def district_heating():
 
             if not backup_rh.empty:
                 backup_rh.to_postgis(
-                    targets["district_heating_supply"]["table"],
-                    schema=targets["district_heating_supply"]["schema"],
+                    targets.get_table_name("district_heating_supply"),
+                    schema=targets.get_table_schema("district_heating_supply"),
                     con=db.engine(),
                     if_exists="append",
                 )
@@ -164,13 +161,12 @@ def individual_heating():
     None.
 
     """
-    targets = config.datasets()["heat_supply"]["targets"]
+    targets = HeatSupply.targets
 
     for scenario in config.settings()["egon-data"]["--scenarios"]:
         db.execute_sql(
             f"""
-            DELETE FROM {targets['individual_heating_supply']['schema']}.
-            {targets['individual_heating_supply']['table']}
+            DELETE FROM {targets.tables['individual_heating_supply']}
             WHERE scenario = '{scenario}'
             """
         )
@@ -186,8 +182,8 @@ def individual_heating():
         supply["scenario"] = scenario
 
         supply.to_postgis(
-            targets["individual_heating_supply"]["table"],
-            schema=targets["individual_heating_supply"]["schema"],
+            targets.get_table_name("individual_heating_supply"),
+            schema=targets.get_table_schema("individual_heating_supply"),
             con=db.engine(),
             if_exists="append",
         )
@@ -392,6 +388,28 @@ class HeatSupply(Dataset):
     name: str = "HeatSupply"
     #:
     version: str = "0.0.12"
+
+    sources = DatasetSources(
+        tables={
+            "scenario_capacities": "supply.egon_scenario_capacities",
+            "district_heating_areas": "demand.egon_district_heating_areas",
+            "chp": "supply.egon_chp_plants",
+            "federal_states": "boundaries.vg250_lan",
+            "heat_demand": "demand.egon_peta_heat",
+            "map_zensus_grid": "boundaries.egon_map_zensus_grid_districts",
+            "map_vg250_grid": "boundaries.egon_map_mvgriddistrict_vg250",
+            "mv_grids": "grid.egon_mv_grid_district",
+            "map_dh": "demand.egon_map_zensus_district_heating_areas",
+            "etrago_buses": "grid.egon_etrago_bus",
+        }
+    )
+
+    targets = DatasetTargets(
+        tables={
+            "district_heating_supply": "supply.egon_district_heating",
+            "individual_heating_supply": "supply.egon_individual_heating",
+        }
+    )
 
     def __init__(self, dependencies):
         super().__init__(
