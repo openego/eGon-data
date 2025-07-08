@@ -80,6 +80,9 @@ class Model(Base):
     version = Column(String, nullable=False)
     epoch = Column(Integer, default=0)
     scenarios = Column(String, nullable=False)
+    sources = Column(JSONB, nullable=True)
+    targets = Column(JSONB, nullable=True)
+
     dependencies = orm.relationship(
         "Model",
         secondary=DependencyGraph,
@@ -312,7 +315,10 @@ class Dataset:
             name=self.name,
             version=self.version,
             scenarios=config.settings()["egon-data"]["--scenarios"],
+            sources=self.sources.to_dict() if hasattr(self.sources, "to_dict") else dict(self.sources),
+            targets=self.targets.to_dict() if hasattr(self.targets, "to_dict") else dict(self.targets),
         )
+
         dependencies = (
             session.query(Model)
             .filter(
