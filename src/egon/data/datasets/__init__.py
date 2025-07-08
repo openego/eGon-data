@@ -433,3 +433,38 @@ class Dataset:
                 f"Dataset '{cls.__name__}' does not define a valid class-level 'targets'.",
                 stacklevel=2
             )
+
+def load_sources_and_targets(
+    name: str,
+) -> tuple[DatasetSources, DatasetTargets]:
+    """
+    Load DatasetSources and DatasetTargets from the datasets table.
+
+    Parameters
+    ----------
+        name (str): Name of the dataset.
+        version (str): Version of the dataset.
+
+    Returns
+    -------
+        Tuple[DatasetSources, DatasetTargets]
+    """
+
+    with db.session_scope() as session:
+        dataset_entry = (
+            session.query(Model)
+            .filter_by(name=name)
+            .first()
+        )
+
+    if dataset_entry is None:
+        raise ValueError(f"Dataset '{name}' not found in the database.")
+
+    raw_sources = dataset_entry.sources or {}
+    raw_targets = dataset_entry.targets or {}
+
+    # Recreate DatasetSources and DatasetTargets from dictionaries
+    sources = DatasetSources(**raw_sources)
+    targets = DatasetTargets(**raw_targets)
+
+    return sources, targets
