@@ -3,15 +3,16 @@
 from __future__ import annotations
 
 from collections import abc
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from functools import partial, reduce, update_wrapper
-from typing import Callable, Iterable, Set, Tuple, Union
+from typing import Callable, Dict, Iterable, Set, Tuple, Union
 import re
 
 from airflow.models.baseoperator import BaseOperator as Operator
 from airflow.operators.python import PythonOperator
 from sqlalchemy import Column, ForeignKey, Integer, String, Table, orm, tuple_
 from sqlalchemy.ext.declarative import declarative_base
+from sqlalchemy.dialects.postgresql import JSONB
 
 from egon.data import config, db, logger
 
@@ -87,6 +88,78 @@ class Model(Base):
         backref=orm.backref("dependents", cascade="all, delete"),
     )
 
+
+@dataclass
+class DatasetSources:
+    tables: Dict[str, str] = field(default_factory=dict)
+    files: Dict[str, str] = field(default_factory=dict)
+    urls: Dict[str, str] = field(default_factory=dict)
+
+    def empty(self):
+        return not (self.tables or self.files or self.urls)
+
+    def get_table_schema(self, key: str) -> str:
+        """Returns the schema of the table identified by key."""
+        try:
+            return self.tables[key].split(".", 1)[0]
+        except (KeyError, AttributeError, IndexError):
+            raise ValueError(f"Invalid table reference: {self.tables.get(key)}")
+
+    def get_table_name(self, key: str) -> str:
+        """Returns the table name of the table identified by key."""
+        try:
+            return self.tables[key].split(".", 1)[1]
+        except (KeyError, AttributeError, IndexError):
+            raise ValueError(f"Invalid table reference: {self.tables.get(key)}")
+
+    def to_dict(self):
+        return {
+            "tables": self.tables,
+            "urls": self.urls,
+            "files": self.files,
+        }
+
+    @classmethod
+    def from_dict(cls, data):
+        return cls(
+            tables=data.get("tables", {}),
+            urls=data.get("urls", {}),
+            files=data.get("files", {}),
+        )
+
+@dataclass
+class DatasetTargets:
+    tables: Dict[str, str] = field(default_factory=dict)
+    files: Dict[str, str] = field(default_factory=dict)
+
+    def empty(self):
+        return not (self.tables or self.files)
+
+    def get_table_schema(self, key: str) -> str:
+        """Returns the schema of the table identified by key."""
+        try:
+            return self.tables[key].split(".", 1)[0]
+        except (KeyError, AttributeError, IndexError):
+            raise ValueError(f"Invalid table reference: {self.tables.get(key)}")
+
+    def get_table_name(self, key: str) -> str:
+        """Returns the table name of the table identified by key."""
+        try:
+            return self.tables[key].split(".", 1)[1]
+        except (KeyError, AttributeError, IndexError):
+            raise ValueError(f"Invalid table reference: {self.tables.get(key)}")
+
+    def to_dict(self):
+        return {
+            "tables": self.tables,
+            "files": self.files,
+        }
+
+    def from_dict(cls, data):
+        return cls(
+            tables=data.get("tables", {}),
+            files=data.get("files", {}),
+        )
 
 #: A :class:`Task` is an Airflow :class:`Operator` or any
 #: :class:`Callable <typing.Callable>` taking no arguments and returning
@@ -189,6 +262,12 @@ class Dataset:
     #: and a sequential number in case the data changes without the date
     #: or region changing, for example due to implementation changes.
     version: str
+    #: The sources used by the datasets.
+    #: Could be tables, files and urls
+    sources: DatasetSources = field(init=False)
+    #: The targets created by the datasets.
+    #: Could be tables and files
+    targets: DatasetTargets = field(init=False)
     #: The first task(s) of this :class:`Dataset` will be marked as
     #: downstream of any of the listed dependencies. In case of bare
     #: :class:`Task`, a direct link will be created whereas for a
@@ -258,6 +337,43 @@ class Dataset:
 
     def __post_init__(self):
         self.dependencies = list(self.dependencies)
+
+        class_sources = getattr(type(self), "sources", None)
+
+        if not isinstance(class_sources, DatasetSources):
+            logger.warning(
+                f"Dataset '{type(self).__name__}' has no valid class-level 'sources' attribute. "
+                "Defaulting to empty DatasetSources().",
+                stacklevel=2
+            )
+            self.sources = DatasetSources()
+        else:
+            self.sources = class_sources
+            if self.sources.empty():
+                logger.warning(
+                    f"Dataset '{type(self).__name__}' defines 'sources', but it is empty. "
+                    "Please check if this is intentional.",
+                    stacklevel=2
+                )
+
+
+        class_targets = getattr(type(self), "targets", None)
+
+        if not isinstance(class_targets, DatasetTargets):
+            logger.warning(
+                f"Dataset '{type(self).__name__}' has no valid class-level 'targets' attribute. "
+                "Defaulting to empty DatasetTargets().",
+                stacklevel=2
+            )
+            self.targets = DatasetTargets()
+        else:
+            self.targets = class_targets
+            if self.targets.empty():
+                logger.warning(
+                    f"Dataset '{type(self).__name__}' defines 'targets', but it is empty. "
+                    "Please check if this is intentional.",
+                    stacklevel=2
+                )
         if not isinstance(self.tasks, Tasks_):
             self.tasks = Tasks_(self.tasks)
         if len(self.tasks.last) > 1:
@@ -298,3 +414,16 @@ class Dataset:
         for p in predecessors:
             for first in self.tasks.first:
                 p.set_downstream(first)
+
+    def __init_subclass__(cls) -> None:
+        # Warn about missing or invalid class attributes
+        if not isinstance(getattr(cls, "sources", None), DatasetSources):
+            logger.warning(
+                f"Dataset '{cls.__name__}' does not define a valid class-level 'sources'.",
+                stacklevel=2
+            )
+        if not isinstance(getattr(cls, "targets", None), DatasetTargets):
+            logger.warning(
+                f"Dataset '{cls.__name__}' does not define a valid class-level 'targets'.",
+                stacklevel=2
+            )
