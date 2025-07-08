@@ -421,6 +421,8 @@ class Dataset:
             for first in self.tasks.first:
                 p.set_downstream(first)
 
+        self.register()
+
     def __init_subclass__(cls) -> None:
         # Warn about missing or invalid class attributes
         if not isinstance(getattr(cls, "sources", None), DatasetSources):
@@ -433,6 +435,22 @@ class Dataset:
                 f"Dataset '{cls.__name__}' does not define a valid class-level 'targets'.",
                 stacklevel=2
             )
+
+    def register(self):
+        with db.session_scope() as session:
+            existing = session.query(Model).filter_by(
+                name=self.name
+            ).first()
+
+            if not existing:
+                entry = Model(
+                    name=self.name,
+                    version="will be filled after execution",
+                    scenarios="{}",
+                    sources=self.sources.to_dict(),
+                    targets=self.targets.to_dict()
+                )
+                session.add(entry)
 
 def load_sources_and_targets(
     name: str,
