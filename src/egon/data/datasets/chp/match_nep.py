@@ -66,7 +66,7 @@ def select_chp_from_nep(sources):
     )
 
     # Insert rows from list without a name
-    chp_NEP = chp_NEP.append(
+    chp_NEP = pd.concat([chp_NEP,(
         chp_NEP_data[chp_NEP_data.name.isnull()].loc[
             :,
             [
@@ -80,9 +80,10 @@ def select_chp_from_nep(sources):
                 "federal_state",
             ],
         ]
-    )
+        )
+        ])
     # Insert rows from list with a name
-    chp_NEP = chp_NEP.append(
+    chp_NEP = pd.concat([chp_NEP,(
         chp_NEP_data.groupby(
             [
                 "carrier",
@@ -91,11 +92,12 @@ def select_chp_from_nep(sources):
                 "c2035_chp",
                 "city",
                 "federal_state",
-            ]
-        )["capacity", "c2035_capacity", "city", "federal_state"]
-        .sum()
+            ],
+            group_keys=False,
+        )[["capacity", "c2035_capacity", "city", "federal_state"]]
+        .sum(numeric_only=True)
         .reset_index()
-    ).reset_index()
+    )]).reset_index()
 
     return chp_NEP.drop("index", axis=1)
 
@@ -284,7 +286,7 @@ def match_nep_chp(
 
             # If a plant could be matched, add this to chp_NEP_matched
             if len(selected) > 0:
-                chp_NEP_matched = chp_NEP_matched.append(
+                chp_NEP_matched = pd.concat([chp_NEP_matched,(
                     geopandas.GeoDataFrame(
                         data={
                             "source": "MaStR scaled with NEP 2021 list",
@@ -300,7 +302,7 @@ def match_nep_chp(
                             "voltage_level": selected.voltage_level.head(1),
                         }
                     )
-                )
+                )])
 
                 # Drop matched CHP from chp_NEP
                 chp_NEP = chp_NEP.drop(index)
