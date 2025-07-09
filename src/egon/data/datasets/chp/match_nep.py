@@ -516,7 +516,7 @@ def insert_large_chp(sources, target, EgonChp):
         insert_chp_c, "eGon2035", "CH4"
     ).bus
 
-    insert_chp = assign_use_case(insert_chp, sources)
+    insert_chp = assign_use_case(insert_chp, sources, scenario="eGon2035")
 
     # Delete existing CHP in the target table
     db.execute_sql(
