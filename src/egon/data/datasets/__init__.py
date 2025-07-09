@@ -8,6 +8,8 @@ from functools import partial, reduce, update_wrapper
 from typing import Callable, Dict, Iterable, Set, Tuple, Union
 import re
 
+import json
+from pathlib import Path
 from airflow.models.baseoperator import BaseOperator as Operator
 from airflow.operators.python import PythonOperator
 from sqlalchemy import Column, ForeignKey, Integer, String, Table, orm, tuple_
@@ -485,3 +487,40 @@ def load_sources_and_targets(
     targets = DatasetTargets(**raw_targets)
 
     return sources, targets
+
+
+def export_dataset_io_to_json(
+    output_path: str = "dataset_io_overview.json",
+) -> None:
+    """
+    Export all sources and targets of datasets to a JSON file.
+
+    Parameters
+    ----------
+    output_path : str
+        Path to the output JSON file.
+    """
+
+    result = {}
+
+    with db.session_scope() as session:
+        datasets = session.query(Model).all()
+
+        for dataset in datasets:
+            name = dataset.name
+
+            try:
+                raw_sources = dict(dataset.sources or {})
+                raw_targets = dict(dataset.targets or {})
+
+                result[name] = {
+                    "sources": raw_sources,
+                    "targets": raw_targets,
+                }
+            except Exception as e:
+                print(f"⚠️ Could not process dataset '{name}': {e}")
+
+    # Save to JSON
+    output_file = Path(output_path)
+    output_file.write_text(json.dumps(result, indent=2, ensure_ascii=False))
+    print(f"✅ Dataset I/O overview written to {output_file.resolve()}")
