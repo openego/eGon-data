@@ -20,13 +20,21 @@ from egon.data.datasets import Dataset, DatasetSources, DatasetTargets
 class ZensusPopulation(Dataset):
     sources = DatasetSources(
         urls={
-            "original_data":
-                "https://www.zensus2011.de/SharedDocs/Downloads/DE/Pressemitteilung/DemografischeGrunddaten/csv_Bevoelkerung_100m_Gitter.zip?__blob=publicationFile&v=3"}
+            "original_data": (
+                "https://www.zensus2011.de/SharedDocs/Downloads/DE/"
+                "Pressemitteilung/DemografischeGrunddaten/"
+                "csv_Bevoelkerung_100m_Gitter.zip?__blob=publicationFile&v=3"
+                ),
+            }
     )
 
     targets = DatasetTargets(
-        files = {"zensus_population": "zensus_population/csv_Bevoelkerung_100m_Gitter.zip"},
-        tables= {"zensus_population": "society.destatis_zensus_population_per_ha"}
+        files = {
+            "zensus_population":
+                "zensus_population/csv_Bevoelkerung_100m_Gitter.zip"},
+        tables= {
+            "zensus_population":
+                "society.destatis_zensus_population_per_ha"}
         )
 
     def __init__(self, dependencies):
@@ -45,13 +53,23 @@ class ZensusPopulation(Dataset):
 class ZensusMiscellaneous(Dataset):
     sources = DatasetSources(
         urls={
-            "zensus_households":
-                'https://www.zensus2011.de/SharedDocs/Downloads/DE/Pressemitteilung/DemografischeGrunddaten/csv_Haushalte_100m_Gitter.zip?__blob=publicationFile&v=2',
-            "zensus_buildings":
-                'https://www.zensus2011.de/SharedDocs/Downloads/DE/Pressemitteilung/DemografischeGrunddaten/csv_Gebaeude_100m_Gitter.zip?__blob=publicationFile&v=2',
-            "zensus_apartments":
-                'https://www.zensus2011.de/SharedDocs/Downloads/DE/Pressemitteilung/DemografischeGrunddaten/csv_Wohnungen_100m_Gitter.zip?__blob=publicationFile&v=5'
-            })
+            "zensus_households": (
+                "https://www.zensus2011.de/SharedDocs/Downloads/DE/"
+                "Pressemitteilung/DemografischeGrunddaten/"
+                "csv_Haushalte_100m_Gitter.zip?__blob=publicationFile&v=2"
+            ),
+            "zensus_buildings": (
+                "https://www.zensus2011.de/SharedDocs/Downloads/DE/"
+                "Pressemitteilung/DemografischeGrunddaten/"
+                "csv_Gebaeude_100m_Gitter.zip?__blob=publicationFile&v=2"
+            ),
+            "zensus_apartments": (
+                "https://www.zensus2011.de/SharedDocs/Downloads/DE/"
+                "Pressemitteilung/DemografischeGrunddaten/"
+                "csv_Wohnungen_100m_Gitter.zip?__blob=publicationFile&v=5"
+            ),
+        }
+    )
     targets = DatasetTargets(
         files = {
             "zensus_households":
