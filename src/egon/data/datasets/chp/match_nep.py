@@ -485,20 +485,25 @@ def insert_large_chp(sources, target, EgonChp):
     chp_NEP.to_csv("not_matched_chp.csv")
 
     # Aggregate chp per location and carrier
-    insert_chp = (
-        chp_NEP_matched.groupby(["carrier", "geometry_wkt", "voltage_level"])[
-            ["el_capacity", "th_capacity", "geometry", "MaStRNummer", "source"]
-        ]
-        .sum(numeric_only=False)
-        .reset_index()
+    # devided into numeric and not-numeric columns
+    numeric_cols = ["el_capacity", "th_capacity"]
+    agg_numeric = chp_NEP_matched.groupby(
+        ["carrier", "geometry_wkt", "voltage_level"]
+    )[numeric_cols].sum().reset_index()
+
+    non_numeric_cols = ["geometry", "MaStRNummer", "source"]
+    agg_non_numeric = chp_NEP_matched.drop_duplicates(
+        subset="geometry_wkt")[["geometry_wkt"] + non_numeric_cols
+                               ].set_index("geometry_wkt")
+
+    merged = agg_numeric.set_index("geometry_wkt").join(
+        agg_non_numeric, how="left").reset_index()
+
+    insert_chp = geopandas.GeoDataFrame(
+        merged,
+        geometry="geometry",
+        crs="EPSG:4326"
     )
-    insert_chp.loc[:, "geometry"] = (
-        chp_NEP_matched.drop_duplicates(subset="geometry_wkt")
-        .set_index("geometry_wkt")
-        .loc[insert_chp.set_index("geometry_wkt").index, "geometry"]
-        .values
-    )
-    insert_chp.crs = "EPSG:4326"
     insert_chp_c = insert_chp.copy()
 
     # Assign bus_id
