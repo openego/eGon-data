@@ -336,7 +336,7 @@ def calc_capacities():
         ]
     ).reset_index()
     df_conv_2035 = df_conv_2035.rename(columns={"Node/Line": "index"})
-    grouped_capacities = grouped_capacities.append(df_conv_2035)
+    grouped_capacities = pd.concat([grouped_capacities, df_conv_2035])
 
     # choose capacities for considered countries
     grouped_capacities = grouped_capacities[
@@ -1370,8 +1370,8 @@ def calculate_ch4_grid_capacities():
         cap_DE["p_nom"] = DE_pipe_capacities_list.at[
             country_code, "p_nom"
         ] / len(cap_DE.index)
-        Neighbouring_pipe_capacities_list = (
-            Neighbouring_pipe_capacities_list.append(cap_DE)
+        Neighbouring_pipe_capacities_list = pd.concat(
+            [Neighbouring_pipe_capacities_list, cap_DE]
         )
 
     # Add topo, geom and length

@@ -66,7 +66,7 @@ def select_chp_from_nep(sources):
     )
 
     # Insert rows from list without a name
-    chp_NEP = chp_NEP.append(
+    chp_NEP = pd.concat([chp_NEP,(
         chp_NEP_data[chp_NEP_data.name.isnull()].loc[
             :,
             [
@@ -80,9 +80,10 @@ def select_chp_from_nep(sources):
                 "federal_state",
             ],
         ]
-    )
+        )
+        ])
     # Insert rows from list with a name
-    chp_NEP = chp_NEP.append(
+    chp_NEP = pd.concat([chp_NEP,(
         chp_NEP_data.groupby(
             [
                 "carrier",
@@ -91,11 +92,12 @@ def select_chp_from_nep(sources):
                 "c2035_chp",
                 "city",
                 "federal_state",
-            ]
-        )["capacity", "c2035_capacity", "city", "federal_state"]
-        .sum()
+            ],
+            group_keys=False,
+        )[["capacity", "c2035_capacity", "city", "federal_state"]]
+        .sum(numeric_only=True)
         .reset_index()
-    ).reset_index()
+    )]).reset_index()
 
     return chp_NEP.drop("index", axis=1)
 
@@ -284,7 +286,7 @@ def match_nep_chp(
 
             # If a plant could be matched, add this to chp_NEP_matched
             if len(selected) > 0:
-                chp_NEP_matched = chp_NEP_matched.append(
+                chp_NEP_matched = pd.concat([chp_NEP_matched,(
                     geopandas.GeoDataFrame(
                         data={
                             "source": "MaStR scaled with NEP 2021 list",
@@ -300,7 +302,7 @@ def match_nep_chp(
                             "voltage_level": selected.voltage_level.head(1),
                         }
                     )
-                )
+                )])
 
                 # Drop matched CHP from chp_NEP
                 chp_NEP = chp_NEP.drop(index)
@@ -483,20 +485,25 @@ def insert_large_chp(sources, target, EgonChp):
     chp_NEP.to_csv("not_matched_chp.csv")
 
     # Aggregate chp per location and carrier
-    insert_chp = (
-        chp_NEP_matched.groupby(["carrier", "geometry_wkt", "voltage_level"])[
-            ["el_capacity", "th_capacity", "geometry", "MaStRNummer", "source"]
-        ]
-        .sum(numeric_only=False)
-        .reset_index()
+    # devided into numeric and not-numeric columns
+    numeric_cols = ["el_capacity", "th_capacity"]
+    agg_numeric = chp_NEP_matched.groupby(
+        ["carrier", "geometry_wkt", "voltage_level"]
+    )[numeric_cols].sum().reset_index()
+
+    non_numeric_cols = ["geometry", "MaStRNummer", "source"]
+    agg_non_numeric = chp_NEP_matched.drop_duplicates(
+        subset="geometry_wkt")[["geometry_wkt"] + non_numeric_cols
+                               ].set_index("geometry_wkt")
+
+    merged = agg_numeric.set_index("geometry_wkt").join(
+        agg_non_numeric, how="left").reset_index()
+
+    insert_chp = geopandas.GeoDataFrame(
+        merged,
+        geometry="geometry",
+        crs="EPSG:4326"
     )
-    insert_chp.loc[:, "geometry"] = (
-        chp_NEP_matched.drop_duplicates(subset="geometry_wkt")
-        .set_index("geometry_wkt")
-        .loc[insert_chp.set_index("geometry_wkt").index, "geometry"]
-        .values
-    )
-    insert_chp.crs = "EPSG:4326"
     insert_chp_c = insert_chp.copy()
 
     # Assign bus_id
@@ -509,7 +516,7 @@ def insert_large_chp(sources, target, EgonChp):
         insert_chp_c, "eGon2035", "CH4"
     ).bus
 
-    insert_chp = assign_use_case(insert_chp, sources)
+    insert_chp = assign_use_case(insert_chp, sources, scenario="eGon2035")
 
     # Delete existing CHP in the target table
     db.execute_sql(
