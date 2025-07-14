@@ -138,7 +138,8 @@ def pv_rooftop_per_mv_grid_and_scenario(scenario, level):
         )
 
         demand["share_federal_state"] = demand.groupby(
-            "vg250_lan"
+            "vg250_lan",
+            group_keys = False,
         ).demand.apply(lambda grp: grp / grp.sum())
 
         demand["target_federal_state"] = targets_per_federal_state.capacity[
