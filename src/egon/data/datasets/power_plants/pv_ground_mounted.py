@@ -977,9 +977,9 @@ def insert():
                     print(" -> No additional expansion necessary")
                 print(" ")
 
-                pv_rora = pv_rora.append(rora_i)
-                pv_agri = pv_agri.append(agri_i)
-                pv_exist = pv_exist.append(exist_i)
+                pv_rora = pd.concat([pv_rora, rora_i])
+                pv_agri = pd.concat([pv_agri, agri_i])
+                pv_exist = pd.concat([pv_exist, exist_i])
                 if len(distr_i) > 0:
                     pv_per_distr = pd.concat([pv_per_distr, distr_i])
 
