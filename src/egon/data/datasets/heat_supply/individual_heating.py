@@ -656,6 +656,18 @@ def cascade_per_technology(
             {"bus_id": "mv_grid_id", "share": "capacity"}, axis=1, inplace=True
         )
 
+    elif (tech.index == "gas_boiler") & (scenario == "eGon2035"):
+        append_df = pd.DataFrame(
+            data={
+                "capacity": heat_per_mv.remaining_demand.div(
+                    tech.estimated_flh.values[0]
+                ),
+                "carrier": f"residential_rural_{tech.index}",
+                "mv_grid_id": heat_per_mv.index,
+                "scenario": scenario,
+            }
+        )
+
     elif tech.index in ("gas_boiler", "resistive_heater", "solar_thermal"):
         # Select target value for Germany
         target = db.select_dataframe(
