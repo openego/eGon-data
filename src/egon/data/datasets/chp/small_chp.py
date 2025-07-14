@@ -467,7 +467,8 @@ def extension_industrial(federal_state, additional_capacity, flh_chp, EgonChp):
     industry_areas = db.select_geodataframe(
         f"""
         SELECT
-        SUM(demand) as demand, a.osm_id, ST_Centroid(b.geom) as geom, b.name
+        SUM(demand) as demand, a.osm_id,
+        ST_PointOnSurface(b.geom) as geom, b.name
         FROM
         {sources['industrial_demand_osm']['schema']}.
         {sources['industrial_demand_osm']['table']} a,
