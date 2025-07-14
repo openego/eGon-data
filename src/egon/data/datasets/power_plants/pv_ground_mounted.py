@@ -852,6 +852,12 @@ def insert():
         pv_exist = gpd.GeoDataFrame()
         pv_per_distr = gpd.GeoDataFrame()
 
+        pv_rora_100RE = gpd.GeoDataFrame()
+        pv_agri_100RE = gpd.GeoDataFrame()
+        pv_exist_100RE = gpd.GeoDataFrame()
+        pv_per_distr_100RE = gpd.GeoDataFrame()
+
+
         # 1) scenario: eGon2035
         if (
             "eGon2035"
@@ -1024,6 +1030,16 @@ def insert():
                 con,
             )
 
+            pv_rora_100RE = pv_rora_100RE[
+                pv_rora_100RE["installed capacity in kW"] > 0
+            ]
+            pv_agri_100RE = pv_agri_100RE[
+                pv_agri_100RE["installed capacity in kW"] > 0
+            ]
+            pv_per_distr_100RE = pv_per_distr_100RE[
+                pv_per_distr_100RE["installed capacity in kW"] > 0
+            ]
+
         # ### create map to show distribution of installed capacity
         if show_map == True:
             # 1) eGon2035
@@ -1126,15 +1142,6 @@ def insert():
             )
             plt.savefig("pv_per_distr_map_eGon100RE.png", dpi=300)
 
-        pv_rora_100RE = pv_rora_100RE[
-            pv_rora_100RE["installed capacity in kW"] > 0
-        ]
-        pv_agri_100RE = pv_agri_100RE[
-            pv_agri_100RE["installed capacity in kW"] > 0
-        ]
-        pv_per_distr_100RE = pv_per_distr_100RE[
-            pv_per_distr_100RE["installed capacity in kW"] > 0
-        ]
 
         return (
             pv_rora,
