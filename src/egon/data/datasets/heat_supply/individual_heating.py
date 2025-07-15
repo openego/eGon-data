@@ -617,7 +617,8 @@ def cascade_per_technology(
             )
 
             heat_per_mv["share"] = heat_per_mv.groupby(
-                "state"
+                "state",
+                group_keys=False,
             ).remaining_demand.apply(lambda grp: grp / grp.sum())
 
             append_df = (
