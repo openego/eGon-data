@@ -600,7 +600,7 @@ def cascade_per_technology(
 
     # Distribute heat pumps linear to remaining demand.
     if tech.index == "heat_pump":
-        if distribution_level == "federal_state":
+        if distribution_level == "federal_states":
             # Select target values per federal state
             target = db.select_dataframe(
                 f"""
