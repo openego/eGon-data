@@ -1,3 +1,5 @@
+import re
+
 import geopandas as gpd
 import numpy as np
 import pandas as pd
@@ -408,7 +410,7 @@ def insert():
             )
             hvmv_substation = hvmv_substation.to_crs(3035)
             hvmv_substation["voltage"] = hvmv_substation["voltage"].apply(
-                lambda x: int(x.split(";")[0])
+                lambda x: int(re.split(";|:", x)[0])
             )
             hv_substations = hvmv_substation[
                 hvmv_substation["voltage"] >= 110000

@@ -371,6 +371,8 @@ def define_gas_buses_abroad(scn_name="eGon2035"):
                 "location",
                 "unit",
                 "sub_network",
+                "substation_lv",
+                "substation_off",
             ],
             errors="ignore",
         )

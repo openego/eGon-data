@@ -35,10 +35,7 @@ setup(
     ),
     author=read("AUTHORS.rst"),
     author_email=(
-        "jonathan.amme@rl-institut.de, "
-        "clara.buettner@hs-flensburg.de, "
-        "carlos.epia@hs-flensburg.de, "
-        "kilian.helfenbein@rl-institut.de"
+        "regon-project@rl-institut.de"
     ),
     url="https://github.com/openego/eGon-data",
     packages=["egon"] + ["egon." + p for p in find_packages("src/egon")],

@@ -336,7 +336,7 @@ def calc_capacities():
         ]
     ).reset_index()
     df_conv_2035 = df_conv_2035.rename(columns={"Node/Line": "index"})
-    grouped_capacities = grouped_capacities.append(df_conv_2035)
+    grouped_capacities = pd.concat([grouped_capacities, df_conv_2035])
 
     # choose capacities for considered countries
     grouped_capacities = grouped_capacities[
@@ -659,7 +659,7 @@ def import_ch4_demandTS():
     neighbors = network.buses[network.buses.country != "DE"]
     neighbors = neighbors[
         (neighbors["country"].isin(countries))
-        & (neighbors["carrier"] == "residential rural heat")
+        & (neighbors["carrier"].str.contains("rural heat"))
     ].drop_duplicates(subset="country")
 
     neighbor_loads = network.loads[network.loads.bus.isin(neighbors.index)]
@@ -667,8 +667,8 @@ def import_ch4_demandTS():
         neighbor_loads.index.isin(network.loads_t.p_set.columns)
     ]
     neighbor_loads_t = network.loads_t["p_set"][neighbor_loads_t_index]
-    Norway_global_demand = neighbor_loads_t[
-        "NO3 0 residential rural heat"
+    Norway_global_demand = neighbor_loads_t.loc[
+        :, neighbor_loads[(neighbor_loads.index.str.startswith("NO"))].index
     ].sum()
 
     for i in neighbor_loads_t.columns:
@@ -704,9 +704,9 @@ def insert_ch4_demand(global_demand, normalized_ch4_demandTS):
         f"""
         DELETE FROM
         {
-            targets['load_time series']['schema']
+            targets['load_timeseries']['schema']
         }.{
-            targets['load_time series']['table']
+            targets['load_timeseries']['table']
         }
         WHERE "load_id" IN (
             SELECT load_id FROM
@@ -796,9 +796,9 @@ def insert_ch4_demand(global_demand, normalized_ch4_demandTS):
 
     # Insert data to DB
     ch4_demand_TS.to_sql(
-        targets["load_time series"]["table"],
+        targets["load_timeseries"]["table"],
         db.engine(),
-        schema=targets["load_time series"]["schema"],
+        schema=targets["load_timeseries"]["schema"],
         index=False,
         if_exists="append",
     )
@@ -1119,7 +1119,7 @@ def insert_power_to_h2_demand(global_power_to_h2_demand):
         map_buses
     )
     global_power_to_h2_demand.loc[:, "bus"] = (
-        get_foreign_bus_id()
+        get_foreign_bus_id(scenario="eGon2035")
         .loc[global_power_to_h2_demand.loc[:, "Node/Line"]]
         .values
     )
@@ -1370,8 +1370,8 @@ def calculate_ch4_grid_capacities():
         cap_DE["p_nom"] = DE_pipe_capacities_list.at[
             country_code, "p_nom"
         ] / len(cap_DE.index)
-        Neighbouring_pipe_capacities_list = (
-            Neighbouring_pipe_capacities_list.append(cap_DE)
+        Neighbouring_pipe_capacities_list = pd.concat(
+            [Neighbouring_pipe_capacities_list, cap_DE]
         )
 
     # Add topo, geom and length
@@ -1559,7 +1559,7 @@ def calculate_ocgt_capacities():
 
     # Attribute bus0 and bus1
     df_ocgt["bus0"] = get_foreign_gas_bus_id()[df_ocgt.index]
-    df_ocgt["bus1"] = get_foreign_bus_id()[df_ocgt.index]
+    df_ocgt["bus1"] = get_foreign_bus_id(scenario="eGon2035")[df_ocgt.index]
     df_ocgt = df_ocgt.groupby(by=["bus0", "bus1"], as_index=False).sum()
 
     return df_ocgt
