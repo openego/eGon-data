@@ -78,17 +78,14 @@ def cts_demand_per_aggregation_level(aggregation_level, scenario):
         )
         df_CTS_gas_2011.to_csv("CTS_heat_demand_profile_nuts3.csv")
 
-    ags_lk = pd.read_csv(
-        os.path.join(
-            os.getcwd(),
-            "demandregio-disaggregator/disaggregator/disaggregator/data_in/regional",
-            "t_nuts3_lk.csv",
-        ),
-        index_col=0,
-    )
-    ags_lk = ags_lk.drop(
-        ags_lk.columns.difference(["natcode_nuts3", "ags_lk"]), axis=1
-    )
+    ags_lk = db.select_dataframe(
+        """
+        SELECT nuts as natcode_nuts3, ags as ags_lk
+        FROM boundaries.vg250_krs
+
+        """
+        )
+    ags_lk.ags_lk = ags_lk.ags_lk.astype(int)
 
     CTS_profile = df_CTS_gas_2011.transpose()
     CTS_profile.reset_index(inplace=True)

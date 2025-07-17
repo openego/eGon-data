@@ -14,9 +14,7 @@ import pandas as pd
 
 from egon.data import db, logger
 from egon.data.datasets import Dataset, wrapped_partial
-from egon.data.datasets.demandregio.install_disaggregator import (
-    clone_and_install,
-)
+
 from egon.data.datasets.scenario_parameters import (
     EgonScenario,
     get_sector_parameters,
@@ -64,7 +62,7 @@ class DemandRegio(Dataset):
     #:
     name: str = "DemandRegio"
     #:
-    version: str = "0.0.11"
+    version: str = "0.0.12"
 
     def __init__(self, dependencies):
         super().__init__(
@@ -72,7 +70,6 @@ class DemandRegio(Dataset):
             version=self.version,
             dependencies=dependencies,
             tasks=(
-                # clone_and_install,  # demandregio must be previously installed
                 get_cached_tables,  # adhoc workaround #180
                 create_tables,
                 {
