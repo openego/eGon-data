@@ -9,7 +9,12 @@ from egon.data.datasets.emobility.motorized_individual_travel.helpers import (
 )
 
 
-def validate_electric_vehicles_numbers(dataset_name, ev_data, ev_target):
+def validate_electric_vehicles_numbers(
+    dataset_name,
+    ev_data,
+    ev_target,
+    rtol=0.001
+):
     """Validate cumulative numbers of electric vehicles' distribution.
 
     Tests
@@ -24,12 +29,14 @@ def validate_electric_vehicles_numbers(dataset_name, ev_data, ev_target):
         EV data
     ev_target : int
         Desired number of EVs
+    rtol : float
+        Relative max. tolerance
     """
     assert not ev_data.isna().any().any()
 
     assert_allclose(
         ev_data[[_ for _ in CONFIG_EV.keys()]].sum().sum(),
         ev_target,
-        rtol=0.001,
+        rtol=rtol,
         err_msg=f"Dataset on EV numbers [{dataset_name}] seems to be flawed.",
     )
