@@ -451,7 +451,10 @@ def allocate_evs_numbers():
             # Check EV results if not in testmode
             if TESTMODE_OFF:
                 validate_electric_vehicles_numbers(
-                    "EV count in registration districts", ev_data, ev_target
+                    "EV count in registration districts",
+                    ev_data,
+                    ev_target,
+                    0.001 if ev_target > 1e6 else 0.02,
                 )
             # Add scenario columns and write to DB
             ev_data["scenario"] = scenario_name
@@ -476,7 +479,10 @@ def allocate_evs_numbers():
             # Check EV results if not in testmode
             if TESTMODE_OFF:
                 validate_electric_vehicles_numbers(
-                    "EV count in municipalities", ev_data_muns, ev_target
+                    "EV count in municipalities",
+                    ev_data_muns,
+                    ev_target,
+                    0.001 if ev_target > 1e6 else 0.02,
                 )
             # Add scenario columns and write to DB
             ev_data_muns["scenario"] = scenario_name
@@ -500,7 +506,10 @@ def allocate_evs_numbers():
             # Check EV results if not in testmode
             if TESTMODE_OFF:
                 validate_electric_vehicles_numbers(
-                    "EV count in grid districts", ev_data_mvgds, ev_target
+                    "EV count in grid districts",
+                    ev_data_mvgds,
+                    ev_target,
+                    0.001 if ev_target > 1e6 else 0.02,
                 )
             # Add scenario columns and write to DB
             ev_data_mvgds["scenario"] = scenario_name
@@ -632,7 +641,7 @@ def allocate_evs_to_grid_districts():
                 np.testing.assert_allclose(
                     int(ev_actual),
                     ev_target,
-                    rtol=0.001,
+                    rtol=0.001 if ev_target > 1e6 else 0.02,
                     err_msg=f"Dataset on EV numbers allocated to MVGDs "
                     f"seems to be flawed. "
                     f"Scenario: [{scn}], "

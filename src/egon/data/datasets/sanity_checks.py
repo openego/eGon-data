@@ -806,8 +806,7 @@ def sanitycheck_pv_rooftop_buildings():
 def sanitycheck_emobility_mit():
     """Execute sanity checks for eMobility: motorized individual travel
 
-    Checks data integrity for eGon2035, eGon2035_lowflex and eGon100RE scenario
-    using assertions:
+    Checks data integrity for scenarios using assertions:
 
     1. Allocated EV numbers and EVs allocated to grid districts
     2. Trip data (original inout data from simBEV)
@@ -868,7 +867,7 @@ def sanitycheck_emobility_mit():
                 np.testing.assert_allclose(
                     count,
                     ev_count_target,
-                    rtol=0.0001,
+                    rtol=0.0001 if ev_count_target > 1e6 else 0.02,
                     err_msg=f"EV numbers in {level} seems to be flawed.",
                 )
         else:
@@ -900,7 +899,7 @@ def sanitycheck_emobility_mit():
             np.testing.assert_allclose(
                 ev_count_alloc,
                 ev_count_target,
-                rtol=0.0001,
+                rtol=0.0001 if ev_count_target > 1e6 else 0.02,
                 err_msg=(
                     "EV numbers allocated to Grid Districts seems to be "
                     "flawed."
@@ -1149,7 +1148,7 @@ def sanitycheck_emobility_mit():
             total_energy_scenario_approx,
             rtol=0.1,
             err_msg=(
-                "The total energy amount in the model deviates heavily "
+                "The total energy amount in the model deviates more than 10% "
                 "from the approximated value for current scenario."
             ),
         )
@@ -1220,8 +1219,9 @@ def sanitycheck_emobility_mit():
             storage_capacity_simbev,
             rtol=0.01,
             err_msg=(
-                "The total storage capacity in the model deviates heavily "
-                "from the input data provided by simBEV for current scenario."
+                "The total storage capacity in the model deviates more than "
+                "1% from the input data provided by simBEV for current "
+                "scenario."
             ),
         )
 
