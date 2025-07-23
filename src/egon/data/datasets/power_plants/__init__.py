@@ -965,18 +965,14 @@ def allocate_other_power_plants():
 
 
 def discard_not_available_generators(gen, max_date):
-    gen["decommissioning_date"] = pd.to_datetime(
-        gen["decommissioning_date"]
-    )
+    gen["decommissioning_date"] = pd.to_datetime(gen["decommissioning_date"])
     gen["commissioning_date"] = pd.to_datetime(gen["commissioning_date"])
     # drop plants that are commissioned after the max date
     gen = gen[gen["commissioning_date"] < max_date]
 
     # drop decommissioned plants while keeping the ones decommissioned
     # after the max date
-    gen.loc[(gen["decommissioning_date"] > max_date), "status"] = (
-        "InBetrieb"
-    )
+    gen.loc[(gen["decommissioning_date"] > max_date), "status"] = "InBetrieb"
 
     gen = gen.loc[
         gen["status"].isin(["InBetrieb", "VoruebergehendStillgelegt"])
@@ -1333,9 +1329,9 @@ def get_conventional_power_plants_non_chp(scn_name):
     conv["geom"] = gpd.points_from_xy(
         conv.Laengengrad, conv.Breitengrad, crs=4326
     )
-    conv.loc[(conv.Laengengrad.isna() | conv.Breitengrad.isna()), "geom"] = (
-        Point()
-    )
+    conv.loc[
+        (conv.Laengengrad.isna() | conv.Breitengrad.isna()), "geom"
+    ] = Point()
     conv = gpd.GeoDataFrame(conv, geometry="geom")
 
     # assign voltage level by capacity
@@ -1400,7 +1396,7 @@ def import_gas_gen_egon100():
     ).iat[0, 0]
 
     conv = pd.read_csv(
-            WORKING_DIR_MASTR_OLD / cfg["sources"]["mastr_combustion"],
+        WORKING_DIR_MASTR_OLD / cfg["sources"]["mastr_combustion"],
         usecols=[
             "EinheitMastrNummer",
             "Energietraeger",
@@ -1448,9 +1444,9 @@ def import_gas_gen_egon100():
     conv["geom"] = gpd.points_from_xy(
         conv.Laengengrad, conv.Breitengrad, crs=4326
     )
-    conv.loc[(conv.Laengengrad.isna() | conv.Breitengrad.isna()), "geom"] = (
-        Point()
-    )
+    conv.loc[
+        (conv.Laengengrad.isna() | conv.Breitengrad.isna()), "geom"
+    ] = Point()
     conv = gpd.GeoDataFrame(conv, geometry="geom")
 
     conv = fill_missing_bus_and_geom(
@@ -1536,12 +1532,16 @@ tasks = tasks + (
 )
 
 for scn_name in egon.data.config.settings()["egon-data"]["--scenarios"]:
-    tasks += (wrapped_partial(assign_weather_data.weatherId_and_busId,
-                              scn_name=scn_name,
-                              postfix=f"_{scn_name}"
-                              ),)
+    tasks += (
+        wrapped_partial(
+            assign_weather_data.weatherId_and_busId,
+            scn_name=scn_name,
+            postfix=f"_{scn_name}",
+        ),
+    )
 
 tasks += (pp_metadata.metadata,)
+
 
 class PowerPlants(Dataset):
     """
@@ -1625,4 +1625,3 @@ class PowerPlants(Dataset):
             dependencies=dependencies,
             tasks=tasks,
         )
-

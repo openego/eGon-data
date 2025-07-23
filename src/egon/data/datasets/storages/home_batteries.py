@@ -108,10 +108,10 @@ def allocate_home_batteries_to_buildings():
         WHERE carrier = 'home_battery'
         AND scenario = '{scenario}';
         """
-        cbat_pbat_ratio = get_sector_parameters(
-            "electricity", scenario
-        )["efficiency"]["battery"]["max_hours"]
-        
+        cbat_pbat_ratio = get_sector_parameters("electricity", scenario)[
+            "efficiency"
+        ]["battery"]["max_hours"]
+
         home_batteries_df = db.select_dataframe(sql)
 
         home_batteries_df = home_batteries_df.assign(
@@ -270,9 +270,7 @@ def add_metadata():
                     "Data from Marktstammdatenregister (MaStR) data using "
                     "the data dump from 2022-11-17 for eGon-data."
                 ),
-                "path": (
-                    f"https://zenodo.org/record/{deposit_id_mastr}"
-                ),
+                "path": (f"https://zenodo.org/record/{deposit_id_mastr}"),
                 "licenses": [license_dedl(attribution="© Amme, Jonathan")],
             },
             sources()["openstreetmap"],

@@ -550,14 +550,14 @@ def combine_decentral_and_rural_heat(network_solved, network_prepared):
 
                         else:
                             print(i)
-                            network_solved.stores.loc[i, "bus"] = (
-                                network_solved.stores.loc[i, "bus"].replace(
-                                    "urban decentral", "rural"
-                                )
+                            network_solved.stores.loc[
+                                i, "bus"
+                            ] = network_solved.stores.loc[i, "bus"].replace(
+                                "urban decentral", "rural"
                             )
-                            network_solved.stores.loc[i, "carrier"] = (
-                                "rural water tanks"
-                            )
+                            network_solved.stores.loc[
+                                i, "carrier"
+                            ] = "rural water tanks"
 
     urban_decentral_loads = network_prepared.loads[
         network_prepared.loads.carrier.str.contains("urban decentral")
@@ -1932,9 +1932,9 @@ def update_heat_timeseries_germany(network):
         + df_egon_heat_demand.loc[:, "service rural"].values
     )
 
-    network.loads_t.p_set.loc[:, "DE1 0 urban central heat"] = (
-        df_egon_heat_demand.loc[:, "urban central"].values
-    )
+    network.loads_t.p_set.loc[
+        :, "DE1 0 urban central heat"
+    ] = df_egon_heat_demand.loc[:, "urban central"].values
 
     return network
 
@@ -2037,15 +2037,15 @@ def district_heating_shares(network):
     )
 
     for country in heat_demand_per_country.columns:
-        network.loads_t.p_set[f"{country} urban central heat"] = (
-            heat_demand_per_country.loc[:, country].mul(
-                df.loc[country[:2]].values[0]
-            )
+        network.loads_t.p_set[
+            f"{country} urban central heat"
+        ] = heat_demand_per_country.loc[:, country].mul(
+            df.loc[country[:2]].values[0]
         )
-        network.loads_t.p_set[f"{country} rural heat"] = (
-            heat_demand_per_country.loc[:, country].mul(
-                (1 - df.loc[country[:2]].values[0])
-            )
+        network.loads_t.p_set[
+            f"{country} rural heat"
+        ] = heat_demand_per_country.loc[:, country].mul(
+            (1 - df.loc[country[:2]].values[0])
         )
 
     # Drop links with undefined buses or carrier

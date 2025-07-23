@@ -124,5 +124,3 @@ Heat stores
 
 Published data
 ==============
-
-

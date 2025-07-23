@@ -138,29 +138,29 @@ def define_DE_crossbording_pipes_geom_eGon100RE(scn_name="eGon100RE"):
         f"""
         SELECT * FROM grid.egon_etrago_link
         WHERE ("bus0" IN (
-                        SELECT bus_id FROM 
+                        SELECT bus_id FROM
                         {sources['buses']['schema']}.{sources['buses']['table']}
                         WHERE country != 'DE'
                         AND country != 'RU'
                         AND carrier = 'CH4'
                         AND scn_name = 'eGon100RE')
-                    AND "bus1" IN (SELECT bus_id FROM 
+                    AND "bus1" IN (SELECT bus_id FROM
                         {sources['buses']['schema']}.{sources['buses']['table']}
                         WHERE country = 'DE'
-                        AND carrier = 'CH4' 
+                        AND carrier = 'CH4'
                         AND scn_name = 'eGon100RE'))
                 OR ("bus0" IN (
-                        SELECT bus_id FROM 
+                        SELECT bus_id FROM
                         {sources['buses']['schema']}.{sources['buses']['table']}
                         WHERE country = 'DE'
                         AND carrier = 'CH4'
                         AND scn_name = 'eGon100RE')
                 AND "bus1" IN (
-                        SELECT bus_id FROM 
+                        SELECT bus_id FROM
                         {sources['buses']['schema']}.{sources['buses']['table']}
                         WHERE country != 'DE'
                         AND country != 'RU'
-                        AND carrier = 'CH4' 
+                        AND carrier = 'CH4'
                         AND scn_name = 'eGon100RE'))
         AND scn_name = 'eGon100RE'
         AND carrier = 'CH4'
@@ -240,10 +240,10 @@ def read_DE_crossbordering_cap_from_pes():
             ["bus0", "bus1", "p_nom_opt", "carrier"]
         ].rename(columns={"p_nom_opt": "p_nom"})
 
-        DE_pipe_capacities_list["country_code"] = (
-            DE_pipe_capacities_list.apply(
-                lambda row: str(sorted([row.bus0[:2], row.bus1[:2]])), axis=1
-            )
+        DE_pipe_capacities_list[
+            "country_code"
+        ] = DE_pipe_capacities_list.apply(
+            lambda row: str(sorted([row.bus0[:2], row.bus1[:2]])), axis=1
         )
 
         DE_pipe_capacities_list = DE_pipe_capacities_list.drop(

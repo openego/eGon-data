@@ -1,12 +1,9 @@
 import os
 
 from sqlalchemy.ext.declarative import declarative_base
-
-
 import pandas as pd
 
 from egon.data import config, db
-
 
 try:
     from disaggregator import temporal
@@ -55,10 +52,10 @@ def cts_demand_per_aggregation_level(aggregation_level, scenario):
     demand_nuts = db.select_dataframe(
         f"""
         SELECT demand, a.zensus_population_id, b.vg250_nuts3
-        FROM demand.egon_peta_heat a 
-        JOIN boundaries.egon_map_zensus_vg250 b 
+        FROM demand.egon_peta_heat a
+        JOIN boundaries.egon_map_zensus_vg250 b
         ON a.zensus_population_id = b.zensus_population_id
-        
+
         WHERE a.sector = 'service'
         AND a.scenario = '{scenario}'
         ORDER BY a.zensus_population_id
@@ -84,7 +81,7 @@ def cts_demand_per_aggregation_level(aggregation_level, scenario):
         FROM boundaries.vg250_krs
 
         """
-        )
+    )
     ags_lk.ags_lk = ags_lk.ags_lk.astype(int)
 
     CTS_profile = df_CTS_gas_2011.transpose()
@@ -137,7 +134,7 @@ def cts_demand_per_aggregation_level(aggregation_level, scenario):
             FROM boundaries.egon_map_zensus_grid_districts a
 
 				JOIN demand.egon_peta_heat c
-				ON a.zensus_population_id = c.zensus_population_id 
+				ON a.zensus_population_id = c.zensus_population_id
 
 				WHERE c.scenario = '{scenario}'
 				AND c.sector = 'service'
@@ -231,7 +228,7 @@ def CTS_demand_scale(aggregation_level):
         demand = db.select_dataframe(
             f"""
                 SELECT demand, zensus_population_id
-                FROM demand.egon_peta_heat                
+                FROM demand.egon_peta_heat
                 WHERE sector = 'service'
                 AND scenario = '{scenario}'
                 ORDER BY zensus_population_id
@@ -290,7 +287,7 @@ def CTS_demand_scale(aggregation_level):
                 FROM boundaries.egon_map_zensus_grid_districts a
 
 				JOIN demand.egon_peta_heat c
-				ON a.zensus_population_id = c.zensus_population_id 
+				ON a.zensus_population_id = c.zensus_population_id
 
 				WHERE c.scenario = '{scenario}'
 				AND c.sector = 'service'

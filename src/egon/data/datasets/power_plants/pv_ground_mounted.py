@@ -857,7 +857,6 @@ def insert():
         pv_exist_100RE = gpd.GeoDataFrame()
         pv_per_distr_100RE = gpd.GeoDataFrame()
 
-
         # 1) scenario: eGon2035
         if (
             "eGon2035"
@@ -1141,7 +1140,6 @@ def insert():
                 },
             )
             plt.savefig("pv_per_distr_map_eGon100RE.png", dpi=300)
-
 
         return (
             pv_rora,

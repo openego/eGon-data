@@ -10,10 +10,7 @@ from egon.data.datasets.emobility.motorized_individual_travel.helpers import (
 
 
 def validate_electric_vehicles_numbers(
-    dataset_name,
-    ev_data,
-    ev_target,
-    rtol=0.001
+    dataset_name, ev_data, ev_target, rtol=0.001
 ):
     """Validate cumulative numbers of electric vehicles' distribution.
 

@@ -28,7 +28,7 @@ def insert_open_cycle_gas_turbines_per_scenario(scn_name):
     Returns
     ----------
     None
-    
+
     """
 
     # Connect to local database

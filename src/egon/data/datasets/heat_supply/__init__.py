@@ -107,7 +107,6 @@ def district_heating():
             if_exists="append",
         )
 
-
         # Do not check data for status quo as is it not listed in the table
         if "status" not in scenario:
             # Compare target value with sum of distributed heat supply
@@ -141,7 +140,6 @@ def district_heating():
             con=db.engine(),
             if_exists="append",
         )
-
 
         # Insert resistive heaters which are not available in status quo
         if "status" not in scenario:
@@ -408,13 +406,12 @@ class HeatSupply(Dataset):
             ),
         )
 
+
 class GeothermalPotentialGermany(Dataset):
     def __init__(self, dependencies):
         super().__init__(
             name="GeothermalPotentialGermany",
             version="0.0.2",
             dependencies=dependencies,
-            tasks=(
-                potential_germany,
-            ),
+            tasks=(potential_germany,),
         )

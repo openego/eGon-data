@@ -41,22 +41,22 @@ def insert_gas_grid_capacities(Neighbouring_pipe_capacities_list, scn_name):
 
         db.execute_sql(
             f"""
-            DELETE FROM 
+            DELETE FROM
             {sources['links']['schema']}.{sources['links']['table']}
             WHERE "bus0" IN (
-                SELECT bus_id FROM 
+                SELECT bus_id FROM
                 {sources['buses']['schema']}.{sources['buses']['table']}
                     WHERE country != 'DE'
                     AND carrier = '{carrier_bus}'
                     AND scn_name = '{scn_name}')
             OR "bus1" IN (
-                SELECT bus_id FROM 
+                SELECT bus_id FROM
                 {sources['buses']['schema']}.{sources['buses']['table']}
                     WHERE country != 'DE'
-                    AND carrier = '{carrier_bus}' 
+                    AND carrier = '{carrier_bus}'
                     AND scn_name = '{scn_name}')
             AND scn_name = '{scn_name}'
-            AND carrier = '{carrier_link}'            
+            AND carrier = '{carrier_link}'
             ;
             """
         )
@@ -73,27 +73,27 @@ def insert_gas_grid_capacities(Neighbouring_pipe_capacities_list, scn_name):
                 DELETE FROM
                 {sources['links']['schema']}.{sources['links']['table']}
                 WHERE ("bus0" IN (
-                        SELECT bus_id FROM 
+                        SELECT bus_id FROM
                         {sources['buses']['schema']}.{sources['buses']['table']}
                         WHERE country != 'DE'
                         AND carrier = '{carriers[c]["bus_abroad"]}'
                         AND scn_name = '{scn_name}')
-                    AND "bus1" IN (SELECT bus_id FROM 
+                    AND "bus1" IN (SELECT bus_id FROM
                         {sources['buses']['schema']}.{sources['buses']['table']}
                         WHERE country = 'DE'
-                        AND carrier = '{carriers[c]["bus_inDE"]}' 
+                        AND carrier = '{carriers[c]["bus_inDE"]}'
                         AND scn_name = '{scn_name}'))
                 OR ("bus0" IN (
-                        SELECT bus_id FROM 
+                        SELECT bus_id FROM
                         {sources['buses']['schema']}.{sources['buses']['table']}
                         WHERE country = 'DE'
                         AND carrier = '{carriers[c]["bus_inDE"]}'
                         AND scn_name = '{scn_name}')
                 AND "bus1" IN (
-                        SELECT bus_id FROM 
+                        SELECT bus_id FROM
                         {sources['buses']['schema']}.{sources['buses']['table']}
                         WHERE country != 'DE'
-                        AND carrier = '{carriers[c]["bus_abroad"]}' 
+                        AND carrier = '{carriers[c]["bus_abroad"]}'
                         AND scn_name = '{scn_name}'))
                 AND scn_name = '{scn_name}'
                 AND carrier = '{carriers[c]["bus_abroad"]}'
@@ -120,7 +120,7 @@ def insert_gas_grid_capacities(Neighbouring_pipe_capacities_list, scn_name):
     INSERT INTO {targets['links']['schema']}.{targets['links']['table']} (
         scn_name, link_id, carrier,
         bus0, bus1, p_nom, p_min_pu, length, geom, topo)
-    
+
     SELECT scn_name, link_id, carrier, bus0, bus1, p_nom, p_min_pu, length, geom, topo
 
     FROM grid.egon_etrago_gas_link;

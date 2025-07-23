@@ -66,38 +66,47 @@ def select_chp_from_nep(sources):
     )
 
     # Insert rows from list without a name
-    chp_NEP = pd.concat([chp_NEP,(
-        chp_NEP_data[chp_NEP_data.name.isnull()].loc[
-            :,
-            [
-                "name",
-                "postcode",
-                "carrier",
-                "capacity",
-                "c2035_capacity",
-                "c2035_chp",
-                "city",
-                "federal_state",
-            ],
+    chp_NEP = pd.concat(
+        [
+            chp_NEP,
+            (
+                chp_NEP_data[chp_NEP_data.name.isnull()].loc[
+                    :,
+                    [
+                        "name",
+                        "postcode",
+                        "carrier",
+                        "capacity",
+                        "c2035_capacity",
+                        "c2035_chp",
+                        "city",
+                        "federal_state",
+                    ],
+                ]
+            ),
         ]
-        )
-        ])
+    )
     # Insert rows from list with a name
-    chp_NEP = pd.concat([chp_NEP,(
-        chp_NEP_data.groupby(
-            [
-                "carrier",
-                "name",
-                "postcode",
-                "c2035_chp",
-                "city",
-                "federal_state",
-            ],
-            group_keys=False,
-        )[["capacity", "c2035_capacity", "city", "federal_state"]]
-        .sum(numeric_only=True)
-        .reset_index()
-    )]).reset_index()
+    chp_NEP = pd.concat(
+        [
+            chp_NEP,
+            (
+                chp_NEP_data.groupby(
+                    [
+                        "carrier",
+                        "name",
+                        "postcode",
+                        "c2035_chp",
+                        "city",
+                        "federal_state",
+                    ],
+                    group_keys=False,
+                )[["capacity", "c2035_capacity", "city", "federal_state"]]
+                .sum(numeric_only=True)
+                .reset_index()
+            ),
+        ]
+    ).reset_index()
 
     return chp_NEP.drop("index", axis=1)
 
@@ -286,23 +295,36 @@ def match_nep_chp(
 
             # If a plant could be matched, add this to chp_NEP_matched
             if len(selected) > 0:
-                chp_NEP_matched = pd.concat([chp_NEP_matched,(
-                    geopandas.GeoDataFrame(
-                        data={
-                            "source": "MaStR scaled with NEP 2021 list",
-                            "MaStRNummer": selected.EinheitMastrNummer.head(1),
-                            "carrier": (
-                                ET if row.c2035_chp == "Nein" else "gas"
-                            ),
-                            "chp": True,
-                            "el_capacity": row.c2035_capacity,
-                            "th_capacity": selected.th_capacity.head(1),
-                            "scenario": "eGon2035",
-                            "geometry": selected.geometry.head(1),
-                            "voltage_level": selected.voltage_level.head(1),
-                        }
-                    )
-                )])
+                chp_NEP_matched = pd.concat(
+                    [
+                        chp_NEP_matched,
+                        (
+                            geopandas.GeoDataFrame(
+                                data={
+                                    "source": "MaStR scaled with NEP 2021 list",
+                                    "MaStRNummer": selected.EinheitMastrNummer.head(
+                                        1
+                                    ),
+                                    "carrier": (
+                                        ET
+                                        if row.c2035_chp == "Nein"
+                                        else "gas"
+                                    ),
+                                    "chp": True,
+                                    "el_capacity": row.c2035_capacity,
+                                    "th_capacity": selected.th_capacity.head(
+                                        1
+                                    ),
+                                    "scenario": "eGon2035",
+                                    "geometry": selected.geometry.head(1),
+                                    "voltage_level": selected.voltage_level.head(
+                                        1
+                                    ),
+                                }
+                            )
+                        ),
+                    ]
+                )
 
                 # Drop matched CHP from chp_NEP
                 chp_NEP = chp_NEP.drop(index)
@@ -326,7 +348,7 @@ def insert_large_chp(sources, target, EgonChp):
     MaStR_konv["voltage_level"] = assign_voltage_level(
         MaStR_konv.rename({"el_capacity": "Nettonennleistung"}, axis=1),
         config.datasets()["chp_location"],
-        WORKING_DIR_MASTR_OLD
+        WORKING_DIR_MASTR_OLD,
     )
 
     # Initalize DataFrame for match CHPs
@@ -380,7 +402,7 @@ def insert_large_chp(sources, target, EgonChp):
     MaStR_konv["voltage_level"] = assign_voltage_level(
         MaStR_konv.rename({"el_capacity": "Nettonennleistung"}, axis=1),
         config.datasets()["chp_location"],
-        WORKING_DIR_MASTR_OLD
+        WORKING_DIR_MASTR_OLD,
     )
 
     # Match CHP from NEP list with aggregated MaStR units
@@ -487,22 +509,27 @@ def insert_large_chp(sources, target, EgonChp):
     # Aggregate chp per location and carrier
     # devided into numeric and not-numeric columns
     numeric_cols = ["el_capacity", "th_capacity"]
-    agg_numeric = chp_NEP_matched.groupby(
-        ["carrier", "geometry_wkt", "voltage_level"]
-    )[numeric_cols].sum().reset_index()
+    agg_numeric = (
+        chp_NEP_matched.groupby(["carrier", "geometry_wkt", "voltage_level"])[
+            numeric_cols
+        ]
+        .sum()
+        .reset_index()
+    )
 
     non_numeric_cols = ["geometry", "MaStRNummer", "source"]
-    agg_non_numeric = chp_NEP_matched.drop_duplicates(
-        subset="geometry_wkt")[["geometry_wkt"] + non_numeric_cols
-                               ].set_index("geometry_wkt")
+    agg_non_numeric = chp_NEP_matched.drop_duplicates(subset="geometry_wkt")[
+        ["geometry_wkt"] + non_numeric_cols
+    ].set_index("geometry_wkt")
 
-    merged = agg_numeric.set_index("geometry_wkt").join(
-        agg_non_numeric, how="left").reset_index()
+    merged = (
+        agg_numeric.set_index("geometry_wkt")
+        .join(agg_non_numeric, how="left")
+        .reset_index()
+    )
 
     insert_chp = geopandas.GeoDataFrame(
-        merged,
-        geometry="geometry",
-        crs="EPSG:4326"
+        merged, geometry="geometry", crs="EPSG:4326"
     )
     insert_chp_c = insert_chp.copy()
 

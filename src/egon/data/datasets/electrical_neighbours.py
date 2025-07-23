@@ -10,20 +10,19 @@ import zipfile
 from shapely.geometry import LineString
 from sqlalchemy.orm import sessionmaker
 import entsoe
-import requests
-
 import geopandas as gpd
 import pandas as pd
+import requests
 
 from egon.data import config, db, logger
-from egon.data.db import session_scope
 from egon.data.datasets import Dataset, wrapped_partial
 from egon.data.datasets.fill_etrago_gen import add_marginal_costs
 from egon.data.datasets.fix_ehv_subnetworks import select_bus_id
+from egon.data.datasets.pypsaeur import prepared_network
 from egon.data.datasets.scenario_parameters import get_sector_parameters
+from egon.data.db import session_scope
 import egon.data.datasets.etrago_setup as etrago
 import egon.data.datasets.scenario_parameters.parameters as scenario_parameters
-from egon.data.datasets.pypsaeur import prepared_network
 
 
 def get_cross_border_buses(scenario, sources):
@@ -1219,9 +1218,9 @@ def insert_storage_tyndp(capacities):
 
     for x in parameters:
         store.loc[store["carrier"] == "battery", x] = parameters_battery[x]
-        store.loc[store["carrier"] == "pumped_hydro", x] = (
-            parameters_pumped_hydro[x]
-        )
+        store.loc[
+            store["carrier"] == "pumped_hydro", x
+        ] = parameters_pumped_hydro[x]
 
     # insert data
     session = sessionmaker(bind=db.engine())()
@@ -1342,9 +1341,9 @@ def tyndp_demand():
     ]
     # Assign etrago bus_id to TYNDP nodes
     buses = pd.DataFrame({"nodes": nodes})
-    buses.loc[buses[buses.nodes.isin(map_buses.keys())].index, "nodes"] = (
-        buses[buses.nodes.isin(map_buses.keys())].nodes.map(map_buses)
-    )
+    buses.loc[
+        buses[buses.nodes.isin(map_buses.keys())].index, "nodes"
+    ] = buses[buses.nodes.isin(map_buses.keys())].nodes.map(map_buses)
     buses.loc[:, "bus"] = (
         get_foreign_bus_id(scenario="eGon2035")
         .loc[buses.loc[:, "nodes"]]

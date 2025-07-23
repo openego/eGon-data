@@ -24,6 +24,7 @@ class Vg250MvGridDistricts(Dataset):
         is created and filled
 
     """
+
     #:
     name: str = "Vg250MvGridDistricts"
     #:
@@ -42,6 +43,7 @@ class MapMvgriddistrictsVg250(Base):
     """
     Class definition of table boundaries.egon_map_mvgriddistrict_vg250.
     """
+
     __tablename__ = "egon_map_mvgriddistrict_vg250"
     __table_args__ = {"schema": "boundaries"}
     bus_id = Column(Integer, primary_key=True)

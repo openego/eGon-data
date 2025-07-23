@@ -7,12 +7,12 @@ assignees: ''
 
 ---
 
-**Describe the bug**  
+**Describe the bug**
 A clear and concise description of what the bug is.
 
 ---
 
-**To Reproduce**  
+**To Reproduce**
 Steps to reproduce the behavior:
 1. Go to '...'
 2. Click on '...'
@@ -21,12 +21,12 @@ Steps to reproduce the behavior:
 
 ---
 
-**Expected behavior**  
+**Expected behavior**
 A clear and concise description of what you expected to happen.
 
 ---
 
-**Screenshots**  
+**Screenshots**
 If applicable, add screenshots to help explain your problem.
 
 ---
@@ -39,10 +39,10 @@ If applicable, add screenshots to help explain your problem.
 
 ---
 
-**Proposed solution (optional)**  
+**Proposed solution (optional)**
 If you have an idea of how this issue could be fixed, describe it here.
 
 ---
 
-**Additional context**  
+**Additional context**
 Add any other context about the problem here.

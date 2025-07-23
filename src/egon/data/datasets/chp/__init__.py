@@ -29,8 +29,8 @@ from egon.data.datasets.chp.small_chp import (
     select_target,
 )
 from egon.data.datasets.mastr import (
-    WORKING_DIR_MASTR_OLD,
     WORKING_DIR_MASTR_NEW,
+    WORKING_DIR_MASTR_OLD,
 )
 from egon.data.datasets.power_plants import (
     assign_bus_id,
@@ -38,6 +38,7 @@ from egon.data.datasets.power_plants import (
     filter_mastr_geometry,
     scale_prox2now,
 )
+from egon.data.datasets.pypsaeur import read_network
 from egon.data.metadata import (
     context,
     generate_resource_fields_from_sqla_model,
@@ -45,8 +46,6 @@ from egon.data.metadata import (
     meta_metadata,
     sources,
 )
-
-from egon.data.datasets.pypsaeur import read_network
 
 Base = declarative_base()
 
@@ -759,12 +758,16 @@ insert_per_scenario = set()
 
 if "status2019" in config.settings()["egon-data"]["--scenarios"]:
     insert_per_scenario.add(
-        wrapped_partial(insert_chp_statusquo, scn="status2019", postfix="_2019")
+        wrapped_partial(
+            insert_chp_statusquo, scn="status2019", postfix="_2019"
+        )
     )
 
 if "status2023" in config.settings()["egon-data"]["--scenarios"]:
     insert_per_scenario.add(
-        wrapped_partial(insert_chp_statusquo, scn="status2023", postfix="_2023")
+        wrapped_partial(
+            insert_chp_statusquo, scn="status2023", postfix="_2023"
+        )
     )
 
 if "eGon2035" in config.settings()["egon-data"]["--scenarios"]:

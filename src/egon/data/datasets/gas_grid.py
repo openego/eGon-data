@@ -22,9 +22,9 @@ import ast
 import json
 import os
 
-from sqlalchemy.orm import sessionmaker
 from geoalchemy2.types import Geometry
 from shapely import geometry
+from sqlalchemy.orm import sessionmaker
 import geopandas
 import numpy as np
 import pandas as pd
@@ -627,9 +627,9 @@ def define_gas_pipeline_list(
     gas_pipelines_list.at["new_pipe", "param"] = gas_pipelines_list[
         gas_pipelines_list["id"] == "NO_PS_8_Seg_0_Seg_23"
     ]["param"].values[0]
-    gas_pipelines_list.at["new_pipe", "node_id"] = (
-        "['SEQ_12442_p', 'LKD_N_200']"
-    )
+    gas_pipelines_list.at[
+        "new_pipe", "node_id"
+    ] = "['SEQ_12442_p', 'LKD_N_200']"
     gas_pipelines_list.at["new_pipe", "lat"] = "[53.358536, 53.412719]"
     gas_pipelines_list.at["new_pipe", "long"] = "[7.041677, 7.093251]"
     gas_pipelines_list.at["new_pipe", "country_code"] = "['DE', 'DE']"

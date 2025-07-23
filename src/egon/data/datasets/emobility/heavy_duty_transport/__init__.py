@@ -104,10 +104,12 @@ class HeavyDutyTransport(Dataset):
     *mobility_hgv*.
 
     """
+
     #:
     name: str = "HeavyDutyTransport"
     #:
     version: str = "0.0.2"
+
     def __init__(self, dependencies):
         super().__init__(
             name=self.name,

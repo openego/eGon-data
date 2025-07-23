@@ -207,8 +207,10 @@ class Dataset:
                 if (
                     self.version in [ds.version for ds in datasets]
                     and all(
-                        scenario_names == ds.scenarios.replace(
-                            "{", "").replace("}", "").split(",")
+                        scenario_names
+                        == ds.scenarios.replace("{", "")
+                        .replace("}", "")
+                        .split(",")
                         for ds in datasets
                     )
                     and not re.search(r"\.dev$", self.version)

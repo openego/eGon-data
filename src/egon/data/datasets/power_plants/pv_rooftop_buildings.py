@@ -40,7 +40,6 @@ from egon.data.metadata import (
     license_dedl,
     license_odbl,
     meta_metadata,
-    meta_metadata,
     sources,
 )
 
@@ -358,6 +357,7 @@ class OsmBuildingsFiltered(Base):
     Class definition of table openstreetmap.osm_buildings_filtered.
 
     """
+
     __tablename__ = "osm_buildings_filtered"
     __table_args__ = {"schema": "openstreetmap"}
 
@@ -760,9 +760,9 @@ def allocate_pv(
 
     assert len(assigned_buildings) == len(assigned_buildings.gens_id.unique())
 
-    q_mastr_gdf.loc[assigned_buildings.gens_id, "building_id"] = (
-        assigned_buildings.index
-    )
+    q_mastr_gdf.loc[
+        assigned_buildings.gens_id, "building_id"
+    ] = assigned_buildings.index
 
     assigned_gens = q_mastr_gdf.loc[~q_mastr_gdf.building_id.isna()]
 
@@ -985,6 +985,7 @@ class Vg250Lan(Base):
     Class definition of table boundaries.vg250_lan.
 
     """
+
     __tablename__ = "vg250_lan"
     __table_args__ = {"schema": "boundaries"}
 
@@ -2131,6 +2132,7 @@ class EgonPowerPlantPvRoofBuilding(Base):
     Class definition of table supply.egon_power_plants_pv_roof_building.
 
     """
+
     __tablename__ = "egon_power_plants_pv_roof_building"
     __table_args__ = {"schema": "supply"}
 
@@ -2210,9 +2212,7 @@ def add_metadata():
                     "Data from Marktstammdatenregister (MaStR) data using "
                     "the data dump from 2022-11-17 for eGon-data."
                 ),
-                "path": (
-                    f"https://zenodo.org/record/{deposit_id_mastr}"
-                ),
+                "path": (f"https://zenodo.org/record/{deposit_id_mastr}"),
                 "licenses": [license_dedl(attribution="© Amme, Jonathan")],
             },
             sources()["openstreetmap"],
@@ -2406,15 +2406,13 @@ def pv_rooftop_to_buildings():
 
     mastr_gdf = load_mastr_data()
 
-    status_quo = "status2023" # FIXME: Hard coded
+    status_quo = "status2023"  # FIXME: Hard coded
 
     ts = pd.Timestamp(
         config.datasets()["mastr_new"][f"{status_quo}_date_max"], tz="UTC"
     )
 
-    mastr_gdf = mastr_gdf.loc[
-        mastr_gdf.commissioning_date <= ts
-    ]
+    mastr_gdf = mastr_gdf.loc[mastr_gdf.commissioning_date <= ts]
 
     buildings_gdf = load_building_data()
 
@@ -2438,7 +2436,8 @@ def pv_rooftop_to_buildings():
             continue
         elif "status" in scenario:
             ts = pd.Timestamp(
-                config.datasets()["mastr_new"][f"{scenario}_date_max"], tz="UTC"
+                config.datasets()["mastr_new"][f"{scenario}_date_max"],
+                tz="UTC",
             )
 
             scenario_buildings_gdf = scenario_buildings_gdf.loc[

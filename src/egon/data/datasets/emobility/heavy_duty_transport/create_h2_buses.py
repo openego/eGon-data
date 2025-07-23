@@ -144,9 +144,7 @@ def delete_old_entries(scenario: str):
 def assign_h2_buses(scenario: str = "eGon2035"):
     hgv_h2_demand_gdf = read_hgv_h2_demand(scenario=scenario)
 
-    hgv_h2_demand_gdf = db.assign_gas_bus_id(
-        hgv_h2_demand_gdf, scenario, "H2"
-    )
+    hgv_h2_demand_gdf = db.assign_gas_bus_id(hgv_h2_demand_gdf, scenario, "H2")
 
     # Add carrier
     c = {"carrier": CARRIER}

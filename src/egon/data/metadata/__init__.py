@@ -415,7 +415,7 @@ def sources():
                 " developed requirements and criteria for the"
                 " assessment of suitable sites even if their"
                 " exploration is still at an early stage and there is"
-                ' little knowledge of the salinaries structures.'
+                " little knowledge of the salinaries structures."
                 " Scientists at DEEP.KBB GmbH in Hanover, worked"
                 " together with their project partners at the Federal"
                 " Institute for Geosciences and Natural Resources and"

@@ -38,6 +38,7 @@ class IeeHouseholdLoadProfiles(Base):
     """
     Class definition of table demand.iee_household_load_profiles.
     """
+
     __tablename__ = "iee_household_load_profiles"
     __table_args__ = {"schema": "demand"}
 
@@ -56,6 +57,7 @@ class HouseholdElectricityProfilesInCensusCells(Base):
     the peak load at load area level.
 
     """
+
     __tablename__ = "egon_household_electricity_profile_in_census_cell"
     __table_args__ = {"schema": "demand"}
 
@@ -74,6 +76,7 @@ class EgonDestatisZensusHouseholdPerHaRefined(Base):
     """
     Class definition of table society.egon_destatis_zensus_household_per_ha_refined.
     """
+
     __tablename__ = "egon_destatis_zensus_household_per_ha_refined"
     __table_args__ = {"schema": "society"}
 
@@ -95,6 +98,7 @@ class EgonEtragoElectricityHouseholds(Base):
     The table contains household electricity demand profiles aggregated at MV grid
     district level in MWh.
     """
+
     __tablename__ = "egon_etrago_electricity_households"
     __table_args__ = {"schema": "demand"}
 
@@ -237,7 +241,10 @@ class HouseholdDemands(Dataset):
     version: str = "0.0.12"
 
     def __init__(self, dependencies):
-        tasks = (create_table, houseprofiles_in_census_cells,)
+        tasks = (
+            create_table,
+            houseprofiles_in_census_cells,
+        )
 
         if (
             "status2019"
@@ -294,6 +301,7 @@ class HouseholdDemands(Dataset):
             tasks=tasks,
         )
 
+
 def create_table():
     EgonEtragoElectricityHouseholds.__table__.drop(
         bind=engine, checkfirst=True
@@ -301,6 +309,7 @@ def create_table():
     EgonEtragoElectricityHouseholds.__table__.create(
         bind=engine, checkfirst=True
     )
+
 
 def clean(x):
     """Clean zensus household data row-wise
@@ -1823,6 +1832,7 @@ def get_hh_profiles_from_db(profile_ids):
 
     return df_profile_loads
 
+
 def get_demand_regio_hh_profiles_from_db(year):
     """
     Retrieve demand regio household electricity demand profiles in nuts3 level
@@ -1841,11 +1851,10 @@ def get_demand_regio_hh_profiles_from_db(year):
     query = """Select * from demand.demandregio_household_load_profiles
     Where year = year"""
 
-    df_profile_loads = pd.read_sql(
-        query, db.engine(), index_col="id"
-    )
+    df_profile_loads = pd.read_sql(query, db.engine(), index_col="id")
 
     return df_profile_loads
+
 
 def mv_grid_district_HH_electricity_load(scenario_name, scenario_year):
     """
@@ -1897,26 +1906,28 @@ def mv_grid_district_HH_electricity_load(scenario_name, scenario_year):
     ]
 
     if method == "slp":
-        #Import demand regio timeseries demand per nuts3 area
-        dr_series = pd.read_sql_query("""
+        # Import demand regio timeseries demand per nuts3 area
+        dr_series = pd.read_sql_query(
+            """
             SELECT year, nuts3, load_in_mwh FROM demand.demandregio_household_load_profiles
             """,
-            con = engine
-            )
+            con=engine,
+        )
         dr_series = dr_series[dr_series["year"] == scenario_year]
         dr_series.drop(columns=["year"], inplace=True)
         dr_series.set_index("nuts3", inplace=True)
         dr_series = dr_series.squeeze()
 
-        #Population data per cell_id is used to scale the demand per nuts3
-        population = pd.read_sql_query("""
+        # Population data per cell_id is used to scale the demand per nuts3
+        population = pd.read_sql_query(
+            """
             SELECT grid_id, population FROM society.destatis_zensus_population_per_ha
             """,
-            con = engine
-            )
+            con=engine,
+        )
         population.set_index("grid_id", inplace=True)
         population = population.squeeze()
-        population.loc[population==-1] = 0
+        population.loc[population == -1] = 0
 
         cells["population"] = cells["grid_id"].map(population)
 
@@ -1928,7 +1939,9 @@ def mv_grid_district_HH_electricity_load(scenario_name, scenario_year):
         mvgd_profiles.index.name = "bus_id"
 
         for nuts3, df in cells.groupby("nuts3"):
-            cells.loc[df.index, factor_column] = df["population"] / df["population"].sum()
+            cells.loc[df.index, factor_column] = (
+                df["population"] / df["population"].sum()
+            )
 
         for bus, df_bus in cells.groupby("bus_id"):
             load_nuts = [0] * 8760
@@ -1962,8 +1975,12 @@ def mv_grid_district_HH_electricity_load(scenario_name, scenario_year):
                 year=scenario_year,
                 peak_load_only=False,
             )
-            mvgd_profiles_dict[grid_district] = [mvgd_profile.round(3).to_list()]
-        mvgd_profiles = pd.DataFrame.from_dict(mvgd_profiles_dict, orient="index")
+            mvgd_profiles_dict[grid_district] = [
+                mvgd_profile.round(3).to_list()
+            ]
+        mvgd_profiles = pd.DataFrame.from_dict(
+            mvgd_profiles_dict, orient="index"
+        )
 
         # Reshape data: put MV grid ids in columns to a single index column
         mvgd_profiles = mvgd_profiles.reset_index()

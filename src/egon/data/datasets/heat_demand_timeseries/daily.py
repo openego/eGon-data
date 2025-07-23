@@ -1,4 +1,5 @@
 from datetime import datetime
+from math import ceil
 import os
 
 from sqlalchemy import Column, Float, Integer, Text
@@ -7,13 +8,9 @@ import geopandas as gpd
 import numpy as np
 import pandas as pd
 
-from egon.data import db, config
+from egon.data import config, db
 from egon.data.datasets.scenario_parameters import get_sector_parameters
 import egon.data.datasets.era5 as era
-
-
-from math import ceil
-
 
 Base = declarative_base()
 
@@ -333,7 +330,7 @@ def temp_interval(temp_profile):
         Hourly temperature intrerval of all 15 TRY Climate station#s temperature profile
 
     """
-    #ToDo: Make this function scenario friendly
+    # ToDo: Make this function scenario friendly
     scenario = config.settings()["egon-data"]["--scenarios"][0]
     year = get_sector_parameters("global", scenario)["weather_year"]
 
@@ -365,7 +362,7 @@ def h_value(temp_profile):
         Extracted from demandlib.
 
     """
-    #ToDo: Make this function scenario friendly
+    # ToDo: Make this function scenario friendly
     scenario = config.settings()["egon-data"]["--scenarios"][0]
 
     year = get_sector_parameters("global", scenario)["weather_year"]

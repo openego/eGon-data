@@ -29,7 +29,7 @@ from egon.data.metadata import (
     contributors,
     license_egon_data_odbl,
     meta_metadata,
-    sources
+    sources,
 )
 
 Base = declarative_base()
@@ -120,10 +120,7 @@ def get_meta(
                     "primaryKey": ["scn_name", component.lower() + "_id"],
                     "foreignKeys": [],
                 },
-                "dialect": {
-                    "delimiter": "",
-                    "decimalSeparator": ""
-                    },
+                "dialect": {"delimiter": "", "decimalSeparator": ""},
             }
         ],
         "metaMetadata": meta_metadata(),
@@ -161,7 +158,6 @@ class EgonPfHvBus(Base):
     contributor_list[2]["comment"] = "Added DSM buses"
     contributor_list[3]["comment"] = "Added CH4 sector buses"
     contributor_list[4]["comment"] = "Added H2 sector buses"
-
 
     __tablename__ = "egon_etrago_bus"
     __table_args__ = {
@@ -235,7 +231,6 @@ class EgonPfHvGenerator(Base):
     contributor_list[3]["comment"] = "Added gas feedin generators"
     contributor_list[4]["comment"] = "Added pv ground mounted"
 
-
     __tablename__ = "egon_etrago_generator"
     __table_args__ = {
         "schema": "grid",
@@ -294,7 +289,6 @@ class EgonPfHvGeneratorTimeseries(Base):
     contributor_list[0][
         "comment"
     ] = "Added p_max_pu timeseries for pv and wind"
-
 
     __tablename__ = "egon_etrago_generator_timeseries"
     __table_args__ = {
@@ -424,7 +418,6 @@ class EgonPfHvLink(Base):
     contributor_list[4]["comment"] = "Added H2 related links"
     contributor_list[5]["comment"] = "Added CH4 links"
 
-
     __tablename__ = "egon_etrago_link"
     __table_args__ = {
         "schema": "grid",
@@ -523,7 +516,6 @@ class EgonPfHvLoad(Base):
     contributor_list[2]["comment"] = "Added gas demands"
     contributor_list[3]["comment"] = "Added mobility demands"
 
-
     __tablename__ = "egon_etrago_load"
     __table_args__ = {
         "schema": "grid",
@@ -565,7 +557,6 @@ class EgonPfHvLoadTimeseries(Base):
     contributor_list[2]["comment"] = "Added e mobility load timeseries"
     contributor_list[3]["comment"] = "Added gas load timeseries"
 
-
     __tablename__ = "egon_etrago_load_timeseries"
     __table_args__ = {
         "schema": "grid",
@@ -592,7 +583,6 @@ class EgonPfHvCarrier(Base):
 
     contributor_list = contributors(["fw"])
     contributor_list[0]["comment"] = "Added list of carriers"
-
 
     __tablename__ = "egon_etrago_carrier"
     __table_args__ = {
@@ -625,7 +615,6 @@ class EgonPfHvStorage(Base):
     contributor_list[0][
         "comment"
     ] = "Added battery and pumped hydro storage units"
-
 
     __tablename__ = "egon_etrago_storage"
     __table_args__ = {
@@ -674,7 +663,6 @@ class EgonPfHvStorageTimeseries(Base):
 
     contributor_list = contributors(["cb"])
     contributor_list[0]["comment"] = "Added metadata"
-
 
     __tablename__ = "egon_etrago_storage_timeseries"
     __table_args__ = {
@@ -813,7 +801,6 @@ class EgonPfHvTransformer(Base):
     contributor_list = contributors(["ic", "cb"])
     contributor_list[0]["comment"] = "Added transformes from osmTGmod tables"
     contributor_list[1]["comment"] = "Added meta data"
-
 
     __tablename__ = "egon_etrago_transformer"
     __table_args__ = {

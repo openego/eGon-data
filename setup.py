@@ -34,9 +34,7 @@ setup(
         re.sub(":[a-z]+:`~?(.*?)`", r"``\1``", read("CHANGELOG.rst")),
     ),
     author=read("AUTHORS.rst"),
-    author_email=(
-        "regon-project@rl-institut.de"
-    ),
+    author_email=("regon-project@rl-institut.de"),
     url="https://github.com/openego/eGon-data",
     packages=["egon"] + ["egon." + p for p in find_packages("src/egon")],
     package_dir={"": "src"},
@@ -100,7 +98,7 @@ setup(
         "netcdf4",
         "numpy",
         "oedialect==0.0.8",
-        "oemetadata<=2.0.1", # incompatibilities with metadata 1.3
+        "oemetadata<=2.0.1",  # incompatibilities with metadata 1.3
         "omi",
         "openpyxl",
         "pandas>2.0.0",
@@ -126,7 +124,15 @@ setup(
         "fuzzywuzzy",
     ],
     extras_require={
-        "dev": ["black", "flake8", "isort>=5", "pre-commit", "pytest", "tox", "jupyterlab"]
+        "dev": [
+            "black",
+            "flake8",
+            "isort>=5",
+            "pre-commit",
+            "pytest",
+            "tox",
+            "jupyterlab",
+        ]
         # eg:
         #   'rst': ['docutils>=0.11'],
         #   ':python_version=="2.6"': ['argparse'],

@@ -3,9 +3,8 @@ import os
 from airflow.utils.dates import days_ago
 import airflow
 
-from egon.data.config import settings as egon_settings
 from egon.data.config import set_numexpr_threads
-from egon.data.metadata import Json_Metadata
+from egon.data.config import settings as egon_settings
 from egon.data.datasets import database
 from egon.data.datasets.calculate_dlr import Calculate_dlr
 from egon.data.datasets.ch4_prod import CH4Production
@@ -55,10 +54,10 @@ from egon.data.datasets.heat_supply import (
     HeatSupply,
 )
 from egon.data.datasets.heat_supply.individual_heating import (
-    HeatPumpsStatusQuo,
     HeatPumps2035,
     HeatPumps2050,
     HeatPumpsPypsaEur,
+    HeatPumpsStatusQuo,
 )
 from egon.data.datasets.hydrogen_etrago import (
     HydrogenBusEtrago,
@@ -90,6 +89,7 @@ from egon.data.datasets.saltcavern import SaltcavernData
 from egon.data.datasets.sanity_checks import SanityChecks
 from egon.data.datasets.scenario_capacities import ScenarioCapacities
 from egon.data.datasets.scenario_parameters import ScenarioParameters
+from egon.data.datasets.scenario_path import CreateIntermediateScenarios
 from egon.data.datasets.society_prognosis import SocietyPrognosis
 from egon.data.datasets.storages import Storages
 from egon.data.datasets.storages_etrago import StorageEtrago
@@ -101,7 +101,7 @@ from egon.data.datasets.vg250_mv_grid_districts import Vg250MvGridDistricts
 from egon.data.datasets.zensus import ZensusMiscellaneous, ZensusPopulation
 from egon.data.datasets.zensus_mv_grid_districts import ZensusMvGridDistricts
 from egon.data.datasets.zensus_vg250 import ZensusVg250
-from egon.data.datasets.scenario_path import CreateIntermediateScenarios
+from egon.data.metadata import Json_Metadata
 
 # Set number of threads used by numpy and pandas
 set_numexpr_threads()
@@ -369,13 +369,12 @@ with airflow.DAG(
         ]
     )
 
-
     geothermal_potential_germany = GeothermalPotentialGermany(
         dependencies=[
             data_bundle,
             district_heating_areas,
         ]
-        )
+    )
 
     # Deal with electrical neighbours
     foreign_lines = ElectricalNeighbours(
@@ -467,9 +466,7 @@ with airflow.DAG(
     )
 
     # Import CH4 storages
-    insert_data_ch4_storages = CH4Storages(
-        dependencies=[create_gas_polygons]
-    )
+    insert_data_ch4_storages = CH4Storages(dependencies=[create_gas_polygons])
 
     # Assign industrial gas demand eGon2035
     IndustrialGasDemandeGon2035(
@@ -478,7 +475,11 @@ with airflow.DAG(
 
     # Assign industrial gas demand eGon100RE
     IndustrialGasDemandeGon100RE(
-        dependencies=[create_gas_polygons, industrial_gas_demand, run_pypsaeur,]
+        dependencies=[
+            create_gas_polygons,
+            industrial_gas_demand,
+            run_pypsaeur,
+        ]
     )
 
     # CHP locations
@@ -571,7 +572,6 @@ with airflow.DAG(
     # CHP to eTraGo
     chp_etrago = ChpEtrago(dependencies=[chp, heat_etrago])
 
-
     # Storages to eTraGo
     storage_etrago = StorageEtrago(
         dependencies=[pumped_hydro, scenario_parameters, setup_etrago]
@@ -623,14 +623,19 @@ with airflow.DAG(
 
     # Power-to-H2-to-power chain installations with oxygen and waste_heat usage
     insert_power_to_h2_installations = HydrogenPowerLinkEtrago(
-        dependencies= [h2_infrastructure, mv_grid_districts, heat_etrago, substation_extraction, hts_etrago_table]
+        dependencies=[
+            h2_infrastructure,
+            mv_grid_districts,
+            heat_etrago,
+            substation_extraction,
+            hts_etrago_table,
+        ]
     )
 
     # Link between methane grid and respective hydrogen buses
     insert_h2_to_ch4_grid_links = HydrogenMethaneLinkEtrago(
         dependencies=[h2_infrastructure, insert_power_to_h2_installations]
     )
-
 
     # Heat pump disaggregation for eGon100RE
     heat_pumps_2050 = HeatPumps2050(

@@ -77,7 +77,7 @@ SELECT obj_description('boundaries.vg250_sta_tiny_buffer' ::regclass) ::json;
 
 -- 1. country - error geometry
 DROP MATERIALIZED VIEW IF EXISTS	boundaries.vg250_sta_invalid_geometry CASCADE;
-CREATE MATERIALIZED VIEW		boundaries.vg250_sta_invalid_geometry AS 
+CREATE MATERIALIZED VIEW		boundaries.vg250_sta_invalid_geometry AS
 	SELECT	sub.id AS id,
 		sub.error AS error,
 		sub.error_reason AS error_reason,
@@ -125,7 +125,7 @@ COMMENT ON MATERIALIZED VIEW boundaries.vg250_sta_invalid_geometry IS '{
 	"Date":  "16.11.2016", "Comment": "Added metadata" } ],
     "Notes": [""],
     "Licence": [{
-	"Name": "Geodatenzugangsgesetz (GeoZG) © GeoBasis-DE / BKG 2016 (Daten verändert)", 
+	"Name": "Geodatenzugangsgesetz (GeoZG) © GeoBasis-DE / BKG 2016 (Daten verändert)",
 	"URL": "http://www.geodatenzentrum.de/auftrag/pdf/geodatenzugangsgesetz.pdf" }],
     "Instructions for proper use": ["Dieser Datenbestand steht über Geodatendienste gemäß Geodatenzugangsgesetz (GeoZG) (http://www.geodatenzentrum.de/auftrag/pdf/geodatenzugangsgesetz.pdf) für die kommerzielle und nicht kommerzielle Nutzung geldleistungsfrei zum Download und zur Online-Nutzung zur Verfügung. Die Nutzung der Geodaten und Geodatendienste wird durch die Verordnung zur Festlegung der Nutzungsbestimmungen für die Bereitstellung von Geodaten des Bundes (GeoNutzV) (http://www.geodatenzentrum.de/auftrag/pdf/geonutz.pdf) geregelt. Insbesondere hat jeder Nutzer den Quellenvermerk zu allen Geodaten, Metadaten und Geodatendiensten erkennbar und in optischem Zusammenhang zu platzieren. Veränderungen, Bearbeitungen, neue Gestaltungen oder sonstige Abwandlungen sind mit einem Veränderungshinweis im Quellenvermerk zu versehen. Quellenvermerk und Veränderungshinweis sind wie folgt zu gestalten. Bei der Darstellung auf einer Webseite ist der Quellenvermerk mit der URL http://www.bkg.bund.de zu verlinken. © GeoBasis-DE / BKG <Jahr des letzten Datenbezugs> © GeoBasis-DE / BKG <Jahr des letzten Datenbezugs> (Daten verändert) Beispiel: © GeoBasis-DE / BKG 2013"]
     }' ;
@@ -182,7 +182,7 @@ COMMENT ON MATERIALIZED VIEW boundaries.vg250_sta_union IS '{
 	"Date":  "16.11.2016", "Comment": "Added metadata" } ],
     "Notes": [""],
     "Licence": [{
-	"Name": "Geodatenzugangsgesetz (GeoZG) © GeoBasis-DE / BKG 2016 (Daten verändert)", 
+	"Name": "Geodatenzugangsgesetz (GeoZG) © GeoBasis-DE / BKG 2016 (Daten verändert)",
 	"URL": "http://www.geodatenzentrum.de/auftrag/pdf/geodatenzugangsgesetz.pdf" }],
     "Instructions for proper use": ["Dieser Datenbestand steht über Geodatendienste gemäß Geodatenzugangsgesetz (GeoZG) (http://www.geodatenzentrum.de/auftrag/pdf/geodatenzugangsgesetz.pdf) für die kommerzielle und nicht kommerzielle Nutzung geldleistungsfrei zum Download und zur Online-Nutzung zur Verfügung. Die Nutzung der Geodaten und Geodatendienste wird durch die Verordnung zur Festlegung der Nutzungsbestimmungen für die Bereitstellung von Geodaten des Bundes (GeoNutzV) (http://www.geodatenzentrum.de/auftrag/pdf/geonutz.pdf) geregelt. Insbesondere hat jeder Nutzer den Quellenvermerk zu allen Geodaten, Metadaten und Geodatendiensten erkennbar und in optischem Zusammenhang zu platzieren. Veränderungen, Bearbeitungen, neue Gestaltungen oder sonstige Abwandlungen sind mit einem Veränderungshinweis im Quellenvermerk zu versehen. Quellenvermerk und Veränderungshinweis sind wie folgt zu gestalten. Bei der Darstellung auf einer Webseite ist der Quellenvermerk mit der URL http://www.bkg.bund.de zu verlinken. © GeoBasis-DE / BKG <Jahr des letzten Datenbezugs> © GeoBasis-DE / BKG <Jahr des letzten Datenbezugs> (Daten verändert) Beispiel: © GeoBasis-DE / BKG 2013"]
     }' ;
@@ -238,7 +238,7 @@ COMMENT ON MATERIALIZED VIEW boundaries.vg250_sta_bbox IS '{
 	"Date":  "16.11.2016", "Comment": "Added metadata" } ],
     "Notes": [""],
     "Licence": [{
-	"Name": "Geodatenzugangsgesetz (GeoZG) © GeoBasis-DE / BKG 2016 (Daten verändert)", 
+	"Name": "Geodatenzugangsgesetz (GeoZG) © GeoBasis-DE / BKG 2016 (Daten verändert)",
 	"URL": "http://www.geodatenzentrum.de/auftrag/pdf/geodatenzugangsgesetz.pdf" }],
     "Instructions for proper use": ["Dieser Datenbestand steht über Geodatendienste gemäß Geodatenzugangsgesetz (GeoZG) (http://www.geodatenzentrum.de/auftrag/pdf/geodatenzugangsgesetz.pdf) für die kommerzielle und nicht kommerzielle Nutzung geldleistungsfrei zum Download und zur Online-Nutzung zur Verfügung. Die Nutzung der Geodaten und Geodatendienste wird durch die Verordnung zur Festlegung der Nutzungsbestimmungen für die Bereitstellung von Geodaten des Bundes (GeoNutzV) (http://www.geodatenzentrum.de/auftrag/pdf/geonutz.pdf) geregelt. Insbesondere hat jeder Nutzer den Quellenvermerk zu allen Geodaten, Metadaten und Geodatendiensten erkennbar und in optischem Zusammenhang zu platzieren. Veränderungen, Bearbeitungen, neue Gestaltungen oder sonstige Abwandlungen sind mit einem Veränderungshinweis im Quellenvermerk zu versehen. Quellenvermerk und Veränderungshinweis sind wie folgt zu gestalten. Bei der Darstellung auf einer Webseite ist der Quellenvermerk mit der URL http://www.bkg.bund.de zu verlinken. © GeoBasis-DE / BKG <Jahr des letzten Datenbezugs> © GeoBasis-DE / BKG <Jahr des letzten Datenbezugs> (Daten verändert) Beispiel: © GeoBasis-DE / BKG 2013"]
     }' ;
@@ -247,7 +247,7 @@ COMMENT ON MATERIALIZED VIEW boundaries.vg250_sta_bbox IS '{
 SELECT obj_description('boundaries.vg250_sta_bbox' ::regclass) ::json;
 */
 
-	
+
 -- 2. Bundesland (lan) - federal state (fst)
 -- 2. federal state - mview with tiny buffer because of intersection (in official data)
 DROP MATERIALIZED VIEW IF EXISTS	boundaries.vg250_lan_union CASCADE;
@@ -299,7 +299,7 @@ COMMENT ON MATERIALIZED VIEW boundaries.vg250_lan_union IS '{
 	"Date":  "16.11.2016", "Comment": "Added metadata" } ],
     "Notes": [""],
     "Licence": [{
-	"Name": "Geodatenzugangsgesetz (GeoZG) © GeoBasis-DE / BKG 2016 (Daten verändert)", 
+	"Name": "Geodatenzugangsgesetz (GeoZG) © GeoBasis-DE / BKG 2016 (Daten verändert)",
 	"URL": "http://www.geodatenzentrum.de/auftrag/pdf/geodatenzugangsgesetz.pdf" }],
     "Instructions for proper use": ["Dieser Datenbestand steht über Geodatendienste gemäß Geodatenzugangsgesetz (GeoZG) (http://www.geodatenzentrum.de/auftrag/pdf/geodatenzugangsgesetz.pdf) für die kommerzielle und nicht kommerzielle Nutzung geldleistungsfrei zum Download und zur Online-Nutzung zur Verfügung. Die Nutzung der Geodaten und Geodatendienste wird durch die Verordnung zur Festlegung der Nutzungsbestimmungen für die Bereitstellung von Geodaten des Bundes (GeoNutzV) (http://www.geodatenzentrum.de/auftrag/pdf/geonutz.pdf) geregelt. Insbesondere hat jeder Nutzer den Quellenvermerk zu allen Geodaten, Metadaten und Geodatendiensten erkennbar und in optischem Zusammenhang zu platzieren. Veränderungen, Bearbeitungen, neue Gestaltungen oder sonstige Abwandlungen sind mit einem Veränderungshinweis im Quellenvermerk zu versehen. Quellenvermerk und Veränderungshinweis sind wie folgt zu gestalten. Bei der Darstellung auf einer Webseite ist der Quellenvermerk mit der URL http://www.bkg.bund.de zu verlinken. © GeoBasis-DE / BKG <Jahr des letzten Datenbezugs> © GeoBasis-DE / BKG <Jahr des letzten Datenbezugs> (Daten verändert) Beispiel: © GeoBasis-DE / BKG 2013"]
     }' ;
@@ -309,7 +309,7 @@ SELECT obj_description('boundaries.vg250_lan_union' ::regclass) ::json;
 */
 
 -- 4. Landkreis (krs) - district (dist)
--- 4. district - mview 
+-- 4. district - mview
 DROP MATERIALIZED VIEW IF EXISTS	boundaries.vg250_krs_area CASCADE;
 CREATE MATERIALIZED VIEW		boundaries.vg250_krs_area AS
 	SELECT
@@ -363,7 +363,7 @@ COMMENT ON MATERIALIZED VIEW boundaries.vg250_krs_area IS '{
 	"Date":  "16.11.2016", "Comment": "Added metadata" } ],
     "Notes": [""],
     "Licence": [{
-	"Name": "Geodatenzugangsgesetz (GeoZG) © GeoBasis-DE / BKG 2016 (Daten verändert)", 
+	"Name": "Geodatenzugangsgesetz (GeoZG) © GeoBasis-DE / BKG 2016 (Daten verändert)",
 	"URL": "http://www.geodatenzentrum.de/auftrag/pdf/geodatenzugangsgesetz.pdf" }],
     "Instructions for proper use": ["Dieser Datenbestand steht über Geodatendienste gemäß Geodatenzugangsgesetz (GeoZG) (http://www.geodatenzentrum.de/auftrag/pdf/geodatenzugangsgesetz.pdf) für die kommerzielle und nicht kommerzielle Nutzung geldleistungsfrei zum Download und zur Online-Nutzung zur Verfügung. Die Nutzung der Geodaten und Geodatendienste wird durch die Verordnung zur Festlegung der Nutzungsbestimmungen für die Bereitstellung von Geodaten des Bundes (GeoNutzV) (http://www.geodatenzentrum.de/auftrag/pdf/geonutz.pdf) geregelt. Insbesondere hat jeder Nutzer den Quellenvermerk zu allen Geodaten, Metadaten und Geodatendiensten erkennbar und in optischem Zusammenhang zu platzieren. Veränderungen, Bearbeitungen, neue Gestaltungen oder sonstige Abwandlungen sind mit einem Veränderungshinweis im Quellenvermerk zu versehen. Quellenvermerk und Veränderungshinweis sind wie folgt zu gestalten. Bei der Darstellung auf einer Webseite ist der Quellenvermerk mit der URL http://www.bkg.bund.de zu verlinken. © GeoBasis-DE / BKG <Jahr des letzten Datenbezugs> © GeoBasis-DE / BKG <Jahr des letzten Datenbezugs> (Daten verändert) Beispiel: © GeoBasis-DE / BKG 2013"]
     }' ;
@@ -431,7 +431,7 @@ COMMENT ON MATERIALIZED VIEW boundaries.vg250_gem_valid IS '{
 	"Date":  "16.11.2016", "Comment": "Added metadata" } ],
     "Notes": [""],
     "Licence": [{
-	"Name": "Geodatenzugangsgesetz (GeoZG) © GeoBasis-DE / BKG 2016 (Daten verändert)", 
+	"Name": "Geodatenzugangsgesetz (GeoZG) © GeoBasis-DE / BKG 2016 (Daten verändert)",
 	"URL": "http://www.geodatenzentrum.de/auftrag/pdf/geodatenzugangsgesetz.pdf" }],
     "Instructions for proper use": ["Dieser Datenbestand steht über Geodatendienste gemäß Geodatenzugangsgesetz (GeoZG) (http://www.geodatenzentrum.de/auftrag/pdf/geodatenzugangsgesetz.pdf) für die kommerzielle und nicht kommerzielle Nutzung geldleistungsfrei zum Download und zur Online-Nutzung zur Verfügung. Die Nutzung der Geodaten und Geodatendienste wird durch die Verordnung zur Festlegung der Nutzungsbestimmungen für die Bereitstellung von Geodaten des Bundes (GeoNutzV) (http://www.geodatenzentrum.de/auftrag/pdf/geonutz.pdf) geregelt. Insbesondere hat jeder Nutzer den Quellenvermerk zu allen Geodaten, Metadaten und Geodatendiensten erkennbar und in optischem Zusammenhang zu platzieren. Veränderungen, Bearbeitungen, neue Gestaltungen oder sonstige Abwandlungen sind mit einem Veränderungshinweis im Quellenvermerk zu versehen. Quellenvermerk und Veränderungshinweis sind wie folgt zu gestalten. Bei der Darstellung auf einer Webseite ist der Quellenvermerk mit der URL http://www.bkg.bund.de zu verlinken. © GeoBasis-DE / BKG <Jahr des letzten Datenbezugs> © GeoBasis-DE / BKG <Jahr des letzten Datenbezugs> (Daten verändert) Beispiel: © GeoBasis-DE / BKG 2013"]
     }' ;
@@ -471,7 +471,7 @@ INSERT INTO	boundaries.vg250_gem_clean (old_id,gen,bez,bem,nuts,rs_0,ags_0,area_
 		ST_AREA(dump.geometry) / 10000 ::decimal AS area_ha,
 		dump.count_hole ::integer,
 		dump.path ::integer[] AS path,
-		dump.geometry ::geometry(Polygon,3035) AS geometry		
+		dump.geometry ::geometry(Polygon,3035) AS geometry
 	FROM	(SELECT vg.id,
 			vg.gen,
 			vg.bez,
@@ -491,7 +491,7 @@ CREATE INDEX  	vg250_gem_clean_geometry_idx
 
 -- separate holes
 DROP MATERIALIZED VIEW IF EXISTS	boundaries.vg250_gem_hole CASCADE;
-CREATE MATERIALIZED VIEW 		boundaries.vg250_gem_hole AS 
+CREATE MATERIALIZED VIEW 		boundaries.vg250_gem_hole AS
 SELECT 	mun.*
 FROM	boundaries.vg250_gem_clean AS mun
 WHERE	mun.path[1] <> 0;
@@ -539,7 +539,7 @@ COMMENT ON MATERIALIZED VIEW boundaries.vg250_gem_hole IS '{
 	"Date":  "16.11.2016", "Comment": "Added metadata" } ],
     "Notes": [""],
     "Licence": [{
-	"Name": "Geodatenzugangsgesetz (GeoZG) © GeoBasis-DE / BKG 2016 (Daten verändert)", 
+	"Name": "Geodatenzugangsgesetz (GeoZG) © GeoBasis-DE / BKG 2016 (Daten verändert)",
 	"URL": "http://www.geodatenzentrum.de/auftrag/pdf/geodatenzugangsgesetz.pdf" }],
     "Instructions for proper use": ["Dieser Datenbestand steht über Geodatendienste gemäß Geodatenzugangsgesetz (GeoZG) (http://www.geodatenzentrum.de/auftrag/pdf/geodatenzugangsgesetz.pdf) für die kommerzielle und nicht kommerzielle Nutzung geldleistungsfrei zum Download und zur Online-Nutzung zur Verfügung. Die Nutzung der Geodaten und Geodatendienste wird durch die Verordnung zur Festlegung der Nutzungsbestimmungen für die Bereitstellung von Geodaten des Bundes (GeoNutzV) (http://www.geodatenzentrum.de/auftrag/pdf/geonutz.pdf) geregelt. Insbesondere hat jeder Nutzer den Quellenvermerk zu allen Geodaten, Metadaten und Geodatendiensten erkennbar und in optischem Zusammenhang zu platzieren. Veränderungen, Bearbeitungen, neue Gestaltungen oder sonstige Abwandlungen sind mit einem Veränderungshinweis im Quellenvermerk zu versehen. Quellenvermerk und Veränderungshinweis sind wie folgt zu gestalten. Bei der Darstellung auf einer Webseite ist der Quellenvermerk mit der URL http://www.bkg.bund.de zu verlinken. © GeoBasis-DE / BKG <Jahr des letzten Datenbezugs> © GeoBasis-DE / BKG <Jahr des letzten Datenbezugs> (Daten verändert) Beispiel: © GeoBasis-DE / BKG 2013"]
     }' ;
@@ -599,7 +599,7 @@ COMMENT ON TABLE boundaries.vg250_gem_clean IS '{
 	"Date":  "16.11.2016", "Comment": "Added metadata" } ],
     "Notes": [""],
     "Licence": [{
-	"Name": "Geodatenzugangsgesetz (GeoZG) © GeoBasis-DE / BKG 2016 (Daten verändert)", 
+	"Name": "Geodatenzugangsgesetz (GeoZG) © GeoBasis-DE / BKG 2016 (Daten verändert)",
 	"URL": "http://www.geodatenzentrum.de/auftrag/pdf/geodatenzugangsgesetz.pdf" }],
     "Instructions for proper use": ["Dieser Datenbestand steht über Geodatendienste gemäß Geodatenzugangsgesetz (GeoZG) (http://www.geodatenzentrum.de/auftrag/pdf/geodatenzugangsgesetz.pdf) für die kommerzielle und nicht kommerzielle Nutzung geldleistungsfrei zum Download und zur Online-Nutzung zur Verfügung. Die Nutzung der Geodaten und Geodatendienste wird durch die Verordnung zur Festlegung der Nutzungsbestimmungen für die Bereitstellung von Geodaten des Bundes (GeoNutzV) (http://www.geodatenzentrum.de/auftrag/pdf/geonutz.pdf) geregelt. Insbesondere hat jeder Nutzer den Quellenvermerk zu allen Geodaten, Metadaten und Geodatendiensten erkennbar und in optischem Zusammenhang zu platzieren. Veränderungen, Bearbeitungen, neue Gestaltungen oder sonstige Abwandlungen sind mit einem Veränderungshinweis im Quellenvermerk zu versehen. Quellenvermerk und Veränderungshinweis sind wie folgt zu gestalten. Bei der Darstellung auf einer Webseite ist der Quellenvermerk mit der URL http://www.bkg.bund.de zu verlinken. © GeoBasis-DE / BKG <Jahr des letzten Datenbezugs> © GeoBasis-DE / BKG <Jahr des letzten Datenbezugs> (Daten verändert) Beispiel: © GeoBasis-DE / BKG 2013"]
     }' ;

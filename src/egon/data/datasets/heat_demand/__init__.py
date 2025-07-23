@@ -35,17 +35,9 @@ import rasterio
 
 from egon.data import db, subprocess
 from egon.data.datasets import Dataset
-from egon.data.datasets.scenario_parameters import (
-    get_sector_parameters,
-)
-from egon.data.metadata import (
-    context,
-    license_ccby,
-    meta_metadata,
-    sources,
-)
+from egon.data.datasets.scenario_parameters import get_sector_parameters
+from egon.data.metadata import context, license_ccby, meta_metadata, sources
 import egon.data.config
-
 
 
 class HeatDemandImport(Dataset):
@@ -70,7 +62,6 @@ class HeatDemandImport(Dataset):
       * :py:class:`demand.egon_peta_heat <egon.data.datasets.heat_demand.EgonPetaHeat>` is created and filled
 
     """
-
 
     #:
     name: str = "heat-demands"
@@ -392,25 +383,31 @@ def future_heat_demand_germany(scenario_name):
             heat_parameters["DE_demand_service_TJ"] / 3600 / 226.588158
         )
     elif scenario_name == "status2023":
-        heat_parameters = get_sector_parameters("heat", scenario=scenario_name) # currently data for 2019 is used
+        heat_parameters = get_sector_parameters(
+            "heat", scenario=scenario_name
+        )  # currently data for 2019 is used
         # see scenario_paramters/__init__ for this.
 
         # Calculate reduction share based on final energy demand and overall demand from Peta for 2015
         res_hd_reduction = (
-            heat_parameters["DE_demand_residential_TJ"] / 3600 / 443.788483  # TODO status2023 can values stay same?
+            heat_parameters["DE_demand_residential_TJ"]
+            / 3600
+            / 443.788483  # TODO status2023 can values stay same?
         )
         ser_hd_reduction = (
-            heat_parameters["DE_demand_service_TJ"] / 3600 / 226.588158  # TODO status2023 can values stay same?
+            heat_parameters["DE_demand_service_TJ"]
+            / 3600
+            / 226.588158  # TODO status2023 can values stay same?
         )
     elif scenario_name == "eGon100RE":
         heat_parameters = get_sector_parameters("heat", scenario=scenario_name)
 
         # Calculate reduction share based on final energy demand and overall demand from Peta for 2015
-        res_hd_reduction = (
-            heat_parameters["DE_demand_residential_MWh"] / (443.788483 * 1e6)
+        res_hd_reduction = heat_parameters["DE_demand_residential_MWh"] / (
+            443.788483 * 1e6
         )
-        ser_hd_reduction = (
-            heat_parameters["DE_demand_service_MWh"] / (226.588158 * 1e6)
+        ser_hd_reduction = heat_parameters["DE_demand_service_MWh"] / (
+            226.588158 * 1e6
         )
     else:
         heat_parameters = get_sector_parameters("heat", scenario=scenario_name)

@@ -746,7 +746,7 @@ def write_model_data_to_db(
                 scenario_name=scenario_name,
                 connection_bus_id=etrago_bus.bus_id,
                 load_ts=hourly_load_time_series_df.load_time_series.to_list(),
-                )
+            )
         else:
             if write_lowflex_model is False:
                 emob_bus_id = write_bus(scenario_name=scenario_name)
@@ -1107,6 +1107,7 @@ def generate_model_data_status2019_remaining():
         bunch=range(MVGD_MIN_COUNT, len(load_grid_district_ids())),
     )
 
+
 def generate_model_data_status2023_remaining():
     """Generates timeseries for status2023 scenario for grid districts which
     has not been processed in the parallel tasks before.
@@ -1115,6 +1116,7 @@ def generate_model_data_status2023_remaining():
         scenario_name="status2023",
         bunch=range(MVGD_MIN_COUNT, len(load_grid_district_ids())),
     )
+
 
 def generate_model_data_eGon2035_remaining():
     """Generates timeseries for eGon2035 scenario for grid districts which

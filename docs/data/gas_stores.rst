@@ -5,7 +5,7 @@ In both scenarios is there the option to store hydrogen. In the scenario
 eGon2035, these potentials are modelled only in Germany, because the hydrogen
 sector is not modelled in the neighboring countries.
 Hydrogen is stored either in steel tanks (*overground storage*) or in saltcavern
-(*underground storage*), which are modelled by PyPSA *stores*. The technical 
+(*underground storage*), which are modelled by PyPSA *stores*. The technical
 parameters (investment and marginal costs, efficiency, lifetime) comes
 from the PyPSA technology data [technoData]_. The steel tank storage potentials
 are not limited. On the contrary, the saltcavern storage potentials do have
@@ -27,7 +27,7 @@ The implementation of these data is detailed in the :py:mod:`hydrogen_etrago.sto
 <egon.data.datasets.hydrogen_etrago.storage>` page of our documentation.
 
 In eGon100RE, the retrofitted hydrogen grid can also be used as storage,
-with unvariable capacity. This implementation is detailed in the 
+with unvariable capacity. This implementation is detailed in the
 :py:mod:`grid_storage <egon.data.datasets.ch4_storages>` page of our documentation.
 
 In the neighboring countries

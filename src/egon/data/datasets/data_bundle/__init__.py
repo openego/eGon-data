@@ -41,9 +41,9 @@ def download():
 
 class DataBundle(Dataset):
     def __init__(self, dependencies):
-        deposit_id = config.datasets()["data-bundle"]["sources"][
-            "zenodo"
-        ]["deposit_id"]
+        deposit_id = config.datasets()["data-bundle"]["sources"]["zenodo"][
+            "deposit_id"
+        ]
         deposit_id_powerd = config.datasets()["data-bundle"]["sources"][
             "zenodo"
         ]["deposit_id"]

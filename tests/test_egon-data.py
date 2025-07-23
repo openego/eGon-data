@@ -25,7 +25,7 @@ def test_main():
     )
 )
 def test_airflow():
-    """ Test that `egon-data airflow` correctly forwards to airflow. """
+    """Test that `egon-data airflow` correctly forwards to airflow."""
     runner = CliRunner()
     with runner.isolated_filesystem():
         result = runner.invoke(egon_data, ["airflow", "--help"])

@@ -1,7 +1,7 @@
 /*
 EHV Substation
 Abstract EHV Substations of the extra high voltage level from OSM.
-This script abstracts substations of the extra high voltage level from openstreetmap data. 
+This script abstracts substations of the extra high voltage level from openstreetmap data.
 
 __copyright__   = "DLR Institute for Networked Energy Systems"
 __license__     = "GNU Affero General Public License Version 3 (AGPL-3.0)"
@@ -21,40 +21,40 @@ CREATE VIEW 		grid.egon_way_substations AS
 	FROM 	openstreetmap.osm_ways JOIN openstreetmap.osm_line ON openstreetmap.osm_ways.id = openstreetmap.osm_line.osm_id
 	WHERE 	hstore(openstreetmap.osm_ways.tags)->'power' in ('substation','sub_station','station');
 
--- 
+--
 DROP VIEW IF EXISTS 	grid.egon_way_substations_with_hoes CASCADE;
 CREATE VIEW 		grid.egon_way_substations_with_hoes AS
-	SELECT 	* 
+	SELECT 	*
 	FROM 	grid.egon_way_substations
-	WHERE 	'220000' = ANY( string_to_array(hstore(grid.egon_way_substations.tags)->'voltage',';')) 
-		OR '380000' = ANY( string_to_array(hstore(grid.egon_way_substations.tags)->'voltage',';')); 
+	WHERE 	'220000' = ANY( string_to_array(hstore(grid.egon_way_substations.tags)->'voltage',';'))
+		OR '380000' = ANY( string_to_array(hstore(grid.egon_way_substations.tags)->'voltage',';'));
 
 --> NODE: Erzeuge einen VIEW aus OSM node substations:
 DROP VIEW IF EXISTS 	grid.egon_node_substations_with_hoes CASCADE;
 CREATE VIEW 		grid.egon_node_substations_with_hoes AS
 	SELECT 	openstreetmap.osm_nodes.id, openstreetmap.osm_point.tags, openstreetmap.osm_point.geom
 	FROM 	openstreetmap.osm_nodes JOIN openstreetmap.osm_point ON openstreetmap.osm_nodes.id = openstreetmap.osm_point.osm_id
-	WHERE 	'220000' = ANY( string_to_array(hstore(openstreetmap.osm_point.tags)->'voltage',';')) 
-		and hstore(openstreetmap.osm_point.tags)->'power' in ('substation','sub_station','station') 
-		OR '380000' = ANY( string_to_array(hstore(openstreetmap.osm_point.tags)->'voltage',';')) 
+	WHERE 	'220000' = ANY( string_to_array(hstore(openstreetmap.osm_point.tags)->'voltage',';'))
+		and hstore(openstreetmap.osm_point.tags)->'power' in ('substation','sub_station','station')
+		OR '380000' = ANY( string_to_array(hstore(openstreetmap.osm_point.tags)->'voltage',';'))
 		and hstore(openstreetmap.osm_point.tags)->'power' in ('substation','sub_station','station');
 
 
 --> RELATION: Erzeuge einen VIEW aus OSM relation substations:
--- Da die relations keine geometry besitzen wird mit folgender funktion der geometrische mittelpunkt der relation ermittelt, 
+-- Da die relations keine geometry besitzen wird mit folgender funktion der geometrische mittelpunkt der relation ermittelt,
 -- wobei hier der Mittelpunkt aus dem Rechteck ermittelt wird welches entsteht, wenn man die äußersten Korrdinaten für
 -- longitude und latitude wählt
 -- needs st_relation_geometry
 DROP VIEW IF EXISTS 	grid.egon_relation_substations_with_hoes CASCADE;
 CREATE VIEW 		grid.egon_relation_substations_with_hoes AS
 	SELECT 	openstreetmap.osm_rels.id, openstreetmap.osm_rels.tags, relation_geometry(openstreetmap.osm_rels.members) as way
-	FROM 	openstreetmap.osm_rels 
-	WHERE 	'220000' = ANY( string_to_array(hstore(openstreetmap.osm_rels.tags)->'voltage',';')) 
-		and hstore(openstreetmap.osm_rels.tags)->'power' in ('substation','sub_station','station') 
-		OR '380000' = ANY( string_to_array(hstore(openstreetmap.osm_rels.tags)->'voltage',';')) 
+	FROM 	openstreetmap.osm_rels
+	WHERE 	'220000' = ANY( string_to_array(hstore(openstreetmap.osm_rels.tags)->'voltage',';'))
+		and hstore(openstreetmap.osm_rels.tags)->'power' in ('substation','sub_station','station')
+		OR '380000' = ANY( string_to_array(hstore(openstreetmap.osm_rels.tags)->'voltage',';'))
 		and hstore(openstreetmap.osm_rels.tags)->'power' in ('substation','sub_station','station');
 
--- 
+--
 DROP VIEW IF EXISTS 	grid.egon_substation_hoes CASCADE;
 CREATE VIEW 		grid.egon_substation_hoes AS
 	SELECT  *,
@@ -68,7 +68,7 @@ CREATE VIEW 		grid.egon_substation_hoes AS
 		'w'|| grid.egon_way_substations_with_hoes.id as osm_id,
 		'2'::smallint as status
 	FROM grid.egon_way_substations_with_hoes
-	UNION 
+	UNION
 	SELECT id, hstore_to_array(tags), geom,
 		'http://www.osm.org/node/'|| grid.egon_node_substations_with_hoes.id as osm_www,
 		'n'|| grid.egon_node_substations_with_hoes.id as osm_id,
@@ -84,20 +84,20 @@ CREATE VIEW 		grid.egon_summary_total_hoes AS
 		ST_Y(ST_Centroid(ST_Transform(substation.way,4326))) as lat,
 		ST_Centroid(ST_Transform(substation.way,4326)) as point,
 		ST_Transform(substation.way,4326) as polygon,
-		(CASE WHEN hstore(substation.tags)->'voltage' <> '' THEN hstore(substation.tags)->'voltage' ELSE 'hoes' END) as voltage, 
+		(CASE WHEN hstore(substation.tags)->'voltage' <> '' THEN hstore(substation.tags)->'voltage' ELSE 'hoes' END) as voltage,
 		hstore(substation.tags)->'power' as power_type,
-		(CASE WHEN hstore(substation.tags)->'substation' <> '' THEN hstore(substation.tags)->'substation' ELSE 'NA' END) as substation,  
-		substation.osm_id as osm_id, 
+		(CASE WHEN hstore(substation.tags)->'substation' <> '' THEN hstore(substation.tags)->'substation' ELSE 'NA' END) as substation,
+		substation.osm_id as osm_id,
 		osm_www,
 		(CASE WHEN hstore(substation.tags)->'frequency' <> '' THEN hstore(substation.tags)->'frequency' ELSE 'NA' END) as frequency,
-		(CASE WHEN hstore(substation.tags)->'name' <> '' THEN hstore(substation.tags)->'name' ELSE 'NA' END) as subst_name, 
-		(CASE WHEN hstore(substation.tags)->'ref' <> '' THEN hstore(substation.tags)->'ref' ELSE 'NA' END) as ref, 
-		(CASE WHEN hstore(substation.tags)->'operator' <> '' THEN hstore(substation.tags)->'operator' ELSE 'NA' END) as operator, 
+		(CASE WHEN hstore(substation.tags)->'name' <> '' THEN hstore(substation.tags)->'name' ELSE 'NA' END) as subst_name,
+		(CASE WHEN hstore(substation.tags)->'ref' <> '' THEN hstore(substation.tags)->'ref' ELSE 'NA' END) as ref,
+		(CASE WHEN hstore(substation.tags)->'operator' <> '' THEN hstore(substation.tags)->'operator' ELSE 'NA' END) as operator,
 		(CASE WHEN hstore(substation.tags)->'operator' in ('DB_Energie','DB Netz AG','DB Energie GmbH','DB Netz')
-		      THEN 'see operator' 
-		      ELSE (CASE WHEN '16.7' = ANY( string_to_array(hstore(substation.tags)->'frequency',';')) or '16.67' = ANY( string_to_array(hstore(substation.tags)->'frequency',';')) 
-				 THEN 'see frequency' 
-				 ELSE 'no' 
+		      THEN 'see operator'
+		      ELSE (CASE WHEN '16.7' = ANY( string_to_array(hstore(substation.tags)->'frequency',';')) or '16.67' = ANY( string_to_array(hstore(substation.tags)->'frequency',';'))
+				 THEN 'see frequency'
+				 ELSE 'no'
 				 END)
 		      END) as dbahn,
 		status
@@ -120,7 +120,7 @@ DROP VIEW IF EXISTS 	grid.egon_summary_de_hoes CASCADE;
 CREATE VIEW		grid.egon_summary_de_hoes AS
 	SELECT 	*
 	FROM 	grid.egon_summary_hoes, boundaries.vg250_sta_union as vg
-	WHERE 	ST_Transform(vg.geometry,4326) && grid.egon_summary_hoes.polygon 
+	WHERE 	ST_Transform(vg.geometry,4326) && grid.egon_summary_hoes.polygon
 	AND 	ST_CONTAINS(ST_Transform(vg.geometry,4326),grid.egon_summary_hoes.polygon);
 
 -- create view with buffer of 75m around polygons
@@ -149,7 +149,7 @@ CREATE MATERIALIZED VIEW 		grid.egon_substations_to_drop_hoes AS
 -- filter those substations and create final_result_hoes
 DROP VIEW IF EXISTS 	grid.egon_final_result_hoes CASCADE;
 CREATE VIEW 		grid.egon_final_result_hoes AS
-	SELECT 	* 
+	SELECT 	*
 	FROM 	grid.egon_summary_de_hoes
 	WHERE 	grid.egon_summary_de_hoes.osm_id NOT IN ( SELECT grid.egon_substations_to_drop_hoes.osm_id FROM grid.egon_substations_to_drop_hoes);
 

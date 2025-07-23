@@ -32,7 +32,6 @@ from egon.data.metadata import (
     license_ccby,
     license_odbl,
     meta_metadata,
-    meta_metadata,
     sources,
 )
 

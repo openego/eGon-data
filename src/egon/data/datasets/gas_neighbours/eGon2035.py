@@ -1564,6 +1564,7 @@ def calculate_ocgt_capacities():
 
     return df_ocgt
 
+
 def insert_ocgt_abroad():
     """Insert gas turbine capacities abroad for eGon2035 in the database
 

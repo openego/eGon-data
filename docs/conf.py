@@ -47,7 +47,7 @@ extlinks = {
 # on_rtd is whether we are on readthedocs.org
 # on_rtd = os.environ.get("READTHEDOCS", None) == "True"
 
-#if not on_rtd:  # only set the theme if we're building docs locally
+# if not on_rtd:  # only set the theme if we're building docs locally
 html_theme = "sphinx_rtd_theme"
 
 html_use_smartypants = True
@@ -65,5 +65,5 @@ modindex_common_prefix = ["egon.data.", "egon.data.datasets."]
 
 autodoc_type_aliases = {
     "Dependencies": "egon.data.datasets.Dependencies",
-    "Tasks": "egon.data.datasets.Tasks"
+    "Tasks": "egon.data.datasets.Tasks",
 }

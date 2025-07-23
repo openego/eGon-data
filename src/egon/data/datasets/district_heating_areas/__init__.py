@@ -11,41 +11,36 @@ This module obtains the information from the census tables and the heat demand
 densities, demarcates so the current and future district heating areas. In the
 end it saves them in the database.
 """
+import datetime
+import json
 import os
-from egon.data import config, db
-from egon.data.datasets.scenario_parameters import (
-    get_sector_parameters,
-    EgonScenario,
-)
-
-import pandas as pd
-import geopandas as gpd
-from shapely.geometry.multipolygon import MultiPolygon
-from shapely.geometry.polygon import Polygon
-from matplotlib import pyplot as plt
-from egon.data.datasets.district_heating_areas.plot import (
-    plot_heat_density_sorted,
-)
 
 # for metadata creation
 import time
-import datetime
-from egon.data.metadata import (
-    context,
-    meta_metadata,
-    license_ccby,
-    sources,
-)
-import json
 
-# import time
+from geoalchemy2.types import Geometry
+from matplotlib import pyplot as plt
+from shapely.geometry.multipolygon import MultiPolygon
+from shapely.geometry.polygon import Polygon
 
 # packages for ORM class definition
-from sqlalchemy import Column, String, Integer, Sequence, Float, ForeignKey
+from sqlalchemy import Column, Float, ForeignKey, Integer, Sequence, String
 from sqlalchemy.ext.declarative import declarative_base
-from geoalchemy2.types import Geometry
+import geopandas as gpd
+import pandas as pd
 
+from egon.data import config, db
 from egon.data.datasets import Dataset
+from egon.data.datasets.district_heating_areas.plot import (
+    plot_heat_density_sorted,
+)
+from egon.data.datasets.scenario_parameters import (
+    EgonScenario,
+    get_sector_parameters,
+)
+from egon.data.metadata import context, license_ccby, meta_metadata, sources
+
+# import time
 
 
 # class for airflow task management (and version control)
