@@ -51,10 +51,111 @@ class RunPypsaEur(Dataset):
                 solve_network,
                 clean_database,
                 electrical_neighbours_egon100,
+                h2_neighbours_egon2035,
                 # Dropped until we decided how we deal with the H2 grid
                 # overwrite_H2_pipeline_share,
             ),
         )
+
+def countries_list():
+    return [
+        "DE",
+        "AT",
+        "CH",
+        "CZ",
+        "PL",
+        "SE",
+        "NO",
+        "DK",
+        "GB",
+        "NL",
+        "BE",
+        "FR",
+        "LU",
+    ]
+
+
+def h2_neighbours_egon2035():
+    """
+    This function load the pypsa_eur network for eGon2035, processes the H2
+    buses and insert them into the grid.egon_etrago_bus table.
+
+    Returns
+    -------
+    None.
+
+    """
+    if "eGon2035" in config.settings()["egon-data"]["--scenarios"]:
+        # Delete buses from previous executions
+        db.execute_sql(
+            """
+            DELETE FROM grid.egon_etrago_bus WHERE carrier = 'H2'
+            AND scn_name = 'eGon2035'
+            AND country <> 'DE'
+            """
+        )
+
+        # Load calculated network for eGon2035
+        target_file = (
+            Path(".")
+            / "data_bundle_egon_data"
+            / "pypsa_eur"
+            / "postnetworks"
+            / "base_s_39_lc1.25__cb40ex0-T-H-I-B-solar+p3-dist1_2035.nc"
+        )
+        n = pypsa.Network(target_file)
+
+        # Filter only H2 buses in selected foreign countries
+        h2_bus = n.buses[(n.buses.country != "DE") & (n.buses.carrier == "H2")]
+        wanted_countries = countries_list()
+        h2_bus = h2_bus[
+            (h2_bus.country.isin(wanted_countries))
+            & (~h2_bus.index.str.contains("FR6"))
+        ]
+
+        # Add geometry column
+        h2_bus = (
+            gpd.GeoDataFrame(
+                h2_bus, geometry=gpd.points_from_xy(h2_bus.x, h2_bus.y)
+            )
+            .rename_geometry("geom")
+            .set_crs(4326)
+        )
+
+        # Adjust dataframe to the database table format
+        h2_bus["scn_name"] = "eGon2035"
+
+        bus_id = db.next_etrago_id("bus")  # will be change in PR1287
+        ### Delete when PR1287 is merged ###
+        bus_id = range(bus_id, bus_id + len(h2_bus.index))
+        ####################################
+        h2_bus["bus_id"] = bus_id
+
+        h2_bus.drop(
+            columns=[
+                "unit",
+                "control",
+                "generator",
+                "location",
+                "substation_off",
+                "substation_lv",
+                "sub_network",
+            ],
+            inplace=True,
+        )
+
+        # Connect to local database and write results
+        engine = db.engine()
+
+        h2_bus.to_postgis(
+            "egon_etrago_bus",
+            engine,
+            schema="grid",
+            if_exists="append",
+            index=False,
+        )
+    else:
+        return
 
 
 def download():
@@ -579,21 +680,7 @@ def neighbor_reduction():
 
     # network.links.drop("pipe_retrofit", axis="columns", inplace=True)
 
-    wanted_countries = [
-        "DE",
-        "AT",
-        "CH",
-        "CZ",
-        "PL",
-        "SE",
-        "NO",
-        "DK",
-        "GB",
-        "NL",
-        "BE",
-        "FR",
-        "LU",
-    ]
+    wanted_countries = countries_list()
 
     foreign_buses = network_solved.buses[
         (~network_solved.buses.index.str.contains("|".join(wanted_countries)))
