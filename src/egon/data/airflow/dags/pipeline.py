@@ -617,6 +617,7 @@ with airflow.DAG(
             heat_time_series,
             mv_grid_districts,
             heat_pumps_sq,
+            heat_pumps_2035,
         ]
     )
 
