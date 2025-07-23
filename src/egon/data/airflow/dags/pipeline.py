@@ -141,14 +141,14 @@ with airflow.DAG(
     tyndp_data = Tyndp(dependencies=[setup])
 
     # Import zensus population
-    zensus_population = ZensusPopulation(dependencies=[setup, vg250])
+    zensus_population = ZensusPopulation(dependencies=[setup, vg250, data_bundle])
 
     # Combine zensus and VG250 data
     zensus_vg250 = ZensusVg250(dependencies=[vg250, zensus_population])
 
     # Download and import zensus data on households, buildings and apartments
     zensus_miscellaneous = ZensusMiscellaneous(
-        dependencies=[zensus_population, zensus_vg250]
+        dependencies=[zensus_population, zensus_vg250, data_bundle]
     )
 
     # Import DemandRegio data
