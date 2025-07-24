@@ -96,14 +96,7 @@ def h2_neighbours_egon2035():
         )
 
         # Load calculated network for eGon2035
-        target_file = (
-            Path(".")
-            / "data_bundle_egon_data"
-            / "pypsa_eur"
-            / "postnetworks"
-            / "base_s_39_lc1.25__cb40ex0-T-H-I-B-solar+p3-dist1_2035.nc"
-        )
-        n = pypsa.Network(target_file)
+        n = read_network(planning_horizon=2035)
 
         # Filter only H2 buses in selected foreign countries
         h2_bus = n.buses[(n.buses.country != "DE") & (n.buses.carrier == "H2")]
@@ -155,7 +148,7 @@ def h2_neighbours_egon2035():
             index=False,
         )
     else:
-        return
+        print("eGon2035 is not in the list of scenarios")
 
 
 def download():
@@ -464,7 +457,7 @@ def solve_network():
         print("Pypsa-eur is not executed due to the settings of egon-data")
 
 
-def read_network(planning_horizon=3):
+def read_network(planning_horizon=2045):
     if config.settings()["egon-data"]["--run-pypsa-eur"]:
         with open(
             __path__[0] + "/datasets/pypsaeur/config_solve.yaml", "r"
@@ -482,7 +475,7 @@ def read_network(planning_horizon=3):
             f"_l{data_config['scenario']['ll'][0]}"
             f"_{data_config['scenario']['opts'][0]}"
             f"_{data_config['scenario']['sector_opts'][0]}"
-            f"_{data_config['scenario']['planning_horizons'][planning_horizon]}.nc"
+            f"_{planning_horizon}.nc"
         )
 
     else:
@@ -491,7 +484,7 @@ def read_network(planning_horizon=3):
             / "data_bundle_egon_data"
             / "pypsa_eur"
             / "postnetworks"
-            / "base_s_39_lc1.25__cb40ex0-T-H-I-B-solar+p3-dist1_2045.nc"
+            / f"base_s_39_lc1.25__cb40ex0-T-H-I-B-solar+p3-dist1_{planning_horizon}.nc"
         )
 
     return pypsa.Network(target_file)
@@ -675,7 +668,7 @@ def combine_decentral_and_rural_heat(network_solved, network_prepared):
 
 
 def neighbor_reduction():
-    network_solved = read_network()
+    network_solved = read_network(planning_horizon=2045)
     network_prepared = prepared_network(planning_horizon="2045")
 
     # network.links.drop("pipe_retrofit", axis="columns", inplace=True)
@@ -1790,7 +1783,7 @@ def overwrite_H2_pipeline_share():
     # Select source and target from dataset configuration
     target = egon.data.config.datasets()["pypsa-eur-sec"]["target"]
 
-    n = read_network()
+    n = read_network(planning_horizon=2045)
 
     H2_pipelines = n.links[n.links["carrier"] == "H2 pipeline retrofitted"]
     CH4_pipelines = n.links[n.links["carrier"] == "gas pipeline"]
@@ -2036,7 +2029,7 @@ def drop_biomass(network):
 
 def postprocessing_biomass_2045():
 
-    network = read_network()
+    network = read_network(planning_horizon=2045)
     network = drop_biomass(network)
 
     with open(
