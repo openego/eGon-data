@@ -49,7 +49,7 @@ class WeatherData(Dataset):
             name=self.name,
             version=self.version,
             dependencies=dependencies,
-            tasks=({create_tables, download_era5}, insert_weather_cells),
+            tasks=({create_tables, }, insert_weather_cells), # download_era5 should be included once issue #1250 is solved
         )
 
 
