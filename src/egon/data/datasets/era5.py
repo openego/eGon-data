@@ -42,7 +42,7 @@ class WeatherData(Dataset):
     #:
     name: str = "Era5"
     #:
-    version: str = "0.0.3"
+    version: str = "0.0.4"
 
     def __init__(self, dependencies):
         super().__init__(
