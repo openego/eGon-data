@@ -189,7 +189,9 @@ def DLR_Regions(weather_year, regions_shape_path):
 
     # The data downloaded using Atlite is loaded in 'weather_data_raw'.
     file_name = f"germany-{weather_year}-era5.nc"
-    weather_info_path = Path(".") / "cutouts" / file_name
+    weather_info_path = (
+        Path(".") / "data_bundle_egon_data" / "cutouts" / file_name
+    )
     weather_data_raw = xr.open_mfdataset(str(weather_info_path))
     weather_data_raw = weather_data_raw.rio.write_crs(4326)
     weather_data_raw = weather_data_raw.rio.clip_box(
