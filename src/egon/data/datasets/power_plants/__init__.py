@@ -1546,26 +1546,29 @@ for scn_name in egon.data.config.settings()["egon-data"]["--scenarios"]:
 tasks += (pp_metadata.metadata,)
 
 class PowerPlants(Dataset):
-    
-    sources = DatasetSources (
-        tables = {
-        'mastr_biomass': "bnetza_mastr_biomass_cleaned.csv",
+        
+    sources = DatasetSources(
+        tables={
         'geom_federal_states' : "boundaries.vg250_lan",
         'geom_germany': "boundaries.vg250_sta_union",
-        'mastr_hydro' : "bnetza_mastr_hydro_cleaned.csv",
-        'mastr_location' : "location_elec_generation_raw.csv",
         'egon_mv_grid_district' : "grid.egon_mv_grid_district",
         'ehv_voronoi': "grid.egon_ehv_substation_voronoi",
         'capacities' : "supply.egon_scenario_capacities",
-        'mastr_gsgk' : "bnetza_mastr_gsgk_cleaned.csv",
         'hydro' : 'supply.egon_power_plants_hydro',
         'biomass' : 'supply.egon_power_plants_biomass',
         'pv' : 'supply.egon_power_plants_pv',
         'wind' : 'supply.egon_power_plants_wind',
+    },
+        files={
+        'mastr_biomass': "bnetza_mastr_biomass_cleaned.csv",
+        'mastr_hydro' : "bnetza_mastr_hydro_cleaned.csv",
+        'mastr_location' : "location_elec_generation_raw.csv",
+        'mastr_gsgk' : "bnetza_mastr_gsgk_cleaned.csv",
         'mastr_nuclear' : "bnetza_mastr_nuclear_cleaned.csv",
         'mastr_combustion' : "bnetza_mastr_combustion_cleaned.csv"
-            }
-        )
+        
+        }
+    )
     
     targets = DatasetTargets (
         tables = {

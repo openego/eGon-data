@@ -19,7 +19,7 @@ import pandas as pd
 import pypsa
 
 from egon.data import config, db
-from egon.data.datasets import Dataset, wrapped_partial
+from egon.data.datasets import Dataset, wrapped_partial, DatasetSources, DatasetTargets
 from egon.data.datasets.chp.match_nep import insert_large_chp, map_carrier
 from egon.data.datasets.chp.small_chp import (
     assign_use_case,
@@ -260,15 +260,12 @@ def assign_heat_bus():
     None.
 
     """
-    sources = config.datasets()["chp_location"]["sources"]
-    target = config.datasets()["chp_location"]["targets"]["chp_table"]
-
     for scenario in config.settings()["egon-data"]["--scenarios"]:
         # Select CHP with use_case = 'district_heating'
         chp = db.select_geodataframe(
             f"""
             SELECT * FROM
-            {target['schema']}.{target['table']}
+            {Chp.targets.tables['chp_table']}
             WHERE scenario = '{scenario}'
             AND district_heating = True
             """,
@@ -285,8 +282,7 @@ def assign_heat_bus():
             f"""
             SELECT area_id, ST_Centroid(geom_polygon) as geom
             FROM
-            {sources['district_heating_areas']['schema']}.
-            {sources['district_heating_areas']['table']}
+            {Chp.sources.tables['district_heating_areas']}
             WHERE scenario = '{scenario}'
             """,
             epsg=4326,
@@ -307,7 +303,7 @@ def assign_heat_bus():
         # Drop district heating CHP without heat_bus_id
         db.execute_sql(
             f"""
-            DELETE FROM {target['schema']}.{target['table']}
+            DELETE FROM {Chp.targets.tables['chp_table']}
             WHERE scenario = '{scenario}'
             AND district_heating = True
             """
@@ -364,14 +360,13 @@ def insert_biomass_chp(scenario):
     None.
 
     """
-    cfg = config.datasets()["chp_location"]
 
     # import target values from NEP 2021, scneario C 2035
     target = select_target("biomass", scenario)
 
     # import data for MaStR
     mastr = pd.read_csv(
-        WORKING_DIR_MASTR_OLD / cfg["sources"]["mastr_biomass"]
+        WORKING_DIR_MASTR_OLD / Chp.sources.files["mastr_biomass"]
     ).query("EinheitBetriebsstatus=='InBetrieb'")
 
     # Drop entries without federal state or 'AusschließlichWirtschaftszone'
@@ -380,8 +375,7 @@ def insert_biomass_chp(scenario):
             pd.read_sql(
                 f"""SELECT DISTINCT ON (gen)
         REPLACE(REPLACE(gen, '-', ''), 'ü', 'ue') as states
-        FROM {cfg['sources']['vg250_lan']['schema']}.
-        {cfg['sources']['vg250_lan']['table']}""",
+        FROM {Chp.sources.tables['vg250_lan']},
                 con=db.engine(),
             ).states.values
         )
@@ -401,10 +395,10 @@ def insert_biomass_chp(scenario):
     # Assign bus_id
     if len(mastr_loc) > 0:
         mastr_loc["voltage_level"] = assign_voltage_level(
-            mastr_loc, cfg, WORKING_DIR_MASTR_OLD
+            mastr_loc, Chp.sources, WORKING_DIR_MASTR_OLD
         )
-        mastr_loc = assign_bus_id(mastr_loc, cfg)
-    mastr_loc = assign_use_case(mastr_loc, cfg["sources"], scenario)
+        mastr_loc = assign_bus_id(mastr_loc, Chp.sources)
+    mastr_loc = assign_use_case(mastr_loc, Chp.sources, scenario)
 
     # Insert entries with location
     session = sessionmaker(bind=db.engine())()
@@ -431,15 +425,15 @@ def insert_biomass_chp(scenario):
 
 
 def insert_chp_statusquo(scn="status2019"):
-    cfg = config.datasets()["chp_location"]
+
 
     # import data for MaStR
     mastr = pd.read_csv(
-        WORKING_DIR_MASTR_NEW / "bnetza_mastr_combustion_cleaned.csv"
+        WORKING_DIR_MASTR_NEW / Chp.sources.files["mastr_combustion"]
     )
 
     mastr_biomass = pd.read_csv(
-        WORKING_DIR_MASTR_NEW / "bnetza_mastr_biomass_cleaned.csv"
+        WORKING_DIR_MASTR_NEW / Chp.sources.files["mastr_biomass"]
     )
 
     mastr = pd.concat([mastr, mastr_biomass]).reset_index(drop=True)
@@ -533,16 +527,16 @@ def insert_chp_statusquo(scn="status2019"):
     # Assign bus_id
     if len(mastr) > 0:
         mastr["voltage_level"] = assign_voltage_level(
-            mastr, cfg, WORKING_DIR_MASTR_NEW
+            mastr, Chp.sources, WORKING_DIR_MASTR_NEW
         )
 
         gas_bus_id = db.assign_gas_bus_id(mastr, scn, "CH4").bus
 
-        mastr = assign_bus_id(mastr, cfg, drop_missing=True)
+        mastr = assign_bus_id(mastr, Chp.sources, drop_missing=True)
 
         mastr["gas_bus_id"] = gas_bus_id
 
-    mastr = assign_use_case(mastr, cfg["sources"], scn)
+    mastr = assign_use_case(mastr, Chp.sources, scn)
 
     # Insert entries with location
     session = sessionmaker(bind=db.engine())()
@@ -578,17 +572,13 @@ def insert_chp_egon2035():
 
     """
 
-    sources = config.datasets()["chp_location"]["sources"]
-
-    targets = config.datasets()["chp_location"]["targets"]
-
     insert_biomass_chp("eGon2035")
 
     # Insert large CHPs based on NEP's list of conventional power plants
-    MaStR_konv = insert_large_chp(sources, targets["chp_table"], EgonChp)
+    MaStR_konv = insert_large_chp(Chp.sources, Chp.targets.tables["chp_table"], EgonChp)
 
     # Insert smaller CHPs (< 10MW) based on existing locations from MaStR
-    existing_chp_smaller_10mw(sources, MaStR_konv, EgonChp)
+    existing_chp_smaller_10mw(Chp.sources, MaStR_konv, EgonChp)
 
     gpd.GeoDataFrame(
         MaStR_konv[
@@ -603,8 +593,8 @@ def insert_chp_egon2035():
             ]
         ]
     ).to_postgis(
-        targets["mastr_conventional_without_chp"]["table"],
-        schema=targets["mastr_conventional_without_chp"]["schema"],
+        Chp.targets.get_table_name("mastr_conventional_without_chp"),
+        schema=Chp.targets.get_table_schema("mastr_conventional_without_chp"),
         con=db.engine(),
         if_exists="replace",
     )
@@ -683,11 +673,9 @@ def insert_chp_egon100re():
 
     """
 
-    sources = config.datasets()["chp_location"]["sources"]
-
     db.execute_sql(
         f"""
-        DELETE FROM {EgonChp.__table__.schema}.{EgonChp.__table__.name}
+        DELETE FROM {Chp.targets.tables['chp_table']}
         WHERE scenario = 'eGon100RE'
         """
     )
@@ -696,7 +684,7 @@ def insert_chp_egon100re():
     additional_capacity = db.select_dataframe(
         """
         SELECT capacity
-        FROM supply.egon_scenario_capacities
+        FROM {Chp.sources.tables['scenario_capacities']}
         WHERE scenario_name = 'eGon100RE'
         AND carrier = 'urban_central_gas_CHP'
         """
@@ -722,8 +710,7 @@ def insert_chp_egon100re():
             residential_and_service_demand as demand, area_id,
             ST_Transform(ST_PointOnSurface(geom_polygon), 4326)  as geom
             FROM
-            {sources['district_heating_areas']['schema']}.
-            {sources['district_heating_areas']['table']}
+            {Chp.sources.tables['district_heating_areas']}
             WHERE scenario = 'eGon100RE'
             """
     )
@@ -811,6 +798,36 @@ tasks += (metadata,)
 
 
 class Chp(Dataset):
+    
+    
+    sources = DatasetSources(
+        tables={
+            "list_conv_pp": "supply.egon_nep_2021_conventional_powerplants",
+            "egon_mv_grid_district": "grid.egon_mv_grid_district",
+            "ehv_voronoi": "grid.egon_ehv_substation_voronoi",
+            "etrago_buses": "grid.egon_etrago_bus",
+            "osm_landuse": "openstreetmap.osm_landuse",
+            "osm_polygon": "openstreetmap.osm_polygon",
+            "district_heating_areas": "demand.egon_district_heating_areas",
+            "industrial_demand_osm": "demand.egon_demandregio_osm_ind_electricity",
+            "vg250_lan": "boundaries.vg250_lan",
+            "scenario_capacities": "supply.egon_scenario_capacities",
+        },
+        files={
+            "mastr_combustion": "bnetza_mastr_combustion_cleaned.csv",
+            "mastr_location": "location_elec_generation_raw.csv",
+            "mastr_biomass": "bnetza_mastr_biomass_cleaned.csv",
+        },
+    )
+    targets = DatasetTargets(
+        tables={
+            "chp_table": "supply.egon_chp_plants",
+            "mastr_conventional_without_chp": "supply.egon_mastr_conventional_without_chp",
+        }
+    )
+    
+    
+    
     """
     Extract combined heat and power plants for each scenario
 
