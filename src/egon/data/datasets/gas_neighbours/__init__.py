@@ -2,7 +2,7 @@
 The central module containing definition of the datasets dealing with gas neighbours
 """
 
-from egon.data.datasets import Dataset
+from egon.data.datasets import Dataset, DatasetSources, DatasetTargets
 from egon.data import config
 from egon.data.datasets.gas_neighbours.eGon100RE import (
     insert_gas_neigbours_eGon100RE,
@@ -43,6 +43,26 @@ if tasks == ():
 
 
 class GasNeighbours(Dataset):
+    
+    
+    sources = DatasetSources(
+        files={
+            "tyndp_capacities": "TYNDP-2020-Scenario-Datafile.xlsx.zip",
+        },
+        tables={
+            "buses": "grid.egon_etrago_bus",
+            "links": "grid.egon_etrago_link",
+        },
+    )
+    targets = DatasetTargets(
+        tables={
+            "generators": "grid.egon_etrago_generator",
+            "loads": "grid.egon_etrago_load",
+            "load_timeseries": "grid.egon_etrago_load_timeseries",
+            "stores": "grid.egon_etrago_store",
+            "links": "grid.egon_etrago_link",
+        }
+    )
     """
     Insert the missing gas data abroad.
 
