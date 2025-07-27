@@ -22,7 +22,7 @@ import numpy as np
 import pandas as pd
 
 from egon.data import config, db, subprocess
-from egon.data.datasets import Dataset
+from egon.data.datasets import Dataset, DatasetSources, DatasetTargets
 from egon.data.datasets.emobility.motorized_individual_travel.db_classes import (  # noqa: E501
     EgonEvCountMunicipality,
     EgonEvCountMvGridDistrict,
@@ -124,8 +124,8 @@ def download_and_preprocess():
     ################################
     # Download and import KBA data #
     ################################
-    url = mit_sources["KBA"]["url"]
-    file = WORKING_DIR / mit_sources["KBA"]["file"]
+    url = MotorizedIndividualTravel.sources.urls["KBA"]
+    file = Path(MotorizedIndividualTravel.targets.files["KBA_download"])
     if not os.path.isfile(file):
         urlretrieve(url, file)
 
@@ -152,15 +152,15 @@ def download_and_preprocess():
     kba_data.ags_reg_district = kba_data.ags_reg_district.astype("int")
 
     kba_data.to_csv(
-        WORKING_DIR / mit_sources["KBA"]["file_processed"], index=None
+        Path(MotorizedIndividualTravel.targets.files["KBA_processed"]), index=None
     )
 
     #######################################
     # Download and import RegioStaR7 data #
     #######################################
 
-    url = mit_sources["RS7"]["url"]
-    file = WORKING_DIR / mit_sources["RS7"]["file"]
+    url = MotorizedIndividualTravel.sources.urls["RS7"]
+    file = Path(MotorizedIndividualTravel.targets.files["RS7_download"])
     if not os.path.isfile(file):
         urlretrieve(url, file)
 
@@ -175,7 +175,7 @@ def download_and_preprocess():
     rs7_data.rs7_id = rs7_data.rs7_id.astype("int")
 
     rs7_data.to_csv(
-        WORKING_DIR / mit_sources["RS7"]["file_processed"], index=None
+        Path(MotorizedIndividualTravel.targets.files["RS7_processed"]), index=None
     )
 
 
@@ -185,11 +185,10 @@ def extract_trip_file():
 
     for scenario_name in config.settings()["egon-data"]["--scenarios"]:
         print(f"SCENARIO: {scenario_name}")
+        trip_file_key = MotorizedIndividualTravel.source_trip_files[scenario_name]
         trip_file = trip_dir / Path(
-            DATASET_CFG["original_data"]["sources"]["trips"][scenario_name][
-                "file"
-            ]
-        )
+    MotorizedIndividualTravel.sources.files[trip_file_key]
+)
 
         tar = tarfile.open(trip_file)
         if os.path.isfile(trip_file):
@@ -213,11 +212,9 @@ def write_evs_trips_to_db():
 
     for scenario_name in config.settings()["egon-data"]["--scenarios"]:
         print(f"SCENARIO: {scenario_name}")
-        trip_dir_name = Path(
-            DATASET_CFG["original_data"]["sources"]["trips"][scenario_name][
-                "file"
-            ].split(".")[0]
-        )
+        trip_file_key = MotorizedIndividualTravel.source_trip_files[scenario_name]
+        trip_file_path = MotorizedIndividualTravel.sources.files[trip_file_key]
+        trip_dir_name = Path(trip_file_path).stem
 
         trip_dir_root = DATA_BUNDLE_DIR / Path("mit_trip_data", trip_dir_name)
 
@@ -395,6 +392,44 @@ class MotorizedIndividualTravel(Dataset):
     *emobility_mit*.
 
     """
+    
+    sources = DatasetSources(
+        urls={
+            "KBA": "https://www.kba.de/SharedDocs/Downloads/DE/Statistik/Fahrzeuge/FZ1/fz1_2021.xlsx?__blob=publicationFile&v=2",
+            "RS7": "https://www.bmvi.de/SharedDocs/DE/Anlage/G/regiostar-referenzdateien.xlsx?__blob=publicationFile",
+        },
+        files={
+            # These are the pre-generated trip data files from the data bundle
+            "trips_status2019": "mit_trip_data/eGon2035_RS7_min2k_2022-06-01_175429_simbev_run.tar.gz",
+            "trips_status2023": "mit_trip_data/eGon2035_RS7_min2k_2022-06-01_175429_simbev_run.tar.gz",
+            "trips_eGon2035": "mit_trip_data/eGon2035_RS7_min2k_2022-06-01_175429_simbev_run.tar.gz",
+            "trips_eGon100RE": "mit_trip_data/eGon100RE_RS7_min2k_2022-06-01_175444_simbev_run.tar.gz",
+        }
+    )
+    targets = DatasetTargets(
+        files={
+            "KBA_download": "motorized_individual_travel/fz1_2021.xlsx",
+            "KBA_processed": "motorized_individual_travel/fz1_2021_preprocessed.csv",
+            "RS7_download": "motorized_individual_travel/regiostar-referenzdateien.xlsx",
+            "RS7_processed": "motorized_individual_travel/regiostar-referenzdateien_preprocessed.csv",
+        },
+        tables={
+            "ev_pool": "emobility.egon_ev_pool",
+            "ev_trip": "emobility.egon_ev_trip",
+            "ev_count_reg_district": "emobility.egon_ev_count_registration_district",
+            "ev_count_municipality": "emobility.egon_ev_count_municipality",
+            "ev_count_mv_grid": "emobility.egon_ev_count_mv_grid_district",
+            "ev_mv_grid": "emobility.egon_ev_mv_grid_district",
+            "ev_metadata": "emobility.egon_ev_metadata",
+        }
+    )
+    # A helper mapping to easily get the right trip file for each scenario
+    source_trip_files = {
+        "status2019": "trips_status2019",
+        "status2023": "trips_status2023",
+        "eGon2035": "trips_eGon2035",
+        "eGon100RE": "trips_eGon100RE",
+        }
 
     #:
     name: str = "MotorizedIndividualTravel"

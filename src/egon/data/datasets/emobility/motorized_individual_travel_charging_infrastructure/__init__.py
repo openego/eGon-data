@@ -14,7 +14,7 @@ from loguru import logger
 import requests
 
 from egon.data import config, db
-from egon.data.datasets import Dataset
+from egon.data.datasets import Dataset, DatasetSources, DatasetTargets
 from egon.data.datasets.emobility.motorized_individual_travel_charging_infrastructure.db_classes import (  # noqa: E501
     EgonEmobChargingInfrastructure,
     add_metadata,
@@ -24,7 +24,6 @@ from egon.data.datasets.emobility.motorized_individual_travel_charging_infrastru
 )
 
 WORKING_DIR = Path(".", "charging_infrastructure").resolve()
-DATASET_CFG = config.datasets()["charging_infrastructure"]
 
 
 def create_tables() -> None:
@@ -87,15 +86,36 @@ def get_tracbev_data() -> None:
     """
     Wrapper function to get TracBEV data provided on Zenodo.
     """
-    tracbev_cfg = DATASET_CFG["original_data"]["sources"]["tracbev"]
-    file = WORKING_DIR / tracbev_cfg["file"]
+    file = Path(MITChargingInfrastructure.targets.files["tracbev_download"])
+    url = MITChargingInfrastructure.sources.urls["tracbev"]
 
-    download_zip(url=tracbev_cfg["url"], target=file)
+    download_zip(url=url, target=file)
 
     unzip_file(source=file, target=WORKING_DIR)
 
 
 class MITChargingInfrastructure(Dataset):
+    
+    
+    sources = DatasetSources(
+        urls={
+            "tracbev": "https://zenodo.org/record/6466480/files/data.zip?download=1"
+        },
+        tables={
+            "mv_grid_districts": "grid.egon_mv_grid_district",
+            "buildings": "demand.egon_map_houseprofiles_buildings"
+        }
+    )
+    targets = DatasetTargets(
+        files={
+            "tracbev_download": "charging_infrastructure/data.zip"
+        },
+        tables={
+            "charging_infrastructure": "grid.egon_emob_charging_infrastructure"
+        }
+    )
+    
+    
     """
     Preparation of static model data for charging infrastructure for
     motorized individual travel.

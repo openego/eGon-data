@@ -19,7 +19,7 @@ from loguru import logger
 import requests
 
 from egon.data import config, db
-from egon.data.datasets import Dataset
+from egon.data.datasets import Dataset, DatasetSources, DatasetTargets
 from egon.data.datasets.emobility.heavy_duty_transport.create_h2_buses import (
     insert_hgv_h2_demand,
 )
@@ -60,13 +60,12 @@ def download_hgv_data():
     *mobility_hgv/original_data/sources/BAST/file*.
 
     """
-    sources = DATASET_CFG["original_data"]["sources"]
 
     # Create the folder, if it does not exist
     WORKING_DIR.mkdir(parents=True, exist_ok=True)
 
-    url = sources["BAST"]["url"]
-    file = WORKING_DIR / sources["BAST"]["file"]
+    url = HeavyDutyTransport.sources.urls["BAST"]
+    file = Path(HeavyDutyTransport.targets.files["BAST_download"])
 
     response = requests.get(url)
 
@@ -104,6 +103,23 @@ class HeavyDutyTransport(Dataset):
     *mobility_hgv*.
 
     """
+    
+    sources = DatasetSources(
+        urls={
+            "BAST": "https://www.bast.de/DE/Verkehrstechnik/Fachthemen/v2-verkehrszaehlung/Daten/2020_1/Jawe2020.csv?view=renderTcDataExportCSV&cms_strTyp=A"
+        }
+    )
+    targets = DatasetTargets(
+        files={
+            "BAST_download": "heavy_duty_transport/Jawe2020.csv"
+        },
+        tables={
+            "voronoi": "demand.egon_heavy_duty_transport_voronoi",
+            "etrago_load": "grid.egon_etrago_load",
+            "etrago_load_timeseries": "grid.egon_etrago_load_timeseries",
+        }
+    )
+    
     #:
     name: str = "HeavyDutyTransport"
     #:
