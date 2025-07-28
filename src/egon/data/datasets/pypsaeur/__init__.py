@@ -43,7 +43,7 @@ class RunPypsaEur(Dataset):
     def __init__(self, dependencies):
         super().__init__(
             name="SolvePypsaEur",
-            version="0.0.41",
+            version="0.0.42",
             dependencies=dependencies,
             tasks=(
                 prepare_network_2,
@@ -51,10 +51,104 @@ class RunPypsaEur(Dataset):
                 solve_network,
                 clean_database,
                 electrical_neighbours_egon100,
+                h2_neighbours_egon2035,
                 # Dropped until we decided how we deal with the H2 grid
                 # overwrite_H2_pipeline_share,
             ),
         )
+
+def countries_list():
+    return [
+        "DE",
+        "AT",
+        "CH",
+        "CZ",
+        "PL",
+        "SE",
+        "NO",
+        "DK",
+        "GB",
+        "NL",
+        "BE",
+        "FR",
+        "LU",
+    ]
+
+
+def h2_neighbours_egon2035():
+    """
+    This function load the pypsa_eur network for eGon2035, processes the H2
+    buses and insert them into the grid.egon_etrago_bus table.
+
+    Returns
+    -------
+    None.
+
+    """
+    if "eGon2035" in config.settings()["egon-data"]["--scenarios"]:
+        # Delete buses from previous executions
+        db.execute_sql(
+            """
+            DELETE FROM grid.egon_etrago_bus WHERE carrier = 'H2'
+            AND scn_name = 'eGon2035'
+            AND country <> 'DE'
+            """
+        )
+
+        # Load calculated network for eGon2035
+        n = read_network(planning_horizon=2035)
+
+        # Filter only H2 buses in selected foreign countries
+        h2_bus = n.buses[(n.buses.country != "DE") & (n.buses.carrier == "H2")]
+        wanted_countries = countries_list()
+        h2_bus = h2_bus[
+            (h2_bus.country.isin(wanted_countries))
+            & (~h2_bus.index.str.contains("FR6"))
+        ]
+
+        # Add geometry column
+        h2_bus = (
+            gpd.GeoDataFrame(
+                h2_bus, geometry=gpd.points_from_xy(h2_bus.x, h2_bus.y)
+            )
+            .rename_geometry("geom")
+            .set_crs(4326)
+        )
+
+        # Adjust dataframe to the database table format
+        h2_bus["scn_name"] = "eGon2035"
+
+        bus_id = db.next_etrago_id("bus")  # will be change in PR1287
+        ### Delete when PR1287 is merged ###
+        bus_id = range(bus_id, bus_id + len(h2_bus.index))
+        ####################################
+        h2_bus["bus_id"] = bus_id
+
+        h2_bus.drop(
+            columns=[
+                "unit",
+                "control",
+                "generator",
+                "location",
+                "substation_off",
+                "substation_lv",
+                "sub_network",
+            ],
+            inplace=True,
+        )
+
+        # Connect to local database and write results
+        engine = db.engine()
+
+        h2_bus.to_postgis(
+            "egon_etrago_bus",
+            engine,
+            schema="grid",
+            if_exists="append",
+            index=False,
+        )
+    else:
+        print("eGon2035 is not in the list of scenarios")
 
 
 def download():
@@ -363,7 +457,7 @@ def solve_network():
         print("Pypsa-eur is not executed due to the settings of egon-data")
 
 
-def read_network(planning_horizon=3):
+def read_network(planning_horizon=2045):
     if config.settings()["egon-data"]["--run-pypsa-eur"]:
         with open(
             __path__[0] + "/datasets/pypsaeur/config_solve.yaml", "r"
@@ -381,7 +475,7 @@ def read_network(planning_horizon=3):
             f"_l{data_config['scenario']['ll'][0]}"
             f"_{data_config['scenario']['opts'][0]}"
             f"_{data_config['scenario']['sector_opts'][0]}"
-            f"_{data_config['scenario']['planning_horizons'][planning_horizon]}.nc"
+            f"_{planning_horizon}.nc"
         )
 
     else:
@@ -390,7 +484,7 @@ def read_network(planning_horizon=3):
             / "data_bundle_egon_data"
             / "pypsa_eur"
             / "postnetworks"
-            / "base_s_39_lc1.25__cb40ex0-T-H-I-B-solar+p3-dist1_2045.nc"
+            / f"base_s_39_lc1.25__cb40ex0-T-H-I-B-solar+p3-dist1_{planning_horizon}.nc"
         )
 
     return pypsa.Network(target_file)
@@ -574,26 +668,12 @@ def combine_decentral_and_rural_heat(network_solved, network_prepared):
 
 
 def neighbor_reduction():
-    network_solved = read_network()
+    network_solved = read_network(planning_horizon=2045)
     network_prepared = prepared_network(planning_horizon="2045")
 
     # network.links.drop("pipe_retrofit", axis="columns", inplace=True)
 
-    wanted_countries = [
-        "DE",
-        "AT",
-        "CH",
-        "CZ",
-        "PL",
-        "SE",
-        "NO",
-        "DK",
-        "GB",
-        "NL",
-        "BE",
-        "FR",
-        "LU",
-    ]
+    wanted_countries = countries_list()
 
     foreign_buses = network_solved.buses[
         (~network_solved.buses.index.str.contains("|".join(wanted_countries)))
@@ -1703,7 +1783,7 @@ def overwrite_H2_pipeline_share():
     # Select source and target from dataset configuration
     target = egon.data.config.datasets()["pypsa-eur-sec"]["target"]
 
-    n = read_network()
+    n = read_network(planning_horizon=2045)
 
     H2_pipelines = n.links[n.links["carrier"] == "H2 pipeline retrofitted"]
     CH4_pipelines = n.links[n.links["carrier"] == "gas pipeline"]
@@ -1949,7 +2029,7 @@ def drop_biomass(network):
 
 def postprocessing_biomass_2045():
 
-    network = read_network()
+    network = read_network(planning_horizon=2045)
     network = drop_biomass(network)
 
     with open(
