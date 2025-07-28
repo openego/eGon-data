@@ -1,6 +1,7 @@
 """
 Central module containing all code dealing with importing era5 weather data.
 """
+
 from pathlib import Path
 import os
 
@@ -42,14 +43,19 @@ class WeatherData(Dataset):
     #:
     name: str = "Era5"
     #:
-    version: str = "0.0.3"
+    version: str = "0.0.4"
 
     def __init__(self, dependencies):
         super().__init__(
             name=self.name,
             version=self.version,
             dependencies=dependencies,
-            tasks=({create_tables, download_era5}, insert_weather_cells),
+            tasks=(
+                {
+                    create_tables,
+                },
+                insert_weather_cells,
+            ),  # download_era5 should be included once issue #1250 is solved
         )
 
 
@@ -58,6 +64,7 @@ class EgonEra5Cells(Base):
     Class definition of table supply.egon_era5_weather_cells.
 
     """
+
     __tablename__ = "egon_era5_weather_cells"
     __table_args__ = {"schema": "supply"}
     w_id = Column(Integer, primary_key=True)
@@ -70,6 +77,7 @@ class EgonRenewableFeedIn(Base):
     Class definition of table supply.egon_era5_renewable_feedin.
 
     """
+
     __tablename__ = "egon_era5_renewable_feedin"
     __table_args__ = {"schema": "supply"}
     w_id = Column(Integer, primary_key=True)

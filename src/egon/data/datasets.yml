@@ -440,7 +440,7 @@ landuse:
 era5_weather_data:
   targets:
     weather_data:
-      path: 'cutouts'
+      path: 'data_bundle_egon_data/cutouts'
     weather_cells:
       schema: 'supply'
       table: 'egon_era5_weather_cells'
