@@ -7,19 +7,45 @@ import numpy as np
 import egon.data.config
 import pandas as pd
 from egon.data import db
-from egon.data.datasets import Dataset
+from egon.data.datasets import Dataset, DatasetSources, DatasetTargets
 from sqlalchemy import Column, Float, Integer
 from sqlalchemy.ext.declarative import declarative_base
 
 # will be later imported from another file ###
 Base = declarative_base()
 
-
+# ############################################################
 class SocietyPrognosis(Dataset):
+    name: str = "SocietyPrognosis"
+    version: str = "0.0.1"
+
+    sources = DatasetSources(
+        tables={
+            "map_zensus_vg250": "boundaries.map_zensus_vg250",
+            "zensus_population": "society.destatis_zensus_population_per_ha",
+            "zensus_households": "society.egon_destatis_zensus_household_per_ha",
+            "demandregio_population": "demandregio.egon_demandregio_population",
+            "demandregio_households": "demandregio.egon_demandregio_household",
+        }
+    )
+
+    targets = DatasetTargets(
+        tables={
+            "population_prognosis": {
+                "schema": "society",
+                "table": "egon_population_prognosis"
+            },
+            "household_prognosis": {
+                "schema": "society",
+                "table": "egon_household_prognosis"
+            }
+        }
+    )
+
     def __init__(self, dependencies):
         super().__init__(
-            name="SocietyPrognosis",
-            version="0.0.1",
+            name=self.name,
+            version=self.version,
             dependencies=dependencies,
             tasks=(create_tables, {zensus_population, zensus_household}),
         )
@@ -52,29 +78,27 @@ def create_tables():
 def zensus_population():
     """Bring population prognosis from DemandRegio to Zensus grid"""
 
-    cfg = egon.data.config.datasets()["society_prognosis"]
+    #cfg = egon.data.config.datasets()["society_prognosis"]
 
     local_engine = db.engine()
 
     # Input: Zensus2011 population data including the NUTS3-Code
     zensus_district = db.select_dataframe(
         f"""SELECT zensus_population_id, vg250_nuts3
-        FROM {cfg['soucres']['map_zensus_vg250']['schema']}.
-        {cfg['soucres']['map_zensus_vg250']['table']}
+        FROM {SocietyPrognosis.sources.tables['map_zensus_vg250']}
         WHERE zensus_population_id IN (
             SELECT id
-        FROM {cfg['soucres']['zensus_population']['schema']}.
-        {cfg['soucres']['zensus_population']['table']})""",
+            FROM {SocietyPrognosis.sources.tables['zensus_population']})""",
         index_col="zensus_population_id",
-    )
+   )
 
     zensus = db.select_dataframe(
-        f"""SELECT id, population
-        FROM {cfg['soucres']['zensus_population']['schema']}.
-        {cfg['soucres']['zensus_population']['table']}
-        WHERE population > 0""",
-        index_col="id",
-    )
+    f"""SELECT id, population
+    FROM {SocietyPrognosis.sources.tables['zensus_population']}
+    WHERE population > 0""",
+    index_col="id",
+)
+
 
     zensus["nuts3"] = zensus_district.vg250_nuts3
 
@@ -92,16 +116,17 @@ def zensus_population():
     ).values
 
     db.execute_sql(
-        f"""DELETE FROM {cfg['target']['population_prognosis']['schema']}.
-        {cfg['target']['population_prognosis']['table']}"""
+    f"""DELETE FROM {SocietyPrognosis.targets.tables['population_prognosis']['schema']}.
+    {SocietyPrognosis.targets.tables['population_prognosis']['table']}"""
     )
+
+
     # Scale to pogosis values from demandregio
     for year in [2035, 2050]:
         # Input: dataset on population prognosis on district-level (NUTS3)
         prognosis = db.select_dataframe(
             f"""SELECT nuts3, population
-            FROM {cfg['soucres']['demandregio_population']['schema']}.
-            {cfg['soucres']['demandregio_population']['table']}
+            FROM {SocietyPrognosis.sources.tables['demandregio_population']}
             WHERE year={year}""",
             index_col="nuts3",
         )
@@ -116,11 +141,12 @@ def zensus_population():
 
         # Insert to database
         df.to_sql(
-            cfg["target"]["population_prognosis"]["table"],
-            schema=cfg["target"]["population_prognosis"]["schema"],
-            con=local_engine,
-            if_exists="append",
+             SocietyPrognosis.targets.tables["population_prognosis"]["table"],
+             schema=SocietyPrognosis.targets.tables["population_prognosis"]["schema"],
+             con=local_engine,
+             if_exists="append",
         )
+
 
 
 def household_prognosis_per_year(prognosis_nuts3, zensus, year):
@@ -165,22 +191,20 @@ def household_prognosis_per_year(prognosis_nuts3, zensus, year):
 
 def zensus_household():
     """Bring household prognosis from DemandRegio to Zensus grid"""
-    cfg = egon.data.config.datasets()["society_prognosis"]
+    #cfg = egon.data.config.datasets()["society_prognosis"]
 
     local_engine = db.engine()
 
     # Input: Zensus2011 household data including the NUTS3-Code
     district = db.select_dataframe(
         f"""SELECT zensus_population_id, vg250_nuts3
-        FROM {cfg['soucres']['map_zensus_vg250']['schema']}.
-        {cfg['soucres']['map_zensus_vg250']['table']}""",
+        FROM {SocietyPrognosis.sources.tables['map_zensus_vg250']}""",
         index_col="zensus_population_id",
     )
 
     zensus = db.select_dataframe(
         f"""SELECT zensus_population_id, quantity
-        FROM {cfg['soucres']['zensus_households']['schema']}.
-        {cfg['soucres']['zensus_households']['table']}""",
+        FROM {SocietyPrognosis.sources.tables['zensus_households']}""",
         index_col="zensus_population_id",
     )
 
@@ -198,9 +222,10 @@ def zensus_household():
     )
 
     db.execute_sql(
-        f"""DELETE FROM {cfg['target']['household_prognosis']['schema']}.
-        {cfg['target']['household_prognosis']['table']}"""
-    )
+    f"""DELETE FROM {SocietyPrognosis.targets.tables['household_prognosis']['schema']}.
+    {SocietyPrognosis.targets.tables['household_prognosis']['table']}"""
+   )
+
 
     # Apply prognosis function
     for year in [2035, 2050]:
@@ -208,17 +233,19 @@ def zensus_household():
         # Input: dataset on household prognosis on district-level (NUTS3)
         prognosis_nuts3 = db.select_dataframe(
             f"""SELECT nuts3, hh_size, households
-            FROM {cfg['soucres']['demandregio_households']['schema']}.
-            {cfg['soucres']['demandregio_households']['table']}
+            FROM {SocietyPrognosis.sources.tables['demandregio_households']}
             WHERE year={year}""",
             index_col="nuts3",
         )
 
         # Insert into database
         household_prognosis_per_year(prognosis_nuts3, zensus, year).to_sql(
-            cfg["target"]["household_prognosis"]["table"],
-            schema=cfg["target"]["household_prognosis"]["schema"],
+            SocietyPrognosis.targets.tables["household_prognosis"]["table"],
+            schema=SocietyPrognosis.targets.tables["household_prognosis"]["schema"],
             con=local_engine,
             if_exists="append",
         )
         print(f"finished prognosis for year {year}")
+
+
+
