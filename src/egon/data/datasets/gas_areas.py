@@ -21,7 +21,7 @@ from egon.data.metadata import (
     sources,
 )
 
-
+from egon.data.datasets import DatasetSources, DatasetTargets
 class GasAreaseGon2035(Dataset):
     """
     Create the gas voronoi table and the gas voronoi areas for eGon2035
@@ -46,6 +46,24 @@ class GasAreaseGon2035(Dataset):
     #:
     version: str = "0.0.2"
 
+    # Dataset sources (input tables)
+    sources = DatasetSources(
+        tables={
+            "vg250_sta_union": "boundaries.vg250_sta_union",
+            "egon_etrago_bus": "grid.egon_etrago_bus",
+        }
+    )
+
+    # Dataset targets (output tables)
+    targets = DatasetTargets(
+        tables={
+            "gas_voronoi": {
+                "schema": "grid",
+                "table": "egon_gas_voronoi",
+            },
+        }
+    )
+
     def __init__(self, dependencies):
         super().__init__(
             name=self.name,
@@ -53,7 +71,6 @@ class GasAreaseGon2035(Dataset):
             dependencies=dependencies,
             tasks=(create_gas_voronoi_table, voronoi_egon2035),
         )
-
 
 class GasAreaseGon100RE(Dataset):
     """Insert the gas voronoi areas for eGon100RE
@@ -75,9 +92,33 @@ class GasAreaseGon100RE(Dataset):
     """
 
     #:
+class GasAreaseGon100RE(Dataset):
+    """
+    Insert the gas voronoi areas for eGon100RE
+    """
+
+    #:
     name: str = "GasAreaseGon100RE"
     #:
     version: str = "0.0.1"
+
+    # Same sources as GasAreaseGon2035
+    sources = DatasetSources(
+        tables={
+            "vg250_sta_union": "boundaries.vg250_sta_union",
+            "egon_etrago_bus": "grid.egon_etrago_bus",
+        }
+    )
+
+    # Same target table
+    targets = DatasetTargets(
+        tables={
+            "gas_voronoi": {
+                "schema": "grid",
+                "table": "egon_gas_voronoi",
+            },
+        }
+    )
 
     def __init__(self, dependencies):
         super().__init__(
@@ -259,7 +300,7 @@ def create_voronoi(scn_name, carrier):
     boundary = db.select_geodataframe(
         """
             SELECT id, geometry
-            FROM boundaries.vg250_sta_union;
+            FROM {GasAreaseGon2035.sources.tables["vg250_sta_union"]};
         """,
         geom_col="geometry",
     ).to_crs(epsg=4326)
@@ -278,7 +319,7 @@ def create_voronoi(scn_name, carrier):
 
     db.execute_sql(
         f"""
-        DELETE FROM grid.egon_gas_voronoi
+        DELETE FROM {GasAreaseGon2035.targets.tables["gas_voronoi"]["schema"]}.{GasAreaseGon2035.targets.tables["gas_voronoi"]["table"]}
         WHERE "carrier" IN ('{carrier_strings}') and "scn_name" = '{scn_name}';
         """
     )
@@ -286,7 +327,7 @@ def create_voronoi(scn_name, carrier):
     buses = db.select_geodataframe(
         f"""
             SELECT bus_id, geom
-            FROM grid.egon_etrago_bus
+            FROM {GasAreaseGon100RE.sources.tables['egon_etrago_bus']}
             WHERE scn_name = '{scn_name}'
             AND country = 'DE'
             AND carrier IN ('{carrier_strings}');
