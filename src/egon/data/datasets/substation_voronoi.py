@@ -4,7 +4,7 @@
 
 import egon.data.config
 from egon.data import db
-from egon.data.datasets import Dataset
+from egon.data.datasets import Dataset,  DatasetSources, DatasetTargets
 from sqlalchemy import Column, Integer, Sequence
 from sqlalchemy.ext.declarative import declarative_base
 from geoalchemy2.types import Geometry
@@ -13,17 +13,41 @@ Base = declarative_base()
 
 
 class SubstationVoronoi(Dataset):
+    name: str = "substation_voronoi"
+    version: str = "0.0.0"
+
+    # Defined sources and targets for the file
+    sources = DatasetSources(
+        tables={
+            "boundaries": {"schema": "boundaries", "table": "vg250_sta_union"},  
+            "hvmv_substation": {"schema": "grid", "table": "egon_hvmv_substation"},
+            "ehv_substation": {"schema": "grid", "table": "egon_ehv_substation"},
+        }
+    )
+
+    targets = DatasetTargets(
+        tables={
+            "ehv_substation_voronoi": {
+                "schema": "grid",
+                "table": "egon_ehv_substation_voronoi",
+            },
+            "hvmv_substation_voronoi": {
+                "schema": "grid",
+                "table": "egon_hvmv_substation_voronoi",
+            },
+        }
+    )
+
     def __init__(self, dependencies):
         super().__init__(
-            name="substation_voronoi",
-            version="0.0.0",
+            name=self.name,
+            version=self.version,
             dependencies=dependencies,
             tasks=(
                 create_tables,
                 substation_voronoi,
             ),
         )
-
 
 class EgonHvmvSubstationVoronoi(Base):
     __tablename__ = "egon_hvmv_substation_voronoi"
@@ -62,33 +86,36 @@ def create_tables():
     None.
     """
 
-    cfg_voronoi = egon.data.config.datasets()["substation_voronoi"]["targets"]
+    #cfg_voronoi = egon.data.config.datasets()["substation_voronoi"]["targets"]
 
 
     db.execute_sql(
         f"""DROP TABLE IF EXISTS
-            {cfg_voronoi['ehv_substation_voronoi']['schema']}.
-            {cfg_voronoi['ehv_substation_voronoi']['table']} CASCADE;"""
+             {SubstationVoronoi.targets.tables['ehv_substation_voronoi']['schema']}.
+             {SubstationVoronoi.targets.tables['ehv_substation_voronoi']['table']} CASCADE;"""
     )
 
+
     db.execute_sql(
         f"""DROP TABLE IF EXISTS
-            {cfg_voronoi['hvmv_substation_voronoi']['schema']}.
-            {cfg_voronoi['hvmv_substation_voronoi']['table']} CASCADE;"""
+            {SubstationVoronoi.targets.tables['hvmv_substation_voronoi']['schema']}.
+            {SubstationVoronoi.targets.tables['hvmv_substation_voronoi']['table']} CASCADE;"""
     )
 
     # Drop sequences
     db.execute_sql(
         f"""DROP SEQUENCE IF EXISTS
-            {cfg_voronoi['ehv_substation_voronoi']['schema']}.
-            {cfg_voronoi['ehv_substation_voronoi']['table']}_id_seq CASCADE;"""
+            {SubstationVoronoi.targets.tables['ehv_substation_voronoi']['schema']}.
+            {SubstationVoronoi.targets.tables['ehv_substation_voronoi']['table']}_id_seq CASCADE;"""
     )
+
 
     db.execute_sql(
         f"""DROP SEQUENCE IF EXISTS
-            {cfg_voronoi['hvmv_substation_voronoi']['schema']}.
-            {cfg_voronoi['hvmv_substation_voronoi']['table']}_id_seq CASCADE;"""
+           {SubstationVoronoi.targets.tables['hvmv_substation_voronoi']['schema']}.
+           {SubstationVoronoi.targets.tables['hvmv_substation_voronoi']['table']}_id_seq CASCADE;"""
     )
+
 
     engine = db.engine()
     EgonEhvSubstationVoronoi.__table__.create(bind=engine, checkfirst=True)
@@ -107,9 +134,10 @@ def substation_voronoi():
     substation_list = ["hvmv_substation", "ehv_substation"]
 
     for substation in substation_list:
-        cfg_boundaries = egon.data.config.datasets()["substation_voronoi"]["sources"]["boundaries"]
-        cfg_substation = egon.data.config.datasets()["substation_voronoi"]["sources"][substation]
-        cfg_voronoi = egon.data.config.datasets()["substation_voronoi"]["targets"][substation+ "_voronoi"]
+        
+        cfg_boundaries = SubstationVoronoi.sources.tables["boundaries"]
+        cfg_substation = SubstationVoronoi.sources.tables[substation]
+        cfg_voronoi = SubstationVoronoi.targets.tables[substation + "_voronoi"]
 
         view = "grid.egon_voronoi_no_borders"
 
