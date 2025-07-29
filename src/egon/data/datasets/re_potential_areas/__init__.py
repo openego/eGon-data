@@ -10,7 +10,7 @@ from sqlalchemy.ext.declarative import declarative_base
 import geopandas as gpd
 
 from egon.data import db
-from egon.data.datasets import Dataset
+from egon.data.datasets import Dataset, DatasetSources, DatasetTargets
 import egon.data.config
 
 Base = declarative_base()
@@ -141,6 +141,36 @@ class re_potential_area_setup(Dataset):
     version: str = "0.0.1"
     #:
     tasks = (create_tables, insert_data)
+
+    sources = DatasetSources(
+       files={
+            "potentialarea_pv_agriculture": "data_bundle_egon_data/re_potential_areas/potentialarea_pv_agriculture.gpkg",
+            "potentialarea_pv_road_railway": "data_bundle_egon_data/re_potential_areas/potentialarea_pv_road_railway.gpkg",
+            "potentialarea_wind": "data_bundle_egon_data/re_potential_areas/potentialarea_wind.gpkg",
+            "potentialarea_pv_agriculture_SH": "data_bundle_egon_data/re_potential_areas/potentialarea_pv_agriculture_SH.gpkg",
+            "potentialarea_pv_road_railway_SH": "data_bundle_egon_data/re_potential_areas/potentialarea_pv_road_railway_SH.gpkg",
+            "potentialarea_wind_SH": "data_bundle_egon_data/re_potential_areas/potentialarea_wind_SH.gpkg",
+        }
+    )
+
+   #that needs further checking
+    
+    targets = DatasetTargets(
+        tables={
+            "egon_re_potential_area_pv_agriculture": {
+                "schema": "supply",
+                "table": "egon_re_potential_area_pv_agriculture"
+            },
+            "egon_re_potential_area_pv_road_railway": {
+                "schema": "supply",
+                "table": "egon_re_potential_area_pv_road_railway"
+            },
+            "egon_re_potential_area_wind": {
+                "schema": "supply",
+                "table": "egon_re_potential_area_wind"
+            }
+        }
+    )
 
     def __init__(self, dependencies):
         super().__init__(
