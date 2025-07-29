@@ -31,6 +31,7 @@ from egon.data.datasets.pypsaeur import (read_network, prepared_network)
 from egon.data.datasets.scenario_parameters import get_sector_parameters
 
 logger = logging.getLogger(__name__)
+from egon.data.datasets import Dataset, DatasetSources, DatasetTargets
 
 
 class IndustrialGasDemand(Dataset):
@@ -46,9 +47,30 @@ class IndustrialGasDemand(Dataset):
     """
 
     #:
+class IndustrialGasDemand(Dataset):
     name: str = "IndustrialGasDemand"
-    #:
     version: str = "0.0.6"
+
+    sources = DatasetSources(
+        tables={
+            "region_mapping_json": "datasets/gas_data/demand/region_corr.json",
+            "industrial_demand_folder": "datasets/gas_data/demand",  
+            "boundaries_vg250_krs": "boundaries.vg250_krs",
+        }
+    )
+
+    targets = DatasetTargets(
+        tables={
+            "etrago_load": {
+                "schema": "grid",
+                "table": "egon_etrago_load"
+            },
+            "etrago_load_timeseries": {
+                "schema": "grid",
+                "table": "egon_etrago_load_timeseries"
+            }
+        }
+    )
 
     def __init__(self, dependencies):
         super().__init__(
@@ -57,6 +79,7 @@ class IndustrialGasDemand(Dataset):
             dependencies=dependencies,
             tasks=(download_industrial_gas_demand),
         )
+
 
 
 class IndustrialGasDemandeGon2035(Dataset):
@@ -145,15 +168,14 @@ def read_industrial_demand(scn_name, carrier):
         Dataframe containing the industrial gas demand time series
 
     """
-    target_file = Path(".") / "datasets/gas_data/demand/region_corr.json"
+    target_file = Path(IndustrialGasDemand.sources.tables["region_mapping_json"])
     df_corr = pd.read_json(target_file)
     df_corr = df_corr.loc[:, ["id_region", "name_short"]]
     df_corr.set_index("id_region", inplace=True)
 
     target_file = (
-        Path(".")
-        / "datasets/gas_data/demand"
-        / (carrier + "_" + scn_name + ".json")
+    Path(IndustrialGasDemand.sources.tables["industrial_demand_folder"])
+    / f"{carrier}_{scn_name}.json"
     )
     industrial_loads = pd.read_json(target_file)
     industrial_loads = industrial_loads.loc[:, ["id_region", "values"]]
@@ -205,10 +227,11 @@ def read_industrial_demand(scn_name, carrier):
     industrial_loads_list = industrial_loads_list.set_index("nuts3")
 
     # Add the centroid point to each NUTS3 area
-    sql_vg250 = """SELECT nuts as nuts3, geometry as geom
-                    FROM boundaries.vg250_krs
-                    WHERE gf = 4 ;"""
+    sql_vg250 = f"""SELECT nuts as nuts3, geometry as geom
+                FROM {IndustrialGasDemand.sources.tables['boundaries_vg250_krs']}
+                WHERE gf = 4;"""
     gdf_vg250 = db.select_geodataframe(sql_vg250, epsg=4326)
+
 
     point = []
     for index, row in gdf_vg250.iterrows():
@@ -304,9 +327,9 @@ def delete_old_entries(scn_name):
     # Clean tables
     db.execute_sql(
         f"""
-        DELETE FROM grid.egon_etrago_load_timeseries
+        DELETE FROM {IndustrialGasDemand.targets.tables['etrago_load_timeseries']['schema']}.{IndustrialGasDemand.targets.tables['etrago_load_timeseries']['table']}
         WHERE "load_id" IN (
-            SELECT load_id FROM grid.egon_etrago_load
+            SELECT load_id FROM {IndustrialGasDemand.targets.tables['etrago_load']['schema']}.{IndustrialGasDemand.targets.tables['etrago_load']['table']}
             WHERE "carrier" IN ('CH4_for_industry', 'H2_for_industry') AND
             scn_name = '{scn_name}' AND bus not IN (
                 SELECT bus_id FROM grid.egon_etrago_bus
@@ -318,9 +341,9 @@ def delete_old_entries(scn_name):
 
     db.execute_sql(
         f"""
-        DELETE FROM grid.egon_etrago_load
+        DELETE FROM {IndustrialGasDemand.targets.tables['etrago_load']['schema']}.{IndustrialGasDemand.targets.tables['etrago_load']['table']}
         WHERE "load_id" IN (
-            SELECT load_id FROM grid.egon_etrago_load
+            SELECT load_id FROM {IndustrialGasDemand.targets.tables['etrago_load']['schema']}.{IndustrialGasDemand.targets.tables['etrago_load']['table']}
             WHERE "carrier" IN ('CH4_for_industry', 'H2_for_industry') AND
             scn_name = '{scn_name}' AND bus not IN (
                 SELECT bus_id FROM grid.egon_etrago_bus
@@ -377,9 +400,9 @@ def insert_new_entries(industrial_gas_demand, scn_name):
     engine = db.engine()
     # Insert data to db
     egon_etrago_load_gas.to_sql(
-        "egon_etrago_load",
+        IndustrialGasDemand.targets.tables['etrago_load']['table'],
         engine,
-        schema="grid",
+        schema=IndustrialGasDemand.targets.tables['etrago_load']['schema'],
         index=False,
         if_exists="append",
     )
@@ -636,9 +659,9 @@ def insert_industrial_gas_demand_time_series(egon_etrago_load_gas):
 
     # Insert data to db
     egon_etrago_load_gas_timeseries.to_sql(
-        "egon_etrago_load_timeseries",
+        IndustrialGasDemand.targets.tables['etrago_load_timeseries']['table'],
         engine,
-        schema="grid",
+        schema=IndustrialGasDemand.targets.tables['etrago_load_timeseries']['schema'],
         index=False,
         if_exists="append",
     )
@@ -664,7 +687,7 @@ def download_industrial_gas_demand():
 
         # Read and save data
         result_corr = requests.get(correspondance_url)
-        target_file = Path(".") / "datasets/gas_data/demand/region_corr.json"
+        target_file = Path(IndustrialGasDemand.sources.tables["region_mapping_json"])
         os.makedirs(os.path.dirname(target_file), exist_ok=True)
         pd.read_json(result_corr.content).to_json(target_file)
 
@@ -686,10 +709,9 @@ def download_industrial_gas_demand():
                 # Read and save data
                 result = requests.get(request)
                 target_file = (
-                    Path(".")
-                    / "datasets/gas_data/demand"
-                    / (carrier + "_" + scn_name + ".json")
-                )
+                    Path(IndustrialGasDemand.sources.tables["industrial_demand_folder"])
+                    / f"{carrier}_{scn_name}.json"
+            )
                 pd.read_json(result.content).to_json(target_file)
     except:
         logger.warning(
