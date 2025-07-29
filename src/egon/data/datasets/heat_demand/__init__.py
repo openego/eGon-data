@@ -34,7 +34,7 @@ import geopandas as gpd
 import rasterio
 
 from egon.data import db, subprocess
-from egon.data.datasets import Dataset
+from egon.data.datasets import Dataset, DatasetSources, DatasetTargets
 from egon.data.datasets.scenario_parameters import (
     get_sector_parameters,
 )
@@ -76,6 +76,22 @@ class HeatDemandImport(Dataset):
     name: str = "heat-demands"
     #:
     version: str = "0.0.4"
+
+    sources = DatasetSources(
+        tables={
+            "boundaries": "boundaries.vg250_sta_union",
+            "zensus_population": "society.destatis_zensus_population_per_ha",
+        }
+    )
+
+    targets = DatasetTargets(
+        tables={
+            "heat_demand": {
+                "schema": "demand",
+                "table": "egon_peta_heat",
+            }
+        }
+    )
 
     def __init__(self, dependencies):
         super().__init__(
@@ -253,8 +269,7 @@ def cutout_heat_demand_germany():
 
     # Load the German boundaries from the local database using a dissolved
     # dataset which provides one multipolygon
-    table_name = "vg250_sta_union"
-    schema = "boundaries"
+
     local_engine = db.engine()
 
     # Recommened way: gpd.read_postgis()
@@ -264,8 +279,7 @@ def cutout_heat_demand_germany():
 
     gdf_boundaries = gpd.read_postgis(
         (
-            f"SELECT (ST_Dump(geometry)).geom As geometry"
-            f" FROM {schema}.{table_name}"
+            f"SELECT (ST_Dump(geometry)).geom As geometry FROM {HeatDemandImport.sources.tables['boundaries']}",
         ),
         local_engine,
         geom_col="geometry",
@@ -526,7 +540,11 @@ def heat_demand_to_db_table():
         os.path.dirname(__file__), "raster2cells-and-centroids.sql"
     )
 
-    db.execute_sql("DELETE FROM demand.egon_peta_heat;")
+    db.execute_sql(
+        f"DELETE FROM {HeatDemandImport.targets.tables['heat_demand']['schema']}."
+        f"{HeatDemandImport.targets.tables['heat_demand']['table']};"
+    )
+
 
     for source in sources:
         if not "2015" in source.stem:
@@ -582,7 +600,7 @@ def adjust_residential_heat_to_zensus(scenario):
     # Select overall residential heat demand
     overall_demand = db.select_dataframe(
         f"""SELECT SUM(demand) as overall_demand
-        FROM  demand.egon_peta_heat
+        FROM  {HeatDemandImport.targets.tables['heat_demand']['schema']}.{HeatDemandImport.targets.tables['heat_demand']['table']}
         WHERE scenario = {'scenario'} and sector = 'residential'
         """
     ).overall_demand[0]
@@ -590,11 +608,11 @@ def adjust_residential_heat_to_zensus(scenario):
     # Select heat demand in populated cells
     df = db.select_dataframe(
         f"""SELECT *
-        FROM  demand.egon_peta_heat
+        FROM  {HeatDemandImport.targets.tables['heat_demand']['schema']}.{HeatDemandImport.targets.tables['heat_demand']['table']}
         WHERE scenario = {'scenario'} and sector = 'residential'
         AND zensus_population_id IN (
             SELECT id
-            FROM society.destatis_zensus_population_per_ha_inside_germany
+            FROM {HeatDemandImport.sources.tables['zensus_population']}
             )""",
         index_col="id",
     )
@@ -604,8 +622,8 @@ def adjust_residential_heat_to_zensus(scenario):
 
     # Drop residential heat demands
     db.execute_sql(
-        f"""DELETE FROM demand.egon_peta_heat
-        WHERE scenario = {'scenario'} and sector = 'residential'"""
+        f"""DELETE FROM {HeatDemandImport.targets.tables['heat_demand']['schema']}.{HeatDemandImport.targets.tables['heat_demand']['table']}
+             WHERE scenario = {'scenario'} and sector = 'residential'"""
     )
 
     # Insert adjusted heat demands in populated cells
@@ -752,8 +770,16 @@ def scenario_data_import():
     db.execute_sql("CREATE SCHEMA IF NOT EXISTS demand;")
     # drop table if exists
     # can be removed when table structure doesn't change anymore
-    db.execute_sql("DROP TABLE IF EXISTS demand.egon_peta_heat CASCADE")
-    db.execute_sql("DROP SEQUENCE IF EXISTS demand.egon_peta_heat_seq CASCADE")
+    db.execute_sql(
+         f"DROP TABLE IF EXISTS {HeatDemandImport.targets.tables['heat_demand']['schema']}."
+         f"{HeatDemandImport.targets.tables['heat_demand']['table']} CASCADE"
+    )
+
+    db.execute_sql(
+         f"DROP SEQUENCE IF EXISTS {HeatDemandImport.targets.tables['heat_demand']['schema']}."
+         f"{HeatDemandImport.targets.tables['heat_demand']['table']}_seq CASCADE"
+    )
+
     # create table
     EgonPetaHeat.__table__.create(bind=db.engine(), checkfirst=True)
 
