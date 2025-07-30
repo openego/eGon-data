@@ -1,12 +1,9 @@
 import os
 
 from sqlalchemy.ext.declarative import declarative_base
-
-
 import pandas as pd
 
 from egon.data import config, db
-
 
 try:
     from disaggregator import temporal
@@ -55,10 +52,10 @@ def cts_demand_per_aggregation_level(aggregation_level, scenario):
     demand_nuts = db.select_dataframe(
         f"""
         SELECT demand, a.zensus_population_id, b.vg250_nuts3
-        FROM demand.egon_peta_heat a 
-        JOIN boundaries.egon_map_zensus_vg250 b 
+        FROM demand.egon_peta_heat a
+        JOIN boundaries.egon_map_zensus_vg250 b
         ON a.zensus_population_id = b.zensus_population_id
-        
+
         WHERE a.sector = 'service'
         AND a.scenario = '{scenario}'
         ORDER BY a.zensus_population_id
@@ -78,21 +75,7 @@ def cts_demand_per_aggregation_level(aggregation_level, scenario):
         )
         df_CTS_gas_2011.to_csv("CTS_heat_demand_profile_nuts3.csv")
 
-    ags_lk = db.select_dataframe(
-        """
-        SELECT nuts as natcode_nuts3, ags as ags_lk
-        FROM boundaries.vg250_krs
-
-        """
-        )
-    ags_lk.ags_lk = ags_lk.ags_lk.astype(int)
-
     CTS_profile = df_CTS_gas_2011.transpose()
-    CTS_profile.reset_index(inplace=True)
-    CTS_profile.ags_lk = CTS_profile.ags_lk.astype(int)
-    CTS_profile = pd.merge(CTS_profile, ags_lk, on="ags_lk", how="inner")
-    CTS_profile.set_index("natcode_nuts3", inplace=True)
-    CTS_profile.drop("ags_lk", axis=1, inplace=True)
 
     CTS_per_zensus = pd.merge(
         demand_nuts[["zensus_population_id", "vg250_nuts3"]],
@@ -137,7 +120,7 @@ def cts_demand_per_aggregation_level(aggregation_level, scenario):
             FROM boundaries.egon_map_zensus_grid_districts a
 
 				JOIN demand.egon_peta_heat c
-				ON a.zensus_population_id = c.zensus_population_id 
+				ON a.zensus_population_id = c.zensus_population_id
 
 				WHERE c.scenario = '{scenario}'
 				AND c.sector = 'service'
@@ -231,7 +214,7 @@ def CTS_demand_scale(aggregation_level):
         demand = db.select_dataframe(
             f"""
                 SELECT demand, zensus_population_id
-                FROM demand.egon_peta_heat                
+                FROM demand.egon_peta_heat
                 WHERE sector = 'service'
                 AND scenario = '{scenario}'
                 ORDER BY zensus_population_id
@@ -290,7 +273,7 @@ def CTS_demand_scale(aggregation_level):
                 FROM boundaries.egon_map_zensus_grid_districts a
 
 				JOIN demand.egon_peta_heat c
-				ON a.zensus_population_id = c.zensus_population_id 
+				ON a.zensus_population_id = c.zensus_population_id
 
 				WHERE c.scenario = '{scenario}'
 				AND c.sector = 'service'
