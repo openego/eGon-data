@@ -93,6 +93,7 @@ setup(
         "geopandas>=0.10.0",
         "geopy",
         "geovoronoi",
+        "google-re2!=1.1.20250722",
         "importlib-resources<6.0",
         "loguru",
         "markupsafe",
