@@ -1150,7 +1150,7 @@ emobility_mit:
   original_data:
     sources:
       RS7:
-        url: "https://www.bmvi.de/SharedDocs/DE/Anlage/G/regiostar-referenzdateien.xlsx?__blob=publicationFile"
+        url: "https://www.bmv.de/SharedDocs/DE/Anlage/G/regiostar-referenzdateien.xlsx?__blob=publicationFile"
         file: "regiostar-referenzdateien.xlsx"
         file_processed: "regiostar-referenzdateien_preprocessed.csv"
         sheet: "ReferenzGebietsstand2020"
