@@ -4,7 +4,7 @@ Fixes # .
 
 ### 📋 Pull Request Guidelines
 
-> Please read the [Pull Request Guidelines](:ref:`pr_guidelines`) carefully before creating your PR.
+> Please read the [Pull Request Guidelines](https://egon-data.readthedocs.io/en/latest/contributing.html#pull-request-guidelines) carefully before creating your PR.
 
 ---
 
