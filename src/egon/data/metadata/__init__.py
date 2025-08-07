@@ -1,5 +1,4 @@
 from geoalchemy2 import Geometry
-from metadata import settings
 from omi.base import get_metadata_specification
 from omi.validation import parse_metadata, validate_metadata
 from sqlalchemy import MetaData, Table
@@ -9,6 +8,7 @@ import importlib_resources
 from egon.data import db, logger
 from egon.data.datasets import Dataset
 from egon.data.db import engine
+from egon.data.metadata import settings
 
 # Easy access to oemetadata schema, template and example Dicts
 # Uses the oemetadata version specified in settings module
