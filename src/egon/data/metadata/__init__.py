@@ -37,6 +37,11 @@ def context():
     }
 
 
+# TODO @jh-RLI: All licenses should be read from SPDX data license list
+# -> especially the "name" prop
+# extend omi to provide list, makes sure licenses are compliant with oeplatform
+# which is important for full data publication on the OEP.
+# SPDX list is quite popular
 def licenses_datenlizenz_deutschland(attribution=EGON_ATTRIBUTION):
     """
     License information for Datenlizenz Deutschland
