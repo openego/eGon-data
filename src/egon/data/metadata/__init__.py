@@ -37,26 +37,6 @@ def context():
     }
 
 
-def meta_metadata():
-    """
-    Meta data on metadata
-
-    Returns
-    -------
-    dict
-        OEP metadata conform metadata on metadata
-    """
-
-    return {
-        "metadataVersion": "OEP-1.4.1",
-        "metadataLicense": {
-            "name": "CC0-1.0",
-            "title": "Creative Commons Zero v1.0 Universal",
-            "path": ("https://creativecommons.org/publicdomain/zero/1.0/"),
-        },
-    }
-
-
 def licenses_datenlizenz_deutschland(attribution=EGON_ATTRIBUTION):
     """
     License information for Datenlizenz Deutschland
@@ -415,7 +395,7 @@ def sources():
                 " developed requirements and criteria for the"
                 " assessment of suitable sites even if their"
                 " exploration is still at an early stage and there is"
-                ' little knowledge of the salinaries structures.'
+                " little knowledge of the salinaries structures."
                 " Scientists at DEEP.KBB GmbH in Hanover, worked"
                 " together with their project partners at the Federal"
                 " Institute for Geosciences and Natural Resources and"
