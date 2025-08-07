@@ -1,5 +1,7 @@
 from geoalchemy2 import Geometry
-from omi.dialects import get_dialect
+from metadata import settings
+from omi.base import get_metadata_specification
+from omi.validation import parse_metadata, validate_metadata
 from sqlalchemy import MetaData, Table
 from sqlalchemy.dialects.postgresql.base import ischema_names
 import importlib_resources
@@ -8,7 +10,9 @@ from egon.data import db, logger
 from egon.data.datasets import Dataset
 from egon.data.db import engine
 
-EGON_ATTRIBUTION: str = "© eGon development team"
+# Easy access to oemetadata schema, template and example Dicts
+# Uses the oemetadata version specified in settings module
+OEMetaData = get_metadata_specification(settings.OEMETADATA_VERSION)
 
 
 def context():
@@ -39,10 +43,14 @@ def context():
 
 # TODO @jh-RLI: All licenses should be read from SPDX data license list
 # -> especially the "name" prop
+# -> see SPDX:oem licenseId:name / name:title / reference:path
 # extend omi to provide list, makes sure licenses are compliant with oeplatform
 # which is important for full data publication on the OEP.
 # SPDX list is quite popular
-def licenses_datenlizenz_deutschland(attribution=EGON_ATTRIBUTION):
+# https://github.com/OpenEnergyPlatform/omi/blob/feature-126-add-yaml-and-template-based-metadata-creation/src/omi/data/licenses.json  # noqa: E501
+def licenses_datenlizenz_deutschland(
+    attribution=settings.EGON_ATTRIBUTION,
+):
     """
     License information for Datenlizenz Deutschland
 
@@ -90,7 +98,7 @@ def licenses_datenlizenz_deutschland(attribution=EGON_ATTRIBUTION):
     }
 
 
-def license_odbl(attribution=EGON_ATTRIBUTION):
+def license_odbl(attribution=settings.EGON_ATTRIBUTION):
     """
     License information for Open Data Commons Open Database License (ODbL-1.0)
 
@@ -115,7 +123,7 @@ def license_odbl(attribution=EGON_ATTRIBUTION):
     }
 
 
-def license_ccby(attribution=EGON_ATTRIBUTION):
+def license_ccby(attribution=settings.EGON_ATTRIBUTION):
     """
     License information for Creative Commons Attribution 4.0 International
     (CC-BY-4.0)
@@ -140,7 +148,7 @@ def license_ccby(attribution=EGON_ATTRIBUTION):
     }
 
 
-def license_geonutzv(attribution=EGON_ATTRIBUTION):
+def license_geonutzv(attribution=settings.EGON_ATTRIBUTION):
     """
     License information for GeoNutzV
 
@@ -171,7 +179,7 @@ def license_geonutzv(attribution=EGON_ATTRIBUTION):
     }
 
 
-def license_agpl(attribution=EGON_ATTRIBUTION):
+def license_agpl(attribution=settings.EGON_ATTRIBUTION):
     """
     License information for GNU Affero General Public License v3.0
 
@@ -201,7 +209,7 @@ def license_agpl(attribution=EGON_ATTRIBUTION):
     }
 
 
-def license_dedl(attribution=EGON_ATTRIBUTION):
+def license_dedl(attribution=settings.EGON_ATTRIBUTION):
     """
     License information for Data licence Germany – attribution – version 2.0
 
@@ -254,6 +262,11 @@ def license_egon_data_odbl():
     return license_odbl("© eGon development team")
 
 
+# TODO @jh-RLI: Metadata schema.fields generation is a generic task and could
+# be moved to OMI for others to also use it and reduce responsibilities in
+# egon-data. Low prio as this here already works.
+# High prio make sure this works with the oem v2 as schema is now at a
+# different location.
 def generate_resource_fields_from_sqla_model(model):
     """Generate a template for the resource fields for metadata from a SQL
     Alchemy model.
@@ -486,7 +499,7 @@ def sources():
                 " project eGon (https://ego-n.org/)"
             ),
             "path": "https://github.com/openego/eGon-data",
-            "licenses": [license_agpl(EGON_ATTRIBUTION)],
+            "licenses": [license_agpl(settings.EGON_ATTRIBUTION)],
         },
         "egon-data_bundle": {
             "title": "Data bundle for egon-data",
@@ -924,7 +937,6 @@ def contributors(authorlist):
 
 def upload_json_metadata():
     """Upload json metadata into db from zenodo"""
-    dialect = get_dialect("oep-v1.4")()
 
     for path in importlib_resources.files(__name__).glob("*.json"):
         split = path.name.split(".")
@@ -934,9 +946,11 @@ def upload_json_metadata():
         table = split[1]
 
         with open(path, "r") as infile:
-            obj = dialect.parse(infile.read())
+            obj = parse_metadata(infile.read())
 
-        metadata = f"'{dialect.compile_and_render(obj)}'"
+        # TODO @jh-RLI: Deactivate license check for now
+        validate_metadata(obj, check_license=False)
+        metadata = f"'{obj}'"
         db.submit_comment(metadata, schema, table)
         logger.info(f"Metadata comment for {schema}.{table} stored.")
 
