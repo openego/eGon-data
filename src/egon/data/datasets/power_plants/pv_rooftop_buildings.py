@@ -2429,21 +2429,21 @@ def pv_rooftop_to_buildings():
         .set_geometry("geom")
     )
 
-    scenario_buildings_gdf = all_buildings_gdf.copy()
+    scenario_buildings_gdf_sq = all_buildings_gdf.copy()
 
     cap_per_bus_id_df = pd.DataFrame()
 
     for scenario in SCENARIOS:
         if scenario == status_quo:
-            continue
+            scenario_buildings_gdf = scenario_buildings_gdf_sq.copy()
         elif "status" in scenario:
             ts = pd.Timestamp(
                 config.datasets()["mastr_new"][f"{scenario}_date_max"], tz="UTC"
             )
 
-            scenario_buildings_gdf = scenario_buildings_gdf.loc[
+            scenario_buildings_gdf = scenario_buildings_gdf_sq.loc[
                 scenario_buildings_gdf.commissioning_date <= ts
-            ]
+            ].copy()
 
         else:
             logger.debug(f"Desaggregating scenario {scenario}.")
@@ -2454,7 +2454,7 @@ def pv_rooftop_to_buildings():
             ) = allocate_scenarios(  # noqa: F841
                 desagg_mastr_gdf,
                 desagg_buildings_gdf,
-                scenario_buildings_gdf,
+                scenario_buildings_gdf_sq,
                 scenario,
             )
 
