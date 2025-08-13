@@ -16,7 +16,6 @@ import json
 from geoalchemy2 import Geometry
 from loguru import logger
 from numpy.random import RandomState, default_rng
-from omi.dialects import get_dialect
 from pyproj.crs.crs import CRS
 from sqlalchemy import BigInteger, Column, Float, Integer, String
 from sqlalchemy.dialects.postgresql import HSTORE
@@ -39,8 +38,6 @@ from egon.data.metadata import (
     generate_resource_fields_from_db_table,
     license_dedl,
     license_odbl,
-    meta_metadata,
-    meta_metadata,
     sources,
 )
 
@@ -358,6 +355,7 @@ class OsmBuildingsFiltered(Base):
     Class definition of table openstreetmap.osm_buildings_filtered.
 
     """
+
     __tablename__ = "osm_buildings_filtered"
     __table_args__ = {"schema": "openstreetmap"}
 
@@ -760,9 +758,9 @@ def allocate_pv(
 
     assert len(assigned_buildings) == len(assigned_buildings.gens_id.unique())
 
-    q_mastr_gdf.loc[assigned_buildings.gens_id, "building_id"] = (
-        assigned_buildings.index
-    )
+    q_mastr_gdf.loc[
+        assigned_buildings.gens_id, "building_id"
+    ] = assigned_buildings.index
 
     assigned_gens = q_mastr_gdf.loc[~q_mastr_gdf.building_id.isna()]
 
@@ -985,6 +983,7 @@ class Vg250Lan(Base):
     Class definition of table boundaries.vg250_lan.
 
     """
+
     __tablename__ = "vg250_lan"
     __table_args__ = {"schema": "boundaries"}
 
@@ -1168,7 +1167,7 @@ def cap_per_bus_id(
         WHERE carrier = 'solar_rooftop'
         AND scenario = '{scenario}'
         GROUP BY bus_id
-        """
+        """  # noqa: E501
 
         df = db.select_dataframe(sql, index_col="bus_id")
 
@@ -1180,7 +1179,7 @@ def cap_per_bus_id(
         FROM {targets['generators']['schema']}.{targets['generators']['table']}
         WHERE carrier = 'solar_rooftop'
         AND scn_name = '{scenario}'
-        """
+        """  # noqa: E501
 
         df = db.select_dataframe(sql, index_col="bus_id")
         df = df.loc[df.control != "Slack"]
@@ -2131,6 +2130,7 @@ class EgonPowerPlantPvRoofBuilding(Base):
     Class definition of table supply.egon_power_plants_pv_roof_building.
 
     """
+
     __tablename__ = "egon_power_plants_pv_roof_building"
     __table_args__ = {"schema": "supply"}
 
@@ -2210,9 +2210,7 @@ def add_metadata():
                     "Data from Marktstammdatenregister (MaStR) data using "
                     "the data dump from 2022-11-17 for eGon-data."
                 ),
-                "path": (
-                    f"https://zenodo.org/record/{deposit_id_mastr}"
-                ),
+                "path": (f"https://zenodo.org/record/{deposit_id_mastr}"),
                 "licenses": [license_dedl(attribution="© Amme, Jonathan")],
             },
             sources()["openstreetmap"],
@@ -2240,7 +2238,6 @@ def add_metadata():
             }
         ],
         "review": {"path": "", "badge": ""},
-        "metaMetadata": meta_metadata(),
         "_comment": {
             "metadata": (
                 "Metadata documentation and explanation (https://github."
@@ -2268,9 +2265,7 @@ def add_metadata():
         },
     }
 
-    dialect = get_dialect(f"oep-v{meta_metadata()['metadataVersion'][4:7]}")()
-
-    meta = dialect.compile_and_render(dialect.parse(json.dumps(meta)))
+    meta = json.dumps(meta)
 
     db.submit_comment(
         f"'{json.dumps(meta)}'",
@@ -2406,15 +2401,13 @@ def pv_rooftop_to_buildings():
 
     mastr_gdf = load_mastr_data()
 
-    status_quo = "status2023" # FIXME: Hard coded
+    status_quo = "status2023"  # FIXME: Hard coded
 
     ts = pd.Timestamp(
         config.datasets()["mastr_new"][f"{status_quo}_date_max"], tz="UTC"
     )
 
-    mastr_gdf = mastr_gdf.loc[
-        mastr_gdf.commissioning_date <= ts
-    ]
+    mastr_gdf = mastr_gdf.loc[mastr_gdf.commissioning_date <= ts]
 
     buildings_gdf = load_building_data()
 
@@ -2438,7 +2431,8 @@ def pv_rooftop_to_buildings():
             continue
         elif "status" in scenario:
             ts = pd.Timestamp(
-                config.datasets()["mastr_new"][f"{scenario}_date_max"], tz="UTC"
+                config.datasets()["mastr_new"][f"{scenario}_date_max"],
+                tz="UTC",
             )
 
             scenario_buildings_gdf = scenario_buildings_gdf.loc[

@@ -28,8 +28,7 @@ from egon.data.metadata import (
     context,
     contributors,
     license_egon_data_odbl,
-    meta_metadata,
-    sources
+    sources,
 )
 
 Base = declarative_base()
@@ -120,13 +119,9 @@ def get_meta(
                     "primaryKey": ["scn_name", component.lower() + "_id"],
                     "foreignKeys": [],
                 },
-                "dialect": {
-                    "delimiter": "",
-                    "decimalSeparator": ""
-                    },
+                "dialect": {"delimiter": "", "decimalSeparator": ""},
             }
         ],
-        "metaMetadata": meta_metadata(),
     }
 
     # Create json dump
@@ -161,7 +156,6 @@ class EgonPfHvBus(Base):
     contributor_list[2]["comment"] = "Added DSM buses"
     contributor_list[3]["comment"] = "Added CH4 sector buses"
     contributor_list[4]["comment"] = "Added H2 sector buses"
-
 
     __tablename__ = "egon_etrago_bus"
     __table_args__ = {
@@ -235,7 +229,6 @@ class EgonPfHvGenerator(Base):
     contributor_list[3]["comment"] = "Added gas feedin generators"
     contributor_list[4]["comment"] = "Added pv ground mounted"
 
-
     __tablename__ = "egon_etrago_generator"
     __table_args__ = {
         "schema": "grid",
@@ -280,7 +273,8 @@ class EgonPfHvGenerator(Base):
     ramp_limit_shut_down = Column(Float(53), server_default="1.")
     e_nom_max = Column(
         Float(53), server_default="inf"
-    )  # [MWh(/y)] Value to be used in eTraGo to set constraint for the production over the year
+    )  # [MWh(/y)] Value to be used in eTraGo to set constraint for
+    # the production over the year
 
 
 class EgonPfHvGeneratorTimeseries(Base):
@@ -294,7 +288,6 @@ class EgonPfHvGeneratorTimeseries(Base):
     contributor_list[0][
         "comment"
     ] = "Added p_max_pu timeseries for pv and wind"
-
 
     __tablename__ = "egon_etrago_generator_timeseries"
     __table_args__ = {
@@ -424,7 +417,6 @@ class EgonPfHvLink(Base):
     contributor_list[4]["comment"] = "Added H2 related links"
     contributor_list[5]["comment"] = "Added CH4 links"
 
-
     __tablename__ = "egon_etrago_link"
     __table_args__ = {
         "schema": "grid",
@@ -523,7 +515,6 @@ class EgonPfHvLoad(Base):
     contributor_list[2]["comment"] = "Added gas demands"
     contributor_list[3]["comment"] = "Added mobility demands"
 
-
     __tablename__ = "egon_etrago_load"
     __table_args__ = {
         "schema": "grid",
@@ -565,7 +556,6 @@ class EgonPfHvLoadTimeseries(Base):
     contributor_list[2]["comment"] = "Added e mobility load timeseries"
     contributor_list[3]["comment"] = "Added gas load timeseries"
 
-
     __tablename__ = "egon_etrago_load_timeseries"
     __table_args__ = {
         "schema": "grid",
@@ -592,7 +582,6 @@ class EgonPfHvCarrier(Base):
 
     contributor_list = contributors(["fw"])
     contributor_list[0]["comment"] = "Added list of carriers"
-
 
     __tablename__ = "egon_etrago_carrier"
     __table_args__ = {
@@ -625,7 +614,6 @@ class EgonPfHvStorage(Base):
     contributor_list[0][
         "comment"
     ] = "Added battery and pumped hydro storage units"
-
 
     __tablename__ = "egon_etrago_storage"
     __table_args__ = {
@@ -674,7 +662,6 @@ class EgonPfHvStorageTimeseries(Base):
 
     contributor_list = contributors(["cb"])
     contributor_list[0]["comment"] = "Added metadata"
-
 
     __tablename__ = "egon_etrago_storage_timeseries"
     __table_args__ = {
@@ -814,7 +801,6 @@ class EgonPfHvTransformer(Base):
     contributor_list[0]["comment"] = "Added transformes from osmTGmod tables"
     contributor_list[1]["comment"] = "Added meta data"
 
-
     __tablename__ = "egon_etrago_transformer"
     __table_args__ = {
         "schema": "grid",
@@ -901,7 +887,7 @@ def create_tables():
     db.execute_sql("CREATE SCHEMA IF NOT EXISTS grid;")
     engine = db.engine()
 
-    ##################### drop tables with old names #########################
+    # drop tables with old names #########################
     db.execute_sql(
         """
         DROP TABLE IF EXISTS grid.egon_pf_hv_bus;"""
@@ -1117,7 +1103,8 @@ def insert_carriers():
 
 
 def check_carriers():
-    """Check if any eTraGo table has carriers not included in the carrier table.
+    """Check if any eTraGo table has carriers not included
+    in the carrier table.
 
     Raises
     ------
@@ -1125,7 +1112,7 @@ def check_carriers():
     used in any eTraGo table.
     """
     carriers = db.select_dataframe(
-        f"""
+        """
         SELECT name FROM grid.egon_etrago_carrier
         """
     )
@@ -1145,8 +1132,8 @@ def check_carriers():
 
     if len(unknown_carriers) > 0:
         msg = (
-            "The eTraGo tables contain carriers, that are not included in the "
-            "carrier table:\n"
+            "The eTraGo tables contain carriers, that are not included "
+            "in the carrier table:\n"
         )
         for table, carriers in unknown_carriers.items():
             carriers = [str(c) for c in carriers]

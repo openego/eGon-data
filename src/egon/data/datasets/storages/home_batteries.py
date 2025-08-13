@@ -38,7 +38,6 @@ import json
 
 from loguru import logger
 from numpy.random import RandomState
-from omi.dialects import get_dialect
 from sqlalchemy import Column, Float, Integer, String
 from sqlalchemy.ext.declarative import declarative_base
 import numpy as np
@@ -52,7 +51,6 @@ from egon.data.metadata import (
     generate_resource_fields_from_db_table,
     license_dedl,
     license_odbl,
-    meta_metadata,
     sources,
 )
 
@@ -108,10 +106,10 @@ def allocate_home_batteries_to_buildings():
         WHERE carrier = 'home_battery'
         AND scenario = '{scenario}';
         """
-        cbat_pbat_ratio = get_sector_parameters(
-            "electricity", scenario
-        )["efficiency"]["battery"]["max_hours"]
-        
+        cbat_pbat_ratio = get_sector_parameters("electricity", scenario)[
+            "efficiency"
+        ]["battery"]["max_hours"]
+
         home_batteries_df = db.select_dataframe(sql)
 
         home_batteries_df = home_batteries_df.assign(
@@ -270,9 +268,7 @@ def add_metadata():
                     "Data from Marktstammdatenregister (MaStR) data using "
                     "the data dump from 2022-11-17 for eGon-data."
                 ),
-                "path": (
-                    f"https://zenodo.org/record/{deposit_id_mastr}"
-                ),
+                "path": (f"https://zenodo.org/record/{deposit_id_mastr}"),
                 "licenses": [license_dedl(attribution="© Amme, Jonathan")],
             },
             sources()["openstreetmap"],
@@ -306,7 +302,6 @@ def add_metadata():
             }
         ],
         "review": {"path": "", "badge": ""},
-        "metaMetadata": meta_metadata(),
         "_comment": {
             "metadata": (
                 "Metadata documentation and explanation (https://github.com/"
@@ -334,9 +329,7 @@ def add_metadata():
         },
     }
 
-    dialect = get_dialect(f"oep-v{meta_metadata()['metadataVersion'][4:7]}")()
-
-    meta = dialect.compile_and_render(dialect.parse(json.dumps(meta)))
+    meta = json.dumps(meta)
 
     db.submit_comment(
         f"'{json.dumps(meta)}'",

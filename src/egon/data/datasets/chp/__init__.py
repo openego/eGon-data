@@ -1,9 +1,8 @@
 """
-The central module containing all code dealing with combined heat and power
-(CHP) plants.
+The central module containing all code dealing with combined heat and
+power (CHP) plants.
 """
 
-from pathlib import Path
 import datetime
 import json
 import time
@@ -16,7 +15,6 @@ from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.orm import sessionmaker
 import geopandas as gpd
 import pandas as pd
-import pypsa
 
 from egon.data import config, db
 from egon.data.datasets import Dataset, wrapped_partial
@@ -29,8 +27,8 @@ from egon.data.datasets.chp.small_chp import (
     select_target,
 )
 from egon.data.datasets.mastr import (
-    WORKING_DIR_MASTR_OLD,
     WORKING_DIR_MASTR_NEW,
+    WORKING_DIR_MASTR_OLD,
 )
 from egon.data.datasets.power_plants import (
     assign_bus_id,
@@ -38,15 +36,16 @@ from egon.data.datasets.power_plants import (
     filter_mastr_geometry,
     scale_prox2now,
 )
+from egon.data.datasets.pypsaeur import read_network
 from egon.data.metadata import (
     context,
     generate_resource_fields_from_sqla_model,
     license_egon_data_odbl,
-    meta_metadata,
     sources,
 )
 
-from egon.data.datasets.pypsaeur import read_network
+# import pypsa
+
 
 Base = declarative_base()
 
@@ -168,10 +167,12 @@ def metadata():
                     "primaryKey": ["index"],
                     "foreignKeys": [],
                 },
-                "dialect": {"delimiter": None, "decimalSeparator": "."},
+                "dialect": {
+                    "delimiter": None,
+                    "decimalSeparator": ".",
+                },
             }
         ],
-        "metaMetadata": meta_metadata(),
     }
 
     # Add metadata as a comment to the table
@@ -330,7 +331,7 @@ def assign_heat_bus():
                     district_heating=row.district_heating,
                     voltage_level=row.voltage_level,
                     scenario=scenario,
-                    geom=f"SRID=4326;POINT({row.geom.x} {row.geom.y})",
+                    geom=(f"SRID=4326;POINT({row.geom.x} {row.geom.y})"),
                 )
             else:
                 entry = EgonChp(
@@ -345,7 +346,7 @@ def assign_heat_bus():
                     district_heating=row.district_heating,
                     voltage_level=row.voltage_level,
                     scenario=scenario,
-                    geom=f"SRID=4326;POINT({row.geom.x} {row.geom.y})",
+                    geom=(f"SRID=4326;POINT({row.geom.x} {row.geom.y})"),
                 )
             session.add(entry)
         session.commit()
@@ -366,7 +367,7 @@ def insert_biomass_chp(scenario):
     """
     cfg = config.datasets()["chp_location"]
 
-    # import target values from NEP 2021, scneario C 2035
+    # import target values from NEP 2021, scenario C 2035
     target = select_target("biomass", scenario)
 
     # import data for MaStR
@@ -387,7 +388,7 @@ def insert_biomass_chp(scenario):
         )
     ]
 
-    # Scaling will be done per federal state in case of eGon2035 scenario.
+    # Scaling per federal state in case of eGon2035 scenario.
     if scenario == "eGon2035":
         level = "federal_state"
     else:
@@ -424,7 +425,7 @@ def insert_biomass_chp(scenario):
                 district_heating=row.district_heating,
                 electrical_bus_id=row.bus_id,
                 voltage_level=row.voltage_level,
-                geom=f"SRID=4326;POINT({row.Laengengrad} {row.Breitengrad})",
+                geom=(f"SRID=4326;POINT({row.Laengengrad} {row.Breitengrad})"),
             )
             session.add(entry)
     session.commit()
@@ -522,7 +523,8 @@ def insert_chp_statusquo(scn="status2019"):
 
     print(
         f"""
-          CHPs with a total installed electrical capacity of {dropped_capacity} kW are dropped
+          CHPs with a total installed electrical
+          capacity of {dropped_capacity} kW are dropped
           because of missing or wrong location data
           """
     )
@@ -563,7 +565,7 @@ def insert_chp_statusquo(scn="status2019"):
                 electrical_bus_id=row.bus_id,
                 ch4_bus_id=row.gas_bus_id,
                 voltage_level=row.voltage_level,
-                geom=f"SRID=4326;POINT({row.Laengengrad} {row.Breitengrad})",
+                geom=(f"SRID=4326;POINT({row.Laengengrad} {row.Breitengrad})"),
             )
             session.add(entry)
     session.commit()
@@ -675,7 +677,8 @@ def extension_SH():
 
 
 def insert_chp_egon100re():
-    """Insert CHP plants for eGon100RE considering results from pypsa-eur-sec
+    """Insert CHP plants for eGon100RE considering results from
+    pypsa-eur-sec
 
     Returns
     -------
@@ -759,12 +762,16 @@ insert_per_scenario = set()
 
 if "status2019" in config.settings()["egon-data"]["--scenarios"]:
     insert_per_scenario.add(
-        wrapped_partial(insert_chp_statusquo, scn="status2019", postfix="_2019")
+        wrapped_partial(
+            insert_chp_statusquo, scn="status2019", postfix="_2019"
+        )
     )
 
 if "status2023" in config.settings()["egon-data"]["--scenarios"]:
     insert_per_scenario.add(
-        wrapped_partial(insert_chp_statusquo, scn="status2023", postfix="_2023")
+        wrapped_partial(
+            insert_chp_statusquo, scn="status2023", postfix="_2023"
+        )
     )
 
 if "eGon2035" in config.settings()["egon-data"]["--scenarios"]:
@@ -814,28 +821,40 @@ class Chp(Dataset):
     """
     Extract combined heat and power plants for each scenario
 
-    This dataset creates combined heat and power (CHP) plants for each scenario and defines their use case.
-    The method bases on existing CHP plants from Marktstammdatenregister. For the eGon2035 scenario,
-    a list of CHP plans from the grid operator is used for new largescale CHP plants. CHP < 10MW are
-    randomly distributed.
-    Depending on the distance to a district heating grid, it is decided if the CHP is used to
-    supply a district heating grid or used by an industrial site.
+    This dataset creates combined heat and power (CHP) plants for each
+    scenario and defines their use case. The method bases on existing CHP
+    plants from Marktstammdatenregister. For the eGon2035 scenario, a list of
+    CHP plans from the grid operator is used for new largescale CHP plants.
+    CHP < 10MW are randomly distributed. Depending on the distance to a
+    district heating grid, it is decided if the CHP is used to supply a
+    district heating grid or used by an industrial site.
 
 
     *Dependencies*
-      * :py:class:`GasAreaseGon100RE <egon.data.datasets.gas_areas.GasAreaseGon100RE>`
-      * :py:class:`GasAreaseGon2035 <egon.data.datasets.gas_areas.GasAreaseGon2035>`
-      * :py:class:`DistrictHeatingAreas <egon.data.datasets.district_heating_areas.DistrictHeatingAreas>`
-      * :py:class:`IndustrialDemandCurves <egon.data.datasets.industry.IndustrialDemandCurves>`
-      * :py:class:`OsmLanduse <egon.data.datasets.loadarea.OsmLanduse>`
-      * :py:func:`download_mastr_data <egon.data.datasets.mastr.download_mastr_data>`
-      * :py:func:`define_mv_grid_districts <egon.data.datasets.mv_grid_districts.define_mv_grid_districts>`
-      * :py:class:`ScenarioCapacities <egon.data.datasets.scenario_capacities.ScenarioCapacities>`
+      * :py:class:`GasAreaseGon100RE
+        <egon.data.datasets.gas_areas.GasAreaseGon100RE>`
+      * :py:class:`GasAreaseGon2035
+        <egon.data.datasets.gas_areas.GasAreaseGon2035>`
+      * :py:class:`DistrictHeatingAreas
+        <egon.data.datasets.district_heating_areas.DistrictHeatingAreas>`
+      * :py:class:`IndustrialDemandCurves
+        <egon.data.datasets.industry.IndustrialDemandCurves>`
+      * :py:class:`OsmLanduse
+        <egon.data.datasets.loadarea.OsmLanduse>`
+      * :py:func:`download_mastr_data
+        <egon.data.datasets.mastr.download_mastr_data>`
+      * :py:func:`define_mv_grid_districts
+        <egon.data.datasets.mv_grid_districts.define_mv_grid_districts>`
+      * :py:class:`ScenarioCapacities
+        <egon.data.datasets.scenario_capacities.ScenarioCapacities>`
 
 
     *Resulting tables*
-      * :py:class:`supply.egon_chp_plants <egon.data.datasets.chp.EgonChp>` is created and filled
-      * :py:class:`supply.egon_mastr_conventional_without_chp <egon.data.datasets.chp.EgonMaStRConventinalWithoutChp>` is created and filled
+      * :py:class:`supply.egon_chp_plants
+        <egon.data.datasets.chp.EgonChp>` is created and filled
+      * :py:class:`supply.egon_mastr_conventional_without_chp
+        <egon.data.datasets.chp.EgonMaStRConventinalWithoutChp>` is created
+        and filled
 
     """
 

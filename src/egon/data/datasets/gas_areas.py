@@ -2,22 +2,22 @@
 The central module containing code to create CH4 and H2 voronoi polygons
 
 """
+
 import datetime
 import json
-import pandas as pd
 
 from geoalchemy2.types import Geometry
 from sqlalchemy import BigInteger, Column, Text
 from sqlalchemy.ext.declarative import declarative_base
+import pandas as pd
 
-from egon.data import db, config
+from egon.data import config, db
 from egon.data.datasets import Dataset, wrapped_partial
 from egon.data.datasets.generate_voronoi import get_voronoi_geodataframe
 from egon.data.metadata import (
     context,
     contributors,
     license_egon_data_odbl,
-    meta_metadata,
     sources,
 )
 
@@ -39,7 +39,7 @@ class GasAreaseGon2035(Dataset):
     *Resulting tables*
       * :py:class:`EgonPfHvGasVoronoi <EgonPfHvGasVoronoi>`
 
-    """
+    """  # noqa: E501
 
     #:
     name: str = "GasAreaseGon2035"
@@ -62,17 +62,23 @@ class GasAreaseGon100RE(Dataset):
     :py:func:`voronoi_egon100RE` function.
 
     *Dependencies*
-      * :py:class:`EtragoSetup <egon.data.datasets.etrago_setup.EtragoSetup>`
-      * :py:class:`HydrogenBusEtrago <egon.data.datasets.hydrogen_etrago.HydrogenBusEtrago>`
-      * :py:class:`HydrogenGridEtrago <egon.data.datasets.hydrogen_etrago.HydrogenGridEtrago>`
-      * :py:class:`Vg250 <egon.data.datasets.vg250.Vg250>`
-      * :py:class:`GasNodesAndPipes <egon.data.datasets.gas_grid.GasNodesAndPipes>`
-      * :py:class:`GasAreaseGon2035 <GasAreaseGon2035>`
+      * :py:class:
+        `EtragoSetup <egon.data.datasets.etrago_setup.EtragoSetup>`
+      * :py:class:
+        `HydrogenBusEtrago <egon.data.datasets.hydrogen_etrago.HydrogenBusEtrago>`
+      * :py:class:
+        `HydrogenGridEtrago <egon.data.datasets.hydrogen_etrago.HydrogenGridEtrago>`
+      * :py:class:
+        `Vg250 <egon.data.datasets.vg250.Vg250>`
+      * :py:class:
+        `GasNodesAndPipes <egon.data.datasets.gas_grid.GasNodesAndPipes>`
+      * :py:class:
+        `GasAreaseGon2035 <GasAreaseGon2035>`
 
     *Resulting tables*
       * :py:class:`EgonPfHvGasVoronoi <EgonPfHvGasVoronoi>`
 
-    """
+    """  # noqa: E501
 
     #:
     name: str = "GasAreaseGon100RE"
@@ -95,7 +101,6 @@ class EgonPfHvGasVoronoi(Base):
     """
     Class definition of table grid.egon_gas_voronoi
     """
-
 
     source_list = [
         sources()["openstreetmap"],
@@ -158,7 +163,6 @@ class EgonPfHvGasVoronoi(Base):
                 "dialect": {"delimiter": None, "decimalSeparator": "."},
             }
         ],
-        "metaMetadata": meta_metadata(),
     }
     # Create json dump
     meta_json = "'" + json.dumps(meta, indent=4, ensure_ascii=False) + "'"
@@ -263,18 +267,16 @@ def create_voronoi(scn_name, carrier):
         """,
         geom_col="geometry",
     ).to_crs(epsg=4326)
-    
-    
+
     if isinstance(carrier, str):
-            if carrier == "H2":
-                carriers = ["H2", "H2_grid"]
-            else:
-                carriers = [carrier]
+        if carrier == "H2":
+            carriers = ["H2", "H2_grid"]
+        else:
+            carriers = [carrier]
     else:
         carriers = carrier
-            
+
     carrier_strings = "', '".join(carriers)
-    
 
     db.execute_sql(
         f"""
@@ -292,11 +294,10 @@ def create_voronoi(scn_name, carrier):
             AND carrier IN ('{carrier_strings}');
         """,
     ).to_crs(epsg=4326)
-    
-    
+
     if len(buses) == 0:
         return
-    
+
     # generate voronois
     # For some scenarios it is defined that there is only 1 bus (e.g. gas). It
     # means that there will be just 1 voronoi covering the entire german
@@ -317,7 +318,7 @@ def create_voronoi(scn_name, carrier):
 
     # Insert data to db
     gdf.set_crs(epsg=4326).to_postgis(
-        f"egon_gas_voronoi",
+        "egon_gas_voronoi",
         engine,
         schema="grid",
         index=False,
@@ -338,7 +339,7 @@ class GasAreas(Dataset):
     *Resulting tables*
       * :py:class:`EgonPfHvGasVoronoi <EgonPfHvGasVoronoi>`
 
-    """
+    """  # noqa: E501
 
     #:
     name: str = "GasAreas"
@@ -357,9 +358,13 @@ class GasAreas(Dataset):
 
     for scn_name in config.settings()["egon-data"]["--scenarios"]:
         if "status" in scn_name:
-            tasks += (wrapped_partial(
-                voronoi_status, scn_name=scn_name, postfix=f"_{scn_name[-4:]}"
-            ),)
+            tasks += (
+                wrapped_partial(
+                    voronoi_status,
+                    scn_name=scn_name,
+                    postfix=f"_{scn_name[-4:]}",
+                ),
+            )
 
     def __init__(self, dependencies):
         super().__init__(

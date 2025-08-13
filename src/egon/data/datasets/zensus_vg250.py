@@ -3,16 +3,7 @@ import json
 import time
 
 from geoalchemy2 import Geometry
-from sqlalchemy import (
-    BigInteger,
-    Column,
-    Float,
-    Integer,
-    SmallInteger,
-    String,
-    func,
-    select,
-)
+from sqlalchemy import BigInteger, Column, Float, Integer, SmallInteger, String
 from sqlalchemy.ext.declarative import declarative_base
 import geopandas as gpd
 import pandas as pd
@@ -22,10 +13,8 @@ from egon.data.datasets import Dataset
 from egon.data.datasets.vg250 import vg250_metadata_resources_fields
 from egon.data.metadata import (
     context,
-    generate_resource_fields_from_sqla_model,
     license_ccby,
     licenses_datenlizenz_deutschland,
-    meta_metadata,
     sources,
 )
 import egon.data.config
@@ -183,20 +172,28 @@ def map_zensus_vg250():
     local_engine = db.engine()
 
     db.execute_sql(
-        f"""DELETE FROM
-        {cfg['targets']['map']['schema']}.{cfg['targets']['map']['table']}"""
+        f"""
+        DELETE FROM
+        {cfg['targets']['map']['schema']}.
+        {cfg['targets']['map']['table']}
+        """
     )
 
     gdf = db.select_geodataframe(
-        f"""SELECT * FROM
+        f"""
+        SELECT * FROM
         {cfg['sources']['zensus_population']['schema']}.
-        {cfg['sources']['zensus_population']['table']}""",
+        {cfg['sources']['zensus_population']['table']}
+        """,
         geom_col="geom_point",
     )
 
     gdf_boundaries = db.select_geodataframe(
-        f"""SELECT * FROM  {cfg['sources']['vg250_municipalities']['schema']}.
-        {cfg['sources']['vg250_municipalities']['table']}""",
+        f"""
+        SELECT * FROM
+        {cfg['sources']['vg250_municipalities']['schema']}.
+        {cfg['sources']['vg250_municipalities']['table']}
+        """,
         geom_col="geometry",
         epsg=3035,
     )
@@ -264,7 +261,10 @@ def inside_germany():
     # Create new table
     db.execute_sql(
         f"""
-        DROP TABLE IF EXISTS {DestatisZensusPopulationPerHaInsideGermany.__table__.schema}.{DestatisZensusPopulationPerHaInsideGermany.__table__.name} CASCADE;
+        DROP TABLE IF EXISTS
+        {DestatisZensusPopulationPerHaInsideGermany.__table__.schema}.
+        {DestatisZensusPopulationPerHaInsideGermany.__table__.name}
+        CASCADE;
         """
     )
     DestatisZensusPopulationPerHaInsideGermany.__table__.create(
@@ -290,7 +290,7 @@ def inside_germany():
         )
 
         # Insert above queried data into new table
-        insert = DestatisZensusPopulationPerHaInsideGermany.__table__.insert().from_select(
+        insert = DestatisZensusPopulationPerHaInsideGermany.__table__.insert().from_select(  # noqa: E501
             (
                 DestatisZensusPopulationPerHaInsideGermany.id,
                 DestatisZensusPopulationPerHaInsideGermany.grid_id,
@@ -325,16 +325,18 @@ def population_in_municipalities():
     )
 
     gem["area_ha"] = gem.area / 10000
-
     gem["area_km2"] = gem.area / 1000000
 
     population = db.select_dataframe(
-        """SELECT id, population, vg250_municipality_id
+        """
+        SELECT id, population, vg250_municipality_id
         FROM society.destatis_zensus_population_per_ha
         INNER JOIN boundaries.egon_map_zensus_vg250 ON (
-             society.destatis_zensus_population_per_ha.id =
-             boundaries.egon_map_zensus_vg250.zensus_population_id)
-        WHERE population > 0"""
+            society.destatis_zensus_population_per_ha.id =
+            boundaries.egon_map_zensus_vg250.zensus_population_id
+        )
+        WHERE population > 0
+        """
     )
 
     gem["population_total"] = (
@@ -359,7 +361,8 @@ def add_metadata_zensus_inside_ger():
     """
     Create metadata JSON for DestatisZensusPopulationPerHaInsideGermany
 
-    Creates a metdadata JSON string and writes it to the database table comment
+    Creates a metdadata JSON string and writes it to the database table
+    comment
     """
     schema_table = ".".join(
         [
@@ -373,8 +376,8 @@ def add_metadata_zensus_inside_ger():
         "title": "DESTATIS - Zensus 2011 - Population per hectar",
         "id": "WILL_BE_SET_AT_PUBLICATION",
         "description": (
-            "National census in Germany in 2011 with the bounds on Germanys "
-            "borders."
+            "National census in Germany in 2011 with the bounds on "
+            "Germanys borders."
         ),
         "language": ["en-EN", "de-DE"],
         "publicationDate": datetime.date.today().isoformat(),
@@ -396,55 +399,69 @@ def add_metadata_zensus_inside_ger():
         },
         "sources": [
             {
-                "title": "Statistisches Bundesamt (Destatis) - Ergebnisse des "
-                "Zensus 2011 zum Download",
-                "description": (
-                    "Als Download bieten wir Ihnen auf dieser Seite "
-                    "zusätzlich zur Zensusdatenbank CSV- und "
-                    "teilweise Excel-Tabellen mit umfassenden "
-                    "Personen-, Haushalts- und Familien- sowie "
-                    "Gebäude- und Wohnungsmerkmalen. Die "
-                    "Ergebnisse liegen auf Bundes-, Länder-, Kreis- "
-                    "und Gemeindeebene vor. Außerdem sind einzelne "
-                    "Ergebnisse für Gitterzellen verfügbar."
+                "title": (
+                    "Statistisches Bundesamt (Destatis) - Ergebnisse des "
+                    "Zensus 2011 zum Download"
                 ),
-                "path": "https://www.zensus2011.de/DE/Home/Aktuelles/"
-                "DemografischeGrunddaten.html",
+                "description": (
+                    "Als Download bieten wir Ihnen auf dieser Seite zusä-"
+                    "tzlich zur Zensusdatenbank CSV- und teilweise "
+                    "Excel-Tabellen mit umfassenden Personen-, Haushalts- "
+                    "und Familien- "
+                    "sowie Gebäude- und Wohnungsmerkmalen. Die Ergebnisse "
+                    "liegen auf Bundes-, Länder-, Kreis- und Gemeindeebene "
+                    "vor. Außerdem sind einzelne Ergebnisse für Gitterzellen "
+                    "verfügbar."
+                ),
+                "path": (
+                    "https://www.zensus2011.de/DE/Home/Aktuelles/"
+                    "DemografischeGrunddaten.html"
+                ),
                 "licenses": [
                     licenses_datenlizenz_deutschland(
-                        attribution="© Statistische Ämter des Bundes und der "
-                        "Länder 2014"
+                        attribution=(
+                            "© Statistische Ämter des Bundes und der Länder "
+                            "2014"
+                        )
                     )
                 ],
             },
             {
-                "title": "Dokumentation - Zensus 2011 - Methoden und Verfahren",
+                "title": (
+                    "Dokumentation - Zensus 2011 - Methoden und Verfahren"
+                ),
                 "description": (
-                    "Diese Publikation beschreibt ausführlich die "
-                    "Methoden und Verfahren des registergestützten "
-                    "Zensus 2011; von der Datengewinnung und "
-                    "-aufbereitung bis hin zur Ergebniserstellung"
-                    " und Geheimhaltung. Der vorliegende Band wurde "
-                    "von den Statistischen Ämtern des Bundes und "
+                    "Diese Publikation beschreibt ausführlich die Methoden "
+                    "und "
+                    "Verfahren des registergestützten Zensus 2011; von der "
+                    "Datengewinnung und -aufbereitung bis hin zur "
+                    "Ergebniserstellung und Geheimhaltung. Der vorliegende "
+                    "Band wurde von den Statistischen Ämtern des Bundes und "
                     "der Länder im Juni 2015 veröffentlicht."
                 ),
-                "path": "https://www.destatis.de/DE/Publikationen/Thematisch/Be"
-                "voelkerung/Zensus/ZensusBuLaMethodenVerfahren51211051"
-                "19004.pdf?__blob=publicationFile",
+                "path": (
+                    "https://www.destatis.de/DE/Publikationen/Thematisch/"
+                    "Bevoelkerung/Zensus/"
+                    "ZensusBuLaMethodenVerfahren5121105119004.pdf"
+                    "?__blob=publicationFile"
+                ),
                 "licenses": [
                     licenses_datenlizenz_deutschland(
-                        attribution="© Statistisches Bundesamt, Wiesbaden "
-                        "2015 (im Auftrag der "
-                        "Herausgebergemeinschaft)"
+                        attribution=(
+                            "© Statistisches Bundesamt, Wiesbaden 2015 "
+                            "(im Auftrag der Herausgebergemeinschaft)"
+                        )
                     )
                 ],
             },
         ],
         "licenses": [
             licenses_datenlizenz_deutschland(
-                attribution="© Statistische Ämter des Bundes und der Länder "
-                "2014; © Statistisches Bundesamt, Wiesbaden 2015 "
-                "(Daten verändert)"
+                attribution=(
+                    "© Statistische Ämter des Bundes und der Länder 2014; "
+                    "© Statistisches Bundesamt, Wiesbaden 2015 "
+                    "(Daten verändert)"
+                )
             )
         ],
         "contributors": [
@@ -486,7 +503,7 @@ def add_metadata_zensus_inside_ger():
                         },
                         {
                             "name": "population",
-                            "description": "Number of registred residents",
+                            "description": ("Number of registred residents"),
                             "type": "integer",
                             "unit": "resident",
                         },
@@ -509,7 +526,6 @@ def add_metadata_zensus_inside_ger():
                 "dialect": {"delimiter": None, "decimalSeparator": "."},
             }
         ],
-        "metaMetadata": meta_metadata(),
     }
 
     meta_json = "'" + json.dumps(metadata) + "'"
@@ -525,7 +541,8 @@ def add_metadata_vg250_gem_pop():
     """
     Create metadata JSON for Vg250GemPopulation
 
-    Creates a metdadata JSON string and writes it to the database table comment
+    Creates a metdadata JSON string and writes it to the database table
+    comment
     """
     vg250_config = egon.data.config.datasets()["vg250"]
     schema_table = ".".join(
@@ -537,18 +554,22 @@ def add_metadata_vg250_gem_pop():
 
     licenses = [
         licenses_datenlizenz_deutschland(
-            attribution="© Bundesamt für Kartographie und Geodäsie "
-            "2020 (Daten verändert)"
+            attribution=(
+                "© Bundesamt für Kartographie und Geodäsie 2020 "
+                "(Daten verändert)"
+            )
         )
     ]
 
     vg250_source = {
         "title": "Verwaltungsgebiete 1:250 000 (Ebenen)",
-        "description": "Der Datenbestand umfasst sämtliche Verwaltungseinheiten der "
-        "hierarchischen Verwaltungsebenen vom Staat bis zu den Gemeinden "
-        "mit ihren Grenzen, statistischen Schlüsselzahlen, Namen der "
-        "Verwaltungseinheit sowie die spezifische Bezeichnung der "
-        "Verwaltungsebene des jeweiligen Landes.",
+        "description": (
+            "Der Datenbestand umfasst sämtliche Verwaltungseinheiten der "
+            "hierarchischen Verwaltungsebenen vom Staat bis zu den Gemeinden "
+            "mit ihren Grenzen, statistischen Schlüsselzahlen, Namen der "
+            "Verwaltungseinheit sowie die spezifische Bezeichnung der "
+            "Verwaltungsebene des jeweiligen Landes."
+        ),
         "path": vg250_config["original_data"]["source"]["url"],
         "licenses": licenses,
     }
@@ -648,7 +669,6 @@ def add_metadata_vg250_gem_pop():
                 "dialect": {"delimiter": None, "decimalSeparator": "."},
             }
         ],
-        "metaMetadata": meta_metadata(),
     }
 
     meta_json = "'" + json.dumps(metadata) + "'"
@@ -709,9 +729,13 @@ def add_metadata_vg250_zensus():
         ],
         "licenses": [
             license_ccby(
-                "© Bundesamt für Kartographie und Geodäsie 2020 (Daten verändert); "
+                "© Bundesamt für Kartographie und Geodäsie 2020 "
+                "(Daten verändert); "
                 "© Statistische Ämter des Bundes und der Länder 2014 "
-                "© Jonathan Amme, Clara Büttner, Ilka Cußmann, Julian Endres, Carlos Epia, Stephan Günther, Ulf Müller, Amélia Nadal, Guido Pleßmann, Francesco Witte",
+                "© Jonathan Amme, Clara Büttner, Ilka Cußmann, "
+                "Julian Endres, Carlos Epia, Stephan Günther, "
+                "Ulf Müller, Amélia Nadal, Guido Pleßmann, "
+                "Francesco Witte"
             )
         ],
         "contributors": [
@@ -738,7 +762,6 @@ def add_metadata_vg250_zensus():
                 "dialect": {"delimiter": None, "decimalSeparator": "."},
             }
         ],
-        "metaMetadata": meta_metadata(),
     }
 
     # Create json dump

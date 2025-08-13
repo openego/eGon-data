@@ -1,10 +1,12 @@
 """
-Central module containing all code dealing with processing era5 weather data.
+Central module containing all code dealing with processing ERA5
+weather data.
 """
 
 import datetime
 import json
 import time
+
 from sqlalchemy import Column, ForeignKey, Integer
 from sqlalchemy.ext.declarative import declarative_base
 import geopandas as gpd
@@ -13,27 +15,27 @@ import pandas as pd
 
 from egon.data import db
 from egon.data.datasets import Dataset
-from egon.data.datasets.era5 import EgonEra5Cells, EgonRenewableFeedIn, import_cutout
-from egon.data.datasets.scenario_parameters import get_sector_parameters
-from egon.data.metadata import (
-    context,
-    license_ccby,
-    meta_metadata,
-    sources,
+from egon.data.datasets.era5 import (
+    EgonEra5Cells,
+    EgonRenewableFeedIn,
+    import_cutout,
 )
+from egon.data.datasets.scenario_parameters import get_sector_parameters
 from egon.data.datasets.zensus_vg250 import DestatisZensusPopulationPerHa
+from egon.data.metadata import context, license_ccby, sources
 import egon.data.config
 
 
 class RenewableFeedin(Dataset):
     """
-    Calculate possible feedin time series for renewable energy generators
+    Calculate possible feed-in time series for renewable generators.
 
-    This dataset calculates possible feedin timeseries for fluctuation renewable generators
-    and coefficient of performance time series for heat pumps. Relevant input is the
-    downloaded weather data. Parameters for the time series calcultaion are also defined by
-    representative types of pv plants and wind turbines that are selected within this dataset.
-    The resulting profiles are stored in the database.
+    This dataset calculates feed-in time series for fluctuating renewable
+    generators and coefficient-of-performance series for heat pumps.
+    Relevant input is the downloaded weather data. Parameters for the
+    calculation are defined by representative types of PV plants and wind
+    turbines selected in this dataset. The resulting profiles are stored in
+    the database.
 
 
     *Dependencies*
@@ -42,7 +44,8 @@ class RenewableFeedin(Dataset):
       * :py:class:`ZensusVg250 <egon.data.datasets.zensus_vg250.ZensusVg250>`
 
     *Resulting tables*
-      * :py:class:`supply.egon_era5_renewable_feedin <egon.data.datasets.era5.EgonRenewableFeedIn>` is filled
+      * :py:class:`supply.egon_era5_renewable_feedin
+        <egon.data.datasets.era5.EgonRenewableFeedIn>` is filled
 
     """
 
@@ -85,7 +88,7 @@ class MapZensusWeatherCell(Base):
 
 
 def weather_cells_in_germany(geom_column="geom"):
-    """Get weather cells which intersect with Germany
+    """Get weather cells which intersect with Germany.
 
     Returns
     -------
@@ -100,15 +103,17 @@ def weather_cells_in_germany(geom_column="geom"):
         f"""SELECT w_id, geom_point, geom
         FROM {cfg['weather_cells']['schema']}.
         {cfg['weather_cells']['table']}
-        WHERE ST_Intersects('SRID=4326;
-        POLYGON((5 56, 15.5 56, 15.5 47, 5 47, 5 56))', geom)""",
+        WHERE ST_Intersects(
+            'SRID=4326;\n     POLYGON((5 56, 15.5 56, 15.5 47, 5 47, 5 56))',
+            geom
+        )""",
         geom_col=geom_column,
         index_col="w_id",
     )
 
 
 def offshore_weather_cells(geom_column="geom"):
-    """Get weather cells which intersect with Germany
+    """Get weather cells which intersect with Germany.
 
     Returns
     -------
@@ -123,20 +128,21 @@ def offshore_weather_cells(geom_column="geom"):
         f"""SELECT w_id, geom_point, geom
         FROM {cfg['weather_cells']['schema']}.
         {cfg['weather_cells']['table']}
-        WHERE ST_Intersects('SRID=4326;
-        POLYGON((5.5 55.5, 14.5 55.5, 14.5 53.5, 5.5 53.5, 5.5 55.5))',
-         geom)""",
+        WHERE ST_Intersects(
+            'SRID=4326;\n        POLYGON((5.5 55.5, 14.5 55.5, 14.5 53.5, 5.5 53.5, 5.5 55.5))',
+            geom
+        )""",  # noqa: E501
         geom_col=geom_column,
         index_col="w_id",
     )
 
 
 def federal_states_per_weather_cell():
-    """Assings a federal state to each weather cell in Germany.
+    """Assign a federal state to each weather cell in Germany.
 
-    Sets the federal state to the weather celss using the centroid.
-    Weather cells at the borders whoes centroid is not inside Germany
-    are assinged to the closest federal state.
+    Sets the federal state to the weather cells using the centroid. Weather
+    cells at the borders whose centroid is not inside Germany are assigned to
+    the closest federal state.
 
     Returns
     -------
@@ -147,7 +153,7 @@ def federal_states_per_weather_cell():
 
     cfg = egon.data.config.datasets()["renewable_feedin"]["sources"]
 
-    # Select weather cells and ferear states from database
+    # Select weather cells and federal states from database
     weather_cells = weather_cells_in_germany(geom_column="geom_point")
 
     federal_states = db.select_geodataframe(
@@ -191,7 +197,7 @@ def federal_states_per_weather_cell():
 
 
 def turbine_per_weather_cell():
-    """Assign wind onshore turbine types to weather cells
+    """Assign wind onshore turbine types to weather cells.
 
     Returns
     -------
@@ -232,12 +238,12 @@ def turbine_per_weather_cell():
 
 
 def feedin_per_turbine():
-    """Calculate feedin timeseries per turbine type and weather cell
+    """Calculate feed-in time series per turbine type and weather cell.
 
     Returns
     -------
     gdf : GeoPandas.GeoDataFrame
-        Feed-in timeseries per turbine type and weather cell
+        Feed-in time series per turbine type and weather cell
 
     """
 
@@ -246,7 +252,7 @@ def feedin_per_turbine():
 
     gdf = gpd.GeoDataFrame(geometry=cutout.grid.geometry, crs=4326)
 
-    # Calculate feedin-timeseries for E-141
+    # Calculate feed-in time series for E-141
     # source:
     # https://openenergy-platform.org/dataedit/view/supply/wind_turbine_library
     turbine_e141 = {
@@ -290,7 +296,7 @@ def feedin_per_turbine():
 
     gdf["E-141"] = ts_e141.to_pandas().transpose().values.tolist()
 
-    # Calculate feedin-timeseries for E-126
+    # Calculate feed-in time series for E-126
     # source:
     # https://openenergy-platform.org/dataedit/view/supply/wind_turbine_library
     turbine_e126 = {
@@ -338,7 +344,7 @@ def feedin_per_turbine():
 
 
 def wind():
-    """Insert feed-in timeseries for wind onshore turbines to database
+    """Insert feed-in time series for wind onshore turbines to database.
 
     Returns
     -------
@@ -352,10 +358,10 @@ def wind():
     weather_cells = turbine_per_weather_cell()
     weather_cells = weather_cells[weather_cells.wind_turbine.notnull()]
 
-    # Calculate feedin timeseries per turbine and weather cell
+    # Calculate feed-in time series per turbine and weather cell
     timeseries_per_turbine = feedin_per_turbine()
 
-    # Join weather cells and feedin-timeseries
+    # Join weather cells and feed-in time series
     timeseries = gpd.sjoin(weather_cells, timeseries_per_turbine)[
         ["E-141", "E-126"]
     ]
@@ -368,7 +374,7 @@ def wind():
         data={"weather_year": weather_year, "carrier": "wind_onshore"},
     )
 
-    # Insert feedin for selected turbine per weather cell
+    # Insert feed-in for selected turbine per weather cell
     for turbine in ["E-126", "E-141"]:
         idx = weather_cells.index[
             (weather_cells.wind_turbine == turbine)
@@ -393,7 +399,7 @@ def wind():
 
 
 def wind_offshore():
-    """Insert feed-in timeseries for wind offshore turbines to database
+    """Insert feed-in time series for wind offshore to database.
 
     Returns
     -------
@@ -401,7 +407,7 @@ def wind_offshore():
 
     """
 
-    # Get offshore weather cells arround Germany
+    # Get offshore weather cells around Germany
     weather_cells = offshore_weather_cells()
 
     # Select weather data for German coast
@@ -410,7 +416,7 @@ def wind_offshore():
     # Select weather year from cutout
     weather_year = cutout.name.split("-")[2]
 
-    # Calculate feedin timeseries
+    # Calculate feed-in time series
     ts_wind_offshore = cutout.wind(
         "Vestas_V164_7MW_offshore",
         per_unit=True,
@@ -422,7 +428,7 @@ def wind_offshore():
 
 
 def pv():
-    """Insert feed-in timeseries for pv plants to database
+    """Insert feed-in time series for PV plants to database.
 
     Returns
     -------
@@ -439,7 +445,7 @@ def pv():
     # Select weather year from cutout
     weather_year = cutout.name.split("-")[1]
 
-    # Calculate feedin timeseries
+    # Calculate feed-in time series
     ts_pv = cutout.pv(
         "CSi",
         orientation={"slope": 35.0, "azimuth": 180.0},
@@ -452,7 +458,7 @@ def pv():
 
 
 def solar_thermal():
-    """Insert feed-in timeseries for pv plants to database
+    """Insert feed-in time series for solar thermal to database.
 
     Returns
     -------
@@ -469,7 +475,7 @@ def solar_thermal():
     # Select weather year from cutout
     weather_year = cutout.name.split("-")[1]
 
-    # Calculate feedin timeseries
+    # Calculate feed-in time series
     ts_solar_thermal = cutout.solar_thermal(
         clearsky_model="simple",
         orientation={"slope": 45.0, "azimuth": 180.0},
@@ -486,15 +492,15 @@ def heat_pump_cop():
     """
     Calculate coefficient of performance for heat pumps according to
     T. Brown et al: "Synergies of sector coupling and transmission
-    reinforcement in a cost-optimised, highlyrenewable European energy system",
-    2018, p. 8
+    reinforcement in a cost-optimised, highly renewable European energy
+    system", 2018, p. 8
 
     Returns
     -------
     None.
 
     """
-    # Assume temperature of heating system to 55°C according to Brown et. al
+    # Assume temperature of heating system to 55°C according to Brown et al.
     t_sink = 55
 
     carrier = "heat_pump_cop"
@@ -511,7 +517,7 @@ def heat_pump_cop():
     # Select weather year from cutout
     weather_year = cutout.name.split("-")[1]
 
-    # Calculate feedin timeseries
+    # Calculate temperature series
     temperature = cutout.temperature(
         shapes=weather_cells.to_crs(4326).geom
     ).transpose()
@@ -520,8 +526,8 @@ def heat_pump_cop():
 
     delta_t = t_sink - t_source
 
-    # Calculate coefficient of performance for air sourced heat pumps
-    # according to Brown et. al
+    # Calculate coefficient of performance for air-sourced heat pumps
+    # according to Brown et al.
     cop = 6.81 - 0.121 * delta_t + 0.00063 * delta_t**2
 
     df = pd.DataFrame(
@@ -550,12 +556,12 @@ def heat_pump_cop():
 
 
 def insert_feedin(data, carrier, weather_year):
-    """Insert feedin data into database
+    """Insert feed-in data into database.
 
     Parameters
     ----------
     data : xarray.core.dataarray.DataArray
-        Feedin timeseries data
+        Feed-in time series data
     carrier : str
         Name of energy carrier
     weather_year : int
@@ -579,11 +585,11 @@ def insert_feedin(data, carrier, weather_year):
         data={"weather_year": weather_year, "carrier": carrier},
     )
 
-    # Convert solar thermal data from W/m^2 to MW/(1000m^2) = kW/m^2
+    # Convert solar thermal from W/m^2 to MW/(1000m^2) = kW/m^2
     if carrier == "solar_thermal":
         data *= 1e-3
 
-    # Insert feedin into DataFrame
+    # Insert feed-in into DataFrame
     df.feedin = data.values.tolist()
 
     # Delete existing rows for carrier
@@ -604,7 +610,7 @@ def insert_feedin(data, carrier, weather_year):
 
 
 def mapping_zensus_weather():
-    """Perform mapping between era5 weather cell and zensus grid"""
+    """Perform mapping between ERA5 weather cell and Zensus grid."""
 
     with db.session_scope() as session:
         cells_query = session.query(
@@ -649,7 +655,7 @@ def mapping_zensus_weather():
 
 
 def add_metadata():
-    """Add metdata to supply.egon_era5_renewable_feedin
+    """Add metadata to supply.egon_era5_renewable_feedin.
 
     Returns
     -------
@@ -678,7 +684,7 @@ def add_metadata():
             "unit": "none",
         },
         {
-            "description": "Weather-dependent feedin timeseries",
+            "description": "Weather-dependent feed-in time series",
             "name": "feedin",
             "type": "array",
             "unit": "p.u.",
@@ -687,9 +693,9 @@ def add_metadata():
 
     meta = {
         "name": "supply.egon_era5_renewable_feedin",
-        "title": "eGon feedin timeseries for RES",
+        "title": "eGon feed-in time series for RES",
         "id": "WILL_BE_SET_AT_PUBLICATION",
-        "description": "Weather-dependent feedin timeseries for RES",
+        "description": "Weather-dependent feed-in time series for RES",
         "language": ["EN"],
         "publicationDate": datetime.date.today().isoformat(),
         "context": context(),
@@ -705,9 +711,16 @@ def add_metadata():
         ],
         "licenses": [
             license_ccby(
-                "© Bundesamt für Kartographie und Geodäsie 2020 (Daten verändert); "
-                "© Copernicus Climate Change Service (C3S) Climate Data Store "
-                "© Jonathan Amme, Clara Büttner, Ilka Cußmann, Julian Endres, Carlos Epia, Stephan Günther, Ulf Müller, Amélia Nadal, Guido Pleßmann, Francesco Witte",
+                (
+                    "© Bundesamt für Kartographie und Geodäsie 2020 "
+                    "(Daten verändert); "
+                    "© Copernicus Climate Change Service (C3S) "
+                    "Climate Data Store "
+                    "© Jonathan Amme, Clara Büttner, Ilka Cußmann, "
+                    "Julian Endres, Carlos Epia, Stephan Günther, "
+                    "Ulf Müller, Amélia Nadal, Guido Pleßmann, "
+                    "Francesco Witte"
+                )
             )
         ],
         "contributors": [
@@ -734,7 +747,6 @@ def add_metadata():
                 "dialect": {"delimiter": None, "decimalSeparator": "."},
             }
         ],
-        "metaMetadata": meta_metadata(),
     }
 
     # Create json dump

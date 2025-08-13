@@ -11,7 +11,6 @@ for updates.
 import datetime
 import json
 
-from omi.dialects import get_dialect
 from sqlalchemy import ARRAY, Column, Float, Integer, String
 from sqlalchemy.ext.declarative import declarative_base
 import geopandas as gpd
@@ -27,8 +26,6 @@ from egon.data.metadata import (
     contributors,
     generate_resource_fields_from_db_table,
     license_odbl,
-    meta_metadata,
-    meta_metadata,
     sources,
 )
 
@@ -368,37 +365,9 @@ def add_metadata_individual():
                 }
             ],
             "review": {"path": "", "badge": ""},
-            "metaMetadata": meta_metadata(),
-            "_comment": {
-                "metadata": (
-                    "Metadata documentation and explanation (https://"
-                    "github.com/OpenEnergyPlatform/oemetadata/blob/master/"
-                    "metadata/v141/metadata_key_description.md)"
-                ),
-                "dates": (
-                    "Dates and time must follow the ISO8601 including time "
-                    "zone (YYYY-MM-DD or YYYY-MM-DDThh:mm:ss±hh)"
-                ),
-                "units": "Use a space between numbers and units (100 m)",
-                "languages": (
-                    "Languages must follow the IETF (BCP47) format (en-GB, "
-                    "en-US, de-DE)"
-                ),
-                "licenses": (
-                    "License name must follow the SPDX License List "
-                    "(https://spdx.org/licenses/)"
-                ),
-                "review": (
-                    "Following the OEP Data Review (https://github.com/"
-                    "OpenEnergyPlatform/data-preprocessing/wiki)"
-                ),
-                "none": "If not applicable use (none)",
-            },
         }
 
-        dialect = get_dialect(f"oep-v{meta_metadata()['metadataVersion'][4:7]}")()
-
-        meta = dialect.compile_and_render(dialect.parse(json.dumps(meta)))
+        meta = json.dumps(meta)
 
         db.submit_comment(
             f"'{json.dumps(meta)}'",

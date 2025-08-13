@@ -27,7 +27,6 @@ from egon.data.metadata import (
     context,
     generate_resource_fields_from_db_table,
     license_odbl,
-    meta_metadata,
 )
 import egon.data.config
 import egon.data.subprocess as subprocess
@@ -138,7 +137,7 @@ def add_metadata():
 
     # Extract spatial extend and date
     (spatial_extend, osm_data_date) = re.compile(
-        "^([\\w-]*).*-(\\d+)$"
+        r"^([\w-]*).*-(\d+)$"
     ).findall(Path(input_filename).name.split(".")[0])[0]
     osm_data_date = datetime.datetime.strptime(
         osm_data_date, "%y%m%d"
@@ -155,11 +154,10 @@ def add_metadata():
             "title": f"OpenStreetMap (OSM) - Germany - {table_suffix}",
             "id": "WILL_BE_SET_AT_PUBLICATION",
             "description": (
-                "OpenStreetMap is a free, editable map of the"
-                " whole world that is being built by volunteers"
-                " largely from scratch and released with"
-                " an open-content license.\n\n"
-                "The OpenStreetMap data here is the result of an PostgreSQL "
+                "OpenStreetMap is a free, editable map of the whole world "
+                "that is being built by volunteers largely from scratch and "
+                "released with an open-content license.\n\n"
+                "The OpenStreetMap data here is the result of a PostgreSQL "
                 "database import using osm2pgsql with a custom style file."
             ),
             "language": ["en-EN", "de-DE"],
@@ -185,7 +183,7 @@ def add_metadata():
                     "title": "OpenStreetMap Data Extracts (Geofabrik)",
                     "description": (
                         "Full data extract of OpenStreetMap data for defined "
-                        "spatial extent at ''referenceDate''"
+                        "spatial extent at 'referenceDate'."
                     ),
                     "path": f"{osm_url}",
                     "licenses": licenses,
@@ -225,7 +223,6 @@ def add_metadata():
                     "dialect": {"delimiter": None, "decimalSeparator": "."},
                 }
             ],
-            "metaMetadata": meta_metadata(),
         }
 
         meta_json = "'" + json.dumps(meta) + "'"
@@ -305,16 +302,22 @@ class OpenStreetMap(Dataset):
       * :py:func:`Setup <egon.data.datasets.database.setup>`
 
     *Resulting Tables*
-      * openstreetmap.osm_line is created and filled (table has no associated python class)
-      * openstreetmap.osm_nodes is created and filled (table has no associated python class)
-      * openstreetmap.osm_point is created and filled (table has no associated python class)
-      * openstreetmap.osm_polygon is created and filled (table has no associated python class)
-      * openstreetmap.osm_rels is created and filled (table has no associated python class)
-      * openstreetmap.osm_roads is created and filled (table has no associated python class)
-      * openstreetmap.osm_ways is created and filled (table has no associated python class)
+      * openstreetmap.osm_line is created and filled (table has no
+        associated python class)
+      * openstreetmap.osm_nodes is created and filled (table has no
+        associated python class)
+      * openstreetmap.osm_point is created and filled (table has no
+        associated python class)
+      * openstreetmap.osm_polygon is created and filled (table has no
+        associated python class)
+      * openstreetmap.osm_rels is created and filled (table has no
+        associated python class)
+      * openstreetmap.osm_roads is created and filled (table has no
+        associated python class)
+      * openstreetmap.osm_ways is created and filled (table has no
+        associated python class)
 
     See documentation section :ref:`osm-ref` for more information.
-
     """
 
     #:

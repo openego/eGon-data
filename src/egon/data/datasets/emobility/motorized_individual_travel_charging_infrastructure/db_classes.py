@@ -6,7 +6,6 @@ import datetime
 import json
 
 from geoalchemy2 import Geometry
-from omi.dialects import get_dialect
 from sqlalchemy import Column, Float, Integer, String
 from sqlalchemy.ext.declarative import declarative_base
 
@@ -16,8 +15,6 @@ from egon.data.metadata import (
     contributors,
     generate_resource_fields_from_db_table,
     license_odbl,
-    meta_metadata,
-    meta_metadata,
 )
 
 Base = declarative_base()
@@ -124,7 +121,6 @@ def add_metadata():
             }
         ],
         "review": {"path": "", "badge": ""},
-        "metaMetadata": meta_metadata(),
         "_comment": {
             "metadata": (
                 "Metadata documentation and explanation (https://github.com/Op"
@@ -152,9 +148,7 @@ def add_metadata():
         },
     }
 
-    dialect = get_dialect(f"oep-v{meta_metadata()['metadataVersion'][4:7]}")()
-
-    meta = dialect.compile_and_render(dialect.parse(json.dumps(meta)))
+    meta = json.dumps(meta)
 
     db.submit_comment(
         f"'{json.dumps(meta)}'",

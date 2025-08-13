@@ -1,6 +1,4 @@
-"""The central module containing all code dealing with heat supply data
-
-"""
+"""The central module containing all code dealing with heat supply data"""
 
 import datetime
 import json
@@ -26,9 +24,7 @@ from egon.data.datasets.heat_supply.individual_heating import (
 from egon.data.metadata import (
     context,
     generate_resource_fields_from_sqla_model,
-    license_ccby,
     license_egon_data_odbl,
-    meta_metadata,
     sources,
 )
 
@@ -83,9 +79,8 @@ def district_heating():
     Returns
     -------
     None.
-
     """
-    sources = config.datasets()["heat_supply"]["sources"]
+    sources_cfg = config.datasets()["heat_supply"]["sources"]
     targets = config.datasets()["heat_supply"]["targets"]
 
     db.execute_sql(
@@ -107,8 +102,7 @@ def district_heating():
             if_exists="append",
         )
 
-
-        # Do not check data for status quo as is it not listed in the table
+        # Do not check data for status quo as it is not listed in the table
         if "status" not in scenario:
             # Compare target value with sum of distributed heat supply
             df_check = db.select_dataframe(
@@ -117,8 +111,8 @@ def district_heating():
                 (SUM(a.capacity) - b.capacity) / SUM(a.capacity) as deviation
                 FROM {targets['district_heating_supply']['schema']}.
                 {targets['district_heating_supply']['table']} a,
-                {sources['scenario_capacities']['schema']}.
-                {sources['scenario_capacities']['table']} b
+                {sources_cfg['scenario_capacities']['schema']}.
+                {sources_cfg['scenario_capacities']['table']} b
                 WHERE a.scenario = '{scenario}'
                 AND b.scenario_name = '{scenario}'
                 AND b.carrier = CONCAT('urban_central_', a.carrier)
@@ -126,11 +120,10 @@ def district_heating():
                 """
             )
             # If the deviation is > 1%, throw an error
-            assert (
-                df_check.deviation.abs().max() < 1
-            ), f"""Unexpected deviation between target value and distributed
-                heat supply: {df_check}
-            """
+            assert df_check.deviation.abs().max() < 1, (
+                "Unexpected deviation between target value and distributed "
+                f"heat supply: {df_check}"
+            )
 
         # Add gas boilers as conventional backup capacities
         backup = backup_gas_boilers(scenario)
@@ -141,7 +134,6 @@ def district_heating():
             con=db.engine(),
             if_exists="append",
         )
-
 
         # Insert resistive heaters which are not available in status quo
         if "status" not in scenario:
@@ -162,7 +154,6 @@ def individual_heating():
     Returns
     -------
     None.
-
     """
     targets = config.datasets()["heat_supply"]["targets"]
 
@@ -180,7 +171,9 @@ def individual_heating():
             distribution_level = "national"
 
         supply = cascade_heat_supply_indiv(
-            scenario, distribution_level=distribution_level, plotting=False
+            scenario,
+            distribution_level=distribution_level,
+            plotting=False,
         )
 
         supply["scenario"] = scenario
@@ -199,7 +192,6 @@ def metadata():
     Returns
     -------
     None.
-
     """
 
     fields = generate_resource_fields_from_sqla_model(
@@ -273,7 +265,6 @@ def metadata():
                 "dialect": {"delimiter": None, "decimalSeparator": "."},
             }
         ],
-        "metaMetadata": meta_metadata(),
     }
 
     # Add metadata as a comment to the table
@@ -309,7 +300,9 @@ def metadata():
         "name": "supply.egon_individual_heating",
         "title": "eGon heat supply for individual supplied buildings",
         "id": "WILL_BE_SET_AT_PUBLICATION",
-        "description": "Heat supply technologies for individual supplied buildings",
+        "description": (
+            "Heat supply technologies for individual supplied buildings"
+        ),
         "language": ["EN"],
         "publicationDate": datetime.date.today().isoformat(),
         "context": context(),
@@ -352,7 +345,6 @@ def metadata():
                 "dialect": {"delimiter": None, "decimalSeparator": "."},
             }
         ],
-        "metaMetadata": meta_metadata(),
     }
 
     # Add metadata as a comment to the table
@@ -365,27 +357,33 @@ def metadata():
 
 class HeatSupply(Dataset):
     """
-    Select and store heat supply technologies for inidvidual and district heating
+    Select and store heat supply technologies for inidvidual and
+    district heating
 
-    This dataset distributes heat supply technologies to each district heating grid
-    and individual supplies buildings per medium voltage grid district.
-    National installed capacities are predefined from external sources within
-    :py:class:`ScenarioCapacities <egon.data.datasets.scenario_capacities.ScenarioCapacities>`.
-    The further distribution is done using a cascade that follows a specific order of supply technologies
-    and the heat demand.
-
+    This dataset distributes heat supply technologies to each district
+    heating grid and individual supplies buildings per medium voltage
+    grid district. National installed capacities are predefined from
+    external sources within :py:class:`ScenarioCapacities
+    <egon.data.datasets.scenario_capacities.ScenarioCapacities>`.
+    The further distribution is done using a cascade that follows a
+    specific order of supply technologies and the heat demand.
 
     *Dependencies*
-      * :py:class:`DataBundle <egon.data.datasets.data_bundle.DataBundle>`
-      * :py:class:`DistrictHeatingAreas <egon.data.datasets.district_heating_areas.DistrictHeatingAreas>`
-      * :py:class:`ZensusMvGridDistricts <egon.data.datasets.zensus_mv_grid_districts.ZensusMvGridDistricts>`
+      * :py:class:`DataBundle
+        <egon.data.datasets.data_bundle.DataBundle>`
+      * :py:class:`DistrictHeatingAreas
+        <egon.data.datasets.district_heating_areas.DistrictHeatingAreas>`
+      * :py:class:`ZensusMvGridDistricts
+        <egon.data.datasets.zensus_mv_grid_districts.ZensusMvGridDistricts>`
       * :py:class:`Chp <egon.data.datasets.chp.Chp>`
 
-
     *Resulting tables*
-      * :py:class:`demand.egon_district_heating <egon.data.datasets.heat_supply.EgonDistrictHeatingSupply>` is created and filled
-      * :py:class:`demand.egon_individual_heating <egon.data.datasets.heat_supply.EgonIndividualHeatingSupply>` is created and filled
-
+      * :py:class:`demand.egon_district_heating
+        <egon.data.datasets.heat_supply.EgonDistrictHeatingSupply>` is
+        created and filled
+      * :py:class:`demand.egon_individual_heating
+        <egon.data.datasets.heat_supply.EgonIndividualHeatingSupply>` is
+        created and filled
     """
 
     #:
@@ -408,13 +406,12 @@ class HeatSupply(Dataset):
             ),
         )
 
+
 class GeothermalPotentialGermany(Dataset):
     def __init__(self, dependencies):
         super().__init__(
             name="GeothermalPotentialGermany",
             version="0.0.2",
             dependencies=dependencies,
-            tasks=(
-                potential_germany,
-            ),
+            tasks=(potential_germany,),
         )

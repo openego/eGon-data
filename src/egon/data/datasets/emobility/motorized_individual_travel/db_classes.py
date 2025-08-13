@@ -4,7 +4,6 @@ DB tables / SQLAlchemy ORM classes for motorized individual travel
 import datetime
 import json
 
-from omi.dialects import get_dialect
 from sqlalchemy import (
     Boolean,
     Column,
@@ -31,8 +30,6 @@ from egon.data.metadata import (
     license_agpl,
     license_ccby,
     license_odbl,
-    meta_metadata,
-    meta_metadata,
     sources,
 )
 
@@ -382,7 +379,6 @@ def add_metadata():
             }
         ],
         "review": {"path": "", "badge": ""},
-        "metaMetadata": meta_metadata(),
         "_comment": {
             "metadata": (
                 "Metadata documentation and explanation (https://github."
@@ -410,9 +406,7 @@ def add_metadata():
         },
     }
 
-    dialect = get_dialect(f"oep-v{meta_metadata()['metadataVersion'][4:7]}")()
-
-    meta = dialect.compile_and_render(dialect.parse(json.dumps(meta)))
+    meta = json.dumps(meta)
 
     db.submit_comment(
         f"'{json.dumps(meta)}'",
@@ -504,7 +498,6 @@ def add_metadata():
             }
         ],
         "review": {"path": "", "badge": ""},
-        "metaMetadata": meta_metadata(),
         "_comment": {
             "metadata": (
                 "Metadata documentation and explanation (https://github."
@@ -532,9 +525,7 @@ def add_metadata():
         },
     }
 
-    dialect = get_dialect(f"oep-v{meta_metadata()['metadataVersion'][4:7]}")()
-
-    meta = dialect.compile_and_render(dialect.parse(json.dumps(meta)))
+    meta = json.dumps(meta)
 
     db.submit_comment(
         f"'{json.dumps(meta)}'",
@@ -626,7 +617,6 @@ def add_metadata():
             }
         ],
         "review": {"path": "", "badge": ""},
-        "metaMetadata": meta_metadata(),
         "_comment": {
             "metadata": (
                 "Metadata documentation and explanation (https://github."
@@ -654,9 +644,7 @@ def add_metadata():
         },
     }
 
-    dialect = get_dialect(f"oep-v{meta_metadata()['metadataVersion'][4:7]}")()
-
-    meta = dialect.compile_and_render(dialect.parse(json.dumps(meta)))
+    meta = json.dumps(meta)
 
     db.submit_comment(
         f"'{json.dumps(meta)}'",

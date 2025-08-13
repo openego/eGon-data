@@ -11,11 +11,10 @@ isn't exported from this module, please file a bug, so we can fix this.
 
 from pathlib import Path
 from urllib.request import urlretrieve
-import time
 import datetime
-import codecs
 import json
 import os
+import time
 
 from geoalchemy2 import Geometry
 import geopandas as gpd
@@ -23,12 +22,8 @@ import geopandas as gpd
 from egon.data import db
 from egon.data.config import settings
 from egon.data.datasets import Dataset
+from egon.data.metadata import context, licenses_datenlizenz_deutschland
 import egon.data.config
-from egon.data.metadata import (
-    context,
-    meta_metadata,
-    licenses_datenlizenz_deutschland,
-)
 
 
 def download_files():
@@ -38,7 +33,6 @@ def download_files():
     Data is downloaded from source specified in *datasets.yml* in section
     *vg250/original_data/source/url* and saved to file specified in
     *vg250/original_data/target/file*.
-
     """
     data_config = egon.data.config.datasets()
     vg250_config = data_config["vg250"]["original_data"]
@@ -61,7 +55,6 @@ def to_postgres():
     Creates schema boundaries if it does not yet exist.
     Newly creates all tables specified as keys in *datasets.yml* in section
     *vg250/processed/file_table_map*.
-
     """
 
     # Get information from data configuration file
@@ -79,16 +72,19 @@ def to_postgres():
     for filename, table in vg250_processed["file_table_map"].items():
         # Open files and read .shp (within .zip) with geopandas
         data = gpd.read_file(
-            f"zip://{zip_file}!vg250_01-01.geo84.shape.ebenen/"
-            f"vg250_ebenen_0101/{filename}"
+            "zip://"
+            f"{zip_file}!vg250_01-01.geo84.shape.ebenen/"
+            "vg250_ebenen_0101/"
+            f"{filename}"
         )
 
         boundary = settings()["egon-data"]["--dataset-boundary"]
         if boundary != "Everything":
             # read-in borders of federal state Schleswig-Holstein
             data_sta = gpd.read_file(
-                f"zip://{zip_file}!vg250_01-01.geo84.shape.ebenen/"
-                f"vg250_ebenen_0101/VG250_LAN.shp"
+                "zip://"
+                f"{zip_file}!vg250_01-01.geo84.shape.ebenen/"
+                "vg250_ebenen_0101/VG250_LAN.shp"
             ).query(f"GEN == '{boundary}'")
             data_sta.BEZ = "Bundesrepublik"
             data_sta.NUTS = "DE"
@@ -107,7 +103,7 @@ def to_postgres():
 
         # Drop table before inserting data
         db.execute_sql(
-            f"DROP TABLE IF EXISTS "
+            "DROP TABLE IF EXISTS "
             f"{vg250_processed['schema']}.{table} CASCADE;"
         )
 
@@ -123,7 +119,7 @@ def to_postgres():
 
         db.execute_sql(
             f"ALTER TABLE {vg250_processed['schema']}.{table} "
-            f"ADD PRIMARY KEY (id);"
+            "ADD PRIMARY KEY (id);"
         )
 
         # Add index on geometry column
@@ -145,47 +141,63 @@ def add_metadata():
         },
         "vg250_lan": {
             "title": "BKG - Verwaltungsgebiete 1:250.000 - Länder (LAN)",
-            "description": "Landesgrenzen der Bundesländer in der "
-            "Bundesrepublik Deutschland",
+            "description": (
+                "Landesgrenzen der Bundesländer in der "
+                "Bundesrepublik Deutschland"
+            ),
         },
         "vg250_rbz": {
-            "title": "BKG - Verwaltungsgebiete 1:250.000 - Regierungsbezirke "
-            "(RBZ)",
-            "description": "Grenzen der Regierungsbezirke in der "
-            "Bundesrepublik Deutschland",
+            "title": (
+                "BKG - Verwaltungsgebiete 1:250.000 - "
+                "Regierungsbezirke (RBZ)"
+            ),
+            "description": (
+                "Grenzen der Regierungsbezirke in der "
+                "Bundesrepublik Deutschland"
+            ),
         },
         "vg250_krs": {
             "title": "BKG - Verwaltungsgebiete 1:250.000 - Kreise (KRS)",
-            "description": "Grenzen der Landkreise in der "
-            "Bundesrepublik Deutschland",
+            "description": (
+                "Grenzen der Landkreise in der " "Bundesrepublik Deutschland"
+            ),
         },
         "vg250_vwg": {
-            "title": "BKG - Verwaltungsgebiete 1:250.000 - "
-            "Verwaltungsgemeinschaften (VWG)",
-            "description": "Grenzen der Verwaltungsgemeinschaften in der "
-            "Bundesrepublik Deutschland",
+            "title": (
+                "BKG - Verwaltungsgebiete 1:250.000 - "
+                "Verwaltungsgemeinschaften (VWG)"
+            ),
+            "description": (
+                "Grenzen der Verwaltungsgemeinschaften in der "
+                "Bundesrepublik Deutschland"
+            ),
         },
         "vg250_gem": {
             "title": "BKG - Verwaltungsgebiete 1:250.000 - Gemeinden (GEM)",
-            "description": "Grenzen der Gemeinden in der "
-            "Bundesrepublik Deutschland",
+            "description": (
+                "Grenzen der Gemeinden in der " "Bundesrepublik Deutschland"
+            ),
         },
     }
 
     licenses = [
         licenses_datenlizenz_deutschland(
-            attribution="© Bundesamt für Kartographie und Geodäsie "
-            "2020 (Daten verändert)"
+            attribution=(
+                "© Bundesamt für Kartographie und Geodäsie 2020 "
+                "(Daten verändert)"
+            )
         )
     ]
 
     vg250_source = {
         "title": "Verwaltungsgebiete 1:250 000 (Ebenen)",
-        "description": "Der Datenbestand umfasst sämtliche Verwaltungseinheiten der "
-        "hierarchischen Verwaltungsebenen vom Staat bis zu den Gemeinden "
-        "mit ihren Grenzen, statistischen Schlüsselzahlen, Namen der "
-        "Verwaltungseinheit sowie die spezifische Bezeichnung der "
-        "Verwaltungsebene des jeweiligen Landes.",
+        "description": (
+            "Der Datenbestand umfasst sämtliche Verwaltungseinheiten der "
+            "hierarchischen Verwaltungsebenen vom Staat bis zu den Gemeinden "
+            "mit ihren Grenzen, statistischen Schlüsselzahlen, Namen der "
+            "Verwaltungseinheit sowie die spezifische Bezeichnung der "
+            "Verwaltungsebene des jeweiligen Landes."
+        ),
         "path": vg250_config["original_data"]["source"]["url"],
         "licenses": licenses,
     }
@@ -248,10 +260,11 @@ def add_metadata():
                     "dialect": {"delimiter": None, "decimalSeparator": "."},
                 }
             ],
-            "metaMetadata": meta_metadata(),
         }
 
-        meta_json = "'" + json.dumps(meta) + "'"
+        meta_json = (
+            "'" + json.dumps(meta) + "'"
+        )  # TODO @jh: Find me and remove
 
         db.submit_comment(
             meta_json, vg250_config["processed"]["schema"], table
@@ -261,10 +274,12 @@ def add_metadata():
 def nuts_mview():
     """
     Creates MView boundaries.vg250_lan_nuts_id.
-
     """
     db.execute_sql_script(
-        os.path.join(os.path.dirname(__file__), "vg250_lan_nuts_id_mview.sql")
+        os.path.join(
+            os.path.dirname(__file__),
+            "vg250_lan_nuts_id_mview.sql",
+        )
     )
 
 
@@ -273,8 +288,8 @@ def cleaning_and_preperation():
     Creates tables and MViews with cleaned and corrected geometry data.
 
     The following table is created:
-      * boundaries.vg250_gem_clean where municipalities (Gemeinden) that are fragmented
-        are cleaned from ringholes
+      * boundaries.vg250_gem_clean where municipalities (Gemeinden) that
+        are fragmented are cleaned from ringholes
 
     The following MViews are created:
       * boundaries.vg250_gem_hole
@@ -285,18 +300,19 @@ def cleaning_and_preperation():
       * boundaries.vg250_sta_invalid_geometry
       * boundaries.vg250_sta_tiny_buffer
       * boundaries.vg250_sta_union
-
     """
 
     db.execute_sql_script(
-        os.path.join(os.path.dirname(__file__), "cleaning_and_preparation.sql")
+        os.path.join(
+            os.path.dirname(__file__),
+            "cleaning_and_preparation.sql",
+        )
     )
 
 
 def vg250_metadata_resources_fields():
     """
     Returns metadata string for VG250 tables.
-
     """
 
     return [
@@ -451,7 +467,10 @@ def vg250_metadata_resources_fields():
             "unit": "none",
         },
         {
-            "description": "Seat of the administration (territorial code, deprecated column)",
+            "description": (
+                "Seat of the administration (territorial code, "
+                "deprecated column)"
+            ),
             "name": "sdv_rs",
             "type": "string",
             "unit": "none",
@@ -475,8 +494,8 @@ class Vg250(Dataset):
     """
     Obtains and processes VG250 data and writes it to database.
 
-    Original data is downloaded using :py:func:`download_files` function and written
-    to database using :py:func:`to_postgres` function.
+    Original data is downloaded using :py:func:`download_files`
+    and written to database using :py:func:`to_postgres`.
 
     *Dependencies*
       No dependencies
@@ -488,25 +507,26 @@ class Vg250(Dataset):
       * :py:func:`boundaries.vg250_rbz <to_postgres>` is created and filled
       * :py:func:`boundaries.vg250_sta <to_postgres>` is created and filled
       * :py:func:`boundaries.vg250_vwg <to_postgres>` is created and filled
-      * :py:func:`boundaries.vg250_lan_nuts_id <nuts_mview>` is created and filled
-      * :py:func:`boundaries.vg250_gem_hole <cleaning_and_preperation>` is created and
-        filled
-      * :py:func:`boundaries.vg250_gem_valid <cleaning_and_preperation>` is created and
-        filled
-      * :py:func:`boundaries.vg250_krs_area <cleaning_and_preperation>` is created and
-        filled
-      * :py:func:`boundaries.vg250_lan_union <cleaning_and_preperation>` is created and
-        filled
-      * :py:func:`boundaries.vg250_sta_bbox <cleaning_and_preperation>` is created and
-        filled
-      * :py:func:`boundaries.vg250_sta_invalid_geometry <cleaning_and_preperation>` is
-        created and filled
-      * :py:func:`boundaries.vg250_sta_tiny_buffer <cleaning_and_preperation>` is
-        created and filled
-      * :py:func:`boundaries.vg250_sta_union <cleaning_and_preperation>` is
-        created and filled
-
+      * :py:func:`boundaries.vg250_lan_nuts_id <nuts_mview>` is created
+        and filled
+      * :py:func:`boundaries.vg250_gem_hole <cleaning_and_preperation>`
+        is created and filled
+      * :py:func:`boundaries.vg250_gem_valid <cleaning_and_preperation>`
+        is created and filled
+      * :py:func:`boundaries.vg250_krs_area <cleaning_and_preperation>`
+        is created and filled
+      * :py:func:`boundaries.vg250_lan_union <cleaning_and_preperation>`
+        is created and filled
+      * :py:func:`boundaries.vg250_sta_bbox <cleaning_and_preperation>`
+        is created and filled
+      * :py:func:`boundaries.vg250_sta_invalid_geometry
+        <cleaning_and_preperation>` is created and filled
+      * :py:func:`boundaries.vg250_sta_tiny_buffer
+        <cleaning_and_preperation>` is created and filled
+      * :py:func:`boundaries.vg250_sta_union <cleaning_and_preperation>`
+        is created and filled
     """
+
     filename = egon.data.config.datasets()["vg250"]["original_data"]["source"][
         "url"
     ]

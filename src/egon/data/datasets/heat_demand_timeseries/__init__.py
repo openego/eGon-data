@@ -7,20 +7,10 @@ import warnings
 
 from sqlalchemy import ARRAY, Column, Float, Integer, String, Text
 from sqlalchemy.ext.declarative import declarative_base
-import geopandas as gpd
 import numpy as np
 import pandas as pd
 
 from egon.data import config, db
-import egon.data.datasets.era5 as era
-
-try:
-    from disaggregator import temporal
-except ImportError as e:
-    pass
-
-from math import ceil
-
 from egon.data.datasets import Dataset
 from egon.data.datasets.heat_demand_timeseries.daily import (
     daily_demand_shares_per_climate_zone,
@@ -30,12 +20,7 @@ from egon.data.datasets.heat_demand_timeseries.idp_pool import create, select
 from egon.data.datasets.heat_demand_timeseries.service_sector import (
     CTS_demand_scale,
 )
-from egon.data.metadata import (
-    context,
-    license_egon_data_odbl,
-    meta_metadata,
-    sources,
-)
+from egon.data.metadata import context, license_egon_data_odbl, sources
 
 Base = declarative_base()
 
@@ -87,7 +72,6 @@ def create_timeseries_for_building(building_id, scenario):
     -------
     pandas.DataFrame
         Hourly heat demand timeseries in MW for the selected building
-
     """
 
     return db.select_dataframe(
@@ -159,7 +143,6 @@ def create_district_heating_profile(scenario, area_id):
     pd.DataFrame
         An hourly heat demand timeseries in MW for the selected district
         heating grid.
-
     """
 
     start_time = datetime.now()
@@ -245,8 +228,9 @@ def create_district_heating_profile(scenario, area_id):
 
 def create_district_heating_profile_python_like(scenario="eGon2035"):
     """Creates profiles for all district heating grids in one scenario.
-    Similar to create_district_heating_profile but faster and needs more RAM.
-    The results are directly written into the database.
+
+    Similar to ``create_district_heating_profile`` but faster and needs
+    more RAM. The results are directly written into the database.
 
     Parameters
     ----------
@@ -256,7 +240,6 @@ def create_district_heating_profile_python_like(scenario="eGon2035"):
     Returns
     -------
     None.
-
     """
 
     start_time = datetime.now()
@@ -384,18 +367,20 @@ def create_district_heating_profile_python_like(scenario="eGon2035"):
                         annual_demand.area_id == area
                     ].demand_total.sum()
                 ) / (
-                    annual_demand[annual_demand.area_id == area].demand_total.sum()
+                    annual_demand[
+                        annual_demand.area_id == area
+                    ].demand_total.sum()
                 )
 
-                assert (
-                    abs(diff) < 0.04
-                ), f"""Deviation of residential heat demand time
-                series for district heating grid {str(area)} is {diff}"""
+                assert abs(diff) < 0.04, (
+                    "Deviation of residential heat demand time series for "
+                    f"district heating grid {str(area)} is {diff}"
+                )
 
                 if abs(diff) > 0.03:
                     warnings.warn(
-                        f"""Deviation of residential heat demand time
-                    series for district heating grid {str(area)} is {diff}"""
+                        "Deviation of residential heat demand time series for "
+                        f"district heating grid {str(area)} is {diff}"
                     )
 
                 hh = np.concatenate(
@@ -431,7 +416,7 @@ def create_district_heating_profile_python_like(scenario="eGon2035"):
                 entry = EgonTimeseriesDistrictHeating(
                     area_id=int(area),
                     scenario=scenario,
-                    dist_aggregated_mw=(hh).tolist(),
+                    dist_aggregated_mw=hh.tolist(),
                 )
             elif not cts.empty:
                 entry = EgonTimeseriesDistrictHeating(
@@ -450,7 +435,8 @@ def create_district_heating_profile_python_like(scenario="eGon2035"):
         session.commit()
 
     print(
-        f"Time to create time series for district heating scenario {scenario}"
+        "Time to create time series for district heating scenario "
+        f"{scenario}"
     )
     print(datetime.now() - start_time)
 
@@ -538,7 +524,7 @@ def calulate_peak_load(df, scenario):
         df.groupby("building_id")
         .max()[range(24)]
         .max(axis=1)
-        .mul(1000000)
+        .mul(1_000_000)
         .astype(int)
         .reset_index()
     )
@@ -670,7 +656,7 @@ def create_individual_heating_profile_python_like(scenario="eGon2035"):
     start_time = datetime.now()
 
     idp_df = db.select_dataframe(
-        f"""
+        """
         SELECT index, idp FROM demand.egon_heat_idp_pool
         """,
         index_col="index",
@@ -730,7 +716,8 @@ def create_individual_heating_profile_python_like(scenario="eGon2035"):
     session = sessionmaker(bind=db.engine())()
 
     print(
-        f"Time to create overhead for time series for district heating scenario {scenario}"
+        "Time to create overhead for time series for district heating "
+        f"scenario {scenario}"
     )
     print(datetime.now() - start_time)
 
@@ -748,7 +735,8 @@ def create_individual_heating_profile_python_like(scenario="eGon2035"):
             UNNEST (selected_idp_profiles) WITH ORDINALITY as selected_idp
 
             WHERE a.zensus_population_id NOT IN (
-                SELECT zensus_population_id FROM demand.egon_map_zensus_district_heating_areas
+                SELECT zensus_population_id FROM
+                demand.egon_map_zensus_district_heating_areas
                 WHERE scenario = '{scenario}'
             )
             AND a.zensus_population_id IN (
@@ -794,8 +782,8 @@ def create_individual_heating_profile_python_like(scenario="eGon2035"):
         ) / (annual_demand[annual_demand.bus_id == grid].demand_total.sum())
 
         assert abs(diff) < 0.03, (
-            "Deviation of residential heat demand time series for mv"
-            f" grid {grid} is {diff}"
+            "Deviation of residential heat demand time series for mv "
+            f"grid {grid} is {diff}"
         )
 
         if not (slice_df[hour].empty or cts.empty):
@@ -808,7 +796,7 @@ def create_individual_heating_profile_python_like(scenario="eGon2035"):
             entry = EgonEtragoTimeseriesIndividualHeating(
                 bus_id=int(grid),
                 scenario=scenario,
-                dist_aggregated_mw=(hh).tolist(),
+                dist_aggregated_mw=hh.tolist(),
             )
         elif not cts.empty:
             entry = EgonEtragoTimeseriesIndividualHeating(
@@ -822,7 +810,8 @@ def create_individual_heating_profile_python_like(scenario="eGon2035"):
     session.commit()
 
     print(
-        f"Time to create time series for district heating scenario {scenario}"
+        "Time to create time series for district heating scenario "
+        f"{scenario}"
     )
     print(datetime.now() - start_time)
 
@@ -1079,13 +1068,12 @@ def store_national_profiles():
 
 
 def export_etrago_cts_heat_profiles():
-    """Export heat cts load profiles at mv substation level
-    to etrago-table in the database
+    """Export heat cts load profiles at MV substation level to the
+    etrago-table in the database.
 
     Returns
     -------
     None.
-
     """
 
     # Calculate cts heat profiles at substation
@@ -1179,7 +1167,6 @@ def metadata():
                 "dialect": {"delimiter": None, "decimalSeparator": "."},
             }
         ],
-        "metaMetadata": meta_metadata(),
     }
 
     # Add metadata as a comment to the table
@@ -1192,41 +1179,57 @@ def metadata():
 
 class HeatTimeSeries(Dataset):
     """
-    Chooses heat demand profiles for each residential and CTS building
+    Chooses heat demand profiles for each residential and CTS building.
 
-    This dataset creates heat demand profiles in an hourly resoultion.
-    Time series for CTS buildings are created using the SLP-gas method implemented
-    in the demandregio disagregator with the function :py:func:`export_etrago_cts_heat_profiles`
-    and stored in the database.
-    Time series for residential buildings are created based on a variety of synthetical created
-    individual demand profiles that are part of :py:class:`DataBundle <egon.data.datasets.data_bundle.DataBundle>`.
-    This method is desribed within the functions and in this publication:
+    This dataset creates heat demand profiles in an hourly resolution.
+    Time series for CTS buildings are created using the SLP-gas method
+    implemented in the demandregio disaggregator with the function
+    :py:func:`export_etrago_cts_heat_profiles` and stored in the database.
+
+    Time series for residential buildings are created based on a variety
+    of synthetic individual demand profiles that are part of
+    :py:class:`DataBundle
+    <egon.data.datasets.data_bundle.DataBundle>`.
+    The method is described within the functions and in this publication:
 
     C. Büttner, J. Amme, J. Endres, A. Malla, B. Schachler, I. Cußmann,
     Open modeling of electricity and heat demand curves for all
     residential buildings in Germany, Energy Informatics 5 (1) (2022) 21.
     doi:10.1186/s42162-022-00201-y.
 
-
     *Dependencies*
-      * :py:class:`DataBundle <egon.data.datasets.data_bundle.DataBundle>`
-      * :py:class:`DemandRegio <egon.data.datasets.demandregio.DemandRegio>`
-      * :py:class:`HeatDemandImport <egon.data.datasets.heat_demand.HeatDemandImport>`
-      * :py:class:`DistrictHeatingAreas <egon.data.datasets.district_heating_areas.DistrictHeatingAreas>`
+      * :py:class:`DataBundle
+        <egon.data.datasets.data_bundle.DataBundle>`
+      * :py:class:`DemandRegio
+        <egon.data.datasets.demandregio.DemandRegio>`
+      * :py:class:`HeatDemandImport
+        <egon.data.datasets.heat_demand.HeatDemandImport>`
+      * :py:class:`DistrictHeatingAreas
+        <egon.data.datasets.district_heating_areas.DistrictHeatingAreas>`
       * :py:class:`Vg250 <egon.data.datasets.vg250.Vg250>`
-      * :py:class:`ZensusMvGridDistricts <egon.data.datasets.zensus_mv_grid_districts.ZensusMvGridDistricts>`
-      * :py:func:`hh_demand_buildings_setup <egon.data.datasets.electricity_demand_timeseries.hh_buildings.map_houseprofiles_to_buildings>`
+      * :py:class:`ZensusMvGridDistricts
+        <egon.data.datasets.zensus_mv_grid_districts.ZensusMvGridDistricts>`
+      * :py:func:`hh_demand_buildings_setup
+        <egon.data.datasets.electricity_demand_timeseries.hh_buildings.
+        map_houseprofiles_to_buildings>`
       * :py:class:`WeatherData <egon.data.datasets.era5.WeatherData>`
 
-
     *Resulting tables*
-      * :py:class:`demand.egon_timeseries_district_heating <egon.data.datasets.heat_demand_timeseries.EgonTimeseriesDistrictHeating>` is created and filled
-      * :py:class:`demand.egon_etrago_heat_cts <egon.data.datasets.heat_demand_timeseries.EgonEtragoHeatCts>` is created and filled
-      * :py:class:`demand.egon_heat_timeseries_selected_profiles <egon.data.datasets.heat_demand_timeseries.idp_pool.EgonHeatTimeseries>` is created and filled
-      * :py:class:`demand.egon_daily_heat_demand_per_climate_zone <egon.data.datasets.heat_demand_timeseries.daily.EgonDailyHeatDemandPerClimateZone>`
+      * :py:class:`demand.egon_timeseries_district_heating
+        <egon.data.datasets.heat_demand_timeseries.
+        EgonTimeseriesDistrictHeating>` is created and filled
+      * :py:class:`demand.egon_etrago_heat_cts
+        <egon.data.datasets.heat_demand_timeseries.EgonEtragoHeatCts>`
         is created and filled
-      * :py:class:`boundaries.egon_map_zensus_climate_zones <egon.data.datasets.heat_demand_timeseries.daily.EgonMapZensusClimateZones>` is created and filled
-
+      * :py:class:`demand.egon_heat_timeseries_selected_profiles
+        <egon.data.datasets.heat_demand_timeseries.idp_pool.EgonHeatTimeseries>`
+        is created and filled
+      * :py:class:`demand.egon_daily_heat_demand_per_climate_zone
+        <egon.data.datasets.heat_demand_timeseries.daily.
+        EgonDailyHeatDemandPerClimateZone>` is created and filled
+      * :py:class:`boundaries.egon_map_zensus_climate_zones
+        <egon.data.datasets.heat_demand_timeseries.daily.
+        EgonMapZensusClimateZones>` is created and filled
     """
 
     #:
