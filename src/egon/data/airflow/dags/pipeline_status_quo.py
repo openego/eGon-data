@@ -3,8 +3,8 @@ import os
 from airflow.utils.dates import days_ago
 import airflow
 
-from egon.data.config import settings as egon_settings
 from egon.data.config import set_numexpr_threads
+from egon.data.config import settings as egon_settings
 from egon.data.datasets import database
 from egon.data.datasets.ch4_prod import CH4Production
 from egon.data.datasets.ch4_storages import CH4Storages
@@ -45,7 +45,9 @@ from egon.data.datasets.heat_demand_timeseries import HeatTimeSeries
 from egon.data.datasets.heat_etrago import HeatEtrago
 from egon.data.datasets.heat_etrago.hts_etrago import HtsEtragoTable
 from egon.data.datasets.heat_supply import HeatSupply
-from egon.data.datasets.heat_supply.individual_heating import HeatPumpsStatusQuo
+from egon.data.datasets.heat_supply.individual_heating import (
+    HeatPumpsStatusQuo,
+)
 from egon.data.datasets.industrial_sites import MergeIndustrialSites
 from egon.data.datasets.industry import IndustrialDemandCurves
 from egon.data.datasets.loadarea import LoadArea, OsmLanduse
@@ -81,9 +83,11 @@ prefix = "" if prefix is None else f"{prefix}-"
 with airflow.DAG(
     f"{prefix}powerd-status-quo-processing-pipeline",
     description="The PoWerD Status Quo data processing DAG.",
-    default_args={"start_date": days_ago(1),
-                  "email_on_failure": False,
-                  "email":"clara.buettner@hs-flensburg.de"},
+    default_args={
+        "start_date": days_ago(1),
+        "email_on_failure": False,
+        "email": "clara.buettner@hs-flensburg.de",
+    },
     template_searchpath=[
         os.path.abspath(
             os.path.join(
@@ -203,8 +207,8 @@ with airflow.DAG(
     # TODO: What does "trans" stand for?
     # Calculate dynamic line rating for HV (high voltage) trans lines
     # dlr = Calculate_dlr(
-    #    dependencies=[data_bundle, osmtgmod, weather_data] # , fix_subnetworks]
-    #)
+    #    dependencies=[data_bundle, osmtgmod, weather_data] # , fix_subnetworks] # noqa: E501
+    # )
 
     # Map zensus grid districts
     zensus_mv_grid_districts = ZensusMvGridDistricts(
@@ -363,7 +367,12 @@ with airflow.DAG(
     )
     # Create gas voronoi status quo
     create_gas_polygons_statusquo = GasAreas(
-        dependencies=[setup_etrago, vg250, gas_grid_insert_data, substation_voronoi]
+        dependencies=[
+            setup_etrago,
+            vg250,
+            gas_grid_insert_data,
+            substation_voronoi,
+        ]
     )
 
     # Gas abroad
@@ -436,7 +445,6 @@ with airflow.DAG(
             scenario_capacities,
         ]
     )
-
 
     # Pumped hydro and home storage units
     storage_units = Storages(
@@ -531,5 +539,3 @@ with airflow.DAG(
             demand_curves_industry,
         ]
     )
-
-
