@@ -1,5 +1,7 @@
+from copy import deepcopy
+
 from geoalchemy2 import Geometry
-from omi.base import get_metadata_specification
+from omi.base import MetadataSpecification, get_metadata_specification
 from omi.validation import parse_metadata, validate_metadata
 from sqlalchemy import MetaData, Table
 from sqlalchemy.dialects.postgresql.base import ischema_names
@@ -12,7 +14,35 @@ from egon.data.metadata import settings
 
 # Easy access to oemetadata schema, template and example Dicts
 # Uses the oemetadata version specified in settings module
-OEMetaData = get_metadata_specification(settings.OEMETADATA_VERSION)
+OEMetaData: MetadataSpecification = get_metadata_specification(
+    settings.OEMETADATA_VERSION
+)
+
+
+def oem_datapackage_template() -> dict:
+    """
+    Provides a clean interface to the oemetadata template.
+
+    the template is used to create a new metadata. It provides
+    all oemetadata properties, including nested fields with empty
+    -> "" values assigned
+
+    Returns
+    -------
+    dict
+        OEP metadata conform template for new metadata
+    """
+
+    template: dict
+
+    if OEMetaData.template:
+        template: dict = deepcopy(OEMetaData.template)
+
+    if OEMetaData.example:
+        template["@context"] = OEMetaData.example["@context"]
+        template["metaMetadata"] = OEMetaData.example["metaMetadata"]
+
+    return template
 
 
 def context():
