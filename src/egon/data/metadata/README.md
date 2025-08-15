@@ -4,7 +4,7 @@ The metadata module provides all metadata related functionality used to create/u
 
 The metadata module is/offers:
 
-    - the central place to configuring the metadata generation
+    - the central place to configuring the metadata generation using the oemetadata builder
     - it provides a metadata-template system which applies information like the project context description to all dataset resources by default to ease handling redundant information.
     - Metadata can be setup using YAML files or dict data structures when working in python code using the OMI package
     - A central functionality to upload metadata to the internal database as SQL comment on table <---## We could also use a jsonb column to avoid parsing metadata from string
