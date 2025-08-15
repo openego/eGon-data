@@ -12,6 +12,7 @@ heavy duty transport.
 * Mapping demand to H2 buses and writing to DB
 
 """
+
 from pathlib import Path
 import csv
 
@@ -39,8 +40,10 @@ TESTMODE_OFF = (
 
 def create_tables():
     """
-    Drops existing :py:class:`demand.egon_heavy_duty_transport_voronoi <egon.data.datasets.emobility.heavy_duty_transport.db_classes.EgonHeavyDutyTransportVoronoi>` is extended
-    table and creates new one.
+    Drops existing :py:class:
+    `demand.egon_heavy_duty_transport_voronoi
+    <egon.data.datasets.emobility.heavy_duty_transport.db_classes.EgonHeavyDutyTransportVoronoi>`
+    is extended table and creates new one.
 
     """
     engine = db.engine()
@@ -103,11 +106,13 @@ class HeavyDutyTransport(Dataset):
     The config of this dataset can be found in *datasets.yml* in section
     *mobility_hgv*.
 
-    """
+    """  # noqa: E501
+
     #:
     name: str = "HeavyDutyTransport"
     #:
     version: str = "0.0.2"
+
     def __init__(self, dependencies):
         super().__init__(
             name=self.name,
