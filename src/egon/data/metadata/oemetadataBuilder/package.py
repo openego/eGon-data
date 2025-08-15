@@ -12,17 +12,15 @@ from egon.data.metadata import settings
 class OEMetadataPackage:
     def __init__(self, version: str = settings.OEMETADATA_VERSION) -> None:
         self.spec = get_metadata_specification(version)
+
         self._doc: Dict[str, Any] = {
-            "@context": "https://raw.githubusercontent.com/OpenEnergyPlatform/oemetadata/production/oemetadata/latest/context.json",  # noqa: E501
+            "@context": self.spec.example["@context"],
             "name": "",
             "title": "",
             "description": "",
             "@id": "",
             "resources": [],
-            "metaMetadata": {
-                "metadataVersion": version,
-                "metadataLicense": {"name": "CC0-1.0"},
-            },
+            "metaMetadata": self.spec.example["metaMetadata"],
         }
         self._validated = False
 
