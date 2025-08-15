@@ -5,16 +5,19 @@ OSM landuse extraction and load areas creation.
 
 import os
 
-from airflow.operators.postgres_operator import PostgresOperator
+# TODO: part of PY 3.10 update ... maybe part of another PR
+# from airflow.providers.postgres.operators.postgres import PostgresOperator
 from geoalchemy2.types import Geometry
 from sqlalchemy import Column, Float, Integer, String
 from sqlalchemy.dialects.postgresql import HSTORE
 from sqlalchemy.ext.declarative import declarative_base
-import importlib_resources as resources
 
 from egon.data import db
 from egon.data.datasets import Dataset
 import egon.data.config
+
+# import importlib_resources as resources
+
 
 # will be later imported from another file ###
 Base = declarative_base()
@@ -24,6 +27,7 @@ class OsmPolygonUrban(Base):
     """
     Class definition of table openstreetmap.osm_landuse.
     """
+
     __tablename__ = "osm_landuse"
     __table_args__ = {"schema": "openstreetmap"}
     id = Column(Integer, primary_key=True)
@@ -92,7 +96,7 @@ class LoadArea(Dataset):
       * voltage levels 4-7
       * only demand from ind. sites+osm located in LA!
 
-    """
+    """  # noqa: E501
 
     #:
     name: str = "LoadArea"
