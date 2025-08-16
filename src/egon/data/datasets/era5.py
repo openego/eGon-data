@@ -11,7 +11,7 @@ import atlite
 import geopandas as gpd
 
 from egon.data import db
-from egon.data.datasets import Dataset
+from egon.data.datasets import Dataset, DatasetSources, DatasetTargets
 from egon.data.datasets.scenario_parameters import get_sector_parameters
 import egon.data.config
 
@@ -43,7 +43,26 @@ class WeatherData(Dataset):
     name: str = "Era5"
     #:
     version: str = "0.0.3"
+    
+    sources = DatasetSources(
+        files={}  
+    )
 
+    targets = DatasetTargets(
+        tables={
+            "weather_cells": {
+                "schema": "supply",
+                "table": "egon_era5_weather_cells",
+            },
+            "weather_feedin": {
+                "schema": "supply",
+                "table": "egon_era5_renewable_feedin",
+            },
+        },
+        paths={
+            "weather_data": "cutouts"  
+        }
+    )
     def __init__(self, dependencies):
         super().__init__(
             name=self.name,
@@ -131,11 +150,7 @@ def import_cutout(boundary="Europe"):
 
         directory = (
             Path(".")
-            / (
-                egon.data.config.datasets()["era5_weather_data"]["targets"][
-                    "weather_data"
-                ]["path"]
-            )
+            / WeatherData.targets.paths["weather_data"]
             / f"{boundary.lower()}-{str(weather_year)}-era5.nc"
         )
 
@@ -157,11 +172,7 @@ def download_era5():
 
     """
 
-    directory = Path(".") / (
-        egon.data.config.datasets()["era5_weather_data"]["targets"][
-            "weather_data"
-        ]["path"]
-    )
+    directory = Path(".") / WeatherData.targets.paths["weather_data"]
 
     if not os.path.exists(directory):
         os.mkdir(directory)
@@ -190,13 +201,12 @@ def insert_weather_cells():
     None.
 
     """
-    cfg = egon.data.config.datasets()["era5_weather_data"]
+    #cfg = egon.data.config.datasets()["era5_weather_data"]
+    schema = WeatherData.targets.tables["weather_cells"]["schema"]
+    table = WeatherData.targets.tables["weather_cells"]["table"]
 
     db.execute_sql(
-        f"""
-        DELETE FROM {cfg['targets']['weather_cells']['schema']}.
-        {cfg['targets']['weather_cells']['table']}
-        """
+        f"DELETE FROM {schema}.{table}"
     )
 
     cutout = import_cutout()
@@ -206,14 +216,12 @@ def insert_weather_cells():
     )
 
     df.to_postgis(
-        cfg["targets"]["weather_cells"]["table"],
-        schema=cfg["targets"]["weather_cells"]["schema"],
+        table,
+        schema=schema,
         con=db.engine(),
         if_exists="append",
     )
 
     db.execute_sql(
-        f"""UPDATE {cfg['targets']['weather_cells']['schema']}.
-        {cfg['targets']['weather_cells']['table']}
-        SET geom_point=ST_Centroid(geom);"""
+        f"UPDATE {schema}.{table} SET geom_point=ST_Centroid(geom);"
     )
