@@ -8,6 +8,21 @@ Unreleased
 Added
 -----
 
+
+Changed
+-------
+
+
+Bug Fixes
+---------
+
+
+Version 2.0.0 (2025-08-19)
+==========================
+
+Added
+-----
+
 * Create new scenario status2019
   `#2 <https://github.com/openego/powerd-data/issues/2>`_
   `#3 <https://github.com/openego/powerd-data/issues/3>`_
