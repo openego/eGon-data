@@ -16,18 +16,20 @@ These links are modelling:
     
  
 """
-import pandas as pd
-import math
-import geopandas as gpd
 from itertools import count
-from sqlalchemy import text
-from shapely.geometry import MultiLineString, LineString, Point
-from shapely.wkb import dumps
-from egon.data import db, config
-from egon.data.datasets.scenario_parameters import get_sector_parameters
 from pathlib import Path
-import numpy as np
+import math
+
+from shapely.geometry import LineString, MultiLineString, Point
 from shapely.strtree import STRtree
+from shapely.wkb import dumps
+from sqlalchemy import text
+import geopandas as gpd
+import numpy as np
+import pandas as pd
+
+from egon.data import config, db
+from egon.data.datasets.scenario_parameters import get_sector_parameters
 
 
 def insert_power_to_h2_to_power():

@@ -29,8 +29,8 @@ from egon.data.datasets.chp.small_chp import (
     select_target,
 )
 from egon.data.datasets.mastr import (
-    WORKING_DIR_MASTR_OLD,
     WORKING_DIR_MASTR_NEW,
+    WORKING_DIR_MASTR_OLD,
 )
 from egon.data.datasets.power_plants import (
     assign_bus_id,
@@ -38,6 +38,7 @@ from egon.data.datasets.power_plants import (
     filter_mastr_geometry,
     scale_prox2now,
 )
+from egon.data.datasets.pypsaeur import read_network
 from egon.data.metadata import (
     context,
     generate_resource_fields_from_sqla_model,
@@ -45,8 +46,6 @@ from egon.data.metadata import (
     meta_metadata,
     sources,
 )
-
-from egon.data.datasets.pypsaeur import read_network
 
 Base = declarative_base()
 

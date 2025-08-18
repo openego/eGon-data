@@ -21,7 +21,6 @@ from egon.data.metadata import (
     generate_resource_fields_from_db_table,
     license_dedl,
     meta_metadata,
-    meta_metadata,
     sources,
 )
 

@@ -41,7 +41,6 @@ from egon.data.metadata import (
     license_dedl,
     license_odbl,
     meta_metadata,
-    meta_metadata,
     sources,
 )
 

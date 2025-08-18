@@ -14,12 +14,12 @@ These links are modelling:
 """
 
 from geoalchemy2.types import Geometry
-import geopandas as gpd
-import numpy as np
 from scipy.spatial import cKDTree
 from shapely.geometry import LineString, MultiLineString
+import geopandas as gpd
+import numpy as np
 
-from egon.data import db, config
+from egon.data import config, db
 from egon.data.datasets.scenario_parameters import get_sector_parameters
 
 

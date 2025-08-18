@@ -69,7 +69,6 @@ from egon.data.datasets.power_plants.pv_rooftop_buildings import (
 from egon.data.datasets.pypsaeur import read_network
 from egon.data.datasets.scenario_parameters import get_sector_parameters
 from egon.data.datasets.storages.home_batteries import get_cbat_pbat_ratio
-from egon.data.datasets.pypsaeur import read_network
 import egon.data
 
 TESTMODE_OFF = (

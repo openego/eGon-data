@@ -3,7 +3,7 @@
 #
 # SPDX-License-Identifier: MIT
 
-from pypsa.optimization.compat import get_var, define_constraints, linexpr
+from pypsa.optimization.compat import define_constraints, get_var, linexpr
 
 
 def custom_extra_functionality(n, snapshots, snakemake):

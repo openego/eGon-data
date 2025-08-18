@@ -8,12 +8,12 @@ Februar 2017
 """
 
 from pathlib import Path
-
-import numpy as np
 import os
 
 import geopandas as gpd
+import numpy as np
 import pandas as pd
+
 from egon.data import config, db
 
 

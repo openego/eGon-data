@@ -12,7 +12,7 @@ are available new synthetic 5x5m buildings are generated.
 from geoalchemy2 import Geometry
 from geoalchemy2.shape import to_shape
 from psycopg2.extensions import AsIs, register_adapter
-from sqlalchemy import REAL, Column, Integer, String, func, cast
+from sqlalchemy import REAL, Column, Integer, String, cast, func
 from sqlalchemy.ext.declarative import declarative_base
 import geopandas as gpd
 import numpy as np

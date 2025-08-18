@@ -3,13 +3,12 @@ timeseries data using demandregio
 
 """
 
-import pandas as pd
-import egon.data.config
-from egon.data import db
-
 from sqlalchemy import ARRAY, Column, Float, Integer, String
 from sqlalchemy.ext.declarative import declarative_base
+import pandas as pd
 
+from egon.data import db
+import egon.data.config
 import egon.data.datasets.scenario_parameters.parameters as scenario_parameters
 
 Base = declarative_base()

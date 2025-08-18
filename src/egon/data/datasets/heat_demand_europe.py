@@ -15,10 +15,11 @@ The data are downloaded to be used in the PyPSA-Eur-Sec scenario generator
 
 """
 
-import egon.data.config
+import os
+
 from egon.data import subprocess
 from egon.data.datasets import Dataset
-import os
+import egon.data.config
 
 
 class HeatDemandEurope(Dataset):

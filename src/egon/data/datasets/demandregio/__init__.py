@@ -14,7 +14,6 @@ import pandas as pd
 
 from egon.data import db, logger
 from egon.data.datasets import Dataset, wrapped_partial
-
 from egon.data.datasets.scenario_parameters import (
     EgonScenario,
     get_sector_parameters,

@@ -15,21 +15,19 @@ related components abroad.
 
 """
 
+from egon.data import config
 from egon.data.datasets import Dataset
 from egon.data.datasets.hydrogen_etrago.bus import insert_hydrogen_buses
 from egon.data.datasets.hydrogen_etrago.h2_grid import insert_h2_pipelines
-from egon.data.datasets.hydrogen_etrago.h2_to_ch4 import (
-    insert_h2_to_ch4_to_h2,
-)
+from egon.data.datasets.hydrogen_etrago.h2_to_ch4 import insert_h2_to_ch4_to_h2
 from egon.data.datasets.hydrogen_etrago.power_to_h2 import (
     insert_power_to_h2_to_power,
 )
 from egon.data.datasets.hydrogen_etrago.storage import (
-    write_saltcavern_potential,
     insert_H2_overground_storage,
     insert_H2_saltcavern_storage,
+    write_saltcavern_potential,
 )
-from egon.data import config
 
 
 class HydrogenBusEtrago(Dataset):

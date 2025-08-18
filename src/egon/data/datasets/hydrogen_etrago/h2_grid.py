@@ -3,20 +3,21 @@ The central module containing all code dealing with the H2 grid in eGon100RE
 
 """
 
+from itertools import count
+from pathlib import Path
+from urllib.request import urlretrieve
+import math
+import os
+import re
+
+from fuzzywuzzy import process
 from geoalchemy2.types import Geometry
+from scipy.spatial import cKDTree
+from shapely import wkb
 from shapely.geometry import LineString, MultiLineString, Point
 import geopandas as gpd
-import pandas as pd
-import os
-from urllib.request import urlretrieve
-from pathlib import Path
-from fuzzywuzzy import process
-from shapely import wkb
-import math
-import re
-from itertools import count
 import numpy as np
-from scipy.spatial import cKDTree
+import pandas as pd
 
 from egon.data import config, db
 from egon.data.datasets.scenario_parameters import get_sector_parameters

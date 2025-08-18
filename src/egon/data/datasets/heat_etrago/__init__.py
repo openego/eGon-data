@@ -1,15 +1,16 @@
 """The central module containing all code dealing with heat sector in etrago
 """
 
-import pandas as pd
 import geopandas as gpd
-from egon.data import db, config
+import pandas as pd
+
+from egon.data import config, db
+from egon.data.datasets import Dataset
+from egon.data.datasets.etrago_setup import link_geom_from_buses
 from egon.data.datasets.heat_etrago.power_to_heat import (
     insert_central_power_to_heat,
     insert_individual_power_to_heat,
 )
-from egon.data.datasets import Dataset
-from egon.data.datasets.etrago_setup import link_geom_from_buses
 from egon.data.datasets.scenario_parameters import get_sector_parameters
 
 

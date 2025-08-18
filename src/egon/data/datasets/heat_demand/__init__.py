@@ -35,15 +35,8 @@ import rasterio
 
 from egon.data import db, subprocess
 from egon.data.datasets import Dataset
-from egon.data.datasets.scenario_parameters import (
-    get_sector_parameters,
-)
-from egon.data.metadata import (
-    context,
-    license_ccby,
-    meta_metadata,
-    sources,
-)
+from egon.data.datasets.scenario_parameters import get_sector_parameters
+from egon.data.metadata import context, license_ccby, meta_metadata, sources
 import egon.data.config
 
 

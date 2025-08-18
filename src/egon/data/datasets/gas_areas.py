@@ -5,13 +5,13 @@ The central module containing code to create CH4 and H2 voronoi polygons
 
 import datetime
 import json
-import pandas as pd
 
 from geoalchemy2.types import Geometry
 from sqlalchemy import BigInteger, Column, Text
 from sqlalchemy.ext.declarative import declarative_base
+import pandas as pd
 
-from egon.data import db, config
+from egon.data import config, db
 from egon.data.datasets import Dataset, wrapped_partial
 from egon.data.datasets.generate_voronoi import get_voronoi_geodataframe
 from egon.data.metadata import (

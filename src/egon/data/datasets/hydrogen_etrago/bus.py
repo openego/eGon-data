@@ -14,13 +14,14 @@ In both scenarios, there are two types of H2 buses in Germany:
 
 """
 
-from geoalchemy2 import Geometry
 from pathlib import Path
-import pandas as pd
-import geopandas as gpd
-from shapely.wkb import loads
-import numpy as np
+
+from geoalchemy2 import Geometry
 from scipy.spatial import cKDTree
+from shapely.wkb import loads
+import geopandas as gpd
+import numpy as np
+import pandas as pd
 
 from egon.data import config, db
 from egon.data.datasets.etrago_helpers import (

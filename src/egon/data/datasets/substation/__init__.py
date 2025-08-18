@@ -2,10 +2,11 @@
 
 """
 
+import os
+
 from geoalchemy2.types import Geometry
 from sqlalchemy import Column, Float, Integer, Sequence, Text
 from sqlalchemy.ext.declarative import declarative_base
-import os
 
 from egon.data import db
 from egon.data.datasets import Dataset

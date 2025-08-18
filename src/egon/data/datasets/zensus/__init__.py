@@ -5,12 +5,12 @@ from pathlib import Path
 import csv
 import json
 import os
-import requests
 import zipfile
 
 from shapely.geometry import Point, shape
 from shapely.prepared import prep
 import pandas as pd
+import requests
 
 from egon.data import db, subprocess
 from egon.data.config import settings

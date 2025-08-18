@@ -5,6 +5,7 @@ Central module containing all code dealing with processing era5 weather data.
 import datetime
 import json
 import time
+
 from sqlalchemy import Column, ForeignKey, Integer
 from sqlalchemy.ext.declarative import declarative_base
 import geopandas as gpd
@@ -19,13 +20,8 @@ from egon.data.datasets.era5 import (
     import_cutout,
 )
 from egon.data.datasets.scenario_parameters import get_sector_parameters
-from egon.data.metadata import (
-    context,
-    license_ccby,
-    meta_metadata,
-    sources,
-)
 from egon.data.datasets.zensus_vg250 import DestatisZensusPopulationPerHa
+from egon.data.metadata import context, license_ccby, meta_metadata, sources
 import egon.data.config
 
 

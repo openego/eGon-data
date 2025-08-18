@@ -5,7 +5,6 @@ from shapely.geometry import LineString
 import geopandas as gpd
 import pandas as pd
 
-
 from egon.data import config, db
 from egon.data.datasets.scenario_parameters import get_sector_parameters
 

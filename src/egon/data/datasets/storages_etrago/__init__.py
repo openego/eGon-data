@@ -5,11 +5,10 @@ eTraGo.
 
 import geopandas as gpd
 import pandas as pd
-from egon.data import db, config
+
+from egon.data import config, db
 from egon.data.datasets import Dataset
-from egon.data.datasets.scenario_parameters import (
-    get_sector_parameters,
-)
+from egon.data.datasets.scenario_parameters import get_sector_parameters
 
 
 class StorageEtrago(Dataset):

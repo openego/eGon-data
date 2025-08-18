@@ -1,4 +1,5 @@
 from datetime import datetime
+from math import ceil
 import os
 
 from sqlalchemy import Column, Float, Integer, Text
@@ -7,13 +8,9 @@ import geopandas as gpd
 import numpy as np
 import pandas as pd
 
-from egon.data import db, config
+from egon.data import config, db
 from egon.data.datasets.scenario_parameters import get_sector_parameters
 import egon.data.datasets.era5 as era
-
-
-from math import ceil
-
 
 Base = declarative_base()
 

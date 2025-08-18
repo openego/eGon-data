@@ -2,12 +2,13 @@
 
 """
 
-import egon.data.config
-from egon.data import db
-from egon.data.datasets import Dataset
+from geoalchemy2.types import Geometry
 from sqlalchemy import Column, Integer, Sequence
 from sqlalchemy.ext.declarative import declarative_base
-from geoalchemy2.types import Geometry
+
+from egon.data import db
+from egon.data.datasets import Dataset
+import egon.data.config
 
 Base = declarative_base()
 
