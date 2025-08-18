@@ -142,12 +142,12 @@ def download_and_preprocess():
         inplace=True,
     )
     kba_data = kba_data.dropna()
-    kba_data[
-        ["ags_reg_district", "reg_district"]
-    ] = kba_data.reg_district.str.split(
-        pat=" ",
-        n=1,
-        expand=True,
+    kba_data[["ags_reg_district", "reg_district"]] = (
+        kba_data.reg_district.str.split(
+            pat=" ",
+            n=1,
+            expand=True,
+        )
     )
     kba_data.ags_reg_district = kba_data.ags_reg_district.astype("int")
 

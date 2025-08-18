@@ -1,6 +1,7 @@
 """
 The central module creating heat demand time series for the eTraGo tool
 """
+
 from egon.data import config, db
 from egon.data.db import next_etrago_id
 from egon.data.datasets import Dataset

@@ -1,6 +1,7 @@
 """The central module containing code to create substation tables
 
 """
+
 from geoalchemy2.types import Geometry
 from sqlalchemy import Column, Float, Integer, Sequence, Text
 from sqlalchemy.ext.declarative import declarative_base

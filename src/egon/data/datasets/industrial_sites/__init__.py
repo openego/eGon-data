@@ -6,7 +6,6 @@
 
 """
 
-
 import egon.data.config
 import geopandas as gpd
 import pandas as pd

@@ -1,5 +1,6 @@
 """The central module containing all code dealing with power to heat
 """
+
 from shapely.geometry import LineString
 import geopandas as gpd
 import pandas as pd
@@ -141,6 +142,7 @@ def insert_individual_power_to_heat(scenario):
             scenario=scenario,
         )
 
+
 def insert_central_power_to_heat(scenario):
     """Insert power to heat in district heating areas into database
 
@@ -228,7 +230,7 @@ def insert_central_power_to_heat(scenario):
     insert_power_to_heat_per_level(
         central_heat_pumps[central_heat_pumps.voltage_level > 3],
         multiple_per_mv_grid=False,
-        carrier = "central_heat_pump",
+        carrier="central_heat_pump",
         scenario=scenario,
     )
     # Insert heat pumps in hv grid
@@ -236,7 +238,7 @@ def insert_central_power_to_heat(scenario):
     insert_power_to_heat_per_level(
         central_heat_pumps[central_heat_pumps.voltage_level < 3],
         multiple_per_mv_grid=True,
-        carrier = "central_heat_pump",
+        carrier="central_heat_pump",
         scenario=scenario,
     )
 
@@ -341,7 +343,8 @@ def insert_power_to_heat_per_level(
     if "central" in carrier:
         # Calculate heat pumps per electrical bus
         gdf = assign_electrical_bus(
-            heat_pumps, carrier, scenario, multiple_per_mv_grid)
+            heat_pumps, carrier, scenario, multiple_per_mv_grid
+        )
 
     else:
         gdf = heat_pumps.copy()
@@ -474,7 +477,9 @@ def assign_voltage_level(heat_pumps, carrier="heat_pump"):
     return heat_pumps
 
 
-def assign_electrical_bus(heat_pumps, carrier, scenario, multiple_per_mv_grid=False):
+def assign_electrical_bus(
+    heat_pumps, carrier, scenario, multiple_per_mv_grid=False
+):
     """Calculates heat pumps per electrical bus
 
     Parameters
@@ -586,10 +591,11 @@ def assign_electrical_bus(heat_pumps, carrier, scenario, multiple_per_mv_grid=Fa
                 power_to_heat.area_id
             ].values
 
-        power_to_heat["share_demand"] = power_to_heat.groupby(
-            "area_id"
-        ).demand.apply(lambda grp: grp / grp.sum()).values
-
+        power_to_heat["share_demand"] = (
+            power_to_heat.groupby("area_id")
+            .demand.apply(lambda grp: grp / grp.sum())
+            .values
+        )
 
         power_to_heat["capacity"] = power_to_heat["share_demand"].mul(
             heat_pumps.capacity[power_to_heat.area_id].values

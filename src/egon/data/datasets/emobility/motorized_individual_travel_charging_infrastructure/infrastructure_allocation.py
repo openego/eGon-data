@@ -5,6 +5,7 @@ of charging infrastructure. In practice this allows users to use results generat
 [SimBEV](https://github.com/rl-institut/simbev) and place the corresponding charging
 points on a map. These are split into the four use cases hpc, public, home and work.
 """
+
 from __future__ import annotations
 
 from pathlib import Path

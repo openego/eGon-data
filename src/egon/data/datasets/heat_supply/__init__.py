@@ -107,7 +107,6 @@ def district_heating():
             if_exists="append",
         )
 
-
         # Do not check data for status quo as is it not listed in the table
         if "status" not in scenario:
             # Compare target value with sum of distributed heat supply
@@ -141,7 +140,6 @@ def district_heating():
             con=db.engine(),
             if_exists="append",
         )
-
 
         # Insert resistive heaters which are not available in status quo
         if "status" not in scenario:
@@ -208,17 +206,17 @@ def metadata():
 
     fields_df = pd.DataFrame(data=fields).set_index("name")
     fields_df.loc["index", "description"] = "Unique identifyer"
-    fields_df.loc[
-        "district_heating_id", "description"
-    ] = "Index of the corresponding district heating grid"
+    fields_df.loc["district_heating_id", "description"] = (
+        "Index of the corresponding district heating grid"
+    )
     fields_df.loc["carrier", "description"] = "Name of energy carrier"
-    fields_df.loc[
-        "category", "description"
-    ] = "Size-category of district heating grid"
+    fields_df.loc["category", "description"] = (
+        "Size-category of district heating grid"
+    )
     fields_df.loc["capacity", "description"] = "Installed heating capacity"
-    fields_df.loc[
-        "geometry", "description"
-    ] = "Location of thermal power plant"
+    fields_df.loc["geometry", "description"] = (
+        "Location of thermal power plant"
+    )
     fields_df.loc["scenario", "description"] = "Name of corresponing scenario"
 
     fields_df.loc["capacity", "unit"] = "MW_th"
@@ -289,15 +287,15 @@ def metadata():
 
     fields_df = pd.DataFrame(data=fields).set_index("name")
     fields_df.loc["index", "description"] = "Unique identifyer"
-    fields_df.loc[
-        "mv_grid_id", "description"
-    ] = "Index of the corresponding mv grid district"
+    fields_df.loc["mv_grid_id", "description"] = (
+        "Index of the corresponding mv grid district"
+    )
     fields_df.loc["carrier", "description"] = "Name of energy carrier"
     fields_df.loc["category", "description"] = "Size-category"
     fields_df.loc["capacity", "description"] = "Installed heating capacity"
-    fields_df.loc[
-        "geometry", "description"
-    ] = "Location of thermal power plant"
+    fields_df.loc["geometry", "description"] = (
+        "Location of thermal power plant"
+    )
     fields_df.loc["scenario", "description"] = "Name of corresponing scenario"
 
     fields_df.loc["capacity", "unit"] = "MW_th"
@@ -408,13 +406,12 @@ class HeatSupply(Dataset):
             ),
         )
 
+
 class GeothermalPotentialGermany(Dataset):
     def __init__(self, dependencies):
         super().__init__(
             name="GeothermalPotentialGermany",
             version="0.0.2",
             dependencies=dependencies,
-            tasks=(
-                potential_germany,
-            ),
+            tasks=(potential_germany,),
         )

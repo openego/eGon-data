@@ -753,12 +753,12 @@ def allocate_pumped_hydro_scn():
         elif scn == "eGon100RE":
             allocate_pumped_hydro_eGon100RE()
         elif "status" in scn:
-            allocate_storage_units_sq(scn_name=scn, storage_types=["pumped_hydro"])
+            allocate_storage_units_sq(
+                scn_name=scn, storage_types=["pumped_hydro"]
+            )
 
 
 def allocate_other_storage_units():
     for scn in config.settings()["egon-data"]["--scenarios"]:
         if "status" in scn:
-            allocate_storage_units_sq(
-                scn_name=scn, storage_types=["battery"]
-            )
+            allocate_storage_units_sq(scn_name=scn, storage_types=["battery"])

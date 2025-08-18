@@ -2,6 +2,7 @@
 The central module containing code to create CH4 and H2 voronoi polygons
 
 """
+
 import datetime
 import json
 import pandas as pd
@@ -95,7 +96,6 @@ class EgonPfHvGasVoronoi(Base):
     """
     Class definition of table grid.egon_gas_voronoi
     """
-
 
     source_list = [
         sources()["openstreetmap"],
@@ -263,18 +263,16 @@ def create_voronoi(scn_name, carrier):
         """,
         geom_col="geometry",
     ).to_crs(epsg=4326)
-    
-    
+
     if isinstance(carrier, str):
-            if carrier == "H2":
-                carriers = ["H2", "H2_grid"]
-            else:
-                carriers = [carrier]
+        if carrier == "H2":
+            carriers = ["H2", "H2_grid"]
+        else:
+            carriers = [carrier]
     else:
         carriers = carrier
-            
+
     carrier_strings = "', '".join(carriers)
-    
 
     db.execute_sql(
         f"""
@@ -292,11 +290,10 @@ def create_voronoi(scn_name, carrier):
             AND carrier IN ('{carrier_strings}');
         """,
     ).to_crs(epsg=4326)
-    
-    
+
     if len(buses) == 0:
         return
-    
+
     # generate voronois
     # For some scenarios it is defined that there is only 1 bus (e.g. gas). It
     # means that there will be just 1 voronoi covering the entire german
@@ -357,9 +354,13 @@ class GasAreas(Dataset):
 
     for scn_name in config.settings()["egon-data"]["--scenarios"]:
         if "status" in scn_name:
-            tasks += (wrapped_partial(
-                voronoi_status, scn_name=scn_name, postfix=f"_{scn_name[-4:]}"
-            ),)
+            tasks += (
+                wrapped_partial(
+                    voronoi_status,
+                    scn_name=scn_name,
+                    postfix=f"_{scn_name[-4:]}",
+                ),
+            )
 
     def __init__(self, dependencies):
         super().__init__(

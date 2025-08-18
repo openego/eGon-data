@@ -1,6 +1,7 @@
 """
 The module containing all code dealing with chp < 10MW.
 """
+
 from sqlalchemy.orm import sessionmaker
 import geopandas as gpd
 import pandas as pd

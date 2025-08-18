@@ -394,7 +394,9 @@ def create_district_heating_profile_python_like(scenario="eGon2035"):
                         annual_demand.area_id == area
                     ].demand_total.sum()
                 ) / (
-                    annual_demand[annual_demand.area_id == area].demand_total.sum()
+                    annual_demand[
+                        annual_demand.area_id == area
+                    ].demand_total.sum()
                 )
 
                 assert (

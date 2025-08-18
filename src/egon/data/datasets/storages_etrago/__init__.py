@@ -44,7 +44,6 @@ class StorageEtrago(Dataset):
     #:
     version: str = "0.0.9"
 
-
     def __init__(self, dependencies):
         super().__init__(
             name=self.name,
@@ -52,6 +51,7 @@ class StorageEtrago(Dataset):
             dependencies=dependencies,
             tasks=(insert_PHES, extendable_batteries),
         )
+
 
 def insert_PHES():
     # Get datasets configuration
@@ -87,9 +87,9 @@ def insert_PHES():
         next_bus_id = db.next_etrago_id("storage")
 
         # Add missing PHES specific information suitable for eTraGo selected from scenario_parameter table
-        parameters = get_sector_parameters(
-            "electricity", scn
-        )["efficiency"]["pumped_hydro"]
+        parameters = get_sector_parameters("electricity", scn)["efficiency"][
+            "pumped_hydro"
+        ]
         phes["storage_id"] = range(next_bus_id, next_bus_id + len(phes))
         phes["max_hours"] = parameters["max_hours"]
         phes["efficiency_store"] = parameters["store"]
@@ -153,9 +153,9 @@ def extendable_batteries_per_scenario(scenario):
     )
 
     # Update index
-    extendable_batteries[
-        "storage_id"
-    ] = extendable_batteries.index + db.next_etrago_id("storage")
+    extendable_batteries["storage_id"] = (
+        extendable_batteries.index + db.next_etrago_id("storage")
+    )
 
     # Set parameters
     extendable_batteries["p_nom_extendable"] = True

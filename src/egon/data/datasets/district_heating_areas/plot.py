@@ -20,6 +20,7 @@ from matplotlib import pyplot as plt
 
 # if plotting:
 
+
 #     from egon.data.processing.district_heating_areas.plot import (
 #         plot_heat_density_sorted)
 #     plot_heat_density_sorted({scenario_name:collection}, scenario_name )
@@ -53,7 +54,8 @@ def plot_heat_density_sorted(heat_denisty_per_scenario, scenario_name=None):
     fig, ax = plt.subplots(1, 1)
 
     colors = pd.DataFrame(
-        columns=["share", "curve"], index=["status2019", "status2023", "eGon2035", "eGon100RE"]
+        columns=["share", "curve"],
+        index=["status2019", "status2023", "eGon2035", "eGon100RE"],
     )
 
     colors["share"]["eGon2035"] = "darkblue"

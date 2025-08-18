@@ -1,6 +1,7 @@
 """
 The central module containing all code dealing with open cycle gas turbine
 """
+
 from egon.data.datasets import Dataset
 from egon.data.datasets.power_etrago.match_ocgt import (
     insert_open_cycle_gas_turbines,

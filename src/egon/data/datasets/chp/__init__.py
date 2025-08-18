@@ -96,26 +96,26 @@ def metadata():
     fields_df = pd.DataFrame(data=fields).set_index("name")
     fields_df.loc["id", "description"] = "Unique identifyer"
     fields_df.loc["sources", "description"] = "List of sources"
-    fields_df.loc[
-        "source_id", "description"
-    ] = "Names of sources, e.g. MaStr_id"
+    fields_df.loc["source_id", "description"] = (
+        "Names of sources, e.g. MaStr_id"
+    )
     fields_df.loc["carrier", "description"] = "Energy carrier"
-    fields_df.loc[
-        "district_heating", "description"
-    ] = "Used in district heating or not"
-    fields_df.loc[
-        "el_capacity", "description"
-    ] = "Installed electrical capacity"
+    fields_df.loc["district_heating", "description"] = (
+        "Used in district heating or not"
+    )
+    fields_df.loc["el_capacity", "description"] = (
+        "Installed electrical capacity"
+    )
     fields_df.loc["th_capacity", "description"] = "Installed thermal capacity"
-    fields_df.loc[
-        "electrical_bus_id", "description"
-    ] = "Index of corresponding electricity bus"
-    fields_df.loc[
-        "district_heating_area_id", "description"
-    ] = "Index of corresponding district heating bus"
-    fields_df.loc[
-        "ch4_bus_id", "description"
-    ] = "Index of corresponding methane bus"
+    fields_df.loc["electrical_bus_id", "description"] = (
+        "Index of corresponding electricity bus"
+    )
+    fields_df.loc["district_heating_area_id", "description"] = (
+        "Index of corresponding district heating bus"
+    )
+    fields_df.loc["ch4_bus_id", "description"] = (
+        "Index of corresponding methane bus"
+    )
     fields_df.loc["voltage_level", "description"] = "Voltage level"
     fields_df.loc["scenario", "description"] = "Name of scenario"
     fields_df.loc["geom", "description"] = "Location of CHP plant"
@@ -759,12 +759,16 @@ insert_per_scenario = set()
 
 if "status2019" in config.settings()["egon-data"]["--scenarios"]:
     insert_per_scenario.add(
-        wrapped_partial(insert_chp_statusquo, scn="status2019", postfix="_2019")
+        wrapped_partial(
+            insert_chp_statusquo, scn="status2019", postfix="_2019"
+        )
     )
 
 if "status2023" in config.settings()["egon-data"]["--scenarios"]:
     insert_per_scenario.add(
-        wrapped_partial(insert_chp_statusquo, scn="status2023", postfix="_2023")
+        wrapped_partial(
+            insert_chp_statusquo, scn="status2023", postfix="_2023"
+        )
     )
 
 if "eGon2035" in config.settings()["egon-data"]["--scenarios"]:

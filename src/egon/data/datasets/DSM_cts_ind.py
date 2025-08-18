@@ -8,6 +8,7 @@ the deviations are relatively small, a tolerance is currently accepted in the
 sanity checks. See `#1120 <https://github.com/openego/eGon-data/issues/1120>`_
 for updates.
 """
+
 import datetime
 import json
 
@@ -396,7 +397,9 @@ def add_metadata_individual():
             },
         }
 
-        dialect = get_dialect(f"oep-v{meta_metadata()['metadataVersion'][4:7]}")()
+        dialect = get_dialect(
+            f"oep-v{meta_metadata()['metadataVersion'][4:7]}"
+        )()
 
         meta = dialect.compile_and_render(dialect.parse(json.dumps(meta)))
 

@@ -101,7 +101,9 @@ def insert():
     if "eGon2035" in target_power_df["scenario_name"].values:
         # Fit wind farms scenarions for each one of the states
         for bundesland in target_power_df.index:
-            state_wf = gpd.clip(wf_areas, target_power_df.at[bundesland, "geom"])
+            state_wf = gpd.clip(
+                wf_areas, target_power_df.at[bundesland, "geom"]
+            )
             state_wf_ni = gpd.clip(
                 wf_areas_ni, target_power_df.at[bundesland, "geom"]
             )
@@ -341,7 +343,8 @@ def wind_power_states(
             lambda x: (
                 power_north * x["area [km²]"]
                 if x["nord"]
-                else power_south * x["area [km²]"]),
+                else power_south * x["area [km²]"]
+            ),
             axis=1,
         )
     else:

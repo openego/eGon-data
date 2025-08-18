@@ -6,6 +6,7 @@ Berlin ifeu – Institut für Energie- und Umweltforschung Heidelberg GmbH
 Februar 2017
 
 """
+
 from pathlib import Path
 
 import numpy as np
@@ -106,7 +107,7 @@ def calc_geothermal_costs(max_costs=np.inf, min_costs=0):
 
 
 def calc_usable_geothermal_potential(max_costs=2, min_costs=0):
-    """ Calculate geothermal potentials close to district heating demands
+    """Calculate geothermal potentials close to district heating demands
 
     Parameters
     ----------

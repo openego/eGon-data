@@ -64,7 +64,6 @@ def create_tables():
 
     cfg_voronoi = egon.data.config.datasets()["substation_voronoi"]["targets"]
 
-
     db.execute_sql(
         f"""DROP TABLE IF EXISTS
             {cfg_voronoi['ehv_substation_voronoi']['schema']}.
@@ -94,6 +93,7 @@ def create_tables():
     EgonEhvSubstationVoronoi.__table__.create(bind=engine, checkfirst=True)
     EgonHvmvSubstationVoronoi.__table__.create(bind=engine, checkfirst=True)
 
+
 def substation_voronoi():
     """
     Creates voronoi polygons for hvmv and ehv substations
@@ -107,16 +107,20 @@ def substation_voronoi():
     substation_list = ["hvmv_substation", "ehv_substation"]
 
     for substation in substation_list:
-        cfg_boundaries = egon.data.config.datasets()["substation_voronoi"]["sources"]["boundaries"]
-        cfg_substation = egon.data.config.datasets()["substation_voronoi"]["sources"][substation]
-        cfg_voronoi = egon.data.config.datasets()["substation_voronoi"]["targets"][substation+ "_voronoi"]
+        cfg_boundaries = egon.data.config.datasets()["substation_voronoi"][
+            "sources"
+        ]["boundaries"]
+        cfg_substation = egon.data.config.datasets()["substation_voronoi"][
+            "sources"
+        ][substation]
+        cfg_voronoi = egon.data.config.datasets()["substation_voronoi"][
+            "targets"
+        ][substation + "_voronoi"]
 
         view = "grid.egon_voronoi_no_borders"
 
         # Create view for Voronoi polygons without taking borders into account
-        db.execute_sql(
-            f"DROP VIEW IF EXISTS {view} CASCADE;"
-        )
+        db.execute_sql(f"DROP VIEW IF EXISTS {view} CASCADE;")
 
         db.execute_sql(
             f"""

@@ -333,7 +333,7 @@ def temp_interval(temp_profile):
         Hourly temperature intrerval of all 15 TRY Climate station#s temperature profile
 
     """
-    #ToDo: Make this function scenario friendly
+    # ToDo: Make this function scenario friendly
     scenario = config.settings()["egon-data"]["--scenarios"][0]
     year = get_sector_parameters("global", scenario)["weather_year"]
 
@@ -365,7 +365,7 @@ def h_value(temp_profile):
         Extracted from demandlib.
 
     """
-    #ToDo: Make this function scenario friendly
+    # ToDo: Make this function scenario friendly
     scenario = config.settings()["egon-data"]["--scenarios"][0]
 
     year = get_sector_parameters("global", scenario)["weather_year"]

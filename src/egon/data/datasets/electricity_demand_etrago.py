@@ -2,6 +2,7 @@
 and feed this data into the corresponding etraGo tables.
 
 """
+
 from datetime import datetime
 from pathlib import Path
 

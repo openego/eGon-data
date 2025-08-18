@@ -1394,23 +1394,23 @@ def calculate_ch4_grid_capacities():
     Neighbouring_pipe_capacities_list["coordinates_bus0"] = coordinates_bus0
     Neighbouring_pipe_capacities_list["coordinates_bus1"] = coordinates_bus1
 
-    Neighbouring_pipe_capacities_list[
-        "topo"
-    ] = Neighbouring_pipe_capacities_list.apply(
-        lambda row: LineString(
-            [row["coordinates_bus0"], row["coordinates_bus1"]]
-        ),
-        axis=1,
+    Neighbouring_pipe_capacities_list["topo"] = (
+        Neighbouring_pipe_capacities_list.apply(
+            lambda row: LineString(
+                [row["coordinates_bus0"], row["coordinates_bus1"]]
+            ),
+            axis=1,
+        )
     )
-    Neighbouring_pipe_capacities_list[
-        "geom"
-    ] = Neighbouring_pipe_capacities_list.apply(
-        lambda row: MultiLineString([row["topo"]]), axis=1
+    Neighbouring_pipe_capacities_list["geom"] = (
+        Neighbouring_pipe_capacities_list.apply(
+            lambda row: MultiLineString([row["topo"]]), axis=1
+        )
     )
-    Neighbouring_pipe_capacities_list[
-        "length"
-    ] = Neighbouring_pipe_capacities_list.apply(
-        lambda row: row["topo"].length, axis=1
+    Neighbouring_pipe_capacities_list["length"] = (
+        Neighbouring_pipe_capacities_list.apply(
+            lambda row: row["topo"].length, axis=1
+        )
     )
 
     # Remove useless columns
@@ -1563,6 +1563,7 @@ def calculate_ocgt_capacities():
     df_ocgt = df_ocgt.groupby(by=["bus0", "bus1"], as_index=False).sum()
 
     return df_ocgt
+
 
 def insert_ocgt_abroad():
     """Insert gas turbine capacities abroad for eGon2035 in the database

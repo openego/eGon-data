@@ -14,6 +14,7 @@ only on the hydrogen related components in Germany, and the module
 related components abroad.
 
 """
+
 from egon.data.datasets import Dataset
 from egon.data.datasets.hydrogen_etrago.bus import insert_hydrogen_buses
 from egon.data.datasets.hydrogen_etrago.h2_grid import insert_h2_pipelines
@@ -66,7 +67,6 @@ class HydrogenBusEtrago(Dataset):
                 insert_h2_buses_for_scn,
             ),
         )
-
 
 
 class HydrogenStoreEtrago(Dataset):
@@ -142,9 +142,7 @@ class HydrogenPowerLinkEtrago(Dataset):
             name=self.name,
             version=self.version,
             dependencies=dependencies,
-            tasks=(
-                insert_power_to_h2_to_power,
-            ),
+            tasks=(insert_power_to_h2_to_power,),
         )
 
 
@@ -212,14 +210,14 @@ class HydrogenGridEtrago(Dataset):
     #:
     version: str = "0.0.2"
 
-
     def __init__(self, dependencies):
         super().__init__(
             name=self.name,
             version=self.version,
             dependencies=dependencies,
-            tasks = insert_h2_pipelines_for_scn,
+            tasks=insert_h2_pipelines_for_scn,
         )
+
 
 def insert_h2_pipelines_for_scn():
     scenarios = config.settings()["egon-data"]["--scenarios"]
@@ -229,6 +227,7 @@ def insert_h2_pipelines_for_scn():
 
     if "eGon100RE" in scenarios:
         insert_h2_pipelines("eGon100RE")
+
 
 def insert_h2_buses_for_scn():
     scenarios = config.settings()["egon-data"]["--scenarios"]

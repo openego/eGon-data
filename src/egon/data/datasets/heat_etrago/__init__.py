@@ -1,5 +1,6 @@
 """The central module containing all code dealing with heat sector in etrago
 """
+
 import pandas as pd
 import geopandas as gpd
 from egon.data import db, config
@@ -399,6 +400,7 @@ def insert_rural_direct_heat(scenario):
         con=db.engine(),
     )
 
+
 def insert_central_direct_heat(scenario):
     """Insert renewable heating technologies (solar and geo thermal)
 
@@ -610,9 +612,9 @@ def insert_central_gas_boilers(scenario):
     central_boilers["efficiency"] = get_sector_parameters("heat", scenario)[
         "efficiency"
     ]["central_gas_boiler"]
-    central_boilers["marginal_cost"] = get_sector_parameters(
-        "heat", scenario
-    )["marginal_cost"]["central_gas_boiler"]
+    central_boilers["marginal_cost"] = get_sector_parameters("heat", scenario)[
+        "marginal_cost"
+    ]["central_gas_boiler"]
 
     # Transform thermal capacity to CH4 installed capacity
     central_boilers["p_nom"] = central_boilers.capacity.div(
