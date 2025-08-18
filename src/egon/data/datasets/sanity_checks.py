@@ -2959,7 +2959,6 @@ if "eGon2035" in SCENARIOS:
         etrago_eGon2035_gas_DE,
         etrago_eGon2035_gas_abroad,
         sanitycheck_dsm,
-        etrago_timeseries_length,
     )
 
 if "eGon100RE" in SCENARIOS:
