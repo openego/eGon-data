@@ -10,20 +10,19 @@ import zipfile
 from shapely.geometry import LineString
 from sqlalchemy.orm import sessionmaker
 import entsoe
-import requests
-
 import geopandas as gpd
 import pandas as pd
+import requests
 
 from egon.data import config, db, logger
-from egon.data.db import session_scope
 from egon.data.datasets import Dataset, wrapped_partial
 from egon.data.datasets.fill_etrago_gen import add_marginal_costs
 from egon.data.datasets.fix_ehv_subnetworks import select_bus_id
+from egon.data.datasets.pypsaeur import prepared_network
 from egon.data.datasets.scenario_parameters import get_sector_parameters
+from egon.data.db import session_scope
 import egon.data.datasets.etrago_setup as etrago
 import egon.data.datasets.scenario_parameters.parameters as scenario_parameters
-from egon.data.datasets.pypsaeur import prepared_network
 
 
 def get_cross_border_buses(scenario, sources):

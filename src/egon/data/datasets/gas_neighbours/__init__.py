@@ -2,8 +2,8 @@
 The central module containing definition of the datasets dealing with gas neighbours
 """
 
-from egon.data.datasets import Dataset
 from egon.data import config
+from egon.data.datasets import Dataset
 from egon.data.datasets.gas_neighbours.eGon100RE import (
     insert_gas_neigbours_eGon100RE,
 )

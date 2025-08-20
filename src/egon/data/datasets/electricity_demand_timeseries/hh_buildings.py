@@ -850,16 +850,21 @@ def map_houseprofiles_to_buildings():
 
     # Copy buildings and set centroid as geom
     gdf_egon_osm_buildings_main = gdf_egon_osm_buildings.copy()
-    gdf_egon_osm_buildings_main["geom_point"] = gdf_egon_osm_buildings_main.centroid
+    gdf_egon_osm_buildings_main["geom_point"] = (
+        gdf_egon_osm_buildings_main.centroid
+    )
     gdf_egon_osm_buildings_main = gdf_egon_osm_buildings_main.drop(
-        columns=["geom_building"]).set_geometry("geom_point")
+        columns=["geom_building"]
+    ).set_geometry("geom_point")
 
     egon_map_zensus_buildings_residential_main = gpd.sjoin(
         gdf_egon_osm_buildings_main,
         gdf_egon_census_cells,
         how="inner",
-        predicate="within"
-    )[["building_id", "zensus_population_id"]].rename(columns={"zensus_population_id": "cell_id"})
+        predicate="within",
+    )[["building_id", "zensus_population_id"]].rename(
+        columns={"zensus_population_id": "cell_id"}
+    )
 
     # ========== Clip buildings with census cells to get building parts ==========
 
@@ -869,13 +874,20 @@ def map_houseprofiles_to_buildings():
     )
 
     # Remove main buildings which are not located in populated census cells
-    buildings_centroid_not_in_census_cells = gdf_egon_osm_buildings_census_cells.loc[
-        ~gdf_egon_osm_buildings_census_cells.building_id.isin(
-            egon_map_zensus_buildings_residential_main.building_id)]
-    gdf_egon_osm_buildings_census_cells = gdf_egon_osm_buildings_census_cells.loc[
-        ~gdf_egon_osm_buildings_census_cells.building_id.isin(
-            buildings_centroid_not_in_census_cells.building_id.to_list())
-    ]
+    buildings_centroid_not_in_census_cells = (
+        gdf_egon_osm_buildings_census_cells.loc[
+            ~gdf_egon_osm_buildings_census_cells.building_id.isin(
+                egon_map_zensus_buildings_residential_main.building_id
+            )
+        ]
+    )
+    gdf_egon_osm_buildings_census_cells = (
+        gdf_egon_osm_buildings_census_cells.loc[
+            ~gdf_egon_osm_buildings_census_cells.building_id.isin(
+                buildings_centroid_not_in_census_cells.building_id.to_list()
+            )
+        ]
+    )
 
     gdf_egon_osm_buildings_census_cells["geom_point"] = (
         gdf_egon_osm_buildings_census_cells.centroid
@@ -970,19 +982,26 @@ def map_houseprofiles_to_buildings():
     egon_map_zensus_buildings_residential_main = pd.merge(
         mapping_profiles_to_buildings[["cell_id", "building_id"]],
         egon_map_zensus_buildings_residential_main,
-        on='building_id',
-        how='left',
-        suffixes=('_df1', '_df2')
+        on="building_id",
+        how="left",
+        suffixes=("_df1", "_df2"),
     ).dropna()
-    egon_map_zensus_buildings_residential_main[
-        "cell_id_df2"] = egon_map_zensus_buildings_residential_main["cell_id_df2"].astype(int)
+    egon_map_zensus_buildings_residential_main["cell_id_df2"] = (
+        egon_map_zensus_buildings_residential_main["cell_id_df2"].astype(int)
+    )
     mapping_profiles_to_buildings2 = mapping_profiles_to_buildings.copy()
-    mapping_profiles_to_buildings["cell_id"] = egon_map_zensus_buildings_residential_main["cell_id_df2"]
+    mapping_profiles_to_buildings["cell_id"] = (
+        egon_map_zensus_buildings_residential_main["cell_id_df2"]
+    )
 
     # Retain original values where no main building has been found
     # (centroid of building part not in a cell)
-    mapping_profiles_to_buildings["cell_id"].fillna(mapping_profiles_to_buildings2["cell_id"], inplace=True)
-    mapping_profiles_to_buildings["cell_id"] = mapping_profiles_to_buildings["cell_id"].astype(int)
+    mapping_profiles_to_buildings["cell_id"].fillna(
+        mapping_profiles_to_buildings2["cell_id"], inplace=True
+    )
+    mapping_profiles_to_buildings["cell_id"] = mapping_profiles_to_buildings[
+        "cell_id"
+    ].astype(int)
 
     # ========== Write results to DB ==========
 

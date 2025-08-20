@@ -12,7 +12,7 @@ from sqlalchemy.sql import func
 import numpy as np
 import pandas as pd
 
-from egon.data import db, config
+from egon.data import config, db
 from egon.data.datasets.emobility.motorized_individual_travel.db_classes import (
     EgonEvCountMunicipality,
     EgonEvCountMvGridDistrict,

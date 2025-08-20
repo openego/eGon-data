@@ -1,12 +1,12 @@
 """The central module to create low flex scenarios
 
 """
+
 from airflow.operators.postgres_operator import PostgresOperator
-from sqlalchemy.ext.declarative import declarative_base
 from importlib_resources import files
+from sqlalchemy.ext.declarative import declarative_base
 
 from egon.data.datasets import Dataset
-
 
 Base = declarative_base()
 

@@ -6,7 +6,6 @@
 
 """
 
-
 from sqlalchemy import ARRAY, Column, Float, Integer, String
 from sqlalchemy.ext.declarative import declarative_base
 import geopandas as gpd

@@ -2,14 +2,16 @@
 and feed this data into the corresponding etraGo tables.
 
 """
+
 from datetime import datetime
 from pathlib import Path
-
 import os
-import egon.data.config
+
 import pandas as pd
+
 from egon.data import db
 from egon.data.datasets import Dataset
+import egon.data.config
 
 
 def demands_per_bus(scenario):

@@ -1,19 +1,14 @@
 from datetime import datetime
+from math import ceil
 import os
 
 from sqlalchemy import ARRAY, Column, Float, Integer, String
 from sqlalchemy.ext.declarative import declarative_base
-
 import numpy as np
 import pandas as pd
 
 from egon.data import db
-
-
-from math import ceil
-
 import egon
-
 
 Base = declarative_base()
 

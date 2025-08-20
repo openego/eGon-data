@@ -57,6 +57,7 @@ class RunPypsaEur(Dataset):
             ),
         )
 
+
 def countries_list():
     return [
         "DE",

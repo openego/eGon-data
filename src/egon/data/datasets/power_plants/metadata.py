@@ -1,5 +1,6 @@
 """Metadata for power plants table
 """
+
 import datetime
 import json
 

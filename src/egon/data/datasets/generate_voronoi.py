@@ -2,6 +2,7 @@
 The central module containing code to create voronoi polygons
 
 """
+
 from geoalchemy2.types import Geometry
 from geovoronoi import voronoi_regions_from_coords
 import geopandas as gpd

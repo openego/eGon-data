@@ -13,6 +13,7 @@ class EgonMapZensusMvgdBuildings(Base):
     cts, heat and electricity timeseries. Including census cells, mvgd bus_id,
     building type (osm or synthetic)
     """
+
     __tablename__ = "egon_map_zensus_mvgd_buildings"
     __table_args__ = {"schema": "boundaries"}
 
@@ -24,7 +25,9 @@ class EgonMapZensusMvgdBuildings(Base):
     electricity = Column(Boolean, index=True)
     heat = Column(Boolean, index=True)
 
+
 scenarios = config.settings()["egon-data"]["--scenarios"]
+
 
 def map_all_used_buildings():
     """This function maps all used buildings from OSM and synthetic ones."""

@@ -207,8 +207,9 @@ def insert_scenario(scenario):
         """
     )
 
-    chp_dh.loc[chp_dh[chp_dh.carrier=="gas extended"].index,
-                   "carrier"] = "gas"
+    chp_dh.loc[chp_dh[chp_dh.carrier == "gas extended"].index, "carrier"] = (
+        "gas"
+    )
 
     # Divide into biomass and gas CHP which are modelled differently
     chp_link_dh = chp_dh[chp_dh.carrier == "gas"].index
@@ -350,8 +351,9 @@ def insert_scenario(scenario):
         """
     )
 
-    chp_industry.loc[chp_industry[chp_industry.carrier=="gas extended"].index,
-                   "carrier"] = "gas"
+    chp_industry.loc[
+        chp_industry[chp_industry.carrier == "gas extended"].index, "carrier"
+    ] = "gas"
 
     chp_link_ind = chp_industry[chp_industry.carrier == "gas"].index
 

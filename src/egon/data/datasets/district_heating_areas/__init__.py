@@ -11,41 +11,38 @@ This module obtains the information from the census tables and the heat demand
 densities, demarcates so the current and future district heating areas. In the
 end it saves them in the database.
 """
+import datetime
+import json
 import os
-from egon.data import config, db
-from egon.data.datasets.scenario_parameters import (
-    get_sector_parameters,
-    EgonScenario,
-)
-
-import pandas as pd
-import geopandas as gpd
-from shapely.geometry.multipolygon import MultiPolygon
-from shapely.geometry.polygon import Polygon
-from matplotlib import pyplot as plt
-from egon.data.datasets.district_heating_areas.plot import (
-    plot_heat_density_sorted,
-)
 
 # for metadata creation
 import time
-import datetime
-from egon.data.metadata import (
-    context,
-    meta_metadata,
-    license_ccby,
-    sources,
+
+from geoalchemy2.types import Geometry
+from matplotlib import pyplot as plt
+from shapely.geometry.multipolygon import MultiPolygon
+from shapely.geometry.polygon import Polygon
+
+# packages for ORM class definition
+from sqlalchemy import Column, Float, ForeignKey, Integer, Sequence, String
+from sqlalchemy.ext.declarative import declarative_base
+import geopandas as gpd
+import pandas as pd
+
+from egon.data import config, db
+from egon.data.datasets import Dataset
+from egon.data.datasets.district_heating_areas.plot import (
+    plot_heat_density_sorted,
 )
-import json
+from egon.data.datasets.scenario_parameters import (
+    EgonScenario,
+    get_sector_parameters,
+)
+from egon.data.metadata import context, license_ccby, meta_metadata, sources
 
 # import time
 
-# packages for ORM class definition
-from sqlalchemy import Column, String, Integer, Sequence, Float, ForeignKey
-from sqlalchemy.ext.declarative import declarative_base
-from geoalchemy2.types import Geometry
 
-from egon.data.datasets import Dataset
 
 
 # class for airflow task management (and version control)
@@ -570,11 +567,12 @@ def district_heating_areas(scenario_name, plotting=False):
     census_plus_heat_demand = load_census_data(
         minimum_connection_rate=minimum_connection_rate
     )[0].copy()
-    census_plus_heat_demand[
-        "residential_and_service_demand"
-    ] = heat_demand_cells.loc[
-        census_plus_heat_demand.index.values, "residential_and_service_demand"
-    ]
+    census_plus_heat_demand["residential_and_service_demand"] = (
+        heat_demand_cells.loc[
+            census_plus_heat_demand.index.values,
+            "residential_and_service_demand",
+        ]
+    )
 
     cells = area_grouping(
         census_plus_heat_demand,
@@ -614,9 +612,9 @@ def district_heating_areas(scenario_name, plotting=False):
     new_areas = new_areas[new_areas.index.isin(PSDs.index)].sort_values(
         "residential_and_service_demand", ascending=False
     )
-    new_areas[
-        "Cumulative_Sum"
-    ] = new_areas.residential_and_service_demand.cumsum()
+    new_areas["Cumulative_Sum"] = (
+        new_areas.residential_and_service_demand.cumsum()
+    )
     # select cells to be supplied with district heating until district
     # heating share is reached
     new_areas = new_areas[new_areas["Cumulative_Sum"] <= diff]

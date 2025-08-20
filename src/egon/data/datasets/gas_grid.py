@@ -22,9 +22,9 @@ import ast
 import json
 import os
 
-from sqlalchemy.orm import sessionmaker
 from geoalchemy2.types import Geometry
 from shapely import geometry
+from sqlalchemy.orm import sessionmaker
 import geopandas
 import numpy as np
 import pandas as pd
