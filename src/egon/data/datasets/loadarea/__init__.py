@@ -24,6 +24,7 @@ class OsmPolygonUrban(Base):
     """
     Class definition of table openstreetmap.osm_landuse.
     """
+
     __tablename__ = "osm_landuse"
     __table_args__ = {"schema": "openstreetmap"}
     id = Column(Integer, primary_key=True)
@@ -63,17 +64,7 @@ class OsmLanduse(Dataset):
             name=self.name,
             version=self.version,
             dependencies=dependencies,
-            tasks=(
-                create_landuse_table,
-                PostgresOperator(
-                    task_id="osm_landuse_extraction",
-                    sql=resources.read_text(
-                        __name__, "osm_landuse_extraction.sql"
-                    ),
-                    postgres_conn_id="egon_data",
-                    autocommit=True,
-                ),
-            ),
+            tasks=(create_landuse_table, extract_osm_landuse),
         )
 
 
@@ -127,6 +118,12 @@ class LoadArea(Dataset):
                 drop_temp_tables,
             ),
         )
+
+
+def extract_osm_landuse():
+    db.execute_sql_script(
+        os.path.dirname(__file__) + "/osm_landuse_extraction.sql"
+    )
 
 
 def create_landuse_table():

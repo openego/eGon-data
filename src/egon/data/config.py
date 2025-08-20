@@ -73,6 +73,8 @@ def settings() -> dict[str, dict[str, str]]:
                 "--jobs": 1,
                 "--random-seed": 42,
                 "--processes-per-task": 1,
+                "--scenarios": ["status2019", "eGon2035"],
+                "--run-pypsa-eur": False,
             }
         }
     with open(files[0]) as f:

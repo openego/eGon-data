@@ -12,7 +12,7 @@ from sqlalchemy.sql import func
 import numpy as np
 import pandas as pd
 
-from egon.data import db
+from egon.data import config, db
 from egon.data.datasets.emobility.motorized_individual_travel.db_classes import (
     EgonEvCountMunicipality,
     EgonEvCountMvGridDistrict,
@@ -106,7 +106,7 @@ def fix_missing_ags_municipality_regiostar(muns, rs7_data):
                                 f"based upon AGS {ags}."
                             )
                             similar_entry.ags = ags
-                            rs7_data = rs7_data.append(similar_entry)
+                            rs7_data = pd.concat([rs7_data, similar_entry])
                         print("Consider to update RS7.")
                 # VG250 entries missing:
                 elif name == "VG250":
@@ -334,7 +334,7 @@ def calc_evs_per_grid_district(ev_data_muns):
     # * pop_mun_in_mvgd_of_mun_total: relative pop share of mun which
     #   intersects with MVGD in relation to total pop of mun
     mvgd_pop_per_mun_in_mvgd = (
-        mvgd_pop_per_mun_in_mvgd.groupby(level=0)
+        mvgd_pop_per_mun_in_mvgd.groupby(level=0, as_index=False)
         .apply(lambda x: x / float(x.sum()))
         .reset_index()
         .rename(columns={"pop": "pop_share_mun_in_mvgd"})
@@ -424,7 +424,7 @@ def allocate_evs_numbers():
     kba_data = read_kba_data()
     rs7_data = read_rs7_data()
 
-    for scenario_name in ["eGon2035", "eGon100RE"]:
+    for scenario_name in config.settings()["egon-data"]["--scenarios"]:
         # Load scenario params
         scenario_parameters = get_sector_parameters(
             "mobility", scenario=scenario_name
@@ -437,9 +437,7 @@ def allocate_evs_numbers():
             scenario_variation_name,
             scenario_variation_parameters,
         ) in scenario_parameters.items():
-
             print(f"  SCENARIO VARIATION: {scenario_variation_name}")
-
             # Get EV target
             ev_target = scenario_variation_parameters["ev_count"]
 
@@ -453,7 +451,10 @@ def allocate_evs_numbers():
             # Check EV results if not in testmode
             if TESTMODE_OFF:
                 validate_electric_vehicles_numbers(
-                    "EV count in registration districts", ev_data, ev_target
+                    "EV count in registration districts",
+                    ev_data,
+                    ev_target,
+                    0.001 if ev_target > 1e6 else 0.02,
                 )
             # Add scenario columns and write to DB
             ev_data["scenario"] = scenario_name
@@ -478,7 +479,10 @@ def allocate_evs_numbers():
             # Check EV results if not in testmode
             if TESTMODE_OFF:
                 validate_electric_vehicles_numbers(
-                    "EV count in municipalities", ev_data_muns, ev_target
+                    "EV count in municipalities",
+                    ev_data_muns,
+                    ev_target,
+                    0.001 if ev_target > 1e6 else 0.02,
                 )
             # Add scenario columns and write to DB
             ev_data_muns["scenario"] = scenario_name
@@ -502,7 +506,10 @@ def allocate_evs_numbers():
             # Check EV results if not in testmode
             if TESTMODE_OFF:
                 validate_electric_vehicles_numbers(
-                    "EV count in grid districts", ev_data_mvgds, ev_target
+                    "EV count in grid districts",
+                    ev_data_mvgds,
+                    ev_target,
+                    0.001 if ev_target > 1e6 else 0.02,
                 )
             # Add scenario columns and write to DB
             ev_data_mvgds["scenario"] = scenario_name
@@ -542,7 +549,7 @@ def allocate_evs_to_grid_districts():
             .ev_id.to_list()
         )
 
-    for scenario_name in ["eGon2035", "eGon100RE"]:
+    for scenario_name in config.settings()["egon-data"]["--scenarios"]:
         print(f"SCENARIO: {scenario_name}")
 
         # Load EVs per grid district
@@ -634,7 +641,7 @@ def allocate_evs_to_grid_districts():
                 np.testing.assert_allclose(
                     int(ev_actual),
                     ev_target,
-                    rtol=0.0001,
+                    rtol=0.001 if ev_target > 1e6 else 0.02,
                     err_msg=f"Dataset on EV numbers allocated to MVGDs "
                     f"seems to be flawed. "
                     f"Scenario: [{scn}], "

@@ -8,12 +8,13 @@ provides individual and distinct time series for each household in a cell.
 The cells are defined by the dataset Zensus 2011.
 
 """
+
 from itertools import cycle, product
 from pathlib import Path
 import os
 import random
 
-from airflow.operators.python_operator import PythonOperator
+from airflow.operators.python import PythonOperator
 from sqlalchemy import ARRAY, Column, Float, Integer, String
 from sqlalchemy.dialects.postgresql import CHAR, INTEGER, REAL
 from sqlalchemy.ext.declarative import declarative_base
@@ -22,6 +23,7 @@ import pandas as pd
 
 from egon.data import db
 from egon.data.datasets import Dataset
+from egon.data.datasets.scenario_parameters import get_scenario_year
 from egon.data.datasets.zensus_mv_grid_districts import MapZensusGridDistricts
 import egon.data.config
 
@@ -37,6 +39,7 @@ class IeeHouseholdLoadProfiles(Base):
     """
     Class definition of table demand.iee_household_load_profiles.
     """
+
     __tablename__ = "iee_household_load_profiles"
     __table_args__ = {"schema": "demand"}
 
@@ -55,6 +58,7 @@ class HouseholdElectricityProfilesInCensusCells(Base):
     the peak load at load area level.
 
     """
+
     __tablename__ = "egon_household_electricity_profile_in_census_cell"
     __table_args__ = {"schema": "demand"}
 
@@ -63,6 +67,8 @@ class HouseholdElectricityProfilesInCensusCells(Base):
     cell_profile_ids = Column(ARRAY(String, dimensions=1))
     nuts3 = Column(String)
     nuts1 = Column(String)
+    factor_2019 = Column(Float)
+    factor_2023 = Column(Float)
     factor_2035 = Column(Float)
     factor_2050 = Column(Float)
 
@@ -71,6 +77,7 @@ class EgonDestatisZensusHouseholdPerHaRefined(Base):
     """
     Class definition of table society.egon_destatis_zensus_household_per_ha_refined.
     """
+
     __tablename__ = "egon_destatis_zensus_household_per_ha_refined"
     __table_args__ = {"schema": "society"}
 
@@ -92,6 +99,7 @@ class EgonEtragoElectricityHouseholds(Base):
     The table contains household electricity demand profiles aggregated at MV grid
     district level in MWh.
     """
+
     __tablename__ = "egon_etrago_electricity_households"
     __table_args__ = {"schema": "demand"}
 
@@ -231,32 +239,77 @@ class HouseholdDemands(Dataset):
     #:
     name: str = "Household Demands"
     #:
-    version: str = "0.0.10"
+    version: str = "0.0.12"
 
     def __init__(self, dependencies):
-        mv_hh_electricity_load_2035 = PythonOperator(
-            task_id="MV-hh-electricity-load-2035",
-            python_callable=mv_grid_district_HH_electricity_load,
-            op_args=["eGon2035", 2035],
-            op_kwargs={"drop_table": True},
+        tasks = (
+            create_table,
+            houseprofiles_in_census_cells,
         )
 
-        mv_hh_electricity_load_2050 = PythonOperator(
-            task_id="MV-hh-electricity-load-2050",
-            python_callable=mv_grid_district_HH_electricity_load,
-            op_args=["eGon100RE", 2050],
-        )
+        if (
+            "status2019"
+            in egon.data.config.settings()["egon-data"]["--scenarios"]
+        ):
+            mv_hh_electricity_load_2035 = PythonOperator(
+                task_id="MV-hh-electricity-load-2019",
+                python_callable=mv_grid_district_HH_electricity_load,
+                op_args=["status2019", 2019],
+            )
+
+            tasks = tasks + (mv_hh_electricity_load_2035,)
+
+        if (
+            "status2023"
+            in egon.data.config.settings()["egon-data"]["--scenarios"]
+        ):
+            mv_hh_electricity_load_2035 = PythonOperator(
+                task_id="MV-hh-electricity-load-2023",
+                python_callable=mv_grid_district_HH_electricity_load,
+                op_args=["status2023", 2023],
+            )
+
+            tasks = tasks + (mv_hh_electricity_load_2035,)
+
+        if (
+            "eGon2035"
+            in egon.data.config.settings()["egon-data"]["--scenarios"]
+        ):
+            mv_hh_electricity_load_2035 = PythonOperator(
+                task_id="MV-hh-electricity-load-2035",
+                python_callable=mv_grid_district_HH_electricity_load,
+                op_args=["eGon2035", 2035],
+            )
+
+            tasks = tasks + (mv_hh_electricity_load_2035,)
+
+        if (
+            "eGon100RE"
+            in egon.data.config.settings()["egon-data"]["--scenarios"]
+        ):
+            mv_hh_electricity_load_2050 = PythonOperator(
+                task_id="MV-hh-electricity-load-2050",
+                python_callable=mv_grid_district_HH_electricity_load,
+                op_args=["eGon100RE", 2050],
+            )
+
+            tasks = tasks + (mv_hh_electricity_load_2050,)
 
         super().__init__(
             name=self.name,
             version=self.version,
             dependencies=dependencies,
-            tasks=(
-                houseprofiles_in_census_cells,
-                mv_hh_electricity_load_2035,
-                mv_hh_electricity_load_2050,
-            ),
+            tasks=tasks,
         )
+
+
+def create_table():
+    EgonEtragoElectricityHouseholds.__table__.drop(
+        bind=engine, checkfirst=True
+    )
+    EgonEtragoElectricityHouseholds.__table__.create(
+        bind=engine, checkfirst=True
+    )
 
 
 def clean(x):
@@ -374,9 +427,11 @@ def get_iee_hh_demand_profiles_raw():
     file_section = (
         "path"
         if dataset == "Everything"
-        else "path_testmode"
-        if dataset == "Schleswig-Holstein"
-        else ve(f"'{dataset}' is not a valid dataset boundary.")
+        else (
+            "path_testmode"
+            if dataset == "Schleswig-Holstein"
+            else ve(f"'{dataset}' is not a valid dataset boundary.")
+        )
     )
 
     file_path = pa_config["sources"]["household_electricity_demand_profiles"][
@@ -933,7 +988,7 @@ def impute_missing_hh_in_populated_cells(df_census_households_grid):
             * df_wo_hh_population_i.shape[0]
         ).values
         # append new cells
-        df_w_hh = df_w_hh.append(df_repeated, ignore_index=True)
+        df_w_hh = pd.concat([df_w_hh, df_repeated], ignore_index=True)
 
     return df_w_hh
 
@@ -1211,12 +1266,13 @@ def refine_census_data_at_cell_level(
                 df_group, dist_households_nuts1, hh_10types_cluster
             )
             df_distribution_group["characteristics_code"] = hh_5type_cluster
-            df_distribution_nuts1 = df_distribution_nuts1.append(
-                df_distribution_group
+            df_distribution_nuts1 = pd.concat(
+                [df_distribution_nuts1, df_distribution_group],
+                ignore_index=True,
             )
 
-        df_distribution_nuts0 = df_distribution_nuts0.append(
-            df_distribution_nuts1
+        df_distribution_nuts0 = pd.concat(
+            [df_distribution_nuts0, df_distribution_nuts1], ignore_index=True
         )
 
     df_census_households_grid_refined = df_census_households_grid.merge(
@@ -1226,15 +1282,15 @@ def refine_census_data_at_cell_level(
         right_on=["cell_id", "characteristics_code"],
     )
 
-    df_census_households_grid_refined[
-        "characteristics_code"
-    ] = df_census_households_grid_refined["characteristics_code"].astype(int)
-    df_census_households_grid_refined[
-        "hh_5types"
-    ] = df_census_households_grid_refined["hh_5types"].astype(int)
-    df_census_households_grid_refined[
-        "hh_10types"
-    ] = df_census_households_grid_refined["hh_10types"].astype(int)
+    df_census_households_grid_refined["characteristics_code"] = (
+        df_census_households_grid_refined["characteristics_code"].astype(int)
+    )
+    df_census_households_grid_refined["hh_5types"] = (
+        df_census_households_grid_refined["hh_5types"].astype(int)
+    )
+    df_census_households_grid_refined["hh_10types"] = (
+        df_census_households_grid_refined["hh_10types"].astype(int)
+    )
 
     return df_census_households_grid_refined
 
@@ -1266,9 +1322,11 @@ def get_cell_demand_profile_ids(df_cell, pool_size):
     # instead of random.sample use random.choices() if with replacement
     # list of sample ids per hh_type in cell
     cell_profile_ids = [
-        (hh_type, random.sample(range(pool_size[hh_type]), k=sq))
-        if pool_size[hh_type] >= sq
-        else (hh_type, random.choices(range(pool_size[hh_type]), k=sq))
+        (
+            (hh_type, random.sample(range(pool_size[hh_type]), k=sq))
+            if pool_size[hh_type] >= sq
+            else (hh_type, random.choices(range(pool_size[hh_type]), k=sq))
+        )
         for hh_type, sq in zip(
             df_cell["hh_type"],
             df_cell["hh_10types"],
@@ -1337,7 +1395,6 @@ def assign_hh_demand_profiles_to_cells(df_zensus_cells, df_iee_profiles):
     # only use non zero entries
     df_zensus_cells = df_zensus_cells.loc[df_zensus_cells["hh_10types"] != 0]
     for grid_id, df_cell in df_zensus_cells.groupby(by="grid_id"):
-
         # random sampling of household profiles for each cell
         # with or without replacement (see :func:`get_cell_demand_profile_ids`)
         # within cell but after number of households are rounded to the nearest
@@ -1348,9 +1405,9 @@ def assign_hh_demand_profiles_to_cells(df_zensus_cells, df_iee_profiles):
         df_hh_profiles_in_census_cells.at[grid_id, "cell_id"] = df_cell.loc[
             :, "cell_id"
         ].unique()[0]
-        df_hh_profiles_in_census_cells.at[
-            grid_id, "cell_profile_ids"
-        ] = cell_profile_ids
+        df_hh_profiles_in_census_cells.at[grid_id, "cell_profile_ids"] = (
+            cell_profile_ids
+        )
         df_hh_profiles_in_census_cells.at[grid_id, "nuts3"] = df_cell.loc[
             :, "nuts3"
         ].unique()[0]
@@ -1408,16 +1465,16 @@ def adjust_to_demand_regio_nuts3_annual(
         # ##############
         # demand regio in MWh
         # profiles in Wh
-        df_hh_profiles_in_census_cells.loc[nuts3_cell_ids, "factor_2035"] = (
-            df_demand_regio.loc[(2035, nuts3_id), "demand_mwha"]
-            * 1e3
-            / (nuts3_profiles_sum_annual / 1e3)
-        )
-        df_hh_profiles_in_census_cells.loc[nuts3_cell_ids, "factor_2050"] = (
-            df_demand_regio.loc[(2050, nuts3_id), "demand_mwha"]
-            * 1e3
-            / (nuts3_profiles_sum_annual / 1e3)
-        )
+
+        for scn in egon.data.config.settings()["egon-data"]["--scenarios"]:
+            year = get_scenario_year(scn)
+            df_hh_profiles_in_census_cells.loc[
+                nuts3_cell_ids, f"factor_{year}"
+            ] = (
+                df_demand_regio.loc[(year, nuts3_id), "demand_mwha"]
+                * 1e3
+                / (nuts3_profiles_sum_annual / 1e3)
+            )
 
     return df_hh_profiles_in_census_cells
 
@@ -1619,10 +1676,10 @@ def houseprofiles_in_census_cells():
     ].astype(int)
 
     # Cast profile ids back to initial str format
-    df_hh_profiles_in_census_cells[
-        "cell_profile_ids"
-    ] = df_hh_profiles_in_census_cells["cell_profile_ids"].apply(
-        lambda x: list(map(gen_profile_names, x))
+    df_hh_profiles_in_census_cells["cell_profile_ids"] = (
+        df_hh_profiles_in_census_cells["cell_profile_ids"].apply(
+            lambda x: list(map(gen_profile_names, x))
+        )
     )
 
     # Write allocation table into database
@@ -1781,15 +1838,36 @@ def get_hh_profiles_from_db(profile_ids):
     return df_profile_loads
 
 
-def mv_grid_district_HH_electricity_load(
-    scenario_name, scenario_year, drop_table=False
-):
+def get_demand_regio_hh_profiles_from_db(year):
+    """
+    Retrieve demand regio household electricity demand profiles in nuts3 level
+
+    Parameters
+    ----------
+    year: int
+        To which year belong the required demand profile
+
+    Returns
+    -------
+    pd.DataFrame
+         Selection of household demand profiles
+    """
+
+    query = """Select * from demand.demandregio_household_load_profiles
+    Where year = year"""
+
+    df_profile_loads = pd.read_sql(query, db.engine(), index_col="id")
+
+    return df_profile_loads
+
+
+def mv_grid_district_HH_electricity_load(scenario_name, scenario_year):
     """
     Aggregated household demand time series at HV/MV substation level
 
     Calculate the aggregated demand time series based on the demand profiles
     of each zensus cell inside each MV grid district. Profiles are read from
-    local hdf5-file.
+    local hdf5-file or demand timeseries per nuts3 in db.
     Creates table `demand.egon_etrago_electricity_households` with
     Household electricity demand profiles aggregated at MV grid district level
     in MWh. Primarily used to create the eTraGo data model.
@@ -1800,9 +1878,6 @@ def mv_grid_district_HH_electricity_load(
         Scenario name identifier, i.e. "eGon2035"
     scenario_year: int
         Scenario year according to `scenario_name`
-    drop_table: bool
-        Toggle to True for dropping table at beginning of this function.
-        Be careful, delete any data.
 
     Returns
     -------
@@ -1831,44 +1906,94 @@ def mv_grid_district_HH_electricity_load(
         cells_query.statement, cells_query.session.bind, index_col="cell_id"
     )
 
-    # convert profile ids to tuple (type, id) format
-    cells["cell_profile_ids"] = cells["cell_profile_ids"].apply(
-        lambda x: list(map(tuple_format, x))
-    )
+    method = egon.data.config.settings()["egon-data"][
+        "--household-electrical-demand-source"
+    ]
 
-    # Read demand profiles from egon-data-bundle
-    df_iee_profiles = get_iee_hh_demand_profiles_raw()
-
-    # Process profiles for further use
-    df_iee_profiles = set_multiindex_to_profiles(df_iee_profiles)
-
-    # Create aggregated load profile for each MV grid district
-    mvgd_profiles_dict = {}
-    for grid_district, data in cells.groupby("bus_id"):
-        mvgd_profile = get_load_timeseries(
-            df_iee_profiles=df_iee_profiles,
-            df_hh_profiles_in_census_cells=data,
-            cell_ids=data.index,
-            year=scenario_year,
-            peak_load_only=False,
+    if method == "slp":
+        # Import demand regio timeseries demand per nuts3 area
+        dr_series = pd.read_sql_query(
+            """
+            SELECT year, nuts3, load_in_mwh FROM demand.demandregio_household_load_profiles
+            """,
+            con=engine,
         )
-        mvgd_profiles_dict[grid_district] = [mvgd_profile.round(3).to_list()]
-    mvgd_profiles = pd.DataFrame.from_dict(mvgd_profiles_dict, orient="index")
+        dr_series = dr_series[dr_series["year"] == scenario_year]
+        dr_series.drop(columns=["year"], inplace=True)
+        dr_series.set_index("nuts3", inplace=True)
+        dr_series = dr_series.squeeze()
 
-    # Reshape data: put MV grid ids in columns to a single index column
-    mvgd_profiles = mvgd_profiles.reset_index()
-    mvgd_profiles.columns = ["bus_id", "p_set"]
+        # Population data per cell_id is used to scale the demand per nuts3
+        population = pd.read_sql_query(
+            """
+            SELECT grid_id, population FROM society.destatis_zensus_population_per_ha
+            """,
+            con=engine,
+        )
+        population.set_index("grid_id", inplace=True)
+        population = population.squeeze()
+        population.loc[population == -1] = 0
+
+        cells["population"] = cells["grid_id"].map(population)
+
+        factor_column = f"""factor_{scenario_year}"""
+
+        mvgd_profiles = pd.DataFrame(
+            columns=["p_set", "q_set"], index=cells.bus_id.unique()
+        )
+        mvgd_profiles.index.name = "bus_id"
+
+        for nuts3, df in cells.groupby("nuts3"):
+            cells.loc[df.index, factor_column] = (
+                df["population"] / df["population"].sum()
+            )
+
+        for bus, df_bus in cells.groupby("bus_id"):
+            load_nuts = [0] * 8760
+            for nuts3, df_nuts in df_bus.groupby("nuts3"):
+                factor_nuts = df_nuts[factor_column].sum()
+                total_load = [x * factor_nuts for x in dr_series[nuts3]]
+                load_nuts = [sum(x) for x in zip(load_nuts, total_load)]
+            mvgd_profiles.at[bus, "p_set"] = load_nuts
+
+        mvgd_profiles.reset_index(inplace=True)
+
+    elif method == "bottom-up-profiles":
+        # convert profile ids to tuple (type, id) format
+        cells["cell_profile_ids"] = cells["cell_profile_ids"].apply(
+            lambda x: list(map(tuple_format, x))
+        )
+
+        # Read demand profiles from egon-data-bundle
+        df_iee_profiles = get_iee_hh_demand_profiles_raw()
+
+        # Process profiles for further use
+        df_iee_profiles = set_multiindex_to_profiles(df_iee_profiles)
+
+        # Create aggregated load profile for each MV grid district
+        mvgd_profiles_dict = {}
+        for grid_district, data in cells.groupby("bus_id"):
+            mvgd_profile = get_load_timeseries(
+                df_iee_profiles=df_iee_profiles,
+                df_hh_profiles_in_census_cells=data,
+                cell_ids=data.index,
+                year=scenario_year,
+                peak_load_only=False,
+            )
+            mvgd_profiles_dict[grid_district] = [
+                mvgd_profile.round(3).to_list()
+            ]
+        mvgd_profiles = pd.DataFrame.from_dict(
+            mvgd_profiles_dict, orient="index"
+        )
+
+        # Reshape data: put MV grid ids in columns to a single index column
+        mvgd_profiles = mvgd_profiles.reset_index()
+        mvgd_profiles.columns = ["bus_id", "p_set"]
 
     # Add remaining columns
     mvgd_profiles["scn_name"] = scenario_name
 
-    if drop_table:
-        EgonEtragoElectricityHouseholds.__table__.drop(
-            bind=engine, checkfirst=True
-        )
-    EgonEtragoElectricityHouseholds.__table__.create(
-        bind=engine, checkfirst=True
-    )
     # Insert data into respective database table
     mvgd_profiles.to_sql(
         name=EgonEtragoElectricityHouseholds.__table__.name,

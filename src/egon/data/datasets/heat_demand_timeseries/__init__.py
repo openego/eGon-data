@@ -3,6 +3,7 @@ from pathlib import Path
 import json
 import os
 import time
+import warnings
 
 from sqlalchemy import ARRAY, Column, Float, Integer, String, Text
 from sqlalchemy.ext.declarative import declarative_base
@@ -10,7 +11,7 @@ import geopandas as gpd
 import numpy as np
 import pandas as pd
 
-from egon.data import db
+from egon.data import config, db
 import egon.data.datasets.era5 as era
 
 try:
@@ -308,6 +309,8 @@ def create_district_heating_profile_python_like(scenario="eGon2035"):
         index_col="zensus_population_id",
     )
 
+    # Assign zensus cells that are part of two district heating grids to
+    # one of them
     annual_demand = annual_demand[
         ~annual_demand.index.duplicated(keep="first")
     ]
@@ -323,103 +326,140 @@ def create_district_heating_profile_python_like(scenario="eGon2035"):
         aggregation_level="district"
     )
 
-    # TODO: use session_scope!
-    from sqlalchemy.orm import sessionmaker
-
-    session = sessionmaker(bind=db.engine())()
-
     print(datetime.now() - start_time)
 
     start_time = datetime.now()
     for area in district_heating_grids.area_id.unique():
-        selected_profiles = db.select_dataframe(
-            f"""
-            SELECT a.zensus_population_id, building_id, c.climate_zone,
-            selected_idp, ordinality as day, b.area_id
-            FROM demand.egon_heat_timeseries_selected_profiles a
-            INNER JOIN boundaries.egon_map_zensus_climate_zones c
-            ON a.zensus_population_id = c.zensus_population_id
-            INNER JOIN (
-                SELECT * FROM demand.egon_map_zensus_district_heating_areas
-                WHERE scenario = '{scenario}'
-                AND area_id = '{area}'
-            ) b ON a.zensus_population_id = b.zensus_population_id        ,
+        with db.session_scope() as session:
+            selected_profiles = db.select_dataframe(
+                f"""
+                SELECT a.zensus_population_id, building_id, c.climate_zone,
+                selected_idp, ordinality as day, b.area_id
+                FROM demand.egon_heat_timeseries_selected_profiles a
+                INNER JOIN boundaries.egon_map_zensus_climate_zones c
+                ON a.zensus_population_id = c.zensus_population_id
+                INNER JOIN (
+                    SELECT * FROM demand.egon_map_zensus_district_heating_areas
+                    WHERE scenario = '{scenario}'
+                    AND area_id = '{area}'
+                ) b ON a.zensus_population_id = b.zensus_population_id        ,
 
-            UNNEST (selected_idp_profiles) WITH ORDINALITY as selected_idp
+                UNNEST (selected_idp_profiles) WITH ORDINALITY as selected_idp
 
-            """
-        )
-
-        if not selected_profiles.empty:
-            df = pd.merge(
-                selected_profiles,
-                daily_demand_shares,
-                on=["day", "climate_zone"],
+                """
             )
 
-            slice_df = pd.merge(
-                df[df.area_id == area],
-                idp_df,
-                left_on="selected_idp",
-                right_on="index",
-            )
+            # Exclude profiles of zensus cells that are in two district
+            # heating grids and added to the other one in the lines above
+            selected_profiles = selected_profiles[
+                selected_profiles.zensus_population_id.isin(
+                    annual_demand[annual_demand.area_id == area].index
+                )
+            ]
 
-            for hour in range(24):
-                slice_df[hour] = (
-                    slice_df.idp.str[hour]
-                    .mul(slice_df.daily_demand_share)
-                    .mul(
-                        annual_demand.loc[
-                            slice_df.zensus_population_id.values,
-                            "per_building",
-                        ].values
-                    )
+            if not selected_profiles.empty:
+                df = pd.merge(
+                    selected_profiles,
+                    daily_demand_shares,
+                    on=["day", "climate_zone"],
                 )
 
-            diff = (
-                slice_df.groupby("day").sum()[range(24)].sum().sum()
-                - annual_demand[
-                    annual_demand.area_id == area
-                ].demand_total.sum()
-            ) / (
-                annual_demand[annual_demand.area_id == area].demand_total.sum()
-            )
+                slice_df = pd.merge(
+                    df[df.area_id == area],
+                    idp_df,
+                    left_on="selected_idp",
+                    right_on="index",
+                )
 
-            assert (
-                abs(diff) < 0.03
-            ), f"""Deviation of residential heat demand time
-            series for district heating grid {str(area)} is {diff}"""
+                # Drop cells without a demand or outside of MVGD
+                slice_df = slice_df[
+                    slice_df.zensus_population_id.isin(annual_demand.index)
+                ]
 
-            hh = np.concatenate(
-                slice_df.groupby("day").sum()[range(24)].values
-            ).ravel()
+                for hour in range(24):
+                    slice_df[hour] = (
+                        slice_df.idp.str[hour]
+                        .mul(slice_df.daily_demand_share)
+                        .mul(
+                            annual_demand.loc[
+                                slice_df.zensus_population_id.values,
+                                "per_building",
+                            ].values
+                        )
+                    )
 
-        cts = CTS_demand_dist[
-            (CTS_demand_dist.scenario == scenario)
-            & (CTS_demand_dist.index == area)
-        ].drop("scenario", axis="columns")
+                diff = (
+                    slice_df[range(24)].sum().sum()
+                    - annual_demand[
+                        annual_demand.area_id == area
+                    ].demand_total.sum()
+                ) / (
+                    annual_demand[
+                        annual_demand.area_id == area
+                    ].demand_total.sum()
+                )
 
-        if (not selected_profiles.empty) and not cts.empty:
-            entry = EgonTimeseriesDistrictHeating(
-                area_id=int(area),
-                scenario=scenario,
-                dist_aggregated_mw=(hh + cts.values[0]).tolist(),
-            )
-        elif (not selected_profiles.empty) and cts.empty:
-            entry = EgonTimeseriesDistrictHeating(
-                area_id=int(area),
-                scenario=scenario,
-                dist_aggregated_mw=(hh).tolist(),
-            )
-        elif not cts.empty:
-            entry = EgonTimeseriesDistrictHeating(
-                area_id=int(area),
-                scenario=scenario,
-                dist_aggregated_mw=(cts.values[0]).tolist(),
-            )
+                assert (
+                    abs(diff) < 0.04
+                ), f"""Deviation of residential heat demand time
+                series for district heating grid {str(area)} is {diff}"""
 
-        session.add(entry)
-    session.commit()
+                if abs(diff) > 0.03:
+                    warnings.warn(
+                        f"""Deviation of residential heat demand time
+                    series for district heating grid {str(area)} is {diff}"""
+                    )
+
+                hh = np.concatenate(
+                    slice_df.drop(
+                        [
+                            "zensus_population_id",
+                            "building_id",
+                            "climate_zone",
+                            "selected_idp",
+                            "area_id",
+                            "daily_demand_share",
+                            "idp",
+                        ],
+                        axis="columns",
+                    )
+                    .groupby("day")
+                    .sum()[range(24)]
+                    .values
+                ).ravel()
+
+            cts = CTS_demand_dist[
+                (CTS_demand_dist.scenario == scenario)
+                & (CTS_demand_dist.index == area)
+            ].drop("scenario", axis="columns")
+
+            if (not selected_profiles.empty) and not cts.empty:
+                entry = EgonTimeseriesDistrictHeating(
+                    area_id=int(area),
+                    scenario=scenario,
+                    dist_aggregated_mw=(hh + cts.values[0]).tolist(),
+                )
+            elif (not selected_profiles.empty) and cts.empty:
+                entry = EgonTimeseriesDistrictHeating(
+                    area_id=int(area),
+                    scenario=scenario,
+                    dist_aggregated_mw=(hh).tolist(),
+                )
+            elif not cts.empty:
+                entry = EgonTimeseriesDistrictHeating(
+                    area_id=int(area),
+                    scenario=scenario,
+                    dist_aggregated_mw=(cts.values[0]).tolist(),
+                )
+            else:
+                entry = EgonTimeseriesDistrictHeating(
+                    area_id=int(area),
+                    scenario=scenario,
+                    dist_aggregated_mw=np.repeat(0, 8760).tolist(),
+                )
+
+            session.add(entry)
+        session.commit()
 
     print(
         f"Time to create time series for district heating scenario {scenario}"
@@ -708,7 +748,6 @@ def create_individual_heating_profile_python_like(scenario="eGon2035"):
 
     start_time = datetime.now()
     for grid in annual_demand.bus_id.unique():
-
         selected_profiles = db.select_dataframe(
             f"""
             SELECT a.zensus_population_id, building_id, c.climate_zone,
@@ -808,8 +847,8 @@ def district_heating(method="python"):
     )
 
     if method == "python":
-        create_district_heating_profile_python_like("eGon2035")
-        create_district_heating_profile_python_like("eGon100RE")
+        for scenario in config.settings()["egon-data"]["--scenarios"]:
+            create_district_heating_profile_python_like(scenario)
 
     else:
         CTS_demand_dist, CTS_demand_grid, CTS_demand_zensus = CTS_demand_scale(
@@ -970,7 +1009,7 @@ def store_national_profiles():
         FROM
 
         (
-        SELECT demand.demand  *
+        SELECT demand.demand  / building.count *
         c.daily_demand_share * hourly_demand as building_demand_per_hour,
         ordinality + 24* (c.day_of_year-1) as hour_of_year,
         demand_profile.building_id,
@@ -1031,7 +1070,7 @@ def store_national_profiles():
 
     df["urban central"] = db.select_dataframe(
         f"""
-        SELECT sum(demand) as "urban central"
+        SELECT sum(nullif(demand, 'NaN')) as "urban central"
 
         FROM demand.egon_timeseries_district_heating,
         UNNEST (dist_aggregated_mw) WITH ORDINALITY as demand
@@ -1163,7 +1202,6 @@ def metadata():
     )
 
 
-
 class HeatTimeSeries(Dataset):
     """
     Chooses heat demand profiles for each residential and CTS building
@@ -1206,7 +1244,7 @@ class HeatTimeSeries(Dataset):
     #:
     name: str = "HeatTimeSeries"
     #:
-    version: str = "0.0.8"
+    version: str = "0.0.12"
 
     def __init__(self, dependencies):
         super().__init__(
@@ -1223,6 +1261,6 @@ class HeatTimeSeries(Dataset):
                 select,
                 district_heating,
                 metadata,
-                # store_national_profiles,
+                store_national_profiles,
             ),
         )

@@ -1,6 +1,7 @@
 """
 DB tables / SQLAlchemy ORM classes for motorized individual travel
 """
+
 import datetime
 import json
 
@@ -31,7 +32,6 @@ from egon.data.metadata import (
     license_agpl,
     license_ccby,
     license_odbl,
-    meta_metadata,
     meta_metadata,
     sources,
 )
@@ -410,7 +410,7 @@ def add_metadata():
         },
     }
 
-    dialect = get_dialect(meta_metadata()["metadataVersion"])()
+    dialect = get_dialect(f"oep-v{meta_metadata()['metadataVersion'][4:7]}")()
 
     meta = dialect.compile_and_render(dialect.parse(json.dumps(meta)))
 
@@ -532,7 +532,7 @@ def add_metadata():
         },
     }
 
-    dialect = get_dialect(meta_metadata()["metadataVersion"])()
+    dialect = get_dialect(f"oep-v{meta_metadata()['metadataVersion'][4:7]}")()
 
     meta = dialect.compile_and_render(dialect.parse(json.dumps(meta)))
 
@@ -654,7 +654,7 @@ def add_metadata():
         },
     }
 
-    dialect = get_dialect(meta_metadata()["metadataVersion"])()
+    dialect = get_dialect(f"oep-v{meta_metadata()['metadataVersion'][4:7]}")()
 
     meta = dialect.compile_and_render(dialect.parse(json.dumps(meta)))
 

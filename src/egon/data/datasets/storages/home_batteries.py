@@ -33,6 +33,7 @@ this specification.
 The selection of buildings is done randomly until a result is reached which is
 close to achieving the sizing specification.
 """
+
 import datetime
 import json
 
@@ -45,13 +46,13 @@ import numpy as np
 import pandas as pd
 
 from egon.data import config, db
+from egon.data.datasets.scenario_parameters import get_sector_parameters
 from egon.data.metadata import (
     context,
     contributors,
     generate_resource_fields_from_db_table,
     license_dedl,
     license_odbl,
-    meta_metadata,
     meta_metadata,
     sources,
 )
@@ -88,11 +89,12 @@ def allocate_home_batteries_to_buildings():
     """
     # get constants
     constants = config.datasets()["home_batteries"]["constants"]
-    scenarios = constants["scenarios"]
+    scenarios = config.settings()["egon-data"]["--scenarios"]
+    if "status2019" in scenarios:
+        scenarios.remove("status2019")
     cbat_ppv_ratio = constants["cbat_ppv_ratio"]
     rtol = constants["rtol"]
     max_it = constants["max_it"]
-    cbat_pbat_ratio = get_cbat_pbat_ratio()
 
     sources = config.datasets()["home_batteries"]["sources"]
 
@@ -107,6 +109,9 @@ def allocate_home_batteries_to_buildings():
         WHERE carrier = 'home_battery'
         AND scenario = '{scenario}';
         """
+        cbat_pbat_ratio = get_sector_parameters("electricity", scenario)[
+            "efficiency"
+        ]["battery"]["max_hours"]
 
         home_batteries_df = db.select_dataframe(sql)
 
@@ -266,9 +271,7 @@ def add_metadata():
                     "Data from Marktstammdatenregister (MaStR) data using "
                     "the data dump from 2022-11-17 for eGon-data."
                 ),
-                "path": (
-                    f"https://zenodo.org/record/{deposit_id_mastr}"
-                ),
+                "path": (f"https://zenodo.org/record/{deposit_id_mastr}"),
                 "licenses": [license_dedl(attribution="© Amme, Jonathan")],
             },
             sources()["openstreetmap"],
@@ -330,7 +333,7 @@ def add_metadata():
         },
     }
 
-    dialect = get_dialect(meta_metadata())()
+    dialect = get_dialect(f"oep-v{meta_metadata()['metadataVersion'][4:7]}")()
 
     meta = dialect.compile_and_render(dialect.parse(json.dumps(meta)))
 

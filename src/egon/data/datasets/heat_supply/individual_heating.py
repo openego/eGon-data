@@ -8,12 +8,11 @@ The following main things are done in this module:
 
 """
 
-
 from pathlib import Path
 import os
 import random
 
-from airflow.operators.python_operator import PythonOperator
+from airflow.operators.python import PythonOperator
 from psycopg2.extensions import AsIs, register_adapter
 from sqlalchemy import ARRAY, REAL, Column, Integer, String
 from sqlalchemy.ext.declarative import declarative_base
@@ -23,7 +22,7 @@ import pandas as pd
 import saio
 
 from egon.data import config, db, logger
-from egon.data.datasets import Dataset
+from egon.data.datasets import Dataset, wrapped_partial
 from egon.data.datasets.district_heating_areas import (
     MapZensusDistrictHeatingAreas,
 )
@@ -37,7 +36,7 @@ from egon.data.datasets.electricity_demand_timeseries.tools import (
     write_table_to_postgres,
 )
 from egon.data.datasets.emobility.motorized_individual_travel.helpers import (
-    reduce_mem_usage
+    reduce_mem_usage,
 )
 from egon.data.datasets.heat_demand import EgonPetaHeat
 from egon.data.datasets.heat_demand_timeseries.daily import (
@@ -54,6 +53,8 @@ from egon.data.datasets.zensus_mv_grid_districts import MapZensusGridDistricts
 engine = db.engine()
 Base = declarative_base()
 
+scenarios = config.settings()["egon-data"]["--scenarios"]
+
 
 class EgonEtragoTimeseriesIndividualHeating(Base):
     """
@@ -64,6 +65,7 @@ class EgonEtragoTimeseriesIndividualHeating(Base):
     the different scenarios. The data is used in eTraGo.
 
     """
+
     __tablename__ = "egon_etrago_timeseries_individual_heating"
     __table_args__ = {"schema": "demand"}
     bus_id = Column(Integer, primary_key=True)
@@ -79,6 +81,7 @@ class EgonHpCapacityBuildings(Base):
     This table contains the heat pump capacity of all buildings with a heat pump.
 
     """
+
     __tablename__ = "egon_hp_capacity_buildings"
     __table_args__ = {"schema": "demand"}
     building_id = Column(Integer, primary_key=True)
@@ -86,7 +89,7 @@ class EgonHpCapacityBuildings(Base):
     hp_capacity = Column(REAL)
 
 
-class HeatPumpsPypsaEurSec(Dataset):
+class HeatPumpsPypsaEur(Dataset):
     """
     Class to determine minimum heat pump capcacities per building for the PyPSA-EUR run.
 
@@ -145,12 +148,14 @@ class HeatPumpsPypsaEurSec(Dataset):
     lead to infeasibilities in eDisGo.
 
     """
+
     #:
     name: str = "HeatPumpsPypsaEurSec"
     #:
-    version: str = "0.0.2"
+    version: str = "0.0.3"
+
     def __init__(self, dependencies):
-        def dyn_parallel_tasks_pypsa_eur_sec():
+        def dyn_parallel_tasks_pypsa_eur():
             """Dynamically generate tasks
             The goal is to speed up tasks by parallelising bulks of mvgds.
 
@@ -162,41 +167,146 @@ class HeatPumpsPypsaEurSec(Dataset):
             set of airflow.PythonOperators
                 The tasks. Each element is of
                 :func:`egon.data.datasets.heat_supply.individual_heating.
-                determine_hp_cap_peak_load_mvgd_ts_pypsa_eur_sec`
+                determine_hp_cap_peak_load_mvgd_ts_pypsa_eur`
             """
             parallel_tasks = config.datasets()["demand_timeseries_mvgd"].get(
                 "parallel_tasks", 1
             )
 
             tasks = set()
+
             for i in range(parallel_tasks):
                 tasks.add(
                     PythonOperator(
                         task_id=(
                             f"individual_heating."
-                            f"determine-hp-capacity-pypsa-eur-sec-"
+                            f"determine-hp-capacity-pypsa-eur-"
                             f"mvgd-bulk{i}"
                         ),
                         python_callable=split_mvgds_into_bulks,
                         op_kwargs={
                             "n": i,
                             "max_n": parallel_tasks,
-                            "func": determine_hp_cap_peak_load_mvgd_ts_pypsa_eur_sec,  # noqa: E501
+                            "func": determine_hp_cap_peak_load_mvgd_ts_pypsa_eur,  # noqa: E501
                         },
                     )
                 )
             return tasks
 
+        tasks_HeatPumpsPypsaEur = set()
+
+        if "eGon100RE" in scenarios:
+            tasks_HeatPumpsPypsaEur = (
+                delete_pypsa_eur_sec_csv_file,
+                delete_mvgd_ts_100RE,
+                delete_heat_peak_loads_100RE,
+                {*dyn_parallel_tasks_pypsa_eur()},
+            )
+        else:
+            tasks_HeatPumpsPypsaEur = (
+                PythonOperator(
+                    task_id="HeatPumpsPypsaEur_skipped",
+                    python_callable=skip_task,
+                    op_kwargs={
+                        "scn": "eGon100RE",
+                        "task": "HeatPumpsPypsaEur",
+                    },
+                ),
+            )
+
         super().__init__(
             name=self.name,
             version=self.version,
             dependencies=dependencies,
-            tasks=(
-                delete_pypsa_eur_sec_csv_file,
-                delete_mvgd_ts_100RE,
-                delete_heat_peak_loads_100RE,
-                {*dyn_parallel_tasks_pypsa_eur_sec()},
-            ),
+            tasks=tasks_HeatPumpsPypsaEur,
+        )
+
+
+class HeatPumpsStatusQuo(Dataset):
+    def __init__(self, dependencies):
+        def dyn_parallel_tasks_status_quo(scenario):
+            """Dynamically generate tasks
+
+            The goal is to speed up tasks by parallelising bulks of mvgds.
+
+            The number of parallel tasks is defined via parameter
+            `parallel_tasks` in the dataset config `datasets.yml`.
+
+            Returns
+            -------
+            set of airflow.PythonOperators
+                The tasks. Each element is of
+                :func:`egon.data.datasets.heat_supply.individual_heating.
+                determine_hp_cap_peak_load_mvgd_ts_status_quo`
+            """
+            parallel_tasks = config.datasets()["demand_timeseries_mvgd"].get(
+                "parallel_tasks", 1
+            )
+
+            tasks = set()
+
+            for i in range(parallel_tasks):
+                tasks.add(
+                    PythonOperator(
+                        task_id=(
+                            "individual_heating."
+                            f"determine-hp-capacity-{scenario}-"
+                            f"mvgd-bulk{i}"
+                        ),
+                        python_callable=split_mvgds_into_bulks,
+                        op_kwargs={
+                            "n": i,
+                            "max_n": parallel_tasks,
+                            "scenario": scenario,
+                            "func": determine_hp_cap_peak_load_mvgd_ts_status_quo,
+                        },
+                    )
+                )
+            return tasks
+
+        if any(
+            "status" in scenario
+            for scenario in config.settings()["egon-data"]["--scenarios"]
+        ):
+            tasks = ()
+
+            for scenario in config.settings()["egon-data"]["--scenarios"]:
+                if "status" in scenario:
+                    postfix = f"_{scenario[-4:]}"
+
+                    tasks += (
+                        wrapped_partial(
+                            delete_heat_peak_loads_status_quo,
+                            scenario=scenario,
+                            postfix=postfix,
+                        ),
+                        wrapped_partial(
+                            delete_hp_capacity_status_quo,
+                            scenario=scenario,
+                            postfix=postfix,
+                        ),
+                        wrapped_partial(
+                            delete_mvgd_ts_status_quo,
+                            scenario=scenario,
+                            postfix=postfix,
+                        ),
+                    )
+
+                    tasks += ({*dyn_parallel_tasks_status_quo(scenario)},)
+        else:
+            tasks = (
+                PythonOperator(
+                    task_id="HeatPumpsSQ_skipped",
+                    python_callable=skip_task,
+                    op_kwargs={"scn": "sq", "task": "HeatPumpsStatusQuo"},
+                ),
+            )
+
+        super().__init__(
+            name="HeatPumpsStatusQuo",
+            version="0.0.4",
+            dependencies=dependencies,
+            tasks=tasks,
         )
 
 
@@ -281,10 +391,12 @@ class HeatPumps2035(Dataset):
     lead to infeasibilities in eDisGo.
 
     """
+
     #:
     name: str = "HeatPumps2035"
     #:
-    version: str = "0.0.2"
+    version: str = "0.0.3"
+
     def __init__(self, dependencies):
         def dyn_parallel_tasks_2035():
             """Dynamically generate tasks
@@ -304,7 +416,9 @@ class HeatPumps2035(Dataset):
             parallel_tasks = config.datasets()["demand_timeseries_mvgd"].get(
                 "parallel_tasks", 1
             )
+
             tasks = set()
+
             for i in range(parallel_tasks):
                 tasks.add(
                     PythonOperator(
@@ -323,16 +437,27 @@ class HeatPumps2035(Dataset):
                 )
             return tasks
 
-        super().__init__(
-            name=self.name,
-            version=self.version,
-            dependencies=dependencies,
-            tasks=(
+        if "eGon2035" in scenarios:
+            tasks_HeatPumps2035 = (
                 delete_heat_peak_loads_2035,
                 delete_hp_capacity_2035,
                 delete_mvgd_ts_2035,
                 {*dyn_parallel_tasks_2035()},
-            ),
+            )
+        else:
+            tasks_HeatPumps2035 = (
+                PythonOperator(
+                    task_id="HeatPumps2035_skipped",
+                    python_callable=skip_task,
+                    op_kwargs={"scn": "eGon2035", "task": "HeatPumps2035"},
+                ),
+            )
+
+        super().__init__(
+            name=self.version,
+            version="0.0.3",
+            dependencies=dependencies,
+            tasks=tasks_HeatPumps2035,
         )
 
 
@@ -382,19 +507,34 @@ class HeatPumps2050(Dataset):
     lead to infeasibilities in eDisGo.
 
     """
+
     #:
     name: str = "HeatPumps2050"
     #:
-    version: str = "0.0.2"
+    version: str = "0.0.3"
+
     def __init__(self, dependencies):
+        tasks_HeatPumps2050 = set()
+
+        if "eGon100RE" in scenarios:
+            tasks_HeatPumps2050 = (
+                delete_hp_capacity_100RE,
+                determine_hp_cap_buildings_eGon100RE,
+            )
+        else:
+            tasks_HeatPumps2050 = (
+                PythonOperator(
+                    task_id="HeatPumps2050_skipped",
+                    python_callable=skip_task,
+                    op_kwargs={"scn": "eGon100RE", "task": "HeatPumps2050"},
+                ),
+            )
+
         super().__init__(
             name=self.name,
             version=self.version,
             dependencies=dependencies,
-            tasks=(
-                delete_hp_capacity_100RE,
-                determine_hp_cap_buildings_eGon100RE,
-            ),
+            tasks=tasks_HeatPumps2050,
         )
 
 
@@ -406,6 +546,7 @@ class BuildingHeatPeakLoads(Base):
     each building.
 
     """
+
     __tablename__ = "egon_building_heat_peak_loads"
     __table_args__ = {"schema": "demand"}
 
@@ -413,6 +554,14 @@ class BuildingHeatPeakLoads(Base):
     scenario = Column(String, primary_key=True)
     sector = Column(String, primary_key=True)
     peak_load_in_w = Column(REAL)
+
+
+def skip_task(scn=str, task=str):
+    logger.info(
+        f"{scn} is not in the list of scenarios. {task} dataset is skipped."
+    )
+
+    return
 
 
 def adapt_numpy_float64(numpy_float64):
@@ -430,7 +579,6 @@ def cascade_per_technology(
     distribution_level,
     max_size_individual_chp=0.05,
 ):
-
     """Add plants for individual heat.
     Currently only on mv grid district level.
 
@@ -460,8 +608,7 @@ def cascade_per_technology(
 
     # Distribute heat pumps linear to remaining demand.
     if tech.index == "heat_pump":
-
-        if distribution_level == "federal_state":
+        if distribution_level == "federal_states":
             # Select target values per federal state
             target = db.select_dataframe(
                 f"""
@@ -478,7 +625,8 @@ def cascade_per_technology(
             )
 
             heat_per_mv["share"] = heat_per_mv.groupby(
-                "state"
+                "state",
+                group_keys=False,
             ).remaining_demand.apply(lambda grp: grp / grp.sum())
 
             append_df = (
@@ -494,9 +642,18 @@ def cascade_per_technology(
                     FROM {sources['scenario_capacities']['schema']}.
                     {sources['scenario_capacities']['table']} a
                     WHERE scenario_name = '{scenario}'
-                    AND carrier = 'residential_rural_heat_pump'
+                    AND carrier = 'rural_heat_pump'
                     """
             )
+
+            if not target.capacity[0]:
+                target.capacity[0] = 0
+
+            if (
+                config.settings()["egon-data"]["--dataset-boundary"]
+                == "Schleswig-Holstein"
+            ):
+                target.capacity[0] /= 16
 
             heat_per_mv["share"] = (
                 heat_per_mv.remaining_demand
@@ -511,14 +668,53 @@ def cascade_per_technology(
             {"bus_id": "mv_grid_id", "share": "capacity"}, axis=1, inplace=True
         )
 
-    elif tech.index == "gas_boiler":
-
+    elif (tech.index == "gas_boiler") & (scenario == "eGon2035"):
         append_df = pd.DataFrame(
             data={
                 "capacity": heat_per_mv.remaining_demand.div(
                     tech.estimated_flh.values[0]
                 ),
-                "carrier": "residential_rural_gas_boiler",
+                "carrier": f"residential_rural_{tech.index}",
+                "mv_grid_id": heat_per_mv.index,
+                "scenario": scenario,
+            }
+        )
+
+    elif tech.index in ("gas_boiler", "resistive_heater", "solar_thermal"):
+        # Select target value for Germany
+        target = db.select_dataframe(
+            f"""
+                SELECT SUM(capacity) AS capacity
+                FROM {sources['scenario_capacities']['schema']}.
+                {sources['scenario_capacities']['table']} a
+                WHERE scenario_name = '{scenario}'
+                AND carrier = 'rural_{tech.index[0]}'
+                """
+        )
+
+        if (
+            config.settings()["egon-data"]["--dataset-boundary"]
+            == "Schleswig-Holstein"
+        ):
+            target.capacity[0] /= 16
+
+        heat_per_mv["share"] = (
+            heat_per_mv.remaining_demand / heat_per_mv.remaining_demand.sum()
+        )
+
+        append_df = heat_per_mv["share"].mul(target.capacity[0]).reset_index()
+
+        append_df.rename(
+            {"bus_id": "mv_grid_id", "share": "capacity"}, axis=1, inplace=True
+        )
+
+    else:
+        append_df = pd.DataFrame(
+            data={
+                "capacity": heat_per_mv.remaining_demand.div(
+                    tech.estimated_flh.values[0]
+                ),
+                "carrier": f"residential_rural_{tech.index}",
                 "mv_grid_id": heat_per_mv.index,
                 "scenario": scenario,
             }
@@ -541,7 +737,6 @@ def cascade_per_technology(
 
 def cascade_heat_supply_indiv(scenario, distribution_level, plotting=True):
     """Assigns supply strategy for individual heating in four steps.
-
     1. all small scale CHP are connected.
     2. If the supply can not  meet the heat demand, solar thermal collectors
        are attached. This is not implemented yet, since individual
@@ -601,12 +796,35 @@ def cascade_heat_supply_indiv(scenario, distribution_level, plotting=True):
 
     # Set technology data according to
     # http://www.wbzu.de/seminare/infopool/infopool-bhkw
-    # TODO: Add gas boilers and solar themal (eGon100RE)
-    technologies = pd.DataFrame(
-        index=["heat_pump", "gas_boiler"],
-        columns=["estimated_flh", "priority"],
-        data={"estimated_flh": [4000, 8000], "priority": [2, 1]},
-    )
+    if scenario == "eGon2035":
+        technologies = pd.DataFrame(
+            index=["heat_pump", "gas_boiler"],
+            columns=["estimated_flh", "priority"],
+            data={"estimated_flh": [4000, 8000], "priority": [2, 1]},
+        )
+    elif scenario == "eGon100RE":
+        technologies = pd.DataFrame(
+            index=[
+                "heat_pump",
+                "resistive_heater",
+                "solar_thermal",
+                "gas_boiler",
+                "oil_boiler",
+            ],
+            columns=["estimated_flh", "priority"],
+            data={
+                "estimated_flh": [4000, 2000, 2000, 8000, 8000],
+                "priority": [5, 4, 3, 2, 1],
+            },
+        )
+    elif "status" in scenario:
+        technologies = pd.DataFrame(
+            index=["heat_pump"],
+            columns=["estimated_flh", "priority"],
+            data={"estimated_flh": [4000], "priority": [1]},
+        )
+    else:
+        raise ValueError(f"{scenario=} is not valid.")
 
     # In the beginning, the remaining demand equals demand
     heat_per_mv["remaining_demand"] = heat_per_mv["demand"]
@@ -618,8 +836,8 @@ def cascade_heat_supply_indiv(scenario, distribution_level, plotting=True):
             heat_per_mv, technologies, scenario, distribution_level
         )
         # Collect resulting capacities
-        resulting_capacities = resulting_capacities.append(
-            append_df, ignore_index=True
+        resulting_capacities = pd.concat(
+            [resulting_capacities, append_df], ignore_index=True
         )
 
     if plotting:
@@ -861,8 +1079,10 @@ def calc_residential_heat_profiles_per_mvgd(mvgd, scenario):
         left=df_peta_demand, right=df_profiles_ids, on="zensus_population_id"
     )
 
-    df_profile_merge.demand = df_profile_merge.demand.div(df_profile_merge.buildings)
-    df_profile_merge.drop('buildings', axis='columns', inplace=True)
+    df_profile_merge.demand = df_profile_merge.demand.div(
+        df_profile_merge.buildings
+    )
+    df_profile_merge.drop("buildings", axis="columns", inplace=True)
 
     # Merge daily demand to daily profile ids by zensus_population_id and day
     df_profile_merge = pd.merge(
@@ -871,8 +1091,9 @@ def calc_residential_heat_profiles_per_mvgd(mvgd, scenario):
         on=["zensus_population_id", "day_of_year"],
     )
     df_profile_merge.demand = df_profile_merge.demand.mul(
-        df_profile_merge.daily_demand_share)
-    df_profile_merge.drop('daily_demand_share', axis='columns', inplace=True)
+        df_profile_merge.daily_demand_share
+    )
+    df_profile_merge.drop("daily_demand_share", axis="columns", inplace=True)
     df_profile_merge = reduce_mem_usage(df_profile_merge)
 
     # Merge daily profiles by profile id
@@ -885,10 +1106,13 @@ def calc_residential_heat_profiles_per_mvgd(mvgd, scenario):
     df_profile_merge = reduce_mem_usage(df_profile_merge)
 
     df_profile_merge.demand = df_profile_merge.demand.mul(
-        df_profile_merge.idp.astype(float))
-    df_profile_merge.drop('idp', axis='columns', inplace=True)
+        df_profile_merge.idp.astype(float)
+    )
+    df_profile_merge.drop("idp", axis="columns", inplace=True)
 
-    df_profile_merge.rename({'demand': 'demand_ts'}, axis='columns', inplace=True)
+    df_profile_merge.rename(
+        {"demand": "demand_ts"}, axis="columns", inplace=True
+    )
 
     df_profile_merge = reduce_mem_usage(df_profile_merge)
 
@@ -896,7 +1120,6 @@ def calc_residential_heat_profiles_per_mvgd(mvgd, scenario):
 
 
 def plot_heat_supply(resulting_capacities):
-
     from matplotlib import pyplot as plt
 
     mv_grids = db.select_geodataframe(
@@ -1129,7 +1352,7 @@ def get_buildings_with_decentral_heat_demand_in_mv_grid(mvgd, scenario):
     )
 
     # merge residential and CTS buildings
-    buildings_decentral_heating = buildings_decentral_heating_res.append(
+    buildings_decentral_heating = buildings_decentral_heating_res.union(
         buildings_decentral_heating_cts
     ).unique()
 
@@ -1314,7 +1537,7 @@ def determine_buildings_with_hp_in_mv_grid(
         random.seed(db.credentials()["--random-seed"])
         new_hp_building = random.choice(possible_buildings)
         # add new building to building with HP
-        buildings_with_hp = buildings_with_hp.append(
+        buildings_with_hp = buildings_with_hp.union(
             pd.Index([new_hp_building])
         )
         # determine if there are still possible buildings
@@ -1402,8 +1625,8 @@ def determine_min_hp_cap_buildings_pypsa_eur_sec(
         return 0.0
 
 
-def determine_hp_cap_buildings_eGon2035_per_mvgd(
-    mv_grid_id, peak_heat_demand, building_ids
+def determine_hp_cap_buildings_pvbased_per_mvgd(
+    scenario, mv_grid_id, peak_heat_demand, building_ids
 ):
     """
     Determines which buildings in the MV grid will have a HP (buildings with PV
@@ -1423,9 +1646,7 @@ def determine_hp_cap_buildings_eGon2035_per_mvgd(
 
     """
 
-    hp_cap_grid = get_total_heat_pump_capacity_of_mv_grid(
-        "eGon2035", mv_grid_id
-    )
+    hp_cap_grid = get_total_heat_pump_capacity_of_mv_grid(scenario, mv_grid_id)
 
     if len(building_ids) > 0 and hp_cap_grid > 0.0:
         peak_heat_demand = peak_heat_demand.loc[building_ids]
@@ -1470,7 +1691,6 @@ def determine_hp_cap_buildings_eGon100RE_per_mvgd(mv_grid_id):
     )
 
     if hp_cap_grid > 0.0:
-
         # get buildings with decentral heating systems
         building_ids = get_buildings_with_decentral_heat_demand_in_mv_grid(
             mv_grid_id, scenario="eGon100RE"
@@ -1531,7 +1751,6 @@ def determine_hp_cap_buildings_eGon100RE():
     )
 
     for mvgd_id in mvgd_ids:
-
         logger.info(f"MVGD={mvgd_id} | Start")
 
         hp_cap_per_building_100RE = (
@@ -1683,9 +1902,7 @@ def export_min_cap_to_csv(df_hp_min_cap_mv_grid_pypsa_eur_sec):
         os.mkdir(folder)
     if not file.is_file():
         logger.info(f"Create {file}")
-        df_hp_min_cap_mv_grid_pypsa_eur_sec.to_csv(
-            file, mode="w", header=True
-        )
+        df_hp_min_cap_mv_grid_pypsa_eur_sec.to_csv(file, mode="w", header=True)
     else:
         df_hp_min_cap_mv_grid_pypsa_eur_sec.to_csv(
             file, mode="a", header=False
@@ -1719,11 +1936,7 @@ def catch_missing_buidings(buildings_decentral_heating, peak_load):
     """
     # Catch missing buildings key error
     # should only happen within cutout SH
-    if (
-        not all(buildings_decentral_heating.isin(peak_load.index))
-        and config.settings()["egon-data"]["--dataset-boundary"]
-        == "Schleswig-Holstein"
-    ):
+    if not all(buildings_decentral_heating.isin(peak_load.index)):
         diff = buildings_decentral_heating.difference(peak_load.index)
         logger.warning(
             f"Dropped {len(diff)} building ids due to missing peak "
@@ -1758,7 +1971,6 @@ def determine_hp_cap_peak_load_mvgd_ts_2035(mvgd_ids):
     df_heat_mvgd_ts_db = pd.DataFrame()
 
     for mvgd in mvgd_ids:
-
         logger.info(f"MVGD={mvgd} | Start")
 
         # ############# aggregate residential and CTS demand profiles #####
@@ -1788,12 +2000,11 @@ def determine_hp_cap_peak_load_mvgd_ts_2035(mvgd_ids):
             buildings_decentral_heating, peak_load_2035
         )
 
-        hp_cap_per_building_2035 = (
-            determine_hp_cap_buildings_eGon2035_per_mvgd(
-                mvgd,
-                peak_load_2035,
-                buildings_decentral_heating,
-            )
+        hp_cap_per_building_2035 = determine_hp_cap_buildings_pvbased_per_mvgd(
+            "eGon2035",
+            mvgd,
+            peak_load_2035,
+            buildings_decentral_heating,
         )
         buildings_gas_2035 = pd.Index(buildings_decentral_heating).drop(
             hp_cap_per_building_2035.index
@@ -1855,12 +2066,17 @@ def determine_hp_cap_peak_load_mvgd_ts_2035(mvgd_ids):
         df_hp_cap_per_building_2035_db.duplicated("building_id", keep=False)
     ]
 
-    logger.info(
-        f"Dropped duplicated buildings: "
-        f"{duplicates.loc[:,['building_id', 'hp_capacity']]}"
-    )
+    if not duplicates.empty:
+        logger.info(
+            f"Dropped duplicated buildings: "
+            f"{duplicates.loc[:,['building_id', 'hp_capacity']]}"
+        )
 
     df_hp_cap_per_building_2035_db.drop_duplicates("building_id", inplace=True)
+
+    df_hp_cap_per_building_2035_db.building_id = (
+        df_hp_cap_per_building_2035_db.building_id.astype(int)
+    )
 
     write_table_to_postgres(
         df_hp_cap_per_building_2035_db,
@@ -1869,7 +2085,141 @@ def determine_hp_cap_peak_load_mvgd_ts_2035(mvgd_ids):
     )
 
 
-def determine_hp_cap_peak_load_mvgd_ts_pypsa_eur_sec(mvgd_ids):
+def determine_hp_cap_peak_load_mvgd_ts_status_quo(mvgd_ids, scenario):
+    """
+    Main function to determine HP capacity per building in status quo scenario.
+    Further, creates heat demand time series for all buildings with heat pumps
+    in MV grid, as well as for all buildings with gas boilers, used in eTraGo.
+
+    Parameters
+    -----------
+    mvgd_ids : list(int)
+        List of MV grid IDs to determine data for.
+
+    """
+
+    # ========== Register np datatypes with SQLA ==========
+    register_adapter(np.float64, adapt_numpy_float64)
+    register_adapter(np.int64, adapt_numpy_int64)
+    # =====================================================
+
+    df_peak_loads_db = pd.DataFrame()
+    df_hp_cap_per_building_status_quo_db = pd.DataFrame()
+    df_heat_mvgd_ts_db = pd.DataFrame()
+
+    for mvgd in mvgd_ids:
+        logger.info(f"MVGD={mvgd} | Start")
+
+        # ############# aggregate residential and CTS demand profiles #####
+
+        df_heat_ts = aggregate_residential_and_cts_profiles(
+            mvgd, scenario=scenario
+        )
+
+        # ##################### determine peak loads ###################
+        logger.info(f"MVGD={mvgd} | Determine peak loads.")
+
+        peak_load_status_quo = df_heat_ts.max().rename(scenario)
+
+        # ######## determine HP capacity per building #########
+        logger.info(f"MVGD={mvgd} | Determine HP capacities.")
+
+        buildings_decentral_heating = (
+            get_buildings_with_decentral_heat_demand_in_mv_grid(
+                mvgd, scenario=scenario
+            )
+        )
+
+        # Reduce list of decentral heating if no Peak load available
+        # TODO maybe remove after succesfull DE run
+        # Might be fixed in #990
+        buildings_decentral_heating = catch_missing_buidings(
+            buildings_decentral_heating, peak_load_status_quo
+        )
+
+        hp_cap_per_building_status_quo = (
+            determine_hp_cap_buildings_pvbased_per_mvgd(
+                scenario,
+                mvgd,
+                peak_load_status_quo,
+                buildings_decentral_heating,
+            )
+        )
+
+        # ################ aggregated heat profiles ###################
+        logger.info(f"MVGD={mvgd} | Aggregate heat profiles.")
+
+        df_mvgd_ts_status_quo_hp = df_heat_ts.loc[
+            :,
+            hp_cap_per_building_status_quo.index,
+        ].sum(axis=1)
+
+        df_heat_mvgd_ts = pd.DataFrame(
+            data={
+                "carrier": "heat_pump",
+                "bus_id": mvgd,
+                "scenario": scenario,
+                "dist_aggregated_mw": [df_mvgd_ts_status_quo_hp.to_list()],
+            }
+        )
+
+        # ################ collect results ##################
+        logger.info(f"MVGD={mvgd} | Collect results.")
+
+        df_peak_loads_db = pd.concat(
+            [df_peak_loads_db, peak_load_status_quo.reset_index()],
+            axis=0,
+            ignore_index=True,
+        )
+
+        df_heat_mvgd_ts_db = pd.concat(
+            [df_heat_mvgd_ts_db, df_heat_mvgd_ts], axis=0, ignore_index=True
+        )
+
+        df_hp_cap_per_building_status_quo_db = pd.concat(
+            [
+                df_hp_cap_per_building_status_quo_db,
+                hp_cap_per_building_status_quo.reset_index(),
+            ],
+            axis=0,
+        )
+
+    # ################ export to db #######################
+    logger.info(f"MVGD={min(mvgd_ids)} : {max(mvgd_ids)} | Write data to db.")
+
+    export_to_db(df_peak_loads_db, df_heat_mvgd_ts_db, drop=False)
+
+    df_hp_cap_per_building_status_quo_db["scenario"] = scenario
+
+    # TODO debug duplicated building_ids
+    duplicates = df_hp_cap_per_building_status_quo_db.loc[
+        df_hp_cap_per_building_status_quo_db.duplicated(
+            "building_id", keep=False
+        )
+    ]
+
+    if not duplicates.empty:
+        logger.info(
+            f"Dropped duplicated buildings: "
+            f"{duplicates.loc[:,['building_id', 'hp_capacity']]}"
+        )
+
+    df_hp_cap_per_building_status_quo_db.drop_duplicates(
+        "building_id", inplace=True
+    )
+
+    df_hp_cap_per_building_status_quo_db.building_id = (
+        df_hp_cap_per_building_status_quo_db.building_id.astype(int)
+    )
+
+    write_table_to_postgres(
+        df_hp_cap_per_building_status_quo_db,
+        EgonHpCapacityBuildings,
+        drop=False,
+    )
+
+
+def determine_hp_cap_peak_load_mvgd_ts_pypsa_eur(mvgd_ids):
     """
     Main function to determine minimum required HP capacity in MV for
     pypsa-eur-sec. Further, creates heat demand time series for all buildings
@@ -1892,7 +2242,6 @@ def determine_hp_cap_peak_load_mvgd_ts_pypsa_eur_sec(mvgd_ids):
     df_hp_min_cap_mv_grid_pypsa_eur_sec = pd.Series(dtype="float64")
 
     for mvgd in mvgd_ids:
-
         logger.info(f"MVGD={mvgd} | Start")
 
         # ############# aggregate residential and CTS demand profiles #####
@@ -1958,9 +2307,9 @@ def determine_hp_cap_peak_load_mvgd_ts_pypsa_eur_sec(mvgd_ids):
             [df_heat_mvgd_ts_db, df_heat_mvgd_ts], axis=0, ignore_index=True
         )
 
-        df_hp_min_cap_mv_grid_pypsa_eur_sec.loc[
-            mvgd
-        ] = hp_min_cap_mv_grid_pypsa_eur_sec
+        df_hp_min_cap_mv_grid_pypsa_eur_sec.loc[mvgd] = (
+            hp_min_cap_mv_grid_pypsa_eur_sec
+        )
 
     # ################ export to db and csv ######################
     logger.info(f"MVGD={min(mvgd_ids)} : {max(mvgd_ids)} | Write data to db.")
@@ -1975,7 +2324,7 @@ def determine_hp_cap_peak_load_mvgd_ts_pypsa_eur_sec(mvgd_ids):
     export_min_cap_to_csv(df_hp_min_cap_mv_grid_pypsa_eur_sec)
 
 
-def split_mvgds_into_bulks(n, max_n, func):
+def split_mvgds_into_bulks(n, max_n, func, scenario=None):
     """
     Generic function to split task into multiple parallel tasks,
     dividing the number of MVGDs into even bulks.
@@ -2013,7 +2362,11 @@ def split_mvgds_into_bulks(n, max_n, func):
     mvgd_ids = mvgd_ids[n]
 
     logger.info(f"Bulk takes care of MVGD: {min(mvgd_ids)} : {max(mvgd_ids)}")
-    func(mvgd_ids)
+
+    if scenario is not None:
+        func(mvgd_ids, scenario=scenario)
+    else:
+        func(mvgd_ids)
 
 
 def delete_hp_capacity(scenario):
@@ -2056,10 +2409,24 @@ def delete_hp_capacity_100RE():
     delete_hp_capacity(scenario="eGon100RE")
 
 
+def delete_hp_capacity_status_quo(scenario):
+    """Remove all hp capacities for the selected status quo"""
+    EgonHpCapacityBuildings.__table__.create(bind=engine, checkfirst=True)
+    delete_hp_capacity(scenario=scenario)
+
+
 def delete_hp_capacity_2035():
     """Remove all hp capacities for the selected eGon2035"""
     EgonHpCapacityBuildings.__table__.create(bind=engine, checkfirst=True)
     delete_hp_capacity(scenario="eGon2035")
+
+
+def delete_mvgd_ts_status_quo(scenario):
+    """Remove all mvgd ts for the selected status quo"""
+    EgonEtragoTimeseriesIndividualHeating.__table__.create(
+        bind=engine, checkfirst=True
+    )
+    delete_mvgd_ts(scenario=scenario)
 
 
 def delete_mvgd_ts_2035():
@@ -2076,6 +2443,16 @@ def delete_mvgd_ts_100RE():
         bind=engine, checkfirst=True
     )
     delete_mvgd_ts(scenario="eGon100RE")
+
+
+def delete_heat_peak_loads_status_quo(scenario):
+    """Remove all heat peak loads for status quo."""
+    BuildingHeatPeakLoads.__table__.create(bind=engine, checkfirst=True)
+    with db.session_scope() as session:
+        # Buses
+        session.query(BuildingHeatPeakLoads).filter(
+            BuildingHeatPeakLoads.scenario == scenario
+        ).delete(synchronize_session=False)
 
 
 def delete_heat_peak_loads_2035():

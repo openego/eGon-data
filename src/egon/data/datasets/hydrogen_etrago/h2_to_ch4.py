@@ -14,136 +14,149 @@ These links are modelling:
 """
 
 from geoalchemy2.types import Geometry
+from scipy.spatial import cKDTree
+from shapely.geometry import LineString, MultiLineString
+import geopandas as gpd
+import numpy as np
 
-from egon.data import db
-from egon.data.datasets.etrago_helpers import copy_and_modify_links
-from egon.data.datasets.etrago_setup import link_geom_from_buses
+from egon.data import config, db
 from egon.data.datasets.scenario_parameters import get_sector_parameters
 
 
 def insert_h2_to_ch4_to_h2():
     """
-    Inserts methanisation, feedin and SMR links into the database
+    Method for implementing Methanisation as optional usage of H2-Production;
+    For H2_Buses and CH4_Buses with distance < 10 km Methanisation/SMR Link will be implemented
 
     Define the potentials for methanisation and Steam Methane Reaction
-    (SMR) modelled as extendable links as well as the H2 feedin
-    capacities modelled as non extendable links and insert all of them
-    into the database.
-    These tree technologies are connecting CH4 and H2_grid buses only.
-
-    The capacity of the H2_feedin links is considerated as constant and
-    calculated as the sum of the capacities of the CH4 links connected
-    to the CH4 bus multiplied by the H2 energy share allowed to be fed in.
-    This share is calculated in the function :py:func:`H2_CH4_mix_energy_fractions`.
+    (SMR) modelled as extendable links
 
     Returns
     -------
     None
 
     """
-    # Connect to local database
-    engine = db.engine()
 
-    scn_name = "eGon2035"
-    # Select CH4 and corresponding H2 buses
-    # No geometry required in this case!
-    buses = db.select_dataframe(
-        f"""
-        SELECT * FROM grid.egon_etrago_ch4_h2 WHERE scn_name = '{scn_name}'
-        """
-    )
+    scenarios = config.settings()["egon-data"]["--scenarios"]
+    con = db.engine()
+    target_links = config.datasets()["etrago_hydrogen"]["targets"][
+        "hydrogen_links"
+    ]
+    target_buses = config.datasets()["etrago_hydrogen"]["targets"][
+        "hydrogen_buses"
+    ]
 
-    methanation = buses.copy().rename(
-        columns={"bus_H2": "bus0", "bus_CH4": "bus1"}
-    )
-    SMR = buses.copy().rename(columns={"bus_H2": "bus1", "bus_CH4": "bus0"})
-    feed_in = methanation.copy()
+    if "status2019" in scenarios:
+        scenarios.remove("status2019")
 
-    # Delete old entries
-    db.execute_sql(
-        f"""
-            DELETE FROM grid.egon_etrago_link WHERE "carrier" IN
-            ('H2_to_CH4', 'H2_feedin', 'CH4_to_H2') AND scn_name = '{scn_name}'
-            AND bus0 NOT IN (
-               SELECT bus_id FROM grid.egon_etrago_bus
-               WHERE scn_name = '{scn_name}' AND country != 'DE'
-            ) AND bus1 NOT IN (
-               SELECT bus_id FROM grid.egon_etrago_bus
-               WHERE scn_name = '{scn_name}' AND country != 'DE'
-            );
-        """
-    )
+    for scn_name in scenarios:
 
-    scn_params = get_sector_parameters("gas", scn_name)
-
-    pipeline_capacities = db.select_dataframe(
-        f"""
-        SELECT bus0, bus1, p_nom FROM grid.egon_etrago_link
-        WHERE scn_name = '{scn_name}' AND carrier = 'CH4'
-        AND (
-            bus0 IN (
-                SELECT bus_id FROM grid.egon_etrago_bus
-                WHERE scn_name = '{scn_name}' AND country = 'DE'
-            ) OR bus1 IN (
-                SELECT bus_id FROM grid.egon_etrago_bus
-                WHERE scn_name = '{scn_name}' AND country = 'DE'
-            )
-        );
-        """
-    )
-
-    feed_in["p_nom"] = 0
-    feed_in["p_nom_extendable"] = False
-    # calculation of H2 energy share via volumetric share outsourced
-    # in a mixture of H2 and CH4 with 15 %vol share
-    H2_share = scn_params["H2_feedin_volumetric_fraction"]
-    H2_energy_share = H2_CH4_mix_energy_fractions(H2_share)
-
-    for bus in feed_in["bus1"].values:
-        # calculate the total pipeline capacity connected to a specific bus
-        nodal_capacity = pipeline_capacities.loc[
-            (pipeline_capacities["bus0"] == bus)
-            | (pipeline_capacities["bus1"] == bus),
-            "p_nom",
-        ].sum()
-        # multiply total pipeline capacity with H2 energy share corresponding
-        # to volumetric share
-        feed_in.loc[feed_in["bus1"] == bus, "p_nom"] = (
-            nodal_capacity * H2_energy_share
+        db.execute_sql(
+            f"""
+           DELETE FROM {target_links["schema"]}.{target_links["table"]} WHERE "carrier" in ('H2_to_CH4', 'CH4_to_H2')
+           AND scn_name = '{scn_name}' AND bus0 IN (
+             SELECT bus_id
+             FROM {target_buses["schema"]}.{target_buses["table"]}
+             WHERE country = 'DE'
+             )
+           """
         )
 
-    # Write new entries
-    for table, carrier in zip(
-        [methanation, SMR, feed_in], ["H2_to_CH4", "CH4_to_H2", "H2_feedin"]
-    ):
+        sql_CH4_buses = f"""
+                SELECT bus_id, x, y, ST_Transform(geom, 32632) as geom
+                FROM {target_buses["schema"]}.{target_buses["table"]} 
+                WHERE carrier = 'CH4'
+                AND scn_name = '{scn_name}' AND country = 'DE'
+                """
+        sql_H2_buses = f"""
+                SELECT bus_id, x, y, ST_Transform(geom, 32632) as geom
+                FROM {target_buses["schema"]}.{target_buses["table"]} 
+                WHERE carrier in ('H2')
+                AND scn_name = '{scn_name}' AND country = 'DE'
+                """
+        CH4_buses = gpd.read_postgis(sql_CH4_buses, con)
+        H2_buses = gpd.read_postgis(sql_H2_buses, con)
 
-        # set parameters according to carrier name
-        table["carrier"] = carrier
-        table["efficiency"] = scn_params["efficiency"][carrier]
-        if carrier != "H2_feedin":
+        CH4_to_H2_links = []
+        H2_to_CH4_links = []
+
+        CH4_coords = np.array(
+            [(point.x, point.y) for point in CH4_buses.geometry]
+        )
+        CH4_tree = cKDTree(CH4_coords)
+
+        for idx, h2_bus in H2_buses.iterrows():
+            h2_coords = [h2_bus["geom"].x, h2_bus["geom"].y]
+
+            # Filter nearest CH4_bus
+            dist, nearest_idx = CH4_tree.query(h2_coords, k=1)
+            nearest_ch4_bus = CH4_buses.iloc[nearest_idx]
+
+            if dist < 10000:
+                CH4_to_H2_links.append(
+                    {
+                        "scn_name": scn_name,
+                        "link_id": None,
+                        "bus0": nearest_ch4_bus["bus_id"],
+                        "bus1": h2_bus["bus_id"],
+                        "geom": MultiLineString(
+                            [
+                                LineString(
+                                    [
+                                        (h2_bus["x"], h2_bus["y"]),
+                                        (
+                                            nearest_ch4_bus["x"],
+                                            nearest_ch4_bus["y"],
+                                        ),
+                                    ]
+                                )
+                            ]
+                        ),
+                    }
+                )
+
+        H2_to_CH4_links = [
+            {
+                "scn_name": link["scn_name"],
+                "link_id": link["link_id"],
+                "bus0": link["bus1"],  # Swap bus0 and bus1
+                "bus1": link["bus0"],
+                "geom": link["geom"],
+            }
+            for link in CH4_to_H2_links
+        ]
+
+        # set crs for geoDataFrame
+        CH4_to_H2_links = gpd.GeoDataFrame(
+            CH4_to_H2_links, geometry="geom", crs=4326
+        )
+        H2_to_CH4_links = gpd.GeoDataFrame(
+            H2_to_CH4_links, geometry="geom", crs=4326
+        )
+
+        scn_params = get_sector_parameters("gas", scn_name)
+        technology = [CH4_to_H2_links, H2_to_CH4_links]
+        links_carriers = ["CH4_to_H2", "H2_to_CH4"]
+
+        # Write new entries
+        for table, carrier in zip(technology, links_carriers):
+            # set parameters according to carrier name
+            table["carrier"] = carrier
+            table["efficiency"] = scn_params["efficiency"][carrier]
             table["p_nom_extendable"] = True
             table["capital_cost"] = scn_params["capital_cost"][carrier]
             table["lifetime"] = scn_params["lifetime"][carrier]
-        new_id = db.next_etrago_id("link")
-        table["link_id"] = range(new_id, new_id + len(table))
+            new_id = db.next_etrago_id("link")
+            table["link_id"] = range(new_id, new_id + len(table))
 
-        table = link_geom_from_buses(table, scn_name)
-
-        table.to_postgis(
-            "egon_etrago_link",
-            engine,
-            schema="grid",
-            index=False,
-            if_exists="append",
-            dtype={"topo": Geometry()},
-        )
-
-
-def insert_h2_to_ch4_eGon100RE():
-    """Copy H2/CH4 links from the eGon2035 to the eGon100RE scenario."""
-    copy_and_modify_links(
-        "eGon2035", "eGon100RE", ["H2_to_CH4", "CH4_to_H2"], "gas"
-    )
+            table.to_postgis(
+                target_links["table"],
+                con,
+                schema=target_links["schema"],
+                index=False,
+                if_exists="append",
+                dtype={"geom": Geometry()},
+            )
 
 
 def H2_CH4_mix_energy_fractions(x, T=25, p=50):

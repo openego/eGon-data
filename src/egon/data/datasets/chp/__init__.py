@@ -2,6 +2,7 @@
 The central module containing all code dealing with combined heat and power
 (CHP) plants.
 """
+
 from pathlib import Path
 import datetime
 import json
@@ -18,8 +19,8 @@ import pandas as pd
 import pypsa
 
 from egon.data import config, db
-from egon.data.datasets import Dataset
-from egon.data.datasets.chp.match_nep import insert_large_chp
+from egon.data.datasets import Dataset, wrapped_partial
+from egon.data.datasets.chp.match_nep import insert_large_chp, map_carrier
 from egon.data.datasets.chp.small_chp import (
     assign_use_case,
     existing_chp_smaller_10mw,
@@ -27,13 +28,17 @@ from egon.data.datasets.chp.small_chp import (
     extension_to_areas,
     select_target,
 )
-from egon.data.datasets.mastr import WORKING_DIR_MASTR_OLD
+from egon.data.datasets.mastr import (
+    WORKING_DIR_MASTR_NEW,
+    WORKING_DIR_MASTR_OLD,
+)
 from egon.data.datasets.power_plants import (
     assign_bus_id,
     assign_voltage_level,
     filter_mastr_geometry,
     scale_prox2now,
 )
+from egon.data.datasets.pypsaeur import read_network
 from egon.data.metadata import (
     context,
     generate_resource_fields_from_sqla_model,
@@ -90,26 +95,26 @@ def metadata():
     fields_df = pd.DataFrame(data=fields).set_index("name")
     fields_df.loc["id", "description"] = "Unique identifyer"
     fields_df.loc["sources", "description"] = "List of sources"
-    fields_df.loc[
-        "source_id", "description"
-    ] = "Names of sources, e.g. MaStr_id"
+    fields_df.loc["source_id", "description"] = (
+        "Names of sources, e.g. MaStr_id"
+    )
     fields_df.loc["carrier", "description"] = "Energy carrier"
-    fields_df.loc[
-        "district_heating", "description"
-    ] = "Used in district heating or not"
-    fields_df.loc[
-        "el_capacity", "description"
-    ] = "Installed electrical capacity"
+    fields_df.loc["district_heating", "description"] = (
+        "Used in district heating or not"
+    )
+    fields_df.loc["el_capacity", "description"] = (
+        "Installed electrical capacity"
+    )
     fields_df.loc["th_capacity", "description"] = "Installed thermal capacity"
-    fields_df.loc[
-        "electrical_bus_id", "description"
-    ] = "Index of corresponding electricity bus"
-    fields_df.loc[
-        "district_heating_area_id", "description"
-    ] = "Index of corresponding district heating bus"
-    fields_df.loc[
-        "ch4_bus_id", "description"
-    ] = "Index of corresponding methane bus"
+    fields_df.loc["electrical_bus_id", "description"] = (
+        "Index of corresponding electricity bus"
+    )
+    fields_df.loc["district_heating_area_id", "description"] = (
+        "Index of corresponding district heating bus"
+    )
+    fields_df.loc["ch4_bus_id", "description"] = (
+        "Index of corresponding methane bus"
+    )
     fields_df.loc["voltage_level", "description"] = "Voltage level"
     fields_df.loc["scenario", "description"] = "Name of scenario"
     fields_df.loc["geom", "description"] = "Location of CHP plant"
@@ -241,7 +246,7 @@ def nearest(
     return value
 
 
-def assign_heat_bus(scenario="eGon2035"):
+def assign_heat_bus():
     """Selects heat_bus for chps used in district heating.
 
     Parameters
@@ -257,87 +262,92 @@ def assign_heat_bus(scenario="eGon2035"):
     sources = config.datasets()["chp_location"]["sources"]
     target = config.datasets()["chp_location"]["targets"]["chp_table"]
 
-    # Select CHP with use_case = 'district_heating'
-    chp = db.select_geodataframe(
-        f"""
-        SELECT * FROM
-        {target['schema']}.{target['table']}
-        WHERE scenario = '{scenario}'
-        AND district_heating = True
-        """,
-        index_col="id",
-        epsg=4326,
-    )
+    for scenario in config.settings()["egon-data"]["--scenarios"]:
+        # Select CHP with use_case = 'district_heating'
+        chp = db.select_geodataframe(
+            f"""
+            SELECT * FROM
+            {target['schema']}.{target['table']}
+            WHERE scenario = '{scenario}'
+            AND district_heating = True
+            """,
+            index_col="id",
+            epsg=4326,
+        )
 
-    # Select district heating areas and their centroid
-    district_heating = db.select_geodataframe(
-        f"""
-        SELECT area_id, ST_Centroid(geom_polygon) as geom
-        FROM
-        {sources['district_heating_areas']['schema']}.
-        {sources['district_heating_areas']['table']}
-        WHERE scenario = '{scenario}'
-        """,
-        epsg=4326,
-    )
+        if chp.empty:
+            print(f"No CHP for district heating in scenario {scenario}")
+            continue
 
-    # Assign district heating area_id to district_heating_chp
-    # According to nearest centroid of district heating area
-    chp["district_heating_area_id"] = chp.apply(
-        nearest,
-        df=district_heating,
-        row_geom_col="geom",
-        df_geom_col="geom",
-        centroid=True,
-        src_column="area_id",
-        axis=1,
-    )
+        # Select district heating areas and their centroid
+        district_heating = db.select_geodataframe(
+            f"""
+            SELECT area_id, ST_Centroid(geom_polygon) as geom
+            FROM
+            {sources['district_heating_areas']['schema']}.
+            {sources['district_heating_areas']['table']}
+            WHERE scenario = '{scenario}'
+            """,
+            epsg=4326,
+        )
 
-    # Drop district heating CHP without heat_bus_id
-    db.execute_sql(
-        f"""
-        DELETE FROM {target['schema']}.{target['table']}
-        WHERE scenario = '{scenario}'
-        AND district_heating = True
-        """
-    )
+        # Assign district heating area_id to district_heating_chp
+        # According to nearest centroid of district heating area
+        chp["district_heating_area_id"] = chp.apply(
+            nearest,
+            df=district_heating,
+            row_geom_col="geom",
+            df_geom_col="geom",
+            centroid=True,
+            src_column="area_id",
+            axis=1,
+        )
 
-    # Insert district heating CHP with heat_bus_id
-    session = sessionmaker(bind=db.engine())()
-    for i, row in chp.iterrows():
-        if row.carrier != "biomass":
-            entry = EgonChp(
-                id=i,
-                sources=row.sources,
-                source_id=row.source_id,
-                carrier=row.carrier,
-                el_capacity=row.el_capacity,
-                th_capacity=row.th_capacity,
-                electrical_bus_id=row.electrical_bus_id,
-                ch4_bus_id=row.ch4_bus_id,
-                district_heating_area_id=row.district_heating_area_id,
-                district_heating=row.district_heating,
-                voltage_level=row.voltage_level,
-                scenario=scenario,
-                geom=f"SRID=4326;POINT({row.geom.x} {row.geom.y})",
-            )
-        else:
-            entry = EgonChp(
-                id=i,
-                sources=row.sources,
-                source_id=row.source_id,
-                carrier=row.carrier,
-                el_capacity=row.el_capacity,
-                th_capacity=row.th_capacity,
-                electrical_bus_id=row.electrical_bus_id,
-                district_heating_area_id=row.district_heating_area_id,
-                district_heating=row.district_heating,
-                voltage_level=row.voltage_level,
-                scenario=scenario,
-                geom=f"SRID=4326;POINT({row.geom.x} {row.geom.y})",
-            )
-        session.add(entry)
-    session.commit()
+        # Drop district heating CHP without heat_bus_id
+        db.execute_sql(
+            f"""
+            DELETE FROM {target['schema']}.{target['table']}
+            WHERE scenario = '{scenario}'
+            AND district_heating = True
+            """
+        )
+
+        # Insert district heating CHP with heat_bus_id
+        session = sessionmaker(bind=db.engine())()
+        for i, row in chp.iterrows():
+            if row.carrier != "biomass":
+                entry = EgonChp(
+                    id=i,
+                    sources=row.sources,
+                    source_id=row.source_id,
+                    carrier=row.carrier,
+                    el_capacity=row.el_capacity,
+                    th_capacity=row.th_capacity,
+                    electrical_bus_id=row.electrical_bus_id,
+                    ch4_bus_id=row.ch4_bus_id,
+                    district_heating_area_id=row.district_heating_area_id,
+                    district_heating=row.district_heating,
+                    voltage_level=row.voltage_level,
+                    scenario=scenario,
+                    geom=f"SRID=4326;POINT({row.geom.x} {row.geom.y})",
+                )
+            else:
+                entry = EgonChp(
+                    id=i,
+                    sources=row.sources,
+                    source_id=row.source_id,
+                    carrier=row.carrier,
+                    el_capacity=row.el_capacity,
+                    th_capacity=row.th_capacity,
+                    electrical_bus_id=row.electrical_bus_id,
+                    district_heating_area_id=row.district_heating_area_id,
+                    district_heating=row.district_heating,
+                    voltage_level=row.voltage_level,
+                    scenario=scenario,
+                    geom=f"SRID=4326;POINT({row.geom.x} {row.geom.y})",
+                )
+            session.add(entry)
+        session.commit()
 
 
 def insert_biomass_chp(scenario):
@@ -393,7 +403,7 @@ def insert_biomass_chp(scenario):
             mastr_loc, cfg, WORKING_DIR_MASTR_OLD
         )
         mastr_loc = assign_bus_id(mastr_loc, cfg)
-    mastr_loc = assign_use_case(mastr_loc, cfg["sources"])
+    mastr_loc = assign_use_case(mastr_loc, cfg["sources"], scenario)
 
     # Insert entries with location
     session = sessionmaker(bind=db.engine())()
@@ -412,6 +422,145 @@ def insert_biomass_chp(scenario):
                 scenario=scenario,
                 district_heating=row.district_heating,
                 electrical_bus_id=row.bus_id,
+                voltage_level=row.voltage_level,
+                geom=f"SRID=4326;POINT({row.Laengengrad} {row.Breitengrad})",
+            )
+            session.add(entry)
+    session.commit()
+
+
+def insert_chp_statusquo(scn="status2019"):
+    cfg = config.datasets()["chp_location"]
+
+    # import data for MaStR
+    mastr = pd.read_csv(
+        WORKING_DIR_MASTR_NEW / "bnetza_mastr_combustion_cleaned.csv"
+    )
+
+    mastr_biomass = pd.read_csv(
+        WORKING_DIR_MASTR_NEW / "bnetza_mastr_biomass_cleaned.csv"
+    )
+
+    mastr = pd.concat([mastr, mastr_biomass]).reset_index(drop=True)
+
+    mastr = mastr.loc[mastr.ThermischeNutzleistung > 0]
+
+    mastr = mastr.loc[
+        mastr.Energietraeger.isin(
+            [
+                "Erdgas",
+                "Mineralölprodukte",
+                "andere Gase",
+                "nicht biogener Abfall",
+                "Braunkohle",
+                "Steinkohle",
+                "Biomasse",
+            ]
+        )
+    ]
+
+    mastr.Inbetriebnahmedatum = pd.to_datetime(mastr.Inbetriebnahmedatum)
+    mastr.DatumEndgueltigeStilllegung = pd.to_datetime(
+        mastr.DatumEndgueltigeStilllegung
+    )
+    mastr = mastr.loc[
+        mastr.Inbetriebnahmedatum
+        <= config.datasets()["mastr_new"][f"{scn}_date_max"]
+    ]
+
+    mastr = mastr.loc[
+        (
+            mastr.DatumEndgueltigeStilllegung
+            >= config.datasets()["mastr_new"][f"{scn}_date_max"]
+        )
+        | (mastr.DatumEndgueltigeStilllegung.isnull())
+    ]
+
+    mastr.groupby("Energietraeger").Nettonennleistung.sum().mul(1e-6)
+
+    geom_municipalities = db.select_geodataframe(
+        """
+        SELECT gen, ST_UNION(geometry) as geom
+        FROM boundaries.vg250_gem
+        GROUP BY gen
+        """
+    ).set_index("gen")
+
+    # Assing Laengengrad and Breitengrad to chps without location data
+    # based on the centroid of the municipaltiy
+    idx_no_location = mastr[
+        (mastr.Laengengrad.isnull())
+        & (mastr.Gemeinde.isin(geom_municipalities.index))
+    ].index
+
+    mastr.loc[idx_no_location, "Laengengrad"] = (
+        geom_municipalities.to_crs(epsg="4326").centroid.x.loc[
+            mastr.Gemeinde[idx_no_location]
+        ]
+    ).values
+
+    mastr.loc[idx_no_location, "Breitengrad"] = (
+        geom_municipalities.to_crs(epsg="4326").centroid.y.loc[
+            mastr.Gemeinde[idx_no_location]
+        ]
+    ).values
+
+    if (
+        config.settings()["egon-data"]["--dataset-boundary"]
+        == "Schleswig-Holstein"
+    ):
+        dropped_capacity = mastr[
+            (mastr.Laengengrad.isnull())
+            & (mastr.Bundesland == "SchleswigHolstein")
+        ].Nettonennleistung.sum()
+
+    else:
+        dropped_capacity = mastr[
+            (mastr.Laengengrad.isnull())
+        ].Nettonennleistung.sum()
+
+    print(
+        f"""
+          CHPs with a total installed electrical capacity of {dropped_capacity} kW are dropped
+          because of missing or wrong location data
+          """
+    )
+
+    mastr = mastr[~mastr.Laengengrad.isnull()]
+    mastr = filter_mastr_geometry(mastr).set_geometry("geometry")
+
+    # Assign bus_id
+    if len(mastr) > 0:
+        mastr["voltage_level"] = assign_voltage_level(
+            mastr, cfg, WORKING_DIR_MASTR_NEW
+        )
+
+        gas_bus_id = db.assign_gas_bus_id(mastr, scn, "CH4").bus
+
+        mastr = assign_bus_id(mastr, cfg, drop_missing=True)
+
+        mastr["gas_bus_id"] = gas_bus_id
+
+    mastr = assign_use_case(mastr, cfg["sources"], scn)
+
+    # Insert entries with location
+    session = sessionmaker(bind=db.engine())()
+    for i, row in mastr.iterrows():
+        if row.ThermischeNutzleistung > 0:
+            entry = EgonChp(
+                sources={
+                    "chp": "MaStR",
+                    "el_capacity": "MaStR",
+                    "th_capacity": "MaStR",
+                },
+                source_id={"MastrNummer": row.EinheitMastrNummer},
+                carrier=map_carrier().loc[row.Energietraeger],
+                el_capacity=row.Nettonennleistung / 1000,
+                th_capacity=row.ThermischeNutzleistung / 1000,
+                scenario=scn,
+                district_heating=row.district_heating,
+                electrical_bus_id=row.bus_id,
+                ch4_bus_id=row.gas_bus_id,
                 voltage_level=row.voltage_level,
                 geom=f"SRID=4326;POINT({row.Laengengrad} {row.Breitengrad})",
             )
@@ -554,17 +703,10 @@ def insert_chp_egon100re():
 
     if config.settings()["egon-data"]["--dataset-boundary"] != "Everything":
         additional_capacity /= 16
-    target_file = (
-        Path(".")
-        / "data_bundle_egon_data"
-        / "pypsa_eur_sec"
-        / "2022-07-26-egondata-integration"
-        / "postnetworks"
-        / "elec_s_37_lv2.0__Co2L0-1H-T-H-B-I-dist1_2050.nc"
-    )
 
-    network = pypsa.Network(str(target_file))
-    chp_index = "DE0 0 urban central gas CHP"
+    network = read_network()
+
+    chp_index = "DE0 0 urban central gas CHP-2045"
 
     standard_chp_th = 10
     standard_chp_el = (
@@ -610,31 +752,65 @@ def insert_chp_egon100re():
     )
 
 
-# Add one task per federal state for small CHP extension
-if (
-    config.settings()["egon-data"]["--dataset-boundary"]
-    == "Schleswig-Holstein"
-):
-    extension = extension_SH
-else:
-    extension = {
-        extension_BW,
-        extension_BY,
-        extension_HB,
-        extension_BB,
-        extension_HE,
-        extension_MV,
-        extension_NS,
-        extension_NW,
-        extension_SH,
-        extension_HH,
-        extension_RP,
-        extension_SL,
-        extension_SN,
-        extension_ST,
-        extension_TH,
-        extension_BE,
-    }
+tasks = (create_tables,)
+
+insert_per_scenario = set()
+
+if "status2019" in config.settings()["egon-data"]["--scenarios"]:
+    insert_per_scenario.add(
+        wrapped_partial(
+            insert_chp_statusquo, scn="status2019", postfix="_2019"
+        )
+    )
+
+if "status2023" in config.settings()["egon-data"]["--scenarios"]:
+    insert_per_scenario.add(
+        wrapped_partial(
+            insert_chp_statusquo, scn="status2023", postfix="_2023"
+        )
+    )
+
+if "eGon2035" in config.settings()["egon-data"]["--scenarios"]:
+    insert_per_scenario.add(insert_chp_egon2035)
+
+if "eGon100RE" in config.settings()["egon-data"]["--scenarios"]:
+    insert_per_scenario.add(insert_chp_egon100re)
+
+tasks = tasks + (insert_per_scenario, assign_heat_bus)
+
+extension = set()
+
+if "eGon2035" in config.settings()["egon-data"]["--scenarios"]:
+    # Add one task per federal state for small CHP extension
+    if (
+        config.settings()["egon-data"]["--dataset-boundary"]
+        == "Schleswig-Holstein"
+    ):
+        extension = extension_SH
+    else:
+        extension = {
+            extension_BW,
+            extension_BY,
+            extension_HB,
+            extension_BB,
+            extension_HE,
+            extension_MV,
+            extension_NS,
+            extension_NW,
+            extension_SH,
+            extension_HH,
+            extension_RP,
+            extension_SL,
+            extension_SN,
+            extension_ST,
+            extension_TH,
+            extension_BE,
+        }
+
+if extension != set():
+    tasks = tasks + (extension,)
+
+tasks += (metadata,)
 
 
 class Chp(Dataset):
@@ -669,18 +845,12 @@ class Chp(Dataset):
     #:
     name: str = "Chp"
     #:
-    version: str = "0.0.7"
+    version: str = "0.0.10"
 
     def __init__(self, dependencies):
         super().__init__(
             name=self.name,
             version=self.version,
             dependencies=dependencies,
-            tasks=(
-                create_tables,
-                {insert_chp_egon2035, insert_chp_egon100re},
-                assign_heat_bus,
-                extension,
-                metadata,
-            ),
+            tasks=tasks,
         )

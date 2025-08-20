@@ -144,11 +144,9 @@ def match_nep_no_chp(
     )
 
     for ET in nep["carrier"].unique():
-
         for index, row in nep[
             (nep["carrier"] == ET) & (nep["postcode"] != "None")
         ].iterrows():
-
             # Select plants from MaStR that match carrier, PLZ
             # and have a similar capacity
             # Create a copy of all power plants from MaStR
@@ -191,18 +189,25 @@ def match_nep_no_chp(
 
             # If a plant could be matched, add this to matched
             if len(selected) > 0:
-                matched = matched.append(
-                    gpd.GeoDataFrame(
-                        data={
-                            "source": "MaStR scaled with NEP 2021 list",
-                            "MaStRNummer": selected.EinheitMastrNummer.head(1),
-                            "carrier": ET,
-                            "el_capacity": row.c2035_capacity,
-                            "scenario": "eGon2035",
-                            "geometry": selected.geometry.head(1),
-                            "voltage_level": selected.voltage_level.head(1),
-                        }
-                    )
+                matched = pd.concat(
+                    [
+                        matched,
+                        gpd.GeoDataFrame(
+                            data={
+                                "source": "MaStR scaled with NEP 2021 list",
+                                "MaStRNummer": selected.EinheitMastrNummer.head(
+                                    1
+                                ),
+                                "carrier": ET,
+                                "el_capacity": row.c2035_capacity,
+                                "scenario": "eGon2035",
+                                "geometry": selected.geometry.head(1),
+                                "voltage_level": selected.voltage_level.head(
+                                    1
+                                ),
+                            }
+                        ),
+                    ]
                 )
 
                 # Drop matched power plant from nep

@@ -82,7 +82,7 @@ TRIP_COLUMN_MAPPING = {
     "drive_end_timesteps": "drive_end",
     "consumption_kWh": "consumption",
 }
-MVGD_MIN_COUNT = 3700 if TESTMODE_OFF else 150
+MVGD_MIN_COUNT = 3600 if TESTMODE_OFF else 150
 
 
 def read_kba_data():
@@ -153,7 +153,7 @@ def reduce_mem_usage(
     pd.DataFrame
         DataFrame with memory usage decreased
     """
-    start_mem = df.memory_usage().sum() / 1024 ** 2
+    start_mem = df.memory_usage().sum() / 1024**2
 
     for col in df.columns:
         col_type = df[col].dtype
@@ -187,7 +187,7 @@ def reduce_mem_usage(
         else:
             df[col] = df[col].astype("category")
 
-    end_mem = df.memory_usage().sum() / 1024 ** 2
+    end_mem = df.memory_usage().sum() / 1024**2
 
     if show_reduction is True:
         print(

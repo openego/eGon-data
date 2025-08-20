@@ -17,6 +17,101 @@ Bug Fixes
 ---------
 
 
+Version 2.0.0 (2025-08-20)
+==========================
+
+Added
+-----
+
+* Create new scenario status2019
+  `#2 <https://github.com/openego/powerd-data/issues/2>`_
+  `#3 <https://github.com/openego/powerd-data/issues/3>`_
+  `#4 <https://github.com/openego/powerd-data/issues/4>`_
+  `#5 <https://github.com/openego/powerd-data/issues/5>`_
+  `#6 <https://github.com/openego/powerd-data/issues/6>`_
+  `#7 <https://github.com/openego/powerd-data/issues/7>`_
+  `#8 <https://github.com/openego/powerd-data/issues/8>`_
+  `#9 <https://github.com/openego/powerd-data/issues/9>`_
+  `#11 <https://github.com/openego/powerd-data/issues/11>`_
+  `#19 <https://github.com/openego/powerd-data/issues/19>`_
+  `#23 <https://github.com/openego/powerd-data/issues/23>`_
+  `#25 <https://github.com/openego/powerd-data/issues/25>`_
+  `#26 <https://github.com/openego/powerd-data/issues/26>`_
+  `#30 <https://github.com/openego/powerd-data/issues/30>`_
+  `#31 <https://github.com/openego/powerd-data/issues/31>`_
+  `#32 <https://github.com/openego/powerd-data/issues/32>`_
+  `#34 <https://github.com/openego/powerd-data/issues/34>`_
+  `#38 <https://github.com/openego/powerd-data/issues/38>`_
+  `#39 <https://github.com/openego/powerd-data/issues/39>`_
+  `#41 <https://github.com/openego/powerd-data/issues/41>`_
+  `#46 <https://github.com/openego/powerd-data/issues/46>`_
+  `#56 <https://github.com/openego/powerd-data/issues/56>`_
+  `#60 <https://github.com/openego/powerd-data/issues/60>`_
+  `#99 <https://github.com/openego/powerd-data/issues/99>`_
+  `#114 <https://github.com/openego/powerd-data/issues/114>`_
+  `#213 <https://github.com/openego/powerd-data/issues/213>`_
+* Make it possible to execute selected scenarios
+  `#15 <https://github.com/openego/powerd-data/issues/15>`_
+* Include H2 grid
+  `#254 <https://github.com/openego/powerd-data/issues/254>`_
+  `#333 <https://github.com/openego/powerd-data/issues/333>`_
+  `#334 <https://github.com/openego/powerd-data/issues/334>`_
+  `#336 <https://github.com/openego/powerd-data/issues/336>`_
+  `#355 <https://github.com/openego/powerd-data/issues/355>`_
+  `#366 <https://github.com/openego/powerd-data/issues/366>`_
+* Finish scenario eGon100RE
+  `#983 <https://github.com/openego/egon-data/pull/983>`_
+  `#713 <https://github.com/openego/egon-data/pull/713>`_
+  `#580 <https://github.com/openego/egon-data/pull/580>`_
+  `#698 <https://github.com/openego/egon-data/pull/698>`_
+  `#274 <https://github.com/openego/powerd-data/pull/274>`_
+  `#273 <https://github.com/openego/powerd-data/pull/273>`_
+  `#271 <https://github.com/openego/powerd-data/pull/271>`_
+  `#268 <https://github.com/openego/powerd-data/pull/268>`_
+  `#267 <https://github.com/openego/powerd-data/pull/267>`_
+  `#265 <https://github.com/openego/powerd-data/pull/265>`_
+  `#264 <https://github.com/openego/powerd-data/pull/264>`_
+  `#256 <https://github.com/openego/powerd-data/pull/256>`_
+  `#255 <https://github.com/openego/powerd-data/pull/255>`_
+  `#254 <https://github.com/openego/powerd-data/pull/254>`_
+  `#252 <https://github.com/openego/powerd-data/pull/252>`_
+  `#274 <https://github.com/openego/powerd-data/pull/274>`_
+  `#245 <https://github.com/openego/powerd-data/pull/245>`_
+  `#244 <https://github.com/openego/powerd-data/pull/244>`_
+  `#243 <https://github.com/openego/powerd-data/pull/243>`_
+  `#241 <https://github.com/openego/powerd-data/pull/241>`_
+  `#237 <https://github.com/openego/powerd-data/pull/237>`_
+
+
+Changed
+-------
+
+* Update Apache Airflow version
+  `#36 <https://github.com/openego/powerd-data/issues/36>`_
+* Python 3.7 is not supported any more
+  `#118 <https://github.com/openego/powerd-data/issues/118>`_
+* update OSM version to 2023
+  `#167 <https://github.com/openego/powerd-data/issues/167>`_
+* update MaStR version to 2023
+  `#172 <https://github.com/openego/powerd-data/issues/172>`_
+* Update data-bundle
+  `#315 <https://github.com/openego/powerd-data/pull/315>`_
+
+
+Bug Fixes
+---------
+
+* Fix entsoe-py dependency problems
+  `#116 <https://github.com/openego/powerd-data/issues/116>`_
+* Fix lines with resistance = 0
+  `#120 <https://github.com/openego/powerd-data/issues/120>`_
+* Fix uncompatibilities with new Pandas versions >2.0.0
+  `#124 <https://github.com/openego/powerd-data/issues/124>`_
+  `#160 <https://github.com/openego/powerd-data/issues/160>`_
+* Fix unavailability of demand-regio with a provisional workaround
+  `#180 <https://github.com/openego/powerd-data/issues/180>`_
+
+
 Version 1.0.0 (2025-05-15)
 ==========================
 
@@ -268,8 +363,22 @@ Added
   `PR #903 <https://github.com/openego/eGon-data/pull/903>`_
 * Add low flex scenario 'eGon2035_lowflex'
   `#822 <https://github.com/openego/eGon-data/issues/822>`_
+* Add Status2023 update heat demand
+  `#199 <https://github.com/openego/powerd-data/pull/199>`_
+* Add status2023 electrical neighbours
+  `#182 <https://github.com/openego/powerd-data/pull/182>`_
+* Add Status2023 to gas nodes
+  `#205 <https://github.com/openego/powerd-data/pull/205>`_
+* Update osm for status2023
+  `#169 <https://github.com/openego/powerd-data/pull/169>`_
+* Add wrapped_partial to dynamise task generation
+  `#207 <https://github.com/openego/powerd-data/pull/207>`_
 * Add MaStR geocoding and handling of conventional generators
   `#1095 <https://github.com/openego/eGon-data/issues/1095>`_
+* Improve building household load assignment
+  `#350 <https://github.com/openego/powerd-data/issues/350>`_
+* Add CLI option to prefix DAG name in Airflow config
+  `#1252 <https://github.com/openego/eGon-data/pull/1252>`_
 
 .. _PR #159: https://github.com/openego/eGon-data/pull/159
 .. _PR #703: https://github.com/openego/eGon-data/pull/703
@@ -516,6 +625,8 @@ Changed
   `#1110 <https://github.com/openego/eGon-data/issues/1110>`_
 * Use MaStR geocoding results for pv rooftop to buildings mapping workflow
   `#1095 <https://github.com/openego/eGon-data/issues/1095>`_
+* Add eMob MIT for SQ2023 scenario
+  `#176 <https://github.com/openego/powerd-data/issues/176>`_
 
 .. _#799: https://github.com/openego/eGon-data/issues/799
 
@@ -769,6 +880,24 @@ Bug Fixes
 * Fix URLs of MaStR datasets
 * Fix CRS in ERA5 transformation
   `#1159 <https://github.com/openego/eGon-data/issues/1159>`_
+* Fix depricated python-operator import
+  `#183 <https://github.com/openego/powerd-data/issues/183>`_
+* Fix incorrect YAML serialization of the --scenarios CLI
+  parameter that caused broken DAGs in the pipeline.
+  `#343 <https://github.com/openego/powerd-data/issues/343>`_
+* Fix hard coded scenario name in CTS building generation
+  `#1180 <https://github.com/openego/eGon-data/issues/1180>`_
+* Update postgresql version but assure compatibility with osmosis
+  `#1185 <https://github.com/openego/eGon-data/issues/1185>`_
+* Fix Zensus population download
+  `#1187 <https://github.com/openego/eGon-data/issues/1187>`_
+* Fix DsmPotential dependency errors
+  `#1157 <https://github.com/openego/eGon-data/issues/1157>`_
+* Fix incorrect handling of `--scenarios` CLI option by converting tuple to list
+  `#1192 <https://github.com/openego/eGon-data/issues/1192>`_
+* Fix household profile allocation to buildings
+  `#1190 <https://github.com/openego/eGon-data/issues/1190>`_
+
 
 .. _PR #692: https://github.com/openego/eGon-data/pull/692
 .. _#343: https://github.com/openego/eGon-data/issues/343

@@ -5,7 +5,7 @@ from egon.data.datasets import Dataset
 
 
 def setup():
-    """ Initialize the local database used for data processing. """
+    """Initialize the local database used for data processing."""
     engine = db.engine()
     with engine.connect().execution_options(autocommit=True) as connection:
         for extension in ["hstore", "postgis", "postgis_raster", "pgrouting"]:

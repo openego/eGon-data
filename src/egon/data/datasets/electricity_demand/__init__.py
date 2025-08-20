@@ -2,6 +2,7 @@
  data from demandRegio
 
 """
+
 from sqlalchemy import Column, Float, ForeignKey, Integer, String
 from sqlalchemy.ext.declarative import declarative_base
 import pandas as pd
@@ -44,7 +45,7 @@ class HouseholdElectricityDemand(Dataset):
     #:
     name: str = "HouseholdElectricityDemand"
     #:
-    version: str = "0.0.3"
+    version: str = "0.0.5"
 
     def __init__(self, dependencies):
         super().__init__(
@@ -146,6 +147,8 @@ def get_annual_household_el_demand_cells():
             session.query(
                 HouseholdElectricityProfilesOfBuildings,
                 HouseholdElectricityProfilesInCensusCells.nuts3,
+                HouseholdElectricityProfilesInCensusCells.factor_2019,
+                HouseholdElectricityProfilesInCensusCells.factor_2023,
                 HouseholdElectricityProfilesInCensusCells.factor_2035,
                 HouseholdElectricityProfilesInCensusCells.factor_2050,
             )
@@ -167,32 +170,50 @@ def get_annual_household_el_demand_cells():
         raise (ValueError(s))
 
     dataset = egon.data.config.settings()["egon-data"]["--dataset-boundary"]
+    scenarios = egon.data.config.settings()["egon-data"]["--scenarios"]
+
     iterate_over = (
         "nuts3"
         if dataset == "Everything"
-        else "cell_id"
-        if dataset == "Schleswig-Holstein"
-        else ve(f"'{dataset}' is not a valid dataset boundary.")
+        else (
+            "cell_id"
+            if dataset == "Schleswig-Holstein"
+            else ve(f"'{dataset}' is not a valid dataset boundary.")
+        )
     )
 
     df_annual_demand = pd.DataFrame(
-        columns=["eGon2035", "eGon100RE", "zensus_population_id"]
+        columns=scenarios + ["zensus_population_id"]
     )
 
     for _, df in df_buildings_and_profiles.groupby(by=iterate_over):
         df_annual_demand_iter = pd.DataFrame(
-            columns=["eGon2035", "eGon100RE", "zensus_population_id"]
+            columns=scenarios + ["zensus_population_id"]
         )
-        df_annual_demand_iter["eGon2035"] = (
-            df_profiles.loc[:, df["profile_id"]].sum(axis=0)
-            * df["factor_2035"].values
-        )
-        df_annual_demand_iter["eGon100RE"] = (
-            df_profiles.loc[:, df["profile_id"]].sum(axis=0)
-            * df["factor_2050"].values
-        )
+
+        if "eGon2035" in scenarios:
+            df_annual_demand_iter["eGon2035"] = (
+                df_profiles.loc[:, df["profile_id"]].sum(axis=0)
+                * df["factor_2035"].values
+            )
+        if "eGon100RE" in scenarios:
+            df_annual_demand_iter["eGon100RE"] = (
+                df_profiles.loc[:, df["profile_id"]].sum(axis=0)
+                * df["factor_2050"].values
+            )
+        if "status2019" in scenarios:
+            df_annual_demand_iter["status2019"] = (
+                df_profiles.loc[:, df["profile_id"]].sum(axis=0)
+                * df["factor_2019"].values
+            )
+
+        if "status2023" in scenarios:
+            df_annual_demand_iter["status2023"] = (
+                df_profiles.loc[:, df["profile_id"]].sum(axis=0)
+                * df["factor_2023"].values
+            )
         df_annual_demand_iter["zensus_population_id"] = df["cell_id"].values
-        df_annual_demand = df_annual_demand.append(df_annual_demand_iter)
+        df_annual_demand = pd.concat([df_annual_demand, df_annual_demand_iter])
 
     df_annual_demand = (
         df_annual_demand.groupby("zensus_population_id").sum().reset_index()
@@ -254,8 +275,7 @@ def distribute_cts_demands():
     )
 
     # Insert data per scenario
-    for scn in sources["demandregio"]["scenarios"]:
-
+    for scn in egon.data.config.settings()["egon-data"]["--scenarios"]:
         # Select heat_demand per zensus cell
         peta = db.select_dataframe(
             f"""SELECT zensus_population_id, demand as heat_demand,
@@ -271,9 +291,10 @@ def distribute_cts_demands():
         peta["nuts3"] = map_nuts3.nuts3
 
         # Calculate share of nuts3 heat demand per zensus cell
-        peta["share"] = peta.heat_demand.groupby(peta.nuts3).apply(
-            lambda grp: grp / grp.sum()
-        )
+        for nuts3, df in peta.groupby("nuts3"):
+            peta.loc[df.index, "share"] = (
+                df["heat_demand"] / df["heat_demand"].sum()
+            )
 
         # Select forecasted electrical demands from demandregio table
         demand_nuts3 = db.select_dataframe(

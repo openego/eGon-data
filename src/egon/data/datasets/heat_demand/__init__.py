@@ -26,7 +26,7 @@ from jinja2 import Template
 from rasterio.mask import mask
 
 # packages for ORM class definition
-from sqlalchemy import Column, Float, ForeignKey, Integer, Sequence, String
+from sqlalchemy import Column, Float, Integer, Sequence, String
 from sqlalchemy.ext.declarative import declarative_base
 import geopandas as gpd
 
@@ -35,22 +35,12 @@ import rasterio
 
 from egon.data import db, subprocess
 from egon.data.datasets import Dataset
-from egon.data.datasets.scenario_parameters import (
-    EgonScenario,
-    get_sector_parameters,
-)
-from egon.data.metadata import (
-    context,
-    license_ccby,
-    meta_metadata,
-    sources,
-)
+from egon.data.datasets.scenario_parameters import get_sector_parameters
+from egon.data.metadata import context, license_ccby, meta_metadata, sources
 import egon.data.config
 
 
-
 class HeatDemandImport(Dataset):
-
     """
     Insert the annual heat demand per census cell for each scenario
 
@@ -72,11 +62,10 @@ class HeatDemandImport(Dataset):
 
     """
 
-
     #:
     name: str = "heat-demands"
     #:
-    version: str = "0.0.1"
+    version: str = "0.0.4"
 
     def __init__(self, dependencies):
         super().__init__(
@@ -105,7 +94,7 @@ class EgonPetaHeat(Base):
     )
     demand = Column(Float)
     sector = Column(String)
-    scenario = Column(String, ForeignKey(EgonScenario.name))
+    scenario = Column(String)
     zensus_population_id = Column(Integer)
 
 
@@ -381,6 +370,44 @@ def future_heat_demand_germany(scenario_name):
     if scenario_name == "eGon2015":
         res_hd_reduction = 1
         ser_hd_reduction = 1
+
+    elif scenario_name == "status2019":
+        heat_parameters = get_sector_parameters("heat", scenario=scenario_name)
+
+        # Calculate reduction share based on final energy demand and overall demand from Peta for 2015
+        res_hd_reduction = (
+            heat_parameters["DE_demand_residential_TJ"] / 3600 / 443.788483
+        )
+        ser_hd_reduction = (
+            heat_parameters["DE_demand_service_TJ"] / 3600 / 226.588158
+        )
+    elif scenario_name == "status2023":
+        heat_parameters = get_sector_parameters(
+            "heat", scenario=scenario_name
+        )  # currently data for 2019 is used
+        # see scenario_paramters/__init__ for this.
+
+        # Calculate reduction share based on final energy demand and overall demand from Peta for 2015
+        res_hd_reduction = (
+            heat_parameters["DE_demand_residential_TJ"]
+            / 3600
+            / 443.788483  # TODO status2023 can values stay same?
+        )
+        ser_hd_reduction = (
+            heat_parameters["DE_demand_service_TJ"]
+            / 3600
+            / 226.588158  # TODO status2023 can values stay same?
+        )
+    elif scenario_name == "eGon100RE":
+        heat_parameters = get_sector_parameters("heat", scenario=scenario_name)
+
+        # Calculate reduction share based on final energy demand and overall demand from Peta for 2015
+        res_hd_reduction = heat_parameters["DE_demand_residential_MWh"] / (
+            443.788483 * 1e6
+        )
+        ser_hd_reduction = heat_parameters["DE_demand_service_MWh"] / (
+            226.588158 * 1e6
+        )
     else:
         heat_parameters = get_sector_parameters("heat", scenario=scenario_name)
 
@@ -730,12 +757,14 @@ def scenario_data_import():
     unzip_peta5_0_1_heat_demands()
     cutout_heat_demand_germany()
     # Specifiy the scenario names for loading factors from csv file
-    future_heat_demand_germany("eGon2035")
-    future_heat_demand_germany("eGon100RE")
+    for scenario in egon.data.config.settings()["egon-data"]["--scenarios"]:
+        future_heat_demand_germany(scenario)
+
     # future_heat_demand_germany("eGon2015")
     heat_demand_to_db_table()
-    adjust_residential_heat_to_zensus("eGon2035")
-    adjust_residential_heat_to_zensus("eGon100RE")
+    for scenario in egon.data.config.settings()["egon-data"]["--scenarios"]:
+        adjust_residential_heat_to_zensus(scenario)
+
     # future_heat_demand_germany("eGon2015")
     add_metadata()
 

@@ -8,9 +8,11 @@
 Module containing all code creating with plots of district heating areas
 """
 import os
-from egon.data.datasets.scenario_parameters import get_sector_parameters
-import pandas as pd
+
 from matplotlib import pyplot as plt
+import pandas as pd
+
+from egon.data.datasets.scenario_parameters import get_sector_parameters
 
 # heat_denisty_per_scenario = {}
 # heat_denisty_per_scenario['eGon2035'] = district_heating_areas(
@@ -19,6 +21,7 @@ from matplotlib import pyplot as plt
 #     'eGon100RE', plotting = True)
 
 # if plotting:
+
 
 #     from egon.data.processing.district_heating_areas.plot import (
 #         plot_heat_density_sorted)
@@ -53,13 +56,19 @@ def plot_heat_density_sorted(heat_denisty_per_scenario, scenario_name=None):
     fig, ax = plt.subplots(1, 1)
 
     colors = pd.DataFrame(
-        columns=["share", "curve"], index=["eGon2035", "eGon100RE"]
+        columns=["share", "curve"],
+        index=["status2019", "status2023", "eGon2035", "eGon100RE"],
     )
 
     colors["share"]["eGon2035"] = "darkblue"
     colors["curve"]["eGon2035"] = "blue"
     colors["share"]["eGon100RE"] = "red"
     colors["curve"]["eGon100RE"] = "orange"
+    colors["share"]["status2019"] = "darkgreen"
+    colors["curve"]["status2019"] = "green"
+    colors["share"]["status2023"] = "darkgrey"
+    colors["curve"]["status2023"] = "grey"
+    # TODO status2023 set plotting=False?
 
     for scenario in heat_denisty_per_scenario.keys():
 

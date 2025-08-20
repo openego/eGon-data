@@ -20,7 +20,7 @@ def read(*names, **kwargs):
 
 setup(
     name="egon.data",
-    version="1.0.0",
+    version="2.0.0",
     license="AGPL-3.0-or-later",
     description=(
         "The data used in the eGo^N project along with the code importing, "
@@ -35,10 +35,7 @@ setup(
     ),
     author=read("AUTHORS.rst"),
     author_email=(
-        "jonathan.amme@rl-institut.de, "
-        "clara.buettner@hs-flensburg.de, "
-        "carlos.epia@hs-flensburg.de, "
-        "kilian.helfenbein@rl-institut.de"
+        "regon-project@rl-institut.de"
     ),
     url="https://github.com/openego/eGon-data",
     packages=["egon"] + ["egon." + p for p in find_packages("src/egon")],
@@ -82,42 +79,55 @@ setup(
     python_requires=">=3.8",
     install_requires=[
         # eg: 'aspectlib==1.1.1', 'six>=1.7',
-        "apache-airflow>=1.10.14,<2.0",  # See accompanying commit message
-        "atlite==0.2.5",
+        "apache-airflow>2.0",
+        "apache-airflow[postgres]",
+        "apache-airflow-providers-sendgrid",
+        "atlite==0.2.11",
         "cdsapi",
-        "click",
-        "geopandas>=0.10.0,<0.11.0",
+        "click<8.1",
+        "disaggregator @ git+https://github.com/openego/disaggregator.git@features/update-cache-directory#egg=disaggregator",
+        "entsoe-py >=0.6.2",
+        "fiona==1.9.6",
+        "Flask-Session<0.6.0",
+        "GeoAlchemy2",
+        "geopandas>=0.10.0",
         "geopy",
-        "geovoronoi==0.3.0",
-        "importlib-resources",
+        "geovoronoi",
+        "google-re2!=1.1.20250722",
+        "importlib-resources<6.0",
         "loguru",
-        "markupsafe<2.1.0",  # MarkupSafe>=2.1.0 breaks WTForms<3
+        "markupsafe",
         "matplotlib",
         "netcdf4",
-        "numpy<1.23",  # incompatibilities with shapely 1.7.
-        # See: https://stackoverflow.com/a/73354885/12460232
+        "numpy",
         "oedialect==0.0.8",
         "oemetadata<=2.0.1", # incompatibilities with metadata 1.3
         "omi",
         "openpyxl",
-        "pandas>1.2.0,<1.4",  # pandas>=1.4 needs SQLAlchemy>=1.4
+        "pandas>2.0.0",
+        "pulp<2.8.0",
         "psycopg2",
         "pyaml",
-        "pypsa==0.17.1",
+        "pypsa==0.20.1",
+        "pydantic<2.0",
         "rasterio",
+        "requests",
         "rioxarray",
         "rtree",
         "saio",
         "seaborn",
+        "setuptools>60.0",
         "shapely",
         "snakemake<7",
-        "sqlalchemy<1.4",  # Airflow<2.0 is not compatible with SQLAlchemy>=1.4
-        "wtforms<3",  # WTForms>=3.0 breaks Airflow<2.0
+        "sqlalchemy",
+        "tabulate==0.8.0",
+        "wtforms",
         "xarray",
         "xlrd",
+        "fuzzywuzzy",
     ],
     extras_require={
-        "dev": ["black", "flake8", "isort>=5", "pre-commit", "pytest", "tox"]
+        "dev": ["black", "flake8", "isort>=5", "pre-commit", "pytest", "tox", "jupyterlab"]
         # eg:
         #   'rst': ['docutils>=0.11'],
         #   ':python_version=="2.6"': ['argparse'],

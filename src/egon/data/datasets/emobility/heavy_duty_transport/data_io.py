@@ -1,6 +1,7 @@
 """
 Read data from DB and download.
 """
+
 from pathlib import Path
 
 from loguru import logger

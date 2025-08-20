@@ -17,7 +17,20 @@ CREATE TABLE openstreetmap.osm_buildings_residential as
         or bld.building like 'farm'
         or bld.building like 'house'
         or bld.building like 'residential'
-        or bld.building like 'semidetached_house';
+        or bld.building like 'semidetached_house'
+        or bld.building like 'terrace'
+        or bld.building like 'dormitory'
+        or bld.building like 'terraced_house'
+
+        -- retirement and assisted homes
+        or bld.amenity like 'retirement_home'
+        or (
+            bld.amenity like 'social_facility'
+			and tags::hstore -> 'social_facility' in ('nursing_home', 'assisted_living', 'group_home')
+        )
+        or bld.amenity like 'nursing_home'
+        or bld.amenity like 'assisted_living'
+        or bld.amenity like 'group_home';
 
 ALTER TABLE openstreetmap.osm_buildings_residential
     ADD CONSTRAINT osm_buildings_residential_id_pkey PRIMARY KEY (id);

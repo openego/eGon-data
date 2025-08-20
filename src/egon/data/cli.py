@@ -15,6 +15,7 @@ Why does this file exist, and why not put this in __main__?
   Also see (1) from http://click.pocoo.org/5/setuptools/#setuptools-integration
 """
 import os
+import shutil
 import socket
 import subprocess
 import sys
@@ -99,6 +100,17 @@ from sqlalchemy.orm import Session
     show_default=True,
 )
 @click.option(
+    "--household-electrical-demand-source",
+    type=click.Choice(["bottom-up-profiles", "slp"]),
+    default="slp",
+    help=(
+        "Choose the source to calculate and allocate household electrical"
+        "demands. There are currently two options:"
+        "'bottom-up-profiles' and 'slp' (Standard Load Profiles)"
+    ),
+    show_default=True,
+)
+@click.option(
     "--jobs",
     default=1,
     metavar="N",
@@ -162,6 +174,38 @@ from sqlalchemy.orm import Session
     ),
     show_default=True,
 )
+@click.option(
+    "--scenarios",
+    default=["status2023", "eGon2035"],
+    metavar="SCENARIOS",
+    help=(
+        "Scenario name for which a data model shall be created."
+        " If you want to create multiple scenarios, set the parameter multiple"
+        " times, e.g. --scenarios eGon2035 --scenarios status2023"
+        ),
+    multiple=True,
+    show_default=True,
+)
+@click.option(
+    "--run-pypsa-eur",
+    default=False,
+    metavar="RUN_PYPSA_EUR",
+    help=(
+        "State if pypsa-eur should be executed and installed within egon-data."
+        " If set to false, a predefined network from the data bundle is used."
+    ),
+    show_default=True,
+)
+@click.option(
+    "--prefix",
+    default=None,
+    metavar="PREFIX",
+    help=(
+        "Add optional prefix to the DAG name in the Airflow config. "
+    ),
+    show_default=True,
+)
+
 @click.version_option(version=egon.data.__version__)
 @click.pass_context
 def egon_data(context, **kwargs):
@@ -236,6 +280,10 @@ def egon_data(context, **kwargs):
         "defaults": options(lambda o: o.default),
     }
 
+    # Fix: Convert 'scenarios' to list if it exists
+    if "scenarios" in options["cli"]:
+        options["cli"]["scenarios"] = list(options["cli"]["scenarios"])
+
     combined = merge(options["defaults"], options["cli"])
     if not config.paths()[0].exists():
         with open(config.paths()[0], "w") as f:
@@ -266,16 +314,19 @@ def egon_data(context, **kwargs):
         with open(config.paths(pid="*")[0]) as f:
             options = yaml.load(f, Loader=yaml.SafeLoader)
     else:  # len(config.paths(pid="*")) == 0, so need to create one.
+
         with open(config.paths()[0]) as f:
             options["file"] = yaml.load(f, Loader=yaml.SafeLoader)
+
         options = dict(
             options.get("file", {}),
             **{
-                flag: options["cli"][flag]
+                flag: options["file"][flag]
                 for flag in options["cli"]
                 if options["cli"][flag] != options["defaults"][flag]
             },
         )
+
         with open(config.paths(pid="current")[0], "w") as f:
             f.write(yaml.safe_dump(options))
 
@@ -313,6 +364,12 @@ def egon_data(context, **kwargs):
         uid=os.getuid(),
     )
     (Path(".") / "docker" / "database-data").mkdir(parents=True, exist_ok=True)
+
+    # Copy webserver_config.py to disable authentification on webinterface
+    shutil.copy2(
+        os.path.dirname(egon.data.airflow.__file__) + "/webserver_config.py",
+        Path(".") / "airflow/webserver_config.py",
+    )
 
     with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
         code = s.connect_ex(
@@ -387,6 +444,7 @@ def egon_data(context, **kwargs):
     connection.host = options["--database-host"]
     connection.port = options["--database-port"]
     connection.schema = options["--database-name"]
+    connection.conn_type = "postgres"
     airflow.add(connection)
     airflow.commit()
 

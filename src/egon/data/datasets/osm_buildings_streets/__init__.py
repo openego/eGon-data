@@ -40,6 +40,14 @@ def filter_buildings_residential():
     execute_sql_script("osm_buildings_filter_residential.sql")
 
 
+def extend_buildings_residential():
+    print(
+        "Extend residential buildings by commercial/retail/office/hotel "
+        "buildings in cells with census population but without buildings..."
+    )
+    execute_sql_script("osm_buildings_extend_residential.sql")
+
+
 def create_buildings_filtered_zensus_mapping():
     print(
         "Create census mapping table for filtered buildings in populated areas..."
@@ -134,6 +142,11 @@ class OsmBuildingsStreets(Dataset):
       * All buildings: `openstreetmap.osm_buildings`
       * Filtered buildings: `openstreetmap.osm_buildings_filtered`
       * Residential buildings: `openstreetmap.osm_buildings_residential`
+        * 1st step: Filter by tags (see `osm_buildings_filter_residential.sql`)
+        * 2nd step: Table is extended by finding census cells with population
+          but no residential buildings and extended by commercial/retail/office/
+          hotel buildings (see `osm_buildings_extend_residential.sql`) since they
+          often include apartments as well.
     * Extract amenities and filter using relevant tags, e.g. shops and restaurants,
       see script `osm_amenities_shops_preprocessing.sql` for the full list of tags.
       Resulting table: `openstreetmap.osm_amenities_shops_filtered`
@@ -171,7 +184,7 @@ class OsmBuildingsStreets(Dataset):
     #:
     name: str = "OsmBuildingsStreets"
     #:
-    version: str = "0.0.6"
+    version: str = "0.0.7"
 
     def __init__(self, dependencies):
         super().__init__(
@@ -181,6 +194,7 @@ class OsmBuildingsStreets(Dataset):
             tasks=(
                 preprocessing,
                 {filter_buildings, filter_buildings_residential},
+                extend_buildings_residential,
                 extract_buildings_filtered_amenities,
                 {
                     create_buildings_filtered_zensus_mapping,

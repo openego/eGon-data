@@ -17,7 +17,6 @@ from egon.data.metadata import (
     generate_resource_fields_from_db_table,
     license_odbl,
     meta_metadata,
-    meta_metadata,
 )
 
 Base = declarative_base()
@@ -152,7 +151,7 @@ def add_metadata():
         },
     }
 
-    dialect = get_dialect(meta_metadata()["metadataVersion"])()
+    dialect = get_dialect(f"oep-v{meta_metadata()['metadataVersion'][4:7]}")()
 
     meta = dialect.compile_and_render(dialect.parse(json.dumps(meta)))
 

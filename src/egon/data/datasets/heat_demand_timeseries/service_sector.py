@@ -1,12 +1,9 @@
 import os
 
 from sqlalchemy.ext.declarative import declarative_base
-
-
 import pandas as pd
 
-from egon.data import db
-
+from egon.data import config, db
 
 try:
     from disaggregator import temporal
@@ -55,10 +52,10 @@ def cts_demand_per_aggregation_level(aggregation_level, scenario):
     demand_nuts = db.select_dataframe(
         f"""
         SELECT demand, a.zensus_population_id, b.vg250_nuts3
-        FROM demand.egon_peta_heat a 
-        JOIN boundaries.egon_map_zensus_vg250 b 
+        FROM demand.egon_peta_heat a
+        JOIN boundaries.egon_map_zensus_vg250 b
         ON a.zensus_population_id = b.zensus_population_id
-        
+
         WHERE a.sector = 'service'
         AND a.scenario = '{scenario}'
         ORDER BY a.zensus_population_id
@@ -74,28 +71,11 @@ def cts_demand_per_aggregation_level(aggregation_level, scenario):
         df_CTS_gas_2011 = df_CTS_gas_2011.asfreq("H")
     else:
         df_CTS_gas_2011 = temporal.disagg_temporal_gas_CTS(
-            use_nuts3code=True, year=2011
+            use_nuts3code=True, year=2017
         )
         df_CTS_gas_2011.to_csv("CTS_heat_demand_profile_nuts3.csv")
 
-    ags_lk = pd.read_csv(
-        os.path.join(
-            os.getcwd(),
-            "demandregio-disaggregator/disaggregator/disaggregator/data_in/regional",
-            "t_nuts3_lk.csv",
-        ),
-        index_col=0,
-    )
-    ags_lk = ags_lk.drop(
-        ags_lk.columns.difference(["natcode_nuts3", "ags_lk"]), axis=1
-    )
-
     CTS_profile = df_CTS_gas_2011.transpose()
-    CTS_profile.reset_index(inplace=True)
-    CTS_profile.ags_lk = CTS_profile.ags_lk.astype(int)
-    CTS_profile = pd.merge(CTS_profile, ags_lk, on="ags_lk", how="inner")
-    CTS_profile.set_index("natcode_nuts3", inplace=True)
-    CTS_profile.drop("ags_lk", axis=1, inplace=True)
 
     CTS_per_zensus = pd.merge(
         demand_nuts[["zensus_population_id", "vg250_nuts3"]],
@@ -140,7 +120,7 @@ def cts_demand_per_aggregation_level(aggregation_level, scenario):
             FROM boundaries.egon_map_zensus_grid_districts a
 
 				JOIN demand.egon_peta_heat c
-				ON a.zensus_population_id = c.zensus_population_id 
+				ON a.zensus_population_id = c.zensus_population_id
 
 				WHERE c.scenario = '{scenario}'
 				AND c.sector = 'service'
@@ -215,7 +195,7 @@ def CTS_demand_scale(aggregation_level):
            Profiles scaled up to annual demand
 
     """
-    scenarios = ["eGon2035", "eGon100RE"]
+    scenarios = config.settings()["egon-data"]["--scenarios"]
 
     CTS_district = pd.DataFrame()
     CTS_grid = pd.DataFrame()
@@ -234,7 +214,7 @@ def CTS_demand_scale(aggregation_level):
         demand = db.select_dataframe(
             f"""
                 SELECT demand, zensus_population_id
-                FROM demand.egon_peta_heat                
+                FROM demand.egon_peta_heat
                 WHERE sector = 'service'
                 AND scenario = '{scenario}'
                 ORDER BY zensus_population_id
@@ -242,7 +222,6 @@ def CTS_demand_scale(aggregation_level):
         )
 
         if aggregation_level == "district":
-
             district_heating = db.select_dataframe(
                 f"""
                 SELECT area_id, zensus_population_id
@@ -283,7 +262,9 @@ def CTS_demand_scale(aggregation_level):
 
             CTS_per_district.insert(0, "scenario", scenario)
 
-            CTS_district = CTS_district.append(CTS_per_district)
+            CTS_district = pd.concat(
+                [CTS_district, CTS_per_district], ignore_index=True
+            )
             CTS_district = CTS_district.sort_index()
 
             mv_grid_ind = db.select_dataframe(
@@ -292,7 +273,7 @@ def CTS_demand_scale(aggregation_level):
                 FROM boundaries.egon_map_zensus_grid_districts a
 
 				JOIN demand.egon_peta_heat c
-				ON a.zensus_population_id = c.zensus_population_id 
+				ON a.zensus_population_id = c.zensus_population_id
 
 				WHERE c.scenario = '{scenario}'
 				AND c.sector = 'service'
@@ -332,7 +313,7 @@ def CTS_demand_scale(aggregation_level):
 
             CTS_per_grid.insert(0, "scenario", scenario)
 
-            CTS_grid = CTS_grid.append(CTS_per_grid)
+            CTS_grid = pd.concat([CTS_grid, CTS_per_grid])
             CTS_grid = CTS_grid.sort_index()
 
             CTS_per_zensus = 0
@@ -358,7 +339,7 @@ def CTS_demand_scale(aggregation_level):
 
             CTS_per_zensus.reset_index(inplace=True)
 
-            CTS_zensus = CTS_zensus.append(CTS_per_grid)
+            CTS_zensus = pd.concat([CTS_zensus, CTS_per_grid])
             CTS_zensus = CTS_zensus.set_index("bus_id")
             CTS_zensus = CTS_zensus.sort_index()
 

@@ -5,6 +5,7 @@ Central module containing all code dealing with processing era5 weather data.
 import datetime
 import json
 import time
+
 from sqlalchemy import Column, ForeignKey, Integer
 from sqlalchemy.ext.declarative import declarative_base
 import geopandas as gpd
@@ -13,15 +14,14 @@ import pandas as pd
 
 from egon.data import db
 from egon.data.datasets import Dataset
-from egon.data.datasets.era5 import EgonEra5Cells, EgonRenewableFeedIn, import_cutout
-from egon.data.datasets.scenario_parameters import get_sector_parameters
-from egon.data.metadata import (
-    context,
-    license_ccby,
-    meta_metadata,
-    sources,
+from egon.data.datasets.era5 import (
+    EgonEra5Cells,
+    EgonRenewableFeedIn,
+    import_cutout,
 )
+from egon.data.datasets.scenario_parameters import get_sector_parameters
 from egon.data.datasets.zensus_vg250 import DestatisZensusPopulationPerHa
+from egon.data.metadata import context, license_ccby, meta_metadata, sources
 import egon.data.config
 
 
@@ -244,7 +244,7 @@ def feedin_per_turbine():
     # Select weather data for Germany
     cutout = import_cutout(boundary="Germany")
 
-    gdf = gpd.GeoDataFrame(geometry=cutout.grid_cells(), crs=4326)
+    gdf = gpd.GeoDataFrame(geometry=cutout.grid.geometry, crs=4326)
 
     # Calculate feedin-timeseries for E-141
     # source:
@@ -285,7 +285,7 @@ def feedin_per_turbine():
         ),
     }
     ts_e141 = cutout.wind(
-        turbine_e141, per_unit=True, shapes=cutout.grid_cells()
+        turbine_e141, per_unit=True, shapes=cutout.grid.geometry
     )
 
     gdf["E-141"] = ts_e141.to_pandas().transpose().values.tolist()
@@ -329,7 +329,7 @@ def feedin_per_turbine():
         ),
     }
     ts_e126 = cutout.wind(
-        turbine_e126, per_unit=True, shapes=cutout.grid_cells()
+        turbine_e126, per_unit=True, shapes=cutout.grid.geometry
     )
 
     gdf["E-126"] = ts_e126.to_pandas().transpose().values.tolist()

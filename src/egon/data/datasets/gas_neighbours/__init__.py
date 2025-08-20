@@ -2,6 +2,7 @@
 The central module containing definition of the datasets dealing with gas neighbours
 """
 
+from egon.data import config
 from egon.data.datasets import Dataset
 from egon.data.datasets.gas_neighbours.eGon100RE import (
     insert_gas_neigbours_eGon100RE,
@@ -12,6 +13,33 @@ from egon.data.datasets.gas_neighbours.eGon2035 import (
     tyndp_gas_demand,
     tyndp_gas_generation,
 )
+
+
+def no_gas_neighbours_required():
+    print(
+        """
+          None of the required scenarios need the creation of
+          foreign gas buses
+          """
+    )
+    return None
+
+
+tasks = ()
+
+if "eGon2035" in config.settings()["egon-data"]["--scenarios"]:
+    tasks = tasks + (
+        tyndp_gas_generation,
+        tyndp_gas_demand,
+        grid,
+        insert_ocgt_abroad,
+    )
+
+if "eGon100RE" in config.settings()["egon-data"]["--scenarios"]:
+    tasks = tasks + (insert_gas_neigbours_eGon100RE,)
+
+if tasks == ():
+    tasks = tasks + (no_gas_neighbours_required,)
 
 
 class GasNeighbours(Dataset):
@@ -44,18 +72,12 @@ class GasNeighbours(Dataset):
     #:
     name: str = "GasNeighbours"
     #:
-    version: str = "0.0.4"
+    version: str = "0.0.5"
 
     def __init__(self, dependencies):
         super().__init__(
             name=self.name,
             version=self.version,
             dependencies=dependencies,
-            tasks=(
-                tyndp_gas_generation,
-                tyndp_gas_demand,
-                grid,
-                insert_ocgt_abroad,
-                insert_gas_neigbours_eGon100RE,
-            ),
+            tasks=tasks,
         )

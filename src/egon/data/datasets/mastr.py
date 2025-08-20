@@ -11,7 +11,7 @@ from egon.data.datasets import Dataset
 import egon.data.config
 
 WORKING_DIR_MASTR_OLD = Path(".", "bnetza_mastr", "dump_2021-05-03")
-WORKING_DIR_MASTR_NEW = Path(".", "bnetza_mastr", "dump_2022-11-17")
+WORKING_DIR_MASTR_NEW = Path(".", "bnetza_mastr", "dump_2024-01-08")
 
 
 def download_mastr_data():
@@ -22,8 +22,7 @@ def download_mastr_data():
         # Get parameters from config and set download URL
         data_config = egon.data.config.datasets()[dataset_name]
         zenodo_files_url = (
-            f"https://zenodo.org/record/"
-            f"{data_config['deposit_id']}/files/"
+            f"https://zenodo.org/record/" f"{data_config['deposit_id']}/files/"
         )
 
         files = []

@@ -1,14 +1,16 @@
 """The central module containing all code dealing with heat sector in etrago
 """
-import pandas as pd
+
 import geopandas as gpd
-from egon.data import db, config
+import pandas as pd
+
+from egon.data import config, db
+from egon.data.datasets import Dataset
+from egon.data.datasets.etrago_setup import link_geom_from_buses
 from egon.data.datasets.heat_etrago.power_to_heat import (
     insert_central_power_to_heat,
     insert_individual_power_to_heat,
 )
-from egon.data.datasets import Dataset
-from egon.data.datasets.etrago_setup import link_geom_from_buses
 from egon.data.datasets.scenario_parameters import get_sector_parameters
 
 
@@ -183,10 +185,10 @@ def insert_store(scenario, carrier):
             "bus0": dh_bus.bus_id,
             "bus1": water_tank_bus.bus_id,
             "carrier": carrier + "_store_charger",
-            "efficiency": get_sector_parameters("heat", "eGon2035")[
+            "efficiency": get_sector_parameters("heat", scenario)[
                 "efficiency"
             ]["water_tank_charger"],
-            "marginal_cost": get_sector_parameters("heat", "eGon2035")[
+            "marginal_cost": get_sector_parameters("heat", scenario)[
                 "marginal_cost"
             ]["water_tank_charger"],
             "p_nom_extendable": True,
@@ -211,10 +213,10 @@ def insert_store(scenario, carrier):
             "bus0": water_tank_bus.bus_id,
             "bus1": dh_bus.bus_id,
             "carrier": carrier + "_store_discharger",
-            "efficiency": get_sector_parameters("heat", "eGon2035")[
+            "efficiency": get_sector_parameters("heat", scenario)[
                 "efficiency"
             ]["water_tank_discharger"],
-            "marginal_cost": get_sector_parameters("heat", "eGon2035")[
+            "marginal_cost": get_sector_parameters("heat", scenario)[
                 "marginal_cost"
             ]["water_tank_discharger"],
             "p_nom_extendable": True,
@@ -238,10 +240,10 @@ def insert_store(scenario, carrier):
             "scn_name": scenario,
             "bus": water_tank_bus.bus_id,
             "carrier": carrier + "_store",
-            "capital_cost": get_sector_parameters("heat", "eGon2035")[
+            "capital_cost": get_sector_parameters("heat", scenario)[
                 "capital_cost"
             ][f"{carrier.split('_')[0]}_water_tank"],
-            "lifetime": get_sector_parameters("heat", "eGon2035")["lifetime"][
+            "lifetime": get_sector_parameters("heat", scenario)["lifetime"][
                 f"{carrier.split('_')[0]}_water_tank"
             ],
             "e_nom_extendable": True,
@@ -262,17 +264,151 @@ def insert_store(scenario, carrier):
 
 
 def store():
-    insert_store("eGon2035", "central_heat")
-    insert_store("eGon2035", "rural_heat")
+    for scenario in config.settings()["egon-data"]["--scenarios"]:
+        if "status" not in scenario:
+            insert_store(scenario, "central_heat")
+            insert_store(scenario, "rural_heat")
 
 
-def insert_central_direct_heat(scenario="eGon2035"):
+def insert_rural_direct_heat(scenario):
+    """Insert renewable heating technologies (solar thermal)
+
+    Parameters
+    ----------
+    scenario : str
+        Name of the scenario
+
+    Returns
+    -------
+    None.
+
+    """
+    sources = config.datasets()["etrago_heat"]["sources"]
+    targets = config.datasets()["etrago_heat"]["targets"]
+
+    db.execute_sql(
+        f"""
+        DELETE FROM {targets['heat_generators']['schema']}.
+        {targets['heat_generators']['table']}
+        WHERE carrier IN ('rural_solar_thermal')
+        AND scn_name = '{scenario}'
+        AND bus IN
+        (SELECT bus_id
+         FROM {targets['heat_buses']['schema']}.
+         {targets['heat_buses']['table']}
+         WHERE scn_name = '{scenario}'
+         AND country = 'DE')
+        """
+    )
+
+    db.execute_sql(
+        f"""
+        DELETE FROM {targets['heat_generator_timeseries']['schema']}.
+        {targets['heat_generator_timeseries']['table']}
+        WHERE scn_name = '{scenario}'
+        AND generator_id NOT IN (
+            SELECT generator_id FROM
+            {targets['heat_generators']['schema']}.
+            {targets['heat_generators']['table']}
+            WHERE scn_name = '{scenario}')
+        """
+    )
+
+    rural_solar_thermal = db.select_geodataframe(
+        f"""
+        SELECT mv_grid_id as power_bus,
+        a.carrier, capacity, b.bus_id as heat_bus, geom as geometry
+        FROM {sources['individual_heating_supply']['schema']}.
+            {sources['individual_heating_supply']['table']} a
+        JOIN {targets['heat_buses']['schema']}.
+        {targets['heat_buses']['table']} b
+        ON ST_Intersects(
+            ST_Buffer(ST_Transform(ST_Centroid(a.geometry), 4326), 0.00000001),
+            geom)
+        WHERE scenario = '{scenario}'
+        AND scn_name  = '{scenario}'
+        AND a.carrier = 'solar_thermal'
+        AND b.carrier = 'rural_heat'
+        """,
+        geom_col="geometry",
+    )
+
+    if rural_solar_thermal.empty:
+        print(f"No rural solar thermal in scenario {scenario}.")
+        return
+
+    new_id = db.next_etrago_id("generator")
+
+    generator = pd.DataFrame(
+        data={
+            "scn_name": scenario,
+            "carrier": "rural_solar_thermal",
+            "bus": rural_solar_thermal.heat_bus,
+            "p_nom": rural_solar_thermal.capacity,
+            "generator_id": range(new_id, new_id + len(rural_solar_thermal)),
+        }
+    )
+
+    weather_cells = db.select_geodataframe(
+        f"""
+        SELECT w_id, geom
+        FROM {sources['weather_cells']['schema']}.
+            {sources['weather_cells']['table']}
+        """,
+        index_col="w_id",
+    )
+
+    # Map solar thermal collectors to weather cells
+    join = gpd.sjoin(weather_cells, rural_solar_thermal)[["index_right"]]
+
+    weather_year = get_sector_parameters("global", scenario)["weather_year"]
+
+    feedin = db.select_dataframe(
+        f"""
+        SELECT w_id, feedin
+        FROM {sources['feedin_timeseries']['schema']}.
+            {sources['feedin_timeseries']['table']}
+        WHERE carrier = 'solar_thermal'
+        AND weather_year = {weather_year}
+        """,
+        index_col="w_id",
+    )
+
+    timeseries = pd.DataFrame(
+        data={
+            "scn_name": scenario,
+            "temp_id": 1,
+            "p_max_pu": feedin.feedin[join.index].values,
+            "generator_id": generator.generator_id[
+                generator.carrier == "rural_solar_thermal"
+            ].values,
+        }
+    ).set_index("generator_id")
+
+    generator = generator.set_index("generator_id")
+
+    generator.to_sql(
+        targets["heat_generators"]["table"],
+        schema=targets["heat_generators"]["schema"],
+        if_exists="append",
+        con=db.engine(),
+    )
+
+    timeseries.to_sql(
+        targets["heat_generator_timeseries"]["table"],
+        schema=targets["heat_generator_timeseries"]["schema"],
+        if_exists="append",
+        con=db.engine(),
+    )
+
+
+def insert_central_direct_heat(scenario):
     """Insert renewable heating technologies (solar and geo thermal)
 
     Parameters
     ----------
-    scenario : str, optional
-        Name of the scenario The default is 'eGon2035'.
+    scenario : str
+        Name of the scenario
 
     Returns
     -------
@@ -330,7 +466,10 @@ def insert_central_direct_heat(scenario="eGon2035"):
         {targets['heat_buses']['table']}
         JOIN {sources['district_heating_areas']['schema']}.
             {sources['district_heating_areas']['table']}
-        ON ST_Transform(ST_Centroid(geom_polygon), 4326) = geom
+        ON ST_Intersects(
+        ST_Transform(
+        ST_Buffer(ST_Centroid(geom_polygon),
+         0.0000001), 4326), geom)
         WHERE carrier = 'central_heat'
         AND scenario = '{scenario}'
         AND scn_name = '{scenario}'
@@ -366,13 +505,15 @@ def insert_central_direct_heat(scenario="eGon2035"):
     # Map solar thermal collectors to weather cells
     join = gpd.sjoin(weather_cells, solar_thermal)[["index_right"]]
 
+    weather_year = get_sector_parameters("global", scenario)["weather_year"]
+
     feedin = db.select_dataframe(
         f"""
         SELECT w_id, feedin
         FROM {sources['feedin_timeseries']['schema']}.
             {sources['feedin_timeseries']['table']}
         WHERE carrier = 'solar_thermal'
-        AND weather_year = 2011
+        AND weather_year = {weather_year}
         """,
         index_col="w_id",
     )
@@ -405,13 +546,13 @@ def insert_central_direct_heat(scenario="eGon2035"):
     )
 
 
-def insert_central_gas_boilers(scenario="eGon2035"):
+def insert_central_gas_boilers(scenario):
     """Inserts gas boilers for district heating to eTraGo-table
 
     Parameters
     ----------
-    scenario : str, optional
-        Name of the scenario. The default is 'eGon2035'.
+    scenario : str
+        Name of the scenario.
 
     Returns
     -------
@@ -428,6 +569,19 @@ def insert_central_gas_boilers(scenario="eGon2035"):
         {targets['heat_links']['table']}
         WHERE carrier  LIKE '%central_gas_boiler%'
         AND scn_name = '{scenario}'
+        AND link_id IN(
+            SELECT link_id FROM grid.egon_etrago_link
+            WHERE bus0 IN (
+                SELECT bus_id FROM grid.egon_etrago_bus
+                WHERE country = 'DE'
+                AND scn_name = '{scenario}'
+                )
+            AND bus1 IN (
+                SELECT bus_id FROM grid.egon_etrago_bus
+                WHERE country = 'DE'
+                AND scn_name = '{scenario}'
+                )
+            )
         """
     )
 
@@ -456,12 +610,12 @@ def insert_central_gas_boilers(scenario="eGon2035"):
     central_boilers = link_geom_from_buses(central_boilers, scenario)
 
     # Add efficiency and marginal costs of gas boilers
-    central_boilers["efficiency"] = get_sector_parameters("heat", "eGon2035")[
+    central_boilers["efficiency"] = get_sector_parameters("heat", scenario)[
         "efficiency"
     ]["central_gas_boiler"]
-    central_boilers["marginal_cost"] = get_sector_parameters(
-        "heat", "eGon2035"
-    )["marginal_cost"]["central_gas_boiler"]
+    central_boilers["marginal_cost"] = get_sector_parameters("heat", scenario)[
+        "marginal_cost"
+    ]["central_gas_boiler"]
 
     # Transform thermal capacity to CH4 installed capacity
     central_boilers["p_nom"] = central_boilers.capacity.div(
@@ -486,13 +640,13 @@ def insert_central_gas_boilers(scenario="eGon2035"):
     )
 
 
-def insert_rural_gas_boilers(scenario="eGon2035"):
+def insert_rural_gas_boilers(scenario):
     """Inserts gas boilers for individual heating to eTraGo-table
 
     Parameters
     ----------
-    scenario : str, optional
-        Name of the scenario. The default is 'eGon2035'.
+    scenario : str
+        Name of the scenario.
 
     Returns
     -------
@@ -545,11 +699,15 @@ def insert_rural_gas_boilers(scenario="eGon2035"):
         """
     )
 
+    if rural_boilers.empty:
+        print(f"No rural gas boilers in scenario {scenario}.")
+        return
+
     # Add LineString topology
     rural_boilers = link_geom_from_buses(rural_boilers, scenario)
 
     # Add efficiency of gas boilers
-    rural_boilers["efficiency"] = get_sector_parameters("heat", "eGon2035")[
+    rural_boilers["efficiency"] = get_sector_parameters("heat", scenario)[
         "efficiency"
     ]["rural_gas_boiler"]
 
@@ -587,11 +745,9 @@ def buses():
     None.
 
     """
-
-    insert_buses("central_heat", scenario="eGon2035")
-    insert_buses("rural_heat", scenario="eGon2035")
-    insert_buses("central_heat", scenario="eGon100RE")
-    insert_buses("rural_heat", scenario="eGon100RE")
+    for scenario in config.settings()["egon-data"]["--scenarios"]:
+        insert_buses("central_heat", scenario)
+        insert_buses("rural_heat", scenario)
 
 
 def supply():
@@ -606,12 +762,15 @@ def supply():
 
     """
 
-    insert_central_direct_heat(scenario="eGon2035")
-    insert_central_power_to_heat(scenario="eGon2035")
-    insert_individual_power_to_heat(scenario="eGon2035")
-
-    # insert_rural_gas_boilers(scenario="eGon2035")
-    insert_central_gas_boilers(scenario="eGon2035")
+    for scenario in config.settings()["egon-data"]["--scenarios"]:
+        # There is no direct heat in status quo scenario
+        if "status" not in scenario:
+            insert_central_direct_heat(scenario)
+            insert_central_power_to_heat(scenario)
+        insert_individual_power_to_heat(scenario)
+        insert_central_gas_boilers(scenario)
+        insert_rural_gas_boilers(scenario)
+        insert_rural_direct_heat(scenario)
 
 
 class HeatEtrago(Dataset):

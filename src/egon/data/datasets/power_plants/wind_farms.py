@@ -1,3 +1,5 @@
+import re
+
 from matplotlib import pyplot as plt
 from shapely.geometry import MultiPoint, Point
 import geopandas as gpd
@@ -45,6 +47,9 @@ def insert():
     target_power_df = target_power_df[
         target_power_df["carrier"] == "wind_onshore"
     ]
+    target_power_df = target_power_df[
+        target_power_df["scenario_name"].isin(["eGon2035", "eGon100RE"])
+    ]
     target_power_df.set_index("nuts", inplace=True)
     target_power_df["geom"] = Point(0, 0)
 
@@ -79,34 +84,51 @@ def insert():
     summary_t = pd.DataFrame()
     farms = pd.DataFrame()
 
-    # Fit wind farms scenarions for each one of the states
-    for scenario in target_power_df.index:
-        state_wf = gpd.clip(wf_areas, target_power_df.at[scenario, "geom"])
-        state_wf_ni = gpd.clip(
-            wf_areas_ni, target_power_df.at[scenario, "geom"]
-        )
-        state_mv_districts = gpd.clip(
-            mv_districts, target_power_df.at[scenario, "geom"]
-        )
-        target_power = target_power_df.at[scenario, "capacity"]
-        scenario_year = target_power_df.at[scenario, "scenario_name"]
-        source = target_power_df.at[scenario, "carrier"]
-        fed_state = target_power_df.at[scenario, "name"]
+    if "eGon100RE" in target_power_df["scenario_name"].values:
         wind_farms_state, summary_state = wind_power_states(
-            state_wf,
-            state_wf_ni,
-            state_mv_districts,
-            target_power,
-            scenario_year,
-            source,
-            fed_state,
+            wf_areas,
+            wf_areas_ni,
+            mv_districts,
+            target_power_df.at["DE", "capacity"],
+            "eGon100RE",
+            "wind_onshore",
+            "DE",
         )
-        summary_t = summary_t.append(summary_state)
-        farms = farms.append(wind_farms_state)
+        target_power_df = target_power_df[
+            target_power_df["scenario_name"] != "eGon100RE"
+        ]
+
+    if "eGon2035" in target_power_df["scenario_name"].values:
+        # Fit wind farms scenarions for each one of the states
+        for bundesland in target_power_df.index:
+            state_wf = gpd.clip(
+                wf_areas, target_power_df.at[bundesland, "geom"]
+            )
+            state_wf_ni = gpd.clip(
+                wf_areas_ni, target_power_df.at[bundesland, "geom"]
+            )
+            state_mv_districts = gpd.clip(
+                mv_districts, target_power_df.at[bundesland, "geom"]
+            )
+            target_power = target_power_df.at[bundesland, "capacity"]
+            scenario_year = target_power_df.at[bundesland, "scenario_name"]
+            source = target_power_df.at[bundesland, "carrier"]
+            fed_state = target_power_df.at[bundesland, "name"]
+            wind_farms_state, summary_state = wind_power_states(
+                state_wf,
+                state_wf_ni,
+                state_mv_districts,
+                target_power,
+                scenario_year,
+                source,
+                fed_state,
+            )
+            summary_t = pd.concat([summary_t, summary_state])
+            farms = pd.concat([farms, wind_farms_state])
 
     generate_map()
 
-    return (summary_t, farms)
+    return
 
 
 def generate_wind_farms():
@@ -175,9 +197,7 @@ def generate_wind_farms():
     wea["connection point"] = wea["LokationMastrNummer"].map(
         bus["NetzanschlusspunktMastrNummer"]
     )
-    wea["voltage"] = wea["LokationMastrNummer"].map(
-        bus["NetzanschlusspunktMastrNummer"]
-    )
+    wea["voltage"] = wea["LokationMastrNummer"].map(bus["Spannungsebene"])
 
     # Create the columns 'geometry' which will have location of each WT in a
     # point type
@@ -310,10 +330,32 @@ def wind_power_states(
         "Hamburg",
     ]
 
-    if fed_state in north:
-        state_wf["inst capacity [MW]"] = power_north * state_wf["area [km²]"]
+    if fed_state == "DE":
+        sql = f"""SELECT * FROM boundaries.vg250_lan
+        WHERE gen in {tuple(north)}
+        """
+        north_states = gpd.GeoDataFrame.from_postgis(
+            sql, con, geom_col="geometry"
+        )
+        north_states.to_crs(3035, inplace=True)
+        state_wf["nord"] = state_wf.within(north_states.unary_union)
+        state_wf["inst capacity [MW]"] = state_wf.apply(
+            lambda x: (
+                power_north * x["area [km²]"]
+                if x["nord"]
+                else power_south * x["area [km²]"]
+            ),
+            axis=1,
+        )
     else:
-        state_wf["inst capacity [MW]"] = power_south * state_wf["area [km²]"]
+        if fed_state in north:
+            state_wf["inst capacity [MW]"] = (
+                power_north * state_wf["area [km²]"]
+            )
+        else:
+            state_wf["inst capacity [MW]"] = (
+                power_south * state_wf["area [km²]"]
+            )
 
     # Divide selected areas based on voltage of connection points
     wf_mv = state_wf[
@@ -333,7 +375,7 @@ def wind_power_states(
     # installed capacity is bigger than max_power_mv
     hvmv_substation = hvmv_substation.to_crs(3035)
     hvmv_substation["voltage"] = hvmv_substation["voltage"].apply(
-        lambda x: int(x.split(";")[0])
+        lambda x: int(re.split(";|:", x)[0])
     )
     hv_substations = hvmv_substation[hvmv_substation["voltage"] >= 110000]
     hv_substations = hv_substations.unary_union  # join all the hv_substations
@@ -347,7 +389,7 @@ def wind_power_states(
     wf_mv_to_hv = wf_mv_to_hv.drop(columns=["dist_to_HV"])
     wf_mv_to_hv["voltage"] = "Hochspannung"
 
-    wf_hv = wf_hv.append(wf_mv_to_hv)
+    wf_hv = pd.concat([wf_hv, wf_mv_to_hv])
     wf_mv = wf_mv[
         (wf_mv["dist_to_HV"] > max_dist_hv)
         | (wf_mv["inst capacity [MW]"] < max_power_mv)
@@ -362,12 +404,13 @@ def wind_power_states(
         lambda x: x if x < max_power_mv else max_power_mv
     )
 
-    wind_farms = wf_hv.append(wf_mv)
+    wind_farms = pd.concat([wf_hv, wf_mv])
 
     # Adjust the total installed capacity to the scenario
     total_wind_power = (
         wf_hv["inst capacity [MW]"].sum() + wf_mv["inst capacity [MW]"].sum()
     )
+
     if total_wind_power > target_power:
         scale_factor = target_power / total_wind_power
         wf_mv["inst capacity [MW]"] = (
@@ -376,23 +419,27 @@ def wind_power_states(
         wf_hv["inst capacity [MW]"] = (
             wf_hv["inst capacity [MW]"] * scale_factor
         )
-        wind_farms = wf_hv.append(wf_mv)
-        summary = summary.append(
-            {
-                "state": fed_state,
-                "target": target_power,
-                "from existin WF": wind_farms["inst capacity [MW]"].sum(),
-                "MV districts": 0,
-            },
+        wind_farms = pd.concat([wf_hv, wf_mv])
+        summary = pd.concat(
+            [
+                summary,
+                pd.DataFrame(
+                    index=[summary.index.max() + 1],
+                    data={
+                        "state": fed_state,
+                        "target": target_power,
+                        "from existin WF": wind_farms[
+                            "inst capacity [MW]"
+                        ].sum(),
+                        "MV districts": 0,
+                    },
+                ),
+            ],
             ignore_index=True,
         )
     else:
         extra_wf = state_mv_districts.copy()
-        extra_wf = extra_wf.drop(columns=["centroid"])
-        # the column centroid has the coordinates of the substation
-        # corresponding to each mv_grid_district
-        extra_wf["centroid"] = extra_wf.apply(match_district_se, axis=1)
-        extra_wf = extra_wf.set_geometry("centroid")
+        extra_wf = extra_wf.set_geometry("geom")
         extra_wf["area [km²]"] = 0.0
         for district in extra_wf.index:
             try:
@@ -409,16 +456,25 @@ def wind_power_states(
         scale_factor = (target_power - total_wind_power) / total_new_area
         extra_wf["inst capacity [MW]"] = extra_wf["area [km²]"] * scale_factor
         extra_wf["voltage"] = "Hochspannung"
-        summary = summary.append(
-            {
-                "state": fed_state,
-                "target": target_power,
-                "from existin WF": wind_farms["inst capacity [MW]"].sum(),
-                "MV districts": extra_wf["inst capacity [MW]"].sum(),
-            },
+        summary = pd.concat(
+            [
+                summary,
+                pd.DataFrame(
+                    index=[summary.index.max() + 1],
+                    data={
+                        "state": fed_state,
+                        "target": target_power,
+                        "from existin WF": wind_farms[
+                            "inst capacity [MW]"
+                        ].sum(),
+                        "MV districts": extra_wf["inst capacity [MW]"].sum(),
+                    },
+                ),
+            ],
             ignore_index=True,
         )
-        wind_farms = wind_farms.append(extra_wf, ignore_index=True)
+        extra_wf.to_crs(4326, inplace=True)
+        wind_farms = pd.concat([wind_farms, extra_wf], ignore_index=True)
 
     # Use Definition of thresholds for voltage level assignment
     wind_farms["voltage_level"] = 0
@@ -470,6 +526,14 @@ def wind_power_states(
         start=wind_farm_id,
         stop=wind_farm_id + len(insert_wind_farms),
         name="id",
+    )
+
+    # Delete old wind_onshore generators
+    db.execute_sql(
+        f"""DELETE FROM supply.egon_power_plants
+        WHERE carrier = 'wind_onshore'
+        AND scenario = '{scenario_year}'
+        """
     )
 
     # Insert into database

@@ -7,7 +7,6 @@ import egon.data.config
 
 
 def read_csv(year):
-
     source = egon.data.config.datasets()["pypsa-technology-data"]["targets"][
         "data_dir"
     ]
@@ -16,7 +15,6 @@ def read_csv(year):
 
 
 def read_costs(df, technology, parameter, value_only=True):
-
     result = df.loc[
         (df.technology == technology) & (df.parameter == parameter)
     ].squeeze()
@@ -118,12 +116,68 @@ def global_settings(scenario):
                 "coal": 0.335,  # [t_CO2/MW_th]
                 "other_non_renewable": 0.268,  # [t_CO2/MW_th]
             },
+            "interest_rate": 0.05,  # [p.u.]
         }
 
     elif scenario == "eGon2021":
         parameters = {
             "weather_year": 2011,
             "population_year": 2021,
+        }
+
+    elif scenario == "status2023":
+        parameters = {
+            "weather_year": 2023,
+            "population_year": 2019,  # TODO: check if possible for 2023
+            "fuel_costs": {
+                # TYNDP 2020, data for 2023 (https://2020.entsos-tyndp-scenarios.eu/fuel-commodities-and-carbon-prices/)
+                "oil": 16.4 * 3.6,  # [EUR/MWh]
+                "gas": 6.1 * 3.6,  # [EUR/MWh]
+                "coal": 3.4 * 3.6,  # [EUR/MWh]
+                "lignite": 1.1 * 3.6,  # [EUR/MWh]
+                "nuclear": 0.47 * 3.6,  # [EUR/MWh]
+                "biomass": read_costs(read_csv(2020), "biomass", "fuel"),
+            },
+            "co2_costs": 83.66,  # [EUR/t_CO2], source:
+            # https://www.iwr.de/news/co2-emissionshandel-deutschland-erzielt-2023-rekordeinnahmen-von-ueber-18-mrd-euro-news38528
+            "co2_emissions": {
+                # Netzentwicklungsplan Strom 2037, Genehmigtr Scenariorahmen, p. 66, table 21
+                # https://www.netzentwicklungsplan.de/sites/default/files/2023-01/Szenariorahmen_2037_Genehmigung.pdf
+                "waste": 0.165,  # [t_CO2/MW_th]
+                "lignite": 0.393,  # [t_CO2/MW_th]
+                "gas": 0.201,  # [t_CO2/MW_th]
+                "nuclear": 0.0,  # [t_CO2/MW_th]
+                "oil": 0.288,  # [t_CO2/MW_th]
+                "coal": 0.337,  # [t_CO2/MW_th]
+                "other_non_renewable": 0.268,  # [t_CO2/MW_th]
+            },
+            "interest_rate": 0.05,  # [p.u.]
+        }
+
+    elif scenario == "status2019":
+        parameters = {
+            "weather_year": 2011,
+            "population_year": 2019,
+            "fuel_costs": {  # TYNDP 2020, data for 2020 (https://2020.entsos-tyndp-scenarios.eu/fuel-commodities-and-carbon-prices/)
+                "oil": 12.9 * 3.6,  # [EUR/MWh]
+                "gas": 5.6 * 3.6,  # [EUR/MWh]
+                "coal": 3.0 * 3.6,  # [EUR/MWh]
+                "lignite": 1.1 * 3.6,  # [EUR/MWh]
+                "nuclear": 0.47 * 3.6,  # [EUR/MWh]
+                "biomass": read_costs(read_csv(2020), "biomass", "fuel"),
+            },
+            "co2_costs": 24.7,  # [EUR/t_CO2], source:
+            # https://de.statista.com/statistik/daten/studie/1304069/umfrage/preisentwicklung-von-co2-emissionsrechten-in-eu/
+            "co2_emissions": {  # Netzentwicklungsplan Strom 2035, Version 2021, 1. Entwurf, p. 40, table 8
+                "waste": 0.165,  # [t_CO2/MW_th]
+                "lignite": 0.393,  # [t_CO2/MW_th]
+                "gas": 0.201,  # [t_CO2/MW_th]
+                "nuclear": 0.0,  # [t_CO2/MW_th]
+                "oil": 0.288,  # [t_CO2/MW_th]
+                "coal": 0.335,  # [t_CO2/MW_th]
+                "other_non_renewable": 0.268,  # [t_CO2/MW_th]
+            },
+            "interest_rate": 0.05,  # [p.u.]
         }
 
     else:
@@ -148,7 +202,6 @@ def electricity(scenario):
     """
 
     if scenario == "eGon2035":
-
         costs = read_csv(2035)
 
         parameters = {"grid_topology": "Status Quo"}
@@ -162,12 +215,14 @@ def electricity(scenario):
                 ** 0.5,
                 "standing_loss": 0,
                 "max_hours": 6,
+                "cyclic_state_of_charge": True,
             },
             "pumped_hydro": {
                 "store": read_costs(costs, "PHS", "efficiency") ** 0.5,
                 "dispatch": read_costs(costs, "PHS", "efficiency") ** 0.5,
                 "standing_loss": 0,
                 "max_hours": 6,
+                "cyclic_state_of_charge": True,
             },
         }
         # Warning: Electrical parameters are set in osmTGmod, editing these values will not change the data!
@@ -292,27 +347,35 @@ def electricity(scenario):
         # marginal cost can include fuel, C02 and operation and maintenance costs
         parameters["marginal_cost"] = {
             "oil": global_settings(scenario)["fuel_costs"]["oil"]
+            / read_costs(costs, "oil", "efficiency")
             + read_costs(costs, "oil", "VOM")
             + global_settings(scenario)["co2_costs"]
-            * global_settings(scenario)["co2_emissions"]["oil"],
+            * global_settings(scenario)["co2_emissions"]["oil"]
+            / read_costs(costs, "oil", "efficiency"),
             "other_non_renewable": global_settings(scenario)["fuel_costs"][
                 "gas"
             ]
+            / read_costs(costs, "OCGT", "efficiency")
             + global_settings(scenario)["co2_costs"]
-            * global_settings(scenario)["co2_emissions"][
-                "other_non_renewable"
-            ],
+            * global_settings(scenario)["co2_emissions"]["other_non_renewable"]
+            / read_costs(costs, "OCGT", "efficiency"),
             "lignite": global_settings(scenario)["fuel_costs"]["lignite"]
+            / read_costs(costs, "lignite", "efficiency")
             + read_costs(costs, "lignite", "VOM")
             + global_settings(scenario)["co2_costs"]
-            * global_settings(scenario)["co2_emissions"]["lignite"],
+            * global_settings(scenario)["co2_emissions"]["lignite"]
+            / read_costs(costs, "lignite", "efficiency"),
             "coal": global_settings(scenario)["fuel_costs"]["coal"]
+            / read_costs(costs, "coal", "efficiency")
             + read_costs(costs, "coal", "VOM")
             + global_settings(scenario)["co2_costs"]
-            * global_settings(scenario)["co2_emissions"]["coal"],
+            * global_settings(scenario)["co2_emissions"]["coal"]
+            / read_costs(costs, "coal", "efficiency"),
             "nuclear": global_settings(scenario)["fuel_costs"]["nuclear"]
+            / read_costs(costs, "nuclear", "efficiency")
             + read_costs(costs, "nuclear", "VOM"),
             "biomass": global_settings(scenario)["fuel_costs"]["biomass"]
+            / read_costs(costs, "biomass", "efficiency")
             + read_costs(costs, "biomass CHP", "VOM"),
             "wind_offshore": read_costs(costs, "offwind", "VOM"),
             "wind_onshore": read_costs(costs, "onwind", "VOM"),
@@ -320,7 +383,6 @@ def electricity(scenario):
         }
 
     elif scenario == "eGon100RE":
-
         costs = read_csv(2050)
 
         parameters = {"grid_topology": "Status Quo"}
@@ -334,12 +396,14 @@ def electricity(scenario):
                 ** 0.5,
                 "standing_loss": 0,
                 "max_hours": 6,
+                "cyclic_state_of_charge": True,
             },
             "pumped_hydro": {
                 "store": read_costs(costs, "PHS", "efficiency") ** 0.5,
                 "dispatch": read_costs(costs, "PHS", "efficiency") ** 0.5,
                 "standing_loss": 0,
                 "max_hours": 6,
+                "cyclic_state_of_charge": True,
             },
         }
         # Warning: Electrical parameters are set in osmTGmod, editing these values will not change the data!
@@ -466,6 +530,191 @@ def electricity(scenario):
     elif scenario == "eGon2021":
         parameters = {}
 
+    elif (scenario == "status2019") or (scenario == "status2023"):
+        costs = read_csv(2020)
+
+        parameters = {"grid_topology": "Status Quo"}
+        # Insert effciencies in p.u.
+        parameters["efficiency"] = {
+            "oil": read_costs(costs, "oil", "efficiency"),
+            "battery": {
+                "store": read_costs(costs, "battery inverter", "efficiency")
+                ** 0.5,
+                "dispatch": read_costs(costs, "battery inverter", "efficiency")
+                ** 0.5,
+                "standing_loss": 0,
+                "max_hours": 6,
+                "cyclic_state_of_charge": True,
+            },
+            "pumped_hydro": {
+                "store": read_costs(costs, "PHS", "efficiency") ** 0.5,
+                "dispatch": read_costs(costs, "PHS", "efficiency") ** 0.5,
+                "standing_loss": 0,
+                "max_hours": 6,
+                "cyclic_state_of_charge": True,
+            },
+        }
+        # Warning: Electrical parameters are set in osmTGmod, editing these values will not change the data!
+        parameters["electrical_parameters"] = {
+            "ac_line_110kV": {
+                "s_nom": 260,  # [MVA]
+                "R": 0.109,  # [Ohm/km]
+                "L": 1.2,  # [mH/km]
+            },
+            "ac_cable_110kV": {
+                "s_nom": 280,  # [MVA]
+                "R": 0.0177,  # [Ohm/km]
+                "L": 0.3,  # [mH/km]
+            },
+            "ac_line_220kV": {
+                "s_nom": 520,  # [MVA]
+                "R": 0.109,  # [Ohm/km]
+                "L": 1.0,  # [mH/km]
+            },
+            "ac_cable_220kV": {
+                "s_nom": 550,  # [MVA]
+                "R": 0.0176,  # [Ohm/km]
+                "L": 0.3,  # [mH/km]
+            },
+            "ac_line_380kV": {
+                "s_nom": 1790,  # [MVA]
+                "R": 0.028,  # [Ohm/km]
+                "L": 0.8,  # [mH/km]
+            },
+            "ac_cable_380kV": {
+                "s_nom": 925,  # [MVA]
+                "R": 0.0175,  # [Ohm/km]
+                "L": 0.3,  # [mH/km]
+            },
+        }
+
+        # Insert overnight investment costs
+        # Source for eHV grid costs: Netzentwicklungsplan Strom 2035, Version 2021, 2. Entwurf
+        # Source for HV lines and cables: Dena Verteilnetzstudie 2021, p. 146
+        parameters["overnight_cost"] = {
+            "ac_ehv_overhead_line": 2.5e6
+            / (
+                2
+                * parameters["electrical_parameters"]["ac_line_380kV"]["s_nom"]
+            ),  # [EUR/km/MW]
+            "ac_ehv_cable": 11.5e6
+            / (
+                2
+                * parameters["electrical_parameters"]["ac_cable_380kV"][
+                    "s_nom"
+                ]
+            ),  # [EUR/km/MW]
+            "ac_hv_overhead_line": 0.06e6
+            / parameters["electrical_parameters"]["ac_line_110kV"][
+                "s_nom"
+            ],  # [EUR/km/MW]
+            "ac_hv_cable": 0.8e6
+            / parameters["electrical_parameters"]["ac_cable_110kV"][
+                "s_nom"
+            ],  # [EUR/km/MW]
+            "dc_overhead_line": 0.5e3,  # [EUR/km/MW]
+            "dc_cable": 3.25e3,  # [EUR/km/MW]
+            "dc_inverter": 0.3e6,  # [EUR/MW]
+            "transformer_380_110": 17.33e3,  # [EUR/MVA]
+            "transformer_380_220": 13.33e3,  # [EUR/MVA]
+            "transformer_220_110": 17.5e3,  # [EUR/MVA]
+            "battery inverter": read_costs(
+                costs, "battery inverter", "investment"
+            ),
+            "battery storage": read_costs(
+                costs, "battery storage", "investment"
+            ),
+        }
+
+        parameters["lifetime"] = {
+            "ac_ehv_overhead_line": read_costs(
+                costs, "HVAC overhead", "lifetime"
+            ),
+            "ac_ehv_cable": read_costs(costs, "HVAC overhead", "lifetime"),
+            "ac_hv_overhead_line": read_costs(
+                costs, "HVAC overhead", "lifetime"
+            ),
+            "ac_hv_cable": read_costs(costs, "HVAC overhead", "lifetime"),
+            "dc_overhead_line": read_costs(costs, "HVDC overhead", "lifetime"),
+            "dc_cable": read_costs(costs, "HVDC overhead", "lifetime"),
+            "dc_inverter": read_costs(costs, "HVDC inverter pair", "lifetime"),
+            "transformer_380_110": read_costs(
+                costs, "HVAC overhead", "lifetime"
+            ),
+            "transformer_380_220": read_costs(
+                costs, "HVAC overhead", "lifetime"
+            ),
+            "transformer_220_110": read_costs(
+                costs, "HVAC overhead", "lifetime"
+            ),
+            "battery inverter": read_costs(
+                costs, "battery inverter", "lifetime"
+            ),
+            "battery storage": read_costs(
+                costs, "battery storage", "lifetime"
+            ),
+        }
+        # Insert annualized capital costs
+        # lines in EUR/km/MW/a
+        # transfermer, inverter, battery in EUR/MW/a
+        parameters["capital_cost"] = {}
+
+        for comp in parameters["overnight_cost"].keys():
+            parameters["capital_cost"][comp] = annualize_capital_costs(
+                parameters["overnight_cost"][comp],
+                parameters["lifetime"][comp],
+                global_settings("status2019")["interest_rate"],
+            )
+
+        parameters["capital_cost"]["battery"] = (
+            parameters["capital_cost"]["battery inverter"]
+            + parameters["efficiency"]["battery"]["max_hours"]
+            * parameters["capital_cost"]["battery storage"]
+        )
+
+        parameters["marginal_cost"] = {
+            "oil": global_settings(scenario)["fuel_costs"]["oil"]
+            / read_costs(costs, "oil", "efficiency")
+            + read_costs(costs, "oil", "VOM")
+            + global_settings(scenario)["co2_costs"]
+            * global_settings(scenario)["co2_emissions"]["oil"]
+            / read_costs(costs, "oil", "efficiency"),
+            "other_non_renewable": global_settings(scenario)["fuel_costs"][
+                "gas"
+            ]
+            / read_costs(costs, "OCGT", "efficiency")
+            + global_settings(scenario)["co2_costs"]
+            * global_settings(scenario)["co2_emissions"]["other_non_renewable"]
+            / read_costs(costs, "OCGT", "efficiency"),
+            "lignite": global_settings(scenario)["fuel_costs"]["lignite"]
+            / read_costs(costs, "lignite", "efficiency")
+            + read_costs(costs, "lignite", "VOM")
+            + global_settings(scenario)["co2_costs"]
+            * global_settings(scenario)["co2_emissions"]["lignite"]
+            / read_costs(costs, "lignite", "efficiency"),
+            "coal": global_settings(scenario)["fuel_costs"]["coal"]
+            / read_costs(costs, "coal", "efficiency")
+            + read_costs(costs, "coal", "VOM")
+            + global_settings(scenario)["co2_costs"]
+            * global_settings(scenario)["co2_emissions"]["coal"]
+            / read_costs(costs, "coal", "efficiency"),
+            "OCGT": global_settings(scenario)["fuel_costs"]["gas"]
+            / read_costs(costs, "OCGT", "efficiency")
+            + read_costs(costs, "OCGT", "VOM")
+            + global_settings(scenario)["co2_costs"]
+            * global_settings(scenario)["co2_emissions"]["gas"]
+            / read_costs(costs, "OCGT", "efficiency"),
+            "nuclear": global_settings(scenario)["fuel_costs"]["nuclear"]
+            / read_costs(costs, "nuclear", "efficiency")
+            + read_costs(costs, "nuclear", "VOM"),
+            "biomass": global_settings(scenario)["fuel_costs"]["biomass"]
+            / read_costs(costs, "biomass CHP", "efficiency")
+            + read_costs(costs, "biomass CHP", "VOM"),
+            "wind_offshore": read_costs(costs, "offwind", "VOM"),
+            "wind_onshore": read_costs(costs, "onwind", "VOM"),
+            "solar": read_costs(costs, "solar", "VOM"),
+        }
+
     else:
         print(f"Scenario name {scenario} is not valid.")
 
@@ -488,25 +737,32 @@ def gas(scenario):
     """
 
     if scenario == "eGon2035":
-
         costs = read_csv(2035)
 
         parameters = {
             "main_gas_carrier": "CH4",
             "H2_feedin_volumetric_fraction": 0.15,
         }
+
         # Insert effciencies in p.u.
         parameters["efficiency"] = {
-            "power_to_H2": read_costs(costs, "electrolysis", "efficiency"),
+            "power_to_H2": 0.6805,  # source: project internal assumption Fraunhofer ISE
             "H2_to_power": read_costs(costs, "fuel cell", "efficiency"),
             "CH4_to_H2": read_costs(costs, "SMR", "efficiency"),
             "H2_feedin": 1,
             "H2_to_CH4": read_costs(costs, "methanation", "efficiency"),
             "OCGT": read_costs(costs, "OCGT", "efficiency"),
+            "power_to_Heat": 0.2,  # overall efficiency (20% electrical Input converted into waste-heat); source: project internal assumption Fraunhofer ISE
+            "power_to_O2": 0.04,  # O2-transfer efficiency; source:  Sayed Sadat, Modeling Regional Utilization of the electrolysers Co-Products Oxygen and Heat in Germany, 2024
         }
+
         # Insert overnight investment costs
         parameters["overnight_cost"] = {
-            "power_to_H2": read_costs(costs, "electrolysis", "investment"),
+            "power_to_H2_system": 452_000,  # [EUR/MW]  source: project internal assumption Fraunhofer ISE
+            "power_to_H2_stack": 0.21
+            * 452_000,  # [EUR/MW] source: project internal assumption Fraunhofer ISE
+            "power_to_H2_OPEX": 0.03
+            * 452_000,  # [EUR/MW/a]  3% of CAPEX, source: project internal assumption Fraunhofer ISE
             "H2_to_power": read_costs(costs, "fuel cell", "investment"),
             "CH4_to_H2": read_costs(costs, "SMR", "investment"),
             "H2_to_CH4": read_costs(costs, "methanation", "investment"),
@@ -520,14 +776,29 @@ def gas(scenario):
             "H2_pipeline": read_costs(
                 costs, "H2 (g) pipeline", "investment"
             ),  # [EUR/MW/km]
+            "Heat_exchanger": 25_000,  # [EUR/MW_th] cost assumption for one additional heat_exchanger; source: project internal cost assumption by Fraunhofer ISE
+            "Heat_pipeline": 400_000,  # [EUR/MW/km]; average value for DN100-pipeline; source: L. Zimmermann, MODELLIERUNG DER ABWÄRMENUTZUNG VON ELEKTROLYSEUREN IN DEUTSCHLAND FÜR EINE TECHNO - ÖKONOMISCHE OPTIMIERUNG EINES SEKTOR - GEKOPPELTEN ENERGIESYSTEM, 2024
+            "O2_components": 5000,  # [EUR] ; source: Sayed Sadat, Modeling Regional Utilization of the electrolysers Co-Products Oxygen and Heat in Germany, 2024
+        }
+
+        # overnight_costs for O2_pipeinecosts related to pipeline_diameter
+        parameters["O2_pipeline_costs"] = {
+            0.5: 500_000,  # EUR/km
+            0.4: 450_000,  # EUR/km
+            0.3: 400_000,  # EUR/km
+            0.2: 350_000,  # EUR/km
+            0.0: 300_000,  # EUR/km   (costs for any other pipeline diameter)
         }
 
         # Insert lifetime
         parameters["lifetime"] = {
-            "power_to_H2": read_costs(costs, "electrolysis", "lifetime"),
+            "power_to_H2_system": 25,  # source: project internal assumption Fraunhofer ISE
+            "power_to_H2_stack": 15,  # 85000 hours ~ 15 years; source: project internal assumption Fraunhofer ISE
+            "power_to_H2_OPEX": 1,  # given as OPEX/year
             "H2_to_power": read_costs(costs, "fuel cell", "lifetime"),
             "CH4_to_H2": read_costs(costs, "SMR", "lifetime"),
             "H2_to_CH4": read_costs(costs, "methanation", "lifetime"),
+            "H2_feedin": read_costs(costs, "CH4 (g) pipeline", "lifetime"),
             "H2_underground": read_costs(
                 costs, "hydrogen storage underground", "lifetime"
             ),
@@ -535,16 +806,26 @@ def gas(scenario):
                 costs, "hydrogen storage tank incl. compressor", "lifetime"
             ),
             "H2_pipeline": read_costs(costs, "H2 (g) pipeline", "lifetime"),
-            "H2_feedin": read_costs(costs, "CH4 (g) pipeline", "lifetime"),
+            "Heat_exchanger": 20,  # assumption based on lifetime heat_exchanger; source: E. van der Roest, R. Bol, T. Fens und A. van Wijk, „Utilisation of waste heat from PEM electrolysers - Unlocking local optimisation, 2023
+            "Heat_pipeline": 20,
+            "O2_components": 25,  # source: Sayed Sadat, Modeling Regional Utilization of the electrolysers Co-Products Oxygen and Heat in Germany, 2024
         }
 
         # Insert annualized capital costs
         parameters["capital_cost"] = {}
+        parameters["O2_capital_cost"] = {}
 
         for comp in parameters["overnight_cost"].keys():
             parameters["capital_cost"][comp] = annualize_capital_costs(
                 parameters["overnight_cost"][comp],
                 parameters["lifetime"][comp],
+                global_settings("eGon2035")["interest_rate"],
+            )
+
+        for diameter in parameters["O2_pipeline_costs"].keys():
+            parameters["O2_capital_cost"][diameter] = annualize_capital_costs(
+                parameters["O2_pipeline_costs"][diameter],
+                parameters["lifetime"]["O2_components"],
                 global_settings("eGon2035")["interest_rate"],
             )
 
@@ -564,7 +845,6 @@ def gas(scenario):
         }
 
     elif scenario == "eGon100RE":
-
         costs = read_csv(2050)
         interest_rate = 0.07  # [p.u.]
 
@@ -575,11 +855,13 @@ def gas(scenario):
         }
         # Insert effciencies in p.u.
         parameters["efficiency"] = {
-            "power_to_H2": read_costs(costs, "electrolysis", "efficiency"),
+            "power_to_H2": 0.709,
             "H2_to_power": read_costs(costs, "fuel cell", "efficiency"),
             "CH4_to_H2": read_costs(costs, "SMR", "efficiency"),
             "H2_to_CH4": read_costs(costs, "methanation", "efficiency"),
             "OCGT": read_costs(costs, "OCGT", "efficiency"),
+            "power_to_Heat": 0.2,  # source: project internal assumption Fraunhofer ISE
+            "power_to_O2": 0.015,  # source:  Sayed Sadat, Modeling Regional Utilization of the electrolysers Co-Products Oxygen and Heat in Germany, 2024
         }
 
         # Insert FOM in %
@@ -590,11 +872,15 @@ def gas(scenario):
             "H2_overground": read_costs(
                 costs, "hydrogen storage tank incl. compressor", "FOM"
             ),
-            "power_to_H2": read_costs(costs, "electrolysis", "FOM"),
+            "power_to_H2_system": 3,  # 3% of CAPEX, source: project internal assumption Fraunhofer ISE
+            "power_to_H2_stack": 3,  # 3% of CAPEX source: project internal assumption Fraunhofer ISE
             "H2_to_power": read_costs(costs, "fuel cell", "FOM"),
             "CH4_to_H2": read_costs(costs, "SMR", "FOM"),
             "H2_to_CH4": read_costs(costs, "methanation", "FOM"),
-            "H2_pipeline": read_costs(costs, "H2 (g) pipeline", "FOM"),
+            "H2_pipeline": 3,  # 3% of CAPEX
+            "Heat_exchanger": 3,  # 3% of CAPEX
+            "Heat_pipeline": 3,  # 3% of CAPEX
+            "O2_components": 3,  # 3% of CAPEX
             "H2_pipeline_retrofit": read_costs(
                 costs, "H2 (g) pipeline repurposed", "FOM"
             ),
@@ -602,7 +888,9 @@ def gas(scenario):
 
         # Insert overnight investment costs
         parameters["overnight_cost"] = {
-            "power_to_H2": read_costs(costs, "electrolysis", "investment"),
+            "power_to_H2_system": 357_000,  # [EUR/MW] source: project internal assumption Fraunhofer ISE
+            "power_to_H2_stack": 0.21
+            * 357_000,  # [EUR/MW] source: project internal assumption Fraunhofer ISE
             "H2_to_power": read_costs(costs, "fuel cell", "investment"),
             "CH4_to_H2": read_costs(costs, "SMR", "investment"),
             "H2_to_CH4": read_costs(costs, "methanation", "investment"),
@@ -616,16 +904,30 @@ def gas(scenario):
                 costs, "H2 (g) pipeline", "investment"
             ),  # [EUR/MW/km]
             "H2_pipeline_retrofit": read_costs(
-                costs, "H2 (g) pipeline repurposed", "investment"
-            ),  # [EUR/MW/km]
+                costs, "H2 (g) pipeline repurposed", "FOM"
+            ),
+            "Heat_exchanger": 25_000,  # [EUR/MW_th] cost assumption for one additional heat_exchanger; source: project internal cost assumption by Fraunhofer ISE
+            "Heat_pipeline": 400_000,  # [EUR/MW/km]; average value for DN100-pipeline; source: L. Zimmermann, MODELLIERUNG DER ABWÄRMENUTZUNG VON ELEKTROLYSEUREN IN DEUTSCHLAND FÜR EINE TECHNO - ÖKONOMISCHE OPTIMIERUNG EINES SEKTOR - GEKOPPELTEN ENERGIESYSTEM, 2024
+            "O2_components": 5000,  # [EUR] ; source toDO: ask sayed
+        }
+
+        # overnight_costs for O2_pipeinecosts related to pipeline_diameter
+        parameters["O2_pipeline_costs"] = {
+            0.5: 500_000,  # EUR/km
+            0.4: 450_000,  # EUR/km
+            0.3: 400_000,  # EUR/km
+            0.2: 350_000,  # EUR/km
+            0: 300_000,  # EUR/km   (costs for any other pipeline diameter)
         }
 
         # Insert lifetime
         parameters["lifetime"] = {
-            "power_to_H2": read_costs(costs, "electrolysis", "lifetime"),
+            "power_to_H2_system": 30,  # source: project internal assumption Fraunhofer ISE
+            "power_to_H2_stack": 20,  # 110_000 hours ~ 20 years; source: project internal assumption Fraunhofer ISE
             "H2_to_power": read_costs(costs, "fuel cell", "lifetime"),
             "CH4_to_H2": read_costs(costs, "SMR", "lifetime"),
             "H2_to_CH4": read_costs(costs, "methanation", "lifetime"),
+            "H2_feedin": read_costs(costs, "CH4 (g) pipeline", "lifetime"),
             "H2_underground": read_costs(
                 costs, "hydrogen storage underground", "lifetime"
             ),
@@ -636,20 +938,22 @@ def gas(scenario):
             "H2_pipeline_retrofit": read_costs(
                 costs, "H2 (g) pipeline repurposed", "lifetime"
             ),
+            "Heat_exchanger": 20,  # assumption based on lifetime heat_exchanger; source: E. van der Roest, R. Bol, T. Fens und A. van Wijk, „Utilisation of waste heat from PEM electrolysers - Unlocking local optimisation, 2023
+            "Heat_pipeline": 20,
+            "O2_components": 25,  # source toDO: ask sayed
         }
 
         # Insert costs
         parameters["capital_cost"] = {}
+        parameters["O2_capital_cost"] = {}
 
         for comp in parameters["overnight_cost"].keys():
-            parameters["capital_cost"][comp] = (
-                annualize_capital_costs(
-                    parameters["overnight_cost"][comp],
-                    parameters["lifetime"][comp],
-                    interest_rate,
-                )
-                + parameters["overnight_cost"][comp]
-                * (parameters["FOM"][comp] / 100)
+            parameters["capital_cost"][comp] = annualize_capital_costs(
+                parameters["overnight_cost"][comp],
+                parameters["lifetime"][comp],
+                interest_rate,
+            ) + parameters["overnight_cost"][comp] * (
+                parameters["FOM"][comp] / 100
             )
 
         for comp in ["H2_to_power", "H2_to_CH4"]:
@@ -663,6 +967,13 @@ def gas(scenario):
                 * (parameters["FOM"][comp] / 100)
             ) * parameters["efficiency"][comp]
 
+        for diameter in parameters["O2_pipeline_costs"].keys():
+            parameters["O2_capital_cost"][diameter] = annualize_capital_costs(
+                parameters["O2_pipeline_costs"][diameter],
+                parameters["lifetime"]["O2_components"],
+                interest_rate,
+            )
+
         parameters["marginal_cost"] = {
             "OCGT": read_costs(costs, "OCGT", "VOM"),
             "biogas": read_costs(costs, "biogas", "fuel"),
@@ -671,6 +982,25 @@ def gas(scenario):
 
     elif scenario == "eGon2021":
         parameters = {}
+
+    elif scenario == "status2019":
+        costs = read_csv(2020)
+        parameters = {
+            "main_gas_carrier": "CH4",
+        }
+
+        parameters["marginal_cost"] = {
+            "CH4": global_settings(scenario)["fuel_costs"]["gas"]
+            + global_settings(scenario)["co2_costs"]
+            * global_settings(scenario)["co2_emissions"]["gas"],
+            "OCGT": read_costs(costs, "OCGT", "VOM"),
+            "biogas": global_settings(scenario)["fuel_costs"]["gas"],
+            "chp_gas": read_costs(costs, "central gas CHP", "VOM"),
+        }
+        # Insert effciencies in p.u.
+        parameters["efficiency"] = {
+            "OCGT": read_costs(costs, "OCGT", "efficiency"),
+        }
 
     else:
         print(f"Scenario name {scenario} is not valid.")
@@ -756,6 +1086,38 @@ def mobility(scenario):
     elif scenario == "eGon2021":
         parameters = {}
 
+    elif scenario == "status2019":
+        parameters = {
+            "motorized_individual_travel": {
+                "status2019": {
+                    "ev_count": 200000,
+                    "bev_mini_share": 0.1589,
+                    "bev_medium_share": 0.3533,
+                    "bev_luxury_share": 0.1053,
+                    "phev_mini_share": 0.0984,
+                    "phev_medium_share": 0.2189,
+                    "phev_luxury_share": 0.0652,
+                    "model_parameters": {},
+                }
+            }
+        }
+
+    elif scenario == "status2023":
+        parameters = {
+            "motorized_individual_travel": {
+                "status2023": {
+                    "ev_count": 2577664,
+                    "bev_mini_share": 0.1535,
+                    "bev_medium_share": 0.3412,
+                    "bev_luxury_share": 0.1017,
+                    "phev_mini_share": 0.1038,
+                    "phev_medium_share": 0.2310,
+                    "phev_luxury_share": 0.0688,
+                    "model_parameters": {},
+                }
+            }
+        }
+
     else:
         print(f"Scenario name {scenario} is not valid.")
         parameters = dict()
@@ -779,7 +1141,6 @@ def heat(scenario):
     """
 
     if scenario == "eGon2035":
-
         costs = read_csv(2035)
 
         parameters = {
@@ -860,14 +1221,165 @@ def heat(scenario):
         }
 
     elif scenario == "eGon100RE":
+        costs = read_csv(2050)
+
         parameters = {
-            "DE_demand_reduction_residential": 0.640720648501849,
-            "DE_demand_reduction_service": 0.390895195300713,
-            "DE_district_heating_share": 0.19,
+            "DE_demand_residential_MWh": 536692489.8152325 * 0.71542,
+            # [MWh], source: pypsa-eur run from 2024/12/23:
+            # total heat demand muliplied by residential share from resources/pop_weighted_heat_totals
+            "DE_demand_service_MWh": 536692489.8152325 * (1 - 0.71542),
+            # [MWh], source: pypsa-eur run from 2024/12/23:
+            # total heat demand muliplied by service share from resources/pop_weighted_heat_totals
+            "DE_district_heating_share": 0.42311285313808533,
+            # [%], source: pypsa-eur run from 2024/12/23
         }
+
+        parameters["marginal_cost"] = {
+            "central_heat_pump": read_costs(
+                costs, "central air-sourced heat pump", "VOM"
+            ),
+            "central_gas_chp": read_costs(costs, "central gas CHP", "VOM"),
+            "central_gas_boiler": read_costs(
+                costs, "central gas boiler", "VOM"
+            ),
+            "central_resistive_heater": read_costs(
+                costs, "central resistive heater", "VOM"
+            ),
+            "geo_thermal": 2.7,  # Danish Energy Agency
+            "water_tank_charger": 0,  # Danish Energy Agency
+            "water_tank_discharger": 0,  # Danish Energy Agency
+            "rural_heat_pump": 0,  # Danish Energy Agency, Technology Data for Individual Heating Plants
+        }
+
+        # Insert efficiency in p.u.
+        parameters["efficiency"] = {
+            "water_tank_charger": read_costs(
+                costs, "water tank charger", "efficiency"
+            ),
+            "water_tank_discharger": read_costs(
+                costs, "water tank discharger", "efficiency"
+            ),
+            "central_resistive_heater": read_costs(
+                costs, "central resistive heater", "efficiency"
+            ),
+            "central_gas_boiler": read_costs(
+                costs, "central gas boiler", "efficiency"
+            ),
+            "rural_resistive_heater": read_costs(
+                costs, "decentral resistive heater", "efficiency"
+            ),
+            "rural_gas_boiler": read_costs(
+                costs, "decentral gas boiler", "efficiency"
+            ),
+        }
+
+        # Insert overnight investment costs, in EUR/MWh
+        parameters["overnight_cost"] = {
+            "central_water_tank": read_costs(
+                costs, "central water tank storage", "investment"
+            ),
+            "rural_water_tank": read_costs(
+                costs, "decentral water tank storage", "investment"
+            ),
+        }
+
+        # Insert lifetime
+        parameters["lifetime"] = {
+            "central_water_tank": read_costs(
+                costs, "central water tank storage", "lifetime"
+            ),
+            "rural_water_tank": read_costs(
+                costs, "decentral water tank storage", "lifetime"
+            ),
+        }
+
+        # Insert annualized capital costs
+        parameters["capital_cost"] = {}
+
+        for comp in parameters["overnight_cost"].keys():
+            parameters["capital_cost"][comp] = annualize_capital_costs(
+                parameters["overnight_cost"][comp],
+                parameters["lifetime"][comp],
+                global_settings("eGon100RE")["interest_rate"],
+            )
 
     elif scenario == "eGon2021":
         parameters = {}
+
+    elif scenario == "status2019":
+        parameters = {
+            "DE_demand_residential_TJ": 1658400
+            + 383300,  # [TJ], space heating + hot water, source: AG Energiebilanzen 2019 (https://ag-energiebilanzen.de/wp-content/uploads/2020/10/ageb_20v_v1.pdf)
+            "DE_demand_service_TJ": 567300
+            + 71500,  # [TJ], space heating + hot water, source: AG Energiebilanzen 2019 (https://ag-energiebilanzen.de/wp-content/uploads/2020/10/ageb_20v_v1.pdf)
+            "DE_district_heating_share": (189760 + 38248)
+            / (
+                1658400 + 383300 + 567300 + 71500
+            ),  # [TJ], source: AG Energiebilanzen 2019 (https://ag-energiebilanzen.de/wp-content/uploads/2021/11/bilanz19d.xlsx)
+        }
+
+        costs = read_csv(2020)
+
+        # Insert marginal_costs in EUR/MWh
+        # marginal cost can include fuel, C02 and operation and maintenance costs
+        parameters["marginal_cost"] = {
+            "central_heat_pump": read_costs(
+                costs, "central air-sourced heat pump", "VOM"
+            ),
+            "central_gas_chp": read_costs(costs, "central gas CHP", "VOM"),
+            "central_gas_boiler": read_costs(
+                costs, "central gas boiler", "VOM"
+            ),
+            "central_resistive_heater": read_costs(
+                costs, "central resistive heater", "VOM"
+            ),
+            "rural_heat_pump": 0,  # Danish Energy Agency, Technology Data for Individual Heating Plants
+        }
+
+        # Insert efficiency in p.u.
+        parameters["efficiency"] = {
+            "central_gas_boiler": read_costs(
+                costs, "central gas boiler", "efficiency"
+            ),
+        }
+
+    # elif scenario == "status2023":
+    #     parameters = {
+    #         #  source: AG Energiebilanzen 2022  https://ag-energiebilanzen.de/wp-content/uploads/2023/01/AGEB_22p2_rev-1.pdf
+    #         "DE_demand_residential_TJ": 1754.2 * 1e3
+    #         + 407.5 * 1e3,  # [TJ], Endenergieverbrauch Haushalte 2.1 Raumwärme + Warmwasser
+    #         "DE_demand_service_TJ": 668.4 * 1e3
+    #         + 44.3 * 1e3 ,  # [TJ], Endenergieverbrauch GHD 3.1 Raumwärme + Warmwasser
+    #         "DE_district_heating_share": (189760 + 38248)
+    #         / (
+    #             1658400 + 383300 + 567300 + 71500
+    #         ),  # [TJ], source: AG Energiebilanzen 2019 (https://ag-energiebilanzen.de/wp-content/uploads/2021/11/bilanz19d.xlsx)
+    #     } # TODO status2023 needs update
+    #
+    #     costs = read_csv(2020)
+    #
+    #     # Insert marginal_costs in EUR/MWh
+    #     # marginal cost can include fuel, C02 and operation and maintenance costs
+    #     parameters["marginal_cost"] = {
+    #         "central_heat_pump": read_costs(
+    #             costs, "central air-sourced heat pump", "VOM"
+    #         ),
+    #         "central_gas_chp": read_costs(costs, "central gas CHP", "VOM"),
+    #         "central_gas_boiler": read_costs(
+    #             costs, "central gas boiler", "VOM"
+    #         ),
+    #         "central_resistive_heater": read_costs(
+    #             costs, "central resistive heater", "VOM"
+    #         ),
+    #         "rural_heat_pump": 0,  # Danish Energy Agency, Technology Data for Individual Heating Plants
+    #     }
+    #
+    #     # Insert efficiency in p.u.
+    #     parameters["efficiency"] = {
+    #         "central_gas_boiler": read_costs(
+    #             costs, "central gas boiler", "efficiency"
+    #         ),
+    #     }
 
     else:
         print(f"Scenario name {scenario} is not valid.")

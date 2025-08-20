@@ -1,6 +1,5 @@
-"""The central module containing all code dealing with small scale inpu-data
+"""The central module containing all code dealing with small scale input-data
 """
-
 
 from pathlib import Path
 from urllib.request import urlretrieve
@@ -13,7 +12,7 @@ from egon.data.datasets import Dataset
 
 def download():
     """
-    Download small scale imput data from Zenodo
+    Download small scale input data from Zenodo
     Parameters
     ----------
 
@@ -30,8 +29,10 @@ def download():
     )
     target_file = config.datasets()["data-bundle"]["targets"]["file"]
 
-    # Retrieve files
-    urlretrieve(url, target_file)
+    # check if file exists
+    if not Path(target_file).exists():
+        # Retrieve files
+        urlretrieve(url, target_file)
 
     with zipfile.ZipFile(target_file, "r") as zip_ref:
         zip_ref.extractall(".")
@@ -42,9 +43,12 @@ class DataBundle(Dataset):
         deposit_id = config.datasets()["data-bundle"]["sources"]["zenodo"][
             "deposit_id"
         ]
+        deposit_id_powerd = config.datasets()["data-bundle"]["sources"][
+            "zenodo"
+        ]["deposit_id"]
         super().__init__(
             name="DataBundle",
-            version=f"{deposit_id}-0.0.1",
+            version=f"{deposit_id}-{deposit_id_powerd}-0.0.3",
             dependencies=dependencies,
             tasks=(download,),
         )

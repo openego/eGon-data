@@ -6,12 +6,14 @@ Berlin ifeu – Institut für Energie- und Umweltforschung Heidelberg GmbH
 Februar 2017
 
 """
-from pathlib import Path
 
-import numpy as np
+from pathlib import Path
+import os
 
 import geopandas as gpd
+import numpy as np
 import pandas as pd
+
 from egon.data import config, db
 
 
@@ -105,7 +107,7 @@ def calc_geothermal_costs(max_costs=np.inf, min_costs=0):
 
 
 def calc_usable_geothermal_potential(max_costs=2, min_costs=0):
-    """ Calculate geothermal potentials close to district heating demands
+    """Calculate geothermal potentials close to district heating demands
 
     Parameters
     ----------
@@ -216,7 +218,7 @@ def potential_germany():
 
     The investment costs for geothermal district heating highly depend on
     the location because of different mass flows and drilling depths.
-    Thsi functions calcultaes the geothermal potentials close to germany
+    This functions calcultaes the geothermal potentials close to germany
     for five different costs ranges.
     This data can be used in pypsa-eur-sec to optimise the share of
     geothermal district heating by considering different investment costs.
@@ -248,6 +250,9 @@ def potential_germany():
         max_costs=10, min_costs=5
     )
 
+    if not os.path.isdir("input-pypsa-eur-sec"):
+        os.mkdir("input-pypsa-eur-sec")
+
     pd.DataFrame(geothermal_costs_and_potentials).reset_index().rename(
         {"index": "cost [EUR/kW]", 0: "potential [MW]"}, axis=1
-    ).to_csv("geothermal_potential_germany.csv")
+    ).to_csv("input-pypsa-eur-sec/geothermal_potential_germany.csv")

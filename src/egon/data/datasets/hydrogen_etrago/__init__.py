@@ -14,24 +14,18 @@ only on the hydrogen related components in Germany, and the module
 related components abroad.
 
 """
+
+from egon.data import config
 from egon.data.datasets import Dataset
-from egon.data.datasets.hydrogen_etrago.bus import (
-    insert_hydrogen_buses,
-    insert_hydrogen_buses_eGon100RE,
-)
+from egon.data.datasets.hydrogen_etrago.bus import insert_hydrogen_buses
 from egon.data.datasets.hydrogen_etrago.h2_grid import insert_h2_pipelines
-from egon.data.datasets.hydrogen_etrago.h2_to_ch4 import (
-    insert_h2_to_ch4_eGon100RE,
-    insert_h2_to_ch4_to_h2,
-)
+from egon.data.datasets.hydrogen_etrago.h2_to_ch4 import insert_h2_to_ch4_to_h2
 from egon.data.datasets.hydrogen_etrago.power_to_h2 import (
     insert_power_to_h2_to_power,
-    insert_power_to_h2_to_power_eGon100RE,
 )
 from egon.data.datasets.hydrogen_etrago.storage import (
     insert_H2_overground_storage,
     insert_H2_saltcavern_storage,
-    insert_H2_storage_eGon100RE,
     write_saltcavern_potential,
 )
 
@@ -68,8 +62,7 @@ class HydrogenBusEtrago(Dataset):
             dependencies=dependencies,
             tasks=(
                 write_saltcavern_potential,
-                insert_hydrogen_buses,
-                insert_hydrogen_buses_eGon100RE,
+                insert_h2_buses_for_scn,
             ),
         )
 
@@ -78,17 +71,13 @@ class HydrogenStoreEtrago(Dataset):
     """
     Insert the H2 stores into the database for Germany
 
-    Insert the H2 stores in Germany into the database for the scenarios
-    eGon2035 and eGon100RE:
-
-    * H2 overground stores or steel tanks at each H2_grid bus with the
-      function :py:func:`insert_H2_overground_storage <egon.data.datasets.hydrogen_etrago.storage.insert_H2_overground_storage>`
-      for the scenario eGon2035,
-    * H2 underground stores or saltcavern stores at each H2_saltcavern
-      bus with the function :py:func:`insert_H2_saltcavern_storage <egon.data.datasets.hydrogen_etrago.storage.insert_H2_saltcavern_storage>`
-      for the scenario eGon2035,
-    * H2 stores (overground and underground) for the scenario eGon100RE
-      with the function :py:func:`insert_H2_storage_eGon100RE <egon.data.datasets.hydrogen_etrago.storage.insert_H2_storage_eGon100RE>`.
+    Insert the H2 stores in Germany into the database for all scenarios:
+      * H2 overground stores or steel tanks at each H2 bus with the
+        function :py:func:`insert_H2_overground_storage <egon.data.datasets.hydrogen_etrago.storage.insert_H2_overground_storage>`
+        for all scenarios,
+      * H2 underground stores or saltcavern stores at each H2_saltcavern
+        bus with the function :py:func:`insert_H2_saltcavern_storage <egon.data.datasets.hydrogen_etrago.storage.insert_H2_saltcavern_storage>`
+        for all scenarios ,
 
     *Dependencies*
       * :py:class:`SaltcavernData <egon.data.datasets.saltcavern.SaltcavernData>`
@@ -116,7 +105,6 @@ class HydrogenStoreEtrago(Dataset):
             tasks=(
                 insert_H2_overground_storage,
                 insert_H2_saltcavern_storage,
-                insert_H2_storage_eGon100RE,
             ),
         )
 
@@ -152,10 +140,7 @@ class HydrogenPowerLinkEtrago(Dataset):
             name=self.name,
             version=self.version,
             dependencies=dependencies,
-            tasks=(
-                insert_power_to_h2_to_power,
-                insert_power_to_h2_to_power_eGon100RE,
-            ),
+            tasks=(insert_power_to_h2_to_power,),
         )
 
 
@@ -192,16 +177,16 @@ class HydrogenMethaneLinkEtrago(Dataset):
             name=self.name,
             version=self.version,
             dependencies=dependencies,
-            tasks=(insert_h2_to_ch4_to_h2, insert_h2_to_ch4_eGon100RE),
+            tasks=(insert_h2_to_ch4_to_h2),
         )
 
 
 class HydrogenGridEtrago(Dataset):
     """
-    Insert the H2 grid in Germany into the database for eGon100RE
+    Insert the H2 grid in Germany into the database for eGon2035 and eGon100RE
 
     Insert the H2 links (pipelines) into Germany in the database for the
-    scenario eGon100RE by executing the function
+    scenario eGon2035/eGon100RE by executing the function
     :py:func:`insert_h2_pipelines <egon.data.datasets.hydrogen_etrago.h2_grid.insert_h2_pipelines>`.
 
     *Dependencies*
@@ -228,5 +213,25 @@ class HydrogenGridEtrago(Dataset):
             name=self.name,
             version=self.version,
             dependencies=dependencies,
-            tasks=(insert_h2_pipelines,),
+            tasks=insert_h2_pipelines_for_scn,
         )
+
+
+def insert_h2_pipelines_for_scn():
+    scenarios = config.settings()["egon-data"]["--scenarios"]
+
+    if "eGon2035" in scenarios:
+        insert_h2_pipelines("eGon2035")
+
+    if "eGon100RE" in scenarios:
+        insert_h2_pipelines("eGon100RE")
+
+
+def insert_h2_buses_for_scn():
+    scenarios = config.settings()["egon-data"]["--scenarios"]
+
+    if "eGon2035" in scenarios:
+        insert_hydrogen_buses("eGon2035")
+
+    if "eGon100RE" in scenarios:
+        insert_hydrogen_buses("eGon100RE")

@@ -1,21 +1,21 @@
 """The central module containing all code dealing with power to heat
 """
+
 from shapely.geometry import LineString
 import geopandas as gpd
 import pandas as pd
-
 
 from egon.data import config, db
 from egon.data.datasets.scenario_parameters import get_sector_parameters
 
 
-def insert_individual_power_to_heat(scenario="eGon2035"):
+def insert_individual_power_to_heat(scenario):
     """Insert power to heat into database
 
     Parameters
     ----------
     scenario : str, optional
-        Name of the scenario The default is 'eGon2035'.
+        Name of the scenario.
 
     Returns
     -------
@@ -34,7 +34,8 @@ def insert_individual_power_to_heat(scenario="eGon2035"):
         WHERE link_id IN (
             SELECT link_id FROM {targets['heat_links']['schema']}.
         {targets['heat_links']['table']}
-        WHERE carrier IN ('individual_heat_pump', 'rural_heat_pump')
+        WHERE carrier IN ('individual_heat_pump', 'rural_heat_pump',
+                          'rural_resisitive_heater')
         AND scn_name = '{scenario}')
         AND scn_name = '{scenario}'
         """
@@ -43,7 +44,8 @@ def insert_individual_power_to_heat(scenario="eGon2035"):
         f"""
         DELETE FROM {targets['heat_links']['schema']}.
         {targets['heat_links']['table']}
-        WHERE carrier IN ('individual_heat_pump', 'rural_heat_pump')
+        WHERE carrier IN ('individual_heat_pump', 'rural_heat_pump',
+                          'rural_resisitive_heater')
         AND bus0 IN 
         (SELECT bus_id 
          FROM {targets['heat_buses']['schema']}.
@@ -90,7 +92,7 @@ def insert_individual_power_to_heat(scenario="eGon2035"):
     heat_pumps["voltage_level"] = 7
 
     # Set marginal_cost
-    heat_pumps["marginal_cost"] = get_sector_parameters("heat", "eGon2035")[
+    heat_pumps["marginal_cost"] = get_sector_parameters("heat", scenario)[
         "marginal_cost"
     ]["rural_heat_pump"]
 
@@ -99,17 +101,54 @@ def insert_individual_power_to_heat(scenario="eGon2035"):
         heat_pumps,
         carrier="rural_heat_pump",
         multiple_per_mv_grid=False,
-        scenario="eGon2035",
+        scenario=scenario,
     )
 
+    # Deal with rural resistive heaters
+    # Select resisitve heaters for individual heating
+    resistive_heaters = db.select_dataframe(
+        f"""
+        SELECT mv_grid_id as power_bus,
+        a.carrier, capacity, b.bus_id as heat_bus
+        FROM {sources['individual_heating_supply']['schema']}.
+            {sources['individual_heating_supply']['table']} a
+        JOIN {targets['heat_buses']['schema']}.
+        {targets['heat_buses']['table']} b
+        ON ST_Intersects(
+            ST_Buffer(ST_Transform(ST_Centroid(a.geometry), 4326), 0.00000001),
+            geom)
+        WHERE scenario = '{scenario}'
+        AND scn_name  = '{scenario}'
+        AND a.carrier = 'resistive_heater'
+        AND b.carrier = 'rural_heat'
+        """
+    )
 
-def insert_central_power_to_heat(scenario="eGon2035"):
+    if resistive_heaters.empty:
+        print(f"No rural resistive heaters in scenario {scenario}.")
+    else:
+        # Assign voltage level
+        resistive_heaters["voltage_level"] = 7
+
+        # Set marginal_cost
+        resistive_heaters["marginal_cost"] = 0
+
+        # Insert heatpumps
+        insert_power_to_heat_per_level(
+            resistive_heaters,
+            carrier="rural_resistive_heater",
+            multiple_per_mv_grid=False,
+            scenario=scenario,
+        )
+
+
+def insert_central_power_to_heat(scenario):
     """Insert power to heat in district heating areas into database
 
     Parameters
     ----------
-    scenario : str, optional
-        Name of the scenario The default is 'eGon2035'.
+    scenario : str
+        Name of the scenario.
 
     Returns
     -------
@@ -182,7 +221,7 @@ def insert_central_power_to_heat(scenario="eGon2035"):
 
     # Set marginal_cost
     central_heat_pumps["marginal_cost"] = get_sector_parameters(
-        "heat", "eGon2035"
+        "heat", scenario
     )["marginal_cost"]["central_heat_pump"]
 
     # Insert heatpumps in mv and below
@@ -190,14 +229,16 @@ def insert_central_power_to_heat(scenario="eGon2035"):
     insert_power_to_heat_per_level(
         central_heat_pumps[central_heat_pumps.voltage_level > 3],
         multiple_per_mv_grid=False,
-        scenario="eGon2035",
+        carrier="central_heat_pump",
+        scenario=scenario,
     )
     # Insert heat pumps in hv grid
     # (as many hvmv substations as intersect with district heating grid)
     insert_power_to_heat_per_level(
         central_heat_pumps[central_heat_pumps.voltage_level < 3],
         multiple_per_mv_grid=True,
-        scenario="eGon2035",
+        carrier="central_heat_pump",
+        scenario=scenario,
     )
 
     # Delete existing entries
@@ -242,7 +283,7 @@ def insert_central_power_to_heat(scenario="eGon2035"):
 
     # Set efficiency
     central_resistive_heater["efficiency"] = get_sector_parameters(
-        "heat", "eGon2035"
+        "heat", scenario
     )["efficiency"]["central_resistive_heater"]
 
     # Insert heatpumps in mv and below
@@ -261,7 +302,7 @@ def insert_central_power_to_heat(scenario="eGon2035"):
             ],
             multiple_per_mv_grid=False,
             carrier="central_resistive_heater",
-            scenario="eGon2035",
+            scenario=scenario,
         )
     # Insert heat pumps in hv grid
     # (as many hvmv substations as intersect with district heating grid)
@@ -269,15 +310,15 @@ def insert_central_power_to_heat(scenario="eGon2035"):
         central_resistive_heater[central_resistive_heater.voltage_level < 3],
         multiple_per_mv_grid=True,
         carrier="central_resistive_heater",
-        scenario="eGon2035",
+        scenario=scenario,
     )
 
 
 def insert_power_to_heat_per_level(
     heat_pumps,
     multiple_per_mv_grid,
-    carrier="central_heat_pump",
-    scenario="eGon2035",
+    carrier,
+    scenario,
 ):
     """Insert power to heat plants per grid level
 
@@ -287,8 +328,8 @@ def insert_power_to_heat_per_level(
         Heat pumps in selected grid level
     multiple_per_mv_grid : boolean
         Choose if one district heating areas is supplied by one hvmv substation
-    scenario : str, optional
-        Name of the scenario The default is 'eGon2035'.
+    scenario : str
+        Name of the scenario.
 
     Returns
     -------
@@ -300,7 +341,9 @@ def insert_power_to_heat_per_level(
 
     if "central" in carrier:
         # Calculate heat pumps per electrical bus
-        gdf = assign_electrical_bus(heat_pumps, carrier, multiple_per_mv_grid)
+        gdf = assign_electrical_bus(
+            heat_pumps, carrier, scenario, multiple_per_mv_grid
+        )
 
     else:
         gdf = heat_pumps.copy()
@@ -346,7 +389,7 @@ def insert_power_to_heat_per_level(
     )
 
     # Insert values into dataframe
-    links.bus0 = gdf.power_bus.values
+    links.bus0 = gdf.power_bus.values.astype(int)
     links.bus1 = gdf.heat_bus.values
     links.p_nom = gdf.capacity.values
     links.topo = gdf.geometry.values
@@ -433,7 +476,9 @@ def assign_voltage_level(heat_pumps, carrier="heat_pump"):
     return heat_pumps
 
 
-def assign_electrical_bus(heat_pumps, carrier, multiple_per_mv_grid=False):
+def assign_electrical_bus(
+    heat_pumps, carrier, scenario, multiple_per_mv_grid=False
+):
     """Calculates heat pumps per electrical bus
 
     Parameters
@@ -462,10 +507,12 @@ def assign_electrical_bus(heat_pumps, carrier, multiple_per_mv_grid=False):
         {targets['heat_buses']['table']}
         JOIN {sources['district_heating_areas']['schema']}.
             {sources['district_heating_areas']['table']}
-        ON ST_Transform(ST_Centroid(geom_polygon), 4326) = geom
+        ON ST_Intersects(
+        ST_Transform(ST_Buffer(
+        ST_Centroid(geom_polygon), 0.0000001), 4326), geom)
         WHERE carrier = 'central_heat'
-        AND scenario='eGon2035'
-        AND scn_name = 'eGon2035'
+        AND scenario='{scenario}'
+        AND scn_name = '{scenario}'
         """,
         index_col="id",
     )
@@ -495,8 +542,8 @@ def assign_electrical_bus(heat_pumps, carrier, multiple_per_mv_grid=False):
         JOIN society.destatis_zensus_population_per_ha
         ON society.destatis_zensus_population_per_ha.id =
         a.zensus_population_id
-        WHERE a.scenario = 'eGon2035'
-        AND b.scenario = 'eGon2035'
+        WHERE a.scenario = '{scenario}'
+        AND b.scenario = '{scenario}'
         GROUP BY (area_id, a.zensus_population_id, geom_point)
         """,
         epsg=4326,
@@ -543,9 +590,11 @@ def assign_electrical_bus(heat_pumps, carrier, multiple_per_mv_grid=False):
                 power_to_heat.area_id
             ].values
 
-        power_to_heat["share_demand"] = power_to_heat.groupby(
-            "area_id"
-        ).demand.apply(lambda grp: grp / grp.sum())
+        power_to_heat["share_demand"] = (
+            power_to_heat.groupby("area_id")
+            .demand.apply(lambda grp: grp / grp.sum())
+            .values
+        )
 
         power_to_heat["capacity"] = power_to_heat["share_demand"].mul(
             heat_pumps.capacity[power_to_heat.area_id].values

@@ -2,7 +2,7 @@ from sqlalchemy import Column, Integer, String
 from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.types import Boolean
 
-from egon.data import db
+from egon.data import config, db
 
 Base = declarative_base()
 
@@ -13,6 +13,7 @@ class EgonMapZensusMvgdBuildings(Base):
     cts, heat and electricity timeseries. Including census cells, mvgd bus_id,
     building type (osm or synthetic)
     """
+
     __tablename__ = "egon_map_zensus_mvgd_buildings"
     __table_args__ = {"schema": "boundaries"}
 
@@ -23,6 +24,9 @@ class EgonMapZensusMvgdBuildings(Base):
     osm = Column(Boolean, index=True)
     electricity = Column(Boolean, index=True)
     heat = Column(Boolean, index=True)
+
+
+scenarios = config.settings()["egon-data"]["--scenarios"]
 
 
 def map_all_used_buildings():
@@ -55,7 +59,7 @@ def map_all_used_buildings():
                 boundaries.egon_map_zensus_grid_districts AS mvgd
             WHERE bld.id = peak.building_id
 -- Buildings do not change in the scenarios
-                AND peak.scenario = 'eGon2035'
+                AND peak.scenario = '{scenarios[0]}'
                 AND ST_Within(bld.geom_point, zensus.geom)
                 AND mvgd.zensus_population_id = zensus.id;
 
