@@ -109,7 +109,7 @@ class HeavyDutyTransport(Dataset):
     #:
     name: str = "HeavyDutyTransport"
     #:
-    version: str = "0.0.2"
+    version: str = "0.0.3"
 
     def __init__(self, dependencies):
         super().__init__(
