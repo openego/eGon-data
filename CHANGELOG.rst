@@ -16,6 +16,9 @@ Changed
 Bug Fixes
 ---------
 
+* Fix URL of BASt traffic data
+  `#1347 <https://github.com/openego/eGon-data/issues/1347>`_
+
 
 Version 2.0.0 (2025-08-20)
 ==========================
