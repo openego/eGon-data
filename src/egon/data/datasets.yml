@@ -1231,7 +1231,7 @@ mobility_hgv:
     original_data:
       sources:
         BAST:
-          url: "https://www.bast.de/DE/Verkehrstechnik/Fachthemen/v2-verkehrszaehlung/Daten/2020_1/Jawe2020.csv?view=renderTcDataExportCSV&cms_strTyp=A"
+          url: "https://www.bast.de/DE/Themen/Digitales/HF_1/Massnahmen/verkehrszaehlung/Daten/2020_1/Jawe2020.csv?view=renderTcDataExportCSV&strTyp=A"
           file: "Jawe2020.csv"
           relevant_columns: ["DTV_SV_MobisSo_Q", "Koor_WGS84_E", "Koor_WGS84_N"]
           srid: 4326
