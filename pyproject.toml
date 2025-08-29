@@ -73,7 +73,7 @@ dependencies = [
   "markupsafe",
   "matplotlib",
   "netcdf4",
-  "numpy",
+  "numpy<=1.26.5",
   "oedialect==0.0.8",
   "oemetadata<=2.0.1",
   "omi",
