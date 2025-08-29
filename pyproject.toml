@@ -96,7 +96,7 @@ dependencies = [
   "sqlalchemy",
   "tabulate>=0.8.10",  # Python 3.10-safe
   "wtforms",
-  "xarray",
+  "xarray==2023.1.0",
   "xlrd",
   "fuzzywuzzy",
 ]
