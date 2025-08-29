@@ -5,12 +5,10 @@ OSM landuse extraction and load areas creation.
 
 import os
 
-from airflow.operators.postgres_operator import PostgresOperator
 from geoalchemy2.types import Geometry
 from sqlalchemy import Column, Float, Integer, String
 from sqlalchemy.dialects.postgresql import HSTORE
 from sqlalchemy.ext.declarative import declarative_base
-import importlib_resources as resources
 
 from egon.data import db
 from egon.data.datasets import Dataset
