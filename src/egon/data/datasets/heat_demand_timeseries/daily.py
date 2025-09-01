@@ -136,7 +136,7 @@ def map_climate_zones_to_zensus():
     # Join climate zones and census cells
     join = (
         census_cells.sjoin(temperature_zones)
-        .rename({"index_right": "climate_zone"}, axis="columns")
+        .rename({"Zone": "climate_zone"}, axis="columns")
         .climate_zone
     )
 
