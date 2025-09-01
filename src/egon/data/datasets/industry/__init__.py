@@ -248,8 +248,9 @@ def industrial_demand_distr():
         landuse = gpd.sjoin(
             landuse, boundaries, how="inner", predicate="intersects"
         )
+
         # Rename column
-        landuse = landuse.rename({"index_right": "nuts3"}, axis=1)
+        landuse = landuse.rename({"nuts": "nuts3"}, axis=1)
 
         landuse_nuts3 = landuse[["area_ha", "nuts3"]]
         landuse_nuts3 = landuse_nuts3.groupby(["nuts3"]).sum().reset_index()
