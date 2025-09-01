@@ -106,7 +106,7 @@ def mapping():
     )
 
     # Rename columns
-    df.rename({"index_right": "vg250_lan"}, axis=1, inplace=True)
+    df.rename({"gen": "vg250_lan"}, axis=1, inplace=True)
 
     # Insert to database
     df.to_sql(
