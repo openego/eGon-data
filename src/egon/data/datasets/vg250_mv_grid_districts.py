@@ -102,7 +102,7 @@ def mapping():
 
     # Join mv grid districts and federal states
     df = pd.DataFrame(
-        gpd.sjoin(mv_grid_districts, federal_states)["index_right"]
+        gpd.sjoin(mv_grid_districts, federal_states)["gen"]
     )
 
     # Rename columns
