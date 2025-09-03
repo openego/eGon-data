@@ -194,7 +194,7 @@ Before requesting a review, please
 3. Make sure that your changes are tested in integration with other
    tasks and on a complete run at least once by merging them into a branch
    that is tested. That could be a release-branch or a continous-integration
-   branch. We will discuss which brnach is tested in which point in time
+   branch. We will discuss which branch is tested in which point in time
    during our regular meetings.
 4. Update documentation when there's new API, functionality etc.
 5. Add a note to ``CHANGELOG.rst`` about the changes and refer to the
