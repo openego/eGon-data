@@ -12,17 +12,19 @@ Fixes # .
 
 Before requesting a review, make sure you've completed all of the following:
 
-- [ ] All tests pass locally (`tox`) or via CI
+- [ ] All **tests pass** locally or via CI
+      _(for more information on local test, check `tox` in the [Contributing section](https://egon-data.readthedocs.io/en/latest/contributing.html#))_
+      _(CI tests are automatically executed when creating a PR, you can see the results of the checks below)_
 - [ ] Workflow has run at least once in **Test mode**
       _(optional if no dataset changes are involved)_
-- [ ] Changes have been tested in **Everything mode**
-      _(e.g., by merging into a release or CI branch)_
 - [ ] Relevant **documentation is updated** (API, new features, etc.)
+- [ ] Dataset-versions are updated when existing datasets are adjusted.
 - [ ] Added a note to `CHANGELOG.rst` about the changes
 - [ ] Added yourself to `AUTHORS.rst`
 
 Optional:
 
+- [ ] Changes have been tested in **Everything mode**
 - [ ] Extend the checklist for reviewers: Which aspects should be reviewed in particular?
 
 ```markdown
