@@ -176,6 +176,7 @@ probably be grouped into separate commits.
     style fixes separated from your actually meaningful changes, which
     makes the reviewers job a lot easier.
 
+.. _pr_guidelines:
 Pull Request Guidelines
 -----------------------
 
@@ -188,12 +189,13 @@ Before requesting a review, please
 
 1. Include passing tests (run ``tox``). [#tox-note]_
 2. Let the workflow run in :ref:`Test mode` once from scratch to verify
-   successful execution
+   successful execution. If the changes do not effect the datasets, this
+   step is not required.
 3. Make sure that your changes are tested in integration with other
-   tasks and on a complete run at least once by merging them into the
-   `continuous-integration/run-everything-over-the-weekend`_ branch.
-   This branch will regularly be checked out and tested on a complete
-   workflow run on friday evening.
+   tasks and on a complete run at least once by merging them into a branch
+   that is tested. That could be a release-branch or a continous-integration
+   branch. We will discuss which branch is tested in which point in time
+   during our regular meetings.
 4. Update documentation when there's new API, functionality etc.
 5. Add a note to ``CHANGELOG.rst`` about the changes and refer to the
    corresponding Github issue.
@@ -239,6 +241,7 @@ Things that definitely should be checked during a review of a PR:
   verify. In case of a pending metadata creation make sure an appropriate
   issue is filed.
 
+Please also have a look at the checklist in each PR.
 
 Extending the data workflow
 ===========================
