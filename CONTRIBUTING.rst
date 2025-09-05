@@ -199,7 +199,7 @@ Before requesting a review, please
 4. Update documentation when there's new API, functionality etc.
 5. Add a note to ``CHANGELOG.rst`` about the changes and refer to the
    corresponding Github issue.
-6. Add yourself to ``AUTHORS.rst``.
+6. Add yourself to ``pyproject.toml``.
 
 .. [#tox-note]
     If you don't have all the necessary Python versions available locally
