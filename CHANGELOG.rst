@@ -71,7 +71,7 @@ Added
   `#273 <https://github.com/openego/powerd-data/pull/273>`_
   `#271 <https://github.com/openego/powerd-data/pull/271>`_
   `#268 <https://github.com/openego/powerd-data/pull/268>`_
-  `#267 <https://github.com/openego/powerd-data/pull/267>`_
+  `#267_powerd-data <https://github.com/openego/powerd-data/pull/267>`_
   `#265 <https://github.com/openego/powerd-data/pull/265>`_
   `#264 <https://github.com/openego/powerd-data/pull/264>`_
   `#256 <https://github.com/openego/powerd-data/pull/256>`_
@@ -81,7 +81,7 @@ Added
   `#274 <https://github.com/openego/powerd-data/pull/274>`_
   `#245 <https://github.com/openego/powerd-data/pull/245>`_
   `#244 <https://github.com/openego/powerd-data/pull/244>`_
-  `#243 <https://github.com/openego/powerd-data/pull/243>`_
+  `#243_powerd-data <https://github.com/openego/powerd-data/pull/243>`_
   `#241 <https://github.com/openego/powerd-data/pull/241>`_
   `#237 <https://github.com/openego/powerd-data/pull/237>`_
 
