@@ -7,7 +7,8 @@ Unreleased
 
 Added
 -----
-
+* Make egon-data runnable in python 3.10
+  `#1352 <https://github.com/openego/egon-data/issues/1352>`_
 
 Changed
 -------
@@ -17,8 +18,7 @@ Bug Fixes
 ---------
 
 * Fix URL of BASt traffic data
-  `#1347 <https://github.com/openego/eGon-data/issues/1347>`_
-
+  `#1352 <https://github.com/openego/eGon-data/issues/1352>`_
 
 Version 2.0.0 (2025-08-20)
 ==========================
