@@ -21,7 +21,6 @@ import requests
 
 from egon.data import config, db
 from egon.data.config import settings
-from egon.data.datasets import Dataset
 from egon.data.datasets.etrago_helpers import (
     finalize_bus_insertion,
     initialise_bus_insertion,
@@ -34,7 +33,10 @@ logger = logging.getLogger(__name__)
 from egon.data.datasets import Dataset, DatasetSources, DatasetTargets
 
 
+
+
 class IndustrialGasDemand(Dataset):
+    
     """
     Download the industrial gas demands from the opendata.ffe database
 
@@ -45,9 +47,6 @@ class IndustrialGasDemand(Dataset):
       * :py:class:`ScenarioParameters <egon.data.datasets.scenario_parameters.ScenarioParameters>`
 
     """
-
-    #:
-class IndustrialGasDemand(Dataset):
     name: str = "IndustrialGasDemand"
     version: str = "0.0.6"
 
@@ -77,7 +76,7 @@ class IndustrialGasDemand(Dataset):
             name=self.name,
             version=self.version,
             dependencies=dependencies,
-            tasks=(download_industrial_gas_demand),
+            tasks=(download_industrial_gas_demand,),
         )
 
 
@@ -111,7 +110,7 @@ class IndustrialGasDemandeGon2035(Dataset):
             name=self.name,
             version=self.version,
             dependencies=dependencies,
-            tasks=(insert_industrial_gas_demand_egon2035),
+            tasks=(insert_industrial_gas_demand_egon2035,),
         )
 
 
@@ -144,7 +143,7 @@ class IndustrialGasDemandeGon100RE(Dataset):
             name=self.name,
             version=self.version,
             dependencies=dependencies,
-            tasks=(insert_industrial_gas_demand_egon100RE),
+            tasks=(insert_industrial_gas_demand_egon100RE,),
         )
 
 
@@ -711,7 +710,7 @@ def download_industrial_gas_demand():
                 target_file = (
                     Path(IndustrialGasDemand.sources.tables["industrial_demand_folder"])
                     / f"{carrier}_{scn_name}.json"
-            )
+                )
                 pd.read_json(result.content).to_json(target_file)
     except:
         logger.warning(
