@@ -13,7 +13,7 @@ from geoalchemy2 import Geometry
 import geopandas as gpd
 
 from egon.data import db
-from egon.data.datasets import Dataset
+from egon.data.datasets import Dataset, DatasetSources, DatasetTargets
 import egon.data.config
 
 
@@ -26,23 +26,19 @@ def to_postgres():
     """
 
     # Get information from data configuraiton file
-    data_config = egon.data.config.datasets()
-    bgr_processed = data_config["bgr"]["processed"]
-
+    #data_config = egon.data.config.datasets()
+    #bgr_processed = data_config["bgr"]["processed"]
+    schema = SaltcavernData.targets.tables["saltcaverns"]["schema"]
+    table = SaltcavernData.targets.tables["satcaverns"]["tables"]
     # Create target schema
-    db.execute_sql(f"CREATE SCHEMA IF NOT EXISTS {bgr_processed['schema']};")
+    db.execute_sql(f"CREATE SCHEMA IF NOT EXISTS {schema};")
 
     engine_local_db = db.engine()
 
     # Extract shapefiles from zip archive and send it to postgres db
-    for filename, table in bgr_processed["file_table_map"].items():
+    for filename, path in SaltcavernData.sources.files.items():
         # Open files and read .shp (within .zip) with geopandas
-        shp_file_path = (
-            Path(".")
-            / "data_bundle_egon_data"
-            / "hydrogen_storage_potential_saltstructures"
-            / filename
-        )
+        shp_file_path = Path(path)
         data = gpd.read_file(shp_file_path).to_crs(epsg=4326)
         data = (
             data[
@@ -64,15 +60,13 @@ def to_postgres():
 
         # Drop table before inserting data
         db.execute_sql(
-            f"DROP TABLE IF EXISTS "
-            f"{bgr_processed['schema']}.{table} CASCADE;"
-        )
+            f"DROP TABLE IF EXISTS {schema}.{table} CASCADE;")
 
         # create database table from geopandas dataframe
         data.to_postgis(
             table,
             engine_local_db,
-            schema=bgr_processed["schema"],
+            schema= schema,
             index=True,
             if_exists="replace",
             dtype={"geometry": Geometry()},
@@ -80,14 +74,12 @@ def to_postgres():
 
         # add primary key
         db.execute_sql(
-            f"ALTER TABLE {bgr_processed['schema']}.{table} "
-            f"ADD PRIMARY KEY (saltstructure_id);"
+            f"ALTER TABLE {schema}.{table} ADD PRIMARY KEY (saltstructure_id);"
         )
 
         # Add index on geometry column
         db.execute_sql(
-            f"CREATE INDEX {table}_geometry_idx ON "
-            f"{bgr_processed['schema']}.{table} USING gist (geometry);"
+            f"CREATE INDEX {table}_geometry_idx ON {schema}.{table} USING gist (geometry);"
         )
 
 
@@ -111,6 +103,22 @@ class SaltcavernData(Dataset):
     name: str = "SaltcavernData"
     #:
     version: str = "0.0.1"
+    
+    
+    sources = DatasetSources(
+        files={
+            "inspee_saltstructures.zip": "data_bundle_egon_data/hydrogen_storage_potential_saltstructures/inspee_saltstructures.zip"
+        }
+    )
+
+    targets = DatasetTargets(
+        tables={
+            "saltcaverns": {
+                "schema": "boundaries",
+                "table": "inspee_saltstructures",
+            },
+        }
+    )
 
     def __init__(self, dependencies):
         super().__init__(
