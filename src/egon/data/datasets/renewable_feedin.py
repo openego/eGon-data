@@ -12,7 +12,7 @@ import numpy as np
 import pandas as pd
 
 from egon.data import db
-from egon.data.datasets import Dataset
+from egon.data.datasets import Dataset, DatasetSources, DatasetTargets
 from egon.data.datasets.era5 import EgonEra5Cells, EgonRenewableFeedIn, import_cutout
 from egon.data.datasets.scenario_parameters import get_sector_parameters
 from egon.data.metadata import (
@@ -50,6 +50,32 @@ class RenewableFeedin(Dataset):
     name: str = "RenewableFeedin"
     #:
     version: str = "0.0.7"
+    
+    sources = DatasetSources(
+        tables={
+            "weather_cells": {
+                "schema": "supply",
+                "table": "egon_era5_weather_cells",
+            },
+            "vg250_lan_union": {
+                "schema": "boundaries",
+                "table": "vg250_lan_union",
+            },
+        }
+    )
+
+    targets = DatasetTargets(
+        tables={
+            "feedin_table": {
+                "schema": "supply",
+                "table": "egon_era5_renewable_feedin",
+            },
+            "map_zensus_weather_cell": {
+                "schema": "boundaries",
+                "table": "egon_map_zensus_weather_cell",
+            },
+        }
+    )
 
     def __init__(self, dependencies):
         super().__init__(
@@ -94,7 +120,8 @@ def weather_cells_in_germany(geom_column="geom"):
 
     """
 
-    cfg = egon.data.config.datasets()["renewable_feedin"]["sources"]
+    #cfg = egon.data.config.datasets()["renewable_feedin"]["sources"]
+    cfg = RenewableFeedin.sources.tables
 
     return db.select_geodataframe(
         f"""SELECT w_id, geom_point, geom
@@ -117,7 +144,8 @@ def offshore_weather_cells(geom_column="geom"):
 
     """
 
-    cfg = egon.data.config.datasets()["renewable_feedin"]["sources"]
+    #cfg = egon.data.config.datasets()["renewable_feedin"]["sources"]
+    cfg = RenewableFeedin.sources.tables
 
     return db.select_geodataframe(
         f"""SELECT w_id, geom_point, geom
@@ -145,7 +173,8 @@ def federal_states_per_weather_cell():
 
     """
 
-    cfg = egon.data.config.datasets()["renewable_feedin"]["sources"]
+    #cfg = egon.data.config.datasets()["renewable_feedin"]["sources"]
+    cfg = RenewableFeedin.sources.tables
 
     # Select weather cells and ferear states from database
     weather_cells = weather_cells_in_germany(geom_column="geom_point")
@@ -346,7 +375,8 @@ def wind():
 
     """
 
-    cfg = egon.data.config.datasets()["renewable_feedin"]["targets"]
+    #cfg = egon.data.config.datasets()["renewable_feedin"]["targets"]
+    cfg = RenewableFeedin.targets.tables
 
     # Get weather cells with turbine type
     weather_cells = turbine_per_weather_cell()
@@ -500,7 +530,8 @@ def heat_pump_cop():
     carrier = "heat_pump_cop"
 
     # Load configuration
-    cfg = egon.data.config.datasets()["renewable_feedin"]
+    #cfg = egon.data.config.datasets()["renewable_feedin"]
+    cfg = RenewableFeedin.targets.tables
 
     # Get weather cells in Germany
     weather_cells = weather_cells_in_germany()
@@ -570,7 +601,8 @@ def insert_feedin(data, carrier, weather_year):
     data = data.transpose().to_pandas()
 
     # Load configuration
-    cfg = egon.data.config.datasets()["renewable_feedin"]
+    #cfg = egon.data.config.datasets()["renewable_feedin"]
+    cfg = RenewableFeedin.targets.tables
 
     # Initialize DataFrame
     df = pd.DataFrame(
