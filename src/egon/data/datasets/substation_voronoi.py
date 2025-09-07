@@ -90,32 +90,26 @@ def create_tables():
 
 
     db.execute_sql(
-        f"""DROP TABLE IF EXISTS
-             {SubstationVoronoi.targets.tables['ehv_substation_voronoi']['schema']}.
-             {SubstationVoronoi.targets.tables['ehv_substation_voronoi']['table']} CASCADE;"""
+        f"DROP TABLE IF EXISTS {SubstationVoronoi.targets.tables['ehv_substation_voronoi']['schema']}."
+        f"{SubstationVoronoi.targets.tables['ehv_substation_voronoi']['table']} CASCADE;"
     )
 
 
     db.execute_sql(
-        f"""DROP TABLE IF EXISTS
-            {SubstationVoronoi.targets.tables['hvmv_substation_voronoi']['schema']}.
-            {SubstationVoronoi.targets.tables['hvmv_substation_voronoi']['table']} CASCADE;"""
+        f"DROP TABLE IF EXISTS {SubstationVoronoi.targets.tables['hvmv_substation_voronoi']['schema']}."
+        f"{SubstationVoronoi.targets.tables['hvmv_substation_voronoi']['table']} CASCADE;"
     )
 
     # Drop sequences
     db.execute_sql(
-        f"""DROP SEQUENCE IF EXISTS
-            {SubstationVoronoi.targets.tables['ehv_substation_voronoi']['schema']}.
-            {SubstationVoronoi.targets.tables['ehv_substation_voronoi']['table']}_id_seq CASCADE;"""
+        f"DROP SEQUENCE IF EXISTS {SubstationVoronoi.targets.tables['ehv_substation_voronoi']['schema']}."
+        f"{SubstationVoronoi.targets.tables['ehv_substation_voronoi']['table']}_id_seq CASCADE;"
     )
-
 
     db.execute_sql(
-        f"""DROP SEQUENCE IF EXISTS
-           {SubstationVoronoi.targets.tables['hvmv_substation_voronoi']['schema']}.
-           {SubstationVoronoi.targets.tables['hvmv_substation_voronoi']['table']}_id_seq CASCADE;"""
+        f"DROP SEQUENCE IF EXISTS {SubstationVoronoi.targets.tables['hvmv_substation_voronoi']['schema']}."
+        f"{SubstationVoronoi.targets.tables['hvmv_substation_voronoi']['table']}_id_seq CASCADE;"
     )
-
 
     engine = db.engine()
     EgonEhvSubstationVoronoi.__table__.create(bind=engine, checkfirst=True)
