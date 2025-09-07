@@ -13,7 +13,7 @@ from sqlalchemy.ext.declarative import declarative_base
 import importlib_resources as resources
 
 from egon.data import db
-from egon.data.datasets import Dataset
+from egon.data.datasets import Dataset, DatasetSources, DatasetTargets
 import egon.data.config
 
 # will be later imported from another file ###
@@ -57,6 +57,32 @@ class OsmLanduse(Dataset):
     name: str = "OsmLanduse"
     #:
     version: str = "0.0.0"
+    
+    sources = DatasetSources(
+        files={
+            "osm_landuse_extraction": "osm_landuse_extraction.sql"
+        },
+        tables={
+            "osm_polygons": {
+                "schema": "openstreetmap",
+                "table": "osm_polygon",
+            },
+            "vg250": {
+                "schema": "boundaries",
+                "table": "vg250_sta_union",
+            },
+        }
+    )
+
+    targets = DatasetTargets(
+        tables={
+            "osm_landuse": {
+                "schema": "openstreetmap",
+                "table": "osm_landuse",
+            }
+        }
+    )
+
 
     def __init__(self, dependencies):
         super().__init__(
@@ -98,7 +124,44 @@ class LoadArea(Dataset):
     name: str = "LoadArea"
     #:
     version: str = "0.0.1"
+    
+    sources = DatasetSources(
+        files={
+            "osm_landuse_melt": "osm_landuse_melt.sql",
+            "census_cells_melt": "census_cells_melt.sql",
+            "osm_landuse_census_cells_melt": "osm_landuse_census_cells_melt.sql",
+            "loadareas_create": "loadareas_create.sql",
+            "loadareas_add_demand_hh": "loadareas_add_demand_hh.sql",
+            "loadareas_add_demand_cts": "loadareas_add_demand_cts.sql",
+            "loadareas_add_demand_ind": "loadareas_add_demand_ind.sql",
+            "drop_temp_tables": "drop_temp_tables.sql",
+        },
+        tables={
+            "osm_landuse": {
+                "schema": "openstreetmap",
+                "table": "osm_landuse",
+            },
+            "zensus_population": {
+                "schema": "society",
+                "table": "destatis_zensus_population_per_ha_inside_germany",
+            },
+            "vg250": {
+                "schema": "boundaries",
+                "table": "vg250_sta_union",
+            },
+        }
+    )
 
+    targets = DatasetTargets(
+        tables={
+            "egon_loadarea": {
+                "schema": "demand",
+                "table": "egon_loadarea",
+            }
+        }
+    )
+
+    
     def __init__(self, dependencies):
         super().__init__(
             name=self.name,
@@ -131,15 +194,18 @@ def create_landuse_table():
     -------
     None.
     """
-    cfg = egon.data.config.datasets()["landuse"]["target"]
+    #cfg = egon.data.config.datasets()["landuse"]["target"]
 
     # Create schema if not exists
-    db.execute_sql(f"""CREATE SCHEMA IF NOT EXISTS {cfg['schema']};""")
+    db.execute_sql(
+        f"CREATE SCHEMA IF NOT EXISTS {OsmLanduse.targets.tables['osm_landuse']['schema']};"
+    )
 
     # Drop tables
     db.execute_sql(
-        f"""DROP TABLE IF EXISTS
-            {cfg['schema']}.{cfg['table']} CASCADE;"""
+        f"DROP TABLE IF EXISTS "
+        f"{OsmLanduse.targets.tables['osm_landuse']['schema']}."
+        f"{OsmLanduse.targets.tables['osm_landuse']['table']} CASCADE;"
     )
 
     engine = db.engine()
