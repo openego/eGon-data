@@ -93,11 +93,11 @@ def zensus_population():
    )
 
     zensus = db.select_dataframe(
-    f"""SELECT id, population
-    FROM {SocietyPrognosis.sources.tables['zensus_population']}
-    WHERE population > 0""",
-    index_col="id",
-)
+        f"""SELECT id, population
+            FROM {SocietyPrognosis.sources.tables['zensus_population']}
+            WHERE population > 0""",
+        index_col="id",
+    )
 
 
     zensus["nuts3"] = zensus_district.vg250_nuts3
@@ -116,9 +116,10 @@ def zensus_population():
     ).values
 
     db.execute_sql(
-    f"""DELETE FROM {SocietyPrognosis.targets.tables['population_prognosis']['schema']}.
-    {SocietyPrognosis.targets.tables['population_prognosis']['table']}"""
+        f"DELETE FROM {SocietyPrognosis.targets.tables['population_prognosis']['schema']}."
+        f"{SocietyPrognosis.targets.tables['population_prognosis']['table']}"
     )
+
 
 
     # Scale to pogosis values from demandregio
@@ -222,9 +223,9 @@ def zensus_household():
     )
 
     db.execute_sql(
-    f"""DELETE FROM {SocietyPrognosis.targets.tables['household_prognosis']['schema']}.
-    {SocietyPrognosis.targets.tables['household_prognosis']['table']}"""
-   )
+        f"DELETE FROM {SocietyPrognosis.targets.tables['household_prognosis']['schema']}."
+        f"{SocietyPrognosis.targets.tables['household_prognosis']['table']}"
+    )
 
 
     # Apply prognosis function
