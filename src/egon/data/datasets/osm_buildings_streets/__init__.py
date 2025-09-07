@@ -6,7 +6,7 @@ Filtering and preprocessing of buildings, streets and amenities from OpenStreetM
 import os
 
 from egon.data import db
-from egon.data.datasets import Dataset
+from egon.data.datasets import Dataset, DatasetSources, DatasetTargets
 
 
 def execute_sql_script(script):
@@ -185,6 +185,88 @@ class OsmBuildingsStreets(Dataset):
     name: str = "OsmBuildingsStreets"
     #:
     version: str = "0.0.7"
+    
+    sources = DatasetSources(
+        tables={
+            "osm_polygon": {
+                "schema": "openstreetmap",
+                "table": "osm_polygon",
+            },
+            "osm_point": {
+                "schema": "openstreetmap",
+                "table": "osm_point",
+            },
+            "osm_line": {
+                "schema": "openstreetmap",
+                "table": "osm_line",
+            },
+            "osm_ways": {
+                "schema": "openstreetmap",
+                "table": "osm_ways",
+            },
+            "zensus_apartments": {
+                "schema": "society",
+                "table": "egon_destatis_zensus_apartment_building_population_per_ha",
+            },
+            "zensus_population": {
+                "schema": "society",
+                "table": "destatis_zensus_population_per_ha",
+            },
+        }
+    )
+
+    targets = DatasetTargets(
+        tables={
+            "osm_buildings": {
+                "schema": "openstreetmap",
+                "table": "osm_buildings",
+            },
+            "osm_buildings_filtered": {
+                "schema": "openstreetmap",
+                "table": "osm_buildings_filtered",
+            },
+            "osm_buildings_residential": {
+                "schema": "openstreetmap",
+                "table": "osm_buildings_residential",
+            },
+            "osm_amenities_shops_filtered": {
+                "schema": "openstreetmap",
+                "table": "osm_amenities_shops_filtered",
+            },
+            "osm_buildings_with_amenities": {
+                "schema": "openstreetmap",
+                "table": "osm_buildings_with_amenities",
+            },
+            "osm_buildings_without_amenities": {
+                "schema": "openstreetmap",
+                "table": "osm_buildings_without_amenities",
+            },
+            "osm_amenities_not_in_buildings": {
+                "schema": "openstreetmap",
+                "table": "osm_amenities_not_in_buildings",
+            },
+            "osm_ways_preprocessed": {
+                "schema": "openstreetmap",
+                "table": "osm_ways_preprocessed",
+            },
+            "osm_ways_with_segments": {
+                "schema": "openstreetmap",
+                "table": "osm_ways_with_segments",
+            },
+            "map_buildings_filtered": {
+                "schema": "boundaries",
+                "table": "egon_map_zensus_buildings_filtered",
+            },
+            "map_buildings_filtered_all": {
+                "schema": "boundaries",
+                "table": "egon_map_zensus_buildings_filtered_all",
+            },
+            "map_buildings_residential": {
+                "schema": "boundaries",
+                "table": "egon_map_zensus_buildings_residential",
+            },
+        }
+    )
 
     def __init__(self, dependencies):
         super().__init__(
