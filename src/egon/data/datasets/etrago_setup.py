@@ -23,7 +23,7 @@ import pandas as pd
 import pypsa
 
 from egon.data import db
-from egon.data.datasets import Dataset
+from egon.data.datasets import Dataset, DatasetSources, DatasetTargets
 from egon.data.metadata import (
     context,
     contributors,
@@ -136,13 +136,103 @@ def get_meta(
 
 
 class EtragoSetup(Dataset):
+    name: str = "EtragoSetup"
+    version: str = "0.0.11"
+
+    sources = DatasetSources(
+        tables={},
+        files={}
+    )
+
+    targets = DatasetTargets(
+        tables={
+            "bus": {
+                "schema": "grid",
+                "table": "egon_etrago_bus",
+            },
+            "bus_timeseries": {
+                "schema": "grid",
+                "table": "egon_etrago_bus_timeseries",
+            },
+            "generator": {
+                "schema": "grid",
+                "table": "egon_etrago_generator",
+            },
+            "generator_timeseries": {
+                "schema": "grid",
+                "table": "egon_etrago_generator_timeseries",
+            },
+            "line": {
+                "schema": "grid",
+                "table": "egon_etrago_line",
+            },
+            "line_timeseries": {
+                "schema": "grid",
+                "table": "egon_etrago_line_timeseries",
+            },
+            "link": {
+                "schema": "grid",
+                "table": "egon_etrago_link",
+            },
+            "link_timeseries": {
+                "schema": "grid",
+                "table": "egon_etrago_link_timeseries",
+            },
+            "load": {
+                "schema": "grid",
+                "table": "egon_etrago_load",
+            },
+            "load_timeseries": {
+                "schema": "grid",
+                "table": "egon_etrago_load_timeseries",
+            },
+            "carrier": {
+                "schema": "grid",
+                "table": "egon_etrago_carrier",
+            },
+            "storage": {
+                "schema": "grid",
+                "table": "egon_etrago_storage",
+            },
+            "storage_timeseries": {
+                "schema": "grid",
+                "table": "egon_etrago_storage_timeseries",
+            },
+            "store": {
+                "schema": "grid",
+                "table": "egon_etrago_store",
+            },
+            "store_timeseries": {
+                "schema": "grid",
+                "table": "egon_etrago_store_timeseries",
+            },
+            "temp_resolution": {
+                "schema": "grid",
+                "table": "egon_etrago_temp_resolution",
+            },
+            "transformer": {
+                "schema": "grid",
+                "table": "egon_etrago_transformer",
+            },
+            "transformer_timeseries": {
+                "schema": "grid",
+                "table": "egon_etrago_transformer_timeseries",
+            },
+            "hv_busmap": {
+                "schema": "grid",
+                "table": "egon_etrago_hv_busmap",
+            },
+        }
+    )
+
     def __init__(self, dependencies):
         super().__init__(
-            name="EtragoSetup",
-            version="0.0.11",
+            name=self.name,
+            version=self.version,
             dependencies=dependencies,
             tasks=(create_tables, {temp_resolution, insert_carriers}),
         )
+
 
 
 class EgonPfHvBus(Base):
@@ -1021,17 +1111,12 @@ def create_tables():
 
 
 def temp_resolution():
-    """Insert temporal resolution for etrago
-
-    Returns
-    -------
-    None.
-
-    """
-
+    """Insert temporal resolution for eTraGo"""
+    schema = EtragoSetup.targets.tables['temp_resolution']['schema']
+    table  = EtragoSetup.targets.tables['temp_resolution']['table']
     db.execute_sql(
-        """
-        INSERT INTO grid.egon_etrago_temp_resolution
+        f"""
+        INSERT INTO {schema}.{table}
         (temp_id, timesteps, resolution, start_time)
         SELECT 1, 8760, 'h', TIMESTAMP '2011-01-01 00:00:00';
         """
@@ -1039,20 +1124,14 @@ def temp_resolution():
 
 
 def insert_carriers():
-    """Insert list of carriers into eTraGo table
-
-    Returns
-    -------
-    None.
-
-    """
-    # Delete existing entries
+    """Insert list of carriers into eTraGo table"""
+    schema = EtragoSetup.targets.tables['carrier']['schema']
+    table  = EtragoSetup.targets.tables['carrier']['table']
     db.execute_sql(
-        """
-        DELETE FROM grid.egon_etrago_carrier
+        f"""
+        DELETE FROM {schema}.{table};
         """
     )
-
     # List carrier names from all components
     df = pd.DataFrame(
         data={
@@ -1108,13 +1187,12 @@ def insert_carriers():
 
     # Insert data into database
     df.to_sql(
-        "egon_etrago_carrier",
-        schema="grid",
+        EtragoSetup.targets.tables["carrier"]["table"],
+        schema=EtragoSetup.targets.tables["carrier"]["schema"],
         con=db.engine(),
         if_exists="append",
         index=False,
     )
-
 
 def check_carriers():
     """Check if any eTraGo table has carriers not included in the carrier table.
@@ -1125,19 +1203,17 @@ def check_carriers():
     used in any eTraGo table.
     """
     carriers = db.select_dataframe(
-        f"""
-        SELECT name FROM grid.egon_etrago_carrier
-        """
-    )
+        f"SELECT name FROM {EtragoSetup.targets.tables['carrier']['schema']}."
+        f"{EtragoSetup.targets.tables['carrier']['table']}"
+    )["name"]
+    
     unknown_carriers = {}
     tables = ["bus", "store", "storage", "link", "line", "generator", "load"]
 
     for table in tables:
-        # Delete existing entries
         data = db.select_dataframe(
-            f"""
-            SELECT carrier FROM grid.egon_etrago_{table}
-            """
+            f"SELECT carrier FROM {EtragoSetup.targets.tables[table]['schema']}."
+            f"{EtragoSetup.targets.tables[table]['table']}"
         )
         unknown_carriers[table] = data[~data["carrier"].isin(carriers)][
             "carrier"
@@ -1176,13 +1252,13 @@ def link_geom_from_buses(df, scn_name):
     geom_buses = db.select_geodataframe(
         f"""
         SELECT bus_id, geom
-        FROM grid.egon_etrago_bus
-        WHERE scn_name = '{scn_name}'
+        FROM {EtragoSetup.targets.tables['bus']['schema']}.{EtragoSetup.targets.tables['bus']['table']}
+        WHERE scn_name = '{scn_name}';
         """,
         index_col="bus_id",
         epsg=4326,
     )
-
+    
     # Create geometry columns for bus0 and bus1
     df["geom_0"] = geom_buses.geom[df.bus0.values].values
     df["geom_1"] = geom_buses.geom[df.bus1.values].values
