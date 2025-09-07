@@ -13,7 +13,7 @@ from sqlalchemy.orm import sessionmaker
 import pandas as pd
 
 from egon.data import db
-from egon.data.datasets import Dataset
+from egon.data.datasets import Dataset, DatasetSources, DatasetTargets
 import egon.data.config
 import egon.data.datasets.scenario_parameters.parameters as parameters
 
@@ -224,9 +224,9 @@ def get_sector_parameters(sector, scenario=None):
                 pd.DataFrame(
                     db.select_dataframe(
                         f"""
-                    SELECT {sector}_parameters as val
-                    FROM scenario.egon_scenario_parameters
-                    WHERE name='eGon2035'"""
+                        SELECT {sector}_parameters as val
+                        FROM scenario.egon_scenario_parameters
+                        WHERE name='eGon2035'"""
                     ).val[0],
                     index=["eGon2035"],
                 ),
@@ -262,18 +262,21 @@ def download_pypsa_technology_data():
     if data_path.exists() and data_path.is_dir():
         shutil.rmtree(data_path)
     # Get parameters from config and set download URL
-    sources = egon.data.config.datasets()["pypsa-technology-data"]["sources"][
-        "zenodo"
-    ]
-    url = f"""https://zenodo.org/record/{sources['deposit_id']}/files/{sources['file']}"""
-    target_file = egon.data.config.datasets()["pypsa-technology-data"][
-        "targets"
-    ]["file"]
+    #sources = egon.data.config.datasets()["pypsa-technology-data"]["sources"][
+     #   "zenodo"
+    #]
+    #url = f"""https://zenodo.org/record/{sources['deposit_id']}/files/{sources['file']}"""
+    #target_file = egon.data.config.datasets()["pypsa-technology-data"][
+     #   "targets"
+    #]["file"]
 
     # Retrieve files
-    urlretrieve(url, target_file)
+    urlretrieve(
+    ScenarioParameters.sources.urls["pypsa_technology_data"]["url"],
+    ScenarioParameters.targets.files["pypsa_zip"],
+    )
 
-    with zipfile.ZipFile(target_file, "r") as zip_ref:
+    with zipfile.ZipFile(ScenarioParameters.targets.files["pypsa_zip"], "r") as zip_ref:
         zip_ref.extractall(".")
 
 
@@ -301,6 +304,29 @@ class ScenarioParameters(Dataset):
     name: str = "ScenarioParameters"
     #:
     version: str = "0.0.18"
+    
+    
+    sources = DatasetSources(
+        urls={
+            "pypsa_technology_data": {
+                "url": "https://zenodo.org/record/5544025/files/PyPSA/technology-data-v0.3.0.zip",
+            }
+        }
+    )
+
+    targets = DatasetTargets(
+        tables={
+            "egon_scenario_parameters": {
+                "schema": "scenario",
+                "table": "egon_scenario_parameters",
+            }
+        },
+        files={
+            "pypsa_zip": "pypsa_technology_data_egon_data.zip",
+            "data_dir": "PyPSA-technology-data-94085a8/outputs/",
+            "technology_data": "pypsa_technology_data/technology_data.xlsx",
+        }
+    )
 
     def __init__(self, dependencies):
         super().__init__(
