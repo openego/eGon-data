@@ -72,6 +72,8 @@ class GasAreaseGon2035(Dataset):
             tasks=(create_gas_voronoi_table, voronoi_egon2035),
         )
 
+
+
 class GasAreaseGon100RE(Dataset):
     """Insert the gas voronoi areas for eGon100RE
 
@@ -89,12 +91,6 @@ class GasAreaseGon100RE(Dataset):
     *Resulting tables*
       * :py:class:`EgonPfHvGasVoronoi <EgonPfHvGasVoronoi>`
 
-    """
-
-    #:
-class GasAreaseGon100RE(Dataset):
-    """
-    Insert the gas voronoi areas for eGon100RE
     """
 
     #:
@@ -125,7 +121,7 @@ class GasAreaseGon100RE(Dataset):
             name=self.name,
             version=self.version,
             dependencies=dependencies,
-            tasks=(voronoi_egon100RE),
+            tasks=(voronoi_egon100RE,),
         )
 
 
@@ -298,7 +294,7 @@ def create_voronoi(scn_name, carrier):
         create_gas_voronoi_table()
 
     boundary = db.select_geodataframe(
-        """
+        f"""
             SELECT id, geometry
             FROM {GasAreaseGon2035.sources.tables["vg250_sta_union"]};
         """,
@@ -358,7 +354,7 @@ def create_voronoi(scn_name, carrier):
 
     # Insert data to db
     gdf.set_crs(epsg=4326).to_postgis(
-        f"egon_gas_voronoi",
+        "egon_gas_voronoi",
         engine,
         schema="grid",
         index=False,
