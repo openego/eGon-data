@@ -371,16 +371,17 @@ def insert_biomass_chp(scenario):
 
     # Drop entries without federal state or 'AusschließlichWirtschaftszone'
     mastr = mastr[
-        mastr.Bundesland.isin(
-            pd.read_sql(
-                f"""SELECT DISTINCT ON (gen)
-        REPLACE(REPLACE(gen, '-', ''), 'ü', 'ue') as states
-        FROM {Chp.sources.tables['vg250_lan']},
-                con=db.engine(),
-            ).states.values
-        )
-    ]
-
+    mastr.Bundesland.isin(
+        pd.read_sql(
+            # The f-string now correctly ends after the FROM clause
+            f"""SELECT DISTINCT ON (gen)
+    REPLACE(REPLACE(gen, '-', ''), 'ü', 'ue') as states
+    FROM {Chp.sources.tables['vg250_lan']}""",
+            # con=db.engine() is now a separate argument to pd.read_sql
+            con=db.engine(),
+        ).states.values
+    )
+]
     # Scaling will be done per federal state in case of eGon2035 scenario.
     if scenario == "eGon2035":
         level = "federal_state"
@@ -474,11 +475,9 @@ def insert_chp_statusquo(scn="status2019"):
     mastr.groupby("Energietraeger").Nettonennleistung.sum().mul(1e-6)
 
     geom_municipalities = db.select_geodataframe(
-        """
-        SELECT gen, ST_UNION(geometry) as geom
+        """SELECT gen, ST_UNION(geometry) as geom
         FROM boundaries.vg250_gem
-        GROUP BY gen
-        """
+        GROUP BY gen"""
     ).set_index("gen")
 
     # Assing Laengengrad and Breitengrad to chps without location data
