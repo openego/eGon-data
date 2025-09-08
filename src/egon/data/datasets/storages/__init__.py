@@ -12,7 +12,7 @@ import geopandas as gpd
 import pandas as pd
 
 from egon.data import config, db
-from egon.data.datasets import Dataset
+from egon.data.datasets import Dataset, DatasetSources, DatasetTargets
 from egon.data.datasets.scenario_parameters import get_sector_parameters
 from egon.data.datasets.electrical_neighbours import entsoe_to_bus_etrago
 from egon.data.datasets.mastr import (
@@ -51,6 +51,29 @@ class EgonStorages(Base):
 
 
 class Storages(Dataset):
+    
+    sources = DatasetSources(
+        files={
+            "mastr_storage": "bnetza_mastr_storage_cleaned.csv",
+            "nep_capacities": "NEP2035_V2021_scnC2035.xlsx",
+            # Dependency from power_plants config:
+            "mastr_location": "location_elec_generation_raw.csv",
+        },
+        tables={
+            "capacities": "supply.egon_scenario_capacities",
+            "generators": "grid.egon_etrago_generator",
+            "bus": "grid.egon_etrago_bus",
+            # Dependencies from power_plants config:
+            "egon_mv_grid_district": "grid.egon_mv_grid_district",
+            "ehv_voronoi": "grid.egon_ehv_substation_voronoi",
+        },
+    )
+    targets = DatasetTargets(
+        tables={
+            "storages": "supply.egon_storages"
+        }
+    )
+    
     """
     Allocates storage units such as pumped hydro and home batteries
 
@@ -108,13 +131,11 @@ def create_tables():
     -------
     None.
     """
-
-    cfg = config.datasets()["storages"]
-    db.execute_sql(f"CREATE SCHEMA IF NOT EXISTS {cfg['target']['schema']};")
+    db.execute_sql(f"CREATE SCHEMA IF NOT EXISTS supply;")
     engine = db.engine()
     db.execute_sql(
         f"""DROP TABLE IF EXISTS
-        {cfg['target']['schema']}.{cfg['target']['table']}"""
+        {Storages.targets.tables['storages']}"""
     )
 
     db.execute_sql("""DROP SEQUENCE IF EXISTS pp_seq""")
@@ -140,7 +161,6 @@ def allocate_pumped_hydro(scn, export=True):
 
     carrier = "pumped_hydro"
 
-    cfg = config.datasets()["power_plants"]
 
     nep = select_nep_pumped_hydro(scn=scn)
     mastr = select_mastr_pumped_hydro()
@@ -148,7 +168,7 @@ def allocate_pumped_hydro(scn, export=True):
     # Assign voltage level to MaStR
     mastr["voltage_level"] = assign_voltage_level(
         mastr.rename({"el_capacity": "Nettonennleistung"}, axis=1),
-        cfg,
+        Storages.sources,
         WORKING_DIR_MASTR_OLD,
     )
 
@@ -257,14 +277,14 @@ def allocate_pumped_hydro(scn, export=True):
     # Load grid district polygons
     mv_grid_districts = db.select_geodataframe(
         f"""
-    SELECT * FROM {cfg['sources']['egon_mv_grid_district']}
+    SELECT * FROM {Storages.sources.tables['egon_mv_grid_district']}
     """,
         epsg=4326,
     )
 
     ehv_grid_districts = db.select_geodataframe(
         f"""
-    SELECT * FROM {cfg['sources']['ehv_voronoi']}
+    SELECT * FROM {Storages.sources.tables['ehv_voronoi']}
     """,
         epsg=4326,
     )
@@ -286,7 +306,7 @@ def allocate_pumped_hydro(scn, export=True):
 
     # Delete existing units in the target table
     db.execute_sql(
-        f""" DELETE FROM {cfg ['sources']['storages']}
+        f""" DELETE FROM {Storages.targets.tables['storages']}
         WHERE carrier IN ('pumped_hydro')
         AND scenario='{scn}';"""
     )
@@ -330,7 +350,6 @@ def allocate_storage_units_sq(scn_name, storage_types):
     -------
 
     """
-    sources = config.datasets()["power_plants"]["sources"]
     scn_parameters = get_sector_parameters("global", scn_name)
     scenario_date_max = str(scn_parameters["weather_year"]) + "-12-31 23:59:00"
 
@@ -345,7 +364,7 @@ def allocate_storage_units_sq(scn_name, storage_types):
     for storage_type in storage_types:
         # Read-in data from MaStR
         mastr_ph = pd.read_csv(
-            WORKING_DIR_MASTR_NEW / sources["mastr_storage"],
+            WORKING_DIR_MASTR_NEW / Storages.sources.files["mastr_storage"],
             delimiter=",",
             usecols=[
                 "Nettonennleistung",
@@ -493,7 +512,7 @@ def allocate_storage_units_sq(scn_name, storage_types):
 
         # Asign buses within germany
         mastr_ph = assign_bus_id(
-            mastr_ph, cfg=config.datasets()["power_plants"], drop_missing=True
+            mastr_ph, sources=Storages.sources, drop_missing=True
         )
         mastr_ph["bus_id"] = mastr_ph["bus_id"].astype(int)
 
@@ -597,7 +616,6 @@ def allocate_pumped_hydro_eGon100RE():
     """
 
     carrier = "pumped_hydro"
-    cfg = config.datasets()["power_plants"]
     boundary = config.settings()["egon-data"]["--dataset-boundary"]
 
     # Select installed capacity for pumped_hydro in eGon100RE scenario from
@@ -605,7 +623,7 @@ def allocate_pumped_hydro_eGon100RE():
     capacity = db.select_dataframe(
         f"""
         SELECT capacity
-        FROM {cfg['sources']['capacities']}
+        FROM {Storages.sources.tables['capacities']}
         WHERE carrier = '{carrier}'
         AND scenario_name = 'eGon100RE';
         """
@@ -664,7 +682,6 @@ def home_batteries_per_scenario(scenario):
     None
     """
 
-    cfg = config.datasets()["storages"]
     dataset = config.settings()["egon-data"]["--dataset-boundary"]
 
     if scenario == "eGon2035":
@@ -672,7 +689,7 @@ def home_batteries_per_scenario(scenario):
             Path(".")
             / "data_bundle_egon_data"
             / "nep2035_version2021"
-            / cfg["sources"]["nep_capacities"]
+            /Storages.sources.files["nep_capacities"]
         )
 
         capacities_nep = pd.read_excel(
@@ -688,7 +705,7 @@ def home_batteries_per_scenario(scenario):
         target = db.select_dataframe(
             f"""
             SELECT capacity
-            FROM {cfg['sources']['capacities']}
+            FROM {Storages.sources.tables['capacities']}
             WHERE scenario_name = '{scenario}'
             AND carrier = 'battery';
             """
@@ -697,11 +714,11 @@ def home_batteries_per_scenario(scenario):
     pv_rooftop = db.select_dataframe(
         f"""
         SELECT bus, p_nom, generator_id
-        FROM {cfg['sources']['generators']}
+        FROM {Storages.sources.tables['generators']}
         WHERE scn_name = '{scenario}'
         AND carrier = 'solar_rooftop'
         AND bus IN
-            (SELECT bus_id FROM {cfg['sources']['bus']}
+            (SELECT bus_id FROM {Storages.sources.tables['bus']}
                WHERE scn_name = '{scenario}' AND country = 'DE' );
         """
     )

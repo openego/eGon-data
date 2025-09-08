@@ -13,7 +13,8 @@ import pandas as pd
 import os
 from urllib.request import urlretrieve
 from egon.data import db, subprocess
-from egon.data.datasets import Dataset
+from egon.data.datasets import Dataset, DatasetSources, DatasetTargets
+from egon.data.datasets.helpers import DATA_BUNDLE_DIR
 from sqlalchemy import Column, String, Float, Integer, Sequence
 from geoalchemy2.types import Geometry
 from sqlalchemy.ext.declarative import declarative_base
@@ -123,57 +124,29 @@ def create_tables():
     None.
     """
 
-    # Get data config
-    targets_sites = egon.data.config.datasets()["industrial_sites"]["targets"]
-
-    # Create target schema
+     # Create target schema
     db.execute_sql("CREATE SCHEMA IF NOT EXISTS demand;")
-
-    # Drop outdated tables if still present, might be removed later
-    db.execute_sql("""DROP TABLE IF EXISTS demand.industrial_sites CASCADE;""")
-
-    db.execute_sql(
-        """DROP TABLE IF EXISTS demand.hotmaps_industrial_sites CASCADE;"""
-    )
-
-    db.execute_sql(
-        """DROP TABLE IF EXISTS demand.seenergies_industrial_sites CASCADE;"""
-    )
-
-    db.execute_sql(
-        """DROP TABLE IF EXISTS demand.schmidt_industrial_sites CASCADE;"""
-    )
 
     # Drop tables and sequences before recreating them
     db.execute_sql(
-        f"""DROP TABLE IF EXISTS
-                   {targets_sites['hotmaps']['schema']}.
-                   {targets_sites['hotmaps']['table']} CASCADE;"""
+        f"""DROP TABLE IF EXISTS {MergeIndustrialSites.targets.tables['hotmaps']} CASCADE;"""
     )
 
     db.execute_sql(
-        f"""DROP TABLE IF EXISTS
-                   {targets_sites['seenergies']['schema']}.
-                   {targets_sites['seenergies']['table']} CASCADE;"""
+        f"""DROP TABLE IF EXISTS {MergeIndustrialSites.targets.tables['seenergies']} CASCADE;"""
     )
 
     db.execute_sql(
-        f"""DROP TABLE IF EXISTS
-                   {targets_sites['schmidt']['schema']}.
-                   {targets_sites['schmidt']['table']} CASCADE;"""
+        f"""DROP TABLE IF EXISTS {MergeIndustrialSites.targets.tables['schmidt']} CASCADE;"""
     )
 
     db.execute_sql(
-        f"""DROP TABLE IF EXISTS
-                   {targets_sites['sites']['schema']}.
-                   {targets_sites['sites']['table']} CASCADE;"""
+        f"""DROP TABLE IF EXISTS {MergeIndustrialSites.targets.tables['sites']} CASCADE;"""
     )
 
     # Drop sequence
     db.execute_sql(
-        f"""DROP SEQUENCE IF EXISTS
-            {targets_sites['sites']['schema']}.
-            {targets_sites['sites']['table']}_id_seq CASCADE;"""
+        f"""DROP SEQUENCE IF EXISTS {MergeIndustrialSites.targets.tables['sites']}_id_seq CASCADE;"""
     )
 
     engine = db.engine()
@@ -189,9 +162,6 @@ def create_tables():
 
 def download_hotmaps():
     """Download csv file on hotmap's industrial sites."""
-    hotmaps_config = egon.data.config.datasets()["industrial_sites"][
-        "sources"
-    ]["hotmaps"]
 
     download_directory = "industrial_sites"
 
@@ -199,48 +169,40 @@ def download_hotmaps():
     if not os.path.exists(download_directory):
         os.mkdir(download_directory)
 
-    target_file = Path(".") / "industrial_sites" / hotmaps_config["path"]
+    target_file = Path(MergeIndustrialSites.targets.files["hotmaps_download"])
+    url = MergeIndustrialSites.sources.urls["hotmaps"]
 
     if not os.path.isfile(target_file):
         subprocess.run(
-            f"curl {hotmaps_config['url']} > {target_file}", shell=True
+            f"curl {url} > {target_file}", shell=True
         )
 
 
 def download_seenergies():
     """Download csv file on s-eenergies' industrial sites."""
-    see_config = egon.data.config.datasets()["industrial_sites"]["sources"][
-        "seenergies"
-    ]
 
     download_directory = "industrial_sites"
     # Create the folder, if it does not exists already
     if not os.path.exists(download_directory):
         os.mkdir(download_directory)
 
-    target_file = Path(".") / "industrial_sites" / see_config["path"]
-
+    target_file = target_file = Path(MergeIndustrialSites.targets.files["seenergies_download"])
+    url = MergeIndustrialSites.sources.urls["seenergies"]
+    
     if not os.path.isfile(target_file):
-        urlretrieve(see_config["url"], target_file)
+        urlretrieve(url, target_file)
 
 
 def hotmaps_to_postgres():
     """Import hotmaps data to postgres database"""
-    # Get information from data configuration file
+ 
 
-    hotmaps_targets = egon.data.config.datasets()["industrial_sites"][
-        "targets"
-    ]["hotmaps"]
-    hotmaps_sources = egon.data.config.datasets()["industrial_sites"][
-        "sources"
-    ]["hotmaps"]
-
-    input_file = Path(".") / "industrial_sites" / hotmaps_sources["path"]
+    input_file = Path(MergeIndustrialSites.targets.files["hotmaps_download"])
 
     engine = db.engine()
 
     db.execute_sql(
-        f"DELETE FROM {hotmaps_targets['schema']}.{hotmaps_targets['table']}"
+        f"DELETE FROM {MergeIndustrialSites.targets.tables['hotmaps']}"
     )
     # Read csv to dataframe
     df = pd.read_csv(input_file, delimiter=";")
@@ -325,9 +287,9 @@ def hotmaps_to_postgres():
 
     # Write data to db
     gdf.to_postgis(
-        hotmaps_targets["table"],
+        MergeIndustrialSites.targets.get_table_name("hotmaps"),
         engine,
-        schema=hotmaps_targets["schema"],
+        schema=MergeIndustrialSites.targets.get_table_schema("hotmaps"),
         if_exists="append",
         index=df.index,
     )
@@ -335,19 +297,12 @@ def hotmaps_to_postgres():
 
 def seenergies_to_postgres():
     """Import seenergies data to postgres database"""
-    # Get information from data configuration file
-    see_targets = egon.data.config.datasets()["industrial_sites"]["targets"][
-        "seenergies"
-    ]
-    see_sources = egon.data.config.datasets()["industrial_sites"]["sources"][
-        "seenergies"
-    ]
 
-    input_file = Path(".") / "industrial_sites" / see_sources["path"]
+    input_file = Path(MergeIndustrialSites.targets.files["seenergies_download"])
     engine = db.engine()
 
     db.execute_sql(
-        f"DELETE FROM {see_targets['schema']}.{see_targets['table']}"
+        f"DELETE FROM {MergeIndustrialSites.targets.tables['seenergies']}"
     )
 
     # Read csv to dataframe
@@ -431,9 +386,9 @@ def seenergies_to_postgres():
 
     # Write data to db
     gdf.to_postgis(
-        see_targets["table"],
+        MergeIndustrialSites.targets.get_table_name("seenergies"),
         engine,
-        schema=see_targets["schema"],
+        schema=MergeIndustrialSites.targets.get_table_schema("seenergies"),
         if_exists="append",
         index=df.index,
     )
@@ -442,24 +397,16 @@ def seenergies_to_postgres():
 def schmidt_to_postgres():
     """Import data from Thesis by Danielle Schmidt to postgres database"""
     # Get information from data configuration file
-    schmidt_targets = egon.data.config.datasets()["industrial_sites"][
-        "targets"
-    ]["schmidt"]
-    schmidt_sources = egon.data.config.datasets()["industrial_sites"][
-        "sources"
-    ]["schmidt"]
-
+    
     input_file = (
-        Path(".")
-        / "data_bundle_egon_data"
-        / "industrial_sites"
-        / schmidt_sources["path"]
+        DATA_BUNDLE_DIR/
+        Path(MergeIndustrialSites.sources.files["schmidt"])
     )
 
     engine = db.engine()
 
     db.execute_sql(
-        f"DELETE FROM {schmidt_targets['schema']}.{schmidt_targets['table']}"
+        f"DELETE FROM {MergeIndustrialSites.targets.tables['schmidt']}"
     )
 
     # Read csv to dataframe
@@ -516,9 +463,9 @@ def schmidt_to_postgres():
 
     # Write data to db
     gdf.to_postgis(
-        schmidt_targets["table"],
+        MergeIndustrialSites.targets.get_table_name("schmidt"),
         engine,
-        schema=schmidt_targets["schema"],
+        schema=MergeIndustrialSites.targets.get_table_schema("schmidt"),
         if_exists="append",
         index=df.index,
     )
@@ -554,58 +501,31 @@ def merge_inputs():
     (hotmaps, seenergies, Thesis Schmidt)
     """
 
-    # Get information from data configuration file
-
-    hotmaps_targets = egon.data.config.datasets()["industrial_sites"][
-        "targets"
-    ]["hotmaps"]
-    see_targets = egon.data.config.datasets()["industrial_sites"]["targets"][
-        "seenergies"
-    ]
-    schmidt_targets = egon.data.config.datasets()["industrial_sites"][
-        "targets"
-    ]["schmidt"]
-    sites_targets = egon.data.config.datasets()["industrial_sites"]["targets"][
-        "sites"
-    ]
-
-    sites_table = f"{sites_targets['schema']}" f".{sites_targets['table']}"
-
-    hotmaps_table = (
-        f"{hotmaps_targets['schema']}" f".{hotmaps_targets['table']}"
-    )
-
-    seenergies_table = f"{see_targets['schema']}" f".{see_targets['table']}"
-
-    schmidt_table = (
-        f"{schmidt_targets['schema']}" f".{schmidt_targets['table']}"
-    )
-
     # Insert data from Schmidt's Master thesis
     db.execute_sql(
-        f"""INSERT INTO {sites_table}
+        f"""INSERT INTO {MergeIndustrialSites.targets.tables['sites']}
               (companyname, subsector, wz, geom)
                 SELECT h.plant, h.application, h.wz, h.geom
-                FROM {schmidt_table} h
+                FROM {MergeIndustrialSites.sources.tables['schmidt_processed']} h
                 WHERE geom IS NOT NULL;"""
     )
 
     # Insert data from s-EEnergies
     db.execute_sql(
-        f"""INSERT INTO {sites_table}
+        f"""INSERT INTO {MergeIndustrialSites.targets.tables['sites']}
               (companyname, address, subsector, wz, geom)
                 SELECT  s.companyname,
                         s.address,
                         s.subsector,
                         s.wz,
                         s.geom
-                FROM {seenergies_table} s
+                FROM {MergeIndustrialSites.sources.tables['seenergies_processed']} s
                 WHERE   s.country = 'DE'
                 AND     geom IS NOT NULL
                 AND LOWER(SUBSTRING(s.companyname, 1, 3)) NOT IN
                     (SELECT LOWER(SUBSTRING(h.companyname, 1, 3))
-                      FROM  {sites_table} h,
-                            {seenergies_table} s
+                      FROM  {MergeIndustrialSites.targets.tables['sites']} h,
+                            {MergeIndustrialSites.sources.tables['seenergies_processed']} s
                       WHERE ST_DWithin (h.geom, s.geom, 0.01)
  					  AND	(h.wz = s.wz)
  					  AND	(LOWER (SUBSTRING(h.companyname, 1, 3)) =
@@ -615,26 +535,26 @@ def merge_inputs():
     # Insert data from Hotmaps
 
     db.execute_sql(
-        f"""INSERT INTO {sites_table}
+        f"""INSERT INTO {MergeIndustrialSites.targets.tables['sites']}
               (companyname, address, subsector, wz, geom)
                   SELECT h.companyname, h.address, h.subsector, h.wz, h.geom
-                  FROM {hotmaps_table} h
+                  FROM {MergeIndustrialSites.sources.tables['hotmaps_processed']} h
                   WHERE h.country = 'Germany'
                   AND h.geom IS NOT NULL
                   AND h.siteid NOT IN
                       (SELECT a.siteid
-                          FROM {seenergies_table} a
+                          FROM {MergeIndustrialSites.sources.tables['seenergies_processed']} a
                           WHERE   a.country = 'DE'
                           AND     a.geom IS NOT NULL)
                   AND h.geom NOT IN
                       (SELECT a.geom
-                          FROM {seenergies_table} a
+                          FROM {MergeIndustrialSites.sources.tables['seenergies_processed']} a
                           WHERE   a.country = 'DE'
                           AND     a.geom IS NOT NULL)
                 AND LOWER(SUBSTRING(h.companyname, 1, 3)) NOT IN
                     (SELECT LOWER(SUBSTRING(s.companyname, 1, 3))
-                      FROM  {sites_table} s,
-                            {hotmaps_table} h
+                      FROM  {MergeIndustrialSites.targets.tables['sites']} s,
+                            {MergeIndustrialSites.sources.tables['hotmaps_processed']} h
                       WHERE ST_DWithin (s.geom, h.geom, 0.01)
  					  AND	(h.wz = s.wz)
  					  AND	(LOWER (SUBSTRING(h.companyname, 1, 3)) =
@@ -644,9 +564,9 @@ def merge_inputs():
     # Replace geometry by spatial information from table 'demand.schmidt_industrial_sites' if possible
 
     db.execute_sql(
-        f"""UPDATE {sites_table} s
+        f"""UPDATE {MergeIndustrialSites.targets.tables['sites']} s
               SET geom = g.geom
-              FROM {schmidt_table} g
+              FROM {MergeIndustrialSites.sources.tables['schmidt_processed']} g
               WHERE ST_DWithin (g.geom, s.geom, 0.01)
               AND (g.wz = s.wz)
               AND  (LOWER (SUBSTRING(g.plant, 1, 3)) =
@@ -664,15 +584,9 @@ def map_nuts3():
     None.
 
     """
-    # Get information from data configuration file
-    sites_targets = egon.data.config.datasets()["industrial_sites"]["targets"][
-        "sites"
-    ]
-
-    sites_table = f"{sites_targets['schema']}" f".{sites_targets['table']}"
 
     db.execute_sql(
-        f"""UPDATE {sites_table} s
+        f"""UPDATE {MergeIndustrialSites.targets.tables['sites']} s
               SET nuts3 = krs.nuts
               FROM boundaries.vg250_krs krs
               WHERE ST_WITHIN(s.geom, ST_TRANSFORM(krs.geometry,4326));"""
@@ -680,6 +594,35 @@ def map_nuts3():
 
 
 class MergeIndustrialSites(Dataset):
+    
+    sources = DatasetSources(
+        urls={
+            "hotmaps": "https://gitlab.com/hotmaps/industrial_sites/industrial_sites_Industrial_Database/-/raw/388278c6df35889b1447a959fc3759e3d78bf659/data/Industrial_Database.csv?inline=false",
+            "seenergies": "https://opendata.arcgis.com/datasets/5e36c0af918040ed936b4e4c101f611d_0.csv",
+        },
+        files={
+            "schmidt": "industrial_sites/MA_Schmidt_Industriestandorte_georef.csv"
+        },
+        tables={
+            # These tables are targets of earlier steps, but sources for the final merge
+            "hotmaps_processed": "demand.egon_hotmaps_industrial_sites",
+            "seenergies_processed": "demand.egon_seenergies_industrial_sites",
+            "schmidt_processed": "demand.egon_schmidt_industrial_sites",
+        }
+    )
+    targets = DatasetTargets(
+        files={
+            "hotmaps_download": "industrial_sites/data_Industrial_Database.csv",
+            "seenergies_download": "industrial_sites/D5_1_Industry_Dataset_With_Demand_Data.csv",
+        },
+        tables={
+            "hotmaps": "demand.egon_hotmaps_industrial_sites",
+            "seenergies": "demand.egon_seenergies_industrial_sites",
+            "schmidt": "demand.egon_schmidt_industrial_sites",
+            "sites": "demand.egon_industrial_sites",
+        }
+    )
+    
     def __init__(self, dependencies):
         super().__init__(
             name="Merge_industrial_sites",

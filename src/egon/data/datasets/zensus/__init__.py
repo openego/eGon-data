@@ -135,33 +135,30 @@ def download_and_check(url, target_file, max_iteration=5):
 
 def download_zensus_pop():
     """Download Zensus csv file on population per hectare grid cell."""
-
-    download_directory = Path(".") / ZensusPopulation.targets.files["zensus_population"]
-    # Create the folder, if it does not exist already
-    if not os.path.exists(download_directory):
-        os.mkdir(download_directory)
+    
+    target_file = Path(ZensusPopulation.targets.files["zensus_population"])
+    
+    target_file.parent.mkdir(parents=True, exist_ok=True)
 
     download_and_check(
         ZensusPopulation.sources.urls["original_data"],
-        ZensusPopulation.targets.files["zensus_population"],
-        max_iteration=5)
+        target_file,  
+        max_iteration=5
+    )
 
 
 def download_zensus_misc():
     """Download Zensus csv files on data per hectare grid cell."""
-
-    # Get data config
-    download_directory = Path(".") / ZensusMiscellaneous.targets.files["zensus_buildings"]
-    # Create the folder, if it does not exist already
-    if not os.path.exists(download_directory):
-        os.mkdir(download_directory)
-    # Download remaining zensus data set on households, buildings, apartments
     for key in ZensusMiscellaneous.sources.urls:
-       download_and_check(
-           ZensusMiscellaneous.sources.urls[key],
-           ZensusMiscellaneous.targets.files[key],
-           max_iteration=5)
+        target_file = Path(ZensusMiscellaneous.targets.files[key])
 
+        target_file.parent.mkdir(parents=True, exist_ok=True)
+
+        download_and_check(
+            ZensusMiscellaneous.sources.urls[key],
+            target_file,
+            max_iteration=5
+        )
 
 
 def create_zensus_pop_table():
@@ -226,30 +223,6 @@ def create_zensus_misc_tables():
         )
 
 
-def target(source, dataset):
-    """Generate the target path corresponding to a source path.
-
-    Parameters
-    ----------
-    dataset: str
-        Toggles between production (`dataset='Everything'`) and test mode e.g.
-        (`dataset='Schleswig-Holstein'`).
-        In production mode, data covering entire Germany
-        is used. In the test mode a subset of this data is used for testing the
-        workflow.
-    Returns
-    -------
-    Path
-        Path to target csv-file
-
-    """
-    return Path(
-        os.path.join(Path("."), "zensus_population", source.stem)
-        + "."
-        + dataset
-        + source.suffix
-    )
-
 
 def select_geom():
     """Select the union of the geometries of Schleswig-Holstein from the
@@ -309,14 +282,16 @@ def filter_zensus_population(filename, dataset):
     csv_file = Path(filename).resolve(strict=True)
 
     schleswig_holstein = select_geom()
+    
+    filtered_target = csv_file.parent / f"{csv_file.stem}.{dataset}{csv_file.suffix}"
 
-    if not os.path.isfile(target(csv_file, dataset)):
+    if not os.path.isfile(filtered_target ):
 
         with open(csv_file, mode="r", newline="") as input_lines:
             rows = csv.DictReader(input_lines, delimiter=";")
             gitter_ids = set()
             with open(
-                target(csv_file, dataset), mode="w", newline=""
+                filtered_target, mode="w", newline=""
             ) as destination:
                 output = csv.DictWriter(
                     destination, delimiter=";", fieldnames=rows.fieldnames
@@ -329,7 +304,7 @@ def filter_zensus_population(filename, dataset):
                         Point(float(row["x_mp_100m"]), float(row["y_mp_100m"]))
                     )
                 )
-    return target(csv_file, dataset)
+    return filtered_target 
 
 
 def filter_zensus_misc(filename, dataset):
@@ -357,18 +332,20 @@ def filter_zensus_misc(filename, dataset):
 
     gitter_ids = set(
         pd.read_sql(
-            "SELECT grid_id from society.destatis_zensus_population_per_ha",
+            f"SELECT grid_id from {ZensusPopulation.targets.tables['zensus_population']}",
             con=db.engine(),
         ).grid_id.values
     )
 
-    if not os.path.isfile(target(csv_file, dataset)):
+    filtered_target = csv_file.parent / f"{csv_file.stem}.{dataset}{csv_file.suffix}"
+
+    if not os.path.isfile(filtered_target):
         with open(
             csv_file, mode="r", newline="", encoding="iso-8859-1"
         ) as inputs:
             rows = csv.DictReader(inputs, delimiter=",")
             with open(
-                target(csv_file, dataset),
+                filtered_target,
                 mode="w",
                 newline="",
                 encoding="iso-8859-1",
@@ -380,7 +357,7 @@ def filter_zensus_misc(filename, dataset):
                 output.writerows(
                     row for row in rows if row["Gitter_ID_100m"] in gitter_ids
                 )
-    return target(csv_file, dataset)
+    return filtered_target
 
 
 def population_to_postgres():
@@ -451,7 +428,6 @@ def zensus_misc_to_postgres():
 
     dataset = settings()["egon-data"]["--dataset-boundary"]
 
-    population_table = ZensusPopulation.targets.tables["zensus_population"]
 
     # Read database configuration from docker-compose.yml
     docker_db_config = db.credentials()
@@ -496,7 +472,7 @@ def zensus_misc_to_postgres():
         db.execute_sql(
             f"""UPDATE {ZensusMiscellaneous.targets.tables[key]} as b
                     SET zensus_population_id = zs.id
-                    FROM {population_table} zs
+                    FROM {ZensusPopulation.targets.tables["zensus_population"]} zs
                     WHERE b.grid_id = zs.grid_id;"""
         )
 
@@ -505,7 +481,7 @@ def zensus_misc_to_postgres():
                     ADD CONSTRAINT
                     {ZensusMiscellaneous.targets.get_table_name(key)}_fkey
                     FOREIGN KEY (zensus_population_id)
-                    REFERENCES {population_table}(id);"""
+                    REFERENCES {ZensusPopulation.targets.tables["zensus_population"]}(id);"""
         )
 
     # Create combined table

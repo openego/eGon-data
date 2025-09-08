@@ -13,7 +13,7 @@ import geopandas as gpd
 import pandas as pd
 
 from egon.data import db
-from egon.data.datasets import Dataset
+from egon.data.datasets import Dataset, DatasetSources, DatasetTargets
 from egon.data.datasets.industry.temporal import (
     insert_osm_ind_load,
     insert_sites_ind_load,
@@ -95,14 +95,6 @@ def create_tables():
     None.
     """
 
-    # Get data config
-    targets_spatial = egon.data.config.datasets()[
-        "distributed_industrial_demand"
-    ]["targets"]
-    targets_temporal = egon.data.config.datasets()[
-        "electrical_load_curves_industry"
-    ]["targets"]
-
     # Create target schema
     db.execute_sql("CREATE SCHEMA IF NOT EXISTS demand;")
 
@@ -110,38 +102,32 @@ def create_tables():
 
     db.execute_sql(
         f"""DROP TABLE IF EXISTS
-            {targets_spatial['sites']['schema']}.
-            {targets_spatial['sites']['table']} CASCADE;"""
+            {IndustrialDemandCurves.targets.tables['sites_spatial']} CASCADE;"""
     )
 
     db.execute_sql(
         f"""DROP TABLE IF EXISTS
-            {targets_spatial['osm']['schema']}.
-            {targets_spatial['osm']['table']} CASCADE;"""
+            {IndustrialDemandCurves.targets.tables['osm_spatial']} CASCADE;"""
     )
 
     db.execute_sql(
         f"""DROP TABLE IF EXISTS
-            {targets_temporal['osm_load']['schema']}.
-            {targets_temporal['osm_load']['table']} CASCADE;"""
+            {IndustrialDemandCurves.targets.tables['osm_load']} CASCADE;"""
     )
 
     db.execute_sql(
         f"""DROP TABLE IF EXISTS
-            {targets_temporal['osm_load_individual']['schema']}.
-            {targets_temporal['osm_load_individual']['table']} CASCADE;"""
+            {IndustrialDemandCurves.targets.tables['osm_load_individual']} CASCADE;"""
     )
 
     db.execute_sql(
         f"""DROP TABLE IF EXISTS
-            {targets_temporal['sites_load']['schema']}.
-            {targets_temporal['sites_load']['table']} CASCADE;"""
+            {IndustrialDemandCurves.targets.tables['sites_load']} CASCADE;"""
     )
 
     db.execute_sql(
         f"""DROP TABLE IF EXISTS
-            {targets_temporal['sites_load_individual']['schema']}.
-            {targets_temporal['sites_load_individual']['table']} CASCADE;"""
+            {IndustrialDemandCurves.targets.tables['sites_load_individual']} CASCADE;"""
     )
 
     engine = db.engine()
@@ -179,25 +165,14 @@ def industrial_demand_distr():
     None.
     """
 
-    # Read information from configuration file
-    sources = egon.data.config.datasets()["distributed_industrial_demand"][
-        "sources"
-    ]
-
-    target_sites = egon.data.config.datasets()[
-        "distributed_industrial_demand"
-    ]["targets"]["sites"]
-    target_osm = egon.data.config.datasets()["distributed_industrial_demand"][
-        "targets"
-    ]["osm"]
 
     # Delete data from table
 
     db.execute_sql(
-        f"""DELETE FROM {target_sites['schema']}.{target_sites['table']}"""
+        f"""DELETE FROM {IndustrialDemandCurves.targets.tables['sites_spatial']}"""
     )
     db.execute_sql(
-        f"""DELETE FROM {target_osm['schema']}.{target_osm['table']}"""
+        f"""DELETE FROM {IndustrialDemandCurves.targets.tables['osm_spatial']}"""
     )
 
     for scn in egon.data.config.settings()["egon-data"]["--scenarios"]:
@@ -205,8 +180,7 @@ def industrial_demand_distr():
         # Select administrative districts (Landkreise) including its boundaries
         boundaries = db.select_geodataframe(
             f"""SELECT nuts, geometry FROM
-                {sources['vg250_krs']['schema']}.
-                {sources['vg250_krs']['table']}""",
+                {IndustrialDemandCurves.sources.tables['vg250_krs']}""",
             index_col="nuts",
             geom_col="geometry",
             epsg=3035,
@@ -215,14 +189,12 @@ def industrial_demand_distr():
         # Select industrial landuse polygons
         landuse = db.select_geodataframe(
             f"""SELECT id, area_ha, geom FROM
-                {sources['osm_landuse']['schema']}.
-                {sources['osm_landuse']['table']}
+                {IndustrialDemandCurves.sources.tables['osm_landuse']}
                 WHERE sector = 3
                 AND NOT ST_Intersects(
                     geom,
                     (SELECT ST_UNION(ST_Transform(geom,3035)) FROM
-                    {sources['industrial_sites']['schema']}.
-                    {sources['industrial_sites']['table']}))
+                    {IndustrialDemandCurves.sources.tables['industrial_sites']}))
                 AND name NOT LIKE '%%kraftwerk%%'
                 AND name NOT LIKE '%%Stadtwerke%%'
                 AND name NOT LIKE '%%Müllverbrennung%%'
@@ -256,8 +228,7 @@ def industrial_demand_distr():
         # Select data on industrial sites
         sites = db.select_dataframe(
             f"""SELECT id, wz, nuts3 FROM
-                {sources['industrial_sites']['schema']}.
-                {sources['industrial_sites']['table']}""",
+                {IndustrialDemandCurves.sources.tables['industrial_sites']}""",
             index_col=None,
         )
         # Count number of industrial sites per subsector (wz) and nuts3
@@ -269,8 +240,7 @@ def industrial_demand_distr():
         # Select industrial demands on nuts3 level from local database
         demand_nuts3_import = db.select_dataframe(
             f"""SELECT nuts3, demand, wz FROM
-                {sources['demandregio']['schema']}.
-                {sources['demandregio']['table']}
+                {IndustrialDemandCurves.sources.tables['demandregio_wz']}
                 WHERE scenario = '{scn}'
                 AND demand > 0
                 AND wz IN
@@ -412,6 +382,27 @@ def industrial_demand_distr():
 
 
 class IndustrialDemandCurves(Dataset):
+    
+    sources = DatasetSources(
+        tables={
+            "vg250_krs": "boundaries.vg250_krs",
+            "osm_landuse": "openstreetmap.osm_landuse",
+            "industrial_sites": "demand.egon_industrial_sites",
+            "demandregio": "demand.egon_demandregio_cts_ind",
+            "demandregio_wz": "demand.egon_demandregio_wz",
+        }
+    )
+    targets = DatasetTargets(
+        tables={
+            "osm_spatial": "demand.egon_demandregio_osm_ind_electricity",
+            "sites_spatial": "demand.egon_demandregio_sites_ind_electricity",
+            "osm_load": "demand.egon_osm_ind_load_curves",
+            "osm_load_individual": "demand.egon_osm_ind_load_curves_individual",
+            "sites_load": "demand.egon_sites_ind_load_curves",
+            "sites_load_individual": "demand.egon_sites_ind_load_curves_individual",
+        }
+    )
+    
     """
     Distribute industrial electricity demands to industrial sites and OSM
     landuse areas

@@ -17,7 +17,7 @@ import requests
 import yaml
 
 from egon.data import __path__, config, db, logger
-from egon.data.datasets import Dataset
+from egon.data.datasets import Dataset, DatasetSources, DatasetTargets
 from egon.data.datasets.scenario_parameters import get_sector_parameters
 from egon.data.datasets.scenario_parameters.parameters import (
     annualize_capital_costs,
@@ -27,6 +27,10 @@ import egon.data.subprocess as subproc
 
 
 class PreparePypsaEur(Dataset):
+    sources = DatasetSources(
+        files={"era5_weather_data": "cutouts"}
+    )
+    targets = DatasetTargets()
     def __init__(self, dependencies):
         super().__init__(
             name="PreparePypsaEur",
@@ -40,6 +44,12 @@ class PreparePypsaEur(Dataset):
 
 
 class RunPypsaEur(Dataset):
+    sources = DatasetSources(
+        tables={"scenario_parameters": "scenario.egon_scenario_parameters"}
+    )
+    targets = DatasetTargets(
+        tables={"scenario_parameters": "scenario.egon_scenario_parameters"}
+    )
     def __init__(self, dependencies):
         super().__init__(
             name="SolvePypsaEur",
@@ -143,17 +153,15 @@ def download():
                 )
 
         # Copy era5 weather data to folder for pypsaeur
-        era5_pypsaeur_path = filepath / "pypsa-eur" / "cutouts"
+        era5_pypsa_eur_path = filepath / "pypsa-eur" / "cutouts"
 
-        if not era5_pypsaeur_path.exists():
-            era5_pypsaeur_path.mkdir(parents=True, exist_ok=True)
-            copy_from = config.datasets()["era5_weather_data"]["targets"][
-                "weather_data"
-            ]["path"]
+        if not era5_pypsa_eur_path.exists():
+            era5_pypsa_eur_path.mkdir(parents=True, exist_ok=True)
+            copy_from = PreparePypsaEur.sources.files["era5_weather_data"]
             filename = "europe-2011-era5.nc"
             shutil.copy(
-                copy_from + "/" + filename, era5_pypsaeur_path / filename
-            )
+        Path(copy_from) / filename, era5_pypsa_eur_path / filename
+    )
 
         # Workaround to download natura, shipdensity and globalenergymonitor
         # data, which is not working in the regular snakemake workflow.
@@ -1701,8 +1709,6 @@ def overwrite_H2_pipeline_share():
     """
     scn_name = "eGon100RE"
     # Select source and target from dataset configuration
-    target = egon.data.config.datasets()["pypsa-eur-sec"]["target"]
-
     n = read_network()
 
     H2_pipelines = n.links[n.links["carrier"] == "H2 pipeline retrofitted"]
@@ -1722,7 +1728,7 @@ def overwrite_H2_pipeline_share():
     parameters = db.select_dataframe(
         f"""
         SELECT *
-        FROM {target['scenario_parameters']['schema']}.{target['scenario_parameters']['table']}
+        FROM {RunPypsaEur.sources.tables['scenario_parameters']}
         WHERE name = '{scn_name}'
         """
     )
@@ -1734,7 +1740,7 @@ def overwrite_H2_pipeline_share():
     # Update data in db
     db.execute_sql(
         f"""
-    UPDATE {target['scenario_parameters']['schema']}.{target['scenario_parameters']['table']}
+    UPDATE {RunPypsaEur.targets.tables['scenario_parameters']}
     SET gas_parameters = '{gas_param}'
     WHERE name = '{scn_name}';
     """
