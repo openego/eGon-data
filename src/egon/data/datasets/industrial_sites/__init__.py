@@ -6,20 +6,19 @@
 
 """
 
+from pathlib import Path
+from urllib.request import urlretrieve
+import os
 
-import egon.data.config
+from geoalchemy2.types import Geometry
+from sqlalchemy import Column, Float, Integer, Sequence, String
+from sqlalchemy.ext.declarative import declarative_base
 import geopandas as gpd
 import pandas as pd
-import os
-from urllib.request import urlretrieve
+
 from egon.data import db, subprocess
 from egon.data.datasets import Dataset, DatasetSources, DatasetTargets
-from egon.data.datasets.helpers import DATA_BUNDLE_DIR
-from sqlalchemy import Column, String, Float, Integer, Sequence
-from geoalchemy2.types import Geometry
-from sqlalchemy.ext.declarative import declarative_base
-from pathlib import Path
-
+import egon.data.config
 
 Base = declarative_base()
 
@@ -124,10 +123,11 @@ def create_tables():
     None.
     """
 
-     # Create target schema
+    # Create target schema
     db.execute_sql("CREATE SCHEMA IF NOT EXISTS demand;")
 
-    # Drop tables and sequences before recreating them
+   
+
     db.execute_sql(
         f"""DROP TABLE IF EXISTS {MergeIndustrialSites.targets.tables['hotmaps']} CASCADE;"""
     )
@@ -161,11 +161,9 @@ def create_tables():
 
 
 def download_hotmaps():
-    """Download csv file on hotmap's industrial sites."""
 
     download_directory = "industrial_sites"
 
-    # Create the folder, if it does not exists already
     if not os.path.exists(download_directory):
         os.mkdir(download_directory)
 
@@ -177,25 +175,26 @@ def download_hotmaps():
             f"curl {url} > {target_file}", shell=True
         )
 
-
 def download_seenergies():
     """Download csv file on s-eenergies' industrial sites."""
+    # The old see_config variable is now removed.
 
     download_directory = "industrial_sites"
     # Create the folder, if it does not exists already
     if not os.path.exists(download_directory):
         os.mkdir(download_directory)
 
-    target_file = target_file = Path(MergeIndustrialSites.targets.files["seenergies_download"])
+    # Use the new class attributes for the target file and source URL
+    target_file = Path(MergeIndustrialSites.targets.files["seenergies_download"])
     url = MergeIndustrialSites.sources.urls["seenergies"]
-    
+
     if not os.path.isfile(target_file):
         urlretrieve(url, target_file)
 
 
 def hotmaps_to_postgres():
     """Import hotmaps data to postgres database"""
- 
+
 
     input_file = Path(MergeIndustrialSites.targets.files["hotmaps_download"])
 
@@ -295,8 +294,11 @@ def hotmaps_to_postgres():
     )
 
 
+
 def seenergies_to_postgres():
     """Import seenergies data to postgres database"""
+    # Get information from data configuration file
+
 
     input_file = Path(MergeIndustrialSites.targets.files["seenergies_download"])
     engine = db.engine()
@@ -397,10 +399,12 @@ def seenergies_to_postgres():
 def schmidt_to_postgres():
     """Import data from Thesis by Danielle Schmidt to postgres database"""
     # Get information from data configuration file
-    
+
+
     input_file = (
-        DATA_BUNDLE_DIR/
-        Path(MergeIndustrialSites.sources.files["schmidt"])
+        Path(".")
+        / "data_bundle_egon_data"
+        / MergeIndustrialSites.sources.files["schmidt"]
     )
 
     engine = db.engine()
@@ -501,6 +505,8 @@ def merge_inputs():
     (hotmaps, seenergies, Thesis Schmidt)
     """
 
+
+
     # Insert data from Schmidt's Master thesis
     db.execute_sql(
         f"""INSERT INTO {MergeIndustrialSites.targets.tables['sites']}
@@ -527,13 +533,14 @@ def merge_inputs():
                       FROM  {MergeIndustrialSites.targets.tables['sites']} h,
                             {MergeIndustrialSites.sources.tables['seenergies_processed']} s
                       WHERE ST_DWithin (h.geom, s.geom, 0.01)
- 					  AND	(h.wz = s.wz)
- 					  AND	(LOWER (SUBSTRING(h.companyname, 1, 3)) =
+                      AND (h.wz = s.wz)
+                      AND (LOWER (SUBSTRING(h.companyname, 1, 3)) =
                               LOWER (SUBSTRING(s.companyname, 1, 3))));"""
     )
 
     # Insert data from Hotmaps
 
+    # Insert data from Hotmaps
     db.execute_sql(
         f"""INSERT INTO {MergeIndustrialSites.targets.tables['sites']}
               (companyname, address, subsector, wz, geom)
@@ -561,7 +568,6 @@ def merge_inputs():
                               LOWER (SUBSTRING(s.companyname, 1, 3))))"""
     )
 
-    # Replace geometry by spatial information from table 'demand.schmidt_industrial_sites' if possible
 
     db.execute_sql(
         f"""UPDATE {MergeIndustrialSites.targets.tables['sites']} s
@@ -577,24 +583,16 @@ def merge_inputs():
 def map_nuts3():
     """
     Match resulting industrial sites with nuts3 codes and fill column 'nuts3'
-
-
-    Returns
-    -------
-    None.
-
     """
-
     db.execute_sql(
         f"""UPDATE {MergeIndustrialSites.targets.tables['sites']} s
               SET nuts3 = krs.nuts
-              FROM boundaries.vg250_krs krs
+              FROM {MergeIndustrialSites.sources.tables['vg250_krs']} krs
               WHERE ST_WITHIN(s.geom, ST_TRANSFORM(krs.geometry,4326));"""
     )
 
 
 class MergeIndustrialSites(Dataset):
-    
     sources = DatasetSources(
         urls={
             "hotmaps": "https://gitlab.com/hotmaps/industrial_sites/industrial_sites_Industrial_Database/-/raw/388278c6df35889b1447a959fc3759e3d78bf659/data/Industrial_Database.csv?inline=false",
@@ -622,7 +620,6 @@ class MergeIndustrialSites(Dataset):
             "sites": "demand.egon_industrial_sites",
         }
     )
-    
     def __init__(self, dependencies):
         super().__init__(
             name="Merge_industrial_sites",
