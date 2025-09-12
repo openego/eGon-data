@@ -2351,7 +2351,7 @@ def add_bus_ids_sq(
     """
     grid_districts_gdf = grid_districts(EPSG)
 
-    mask = buildings_gdf.scenario.str.contains("status")
+    mask = buildings_gdf.scenario.str.startswith("status")
 
     buildings_gdf.loc[mask, "bus_id"] = (
         buildings_gdf.loc[mask]
