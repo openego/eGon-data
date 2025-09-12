@@ -22,20 +22,7 @@ version = "2.0.0"
 description = "The data used in the eGo^N project along with the code importing, generating and processing it."
 requires-python = ">=3.10"
 license = { text = "AGPL-3.0-or-later" }
-authors = [
-  { name = "eGo^N team", email = "regon-project@rl-institut.de" },
-  { name = "Jonathan Amme" },
-  { name = "Clara Büttner" },
-  { name = "Ilka Cußmann" },
-  { name = "Julian Endres" },
-  { name = "Carlos Epia" },
-  { name = "Kilian Helfenbein" },
-  { name = "Stephan Günther" },
-  { name = "Ulf Müller" },
-  { name = "Amélia Nadal" },
-  { name = "Guido Pleßmann" },
-  { name = "Francesco Witte" },
-]
+authors = [ { name = "reGon team", email = "regon-project@rl-institut.de" },]
 dynamic = ["readme"]
 
 classifiers = [
