@@ -172,9 +172,9 @@ are recommended.
 
 In order to keep the package installation isolated, we recommend
 installing the package in a dedicated virtual environment with
-Python 3.8, as eGon-data works currently only with that Python version.
-There's both, an `external tool`_ and a `builtin module`_ which help in
-doing so. I also highly recommend spending the time to set up
+Python 3.10, as eGon-data has been developed and tested only with that
+version. There's both, an `external tool`_ and a `builtin module`_ which help
+in doing so. I also highly recommend spending the time to set up
 `virtualenvwrapper`_ to manage your virtual environments if you start
 having to keep multiple ones around.
 
