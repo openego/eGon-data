@@ -290,11 +290,13 @@ class Dataset:
                 datasets = session.query(Model).filter_by(name=self.name).all()
                 if (
                     self.version in [ds.version for ds in datasets]
-                    and scenario_names
-                    == [
-                        ds.scenarios.replace("{", "").replace("}", "")
+                    and all(
+                        scenario_names
+                        == ds.scenarios.replace("{", "")
+                        .replace("}", "")
+                        .split(",")
                         for ds in datasets
-                    ]
+                    )
                     and not re.search(r"\.dev$", self.version)
                 ):
                     logger.info(
@@ -331,9 +333,11 @@ class Dataset:
                         if isinstance(dependency, Dataset)
                         or hasattr(dependency, "dataset")
                         for dataset in [
-                            dependency.dataset
-                            if isinstance(dependency, Operator)
-                            else dependency
+                            (
+                                dependency.dataset
+                                if isinstance(dependency, Operator)
+                                else dependency
+                            )
                         ]
                     ]
                 )

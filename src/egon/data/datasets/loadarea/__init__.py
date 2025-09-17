@@ -24,6 +24,7 @@ class OsmPolygonUrban(Base):
     """
     Class definition of table openstreetmap.osm_landuse.
     """
+
     __tablename__ = "osm_landuse"
     __table_args__ = {"schema": "openstreetmap"}
     id = Column(Integer, primary_key=True)

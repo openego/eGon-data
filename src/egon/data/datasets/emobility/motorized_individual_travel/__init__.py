@@ -49,10 +49,10 @@ from egon.data.datasets.emobility.motorized_individual_travel.helpers import (
 from egon.data.datasets.emobility.motorized_individual_travel.model_timeseries import (  # noqa: E501
     delete_model_data_from_db,
     generate_model_data_bunch,
-    generate_model_data_status2019_remaining,
-    generate_model_data_status2023_remaining,
     generate_model_data_eGon100RE_remaining,
     generate_model_data_eGon2035_remaining,
+    generate_model_data_status2019_remaining,
+    generate_model_data_status2023_remaining,
     read_simbev_metadata_file,
 )
 
@@ -142,12 +142,12 @@ def download_and_preprocess():
         inplace=True,
     )
     kba_data = kba_data.dropna()
-    kba_data[
-        ["ags_reg_district", "reg_district"]
-    ] = kba_data.reg_district.str.split(
-        pat=" ",
-        n=1,
-        expand=True,
+    kba_data[["ags_reg_district", "reg_district"]] = (
+        kba_data.reg_district.str.split(
+            pat=" ",
+            n=1,
+            expand=True,
+        )
     )
     kba_data.ags_reg_district = kba_data.ags_reg_district.astype("int")
 

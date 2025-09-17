@@ -99,6 +99,7 @@ class DemandRegio(Dataset):
             version=self.version,
             dependencies=dependencies,
             tasks=(
+
                 get_cached_tables,  # adhoc workaround #180
                 create_tables,
                 {
@@ -311,6 +312,7 @@ def adjust_ind_pes(ec_cts_ind):
         Industrial demand with additional electrification
 
     """
+
     pes_path = (
         Path(".") / "data_bundle_powerd_data" / "pypsa_eur" / "resources"
     )
@@ -723,6 +725,9 @@ def insert_cts_ind(scenario, year, engine, target_values):
     None.
 
     """
+    targets = egon.data.config.datasets()["demandregio_cts_ind_demand"][
+        "targets"
+    ]
 
     wz_table = pd.read_sql(
         f"SELECT wz, sector FROM {DemandRegio.targets.tables['wz_definitions']}",
@@ -838,6 +843,7 @@ def insert_household_demand():
     engine = db.engine()
 
     scenarios = egon.data.config.settings()["egon-data"]["--scenarios"]
+
     scenarios.append("eGon2021")
 
     for table_key in ["hh_demand"]: # Assuming this is the only target here
@@ -851,6 +857,8 @@ def insert_household_demand():
             if scn == "status2023"
             else scenario_parameters.global_settings(scn)["population_year"]
         )
+
+        # Insert demands of private households
         insert_hh_demand(scn, year, engine)
 
 
@@ -863,6 +871,7 @@ def insert_cts_ind_demands():
     None.
 
     """
+
     engine = db.engine()
 
     for table_key in [
@@ -916,6 +925,7 @@ def insert_society_data():
     None.
 
     """
+
     engine = db.engine()
 
     for table_key in ["population", "households"]:
@@ -956,6 +966,7 @@ def insert_society_data():
                 if_exists="append",
             )
 
+
 def insert_timeseries_per_wz(sector, year):
     """Insert normalized electrical load time series for the selected sector
 
@@ -971,6 +982,7 @@ def insert_timeseries_per_wz(sector, year):
     None.
 
     """
+
 
     if sector == "CTS":
         profiles = (
@@ -1067,3 +1079,4 @@ def get_cached_tables():
 
         with zipfile.ZipFile(source_path, "r") as zip_ref:
             zip_ref.extractall(path=target_path)
+

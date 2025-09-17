@@ -123,6 +123,8 @@ def create_tables():
     None.
     """
 
+
+
     # Create target schema
     db.execute_sql("CREATE SCHEMA IF NOT EXISTS demand;")
 
@@ -139,6 +141,7 @@ def create_tables():
     db.execute_sql(
         f"""DROP TABLE IF EXISTS {MergeIndustrialSites.targets.tables['schmidt']} CASCADE;"""
     )
+
 
     db.execute_sql(
         f"""DROP TABLE IF EXISTS {MergeIndustrialSites.targets.tables['sites']} CASCADE;"""
@@ -162,7 +165,9 @@ def create_tables():
 
 def download_hotmaps():
 
+
     download_directory = "industrial_sites"
+
 
     if not os.path.exists(download_directory):
         os.mkdir(download_directory)
@@ -175,9 +180,10 @@ def download_hotmaps():
             f"curl {url} > {target_file}", shell=True
         )
 
+
 def download_seenergies():
     """Download csv file on s-eenergies' industrial sites."""
-    # The old see_config variable is now removed.
+
 
     download_directory = "industrial_sites"
     # Create the folder, if it does not exists already
@@ -505,7 +511,7 @@ def merge_inputs():
     (hotmaps, seenergies, Thesis Schmidt)
     """
 
-
+  
 
     # Insert data from Schmidt's Master thesis
     db.execute_sql(
@@ -540,7 +546,7 @@ def merge_inputs():
 
     # Insert data from Hotmaps
 
-    # Insert data from Hotmaps
+
     db.execute_sql(
         f"""INSERT INTO {MergeIndustrialSites.targets.tables['sites']}
               (companyname, address, subsector, wz, geom)
@@ -569,6 +575,7 @@ def merge_inputs():
     )
 
 
+
     db.execute_sql(
         f"""UPDATE {MergeIndustrialSites.targets.tables['sites']} s
               SET geom = g.geom
@@ -583,7 +590,11 @@ def merge_inputs():
 def map_nuts3():
     """
     Match resulting industrial sites with nuts3 codes and fill column 'nuts3'
+
+
     """
+
+
     db.execute_sql(
         f"""UPDATE {MergeIndustrialSites.targets.tables['sites']} s
               SET nuts3 = krs.nuts

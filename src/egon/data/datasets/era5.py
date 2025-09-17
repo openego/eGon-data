@@ -1,6 +1,7 @@
 """
 Central module containing all code dealing with importing era5 weather data.
 """
+
 from pathlib import Path
 import os
 
@@ -39,9 +40,10 @@ class WeatherData(Dataset):
 
     """
 
-    
+    #:
     name: str = "Era5"
-    version: str = "0.0.3"
+    #:
+    version: str = "0.0.4"
     
     sources = DatasetSources(files={})
 
@@ -77,6 +79,7 @@ class EgonEra5Cells(Base):
     Class definition of table supply.egon_era5_weather_cells.
 
     """
+
     __tablename__ = "egon_era5_weather_cells"
     __table_args__ = {"schema": "supply"}
     w_id = Column(Integer, primary_key=True)
@@ -89,6 +92,7 @@ class EgonRenewableFeedIn(Base):
     Class definition of table supply.egon_era5_renewable_feedin.
 
     """
+
     __tablename__ = "egon_era5_renewable_feedin"
     __table_args__ = {"schema": "supply"}
     w_id = Column(Integer, primary_key=True)

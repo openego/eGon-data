@@ -21,7 +21,6 @@ from egon.data.metadata import (
     generate_resource_fields_from_db_table,
     license_dedl,
     meta_metadata,
-    meta_metadata,
     sources,
 )
 
@@ -52,7 +51,9 @@ class EgonPowerPlantsPv(Base):
 
     status = Column(String, nullable=True)  # EinheitBetriebsstatus
     commissioning_date = Column(DateTime, nullable=True)  # Inbetriebnahmedatum
-    decommissioning_date = Column(DateTime, nullable=True)  # DatumEndgueltigeStilllegung
+    decommissioning_date = Column(
+        DateTime, nullable=True
+    )  # DatumEndgueltigeStilllegung
     postcode = Column(String(5), nullable=True)  # Postleitzahl
     city = Column(String(50), nullable=True)  # Ort
     municipality = Column(String, nullable=True)  # Gemeinde
@@ -99,7 +100,9 @@ class EgonPowerPlantsWind(Base):
 
     status = Column(String, nullable=True)  # EinheitBetriebsstatus
     commissioning_date = Column(DateTime, nullable=True)  # Inbetriebnahmedatum
-    decommissioning_date = Column(DateTime, nullable=True)  # DatumEndgueltigeStilllegung
+    decommissioning_date = Column(
+        DateTime, nullable=True
+    )  # DatumEndgueltigeStilllegung
     postcode = Column(String(5), nullable=True)  # Postleitzahl
     city = Column(String(50), nullable=True)  # Ort
     municipality = Column(String, nullable=True)  # Gemeinde
@@ -131,7 +134,9 @@ class EgonPowerPlantsBiomass(Base):
 
     status = Column(String, nullable=True)  # EinheitBetriebsstatus
     commissioning_date = Column(DateTime, nullable=True)  # Inbetriebnahmedatum
-    decommissioning_date = Column(DateTime, nullable=True)  # DatumEndgueltigeStilllegung
+    decommissioning_date = Column(
+        DateTime, nullable=True
+    )  # DatumEndgueltigeStilllegung
     postcode = Column(String(5), nullable=True)  # Postleitzahl
     city = Column(String(50), nullable=True)  # Ort
     municipality = Column(String, nullable=True)  # Gemeinde
@@ -162,7 +167,9 @@ class EgonPowerPlantsHydro(Base):
 
     status = Column(String, nullable=True)  # EinheitBetriebsstatus
     commissioning_date = Column(DateTime, nullable=True)  # Inbetriebnahmedatum
-    decommissioning_date = Column(DateTime, nullable=True)  # DatumEndgueltigeStilllegung
+    decommissioning_date = Column(
+        DateTime, nullable=True
+    )  # DatumEndgueltigeStilllegung
     postcode = Column(String(5), nullable=True)  # Postleitzahl
     city = Column(String(50), nullable=True)  # Ort
     municipality = Column(String, nullable=True)  # Gemeinde
@@ -382,9 +389,7 @@ def add_metadata():
                         "Data from Marktstammdatenregister (MaStR) data using "
                         "the data dump from 2022-11-17 for eGon-data."
                     ),
-                    "path": (
-                        f"https://zenodo.org/record/{deposit_id_mastr}"
-                    ),
+                    "path": (f"https://zenodo.org/record/{deposit_id_mastr}"),
                     "licenses": [license_dedl(attribution="© Amme, Jonathan")],
                 },
                 sources()["egon-data"],
@@ -441,7 +446,9 @@ def add_metadata():
             },
         }
 
-        dialect = get_dialect(f"oep-v{meta_metadata()['metadataVersion'][4:7]}")()
+        dialect = get_dialect(
+            f"oep-v{meta_metadata()['metadataVersion'][4:7]}"
+        )()
 
         meta = dialect.compile_and_render(dialect.parse(json.dumps(meta)))
 

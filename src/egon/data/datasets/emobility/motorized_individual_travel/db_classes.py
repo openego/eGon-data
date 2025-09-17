@@ -1,6 +1,7 @@
 """
 DB tables / SQLAlchemy ORM classes for motorized individual travel
 """
+
 import datetime
 import json
 
@@ -31,7 +32,6 @@ from egon.data.metadata import (
     license_agpl,
     license_ccby,
     license_odbl,
-    meta_metadata,
     meta_metadata,
     sources,
 )

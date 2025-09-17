@@ -40,14 +40,15 @@ class SubstationVoronoi(Dataset):
 
     def __init__(self, dependencies):
         super().__init__(
-            name=self.name,
-            version=self.version,
+            name="substation_voronoi",
+            version="0.0.0",
             dependencies=dependencies,
             tasks=(
                 create_tables,
                 substation_voronoi,
             ),
         )
+
 
 class EgonHvmvSubstationVoronoi(Base):
     __tablename__ = "egon_hvmv_substation_voronoi"
@@ -114,6 +115,7 @@ def create_tables():
     engine = db.engine()
     EgonEhvSubstationVoronoi.__table__.create(bind=engine, checkfirst=True)
     EgonHvmvSubstationVoronoi.__table__.create(bind=engine, checkfirst=True)
+
 
 def substation_voronoi():
     """

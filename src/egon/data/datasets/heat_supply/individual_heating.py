@@ -67,6 +67,7 @@ class EgonEtragoTimeseriesIndividualHeating(Base):
     the different scenarios. The data is used in eTraGo.
 
     """
+
     __tablename__ = "egon_etrago_timeseries_individual_heating"
     __table_args__ = {"schema": "demand"}
     bus_id = Column(Integer, primary_key=True)
@@ -82,12 +83,12 @@ class EgonHpCapacityBuildings(Base):
     This table contains the heat pump capacity of all buildings with a heat pump.
 
     """
+
     __tablename__ = "egon_hp_capacity_buildings"
     __table_args__ = {"schema": "demand"}
     building_id = Column(Integer, primary_key=True)
     scenario = Column(String, primary_key=True)
     hp_capacity = Column(REAL)
-
 
 
 class HeatPumpsPypsaEur(Dataset):
@@ -149,6 +150,7 @@ class HeatPumpsPypsaEur(Dataset):
     lead to infeasibilities in eDisGo.
 
     """
+
     #:
     name: str = "HeatPumpsPypsaEurSec"
     #:
@@ -264,7 +266,10 @@ class HeatPumpsStatusQuo(Dataset):
                 )
             return tasks
 
-        if any("status" in scenario for scenario in config.settings()["egon-data"]["--scenarios"]):
+        if any(
+            "status" in scenario
+            for scenario in config.settings()["egon-data"]["--scenarios"]
+        ):
             tasks = ()
 
             for scenario in config.settings()["egon-data"]["--scenarios"]:
@@ -289,9 +294,7 @@ class HeatPumpsStatusQuo(Dataset):
                         ),
                     )
 
-                    tasks += (
-                        {*dyn_parallel_tasks_status_quo(scenario)},
-                    )
+                    tasks += ({*dyn_parallel_tasks_status_quo(scenario)},)
         else:
             tasks = (
                 PythonOperator(
@@ -390,10 +393,12 @@ class HeatPumps2035(Dataset):
     lead to infeasibilities in eDisGo.
 
     """
+
     #:
     name: str = "HeatPumps2035"
     #:
     version: str = "0.0.3"
+
     def __init__(self, dependencies):
         def dyn_parallel_tasks_2035():
             """Dynamically generate tasks
@@ -504,10 +509,12 @@ class HeatPumps2050(Dataset):
     lead to infeasibilities in eDisGo.
 
     """
+
     #:
     name: str = "HeatPumps2050"
     #:
     version: str = "0.0.3"
+
     def __init__(self, dependencies):
         tasks_HeatPumps2050 = set()
 
@@ -541,6 +548,7 @@ class BuildingHeatPeakLoads(Base):
     each building.
 
     """
+
     __tablename__ = "egon_building_heat_peak_loads"
     __table_args__ = {"schema": "demand"}
 
@@ -602,7 +610,7 @@ def cascade_per_technology(
 
     # Distribute heat pumps linear to remaining demand.
     if tech.index == "heat_pump":
-        if distribution_level == "federal_state":
+        if distribution_level == "federal_states":
             # Select target values per federal state
             target = db.select_dataframe(
                 f"""
@@ -617,7 +625,8 @@ def cascade_per_technology(
             )
 
             heat_per_mv["share"] = heat_per_mv.groupby(
-                "state"
+                "state",
+                group_keys=False,
             ).remaining_demand.apply(lambda grp: grp / grp.sum())
 
             append_df = (
@@ -639,7 +648,10 @@ def cascade_per_technology(
             if not target.capacity[0]:
                 target.capacity[0] = 0
 
-            if config.settings()["egon-data"]["--dataset-boundary"] == "Schleswig-Holstein":
+            if (
+                config.settings()["egon-data"]["--dataset-boundary"]
+                == "Schleswig-Holstein"
+            ):
                 target.capacity[0] /= 16
 
             heat_per_mv["share"] = (
@@ -655,6 +667,18 @@ def cascade_per_technology(
             {"bus_id": "mv_grid_id", "share": "capacity"}, axis=1, inplace=True
         )
 
+    elif (tech.index == "gas_boiler") & (scenario == "eGon2035"):
+        append_df = pd.DataFrame(
+            data={
+                "capacity": heat_per_mv.remaining_demand.div(
+                    tech.estimated_flh.values[0]
+                ),
+                "carrier": f"residential_rural_{tech.index}",
+                "mv_grid_id": heat_per_mv.index,
+                "scenario": scenario,
+            }
+        )
+
     elif tech.index in ("gas_boiler", "resistive_heater", "solar_thermal"):
         # Select target value for Germany
         target = db.select_dataframe(
@@ -666,17 +690,17 @@ def cascade_per_technology(
                 """
         )
 
-        if config.settings()["egon-data"]["--dataset-boundary"] == "Schleswig-Holstein":
+        if (
+            config.settings()["egon-data"]["--dataset-boundary"]
+            == "Schleswig-Holstein"
+        ):
             target.capacity[0] /= 16
 
         heat_per_mv["share"] = (
-            heat_per_mv.remaining_demand
-            / heat_per_mv.remaining_demand.sum()
+            heat_per_mv.remaining_demand / heat_per_mv.remaining_demand.sum()
         )
 
-        append_df = (
-            heat_per_mv["share"].mul(target.capacity[0]).reset_index()
-        )
+        append_df = heat_per_mv["share"].mul(target.capacity[0]).reset_index()
 
         append_df.rename(
             {"bus_id": "mv_grid_id", "share": "capacity"}, axis=1, inplace=True
@@ -774,9 +798,18 @@ def cascade_heat_supply_indiv(scenario, distribution_level, plotting=True):
         )
     elif scenario == "eGon100RE":
         technologies = pd.DataFrame(
-            index=["heat_pump", "resistive_heater", "solar_thermal", "gas_boiler", "oil_boiler"],
+            index=[
+                "heat_pump",
+                "resistive_heater",
+                "solar_thermal",
+                "gas_boiler",
+                "oil_boiler",
+            ],
             columns=["estimated_flh", "priority"],
-            data={"estimated_flh": [4000, 2000, 2000, 8000,  8000], "priority": [5,4,3,2,1]},
+            data={
+                "estimated_flh": [4000, 2000, 2000, 8000, 8000],
+                "priority": [5, 4, 3, 2, 1],
+            },
         )
     elif "status" in scenario:
         technologies = pd.DataFrame(
@@ -1897,9 +1930,7 @@ def catch_missing_buidings(buildings_decentral_heating, peak_load):
     """
     # Catch missing buildings key error
     # should only happen within cutout SH
-    if (
-        not all(buildings_decentral_heating.isin(peak_load.index))
-    ):
+    if not all(buildings_decentral_heating.isin(peak_load.index)):
         diff = buildings_decentral_heating.difference(peak_load.index)
         logger.warning(
             f"Dropped {len(diff)} building ids due to missing peak "
@@ -2100,11 +2131,13 @@ def determine_hp_cap_peak_load_mvgd_ts_status_quo(mvgd_ids, scenario):
             buildings_decentral_heating, peak_load_status_quo
         )
 
-        hp_cap_per_building_status_quo = determine_hp_cap_buildings_pvbased_per_mvgd(
-            scenario,
-            mvgd,
-            peak_load_status_quo,
-            buildings_decentral_heating,
+        hp_cap_per_building_status_quo = (
+            determine_hp_cap_buildings_pvbased_per_mvgd(
+                scenario,
+                mvgd,
+                peak_load_status_quo,
+                buildings_decentral_heating,
+            )
         )
 
         # ################ aggregated heat profiles ###################
@@ -2154,7 +2187,9 @@ def determine_hp_cap_peak_load_mvgd_ts_status_quo(mvgd_ids, scenario):
 
     # TODO debug duplicated building_ids
     duplicates = df_hp_cap_per_building_status_quo_db.loc[
-        df_hp_cap_per_building_status_quo_db.duplicated("building_id", keep=False)
+        df_hp_cap_per_building_status_quo_db.duplicated(
+            "building_id", keep=False
+        )
     ]
 
     if not duplicates.empty:
@@ -2163,7 +2198,9 @@ def determine_hp_cap_peak_load_mvgd_ts_status_quo(mvgd_ids, scenario):
             f"{duplicates.loc[:,['building_id', 'hp_capacity']]}"
         )
 
-    df_hp_cap_per_building_status_quo_db.drop_duplicates("building_id", inplace=True)
+    df_hp_cap_per_building_status_quo_db.drop_duplicates(
+        "building_id", inplace=True
+    )
 
     df_hp_cap_per_building_status_quo_db.building_id = (
         df_hp_cap_per_building_status_quo_db.building_id.astype(int)

@@ -11,6 +11,7 @@ import zipfile
 from shapely.geometry import Point, shape
 from shapely.prepared import prep
 import pandas as pd
+import requests
 
 from egon.data import db, subprocess
 from egon.data.config import settings
@@ -46,7 +47,7 @@ class ZensusPopulation(Dataset):
                 download_zensus_pop,
                 create_zensus_pop_table,
                 population_to_postgres,
-            )
+            ),
         )
 
 
@@ -114,8 +115,10 @@ def download_and_check(url, target_file, max_iteration=5):
             # check if url
             if url.lower().startswith("http"):
                 print("Downloading: ", url)
-                req = requests.get(url, headers={"User-Agent": "Mozilla/5.0"}, stream=True)
-                open(target_file, 'wb').write(req.content)
+                req = requests.get(
+                    url, headers={"User-Agent": "Mozilla/5.0"}, stream=True
+                )
+                open(target_file, "wb").write(req.content)
             else:
                 raise ValueError("No http url")
 
@@ -197,6 +200,7 @@ def create_zensus_pop_table():
 def create_zensus_misc_tables():
     """Create tables for zensus data in postgres database"""
 
+
     # Create tables for household, apartment and building
     for table in ZensusMiscellaneous.targets.tables:
         table_name = ZensusMiscellaneous.targets.tables[table]
@@ -222,6 +226,31 @@ def create_zensus_misc_tables():
             """
         )
 
+
+def target(source, dataset):
+    """Generate the target path corresponding to a source path.
+
+    Parameters
+    ----------
+    dataset: str
+        Toggles between production (`dataset='Everything'`) and test mode e.g.
+        (`dataset='Schleswig-Holstein'`).
+        In production mode, data covering entire Germany
+        is used. In the test mode a subset of this data is used for testing the
+        workflow.
+    Returns
+    -------
+    Path
+        Path to target csv-file
+
+    """
+    return Path(
+        os.path.join(Path("."), "data_bundle_egon_data", source.stem)
+        + "zensus_population"
+        + "."
+        + dataset
+        + source.suffix
+    )
 
 
 def select_geom():
@@ -363,7 +392,15 @@ def filter_zensus_misc(filename, dataset):
 def population_to_postgres():
     """Import Zensus population data to postgres database"""
     # Get information from data configuration file
-    input_file = ZensusPopulation.targets.files["zensus_population"]
+    data_config = egon.data.config.datasets()
+    zensus_population_orig = data_config["zensus_population"]["original_data"]
+    zensus_population_processed = data_config["zensus_population"]["processed"]
+    input_file = (
+        Path(".")
+        / "data_bundle_egon_data"
+        / "zensus_population"
+        / zensus_population_orig["target"]["file"]
+    )
     dataset = settings()["egon-data"]["--dataset-boundary"]
 
     # Read database configuration from docker-compose.yml
@@ -426,7 +463,9 @@ def population_to_postgres():
 def zensus_misc_to_postgres():
     """Import data on buildings, households and apartments to postgres db"""
 
+
     dataset = settings()["egon-data"]["--dataset-boundary"]
+
 
 
     # Read database configuration from docker-compose.yml
@@ -526,6 +565,7 @@ def adjust_zensus_misc():
     None.
 
     """
+
 
     for table in ZensusMiscellaneous.targets.tables:
         db.execute_sql(

@@ -1,3 +1,5 @@
+import re
+
 import geopandas as gpd
 import numpy as np
 import pandas as pd
@@ -408,7 +410,7 @@ def insert():
             )
             hvmv_substation = hvmv_substation.to_crs(3035)
             hvmv_substation["voltage"] = hvmv_substation["voltage"].apply(
-                lambda x: int(x.split(";")[0])
+                lambda x: int(re.split(";|:", x)[0])
             )
             hv_substations = hvmv_substation[
                 hvmv_substation["voltage"] >= 110000
@@ -850,6 +852,11 @@ def insert():
         pv_exist = gpd.GeoDataFrame()
         pv_per_distr = gpd.GeoDataFrame()
 
+        pv_rora_100RE = gpd.GeoDataFrame()
+        pv_agri_100RE = gpd.GeoDataFrame()
+        pv_exist_100RE = gpd.GeoDataFrame()
+        pv_per_distr_100RE = gpd.GeoDataFrame()
+
         # 1) scenario: eGon2035
         if (
             "eGon2035"
@@ -975,9 +982,9 @@ def insert():
                     print(" -> No additional expansion necessary")
                 print(" ")
 
-                pv_rora = pv_rora.append(rora_i)
-                pv_agri = pv_agri.append(agri_i)
-                pv_exist = pv_exist.append(exist_i)
+                pv_rora = pd.concat([pv_rora, rora_i])
+                pv_agri = pd.concat([pv_agri, agri_i])
+                pv_exist = pd.concat([pv_exist, exist_i])
                 if len(distr_i) > 0:
                     pv_per_distr = pd.concat([pv_per_distr, distr_i])
 
@@ -1021,6 +1028,16 @@ def insert():
                 pow_per_area,
                 con,
             )
+
+            pv_rora_100RE = pv_rora_100RE[
+                pv_rora_100RE["installed capacity in kW"] > 0
+            ]
+            pv_agri_100RE = pv_agri_100RE[
+                pv_agri_100RE["installed capacity in kW"] > 0
+            ]
+            pv_per_distr_100RE = pv_per_distr_100RE[
+                pv_per_distr_100RE["installed capacity in kW"] > 0
+            ]
 
         # ### create map to show distribution of installed capacity
         if show_map == True:
@@ -1123,16 +1140,6 @@ def insert():
                 },
             )
             plt.savefig("pv_per_distr_map_eGon100RE.png", dpi=300)
-
-        pv_rora_100RE = pv_rora_100RE[
-            pv_rora_100RE["installed capacity in kW"] > 0
-        ]
-        pv_agri_100RE = pv_agri_100RE[
-            pv_agri_100RE["installed capacity in kW"] > 0
-        ]
-        pv_per_distr_100RE = pv_per_distr_100RE[
-            pv_per_distr_100RE["installed capacity in kW"] > 0
-        ]
 
         return (
             pv_rora,

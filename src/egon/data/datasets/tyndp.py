@@ -2,6 +2,7 @@
 """
 
 import os
+
 from egon.data import config
 from egon.data.datasets import Dataset, DatasetSources, DatasetTargets
 from urllib.request import urlretrieve

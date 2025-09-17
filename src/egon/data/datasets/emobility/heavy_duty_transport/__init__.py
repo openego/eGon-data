@@ -12,6 +12,7 @@ heavy duty transport.
 * Mapping demand to H2 buses and writing to DB
 
 """
+
 from pathlib import Path
 import csv
 
@@ -60,6 +61,7 @@ def download_hgv_data():
     *mobility_hgv/original_data/sources/BAST/file*.
 
     """
+
 
     # Create the folder, if it does not exist
     WORKING_DIR.mkdir(parents=True, exist_ok=True)
@@ -123,7 +125,8 @@ class HeavyDutyTransport(Dataset):
     #:
     name: str = "HeavyDutyTransport"
     #:
-    version: str = "0.0.2"
+    version: str = "0.0.3"
+
     def __init__(self, dependencies):
         super().__init__(
             name=self.name,

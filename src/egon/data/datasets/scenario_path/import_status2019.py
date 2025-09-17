@@ -26,8 +26,10 @@ def download_status2019():
     """
 
     if "status2019" in config.settings()["egon-data"]["--scenarios"]:
-        print("Scenario status2019 was created within the pipeline. "
-              "It is not imported from zenodo.")
+        print(
+            "Scenario status2019 was created within the pipeline. "
+            "It is not imported from zenodo."
+        )
         return
 
     # Get parameters from config and set download URL
@@ -51,8 +53,10 @@ def import_scn_status2019():
     """
 
     if "status2019" in config.settings()["egon-data"]["--scenarios"]:
-        print("Scenario status2019 was created within the pipeline. "
-              "It is not imported from zenodo.")
+        print(
+            "Scenario status2019 was created within the pipeline. "
+            "It is not imported from zenodo."
+        )
         return
 
     # Connect to the data base

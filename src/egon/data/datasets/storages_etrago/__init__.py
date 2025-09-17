@@ -14,7 +14,29 @@ from egon.data.datasets.scenario_parameters import (
 
 class StorageEtrago(Dataset):
     """
-    Docstring for the class...
+    Adds pumped hydro storage units and extendable batteries to the data base
+
+    This data sets adds storage unit to the data base used for transmission
+    grid optimisation with the tool eTraGo. In a first step pumped hydro
+    storage units for Germany are taken from an interim table and technical
+    parameters such as standing losses, efficiency and max_hours are added.
+    Afterwards the data is written to the correct tables which are accessed by
+    eTraGo.
+    In a next step batteries are added. On the one hand these are home
+    batteries, assumptions on their capacity and distribution is taken from an
+    other interim table. In addition extendable batteries with an installed
+    capacity of 0 are added to every substation to allow a battery expansion in
+    eTraGo. For all batteries assumptions on technical parameters are added.
+    The resulting data is written to the corresponding tables in the data base.
+
+    *Dependencies*
+    * :py:class:`Storages <egon.data.datasets.storages.Storages>`
+    * :py:class:`ScenarioParameters <egon.data.datasets.scenario_parameters.ScenarioParameters>`
+    * :py:class:`EtragoSetup <egon.data.datasets.etrago_setup.EtragoSetup>`
+
+    *Resulting tables*
+    * :py:class:`grid.egon_etrago_storage <egon.data.datasets.etrago_setup.EgonPfHvStorage>` is extended
+
     """
     sources = DatasetSources(
         tables={
@@ -31,8 +53,11 @@ class StorageEtrago(Dataset):
         }
     )
 
+    #:
     name: str = "StorageEtrago"
+    #:
     version: str = "0.0.9"
+
 
     def __init__(self, dependencies):
         super().__init__(
@@ -73,9 +98,9 @@ def insert_PHES():
         next_bus_id = db.next_etrago_id("storage")
 
         # Add missing PHES specific information suitable for eTraGo selected from scenario_parameter table
-        parameters = get_sector_parameters(
-            "electricity", scn
-        )["efficiency"]["pumped_hydro"]
+        parameters = get_sector_parameters("electricity", scn)["efficiency"][
+            "pumped_hydro"
+        ]
         phes["storage_id"] = range(next_bus_id, next_bus_id + len(phes))
         phes["max_hours"] = parameters["max_hours"]
         phes["efficiency_store"] = parameters["store"]
@@ -95,6 +120,8 @@ def insert_PHES():
 
 def extendable_batteries_per_scenario(scenario):
     # Get datasets configuration
+
+
 
     engine = db.engine()
 
@@ -135,9 +162,9 @@ def extendable_batteries_per_scenario(scenario):
     )
 
     # Update index
-    extendable_batteries[
-        "storage_id"
-    ] = extendable_batteries.index + db.next_etrago_id("storage")
+    extendable_batteries["storage_id"] = (
+        extendable_batteries.index + db.next_etrago_id("storage")
+    )
 
     # Set parameters
     extendable_batteries["p_nom_extendable"] = True

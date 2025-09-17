@@ -112,6 +112,7 @@ def create_tables():
     -------
     None.
     """
+    
 
     db.execute_sql(
         f"CREATE SCHEMA IF NOT EXISTS grid;"
@@ -235,6 +236,7 @@ def create_sql_functions():
 
 
 def transfer_busses():
+
 
     db.execute_sql(
         f"""

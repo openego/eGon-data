@@ -21,6 +21,7 @@ class EgonRePotentialAreaPvAgriculture(Base):
     Class definition of table supply.egon_re_potential_area_pv_agriculture.
 
     """
+
     __tablename__ = "egon_re_potential_area_pv_agriculture"
     __table_args__ = {"schema": "supply"}
     id = Column(Integer, primary_key=True)
@@ -32,6 +33,7 @@ class EgonRePotentialAreaPvRoadRailway(Base):
     Class definition of table supply.egon_re_potential_area_pv_road_railway.
 
     """
+
     __tablename__ = "egon_re_potential_area_pv_road_railway"
     __table_args__ = {"schema": "supply"}
     id = Column(Integer, primary_key=True)
@@ -43,6 +45,7 @@ class EgonRePotentialAreaWind(Base):
     Class definition of table supply.egon_re_potential_area_wind.
 
     """
+
     __tablename__ = "egon_re_potential_area_wind"
     __table_args__ = {"schema": "supply"}
     id = Column(Integer, primary_key=True)
@@ -135,6 +138,7 @@ class re_potential_area_setup(Dataset):
       * :py:class:`EgonRePotentialAreaWind <egon.data.datasets.re_potential_areas.EgonRePotentialAreaWind>`
 
     """
+
     #:
     name: str = "RePotentialAreas"
     #:

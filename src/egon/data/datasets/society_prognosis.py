@@ -1,9 +1,7 @@
 """The central module containing all code dealing with processing and
 forecast Zensus data.
 """
-
 import numpy as np
-
 import egon.data.config
 import pandas as pd
 from egon.data import db
@@ -44,8 +42,8 @@ class SocietyPrognosis(Dataset):
 
     def __init__(self, dependencies):
         super().__init__(
-            name=self.name,
-            version=self.version,
+            name="SocietyPrognosis",
+            version="0.0.1",
             dependencies=dependencies,
             tasks=(create_tables, {zensus_population, zensus_household}),
         )
@@ -99,7 +97,6 @@ def zensus_population():
         index_col="id",
     )
 
-
     zensus["nuts3"] = zensus_district.vg250_nuts3
 
     # Rename index
@@ -119,9 +116,6 @@ def zensus_population():
         f"DELETE FROM {SocietyPrognosis.targets.tables['population_prognosis']['schema']}."
         f"{SocietyPrognosis.targets.tables['population_prognosis']['table']}"
     )
-
-
-
     # Scale to pogosis values from demandregio
     for year in [2035, 2050]:
         # Input: dataset on population prognosis on district-level (NUTS3)
@@ -147,7 +141,6 @@ def zensus_population():
              con=local_engine,
              if_exists="append",
         )
-
 
 
 def household_prognosis_per_year(prognosis_nuts3, zensus, year):
@@ -227,7 +220,6 @@ def zensus_household():
         f"{SocietyPrognosis.targets.tables['household_prognosis']['table']}"
     )
 
-
     # Apply prognosis function
     for year in [2035, 2050]:
         print(f"start prognosis for year {year}")
@@ -247,6 +239,3 @@ def zensus_household():
             if_exists="append",
         )
         print(f"finished prognosis for year {year}")
-
-
-

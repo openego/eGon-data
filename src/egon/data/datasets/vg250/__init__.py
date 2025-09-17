@@ -11,11 +11,11 @@ isn't exported from this module, please file a bug, so we can fix this.
 
 from pathlib import Path
 from urllib.request import urlretrieve
-import time
 import datetime
 import codecs
 import json
 import os
+import time
 
 from geoalchemy2 import Geometry
 import geopandas as gpd
@@ -26,9 +26,11 @@ from egon.data.datasets import Dataset, DatasetSources, DatasetTargets
 import egon.data.config
 from egon.data.metadata import (
     context,
+
     meta_metadata,
     licenses_datenlizenz_deutschland,
 )
+import egon.data.config
 
 
 def download_files():
@@ -40,6 +42,8 @@ def download_files():
     *vg250/original_data/target/file*.
 
     """
+
+
 
     download_directory = Path(".") / "vg250"
     # Create the folder, if it does not exist already
@@ -61,6 +65,8 @@ def to_postgres():
     *vg250/processed/file_table_map*.
 
     """
+
+
 
     # Create target schema
     db.execute_sql(f"CREATE SCHEMA IF NOT EXISTS boundaries;")
@@ -118,6 +124,7 @@ def to_postgres():
             f"ADD PRIMARY KEY (id);"
             )
 
+        # Add index on geometry column
         db.execute_sql(
             f"CREATE INDEX {table}_geometry_idx ON "
             f"{Vg250.targets.tables[table]} USING gist (geometry);"
@@ -126,6 +133,7 @@ def to_postgres():
 
 def add_metadata():
     """Writes metadata JSON string into table comment."""
+
 
     title_and_description = {
         "vg250_sta": {
@@ -532,6 +540,7 @@ class Vg250(Dataset):
     """
 
 
+    #:
     name: str = "VG250"
     version: str = sources.urls["vg250_zip"] + "-0.0.4"
 

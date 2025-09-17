@@ -311,6 +311,8 @@ def create_district_heating_profile_python_like(scenario="eGon2035"):
         index_col="zensus_population_id",
     )
 
+    # Assign zensus cells that are part of two district heating grids to
+    # one of them
     annual_demand = annual_demand[
         ~annual_demand.index.duplicated(keep="first")
     ]
@@ -349,6 +351,14 @@ def create_district_heating_profile_python_like(scenario="eGon2035"):
                 """
             )
 
+            # Exclude profiles of zensus cells that are in two district
+            # heating grids and added to the other one in the lines above
+            selected_profiles = selected_profiles[
+                selected_profiles.zensus_population_id.isin(
+                    annual_demand[annual_demand.area_id == area].index
+                )
+            ]
+
             if not selected_profiles.empty:
                 df = pd.merge(
                     selected_profiles,
@@ -386,7 +396,9 @@ def create_district_heating_profile_python_like(scenario="eGon2035"):
                         annual_demand.area_id == area
                     ].demand_total.sum()
                 ) / (
-                    annual_demand[annual_demand.area_id == area].demand_total.sum()
+                    annual_demand[
+                        annual_demand.area_id == area
+                    ].demand_total.sum()
                 )
 
                 assert (

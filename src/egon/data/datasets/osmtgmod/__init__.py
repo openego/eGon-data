@@ -550,6 +550,7 @@ def to_pypsa():
         DELETE FROM {Osmtgmod.targets.tables['etrago_line']['schema']}.{Osmtgmod.targets.tables['etrago_line']['table']};
         DELETE FROM {Osmtgmod.targets.tables['etrago_transformer']['schema']}.{Osmtgmod.targets.tables['etrago_transformer']['table']};
         """
+
     )
 
     # for scenario_name in ["'eGon2035'", "'eGon100RE'", "'status2019'"]:

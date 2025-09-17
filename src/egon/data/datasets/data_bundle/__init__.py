@@ -23,12 +23,9 @@ def download():
     if data_bundle_path.exists() and data_bundle_path.is_dir():
         shutil.rmtree(data_bundle_path)
     # Get parameters from config and set download URL
-    #sources = config.datasets()["data-bundle"]["sources"]["zenodo"]
-    
+
     url = DataBundle.sources.urls["zenodo_data_bundle"]["url"]
     target_file = DataBundle.targets.files["data_bundle"]
-    #url = ( f"https://zenodo.org/record/{sources['deposit_id']}/files/""data_bundle_egon_data.zip")
-    #target_file = config.datasets()["data-bundle"]["targets"]["file"]
 
     # check if file exists
     if not Path(target_file).exists():
@@ -64,15 +61,3 @@ class DataBundle(Dataset):
             dependencies=dependencies,
             tasks=(download,),
         )
-        #deposit_id = config.datasets()["data-bundle"]["sources"][
-           # "zenodo"
-        #]["deposit_id"]
-        #deposit_id_powerd = config.datasets()["data-bundle"]["sources"][
-          #  "zenodo"
-        #]["deposit_id"]
-        #super().__init__(
-            #name="DataBundle",
-            #version=f"{deposit_id}-{deposit_id_powerd}-0.0.3",
-            #dependencies=dependencies,
-           # tasks=(download,),
-        #)

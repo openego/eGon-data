@@ -152,7 +152,7 @@ def select_target(carrier, scenario):
         Target values for carrier and scenario
 
     """
-   # cfg = egon.data.config.datasets()["power_plants"]
+
 
     return (
         pd.read_sql(
@@ -607,7 +607,6 @@ def insert_hydro_biomass():
         AND scenario IN ('eGon2035', 'eGon100RE')
         """
     )
-
 
     s = egon.data.config.settings()["egon-data"]["--scenarios"]
     scenarios = []
@@ -1544,6 +1543,7 @@ for scn_name in egon.data.config.settings()["egon-data"]["--scenarios"]:
                               ),)
 
 tasks += (pp_metadata.metadata,)
+
 
 class PowerPlants(Dataset):
         
