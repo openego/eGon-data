@@ -50,6 +50,7 @@ dependencies = [
   "entsoe-py>=0.6.2",
   "fiona==1.9.6",
   "Flask-Session<0.6.0",
+  "Flask-Limiter<3.13",
   "GeoAlchemy2",
   "geopandas>=0.10.0",
   "geopy",
@@ -111,4 +112,3 @@ zip-safe = false
 [tool.setuptools.packages.find]
 where = ["src"]
 include = ["egon*"]
-
