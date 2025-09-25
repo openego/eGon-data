@@ -1237,12 +1237,12 @@ def get_conventional_power_plants_non_chp(scn_name):
     ]
     # import nuclear power plants
     nuclear = pd.read_csv(
-        WORKING_DIR_MASTR_OLD / cfg["sources"]["mastr_nuclear"],
+        WORKING_DIR_MASTR_NEW / cfg["sources"]["mastr_nuclear"],
         usecols=common_columns,
     )
     # import combustion power plants
     comb = pd.read_csv(
-        WORKING_DIR_MASTR_OLD / cfg["sources"]["mastr_combustion"],
+        WORKING_DIR_MASTR_NEW / cfg["sources"]["mastr_combustion"],
         usecols=common_columns + ["ThermischeNutzleistung"],
     )
 
