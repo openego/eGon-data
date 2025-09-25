@@ -10,7 +10,6 @@ import os
 from egon.data.datasets import Dataset
 import egon.data.config
 
-WORKING_DIR_MASTR_OLD = Path(".", "bnetza_mastr", "dump_2021-05-03")
 WORKING_DIR_MASTR_NEW = Path(".", "bnetza_mastr", "dump_2024-01-08")
 
 
@@ -39,12 +38,9 @@ def download_mastr_data():
                     zenodo_files_url + filename, download_dir / filename
                 )
 
-    if not os.path.exists(WORKING_DIR_MASTR_OLD):
-        WORKING_DIR_MASTR_OLD.mkdir(exist_ok=True, parents=True)
     if not os.path.exists(WORKING_DIR_MASTR_NEW):
         WORKING_DIR_MASTR_NEW.mkdir(exist_ok=True, parents=True)
 
-    download(dataset_name="mastr", download_dir=WORKING_DIR_MASTR_OLD)
     download(dataset_name="mastr_new", download_dir=WORKING_DIR_MASTR_NEW)
 
 
