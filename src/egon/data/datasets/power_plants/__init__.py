@@ -19,7 +19,6 @@ from egon.data import db, logger
 from egon.data.datasets import Dataset, wrapped_partial
 from egon.data.datasets.mastr import (
     WORKING_DIR_MASTR_NEW,
-    WORKING_DIR_MASTR_OLD,
 )
 from egon.data.datasets.power_plants.conventional import (
     match_nep_no_chp,
@@ -431,9 +430,7 @@ def assign_voltage_level(mastr_loc, cfg, mastr_working_dir):
 
     if "LokationMastrNummer" in mastr_loc.columns:
         # Adjust column names to format of MaStR location dataset
-        if mastr_working_dir == WORKING_DIR_MASTR_OLD:
-            cols = ["LokationMastrNummer", "Spannungsebene"]
-        elif mastr_working_dir == WORKING_DIR_MASTR_NEW:
+        if mastr_working_dir == WORKING_DIR_MASTR_NEW:
             cols = ["MaStRNummer", "Spannungsebene"]
         else:
             raise ValueError("Invalid MaStR working directory!")
