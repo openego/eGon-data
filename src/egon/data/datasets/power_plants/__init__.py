@@ -250,7 +250,7 @@ def insert_biomass_plants(scenario):
 
     # import data for MaStR
     mastr = pd.read_csv(
-        WORKING_DIR_MASTR_OLD / cfg["sources"]["mastr_biomass"]
+        WORKING_DIR_MASTR_NEW / cfg["sources"]["mastr_biomass"]
     ).query("EinheitBetriebsstatus=='InBetrieb'")
 
     # Drop entries without federal state or 'AusschließlichWirtschaftszone'
@@ -280,7 +280,7 @@ def insert_biomass_plants(scenario):
     # Assign bus_id
     if len(mastr_loc) > 0:
         mastr_loc["voltage_level"] = assign_voltage_level(
-            mastr_loc, cfg, WORKING_DIR_MASTR_OLD
+            mastr_loc, cfg, WORKING_DIR_MASTR_NEW
         )
         mastr_loc = assign_bus_id(mastr_loc, cfg)
 
