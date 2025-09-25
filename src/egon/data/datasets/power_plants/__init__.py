@@ -664,7 +664,7 @@ def allocate_conventional_non_chp_power_plants():
             mastr["voltage_level"] = assign_voltage_level(
                 mastr.rename({"el_capacity": "Nettonennleistung"}, axis=1),
                 cfg,
-                WORKING_DIR_MASTR_OLD,
+                WORKING_DIR_MASTR_NEW,
             )
 
             # Initalize DataFrame for matching power plants
@@ -872,15 +872,15 @@ def allocate_other_power_plants():
 
     # Select power plants representing carrier 'others' from MaStR files
     mastr_sludge = pd.read_csv(
-        WORKING_DIR_MASTR_OLD / cfg["sources"]["mastr_gsgk"]
+        WORKING_DIR_MASTR_NEW / cfg["sources"]["mastr_gsgk"]
     ).query(
         """EinheitBetriebsstatus=='InBetrieb'and Energietraeger=='Klärschlamm'"""  # noqa: E501
     )
     mastr_geothermal = pd.read_csv(
-        WORKING_DIR_MASTR_OLD / cfg["sources"]["mastr_gsgk"]
+        WORKING_DIR_MASTR_NEW / cfg["sources"]["mastr_gsgk"]
     ).query(
         "EinheitBetriebsstatus=='InBetrieb' and Energietraeger=='Geothermie' "
-        "and Technologie == 'ORCOrganicRankineCycleAnlage'"
+        "and Technologie == 'ORC (Organic Rankine Cycle)-Anlage'"
     )
 
     mastr_sg = pd.concat([mastr_sludge, mastr_geothermal])
