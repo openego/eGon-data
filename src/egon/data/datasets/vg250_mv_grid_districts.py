@@ -1,5 +1,6 @@
 """The module containing all code to map MV grid districts to federal states.
 """
+
 from sqlalchemy import Column, Integer, String
 from sqlalchemy.ext.declarative import declarative_base
 import geopandas as gpd
@@ -24,6 +25,7 @@ class Vg250MvGridDistricts(Dataset):
         is created and filled
 
     """
+
     #:
     name: str = "Vg250MvGridDistricts"
     #:
@@ -42,6 +44,7 @@ class MapMvgriddistrictsVg250(Base):
     """
     Class definition of table boundaries.egon_map_mvgriddistrict_vg250.
     """
+
     __tablename__ = "egon_map_mvgriddistrict_vg250"
     __table_args__ = {"schema": "boundaries"}
     bus_id = Column(Integer, primary_key=True)

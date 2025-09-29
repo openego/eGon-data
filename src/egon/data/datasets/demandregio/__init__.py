@@ -14,9 +14,6 @@ import pandas as pd
 
 from egon.data import db, logger
 from egon.data.datasets import Dataset, wrapped_partial
-from egon.data.datasets.demandregio.install_disaggregator import (
-    clone_and_install,
-)
 from egon.data.datasets.scenario_parameters import (
     EgonScenario,
     get_sector_parameters,
@@ -64,7 +61,7 @@ class DemandRegio(Dataset):
     #:
     name: str = "DemandRegio"
     #:
-    version: str = "0.0.11"
+    version: str = "0.0.12"
 
     def __init__(self, dependencies):
         super().__init__(
@@ -72,7 +69,6 @@ class DemandRegio(Dataset):
             version=self.version,
             dependencies=dependencies,
             tasks=(
-                # clone_and_install,  # demandregio must be previously installed
                 get_cached_tables,  # adhoc workaround #180
                 create_tables,
                 {
@@ -594,7 +590,7 @@ def write_demandregio_hh_profiles_to_db(hh_profiles):
         df = hh_profiles[hh_profiles.index.year == year]
 
         for nuts3 in hh_profiles.columns:
-            idx+=1
+            idx += 1
             df_to_db.at[idx, "year"] = year
             df_to_db.at[idx, "nuts3"] = nuts3
             df_to_db.at[idx, "load_in_mwh"] = df[nuts3].to_list()
@@ -641,7 +637,9 @@ def insert_hh_demand(scenario, year, engine):
     # insert into database
     for hh_size in ec_hh.columns:
         df = pd.DataFrame(ec_hh[hh_size])
-        df["year"] = 2023 if scenario == "status2023" else year # TODO status2023
+        df["year"] = (
+            2023 if scenario == "status2023" else year
+        )  # TODO status2023
         # adhoc fix until ffeopendata servers are up and population_year can be set
 
         df["scenario"] = scenario
@@ -667,14 +665,15 @@ def insert_hh_demand(scenario, year, engine):
             .sum()
         )
         hh_load_timeseries.rename(
-            columns={"DEB16": "DEB1C", "DEB19": "DEB1D"}, inplace=True)
+            columns={"DEB16": "DEB1C", "DEB19": "DEB1D"}, inplace=True
+        )
     except Exception as e:
         logger.warning(
             f"Couldnt get profiles from FFE, will use pickeld fallback! \n {e}"
         )
         hh_load_timeseries = pd.read_csv(
             "data_bundle_egon_data/demand_regio_backup/df_load_profiles.csv",
-            index_col="time"
+            index_col="time",
         )
         hh_load_timeseries.index = pd.to_datetime(
             hh_load_timeseries.index, format="%Y-%m-%d %H:%M:%S"
@@ -721,9 +720,11 @@ def insert_cts_ind(scenario, year, engine, target_values):
         "targets"
     ]
 
-    wz_table = pd.read_sql("SELECT wz, sector FROM demand.egon_demandregio_wz",
-                           con = engine,
-                           index_col = "wz")
+    wz_table = pd.read_sql(
+        "SELECT wz, sector FROM demand.egon_demandregio_wz",
+        con=engine,
+        index_col="wz",
+    )
 
     # Workaround: Since the disaggregator does not work anymore, data from
     # previous runs is used for eGon2035 and eGon100RE
@@ -766,7 +767,7 @@ def insert_cts_ind(scenario, year, engine, target_values):
             axis=1,
         )
 
-        ec_cts_ind2.drop(columns=["sector"], inplace = True)
+        ec_cts_ind2.drop(columns=["sector"], inplace=True)
 
         ec_cts_ind2.to_sql(
             targets["cts_ind_demand"]["table"],
@@ -845,7 +846,8 @@ def insert_household_demand():
 
     for scn in scenarios:
         year = (
-            2023 if scn == "status2023"
+            2023
+            if scn == "status2023"
             else scenario_parameters.global_settings(scn)["population_year"]
         )
 
@@ -896,10 +898,7 @@ def insert_cts_ind_demands():
             # no adjustments for status quo
             "eGon2021": {},
             "status2019": {},
-            "status2023": {
-                "CTS": 121160 * 1e3,
-                "industry": 200380 * 1e3
-            },
+            "status2023": {"CTS": 121160 * 1e3, "industry": 200380 * 1e3},
         }
 
         insert_cts_ind(scn, year, engine, target_values)
@@ -1075,4 +1074,3 @@ def get_cached_tables():
 
         with zipfile.ZipFile(source_path, "r") as zip_ref:
             zip_ref.extractall(path=target_path)
-

@@ -2,6 +2,7 @@
  data from demandRegio
 
 """
+
 from sqlalchemy import Column, Float, ForeignKey, Integer, String
 from sqlalchemy.ext.declarative import declarative_base
 import pandas as pd
@@ -174,9 +175,11 @@ def get_annual_household_el_demand_cells():
     iterate_over = (
         "nuts3"
         if dataset == "Everything"
-        else "cell_id"
-        if dataset == "Schleswig-Holstein"
-        else ve(f"'{dataset}' is not a valid dataset boundary.")
+        else (
+            "cell_id"
+            if dataset == "Schleswig-Holstein"
+            else ve(f"'{dataset}' is not a valid dataset boundary.")
+        )
     )
 
     df_annual_demand = pd.DataFrame(

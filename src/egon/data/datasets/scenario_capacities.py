@@ -713,8 +713,15 @@ def eGon100_capacities():
         )
 
     df = pd.read_csv(target_file, delimiter=",", skiprows=3)
-    df.columns = ["component", "country", "carrier", "p_nom_2025",
-                  "p_nom_2030", "p_nom_2035", "p_nom_2045"]
+    df.columns = [
+        "component",
+        "country",
+        "carrier",
+        "p_nom_2025",
+        "p_nom_2030",
+        "p_nom_2035",
+        "p_nom_2045",
+    ]
 
     df.set_index("carrier", inplace=True)
 
@@ -767,8 +774,9 @@ def eGon100_capacities():
     df.index = df.index.str.replace(" ", "_")
 
     # Aggregate offshore wind
-    df.loc["wind_offshore"] = df[df.index.str.startswith(
-        "offwind")].sum(numeric_only=True)
+    df.loc["wind_offshore"] = df[df.index.str.startswith("offwind")].sum(
+        numeric_only=True
+    )
     df.loc["wind_offshore", "component"] = "generators"
     df = df.drop(df.index[df.index.str.startswith("offwind")])
 
@@ -794,35 +802,38 @@ def eGon100_capacities():
     df = df.drop(["solar-hsat"])
 
     # Aggregate technologies with and without carbon_capture (CC)
-    for carrier in ["urban_central_gas_CHP", "urban_central_solid_biomass_CHP"]:
+    for carrier in [
+        "urban_central_gas_CHP",
+        "urban_central_solid_biomass_CHP",
+    ]:
         df.loc[
-            carrier,
-            ["p_nom_2025", "p_nom_2030", "p_nom_2035", "p_nom_2045"]] += df.loc[
-                f"{carrier}_CC",
-                ["p_nom_2025", "p_nom_2030", "p_nom_2035", "p_nom_2045"]]
+            carrier, ["p_nom_2025", "p_nom_2030", "p_nom_2035", "p_nom_2045"]
+        ] += df.loc[
+            f"{carrier}_CC",
+            ["p_nom_2025", "p_nom_2030", "p_nom_2035", "p_nom_2045"],
+        ]
         df = df.drop([f"{carrier}_CC"])
 
     # Aggregate urban decentral and rural heat supply
-    for merge_carrier in df.index[
-            df.index.str.startswith("urban_decentral")]:
+    for merge_carrier in df.index[df.index.str.startswith("urban_decentral")]:
 
         # Add capacity of urban decentral to coresponding rural technology
-        df.loc[
-            merge_carrier.replace("urban_decentral", "rural")] += df.loc[
-                merge_carrier]
+        df.loc[merge_carrier.replace("urban_decentral", "rural")] += df.loc[
+            merge_carrier
+        ]
 
         # Avoid summing up of component names
         df.loc[
-            merge_carrier.replace("urban_decentral", "rural"),
-            "component"] = df.loc[
-                merge_carrier, "component"]
+            merge_carrier.replace("urban_decentral", "rural"), "component"
+        ] = df.loc[merge_carrier, "component"]
 
         # Drop urban decentral technology
         df = df.drop(merge_carrier)
 
     # Aggregate rural air and rural ground heat pump
-    df.loc["rural_heat_pump"] = df.loc[
-        "rural_air_heat_pump"] + df.loc["rural_ground_heat_pump"]
+    df.loc["rural_heat_pump"] = (
+        df.loc["rural_air_heat_pump"] + df.loc["rural_ground_heat_pump"]
+    )
     df.loc["rural_heat_pump", "component"] = "links"
     df = df.drop(["rural_air_heat_pump", "rural_ground_heat_pump"])
 
@@ -835,7 +846,7 @@ def eGon100_capacities():
             "urban_central_solar_thermal": (
                 "urban_central_solar_thermal_collector"
             ),
-            "home_battery": "battery"
+            "home_battery": "battery",
         },
         inplace=True,
     )
@@ -848,8 +859,13 @@ def eGon100_capacities():
         df_year = df.rename(
             {f"p_nom_{year}": "capacity", "index": "carrier"}, axis="columns"
         )
-        df_year.drop(df_year.columns[~df_year.columns.isin(
-            ["carrier", 'component', "capacity"])], axis="columns", inplace=True)
+        df_year.drop(
+            df_year.columns[
+                ~df_year.columns.isin(["carrier", "component", "capacity"])
+            ],
+            axis="columns",
+            inplace=True,
+        )
 
         if year == "2045":
             df_year["scenario_name"] = "eGon100RE"
@@ -874,6 +890,7 @@ def eGon100_capacities():
             index=False,
         )
 
+
 def add_metadata():
     """Add metdata to supply.egon_scenario_capacities
 
@@ -890,18 +907,18 @@ def add_metadata():
 
     # Set descriptions and units
     fields.loc["index", "description"] = "Index"
-    fields.loc[
-        "component", "description"
-    ] = "Name of representative PyPSA component"
+    fields.loc["component", "description"] = (
+        "Name of representative PyPSA component"
+    )
     fields.loc["carrier", "description"] = "Name of carrier"
     fields.loc["capacity", "description"] = "Installed capacity"
     fields.loc["capacity", "unit"] = "MW"
-    fields.loc[
-        "nuts", "description"
-    ] = "NUTS region, either federal state or Germany"
-    fields.loc[
-        "scenario_name", "description"
-    ] = "Name of corresponding eGon scenario"
+    fields.loc["nuts", "description"] = (
+        "NUTS region, either federal state or Germany"
+    )
+    fields.loc["scenario_name", "description"] = (
+        "Name of corresponding eGon scenario"
+    )
 
     # Reformat pandas.DataFrame to dict
     fields = fields.reset_index().to_dict(orient="records")
@@ -972,6 +989,7 @@ def add_metadata():
         EgonScenarioCapacities.__table__.name,
     )
 
+
 tasks = (create_table,)
 
 scenarios = config.settings()["egon-data"]["--scenarios"]
@@ -982,8 +1000,9 @@ for scenario in scenarios:
     if "status" in scenario:
         tasks += (
             wrapped_partial(
-                insert_capacities_status_quo, scenario=scenario,
-                postfix=f"_{scenario[-2:]}"
+                insert_capacities_status_quo,
+                scenario=scenario,
+                postfix=f"_{scenario[-2:]}",
             ),
         )
         status_quo = True
@@ -1033,4 +1052,3 @@ class ScenarioCapacities(Dataset):
             dependencies=dependencies,
             tasks=tasks,
         )
-

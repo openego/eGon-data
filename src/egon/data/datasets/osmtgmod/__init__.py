@@ -874,7 +874,8 @@ def fix_transformer_snom():
                  AND l.scn_name = t.scn_name)
             ) AS smallint
         );
-        """)
+        """
+    )
 
 
 class Osmtgmod(Dataset):

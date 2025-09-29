@@ -5,12 +5,12 @@ from pathlib import Path
 import csv
 import json
 import os
-import requests
 import zipfile
 
 from shapely.geometry import Point, shape
 from shapely.prepared import prep
 import pandas as pd
+import requests
 
 from egon.data import db, subprocess
 from egon.data.config import settings
@@ -25,7 +25,6 @@ class ZensusPopulation(Dataset):
             version="0.0.2",
             dependencies=dependencies,
             tasks=(
-                download_zensus_pop,
                 create_zensus_pop_table,
                 population_to_postgres,
             ),
@@ -39,7 +38,6 @@ class ZensusMiscellaneous(Dataset):
             version="0.0.1",
             dependencies=dependencies,
             tasks=(
-                download_zensus_misc,
                 create_zensus_misc_tables,
                 zensus_misc_to_postgres,
             ),
@@ -59,8 +57,10 @@ def download_and_check(url, target_file, max_iteration=5):
             # check if url
             if url.lower().startswith("http"):
                 print("Downloading: ", url)
-                req = requests.get(url, headers={"User-Agent": "Mozilla/5.0"}, stream=True)
-                open(target_file, 'wb').write(req.content)
+                req = requests.get(
+                    url, headers={"User-Agent": "Mozilla/5.0"}, stream=True
+                )
+                open(target_file, "wb").write(req.content)
             else:
                 raise ValueError("No http url")
 
@@ -80,6 +80,7 @@ def download_and_check(url, target_file, max_iteration=5):
 
 def download_zensus_pop():
     """Download Zensus csv file on population per hectare grid cell."""
+
     data_config = egon.data.config.datasets()
     zensus_population_config = data_config["zensus_population"][
         "original_data"
@@ -208,7 +209,8 @@ def target(source, dataset):
 
     """
     return Path(
-        os.path.join(Path("."), "zensus_population", source.stem)
+        os.path.join(Path("."), "data_bundle_egon_data", source.stem)
+        + "zensus_population"
         + "."
         + dataset
         + source.suffix
@@ -355,6 +357,7 @@ def population_to_postgres():
     zensus_population_processed = data_config["zensus_population"]["processed"]
     input_file = (
         Path(".")
+        / "data_bundle_egon_data"
         / "zensus_population"
         / zensus_population_orig["target"]["file"]
     )
@@ -427,7 +430,7 @@ def zensus_misc_to_postgres():
     data_config = egon.data.config.datasets()
     zensus_misc_processed = data_config["zensus_misc"]["processed"]
     zensus_population_processed = data_config["zensus_population"]["processed"]
-    file_path = Path(".") / "zensus_population"
+    file_path = Path(".") / "data_bundle_egon_data" / "zensus_population"
     dataset = settings()["egon-data"]["--dataset-boundary"]
 
     population_table = (

@@ -5,6 +5,7 @@ Main module for preparation of static model data for charging infrastructure for
 motorized individual travel.
 
 """
+
 from __future__ import annotations
 
 from pathlib import Path

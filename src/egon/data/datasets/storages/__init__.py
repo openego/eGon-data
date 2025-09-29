@@ -13,7 +13,6 @@ import pandas as pd
 
 from egon.data import config, db
 from egon.data.datasets import Dataset
-from egon.data.datasets.scenario_parameters import get_sector_parameters
 from egon.data.datasets.electrical_neighbours import entsoe_to_bus_etrago
 from egon.data.datasets.mastr import (
     WORKING_DIR_MASTR_NEW,
@@ -21,6 +20,7 @@ from egon.data.datasets.mastr import (
 )
 from egon.data.datasets.mv_grid_districts import Vg250GemClean
 from egon.data.datasets.power_plants import assign_bus_id, assign_voltage_level
+from egon.data.datasets.scenario_parameters import get_sector_parameters
 from egon.data.datasets.storages.home_batteries import (
     allocate_home_batteries_to_buildings,
 )
@@ -753,12 +753,12 @@ def allocate_pumped_hydro_scn():
         elif scn == "eGon100RE":
             allocate_pumped_hydro_eGon100RE()
         elif "status" in scn:
-            allocate_storage_units_sq(scn_name=scn, storage_types=["pumped_hydro"])
+            allocate_storage_units_sq(
+                scn_name=scn, storage_types=["pumped_hydro"]
+            )
 
 
 def allocate_other_storage_units():
     for scn in config.settings()["egon-data"]["--scenarios"]:
         if "status" in scn:
-            allocate_storage_units_sq(
-                scn_name=scn, storage_types=["battery"]
-            )
+            allocate_storage_units_sq(scn_name=scn, storage_types=["battery"])

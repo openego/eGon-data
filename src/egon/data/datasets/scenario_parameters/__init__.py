@@ -55,7 +55,9 @@ def get_scenario_year(scenario_name):
         if e.args[0] == "invalid literal for int() with base 10: '00RE'":
             year = 2050  # eGon100RE
         else:
-            raise ValueError("The names of the scenarios do not end with the year!")
+            raise ValueError(
+                "The names of the scenarios do not end with the year!"
+            )
     return year
 
 

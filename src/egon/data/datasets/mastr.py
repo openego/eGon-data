@@ -22,8 +22,7 @@ def download_mastr_data():
         # Get parameters from config and set download URL
         data_config = egon.data.config.datasets()[dataset_name]
         zenodo_files_url = (
-            f"https://zenodo.org/record/"
-            f"{data_config['deposit_id']}/files/"
+            f"https://zenodo.org/record/" f"{data_config['deposit_id']}/files/"
         )
 
         files = []

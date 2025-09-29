@@ -20,7 +20,7 @@ def read(*names, **kwargs):
 
 setup(
     name="egon.data",
-    version="1.0.0",
+    version="2.0.0",
     license="AGPL-3.0-or-later",
     description=(
         "The data used in the eGo^N project along with the code importing, "
@@ -35,10 +35,7 @@ setup(
     ),
     author=read("AUTHORS.rst"),
     author_email=(
-        "jonathan.amme@rl-institut.de, "
-        "clara.buettner@hs-flensburg.de, "
-        "carlos.epia@hs-flensburg.de, "
-        "kilian.helfenbein@rl-institut.de"
+        "regon-project@rl-institut.de"
     ),
     url="https://github.com/openego/eGon-data",
     packages=["egon"] + ["egon." + p for p in find_packages("src/egon")],
@@ -88,6 +85,7 @@ setup(
         "atlite==0.2.11",
         "cdsapi",
         "click<8.1",
+        "disaggregator @ git+https://github.com/openego/disaggregator.git@features/update-cache-directory#egg=disaggregator",
         "entsoe-py >=0.6.2",
         "fiona==1.9.6",
         "Flask-Session<0.6.0",
@@ -95,6 +93,7 @@ setup(
         "geopandas>=0.10.0",
         "geopy",
         "geovoronoi",
+        "google-re2!=1.1.20250722",
         "importlib-resources<6.0",
         "loguru",
         "markupsafe",

@@ -22,9 +22,9 @@ import ast
 import json
 import os
 
-from sqlalchemy.orm import sessionmaker
 from geoalchemy2.types import Geometry
 from shapely import geometry
+from sqlalchemy.orm import sessionmaker
 import geopandas
 import numpy as np
 import pandas as pd
@@ -366,6 +366,8 @@ def define_gas_buses_abroad(scn_name="eGon2035"):
                 "location",
                 "unit",
                 "sub_network",
+                "substation_lv",
+                "substation_off",
             ],
             errors="ignore",
         )

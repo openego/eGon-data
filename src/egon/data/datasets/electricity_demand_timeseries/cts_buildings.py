@@ -12,7 +12,7 @@ are available new synthetic 5x5m buildings are generated.
 from geoalchemy2 import Geometry
 from geoalchemy2.shape import to_shape
 from psycopg2.extensions import AsIs, register_adapter
-from sqlalchemy import REAL, Column, Integer, String, func, cast
+from sqlalchemy import REAL, Column, Integer, String, cast, func
 from sqlalchemy.ext.declarative import declarative_base
 import geopandas as gpd
 import numpy as np
@@ -63,6 +63,7 @@ class EgonCtsElectricityDemandBuildingShare(Base):
     CTS buildings for scenario eGon2035 and eGon100RE. This table is created
     within :func:`cts_electricity()`.
     """
+
     __tablename__ = "egon_cts_electricity_demand_building_share"
     __table_args__ = {"schema": "demand"}
 
@@ -80,6 +81,7 @@ class EgonCtsHeatDemandBuildingShare(Base):
     CTS buildings for scenario eGon2035 and eGon100RE. This table is created
     within :func:`cts_heat()`.
     """
+
     __tablename__ = "egon_cts_heat_demand_building_share"
     __table_args__ = {"schema": "demand"}
 
@@ -97,6 +99,7 @@ class CtsBuildings(Base):
     amenity count in building. This table is created within
     :func:`cts_buildings()`.
     """
+
     __tablename__ = "egon_cts_buildings"
     __table_args__ = {"schema": "openstreetmap"}
 
@@ -113,6 +116,7 @@ class BuildingHeatPeakLoads(Base):
     Class definition of table demand.egon_building_heat_peak_loads.
 
     """
+
     __tablename__ = "egon_building_heat_peak_loads"
     __table_args__ = {"schema": "demand"}
 
@@ -1215,7 +1219,9 @@ def cts_buildings():
 
     log.info("Start logging!")
     # Buildings with amenities
-    df_buildings_with_amenities, df_lost_cells = buildings_with_amenities()  # TODO: status2023 this is fixed to 2023
+    df_buildings_with_amenities, df_lost_cells = (
+        buildings_with_amenities()
+    )  # TODO: status2023 this is fixed to 2023
     log.info("Buildings with amenities selected!")
 
     # Median number of amenities per cell

@@ -1,12 +1,14 @@
 """
 The central module creating heat demand time series for the eTraGo tool
 """
+
+import numpy as np
+import pandas as pd
+
 from egon.data import config, db
 from egon.data.datasets import Dataset
 from egon.data.datasets.scenario_parameters import get_sector_parameters
-
-import pandas as pd
-import numpy as np
+from egon.data.db import next_etrago_id
 
 
 def hts_to_etrago(scenario):

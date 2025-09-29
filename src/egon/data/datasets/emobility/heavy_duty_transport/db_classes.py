@@ -17,6 +17,7 @@ class EgonHeavyDutyTransportVoronoi(Base):
     """
     Class definition of table demand.egon_heavy_duty_transport_voronoi.
     """
+
     __tablename__ = "egon_heavy_duty_transport_voronoi"
     __table_args__ = {"schema": "demand"}
 

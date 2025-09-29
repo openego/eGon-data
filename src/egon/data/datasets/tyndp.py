@@ -1,10 +1,11 @@
 """The central module containing all code dealing with downloading tyndp data
 """
 
+from urllib.request import urlretrieve
 import os
+
 from egon.data import config
 from egon.data.datasets import Dataset
-from urllib.request import urlretrieve
 
 
 class Tyndp(Dataset):
