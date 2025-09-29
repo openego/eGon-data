@@ -131,32 +131,25 @@ with airflow.DAG(
 
     with TaskGroup(group_id="input_data") as input_data_group:
         osm = OpenStreetMap(dependencies=[setup])
-        # input_data
 
         data_bundle = DataBundle(dependencies=[setup])
-        # input_data
 
         # Import VG250 (Verwaltungsgebiete 250) data
         vg250 = Vg250(dependencies=[setup])
-        # input_data
 
         # Scenario table
         scenario_parameters = ScenarioParameters(dependencies=[setup])
-        # input_data
 
         # Download TYNDP data
         tyndp_data = Tyndp(dependencies=[setup])
-        # input_data
 
         # Import zensus population
         zensus_population = ZensusPopulation(
             dependencies=[setup, vg250, data_bundle]
         )
-        # input_data
 
         # Combine zensus and VG250 data
         zensus_vg250 = ZensusVg250(dependencies=[vg250, zensus_population])
-        # mapping
 
         # Download and import zensus data on households, buildings and apartments
         zensus_miscellaneous = ZensusMiscellaneous(
@@ -218,7 +211,6 @@ with airflow.DAG(
                 tasks["input_data.osm.download"],
             ]
         )
-        # elecitricity_grid
 
         # Fix eHV subnetworks in Germany manually
         fix_subnetworks = FixEhvSubnetworks(dependencies=[osmtgmod])
@@ -278,7 +270,6 @@ with airflow.DAG(
                 ]
             ]
         )
-        # electricity_demand
 
         # Get household electrical demands for census cells
         household_electricity_demand_annual = HouseholdElectricityDemand(
@@ -290,7 +281,6 @@ with airflow.DAG(
                 ]
             ]
         )
-        # electricity_demand
 
         # Distribute electrical CTS demands to census grid
         cts_electricity_demand_annual = CtsElectricityDemand(
@@ -454,7 +444,6 @@ with airflow.DAG(
         create_gas_polygons = GasAreas(
             dependencies=[setup_etrago, insert_hydrogen_buses, vg250]
         )
-        # gas_grid
 
         # Insert hydrogen grid
         insert_h2_grid = HydrogenGridEtrago(
