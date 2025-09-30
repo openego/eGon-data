@@ -216,7 +216,7 @@ class mastr_data_setup(Dataset):
     #:
     name: str = "MastrData"
     #:
-    version: str = "0.0.2"
+    version: str = "0.0.3"
     #:
     tasks = (download_mastr_data, extract_and_preprocess_mastr)
 
