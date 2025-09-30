@@ -42,6 +42,46 @@ def download_mastr_data():
 
 
 def extract_and_preprocess_mastr():
+    """
+    Extract the downloaded MaStR dump and create cleaned, schema-aligned CSVs.
+
+    This routine expects a MaStR ZIP archive (downloaded by
+    :func:`download_mastr_data`) to be present in ``WORKING_DIR_MASTR_NEW``.
+    It unpacks the archive, reads the *raw* CSV files shipped in the dump,
+    applies a set of harmonization steps (column renaming, categorical
+    normalization, data enrichments), and writes *cleaned* CSVs. The function
+    performs the following steps:
+
+    1) Locate and extract the MaStR ZIP
+    2) Read raw CSVs from the extracted dump folder
+     ``bnetza_mastr_wind_raw.csv``,
+     ``bnetza_mastr_solar_raw.csv``,
+     ``bnetza_mastr_biomass_raw.csv``,
+     ``bnetza_mastr_hydro_raw.csv``,
+     ``bnetza_mastr_gsgk_raw.csv``,
+     ``bnetza_mastr_storage_raw.csv``,
+     ``bnetza_mastr_combustion_raw.csv``,
+     ``bnetza_mastr_nuclear_raw.csv``,
+     ``bnetza_mastr_locations_extended_raw.csv``,
+     ``bnetza_mastr_grid_connections_raw.csv``.
+    3) Voltage-level enrichment for locations
+    4) Solar-specific fixes
+    5) Common harmonization across technologies
+    6) Write cleaned outputs (UTF-8, no index) to ``WORKING_DIR_MASTR_NEW``
+       - ``bnetza_mastr_wind_cleaned.csv``
+       - ``bnetza_mastr_solar_cleaned.csv``
+       - ``bnetza_mastr_biomass_cleaned.csv``
+       - ``bnetza_mastr_hydro_cleaned.csv``
+       - ``bnetza_mastr_gsgk_cleaned.csv``
+       - ``bnetza_mastr_storage_cleaned.csv``
+       - ``bnetza_mastr_combustion_cleaned.csv``
+       - ``bnetza_mastr_nuclear_cleaned.csv``
+
+    Returns
+    -------
+    None
+        Results are written to disk as CSV files (see list above).
+    """
 
     # Extract mastr
     data_config = egon.data.config.datasets()["mastr_new"]
