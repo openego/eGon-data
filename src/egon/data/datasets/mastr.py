@@ -5,9 +5,10 @@ Download Marktstammdatenregister (MaStR) from Zenodo.
 
 from pathlib import Path
 from urllib.request import urlretrieve
-import pandas as pd
 import os
 import zipfile
+
+import pandas as pd
 
 from egon.data.datasets import Dataset
 import egon.data.config
