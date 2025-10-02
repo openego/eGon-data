@@ -14,8 +14,8 @@ Added
 Changed
 -------
 
-* Update setting indices in etrago tables
-  `#1347 <https://github.com/openego/eGon-data/issues/1284>`_
+* Update setting indices in etrago tables to avoid collisions
+  `#1284 <https://github.com/openego/eGon-data/issues/1284>`_
 
 Bug Fixes
 ---------
