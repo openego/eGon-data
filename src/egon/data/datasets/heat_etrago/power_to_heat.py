@@ -558,7 +558,7 @@ def assign_electrical_bus(
 
     # Assign power bus per zensus cell
     cells["power_bus"] = gpd.sjoin(
-        cells, mv_grid_district, how="inner", op="intersects"
+        cells, mv_grid_district, how="inner", predicate="intersects"
     ).bus_id
 
     # Calclate district heating demand per substaion

@@ -168,6 +168,7 @@ def read_LNG_capacities():
         ],
         axis=1,
         inplace=True,
+        errors="ignore",
     )
 
     IGGIELGN_LNGs["Country"] = IGGIELGN_LNGs["country_code"].map(

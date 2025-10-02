@@ -271,7 +271,7 @@ def pv_rooftop_per_mv_grid_and_scenario(scenario, level):
     )
 
     # Map centroid of mv grids to weather cells
-    join = gpd.sjoin(weather_cells, mv_grid_districts)[["index_right"]]
+    join = gpd.sjoin(weather_cells, mv_grid_districts)[["bus_id"]]
 
     feedin = db.select_dataframe(
         f"""
@@ -285,14 +285,14 @@ def pv_rooftop_per_mv_grid_and_scenario(scenario, level):
     )
 
     # Create timeseries only for mv grid districts with pv rooftop
-    join = join[join.index_right.isin(pv_rooftop.bus)]
+    join = join[join.bus_id.isin(pv_rooftop.bus)]
 
     timeseries = pd.DataFrame(
         data={
             "scn_name": scenario,
             "temp_id": 1,
             "p_max_pu": feedin.feedin[join.index].values,
-            "generator_id": pv_rooftop.generator_id[join.index_right].values,
+            "generator_id": pv_rooftop.generator_id[join.bus_id].values,
         }
     ).set_index("generator_id")
 

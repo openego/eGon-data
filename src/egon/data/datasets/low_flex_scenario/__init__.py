@@ -2,7 +2,7 @@
 
 """
 
-from airflow.operators.postgres_operator import PostgresOperator
+from airflow.providers.common.sql.operators.sql import SQLExecuteQueryOperator
 from importlib_resources import files
 from sqlalchemy.ext.declarative import declarative_base
 
@@ -15,16 +15,16 @@ class LowFlexScenario(Dataset):
     def __init__(self, dependencies):
         super().__init__(
             name="low_flex_scenario",
-            version="0.0.1",
+            version="0.0.2",
             dependencies=dependencies,
             tasks=(
                 {
-                    PostgresOperator(
+                    SQLExecuteQueryOperator(
                         task_id="low_flex_eGon2035",
                         sql=files(__name__)
                         .joinpath("low_flex_eGon2035.sql")
                         .read_text(encoding="utf-8"),
-                        postgres_conn_id="egon_data",
+                        conn_id="egon_data",
                         autocommit=True,
                     ),
                 },

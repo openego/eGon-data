@@ -101,13 +101,15 @@ def identify_bus(load_curves, demand_area):
     # grid districts to identify grid connection point
     peak_hv["centroid"] = peak_hv["geom"].centroid
     peak_hv = peak_hv.set_geometry("centroid")
-    peak_hv_c = gpd.sjoin(peak_hv, griddistrict, how="inner", op="intersects")
+    peak_hv_c = gpd.sjoin(
+        peak_hv, griddistrict, how="inner", predicate="intersects"
+    )
 
     # Perform a spatial join between the polygon of the demand area  and mv
     # grid districts to ensure every area got assign to a bus
     peak_hv_p = peak_hv[~peak_hv.isin(peak_hv_c)].dropna().set_geometry("geom")
     peak_hv_p = gpd.sjoin(
-        peak_hv_p, griddistrict, how="inner", op="intersects"
+        peak_hv_p, griddistrict, how="inner", predicate="intersects"
     ).drop_duplicates(subset=["id"])
 
     # Bring both dataframes together
@@ -129,7 +131,9 @@ def identify_bus(load_curves, demand_area):
     # voronoi to identify grid connection point
     peak_ehv["centroid"] = peak_ehv["geom"].centroid
     peak_ehv = peak_ehv.set_geometry("centroid")
-    peak_ehv = gpd.sjoin(peak_ehv, ehv_voronoi, how="inner", op="intersects")
+    peak_ehv = gpd.sjoin(
+        peak_ehv, ehv_voronoi, how="inner", predicate="intersects"
+    )
 
     # Bring both dataframes together
     peak_bus = pd.concat([peak_bus, peak_ehv], ignore_index=True)
