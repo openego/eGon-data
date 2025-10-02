@@ -43,8 +43,6 @@ from egon.data.metadata import context, license_ccby, meta_metadata, sources
 # import time
 
 
-
-
 # class for airflow task management (and version control)
 class DistrictHeatingAreas(Dataset):
     """
@@ -75,7 +73,7 @@ class DistrictHeatingAreas(Dataset):
     #:
     name: str = "district-heating-areas"
     #:
-    version: str = "0.0.2"
+    version: str = "0.0.3"
 
     def __init__(self, dependencies):
         super().__init__(
@@ -384,7 +382,7 @@ def area_grouping(
     # Join studied cells with buffer polygons
     columnname = "area_id"
     join = gpd.sjoin(
-        raw_polygons, buffer_polygons_gdf, how="inner", op="intersects"
+        raw_polygons, buffer_polygons_gdf, how="inner", predicate="intersects"
     )
 
     join = join.rename({"index_right": columnname}, axis=1)
@@ -442,7 +440,10 @@ def area_grouping(
             """
         )
         join_2 = gpd.sjoin(
-            cells_in_huge_areas, nuts3_boundaries, how="inner", op="intersects"
+            cells_in_huge_areas,
+            nuts3_boundaries,
+            how="inner",
+            predicate="intersects",
         )
 
         join = join.drop(cells_in_huge_areas.index)

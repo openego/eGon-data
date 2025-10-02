@@ -41,8 +41,10 @@ version = release = "1.0.0"
 pygments_style = "trac"
 templates_path = ["."]
 extlinks = {
-    "issue": ("https://github.com/openego/eGon-data/issues/%s", "issue #"),
-    "pr": ("https://github.com/openego/eGon-data/pull/%s", "PR #"),
+    "egon-issue":   ("https://github.com/openego/eGon-data/issues/%s", "#%s"),
+    "egon-pr":      ("https://github.com/openego/eGon-data/pull/%s",   "PR #%s"),
+    "powerd-issue": ("https://github.com/openego/powerd-data/issues/%s", "#%s"),
+    "powerd-pr":    ("https://github.com/openego/powerd-data/pull/%s",   "PR #%s"),
 }
 # on_rtd is whether we are on readthedocs.org
 # on_rtd = os.environ.get("READTHEDOCS", None) == "True"

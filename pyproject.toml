@@ -1,6 +1,6 @@
 [tool.black]
 line-length = 79
-target-version = ["py36", "py37", "py38"]
+target-version = ["py310"]
 include = '\.pyi?$'
 exclude = '''
 /(
@@ -13,5 +13,102 @@ exclude = '''
 '''
 
 [build-system]
-requires = ["setuptools>=41.0", "wheel"]
+requires = ["setuptools>=61", "wheel"]
 build-backend = "setuptools.build_meta"
+
+[project]
+name = "egon.data"
+version = "2.0.0"
+description = "The data used in the eGo^N project along with the code importing, generating and processing it."
+requires-python = ">=3.10"
+license = { text = "AGPL-3.0-or-later" }
+authors = [ { name = "reGon team", email = "regon-project@rl-institut.de" },]
+dynamic = ["readme"]
+
+classifiers = [
+  "Development Status :: 1 - Planning",
+  "Intended Audience :: Developers",
+  "License :: OSI Approved :: GNU Affero General Public License v3 or later (AGPLv3+)",
+  "Operating System :: Unix",
+  "Operating System :: POSIX",
+  "Operating System :: Microsoft :: Windows",
+  "Programming Language :: Python",
+  "Programming Language :: Python :: 3",
+  "Programming Language :: Python :: 3.10",
+  "Programming Language :: Python :: Implementation :: CPython",
+  "Topic :: Utilities",
+]
+
+dependencies = [
+  "apache-airflow>2.0",
+  "apache-airflow[postgres]",
+  "apache-airflow-providers-sendgrid",
+  "atlite==0.2.11",
+  "cdsapi",
+  "click<8.1",
+  "disaggregator @ git+https://github.com/openego/disaggregator.git@features/update-cache-directory#egg=disaggregator",
+  "entsoe-py>=0.6.2",
+  "fiona==1.9.6",
+  "Flask-Session<0.6.0",
+  "Flask-Limiter<3.13",
+  "GeoAlchemy2",
+  "geopandas>=0.10.0",
+  "geopy",
+  "geovoronoi",
+  "google-re2!=1.1.20250722",
+  "importlib-resources<6.0",
+  "loguru",
+  "markupsafe",
+  "matplotlib",
+  "netcdf4",
+  "numpy<=1.26.4",
+  "oedialect==0.0.8",
+  "oemetadata<=2.0.1",
+  "omi",
+  "openpyxl",
+  "pandas==2.0.3",
+  "pulp<2.8.0",
+  "psycopg2",
+  "pyaml",
+  "pypsa==0.20.1",
+  "pydantic<2.0",
+  "rasterio",
+  "requests",
+  "rioxarray",
+  "rtree",
+  "saio",
+  "seaborn",
+  "setuptools>60.0",
+  "shapely",
+  "snakemake<7",
+  "sqlalchemy",
+  "tabulate>=0.8.10",  # Python 3.10-safe
+  "wtforms",
+  "xarray==2023.1.0",
+  "xlrd",
+  "fuzzywuzzy",
+]
+
+[project.optional-dependencies]
+dev = ["black", "flake8", "isort>=5", "pre-commit", "pytest", "tox", "jupyterlab"]
+
+[project.scripts]
+egon-data = "egon.data.cli:main"
+
+[project.urls]
+Homepage = "https://github.com/openego/eGon-data"
+Documentation = "https://eGon-data.readthedocs.io/"
+Changelog = "https://eGon-data.readthedocs.io/en/latest/changelog.html"
+"Issue Tracker" = "https://github.com/openego/eGon-data/issues"
+
+[tool.setuptools.dynamic]
+readme = { file = ["README.rst", "CHANGELOG.rst"], content-type = "text/x-rst" }
+
+[tool.setuptools]
+package-dir = { "" = "src" }
+include-package-data = true
+zip-safe = false
+
+[tool.setuptools.packages.find]
+where = ["src"]
+include = ["egon*"]

@@ -49,7 +49,7 @@ class RenewableFeedin(Dataset):
     #:
     name: str = "RenewableFeedin"
     #:
-    version: str = "0.0.7"
+    version: str = "0.0.8"
 
     def __init__(self, dependencies):
         super().__init__(
@@ -161,7 +161,7 @@ def federal_states_per_weather_cell():
     # Map federal state and onshore wind turbine to weather cells
     weather_cells["federal_state"] = gpd.sjoin(
         weather_cells, federal_states
-    ).index_right
+    ).gen
 
     # Assign a federal state to each cell inside Germany
     buffer = 1000
@@ -175,7 +175,7 @@ def federal_states_per_weather_cell():
 
         weather_cells.loc[cells.index, "federal_state"] = gpd.sjoin(
             cells, federal_states
-        ).index_right
+        ).gen
 
         buffer += 200
 

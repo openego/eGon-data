@@ -503,7 +503,7 @@ def insert_central_direct_heat(scenario):
     )
 
     # Map solar thermal collectors to weather cells
-    join = gpd.sjoin(weather_cells, solar_thermal)[["index_right"]]
+    join = gpd.sjoin(weather_cells, solar_thermal)[["district_heating_id"]]
 
     weather_year = get_sector_parameters("global", scenario)["weather_year"]
 
@@ -804,7 +804,7 @@ class HeatEtrago(Dataset):
     #:
     name: str = "HeatEtrago"
     #:
-    version: str = "0.0.10"
+    version: str = "0.0.11"
 
     def __init__(self, dependencies):
         super().__init__(

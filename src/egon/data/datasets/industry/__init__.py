@@ -1,8 +1,8 @@
 """The central module containing all code dealing with the spatial
-   distribution of industrial electricity demands.
-   Industrial demands from DemandRegio are distributed from nuts3 level down
-   to osm landuse polygons and/or industrial sites also identified within this
-   processing step bringing three different inputs together.
+distribution of industrial electricity demands.
+Industrial demands from DemandRegio are distributed from nuts3 level down
+to osm landuse polygons and/or industrial sites also identified within this
+processing step bringing three different inputs together.
 
 """
 
@@ -245,9 +245,12 @@ def industrial_demand_distr():
         )
 
         # Spatially join vg250_krs and industrial landuse areas
-        landuse = gpd.sjoin(landuse, boundaries, how="inner", op="intersects")
+        landuse = gpd.sjoin(
+            landuse, boundaries, how="inner", predicate="intersects"
+        )
+
         # Rename column
-        landuse = landuse.rename({"index_right": "nuts3"}, axis=1)
+        landuse = landuse.rename({"nuts": "nuts3"}, axis=1)
 
         landuse_nuts3 = landuse[["area_ha", "nuts3"]]
         landuse_nuts3 = landuse_nuts3.groupby(["nuts3"]).sum().reset_index()
@@ -442,7 +445,7 @@ class IndustrialDemandCurves(Dataset):
     #:
     name: str = "Industrial_demand_curves"
     #:
-    version: str = "0.0.5"
+    version: str = "0.0.6"
 
     def __init__(self, dependencies):
         super().__init__(
