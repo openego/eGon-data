@@ -41,6 +41,26 @@ def download_mastr_data():
     download(dataset_name="mastr_new", download_dir=WORKING_DIR_MASTR_NEW)
 
 
+def download_mastr_geocoding():
+    """Download MaStR_geocoding data from Zenodo."""
+    zenodo_files_url = "https://zenodo.org/records/17279317/files/mastr_geocoding_dump_2025-02-09_14783581.gpkg?download=1"
+    WORKING_DIR_MASTR_GEOCODING = Path(".", "mastr_geocoding")
+    dump_file_name = egon.data.config.datasets()["mastr_new"][
+        "dump_geocoding_name"
+    ]
+    if not os.path.exists(WORKING_DIR_MASTR_GEOCODING):
+        WORKING_DIR_MASTR_GEOCODING.mkdir(exist_ok=True, parents=True)
+
+    if not os.path.isfile(WORKING_DIR_MASTR_GEOCODING / dump_file_name):
+        print("Downloading dataset mastr_geocoding")
+        urlretrieve(
+            zenodo_files_url + dump_file_name,
+            WORKING_DIR_MASTR_GEOCODING / dump_file_name,
+        )
+    else:
+        print("mastr_geocoding was already present. Download skipped")
+
+
 def extract_and_preprocess_mastr():
     """
     Extract the downloaded MaStR dump and create cleaned, schema-aligned CSVs.
@@ -259,7 +279,11 @@ class mastr_data_setup(Dataset):
     #:
     version: str = "0.0.3"
     #:
-    tasks = (download_mastr_data, extract_and_preprocess_mastr)
+    tasks = (
+        download_mastr_data,
+        extract_and_preprocess_mastr,
+        download_mastr_geocoding,
+    )
 
     def __init__(self, dependencies):
         super().__init__(
