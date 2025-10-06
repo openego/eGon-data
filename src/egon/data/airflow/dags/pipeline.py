@@ -4,9 +4,8 @@ from airflow.utils.dates import days_ago
 from airflow.utils.task_group import TaskGroup
 import airflow
 
-from egon.data.config import settings as egon_settings
 from egon.data.config import set_numexpr_threads
-from egon.data.metadata import Json_Metadata
+from egon.data.config import settings as egon_settings
 from egon.data.datasets import database
 from egon.data.datasets.calculate_dlr import Calculate_dlr
 from egon.data.datasets.ch4_prod import CH4Production
@@ -56,10 +55,10 @@ from egon.data.datasets.heat_supply import (
     HeatSupply,
 )
 from egon.data.datasets.heat_supply.individual_heating import (
-    HeatPumpsStatusQuo,
     HeatPumps2035,
     HeatPumps2050,
     HeatPumpsPypsaEur,
+    HeatPumpsStatusQuo,
 )
 from egon.data.datasets.hydrogen_etrago import (
     HydrogenBusEtrago,
@@ -102,6 +101,7 @@ from egon.data.datasets.vg250_mv_grid_districts import Vg250MvGridDistricts
 from egon.data.datasets.zensus import ZensusMiscellaneous, ZensusPopulation
 from egon.data.datasets.zensus_mv_grid_districts import ZensusMvGridDistricts
 from egon.data.datasets.zensus_vg250 import ZensusVg250
+from egon.data.metadata import Json_Metadata
 
 # Set number of threads used by numpy and pandas
 set_numexpr_threads()
