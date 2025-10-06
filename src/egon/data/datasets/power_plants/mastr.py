@@ -187,6 +187,9 @@ def import_mastr() -> None:
     # remove failed requests
     geocoding_gdf = geocoding_gdf.loc[geocoding_gdf.geometry.is_valid]
 
+    # remove unnecesary columns
+    geocoding_gdf.drop(columns="geocode_source", inplace=True)
+
     EgonMastrGeocoded.__table__.drop(bind=engine, checkfirst=True)
     EgonMastrGeocoded.__table__.create(bind=engine, checkfirst=True)
 
