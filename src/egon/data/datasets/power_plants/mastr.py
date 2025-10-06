@@ -343,6 +343,7 @@ def import_mastr() -> None:
             low_memory=False,
         ).rename(columns=cols_mapping)
 
+
         # drop units outside of Germany
         len_old = len(units)
         units = units.loc[units.Land == "Deutschland"]
@@ -430,7 +431,10 @@ def import_mastr() -> None:
         ok_units = units.loc[mask]
 
         units.loc[mask, "zip_and_municipality"] = (
-            ok_units.Postleitzahl.astype(int).astype(str).str.zfill(5)
+            ok_units.Postleitzahl.astype(float)
+            .astype(int)
+            .astype(str)
+            .str.zfill(5)
             + " "
             + ok_units.Gemeinde.astype(str).str.rstrip().str.lstrip()
             + ", Deutschland"
@@ -509,6 +513,7 @@ def import_mastr() -> None:
         mapping.update({"geometry": "geom"})
         units.rename(columns=mapping, inplace=True)
         units["voltage_level"] = units.voltage_level.fillna(-1).astype(int)
+        units["postcode"] = units["postcode"].apply(float).apply(int)
 
         units.set_geometry("geom", inplace=True)
         units["id"] = range(len(units))
