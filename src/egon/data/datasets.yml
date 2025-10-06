@@ -313,6 +313,15 @@ mastr:
   deposit_id: 10480930
 
 mastr_new:
+  technologies:
+    - "biomass"
+    - "combustion"
+    - "gsgk"
+    - "hydro"
+    - "nuclear"
+    - "solar"
+    - "storage"
+    - "wind"
   dump_name: "bnetza_open_mastr_2025-02-09"
   file_basename: "bnetza_mastr"
   deposit_id: 14783581
