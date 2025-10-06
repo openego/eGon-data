@@ -544,9 +544,7 @@ def merge_polygons_to_grid_district():
     engine = db.engine()
     MvGridDistrictsDissolved.__table__.drop(bind=engine, checkfirst=True)
     MvGridDistrictsDissolved.__table__.create(bind=engine)
-    db.execute_sql(
-        "DROP TABLE grid.egon_mv_grid_district CASCADE;"
-        )
+    db.execute_sql("DROP TABLE IF EXISTS grid.egon_mv_grid_district CASCADE;")
     MvGridDistricts.__table__.create(bind=engine)
 
     with session_scope() as session:
