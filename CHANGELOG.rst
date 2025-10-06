@@ -13,7 +13,8 @@ Added
 
 Changed
 -------
-
+* Introduce TaskGroups to group Datasets in the pipeline
+  `#1360 <https://github.com/openego/eGon-data/issues/1360>`_
 
 Bug Fixes
 ---------
