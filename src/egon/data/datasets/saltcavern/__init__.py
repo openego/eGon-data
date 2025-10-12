@@ -29,7 +29,7 @@ def to_postgres():
     #data_config = egon.data.config.datasets()
     #bgr_processed = data_config["bgr"]["processed"]
     schema = SaltcavernData.targets.tables["saltcaverns"]["schema"]
-    table = SaltcavernData.targets.tables["satcaverns"]["tables"]
+    table = SaltcavernData.targets.tables["saltcaverns"]["table"]
     # Create target schema
     db.execute_sql(f"CREATE SCHEMA IF NOT EXISTS {schema};")
 
@@ -107,7 +107,7 @@ class SaltcavernData(Dataset):
     
     sources = DatasetSources(
         files={
-            "inspee_saltstructures.zip": "data_bundle_egon_data/hydrogen_storage_potential_saltstructures/inspee_saltstructures.zip"
+            "inspee_saltstructures": "data_bundle_egon_data/hydrogen_storage_potential_saltstructures/Potenzialbewertung_InSpEE_InSpEE_DS.shp"
         }
     )
 
