@@ -497,13 +497,15 @@ def import_mastr() -> None:
             ],
             inplace=True,
         )
+
         mapping = cols_mapping["all"].copy()
         mapping.update(cols_mapping[tech])
         mapping.update({"geometry": "geom"})
         units.rename(columns=mapping, inplace=True)
         units["voltage_level"] = units.voltage_level.fillna(-1).astype(int)
-        units["postcode"] = units["postcode"].apply(float).apply(int)
-
+        units["postcode"] = units["postcode"].apply(
+            lambda x: int(float(x)) if not pd.isna(x) else pd.NA
+        )
         units.set_geometry("geom", inplace=True)
         units["id"] = range(len(units))
 
