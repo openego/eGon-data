@@ -755,9 +755,16 @@ def insert_cts_ind(scenario, year, engine, target_values):
         ec_cts_ind = ec_cts_ind.drop(columns=49, errors="ignore")
 
         # scale values according to target_values
-        if sector in target_values[scenario].keys():
-            ec_cts_ind *= target_values[sector] * 1e3 / ec_cts_ind.sum().sum()
-
+        if target_values:
+            if sector in target_values.keys():
+                ec_cts_ind *= (
+                    target_values[sector] * 1e3 / ec_cts_ind.sum().sum()
+                )
+        else:
+            print(
+                f"No scaling factors for scenario {scenario}."
+                "Data from demandregio is used without scaling."
+            )
         # include new largescale consumers according to NEP 2021
         if scenario == "eGon2035":
             ec_cts_ind = adjust_cts_ind_nep(ec_cts_ind, sector)
