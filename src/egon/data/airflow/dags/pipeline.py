@@ -532,6 +532,7 @@ with airflow.DAG(
             dependencies=[
                 chp,
                 cts_electricity_demand_annual,
+                cts_demand_buildings,
                 household_electricity_demand_annual,
                 mastr_data,
                 mv_grid_districts,
