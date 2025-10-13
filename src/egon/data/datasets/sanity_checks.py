@@ -1326,7 +1326,7 @@ def sanitycheck_emobility_mit():
     print("=== SANITY CHECKS FOR MOTORIZED INDIVIDUAL TRAVEL ===")
     print("=====================================================")
 
-    for scenario_name in ["eGon2035", "eGon100RE"]:
+    for scenario_name in config.settings()["egon-data"]["--scenarios"]:
         scenario_var_name = DATASET_CFG["scenario"]["variation"][scenario_name]
 
         print("")
