@@ -30,7 +30,7 @@ class ZensusMvGridDistricts(Dataset):
     #:
     name: str = "ZensusMvGridDistricts"
     #:
-    version: str = "0.0.1"
+    version: str = "0.0.2"
 
     def __init__(self, dependencies):
         super().__init__(
@@ -99,7 +99,9 @@ def mapping():
     )
 
     # Join mv grid districts with zensus cells
-    join = gpd.sjoin(zensus, grid_districts, how="inner", op="intersects")
+    join = gpd.sjoin(
+        zensus, grid_districts, how="inner", predicate="intersects"
+    )
 
     # Insert results to database
     join[["zensus_population_id", "bus_id"]].to_sql(

@@ -2351,12 +2351,12 @@ def add_bus_ids_sq(
     """
     grid_districts_gdf = grid_districts(EPSG)
 
-    mask = buildings_gdf.scenario == "status_quo"
+    mask = buildings_gdf.scenario.str.startswith("status")
 
     buildings_gdf.loc[mask, "bus_id"] = (
         buildings_gdf.loc[mask]
         .sjoin(grid_districts_gdf, how="left")
-        .index_right
+        .bus_id_right
     )
 
     return buildings_gdf

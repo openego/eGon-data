@@ -136,9 +136,13 @@ class EtragoSetup(Dataset):
     def __init__(self, dependencies):
         super().__init__(
             name="EtragoSetup",
-            version="0.0.11",
+            version="0.0.12",
             dependencies=dependencies,
-            tasks=(create_tables, {temp_resolution, insert_carriers}),
+            tasks=(
+                create_tables,
+                create_etrago_id_sequences,
+                {temp_resolution, insert_carriers},
+            ),
         )
 
 
@@ -1006,6 +1010,40 @@ def create_tables():
     )
     EgonPfHvBusmap.__table__.create(bind=engine, checkfirst=True)
 
+
+def create_etrago_id_sequences():
+    """
+    Forcefully recreate all required PostgreSQL sequences for etrago components.
+    Drops existing sequences and creates them fresh, starting from 1.
+
+    This ensures that no stale or misaligned sequences remain from earlier states.
+
+    Notes
+    -----
+    - All sequences are named grid.etrago_{component}_id_seq
+    - Existing sequences will be dropped with CASCADE
+    - New sequences will start from 1 (default PostgreSQL behavior)
+    """
+    components = [
+        "bus",
+        "line",
+        "transformer",
+        "load",
+        "storage",
+        "generator",
+        "link",
+        "store",
+    ]
+
+    for component in components:
+        sequence_name = f"grid.etrago_{component}_id_seq"
+
+        drop_query = f"DROP SEQUENCE IF EXISTS {sequence_name} CASCADE;"
+        create_query = f"CREATE SEQUENCE {sequence_name};"
+
+        print(f"Recreating sequence: {sequence_name}")
+        db.execute_sql(drop_query)
+        db.execute_sql(create_query)
 
 def temp_resolution():
     """Insert temporal resolution for etrago

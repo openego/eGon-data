@@ -8,7 +8,7 @@ from loguru import logger
 from shapely import wkt
 from shapely.geometry.multipolygon import MultiPolygon
 from shapely.geometry.polygon import Polygon
-from shapely.ops import cascaded_union
+from shapely.ops import unary_union
 import geopandas as gpd
 
 from egon.data import config, db
@@ -144,7 +144,7 @@ def voronoi(
 
     # convert the boundary geometry into a union of the polygon
     # convert the Geopandas GeoSeries of Point objects to NumPy array of coordinates.
-    boundary_shape = cascaded_union(boundary.geometry)
+    boundary_shape = unary_union(boundary.geometry)
     coords = points_to_coords(points.geometry)
 
     # calculate Voronoi regions

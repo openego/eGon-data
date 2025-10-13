@@ -227,42 +227,34 @@ def select_geodataframe(sql, index_col=None, geom_col="geom", epsg=3035):
     return gdf
 
 
-def next_etrago_id(component):
-    """Select next id value for components in etrago tables
+def next_etrago_id(component, count=1):
+    """
+    Reserve one or more unique IDs from a PostgreSQL sequence specific to the
+    given component.
 
     Parameters
     ----------
     component : str
-        Name of component
+        Name of the component (e.g., 'line', 'transformer', etc.).
+    count : int, optional
+        Number of IDs to reserve. Defaults to 1.
 
     Returns
     -------
-    next_id : int
-        Next index value
-
-    Notes
-    -----
-    To catch concurrent DB commits, consider to use
-    :func:`check_db_unique_violation` instead.
+    int or list of int
+        A single ID (if count == 1) or a list of IDs.
     """
 
-    if component == "transformer":
-        id_column = "trafo_id"
-    else:
-        id_column = f"{component}_id"
+    sequence_name = f"grid.etrago_{component}_id_seq"
 
-    max_id = select_dataframe(
-        f"""
-        SELECT MAX({id_column}) FROM grid.egon_etrago_{component}
-        """
-    )["max"][0]
+    # Fetch the next `count` IDs from the sequence
+    id_query = f"""
+        SELECT nextval('{sequence_name}') FROM generate_series(1, {count})
+    """
+    ids_df = select_dataframe(id_query)
+    ids = ids_df["nextval"].tolist()
 
-    if max_id:
-        next_id = max_id + 1
-    else:
-        next_id = 1
-
-    return next_id
+    return ids[0] if count == 1 else ids
 
 
 def check_db_unique_violation(func):

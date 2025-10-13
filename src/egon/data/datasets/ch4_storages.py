@@ -333,10 +333,8 @@ def insert_ch4_stores(scn_name):
         .reset_index(drop=False)
     )
 
-    new_id = db.next_etrago_id("store")
-    gas_storages_list["store_id"] = range(
-        new_id, new_id + len(gas_storages_list)
-    )
+    gas_storages_list["store_id"] = db.next_etrago_id(
+        "store", len(gas_storages_list))
 
     # Insert data to db
     gas_storages_list.to_sql(
