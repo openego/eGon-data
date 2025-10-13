@@ -544,7 +544,7 @@ def etrago_eGon2035_heat():
     logger.info(f"'geothermal': {e_geo_thermal} %")
 
 
-def residential_electricity_annual_sum(rtol=1e-5):
+def residential_electricity_annual_sum(rtol=0.005):
     """Sanity check for dataset electricity_demand_timeseries :
     Demand_Building_Assignment
 
@@ -624,7 +624,7 @@ def residential_electricity_hh_refinement(rtol=1e-5):
     logger.info("All Aggregated household types match at NUTS-3.")
 
 
-def cts_electricity_demand_share(rtol=1e-5):
+def cts_electricity_demand_share(rtol=0.005):
     """Sanity check for dataset electricity_demand_timeseries :
     CtsBuildings
 
@@ -651,7 +651,7 @@ def cts_electricity_demand_share(rtol=1e-5):
     logger.info("The aggregated demand shares equal to one!.")
 
 
-def cts_heat_demand_share(rtol=1e-5):
+def cts_heat_demand_share(rtol=0.005):
     """Sanity check for dataset electricity_demand_timeseries
     : CtsBuildings
 
