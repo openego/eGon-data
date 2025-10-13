@@ -220,15 +220,12 @@ def export_to_db():
             columns=["scn_name", "load_id", "temp_id", "p_set", "q_set"]
         )
 
-        # Choose next unused load_id
-        next_load_id = db.next_etrago_id("load")
-
         # Insert values into load df
         load.bus = curves.bus
         load.scn_name = scenario
         load.sign = -1
         load.carrier = "AC"
-        load.load_id = range(next_load_id, next_load_id + len(load))
+        load.load_id = db.next_etrago_id("load", len(load))
         load.p_set = curves.p_set
 
         # Insert values into load timeseries df

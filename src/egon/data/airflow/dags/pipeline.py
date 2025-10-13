@@ -90,7 +90,6 @@ from egon.data.datasets.saltcavern import SaltcavernData
 from egon.data.datasets.sanity_checks import SanityChecks
 from egon.data.datasets.scenario_capacities import ScenarioCapacities
 from egon.data.datasets.scenario_parameters import ScenarioParameters
-from egon.data.datasets.society_prognosis import SocietyPrognosis
 from egon.data.datasets.storages import Storages
 from egon.data.datasets.storages_etrago import StorageEtrago
 from egon.data.datasets.substation import SubstationExtraction
@@ -151,7 +150,8 @@ with airflow.DAG(
         # Combine zensus and VG250 data
         zensus_vg250 = ZensusVg250(dependencies=[vg250, zensus_population])
 
-        # Download and import zensus data on households, buildings and apartments
+        # Download and import zensus data on households, buildings and
+        # apartments
         zensus_miscellaneous = ZensusMiscellaneous(
             dependencies=[zensus_population, zensus_vg250, data_bundle]
         )
@@ -345,7 +345,8 @@ with airflow.DAG(
                 cts_electricity_demand_annual,
                 hh_demand_buildings_setup,
                 tasks[
-                    "heat_demand.heat_demand_timeseries.export-etrago-cts-heat-profiles"
+                    "heat_demand.heat_demand_timeseries"
+                    ".export-etrago-cts-heat-profiles"
                 ],
             ]
         )
@@ -531,6 +532,7 @@ with airflow.DAG(
             dependencies=[
                 chp,
                 cts_electricity_demand_annual,
+                cts_demand_buildings,
                 household_electricity_demand_annual,
                 mastr_data,
                 mv_grid_districts,
@@ -663,7 +665,8 @@ with airflow.DAG(
     with TaskGroup(
         group_id="gas_sector_coupling"
     ) as gas_sector_coupling_group:
-        # Power-to-H2-to-power chain installations with oxygen and waste_heat usage
+        # Power-to-H2-to-power chain installations
+        # with oxygen and waste_heat usage
         insert_power_to_h2_installations = HydrogenPowerLinkEtrago(
             dependencies=[
                 h2_infrastructure,
@@ -694,18 +697,6 @@ with airflow.DAG(
                 setup_etrago,
                 zensus_mv_grid_districts,
                 zensus_vg250,
-                storage_etrago,
-                hts_etrago_table,
-                chp_etrago,
-                components_dsm,
-                heat_etrago,
-                fill_etrago_generators,
-                create_ocgt,
-                insert_H2_storage,
-                insert_power_to_h2_installations,
-                insert_h2_to_ch4_grid_links,
-                gas_production_insert_data,
-                insert_data_ch4_storages,
             ]
         )
 

@@ -81,10 +81,8 @@ def insert_new_entries(hgv_h2_demand_gdf: gpd.GeoDataFrame):
         Load data to insert.
 
     """
-    new_id = db.next_etrago_id("load")
-    hgv_h2_demand_gdf["load_id"] = range(
-        new_id, new_id + len(hgv_h2_demand_gdf)
-    )
+    hgv_h2_demand_gdf["load_id"] = db.next_etrago_id(
+        "load", len(hgv_h2_demand_gdf))
 
     # Add missing columns
     c = {"sign": -1, "type": np.nan, "p_set": np.nan, "q_set": np.nan}
