@@ -4,3 +4,4 @@ OEMETADATA_VERSION = "OEMetadata-2.0"
 
 
 EGON_ATTRIBUTION: str = "© eGon development team"
+REGON_ATTRIBUTION: str = "© ReGon development team"
