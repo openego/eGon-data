@@ -7,8 +7,8 @@ from pathlib import Path
 from urllib.request import urlretrieve
 import os
 
-from egon.data.datasets import Dataset
-import egon.data.config
+from egon.data.datasets import Dataset, DatasetSources, DatasetTargets
+#import egon.data.config
 
 WORKING_DIR_MASTR_OLD = Path(".", "bnetza_mastr", "dump_2021-05-03")
 WORKING_DIR_MASTR_NEW = Path(".", "bnetza_mastr", "dump_2024-01-08")
@@ -20,7 +20,7 @@ def download_mastr_data():
     def download(dataset_name, download_dir):
         print(f"Downloading dataset {dataset_name} to {download_dir} ...")
         # Get parameters from config and set download URL
-        data_config = egon.data.config.datasets()[dataset_name]
+        data_config = mastr_data_setup.sources.tables[dataset_name]["zenodo"]
         zenodo_files_url = (
             f"https://zenodo.org/record/" f"{data_config['deposit_id']}/files/"
         )
@@ -44,8 +44,14 @@ def download_mastr_data():
     if not os.path.exists(WORKING_DIR_MASTR_NEW):
         WORKING_DIR_MASTR_NEW.mkdir(exist_ok=True, parents=True)
 
-    download(dataset_name="mastr", download_dir=WORKING_DIR_MASTR_OLD)
-    download(dataset_name="mastr_new", download_dir=WORKING_DIR_MASTR_NEW)
+    download(
+        dataset_name="mastr",
+        download_dir=Path(mastr_data_setup.targets.tables["mastr"]["download_dir"]["path"])
+    )
+    download(
+        dataset_name="mastr_new",
+        download_dir=Path(mastr_data_setup.targets.tables["mastr_new"]["download_dir"]["path"])
+    )
 
 
 class mastr_data_setup(Dataset):
@@ -78,9 +84,60 @@ class mastr_data_setup(Dataset):
     #:
     name: str = "MastrData"
     #:
-    version: str = "0.0.2"
+    version: str = "0.0.3"
     #:
     tasks = (download_mastr_data,)
+
+    
+    sources = DatasetSources(
+        tables={
+            "mastr": {
+                "zenodo": {
+                    "deposit_id": "10480930",
+                    "file_basename": "bnetza_mastr",
+                    "technologies": [
+                        "wind",
+                        "hydro",
+                        "solar",
+                        "biomass",
+                        "combustion",
+                        "nuclear",
+                        "gsgk",
+                        "storage",
+                    ],
+                }
+            },
+            "mastr_new": {
+                "zenodo": {
+                    "deposit_id": "10491882",
+                    "file_basename": "bnetza_mastr",
+                    "technologies": [
+                        "biomass",
+                        "combustion",
+                        "gsgk",
+                        "hydro",
+                        "nuclear",
+                        "solar",
+                        "storage",
+                        "wind",
+                    ],
+                    
+                }
+            },
+        }
+    )
+
+    targets = DatasetTargets(
+        tables={
+            "mastr": {
+                "download_dir": {"path": "./bnetza_mastr/dump_2021-05-03"},
+            },
+            "mastr_new": {
+                "download_dir": {"path": "./bnetza_mastr/dump_2024-01-08"},
+            },
+        }
+    )
+
 
     def __init__(self, dependencies):
         super().__init__(
