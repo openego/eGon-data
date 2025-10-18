@@ -617,6 +617,7 @@ class MergeIndustrialSites(Dataset):
             "hotmaps_processed": "demand.egon_hotmaps_industrial_sites",
             "seenergies_processed": "demand.egon_seenergies_industrial_sites",
             "schmidt_processed": "demand.egon_schmidt_industrial_sites",
+            "vg250_krs": "boundaries.vg250_krs",
         }
     )
     targets = DatasetTargets(
@@ -634,7 +635,7 @@ class MergeIndustrialSites(Dataset):
     def __init__(self, dependencies):
         super().__init__(
             name="Merge_industrial_sites",
-            version="0.0.3",
+            version="0.0.4",
             dependencies=dependencies,
             tasks=(download_import_industrial_sites, merge_inputs, map_nuts3),
         )
