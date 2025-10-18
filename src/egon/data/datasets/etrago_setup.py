@@ -134,7 +134,7 @@ def get_meta(
 
 class EtragoSetup(Dataset):
     name: str = "EtragoSetup"
-    version: str = "0.0.11"
+    version: str = "0.0.12"
 
     sources = DatasetSources(
         tables={},
