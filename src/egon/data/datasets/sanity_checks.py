@@ -18,7 +18,7 @@ import pandas as pd
 import seaborn as sns
 
 from egon.data import config, db, logger
-from egon.data.datasets import Dataset
+from egon.data.datasets import Dataset, DatasetSources, DatasetTargets
 from egon.data.datasets.electricity_demand_timeseries.cts_buildings import (
     EgonCtsElectricityDemandBuildingShare,
     EgonCtsHeatDemandBuildingShare,
@@ -755,7 +755,8 @@ def sanitycheck_pv_rooftop_buildings():
                 f"{merge_df.loc[merge_df.scenario == scenario].capacity.sum()}"
             )
         elif scenario == "eGon100RE":
-            sources = config.datasets()["solar_rooftop"]["sources"]
+            sources = SanityChecks.sources.tables["solar_rooftop"]
+
 
             target = db.select_dataframe(
                 f"""
@@ -1367,8 +1368,9 @@ def sanitycheck_home_batteries():
     scenarios = constants["scenarios"]
     cbat_pbat_ratio = get_cbat_pbat_ratio()
 
-    sources = config.datasets()["home_batteries"]["sources"]
-    targets = config.datasets()["home_batteries"]["targets"]
+    sources = SanityChecks.sources.tables["home_batteries"]
+    targets = SanityChecks.targets.tables["home_batteries"]
+
 
     for scenario in scenarios:
         # get home battery capacity per mv grid id
@@ -2354,7 +2356,8 @@ def sanitycheck_dsm():
         p_max_df.columns = meta_df.bus.tolist()
         p_min_df.columns = meta_df.bus.tolist()
 
-        targets = config.datasets()["DSM_CTS_industry"]["targets"]
+        targets = SanityChecks.targets.tables["DSM_CTS_industry"]
+
 
         tables = [
             "cts_loadcurves_dsm",
@@ -2713,7 +2716,7 @@ def electrical_load_100RE(scn="eGon100RE"):
         warning=False,
     )["load_twh"].values[0]
 
-    sources = egon.data.config.datasets()["etrago_electricity"]["sources"]
+    sources = SanityChecks.sources.tables["etrago_electricity"]
     cts_curves = db.select_dataframe(
         f"""SELECT bus_id AS bus, p_set FROM
                 {sources['cts_curves']['schema']}.
@@ -2974,7 +2977,62 @@ class SanityChecks(Dataset):
     #:
     name: str = "SanityChecks"
     #:
-    version: str = "0.0.8"
+    version: str = "0.0.9"
+
+    sources = DatasetSources(
+        tables={
+            "etrago_electricity": {
+                "cts_curves": {"schema": "demand", "table": "egon_etrago_electricity_cts"},
+                "osm_curves": {"schema": "demand", "table": "egon_osm_ind_load_curves"},
+                "sites_curves": {"schema": "demand", "table": "egon_sites_ind_load_curves"},
+                "household_curves": {"schema": "demand", "table": "egon_etrago_electricity_households"},
+            },
+            "home_batteries": {
+                "storage": {"schema": "supply", "table": "egon_storages"},
+            },
+            "solar_rooftop": {
+                "scenario_capacities": {"schema": "supply", "table": "egon_scenario_capacities"},
+            },
+            "DSM_CTS_industry": {
+                "cts_loadcurves_dsm": {"schema": "demand", "table": "egon_etrago_electricity_cts_dsm_timeseries"},
+                "ind_osm_loadcurves_individual_dsm": {
+                    "schema": "demand",
+                    "table": "egon_osm_ind_load_curves_individual_dsm_timeseries",
+                },
+                "demandregio_ind_sites_dsm": {
+                    "schema": "demand",
+                    "table": "egon_demandregio_sites_ind_electricity_dsm_timeseries",
+                },
+                "ind_sites_loadcurves_individual": {
+                    "schema": "demand",
+                    "table": "egon_sites_ind_load_curves_individual_dsm_timeseries",
+                },
+            },
+        }
+    )
+
+    targets = DatasetTargets(
+        tables={
+            "home_batteries": {
+                "home_batteries": {"schema": "supply", "table": "egon_home_batteries"},
+            },
+            "DSM_CTS_industry": {
+                "cts_loadcurves_dsm": {"schema": "demand", "table": "egon_etrago_electricity_cts_dsm_timeseries"},
+                "ind_osm_loadcurves_individual_dsm": {
+                    "schema": "demand",
+                    "table": "egon_osm_ind_load_curves_individual_dsm_timeseries",
+                },
+                "demandregio_ind_sites_dsm": {
+                    "schema": "demand",
+                    "table": "egon_demandregio_sites_ind_electricity_dsm_timeseries",
+                },
+                "ind_sites_loadcurves_individual": {
+                    "schema": "demand",
+                    "table": "egon_sites_ind_load_curves_individual_dsm_timeseries",
+                },
+            },
+        }
+    )
 
     def __init__(self, dependencies):
         super().__init__(
