@@ -18,7 +18,7 @@ The data are downloaded to be used in the PyPSA-Eur-Sec scenario generator
 import os
 
 from egon.data import subprocess
-from egon.data.datasets import Dataset
+from egon.data.datasets import Dataset, DatasetSources, DatasetTargets
 import egon.data.config
 
 
@@ -35,14 +35,18 @@ class HeatDemandEurope(Dataset):
 
     """
 
-    #:
     name: str = "heat-demands-europe"
-    #:
-    version: str = (
-        egon.data.config.datasets()[
-            "hotmaps_current_policy_scenario_heat_demands_buildings"
-        ]["targets"]["path"]
-        + "_hotmaps.0.1"
+    version: str = "0.2.0"  
+    
+    sources = DatasetSources(
+        urls={
+            "hotmaps_heat_demand": "https://gitlab.com/hotmaps/building-stock/-/raw/master/output_csv/3_indicator/1_Data_for_graphs/part_2_energy_demands/CSV_Actions_Total_energy_demand_by_building_type_in_2050_NUTS0.csv"
+        }
+    )
+    targets = DatasetTargets(
+        files={
+            "heat_demand_europe": "pypsa-eur/resources/heat_demands_in_2050_NUTS0_hotmaps.csv"
+        }
     )
 
     def __init__(self, dependencies):
@@ -71,18 +75,14 @@ def download():
 
     """
 
-    data_config = egon.data.config.datasets()
+    url = HeatDemandEurope.sources.urls["hotmaps_heat_demand"]
+    target_file = HeatDemandEurope.targets.files["heat_demand_europe"]
 
-    # heat demands
-    hotmapsheatdemands_config = data_config[
-        "hotmaps_current_policy_scenario_heat_demands_buildings"
-    ]
-
-    target_file = hotmapsheatdemands_config["targets"]["path"]
+    os.makedirs(os.path.dirname(target_file), exist_ok=True)
 
     if not os.path.isfile(target_file):
         subprocess.run(
-            f"curl { hotmapsheatdemands_config['sources']['url']} > {target_file}",
+            f"curl {url} > {target_file}",
             shell=True,
         )
     return None

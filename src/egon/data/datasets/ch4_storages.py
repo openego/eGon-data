@@ -17,7 +17,7 @@ import pandas as pd
 
 from egon.data import config, db
 from egon.data.config import settings
-from egon.data.datasets import Dataset
+from egon.data.datasets import Dataset, DatasetSources, DatasetTargets
 from egon.data.datasets.gas_grid import (
     ch4_nodes_number_G,
     define_gas_nodes_list,
@@ -47,15 +47,29 @@ class CH4Storages(Dataset):
     #:
     name: str = "CH4Storages"
     #:
-    version: str = "0.0.3"
+    version: str = "0.0.4"
+
+    sources = DatasetSources(
+        files={
+            "scigrid_storages": "datasets/gas_data/data/IGGIELGN_Storages.csv"
+        },
+        tables={
+            "gas_buses": "grid.egon_etrago_bus",
+        },
+    )
+    targets = DatasetTargets(
+        tables={
+            "stores": "grid.egon_etrago_store",
+        }
+    )
 
     def __init__(self, dependencies):
         super().__init__(
             name=self.name,
             version=self.version,
             dependencies=dependencies,
-            # tasks=(insert_ch4_storages),
-            tasks=(notasks),
+            tasks=(insert_ch4_storages),
+            #tasks=(notasks),
         )
 
 
@@ -85,12 +99,10 @@ def import_installed_ch4_storages(scn_name):
         Dataframe containing the CH4 cavern store units in Germany
 
     """
-    target_file = (
-        Path(".") / "datasets" / "gas_data" / "data" / "IGGIELGN_Storages.csv"
-    )
+    storage_file = CH4Storages.sources.files["scigrid_storages"]
 
     Gas_storages_list = pd.read_csv(
-        target_file,
+        storage_file,
         delimiter=";",
         decimal=".",
         usecols=["lat", "long", "country_code", "param", "method"],
@@ -235,8 +247,6 @@ def import_ch4_grid_capacity(scn_name):
         List of gas stores in Germany modelling the gas grid storage capacity
 
     """
-    # Select source from dataset configuration
-    source = config.datasets()["gas_stores"]["source"]
 
     Gas_grid_capacity = 130000  # Storage capacity of the CH4 grid - G.Volk "Die Herauforderung an die Bundesnetzagentur die Energiewende zu meistern" Berlin, Dec 2012
     N_ch4_nodes_G = ch4_nodes_number_G(
@@ -247,9 +257,9 @@ def import_ch4_grid_capacity(scn_name):
     )  # Storage capacity associated to each CH4 node of the German grid
 
     sql_gas = f"""SELECT bus_id, scn_name, carrier, geom
-                FROM {source['buses']['schema']}.{source['buses']['table']}
-                WHERE carrier = 'CH4' AND scn_name = '{scn_name}'
-                AND country = 'DE';"""
+                 FROM {CH4Storages.sources.tables['gas_buses']}
+                 WHERE carrier = 'CH4' AND scn_name = '{scn_name}'
+                 AND country = 'DE';"""
     Gas_storages_list = db.select_geodataframe(sql_gas, epsg=4326)
 
     # Add missing column
@@ -301,18 +311,15 @@ def insert_ch4_stores(scn_name):
     # Connect to local database
     engine = db.engine()
 
-    # Select target from dataset configuration
-    source = config.datasets()["gas_stores"]["source"]
-    target = config.datasets()["gas_stores"]["target"]
 
     # Clean table
     db.execute_sql(
         f"""
-        DELETE FROM {target['stores']['schema']}.{target['stores']['table']}
+        DELETE FROM {CH4Storages.targets.tables['stores']}
         WHERE "carrier" = 'CH4'
         AND scn_name = '{scn_name}'
         AND bus IN (
-            SELECT bus_id FROM {source['buses']['schema']}.{source['buses']['table']}
+            SELECT bus_id FROM {CH4Storages.sources.tables['gas_buses']}
             WHERE scn_name = '{scn_name}'
             AND country = 'DE'
             );
@@ -340,9 +347,9 @@ def insert_ch4_stores(scn_name):
 
     # Insert data to db
     gas_storages_list.to_sql(
-        target["stores"]["table"],
+        CH4Storages.targets.get_table_name("stores"),
         engine,
-        schema=target["stores"]["schema"],
+        schema=CH4Storages.targets.get_table_schema("stores"),
         index=False,
         if_exists="append",
     )
