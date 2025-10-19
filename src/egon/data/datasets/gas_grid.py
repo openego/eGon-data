@@ -31,7 +31,7 @@ import pandas as pd
 
 from egon.data import config, db
 from egon.data.config import settings
-from egon.data.datasets import Dataset, wrapped_partial
+from egon.data.datasets import Dataset, DatasetSources, DatasetTargets, wrapped_partial
 from egon.data.datasets.electrical_neighbours import central_buses_pypsaeur
 from egon.data.datasets.etrago_helpers import copy_and_modify_buses
 from egon.data.datasets.scenario_parameters import get_sector_parameters
@@ -58,27 +58,27 @@ def download_SciGRID_gas_data():
     None
 
     """
-    path = Path(".") / "datasets" / "gas_data"
+    path = Path(GasNodesAndPipes.targets.tables["scigrid_gas"]["data_dir"]["path"])
     os.makedirs(path, exist_ok=True)
 
-    basename = "IGGIELGN"
-    zip_file = Path(".") / "datasets" / "gas_data" / "IGGIELGN.zip"
+    basename = GasNodesAndPipes.sources.tables["scigrid_gas"]["zenodo"]["basename"]
+    zip_file = path / GasNodesAndPipes.sources.tables["scigrid_gas"]["zenodo"]["zip_name"]
     zenodo_zip_file_url = (
-        "https://zenodo.org/record/4767098/files/" + basename + ".zip"
+    f"https://zenodo.org/record/"
+    f"{GasNodesAndPipes.sources.tables['scigrid_gas']['zenodo']['deposit_id']}"
+    f"/files/{basename}.zip"
     )
     if not os.path.isfile(zip_file):
         urlretrieve(zenodo_zip_file_url, zip_file)
 
-    components = [
-        "Nodes",
-        "PipeSegments",
-        "Productions",
-        "Storages",
-        "LNGs",
-    ]  #'Compressors'
-    files = []
-    for i in components:
-        files.append("data/" + basename + "_" + i + ".csv")
+    
+    files = [
+        "data/" + GasNodesAndPipes.sources.tables["scigrid_gas"]["files"]["nodes"],
+        "data/" + GasNodesAndPipes.sources.tables["scigrid_gas"]["files"]["pipes"],
+        "data/" + GasNodesAndPipes.sources.tables["scigrid_gas"]["files"]["productions"],
+        "data/" + GasNodesAndPipes.sources.tables["scigrid_gas"]["files"]["storages"],
+        "data/" + GasNodesAndPipes.sources.tables["scigrid_gas"]["files"]["lngs"],  # <- lowercase key
+    ]
 
     with ZipFile(zip_file, "r") as zipObj:
         listOfFileNames = zipObj.namelist()
@@ -106,9 +106,11 @@ def define_gas_nodes_list():
     new_id = db.next_etrago_id("bus")
 
     target_file = (
-        Path(".") / "datasets" / "gas_data" / "data" / "IGGIELGN_Nodes.csv"
+    Path(GasNodesAndPipes.targets.tables["scigrid_gas"]["data_dir"]["path"])
+    / "data"
+    / GasNodesAndPipes.sources.tables["scigrid_gas"]["files"]["nodes"]
     )
-
+    
     gas_nodes_list = pd.read_csv(
         target_file,
         delimiter=";",
@@ -244,17 +246,17 @@ def insert_CH4_nodes_list(gas_nodes_list, scn_name="eGon2035"):
     # Insert data to db
     db.execute_sql(
         f"""
-    DELETE FROM grid.egon_etrago_bus WHERE "carrier" = 'CH4' AND
-    scn_name = '{c['scn_name']}' AND country = 'DE';
+    DELETE FROM {GasNodesAndPipes.targets.tables["buses"]["schema"]}.{GasNodesAndPipes.targets.tables["buses"]["table"]}
+    WHERE "carrier" = 'CH4' AND scn_name = '{c['scn_name']}' AND country = 'DE';
     """
     )
 
     # Insert CH4 data to db
     print(gas_nodes_list)
     gas_nodes_list.to_postgis(
-        "egon_etrago_bus",
+        GasNodesAndPipes.targets.tables["buses"]["table"],
         engine,
-        schema="grid",
+        schema=GasNodesAndPipes.targets.tables["buses"]["schema"],
         index=False,
         if_exists="append",
         dtype={"geom": Geometry()},
@@ -302,8 +304,8 @@ def define_gas_buses_abroad(scn_name="eGon2035"):
     if scn_name == "eGon100RE":
         gdf_abroad_buses = geopandas.read_postgis(
             f"""
-            SELECT * FROM grid.egon_etrago_bus WHERE "carrier" = '{gas_carrier}' AND
-            scn_name = '{scn_name}' AND country != 'DE';
+            SELECT * FROM {GasNodesAndPipes.targets.tables["buses"]["schema"]}.{GasNodesAndPipes.targets.tables["buses"]["table"]}
+            WHERE "carrier" = '{gas_carrier}' AND scn_name = '{scn_name}' AND country != 'DE';
             """,
             con=engine,
             crs=4326,
@@ -347,8 +349,8 @@ def define_gas_buses_abroad(scn_name="eGon2035"):
     else:
         db.execute_sql(
             f"""
-        DELETE FROM grid.egon_etrago_bus WHERE "carrier" = '{gas_carrier}' AND
-        scn_name = '{scn_name}' AND country != 'DE';
+        DELETE FROM {GasNodesAndPipes.targets.tables["buses"]["schema"]}.{GasNodesAndPipes.targets.tables["buses"]["table"]}
+        WHERE "carrier" = '{gas_carrier}' AND scn_name = '{scn_name}' AND country != 'DE';
         """
         )
 
@@ -469,9 +471,9 @@ def insert_gas_buses_abroad(scn_name="eGon2035"):
     # Insert to db
     if scn_name == "eGon100RE":
         gdf_abroad_buses[gdf_abroad_buses["country"] == "DE"].to_postgis(
-            "egon_etrago_bus",
+            GasNodesAndPipes.targets.tables["buses"]["table"],
             engine,
-            schema="grid",
+            schema=GasNodesAndPipes.targets.tables["buses"]["schema"],
             index=False,
             if_exists="append",
             dtype={"geom": Geometry()},
@@ -480,14 +482,14 @@ def insert_gas_buses_abroad(scn_name="eGon2035"):
     else:
         db.execute_sql(
             f"""
-        DELETE FROM grid.egon_etrago_bus WHERE "carrier" = '{gas_carrier}' AND
-        scn_name = '{scn_name}' AND country != 'DE';
+        DELETE FROM {GasNodesAndPipes.targets.tables["buses"]["schema"]}.{GasNodesAndPipes.targets.tables["buses"]["table"]}
+        WHERE "carrier" = '{gas_carrier}' AND scn_name = '{scn_name}' AND country != 'DE';
         """
         )
         gdf_abroad_buses.to_postgis(
-            "egon_etrago_bus",
+            GasNodesAndPipes.targets.tables["buses"]["table"],
             engine,
-            schema="grid",
+            schema=GasNodesAndPipes.targets.tables["buses"]["schema"],
             index=False,
             if_exists="append",
             dtype={"geom": Geometry()},
@@ -542,25 +544,20 @@ def define_gas_pipeline_list(
     # Select next id value
     new_id = db.next_etrago_id("link")
 
-    classifiaction_file = (
-        Path(".")
-        / "data_bundle_egon_data"
-        / "pipeline_classification_gas"
-        / "pipeline_classification.csv"
+    classification_file = Path(
+        GasNodesAndPipes.sources.tables["scigrid_gas"]["classification_csv"]["path"]
     )
 
     classification = pd.read_csv(
-        classifiaction_file,
+        classification_file,
         delimiter=",",
         usecols=["classification", "max_transport_capacity_Gwh/d"],
     )
 
     target_file = (
-        Path(".")
-        / "datasets"
-        / "gas_data"
-        / "data"
-        / "IGGIELGN_PipeSegments.csv"
+    Path(GasNodesAndPipes.targets.tables["scigrid_gas"]["data_dir"]["path"])
+    / "data"
+    / GasNodesAndPipes.sources.tables["scigrid_gas"]["files"]["pipes"]
     )
 
     gas_pipelines_list = pd.read_csv(
@@ -944,18 +941,18 @@ def insert_gas_pipeline_list(gas_pipelines_list, scn_name="eGon2035"):
 
     # Clean db
     db.execute_sql(
-        f"""DELETE FROM grid.egon_etrago_link
+        f"""DELETE FROM {GasNodesAndPipes.targets.tables["links"]["schema"]}.{GasNodesAndPipes.targets.tables["links"]["table"]}
         WHERE "carrier" = '{gas_carrier}'
         AND scn_name = '{scn_name}'
         AND link_id IN(
-            SELECT link_id FROM grid.egon_etrago_link
+            SELECT link_id FROM {GasNodesAndPipes.targets.tables["links"]["schema"]}.{GasNodesAndPipes.targets.tables["links"]["table"]}
             WHERE bus0 IN (
-                SELECT bus_id FROM grid.egon_etrago_bus
+                SELECT bus_id FROM {GasNodesAndPipes.targets.tables["buses"]["schema"]}.{GasNodesAndPipes.targets.tables["buses"]["table"]}
                 WHERE country = 'DE'
                 AND scn_name = '{scn_name}'
                 )
             AND bus1 IN (
-                SELECT bus_id FROM grid.egon_etrago_bus
+                SELECT bus_id FROM {GasNodesAndPipes.targets.tables["buses"]["schema"]}.{GasNodesAndPipes.targets.tables["buses"]["table"]}
                 WHERE country = 'DE'
                 AND scn_name = '{scn_name}'
                 )
@@ -968,32 +965,35 @@ def insert_gas_pipeline_list(gas_pipelines_list, scn_name="eGon2035"):
     gas_pipelines_list.to_postgis(
         "egon_etrago_gas_link",
         engine,
-        schema="grid",
+        schema=GasNodesAndPipes.targets.tables["links"]["schema"],
         index=False,
         if_exists="replace",
         dtype={"geom": Geometry(), "topo": Geometry()},
     )
 
     db.execute_sql(
-        """
-    select UpdateGeometrySRID('grid', 'egon_etrago_gas_link', 'topo', 4326) ;
+        f"""
+        SELECT UpdateGeometrySRID(
+            '{GasNodesAndPipes.targets.tables["links"]["schema"]}',
+            'egon_etrago_gas_link',
+            'topo',
+            4326
+        );
 
-    INSERT INTO grid.egon_etrago_link (scn_name,
-                                              link_id, carrier,
-                                              bus0, bus1, p_min_pu,
-                                              p_nom, p_nom_extendable, length,
-                                              geom, topo)
-    SELECT scn_name,
-                link_id, carrier,
-                bus0, bus1, p_min_pu,
-                p_nom, p_nom_extendable, length,
-                geom, topo
+        INSERT INTO {GasNodesAndPipes.targets.tables["links"]["schema"]}.{GasNodesAndPipes.targets.tables["links"]["table"]}
+            (scn_name, link_id, carrier, bus0, bus1, p_min_pu,
+             p_nom, p_nom_extendable, length, geom, topo)
+        SELECT scn_name,
+               link_id, carrier,
+               bus0, bus1, p_min_pu,
+               p_nom, p_nom_extendable, length,
+               geom, topo
+        FROM {GasNodesAndPipes.targets.tables["links"]["schema"]}.egon_etrago_gas_link;
 
-    FROM grid.egon_etrago_gas_link;
-
-    DROP TABLE grid.egon_etrago_gas_link;
+        DROP TABLE {GasNodesAndPipes.targets.tables["links"]["schema"]}.egon_etrago_gas_link;
         """
     )
+
 
 
 def remove_isolated_gas_buses(scn_name="eGon2035"):
@@ -1006,20 +1006,20 @@ def remove_isolated_gas_buses(scn_name="eGon2035"):
     None
 
     """
-    targets = config.datasets()["gas_grid"]["targets"]
+    #targets = config.datasets()["gas_grid"]["targets"]
 
     db.execute_sql(
         f"""
-        DELETE FROM {targets['buses']['schema']}.{targets['buses']['table']}
+        DELETE FROM {GasNodesAndPipes.targets.tables["buses"]["schema"]}.{GasNodesAndPipes.targets.tables["buses"]["table"]}
         WHERE "carrier" = 'CH4'
         AND scn_name = '{scn_name}'
         AND country = 'DE'
         AND "bus_id" NOT IN
-            (SELECT bus0 FROM {targets['links']['schema']}.{targets['links']['table']}
+            (SELECT bus0 FROM {GasNodesAndPipes.targets.tables["links"]["schema"]}.{GasNodesAndPipes.targets.tables["links"]["table"]}
             WHERE scn_name = '{scn_name}'
             AND carrier = 'CH4')
         AND "bus_id" NOT IN
-            (SELECT bus1 FROM {targets['links']['schema']}.{targets['links']['table']}
+            (SELECT bus1 FROM {GasNodesAndPipes.targets.tables["links"]["schema"]}.{GasNodesAndPipes.targets.tables["links"]["table"]}
             WHERE scn_name = '{scn_name}'
             AND carrier = 'CH4');
     """
@@ -1091,13 +1091,13 @@ def insert_gas_data_status(scn_name):
     # delete old entries
     db.execute_sql(
         f"""
-        DELETE FROM grid.egon_etrago_link
+        DELETE FROM {GasNodesAndPipes.targets.tables["links"]["schema"]}.{GasNodesAndPipes.targets.tables["links"]["table"]}
         WHERE carrier = 'CH4' AND scn_name = '{scn_name}'
         """
     )
     db.execute_sql(
         f"""
-        DELETE FROM grid.egon_etrago_bus
+        DELETE FROM {GasNodesAndPipes.targets.tables["buses"]["schema"]}.{GasNodesAndPipes.targets.tables["buses"]["table"]}
         WHERE carrier = 'CH4' AND scn_name = '{scn_name}'
         """
     )
@@ -1126,7 +1126,7 @@ def insert_gas_data_status(scn_name):
     gdf.index.name = "bus_id"
 
     gdf.reset_index().to_postgis(
-        "egon_etrago_bus", schema="grid", con=db.engine(), if_exists="append"
+        GasNodesAndPipes.targets.tables["buses"]["table"], schema=GasNodesAndPipes.targets.tables["buses"]["schema"], con=db.engine(), if_exists="append"
     )
 
 
@@ -1154,7 +1154,7 @@ class GasNodesAndPipes(Dataset):
     #:
     name: str = "GasNodesAndPipes"
     #:
-    version: str = "0.0.11"
+    version: str = "0.0.12"
 
     tasks = ()
 
@@ -1169,7 +1169,36 @@ class GasNodesAndPipes(Dataset):
             )
 
     tasks += (insert_gas_data,)
-
+    
+    sources = DatasetSources(
+        tables={
+            "scigrid_gas": {
+                "zenodo": {
+                    "deposit_id": "4767098",
+                    "basename": "IGGIELGN",
+                    "zip_name": "IGGIELGN.zip",
+                },
+                "files": {
+                    "nodes": "IGGIELGN_Nodes.csv",
+                    "pipes": "IGGIELGN_PipeSegments.csv",
+                    "productions": "IGGIELGN_Productions.csv",
+                    "storages": "IGGIELGN_Storages.csv",
+                    "lngs": "IGGIELGN_LNGs.csv",
+                },
+            # NEW: make the classification CSV configurable
+                "classification_csv": {
+                    "path": "./data_bundle_egon_data/pipeline_classification_gas/pipeline_classification.csv"
+                },
+            }
+        }   
+    )
+    targets = DatasetTargets(
+        tables={
+            "scigrid_gas": {"data_dir": {"path": "./datasets/gas_data"}},
+            "buses": {"schema": "grid", "table": "egon_etrago_bus"},
+            "links": {"schema": "grid", "table": "egon_etrago_link"},
+        }
+    )
     def __init__(self, dependencies):
         super().__init__(
             name=self.name,

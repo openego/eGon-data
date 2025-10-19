@@ -124,7 +124,7 @@ class LoadArea(Dataset):
     #:
     name: str = "LoadArea"
     #:
-    version: str = "0.0.1"
+    version: str = "0.0.2"
     
     sources = DatasetSources(
         files={

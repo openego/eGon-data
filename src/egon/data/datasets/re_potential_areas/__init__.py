@@ -142,7 +142,7 @@ class re_potential_area_setup(Dataset):
     #:
     name: str = "RePotentialAreas"
     #:
-    version: str = "0.0.1"
+    version: str = "0.0.2"
     #:
     tasks = (create_tables, insert_data)
 
