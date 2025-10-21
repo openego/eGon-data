@@ -74,8 +74,7 @@ def insert_hydrogen_buses(scn_name):
     h2_buses.geom = h2_input.geom
     h2_buses.carrier = "H2_grid"
     h2_buses.scn_name = scn_name
-    next_bus_id = db.next_etrago_id("bus")
-    h2_buses.bus_id = range(next_bus_id, next_bus_id + len(h2_input))
+    h2_buses.bus_id = db.next_etrago_id("bus", len(h2_input))
 
     h2_buses.to_postgis(
         target_buses["table"],
@@ -124,9 +123,8 @@ def insert_hydrogen_buses(scn_name):
         )
     additional_H2_buses = additional_H2_buses.to_crs(epsg=4326)
 
-    next_bus_id = db.next_etrago_id("bus")
-    additional_H2_buses["bus_id"] = range(
-        next_bus_id, next_bus_id + len(additional_H2_buses)
+    additional_H2_buses["bus_id"] = db.next_etrago_id(
+        "bus", len(additional_H2_buses)
     )
     # Insert data to db
     additional_H2_buses.to_postgis(

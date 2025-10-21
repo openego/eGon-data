@@ -359,11 +359,8 @@ def insert_new_entries(industrial_gas_demand, scn_name):
         the database with their time series
 
     """
-
-    new_id = db.next_etrago_id("load")
-    industrial_gas_demand["load_id"] = range(
-        new_id, new_id + len(industrial_gas_demand)
-    )
+    industrial_gas_demand["load_id"] = db.next_etrago_id(
+        "load", len(industrial_gas_demand))
 
     # Add missing columns
     c = {"scn_name": scn_name, "sign": -1}

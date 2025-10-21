@@ -184,9 +184,7 @@ def hts_to_etrago(scenario):
             """
         )
 
-        next_id = next_etrago_id("load")
-
-        bus_ts["load_id"] = np.arange(len(bus_ts)) + next_id
+        bus_ts["load_id"] = db.next_etrago_id("load", len(bus_ts))
 
         etrago_load = pd.DataFrame(index=range(len(bus_ts)))
         etrago_load["scn_name"] = scenario

@@ -82,14 +82,11 @@ def insert_PHES():
             """
         )
 
-        # Select unused index of buses
-        next_bus_id = db.next_etrago_id("storage")
-
         # Add missing PHES specific information suitable for eTraGo selected from scenario_parameter table
         parameters = get_sector_parameters("electricity", scn)["efficiency"][
             "pumped_hydro"
         ]
-        phes["storage_id"] = range(next_bus_id, next_bus_id + len(phes))
+        phes["storage_id"] = db.next_etrago_id("storage", len(phes))
         phes["max_hours"] = parameters["max_hours"]
         phes["efficiency_store"] = parameters["store"]
         phes["efficiency_dispatch"] = parameters["dispatch"]
@@ -152,8 +149,8 @@ def extendable_batteries_per_scenario(scenario):
     )
 
     # Update index
-    extendable_batteries["storage_id"] = (
-        extendable_batteries.index + db.next_etrago_id("storage")
+    extendable_batteries["storage_id"] = db.next_etrago_id(
+        "storage", len(extendable_batteries.index)
     )
 
     # Set parameters

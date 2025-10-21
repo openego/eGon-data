@@ -14,6 +14,10 @@ Added
 Changed
 -------
 
+* Introduce TaskGroups to group Datasets in the pipeline
+  `#1360 <https://github.com/openego/eGon-data/issues/1360>`_
+* Update setting indices in etrago tables to avoid collisions
+  `#1284 <https://github.com/openego/eGon-data/issues/1284>`_
 
 Bug Fixes
 ---------
