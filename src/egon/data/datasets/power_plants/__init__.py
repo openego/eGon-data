@@ -118,13 +118,14 @@ def scale_prox2now(df, target, level="federal_state"):
     if level == "federal_state":
         df.loc[:, "Nettonennleistung"] = (
             (
-                df.groupby(df.Bundesland)
+                df.groupby("Bundesland")
                 .Nettonennleistung.apply(lambda grp: grp / grp.sum())
-                .mul(target[df.Bundesland.values].values)
             )
             .reset_index(level=[0])
             .Nettonennleistung
         )
+        df["Nettonennleistung"] = df.apply(
+            lambda x: x["Nettonennleistung"] * target[x["Bundesland"]], axis=1)
     else:
         df.loc[:, "Nettonennleistung"] = df.Nettonennleistung * (
             target / df.Nettonennleistung.sum()
