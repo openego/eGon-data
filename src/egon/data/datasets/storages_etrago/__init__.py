@@ -56,7 +56,7 @@ class StorageEtrago(Dataset):
     #:
     name: str = "StorageEtrago"
     #:
-    version: str = "0.0.9"
+    version: str = "0.0.10"
 
 
     def __init__(self, dependencies):

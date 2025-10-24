@@ -45,7 +45,7 @@ class GasAreaseGon2035(Dataset):
     #:
     name: str = "GasAreaseGon2035"
     #:
-    version: str = "0.0.2"
+    version: str = "0.0.3"
 
     # Dataset sources (input tables)
     sources = DatasetSources(
@@ -97,7 +97,7 @@ class GasAreaseGon100RE(Dataset):
     #:
     name: str = "GasAreaseGon100RE"
     #:
-    version: str = "0.0.1"
+    version: str = "0.0.2"
 
     # Same sources as GasAreaseGon2035
     sources = DatasetSources(

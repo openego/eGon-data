@@ -75,7 +75,7 @@ class HeatDemandImport(Dataset):
     #:
     name: str = "heat-demands"
     #:
-    version: str = "0.0.4"
+    version: str = "0.0.5"
 
     sources = DatasetSources(
         tables={

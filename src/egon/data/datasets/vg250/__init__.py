@@ -542,7 +542,8 @@ class Vg250(Dataset):
 
     #:
     name: str = "VG250"
-    version: str = sources.urls["vg250_zip"] + "-0.0.5"
+    version: str = "0.0.6"
+
 
     def __init__(self, dependencies):
         super().__init__(

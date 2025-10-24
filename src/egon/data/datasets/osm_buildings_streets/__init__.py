@@ -184,7 +184,7 @@ class OsmBuildingsStreets(Dataset):
     #:
     name: str = "OsmBuildingsStreets"
     #:
-    version: str = "0.0.7"
+    version: str = "0.0.8"
     
     sources = DatasetSources(
         tables={

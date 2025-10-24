@@ -273,7 +273,7 @@ class IndustrialDemandCurves(Dataset):
     #:
     name: str = "Industrial_demand_curves"
     #:
-    version: str = "0.0.5"
+    version: str = "0.0.6"
 
     def __init__(self, dependencies):
         super().__init__(

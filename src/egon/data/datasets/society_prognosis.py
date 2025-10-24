@@ -15,7 +15,7 @@ Base = declarative_base()
 # ############################################################
 class SocietyPrognosis(Dataset):
     name: str = "SocietyPrognosis"
-    version: str = "0.0.1"
+    version: str = "0.0.2"
 
     sources = DatasetSources(
         tables={

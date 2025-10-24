@@ -57,7 +57,7 @@ class OsmLanduse(Dataset):
     #:
     name: str = "OsmLanduse"
     #:
-    version: str = "0.0.0"
+    version: str = "0.0.1"
     
     sources = DatasetSources(
         files={

@@ -14,7 +14,7 @@ Base = declarative_base()
 
 class SubstationVoronoi(Dataset):
     name: str = "substation_voronoi"
-    version: str = "0.0.0"
+    version: str = "0.0.1"
 
     # Defined sources and targets for the file
     sources = DatasetSources(
