@@ -114,31 +114,24 @@ def create_tables():
     """
     
 
+    db.execute_sql("CREATE SCHEMA IF NOT EXISTS grid;")
+    
     db.execute_sql(
-        f"CREATE SCHEMA IF NOT EXISTS grid;"
-    )
-
-    # Drop tables
-    db.execute_sql(
-        f"""DROP TABLE IF EXISTS {SubstationExtraction.targets.tables
-        ['ehv_substation']} CASCADE;"""
+    f"""DROP TABLE IF EXISTS {SubstationExtraction.targets.tables['ehv_substation']} CASCADE;"""
     )
 
     db.execute_sql(
-        f"""DROP TABLE IF EXISTS {SubstationExtraction.targets.tables
-        ['hvmv_substation']} CASCADE;"""
-        
+    f"""DROP TABLE IF EXISTS {SubstationExtraction.targets.tables['hvmv_substation']} CASCADE;"""
     )
 
     db.execute_sql(
-        f"""DROP SEQUENCE IF EXISTS {SubstationExtraction.targets.tables
-        ['hvmv_substation']}_bus_id_seq CASCADE;"""
+    f"""DROP SEQUENCE IF EXISTS {SubstationExtraction.targets.tables['hvmv_substation']}_bus_id_seq CASCADE;"""
     )
 
     db.execute_sql(
-        f"""DROP SEQUENCE IF EXISTS {SubstationExtraction.targets.tables
-        ['ehv_substation']}_bus_id_seq CASCADE;"""
+    f"""DROP SEQUENCE IF EXISTS {SubstationExtraction.targets.tables['ehv_substation']}_bus_id_seq CASCADE;"""
     )
+
 
     engine = db.engine()
     EgonEhvTransferBuses.__table__.create(bind=engine, checkfirst=True)
