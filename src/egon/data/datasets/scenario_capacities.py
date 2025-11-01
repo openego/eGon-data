@@ -807,7 +807,7 @@ def eGon100_capacities():
     df.loc["solar", "component"] = "generators"
     df = df.drop(["solar-hsat"])
 
-    # Aggregate tech with and without carbon_capture (CC)
+    # Aggregate technologies with and without carbon_capture (CC)
     for carrier in [
         "urban_central_gas_CHP",
         "urban_central_solid_biomass_CHP",
@@ -822,7 +822,8 @@ def eGon100_capacities():
 
     # Aggregate urban decentral and rural heat supply
     for merge_carrier in df.index[df.index.str.startswith("urban_decentral")]:
-        # Add capacity of urban decentral to corresponding rural technology
+
+        # Add capacity of urban decentral to coresponding rural technology
         df.loc[merge_carrier.replace("urban_decentral", "rural")] += df.loc[
             merge_carrier
         ]
@@ -874,6 +875,13 @@ def eGon100_capacities():
                         "capacity",
                     ]
                 )
+            ],
+            axis="columns",
+            inplace=True,
+        )
+        df_year.drop(
+            df_year.columns[
+                ~df_year.columns.isin(["carrier", "component", "capacity"])
             ],
             axis="columns",
             inplace=True,

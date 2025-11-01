@@ -1,6 +1,7 @@
 """
 DB tables / SQLAlchemy ORM classes for motorized individual travel
 """
+
 import datetime
 import json
 

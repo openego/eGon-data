@@ -1,5 +1,6 @@
 """Module for repeated bus insertion tasks
 """
+
 from geoalchemy2 import Geometry
 import geopandas as gpd
 
@@ -8,7 +9,7 @@ from egon.data.datasets.scenario_parameters import get_sector_parameters
 
 
 def initialise_bus_insertion(carrier, target, scenario="eGon2035"):
-    """ Initialise bus insertion to etrago table
+    """Initialise bus insertion to etrago table
 
     Parameters
     ----------
@@ -45,7 +46,7 @@ def initialise_bus_insertion(carrier, target, scenario="eGon2035"):
 
 
 def finalize_bus_insertion(bus_data, carrier, target, scenario="eGon2035"):
-    """ Finalize bus insertion to etrago table
+    """Finalize bus insertion to etrago table
 
     Parameters
     ----------
@@ -63,15 +64,12 @@ def finalize_bus_insertion(bus_data, carrier, target, scenario="eGon2035"):
     bus_data : geopandas.GeoDataFrame
         GeoDataFrame containing the inserted bus data.
     """
-    # Select unused index of buses
-    next_bus_id = db.next_etrago_id("bus")
-
     # Insert values into dataframe
     bus_data["scn_name"] = scenario
     bus_data["carrier"] = carrier
     bus_data["x"] = bus_data.geom.x
     bus_data["y"] = bus_data.geom.y
-    bus_data["bus_id"] = range(next_bus_id, next_bus_id + len(bus_data))
+    bus_data["bus_id"] = db.next_etrago_id("bus", len(bus_data))
 
     # Insert data into database
     bus_data.to_postgis(

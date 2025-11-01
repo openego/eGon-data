@@ -5,6 +5,7 @@ new PV rooftop generators for scenarios eGon2035 and eGon100RE.
 See documentation section :ref:`pv-rooftop-ref` for more information.
 
 """
+
 from __future__ import annotations
 
 from collections import Counter
@@ -2345,12 +2346,12 @@ def add_bus_ids_sq(
     """
     grid_districts_gdf = grid_districts(EPSG)
 
-    mask = buildings_gdf.scenario == "status_quo"
+    mask = buildings_gdf.scenario.str.startswith("status")
 
     buildings_gdf.loc[mask, "bus_id"] = (
         buildings_gdf.loc[mask]
         .sjoin(grid_districts_gdf, how="left")
-        .index_right
+        .bus_id_right
     )
 
     return buildings_gdf
@@ -2422,22 +2423,22 @@ def pv_rooftop_to_buildings():
         .set_geometry("geom")
     )
 
-    scenario_buildings_gdf = all_buildings_gdf.copy()
+    scenario_buildings_gdf_sq = all_buildings_gdf.copy()
 
     cap_per_bus_id_df = pd.DataFrame()
 
     for scenario in SCENARIOS:
         if scenario == status_quo:
-            continue
+            scenario_buildings_gdf = scenario_buildings_gdf_sq.copy()
         elif "status" in scenario:
             ts = pd.Timestamp(
                 config.datasets()["mastr_new"][f"{scenario}_date_max"],
                 tz="UTC",
             )
 
-            scenario_buildings_gdf = scenario_buildings_gdf.loc[
+            scenario_buildings_gdf = scenario_buildings_gdf_sq.loc[
                 scenario_buildings_gdf.commissioning_date <= ts
-            ]
+            ].copy()
 
         else:
             logger.debug(f"Desaggregating scenario {scenario}.")
@@ -2448,7 +2449,7 @@ def pv_rooftop_to_buildings():
             ) = allocate_scenarios(  # noqa: F841
                 desagg_mastr_gdf,
                 desagg_buildings_gdf,
-                scenario_buildings_gdf,
+                scenario_buildings_gdf_sq,
                 scenario,
             )
 

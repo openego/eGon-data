@@ -57,6 +57,7 @@ class RunPypsaEur(Dataset):
             ),
         )
 
+
 def countries_list():
     return [
         "DE",
@@ -876,7 +877,7 @@ def neighbor_reduction():
     neighbors = network_solved.buses[network_solved.buses.country != "DE"]
 
     neighbors["new_index"] = (
-        db.next_etrago_id("bus") + neighbors.reset_index().index
+        db.next_etrago_id("bus", len(neighbors.index))
     )
 
     # Use index of AC buses created by electrical_neigbors
@@ -917,7 +918,7 @@ def neighbor_reduction():
     neighbor_lines.bus1 = (
         neighbors.loc[neighbor_lines.bus1, "new_index"].reset_index().new_index
     )
-    neighbor_lines.index += db.next_etrago_id("line")
+    neighbor_lines.index = db.next_etrago_id("line", len(neighbor_lines.index))
 
     if not network_solved.lines_t["s_max_pu"].empty:
         for i in neighbor_lines_t.columns:
@@ -937,7 +938,7 @@ def neighbor_reduction():
     neighbor_links.bus1 = (
         neighbors.loc[neighbor_links.bus1, "new_index"].reset_index().new_index
     )
-    neighbor_links.index += db.next_etrago_id("link")
+    neighbor_links.index = db.next_etrago_id("link", len(neighbor_links.index))
 
     # generators
     neighbor_gens = network_solved.generators[
@@ -979,7 +980,8 @@ def neighbor_reduction():
     neighbor_gens.bus = (
         neighbors.loc[neighbor_gens.bus, "new_index"].reset_index().new_index
     )
-    neighbor_gens.index += db.next_etrago_id("generator")
+    neighbor_gens.index = db.next_etrago_id(
+        "generator", len(neighbor_gens.index))
 
     for i in neighbor_gens_t.columns:
         new_index = neighbor_gens[neighbor_gens["Generator"] == i].index
@@ -1001,7 +1003,7 @@ def neighbor_reduction():
     neighbor_loads.bus = (
         neighbors.loc[neighbor_loads.bus, "new_index"].reset_index().new_index
     )
-    neighbor_loads.index += db.next_etrago_id("load")
+    neighbor_loads.index = db.next_etrago_id("load", len(neighbor_loads.index))
 
     for i in neighbor_loads_t.columns:
         new_index = neighbor_loads[neighbor_loads["Load"] == i].index
@@ -1022,7 +1024,8 @@ def neighbor_reduction():
     neighbor_stores.bus = (
         neighbors.loc[neighbor_stores.bus, "new_index"].reset_index().new_index
     )
-    neighbor_stores.index += db.next_etrago_id("store")
+    neighbor_stores.index = db.next_etrago_id(
+        "store", len(neighbor_stores.index))
 
     for i in neighbor_stores_t.columns:
         new_index = neighbor_stores[neighbor_stores["Store"] == i].index
@@ -1047,7 +1050,8 @@ def neighbor_reduction():
         .reset_index()
         .new_index
     )
-    neighbor_storage.index += db.next_etrago_id("storage")
+    neighbor_storage.index = db.next_etrago_id(
+        "storage", len(neighbor_storage.index))
 
     for i in neighbor_storage_t.columns:
         new_index = neighbor_storage[

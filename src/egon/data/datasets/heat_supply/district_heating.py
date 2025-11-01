@@ -2,8 +2,10 @@
 for district heating areas.
 
 """
+
 import geopandas as gpd
 import pandas as pd
+
 from egon.data import config, db
 from egon.data.datasets.heat_supply.geothermal import calc_geothermal_costs
 
@@ -234,12 +236,13 @@ def cascade_per_technology(
             # Select areas with geothermal potential considering costs
             gdf_geothermal = calc_geothermal_costs(max_geothermal_costs)
             # Select areas which intersect with district heating areas
+
             join = gpd.sjoin(
                 gdf_geothermal.to_crs(4326), areas, rsuffix="area"
             )
             # Calculate share of installed capacity
             share_per_area = (
-                join.groupby("index_area")["remaining_demand"].sum()
+                join.groupby("district_heating_id")["remaining_demand"].sum()
                 / join["remaining_demand"].sum().sum()
             )
 

@@ -102,7 +102,7 @@ def district_heating():
             if_exists="append",
         )
 
-        # Do not check data for status quo as it is not listed in the table
+        # Do not check data for status quo as is it not listed in the table
         if "status" not in scenario:
             # Compare target value with sum of distributed heat supply
             df_check = db.select_dataframe(
@@ -389,7 +389,7 @@ class HeatSupply(Dataset):
     #:
     name: str = "HeatSupply"
     #:
-    version: str = "0.0.13"
+    version: str = "0.0.14"
 
     def __init__(self, dependencies):
         super().__init__(

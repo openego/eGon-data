@@ -692,7 +692,7 @@ etrago_hydrogen:
       schema: 'grid'
       table: 'egon_etrago_link'
     H2_grid:
-      new_constructed_pipes:  
+      new_constructed_pipes:
         url: 'https://fnb-gas.de/wp-content/uploads/2024/07/2024_07_22_Anlage3_FNB_Massnahmenliste_Neubau.xlsx'
         path: "Anlage_3_Wasserstoffkernnetz_Neubau.xlsx"
       converted_ch4_pipes:
@@ -700,7 +700,7 @@ etrago_hydrogen:
         path: "Anlage_4_Wasserstoffkernnetz_Umstellung.xlsx"
       pipes_of_further_h2_grid_operators:
         url: 'https://fnb-gas.de/wp-content/uploads/2024/07/2024_07_22_Anlage2_Leitungsmeldungen_weiterer_potenzieller_Wasserstoffnetzbetreiber.xlsx'
-        path: "Anlage_2_Wasserstoffkernetz_weitere_Leitungen.xlsx"     
+        path: "Anlage_2_Wasserstoffkernetz_weitere_Leitungen.xlsx"
   targets:
     hydrogen_buses:
       schema: 'grid'
@@ -1150,7 +1150,7 @@ emobility_mit:
   original_data:
     sources:
       RS7:
-        url: "https://www.bmvi.de/SharedDocs/DE/Anlage/G/regiostar-referenzdateien.xlsx?__blob=publicationFile"
+        url: "https://www.bmv.de/SharedDocs/DE/Anlage/G/regiostar-referenzdateien.xlsx?__blob=publicationFile"
         file: "regiostar-referenzdateien.xlsx"
         file_processed: "regiostar-referenzdateien_preprocessed.csv"
         sheet: "ReferenzGebietsstand2020"
@@ -1231,7 +1231,7 @@ mobility_hgv:
     original_data:
       sources:
         BAST:
-          url: "https://www.bast.de/DE/Verkehrstechnik/Fachthemen/v2-verkehrszaehlung/Daten/2020_1/Jawe2020.csv?view=renderTcDataExportCSV&cms_strTyp=A"
+          url: "https://www.bast.de/DE/Themen/Digitales/HF_1/Massnahmen/verkehrszaehlung/Daten/2020_1/Jawe2020.csv?view=renderTcDataExportCSV&strTyp=A"
           file: "Jawe2020.csv"
           relevant_columns: ["DTV_SV_MobisSo_Q", "Koor_WGS84_E", "Koor_WGS84_N"]
           srid: 4326
@@ -1291,7 +1291,7 @@ home_batteries:
     home_batteries:
       schema: 'supply'
       table: 'egon_home_batteries'
-      
+
 PtH2_waste_heat_O2:
   sources:
     ehv_substation:
@@ -1340,7 +1340,7 @@ PtH2_waste_heat_O2:
     buses:
       schema: 'grid'
       table: 'egon_etrago_bus'
-      
+
 
 scenario_path:
   sources:

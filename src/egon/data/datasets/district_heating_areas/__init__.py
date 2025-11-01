@@ -82,7 +82,7 @@ class DistrictHeatingAreas(Dataset):
     #:
     name: str = "district-heating-areas"
     #:
-    version: str = "0.0.2"
+    version: str = "0.0.3"
 
     def __init__(self, dependencies):
         super().__init__(
@@ -400,7 +400,7 @@ def area_grouping(
     # Join studied cells with buffer polygons
     columnname = "area_id"
     join = gpd.sjoin(
-        raw_polygons, buffer_polygons_gdf, how="inner", op="intersects"
+        raw_polygons, buffer_polygons_gdf, how="inner", predicate="intersects"
     )
 
     join = join.rename({"index_right": columnname}, axis=1)
@@ -458,7 +458,10 @@ def area_grouping(
             """
         )
         join_2 = gpd.sjoin(
-            cells_in_huge_areas, nuts3_boundaries, how="inner", op="intersects"
+            cells_in_huge_areas,
+            nuts3_boundaries,
+            how="inner",
+            predicate="intersects",
         )
 
         join = join.drop(cells_in_huge_areas.index)
@@ -624,7 +627,8 @@ def district_heating_areas(scenario_name, plotting=False):
     new_areas[
         "Cumulative_Sum"
     ] = new_areas.residential_and_service_demand.cumsum()
-    # select cells to be supplied with DH until DH share is reached
+    # select cells to be supplied with district heating until district
+    # heating share is reached
     new_areas = new_areas[new_areas["Cumulative_Sum"] <= diff]
 
     print(

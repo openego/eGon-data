@@ -28,7 +28,7 @@ def insert_open_cycle_gas_turbines_per_scenario(scn_name):
     Returns
     ----------
     None
-    
+
     """
 
     # Connect to local database
@@ -75,8 +75,7 @@ def insert_open_cycle_gas_turbines_per_scenario(scn_name):
     gdf["p_nom"] = gdf["p_nom"] / scn_params["efficiency"][carrier]
 
     # Select next id value
-    new_id = db.next_etrago_id("link")
-    gdf["link_id"] = range(new_id, new_id + len(gdf))
+    gdf["link_id"] = db.next_etrago_id("link", len(gdf))
 
     # Insert data to db
     gdf.to_postgis(

@@ -26,10 +26,12 @@ class ZensusMvGridDistricts(Dataset):
         is created and filled
 
     """
+
     #:
     name: str = "ZensusMvGridDistricts"
     #:
-    version: str = "0.0.1"
+    version: str = "0.0.2"
+
     def __init__(self, dependencies):
         super().__init__(
             name=self.name,
@@ -47,6 +49,7 @@ class MapZensusGridDistricts(Base):
     """
     Class definition of table boundaries.egon_map_zensus_grid_districts.
     """
+
     __tablename__ = "egon_map_zensus_grid_districts"
     __table_args__ = {"schema": "boundaries"}
 
@@ -96,7 +99,9 @@ def mapping():
     )
 
     # Join mv grid districts with zensus cells
-    join = gpd.sjoin(zensus, grid_districts, how="inner", op="intersects")
+    join = gpd.sjoin(
+        zensus, grid_districts, how="inner", predicate="intersects"
+    )
 
     # Insert results to database
     join[["zensus_population_id", "bus_id"]].to_sql(

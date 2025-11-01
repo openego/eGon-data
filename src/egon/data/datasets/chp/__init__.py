@@ -44,9 +44,6 @@ from egon.data.metadata import (
     sources,
 )
 
-# import pypsa
-
-
 Base = declarative_base()
 
 

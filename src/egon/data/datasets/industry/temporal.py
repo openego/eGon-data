@@ -101,13 +101,15 @@ def identify_bus(load_curves, demand_area):
     # grid districts to identify grid connection point
     peak_hv["centroid"] = peak_hv["geom"].centroid
     peak_hv = peak_hv.set_geometry("centroid")
-    peak_hv_c = gpd.sjoin(peak_hv, griddistrict, how="inner", op="intersects")
+    peak_hv_c = gpd.sjoin(
+        peak_hv, griddistrict, how="inner", predicate="intersects"
+    )
 
     # Perform a spatial join between the polygon of the demand area  and mv
     # grid districts to ensure every area got assign to a bus
     peak_hv_p = peak_hv[~peak_hv.isin(peak_hv_c)].dropna().set_geometry("geom")
     peak_hv_p = gpd.sjoin(
-        peak_hv_p, griddistrict, how="inner", op="intersects"
+        peak_hv_p, griddistrict, how="inner", predicate="intersects"
     ).drop_duplicates(subset=["id"])
 
     # Bring both dataframes together
@@ -129,7 +131,9 @@ def identify_bus(load_curves, demand_area):
     # voronoi to identify grid connection point
     peak_ehv["centroid"] = peak_ehv["geom"].centroid
     peak_ehv = peak_ehv.set_geometry("centroid")
-    peak_ehv = gpd.sjoin(peak_ehv, ehv_voronoi, how="inner", op="intersects")
+    peak_ehv = gpd.sjoin(
+        peak_ehv, ehv_voronoi, how="inner", predicate="intersects"
+    )
 
     # Bring both dataframes together
     peak_bus = pd.concat([peak_bus, peak_ehv], ignore_index=True)
@@ -212,7 +216,9 @@ def calc_load_curves_ind_osm(scenario):
     annual_demand_osm = demands_osm_area.groupby("osm_id").demand.sum()
 
     # Return electrical load curves per osm industrial landuse area
-    load_curves = calc_load_curve(share_wz_transpose, scenario, annual_demand_osm)
+    load_curves = calc_load_curve(
+        share_wz_transpose, scenario, annual_demand_osm
+    )
 
     curves_da = identify_bus(load_curves, demand_area)
 
@@ -373,7 +379,9 @@ def calc_load_curves_ind_sites(scenario):
             .demand
         )
 
-    load_curves = calc_load_curve(share_transpose, scenario, demands_ind_sites["demand"])
+    load_curves = calc_load_curve(
+        share_transpose, scenario, demands_ind_sites["demand"]
+    )
 
     curves_da = identify_bus(load_curves, demand_area)
 

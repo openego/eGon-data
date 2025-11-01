@@ -22,6 +22,7 @@ Handling of empty source data in MaStr dump:
 
 The data is used especially for the generation of status quo grids by ding0.
 """
+
 from __future__ import annotations
 
 from pathlib import Path
@@ -34,7 +35,6 @@ import pandas as pd
 from egon.data import config, db
 from egon.data.datasets.mastr import WORKING_DIR_MASTR_NEW
 from egon.data.datasets.power_plants.mastr_db_classes import (
-    add_metadata,
     EgonMastrGeocoded,
     EgonPowerPlantsBiomass,
     EgonPowerPlantsCombustion,
@@ -44,6 +44,7 @@ from egon.data.datasets.power_plants.mastr_db_classes import (
     EgonPowerPlantsPv,
     EgonPowerPlantsStorage,
     EgonPowerPlantsWind,
+    add_metadata,
 )
 from egon.data.datasets.power_plants.pv_rooftop_buildings import (
     federal_state_data,
@@ -210,7 +211,7 @@ def import_mastr() -> None:
             "Bundesland": "federal_state",
             "Nettonennleistung": "capacity",
             "Einspeisungsart": "feedin_type",
-            "DatumEndgueltigeStilllegung": "decommissioning_date"
+            "DatumEndgueltigeStilllegung": "decommissioning_date",
         },
         "pv": {
             "Lage": "site_type",
@@ -452,9 +453,9 @@ def import_mastr() -> None:
             parse_df = parse_df.loc[parse_df.drop_this]
 
             if not parse_df.empty:
-                units.loc[
-                    parse_df.index, "zip_and_municipality"
-                ] = parse_df.zip_and_municipality
+                units.loc[parse_df.index, "zip_and_municipality"] = (
+                    parse_df.zip_and_municipality
+                )
 
         # add geocoding to missing
         units = units.merge(

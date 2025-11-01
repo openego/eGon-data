@@ -5,8 +5,6 @@ OSM landuse extraction and load areas creation.
 
 import os
 
-# TODO: part of PY 3.10 update ... maybe part of another PR
-# from airflow.providers.postgres.operators.postgres import PostgresOperator
 from geoalchemy2.types import Geometry
 from sqlalchemy import Column, Float, Integer, String
 from sqlalchemy.dialects.postgresql import HSTORE
@@ -101,7 +99,7 @@ class LoadArea(Dataset):
     #:
     name: str = "LoadArea"
     #:
-    version: str = "0.0.1"
+    version: str = "0.0.2"
 
     def __init__(self, dependencies):
         super().__init__(

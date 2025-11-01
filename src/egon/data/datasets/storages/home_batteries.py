@@ -33,6 +33,7 @@ this specification.
 The selection of buildings is done randomly until a result is reached which is
 close to achieving the sizing specification.
 """
+
 import datetime
 import json
 

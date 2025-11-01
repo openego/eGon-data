@@ -139,7 +139,7 @@ def pv_rooftop_per_mv_grid_and_scenario(scenario, level):
 
         demand["share_federal_state"] = demand.groupby(
             "vg250_lan",
-            group_keys = False,
+            group_keys=False,
         ).demand.apply(lambda grp: grp / grp.sum())
 
         demand["target_federal_state"] = targets_per_federal_state.capacity[
@@ -199,9 +199,6 @@ def pv_rooftop_per_mv_grid_and_scenario(scenario, level):
 
         capacities = demand["share_country"].mul(target)
 
-    # Select next id value
-    new_id = db.next_etrago_id("generator")
-
     # Store data in dataframe
     pv_rooftop = pd.DataFrame(
         data={
@@ -209,7 +206,7 @@ def pv_rooftop_per_mv_grid_and_scenario(scenario, level):
             "carrier": "solar_rooftop",
             "bus": demand.index,
             "p_nom": capacities,
-            "generator_id": range(new_id, new_id + len(demand)),
+            "generator_id": db.next_etrago_id("generator", len(demand)),
         }
     )
 
@@ -274,7 +271,7 @@ def pv_rooftop_per_mv_grid_and_scenario(scenario, level):
     )
 
     # Map centroid of mv grids to weather cells
-    join = gpd.sjoin(weather_cells, mv_grid_districts)[["index_right"]]
+    join = gpd.sjoin(weather_cells, mv_grid_districts)[["bus_id"]]
 
     feedin = db.select_dataframe(
         f"""
@@ -288,14 +285,14 @@ def pv_rooftop_per_mv_grid_and_scenario(scenario, level):
     )
 
     # Create timeseries only for mv grid districts with pv rooftop
-    join = join[join.index_right.isin(pv_rooftop.bus)]
+    join = join[join.bus_id.isin(pv_rooftop.bus)]
 
     timeseries = pd.DataFrame(
         data={
             "scn_name": scenario,
             "temp_id": 1,
             "p_max_pu": feedin.feedin[join.index].values,
-            "generator_id": pv_rooftop.generator_id[join.index_right].values,
+            "generator_id": pv_rooftop.generator_id[join.bus_id].values,
         }
     ).set_index("generator_id")
 

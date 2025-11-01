@@ -56,6 +56,7 @@ class HeatDemandImport(Dataset):
     <egon.data.datasets.scenario_parameters.ScenarioParameters>`.
     """
 
+    #:
     name: str = "heat-demands"
     #:
     version: str = "0.0.4"
@@ -397,7 +398,7 @@ def future_heat_demand_germany(scenario_name):
         heat_parameters = get_sector_parameters("heat", scenario=scenario_name)
 
         # Calculate reduction share based on final energy demand and overall
-        # demand from Peta for 2015
+        #  demand from Peta for 2015
         res_hd_reduction = heat_parameters["DE_demand_residential_MWh"] / (
             443.788483 * 1e6
         )

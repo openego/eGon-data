@@ -444,7 +444,7 @@ def egon_data(context, **kwargs):
     connection.host = options["--database-host"]
     connection.port = options["--database-port"]
     connection.schema = options["--database-name"]
-    connection.conn_type = "pgsql"
+    connection.conn_type = "postgres"
     airflow.add(connection)
     airflow.commit()
 

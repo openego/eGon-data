@@ -27,7 +27,7 @@ from egon.data.datasets.etrago_helpers import (
     initialise_bus_insertion,
 )
 from egon.data.datasets.etrago_setup import link_geom_from_buses
-from egon.data.datasets.pypsaeur import (read_network, prepared_network)
+from egon.data.datasets.pypsaeur import prepared_network, read_network
 from egon.data.datasets.scenario_parameters import get_sector_parameters
 
 logger = logging.getLogger(__name__)
@@ -359,11 +359,8 @@ def insert_new_entries(industrial_gas_demand, scn_name):
         the database with their time series
 
     """
-
-    new_id = db.next_etrago_id("load")
-    industrial_gas_demand["load_id"] = range(
-        new_id, new_id + len(industrial_gas_demand)
-    )
+    industrial_gas_demand["load_id"] = db.next_etrago_id(
+        "load", len(industrial_gas_demand))
 
     # Add missing columns
     c = {"scn_name": scn_name, "sign": -1}
@@ -504,16 +501,24 @@ def insert_industrial_gas_demand_egon100RE():
                 + solved_network.links_t.p0[
                     solved_network.links.loc[
                         solved_network.links.index.str.contains(
-                            "DE0 0 Fischer-Tropsch")].index].mul(
-                                solved_network.snapshot_weightings.generators,
-                                axis= 0).sum().sum()
+                            "DE0 0 Fischer-Tropsch"
+                        )
+                    ].index
+                ]
+                .mul(solved_network.snapshot_weightings.generators, axis=0)
+                .sum()
+                .sum()
                 # Add h2 demand of methanolisation process from pypsa-eur
                 + solved_network.links_t.p0[
                     solved_network.links.loc[
                         solved_network.links.index.str.contains(
-                            "DE0 0 methanolisation")].index].mul(
-                                solved_network.snapshot_weightings.generators,
-                                axis= 0).sum().sum()
+                            "DE0 0 methanolisation"
+                        )
+                    ].index
+                ]
+                .mul(solved_network.snapshot_weightings.generators, axis=0)
+                .sum()
+                .sum()
             )
         except KeyError:
             H2_total_PES = 42090000

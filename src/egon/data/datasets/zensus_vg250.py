@@ -26,7 +26,7 @@ class ZensusVg250(Dataset):
     def __init__(self, dependencies):
         super().__init__(
             name="ZensusVg250",
-            version="0.0.3",
+            version="0.0.4",
             dependencies=dependencies,
             tasks=(
                 map_zensus_vg250,
@@ -199,7 +199,7 @@ def map_zensus_vg250():
     )
 
     # Join vg250 with zensus cells
-    join = gpd.sjoin(gdf, gdf_boundaries, how="inner", op="intersects")
+    join = gpd.sjoin(gdf, gdf_boundaries, how="inner", predicate="intersects")
 
     # Deal with cells that don't interect with boundaries (e.g. at borders)
     missing_cells = gdf[(~gdf.id.isin(join.id_left)) & (gdf.population > 0)]
@@ -213,7 +213,10 @@ def map_zensus_vg250():
         boundaries_buffer = gdf_boundaries.copy()
         boundaries_buffer.geometry = boundaries_buffer.geometry.buffer(buffer)
         join_missing = gpd.sjoin(
-            missing_cells, boundaries_buffer, how="inner", op="intersects"
+            missing_cells,
+            boundaries_buffer,
+            how="inner",
+            predicate="intersects",
         )
         join = pd.concat([join, join_missing])
         missing_cells = gdf[

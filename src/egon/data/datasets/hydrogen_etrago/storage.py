@@ -11,6 +11,7 @@ store potentials in Germany:
 All these stores are modelled as extendable PyPSA stores.
 
 """
+
 from geoalchemy2 import Geometry
 import geopandas as gpd
 import pandas as pd
@@ -35,14 +36,14 @@ def insert_H2_overground_storage():
     # The targets of etrago_hydrogen also serve as source here ಠ_ಠ
     sources = config.datasets()["etrago_hydrogen"]["sources"]
     targets = config.datasets()["etrago_hydrogen"]["targets"]
-    
+
     s = config.settings()["egon-data"]["--scenarios"]
     scn = []
     if "eGon2035" in s:
         scn.append("eGon2035")
     if "eGon100RE" in s:
         scn.append("eGon100RE")
-    
+
     for scn_name in scn:
         # Place storage at every H2 bus
         storages = db.select_geodataframe(
@@ -53,24 +54,24 @@ def insert_H2_overground_storage():
             AND scn_name = '{scn_name}' AND country = 'DE'""",
             index_col="bus_id",
         )
-    
+
         carrier = "H2_overground"
         # Add missing column
         storages["bus"] = storages.index
         storages["carrier"] = carrier
-    
+
         # Does e_nom_extenable = True render e_nom useless?
         storages["e_nom"] = 0
         storages["e_nom_extendable"] = True
-    
+
         # read carrier information from scnario parameter data
         scn_params = get_sector_parameters("gas", scn_name)
         storages["capital_cost"] = scn_params["capital_cost"][carrier]
         storages["lifetime"] = scn_params["lifetime"][carrier]
-    
+
         # Remove useless columns
         storages.drop(columns=["geom"], inplace=True)
-    
+
         # Clean table
         db.execute_sql(
             f"""
@@ -81,12 +82,11 @@ def insert_H2_overground_storage():
             );
             """
         )
-    
+
         # Select next id value
-        new_id = db.next_etrago_id("store")
-        storages["store_id"] = range(new_id, new_id + len(storages))
+        storages["store_id"] = db.next_etrago_id("store", len(storages))
         storages = storages.reset_index(drop=True)
-    
+
         # Insert data to db
         storages.to_sql(
             targets["hydrogen_stores"]["table"],
@@ -119,7 +119,7 @@ def insert_H2_saltcavern_storage():
         scn.append("eGon2035")
     if "eGon100RE" in s:
         scn.append("eGon100RE")
-    
+
     for scn_name in scn:
         storage_potentials = db.select_geodataframe(
             f"""
@@ -128,7 +128,7 @@ def insert_H2_saltcavern_storage():
             {sources['saltcavern_data']['table']}""",
             geom_col="geometry",
         )
-    
+
         # Place storage at every H2 bus from the H2 AC saltcavern map
         H2_AC_bus_map = db.select_dataframe(
             f"""
@@ -136,44 +136,45 @@ def insert_H2_saltcavern_storage():
             FROM {sources['H2_AC_map']['schema']}.
             {sources['H2_AC_map']['table']}""",
         )
-    
+
         storage_potentials["storage_potential"] = (
-            storage_potentials["area_fraction"] * storage_potentials["potential"]
+            storage_potentials["area_fraction"]
+            * storage_potentials["potential"]
         )
-    
-        storage_potentials[
-            "summed_potential_per_bus"
-        ] = storage_potentials.groupby("bus_id")["storage_potential"].transform(
-            "sum"
+
+        storage_potentials["summed_potential_per_bus"] = (
+            storage_potentials.groupby("bus_id")[
+                "storage_potential"
+            ].transform("sum")
         )
-    
+
         storages = storage_potentials[
             ["summed_potential_per_bus", "bus_id"]
         ].copy()
         storages.drop_duplicates("bus_id", keep="last", inplace=True)
-    
+
         # map AC buses in potetial data to respective H2 buses
         storages = storages.merge(
             H2_AC_bus_map, left_on="bus_id", right_on="bus_AC"
         ).reindex(columns=["bus_H2", "summed_potential_per_bus", "scn_name"])
-    
+
         # rename columns
         storages.rename(
             columns={"bus_H2": "bus", "summed_potential_per_bus": "e_nom_max"},
             inplace=True,
         )
-    
+
         # add missing columns
         carrier = "H2_underground"
         storages["carrier"] = carrier
         storages["e_nom"] = 0
         storages["e_nom_extendable"] = True
-    
+
         # read carrier information from scnario parameter data
         scn_params = get_sector_parameters("gas", scn_name)
         storages["capital_cost"] = scn_params["capital_cost"][carrier]
         storages["lifetime"] = scn_params["lifetime"][carrier]
-    
+
         # Clean table
         db.execute_sql(
             f"""
@@ -184,12 +185,11 @@ def insert_H2_saltcavern_storage():
             );
             """
         )
-    
+
         # Select next id value
-        new_id = db.next_etrago_id("store")
-        storages["store_id"] = range(new_id, new_id + len(storages))
+        storages["store_id"] = db.next_etrago_id("store", len(storages))
         storages = storages.reset_index(drop=True)
-    
+
         # # Insert data to db
         storages.to_sql(
             targets["hydrogen_stores"]["table"],

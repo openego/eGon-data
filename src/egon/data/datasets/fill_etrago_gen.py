@@ -26,6 +26,7 @@ class Egon_etrago_gen(Dataset):
         <egon.data.datasets.etrago_setup.EgonPfHvGeneratorTimeseries>` is filled
 
     """
+
     #:
     name: str = "etrago_generators"
     #:
@@ -102,8 +103,7 @@ def group_power_plants(power_plants, renew_feedin, etrago_gen_orig, cfg):
     )
     etrago_pp = etrago_pp.reset_index(drop=True)
 
-    max_id = db.next_etrago_id("generator")
-    etrago_pp["generator_id"] = list(range(max_id, max_id + len(etrago_pp)))
+    etrago_pp["generator_id"] = db.next_etrago_id("generator", len(etrago_pp))
     etrago_pp.set_index("generator_id", inplace=True)
 
     return etrago_pp
@@ -269,9 +269,11 @@ def adjust_renew_feedin_table(renew_feedin, cfg):
     renew_feedin.loc[carrier_pv_mask, "carrier"] = "solar"
 
     # Copy solar timeseries for solar_rooftop
-    feedin_solar_rooftop = renew_feedin.loc[renew_feedin["carrier"]=="solar"]
+    feedin_solar_rooftop = renew_feedin.loc[renew_feedin["carrier"] == "solar"]
     feedin_solar_rooftop.loc[:, "carrier"] = "solar_rooftop"
-    renew_feedin = pd.concat([renew_feedin, feedin_solar_rooftop], ignore_index=True)
+    renew_feedin = pd.concat(
+        [renew_feedin, feedin_solar_rooftop], ignore_index=True
+    )
 
     # convert renewable feedin lists to arrays
     renew_feedin["feedin"] = renew_feedin["feedin"].apply(np.array)
@@ -363,7 +365,8 @@ def set_timeseries(power_plants, renew_feedin):
 
             # Calculate and return aggregated feed-in based on electrical capacity
             return df.apply(
-                lambda x: x["el_capacity"] / total_int_cap * x["feedin"], axis=1
+                lambda x: x["el_capacity"] / total_int_cap * x["feedin"],
+                axis=1,
             ).sum()
 
     return timeseries

@@ -11,6 +11,7 @@ isn't exported from this module, please file a bug, so we can fix this.
 
 from pathlib import Path
 from urllib.request import urlretrieve
+import codecs  # noqa: F401
 import datetime
 import json
 import os

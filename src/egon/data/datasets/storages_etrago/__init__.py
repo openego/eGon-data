@@ -5,11 +5,10 @@ eTraGo.
 
 import geopandas as gpd
 import pandas as pd
-from egon.data import db, config
+
+from egon.data import config, db
 from egon.data.datasets import Dataset
-from egon.data.datasets.scenario_parameters import (
-    get_sector_parameters,
-)
+from egon.data.datasets.scenario_parameters import get_sector_parameters
 
 
 class StorageEtrago(Dataset):
@@ -44,7 +43,6 @@ class StorageEtrago(Dataset):
     #:
     version: str = "0.0.9"
 
-
     def __init__(self, dependencies):
         super().__init__(
             name=self.name,
@@ -52,6 +50,7 @@ class StorageEtrago(Dataset):
             dependencies=dependencies,
             tasks=(insert_PHES, extendable_batteries),
         )
+
 
 def insert_PHES():
     # Get datasets configuration
@@ -83,14 +82,11 @@ def insert_PHES():
             """
         )
 
-        # Select unused index of buses
-        next_bus_id = db.next_etrago_id("storage")
-
         # Add missing PHES specific information suitable for eTraGo selected from scenario_parameter table
-        parameters = get_sector_parameters(
-            "electricity", scn
-        )["efficiency"]["pumped_hydro"]
-        phes["storage_id"] = range(next_bus_id, next_bus_id + len(phes))
+        parameters = get_sector_parameters("electricity", scn)["efficiency"][
+            "pumped_hydro"
+        ]
+        phes["storage_id"] = db.next_etrago_id("storage", len(phes))
         phes["max_hours"] = parameters["max_hours"]
         phes["efficiency_store"] = parameters["store"]
         phes["efficiency_dispatch"] = parameters["dispatch"]
@@ -153,9 +149,9 @@ def extendable_batteries_per_scenario(scenario):
     )
 
     # Update index
-    extendable_batteries[
-        "storage_id"
-    ] = extendable_batteries.index + db.next_etrago_id("storage")
+    extendable_batteries["storage_id"] = db.next_etrago_id(
+        "storage", len(extendable_batteries.index)
+    )
 
     # Set parameters
     extendable_batteries["p_nom_extendable"] = True
