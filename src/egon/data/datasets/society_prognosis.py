@@ -15,11 +15,11 @@ Base = declarative_base()
 # ############################################################
 class SocietyPrognosis(Dataset):
     name: str = "SocietyPrognosis"
-    version: str = "0.0.2"
+    version: str = "0.0.3"
 
     sources = DatasetSources(
         tables={
-            "map_zensus_vg250": "boundaries.map_zensus_vg250",
+            "map_zensus_vg250": "boundaries.egon_map_zensus_vg250",
             "zensus_population": "society.destatis_zensus_population_per_ha",
             "zensus_households": "society.egon_destatis_zensus_household_per_ha",
             "demandregio_population": "demandregio.egon_demandregio_population",
@@ -42,8 +42,8 @@ class SocietyPrognosis(Dataset):
 
     def __init__(self, dependencies):
         super().__init__(
-            name="SocietyPrognosis",
-            version="0.0.1",
+            name=self.name,
+            version=self.version,
             dependencies=dependencies,
             tasks=(create_tables, {zensus_population, zensus_household}),
         )
@@ -165,14 +165,14 @@ def household_prognosis_per_year(prognosis_nuts3, zensus, year):
 
     # Rounding process to meet exact values from demandregio on nuts3-level
     for name, group in prognosis.groupby(prognosis.nuts3):
-        print(f"start progosis nuts3 {name}")
+        print(f"start prognosis nuts3 {name}")
         while prognosis_total[name] > group["rounded"].sum():
             index = np.random.choice(
                 group["rest"].index.values[group["rest"] == max(group["rest"])]
             )
             group.at[index, "rounded"] += 1
             group.at[index, "rest"] = 0
-        print(f"finished progosis nuts3 {name}")
+        print(f"finished prognosis nuts3 {name}")
         prognosis[prognosis.index.isin(group.index)] = group
 
     prognosis = prognosis.drop(["nuts3", "quantity", "rest"], axis=1).rename(
