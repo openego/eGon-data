@@ -13,11 +13,11 @@ import pandas as pd
 
 from egon.data import db
 from egon.data.datasets import Dataset, DatasetSources, DatasetTargets
+from egon.data.config import settings
 from egon.data.datasets.industry.temporal import (
     insert_osm_ind_load,
     insert_sites_ind_load,
 )
-import egon.data.config
 
 Base = declarative_base()
 
@@ -93,15 +93,18 @@ def create_tables():
 
     db.execute_sql("CREATE SCHEMA IF NOT EXISTS demand;")
 
-    # Drop tables using the new class attributes
-    db.execute_sql(f"""DROP TABLE IF EXISTS {IndustrialDemandCurves.targets.tables['sites_spatial']} CASCADE;""")
-    db.execute_sql(f"""DROP TABLE IF EXISTS {IndustrialDemandCurves.targets.tables['osm_spatial']} CASCADE;""")
-    db.execute_sql(f"""DROP TABLE IF EXISTS {IndustrialDemandCurves.targets.tables['osm_load']} CASCADE;""")
-    db.execute_sql(f"""DROP TABLE IF EXISTS {IndustrialDemandCurves.targets.tables['osm_load_individual']} CASCADE;""")
-    db.execute_sql(f"""DROP TABLE IF EXISTS {IndustrialDemandCurves.targets.tables['sites_load']} CASCADE;""")
-    db.execute_sql(f"""DROP TABLE IF EXISTS {IndustrialDemandCurves.targets.tables['sites_load_individual']} CASCADE;""")
+    db.execute_sql(f"""DROP TABLE IF EXISTS {IndustrialDemandCurves.targets.tables['sites_spatial']['schema']}.{IndustrialDemandCurves.targets.tables['sites_spatial']['table']} CASCADE;""")
 
-    # ... (the rest of the function for creating tables is unchanged)
+    db.execute_sql(f"""DROP TABLE IF EXISTS {IndustrialDemandCurves.targets.tables['osm_spatial']['schema']}.{IndustrialDemandCurves.targets.tables['osm_spatial']['table']} CASCADE;""")
+
+    db.execute_sql(f"""DROP TABLE IF EXISTS {IndustrialDemandCurves.targets.tables['osm_load']['schema']}.{IndustrialDemandCurves.targets.tables['osm_load']['table']} CASCADE;""")
+
+    db.execute_sql(f"""DROP TABLE IF EXISTS {IndustrialDemandCurves.targets.tables['osm_load_individual']['schema']}.{IndustrialDemandCurves.targets.tables['osm_load_individual']['table']} CASCADE;""")
+
+    db.execute_sql(f"""DROP TABLE IF EXISTS {IndustrialDemandCurves.targets.tables['sites_load']['schema']}.{IndustrialDemandCurves.targets.tables['sites_load']['table']} CASCADE;""")
+
+    db.execute_sql(f"""DROP TABLE IF EXISTS {IndustrialDemandCurves.targets.tables['sites_load_individual']['schema']}.{IndustrialDemandCurves.targets.tables['sites_load_individual']['table']} CASCADE;""")
+
     engine = db.engine()
 
     EgonDemandRegioSitesIndElectricity.__table__.create(
@@ -130,18 +133,18 @@ def industrial_demand_distr():
     and/or industrial sites, identified earlier in the process.
     """
 
-    # The old config variables are now removed.
+    target_sites = IndustrialDemandCurves.targets.tables["sites_spatial"]
+    target_osm = IndustrialDemandCurves.targets.tables["osm_spatial"]
 
-    # DELETE statements are updated
     db.execute_sql(
-        f"""DELETE FROM {IndustrialDemandCurves.targets.tables['sites_spatial']}"""
+        f"""DELETE FROM {target_sites['schema']}.{target_sites['table']}"""
     )
     db.execute_sql(
-        f"""DELETE FROM {IndustrialDemandCurves.targets.tables['osm_spatial']}"""
+        f"""DELETE FROM {target_osm['schema']}.{target_osm['table']}"""
     )
 
-    for scn in egon.data.config.settings()["egon-data"]["--scenarios"]:
-        # All SQL queries are updated to use the new class attributes
+    for scn in settings()["egon-data"]["--scenarios"]:
+        # Select administrative districts (Landkreise) including its boundaries
         boundaries = db.select_geodataframe(
             f"""SELECT nuts, geometry FROM
                 {IndustrialDemandCurves.sources.tables['vg250_krs']}""",
@@ -203,21 +206,114 @@ def industrial_demand_distr():
                     (SELECT wz FROM {IndustrialDemandCurves.sources.tables['demandregio_wz']}
                          WHERE sector = 'industry')"""
         )
+        
 
-        # ... (the rest of the data processing logic is unchanged) ...
+        demand_nuts3_import["wz"] = demand_nuts3_import["wz"].replace(
+            [17, 18], 1718
+        )
 
-        # The final .to_sql() calls are updated
+
+        demand_nuts3 = (
+            demand_nuts3_import.groupby(["nuts3", "wz"]).sum().reset_index()
+        )
+
+        demand_nuts3_a = demand_nuts3[
+            ~demand_nuts3["wz"].isin([1718, 19, 20, 23, 24])
+        ]
+
+
+        demand_nuts3_b = demand_nuts3[
+            demand_nuts3["wz"].isin([1718, 19, 20, 23, 24])
+        ]
+
+
+        demand_nuts3_b = demand_nuts3_b.merge(
+            sites_grouped,
+            how="left",
+            left_on=["nuts3", "wz"],
+            right_on=["nuts3", "wz"],
+        )
+
+
+        share_to_sites = 0.5
+
+
+        demand_nuts3_b["demand_per_site"] = (
+            demand_nuts3_b["demand"] * share_to_sites
+        ) / demand_nuts3_b["counts"]
+
+        demand_nuts3_b = demand_nuts3_b.fillna(0)
+
+
+        demand_nuts3_b["demand_b_osm"] = demand_nuts3_b["demand"] - (
+            demand_nuts3_b["demand_per_site"] * demand_nuts3_b["counts"]
+        )
+
+
+        sites = sites.merge(
+            demand_nuts3_b[["nuts3", "wz", "demand_per_site"]],
+            how="left",
+            left_on=["nuts3", "wz"],
+            right_on=["nuts3", "wz"],
+        )
+        sites = sites.rename(columns={"demand_per_site": "demand"}) # <-- CREATES THE 'DEMAND' COLUMN
+
+        demand_nuts3_b_osm = demand_nuts3_b[["nuts3", "wz", "demand_b_osm"]]
+        demand_nuts3_b_osm = demand_nuts3_b_osm.rename(
+            {"demand_b_osm": "demand"}, axis=1
+        )
+
+
+        demand_nuts3_osm_wz = pd.concat(
+            [demand_nuts3_a, demand_nuts3_b_osm], ignore_index=True
+        )
+        demand_nuts3_osm_wz = (
+            demand_nuts3_osm_wz.groupby(["nuts3", "wz"]).sum().reset_index()
+        )
+
+        demand_nuts3_osm_wz = demand_nuts3_osm_wz.merge(
+            landuse_nuts3, how="left", left_on=["nuts3"], right_on=["nuts3"]
+        )
+        demand_nuts3_osm_wz["demand_per_ha"] = (
+            demand_nuts3_osm_wz["demand"] / demand_nuts3_osm_wz["area_ha"]
+        )
+
+        landuse = landuse.merge(
+            demand_nuts3_osm_wz[["nuts3", "demand_per_ha", "wz"]],
+            how="left",
+            left_on=["nuts3"],
+            right_on=["nuts3"],
+        )
+
+        landuse["demand"] = landuse["area_ha"] * landuse["demand_per_ha"]
+
+
+        sites = sites.rename(columns={"id": "industrial_sites_id"}, axis=1) 
+        sites["scenario"] = scn 
+        sites.set_index("industrial_sites_id", inplace=True)
+
+        landuse = landuse.rename({"id": "osm_id"}, axis=1)
+
+        landuse = (
+            landuse.drop("geom", axis="columns")
+            .groupby(["osm_id", "wz"])
+            .sum()
+            .reset_index()
+        )
+        landuse.index.rename("id", inplace=True)
+        landuse["scenario"] = scn
+        
         sites[["scenario", "wz", "demand"]].to_sql(
-            IndustrialDemandCurves.targets.get_table_name("sites_spatial"),
+            target_sites["table"],
             con=db.engine(),
-            schema=IndustrialDemandCurves.targets.get_table_schema("sites_spatial"),
+            schema=target_sites["schema"],
             if_exists="append",
         )
 
         landuse[["osm_id", "scenario", "wz", "demand"]].to_sql(
-            IndustrialDemandCurves.targets.get_table_name("osm_spatial"),
+            target_osm["table"],
             con=db.engine(),
-            schema=IndustrialDemandCurves.targets.get_table_schema("osm_spatial"),
+            schema=target_osm["schema"],
             if_exists="append",
         )
 class IndustrialDemandCurves(Dataset):
