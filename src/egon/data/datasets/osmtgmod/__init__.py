@@ -795,7 +795,7 @@ def to_pypsa():
 
 def fix_transformer_snom():
     db.execute_sql(
-     """
+     f"""
      UPDATE {Osmtgmod.targets.tables['etrago_transformer']['schema']}.{Osmtgmod.targets.tables['etrago_transformer']['table']} AS t
      SET s_nom = CAST(
          LEAST(

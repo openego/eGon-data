@@ -1,8 +1,8 @@
 """The central module containing all code dealing with the spatial
-   distribution of industrial electricity demands.
-   Industrial demands from DemandRegio are distributed from nuts3 level down
-   to osm landuse polygons and/or industrial sites also identified within this
-   processing step bringing three different inputs together.
+distribution of industrial electricity demands.
+Industrial demands from DemandRegio are distributed from nuts3 level down
+to osm landuse polygons and/or industrial sites also identified within this
+processing step bringing three different inputs together.
 
 """
 
@@ -13,11 +13,11 @@ import pandas as pd
 
 from egon.data import db
 from egon.data.datasets import Dataset, DatasetSources, DatasetTargets
-from egon.data.config import settings
 from egon.data.datasets.industry.temporal import (
     insert_osm_ind_load,
     insert_sites_ind_load,
 )
+import egon.data.config
 
 Base = declarative_base()
 
@@ -88,22 +88,52 @@ class DemandCurvesSitesIndustryIndividual(Base):
 
 
 def create_tables():
-    """Create tables for industrial sites and distributed industrial demands"""
-    # The old config variables are now removed.
+    """Create tables for industrial sites and distributed industrial demands
+    Returns
+    -------
+    None.
+    """
 
+    # Create target schema
     db.execute_sql("CREATE SCHEMA IF NOT EXISTS demand;")
 
-    db.execute_sql(f"""DROP TABLE IF EXISTS {IndustrialDemandCurves.targets.tables['sites_spatial']['schema']}.{IndustrialDemandCurves.targets.tables['sites_spatial']['table']} CASCADE;""")
+    # Drop tables and sequences before recreating them
 
-    db.execute_sql(f"""DROP TABLE IF EXISTS {IndustrialDemandCurves.targets.tables['osm_spatial']['schema']}.{IndustrialDemandCurves.targets.tables['osm_spatial']['table']} CASCADE;""")
+    db.execute_sql(
+    f"""DROP TABLE IF EXISTS
+        {IndustrialDemandCurves.targets.tables["sites"].schema}.
+        {IndustrialDemandCurves.targets.tables["sites"].table} CASCADE;"""
+    )
 
-    db.execute_sql(f"""DROP TABLE IF EXISTS {IndustrialDemandCurves.targets.tables['osm_load']['schema']}.{IndustrialDemandCurves.targets.tables['osm_load']['table']} CASCADE;""")
+    db.execute_sql(
+    f"""DROP TABLE IF EXISTS
+        {IndustrialDemandCurves.targets.tables["osm"].schema}.
+        {IndustrialDemandCurves.targets.tables["osm"].table} CASCADE;"""
+    )
 
-    db.execute_sql(f"""DROP TABLE IF EXISTS {IndustrialDemandCurves.targets.tables['osm_load_individual']['schema']}.{IndustrialDemandCurves.targets.tables['osm_load_individual']['table']} CASCADE;""")
+    db.execute_sql(
+    f"""DROP TABLE IF EXISTS
+        {IndustrialDemandCurves.targets.tables["osm_load"].schema}.
+        {IndustrialDemandCurves.targets.tables["osm_load"].table} CASCADE;"""
+    )
 
-    db.execute_sql(f"""DROP TABLE IF EXISTS {IndustrialDemandCurves.targets.tables['sites_load']['schema']}.{IndustrialDemandCurves.targets.tables['sites_load']['table']} CASCADE;""")
+    db.execute_sql(
+    f"""DROP TABLE IF EXISTS
+        {IndustrialDemandCurves.targets.tables["osm_load_individual"].schema}.
+        {IndustrialDemandCurves.targets.tables["osm_load_individual"].table} CASCADE;"""
+    )
 
-    db.execute_sql(f"""DROP TABLE IF EXISTS {IndustrialDemandCurves.targets.tables['sites_load_individual']['schema']}.{IndustrialDemandCurves.targets.tables['sites_load_individual']['table']} CASCADE;""")
+    db.execute_sql(
+    f"""DROP TABLE IF EXISTS
+        {IndustrialDemandCurves.targets.tables["sites_load"].schema}.
+        {IndustrialDemandCurves.targets.tables["sites_load"].table} CASCADE;"""
+    )
+
+    db.execute_sql(
+    f"""DROP TABLE IF EXISTS
+        {IndustrialDemandCurves.targets.tables["sites_load_individual"].schema}.
+        {IndustrialDemandCurves.targets.tables["sites_load_individual"].table} CASCADE;"""
+    )
 
     engine = db.engine()
 
@@ -131,36 +161,53 @@ def create_tables():
 def industrial_demand_distr():
     """Distribute electrical demands for industry to osm landuse polygons
     and/or industrial sites, identified earlier in the process.
+    The demands per subsector on nuts3-level from demandregio are distributed
+    linearly to the area of the corresponding landuse polygons or evenly to
+    identified industrial sites.
+
+    Returns
+    -------
+    None.
     """
 
-    target_sites = IndustrialDemandCurves.targets.tables["sites_spatial"]
-    target_osm = IndustrialDemandCurves.targets.tables["osm_spatial"]
+    # Read information from configuration file
+    sources = IndustrialDemandCurves.sources.tables
+
+    target_sites = IndustrialDemandCurves.targets.tables["sites"]
+    target_osm = IndustrialDemandCurves.targets.tables["osm"]
+
+    # Delete data from table
 
     db.execute_sql(
-        f"""DELETE FROM {target_sites['schema']}.{target_sites['table']}"""
+    f"""DELETE FROM {target_sites.schema}.{target_sites.table}"""
     )
     db.execute_sql(
-        f"""DELETE FROM {target_osm['schema']}.{target_osm['table']}"""
+    f"""DELETE FROM {target_osm.schema}.{target_osm.table}"""
     )
 
-    for scn in settings()["egon-data"]["--scenarios"]:
+    for scn in egon.data.config.settings()["egon-data"]["--scenarios"]:
+        # Select spatial information from local database
         # Select administrative districts (Landkreise) including its boundaries
         boundaries = db.select_geodataframe(
             f"""SELECT nuts, geometry FROM
-                {IndustrialDemandCurves.sources.tables['vg250_krs']}""",
+                {sources["vg250_krs"].schema}.
+                {sources["vg250_krs"].table}""",
             index_col="nuts",
             geom_col="geometry",
             epsg=3035,
         )
 
+        # Select industrial landuse polygons
         landuse = db.select_geodataframe(
             f"""SELECT id, area_ha, geom FROM
-                {IndustrialDemandCurves.sources.tables['osm_landuse']}
+                {sources["osm_landuse"].schema}.
+                {sources["osm_landuse"].table}
                 WHERE sector = 3
                 AND NOT ST_Intersects(
                     geom,
                     (SELECT ST_UNION(ST_Transform(geom,3035)) FROM
-                    {IndustrialDemandCurves.sources.tables['industrial_sites']}))
+                    {sources["industrial_sites"].schema}.
+                    {sources["industrial_sites"].table}))
                 AND name NOT LIKE '%%kraftwerk%%'
                 AND name NOT LIKE '%%Stadtwerke%%'
                 AND name NOT LIKE '%%Müllverbrennung%%'
@@ -183,50 +230,72 @@ def industrial_demand_distr():
             epsg=3035,
         )
 
-        landuse = gpd.sjoin(landuse, boundaries, how="inner", op="intersects")
-        landuse = landuse.rename({"index_right": "nuts3"}, axis=1)
+        # Spatially join vg250_krs and industrial landuse areas
+        landuse = gpd.sjoin(
+            landuse, boundaries, how="inner", predicate="intersects"
+        )
+
+        # Rename column
+        landuse = landuse.rename({"nuts": "nuts3"}, axis=1)
+
         landuse_nuts3 = landuse[["area_ha", "nuts3"]]
         landuse_nuts3 = landuse_nuts3.groupby(["nuts3"]).sum().reset_index()
 
+        # Select data on industrial sites
         sites = db.select_dataframe(
             f"""SELECT id, wz, nuts3 FROM
-                {IndustrialDemandCurves.sources.tables['industrial_sites']}""",
+                {sources["industrial_sites"].schema}.
+                {sources["industrial_sites"].table}""",
             index_col=None,
         )
+        # Count number of industrial sites per subsector (wz) and nuts3
+        # district
         sites_grouped = (
             sites.groupby(["nuts3", "wz"]).size().reset_index(name="counts")
         )
 
+        # Select industrial demands on nuts3 level from local database
         demand_nuts3_import = db.select_dataframe(
             f"""SELECT nuts3, demand, wz FROM
-                {IndustrialDemandCurves.sources.tables['demandregio']}
+                {sources["demandregio"].schema}.
+                {sources["demandregio"].table}
                 WHERE scenario = '{scn}'
                 AND demand > 0
                 AND wz IN
-                    (SELECT wz FROM {IndustrialDemandCurves.sources.tables['demandregio_wz']}
+                    (SELECT wz FROM demand.egon_demandregio_wz
                          WHERE sector = 'industry')"""
         )
-        
 
+        # Replace wz=17 and wz=18 by wz=1718 as a differentiation of these two
+        # subsectors can't be performed
         demand_nuts3_import["wz"] = demand_nuts3_import["wz"].replace(
             [17, 18], 1718
         )
 
-
+        # Group results by nuts3 and wz to aggregate demands from subsectors
+        # 17 and 18
         demand_nuts3 = (
             demand_nuts3_import.groupby(["nuts3", "wz"]).sum().reset_index()
         )
 
+        # A differentiation between those industrial subsectors (wz) which
+        # aren't represented and subsectors with a representation in the
+        # dataset on industrial sites is needed
+
+        # Select industrial demand for sectors which aren't found in
+        # industrial sites as category a
         demand_nuts3_a = demand_nuts3[
             ~demand_nuts3["wz"].isin([1718, 19, 20, 23, 24])
         ]
 
-
+        # Select industrial demand for sectors which are found in industrial
+        # sites as category b
         demand_nuts3_b = demand_nuts3[
             demand_nuts3["wz"].isin([1718, 19, 20, 23, 24])
         ]
 
-
+        # Bring demands on nuts3 level and information on industrial sites per
+        # nuts3 district together
         demand_nuts3_b = demand_nuts3_b.merge(
             sites_grouped,
             how="left",
@@ -234,21 +303,26 @@ def industrial_demand_distr():
             right_on=["nuts3", "wz"],
         )
 
-
+        # Define share of industrial demand per nuts3 region and subsector
+        # allocated to industrial sites
         share_to_sites = 0.5
 
+        # Define demand per site for every nuts3 region and subsector
 
         demand_nuts3_b["demand_per_site"] = (
             demand_nuts3_b["demand"] * share_to_sites
         ) / demand_nuts3_b["counts"]
 
+        # Replace NaN by 0
         demand_nuts3_b = demand_nuts3_b.fillna(0)
 
-
+        # Calculate demand which needs to be distributed to osm landuse areas
+        # from category b
         demand_nuts3_b["demand_b_osm"] = demand_nuts3_b["demand"] - (
             demand_nuts3_b["demand_per_site"] * demand_nuts3_b["counts"]
         )
 
+        # Add information about demand per site to sites dataframe
 
         sites = sites.merge(
             demand_nuts3_b[["nuts3", "wz", "demand_per_site"]],
@@ -256,14 +330,15 @@ def industrial_demand_distr():
             left_on=["nuts3", "wz"],
             right_on=["nuts3", "wz"],
         )
-        sites = sites.rename(columns={"demand_per_site": "demand"}) # <-- CREATES THE 'DEMAND' COLUMN
+        sites = sites.rename(columns={"demand_per_site": "demand"})
 
         demand_nuts3_b_osm = demand_nuts3_b[["nuts3", "wz", "demand_b_osm"]]
         demand_nuts3_b_osm = demand_nuts3_b_osm.rename(
             {"demand_b_osm": "demand"}, axis=1
         )
 
-
+        # Create df containing all demand per wz which will be allocated to
+        # osm areas
         demand_nuts3_osm_wz = pd.concat(
             [demand_nuts3_a, demand_nuts3_b_osm], ignore_index=True
         )
@@ -271,6 +346,7 @@ def industrial_demand_distr():
             demand_nuts3_osm_wz.groupby(["nuts3", "wz"]).sum().reset_index()
         )
 
+        # Calculate demand per hectar for each nuts3 region
         demand_nuts3_osm_wz = demand_nuts3_osm_wz.merge(
             landuse_nuts3, how="left", left_on=["nuts3"], right_on=["nuts3"]
         )
@@ -278,6 +354,7 @@ def industrial_demand_distr():
             demand_nuts3_osm_wz["demand"] / demand_nuts3_osm_wz["area_ha"]
         )
 
+        # Add information about demand per ha to landuse df
         landuse = landuse.merge(
             demand_nuts3_osm_wz[["nuts3", "demand_per_ha", "wz"]],
             how="left",
@@ -287,13 +364,15 @@ def industrial_demand_distr():
 
         landuse["demand"] = landuse["area_ha"] * landuse["demand_per_ha"]
 
+        # Adjust dataframes for export to local database
 
-        sites = sites.rename(columns={"id": "industrial_sites_id"}, axis=1) 
-        sites["scenario"] = scn 
+        sites = sites.rename({"id": "industrial_sites_id"}, axis=1)
+        sites["scenario"] = scn
         sites.set_index("industrial_sites_id", inplace=True)
 
         landuse = landuse.rename({"id": "osm_id"}, axis=1)
 
+        # Remove duplicates and adjust index
         landuse = (
             landuse.drop("geom", axis="columns")
             .groupby(["osm_id", "wz"])
@@ -302,42 +381,26 @@ def industrial_demand_distr():
         )
         landuse.index.rename("id", inplace=True)
         landuse["scenario"] = scn
-        
+
+        # Write data to db
+
         sites[["scenario", "wz", "demand"]].to_sql(
-            target_sites["table"],
+            target_sites.table,
             con=db.engine(),
-            schema=target_sites["schema"],
+            schema=target_sites.schema,
+            if_exists="append",
+        )
+        
+
+        landuse[["osm_id", "scenario", "wz", "demand"]].to_sql(
+            target_osm.table,
+            con=db.engine(),
+            schema=target_osm.schema,
             if_exists="append",
         )
 
-        landuse[["osm_id", "scenario", "wz", "demand"]].to_sql(
-            target_osm["table"],
-            con=db.engine(),
-            schema=target_osm["schema"],
-            if_exists="append",
-        )
+
 class IndustrialDemandCurves(Dataset):
-    
-    sources = DatasetSources(
-        tables={
-            "vg250_krs": "boundaries.vg250_krs",
-            "osm_landuse": "openstreetmap.osm_landuse",
-            "industrial_sites": "demand.egon_industrial_sites",
-            "demandregio": "demand.egon_demandregio_cts_ind",
-            "demandregio_wz": "demand.egon_demandregio_wz",
-        }
-    )
-    targets = DatasetTargets(
-        tables={
-            "osm_spatial": "demand.egon_demandregio_osm_ind_electricity",
-            "sites_spatial": "demand.egon_demandregio_sites_ind_electricity",
-            "osm_load": "demand.egon_osm_ind_load_curves",
-            "osm_load_individual": "demand.egon_osm_ind_load_curves_individual",
-            "sites_load": "demand.egon_sites_ind_load_curves",
-            "sites_load_individual": "demand.egon_sites_ind_load_curves_individual",
-        }
-    )
-    
     """
     Distribute industrial electricity demands to industrial sites and OSM
     landuse areas
@@ -365,12 +428,41 @@ class IndustrialDemandCurves(Dataset):
       * :py:class:`demand.egon_sites_ind_load_curves_individual <egon.data.datasets.industry.DemandCurvesSitesIndustryIndividual>` is created and filled
 
     """
-
+    
     #:
     name: str = "Industrial_demand_curves"
     #:
     version: str = "0.0.6"
-
+    
+    sources = DatasetSources(
+        tables={
+            "demandregio": {"schema": "demand", "table": "egon_demandregio_cts_ind"},
+            "wz": {"schema": "demand", "table": "egon_demandregio_wz"},
+            "osm_landuse": {"schema": "openstreetmap", "table": "osm_landuse"},
+            "industrial_sites": {"schema": "demand", "table": "egon_industrial_sites"},
+            "vg250_krs": {"schema": "boundaries", "table": "vg250_krs"},
+            "osm": {"schema": "demand", "table": "egon_demandregio_osm_ind_electricity"},
+            "sites": {"schema": "demand", "table": "egon_demandregio_sites_ind_electricity"},
+            "sites_geom": {"schema": "demand", "table": "egon_industrial_sites"},
+            "demandregio_industry": {"schema": "demand", "table": "egon_demandregio_cts_ind"},
+            "demandregio_wz": {"schema": "demand", "table": "egon_demandregio_wz"},
+            "demandregio_timeseries": {"schema": "demand", "table": "egon_demandregio_timeseries_cts_ind"},
+            "hvmv_substation": {"schema": "grid", "table": "egon_hvmv_substation"},
+            "egon_mv_grid_district": {"schema": "grid", "table": "egon_mv_grid_district"},
+            "egon_ehv_voronoi": {"schema": "grid", "table": "egon_ehv_substation_voronoi"},
+        }
+    )
+    targets = DatasetTargets(
+        tables={
+            "osm": {"schema": "demand", "table": "egon_demandregio_osm_ind_electricity"},
+            "sites": {"schema": "demand", "table": "egon_demandregio_sites_ind_electricity"},
+            "osm_load": {"schema": "demand", "table": "egon_osm_ind_load_curves"},
+            "osm_load_individual": {"schema": "demand", "table": "egon_osm_ind_load_curves_individual"},
+            "sites_load": {"schema": "demand", "table": "egon_sites_ind_load_curves"},
+            "sites_load_individual": {"schema": "demand", "table": "egon_sites_ind_load_curves_individual"},
+        }
+    )
+    
     def __init__(self, dependencies):
         super().__init__(
             name=self.name,
