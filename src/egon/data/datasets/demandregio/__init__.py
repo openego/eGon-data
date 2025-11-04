@@ -13,19 +13,18 @@ import numpy as np
 import pandas as pd
 
 from egon.data import db, logger
-from egon.data.datasets import Dataset, wrapped_partial
+from egon.data.datasets import Dataset
 from egon.data.datasets.scenario_parameters import (
     EgonScenario,
     get_sector_parameters,
 )
-from egon.data.datasets.zensus import download_and_check
 import egon.data.config
 import egon.data.datasets.scenario_parameters.parameters as scenario_parameters
 
 try:
     from disaggregator import config, data, spatial, temporal
 
-except ImportError as e:
+except ImportError:
     pass
 
 # will be later imported from another file ###
@@ -45,16 +44,27 @@ class DemandRegio(Dataset):
 
     *Dependencies*
       * :py:class:`DataBundle <egon.data.datasets.data_bundle.DataBundle>`
-      * :py:class:`ScenarioParameters <egon.data.datasets.scenario_parameters.ScenarioParameters>`
+      * :py:class:`ScenarioParameters
+      <egon.data.datasets.scenario_parameters.ScenarioParameters>`
       * :py:class:`ZensusVg250 <egon.data.datasets.zensus_vg250.ZensusVg250>`
 
     *Resulting tables*
-      * :py:class:`demand.egon_demandregio_hh <egon.data.datasets.demandregio.EgonDemandRegioHH>` is created and filled
-      * :py:class:`demand.egon_demandregio_cts_ind <egon.data.datasets.demandregio.EgonDemandRegioCtsInd>` is created and filled
-      * :py:class:`society.egon_demandregio_population <egon.data.datasets.demandregio.EgonDemandRegioPopulation>` is created and filled
-      * :py:class:`society.egon_demandregio_household <egon.data.datasets.demandregio.EgonDemandRegioHouseholds>` is created and filled
-      * :py:class:`demand.egon_demandregio_wz <egon.data.datasets.demandregio.EgonDemandRegioWz>` is created and filled
-      * :py:class:`demand.egon_demandregio_timeseries_cts_ind <egon.data.datasets.demandregio.EgonDemandRegioTimeseriesCtsInd>` is created and filled
+      * :py:class:`demand.egon_demandregio_hh
+      <egon.data.datasets.demandregio.EgonDemandRegioHH>` is created and filled
+      * :py:class:`demand.egon_demandregio_cts_ind
+      <egon.data.datasets.demandregio.EgonDemandRegioCtsInd>`
+      is created and filled
+      * :py:class:`society.egon_demandregio_population
+      <egon.data.datasets.demandregio.EgonDemandRegioPopulation>`
+      is created and filled
+      * :py:class:`society.egon_demandregio_household
+      <egon.data.datasets.demandregio.EgonDemandRegioHouseholds>`
+      is created and filled
+      * :py:class:`demand.egon_demandregio_wz
+      <egon.data.datasets.demandregio.EgonDemandRegioWz>` is created and filled
+      * :py:class:`demand.egon_demandregio_timeseries_cts_ind
+      <egon.data.datasets.demandregio.EgonDemandRegioTimeseriesCtsInd>`
+      is created and filled
 
     """
 
@@ -605,7 +615,8 @@ def insert_hh_demand(scenario, year, engine):
         df["year"] = (
             2023 if scenario == "status2023" else year
         )  # TODO status2023
-        # adhoc fix until ffeopendata servers are up and population_year can be set
+        # adhoc fix until ffeopendata servers are up and population_year
+        # can be set
 
         df["scenario"] = scenario
         df["hh_size"] = hh_size
@@ -712,7 +723,8 @@ def insert_cts_ind(scenario, year, engine, target_values):
 
     if scenario == "eGon100RE":
         ec_cts_ind2 = pd.read_csv(
-            "data_bundle_egon_data/demand_regio_backup/egon_demandregio_cts_ind.csv"
+            "data_bundle_egon_data/"
+            "demand_regio_backup/egon_demandregio_cts_ind.csv"
         )
         ec_cts_ind2["sector"] = ec_cts_ind2["wz"].map(wz_table["sector"])
         factor_ind = target_values["industry"] / (
@@ -1024,7 +1036,7 @@ def timeseries_per_wz():
         year = int(scenario_parameters.global_settings(scn)["weather_year"])
 
         for sector in ["CTS", "industry"]:
-            if not year in year_already_in_database:
+            if year not in year_already_in_database:
                 insert_timeseries_per_wz(sector, int(year))
         year_already_in_database.append(year)
 
