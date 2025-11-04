@@ -475,7 +475,7 @@ def disagg_households_power(scenario, year, original=False, **kwargs):
 
     if scenario == "eGon100RE":
         # chose demand per household size from survey without DHW
-        power_per_HH = demand_per_hh_size["without DHW"] / 1e3
+        power_per_HH = demand_per_hh_size["without_DHW"] / 1e3
 
         # calculate demand per nuts3 in 2011
         df_2011 = data.households_per_size(year=2011) * power_per_HH
