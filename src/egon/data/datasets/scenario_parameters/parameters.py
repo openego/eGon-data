@@ -382,6 +382,12 @@ def electricity(scenario):
             "solar": read_costs(costs, "solar", "VOM"),
         }
 
+        parameters["annual_demand"] = {
+            "households": 119.0 * 1e6,  # MWh source: NEP 2021
+            "CTS": 135.3 * 1e6,  # MWh source: NEP 2021
+            "industry": 225.4 * 1e6,  # MWh source: NEP 2021
+        }
+
     elif scenario == "eGon100RE":
         costs = read_csv(2050)
 
@@ -525,6 +531,14 @@ def electricity(scenario):
             "wind_offshore": read_costs(costs, "offwind", "VOM"),
             "wind_onshore": read_costs(costs, "onwind", "VOM"),
             "solar": read_costs(costs, "solar", "VOM"),
+        }
+
+        parameters["annual_demand"] = {
+            "households": 90.4 * 1e6,  # MWh source: NEP 2023, scenario B 2045
+            "CTS": 146.7 * 1e6,  # MWh source: reduce overall demand from
+            # demandregio (without traffic)
+            # by share of heat according to JRC IDEES
+            "industry": 382.9 * 1e6,  # MWh source: data from demandregio
         }
 
     elif scenario == "eGon2021":
@@ -714,6 +728,13 @@ def electricity(scenario):
             "wind_onshore": read_costs(costs, "onwind", "VOM"),
             "solar": read_costs(costs, "solar", "VOM"),
         }
+
+        if scenario == "status2023":
+            parameters["annual_demand"] = {
+                "households": 130.48 * 1e6,  # MWh, source: BDEW 2023
+                "CTS": 121.16 * 1e6,  # MWh
+                "industry": 200.38 * 1e6,  # MWh
+            }
 
     else:
         print(f"Scenario name {scenario} is not valid.")

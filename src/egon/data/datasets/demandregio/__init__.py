@@ -13,19 +13,18 @@ import numpy as np
 import pandas as pd
 
 from egon.data import db, logger
-from egon.data.datasets import Dataset, wrapped_partial
+from egon.data.datasets import Dataset
 from egon.data.datasets.scenario_parameters import (
     EgonScenario,
     get_sector_parameters,
 )
-from egon.data.datasets.zensus import download_and_check
 import egon.data.config
 import egon.data.datasets.scenario_parameters.parameters as scenario_parameters
 
 try:
     from disaggregator import config, data, spatial, temporal
 
-except ImportError as e:
+except ImportError:
     pass
 
 # will be later imported from another file ###
@@ -45,23 +44,34 @@ class DemandRegio(Dataset):
 
     *Dependencies*
       * :py:class:`DataBundle <egon.data.datasets.data_bundle.DataBundle>`
-      * :py:class:`ScenarioParameters <egon.data.datasets.scenario_parameters.ScenarioParameters>`
+      * :py:class:`ScenarioParameters
+      <egon.data.datasets.scenario_parameters.ScenarioParameters>`
       * :py:class:`ZensusVg250 <egon.data.datasets.zensus_vg250.ZensusVg250>`
 
     *Resulting tables*
-      * :py:class:`demand.egon_demandregio_hh <egon.data.datasets.demandregio.EgonDemandRegioHH>` is created and filled
-      * :py:class:`demand.egon_demandregio_cts_ind <egon.data.datasets.demandregio.EgonDemandRegioCtsInd>` is created and filled
-      * :py:class:`society.egon_demandregio_population <egon.data.datasets.demandregio.EgonDemandRegioPopulation>` is created and filled
-      * :py:class:`society.egon_demandregio_household <egon.data.datasets.demandregio.EgonDemandRegioHouseholds>` is created and filled
-      * :py:class:`demand.egon_demandregio_wz <egon.data.datasets.demandregio.EgonDemandRegioWz>` is created and filled
-      * :py:class:`demand.egon_demandregio_timeseries_cts_ind <egon.data.datasets.demandregio.EgonDemandRegioTimeseriesCtsInd>` is created and filled
+      * :py:class:`demand.egon_demandregio_hh
+      <egon.data.datasets.demandregio.EgonDemandRegioHH>` is created and filled
+      * :py:class:`demand.egon_demandregio_cts_ind
+      <egon.data.datasets.demandregio.EgonDemandRegioCtsInd>`
+      is created and filled
+      * :py:class:`society.egon_demandregio_population
+      <egon.data.datasets.demandregio.EgonDemandRegioPopulation>`
+      is created and filled
+      * :py:class:`society.egon_demandregio_household
+      <egon.data.datasets.demandregio.EgonDemandRegioHouseholds>`
+      is created and filled
+      * :py:class:`demand.egon_demandregio_wz
+      <egon.data.datasets.demandregio.EgonDemandRegioWz>` is created and filled
+      * :py:class:`demand.egon_demandregio_timeseries_cts_ind
+      <egon.data.datasets.demandregio.EgonDemandRegioTimeseriesCtsInd>`
+      is created and filled
 
     """
 
     #:
     name: str = "DemandRegio"
     #:
-    version: str = "0.0.12"
+    version: str = "0.0.13"
 
     def __init__(self, dependencies):
         super().__init__(
@@ -439,12 +449,9 @@ def adjust_cts_ind_nep(ec_cts_ind, sector):
     return ec_cts_ind
 
 
-def disagg_households_power(
-    scenario, year, weight_by_income=False, original=False, **kwargs
-):
+def disagg_households_power(scenario, year, original=False, **kwargs):
     """
-    Perform spatial disaggregation of electric power in [GWh/a] by key and
-    possibly weight by income.
+    Perform spatial disaggregation of electric power in [GWh/a] by key
     Similar to disaggregator.spatial.disagg_households_power
 
 
@@ -452,8 +459,6 @@ def disagg_households_power(
     ----------
     by : str
         must be one of ['households', 'population']
-    weight_by_income : bool, optional
-        Flag if to weight the results by the regional income (default False)
     orignal : bool, optional
         Throughput to function households_per_size,
         A flag if the results should be left untouched and returned in
@@ -480,23 +485,20 @@ def disagg_households_power(
 
     if scenario == "eGon100RE":
         # chose demand per household size from survey without DHW
-        power_per_HH = (
-            demand_per_hh_size["without_DHW"] / 1e3
-        )  # TODO why without?
+        power_per_HH = demand_per_hh_size["without_DHW"] / 1e3
 
         # calculate demand per nuts3 in 2011
         df_2011 = data.households_per_size(year=2011) * power_per_HH
 
         # scale demand per hh-size to meet demand without heat
         # according to JRC in 2011 (136.6-(20.14+9.41) TWh)
-        # TODO check source and method
         power_per_HH *= (136.6 - (20.14 + 9.41)) * 1e6 / df_2011.sum().sum()
 
         # calculate demand per nuts3 in 2050
         df = data.households_per_size(year=year) * power_per_HH
 
     # Bottom-Up: Power demand by household sizes in [MWh/a] for each scenario
-    elif scenario in ["status2019", "status2023", "eGon2021", "eGon2035"]:
+    else:
         # chose demand per household size from survey including weighted DHW
         power_per_HH = demand_per_hh_size["weighted"] / 1e3
 
@@ -505,45 +507,6 @@ def disagg_households_power(
             data.households_per_size(original=original, year=year)
             * power_per_HH
         )
-
-        if scenario == "eGon2035":
-            # scale to fit demand of NEP 2021 scebario C 2035 (119TWh)
-            df *= 119 * 1e6 / df.sum().sum()
-
-        if scenario == "status2023":
-            # scale to fit demand of BDEW 2023 (130.48 TWh) see issue #180
-            df *= 130.48 * 1e6 / df.sum().sum()
-
-        # if scenario == "status2021": # TODO status2021
-        #     # scale to fit demand of AGEB 2021 (138.6 TWh)
-        #     # https://ag-energiebilanzen.de/wp-content/uploads/2023/01/AGEB_22p2_rev-1.pdf#page=10
-        #     df *= 138.6 * 1e6 / df.sum().sum()
-
-    elif scenario == "eGon100RE":
-        # chose demand per household size from survey without DHW
-        power_per_HH = demand_per_hh_size["without DHW"] / 1e3
-
-        # calculate demand per nuts3 in 2011
-        df_2011 = data.households_per_size(year=2011) * power_per_HH
-
-        # scale demand per hh-size to meet demand without heat
-        # according to JRC in 2011 (136.6-(20.14+9.41) TWh)
-        power_per_HH *= (136.6 - (20.14 + 9.41)) * 1e6 / df_2011.sum().sum()
-
-        # calculate demand per nuts3 in 2050
-        df = data.households_per_size(year=year) * power_per_HH
-
-        # scale to meet annual demand from NEP 2023, scenario B 2045
-        df *= 90400000 / df.sum().sum()
-
-    else:
-        print(
-            f"Electric demand per household size for scenario {scenario} "
-            "is not specified."
-        )
-
-    if weight_by_income:
-        df = spatial.adjust_by_income(df=df)
 
     return df
 
@@ -628,8 +591,20 @@ def insert_hh_demand(scenario, year, engine):
     targets = egon.data.config.datasets()["demandregio_household_demand"][
         "targets"
     ]["household_demand"]
-    # get demands of private households per nuts and size from demandregio
+    # get spatial distribution of demands of private households per nuts
+    # and size from demandregio
     ec_hh = disagg_households_power(scenario, year)
+
+    # Scale to meet target value
+    # For status2019 and eGon2021 the final demand from demandregio is kept
+    if scenario not in ["status2019", "eGon2021"]:
+        ec_hh *= (
+            get_sector_parameters("electricity", scenario=scenario)[
+                "annual_demand"
+            ]["households"]
+            * 1e6
+            / ec_hh.sum().sum()
+        )
 
     # Select demands for nuts3-regions in boundaries (needed for testmode)
     ec_hh = data_in_boundaries(ec_hh)
@@ -640,7 +615,8 @@ def insert_hh_demand(scenario, year, engine):
         df["year"] = (
             2023 if scenario == "status2023" else year
         )  # TODO status2023
-        # adhoc fix until ffeopendata servers are up and population_year can be set
+        # adhoc fix until ffeopendata servers are up and population_year
+        # can be set
 
         df["scenario"] = scenario
         df["hh_size"] = hh_size
@@ -747,14 +723,15 @@ def insert_cts_ind(scenario, year, engine, target_values):
 
     if scenario == "eGon100RE":
         ec_cts_ind2 = pd.read_csv(
-            "data_bundle_egon_data/demand_regio_backup/egon_demandregio_cts_ind.csv"
+            "data_bundle_egon_data/"
+            "demand_regio_backup/egon_demandregio_cts_ind.csv"
         )
         ec_cts_ind2["sector"] = ec_cts_ind2["wz"].map(wz_table["sector"])
-        factor_ind = target_values[scenario]["industry"] / (
+        factor_ind = target_values["industry"] / (
             ec_cts_ind2[ec_cts_ind2["sector"] == "industry"]["demand"].sum()
             / 1000
         )
-        factor_cts = target_values[scenario]["CTS"] / (
+        factor_cts = target_values["CTS"] / (
             ec_cts_ind2[ec_cts_ind2["sector"] == "CTS"]["demand"].sum() / 1000
         )
 
@@ -790,11 +767,16 @@ def insert_cts_ind(scenario, year, engine, target_values):
         ec_cts_ind = ec_cts_ind.drop(columns=49, errors="ignore")
 
         # scale values according to target_values
-        if sector in target_values[scenario].keys():
-            ec_cts_ind *= (
-                target_values[scenario][sector] * 1e3 / ec_cts_ind.sum().sum()
+        if target_values:
+            if sector in target_values.keys():
+                ec_cts_ind *= (
+                    target_values[sector] * 1e3 / ec_cts_ind.sum().sum()
+                )
+        else:
+            print(
+                f"No scaling factors for scenario {scenario}."
+                "Data from demandregio is used without scaling."
             )
-
         # include new largescale consumers according to NEP 2021
         if scenario == "eGon2035":
             ec_cts_ind = adjust_cts_ind_nep(ec_cts_ind, sector)
@@ -887,19 +869,18 @@ def insert_cts_ind_demands():
             year = 2035
 
         # target values per scenario in MWh
-        target_values = {
-            # according to NEP 2021
-            # new consumers will be added seperatly
-            "eGon2035": {"CTS": 135300, "industry": 225400},
-            # CTS: reduce overall demand from demandregio (without traffic)
-            # by share of heat according to JRC IDEES, data from 2011
-            # industry: no specific heat demand, use data from demandregio
-            "eGon100RE": {"CTS": 146700, "industry": 382900},
-            # no adjustments for status quo
-            "eGon2021": {},
-            "status2019": {},
-            "status2023": {"CTS": 121160 * 1e3, "industry": 200380 * 1e3},
-        }
+        # for eGon2021 and status2019 demandregio-data is used without scaling
+        if scn not in ["eGon2021", "status2019"]:
+            target_values = {
+                "CTS": get_sector_parameters("electricity", scenario=scn)[
+                    "annual_demand"
+                ]["CTS"],
+                "industry": get_sector_parameters("electricity", scenario=scn)[
+                    "annual_demand"
+                ]["industry"],
+            }
+        else:
+            target_values = None
 
         insert_cts_ind(scn, year, engine, target_values)
 
@@ -1055,7 +1036,7 @@ def timeseries_per_wz():
         year = int(scenario_parameters.global_settings(scn)["weather_year"])
 
         for sector in ["CTS", "industry"]:
-            if not year in year_already_in_database:
+            if year not in year_already_in_database:
                 insert_timeseries_per_wz(sector, int(year))
         year_already_in_database.append(year)
 
