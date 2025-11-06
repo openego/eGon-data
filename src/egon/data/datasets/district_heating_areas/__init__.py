@@ -850,7 +850,7 @@ def add_metadata():
             },
         ],
     }
-    meta_json = "'" + json.dumps(meta) + "'"
+    meta_json = json.dumps(meta)
 
     db.submit_comment(meta_json, "demand", "egon_district_heating_areas")
 
@@ -955,7 +955,7 @@ def add_metadata():
             },
         ],
     }
-    meta_json = "'" + json.dumps(meta) + "'"
+    meta_json = json.dumps(meta)
 
     db.submit_comment(
         meta_json, "demand", "egon_map_zensus_district_heating_areas"

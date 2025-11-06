@@ -967,20 +967,26 @@ def contributors(authorlist):
 
 def upload_json_metadata():
     """Upload json metadata into db from zenodo"""
-
-    for path in importlib_resources.files(__name__).glob("*.json"):
+    # TODO @jh-RLI: This reads from "converted", either read form results
+    # or remove this completely once metadata generation is done
+    # by OMI / oemetaBuilder
+    for path in (
+        importlib_resources.files(__name__)
+        .joinpath("results", "converted")
+        .glob("*.json")
+    ):
         split = path.name.split(".")
         if len(split) != 3:
             continue
         schema = split[0]
         table = split[1]
-
+        logger.info(f"Process metadata comment for {schema}.{table} to db.")
         with open(path, "r") as infile:
             obj = parse_metadata(infile.read())
 
         # TODO @jh-RLI: Deactivate license check for now
         validate_metadata(obj, check_license=False)
-        metadata = f"'{obj}'"
+        metadata = obj
         db.submit_comment(metadata, schema, table)
         logger.info(f"Metadata comment for {schema}.{table} stored.")
 

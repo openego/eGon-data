@@ -130,6 +130,7 @@ def to_postgres():
         )
 
 
+# TODO @jh:Move to metadata module, as yaml
 def add_metadata():
     """Writes metadata JSON string into table comment."""
     # Prepare variables
@@ -263,9 +264,7 @@ def add_metadata():
             ],
         }
 
-        meta_json = (
-            "'" + json.dumps(meta) + "'"
-        )  # TODO @jh: Find me and remove
+        meta_json = json.dumps(meta)  # TODO @jh: Find me and remove
 
         db.submit_comment(
             meta_json, vg250_config["processed"]["schema"], table

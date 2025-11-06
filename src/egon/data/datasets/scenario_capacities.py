@@ -1006,7 +1006,7 @@ def add_metadata():
     }
 
     # Create json dump
-    meta_json = "'" + json.dumps(meta) + "'"
+    meta_json = json.dumps(meta)
 
     # Add metadata as a comment to the table
     db.submit_comment(
