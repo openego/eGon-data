@@ -15,15 +15,15 @@ Base = declarative_base()
 # ############################################################
 class SocietyPrognosis(Dataset):
     name: str = "SocietyPrognosis"
-    version: str = "0.0.3"
+    version: str = "0.0.4"
 
     sources = DatasetSources(
         tables={
             "map_zensus_vg250": "boundaries.egon_map_zensus_vg250",
             "zensus_population": "society.destatis_zensus_population_per_ha",
             "zensus_households": "society.egon_destatis_zensus_household_per_ha",
-            "demandregio_population": "demandregio.egon_demandregio_population",
-            "demandregio_households": "demandregio.egon_demandregio_household",
+            "demandregio_population": "society.egon_demandregio_population",
+            "demandregio_households": "society.egon_demandregio_household",
         }
     )
 
