@@ -93,8 +93,8 @@ def dlr():
 
         sql = f"""
         SELECT scn_name, line_id, topo, s_nom FROM
-        {Calculate_dlr.sources.tables["trans_lines"].schema}.
-        {Calculate_dlr.sources.tables["trans_lines"].table}
+        {Calculate_dlr.sources.tables["trans_lines"]["schema"]}.
+        {Calculate_dlr.sources.tables["trans_lines"]["table"]}
         """
         df = gpd.GeoDataFrame.from_postgis(
             sql, con, crs="EPSG:4326", geom_col="topo"
@@ -165,15 +165,15 @@ def dlr():
         # Delete existing data
         db.execute_sql(
             f"""
-            DELETE FROM {Calculate_dlr.sources.tables["line_timeseries"].schema}.
-            {Calculate_dlr.sources.tables["line_timeseries"].table};
+            DELETE FROM {Calculate_dlr.sources.tables["line_timeseries"]["schema"]}.
+            {Calculate_dlr.sources.tables["line_timeseries"]["table"]};
             """
         )
 
         # Insert into database
         trans_lines.to_sql(
-            Calculate_dlr.targets.tables["line_timeseries"].table,
-            schema=Calculate_dlr.targets.tables["line_timeseries"].schema,
+            Calculate_dlr.targets.tables["line_timeseries"]["table"],
+            schema=Calculate_dlr.targets.tables["line_timeseries"]["schema"],
             con=db.engine(),
             if_exists="append",
             index=False,
