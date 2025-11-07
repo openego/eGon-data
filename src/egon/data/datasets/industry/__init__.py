@@ -179,10 +179,10 @@ def industrial_demand_distr():
     # Delete data from table
 
     db.execute_sql(
-    f"""DELETE FROM {target_sites.schema}.{target_sites.table}"""
+    f"""DELETE FROM {target_sites['schema']}.{target_sites['table']}"""
     )
     db.execute_sql(
-    f"""DELETE FROM {target_osm.schema}.{target_osm.table}"""
+    f"""DELETE FROM {target_osm['schema']}.{target_osm['table']}"""
     )
 
     for scn in egon.data.config.settings()["egon-data"]["--scenarios"]:
