@@ -113,26 +113,26 @@ def create_tables():
 
     db.execute_sql(
     f"""DROP TABLE IF EXISTS
-        {IndustrialDemandCurves.targets.tables["osm load"]["schema"]}.
-        {IndustrialDemandCurves.targets.tables["osm load"]["table"]} CASCADE;"""
+        {IndustrialDemandCurves.targets.tables["osm_load"]["schema"]}.
+        {IndustrialDemandCurves.targets.tables["osm_load"]["table"]} CASCADE;"""
     )
 
     db.execute_sql(
     f"""DROP TABLE IF EXISTS
-        {IndustrialDemandCurves.targets.tables["osm load individual"]["schema"]}.
-        {IndustrialDemandCurves.targets.tables["osm load individual"]["table"]} CASCADE;"""
+        {IndustrialDemandCurves.targets.tables["osm_load_individual"]["schema"]}.
+        {IndustrialDemandCurves.targets.tables["osm_load_individual"]["table"]} CASCADE;"""
     )
 
     db.execute_sql(
     f"""DROP TABLE IF EXISTS
-        {IndustrialDemandCurves.targets.tables["sites load"]["schema"]}.
-        {IndustrialDemandCurves.targets.tables["sites load"]["table"]} CASCADE;"""
+        {IndustrialDemandCurves.targets.tables["sites_load"]["schema"]}.
+        {IndustrialDemandCurves.targets.tables["sites_load"]["table"]} CASCADE;"""
     )
 
     db.execute_sql(
     f"""DROP TABLE IF EXISTS
-        {IndustrialDemandCurves.targets.tables["sites load individual"]["schema"]}.
-        {IndustrialDemandCurves.targets.tables["sites load individual"]["table"]} CASCADE;"""
+        {IndustrialDemandCurves.targets.tables["sites_load_individual"]["schema"]}.
+        {IndustrialDemandCurves.targets.tables["sites_load_individual"]["table"]} CASCADE;"""
     )
 
     engine = db.engine()
@@ -190,8 +190,8 @@ def industrial_demand_distr():
         # Select administrative districts (Landkreise) including its boundaries
         boundaries = db.select_geodataframe(
             f"""SELECT nuts, geometry FROM
-                {sources["vg250 krs"]["schema"]}.
-                {sources["vg250 krs"]["table"]}""",
+                {sources["vg250_krs"]["schema"]}.
+                {sources["vg250_krs"]["table"]}""",
             index_col="nuts",
             geom_col="geometry",
             epsg=3035,
@@ -200,13 +200,13 @@ def industrial_demand_distr():
         # Select industrial landuse polygons
         landuse = db.select_geodataframe(
             f"""SELECT id, area_ha, geom FROM
-                {sources["osm landuse"]["schema"]}.
-                {sources["osm landuse"]["table"]}
+                {sources["osm_landuse"]["schema"]}.
+                {sources["osm_landuse"]["table"]}
                 WHERE sector = 3
                 AND NOT ST_Intersects(
                     geom,
                     (SELECT ST_UNION(ST_Transform(geom,3035)) FROM
-                     {sources["industrial sites"]["schema"]}.{sources["industrial sites"]["table"]}))
+                     {sources["industrial_sites"]["schema"]}.{sources["industrial_sites"]["table"]}))
                 AND name NOT LIKE '%%kraftwerk%%'
                 AND name NOT LIKE '%%Stadtwerke%%'
                 AND name NOT LIKE '%%Müllverbrennung%%'
@@ -243,7 +243,7 @@ def industrial_demand_distr():
         # Select data on industrial sites
         sites = db.select_dataframe(
             f"""SELECT id, wz, nuts3 FROM
-                {sources["industrial sites"]["schema"]}.{sources["industrial sites"]["table"]}""",
+                {sources["industrial_sites"]["schema"]}.{sources["industrial_sites"]["table"]}""",
             index_col=None,
         )
         # Count number of industrial sites per subsector (wz) and nuts3
