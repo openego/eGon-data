@@ -101,38 +101,38 @@ def create_tables():
 
     db.execute_sql(
     f"""DROP TABLE IF EXISTS
-        {IndustrialDemandCurves.targets.tables["sites"].schema}.
-        {IndustrialDemandCurves.targets.tables["sites"].table} CASCADE;"""
+        {IndustrialDemandCurves.targets.tables["sites"]["schema"]}.
+        {IndustrialDemandCurves.targets.tables["sites"]["table"]} CASCADE;"""
     )
 
     db.execute_sql(
     f"""DROP TABLE IF EXISTS
-        {IndustrialDemandCurves.targets.tables["osm"].schema}.
-        {IndustrialDemandCurves.targets.tables["osm"].table} CASCADE;"""
+        {IndustrialDemandCurves.targets.tables["osm"]["schema"]}.
+        {IndustrialDemandCurves.targets.tables["osm"]["table"]} CASCADE;"""
     )
 
     db.execute_sql(
     f"""DROP TABLE IF EXISTS
-        {IndustrialDemandCurves.targets.tables["osm_load"].schema}.
-        {IndustrialDemandCurves.targets.tables["osm_load"].table} CASCADE;"""
+        {IndustrialDemandCurves.targets.tables["osm load"]["schema"]}.
+        {IndustrialDemandCurves.targets.tables["osm load"]["table"]} CASCADE;"""
     )
 
     db.execute_sql(
     f"""DROP TABLE IF EXISTS
-        {IndustrialDemandCurves.targets.tables["osm_load_individual"].schema}.
-        {IndustrialDemandCurves.targets.tables["osm_load_individual"].table} CASCADE;"""
+        {IndustrialDemandCurves.targets.tables["osm load individual"]["schema"]}.
+        {IndustrialDemandCurves.targets.tables["osm load individual"]["table"]} CASCADE;"""
     )
 
     db.execute_sql(
     f"""DROP TABLE IF EXISTS
-        {IndustrialDemandCurves.targets.tables["sites_load"].schema}.
-        {IndustrialDemandCurves.targets.tables["sites_load"].table} CASCADE;"""
+        {IndustrialDemandCurves.targets.tables["sites load"]["schema"]}.
+        {IndustrialDemandCurves.targets.tables["sites load"]["table"]} CASCADE;"""
     )
 
     db.execute_sql(
     f"""DROP TABLE IF EXISTS
-        {IndustrialDemandCurves.targets.tables["sites_load_individual"].schema}.
-        {IndustrialDemandCurves.targets.tables["sites_load_individual"].table} CASCADE;"""
+        {IndustrialDemandCurves.targets.tables["sites load individual"]["schema"]}.
+        {IndustrialDemandCurves.targets.tables["sites load individual"]["table"]} CASCADE;"""
     )
 
     engine = db.engine()
@@ -190,8 +190,8 @@ def industrial_demand_distr():
         # Select administrative districts (Landkreise) including its boundaries
         boundaries = db.select_geodataframe(
             f"""SELECT nuts, geometry FROM
-                {sources["vg250_krs"].schema}.
-                {sources["vg250_krs"].table}""",
+                {sources["vg250 krs"]["schema"]}.
+                {sources["vg250 krs"]["table"]}""",
             index_col="nuts",
             geom_col="geometry",
             epsg=3035,
@@ -200,14 +200,13 @@ def industrial_demand_distr():
         # Select industrial landuse polygons
         landuse = db.select_geodataframe(
             f"""SELECT id, area_ha, geom FROM
-                {sources["osm_landuse"].schema}.
-                {sources["osm_landuse"].table}
+                {sources["osm landuse"]["schema"]}.
+                {sources["osm landuse"]["table"]}
                 WHERE sector = 3
                 AND NOT ST_Intersects(
                     geom,
                     (SELECT ST_UNION(ST_Transform(geom,3035)) FROM
-                    {sources["industrial_sites"].schema}.
-                    {sources["industrial_sites"].table}))
+                     {sources["industrial sites"]["schema"]}.{sources["industrial sites"]["table"]}))
                 AND name NOT LIKE '%%kraftwerk%%'
                 AND name NOT LIKE '%%Stadtwerke%%'
                 AND name NOT LIKE '%%Müllverbrennung%%'
@@ -244,8 +243,7 @@ def industrial_demand_distr():
         # Select data on industrial sites
         sites = db.select_dataframe(
             f"""SELECT id, wz, nuts3 FROM
-                {sources["industrial_sites"].schema}.
-                {sources["industrial_sites"].table}""",
+                {sources["industrial sites"]["schema"]}.{sources["industrial sites"]["table"]}""",
             index_col=None,
         )
         # Count number of industrial sites per subsector (wz) and nuts3
@@ -257,8 +255,7 @@ def industrial_demand_distr():
         # Select industrial demands on nuts3 level from local database
         demand_nuts3_import = db.select_dataframe(
             f"""SELECT nuts3, demand, wz FROM
-                {sources["demandregio"].schema}.
-                {sources["demandregio"].table}
+                {sources["demandregio"]["schema"]}.{sources["demandregio"]["table"]}
                 WHERE scenario = '{scn}'
                 AND demand > 0
                 AND wz IN
@@ -385,17 +382,17 @@ def industrial_demand_distr():
         # Write data to db
 
         sites[["scenario", "wz", "demand"]].to_sql(
-            target_sites.table,
+            target_sites["table"],
             con=db.engine(),
-            schema=target_sites.schema,
+            schema=target_sites["schema"],
             if_exists="append",
         )
         
 
         landuse[["osm_id", "scenario", "wz", "demand"]].to_sql(
-            target_osm.table,
+            target_osm["table"],
             con=db.engine(),
-            schema=target_osm.schema,
+            schema=target_osm["schema"],
             if_exists="append",
         )
 
