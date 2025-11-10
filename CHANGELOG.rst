@@ -19,6 +19,8 @@ Changed
   `#1360 <https://github.com/openego/eGon-data/issues/1360>`_
 * Update setting indices in etrago tables to avoid collisions
   `#1284 <https://github.com/openego/eGon-data/issues/1284>`_
+* Unify and update to latest official open_mastr release
+  `#1274 <https://github.com/openego/eGon-data/issues/1274>`_
 
 Bug Fixes
 ---------
