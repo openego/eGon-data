@@ -60,7 +60,7 @@ def download_mastr_geocoding():
     else:
         print("mastr_geocoding was already present. Download skipped")
 
-
+# pylint: disable=too-many-locals
 def extract_and_preprocess_mastr():
     """
     Extract the downloaded MaStR dump and create cleaned, schema-aligned CSVs.
