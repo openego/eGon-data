@@ -343,7 +343,6 @@ def import_mastr() -> None:
             low_memory=False,
         ).rename(columns=cols_mapping)
 
-
         # drop units outside of Germany
         len_old = len(units)
         units = units.loc[units.Land == "Deutschland"]
