@@ -844,7 +844,7 @@ class Chp(Dataset):
     #:
     name: str = "Chp"
     #:
-    version: str = "0.0.10"
+    version: str = "0.0.11"
 
     def __init__(self, dependencies):
         super().__init__(
