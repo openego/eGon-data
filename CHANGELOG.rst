@@ -13,7 +13,8 @@ Added
 
 Changed
 -------
-
+* Set annual electricity demands in scenario parameters
+  `#1359 <https://github.com/openego/eGon-data/issues/1359>`_
 * Introduce TaskGroups to group Datasets in the pipeline
   `#1360 <https://github.com/openego/eGon-data/issues/1360>`_
 * Update setting indices in etrago tables to avoid collisions
