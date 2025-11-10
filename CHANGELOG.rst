@@ -13,6 +13,7 @@ Added
 
 Changed
 -------
+
 * Set annual electricity demands in scenario parameters
   `#1359 <https://github.com/openego/eGon-data/issues/1359>`_
 * Introduce TaskGroups to group Datasets in the pipeline
@@ -27,6 +28,9 @@ Bug Fixes
   `#1347 <https://github.com/openego/eGon-data/issues/1347>`_
 * Discard scenario_path tasks
   `#1353 <https://github.com/openego/eGon-data/issues/1353>`_
+* Fix sanity checks of eMob MIT and mitigate those for el+heat demand
+  `#1365 <https://github.com/openego/eGon-data/issues/1365>`_
+  `#1354 <https://github.com/openego/eGon-data/issues/1354>`_
 
 
 Version 2.0.0 (2025-08-20)
