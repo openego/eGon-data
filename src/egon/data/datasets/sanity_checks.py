@@ -1550,7 +1550,8 @@ def sanity_check_CH4_stores(scn):
             ]
         )
 
-    stores_cap_D = 266424202  # MWh GIE https://www.gie.eu/transparency/databases/storage-database/
+    # MWh GIE https://www.gie.eu/transparency/databases/storage-database/
+    stores_cap_D = 266424202
 
     input_CH4_stores = stores_cap_D + grid_cap
 
@@ -1926,7 +1927,8 @@ def etrago_eGon2035_gas_DE():
         calculated:
 
           * 'CH4': with the function :py:func:`sanity_check_CH4_stores`
-          * 'H2_underground': with the function :py:func:`sanity_check_H2_saltcavern_stores`
+          * 'H2_underground': with the function
+            :py:func:`sanity_check_H2_saltcavern_stores`
       * One-port components (loads, generators, stores): verification
         that they are all connected to a bus present in the data base
         with the function :py:func:`sanity_check_gas_one_port`
@@ -2315,7 +2317,8 @@ def etrago_eGon2035_gas_abroad():
             * 100
         )
         logger.info(
-            f"Deviation of the capacity of the crossbordering CH4 grid: {e_gas_grid} %"
+            f"Deviation of the capacity of the crossbordering CH4 grid: "
+            f"{e_gas_grid} %"
         )
 
     else:
@@ -2800,11 +2803,11 @@ def heat_gas_load_egon100RE(scn="eGon100RE"):
     # filter out NaN values central_heat timeseries
     NaN_load_ids = db.select_dataframe(
         """
-        SELECT load_id from grid.egon_etrago_load_timeseries 
-        WHERE load_id IN (Select load_id 
+        SELECT load_id from grid.egon_etrago_load_timeseries
+        WHERE load_id IN (Select load_id
             FROM grid.egon_etrago_load
-            WHERE carrier = 'central_heat') AND (SELECT 
-            bool_or(value::double precision::text = 'NaN') 
+            WHERE carrier = 'central_heat') AND (SELECT
+            bool_or(value::double precision::text = 'NaN')
         FROM unnest(p_set) AS value
         )
        """
@@ -2815,28 +2818,28 @@ def heat_gas_load_egon100RE(scn="eGon100RE"):
     #####loads for eGon100RE
     loads_etrago_timeseries = db.select_dataframe(
         f"""
-            SELECT 
+            SELECT
                 l.carrier,
                 SUM(
                     (SELECT SUM(p)
-                    FROM UNNEST(t.p_set) p)  
-                )  AS total_p_set_timeseries  
-            FROM 
+                    FROM UNNEST(t.p_set) p)
+                )  AS total_p_set_timeseries
+            FROM
                 grid.egon_etrago_load l
-            LEFT JOIN 
-                grid.egon_etrago_load_timeseries t ON l.load_id = t.load_id 
-            WHERE 
+            LEFT JOIN
+                grid.egon_etrago_load_timeseries t ON l.load_id = t.load_id
+            WHERE
                 l.scn_name = '{scn}'
                 AND l.carrier != 'AC'
                 AND l.bus IN (
                     SELECT bus_id
                     FROM grid.egon_etrago_bus
-                    WHERE scn_name = '{scn}' 
+                    WHERE scn_name = '{scn}'
                     AND country = 'DE'
                 )
                 AND l.load_id NOT IN ({nan_load_str})
-                
-            GROUP BY 
+
+            GROUP BY
                 l.carrier
         """
     )
