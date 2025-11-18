@@ -344,7 +344,7 @@ def create_district_heating_profile_python_like(scenario="eGon2035"):
                     SELECT * FROM {HeatTimeSeries.sources.tables['district_heating_areas']}
                     WHERE scenario = '{scenario}'
                     AND area_id = '{area}'
-                ) b ON a.zensus_population_id = b.zensus_population_id       
+                ) b ON a.zensus_population_id = b.zensus_population_id,      
 
                 UNNEST (selected_idp_profiles) WITH ORDINALITY as selected_idp
 
@@ -1254,7 +1254,7 @@ class HeatTimeSeries(Dataset):
     #:
     name: str = "HeatTimeSeries"
     #:
-    version: str = "0.0.14"
+    version: str = "0.0.15"
 
     sources = DatasetSources(
         tables={
