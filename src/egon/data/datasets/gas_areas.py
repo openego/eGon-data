@@ -45,20 +45,26 @@ class GasAreaseGon2035(Dataset):
     #:
     name: str = "GasAreaseGon2035"
     #:
-    version: str = "0.0.3"
+    version: str = "0.0.4"
 
     # Dataset sources (input tables)
     sources = DatasetSources(
         tables={
-            "vg250_sta_union": "boundaries.vg250_sta_union",
-            "egon_etrago_bus": "grid.egon_etrago_bus",
+            "vg250_sta_union": {
+                "schema": "boundaries",
+                "table": "vg250_sta_union",
+            },
+            "egon_etrago_bus": {
+                "schema": "grid",
+                "table": "egon_etrago_bus",
+            },
         }
     )
 
     # Dataset targets (output tables)
     targets = DatasetTargets(
         tables={
-            "gas_voronoi": {
+            "ch4_voronoi": {
                 "schema": "grid",
                 "table": "egon_gas_voronoi",
             },
@@ -97,20 +103,26 @@ class GasAreaseGon100RE(Dataset):
     #:
     name: str = "GasAreaseGon100RE"
     #:
-    version: str = "0.0.2"
+    version: str = "0.0.3"
 
     # Same sources as GasAreaseGon2035
     sources = DatasetSources(
         tables={
-            "vg250_sta_union": "boundaries.vg250_sta_union",
-            "egon_etrago_bus": "grid.egon_etrago_bus",
+            "vg250_sta_union": {
+                "schema": "boundaries",
+                "table": "vg250_sta_union",
+            },
+            "egon_etrago_bus": {
+                "schema": "grid",
+                "table": "egon_etrago_bus",
+            },
         }
     )
 
     # Same target table
     targets = DatasetTargets(
         tables={
-            "gas_voronoi": {
+            "ch4_voronoi": {
                 "schema": "grid",
                 "table": "egon_gas_voronoi",
             },
@@ -277,11 +289,11 @@ def create_voronoi(scn_name, carrier):
     table_exist = (
         len(
             pd.read_sql(
-                """
+                f"""
     SELECT *
     FROM information_schema.tables
-    WHERE table_schema = 'grid'
-        AND table_name = 'egon_gas_voronoi'
+    WHERE table_schema = '{GasAreaseGon2035.targets.tables["ch4_voronoi"]["schema"]}'
+        AND table_name = '{GasAreaseGon2035.targets.tables["ch4_voronoi"]["table"]}'
     LIMIT 1;
         """,
                 engine,
@@ -296,7 +308,8 @@ def create_voronoi(scn_name, carrier):
     boundary = db.select_geodataframe(
         f"""
             SELECT id, geometry
-            FROM {GasAreaseGon2035.sources.tables["vg250_sta_union"]};
+            FROM {GasAreaseGon2035.sources.tables["vg250_sta_union"]["schema"]}.
+                 {GasAreaseGon2035.sources.tables["vg250_sta_union"]["table"]};
         """,
         geom_col="geometry",
     ).to_crs(epsg=4326)
@@ -313,7 +326,7 @@ def create_voronoi(scn_name, carrier):
 
     db.execute_sql(
         f"""
-        DELETE FROM {GasAreaseGon2035.targets.tables["gas_voronoi"]["schema"]}.{GasAreaseGon2035.targets.tables["gas_voronoi"]["table"]}
+        DELETE FROM {GasAreaseGon2035.targets.tables["ch4_voronoi"]["schema"]}.{GasAreaseGon2035.targets.tables["ch4_voronoi"]["table"]}
         WHERE "carrier" IN ('{carrier_strings}') and "scn_name" = '{scn_name}';
         """
     )
@@ -321,7 +334,8 @@ def create_voronoi(scn_name, carrier):
     buses = db.select_geodataframe(
         f"""
             SELECT bus_id, geom
-            FROM {GasAreaseGon100RE.sources.tables['egon_etrago_bus']}
+            FROM {GasAreaseGon100RE.sources.tables['egon_etrago_bus']['schema']}.
+                 {GasAreaseGon100RE.sources.tables['egon_etrago_bus']['table']}
             WHERE scn_name = '{scn_name}'
             AND country = 'DE'
             AND carrier IN ('{carrier_strings}');
@@ -351,9 +365,9 @@ def create_voronoi(scn_name, carrier):
 
     # Insert data to db
     gdf.set_crs(epsg=4326).to_postgis(
-        "egon_gas_voronoi",
+        GasAreaseGon2035.targets.tables["ch4_voronoi"]["table"],
         engine,
-        schema="grid",
+        schema=GasAreaseGon2035.targets.tables["ch4_voronoi"]["schema"],
         index=False,
         if_exists="append",
         dtype={"geom": Geometry},
