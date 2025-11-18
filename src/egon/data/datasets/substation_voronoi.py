@@ -14,7 +14,7 @@ Base = declarative_base()
 
 class SubstationVoronoi(Dataset):
     name: str = "substation_voronoi"
-    version: str = "0.0.1"
+    version: str = "0.0.2"
 
     # Defined sources and targets for the file
     sources = DatasetSources(
@@ -40,8 +40,8 @@ class SubstationVoronoi(Dataset):
 
     def __init__(self, dependencies):
         super().__init__(
-            name="substation_voronoi",
-            version="0.0.0",
+            name=self.name,
+            version=self.version,
             dependencies=dependencies,
             tasks=(
                 create_tables,
@@ -86,8 +86,6 @@ def create_tables():
     -------
     None.
     """
-
-    #cfg_voronoi = egon.data.config.datasets()["substation_voronoi"]["targets"]
 
 
     db.execute_sql(
