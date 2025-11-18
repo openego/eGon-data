@@ -28,7 +28,7 @@ class Tyndp(Dataset):
     #:
     name: str = "Tyndp"
     #:
-    version: str = "0.0.2"
+    version: str = "0.0.3"
     
     sources = DatasetSources(
         files={
@@ -62,13 +62,12 @@ def download():
     -------
     None.
     """
-    sources = config.datasets()["tyndp"]["sources"]
-    targets = config.datasets()["tyndp"]["targets"]
 
     if not os.path.exists("tyndp"):
         os.mkdir("tyndp")
 
     for dataset in ["capacities", "demand_2030", "demand_2040"]:
-        target_file = targets[dataset]
+        source_url = Tyndp.sources.files[dataset]
+        target_file = Tyndp.targets.files[dataset]
 
-        urlretrieve(sources[dataset], f"tyndp/{target_file}")
+        urlretrieve(source_url, f"tyndp/{target_file}")
