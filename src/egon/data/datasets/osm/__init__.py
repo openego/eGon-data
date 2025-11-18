@@ -34,8 +34,8 @@ import egon.data.subprocess as subprocess
 
 
 def download():
+    """Download OpenStreetMap `.pbf` file."""
     
-
     download_directory = Path(".") / "openstreetmap"
     # Create the folder, if it does not exists already
     if not os.path.exists(download_directory):
