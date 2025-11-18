@@ -43,9 +43,18 @@ class WeatherData(Dataset):
     #:
     name: str = "Era5"
     #:
-    version: str = "0.0.5"
+    version: str = "0.0.6"
     
-    sources = DatasetSources(files={})
+    sources = DatasetSources(
+        files={},
+        tables={
+            "vg250_bbox": {
+                "schema": "boundaries",
+                "table": "vg250_sta_bbox",
+            },
+        },
+    )
+
 
     targets = DatasetTargets(
         tables={
@@ -102,11 +111,13 @@ class EgonRenewableFeedIn(Base):
 
 
 def create_tables():
-    db.execute_sql("CREATE SCHEMA IF NOT EXISTS supply;")
+    db.execute_sql(
+        f"CREATE SCHEMA IF NOT EXISTS {WeatherData.targets.tables['weather_cells']['schema']};"
+    )
     engine = db.engine()
     db.execute_sql(
         f"""
-        DROP TABLE IF EXISTS {EgonEra5Cells.__table__.schema}.{EgonEra5Cells.__table__.name} CASCADE;
+        DROP TABLE IF EXISTS {WeatherData.targets.tables['weather_cells']['schema']}.{WeatherData.targets.tables['weather_cells']['table']} CASCADE;
         """
     )
     EgonEra5Cells.__table__.create(bind=engine, checkfirst=True)
@@ -133,7 +144,9 @@ def import_cutout(boundary="Europe"):
         elif boundary == "Germany":
             geom_de = (
                 gpd.read_postgis(
-                    "SELECT geometry as geom FROM boundaries.vg250_sta_bbox",
+                    f"SELECT geometry as geom FROM "
+                    f"{WeatherData.sources.tables['vg250_bbox']['schema']}."
+                    f"{WeatherData.sources.tables['vg250_bbox']['table']}",
                     db.engine(),
                 )
                 .to_crs(4326)
@@ -205,7 +218,6 @@ def insert_weather_cells():
     None.
 
     """
-    #cfg = egon.data.config.datasets()["era5_weather_data"]
 
     db.execute_sql(
         f"DELETE FROM {WeatherData.targets.tables['weather_cells']['schema']}."
