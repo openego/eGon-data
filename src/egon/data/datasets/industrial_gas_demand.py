@@ -48,13 +48,17 @@ class IndustrialGasDemand(Dataset):
 
     """
     name: str = "IndustrialGasDemand"
-    version: str = "0.0.7"
+    version: str = "0.0.8"
 
     sources = DatasetSources(
         tables={
             "region_mapping_json": "datasets/gas_data/demand/region_corr.json",
             "industrial_demand_folder": "datasets/gas_data/demand",  
             "boundaries_vg250_krs": "boundaries.vg250_krs",
+            "egon_etrago_bus": "grid.egon_etrago_bus",
+        },      
+        files={
+            "industrial_gas_bundle_src": "data_bundle_egon_data/industrial_gas_demand"  
         }
     )
 
@@ -331,7 +335,7 @@ def delete_old_entries(scn_name):
             SELECT load_id FROM {IndustrialGasDemand.targets.tables['etrago_load']['schema']}.{IndustrialGasDemand.targets.tables['etrago_load']['table']}
             WHERE "carrier" IN ('CH4_for_industry', 'H2_for_industry') AND
             scn_name = '{scn_name}' AND bus not IN (
-                SELECT bus_id FROM grid.egon_etrago_bus
+                SELECT bus_id FROM {IndustrialGasDemand.sources.tables['egon_etrago_bus']}
                 WHERE scn_name = '{scn_name}' AND country != 'DE'
             )
         );
@@ -345,7 +349,7 @@ def delete_old_entries(scn_name):
             SELECT load_id FROM {IndustrialGasDemand.targets.tables['etrago_load']['schema']}.{IndustrialGasDemand.targets.tables['etrago_load']['table']}
             WHERE "carrier" IN ('CH4_for_industry', 'H2_for_industry') AND
             scn_name = '{scn_name}' AND bus not IN (
-                SELECT bus_id FROM grid.egon_etrago_bus
+                SELECT bus_id FROM {IndustrialGasDemand.sources.tables['egon_etrago_bus']}
                 WHERE scn_name = '{scn_name}' AND country != 'DE'
             )
         );
@@ -729,7 +733,7 @@ def download_industrial_gas_demand():
             """
         )
         shutil.copytree(
-            "data_bundle_egon_data/industrial_gas_demand",
-            "datasets/gas_data/demand",
+            IndustrialGasDemand.sources.files["industrial_gas_bundle_src"],
+            IndustrialGasDemand.sources.tables["industrial_demand_folder"],
             dirs_exist_ok=True,
         )
