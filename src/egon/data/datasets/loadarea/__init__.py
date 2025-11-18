@@ -57,7 +57,7 @@ class OsmLanduse(Dataset):
     #:
     name: str = "OsmLanduse"
     #:
-    version: str = "0.0.1"
+    version: str = "0.0.2"
     
     sources = DatasetSources(
         files={
@@ -124,7 +124,7 @@ class LoadArea(Dataset):
     #:
     name: str = "LoadArea"
     #:
-    version: str = "0.0.2"
+    version: str = "0.0.3"
     
     sources = DatasetSources(
         files={
@@ -185,7 +185,9 @@ class LoadArea(Dataset):
 
 def extract_osm_landuse():
     db.execute_sql_script(
-        os.path.dirname(__file__) + "/osm_landuse_extraction.sql"
+        os.path.dirname(__file__)
+        + "/"
+        + OsmLanduse.sources.files["osm_landuse_extraction"]
     )
 
 
@@ -227,7 +229,7 @@ def execute_sql_script(script):
 def osm_landuse_melt():
     """Melt all OSM landuse areas by: buffer, union, unbuffer"""
     print("Melting OSM landuse areas from openstreetmap.osm_landuse...")
-    execute_sql_script("osm_landuse_melt.sql")
+    execute_sql_script(LoadArea.sources.files["osm_landuse_melt"])
 
 
 def census_cells_melt():
@@ -236,7 +238,7 @@ def census_cells_melt():
         "Melting census cells from "
         "society.destatis_zensus_population_per_ha_inside_germany..."
     )
-    execute_sql_script("census_cells_melt.sql")
+    execute_sql_script(LoadArea.sources.files["census_cells_melt"])
 
 
 def osm_landuse_census_cells_melt():
@@ -246,7 +248,7 @@ def osm_landuse_census_cells_melt():
         "census cells from "
         "society.egon_destatis_zensus_cells_melted_cluster..."
     )
-    execute_sql_script("osm_landuse_census_cells_melt.sql")
+    execute_sql_script(LoadArea.sources.files["osm_landuse_census_cells_melt"])
 
 
 def loadareas_create():
@@ -261,27 +263,27 @@ def loadareas_create():
     * Check for Loadareas without AGS code.
     """
     print("Create initial load areas and add some sector stats...")
-    execute_sql_script("loadareas_create.sql")
+    execute_sql_script(LoadArea.sources.files["loadareas_create"])
 
 
 def loadareas_add_demand_hh():
     """Adds consumption and peak load to load areas for households"""
     print("Add consumption and peak loads to load areas for households...")
-    execute_sql_script("loadareas_add_demand_hh.sql")
+    execute_sql_script(LoadArea.sources.files["loadareas_add_demand_hh"])
 
 
 def loadareas_add_demand_cts():
     """Adds consumption and peak load to load areas for CTS"""
     print("Add consumption and peak loads to load areas for CTS...")
-    execute_sql_script("loadareas_add_demand_cts.sql")
+    execute_sql_script(LoadArea.sources.files["loadareas_add_demand_cts"])
 
 
 def loadareas_add_demand_ind():
     """Adds consumption and peak load to load areas for industry"""
     print("Add consumption and peak loads to load areas for industry...")
-    execute_sql_script("loadareas_add_demand_ind.sql")
+    execute_sql_script(LoadArea.sources.files["loadareas_add_demand_ind"])
 
 
 def drop_temp_tables():
     print("Dropping temp tables, views and sequences...")
-    execute_sql_script("drop_temp_tables.sql")
+    execute_sql_script(LoadArea.sources.files["drop_temp_tables"])
