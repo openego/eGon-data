@@ -25,10 +25,12 @@ class ZensusPopulation(Dataset):
                 "https://www.zensus2011.de/SharedDocs/Downloads/DE/"
                 "Pressemitteilung/DemografischeGrunddaten/"
                 "csv_Bevoelkerung_100m_Gitter.zip?__blob=publicationFile&v=3"
-                ),
-            }
+            ),
+        },
+        tables={
+            "boundaries_vg250_lan": "boundaries.vg250_lan",
+        },
     )
-
     targets = DatasetTargets(
         files={
             
@@ -42,7 +44,7 @@ class ZensusPopulation(Dataset):
     def __init__(self, dependencies):
         super().__init__(
             name="ZensusPopulation",
-            version="0.0.3",
+            version="0.0.4",
             dependencies=dependencies,
             tasks=(
                 download_zensus_pop,
@@ -132,14 +134,18 @@ def download_and_check(url, target_file, max_iteration=5):
 
 
 def download_zensus_pop():
-    """Download Zensus csv file on population per hectare grid cell."""
+    """Download the Zensus population ZIP to the path defined in
+    ZensusPopulation.targets.files using the URL from
+    ZensusPopulation.sources.urls (no global config.datasets() usage)."""
     target_file = Path(ZensusPopulation.targets.files["zensus_population"])
     target_file.parent.mkdir(parents=True, exist_ok=True)
     download_and_check(ZensusPopulation.sources.urls["original_data"], target_file, max_iteration=5)
 
 
 def download_zensus_misc():
-    """Download Zensus csv files on data per hectare grid cell."""
+    """Download the Zensus miscellaneous ZIP files (households, buildings,
+    apartments) using the URL/file mappings from
+    ZensusMiscellaneous.sources.urls and .targets.files for each key."""
     for key, url in ZensusMiscellaneous.sources.urls.items():
         target_file = Path(ZensusMiscellaneous.targets.files[key])
         target_file.parent.mkdir(parents=True, exist_ok=True)
@@ -228,7 +234,10 @@ def select_geom():
             f" port={docker_db_config['PORT']}"
             f" dbname='{docker_db_config['POSTGRES_DB']}'"
         ]
-        + ["-sql", "SELECT ST_Union(geometry) FROM boundaries.vg250_lan"],
+        + [
+            "-sql",
+            f"SELECT ST_Union(geometry) FROM {ZensusPopulation.sources.tables['boundaries_vg250_lan']}",
+        ],
         text=True,
     )
     features = json.loads(geojson.stdout)["features"]
