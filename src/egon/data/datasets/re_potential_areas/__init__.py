@@ -55,10 +55,8 @@ class EgonRePotentialAreaWind(Base):
 def create_tables():
     """Create tables for RE potential areas"""
 
-    data_config = egon.data.config.datasets()
-    schema = data_config["re_potential_areas"]["target"].get(
-        "schema", "supply"
-    )
+    schema = re_potential_area_setup.targets.tables["egon_re_potential_area_wind"]["schema"]
+
 
     db.execute_sql(f"CREATE SCHEMA IF NOT EXISTS {schema};")
     engine = db.engine()
@@ -110,7 +108,7 @@ def insert_data():
         data.rename(columns={"geometry": "geom"}, inplace=True)
         data.set_geometry("geom", inplace=True)
 
-        schema = pa_config["target"].get("schema", "supply")
+        schema = re_potential_area_setup.targets.tables["egon_re_potential_area_wind"]["schema"]
 
         # create database table from geopandas dataframe
         data[["id", "geom"]].to_postgis(
@@ -142,7 +140,7 @@ class re_potential_area_setup(Dataset):
     #:
     name: str = "RePotentialAreas"
     #:
-    version: str = "0.0.2"
+    version: str = "0.0.3"
     #:
     tasks = (create_tables, insert_data)
 
@@ -157,7 +155,6 @@ class re_potential_area_setup(Dataset):
         }
     )
 
-   #that needs further checking
     
     targets = DatasetTargets(
         tables={
