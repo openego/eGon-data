@@ -134,7 +134,7 @@ def get_meta(
 
 class EtragoSetup(Dataset):
     name: str = "EtragoSetup"
-    version: str = "0.0.12"
+    version: str = "0.0.13"
 
     sources = DatasetSources(
         tables={},
@@ -975,81 +975,45 @@ def create_tables():
     -------
     None.
     """
-    db.execute_sql("CREATE SCHEMA IF NOT EXISTS grid;")
+    schema = EtragoSetup.targets.tables["bus"]["schema"]
+    db.execute_sql(f"CREATE SCHEMA IF NOT EXISTS {schema};")
+
     engine = db.engine()
 
     ##################### drop tables with old names #########################
+    db.execute_sql(f"DROP TABLE IF EXISTS {schema}.egon_pf_hv_bus;")
+    db.execute_sql(f"DROP TABLE IF EXISTS {schema}.egon_pf_hv_bus_timeseries;")
+    db.execute_sql(f"DROP TABLE IF EXISTS {schema}.egon_pf_hv_carrier;")
+    db.execute_sql(f"DROP TABLE IF EXISTS {schema}.egon_pf_hv_generator;")
     db.execute_sql(
-        """
-        DROP TABLE IF EXISTS grid.egon_pf_hv_bus;"""
+    f"DROP TABLE IF EXISTS {schema}.egon_pf_hv_generator_timeseries;"
+    )
+    db.execute_sql(f"DROP TABLE IF EXISTS {schema}.egon_pf_hv_line;")
+    db.execute_sql(
+    f"DROP TABLE IF EXISTS {schema}.egon_pf_hv_line_timeseries;"
+    )
+    db.execute_sql(f"DROP TABLE IF EXISTS {schema}.egon_pf_hv_link;")
+    db.execute_sql(
+    f"DROP TABLE IF EXISTS {schema}.egon_pf_hv_link_timeseries;"
+    )
+    db.execute_sql(f"DROP TABLE IF EXISTS {schema}.egon_pf_hv_load;")
+    db.execute_sql(
+    f"DROP TABLE IF EXISTS {schema}.egon_pf_hv_load_timeseries;"
+    )
+    db.execute_sql(f"DROP TABLE IF EXISTS {schema}.egon_pf_hv_storage;")
+    db.execute_sql(
+    f"DROP TABLE IF EXISTS {schema}.egon_pf_hv_storage_timeseries;"
+    )
+    db.execute_sql(f"DROP TABLE IF EXISTS {schema}.egon_pf_hv_store;")
+    db.execute_sql(
+    f"DROP TABLE IF EXISTS {schema}.egon_pf_hv_store_timeseries;"
     )
     db.execute_sql(
-        """
-        DROP TABLE IF EXISTS grid.egon_pf_hv_bus_timeseries;"""
+    f"DROP TABLE IF EXISTS {schema}.egon_pf_hv_temp_resolution;"
     )
+    db.execute_sql(f"DROP TABLE IF EXISTS {schema}.egon_pf_hv_transformer;")
     db.execute_sql(
-        """
-        DROP TABLE IF EXISTS grid.egon_pf_hv_carrier;"""
-    )
-    db.execute_sql(
-        """
-        DROP TABLE IF EXISTS grid.egon_pf_hv_generator;"""
-    )
-    db.execute_sql(
-        """
-        DROP TABLE IF EXISTS grid.egon_pf_hv_generator_timeseries;"""
-    )
-    db.execute_sql(
-        """
-        DROP TABLE IF EXISTS grid.egon_pf_hv_line;"""
-    )
-    db.execute_sql(
-        """
-        DROP TABLE IF EXISTS grid.egon_pf_hv_line_timeseries;"""
-    )
-    db.execute_sql(
-        """
-        DROP TABLE IF EXISTS grid.egon_pf_hv_link;"""
-    )
-    db.execute_sql(
-        """
-        DROP TABLE IF EXISTS grid.egon_pf_hv_link_timeseries;"""
-    )
-    db.execute_sql(
-        """
-        DROP TABLE IF EXISTS grid.egon_pf_hv_load;"""
-    )
-    db.execute_sql(
-        """
-        DROP TABLE IF EXISTS grid.egon_pf_hv_load_timeseries;"""
-    )
-    db.execute_sql(
-        """
-        DROP TABLE IF EXISTS grid.egon_pf_hv_storage;"""
-    )
-    db.execute_sql(
-        """
-        DROP TABLE IF EXISTS grid.egon_pf_hv_storage_timeseries;"""
-    )
-    db.execute_sql(
-        """
-        DROP TABLE IF EXISTS grid.egon_pf_hv_store;"""
-    )
-    db.execute_sql(
-        """
-        DROP TABLE IF EXISTS grid.egon_pf_hv_store_timeseries;"""
-    )
-    db.execute_sql(
-        """
-        DROP TABLE IF EXISTS grid.egon_pf_hv_temp_resolution;"""
-    )
-    db.execute_sql(
-        """
-        DROP TABLE IF EXISTS grid.egon_pf_hv_transformer;"""
-    )
-    db.execute_sql(
-        """
-        DROP TABLE IF EXISTS grid.egon_pf_hv_transformer_timeseries;"""
+    f"DROP TABLE IF EXISTS {schema}.egon_pf_hv_transformer_timeseries;"
     )
     ##########################################################################
 
