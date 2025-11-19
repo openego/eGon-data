@@ -116,10 +116,10 @@ def etrago_eGon2035_electricity():
 
         if carrier == "biomass":
             sum_output = db.select_dataframe(
-                """SELECT scn_name, SUM(p_nom::numeric) as output_capacity_mw
-                    FROM grid.egon_etrago_generator
+                f"""SELECT scn_name, SUM(p_nom::numeric) as output_capacity_mw
+                    FROM {SanityChecks.sources.tables["etrago"]["generator"]["schema"]}.{SanityChecks.sources.tables["etrago"]["generator"]["table"]}
                     WHERE bus IN (
-                        SELECT bus_id FROM grid.egon_etrago_bus
+                        SELECT bus_id FROM {SanityChecks.sources.tables["etrago"]["bus"]["schema"]}.{SanityChecks.sources.tables["etrago"]["bus"]["table"]}
                         WHERE scn_name = 'eGon2035'
                         AND country = 'DE')
                     AND carrier IN ('biomass', 'industrial_biomass_CHP',
@@ -133,14 +133,14 @@ def etrago_eGon2035_electricity():
             sum_output = db.select_dataframe(
                 f"""SELECT scn_name,
                  SUM(p_nom::numeric) as output_capacity_mw
-                         FROM grid.egon_etrago_generator
+                         FROM {SanityChecks.sources.tables["etrago"]["generator"]["schema"]}.{SanityChecks.sources.tables["etrago"]["generator"]["table"]}
                          WHERE scn_name = '{scn}'
                          AND carrier IN ('{carrier}')
-                         AND bus IN
-                             (SELECT bus_id
-                               FROM grid.egon_etrago_bus
-                               WHERE scn_name = 'eGon2035'
-                               AND country = 'DE')
+                         AND bus IN (
+                             SELECT bus_id
+                             FROM {SanityChecks.sources.tables["etrago"]["bus"]["schema"]}.{SanityChecks.sources.tables["etrago"]["bus"]["table"]}
+                             WHERE scn_name = 'eGon2035'
+                             AND country = 'DE')
                          GROUP BY (scn_name);
                     """,
                 warning=False,
@@ -148,7 +148,7 @@ def etrago_eGon2035_electricity():
 
         sum_input = db.select_dataframe(
             f"""SELECT carrier, SUM(capacity::numeric) as input_capacity_mw
-                     FROM supply.egon_scenario_capacities
+                     FROM {SanityChecks.sources.tables["solar_rooftop"]["scenario_capacities"]["schema"]}.{SanityChecks.sources.tables["solar_rooftop"]["scenario_capacities"]["table"]}
                      WHERE carrier= '{carrier}'
                      AND scenario_name ='{scn}'
                      GROUP BY (carrier);
@@ -206,14 +206,14 @@ def etrago_eGon2035_electricity():
 
         sum_output = db.select_dataframe(
             f"""SELECT scn_name, SUM(p_nom::numeric) as output_capacity_mw
-                         FROM grid.egon_etrago_storage
+                         FROM {SanityChecks.sources.tables["etrago"]["storage"]["schema"]}.{SanityChecks.sources.tables["etrago"]["storage"]["table"]}
                          WHERE scn_name = '{scn}'
                          AND carrier IN ('{carrier}')
-                         AND bus IN
-                             (SELECT bus_id
-                               FROM grid.egon_etrago_bus
-                               WHERE scn_name = 'eGon2035'
-                               AND country = 'DE')
+                         AND bus IN (
+                             SELECT bus_id
+                             FROM {SanityChecks.sources.tables["etrago"]["bus"]["schema"]}.{SanityChecks.sources.tables["etrago"]["bus"]["table"]}
+                             WHERE scn_name = 'eGon2035'
+                             AND country = 'DE')
                          GROUP BY (scn_name);
                     """,
             warning=False,
@@ -221,7 +221,7 @@ def etrago_eGon2035_electricity():
 
         sum_input = db.select_dataframe(
             f"""SELECT carrier, SUM(capacity::numeric) as input_capacity_mw
-                     FROM supply.egon_scenario_capacities
+                     FROM {SanityChecks.sources.tables["solar_rooftop"]["scenario_capacities"]["schema"]}.{SanityChecks.sources.tables["solar_rooftop"]["scenario_capacities"]["table"]}
                      WHERE carrier= '{carrier}'
                      AND scenario_name ='{scn}'
                      GROUP BY (carrier);
@@ -273,13 +273,13 @@ def etrago_eGon2035_electricity():
     )
 
     output_demand = db.select_dataframe(
-        """SELECT a.scn_name, a.carrier,  SUM((SELECT SUM(p)
-        FROM UNNEST(b.p_set) p))/1000000::numeric as load_twh
-            FROM grid.egon_etrago_load a
-            JOIN grid.egon_etrago_load_timeseries b
-            ON (a.load_id = b.load_id)
-            JOIN grid.egon_etrago_bus c
-            ON (a.bus=c.bus_id)
+        f"""SELECT a.scn_name, a.carrier,
+                    SUM((SELECT SUM(p) FROM UNNEST(b.p_set) p))/1000000::numeric as load_twh
+            FROM {SanityChecks.sources.tables["etrago"]["load"]["schema"]}.{SanityChecks.sources.tables["etrago"]["load"]["table"]} a
+            JOIN {SanityChecks.sources.tables["etrago"]["load_timeseries"]["schema"]}.{SanityChecks.sources.tables["etrago"]["load_timeseries"]["table"]} b
+                ON (a.load_id = b.load_id)
+            JOIN {SanityChecks.sources.tables["etrago"]["bus"]["schema"]}.{SanityChecks.sources.tables["etrago"]["bus"]["table"]} c
+                ON (a.bus=c.bus_id)
             AND b.scn_name = 'eGon2035'
             AND a.scn_name = 'eGon2035'
             AND a.carrier = 'AC'
@@ -292,9 +292,9 @@ def etrago_eGon2035_electricity():
     )["load_twh"].values[0]
 
     input_cts_ind = db.select_dataframe(
-        """SELECT scenario,
-         SUM(demand::numeric/1000000) as demand_mw_regio_cts_ind
-            FROM demand.egon_demandregio_cts_ind
+        f"""SELECT scenario,
+                 SUM(demand::numeric/1000000) as demand_mw_regio_cts_ind
+            FROM {SanityChecks.sources.tables["demand"]["demandregio_cts_ind"]["schema"]}.{SanityChecks.sources.tables["demand"]["demandregio_cts_ind"]["table"]}
             WHERE scenario= 'eGon2035'
             AND year IN ('2035')
             GROUP BY (scenario);
@@ -304,8 +304,9 @@ def etrago_eGon2035_electricity():
     )["demand_mw_regio_cts_ind"].values[0]
 
     input_hh = db.select_dataframe(
-        """SELECT scenario, SUM(demand::numeric/1000000) as demand_mw_regio_hh
-            FROM demand.egon_demandregio_hh
+        f"""SELECT scenario,
+                SUM(demand::numeric/1000000) as demand_mw_regio_hh
+            FROM {SanityChecks.sources.tables["demand"]["demandregio_hh"]["schema"]}.{SanityChecks.sources.tables["demand"]["demandregio_hh"]["table"]}
             WHERE scenario= 'eGon2035'
             AND year IN ('2035')
             GROUP BY (scenario);
@@ -350,14 +351,13 @@ def etrago_eGon2035_heat():
     # Sanity checks for heat demand
 
     output_heat_demand = db.select_dataframe(
-        """SELECT a.scn_name,
-          (SUM(
-          (SELECT SUM(p) FROM UNNEST(b.p_set) p))/1000000)::numeric as load_twh
-            FROM grid.egon_etrago_load a
-            JOIN grid.egon_etrago_load_timeseries b
-            ON (a.load_id = b.load_id)
-            JOIN grid.egon_etrago_bus c
-            ON (a.bus=c.bus_id)
+        f"""SELECT a.scn_name,
+                  (SUM((SELECT SUM(p) FROM UNNEST(b.p_set) p))/1000000)::numeric as load_twh
+            FROM {SanityChecks.sources.tables["etrago"]["load"]["schema"]}.{SanityChecks.sources.tables["etrago"]["load"]["table"]} a
+            JOIN {SanityChecks.sources.tables["etrago"]["load_timeseries"]["schema"]}.{SanityChecks.sources.tables["etrago"]["load_timeseries"]["table"]} b
+              ON (a.load_id = b.load_id)
+            JOIN {SanityChecks.sources.tables["etrago"]["bus"]["schema"]}.{SanityChecks.sources.tables["etrago"]["bus"]["table"]} c
+              ON (a.bus=c.bus_id)
             AND b.scn_name = 'eGon2035'
             AND a.scn_name = 'eGon2035'
             AND c.scn_name= 'eGon2035'
@@ -369,8 +369,9 @@ def etrago_eGon2035_heat():
     )["load_twh"].values[0]
 
     input_heat_demand = db.select_dataframe(
-        """SELECT scenario, SUM(demand::numeric/1000000) as demand_mw_peta_heat
-            FROM demand.egon_peta_heat
+        f"""SELECT scenario,
+                SUM(demand::numeric/1000000) as demand_mw_peta_heat
+            FROM {SanityChecks.sources.tables["demand"]["peta_heat"]["schema"]}.{SanityChecks.sources.tables["demand"]["peta_heat"]["table"]}
             WHERE scenario= 'eGon2035'
             GROUP BY (scenario);
         """,
@@ -393,8 +394,8 @@ def etrago_eGon2035_heat():
 
     # Comparison for central heat pumps
     heat_pump_input = db.select_dataframe(
-        """SELECT carrier, SUM(capacity::numeric) as Urban_central_heat_pump_mw
-            FROM supply.egon_scenario_capacities
+        f"""SELECT carrier, SUM(capacity::numeric) as Urban_central_heat_pump_mw
+            FROM {SanityChecks.sources.tables["solar_rooftop"]["scenario_capacities"]["schema"]}.{SanityChecks.sources.tables["solar_rooftop"]["scenario_capacities"]["table"]}
             WHERE carrier= 'urban_central_heat_pump'
             AND scenario_name IN ('eGon2035')
             GROUP BY (carrier);
@@ -403,8 +404,8 @@ def etrago_eGon2035_heat():
     )["urban_central_heat_pump_mw"].values[0]
 
     heat_pump_output = db.select_dataframe(
-        """SELECT carrier, SUM(p_nom::numeric) as Central_heat_pump_mw
-            FROM grid.egon_etrago_link
+        f"""SELECT carrier, SUM(p_nom::numeric) as Central_heat_pump_mw
+            FROM {SanityChecks.sources.tables["etrago"]["link"]["schema"]}.{SanityChecks.sources.tables["etrago"]["link"]["table"]}
             WHERE carrier= 'central_heat_pump'
             AND scn_name IN ('eGon2035')
             GROUP BY (carrier);
@@ -421,8 +422,8 @@ def etrago_eGon2035_heat():
     # Comparison for residential heat pumps
 
     input_residential_heat_pump = db.select_dataframe(
-        """SELECT carrier, SUM(capacity::numeric) as residential_heat_pump_mw
-            FROM supply.egon_scenario_capacities
+        f"""SELECT carrier, SUM(capacity::numeric) as residential_heat_pump_mw
+            FROM {SanityChecks.sources.tables["solar_rooftop"]["scenario_capacities"]["schema"]}.{SanityChecks.sources.tables["solar_rooftop"]["scenario_capacities"]["table"]}
             WHERE carrier= 'residential_rural_heat_pump'
             AND scenario_name IN ('eGon2035')
             GROUP BY (carrier);
@@ -431,8 +432,8 @@ def etrago_eGon2035_heat():
     )["residential_heat_pump_mw"].values[0]
 
     output_residential_heat_pump = db.select_dataframe(
-        """SELECT carrier, SUM(p_nom::numeric) as rural_heat_pump_mw
-            FROM grid.egon_etrago_link
+        f"""SELECT carrier, SUM(p_nom::numeric) as rural_heat_pump_mw
+            FROM {SanityChecks.sources.tables["etrago"]["link"]["schema"]}.{SanityChecks.sources.tables["etrago"]["link"]["table"]}
             WHERE carrier= 'rural_heat_pump'
             AND scn_name IN ('eGon2035')
             GROUP BY (carrier);
@@ -452,9 +453,8 @@ def etrago_eGon2035_heat():
 
     # Comparison for resistive heater
     resistive_heater_input = db.select_dataframe(
-        """SELECT carrier,
-         SUM(capacity::numeric) as Urban_central_resistive_heater_MW
-            FROM supply.egon_scenario_capacities
+        f"""SELECT carrier, SUM(capacity::numeric) as Urban_central_resistive_heater_MW
+            FROM {SanityChecks.sources.tables["solar_rooftop"]["scenario_capacities"]["schema"]}.{SanityChecks.sources.tables["solar_rooftop"]["scenario_capacities"]["table"]}
             WHERE carrier= 'urban_central_resistive_heater'
             AND scenario_name IN ('eGon2035')
             GROUP BY (carrier);
@@ -463,8 +463,8 @@ def etrago_eGon2035_heat():
     )["urban_central_resistive_heater_mw"].values[0]
 
     resistive_heater_output = db.select_dataframe(
-        """SELECT carrier, SUM(p_nom::numeric) as central_resistive_heater_MW
-            FROM grid.egon_etrago_link
+        f"""SELECT carrier, SUM(p_nom::numeric) as central_resistive_heater_MW
+            FROM {SanityChecks.sources.tables["etrago"]["link"]["schema"]}.{SanityChecks.sources.tables["etrago"]["link"]["table"]}
             WHERE carrier= 'central_resistive_heater'
             AND scn_name IN ('eGon2035')
             GROUP BY (carrier);
@@ -486,8 +486,8 @@ def etrago_eGon2035_heat():
     # Comparison for solar thermal collectors
 
     input_solar_thermal = db.select_dataframe(
-        """SELECT carrier, SUM(capacity::numeric) as solar_thermal_collector_mw
-            FROM supply.egon_scenario_capacities
+        f"""SELECT carrier, SUM(capacity::numeric) as solar_thermal_collector_mw
+            FROM {SanityChecks.sources.tables["solar_rooftop"]["scenario_capacities"]["schema"]}.{SanityChecks.sources.tables["solar_rooftop"]["scenario_capacities"]["table"]}
             WHERE carrier= 'urban_central_solar_thermal_collector'
             AND scenario_name IN ('eGon2035')
             GROUP BY (carrier);
@@ -496,8 +496,8 @@ def etrago_eGon2035_heat():
     )["solar_thermal_collector_mw"].values[0]
 
     output_solar_thermal = db.select_dataframe(
-        """SELECT carrier, SUM(p_nom::numeric) as solar_thermal_collector_mw
-            FROM grid.egon_etrago_generator
+        f"""SELECT carrier, SUM(p_nom::numeric) as solar_thermal_collector_mw
+            FROM {SanityChecks.sources.tables["etrago"]["generator"]["schema"]}.{SanityChecks.sources.tables["etrago"]["generator"]["table"]}
             WHERE carrier= 'solar_thermal_collector'
             AND scn_name IN ('eGon2035')
             GROUP BY (carrier);
@@ -517,9 +517,8 @@ def etrago_eGon2035_heat():
     # Comparison for geothermal
 
     input_geo_thermal = db.select_dataframe(
-        """SELECT carrier,
-         SUM(capacity::numeric) as Urban_central_geo_thermal_MW
-            FROM supply.egon_scenario_capacities
+        f"""SELECT carrier, SUM(capacity::numeric) as Urban_central_geo_thermal_MW
+            FROM {SanityChecks.sources.tables["solar_rooftop"]["scenario_capacities"]["schema"]}.{SanityChecks.sources.tables["solar_rooftop"]["scenario_capacities"]["table"]}
             WHERE carrier= 'urban_central_geo_thermal'
             AND scenario_name IN ('eGon2035')
             GROUP BY (carrier);
@@ -528,8 +527,8 @@ def etrago_eGon2035_heat():
     )["urban_central_geo_thermal_mw"].values[0]
 
     output_geo_thermal = db.select_dataframe(
-        """SELECT carrier, SUM(p_nom::numeric) as geo_thermal_MW
-            FROM grid.egon_etrago_generator
+        f"""SELECT carrier, SUM(p_nom::numeric) as geo_thermal_MW
+            FROM {SanityChecks.sources.tables["etrago"]["generator"]["schema"]}.{SanityChecks.sources.tables["etrago"]["generator"]["table"]}
             WHERE carrier= 'geo_thermal'
             AND scn_name IN ('eGon2035')
             GROUP BY (carrier);
@@ -553,19 +552,19 @@ def residential_electricity_annual_sum(rtol=1e-5):
     """
 
     df_nuts3_annual_sum = db.select_dataframe(
-        sql="""
+        sql=f"""
         SELECT dr.nuts3, dr.scenario, dr.demand_regio_sum, profiles.profile_sum
         FROM (
             SELECT scenario, SUM(demand) AS profile_sum, vg250_nuts3
-            FROM demand.egon_demandregio_zensus_electricity AS egon,
-             boundaries.egon_map_zensus_vg250 AS boundaries
+            FROM {SanityChecks.sources.tables["demand"]["demandregio_zensus_electricity"]["schema"]}.{SanityChecks.sources.tables["demand"]["demandregio_zensus_electricity"]["table"]} AS egon,
+                {SanityChecks.sources.tables["boundaries"]["zensus_vg250"]["schema"]}.{SanityChecks.sources.tables["boundaries"]["zensus_vg250"]["table"]} AS boundaries
             Where egon.zensus_population_id = boundaries.zensus_population_id
             AND sector = 'residential'
             GROUP BY vg250_nuts3, scenario
             ) AS profiles
         JOIN (
             SELECT nuts3, scenario, sum(demand) AS demand_regio_sum
-            FROM demand.egon_demandregio_hh
+            FROM {SanityChecks.sources.tables["demand"]["demandregio_hh"]["schema"]}.{SanityChecks.sources.tables["demand"]["demandregio_hh"]["table"]}
             GROUP BY year, scenario, nuts3
               ) AS dr
         ON profiles.vg250_nuts3 = dr.nuts3 and profiles.scenario  = dr.scenario
@@ -593,12 +592,12 @@ def residential_electricity_hh_refinement(rtol=1e-5):
     was applied and compare it to the original census values."""
 
     df_refinement = db.select_dataframe(
-        sql="""
+        sql=f"""
         SELECT refined.nuts3, refined.characteristics_code,
                 refined.sum_refined::int, census.sum_census::int
         FROM(
             SELECT nuts3, characteristics_code, SUM(hh_10types) as sum_refined
-            FROM society.egon_destatis_zensus_household_per_ha_refined
+            FROM {SanityChecks.sources.tables["zensus_households"]["households_per_ha_refined"]["schema"]}.{SanityChecks.sources.tables["zensus_households"]["households_per_ha_refined"]["table"]}
             GROUP BY nuts3, characteristics_code)
             AS refined
         JOIN(
@@ -606,7 +605,7 @@ def residential_electricity_hh_refinement(rtol=1e-5):
             FROM(
                 SELECT nuts3, cell_id, characteristics_code,
                         sum(DISTINCT(hh_5types))as orig
-                FROM society.egon_destatis_zensus_household_per_ha_refined
+                FROM {SanityChecks.sources.tables["zensus_households"]["households_per_ha_refined"]["schema"]}.{SanityChecks.sources.tables["zensus_households"]["households_per_ha_refined"]["table"]}
                 GROUP BY cell_id, characteristics_code, nuts3) AS t
             GROUP BY t.nuts3, t.characteristics_code    ) AS census
         ON refined.nuts3 = census.nuts3
@@ -680,9 +679,9 @@ def cts_heat_demand_share(rtol=1e-5):
 
 def sanitycheck_pv_rooftop_buildings():
     def egon_power_plants_pv_roof_building():
-        sql = """
+        sql = f"""
         SELECT *
-        FROM supply.egon_power_plants_pv_roof_building
+        FROM {SanityChecks.sources.tables["pv_rooftop_buildings"]["pv_roof_building"]["schema"]}.{SanityChecks.sources.tables["pv_rooftop_buildings"]["pv_roof_building"]["table"]}
         """
 
         return db.select_dataframe(sql, index_col="index")
@@ -761,8 +760,7 @@ def sanitycheck_pv_rooftop_buildings():
             target = db.select_dataframe(
                 f"""
                 SELECT capacity
-                FROM {sources['scenario_capacities']['schema']}.
-                {sources['scenario_capacities']['table']} a
+                FROM {sources['scenario_capacities']['schema']}.{sources['scenario_capacities']['table']} a
                 WHERE carrier = 'solar_rooftop'
                 AND scenario_name = '{scenario}'
                 """
@@ -771,12 +769,8 @@ def sanitycheck_pv_rooftop_buildings():
             dataset = config.settings()["egon-data"]["--dataset-boundary"]
 
             if dataset == "Schleswig-Holstein":
-                sources = config.datasets()["scenario_input"]["sources"]
 
-                path = Path(
-                    f"./data_bundle_egon_data/nep2035_version2021/"
-                    f"{sources['eGon2035']['capacities']}"
-                ).resolve()
+                path = Path(SanityChecks.sources.files["nep2035_capacities"]).resolve()
 
                 total_2035 = (
                     pd.read_excel(
@@ -1375,11 +1369,10 @@ def sanitycheck_home_batteries():
     for scenario in scenarios:
         # get home battery capacity per mv grid id
         sql = f"""
-        SELECT el_capacity as p_nom, bus_id FROM
-        {sources["storage"]["schema"]}
-        .{sources["storage"]["table"]}
+        SELECT el_capacity as p_nom, bus_id
+        FROM {sources["storage"]["schema"]}.{sources["storage"]["table"]}
         WHERE carrier = 'home_battery'
-        AND scenario = '{scenario}'
+          AND scenario = '{scenario}'
         """
 
         home_batteries_df = db.select_dataframe(sql, index_col="bus_id")
@@ -1389,9 +1382,8 @@ def sanitycheck_home_batteries():
         )
 
         sql = f"""
-        SELECT * FROM
-        {targets["home_batteries"]["schema"]}
-        .{targets["home_batteries"]["table"]}
+        SELECT * 
+        FROM {targets["home_batteries"]["schema"]}.{targets["home_batteries"]["table"]}
         WHERE scenario = '{scenario}'
         """
 
@@ -1444,18 +1436,18 @@ def sanity_check_gas_buses(scn):
         isolated_gas_buses = db.select_dataframe(
             f"""
             SELECT bus_id, carrier, country
-            FROM grid.egon_etrago_bus
+            FROM {SanityChecks.sources.tables["etrago"]["bus"]["schema"]}.{SanityChecks.sources.tables["etrago"]["bus"]["table"]}
             WHERE scn_name = '{scn}'
             AND carrier = '{key}'
             AND country = 'DE'
-            AND bus_id NOT IN
-                (SELECT bus0
-                FROM grid.egon_etrago_link
+            AND bus_id NOT IN (
+                SELECT bus0
+                FROM {SanityChecks.sources.tables["etrago"]["link"]["schema"]}.{SanityChecks.sources.tables["etrago"]["link"]["table"]}
                 WHERE scn_name = '{scn}'
                 AND carrier = '{corresponding_carriers[scn][key]}')
-            AND bus_id NOT IN
-                (SELECT bus1
-                FROM grid.egon_etrago_link
+            AND bus_id NOT IN (
+                SELECT bus1
+                FROM {SanityChecks.sources.tables["etrago"]["link"]["schema"]}.{SanityChecks.sources.tables["etrago"]["link"]["table"]}
                 WHERE scn_name = '{scn}'
                 AND carrier = '{corresponding_carriers[scn][key]}')
             ;
@@ -1467,9 +1459,8 @@ def sanity_check_gas_buses(scn):
             logger.info(isolated_gas_buses)
 
     # Deviation of the gas grid buses number
-    target_file = (
-        Path(".") / "datasets" / "gas_data" / "data" / "IGGIELGN_Nodes.csv"
-    )
+    target_file = Path(SanityChecks.sources.files["gas_nodes"]).resolve()
+
 
     Grid_buses_list = pd.read_csv(
         target_file,
@@ -1487,7 +1478,7 @@ def sanity_check_gas_buses(scn):
         output_grid_buses_df = db.select_dataframe(
             f"""
             SELECT bus_id
-            FROM grid.egon_etrago_bus
+            FROM {SanityChecks.sources.tables["etrago"]["bus"]["schema"]}.{SanityChecks.sources.tables["etrago"]["bus"]["table"]}
             WHERE scn_name = '{scn}'
             AND country = 'DE'
             AND carrier = '{carrier}';
@@ -1529,12 +1520,12 @@ def sanity_check_CH4_stores(scn):
     """
     output_CH4_stores = db.select_dataframe(
         f"""SELECT SUM(e_nom::numeric) as e_nom_germany
-                FROM grid.egon_etrago_store
+                FROM {SanityChecks.sources.tables["etrago"]["store"]["schema"]}.{SanityChecks.sources.tables["etrago"]["store"]["table"]}
                 WHERE scn_name = '{scn}'
                 AND carrier = 'CH4'
-                AND bus IN
-                    (SELECT bus_id
-                    FROM grid.egon_etrago_bus
+                AND bus IN (
+                    SELECT bus_id
+                    FROM {SanityChecks.sources.tables["etrago"]["bus"]["schema"]}.{SanityChecks.sources.tables["etrago"]["bus"]["table"]}
                     WHERE scn_name = '{scn}'
                     AND country = 'DE'
                     AND carrier = 'CH4');
@@ -1590,12 +1581,12 @@ def sanity_check_H2_saltcavern_stores(scn):
     """
     output_H2_stores = db.select_dataframe(
         f"""SELECT SUM(e_nom_max::numeric) as e_nom_max_germany
-                FROM grid.egon_etrago_store
+                FROM {SanityChecks.sources.tables["etrago"]["store"]["schema"]}.{SanityChecks.sources.tables["etrago"]["store"]["table"]}
                 WHERE scn_name = '{scn}'
                 AND carrier = 'H2_underground'
-                AND bus IN
-                    (SELECT bus_id
-                    FROM grid.egon_etrago_bus
+                AND bus IN (
+                    SELECT bus_id
+                    FROM {SanityChecks.sources.tables["etrago"]["bus"]["schema"]}.{SanityChecks.sources.tables["etrago"]["bus"]["table"]}
                     WHERE scn_name = '{scn}'
                     AND country = 'DE'
                     AND carrier = 'H2_saltcavern');
@@ -1640,12 +1631,12 @@ def sanity_check_gas_one_port(scn):
         isolated_one_port_c = db.select_dataframe(
             f"""
             SELECT load_id, bus, carrier, scn_name
-                FROM grid.egon_etrago_load
+                FROM {SanityChecks.sources.tables["etrago"]["load"]["schema"]}.{SanityChecks.sources.tables["etrago"]["load"]["table"]}
                 WHERE scn_name = '{scn}'
                 AND carrier = 'CH4_for_industry'
-                AND bus NOT IN
-                    (SELECT bus_id
-                    FROM grid.egon_etrago_bus
+                AND bus NOT IN (
+                    SELECT bus_id
+                    FROM {SanityChecks.sources.tables["etrago"]["bus"]["schema"]}.{SanityChecks.sources.tables["etrago"]["bus"]["table"]}
                     WHERE scn_name = '{scn}'
                     AND country = 'DE'
                     AND carrier = 'CH4')
@@ -1661,12 +1652,12 @@ def sanity_check_gas_one_port(scn):
         isolated_one_port_c = db.select_dataframe(
             f"""
             SELECT load_id, bus, carrier, scn_name
-                FROM grid.egon_etrago_load
+                FROM {SanityChecks.sources.tables["etrago"]["load"]["schema"]}.{SanityChecks.sources.tables["etrago"]["load"]["table"]}
                 WHERE scn_name = '{scn}'
                 AND carrier = 'CH4'
-                AND bus NOT IN
-                    (SELECT bus_id
-                    FROM grid.egon_etrago_bus
+                AND bus NOT IN (
+                    SELECT bus_id
+                    FROM {SanityChecks.sources.tables["etrago"]["bus"]["schema"]}.{SanityChecks.sources.tables["etrago"]["bus"]["table"]}
                     WHERE scn_name = '{scn}'
                     AND country != 'DE'
                     AND carrier = 'CH4')
@@ -1682,18 +1673,19 @@ def sanity_check_gas_one_port(scn):
         isolated_one_port_c = db.select_dataframe(
             f"""
             SELECT load_id, bus, carrier, scn_name
-                FROM grid.egon_etrago_load
+                FROM {SanityChecks.sources.tables["etrago"]["load"]["schema"]}.{SanityChecks.sources.tables["etrago"]["load"]["table"]}
                 WHERE scn_name = '{scn}'
                 AND carrier = 'H2_for_industry'
-                AND (bus NOT IN
-                    (SELECT bus_id
-                    FROM grid.egon_etrago_bus
-                    WHERE scn_name = '{scn}'
-                    AND country = 'DE'
-                    AND carrier = 'H2_grid')
-                AND bus NOT IN
-                    (SELECT bus_id
-                    FROM grid.egon_etrago_bus
+                AND (
+                    bus NOT IN (
+                        SELECT bus_id
+                        FROM {SanityChecks.sources.tables["etrago"]["bus"]["schema"]}.{SanityChecks.sources.tables["etrago"]["bus"]["table"]}
+                        WHERE scn_name = '{scn}'
+                         AND country = 'DE'
+                         AND carrier = 'H2_grid')
+                AND bus NOT IN (
+                    SELECT bus_id
+                    FROM {SanityChecks.sources.tables["etrago"]["bus"]["schema"]}.{SanityChecks.sources.tables["etrago"]["bus"]["table"]}
                     WHERE scn_name = '{scn}'
                     AND country != 'DE'
                     AND carrier = 'AC'))
@@ -1709,12 +1701,12 @@ def sanity_check_gas_one_port(scn):
         isolated_one_port_c = db.select_dataframe(
             f"""
             SELECT generator_id, bus, carrier, scn_name
-                FROM grid.egon_etrago_generator
+                FROM {SanityChecks.sources.tables["etrago"]["generator"]["schema"]}.{SanityChecks.sources.tables["etrago"]["generator"]["table"]}
                 WHERE scn_name = '{scn}'
                 AND carrier = 'CH4'
-                AND bus NOT IN
-                    (SELECT bus_id
-                    FROM grid.egon_etrago_bus
+                AND bus NOT IN (
+                    SELECT bus_id
+                    FROM {SanityChecks.sources.tables["etrago"]["bus"]["schema"]}.{SanityChecks.sources.tables["etrago"]["bus"]["table"]}
                     WHERE scn_name = '{scn}'
                     AND carrier = 'CH4');
             ;
@@ -1735,12 +1727,12 @@ def sanity_check_gas_one_port(scn):
             isolated_one_port_c = db.select_dataframe(
                 f"""
                 SELECT store_id, bus, carrier, scn_name
-                    FROM grid.egon_etrago_store
+                    FROM {SanityChecks.sources.tables["etrago"]["store"]["schema"]}.{SanityChecks.sources.tables["etrago"]["store"]["table"]}
                     WHERE scn_name = '{scn}'
                     AND carrier = '{corresponding_carriers[key]}'
-                    AND bus NOT IN
-                        (SELECT bus_id
-                        FROM grid.egon_etrago_bus
+                    AND bus NOT IN (
+                        SELECT bus_id
+                        FROM {SanityChecks.sources.tables["etrago"]["bus"]["schema"]}.{SanityChecks.sources.tables["etrago"]["bus"]["table"]}
                         WHERE scn_name = '{scn}'
                         AND carrier = '{key}')
                 ;
@@ -1755,18 +1747,18 @@ def sanity_check_gas_one_port(scn):
         isolated_one_port_c = db.select_dataframe(
             f"""
             SELECT store_id, bus, carrier, scn_name
-                FROM grid.egon_etrago_store
+                FROM {SanityChecks.sources.tables["etrago"]["store"]["schema"]}.{SanityChecks.sources.tables["etrago"]["store"]["table"]}
                 WHERE scn_name = '{scn}'
                 AND carrier = 'H2_overground'
-                AND bus NOT IN
-                    (SELECT bus_id
-                    FROM grid.egon_etrago_bus
+                AND bus NOT IN (
+                    SELECT bus_id
+                    FROM {SanityChecks.sources.tables["etrago"]["bus"]["schema"]}.{SanityChecks.sources.tables["etrago"]["bus"]["table"]}
                     WHERE scn_name = '{scn}'
                     AND country = 'DE'
                     AND carrier = 'H2_saltcavern')
-                AND bus NOT IN
-                    (SELECT bus_id
-                    FROM grid.egon_etrago_bus
+                AND bus NOT IN (
+                    SELECT bus_id
+                    FROM {SanityChecks.sources.tables["etrago"]["bus"]["schema"]}.{SanityChecks.sources.tables["etrago"]["bus"]["table"]}
                     WHERE scn_name = '{scn}'
                     AND country = 'DE'
                     AND carrier = 'H2_grid')
@@ -1807,18 +1799,18 @@ def sanity_check_CH4_grid(scn):
     grid_carrier = "CH4"
     output_gas_grid = db.select_dataframe(
         f"""SELECT SUM(p_nom::numeric) as p_nom_germany
-            FROM grid.egon_etrago_link
+            FROM {SanityChecks.sources.tables["etrago"]["link"]["schema"]}.{SanityChecks.sources.tables["etrago"]["link"]["table"]}
             WHERE scn_name = '{scn}'
             AND carrier = '{grid_carrier}'
-            AND bus0 IN
-                (SELECT bus_id
-                FROM grid.egon_etrago_bus
+            AND bus0 IN (
+                SELECT bus_id
+                FROM {SanityChecks.sources.tables["etrago"]["bus"]["schema"]}.{SanityChecks.sources.tables["etrago"]["bus"]["table"]}
                 WHERE scn_name = '{scn}'
                 AND country = 'DE'
                 AND carrier = '{grid_carrier}')
-            AND bus1 IN
-                (SELECT bus_id
-                FROM grid.egon_etrago_bus
+            AND bus1 IN (
+                SELECT bus_id
+                FROM {SanityChecks.sources.tables["etrago"]["bus"]["schema"]}.{SanityChecks.sources.tables["etrago"]["bus"]["table"]}
                 WHERE scn_name = '{scn}'
                 AND country = 'DE'
                 AND carrier = '{grid_carrier}')
@@ -1888,16 +1880,17 @@ def sanity_check_gas_links(scn):
         link_with_missing_bus = db.select_dataframe(
             f"""
             SELECT link_id, bus0, bus1, carrier, scn_name
-                FROM grid.egon_etrago_link
+                FROM {SanityChecks.sources.tables["etrago"]["link"]["schema"]}.{SanityChecks.sources.tables["etrago"]["link"]["table"]}
                 WHERE scn_name = '{scn}'
                 AND carrier = '{c}'
-                AND (bus0 NOT IN
-                    (SELECT bus_id
-                    FROM grid.egon_etrago_bus
-                    WHERE scn_name = '{scn}')
-                OR bus1 NOT IN
-                    (SELECT bus_id
-                    FROM grid.egon_etrago_bus
+                AND (
+                    bus0 NOT IN (
+                        SELECT bus_id
+                        FROM {SanityChecks.sources.tables["etrago"]["bus"]["schema"]}.{SanityChecks.sources.tables["etrago"]["bus"]["table"]}
+                        WHERE scn_name = '{scn}')
+                OR bus1 NOT IN (
+                    SELECT bus_id
+                    FROM {SanityChecks.sources.tables["etrago"]["bus"]["schema"]}.{SanityChecks.sources.tables["etrago"]["bus"]["table"]}
                     WHERE scn_name = '{scn}'))
             ;
             """,
@@ -1951,8 +1944,8 @@ def etrago_eGon2035_gas_DE():
         # Loads
         logger.info("LOADS")
 
-        path = Path(".") / "datasets" / "gas_data" / "demand"
-        corr_file = path / "region_corr.json"
+        corr_file = Path(SanityChecks.sources.files["gas_region_corr"]).resolve()
+        #path = corr_file.parent
         df_corr = pd.read_json(corr_file)
         df_corr = df_corr.loc[:, ["id_region", "name_short"]]
         df_corr.set_index("id_region", inplace=True)
@@ -1960,25 +1953,29 @@ def etrago_eGon2035_gas_DE():
         for carrier in ["CH4_for_industry", "H2_for_industry"]:
 
             output_gas_demand = db.select_dataframe(
-                f"""SELECT (SUM(
-                    (SELECT SUM(p)
-                    FROM UNNEST(b.p_set) p))/1000000)::numeric as load_twh
-                    FROM grid.egon_etrago_load a
-                    JOIN grid.egon_etrago_load_timeseries b
+                f"""
+                SELECT (
+                    SUM(
+                        (SELECT SUM(p)
+                         FROM UNNEST(b.p_set) p)
+                    )/1000000
+                )::numeric as load_twh
+                FROM {SanityChecks.sources.tables["etrago"]["load"]["schema"]}.{SanityChecks.sources.tables["etrago"]["load"]["table"]} a
+                JOIN {SanityChecks.sources.tables["etrago"]["load_timeseries"]["schema"]}.{SanityChecks.sources.tables["etrago"]["load_timeseries"]["table"]} b
                     ON (a.load_id = b.load_id)
-                    JOIN grid.egon_etrago_bus c
+                JOIN {SanityChecks.sources.tables["etrago"]["bus"]["schema"]}.{SanityChecks.sources.tables["etrago"]["bus"]["table"]} c
                     ON (a.bus=c.bus_id)
-                    AND b.scn_name = '{scn}'
-                    AND a.scn_name = '{scn}'
-                    AND c.scn_name = '{scn}'
-                    AND c.country = 'DE'
-                    AND a.carrier = '{carrier}';
+                AND b.scn_name = '{scn}'
+                AND a.scn_name = '{scn}'
+                AND c.scn_name = '{scn}'
+                AND c.country = 'DE'
+                AND a.carrier = '{carrier}';
                 """,
                 warning=False,
             )["load_twh"].values[0]
 
             input_gas_demand = pd.read_json(
-                path / (carrier + "_eGon2035.json")
+                Path(SanityChecks.sources.files[f"gas_{carrier}_eGon2035"])
             )
             input_gas_demand = input_gas_demand.loc[:, ["id_region", "value"]]
             input_gas_demand.set_index("id_region", inplace=True)
@@ -2008,12 +2005,12 @@ def etrago_eGon2035_gas_DE():
 
         output_gas_generation = db.select_dataframe(
             f"""SELECT SUM(p_nom::numeric) as p_nom_germany
-                    FROM grid.egon_etrago_generator
+                    FROM {SanityChecks.sources.tables["etrago"]["generator"]["schema"]}.{SanityChecks.sources.tables["etrago"]["generator"]["table"]}
                     WHERE scn_name = '{scn}'
                     AND carrier = '{carrier_generator}'
-                    AND bus IN
-                        (SELECT bus_id
-                        FROM grid.egon_etrago_bus
+                    AND bus IN (
+                        SELECT bus_id
+                        FROM {SanityChecks.sources.tables["etrago"]["bus"]["schema"]}.{SanityChecks.sources.tables["etrago"]["bus"]["table"]}
                         WHERE scn_name = '{scn}'
                         AND country = 'DE'
                         AND carrier = '{carrier_generator}');
@@ -2021,13 +2018,8 @@ def etrago_eGon2035_gas_DE():
             warning=False,
         )["p_nom_germany"].values[0]
 
-        target_file = (
-            Path(".")
-            / "datasets"
-            / "gas_data"
-            / "data"
-            / "IGGIELGN_Productions.csv"
-        )
+        target_file = Path(SanityChecks.sources.files["gas_productions"]).resolve()
+
 
         NG_generators_list = pd.read_csv(
             target_file,
@@ -2047,10 +2039,10 @@ def etrago_eGon2035_gas_DE():
         conversion_factor = 437.5  # MCM/day to MWh/h
         p_NG = p_NG * conversion_factor
 
-        basename = "Biogaspartner_Einspeiseatlas_Deutschland_2021.xlsx"
-        target_file = (
-            Path(".") / "data_bundle_egon_data" / "gas_data" / basename
-        )
+        target_file = Path(
+            SanityChecks.sources.files["gas_biogaspartner_einspeiseatlas"]
+        ).resolve()
+
 
         conversion_factor_b = 0.01083  # m^3/h to MWh/h
         p_biogas = (
@@ -2133,18 +2125,18 @@ def etrago_eGon2035_gas_abroad():
             isolated_gas_buses_abroad = db.select_dataframe(
                 f"""
                 SELECT bus_id, carrier, country
-                FROM grid.egon_etrago_bus
+                FROM {SanityChecks.sources.tables["etrago"]["bus"]["schema"]}.{SanityChecks.sources.tables["etrago"]["bus"]["table"]}
                 WHERE scn_name = '{scn}'
                 AND carrier = '{key}'
                 AND country != 'DE'
-                AND bus_id NOT IN
-                    (SELECT bus0
-                    FROM grid.egon_etrago_link
+                AND bus_id NOT IN (
+                    SELECT bus0
+                    FROM {SanityChecks.sources.tables["etrago"]["link"]["schema"]}.{SanityChecks.sources.tables["etrago"]["link"]["table"]}
                     WHERE scn_name = '{scn}'
                     AND carrier = '{corresponding_carriers[scn][key]}')
-                AND bus_id NOT IN
-                    (SELECT bus1
-                    FROM grid.egon_etrago_link
+                AND bus_id NOT IN (
+                    SELECT bus1
+                    FROM {SanityChecks.sources.tables["etrago"]["link"]["schema"]}.{SanityChecks.sources.tables["etrago"]["link"]["table"]}
                     WHERE scn_name = '{scn}'
                     AND carrier = '{corresponding_carriers[scn][key]}')
                 ;
@@ -2172,10 +2164,10 @@ def etrago_eGon2035_gas_abroad():
             f"""SELECT (SUM(
                 (SELECT SUM(p)
                 FROM UNNEST(b.p_set) p)))::numeric as load_mwh
-                FROM grid.egon_etrago_load a
-                JOIN grid.egon_etrago_load_timeseries b
+                FROM {SanityChecks.sources.tables["etrago"]["load"]["schema"]}.{SanityChecks.sources.tables["etrago"]["load"]["table"]} a
+                JOIN {SanityChecks.sources.tables["etrago"]["load_timeseries"]["schema"]}.{SanityChecks.sources.tables["etrago"]["load_timeseries"]["table"]} b
                 ON (a.load_id = b.load_id)
-                JOIN grid.egon_etrago_bus c
+                JOIN {SanityChecks.sources.tables["etrago"]["bus"]["schema"]}.{SanityChecks.sources.tables["etrago"]["bus"]["table"]} c
                 ON (a.bus=c.bus_id)
                 AND b.scn_name = '{scn}'
                 AND a.scn_name = '{scn}'
@@ -2201,12 +2193,12 @@ def etrago_eGon2035_gas_abroad():
 
         output_H2_demand = db.select_dataframe(
             f"""SELECT SUM(p_set::numeric) as p_set_abroad
-                    FROM grid.egon_etrago_load
+                    FROM {SanityChecks.sources.tables["etrago"]["load"]["schema"]}.{SanityChecks.sources.tables["etrago"]["load"]["table"]}
                     WHERE scn_name = '{scn}'
                     AND carrier = 'H2_for_industry'
-                    AND bus IN
-                        (SELECT bus_id
-                        FROM grid.egon_etrago_bus
+                    AND bus IN (
+                        SELECT bus_id
+                        FROM {SanityChecks.sources.tables["etrago"]["bus"]["schema"]}.{SanityChecks.sources.tables["etrago"]["bus"]["table"]}
                         WHERE scn_name = '{scn}'
                         AND country != 'DE'
                         AND carrier = 'AC');
@@ -2230,12 +2222,12 @@ def etrago_eGon2035_gas_abroad():
 
         output_CH4_gen = db.select_dataframe(
             f"""SELECT SUM(p_nom::numeric) as p_nom_abroad
-                    FROM grid.egon_etrago_generator
+                    FROM {SanityChecks.sources.tables["etrago"]["generator"]["schema"]}.{SanityChecks.sources.tables["etrago"]["generator"]["table"]}
                     WHERE scn_name = '{scn}'
                     AND carrier = 'CH4'
-                    AND bus IN
-                        (SELECT bus_id
-                        FROM grid.egon_etrago_bus
+                    AND bus IN (
+                        SELECT bus_id
+                        FROM {SanityChecks.sources.tables["etrago"]["bus"]["schema"]}.{SanityChecks.sources.tables["etrago"]["bus"]["table"]}
                         WHERE scn_name = '{scn}'
                         AND country != 'DE'
                         AND carrier = 'CH4');
@@ -2259,12 +2251,12 @@ def etrago_eGon2035_gas_abroad():
 
         output_CH4_stores = db.select_dataframe(
             f"""SELECT SUM(e_nom::numeric) as e_nom_abroad
-                    FROM grid.egon_etrago_store
+                    FROM {SanityChecks.sources.tables["etrago"]["store"]["schema"]}.{SanityChecks.sources.tables["etrago"]["store"]["table"]}
                     WHERE scn_name = '{scn}'
                     AND carrier = 'CH4'
-                    AND bus IN
-                        (SELECT bus_id
-                        FROM grid.egon_etrago_bus
+                    AND bus IN (
+                        SELECT bus_id
+                        FROM {SanityChecks.sources.tables["etrago"]["bus"]["schema"]}.{SanityChecks.sources.tables["etrago"]["bus"]["table"]}
                         WHERE scn_name = '{scn}'
                         AND country != 'DE'
                         AND carrier = 'CH4');
@@ -2289,18 +2281,18 @@ def etrago_eGon2035_gas_abroad():
         grid_carrier = "CH4"
         output_gas_grid = db.select_dataframe(
             f"""SELECT SUM(p_nom::numeric) as p_nom
-            FROM grid.egon_etrago_link
+            FROM {SanityChecks.sources.tables["etrago"]["link"]["schema"]}.{SanityChecks.sources.tables["etrago"]["link"]["table"]}
             WHERE scn_name = '{scn}'
             AND carrier = '{grid_carrier}'
             AND (bus0 IN
                 (SELECT bus_id
-                FROM grid.egon_etrago_bus
+                FROM {SanityChecks.sources.tables["etrago"]["bus"]["schema"]}.{SanityChecks.sources.tables["etrago"]["bus"]["table"]}
                 WHERE scn_name = '{scn}'
                 AND country != 'DE'
                 AND carrier = '{grid_carrier}')
             OR bus1 IN
                 (SELECT bus_id
-                FROM grid.egon_etrago_bus
+                FROM {SanityChecks.sources.tables["etrago"]["bus"]["schema"]}.{SanityChecks.sources.tables["etrago"]["bus"]["table"]}
                 WHERE scn_name = '{scn}'
                 AND country != 'DE'
                 AND carrier = '{grid_carrier}'))
@@ -2331,7 +2323,8 @@ def sanitycheck_dsm():
     for scenario in ["eGon2035", "eGon100RE"]:
         # p_min and p_max
         sql = f"""
-        SELECT link_id, bus0 as bus, p_nom FROM grid.egon_etrago_link
+        SELECT link_id, bus0 as bus, p_nom 
+        FROM {SanityChecks.sources.tables["etrago"]["link"]["schema"]}.{SanityChecks.sources.tables["etrago"]["link"]["table"]}
         WHERE carrier = 'dsm'
         AND scn_name = '{scenario}'
         ORDER BY link_id
@@ -2342,7 +2335,7 @@ def sanitycheck_dsm():
 
         sql = f"""
         SELECT link_id, p_min_pu, p_max_pu
-        FROM grid.egon_etrago_link_timeseries
+        FROM {SanityChecks.sources.tables["etrago"]["link_timeseries"]["schema"]}.{SanityChecks.sources.tables["etrago"]["link_timeseries"]["table"]}
         WHERE scn_name = '{scenario}'
         AND link_id IN ({link_ids})
         ORDER BY link_id
@@ -2414,7 +2407,8 @@ def sanitycheck_dsm():
 
         # e_min and e_max
         sql = f"""
-        SELECT store_id, bus, e_nom FROM grid.egon_etrago_store
+        SELECT store_id, bus, e_nom 
+        FROM {SanityChecks.sources.tables["etrago"]["store"]["schema"]}.{SanityChecks.sources.tables["etrago"]["store"]["table"]}
         WHERE carrier = 'dsm'
         AND scn_name = '{scenario}'
         ORDER BY store_id
@@ -2425,7 +2419,7 @@ def sanitycheck_dsm():
 
         sql = f"""
         SELECT store_id, e_min_pu, e_max_pu
-        FROM grid.egon_etrago_store_timeseries
+        FROM {SanityChecks.sources.tables["etrago"]["store_timeseries"]["schema"]}.{SanityChecks.sources.tables["etrago"]["store_timeseries"]["table"]}
         WHERE scn_name = '{scenario}'
         AND store_id IN ({store_ids})
         ORDER BY store_id
@@ -2498,7 +2492,7 @@ def generators_links_storages_stores_100RE(scn="eGon100RE"):
     # Generators
     scn_capacities = db.select_dataframe(
         f"""
-        SELECT * FROM supply.egon_scenario_capacities
+        SELECT * FROM {SanityChecks.sources.tables["solar_rooftop"]["scenario_capacities"]["schema"]}.{SanityChecks.sources.tables["solar_rooftop"]["scenario_capacities"]["table"]}
         WHERE scenario_name = '{scn}'
         """,
         index_col="index",
@@ -2535,9 +2529,9 @@ def generators_links_storages_stores_100RE(scn="eGon100RE"):
 
     gen_etrago = db.select_dataframe(
         f"""
-        SELECT * FROM grid.egon_etrago_generator
+        SELECT * FROM {SanityChecks.sources.tables["etrago"]["generator"]["schema"]}.{SanityChecks.sources.tables["etrago"]["generator"]["table"]}
         WHERE scn_name = '{scn}'
-        AND bus IN (SELECT bus_id from grid.egon_etrago_bus
+        AND bus IN (SELECT bus_id from {SanityChecks.sources.tables["etrago"]["bus"]["schema"]}.{SanityChecks.sources.tables["etrago"]["bus"]["table"]}
                     WHERE scn_name = '{scn}'
                     AND country = 'DE')
         """,
@@ -2577,13 +2571,13 @@ def generators_links_storages_stores_100RE(scn="eGon100RE"):
 
     link_etrago = db.select_dataframe(
         f"""
-        SELECT * FROM grid.egon_etrago_link
+        SELECT * FROM {SanityChecks.sources.tables["etrago"]["link"]["schema"]}.{SanityChecks.sources.tables["etrago"]["link"]["table"]}
         WHERE scn_name = '{scn}'
-        AND (bus0 IN (SELECT bus_id from grid.egon_etrago_bus
+        AND (bus0 IN (SELECT bus_id from {SanityChecks.sources.tables["etrago"]["bus"]["schema"]}.{SanityChecks.sources.tables["etrago"]["bus"]["table"]}
                     WHERE scn_name = '{scn}'
                     AND country = 'DE')
              OR
-             bus1 IN (SELECT bus_id from grid.egon_etrago_bus
+             bus1 IN (SELECT bus_id from {SanityChecks.sources.tables["etrago"]["bus"]["schema"]}.{SanityChecks.sources.tables["etrago"]["bus"]["table"]}
                     WHERE scn_name = '{scn}'
                     AND country = 'DE')
              )
@@ -2613,9 +2607,9 @@ def generators_links_storages_stores_100RE(scn="eGon100RE"):
     # storage
     storage_etrago = db.select_dataframe(
         f"""
-        SELECT * FROM grid.egon_etrago_storage
+        SELECT * FROM {SanityChecks.sources.tables["etrago"]["storage"]["schema"]}.{SanityChecks.sources.tables["etrago"]["storage"]["table"]}
         WHERE scn_name = '{scn}'
-        AND bus IN (SELECT bus_id from grid.egon_etrago_bus
+        AND bus IN (SELECT bus_id from {SanityChecks.sources.tables["etrago"]["bus"]["schema"]}.{SanityChecks.sources.tables["etrago"]["bus"]["table"]}
                     WHERE scn_name = '{scn}'
                     AND country = 'DE')
         """,
@@ -2643,9 +2637,9 @@ def generators_links_storages_stores_100RE(scn="eGon100RE"):
     # stores
     stores_etrago = db.select_dataframe(
         f"""
-        SELECT * FROM grid.egon_etrago_store
+        SELECT * FROM {SanityChecks.sources.tables["etrago"]["store"]["schema"]}.{SanityChecks.sources.tables["etrago"]["store"]["table"]}
         WHERE scn_name = '{scn}'
-        AND bus IN (SELECT bus_id from grid.egon_etrago_bus
+        AND bus IN (SELECT bus_id from {SanityChecks.sources.tables["etrago"]["bus"]["schema"]}.{SanityChecks.sources.tables["etrago"]["bus"]["table"]}
                     WHERE scn_name = '{scn}'
                     AND country = 'DE')
         """,
@@ -2699,13 +2693,18 @@ def electrical_load_100RE(scn="eGon100RE"):
     )
 
     load_summary.loc["total", "eGon100RE"] = db.select_dataframe(
-        """SELECT a.scn_name, a.carrier,  SUM((SELECT SUM(p)
-        FROM UNNEST(b.p_set) p))/1000000::numeric as load_twh
-            FROM grid.egon_etrago_load a
-            JOIN grid.egon_etrago_load_timeseries b
-            ON (a.load_id = b.load_id)
-            JOIN grid.egon_etrago_bus c
-            ON (a.bus=c.bus_id)
+        f"""
+        SELECT a.scn_name,
+               a.carrier,
+               SUM(
+                   (SELECT SUM(p)
+                    FROM UNNEST(b.p_set) p)
+               )/1000000::numeric as load_twh
+            FROM {SanityChecks.sources.tables["etrago"]["load"]["schema"]}.{SanityChecks.sources.tables["etrago"]["load"]["table"]} a
+            JOIN {SanityChecks.sources.tables["etrago"]["load_timeseries"]["schema"]}.{SanityChecks.sources.tables["etrago"]["load_timeseries"]["table"]} b
+                ON (a.load_id = b.load_id)
+            JOIN {SanityChecks.sources.tables["etrago"]["bus"]["schema"]}.{SanityChecks.sources.tables["etrago"]["bus"]["table"]} c
+                ON (a.bus=c.bus_id)
             AND b.scn_name = 'eGon100RE'
             AND a.scn_name = 'eGon100RE'
             AND a.carrier = 'AC'
@@ -2718,9 +2717,8 @@ def electrical_load_100RE(scn="eGon100RE"):
 
     sources = SanityChecks.sources.tables["etrago_electricity"]
     cts_curves = db.select_dataframe(
-        f"""SELECT bus_id AS bus, p_set FROM
-                {sources['cts_curves']['schema']}.
-                {sources['cts_curves']['table']}
+        f"""SELECT bus_id AS bus, p_set
+                FROM {sources['cts_curves']['schema']}.{sources['cts_curves']['table']}
                 WHERE scn_name = '{scn}'""",
     )
     sum_cts_curves = (
@@ -2730,10 +2728,10 @@ def electrical_load_100RE(scn="eGon100RE"):
 
     # Select data on industrial demands assigned to osm landuse areas
     ind_curves_osm = db.select_dataframe(
-        f"""SELECT bus, p_set FROM
-                {sources['osm_curves']['schema']}.
-                {sources['osm_curves']['table']}
-                WHERE scn_name = '{scn}'""",
+        f"""
+        SELECT bus, p_set
+        FROM {sources['osm_curves']['schema']}.{sources['osm_curves']['table']}
+        WHERE scn_name = '{scn}'""",
     )
     sum_ind_curves_osm = (
         ind_curves_osm.apply(lambda x: sum(x["p_set"]), axis=1).sum() / 1000000
@@ -2742,10 +2740,10 @@ def electrical_load_100RE(scn="eGon100RE"):
     # Select data on industrial demands assigned to industrial sites
 
     ind_curves_sites = db.select_dataframe(
-        f"""SELECT bus, p_set FROM
-                {sources['sites_curves']['schema']}.
-                {sources['sites_curves']['table']}
-                WHERE scn_name = '{scn}'""",
+        f"""
+        SELECT bus, p_set 
+        FROM {sources['sites_curves']['schema']}.{sources['sites_curves']['table']}
+        WHERE scn_name = '{scn}'""",
     )
     sum_ind_curves_sites = (
         ind_curves_sites.apply(lambda x: sum(x["p_set"]), axis=1).sum()
@@ -2758,10 +2756,10 @@ def electrical_load_100RE(scn="eGon100RE"):
 
     # Select data on household electricity demands per bus
     hh_curves = db.select_dataframe(
-        f"""SELECT bus_id AS bus, p_set FROM
-                {sources['household_curves']['schema']}.
-                {sources['household_curves']['table']}
-                WHERE scn_name = '{scn}'""",
+        f"""
+        SELECT bus_id AS bus, p_set
+        FROM {sources['household_curves']['schema']}.{sources['household_curves']['table']}
+        WHERE scn_name = '{scn}'""",
     )
     sum_hh_curves = (
         hh_curves.apply(lambda x: sum(x["p_set"]), axis=1).sum() / 1000000
@@ -2802,13 +2800,17 @@ def heat_gas_load_egon100RE(scn="eGon100RE"):
 
     # filter out NaN values central_heat timeseries
     NaN_load_ids = db.select_dataframe(
-        """
-        SELECT load_id from grid.egon_etrago_load_timeseries 
-        WHERE load_id IN (Select load_id 
-            FROM grid.egon_etrago_load
-            WHERE carrier = 'central_heat') AND (SELECT 
-            bool_or(value::double precision::text = 'NaN') 
-        FROM unnest(p_set) AS value
+        f"""
+        SELECT load_id 
+        from {SanityChecks.sources.tables["etrago"]["load_timeseries"]["schema"]}.{SanityChecks.sources.tables["etrago"]["load_timeseries"]["table"]}
+        WHERE load_id IN (
+            Select load_id 
+            FROM {SanityChecks.sources.tables["etrago"]["load"]["schema"]}.{SanityChecks.sources.tables["etrago"]["load"]["table"]}
+            WHERE carrier = 'central_heat'
+        ) 
+        AND (
+            SELECT bool_or(value::double precision::text = 'NaN') 
+            FROM unnest(p_set) AS value
         )
        """
     )
@@ -2825,15 +2827,16 @@ def heat_gas_load_egon100RE(scn="eGon100RE"):
                     FROM UNNEST(t.p_set) p)  
                 )  AS total_p_set_timeseries  
             FROM 
-                grid.egon_etrago_load l
+                {SanityChecks.sources.tables["etrago"]["load"]["schema"]}.{SanityChecks.sources.tables["etrago"]["load"]["table"]} l
             LEFT JOIN 
-                grid.egon_etrago_load_timeseries t ON l.load_id = t.load_id 
+                {SanityChecks.sources.tables["etrago"]["load_timeseries"]["schema"]}.{SanityChecks.sources.tables["etrago"]["load_timeseries"]["table"]} t 
+                ON l.load_id = t.load_id 
             WHERE 
                 l.scn_name = '{scn}'
                 AND l.carrier != 'AC'
                 AND l.bus IN (
                     SELECT bus_id
-                    FROM grid.egon_etrago_bus
+                    FROM {SanityChecks.sources.tables["etrago"]["bus"]["schema"]}.{SanityChecks.sources.tables["etrago"]["bus"]["table"]}
                     WHERE scn_name = '{scn}' 
                     AND country = 'DE'
                 )
@@ -2977,24 +2980,74 @@ class SanityChecks(Dataset):
     #:
     name: str = "SanityChecks"
     #:
-    version: str = "0.0.9"
+    version: str = "0.0.10"
 
     sources = DatasetSources(
         tables={
-            "etrago_electricity": {
-                "cts_curves": {"schema": "demand", "table": "egon_etrago_electricity_cts"},
-                "osm_curves": {"schema": "demand", "table": "egon_osm_ind_load_curves"},
-                "sites_curves": {"schema": "demand", "table": "egon_sites_ind_load_curves"},
-                "household_curves": {"schema": "demand", "table": "egon_etrago_electricity_households"},
+            "etrago": {
+                "generator": {"schema": "grid", "table": "egon_etrago_generator"},
+                "bus": {"schema": "grid", "table": "egon_etrago_bus"},
+                "storage": {"schema": "grid", "table": "egon_etrago_storage"},
+                "load": {"schema": "grid", "table": "egon_etrago_load"},
+                "load_timeseries": {
+                    "schema": "grid",
+                    "table": "egon_etrago_load_timeseries",
+                },
+                "link": {"schema": "grid", "table": "egon_etrago_link"},
+                "store": {"schema": "grid", "table": "egon_etrago_store"},
+                "generator_timeseries": {
+                    "schema": "grid",
+                    "table": "egon_etrago_generator_timeseries",
+                },
+                "link_timeseries": {
+                    "schema": "grid",
+                    "table": "egon_etrago_link_timeseries",
+                },
+                "store_timeseries": {
+                    "schema": "grid",
+                    "table": "egon_etrago_store_timeseries",
+                },
+                "storage_timeseries": {
+                    "schema": "grid",
+                    "table": "egon_etrago_storage_timeseries",
+                },
             },
+            
+            "etrago_electricity": {
+                "cts_curves": {
+                    "schema": "demand",
+                    "table": "egon_etrago_electricity_cts",
+                },
+                "osm_curves": {
+                    "schema": "demand",
+                    "table": "egon_osm_ind_load_curves",
+                },
+                "sites_curves": {
+                    "schema": "demand",
+                    "table": "egon_sites_ind_load_curves",
+                },
+                "household_curves": {
+                    "schema": "demand",
+                    "table": "egon_etrago_electricity_households",
+                },
+            },
+            
             "home_batteries": {
                 "storage": {"schema": "supply", "table": "egon_storages"},
             },
+            
             "solar_rooftop": {
-                "scenario_capacities": {"schema": "supply", "table": "egon_scenario_capacities"},
+                "scenario_capacities": {
+                    "schema": "supply",
+                    "table": "egon_scenario_capacities",
+                },
             },
+            
             "DSM_CTS_industry": {
-                "cts_loadcurves_dsm": {"schema": "demand", "table": "egon_etrago_electricity_cts_dsm_timeseries"},
+                "cts_loadcurves_dsm": {
+                    "schema": "demand",
+                    "table": "egon_etrago_electricity_cts_dsm_timeseries",
+                },
                 "ind_osm_loadcurves_individual_dsm": {
                     "schema": "demand",
                     "table": "egon_osm_ind_load_curves_individual_dsm_timeseries",
@@ -3008,8 +3061,72 @@ class SanityChecks(Dataset):
                     "table": "egon_sites_ind_load_curves_individual_dsm_timeseries",
                 },
             },
-        }
+            
+            "demand": {
+                "demandregio_cts_ind": {
+                    "schema": "demand",
+                    "table": "egon_demandregio_cts_ind",
+                },
+                "demandregio_hh": {
+                    "schema": "demand",
+                    "table": "egon_demandregio_hh",
+                },
+                "peta_heat": {
+                    "schema": "demand",
+                    "table": "egon_peta_heat",
+                },
+                "demandregio_zensus_electricity": {
+                    "schema": "demand",
+                    "table": "egon_demandregio_zensus_electricity",
+                },
+            },
+            
+            "boundaries": {
+                "zensus_vg250": {
+                    "schema": "boundaries",
+                    "table": "egon_map_zensus_vg250",
+                },
+            },
+            
+            "zensus_households": {
+                "households_per_ha_refined": {
+                    "schema": "society",
+                    "table": "egon_destatis_zensus_household_per_ha_refined",
+                },
+            },
+            
+            "pv_rooftop_buildings": {
+                "pv_roof_building": {
+                    "schema": "supply",
+                    "table": "egon_power_plants_pv_roof_building",
+                },
+            },
+        },
+        files={
+            
+            "nep2035_capacities": (
+                "data_bundle_egon_data/nep2035_version2021/"
+                "NEP2035_V2021_scnC2035.xlsx"
+            ),
+           
+            "gas_nodes": "datasets/gas_data/data/IGGIELGN_Nodes.csv",
+            "gas_productions": "datasets/gas_data/data/IGGIELGN_Productions.csv",
+            
+            "gas_region_corr": "datasets/gas_data/demand/region_corr.json",
+            "gas_CH4_for_industry_eGon2035": (
+                "datasets/gas_data/demand/CH4_for_industry_eGon2035.json"
+            ),
+            "gas_H2_for_industry_eGon2035": (
+                "datasets/gas_data/demand/H2_for_industry_eGon2035.json"
+            ),
+            
+            "gas_biogaspartner_einspeiseatlas": (
+                "data_bundle_egon_data/gas_data/"
+                "Biogaspartner_Einspeiseatlas_Deutschland_2021.xlsx"
+            ),
+        },
     )
+
 
     targets = DatasetTargets(
         tables={
