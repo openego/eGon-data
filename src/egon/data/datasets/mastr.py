@@ -8,7 +8,6 @@ from urllib.request import urlretrieve
 import os
 
 from egon.data.datasets import Dataset, DatasetSources, DatasetTargets
-#import egon.data.config
 
 WORKING_DIR_MASTR_OLD = Path(".", "bnetza_mastr", "dump_2021-05-03")
 WORKING_DIR_MASTR_NEW = Path(".", "bnetza_mastr", "dump_2024-01-08")
@@ -39,10 +38,18 @@ def download_mastr_data():
                     zenodo_files_url + filename, download_dir / filename
                 )
 
-    if not os.path.exists(WORKING_DIR_MASTR_OLD):
-        WORKING_DIR_MASTR_OLD.mkdir(exist_ok=True, parents=True)
-    if not os.path.exists(WORKING_DIR_MASTR_NEW):
-        WORKING_DIR_MASTR_NEW.mkdir(exist_ok=True, parents=True)
+    if not os.path.exists(
+        Path(mastr_data_setup.targets.tables["mastr"]["download_dir"]["path"])
+    ):
+        Path(mastr_data_setup.targets.tables["mastr"]["download_dir"]["path"]).mkdir(
+            exist_ok=True, parents=True
+        )
+    if not os.path.exists(
+        Path(mastr_data_setup.targets.tables["mastr_new"]["download_dir"]["path"])
+    ):
+        Path(mastr_data_setup.targets.tables["mastr_new"]["download_dir"]["path"]).mkdir(
+            exist_ok=True, parents=True
+        )
 
     download(
         dataset_name="mastr",
@@ -84,7 +91,7 @@ class mastr_data_setup(Dataset):
     #:
     name: str = "MastrData"
     #:
-    version: str = "0.0.3"
+    version: str = "0.0.4"
     #:
     tasks = (download_mastr_data,)
 
