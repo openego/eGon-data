@@ -29,6 +29,7 @@ from egon.data.metadata import (
     meta_metadata,
 )
 import egon.data.config
+from egon_validation import RowCountValidation
 
 
 def download_files():
@@ -529,4 +530,15 @@ class Vg250(Dataset):
                 add_metadata,
                 cleaning_and_preperation,
             ),
+            validation={
+                "data_quality": [
+                    RowCountValidation(
+                        table="boundaries.vg250_krs",
+                        rule_id="TEST_ROW_COUNT",
+                        expected_count=27
+                    )
+                ]
+            },
+            validation_on_failure="continue"
+
         )
