@@ -3,7 +3,7 @@
 from __future__ import annotations
 
 from collections import abc
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from functools import partial, reduce, update_wrapper
 from typing import Callable, Iterable, Set, Tuple, Union
 import re
@@ -12,8 +12,16 @@ from airflow.models.baseoperator import BaseOperator as Operator
 from airflow.operators.python import PythonOperator
 from sqlalchemy import Column, ForeignKey, Integer, String, Table, orm, tuple_
 from sqlalchemy.ext.declarative import declarative_base
+from typing import Dict, List
+from egon.data.validation_utils import create_validation_tasks
 
 from egon.data import config, db, logger
+
+try:
+      from egon_validation.rules.base import Rule
+except ImportError:
+      Rule = None  # Type hint only
+
 
 Base = declarative_base()
 SCHEMA = "metadata"
@@ -197,6 +205,8 @@ class Dataset:
     #: The tasks of this :class:`Dataset`. A :class:`TaskGraph` will
     #: automatically be converted to :class:`Tasks_`.
     tasks: Tasks = ()
+    validation: Dict[str, List] = field(default_factory=dict)
+    validation_on_failure: str = "continue"
 
     def check_version(self, after_execution=()):
         scenario_names = config.settings()["egon-data"]["--scenarios"]
@@ -264,6 +274,20 @@ class Dataset:
         self.dependencies = list(self.dependencies)
         if not isinstance(self.tasks, Tasks_):
             self.tasks = Tasks_(self.tasks)
+            # Process validation configuration
+        if self.validation:
+            validation_tasks = create_validation_tasks(
+                validation_dict=self.validation,
+                dataset_name=self.name,
+                on_failure=self.validation_on_failure
+            )
+
+            # Append validation tasks to existing tasks
+            if validation_tasks:
+                task_list = list(self.tasks.graph if hasattr(self.tasks, 'graph') else self.tasks)
+                task_list.extend(validation_tasks)
+                self.tasks = Tasks_(tuple(task_list))
+
         if len(self.tasks.last) > 1:
             # Explicitly create single final task, because we can't know
             # which of the multiple tasks finishes last.
@@ -302,3 +326,29 @@ class Dataset:
         for p in predecessors:
             for first in self.tasks.first:
                 p.set_downstream(first)
+
+        # Link validation tasks to run after data tasks
+        if self.validation and validation_tasks:
+            # Get last non-validation tasks
+            non_validation_task_ids = [
+                task.task_id for task in self.tasks.values()
+                if not any(task.task_id.endswith(f".validate.{name}") for name in self.validation.keys())
+            ]
+
+            last_data_tasks = [
+                task for task in self.tasks.values()
+                if task.task_id in non_validation_task_ids and task in self.tasks.last
+            ]
+
+            if not last_data_tasks:
+                # Fallback to last non-validation task
+                last_data_tasks = [
+                                      task for task in self.tasks.values()
+                                      if task.task_id in non_validation_task_ids
+                                  ][-1:]
+
+            # Link each validation task downstream of last data tasks
+            for validation_task in validation_tasks:
+                for last_task in last_data_tasks:
+                    last_task.set_downstream(validation_task)
+
