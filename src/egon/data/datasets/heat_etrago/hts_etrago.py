@@ -6,14 +6,14 @@ import numpy as np
 import pandas as pd
 
 from egon.data import config, db
-from egon.data.datasets import Dataset
+from egon.data.datasets import Dataset, DatasetSources, DatasetTargets
 from egon.data.datasets.scenario_parameters import get_sector_parameters
 from egon.data.db import next_etrago_id
 
 
 def hts_to_etrago(scenario):
-    sources = config.datasets()["etrago_heat"]["sources"]
-    targets = config.datasets()["etrago_heat"]["targets"]
+    sources = HtsEtragoTable.sources.tables
+    targets = HtsEtragoTable.targets.tables
     carriers = ["central_heat", "rural_heat", "rural_gas_boiler"]
 
     if "status" in scenario:
@@ -26,8 +26,8 @@ def hts_to_etrago(scenario):
             bus_area = db.select_dataframe(
                 f"""
                  SELECT bus_id, area_id, id FROM
-                 {targets['heat_buses']['schema']}.
-                 {targets['heat_buses']['table']}
+                 {sources['heat_buses']['schema']}.
+                 {sources['heat_buses']['table']}
                  JOIN {sources['district_heating_areas']['schema']}.
                      {sources['district_heating_areas']['table']}
                  ON ST_Transform(ST_Centroid(geom_polygon), 4326) = geom
@@ -42,7 +42,8 @@ def hts_to_etrago(scenario):
             disct_time_series = db.select_dataframe(
                 f"""
                                 SELECT * FROM 
-                                demand.egon_timeseries_district_heating
+                                {sources['district_heating_timeseries']['schema']}.
+                                {sources['district_heating_timeseries']['table']}
                                 WHERE scenario ='{scenario}'                                
                                 """
             )
@@ -55,19 +56,19 @@ def hts_to_etrago(scenario):
             # interlinking heat_bus_id and mv_grid bus_id
             bus_sub = db.select_dataframe(
                 f"""
-                 SELECT {targets['heat_buses']['schema']}.
-                 {targets['heat_buses']['table']}.bus_id as heat_bus_id, 
+                 SELECT {sources['heat_buses']['schema']}.
+                 {sources['heat_buses']['table']}.bus_id as heat_bus_id, 
                  {sources['egon_mv_grid_district']['schema']}.
                              {sources['egon_mv_grid_district']['table']}.bus_id as 
                              bus_id FROM
-                 {targets['heat_buses']['schema']}.
-                 {targets['heat_buses']['table']}
+                 {sources['heat_buses']['schema']}.
+                 {sources['heat_buses']['table']}
                  JOIN {sources['egon_mv_grid_district']['schema']}.
                              {sources['egon_mv_grid_district']['table']}
                  ON ST_Transform(ST_Centroid({sources['egon_mv_grid_district']['schema']}.
-                             {sources['egon_mv_grid_district']['table']}.geom), 
-                                 4326) = {targets['heat_buses']['schema']}.
-                                         {targets['heat_buses']['table']}.geom
+                             {sources['egon_mv_grid_district']['table']}.geom),  
+                                 4326) = {sources['heat_buses']['schema']}.
+                                         {sources['heat_buses']['table']}.geom
                  WHERE carrier = '{carrier}'
                  AND scn_name = '{scenario}'
                  """
@@ -78,7 +79,8 @@ def hts_to_etrago(scenario):
             ind_time_series = db.select_dataframe(
                 f"""
                 SELECT scenario, bus_id, dist_aggregated_mw FROM 
-                demand.egon_etrago_timeseries_individual_heating
+                {sources['individual_heating_timeseries']['schema']}.
+                {sources['individual_heating_timeseries']['table']}
                 WHERE scenario ='{scenario}'
                 AND carrier = 'heat_pump'
                 """
@@ -101,7 +103,8 @@ def hts_to_etrago(scenario):
             ind_time_series = db.select_dataframe(
                 f"""
                 SELECT * FROM 
-                demand.egon_etrago_timeseries_individual_heating
+                {sources['individual_heating_timeseries']['schema']}.
+                {sources['individual_heating_timeseries']['table']}
                 WHERE scenario ='{scenario}'
                 AND carrier = 'CH4'
                 """
@@ -120,7 +123,8 @@ def hts_to_etrago(scenario):
             gas_voronoi = db.select_geodataframe(
                 f"""
                 SELECT bus_id, geom FROM 
-                grid.egon_gas_voronoi
+                {sources['ch4_voronoi']['schema']}.
+                {sources['ch4_voronoi']['table']}
                 WHERE scn_name = '{scenario}'
                 AND carrier = 'CH4'
                 """
@@ -161,11 +165,12 @@ def hts_to_etrago(scenario):
         # Delete existing data from database
         db.execute_sql(
             f"""
-            DELETE FROM grid.egon_etrago_load
+            DELETE FROM {targets['loads']['schema']}.{targets['loads']['table']}
             WHERE scn_name = '{scenario}'
             AND carrier = '{carrier}'
             AND bus IN (
-                SELECT bus_id FROM grid.egon_etrago_bus
+                SELECT bus_id FROM {sources['heat_buses']['schema']}.
+                                   {sources['heat_buses']['table']}
                 WHERE country = 'DE'
                 AND scn_name = '{scenario}'
                 )
@@ -175,11 +180,11 @@ def hts_to_etrago(scenario):
         db.execute_sql(
             f"""
             DELETE FROM
-            grid.egon_etrago_load_timeseries
+            {targets['load_timeseries']['schema']}.{targets['load_timeseries']['table']}
             WHERE scn_name = '{scenario}'
             AND load_id NOT IN (
             SELECT load_id FROM
-            grid.egon_etrago_load
+            {targets['loads']['schema']}.{targets['loads']['table']}
             WHERE scn_name = '{scenario}')
             """
         )
@@ -196,8 +201,8 @@ def hts_to_etrago(scenario):
         etrago_load["sign"] = -1
 
         etrago_load.to_sql(
-            "egon_etrago_load",
-            schema="grid",
+            targets["loads"]["table"],
+            schema=targets["loads"]["schema"],
             con=db.engine(),
             if_exists="append",
             index=False,
@@ -210,8 +215,8 @@ def hts_to_etrago(scenario):
         etrago_load_timeseries["p_set"] = bus_ts.loc[:, "dist_aggregated_mw"]
 
         etrago_load_timeseries.to_sql(
-            "egon_etrago_load_timeseries",
-            schema="grid",
+            targets["load_timeseries"]["table"],
+            schema=targets["load_timeseries"]["schema"],
             con=db.engine(),
             if_exists="append",
             index=False,
@@ -253,7 +258,50 @@ class HtsEtragoTable(Dataset):
     #:
     name: str = "HtsEtragoTable"
     #:
-    version: str = "0.0.6"
+    version: str = "0.0.7"
+    
+    sources = DatasetSources(
+        tables={
+            # buses coming from HeatEtrago (used as source here)
+            "heat_buses": {"schema": "grid", "table": "egon_etrago_bus"},
+            # polygons & MV grid districts
+            "district_heating_areas": {
+                "schema": "demand",
+                "table": "egon_district_heating_areas",
+            },
+            "egon_mv_grid_district": {
+                "schema": "grid",
+                "table": "egon_mv_grid_district",
+            },
+            # gas voronoi for CH4
+            "ch4_voronoi": {
+                "schema": "grid",
+                "table": "egon_gas_voronoi",
+            },
+            # time series inputs
+            "district_heating_timeseries": {
+                "schema": "demand",
+                "table": "egon_timeseries_district_heating",
+            },
+            "individual_heating_timeseries": {
+                "schema": "demand",
+                "table": "egon_etrago_timeseries_individual_heating",
+            },
+        },
+    )
+
+    targets = DatasetTargets(
+        tables={
+            "loads": {
+                "schema": "grid",
+                "table": "egon_etrago_load",
+            },
+            "load_timeseries": {
+                "schema": "grid",
+                "table": "egon_etrago_load_timeseries",
+            },
+        },
+    )
 
     def __init__(self, dependencies):
         super().__init__(
