@@ -58,7 +58,7 @@ def download_SciGRID_gas_data():
     None
 
     """
-    path = Path(GasNodesAndPipes.targets.tables["scigrid_gas"]["data_dir"]["path"])
+    path = Path(GasNodesAndPipes.targets.files["scigrid_gas_data_dir"]["path"])
     os.makedirs(path, exist_ok=True)
 
     basename = GasNodesAndPipes.sources.tables["scigrid_gas"]["zenodo"]["basename"]
@@ -72,13 +72,14 @@ def download_SciGRID_gas_data():
         urlretrieve(zenodo_zip_file_url, zip_file)
 
     
-    files = [
-        "data/" + GasNodesAndPipes.sources.tables["scigrid_gas"]["files"]["nodes"],
-        "data/" + GasNodesAndPipes.sources.tables["scigrid_gas"]["files"]["pipes"],
-        "data/" + GasNodesAndPipes.sources.tables["scigrid_gas"]["files"]["productions"],
-        "data/" + GasNodesAndPipes.sources.tables["scigrid_gas"]["files"]["storages"],
-        "data/" + GasNodesAndPipes.sources.tables["scigrid_gas"]["files"]["lngs"],  # <- lowercase key
-    ]
+    components = ["nodes", "pipes", "productions", "storages", "lngs"]  
+
+    files = []
+
+    for i in components:
+        files.append(
+            "data/" + GasNodesAndPipes.sources.tables["scigrid_gas"]["files"][i]
+        )
 
     with ZipFile(zip_file, "r") as zipObj:
         listOfFileNames = zipObj.namelist()
@@ -106,7 +107,7 @@ def define_gas_nodes_list():
     new_id = db.next_etrago_id("bus")
 
     target_file = (
-    Path(GasNodesAndPipes.targets.tables["scigrid_gas"]["data_dir"]["path"])
+    Path(GasNodesAndPipes.targets.files["scigrid_gas_data_dir"]["path"])
     / "data"
     / GasNodesAndPipes.sources.tables["scigrid_gas"]["files"]["nodes"]
     )
@@ -545,7 +546,7 @@ def define_gas_pipeline_list(
     new_id = db.next_etrago_id("link")
 
     classification_file = Path(
-        GasNodesAndPipes.sources.tables["scigrid_gas"]["classification_csv"]["path"]
+        GasNodesAndPipes.sources.files["pipeline_classification"]["path"]
     )
 
     classification = pd.read_csv(
@@ -555,7 +556,7 @@ def define_gas_pipeline_list(
     )
 
     target_file = (
-    Path(GasNodesAndPipes.targets.tables["scigrid_gas"]["data_dir"]["path"])
+    Path(GasNodesAndPipes.targets.files["scigrid_gas_data_dir"]["path"])
     / "data"
     / GasNodesAndPipes.sources.tables["scigrid_gas"]["files"]["pipes"]
     )
@@ -963,9 +964,9 @@ def insert_gas_pipeline_list(gas_pipelines_list, scn_name="eGon2035"):
     print(gas_pipelines_list)
     # Insert data to db
     gas_pipelines_list.to_postgis(
-        "egon_etrago_gas_link",
+        GasNodesAndPipes.targets.tables["gas_link"]["table"],
         engine,
-        schema=GasNodesAndPipes.targets.tables["links"]["schema"],
+        schema=GasNodesAndPipes.targets.tables["gas_link"]["schema"],
         index=False,
         if_exists="replace",
         dtype={"geom": Geometry(), "topo": Geometry()},
@@ -974,8 +975,8 @@ def insert_gas_pipeline_list(gas_pipelines_list, scn_name="eGon2035"):
     db.execute_sql(
         f"""
         SELECT UpdateGeometrySRID(
-            '{GasNodesAndPipes.targets.tables["links"]["schema"]}',
-            'egon_etrago_gas_link',
+            '{GasNodesAndPipes.targets.tables["gas_link"]["schema"]}',
+            '{GasNodesAndPipes.targets.tables["gas_link"]["table"]}',
             'topo',
             4326
         );
@@ -988,9 +989,9 @@ def insert_gas_pipeline_list(gas_pipelines_list, scn_name="eGon2035"):
                bus0, bus1, p_min_pu,
                p_nom, p_nom_extendable, length,
                geom, topo
-        FROM {GasNodesAndPipes.targets.tables["links"]["schema"]}.egon_etrago_gas_link;
+        FROM {GasNodesAndPipes.targets.tables["gas_link"]["schema"]}.{GasNodesAndPipes.targets.tables["gas_link"]["table"]};
 
-        DROP TABLE {GasNodesAndPipes.targets.tables["links"]["schema"]}.egon_etrago_gas_link;
+        DROP TABLE {GasNodesAndPipes.targets.tables["gas_link"]["schema"]}.{GasNodesAndPipes.targets.tables["gas_link"]["table"]};
         """
     )
 
@@ -1154,7 +1155,7 @@ class GasNodesAndPipes(Dataset):
     #:
     name: str = "GasNodesAndPipes"
     #:
-    version: str = "0.0.12"
+    version: str = "0.0.13"
 
     tasks = ()
 
@@ -1185,20 +1186,26 @@ class GasNodesAndPipes(Dataset):
                     "storages": "IGGIELGN_Storages.csv",
                     "lngs": "IGGIELGN_LNGs.csv",
                 },
-            # NEW: make the classification CSV configurable
-                "classification_csv": {
-                    "path": "./data_bundle_egon_data/pipeline_classification_gas/pipeline_classification.csv"
-                },
             }
-        }   
+        },
+        files={
+            "pipeline_classification": {
+                "path": "./data_bundle_egon_data/pipeline_classification_gas/pipeline_classification.csv"
+            },
+        },
     )
+    
     targets = DatasetTargets(
         tables={
-            "scigrid_gas": {"data_dir": {"path": "./datasets/gas_data"}},
             "buses": {"schema": "grid", "table": "egon_etrago_bus"},
             "links": {"schema": "grid", "table": "egon_etrago_link"},
-        }
+            "gas_link": {"schema": "grid", "table": "egon_etrago_gas_link"},
+        },
+        files={
+            "scigrid_gas_data_dir": {"path": "./datasets/gas_data"},
+        },
     )
+
     def __init__(self, dependencies):
         super().__init__(
             name=self.name,
