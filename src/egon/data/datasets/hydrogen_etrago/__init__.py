@@ -109,12 +109,13 @@ class HydrogenStoreEtrago(Dataset):
     #:
     name: str = "HydrogenStoreEtrago"
     #:
-    version: str = "0.0.4"
+    version: str = "0.0.5"
     
     sources = DatasetSources(
         tables={
             "saltcavern_data": {"schema": "grid", "table": "egon_saltstructures_storage_potential"},
             "buses": {"schema": "grid", "table": "egon_etrago_bus"},
+            "H2_AC_map": {"schema": "grid", "table": "egon_etrago_ac_h2"},
         },
     )
     targets = DatasetTargets(
@@ -159,19 +160,68 @@ class HydrogenPowerLinkEtrago(Dataset):
     #:
     name: str = "HydrogenPowerLinkEtrago"
     #:
-    version: str = "0.0.5"
+    version: str = "0.0.6"
     
     sources = DatasetSources(
         tables={
             "buses": {"schema": "grid", "table": "egon_etrago_bus"},
             "links": {"schema": "grid", "table": "egon_etrago_link"},
             "H2_AC_map": {"schema": "grid", "table": "egon_etrago_ac_h2"},
+            "ehv_substation": {
+                "schema": "grid",
+                "table": "egon_ehv_substation",
+            },
+            "hvmv_substation": {
+                "schema": "grid",
+                "table": "egon_hvmv_substation",
+            },
+            "loads": {
+                "schema": "grid",
+                "table": "egon_etrago_load",
+            },
+            "load_timeseries": {
+                "schema": "grid",
+                "table": "egon_etrago_load_timeseries",
+            },
+            "mv_districts": {
+                "schema": "grid",
+                "table": "egon_mv_grid_district",
+            },
+            "ehv_voronoi": {
+                "schema": "grid",
+                "table": "egon_ehv_substation_voronoi",
+            },
+            "district_heating_area": {
+                "schema": "demand",
+                "table": "egon_district_heating_areas",
+            },
+            "o2_load_profile": {
+                "schema": "demand",
+                "table": "egon_demandregio_timeseries_cts_ind",
+            },
         },
     )
     targets = DatasetTargets(
         tables={
             "hydrogen_links": {"schema": "grid", "table": "egon_etrago_link"},
+            "loads": {
+                "schema": "grid",
+                "table": "egon_etrago_load",
+            },
+            "load_timeseries": {
+                "schema": "grid",
+                "table": "egon_etrago_load_timeseries",
+            },
+            "generators": {
+                "schema": "grid",
+                "table": "egon_etrago_generator",
+            },
+            "buses": {
+                "schema": "grid",
+                "table": "egon_etrago_bus",
+            },
         },
+        
     )
 
     def __init__(self, dependencies):
