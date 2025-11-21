@@ -293,8 +293,8 @@ def buses(scenario, sources, targets):
         "status2023",
     ]:  # TODO: status2023 this is hardcoded shit
         central_buses.to_postgis(
-            targets["buses"]["table"],
-            schema=targets["buses"]["schema"],
+            ElectricalNeighbours.targets.tables["buses"]["table"],
+            schema=ElectricalNeighbours.targets.tables["buses"]["schema"],
             if_exists="append",
             con=db.engine(),
             index=False,
@@ -303,8 +303,8 @@ def buses(scenario, sources, targets):
     # (buses with another voltage_level or inside Germany in test mode)
     else:
         central_buses[central_buses.carrier == "AC"].to_postgis(
-            targets["buses"]["table"],
-            schema=targets["buses"]["schema"],
+            ElectricalNeighbours.targets.tables["buses"]["table"],
+            schema=ElectricalNeighbours.targets.tables["buses"]["schema"],
             if_exists="append",
             con=db.engine(),
             index=False,
@@ -569,8 +569,8 @@ def cross_border_lines(scenario, sources, targets, central_buses):
 
     # Insert lines to the database
     new_lines.to_postgis(
-        targets["lines"]["table"],
-        schema=targets["lines"]["schema"],
+        ElectricalNeighbours.targets.tables["lines"]["table"],
+        schema=ElectricalNeighbours.targets.tables["lines"]["schema"],
         if_exists="append",
         con=db.engine(),
         index=False,
@@ -709,8 +709,8 @@ def central_transformer(scenario, sources, targets, central_buses, new_lines):
 
     # Insert transformers to the database
     trafo.to_sql(
-        targets["transformers"]["table"],
-        schema=targets["transformers"]["schema"],
+        ElectricalNeighbours.targets.tables["transformers"]["table"],
+        schema=ElectricalNeighbours.targets.tables["transformers"]["schema"],
         if_exists="append",
         con=db.engine(),
         index=False,
@@ -838,8 +838,8 @@ def foreign_dc_lines(scenario, sources, targets, central_buses):
 
     # Insert DC lines to the database
     foreign_links.to_postgis(
-        targets["links"]["table"],
-        schema=targets["links"]["schema"],
+        ElectricalNeighbours.targets.tables["links"]["table"],
+        schema=ElectricalNeighbours.targets.tables["links"]["schema"],
         if_exists="append",
         con=db.engine(),
         index=False,
@@ -937,8 +937,6 @@ def get_foreign_bus_id(scenario):
 
     """
 
-    #sources = config.datasets()["electrical_neighbours"]["sources"]
-
     bus_id = db.select_geodataframe(
         f"""SELECT bus_id, ST_Buffer(geom, 1) as geom, country
         FROM {ElectricalNeighbours.sources.tables['electricity_buses']['schema']}.
@@ -957,7 +955,7 @@ def get_foreign_bus_id(scenario):
 
     # insert installed capacities
     file = zipfile.ZipFile(
-       f"tyndp/{ElectricalNeighbours.sources.files['tyndp_capacities']}"
+       ElectricalNeighbours.sources.files['tyndp_capacities']
    )
 
     # Select buses in neighbouring countries as geodataframe
@@ -993,8 +991,6 @@ def calc_capacities():
 
     """
 
-    #sources = config.datasets()["electrical_neighbours"]["sources"]
-
     countries = [
         "AT",
         "BE",
@@ -1011,7 +1007,7 @@ def calc_capacities():
 
     # insert installed capacities
     file = zipfile.ZipFile(
-        f"tyndp/{ElectricalNeighbours.sources.files['tyndp_capacities']}"
+        ElectricalNeighbours.sources.files['tyndp_capacities']
     )
     df = pd.read_excel(
         file.open("TYNDP-2020-Scenario-Datafile.xlsx").read(),
@@ -1369,11 +1365,11 @@ def tyndp_demand():
 
     # Read in data from TYNDP for 2030 and 2040
     dataset_2030 = pd.read_excel(
-        f"tyndp/{sources.files['tyndp_demand_2030']}", sheet_name=nodes, skiprows=10
+        sources.files['tyndp_demand_2030'], sheet_name=nodes, skiprows=10
     )
 
     dataset_2040 = pd.read_excel(
-        f"tyndp/{sources.files['tyndp_demand_2040']}", sheet_name=None, skiprows=10
+        sources.files['tyndp_demand_2040'], sheet_name=None, skiprows=10
     )
 
     # Transform map_buses to pandas.Series and select only used values
@@ -2224,7 +2220,7 @@ class ElectricalNeighbours(Dataset):
     #:
     name: str = "ElectricalNeighbours"
     #:
-    version: str = "0.0.12"
+    version: str = "0.0.13"
     
     sources = DatasetSources(
         tables={
