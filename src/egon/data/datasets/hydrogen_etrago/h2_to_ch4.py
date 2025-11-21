@@ -21,6 +21,9 @@ import numpy as np
 
 from egon.data import config, db
 from egon.data.datasets.scenario_parameters import get_sector_parameters
+from egon.data.datasets import load_sources_and_targets
+
+sources, targets = load_sources_and_targets("HydrogenMethaneLinkEtrago")
 
 
 def insert_h2_to_ch4_to_h2():
@@ -39,12 +42,9 @@ def insert_h2_to_ch4_to_h2():
 
     scenarios = config.settings()["egon-data"]["--scenarios"]
     con = db.engine()
-    target_links = config.datasets()["etrago_hydrogen"]["targets"][
-        "hydrogen_links"
-    ]
-    target_buses = config.datasets()["etrago_hydrogen"]["targets"][
-        "hydrogen_buses"
-    ]
+    target_links = targets.tables["hydrogen_links"]
+    target_buses = sources.tables["buses"]
+
 
     if "status2019" in scenarios:
         scenarios.remove("status2019")
