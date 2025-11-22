@@ -159,7 +159,7 @@ class MITChargingInfrastructure(Dataset):
     #:
     name: str = "MITChargingInfrastructure"
     #:
-    version: str = "0.0.1"
+    version: str = "0.0.3"
 
     def __init__(self, dependencies):
         super().__init__(

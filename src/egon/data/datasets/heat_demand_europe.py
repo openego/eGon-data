@@ -36,7 +36,7 @@ class HeatDemandEurope(Dataset):
     """
 
     name: str = "heat-demands-europe"
-    version: str = "0.2.0"  
+    version: str = "0.3.0"  
     
     sources = DatasetSources(
         urls={
@@ -54,7 +54,7 @@ class HeatDemandEurope(Dataset):
             name=self.name,
             version=self.version,
             dependencies=dependencies,
-            tasks=(download),
+            tasks=(download,),
         )
 
 

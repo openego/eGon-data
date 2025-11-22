@@ -23,14 +23,12 @@ import geopandas as gpd
 from egon.data import db
 from egon.data.config import settings
 from egon.data.datasets import Dataset, DatasetSources, DatasetTargets
-import egon.data.config
 from egon.data.metadata import (
     context,
 
     meta_metadata,
     licenses_datenlizenz_deutschland,
 )
-import egon.data.config
 
 
 def download_files():
@@ -106,7 +104,9 @@ def to_postgres():
 
         # Drop table before inserting data
         db.execute_sql(
-            f"DROP TABLE IF EXISTS {Vg250.targets.tables[table]} CASCADE;"
+            "DROP TABLE IF EXISTS "
+            f"{Vg250.targets.tables[table]['schema']}."
+            f"{Vg250.targets.tables[table]['table']} CASCADE;"
         )
 
         # create database table from geopandas dataframe
@@ -120,15 +120,18 @@ def to_postgres():
         )
 
         db.execute_sql(
-            f"ALTER TABLE {Vg250.targets.tables[table]} "
-            f"ADD PRIMARY KEY (id);"
-            )
+            "ALTER TABLE "
+            f"{Vg250.targets.tables[table]['schema']}."
+            f"{Vg250.targets.tables[table]['table']} "
+            "ADD PRIMARY KEY (id);"
+        )
 
         # Add index on geometry column
         db.execute_sql(
             f"CREATE INDEX {table}_geometry_idx ON "
-            f"{Vg250.targets.tables[table]} USING gist (geometry);"
-            )
+            f"{Vg250.targets.tables[table]['schema']}."
+            f"{Vg250.targets.tables[table]['table']} USING gist (geometry);"
+        )
 
 
 def add_metadata():
@@ -188,7 +191,10 @@ def add_metadata():
     }
 
     for table in Vg250.file_table_map.values():
-        schema_table = Vg250.targets.tables[table]
+        schema_table = (
+            f"{Vg250.targets.tables[table]['schema']}."
+            f"{Vg250.targets.tables[table]['table']}"
+        )
         meta = {
             "name": schema_table,
             "title": title_and_description[table]["title"],
@@ -485,12 +491,12 @@ class Vg250(Dataset):
             "vg250_zip": "vg250/vg250_01-01.geo84.shape.ebenen.zip"
         },
         tables={
-            "vg250_sta": "boundaries.vg250_sta",
-            "vg250_lan": "boundaries.vg250_lan",
-            "vg250_rbz": "boundaries.vg250_rbz",
-            "vg250_krs": "boundaries.vg250_krs",
-            "vg250_vwg": "boundaries.vg250_vwg",
-            "vg250_gem": "boundaries.vg250_gem",
+            "vg250_sta": {"schema": "boundaries", "table": "vg250_sta"},
+            "vg250_lan": {"schema": "boundaries", "table": "vg250_lan"},
+            "vg250_rbz": {"schema": "boundaries", "table": "vg250_rbz"},
+            "vg250_krs": {"schema": "boundaries", "table": "vg250_krs"},
+            "vg250_vwg": {"schema": "boundaries", "table": "vg250_vwg"},
+            "vg250_gem": {"schema": "boundaries", "table": "vg250_gem"},
         }
     )
     
@@ -542,7 +548,7 @@ class Vg250(Dataset):
 
     #:
     name: str = "VG250"
-    version: str = "0.0.6"
+    version: str = "0.0.7"
 
 
     def __init__(self, dependencies):

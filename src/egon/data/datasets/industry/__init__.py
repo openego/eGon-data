@@ -13,11 +13,11 @@ import pandas as pd
 
 from egon.data import db
 from egon.data.datasets import Dataset, DatasetSources, DatasetTargets
+from egon.data.config import settings
 from egon.data.datasets.industry.temporal import (
     insert_osm_ind_load,
     insert_sites_ind_load,
 )
-import egon.data.config
 
 Base = declarative_base()
 
@@ -185,9 +185,7 @@ def industrial_demand_distr():
     f"""DELETE FROM {target_osm['schema']}.{target_osm['table']}"""
     )
 
-    for scn in egon.data.config.settings()["egon-data"]["--scenarios"]:
-        # Select spatial information from local database
-        # Select administrative districts (Landkreise) including its boundaries
+    for scn in settings()["egon-data"]["--scenarios"]:
         boundaries = db.select_geodataframe(
             f"""SELECT nuts, geometry FROM
                 {sources["vg250_krs"]["schema"]}.
@@ -235,7 +233,7 @@ def industrial_demand_distr():
         )
 
         # Rename column
-        landuse = landuse.rename({"nuts": "nuts3"}, axis=1)
+        landuse = landuse.rename({"index_right": "nuts3"}, axis=1)
 
         landuse_nuts3 = landuse[["area_ha", "nuts3"]]
         landuse_nuts3 = landuse_nuts3.groupby(["nuts3"]).sum().reset_index()
@@ -259,7 +257,7 @@ def industrial_demand_distr():
                 WHERE scenario = '{scn}'
                 AND demand > 0
                 AND wz IN
-                    (SELECT wz FROM demand.egon_demandregio_wz
+                    (SELECT wz FROM {sources["wz"]["schema"]}.{sources["wz"]["table"]}
                          WHERE sector = 'industry')"""
         )
 
@@ -429,7 +427,7 @@ class IndustrialDemandCurves(Dataset):
     #:
     name: str = "Industrial_demand_curves"
     #:
-    version: str = "0.0.6"
+    version: str = "0.0.7"
     
     sources = DatasetSources(
         tables={

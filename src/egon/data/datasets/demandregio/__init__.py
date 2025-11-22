@@ -65,6 +65,9 @@ class DemandRegio(Dataset):
             "new_consumers_2035": "new_largescale_consumers_nep.csv",
             "cache_zip": "demand_regio_backup/cache.zip",
             "dbdump_zip": "demand_regio_backup/status2019-egon-demandregio-cts-ind.zip",
+            "pes_demand_today": "pypsa_eur_sec_data/industrial_demand_today.csv",
+            "pes_production_tomorrow": "pypsa_eur_sec_data/industrial_production_2050.csv",
+            "pes_sector_ratios": "pypsa_eur_sec_data/industrial_sector_ratios.csv",
         },
         tables={
             "vg250_krs": "boundaries.vg250_krs",
@@ -88,7 +91,7 @@ class DemandRegio(Dataset):
     #:
     name: str = "DemandRegio"
     #:
-    version: str = "0.0.14"
+    version: str = "0.0.15"
 
     def __init__(self, dependencies):
         super().__init__(
@@ -1058,4 +1061,3 @@ def get_cached_tables():
 
         with zipfile.ZipFile(source_path, "r") as zip_ref:
             zip_ref.extractall(path=target_path)
-
