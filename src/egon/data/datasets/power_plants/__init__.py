@@ -75,17 +75,12 @@ def create_tables():
 
     # Tables for future scenarios
     #cfg = egon.data.config.datasets()["power_plants"]
-    db.execute_sql(
-    f"CREATE SCHEMA IF NOT EXISTS "
-    f"{PowerPlants.targets.get_table_schema('power_plants')};"
-)
+    db.execute_sql(f"CREATE SCHEMA IF NOT EXISTS {PowerPlants.targets.tables['schema']};")
     engine = db.engine()
     db.execute_sql(
-    f"DROP TABLE IF EXISTS "
-    f"{PowerPlants.targets.get_table_schema('power_plants')}."
-    f"{PowerPlants.targets.get_table_name('power_plants')}"
-)
-
+        f"""DROP TABLE IF EXISTS
+        {PowerPlants.targets.tables['schema']}.{PowerPlants.targets.tables['table']}"""
+    )
 
     db.execute_sql("""DROP SEQUENCE IF EXISTS pp_seq""")
     EgonPowerPlants.__table__.create(bind=engine, checkfirst=True)
@@ -255,7 +250,7 @@ def insert_biomass_plants(scenario):
 
     # import data for MaStR
     mastr = pd.read_csv(
-        WORKING_DIR_MASTR_OLD / PowerPlants.sources.files["mastr_biomass"]
+        WORKING_DIR_MASTR_OLD / PowerPlants.sources.tables["mastr_biomass"]
     ).query("EinheitBetriebsstatus=='InBetrieb'")
 
     # Drop entries without federal state or 'AusschließlichWirtschaftszone'
@@ -340,7 +335,7 @@ def insert_hydro_plants(scenario):
         if scenario == "eGon100RE":
             try:
                 target = pd.read_sql(
-                    f"""SELECT capacity FROM {PowerPlants.sources.tables['capacities']}
+                    f"""SELECT capacity FROM supply.egon_scenario_capacities
                             WHERE scenario_name = '{scenario}'
                             AND carrier = '{carrier}'
                             """,
@@ -357,7 +352,7 @@ def insert_hydro_plants(scenario):
 
         # import data for MaStR
         mastr = pd.read_csv(
-            WORKING_DIR_MASTR_NEW / PowerPlants.sources.files["mastr_hydro"]
+            WORKING_DIR_MASTR_NEW / PowerPlants.sources.tables["mastr_hydro"]
         ).query("EinheitBetriebsstatus=='InBetrieb'")
 
         # Choose only plants with specific carriers
@@ -446,7 +441,7 @@ def assign_voltage_level(mastr_loc, sources, mastr_working_dir):
 
         location = (
             pd.read_csv(
-                mastr_working_dir / PowerPlants.sources.files["mastr_location"],
+                mastr_working_dir / PowerPlants.sources.tables["mastr_location"],
                 usecols=cols,
             )
             .rename(columns={"MaStRNummer": "LokationMastrNummer"})
@@ -607,7 +602,7 @@ def insert_hydro_biomass():
     #cfg = egon.data.config.datasets()["power_plants"]
     db.execute_sql(
         f"""
-        DELETE FROM {PowerPlants.targets.get_table_schema('power_plants')}.{PowerPlants.targets.get_table_name('power_plants')}
+        DELETE FROM {PowerPlants.targets.tables['schema']}.{PowerPlants.targets.tables['table']}
         WHERE carrier IN ('biomass', 'reservoir', 'run_of_river')
         AND scenario IN ('eGon2035', 'eGon100RE')
         """
@@ -649,7 +644,7 @@ def allocate_conventional_non_chp_power_plants():
     # Delete existing plants in the target table
     db.execute_sql(
         f"""
-         DELETE FROM {PowerPlants.targets.get_table_schema('power_plants')}.{PowerPlants.targets.get_table_name('power_plants')}
+         DELETE FROM {PowerPlants.targets.tables['schema']}.{PowerPlants.targets.tables['table']}
          WHERE carrier IN ('gas', 'oil')
          AND scenario='eGon2035';
          """
@@ -815,7 +810,7 @@ def allocate_other_power_plants():
 
     db.execute_sql(
         f"""
-        DELETE FROM {PowerPlants.targets.get_table_schema('power_plants')}.{PowerPlants.targets.get_table_name('power_plants')}
+        DELETE FROM {PowerPlants.targets.tables['schema']}.{PowerPlants.targets.tables['table']}
         WHERE carrier ='others'
         """
     )
@@ -878,12 +873,12 @@ def allocate_other_power_plants():
 
     # Select power plants representing carrier 'others' from MaStR files
     mastr_sludge = pd.read_csv(
-        WORKING_DIR_MASTR_OLD / PowerPlants.sources.files["mastr_gsgk"]
+        WORKING_DIR_MASTR_OLD / PowerPlants.sources.tables["mastr_gsgk"]
     ).query(
         """EinheitBetriebsstatus=='InBetrieb'and Energietraeger=='Klärschlamm'"""  # noqa: E501
     )
     mastr_geothermal = pd.read_csv(
-        WORKING_DIR_MASTR_OLD / PowerPlants.sources.files["mastr_gsgk"]
+        WORKING_DIR_MASTR_OLD / PowerPlants.sources.tables["mastr_gsgk"]
     ).query(
         "EinheitBetriebsstatus=='InBetrieb' and Energietraeger=='Geothermie' "
         "and Technologie == 'ORCOrganicRankineCycleAnlage'"
@@ -1057,7 +1052,7 @@ def power_plants_status_quo(scn_name="status2019"):
 
     db.execute_sql(
         f"""
-        DELETE FROM {PowerPlants.targets.get_table_schema('power_plants')}.{PowerPlants.targets.get_table_name('power_plants')}
+        DELETE FROM {PowerPlants.targets.tables['schema']}.{PowerPlants.targets.tables['table']}
         WHERE carrier IN ('wind_onshore', 'solar', 'biomass',
                           'run_of_river', 'reservoir', 'solar_rooftop',
                           'wind_offshore', 'nuclear', 'coal', 'lignite', 'oil',
@@ -1247,14 +1242,14 @@ def get_conventional_power_plants_non_chp(scn_name):
     ]
     # import nuclear power plants
     nuclear = pd.read_csv(
-        WORKING_DIR_MASTR_OLD / PowerPlants.sources.files["mastr_nuclear"],
+        WORKING_DIR_MASTR_OLD / PowerPlants.sources.tables["mastr_nuclear"],
         usecols=common_columns,
-        )
+    )
     # import combustion power plants
     comb = pd.read_csv(
-        WORKING_DIR_MASTR_OLD / PowerPlants.sources.files["mastr_combustion"],
+        WORKING_DIR_MASTR_OLD / PowerPlants.sources.tables["mastr_combustion"],
         usecols=common_columns + ["ThermischeNutzleistung"],
-        )
+    )
 
     conv = pd.concat([comb, nuclear])
 
@@ -1368,7 +1363,7 @@ def import_gas_gen_egon100():
 
     db.execute_sql(
         f"""
-        DELETE FROM {PowerPlants.targets.get_table_schema('power_plants')}.{PowerPlants.targets.get_table_name('power_plants')}
+        DELETE FROM {PowerPlants.targets.tables['schema']}.{PowerPlants.targets.tables['table']}
         WHERE carrier = 'gas'
         AND bus_id IN (SELECT bus_id from grid.egon_etrago_bus
                 WHERE scn_name = '{scn_name}'
@@ -1399,14 +1394,14 @@ def import_gas_gen_egon100():
 
     target = db.select_dataframe(
         f"""
-        SELECT capacity FROM {PowerPlants.sources.tables['capacities']}
+        SELECT capacity FROM supply.egon_scenario_capacities
         WHERE scenario_name = '{scn_name}'
         AND carrier = 'gas'
         """,
     ).iat[0, 0]
 
     conv = pd.read_csv(
-            WORKING_DIR_MASTR_OLD / PowerPlants.sources.files["mastr_combustion"],
+            WORKING_DIR_MASTR_OLD / PowerPlants.sources.tables["mastr_combustion"],
         usecols=[
             "EinheitMastrNummer",
             "Energietraeger",
@@ -1471,11 +1466,10 @@ def import_gas_gen_egon100():
     conv["capacity"] = conv["capacity"] * (target / conv["capacity"].sum())
 
     max_id = db.select_dataframe(
-    f"""
-        SELECT max(id)
-        FROM {PowerPlants.targets.get_table_schema('power_plants')}.{PowerPlants.targets.get_table_name('power_plants')}
         """
-).iat[0, 0]
+            SELECT max(id) FROM supply.egon_power_plants
+            """,
+    ).iat[0, 0]
 
     conv["id"] = range(max_id + 1, max_id + 1 + len(conv))
 
@@ -1654,7 +1648,7 @@ class PowerPlants(Dataset):
     #:
     name: str = "PowerPlants"
     #:
-    version: str = "0.0.30"
+    version: str = "0.0.31"
 
     def __init__(self, dependencies):
         super().__init__(

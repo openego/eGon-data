@@ -680,7 +680,7 @@ def insert_chp_egon100re():
 
     # select target values from pypsa-eur-sec
     additional_capacity = db.select_dataframe(
-        f"""
+        """
         SELECT capacity
         FROM {Chp.sources.tables['scenario_capacities']}
         WHERE scenario_name = 'eGon100RE'
@@ -861,7 +861,7 @@ class Chp(Dataset):
     #:
     name: str = "Chp"
     #:
-    version: str = "0.0.12"
+    version: str = "0.0.13"
 
     def __init__(self, dependencies):
         super().__init__(

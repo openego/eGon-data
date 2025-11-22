@@ -56,7 +56,7 @@ class StorageEtrago(Dataset):
     #:
     name: str = "StorageEtrago"
     #:
-    version: str = "0.0.11"
+    version: str = "0.0.12"
 
 
     def __init__(self, dependencies):
@@ -139,8 +139,8 @@ def extendable_batteries_per_scenario(scenario):
 
     extendable_batteries = db.select_dataframe(
         f"""
-        SELECT bus_id as bus, scn_name
-        FROM {StorageEtrago.sources.tables['bus']}
+        SELECT bus_id as bus, scn_name FROM
+        StorageEtrago.sources.tables['bus']
         WHERE carrier = 'AC'
         AND scn_name = '{scenario}'
         AND (bus_id IN (SELECT bus_id
@@ -154,8 +154,8 @@ def extendable_batteries_per_scenario(scenario):
     # Select information on allocated capacities for home batteries from database
     home_batteries = db.select_dataframe(
         f"""
-        SELECT el_capacity as p_nom_min, bus_id as bus
-        FROM {StorageEtrago.sources.tables['storage']}
+        SELECT el_capacity as p_nom_min, bus_id as bus FROM
+        StorageEtrago.sources.tables['storage']
         WHERE carrier = 'home_battery'
         AND scenario = '{scenario}';
         """
