@@ -21,8 +21,8 @@ from egon.data.datasets.etrago_helpers import copy_and_modify_stores
 from egon.data.datasets.scenario_parameters import get_sector_parameters
 from egon.data.datasets import load_sources_and_targets
 
-sources, targets = load_sources_and_targets("etrago_hydrogen")
-bgr_sources, bgr_targets = load_sources_and_targets("bgr")
+sources, targets = load_sources_and_targets("HydrogenStoreEtrago")
+
 
 
 def insert_H2_overground_storage():
@@ -223,12 +223,12 @@ def calculate_and_map_saltcavern_storage_potential():
     """
 
     # select onshore vg250 data
-    #sources = config.datasets()["bgr"]["sources"]
-    #targets = config.datasets()["bgr"]["targets"]
+    sources = config.datasets()["bgr"]["sources"]
+    targets = config.datasets()["bgr"]["targets"]
     vg250_data = db.select_geodataframe(
         f"""SELECT * FROM
-                {bgr_sources.tables['vg250_federal_states']['schema']}.
-                {bgr_sources.tables['vg250_federal_states']['table']}
+                {sources['vg250_federal_states']['schema']}.
+                {sources['vg250_federal_states']['table']}
             WHERE gf = '4'""",
         index_col="id",
         geom_col="geometry",
@@ -237,8 +237,8 @@ def calculate_and_map_saltcavern_storage_potential():
     # get saltcavern shapes
     saltcavern_data = db.select_geodataframe(
         f"""SELECT * FROM
-                {bgr_sources.tables['saltcaverns']['schema']}.
-                {bgr_sources.tables['saltcaverns']['table']}
+                {sources['saltcaverns']['schema']}.
+                {sources['saltcaverns']['table']}
             """,
         geom_col="geometry",
     )
@@ -421,11 +421,11 @@ def write_saltcavern_potential():
     potential_areas = calculate_and_map_saltcavern_storage_potential()
 
     # write information to saltcavern data
-    #targets = config.datasets()["bgr"]["targets"]
+    targets = config.datasets()["bgr"]["targets"]
     potential_areas.to_crs(epsg=4326).to_postgis(
-        bgr_targets.tables["storage_potential"]["table"],
+        targets["storage_potential"]["table"],
         db.engine(),
-        schema=bgr_targets.tables["storage_potential"]["schema"],
+        schema=targets["storage_potential"]["schema"],
         index=True,
         if_exists="replace",
         dtype={"geometry": Geometry()},

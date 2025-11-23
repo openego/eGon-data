@@ -23,7 +23,7 @@ from egon.data import config, db
 from egon.data.datasets.scenario_parameters import get_sector_parameters
 from egon.data.datasets import load_sources_and_targets
 
-sources, targets = load_sources_and_targets("etrago_hydrogen")
+sources, targets = load_sources_and_targets("HydrogenMethaneLinkEtrago")
 
 
 def insert_h2_to_ch4_to_h2():
