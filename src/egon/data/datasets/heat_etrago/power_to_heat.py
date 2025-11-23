@@ -9,7 +9,7 @@ from egon.data import config, db
 from egon.data.datasets.scenario_parameters import get_sector_parameters
 from egon.data.datasets import load_sources_and_targets
 
-sources, targets = load_sources_and_targets("etrago_heat")
+sources, targets = load_sources_and_targets("HeatEtrago")
 
 def insert_individual_power_to_heat(scenario):
     """Insert power to heat into database
