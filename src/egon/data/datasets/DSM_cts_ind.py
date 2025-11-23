@@ -483,7 +483,7 @@ def cts_data_import(cts_cool_vent_ac_share):
 
     ts = db.select_dataframe(
         f"""SELECT bus_id, scn_name, p_set FROM
-        {sources.schema}.{sources.table}"""
+        {sources['schema']}.{sources['table']}"""
     )
 
     # identify relevant columns and prepare df to be returned
@@ -525,7 +525,7 @@ def ind_osm_data_import(ind_vent_cool_share):
     dsm = db.select_dataframe(
         f"""
         SELECT bus, scn_name, p_set FROM
-        {sources.schema}.{sources.table}
+        {sources["schema"]}.{sources["table"]}
         """
     )
 
@@ -561,7 +561,7 @@ def ind_osm_data_import_individual(ind_vent_cool_share):
     dsm = db.select_dataframe(
         f"""
         SELECT osm_id, bus_id as bus, scn_name, p_set FROM
-        {sources.schema}.{sources.table}
+        {sources["schema"]}.{sources["table"]}
         """
     )
 
@@ -599,7 +599,7 @@ def ind_sites_vent_data_import(ind_vent_share, wz):
     dsm = db.select_dataframe(
         f"""
         SELECT bus, scn_name, p_set FROM
-        {sources.schema}.{sources.table}
+        {sources["schema"]}.{sources["table"]}
         WHERE wz = {wz}
         """
     )
@@ -636,7 +636,7 @@ def ind_sites_vent_data_import_individual(ind_vent_share, wz):
     dsm = db.select_dataframe(
         f"""
         SELECT site_id, bus_id as bus, scn_name, p_set FROM
-        {sources.schema}.{sources.table}
+        {sources["schema"]}.{sources["table"]}
         WHERE wz = {wz}
         """
     )
@@ -664,7 +664,7 @@ def calc_ind_site_timeseries(scenario):
 
     demands_ind_sites = db.select_dataframe(
     f"""SELECT industrial_sites_id, wz, demand
-        FROM {source1.schema}.{source1.table}
+        FROM {source1["schema"]}.{source1["table"]}
         WHERE scenario = '{scenario}'
         AND demand > 0
         """
@@ -675,7 +675,7 @@ def calc_ind_site_timeseries(scenario):
 
     demand_area = db.select_geodataframe(
         f"""SELECT id, geom, subsector FROM
-            {source2.schema}.{source2.table}""",
+            {source2["schema"]}.{source2["table"]}""",
         index_col="id",
         geom_col="geom",
         epsg=3035,
@@ -734,7 +734,7 @@ def relate_to_schmidt_sites(dsm):
 
     schmidt = db.select_dataframe(
         f"""SELECT application, geom FROM
-            {source.schema}.{source.table}"""
+            {source["schema"]}.{source["table"]}"""
     )
 
     # relate calculated timeseries (dsm) to Schmidt's industrial sites
@@ -925,7 +925,7 @@ def create_dsm_components(
     target1 = DsmPotential.targets.tables["bus"]
     original_buses = db.select_geodataframe(
         f"""SELECT bus_id, v_nom, scn_name, x, y, geom FROM
-            {target1.schema}.{target1.table}""",
+            {target1["schema"]}.{target1["table"]}""",
         geom_col="geom",
         epsg=4326,
     )
@@ -978,7 +978,7 @@ def create_dsm_components(
 
     # set link_id
     target2 = DsmPotential.targets.tables["link"]
-    sql = f"""SELECT link_id FROM {target2.schema}.{target2.table}"""
+    sql = f"""SELECT link_id FROM {target2["schema"]}.{target2["table"]}"""
     max_id = pd.read_sql_query(sql, con)
     max_id = max_id["link_id"].max()
     if np.isnan(max_id):
@@ -1015,7 +1015,7 @@ def create_dsm_components(
 
     # set store_id
     target3 = DsmPotential.targets.tables["store"]
-    sql = f"""SELECT store_id FROM {target3.schema}.{target3.table}"""
+    sql = f"""SELECT store_id FROM {target3["schema"]}.{target3["table"]}"""
     max_id = pd.read_sql_query(sql, con)
     max_id = max_id["store_id"].max()
     if np.isnan(max_id):
@@ -1171,9 +1171,9 @@ def data_export(dsm_buses, dsm_links, dsm_stores, carrier):
 
     # insert into database
     insert_buses.to_postgis(
-        targets["bus"].table,
+        targets["bus"]["table"],
         con=db.engine(),
-        schema=targets["bus"].schema,
+        schema=targets["bus"]["schema"],
         if_exists="append",
         index=False,
         dtype={"geom": "geometry"},
@@ -1191,9 +1191,9 @@ def data_export(dsm_buses, dsm_links, dsm_stores, carrier):
 
     # insert into database
     insert_links.to_sql(
-        targets["link"].table,
+        targets["link"]["table"],
         con=db.engine(),
-        schema=targets["link"].schema,
+        schema=targets["link"]["schema"],
         if_exists="append",
         index=False,
     )
@@ -1207,9 +1207,9 @@ def data_export(dsm_buses, dsm_links, dsm_stores, carrier):
 
     # insert into database
     insert_links_timeseries.to_sql(
-        targets["link_timeseries"].table,
+        targets["link_timeseries"]["table"],
         con=db.engine(),
-        schema=targets["link_timeseries"].schema,
+        schema=targets["link_timeseries"]["schema"],
         if_exists="append",
         index=False,
     )
@@ -1225,9 +1225,9 @@ def data_export(dsm_buses, dsm_links, dsm_stores, carrier):
 
     # insert into database
     insert_stores.to_sql(
-        targets["store"].table,
+        targets["store"]["table"],
         con=db.engine(),
-        schema=targets["store"].schema,
+        schema=targets["store"]["schema"],
         if_exists="append",
         index=False,
     )
@@ -1241,9 +1241,9 @@ def data_export(dsm_buses, dsm_links, dsm_stores, carrier):
 
     # insert into database
     insert_stores_timeseries.to_sql(
-        targets["store_timeseries"].table,
+        targets["store_timeseries"]["table"],
         con=db.engine(),
-        schema=targets["store_timeseries"].schema,
+        schema=targets["store_timeseries"]["schema"],
         if_exists="append",
         index=False,
     )
@@ -1264,7 +1264,7 @@ def delete_dsm_entries(carrier):
     # buses
 
     sql = (
-        f"DELETE FROM {targets['bus'].schema}.{targets['bus'].table} b "
+        f"DELETE FROM {targets['bus']['schema']}.{targets['bus']['table']} b "
         f"WHERE (b.carrier LIKE '{carrier}');"
     )
     db.execute_sql(sql)
@@ -1272,12 +1272,10 @@ def delete_dsm_entries(carrier):
     # links
 
     sql = f"""
-        DELETE FROM {targets['link_timeseries'].schema}.
-        {targets['link_timeseries'].table} t
+        DELETE FROM {targets['link_timeseries']['schema']}.{targets['link_timeseries']['table']} t
         WHERE t.link_id IN
         (
-            SELECT l.link_id FROM {targets['link'].schema}.
-            {targets['link'].table} l
+            SELECT l.link_id FROM {targets['link']['schema']}.{targets['link']['table']} l
             WHERE l.carrier LIKE '{carrier}'
         );
         """
@@ -1285,8 +1283,7 @@ def delete_dsm_entries(carrier):
     db.execute_sql(sql)
 
     sql = f"""
-        DELETE FROM {targets['link'].schema}.
-        {targets['link'].table} l
+        DELETE FROM {targets['link']['schema']}.{targets['link']['table']} l
         WHERE (l.carrier LIKE '{carrier}');
         """
 
@@ -1295,12 +1292,10 @@ def delete_dsm_entries(carrier):
     # stores
 
     sql = f"""
-        DELETE FROM {targets['store_timeseries'].schema}.
-        {targets['store_timeseries'].table} t
+        DELETE FROM {targets['store_timeseries']['schema']}.{targets['store_timeseries']['table']} t
         WHERE t.store_id IN
         (
-            SELECT s.store_id FROM {targets['store'].schema}.
-            {targets['store'].table} s
+            SELECT s.store_id FROM {targets['store']['schema']}.{targets['store']['table']} s
             WHERE s.carrier LIKE '{carrier}'
         );
         """
@@ -1308,7 +1303,7 @@ def delete_dsm_entries(carrier):
     db.execute_sql(sql)
 
     sql = f"""
-        DELETE FROM {targets['store'].schema}.{targets['store'].table} s
+        DELETE FROM {targets['store']['schema']}.{targets['store']['table']} s
         WHERE (s.carrier LIKE '{carrier}');
         """
 
