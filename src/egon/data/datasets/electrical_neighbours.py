@@ -2231,9 +2231,9 @@ class ElectricalNeighbours(Dataset):
             "osmtgmod_branch":  {"schema": "osmtgmod_results",  "table": "branch_data"},
         },
         files={
-            "tyndp_capacities":    "TYNDP-2020-Scenario-Datafile.xlsx.zip",
-            "tyndp_demand_2030":   "Demand_TimeSeries_2030_DistributedEnergy.xlsx",
-            "tyndp_demand_2040":   "Demand_TimeSeries_2040_DistributedEnergy.xlsx",
+            "tyndp_capacities":    "tyndp/TYNDP-2020-Scenario-Datafile.xlsx.zip",
+            "tyndp_demand_2030":   "tyndp/Demand_TimeSeries_2030_DistributedEnergy.xlsx",
+            "tyndp_demand_2040":   "tyndp/Demand_TimeSeries_2040_DistributedEnergy.xlsx",
         },
     )
 
