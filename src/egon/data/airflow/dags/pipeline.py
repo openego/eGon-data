@@ -102,6 +102,8 @@ from egon.data.datasets.zensus_mv_grid_districts import ZensusMvGridDistricts
 from egon.data.datasets.zensus_vg250 import ZensusVg250
 from egon.data.metadata import Json_Metadata
 
+from egon.data.datasets.validation_report import ValidationReport
+
 # Set number of threads used by numpy and pandas
 set_numexpr_threads()
 
@@ -728,6 +730,13 @@ with airflow.DAG(
                 cts_demand_buildings,
                 emobility_mit,
             ]
+        )
+
+    with TaskGroup(group_id="validation_report") as validation_report_group:
+        # Generate validation report from all validation tasks
+        # NOTE: Temporarily depends only on vg250 for testing purposes
+        validation_report = ValidationReport(
+            dependencies=[vg250]
         )
 
     with TaskGroup(group_id="sanity_checks") as sanity_checks_group:
