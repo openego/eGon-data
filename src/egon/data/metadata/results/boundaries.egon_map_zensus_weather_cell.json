@@ -3,7 +3,7 @@
   "title": "Map census cells to era5 climate zones",
   "id": "WILL_BE_SET_AT_PUBLICATION",
   "description": "Mapping table of census cells to era5 climate zones",
-  "language": "en-US",
+  "language": ["en-US"],
   "keywords": [
     ""
   ],

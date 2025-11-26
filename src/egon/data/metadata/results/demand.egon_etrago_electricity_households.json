@@ -3,7 +3,9 @@
   "title": "MV residential electricity demand profiles",
   "id": "WILL_BE_SET_AT_PUBLICATION",
   "description": "Aggregated electricity demand profile of residential sector at mvgd bus level for two scenarios. Values are given in MWh.",
-  "language": "en-US",
+  "language": [
+    "en-US"
+  ],
   "keywords": [
     ""
   ],
