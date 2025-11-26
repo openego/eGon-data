@@ -249,7 +249,7 @@ def map_zensus_vg250():
         cfg["targets"]["map"]["table"],
         schema=cfg["targets"]["map"]["schema"],
         con=local_engine,
-        if_exists="replace",
+        if_exists="append",
     )
 
 
@@ -531,7 +531,7 @@ def add_metadata_zensus_inside_ger():
         ],
     }
 
-    meta_json = "'" + json.dumps(metadata) + "'"
+    meta_json = json.dumps(metadata)
 
     db.submit_comment(
         meta_json,
@@ -674,7 +674,7 @@ def add_metadata_vg250_gem_pop():
         ],
     }
 
-    meta_json = "'" + json.dumps(metadata) + "'"
+    meta_json = json.dumps(metadata)
 
     db.submit_comment(
         meta_json,
