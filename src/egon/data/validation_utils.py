@@ -4,8 +4,6 @@ from typing import Dict, List
 from airflow.operators.python import PythonOperator
 from egon_validation import run_validations, RunContext
 from egon_validation.rules.base import Rule
-from egon_validation.config import get_env, build_db_url
-from egon_validation import db
 import logging
 
 logger = logging.getLogger(__name__)
@@ -34,31 +32,51 @@ def create_validation_tasks(
     for task_name, rules in validation_dict.items():
         def make_callable(rules, task_name):
             def run_validation(**context):
+                import os
+                import time
                 from datetime import datetime
+                from egon.data import db as egon_db
 
-                execution_date = context.get("execution_date", datetime.now())
-                run_id = f"airflow-{dataset_name}-{task_name}-{execution_date.strftime('%Y%m%dT%H%M%S')}"
+                # Use same run_id as validation report for consistency
+                # This allows the validation report to collect results from all validation tasks
+                run_id = (
+                    os.environ.get('AIRFLOW_CTX_DAG_RUN_ID') or
+                    context.get('run_id') or
+                    (context.get('ti') and hasattr(context['ti'], 'dag_run') and context['ti'].dag_run.run_id) or
+                    (context.get('dag_run') and context['dag_run'].run_id) or
+                    f"airflow-{dataset_name}-{task_name}-{int(time.time())}"
+                )
 
-                logger.info(f"Validation: {dataset_name}.{task_name}")
+                # Include execution timestamp in task name so retries write to separate directories
+                # The validation report will filter to keep only the most recent execution per task
+                execution_date = context.get('execution_date') or datetime.now()
+                timestamp = execution_date.strftime('%Y%m%dT%H%M%S')
+                full_task_name = f"{dataset_name}.{task_name}.{timestamp}"
 
-                db_url = get_env("EGON_DB_URL") or build_db_url()
-                engine = db.make_engine(db_url)
+                logger.info(f"Validation: {full_task_name} (run_id: {run_id})")
 
-                try:
-                    ctx = RunContext(run_id=run_id, source="airflow")
-                    results = run_validations(engine, ctx, rules, task_name)
+                # Use existing engine from egon.data.db
+                engine = egon_db.engine()
 
-                    total = len(results)
-                    failed = sum(1 for r in results if not r.success)
+                # Set task and dataset on all rules (required by Rule base class)
+                for rule in rules:
+                    if not hasattr(rule, 'task') or rule.task is None:
+                        rule.task = task_name
+                    if not hasattr(rule, 'dataset') or rule.dataset is None:
+                        rule.dataset = dataset_name
 
-                    logger.info(f"Complete: {total - failed}/{total} passed")
+                ctx = RunContext(run_id=run_id, source="airflow")
+                results = run_validations(engine, ctx, rules, full_task_name)
 
-                    if failed > 0 and on_failure == "fail":
-                        raise Exception(f"{failed}/{total} validations failed")
+                total = len(results)
+                failed = sum(1 for r in results if not r.success)
 
-                    return {"total": total, "passed": total - failed, "failed": failed}
-                finally:
-                    engine.dispose()
+                logger.info(f"Complete: {total - failed}/{total} passed")
+
+                if failed > 0 and on_failure == "fail":
+                    raise Exception(f"{failed}/{total} validations failed")
+
+                return {"total": total, "passed": total - failed, "failed": failed}
 
             return run_validation
 
