@@ -15,10 +15,6 @@ from egon_validation import RunContext
 from egon_validation.runner.aggregate import collect, build_coverage, write_outputs
 from egon_validation.report.generate import generate
 
-# Default output directory for validation results
-DEFAULT_OUT_DIR = "./validation_runs"
-
-
 def generate_validation_report(**kwargs):
     """
     Generate validation report aggregating all validation results.
@@ -39,7 +35,13 @@ def generate_validation_report(**kwargs):
         (kwargs.get('dag_run') and kwargs['dag_run'].run_id) or
         f"pipeline_validation_report_{int(time.time())}"
     )
-    out_dir = DEFAULT_OUT_DIR
+
+    # Determine output directory at runtime (not import time)
+    # Priority: EGON_VALIDATION_DIR env var > current working directory
+    out_dir = os.path.join(
+        os.environ.get('EGON_VALIDATION_DIR', os.getcwd()),
+        "validation_runs"
+    )
 
     try:
         ctx = RunContext(run_id=run_id, source="airflow", out_dir=out_dir)
@@ -93,7 +95,7 @@ class ValidationReport(Dataset):
     #:
     name: str = "ValidationReport"
     #:
-    version: str = "0.0.2 dev"
+    version: str = "0.0.2.dev"
 
     def __init__(self, dependencies):
         super().__init__(

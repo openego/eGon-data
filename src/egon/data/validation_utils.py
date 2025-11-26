@@ -47,6 +47,13 @@ def create_validation_tasks(
                     f"airflow-{dataset_name}-{task_name}-{int(time.time())}"
                 )
 
+                # Use absolute path to ensure consistent location regardless of working directory
+                # Priority: EGON_VALIDATION_DIR env var > current working directory
+                out_dir = os.path.join(
+                    os.environ.get('EGON_VALIDATION_DIR', os.getcwd()),
+                    "validation_runs"
+                )
+
                 # Include execution timestamp in task name so retries write to separate directories
                 # The validation report will filter to keep only the most recent execution per task
                 execution_date = context.get('execution_date') or datetime.now()
@@ -65,7 +72,7 @@ def create_validation_tasks(
                     if not hasattr(rule, 'dataset') or rule.dataset is None:
                         rule.dataset = dataset_name
 
-                ctx = RunContext(run_id=run_id, source="airflow")
+                ctx = RunContext(run_id=run_id, source="airflow", out_dir=out_dir)
                 results = run_validations(engine, ctx, rules, full_task_name)
 
                 total = len(results)
