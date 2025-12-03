@@ -8,7 +8,6 @@ import logging
 
 logger = logging.getLogger(__name__)
 
-
 def create_validation_tasks(
     validation_dict: Dict[str, List[Rule]],
     dataset_name: str,
