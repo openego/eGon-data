@@ -20,6 +20,8 @@ Changed
   `#1360 <https://github.com/openego/eGon-data/issues/1360>`_
 * Update setting indices in etrago tables to avoid collisions
   `#1284 <https://github.com/openego/eGon-data/issues/1284>`_
+* Update zensus data to 2022. Data required conversion to 2011 format to keep code changes minimal. Conversion was done outside of egon-data. Databundle update is WIP.
+  `#1240 <https://github.com/openego/eGon-data/issues/1240>`_
 
 Bug Fixes
 ---------
