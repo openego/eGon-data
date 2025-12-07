@@ -9,23 +9,25 @@ import geopandas as gpd
 import numpy as np
 import pandas as pd
 
-from egon.data import config, db
+from egon.data import db
 from egon.data.datasets.emobility.heavy_duty_transport.db_classes import (
     EgonHeavyDutyTransportVoronoi,
 )
 
-DATASET_CFG = config.datasets()["mobility_hgv"]
-CARRIER = DATASET_CFG["constants"]["carrier"]
-SCENARIOS = DATASET_CFG["constants"]["scenarios"]
-ENERGY_VALUE = DATASET_CFG["constants"]["energy_value_h2"]
-FAC = DATASET_CFG["constants"]["fac"]
-HOURS_PER_YEAR = DATASET_CFG["constants"]["hours_per_year"]
+CARRIER = "H2_hgv_load"
+SCENARIOS = ["eGon2035", "eGon100RE"]
+ENERGY_VALUE = 39.4
+FAC = 0.001
+HOURS_PER_YEAR = 8760
 
 
 def insert_hgv_h2_demand():
     """
     Insert list of hgv H2 demand (one per NUTS3) in database.
     """
+    # Local import to avoid circular dependency
+    from egon.data.datasets.emobility.heavy_duty_transport import HeavyDutyTransport
+
     for scenario in SCENARIOS:
         delete_old_entries(scenario)
 
@@ -34,10 +36,13 @@ def insert_hgv_h2_demand():
         hgv_gdf = insert_new_entries(hgv_gdf)
 
         ts_df = kg_per_year_to_mega_watt(hgv_gdf)
+        
+        target = HeavyDutyTransport.targets.tables["etrago_load_timeseries"]
+        schema, table = target.split(".")
 
         ts_df.to_sql(
-            "egon_etrago_load_timeseries",
-            schema="grid",
+            table,
+            schema=schema,
             con=db.engine(),
             if_exists="append",
             index=False,
@@ -98,12 +103,17 @@ def insert_new_entries(hgv_h2_demand_gdf: gpd.GeoDataFrame):
         .reset_index(drop=True)
     )
 
+    from egon.data.datasets.emobility.heavy_duty_transport import HeavyDutyTransport
+    
+    target = HeavyDutyTransport.targets.tables["etrago_load"]
+    schema, table = target.split(".")
+    
     engine = db.engine()
     # Insert data to db
     hgv_h2_demand_df.to_sql(
-        "egon_etrago_load",
+        table,
         engine,
-        schema="grid",
+        schema=schema,
         index=False,
         if_exists="append",
     )
@@ -121,12 +131,14 @@ def delete_old_entries(scenario: str):
         Name of the scenario.
 
     """
+    from egon.data.datasets.emobility.heavy_duty_transport import HeavyDutyTransport
+    
     # Clean tables
     db.execute_sql(
         f"""
-        DELETE FROM grid.egon_etrago_load_timeseries
+        DELETE FROM {HeavyDutyTransport.targets.tables["etrago_load_timeseries"]}
         WHERE "load_id" IN (
-            SELECT load_id FROM grid.egon_etrago_load
+            SELECT load_id FROM {HeavyDutyTransport.targets.tables["etrago_load"]}
             WHERE carrier = '{CARRIER}'
             AND scn_name = '{scenario}'
         )
@@ -135,7 +147,7 @@ def delete_old_entries(scenario: str):
 
     db.execute_sql(
         f"""
-        DELETE FROM grid.egon_etrago_load
+        DELETE FROM {HeavyDutyTransport.targets.tables["etrago_load"]}
         WHERE carrier = '{CARRIER}'
         AND scn_name = '{scenario}'
         """
@@ -169,21 +181,18 @@ def read_hgv_h2_demand(scenario: str = "eGon2035"):
 
     df = pd.read_sql(query.statement, query.session.bind, index_col="nuts3")
 
-    sql_vg250 = """
+    from egon.data.datasets.emobility.heavy_duty_transport import HeavyDutyTransport
+
+    sql_vg250 = f"""
                 SELECT nuts as nuts3, geometry as geom
-                FROM boundaries.vg250_krs
+                FROM {HeavyDutyTransport.sources.tables["vg250_krs"]}
                 WHERE gf = 4
                 """
 
-    srid = DATASET_CFG["tables"]["srid"]
+    srid = 3035
 
     gdf_vg250 = db.select_geodataframe(sql_vg250, index_col="nuts3", epsg=srid)
 
     gdf_vg250["geometry"] = gdf_vg250.geom.centroid
 
-    srid_buses = DATASET_CFG["tables"]["srid_buses"]
-
-    return gpd.GeoDataFrame(
-        df.merge(gdf_vg250[["geometry"]], left_index=True, right_index=True),
-        crs=gdf_vg250.crs,
-    ).to_crs(epsg=srid_buses)
+    srid_buses = 4326

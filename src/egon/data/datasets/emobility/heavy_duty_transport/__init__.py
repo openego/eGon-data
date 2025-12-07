@@ -19,7 +19,7 @@ import csv
 from loguru import logger
 import requests
 
-from egon.data import config, db
+from egon.data import db
 from egon.data.datasets import Dataset, DatasetSources, DatasetTargets
 from egon.data.datasets.emobility.heavy_duty_transport.create_h2_buses import (
     insert_hgv_h2_demand,
@@ -32,13 +32,9 @@ from egon.data.datasets.emobility.heavy_duty_transport.h2_demand_distribution im
 )
 
 WORKING_DIR = Path(".", "heavy_duty_transport").resolve()
-DATASET_CFG = config.datasets()["mobility_hgv"]
-TESTMODE_OFF = (
-    config.settings()["egon-data"]["--dataset-boundary"] == "Everything"
-)
 
 
-def create_tables():
+def create_tables():    
     """
     Drops existing :py:class:`demand.egon_heavy_duty_transport_voronoi <egon.data.datasets.emobility.heavy_duty_transport.db_classes.EgonHeavyDutyTransportVoronoi>` is extended
     table and creates new one.
@@ -109,6 +105,11 @@ class HeavyDutyTransport(Dataset):
     sources = DatasetSources(
         urls={
             "BAST": "https://www.bast.de/DE/Verkehrstechnik/Fachthemen/v2-verkehrszaehlung/Daten/2020_1/Jawe2020.csv?view=renderTcDataExportCSV&cms_strTyp=A"
+        },
+        tables={
+            "vg250_krs": "boundaries.vg250_krs",
+            "hvmv_substation": "grid.egon_hvmv_substation",
+            "scenarios": "scenario.egon_scenario_parameters",
         }
     )
     targets = DatasetTargets(
@@ -125,7 +126,7 @@ class HeavyDutyTransport(Dataset):
     #:
     name: str = "HeavyDutyTransport"
     #:
-    version: str = "0.0.5"
+    version: str = "0.0.6"
 
     def __init__(self, dependencies):
         super().__init__(

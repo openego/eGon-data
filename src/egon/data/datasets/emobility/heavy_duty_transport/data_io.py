@@ -8,14 +8,7 @@ from loguru import logger
 import geopandas as gpd
 import pandas as pd
 
-from egon.data import config
 from egon.data.db import select_geodataframe
-
-DATASET_CFG = config.datasets()["mobility_hgv"]
-WORKING_DIR = Path(".", "heavy_duty_transport").resolve()
-TESTMODE_OFF = (
-    config.settings()["egon-data"]["--dataset-boundary"] == "Everything"
-)
 
 
 def get_data():
@@ -29,7 +22,7 @@ def boundary_gdf():
     """
     Get outer boundary from database.
     """
-    srid = DATASET_CFG["tables"]["srid"]
+    srid = 3035  # From YML
 
     gdf = select_geodataframe(
         """
@@ -47,11 +40,13 @@ def bast_gdf():
     """
     Reads BAST data.
     """
-    sources = DATASET_CFG["original_data"]["sources"]
-    file = sources["BAST"]["file"]
+    from egon.data.datasets.emobility.heavy_duty_transport import HeavyDutyTransport
 
-    path = WORKING_DIR / file
-    relevant_columns = sources["BAST"]["relevant_columns"]
+    # Path from HeavyDutyTransport class
+    path = Path(HeavyDutyTransport.targets.files["BAST_download"])
+    
+    # from YML
+    relevant_columns = ["DTV_SV_MobisSo_Q", "Koor_WGS84_E", "Koor_WGS84_N"]
 
     df = pd.read_csv(
         path,
@@ -62,8 +57,8 @@ def bast_gdf():
         usecols=relevant_columns,
     )
 
-    init_srid = sources["BAST"]["srid"]
-    final_srid = DATASET_CFG["tables"]["srid"]
+    init_srid = 4326 # From YML
+    final_srid = 3035 # From YML
 
     gdf = gpd.GeoDataFrame(
         df[relevant_columns[0]],
@@ -81,9 +76,14 @@ def bast_gdf():
 
 def nuts3_gdf():
     """Read in NUTS3 geo shapes."""
-    srid = DATASET_CFG["tables"]["srid"]
-    sql = """
-        SELECT nuts as nuts3, geometry FROM boundaries.vg250_krs
+    from egon.data.datasets.emobility.heavy_duty_transport import HeavyDutyTransport
+
+    srid = 3035 # From YML
+    
+    source_table = HeavyDutyTransport.sources.tables["vg250_krs"]
+    
+    sql = f"""
+        SELECT nuts as nuts3, geometry FROM {source_table}
         WHERE gf = 4
         ORDER BY nuts
         """
