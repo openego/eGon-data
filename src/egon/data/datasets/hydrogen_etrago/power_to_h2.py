@@ -123,10 +123,6 @@ def insert_power_to_h2_to_power():
     # connet to PostgreSQL database (to localhost)
     engine = db.engine()
 
-    #data_config = config.datasets()
-    #sources = data_config["PtH2_waste_heat_O2"]["sources"]
-    #targets = data_config["PtH2_waste_heat_O2"]["targets"]
-
     for SCENARIO_NAME in scenarios:
 
         if SCENARIO_NAME not in ["eGon100RE", "eGon2035"]:
