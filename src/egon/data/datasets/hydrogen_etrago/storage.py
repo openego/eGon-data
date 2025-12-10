@@ -37,10 +37,7 @@ def insert_H2_overground_storage():
     None
 
     """
-    # The targets of etrago_hydrogen also serve as source here ಠ_ಠ
-    #sources = config.datasets()["etrago_hydrogen"]["sources"]
-    #targets = config.datasets()["etrago_hydrogen"]["targets"]
-
+   
     s = config.settings()["egon-data"]["--scenarios"]
     scn = []
     if "eGon2035" in s:
@@ -119,8 +116,7 @@ def insert_H2_saltcavern_storage():
 
     """
     # Data tables sources and targets
-    #sources = config.datasets()["etrago_hydrogen"]["sources"]
-    #targets = config.datasets()["etrago_hydrogen"]["targets"]
+  
 
     s = config.settings()["egon-data"]["--scenarios"]
     scn = []
