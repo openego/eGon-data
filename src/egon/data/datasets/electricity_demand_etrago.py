@@ -10,7 +10,7 @@ import os
 import pandas as pd
 
 from egon.data import db
-from egon.data.datasets import Dataset
+from egon.data.datasets import Dataset, DatasetSources, DatasetTargets
 import egon.data.config
 
 
@@ -29,13 +29,13 @@ def demands_per_bus(scenario):
     """
 
     # Read information from configuration file
-    sources = egon.data.config.datasets()["etrago_electricity"]["sources"]
+    
 
     # Select data on CTS electricity demands per bus
     cts_curves = db.select_dataframe(
         f"""SELECT bus_id AS bus, p_set FROM
-                {sources['cts_curves']['schema']}.
-                {sources['cts_curves']['table']}
+                {ElectricalLoadEtrago.sources.tables['cts_curves']['schema']}.
+                {ElectricalLoadEtrago.sources.tables['cts_curves']['table']}
                 WHERE scn_name = '{scenario}'""",
     )
 
@@ -43,8 +43,8 @@ def demands_per_bus(scenario):
 
     ind_curves_osm = db.select_dataframe(
         f"""SELECT bus, p_set FROM
-                {sources['osm_curves']['schema']}.
-                {sources['osm_curves']['table']}
+                {ElectricalLoadEtrago.sources.tables['osm_curves']['schema']}.
+                {ElectricalLoadEtrago.sources.tables['osm_curves']['table']}
                 WHERE scn_name = '{scenario}'""",
     )
 
@@ -52,8 +52,8 @@ def demands_per_bus(scenario):
 
     ind_curves_sites = db.select_dataframe(
         f"""SELECT bus, p_set FROM
-                {sources['sites_curves']['schema']}.
-                {sources['sites_curves']['table']}
+                {ElectricalLoadEtrago.sources.tables['sites_curves']['schema']}.
+                {ElectricalLoadEtrago.sources.tables['sites_curves']['table']}
                 WHERE scn_name = '{scenario}'""",
     )
 
@@ -61,8 +61,8 @@ def demands_per_bus(scenario):
 
     hh_curves = db.select_dataframe(
         f"""SELECT bus_id AS bus, p_set FROM
-                {sources['household_curves']['schema']}.
-                {sources['household_curves']['table']}
+                {ElectricalLoadEtrago.sources.tables['household_curves']['schema']}.
+                {ElectricalLoadEtrago.sources.tables['household_curves']['table']}
                 WHERE scn_name = '{scenario}'""",
     )
 
@@ -132,7 +132,9 @@ def store_national_profiles(
 
     """
 
-    folder = Path(".") / "input-pypsa-eur-sec"
+    folder = ElectricalLoadEtrago.targets.files["pypsa_eur"][
+        "national_demand_folder"
+    ]["path"]
     # Create the folder, if it does not exists already
     if not os.path.exists(folder):
         os.mkdir(folder)
@@ -166,36 +168,35 @@ def export_to_db():
     None.
 
     """
-    sources = egon.data.config.datasets()["etrago_electricity"]["sources"]
-    targets = egon.data.config.datasets()["etrago_electricity"]["targets"]
+    #sources = egon.data.config.datasets()["etrago_electricity"]["sources"]
+    #targets = egon.data.config.datasets()["etrago_electricity"]["targets"]
 
     for scenario in egon.data.config.settings()["egon-data"]["--scenarios"]:
         # Delete existing data from database
         db.execute_sql(
             f"""
             DELETE FROM
-            {targets['etrago_load']['schema']}.{targets['etrago_load']['table']}
+            {ElectricalLoadEtrago.targets.tables['etrago_load']['schema']}.{ElectricalLoadEtrago.targets.tables['etrago_load']['table']}
             WHERE scn_name = '{scenario}'
             AND carrier = 'AC'
             AND bus IN (
                 SELECT bus_id FROM
-                {sources['etrago_buses']['schema']}.
-                {sources['etrago_buses']['table']}
+                {ElectricalLoadEtrago.sources.tables['etrago_buses']['schema']}.
+                {ElectricalLoadEtrago.sources.tables['etrago_buses']['table']}
                 WHERE country = 'DE'
                 AND carrier = 'AC'
                 AND scn_name = '{scenario}')
             """
         )
-
         db.execute_sql(
             f"""
             DELETE FROM
-            {targets['etrago_load_curves']['schema']}.{targets['etrago_load_curves']['table']}
+            {ElectricalLoadEtrago.targets.tables['etrago_load_curves']['schema']}.{ElectricalLoadEtrago.targets.tables['etrago_load_curves']['table']}
             WHERE scn_name = '{scenario}'
             AND load_id NOT IN (
             SELECT load_id FROM
-            {targets['etrago_load']['schema']}.
-            {targets['etrago_load']['table']}
+            {ElectricalLoadEtrago.targets.tables['etrago_load']['schema']}.
+            {ElectricalLoadEtrago.targets.tables['etrago_load']['table']}
             WHERE scn_name = '{scenario}')
             """
         )
@@ -248,15 +249,16 @@ def export_to_db():
 
         # Insert data into database
         load.to_sql(
-            targets["etrago_load"]["table"],
-            schema=targets["etrago_load"]["schema"],
+            ElectricalLoadEtrago.targets.tables["etrago_load"]["table"],
+            schema=ElectricalLoadEtrago.targets.tables["etrago_load"]["schema"],
             con=db.engine(),
             if_exists="append",
         )
 
+
         load_timeseries.to_sql(
-            targets["etrago_load_curves"]["table"],
-            schema=targets["etrago_load_curves"]["schema"],
+            ElectricalLoadEtrago.targets.tables["etrago_load_curves"]["table"],
+            schema=ElectricalLoadEtrago.targets.tables["etrago_load_curves"]["schema"],
             con=db.engine(),
             if_exists="append",
         )
@@ -285,7 +287,53 @@ class ElectricalLoadEtrago(Dataset):
     #:
     name: str = "Electrical_load_etrago"
     #:
-    version: str = "0.0.8"
+    version: str = "0.0.9"
+    
+    sources = DatasetSources(
+        tables={
+            
+            "cts_curves": {
+                "schema": "demand",    
+                "table": "egon_etrago_electricity_cts",          
+            },
+            "osm_curves": {
+                "schema": "demand",      
+                "table": "egon_osm_ind_load_curves",
+            },
+            "sites_curves": {
+                "schema": "demand",      
+                "table": "egon_sites_ind_load_curves",
+            },
+            "household_curves": {
+                "schema": "demand",      
+                "table": "egon_etrago_electricity_households",
+            },
+            "etrago_buses": {
+                "schema": "grid",
+                "table": "egon_etrago_bus",
+            },
+        },
+    )
+
+    targets = DatasetTargets(
+        tables={
+            "etrago_load": {
+                "schema": "grid",
+                "table": "egon_etrago_load",
+            },
+            "etrago_load_curves": {
+                "schema": "grid",
+                "table": "egon_etrago_load_timeseries",
+            },
+        },
+        files={
+            "pypsa_eur": {
+                "national_demand_folder": {
+                    "path": Path("input-pypsa-eur-sec"),
+                }
+            }
+        },
+    )
 
     def __init__(self, dependencies):
         super().__init__(
