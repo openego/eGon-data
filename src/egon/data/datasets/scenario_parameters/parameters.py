@@ -2,16 +2,15 @@
 """
 
 import pandas as pd
+from egon.data.datasets import load_sources_and_targets
 
-import egon.data.config
+_, targets = load_sources_and_targets("ScenarioParameters")
 
 
 def read_csv(year):
-    source = egon.data.config.datasets()["pypsa-technology-data"]["targets"][
-        "data_dir"
-    ]
-
+    source = targets.files["data_dir"]
     return pd.read_csv(f"{source}costs_{year}.csv")
+
 
 
 def read_costs(df, technology, parameter, value_only=True):
