@@ -24,6 +24,7 @@ from egon.data.datasets.scenario_parameters import get_sector_parameters
 from egon.data.datasets.storages.home_batteries import (
     allocate_home_batteries_to_buildings,
 )
+from egon.data.validation.rules.custom.sanity import HomeBatteriesAggregation
 from egon.data.datasets.storages.pumped_hydro import (
     apply_voltage_level_thresholds,
     get_location,
@@ -99,6 +100,21 @@ class Storages(Dataset):
                 allocate_pv_home_batteries_to_grids,
                 allocate_home_batteries_to_buildings,
             ),
+            validation={
+                "sanity_home_batteries_aggregation": [
+                    HomeBatteriesAggregation(
+                        table="supply.egon_home_batteries",
+                        rule_id="SANITY_HOME_BATTERIES_AGGREGATION_EGON2035",
+                        scenario="eGon2035"
+                    ),
+                    HomeBatteriesAggregation(
+                        table="supply.egon_home_batteries",
+                        rule_id="SANITY_HOME_BATTERIES_AGGREGATION_EGON100RE",
+                        scenario="eGon100RE"
+                    ),
+                ]
+            },
+            validation_on_failure="continue"
         )
 
 
