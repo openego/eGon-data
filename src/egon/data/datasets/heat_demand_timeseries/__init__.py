@@ -1254,7 +1254,7 @@ class HeatTimeSeries(Dataset):
     #:
     name: str = "HeatTimeSeries"
     #:
-    version: str = "0.0.15"
+    version: str = "0.0.16"
 
     sources = DatasetSources(
         tables={
@@ -1265,6 +1265,17 @@ class HeatTimeSeries(Dataset):
             "daily_heat_demand_per_climate_zone": "demand.egon_daily_heat_demand_per_climate_zone",
             "selected_profiles": "demand.egon_heat_timeseries_selected_profiles",
             "idp_pool": "demand.egon_heat_idp_pool",
+            "map_zensus_vg250": "boundaries.egon_map_zensus_vg250",
+            "zensus_population": "society.destatis_zensus_population_per_ha_inside_germany",
+            "era5_weather_cells": "supply.egon_era5_weather_cells",
+            "household_electricity_profiles": "demand.egon_household_electricity_profile_of_buildings"
+        },
+        files={
+            "household_heat_profiles": (
+                "data_bundle_egon_data/household_heat_demand_profiles/"
+                "household_heat_demand_profiles.hdf5"
+            ),
+    
         }
     )
 
