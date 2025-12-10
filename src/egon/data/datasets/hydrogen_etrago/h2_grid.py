@@ -19,19 +19,22 @@ import geopandas as gpd
 import numpy as np
 import pandas as pd
 
-from egon.data import config, db
+from egon.data import db
 from egon.data.datasets.scenario_parameters import get_sector_parameters
 from egon.data.datasets.scenario_parameters.parameters import (
     annualize_capital_costs,
 )
+
 from egon.data.datasets import load_sources_and_targets
 
 sources, targets = load_sources_and_targets("HydrogenGridEtrago")
 
 
 
+
 def insert_h2_pipelines(scn_name):
     "Insert H2_grid based on Input Data from FNB-Gas"
+    
 
     download_h2_grid_data()
     H2_grid_Neubau, H2_grid_Umstellung, H2_grid_Erweiterung = (
@@ -70,7 +73,7 @@ def insert_h2_pipelines(scn_name):
         """
     )
 
-    #target = config.datasets()["etrago_hydrogen"]["targets"]["hydrogen_links"]
+    
 
     for df in [H2_grid_Neubau, H2_grid_Umstellung, H2_grid_Erweiterung]:
 
@@ -482,10 +485,10 @@ def download_h2_grid_data():
     None
 
     """
+    
     path = Path("datasets/h2_data")
     os.makedirs(path, exist_ok=True)
 
-    #download_config = config.datasets()["etrago_hydrogen"]["sources"]["H2_grid" ]
     target_file_Um = path / sources.files["converted_ch4_pipes"]
     target_file_Neu = path / sources.files["new_constructed_pipes"]
     target_file_Erw = path / sources.files["pipes_of_further_h2_grid_operators"]
@@ -516,7 +519,7 @@ def read_h2_excel_sheets():
     """
 
     path = Path(".") / "datasets" / "h2_data"
-    #download_config = config.datasets()["etrago_hydrogen"]["sources"][ "H2_grid" ]
+
     excel_file_Um = pd.ExcelFile(
         f'{path}/{sources.files["converted_ch4_pipes"]}'
     )
@@ -621,8 +624,7 @@ def connect_saltcavern_to_h2_grid(scn_name):
 
     """
 
-    #targets = config.datasets()["etrago_hydrogen"]["targets"]
-    #sources = config.datasets()["etrago_hydrogen"]["sources"]
+
     engine = db.engine()
 
     db.execute_sql(
@@ -708,9 +710,9 @@ def connect_h2_grid_to_neighbour_countries(scn_name):
     None
 
     """
+
     engine = db.engine()
-    #targets = config.datasets()["etrago_hydrogen"]["targets"]
-    #sources = config.datasets()["etrago_hydrogen"]["sources"]
+   
 
     h2_buses_df = gpd.read_postgis(
         f"""
