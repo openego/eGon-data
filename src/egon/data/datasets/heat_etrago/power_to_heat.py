@@ -25,9 +25,6 @@ def insert_individual_power_to_heat(scenario):
 
     """
 
-    #sources = config.datasets()["etrago_heat"]["sources"]
-    #targets = config.datasets()["etrago_heat"]["targets"]
-
     # Delete existing entries
     db.execute_sql(
         f"""
@@ -157,9 +154,6 @@ def insert_central_power_to_heat(scenario):
     None.
 
     """
-
-    #sources = config.datasets()["etrago_heat"]["sources"]
-    #targets = config.datasets()["etrago_heat"]["targets"]
 
     # Delete existing entries
     db.execute_sql(
@@ -338,9 +332,6 @@ def insert_power_to_heat_per_level(
     None.
 
     """
-    #sources = config.datasets()["etrago_heat"]["sources"]
-    #targets = config.datasets()["etrago_heat"]["targets"]
-
     if "central" in carrier:
         # Calculate heat pumps per electrical bus
         gdf = assign_electrical_bus(
@@ -497,10 +488,6 @@ def assign_electrical_bus(
         Heat pumps per electrical bus
 
     """
-
-    #sources = config.datasets()["etrago_heat"]["sources"]
-    #targets = config.datasets()["etrago_heat"]["targets"]
-
     # Map heat buses to district heating id and area_id
     heat_buses = db.select_dataframe(
         f"""
