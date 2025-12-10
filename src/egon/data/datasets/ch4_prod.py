@@ -62,21 +62,6 @@ class CH4Production(Dataset):
                 "table": "vg250_sta_union",
             },
         },
-        files={
-            "gas_data": {
-                "iggielgn_productions": {
-                    "path": Path("datasets")
-                    / "gas_data"
-                    / "data"
-                    / "IGGIELGN_Productions.csv"
-                },
-                "biogaspartner_einspeiseatlas": {
-                    "path": Path("data_bundle_egon_data")
-                    / "gas_data"
-                    / "Biogaspartner_Einspeiseatlas_Deutschland_2021.xlsx"
-                },
-            }
-        },
     )
 
     targets = DatasetTargets(
@@ -126,9 +111,13 @@ def load_NG_generators(scn_name):
     # read carrier information from scnario parameter data
     scn_params = get_sector_parameters("gas", scn_name)
 
-    target_file = CH4Production.sources.files["gas_data"][
-        "iggielgn_productions"
-    ]["path"]
+    target_file = (
+        Path(".")
+        / "datasets"
+        / "gas_data"
+        / "data"
+        / "IGGIELGN_Productions.csv"
+    )
 
     NG_generators_list = pd.read_csv(
         target_file,
@@ -237,9 +226,7 @@ def load_biogas_generators(scn_name):
         "https://www.biogaspartner.de/fileadmin/Biogaspartner/Dokumente/Einspeiseatlas/"
         + basename
     )
-    target_file = CH4Production.sources.files["gas_data"][
-        "biogaspartner_einspeiseatlas"
-    ]["path"]
+    target_file = Path(".") / "data_bundle_egon_data" / "gas_data" / basename
 
     if not target_file.is_file():
         urlretrieve(url, target_file)
@@ -368,8 +355,7 @@ def import_gas_generators():
     engine = db.engine()
 
     # Select source and target from dataset configuration
-    #source = config.datasets()["gas_prod"]["source"]
-    #target = config.datasets()["gas_prod"]["target"]
+
 
     for scn_name in config.settings()["egon-data"]["--scenarios"]:
         # Clean table
