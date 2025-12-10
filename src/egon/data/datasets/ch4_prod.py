@@ -21,7 +21,7 @@ import pandas as pd
 
 from egon.data import config, db
 from egon.data.config import settings
-from egon.data.datasets import Dataset
+from egon.data.datasets import Dataset, DatasetSources, DatasetTargets
 from egon.data.datasets.scenario_parameters import get_sector_parameters
 
 
@@ -45,7 +45,52 @@ class CH4Production(Dataset):
     name: str = "CH4Production"
     #:
 
-    version: str = "0.0.9"
+    version: str = "0.0.10"
+    
+    sources = DatasetSources(
+        tables={
+            "buses": {
+                "schema": "grid",
+                "table": "egon_etrago_bus",
+            },
+            "gas_voronoi": {
+                "schema": "grid",
+                "table": "egon_gas_voronoi",
+            },
+            "vg250_sta_union": {
+                "schema": "boundaries",
+                "table": "vg250_sta_union",
+            },
+        },
+        files={
+            "gas_data": {
+                "iggielgn_productions": {
+                    "path": Path("datasets")
+                    / "gas_data"
+                    / "data"
+                    / "IGGIELGN_Productions.csv"
+                },
+                "biogaspartner_einspeiseatlas": {
+                    "path": Path("data_bundle_egon_data")
+                    / "gas_data"
+                    / "Biogaspartner_Einspeiseatlas_Deutschland_2021.xlsx"
+                },
+            }
+        },
+    )
+
+    targets = DatasetTargets(
+        tables={
+            "stores": {
+                "schema": "grid",
+                "table": "egon_etrago_generator",
+            },
+            "biogas_generator": {
+                "schema": "grid",
+                "table": "egon_biogas_generator",
+            },
+        }
+    )
 
     def __init__(self, dependencies):
         super().__init__(
@@ -81,13 +126,9 @@ def load_NG_generators(scn_name):
     # read carrier information from scnario parameter data
     scn_params = get_sector_parameters("gas", scn_name)
 
-    target_file = (
-        Path(".")
-        / "datasets"
-        / "gas_data"
-        / "data"
-        / "IGGIELGN_Productions.csv"
-    )
+    target_file = CH4Production.sources.files["gas_data"][
+        "iggielgn_productions"
+    ]["path"]
 
     NG_generators_list = pd.read_csv(
         target_file,
@@ -196,7 +237,9 @@ def load_biogas_generators(scn_name):
         "https://www.biogaspartner.de/fileadmin/Biogaspartner/Dokumente/Einspeiseatlas/"
         + basename
     )
-    target_file = Path(".") / "data_bundle_egon_data" / "gas_data" / basename
+    target_file = CH4Production.sources.files["gas_data"][
+        "biogaspartner_einspeiseatlas"
+    ]["path"]
 
     if not target_file.is_file():
         urlretrieve(url, target_file)
@@ -233,23 +276,25 @@ def load_biogas_generators(scn_name):
     boundary = settings()["egon-data"]["--dataset-boundary"]
     if boundary != "Everything":
         db.execute_sql(
-            """
-              DROP TABLE IF EXISTS grid.egon_biogas_generator CASCADE;
+            f"""
+              DROP TABLE IF EXISTS {CH4Production.targets.tables['biogas_generator']['schema']}.{CH4Production.targets.tables['biogas_generator']['table']} CASCADE;
             """
         )
         biogas_generators_list.to_postgis(
-            "egon_biogas_generator",
+            CH4Production.targets.tables["biogas_generator"]["table"],
             engine,
-            schema="grid",
+            schema=CH4Production.targets.tables["biogas_generator"]["schema"],
             index=False,
             if_exists="replace",
         )
 
-        sql = """SELECT *
-            FROM grid.egon_biogas_generator, boundaries.vg250_sta_union  as vg
+        sql = f"""
+            SELECT *
+            FROM {CH4Production.targets.tables['biogas_generator']['schema']}.{CH4Production.targets.tables['biogas_generator']['table']} AS egon_biogas_generator,
+                 {CH4Production.sources.tables['vg250_sta_union']['schema']}.{CH4Production.sources.tables['vg250_sta_union']['table']} AS vg
             WHERE ST_Transform(vg.geometry,4326) && egon_biogas_generator.geom
-            AND ST_Contains(ST_Transform(vg.geometry,4326), egon_biogas_generator.geom)"""
-
+              AND ST_Contains(ST_Transform(vg.geometry,4326), egon_biogas_generator.geom)
+        """
         biogas_generators_list = gpd.GeoDataFrame.from_postgis(
             sql, con=engine, geom_col="geom", crs=4326
         )
@@ -257,8 +302,8 @@ def load_biogas_generators(scn_name):
             columns=["id", "bez", "area_ha", "geometry"]
         )
         db.execute_sql(
-            """
-              DROP TABLE IF EXISTS grid.egon_biogas_generator CASCADE;
+            f"""
+              DROP TABLE IF EXISTS {CH4Production.targets.tables['biogas_generator']['schema']}.{CH4Production.targets.tables['biogas_generator']['table']} CASCADE;
             """
         )
 
@@ -323,17 +368,18 @@ def import_gas_generators():
     engine = db.engine()
 
     # Select source and target from dataset configuration
-    source = config.datasets()["gas_prod"]["source"]
-    target = config.datasets()["gas_prod"]["target"]
+    #source = config.datasets()["gas_prod"]["source"]
+    #target = config.datasets()["gas_prod"]["target"]
 
     for scn_name in config.settings()["egon-data"]["--scenarios"]:
         # Clean table
         db.execute_sql(
             f"""
-            DELETE FROM {target['stores']['schema']}.{target['stores']['table']}
+            DELETE FROM {CH4Production.targets.tables['stores']['schema']}.{CH4Production.targets.tables['stores']['table']}
             WHERE "carrier" = 'CH4' AND
             scn_name = '{scn_name}' AND bus not IN (
-                SELECT bus_id FROM {source['buses']['schema']}.{source['buses']['table']}
+                SELECT bus_id
+                FROM {CH4Production.sources.tables['buses']['schema']}.{CH4Production.sources.tables['buses']['table']}
                 WHERE scn_name = '{scn_name}' AND country != 'DE'
             );
             """
@@ -375,7 +421,7 @@ def import_gas_generators():
             CH4_generators_list = db.select_dataframe(
                 f"""
                 SELECT bus_id as bus, scn_name, carrier
-                FROM grid.egon_gas_voronoi
+                FROM {CH4Production.sources.tables['gas_voronoi']['schema']}.{CH4Production.sources.tables['gas_voronoi']['table']}
                 WHERE scn_name = '{scn_name}'
                 AND carrier = 'CH4'
                 """
@@ -426,9 +472,9 @@ def import_gas_generators():
 
         # Insert data to db
         CH4_generators_list.to_sql(
-            target["stores"]["table"],
+            CH4Production.targets.tables["stores"]["table"],
             engine,
-            schema=target["stores"]["schema"],
+            schema=CH4Production.targets.tables["stores"]["schema"],
             index=False,
             if_exists="append",
         )
