@@ -10,6 +10,10 @@ try:
 except ImportError as e:
     pass
 
+from egon.data.datasets import load_sources_and_targets
+
+sources, targets = load_sources_and_targets("HeatTimeSeries")
+
 
 Base = declarative_base()
 
@@ -52,8 +56,8 @@ def cts_demand_per_aggregation_level(aggregation_level, scenario):
     demand_nuts = db.select_dataframe(
         f"""
         SELECT demand, a.zensus_population_id, b.vg250_nuts3
-        FROM demand.egon_peta_heat a
-        JOIN boundaries.egon_map_zensus_vg250 b
+        FROM {sources.tables["heat_demand_cts"]} a
+        JOIN {sources.tables['map_zensus_vg250']} b
         ON a.zensus_population_id = b.zensus_population_id
 
         WHERE a.sector = 'service'
@@ -91,7 +95,7 @@ def cts_demand_per_aggregation_level(aggregation_level, scenario):
         district_heating = db.select_dataframe(
             f"""
             SELECT area_id, zensus_population_id
-            FROM demand.egon_map_zensus_district_heating_areas
+            FROM {sources.tables["district_heating_areas"]}
             WHERE scenario = '{scenario}'
             """
         )
@@ -117,9 +121,9 @@ def cts_demand_per_aggregation_level(aggregation_level, scenario):
         mv_grid_ind = db.select_dataframe(
             f"""
             SELECT bus_id, a.zensus_population_id
-            FROM boundaries.egon_map_zensus_grid_districts a
+            FROM {sources.tables["map_zensus_grid_districts"]} a
 
-				JOIN demand.egon_peta_heat c
+				JOIN {sources.tables["heat_demand_cts"]} c
 				ON a.zensus_population_id = c.zensus_population_id
 
 				WHERE c.scenario = '{scenario}'
@@ -214,7 +218,7 @@ def CTS_demand_scale(aggregation_level):
         demand = db.select_dataframe(
             f"""
                 SELECT demand, zensus_population_id
-                FROM demand.egon_peta_heat
+                FROM {sources.tables["heat_demand_cts"]}
                 WHERE sector = 'service'
                 AND scenario = '{scenario}'
                 ORDER BY zensus_population_id
@@ -225,7 +229,7 @@ def CTS_demand_scale(aggregation_level):
             district_heating = db.select_dataframe(
                 f"""
                 SELECT area_id, zensus_population_id
-                FROM demand.egon_map_zensus_district_heating_areas
+                FROM {sources.tables["district_heating_areas"]}
                 WHERE scenario = '{scenario}'
                 """
             )
@@ -270,9 +274,9 @@ def CTS_demand_scale(aggregation_level):
             mv_grid_ind = db.select_dataframe(
                 f"""
                 SELECT bus_id, a.zensus_population_id
-                FROM boundaries.egon_map_zensus_grid_districts a
+                FROM {sources.tables["map_zensus_grid_districts"]} a
 
-				JOIN demand.egon_peta_heat c
+				JOIN {sources.tables["heat_demand_cts"]} c
 				ON a.zensus_population_id = c.zensus_population_id
 
 				WHERE c.scenario = '{scenario}'
