@@ -30,7 +30,7 @@ import geopandas as gpd
 import pandas as pd
 
 from egon.data import config, db
-from egon.data.datasets import Dataset
+from egon.data.datasets import Dataset, DatasetSources, DatasetTargets
 from egon.data.datasets.district_heating_areas.plot import (
     plot_heat_density_sorted,
 )
@@ -75,7 +75,52 @@ class DistrictHeatingAreas(Dataset):
     #:
     name: str = "district-heating-areas"
     #:
-    version: str = "0.0.2"
+    version: str = "0.0.3"
+    
+    sources = DatasetSources(
+        tables={
+            # zensus_population.processed
+            "zensus_population": {
+                "schema": "society",
+                "table": "destatis_zensus_population_per_ha",
+            },
+            # zensus_misc.processed.file_table_map -> Wohnungen
+            "zensus_apartment": {
+                "schema": "society",
+                "table": "egon_destatis_zensus_apartment_per_ha",
+            },
+            # heat_demand_cts, heat_supply, etrago_heat, etc.
+            "peta_heat": {
+                "schema": "demand",
+                "table": "egon_peta_heat",
+            },
+            # vg250.processed.file_table_map -> "VG250_KRS.shp": "vg250_krs"
+            "vg250_krs": {
+                "schema": "boundaries",
+                "table": "vg250_krs",
+            },
+        },
+        files={},
+    )
+
+    targets = DatasetTargets(
+        tables={
+            # used by many modules (heat_supply, etrago_heat, chp_location, PtH2, ...)
+            "district_heating_areas": {
+                "schema": "demand",
+                "table": "egon_district_heating_areas",
+            },
+            "map_district_heating_areas": {
+                "schema": "demand",
+                "table": "egon_map_zensus_district_heating_areas",
+            },
+        },
+        files={
+            "results_path": {
+                "filepath": "district_heating_areas/",
+            },
+        },
+    )
 
     def __init__(self, dependencies):
         super().__init__(
@@ -220,28 +265,36 @@ def load_census_data(minimum_connection_rate=0.3):
     # only census cells where egon-data has a heat demand are considered
 
     district_heat = db.select_geodataframe(
-        """SELECT flats.zensus_population_id, flats.characteristics_text,
+        f"""SELECT flats.zensus_population_id, flats.characteristics_text,
         flats.quantity, flats.quantity_q, pop.geom_point,
         pop.geom AS geom_polygon
-        FROM society.egon_destatis_zensus_apartment_per_ha AS flats
-        JOIN society.destatis_zensus_population_per_ha AS pop
+        FROM {DistrictHeatingAreas.sources.tables["zensus_apartment"]["schema"]}.
+             {DistrictHeatingAreas.sources.tables["zensus_apartment"]["table"]} AS flats
+        JOIN {DistrictHeatingAreas.sources.tables["zensus_population"]["schema"]}.
+             {DistrictHeatingAreas.sources.tables["zensus_population"]["table"]} AS pop
         ON flats.zensus_population_id = pop.id
         AND flats.characteristics_text = 'Fernheizung (Fernwärme)'
         AND flats.zensus_population_id IN
-        (SELECT zensus_population_id FROM demand.egon_peta_heat);""",
+        (SELECT zensus_population_id FROM
+            {DistrictHeatingAreas.sources.tables["peta_heat"]["schema"]}.
+            {DistrictHeatingAreas.sources.tables["peta_heat"]["table"]});""",
         index_col="zensus_population_id",
         geom_col="geom_polygon",
     )
 
     heating_type = db.select_geodataframe(
-        """SELECT flats.zensus_population_id,
+        f"""SELECT flats.zensus_population_id,
         SUM(flats.quantity) AS quantity, pop.geom AS geom_polygon
-        FROM society.egon_destatis_zensus_apartment_per_ha AS flats
-        JOIN society.destatis_zensus_population_per_ha AS pop
+        FROM {DistrictHeatingAreas.sources.tables["zensus_apartment"]["schema"]}.
+             {DistrictHeatingAreas.sources.tables["zensus_apartment"]["table"]} AS flats
+        JOIN {DistrictHeatingAreas.sources.tables["zensus_population"]["schema"]}.
+             {DistrictHeatingAreas.sources.tables["zensus_population"]["table"]} AS pop
         ON flats.zensus_population_id = pop.id
         AND flats.attribute = 'HEIZTYP'
         AND flats.zensus_population_id IN
-        (SELECT zensus_population_id FROM demand.egon_peta_heat)
+        (SELECT zensus_population_id FROM
+            {DistrictHeatingAreas.sources.tables["peta_heat"]["schema"]}.
+            {DistrictHeatingAreas.sources.tables["peta_heat"]["table"]})
         GROUP BY flats.zensus_population_id, pop.geom;""",
         index_col="zensus_population_id",
         geom_col="geom_polygon",
@@ -287,8 +340,10 @@ def load_heat_demands(scenario_name):
         f"""SELECT demand.zensus_population_id,
         SUM(demand.demand) AS residential_and_service_demand,
         pop.geom AS geom_polygon
-        FROM demand.egon_peta_heat AS demand
-        JOIN society.destatis_zensus_population_per_ha AS pop
+        FROM {DistrictHeatingAreas.sources.tables["peta_heat"]["schema"]}.
+             {DistrictHeatingAreas.sources.tables["peta_heat"]["table"]} AS demand
+        JOIN {DistrictHeatingAreas.sources.tables["zensus_population"]["schema"]}.
+             {DistrictHeatingAreas.sources.tables["zensus_population"]["table"]} AS pop
         ON demand.zensus_population_id = pop.id
         AND demand.scenario = '{scenario_name}'
         GROUP BY demand.zensus_population_id, pop.geom;""",
@@ -437,8 +492,10 @@ def area_grouping(
         ]
 
         nuts3_boundaries = db.select_geodataframe(
-            """
-            SELECT gen, geometry as geom FROM boundaries.vg250_krs
+            f"""
+            SELECT gen, geometry as geom FROM
+                {DistrictHeatingAreas.sources.tables["vg250_krs"]["schema"]}.
+                {DistrictHeatingAreas.sources.tables["vg250_krs"]["table"]}
             """
         )
         join_2 = gpd.sjoin(
@@ -660,12 +717,14 @@ def district_heating_areas(scenario_name, plotting=False):
     scenario_dh_area["scenario"] = scenario_name
 
     db.execute_sql(
-        f"""DELETE FROM demand.egon_map_zensus_district_heating_areas
-                   WHERE scenario = '{scenario_name}'"""
+        f"""DELETE FROM
+            {DistrictHeatingAreas.targets.tables["map_district_heating_areas"]["schema"]}.
+            {DistrictHeatingAreas.targets.tables["map_district_heating_areas"]["table"]}
+            WHERE scenario = '{scenario_name}'"""
     )
     scenario_dh_area[["scenario", "area_id", "zensus_population_id"]].to_sql(
-        "egon_map_zensus_district_heating_areas",
-        schema="demand",
+        DistrictHeatingAreas.targets.tables["map_district_heating_areas"]["table"],
+        schema=DistrictHeatingAreas.targets.tables["map_district_heating_areas"]["schema"],
         con=db.engine(),
         if_exists="append",
         index=False,
@@ -701,14 +760,16 @@ def district_heating_areas(scenario_name, plotting=False):
         #           )].index.values}""")
 
     db.execute_sql(
-        f"""DELETE FROM demand.egon_district_heating_areas
-                   WHERE scenario = '{scenario_name}'"""
+        f"""DELETE FROM
+            {DistrictHeatingAreas.targets.tables["district_heating_areas"]["schema"]}.
+            {DistrictHeatingAreas.targets.tables["district_heating_areas"]["table"]}
+            WHERE scenario = '{scenario_name}'"""
     )
     areas_dissolved.reset_index().drop(
         "zensus_population_id", axis="columns"
     ).to_postgis(
-        "egon_district_heating_areas",
-        schema="demand",
+        DistrictHeatingAreas.targets.tables["district_heating_areas"]["table"],
+        schema=DistrictHeatingAreas.targets.tables["district_heating_areas"]["schema"],
         con=db.engine(),
         if_exists="append",
     )
@@ -850,7 +911,11 @@ def add_metadata():
     }
     meta_json = "'" + json.dumps(meta) + "'"
 
-    db.submit_comment(meta_json, "demand", "egon_district_heating_areas")
+    db.submit_comment(
+        meta_json,
+        DistrictHeatingAreas.targets.tables["district_heating_areas"]["schema"],
+        DistrictHeatingAreas.targets.tables["district_heating_areas"]["table"],
+    )
 
     # Metadata creation for "id mapping" table
     meta = {
@@ -941,7 +1006,9 @@ def add_metadata():
     meta_json = "'" + json.dumps(meta) + "'"
 
     db.submit_comment(
-        meta_json, "demand", "egon_map_zensus_district_heating_areas"
+        meta_json,
+        DistrictHeatingAreas.targets.tables["map_district_heating_areas"]["schema"],
+        DistrictHeatingAreas.targets.tables["map_district_heating_areas"]["table"],
     )
 
     return None
@@ -978,7 +1045,8 @@ def study_prospective_district_heating_areas():
     """
 
     # create directory to store files
-    results_path = "district_heating_areas/"
+    results_path = DistrictHeatingAreas.targets.files["results_path"]["filepath"]
+
 
     if not os.path.exists(results_path):
         os.mkdir(results_path)
