@@ -102,7 +102,12 @@ def idp_pool_generator():
         for every combination of household stock and temperature class
 
     """
-    path = sources.files["household_heat_profiles"]
+    path = os.path.join(
+        os.getcwd(),
+        "data_bundle_egon_data",
+        "household_heat_demand_profiles",
+        "household_heat_demand_profiles.hdf5",
+    )
 
     index = pd.date_range(datetime(2011, 1, 1, 0), periods=8760, freq="H")
 
