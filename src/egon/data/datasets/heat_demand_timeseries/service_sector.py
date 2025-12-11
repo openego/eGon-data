@@ -272,7 +272,7 @@ def CTS_demand_scale(aggregation_level):
             mv_grid_ind = db.select_dataframe(
                 f"""
                 SELECT bus_id, a.zensus_population_id
-                FROM boundaries.egon_map_zensus_grid_districts 
+                FROM boundaries.egon_map_zensus_grid_districts a
 
 				JOIN demand.egon_peta_heat c
 				ON a.zensus_population_id = c.zensus_population_id
