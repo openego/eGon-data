@@ -132,9 +132,7 @@ def store_national_profiles(
 
     """
 
-    folder = ElectricalLoadEtrago.targets.files["pypsa_eur"][
-        "national_demand_folder"
-    ]["path"]
+    folder = Path(".") / "input-pypsa-eur-sec"
     # Create the folder, if it does not exists already
     if not os.path.exists(folder):
         os.mkdir(folder)
@@ -168,8 +166,6 @@ def export_to_db():
     None.
 
     """
-    #sources = egon.data.config.datasets()["etrago_electricity"]["sources"]
-    #targets = egon.data.config.datasets()["etrago_electricity"]["targets"]
 
     for scenario in egon.data.config.settings()["egon-data"]["--scenarios"]:
         # Delete existing data from database
