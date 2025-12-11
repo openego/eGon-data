@@ -322,13 +322,6 @@ class ElectricalLoadEtrago(Dataset):
                 "table": "egon_etrago_load_timeseries",
             },
         },
-        files={
-            "pypsa_eur": {
-                "national_demand_folder": {
-                    "path": Path("input-pypsa-eur-sec"),
-                }
-            }
-        },
     )
 
     def __init__(self, dependencies):
