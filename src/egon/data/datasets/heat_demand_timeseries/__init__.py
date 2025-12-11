@@ -1270,13 +1270,6 @@ class HeatTimeSeries(Dataset):
             "era5_weather_cells": "supply.egon_era5_weather_cells",
             "household_electricity_profiles": "demand.egon_household_electricity_profile_of_buildings"
         },
-        files={
-            "household_heat_profiles": (
-                "data_bundle_egon_data/household_heat_demand_profiles/"
-                "household_heat_demand_profiles.hdf5"
-            ),
-    
-        }
     )
 
     targets = DatasetTargets(
