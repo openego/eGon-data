@@ -27,13 +27,13 @@ from egon.data.datasets.scenario_parameters.parameters import (
 
 from egon.data.datasets import load_sources_and_targets
 
-sources, targets = load_sources_and_targets("HydrogenGridEtrago")
 
 
 
 
 def insert_h2_pipelines(scn_name):
     "Insert H2_grid based on Input Data from FNB-Gas"
+    sources, targets = load_sources_and_targets("HydrogenGridEtrago")
     
 
     download_h2_grid_data()
@@ -485,7 +485,7 @@ def download_h2_grid_data():
     None
 
     """
-    
+    sources, targets = load_sources_and_targets("HydrogenGridEtrago")
     path = Path("datasets/h2_data")
     os.makedirs(path, exist_ok=True)
 
@@ -517,7 +517,7 @@ def read_h2_excel_sheets():
 
 
     """
-
+    sources, targets = load_sources_and_targets("HydrogenGridEtrago")
     path = Path(".") / "datasets" / "h2_data"
 
     excel_file_Um = pd.ExcelFile(
@@ -623,6 +623,7 @@ def connect_saltcavern_to_h2_grid(scn_name):
     None
 
     """
+    sources, targets = load_sources_and_targets("HydrogenGridEtrago")
 
 
     engine = db.engine()
@@ -710,6 +711,7 @@ def connect_h2_grid_to_neighbour_countries(scn_name):
     None
 
     """
+    sources, targets = load_sources_and_targets("HydrogenGridEtrago")
 
     engine = db.engine()
    
