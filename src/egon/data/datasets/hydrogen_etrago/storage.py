@@ -21,7 +21,7 @@ from egon.data.datasets.etrago_helpers import copy_and_modify_stores
 from egon.data.datasets.scenario_parameters import get_sector_parameters
 from egon.data.datasets import load_sources_and_targets
 
-sources, targets = load_sources_and_targets("HydrogenStoreEtrago")
+
 
 
 
@@ -37,6 +37,7 @@ def insert_H2_overground_storage():
     None
 
     """
+    sources, targets = load_sources_and_targets("HydrogenStoreEtrago")
    
     s = config.settings()["egon-data"]["--scenarios"]
     scn = []
@@ -116,6 +117,7 @@ def insert_H2_saltcavern_storage():
 
     """
     # Data tables sources and targets
+    sources, targets = load_sources_and_targets("HydrogenStoreEtrago")
   
 
     s = config.settings()["egon-data"]["--scenarios"]
