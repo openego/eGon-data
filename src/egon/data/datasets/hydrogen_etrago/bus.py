@@ -30,7 +30,7 @@ from egon.data.datasets.etrago_helpers import (
 )
 from egon.data.datasets import load_sources_and_targets
 
-sources, targets = load_sources_and_targets("HydrogenBusEtrago")
+
 
 
 def insert_hydrogen_buses(scn_name):
@@ -45,6 +45,7 @@ def insert_hydrogen_buses(scn_name):
         Name of scenario
 
     """
+    sources, targets = load_sources_and_targets("HydrogenBusEtrago")
 
     h2_input = pd.read_csv(
         Path(".")
