@@ -32,7 +32,6 @@ from egon.data import config, db
 from egon.data.datasets.scenario_parameters import get_sector_parameters
 from egon.data.datasets import load_sources_and_targets
 
-sources, targets = load_sources_and_targets("HydrogenPowerLinkEtrago")
 
 
 def insert_power_to_h2_to_power():
@@ -65,6 +64,8 @@ def insert_power_to_h2_to_power():
     None
 
     """
+    sources, targets = load_sources_and_targets("HydrogenPowerLinkEtrago")
+
     scenarios = config.settings()["egon-data"]["--scenarios"]
 
     # General Constant Parameters
