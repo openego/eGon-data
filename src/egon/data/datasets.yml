@@ -511,7 +511,7 @@ hh_demand_profiles:
       path: "hh_el_load_profiles_100k.hdf"
 
     zensus_household_types:
-      path: "Zensus2011_Personen.csv"
+      path: "Zensus2022_Personen.csv"
 
 map_mvgrid_vg250:
   sources:
