@@ -5,7 +5,7 @@ census cell level are set up.
 Electricity demand data for households in Germany in 1-hourly resolution for
 an entire year. Spatially, the data is resolved to 100 x 100 m cells and
 provides individual and distinct time series for each household in a cell.
-The cells are defined by the dataset Zensus 2011.
+The cells are defined by the dataset Zensus 2022.
 
 """  # noqa: E501
 
@@ -117,7 +117,7 @@ class HouseholdDemands(Dataset):
     Electricity demand data for households in Germany in 1-hourly resolution for
     an entire year. Spatially, the data is resolved to 100 x 100 m cells and
     provides individual and distinct time series for each household in a cell.
-    The cells are defined by the dataset Zensus 2011.
+    The cells are defined by the dataset Zensus 2022.
 
     *Dependencies*
       * :py:class:`DemandRegio <egon.data.datasets.demandregio.DemandRegio>`
@@ -143,14 +143,14 @@ class HouseholdDemands(Dataset):
     * Electricity demand time series for household categories
       produced by demand profile generator (DPG) from Fraunhofer IEE
       (see :func:`get_iee_hh_demand_profiles_raw`)
-    * Spatial information about people living in households by Zensus 2011 at
+    * Spatial information about people living in households by Zensus 2022 at
       federal state level
 
         * Type of household (family status)
         * Age
         * Number of people
     * Spatial information about number of households per ha, categorized by type
-      of household (family status) with 5 categories (also from Zensus 2011)
+      of household (family status) with 5 categories (also from Zensus 2022)
     * Demand-Regio annual household demand at NUTS3 level
 
     *What is the goal?*
@@ -239,7 +239,7 @@ class HouseholdDemands(Dataset):
     #:
     name: str = "Household Demands"
     #:
-    version: str = "0.0.12"
+    version: str = "0.0.13"
 
     def __init__(self, dependencies):
         tasks = (
