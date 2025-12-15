@@ -3,6 +3,9 @@ import json
 import time
 
 from geoalchemy2 import Geometry
+from omi.creation.assembler import assemble_metadata_dict
+from omi.creation.builder import MetadataBuilder
+from omi.creation.cleaner import normalize_metadata_for_schema
 from sqlalchemy import BigInteger, Column, Float, Integer, SmallInteger, String
 from sqlalchemy.ext.declarative import declarative_base
 import geopandas as gpd
@@ -17,6 +20,7 @@ from egon.data.metadata import (
     licenses_datenlizenz_deutschland,
     sources,
 )
+from egon.data.metadata.settings import OEM_BASE_DIR, OEM_DATASET_ID
 import egon.data.config
 
 Base = declarative_base()
@@ -360,7 +364,7 @@ def population_in_municipalities():
     )
 
 
-def add_metadata_zensus_inside_ger():
+def add_metadata_old_zensus_inside_ger():
     """
     Create metadata JSON for DestatisZensusPopulationPerHaInsideGermany
 
@@ -537,6 +541,50 @@ def add_metadata_zensus_inside_ger():
         meta_json,
         DestatisZensusPopulationPerHaInsideGermany.__table__.schema,
         DestatisZensusPopulationPerHaInsideGermany.__table__.name,
+    )
+
+
+def add_metadata_zensus_inside_ger():
+    """
+    Create or update OEMetadata JSON for
+    DestatisZensusPopulationPerHaInsideGermany.
+    """
+    schema = DestatisZensusPopulationPerHaInsideGermany.__table__.schema
+    table = DestatisZensusPopulationPerHaInsideGermany.__tablename__
+    schema_table = f"{schema}.{table}"
+
+    # 1) Assemble OEMetadata from YAML
+    md = assemble_metadata_dict(OEM_BASE_DIR, OEM_DATASET_ID)
+
+    # 2) Mutate with builder (dynamic bits)
+    today_iso = datetime.date.today().isoformat()
+
+    builder = (
+        MetadataBuilder(md)
+        .resource(schema_table)  # or the resource name in your YAML
+        .set("publicationDate", today_iso)
+        .append_contributor(
+            {
+                "title": "CI Pipeline",
+                "organization": "egon-data",
+                "comment": f"Automated import on {today_iso}",
+            }
+        )
+        .done()
+    )
+
+    new_md = builder.build(validate=True, check_license=False)
+
+    # 4) Clean for storage (drop empties but keep schema-required keys)
+    md_clean = normalize_metadata_for_schema(new_md, keep_empty=False)
+
+    meta_json = json.dumps(md_clean, indent=2, ensure_ascii=False)
+
+    # 5) Store in DB
+    db.submit_comment(
+        meta_json,
+        schema,
+        table,
     )
 
 
