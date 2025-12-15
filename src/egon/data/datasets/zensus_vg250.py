@@ -365,7 +365,7 @@ def add_metadata_zensus_inside_ger():
 
     metadata = {
         "name": schema_table,
-        "title": "DESTATIS - Zensus 2011 - Population per hectar",
+        "title": "DESTATIS - Zensus 2022 - Population per hectar",
         "id": "WILL_BE_SET_AT_PUBLICATION",
         "description": (
             "National census in Germany in 2011 with the bounds on Germanys "
@@ -392,7 +392,7 @@ def add_metadata_zensus_inside_ger():
         "sources": [
             {
                 "title": "Statistisches Bundesamt (Destatis) - Ergebnisse des "
-                "Zensus 2011 zum Download",
+                "Zensus 2022 zum Download",
                 "description": (
                     "Als Download bieten wir Ihnen auf dieser Seite "
                     "zusätzlich zur Zensusdatenbank CSV- und "
@@ -414,11 +414,11 @@ def add_metadata_zensus_inside_ger():
             },
             {
                 "title": "Dokumentation "
-                "- Zensus 2011 - Methoden und Verfahren",
+                "- Zensus 2022 - Methoden und Verfahren",
                 "description": (
                     "Diese Publikation beschreibt ausführlich die "
                     "Methoden und Verfahren des registergestützten "
-                    "Zensus 2011; von der Datengewinnung und "
+                    "Zensus 2022; von der Datengewinnung und "
                     "-aufbereitung bis hin zur Ergebniserstellung"
                     " und Geheimhaltung. Der vorliegende Band wurde "
                     "von den Statistischen Ämtern des Bundes und "
