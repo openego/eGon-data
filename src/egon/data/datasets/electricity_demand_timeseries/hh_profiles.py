@@ -677,20 +677,19 @@ def get_census_households_nuts1_raw():
         Normalize a single Zensus value token to a numeric string.
 
         Rules:
-          * NaN / empty -> "0"
-          * "-"         -> "0"
-          * "."         -> "0"
-          * "(1234)"    -> "1234"
-          * everything else is returned unchanged as string
+        * NaN / empty       -> "0"
+        * "-"               -> "0"
+        * "."               -> "0"
+        * "(1234)"          -> "1234"
+        * any other content -> returned unchanged as string
         """
         if pd.isna(x):
             return "0"
 
         s = str(x).strip()
 
-        if s == "" or s == "-":
-            return "0"
-        if s == ".":
+        # Treat empty strings and special symbols as zero
+        if s in ("", "-", "."):
             return "0"
 
         # Strip simple outer parentheses used for confidentiality marks
