@@ -10,6 +10,10 @@ import pandas as pd
 from egon.data import db
 from egon.data.datasets import Dataset
 from egon.data.datasets.electricity_demand.temporal import insert_cts_load
+from egon.data.validation.rules.custom.sanity import (
+    ResidentialElectricityAnnualSum,
+    ResidentialElectricityHhRefinement,
+)
 from egon.data.datasets.electricity_demand_timeseries.hh_buildings import (
     HouseholdElectricityProfilesOfBuildings,
     get_iee_hh_demand_profiles_raw,
@@ -53,6 +57,21 @@ class HouseholdElectricityDemand(Dataset):
             version=self.version,
             dependencies=dependencies,
             tasks=(create_tables, get_annual_household_el_demand_cells),
+            validation={
+                "data_quality": [
+                    ResidentialElectricityAnnualSum(
+                        table="demand.egon_demandregio_zensus_electricity",
+                        rule_id="SANITY_RESIDENTIAL_ELECTRICITY_ANNUAL_SUM",
+                        rtol=0.005
+                    ),
+                    ResidentialElectricityHhRefinement(
+                        table="society.egon_destatis_zensus_household_per_ha_refined",
+                        rule_id="SANITY_RESIDENTIAL_HH_REFINEMENT",
+                        rtol=1e-5
+                    ),
+                ]
+            },
+            validation_on_failure="continue"
         )
 
 
