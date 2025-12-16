@@ -9,6 +9,9 @@ import pandas as pd
 
 from egon.data import db
 import egon
+from egon.data.datasets import load_sources_and_targets
+
+
 
 
 
@@ -374,12 +377,13 @@ def annual_demand_generator(scenario):
         respective associated Station
 
     """
+    sources, targets = load_sources_and_targets("HeatTimeSeries")
 
     demand_zone = db.select_dataframe(
-        """
+        f"""
             SELECT a.demand, a.zensus_population_id, a.scenario, c.climate_zone
-            FROM demand.egon_peta_heat a
-            JOIN boundaries.egon_map_zensus_climate_zones c
+            FROM {sources.tables["heat_demand_cts"]} a
+            JOIN {sources.tables["climate_zones"]} c
             ON a.zensus_population_id = c.zensus_population_id
             WHERE a.sector = 'residential'
             AND a.scenario = '{scenario}'
@@ -393,7 +397,7 @@ def annual_demand_generator(scenario):
         SELECT cell_id as zensus_population_id, COUNT(*) as number FROM
         (
         SELECT cell_id, COUNT(*), building_id
-        FROM demand.egon_household_electricity_profile_of_buildings
+        FROM {sources.tables["household_electricity_profiles"]}
         GROUP BY (cell_id, building_id)
         ) a
 
@@ -409,7 +413,7 @@ def annual_demand_generator(scenario):
         SELECT cell_id as zensus_population_id, COUNT(*) as number FROM
         (
         SELECT cell_id, COUNT(*), building_id
-        FROM demand.egon_household_electricity_profile_of_buildings
+        FROM {sources.tables["household_electricity_profiles"]}
         GROUP BY (cell_id, building_id)
         ) a
         WHERE a.count = 1
@@ -444,21 +448,22 @@ def select():
     engine = db.engine()
     EgonHeatTimeseries.__table__.drop(bind=engine, checkfirst=True)
     EgonHeatTimeseries.__table__.create(bind=engine, checkfirst=True)
+    sources, targets = load_sources_and_targets("HeatTimeSeries")
 
     # Select all intra-day-profiles
     idp_df = db.select_dataframe(
-        """
+        f"""
         SELECT index, house, temperature_class
-        FROM demand.egon_heat_idp_pool
+        FROM {sources.tables["idp_pool"]}
         """,
         index_col="index",
     )
 
     # Select daily heat demand shares per climate zone from table
     temperature_classes = db.select_dataframe(
-        """
+        f"""
         SELECT climate_zone, day_of_year, temperature_class
-        FROM demand.egon_daily_heat_demand_per_climate_zone
+        FROM {sources.tables["daily_heat_demand_per_climate_zone"]}
         """
     )
 
@@ -525,12 +530,12 @@ def select():
 
         result_SFH["building_id"] = (
             db.select_dataframe(
-                """
+                f"""
 
             SELECT cell_id as zensus_population_id, building_id FROM
             (
             SELECT cell_id, COUNT(*), building_id
-            FROM demand.egon_household_electricity_profile_of_buildings
+            FROM {sources.tables["household_electricity_profiles"]}
             GROUP BY (cell_id, building_id)
             ) a
             WHERE a.count = 1
@@ -557,12 +562,12 @@ def select():
 
         result_MFH["building_id"] = (
             db.select_dataframe(
-                """
+                f"""
 
             SELECT cell_id as zensus_population_id, building_id FROM
             (
             SELECT cell_id, COUNT(*), building_id
-            FROM demand.egon_household_electricity_profile_of_buildings
+            FROM {sources.tables["household_electricity_profiles"]}
             GROUP BY (cell_id, building_id)
             ) a
             WHERE a.count > 1
@@ -593,12 +598,12 @@ def select():
                 ),
                 "building_id": (
                     db.select_dataframe(
-                        """
+                        f"""
 
                 SELECT cell_id as zensus_population_id, building_id FROM
                 (
                 SELECT cell_id, COUNT(*), building_id
-                FROM demand.egon_household_electricity_profile_of_buildings
+                FROM {sources.tables["household_electricity_profiles"]}
                 GROUP BY (cell_id, building_id)
                 ) a
                 WHERE a.count = 1
@@ -645,12 +650,12 @@ def select():
                 ),
                 "building_id": (
                     db.select_dataframe(
-                        """
+                        f"""
 
                 SELECT cell_id as zensus_population_id, building_id FROM
                 (
                 SELECT cell_id, COUNT(*), building_id
-                FROM demand.egon_household_electricity_profile_of_buildings
+                FROM {sources.tables["household_electricity_profiles"]}
                 GROUP BY (cell_id, building_id)
                 ) a
                 WHERE a.count > 1
