@@ -846,7 +846,7 @@ class Osmtgmod(Dataset):
     #:
     name: str = "Osmtgmod"
     #:
-    version: str = "0.0.9"
+    version: str = "0.0.10"
     
     sources = DatasetSources(
         tables={
@@ -866,6 +866,14 @@ class Osmtgmod(Dataset):
                 "schema": "osmtgmod_results",
                 "table": "results_metadata",
             },
+            "ehv_transfer_buses": {
+                "schema": "grid",
+                "table": "egon_ehv_transfer_buses",
+            },
+            "hvmv_transfer_buses": {
+                "schema": "grid",
+                "table": "egon_hvmv_transfer_buses",
+            },
         }
     )
 
@@ -882,6 +890,14 @@ class Osmtgmod(Dataset):
             "etrago_transformer": {
                 "schema": "grid",
                 "table": "egon_etrago_transformer",
+            },
+            "ehv_substation": {
+                "schema": "grid",
+                "table": "egon_ehv_substation",
+            },
+            "hvmv_substation": {
+                "schema": "grid",
+                "table": "egon_hvmv_substation",
             },
         }
     )
