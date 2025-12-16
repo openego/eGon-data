@@ -5,11 +5,11 @@ from shapely.geometry import LineString
 import geopandas as gpd
 import pandas as pd
 
-from egon.data import config, db
+from egon.data import db
 from egon.data.datasets.scenario_parameters import get_sector_parameters
 from egon.data.datasets import load_sources_and_targets
 
-sources, targets = load_sources_and_targets("HeatEtrago")
+
 
 def insert_individual_power_to_heat(scenario):
     """Insert power to heat into database
@@ -24,6 +24,7 @@ def insert_individual_power_to_heat(scenario):
     None.
 
     """
+    sources, targets = load_sources_and_targets("HeatEtrago")
 
     # Delete existing entries
     db.execute_sql(
@@ -154,6 +155,7 @@ def insert_central_power_to_heat(scenario):
     None.
 
     """
+    sources, targets = load_sources_and_targets("HeatEtrago")
 
     # Delete existing entries
     db.execute_sql(
@@ -332,6 +334,7 @@ def insert_power_to_heat_per_level(
     None.
 
     """
+    sources, targets = load_sources_and_targets("HeatEtrago")
     if "central" in carrier:
         # Calculate heat pumps per electrical bus
         gdf = assign_electrical_bus(
@@ -488,6 +491,7 @@ def assign_electrical_bus(
         Heat pumps per electrical bus
 
     """
+    sources, targets = load_sources_and_targets("HeatEtrago")
     # Map heat buses to district heating id and area_id
     heat_buses = db.select_dataframe(
         f"""
