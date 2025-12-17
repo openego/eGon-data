@@ -29,7 +29,13 @@ from egon.data.metadata import (
     meta_metadata,
 )
 import egon.data.config
-from egon_validation import RowCountValidation
+from egon_validation import (
+    RowCountValidation,
+    DataTypeValidation,
+    NotNullAndNotNaNValidation,
+    WholeTableNotNullAndNotNaNValidation,
+    ValueSetValidation
+)
 
 
 def download_files():
@@ -516,7 +522,7 @@ class Vg250(Dataset):
     #:
     name: str = "VG250"
     #:
-    version: str = filename + "-0.0.4"
+    version: str = filename + "-0.0.4.dev"
 
     def __init__(self, dependencies):
         super().__init__(
@@ -536,9 +542,33 @@ class Vg250(Dataset):
                         table="boundaries.vg250_krs",
                         rule_id="TEST_ROW_COUNT",
                         expected_count=27
+                    ),
+                    DataTypeValidation(
+                        table="boundaries.vg250_krs",
+                        rule_id="TEST_DATA_MULTIPLE_TYPES",
+                        column_types={"id":"bigint","ade":"bigint", "gf":"bigint", "bsg":"bigint","ars":"text",
+                                      "ags":"text", "sdv_ars":"text", "gen":"text", "bez":"text","ibz":"bigint",
+                                      "bem":"text", "nbd":"text", "sn_l":"text", "sn_r":"text", "sn_k":"text",
+                                      "sn_v1":"text", "sn_v2":"text", "sn_g":"text", "fk_s3":"text", "nuts":"text",
+                                      "ars_0":"text", "ags_0":"text", "wsk":"text", "debkg_id":"text", "rs":"text",
+                                      "sdv_rs":"text", "rs_0":"text", "geometry":"geometry"}
+                    ),
+                    NotNullAndNotNaNValidation(
+                        table="boundaries.vg250_krs",
+                        rule_id="TEST_NOT_NAN",
+                        columns=["gf","bsg"]
+                    ),
+                    WholeTableNotNullAndNotNaNValidation(
+                        table="boundaries.vg250_krs",
+                        rule_id="TEST_WHOLE_TABLE_NOT_NAN"
+                    ),
+                    ValueSetValidation(
+                        table="boundaries.vg250_krs",
+                        rule_id="TEST_VALUE_SET",
+                        column="nbd",
+                        expected_values=["ja", "nein"]
                     )
                 ]
             },
             validation_on_failure="continue"
-
         )
