@@ -53,6 +53,7 @@ class WeatherData(Dataset):
             tasks=(
                 {
                     create_tables,
+                    download_era5,
                 },
                 insert_weather_cells,
             ),  # download_era5 should be included once issue #1250 is solved
@@ -152,7 +153,7 @@ def import_cutout(boundary="Europe"):
             module="era5",
             x=xs,
             y=ys,
-            years=slice(weather_year, weather_year),
+            time=slice(f"{weather_year}-01-01", f"{weather_year}-12-31"),
         )
 
 
