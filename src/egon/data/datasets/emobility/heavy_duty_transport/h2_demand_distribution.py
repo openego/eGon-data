@@ -11,12 +11,13 @@ from shapely.geometry.polygon import Polygon
 from shapely.ops import cascaded_union
 import geopandas as gpd
 
-from egon.data import db
+from egon.data import config, db
 from egon.data.datasets.emobility.heavy_duty_transport.data_io import get_data
 from egon.data.datasets.emobility.heavy_duty_transport.db_classes import (
     EgonHeavyDutyTransportVoronoi,
 )
 
+DATASET_CFG = config.datasets()["mobility_hgv"]
 
 
 def run_egon_truck():
@@ -36,7 +37,7 @@ def run_egon_truck():
         )
     )
 
-    scenarios = ["eGon2035", "eGon100RE"] # from YML
+    scenarios = DATASET_CFG["constants"]["scenarios"]
 
     for scenario in scenarios:
         total_hydrogen_consumption = calculate_total_hydrogen_consumption(
@@ -61,20 +62,15 @@ def run_egon_truck():
 
 def calculate_total_hydrogen_consumption(scenario: str = "eGon2035"):
     """Calculate the total hydrogen demand for trucking in Germany."""
-    
-    # Constants from YML
-    leakage = True
-    leakage_rate = 0.005
-    hydrogen_consumption = 6.68  # kg/100km
-    fcev_share = 1.0
-    
-    # HGV Mileage from YML
-    if scenario == "eGon2035":
-        hgv_mileage = 10000000000
-    elif scenario == "eGon100RE":
-        hgv_mileage = 40000000000
-    else:
-        hgv_mileage = 0
+    constants = DATASET_CFG["constants"]
+    hgv_mileage = DATASET_CFG["hgv_mileage"]
+
+    leakage = constants["leakage"]
+    leakage_rate = constants["leakage_rate"]
+    hydrogen_consumption = constants["hydrogen_consumption"]  # kg/100km
+    fcev_share = constants["fcev_share"]
+
+    hgv_mileage = hgv_mileage[scenario]  # km
 
     hydrogen_consumption_per_km = hydrogen_consumption / 100  # kg/km
 
@@ -141,8 +137,10 @@ def voronoi(
     """Building a Voronoi Field from points and a boundary."""
     logger.info("Building Voronoi Field.")
 
-    truck_col = "DTV_SV_MobisSo_Q"
-    srid = 3035
+    sources = DATASET_CFG["original_data"]["sources"]
+    relevant_columns = sources["BAST"]["relevant_columns"]
+    truck_col = relevant_columns[0]
+    srid = DATASET_CFG["tables"]["srid"]
 
     # convert the boundary geometry into a union of the polygon
     # convert the Geopandas GeoSeries of Point objects to NumPy array of coordinates.
