@@ -19,7 +19,7 @@ import geopandas as gpd
 import numpy as np
 import pandas as pd
 
-from egon.data import db
+from egon.data import db, config
 from egon.data.datasets.scenario_parameters import get_sector_parameters
 from egon.data.datasets.scenario_parameters.parameters import (
     annualize_capital_costs,
@@ -485,21 +485,23 @@ def download_h2_grid_data():
     None
 
     """
-    sources, targets = load_sources_and_targets("HydrogenGridEtrago")
+    download_config = config.datasets()["etrago_hydrogen"]["sources"]["H2_grid"]
+
     path = Path("datasets/h2_data")
     os.makedirs(path, exist_ok=True)
+    
+    target_file_Um = path / download_config["converted_ch4_pipes"]["path"]
+    target_file_Neu = path / download_config["new_constructed_pipes"]["path"]
+    target_file_Erw = path / download_config["pipes_of_further_h2_grid_operators"]["path"]
 
-    target_file_Um = path / sources.files["converted_ch4_pipes"]
-    target_file_Neu = path / sources.files["new_constructed_pipes"]
-    target_file_Erw = path / sources.files["pipes_of_further_h2_grid_operators"]
 
     for target_file in [target_file_Neu, target_file_Um, target_file_Erw]:
         if target_file is target_file_Um:
-            url = sources.urls["converted_ch4_pipes"]
+            url = download_config["converted_ch4_pipes"]["url"]
         elif target_file is target_file_Neu:
-            url = sources.urls["new_constructed_pipes"]
+            url = download_config["new_constructed_pipes"]["url"]
         else:
-            url = sources.urls["pipes_of_further_h2_grid_operators"]
+            url = download_config["pipes_of_further_h2_grid_operators"]["url"]
 
         if not os.path.isfile(target_file):
             urlretrieve(url, target_file)
@@ -517,17 +519,17 @@ def read_h2_excel_sheets():
 
 
     """
-    sources, targets = load_sources_and_targets("HydrogenGridEtrago")
+    download_config = config.datasets()["etrago_hydrogen"]["sources"]["H2_grid"]
     path = Path(".") / "datasets" / "h2_data"
 
     excel_file_Um = pd.ExcelFile(
-        f'{path}/{sources.files["converted_ch4_pipes"]}'
+        f'{path}/{download_config["converted_ch4_pipes"]["path"]}'
     )
     excel_file_Neu = pd.ExcelFile(
-        f'{path}/{sources.files["new_constructed_pipes"]}'
+        f'{path}/{download_config["new_constructed_pipes"]["path"]}'
     )
     excel_file_Erw = pd.ExcelFile(
-        f'{path}/{sources.files["pipes_of_further_h2_grid_operators"]}'
+        f'{path}/{download_config["pipes_of_further_h2_grid_operators"]["path"]}'
     )
 
     df_Um = pd.read_excel(excel_file_Um, header=3)
