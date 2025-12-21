@@ -8,14 +8,9 @@ from loguru import logger
 import geopandas as gpd
 import pandas as pd
 
-from egon.data import config
 from egon.data.db import select_geodataframe
 
-DATASET_CFG = config.datasets()["mobility_hgv"]
-WORKING_DIR = Path(".", "heavy_duty_transport").resolve()
-TESTMODE_OFF = (
-    config.settings()["egon-data"]["--dataset-boundary"] == "Everything"
-)
+from egon.data.datasets import load_sources_and_targets
 
 
 def get_data():
@@ -29,7 +24,9 @@ def boundary_gdf():
     """
     Get outer boundary from database.
     """
-    srid = DATASET_CFG["tables"]["srid"]
+    #Local Import for SRID (Constant from Class)
+    from egon.data.datasets.emobility.heavy_duty_transport import HeavyDutyTransport
+    srid = HeavyDutyTransport.srid
 
     gdf = select_geodataframe(
         """
@@ -47,11 +44,18 @@ def bast_gdf():
     """
     Reads BAST data.
     """
-    sources = DATASET_CFG["original_data"]["sources"]
-    file = sources["BAST"]["file"]
+    sources, targets = load_sources_and_targets("HeavyDutyTransport")
+    
+    # Local Import for Constants (Columns, SRID)
+    from egon.data.datasets.emobility.heavy_duty_transport import HeavyDutyTransport
 
-    path = WORKING_DIR / file
-    relevant_columns = sources["BAST"]["relevant_columns"]
+    # Get file path from targets
+    path = Path(targets.files["BAST_download"])
+    
+    # Get constants from Class
+    relevant_columns = HeavyDutyTransport.bast_relevant_columns
+    init_srid = HeavyDutyTransport.bast_srid
+    final_srid = HeavyDutyTransport.srid
 
     df = pd.read_csv(
         path,
@@ -61,9 +65,6 @@ def bast_gdf():
         encoding="ISO-8859-1",
         usecols=relevant_columns,
     )
-
-    init_srid = sources["BAST"]["srid"]
-    final_srid = DATASET_CFG["tables"]["srid"]
 
     gdf = gpd.GeoDataFrame(
         df[relevant_columns[0]],
@@ -81,7 +82,10 @@ def bast_gdf():
 
 def nuts3_gdf():
     """Read in NUTS3 geo shapes."""
-    srid = DATASET_CFG["tables"]["srid"]
+    # Local Import for SRID
+    from egon.data.datasets.emobility.heavy_duty_transport import HeavyDutyTransport
+    srid = HeavyDutyTransport.srid
+    
     sql = """
         SELECT nuts as nuts3, geometry FROM boundaries.vg250_krs
         WHERE gf = 4

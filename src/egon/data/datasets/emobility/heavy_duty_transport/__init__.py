@@ -19,7 +19,7 @@ import csv
 from loguru import logger
 import requests
 
-from egon.data import config, db
+from egon.data import db
 from egon.data.datasets import Dataset, DatasetSources, DatasetTargets
 from egon.data.datasets.emobility.heavy_duty_transport.create_h2_buses import (
     insert_hgv_h2_demand,
@@ -32,10 +32,7 @@ from egon.data.datasets.emobility.heavy_duty_transport.h2_demand_distribution im
 )
 
 WORKING_DIR = Path(".", "heavy_duty_transport").resolve()
-DATASET_CFG = config.datasets()["mobility_hgv"]
-TESTMODE_OFF = (
-    config.settings()["egon-data"]["--dataset-boundary"] == "Everything"
-)
+
 
 
 def create_tables():
@@ -122,10 +119,38 @@ class HeavyDutyTransport(Dataset):
         }
     )
     
+    srid: int = 3035
+
+    srid_buses: int = 4326
+
+    bast_srid: int = 4326
+
+    bast_relevant_columns: list = [
+    "DTV_SV_MobisSo_Q", 
+    "Koor_WGS84_E", 
+    "Koor_WGS84_N"
+]
+    
+    carrier: str = "H2_hgv_load"
+    
+    scenarios_list: list = ["eGon2035", "eGon100RE"]
+    
+    energy_value_h2: float = 39.4
+    
+    hours_per_year: int = 8760
+    
+    fac: float = 0.001
+    
+    hgv_mileage: dict = {"eGon2035": 88700000000, "eGon100RE": 88700000000}
+    leakage: bool = True
+    leakage_rate: float = 0.015
+    hydrogen_consumption: float = 9.0
+    fcev_share: float = 1.0
+    
     #:
     name: str = "HeavyDutyTransport"
     #:
-    version: str = "0.0.5"
+    version: str = "0.0.7"
 
     def __init__(self, dependencies):
         super().__init__(
