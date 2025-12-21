@@ -56,12 +56,11 @@ def bast_gdf():
     # 1. Read file with flexible separator and NO 'usecols'
     df = pd.read_csv(
         path,
-        sep=r"[,;]",
-        engine="python",  
-        decimal=r",",
-        thousands=r".",
+        sep=",",  
+        decimal=",",        
+        thousands=".",
         encoding="ISO-8859-1",
-        # usecols=relevant_columns,  <-- DELETED to avoid crash
+        # usecols=relevant_columns,  <-- REMOVE THIS to avoid the crash
     )
     
     df.columns = df.columns.str.strip().str.replace('^ï»¿', '', regex=True)
