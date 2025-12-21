@@ -58,13 +58,14 @@ def bast_gdf():
     final_srid = HeavyDutyTransport.srid
 
     df = pd.read_csv(
-        path,
-        delimiter=r",",
-        decimal=r",",
-        thousands=r".",
-        encoding="ISO-8859-1",
-        usecols=relevant_columns,
-    )
+    path,
+    sep=r"[,;]",      
+    engine="python",
+    decimal=r",",
+    thousands=r".",
+    encoding="ISO-8859-1",
+    usecols=relevant_columns,
+)
 
     gdf = gpd.GeoDataFrame(
         df[relevant_columns[0]],
