@@ -8,22 +8,19 @@ from loguru import logger
 from shapely import wkt
 from shapely.geometry.multipolygon import MultiPolygon
 from shapely.geometry.polygon import Polygon
-from shapely.ops import cascaded_union
+from shapely.ops import unary_union
 import geopandas as gpd
 
-from egon.data import db
+from egon.data import config, db
 from egon.data.datasets.emobility.heavy_duty_transport.data_io import get_data
 from egon.data.datasets.emobility.heavy_duty_transport.db_classes import (
     EgonHeavyDutyTransportVoronoi,
 )
-from egon.data.datasets import load_sources_and_targets
 
+DATASET_CFG = config.datasets()["mobility_hgv"]
 
 
 def run_egon_truck():
-    from egon.data.datasets.emobility.heavy_duty_transport import HeavyDutyTransport
-    scenarios = HeavyDutyTransport.scenarios_list
-
     boundary_gdf, bast_gdf, nuts3_gdf = get_data()
 
     bast_gdf_within = bast_gdf.dropna().loc[
@@ -39,6 +36,8 @@ def run_egon_truck():
             nuts3_gdf.truck_traffic / nuts3_gdf.truck_traffic.sum()
         )
     )
+
+    scenarios = DATASET_CFG["constants"]["scenarios"]
 
     for scenario in scenarios:
         total_hydrogen_consumption = calculate_total_hydrogen_consumption(
@@ -63,17 +62,15 @@ def run_egon_truck():
 
 def calculate_total_hydrogen_consumption(scenario: str = "eGon2035"):
     """Calculate the total hydrogen demand for trucking in Germany."""
-    
-    # 3. Local import for physics constants
-    from egon.data.datasets.emobility.heavy_duty_transport import HeavyDutyTransport
-    
-    hgv_mileage_dict = HeavyDutyTransport.hgv_mileage
-    leakage = HeavyDutyTransport.leakage
-    leakage_rate = HeavyDutyTransport.leakage_rate
-    hydrogen_consumption = HeavyDutyTransport.hydrogen_consumption
-    fcev_share = HeavyDutyTransport.fcev_share
+    constants = DATASET_CFG["constants"]
+    hgv_mileage = DATASET_CFG["hgv_mileage"]
 
-    hgv_mileage = hgv_mileage_dict[scenario]  # km
+    leakage = constants["leakage"]
+    leakage_rate = constants["leakage_rate"]
+    hydrogen_consumption = constants["hydrogen_consumption"]  # kg/100km
+    fcev_share = constants["fcev_share"]
+
+    hgv_mileage = hgv_mileage[scenario]  # km
 
     hydrogen_consumption_per_km = hydrogen_consumption / 100  # kg/km
 
@@ -87,6 +84,7 @@ def calculate_total_hydrogen_consumption(scenario: str = "eGon2035"):
         )
     else:
         return hgv_mileage * hydrogen_consumption_per_km * fcev_share
+
 
 def geo_intersect(
     voronoi_gdf: gpd.GeoDataFrame,
@@ -139,20 +137,14 @@ def voronoi(
     """Building a Voronoi Field from points and a boundary."""
     logger.info("Building Voronoi Field.")
 
-    # 4. Local Loading (Standard Pattern)
-    sources, targets = load_sources_and_targets("HeavyDutyTransport")
-
-    # 5. Local Import for Constants (SRID and Columns are in the Class)
-    from egon.data.datasets.emobility.heavy_duty_transport import HeavyDutyTransport
-    
-    relevant_columns = HeavyDutyTransport.bast_relevant_columns
-    srid = HeavyDutyTransport.srid
-    
+    sources = DATASET_CFG["original_data"]["sources"]
+    relevant_columns = sources["BAST"]["relevant_columns"]
     truck_col = relevant_columns[0]
+    srid = DATASET_CFG["tables"]["srid"]
 
     # convert the boundary geometry into a union of the polygon
     # convert the Geopandas GeoSeries of Point objects to NumPy array of coordinates.
-    boundary_shape = cascaded_union(boundary.geometry)
+    boundary_shape = unary_union(boundary.geometry)
     coords = points_to_coords(points.geometry)
 
     # calculate Voronoi regions

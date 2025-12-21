@@ -53,18 +53,17 @@ def create_tables():
 def download_hgv_data():
     """
     Downloads BAST data.
-
-    The data is downloaded to file specified in *datasets.yml* in section
-    *mobility_hgv/original_data/sources/BAST/file*.
-
     """
-
-
     # Create the folder, if it does not exist
     WORKING_DIR.mkdir(parents=True, exist_ok=True)
 
     url = HeavyDutyTransport.sources.urls["BAST"]
-    file = Path(HeavyDutyTransport.targets.files["BAST_download"])
+    
+    # Extract just the filename if the target string contains a folder
+    filename = Path(HeavyDutyTransport.targets.files["BAST_download"]).name
+    
+    # Use the WORKING_DIR constant to ensure it goes exactly where data_io.py expects it
+    file = WORKING_DIR / filename 
 
     response = requests.get(url)
 
@@ -73,7 +72,7 @@ def download_hgv_data():
         for line in response.iter_lines():
             writer.writerow(line.decode("ISO-8859-1").split(";"))
 
-    logger.debug("Downloaded BAST data.")
+    logger.debug(f"Downloaded BAST data to {file}.")
 
 
 class HeavyDutyTransport(Dataset):
@@ -150,7 +149,7 @@ class HeavyDutyTransport(Dataset):
     #:
     name: str = "HeavyDutyTransport"
     #:
-    version: str = "0.0.8"
+    version: str = "0.0.9"
 
     def __init__(self, dependencies):
         super().__init__(

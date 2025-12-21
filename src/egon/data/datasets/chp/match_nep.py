@@ -6,7 +6,7 @@ from sqlalchemy.orm import sessionmaker
 import geopandas
 import pandas as pd
 
-from egon.data import db
+from egon.data import config, db
 from egon.data.datasets.chp.small_chp import assign_use_case
 from egon.data.datasets.mastr import WORKING_DIR_MASTR_OLD
 from egon.data.datasets.power_plants import (
@@ -16,24 +16,26 @@ from egon.data.datasets.power_plants import (
     select_target,
 )
 from egon.data.datasets.scenario_capacities import map_carrier
-from pathlib import Path
-from egon.data.datasets import load_sources_and_targets
-
 
 
 #####################################   NEP treatment   #################################
-def select_chp_from_nep(): 
-    """Select CHP plants with location from NEP's list of power plants"""
+def select_chp_from_nep(sources):
+    """Select CHP plants with location from NEP's list of power plants
 
-    # Added Local Execution
-    sources, targets = load_sources_and_targets("Chp")
+    Returns
+    -------
+    pandas.DataFrame
+        CHP plants from NEP list
+
+    """
 
     # Select CHP plants with geolocation from list of conventional power plants
     chp_NEP_data = db.select_dataframe(
         f"""
         SELECT bnetza_id, name, carrier, chp, postcode, capacity, city,
         federal_state, c2035_chp, c2035_capacity
-        FROM {sources.tables['list_conv_pp']}
+        FROM {sources['list_conv_pp']['schema']}.
+        {sources['list_conv_pp']['table']}
         WHERE bnetza_id != 'KW<10 MW'
         AND (chp = 'Ja' OR c2035_chp = 'Ja')
         AND c2035_capacity > 0
@@ -110,15 +112,19 @@ def select_chp_from_nep():
 
 
 #####################################   MaStR treatment   #################################
-def select_chp_from_mastr():  
-    """Select combustion CHP plants from MaStR"""
+def select_chp_from_mastr(sources):
+    """Select combustion CHP plants from MaStR
 
-    # Added Local Execution
-    sources, targets = load_sources_and_targets("Chp")
+    Returns
+    -------
+    MaStR_konv : pd.DataFrame
+        CHP plants from MaStR
+
+    """
 
     # Read-in data from MaStR
     MaStR_konv = pd.read_csv(
-        Path(sources.files["mastr_combustion"]),
+        WORKING_DIR_MASTR_OLD / sources["mastr_combustion"],
         delimiter=",",
         usecols=[
             "Nettonennleistung",
@@ -332,21 +338,17 @@ def match_nep_chp(
 
 ################################################### Final table ###################################################
 def insert_large_chp(sources, target, EgonChp):
-    
-    sources, targets = load_sources_and_targets("Chp")
+    # Select CHP from NEP list
+    chp_NEP = select_chp_from_nep(sources)
 
-    # Select CHP from NEP list (Empty brackets now)
-    chp_NEP = select_chp_from_nep()
-
-    # Select CHP from MaStR (Empty brackets now)
-    MaStR_konv = select_chp_from_mastr()
+    # Select CHP from MaStR
+    MaStR_konv = select_chp_from_mastr(sources)
 
     # Assign voltage level to MaStR
-    # Replaced config with sources and Path logic
     MaStR_konv["voltage_level"] = assign_voltage_level(
         MaStR_konv.rename({"el_capacity": "Nettonennleistung"}, axis=1),
-        sources,
-        Path(sources.files["mastr_combustion"]).parent,
+        config.datasets()["chp_location"],
+        WORKING_DIR_MASTR_OLD,
     )
 
     # Initalize DataFrame for match CHPs
@@ -399,13 +401,13 @@ def insert_large_chp(sources, target, EgonChp):
     )
     MaStR_konv["voltage_level"] = assign_voltage_level(
         MaStR_konv.rename({"el_capacity": "Nettonennleistung"}, axis=1),
-        sources,
-        Path(sources.files["mastr_combustion"]).parent,
+        config.datasets()["chp_location"],
+        WORKING_DIR_MASTR_OLD,
     )
 
     # Match CHP from NEP list with aggregated MaStR units
-    chp_NEP_matched["geometry_wkt"] = chp_NEP_matched["geometry"].apply(
-        lambda geom: geom.wkt
+    chp_NEP_matched, MaStR_konv, chp_NEP = match_nep_chp(
+        chp_NEP, MaStR_konv, chp_NEP_matched, buffer_capacity=0.1
     )
 
     # Match CHP from NEP list with aggregated MaStR units
@@ -533,7 +535,7 @@ def insert_large_chp(sources, target, EgonChp):
 
     # Assign bus_id
     insert_chp["bus_id"] = assign_bus_id(
-        insert_chp, sources
+        insert_chp, config.datasets()["chp_location"]
     ).bus_id
 
     # Assign gas bus_id
@@ -544,15 +546,11 @@ def insert_large_chp(sources, target, EgonChp):
     insert_chp = assign_use_case(insert_chp, sources, scenario="eGon2035")
 
     # Delete existing CHP in the target table
-    target_schema = targets.get_table_schema("chp_table")
-    target_table = targets.get_table_name("chp_table")
-
     db.execute_sql(
-        f""" DELETE FROM {target_schema}.{target_table}
+        f""" DELETE FROM {target['schema']}.{target['table']}
         WHERE carrier IN ('gas', 'other_non_renewable', 'oil')
         AND scenario='eGon2035';"""
     )
-    
 
     # Insert into target table
     session = sessionmaker(bind=db.engine())()
