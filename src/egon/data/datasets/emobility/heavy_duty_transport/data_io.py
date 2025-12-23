@@ -53,19 +53,14 @@ def bast_gdf():
     path = WORKING_DIR / file
     relevant_columns = sources["BAST"]["relevant_columns"]
 
-    # 1. Read file with flexible separator and NO 'usecols'
     df = pd.read_csv(
         path,
-        sep=",",  
-        decimal=",",        
-        thousands=".",
+        delimiter=r",",
+        decimal=r",",
+        thousands=r".",
         encoding="ISO-8859-1",
-        # usecols=relevant_columns,  <-- REMOVE THIS to avoid the crash
+        usecols=relevant_columns,
     )
-    
-    df.columns = df.columns.str.strip().str.replace('^ï»¿', '', regex=True)
-
-    df = df[relevant_columns]
 
     init_srid = sources["BAST"]["srid"]
     final_srid = DATASET_CFG["tables"]["srid"]
