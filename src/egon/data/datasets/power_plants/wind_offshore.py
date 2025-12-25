@@ -177,13 +177,14 @@ def insert():
 
         # load file
         if scenario == "eGon2035":
+            filename = "NEP2035_V2021_scnC2035.xlsx"
+            
             offshore_path = (
                 Path(".")
                 / "data_bundle_egon_data"
                 / "nep2035_version2021"
-                / sources.files["nep_2035"]
+                / filename
             )
-
             offshore = pd.read_excel(
                 offshore_path,
                 sheet_name="WInd_Offshore_NEP",
