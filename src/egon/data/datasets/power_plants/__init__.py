@@ -1551,67 +1551,73 @@ tasks += (pp_metadata.metadata,)
 
 
 class PowerPlants(Dataset):
-        
     sources = DatasetSources(
         tables={
-        'geom_federal_states' : "boundaries.vg250_lan",
-        'geom_germany': "boundaries.vg250_sta_union",
-        'egon_mv_grid_district' : "grid.egon_mv_grid_district",
-        'ehv_voronoi': "grid.egon_ehv_substation_voronoi",
-        'capacities' : "supply.egon_scenario_capacities",
-        'hydro' : 'supply.egon_power_plants_hydro',
-        'biomass' : 'supply.egon_power_plants_biomass',
-        'pv' : 'supply.egon_power_plants_pv',
-        'wind' : 'supply.egon_power_plants_wind',
-        "mastr_combustion_without_chp": "supply.egon_mastr_conventional_without_chp",
-        "nep_conv": "supply.egon_nep_2021_conventional_powerplants",
-        "buses_data": "osmtgmod_results.bus_data",
-        "power_plants": "supply.egon_power_plants",
-        "storages": "supply.egon_storages",
-        "wind_potential_areas": "supply.egon_re_potential_area_wind",
-        "hvmv_substation": "grid.egon_hvmv_substation",
-        "electricity_demand": "demand.egon_demandregio_zensus_electricity",
-        "map_zensus_grid_districts": "boundaries.egon_map_zensus_grid_districts",
-        "map_grid_boundaries": "boundaries.egon_map_mvgriddistrict_vg250",
-        "federal_states": "boundaries.vg250_lan", # Alias for convenience
-        "scenario_capacities": "supply.egon_scenario_capacities", # Alias
-        "weather_cells": "supply.egon_era5_weather_cells",
-        "solar_feedin": "supply.egon_era5_renewable_feedin",
-    },
+            'geom_federal_states': "boundaries.vg250_lan",
+            'geom_germany': "boundaries.vg250_sta_union",
+            'egon_mv_grid_district': "grid.egon_mv_grid_district",
+            'ehv_voronoi': "grid.egon_ehv_substation_voronoi",
+            'capacities': "supply.egon_scenario_capacities",
+            'hydro': 'supply.egon_power_plants_hydro',
+            'biomass': 'supply.egon_power_plants_biomass',
+            'pv': 'supply.egon_power_plants_pv',
+            'wind': 'supply.egon_power_plants_wind',
+            "mastr_combustion_without_chp": "supply.egon_mastr_conventional_without_chp",
+            "nep_conv": "supply.egon_nep_2021_conventional_powerplants",
+            "buses_data": "osmtgmod_results.bus_data",
+            "storages": "supply.egon_storages",
+            "wind_potential_areas": "supply.egon_re_potential_area_wind",
+            "hvmv_substation": "grid.egon_hvmv_substation",
+            "electricity_demand": "demand.egon_demandregio_zensus_electricity",
+            "map_zensus_grid_districts": "boundaries.egon_map_zensus_grid_districts",
+            "map_grid_boundaries": "boundaries.egon_map_mvgriddistrict_vg250",
+            "federal_states": "boundaries.vg250_lan",  # Alias
+            "scenario_capacities": "supply.egon_scenario_capacities",  # Alias
+            "weather_cells": "supply.egon_era5_weather_cells",
+            "solar_feedin": "supply.egon_era5_renewable_feedin",
+            "potential_area_pv_road_railway": "supply.egon_re_potential_area_pv_road_railway",
+            "potential_area_pv_agriculture": "supply.egon_re_potential_area_pv_agriculture",
+        },
         files={
-        'mastr_biomass': "bnetza_mastr_biomass_cleaned.csv",
-        'mastr_hydro' : "bnetza_mastr_hydro_cleaned.csv",
-        'mastr_location' : "location_elec_generation_raw.csv",
-        'mastr_gsgk' : "bnetza_mastr_gsgk_cleaned.csv",
-        'mastr_nuclear' : "bnetza_mastr_nuclear_cleaned.csv",
-        'mastr_combustion' : "bnetza_mastr_combustion_cleaned.csv",
-        "mastr_pv": "bnetza_mastr_solar_cleaned.csv",
-        "mastr_storage": "bnetza_mastr_storage_cleaned.csv",
-        "mastr_wind": "bnetza_mastr_wind_cleaned.csv",
-        "nep_2035": "NEP2035_V2021_scnC2035.xlsx",
-        "wind_offshore_status2019": "windoffshore_status2019.xlsx",
-        "osm_config": "https://download.geofabrik.de/europe/germany-240101.osm.pbf",
-        "nep_2035_capacities": "NEP2035_V2021_scnC2035.xlsx",
-        "mastr_deposit_id": "10491882",
-        "data_bundle_deposit_id": "16576506",
-        "status2023_date_max": "2023-12-31 23:59:00", 
-        "status2019_date_max": "2019-12-31 23:59:00",
-        "egon2021_date_max": "2021-12-31 23:59:00",
-            
-        # These are NOT in datasets.yml, but were in your original Python code's SCENARIO_TIMESTAMP:
-        "eGon2035_date_max": "2035-01-01", 
-        "eGon100RE_date_max": "2050-01-01",
-        
+            'mastr_biomass': "bnetza_mastr_biomass_cleaned.csv",
+            'mastr_combustion': "bnetza_mastr_combustion_cleaned.csv",
+            'mastr_gsgk': "bnetza_mastr_gsgk_cleaned.csv",
+            'mastr_hydro': "bnetza_mastr_hydro_cleaned.csv",
+            'mastr_location': "location_elec_generation_raw.csv", 
+            'mastr_nuclear': "bnetza_mastr_nuclear_cleaned.csv",
+            'mastr_pv': "bnetza_mastr_solar_cleaned.csv",
+            'mastr_storage': "bnetza_mastr_storage_cleaned.csv",
+            'mastr_wind': "bnetza_mastr_wind_cleaned.csv", 
+            # --- Config/Meta values ---
+            "osm_config": "https://download.geofabrik.de/europe/germany-240101.osm.pbf",
+            "nep_2035_capacities": "NEP2035_V2021_scnC2035.xlsx",
+            "mastr_deposit_id": "10491882",
+            "data_bundle_deposit_id": "16576506",
+            "status2023_date_max": "2023-12-31 23:59:00", 
+            "status2019_date_max": "2019-12-31 23:59:00",
+            "egon2021_date_max": "2021-12-31 23:59:00",
+            "eGon2035_date_max": "2035-01-01", 
+            "eGon100RE_date_max": "2050-01-01",
+            "mastr_geocoding_path": "data_bundle_egon_data/mastr_geocoding",
         }
     )
-    
-    targets = DatasetTargets (
-        tables = {
+
+    targets = DatasetTargets(
+        tables={
             'power_plants': 'supply.egon_power_plants',
             "generators": "grid.egon_etrago_generator",
             "generator_timeseries": "grid.egon_etrago_generator_timeseries",
-            }
-        )
+            "mastr_geocoded": "supply.egon_mastr_geocoded",
+            "power_plants_pv": "supply.egon_power_plants_pv",
+            "power_plants_wind": "supply.egon_power_plants_wind",
+            "power_plants_biomass": "supply.egon_power_plants_biomass",
+            "power_plants_hydro": "supply.egon_power_plants_hydro",
+            "power_plants_combustion": "supply.egon_power_plants_combustion",
+            "power_plants_gsgk": "supply.egon_power_plants_gsgk",
+            "power_plants_nuclear": "supply.egon_power_plants_nuclear",
+            "power_plants_storage": "supply.egon_power_plants_storage",
+        }
+    )
     
     """
     This dataset deals with the distribution and allocation of power plants
@@ -1685,7 +1691,7 @@ class PowerPlants(Dataset):
     #:
     name: str = "PowerPlants"
     #:
-    version: str = "0.0.33"
+    version: str = "0.0.34"
 
     def __init__(self, dependencies):
         super().__init__(
