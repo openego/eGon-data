@@ -9,6 +9,7 @@ import geopandas as gpd
 import pandas as pd
 
 from egon.data import config, db
+from egon.data.datasets import load_sources_and_targets
 from egon.data.datasets.power_plants.pv_rooftop_buildings import (
     PV_CAP_PER_SQ_M,
     ROOF_FACTOR,
@@ -61,26 +62,22 @@ def pv_rooftop_per_mv_grid_and_scenario(scenario, level):
 
     """
     # Select sources and targets from dataset configuration
-    sources = config.datasets()["solar_rooftop"]["sources"]
-    targets = config.datasets()["solar_rooftop"]["targets"]
+    sources, targets = load_sources_and_targets("PowerPlants")
 
     # Delete existing rows
     db.execute_sql(
         f"""
-        DELETE FROM {targets['generators']['schema']}.
-        {targets['generators']['table']}
+        DELETE FROM {targets.tables['generators']}
         WHERE carrier IN ('solar_rooftop')
         AND scn_name = '{scenario}'
         AND bus IN (SELECT bus_id FROM
-                    {sources['egon_mv_grid_district']['schema']}.
-                    {sources['egon_mv_grid_district']['table']}            )
+                    {sources.tables['egon_mv_grid_district']})
         """
     )
 
     db.execute_sql(
         f"""
-        DELETE FROM {targets['generator_timeseries']['schema']}.
-        {targets['generator_timeseries']['table']}
+        DELETE FROM {targets.tables['generator_timeseries']}
         WHERE scn_name = '{scenario}'
         AND generator_id NOT IN (
             SELECT generator_id FROM
@@ -94,13 +91,10 @@ def pv_rooftop_per_mv_grid_and_scenario(scenario, level):
         f"""
          SELECT SUM(demand) as demand,
          b.bus_id, vg250_lan
-         FROM {sources['electricity_demand']['schema']}.
-         {sources['electricity_demand']['table']} a
-         JOIN {sources['map_zensus_grid_districts']['schema']}.
-         {sources['map_zensus_grid_districts']['table']} b
+         FROM {sources.tables['electricity_demand']} a
+         JOIN {sources.tables['map_zensus_grid_districts']} b
          ON a.zensus_population_id = b.zensus_population_id
-         JOIN {sources['map_grid_boundaries']['schema']}.
-         {sources['map_grid_boundaries']['table']} c
+         JOIN {sources.tables['map_grid_boundaries']} c
          ON c.bus_id = b.bus_id
          WHERE scenario = '{scenario}'
          GROUP BY (b.bus_id, vg250_lan)
@@ -126,10 +120,8 @@ def pv_rooftop_per_mv_grid_and_scenario(scenario, level):
         targets_per_federal_state = db.select_dataframe(
             f"""
             SELECT DISTINCT ON (gen) capacity, gen
-            FROM {sources['scenario_capacities']['schema']}.
-            {sources['scenario_capacities']['table']} a
-            JOIN {sources['federal_states']['schema']}.
-            {sources['federal_states']['table']} b
+            FROM {sources.tables['scenario_capacities']} a
+            JOIN {sources.tables['federal_states']} b
             ON a.nuts = b.nuts
             WHERE carrier = 'solar_rooftop'
             AND scenario_name = '{scenario}'
@@ -156,8 +148,7 @@ def pv_rooftop_per_mv_grid_and_scenario(scenario, level):
         target = db.select_dataframe(
             f"""
             SELECT capacity
-            FROM {sources['scenario_capacities']['schema']}.
-            {sources['scenario_capacities']['table']} a
+            FROM {sources.tables['scenario_capacities']} a
             WHERE carrier = 'solar_rooftop'
             AND scenario_name = '{scenario}'
             """
@@ -172,11 +163,11 @@ def pv_rooftop_per_mv_grid_and_scenario(scenario, level):
         dataset = config.settings()["egon-data"]["--dataset-boundary"]
 
         if dataset == "Schleswig-Holstein":
-            sources_scn = config.datasets()["scenario_input"]["sources"]
-
+            # <--- REFACTORING: Use sources.files lookup instead of config.datasets()
+            
             path = Path(
                 f"./data_bundle_egon_data/nep2035_version2021/"
-                f"{sources_scn['eGon2035']['capacities']}"
+                f"{sources.files['nep_2035_capacities']}"
             ).resolve()
 
             total_2035 = (
@@ -258,8 +249,7 @@ def pv_rooftop_per_mv_grid_and_scenario(scenario, level):
     weather_cells = db.select_geodataframe(
         f"""
             SELECT w_id, geom
-            FROM {sources['weather_cells']['schema']}.
-                {sources['weather_cells']['table']}
+            FROM {sources.tables['weather_cells']}
             """,
         index_col="w_id",
     )
@@ -267,8 +257,7 @@ def pv_rooftop_per_mv_grid_and_scenario(scenario, level):
     mv_grid_districts = db.select_geodataframe(
         f"""
         SELECT bus_id as bus_id, ST_Centroid(geom) as geom
-        FROM {sources['egon_mv_grid_district']['schema']}.
-        {sources['egon_mv_grid_district']['table']}
+        FROM {sources.tables['egon_mv_grid_district']}
         """,
         index_col="bus_id",
     )
@@ -279,8 +268,7 @@ def pv_rooftop_per_mv_grid_and_scenario(scenario, level):
     feedin = db.select_dataframe(
         f"""
             SELECT w_id, feedin
-            FROM {sources['solar_feedin']['schema']}.
-                {sources['solar_feedin']['table']}
+            FROM {sources.tables['solar_feedin']}
             WHERE carrier = 'pv'
             AND weather_year = 2011
             """,
@@ -306,15 +294,15 @@ def pv_rooftop_per_mv_grid_and_scenario(scenario, level):
 
     # Insert data to database
     pv_rooftop.to_sql(
-        targets["generators"]["table"],
-        schema=targets["generators"]["schema"],
+        targets.get_table_name("generators"),
+        schema=targets.get_table_schema("generators"),
         if_exists="append",
         con=db.engine(),
     )
 
     timeseries.to_sql(
-        targets["generator_timeseries"]["table"],
-        schema=targets["generator_timeseries"]["schema"],
+        targets.get_table_name("generator_timeseries"),
+        schema=targets.get_table_schema("generator_timeseries"),
         if_exists="append",
         con=db.engine(),
     )
