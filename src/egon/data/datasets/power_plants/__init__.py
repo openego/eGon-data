@@ -1590,7 +1590,7 @@ class PowerPlants(Dataset):
             'mastr_wind': "bnetza_mastr_wind_cleaned.csv", 
             # --- Config/Meta values ---
             "osm_config": "https://download.geofabrik.de/europe/germany-240101.osm.pbf",
-            "nep_2035_capacities": "NEP2035_V2021_scnC2035.xlsx",
+            "nep_2035": "NEP2035_V2021_scnC2035.xlsx",
             "mastr_deposit_id": "10491882",
             "data_bundle_deposit_id": "16576506",
             "status2023_date_max": "2023-12-31 23:59:00", 
