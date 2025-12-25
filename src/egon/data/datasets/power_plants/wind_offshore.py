@@ -177,7 +177,6 @@ def insert():
 
         # load file
         if scenario == "eGon2035":
-            # <--- REFACTORING: Use sources.files lookup
             offshore_path = (
                 Path(".")
                 / "data_bundle_egon_data"
