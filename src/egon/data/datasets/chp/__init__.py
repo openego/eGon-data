@@ -370,24 +370,25 @@ def insert_biomass_chp(scenario):
 
     # Drop entries without federal state or 'AusschließlichWirtschaftszone'
     mastr = mastr[
-    mastr.Bundesland.isin(
-        pd.read_sql(
-            # The f-string now correctly ends after the FROM clause
-            f"""SELECT DISTINCT ON (gen)
+        mastr.Bundesland.isin(
+            pd.read_sql(
+                f"""SELECT DISTINCT ON (gen)
     REPLACE(REPLACE(gen, '-', ''), 'ü', 'ue') as states
     FROM {Chp.sources.tables['vg250_lan']}""",
-            # con=db.engine() is now a separate argument to pd.read_sql
-            con=db.engine(),
-        ).states.values
-    )
-]
+                con=db.engine(),
+            ).states.values
+        )
+    ]
     # Scaling will be done per federal state in case of eGon2035 scenario.
     if scenario == "eGon2035":
         level = "federal_state"
     else:
         level = "country"
+        
     # Choose only entries with valid geometries inside DE/test mode
     mastr_loc = filter_mastr_geometry(mastr).set_geometry("geometry")
+
+    mastr_loc = mastr_loc.reset_index(drop=True)
 
     # Scale capacities to meet target values
     mastr_loc = scale_prox2now(mastr_loc, target, level=level)
