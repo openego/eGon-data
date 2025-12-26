@@ -802,7 +802,13 @@ tasks += (metadata,)
 class Chp(Dataset):
     
     
-    sources = DatasetSources(
+    class Chp(Dataset):
+        sources = DatasetSources(
+        files={
+            "mastr_combustion": "bnetza_mastr_combustion_cleaned.csv",
+            "mastr_location": "location_elec_generation_raw.csv",
+            "mastr_biomass": "bnetza_mastr_biomass_cleaned.csv",
+        },
         tables={
             "list_conv_pp": "supply.egon_nep_2021_conventional_powerplants",
             "egon_mv_grid_district": "grid.egon_mv_grid_district",
@@ -814,11 +820,6 @@ class Chp(Dataset):
             "industrial_demand_osm": "demand.egon_demandregio_osm_ind_electricity",
             "vg250_lan": "boundaries.vg250_lan",
             "scenario_capacities": "supply.egon_scenario_capacities",
-        },
-        files={
-            "mastr_combustion": "bnetza_mastr_combustion_cleaned.csv",
-            "mastr_location": "location_elec_generation_raw.csv",
-            "mastr_biomass": "bnetza_mastr_biomass_cleaned.csv",
         },
     )
     targets = DatasetTargets(
@@ -861,7 +862,7 @@ class Chp(Dataset):
     #:
     name: str = "Chp"
     #:
-    version: str = "0.0.14"
+    version: str = "0.0.15"
 
     def __init__(self, dependencies):
         super().__init__(

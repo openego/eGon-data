@@ -7,6 +7,7 @@ import geopandas
 import pandas as pd
 
 from egon.data import config, db
+from egon.data.datasets import load_sources_and_targets 
 from egon.data.datasets.chp.small_chp import assign_use_case
 from egon.data.datasets.mastr import WORKING_DIR_MASTR_OLD
 from egon.data.datasets.power_plants import (
@@ -19,7 +20,7 @@ from egon.data.datasets.scenario_capacities import map_carrier
 
 
 #####################################   NEP treatment   #################################
-def select_chp_from_nep(sources):
+def select_chp_from_nep(): 
     """Select CHP plants with location from NEP's list of power plants
 
     Returns
@@ -28,6 +29,8 @@ def select_chp_from_nep(sources):
         CHP plants from NEP list
 
     """
+    sources, targets = load_sources_and_targets("Chp")
+    
     table_nep = sources.tables['list_conv_pp']
 
     # Select CHP plants with geolocation from list of conventional power plants
@@ -112,7 +115,7 @@ def select_chp_from_nep(sources):
 
 
 #####################################   MaStR treatment   #################################
-def select_chp_from_mastr(sources):
+def select_chp_from_mastr():
     """Select combustion CHP plants from MaStR
 
     Returns
@@ -121,6 +124,7 @@ def select_chp_from_mastr(sources):
         CHP plants from MaStR
 
     """
+    sources, targets = load_sources_and_targets("Chp")
 
     # Read-in data from MaStR
     MaStR_konv = pd.read_csv(
@@ -338,16 +342,20 @@ def match_nep_chp(
 
 ################################################### Final table ###################################################
 def insert_large_chp(sources, target, EgonChp):
+
+    sources, targets = load_sources_and_targets("Chp")
+    target = targets.tables["chp_table"]
+
     # Select CHP from NEP list
-    chp_NEP = select_chp_from_nep(sources)
+    chp_NEP = select_chp_from_nep()
 
     # Select CHP from MaStR
-    MaStR_konv = select_chp_from_mastr(sources)
+    MaStR_konv = select_chp_from_mastr()
 
     # Assign voltage level to MaStR
     MaStR_konv["voltage_level"] = assign_voltage_level(
         MaStR_konv.rename({"el_capacity": "Nettonennleistung"}, axis=1),
-        config.datasets()["chp_location"],
+        sources, 
         WORKING_DIR_MASTR_OLD,
     )
 
@@ -401,7 +409,7 @@ def insert_large_chp(sources, target, EgonChp):
     )
     MaStR_konv["voltage_level"] = assign_voltage_level(
         MaStR_konv.rename({"el_capacity": "Nettonennleistung"}, axis=1),
-        config.datasets()["chp_location"],
+        sources, # <--- REFACTORING: Use 'sources'
         WORKING_DIR_MASTR_OLD,
     )
 
@@ -535,7 +543,7 @@ def insert_large_chp(sources, target, EgonChp):
 
     # Assign bus_id
     insert_chp["bus_id"] = assign_bus_id(
-        insert_chp, config.datasets()["chp_location"]
+        insert_chp, sources # <--- REFACTORING: Use 'sources'
     ).bus_id
 
     # Assign gas bus_id
