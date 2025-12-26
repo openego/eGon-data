@@ -46,6 +46,7 @@ import numpy as np
 import pandas as pd
 
 from egon.data import config, db
+from egon.data.datasets import load_sources_and_targets
 from egon.data.datasets.scenario_parameters import get_sector_parameters
 from egon.data.metadata import (
     context,
@@ -71,12 +72,11 @@ def get_cbat_pbat_ratio():
         Mean ratio between the storage capacity and the power of the pv
         rooftop system
     """
-    sources = config.datasets()["home_batteries"]["sources"]
+    sources, targets = load_sources_and_targets("Storages")
 
     sql = f"""
     SELECT max_hours
-    FROM {sources["etrago_storage"]["schema"]}
-    .{sources["etrago_storage"]["table"]}
+    FROM {targets.tables['storages']}
     WHERE carrier = 'home_battery'
     """
 
@@ -87,6 +87,8 @@ def allocate_home_batteries_to_buildings():
     """
     Allocate home battery storage systems to buildings with pv rooftop systems
     """
+    sources, targets = load_sources_and_targets("Storages")
+
     # get constants
     constants = config.datasets()["home_batteries"]["constants"]
     scenarios = config.settings()["egon-data"]["--scenarios"]
@@ -96,16 +98,13 @@ def allocate_home_batteries_to_buildings():
     rtol = constants["rtol"]
     max_it = constants["max_it"]
 
-    sources = config.datasets()["home_batteries"]["sources"]
-
     df_list = []
 
     for scenario in scenarios:
         # get home battery capacity per mv grid id
         sql = f"""
         SELECT el_capacity as p_nom_min, bus_id as bus FROM
-        {sources["storage"]["schema"]}
-        .{sources["storage"]["table"]}
+        {targets.tables['storages']}
         WHERE carrier = 'home_battery'
         AND scenario = '{scenario}';
         """
@@ -197,10 +196,8 @@ def allocate_home_batteries_to_buildings():
 
 
 class EgonHomeBatteries(Base):
-    targets = config.datasets()["home_batteries"]["targets"]
-
-    __tablename__ = targets["home_batteries"]["table"]
-    __table_args__ = {"schema": targets["home_batteries"]["schema"]}
+    __tablename__ = "egon_home_batteries"
+    __table_args__ = {"schema": "supply"}
 
     index = Column(Integer, primary_key=True, index=True)
     scenario = Column(String)
@@ -214,7 +211,8 @@ def add_metadata():
     """
     Add metadata to table supply.egon_home_batteries
     """
-    targets = config.datasets()["home_batteries"]["targets"]
+    sources_dataset, targets = load_sources_and_targets("Storages")
+
     deposit_id_mastr = config.datasets()["mastr_new"]["deposit_id"]
     deposit_id_data_bundle = config.datasets()["data-bundle"]["sources"][
         "zenodo"
@@ -230,10 +228,13 @@ def add_metadata():
     contris[0]["comment"] = "Add metadata to dataset."
     contris[1]["comment"] = "Add workflow to generate dataset."
 
+    target_table = targets.get_table_name("home_batteries")
+    target_schema = targets.get_table_schema("home_batteries")
+
     meta = {
         "name": (
-            f"{targets['home_batteries']['schema']}."
-            f"{targets['home_batteries']['table']}"
+            f"{target_schema}."
+            f"{target_table}"
         ),
         "title": "eGon Home Batteries",
         "id": "WILL_BE_SET_AT_PUBLICATION",
@@ -288,16 +289,16 @@ def add_metadata():
             {
                 "profile": "tabular-data-resource",
                 "name": (
-                    f"{targets['home_batteries']['schema']}."
-                    f"{targets['home_batteries']['table']}"
+                    f"{target_schema}."
+                    f"{target_table}"
                 ),
                 "path": "None",
                 "format": "PostgreSQL",
                 "encoding": "UTF-8",
                 "schema": {
                     "fields": generate_resource_fields_from_db_table(
-                        targets["home_batteries"]["schema"],
-                        targets["home_batteries"]["table"],
+                        target_schema,
+                        target_table,
                     ),
                     "primaryKey": "index",
                 },
@@ -339,8 +340,8 @@ def add_metadata():
 
     db.submit_comment(
         f"'{json.dumps(meta)}'",
-        targets["home_batteries"]["schema"],
-        targets["home_batteries"]["table"],
+        target_schema,
+        target_table,
     )
 
 
