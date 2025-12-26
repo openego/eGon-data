@@ -595,7 +595,9 @@ def assign_use_case(chp, sources, scenario):
 
 
     """
-    sources, targets = load_sources_and_targets("Chp")
+
+    if sources is None or not hasattr(sources, 'tables') or 'osm_landuse' not in sources.tables:
+        sources, targets = load_sources_and_targets("Chp")
     
     table_landuse = sources.tables['osm_landuse']
     table_polygon = sources.tables['osm_polygon']
