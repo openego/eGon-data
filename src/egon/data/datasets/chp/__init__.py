@@ -801,10 +801,7 @@ tasks += (metadata,)
 
 
 class Chp(Dataset):
-    
-    
-    class Chp(Dataset):
-        sources = DatasetSources(
+    sources = DatasetSources(
         files={
             "mastr_combustion": "bnetza_mastr_combustion_cleaned.csv",
             "mastr_location": "location_elec_generation_raw.csv",
@@ -863,7 +860,7 @@ class Chp(Dataset):
     #:
     name: str = "Chp"
     #:
-    version: str = "0.0.15"
+    version: str = "0.0.16"
 
     def __init__(self, dependencies):
         super().__init__(
