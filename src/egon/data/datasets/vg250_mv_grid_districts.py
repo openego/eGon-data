@@ -6,10 +6,10 @@ from sqlalchemy.ext.declarative import declarative_base
 import geopandas as gpd
 import pandas as pd
 
-from egon.data import config, db
+from egon.data import db
 
 Base = declarative_base()
-from egon.data.datasets import Dataset
+from egon.data.datasets import Dataset, DatasetSources, DatasetTargets
 
 
 class Vg250MvGridDistricts(Dataset):
@@ -29,7 +29,19 @@ class Vg250MvGridDistricts(Dataset):
     #:
     name: str = "Vg250MvGridDistricts"
     #:
-    version: str = "0.0.1"
+    version: str = "0.0.2"
+    sources = DatasetSources(
+        tables={
+            "egon_mv_grid_district": {"schema": "grid", "table": "egon_mv_grid_district"},
+            "federal_states": {"schema": "boundaries", "table": "vg250_lan_union"},
+        }
+    )
+
+    targets = DatasetTargets(
+        tables={
+            "map": {"schema": "boundaries", "table": "egon_map_mvgriddistrict_vg250"}
+        }
+    )
 
     def __init__(self, dependencies):
         super().__init__(
@@ -57,7 +69,9 @@ def create_tables():
 
     """
 
-    db.execute_sql("CREATE SCHEMA IF NOT EXISTS boundaries;")
+    db.execute_sql(
+        f"CREATE SCHEMA IF NOT EXISTS {Vg250MvGridDistricts.targets.tables['map']['schema']};"
+    )
     engine = db.engine()
     MapMvgriddistrictsVg250.__table__.drop(bind=engine, checkfirst=True)
     MapMvgriddistrictsVg250.__table__.create(bind=engine, checkfirst=True)
@@ -73,9 +87,10 @@ def mapping():
     # Create table
     create_tables()
 
-    # Select sources and targets from dataset configuration
-    sources = config.datasets()["map_mvgrid_vg250"]["sources"]
-    target = config.datasets()["map_mvgrid_vg250"]["targets"]["map"]
+    # Select sources and targets from dataset definition
+    sources = Vg250MvGridDistricts.sources.tables
+    target = Vg250MvGridDistricts.targets.tables["map"]
+   
 
     # Delete existing data
     db.execute_sql(f"DELETE FROM {target['schema']}.{target['table']}")
