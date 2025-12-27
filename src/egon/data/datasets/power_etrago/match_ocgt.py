@@ -10,6 +10,7 @@ import pandas as pd
 from egon.data import config, db
 from egon.data.datasets.etrago_setup import link_geom_from_buses
 from egon.data.datasets.scenario_parameters import get_sector_parameters
+from egon.data.datasets import load_sources_and_targets
 
 
 def insert_open_cycle_gas_turbines():
@@ -30,7 +31,7 @@ def insert_open_cycle_gas_turbines_per_scenario(scn_name):
     None
 
     """
-
+    sources, targets = load_sources_and_targets("OpenCycleGasTurbineEtrago")
     # Connect to local database
     engine = db.engine()
 
@@ -48,7 +49,8 @@ def insert_open_cycle_gas_turbines_per_scenario(scn_name):
 
     buses = tuple(
         db.select_dataframe(
-            f"""SELECT bus_id FROM grid.egon_etrago_bus
+            f"""SELECT bus_id FROM {sources["etrago_bus"]["schema"]}.
+            {sources["etrago_bus"]["table"]}
             WHERE scn_name = '{scn_name}' AND country = 'DE';
         """
         )["bus_id"]
@@ -57,7 +59,8 @@ def insert_open_cycle_gas_turbines_per_scenario(scn_name):
     # Delete old entries
     db.execute_sql(
         f"""
-        DELETE FROM grid.egon_etrago_link WHERE "carrier" = '{carrier}'
+        DELETE FROM {targets["etrago_link"]["schema"]}.{targets["etrago_link"]["table"]} 
+        WHERE "carrier" = '{carrier}'
         AND scn_name = '{scn_name}'
         AND bus0 IN {buses} AND bus1 IN {buses};
         """
@@ -80,9 +83,9 @@ def insert_open_cycle_gas_turbines_per_scenario(scn_name):
 
     # Insert data to db
     gdf.to_postgis(
-        "egon_etrago_link",
+        targets["etrago_link"]["table"],
         engine,
-        schema="grid",
+        schema=targets["etrago_link"]["schema"],
         index=False,
         if_exists="append",
         dtype={"topo": Geometry()},
@@ -104,13 +107,14 @@ def map_buses(scn_name):
         GeoDataFrame with connected buses.
 
     """
+    sources, _ = load_sources_and_targets("OpenCycleGasTurbineEtrago")
     # Create dataframes containing all gas buses and all the HV power buses
     sql_AC = f"""SELECT bus_id, el_capacity as p_nom, geom
-                FROM supply.egon_power_plants
+                FROM {sources["power_plants"]["schema"]}.{sources["power_plants"]["table"]}
                 WHERE carrier = 'gas' AND scenario = '{scn_name}';
                 """
     sql_gas = f"""SELECT bus_id, scn_name, geom
-                FROM grid.egon_etrago_bus
+                FROM {sources["etrago_bus"]["schema"]}.{sources["etrago_bus"]["table"]}
                 WHERE carrier = 'CH4' AND scn_name = '{scn_name}'
                 AND country = 'DE';"""
 
