@@ -276,15 +276,6 @@ def download_pypsa_technology_data():
     # Delete folder if it already exists
     if data_path.exists() and data_path.is_dir():
         shutil.rmtree(data_path)
-    # Get parameters from config and set download URL
-    #sources = egon.data.config.datasets()["pypsa-technology-data"]["sources"][
-     #   "zenodo"
-    #]
-    #url = f"""https://zenodo.org/record/{sources['deposit_id']}/files/{sources['file']}"""
-    #target_file = egon.data.config.datasets()["pypsa-technology-data"][
-     #   "targets"
-    #]["file"]
-
     # Retrieve files
     urlretrieve(
     ScenarioParameters.sources.urls["pypsa_technology_data"]["url"],
