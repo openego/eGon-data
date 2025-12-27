@@ -10,6 +10,7 @@ import pandas as pd
 from egon.data import db
 import egon.data.config
 import egon.data.datasets.scenario_parameters.parameters as scenario_parameters
+from egon.data.datasets import load_sources_and_targets
 
 Base = declarative_base()
 
@@ -56,15 +57,12 @@ def calc_load_curve(share_wz, scn, annual_demand=1):
     """
     year = int(scenario_parameters.global_settings(scn)["weather_year"])
 
-    sources = egon.data.config.datasets()["electrical_load_curves_cts"][
-        "sources"
-    ]
+    sources, _ = load_sources_and_targets("CtsElectricityDemand")
 
     # Select normalizes load curves per cts branch
     df_select = db.select_dataframe(
         f"""SELECT wz, load_curve
-        FROM {sources['demandregio_timeseries']['schema']}.
-            {sources['demandregio_timeseries']['table']}
+        FROM {sources['demandregio_timeseries']['schema']}.{sources['demandregio_timeseries']['table']}
         WHERE year = {year}""",
         index_col="wz",
     ).transpose()
@@ -132,10 +130,7 @@ def calc_load_curves_cts(scenario):
 
     """
 
-    sources = egon.data.config.datasets()["electrical_load_curves_cts"][
-        "sources"
-    ]
-
+    sources, _ = load_sources_and_targets("CtsElectricityDemand")
     # Select demands per cts branch and nuts3-region
     demands_nuts = db.select_dataframe(
         f"""SELECT nuts3, wz, demand
@@ -162,8 +157,7 @@ def calc_load_curves_cts(scenario):
             {sources['map_vg250']['schema']}.{sources['map_vg250']['table']} b
             ON (a.zensus_population_id = b.zensus_population_id)
             INNER JOIN
-            {sources['map_grid_districts']['schema']}.
-            {sources['map_grid_districts']['table']} c
+            {sources['map_grid_districts']['schema']}.{sources['map_grid_districts']['table']} c
             ON (a.zensus_population_id = c.zensus_population_id)
             WHERE a.scenario = '{scenario}'
             AND a.sector = 'service'
@@ -213,9 +207,7 @@ def insert_cts_load():
 
     """
 
-    targets = egon.data.config.datasets()["electrical_load_curves_cts"][
-        "targets"
-    ]
+    _, targets = load_sources_and_targets("CtsElectricityDemand")
 
     create_table()
 
@@ -224,8 +216,7 @@ def insert_cts_load():
         db.execute_sql(
             f"""
             DELETE FROM
-            {targets['cts_demand_curves']['schema']}
-            .{targets['cts_demand_curves']['table']}
+            {targets['cts_demand_curves']['schema']}.{targets['cts_demand_curves']['table']}
             WHERE scn_name = '{scenario}'
             """
         )
