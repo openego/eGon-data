@@ -79,23 +79,18 @@ class HeatDemandImport(Dataset):
 
     sources = DatasetSources(
         tables={
-            # DB sources
             "boundaries": "boundaries.vg250_sta_union",  
             "zensus_population": "society.destatis_zensus_population_per_ha",
         },
         urls={
-            # external artifacts (download sources)
             "peta_res_zip": "https://arcgis.com/sharing/rest/content/items/d7d18b63250240a49eb81db972aa573e/data",
             "peta_ser_zip": "https://arcgis.com/sharing/rest/content/items/52ff5e02111142459ed5c2fe3d80b3a0/data",
         },
         files={
-            # local artifact targets
             "peta_res_zip": "Peta5_0_1_HD_res.zip",
             "peta_ser_zip": "Peta5_0_1_HD_ser.zip",
-            # derived/cutouts
             "res_cutout_tif": "Peta_5_0_1/res_hd_2015_GER.tif",
             "ser_cutout_tif": "Peta_5_0_1/ser_hd_2015_GER.tif",
-            # scenario outputs (patterns)
             "scenario_res_glob": "heat_scenario_raster/res_HD_*.tif",
             "scenario_ser_glob": "heat_scenario_raster/ser_HD_*.tif",
         },
@@ -109,7 +104,6 @@ class HeatDemandImport(Dataset):
             }
         },
         files={
-            # where your pipeline writes rasters; keep for bookkeeping
             "scenario_dir": "heat_scenario_raster",
         },
     )
