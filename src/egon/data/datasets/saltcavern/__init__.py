@@ -25,9 +25,6 @@ def to_postgres():
 
     """
 
-    # Get information from data configuraiton file
-    #data_config = egon.data.config.datasets()
-    #bgr_processed = data_config["bgr"]["processed"]
     schema = SaltcavernData.targets.tables["saltcaverns"]["schema"]
     table = SaltcavernData.targets.tables["saltcaverns"]["table"]
     # Create target schema
