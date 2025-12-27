@@ -4,10 +4,11 @@
 import pandas as pd
 from egon.data.datasets import load_sources_and_targets
 
-_, targets = load_sources_and_targets("ScenarioParameters")
+
 
 
 def read_csv(year):
+    _, targets = load_sources_and_targets("ScenarioParameters")
     source = targets.files["data_dir"]
     return pd.read_csv(f"{source}costs_{year}.csv")
 
