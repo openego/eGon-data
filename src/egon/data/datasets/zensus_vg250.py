@@ -18,7 +18,7 @@ import geopandas as gpd
 import pandas as pd
 
 from egon.data import db
-from egon.data.datasets import Dataset
+from egon.data.datasets import Dataset, DatasetSources, DatasetTargets
 from egon.data.datasets.vg250 import vg250_metadata_resources_fields
 from egon.data.metadata import (
     context,
@@ -28,16 +28,56 @@ from egon.data.metadata import (
     meta_metadata,
     sources,
 )
-import egon.data.config
+
 
 Base = declarative_base()
 
 
 class ZensusVg250(Dataset):
+    
+    name: str = "ZensusVg250"
+    version: str = "0.0.4"
+
+    sources = DatasetSources(
+        tables={
+            "zensus_population": {
+                "schema": "society",
+                "table": "destatis_zensus_population_per_ha",
+            },
+            "vg250_municipalities": {
+                "schema": "boundaries",
+                "table": "vg250_gem",
+            },
+            "map_zensus_vg250": {
+                "schema": "boundaries",
+                "table": "egon_map_zensus_vg250",
+            },
+        },
+        urls={
+            "vg250_original_data": "https://daten.gdz.bkg.bund.de/produkte/vg/vg250_ebenen_0101/2020/vg250_01-01.geo84.shape.ebenen.zip"
+        },
+    )
+    targets = DatasetTargets(
+        tables={
+            "map": {
+                "schema": "boundaries",
+                "table": "egon_map_zensus_vg250",
+            },
+            "zensus_inside_germany": {
+                "schema": "society",
+                "table": "destatis_zensus_population_per_ha_inside_germany",
+            },
+            "vg250_gem_population": {
+                "schema": "boundaries",
+                "table": "vg250_gem_population",
+            },
+        }
+    )
+         
     def __init__(self, dependencies):
         super().__init__(
-            name="ZensusVg250",
-            version="0.0.3",
+            name=ZensusVg250.name,
+            version=ZensusVg250.version,
             dependencies=dependencies,
             tasks=(
                 map_zensus_vg250,
@@ -177,26 +217,23 @@ def map_zensus_vg250():
     MapZensusVg250.__table__.drop(bind=db.engine(), checkfirst=True)
     MapZensusVg250.__table__.create(bind=db.engine(), checkfirst=True)
 
-    # Get information from data configuration file
-    cfg = egon.data.config.datasets()["map_zensus_vg250"]
+    sources = ZensusVg250.sources.tables
+    target = ZensusVg250.targets.tables["map"]
 
     local_engine = db.engine()
 
-    db.execute_sql(
-        f"""DELETE FROM
-        {cfg['targets']['map']['schema']}.{cfg['targets']['map']['table']}"""
-    )
-
+    db.execute_sql(f"DELETE FROM {target['schema']}.{target['table']}")
+    
     gdf = db.select_geodataframe(
         f"""SELECT * FROM
-        {cfg['sources']['zensus_population']['schema']}.
-        {cfg['sources']['zensus_population']['table']}""",
+        {sources['zensus_population']['schema']}.
+        {sources['zensus_population']['table']}""",
         geom_col="geom_point",
     )
 
     gdf_boundaries = db.select_geodataframe(
-        f"""SELECT * FROM  {cfg['sources']['vg250_municipalities']['schema']}.
-        {cfg['sources']['vg250_municipalities']['table']}""",
+        f"""SELECT * FROM  {sources['vg250_municipalities']['schema']}.
+        {sources['vg250_municipalities']['table']}""",
         geom_col="geometry",
         epsg=3035,
     )
@@ -246,8 +283,8 @@ def map_zensus_vg250():
     ].set_geometry(
         "zensus_geom"
     ).to_postgis(
-        cfg["targets"]["map"]["table"],
-        schema=cfg["targets"]["map"]["schema"],
+        target["table"],
+        schema=target["schema"],
         con=local_engine,
         if_exists="replace",
     )
@@ -318,7 +355,8 @@ def population_in_municipalities():
     srid = 3035
 
     gem = db.select_geodataframe(
-        "SELECT * FROM boundaries.vg250_gem",
+        f"SELECT * FROM {ZensusVg250.sources.tables['vg250_municipalities']['schema']}."
+        f"{ZensusVg250.sources.tables['vg250_municipalities']['table']}",
         geom_col="geometry",
         epsg=srid,
         index_col="id",
@@ -329,11 +367,15 @@ def population_in_municipalities():
     gem["area_km2"] = gem.area / 1000000
 
     population = db.select_dataframe(
-        """SELECT id, population, vg250_municipality_id
-        FROM society.destatis_zensus_population_per_ha
-        INNER JOIN boundaries.egon_map_zensus_vg250 ON (
-             society.destatis_zensus_population_per_ha.id =
-             boundaries.egon_map_zensus_vg250.zensus_population_id)
+        f"""SELECT id, population, vg250_municipality_id
+        FROM {ZensusVg250.sources.tables['zensus_population']['schema']}.
+        {ZensusVg250.sources.tables['zensus_population']['table']}
+        INNER JOIN {ZensusVg250.sources.tables['map_zensus_vg250']['schema']}.
+        {ZensusVg250.sources.tables['map_zensus_vg250']['table']} ON (
+             {ZensusVg250.sources.tables['zensus_population']['schema']}.
+             {ZensusVg250.sources.tables['zensus_population']['table']}.id =
+             {ZensusVg250.sources.tables['map_zensus_vg250']['schema']}.
+             {ZensusVg250.sources.tables['map_zensus_vg250']['table']}.zensus_population_id)
         WHERE population > 0"""
     )
 
@@ -348,8 +390,8 @@ def population_in_municipalities():
     gem["population_density"] = gem["population_total"] / gem["area_km2"]
 
     gem.reset_index().to_postgis(
-        "vg250_gem_population",
-        schema="boundaries",
+        ZensusVg250.targets.tables["vg250_gem_population"]["table"],
+        schema=ZensusVg250.targets.tables["vg250_gem_population"]["schema"],
         con=db.engine(),
         if_exists="replace",
     )
@@ -527,7 +569,7 @@ def add_metadata_vg250_gem_pop():
 
     Creates a metdadata JSON string and writes it to the database table comment
     """
-    vg250_config = egon.data.config.datasets()["vg250"]
+    
     schema_table = ".".join(
         [
             Vg250GemPopulation.__table__.schema,
@@ -549,7 +591,7 @@ def add_metadata_vg250_gem_pop():
         "mit ihren Grenzen, statistischen Schlüsselzahlen, Namen der "
         "Verwaltungseinheit sowie die spezifische Bezeichnung der "
         "Verwaltungsebene des jeweiligen Landes.",
-        "path": vg250_config["original_data"]["source"]["url"],
+        "path": ZensusVg250.sources.urls["vg250_original_data"],
         "licenses": licenses,
     }
 
