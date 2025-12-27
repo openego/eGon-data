@@ -370,25 +370,24 @@ def insert_biomass_chp(scenario):
 
     # Drop entries without federal state or 'AusschließlichWirtschaftszone'
     mastr = mastr[
-        mastr.Bundesland.isin(
-            pd.read_sql(
-                f"""SELECT DISTINCT ON (gen)
+    mastr.Bundesland.isin(
+        pd.read_sql(
+            # The f-string now correctly ends after the FROM clause
+            f"""SELECT DISTINCT ON (gen)
     REPLACE(REPLACE(gen, '-', ''), 'ü', 'ue') as states
     FROM {Chp.sources.tables['vg250_lan']}""",
-                con=db.engine(),
-            ).states.values
-        )
-    ]
+            # con=db.engine() is now a separate argument to pd.read_sql
+            con=db.engine(),
+        ).states.values
+    )
+]
     # Scaling will be done per federal state in case of eGon2035 scenario.
     if scenario == "eGon2035":
         level = "federal_state"
     else:
         level = "country"
-        
     # Choose only entries with valid geometries inside DE/test mode
     mastr_loc = filter_mastr_geometry(mastr).set_geometry("geometry")
-
-    mastr_loc = mastr_loc.reset_index(drop=True)
 
     # Scale capacities to meet target values
     mastr_loc = scale_prox2now(mastr_loc, target, level=level)
@@ -801,12 +800,9 @@ tasks += (metadata,)
 
 
 class Chp(Dataset):
+    
+    
     sources = DatasetSources(
-        files={
-            "mastr_combustion": "bnetza_mastr_combustion_cleaned.csv",
-            "mastr_location": "location_elec_generation_raw.csv",
-            "mastr_biomass": "bnetza_mastr_biomass_cleaned.csv",
-        },
         tables={
             "list_conv_pp": "supply.egon_nep_2021_conventional_powerplants",
             "egon_mv_grid_district": "grid.egon_mv_grid_district",
@@ -818,6 +814,11 @@ class Chp(Dataset):
             "industrial_demand_osm": "demand.egon_demandregio_osm_ind_electricity",
             "vg250_lan": "boundaries.vg250_lan",
             "scenario_capacities": "supply.egon_scenario_capacities",
+        },
+        files={
+            "mastr_combustion": "bnetza_mastr_combustion_cleaned.csv",
+            "mastr_location": "location_elec_generation_raw.csv",
+            "mastr_biomass": "bnetza_mastr_biomass_cleaned.csv",
         },
     )
     targets = DatasetTargets(
@@ -860,7 +861,7 @@ class Chp(Dataset):
     #:
     name: str = "Chp"
     #:
-    version: str = "0.0.16"
+    version: str = "0.0.14"
 
     def __init__(self, dependencies):
         super().__init__(

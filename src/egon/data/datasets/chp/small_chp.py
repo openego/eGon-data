@@ -8,7 +8,6 @@ import numpy as np
 import pandas as pd
 
 from egon.data import config, db
-from egon.data.datasets import load_sources_and_targets
 from egon.data.datasets.power_plants import (
     assign_bus_id,
     filter_mastr_geometry,
@@ -31,7 +30,7 @@ def insert_mastr_chp(mastr_chp, EgonChp):
     None.
 
     """
-    
+
     session = sessionmaker(bind=db.engine())()
     for i, row in mastr_chp.iterrows():
         entry = EgonChp(
@@ -72,8 +71,6 @@ def existing_chp_smaller_10mw(sources, MaStR_konv, EgonChp):
 
     """
 
-    sources, targets = load_sources_and_targets("Chp")
-
     existsting_chp_smaller_10mw = MaStR_konv[
         # (MaStR_konv.Nettonennleistung>0.1)
         (MaStR_konv.el_capacity <= 10)
@@ -97,7 +94,7 @@ def existing_chp_smaller_10mw(sources, MaStR_konv, EgonChp):
 
         # Assign bus_id
         mastr_chp["bus_id"] = assign_bus_id(
-            mastr_chp, sources
+            mastr_chp, config.datasets()["chp_location"]
         ).bus_id
 
         mastr_chp = assign_use_case(mastr_chp, sources, "eGon2035")
@@ -115,10 +112,53 @@ def extension_to_areas(
     scenario="eGon2035",
 ):
     """Builds new CHPs on potential industry or district heating areas.
-    ...
+
+    This method can be used to distrectly extend and spatial allocate CHP
+    for industry or district heating areas.
+    The following steps are running in a loop until the additional
+    capacity is reached:
+
+        1. Randomly select an existing CHP < 10MW and its parameters.
+
+        2. Select possible areas where the CHP can be located.
+        It is assumed that CHPs are only build if the demand of the industry
+        or district heating grid exceeds the annual energy output of the CHP.
+        The energy output is calculated using the installed capacity and
+        estimated full load hours.
+        The thermal output is used for district heating areas. Since there are
+        no explicit heat demands for industry, the electricity output and
+        demands are used.
+
+        3. Randomly select one of the possible areas.
+        The areas are weighted by the annal demand, assuming that the
+        possibility of building a CHP plant is higher when for large consumers.
+
+        4. Insert allocated CHP plant into the database
+
+        5. Substract capacity of new build CHP from the additional capacity.
+        The energy demands of the areas are reduced by the estimated energy
+        output of the CHP plant.
+
+    Parameters
+    ----------
+    areas : geopandas.GeoDataFrame
+        Possible areas for a new CHP plant, including their energy demand
+    additional_capacity : float
+        Overall eletcrical capacity of CHPs that should be build in MW.
+    existing_chp : pandas.DataFrame
+        List of existing CHP plants including electrical and thermal capacity
+    flh : int
+        Assumed electrical or thermal full load hours.
+    EgonChp : class
+        ORM-class definition of CHP database-table.
+    district_heating : boolean, optional
+        State if the areas are district heating areas. The default is True.
+
+    Returns
+    -------
+    None.
+
     """
-    sources, targets = load_sources_and_targets("Chp")
-    
     session = sessionmaker(bind=db.engine())()
 
     np.random.seed(seed=config.settings()["egon-data"]["--random-seed"])
@@ -181,7 +221,7 @@ def extension_to_areas(
                 selected_areas["voltage_level"] = selected_chp["voltage_level"]
 
                 selected_areas.loc[:, "bus_id"] = assign_bus_id(
-                    selected_areas, sources
+                    selected_areas, config.datasets()["chp_location"]
                 ).bus_id
 
                 entry = EgonChp(
@@ -276,14 +316,18 @@ def extension_district_heating(
     None.
 
     """
-    sources, targets = load_sources_and_targets("Chp")
+
+    sources = config.datasets()["chp_location"]["sources"]
+    targets = config.datasets()["chp_location"]["targets"]
 
     existing_chp = db.select_dataframe(
         f"""
         SELECT el_capacity, th_capacity, voltage_level, b.area_id
         FROM
-        {targets.tables['chp_table']} a,
-        {sources.tables['district_heating_areas']} b
+        {targets['chp_table']['schema']}.
+        {targets['chp_table']['table']} a,
+        {sources['district_heating_areas']['schema']}.
+        {sources['district_heating_areas']['table']} b
         WHERE a.scenario = 'eGon2035'
         AND b.scenario = 'eGon2035'
         AND district_heating = True
@@ -291,7 +335,8 @@ def extension_district_heating(
             ST_Transform(
                 ST_Centroid(geom_polygon), 4326),
             (SELECT ST_Union(geometry)
-             FROM {sources.tables['vg250_lan']}
+             FROM {sources['vg250_lan']['schema']}.
+             {sources['vg250_lan']['table']}
             WHERE REPLACE(REPLACE(gen, '-', ''), 'ü', 'ue') ='{federal_state}'))
         AND el_capacity < 10
         ORDER BY el_capacity, residential_and_service_demand
@@ -308,16 +353,18 @@ def extension_district_heating(
             residential_and_service_demand as demand, area_id,
             ST_Transform(ST_PointOnSurface(geom_polygon), 4326)  as geom
             FROM
-            {sources.tables['district_heating_areas']}
+            {sources['district_heating_areas']['schema']}.
+            {sources['district_heating_areas']['table']}
             WHERE scenario = 'eGon2035'
             AND ST_Intersects(ST_Transform(ST_Centroid(geom_polygon), 4326), (
                 SELECT ST_Union(d.geometry)
                 FROM
-                {sources.tables['vg250_lan']} d
+                {sources['vg250_lan']['schema']}.{sources['vg250_lan']['table']} d
                 WHERE REPLACE(REPLACE(gen, '-', ''), 'ü', 'ue') ='{federal_state}'))
             AND area_id NOT IN (
                 SELECT district_heating_area_id
-                FROM {targets.tables['chp_table']}
+                FROM {targets['chp_table']['schema']}.
+                {targets['chp_table']['table']}
                 WHERE scenario = 'eGon2035'
                 AND district_heating = TRUE)
             """
@@ -341,14 +388,17 @@ def extension_district_heating(
                 as demand, b.area_id,
                 ST_Transform(ST_PointOnSurface(geom_polygon), 4326) as geom
                 FROM
-                {targets.tables['chp_table']} a,
-                {sources.tables['district_heating_areas']} b
+                {targets['chp_table']['schema']}.
+                {targets['chp_table']['table']} a,
+                {sources['district_heating_areas']['schema']}.
+                {sources['district_heating_areas']['table']} b
                 WHERE b.scenario = 'eGon2035'
                 AND a.scenario = 'eGon2035'
                 AND ST_Intersects(
                     ST_Transform(ST_Centroid(geom_polygon), 4326),
                     (SELECT ST_Union(d.geometry)
-                     FROM {sources.tables['vg250_lan']} d
+                     FROM {sources['vg250_lan']['schema']}.
+                      {sources['vg250_lan']['table']} d
                     WHERE REPLACE(REPLACE(gen, '-', ''), 'ü', 'ue') ='{federal_state}'))
                 AND a.district_heating_area_id = b.area_id
                 GROUP BY (
@@ -396,13 +446,16 @@ def extension_industrial(federal_state, additional_capacity, flh_chp, EgonChp):
     None.
 
     """
-    sources, targets = load_sources_and_targets("Chp")
+
+    sources = config.datasets()["chp_location"]["sources"]
+    targets = config.datasets()["chp_location"]["targets"]
 
     existing_chp = db.select_dataframe(
         f"""
         SELECT el_capacity, th_capacity, voltage_level
         FROM
-        {targets.tables['chp_table']} a
+        {targets['chp_table']['schema']}.
+        {targets['chp_table']['table']} a
         WHERE a.scenario = 'eGon2035'
         AND district_heating = False
         AND el_capacity < 10
@@ -418,14 +471,17 @@ def extension_industrial(federal_state, additional_capacity, flh_chp, EgonChp):
         SUM(demand) as demand, a.osm_id,
         ST_PointOnSurface(b.geom) as geom, b.name
         FROM
-        {sources.tables['industrial_demand_osm']} a,
-        {sources.tables['osm_landuse']} b
+        {sources['industrial_demand_osm']['schema']}.
+        {sources['industrial_demand_osm']['table']} a,
+        {sources['osm_landuse']['schema']}.
+        {sources['osm_landuse']['table']} b
         WHERE a.scenario = 'eGon2035'
         AND b.id = a.osm_id
         AND NOT ST_Intersects(
             ST_Transform(b.geom, 4326),
             (SELECT ST_Union(geom) FROM
-              {targets.tables['chp_table']}
+              {targets['chp_table']['schema']}.
+              {targets['chp_table']['table']}
               ))
         AND b.tags::json->>'landuse' = 'industrial'
         AND b.name NOT LIKE '%%kraftwerk%%'
@@ -441,7 +497,8 @@ def extension_industrial(federal_state, additional_capacity, flh_chp, EgonChp):
         AND ST_Intersects(
             ST_Transform(ST_Centroid(b.geom), 4326),
             (SELECT ST_Union(d.geometry)
-             FROM {sources.tables['vg250_lan']} d
+             FROM {sources['vg250_lan']['schema']}.
+             {sources['vg250_lan']['table']} d
              WHERE REPLACE(REPLACE(gen, '-', ''), 'ü', 'ue') ='{federal_state}'))
 
         GROUP BY (a.osm_id, b.geom, b.name)
@@ -488,32 +545,35 @@ def extension_per_federal_state(federal_state, EgonChp):
     None.
 
     """
-    sources, targets = load_sources_and_targets("Chp")
 
-    targets_val = select_target("small_chp", "eGon2035")
+    sources = config.datasets()["chp_location"]["sources"]
+    target_table = config.datasets()["chp_location"]["targets"]["chp_table"]
+
+    targets = select_target("small_chp", "eGon2035")
 
     existing_capacity = db.select_dataframe(
         f"""
             SELECT SUM(el_capacity) as capacity, district_heating
-            FROM {targets.tables['chp_table']}
+            FROM {target_table['schema']}.
+            {target_table['table']}
             WHERE sources::json->>'el_capacity' = 'MaStR'
             AND carrier != 'biomass'
             AND scenario = 'eGon2035'
             AND ST_Intersects(geom, (
             SELECT ST_Union(geometry) FROM
-            {sources.tables['vg250_lan']} b
+            {sources['vg250_lan']['schema']}.{sources['vg250_lan']['table']} b
             WHERE REPLACE(REPLACE(gen, '-', ''), 'ü', 'ue') ='{federal_state}'))
             GROUP BY district_heating
             """
     )
 
-    print(f"Target capacity in {federal_state}: {targets_val[federal_state]}")
+    print(f"Target capacity in {federal_state}: {targets[federal_state]}")
     print(
         f"Existing capacity in {federal_state}: {existing_capacity.capacity.sum()}"
     )
 
     additional_capacity = (
-        targets_val[federal_state] - existing_capacity.capacity.sum()
+        targets[federal_state] - existing_capacity.capacity.sum()
     )
 
     if additional_capacity > 0:
@@ -595,9 +655,6 @@ def assign_use_case(chp, sources, scenario):
 
 
     """
-
-    if sources is None or not hasattr(sources, 'tables') or 'osm_landuse' not in sources.tables:
-        sources, targets = load_sources_and_targets("Chp")
     
     table_landuse = sources.tables['osm_landuse']
     table_polygon = sources.tables['osm_polygon']
