@@ -14,7 +14,7 @@ import numpy as np
 import pandas as pd
 
 from egon.data import db
-from egon.data.datasets import Dataset
+from egon.data.datasets import Dataset, DatasetSources, DatasetTargets
 from egon.data.datasets.electricity_demand_timeseries.hh_profiles import (
     HouseholdElectricityProfilesInCensusCells,
     get_iee_hh_demand_profiles_raw,
@@ -27,7 +27,7 @@ import egon.data.config
 engine = db.engine()
 Base = declarative_base()
 
-data_config = egon.data.config.datasets()
+
 RANDOM_SEED = egon.data.config.settings()["egon-data"]["--random-seed"]
 np.random.seed(RANDOM_SEED)
 
@@ -1218,8 +1218,54 @@ class setup(Dataset):
     #:
     name: str = "Demand_Building_Assignment"
     #:
-    version: str = "0.0.7"
+    version: str = "0.0.8"
     #:
+    sources = DatasetSources(
+        tables={
+            "hh_profiles_in_census_cells": {
+                "schema": "demand",
+                "table": "egon_household_electricity_profile_in_census_cell",
+            },
+            "zensus_apartment_building_population_per_ha": {
+                "schema": "society",
+                "table": "egon_destatis_zensus_apartment_building_population_per_ha",
+            },
+            "zensus_population_per_ha_inside_germany": {
+                "schema": "society",
+                "table": "destatis_zensus_population_per_ha_inside_germany",
+            },
+            "osm_buildings": {
+                "schema": "openstreetmap",
+                "table": "osm_buildings",
+            },
+            "osm_buildings_residential": {
+                "schema": "openstreetmap",
+                "table": "osm_buildings_residential",
+            },
+        }
+    )
+
+    targets = DatasetTargets(
+        tables={
+            "osm_buildings_synthetic": {
+                "schema": "openstreetmap",
+                "table": "osm_buildings_synthetic",
+            },
+            "hh_profiles_of_buildings": {
+                "schema": "demand",
+                "table": "egon_household_electricity_profile_of_buildings",
+            },
+            "hh_profiles_of_buildings_stats": {
+                "schema": "demand",
+                "table": "egon_household_electricity_profile_of_buildings_stats",
+            },
+            "building_electricity_peak_loads": {
+                "schema": "demand",
+                "table": "egon_building_electricity_peak_loads",
+            },
+        }
+    )
+
     tasks = (
         map_houseprofiles_to_buildings,
         create_buildings_profiles_stats,
