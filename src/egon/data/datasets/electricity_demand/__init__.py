@@ -8,7 +8,7 @@ from sqlalchemy.ext.declarative import declarative_base
 import pandas as pd
 
 from egon.data import db
-from egon.data.datasets import Dataset
+from egon.data.datasets import Dataset, DatasetSources, DatasetTargets
 from egon.data.datasets.electricity_demand.temporal import insert_cts_load
 from egon.data.datasets.electricity_demand_timeseries.hh_buildings import (
     HouseholdElectricityProfilesOfBuildings,
@@ -45,7 +45,17 @@ class HouseholdElectricityDemand(Dataset):
     #:
     name: str = "HouseholdElectricityDemand"
     #:
-    version: str = "0.0.5"
+    version: str = "0.0.6"
+    
+    targets = DatasetTargets(
+        tables={
+            "household_demands_zensus": {
+                "schema": "demand",
+                "table": "egon_demandregio_zensus_electricity",
+            }
+        }
+    )
+
 
     def __init__(self, dependencies):
         super().__init__(
@@ -88,7 +98,34 @@ class CtsElectricityDemand(Dataset):
     #:
     name: str = "CtsElectricityDemand"
     #:
-    version: str = "0.0.2"
+    version: str = "0.0.3"
+    
+    sources = DatasetSources(
+        tables={
+            "demandregio": {"schema": "demand", "table": "egon_demandregio_cts_ind"},
+            "demandregio_wz": {"schema": "demand", "table": "egon_demandregio_wz"},
+            "heat_demand_cts": {"schema": "demand", "table": "egon_peta_heat"},
+            "map_zensus_vg250": {"schema": "boundaries", "table": "egon_map_zensus_vg250"},
+            "demandregio_cts": {"schema": "demand", "table": "egon_demandregio_cts_ind"},
+            "demandregio_timeseries": {"schema": "demand", "table": "egon_demandregio_timeseries_cts_ind"},
+            "map_grid_districts": {"schema": "boundaries", "table": "egon_map_zensus_grid_districts"},
+            "map_vg250": {"schema": "boundaries", "table": "egon_map_zensus_vg250"},
+            "zensus_electricity": {"schema": "demand", "table": "egon_demandregio_zensus_electricity"},
+        }
+    )
+
+    targets = DatasetTargets(
+        tables={
+            "cts_demands_zensus": {
+                "schema": "demand",
+                "table": "egon_demandregio_zensus_electricity",
+            },
+            "cts_demand_curves": {
+                "schema": "demand",
+                "table": "egon_etrago_electricity_cts",
+            },
+        }
+    )
 
     def __init__(self, dependencies):
         super().__init__(
@@ -255,22 +292,18 @@ def distribute_cts_demands():
 
     """
 
-    sources = egon.data.config.datasets()["electrical_demands_cts"]["sources"]
-
-    target = egon.data.config.datasets()["electrical_demands_cts"]["targets"][
-        "cts_demands_zensus"
-    ]
+    
 
     db.execute_sql(
-        f"""DELETE FROM {target['schema']}.{target['table']}
-                   WHERE sector = 'service'"""
+        f"""DELETE FROM {CtsElectricityDemand.targets.tables['cts_demands_zensus']['schema']}.{CtsElectricityDemand.targets.tables['cts_demands_zensus']['table']}
+        WHERE sector = 'service'"""
     )
 
     # Select match between zensus cells and nuts3 regions of vg250
     map_nuts3 = db.select_dataframe(
         f"""SELECT zensus_population_id, vg250_nuts3 as nuts3 FROM
-        {sources['map_zensus_vg250']['schema']}.
-        {sources['map_zensus_vg250']['table']}""",
+        {CtsElectricityDemand.sources.tables['map_zensus_vg250']['schema']}.
+        {CtsElectricityDemand.sources.tables['map_zensus_vg250']['table']}""",
         index_col="zensus_population_id",
     )
 
@@ -280,8 +313,8 @@ def distribute_cts_demands():
         peta = db.select_dataframe(
             f"""SELECT zensus_population_id, demand as heat_demand,
             sector, scenario FROM
-            {sources['heat_demand_cts']['schema']}.
-            {sources['heat_demand_cts']['table']}
+            {CtsElectricityDemand.sources.tables['heat_demand_cts']['schema']}.
+            {CtsElectricityDemand.sources.tables['heat_demand_cts']['table']}
             WHERE scenario = '{scn}'
             AND sector = 'service'""",
             index_col="zensus_population_id",
@@ -299,13 +332,13 @@ def distribute_cts_demands():
         # Select forecasted electrical demands from demandregio table
         demand_nuts3 = db.select_dataframe(
             f"""SELECT nuts3, SUM(demand) as demand FROM
-            {sources['demandregio']['schema']}.
-            {sources['demandregio']['table']}
+            {CtsElectricityDemand.sources.tables['demandregio']['schema']}.
+            {CtsElectricityDemand.sources.tables['demandregio']['table']}
             WHERE scenario = '{scn}'
             AND wz IN (
                 SELECT wz FROM
-                {sources['demandregio_wz']['schema']}.
-                {sources['demandregio_wz']['table']}
+                {CtsElectricityDemand.sources.tables['demandregio_wz']['schema']}.
+                {CtsElectricityDemand.sources.tables['demandregio_wz']['table']}
                 WHERE sector = 'CTS')
             GROUP BY nuts3""",
             index_col="nuts3",
@@ -321,8 +354,8 @@ def distribute_cts_demands():
 
         # Insert data to target table
         peta[["scenario", "demand", "sector"]].to_sql(
-            target["table"],
-            schema=target["schema"],
+            CtsElectricityDemand.targets.tables["cts_demands_zensus"]["table"],
+            schema=CtsElectricityDemand.targets.tables["cts_demands_zensus"]["schema"],
             con=db.engine(),
             if_exists="append",
         )
