@@ -76,8 +76,7 @@ def create_tables():
 def zensus_population():
     """Bring population prognosis from DemandRegio to Zensus grid"""
 
-    #cfg = egon.data.config.datasets()["society_prognosis"]
-
+    
     local_engine = db.engine()
 
     # Input: Zensus2011 population data including the NUTS3-Code
@@ -185,7 +184,7 @@ def household_prognosis_per_year(prognosis_nuts3, zensus, year):
 
 def zensus_household():
     """Bring household prognosis from DemandRegio to Zensus grid"""
-    #cfg = egon.data.config.datasets()["society_prognosis"]
+    
 
     local_engine = db.engine()
 
