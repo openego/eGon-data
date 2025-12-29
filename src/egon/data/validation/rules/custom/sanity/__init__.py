@@ -11,6 +11,17 @@ from .cts_demand import (
 from .home_batteries import (
     HomeBatteriesAggregation,
 )
+from .gas_stores import (
+    CH4StoresCapacity,
+    H2SaltcavernStoresCapacity,
+)
+from .gas_grid import (
+    GasBusesIsolated,
+    GasBusesCount,
+    GasOnePortConnections,
+    CH4GridCapacity,
+    GasLinksConnections,
+)
 
 __all__ = [
     "ResidentialElectricityAnnualSum",
@@ -18,4 +29,11 @@ __all__ = [
     "CtsElectricityDemandShare",
     "CtsHeatDemandShare",
     "HomeBatteriesAggregation",
+    "CH4StoresCapacity",
+    "H2SaltcavernStoresCapacity",
+    "GasBusesIsolated",
+    "GasBusesCount",
+    "GasOnePortConnections",
+    "CH4GridCapacity",
+    "GasLinksConnections",
 ]

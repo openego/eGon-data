@@ -109,7 +109,9 @@ class CtsElectricityDemandShare(DataFrameRule):
 
 ## Using Inline Validations in Datasets
 
-### Dataset Definition with Inline Validation
+### Option 1: Dataset-Specific Inline Validation
+
+For validations tied to a specific dataset (e.g., CTS demand validations), add them inline to that dataset:
 
 ```python
 from egon.data.datasets import Dataset
@@ -146,6 +148,56 @@ class CtsElectricityDemand(Dataset):
             validation_on_failure="continue"  # or "fail" to stop pipeline
         )
 ```
+
+### Option 2: Cross-Cutting Validations in FinalValidations
+
+For validations that check data consistency **across multiple datasets** (e.g., gas store capacity checks), add them to the `FinalValidations` dataset:
+
+```python
+# In: src/egon/data/datasets/final_validations.py
+
+from egon.data.validation.rules.custom.sanity import (
+    CH4StoresCapacity,
+    H2SaltcavernStoresCapacity,
+    # Import your new validation rule here
+)
+
+class FinalValidations(Dataset):
+    def __init__(self, dependencies):
+        super().__init__(
+            # ...
+            validation={
+                "gas_stores": [
+                    CH4StoresCapacity(...),
+                    H2SaltcavernStoresCapacity(...),
+                    # Add your new rule here
+                ],
+                # Add new category if needed
+                "your_category": [
+                    YourNewValidationRule(...),
+                ],
+            },
+        )
+```
+
+Then update `pipeline.py` to include your dataset in `FinalValidations` dependencies:
+
+```python
+final_validations = FinalValidations(
+    dependencies=[
+        insert_data_ch4_storages,
+        insert_H2_storage,
+        storage_etrago,
+        your_new_dataset,  # Add dataset providing data for your validation
+    ]
+)
+```
+
+**When to use FinalValidations:**
+- ✅ Validation checks data from multiple datasets
+- ✅ Validation should run at the end of the pipeline
+- ✅ Validation is cross-cutting (gas network, timeseries consistency, etc.)
+- ❌ Don't use for dataset-specific checks (use inline validation instead)
 
 ### How It Works
 
@@ -264,6 +316,19 @@ The following sanity checks have been migrated to validation rules:
 - `cts_electricity_demand_share()` → `CtsElectricityDemandShare`
 - `cts_heat_demand_share()` → `CtsHeatDemandShare`
 
+### ✅ Home Batteries
+- `sanitycheck_home_batteries()` → `HomeBatteriesAggregation`
+
+### ✅ Gas Stores
+- `sanity_check_CH4_stores()` → `CH4StoresCapacity`
+- `sanity_check_H2_saltcavern_stores()` → `H2SaltcavernStoresCapacity`
+
+### ✅ Gas Grid
+- `sanity_check_gas_buses()` → `GasBusesIsolated` + `GasBusesCount`
+- `sanity_check_gas_one_port()` → `GasOnePortConnections`
+- `sanity_check_CH4_grid()` → `CH4GridCapacity`
+- `sanity_check_gas_links()` → `GasLinksConnections`
+
 ---
 
 ## Remaining Sanity Checks to Migrate
@@ -272,22 +337,15 @@ The following functions from `sanity_checks.py` still need to be migrated:
 
 1. `etrago_eGon2035_electricity()` - Complex multi-carrier capacity checks
 2. `etrago_eGon2035_heat()` - Heat capacity distribution checks
-3. `sanitycheck_pv_rooftop_buildings()` - PV rooftop capacity validation
+3. `sanitycheck_pv_rooftop_buildings()` - PV rooftop capacity validation (complex with plots)
 4. `sanitycheck_emobility_mit()` - E-mobility trip and vehicle checks
-5. `sanitycheck_home_batteries()` - Home battery capacity validation
-6. `sanity_check_gas_buses()` - Gas bus capacity checks
-7. `sanity_check_CH4_stores()` - CH4 storage validation
-8. `sanity_check_H2_saltcavern_stores()` - H2 storage validation
-9. `sanity_check_gas_one_port()` - Gas one-port component checks
-10. `sanity_check_CH4_grid()` - CH4 grid capacity validation
-11. `sanity_check_gas_links()` - Gas link validation
-12. `etrago_eGon2035_gas_DE()` - German gas network checks
-13. `etrago_eGon2035_gas_abroad()` - International gas network checks
-14. `sanitycheck_dsm()` - Demand-side management validation
-15. `etrago_timeseries_length()` - Timeseries array length checks
-16. `generators_links_storages_stores_100RE()` - eGon100RE capacity checks
-17. `electrical_load_100RE()` - eGon100RE load validation
-18. `heat_gas_load_egon100RE()` - eGon100RE heat/gas load validation
+5. `etrago_eGon2035_gas_DE()` - German gas network checks
+6. `etrago_eGon2035_gas_abroad()` - International gas network checks
+7. `sanitycheck_dsm()` - Demand-side management validation
+8. `etrago_timeseries_length()` - Timeseries array length checks
+9. `generators_links_storages_stores_100RE()` - eGon100RE capacity checks
+10. `electrical_load_100RE()` - eGon100RE load validation
+11. `heat_gas_load_egon100RE()` - eGon100RE heat/gas load validation
 
 ---
 
@@ -305,10 +363,12 @@ egon-data/src/egon/data/
                 ├── __init__.py
                 ├── residential_electricity.py  # ✅ Migrated
                 ├── cts_demand.py               # ✅ Migrated
+                ├── home_batteries.py           # ✅ Migrated
+                ├── gas_stores.py               # ✅ Migrated (CH4, H2 saltcavern stores)
+                ├── gas_grid.py                 # ✅ Migrated (bus isolation, bus counts, one-port, CH4 grid capacity, link connections)
                 ├── timeseries.py               # TODO
                 ├── capacity_comparison.py      # TODO
                 ├── emobility.py                # TODO
-                ├── gas_grid.py                 # TODO
                 └── ...                         # TODO
 ```
 

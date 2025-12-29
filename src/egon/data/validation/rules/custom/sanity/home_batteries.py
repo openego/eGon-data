@@ -9,8 +9,7 @@ import numpy as np
 import pandas as pd
 from egon_validation.rules.base import DataFrameRule, RuleResult, Severity
 
-from egon.data import config
-from egon.data.datasets.storages.home_batteries import get_cbat_pbat_ratio
+from egon.data import config, db
 
 
 class HomeBatteriesAggregation(DataFrameRule):
@@ -44,7 +43,14 @@ class HomeBatteriesAggregation(DataFrameRule):
         targets = config.datasets()["home_batteries"]["targets"]
 
         # Get cbat_pbat_ratio for capacity calculation
-        cbat_pbat_ratio = get_cbat_pbat_ratio()
+        # Query the ratio directly from the database instead of importing from dataset module
+        cbat_pbat_ratio_query = f"""
+            SELECT max_hours
+            FROM {sources["etrago_storage"]["schema"]}.{sources["etrago_storage"]["table"]}
+            WHERE carrier = 'home_battery'
+            LIMIT 1
+        """
+        cbat_pbat_ratio = int(db.select_dataframe(cbat_pbat_ratio_query).iat[0, 0])
 
         return f"""
         WITH storage_data AS (
