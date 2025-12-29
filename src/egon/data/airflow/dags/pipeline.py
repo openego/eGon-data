@@ -103,6 +103,7 @@ from egon.data.datasets.zensus_vg250 import ZensusVg250
 from egon.data.metadata import Json_Metadata
 
 from egon.data.datasets.validation_report import ValidationReport
+from egon.data.datasets.final_validations import FinalValidations
 
 # Set number of threads used by numpy and pandas
 set_numexpr_threads()
@@ -732,11 +733,30 @@ with airflow.DAG(
             ]
         )
 
+    with TaskGroup(group_id="final_validations") as final_validations_group:
+        # Cross-cutting validations that check data consistency across datasets
+        # These run after all data generation but before the validation report
+        final_validations = FinalValidations(
+            dependencies=[
+                insert_data_ch4_storages,  # CH4Storages - for CH4 store validation
+                insert_H2_storage,          # HydrogenStoreEtrago - for H2 saltcavern validation
+                storage_etrago,             # StorageEtrago - general storage validation
+                hts_etrago_table,
+                fill_etrago_generators,
+                household_electricity_demand_annual,
+                cts_demand_buildings,
+                emobility_mit,
+                low_flex_scenario,
+            ]
+        )
+
     with TaskGroup(group_id="validation_report") as validation_report_group:
         # Generate validation report from all validation tasks
-        # NOTE: Temporarily depends only on vg250 for testing purposes
+        # Runs after all validations (including final_validations) are complete
         validation_report = ValidationReport(
-            dependencies=[vg250]
+            dependencies=[
+                final_validations,           # Wait for final validations
+            ]
         )
 
     with TaskGroup(group_id="sanity_checks") as sanity_checks_group:
