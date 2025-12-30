@@ -84,6 +84,32 @@ class ElectricityCapacityComparison(DataFrameRule):
             carriers_str = "', '".join(self.output_carriers)
             carrier_filter = f"carrier IN ('{carriers_str}')"
 
+        # Build bus filter based on component type
+        # Links have bus0 and bus1, generators/storage have bus
+        if self.component_type == "link":
+            bus_filter = f"""
+            AND (bus0 IN (
+                SELECT bus_id
+                FROM grid.egon_etrago_bus
+                WHERE scn_name = '{self.scenario}'
+                AND country = 'DE'
+            ) OR bus1 IN (
+                SELECT bus_id
+                FROM grid.egon_etrago_bus
+                WHERE scn_name = '{self.scenario}'
+                AND country = 'DE'
+            ))
+            """
+        else:
+            bus_filter = f"""
+            AND bus IN (
+                SELECT bus_id
+                FROM grid.egon_etrago_bus
+                WHERE scn_name = '{self.scenario}'
+                AND country = 'DE'
+            )
+            """
+
         return f"""
         WITH output_capacity AS (
             SELECT
@@ -91,12 +117,7 @@ class ElectricityCapacityComparison(DataFrameRule):
             FROM {self.table}
             WHERE scn_name = '{self.scenario}'
             AND {carrier_filter}
-            AND bus IN (
-                SELECT bus_id
-                FROM grid.egon_etrago_bus
-                WHERE scn_name = '{self.scenario}'
-                AND country = 'DE'
-            )
+            {bus_filter}
         ),
         input_capacity AS (
             SELECT
