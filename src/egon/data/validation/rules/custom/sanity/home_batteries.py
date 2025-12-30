@@ -158,8 +158,8 @@ class HomeBatteriesAggregation(DataFrameRule):
             max_p_nom_diff = (df["storage_p_nom"] - df["building_p_nom"]).abs().max()
             max_capacity_diff = (df["storage_capacity"] - df["building_capacity"]).abs().max()
 
-            # Get sample violations
-            sample_violations = mismatches.head(5)[
+            # Get all violations
+            all_violations = mismatches[
                 ["bus_id", "storage_p_nom", "building_p_nom", "storage_capacity", "building_capacity"]
             ].to_dict(orient="records")
 
@@ -173,13 +173,13 @@ class HomeBatteriesAggregation(DataFrameRule):
                 expected=0.0,
                 message=(
                     f"Home battery aggregation mismatch for {len(mismatches)} bus(es): "
-                    f"max p_nom diff={max_p_nom_diff:.6f}, max capacity diff={max_capacity_diff:.6f}"
+                    f"max p_nom diff={max_p_nom_diff:.6f}, max capacity diff={max_capacity_diff:.6f}. "
+                    f"violations: {all_violations}"
                 ),
                 severity=Severity.ERROR,
                 schema=self.schema,
                 table_name=self.table_name,
-                rule_class=self.__class__.__name__,
-                details={"sample_violations": sample_violations}
+                rule_class=self.__class__.__name__
             )
 
         # All checks passed
