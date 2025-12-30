@@ -274,7 +274,7 @@ def add_metadata():
                 "path": (f"https://zenodo.org/record/{deposit_id_mastr}"),
                 "licenses": [license_dedl(attribution="© Amme, Jonathan")],
             },
-            # Now 'sources()' correctly refers to the function from metadata
+            # 'sources()' correctly refers to the function from metadata
             sources()["openstreetmap"],
             sources()["era5"],
             sources()["vg250"],
@@ -295,7 +295,8 @@ def add_metadata():
                 "schema": {
                     "fields": generate_resource_fields_from_db_table(
                         targets.get_table_schema("home_batteries"),
-                        targets.get_table_name("home_batteries").split('.')[1],
+                        # FIX: Use [-1] to get the table name safely (works with or without 'schema.' prefix)
+                        targets.get_table_name("home_batteries").split('.')[-1],
                     ),
                     "primaryKey": "index",
                 },
@@ -338,7 +339,7 @@ def add_metadata():
     db.submit_comment(
         f"'{json.dumps(meta)}'",
         targets.get_table_schema("home_batteries"),
-        targets.get_table_name("home_batteries").split('.')[1],
+        targets.get_table_name("home_batteries").split('.')[-1],
     )
 
 
