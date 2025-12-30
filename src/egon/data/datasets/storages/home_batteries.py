@@ -218,7 +218,7 @@ def add_metadata():
     """
     Add metadata to table supply.egon_home_batteries
     """
-    sources, targets = load_sources_and_targets("Storages")
+    _, targets = load_sources_and_targets("Storages")
     
     deposit_id_mastr = CONSTANTS["deposit_id_mastr"]
     deposit_id_data_bundle = CONSTANTS["deposit_id_data_bundle"]
@@ -274,6 +274,7 @@ def add_metadata():
                 "path": (f"https://zenodo.org/record/{deposit_id_mastr}"),
                 "licenses": [license_dedl(attribution="© Amme, Jonathan")],
             },
+            # Now 'sources()' correctly refers to the function from metadata
             sources()["openstreetmap"],
             sources()["era5"],
             sources()["vg250"],
@@ -338,6 +339,22 @@ def add_metadata():
         f"'{json.dumps(meta)}'",
         targets.get_table_schema("home_batteries"),
         targets.get_table_name("home_batteries").split('.')[1],
+    )
+
+
+def create_table(df):
+    """Create mapping table home battery <-> building id"""
+    engine = db.engine()
+
+    EgonHomeBatteries.__table__.drop(bind=engine, checkfirst=True)
+    EgonHomeBatteries.__table__.create(bind=engine, checkfirst=True)
+
+    df.reset_index().to_sql(
+        name=EgonHomeBatteries.__table__.name,
+        schema=EgonHomeBatteries.__table__.schema,
+        con=engine,
+        if_exists="append",
+        index=False,
     )
 
 
