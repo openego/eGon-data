@@ -19,6 +19,7 @@ from egon.data.datasets.power_plants import (
     select_target,
 )
 import egon.data.config
+from egon.data.datasets import load_sources_and_targets
 
 
 def select_nep_pumped_hydro(scn):
@@ -30,7 +31,7 @@ def select_nep_pumped_hydro(scn):
     pandas.DataFrame
         Pumped hydro plants from NEP list
     """
-    cfg = egon.data.config.datasets()["power_plants"]
+    sources, targets = load_sources_and_targets("Storages")
 
     carrier = "pumped_hydro"
 
@@ -40,7 +41,7 @@ def select_nep_pumped_hydro(scn):
             f"""
             SELECT bnetza_id, name, carrier, postcode, capacity, city,
             federal_state, c2035_capacity
-            FROM {cfg['sources']['nep_conv']}
+            FROM {sources.tables['nep_conv']}
             WHERE carrier = '{carrier}'
             AND c2035_capacity > 0
             AND postcode != 'None';
@@ -57,7 +58,7 @@ def select_nep_pumped_hydro(scn):
             f"""
             SELECT bnetza_id, name, carrier, postcode, capacity, city,
             federal_state
-            FROM {cfg['sources']['nep_conv']}
+            FROM {sources.tables['nep_conv']}
             WHERE carrier = '{carrier}'
             AND capacity > 0
             AND postcode != 'None'
@@ -89,11 +90,11 @@ def select_mastr_pumped_hydro():
     pandas.DataFrame
         Pumped hydro plants from MaStR
     """
-    sources = egon.data.config.datasets()["power_plants"]["sources"]
+    sources, targets = load_sources_and_targets("Storages")
 
     # Read-in data from MaStR
     mastr_ph = pd.read_csv(
-        WORKING_DIR_MASTR_NEW / sources["mastr_storage"],
+        WORKING_DIR_MASTR_NEW / sources.files["mastr_storage"],
         delimiter=",",
         usecols=[
             "Nettonennleistung",

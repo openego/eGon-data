@@ -57,22 +57,26 @@ class Storages(Dataset):
         files={
             "mastr_storage": "bnetza_mastr_storage_cleaned.csv",
             "nep_capacities": "NEP2035_V2021_scnC2035.xlsx",
-            # Dependency from power_plants config:
             "mastr_location": "location_elec_generation_raw.csv",
         },
         tables={
             "capacities": "supply.egon_scenario_capacities",
             "generators": "grid.egon_etrago_generator",
             "bus": "grid.egon_etrago_bus",
-            # Dependencies from power_plants config:
             "egon_mv_grid_district": "grid.egon_mv_grid_district",
             "ehv_voronoi": "grid.egon_ehv_substation_voronoi",
+            # Added for pumped_hydro.py
+            "nep_conv": "supply.egon_nep_2021_conventional_powerplants",
+            # Added for home_batteries.py
+            "etrago_storage": "grid.egon_etrago_storage",
         },
     )
     targets = DatasetTargets(
         tables={
-            "storages": "supply.egon_storages"
-        }
+            "storages": "supply.egon_storages",
+            # Added for home_batteries.py
+            "home_batteries": "supply.egon_home_batteries",
+            }
     )
     
     """
@@ -109,7 +113,7 @@ class Storages(Dataset):
     #:
     name: str = "Storages"
     #:
-    version: str = "0.0.9"
+    version: str = "0.0.10"
 
     def __init__(self, dependencies):
         super().__init__(
