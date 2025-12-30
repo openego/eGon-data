@@ -26,6 +26,12 @@ from .gas_loads_generators import (
     GasLoadsCapacity,
     GasGeneratorsCapacity,
 )
+from .electricity_capacity import (
+    ElectricityCapacityComparison,
+)
+from .heat_demand import (
+    HeatDemandValidation,
+)
 
 __all__ = [
     "ResidentialElectricityAnnualSum",
@@ -42,4 +48,6 @@ __all__ = [
     "GasLinksConnections",
     "GasLoadsCapacity",
     "GasGeneratorsCapacity",
+    "ElectricityCapacityComparison",
+    "HeatDemandValidation",
 ]
