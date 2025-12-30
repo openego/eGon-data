@@ -89,7 +89,7 @@ class FinalValidations(Dataset):
     #:
     name: str = "FinalValidations"
     #:
-    version: str = "0.0.1"
+    version: str = "0.0.1.dev"
 
     def __init__(self, dependencies):
         super().__init__(
@@ -257,34 +257,34 @@ class FinalValidations(Dataset):
                     ),
 
                     # GENERATORS - eGon2035
-                    # CH4 generators must connect to CH4 buses
+                    # CH4 generators must connect to CH4 buses (any country)
                     GasOnePortConnections(
                         table="grid.egon_etrago_generator",
                         rule_id="SANITY_GAS_ONE_PORT_GENERATOR_CH4_EGON2035",
                         scenario="eGon2035",
                         component_type="generator",
                         component_carrier="CH4",
-                        bus_conditions=[("CH4", "IS NOT NULL")]  # Any CH4 bus
+                        bus_conditions=[("CH4", "")]  # Any CH4 bus, no country filter
                     ),
 
                     # STORES - eGon2035
-                    # CH4 stores must connect to CH4 buses
+                    # CH4 stores must connect to CH4 buses (any country)
                     GasOnePortConnections(
                         table="grid.egon_etrago_store",
                         rule_id="SANITY_GAS_ONE_PORT_STORE_CH4_EGON2035",
                         scenario="eGon2035",
                         component_type="store",
                         component_carrier="CH4",
-                        bus_conditions=[("CH4", "IS NOT NULL")]
+                        bus_conditions=[("CH4", "")]  # Any CH4 bus, no country filter
                     ),
-                    # H2_underground stores must connect to H2_saltcavern buses
+                    # H2_underground stores must connect to H2_saltcavern buses (any country)
                     GasOnePortConnections(
                         table="grid.egon_etrago_store",
                         rule_id="SANITY_GAS_ONE_PORT_STORE_H2_UNDERGROUND_EGON2035",
                         scenario="eGon2035",
                         component_type="store",
                         component_carrier="H2_underground",
-                        bus_conditions=[("H2_saltcavern", "IS NOT NULL")]
+                        bus_conditions=[("H2_saltcavern", "")]  # Any H2_saltcavern bus, no country filter
                     ),
                     # H2_overground stores must connect to H2_saltcavern or H2_grid in DE
                     GasOnePortConnections(
