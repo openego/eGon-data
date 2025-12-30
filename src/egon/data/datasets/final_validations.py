@@ -15,6 +15,8 @@ from egon.data.validation.rules.custom.sanity import (
     GasOnePortConnections,
     CH4GridCapacity,
     GasLinksConnections,
+    GasLoadsCapacity,
+    GasGeneratorsCapacity,
 )
 
 
@@ -370,6 +372,35 @@ class FinalValidations(Dataset):
                         rule_id="SANITY_GAS_LINKS_INDUSTRIAL_GAS_CHP_EGON2035",
                         scenario="eGon2035",
                         carrier="industrial_gas_CHP"
+                    ),
+                ],
+
+                # Gas loads and generators capacity validations
+                # These check that gas demand and generation capacity match reference data
+                "gas_loads_generators": [
+                    # CH4_for_industry loads - eGon2035
+                    GasLoadsCapacity(
+                        table="grid.egon_etrago_load",
+                        rule_id="SANITY_GAS_LOADS_CH4_FOR_INDUSTRY_EGON2035",
+                        scenario="eGon2035",
+                        carrier="CH4_for_industry",
+                        rtol=0.10
+                    ),
+                    # H2_for_industry loads - eGon2035
+                    GasLoadsCapacity(
+                        table="grid.egon_etrago_load",
+                        rule_id="SANITY_GAS_LOADS_H2_FOR_INDUSTRY_EGON2035",
+                        scenario="eGon2035",
+                        carrier="H2_for_industry",
+                        rtol=0.10
+                    ),
+                    # CH4 generators - eGon2035
+                    GasGeneratorsCapacity(
+                        table="grid.egon_etrago_generator",
+                        rule_id="SANITY_GAS_GENERATORS_CH4_EGON2035",
+                        scenario="eGon2035",
+                        carrier="CH4",
+                        rtol=0.10
                     ),
                 ],
 
