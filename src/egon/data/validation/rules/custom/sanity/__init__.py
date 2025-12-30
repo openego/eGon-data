@@ -32,6 +32,9 @@ from .electricity_capacity import (
 from .heat_demand import (
     HeatDemandValidation,
 )
+from .electrical_load_sectors import (
+    ElectricalLoadSectorBreakdown,
+)
 
 __all__ = [
     "ResidentialElectricityAnnualSum",
@@ -50,4 +53,5 @@ __all__ = [
     "GasGeneratorsCapacity",
     "ElectricityCapacityComparison",
     "HeatDemandValidation",
+    "ElectricalLoadSectorBreakdown",
 ]
