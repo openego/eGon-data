@@ -22,6 +22,10 @@ from .gas_grid import (
     CH4GridCapacity,
     GasLinksConnections,
 )
+from .gas_loads_generators import (
+    GasLoadsCapacity,
+    GasGeneratorsCapacity,
+)
 
 __all__ = [
     "ResidentialElectricityAnnualSum",
@@ -36,4 +40,6 @@ __all__ = [
     "GasOnePortConnections",
     "CH4GridCapacity",
     "GasLinksConnections",
+    "GasLoadsCapacity",
+    "GasGeneratorsCapacity",
 ]

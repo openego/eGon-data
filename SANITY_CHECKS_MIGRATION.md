@@ -329,6 +329,9 @@ The following sanity checks have been migrated to validation rules:
 - `sanity_check_CH4_grid()` → `CH4GridCapacity`
 - `sanity_check_gas_links()` → `GasLinksConnections`
 
+### ✅ Gas Loads and Generators
+- `etrago_eGon2035_gas_DE()` → `GasLoadsCapacity` + `GasGeneratorsCapacity` (wrapper function - components already migrated)
+
 ---
 
 ## Remaining Sanity Checks to Migrate
@@ -339,13 +342,12 @@ The following functions from `sanity_checks.py` still need to be migrated:
 2. `etrago_eGon2035_heat()` - Heat capacity distribution checks
 3. `sanitycheck_pv_rooftop_buildings()` - PV rooftop capacity validation (complex with plots)
 4. `sanitycheck_emobility_mit()` - E-mobility trip and vehicle checks
-5. `etrago_eGon2035_gas_DE()` - German gas network checks
-6. `etrago_eGon2035_gas_abroad()` - International gas network checks
-7. `sanitycheck_dsm()` - Demand-side management validation
-8. `etrago_timeseries_length()` - Timeseries array length checks
-9. `generators_links_storages_stores_100RE()` - eGon100RE capacity checks
-10. `electrical_load_100RE()` - eGon100RE load validation
-11. `heat_gas_load_egon100RE()` - eGon100RE heat/gas load validation
+5. `etrago_eGon2035_gas_abroad()` - International gas network checks
+6. `sanitycheck_dsm()` - Demand-side management validation
+7. `etrago_timeseries_length()` - Timeseries array length checks
+8. `generators_links_storages_stores_100RE()` - eGon100RE capacity checks
+9. `electrical_load_100RE()` - eGon100RE load validation
+10. `heat_gas_load_egon100RE()` - eGon100RE heat/gas load validation
 
 ---
 
@@ -366,6 +368,7 @@ egon-data/src/egon/data/
                 ├── home_batteries.py           # ✅ Migrated
                 ├── gas_stores.py               # ✅ Migrated (CH4, H2 saltcavern stores)
                 ├── gas_grid.py                 # ✅ Migrated (bus isolation, bus counts, one-port, CH4 grid capacity, link connections)
+                ├── gas_loads_generators.py     # ✅ Migrated (loads and generators capacity)
                 ├── timeseries.py               # TODO
                 ├── capacity_comparison.py      # TODO
                 ├── emobility.py                # TODO
