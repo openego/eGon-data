@@ -17,7 +17,11 @@ from egon.data.validation.rules.custom.sanity import (
     GasLinksConnections,
     GasLoadsCapacity,
     GasGeneratorsCapacity,
+    ElectricityCapacityComparison,
+    HeatDemandValidation,
 )
+from egon_validation.rules.formal.array_cardinality_check import ArrayCardinalityValidation
+from egon_validation.rules.custom.numeric_aggregation_check import ElectricalLoadAggregationValidation
 
 
 def notasks():
@@ -404,10 +408,474 @@ class FinalValidations(Dataset):
                     ),
                 ],
 
-                # Add more validation categories here as you migrate more sanity checks
-                # Examples:
-                # "timeseries": [ ... ],
-                # "capacity_comparison": [ ... ],
+                # Electricity capacity validations
+                # These check that distributed generator and storage capacities match input capacities
+                "electricity_capacity": [
+                    # GENERATORS - eGon2035
+                    # Wind onshore
+                    ElectricityCapacityComparison(
+                        table="grid.egon_etrago_generator",
+                        rule_id="SANITY_ELECTRICITY_GENERATOR_WIND_ONSHORE_EGON2035",
+                        scenario="eGon2035",
+                        carrier="wind_onshore",
+                        component_type="generator",
+                        rtol=0.10
+                    ),
+                    # Wind offshore
+                    ElectricityCapacityComparison(
+                        table="grid.egon_etrago_generator",
+                        rule_id="SANITY_ELECTRICITY_GENERATOR_WIND_OFFSHORE_EGON2035",
+                        scenario="eGon2035",
+                        carrier="wind_offshore",
+                        component_type="generator",
+                        rtol=0.10
+                    ),
+                    # Solar
+                    ElectricityCapacityComparison(
+                        table="grid.egon_etrago_generator",
+                        rule_id="SANITY_ELECTRICITY_GENERATOR_SOLAR_EGON2035",
+                        scenario="eGon2035",
+                        carrier="solar",
+                        component_type="generator",
+                        rtol=0.10
+                    ),
+                    # Solar rooftop
+                    ElectricityCapacityComparison(
+                        table="grid.egon_etrago_generator",
+                        rule_id="SANITY_ELECTRICITY_GENERATOR_SOLAR_ROOFTOP_EGON2035",
+                        scenario="eGon2035",
+                        carrier="solar_rooftop",
+                        component_type="generator",
+                        rtol=0.10
+                    ),
+                    # Biomass (maps to multiple output carriers: biomass, industrial_biomass_CHP, central_biomass_CHP)
+                    ElectricityCapacityComparison(
+                        table="grid.egon_etrago_generator",
+                        rule_id="SANITY_ELECTRICITY_GENERATOR_BIOMASS_EGON2035",
+                        scenario="eGon2035",
+                        carrier="biomass",
+                        component_type="generator",
+                        output_carriers=["biomass", "industrial_biomass_CHP", "central_biomass_CHP"],
+                        rtol=0.10
+                    ),
+                    # Run of river
+                    ElectricityCapacityComparison(
+                        table="grid.egon_etrago_generator",
+                        rule_id="SANITY_ELECTRICITY_GENERATOR_RUN_OF_RIVER_EGON2035",
+                        scenario="eGon2035",
+                        carrier="run_of_river",
+                        component_type="generator",
+                        rtol=0.10
+                    ),
+                    # Reservoir
+                    ElectricityCapacityComparison(
+                        table="grid.egon_etrago_generator",
+                        rule_id="SANITY_ELECTRICITY_GENERATOR_RESERVOIR_EGON2035",
+                        scenario="eGon2035",
+                        carrier="reservoir",
+                        component_type="generator",
+                        rtol=0.10
+                    ),
+                    # Oil
+                    ElectricityCapacityComparison(
+                        table="grid.egon_etrago_generator",
+                        rule_id="SANITY_ELECTRICITY_GENERATOR_OIL_EGON2035",
+                        scenario="eGon2035",
+                        carrier="oil",
+                        component_type="generator",
+                        rtol=0.10
+                    ),
+                    # Others
+                    ElectricityCapacityComparison(
+                        table="grid.egon_etrago_generator",
+                        rule_id="SANITY_ELECTRICITY_GENERATOR_OTHERS_EGON2035",
+                        scenario="eGon2035",
+                        carrier="others",
+                        component_type="generator",
+                        rtol=0.10
+                    ),
+
+                    # STORAGE - eGon2035
+                    # Pumped hydro
+                    ElectricityCapacityComparison(
+                        table="grid.egon_etrago_storage",
+                        rule_id="SANITY_ELECTRICITY_STORAGE_PUMPED_HYDRO_EGON2035",
+                        scenario="eGon2035",
+                        carrier="pumped_hydro",
+                        component_type="storage",
+                        rtol=0.10
+                    ),
+
+                    # GENERATORS - eGon100RE
+                    # Wind onshore
+                    ElectricityCapacityComparison(
+                        table="grid.egon_etrago_generator",
+                        rule_id="SANITY_ELECTRICITY_GENERATOR_WIND_ONSHORE_EGON100RE",
+                        scenario="eGon100RE",
+                        carrier="wind_onshore",
+                        component_type="generator",
+                        rtol=0.10
+                    ),
+                    # Wind offshore
+                    ElectricityCapacityComparison(
+                        table="grid.egon_etrago_generator",
+                        rule_id="SANITY_ELECTRICITY_GENERATOR_WIND_OFFSHORE_EGON100RE",
+                        scenario="eGon100RE",
+                        carrier="wind_offshore",
+                        component_type="generator",
+                        rtol=0.10
+                    ),
+                    # Solar
+                    ElectricityCapacityComparison(
+                        table="grid.egon_etrago_generator",
+                        rule_id="SANITY_ELECTRICITY_GENERATOR_SOLAR_EGON100RE",
+                        scenario="eGon100RE",
+                        carrier="solar",
+                        component_type="generator",
+                        rtol=0.10
+                    ),
+                    # Solar rooftop
+                    ElectricityCapacityComparison(
+                        table="grid.egon_etrago_generator",
+                        rule_id="SANITY_ELECTRICITY_GENERATOR_SOLAR_ROOFTOP_EGON100RE",
+                        scenario="eGon100RE",
+                        carrier="solar_rooftop",
+                        component_type="generator",
+                        rtol=0.10
+                    ),
+                    # Run of river
+                    ElectricityCapacityComparison(
+                        table="grid.egon_etrago_generator",
+                        rule_id="SANITY_ELECTRICITY_GENERATOR_RUN_OF_RIVER_EGON100RE",
+                        scenario="eGon100RE",
+                        carrier="run_of_river",
+                        component_type="generator",
+                        rtol=0.10
+                    ),
+                    # Oil
+                    ElectricityCapacityComparison(
+                        table="grid.egon_etrago_generator",
+                        rule_id="SANITY_ELECTRICITY_GENERATOR_OIL_EGON100RE",
+                        scenario="eGon100RE",
+                        carrier="oil",
+                        component_type="generator",
+                        rtol=0.10
+                    ),
+                    # Lignite
+                    ElectricityCapacityComparison(
+                        table="grid.egon_etrago_generator",
+                        rule_id="SANITY_ELECTRICITY_GENERATOR_LIGNITE_EGON100RE",
+                        scenario="eGon100RE",
+                        carrier="lignite",
+                        component_type="generator",
+                        rtol=0.10
+                    ),
+                    # Coal
+                    ElectricityCapacityComparison(
+                        table="grid.egon_etrago_generator",
+                        rule_id="SANITY_ELECTRICITY_GENERATOR_COAL_EGON100RE",
+                        scenario="eGon100RE",
+                        carrier="coal",
+                        component_type="generator",
+                        rtol=0.10
+                    ),
+                    # Solar thermal collector
+                    ElectricityCapacityComparison(
+                        table="grid.egon_etrago_generator",
+                        rule_id="SANITY_ELECTRICITY_GENERATOR_SOLAR_THERMAL_EGON100RE",
+                        scenario="eGon100RE",
+                        carrier="urban_central_solar_thermal_collector",
+                        component_type="generator",
+                        output_carriers=["solar_thermal_collector"],
+                        rtol=0.10
+                    ),
+                    # Geothermal
+                    ElectricityCapacityComparison(
+                        table="grid.egon_etrago_generator",
+                        rule_id="SANITY_ELECTRICITY_GENERATOR_GEO_THERMAL_EGON100RE",
+                        scenario="eGon100RE",
+                        carrier="urban_central_geo_thermal",
+                        component_type="generator",
+                        output_carriers=["geo_thermal"],
+                        rtol=0.10
+                    ),
+                    # Rural solar thermal
+                    ElectricityCapacityComparison(
+                        table="grid.egon_etrago_generator",
+                        rule_id="SANITY_ELECTRICITY_GENERATOR_RURAL_SOLAR_THERMAL_EGON100RE",
+                        scenario="eGon100RE",
+                        carrier="rural_solar_thermal",
+                        component_type="generator",
+                        rtol=0.10
+                    ),
+                    # Urban central gas CHP
+                    ElectricityCapacityComparison(
+                        table="grid.egon_etrago_generator",
+                        rule_id="SANITY_ELECTRICITY_GENERATOR_URBAN_GAS_CHP_EGON100RE",
+                        scenario="eGon100RE",
+                        carrier="urban_central_gas_CHP",
+                        component_type="generator",
+                        rtol=0.10
+                    ),
+                    # Urban central solid biomass CHP
+                    ElectricityCapacityComparison(
+                        table="grid.egon_etrago_generator",
+                        rule_id="SANITY_ELECTRICITY_GENERATOR_BIOMASS_CHP_EGON100RE",
+                        scenario="eGon100RE",
+                        carrier="urban_central_solid_biomass_CHP",
+                        component_type="generator",
+                        rtol=0.10
+                    ),
+
+                    # LINKS - eGon100RE
+                    # Central gas boiler
+                    ElectricityCapacityComparison(
+                        table="grid.egon_etrago_link",
+                        rule_id="SANITY_ELECTRICITY_LINK_CENTRAL_GAS_BOILER_EGON100RE",
+                        scenario="eGon100RE",
+                        carrier="urban_central_gas_boiler",
+                        component_type="link",
+                        output_carriers=["central_gas_boiler"],
+                        rtol=0.10
+                    ),
+                    # Central heat pump
+                    ElectricityCapacityComparison(
+                        table="grid.egon_etrago_link",
+                        rule_id="SANITY_ELECTRICITY_LINK_CENTRAL_HEAT_PUMP_EGON100RE",
+                        scenario="eGon100RE",
+                        carrier="urban_central_heat_pump",
+                        component_type="link",
+                        output_carriers=["central_heat_pump"],
+                        rtol=0.10
+                    ),
+                    # Central resistive heater
+                    ElectricityCapacityComparison(
+                        table="grid.egon_etrago_link",
+                        rule_id="SANITY_ELECTRICITY_LINK_CENTRAL_RESISTIVE_HEATER_EGON100RE",
+                        scenario="eGon100RE",
+                        carrier="urban_central_resistive_heater",
+                        component_type="link",
+                        output_carriers=["central_resistive_heater"],
+                        rtol=0.10
+                    ),
+                    # OCGT (gas)
+                    ElectricityCapacityComparison(
+                        table="grid.egon_etrago_link",
+                        rule_id="SANITY_ELECTRICITY_LINK_OCGT_EGON100RE",
+                        scenario="eGon100RE",
+                        carrier="gas",
+                        component_type="link",
+                        output_carriers=["OCGT"],
+                        rtol=0.10
+                    ),
+                    # Rural biomass boiler
+                    ElectricityCapacityComparison(
+                        table="grid.egon_etrago_link",
+                        rule_id="SANITY_ELECTRICITY_LINK_RURAL_BIOMASS_BOILER_EGON100RE",
+                        scenario="eGon100RE",
+                        carrier="rural_biomass_boiler",
+                        component_type="link",
+                        rtol=0.10
+                    ),
+                    # Rural gas boiler
+                    ElectricityCapacityComparison(
+                        table="grid.egon_etrago_link",
+                        rule_id="SANITY_ELECTRICITY_LINK_RURAL_GAS_BOILER_EGON100RE",
+                        scenario="eGon100RE",
+                        carrier="rural_gas_boiler",
+                        component_type="link",
+                        rtol=0.10
+                    ),
+                    # Rural heat pump
+                    ElectricityCapacityComparison(
+                        table="grid.egon_etrago_link",
+                        rule_id="SANITY_ELECTRICITY_LINK_RURAL_HEAT_PUMP_EGON100RE",
+                        scenario="eGon100RE",
+                        carrier="rural_heat_pump",
+                        component_type="link",
+                        rtol=0.10
+                    ),
+                    # Rural oil boiler
+                    ElectricityCapacityComparison(
+                        table="grid.egon_etrago_link",
+                        rule_id="SANITY_ELECTRICITY_LINK_RURAL_OIL_BOILER_EGON100RE",
+                        scenario="eGon100RE",
+                        carrier="rural_oil_boiler",
+                        component_type="link",
+                        rtol=0.10
+                    ),
+                    # Rural resistive heater
+                    ElectricityCapacityComparison(
+                        table="grid.egon_etrago_link",
+                        rule_id="SANITY_ELECTRICITY_LINK_RURAL_RESISTIVE_HEATER_EGON100RE",
+                        scenario="eGon100RE",
+                        carrier="rural_resistive_heater",
+                        component_type="link",
+                        rtol=0.10
+                    ),
+
+                    # STORAGE - eGon100RE
+                    # Pumped hydro
+                    ElectricityCapacityComparison(
+                        table="grid.egon_etrago_storage",
+                        rule_id="SANITY_ELECTRICITY_STORAGE_PUMPED_HYDRO_EGON100RE",
+                        scenario="eGon100RE",
+                        carrier="pumped_hydro",
+                        component_type="storage",
+                        rtol=0.10
+                    ),
+                ],
+
+                # Heat capacity validations
+                # These check that distributed heat supply capacities match input capacities
+                "heat_capacity": [
+                    # LINKS - eGon2035
+                    # Central heat pump
+                    ElectricityCapacityComparison(
+                        table="grid.egon_etrago_link",
+                        rule_id="SANITY_HEAT_LINK_CENTRAL_HEAT_PUMP_EGON2035",
+                        scenario="eGon2035",
+                        carrier="urban_central_heat_pump",
+                        component_type="link",
+                        output_carriers=["central_heat_pump"],
+                        rtol=0.10
+                    ),
+                    # Rural heat pump
+                    ElectricityCapacityComparison(
+                        table="grid.egon_etrago_link",
+                        rule_id="SANITY_HEAT_LINK_RURAL_HEAT_PUMP_EGON2035",
+                        scenario="eGon2035",
+                        carrier="residential_rural_heat_pump",
+                        component_type="link",
+                        output_carriers=["rural_heat_pump"],
+                        rtol=0.10
+                    ),
+                    # Central resistive heater
+                    ElectricityCapacityComparison(
+                        table="grid.egon_etrago_link",
+                        rule_id="SANITY_HEAT_LINK_CENTRAL_RESISTIVE_HEATER_EGON2035",
+                        scenario="eGon2035",
+                        carrier="urban_central_resistive_heater",
+                        component_type="link",
+                        output_carriers=["central_resistive_heater"],
+                        rtol=0.10
+                    ),
+
+                    # GENERATORS - eGon2035
+                    # Solar thermal collector
+                    ElectricityCapacityComparison(
+                        table="grid.egon_etrago_generator",
+                        rule_id="SANITY_HEAT_GENERATOR_SOLAR_THERMAL_EGON2035",
+                        scenario="eGon2035",
+                        carrier="urban_central_solar_thermal_collector",
+                        component_type="generator",
+                        output_carriers=["solar_thermal_collector"],
+                        rtol=0.10
+                    ),
+                    # Geothermal
+                    ElectricityCapacityComparison(
+                        table="grid.egon_etrago_generator",
+                        rule_id="SANITY_HEAT_GENERATOR_GEO_THERMAL_EGON2035",
+                        scenario="eGon2035",
+                        carrier="urban_central_geo_thermal",
+                        component_type="generator",
+                        output_carriers=["geo_thermal"],
+                        rtol=0.10
+                    ),
+                ],
+
+                # Timeseries length validations
+                # These check that all timeseries arrays have the expected length (8760 hours)
+                "timeseries_length": [
+                    # Generator timeseries - p_max_pu
+                    ArrayCardinalityValidation(
+                        rule_id="SANITY_TIMESERIES_GENERATOR_P_MAX_PU",
+                        task="FinalValidations.timeseries_length",
+                        table="grid.egon_etrago_generator_timeseries",
+                        array_column="p_max_pu",
+                        expected_length=8760
+                    ),
+                    # Generator timeseries - p_min_pu
+                    ArrayCardinalityValidation(
+                        rule_id="SANITY_TIMESERIES_GENERATOR_P_MIN_PU",
+                        task="FinalValidations.timeseries_length",
+                        table="grid.egon_etrago_generator_timeseries",
+                        array_column="p_min_pu",
+                        expected_length=8760
+                    ),
+                    # Load timeseries - p_set
+                    ArrayCardinalityValidation(
+                        rule_id="SANITY_TIMESERIES_LOAD_P_SET",
+                        task="FinalValidations.timeseries_length",
+                        table="grid.egon_etrago_load_timeseries",
+                        array_column="p_set",
+                        expected_length=8760
+                    ),
+                    # Load timeseries - q_set
+                    ArrayCardinalityValidation(
+                        rule_id="SANITY_TIMESERIES_LOAD_Q_SET",
+                        task="FinalValidations.timeseries_length",
+                        table="grid.egon_etrago_load_timeseries",
+                        array_column="q_set",
+                        expected_length=8760
+                    ),
+                    # Link timeseries - p_set (note: may have NULLs)
+                    ArrayCardinalityValidation(
+                        rule_id="SANITY_TIMESERIES_LINK_P_SET",
+                        task="FinalValidations.timeseries_length",
+                        table="grid.egon_etrago_link_timeseries",
+                        array_column="p_set",
+                        expected_length=8760
+                    ),
+                    # Store timeseries - e_min_pu
+                    ArrayCardinalityValidation(
+                        rule_id="SANITY_TIMESERIES_STORE_E_MIN_PU",
+                        task="FinalValidations.timeseries_length",
+                        table="grid.egon_etrago_store_timeseries",
+                        array_column="e_min_pu",
+                        expected_length=8760
+                    ),
+                    # Store timeseries - e_max_pu
+                    ArrayCardinalityValidation(
+                        rule_id="SANITY_TIMESERIES_STORE_E_MAX_PU",
+                        task="FinalValidations.timeseries_length",
+                        table="grid.egon_etrago_store_timeseries",
+                        array_column="e_max_pu",
+                        expected_length=8760
+                    ),
+                    # Storage timeseries - inflow
+                    ArrayCardinalityValidation(
+                        rule_id="SANITY_TIMESERIES_STORAGE_INFLOW",
+                        task="FinalValidations.timeseries_length",
+                        table="grid.egon_etrago_storage_timeseries",
+                        array_column="inflow",
+                        expected_length=8760
+                    ),
+                ],
+
+                # Electrical load demand validations
+                # Validates annual electrical load sums against expected values
+                "electrical_load": [
+                    # Total AC load aggregation for all scenarios (eGon2035, eGon100RE, etc.)
+                    ElectricalLoadAggregationValidation(
+                        rule_id="SANITY_ELECTRICAL_LOAD_AGGREGATION",
+                        task="FinalValidations.electrical_load",
+                        table="grid.egon_etrago_load",
+                        tolerance=0.05  # 5% tolerance
+                    ),
+                ],
+
+                # Heat demand validations
+                # Validates annual heat demand against peta_heat reference values
+                "heat_demand": [
+                    # Heat demand - eGon2035
+                    HeatDemandValidation(
+                        table="grid.egon_etrago_load",
+                        rule_id="SANITY_HEAT_DEMAND_EGON2035",
+                        scenario="eGon2035",
+                        rtol=0.02  # 2% tolerance
+                    ),
+                ],
             },
             validation_on_failure="continue"  # Continue pipeline even if validations fail
         )
