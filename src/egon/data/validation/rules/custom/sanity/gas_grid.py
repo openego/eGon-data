@@ -146,13 +146,12 @@ class GasBusesIsolated(DataFrameRule):
                 expected=0,
                 message=(
                     f"Found {isolated_count} isolated {self.carrier} buses for {self.scenario} "
-                    f"(sample: {sample_buses})"
+                    f"isolated_buses: {df.to_dict(orient="records")}"
                 ),
                 severity=Severity.ERROR,
                 schema=self.schema,
                 table_name=self.table_name,
-                rule_class=self.__class__.__name__,
-                details={"isolated_buses": df.to_dict(orient="records")}
+                rule_class=self.__class__.__name__
             )
 
 
@@ -453,17 +452,14 @@ class GasOnePortConnections(DataFrameRule):
                 expected=0,
                 message=(
                     f"Found {disconnected_count} disconnected {self.component_carrier} "
-                    f"{self.component_type}s for {self.scenario} "
-                    f"(sample IDs: {sample_components}, buses: {sample_buses})"
+                    f"{self.component_type}s for {self.scenario}. "
+                    f"disconnected_components: {df.to_dict(orient='records')}, "
+                    f"bus_conditions: {self.bus_conditions}"
                 ),
                 severity=Severity.ERROR,
                 schema=self.schema,
                 table_name=self.table_name,
-                rule_class=self.__class__.__name__,
-                details={
-                    "disconnected_components": df.to_dict(orient="records"),
-                    "bus_conditions": self.bus_conditions
-                }
+                rule_class=self.__class__.__name__
             )
 
 
@@ -806,14 +802,11 @@ class GasLinksConnections(DataFrameRule):
                 expected=0,
                 message=(
                     f"Found {disconnected_count} disconnected {self.carrier} links "
-                    f"for {self.scenario} (sample link IDs: {sample_links}, "
-                    f"bus0: {sample_bus0}, bus1: {sample_bus1})"
+                    f"for {self.scenario}. "
+                    f"disconnected_links: {df.to_dict(orient='records')}"
                 ),
                 severity=Severity.ERROR,
                 schema=self.schema,
                 table_name=self.table_name,
-                rule_class=self.__class__.__name__,
-                details={
-                    "disconnected_links": df.to_dict(orient="records")
-                }
+                rule_class=self.__class__.__name__
             )
