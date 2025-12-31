@@ -53,7 +53,7 @@ class HydrogenBusEtrago(Dataset):
     #:
     name: str = "HydrogenBusEtrago"
     #:
-    version: str = "0.0.2"
+    version: str = "0.0.3"
     
     sources = DatasetSources(
         tables={
