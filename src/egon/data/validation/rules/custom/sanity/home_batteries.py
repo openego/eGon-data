@@ -10,6 +10,7 @@ import pandas as pd
 from egon_validation.rules.base import DataFrameRule, RuleResult, Severity
 
 from egon.data import config, db
+from egon.data.datasets.storages.home_batteries import get_cbat_pbat_ratio
 
 
 class HomeBatteriesAggregation(DataFrameRule):
@@ -31,6 +32,27 @@ class HomeBatteriesAggregation(DataFrameRule):
         self.kind = "sanity"
         self.scenario = scenario
 
+    def evaluate(self, engine, ctx) -> RuleResult:
+        """Override evaluate to catch errors from get_cbat_pbat_ratio()."""
+        try:
+            return super().evaluate(engine, ctx)
+        except IndexError as e:
+            # get_cbat_pbat_ratio() failed because no home_battery data exists
+            if "index 0 is out of bounds" in str(e):
+                return RuleResult(
+                    rule_id=self.rule_id,
+                    task=self.task,
+                    table=self.table,
+                    kind=self.kind,
+                    success=False,
+                    message=f"⚠️ NO DATA FOUND: No home_battery carrier found in etrago_storage table for scenario {self.scenario}",
+                    severity=Severity.WARNING,
+                    schema=self.schema,
+                    table_name=self.table_name,
+                    rule_class=self.__class__.__name__
+                )
+            raise
+
     def get_query(self, ctx):
         """
         Query to compare storage and building-level home battery data.
@@ -42,15 +64,8 @@ class HomeBatteriesAggregation(DataFrameRule):
         sources = config.datasets()["home_batteries"]["sources"]
         targets = config.datasets()["home_batteries"]["targets"]
 
-        # Get cbat_pbat_ratio for capacity calculation
-        # Query the ratio directly from the database instead of importing from dataset module
-        cbat_pbat_ratio_query = f"""
-            SELECT max_hours
-            FROM {sources["etrago_storage"]["schema"]}.{sources["etrago_storage"]["table"]}
-            WHERE carrier = 'home_battery'
-            LIMIT 1
-        """
-        cbat_pbat_ratio = int(db.select_dataframe(cbat_pbat_ratio_query).iat[0, 0])
+        # Get cbat_pbat_ratio for capacity calculation (same as original sanity check)
+        cbat_pbat_ratio = get_cbat_pbat_ratio()
 
         return f"""
         WITH storage_data AS (
