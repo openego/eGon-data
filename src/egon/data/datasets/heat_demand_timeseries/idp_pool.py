@@ -392,7 +392,7 @@ def annual_demand_generator(scenario):
     )
 
     house_count_MFH = db.select_dataframe(
-        """
+        f"""
 
         SELECT cell_id as zensus_population_id, COUNT(*) as number FROM
         (
@@ -408,7 +408,7 @@ def annual_demand_generator(scenario):
     )
 
     house_count_SFH = db.select_dataframe(
-        """
+        f"""
 
         SELECT cell_id as zensus_population_id, COUNT(*) as number FROM
         (
