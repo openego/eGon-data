@@ -133,8 +133,8 @@ class GasBusesIsolated(DataFrameRule):
                 rule_class=self.__class__.__name__
             )
         else:
-            # Get sample of isolated buses
-            sample_buses = df.head(10)['bus_id'].tolist()
+            # Show sample of isolated buses (first 5)
+            sample_buses = df.head(5).to_dict(orient='records')
 
             return RuleResult(
                 rule_id=self.rule_id,
@@ -145,8 +145,8 @@ class GasBusesIsolated(DataFrameRule):
                 observed=isolated_count,
                 expected=0,
                 message=(
-                    f"Found {isolated_count} isolated {self.carrier} buses for {self.scenario} "
-                    f"isolated_buses: {df.to_dict(orient='records')}"
+                    f"Found {isolated_count} isolated {self.carrier} buses for {self.scenario}. "
+                    f"Sample (first 5): {sample_buses}"
                 ),
                 severity=Severity.ERROR,
                 schema=self.schema,
@@ -377,12 +377,18 @@ class GasOnePortConnections(DataFrameRule):
         # Build bus subqueries for each condition
         bus_subqueries = []
         for bus_carrier, country_cond in self.bus_conditions:
+            # Build country filter - if empty string, omit country condition entirely
+            if country_cond == "":
+                country_filter = ""
+            else:
+                country_filter = f"AND country {country_cond}"
+
             subquery = f"""
                 (SELECT bus_id
                 FROM grid.egon_etrago_bus
                 WHERE scn_name = '{self.scenario}'
                 AND carrier = '{bus_carrier}'
-                AND country {country_cond})
+                {country_filter})
             """
             bus_subqueries.append(subquery)
 
@@ -438,9 +444,8 @@ class GasOnePortConnections(DataFrameRule):
                 rule_class=self.__class__.__name__
             )
         else:
-            # Get sample of disconnected components
-            sample_components = df.head(10)['component_id'].tolist()
-            sample_buses = df.head(10)['bus'].tolist()
+            # Show sample of disconnected components (first 5)
+            sample_components = df.head(5).to_dict(orient='records')
 
             return RuleResult(
                 rule_id=self.rule_id,
@@ -453,8 +458,7 @@ class GasOnePortConnections(DataFrameRule):
                 message=(
                     f"Found {disconnected_count} disconnected {self.component_carrier} "
                     f"{self.component_type}s for {self.scenario}. "
-                    f"disconnected_components: {df.to_dict(orient='records')}, "
-                    f"bus_conditions: {self.bus_conditions}"
+                    f"Sample (first 5): {sample_components}"
                 ),
                 severity=Severity.ERROR,
                 schema=self.schema,
@@ -787,10 +791,8 @@ class GasLinksConnections(DataFrameRule):
                 rule_class=self.__class__.__name__
             )
         else:
-            # Get sample of disconnected links
-            sample_links = df.head(10)['link_id'].tolist()
-            sample_bus0 = df.head(10)['bus0'].tolist()
-            sample_bus1 = df.head(10)['bus1'].tolist()
+            # Show sample of disconnected links (first 5)
+            sample_links = df.head(5).to_dict(orient='records')
 
             return RuleResult(
                 rule_id=self.rule_id,
@@ -803,7 +805,7 @@ class GasLinksConnections(DataFrameRule):
                 message=(
                     f"Found {disconnected_count} disconnected {self.carrier} links "
                     f"for {self.scenario}. "
-                    f"disconnected_links: {df.to_dict(orient='records')}"
+                    f"Sample (first 5): {sample_links}"
                 ),
                 severity=Severity.ERROR,
                 schema=self.schema,

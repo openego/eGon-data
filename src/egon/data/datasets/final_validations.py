@@ -19,6 +19,7 @@ from egon.data.validation.rules.custom.sanity import (
     GasGeneratorsCapacity,
     ElectricityCapacityComparison,
     HeatDemandValidation,
+    ElectricalLoadSectorBreakdown,
 )
 from egon_validation.rules.formal.array_cardinality_check import ArrayCardinalityValidation
 from egon_validation.rules.custom.numeric_aggregation_check import ElectricalLoadAggregationValidation
@@ -89,7 +90,7 @@ class FinalValidations(Dataset):
     #:
     name: str = "FinalValidations"
     #:
-    version: str = "0.0.1"
+    version: str = "0.0.1.dev"
 
     def __init__(self, dependencies):
         super().__init__(
@@ -155,27 +156,30 @@ class FinalValidations(Dataset):
                         scenario="eGon2035",
                         carrier="H2_saltcavern"
                     ),
-                    # Check for isolated CH4 buses - eGon100RE
-                    GasBusesIsolated(
-                        table="grid.egon_etrago_bus",
-                        rule_id="SANITY_GAS_BUSES_ISOLATED_CH4_EGON100RE",
-                        scenario="eGon100RE",
-                        carrier="CH4"
-                    ),
-                    # Check for isolated H2_grid buses - eGon100RE
-                    GasBusesIsolated(
-                        table="grid.egon_etrago_bus",
-                        rule_id="SANITY_GAS_BUSES_ISOLATED_H2_GRID_EGON100RE",
-                        scenario="eGon100RE",
-                        carrier="H2_grid"
-                    ),
-                    # Check for isolated H2_saltcavern buses - eGon100RE
-                    GasBusesIsolated(
-                        table="grid.egon_etrago_bus",
-                        rule_id="SANITY_GAS_BUSES_ISOLATED_H2_SALTCAVERN_EGON100RE",
-                        scenario="eGon100RE",
-                        carrier="H2_saltcavern"
-                    ),
+                    # NOTE: eGon100RE gas bus isolated checks are commented out
+                    # because they are also commented out in the original sanity_checks.py
+                    # (lines 1435-1439). Uncomment when eGon100RE gas bus data is ready.
+                    # # Check for isolated CH4 buses - eGon100RE
+                    # GasBusesIsolated(
+                    #     table="grid.egon_etrago_bus",
+                    #     rule_id="SANITY_GAS_BUSES_ISOLATED_CH4_EGON100RE",
+                    #     scenario="eGon100RE",
+                    #     carrier="CH4"
+                    # ),
+                    # # Check for isolated H2_grid buses - eGon100RE
+                    # GasBusesIsolated(
+                    #     table="grid.egon_etrago_bus",
+                    #     rule_id="SANITY_GAS_BUSES_ISOLATED_H2_GRID_EGON100RE",
+                    #     scenario="eGon100RE",
+                    #     carrier="H2_grid"
+                    # ),
+                    # # Check for isolated H2_saltcavern buses - eGon100RE
+                    # GasBusesIsolated(
+                    #     table="grid.egon_etrago_bus",
+                    #     rule_id="SANITY_GAS_BUSES_ISOLATED_H2_SALTCAVERN_EGON100RE",
+                    #     scenario="eGon100RE",
+                    #     carrier="H2_saltcavern"
+                    # ),
                     # Check CH4 bus count - eGon2035
                     GasBusesCount(
                         table="grid.egon_etrago_bus",
@@ -192,22 +196,24 @@ class FinalValidations(Dataset):
                         carrier="H2_grid",
                         rtol=0.10
                     ),
-                    # Check CH4 bus count - eGon100RE
-                    GasBusesCount(
-                        table="grid.egon_etrago_bus",
-                        rule_id="SANITY_GAS_BUSES_COUNT_CH4_EGON100RE",
-                        scenario="eGon100RE",
-                        carrier="CH4",
-                        rtol=0.10
-                    ),
-                    # Check H2_grid bus count - eGon100RE
-                    GasBusesCount(
-                        table="grid.egon_etrago_bus",
-                        rule_id="SANITY_GAS_BUSES_COUNT_H2_GRID_EGON100RE",
-                        scenario="eGon100RE",
-                        carrier="H2_grid",
-                        rtol=0.10
-                    ),
+                    # NOTE: eGon100RE gas bus count checks are commented out
+                    # because sanity_check_gas_buses() is only called for eGon2035 (line 1943)
+                    # # Check CH4 bus count - eGon100RE
+                    # GasBusesCount(
+                    #     table="grid.egon_etrago_bus",
+                    #     rule_id="SANITY_GAS_BUSES_COUNT_CH4_EGON100RE",
+                    #     scenario="eGon100RE",
+                    #     carrier="CH4",
+                    #     rtol=0.10
+                    # ),
+                    # # Check H2_grid bus count - eGon100RE
+                    # GasBusesCount(
+                    #     table="grid.egon_etrago_bus",
+                    #     rule_id="SANITY_GAS_BUSES_COUNT_H2_GRID_EGON100RE",
+                    #     scenario="eGon100RE",
+                    #     carrier="H2_grid",
+                    #     rtol=0.10
+                    # ),
                     # Check CH4 grid capacity - eGon2035
                     CH4GridCapacity(
                         table="grid.egon_etrago_link",
@@ -257,34 +263,34 @@ class FinalValidations(Dataset):
                     ),
 
                     # GENERATORS - eGon2035
-                    # CH4 generators must connect to CH4 buses
+                    # CH4 generators must connect to CH4 buses (any country)
                     GasOnePortConnections(
                         table="grid.egon_etrago_generator",
                         rule_id="SANITY_GAS_ONE_PORT_GENERATOR_CH4_EGON2035",
                         scenario="eGon2035",
                         component_type="generator",
                         component_carrier="CH4",
-                        bus_conditions=[("CH4", "IS NOT NULL")]  # Any CH4 bus
+                        bus_conditions=[("CH4", "")]  # Any CH4 bus, no country filter
                     ),
 
                     # STORES - eGon2035
-                    # CH4 stores must connect to CH4 buses
+                    # CH4 stores must connect to CH4 buses (any country)
                     GasOnePortConnections(
                         table="grid.egon_etrago_store",
                         rule_id="SANITY_GAS_ONE_PORT_STORE_CH4_EGON2035",
                         scenario="eGon2035",
                         component_type="store",
                         component_carrier="CH4",
-                        bus_conditions=[("CH4", "IS NOT NULL")]
+                        bus_conditions=[("CH4", "")]  # Any CH4 bus, no country filter
                     ),
-                    # H2_underground stores must connect to H2_saltcavern buses
+                    # H2_underground stores must connect to H2_saltcavern buses (any country)
                     GasOnePortConnections(
                         table="grid.egon_etrago_store",
                         rule_id="SANITY_GAS_ONE_PORT_STORE_H2_UNDERGROUND_EGON2035",
                         scenario="eGon2035",
                         component_type="store",
                         component_carrier="H2_underground",
-                        bus_conditions=[("H2_saltcavern", "IS NOT NULL")]
+                        bus_conditions=[("H2_saltcavern", "")]  # Any H2_saltcavern bus, no country filter
                     ),
                     # H2_overground stores must connect to H2_saltcavern or H2_grid in DE
                     GasOnePortConnections(
@@ -786,16 +792,24 @@ class FinalValidations(Dataset):
 
                 # Timeseries length validations
                 # These check that all timeseries arrays have the expected length (8760 hours)
+                # NOTE: All array columns are validated to match original sanity_checks.py
+                # which dynamically discovers all array columns (lines 2465-2494)
                 "timeseries_length": [
-                    # Generator timeseries - p_max_pu
+                    # Generator timeseries - all array columns
                     ArrayCardinalityValidation(
-                        rule_id="SANITY_TIMESERIES_GENERATOR_P_MAX_PU",
+                        rule_id="SANITY_TIMESERIES_GENERATOR_P_SET",
                         task="FinalValidations.timeseries_length",
                         table="grid.egon_etrago_generator_timeseries",
-                        array_column="p_max_pu",
+                        array_column="p_set",
                         expected_length=8760
                     ),
-                    # Generator timeseries - p_min_pu
+                    ArrayCardinalityValidation(
+                        rule_id="SANITY_TIMESERIES_GENERATOR_Q_SET",
+                        task="FinalValidations.timeseries_length",
+                        table="grid.egon_etrago_generator_timeseries",
+                        array_column="q_set",
+                        expected_length=8760
+                    ),
                     ArrayCardinalityValidation(
                         rule_id="SANITY_TIMESERIES_GENERATOR_P_MIN_PU",
                         task="FinalValidations.timeseries_length",
@@ -803,7 +817,22 @@ class FinalValidations(Dataset):
                         array_column="p_min_pu",
                         expected_length=8760
                     ),
-                    # Load timeseries - p_set
+                    ArrayCardinalityValidation(
+                        rule_id="SANITY_TIMESERIES_GENERATOR_P_MAX_PU",
+                        task="FinalValidations.timeseries_length",
+                        table="grid.egon_etrago_generator_timeseries",
+                        array_column="p_max_pu",
+                        expected_length=8760
+                    ),
+                    ArrayCardinalityValidation(
+                        rule_id="SANITY_TIMESERIES_GENERATOR_MARGINAL_COST",
+                        task="FinalValidations.timeseries_length",
+                        table="grid.egon_etrago_generator_timeseries",
+                        array_column="marginal_cost",
+                        expected_length=8760
+                    ),
+
+                    # Load timeseries - all array columns
                     ArrayCardinalityValidation(
                         rule_id="SANITY_TIMESERIES_LOAD_P_SET",
                         task="FinalValidations.timeseries_length",
@@ -811,7 +840,6 @@ class FinalValidations(Dataset):
                         array_column="p_set",
                         expected_length=8760
                     ),
-                    # Load timeseries - q_set
                     ArrayCardinalityValidation(
                         rule_id="SANITY_TIMESERIES_LOAD_Q_SET",
                         task="FinalValidations.timeseries_length",
@@ -819,7 +847,8 @@ class FinalValidations(Dataset):
                         array_column="q_set",
                         expected_length=8760
                     ),
-                    # Link timeseries - p_set (note: may have NULLs)
+
+                    # Link timeseries - all array columns
                     ArrayCardinalityValidation(
                         rule_id="SANITY_TIMESERIES_LINK_P_SET",
                         task="FinalValidations.timeseries_length",
@@ -827,7 +856,101 @@ class FinalValidations(Dataset):
                         array_column="p_set",
                         expected_length=8760
                     ),
-                    # Store timeseries - e_min_pu
+                    ArrayCardinalityValidation(
+                        rule_id="SANITY_TIMESERIES_LINK_P_MIN_PU",
+                        task="FinalValidations.timeseries_length",
+                        table="grid.egon_etrago_link_timeseries",
+                        array_column="p_min_pu",
+                        expected_length=8760
+                    ),
+                    ArrayCardinalityValidation(
+                        rule_id="SANITY_TIMESERIES_LINK_P_MAX_PU",
+                        task="FinalValidations.timeseries_length",
+                        table="grid.egon_etrago_link_timeseries",
+                        array_column="p_max_pu",
+                        expected_length=8760
+                    ),
+                    ArrayCardinalityValidation(
+                        rule_id="SANITY_TIMESERIES_LINK_EFFICIENCY",
+                        task="FinalValidations.timeseries_length",
+                        table="grid.egon_etrago_link_timeseries",
+                        array_column="efficiency",
+                        expected_length=8760
+                    ),
+                    ArrayCardinalityValidation(
+                        rule_id="SANITY_TIMESERIES_LINK_MARGINAL_COST",
+                        task="FinalValidations.timeseries_length",
+                        table="grid.egon_etrago_link_timeseries",
+                        array_column="marginal_cost",
+                        expected_length=8760
+                    ),
+
+                    # Storage timeseries - all array columns
+                    ArrayCardinalityValidation(
+                        rule_id="SANITY_TIMESERIES_STORAGE_P_SET",
+                        task="FinalValidations.timeseries_length",
+                        table="grid.egon_etrago_storage_timeseries",
+                        array_column="p_set",
+                        expected_length=8760
+                    ),
+                    ArrayCardinalityValidation(
+                        rule_id="SANITY_TIMESERIES_STORAGE_Q_SET",
+                        task="FinalValidations.timeseries_length",
+                        table="grid.egon_etrago_storage_timeseries",
+                        array_column="q_set",
+                        expected_length=8760
+                    ),
+                    ArrayCardinalityValidation(
+                        rule_id="SANITY_TIMESERIES_STORAGE_P_MIN_PU",
+                        task="FinalValidations.timeseries_length",
+                        table="grid.egon_etrago_storage_timeseries",
+                        array_column="p_min_pu",
+                        expected_length=8760
+                    ),
+                    ArrayCardinalityValidation(
+                        rule_id="SANITY_TIMESERIES_STORAGE_P_MAX_PU",
+                        task="FinalValidations.timeseries_length",
+                        table="grid.egon_etrago_storage_timeseries",
+                        array_column="p_max_pu",
+                        expected_length=8760
+                    ),
+                    ArrayCardinalityValidation(
+                        rule_id="SANITY_TIMESERIES_STORAGE_STATE_OF_CHARGE_SET",
+                        task="FinalValidations.timeseries_length",
+                        table="grid.egon_etrago_storage_timeseries",
+                        array_column="state_of_charge_set",
+                        expected_length=8760
+                    ),
+                    ArrayCardinalityValidation(
+                        rule_id="SANITY_TIMESERIES_STORAGE_INFLOW",
+                        task="FinalValidations.timeseries_length",
+                        table="grid.egon_etrago_storage_timeseries",
+                        array_column="inflow",
+                        expected_length=8760
+                    ),
+                    ArrayCardinalityValidation(
+                        rule_id="SANITY_TIMESERIES_STORAGE_MARGINAL_COST",
+                        task="FinalValidations.timeseries_length",
+                        table="grid.egon_etrago_storage_timeseries",
+                        array_column="marginal_cost",
+                        expected_length=8760
+                    ),
+
+                    # Store timeseries - all array columns
+                    ArrayCardinalityValidation(
+                        rule_id="SANITY_TIMESERIES_STORE_P_SET",
+                        task="FinalValidations.timeseries_length",
+                        table="grid.egon_etrago_store_timeseries",
+                        array_column="p_set",
+                        expected_length=8760
+                    ),
+                    ArrayCardinalityValidation(
+                        rule_id="SANITY_TIMESERIES_STORE_Q_SET",
+                        task="FinalValidations.timeseries_length",
+                        table="grid.egon_etrago_store_timeseries",
+                        array_column="q_set",
+                        expected_length=8760
+                    ),
                     ArrayCardinalityValidation(
                         rule_id="SANITY_TIMESERIES_STORE_E_MIN_PU",
                         task="FinalValidations.timeseries_length",
@@ -835,7 +958,6 @@ class FinalValidations(Dataset):
                         array_column="e_min_pu",
                         expected_length=8760
                     ),
-                    # Store timeseries - e_max_pu
                     ArrayCardinalityValidation(
                         rule_id="SANITY_TIMESERIES_STORE_E_MAX_PU",
                         task="FinalValidations.timeseries_length",
@@ -843,12 +965,11 @@ class FinalValidations(Dataset):
                         array_column="e_max_pu",
                         expected_length=8760
                     ),
-                    # Storage timeseries - inflow
                     ArrayCardinalityValidation(
-                        rule_id="SANITY_TIMESERIES_STORAGE_INFLOW",
+                        rule_id="SANITY_TIMESERIES_STORE_MARGINAL_COST",
                         task="FinalValidations.timeseries_length",
-                        table="grid.egon_etrago_storage_timeseries",
-                        array_column="inflow",
+                        table="grid.egon_etrago_store_timeseries",
+                        array_column="marginal_cost",
                         expected_length=8760
                     ),
                 ],
@@ -862,6 +983,16 @@ class FinalValidations(Dataset):
                         task="FinalValidations.electrical_load",
                         table="grid.egon_etrago_load",
                         tolerance=0.05  # 5% tolerance
+                    ),
+                    # Sector breakdown validation for eGon100RE
+                    # Validates residential (90.4 TWh), commercial (146.7 TWh),
+                    # industrial (382.9 TWh), and total (620.0 TWh) loads
+                    ElectricalLoadSectorBreakdown(
+                        rule_id="SANITY_ELECTRICAL_LOAD_SECTOR_BREAKDOWN_EGON100RE",
+                        task="FinalValidations.electrical_load",
+                        table="grid.egon_etrago_load",
+                        scenario="eGon100RE",
+                        rtol=0.01  # 1% tolerance as in original
                     ),
                 ],
 

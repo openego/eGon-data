@@ -344,9 +344,14 @@ The following sanity checks have been migrated to validation rules:
 
 ### ✅ Timeseries Length
 - `etrago_timeseries_length()` → `ArrayCardinalityValidation` (reused from egon-validation formal rules!)
-  - Validates 8 array columns across 5 component types (generator, load, link, store, storage)
-  - Checks: p_max_pu, p_min_pu, p_set, q_set, e_min_pu, e_max_pu, inflow
+  - Validates ALL 24 array columns across 5 component types (generator, load, link, store, storage)
+  - **Generator timeseries (5):** p_set, q_set, p_min_pu, p_max_pu, marginal_cost
+  - **Load timeseries (2):** p_set, q_set
+  - **Link timeseries (5):** p_set, p_min_pu, p_max_pu, efficiency, marginal_cost
+  - **Storage timeseries (7):** p_set, q_set, p_min_pu, p_max_pu, state_of_charge_set, inflow, marginal_cost
+  - **Store timeseries (5):** p_set, q_set, e_min_pu, e_max_pu, marginal_cost
   - Leverages existing formal validation rule from egon-validation library
+  - **Updated:** Now matches original dynamic column discovery behavior (sanity_checks.py:2465-2494)
 
 ### ✅ eGon100RE Capacity Validations
 - `generators_links_storages_stores_100RE()` → `ElectricityCapacityComparison` (reused for eGon100RE!)
@@ -356,11 +361,18 @@ The following sanity checks have been migrated to validation rules:
   - **Note:** Stores validation deferred (original function only prints, no validation logic)
 
 ### ✅ Electrical Load Demand
-- `electrical_load_100RE()` → `ElectricalLoadAggregationValidation` (reused from egon-validation!)
-  - Validates annual electrical load sum (TWh) for all scenarios (eGon2035, eGon100RE, etc.)
-  - Also checks max/min load (GW) - more comprehensive than original
-  - Leverages existing custom validation rule from egon-validation library
-  - **Note:** Original function validated by sector (residential, commercial, industrial) but existing rule validates total only
+- `electrical_load_100RE()` → `ElectricalLoadAggregationValidation` + `ElectricalLoadSectorBreakdown`
+  - **Total load validation:** `ElectricalLoadAggregationValidation` validates annual load sum (TWh) for all scenarios
+    - Also checks max/min load (GW) - more comprehensive than original
+    - Leverages existing custom validation rule from egon-validation library
+  - **Sector breakdown validation:** `ElectricalLoadSectorBreakdown` validates eGon100RE by sector (new class!)
+    - Residential: 90.4 TWh expected (from household_curves table)
+    - Commercial: 146.7 TWh expected (from cts_curves table)
+    - Industrial: 382.9 TWh expected (from osm_curves + sites_curves tables)
+    - Total: 620.0 TWh expected (from etrago AC loads)
+    - Validates each sector independently with 1% tolerance
+    - Queries source tables directly matching original implementation
+    - **Updated:** Now provides full sector granularity as in original (sanity_checks.py:2676-2784)
 
 ### ✅ Heat Demand
 - Heat demand validation (from `etrago_eGon2035_heat()`) → `HeatDemandValidation` (new class!)
@@ -443,6 +455,7 @@ egon-data/src/egon/data/
                 ├── gas_grid.py                 # ✅ Migrated (5 rules: buses, one-port, CH4 grid, links)
                 ├── gas_loads_generators.py     # ✅ Migrated (2 rules: loads, generators)
                 ├── electricity_capacity.py     # ✅ Migrated (reusable class for capacity comparison)
+                ├── electrical_load_sectors.py  # ✅ Migrated (1 rule: sector breakdown)
                 └── heat_demand.py              # ✅ Migrated (1 rule)
 
 egon-validation/egon_validation/rules/
@@ -459,8 +472,8 @@ egon-validation/egon_validation/rules/
 **Total sanity checks in original `sanity_checks.py`**: 21 functions
 
 **Successfully migrated**: 16 functions (76%)
-- Converted to **48 individual validation rules** across multiple categories
-- Organized into **8 custom validation modules**
+- Converted to **65 individual validation rules** across multiple categories
+- Organized into **9 custom validation modules**
 - Reused **2 existing validation classes** from egon-validation
 
 **Deferred (require dataset-inline implementation)**: 5 functions (24%)
@@ -473,10 +486,14 @@ egon-validation/egon_validation/rules/
 - eGon100RE capacity: 23 rules (13 generators, 9 links, 1 storage)
 - Gas infrastructure: 11 rules
 - Demand validation: 4 rules
-- Timeseries: 8 rules
+- Timeseries: 24 rules (all array columns across 5 component types)
 - Home batteries: 1 rule
-- Electrical load: 1 rule (multi-scenario)
+- Electrical load: 2 rules (total aggregation + sector breakdown)
 - Heat demand: 1 rule
+
+**Recent Updates (2025-12-30)**:
+- ✅ **Timeseries validation coverage expanded**: 8 → 24 array columns (now matches original dynamic discovery)
+- ✅ **Electrical load sector breakdown implemented**: Added granular validation by sector (residential, commercial, industrial)
 
 ---
 
@@ -538,11 +555,13 @@ open validation_runs/{run_id}/final/report.html
 
 The sanity checks migration is **76% complete** with all core validations successfully migrated to the new framework:
 
-1. **8 custom validation modules** created in `egon/data/validation/rules/custom/sanity/`
-2. **48 individual validation rules** implemented across all major categories
+1. **9 custom validation modules** created in `egon/data/validation/rules/custom/sanity/`
+2. **65 individual validation rules** implemented across all major categories
 3. **Reused 2 existing validation classes** from egon-validation library (code reuse > new code)
 4. **Fixed 4 RuleResult 'details' parameter errors** by moving violation data to message field
 5. **Integrated validations** into `FinalValidations` dataset for cross-cutting checks
+6. **Full timeseries coverage** - All 24 array columns validated (matches original dynamic discovery)
+7. **Sector breakdown validation** - Electrical load validated by sector (residential, commercial, industrial)
 
 ### 🔄 Remaining Work
 
