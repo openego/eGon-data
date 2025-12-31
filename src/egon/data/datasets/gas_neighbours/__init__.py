@@ -93,7 +93,7 @@ class GasNeighbours(Dataset):
     #:
     name: str = "GasNeighbours"
     #:
-    version: str = "0.0.6"
+    version: str = "0.0.8"
 
     def __init__(self, dependencies):
         super().__init__(

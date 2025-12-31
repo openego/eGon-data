@@ -9,6 +9,7 @@ CH4) abroad for eGon2035 and eGon100RE are defined.
 from geoalchemy2.types import Geometry
 
 from egon.data import config, db
+from egon.data.datasets import load_sources_and_targets
 
 
 def insert_gas_grid_capacities(Neighbouring_pipe_capacities_list, scn_name):
@@ -31,8 +32,7 @@ def insert_gas_grid_capacities(Neighbouring_pipe_capacities_list, scn_name):
         Name of the scenario
 
     """
-    sources = config.datasets()["gas_neighbours"]["sources"]
-    targets = config.datasets()["gas_neighbours"]["targets"]
+    sources, targets = load_sources_and_targets("GasNeighbours")
 
     # Delete existing data
     if scn_name == "eGon2035":
@@ -42,16 +42,16 @@ def insert_gas_grid_capacities(Neighbouring_pipe_capacities_list, scn_name):
         db.execute_sql(
             f"""
             DELETE FROM 
-            {sources['links']['schema']}.{sources['links']['table']}
+            {targets.tables['links']}
             WHERE "bus0" IN (
                 SELECT bus_id FROM 
-                {sources['buses']['schema']}.{sources['buses']['table']}
+                {sources.tables['buses']}
                     WHERE country != 'DE'
                     AND carrier = '{carrier_bus}'
                     AND scn_name = '{scn_name}')
             OR "bus1" IN (
                 SELECT bus_id FROM 
-                {sources['buses']['schema']}.{sources['buses']['table']}
+                {sources.tables['buses']}
                     WHERE country != 'DE'
                     AND carrier = '{carrier_bus}' 
                     AND scn_name = '{scn_name}')
@@ -71,27 +71,27 @@ def insert_gas_grid_capacities(Neighbouring_pipe_capacities_list, scn_name):
             db.execute_sql(
                 f"""
                 DELETE FROM
-                {sources['links']['schema']}.{sources['links']['table']}
+                {targets.tables['links']}
                 WHERE ("bus0" IN (
                         SELECT bus_id FROM 
-                        {sources['buses']['schema']}.{sources['buses']['table']}
+                        {sources.tables['buses']}
                         WHERE country != 'DE'
                         AND carrier = '{carriers[c]["bus_abroad"]}'
                         AND scn_name = '{scn_name}')
                     AND "bus1" IN (SELECT bus_id FROM 
-                        {sources['buses']['schema']}.{sources['buses']['table']}
+                        {sources.tables['buses']}
                         WHERE country = 'DE'
                         AND carrier = '{carriers[c]["bus_inDE"]}' 
                         AND scn_name = '{scn_name}'))
                 OR ("bus0" IN (
                         SELECT bus_id FROM 
-                        {sources['buses']['schema']}.{sources['buses']['table']}
+                        {sources.tables['buses']}
                         WHERE country = 'DE'
                         AND carrier = '{carriers[c]["bus_inDE"]}'
                         AND scn_name = '{scn_name}')
                 AND "bus1" IN (
                         SELECT bus_id FROM 
-                        {sources['buses']['schema']}.{sources['buses']['table']}
+                        {sources.tables['buses']}
                         WHERE country != 'DE'
                         AND carrier = '{carriers[c]["bus_abroad"]}' 
                         AND scn_name = '{scn_name}'))
@@ -117,7 +117,7 @@ def insert_gas_grid_capacities(Neighbouring_pipe_capacities_list, scn_name):
         f"""
     select UpdateGeometrySRID('grid', 'egon_etrago_gas_link', 'topo', 4326) ;
 
-    INSERT INTO {targets['links']['schema']}.{targets['links']['table']} (
+    INSERT INTO {targets.tables['links']} (
         scn_name, link_id, carrier,
         bus0, bus1, p_nom, p_min_pu, length, geom, topo)
     

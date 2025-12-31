@@ -22,6 +22,7 @@ from egon.data.datasets.gas_neighbours.gas_abroad import (
     insert_gas_grid_capacities,
 )
 from egon.data.datasets.pypsaeur import read_network
+from egon.data.datasets import load_sources_and_targets
 
 countries = [
     "AT",
@@ -132,32 +133,32 @@ def define_DE_crossbording_pipes_geom_eGon100RE(scn_name="eGon100RE"):
 
         return country
 
-    sources = config.datasets()["gas_neighbours"]["sources"]
+    sources, _ = load_sources_and_targets("GasNeighbours")
 
     gas_pipelines_list_CH4 = db.select_geodataframe(
         f"""
         SELECT * FROM grid.egon_etrago_link
         WHERE ("bus0" IN (
                         SELECT bus_id FROM 
-                        {sources['buses']['schema']}.{sources['buses']['table']}
+                        {sources.tables['buses']}
                         WHERE country != 'DE'
                         AND country != 'RU'
                         AND carrier = 'CH4'
                         AND scn_name = 'eGon100RE')
                     AND "bus1" IN (SELECT bus_id FROM 
-                        {sources['buses']['schema']}.{sources['buses']['table']}
+                        {sources.tables['buses']}
                         WHERE country = 'DE'
                         AND carrier = 'CH4' 
                         AND scn_name = 'eGon100RE'))
                 OR ("bus0" IN (
                         SELECT bus_id FROM 
-                        {sources['buses']['schema']}.{sources['buses']['table']}
+                        {sources.tables['buses']}
                         WHERE country = 'DE'
                         AND carrier = 'CH4'
                         AND scn_name = 'eGon100RE')
                 AND "bus1" IN (
                         SELECT bus_id FROM 
-                        {sources['buses']['schema']}.{sources['buses']['table']}
+                        {sources.tables['buses']}
                         WHERE country != 'DE'
                         AND country != 'RU'
                         AND carrier = 'CH4' 
@@ -167,17 +168,15 @@ def define_DE_crossbording_pipes_geom_eGon100RE(scn_name="eGon100RE"):
         """,
         epsg=4326,
     )
-
     gas_nodes_list_100 = db.select_geodataframe(
         f"""
-        SELECT * FROM {sources['buses']['schema']}.{sources['buses']['table']}
+        SELECT * FROM {sources.tables['buses']}
         WHERE scn_name = 'eGon100RE'
         AND carrier = 'CH4'
         AND country <> 'RU'
         """,
         epsg=4326,
     )
-
     foreign_bus = gas_nodes_list_100[
         gas_nodes_list_100.country != "DE"
     ].set_index("bus_id")
