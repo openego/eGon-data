@@ -391,7 +391,7 @@ class GasAreas(Dataset):
     #:
     name: str = "GasAreas"
     #:
-    version: str = "0.0.3"
+    version: str = "0.0.4"
 
     tasks = (create_gas_voronoi_table,)
     extra_dependencies = ()
