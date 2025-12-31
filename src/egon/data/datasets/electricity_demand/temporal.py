@@ -62,7 +62,7 @@ def calc_load_curve(share_wz, scn, annual_demand=1):
     # Select normalizes load curves per cts branch
     df_select = db.select_dataframe(
         f"""SELECT wz, load_curve
-        FROM {sources['demandregio_timeseries']['schema']}.{sources['demandregio_timeseries']['table']}
+        FROM {sources.tables["demandregio_timeseries"]["schema"]}.{sources.tables["demandregio_timeseries"]["table"]}
         WHERE year = {year}""",
         index_col="wz",
     ).transpose()
@@ -134,14 +134,13 @@ def calc_load_curves_cts(scenario):
     # Select demands per cts branch and nuts3-region
     demands_nuts = db.select_dataframe(
         f"""SELECT nuts3, wz, demand
-            FROM {sources['demandregio_cts']['schema']}.
-            {sources['demandregio_cts']['table']}
+            FROM {sources.tables["demandregio_cts"]["schema"]}.{sources.tables["demandregio_cts"]["table"]}
             WHERE scenario = '{scenario}'
             AND demand > 0
             AND wz IN (
                 SELECT wz FROM
-                {sources['demandregio_wz']['schema']}.
-                {sources['demandregio_wz']['table']}
+                {sources.tables["demandregio_wz"]["schema"]}.
+                {sources.tables["demandregio_wz"]["table"]}
                 WHERE sector = 'CTS')
             """
     ).set_index(["nuts3", "wz"])
@@ -151,13 +150,12 @@ def calc_load_curves_cts(scenario):
         f"""SELECT a.zensus_population_id, a.demand,
             b.vg250_nuts3 as nuts3,
             c.bus_id
-            FROM {sources['zensus_electricity']['schema']}.
-            {sources['zensus_electricity']['table']} a
+            FROM {sources.tables["zensus_electricity"]["schema"]}.{sources.tables["zensus_electricity"]["table"]} a
             INNER JOIN
-            {sources['map_vg250']['schema']}.{sources['map_vg250']['table']} b
+            {sources.tables["map_vg250"]["schema"]}.{sources.tables["map_vg250"]["table"]} b
             ON (a.zensus_population_id = b.zensus_population_id)
             INNER JOIN
-            {sources['map_grid_districts']['schema']}.{sources['map_grid_districts']['table']} c
+            {sources.tables["map_grid_districts"]["schema"]}.{sources.tables["map_grid_districts"]["table"]} c
             ON (a.zensus_population_id = c.zensus_population_id)
             WHERE a.scenario = '{scenario}'
             AND a.sector = 'service'
@@ -216,7 +214,7 @@ def insert_cts_load():
         db.execute_sql(
             f"""
             DELETE FROM
-            {targets['cts_demand_curves']['schema']}.{targets['cts_demand_curves']['table']}
+            {targets.tables["cts_demand_curves"]["schema"]}.{targets.tables["cts_demand_curves"]["table"]}
             WHERE scn_name = '{scenario}'
             """
         )
@@ -235,8 +233,8 @@ def insert_cts_load():
 
         # Insert into database
         load_ts_df.to_sql(
-            targets["cts_demand_curves"]["table"],
-            schema=targets["cts_demand_curves"]["schema"],
+            targets.tables["cts_demand_curves"]["table"],
+            schema=targets.tables["cts_demand_curves"]["schema"],
             con=db.engine(),
             if_exists="append",
         )
