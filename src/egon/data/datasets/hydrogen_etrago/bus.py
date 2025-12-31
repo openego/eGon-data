@@ -176,16 +176,15 @@ def insert_H2_buses_from_saltcavern(gdf, carrier, sources, target, scn_name):
     el_buses = db.select_dataframe(
         f"""
         SELECT bus_id
-        FROM  {sources.tables['saltcavern_data']['schema']}.
-        {sources.tables['saltcavern_data']['table']}"""
+        FROM  {sources.tables['saltcavern_data']['schema']}.{sources.tables['saltcavern_data']['table']}"""
     )["bus_id"]
 
     # locations of electrical buses (filtering not necessarily required)
     locations = db.select_geodataframe(
         f"""
         SELECT bus_id, geom
-        FROM  {sources.tables['buses']['schema']}.
-        {sources.tables['buses']['table']} WHERE scn_name = '{scn_name}'
+        FROM  {sources.tables['buses']['schema']}.{sources.tables['buses']['table']} 
+        WHERE scn_name = '{scn_name}'
         AND country = 'DE'""",
         index_col="bus_id",
     ).to_crs(epsg=4326)
