@@ -7,6 +7,7 @@ import geopandas
 import pandas as pd
 
 from egon.data import config, db
+from egon.data.datasets import load_sources_and_targets
 from egon.data.datasets.chp.small_chp import assign_use_case
 from egon.data.datasets.mastr import WORKING_DIR_MASTR_OLD
 from egon.data.datasets.power_plants import (
@@ -347,7 +348,7 @@ def insert_large_chp(sources, target, EgonChp):
     # Assign voltage level to MaStR
     MaStR_konv["voltage_level"] = assign_voltage_level(
         MaStR_konv.rename({"el_capacity": "Nettonennleistung"}, axis=1),
-        config.datasets()["chp_location"],
+        sources,
         WORKING_DIR_MASTR_OLD,
     )
 
@@ -399,9 +400,10 @@ def insert_large_chp(sources, target, EgonChp):
     MaStR_konv["geometry"] = geopandas.points_from_xy(
         MaStR_konv["Laengengrad"], MaStR_konv["Breitengrad"]
     )
+    
     MaStR_konv["voltage_level"] = assign_voltage_level(
         MaStR_konv.rename({"el_capacity": "Nettonennleistung"}, axis=1),
-        config.datasets()["chp_location"],
+        sources,
         WORKING_DIR_MASTR_OLD,
     )
 
@@ -535,7 +537,7 @@ def insert_large_chp(sources, target, EgonChp):
 
     # Assign bus_id
     insert_chp["bus_id"] = assign_bus_id(
-        insert_chp, config.datasets()["chp_location"]
+        insert_chp, sources
     ).bus_id
 
     # Assign gas bus_id
@@ -546,13 +548,13 @@ def insert_large_chp(sources, target, EgonChp):
     insert_chp = assign_use_case(insert_chp, sources, scenario="eGon2035")
 
     # Delete existing CHP in the target table
-    target_schema, target_table = target.split('.')
+    target_schema, target_table = target.split('.')[-2:]
 
     db.execute_sql(
         f""" DELETE FROM {target_schema}.{target_table}
         WHERE carrier IN ('gas', 'other_non_renewable', 'oil')
         AND scenario='eGon2035';"""
-    ) 
+    )
 
     # Insert into target table
     session = sessionmaker(bind=db.engine())()
