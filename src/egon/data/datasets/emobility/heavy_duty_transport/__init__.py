@@ -19,8 +19,8 @@ import csv
 from loguru import logger
 import requests
 
-from egon.data import db
-from egon.data.datasets import Dataset, DatasetSources, DatasetTargets
+from egon.data import config, db
+from egon.data.datasets import Dataset
 from egon.data.datasets.emobility.heavy_duty_transport.create_h2_buses import (
     insert_hgv_h2_demand,
 )
@@ -32,7 +32,10 @@ from egon.data.datasets.emobility.heavy_duty_transport.h2_demand_distribution im
 )
 
 WORKING_DIR = Path(".", "heavy_duty_transport").resolve()
-
+DATASET_CFG = config.datasets()["mobility_hgv"]
+TESTMODE_OFF = (
+    config.settings()["egon-data"]["--dataset-boundary"] == "Everything"
+)
 
 
 def create_tables():
@@ -53,17 +56,18 @@ def create_tables():
 def download_hgv_data():
     """
     Downloads BAST data.
+
+    The data is downloaded to file specified in *datasets.yml* in section
+    *mobility_hgv/original_data/sources/BAST/file*.
+
     """
+    sources = DATASET_CFG["original_data"]["sources"]
+
     # Create the folder, if it does not exist
     WORKING_DIR.mkdir(parents=True, exist_ok=True)
 
-    url = HeavyDutyTransport.sources.urls["BAST"]
-    
-    # Extract just the filename if the target string contains a folder
-    filename = Path(HeavyDutyTransport.targets.files["BAST_download"]).name
-    
-    # Use the WORKING_DIR constant to ensure it goes exactly where data_io.py expects it
-    file = WORKING_DIR / filename 
+    url = sources["BAST"]["url"]
+    file = WORKING_DIR / sources["BAST"]["file"]
 
     response = requests.get(url)
 
@@ -72,7 +76,7 @@ def download_hgv_data():
         for line in response.iter_lines():
             writer.writerow(line.decode("ISO-8859-1").split(";"))
 
-    logger.debug(f"Downloaded BAST data to {file}.")
+    logger.debug("Downloaded BAST data.")
 
 
 class HeavyDutyTransport(Dataset):
@@ -101,55 +105,11 @@ class HeavyDutyTransport(Dataset):
     *mobility_hgv*.
 
     """
-    
-    sources = DatasetSources(
-        urls={
-            "BAST": "https://www.bast.de/DE/Verkehrstechnik/Fachthemen/v2-verkehrszaehlung/Daten/2020_1/Jawe2020.csv?view=renderTcDataExportCSV&cms_strTyp=A"
-        }
-    )
-    targets = DatasetTargets(
-        files={
-            "BAST_download": "heavy_duty_transport/Jawe2020.csv"
-        },
-        tables={
-            "voronoi": "demand.egon_heavy_duty_transport_voronoi",
-            "etrago_load": "grid.egon_etrago_load",
-            "etrago_load_timeseries": "grid.egon_etrago_load_timeseries",
-        }
-    )
-    
-    srid: int = 3035
 
-    srid_buses: int = 4326
-
-    bast_srid: int = 4326
-
-    bast_relevant_columns: list = [
-    "DTV_SV_MobisSo_Q", 
-    "Koor_WGS84_E", 
-    "Koor_WGS84_N"
-]
-    
-    carrier: str = "H2_hgv_load"
-    
-    scenarios_list: list = ["eGon2035", "eGon100RE"]
-    
-    energy_value_h2: float = 39.4
-    
-    hours_per_year: int = 8760
-    
-    fac: float = 0.001
-    
-    hgv_mileage: dict = {"eGon2035": 88700000000, "eGon100RE": 88700000000}
-    leakage: bool = True
-    leakage_rate: float = 0.015
-    hydrogen_consumption: float = 9.0
-    fcev_share: float = 1.0
-    
     #:
     name: str = "HeavyDutyTransport"
     #:
-    version: str = "0.0.12"
+    version: str = "0.0.10"
 
     def __init__(self, dependencies):
         super().__init__(
