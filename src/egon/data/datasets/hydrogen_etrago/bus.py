@@ -143,11 +143,11 @@ def insert_hydrogen_buses(scn_name):
         "H2_saltcavern", target_buses, scenario=scn_name
     )
     insert_H2_buses_from_saltcavern(
-        hydrogen_buses, "H2_saltcavern", sources, target_buses, scn_name
+        hydrogen_buses, "H2_saltcavern", sources, targets, scn_name
     )
 
 
-def insert_H2_buses_from_saltcavern(gdf, carrier, sources, target, scn_name):
+def insert_H2_buses_from_saltcavern(gdf, carrier, sources, targets, scn_name):
     """
     Insert the H2 buses based on saltcavern locations into the database.
 
@@ -162,7 +162,7 @@ def insert_H2_buses_from_saltcavern(gdf, carrier, sources, target, scn_name):
         Name of the carrier.
     sources : DatasetSources
         Sources schema and table information.
-    target : dict
+    targets : DatasetTargets
         Target schema and table information.
     scn_name : str
         Name of the scenario.
@@ -172,6 +172,8 @@ def insert_H2_buses_from_saltcavern(gdf, carrier, sources, target, scn_name):
     None
 
     """
+    target_buses = targets.tables["hydrogen_buses"]
+    target_map = targets.tables["H2_AC_map"]
     # electrical buses related to saltcavern storage
     el_buses = db.select_dataframe(
         f"""
@@ -199,7 +201,7 @@ def insert_H2_buses_from_saltcavern(gdf, carrier, sources, target, scn_name):
 
     # create H2 bus data
     hydrogen_bus_ids = finalize_bus_insertion(
-        locations, carrier, target, scenario=scn_name
+        locations, carrier, target_buses, scenario=scn_name
     )
 
     gdf_H2_cavern = hydrogen_bus_ids[["bus_id"]].rename(
@@ -210,9 +212,9 @@ def insert_H2_buses_from_saltcavern(gdf, carrier, sources, target, scn_name):
 
     # Insert data to db
     gdf_H2_cavern.to_sql(
-        "egon_etrago_ac_h2",
+        target_map["table"],
         db.engine(),
-        schema="grid",
+        schema=target_map["schema"],
         index=False,
         if_exists="replace",
     )
