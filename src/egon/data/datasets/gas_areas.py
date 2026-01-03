@@ -308,8 +308,7 @@ def create_voronoi(scn_name, carrier):
     boundary = db.select_geodataframe(
         f"""
             SELECT id, geometry
-            FROM {GasAreaseGon2035.sources.tables["vg250_sta_union"]["schema"]}.
-                 {GasAreaseGon2035.sources.tables["vg250_sta_union"]["table"]};
+            FROM {GasAreaseGon2035.sources.tables["vg250_sta_union"]["schema"]}.{GasAreaseGon2035.sources.tables["vg250_sta_union"]["table"]};
         """,
         geom_col="geometry",
     ).to_crs(epsg=4326)
@@ -334,8 +333,7 @@ def create_voronoi(scn_name, carrier):
     buses = db.select_geodataframe(
         f"""
             SELECT bus_id, geom
-            FROM {GasAreaseGon100RE.sources.tables['egon_etrago_bus']['schema']}.
-                 {GasAreaseGon100RE.sources.tables['egon_etrago_bus']['table']}
+            FROM {GasAreaseGon100RE.sources.tables['egon_etrago_bus']['schema']}.{GasAreaseGon100RE.sources.tables['egon_etrago_bus']['table']}
             WHERE scn_name = '{scn_name}'
             AND country = 'DE'
             AND carrier IN ('{carrier_strings}');
