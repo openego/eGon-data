@@ -51,9 +51,10 @@ def insert_H2_overground_storage():
         storages = db.select_geodataframe(
             f"""
             SELECT bus_id, scn_name, geom
-            FROM {sources.tables["buses"]["schema"]}.
-            {sources.tables["buses"]["table"]} WHERE carrier IN ('H2', 'H2_grid')
-            AND scn_name = '{scn_name}' AND country = 'DE'""",
+            FROM {sources.tables["buses"]["schema"]}.{sources.tables["buses"]["table"]} 
+            WHERE carrier IN ('H2', 'H2_grid')
+            AND scn_name = '{scn_name}' AND country = 'DE'
+            """,
             index_col="bus_id",
         )
 
@@ -77,22 +78,21 @@ def insert_H2_overground_storage():
         # Clean table
         db.execute_sql(
             f"""
-            DELETE FROM {targets.tables["hydrogen_stores"]["schema"]}.
-            {targets.tables["hydrogen_stores"]["table"]}
-            WHERE carrier = '{carrier}' AND
-            scn_name = '{scn_name}' AND bus not IN (
+            DELETE FROM {targets.tables["hydrogen_stores"]["schema"]}.{targets.tables["hydrogen_stores"]["table"]}
+            WHERE carrier = '{carrier}' 
+            AND scn_name = '{scn_name}' 
+            AND bus not IN (
                 SELECT bus_id 
-                FROM {sources.tables["buses"]["schema"]}.
-                {sources.tables["buses"]["table"]}
+                FROM {sources.tables["buses"]["schema"]}.{sources.tables["buses"]["table"]}
                 WHERE scn_name = '{scn_name}' AND country != 'DE'
             );
             """
         )
 
         # Select next id value
-        new_id = db.next_etrago_id("store")
-        storages["store_id"] = range(new_id, new_id + len(storages))
+        storages["store_id"] = db.next_etrago_id("store", len(storages))
         storages = storages.reset_index(drop=True)
+
 
         # Insert data to db
         storages.to_sql(
@@ -131,8 +131,8 @@ def insert_H2_saltcavern_storage():
         storage_potentials = db.select_geodataframe(
             f"""
             SELECT *
-            FROM {sources.tables["saltcavern_data"]["schema"]}.
-            {sources.tables["saltcavern_data"]["table"]}""",
+            FROM {sources.tables["saltcavern_data"]["schema"]}.{sources.tables["saltcavern_data"]["table"]}
+            """,
             geom_col="geometry",
         )
 
@@ -140,8 +140,8 @@ def insert_H2_saltcavern_storage():
         H2_AC_bus_map = db.select_dataframe(
             f"""
             SELECT *
-            FROM {sources.tables["H2_AC_map"]["schema"]}.
-            {sources.tables["H2_AC_map"]["table"]}""",
+            FROM {sources.tables["H2_AC_map"]["schema"]}.{sources.tables["H2_AC_map"]["table"]}
+            """,
         )
 
         storage_potentials["storage_potential"] = (
@@ -185,13 +185,12 @@ def insert_H2_saltcavern_storage():
         # Clean table
         db.execute_sql(
             f"""
-            DELETE FROM {targets.tables["hydrogen_stores"]["schema"]}.
-            {targets.tables["hydrogen_stores"]["table"]}
-            WHERE carrier = '{carrier}' AND
-            scn_name = '{scn_name}' AND bus not IN (
+            DELETE FROM {targets.tables["hydrogen_stores"]["schema"]}.{targets.tables["hydrogen_stores"]["table"]}
+            WHERE carrier = '{carrier}' 
+            AND scn_name = '{scn_name}' 
+            AND bus not IN (
                 SELECT bus_id 
-                FROM {sources.tables["buses"]["schema"]}.
-                {sources.tables["buses"]["table"]}
+                FROM {sources.tables["buses"]["schema"]}.{sources.tables["buses"]["table"]}
                 WHERE scn_name = '{scn_name}' AND country != 'DE'
             );
             """
@@ -221,23 +220,23 @@ def calculate_and_map_saltcavern_storage_potential():
     """
 
     # select onshore vg250 data
-    sources = config.datasets()["bgr"]["sources"]
-    targets = config.datasets()["bgr"]["targets"]
+    sources, _ = load_sources_and_targets("HydrogenBusEtrago")
     vg250_data = db.select_geodataframe(
-        f"""SELECT * FROM
-                {sources['vg250_federal_states']['schema']}.
-                {sources['vg250_federal_states']['table']}
-            WHERE gf = '4'""",
+        f"""
+        SELECT *
+        FROM {sources.tables['vg250_federal_states']['schema']}.{sources.tables['vg250_federal_states']['table']}
+        WHERE gf = '4'
+        """,
         index_col="id",
         geom_col="geometry",
     )
 
     # get saltcavern shapes
     saltcavern_data = db.select_geodataframe(
-        f"""SELECT * FROM
-                {sources['saltcaverns']['schema']}.
-                {sources['saltcaverns']['table']}
-            """,
+        f"""
+        SELECT *
+        FROM {sources.tables['saltcaverns']['schema']}.{sources.tables['saltcaverns']['table']}
+        """,
         geom_col="geometry",
     )
 
@@ -416,14 +415,15 @@ def write_saltcavern_potential():
     None
 
     """
+    _, targets = load_sources_and_targets("HydrogenBusEtrago")
     potential_areas = calculate_and_map_saltcavern_storage_potential()
+    
 
-    # write information to saltcavern data
-    targets = config.datasets()["bgr"]["targets"]
+
     potential_areas.to_crs(epsg=4326).to_postgis(
-        targets["storage_potential"]["table"],
+        targets.tables["storage_potential"]["table"],
         db.engine(),
-        schema=targets["storage_potential"]["schema"],
+        schema=targets.tables["storage_potential"]["schema"],
         index=True,
         if_exists="replace",
         dtype={"geometry": Geometry()},
