@@ -53,19 +53,23 @@ class HydrogenBusEtrago(Dataset):
     #:
     name: str = "HydrogenBusEtrago"
     #:
-    version: str = "0.0.3"
+    version: str = "0.0.4"
     
     sources = DatasetSources(
         tables={
             "saltcavern_data": {"schema": "grid", "table": "egon_saltstructures_storage_potential"},
             "buses": {"schema": "grid", "table": "egon_etrago_bus"},
             "H2_AC_map": {"schema": "grid", "table": "egon_etrago_ac_h2"},
+            "vg250_federal_states": {"schema": "boundaries", "table": "vg250_lan"},
+            "saltcaverns": {"schema": "boundaries", "table": "inspee_saltstructures"},
         },
     )
 
     targets = DatasetTargets(
         tables={
             "hydrogen_buses": {"schema": "grid", "table": "egon_etrago_bus"},
+            "H2_AC_map": {"schema": "grid", "table": "egon_etrago_ac_h2"},
+            "storage_potential": {"schema": "grid", "table": "egon_saltstructures_storage_potential"},
         },
     )
 
@@ -109,7 +113,7 @@ class HydrogenStoreEtrago(Dataset):
     #:
     name: str = "HydrogenStoreEtrago"
     #:
-    version: str = "0.0.5"
+    version: str = "0.0.6"
     
     sources = DatasetSources(
         tables={
