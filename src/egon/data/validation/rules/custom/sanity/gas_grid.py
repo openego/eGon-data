@@ -314,7 +314,7 @@ class GasOnePortConnections(DataFrameRule):
 
     Checks that all gas one-port components (loads, generators, stores) are
     connected to buses that exist in the database with the correct carrier type.
-    
+
     This validation ensures data integrity across the etrago tables and prevents
     orphaned components that would cause errors in network optimization.
     """
@@ -326,7 +326,7 @@ class GasOnePortConnections(DataFrameRule):
         Parameters
         ----------
         table : str
-            Target table (grid.egon_etrago_load, grid.egon_etrago_generator, 
+            Target table (grid.egon_etrago_load, grid.egon_etrago_generator,
             or grid.egon_etrago_store)
         rule_id : str
             Unique identifier for this validation rule
@@ -340,11 +340,11 @@ class GasOnePortConnections(DataFrameRule):
             List of (bus_carrier, country_condition) tuples that define valid buses
             Examples:
             - [("CH4", "= 'DE'")] - CH4 buses in Germany
-            - [("CH4", "!= 'DE'")] - CH4 buses outside Germany  
+            - [("CH4", "!= 'DE'")] - CH4 buses outside Germany
             - [("H2_grid", "= 'DE'"), ("AC", "!= 'DE'")] - H2_grid in DE OR AC abroad
         """
         super().__init__(rule_id=rule_id, table=table, scenario=scenario,
-                         component_type=component_type, 
+                         component_type=component_type,
                          component_carrier=component_carrier,
                          bus_conditions=bus_conditions or [], **kwargs)
         self.kind = "sanity"
@@ -352,7 +352,7 @@ class GasOnePortConnections(DataFrameRule):
         self.component_type = component_type
         self.component_carrier = component_carrier
         self.bus_conditions = bus_conditions or []
-        
+
         # Map component type to ID column name
         self.id_column_map = {
             "load": "load_id",
@@ -373,7 +373,7 @@ class GasOnePortConnections(DataFrameRule):
             return "SELECT NULL as component_id, NULL as bus, NULL as carrier LIMIT 0"
 
         id_column = self.id_column_map.get(self.component_type, "id")
-        
+
         # Build bus subqueries for each condition
         bus_subqueries = []
         for bus_carrier, country_cond in self.bus_conditions:
@@ -391,11 +391,11 @@ class GasOnePortConnections(DataFrameRule):
                 {country_filter})
             """
             bus_subqueries.append(subquery)
-        
+
         # Build NOT IN clauses for all bus conditions
         not_in_clauses = [f"bus NOT IN {subq}" for subq in bus_subqueries]
         combined_condition = " AND ".join(not_in_clauses)
-        
+
         return f"""
         SELECT {id_column} as component_id, bus, carrier, scn_name
         FROM {self.table}

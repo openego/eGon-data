@@ -570,5 +570,5 @@ class Vg250(Dataset):
                     )
                 ]
             },
-            validation_on_failure="continue"
+            on_validation_failure="continue"
         )

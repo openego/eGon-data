@@ -206,7 +206,7 @@ class Dataset:
     #: automatically be converted to :class:`Tasks_`.
     tasks: Tasks = ()
     validation: Dict[str, List] = field(default_factory=dict)
-    validation_on_failure: str = "continue"
+    on_validation_failure: str = "continue"
 
     def check_version(self, after_execution=()):
         scenario_names = config.settings()["egon-data"]["--scenarios"]
@@ -279,7 +279,7 @@ class Dataset:
             validation_tasks = create_validation_tasks(
                 validation_dict=self.validation,
                 dataset_name=self.name,
-                on_failure=self.validation_on_failure
+                on_failure=self.on_validation_failure
             )
 
             # Append validation tasks to existing tasks
