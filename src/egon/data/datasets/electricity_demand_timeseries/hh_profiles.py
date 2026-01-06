@@ -27,6 +27,13 @@ from egon.data.datasets.scenario_parameters import get_scenario_year
 from egon.data.datasets.zensus_mv_grid_districts import MapZensusGridDistricts
 import egon.data.config
 
+from egon_validation import (
+    RowCountValidation,
+    DataTypeValidation,
+    WholeTableNotNullAndNotNaNValidation,
+    ValueSetValidation
+)
+
 Base = declarative_base()
 engine = db.engine()
 
@@ -300,6 +307,26 @@ class HouseholdDemands(Dataset):
             version=self.version,
             dependencies=dependencies,
             tasks=tasks,
+            validation={
+                "data_quality": [
+                    RowCountValidation(
+                        table=" demand.egon_household_electricity_profile_in_census_cell",
+                        rule_id="ROW_COUNT.egon_household_electricity_profile_in_census_cell",
+                        expected_count=3177723
+                    ),
+                    DataTypeValidation(
+                        table="demand.egon_household_electricity_profile_in_census_cell",
+                        rule_id="DATA_MULTIPLE_TYPES.egon_household_electricity_profile_in_census_cell",
+                        column_types={"cell_id": "integer", "grid_id": "character varying", "cell_profile_ids": "character varying",
+                                      "nuts3": "character varying", "nuts1": "character varying", "factor_2035": "double precision",
+                                      "factor_2050": "double precision"}
+                    ),
+                    WholeTableNotNullAndNotNaNValidation(
+                        table="demand.egon_household_electricity_profile_in_census_cell",
+                        rule_id="WHOLE_TABLE_NOT_NAN.egon_household_electricity_profile_in_census_cell"
+                    )
+                ]
+            }
         )
 
 

@@ -220,32 +220,33 @@ class OsmBuildingsStreets(Dataset):
                 "data_quality": [
                     RowCountValidation(
                         table="boundaries.egon_map_zensus_buildings_filtered",
-                        rule_id="TEST_ROW_COUNT",
+                        rule_id="ROW_COUNT.egon_map_zensus_buildings_filtered",
                         expected_count=28070301
                     ),
                     DataTypeValidation(
                         table="boundaries.egon_map_zensus_buildings_filtered",
-                        rule_id="TEST_DATA_MULTIPLE_TYPES",
+                        rule_id="DATA_MULTIPLE_TYPES.egon_map_zensus_buildings_filtered",
                         column_types={"id": "integer", "cell_id": "integer"}
                     ),
                     WholeTableNotNullAndNotNaNValidation(
                         table="boundaries.egon_map_zensus_buildings_filtered",
-                        rule_id="TEST_WHOLE_TABLE_NOT_NAN"
+                        rule_id="WHOLE_TABLE_NOT_NAN.egon_map_zensus_buildings_filtered"
                     ),
                     RowCountValidation(
                         table="boundaries.egon_map_zensus_buildings_residential",
-                        rule_id="TEST_ROW_COUNT",
+                        rule_id="ROW_COUNT.egon_map_zensus_buildings_residential",
                         expected_count=27477467
                     ),
                     DataTypeValidation(
                         table="boundaries.egon_map_zensus_buildings_residential",
-                        rule_id="TEST_DATA_MULTIPLE_TYPES",
-                        column_types={"id": "integer", "cell_id": "integer"}
+                        rule_id="DATA_MULTIPLE_TYPES.egon_map_zensus_buildings_residential",
+                        column_types={"id": "integer", "grid_id": "character varying", "cell_id": "integer"}
                     ),
                     WholeTableNotNullAndNotNaNValidation(
                         table="boundaries.egon_map_zensus_buildings_residential",
-                        rule_id="TEST_WHOLE_TABLE_NOT_NAN"
+                        rule_id="WHOLE_TABLE_NOT_NAN.egon_map_zensus_buildings_residential"
                     )
                 ]
-            }
+            },
+            on_validation_failure="continue"
         )

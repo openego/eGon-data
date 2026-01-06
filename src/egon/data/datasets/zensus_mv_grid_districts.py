@@ -11,6 +11,11 @@ from egon.data.datasets import Dataset
 from egon.data.datasets.mv_grid_districts import MvGridDistricts
 from egon.data.datasets.zensus_vg250 import DestatisZensusPopulationPerHa
 import egon.data.config
+from egon_validation import (
+    RowCountValidation,
+    DataTypeValidation,
+    WholeTableNotNullAndNotNaNValidation
+)
 
 
 class ZensusMvGridDistricts(Dataset):
@@ -38,6 +43,25 @@ class ZensusMvGridDistricts(Dataset):
             version=self.version,
             dependencies=dependencies,
             tasks=(mapping),
+            validation={
+                "data_quality": [
+                    RowCountValidation(
+                        table=" boundaries.egon_map_zensus_grid_districts",
+                        rule_id="ROW_COUNT.egon_map_zensus_grid_districts",
+                        expected_count=35718586
+                    ),
+                    DataTypeValidation(
+                        table="boundaries.egon_map_zensus_grid_districts",
+                        rule_id="DATA_MULTIPLE_TYPES.egon_map_zensus_grid_districts",
+                        column_types={"index": "bigint", "zensus_population_id": "bigint", "bus_id": "bigint"}
+                    ),
+                    WholeTableNotNullAndNotNaNValidation(
+                        table="boundaries.egon_map_zensus_grid_districts",
+                        rule_id="WHOLE_TABLE_NOT_NAN.egon_map_zensus_grid_districts"
+                    ),
+                ]
+            },
+            on_validation_failure="continue"
         )
 
 

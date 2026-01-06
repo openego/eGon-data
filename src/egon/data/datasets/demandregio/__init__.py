@@ -20,6 +20,12 @@ from egon.data.datasets.scenario_parameters import (
 )
 import egon.data.config
 import egon.data.datasets.scenario_parameters.parameters as scenario_parameters
+from egon_validation import (
+    RowCountValidation,
+    DataTypeValidation,
+    WholeTableNotNullAndNotNaNValidation,
+    ValueSetValidation
+)
 
 try:
     from disaggregator import config, data, spatial, temporal
@@ -87,6 +93,51 @@ class DemandRegio(Dataset):
                     insert_cts_ind_demands,
                 },
             ),
+            validation={
+                "data_quality": [
+                    RowCountValidation(
+                        table=" demand.egon_demandregio_hh",
+                        rule_id="ROW_COUNT.egon_demandregio_hh",
+                        expected_count=7218
+                    ),
+                    DataTypeValidation(
+                        table="demand.egon_demandregio_hh",
+                        rule_id="DATA_MULTIPLE_TYPES.egon_demandregio_hh",
+                        column_types={"nuts3": "character varying", "hh_size": "integer", "year": "integer", "demand": "double precision"}
+                    ),
+                    WholeTableNotNullAndNotNaNValidation(
+                        table="demand.egon_demandregio_hh",
+                        rule_id="WHOLE_TABLE_NOT_NAN.egon_demandregio_hh"
+                    ),
+                    ValueSetValidation(
+                        table="demand.egon_demandregio_hh",
+                        rule_id="VALUE_SET_VALIDATION_SCENARIO.egon_demandregio_hh",
+                        column="scenario",
+                        expected_values=["eGon2035", "eGon100RE", "eGon2021"]
+                    ),
+                    RowCountValidation(
+                        table=" demand.egon_demandregio_wz",
+                        rule_id="ROW_COUNT.egon_demandregio_wz",
+                        expected_count=87
+                    ),
+                    DataTypeValidation(
+                        table="demand.egon_demandregio_wz",
+                        rule_id="DATA_MULTIPLE_TYPES.egon_demandregio_wz",
+                        column_types={"wz": "integer", "sector": "character varying", "definition": "character varying"}
+                    ),
+                    WholeTableNotNullAndNotNaNValidation(
+                        table="demand.egon_demandregio_wz",
+                        rule_id="WHOLE_TABLE_NOT_NAN.egon_demandregio_wz"
+                    ),
+                    ValueSetValidation(
+                        table="demand.egon_demandregio_wz",
+                        rule_id="VALUE_SET_VALIDATION_SECTOR.egon_demandregio_wz",
+                        column="sector",
+                        expected_values=["industry", "CTS"]
+                    ),
+                ]
+            },
+            on_validation_failure="continue"
         )
 
 

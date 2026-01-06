@@ -40,6 +40,13 @@ from egon.data.datasets.scenario_parameters import (
 )
 from egon.data.metadata import context, license_ccby, meta_metadata, sources
 
+from egon_validation import (
+    RowCountValidation,
+    DataTypeValidation,
+    WholeTableNotNullAndNotNaNValidation,
+    ValueSetValidation
+)
+
 # import time
 
 
@@ -82,6 +89,32 @@ class DistrictHeatingAreas(Dataset):
             version=self.version,  # maybe rethink the naming
             dependencies=dependencies,
             tasks=(create_tables, demarcation),
+            validation={
+                "data_quality": [
+                    RowCountValidation(
+                        table=" demand.egon_district_heating_areas",
+                        rule_id="ROW_COUNT.egon_district_heating_areas",
+                        expected_count=6335
+                    ),
+                    DataTypeValidation(
+                        table="demand.egon_district_heating_areas",
+                        rule_id="DATA_MULTIPLE_TYPES.egon_district_heating_areas",
+                        column_types={"id": "integer", "area_id": "integer", "scenario": "character varying",
+                                      "geom_polygon": "geometry", "residential_and_service_demand": "double precision"}
+                    ),
+                    WholeTableNotNullAndNotNaNValidation(
+                        table="demand.egon_district_heating_areas",
+                        rule_id="WHOLE_TABLE_NOT_NAN.egon_district_heating_areas"
+                    ),
+                    ValueSetValidation(
+                        table="demand.egon_district_heating_areas",
+                        rule_id="VALUE_SET_VALIDATION_SCENARIO.egon_district_heating_areas",
+                        column="scenario",
+                        expected_values=["eGon2035", "eGon100RE"]
+                    ),
+                ]
+            },
+            on_validation_failure="continue"
         )
 
 
