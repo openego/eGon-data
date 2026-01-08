@@ -220,13 +220,14 @@ class OsmBuildingsStreets(Dataset):
                 "data_quality": [
                     RowCountValidation(
                         table="boundaries.egon_map_zensus_buildings_filtered",
-                        rule_id="ROW_COUNT.egon_map_zensus_buildings_filtered",
-                        expected_count=28070301
+                        rule_id="TEST_ROW_COUNT.egon_map_zensus_buildings_filtered",
+                        expected_count={"Schleswig-Holstein":1010387,
+                                        "Everything":28070301}
                     ),
                     DataTypeValidation(
                         table="boundaries.egon_map_zensus_buildings_filtered",
                         rule_id="DATA_MULTIPLE_TYPES.egon_map_zensus_buildings_filtered",
-                        column_types={"id": "integer", "cell_id": "integer"}
+                        column_types={"id": "integer", "grid_id": "character varying", "cell_id": "integer"}
                     ),
                     WholeTableNotNullAndNotNaNValidation(
                         table="boundaries.egon_map_zensus_buildings_filtered",
@@ -235,7 +236,8 @@ class OsmBuildingsStreets(Dataset):
                     RowCountValidation(
                         table="boundaries.egon_map_zensus_buildings_residential",
                         rule_id="ROW_COUNT.egon_map_zensus_buildings_residential",
-                        expected_count=27477467
+                        expected_count={"Schleswig-Holstein":989967,
+                                        "Everything":27477467}
                     ),
                     DataTypeValidation(
                         table="boundaries.egon_map_zensus_buildings_residential",

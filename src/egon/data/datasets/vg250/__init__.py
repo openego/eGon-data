@@ -541,17 +541,24 @@ class Vg250(Dataset):
                     RowCountValidation(
                         table="boundaries.vg250_krs",
                         rule_id="TEST_ROW_COUNT",
-                        expected_count=27
+                        expected_count={"Schleswig-Holstein":27, "Everything":431}
                     ),
                     DataTypeValidation(
                         table="boundaries.vg250_krs",
                         rule_id="TEST_DATA_MULTIPLE_TYPES",
-                        column_types={"id":"bigint","ade":"bigint", "gf":"bigint", "bsg":"bigint","ars":"text",
+                        column_types={"Schleswig-Holstein":{"id":"bigint","ade":"integer", "gf":"integer", "bsg":"integer","ars":"text",
+                                      "ags":"text", "sdv_ars":"text", "gen":"text", "bez":"text","ibz":"integer",
+                                      "bem":"text", "nbd":"text", "sn_l":"text", "sn_r":"text", "sn_k":"text",
+                                      "sn_v1":"text", "sn_v2":"text", "sn_g":"text", "fk_s3":"text", "nuts":"text",
+                                      "ars_0":"text", "ags_0":"text", "wsk":"timestamp without time zone", "debkg_id":"text", "rs":"text",
+                                      "sdv_rs":"text", "rs_0":"text", "geometry":"geometry"},
+                                      "Everything":{"id":"bigint","ade":"bigint", "gf":"bigint", "bsg":"bigint","ars":"text",
                                       "ags":"text", "sdv_ars":"text", "gen":"text", "bez":"text","ibz":"bigint",
                                       "bem":"text", "nbd":"text", "sn_l":"text", "sn_r":"text", "sn_k":"text",
                                       "sn_v1":"text", "sn_v2":"text", "sn_g":"text", "fk_s3":"text", "nuts":"text",
                                       "ars_0":"text", "ags_0":"text", "wsk":"text", "debkg_id":"text", "rs":"text",
                                       "sdv_rs":"text", "rs_0":"text", "geometry":"geometry"}
+                                      }
                     ),
                     NotNullAndNotNaNValidation(
                         table="boundaries.vg250_krs",
