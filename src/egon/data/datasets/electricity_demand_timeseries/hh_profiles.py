@@ -312,14 +312,24 @@ class HouseholdDemands(Dataset):
                     RowCountValidation(
                         table=" demand.egon_household_electricity_profile_in_census_cell",
                         rule_id="ROW_COUNT.egon_household_electricity_profile_in_census_cell",
-                        expected_count=3177723
+                        expected_count={"Schleswig-Holstein": 143521, "Everything": 3177723}
                     ),
                     DataTypeValidation(
                         table="demand.egon_household_electricity_profile_in_census_cell",
                         rule_id="DATA_MULTIPLE_TYPES.egon_household_electricity_profile_in_census_cell",
-                        column_types={"cell_id": "integer", "grid_id": "character varying", "cell_profile_ids": "character varying",
-                                      "nuts3": "character varying", "nuts1": "character varying", "factor_2035": "double precision",
-                                      "factor_2050": "double precision"}
+                        column_types={
+                            "Schleswig-Holstein":{
+                              "cell_id": "integer", "grid_id": "character varying", "cell_profile_ids": "character varying",
+                              "nuts3": "character varying", "nuts1": "character varying",
+                              "factor_2019": "double precision","factor_2023": "double precision",
+                              "factor_2035": "double precision", "factor_2050": "double precision"
+                            },
+                            "Everything":{
+                              "cell_id": "integer", "grid_id": "character varying", "cell_profile_ids": "character varying",
+                              "nuts3": "character varying", "nuts1": "character varying",
+                              "factor_2035": "double precision", "factor_2050": "double precision"
+                            }
+                        }
                     ),
                     WholeTableNotNullAndNotNaNValidation(
                         table="demand.egon_household_electricity_profile_in_census_cell",

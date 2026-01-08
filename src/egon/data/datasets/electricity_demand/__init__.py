@@ -79,7 +79,7 @@ class HouseholdElectricityDemand(Dataset):
                     RowCountValidation(
                         table=" demand.egon_demandregio_zensus_electricity",
                         rule_id="ROW_COUNT.egon_demandregio_zensus_electricity",
-                        expected_count=7355160
+                        expected_count={"Schleswig-Holstein": 154527, "Everything": 7355160}
                     ),
                     DataTypeValidation(
                         table="demand.egon_demandregio_zensus_electricity",

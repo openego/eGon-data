@@ -48,7 +48,7 @@ class ZensusMvGridDistricts(Dataset):
                     RowCountValidation(
                         table=" boundaries.egon_map_zensus_grid_districts",
                         rule_id="ROW_COUNT.egon_map_zensus_grid_districts",
-                        expected_count=35718586
+                        expected_count={"Schleswig-Holstein": 7519, "Everything": 35718586}
                     ),
                     DataTypeValidation(
                         table="boundaries.egon_map_zensus_grid_districts",

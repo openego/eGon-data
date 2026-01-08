@@ -98,12 +98,13 @@ class DemandRegio(Dataset):
                     RowCountValidation(
                         table=" demand.egon_demandregio_hh",
                         rule_id="ROW_COUNT.egon_demandregio_hh",
-                        expected_count=7218
+                        expected_count={"Schleswig-Holstein": 180, "everything": 7218}
                     ),
                     DataTypeValidation(
                         table="demand.egon_demandregio_hh",
                         rule_id="DATA_MULTIPLE_TYPES.egon_demandregio_hh",
-                        column_types={"nuts3": "character varying", "hh_size": "integer", "year": "integer", "demand": "double precision"}
+                        column_types={"nuts3": "character varying", "hh_size": "integer", "scenario": "character varying",
+                                      "year": "integer", "demand": "double precision"}
                     ),
                     WholeTableNotNullAndNotNaNValidation(
                         table="demand.egon_demandregio_hh",

@@ -502,7 +502,7 @@ class MotorizedIndividualTravel(Dataset):
                     RowCountValidation(
                         table=" demand.egon_ev_count_municipality",
                         rule_id="ROW_COUNT.egon_ev_count_municipality",
-                        expected_count=44012
+                        expected_count={"Schleswig-Holstein": 1108, "Everything": 44012}
                     ),
                     DataTypeValidation(
                         table="demand.egon_ev_count_municipality",
@@ -531,7 +531,7 @@ class MotorizedIndividualTravel(Dataset):
                     RowCountValidation(
                         table=" demand.egon_ev_count_mv_grid_district",
                         rule_id="ROW_COUNT.egon_ev_count_mv_grid_district",
-                        expected_count=15348
+                        expected_count={"Schleswig-Holstein": 199, "Everything": 15348}
                     ),
                     DataTypeValidation(
                         table="demand.egon_ev_count_mv_grid_district",
@@ -561,7 +561,7 @@ class MotorizedIndividualTravel(Dataset):
                     RowCountValidation(
                         table=" demand.egon_ev_count_registration_district",
                         rule_id="ROW_COUNT.egon_ev_count_registration_district",
-                        expected_count=1600
+                        expected_count={"Schleswig-Holstein": 400, "Everything": 1600}
                     ),
                     DataTypeValidation(
                         table="demand.egon_ev_count_registration_district",
@@ -591,7 +591,7 @@ class MotorizedIndividualTravel(Dataset):
                     RowCountValidation(
                         table=" demand.egon_ev_mv_grid_district",
                         rule_id="ROW_COUNT.egon_ev_mv_grid_district",
-                        expected_count=15348
+                        expected_count={"Schleswig-Holstein": 534899, "Everything": 125609556}
                     ),
                     DataTypeValidation(
                         table="demand.egon_ev_mv_grid_district",
@@ -622,7 +622,7 @@ class MotorizedIndividualTravel(Dataset):
                     RowCountValidation(
                         table=" demand.egon_ev_pool",
                         rule_id="ROW_COUNT.egon_ev_pool",
-                        expected_count=65376
+                        expected_count={"Schleswig-Holstein": 7000, "Everything": 65376}
                     ),
                     DataTypeValidation(
                         table="demand.egon_ev_pool",
@@ -650,7 +650,7 @@ class MotorizedIndividualTravel(Dataset):
                     RowCountValidation(
                         table=" demand.egon_ev_trip",
                         rule_id="ROW_COUNT.egon_ev_trip",
-                        expected_count=108342188
+                        expected_count={"Schleswig-Holstein":11642066, "Everything": 108342188}
                     ),
                     DataTypeValidation(
                         table="demand.egon_ev_trip",
@@ -678,7 +678,7 @@ class MotorizedIndividualTravel(Dataset):
                         column="type",
                         expected_values=["0_work", "1_business", "2_school", "3_shopping", "4_private/ridesharing",
                                          "5_leisure", "6_home", "7_charging_hub", "driving"]
-                    ),
+                    )
                 ]
             },
             on_validation_failure="continue"
