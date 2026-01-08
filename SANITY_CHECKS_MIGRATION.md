@@ -312,9 +312,11 @@ The following sanity checks have been migrated to validation rules:
 - `residential_electricity_annual_sum()` → `ResidentialElectricityAnnualSum`
 - `residential_electricity_hh_refinement()` → `ResidentialElectricityHhRefinement`
 
-### ✅ CTS Demand
-- `cts_electricity_demand_share()` → `CtsElectricityDemandShare`
-- `cts_heat_demand_share()` → `CtsHeatDemandShare`
+### ⚠️ CTS Demand (Migrated But Not Yet Integrated)
+- `cts_electricity_demand_share()` → `CtsElectricityDemandShare` - **Rule exists but not yet integrated into CtsElectricityDemand dataset**
+- `cts_heat_demand_share()` → `CtsHeatDemandShare` - **Rule exists but not yet integrated into CTS heat demand dataset**
+
+**Status:** Rules are fully implemented and tested but need to be added to their respective datasets using the inline validation pattern. See "Using Inline Validations in Datasets" (line 110) for integration examples.
 
 ### ✅ Home Batteries
 - `sanitycheck_home_batteries()` → `HomeBatteriesAggregation`
@@ -388,7 +390,7 @@ The following sanity checks have been migrated to validation rules:
 
 All core sanity checks have been successfully migrated to the new validation framework, including:
 - Residential electricity (annual sum, household refinement)
-- CTS demand (electricity and heat shares)
+- CTS demand (electricity and heat shares) - **rules migrated but not yet integrated**
 - Home batteries aggregation
 - Gas infrastructure (stores, buses, grid, links, loads, generators)
 - Electricity capacity (eGon2035 and eGon100RE generators, storage)
@@ -396,6 +398,43 @@ All core sanity checks have been successfully migrated to the new validation fra
 - Timeseries length validation
 - Electrical load aggregation
 - Heat demand validation
+
+### Integration Status
+
+This section tracks where each migrated validation rule has been integrated into the pipeline.
+
+**✅ Fully Integrated in FinalValidations (Cross-Cutting Validations):**
+- Gas stores: 4 rule instantiations (CH4 × 2 scenarios, H2 saltcavern × 2 scenarios)
+- Gas grid buses: 5 rule instantiations (isolated buses + bus counts for CH4 and H2_grid)
+- Gas one-port connections: 10 rule instantiations (loads, generators, stores validation)
+- Gas links connections: 11 rule instantiations (CH4, H2_feedin, conversions, power coupling, etc.)
+- Gas loads and generators capacity: 3 rule instantiations (CH4/H2 industry loads, CH4 generators)
+- Electricity capacity: 33 rule instantiations (10 for eGon2035 + 23 for eGon100RE)
+- Heat capacity: 5 rule instantiations (heat pumps, resistive heaters, solar/geo thermal)
+- Timeseries length: 24 rule instantiations (all array columns across 5 component types)
+- Electrical load: 2 rule instantiations (total aggregation + sector breakdown)
+- Heat demand: 1 rule instantiation (eGon2035 validation)
+- **Total in FinalValidations: 103 rule instantiations**
+
+**✅ Fully Integrated as Dataset-Inline Validations:**
+- ResidentialElectricityDemand dataset: 2 rules (annual sum + household refinement)
+  - Location: `src/egon/data/datasets/electricity_demand/__init__.py` (lines 60-73)
+- Storages dataset: 2 rule instantiations (home batteries aggregation × 2 scenarios)
+  - Location: `src/egon/data/datasets/storages/__init__.py` (lines 103-118)
+- **Total dataset-inline: 4 rule instantiations**
+
+**⚠️ Migrated But Not Yet Integrated:**
+- `CtsElectricityDemandShare`: Rule class exists in `rules/custom/sanity/cts_demand.py`
+  - **Action needed**: Add to CtsElectricityDemand dataset validation dict
+  - **Pattern**: See ResidentialElectricityDemand integration example (line 60-73)
+- `CtsHeatDemandShare`: Rule class exists in `rules/custom/sanity/cts_demand.py`
+  - **Action needed**: Add to CTS heat demand dataset validation dict
+  - **Pattern**: See example in migration doc line 110-150
+
+**Status Summary:**
+- ✅ 107 validation rule instantiations actively running in pipeline
+- ⚠️ 2 validation rule classes awaiting dataset integration
+- 📊 Total: 17 reusable validation rule classes created
 
 ### Deferred Validations (Require Dataset-Inline Implementation)
 
@@ -440,23 +479,25 @@ The following sanity checks require dataset-inline validation due to their compl
 ```
 egon-data/src/egon/data/
 ├── datasets/
-│   ├── sanity_checks.py                        # ⚠️ Old sanity checks (kept for deferred validations)
-│   ├── final_validations.py                    # ✅ Cross-cutting validations
+│   ├── sanity_checks.py                        # ⚠️ Old sanity checks (STILL IN USE - see note below)
+│   ├── final_validations.py                    # ✅ Cross-cutting validations (103 rule instantiations)
+│   ├── electricity_demand/__init__.py          # ✅ Uses residential electricity validations (2 rules)
+│   ├── storages/__init__.py                    # ✅ Uses home batteries validation (2 instantiations)
 │   └── ...
 └── validation/
     └── rules/
         └── custom/
             └── sanity/
-                ├── __init__.py                 # ✅ Exports all sanity validation classes
-                ├── residential_electricity.py  # ✅ Migrated (2 rules)
-                ├── cts_demand.py               # ✅ Migrated (2 rules)
-                ├── home_batteries.py           # ✅ Migrated (1 rule)
-                ├── gas_stores.py               # ✅ Migrated (2 rules: CH4, H2 saltcavern)
-                ├── gas_grid.py                 # ✅ Migrated (5 rules: buses, one-port, CH4 grid, links)
-                ├── gas_loads_generators.py     # ✅ Migrated (2 rules: loads, generators)
-                ├── electricity_capacity.py     # ✅ Migrated (reusable class for capacity comparison)
-                ├── electrical_load_sectors.py  # ✅ Migrated (1 rule: sector breakdown)
-                └── heat_demand.py              # ✅ Migrated (1 rule)
+                ├── __init__.py                 # ✅ Exports all sanity validation classes (17 total)
+                ├── residential_electricity.py  # ✅ Migrated & integrated (2 rule classes)
+                ├── cts_demand.py               # ⚠️ Migrated but not integrated (2 rule classes)
+                ├── home_batteries.py           # ✅ Migrated & integrated (1 rule class)
+                ├── gas_stores.py               # ✅ Migrated & integrated (2 rule classes)
+                ├── gas_grid.py                 # ✅ Migrated & integrated (5 rule classes)
+                ├── gas_loads_generators.py     # ✅ Migrated & integrated (2 rule classes)
+                ├── electricity_capacity.py     # ✅ Migrated & integrated (1 reusable rule class)
+                ├── electrical_load_sectors.py  # ✅ Migrated & integrated (1 rule class)
+                └── heat_demand.py              # ✅ Migrated & integrated (1 rule class)
 
 egon-validation/egon_validation/rules/
 ├── formal/
@@ -465,6 +506,13 @@ egon-validation/egon_validation/rules/
     └── numeric_aggregation_check.py            # ✅ Reused for electrical load aggregation
 ```
 
+**Note on old sanity_checks.py:**
+- The old `sanity_checks.py` file is **still being used** by the `SanityChecks` dataset in the pipeline
+- Location: `src/egon/data/airflow/dags/pipeline.py` (line 765)
+- It currently runs the 5 deferred validation functions that haven't been migrated yet
+- Once remaining functions are migrated, this file can be deprecated
+- Migrated functions in this file are no longer called by the SanityChecks dataset
+
 ---
 
 ## Migration Statistics
@@ -472,28 +520,43 @@ egon-validation/egon_validation/rules/
 **Total sanity checks in original `sanity_checks.py`**: 21 functions
 
 **Successfully migrated**: 16 functions (76%)
-- Converted to **65 individual validation rules** across multiple categories
+- Created **17 reusable validation rule classes** (not counting reused egon-validation classes)
+- Deployed as **110+ rule instantiations** across the pipeline
+  - Each rule class can be instantiated multiple times for different scenarios/carriers
+  - Example: `ElectricityCapacityComparison` is instantiated 33 times for different carriers/scenarios
 - Organized into **9 custom validation modules**
-- Reused **2 existing validation classes** from egon-validation
+- Reused **2 existing validation classes** from egon-validation library
 
 **Deferred (require dataset-inline implementation)**: 5 functions (24%)
 - 3 complex validations with external dependencies
 - 2 validations requiring external calculation functions
 
-**Validation rules by category**:
-- Electricity capacity: 10 rules (eGon2035)
-- Heat capacity: 5 rules (eGon2035)
-- eGon100RE capacity: 23 rules (13 generators, 9 links, 1 storage)
-- Gas infrastructure: 11 rules
-- Demand validation: 4 rules
-- Timeseries: 24 rules (all array columns across 5 component types)
-- Home batteries: 1 rule
-- Electrical load: 2 rules (total aggregation + sector breakdown)
-- Heat demand: 1 rule
+**Rule instantiation breakdown**:
+- **FinalValidations (cross-cutting)**: 103 instantiations
+  - Gas stores: 4 (CH4 × 2 scenarios, H2 saltcavern × 2 scenarios)
+  - Gas grid buses: 5 (isolated + count checks)
+  - Gas one-port: 10 (load/generator/store connection validation)
+  - Gas links: 11 (various carrier types)
+  - Gas loads/generators: 3 (industry loads, generators)
+  - Electricity capacity: 33 (10 eGon2035 + 23 eGon100RE)
+  - Heat capacity: 5 (eGon2035)
+  - Timeseries length: 24 (all array columns × 5 component types)
+  - Electrical load: 2 (total aggregation + sector breakdown)
+  - Heat demand: 1 (eGon2035)
 
-**Recent Updates (2025-12-30)**:
-- ✅ **Timeseries validation coverage expanded**: 8 → 24 array columns (now matches original dynamic discovery)
-- ✅ **Electrical load sector breakdown implemented**: Added granular validation by sector (residential, commercial, industrial)
+- **Dataset-inline validations**: 4 instantiations
+  - ResidentialElectricityDemand: 2 (annual sum + household refinement)
+  - Storages: 2 (home batteries × 2 scenarios)
+
+- **Migrated but not integrated**: 2 rule classes
+  - CtsElectricityDemandShare (awaiting integration into CtsElectricityDemand dataset)
+  - CtsHeatDemandShare (awaiting integration into CTS heat demand dataset)
+
+**Total active validations**: 107 rule instantiations running in pipeline
+
+**Recent Updates**:
+- **2025-12-30**: Timeseries validation coverage expanded (8 → 24 array columns); Electrical load sector breakdown implemented
+- **2026-01-07**: Documentation updated to clarify rule classes vs instantiations; Integration status tracking added
 
 ---
 
@@ -555,17 +618,20 @@ open validation_runs/{run_id}/final/report.html
 
 The sanity checks migration is **76% complete** with all core validations successfully migrated to the new framework:
 
-1. **9 custom validation modules** created in `egon/data/validation/rules/custom/sanity/`
-2. **65 individual validation rules** implemented across all major categories
-3. **Reused 2 existing validation classes** from egon-validation library (code reuse > new code)
-4. **Fixed 4 RuleResult 'details' parameter errors** by moving violation data to message field
-5. **Integrated validations** into `FinalValidations` dataset for cross-cutting checks
-6. **Full timeseries coverage** - All 24 array columns validated (matches original dynamic discovery)
-7. **Sector breakdown validation** - Electrical load validated by sector (residential, commercial, industrial)
+1. **17 reusable validation rule classes** created in `egon/data/validation/rules/custom/sanity/`
+2. **110+ rule instantiations** deployed across the pipeline
+   - 103 instantiations in FinalValidations (cross-cutting validations)
+   - 4 instantiations in dataset-inline validations (ResidentialElectricityDemand, Storages)
+   - 2 rule classes migrated but awaiting integration (CTS demand)
+3. **9 custom validation modules** organized by domain (gas, electricity, heat, demand, etc.)
+4. **Reused 2 existing validation classes** from egon-validation library (code reuse > new code)
+5. **Full timeseries coverage** - All 24 array columns validated (matches original dynamic discovery)
+6. **Sector breakdown validation** - Electrical load validated by sector (residential, commercial, industrial)
+7. **107 validations actively running** in the pipeline with structured reporting
 
 ### 🔄 Remaining Work
 
-5 sanity check functions (24%) are deferred for dataset-inline implementation:
+**5 sanity check functions (24%)** are deferred for dataset-inline implementation:
 
 **High Priority** (complex with external dependencies):
 1. `sanitycheck_pv_rooftop_buildings()` - Implement in PV rooftop dataset
@@ -576,13 +642,34 @@ The sanity checks migration is **76% complete** with all core validations succes
 4. `etrago_eGon2035_gas_abroad()` - Implement in gas grid dataset
 5. `sanitycheck_dsm()` - Implement in DSM dataset
 
-### 🎯 Recommended Approach for Deferred Validations
+**Low Priority** (integration pending):
+6. Integrate `CtsElectricityDemandShare` into CtsElectricityDemand dataset
+7. Integrate `CtsHeatDemandShare` into CTS heat demand dataset
 
-For each deferred validation:
+### 🎯 Recommended Approach for Remaining Work
+
+**For CTS Validation Integration (Quick Win):**
+The CTS validation rules already exist and just need to be integrated:
+1. Open `src/egon/data/datasets/electricity_demand/__init__.py`
+2. Import the CTS rules at the top:
+   ```python
+   from egon.data.validation.rules.custom.sanity import (
+       CtsElectricityDemandShare,
+       CtsHeatDemandShare,
+   )
+   ```
+3. Add validation dict to `CtsElectricityDemand` class (see ResidentialElectricityDemand example, lines 60-73)
+4. Test and verify
+
+**For Deferred Validations (Complex):**
+For the 5 remaining sanity check functions:
 1. Add inline `validation={}` dict to the relevant Dataset class
 2. Create custom validation rules that can access dataset-specific functions
 3. Use the same pattern as migrated validations (SqlRule or DataFrameRule)
 4. Ensure validations run after dataset tasks complete
+5. For complex checks with visualizations (PV rooftop), consider splitting:
+   - Validation logic → DataFrameRule (automated)
+   - Visualization logic → Separate reporting function (manual)
 
 ### 📊 Impact
 
