@@ -39,6 +39,13 @@ from egon.data.datasets.scenario_parameters import get_sector_parameters
 from egon.data.metadata import context, license_ccby, meta_metadata, sources
 import egon.data.config
 
+from egon_validation import (
+    RowCountValidation,
+    DataTypeValidation,
+    WholeTableNotNullAndNotNaNValidation,
+    ValueSetValidation
+)
+
 
 class HeatDemandImport(Dataset):
     """
@@ -74,6 +81,40 @@ class HeatDemandImport(Dataset):
             version=self.version,  # maybe rethink the naming
             dependencies=dependencies,
             tasks=(scenario_data_import),
+            validation={
+                "data_quality": [
+                    RowCountValidation(
+                        table=" demand.egon_peta_heat",
+                        rule_id="ROW_COUNT.egon_peta_heat",
+                        expected_count={"Schleswig-Holstein": 139250, "Everything": 6836426}
+                    ),
+                    DataTypeValidation(
+                        table="demand.egon_peta_heat",
+                        rule_id="DATA_MULTIPLE_TYPES.egon_peta_heat",
+                        column_types={"id": "integer", "demand": "double precision", "sector": "character varying",
+                                      "scenario": "character varying", "zensus_pupulation_id": "integer"}
+                    ),
+                    WholeTableNotNullAndNotNaNValidation(
+                        table="demand.egon_peta_heat",
+                        rule_id="WHOLE_TABLE_NOT_NAN.egon_peta_heat"
+                    ),
+                    ValueSetValidation(
+                        table="demand.egon_peta_heat",
+                        rule_id="VALUE_SET_VALIDATION_SCENARIO.egon_peta_heat",
+                        column="scenario",
+                        expected_values={
+                            "Schleswig-Holstein":["eGon2035"],
+                            "Everything":["eGon2035", "eGon100RE"]
+                        }
+                    ),
+                    ValueSetValidation(
+                        table="demand.egon_peta_heat",
+                        rule_id="VALUE_SET_VALIDATION_SECTOR.egon_peta_heat",
+                        column="sector",
+                        expected_values=["residential", "service"]
+                    ),
+                ]
+            },
         )
 
 

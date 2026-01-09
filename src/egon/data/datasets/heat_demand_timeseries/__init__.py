@@ -37,6 +37,13 @@ from egon.data.metadata import (
     sources,
 )
 
+from egon_validation import (
+    RowCountValidation,
+    DataTypeValidation,
+    WholeTableNotNullAndNotNaNValidation,
+    ValueSetValidation
+)
+
 Base = declarative_base()
 
 
@@ -1263,4 +1270,33 @@ class HeatTimeSeries(Dataset):
                 metadata,
                 store_national_profiles,
             ),
+            validation={
+                "data_quality": [
+                    RowCountValidation(
+                        table=" demand.egon_heat_idp_pool",
+                        rule_id="ROW_COUNT.egon_heat_idp_pool",
+                        expected_count=459535
+                    ),
+                    DataTypeValidation(
+                        table="demand.egon_heat_idp_pool",
+                        rule_id="DATA_MULTIPLE_TYPES.egon_heat_idp_pool",
+                        column_types={"index": "bigint", "idp": "double precision[]"}
+                    ),
+                    WholeTableNotNullAndNotNaNValidation(
+                        table="demand.egon_heat_idp_pool",
+                        rule_id="WHOLE_TABLE_NOT_NAN.egon_heat_idp_pool"
+                    ),
+                    RowCountValidation(
+                        table="demand.egon_heat_timeseries_selected_profiles",
+                        rule_id="ROW_COUNT.egon_heat_timeseries_selected_profiles",
+                        expected_count={"Schleswig-Holstein": 719960, "Everything": 20606259}
+                    ),
+                    DataTypeValidation(
+                        table="demand.egon_heat_timeseries_selected_profiles",
+                        rule_id="DATA_MULTIPLE_TYPES.egon_heat_timeseries_selected_profiles",
+                        column_types={"zensus_population_id": "integer", "bulding_id": "integer",
+                                      "selected_idp_profiles": "integer[]"}
+                    )
+                ]
+            },
         )

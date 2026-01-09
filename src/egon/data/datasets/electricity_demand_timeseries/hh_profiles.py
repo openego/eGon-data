@@ -334,6 +334,23 @@ class HouseholdDemands(Dataset):
                     WholeTableNotNullAndNotNaNValidation(
                         table="demand.egon_household_electricity_profile_in_census_cell",
                         rule_id="WHOLE_TABLE_NOT_NAN.egon_household_electricity_profile_in_census_cell"
+                    ),
+                    RowCountValidation(
+                        table=" demand.demand.iee_household_load_profiles",
+                        rule_id="ROW_COUNT.iee_household_load_profiles",
+                        expected_count={"Schleswig-Holstein": 2511, "Everything": 1000000}
+                    ),
+                    DataTypeValidation(
+                        table="demand.iee_household_load_profiles",
+                        rule_id="DATA_MULTIPLE_TYPES.iee_household_load_profiles",
+                        column_types={
+                                "id": "integer", "type": "character",
+                                "load_in_wh": "real[]"
+                        }
+                    ),
+                    WholeTableNotNullAndNotNaNValidation(
+                        table="demand.iee_household_load_profiles",
+                        rule_id="WHOLE_TABLE_NOT_NAN.iee_household_load_profiles"
                     )
                 ]
             }
