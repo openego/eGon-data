@@ -15,7 +15,7 @@ import pandas as pd
 import yaml
 
 from egon.data import config, db
-from egon.data.datasets import Dataset, wrapped_partial
+from egon.data.datasets import Dataset, DatasetSources, DatasetTargets, wrapped_partial
 from egon.data.metadata import (
     context,
     generate_resource_fields_from_sqla_model,
@@ -113,7 +113,7 @@ def insert_capacities_status_quo(scenario: str) -> None:
 
     """
 
-    targets = config.datasets()["scenario_input"]["targets"]
+    targets = ScenarioCapacities.targets.tables
 
     # Delete rows if already exist
     db.execute_sql(
@@ -201,8 +201,8 @@ def insert_capacities_per_federal_state_nep():
 
     """
 
-    sources = config.datasets()["scenario_input"]["sources"]
-    targets = config.datasets()["scenario_input"]["targets"]
+    sources = ScenarioCapacities.sources
+    targets = ScenarioCapacities.targets.tables
 
     # Connect to local database
     engine = db.engine()
@@ -219,12 +219,7 @@ def insert_capacities_per_federal_state_nep():
     )
 
     # read-in installed capacities per federal state of germany
-    target_file = (
-        Path(".")
-        / "data_bundle_egon_data"
-        / "nep2035_version2021"
-        / sources["eGon2035"]["capacities"]
-    )
+    target_file = Path(".") / sources.files["eGon2035_capacities"]
 
     df = pd.read_excel(
         target_file,
@@ -288,7 +283,7 @@ def insert_capacities_per_federal_state_nep():
     map_nuts = pd.read_sql(
         f"""
         SELECT DISTINCT ON (nuts) gen, nuts
-        FROM {sources['boundaries']['schema']}.{sources['boundaries']['table']}
+        FROM {sources.tables['boundaries']['schema']}.{sources.tables['boundaries']['table']}
         """,
         engine,
         index_col="gen",
@@ -391,14 +386,13 @@ def population_share():
 
     """
 
-    sources = config.datasets()["scenario_input"]["sources"]
+    sources = ScenarioCapacities.sources
 
     return (
         pd.read_sql(
             f"""
             SELECT SUM(population)
-            FROM {sources['zensus_population']['schema']}.
-            {sources['zensus_population']['table']}
+            FROM {sources.tables['zensus_population']['schema']}.{sources.tables['zensus_population']['table']}
             WHERE population>0
             """,
             con=db.engine(),
@@ -495,19 +489,14 @@ def insert_nep_list_powerplants(export=True):
         List of conventional power plants from nep if export=False
     """
 
-    sources = config.datasets()["scenario_input"]["sources"]
-    targets = config.datasets()["scenario_input"]["targets"]
+    sources = ScenarioCapacities.sources
+    targets = ScenarioCapacities.targets.tables
 
     # Connect to local database
     engine = db.engine()
 
     # Read-in data from csv-file
-    target_file = (
-        Path(".")
-        / "data_bundle_egon_data"
-        / "nep2035_version2021"
-        / sources["eGon2035"]["list_conv_pp"]
-    )
+    target_file = Path(".") / sources.files["eGon2035_list_conv_pp"]
 
     kw_liste_nep = pd.read_csv(target_file, delimiter=";", decimal=",")
 
@@ -596,15 +585,10 @@ def district_heating_input():
 
     """
 
-    sources = config.datasets()["scenario_input"]["sources"]
+    sources = ScenarioCapacities.sources
 
     # import data to dataframe
-    file = (
-        Path(".")
-        / "data_bundle_egon_data"
-        / "nep2035_version2021"
-        / sources["eGon2035"]["capacities"]
-    )
+    file = Path(".") / sources.files["eGon2035_capacities"]
     df = pd.read_excel(
         file, sheet_name="Kurzstudie_KWK", dtype={"Wert": float}
     )
@@ -681,8 +665,8 @@ def eGon100_capacities():
 
     """
 
-    sources = config.datasets()["scenario_input"]["sources"]
-    targets = config.datasets()["scenario_input"]["targets"]
+    sources = ScenarioCapacities.sources
+    targets = ScenarioCapacities.targets.tables
 
     # read-in installed capacities
     cwd = Path(".")
@@ -700,18 +684,12 @@ def eGon100_capacities():
             / "results"
             / data_config["run"]["name"]
             / "csvs"
-            / sources["eGon100RE"]["capacities"]
+            / Path(sources.files["eGon100RE_capacities"]).name
         )
+
 
     else:
-        target_file = (
-            cwd
-            / "data_bundle_egon_data"
-            / "pypsa_eur"
-            / "csvs"
-            / sources["eGon100RE"]["capacities"]
-        )
-
+        target_file = cwd / sources.files["eGon100RE_capacities"]
     df = pd.read_csv(target_file, delimiter=",", skiprows=3)
     df.columns = [
         "component",
@@ -1043,8 +1021,37 @@ class ScenarioCapacities(Dataset):
     #:
     name: str = "ScenarioCapacities"
     #:
-    version: str = "0.0.19"
+    version: str = "0.0.20"
+    sources = DatasetSources(
+        files={
+            "eGon2035_capacities": "data_bundle_egon_data/nep2035_version2021/NEP2035_V2021_scnC2035.xlsx",
+            "eGon2035_list_conv_pp": "data_bundle_egon_data/nep2035_version2021/Kraftwerksliste_NEP_2021_konv.csv",
+            "eGon100RE_capacities": "data_bundle_egon_data/pypsa_eur/csvs/nodal_capacities.csv",
+        },
+        tables={
+            "boundaries": {
+                "schema": "boundaries",
+                "table": "vg250_lan",
+            },
+            "zensus_population": {
+                "schema": "society",
+                "table": "destatis_zensus_population_per_ha",
+            },
+        },
+    )
 
+    targets = DatasetTargets(
+        tables={
+            "scenario_capacities": {
+                "schema": "supply",
+                "table": "egon_scenario_capacities",
+            },
+            "nep_conventional_powerplants": {
+                "schema": "supply",
+                "table": "egon_nep_2021_conventional_powerplants",
+            },
+        }
+    )
     def __init__(self, dependencies):
         super().__init__(
             name=self.name,
