@@ -7,6 +7,11 @@ import os
 
 from egon.data import db
 from egon.data.datasets import Dataset
+from egon_validation import (
+    RowCountValidation,
+    DataTypeValidation,
+    WholeTableNotNullAndNotNaNValidation
+)
 
 
 def execute_sql_script(script):
@@ -211,4 +216,36 @@ class OsmBuildingsStreets(Dataset):
                 drop_temp_tables,
                 add_metadata,
             ),
+            validation={
+                "data_quality": [
+                    RowCountValidation(
+                        table="boundaries.egon_map_zensus_buildings_filtered",
+                        rule_id="TEST_ROW_COUNT",
+                        expected_count=28070301
+                    ),
+                    DataTypeValidation(
+                        table="boundaries.egon_map_zensus_buildings_filtered",
+                        rule_id="TEST_DATA_MULTIPLE_TYPES",
+                        column_types={"id": "integer", "cell_id": "integer"}
+                    ),
+                    WholeTableNotNullAndNotNaNValidation(
+                        table="boundaries.egon_map_zensus_buildings_filtered",
+                        rule_id="TEST_WHOLE_TABLE_NOT_NAN"
+                    ),
+                    RowCountValidation(
+                        table="boundaries.egon_map_zensus_buildings_residential",
+                        rule_id="TEST_ROW_COUNT",
+                        expected_count=27477467
+                    ),
+                    DataTypeValidation(
+                        table="boundaries.egon_map_zensus_buildings_residential",
+                        rule_id="TEST_DATA_MULTIPLE_TYPES",
+                        column_types={"id": "integer", "cell_id": "integer"}
+                    ),
+                    WholeTableNotNullAndNotNaNValidation(
+                        table="boundaries.egon_map_zensus_buildings_residential",
+                        rule_id="TEST_WHOLE_TABLE_NOT_NAN"
+                    )
+                ]
+            }
         )
