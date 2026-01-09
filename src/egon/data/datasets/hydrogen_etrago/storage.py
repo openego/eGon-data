@@ -220,7 +220,7 @@ def calculate_and_map_saltcavern_storage_potential():
     """
 
     # select onshore vg250 data
-    sources, _ = load_sources_and_targets("HydrogenBusEtrago")
+    sources, targets = load_sources_and_targets("HydrogenBusEtrago")
     vg250_data = db.select_geodataframe(
         f"""
         SELECT *
@@ -415,10 +415,9 @@ def write_saltcavern_potential():
     None
 
     """
-    _, targets = load_sources_and_targets("HydrogenBusEtrago")
     potential_areas = calculate_and_map_saltcavern_storage_potential()
+    _, targets = load_sources_and_targets("HydrogenBusEtrago")
     
-
 
     potential_areas.to_crs(epsg=4326).to_postgis(
         targets.tables["storage_potential"]["table"],
