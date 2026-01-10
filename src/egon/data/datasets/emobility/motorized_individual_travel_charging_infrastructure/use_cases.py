@@ -9,7 +9,6 @@ import geopandas as gpd
 import numpy as np
 import pandas as pd
 
-from egon.data import config
 from egon.data.datasets import load_sources_and_targets
 
 
@@ -277,7 +276,7 @@ def work(
     :param uc_dict: dict
         contains basic run info like region boundary and save directory
     """
-    sources, targets = load_sources_and_targets("ChargingInfrastructure")
+    sources, targets = load_sources_and_targets("MITChargingInfrastructure")
     uc_id = "work"
     logger.debug(f"Use case: {uc_id}")
 
@@ -292,7 +291,7 @@ def work(
     groups = in_region.groupby("landuse")
     group_labels = ["retail", "commercial", "industrial"]
 
-    srid = sources["tracbev"]["srid"]
+    srid = sources.original_data["sources"]["tracbev"]["srid"]
 
     result = gpd.GeoDataFrame(
         columns=["geometry", "landuse", "potential"], crs=f"EPSG:{srid}"

@@ -42,7 +42,7 @@ def write_to_db(
         Calculated use case
 
     """
-    sources, targets = load_sources_and_targets("ChargingInfrastructure")
+    sources, targets = load_sources_and_targets("MITChargingInfrastructure")
 
     if gdf.empty:
         return
@@ -50,14 +50,15 @@ def write_to_db(
     if "energy" in gdf.columns:
         gdf = gdf.assign(weight=gdf.energy.div(gdf.energy.sum()))
     else:
-        rng = np.random.default_rng(sources["constants"]["random_seed"])
+        rng = np.random.default_rng(sources.constants["random_seed"])
 
         gdf = gdf.assign(weight=rng.integers(low=0, high=100, size=len(gdf)))
 
         gdf = gdf.assign(weight=gdf.weight.div(gdf.weight.sum()))
 
-    target_table = targets["charging_infrastructure"]["table"]
-    target_schema = targets["charging_infrastructure"]["schema"]
+    target_conf = targets.charging_infrastructure
+    target_table = target_conf["table"]
+    target_schema = target_conf["schema"]
 
     max_id = db.select_dataframe(
         f"""
@@ -74,7 +75,7 @@ def write_to_db(
         use_case=use_case,
     )
 
-    cols_to_export = targets["charging_infrastructure"]["cols_to_export"]
+    cols_to_export = target_conf["cols_to_export"]
 
     gpd.GeoDataFrame(gdf[cols_to_export], crs=gdf.crs).to_postgis(
         target_table,
@@ -159,12 +160,11 @@ def get_data() -> dict[gpd.GeoDataFrame]:
     * miscellaneous found in *datasets.yml* in section *charging_infrastructure*
 
     Returns
-    -------
-
+    # ...
     """
-    sources, targets = load_sources_and_targets("ChargingInfrastructure")
+    sources, targets = load_sources_and_targets("MITChargingInfrastructure")
     
-    tracbev_cfg = sources["tracbev"]
+    tracbev_cfg = sources.original_data["sources"]["tracbev"]
     srid = tracbev_cfg["srid"]
 
     # TODO: get zensus housing data from DB instead of gpkg?
@@ -253,26 +253,26 @@ def get_data() -> dict[gpd.GeoDataFrame]:
     )
 
     data_dict["work_dict"] = {
-        "retail": sources["constants"]["work_weight_retail"],
-        "commercial": sources["constants"]["work_weight_commercial"],
-        "industrial": sources["constants"]["work_weight_industrial"],
+        "retail": sources.constants["work_weight_retail"],
+        "commercial": sources.constants["work_weight_commercial"],
+        "industrial": sources.constants["work_weight_industrial"],
     }
 
-    data_dict["sfh_available"] = sources["constants"][
+    data_dict["sfh_available"] = sources.constants[
         "single_family_home_share"
     ]
-    data_dict["sfh_avg_spots"] = sources["constants"][
+    data_dict["sfh_avg_spots"] = sources.constants[
         "single_family_home_spots"
     ]
-    data_dict["mfh_available"] = sources["constants"][
+    data_dict["mfh_available"] = sources.constants[
         "multi_family_home_share"
     ]
-    data_dict["mfh_avg_spots"] = sources["constants"][
+    data_dict["mfh_avg_spots"] = sources.constants[
         "multi_family_home_spots"
     ]
 
     data_dict["random_seed"] = np.random.default_rng(
-        sources["constants"]["random_seed"]
+        sources.constants["random_seed"]
     )
 
     return data_dict
