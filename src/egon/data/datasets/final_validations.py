@@ -21,8 +21,15 @@ from egon.data.validation.rules.custom.sanity import (
     HeatDemandValidation,
     ElectricalLoadSectorBreakdown,
 )
-from egon_validation.rules.formal.array_cardinality_check import ArrayCardinalityValidation
-from egon_validation.rules.custom.numeric_aggregation_check import ElectricalLoadAggregationValidation
+from egon_validation import (
+    ArrayCardinalityValidation,
+    ElectricalLoadAggregationValidation,
+    RowCountValidation,
+    DataTypeValidation,
+    NotNullAndNotNaNValidation,
+    WholeTableNotNullAndNotNaNValidation,
+    ValueSetValidation
+)
 
 
 def notasks():
@@ -1007,6 +1014,232 @@ class FinalValidations(Dataset):
                         rtol=0.02  # 2% tolerance
                     ),
                 ],
+                "data-quality": [
+                    #grid validation
+                    RowCountValidation(
+                        table="grid.egon_etrago_bus",
+                        rule_id="TEST_ROW_COUNT.egon_etrago_bus",
+                        expected_count={"Schleswig-Holstein": 2729, "Everything": 85710}
+                    ),
+                    DataTypeValidation(
+                        table="grid.egon_etrago_bus",
+                        rule_id="TEST_DATA_MULTIPLE_TYPES.egon_etrago_bus",
+                        column_types={
+                            "scen_name": "character varying", "bus_id": "bigint", "v_nom": "double precision",
+                            "type": "text", "carrier": "text", "v_mag_pu_set": "double precision",
+                            "v_mag_pu_min": "double precision", "v_mag_pu_max": "double precision",
+                            "x": "double precision", "y": "double precision", "geometry": "geometry", "country": "text"
+                        },
+                    ),
+                    NotNullAndNotNaNValidation(
+                        table="grid.egon_etrago_bus",
+                        rule_id="TEST_NOT_NAN.egon_etrago_bus",
+                        columns=[
+                            "scn_name", "bus_id", "v_nom", "carrier", "v_mag_pu_min", "v_mag_pu_max", "x", "y", "geom"
+                        ]
+                    ),
+                    WholeTableNotNullAndNotNaNValidation(
+                        table="grid.egon_etrago_bus",
+                        rule_id="TEST_WHOLE_TABLE_NOT_NAN.egon_etrago_bus"
+                    ),
+                    ValueSetValidation(
+                        table="grid.egon_etrago_bus",
+                        rule_id="TEST_VALUE_SET_SCENARIO.egon_etrago_bus",
+                        column="scn_name",
+                        expected_values=["eGon2035", "eGon2035_lowflex", "eGon100RE"]
+                    ),
+                    ValueSetValidation(
+                        table="grid.egon_etrago_bus",
+                        rule_id="TEST_VALUE_SET_CARRIER.egon_etrago_bus",
+                        column="carrier",
+                        expected_values=[
+                            "rural_heat", "urban_central_water_tanks", "low_voltage", "CH4", "H2_saltcavern",
+                            "services_rural_heat", "services_rural_water_tanks", "central_heat_store", "AC", "Li_ion",
+                            "H2_grid", "dsm", "urban_central_heat", "residential_rural_heat", "central_heat",
+                            "rural_heat_store", "residential_rural_water_tanks"
+                        ]
+                    ),
+                    RowCountValidation(
+                        table="grid.egon_etrago_generator",
+                        rule_id="TEST_ROW_COUNT.egon_etrago_generator",
+                        expected_count={"Schleswig-Holstein": 2863, "Everything": 40577}
+                    ),
+                    DataTypeValidation(
+                        table="grid.egon_etrago_generator",
+                        rule_id="TEST_DATA_MULTIPLE_TYPES.egon_etrago_generator",
+                        column_types={
+                            "scen_name": "character varying", "generator_id": "bigint", "control": "text",
+                            "type": "text", "carrier": "text", "p_nom": "double precision", "p_nom_extendable": "boolean",
+                            "p_nom_min": "double precision", "p_nom_max": "double precision", "p_min_pu": "double precision",
+                            "p_max_pu": "double precision", "p_set": "double precision", "q_set": "double precision",
+                            "sign": "double precision", "marginal_cost": "double precision", "build_year": "bigint",
+                            "lifetime": "double precision", "capital_cost": "double precision", "efficiency": "double precision",
+                            "commitable": "boolean", "start_up_cost": "double precision", "shut_down_cost": "double precision",
+                            "min_up_time": "bigint", "min_down_time": "bigint", "up_time_before": "bigint", "down_time_before": "bigint",
+                            "ramp_limit_up": "double precision", "ramp_limit_down": "double precision",
+                            "ramp_limit_start_up": "double precision", "ramp_limit_shut_down": "double precision",
+                            "e_nom_max": "double precision"
+                        },
+                    ),
+                    NotNullAndNotNaNValidation(
+                        table="grid.egon_etrago_generator",
+                        rule_id="TEST_NOT_NAN.egon_etrago_generator",
+                        columns=[
+                            "scn_name", "generator_id", "bus", "control", "type", "carrier", "p_nom", "p_nom_extendable",
+                            "p_nom_min", "p_nom_max", "p_min_pu", "p_max_pu", "sign", "marginal_cost", "build_year",
+                            "lifetime", "capital_cost", "efficiency", "committable", "start_up_cost", "shut_down_cost",
+                            "min_up_time", "min_down_time", "up_time_before", "down_time_before", "ramp_limit_start_up",
+                            "ramp_limit_shut_down", "e_nom_max"
+                        ]
+                    ),
+                    WholeTableNotNullAndNotNaNValidation(
+                        table="grid.egon_etrago_generator",
+                        rule_id="TEST_WHOLE_TABLE_NOT_NAN.egon_etrago_generator"
+                    ),
+                    ValueSetValidation(
+                        table="grid.egon_etrago_generator",
+                        rule_id="TEST_VALUE_SET_SCENARIO.egon_etrago_generator",
+                        column="scn_name",
+                        expected_values=["eGon2035", "eGon2035_lowflex", "eGon100RE"]
+                    ),
+                    ValueSetValidation(
+                        table="grid.egon_egon_etrago_generator",
+                        rule_id="TEST_VALUE_SET_CARRIER.egon_etrago_generator",
+                        column="carrier",
+                        expected_values=[
+                            "CH4", "others", "central_biomass_CHP", "wind_onshore", "lignite", "geo_thermal", "solar",
+                            "reservoir", "services_rural_solar_thermal_collector", "residential_rural_solar_thermal_collector",
+                            "industrial_biomass_CHP", "biomass", "urban_central_solar_thermal_collector", "run_of_river",
+                            "oil", "central_biomass_CHP_heat", "nuclear", "coal", "solar_thermal_collector", "solar_rooftop",
+                            "wind_offshore"
+                        ]
+                    ),
+                    RowCountValidation(
+                        table="grid.egon_etrago_generator_timeseries",
+                        rule_id="TEST_ROW_COUNT.egon_etrago_generator_timeseries",
+                        expected_count={"Schleswig-Holstein": 1929, "Everything": 28651}
+                    ),
+                    DataTypeValidation(
+                        table="grid.egon_etrago_generator_timeseries",
+                        rule_id="TEST_DATA_MULTIPLE_TYPES.egon_etrago_generator_timeseries",
+                        column_types={
+                            "scn_name":	"character varying", "generator_id": "integer", "temp_id": "integer",
+                            "p_set": "double precision[]", "q_set":	"double precision[]", "p_min_pu": "double_precision []",
+                            "p_max_pu":	"double precision []", "marginal_cost":	"double precision[]"
+                        },
+                    ),
+                    NotNullAndNotNaNValidation(
+                        table="grid.egon_etrago_generator_timeseries",
+                        rule_id="TEST_NOT_NAN.egon_etrago_generator_timeseries",
+                        columns=[
+                            "scn_name", "generator_id", "temp_id", "p_max_pu"
+                        ]
+                    ),
+                    WholeTableNotNullAndNotNaNValidation(
+                        table="grid.egon_etrago_generator_timeseries",
+                        rule_id="TEST_WHOLE_TABLE_NOT_NAN.egon_etrago_generator_timeseries"
+                    ),
+                    ValueSetValidation(
+                        table="grid.egon_etrago_generator_timeseries",
+                        rule_id="TEST_VALUE_SET_SCENARIO.egon_etrago_generator_timeseries",
+                        column="scn_name",
+                        expected_values=["eGon2035", "eGon2035_lowflex", "eGon100RE"]
+                    ),
+                    RowCountValidation(
+                        table="grid.egon_etrago_line",
+                        rule_id="TEST_ROW_COUNT.egon_etrago_line",
+                        expected_count={"Schleswig-Holstein": 1197, "Everything": 69901}
+                    ),
+                    DataTypeValidation(
+                        table="grid.egon_etrago_line",
+                        rule_id="TEST_DATA_MULTIPLE_TYPES.egon_etrago_line",
+                        column_types={
+                            "scn_name":	"character varying", "line_id":	"bigint", "bus0": "bigint", "bus1":	"bigint",
+                            "type":	"text", "carrier": "text", "x": "numeric", "r": "numeric", "g":	"numeric", "b":	"numeric",
+                            "s_nom": "numeric", "s_nom_extendable":	"boolean", "s_nom_min":	"double precision",
+                            "s_nom_max": "double precision", "s_max_pu": "double precision", "build_year": "bigint",
+                            "lifetime":	"double precision", "capital_cost":	"double precision", "length": "double precision",
+                            "cables": "integer", "terrain_factor": "double precision", "num_parallel": "double precision",
+                            "v_ang_min": "double precision", "v_ang_max": "double precision", "v_nom": "double precision",
+                            "geom":	"geometry", "topo":	"geometry"
+                        },
+                    ),
+                    NotNullAndNotNaNValidation(
+                        table="grid.egon_etrago_line",
+                        rule_id="TEST_NOT_NAN.egon_etrago_line",
+                        columns=[
+                            "scn_name", "line_id", "bus0", "bus1", "carrier", "x", "r", "g", "b", "s_nom",
+                            "s_nom_extendable", "s_nom_min", "s_nom_max", "s_max_pu", "build_year", "lifetime",
+                            "capital_cost", "length", "cables", "terrain_factor", "num_parallel", "v_ang_min",
+                            "v_ang_max", "v_nom", "geom", "topo",
+                        ]
+                    ),
+                    WholeTableNotNullAndNotNaNValidation(
+                        table="grid.egon_etrago_line",
+                        rule_id="TEST_WHOLE_TABLE_NOT_NAN.egon_etrago_line"
+                    ),
+                    ValueSetValidation(
+                        table="grid.egon_etrago_line",
+                        rule_id="TEST_VALUE_SET_SCENARIO.egon_etrago_line",
+                        column="scn_name",
+                        expected_values=["eGon2035", "eGon2035_lowflex", "eGon100RE"]
+                    ),
+                    ValueSetValidation(
+                        table="grid.egon_egon_etrago_line",
+                        rule_id="TEST_VALUE_SET_CARRIER.egon_etrago_line",
+                        column="carrier",
+                        expected_values=["AC"]
+                    ),
+                    RowCountValidation(
+                        table="grid.egon_etrago_line_timeseries",
+                        rule_id="TEST_ROW_COUNT.egon_etrago_line_timeseries",
+                        expected_count={"Schleswig-Holstein": 1197, "Everything": 69714}
+                    ),
+                    DataTypeValidation(
+                        table="grid.egon_etrago_line",
+                        rule_id="TEST_DATA_MULTIPLE_TYPES.egon_etrago_line_timeseries",
+                        column_types={
+                            "scn_name": "character varying", "line_id": "bigint", "bus0": "bigint", "bus1": "bigint",
+                            "type": "text", "carrier": "text", "x": "numeric", "r": "numeric", "g": "numeric",
+                            "b": "numeric",
+                            "s_nom": "numeric", "s_nom_extendable": "boolean", "s_nom_min": "double precision",
+                            "s_nom_max": "double precision", "s_max_pu": "double precision", "build_year": "bigint",
+                            "lifetime": "double precision", "capital_cost": "double precision",
+                            "length": "double precision",
+                            "cables": "integer", "terrain_factor": "double precision",
+                            "num_parallel": "double precision",
+                            "v_ang_min": "double precision", "v_ang_max": "double precision",
+                            "v_nom": "double precision",
+                            "geom": "geometry", "topo": "geometry"
+                        },
+                    ),
+                    NotNullAndNotNaNValidation(
+                        table="grid.egon_etrago_line_timeseries",
+                        rule_id="TEST_NOT_NAN.egon_etrago_line_timeseries",
+                        columns=[
+                            "scn_name", "line_id", "bus0", "bus1", "carrier", "x", "r", "g", "b", "s_nom",
+                            "s_nom_extendable", "s_nom_min", "s_nom_max", "s_max_pu", "build_year", "lifetime",
+                            "capital_cost", "length", "cables", "terrain_factor", "num_parallel", "v_ang_min",
+                            "v_ang_max", "v_nom", "geom", "topo",
+                        ]
+                    ),
+                    WholeTableNotNullAndNotNaNValidation(
+                        table="grid.egon_etrago_generator_line_timeseries",
+                        rule_id="TEST_WHOLE_TABLE_NOT_NAN.egon_etrago_line_timeseries"
+                    ),
+                    ValueSetValidation(
+                        table="grid.egon_etrago_line_timeseries",
+                        rule_id="TEST_VALUE_SET_SCENARIO.egon_etrago_line_timeseries",
+                        column="scn_name",
+                        expected_values=["eGon2035", "eGon2035_lowflex", "eGon100RE"]
+                    ),
+                    ValueSetValidation(
+                        table="grid.egon_egon_etrago_line_timeseries",
+                        rule_id="TEST_VALUE_SET_CARRIER.egon_etrago_line_timeseries",
+                        column="carrier",
+                        expected_values=["AC"]
+                    ),
+                ]
             },
             on_validation_failure="continue"  # Continue pipeline even if validations fail
         )
