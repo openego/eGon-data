@@ -11,6 +11,13 @@ from egon.data import db
 from egon.data.datasets import Dataset
 import egon.data.config
 
+from egon_validation import(
+    RowCountValidation,
+    DataTypeValidation,
+    NotNullAndNotNaNValidation,
+    WholeTableNotNullAndNotNaNValidation
+)
+
 # will be later imported from another file ###
 Base = declarative_base()
 
@@ -22,6 +29,50 @@ class SocietyPrognosis(Dataset):
             version="0.0.1",
             dependencies=dependencies,
             tasks=(create_tables, {zensus_population, zensus_household}),
+            validation={
+                "data-quality":[
+                    RowCountValidation(
+                        table="society.egon_household_prognosis",
+                        rule_id="TEST_ROW_COUNT.egon_household_prognosis",
+                        expected_count={"Everything": 5319490}
+                    ),
+                    DataTypeValidation(
+                        table="society.egon_household_prognosis",
+                        rule_id="TEST_DATA_MULTIPLE_TYPES.egon_household_prognosis",
+                        column_types={"zensus_population_id": "integer", "year": "integer", "households": "double precision"}
+                    ),
+                    NotNullAndNotNaNValidation(
+                        table="society.egon_household_prognosis",
+                        rule_id="TEST_NOT_NAN.egon_household_prognosis",
+                        columns=["zensus_population_id", "year", "households"]
+                    ),
+                    WholeTableNotNullAndNotNaNValidation(
+                        table="society.egon_household_prognosis",
+                        rule_id="TEST_WHOLE_TABLE_NOT_NAN.egon_household_prognosis"
+                    ),
+                    RowCountValidation(
+                        table="society.egon_population_prognosis",
+                        rule_id="TEST_ROW_COUNT.egon_population_prognosis",
+                        expected_count={"Everything": 6355446}
+                    ),
+                    DataTypeValidation(
+                        table="society.egon_population_prognosis",
+                        rule_id="TEST_DATA_MULTIPLE_TYPES.egon_population_prognosis",
+                        column_types={"zensus_population_id": "integer", "year": "integer",
+                                      "population": "double precision"}
+                    ),
+                    NotNullAndNotNaNValidation(
+                        table="society.egon_population_prognosis",
+                        rule_id="TEST_NOT_NAN.egon_population_prognosis",
+                        columns=["zensus_population_id", "year", "population"]
+                    ),
+                    WholeTableNotNullAndNotNaNValidation(
+                        table="society.egon_population_prognosis",
+                        rule_id="TEST_WHOLE_TABLE_NOT_NAN.egon_population_prognosis"
+                    ),
+                ]
+            },
+            on_validation_failure="continue"
         )
 
 
