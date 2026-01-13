@@ -17,6 +17,12 @@ from egon.data.datasets import Dataset
 import egon.data.config
 import egon.data.datasets.scenario_parameters.parameters as parameters
 
+from egon_validation import (
+    RowCountValidation,
+    DataTypeValidation,
+    WholeTableNotNullAndNotNaNValidation
+)
+
 Base = declarative_base()
 
 
@@ -314,4 +320,26 @@ class ScenarioParameters(Dataset):
                 download_pypsa_technology_data,
                 insert_scenarios,
             ),
+            validation={
+                "data-quality": [
+                    RowCountValidation(
+                        table="scenario.egon_scenario_parameters",
+                        rule_id="ROW_COUNT.egon_scenario_parameters",
+                        expected_count={"Schleswig-Holstein": 5, "Everything": 3}
+                    ),
+                    DataTypeValidation(
+                        table="scenario.egon_scenario_parameters",
+                        rule_id="DATA_MULTIPLE_TYPES.egon_scenario_parameters",
+                        column_types={
+                            "name": "character varying", "global_parameters": "jsonb", "electricity_parameters": "jsonb",
+                            "gas_parameters": "jsonb", "heat_parameters": "jsonb", "mobility_parameters": "jsonb",
+                            "description": "character varying"}
+                    ),
+                    WholeTableNotNullAndNotNaNValidation(
+                        table="scenario.egon_scenario_parameters",
+                        rule_id="WHOLE_TABLE_NOT_NAN.egon_scenario_parameters"
+                    )
+                ]
+            },
+            on_validation_failure = "continue"
         )
