@@ -24,6 +24,14 @@ from egon.data.metadata import (
     sources,
 )
 
+from egon_validation import(
+    RowCountValidation,
+    DataTypeValidation,
+    NotNullAndNotNaNValidation,
+    WholeTableNotNullAndNotNaNValidation,
+    ValueSetValidation
+)
+
 Base = declarative_base()
 
 
@@ -1051,4 +1059,146 @@ class ScenarioCapacities(Dataset):
             version=self.version,
             dependencies=dependencies,
             tasks=tasks,
+            validation={
+                "data-quality": [
+                    RowCountValidation(
+                        table="supply.egon_nep_2021_conventional_powerplants",
+                        rule_id="TEST_ROW_COUNT.egon_nep_2021_conventional_powerplants",
+                        expected_count={"Schleswig-Holstein": 40, "Everything": 737}
+                    ),
+                    DataTypeValidation(
+                        table="supply.egon_nep_2021_conventional_powerplants",
+                        rule_id="TEST_DATA_MULTIPLE_TYPES.egon_nep_2021_conventional_powerplants",
+                        column_types={
+                            "index": "bigint",
+                            "bnetza_id": "text",
+                            "name": "text",
+                            "name_unit": "text",
+                            "carrier_nep": "text",
+                            "chp": "text",
+                            "postcode": "text",
+                            "city": "text",
+                            "federal_state": "text",
+                            "commissioned": "double precision",
+                            "status": "text",
+                            "capacity": "double precision",
+                            "a2035_chp": "text",
+                            "a2035_capacity": "double precision",
+                            "b2035_chp": "text",
+                            "b2035_capacity": "double precision",
+                            "c2035_chp": "text",
+                            "c2035_capacity": "double precision",
+                            "b2040_chp": "text",
+                            "b2040_capacity": "double precision",
+                            "carrier": "text"
+                        }
+                    ),
+                    NotNullAndNotNaNValidation(
+                        table="supply.egon_nep_2021_conventional_powerplants",
+                        rule_id="TEST_NOT_NAN.egon_nep_2021_conventional_powerplants",
+                        columns=[
+                            "index",
+                            "bnetza_id",
+                            "name",
+                            "name_unit",
+                            "carrier_nep",
+                            "chp",
+                            "postcode",
+                            "city",
+                            "federal_state",
+                            "commissioned",
+                            "status",
+                            "capacity",
+                            "a2035_chp",
+                            "a2035_capacity",
+                            "b2035_chp",
+                            "b2035_capacity",
+                            "c2035_chp",
+                            "c2035_capacity",
+                            "b2040_chp",
+                            "b2040_capacity",
+                            "carrier"
+                        ]
+                    ),
+                    WholeTableNotNullAndNotNaNValidation(
+                        table="supply.egon_nep_2021_conventional_powerplants",
+                        rule_id="TEST_WHOLE_TABLE_NOT_NAN.egon_nep_2021_conventional_powerplants"
+                    ),
+                    RowCountValidation(
+                        table="supply.egon_scenario_capacities",
+                        rule_id="TEST_ROW_COUNT.egon_scenario_capacities",
+                        expected_count={"Schleswig-Holstein": 17, "Everything": 236}
+                    ),
+                    DataTypeValidation(
+                        table="supply.egon_scenario_capacities",
+                        rule_id="TEST_DATA_MULTIPLE_TYPES.egon_scenario_capacities",
+                        column_types={
+                            "index": "integer",
+                            "component": "character varying",
+                            "carrier": "character varying",
+                            "capacity": "double precision",
+                            "nuts": "character varying",
+                            "scenario_name": "character varying"
+                        }
+                    ),
+                    NotNullAndNotNaNValidation(
+                        table="supply.egon_scenario_capacities",
+                        rule_id="TEST_NOT_NAN.egon_scenario_capacities",
+                        columns=[
+                            "index",
+                            "component",
+                            "carrier",
+                            "capacity",
+                            "nuts",
+                            "scenario_name"
+                        ]
+                    ),
+                    WholeTableNotNullAndNotNaNValidation(
+                        table="supply.egon_scenario_capacities",
+                        rule_id="TEST_WHOLE_TABLE_NOT_NAN.egon_scenario_capacities"
+                    ),
+                    ValueSetValidation(
+                        table="supply.egon_scenario_capacities",
+                        rule_id="VALUE_SET_VALIDATION_CARRIER.egon_scenario_capacities",
+                        column="carrier",
+                        expected_values=["pumped_hydro",
+                            "gas_for_industry",
+                            "gas_for_industry_CC",
+                            "biogas_to_gas",
+                            "Sabatier",
+                            "urban_central_gas_CHP",
+                            "solar",
+                            "reservoir",
+                            "biogas",
+                            "residential_rural_heat_pump",
+                            "urban_central_solar_thermal_collector",
+                            "oil",
+                            "urban_central_resistive_heater",
+                            "wind_offshore",
+                            "battery",
+                            "others",
+                            "gas",
+                            "wind_onshore",
+                            "small_chp",
+                            "Li_ion",
+                            "urban_central_heat_pump",
+                            "urban_central_geo_thermal",
+                            "SMR",
+                            "biomass",
+                            "hydro",
+                            "run_of_river",
+                            "rural_solar_thermal",
+                            "solar_rooftop",
+                            "BEV_charger"]
+                    ),
+                    ValueSetValidation(
+                        table="supply.egon_scenario_capacities",
+                        rule_id="VALUE_SET_VALIDATION_SCENARIO_NAME.egon_scenario_capacities",
+                        column="scenario_name",
+                        expected_values=["eGon2035", "eGon100RE"]
+                    ),
+
+                ]
+            },
+            on_validation_failure="continue"
         )

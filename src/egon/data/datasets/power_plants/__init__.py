@@ -44,6 +44,14 @@ import egon.data.datasets.power_plants.pv_ground_mounted as pv_ground_mounted
 import egon.data.datasets.power_plants.wind_farms as wind_onshore
 import egon.data.datasets.power_plants.wind_offshore as wind_offshore
 
+from egon_validation import(
+    RowCountValidation,
+    DataTypeValidation,
+    NotNullAndNotNaNValidation,
+    WholeTableNotNullAndNotNaNValidation,
+    ValueSetValidation
+)
+
 Base = declarative_base()
 
 
@@ -1624,4 +1632,68 @@ class PowerPlants(Dataset):
             version=self.version,
             dependencies=dependencies,
             tasks=tasks,
+            validation={
+                "data-quality": [
+                    RowCountValidation(
+                        table="supply.egon_power_plants",
+                        rule_id="TEST_ROW_COUNT.egon_power_plants",
+                        expected_count={"Schleswig-Holstein":34828, "Everything": 1103}
+                    ),
+                    DataTypeValidation(
+                        table="supply.egon_power_plants",
+                        rule_id="TEST_DATA_MULTIPLE_TYPES.egon_power_plants",
+                        column_types={
+                            "id": "bigint",
+                            "sources": "jsonb",
+                            "source_id": "jsonb",
+                            "carrier": "character varying",
+                            "el_capacity": "double precision",
+                            "bus_id": "integer",
+                            "voltage_level": "integer",
+                            "weather_cell_id": "integer",
+                            "scenario": "character varying",
+                            "geom": "geometry"
+                        }
+                    ),
+                    NotNullAndNotNaNValidation(
+                        table="supply.egon_power_plants",
+                        rule_id="TEST_NOT_NAN.egon_power_plants",
+                        columns=["id",
+                            "sources",
+                            "source_id",
+                            "carrier",
+                            "el_capacity",
+                            "bus_id",
+                            "voltage_level",
+                            "weather_cell_id",
+                            "scenario",
+                            "geom"]
+                    ),
+                    WholeTableNotNullAndNotNaNValidation(
+                        table="supply.egon_power_plants",
+                        rule_id="TEST_WHOLE_TABLE_NOT_NAN.egon_power_plants"
+                    ),
+                    ValueSetValidation(
+                        table="supply.egon_power_plants",
+                        rule_id="VALUE_SET_VALIDATION_CARRIER.egon_power_plants",
+                        column="carrier",
+                        expected_values=["others",
+                            "gas",
+                            "biomass",
+                            "run_of_river",
+                            "wind_onshore",
+                            "oil",
+                            "wind_offshore",
+                            "solar",
+                            "reservoir"]
+                    ),
+                    ValueSetValidation(
+                        table="supply.egon_power_plants",
+                        rule_id="VALUE_SET_VALIDATION_SCENARIO.egon_power_plants",
+                        column="scenario",
+                        expected_values=["eGon2035", "eGon100RE"]
+                    ),
+                ]
+            },
+            on_validation_failure="continue"
         )

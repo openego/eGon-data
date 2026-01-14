@@ -16,6 +16,14 @@ from egon.data.datasets import Dataset
 from egon.data.datasets.scenario_parameters import get_sector_parameters
 import egon.data.config
 
+from egon_validation import(
+    RowCountValidation,
+    DataTypeValidation,
+    NotNullAndNotNaNValidation,
+    WholeTableNotNullAndNotNaNValidation,
+    ValueSetValidation
+)
+
 # will be later imported from another file ###
 Base = declarative_base()
 
@@ -56,6 +64,30 @@ class WeatherData(Dataset):
                 },
                 insert_weather_cells,
             ),  # download_era5 should be included once issue #1250 is solved
+            validation={
+                "data-quality": [
+                    RowCountValidation(
+                        table="supply.egon_era5_weather_cells",
+                        rule_id="TEST_ROW_COUNT.egon_era5_weather_cells",
+                        expected_count=29673
+                    ),
+                    DataTypeValidation(
+                        table="supply.egon_era5_weather_cells",
+                        rule_id="TEST_DATA_MULTIPLE_TYPES.egon_era5_weather_cells",
+                        column_types={"w_id": "integer", "geom": "geometry", "geom_point": "geometry"}
+                    ),
+                    NotNullAndNotNaNValidation(
+                        table="supply.egon_era5_weather_cells",
+                        rule_id="TEST_NOT_NAN.egon_era5_weather_cells",
+                        columns=["w_id", "geom", "geom_point"]
+                    ),
+                    WholeTableNotNullAndNotNaNValidation(
+                        table="supply.egon_era5_weather_cells",
+                        rule_id="TEST_WHOLE_TABLE_NOT_NAN.egon_era5_weather_cells"
+                    ),
+                ]
+            },
+            on_validation_failure="continue"
         )
 
 

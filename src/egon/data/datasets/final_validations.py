@@ -1190,6 +1190,7 @@ class FinalValidations(Dataset):
                         column="carrier",
                         expected_values=["AC"]
                     ),
+                    #Row Count doen't equal egon_etrago_line,
                     RowCountValidation(
                         table="grid.egon_etrago_line_timeseries",
                         rule_id="TEST_ROW_COUNT.egon_etrago_line_timeseries",

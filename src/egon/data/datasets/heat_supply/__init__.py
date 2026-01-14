@@ -32,6 +32,14 @@ from egon.data.metadata import (
     sources,
 )
 
+from egon_validation import(
+    RowCountValidation,
+    DataTypeValidation,
+    NotNullAndNotNaNValidation,
+    WholeTableNotNullAndNotNaNValidation,
+    ValueSetValidation
+)
+
 # Will later be imported from another file.
 Base = declarative_base()
 
@@ -404,6 +412,105 @@ class HeatSupply(Dataset):
                 },
                 metadata,
             ),
+            validation={
+                "data-quality":[
+                    RowCountValidation(
+                        table="supply.egon_district_heating",
+                        rule_id="TEST_ROW_COUNT.egon_district_heating",
+                        expected_count={"Schleswig-Holstein": 402, "Everything": 9090}
+                    ),
+                    DataTypeValidation(
+                        table="supply.egon_district_heating",
+                        rule_id="TEST_DATA_MULTIPLE_TYPES.egon_district_heating",
+                        column_types={
+                            "index": "integer",
+                            "district_heating_id": "integer",
+                            "carrier": "character varying",
+                            "category": "character varying",
+                            "capacity": "double precision",
+                            "geometry": "geometry",
+                            "scenario": "character varying"
+                        }
+                    ),
+                    NotNullAndNotNaNValidation(
+                        table="supply.egon_district_heating",
+                        rule_id="TEST_NOT_NAN.egon_district_heating",
+                        columns=[
+                            "index",
+                            "district_heating_id",
+                            "carrier",
+                            "category",
+                            "capacity",
+                            "geometry",
+                            "scenario"
+                        ]
+                    ),
+                    WholeTableNotNullAndNotNaNValidation(
+                        table="supply.egon_district_heating",
+                        rule_id="TEST_WHOLE_TABLE_NOT_NAN.egon_district_heating"
+                    ),
+                    ValueSetValidation(
+                        table="supply.egon_district_heating",
+                        rule_id="VALUE_SET_VALIDATION_CARRIER.egon_district_heating",
+                        column="carrier",
+                        expected_values=["geo_thermal", "CHP", "gas_boiler", "resistive_heater", "heat_pump", "solar_thermal_collector"]
+                    ),
+                    ValueSetValidation(
+                        table="supply.egon_district_heating",
+                        rule_id="VALUE_SET_VALIDATION_SCENARIO.egon_district_heating",
+                        column="scenario",
+                        expected_values=["eGon2035"]
+                    ),
+                    RowCountValidation(
+                        table="supply.egon_individual_heating",
+                        rule_id="TEST_ROW_COUNT.egon_individual_heating",
+                        expected_count={"Schleswig-Holstein": 400, "Everything": 7692}
+                    ),
+                    DataTypeValidation(
+                        table="supply.egon_individual_heating",
+                        rule_id="TEST_DATA_MULTIPLE_TYPES.egon_individual_heating",
+                        column_types={
+                            "index": "integer",
+                            "mv_grid_id": "integer",
+                            "carrier": "character varying",
+                            "category": "character varying",
+                            "capacity": "double precision",
+                            "geometry": "geometry",
+                            "scenario": "character varying"
+                        }
+                    ),
+                    NotNullAndNotNaNValidation(
+                        table="supply.egon_individual_heating",
+                        rule_id="TEST_NOT_NAN.egon_individual_heating",
+                        columns=[
+                            "index",
+                            "mv_grid_id",
+                            "carrier",
+                            "category",
+                            "capacity",
+                            "geometry",
+                            "scenario"
+                        ]
+                    ),
+                    WholeTableNotNullAndNotNaNValidation(
+                        table="supply.egon_individual_heating",
+                        rule_id="TEST_WHOLE_TABLE_NOT_NAN.egon_individual_heating"
+                    ),
+                    ValueSetValidation(
+                        table="supply.egon_individual_heating",
+                        rule_id="VALUE_SET_VALIDATION_CARRIER.egon_individual_heating",
+                        column="carrier",
+                        expected_values=["gas_boiler", "heat_pump"]
+                    ),
+                    ValueSetValidation(
+                        table="supply.egon_individual_heating",
+                        rule_id="VALUE_SET_VALIDATION_SCENARIO.egon_individual_heating",
+                        column="scenario",
+                        expected_values=["eGon2035"]
+                    ),
+                ]
+            },
+            on_validation_failure="continue"
         )
 
 

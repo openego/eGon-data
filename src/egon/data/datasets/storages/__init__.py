@@ -34,6 +34,14 @@ from egon.data.datasets.storages.pumped_hydro import (
 )
 from egon.data.db import session_scope
 
+from egon_validation import(
+    RowCountValidation,
+    DataTypeValidation,
+    NotNullAndNotNaNValidation,
+    WholeTableNotNullAndNotNaNValidation,
+    ValueSetValidation
+)
+
 Base = declarative_base()
 
 
@@ -111,6 +119,57 @@ class Storages(Dataset):
                         table="supply.egon_home_batteries",
                         rule_id="SANITY_HOME_BATTERIES_AGGREGATION_EGON100RE",
                         scenario="eGon100RE"
+                    ),
+                    RowCountValidation(
+                        table="supply.egon_storages",
+                        rule_id="TEST_ROW_COUNT.egon_storages",
+                        expected_count={"Schleswig-Holstein": 290, "Everything": 7748}
+                    ),
+                    DataTypeValidation(
+                        table="supply.egon_storages",
+                        rule_id="TEST_DATA_MULTIPLE_TYPES.egon_storages",
+                        column_types={
+                            "id": "bigint",
+                            "sources": "jsonb",
+                            "source_id": "jsonb",
+                            "carrier": "character varying",
+                            "el_capacity": "double precision",
+                            "bus_id": "integer",
+                            "voltage_level": "integer",
+                            "scenario": "character varying",
+                            "geom": "geometry"
+                        }
+                    ),
+                    NotNullAndNotNaNValidation(
+                        table="supply.egon_storages",
+                        rule_id="TEST_NOT_NAN.egon_storages",
+                        columns=[
+                            "id",
+                            "sources",
+                            "source_id",
+                            "carrier",
+                            "el_capacity",
+                            "bus_id",
+                            "voltage_level",
+                            "scenario",
+                            "geom"
+                        ]
+                    ),
+                    WholeTableNotNullAndNotNaNValidation(
+                        table="supply.egon_storages",
+                        rule_id="TEST_WHOLE_TABLE_NOT_NAN.egon_storages"
+                    ),
+                    ValueSetValidation(
+                        table="supply.egon_storages",
+                        rule_id="VALUE_SET_VALIDATION_SCENARIO.egon_storages",
+                        column="scenario",
+                        expected_values=["eGon2035", "eGon100RE"]
+                    ),
+                    ValueSetValidation(
+                        table="supply.egon_storages",
+                        rule_id="VALUE_SET_VALIDATION_CARRIER.egon_storages",
+                        column="carrier",
+                        expected_values=["home_battery", "pumped_hydro"]
                     ),
                 ]
             },

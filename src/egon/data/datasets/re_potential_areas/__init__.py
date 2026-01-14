@@ -13,6 +13,13 @@ from egon.data import db
 from egon.data.datasets import Dataset
 import egon.data.config
 
+from egon_validation import(
+    RowCountValidation,
+    DataTypeValidation,
+    NotNullAndNotNaNValidation,
+    WholeTableNotNullAndNotNaNValidation
+)
+
 Base = declarative_base()
 
 
@@ -152,4 +159,78 @@ class re_potential_area_setup(Dataset):
             version=self.version,
             dependencies=dependencies,
             tasks=self.tasks,
+            validation={
+                "data-quality": [
+                    RowCountValidation(
+                        table="supply.egon_re_potential_area_pv_agricultur",
+                        rule_id="TEST_ROW_COUNT.egon_re_potential_area_pv_agricultur",
+                        expected_count={"Schleswig-Holstein": 388, "Everything": 8259}
+                    ),
+                    DataTypeValidation(
+                        table="supply.egon_re_potential_area_pv_agricultur",
+                        rule_id="TEST_DATA_MULTIPLE_TYPES.egon_re_potential_area_pv_agricultur",
+                        column_types={
+                            "id": "integer",
+                            "geom": "geometry"
+                        }
+                    ),
+                    NotNullAndNotNaNValidation(
+                        table="supply.egon_re_potential_area_pv_agricultur",
+                        rule_id="TEST_NOT_NAN.egon_re_potential_area_pv_agricultur",
+                        columns=["id",
+                                 "geom"]
+                    ),
+                    WholeTableNotNullAndNotNaNValidation(
+                        table="supply.egon_re_potential_area_pv_agricultur",
+                        rule_id="TEST_WHOLE_TABLE_NOT_NAN.egon_re_potential_area_pv_agricultur"
+                    ),
+                    RowCountValidation(
+                        table="supply.egon_re_potential_area_pv_road_railway",
+                        rule_id="TEST_ROW_COUNT.egon_re_potential_area_pv_road_railway",
+                        expected_count={"Schleswig-Holstein": 479, "Everything": 5159}
+                    ),
+                    DataTypeValidation(
+                        table="supply.egon_re_potential_area_pv_road_railway",
+                        rule_id="TEST_DATA_MULTIPLE_TYPES.egon_re_potential_area_pv_road_railway",
+                        column_types={
+                            "id": "integer",
+                            "geom": "geometry"
+                        }
+                    ),
+                    NotNullAndNotNaNValidation(
+                        table="supply.egon_re_potential_area_pv_road_railway",
+                        rule_id="TEST_NOT_NAN.egon_re_potential_area_pv_road_railway",
+                        columns=["id",
+                                 "geom"]
+                    ),
+                    WholeTableNotNullAndNotNaNValidation(
+                        table="supply.egon_re_potential_area_pv_road_railway",
+                        rule_id="TEST_WHOLE_TABLE_NOT_NAN.egon_re_potential_area_pv_road_railway"
+                    ),
+                    RowCountValidation(
+                        table="supply.egon_re_potential_area_wind",
+                        rule_id="TEST_ROW_COUNT.egon_re_potential_area_wind",
+                        expected_count={"Schleswig-Holstein": 6306, "Everything": 120268}
+                    ),
+                    DataTypeValidation(
+                        table="supply.egon_re_potential_area_wind",
+                        rule_id="TEST_DATA_MULTIPLE_TYPES.egon_re_potential_area_wind",
+                        column_types={
+                            "id": "integer",
+                            "geom": "geometry"
+                        }
+                    ),
+                    NotNullAndNotNaNValidation(
+                        table="supply.egon_re_potential_area_wind",
+                        rule_id="TEST_NOT_NAN.egon_re_potential_area_wind",
+                        columns=["id",
+                                 "geom"]
+                    ),
+                    WholeTableNotNullAndNotNaNValidation(
+                        table="supply.egon_re_potential_area_wind",
+                        rule_id="TEST_WHOLE_TABLE_NOT_NAN.egon_re_potential_area_wind"
+                    ),
+                ]
+            },
+            on_validation_failure="continue"
         )

@@ -47,6 +47,14 @@ from egon.data.metadata import (
     sources,
 )
 
+from egon_validation import(
+    RowCountValidation,
+    DataTypeValidation,
+    NotNullAndNotNaNValidation,
+    WholeTableNotNullAndNotNaNValidation,
+    ValueSetValidation
+)
+
 Base = declarative_base()
 
 
@@ -853,4 +861,68 @@ class Chp(Dataset):
             version=self.version,
             dependencies=dependencies,
             tasks=tasks,
+            validation={
+                "data-quality":[
+                    RowCountValidation(
+                        table="supply.egon_chp_plants",
+                        rule_id="TEST_ROW_COUNT.egon_chp_plants",
+                        expected_count={"Schleswig-Holstein": 1720, "Everything": 40197}
+                    ),
+                    DataTypeValidation(
+                        table="supply.egon_chp_plants",
+                        rule_id="TEST_DATA_MULTIPLE_TYPES.egon_chp_plants",
+                        column_types={
+                            "id": "integer",
+                            "sources": "jsonb",
+                            "source_id": "jsonb",
+                            "carrier": "character varying",
+                            "district_heating": "boolean",
+                            "el_capacity": "double precision",
+                            "th_capacity": "double precision",
+                            "electrical_bus_id": "integer",
+                            "district_heating_area_id": "integer",
+                            "ch4_bus_id": "integer",
+                            "voltage_level": "integer",
+                            "scenario": "character varying",
+                            "geom": "geometry"
+                        }
+                    ),
+                    NotNullAndNotNaNValidation(
+                        table="supply.egon_chp_plants",
+                        rule_id="TEST_NOT_NAN.egon_chp_plants",
+                        columns=[
+                            "id",
+                            "sources",
+                            "source_id",
+                            "carrier",
+                            "district_heating",
+                            "el_capacity",
+                            "th_capacity",
+                            "electrical_bus_id",
+                            "district_heating_area_id",
+                            "ch4_bus_id",
+                            "voltage_level",
+                            "scenario",
+                            "geom"
+                        ]
+                    ),
+                    WholeTableNotNullAndNotNaNValidation(
+                        table="supply.egon_chp_plants",
+                        rule_id="TEST_WHOLE_TABLE_NOT_NAN.egon_chp_plants"
+                    ),
+                    ValueSetValidation(
+                        table="supply.egon_chp_plants",
+                        rule_id="VALUE_SET_VALIDATION_CARRIER.egon_chp_plants",
+                        column="carrier",
+                        expected_values=["oil", "others", "gas", "gas extended", "biomass"]
+                    ),
+                    ValueSetValidation(
+                        table="supply.egon_chp_plants",
+                        rule_id="VALUE_SET_VALIDATION_SCENARIO.egon_chp_plants",
+                        column="scenario",
+                        expected_values=["eGon2035", "eGon100RE"]
+                    ),
+                ]
+            },
+            on_validation_failure="continue"
         )
