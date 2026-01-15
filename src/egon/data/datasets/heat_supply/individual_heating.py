@@ -50,6 +50,8 @@ from egon.data.datasets.heat_demand_timeseries.idp_pool import (
 # get zensus cells with district heating
 from egon.data.datasets.zensus_mv_grid_districts import MapZensusGridDistricts
 
+from egon_validation import ArrayCardinalityValidation
+
 engine = db.engine()
 Base = declarative_base()
 
@@ -219,6 +221,16 @@ class HeatPumpsPypsaEur(Dataset):
             version=self.version,
             dependencies=dependencies,
             tasks=tasks_HeatPumpsPypsaEur,
+            validation={
+                "data-quality": [
+                    ArrayCardinalityValidation(
+                        table="demand.egon_etrago_timeseries_individual_heating",
+                        array_column="dist_aggregated_mv",
+                        expected_length=8760,
+                    ),
+                ]
+            },
+            on_validation_failure="continue"
         )
 
 
@@ -458,6 +470,16 @@ class HeatPumps2035(Dataset):
             version="0.0.3",
             dependencies=dependencies,
             tasks=tasks_HeatPumps2035,
+            validation={
+                "data-quality":[
+                    ArrayCardinalityValidation(
+                        table="demand.egon_etrago_timeseries_individual_heating",
+                        array_column="dist_aggregated_mv",
+                        expected_length=8760,
+                    ),
+                ]
+            },
+            on_validation_failure="continue"
         )
 
 

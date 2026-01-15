@@ -32,6 +32,10 @@ from egon.data.metadata import (
     sources,
 )
 
+from egon_validation import(
+    ArrayCardinalityValidation
+)
+
 # CONSTANTS
 # TODO: move to datasets.yml
 CON = db.engine()
@@ -142,6 +146,31 @@ class DsmPotential(Dataset):
             version=self.version,
             dependencies=dependencies,
             tasks=(dsm_cts_ind_processing,),
+            validation={
+                "data-quality":[
+                    ArrayCardinalityValidation(
+                        table="demand.egon_demandregio_sites_ind_electricity_dsm_timeseries",
+                        array_column= "p_set",
+                        expected_length= 8760,
+                    ),
+                    ArrayCardinalityValidation(
+                        table="demand.egon_etrago_electricity_cts_dsm_timeseries",
+                        array_column="p_set",
+                        expected_length=8760,
+                    ),
+                    ArrayCardinalityValidation(
+                        table="demand.egon_osm_ind_load_curves_individual_dsm_timeseries",
+                        array_column="p_set",
+                        expected_length=8760,
+                    ),
+                    ArrayCardinalityValidation(
+                        table="demand.egon_sites_ind_load_curves_individual_dsm_timeseries",
+                        array_column="p_set",
+                        expected_length=8760,
+                    ),
+                ]
+            },
+            on_validation_failure="continue"
         )
 
 

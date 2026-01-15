@@ -41,7 +41,8 @@ from egon_validation import (
     RowCountValidation,
     DataTypeValidation,
     WholeTableNotNullAndNotNaNValidation,
-    ValueSetValidation
+    ValueSetValidation,
+    ArrayCardinalityValidation
 )
 
 Base = declarative_base()
@@ -1296,7 +1297,17 @@ class HeatTimeSeries(Dataset):
                         rule_id="DATA_MULTIPLE_TYPES.egon_heat_timeseries_selected_profiles",
                         column_types={"zensus_population_id": "integer", "bulding_id": "integer",
                                       "selected_idp_profiles": "integer[]"}
-                    )
+                    ),
+                    ArrayCardinalityValidation(
+                        table="demand.egon_heat_timeseries_selected_profiles",
+                        array_column="selected_idp_profiles",
+                        expected_length=365,
+                    ),
+                    ArrayCardinalityValidation(
+                        table="demand.egon_timeseries_district_heating",
+                        array_column="dist_aggregated_mw",
+                        expected_length=8760,
+                    ),
                 ]
             },
             on_validation_failure="continue"

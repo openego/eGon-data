@@ -8,6 +8,8 @@ from sqlalchemy.ext.declarative import declarative_base
 
 from egon.data.datasets import Dataset
 
+from egon_validation import ArrayCardinalityValidation
+
 Base = declarative_base()
 
 
@@ -29,4 +31,14 @@ class LowFlexScenario(Dataset):
                     ),
                 },
             ),
+            validation={
+                "data-quality":[
+                    ArrayCardinalityValidation(
+                        table="grid.egon_etrago_bus_timeseries",
+                        array_column="v_mag_pu_set",
+                        expected_length=8760,
+                    ),
+                ]
+            },
+            on_validaiton_failure="continue"
         )
