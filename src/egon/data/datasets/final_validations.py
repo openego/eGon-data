@@ -1206,7 +1206,7 @@ class FinalValidations(Dataset):
                         rule_id="SRIDUniqueNonZero.egon_etrago_line.topo",
                         column="topo"
                     ),
-                    #Row Count doen't equal egon_etrago_line,
+                    #Row Count does't equal egon_etrago_line, because buses are located outside Germany
                     RowCountValidation(
                         table="grid.egon_etrago_line_timeseries",
                         rule_id="TEST_ROW_COUNT.egon_etrago_line_timeseries",
