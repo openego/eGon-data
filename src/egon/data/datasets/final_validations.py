@@ -28,7 +28,8 @@ from egon_validation import (
     DataTypeValidation,
     NotNullAndNotNaNValidation,
     WholeTableNotNullAndNotNaNValidation,
-    ValueSetValidation
+    ValueSetValidation,
+    SRIDUniqueNonZero
 )
 
 
@@ -1059,6 +1060,11 @@ class FinalValidations(Dataset):
                             "rural_heat_store", "residential_rural_water_tanks"
                         ]
                     ),
+                    SRIDUniqueNonZero(
+                        table="grid.egon_etrago_bus",
+                        rule_id="SRIDUniqueNonZero.egon_etrago_bus",
+                        column="geometry"
+                    ),
                     RowCountValidation(
                         table="grid.egon_etrago_generator",
                         rule_id="TEST_ROW_COUNT.egon_etrago_generator",
@@ -1190,6 +1196,16 @@ class FinalValidations(Dataset):
                         column="carrier",
                         expected_values=["AC"]
                     ),
+                    SRIDUniqueNonZero(
+                        table="grid.egon_etrago_line",
+                        rule_id="SRIDUniqueNonZero.egon_etrago_line.geom",
+                        column="geom"
+                    ),
+                    SRIDUniqueNonZero(
+                        table="grid.egon_etrago_line",
+                        rule_id="SRIDUniqueNonZero.egon_etrago_line.topo",
+                        column="topo"
+                    ),
                     #Row Count doen't equal egon_etrago_line,
                     RowCountValidation(
                         table="grid.egon_etrago_line_timeseries",
@@ -1239,6 +1255,16 @@ class FinalValidations(Dataset):
                         rule_id="TEST_VALUE_SET_CARRIER.egon_etrago_line_timeseries",
                         column="carrier",
                         expected_values=["AC"]
+                    ),
+                    SRIDUniqueNonZero(
+                        table="grid.egon_etrago_line_timeseries",
+                        rule_id="SRIDUniqueNonZero.egon_etrago_line_timeseries.geom",
+                        column="geom"
+                    ),
+                    SRIDUniqueNonZero(
+                        table="grid.egon_etrago_line_timeseries",
+                        rule_id="SRIDUniqueNonZero.egon_etrago_line_timeseries.topo",
+                        column="topo"
                     ),
                     RowCountValidation(
                         table="grid.egon_etrago_link",
@@ -1292,6 +1318,16 @@ class FinalValidations(Dataset):
                             "urban_central_water_tanks_charger", "services_rural_water_tanks_discharger",
                             "electricity_distribution_grid", "central_heat_store_discharger", "H2_to_power",
                             "central_heat_store_charger", "central_gas_CHP", "residential_rural_ground_heat_pump"]
+                    ),
+                    SRIDUniqueNonZero(
+                        table="grid.egon_etrago_link",
+                        rule_id="SRIDUniqueNonZero.egon_etrago_link.geom",
+                        column="geom"
+                    ),
+                    SRIDUniqueNonZero(
+                        table="grid.egon_etrago_link",
+                        rule_id="SRIDUniqueNonZero.egon_etrago_link.topo",
+                        column="topo"
                     ),
                     RowCountValidation(
                         table="grid.egon_etrago_link_timeseries",
@@ -1712,6 +1748,16 @@ class FinalValidations(Dataset):
                         table="grid.egon_hvmv_substation",
                         rule_id="TEST_WHOLE_TABLE_NOT_NAN.egon_hvmv_substation"
                     ),
+                    SRIDUniqueNonZero(
+                        table="grid.egon_hvmv_substation",
+                        rule_id="SRIDUniqueNonZero.egon_hvmv_substation.point",
+                        column="point"
+                    ),
+                    SRIDUniqueNonZero(
+                        table="grid.egon_hvmv_substation",
+                        rule_id="SRIDUniqueNonZero.egon_hvmv_substation.polygon",
+                        column="polygon"
+                    ),
                     RowCountValidation(
                         table="grid.egon_mv_grid_district",
                         rule_id="TEST_ROW_COUNT.egon_mv_grid_district",
@@ -1729,6 +1775,11 @@ class FinalValidations(Dataset):
                     WholeTableNotNullAndNotNaNValidation(
                         table="grid.egon_mv_grid_district",
                         rule_id="TEST_WHOLE_TABLE_NOT_NAN.egon_mv_grid_district"
+                    ),
+                    SRIDUniqueNonZero(
+                        table="grid.egon_mv_grid_district",
+                        rule_id="SRIDUniqueNonZero.egon_mv_grid_district.geom",
+                        column="geom"
                     ),
                 ]
             },

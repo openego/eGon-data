@@ -10,7 +10,8 @@ from egon.data.datasets import Dataset
 from egon_validation import (
     RowCountValidation,
     DataTypeValidation,
-    WholeTableNotNullAndNotNaNValidation
+    WholeTableNotNullAndNotNaNValidation,
+    SRIDUniqueNonZero
 )
 
 
@@ -265,6 +266,11 @@ class OsmBuildingsStreets(Dataset):
                         table="openstreetmap.osm_amenities_not_in_buildings",
                         rule_id="WHOLE_TABLE_NOT_NAN.osm_amenities_not_in_buildings"
                     ),
+                    SRIDUniqueNonZero(
+                        table="openstreetmap.osm_amenities_not_in_buildings",
+                        rule_id="SRIDUniqueNonZero.osm_amenities_not_in_buildings.geom_amenity",
+                        column="geom_amenity"
+                    ),
                     RowCountValidation(
                         table="openstreetmap.osm_amenities_shops_filtered",
                         rule_id="ROW_COUNT.osm_amenities_shops_filtered",
@@ -280,6 +286,11 @@ class OsmBuildingsStreets(Dataset):
                     WholeTableNotNullAndNotNaNValidation(
                         table="openstreetmap.osm_amenities_shops_filtered",
                         rule_id="WHOLE_TABLE_NOT_NAN.osm_amenities_shops_filtered"
+                    ),
+                    SRIDUniqueNonZero(
+                        table="openstreetmap.osm_amenities_shops_filtered",
+                        rule_id="SRIDUniqueNonZero.osm_amenities_shops_filtered.geom_amenity",
+                        column="geom_amenity"
                     ),
                     RowCountValidation(
                         table="openstreetmap.osm_buildings",
@@ -298,6 +309,16 @@ class OsmBuildingsStreets(Dataset):
                         table="openstreetmap.osm_buildings",
                         rule_id="WHOLE_TABLE_NOT_NAN.osm_buildings"
                     ),
+                    SRIDUniqueNonZero(
+                        table="openstreetmap.osm_buildings",
+                        rule_id="SRIDUniqueNonZero.osm_buildings.geom_building",
+                        column="geom_building"
+                    ),
+                    SRIDUniqueNonZero(
+                        table="openstreetmap.osm_buildings",
+                        rule_id="SRIDUniqueNonZero.osm_buildings.geom_point",
+                        column="geom_point"
+                    ),
                     RowCountValidation(
                         table="openstreetmap.osm_buildings_filtered",
                         rule_id="ROW_COUNT.osm_buildings_filtered",
@@ -314,6 +335,16 @@ class OsmBuildingsStreets(Dataset):
                     WholeTableNotNullAndNotNaNValidation(
                         table="openstreetmap.osm_buildings_filtered",
                         rule_id="WHOLE_TABLE_NOT_NAN.osm_buildings_filtered"
+                    ),
+                    SRIDUniqueNonZero(
+                        table="openstreetmap.osm_buildings_filtered",
+                        rule_id="SRIDUniqueNonZero.osm_buildings_filtered.geom_building",
+                        column="geom_building"
+                    ),
+                    SRIDUniqueNonZero(
+                        table="openstreetmap.osm_buildings_filtered",
+                        rule_id="SRIDUniqueNonZero.osm_buildings_filtered.geom_point",
+                        column="geom_point"
                     ),
                     RowCountValidation(
                         table="openstreetmap.osm_buildings_residential",
@@ -332,6 +363,16 @@ class OsmBuildingsStreets(Dataset):
                         table="openstreetmap.osm_buildings_residential",
                         rule_id="WHOLE_TABLE_NOT_NAN.osm_buildings_residential"
                     ),
+                    SRIDUniqueNonZero(
+                        table="openstreetmap.osm_buildings_residential",
+                        rule_id="SRIDUniqueNonZero.osm_buildings_residential.geom_building",
+                        column="geom_building"
+                    ),
+                    SRIDUniqueNonZero(
+                        table="openstreetmap.osm_buildings_residential",
+                        rule_id="SRIDUniqueNonZero.osm_buildings_residental.geom_point",
+                        column="geom_point"
+                    ),
                     RowCountValidation(
                         table="openstreetmap.osm_buildings_synthetic",
                         rule_id="ROW_COUNT.osm_buildings_synthetic",
@@ -348,6 +389,16 @@ class OsmBuildingsStreets(Dataset):
                     WholeTableNotNullAndNotNaNValidation(
                         table="openstreetmap.osm_buildings_synthetic",
                         rule_id="WHOLE_TABLE_NOT_NAN.osm_buildings_synthetic"
+                    ),
+                    SRIDUniqueNonZero(
+                        table="openstreetmap.osm_buildings_synthetic",
+                        rule_id="SRIDUniqueNonZero.osm_buildings_synthetic.geom_building",
+                        column="geom_building"
+                    ),
+                    SRIDUniqueNonZero(
+                        table="openstreetmap.osm_buildings_synthetic",
+                        rule_id="SRIDUniqueNonZero.osm_buildings_synthetic.geom_point",
+                        column="geom_point"
                     ),
                     RowCountValidation(
                         table="openstreetmap.osm_buildings_with_amenities",
@@ -376,6 +427,21 @@ class OsmBuildingsStreets(Dataset):
                         table="openstreetmap.osm_buildings_with_amenities",
                         rule_id="WHOLE_TABLE_NOT_NAN.osm_buildings_with_amenities"
                     ),
+                    SRIDUniqueNonZero(
+                        table="openstreetmap.osm_buildings_with_amenities",
+                        rule_id="SRIDUniqueNonZero.osm_buildings_with_amenities.geom_building",
+                        column="geom_building"
+                    ),
+                    SRIDUniqueNonZero(
+                        table="openstreetmap.osm_buildings_with_amenities",
+                        rule_id="SRIDUniqueNonZero.osm_buildings_with_amenities.geom_amenity",
+                        column="geom_amenity"
+                    ),
+                    SRIDUniqueNonZero(
+                        table="openstreetmap.osm_buildings_with_amenities",
+                        rule_id="SRIDUniqueNonZero.osm_buildings_with_amenities.geom_point",
+                        column="geom_point"
+                    ),
                     RowCountValidation(
                         table="openstreetmap.osm_buildings_without_amenities",
                         rule_id="ROW_COUNT.osm_buildings_without_amenities",
@@ -399,6 +465,16 @@ class OsmBuildingsStreets(Dataset):
                         table="openstreetmap.osm_buildings_without_amenities",
                         rule_id="WHOLE_TABLE_NOT_NAN.osm_buildings_without_amenities"
                     ),
+                    SRIDUniqueNonZero(
+                        table="openstreetmap.osm_buildings_without_amenities",
+                        rule_id="SRIDUniqueNonZero.osm_buildings_without_amenities.geom_building",
+                        column="geom_building"
+                    ),
+                    SRIDUniqueNonZero(
+                        table="openstreetmap.osm_buildings_without_amenities",
+                        rule_id="SRIDUniqueNonZero.osm_buildings_without_amenities.geom_point",
+                        column="geom_point"
+                    ),
                     RowCountValidation(
                         table="openstreetmap.osm_ways_with_segments",
                         rule_id="ROW_COUNT.osm_ways_with_segments",
@@ -417,6 +493,11 @@ class OsmBuildingsStreets(Dataset):
                     WholeTableNotNullAndNotNaNValidation(
                         table="openstreetmap.osm_ways_with_segments",
                         rule_id="WHOLE_TABLE_NOT_NAN.osm_ways_with_segments"
+                    ),
+                    SRIDUniqueNonZero(
+                        table="openstreetmap.osm_buildings_with_segments",
+                        rule_id="SRIDUniqueNonZero.osm_buildings_with_segments.geom",
+                        column="geom"
                     ),
                 ]
             },

@@ -21,7 +21,8 @@ from egon_validation import(
     RowCountValidation,
     DataTypeValidation,
     NotNullAndNotNaNValidation,
-    WholeTableNotNullAndNotNaNValidation
+    WholeTableNotNullAndNotNaNValidation,
+    SRIDUniqueNonZero
 )
 
 
@@ -58,6 +59,16 @@ class ZensusPopulation(Dataset):
                     WholeTableNotNullAndNotNaNValidation(
                         table="society.egon_destatis_zensus_apartment_building_population_per_ha",
                         rule_id="TEST_WHOLE_TABLE_NOT_NAN.egon_destatis_zensus_apartment_building_population_per_ha"
+                    ),
+                    SRIDUniqueNonZero(
+                        table="society.egon_destatis_zensus_apartment_building_population_per_ha",
+                        rule_id="SRIDUniqueNonZero.egon_destatis_zensus_apartment_building_population_per_ha.geom",
+                        column="geom"
+                    ),
+                    SRIDUniqueNonZero(
+                        table="society.egon_destatis_zensus_apartment_building_population_per_ha",
+                        rule_id="SRIDUniqueNonZero.egon_destatis_zensus_apartment_building_population_per_ha.geom_point",
+                        column="geom_point"
                     ),
                 ]
             },

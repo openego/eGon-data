@@ -39,7 +39,8 @@ from egon_validation import(
     DataTypeValidation,
     NotNullAndNotNaNValidation,
     WholeTableNotNullAndNotNaNValidation,
-    ValueSetValidation
+    ValueSetValidation,
+    SRIDUniqueNonZero
 )
 
 Base = declarative_base()
@@ -170,6 +171,11 @@ class Storages(Dataset):
                         rule_id="VALUE_SET_VALIDATION_CARRIER.egon_storages",
                         column="carrier",
                         expected_values=["home_battery", "pumped_hydro"]
+                    ),
+                    SRIDUniqueNonZero(
+                        table="supply.egon_storages",
+                        rule_id="SRIDUniqueNonZero.egon_storages.geom",
+                        column="geom"
                     ),
                 ]
             },

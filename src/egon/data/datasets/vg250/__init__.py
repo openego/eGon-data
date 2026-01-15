@@ -34,7 +34,8 @@ from egon_validation import (
     DataTypeValidation,
     NotNullAndNotNaNValidation,
     WholeTableNotNullAndNotNaNValidation,
-    ValueSetValidation
+    ValueSetValidation,
+    SRIDUniqueNonZero
 )
 
 
@@ -569,6 +570,11 @@ class Vg250(Dataset):
                         table="boundaries.vg250_krs",
                         rule_id="TEST_WHOLE_TABLE_NOT_NAN.vg250_krs"
                     ),
+                    SRIDUniqueNonZero(
+                        table="boundaries.vg250_krs",
+                        rule_id="SRIDUniqueNonZero.vg250_krs.geometry",
+                        column="geometry"
+                    ),
                     ValueSetValidation(
                         table="boundaries.vg250_krs",
                         rule_id="TEST_VALUE_SET_NBD.vg250_krs",
@@ -596,6 +602,16 @@ class Vg250(Dataset):
                     WholeTableNotNullAndNotNaNValidation(
                         table="society.destatis_zensus_population_per_ha_inside_germany",
                         rule_id="TEST_WHOLE_TABLE_NOT_NAN.destatis_zensus_population_per_ha_inside_germany"
+                    ),
+                    SRIDUniqueNonZero(
+                        table="society.destatis_zensus_population_per_ha_inside_germany",
+                        rule_id="SRIDUniqueNonZero.destatis_zensus_population_per_ha_inside_germany.geom_point",
+                        column="geom_point"
+                    ),
+                    SRIDUniqueNonZero(
+                        table="society.destatis_zensus_population_per_ha_inside_germany",
+                        rule_id="SRIDUniqueNonZero.destatis_zensus_population_per_ha_inside_germany.geom",
+                        column="geom"
                     ),
                 ]
             },

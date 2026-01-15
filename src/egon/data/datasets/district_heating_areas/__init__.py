@@ -44,7 +44,8 @@ from egon_validation import (
     RowCountValidation,
     DataTypeValidation,
     WholeTableNotNullAndNotNaNValidation,
-    ValueSetValidation
+    ValueSetValidation,
+    SRIDUniqueNonZero
 )
 
 # import time
@@ -111,6 +112,11 @@ class DistrictHeatingAreas(Dataset):
                         rule_id="VALUE_SET_VALIDATION_SCENARIO.egon_district_heating_areas",
                         column="scenario",
                         expected_values=["eGon2035", "eGon100RE"]
+                    ),
+                    SRIDUniqueNonZero(
+                        table="demand.egon_district_heating_areas",
+                        rule_id="SRIDUniqueNonZero.egon_district_heating_areas",
+                        column="geom_polygon"
                     ),
                 ]
             },

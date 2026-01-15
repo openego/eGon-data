@@ -52,7 +52,8 @@ from egon_validation import(
     DataTypeValidation,
     NotNullAndNotNaNValidation,
     WholeTableNotNullAndNotNaNValidation,
-    ValueSetValidation
+    ValueSetValidation,
+    SRIDUniqueNonZero
 )
 
 Base = declarative_base()
@@ -922,6 +923,11 @@ class Chp(Dataset):
                         column="scenario",
                         expected_values=["eGon2035", "eGon100RE"]
                     ),
+                    SRIDUniqueNonZero(
+                        table="supply.egon_chp_plants",
+                        rule_id="SRIDUniqueNonZero.egon_chp_plants",
+                        column="geom"
+                    )
                 ]
             },
             on_validation_failure="continue"

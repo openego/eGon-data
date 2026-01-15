@@ -17,7 +17,8 @@ from egon_validation import(
     RowCountValidation,
     DataTypeValidation,
     NotNullAndNotNaNValidation,
-    WholeTableNotNullAndNotNaNValidation
+    WholeTableNotNullAndNotNaNValidation,
+    SRIDUniqueNonZero
 )
 
 Base = declarative_base()
@@ -184,6 +185,11 @@ class re_potential_area_setup(Dataset):
                         table="supply.egon_re_potential_area_pv_agricultur",
                         rule_id="TEST_WHOLE_TABLE_NOT_NAN.egon_re_potential_area_pv_agricultur"
                     ),
+                    SRIDUniqueNonZero(
+                        table="supply.egon_re_potential_area_pv_agricultur",
+                        rule_id="SRIDUniqueNonZero.egon_re_potential_area_pv_agricultur.geom",
+                        column="geom"
+                    ),
                     RowCountValidation(
                         table="supply.egon_re_potential_area_pv_road_railway",
                         rule_id="TEST_ROW_COUNT.egon_re_potential_area_pv_road_railway",
@@ -207,6 +213,11 @@ class re_potential_area_setup(Dataset):
                         table="supply.egon_re_potential_area_pv_road_railway",
                         rule_id="TEST_WHOLE_TABLE_NOT_NAN.egon_re_potential_area_pv_road_railway"
                     ),
+                    SRIDUniqueNonZero(
+                        table="supply.egon_re_potential_area_pv_road_railway",
+                        rule_id="SRIDUniqueNonZero.egon_re_potential_area_pv_road_railway.geom",
+                        column="geom"
+                    ),
                     RowCountValidation(
                         table="supply.egon_re_potential_area_wind",
                         rule_id="TEST_ROW_COUNT.egon_re_potential_area_wind",
@@ -229,6 +240,11 @@ class re_potential_area_setup(Dataset):
                     WholeTableNotNullAndNotNaNValidation(
                         table="supply.egon_re_potential_area_wind",
                         rule_id="TEST_WHOLE_TABLE_NOT_NAN.egon_re_potential_area_wind"
+                    ),
+                    SRIDUniqueNonZero(
+                        table="supply.egon_re_potential_area_wind",
+                        rule_id="SRIDUniqueNonZero.egon_re_potential_area_wind.geom",
+                        column="geom"
                     ),
                 ]
             },

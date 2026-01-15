@@ -21,7 +21,8 @@ from egon_validation import(
     DataTypeValidation,
     NotNullAndNotNaNValidation,
     WholeTableNotNullAndNotNaNValidation,
-    ValueSetValidation
+    ValueSetValidation,
+    SRIDUniqueNonZero
 )
 
 # will be later imported from another file ###
@@ -85,6 +86,16 @@ class WeatherData(Dataset):
                         table="supply.egon_era5_weather_cells",
                         rule_id="TEST_WHOLE_TABLE_NOT_NAN.egon_era5_weather_cells"
                     ),
+                    SRIDUniqueNonZero(
+                        table="supply.egon_era5_weather_cells",
+                        rule_id="SRIDUniqueNonZero.egon_era5_weather_cells",
+                        column="geom"
+                    ),
+                    SRIDUniqueNonZero(
+                        table="supply.egon_era5_weather_cells",
+                        rule_id="SRIDUniqueNonZero.egon_era5_weather_cells",
+                        column="geom_point"
+                    )
                 ]
             },
             on_validation_failure="continue"

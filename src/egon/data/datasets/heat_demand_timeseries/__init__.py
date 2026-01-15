@@ -1299,4 +1299,5 @@ class HeatTimeSeries(Dataset):
                     )
                 ]
             },
+            on_validation_failure="continue"
         )

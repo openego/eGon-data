@@ -115,6 +115,7 @@ class HeatDemandImport(Dataset):
                     ),
                 ]
             },
+            on_validation_failure="continue"
         )
 
 

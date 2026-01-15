@@ -49,7 +49,8 @@ from egon_validation import(
     DataTypeValidation,
     NotNullAndNotNaNValidation,
     WholeTableNotNullAndNotNaNValidation,
-    ValueSetValidation
+    ValueSetValidation,
+    SRIDUniqueNonZero
 )
 
 Base = declarative_base()
@@ -1692,6 +1693,11 @@ class PowerPlants(Dataset):
                         rule_id="VALUE_SET_VALIDATION_SCENARIO.egon_power_plants",
                         column="scenario",
                         expected_values=["eGon2035", "eGon100RE"]
+                    ),
+                    SRIDUniqueNonZero(
+                        table="supply.egon_power_plants",
+                        rule_id="SRIDUniqueNonZero.egon_power_plants.geom",
+                        column="geom"
                     ),
                 ]
             },

@@ -353,7 +353,8 @@ class HouseholdDemands(Dataset):
                         rule_id="WHOLE_TABLE_NOT_NAN.iee_household_load_profiles"
                     )
                 ]
-            }
+            },
+            on_validation_failure="continue"
         )
 
 

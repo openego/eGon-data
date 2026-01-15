@@ -37,7 +37,8 @@ from egon_validation import(
     DataTypeValidation,
     NotNullAndNotNaNValidation,
     WholeTableNotNullAndNotNaNValidation,
-    ValueSetValidation
+    ValueSetValidation,
+    SRIDUniqueNonZero
 )
 
 # Will later be imported from another file.
@@ -449,6 +450,11 @@ class HeatSupply(Dataset):
                         table="supply.egon_district_heating",
                         rule_id="TEST_WHOLE_TABLE_NOT_NAN.egon_district_heating"
                     ),
+                    SRIDUniqueNonZero(
+                        table="supply.egon_district_heating",
+                        rule_id="SRIDUniqueNonZero.egon_district_heating.geometry",
+                        column="geometry"
+                    ),
                     ValueSetValidation(
                         table="supply.egon_district_heating",
                         rule_id="VALUE_SET_VALIDATION_CARRIER.egon_district_heating",
@@ -495,6 +501,11 @@ class HeatSupply(Dataset):
                     WholeTableNotNullAndNotNaNValidation(
                         table="supply.egon_individual_heating",
                         rule_id="TEST_WHOLE_TABLE_NOT_NAN.egon_individual_heating"
+                    ),
+                    SRIDUniqueNonZero(
+                        table="supply.egon_individual_heating",
+                        rule_id="SRIDUniqueNonZero.egon_individual_heating.geometry",
+                        column="geometry"
                     ),
                     ValueSetValidation(
                         table="supply.egon_individual_heating",
