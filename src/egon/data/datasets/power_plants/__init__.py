@@ -1234,7 +1234,7 @@ def power_plants_status_quo(scn_name="status2019"):
 
 
 def get_conventional_power_plants_non_chp(scn_name):
-
+    max_date = pd.Timestamp(year=int(scn_name[-4:]), month=12, day=31)
     cfg = egon.data.config.datasets()["power_plants"]
     # Write conventional power plants in supply.egon_power_plants
     common_columns = [
@@ -1278,30 +1278,10 @@ def get_conventional_power_plants_non_chp(scn_name):
         conv["DatumEndgueltigeStilllegung"]
     )
 
-    # keep plants that were decommissioned after the max date
-    conv.loc[
-        (
-            conv.DatumEndgueltigeStilllegung
-            > egon.data.config.datasets()["mastr_new"][f"{scn_name}_date_max"]
-        ),
-        "EinheitBetriebsstatus",
-    ] = "InBetrieb"
-
-    conv = conv.loc[conv.EinheitBetriebsstatus == "InBetrieb"]
-
-    conv = conv.drop(
-        columns=["EinheitBetriebsstatus", "DatumEndgueltigeStilllegung"]
-    )
+    conv = discard_not_available_generators(conv, max_date)
 
     # convert from KW to MW
     conv["Nettonennleistung"] = conv["Nettonennleistung"] / 1000
-
-    # drop generators installed after 2019
-    conv["Inbetriebnahmedatum"] = pd.to_datetime(conv["Inbetriebnahmedatum"])
-    conv = conv[
-        conv["Inbetriebnahmedatum"]
-        < egon.data.config.datasets()["mastr_new"][f"{scn_name}_date_max"]
-    ]
 
     conv_cap_chp = (
         conv.groupby("Energietraeger")["Nettonennleistung"].sum() / 1e3
@@ -1316,7 +1296,6 @@ def get_conventional_power_plants_non_chp(scn_name):
     logger.info("Dropped CHP generators in GW")
     logger.info(conv_cap_chp - conv_cap_no_chp)
 
-    # rename carriers
     # rename carriers
     conv["Energietraeger"] = conv["Energietraeger"].replace(
         to_replace={
