@@ -982,6 +982,9 @@ def discard_not_available_generators(gen, max_date):
 
     gen["decommissioning_date"] = pd.to_datetime(gen["decommissioning_date"])
     gen["commissioning_date"] = pd.to_datetime(gen["commissioning_date"])
+
+    gen["decommissioning_date"] = pd.to_datetime(gen["decommissioning_date"])
+    gen["commissioning_date"] = pd.to_datetime(gen["commissioning_date"])
     # drop plants that are commissioned after the max date
     gen = gen[gen["commissioning_date"] < max_date]
 
@@ -1058,6 +1061,8 @@ def power_plants_status_quo(scn_name="status2019"):
     con = db.engine()
     cfg = egon.data.config.datasets()["power_plants"]
 
+    max_date = pd.Timestamp(year=int(scn_name[-4:]), month=12, day=31)
+
     db.execute_sql(
         f"""
         DELETE FROM {cfg['target']['schema']}.{cfg['target']['table']}
@@ -1122,6 +1127,7 @@ def power_plants_status_quo(scn_name="status2019"):
     )
 
     hydro = convert_master_info(hydro)
+    hydro = discard_not_available_generators(hydro, max_date)
     hydro["carrier"] = hydro["plant_type"].replace(
         to_replace={
             "Laufwasseranlage": "run_of_river",
@@ -1152,6 +1158,8 @@ def power_plants_status_quo(scn_name="status2019"):
     # drop chp generators
     biomass["th_capacity"] = biomass["th_capacity"].fillna(0)
     biomass = biomass[biomass.th_capacity == 0]
+
+    biomass = discard_not_available_generators(biomass, max_date)
 
     biomass = fill_missing_bus_and_geom(
         biomass, "biomass", geom_municipalities, mv_grid_districts
@@ -1185,6 +1193,9 @@ def power_plants_status_quo(scn_name="status2019"):
         "Freifläche": "solar",
         "Bauliche Anlagen (Hausdach, Gebäude und Fassade)": "solar_rooftop",
     }
+
+    solar = discard_not_available_generators(solar, max_date)
+
     solar["carrier"] = solar["site_type"].replace(to_replace=map_solar)
 
     solar = fill_missing_bus_and_geom(
@@ -1212,6 +1223,8 @@ def power_plants_status_quo(scn_name="status2019"):
         con,
         geom_col="geom",
     )
+
+    wind_onshore = discard_not_available_generators(wind_onshore, max_date)
 
     wind_onshore = fill_missing_bus_and_geom(
         wind_onshore, "wind_onshore", geom_municipalities, mv_grid_districts
@@ -1272,11 +1285,6 @@ def get_conventional_power_plants_non_chp(scn_name):
             ]
         )
     ]
-
-    # drop plants that are decommissioned
-    conv["DatumEndgueltigeStilllegung"] = pd.to_datetime(
-        conv["DatumEndgueltigeStilllegung"]
-    )
 
     conv = discard_not_available_generators(conv, max_date)
 
