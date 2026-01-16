@@ -965,6 +965,21 @@ def allocate_other_power_plants():
 
 
 def discard_not_available_generators(gen, max_date):
+    # map column names in case they are still in German
+    if (
+        ("DatumEndgueltigeStilllegung" in gen.columns)
+        | ("Inbetriebnahmedatum" in gen.columns)
+        | ("DatumEndgueltigeStilllegung" in gen.columns)
+    ):
+        gen.rename(
+            columns={
+                "DatumEndgueltigeStilllegung": "decommissioning_date",
+                "Inbetriebnahmedatum": "commissioning_date",
+                "EinheitBetriebsstatus": "status",
+            },
+            inplace=True,
+        )
+
     gen["decommissioning_date"] = pd.to_datetime(gen["decommissioning_date"])
     gen["commissioning_date"] = pd.to_datetime(gen["commissioning_date"])
     # drop plants that are commissioned after the max date
@@ -973,11 +988,9 @@ def discard_not_available_generators(gen, max_date):
     # drop decommissioned plants while keeping the ones decommissioned
     # after the max date
     gen.loc[(gen["decommissioning_date"] > max_date), "status"] = "InBetrieb"
-
     gen = gen.loc[
         gen["status"].isin(["InBetrieb", "VoruebergehendStillgelegt"])
     ]
-
     # drop unnecessary columns
     gen = gen.drop(columns=["commissioning_date", "decommissioning_date"])
 
