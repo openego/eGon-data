@@ -46,7 +46,7 @@ def map_id_bus(scenario):
                 "Emden/Borßum": "34835258",
                 "Cloppenburg": "50643382",
             }
-        elif "250101" in osm_year:
+        elif ("250101" in osm_year) | ("240101" in osm_year):
             id_bus2 = {
                 "Heide/West": "603661085",
                 "Emden/Ost": "1280178909",
