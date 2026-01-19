@@ -523,7 +523,7 @@ class Vg250(Dataset):
     #:
     name: str = "VG250"
     #:
-    version: str = filename + "-0.0.4.dev"
+    version: str = filename + "-0.0.4"
 
     def __init__(self, dependencies):
         super().__init__(
