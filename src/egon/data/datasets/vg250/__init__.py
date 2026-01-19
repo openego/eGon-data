@@ -541,7 +541,7 @@ class Vg250(Dataset):
                     RowCountValidation(
                         table="boundaries.vg250_krs",
                         rule_id="TEST_ROW_COUNT",
-                        expected_count=27
+                        expected_count={"Schleswig-Holstein": 27, "Everything": 431}
                     ),
                     DataTypeValidation(
                         table="boundaries.vg250_krs",
