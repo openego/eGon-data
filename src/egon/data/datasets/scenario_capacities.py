@@ -1063,12 +1063,12 @@ class ScenarioCapacities(Dataset):
                 "data-quality": [
                     RowCountValidation(
                         table="supply.egon_nep_2021_conventional_powerplants",
-                        rule_id="TEST_ROW_COUNT.egon_nep_2021_conventional_powerplants",
+                        rule_id="ROW_COUNT.egon_nep_2021_conventional_powerplants",
                         expected_count={"Schleswig-Holstein": 40, "Everything": 737}
                     ),
                     DataTypeValidation(
                         table="supply.egon_nep_2021_conventional_powerplants",
-                        rule_id="TEST_DATA_MULTIPLE_TYPES.egon_nep_2021_conventional_powerplants",
+                        rule_id="DATA_TYPES.egon_nep_2021_conventional_powerplants",
                         column_types={
                             "index": "bigint",
                             "bnetza_id": "text",
@@ -1095,7 +1095,7 @@ class ScenarioCapacities(Dataset):
                     ),
                     NotNullAndNotNaNValidation(
                         table="supply.egon_nep_2021_conventional_powerplants",
-                        rule_id="TEST_NOT_NAN.egon_nep_2021_conventional_powerplants",
+                        rule_id="NOT_NAN.egon_nep_2021_conventional_powerplants",
                         columns=[
                             "index",
                             "bnetza_id",
@@ -1122,16 +1122,16 @@ class ScenarioCapacities(Dataset):
                     ),
                     WholeTableNotNullAndNotNaNValidation(
                         table="supply.egon_nep_2021_conventional_powerplants",
-                        rule_id="TEST_WHOLE_TABLE_NOT_NAN.egon_nep_2021_conventional_powerplants"
+                        rule_id="TABLE_NOT_NAN.egon_nep_2021_conventional_powerplants"
                     ),
                     RowCountValidation(
                         table="supply.egon_scenario_capacities",
-                        rule_id="TEST_ROW_COUNT.egon_scenario_capacities",
+                        rule_id="ROW_COUNT.egon_scenario_capacities",
                         expected_count={"Schleswig-Holstein": 17, "Everything": 236}
                     ),
                     DataTypeValidation(
                         table="supply.egon_scenario_capacities",
-                        rule_id="TEST_DATA_MULTIPLE_TYPES.egon_scenario_capacities",
+                        rule_id="DATA_TYPES.egon_scenario_capacities",
                         column_types={
                             "index": "integer",
                             "component": "character varying",
@@ -1143,7 +1143,7 @@ class ScenarioCapacities(Dataset):
                     ),
                     NotNullAndNotNaNValidation(
                         table="supply.egon_scenario_capacities",
-                        rule_id="TEST_NOT_NAN.egon_scenario_capacities",
+                        rule_id="NOT_NAN.egon_scenario_capacities",
                         columns=[
                             "index",
                             "component",
@@ -1155,7 +1155,7 @@ class ScenarioCapacities(Dataset):
                     ),
                     WholeTableNotNullAndNotNaNValidation(
                         table="supply.egon_scenario_capacities",
-                        rule_id="TEST_WHOLE_TABLE_NOT_NAN.egon_scenario_capacities"
+                        rule_id="TABLE_NOT_NAN.egon_scenario_capacities"
                     ),
                     ValueSetValidation(
                         table="supply.egon_scenario_capacities",

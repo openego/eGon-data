@@ -102,7 +102,7 @@ class SubstationExtraction(Dataset):
                 # "<task_name>": [
                 #     RowCountValidation(
                 #         table="<schema>.<table_name>",
-                #         rule_id="TEST_ROW_COUNT.<table_name>",
+                #         rule_id="ROW_COUNT.<table_name>",
                 #         expected_count={"Schleswig-Holstein": X, "Everything": Y}
                 #     ),
                 # ]

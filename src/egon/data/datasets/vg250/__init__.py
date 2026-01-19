@@ -541,12 +541,12 @@ class Vg250(Dataset):
                 "data_quality": [
                     RowCountValidation(
                         table="boundaries.vg250_krs",
-                        rule_id="TEST_ROW_COUNT.vg250_krs",
+                        rule_id="ROW_COUNT.vg250_krs",
                         expected_count={"Schleswig-Holstein":27, "Everything":431}
                     ),
                     DataTypeValidation(
                         table="boundaries.vg250_krs",
-                        rule_id="TEST_DATA_MULTIPLE_TYPES.vg250_krs",
+                        rule_id="DATA_TYPES.vg250_krs",
                         column_types={"Schleswig-Holstein":{"id":"bigint","ade":"integer", "gf":"integer", "bsg":"integer","ars":"text",
                                       "ags":"text", "sdv_ars":"text", "gen":"text", "bez":"text","ibz":"integer",
                                       "bem":"text", "nbd":"text", "sn_l":"text", "sn_r":"text", "sn_k":"text",
@@ -563,12 +563,12 @@ class Vg250(Dataset):
                     ),
                     NotNullAndNotNaNValidation(
                         table="boundaries.vg250_krs",
-                        rule_id="TEST_NOT_NAN.vg250_krs",
+                        rule_id="NOT_NAN.vg250_krs",
                         columns=["gf","bsg"]
                     ),
                     WholeTableNotNullAndNotNaNValidation(
                         table="boundaries.vg250_krs",
-                        rule_id="TEST_WHOLE_TABLE_NOT_NAN.vg250_krs"
+                        rule_id="TABLE_NOT_NAN.vg250_krs"
                     ),
                     SRIDUniqueNonZero(
                         table="boundaries.vg250_krs",
@@ -577,18 +577,18 @@ class Vg250(Dataset):
                     ),
                     ValueSetValidation(
                         table="boundaries.vg250_krs",
-                        rule_id="TEST_VALUE_SET_NBD.vg250_krs",
+                        rule_id="VALUE_SET_NBD.vg250_krs",
                         column="nbd",
                         expected_values=["ja", "nein"]
                     ),
                     RowCountValidation(
                         table="society.destatis_zensus_population_per_ha_inside_germany",
-                        rule_id="TEST_ROW_COUNT.destatis_zensus_population_per_ha_inside_germany",
+                        rule_id="ROW_COUNT.destatis_zensus_population_per_ha_inside_germany",
                         expected_count={"Schleswig-Holstein": 143521, "Everything": 3177723}
                     ),
                     DataTypeValidation(
                         table="society.destatis_zensus_population_per_ha_inside_germany",
-                        rule_id="TEST_DATA_MULTIPLE_TYPES.destatis_zensus_population_per_ha_inside_germany",
+                        rule_id="DATA_TYPES.destatis_zensus_population_per_ha_inside_germany",
                         column_types={
                             "id": "integer", "grid_id": "character varying (254)", "population": "smallint",
                             "geom_point": "geometry","geom": "geometry"
@@ -596,12 +596,12 @@ class Vg250(Dataset):
                     ),
                     NotNullAndNotNaNValidation(
                         table="society.destatis_zensus_population_per_ha_inside_germany",
-                        rule_id="TEST_NOT_NAN.destatis_zensus_population_per_ha_inside_germany",
+                        rule_id="NOT_NAN.destatis_zensus_population_per_ha_inside_germany",
                         columns=["id", "grid_id", "population", "geom_point", "geom"]
                     ),
                     WholeTableNotNullAndNotNaNValidation(
                         table="society.destatis_zensus_population_per_ha_inside_germany",
-                        rule_id="TEST_WHOLE_TABLE_NOT_NAN.destatis_zensus_population_per_ha_inside_germany"
+                        rule_id="TABLE_NOT_NAN.destatis_zensus_population_per_ha_inside_germany"
                     ),
                     SRIDUniqueNonZero(
                         table="society.destatis_zensus_population_per_ha_inside_germany",

@@ -417,12 +417,12 @@ class HeatSupply(Dataset):
                 "data-quality":[
                     RowCountValidation(
                         table="supply.egon_district_heating",
-                        rule_id="TEST_ROW_COUNT.egon_district_heating",
+                        rule_id="ROW_COUNT.egon_district_heating",
                         expected_count={"Schleswig-Holstein": 402, "Everything": 9090}
                     ),
                     DataTypeValidation(
                         table="supply.egon_district_heating",
-                        rule_id="TEST_DATA_MULTIPLE_TYPES.egon_district_heating",
+                        rule_id="DATA_TYPES.egon_district_heating",
                         column_types={
                             "index": "integer",
                             "district_heating_id": "integer",
@@ -435,7 +435,7 @@ class HeatSupply(Dataset):
                     ),
                     NotNullAndNotNaNValidation(
                         table="supply.egon_district_heating",
-                        rule_id="TEST_NOT_NAN.egon_district_heating",
+                        rule_id="NOT_NAN.egon_district_heating",
                         columns=[
                             "index",
                             "district_heating_id",
@@ -448,7 +448,7 @@ class HeatSupply(Dataset):
                     ),
                     WholeTableNotNullAndNotNaNValidation(
                         table="supply.egon_district_heating",
-                        rule_id="TEST_WHOLE_TABLE_NOT_NAN.egon_district_heating"
+                        rule_id="TABLE_NOT_NAN.egon_district_heating"
                     ),
                     SRIDUniqueNonZero(
                         table="supply.egon_district_heating",
@@ -469,12 +469,12 @@ class HeatSupply(Dataset):
                     ),
                     RowCountValidation(
                         table="supply.egon_individual_heating",
-                        rule_id="TEST_ROW_COUNT.egon_individual_heating",
+                        rule_id="ROW_COUNT.egon_individual_heating",
                         expected_count={"Schleswig-Holstein": 400, "Everything": 7692}
                     ),
                     DataTypeValidation(
                         table="supply.egon_individual_heating",
-                        rule_id="TEST_DATA_MULTIPLE_TYPES.egon_individual_heating",
+                        rule_id="DATA_TYPES.egon_individual_heating",
                         column_types={
                             "index": "integer",
                             "mv_grid_id": "integer",
@@ -487,7 +487,7 @@ class HeatSupply(Dataset):
                     ),
                     NotNullAndNotNaNValidation(
                         table="supply.egon_individual_heating",
-                        rule_id="TEST_NOT_NAN.egon_individual_heating",
+                        rule_id="NOT_NAN.egon_individual_heating",
                         columns=[
                             "index",
                             "mv_grid_id",
@@ -500,7 +500,7 @@ class HeatSupply(Dataset):
                     ),
                     WholeTableNotNullAndNotNaNValidation(
                         table="supply.egon_individual_heating",
-                        rule_id="TEST_WHOLE_TABLE_NOT_NAN.egon_individual_heating"
+                        rule_id="TABLE_NOT_NAN.egon_individual_heating"
                     ),
                     SRIDUniqueNonZero(
                         table="supply.egon_individual_heating",

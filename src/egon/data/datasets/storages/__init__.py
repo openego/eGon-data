@@ -123,12 +123,12 @@ class Storages(Dataset):
                     ),
                     RowCountValidation(
                         table="supply.egon_storages",
-                        rule_id="TEST_ROW_COUNT.egon_storages",
+                        rule_id="ROW_COUNT.egon_storages",
                         expected_count={"Schleswig-Holstein": 290, "Everything": 7748}
                     ),
                     DataTypeValidation(
                         table="supply.egon_storages",
-                        rule_id="TEST_DATA_MULTIPLE_TYPES.egon_storages",
+                        rule_id="DATA_TYPES.egon_storages",
                         column_types={
                             "id": "bigint",
                             "sources": "jsonb",
@@ -143,7 +143,7 @@ class Storages(Dataset):
                     ),
                     NotNullAndNotNaNValidation(
                         table="supply.egon_storages",
-                        rule_id="TEST_NOT_NAN.egon_storages",
+                        rule_id="NOT_NAN.egon_storages",
                         columns=[
                             "id",
                             "sources",
@@ -158,7 +158,7 @@ class Storages(Dataset):
                     ),
                     WholeTableNotNullAndNotNaNValidation(
                         table="supply.egon_storages",
-                        rule_id="TEST_WHOLE_TABLE_NOT_NAN.egon_storages"
+                        rule_id="TABLE_NOT_NAN.egon_storages"
                     ),
                     ValueSetValidation(
                         table="supply.egon_storages",

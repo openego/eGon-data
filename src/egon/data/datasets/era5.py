@@ -69,22 +69,22 @@ class WeatherData(Dataset):
                 "data-quality": [
                     RowCountValidation(
                         table="supply.egon_era5_weather_cells",
-                        rule_id="TEST_ROW_COUNT.egon_era5_weather_cells",
+                        rule_id="ROW_COUNT.egon_era5_weather_cells",
                         expected_count=29673
                     ),
                     DataTypeValidation(
                         table="supply.egon_era5_weather_cells",
-                        rule_id="TEST_DATA_MULTIPLE_TYPES.egon_era5_weather_cells",
+                        rule_id="DATA_TYPES.egon_era5_weather_cells",
                         column_types={"w_id": "integer", "geom": "geometry", "geom_point": "geometry"}
                     ),
                     NotNullAndNotNaNValidation(
                         table="supply.egon_era5_weather_cells",
-                        rule_id="TEST_NOT_NAN.egon_era5_weather_cells",
+                        rule_id="NOT_NAN.egon_era5_weather_cells",
                         columns=["w_id", "geom", "geom_point"]
                     ),
                     WholeTableNotNullAndNotNaNValidation(
                         table="supply.egon_era5_weather_cells",
-                        rule_id="TEST_WHOLE_TABLE_NOT_NAN.egon_era5_weather_cells"
+                        rule_id="TABLE_NOT_NAN.egon_era5_weather_cells"
                     ),
                     SRIDUniqueNonZero(
                         table="supply.egon_era5_weather_cells",

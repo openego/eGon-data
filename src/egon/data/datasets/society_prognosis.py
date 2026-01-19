@@ -33,42 +33,42 @@ class SocietyPrognosis(Dataset):
                 "data-quality":[
                     RowCountValidation(
                         table="society.egon_household_prognosis",
-                        rule_id="TEST_ROW_COUNT.egon_household_prognosis",
+                        rule_id="ROW_COUNT.egon_household_prognosis",
                         expected_count={"Everything": 5319490}
                     ),
                     DataTypeValidation(
                         table="society.egon_household_prognosis",
-                        rule_id="TEST_DATA_MULTIPLE_TYPES.egon_household_prognosis",
+                        rule_id="DATA_TYPES.egon_household_prognosis",
                         column_types={"zensus_population_id": "integer", "year": "integer", "households": "double precision"}
                     ),
                     NotNullAndNotNaNValidation(
                         table="society.egon_household_prognosis",
-                        rule_id="TEST_NOT_NAN.egon_household_prognosis",
+                        rule_id="NOT_NAN.egon_household_prognosis",
                         columns=["zensus_population_id", "year", "households"]
                     ),
                     WholeTableNotNullAndNotNaNValidation(
                         table="society.egon_household_prognosis",
-                        rule_id="TEST_WHOLE_TABLE_NOT_NAN.egon_household_prognosis"
+                        rule_id="TABLE_NOT_NAN.egon_household_prognosis"
                     ),
                     RowCountValidation(
                         table="society.egon_population_prognosis",
-                        rule_id="TEST_ROW_COUNT.egon_population_prognosis",
+                        rule_id="ROW_COUNT.egon_population_prognosis",
                         expected_count={"Everything": 6355446}
                     ),
                     DataTypeValidation(
                         table="society.egon_population_prognosis",
-                        rule_id="TEST_DATA_MULTIPLE_TYPES.egon_population_prognosis",
+                        rule_id="DATA_TYPES.egon_population_prognosis",
                         column_types={"zensus_population_id": "integer", "year": "integer",
                                       "population": "double precision"}
                     ),
                     NotNullAndNotNaNValidation(
                         table="society.egon_population_prognosis",
-                        rule_id="TEST_NOT_NAN.egon_population_prognosis",
+                        rule_id="NOT_NAN.egon_population_prognosis",
                         columns=["zensus_population_id", "year", "population"]
                     ),
                     WholeTableNotNullAndNotNaNValidation(
                         table="society.egon_population_prognosis",
-                        rule_id="TEST_WHOLE_TABLE_NOT_NAN.egon_population_prognosis"
+                        rule_id="TABLE_NOT_NAN.egon_population_prognosis"
                     ),
                 ]
             },

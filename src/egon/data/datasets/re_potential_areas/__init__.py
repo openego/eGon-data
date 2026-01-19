@@ -164,12 +164,12 @@ class re_potential_area_setup(Dataset):
                 "data-quality": [
                     RowCountValidation(
                         table="supply.egon_re_potential_area_pv_agricultur",
-                        rule_id="TEST_ROW_COUNT.egon_re_potential_area_pv_agricultur",
+                        rule_id="ROW_COUNT.egon_re_potential_area_pv_agricultur",
                         expected_count={"Schleswig-Holstein": 388, "Everything": 8259}
                     ),
                     DataTypeValidation(
                         table="supply.egon_re_potential_area_pv_agricultur",
-                        rule_id="TEST_DATA_MULTIPLE_TYPES.egon_re_potential_area_pv_agricultur",
+                        rule_id="DATA_TYPES.egon_re_potential_area_pv_agricultur",
                         column_types={
                             "id": "integer",
                             "geom": "geometry"
@@ -177,13 +177,13 @@ class re_potential_area_setup(Dataset):
                     ),
                     NotNullAndNotNaNValidation(
                         table="supply.egon_re_potential_area_pv_agricultur",
-                        rule_id="TEST_NOT_NAN.egon_re_potential_area_pv_agricultur",
+                        rule_id="NOT_NAN.egon_re_potential_area_pv_agricultur",
                         columns=["id",
                                  "geom"]
                     ),
                     WholeTableNotNullAndNotNaNValidation(
                         table="supply.egon_re_potential_area_pv_agricultur",
-                        rule_id="TEST_WHOLE_TABLE_NOT_NAN.egon_re_potential_area_pv_agricultur"
+                        rule_id="WHOLE_TABLE_NOT_NAN.egon_re_potential_area_pv_agricultur"
                     ),
                     SRIDUniqueNonZero(
                         table="supply.egon_re_potential_area_pv_agricultur",
@@ -192,12 +192,12 @@ class re_potential_area_setup(Dataset):
                     ),
                     RowCountValidation(
                         table="supply.egon_re_potential_area_pv_road_railway",
-                        rule_id="TEST_ROW_COUNT.egon_re_potential_area_pv_road_railway",
+                        rule_id="ROW_COUNT.egon_re_potential_area_pv_road_railway",
                         expected_count={"Schleswig-Holstein": 479, "Everything": 5159}
                     ),
                     DataTypeValidation(
                         table="supply.egon_re_potential_area_pv_road_railway",
-                        rule_id="TEST_DATA_MULTIPLE_TYPES.egon_re_potential_area_pv_road_railway",
+                        rule_id="DATA_TYPES.egon_re_potential_area_pv_road_railway",
                         column_types={
                             "id": "integer",
                             "geom": "geometry"
@@ -205,13 +205,13 @@ class re_potential_area_setup(Dataset):
                     ),
                     NotNullAndNotNaNValidation(
                         table="supply.egon_re_potential_area_pv_road_railway",
-                        rule_id="TEST_NOT_NAN.egon_re_potential_area_pv_road_railway",
+                        rule_id="NOT_NAN.egon_re_potential_area_pv_road_railway",
                         columns=["id",
                                  "geom"]
                     ),
                     WholeTableNotNullAndNotNaNValidation(
                         table="supply.egon_re_potential_area_pv_road_railway",
-                        rule_id="TEST_WHOLE_TABLE_NOT_NAN.egon_re_potential_area_pv_road_railway"
+                        rule_id="TABLE_NOT_NAN.egon_re_potential_area_pv_road_railway"
                     ),
                     SRIDUniqueNonZero(
                         table="supply.egon_re_potential_area_pv_road_railway",
@@ -220,12 +220,12 @@ class re_potential_area_setup(Dataset):
                     ),
                     RowCountValidation(
                         table="supply.egon_re_potential_area_wind",
-                        rule_id="TEST_ROW_COUNT.egon_re_potential_area_wind",
+                        rule_id="ROW_COUNT.egon_re_potential_area_wind",
                         expected_count={"Schleswig-Holstein": 6306, "Everything": 120268}
                     ),
                     DataTypeValidation(
                         table="supply.egon_re_potential_area_wind",
-                        rule_id="TEST_DATA_MULTIPLE_TYPES.egon_re_potential_area_wind",
+                        rule_id="DATA_TYPES.egon_re_potential_area_wind",
                         column_types={
                             "id": "integer",
                             "geom": "geometry"
@@ -233,13 +233,13 @@ class re_potential_area_setup(Dataset):
                     ),
                     NotNullAndNotNaNValidation(
                         table="supply.egon_re_potential_area_wind",
-                        rule_id="TEST_NOT_NAN.egon_re_potential_area_wind",
+                        rule_id="NOT_NAN.egon_re_potential_area_wind",
                         columns=["id",
                                  "geom"]
                     ),
                     WholeTableNotNullAndNotNaNValidation(
                         table="supply.egon_re_potential_area_wind",
-                        rule_id="TEST_WHOLE_TABLE_NOT_NAN.egon_re_potential_area_wind"
+                        rule_id="TABLE_NOT_NAN.egon_re_potential_area_wind"
                     ),
                     SRIDUniqueNonZero(
                         table="supply.egon_re_potential_area_wind",

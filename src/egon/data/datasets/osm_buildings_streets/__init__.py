@@ -221,18 +221,18 @@ class OsmBuildingsStreets(Dataset):
                 "data_quality": [
                     RowCountValidation(
                         table="boundaries.egon_map_zensus_buildings_filtered",
-                        rule_id="TEST_ROW_COUNT.egon_map_zensus_buildings_filtered",
+                        rule_id="ROW_COUNT.egon_map_zensus_buildings_filtered",
                         expected_count={"Schleswig-Holstein":1010387,
                                         "Everything":28070301}
                     ),
                     DataTypeValidation(
                         table="boundaries.egon_map_zensus_buildings_filtered",
-                        rule_id="DATA_MULTIPLE_TYPES.egon_map_zensus_buildings_filtered",
+                        rule_id="DATA_TYPES.egon_map_zensus_buildings_filtered",
                         column_types={"id": "integer", "grid_id": "character varying", "cell_id": "integer"}
                     ),
                     WholeTableNotNullAndNotNaNValidation(
                         table="boundaries.egon_map_zensus_buildings_filtered",
-                        rule_id="WHOLE_TABLE_NOT_NAN.egon_map_zensus_buildings_filtered"
+                        rule_id="TABLE_NOT_NAN.egon_map_zensus_buildings_filtered"
                     ),
                     RowCountValidation(
                         table="boundaries.egon_map_zensus_buildings_residential",
@@ -242,12 +242,12 @@ class OsmBuildingsStreets(Dataset):
                     ),
                     DataTypeValidation(
                         table="boundaries.egon_map_zensus_buildings_residential",
-                        rule_id="DATA_MULTIPLE_TYPES.egon_map_zensus_buildings_residential",
+                        rule_id="DATA_TYPES.egon_map_zensus_buildings_residential",
                         column_types={"id": "integer", "grid_id": "character varying", "cell_id": "integer"}
                     ),
                     WholeTableNotNullAndNotNaNValidation(
                         table="boundaries.egon_map_zensus_buildings_residential",
-                        rule_id="WHOLE_TABLE_NOT_NAN.egon_map_zensus_buildings_residential"
+                        rule_id="TABLE_NOT_NAN.egon_map_zensus_buildings_residential"
                     ),
                     RowCountValidation(
                         table="openstreetmap.osm_amenities_not_in_buildings",
@@ -257,14 +257,14 @@ class OsmBuildingsStreets(Dataset):
                     ),
                     DataTypeValidation(
                         table="openstreetmap.osm_amenities_not_in_buildings",
-                        rule_id="DATA_MULTIPLE_TYPES.osm_amenities_not_in_buildings",
+                        rule_id="DATA_TYPES.osm_amenities_not_in_buildings",
                         column_types={
                             "osm_id": "bigint", "amenity": "text", "name": "text", "geom_amenity": "geometry",
                             "tags": "hstore", "egon_amenity_id": "integer" }
                     ),
                     WholeTableNotNullAndNotNaNValidation(
                         table="openstreetmap.osm_amenities_not_in_buildings",
-                        rule_id="WHOLE_TABLE_NOT_NAN.osm_amenities_not_in_buildings"
+                        rule_id="TABLE_NOT_NAN.osm_amenities_not_in_buildings"
                     ),
                     SRIDUniqueNonZero(
                         table="openstreetmap.osm_amenities_not_in_buildings",
@@ -278,14 +278,14 @@ class OsmBuildingsStreets(Dataset):
                     ),
                     DataTypeValidation(
                         table="openstreetmap.osm_amenities_shops_filtered",
-                        rule_id="DATA_MULTIPLE_TYPES.osm_amenities_shops_filtered",
+                        rule_id="DATA_TYPES.osm_amenities_shops_filtered",
                         column_types={
                             "osm_id": "bigint", "amenity": "text", "name": "text", "geom_amenity": "geometry",
                             "tags": "hstore", "egon_amenity_id": "integer"}
                     ),
                     WholeTableNotNullAndNotNaNValidation(
                         table="openstreetmap.osm_amenities_shops_filtered",
-                        rule_id="WHOLE_TABLE_NOT_NAN.osm_amenities_shops_filtered"
+                        rule_id="TABLE_NOT_NAN.osm_amenities_shops_filtered"
                     ),
                     SRIDUniqueNonZero(
                         table="openstreetmap.osm_amenities_shops_filtered",
@@ -299,7 +299,7 @@ class OsmBuildingsStreets(Dataset):
                     ),
                     DataTypeValidation(
                         table="openstreetmap.osm_buildings",
-                        rule_id="DATA_MULTIPLE_TYPES.osm_buildings",
+                        rule_id="DATA_TYPES.osm_buildings",
                         column_types={
                             "osm_id": "bigint", "amenity": "text", "building": "text", "name": "text",
                             "geom_building": "geometry", "area": "double precision", "geom_point": "geometry",
@@ -307,7 +307,7 @@ class OsmBuildingsStreets(Dataset):
                     ),
                     WholeTableNotNullAndNotNaNValidation(
                         table="openstreetmap.osm_buildings",
-                        rule_id="WHOLE_TABLE_NOT_NAN.osm_buildings"
+                        rule_id="TABLE_NOT_NAN.osm_buildings"
                     ),
                     SRIDUniqueNonZero(
                         table="openstreetmap.osm_buildings",
@@ -326,7 +326,7 @@ class OsmBuildingsStreets(Dataset):
                     ),
                     DataTypeValidation(
                         table="openstreetmap.osm_buildings_filtered",
-                        rule_id="DATA_MULTIPLE_TYPES.osm_buildings_filtered",
+                        rule_id="DATA_TYPES.osm_buildings_filtered",
                         column_types={
                             "osm_id": "bigint", "amenity": "text", "building": "text", "name": "text",
                             "geom_building": "geometry", "area": "double precision", "geom_point": "geometry",
@@ -334,7 +334,7 @@ class OsmBuildingsStreets(Dataset):
                     ),
                     WholeTableNotNullAndNotNaNValidation(
                         table="openstreetmap.osm_buildings_filtered",
-                        rule_id="WHOLE_TABLE_NOT_NAN.osm_buildings_filtered"
+                        rule_id="TABLE_NOT_NAN.osm_buildings_filtered"
                     ),
                     SRIDUniqueNonZero(
                         table="openstreetmap.osm_buildings_filtered",
@@ -353,7 +353,7 @@ class OsmBuildingsStreets(Dataset):
                     ),
                     DataTypeValidation(
                         table="openstreetmap.osm_buildings_residential",
-                        rule_id="DATA_MULTIPLE_TYPES.osm_buildings_residential",
+                        rule_id="DATA_TYPES.osm_buildings_residential",
                         column_types={
                             "osm_id": "bigint", "amenity": "text", "building": "text", "name": "text",
                             "geom_building": "geometry", "area": "double precision", "geom_point": "geometry",
@@ -361,7 +361,7 @@ class OsmBuildingsStreets(Dataset):
                     ),
                     WholeTableNotNullAndNotNaNValidation(
                         table="openstreetmap.osm_buildings_residential",
-                        rule_id="WHOLE_TABLE_NOT_NAN.osm_buildings_residential"
+                        rule_id="TABLE_NOT_NAN.osm_buildings_residential"
                     ),
                     SRIDUniqueNonZero(
                         table="openstreetmap.osm_buildings_residential",
@@ -380,7 +380,7 @@ class OsmBuildingsStreets(Dataset):
                     ),
                     DataTypeValidation(
                         table="openstreetmap.osm_buildings_synthetic",
-                        rule_id="DATA_MULTIPLE_TYPES.osm_buildings_synthetic",
+                        rule_id="DATA_TYPES.osm_buildings_synthetic",
                         column_types={
                             "id": "character varying", "cell_id": "character varying", "geom_building": "geometry",
                             "geom_point": "geometry", "n_amenities_inside": "integer", "building": "character varying",
@@ -388,7 +388,7 @@ class OsmBuildingsStreets(Dataset):
                     ),
                     WholeTableNotNullAndNotNaNValidation(
                         table="openstreetmap.osm_buildings_synthetic",
-                        rule_id="WHOLE_TABLE_NOT_NAN.osm_buildings_synthetic"
+                        rule_id="TABLE_NOT_NAN.osm_buildings_synthetic"
                     ),
                     SRIDUniqueNonZero(
                         table="openstreetmap.osm_buildings_synthetic",
@@ -407,7 +407,7 @@ class OsmBuildingsStreets(Dataset):
                     ),
                     DataTypeValidation(
                         table="openstreetmap.osm_buildings_with_amenities",
-                        rule_id="DATA_MULTIPLE_TYPES.osm_buildings_with_amenities",
+                        rule_id="DATA_TYPES.osm_buildings_with_amenities",
                         column_types={
                             "osm_id_amenity": "bigint",
                             "osm_id_building": "bigint",
@@ -425,7 +425,7 @@ class OsmBuildingsStreets(Dataset):
                     ),
                     WholeTableNotNullAndNotNaNValidation(
                         table="openstreetmap.osm_buildings_with_amenities",
-                        rule_id="WHOLE_TABLE_NOT_NAN.osm_buildings_with_amenities"
+                        rule_id="TABLE_NOT_NAN.osm_buildings_with_amenities"
                     ),
                     SRIDUniqueNonZero(
                         table="openstreetmap.osm_buildings_with_amenities",
@@ -449,7 +449,7 @@ class OsmBuildingsStreets(Dataset):
                     ),
                     DataTypeValidation(
                         table="openstreetmap.osm_buildings_without_amenities",
-                        rule_id="DATA_MULTIPLE_TYPES.osm_buildings_without_amenities",
+                        rule_id="DATA_TYPES.osm_buildings_without_amenities",
                         column_types={
                             "osm_id": "bigint",
                             "id": "integer",
@@ -463,7 +463,7 @@ class OsmBuildingsStreets(Dataset):
                     ),
                     WholeTableNotNullAndNotNaNValidation(
                         table="openstreetmap.osm_buildings_without_amenities",
-                        rule_id="WHOLE_TABLE_NOT_NAN.osm_buildings_without_amenities"
+                        rule_id="TABLE_NOT_NAN.osm_buildings_without_amenities"
                     ),
                     SRIDUniqueNonZero(
                         table="openstreetmap.osm_buildings_without_amenities",
@@ -482,7 +482,7 @@ class OsmBuildingsStreets(Dataset):
                     ),
                     DataTypeValidation(
                         table="openstreetmap.osm_ways_with_segments",
-                        rule_id="DATA_MULTIPLE_TYPES.osm_ways_with_segments",
+                        rule_id="DATA_TYPES.osm_ways_with_segments",
                         column_types={
                             "osm_id": "bigint",
                             "nodes": "bigint[]",
@@ -492,7 +492,7 @@ class OsmBuildingsStreets(Dataset):
                     ),
                     WholeTableNotNullAndNotNaNValidation(
                         table="openstreetmap.osm_ways_with_segments",
-                        rule_id="WHOLE_TABLE_NOT_NAN.osm_ways_with_segments"
+                        rule_id="TABLE_NOT_NAN.osm_ways_with_segments"
                     ),
                     SRIDUniqueNonZero(
                         table="openstreetmap.osm_ways_with_segments",

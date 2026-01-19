@@ -866,12 +866,12 @@ class Chp(Dataset):
                 "data-quality":[
                     RowCountValidation(
                         table="supply.egon_chp_plants",
-                        rule_id="TEST_ROW_COUNT.egon_chp_plants",
+                        rule_id="ROW_COUNT.egon_chp_plants",
                         expected_count={"Schleswig-Holstein": 1720, "Everything": 40197}
                     ),
                     DataTypeValidation(
                         table="supply.egon_chp_plants",
-                        rule_id="TEST_DATA_MULTIPLE_TYPES.egon_chp_plants",
+                        rule_id="DATA_TYPES.egon_chp_plants",
                         column_types={
                             "id": "integer",
                             "sources": "jsonb",
@@ -890,7 +890,7 @@ class Chp(Dataset):
                     ),
                     NotNullAndNotNaNValidation(
                         table="supply.egon_chp_plants",
-                        rule_id="TEST_NOT_NAN.egon_chp_plants",
+                        rule_id="NOT_NAN.egon_chp_plants",
                         columns=[
                             "id",
                             "sources",
@@ -909,7 +909,7 @@ class Chp(Dataset):
                     ),
                     WholeTableNotNullAndNotNaNValidation(
                         table="supply.egon_chp_plants",
-                        rule_id="TEST_WHOLE_TABLE_NOT_NAN.egon_chp_plants"
+                        rule_id="TABLE_NOT_NAN.egon_chp_plants"
                     ),
                     ValueSetValidation(
                         table="supply.egon_chp_plants",

@@ -40,12 +40,12 @@ class ZensusPopulation(Dataset):
                 "data-quality":[
                     RowCountValidation(
                         table="society.egon_destatis_zensus_apartment_building_population_per_ha",
-                        rule_id="TEST_ROW_COUNT.egon_destatis_zensus_apartment_building_population_per_ha",
+                        rule_id="ROW_COUNT.egon_destatis_zensus_apartment_building_population_per_ha",
                         expected_count={"Schleswig-Holstein": 145634, "Everything": 3206490}
                     ),
                     DataTypeValidation(
                         table="society.egon_destatis_zensus_apartment_building_population_per_ha",
-                        rule_id="TEST_DATA_MULTIPLE_TYPES.egon_destatis_zensus_apartment_building_population_per_ha",
+                        rule_id="DATA_TYPES.egon_destatis_zensus_apartment_building_population_per_ha",
                         column_types={
                             "grid_id": "character varying", "zensus_population_id": "integer", "building_count": "smallint",
                             "apartment_count": "smallint", "geom": "geometry", "geom_point": "geometry"
@@ -53,12 +53,12 @@ class ZensusPopulation(Dataset):
                     ),
                     NotNullAndNotNaNValidation(
                         table="society.egon_destatis_zensus_apartment_building_population_per_ha",
-                        rule_id="TEST_NOT_NAN.egon_destatis_zensus_apartment_building_population_per_ha",
+                        rule_id="NOT_NAN.egon_destatis_zensus_apartment_building_population_per_ha",
                         columns=["grid_id", "zensus_population_id", "building_count", "apartment_count", "geom", "geom_point"]
                     ),
                     WholeTableNotNullAndNotNaNValidation(
                         table="society.egon_destatis_zensus_apartment_building_population_per_ha",
-                        rule_id="TEST_WHOLE_TABLE_NOT_NAN.egon_destatis_zensus_apartment_building_population_per_ha"
+                        rule_id="TABLE_NOT_NAN.egon_destatis_zensus_apartment_building_population_per_ha"
                     ),
                     SRIDUniqueNonZero(
                         table="society.egon_destatis_zensus_apartment_building_population_per_ha",
@@ -91,12 +91,12 @@ class ZensusMiscellaneous(Dataset):
 
                     RowCountValidation(
                         table="society.egon_destatis_zensus_apartment_per_ha",
-                        rule_id="TEST_ROW_COUNT.egon_destatis_zensus_apartment_per_ha",
+                        rule_id="ROW_COUNT.egon_destatis_zensus_apartment_per_ha",
                         expected_count={"Schleswig-Holstein": 1946300, "Everything": 51095280}
                     ),
                     DataTypeValidation(
                         table="society.egon_destatis_zensus_apartment_per_ha",
-                        rule_id="TEST_DATA_MULTIPLE_TYPES.egon_destatis_zensus_apartment_per_ha",
+                        rule_id="DATA_TYPES.egon_destatis_zensus_apartment_per_ha",
                         column_types={
                             "id": "integer", "grid_id": "character varying", "grid_id_new": "character varying",
                             "attribute": "character varying", "characteristics_code": "smallint",
@@ -106,7 +106,7 @@ class ZensusMiscellaneous(Dataset):
                     ),
                     NotNullAndNotNaNValidation(
                         table="society.egon_destatis_zensus_apartment_per_ha",
-                        rule_id="TEST_NOT_NAN.egon_destatis_zensus_apartment_per_ha",
+                        rule_id="NOT_NAN.egon_destatis_zensus_apartment_per_ha",
                         columns=[
                             "id", "grid_id", "grid_id_new", "attribute", "characteristics_code", "characteristics_text",
                             "quantity", "quantity_q", "zensus_population_id"
@@ -114,16 +114,16 @@ class ZensusMiscellaneous(Dataset):
                     ),
                     WholeTableNotNullAndNotNaNValidation(
                         table="society.egon_destatis_zensus_apartment_per_ha",
-                        rule_id="TEST_WHOLE_TABLE_NOT_NAN.egon_destatis_zensus_apartment_per_ha"
+                        rule_id="TABLE_NOT_NAN.egon_destatis_zensus_apartment_per_ha"
                     ),
                     RowCountValidation(
                         table="society.egon_destatis_zensus_building_per_ha",
-                        rule_id="TEST_ROW_COUNT.egon_destatis_zensus_building_per_ha",
+                        rule_id="ROW_COUNT.egon_destatis_zensus_building_per_ha",
                         expected_count={"Schleswig-Holstein": 978493, "Everything": 24297136}
                     ),
                     DataTypeValidation(
                         table="society.egon_destatis_zensus_building_per_ha",
-                        rule_id="TEST_DATA_MULTIPLE_TYPES.egon_destatis_zensus_building_per_ha",
+                        rule_id="DATA_TYPES.egon_destatis_zensus_building_per_ha",
                         column_types={
                             "id": "integer",
                             "grid_id": "character varying",
@@ -138,7 +138,7 @@ class ZensusMiscellaneous(Dataset):
                     ),
                     NotNullAndNotNaNValidation(
                         table="society.egon_destatis_zensus_building_per_ha",
-                        rule_id="TEST_NOT_NAN.egon_destatis_zensus_building_per_ha",
+                        rule_id="NOT_NAN.egon_destatis_zensus_building_per_ha",
                         columns=[
                             "id",
                             "grid_id",
@@ -153,16 +153,16 @@ class ZensusMiscellaneous(Dataset):
                     ),
                     WholeTableNotNullAndNotNaNValidation(
                         table="society.egon_destatis_zensus_building_per_ha",
-                        rule_id="TEST_WHOLE_TABLE_NOT_NAN.egon_destatis_zensus_building_per_ha"
+                        rule_id="TABLE_NOT_NAN.egon_destatis_zensus_building_per_ha"
                     ),
                     RowCountValidation(
                         table="society.egon_destatis_zensus_household_per_ha",
-                        rule_id="TEST_ROW_COUNT.egon_destatis_zensus_household_per_ha",
+                        rule_id="ROW_COUNT.egon_destatis_zensus_household_per_ha",
                         expected_count={"Schleswig-Holstein": 724970, "Everything": 18788917}
                     ),
                     DataTypeValidation(
                         table="society.egon_destatis_zensus_household_per_ha",
-                        rule_id="TEST_DATA_MULTIPLE_TYPES.egon_destatis_zensus_household_per_ha",
+                        rule_id="DATA_TYPES.egon_destatis_zensus_household_per_ha",
                         column_types={
                             "id": "integer",
                             "grid_id": "character varying",
@@ -177,7 +177,7 @@ class ZensusMiscellaneous(Dataset):
                     ),
                     NotNullAndNotNaNValidation(
                         table="society.egon_destatis_zensus_household_per_ha",
-                        rule_id="TEST_NOT_NAN.egon_destatis_zensus_household_per_ha",
+                        rule_id="NOT_NAN.egon_destatis_zensus_household_per_ha",
                         columns=[
                             "id",
                             "grid_id",
@@ -192,16 +192,16 @@ class ZensusMiscellaneous(Dataset):
                     ),
                     WholeTableNotNullAndNotNaNValidation(
                         table="society.egon_destatis_zensus_household_per_ha",
-                        rule_id="TEST_WHOLE_TABLE_NOT_NAN.egon_destatis_zensus_household_per_ha"
+                        rule_id="TABLE_NOT_NAN.egon_destatis_zensus_household_per_ha"
                     ),
                     RowCountValidation(
                         table="society.egon_destatis_zensus_household_per_ha_refined",
-                        rule_id="TEST_ROW_COUNT.egon_destatis_zensus_household_per_ha_refined",
+                        rule_id="ROW_COUNT.egon_destatis_zensus_household_per_ha_refined",
                         expected_count={"Schleswig-Holstein": 551678, "Everything": 13304814}
                     ),
                     DataTypeValidation(
                         table="society.egon_destatis_zensus_household_per_ha_refined",
-                        rule_id="TEST_DATA_MULTIPLE_TYPES.egon_destatis_zensus_household_per_ha_refined",
+                        rule_id="DATA_TYPES.egon_destatis_zensus_household_per_ha_refined",
                         column_types={
                             "id": "integer",
                             "cell_id": "integer",
@@ -216,7 +216,7 @@ class ZensusMiscellaneous(Dataset):
                     ),
                     NotNullAndNotNaNValidation(
                         table="society.egon_destatis_zensus_household_per_ha_refined",
-                        rule_id="TEST_NOT_NAN.egon_destatis_zensus_household_per_ha_refined",
+                        rule_id="NOT_NAN.egon_destatis_zensus_household_per_ha_refined",
                         columns=[
                             "id",
                             "cell_id",
@@ -231,7 +231,7 @@ class ZensusMiscellaneous(Dataset):
                     ),
                     WholeTableNotNullAndNotNaNValidation(
                         table="society.egon_destatis_zensus_household_per_ha_refined",
-                        rule_id="TEST_WHOLE_TABLE_NOT_NAN.egon_destatis_zensus_household_per_ha_refined"
+                        rule_id="TABLE_NOT_NAN.egon_destatis_zensus_household_per_ha_refined"
                     ),
                 ]
             },

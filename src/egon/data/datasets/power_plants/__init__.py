@@ -1637,12 +1637,12 @@ class PowerPlants(Dataset):
                 "data-quality": [
                     RowCountValidation(
                         table="supply.egon_power_plants",
-                        rule_id="TEST_ROW_COUNT.egon_power_plants",
+                        rule_id="ROW_COUNT.egon_power_plants",
                         expected_count={"Schleswig-Holstein":34828, "Everything": 1103}
                     ),
                     DataTypeValidation(
                         table="supply.egon_power_plants",
-                        rule_id="TEST_DATA_MULTIPLE_TYPES.egon_power_plants",
+                        rule_id="DATA_TYPES.egon_power_plants",
                         column_types={
                             "id": "bigint",
                             "sources": "jsonb",
@@ -1658,7 +1658,7 @@ class PowerPlants(Dataset):
                     ),
                     NotNullAndNotNaNValidation(
                         table="supply.egon_power_plants",
-                        rule_id="TEST_NOT_NAN.egon_power_plants",
+                        rule_id="NOT_NAN.egon_power_plants",
                         columns=["id",
                             "sources",
                             "source_id",
@@ -1672,7 +1672,7 @@ class PowerPlants(Dataset):
                     ),
                     WholeTableNotNullAndNotNaNValidation(
                         table="supply.egon_power_plants",
-                        rule_id="TEST_WHOLE_TABLE_NOT_NAN.egon_power_plants"
+                        rule_id="TABLE_NOT_NAN.egon_power_plants"
                     ),
                     ValueSetValidation(
                         table="supply.egon_power_plants",

@@ -95,7 +95,7 @@ def create_validation_tasks(
         ...     "data_quality": [
         ...         RowCountValidation(
         ...             table="boundaries.vg250_krs",
-        ...             rule_id="TEST_ROW_COUNT",
+        ...             rule_id="ROW_COUNT",
         ...             expected_count={"Schleswig-Holstein": 27, "Everything": 537}
         ...         )
         ...     ]
