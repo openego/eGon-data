@@ -98,7 +98,7 @@ class FinalValidations(Dataset):
     #:
     name: str = "FinalValidations"
     #:
-    version: str = "0.0.1.dev"
+    version: str = "0.0.1"
 
     def __init__(self, dependencies):
         super().__init__(
