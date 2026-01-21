@@ -29,7 +29,7 @@ from egon.data.metadata import (
     meta_metadata,
 )
 import egon.data.config
-from .validation_utils import TableValidation
+from egon.data.validation import TableValidation, resolve_boundary_dependence
 from egon_validation import (
     RowCountValidation,
     DataTypeValidation,
@@ -542,7 +542,7 @@ class Vg250(Dataset):
                 "data_quality": [
                     TableValidation(
                         table_name="boundaries.vg250_krs",
-                        row_count={"Schleswig-Holstein": 27, "Everything": 537},
+                        row_count=resolve_boundary_dependence({"Schleswig-Holstein": 27, "Everything": 537}),
                         geometry_columns=["geometry"],
                         data_type_columns={"Schleswig-Holstein":{"id":"bigint","ade":"integer", "gf":"integer", "bsg":"integer","ars":"text",
                                       "ags":"text", "sdv_ars":"text", "gen":"text", "bez":"text","ibz":"integer",
@@ -563,7 +563,7 @@ class Vg250(Dataset):
                     RowCountValidation(
                         table="boundaries.vg250_krs",
                         rule_id="ROW_COUNT.vg250_krs",
-                        expected_count={"Schleswig-Holstein":27, "Everything":431}
+                        expected_count=resolve_boundary_dependence({"Schleswig-Holstein":27, "Everything":431})
                     ),
                     DataTypeValidation(
                         table="boundaries.vg250_krs",
