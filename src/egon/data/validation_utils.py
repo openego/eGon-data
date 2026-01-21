@@ -1,12 +1,152 @@
-"""Airflow integration for egon-validation."""
+"""Airflow integration for egon-validation.
 
-from typing import Any, Dict, List
+This module supports two configuration styles:
+
+1) Backwards compatible "rule-first":
+   validation_dict = {"task": [Rule(...), Rule(...)]}
+
+2) New "table-first":
+   validation_dict = {"task": [TableValidation(...), TableValidation(...)]}
+
+Both styles can be mixed in the same list.
+"""
+
+from __future__ import annotations
+
+import copy
+import logging
+from dataclasses import dataclass
+from typing import Any, Dict, List, Mapping, Optional, Sequence, Union
+
 from airflow.operators.python import PythonOperator
 from egon_validation import run_validations, RunContext
 from egon_validation.rules.base import Rule
 import logging
 
+from egon_validation import (  # noqa: F401
+    DataTypeValidation,
+    NotNullAndNotNaNValidation,
+    RowCountValidation,
+    SRIDUniqueNonZero,
+    ValueSetValidation,
+    WholeTableNotNullAndNotNaNValidation,
+)
+
 logger = logging.getLogger(__name__)
+
+
+@dataclass(frozen=True, slots=True)
+class TableValidation:
+    """
+    Table-first validation specification.
+
+    Properties you asked for:
+      - table_name
+      - row_count
+      - geometry_columns
+      - data_type_columns
+      - not_null_columns
+      - value_set_columns
+
+    Behavior:
+      - Generates rule_ids exactly like your manual convention:
+          ROW_COUNT.<table_suffix>
+          DATA_TYPES.<table_suffix>
+          NOT_NAN.<table_suffix>
+          TABLE_NOT_NAN.<table_suffix>        <-- always added automatically
+          SRIDUniqueNonZero.<table_suffix>.<geom_col>
+          VALUE_SET_<COL>.<table_suffix>
+      - Boundary-dependent dict values are preserved and resolved later in _resolve_rule_params().
+    """
+
+    table_name: str
+
+    row_count: Optional[Any] = None
+    geometry_columns: Optional[Sequence[str]] = None
+    data_type_columns: Optional[Mapping[str, Any]] = None
+    not_null_columns: Optional[Sequence[str]] = None
+    value_set_columns: Optional[Mapping[str, Any]] = None
+
+    def to_rules(self) -> List[Rule]:
+        rules: List[Rule] = []
+        table_suffix = self.table_name.split(".")[-1]
+
+        # 1) Row count
+        if self.row_count is not None:
+            rules.append(
+                RowCountValidation(
+                    table=self.table_name,
+                    rule_id=f"ROW_COUNT.{table_suffix}",
+                    expected_count=self.row_count,
+                )
+            )
+
+        # 2) Data types
+        if self.data_type_columns is not None:
+            rules.append(
+                DataTypeValidation(
+                    table=self.table_name,
+                    rule_id=f"DATA_TYPES.{table_suffix}",
+                    column_types=dict(self.data_type_columns),
+                )
+            )
+
+        # 3) Column-level not-null / not-NaN
+        if self.not_null_columns:
+            rules.append(
+                NotNullAndNotNaNValidation(
+                    table=self.table_name,
+                    rule_id=f"NOT_NAN.{table_suffix}",
+                    columns=list(self.not_null_columns),
+                )
+            )
+
+        # 4) Geometry checks (one rule per geometry column)
+        if self.geometry_columns:
+            for geom_col in self.geometry_columns:
+                rules.append(
+                    SRIDUniqueNonZero(
+                        table=self.table_name,
+                        rule_id=f"SRIDUniqueNonZero.{table_suffix}.{geom_col}",
+                        column=geom_col,
+                    )
+                )
+
+        # 5) Value sets (one rule per column)
+        if self.value_set_columns:
+            for col_name, expected_values in self.value_set_columns.items():
+                rules.append(
+                    ValueSetValidation(
+                        table=self.table_name,
+                        rule_id=f"VALUE_SET_{str(col_name).upper()}.{table_suffix}",
+                        column=str(col_name),
+                        expected_values=expected_values,
+                    )
+                )
+
+        # 6) Whole-table not-null / not-NaN (automatic, as requested)
+        rules.append(
+            WholeTableNotNullAndNotNaNValidation(
+                table=self.table_name,
+                rule_id=f"TABLE_NOT_NAN.{table_suffix}",
+            )
+        )
+
+        return rules
+
+
+ValidationSpec = Union[Rule, TableValidation]
+
+
+def _expand_specs(specs: Sequence[ValidationSpec]) -> List[Rule]:
+    """Turn a mixed list of Rule/TableValidation into a flat list of Rule."""
+    expanded: List[Rule] = []
+    for spec in specs:
+        if isinstance(spec, TableValidation):
+            expanded.extend(spec.to_rules())
+        else:
+            expanded.append(spec)
+    return expanded
 
 
 def _resolve_context_value(value: Any, boundary: str) -> Any:
@@ -69,46 +209,22 @@ def _resolve_rule_params(rule: Rule, boundary: str) -> None:
             rule.params[param_name] = resolved_value
 
 def create_validation_tasks(
-    validation_dict: Dict[str, List[Rule]],
+    validation_dict: Dict[str, Sequence[ValidationSpec]],
     dataset_name: str,
     on_failure: str = "continue"
 ) -> List[PythonOperator]:
     """Convert validation dict to Airflow tasks.
 
-    Automatically resolves boundary-dependent parameters in validation rules.
-    Parameters can be specified as dicts with boundary keys:
-
-    - Boundary-dependent: {"Schleswig-Holstein": 27, "Everything": 537}
-
-    The appropriate value is selected based on the current configuration.
-
-    Args:
-        validation_dict: {"task_name": [Rule1(), Rule2()]}
-        dataset_name: Name of dataset
-        on_failure: "continue" or "fail"
-
-    Returns:
-        List of PythonOperator tasks
-
-    Example:
-        >>> validation_dict = {
-        ...     "data_quality": [
-        ...         RowCountValidation(
-        ...             table="boundaries.vg250_krs",
-        ...             rule_id="ROW_COUNT",
-        ...             expected_count={"Schleswig-Holstein": 27, "Everything": 537}
-        ...         )
-        ...     ]
-        ... }
-        >>> tasks = create_validation_tasks(validation_dict, "VG250")
+    Values can be List[Rule], values can be List[TableValidation] or mixed.
     """
     if not validation_dict:
         return []
 
-    tasks = []
+    tasks: List[PythonOperator] = []
 
-    for task_name, rules in validation_dict.items():
-        def make_callable(rules, task_name):
+    for task_name, specs in validation_dict.items():
+
+        def make_callable(specs: Sequence[ValidationSpec], task_name: str):
             def run_validation(**context):
                 import os
                 import time
@@ -116,14 +232,17 @@ def create_validation_tasks(
                 from egon.data import db as egon_db
                 from egon.data.config import settings
 
-                # Use same run_id as validation report for consistency
-                # This allows the validation report to collect results from all validation tasks
+                # Run id selection (unchanged logic)
                 run_id = (
-                    os.environ.get('AIRFLOW_CTX_DAG_RUN_ID') or
-                    context.get('run_id') or
-                    (context.get('ti') and hasattr(context['ti'], 'dag_run') and context['ti'].dag_run.run_id) or
-                    (context.get('dag_run') and context['dag_run'].run_id) or
-                    f"airflow-{dataset_name}-{task_name}-{int(time.time())}"
+                    os.environ.get("AIRFLOW_CTX_DAG_RUN_ID")
+                    or context.get("run_id")
+                    or (
+                        context.get("ti")
+                        and hasattr(context["ti"], "dag_run")
+                        and context["ti"].dag_run.run_id
+                    )
+                    or (context.get("dag_run") and context["dag_run"].run_id)
+                    or f"airflow-{dataset_name}-{task_name}-{int(time.time())}"
                 )
 
                 # Use absolute path to ensure consistent location regardless of working directory
@@ -149,6 +268,8 @@ def create_validation_tasks(
                 boundary = config["--dataset-boundary"]
 
                 logger.info(f"Resolving validation parameters for boundary='{boundary}'")
+
+                rules: List[Rule] = copy.deepcopy(_expand_specs(specs))
 
                 # Set task and dataset on all rules (required by Rule base class)
                 # Also resolve boundary-dependent parameters
@@ -176,7 +297,7 @@ def create_validation_tasks(
 
             return run_validation
 
-        func = make_callable(rules, task_name)
+        func = make_callable(specs, task_name)
         func.__name__ = f"validate_{task_name}"
 
         operator = PythonOperator(
