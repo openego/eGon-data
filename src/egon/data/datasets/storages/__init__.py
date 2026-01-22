@@ -41,7 +41,7 @@ from egon_validation import(
     ValueSetValidation,
     SRIDUniqueNonZero
 )
-from egon.data.validation.rules.custom.sanity import HomeBatteriesAggregation
+from egon.data.validation.rules.custom.sanity.home_batteries import HomeBatteriesAggregation
 
 Base = declarative_base()
 

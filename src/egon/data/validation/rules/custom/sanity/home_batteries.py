@@ -10,7 +10,7 @@ import pandas as pd
 from egon_validation.rules.base import DataFrameRule, RuleResult, Severity
 
 from egon.data import config, db
-from egon.data.datasets.storages.utils import get_cbat_pbat_ratio
+from egon.data.validation.rules.custom.sanity.utils import get_cbat_pbat_ratio
 
 
 class HomeBatteriesAggregation(DataFrameRule):
