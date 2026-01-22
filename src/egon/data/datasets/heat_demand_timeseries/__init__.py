@@ -1300,11 +1300,13 @@ class HeatTimeSeries(Dataset):
                     ),
                     ArrayCardinalityValidation(
                         table="demand.egon_heat_timeseries_selected_profiles",
+                        rule_id="ARRAY.egon_heat_timeseries_selected_profiles",
                         array_column="selected_idp_profiles",
                         expected_length=365,
                     ),
                     ArrayCardinalityValidation(
                         table="demand.egon_timeseries_district_heating",
+                        rule_id="ARRAY.egon_timeseries_district_heating",
                         array_column="dist_aggregated_mw",
                         expected_length=8760,
                     ),

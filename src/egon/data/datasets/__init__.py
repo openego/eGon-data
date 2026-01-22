@@ -284,7 +284,11 @@ class Dataset:
 
             # Append validation tasks to existing tasks
             if validation_tasks:
-                task_list = list(self.tasks.graph if hasattr(self.tasks, 'graph') else self.tasks)
+                graph = self.tasks.graph if hasattr(self.tasks, 'graph') else self.tasks
+                if isinstance(graph, (tuple, set, list)):
+                    task_list = list(graph)
+                else:
+                    task_list = [graph]
                 task_list.extend(validation_tasks)
                 self.tasks = Tasks_(tuple(task_list))
 

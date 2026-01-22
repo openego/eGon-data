@@ -35,6 +35,7 @@ class LowFlexScenario(Dataset):
                 "data-quality":[
                     ArrayCardinalityValidation(
                         table="grid.egon_etrago_bus_timeseries",
+                        rule_id="ARRAY.egon_etrago_bus_timeseries",
                         array_column="v_mag_pu_set",
                         expected_length=8760,
                     ),
