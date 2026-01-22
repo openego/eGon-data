@@ -41,5 +41,5 @@ class LowFlexScenario(Dataset):
                     ),
                 ]
             },
-            on_validaiton_failure="continue"
+            on_validation_failure="continue"
         )
