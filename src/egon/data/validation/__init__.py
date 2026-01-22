@@ -7,7 +7,7 @@ Supports two configuration styles (can be mixed):
    validation_dict = {"task_name": [Rule(...), Rule(...)]}
 
 2) "table-first":
-   validation_dict = {"task_name": [TableValidation(...), TableValidation(...)]}
+   validation_dict = {"task_name": [TableValidation(...), ...]}
 """
 
 from .resolver import (

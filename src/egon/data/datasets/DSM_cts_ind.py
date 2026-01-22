@@ -32,7 +32,7 @@ from egon.data.metadata import (
     sources,
 )
 
-from egon_validation import(
+from egon_validation import (
     ArrayCardinalityValidation
 )
 
@@ -147,12 +147,12 @@ class DsmPotential(Dataset):
             dependencies=dependencies,
             tasks=(dsm_cts_ind_processing,),
             validation={
-                "data-quality":[
+                "data-quality": [
                     ArrayCardinalityValidation(
                         table="demand.egon_demandregio_sites_ind_electricity_dsm_timeseries",
                         rule_id="ARRAY_VALIDATION.egon_demandregio_sites_ind_electricity_dsm_timeseries",
-                        array_column= "p_set",
-                        expected_length= 8760,
+                        array_column="p_set",
+                        expected_length=8760,
                     ),
                     ArrayCardinalityValidation(
                         table="demand.egon_etrago_electricity_cts_dsm_timeseries",

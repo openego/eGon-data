@@ -1,9 +1,9 @@
 """
 Dataset for generating validation reports during pipeline execution.
 
-This module provides the ValidationReport dataset which generates comprehensive
-validation reports by aggregating all validation results from individual dataset
-validation tasks executed during the pipeline run.
+This module provides the ValidationReport dataset which generates
+comprehensive validation reports by aggregating all validation results
+from individual dataset validation tasks executed during the pipeline run.
 """
 
 import os
@@ -12,11 +12,14 @@ import time
 from egon.data import logger, db as egon_db
 from egon.data.datasets import Dataset
 from egon_validation import RunContext
-from egon_validation.runner.aggregate import collect, build_coverage, write_outputs
+from egon_validation.runner.aggregate import (
+    collect, build_coverage, write_outputs
+)
 from egon_validation.report.generate import generate
 from egon_validation.runner.coverage_analysis import discover_total_tables
 from egon_validation.config import ENV_DB_URL
 import os as _os
+
 
 def generate_validation_report(**kwargs):
     """
@@ -31,11 +34,13 @@ def generate_validation_report(**kwargs):
     """
     # Use same run_id as other validation tasks in the pipeline
     # This ensures all tasks read/write to the same directory
+    dag_run = kwargs.get('dag_run')
+    ti = kwargs.get('ti')
     run_id = (
         os.environ.get('AIRFLOW_CTX_DAG_RUN_ID') or
         kwargs.get('run_id') or
-        (kwargs.get('ti') and hasattr(kwargs['ti'], 'dag_run') and kwargs['ti'].dag_run.run_id) or
-        (kwargs.get('dag_run') and kwargs['dag_run'].run_id) or
+        (ti and hasattr(ti, 'dag_run') and ti.dag_run.run_id) or
+        (dag_run and dag_run.run_id) or
         f"pipeline_validation_report_{int(time.time())}"
     )
 
@@ -58,11 +63,13 @@ def generate_validation_report(**kwargs):
         try:
             # Get the database URL from egon.data
             db_url = str(egon_db.engine().url)
-            # Temporarily set the environment variable so discover_total_tables can use it
+            # Set env var so discover_total_tables can use it
             _os.environ[ENV_DB_URL] = db_url
             logger.info("Database connection available for table counting")
         except Exception as e:
-            logger.warning(f"Could not set database URL for table counting: {e}")
+            logger.warning(
+                f"Could not set database URL for table counting: {e}"
+            )
 
         # Collect all validation results from existing validation runs
         collected = collect(ctx)
@@ -71,18 +78,20 @@ def generate_validation_report(**kwargs):
         generate(ctx)
 
         report_path = os.path.join(final_out_dir, 'report.html')
-        logger.info("Pipeline validation report generated successfully", extra={
-            "report_path": report_path,
-            "run_id": run_id,
-            "total_results": len(collected.get("items", []))
-        })
-
+        logger.info(
+            "Pipeline validation report generated successfully",
+            extra={
+                "report_path": report_path,
+                "run_id": run_id,
+                "total_results": len(collected.get("items", []))
+            }
+        )
 
     except FileNotFoundError as e:
         logger.warning(
             f"No validation results found for pipeline validation report | "
             f"run_id={run_id} | out_dir={out_dir} | error={e} | "
-            f"suggestion=This may be expected if no validation tasks were run during the pipeline"
+            f"suggestion=This may be expected if no validation tasks ran"
         )
 
         # Don't raise - this is acceptable if no validations were run
@@ -103,10 +112,11 @@ class ValidationReport(Dataset):
     """
     Dataset for generating validation reports.
 
-    This dataset generates a comprehensive HTML validation report by aggregating
-    all validation results from individual dataset validation tasks that were
-    executed during the pipeline run. It should be placed before sanity_checks
-    in the DAG to ensure validation results are collected before final checks.
+    This dataset generates a comprehensive HTML validation report by
+    aggregating all validation results from individual dataset validation
+    tasks that were executed during the pipeline run. It should be placed
+    before sanity_checks in the DAG to ensure validation results are
+    collected before final checks.
     """
     #:
     name: str = "ValidationReport"

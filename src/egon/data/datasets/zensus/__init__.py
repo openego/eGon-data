@@ -17,7 +17,7 @@ from egon.data.config import settings
 from egon.data.datasets import Dataset
 import egon.data.config
 
-from egon_validation import(
+from egon_validation import (
     RowCountValidation,
     DataTypeValidation,
     NotNullAndNotNaNValidation,
@@ -37,7 +37,7 @@ class ZensusPopulation(Dataset):
                 population_to_postgres,
             ),
             validation={
-                "data-quality":[
+                "data-quality": [
                     RowCountValidation(
                         table="society.egon_destatis_zensus_apartment_building_population_per_ha",
                         rule_id="ROW_COUNT.egon_destatis_zensus_apartment_building_population_per_ha",
@@ -87,7 +87,7 @@ class ZensusMiscellaneous(Dataset):
                 zensus_misc_to_postgres,
             ),
             validation={
-                "data-quality":[
+                "data-quality": [
 
                     RowCountValidation(
                         table="society.egon_destatis_zensus_apartment_per_ha",

@@ -16,7 +16,7 @@ from egon.data.datasets import Dataset
 from egon.data.datasets.scenario_parameters import get_sector_parameters
 import egon.data.config
 
-from egon_validation import(
+from egon_validation import (
     RowCountValidation,
     DataTypeValidation,
     NotNullAndNotNaNValidation,
@@ -75,7 +75,11 @@ class WeatherData(Dataset):
                     DataTypeValidation(
                         table="supply.egon_era5_weather_cells",
                         rule_id="DATA_TYPES.egon_era5_weather_cells",
-                        column_types={"w_id": "integer", "geom": "geometry", "geom_point": "geometry"}
+                        column_types={
+                            "w_id": "integer",
+                            "geom": "geometry",
+                            "geom_point": "geometry"
+                        }
                     ),
                     NotNullAndNotNaNValidation(
                         table="supply.egon_era5_weather_cells",

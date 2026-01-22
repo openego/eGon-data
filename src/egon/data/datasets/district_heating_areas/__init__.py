@@ -95,13 +95,21 @@ class DistrictHeatingAreas(Dataset):
                     RowCountValidation(
                         table=" demand.egon_district_heating_areas",
                         rule_id="ROW_COUNT.egon_district_heating_areas",
-                        expected_count={"Schleswig-Holstein": 100, "Everything": 6335}
+                        expected_count={
+                            "Schleswig-Holstein": 100,
+                            "Everything": 6335
+                        }
                     ),
                     DataTypeValidation(
                         table="demand.egon_district_heating_areas",
                         rule_id="DATA_MULTIPLE_TYPES.egon_district_heating_areas",
-                        column_types={"id": "integer", "area_id": "integer", "scenario": "character varying",
-                                      "geom_polygon": "geometry", "residential_and_service_demand": "double precision"}
+                        column_types={
+                            "id": "integer",
+                            "area_id": "integer",
+                            "scenario": "character varying",
+                            "geom_polygon": "geometry",
+                            "residential_and_service_demand": "double precision"
+                        }
                     ),
                     WholeTableNotNullAndNotNaNValidation(
                         table="demand.egon_district_heating_areas",

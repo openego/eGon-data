@@ -1243,12 +1243,21 @@ class setup(Dataset):
                     RowCountValidation(
                         table=" demand.egon_building_electricity_peak_loads",
                         rule_id="ROW_COUNT.egon_building_electricity_peak_loads",
-                        expected_count={"Schleswig-Holstein": 3054820, "Everything": 44683620}
+                        expected_count={
+                            "Schleswig-Holstein": 3054820,
+                            "Everything": 44683620
+                        }
                     ),
                     DataTypeValidation(
                         table="demand.egon_building_electricity_peak_loads",
                         rule_id="DATA_MULTIPLE_TYPES.egon_building_electricity_peak_loads",
-                        column_types={"building_id": "integer", "scenario": "character varying", "sector": "character varying", "peak_load_in_w": "real", "voltage_level": "integer"}
+                        column_types={
+                            "building_id": "integer",
+                            "scenario": "character varying",
+                            "sector": "character varying",
+                            "peak_load_in_w": "real",
+                            "voltage_level": "integer"
+                        }
                     ),
                     WholeTableNotNullAndNotNaNValidation(
                         table="demand.egon_building_electricity_peak_loads",
@@ -1269,12 +1278,20 @@ class setup(Dataset):
                     RowCountValidation(
                         table=" demand.egon_building_heat_peak_loads",
                         rule_id="ROW_COUNT.egon_building_heat_peak_loads",
-                        expected_count={"Schleswig-Holstein": 732905, "Everything": 42128819}
+                        expected_count={
+                            "Schleswig-Holstein": 732905,
+                            "Everything": 42128819
+                        }
                     ),
                     DataTypeValidation(
                         table="demand.egon_building_heat_peak_loads",
                         rule_id="DATA_MULTIPLE_TYPES.egon_building_heat_peak_loads",
-                        column_types={"building_id": "integer", "scenario": "character varying", "sector": "character varying", "peak_load_in_w": "real"}
+                        column_types={
+                            "building_id": "integer",
+                            "scenario": "character varying",
+                            "sector": "character varying",
+                            "peak_load_in_w": "real"
+                        }
                     ),
                     WholeTableNotNullAndNotNaNValidation(
                         table="demand.egon_building_heat_peak_loads",
@@ -1295,13 +1312,19 @@ class setup(Dataset):
                     RowCountValidation(
                         table=" demand.egon_household_electricity_profile_of_buildings",
                         rule_id="ROW_COUNT.egon_household_electricity_profile_of_buildings",
-                        expected_count={"Schleswig-Holstein": 1371592, "Everything": 38605221}
+                        expected_count={
+                            "Schleswig-Holstein": 1371592,
+                            "Everything": 38605221
+                        }
                     ),
                     DataTypeValidation(
                         table="demand.egon_household_electricity_profile_of_buildings",
                         rule_id="DATA_MULTIPLE_TYPES.egon_household_electricity_profile_of_buildings",
-                        column_types={"id": "integer", "building_id": "integer", "cell_id": "integer",
-                                      "profile_id": "character varying"}
+                        column_types={
+                            "id": "integer",
+                            "building_id": "integer",
+                            "cell_id": "integer",
+                            "profile_id": "character varying"}
                     ),
                     WholeTableNotNullAndNotNaNValidation(
                         table="demand.egon_household_electricity_profile_of_buildings",

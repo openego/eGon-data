@@ -7,7 +7,6 @@ grid capacities and external data sources.
 
 from egon_validation.rules.base import DataFrameRule, RuleResult, Severity
 
-from egon.data import config
 from egon.data.datasets.hydrogen_etrago.storage import (
     calculate_and_map_saltcavern_storage_potential
 )

@@ -18,9 +18,9 @@ from egon.data.validation import create_validation_tasks
 from egon.data import config, db, logger
 
 try:
-      from egon_validation.rules.base import Rule
+    from egon_validation.rules.base import Rule
 except ImportError:
-      Rule = None  # Type hint only
+    Rule = None  # Type hint only
 
 
 Base = declarative_base()
@@ -284,7 +284,10 @@ class Dataset:
 
             # Append validation tasks to existing tasks
             if validation_tasks:
-                graph = self.tasks.graph if hasattr(self.tasks, 'graph') else self.tasks
+                if hasattr(self.tasks, 'graph'):
+                    graph = self.tasks.graph
+                else:
+                    graph = self.tasks
                 if isinstance(graph, (tuple, set, list)):
                     task_list = list(graph)
                 else:
@@ -336,20 +339,24 @@ class Dataset:
             # Get last non-validation tasks
             non_validation_task_ids = [
                 task.task_id for task in self.tasks.values()
-                if not any(task.task_id.endswith(f".validate.{name}") for name in self.validation.keys())
+                if not any(
+                    task.task_id.endswith(f".validate.{name}")
+                    for name in self.validation.keys()
+                )
             ]
 
             last_data_tasks = [
                 task for task in self.tasks.values()
-                if task.task_id in non_validation_task_ids and task in self.tasks.last
+                if task.task_id in non_validation_task_ids
+                and task in self.tasks.last
             ]
 
             if not last_data_tasks:
                 # Fallback to last non-validation task
                 last_data_tasks = [
-                                      task for task in self.tasks.values()
-                                      if task.task_id in non_validation_task_ids
-                                  ][-1:]
+                    task for task in self.tasks.values()
+                    if task.task_id in non_validation_task_ids
+                ][-1:]
 
             # Link each validation task downstream of last data tasks
             for validation_task in validation_tasks:

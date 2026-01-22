@@ -229,7 +229,6 @@ class ElectricityCapacityComparison(DataFrameRule):
 
         # Case 4: Both > 0 - Check deviation
         deviation = abs(output_capacity - input_capacity) / input_capacity
-        deviation_pct = deviation * 100
         error_pct = ((output_capacity - input_capacity) / input_capacity) * 100
 
         success = deviation <= self.rtol

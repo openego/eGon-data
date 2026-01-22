@@ -47,7 +47,7 @@ from egon.data.metadata import (
     sources,
 )
 
-from egon_validation import(
+from egon_validation import (
     RowCountValidation,
     DataTypeValidation,
     NotNullAndNotNaNValidation,
@@ -863,11 +863,14 @@ class Chp(Dataset):
             dependencies=dependencies,
             tasks=tasks,
             validation={
-                "data-quality":[
+                "data-quality": [
                     RowCountValidation(
                         table="supply.egon_chp_plants",
                         rule_id="ROW_COUNT.egon_chp_plants",
-                        expected_count={"Schleswig-Holstein": 1720, "Everything": 40197}
+                        expected_count={
+                            "Schleswig-Holstein": 1720,
+                            "Everything": 40197
+                        }
                     ),
                     DataTypeValidation(
                         table="supply.egon_chp_plants",
@@ -915,7 +918,13 @@ class Chp(Dataset):
                         table="supply.egon_chp_plants",
                         rule_id="VALUE_SET_VALIDATION_CARRIER.egon_chp_plants",
                         column="carrier",
-                        expected_values=["oil", "others", "gas", "gas extended", "biomass"]
+                        expected_values=[
+                            "oil",
+                            "others",
+                            "gas",
+                            "gas extended",
+                            "biomass"
+                        ]
                     ),
                     ValueSetValidation(
                         table="supply.egon_chp_plants",
