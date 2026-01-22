@@ -4,7 +4,9 @@ from __future__ import annotations
 
 import logging
 from functools import partial
-from typing import Any, Dict, List, Sequence
+import re
+import hashlib
+from typing import Any, Dict, List, Sequence, Set
 
 from airflow.operators.python import PythonOperator
 from egon_validation import RunContext, run_validations
@@ -105,6 +107,10 @@ def create_validation_tasks(
 
     tasks: List[PythonOperator] = []
 
+    used_task_ids: Set[str] = set()
+
+    safe_dataset = sanitize_airflow_key(dataset_name)
+
     for task_name, specs in validation_dict.items():
         callable_for_airflow = partial(
             run_validation_task,
@@ -116,10 +122,30 @@ def create_validation_tasks(
 
         tasks.append(
             PythonOperator(
-                task_id=f"{dataset_name}.validate.{task_name}",
+                task_id=f"{safe_dataset}.validate.{task_name}",
                 python_callable=callable_for_airflow,
                 provide_context=True,
             )
         )
 
     return tasks
+
+def sanitize_airflow_key(value: str) -> str:
+    """
+    Airflow task_id/key must match: [A-Za-z0-9_.-]+
+    Replace everything else with underscores.
+    """
+    # 1) strip outer whitespace
+    v = value.strip()
+
+    # 2) replace any run of invalid characters (including spaces) with "_"
+    v = re.sub(r"[^A-Za-z0-9_.-]+", "_", v)
+
+    # 3) collapse multiple underscores
+    v = re.sub(r"_+", "_", v)
+
+    # 4) avoid leading/trailing separators that can look ugly / confusing
+    v = v.strip("._-")
+
+    # 5) don't return empty
+    return v or "unnamed"
