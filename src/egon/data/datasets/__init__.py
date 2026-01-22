@@ -13,7 +13,7 @@ from airflow.operators.python import PythonOperator
 from sqlalchemy import Column, ForeignKey, Integer, String, Table, orm, tuple_
 from sqlalchemy.ext.declarative import declarative_base
 from typing import Dict, List
-from egon.data.validation_utils import create_validation_tasks
+from egon.data.validation import create_validation_tasks
 
 from egon.data import config, db, logger
 
