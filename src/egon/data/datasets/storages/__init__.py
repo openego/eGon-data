@@ -24,7 +24,6 @@ from egon.data.datasets.scenario_parameters import get_sector_parameters
 from egon.data.datasets.storages.home_batteries import (
     allocate_home_batteries_to_buildings,
 )
-from egon.data.validation.rules.custom.sanity import HomeBatteriesAggregation
 from egon.data.datasets.storages.pumped_hydro import (
     apply_voltage_level_thresholds,
     get_location,
@@ -42,6 +41,7 @@ from egon_validation import(
     ValueSetValidation,
     SRIDUniqueNonZero
 )
+from egon.data.validation.rules.custom.sanity import HomeBatteriesAggregation
 
 Base = declarative_base()
 
