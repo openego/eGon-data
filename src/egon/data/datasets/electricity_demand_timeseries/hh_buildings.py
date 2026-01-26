@@ -1279,10 +1279,10 @@ class setup(Dataset):
                     RowCountValidation(
                         table=" demand.egon_building_heat_peak_loads",
                         rule_id="ROW_COUNT.egon_building_heat_peak_loads",
-                        expected_count={resolve_boundary_dependence(
+                        expected_count=resolve_boundary_dependence(
                             {"Schleswig-Holstein": 732905,
                             "Everything": 42128819}
-                        )}
+                        )
                     ),
                     DataTypeValidation(
                         table="demand.egon_building_heat_peak_loads",
