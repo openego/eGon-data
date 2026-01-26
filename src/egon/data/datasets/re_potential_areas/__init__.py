@@ -163,31 +163,31 @@ class re_potential_area_setup(Dataset):
             validation={
                 "data-quality": [
                     RowCountValidation(
-                        table="supply.egon_re_potential_area_pv_agricultur",
-                        rule_id="ROW_COUNT.egon_re_potential_area_pv_agricultur",
+                        table="supply.egon_re_potential_area_pv_agriculture",
+                        rule_id="ROW_COUNT.egon_re_potential_area_pv_agriculture",
                         expected_count={"Schleswig-Holstein": 388, "Everything": 8259}
                     ),
                     DataTypeValidation(
-                        table="supply.egon_re_potential_area_pv_agricultur",
-                        rule_id="DATA_TYPES.egon_re_potential_area_pv_agricultur",
+                        table="supply.egon_re_potential_area_pv_agriculture",
+                        rule_id="DATA_TYPES.egon_re_potential_area_pv_agriculture",
                         column_types={
                             "id": "integer",
                             "geom": "geometry"
                         }
                     ),
                     NotNullAndNotNaNValidation(
-                        table="supply.egon_re_potential_area_pv_agricultur",
-                        rule_id="NOT_NAN.egon_re_potential_area_pv_agricultur",
+                        table="supply.egon_re_potential_area_pv_agriculture",
+                        rule_id="NOT_NAN.egon_re_potential_area_pv_agriculture",
                         columns=["id",
                                  "geom"]
                     ),
                     WholeTableNotNullAndNotNaNValidation(
-                        table="supply.egon_re_potential_area_pv_agricultur",
-                        rule_id="WHOLE_TABLE_NOT_NAN.egon_re_potential_area_pv_agricultur"
+                        table="supply.egon_re_potential_area_pv_agriculture",
+                        rule_id="WHOLE_TABLE_NOT_NAN.egon_re_potential_area_pv_agriculture"
                     ),
                     SRIDUniqueNonZero(
-                        table="supply.egon_re_potential_area_pv_agricultur",
-                        rule_id="SRIDUniqueNonZero.egon_re_potential_area_pv_agricultur.geom",
+                        table="supply.egon_re_potential_area_pv_agriculture",
+                        rule_id="SRIDUniqueNonZero.egon_re_potential_area_pv_agriculture.geom",
                         column="geom"
                     ),
                     RowCountValidation(
