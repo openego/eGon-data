@@ -29,6 +29,7 @@ from egon_validation import (
     WholeTableNotNullAndNotNaNValidation,
     ValueSetValidation
 )
+from egon.data.validation.resolver import resolve_boundary_dependence
 
 engine = db.engine()
 Base = declarative_base()
@@ -1243,10 +1244,10 @@ class setup(Dataset):
                     RowCountValidation(
                         table=" demand.egon_building_electricity_peak_loads",
                         rule_id="ROW_COUNT.egon_building_electricity_peak_loads",
-                        expected_count={
+                        expected_count=resolve_boundary_dependence({
                             "Schleswig-Holstein": 3054820,
                             "Everything": 44683620
-                        }
+                        })
                     ),
                     DataTypeValidation(
                         table="demand.egon_building_electricity_peak_loads",
@@ -1278,10 +1279,10 @@ class setup(Dataset):
                     RowCountValidation(
                         table=" demand.egon_building_heat_peak_loads",
                         rule_id="ROW_COUNT.egon_building_heat_peak_loads",
-                        expected_count={
-                            "Schleswig-Holstein": 732905,
-                            "Everything": 42128819
-                        }
+                        expected_count={resolve_boundary_dependence(
+                            {"Schleswig-Holstein": 732905,
+                            "Everything": 42128819}
+                        )}
                     ),
                     DataTypeValidation(
                         table="demand.egon_building_heat_peak_loads",
@@ -1312,10 +1313,10 @@ class setup(Dataset):
                     RowCountValidation(
                         table=" demand.egon_household_electricity_profile_of_buildings",
                         rule_id="ROW_COUNT.egon_household_electricity_profile_of_buildings",
-                        expected_count={
-                            "Schleswig-Holstein": 1371592,
-                            "Everything": 38605221
-                        }
+                        expected_count=resolve_boundary_dependence(
+                            {"Schleswig-Holstein": 1371592,
+                            "Everything": 38605221}
+                        )
                     ),
                     DataTypeValidation(
                         table="demand.egon_household_electricity_profile_of_buildings",

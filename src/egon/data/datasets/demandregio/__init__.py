@@ -27,6 +27,7 @@ from egon_validation import (
     ValueSetValidation,
     ArrayCardinalityValidation
 )
+from egon.data.validation.resolver import resolve_boundary_dependence
 
 try:
     from disaggregator import config, data, spatial, temporal
@@ -99,10 +100,10 @@ class DemandRegio(Dataset):
                     RowCountValidation(
                         table=" demand.egon_demandregio_hh",
                         rule_id="ROW_COUNT.egon_demandregio_hh",
-                        expected_count={
-                            "Schleswig-Holstein": 180,
-                            "everything": 7218
-                        }
+                        expected_count=resolve_boundary_dependence(
+                            {"Schleswig-Holstein": 180,
+                            "Everything": 7218}
+                        )
                     ),
                     DataTypeValidation(
                         table="demand.egon_demandregio_hh",

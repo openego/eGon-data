@@ -41,6 +41,8 @@ from egon_validation import(
     ValueSetValidation,
     SRIDUniqueNonZero
 )
+
+from egon.data.validation import resolve_boundary_dependence
 from egon.data.validation.rules.custom.sanity.home_batteries import HomeBatteriesAggregation
 
 Base = declarative_base()
@@ -124,7 +126,10 @@ class Storages(Dataset):
                     RowCountValidation(
                         table="supply.egon_storages",
                         rule_id="ROW_COUNT.egon_storages",
-                        expected_count={"Schleswig-Holstein": 290, "Everything": 7748}
+                        expected_count=resolve_boundary_dependence(
+                            {"Schleswig-Holstein": 290,
+                             "Everything": 7748}
+                        )
                     ),
                     DataTypeValidation(
                         table="supply.egon_storages",

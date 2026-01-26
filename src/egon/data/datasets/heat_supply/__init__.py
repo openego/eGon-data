@@ -41,6 +41,8 @@ from egon_validation import(
     SRIDUniqueNonZero
 )
 
+from egon.data.validation import resolve_boundary_dependence
+
 # Will later be imported from another file.
 Base = declarative_base()
 
@@ -418,7 +420,10 @@ class HeatSupply(Dataset):
                     RowCountValidation(
                         table="supply.egon_district_heating",
                         rule_id="ROW_COUNT.egon_district_heating",
-                        expected_count={"Schleswig-Holstein": 402, "Everything": 9090}
+                        expected_count=resolve_boundary_dependence(
+                            {"Schleswig-Holstein": 402,
+                             "Everything": 9090}
+                        )
                     ),
                     DataTypeValidation(
                         table="supply.egon_district_heating",
@@ -470,7 +475,10 @@ class HeatSupply(Dataset):
                     RowCountValidation(
                         table="supply.egon_individual_heating",
                         rule_id="ROW_COUNT.egon_individual_heating",
-                        expected_count={"Schleswig-Holstein": 400, "Everything": 7692}
+                        expected_count=resolve_boundary_dependence(
+                            {"Schleswig-Holstein": 400,
+                             "Everything": 7692}
+                        )
                     ),
                     DataTypeValidation(
                         table="supply.egon_individual_heating",

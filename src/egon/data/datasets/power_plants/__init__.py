@@ -4,6 +4,7 @@ allocation of data on conventional and renewable power plants.
 
 from pathlib import Path
 import logging
+from pydoc import resolve
 
 from geoalchemy2 import Geometry
 from shapely.geometry import Point
@@ -52,6 +53,8 @@ from egon_validation import(
     ValueSetValidation,
     SRIDUniqueNonZero
 )
+
+from egon.data.validation import resolve_boundary_dependence
 
 Base = declarative_base()
 
@@ -1638,7 +1641,10 @@ class PowerPlants(Dataset):
                     RowCountValidation(
                         table="supply.egon_power_plants",
                         rule_id="ROW_COUNT.egon_power_plants",
-                        expected_count={"Schleswig-Holstein":34828, "Everything": 1103}
+                        expected_count=resolve_boundary_dependence(
+                            {"Schleswig-Holstein":34828,
+                             "Everything": 1103}
+                        )
                     ),
                     DataTypeValidation(
                         table="supply.egon_power_plants",

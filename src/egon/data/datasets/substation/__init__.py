@@ -103,7 +103,8 @@ class SubstationExtraction(Dataset):
                 #     RowCountValidation(
                 #         table="<schema>.<table_name>",
                 #         rule_id="ROW_COUNT.<table_name>",
-                #         expected_count={"Schleswig-Holstein": X, "Everything": Y}
+                #         expected_count=resolve_boundary_dependence(
+                #         {"Schleswig-Holstein": X, "Everything": Y})
                 #     ),
                 # ]
             },

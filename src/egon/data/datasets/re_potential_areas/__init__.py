@@ -21,6 +21,8 @@ from egon_validation import(
     SRIDUniqueNonZero
 )
 
+from egon.data.validation import resolve_boundary_dependence
+
 Base = declarative_base()
 
 
@@ -165,7 +167,10 @@ class re_potential_area_setup(Dataset):
                     RowCountValidation(
                         table="supply.egon_re_potential_area_pv_agriculture",
                         rule_id="ROW_COUNT.egon_re_potential_area_pv_agriculture",
-                        expected_count={"Schleswig-Holstein": 388, "Everything": 8259}
+                        expected_count=resolve_boundary_dependence(
+                            {"Schleswig-Holstein": 388,
+                             "Everything": 8259}
+                        )
                     ),
                     DataTypeValidation(
                         table="supply.egon_re_potential_area_pv_agriculture",
@@ -193,7 +198,10 @@ class re_potential_area_setup(Dataset):
                     RowCountValidation(
                         table="supply.egon_re_potential_area_pv_road_railway",
                         rule_id="ROW_COUNT.egon_re_potential_area_pv_road_railway",
-                        expected_count={"Schleswig-Holstein": 479, "Everything": 5159}
+                        expected_count=resolve_boundary_dependence(
+                            {"Schleswig-Holstein": 479,
+                             "Everything": 5159}
+                        )
                     ),
                     DataTypeValidation(
                         table="supply.egon_re_potential_area_pv_road_railway",
@@ -221,7 +229,10 @@ class re_potential_area_setup(Dataset):
                     RowCountValidation(
                         table="supply.egon_re_potential_area_wind",
                         rule_id="ROW_COUNT.egon_re_potential_area_wind",
-                        expected_count={"Schleswig-Holstein": 6306, "Everything": 120268}
+                        expected_count=resolve_boundary_dependence(
+                            {"Schleswig-Holstein": 6306,
+                             "Everything": 120268}
+                        )
                     ),
                     DataTypeValidation(
                         table="supply.egon_re_potential_area_wind",

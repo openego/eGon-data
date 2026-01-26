@@ -55,6 +55,7 @@ from egon_validation import (
     ValueSetValidation,
     SRIDUniqueNonZero
 )
+from egon.data.validation.resolver import resolve_boundary_dependence
 
 Base = declarative_base()
 
@@ -867,10 +868,10 @@ class Chp(Dataset):
                     RowCountValidation(
                         table="supply.egon_chp_plants",
                         rule_id="ROW_COUNT.egon_chp_plants",
-                        expected_count={
-                            "Schleswig-Holstein": 1720,
-                            "Everything": 40197
-                        }
+                        expected_count=resolve_boundary_dependence(
+                            {"Schleswig-Holstein": 1720,
+                            "Everything": 40197}
+                        )
                     ),
                     DataTypeValidation(
                         table="supply.egon_chp_plants",

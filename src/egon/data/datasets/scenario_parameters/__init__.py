@@ -23,6 +23,8 @@ from egon_validation import (
     WholeTableNotNullAndNotNaNValidation
 )
 
+from egon.data.validation import resolve_boundary_dependence
+
 Base = declarative_base()
 
 
@@ -325,7 +327,10 @@ class ScenarioParameters(Dataset):
                     RowCountValidation(
                         table="scenario.egon_scenario_parameters",
                         rule_id="ROW_COUNT.egon_scenario_parameters",
-                        expected_count={"Schleswig-Holstein": 5, "Everything": 3}
+                        expected_count=resolve_boundary_dependence(
+                            {"Schleswig-Holstein": 5,
+                             "Everything": 3}
+                        )
                     ),
                     DataTypeValidation(
                         table="scenario.egon_scenario_parameters",

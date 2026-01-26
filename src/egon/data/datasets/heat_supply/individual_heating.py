@@ -226,7 +226,7 @@ class HeatPumpsPypsaEur(Dataset):
                     ArrayCardinalityValidation(
                         table="demand.egon_etrago_timeseries_individual_heating",
                         rule_id="ARRAY_HEAT_PUMPS_PYPSA.egon_etrago_timeseries_individual_heating",
-                        array_column="dist_aggregated_mv",
+                        array_column="dist_aggregated_mw",
                         expected_length=8760,
                     ),
                 ]
@@ -472,11 +472,11 @@ class HeatPumps2035(Dataset):
             dependencies=dependencies,
             tasks=tasks_HeatPumps2035,
             validation={
-                "data-quality":[
+                "data-quality": [
                     ArrayCardinalityValidation(
                         table="demand.egon_etrago_timeseries_individual_heating",
                         rule_id="ARRAY_HEAT_PUMPS.egon_etrago_timeseries_individual_heating",
-                        array_column="dist_aggregated_mv",
+                        array_column="dist_aggregated_mw",
                         expected_length=8760,
                     ),
                 ]
