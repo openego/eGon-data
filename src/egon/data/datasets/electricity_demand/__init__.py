@@ -20,6 +20,7 @@ from egon_validation import (
     WholeTableNotNullAndNotNaNValidation,
     ValueSetValidation
 )
+from egon.data.validation.resolver import resolve_boundary_dependence
 
 from egon.data.datasets.electricity_demand_timeseries.hh_buildings import (
     HouseholdElectricityProfilesOfBuildings,
@@ -79,10 +80,10 @@ class HouseholdElectricityDemand(Dataset):
                     RowCountValidation(
                         table=" demand.egon_demandregio_zensus_electricity",
                         rule_id="ROW_COUNT.egon_demandregio_zensus_electricity",
-                        expected_count={
+                        expected_count=resolve_boundary_dependence({
                             "Schleswig-Holstein": 154527,
                             "Everything": 7355160
-                        }
+                        })
                     ),
                     DataTypeValidation(
                         table="demand.egon_demandregio_zensus_electricity",

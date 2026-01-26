@@ -17,6 +17,7 @@ from egon_validation import(
     NotNullAndNotNaNValidation,
     WholeTableNotNullAndNotNaNValidation
 )
+from egon.data.validation.resolver import resolve_boundary_dependence
 
 # will be later imported from another file ###
 Base = declarative_base()
@@ -34,7 +35,7 @@ class SocietyPrognosis(Dataset):
                     RowCountValidation(
                         table="society.egon_household_prognosis",
                         rule_id="ROW_COUNT.egon_household_prognosis",
-                        expected_count={"Everything": 5319490}
+                        expected_count=resolve_boundary_dependence({"Everything": 5319490})
                     ),
                     DataTypeValidation(
                         table="society.egon_household_prognosis",
@@ -53,7 +54,7 @@ class SocietyPrognosis(Dataset):
                     RowCountValidation(
                         table="society.egon_population_prognosis",
                         rule_id="ROW_COUNT.egon_population_prognosis",
-                        expected_count={"Everything": 6355446}
+                        expected_count=resolve_boundary_dependence({"Everything": 6355446})
                     ),
                     DataTypeValidation(
                         table="society.egon_population_prognosis",

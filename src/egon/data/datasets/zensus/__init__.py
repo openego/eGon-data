@@ -24,6 +24,7 @@ from egon_validation import (
     WholeTableNotNullAndNotNaNValidation,
     SRIDUniqueNonZero
 )
+from egon.data.validation.resolver import resolve_boundary_dependence
 
 
 class ZensusPopulation(Dataset):
@@ -41,7 +42,7 @@ class ZensusPopulation(Dataset):
                     RowCountValidation(
                         table="society.egon_destatis_zensus_apartment_building_population_per_ha",
                         rule_id="ROW_COUNT.egon_destatis_zensus_apartment_building_population_per_ha",
-                        expected_count={"Schleswig-Holstein": 145634, "Everything": 3206490}
+                        expected_count=resolve_boundary_dependence({"Schleswig-Holstein": 145634, "Everything": 3206490})
                     ),
                     DataTypeValidation(
                         table="society.egon_destatis_zensus_apartment_building_population_per_ha",
@@ -92,7 +93,7 @@ class ZensusMiscellaneous(Dataset):
                     RowCountValidation(
                         table="society.egon_destatis_zensus_apartment_per_ha",
                         rule_id="ROW_COUNT.egon_destatis_zensus_apartment_per_ha",
-                        expected_count={"Schleswig-Holstein": 1946300, "Everything": 51095280}
+                        expected_count=resolve_boundary_dependence({"Schleswig-Holstein": 1946300, "Everything": 51095280})
                     ),
                     DataTypeValidation(
                         table="society.egon_destatis_zensus_apartment_per_ha",
@@ -119,7 +120,7 @@ class ZensusMiscellaneous(Dataset):
                     RowCountValidation(
                         table="society.egon_destatis_zensus_building_per_ha",
                         rule_id="ROW_COUNT.egon_destatis_zensus_building_per_ha",
-                        expected_count={"Schleswig-Holstein": 978493, "Everything": 24297136}
+                        expected_count=resolve_boundary_dependence({"Schleswig-Holstein": 978493, "Everything": 24297136})
                     ),
                     DataTypeValidation(
                         table="society.egon_destatis_zensus_building_per_ha",
@@ -158,7 +159,7 @@ class ZensusMiscellaneous(Dataset):
                     RowCountValidation(
                         table="society.egon_destatis_zensus_household_per_ha",
                         rule_id="ROW_COUNT.egon_destatis_zensus_household_per_ha",
-                        expected_count={"Schleswig-Holstein": 724970, "Everything": 18788917}
+                        expected_count=resolve_boundary_dependence({"Schleswig-Holstein": 724970, "Everything": 18788917})
                     ),
                     DataTypeValidation(
                         table="society.egon_destatis_zensus_household_per_ha",
@@ -197,7 +198,7 @@ class ZensusMiscellaneous(Dataset):
                     RowCountValidation(
                         table="society.egon_destatis_zensus_household_per_ha_refined",
                         rule_id="ROW_COUNT.egon_destatis_zensus_household_per_ha_refined",
-                        expected_count={"Schleswig-Holstein": 551678, "Everything": 13304814}
+                        expected_count=resolve_boundary_dependence({"Schleswig-Holstein": 551678, "Everything": 13304814})
                     ),
                     DataTypeValidation(
                         table="society.egon_destatis_zensus_household_per_ha_refined",

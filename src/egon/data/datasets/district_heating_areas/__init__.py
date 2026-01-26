@@ -47,6 +47,7 @@ from egon_validation import (
     ValueSetValidation,
     SRIDUniqueNonZero
 )
+from egon.data.validation.resolver import resolve_boundary_dependence
 
 # import time
 
@@ -95,10 +96,10 @@ class DistrictHeatingAreas(Dataset):
                     RowCountValidation(
                         table=" demand.egon_district_heating_areas",
                         rule_id="ROW_COUNT.egon_district_heating_areas",
-                        expected_count={
+                        expected_count=resolve_boundary_dependence({
                             "Schleswig-Holstein": 100,
                             "Everything": 6335
-                        }
+                        })
                     ),
                     DataTypeValidation(
                         table="demand.egon_district_heating_areas",

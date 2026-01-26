@@ -13,6 +13,7 @@ from egon_validation import (
     WholeTableNotNullAndNotNaNValidation,
     SRIDUniqueNonZero
 )
+from egon.data.validation.resolver import resolve_boundary_dependence
 
 
 def execute_sql_script(script):
@@ -222,8 +223,8 @@ class OsmBuildingsStreets(Dataset):
                     RowCountValidation(
                         table="boundaries.egon_map_zensus_buildings_filtered",
                         rule_id="ROW_COUNT.egon_map_zensus_buildings_filtered",
-                        expected_count={"Schleswig-Holstein":1010387,
-                                        "Everything":28070301}
+                        expected_count=resolve_boundary_dependence({"Schleswig-Holstein":1010387,
+                                        "Everything":28070301})
                     ),
                     DataTypeValidation(
                         table="boundaries.egon_map_zensus_buildings_filtered",
@@ -237,8 +238,8 @@ class OsmBuildingsStreets(Dataset):
                     RowCountValidation(
                         table="boundaries.egon_map_zensus_buildings_residential",
                         rule_id="ROW_COUNT.egon_map_zensus_buildings_residential",
-                        expected_count={"Schleswig-Holstein":989967,
-                                        "Everything":27477467}
+                        expected_count=resolve_boundary_dependence({"Schleswig-Holstein":989967,
+                                        "Everything":27477467})
                     ),
                     DataTypeValidation(
                         table="boundaries.egon_map_zensus_buildings_residential",
@@ -252,8 +253,8 @@ class OsmBuildingsStreets(Dataset):
                     RowCountValidation(
                         table="openstreetmap.osm_amenities_not_in_buildings",
                         rule_id="ROW_COUNT.osm_amenities_not_in_buildings",
-                        expected_count={"Schleswig-Holstein": 3142,
-                                        "Everything": 79928}
+                        expected_count=resolve_boundary_dependence({"Schleswig-Holstein": 3142,
+                                        "Everything": 79928})
                     ),
                     DataTypeValidation(
                         table="openstreetmap.osm_amenities_not_in_buildings",
@@ -274,7 +275,7 @@ class OsmBuildingsStreets(Dataset):
                     RowCountValidation(
                         table="openstreetmap.osm_amenities_shops_filtered",
                         rule_id="ROW_COUNT.osm_amenities_shops_filtered",
-                        expected_count={"Schleswig-Holstein": 27438, "Everything": 700315}
+                        expected_count=resolve_boundary_dependence({"Schleswig-Holstein": 27438, "Everything": 700315})
                     ),
                     DataTypeValidation(
                         table="openstreetmap.osm_amenities_shops_filtered",
@@ -295,7 +296,7 @@ class OsmBuildingsStreets(Dataset):
                     RowCountValidation(
                         table="openstreetmap.osm_buildings",
                         rule_id="ROW_COUNT.osm_buildings",
-                        expected_count={"Schleswig-Holstein": 1298230, "Everything": 34328483}
+                        expected_count=resolve_boundary_dependence({"Schleswig-Holstein": 1298230, "Everything": 34328483})
                     ),
                     DataTypeValidation(
                         table="openstreetmap.osm_buildings",
@@ -322,7 +323,7 @@ class OsmBuildingsStreets(Dataset):
                     RowCountValidation(
                         table="openstreetmap.osm_buildings_filtered",
                         rule_id="ROW_COUNT.osm_buildings_filtered",
-                        expected_count={"Schleswig-Holstein": 1169881, "Everything": 31619905}
+                        expected_count=resolve_boundary_dependence({"Schleswig-Holstein": 1169881, "Everything": 31619905})
                     ),
                     DataTypeValidation(
                         table="openstreetmap.osm_buildings_filtered",
@@ -349,7 +350,7 @@ class OsmBuildingsStreets(Dataset):
                     RowCountValidation(
                         table="openstreetmap.osm_buildings_residential",
                         rule_id="ROW_COUNT.osm_buildings_residential",
-                        expected_count={"Schleswig-Holstein": 1130929, "Everything": 30713011}
+                        expected_count=resolve_boundary_dependence({"Schleswig-Holstein": 1130929, "Everything": 30713011})
                     ),
                     DataTypeValidation(
                         table="openstreetmap.osm_buildings_residential",
@@ -376,7 +377,7 @@ class OsmBuildingsStreets(Dataset):
                     RowCountValidation(
                         table="openstreetmap.osm_buildings_synthetic",
                         rule_id="ROW_COUNT.osm_buildings_synthetic",
-                        expected_count={"Schleswig-Holstein": 9498, "Everything": 706911}
+                        expected_count=resolve_boundary_dependence({"Schleswig-Holstein": 9498, "Everything": 706911})
                     ),
                     DataTypeValidation(
                         table="openstreetmap.osm_buildings_synthetic",
@@ -403,7 +404,7 @@ class OsmBuildingsStreets(Dataset):
                     RowCountValidation(
                         table="openstreetmap.osm_buildings_with_amenities",
                         rule_id="ROW_COUNT.osm_buildings_with_amenities",
-                        expected_count={"Schleswig-Holstein": 24314, "Everything": 621385}
+                        expected_count=resolve_boundary_dependence({"Schleswig-Holstein": 24314, "Everything": 621385})
                     ),
                     DataTypeValidation(
                         table="openstreetmap.osm_buildings_with_amenities",
@@ -445,7 +446,7 @@ class OsmBuildingsStreets(Dataset):
                     RowCountValidation(
                         table="openstreetmap.osm_buildings_without_amenities",
                         rule_id="ROW_COUNT.osm_buildings_without_amenities",
-                        expected_count={"Schleswig-Holstein": 1152146, "Everything": 31151277}
+                        expected_count=resolve_boundary_dependence({"Schleswig-Holstein": 1152146, "Everything": 31151277})
                     ),
                     DataTypeValidation(
                         table="openstreetmap.osm_buildings_without_amenities",
@@ -478,7 +479,7 @@ class OsmBuildingsStreets(Dataset):
                     RowCountValidation(
                         table="openstreetmap.osm_ways_with_segments",
                         rule_id="ROW_COUNT.osm_ways_with_segments",
-                        expected_count={"Schleswig-Holstein": 263427, "Everything": 6716196}
+                        expected_count=resolve_boundary_dependence({"Schleswig-Holstein": 263427, "Everything": 6716196})
                     ),
                     DataTypeValidation(
                         table="openstreetmap.osm_ways_with_segments",

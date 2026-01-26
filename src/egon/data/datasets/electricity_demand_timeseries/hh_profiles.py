@@ -33,6 +33,7 @@ from egon_validation import (
     WholeTableNotNullAndNotNaNValidation,
     ValueSetValidation
 )
+from egon.data.validation.resolver import resolve_boundary_dependence
 
 Base = declarative_base()
 engine = db.engine()
@@ -312,15 +313,15 @@ class HouseholdDemands(Dataset):
                     RowCountValidation(
                         table=" demand.egon_household_electricity_profile_in_census_cell",
                         rule_id="ROW_COUNT.egon_household_electricity_profile_in_census_cell",
-                        expected_count={
+                        expected_count=resolve_boundary_dependence({
                             "Schleswig-Holstein": 143521,
                             "Everything": 3177723
-                        }
+                        })
                     ),
                     DataTypeValidation(
                         table="demand.egon_household_electricity_profile_in_census_cell",
                         rule_id="DATA_MULTIPLE_TYPES.egon_household_electricity_profile_in_census_cell",
-                        column_types={
+                        column_types=resolve_boundary_dependence({
                             "Schleswig-Holstein":{
                               "cell_id": "integer",
                                 "grid_id": "character varying",
@@ -341,7 +342,7 @@ class HouseholdDemands(Dataset):
                                 "factor_2035": "double precision",
                                 "factor_2050": "double precision"
                             }
-                        }
+                        })
                     ),
                     WholeTableNotNullAndNotNaNValidation(
                         table="demand.egon_household_electricity_profile_in_census_cell",
@@ -350,10 +351,10 @@ class HouseholdDemands(Dataset):
                     RowCountValidation(
                         table=" demand.demand.iee_household_load_profiles",
                         rule_id="ROW_COUNT.iee_household_load_profiles",
-                        expected_count={
+                        expected_count=resolve_boundary_dependence({
                             "Schleswig-Holstein": 2511,
                             "Everything": 1000000
-                        }
+                        })
                     ),
                     DataTypeValidation(
                         table="demand.iee_household_load_profiles",

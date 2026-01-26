@@ -62,6 +62,7 @@ from egon_validation import (
     WholeTableNotNullAndNotNaNValidation,
     ValueSetValidation
 )
+from egon.data.validation.resolver import resolve_boundary_dependence
 
 
 # ========== Register np datatypes with SQLA ==========
@@ -502,10 +503,10 @@ class MotorizedIndividualTravel(Dataset):
                     RowCountValidation(
                         table=" demand.egon_ev_count_municipality",
                         rule_id="ROW_COUNT.egon_ev_count_municipality",
-                        expected_count={
+                        expected_count=resolve_boundary_dependence({
                             "Schleswig-Holstein": 1108,
                             "Everything": 44012
-                        }
+                        })
                     ),
                     DataTypeValidation(
                         table="demand.egon_ev_count_municipality",
@@ -547,10 +548,10 @@ class MotorizedIndividualTravel(Dataset):
                     RowCountValidation(
                         table=" demand.egon_ev_count_mv_grid_district",
                         rule_id="ROW_COUNT.egon_ev_count_mv_grid_district",
-                        expected_count={
+                        expected_count=resolve_boundary_dependence({
                             "Schleswig-Holstein": 199,
                             "Everything": 15348
-                        }
+                        })
                     ),
                     DataTypeValidation(
                         table="demand.egon_ev_count_mv_grid_district",
@@ -592,10 +593,10 @@ class MotorizedIndividualTravel(Dataset):
                     RowCountValidation(
                         table=" demand.egon_ev_count_registration_district",
                         rule_id="ROW_COUNT.egon_ev_count_registration_district",
-                        expected_count={
+                        expected_count=resolve_boundary_dependence({
                             "Schleswig-Holstein": 400,
                             "Everything": 1600
-                        }
+                        })
                     ),
                     DataTypeValidation(
                         table="demand.egon_ev_count_registration_district",
@@ -637,10 +638,10 @@ class MotorizedIndividualTravel(Dataset):
                     RowCountValidation(
                         table=" demand.egon_ev_mv_grid_district",
                         rule_id="ROW_COUNT.egon_ev_mv_grid_district",
-                        expected_count={
+                        expected_count=resolve_boundary_dependence({
                             "Schleswig-Holstein": 534899,
                             "Everything": 125609556
-                        }
+                        })
                     ),
                     DataTypeValidation(
                         table="demand.egon_ev_mv_grid_district",
@@ -683,10 +684,10 @@ class MotorizedIndividualTravel(Dataset):
                     RowCountValidation(
                         table=" demand.egon_ev_pool",
                         rule_id="ROW_COUNT.egon_ev_pool",
-                        expected_count={
+                        expected_count=resolve_boundary_dependence({
                             "Schleswig-Holstein": 7000,
                             "Everything": 65376
-                        }
+                        })
                     ),
                     DataTypeValidation(
                         table="demand.egon_ev_pool",
@@ -725,10 +726,10 @@ class MotorizedIndividualTravel(Dataset):
                     RowCountValidation(
                         table=" demand.egon_ev_trip",
                         rule_id="ROW_COUNT.egon_ev_trip",
-                        expected_count={
+                        expected_count=resolve_boundary_dependence({
                             "Schleswig-Holstein":11642066,
                             "Everything": 108342188
-                        }
+                        })
                     ),
                     DataTypeValidation(
                         table="demand.egon_ev_trip",

@@ -31,6 +31,7 @@ from egon_validation import(
     WholeTableNotNullAndNotNaNValidation,
     ValueSetValidation
 )
+from egon.data.validation.resolver import resolve_boundary_dependence
 
 Base = declarative_base()
 
@@ -1064,7 +1065,7 @@ class ScenarioCapacities(Dataset):
                     RowCountValidation(
                         table="supply.egon_nep_2021_conventional_powerplants",
                         rule_id="ROW_COUNT.egon_nep_2021_conventional_powerplants",
-                        expected_count={"Schleswig-Holstein": 40, "Everything": 737}
+                        expected_count=resolve_boundary_dependence({"Schleswig-Holstein": 40, "Everything": 737})
                     ),
                     DataTypeValidation(
                         table="supply.egon_nep_2021_conventional_powerplants",
@@ -1127,7 +1128,7 @@ class ScenarioCapacities(Dataset):
                     RowCountValidation(
                         table="supply.egon_scenario_capacities",
                         rule_id="ROW_COUNT.egon_scenario_capacities",
-                        expected_count={"Schleswig-Holstein": 17, "Everything": 236}
+                        expected_count=resolve_boundary_dependence({"Schleswig-Holstein": 17, "Everything": 236})
                     ),
                     DataTypeValidation(
                         table="supply.egon_scenario_capacities",

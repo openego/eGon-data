@@ -45,6 +45,7 @@ from egon_validation import (
     WholeTableNotNullAndNotNaNValidation,
     ValueSetValidation
 )
+from egon.data.validation.resolver import resolve_boundary_dependence
 
 
 class HeatDemandImport(Dataset):
@@ -86,7 +87,7 @@ class HeatDemandImport(Dataset):
                     RowCountValidation(
                         table=" demand.egon_peta_heat",
                         rule_id="ROW_COUNT.egon_peta_heat",
-                        expected_count={"Schleswig-Holstein": 139250, "Everything": 6836426}
+                        expected_count=resolve_boundary_dependence({"Schleswig-Holstein": 139250, "Everything": 6836426})
                     ),
                     DataTypeValidation(
                         table="demand.egon_peta_heat",
@@ -102,10 +103,10 @@ class HeatDemandImport(Dataset):
                         table="demand.egon_peta_heat",
                         rule_id="VALUE_SET_VALIDATION_SCENARIO.egon_peta_heat",
                         column="scenario",
-                        expected_values={
+                        expected_values=resolve_boundary_dependence({
                             "Schleswig-Holstein":["eGon2035"],
                             "Everything":["eGon2035", "eGon100RE"]
-                        }
+                        })
                     ),
                     ValueSetValidation(
                         table="demand.egon_peta_heat",

@@ -544,7 +544,7 @@ class Vg250(Dataset):
                         table_name="boundaries.vg250_krs",
                         row_count=resolve_boundary_dependence({"Schleswig-Holstein": 27, "Everything": 537}),
                         geometry_columns=["geometry"],
-                        data_type_columns={"Schleswig-Holstein":{"id":"bigint","ade":"integer", "gf":"integer", "bsg":"integer","ars":"text",
+                        data_type_columns=resolve_boundary_dependence({"Schleswig-Holstein":{"id":"bigint","ade":"integer", "gf":"integer", "bsg":"integer","ars":"text",
                                       "ags":"text", "sdv_ars":"text", "gen":"text", "bez":"text","ibz":"integer",
                                       "bem":"text", "nbd":"text", "sn_l":"text", "sn_r":"text", "sn_k":"text",
                                       "sn_v1":"text", "sn_v2":"text", "sn_g":"text", "fk_s3":"text", "nuts":"text",
@@ -556,7 +556,7 @@ class Vg250(Dataset):
                                       "sn_v1":"text", "sn_v2":"text", "sn_g":"text", "fk_s3":"text", "nuts":"text",
                                       "ars_0":"text", "ags_0":"text", "wsk":"text", "debkg_id":"text", "rs":"text",
                                       "sdv_rs":"text", "rs_0":"text", "geometry":"geometry"}
-                                      },
+                                      }),
                         not_null_columns=["gf", "bsg"],
                         value_set_columns={"nbd": ["ja", "nein"]},
                     ),
@@ -568,7 +568,7 @@ class Vg250(Dataset):
                     DataTypeValidation(
                         table="boundaries.vg250_krs",
                         rule_id="DATA_TYPES.vg250_krs",
-                        column_types={
+                        column_types=resolve_boundary_dependence({
                             "Schleswig-Holstein": {
                                 "id": "bigint",
                                 "ade": "integer",
@@ -629,7 +629,7 @@ class Vg250(Dataset):
                                 "rs_0": "text",
                                 "geometry": "geometry"
                             }
-                        }
+                        })
                     ),
                     NotNullAndNotNaNValidation(
                         table="boundaries.vg250_krs",
@@ -654,10 +654,10 @@ class Vg250(Dataset):
                     RowCountValidation(
                         table="society.destatis_zensus_population_per_ha_inside_germany",
                         rule_id="ROW_COUNT.destatis_zensus_population_per_ha_inside_germany",
-                        expected_count={
+                        expected_count=resolve_boundary_dependence({
                             "Schleswig-Holstein": 143521,
                             "Everything": 3177723
-                        }
+                        })
                     ),
                     DataTypeValidation(
                         table="society.destatis_zensus_population_per_ha_inside_germany",

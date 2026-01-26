@@ -44,6 +44,7 @@ from egon_validation import (
     ValueSetValidation,
     ArrayCardinalityValidation
 )
+from egon.data.validation.resolver import resolve_boundary_dependence
 
 Base = declarative_base()
 
@@ -1290,7 +1291,7 @@ class HeatTimeSeries(Dataset):
                     RowCountValidation(
                         table="demand.egon_heat_timeseries_selected_profiles",
                         rule_id="ROW_COUNT.egon_heat_timeseries_selected_profiles",
-                        expected_count={"Schleswig-Holstein": 719960, "Everything": 20606259}
+                        expected_count=resolve_boundary_dependence({"Schleswig-Holstein": 719960, "Everything": 20606259})
                     ),
                     DataTypeValidation(
                         table="demand.egon_heat_timeseries_selected_profiles",
