@@ -93,7 +93,8 @@ class TableValidation:
                 rules.append(
                     ValueSetValidation(
                         table=self.table_name,
-                        rule_id=f"VALUE_SET_{str(col_name).upper()}.{table_suffix}",
+                        rule_id=f"VALUE_SET_{str(col_name).upper()}"
+                                f".{table_suffix}",
                         column=str(col_name),
                         expected_values=expected_values,
                     )
@@ -115,22 +116,24 @@ ValidationSpec = Union[Rule, TableValidation]
 
 def clone_rule(rule: Rule) -> Rule:
     """
-    Creates a per-run copy of a rule so we don't mutate DAG-parse-time objects.
+    Creates a per-run copy of a rule to avoid mutating DAG-parse-time objects.
 
-    We avoid deepcopy as the first choice (deepcopy can break on complex objects).
+    We avoid deepcopy as first choice (can break on complex objects).
     Strategy:
       1) Shallow copy the object
       2) Deep copy ONLY rule.params (the part we mutate)
       3) Fallback to deepcopy(rule) if shallow copy fails
     """
     try:
-        cloned = copy.copy(rule)  # shallow copy: new object, same inner references
+        # shallow copy: new object, same inner references
+        cloned = copy.copy(rule)
     except Exception:
         # Last resort: full deepcopy
         return copy.deepcopy(rule)
 
     # Make params safe to mutate
-    if hasattr(cloned, "params") and isinstance(getattr(cloned, "params"), dict):
+    params = getattr(cloned, "params", None)
+    if hasattr(cloned, "params") and isinstance(params, dict):
         cloned.params = copy.deepcopy(cloned.params)
 
     return cloned
@@ -138,7 +141,8 @@ def clone_rule(rule: Rule) -> Rule:
 
 def expand_specs(specs: Sequence[ValidationSpec]) -> List[Rule]:
     """
-    Turn a mixed list of Rule/TableValidation into a plain list of Rule objects.
+    Turn a mixed list of Rule/TableValidation into a plain list of Rules.
+
     TableValidation produces fresh rule instances.
     Rule instances are cloned to avoid cross-run mutation.
     """
@@ -165,7 +169,11 @@ def resolve_rule_params(rule: Rule, boundary: str) -> None:
     for name, val in list(params.items()):
         resolved = resolve_value(val, boundary)
         if resolved is not val:
-            logger.info("Rule %s: Resolved %s for boundary='%s'", getattr(rule, "rule_id", "<no-id>"), name, boundary)
+            rule_id = getattr(rule, "rule_id", "<no-id>")
+            logger.info(
+                "Rule %s: Resolved %s for boundary='%s'",
+                rule_id, name, boundary
+            )
             params[name] = resolved
 
 

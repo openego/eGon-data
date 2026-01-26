@@ -568,24 +568,73 @@ class Vg250(Dataset):
                     DataTypeValidation(
                         table="boundaries.vg250_krs",
                         rule_id="DATA_TYPES.vg250_krs",
-                        column_types={"Schleswig-Holstein":{"id":"bigint","ade":"integer", "gf":"integer", "bsg":"integer","ars":"text",
-                                      "ags":"text", "sdv_ars":"text", "gen":"text", "bez":"text","ibz":"integer",
-                                      "bem":"text", "nbd":"text", "sn_l":"text", "sn_r":"text", "sn_k":"text",
-                                      "sn_v1":"text", "sn_v2":"text", "sn_g":"text", "fk_s3":"text", "nuts":"text",
-                                      "ars_0":"text", "ags_0":"text", "wsk":"timestamp without time zone", "debkg_id":"text", "rs":"text",
-                                      "sdv_rs":"text", "rs_0":"text", "geometry":"geometry"},
-                                      "Everything":{"id":"bigint","ade":"bigint", "gf":"bigint", "bsg":"bigint","ars":"text",
-                                      "ags":"text", "sdv_ars":"text", "gen":"text", "bez":"text","ibz":"bigint",
-                                      "bem":"text", "nbd":"text", "sn_l":"text", "sn_r":"text", "sn_k":"text",
-                                      "sn_v1":"text", "sn_v2":"text", "sn_g":"text", "fk_s3":"text", "nuts":"text",
-                                      "ars_0":"text", "ags_0":"text", "wsk":"text", "debkg_id":"text", "rs":"text",
-                                      "sdv_rs":"text", "rs_0":"text", "geometry":"geometry"}
-                                      }
+                        column_types={
+                            "Schleswig-Holstein": {
+                                "id": "bigint",
+                                "ade": "integer",
+                                "gf": "integer",
+                                "bsg": "integer",
+                                "ars": "text",
+                                "ags": "text",
+                                "sdv_ars": "text",
+                                "gen": "text",
+                                "bez": "text",
+                                "ibz": "integer",
+                                "bem": "text",
+                                "nbd": "text",
+                                "sn_l": "text",
+                                "sn_r": "text",
+                                "sn_k": "text",
+                                "sn_v1": "text",
+                                "sn_v2": "text",
+                                "sn_g": "text",
+                                "fk_s3": "text",
+                                "nuts": "text",
+                                "ars_0": "text",
+                                "ags_0": "text",
+                                "wsk": "timestamp without time zone",
+                                "debkg_id": "text",
+                                "rs": "text",
+                                "sdv_rs": "text",
+                                "rs_0": "text",
+                                "geometry": "geometry"
+                            },
+                            "Everything": {
+                                "id": "bigint",
+                                "ade": "bigint",
+                                "gf": "bigint",
+                                "bsg": "bigint",
+                                "ars": "text",
+                                "ags": "text",
+                                "sdv_ars": "text",
+                                "gen": "text",
+                                "bez": "text",
+                                "ibz": "bigint",
+                                "bem": "text",
+                                "nbd": "text",
+                                "sn_l": "text",
+                                "sn_r": "text",
+                                "sn_k": "text",
+                                "sn_v1": "text",
+                                "sn_v2": "text",
+                                "sn_g": "text",
+                                "fk_s3": "text",
+                                "nuts": "text",
+                                "ars_0": "text",
+                                "ags_0": "text",
+                                "wsk": "text",
+                                "debkg_id": "text",
+                                "rs": "text",
+                                "sdv_rs": "text",
+                                "rs_0": "text",
+                                "geometry": "geometry"
+                            }
+                        }
                     ),
                     NotNullAndNotNaNValidation(
                         table="boundaries.vg250_krs",
                         rule_id="NOT_NAN.vg250_krs",
-                        columns=["gf","bsg"]
+                        columns=["gf", "bsg"]
                     ),
                     WholeTableNotNullAndNotNaNValidation(
                         table="boundaries.vg250_krs",
@@ -605,20 +654,32 @@ class Vg250(Dataset):
                     RowCountValidation(
                         table="society.destatis_zensus_population_per_ha_inside_germany",
                         rule_id="ROW_COUNT.destatis_zensus_population_per_ha_inside_germany",
-                        expected_count={"Schleswig-Holstein": 143521, "Everything": 3177723}
+                        expected_count={
+                            "Schleswig-Holstein": 143521,
+                            "Everything": 3177723
+                        }
                     ),
                     DataTypeValidation(
                         table="society.destatis_zensus_population_per_ha_inside_germany",
                         rule_id="DATA_TYPES.destatis_zensus_population_per_ha_inside_germany",
                         column_types={
-                            "id": "integer", "grid_id": "character varying (254)", "population": "smallint",
-                            "geom_point": "geometry","geom": "geometry"
+                            "id": "integer",
+                            "grid_id": "character varying (254)",
+                            "population": "smallint",
+                            "geom_point": "geometry",
+                            "geom": "geometry"
                         }
                     ),
                     NotNullAndNotNaNValidation(
                         table="society.destatis_zensus_population_per_ha_inside_germany",
                         rule_id="NOT_NAN.destatis_zensus_population_per_ha_inside_germany",
-                        columns=["id", "grid_id", "population", "geom_point", "geom"]
+                        columns=[
+                            "id",
+                            "grid_id",
+                            "population",
+                            "geom_point",
+                            "geom"
+                        ]
                     ),
                     WholeTableNotNullAndNotNaNValidation(
                         table="society.destatis_zensus_population_per_ha_inside_germany",

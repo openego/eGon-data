@@ -1,15 +1,14 @@
 """
 Sanity check validation rules for home batteries
 
-Validates that home battery capacities are correctly aggregated from building-level
-to bus-level in the storages table.
+Validates that home battery capacities are correctly aggregated
+from building-level to bus-level in the storages table.
 """
 
-import numpy as np
 import pandas as pd
 from egon_validation.rules.base import DataFrameRule, RuleResult, Severity
 
-from egon.data import config, db
+from egon.data import config
 from egon.data.validation.rules.custom.sanity.utils import get_cbat_pbat_ratio
 
 
@@ -27,8 +26,12 @@ class HomeBatteriesAggregation(DataFrameRule):
     Both values are rounded to 6 decimal places for comparison.
     """
 
-    def __init__(self, table: str, rule_id: str, scenario: str = "eGon2035", **kwargs):
-        super().__init__(rule_id=rule_id, table=table, scenario=scenario, **kwargs)
+    def __init__(
+        self, table: str, rule_id: str, scenario: str = "eGon2035", **kwargs
+    ):
+        super().__init__(
+            rule_id=rule_id, table=table, scenario=scenario, **kwargs
+        )
         self.kind = "sanity"
         self.scenario = scenario
 
@@ -37,7 +40,7 @@ class HomeBatteriesAggregation(DataFrameRule):
         try:
             return super().evaluate(engine, ctx)
         except IndexError as e:
-            # get_cbat_pbat_ratio() failed because no home_battery data exists
+            # get_cbat_pbat_ratio() failed - no home_battery data exists
             if "index 0 is out of bounds" in str(e):
                 return RuleResult(
                     rule_id=self.rule_id,
@@ -45,7 +48,10 @@ class HomeBatteriesAggregation(DataFrameRule):
                     table=self.table,
                     kind=self.kind,
                     success=False,
-                    message=f"⚠️ NO DATA FOUND: No home_battery carrier found in etrago_storage table for scenario {self.scenario}",
+                    message=(
+                        f"NO DATA FOUND: No home_battery carrier found in "
+                        f"etrago_storage table for scenario {self.scenario}"
+                    ),
                     severity=Severity.WARNING,
                     schema=self.schema,
                     table_name=self.table_name,
@@ -64,8 +70,13 @@ class HomeBatteriesAggregation(DataFrameRule):
         sources = config.datasets()["home_batteries"]["sources"]
         targets = config.datasets()["home_batteries"]["targets"]
 
-        # Get cbat_pbat_ratio for capacity calculation (same as original sanity check)
+        # Get cbat_pbat_ratio for capacity calculation
         cbat_pbat_ratio = get_cbat_pbat_ratio()
+
+        storage_schema = sources["storage"]["schema"]
+        storage_table = sources["storage"]["table"]
+        hb_schema = targets["home_batteries"]["schema"]
+        hb_table = targets["home_batteries"]["table"]
 
         return f"""
         WITH storage_data AS (
@@ -73,7 +84,7 @@ class HomeBatteriesAggregation(DataFrameRule):
                 bus_id,
                 el_capacity as storage_p_nom,
                 el_capacity * {cbat_pbat_ratio} as storage_capacity
-            FROM {sources["storage"]["schema"]}.{sources["storage"]["table"]}
+            FROM {storage_schema}.{storage_table}
             WHERE carrier = 'home_battery'
             AND scenario = '{self.scenario}'
         ),
@@ -82,7 +93,7 @@ class HomeBatteriesAggregation(DataFrameRule):
                 bus_id,
                 SUM(p_nom) as building_p_nom,
                 SUM(capacity) as building_capacity
-            FROM {targets["home_batteries"]["schema"]}.{targets["home_batteries"]["table"]}
+            FROM {hb_schema}.{hb_table}
             WHERE scenario = '{self.scenario}'
             GROUP BY bus_id
         )
@@ -120,7 +131,9 @@ class HomeBatteriesAggregation(DataFrameRule):
                 table=self.table,
                 kind=self.kind,
                 success=False,
-                message=f"No home battery data found for scenario {self.scenario}",
+                message=(
+                    f"No home battery data found for scenario {self.scenario}"
+                ),
                 severity=Severity.WARNING,
                 schema=self.schema,
                 table_name=self.table_name,
@@ -134,14 +147,16 @@ class HomeBatteriesAggregation(DataFrameRule):
         if not missing_in_storage.empty or not missing_in_buildings.empty:
             violations = []
             if not missing_in_storage.empty:
+                bus_list = missing_in_storage['bus_id'].tolist()[:5]
                 violations.append(
-                    f"{len(missing_in_storage)} bus(es) in buildings but not in storage: "
-                    f"{missing_in_storage['bus_id'].tolist()[:5]}"
+                    f"{len(missing_in_storage)} bus(es) in buildings "
+                    f"but not in storage: {bus_list}"
                 )
             if not missing_in_buildings.empty:
+                bus_list = missing_in_buildings['bus_id'].tolist()[:5]
                 violations.append(
-                    f"{len(missing_in_buildings)} bus(es) in storage but not in buildings: "
-                    f"{missing_in_buildings['bus_id'].tolist()[:5]}"
+                    f"{len(missing_in_buildings)} bus(es) in storage "
+                    f"but not in buildings: {bus_list}"
                 )
 
             return RuleResult(
@@ -152,7 +167,7 @@ class HomeBatteriesAggregation(DataFrameRule):
                 success=False,
                 observed=len(missing_in_storage) + len(missing_in_buildings),
                 expected=0,
-                message=f"Bus mismatch between tables: {'; '.join(violations)}",
+                message=f"Bus mismatch: {'; '.join(violations)}",
                 severity=Severity.ERROR,
                 schema=self.schema,
                 table_name=self.table_name,
@@ -163,20 +178,26 @@ class HomeBatteriesAggregation(DataFrameRule):
         p_nom_mismatch = df[df["storage_p_nom"] != df["building_p_nom"]]
 
         # Check if capacity values match
-        capacity_mismatch = df[df["storage_capacity"] != df["building_capacity"]]
+        cap_mismatch = df[df["storage_capacity"] != df["building_capacity"]]
 
         # Combine mismatches
-        mismatches = pd.concat([p_nom_mismatch, capacity_mismatch]).drop_duplicates(subset=["bus_id"])
+        mismatches = pd.concat(
+            [p_nom_mismatch, cap_mismatch]
+        ).drop_duplicates(subset=["bus_id"])
 
         if not mismatches.empty:
             # Calculate maximum differences
-            max_p_nom_diff = (df["storage_p_nom"] - df["building_p_nom"]).abs().max()
-            max_capacity_diff = (df["storage_capacity"] - df["building_capacity"]).abs().max()
+            p_nom_diff = df["storage_p_nom"] - df["building_p_nom"]
+            cap_diff = df["storage_capacity"] - df["building_capacity"]
+            max_p_nom_diff = p_nom_diff.abs().max()
+            max_capacity_diff = cap_diff.abs().max()
 
             # Get all violations
-            all_violations = mismatches[
-                ["bus_id", "storage_p_nom", "building_p_nom", "storage_capacity", "building_capacity"]
-            ].to_dict(orient="records")
+            cols = [
+                "bus_id", "storage_p_nom", "building_p_nom",
+                "storage_capacity", "building_capacity"
+            ]
+            all_violations = mismatches[cols].to_dict(orient="records")
 
             return RuleResult(
                 rule_id=self.rule_id,
@@ -187,8 +208,10 @@ class HomeBatteriesAggregation(DataFrameRule):
                 observed=float(max(max_p_nom_diff, max_capacity_diff)),
                 expected=0.0,
                 message=(
-                    f"Home battery aggregation mismatch for {len(mismatches)} bus(es): "
-                    f"max p_nom diff={max_p_nom_diff:.6f}, max capacity diff={max_capacity_diff:.6f}. "
+                    f"Home battery aggregation mismatch for "
+                    f"{len(mismatches)} bus(es): "
+                    f"max p_nom diff={max_p_nom_diff:.6f}, "
+                    f"max capacity diff={max_capacity_diff:.6f}. "
                     f"violations: {all_violations}"
                 ),
                 severity=Severity.ERROR,
@@ -206,8 +229,12 @@ class HomeBatteriesAggregation(DataFrameRule):
             success=True,
             observed=0.0,
             expected=0.0,
-            message=f"Home battery capacities correctly aggregated for all {len(df)} buses in scenario {self.scenario}",
+            message=(
+                f"Home battery capacities correctly aggregated for all "
+                f"{len(df)} buses in scenario {self.scenario}"
+            ),
             schema=self.schema,
             table_name=self.table_name,
             rule_class=self.__class__.__name__
         )
+

@@ -5,8 +5,7 @@ from __future__ import annotations
 import logging
 from functools import partial
 import re
-import hashlib
-from typing import Any, Dict, List, Sequence, Set
+from typing import Any, Dict, List, Sequence
 
 from airflow.operators.python import PythonOperator
 from egon_validation import RunContext, run_validations
@@ -107,8 +106,6 @@ def create_validation_tasks(
 
     tasks: List[PythonOperator] = []
 
-    used_task_ids: Set[str] = set()
-
     safe_dataset = sanitize_airflow_key(dataset_name)
 
     for task_name, specs in validation_dict.items():
@@ -129,6 +126,7 @@ def create_validation_tasks(
         )
 
     return tasks
+
 
 def sanitize_airflow_key(value: str) -> str:
     """

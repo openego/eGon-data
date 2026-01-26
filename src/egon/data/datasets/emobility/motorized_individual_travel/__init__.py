@@ -502,15 +502,26 @@ class MotorizedIndividualTravel(Dataset):
                     RowCountValidation(
                         table=" demand.egon_ev_count_municipality",
                         rule_id="ROW_COUNT.egon_ev_count_municipality",
-                        expected_count={"Schleswig-Holstein": 1108, "Everything": 44012}
+                        expected_count={
+                            "Schleswig-Holstein": 1108,
+                            "Everything": 44012
+                        }
                     ),
                     DataTypeValidation(
                         table="demand.egon_ev_count_municipality",
                         rule_id="DATA_MULTIPLE_TYPES.egon_ev_count_municipality",
-                        column_types={"scenario": "character varying", "scenario_variation": "character varying",
-                                      "ags": "integer", "bev_mini": "integer", "bev_medium": "integer",
-                                      "bev_luxury": "integer", "phev_mini": "integer", "phev_medium": "integer",
-                                      "phev_luxury": "integer", "rs7_id": "smallint"}
+                        column_types={
+                            "scenario": "character varying",
+                            "scenario_variation": "character varying",
+                            "ags": "integer",
+                            "bev_mini": "integer",
+                            "bev_medium": "integer",
+                            "bev_luxury": "integer",
+                            "phev_mini": "integer",
+                            "phev_medium": "integer",
+                            "phev_luxury": "integer",
+                            "rs7_id": "smallint"
+                        }
                     ),
                     WholeTableNotNullAndNotNaNValidation(
                         table="demand.egon_ev_count_municipality",
@@ -526,20 +537,36 @@ class MotorizedIndividualTravel(Dataset):
                         table="demand.egon_ev_count_municipality",
                         rule_id="VALUE_SET_VALIDATION_SCENARIO_VARIATION.egon_ev_count_municipality",
                         column="scenario_variation",
-                        expected_values=["Mobility Transition 2050", "NEP C 2035", "Electrification 2050", "Reference 2050"]
+                        expected_values=[
+                            "Mobility Transition 2050",
+                            "NEP C 2035",
+                            "Electrification 2050",
+                            "Reference 2050"
+                        ]
                     ),
                     RowCountValidation(
                         table=" demand.egon_ev_count_mv_grid_district",
                         rule_id="ROW_COUNT.egon_ev_count_mv_grid_district",
-                        expected_count={"Schleswig-Holstein": 199, "Everything": 15348}
+                        expected_count={
+                            "Schleswig-Holstein": 199,
+                            "Everything": 15348
+                        }
                     ),
                     DataTypeValidation(
                         table="demand.egon_ev_count_mv_grid_district",
                         rule_id="DATA_MULTIPLE_TYPES.egon_ev_count_mv_grid_district",
-                        column_types={"scenario": "character varying", "scenario_variation": "character varying",
-                                      "bus_id": "integer", "bev_mini": "integer", "bev_medium": "integer",
-                                      "bev_luxury": "integer", "phev_mini": "integer", "phev_medium": "integer",
-                                      "phev_luxury": "integer", "rs7_id": "smallint"}
+                        column_types={
+                            "scenario": "character varying",
+                            "scenario_variation": "character varying",
+                            "bus_id": "integer",
+                            "bev_mini": "integer",
+                            "bev_medium": "integer",
+                            "bev_luxury": "integer",
+                            "phev_mini": "integer",
+                            "phev_medium": "integer",
+                            "phev_luxury": "integer",
+                            "rs7_id": "smallint"
+                        }
                     ),
                     WholeTableNotNullAndNotNaNValidation(
                         table="demand.egon_ev_count_mv_grid_district",
@@ -555,21 +582,36 @@ class MotorizedIndividualTravel(Dataset):
                         table="demand.egon_ev_count_mv_grid_district",
                         rule_id="VALUE_SET_VALIDATION_SCENARIO_VARIATION.egon_ev_count_mv_grid_district",
                         column="scenario_variation",
-                        expected_values=["Mobility Transition 2050", "NEP C 2035", "Electrification 2050",
-                                         "Reference 2050"]
+                        expected_values=[
+                            "Mobility Transition 2050",
+                            "NEP C 2035",
+                            "Electrification 2050",
+                            "Reference 2050"
+                        ]
                     ),
                     RowCountValidation(
                         table=" demand.egon_ev_count_registration_district",
                         rule_id="ROW_COUNT.egon_ev_count_registration_district",
-                        expected_count={"Schleswig-Holstein": 400, "Everything": 1600}
+                        expected_count={
+                            "Schleswig-Holstein": 400,
+                            "Everything": 1600
+                        }
                     ),
                     DataTypeValidation(
                         table="demand.egon_ev_count_registration_district",
                         rule_id="DATA_MULTIPLE_TYPES.egon_ev_count_registration_district",
-                        column_types={"scenario": "character varying", "scenario_variation": "character varying",
-                                      "ags_reg_district": "integer", "reg_district": "character varying",
-                                      "bev_mini": "integer", "bev_medium": "integer", "bev_luxury": "integer",
-                                      "phev_mini": "integer", "phev_medium": "integer", "phev_luxury": "integer"}
+                        column_types={
+                            "scenario": "character varying",
+                            "scenario_variation": "character varying",
+                            "ags_reg_district": "integer",
+                            "reg_district": "character varying",
+                            "bev_mini": "integer",
+                            "bev_medium": "integer",
+                            "bev_luxury": "integer",
+                            "phev_mini": "integer",
+                            "phev_medium": "integer",
+                            "phev_luxury": "integer"
+                        }
                     ),
                     WholeTableNotNullAndNotNaNValidation(
                         table="demand.egon_ev_count_registration_district",
@@ -585,22 +627,37 @@ class MotorizedIndividualTravel(Dataset):
                         table="demand.egon_ev_count_registration_district",
                         rule_id="VALUE_SET_VALIDATION_SCENARIO_VARIATION.egon_ev_count_registration_district",
                         column="scenario_variation",
-                        expected_values=["Mobility Transition 2050", "NEP C 2035", "Electrification 2050",
-                                         "Reference 2050"]
+                        expected_values=[
+                            "Mobility Transition 2050",
+                            "NEP C 2035",
+                            "Electrification 2050",
+                            "Reference 2050"
+                        ]
                     ),
                     RowCountValidation(
                         table=" demand.egon_ev_mv_grid_district",
                         rule_id="ROW_COUNT.egon_ev_mv_grid_district",
-                        expected_count={"Schleswig-Holstein": 534899, "Everything": 125609556}
+                        expected_count={
+                            "Schleswig-Holstein": 534899,
+                            "Everything": 125609556
+                        }
                     ),
                     DataTypeValidation(
                         table="demand.egon_ev_mv_grid_district",
                         rule_id="DATA_MULTIPLE_TYPES.egon_ev_mv_grid_district",
-                        column_types={"scenario": "character varying", "scenario_variation": "character varying",
-                                      "bus_id": "integer", "reg_district": "character varying",
-                                      "bev_mini": "integer", "bev_medium": "integer", "bev_luxury": "integer",
-                                      "phev_mini": "integer", "phev_medium": "integer", "phev_luxury": "integer",
-                                      "rs7_id": "smallint"}
+                        column_types={
+                            "scenario": "character varying",
+                            "scenario_variation": "character varying",
+                            "bus_id": "integer",
+                            "reg_district": "character varying",
+                            "bev_mini": "integer",
+                            "bev_medium": "integer",
+                            "bev_luxury": "integer",
+                            "phev_mini": "integer",
+                            "phev_medium": "integer",
+                            "phev_luxury": "integer",
+                            "rs7_id": "smallint"
+                        }
                     ),
                     WholeTableNotNullAndNotNaNValidation(
                         table="demand.egon_ev_mv_grid_district",
@@ -616,19 +673,31 @@ class MotorizedIndividualTravel(Dataset):
                         table="demand.egon_ev_mv_grid_district",
                         rule_id="VALUE_SET_VALIDATION_SCENARIO_VARIATION.egon_ev_mv_grid_district",
                         column="scenario_variation",
-                        expected_values=["Mobility Transition 2050", "NEP C 2035", "Electrification 2050",
-                                         "Reference 2050"]
+                        expected_values=[
+                            "Mobility Transition 2050",
+                            "NEP C 2035",
+                            "Electrification 2050",
+                            "Reference 2050"
+                        ]
                     ),
                     RowCountValidation(
                         table=" demand.egon_ev_pool",
                         rule_id="ROW_COUNT.egon_ev_pool",
-                        expected_count={"Schleswig-Holstein": 7000, "Everything": 65376}
+                        expected_count={
+                            "Schleswig-Holstein": 7000,
+                            "Everything": 65376
+                        }
                     ),
                     DataTypeValidation(
                         table="demand.egon_ev_pool",
                         rule_id="DATA_MULTIPLE_TYPES.egon_ev_pool",
-                        column_types={"scenario": "character varying", "ev_id": "integer", "rs7_id": "smallint",
-                                      "type": "character varying", "simbev_ev_id": "integer"}
+                        column_types={
+                            "scenario": "character varying",
+                            "ev_id": "integer",
+                            "rs7_id": "smallint",
+                            "type": "character varying",
+                            "simbev_ev_id": "integer"
+                        }
                     ),
                     WholeTableNotNullAndNotNaNValidation(
                         table="demand.egon_ev_pool",
@@ -644,23 +713,44 @@ class MotorizedIndividualTravel(Dataset):
                         table="demand.egon_ev_pool",
                         rule_id="VALUE_SET_VALIDATION_TYPE.egon_ev_pool",
                         column="type",
-                        expected_values=["bev_mini", "bev_medium", "bev_luxury", "phev_mini", "phev_medium",
-                                         "phev_luxury"]
+                        expected_values=[
+                            "bev_mini",
+                            "bev_medium",
+                            "bev_luxury",
+                            "phev_mini",
+                            "phev_medium",
+                            "phev_luxury"
+                        ]
                     ),
                     RowCountValidation(
                         table=" demand.egon_ev_trip",
                         rule_id="ROW_COUNT.egon_ev_trip",
-                        expected_count={"Schleswig-Holstein":11642066, "Everything": 108342188}
+                        expected_count={
+                            "Schleswig-Holstein":11642066,
+                            "Everything": 108342188
+                        }
                     ),
                     DataTypeValidation(
                         table="demand.egon_ev_trip",
                         rule_id="DATA_MULTIPLE_TYPES.egon_ev_trip",
-                        column_types={"scenario": "character varying", "event_id": "integer", "egon_ev_pool_ev_id": "integer",
-                                      "simbev_event_id": "integer", "location": "character varying", "use_case": "character varying",
-                                      "charging_capacity_nominal": "real", "charging_capacity_grid": "real",
-                                      "charging_capacity_battery": "real", "soc_start": "real", "soc_end": "real",
-                                      "charging_demand": "real", "park_start": "integer", "park_end": "integer",
-                                      "drive_start": "integer", "drive_end": "integer", "consumption": "real"}
+                        column_types={
+                            "scenario": "character varying",
+                            "event_id": "integer",
+                            "egon_ev_pool_ev_id": "integer",
+                            "simbev_event_id": "integer",
+                            "location": "character varying",
+                            "use_case": "character varying",
+                            "charging_capacity_nominal": "real",
+                            "charging_capacity_grid": "real",
+                            "charging_capacity_battery": "real",
+                            "soc_start": "real", "soc_end": "real",
+                            "charging_demand": "real",
+                            "park_start": "integer",
+                            "park_end": "integer",
+                            "drive_start": "integer",
+                            "drive_end": "integer",
+                            "consumption": "real"
+                        }
                     ),
                     WholeTableNotNullAndNotNaNValidation(
                         table="demand.egon_ev_trip",
@@ -676,8 +766,17 @@ class MotorizedIndividualTravel(Dataset):
                         table="demand.egon_ev_trip",
                         rule_id="VALUE_SET_LOCATION.egon_ev_trip",
                         column="type",
-                        expected_values=["0_work", "1_business", "2_school", "3_shopping", "4_private/ridesharing",
-                                         "5_leisure", "6_home", "7_charging_hub", "driving"]
+                        expected_values=[
+                            "0_work",
+                            "1_business",
+                            "2_school",
+                            "3_shopping",
+                            "4_private/ridesharing",
+                            "5_leisure",
+                            "6_home",
+                            "7_charging_hub",
+                            "driving"
+                        ]
                     )
                 ]
             },

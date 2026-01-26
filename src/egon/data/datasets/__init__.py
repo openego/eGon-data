@@ -18,9 +18,9 @@ from egon.data.validation import create_validation_tasks
 from egon.data import config, db, logger
 
 try:
-      from egon_validation.rules.base import Rule
+    from egon_validation.rules.base import Rule
 except ImportError:
-      Rule = None  # Type hint only
+    Rule = None  # Type hint only
 
 
 Base = declarative_base()
