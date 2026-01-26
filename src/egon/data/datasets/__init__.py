@@ -282,15 +282,22 @@ class Dataset:
                 on_failure=self.on_validation_failure
             )
 
-            # Append validation tasks to existing tasks
+            # Add validation tasks to existing Tasks_ without re-processing dependencies
             if validation_tasks:
-                graph = self.tasks.graph if hasattr(self.tasks, 'graph') else self.tasks
-                if isinstance(graph, (tuple, set, list)):
-                    task_list = list(graph)
-                else:
-                    task_list = [graph]
-                task_list.extend(validation_tasks)
-                self.tasks = Tasks_(tuple(task_list))
+                # Store original last tasks before adding validation
+                original_last_tasks = set(self.tasks.last)
+
+                # Add validation tasks to the Tasks_ dict
+                for vtask in validation_tasks:
+                    self.tasks[vtask.task_id] = vtask
+
+                # Update last to be validation tasks (they run after data tasks)
+                self.tasks.last = set(validation_tasks)
+
+                # Set up dependencies: original last tasks -> validation tasks
+                for last_task in sorted(original_last_tasks, key=lambda t: t.task_id):
+                    for vtask in validation_tasks:
+                        last_task.set_downstream(vtask)
 
         if len(self.tasks.last) > 1:
             # Explicitly create single final task, because we can't know
@@ -306,7 +313,7 @@ class Dataset:
         # Due to the `if`-block above, there'll now always be exactly
         # one task in `self.tasks.last` which the next line just
         # selects.
-        last = list(self.tasks.last)[0]
+        last = sorted(list(self.tasks.last), key=lambda t: t.task_id)[0]
         for task in self.tasks.values():
             task.dataset = self
             cls = task.__class__
@@ -330,29 +337,4 @@ class Dataset:
         for p in predecessors:
             for first in self.tasks.first:
                 p.set_downstream(first)
-
-        # Link validation tasks to run after data tasks
-        if self.validation and validation_tasks:
-            # Get last non-validation tasks
-            non_validation_task_ids = [
-                task.task_id for task in self.tasks.values()
-                if not any(task.task_id.endswith(f".validate.{name}") for name in self.validation.keys())
-            ]
-
-            last_data_tasks = [
-                task for task in self.tasks.values()
-                if task.task_id in non_validation_task_ids and task in self.tasks.last
-            ]
-
-            if not last_data_tasks:
-                # Fallback to last non-validation task
-                last_data_tasks = [
-                                      task for task in self.tasks.values()
-                                      if task.task_id in non_validation_task_ids
-                                  ][-1:]
-
-            # Link each validation task downstream of last data tasks
-            for validation_task in validation_tasks:
-                for last_task in last_data_tasks:
-                    last_task.set_downstream(validation_task)
 
