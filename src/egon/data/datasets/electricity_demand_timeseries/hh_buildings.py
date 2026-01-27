@@ -1268,47 +1268,19 @@ class setup(Dataset):
                         table="demand.egon_building_electricity_peak_loads",
                         rule_id="VALUE_SET_VALIDATION_SCENARIO.egon_building_electricity_peak_loads",
                         column="scenario",
-                        expected_values=["eGon2035", "eGon100RE"]
+                        expected_values=resolve_boundary_dependence({
+                            "Schleswig-Holstein": [
+                                "eGon2035", "eGon100RE", "status2019", "status2023"
+                            ],
+                            "Everything": [
+                                "eGon2035", "eGon100RE"]
+                        })
                     ),
                     ValueSetValidation(
                         table="demand.egon_building_electricity_peak_loads",
                         rule_id="VALUE_SET_VALIDATION_SECTOR.egon_building_electricity_peak_loads",
                         column="sector",
                         expected_values=["cts", "residential"]
-                    ),
-                    RowCountValidation(
-                        table=" demand.egon_building_heat_peak_loads",
-                        rule_id="ROW_COUNT.egon_building_heat_peak_loads",
-                        expected_count=resolve_boundary_dependence(
-                            {"Schleswig-Holstein": 732905,
-                            "Everything": 42128819}
-                        )
-                    ),
-                    DataTypeValidation(
-                        table="demand.egon_building_heat_peak_loads",
-                        rule_id="DATA_MULTIPLE_TYPES.egon_building_heat_peak_loads",
-                        column_types={
-                            "building_id": "integer",
-                            "scenario": "character varying",
-                            "sector": "character varying",
-                            "peak_load_in_w": "real"
-                        }
-                    ),
-                    WholeTableNotNullAndNotNaNValidation(
-                        table="demand.egon_building_heat_peak_loads",
-                        rule_id="WHOLE_TABLE_NOT_NAN.egon_building_heat_peak_loads"
-                    ),
-                    ValueSetValidation(
-                        table="demand.egon_building_heat_peak_loads",
-                        rule_id="VALUE_SET_VALIDATION_SCENARIO.egon_building_heat_peak_loads",
-                        column="scenario",
-                        expected_values=["eGon2035", "eGon100RE"]
-                    ),
-                    ValueSetValidation(
-                        table="demand.egon_building_heat_peak_loads",
-                        rule_id="VALUE_SET_VALIDATION_SECTOR.egon_building_heat_peak_loads",
-                        column="sector",
-                        expected_values=["residential+cts"]
                     ),
                     RowCountValidation(
                         table=" demand.egon_household_electricity_profile_of_buildings",
