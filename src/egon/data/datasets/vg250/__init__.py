@@ -544,19 +544,68 @@ class Vg250(Dataset):
                         table_name="boundaries.vg250_krs",
                         row_count=resolve_boundary_dependence({"Schleswig-Holstein": 27, "Everything": 537}),
                         geometry_columns=["geometry"],
-                        data_type_columns=resolve_boundary_dependence({"Schleswig-Holstein":{"id":"bigint","ade":"integer", "gf":"integer", "bsg":"integer","ars":"text",
-                                      "ags":"text", "sdv_ars":"text", "gen":"text", "bez":"text","ibz":"integer",
-                                      "bem":"text", "nbd":"text", "sn_l":"text", "sn_r":"text", "sn_k":"text",
-                                      "sn_v1":"text", "sn_v2":"text", "sn_g":"text", "fk_s3":"text", "nuts":"text",
-                                      "ars_0":"text", "ags_0":"text", "wsk":"timestamp without time zone", "debkg_id":"text", "rs":"text",
-                                      "sdv_rs":"text", "rs_0":"text", "geometry":"geometry"},
-                                      "Everything":{"id":"bigint","ade":"bigint", "gf":"bigint", "bsg":"bigint","ars":"text",
-                                      "ags":"text", "sdv_ars":"text", "gen":"text", "bez":"text","ibz":"bigint",
-                                      "bem":"text", "nbd":"text", "sn_l":"text", "sn_r":"text", "sn_k":"text",
-                                      "sn_v1":"text", "sn_v2":"text", "sn_g":"text", "fk_s3":"text", "nuts":"text",
-                                      "ars_0":"text", "ags_0":"text", "wsk":"text", "debkg_id":"text", "rs":"text",
-                                      "sdv_rs":"text", "rs_0":"text", "geometry":"geometry"}
-                                      }),
+                        data_type_columns=resolve_boundary_dependence(
+                            {"Schleswig-Holstein": {
+                                "id": "bigint",
+                                "ade": "integer",
+                                "gf": "integer",
+                                "bsg": "integer",
+                                "ars": "text",
+                                "ags": "text",
+                                "sdv_ars": "text",
+                                "gen": "text",
+                                "bez": "text",
+                                "ibz": "integer",
+                                "bem": "text",
+                                "nbd": "text",
+                                "sn_l": "text",
+                                "sn_r": "text",
+                                "sn_k": "text",
+                                "sn_v1": "text",
+                                "sn_v2": "text",
+                                "sn_g": "text",
+                                "fk_s3": "text",
+                                "nuts": "text",
+                                "ars_0": "text",
+                                "ags_0": "text",
+                                "wsk": "timestamp without time zone",
+                                "debkg_id": "text",
+                                "rs": "text",
+                                "sdv_rs": "text",
+                                "rs_0": "text",
+                                "geometry": "geometry"
+                            },
+                            "Everything": {
+                                "id": "bigint",
+                                "ade": "bigint",
+                                "gf": "bigint",
+                                "bsg": "bigint",
+                                "ars": "text",
+                                "ags": "text",
+                                "sdv_ars": "text",
+                                "gen": "text",
+                                "bez": "text",
+                                "ibz": "bigint",
+                                "bem": "text",
+                                "nbd": "text",
+                                "sn_l": "text",
+                                "sn_r": "text",
+                                "sn_k": "text",
+                                "sn_v1": "text",
+                                "sn_v2": "text",
+                                "sn_g": "text",
+                                "fk_s3": "text",
+                                "nuts": "text",
+                                "ars_0": "text",
+                                "ags_0": "text",
+                                "wsk": "text",
+                                "debkg_id": "text",
+                                "rs": "text",
+                                "sdv_rs": "text",
+                                "rs_0": "text",
+                                "geometry": "geometry"
+                            }
+                            }),
                         not_null_columns=["gf", "bsg"],
                         value_set_columns={"nbd": ["ja", "nein"]},
                     ),
@@ -643,7 +692,7 @@ class Vg250(Dataset):
                     SRIDUniqueNonZero(
                         table="boundaries.vg250_krs",
                         rule_id="SRIDUniqueNonZero.vg250_krs.geometry",
-                        column="geometry"
+                        geom="geometry"
                     ),
                     ValueSetValidation(
                         table="boundaries.vg250_krs",
@@ -688,12 +737,12 @@ class Vg250(Dataset):
                     SRIDUniqueNonZero(
                         table="society.destatis_zensus_population_per_ha_inside_germany",
                         rule_id="SRIDUniqueNonZero.destatis_zensus_population_per_ha_inside_germany.geom_point",
-                        column="geom_point"
+                        geom="geom_point"
                     ),
                     SRIDUniqueNonZero(
                         table="society.destatis_zensus_population_per_ha_inside_germany",
                         rule_id="SRIDUniqueNonZero.destatis_zensus_population_per_ha_inside_germany.geom",
-                        column="geom"
+                        geom="geom"
                     ),
                 ]
             },

@@ -7,6 +7,8 @@ import logging
 from dataclasses import dataclass
 from typing import Any, List, Mapping, Optional, Sequence, Union
 
+from .resolver import BoundaryDependent
+
 from egon_validation.rules.base import Rule
 from egon_validation import (
     RowCountValidation,
@@ -43,9 +45,9 @@ class TableValidation:
     table_name: str
     row_count: Optional[Any] = None
     geometry_columns: Optional[Sequence[str]] = None
-    data_type_columns: Optional[Mapping[str, Any]] = None
+    data_type_columns: Optional[Union[Mapping[str, Any], BoundaryDependent]] = None
     not_null_columns: Optional[Sequence[str]] = None
-    value_set_columns: Optional[Mapping[str, Any]] = None
+    value_set_columns: Optional[Union[Mapping[str, Any], BoundaryDependent]] = None
 
     def to_rules(self) -> List[Rule]:
         rules: List[Rule] = []
@@ -84,7 +86,7 @@ class TableValidation:
                     SRIDUniqueNonZero(
                         table=self.table_name,
                         rule_id=f"SRIDUniqueNonZero.{table_suffix}.{geom_col}",
-                        column=geom_col,
+                        geom=geom_col,
                     )
                 )
 

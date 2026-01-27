@@ -1110,7 +1110,7 @@ class FinalValidations(Dataset):
                     SRIDUniqueNonZero(
                         table="grid.egon_etrago_bus",
                         rule_id="SRIDUniqueNonZero.egon_etrago_bus",
-                        column="geometry"
+                        geom="geometry"
                     ),
                     RowCountValidation(
                         table="grid.egon_etrago_generator",
@@ -1375,12 +1375,12 @@ class FinalValidations(Dataset):
                     SRIDUniqueNonZero(
                         table="grid.egon_etrago_line",
                         rule_id="SRIDUniqueNonZero.egon_etrago_line.geom",
-                        column="geom"
+                        geom="geom"
                     ),
                     SRIDUniqueNonZero(
                         table="grid.egon_etrago_line",
                         rule_id="SRIDUniqueNonZero.egon_etrago_line.topo",
-                        column="topo"
+                        geom="topo"
                     ),
                     #Row Count does not equal egon_etrago_line, because buses are located outside Germany
                     RowCountValidation(
@@ -1479,12 +1479,12 @@ class FinalValidations(Dataset):
                     SRIDUniqueNonZero(
                         table="grid.egon_etrago_line_timeseries",
                         rule_id="SRIDUniqueNonZero.egon_etrago_line_timeseries.geom",
-                        column="geom"
+                        geom="geom"
                     ),
                     SRIDUniqueNonZero(
                         table="grid.egon_etrago_line_timeseries",
                         rule_id="SRIDUniqueNonZero.egon_etrago_line_timeseries.topo",
-                        column="topo"
+                        geom="topo"
                     ),
                     RowCountValidation(
                         table="grid.egon_etrago_link",
@@ -1560,12 +1560,12 @@ class FinalValidations(Dataset):
                     SRIDUniqueNonZero(
                         table="grid.egon_etrago_link",
                         rule_id="SRIDUniqueNonZero.egon_etrago_link.geom",
-                        column="geom"
+                        geom="geom"
                     ),
                     SRIDUniqueNonZero(
                         table="grid.egon_etrago_link",
                         rule_id="SRIDUniqueNonZero.egon_etrago_link.topo",
-                        column="topo"
+                        geom="topo"
                     ),
                     RowCountValidation(
                         table="grid.egon_etrago_link_timeseries",
@@ -1929,36 +1929,64 @@ class FinalValidations(Dataset):
                         rule_id="DATA_TYPES.egon_etrago_transformer",
                         column_types={
                             "scn_name": "character varying",
-                            "store_id": "bigint",
-                            "bus": "bigint",
+                            "trafo_id": "bigint",
+                            "bus0": "bigint",
+                            "bus1": "bigint",
                             "type": "text",
-                            "carrier": "text",
-                            "e_nom": "double precision",
-                            "e_nom_extendable": "boolean",
-                            "e_nom_min": "double precision",
-                            "e_nom_max": "double precision",
-                            "e_min_pu": "double precision",
-                            "e_max_pu": "double precision",
-                            "p_set": "double precision",
-                            "q_set": "double precision",
-                            "e_initial": "double precision",
-                            "e_cyclic": "boolean",
-                            "sign": "double precision",
-                            "marginal_cost": "double precision",
-                            "capital_cost": "double precision",
-                            "standing_loss": "double precision",
+                            "model": "text",
+                            "x": "numeric",
+                            "r": "numeric",
+                            "g": "numeric",
+                            "b": "numeric",
+                            "s_nom": "double precision",
+                            "s_nom_extendable": "boolean",
+                            "s_nom_min": "double precision",
+                            "s_nom_max": "double precision",
+                            "s_max_pu": "double precision",
+                            "tap_ratio": "double precision",
+                            "tap_side": "bigint",
+                            "tap_position": "bigint",
+                            "phase_shift": "double precision",
                             "build_year": "bigint",
-                            "lifetime": "double precision"
+                            "lifetime": "double precision",
+                            "v_ang_min": "double precision",
+                            "v_ang_max": "double precision",
+                            "capital_cost": "double precision",
+                            "num_parallel": "double precision",
+                            "geom": "geometry",
+                            "topo": "geometry"
                         },
                     ),
                     NotNullAndNotNaNValidation(
                         table="grid.egon_etrago_transformer",
                         rule_id="NOT_NAN.egon_etrago_transformer",
                         columns=[
-                            "scn_name", "store_id", "bus", "type", "carrier", "e_nom", "e_nom_extendable",
-                            "e_nom_min", "e_nom_max", "e_min_pu", "e_max_pu", "p_set", "q_set", "e_initial",
-                            "e_cyclic", "sign", "marginal_cost", "capital_cost", "standing_loss", "build_year",
-                            "lifetime"
+                            "scn_name",
+                            "trafo_id",
+                            "bus0",
+                            "bus1",
+                            "type",
+                            "model",
+                            "x",
+                            "r",
+                            "g",
+                            "b",
+                            "s_nom",
+                            "s_nom_extendable",
+                            "s_nom_min",
+                            "s_nom_max",
+                            "s_max_pu",
+                            "tap_ratio",
+                            "tap_side",
+                            "tap_position",
+                            "phase_shift",
+                            "build_year",
+                            "lifetime",
+                            "v_ang_max",
+                            "capital_cost",
+                            "num_parallel",
+                            "geom",
+                            "topo"
                         ]
                     ),
                     WholeTableNotNullAndNotNaNValidation(
@@ -2016,12 +2044,12 @@ class FinalValidations(Dataset):
                     SRIDUniqueNonZero(
                         table="grid.egon_hvmv_substation",
                         rule_id="SRIDUniqueNonZero.egon_hvmv_substation.point",
-                        column="point"
+                        geom="point"
                     ),
                     SRIDUniqueNonZero(
                         table="grid.egon_hvmv_substation",
                         rule_id="SRIDUniqueNonZero.egon_hvmv_substation.polygon",
-                        column="polygon"
+                        geom="polygon"
                     ),
                     RowCountValidation(
                         table="grid.egon_mv_grid_district",
@@ -2047,7 +2075,7 @@ class FinalValidations(Dataset):
                     SRIDUniqueNonZero(
                         table="grid.egon_mv_grid_district",
                         rule_id="SRIDUniqueNonZero.egon_mv_grid_district.geom",
-                        column="geom"
+                        geom="geom"
                     ),
                 ]
             },
