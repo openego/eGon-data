@@ -1032,7 +1032,7 @@ class FinalValidations(Dataset):
                         table="grid.egon_etrago_bus",
                         rule_id="ROW_COUNT.egon_etrago_bus",
                         expected_count=resolve_boundary_dependence(
-                            {"Schleswig-Holstein": 2729,
+                            {"Schleswig-Holstein": 3408,
                              "Everything": 85710}
                         )
                     ),
@@ -1116,7 +1116,7 @@ class FinalValidations(Dataset):
                         table="grid.egon_etrago_generator",
                         rule_id="ROW_COUNT.egon_etrago_generator",
                         expected_count=resolve_boundary_dependence({
-                            "Schleswig-Holstein": 2863,
+                            "Schleswig-Holstein": 1921,
                             "Everything": 40577
                         })
                     ),
@@ -1237,7 +1237,7 @@ class FinalValidations(Dataset):
                         table="grid.egon_etrago_generator_timeseries",
                         rule_id="ROW_COUNT.egon_etrago_generator_timeseries",
                         expected_count=resolve_boundary_dependence(
-                            {"Schleswig-Holstein": 1929,
+                            {"Schleswig-Holstein": 1112,
                             "Everything": 28651
                         })
                     ),
@@ -1283,7 +1283,7 @@ class FinalValidations(Dataset):
                         table="grid.egon_etrago_line",
                         rule_id="ROW_COUNT.egon_etrago_line",
                         expected_count=resolve_boundary_dependence({
-                            "Schleswig-Holstein": 1197,
+                            "Schleswig-Holstein": 2380,
                             "Everything": 69901
                         })
                     ),
@@ -1387,7 +1387,7 @@ class FinalValidations(Dataset):
                         table="grid.egon_etrago_line_timeseries",
                         rule_id="ROW_COUNT.egon_etrago_line_timeseries",
                         expected_count=resolve_boundary_dependence({
-                            "Schleswig-Holstein": 1197,
+                            "Schleswig-Holstein": 2380,
                             "Everything": 69714
                         })
                     ),
@@ -1490,7 +1490,7 @@ class FinalValidations(Dataset):
                         table="grid.egon_etrago_link",
                         rule_id="ROW_COUNT.egon_etrago_link",
                         expected_count=resolve_boundary_dependence({
-                            "Schleswig-Holstein": 15496,
+                            "Schleswig-Holstein": 1293,
                             "Everything": 83980
                         })
                     ),
@@ -1571,7 +1571,7 @@ class FinalValidations(Dataset):
                         table="grid.egon_etrago_link_timeseries",
                         rule_id="ROW_COUNT.egon_etrago_link_timeseries",
                         expected_count=resolve_boundary_dependence(
-                            {"Schleswig-Holstein": 947,
+                            {"Schleswig-Holstein": 899,
                              "Everything": 25729}
                         )
                     ),
@@ -1611,7 +1611,7 @@ class FinalValidations(Dataset):
                         table="grid.egon_etrago_load",
                         rule_id="ROW_COUNT.egon_etrago_load",
                         expected_count=resolve_boundary_dependence(
-                            {"Schleswig-Holstein": 3202,
+                            {"Schleswig-Holstein": 1579,
                              "Everything": 44019}
                         )
                     ),
@@ -1661,7 +1661,7 @@ class FinalValidations(Dataset):
                         table="grid.egon_etrago_load_timeseries",
                         rule_id="ROW_COUNT.egon_etrago_load_timeseries",
                         expected_count=resolve_boundary_dependence(
-                            {"Schleswig-Holstein": 3176,
+                            {"Schleswig-Holstein": 1557,
                              "Everything": 44013}
                         )
                     ),
@@ -1697,7 +1697,7 @@ class FinalValidations(Dataset):
                         table="grid.egon_etrago_storage",
                         rule_id="ROW_COUNT.egon_etrago_storage",
                         expected_count=resolve_boundary_dependence(
-                            {"Schleswig-Holstein": 418,
+                            {"Schleswig-Holstein": 498,
                              "Everything": 13044}
                         )
                     ),
@@ -1806,7 +1806,7 @@ class FinalValidations(Dataset):
                         table="grid.egon_etrago_store",
                         rule_id="ROW_COUNT.egon_etrago_store",
                         expected_count=resolve_boundary_dependence(
-                            {"Schleswig-Holstein": 2913,
+                            {"Schleswig-Holstein": 1357,
                              "Everything": 26520}
                         )
                     ),
@@ -1861,7 +1861,7 @@ class FinalValidations(Dataset):
                         table="grid.egon_etrago_store_timeseries",
                         rule_id="ROW_COUNT.egon_etrago_store_timeseries",
                         expected_count=resolve_boundary_dependence(
-                            {"Schleswig-Holstein": 392,
+                            {"Schleswig-Holstein": 389,
                              "Everything": 15281}
                         )
                     ),
@@ -1920,7 +1920,7 @@ class FinalValidations(Dataset):
                         table="grid.egon_etrago_transformer",
                         rule_id="ROW_COUNT.egon_etrago_transformer",
                         expected_count=resolve_boundary_dependence(
-                            {"Schleswig-Holstein": 31,
+                            {"Schleswig-Holstein": 62,
                              "Everything": 1545}
                         )
                     ),
@@ -1975,7 +1975,7 @@ class FinalValidations(Dataset):
                         table="grid.egon_hvmv_substation",
                         rule_id="ROW_COUNT.hvmv_substation",
                         expected_count=resolve_boundary_dependence(
-                            {"Schleswig-Holstein": 200,
+                            {"Schleswig-Holstein": 199,
                              "Everything": 3854}
                         )
                     ),
@@ -2027,7 +2027,7 @@ class FinalValidations(Dataset):
                         table="grid.egon_mv_grid_district",
                         rule_id="ROW_COUNT.egon_mv_grid_district",
                         expected_count=resolve_boundary_dependence(
-                            {"Schleswig-Holstein": 200,
+                            {"Schleswig-Holstein": 199,
                              "Everything": 3854}
                         )
                     ),
