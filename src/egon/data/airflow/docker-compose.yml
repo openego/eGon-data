@@ -17,5 +17,5 @@ services:
       # Use md5 authentication because of old JDBC driver in osmosis
       POSTGRES_INITDB_ARGS: "--auth=md5"
     volumes:
-      - ./database-data/:/var/lib/postgresql/data
+      - ./{--database-directory}/:/var/lib/postgresql/data
       - /dev/shm:/dev/shm
