@@ -67,6 +67,7 @@ def run_validation_task(
     boundary = config["--dataset-boundary"]
     logger.info("Resolving validation parameters for boundary='%s'", boundary)
 
+
     rules = prepare_rules(
         specs=specs,
         boundary=boundary,

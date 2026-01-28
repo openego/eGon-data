@@ -1104,7 +1104,9 @@ class FinalValidations(Dataset):
                             "residential_rural_heat",
                             "central_heat",
                             "rural_heat_store",
-                            "residential_rural_water_tanks"
+                            "residential_rural_water_tanks",
+                            "H2",
+                            "O2"
                         ]
                     ),
                     SRIDUniqueNonZero(
@@ -1133,17 +1135,17 @@ class FinalValidations(Dataset):
                             "p_nom_extendable": "boolean",
                             "p_nom_min": "double precision",
                             "p_nom_max": "double precision",
-                            "p_min_pu": "double precision",
-                            "p_max_pu": "double precision",
-                            "p_set": "double precision",
-                            "q_set": "double precision",
+                            "p_min_pu": "array",
+                            "p_max_pu": "array",
+                            "p_set": "array",
+                            "q_set": "array",
                             "sign": "double precision",
-                            "marginal_cost": "double precision",
+                            "marginal_cost": "array",
                             "build_year": "bigint",
                             "lifetime": "double precision",
                             "capital_cost": "double precision",
                             "efficiency": "double precision",
-                            "commitable": "boolean",
+                            "committable": "boolean",
                             "start_up_cost": "double precision",
                             "shut_down_cost": "double precision",
                             "min_up_time": "bigint",
@@ -1230,7 +1232,11 @@ class FinalValidations(Dataset):
                             "coal",
                             "solar_thermal_collector",
                             "solar_rooftop",
-                            "wind_offshore"
+                            "wind_offshore",
+                            "central_others_CHP",
+                            "central_others_CHP_heat",
+                            "industrial_others_CHP",
+                            "O2"
                         ]
                     ),
                     RowCountValidation(
@@ -1246,13 +1252,9 @@ class FinalValidations(Dataset):
                         rule_id="DATA_TYPES.egon_etrago_generator_timeseries",
                         column_types={
                             "scn_name":	"character varying",
-                            "generator_id": "integer",
+                            "line_id": "bigint",
                             "temp_id": "integer",
-                            "p_set": "double precision[]",
-                            "q_set": "double precision[]",
-                            "p_min_pu": "double precision[]",
-                            "p_max_pu":	"double precision[]",
-                            "marginal_cost": "double precision[]"
+                            "s_max_pu":	"array",
                         },
                     ),
                     NotNullAndNotNaNValidation(
@@ -1260,9 +1262,9 @@ class FinalValidations(Dataset):
                         rule_id="NOT_NAN.egon_etrago_generator_timeseries",
                         columns=[
                             "scn_name",
-                            "generator_id",
+                            "line_id",
                             "temp_id",
-                            "p_max_pu"
+                            "s_max_pu"
                         ]
                     ),
                     WholeTableNotNullAndNotNaNValidation(
@@ -1398,7 +1400,7 @@ class FinalValidations(Dataset):
                             "scn_name": "character varying",
                             "line_id": "bigint",
                             "temp_id": "integer",
-                            "s_max_pu": "double precision[]"
+                            "s_max_pu": "array"
                         },
                     ),
                     NotNullAndNotNaNValidation(
@@ -1408,6 +1410,7 @@ class FinalValidations(Dataset):
                             "scn_name",
                             "line_id",
                             "temp_id",
+                            "s_max_pu"
                         ]
                     ),
                     WholeTableNotNullAndNotNaNValidation(
@@ -1493,7 +1496,8 @@ class FinalValidations(Dataset):
                             "urban_central_air_heat_pump", "urban_central_water_tanks_discharger",
                             "urban_central_water_tanks_charger", "services_rural_water_tanks_discharger",
                             "electricity_distribution_grid", "central_heat_store_discharger", "H2_to_power",
-                            "central_heat_store_charger", "central_gas_CHP", "residential_rural_ground_heat_pump"]
+                            "central_heat_store_charger", "central_gas_CHP", "residential_rural_ground_heat_pump",
+                            "H2_grid", "H2_saltcavern", "PtH2_O2", "PtH2_waste_heat", "rural_gas_boiler"]
                     ),
                     SRIDUniqueNonZero(
                         table="grid.egon_etrago_link",
@@ -1520,11 +1524,11 @@ class FinalValidations(Dataset):
                             "scn_name": "character varying",
                             "link_id": "bigint",
                             "temp_id": "integer",
-                            "p_set": "double precision[]",
-                            "p_min_pu": "double precision[]",
-                            "p_max_pu": "double precision[]",
-                            "efficiency": "double precision[]",
-                            "marginal_cost": "double precision[]"
+                            "p_set": "array",
+                            "p_min_pu": "array",
+                            "p_max_pu": "array",
+                            "efficiency": "array",
+                            "marginal_cost": "array"
                         },
                     ),
                     NotNullAndNotNaNValidation(
@@ -1592,7 +1596,7 @@ class FinalValidations(Dataset):
                             "CH4", "H2_for_industry", "services_rural_heat", "H2_system_boundary", "AC",
                             "urban_central_heat", "residential_rural_heat", "low-temperature_heat_for_industry",
                             "CH4_for_industry", "central_heat", "CH4_system_boundary", "land_transport_EV",
-                            "H2_hgv_load", "rural_gas_boiler", "rural_heat"
+                            "H2_hgv_load", "rural_gas_boiler", "rural_heat", "O2"
                         ]
                     ),
                     RowCountValidation(
@@ -1610,8 +1614,8 @@ class FinalValidations(Dataset):
                             "scn_name": "character varying",
                             "load_id": "bigint",
                             "temp_id": "integer",
-                            "p_set": "double precision[]",
-                            "q_set": "double precision[]"
+                            "p_set": "array",
+                            "q_set": "array"
                         },
                     ),
                     NotNullAndNotNaNValidation(
@@ -1810,11 +1814,11 @@ class FinalValidations(Dataset):
                             "scn_name": "character varying",
                             "store_id": "bigint",
                             "temp_id": "integer",
-                            "p_set": "double precision[]",
-                            "q_set": "double precision[]",
-                            "e_min_pu": "double precision[]",
-                            "e_max_pu": "double precision[]",
-                            "marginal_cost": "double precision[]"
+                            "p_set": "array",
+                            "q_set": "array",
+                            "e_min_pu": "array",
+                            "e_max_pu": "array",
+                            "marginal_cost": "array"
                         },
                     ),
                     NotNullAndNotNaNValidation(
@@ -1920,6 +1924,7 @@ class FinalValidations(Dataset):
                             "phase_shift",
                             "build_year",
                             "lifetime",
+                            "v_ang_min",
                             "v_ang_max",
                             "capital_cost",
                             "num_parallel",

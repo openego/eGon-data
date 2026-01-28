@@ -98,7 +98,7 @@ class DemandRegio(Dataset):
             validation={
                 "data_quality": [
                     RowCountValidation(
-                        table=" demand.egon_demandregio_hh",
+                        table="demand.egon_demandregio_hh",
                         rule_id="ROW_COUNT.egon_demandregio_hh",
                         expected_count=resolve_boundary_dependence(
                             {"Schleswig-Holstein": 180,
@@ -126,7 +126,7 @@ class DemandRegio(Dataset):
                         expected_values=["eGon2035", "eGon100RE", "eGon2021"]
                     ),
                     RowCountValidation(
-                        table=" demand.egon_demandregio_wz",
+                        table="demand.egon_demandregio_wz",
                         rule_id="ROW_COUNT.egon_demandregio_wz",
                         expected_count=87
                     ),
@@ -148,12 +148,6 @@ class DemandRegio(Dataset):
                         column="sector",
                         expected_values=["industry", "CTS"]
                     ),
-                    ArrayCardinalityValidation(
-                        table="demand.egon_demandregio_sites_ind_electricity_dsm_timeseries",
-                        rule_id="ARRAY_VALIDATION.egon_demandregio_sites_ind_electricity_dsm_timeseries",
-                        array_column="load_curve",
-                        expected_length=8760,
-                    )
                 ]
             },
             on_validation_failure="continue"

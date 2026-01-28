@@ -1275,7 +1275,7 @@ class HeatTimeSeries(Dataset):
             validation={
                 "data_quality": [
                     RowCountValidation(
-                        table=" demand.egon_heat_idp_pool",
+                        table="demand.egon_heat_idp_pool",
                         rule_id="ROW_COUNT.egon_heat_idp_pool",
                         expected_count=459535
                     ),
