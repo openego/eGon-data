@@ -49,25 +49,38 @@ class TableValidation:
     not_null_columns: Optional[Sequence[str]] = None
     value_set_columns: Optional[Union[Mapping[str, Any], BoundaryDependent]] = None
 
-    def to_rules(self) -> List[Rule]:
+    def to_rules(self, boundary: str) -> List[Rule]:
         rules: List[Rule] = []
         table_suffix = self.table_name.split(".")[-1]
 
-        if self.row_count is not None:
+        # Resolve all boundary-dependent fields up-front
+        row_count = resolve_value(self.row_count, boundary) if self.row_count is not None else None
+        data_type_columns = (
+            resolve_value(self.data_type_columns, boundary)
+            if self.data_type_columns is not None
+            else None
+        )
+        value_set_columns = (
+            resolve_value(self.value_set_columns, boundary)
+            if self.value_set_columns is not None
+            else None
+        )
+
+        if row_count is not None:
             rules.append(
                 RowCountValidation(
                     table=self.table_name,
                     rule_id=f"ROW_COUNT.{table_suffix}",
-                    expected_count=self.row_count,
+                    expected_count=row_count,
                 )
             )
 
-        if self.data_type_columns is not None:
+        if data_type_columns is not None:
             rules.append(
                 DataTypeValidation(
                     table=self.table_name,
                     rule_id=f"DATA_TYPES.{table_suffix}",
-                    column_types=dict(self.data_type_columns),
+                    column_types=dict(data_type_columns),
                 )
             )
 
@@ -90,8 +103,8 @@ class TableValidation:
                     )
                 )
 
-        if self.value_set_columns:
-            for col_name, expected_values in self.value_set_columns.items():
+        if value_set_columns:
+            for col_name, expected_values in value_set_columns.items():
                 rules.append(
                     ValueSetValidation(
                         table=self.table_name,
@@ -191,7 +204,13 @@ def prepare_rules(
       - inject dataset/task if missing
       - resolve boundary-dependent params
     """
-    rules = expand_specs(specs)
+    rules: List[Rule] = []
+
+    for spec in specs:
+        if isinstance(spec, TableValidation):
+            rules.extend(spec.to_rules(boundary))
+        else:
+            rules.append(clone_rule(spec))
 
     for rule in rules:
         if getattr(rule, "task", None) is None:
