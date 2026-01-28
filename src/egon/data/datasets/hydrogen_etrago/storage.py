@@ -220,23 +220,23 @@ def calculate_and_map_saltcavern_storage_potential():
     """
 
     # select onshore vg250 data
-    sources, targets = load_sources_and_targets("HydrogenBusEtrago")
+    sources = config.datasets()["bgr"]["sources"]
+    targets = config.datasets()["bgr"]["targets"]
     vg250_data = db.select_geodataframe(
-        f"""
-        SELECT *
-        FROM {sources.tables['vg250_federal_states']['schema']}.{sources.tables['vg250_federal_states']['table']}
-        WHERE gf = '4'
-        """,
+        f""" SELECT * FROM
+                {sources['vg250_federal_states']['schema']}.
+                {sources['vg250_federal_states']['table']}
+            WHERE gf = '4'""",
         index_col="id",
         geom_col="geometry",
     )
 
     # get saltcavern shapes
     saltcavern_data = db.select_geodataframe(
-        f"""
-        SELECT *
-        FROM {sources.tables['saltcaverns']['schema']}.{sources.tables['saltcaverns']['table']}
-        """,
+        f""" SELECT * FROM
+                {sources['saltcaverns']['schema']}.
+                {sources['saltcaverns']['table']}
+            """,
         geom_col="geometry",
     )
 
@@ -416,13 +416,13 @@ def write_saltcavern_potential():
 
     """
     potential_areas = calculate_and_map_saltcavern_storage_potential()
-    _, targets = load_sources_and_targets("HydrogenBusEtrago")
+    targets = config.datasets()["bgr"]["targets"]
     
 
     potential_areas.to_crs(epsg=4326).to_postgis(
-        targets.tables["storage_potential"]["table"],
+        targets["storage_potential"]["table"],
         db.engine(),
-        schema=targets.tables["storage_potential"]["schema"],
+        schema=targets["storage_potential"]["schema"],
         index=True,
         if_exists="replace",
         dtype={"geometry": Geometry()},
