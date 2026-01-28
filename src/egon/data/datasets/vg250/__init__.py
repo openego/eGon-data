@@ -50,7 +50,7 @@ def download_files():
     if not os.path.exists(download_directory):
         os.mkdir(download_directory)
 
-    target_file = download_directory / Path(Vg250.targets.files['vg250_zip']).name
+    target_file = download_directory / Path(Vg250.sources.files["vg250_zip"]).name
 
     if not os.path.isfile(target_file):
         urlretrieve(Vg250.sources.urls['vg250_zip'], target_file)
@@ -538,11 +538,12 @@ class Vg250(Dataset):
         created and filled
 
     """
+    filename = sources.urls["vg250_zip"]
 
 
     #:
     name: str = "VG250"
-    version: str = "0.0.8"
+    version: str = f"{filename}-0.0.9"
 
 
     def __init__(self, dependencies):
