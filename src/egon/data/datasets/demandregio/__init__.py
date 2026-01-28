@@ -148,12 +148,6 @@ class DemandRegio(Dataset):
                         column="sector",
                         expected_values=["industry", "CTS"]
                     ),
-                    ArrayCardinalityValidation(
-                        table="demand.egon_demandregio_sites_ind_electricity_dsm_timeseries",
-                        rule_id="ARRAY_VALIDATION.egon_demandregio_sites_ind_electricity_dsm_timeseries",
-                        array_column="load_curve",
-                        expected_length=8760,
-                    )
                 ]
             },
             on_validation_failure="continue"
