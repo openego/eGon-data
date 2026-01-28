@@ -71,6 +71,50 @@ class ZensusPopulation(Dataset):
                         rule_id="SRIDUniqueNonZero.egon_destatis_zensus_apartment_building_population_per_ha.geom_point",
                         column="geom_point"
                     ),
+                    RowCountValidation(
+                        table="society.destatis_zensus_population_per_ha_inside_germany",
+                        rule_id="ROW_COUNT.destatis_zensus_population_per_ha_inside_germany",
+                        expected_count=resolve_boundary_dependence({
+                            "Schleswig-Holstein": 143521,
+                            "Everything": 3177723
+                        })
+                    ),
+                    DataTypeValidation(
+                        table="society.destatis_zensus_population_per_ha_inside_germany",
+                        rule_id="DATA_TYPES.destatis_zensus_population_per_ha_inside_germany",
+                        column_types={
+                            "id": "integer",
+                            "grid_id": "character varying (254)",
+                            "population": "smallint",
+                            "geom_point": "geometry",
+                            "geom": "geometry"
+                        }
+                    ),
+                    NotNullAndNotNaNValidation(
+                        table="society.destatis_zensus_population_per_ha_inside_germany",
+                        rule_id="NOT_NAN.destatis_zensus_population_per_ha_inside_germany",
+                        columns=[
+                            "id",
+                            "grid_id",
+                            "population",
+                            "geom_point",
+                            "geom"
+                        ]
+                    ),
+                    WholeTableNotNullAndNotNaNValidation(
+                        table="society.destatis_zensus_population_per_ha_inside_germany",
+                        rule_id="TABLE_NOT_NAN.destatis_zensus_population_per_ha_inside_germany"
+                    ),
+                    SRIDUniqueNonZero(
+                        table="society.destatis_zensus_population_per_ha_inside_germany",
+                        rule_id="SRIDUniqueNonZero.destatis_zensus_population_per_ha_inside_germany.geom_point",
+                        geom="geom_point"
+                    ),
+                    SRIDUniqueNonZero(
+                        table="society.destatis_zensus_population_per_ha_inside_germany",
+                        rule_id="SRIDUniqueNonZero.destatis_zensus_population_per_ha_inside_germany.geom",
+                        geom="geom"
+                    ),
                 ]
             },
             on_validation_failure="continue"
