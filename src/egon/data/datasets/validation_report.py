@@ -75,7 +75,7 @@ def generate_validation_report(**kwargs):
         collected = collect(ctx)
         coverage = build_coverage(ctx, collected)
         final_out_dir = write_outputs(ctx, collected, coverage)
-        generate(ctx)
+        generate(ctx, final_out_dir)
 
         report_path = os.path.join(final_out_dir, 'report.html')
         logger.info(
