@@ -458,7 +458,7 @@ class HeatSupply(Dataset):
                     SRIDUniqueNonZero(
                         table="supply.egon_district_heating",
                         rule_id="SRIDUniqueNonZero.egon_district_heating.geometry",
-                        column="geometry"
+                        geom="geometry"
                     ),
                     ValueSetValidation(
                         table="supply.egon_district_heating",
@@ -513,7 +513,7 @@ class HeatSupply(Dataset):
                     SRIDUniqueNonZero(
                         table="supply.egon_individual_heating",
                         rule_id="SRIDUniqueNonZero.egon_individual_heating.geometry",
-                        column="geometry"
+                        geom="geometry"
                     ),
                     ValueSetValidation(
                         table="supply.egon_individual_heating",

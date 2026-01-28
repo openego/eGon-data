@@ -270,7 +270,7 @@ class OsmBuildingsStreets(Dataset):
                     SRIDUniqueNonZero(
                         table="openstreetmap.osm_amenities_not_in_buildings",
                         rule_id="SRIDUniqueNonZero.osm_amenities_not_in_buildings.geom_amenity",
-                        column="geom_amenity"
+                        geom="geom_amenity"
                     ),
                     RowCountValidation(
                         table="openstreetmap.osm_amenities_shops_filtered",
@@ -291,7 +291,7 @@ class OsmBuildingsStreets(Dataset):
                     SRIDUniqueNonZero(
                         table="openstreetmap.osm_amenities_shops_filtered",
                         rule_id="SRIDUniqueNonZero.osm_amenities_shops_filtered.geom_amenity",
-                        column="geom_amenity"
+                        geom="geom_amenity"
                     ),
                     RowCountValidation(
                         table="openstreetmap.osm_buildings",
@@ -313,12 +313,12 @@ class OsmBuildingsStreets(Dataset):
                     SRIDUniqueNonZero(
                         table="openstreetmap.osm_buildings",
                         rule_id="SRIDUniqueNonZero.osm_buildings.geom_building",
-                        column="geom_building"
+                        geom="geom_building"
                     ),
                     SRIDUniqueNonZero(
                         table="openstreetmap.osm_buildings",
                         rule_id="SRIDUniqueNonZero.osm_buildings.geom_point",
-                        column="geom_point"
+                        geom="geom_point"
                     ),
                     RowCountValidation(
                         table="openstreetmap.osm_buildings_filtered",
@@ -340,12 +340,12 @@ class OsmBuildingsStreets(Dataset):
                     SRIDUniqueNonZero(
                         table="openstreetmap.osm_buildings_filtered",
                         rule_id="SRIDUniqueNonZero.osm_buildings_filtered.geom_building",
-                        column="geom_building"
+                        geom="geom_building"
                     ),
                     SRIDUniqueNonZero(
                         table="openstreetmap.osm_buildings_filtered",
                         rule_id="SRIDUniqueNonZero.osm_buildings_filtered.geom_point",
-                        column="geom_point"
+                        geom="geom_point"
                     ),
                     RowCountValidation(
                         table="openstreetmap.osm_buildings_residential",
@@ -367,12 +367,12 @@ class OsmBuildingsStreets(Dataset):
                     SRIDUniqueNonZero(
                         table="openstreetmap.osm_buildings_residential",
                         rule_id="SRIDUniqueNonZero.osm_buildings_residential.geom_building",
-                        column="geom_building"
+                        geom="geom_building"
                     ),
                     SRIDUniqueNonZero(
                         table="openstreetmap.osm_buildings_residential",
                         rule_id="SRIDUniqueNonZero.osm_buildings_residential.geom_point",
-                        column="geom_point"
+                        geom="geom_point"
                     ),
                     RowCountValidation(
                         table="openstreetmap.osm_buildings_synthetic",
@@ -394,12 +394,12 @@ class OsmBuildingsStreets(Dataset):
                     SRIDUniqueNonZero(
                         table="openstreetmap.osm_buildings_synthetic",
                         rule_id="SRIDUniqueNonZero.osm_buildings_synthetic.geom_building",
-                        column="geom_building"
+                        geom="geom_building"
                     ),
                     SRIDUniqueNonZero(
                         table="openstreetmap.osm_buildings_synthetic",
                         rule_id="SRIDUniqueNonZero.osm_buildings_synthetic.geom_point",
-                        column="geom_point"
+                        geom="geom_point"
                     ),
                     RowCountValidation(
                         table="openstreetmap.osm_buildings_with_amenities",
@@ -431,17 +431,17 @@ class OsmBuildingsStreets(Dataset):
                     SRIDUniqueNonZero(
                         table="openstreetmap.osm_buildings_with_amenities",
                         rule_id="SRIDUniqueNonZero.osm_buildings_with_amenities.geom_building",
-                        column="geom_building"
+                        geom="geom_building"
                     ),
                     SRIDUniqueNonZero(
                         table="openstreetmap.osm_buildings_with_amenities",
                         rule_id="SRIDUniqueNonZero.osm_buildings_with_amenities.geom_amenity",
-                        column="geom_amenity"
+                        geom="geom_amenity"
                     ),
                     SRIDUniqueNonZero(
                         table="openstreetmap.osm_buildings_with_amenities",
                         rule_id="SRIDUniqueNonZero.osm_buildings_with_amenities.geom_point",
-                        column="geom_point"
+                        geom="geom_point"
                     ),
                     RowCountValidation(
                         table="openstreetmap.osm_buildings_without_amenities",
@@ -469,12 +469,12 @@ class OsmBuildingsStreets(Dataset):
                     SRIDUniqueNonZero(
                         table="openstreetmap.osm_buildings_without_amenities",
                         rule_id="SRIDUniqueNonZero.osm_buildings_without_amenities.geom_building",
-                        column="geom_building"
+                        geom="geom_building"
                     ),
                     SRIDUniqueNonZero(
                         table="openstreetmap.osm_buildings_without_amenities",
                         rule_id="SRIDUniqueNonZero.osm_buildings_without_amenities.geom_point",
-                        column="geom_point"
+                        geom="geom_point"
                     ),
                     RowCountValidation(
                         table="openstreetmap.osm_ways_with_segments",
@@ -498,7 +498,7 @@ class OsmBuildingsStreets(Dataset):
                     SRIDUniqueNonZero(
                         table="openstreetmap.osm_ways_with_segments",
                         rule_id="SRIDUniqueNonZero.osm_ways_with_segments.geom",
-                        column="geom"
+                        geom="geom"
                     ),
                 ]
             },

@@ -311,7 +311,7 @@ class HouseholdDemands(Dataset):
             validation={
                 "data_quality": [
                     RowCountValidation(
-                        table=" demand.egon_household_electricity_profile_in_census_cell",
+                        table="demand.egon_household_electricity_profile_in_census_cell",
                         rule_id="ROW_COUNT.egon_household_electricity_profile_in_census_cell",
                         expected_count=resolve_boundary_dependence({
                             "Schleswig-Holstein": 143521,
@@ -349,7 +349,7 @@ class HouseholdDemands(Dataset):
                         rule_id="WHOLE_TABLE_NOT_NAN.egon_household_electricity_profile_in_census_cell"
                     ),
                     RowCountValidation(
-                        table=" demand.demand.iee_household_load_profiles",
+                        table="demand.iee_household_load_profiles",
                         rule_id="ROW_COUNT.iee_household_load_profiles",
                         expected_count=resolve_boundary_dependence({
                             "Schleswig-Holstein": 2511,

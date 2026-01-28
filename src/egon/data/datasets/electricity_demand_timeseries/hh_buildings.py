@@ -1242,7 +1242,7 @@ class setup(Dataset):
             validation={
                 "data_quality": [
                     RowCountValidation(
-                        table=" demand.egon_building_electricity_peak_loads",
+                        table="demand.egon_building_electricity_peak_loads",
                         rule_id="ROW_COUNT.egon_building_electricity_peak_loads",
                         expected_count=resolve_boundary_dependence({
                             "Schleswig-Holstein": 3054820,
@@ -1283,7 +1283,7 @@ class setup(Dataset):
                         expected_values=["cts", "residential"]
                     ),
                     RowCountValidation(
-                        table=" demand.egon_household_electricity_profile_of_buildings",
+                        table="demand.egon_household_electricity_profile_of_buildings",
                         rule_id="ROW_COUNT.egon_household_electricity_profile_of_buildings",
                         expected_count=resolve_boundary_dependence(
                             {"Schleswig-Holstein": 1371592,

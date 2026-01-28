@@ -94,7 +94,7 @@ class DistrictHeatingAreas(Dataset):
             validation={
                 "data_quality": [
                     RowCountValidation(
-                        table=" demand.egon_district_heating_areas",
+                        table="demand.egon_district_heating_areas",
                         rule_id="ROW_COUNT.egon_district_heating_areas",
                         expected_count=resolve_boundary_dependence({
                             "Schleswig-Holstein": 100,
@@ -125,7 +125,7 @@ class DistrictHeatingAreas(Dataset):
                     SRIDUniqueNonZero(
                         table="demand.egon_district_heating_areas",
                         rule_id="SRIDUniqueNonZero.egon_district_heating_areas",
-                        column="geom_polygon"
+                        geom="geom_polygon"
                     ),
                 ]
             },

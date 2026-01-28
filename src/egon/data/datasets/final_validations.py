@@ -1110,7 +1110,7 @@ class FinalValidations(Dataset):
                     SRIDUniqueNonZero(
                         table="grid.egon_etrago_bus",
                         rule_id="SRIDUniqueNonZero.egon_etrago_bus",
-                        geom="geometry"
+                        geom="geom"
                     ),
                     RowCountValidation(
                         table="grid.egon_etrago_generator",
@@ -1397,31 +1397,8 @@ class FinalValidations(Dataset):
                         column_types={
                             "scn_name": "character varying",
                             "line_id": "bigint",
-                            "bus0": "bigint",
-                            "bus1": "bigint",
-                            "type": "text",
-                            "carrier": "text",
-                            "x": "numeric",
-                            "r": "numeric",
-                            "g": "numeric",
-                            "b": "numeric",
-                            "s_nom": "numeric",
-                            "s_nom_extendable": "boolean",
-                            "s_nom_min": "double precision",
-                            "s_nom_max": "double precision",
-                            "s_max_pu": "double precision",
-                            "build_year": "bigint",
-                            "lifetime": "double precision",
-                            "capital_cost": "double precision",
-                            "length": "double precision",
-                            "cables": "integer",
-                            "terrain_factor": "double precision",
-                            "num_parallel": "double precision",
-                            "v_ang_min": "double precision",
-                            "v_ang_max": "double precision",
-                            "v_nom": "double precision",
-                            "geom": "geometry",
-                            "topo": "geometry"
+                            "temp_id": "integer",
+                            "s_max_pu": "double precision[]"
                         },
                     ),
                     NotNullAndNotNaNValidation(
@@ -1430,30 +1407,7 @@ class FinalValidations(Dataset):
                         columns=[
                             "scn_name",
                             "line_id",
-                            "bus0",
-                            "bus1",
-                            "carrier",
-                            "x",
-                            "r",
-                            "g",
-                            "b",
-                            "s_nom",
-                            "s_nom_extendable",
-                            "s_nom_min",
-                            "s_nom_max",
-                            "s_max_pu",
-                            "build_year",
-                            "lifetime",
-                            "capital_cost",
-                            "length",
-                            "cables",
-                            "terrain_factor",
-                            "num_parallel",
-                            "v_ang_min",
-                            "v_ang_max",
-                            "v_nom",
-                            "geom",
-                            "topo",
+                            "temp_id",
                         ]
                     ),
                     WholeTableNotNullAndNotNaNValidation(
@@ -1469,22 +1423,6 @@ class FinalValidations(Dataset):
                             "eGon2035_lowflex",
                             "eGon100RE"
                         ]
-                    ),
-                    ValueSetValidation(
-                        table="grid.egon_etrago_line_timeseries",
-                        rule_id="VALUE_SET_CARRIER.egon_etrago_line_timeseries",
-                        column="carrier",
-                        expected_values=["AC"]
-                    ),
-                    SRIDUniqueNonZero(
-                        table="grid.egon_etrago_line_timeseries",
-                        rule_id="SRIDUniqueNonZero.egon_etrago_line_timeseries.geom",
-                        geom="geom"
-                    ),
-                    SRIDUniqueNonZero(
-                        table="grid.egon_etrago_line_timeseries",
-                        rule_id="SRIDUniqueNonZero.egon_etrago_line_timeseries.topo",
-                        geom="topo"
                     ),
                     RowCountValidation(
                         table="grid.egon_etrago_link",
