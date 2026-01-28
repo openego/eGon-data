@@ -78,7 +78,7 @@ class HouseholdElectricityDemand(Dataset):
                         rtol=1e-5
                     ),
                     RowCountValidation(
-                        table=" demand.egon_demandregio_zensus_electricity",
+                        table="demand.egon_demandregio_zensus_electricity",
                         rule_id="ROW_COUNT.egon_demandregio_zensus_electricity",
                         expected_count=resolve_boundary_dependence({
                             "Schleswig-Holstein": 154527,

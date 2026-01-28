@@ -255,7 +255,7 @@ class CtsDemandBuildings(Dataset):
             validation={
                 "data-quality": [
                     RowCountValidation(
-                        table=" demand.egon_building_heat_peak_loads",
+                        table="demand.egon_building_heat_peak_loads",
                         rule_id="ROW_COUNT.egon_building_heat_peak_loads",
                         expected_count=resolve_boundary_dependence(
                             {"Schleswig-Holstein": 732905,

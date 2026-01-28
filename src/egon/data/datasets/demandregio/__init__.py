@@ -98,7 +98,7 @@ class DemandRegio(Dataset):
             validation={
                 "data_quality": [
                     RowCountValidation(
-                        table=" demand.egon_demandregio_hh",
+                        table="demand.egon_demandregio_hh",
                         rule_id="ROW_COUNT.egon_demandregio_hh",
                         expected_count=resolve_boundary_dependence(
                             {"Schleswig-Holstein": 180,
@@ -126,7 +126,7 @@ class DemandRegio(Dataset):
                         expected_values=["eGon2035", "eGon100RE", "eGon2021"]
                     ),
                     RowCountValidation(
-                        table=" demand.egon_demandregio_wz",
+                        table="demand.egon_demandregio_wz",
                         rule_id="ROW_COUNT.egon_demandregio_wz",
                         expected_count=87
                     ),

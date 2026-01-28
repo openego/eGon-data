@@ -85,7 +85,7 @@ class HeatDemandImport(Dataset):
             validation={
                 "data_quality": [
                     RowCountValidation(
-                        table=" demand.egon_peta_heat",
+                        table="demand.egon_peta_heat",
                         rule_id="ROW_COUNT.egon_peta_heat",
                         expected_count=resolve_boundary_dependence({"Schleswig-Holstein": 139250, "Everything": 6836426})
                     ),
