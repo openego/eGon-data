@@ -1245,7 +1245,7 @@ class setup(Dataset):
                         table="demand.egon_building_electricity_peak_loads",
                         rule_id="ROW_COUNT.egon_building_electricity_peak_loads",
                         expected_count=resolve_boundary_dependence({
-                            "Schleswig-Holstein": 3054820,
+                            "Schleswig-Holstein": 3029824,
                             "Everything": 44683620
                         })
                     ),

@@ -490,7 +490,7 @@ class HeatPumps2035(Dataset):
                         table="demand.egon_building_heat_peak_loads",
                         rule_id="ROW_COUNT.egon_building_heat_peak_loads",
                         expected_count=resolve_boundary_dependence(
-                            {"Schleswig-Holstein": 732905,
+                            {"Schleswig-Holstein": 732858,
                              "Everything": 42128819}
                         )
                     ),

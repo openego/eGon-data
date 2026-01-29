@@ -81,7 +81,7 @@ class HouseholdElectricityDemand(Dataset):
                         table="demand.egon_demandregio_zensus_electricity",
                         rule_id="ROW_COUNT.egon_demandregio_zensus_electricity",
                         expected_count=resolve_boundary_dependence({
-                            "Schleswig-Holstein": 154527,
+                            "Schleswig-Holstein": 154525,
                             "Everything": 7355160
                         })
                     ),

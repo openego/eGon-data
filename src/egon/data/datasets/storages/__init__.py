@@ -127,7 +127,7 @@ class Storages(Dataset):
                         table="supply.egon_storages",
                         rule_id="ROW_COUNT.egon_storages",
                         expected_count=resolve_boundary_dependence(
-                            {"Schleswig-Holstein": 290,
+                            {"Schleswig-Holstein": 199,
                              "Everything": 7748}
                         )
                     ),

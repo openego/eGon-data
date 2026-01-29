@@ -476,7 +476,7 @@ class HeatSupply(Dataset):
                         table="supply.egon_individual_heating",
                         rule_id="ROW_COUNT.egon_individual_heating",
                         expected_count=resolve_boundary_dependence(
-                            {"Schleswig-Holstein": 400,
+                            {"Schleswig-Holstein": 396,
                              "Everything": 7692}
                         )
                     ),

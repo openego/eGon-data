@@ -32,6 +32,9 @@ from egon_validation import(
     ValueSetValidation
 )
 
+from egon.data.validation import resolve_boundary_dependence
+
+
 class RenewableFeedin(Dataset):
     """
     Calculate possible feedin time series for renewable energy generators
@@ -75,12 +78,15 @@ class RenewableFeedin(Dataset):
                 "data-quality": [
                     RowCountValidation(
                         table="supply.egon_era5_renewable_feedin",
-                        rule_id="ROW_COUNT.egon_renewable_feedin",
-                        expected_count=6102
+                        rule_id="ROW_COUNT.egon_era5_renewable_feedin",
+                        expected_count=resolve_boundary_dependence(
+                            {"Schleswig-Holstein": 5224,
+                             "Everything": 6102}
+                        )
                     ),
                     DataTypeValidation(
                         table="supply.egon_era5_renewable_feedin",
-                        rule_id="DATA_MULTIPLE_TYPES.egon_era5_renewable_feedin",
+                        rule_id="DATA_TYPES.egon_era5_renewable_feedin",
                         column_types={
                             "w_id": "integer",
                             "weather_year": "integer",

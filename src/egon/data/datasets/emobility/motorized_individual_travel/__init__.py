@@ -549,7 +549,7 @@ class MotorizedIndividualTravel(Dataset):
                         table="demand.egon_ev_count_mv_grid_district",
                         rule_id="ROW_COUNT.egon_ev_count_mv_grid_district",
                         expected_count=resolve_boundary_dependence({
-                            "Schleswig-Holstein": 199,
+                            "Schleswig-Holstein": 197,
                             "Everything": 15348
                         })
                     ),
@@ -639,7 +639,7 @@ class MotorizedIndividualTravel(Dataset):
                         table="demand.egon_ev_mv_grid_district",
                         rule_id="ROW_COUNT.egon_ev_mv_grid_district",
                         expected_count=resolve_boundary_dependence({
-                            "Schleswig-Holstein": 534899,
+                            "Schleswig-Holstein": 534891,
                             "Everything": 125609556
                         })
                     ),

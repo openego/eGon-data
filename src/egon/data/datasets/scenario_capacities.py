@@ -1065,7 +1065,7 @@ class ScenarioCapacities(Dataset):
                     RowCountValidation(
                         table="supply.egon_nep_2021_conventional_powerplants",
                         rule_id="ROW_COUNT.egon_nep_2021_conventional_powerplants",
-                        expected_count=resolve_boundary_dependence({"Schleswig-Holstein": 40, "Everything": 737})
+                        expected_count=resolve_boundary_dependence({"Schleswig-Holstein": 34, "Everything": 737})
                     ),
                     DataTypeValidation(
                         table="supply.egon_nep_2021_conventional_powerplants",

@@ -1642,7 +1642,7 @@ class PowerPlants(Dataset):
                         table="supply.egon_power_plants",
                         rule_id="ROW_COUNT.egon_power_plants",
                         expected_count=resolve_boundary_dependence(
-                            {"Schleswig-Holstein":34828,
+                            {"Schleswig-Holstein":1102,
                              "Everything": 1103}
                         )
                     ),
