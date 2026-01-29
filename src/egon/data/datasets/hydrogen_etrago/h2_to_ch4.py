@@ -39,12 +39,16 @@ def insert_h2_to_ch4_to_h2():
     None
 
     """
-    sources, targets = load_sources_and_targets("HydrogenMethaneLinkEtrago")
+    
 
     scenarios = config.settings()["egon-data"]["--scenarios"]
     con = db.engine()
-    target_links = targets.tables["hydrogen_links"]
-    target_buses = sources.tables["buses"]
+    target_links = config.datasets()["etrago_hydrogen"]["targets"][
+        "hydrogen_links"
+    ]
+    target_buses = config.datasets()["etrago_hydrogen"]["targets"][
+        "hydrogen_buses"
+    ]
 
 
     if "status2019" in scenarios:
