@@ -464,11 +464,11 @@ def insert_central_direct_heat(scenario):
 
     map_dh_id_bus_id = db.select_dataframe(
         f"""
-        SELECT bus_id, area_id, id FROM
-        {targets.tables['heat_buses']['schema']}.
-        {targets.tables['heat_buses']['table']}
-        JOIN {sources.tables['map_district_heating_areas']['schema']}.
-            {sources.tables['map_district_heating_areas']['table']}
+        SELECT bus_id, area_id, id
+        FROM {targets.tables['heat_buses']['schema']}.
+             {targets.tables['heat_buses']['table']}
+        JOIN {sources.tables['district_heating_areas']['schema']}.
+             {sources.tables['district_heating_areas']['table']}
         ON ST_Intersects(
         ST_Transform(
         ST_Buffer(ST_Centroid(geom_polygon),
