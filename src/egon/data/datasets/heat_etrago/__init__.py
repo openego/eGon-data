@@ -56,8 +56,8 @@ def insert_buses(carrier, scenario):
         areas = db.select_geodataframe(
             f"""
             SELECT area_id, geom_polygon as geom
-            FROM  {sources.tables['map_district_heating_areas']['schema']}.
-            {sources.tables['map_district_heating_areas']['table']}
+            FROM  {sources.tables['district_heating_areas']['schema']}.
+            {sources.tables['district_heating_areas']['table']}
             WHERE scenario = '{scenario}'
             """,
             index_col="area_id",
@@ -813,7 +813,7 @@ class HeatEtrago(Dataset):
     #:
     name: str = "HeatEtrago"
     #:
-    version: str = "0.0.12"
+    version: str = "0.0.13"
     
     sources = DatasetSources(
         tables={
