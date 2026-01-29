@@ -37,7 +37,8 @@ def insert_H2_overground_storage():
     None
 
     """
-    sources, targets = load_sources_and_targets("HydrogenStoreEtrago")
+    sources = config.datasets()["etrago_hydrogen"]["sources"]
+    targets = config.datasets()["etrago_hydrogen"]["targets"]
    
     s = config.settings()["egon-data"]["--scenarios"]
     scn = []
@@ -51,8 +52,8 @@ def insert_H2_overground_storage():
         storages = db.select_geodataframe(
             f"""
             SELECT bus_id, scn_name, geom
-            FROM {sources.tables["buses"]["schema"]}.{sources.tables["buses"]["table"]} 
-            WHERE carrier IN ('H2', 'H2_grid')
+            FROM {sources['buses']['schema']}.
+            {sources['buses']['table']} WHERE carrier IN ('H2', 'H2_grid')
             AND scn_name = '{scn_name}' AND country = 'DE'
             """,
             index_col="bus_id",
@@ -78,12 +79,9 @@ def insert_H2_overground_storage():
         # Clean table
         db.execute_sql(
             f"""
-            DELETE FROM {targets.tables["hydrogen_stores"]["schema"]}.{targets.tables["hydrogen_stores"]["table"]}
-            WHERE carrier = '{carrier}' 
-            AND scn_name = '{scn_name}' 
-            AND bus not IN (
-                SELECT bus_id 
-                FROM {sources.tables["buses"]["schema"]}.{sources.tables["buses"]["table"]}
+            DELETE FROM grid.egon_etrago_store WHERE carrier = '{carrier}' AND
+            scn_name = '{scn_name}' AND bus not IN (
+                SELECT bus_id FROM grid.egon_etrago_bus
                 WHERE scn_name = '{scn_name}' AND country != 'DE'
             );
             """
@@ -96,9 +94,9 @@ def insert_H2_overground_storage():
 
         # Insert data to db
         storages.to_sql(
-            targets.tables["hydrogen_stores"]["table"],
+            targets["hydrogen_stores"]["table"],
             db.engine(),
-            schema=targets.tables["hydrogen_stores"]["schema"],
+            schema=targets["hydrogen_stores"]["schema"],
             index=False,
             if_exists="append",
         )
@@ -117,7 +115,8 @@ def insert_H2_saltcavern_storage():
 
     """
     # Data tables sources and targets
-    sources, targets = load_sources_and_targets("HydrogenStoreEtrago")
+    sources = config.datasets()["etrago_hydrogen"]["sources"]
+    targets = config.datasets()["etrago_hydrogen"]["targets"]
   
 
     s = config.settings()["egon-data"]["--scenarios"]
@@ -131,8 +130,8 @@ def insert_H2_saltcavern_storage():
         storage_potentials = db.select_geodataframe(
             f"""
             SELECT *
-            FROM {sources.tables["saltcavern_data"]["schema"]}.{sources.tables["saltcavern_data"]["table"]}
-            """,
+            FROM {sources['saltcavern_data']['schema']}.
+            {sources['saltcavern_data']['table']}""",
             geom_col="geometry",
         )
 
@@ -140,8 +139,8 @@ def insert_H2_saltcavern_storage():
         H2_AC_bus_map = db.select_dataframe(
             f"""
             SELECT *
-            FROM {sources.tables["H2_AC_map"]["schema"]}.{sources.tables["H2_AC_map"]["table"]}
-            """,
+            FROM {sources['H2_AC_map']['schema']}.
+            {sources['H2_AC_map']['table']}""",
         )
 
         storage_potentials["storage_potential"] = (
@@ -185,27 +184,24 @@ def insert_H2_saltcavern_storage():
         # Clean table
         db.execute_sql(
             f"""
-            DELETE FROM {targets.tables["hydrogen_stores"]["schema"]}.{targets.tables["hydrogen_stores"]["table"]}
-            WHERE carrier = '{carrier}' 
-            AND scn_name = '{scn_name}' 
+            DELETE FROM grid.egon_etrago_store WHERE carrier = '{carrier}' AND
+            scn_name = '{scn_name}' 
             AND bus not IN (
-                SELECT bus_id 
-                FROM {sources.tables["buses"]["schema"]}.{sources.tables["buses"]["table"]}
+                SELECT bus_id FROM grid.egon_etrago_bus
                 WHERE scn_name = '{scn_name}' AND country != 'DE'
             );
             """
         )
 
         # Select next id value
-        new_id = db.next_etrago_id("store")
-        storages["store_id"] = range(new_id, new_id + len(storages))
+        storages["store_id"] = db.next_etrago_id("store", len(storages))
         storages = storages.reset_index(drop=True)
 
         # # Insert data to db
         storages.to_sql(
-            targets.tables["hydrogen_stores"]["table"],
+            targets["hydrogen_stores"]["table"],
             db.engine(),
-            schema=targets.tables["hydrogen_stores"]["schema"],
+            schema=targets["hydrogen_stores"]["schema"],
             index=False,
             if_exists="append",
         )
