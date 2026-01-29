@@ -486,10 +486,10 @@ class OsmBuildingsStreets(Dataset):
                         rule_id="DATA_TYPES.osm_ways_with_segments",
                         column_types={
                             "osm_id": "bigint",
-                            "nodes": "bigint[]",
+                            "nodes": "array",
                             "highway": "text",
                             "geom": "geometry",
-                            "length_segments": "double precision[]"}
+                            "length_segments": "array"}
                     ),
                     WholeTableNotNullAndNotNaNValidation(
                         table="openstreetmap.osm_ways_with_segments",

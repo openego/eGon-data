@@ -85,7 +85,7 @@ class RenewableFeedin(Dataset):
                             "w_id": "integer",
                             "weather_year": "integer",
                             "carrier": "character varying",
-                            "feedin": "double precision[]"
+                            "feedin": "array"
                         }
                     ),
                     NotNullAndNotNaNValidation(

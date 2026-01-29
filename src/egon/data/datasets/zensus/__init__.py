@@ -84,7 +84,7 @@ class ZensusPopulation(Dataset):
                         rule_id="DATA_TYPES.destatis_zensus_population_per_ha_inside_germany",
                         column_types={
                             "id": "integer",
-                            "grid_id": "character varying (254)",
+                            "grid_id": "character varying",
                             "population": "smallint",
                             "geom_point": "geometry",
                             "geom": "geometry"

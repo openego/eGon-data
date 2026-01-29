@@ -647,17 +647,11 @@ class MotorizedIndividualTravel(Dataset):
                         table="demand.egon_ev_mv_grid_district",
                         rule_id="DATA_MULTIPLE_TYPES.egon_ev_mv_grid_district",
                         column_types={
+                            "id": "integer",
                             "scenario": "character varying",
                             "scenario_variation": "character varying",
                             "bus_id": "integer",
-                            "reg_district": "character varying",
-                            "bev_mini": "integer",
-                            "bev_medium": "integer",
-                            "bev_luxury": "integer",
-                            "phev_mini": "integer",
-                            "phev_medium": "integer",
-                            "phev_luxury": "integer",
-                            "rs7_id": "smallint"
+                            "egon_ev_pool_ev_id": "integer"
                         }
                     ),
                     WholeTableNotNullAndNotNaNValidation(

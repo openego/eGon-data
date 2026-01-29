@@ -325,7 +325,7 @@ class HouseholdDemands(Dataset):
                             "Schleswig-Holstein":{
                               "cell_id": "integer",
                                 "grid_id": "character varying",
-                                "cell_profile_ids": "character varying",
+                                "cell_profile_ids": "array",
                                 "nuts3": "character varying",
                                 "nuts1": "character varying",
                                 "factor_2019": "double precision",
@@ -362,7 +362,7 @@ class HouseholdDemands(Dataset):
                         column_types={
                             "id": "integer",
                             "type": "character",
-                            "load_in_wh": "real[]"
+                            "load_in_wh": "array"
                         }
                     ),
                     WholeTableNotNullAndNotNaNValidation(
