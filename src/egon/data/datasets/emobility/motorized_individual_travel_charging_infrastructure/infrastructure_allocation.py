@@ -15,7 +15,6 @@ import numpy as np
 import pandas as pd
 
 from egon.data import config, db
-from egon.data.datasets import load_sources_and_targets
 from egon.data.datasets.emobility.motorized_individual_travel_charging_infrastructure.use_cases import (  # noqa: E501
     home,
     hpc,
@@ -24,6 +23,7 @@ from egon.data.datasets.emobility.motorized_individual_travel_charging_infrastru
 )
 
 WORKING_DIR = Path(".", "charging_infrastructure").resolve()
+DATASET_CFG = config.datasets()["charging_infrastructure"]
 
 
 def write_to_db(
@@ -42,27 +42,21 @@ def write_to_db(
         Calculated use case
 
     """
-    sources, targets = load_sources_and_targets("MITChargingInfrastructure")
-
     if gdf.empty:
         return
 
     if "energy" in gdf.columns:
         gdf = gdf.assign(weight=gdf.energy.div(gdf.energy.sum()))
     else:
-        rng = np.random.default_rng(sources.constants["random_seed"])
+        rng = np.random.default_rng(DATASET_CFG["constants"]["random_seed"])
 
         gdf = gdf.assign(weight=rng.integers(low=0, high=100, size=len(gdf)))
 
         gdf = gdf.assign(weight=gdf.weight.div(gdf.weight.sum()))
 
-    target_conf = targets.charging_infrastructure
-    target_table = target_conf["table"]
-    target_schema = target_conf["schema"]
-
     max_id = db.select_dataframe(
-        f"""
-        SELECT MAX(cp_id) FROM {target_schema}.{target_table}
+        """
+        SELECT MAX(cp_id) FROM grid.egon_emob_charging_infrastructure
         """
     )["max"][0]
 
@@ -75,11 +69,12 @@ def write_to_db(
         use_case=use_case,
     )
 
-    cols_to_export = target_conf["cols_to_export"]
+    targets = DATASET_CFG["targets"]
+    cols_to_export = targets["charging_infrastructure"]["cols_to_export"]
 
     gpd.GeoDataFrame(gdf[cols_to_export], crs=gdf.crs).to_postgis(
-        target_table,
-        schema=target_schema,
+        targets["charging_infrastructure"]["table"],
+        schema=targets["charging_infrastructure"]["schema"],
         con=db.engine(),
         if_exists="append",
     )
@@ -160,11 +155,10 @@ def get_data() -> dict[gpd.GeoDataFrame]:
     * miscellaneous found in *datasets.yml* in section *charging_infrastructure*
 
     Returns
-    # ...
+    -------
+
     """
-    sources, targets = load_sources_and_targets("MITChargingInfrastructure")
-    
-    tracbev_cfg = sources.original_data["sources"]["tracbev"]
+    tracbev_cfg = DATASET_CFG["original_data"]["sources"]["tracbev"]
     srid = tracbev_cfg["srid"]
 
     # TODO: get zensus housing data from DB instead of gpkg?
@@ -253,26 +247,26 @@ def get_data() -> dict[gpd.GeoDataFrame]:
     )
 
     data_dict["work_dict"] = {
-        "retail": sources.constants["work_weight_retail"],
-        "commercial": sources.constants["work_weight_commercial"],
-        "industrial": sources.constants["work_weight_industrial"],
+        "retail": DATASET_CFG["constants"]["work_weight_retail"],
+        "commercial": DATASET_CFG["constants"]["work_weight_commercial"],
+        "industrial": DATASET_CFG["constants"]["work_weight_industrial"],
     }
 
-    data_dict["sfh_available"] = sources.constants[
+    data_dict["sfh_available"] = DATASET_CFG["constants"][
         "single_family_home_share"
     ]
-    data_dict["sfh_avg_spots"] = sources.constants[
+    data_dict["sfh_avg_spots"] = DATASET_CFG["constants"][
         "single_family_home_spots"
     ]
-    data_dict["mfh_available"] = sources.constants[
+    data_dict["mfh_available"] = DATASET_CFG["constants"][
         "multi_family_home_share"
     ]
-    data_dict["mfh_avg_spots"] = sources.constants[
+    data_dict["mfh_avg_spots"] = DATASET_CFG["constants"][
         "multi_family_home_spots"
     ]
 
     data_dict["random_seed"] = np.random.default_rng(
-        sources.constants["random_seed"]
+        DATASET_CFG["constants"]["random_seed"]
     )
 
     return data_dict
