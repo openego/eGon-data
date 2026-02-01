@@ -43,6 +43,7 @@ def write_to_db(
 
     """
     sources, targets = load_sources_and_targets("MITChargingInfrastructure")
+    sources.constants = sources.files["config_data"]
 
     if gdf.empty:
         return
@@ -163,6 +164,7 @@ def get_data() -> dict[gpd.GeoDataFrame]:
     # ...
     """
     sources, targets = load_sources_and_targets("MITChargingInfrastructure")
+    sources.constants = sources.files["config_data"]
     
     tracbev_cfg = sources.constants["tracbev_config"]
     srid = tracbev_cfg["srid"]

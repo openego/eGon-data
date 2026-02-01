@@ -105,36 +105,31 @@ class MITChargingInfrastructure(Dataset):
         tables={
             "mv_grid_districts": "grid.egon_mv_grid_district",
             "buildings": "demand.egon_map_houseprofiles_buildings"
+        },
+        files={
+            "config_data": {
+                "tracbev_config": {
+                    "srid": 3035,
+                    "files_to_use": [
+                        "hpc_positions.gpkg",
+                        "landuse.gpkg",
+                        "poi_cluster.gpkg",
+                        "public_positions.gpkg"
+                    ]
+                },
+                "work_weight_retail": 0.8,
+                "work_weight_commercial": 1.25,
+                "work_weight_industrial": 1,
+                "single_family_home_share": 0.6,
+                "single_family_home_spots": 1.5,
+                "multi_family_home_share": 0.4,
+                "multi_family_home_spots": 10,
+                "random_seed": 5,
+                "cols_to_export": ["mv_grid_id", "use_case", "weight", "geometry"]
+            }
         }
     )
 
-
-    sources.constants = {
-        "tracbev_config": {
-            "srid": 3035,
-            "files_to_use": [
-                "hpc_positions.gpkg",
-                "landuse.gpkg",
-                "poi_cluster.gpkg",
-                "public_positions.gpkg"
-            ]
-        },
-        "work_weight_retail": 0.8,
-        "work_weight_commercial": 1.25,
-        "work_weight_industrial": 1,
-        "single_family_home_share": 0.6,
-        "single_family_home_spots": 1.5,
-        "multi_family_home_share": 0.4,
-        "multi_family_home_spots": 10,
-        "random_seed": 5,
-        "cols_to_export": [
-            "mv_grid_id",
-            "use_case",
-            "weight",
-            "geometry"
-        ]
-    }
- 
     targets = DatasetTargets(
         files={
             "tracbev_download": "charging_infrastructure/data.zip"
@@ -143,6 +138,7 @@ class MITChargingInfrastructure(Dataset):
             "charging_infrastructure": "grid.egon_emob_charging_infrastructure"
         }
     )
+ 
     
     
     """
@@ -187,7 +183,7 @@ class MITChargingInfrastructure(Dataset):
     #:
     name: str = "MITChargingInfrastructure"
     #:
-    version: str = "0.0.5"
+    version: str = "0.0.7"
 
     def __init__(self, dependencies):
         super().__init__(
