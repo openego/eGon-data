@@ -15,7 +15,7 @@ from loguru import logger
 import requests
 
 from egon.data import config, db
-from egon.data.datasets import Dataset
+from egon.data.datasets import Dataset, DatasetSources, DatasetTargets
 from egon.data.datasets.emobility.motorized_individual_travel_charging_infrastructure.db_classes import (  # noqa: E501
     EgonEmobChargingInfrastructure,
     add_metadata,
@@ -25,7 +25,6 @@ from egon.data.datasets.emobility.motorized_individual_travel_charging_infrastru
 )
 
 WORKING_DIR = Path(".", "charging_infrastructure").resolve()
-DATASET_CFG = config.datasets()["charging_infrastructure"]
 
 
 def create_tables() -> None:
@@ -88,15 +87,68 @@ def get_tracbev_data() -> None:
     """
     Wrapper function to get TracBEV data provided on Zenodo.
     """
-    tracbev_cfg = DATASET_CFG["original_data"]["sources"]["tracbev"]
-    file = WORKING_DIR / tracbev_cfg["file"]
+    file = Path(MITChargingInfrastructure.targets.files["tracbev_download"])
+    url = MITChargingInfrastructure.sources.urls["tracbev"]
 
-    download_zip(url=tracbev_cfg["url"], target=file)
+    download_zip(url=url, target=file)
 
     unzip_file(source=file, target=WORKING_DIR)
 
 
 class MITChargingInfrastructure(Dataset):
+    
+    
+    sources = DatasetSources(
+        urls={
+            "tracbev": "https://zenodo.org/record/6466480/files/data.zip?download=1"
+        },
+        tables={
+            "mv_grid_districts": "grid.egon_mv_grid_district",
+            "buildings": "demand.egon_map_houseprofiles_buildings"
+        },
+     
+        files={
+            "tracbev_parameters": {
+                "tracbev_config": {
+                    "srid": 3035,
+                    "files_to_use": [
+                        "hpc_positions.gpkg",
+                        "landuse.gpkg",
+                        "poi_cluster.gpkg",
+                        "public_positions.gpkg"
+                    ]
+                },
+                "work_weight_retail": 0.8,
+                "work_weight_commercial": 1.25,
+                "work_weight_industrial": 1,
+                "single_family_home_share": 0.6,
+                "single_family_home_spots": 1.5,
+                "multi_family_home_share": 0.4,
+                "multi_family_home_spots": 10,
+                "random_seed": 5,
+                
+                "cols_to_export": [
+                    "mv_grid_id", 
+                    "use_case", 
+                    "weight", 
+                    "geometry"
+                ]
+            }
+        }
+    )
+
+    targets = DatasetTargets(
+        files={
+            "tracbev_download": "charging_infrastructure/data.zip"
+        },
+        tables={
+            # We only keep the table string here
+            "charging_infrastructure": "grid.egon_emob_charging_infrastructure"
+        }
+    )
+ 
+    
+    
     """
     Preparation of static model data for charging infrastructure for
     motorized individual travel.
@@ -139,7 +191,7 @@ class MITChargingInfrastructure(Dataset):
     #:
     name: str = "MITChargingInfrastructure"
     #:
-    version: str = "0.0.8"
+    version: str = "0.0.9"
 
     def __init__(self, dependencies):
         super().__init__(
