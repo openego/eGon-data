@@ -142,7 +142,6 @@ class MITChargingInfrastructure(Dataset):
             "tracbev_download": "charging_infrastructure/data.zip"
         },
         tables={
-            # We only keep the table string here
             "charging_infrastructure": "grid.egon_emob_charging_infrastructure"
         }
     )

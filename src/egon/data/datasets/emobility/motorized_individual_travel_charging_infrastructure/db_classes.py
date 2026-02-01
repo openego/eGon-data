@@ -11,6 +11,7 @@ from sqlalchemy import Column, Float, Integer, String
 from sqlalchemy.ext.declarative import declarative_base
 
 from egon.data import config, db
+from egon.data.datasets import load_sources_and_targets
 from egon.data.metadata import (
     context,
     contributors,
@@ -20,26 +21,24 @@ from egon.data.metadata import (
 )
 
 Base = declarative_base()
-DATASET_CFG = config.datasets()["charging_infrastructure"]
 
 
 class EgonEmobChargingInfrastructure(Base):
     """
     Class definition of table grid.egon_emob_charging_infrastructure.
     """
-
-    __tablename__ = DATASET_CFG["targets"]["charging_infrastructure"]["table"]
-    __table_args__ = {
-        "schema": DATASET_CFG["targets"]["charging_infrastructure"]["schema"]
-    }
+    __tablename__ = "egon_emob_charging_infrastructure"
+    __table_args__ = {"schema": "grid"}
 
     cp_id = Column(Integer, primary_key=True)
     mv_grid_id = Column(Integer)
     use_case = Column(String)
     weight = Column(Float)
+    
+    # SRID 3035 from YML)
     geometry = Column(
         Geometry(
-            srid=DATASET_CFG["original_data"]["sources"]["tracbev"]["srid"]
+            srid=3035
         )
     )
 
@@ -48,6 +47,10 @@ def add_metadata():
     """
     Add metadata to table grid.egon_emob_charging_infrastructure
     """
+    sources, targets = load_sources_and_targets("MITChargingInfrastructure")
+    
+    target_conf = targets.charging_infrastructure
+    
     contris = contributors(["kh", "kh"])
 
     contris[0]["date"] = "2023-03-14"
@@ -93,7 +96,7 @@ def add_metadata():
                     "calculate locations for charging infrastructure from "
                     "SimBEV results."
                 ),
-                "path": "https://zenodo.org/record/6466480#.YmE9xtPP1hE",
+                "path": sources.urls["tracbev"],
                 "licenses": [license_odbl(attribution="© Schiel, Moritz")],
             }
         ],
@@ -110,12 +113,8 @@ def add_metadata():
                 "encoding": "UTF-8",
                 "schema": {
                     "fields": generate_resource_fields_from_db_table(
-                        DATASET_CFG["targets"]["charging_infrastructure"][
-                            "schema"
-                        ],
-                        DATASET_CFG["targets"]["charging_infrastructure"][
-                            "table"
-                        ],
+                        target_conf["schema"],
+                        target_conf["table"],
                     ),
                     "primaryKey": "cp_id",
                 },
@@ -157,6 +156,6 @@ def add_metadata():
 
     db.submit_comment(
         f"'{json.dumps(meta)}'",
-        DATASET_CFG["targets"]["charging_infrastructure"]["schema"],
-        DATASET_CFG["targets"]["charging_infrastructure"]["table"],
+        target_conf["schema"],
+        target_conf["table"],
     )
