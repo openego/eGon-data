@@ -1135,12 +1135,12 @@ class FinalValidations(Dataset):
                             "p_nom_extendable": "boolean",
                             "p_nom_min": "double precision",
                             "p_nom_max": "double precision",
-                            "p_min_pu": "array",
-                            "p_max_pu": "array",
-                            "p_set": "array",
-                            "q_set": "array",
+                            "p_min_pu": "double prescision",
+                            "p_max_pu": "double precision",
+                            "p_set": "double precision",
+                            "q_set": "double precision",
                             "sign": "double precision",
-                            "marginal_cost": "array",
+                            "marginal_cost": "double precision",
                             "build_year": "bigint",
                             "lifetime": "double precision",
                             "capital_cost": "double precision",
@@ -1252,9 +1252,13 @@ class FinalValidations(Dataset):
                         rule_id="DATA_TYPES.egon_etrago_generator_timeseries",
                         column_types={
                             "scn_name":	"character varying",
-                            "line_id": "bigint",
+                            "generator_id": "integer",
                             "temp_id": "integer",
-                            "s_max_pu":	"array",
+                            "p_set": "array",
+                            "q_set": "array",
+                            "p_min_pu": "array",
+                            "p_max_pu":	"array",
+                            "marginal_cost": "array"
                         },
                     ),
                     NotNullAndNotNaNValidation(
@@ -1262,9 +1266,13 @@ class FinalValidations(Dataset):
                         rule_id="NOT_NAN.egon_etrago_generator_timeseries",
                         columns=[
                             "scn_name",
-                            "line_id",
+                            "generator_id",
                             "temp_id",
-                            "s_max_pu"
+                            "p_set",
+                            "q_set",
+                            "p_min_pu",
+                            "p_max_pu",
+                            "marginal_cost"
                         ]
                     ),
                     WholeTableNotNullAndNotNaNValidation(
@@ -1294,7 +1302,7 @@ class FinalValidations(Dataset):
                         rule_id="DATA_TYPES.egon_etrago_line",
                         column_types={
                             "scn_name":	"character varying",
-                            "line_id":	"bigint",
+                            "generator_id":	"integer",
                             "bus0": "bigint",
                             "bus1":	"bigint",
                             "type":	"text",

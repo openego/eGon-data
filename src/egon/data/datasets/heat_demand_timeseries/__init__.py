@@ -1281,7 +1281,7 @@ class HeatTimeSeries(Dataset):
                     ),
                     DataTypeValidation(
                         table="demand.egon_heat_idp_pool",
-                        rule_id="DATA_MULTIPLE_TYPES.egon_heat_idp_pool",
+                        rule_id="DATA_TYPES.egon_heat_idp_pool",
                         column_types={"index": "bigint", "idp": "double precision[]"}
                     ),
                     WholeTableNotNullAndNotNaNValidation(
@@ -1295,9 +1295,9 @@ class HeatTimeSeries(Dataset):
                     ),
                     DataTypeValidation(
                         table="demand.egon_heat_timeseries_selected_profiles",
-                        rule_id="DATA_MULTIPLE_TYPES.egon_heat_timeseries_selected_profiles",
+                        rule_id="DATA_TYPES.egon_heat_timeseries_selected_profiles",
                         column_types={"zensus_population_id": "integer", "bulding_id": "integer",
-                                      "selected_idp_profiles": "integer[]"}
+                                      "selected_idp_profiles": "array"}
                     ),
                     ArrayCardinalityValidation(
                         table="demand.egon_heat_timeseries_selected_profiles",
