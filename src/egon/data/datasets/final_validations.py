@@ -195,7 +195,11 @@ class FinalValidations(Dataset):
                         rule_id="SANITY_GAS_BUSES_COUNT_CH4_EGON2035",
                         scenario="eGon2035",
                         carrier="CH4",
-                        rtol=0.10
+                        rtol=0.10,
+                        expected_count=resolve_boundary_dependence({
+                            "Schleswig-Holstein": 11,
+                            "Everything": 619
+                        })
                     ),
                     # Check H2_grid bus count - eGon2035
                     GasBusesCount(
@@ -203,7 +207,11 @@ class FinalValidations(Dataset):
                         rule_id="SANITY_GAS_BUSES_COUNT_H2_GRID_EGON2035",
                         scenario="eGon2035",
                         carrier="H2_grid",
-                        rtol=0.10
+                        rtol=0.10,
+                        expected_count=resolve_boundary_dependence({
+                            "Schleswig-Holstein": 305,
+                            "Everything": 631
+                        })
                     ),
                     # NOTE: eGon100RE gas bus count checks are commented out
                     # because sanity_check_gas_buses() is only called for eGon2035 (line 1943)
@@ -409,7 +417,11 @@ class FinalValidations(Dataset):
                         rule_id="SANITY_GAS_LOADS_CH4_FOR_INDUSTRY_EGON2035",
                         scenario="eGon2035",
                         carrier="CH4_for_industry",
-                        rtol=0.10
+                        rtol=0.10,
+                        expected_load=resolve_boundary_dependence({
+                            "Schleswig-Holstein": 5.37,
+                            "Everything": 196.01
+                        })
                     ),
                     # H2_for_industry loads - eGon2035
                     GasLoadsCapacity(
@@ -417,7 +429,11 @@ class FinalValidations(Dataset):
                         rule_id="SANITY_GAS_LOADS_H2_FOR_INDUSTRY_EGON2035",
                         scenario="eGon2035",
                         carrier="H2_for_industry",
-                        rtol=0.10
+                        rtol=0.10,
+                        expected_load=resolve_boundary_dependence({
+                            "Schleswig-Holstein": 0.33,
+                            "Everything": 16.07
+                        })
                     ),
                     # CH4 generators - eGon2035
                     GasGeneratorsCapacity(
@@ -425,7 +441,11 @@ class FinalValidations(Dataset):
                         rule_id="SANITY_GAS_GENERATORS_CH4_EGON2035",
                         scenario="eGon2035",
                         carrier="CH4",
-                        rtol=0.10
+                        rtol=0.10,
+                        expected_capacity=resolve_boundary_dependence({
+                            "Schleswig-Holstein": 35.63,
+                            "Everything": 4185700.39
+                        })
                     ),
                 ],
 

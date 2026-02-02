@@ -5,9 +5,11 @@ Validates gas bus connectivity, counts, and grid consistency.
 """
 
 from pathlib import Path
+from typing import List, Tuple, Optional, Any
+
 import pandas as pd
 from egon_validation.rules.base import DataFrameRule, RuleResult, Severity
-from typing import List, Tuple
+
 from egon.data.datasets.scenario_parameters import get_sector_parameters
 
 
@@ -162,10 +164,14 @@ class GasBusesCount(DataFrameRule):
     Compares the number of gas grid buses (CH4 or H2_grid) in the database
     against the original SciGRID_gas node count for Germany. Allows for
     small deviations due to grid simplification or modifications.
+
+    If expected_count is provided (can be boundary-dependent), it overrides
+    the SciGRID_gas reference data. Use None for a boundary to skip validation.
     """
 
     def __init__(self, table: str, rule_id: str, scenario: str = "eGon2035",
-                 carrier: str = "CH4", rtol: float = 0.10, **kwargs):
+                 carrier: str = "CH4", rtol: float = 0.10,
+                 expected_count: Optional[Any] = None, **kwargs):
         """
         Parameters
         ----------
@@ -179,9 +185,16 @@ class GasBusesCount(DataFrameRule):
             Bus carrier type ("CH4" or "H2_grid")
         rtol : float
             Relative tolerance for bus count deviation (default: 0.10 = 10%)
+        expected_count : Optional[Any]
+            Expected bus count. Can be:
+            - None: calculate from SciGRID_gas reference data
+            - int: fixed expected count
+            - BoundaryDependent: boundary-specific expected counts
+              Use None for a boundary to skip validation for that boundary.
         """
         super().__init__(rule_id=rule_id, table=table, scenario=scenario,
-                         carrier=carrier, rtol=rtol, **kwargs)
+                         carrier=carrier, rtol=rtol, expected_count=expected_count,
+                         **kwargs)
         self.kind = "sanity"
         self.scenario = scenario
         self.carrier = carrier
@@ -203,7 +216,7 @@ class GasBusesCount(DataFrameRule):
 
     def evaluate_df(self, df, ctx):
         """
-        Evaluate bus count against SciGRID_gas reference data.
+        Evaluate bus count against expected count.
 
         Parameters
         ----------
@@ -217,6 +230,38 @@ class GasBusesCount(DataFrameRule):
         RuleResult
             Validation result with success/failure status
         """
+        # Check if expected_count was provided (resolved by framework)
+        expected_count = self.params.get("expected_count")
+
+        # If expected_count is None, skip validation for this boundary
+        if expected_count is None:
+            # Fall back to SciGRID_gas reference data
+            try:
+                target_file = Path(".") / "datasets" / "gas_data" / "data" / "IGGIELGN_Nodes.csv"
+                grid_buses_df = pd.read_csv(
+                    target_file,
+                    delimiter=";",
+                    decimal=".",
+                    usecols=["country_code"],
+                )
+                grid_buses_df = grid_buses_df[
+                    grid_buses_df["country_code"].str.match("DE")
+                ]
+                expected_count = len(grid_buses_df.index)
+            except Exception as e:
+                return RuleResult(
+                    rule_id=self.rule_id,
+                    task=self.task,
+                    table=self.table,
+                    kind=self.kind,
+                    success=False,
+                    message=f"Error reading SciGRID_gas reference data: {str(e)}",
+                    severity=Severity.ERROR,
+                    schema=self.schema,
+                    table_name=self.table_name,
+                    rule_class=self.__class__.__name__
+                )
+
         if df.empty or df["bus_count"].isna().all():
             return RuleResult(
                 rule_id=self.rule_id,
@@ -232,33 +277,6 @@ class GasBusesCount(DataFrameRule):
             )
 
         observed_count = int(df["bus_count"].values[0])
-
-        # Get expected count from SciGRID_gas data
-        try:
-            target_file = Path(".") / "datasets" / "gas_data" / "data" / "IGGIELGN_Nodes.csv"
-            grid_buses_df = pd.read_csv(
-                target_file,
-                delimiter=";",
-                decimal=".",
-                usecols=["country_code"],
-            )
-            grid_buses_df = grid_buses_df[
-                grid_buses_df["country_code"].str.match("DE")
-            ]
-            expected_count = len(grid_buses_df.index)
-        except Exception as e:
-            return RuleResult(
-                rule_id=self.rule_id,
-                task=self.task,
-                table=self.table,
-                kind=self.kind,
-                success=False,
-                message=f"Error reading SciGRID_gas reference data: {str(e)}",
-                severity=Severity.ERROR,
-                schema=self.schema,
-                table_name=self.table_name,
-                rule_class=self.__class__.__name__
-            )
 
         # Calculate relative deviation
         rtol = self.params.get("rtol", 0.10)
@@ -528,8 +546,10 @@ class CH4GridCapacity(DataFrameRule):
         Returns
         -------
         float
-            Expected total pipeline capacity for the scenario
+            Expected total pipeline capacity for the scenario (in MW)
         """
+        import ast
+
         try:
             # Read pipeline segments from SciGRID_gas
             target_file = (
@@ -547,16 +567,44 @@ class CH4GridCapacity(DataFrameRule):
                 usecols=["id", "node_id", "country_code", "param"],
             )
 
-            # Parse bus0, bus1 and countries
-            pipelines["bus0"] = pipelines["node_id"].apply(lambda x: x.split(",")[0])
-            pipelines["bus1"] = pipelines["node_id"].apply(lambda x: x.split(",")[1])
-            pipelines["country_0"] = pipelines["country_code"].apply(lambda x: x.split(",")[0])
-            pipelines["country_1"] = pipelines["country_code"].apply(lambda x: x.split(",")[1])
+            # Parse countries from country_code (matches define_gas_pipeline_list)
+            pipelines["country_0"] = pipelines["country_code"].apply(
+                lambda x: ast.literal_eval(x)[0]
+            )
+            pipelines["country_1"] = pipelines["country_code"].apply(
+                lambda x: ast.literal_eval(x)[1]
+            )
 
             # Filter for pipelines within Germany
             germany_pipelines = pipelines[
                 (pipelines["country_0"] == "DE") & (pipelines["country_1"] == "DE")
-            ]
+            ].copy()
+
+            # Extract diameter from param (matches define_gas_pipeline_list line 680)
+            germany_pipelines["diameter"] = germany_pipelines["param"].apply(
+                lambda x: ast.literal_eval(x)["diameter_mm"]
+            )
+
+            # Map diameter to pipe_class (matches define_gas_pipeline_list lines 842-855)
+            def get_pipe_class(diameter):
+                if diameter >= 1000:
+                    return "A"
+                elif 700 <= diameter <= 1000:
+                    return "B"
+                elif 500 <= diameter <= 700:
+                    return "C"
+                elif 350 <= diameter <= 500:
+                    return "D"
+                elif 200 <= diameter <= 350:
+                    return "E"
+                elif 100 <= diameter <= 200:
+                    return "F"
+                else:  # diameter <= 100
+                    return "G"
+
+            germany_pipelines["pipe_class"] = germany_pipelines["diameter"].apply(
+                get_pipe_class
+            )
 
             # Read pipeline classification for capacity mapping
             classification_file = (
@@ -572,13 +620,19 @@ class CH4GridCapacity(DataFrameRule):
                 usecols=["classification", "max_transport_capacity_Gwh/d"],
             )
 
-            # Map pipeline param to capacity
-            param_to_capacity = dict(
-                zip(classification["classification"],
-                    classification["max_transport_capacity_Gwh/d"])
+            # Merge with classification (matches define_gas_pipeline_list lines 869-874)
+            germany_pipelines = germany_pipelines.merge(
+                classification,
+                how="left",
+                left_on="pipe_class",
+                right_on="classification",
             )
 
-            germany_pipelines["p_nom"] = germany_pipelines["param"].map(param_to_capacity)
+            # Calculate p_nom in MW (matches define_gas_pipeline_list lines 875-877)
+            # Conversion: GWh/d * (1000 MW/GW) / (24 h/d) = MW
+            germany_pipelines["p_nom"] = (
+                germany_pipelines["max_transport_capacity_Gwh/d"] * (1000 / 24)
+            )
 
             # Sum total capacity
             total_p_nom = germany_pipelines["p_nom"].sum()
@@ -638,6 +692,24 @@ class CH4GridCapacity(DataFrameRule):
                 success=False,
                 message=str(e),
                 severity=Severity.ERROR,
+                schema=self.schema,
+                table_name=self.table_name,
+                rule_class=self.__class__.__name__
+            )
+
+        # Handle edge case: expected capacity is zero or very small
+        if expected_capacity is None or expected_capacity <= 0:
+            return RuleResult(
+                rule_id=self.rule_id,
+                task=self.task,
+                table=self.table,
+                kind=self.kind,
+                success=False,
+                message=(
+                    f"Cannot validate CH4 grid capacity for {self.scenario}: "
+                    f"reference capacity is zero or unavailable"
+                ),
+                severity=Severity.WARNING,
                 schema=self.schema,
                 table_name=self.table_name,
                 rule_class=self.__class__.__name__

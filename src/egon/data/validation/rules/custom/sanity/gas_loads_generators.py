@@ -5,6 +5,8 @@ Validates gas demand and generation capacity against reference data.
 """
 
 from pathlib import Path
+from typing import Optional, Any
+
 import pandas as pd
 import ast
 from egon_validation.rules.base import DataFrameRule, RuleResult, Severity
@@ -21,7 +23,8 @@ class GasLoadsCapacity(DataFrameRule):
     """
 
     def __init__(self, table: str, rule_id: str, scenario: str = "eGon2035",
-                 carrier: str = "CH4_for_industry", rtol: float = 0.10, **kwargs):
+                 carrier: str = "CH4_for_industry", rtol: float = 0.10,
+                 expected_load: Optional[Any] = None, **kwargs):
         """
         Parameters
         ----------
@@ -35,9 +38,13 @@ class GasLoadsCapacity(DataFrameRule):
             Load carrier type ("CH4_for_industry" or "H2_for_industry")
         rtol : float
             Relative tolerance for capacity deviation (default: 0.10 = 10%)
+        expected_load : Optional[Any]
+            Expected load in TWh. If None, calculates from reference data.
+            Can be boundary-dependent via resolve_boundary_dependence().
         """
         super().__init__(rule_id=rule_id, table=table, scenario=scenario,
-                         carrier=carrier, rtol=rtol, **kwargs)
+                         carrier=carrier, rtol=rtol, expected_load=expected_load,
+                         **kwargs)
         self.kind = "sanity"
         self.scenario = scenario
         self.carrier = carrier
@@ -139,22 +146,24 @@ class GasLoadsCapacity(DataFrameRule):
 
         observed_load = float(df["load_twh"].values[0])
 
-        # Get expected capacity from reference data
-        try:
-            expected_load = self._get_reference_capacity()
-        except Exception as e:
-            return RuleResult(
-                rule_id=self.rule_id,
-                task=self.task,
-                table=self.table,
-                kind=self.kind,
-                success=False,
-                message=str(e),
-                severity=Severity.ERROR,
-                schema=self.schema,
-                table_name=self.table_name,
-                rule_class=self.__class__.__name__
-            )
+        # Get expected load - use param if provided, otherwise calculate
+        expected_load = self.params.get("expected_load")
+        if expected_load is None:
+            try:
+                expected_load = self._get_reference_capacity()
+            except Exception as e:
+                return RuleResult(
+                    rule_id=self.rule_id,
+                    task=self.task,
+                    table=self.table,
+                    kind=self.kind,
+                    success=False,
+                    message=str(e),
+                    severity=Severity.ERROR,
+                    schema=self.schema,
+                    table_name=self.table_name,
+                    rule_class=self.__class__.__name__
+                )
 
         # Calculate relative deviation
         rtol = self.params.get("rtol", 0.10)
@@ -213,7 +222,8 @@ class GasGeneratorsCapacity(DataFrameRule):
     """
 
     def __init__(self, table: str, rule_id: str, scenario: str = "eGon2035",
-                 carrier: str = "CH4", rtol: float = 0.10, **kwargs):
+                 carrier: str = "CH4", rtol: float = 0.10,
+                 expected_capacity: Optional[Any] = None, **kwargs):
         """
         Parameters
         ----------
@@ -227,9 +237,13 @@ class GasGeneratorsCapacity(DataFrameRule):
             Generator carrier type (default: "CH4")
         rtol : float
             Relative tolerance for capacity deviation (default: 0.10 = 10%)
+        expected_capacity : Optional[Any]
+            Expected capacity in MW. If None, calculates from reference data.
+            Can be boundary-dependent via resolve_boundary_dependence().
         """
         super().__init__(rule_id=rule_id, table=table, scenario=scenario,
-                         carrier=carrier, rtol=rtol, **kwargs)
+                         carrier=carrier, rtol=rtol, expected_capacity=expected_capacity,
+                         **kwargs)
         self.kind = "sanity"
         self.scenario = scenario
         self.carrier = carrier
@@ -348,22 +362,24 @@ class GasGeneratorsCapacity(DataFrameRule):
 
         observed_capacity = float(df["p_nom_germany"].values[0])
 
-        # Get expected capacity from reference data
-        try:
-            expected_capacity = self._get_reference_capacity()
-        except Exception as e:
-            return RuleResult(
-                rule_id=self.rule_id,
-                task=self.task,
-                table=self.table,
-                kind=self.kind,
-                success=False,
-                message=str(e),
-                severity=Severity.ERROR,
-                schema=self.schema,
-                table_name=self.table_name,
-                rule_class=self.__class__.__name__
-            )
+        # Get expected capacity - use param if provided, otherwise calculate
+        expected_capacity = self.params.get("expected_capacity")
+        if expected_capacity is None:
+            try:
+                expected_capacity = self._get_reference_capacity()
+            except Exception as e:
+                return RuleResult(
+                    rule_id=self.rule_id,
+                    task=self.task,
+                    table=self.table,
+                    kind=self.kind,
+                    success=False,
+                    message=str(e),
+                    severity=Severity.ERROR,
+                    schema=self.schema,
+                    table_name=self.table_name,
+                    rule_class=self.__class__.__name__
+                )
 
         # Calculate relative deviation
         rtol = self.params.get("rtol", 0.10)

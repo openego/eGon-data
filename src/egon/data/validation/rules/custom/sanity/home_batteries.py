@@ -35,30 +35,6 @@ class HomeBatteriesAggregation(DataFrameRule):
         self.kind = "sanity"
         self.scenario = scenario
 
-    def evaluate(self, engine, ctx) -> RuleResult:
-        """Override evaluate to catch errors from get_cbat_pbat_ratio()."""
-        try:
-            return super().evaluate(engine, ctx)
-        except IndexError as e:
-            # get_cbat_pbat_ratio() failed - no home_battery data exists
-            if "index 0 is out of bounds" in str(e):
-                return RuleResult(
-                    rule_id=self.rule_id,
-                    task=self.task,
-                    table=self.table,
-                    kind=self.kind,
-                    success=False,
-                    message=(
-                        f"NO DATA FOUND: No home_battery carrier found in "
-                        f"etrago_storage table for scenario {self.scenario}"
-                    ),
-                    severity=Severity.WARNING,
-                    schema=self.schema,
-                    table_name=self.table_name,
-                    rule_class=self.__class__.__name__
-                )
-            raise
-
     def get_query(self, ctx):
         """
         Query to compare storage and building-level home battery data.
@@ -71,7 +47,7 @@ class HomeBatteriesAggregation(DataFrameRule):
         targets = config.datasets()["home_batteries"]["targets"]
 
         # Get cbat_pbat_ratio for capacity calculation
-        cbat_pbat_ratio = get_cbat_pbat_ratio()
+        cbat_pbat_ratio = get_cbat_pbat_ratio(self.scenario)
 
         storage_schema = sources["storage"]["schema"]
         storage_table = sources["storage"]["table"]
