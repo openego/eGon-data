@@ -17,13 +17,7 @@ from egon.data.datasets import Dataset
 import egon.data.config
 import egon.data.datasets.scenario_parameters.parameters as parameters
 
-from egon_validation import (
-    RowCountValidation,
-    DataTypeValidation,
-    WholeTableNotNullAndNotNaNValidation
-)
-
-from egon.data.validation import resolve_boundary_dependence
+from egon.data.validation import TableValidation, resolve_boundary_dependence
 
 Base = declarative_base()
 
@@ -324,25 +318,21 @@ class ScenarioParameters(Dataset):
             ),
             validation={
                 "data-quality": [
-                    RowCountValidation(
-                        table="scenario.egon_scenario_parameters",
-                        rule_id="ROW_COUNT.egon_scenario_parameters",
-                        expected_count=resolve_boundary_dependence(
-                            {"Schleswig-Holstein": 5,
-                             "Everything": 3}
-                        )
-                    ),
-                    DataTypeValidation(
-                        table="scenario.egon_scenario_parameters",
-                        rule_id="DATA_MULTIPLE_TYPES.egon_scenario_parameters",
-                        column_types={
-                            "name": "character varying", "global_parameters": "jsonb", "electricity_parameters": "jsonb",
-                            "gas_parameters": "jsonb", "heat_parameters": "jsonb", "mobility_parameters": "jsonb",
-                            "description": "character varying"}
-                    ),
-                    WholeTableNotNullAndNotNaNValidation(
-                        table="scenario.egon_scenario_parameters",
-                        rule_id="WHOLE_TABLE_NOT_NAN.egon_scenario_parameters"
+                    TableValidation(
+                        table_name="scenario.egon_scenario_parameters",
+                        row_count=resolve_boundary_dependence({
+                            "Schleswig-Holstein": 5,
+                            "Everything": 3
+                        }),
+                        data_type_columns={
+                            "name": "character varying",
+                            "global_parameters": "jsonb",
+                            "electricity_parameters": "jsonb",
+                            "gas_parameters": "jsonb",
+                            "heat_parameters": "jsonb",
+                            "mobility_parameters": "jsonb",
+                            "description": "character varying"
+                        }
                     )
                 ]
             },

@@ -11,12 +11,7 @@ from egon.data.datasets import Dataset
 from egon.data.datasets.mv_grid_districts import MvGridDistricts
 from egon.data.datasets.zensus_vg250 import DestatisZensusPopulationPerHa
 import egon.data.config
-from egon_validation import (
-    RowCountValidation,
-    DataTypeValidation,
-    WholeTableNotNullAndNotNaNValidation
-)
-from egon.data.validation.resolver import resolve_boundary_dependence
+from egon.data.validation import TableValidation, resolve_boundary_dependence
 
 
 class ZensusMvGridDistricts(Dataset):
@@ -46,22 +41,17 @@ class ZensusMvGridDistricts(Dataset):
             tasks=(mapping),
             validation={
                 "data_quality": [
-                    RowCountValidation(
-                        table="boundaries.egon_map_zensus_grid_districts",
-                        rule_id="ROW_COUNT.egon_map_zensus_grid_districts",
-                        expected_count=resolve_boundary_dependence(
-                            {"Schleswig-Holstein": 1562025,
-                             "Everything": 35718586}
-                        )
-                    ),
-                    DataTypeValidation(
-                        table="boundaries.egon_map_zensus_grid_districts",
-                        rule_id="DATA_MULTIPLE_TYPES.egon_map_zensus_grid_districts",
-                        column_types={"index": "bigint", "zensus_population_id": "bigint", "bus_id": "bigint"}
-                    ),
-                    WholeTableNotNullAndNotNaNValidation(
-                        table="boundaries.egon_map_zensus_grid_districts",
-                        rule_id="WHOLE_TABLE_NOT_NAN.egon_map_zensus_grid_districts"
+                    TableValidation(
+                        table_name="boundaries.egon_map_zensus_grid_districts",
+                        row_count=resolve_boundary_dependence({
+                            "Schleswig-Holstein": 1562025,
+                            "Everything": 35718586
+                        }),
+                        data_type_columns={
+                            "index": "bigint",
+                            "zensus_population_id": "bigint",
+                            "bus_id": "bigint"
+                        }
                     ),
                 ]
             },

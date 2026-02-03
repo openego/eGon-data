@@ -32,16 +32,7 @@ from egon.data.metadata import (
     sources,
 )
 
-from egon_validation import(
-    RowCountValidation,
-    DataTypeValidation,
-    NotNullAndNotNaNValidation,
-    WholeTableNotNullAndNotNaNValidation,
-    ValueSetValidation,
-    SRIDUniqueNonZero
-)
-
-from egon.data.validation import resolve_boundary_dependence
+from egon.data.validation import TableValidation, resolve_boundary_dependence
 
 # Will later be imported from another file.
 Base = declarative_base()
@@ -416,19 +407,15 @@ class HeatSupply(Dataset):
                 metadata,
             ),
             validation={
-                "data-quality":[
-                    RowCountValidation(
-                        table="supply.egon_district_heating",
-                        rule_id="ROW_COUNT.egon_district_heating",
-                        expected_count=resolve_boundary_dependence(
-                            {"Schleswig-Holstein": 402,
-                             "Everything": 9090}
-                        )
-                    ),
-                    DataTypeValidation(
-                        table="supply.egon_district_heating",
-                        rule_id="DATA_TYPES.egon_district_heating",
-                        column_types={
+                "data-quality": [
+                    TableValidation(
+                        table_name="supply.egon_district_heating",
+                        row_count=resolve_boundary_dependence({
+                            "Schleswig-Holstein": 402,
+                            "Everything": 9090
+                        }),
+                        geometry_columns=["geometry"],
+                        data_type_columns={
                             "index": "integer",
                             "district_heating_id": "integer",
                             "carrier": "character varying",
@@ -436,12 +423,8 @@ class HeatSupply(Dataset):
                             "capacity": "double precision",
                             "geometry": "geometry",
                             "scenario": "character varying"
-                        }
-                    ),
-                    NotNullAndNotNaNValidation(
-                        table="supply.egon_district_heating",
-                        rule_id="NOT_NAN.egon_district_heating",
-                        columns=[
+                        },
+                        not_null_columns=[
                             "index",
                             "district_heating_id",
                             "carrier",
@@ -449,41 +432,20 @@ class HeatSupply(Dataset):
                             "capacity",
                             "geometry",
                             "scenario"
-                        ]
+                        ],
+                        value_set_columns={
+                            "carrier": ["geo_thermal", "CHP", "gas_boiler", "resistive_heater", "heat_pump", "solar_thermal_collector"],
+                            "scenario": ["eGon2035"]
+                        }
                     ),
-                    WholeTableNotNullAndNotNaNValidation(
-                        table="supply.egon_district_heating",
-                        rule_id="TABLE_NOT_NAN.egon_district_heating"
-                    ),
-                    SRIDUniqueNonZero(
-                        table="supply.egon_district_heating",
-                        rule_id="SRIDUniqueNonZero.egon_district_heating.geometry",
-                        geom="geometry"
-                    ),
-                    ValueSetValidation(
-                        table="supply.egon_district_heating",
-                        rule_id="VALUE_SET_VALIDATION_CARRIER.egon_district_heating",
-                        column="carrier",
-                        expected_values=["geo_thermal", "CHP", "gas_boiler", "resistive_heater", "heat_pump", "solar_thermal_collector"]
-                    ),
-                    ValueSetValidation(
-                        table="supply.egon_district_heating",
-                        rule_id="VALUE_SET_VALIDATION_SCENARIO.egon_district_heating",
-                        column="scenario",
-                        expected_values=["eGon2035"]
-                    ),
-                    RowCountValidation(
-                        table="supply.egon_individual_heating",
-                        rule_id="ROW_COUNT.egon_individual_heating",
-                        expected_count=resolve_boundary_dependence(
-                            {"Schleswig-Holstein": 396,
-                             "Everything": 7692}
-                        )
-                    ),
-                    DataTypeValidation(
-                        table="supply.egon_individual_heating",
-                        rule_id="DATA_TYPES.egon_individual_heating",
-                        column_types={
+                    TableValidation(
+                        table_name="supply.egon_individual_heating",
+                        row_count=resolve_boundary_dependence({
+                            "Schleswig-Holstein": 396,
+                            "Everything": 7692
+                        }),
+                        geometry_columns=["geometry"],
+                        data_type_columns={
                             "index": "integer",
                             "mv_grid_id": "integer",
                             "carrier": "character varying",
@@ -491,12 +453,8 @@ class HeatSupply(Dataset):
                             "capacity": "double precision",
                             "geometry": "geometry",
                             "scenario": "character varying"
-                        }
-                    ),
-                    NotNullAndNotNaNValidation(
-                        table="supply.egon_individual_heating",
-                        rule_id="NOT_NAN.egon_individual_heating",
-                        columns=[
+                        },
+                        not_null_columns=[
                             "index",
                             "mv_grid_id",
                             "carrier",
@@ -504,28 +462,11 @@ class HeatSupply(Dataset):
                             "capacity",
                             "geometry",
                             "scenario"
-                        ]
-                    ),
-                    WholeTableNotNullAndNotNaNValidation(
-                        table="supply.egon_individual_heating",
-                        rule_id="TABLE_NOT_NAN.egon_individual_heating"
-                    ),
-                    SRIDUniqueNonZero(
-                        table="supply.egon_individual_heating",
-                        rule_id="SRIDUniqueNonZero.egon_individual_heating.geometry",
-                        geom="geometry"
-                    ),
-                    ValueSetValidation(
-                        table="supply.egon_individual_heating",
-                        rule_id="VALUE_SET_VALIDATION_CARRIER.egon_individual_heating",
-                        column="carrier",
-                        expected_values=["gas_boiler", "heat_pump"]
-                    ),
-                    ValueSetValidation(
-                        table="supply.egon_individual_heating",
-                        rule_id="VALUE_SET_VALIDATION_SCENARIO.egon_individual_heating",
-                        column="scenario",
-                        expected_values=["eGon2035"]
+                        ],
+                        value_set_columns={
+                            "carrier": ["gas_boiler", "heat_pump"],
+                            "scenario": ["eGon2035"]
+                        }
                     ),
                 ]
             },

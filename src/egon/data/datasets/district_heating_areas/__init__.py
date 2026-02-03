@@ -40,14 +40,7 @@ from egon.data.datasets.scenario_parameters import (
 )
 from egon.data.metadata import context, license_ccby, meta_metadata, sources
 
-from egon_validation import (
-    RowCountValidation,
-    DataTypeValidation,
-    WholeTableNotNullAndNotNaNValidation,
-    ValueSetValidation,
-    SRIDUniqueNonZero
-)
-from egon.data.validation.resolver import resolve_boundary_dependence
+from egon.data.validation import TableValidation, resolve_boundary_dependence
 
 # import time
 
@@ -93,39 +86,23 @@ class DistrictHeatingAreas(Dataset):
             tasks=(create_tables, demarcation),
             validation={
                 "data_quality": [
-                    RowCountValidation(
-                        table="demand.egon_district_heating_areas",
-                        rule_id="ROW_COUNT.egon_district_heating_areas",
-                        expected_count=resolve_boundary_dependence({
+                    TableValidation(
+                        table_name="demand.egon_district_heating_areas",
+                        row_count=resolve_boundary_dependence({
                             "Schleswig-Holstein": 100,
                             "Everything": 6335
-                        })
-                    ),
-                    DataTypeValidation(
-                        table="demand.egon_district_heating_areas",
-                        rule_id="DATA_MULTIPLE_TYPES.egon_district_heating_areas",
-                        column_types={
+                        }),
+                        geometry_columns=["geom_polygon"],
+                        data_type_columns={
                             "id": "integer",
                             "area_id": "integer",
                             "scenario": "character varying",
                             "geom_polygon": "geometry",
                             "residential_and_service_demand": "double precision"
+                        },
+                        value_set_columns={
+                            "scenario": ["eGon2035", "eGon100RE"]
                         }
-                    ),
-                    WholeTableNotNullAndNotNaNValidation(
-                        table="demand.egon_district_heating_areas",
-                        rule_id="WHOLE_TABLE_NOT_NAN.egon_district_heating_areas"
-                    ),
-                    ValueSetValidation(
-                        table="demand.egon_district_heating_areas",
-                        rule_id="VALUE_SET_VALIDATION_SCENARIO.egon_district_heating_areas",
-                        column="scenario",
-                        expected_values=["eGon2035", "eGon100RE"]
-                    ),
-                    SRIDUniqueNonZero(
-                        table="demand.egon_district_heating_areas",
-                        rule_id="SRIDUniqueNonZero.egon_district_heating_areas",
-                        geom="geom_polygon"
                     ),
                 ]
             },

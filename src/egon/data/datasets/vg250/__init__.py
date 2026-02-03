@@ -30,14 +30,6 @@ from egon.data.metadata import (
 )
 import egon.data.config
 from egon.data.validation import TableValidation, resolve_boundary_dependence
-from egon_validation import (
-    RowCountValidation,
-    DataTypeValidation,
-    NotNullAndNotNaNValidation,
-    WholeTableNotNullAndNotNaNValidation,
-    ValueSetValidation,
-    SRIDUniqueNonZero
-)
 
 
 def download_files():
@@ -609,12 +601,6 @@ class Vg250(Dataset):
                         not_null_columns=["gf", "bsg"],
                         value_set_columns={"nbd": ["ja", "nein"]},
                     ),
-                    ValueSetValidation(
-                        table="boundaries.vg250_krs",
-                        rule_id="TEST_VALUE_SET",
-                        column="nbd",
-                        expected_values=["ja", "nein"]
-                    )
                 ]
             },
             on_validation_failure="continue"

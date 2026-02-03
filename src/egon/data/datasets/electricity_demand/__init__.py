@@ -14,13 +14,7 @@ from egon.data.validation.rules.custom.sanity import (
     ResidentialElectricityAnnualSum,
     ResidentialElectricityHhRefinement,
 )
-from egon_validation import (
-    RowCountValidation,
-    DataTypeValidation,
-    WholeTableNotNullAndNotNaNValidation,
-    ValueSetValidation
-)
-from egon.data.validation.resolver import resolve_boundary_dependence
+from egon.data.validation import resolve_boundary_dependence, TableValidation
 
 from egon.data.datasets.electricity_demand_timeseries.hh_buildings import (
     HouseholdElectricityProfilesOfBuildings,
@@ -77,39 +71,22 @@ class HouseholdElectricityDemand(Dataset):
                         rule_id="SANITY_RESIDENTIAL_HH_REFINEMENT",
                         rtol=1e-5
                     ),
-                    RowCountValidation(
-                        table="demand.egon_demandregio_zensus_electricity",
-                        rule_id="ROW_COUNT.egon_demandregio_zensus_electricity",
-                        expected_count=resolve_boundary_dependence({
+                    TableValidation(
+                        table_name="demand.egon_demandregio_zensus_electricity",
+                        row_count=resolve_boundary_dependence({
                             "Schleswig-Holstein": 154525,
                             "Everything": 7355160
-                        })
-                    ),
-                    DataTypeValidation(
-                        table="demand.egon_demandregio_zensus_electricity",
-                        rule_id="DATA_MULTIPLE_TYPES.egon_demandregio_zensus_electricity",
-                        column_types={
+                        }),
+                        data_type_columns={
                             "zensus_population_id": "integer",
                             "scenario": "character varying",
                             "sector": "character varying",
                             "demand": "double precision"
+                        },
+                        value_set_columns={
+                            "scenario": ["eGon2035", "eGon100RE"],
+                            "sector": ["residential", "service"]
                         }
-                    ),
-                    WholeTableNotNullAndNotNaNValidation(
-                        table="demand.egon_demandregio_zensus_electricity",
-                        rule_id="WHOLE_TABLE_NOT_NAN.egon_demandregio_zensus_electricity"
-                    ),
-                    ValueSetValidation(
-                        table="demand.egon_demandregio_zensus_electricity",
-                        rule_id="VALUE_SET_VALIDATION_SCENARIO.egon_demandregio_zensus_electricity",
-                        column="scenario",
-                        expected_values=["eGon2035", "eGon100RE"]
-                    ),
-                    ValueSetValidation(
-                        table="demand.egon_demandregio_zensus_electricity",
-                        rule_id="VALUE_SET_VALIDATION_SECTOR.egon_demandregio_zensus_electricity",
-                        column="sector",
-                        expected_values=["residential", "service"]
                     ),
                 ]
             },
