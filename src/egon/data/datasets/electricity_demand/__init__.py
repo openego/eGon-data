@@ -57,7 +57,7 @@ class HouseholdElectricityDemand(Dataset):
     #:
     name: str = "HouseholdElectricityDemand"
     #:
-    version: str = "0.0.5.dev"
+    version: str = "0.0.5"
 
     def __init__(self, dependencies):
         super().__init__(

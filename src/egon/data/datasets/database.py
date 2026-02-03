@@ -15,7 +15,7 @@ def setup():
 Setup = functools.partial(
     Dataset,
     name="Database Setup",
-    version="0.0.0.dev",
+    version="0.0.0",
     dependencies=[],
     tasks=setup,
 )
