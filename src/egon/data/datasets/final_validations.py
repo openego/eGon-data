@@ -21,6 +21,25 @@ from egon.data.validation.rules.custom.sanity import (
     ElectricityCapacityComparison,
     HeatDemandValidation,
     ElectricalLoadSectorBreakdown,
+    DSMTimeseries,
+    PvRooftopBuildingsValidation,
+    EVAllocationCount,
+    EVGridDistrictAllocation,
+    EVTripTimeranges,
+    EVTripChargingDemand,
+    EVModelComponentsCreated,
+    EVModelTimeseriesLength,
+    EVModelEnergyDemand,
+    EVModelStorageCapacity,
+    EVModelSoCConstraint,
+    EVLowflexDrivingLoad,
+    GasBusesIsolatedAbroad,
+    CH4LoadsAbroad,
+    H2LoadsAbroad,
+    CH4GeneratorsAbroad,
+    CH4StoresAbroad,
+    CH4GridLinksAbroad,
+    HeatGasLoadPypsaEurComparison,
 )
 from egon_validation import (
     ArrayCardinalityValidation,
@@ -1044,6 +1063,215 @@ class FinalValidations(Dataset):
                         rule_id="SANITY_HEAT_DEMAND_EGON2035",
                         scenario="eGon2035",
                         rtol=0.02  # 2% tolerance
+                    ),
+                ],
+                "dsm": [
+                    # DSM timeseries validation - eGon2035
+                    # Checks that DSM link/store timeseries match aggregated individual data
+                    DSMTimeseries(
+                        table="grid.egon_etrago_link",
+                        rule_id="SANITY_DSM_TIMESERIES_EGON2035",
+                        scenario="eGon2035"
+                    ),
+                    # DSM timeseries validation - eGon100RE
+                    DSMTimeseries(
+                        table="grid.egon_etrago_link",
+                        rule_id="SANITY_DSM_TIMESERIES_EGON100RE",
+                        scenario="eGon100RE"
+                    ),
+                ],
+                "pv_rooftop": [
+                    # PV rooftop buildings validation - eGon2035
+                    # Checks building assignments and capacity against scenario_data
+                    PvRooftopBuildingsValidation(
+                        table="supply.egon_power_plants_pv_roof_building",
+                        rule_id="SANITY_PV_ROOFTOP_BUILDINGS_EGON2035",
+                        scenario="eGon2035",
+                        rtol=0.01  # 1% tolerance
+                    ),
+                    # PV rooftop buildings validation - eGon100RE
+                    # Checks building assignments and capacity against scenario_capacities
+                    PvRooftopBuildingsValidation(
+                        table="supply.egon_power_plants_pv_roof_building",
+                        rule_id="SANITY_PV_ROOFTOP_BUILDINGS_EGON100RE",
+                        scenario="eGon100RE",
+                        rtol=0.01  # 1% tolerance
+                    ),
+                ],
+                "emobility_mit": [
+                    # EV allocation count - eGon2035
+                    # Only validates when TESTMODE_OFF (boundary == "Everything")
+                    EVAllocationCount(
+                        table="demand.egon_ev_count_mv_grid_district",
+                        rule_id="SANITY_EV_ALLOCATION_COUNT_EGON2035",
+                        scenario="eGon2035"
+                    ),
+                    # EV allocation count - eGon100RE
+                    EVAllocationCount(
+                        table="demand.egon_ev_count_mv_grid_district",
+                        rule_id="SANITY_EV_ALLOCATION_COUNT_EGON100RE",
+                        scenario="eGon100RE"
+                    ),
+                    # EV grid district allocation - eGon2035
+                    EVGridDistrictAllocation(
+                        table="demand.egon_ev_mv_grid_district",
+                        rule_id="SANITY_EV_GRID_DISTRICT_ALLOCATION_EGON2035",
+                        scenario="eGon2035"
+                    ),
+                    # EV grid district allocation - eGon100RE
+                    EVGridDistrictAllocation(
+                        table="demand.egon_ev_mv_grid_district",
+                        rule_id="SANITY_EV_GRID_DISTRICT_ALLOCATION_EGON100RE",
+                        scenario="eGon100RE"
+                    ),
+                    # EV trip timeranges - eGon2035
+                    EVTripTimeranges(
+                        table="demand.egon_ev_trip",
+                        rule_id="SANITY_EV_TRIP_TIMERANGES_EGON2035",
+                        scenario="eGon2035"
+                    ),
+                    # EV trip timeranges - eGon100RE
+                    EVTripTimeranges(
+                        table="demand.egon_ev_trip",
+                        rule_id="SANITY_EV_TRIP_TIMERANGES_EGON100RE",
+                        scenario="eGon100RE"
+                    ),
+                    # EV trip charging demand - eGon2035
+                    EVTripChargingDemand(
+                        table="demand.egon_ev_trip",
+                        rule_id="SANITY_EV_TRIP_CHARGING_DEMAND_EGON2035",
+                        scenario="eGon2035"
+                    ),
+                    # EV trip charging demand - eGon100RE
+                    EVTripChargingDemand(
+                        table="demand.egon_ev_trip",
+                        rule_id="SANITY_EV_TRIP_CHARGING_DEMAND_EGON100RE",
+                        scenario="eGon100RE"
+                    ),
+                    # EV model components created - eGon2035
+                    EVModelComponentsCreated(
+                        table="grid.egon_etrago_load",
+                        rule_id="SANITY_EV_MODEL_COMPONENTS_EGON2035",
+                        scenario="eGon2035"
+                    ),
+                    # EV model components created - eGon100RE
+                    EVModelComponentsCreated(
+                        table="grid.egon_etrago_load",
+                        rule_id="SANITY_EV_MODEL_COMPONENTS_EGON100RE",
+                        scenario="eGon100RE"
+                    ),
+                    # EV model timeseries length - eGon2035
+                    EVModelTimeseriesLength(
+                        table="grid.egon_etrago_load_timeseries",
+                        rule_id="SANITY_EV_MODEL_TIMESERIES_LENGTH_EGON2035",
+                        scenario="eGon2035"
+                    ),
+                    # EV model timeseries length - eGon100RE
+                    EVModelTimeseriesLength(
+                        table="grid.egon_etrago_load_timeseries",
+                        rule_id="SANITY_EV_MODEL_TIMESERIES_LENGTH_EGON100RE",
+                        scenario="eGon100RE"
+                    ),
+                    # EV model energy demand - eGon2035
+                    EVModelEnergyDemand(
+                        table="grid.egon_etrago_load",
+                        rule_id="SANITY_EV_MODEL_ENERGY_DEMAND_EGON2035",
+                        scenario="eGon2035",
+                        rtol=0.1  # 10% tolerance
+                    ),
+                    # EV model energy demand - eGon100RE
+                    EVModelEnergyDemand(
+                        table="grid.egon_etrago_load",
+                        rule_id="SANITY_EV_MODEL_ENERGY_DEMAND_EGON100RE",
+                        scenario="eGon100RE",
+                        rtol=0.1  # 10% tolerance
+                    ),
+                    # EV model storage capacity - eGon2035
+                    EVModelStorageCapacity(
+                        table="grid.egon_etrago_store",
+                        rule_id="SANITY_EV_MODEL_STORAGE_CAPACITY_EGON2035",
+                        scenario="eGon2035",
+                        rtol=0.01  # 1% tolerance
+                    ),
+                    # EV model storage capacity - eGon100RE
+                    EVModelStorageCapacity(
+                        table="grid.egon_etrago_store",
+                        rule_id="SANITY_EV_MODEL_STORAGE_CAPACITY_EGON100RE",
+                        scenario="eGon100RE",
+                        rtol=0.01  # 1% tolerance
+                    ),
+                    # EV model SoC constraint - eGon2035
+                    EVModelSoCConstraint(
+                        table="grid.egon_etrago_store_timeseries",
+                        rule_id="SANITY_EV_MODEL_SOC_CONSTRAINT_EGON2035",
+                        scenario="eGon2035"
+                    ),
+                    # EV model SoC constraint - eGon100RE
+                    EVModelSoCConstraint(
+                        table="grid.egon_etrago_store_timeseries",
+                        rule_id="SANITY_EV_MODEL_SOC_CONSTRAINT_EGON100RE",
+                        scenario="eGon100RE"
+                    ),
+                    # EV lowflex driving load comparison
+                    EVLowflexDrivingLoad(
+                        table="grid.egon_etrago_load",
+                        rule_id="SANITY_EV_LOWFLEX_DRIVING_LOAD",
+                        rtol=0.01  # 1% tolerance
+                    ),
+                ],
+                "gas_abroad": [
+                    # Gas buses isolated abroad - eGon2035
+                    # Only runs when TESTMODE_OFF (boundary == "Everything")
+                    GasBusesIsolatedAbroad(
+                        table="grid.egon_etrago_bus",
+                        rule_id="SANITY_GAS_BUSES_ISOLATED_ABROAD_CH4_EGON2035",
+                        scenario="eGon2035",
+                        carrier="CH4"
+                    ),
+                    # CH4 loads abroad - eGon2035
+                    CH4LoadsAbroad(
+                        table="grid.egon_etrago_load",
+                        rule_id="SANITY_CH4_LOADS_ABROAD_EGON2035",
+                        scenario="eGon2035",
+                        rtol=0.10  # 10% tolerance
+                    ),
+                    # H2 loads abroad - eGon2035
+                    H2LoadsAbroad(
+                        table="grid.egon_etrago_load",
+                        rule_id="SANITY_H2_LOADS_ABROAD_EGON2035",
+                        scenario="eGon2035",
+                        rtol=0.10  # 10% tolerance
+                    ),
+                    # CH4 generators abroad - eGon2035
+                    CH4GeneratorsAbroad(
+                        table="grid.egon_etrago_generator",
+                        rule_id="SANITY_CH4_GENERATORS_ABROAD_EGON2035",
+                        scenario="eGon2035",
+                        rtol=0.10  # 10% tolerance
+                    ),
+                    # CH4 stores abroad - eGon2035
+                    CH4StoresAbroad(
+                        table="grid.egon_etrago_store",
+                        rule_id="SANITY_CH4_STORES_ABROAD_EGON2035",
+                        scenario="eGon2035",
+                        rtol=0.10  # 10% tolerance
+                    ),
+                    # CH4 grid links abroad - eGon2035
+                    CH4GridLinksAbroad(
+                        table="grid.egon_etrago_link",
+                        rule_id="SANITY_CH4_GRID_LINKS_ABROAD_EGON2035",
+                        scenario="eGon2035",
+                        rtol=0.10  # 10% tolerance
+                    ),
+                ],
+                "heat_gas_load_pypsa_eur": [
+                    # Heat and gas loads comparison with PyPSA-Eur - eGon100RE
+                    # Validates all carriers against PyPSA-Eur network
+                    HeatGasLoadPypsaEurComparison(
+                        table="grid.egon_etrago_load",
+                        rule_id="SANITY_HEAT_GAS_LOAD_PYPSA_EUR_EGON100RE",
+                        scenario="eGon100RE",
+                        rtol=0.10  # 10% tolerance
                     ),
                 ],
                 "data-quality": [

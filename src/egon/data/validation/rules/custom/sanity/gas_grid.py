@@ -395,12 +395,19 @@ class GasOnePortConnections(DataFrameRule):
         # Build bus subqueries for each condition
         bus_subqueries = []
         for bus_carrier, country_cond in self.bus_conditions:
+            # Only add country filter if condition is specified
+            # Empty string means no country filter (matches original sanity_checks.py)
+            if country_cond:
+                country_clause = f"AND country {country_cond}"
+            else:
+                country_clause = ""
+
             subquery = f"""
                 (SELECT bus_id
                 FROM grid.egon_etrago_bus
                 WHERE scn_name = '{self.scenario}'
                 AND carrier = '{bus_carrier}'
-                AND country {country_cond})
+                {country_clause})
             """
             bus_subqueries.append(subquery)
 

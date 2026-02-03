@@ -35,6 +35,35 @@ from .heat_demand import (
 from .electrical_load_sectors import (
     ElectricalLoadSectorBreakdown,
 )
+from .dsm import (
+    DSMTimeseries,
+)
+from .pv_rooftop import (
+    PvRooftopBuildingsValidation,
+)
+from .emobility_mit import (
+    EVAllocationCount,
+    EVGridDistrictAllocation,
+    EVTripTimeranges,
+    EVTripChargingDemand,
+    EVModelComponentsCreated,
+    EVModelTimeseriesLength,
+    EVModelEnergyDemand,
+    EVModelStorageCapacity,
+    EVModelSoCConstraint,
+    EVLowflexDrivingLoad,
+)
+from .gas_abroad import (
+    GasBusesIsolatedAbroad,
+    CH4LoadsAbroad,
+    H2LoadsAbroad,
+    CH4GeneratorsAbroad,
+    CH4StoresAbroad,
+    CH4GridLinksAbroad,
+)
+from .heat_gas_load import (
+    HeatGasLoadPypsaEurComparison,
+)
 
 __all__ = [
     "ResidentialElectricityAnnualSum",
@@ -54,4 +83,23 @@ __all__ = [
     "ElectricityCapacityComparison",
     "HeatDemandValidation",
     "ElectricalLoadSectorBreakdown",
+    "DSMTimeseries",
+    "PvRooftopBuildingsValidation",
+    "EVAllocationCount",
+    "EVGridDistrictAllocation",
+    "EVTripTimeranges",
+    "EVTripChargingDemand",
+    "EVModelComponentsCreated",
+    "EVModelTimeseriesLength",
+    "EVModelEnergyDemand",
+    "EVModelStorageCapacity",
+    "EVModelSoCConstraint",
+    "EVLowflexDrivingLoad",
+    "GasBusesIsolatedAbroad",
+    "CH4LoadsAbroad",
+    "H2LoadsAbroad",
+    "CH4GeneratorsAbroad",
+    "CH4StoresAbroad",
+    "CH4GridLinksAbroad",
+    "HeatGasLoadPypsaEurComparison",
 ]
