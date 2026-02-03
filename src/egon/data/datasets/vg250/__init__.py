@@ -609,6 +609,12 @@ class Vg250(Dataset):
                         not_null_columns=["gf", "bsg"],
                         value_set_columns={"nbd": ["ja", "nein"]},
                     ),
+                    ValueSetValidation(
+                        table="boundaries.vg250_krs",
+                        rule_id="TEST_VALUE_SET",
+                        column="nbd",
+                        expected_values=["ja", "nein"]
+                    )
                 ]
             },
             on_validation_failure="continue"
