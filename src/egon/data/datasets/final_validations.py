@@ -99,7 +99,7 @@ class FinalValidations(Dataset):
     #:
     name: str = "FinalValidations"
     #:
-    version: str = "0.0.1"
+    version: str = "0.0.1.dev"
 
     def __init__(self, dependencies):
         super().__init__(
@@ -1155,7 +1155,7 @@ class FinalValidations(Dataset):
                             "p_nom_extendable": "boolean",
                             "p_nom_min": "double precision",
                             "p_nom_max": "double precision",
-                            "p_min_pu": "double prescision",
+                            "p_min_pu": "double precision",
                             "p_max_pu": "double precision",
                             "p_set": "double precision",
                             "q_set": "double precision",
@@ -1322,7 +1322,7 @@ class FinalValidations(Dataset):
                         rule_id="DATA_TYPES.egon_etrago_line",
                         column_types={
                             "scn_name":	"character varying",
-                            "generator_id":	"integer",
+                            "line_id":	"bigint",
                             "bus0": "bigint",
                             "bus1":	"bigint",
                             "type":	"text",
