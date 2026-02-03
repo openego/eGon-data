@@ -195,7 +195,6 @@ class GasBusesCount(DataFrameRule):
         super().__init__(rule_id=rule_id, table=table, scenario=scenario,
                          carrier=carrier, rtol=rtol, expected_count=expected_count,
                          **kwargs)
-                         carrier=carrier, rtol=rtol, **kwargs)
         self.kind = "sanity"
         self.scenario = scenario
         self.carrier = carrier
