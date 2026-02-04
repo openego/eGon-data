@@ -230,7 +230,7 @@ class CtsDemandBuildings(Dataset):
     #:
     name: str = "CtsDemandBuildings"
     #:
-    version: str = "0.0.5"
+    version: str = "0.0.6"
     sources = DatasetSources(
         tables={
             "osm_buildings_filtered": {
