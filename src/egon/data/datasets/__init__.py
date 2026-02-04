@@ -458,6 +458,47 @@ class Dataset:
                 )
                 session.add(entry)
 
+def register_sources_and_targets(self) -> None:
+    """
+    Insert or update sources and targets in the database early,
+    without touching versioning / epoch logic.
+    """
+    with db.session_scope() as session:
+        dataset = (
+            session.query(Model)
+            .filter_by(name=self.name)
+            .order_by(Model.epoch.desc())
+            .first()
+        )
+
+        sources_dict = self.sources.to_dict()
+        targets_dict = self.targets.to_dict()
+
+        if dataset is None:
+            # first registration
+            dataset = Model(
+                name=self.name,
+                version=self.version,
+                scenarios=config.settings()["egon-data"]["--scenarios"],
+                sources=sources_dict,
+                targets=targets_dict,
+            )
+            session.add(dataset)
+            return
+
+        updated = False
+
+        if (dataset.sources or {}) != sources_dict:
+            dataset.sources = sources_dict
+            updated = True
+
+        if (dataset.targets or {}) != targets_dict:
+            dataset.targets = targets_dict
+            updated = True
+
+        if updated:
+            session.add(dataset)
+
 def load_sources_and_targets(
     name: str,
 ) -> tuple[DatasetSources, DatasetTargets]:
@@ -489,6 +530,8 @@ def load_sources_and_targets(
     # Recreate objects *outside the session* (now safe)
     sources = DatasetSources(**raw_sources)
     targets = DatasetTargets(**raw_targets)
+
+    self.register_sources_and_targets()
 
     return sources, targets
 
