@@ -154,7 +154,7 @@ class HeatPumpsPypsaEur(Dataset):
     #:
     name: str = "HeatPumpsPypsaEurSec"
     #:
-    version: str = "0.0.3"
+    version: str = "0.0.4"
 
     def __init__(self, dependencies):
         def dyn_parallel_tasks_pypsa_eur():
@@ -306,7 +306,7 @@ class HeatPumpsStatusQuo(Dataset):
 
         super().__init__(
             name="HeatPumpsStatusQuo",
-            version="0.0.4",
+            version="0.0.5",
             dependencies=dependencies,
             tasks=tasks,
         )
@@ -397,7 +397,7 @@ class HeatPumps2035(Dataset):
     #:
     name: str = "HeatPumps2035"
     #:
-    version: str = "0.0.3"
+    version: str = "0.0.4"
 
     def __init__(self, dependencies):
         def dyn_parallel_tasks_2035():
@@ -456,8 +456,8 @@ class HeatPumps2035(Dataset):
             )
 
         super().__init__(
-            name=self.version,
-            version="0.0.3",
+            name=self.name,
+            version=self.version,
             dependencies=dependencies,
             tasks=tasks_HeatPumps2035,
         )
