@@ -50,7 +50,7 @@ from egon.data.datasets.heat_demand_timeseries.idp_pool import (
 # get zensus cells with district heating
 from egon.data.datasets.zensus_mv_grid_districts import MapZensusGridDistricts
 
-from egon.data.datasets import load_sources_and_targets
+
 
 engine = db.engine()
 Base = declarative_base()
@@ -604,7 +604,7 @@ def cascade_per_technology(
         List of plants per mv grid for the selected technology
 
     """
-    sources, targets = load_sources_and_targets("HeatSupply")
+    sources = config.datasets()["heat_supply"]["sources"]
 
     tech = technologies[technologies.priority == technologies.priority.max()]
 
@@ -615,8 +615,10 @@ def cascade_per_technology(
             target = db.select_dataframe(
                 f"""
                     SELECT DISTINCT ON (gen) gen as state, capacity
-                    FROM {sources.tables['scenario_capacities']} a
-                    JOIN {sources.tables['federal_states']} b
+                    FROM {sources['scenario_capacities']['schema']}.
+                    {sources['scenario_capacities']['table']} a
+                    JOIN {sources['federal_states']['schema']}.
+                    {sources['federal_states']['table']} b
                     ON a.nuts = b.nuts
                     WHERE scenario_name = '{scenario}'
                     AND carrier = 'residential_rural_heat_pump'
@@ -639,7 +641,8 @@ def cascade_per_technology(
             target = db.select_dataframe(
                 f"""
                     SELECT SUM(capacity) AS capacity
-                    FROM {sources.tables['scenario_capacities']} a
+                    FROM {sources['scenario_capacities']['schema']}.
+                    {sources['scenario_capacities']['table']} a
                     WHERE scenario_name = '{scenario}'
                     AND carrier = 'rural_heat_pump'
                     """
@@ -684,7 +687,8 @@ def cascade_per_technology(
         target = db.select_dataframe(
             f"""
                 SELECT SUM(capacity) AS capacity
-                FROM {sources.tables['scenario_capacities']} a
+                FROM {sources['scenario_capacities']['schema']}.
+                {sources['scenario_capacities']['table']} a
                 WHERE scenario_name = '{scenario}'
                 AND carrier = 'rural_{tech.index[0]}'
                 """
@@ -756,24 +760,28 @@ def cascade_heat_supply_indiv(scenario, distribution_level, plotting=True):
 
     """
 
-    sources, targets = load_sources_and_targets("HeatSupply")
+    sources = config.datasets()["heat_supply"]["sources"]
 
     # Select residential heat demand per mv grid district and federal state
     heat_per_mv = db.select_geodataframe(
         f"""
         SELECT d.bus_id as bus_id, SUM(demand) as demand,
         c.vg250_lan as state, d.geom
-        FROM {sources.tables['heat_demand']} a
-        JOIN {sources.tables['map_zensus_grid']} b
+        FROM {sources['heat_demand']['schema']}.
+        {sources['heat_demand']['table']} a
+        JOIN {sources['map_zensus_grid']['schema']}.
+        {sources['map_zensus_grid']['table']} b
         ON a.zensus_population_id = b.zensus_population_id
-        JOIN {sources.tables['map_vg250_grid']} c
+        JOIN {sources['map_vg250_grid']['schema']}.
+        {sources['map_vg250_grid']['table']} c
         ON b.bus_id = c.bus_id
-        JOIN {sources.tables['mv_grids']} d
+        JOIN {sources['mv_grids']['schema']}.
+        {sources['mv_grids']['table']} d
         ON d.bus_id = c.bus_id
         WHERE scenario = '{scenario}'
         AND a.zensus_population_id NOT IN (
             SELECT zensus_population_id
-            FROM {sources.tables['map_dh']}
+            FROM {sources['map_dh']['schema']}.{sources['map_dh']['table']}
             WHERE scenario = '{scenario}')
         GROUP BY d.bus_id, vg250_lan, geom
         """,
