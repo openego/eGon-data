@@ -387,7 +387,7 @@ class HeatSupply(Dataset):
     #:
     name: str = "HeatSupply"
     #:
-    version: str = "0.0.15"
+    version: str = "0.0.16"
 
     sources = DatasetSources(
         tables={

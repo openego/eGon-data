@@ -239,7 +239,7 @@ class HouseholdDemands(Dataset):
     #:
     name: str = "Household Demands"
     #:
-    version: str = "0.0.13"
+    version: str = "0.0.14"
     sources = DatasetSources(
         tables={
             "demandregio_hh": {
