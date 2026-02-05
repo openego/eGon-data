@@ -236,12 +236,14 @@ class DSMTimeseries(Rule):
 
         return False, "; ".join(errors)
 
-    def evaluate(self, ctx):
+    def evaluate(self, engine, ctx):
         """
         Evaluate DSM timeseries against individual component data.
 
         Parameters
         ----------
+        engine : sqlalchemy.engine.Engine
+            Database engine (not used, but required by runner interface)
         ctx : dict
             Context information
 

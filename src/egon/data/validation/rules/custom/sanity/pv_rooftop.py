@@ -124,12 +124,14 @@ class PvRooftopBuildingsValidation(Rule):
 
         return target
 
-    def evaluate(self, ctx):
+    def evaluate(self, engine, ctx):
         """
         Evaluate PV rooftop building assignments and capacities.
 
         Parameters
         ----------
+        engine : sqlalchemy.engine.Engine
+            Database engine (not used, but required by runner interface)
         ctx : dict
             Context information
 

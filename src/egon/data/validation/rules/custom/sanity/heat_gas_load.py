@@ -202,7 +202,7 @@ class HeatGasLoadPypsaEurComparison(Rule):
 
         return combined
 
-    def evaluate(self, ctx):
+    def evaluate(self, engine, ctx):
         """Evaluate heat and gas loads against PyPSA-Eur data."""
         try:
             # Get data from both sources

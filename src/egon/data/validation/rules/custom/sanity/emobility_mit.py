@@ -55,7 +55,7 @@ class EVAllocationCount(Rule):
         self.kind = "sanity"
         self.scenario = scenario
 
-    def evaluate(self, ctx):
+    def evaluate(self, engine, ctx):
         """Evaluate EV allocation counts."""
         if not TESTMODE_OFF:
             return RuleResult(
@@ -171,7 +171,7 @@ class EVGridDistrictAllocation(Rule):
         self.kind = "sanity"
         self.scenario = scenario
 
-    def evaluate(self, ctx):
+    def evaluate(self, engine, ctx):
         """Evaluate EVs allocated to grid districts."""
         if not TESTMODE_OFF:
             return RuleResult(
@@ -274,7 +274,7 @@ class EVTripTimeranges(Rule):
         self.kind = "sanity"
         self.scenario = scenario
 
-    def evaluate(self, ctx):
+    def evaluate(self, engine, ctx):
         """Evaluate trip timeranges."""
         try:
             meta_run_config = read_simbev_metadata_file(
@@ -364,7 +364,7 @@ class EVTripChargingDemand(Rule):
         self.kind = "sanity"
         self.scenario = scenario
 
-    def evaluate(self, ctx):
+    def evaluate(self, engine, ctx):
         """Evaluate charging demand vs available power."""
         try:
             meta_run_config = read_simbev_metadata_file(
@@ -459,7 +459,7 @@ class EVModelComponentsCreated(Rule):
         self.kind = "sanity"
         self.scenario = scenario
 
-    def evaluate(self, ctx):
+    def evaluate(self, engine, ctx):
         """Evaluate model components creation."""
         try:
             scenario_var_name = DATASET_CFG["scenario"]["variation"][self.scenario]
@@ -596,7 +596,7 @@ class EVModelTimeseriesLength(Rule):
         self.kind = "sanity"
         self.scenario = scenario
 
-    def evaluate(self, ctx):
+    def evaluate(self, engine, ctx):
         """Evaluate timeseries lengths."""
         try:
             model_ts_dict = {
@@ -722,7 +722,7 @@ class EVModelEnergyDemand(Rule):
         self.kind = "sanity"
         self.scenario = scenario
 
-    def evaluate(self, ctx):
+    def evaluate(self, engine, ctx):
         """Evaluate total energy demand."""
         try:
             scenario_var_name = DATASET_CFG["scenario"]["variation"][self.scenario]
@@ -836,7 +836,7 @@ class EVModelStorageCapacity(Rule):
         self.kind = "sanity"
         self.scenario = scenario
 
-    def evaluate(self, ctx):
+    def evaluate(self, engine, ctx):
         """Evaluate storage capacity."""
         try:
             scenario_var_name = DATASET_CFG["scenario"]["variation"][self.scenario]
@@ -956,7 +956,7 @@ class EVModelSoCConstraint(Rule):
         self.kind = "sanity"
         self.scenario = scenario
 
-    def evaluate(self, ctx):
+    def evaluate(self, engine, ctx):
         """Evaluate SoC constraints."""
         try:
             with db.session_scope() as session:
@@ -1049,7 +1049,7 @@ class EVLowflexDrivingLoad(Rule):
         super().__init__(rule_id=rule_id, table=table, rtol=rtol, **kwargs)
         self.kind = "sanity"
 
-    def evaluate(self, ctx):
+    def evaluate(self, engine, ctx):
         """Evaluate driving vs charging load."""
         try:
             meta_run_config = read_simbev_metadata_file(

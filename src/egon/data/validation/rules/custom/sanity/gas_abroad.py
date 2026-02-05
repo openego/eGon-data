@@ -47,7 +47,7 @@ class GasBusesIsolatedAbroad(Rule):
         self.scenario = scenario
         self.carrier = carrier
 
-    def evaluate(self, ctx):
+    def evaluate(self, engine, ctx):
         """Check for isolated gas buses abroad."""
         if not TESTMODE_OFF:
             return RuleResult(
@@ -158,7 +158,7 @@ class CH4LoadsAbroad(Rule):
         self.kind = "sanity"
         self.scenario = scenario
 
-    def evaluate(self, ctx):
+    def evaluate(self, engine, ctx):
         """Evaluate CH4 loads abroad against reference data."""
         if not TESTMODE_OFF:
             return RuleResult(
@@ -295,7 +295,7 @@ class H2LoadsAbroad(Rule):
         self.kind = "sanity"
         self.scenario = scenario
 
-    def evaluate(self, ctx):
+    def evaluate(self, engine, ctx):
         """Evaluate H2_for_industry loads abroad against reference data."""
         if not TESTMODE_OFF:
             return RuleResult(
@@ -423,7 +423,7 @@ class CH4GeneratorsAbroad(Rule):
         self.kind = "sanity"
         self.scenario = scenario
 
-    def evaluate(self, ctx):
+    def evaluate(self, engine, ctx):
         """Evaluate CH4 generators abroad against reference data."""
         if not TESTMODE_OFF:
             return RuleResult(
@@ -551,7 +551,7 @@ class CH4StoresAbroad(Rule):
         self.kind = "sanity"
         self.scenario = scenario
 
-    def evaluate(self, ctx):
+    def evaluate(self, engine, ctx):
         """Evaluate CH4 stores abroad against reference data."""
         if not TESTMODE_OFF:
             return RuleResult(
@@ -679,7 +679,7 @@ class CH4GridLinksAbroad(Rule):
         self.kind = "sanity"
         self.scenario = scenario
 
-    def evaluate(self, ctx):
+    def evaluate(self, engine, ctx):
         """Evaluate CH4 grid links abroad against reference data."""
         if not TESTMODE_OFF:
             return RuleResult(
