@@ -302,14 +302,28 @@ class Dataset:
         if len(self.tasks.last) > 1:
             # Explicitly create single final task, because we can't know
             # which of the multiple tasks finishes last.
+            # Save current state before re-creating Tasks_ (validation tasks
+            # are in dict/last but not in graph, so they'd be lost otherwise)
+            current_last_tasks = set(self.tasks.last)
+            current_tasks_dict = dict(self.tasks)
+
             name = prefix(self)
             name = f"{name if name else f'{self.__module__}.'}{self.name}."
-            update_version = PythonOperator(
-                task_id=f"{name}update-version",
-                # Do nothing, because updating will be added later.
+            finalize = PythonOperator(
+                task_id=f"{name}finalize",
+                # Do nothing here; version update is added via check_version wrapper.
                 python_callable=lambda *xs, **ks: None,
             )
-            self.tasks = Tasks_((self.tasks.graph, update_version))
+            self.tasks = Tasks_((self.tasks.graph, finalize))
+
+            # Re-add tasks not in original graph (e.g., validation tasks)
+            for task_id, task in current_tasks_dict.items():
+                if task_id not in self.tasks:
+                    self.tasks[task_id] = task
+
+            # Set ALL current last tasks as upstream of finalize
+            for task in current_last_tasks:
+                task.set_downstream(finalize)
         # Due to the `if`-block above, there'll now always be exactly
         # one task in `self.tasks.last` which the next line just
         # selects.
