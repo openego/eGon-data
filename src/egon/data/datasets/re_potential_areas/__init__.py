@@ -13,15 +13,7 @@ from egon.data import db
 from egon.data.datasets import Dataset
 import egon.data.config
 
-from egon_validation import(
-    RowCountValidation,
-    DataTypeValidation,
-    NotNullAndNotNaNValidation,
-    WholeTableNotNullAndNotNaNValidation,
-    SRIDUniqueNonZero
-)
-
-from egon.data.validation import resolve_boundary_dependence
+from egon.data.validation import TableValidation, resolve_boundary_dependence
 
 Base = declarative_base()
 
@@ -164,98 +156,44 @@ class re_potential_area_setup(Dataset):
             tasks=self.tasks,
             validation={
                 "data-quality": [
-                    RowCountValidation(
-                        table="supply.egon_re_potential_area_pv_agriculture",
-                        rule_id="ROW_COUNT.egon_re_potential_area_pv_agriculture",
-                        expected_count=resolve_boundary_dependence(
-                            {"Schleswig-Holstein": 388,
-                             "Everything": 8259}
-                        )
-                    ),
-                    DataTypeValidation(
-                        table="supply.egon_re_potential_area_pv_agriculture",
-                        rule_id="DATA_TYPES.egon_re_potential_area_pv_agriculture",
-                        column_types={
+                    TableValidation(
+                        table_name="supply.egon_re_potential_area_pv_agriculture",
+                        row_count=resolve_boundary_dependence({
+                            "Schleswig-Holstein": 388,
+                            "Everything": 8259
+                        }),
+                        geometry_columns=["geom"],
+                        data_type_columns={
                             "id": "integer",
                             "geom": "geometry"
-                        }
+                        },
+                        not_null_columns=["id", "geom"]
                     ),
-                    NotNullAndNotNaNValidation(
-                        table="supply.egon_re_potential_area_pv_agriculture",
-                        rule_id="NOT_NAN.egon_re_potential_area_pv_agriculture",
-                        columns=["id",
-                                 "geom"]
-                    ),
-                    WholeTableNotNullAndNotNaNValidation(
-                        table="supply.egon_re_potential_area_pv_agriculture",
-                        rule_id="WHOLE_TABLE_NOT_NAN.egon_re_potential_area_pv_agriculture"
-                    ),
-                    SRIDUniqueNonZero(
-                        table="supply.egon_re_potential_area_pv_agriculture",
-                        rule_id="SRIDUniqueNonZero.egon_re_potential_area_pv_agriculture.geom",
-                        column="geom"
-                    ),
-                    RowCountValidation(
-                        table="supply.egon_re_potential_area_pv_road_railway",
-                        rule_id="ROW_COUNT.egon_re_potential_area_pv_road_railway",
-                        expected_count=resolve_boundary_dependence(
-                            {"Schleswig-Holstein": 479,
-                             "Everything": 5159}
-                        )
-                    ),
-                    DataTypeValidation(
-                        table="supply.egon_re_potential_area_pv_road_railway",
-                        rule_id="DATA_TYPES.egon_re_potential_area_pv_road_railway",
-                        column_types={
+                    TableValidation(
+                        table_name="supply.egon_re_potential_area_pv_road_railway",
+                        row_count=resolve_boundary_dependence({
+                            "Schleswig-Holstein": 479,
+                            "Everything": 5159
+                        }),
+                        geometry_columns=["geom"],
+                        data_type_columns={
                             "id": "integer",
                             "geom": "geometry"
-                        }
+                        },
+                        not_null_columns=["id", "geom"]
                     ),
-                    NotNullAndNotNaNValidation(
-                        table="supply.egon_re_potential_area_pv_road_railway",
-                        rule_id="NOT_NAN.egon_re_potential_area_pv_road_railway",
-                        columns=["id",
-                                 "geom"]
-                    ),
-                    WholeTableNotNullAndNotNaNValidation(
-                        table="supply.egon_re_potential_area_pv_road_railway",
-                        rule_id="TABLE_NOT_NAN.egon_re_potential_area_pv_road_railway"
-                    ),
-                    SRIDUniqueNonZero(
-                        table="supply.egon_re_potential_area_pv_road_railway",
-                        rule_id="SRIDUniqueNonZero.egon_re_potential_area_pv_road_railway.geom",
-                        column="geom"
-                    ),
-                    RowCountValidation(
-                        table="supply.egon_re_potential_area_wind",
-                        rule_id="ROW_COUNT.egon_re_potential_area_wind",
-                        expected_count=resolve_boundary_dependence(
-                            {"Schleswig-Holstein": 6306,
-                             "Everything": 120268}
-                        )
-                    ),
-                    DataTypeValidation(
-                        table="supply.egon_re_potential_area_wind",
-                        rule_id="DATA_TYPES.egon_re_potential_area_wind",
-                        column_types={
+                    TableValidation(
+                        table_name="supply.egon_re_potential_area_wind",
+                        row_count=resolve_boundary_dependence({
+                            "Schleswig-Holstein": 6306,
+                            "Everything": 120268
+                        }),
+                        geometry_columns=["geom"],
+                        data_type_columns={
                             "id": "integer",
                             "geom": "geometry"
-                        }
-                    ),
-                    NotNullAndNotNaNValidation(
-                        table="supply.egon_re_potential_area_wind",
-                        rule_id="NOT_NAN.egon_re_potential_area_wind",
-                        columns=["id",
-                                 "geom"]
-                    ),
-                    WholeTableNotNullAndNotNaNValidation(
-                        table="supply.egon_re_potential_area_wind",
-                        rule_id="TABLE_NOT_NAN.egon_re_potential_area_wind"
-                    ),
-                    SRIDUniqueNonZero(
-                        table="supply.egon_re_potential_area_wind",
-                        rule_id="SRIDUniqueNonZero.egon_re_potential_area_wind.geom",
-                        column="geom"
+                        },
+                        not_null_columns=["id", "geom"]
                     ),
                 ]
             },

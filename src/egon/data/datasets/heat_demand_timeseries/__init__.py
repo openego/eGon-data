@@ -37,14 +37,8 @@ from egon.data.metadata import (
     sources,
 )
 
-from egon_validation import (
-    RowCountValidation,
-    DataTypeValidation,
-    WholeTableNotNullAndNotNaNValidation,
-    ValueSetValidation,
-    ArrayCardinalityValidation
-)
-from egon.data.validation.resolver import resolve_boundary_dependence
+from egon_validation import ArrayCardinalityValidation
+from egon.data.validation import resolve_boundary_dependence, TableValidation
 
 Base = declarative_base()
 
@@ -1274,30 +1268,25 @@ class HeatTimeSeries(Dataset):
             ),
             validation={
                 "data_quality": [
-                    RowCountValidation(
-                        table="demand.egon_heat_idp_pool",
-                        rule_id="ROW_COUNT.egon_heat_idp_pool",
-                        expected_count=459535
+                    TableValidation(
+                        table_name="demand.egon_heat_idp_pool",
+                        row_count=459535,
+                        data_type_columns={
+                            "index": "bigint",
+                            "idp": "double precision[]"
+                        }
                     ),
-                    DataTypeValidation(
-                        table="demand.egon_heat_idp_pool",
-                        rule_id="DATA_TYPES.egon_heat_idp_pool",
-                        column_types={"index": "bigint", "idp": "double precision[]"}
-                    ),
-                    WholeTableNotNullAndNotNaNValidation(
-                        table="demand.egon_heat_idp_pool",
-                        rule_id="WHOLE_TABLE_NOT_NAN.egon_heat_idp_pool"
-                    ),
-                    RowCountValidation(
-                        table="demand.egon_heat_timeseries_selected_profiles",
-                        rule_id="ROW_COUNT.egon_heat_timeseries_selected_profiles",
-                        expected_count=resolve_boundary_dependence({"Schleswig-Holstein": 719936, "Everything": 20606259})
-                    ),
-                    DataTypeValidation(
-                        table="demand.egon_heat_timeseries_selected_profiles",
-                        rule_id="DATA_TYPES.egon_heat_timeseries_selected_profiles",
-                        column_types={"zensus_population_id": "integer", "bulding_id": "integer",
-                                      "selected_idp_profiles": "array"}
+                    TableValidation(
+                        table_name="demand.egon_heat_timeseries_selected_profiles",
+                        row_count=resolve_boundary_dependence({
+                            "Schleswig-Holstein": 719936,
+                            "Everything": 20606259
+                        }),
+                        data_type_columns={
+                            "zensus_population_id": "integer",
+                            "bulding_id": "integer",
+                            "selected_idp_profiles": "array"
+                        }
                     ),
                     ArrayCardinalityValidation(
                         table="demand.egon_heat_timeseries_selected_profiles",

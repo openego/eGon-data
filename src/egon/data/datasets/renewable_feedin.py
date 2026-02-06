@@ -24,15 +24,7 @@ from egon.data.datasets.zensus_vg250 import DestatisZensusPopulationPerHa
 from egon.data.metadata import context, license_ccby, meta_metadata, sources
 import egon.data.config
 
-from egon_validation import(
-    RowCountValidation,
-    DataTypeValidation,
-    NotNullAndNotNaNValidation,
-    WholeTableNotNullAndNotNaNValidation,
-    ValueSetValidation
-)
-
-from egon.data.validation import resolve_boundary_dependence
+from egon.data.validation import TableValidation, resolve_boundary_dependence
 
 
 class RenewableFeedin(Dataset):
@@ -74,42 +66,25 @@ class RenewableFeedin(Dataset):
                 wind_offshore,
                 mapping_zensus_weather,
             },
-            validation = {
+            validation={
                 "data-quality": [
-                    RowCountValidation(
-                        table="supply.egon_era5_renewable_feedin",
-                        rule_id="ROW_COUNT.egon_era5_renewable_feedin",
-                        expected_count=resolve_boundary_dependence(
-                            {"Schleswig-Holstein": 5224,
-                             "Everything": 6102}
-                        )
-                    ),
-                    DataTypeValidation(
-                        table="supply.egon_era5_renewable_feedin",
-                        rule_id="DATA_TYPES.egon_era5_renewable_feedin",
-                        column_types={
+                    TableValidation(
+                        table_name="supply.egon_era5_renewable_feedin",
+                        row_count=resolve_boundary_dependence({
+                            "Schleswig-Holstein": 5224,
+                            "Everything": 6102
+                        }),
+                        data_type_columns={
                             "w_id": "integer",
                             "weather_year": "integer",
                             "carrier": "character varying",
                             "feedin": "array"
+                        },
+                        not_null_columns=["w_id", "weather_year", "carrier", "feedin"],
+                        value_set_columns={
+                            "carrier": ["wind_onshore", "solar_thermal", "heat_pump_cop", "wind_offshore", "pv"]
                         }
                     ),
-                    NotNullAndNotNaNValidation(
-                        table="supply.egon_era5_renewable_feedin",
-                        rule_id="NOT_NAN.egon_era5_renewable_feedin",
-                        columns=["w_id", "weather_year", "carrier", "feedin"]
-                    ),
-                    WholeTableNotNullAndNotNaNValidation(
-                        table="supply.egon_era5_renewable_feedin",
-                        rule_id="TABLE_NOT_NAN.egon_era5_renewable_feedin"
-                    ),
-                    ValueSetValidation(
-                        table="supply.egon_district_heating",
-                        rule_id="VALUE_SET_VALIDATION_CARRIER.egon_district_heating",
-                        column="carrier",
-                        expected_values=["wind_onshore", "solar_thermal", "heat_pump_cop", "wind_offshore", "pv"]
-                    ),
-
                 ]
             },
             on_validation_failure = "continue"

@@ -47,15 +47,7 @@ from egon.data.metadata import (
     sources,
 )
 
-from egon_validation import (
-    RowCountValidation,
-    DataTypeValidation,
-    NotNullAndNotNaNValidation,
-    WholeTableNotNullAndNotNaNValidation,
-    ValueSetValidation,
-    SRIDUniqueNonZero
-)
-from egon.data.validation.resolver import resolve_boundary_dependence
+from egon.data.validation import TableValidation, resolve_boundary_dependence
 
 Base = declarative_base()
 
@@ -865,18 +857,14 @@ class Chp(Dataset):
             tasks=tasks,
             validation={
                 "data-quality": [
-                    RowCountValidation(
-                        table="supply.egon_chp_plants",
-                        rule_id="ROW_COUNT.egon_chp_plants",
-                        expected_count=resolve_boundary_dependence(
-                            {"Schleswig-Holstein": 1720,
-                            "Everything": 40197}
-                        )
-                    ),
-                    DataTypeValidation(
-                        table="supply.egon_chp_plants",
-                        rule_id="DATA_TYPES.egon_chp_plants",
-                        column_types={
+                    TableValidation(
+                        table_name="supply.egon_chp_plants",
+                        row_count=resolve_boundary_dependence({
+                            "Schleswig-Holstein": 1720,
+                            "Everything": 40197
+                        }),
+                        geometry_columns=["geom"],
+                        data_type_columns={
                             "id": "integer",
                             "sources": "jsonb",
                             "source_id": "jsonb",
@@ -890,54 +878,18 @@ class Chp(Dataset):
                             "voltage_level": "integer",
                             "scenario": "character varying",
                             "geom": "geometry"
+                        },
+                        not_null_columns=[
+                            "id", "sources", "source_id", "carrier", "district_heating",
+                            "el_capacity", "th_capacity", "electrical_bus_id",
+                            "district_heating_area_id", "ch4_bus_id", "voltage_level",
+                            "scenario", "geom"
+                        ],
+                        value_set_columns={
+                            "carrier": ["oil", "others", "gas", "gas extended", "biomass"],
+                            "scenario": ["eGon2035", "eGon100RE"]
                         }
                     ),
-                    NotNullAndNotNaNValidation(
-                        table="supply.egon_chp_plants",
-                        rule_id="NOT_NAN.egon_chp_plants",
-                        columns=[
-                            "id",
-                            "sources",
-                            "source_id",
-                            "carrier",
-                            "district_heating",
-                            "el_capacity",
-                            "th_capacity",
-                            "electrical_bus_id",
-                            "district_heating_area_id",
-                            "ch4_bus_id",
-                            "voltage_level",
-                            "scenario",
-                            "geom"
-                        ]
-                    ),
-                    WholeTableNotNullAndNotNaNValidation(
-                        table="supply.egon_chp_plants",
-                        rule_id="TABLE_NOT_NAN.egon_chp_plants"
-                    ),
-                    ValueSetValidation(
-                        table="supply.egon_chp_plants",
-                        rule_id="VALUE_SET_VALIDATION_CARRIER.egon_chp_plants",
-                        column="carrier",
-                        expected_values=[
-                            "oil",
-                            "others",
-                            "gas",
-                            "gas extended",
-                            "biomass"
-                        ]
-                    ),
-                    ValueSetValidation(
-                        table="supply.egon_chp_plants",
-                        rule_id="VALUE_SET_VALIDATION_SCENARIO.egon_chp_plants",
-                        column="scenario",
-                        expected_values=["eGon2035", "eGon100RE"]
-                    ),
-                    SRIDUniqueNonZero(
-                        table="supply.egon_chp_plants",
-                        rule_id="SRIDUniqueNonZero.egon_chp_plants",
-                        column="geom"
-                    )
                 ]
             },
             on_validation_failure="continue"

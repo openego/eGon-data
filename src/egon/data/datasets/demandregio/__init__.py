@@ -20,14 +20,7 @@ from egon.data.datasets.scenario_parameters import (
 )
 import egon.data.config
 import egon.data.datasets.scenario_parameters.parameters as scenario_parameters
-from egon_validation import (
-    RowCountValidation,
-    DataTypeValidation,
-    WholeTableNotNullAndNotNaNValidation,
-    ValueSetValidation,
-    ArrayCardinalityValidation
-)
-from egon.data.validation.resolver import resolve_boundary_dependence
+from egon.data.validation import resolve_boundary_dependence, TableValidation
 
 try:
     from disaggregator import config, data, spatial, temporal
@@ -97,56 +90,34 @@ class DemandRegio(Dataset):
             ),
             validation={
                 "data_quality": [
-                    RowCountValidation(
-                        table="demand.egon_demandregio_hh",
-                        rule_id="ROW_COUNT.egon_demandregio_hh",
-                        expected_count=resolve_boundary_dependence(
-                            {"Schleswig-Holstein": 180,
-                            "Everything": 7218}
-                        )
+                    TableValidation(
+                        table_name="demand.egon_demandregio_hh",
+                        row_count=resolve_boundary_dependence({
+                            "Schleswig-Holstein": 180,
+                            "Everything": 7218
+                        }),
+                        data_type_columns={
+                            "nuts3": "character varying",
+                            "hh_size": "integer",
+                            "scenario": "character varying",
+                            "year": "integer",
+                            "demand": "double precision"
+                        },
+                        value_set_columns={
+                            "scenario": ["eGon2035", "eGon100RE", "eGon2021"]
+                        }
                     ),
-                    DataTypeValidation(
-                        table="demand.egon_demandregio_hh",
-                        rule_id="DATA_MULTIPLE_TYPES.egon_demandregio_hh",
-                        column_types={"nuts3": "character varying",
-                                      "hh_size": "integer",
-                                      "scenario": "character varying",
-                                      "year": "integer",
-                                      "demand": "double precision"
-                                      }
-                    ),
-                    WholeTableNotNullAndNotNaNValidation(
-                        table="demand.egon_demandregio_hh",
-                        rule_id="WHOLE_TABLE_NOT_NAN.egon_demandregio_hh"
-                    ),
-                    ValueSetValidation(
-                        table="demand.egon_demandregio_hh",
-                        rule_id="VALUE_SET_VALIDATION_SCENARIO.egon_demandregio_hh",
-                        column="scenario",
-                        expected_values=["eGon2035", "eGon100RE", "eGon2021"]
-                    ),
-                    RowCountValidation(
-                        table="demand.egon_demandregio_wz",
-                        rule_id="ROW_COUNT.egon_demandregio_wz",
-                        expected_count=87
-                    ),
-                    DataTypeValidation(
-                        table="demand.egon_demandregio_wz",
-                        rule_id="DATA_MULTIPLE_TYPES.egon_demandregio_wz",
-                        column_types={"wz": "integer",
-                                      "sector": "character varying",
-                                      "definition": "character varying"
-                                      }
-                    ),
-                    WholeTableNotNullAndNotNaNValidation(
-                        table="demand.egon_demandregio_wz",
-                        rule_id="WHOLE_TABLE_NOT_NAN.egon_demandregio_wz"
-                    ),
-                    ValueSetValidation(
-                        table="demand.egon_demandregio_wz",
-                        rule_id="VALUE_SET_VALIDATION_SECTOR.egon_demandregio_wz",
-                        column="sector",
-                        expected_values=["industry", "CTS"]
+                    TableValidation(
+                        table_name="demand.egon_demandregio_wz",
+                        row_count=87,
+                        data_type_columns={
+                            "wz": "integer",
+                            "sector": "character varying",
+                            "definition": "character varying"
+                        },
+                        value_set_columns={
+                            "sector": ["industry", "CTS"]
+                        }
                     ),
                 ]
             },

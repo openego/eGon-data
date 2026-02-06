@@ -33,16 +33,7 @@ from egon.data.datasets.storages.pumped_hydro import (
 )
 from egon.data.db import session_scope
 
-from egon_validation import(
-    RowCountValidation,
-    DataTypeValidation,
-    NotNullAndNotNaNValidation,
-    WholeTableNotNullAndNotNaNValidation,
-    ValueSetValidation,
-    SRIDUniqueNonZero
-)
-
-from egon.data.validation import resolve_boundary_dependence
+from egon.data.validation import resolve_boundary_dependence, TableValidation
 from egon.data.validation.rules.custom.sanity.home_batteries import HomeBatteriesAggregation
 
 Base = declarative_base()
@@ -123,18 +114,14 @@ class Storages(Dataset):
                         rule_id="SANITY_HOME_BATTERIES_AGGREGATION_EGON100RE",
                         scenario="eGon100RE"
                     ),
-                    RowCountValidation(
-                        table="supply.egon_storages",
-                        rule_id="ROW_COUNT.egon_storages",
-                        expected_count=resolve_boundary_dependence(
-                            {"Schleswig-Holstein": 199,
-                             "Everything": 7748}
-                        )
-                    ),
-                    DataTypeValidation(
-                        table="supply.egon_storages",
-                        rule_id="DATA_TYPES.egon_storages",
-                        column_types={
+                    TableValidation(
+                        table_name="supply.egon_storages",
+                        row_count=resolve_boundary_dependence({
+                            "Schleswig-Holstein": 199,
+                            "Everything": 7748
+                        }),
+                        geometry_columns=["geom"],
+                        data_type_columns={
                             "id": "bigint",
                             "sources": "jsonb",
                             "source_id": "jsonb",
@@ -144,43 +131,16 @@ class Storages(Dataset):
                             "voltage_level": "integer",
                             "scenario": "character varying",
                             "geom": "geometry"
+                        },
+                        not_null_columns=[
+                            "id", "sources", "source_id", "carrier",
+                            "el_capacity", "bus_id", "voltage_level",
+                            "scenario", "geom"
+                        ],
+                        value_set_columns={
+                            "scenario": ["eGon2035", "eGon100RE"],
+                            "carrier": ["home_battery", "pumped_hydro"]
                         }
-                    ),
-                    NotNullAndNotNaNValidation(
-                        table="supply.egon_storages",
-                        rule_id="NOT_NAN.egon_storages",
-                        columns=[
-                            "id",
-                            "sources",
-                            "source_id",
-                            "carrier",
-                            "el_capacity",
-                            "bus_id",
-                            "voltage_level",
-                            "scenario",
-                            "geom"
-                        ]
-                    ),
-                    WholeTableNotNullAndNotNaNValidation(
-                        table="supply.egon_storages",
-                        rule_id="TABLE_NOT_NAN.egon_storages"
-                    ),
-                    ValueSetValidation(
-                        table="supply.egon_storages",
-                        rule_id="VALUE_SET_VALIDATION_SCENARIO.egon_storages",
-                        column="scenario",
-                        expected_values=["eGon2035", "eGon100RE"]
-                    ),
-                    ValueSetValidation(
-                        table="supply.egon_storages",
-                        rule_id="VALUE_SET_VALIDATION_CARRIER.egon_storages",
-                        column="carrier",
-                        expected_values=["home_battery", "pumped_hydro"]
-                    ),
-                    SRIDUniqueNonZero(
-                        table="supply.egon_storages",
-                        rule_id="SRIDUniqueNonZero.egon_storages.geom",
-                        column="geom"
                     ),
                 ]
             },

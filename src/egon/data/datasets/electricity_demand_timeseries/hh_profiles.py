@@ -27,13 +27,7 @@ from egon.data.datasets.scenario_parameters import get_scenario_year
 from egon.data.datasets.zensus_mv_grid_districts import MapZensusGridDistricts
 import egon.data.config
 
-from egon_validation import (
-    RowCountValidation,
-    DataTypeValidation,
-    WholeTableNotNullAndNotNaNValidation,
-    ValueSetValidation
-)
-from egon.data.validation.resolver import resolve_boundary_dependence
+from egon.data.validation import resolve_boundary_dependence, TableValidation
 
 Base = declarative_base()
 engine = db.engine()
@@ -310,20 +304,15 @@ class HouseholdDemands(Dataset):
             tasks=tasks,
             validation={
                 "data_quality": [
-                    RowCountValidation(
-                        table="demand.egon_household_electricity_profile_in_census_cell",
-                        rule_id="ROW_COUNT.egon_household_electricity_profile_in_census_cell",
-                        expected_count=resolve_boundary_dependence({
+                    TableValidation(
+                        table_name="demand.egon_household_electricity_profile_in_census_cell",
+                        row_count=resolve_boundary_dependence({
                             "Schleswig-Holstein": 143521,
                             "Everything": 3177723
-                        })
-                    ),
-                    DataTypeValidation(
-                        table="demand.egon_household_electricity_profile_in_census_cell",
-                        rule_id="DATA_MULTIPLE_TYPES.egon_household_electricity_profile_in_census_cell",
-                        column_types=resolve_boundary_dependence({
-                            "Schleswig-Holstein":{
-                              "cell_id": "integer",
+                        }),
+                        data_type_columns=resolve_boundary_dependence({
+                            "Schleswig-Holstein": {
+                                "cell_id": "integer",
                                 "grid_id": "character varying",
                                 "cell_profile_ids": "array",
                                 "nuts3": "character varying",
@@ -333,7 +322,7 @@ class HouseholdDemands(Dataset):
                                 "factor_2035": "double precision",
                                 "factor_2050": "double precision"
                             },
-                            "Everything":{
+                            "Everything": {
                                 "cell_id": "integer",
                                 "grid_id": "character varying",
                                 "cell_profile_ids": "character varying",
@@ -344,31 +333,18 @@ class HouseholdDemands(Dataset):
                             }
                         })
                     ),
-                    WholeTableNotNullAndNotNaNValidation(
-                        table="demand.egon_household_electricity_profile_in_census_cell",
-                        rule_id="WHOLE_TABLE_NOT_NAN.egon_household_electricity_profile_in_census_cell"
-                    ),
-                    RowCountValidation(
-                        table="demand.iee_household_load_profiles",
-                        rule_id="ROW_COUNT.iee_household_load_profiles",
-                        expected_count=resolve_boundary_dependence({
+                    TableValidation(
+                        table_name="demand.iee_household_load_profiles",
+                        row_count=resolve_boundary_dependence({
                             "Schleswig-Holstein": 2511,
                             "Everything": 1000000
-                        })
-                    ),
-                    DataTypeValidation(
-                        table="demand.iee_household_load_profiles",
-                        rule_id="DATA_MULTIPLE_TYPES.iee_household_load_profiles",
-                        column_types={
+                        }),
+                        data_type_columns={
                             "id": "integer",
                             "type": "character",
                             "load_in_wh": "array"
                         }
                     ),
-                    WholeTableNotNullAndNotNaNValidation(
-                        table="demand.iee_household_load_profiles",
-                        rule_id="WHOLE_TABLE_NOT_NAN.iee_household_load_profiles"
-                    )
                 ]
             },
             on_validation_failure="continue"

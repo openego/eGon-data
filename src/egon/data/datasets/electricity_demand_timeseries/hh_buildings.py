@@ -23,13 +23,7 @@ from egon.data.datasets.electricity_demand_timeseries.tools import (
     random_point_in_square,
 )
 import egon.data.config
-from egon_validation import (
-    RowCountValidation,
-    DataTypeValidation,
-    WholeTableNotNullAndNotNaNValidation,
-    ValueSetValidation
-)
-from egon.data.validation.resolver import resolve_boundary_dependence
+from egon.data.validation import resolve_boundary_dependence, TableValidation
 
 engine = db.engine()
 Base = declarative_base()
@@ -1241,67 +1235,42 @@ class setup(Dataset):
             tasks=self.tasks,
             validation={
                 "data_quality": [
-                    RowCountValidation(
-                        table="demand.egon_building_electricity_peak_loads",
-                        rule_id="ROW_COUNT.egon_building_electricity_peak_loads",
-                        expected_count=resolve_boundary_dependence({
+                    TableValidation(
+                        table_name="demand.egon_building_electricity_peak_loads",
+                        row_count=resolve_boundary_dependence({
                             "Schleswig-Holstein": 3029824,
                             "Everything": 44683620
-                        })
-                    ),
-                    DataTypeValidation(
-                        table="demand.egon_building_electricity_peak_loads",
-                        rule_id="DATA_MULTIPLE_TYPES.egon_building_electricity_peak_loads",
-                        column_types={
+                        }),
+                        data_type_columns={
                             "building_id": "integer",
                             "scenario": "character varying",
                             "sector": "character varying",
                             "peak_load_in_w": "real",
                             "voltage_level": "integer"
-                        }
-                    ),
-                    WholeTableNotNullAndNotNaNValidation(
-                        table="demand.egon_building_electricity_peak_loads",
-                        rule_id="WHOLE_TABLE_NOT_NAN.egon_building_electricity_peak_loads"
-                    ),
-                    ValueSetValidation(
-                        table="demand.egon_building_electricity_peak_loads",
-                        rule_id="VALUE_SET_VALIDATION_SCENARIO.egon_building_electricity_peak_loads",
-                        column="scenario",
-                        expected_values=resolve_boundary_dependence({
-                            "Schleswig-Holstein": [
-                                "eGon2035", "eGon100RE", "status2019", "status2023"
-                            ],
-                            "Everything": [
-                                "eGon2035", "eGon100RE"]
+                        },
+                        value_set_columns=resolve_boundary_dependence({
+                            "Schleswig-Holstein": {
+                                "scenario": ["eGon2035", "eGon100RE", "status2019", "status2023"],
+                                "sector": ["cts", "residential"]
+                            },
+                            "Everything": {
+                                "scenario": ["eGon2035", "eGon100RE"],
+                                "sector": ["cts", "residential"]
+                            }
                         })
                     ),
-                    ValueSetValidation(
-                        table="demand.egon_building_electricity_peak_loads",
-                        rule_id="VALUE_SET_VALIDATION_SECTOR.egon_building_electricity_peak_loads",
-                        column="sector",
-                        expected_values=["cts", "residential"]
-                    ),
-                    RowCountValidation(
-                        table="demand.egon_household_electricity_profile_of_buildings",
-                        rule_id="ROW_COUNT.egon_household_electricity_profile_of_buildings",
-                        expected_count=resolve_boundary_dependence(
-                            {"Schleswig-Holstein": 1371592,
-                            "Everything": 38605221}
-                        )
-                    ),
-                    DataTypeValidation(
-                        table="demand.egon_household_electricity_profile_of_buildings",
-                        rule_id="DATA_MULTIPLE_TYPES.egon_household_electricity_profile_of_buildings",
-                        column_types={
+                    TableValidation(
+                        table_name="demand.egon_household_electricity_profile_of_buildings",
+                        row_count=resolve_boundary_dependence({
+                            "Schleswig-Holstein": 1371592,
+                            "Everything": 38605221
+                        }),
+                        data_type_columns={
                             "id": "integer",
                             "building_id": "integer",
                             "cell_id": "integer",
-                            "profile_id": "character varying"}
-                    ),
-                    WholeTableNotNullAndNotNaNValidation(
-                        table="demand.egon_household_electricity_profile_of_buildings",
-                        rule_id="WHOLE_TABLE_NOT_NAN.egon_household_electricity_profile_of_buildings"
+                            "profile_id": "character varying"
+                        }
                     ),
                 ]
             },

@@ -11,13 +11,7 @@ from egon.data import db
 from egon.data.datasets import Dataset
 import egon.data.config
 
-from egon_validation import(
-    RowCountValidation,
-    DataTypeValidation,
-    NotNullAndNotNaNValidation,
-    WholeTableNotNullAndNotNaNValidation
-)
-from egon.data.validation.resolver import resolve_boundary_dependence
+from egon.data.validation import TableValidation, resolve_boundary_dependence
 
 # will be later imported from another file ###
 Base = declarative_base()
@@ -31,45 +25,26 @@ class SocietyPrognosis(Dataset):
             dependencies=dependencies,
             tasks=(create_tables, {zensus_population, zensus_household}),
             validation={
-                "data-quality":[
-                    RowCountValidation(
-                        table="society.egon_household_prognosis",
-                        rule_id="ROW_COUNT.egon_household_prognosis",
-                        expected_count=resolve_boundary_dependence({"Everything": 5319490})
+                "data-quality": [
+                    TableValidation(
+                        table_name="society.egon_household_prognosis",
+                        row_count=resolve_boundary_dependence({"Everything": 5319490}),
+                        data_type_columns={
+                            "zensus_population_id": "integer",
+                            "year": "integer",
+                            "households": "double precision"
+                        },
+                        not_null_columns=["zensus_population_id", "year", "households"]
                     ),
-                    DataTypeValidation(
-                        table="society.egon_household_prognosis",
-                        rule_id="DATA_TYPES.egon_household_prognosis",
-                        column_types={"zensus_population_id": "integer", "year": "integer", "households": "double precision"}
-                    ),
-                    NotNullAndNotNaNValidation(
-                        table="society.egon_household_prognosis",
-                        rule_id="NOT_NAN.egon_household_prognosis",
-                        columns=["zensus_population_id", "year", "households"]
-                    ),
-                    WholeTableNotNullAndNotNaNValidation(
-                        table="society.egon_household_prognosis",
-                        rule_id="TABLE_NOT_NAN.egon_household_prognosis"
-                    ),
-                    RowCountValidation(
-                        table="society.egon_population_prognosis",
-                        rule_id="ROW_COUNT.egon_population_prognosis",
-                        expected_count=resolve_boundary_dependence({"Everything": 6355446})
-                    ),
-                    DataTypeValidation(
-                        table="society.egon_population_prognosis",
-                        rule_id="DATA_TYPES.egon_population_prognosis",
-                        column_types={"zensus_population_id": "integer", "year": "integer",
-                                      "population": "double precision"}
-                    ),
-                    NotNullAndNotNaNValidation(
-                        table="society.egon_population_prognosis",
-                        rule_id="NOT_NAN.egon_population_prognosis",
-                        columns=["zensus_population_id", "year", "population"]
-                    ),
-                    WholeTableNotNullAndNotNaNValidation(
-                        table="society.egon_population_prognosis",
-                        rule_id="TABLE_NOT_NAN.egon_population_prognosis"
+                    TableValidation(
+                        table_name="society.egon_population_prognosis",
+                        row_count=resolve_boundary_dependence({"Everything": 6355446}),
+                        data_type_columns={
+                            "zensus_population_id": "integer",
+                            "year": "integer",
+                            "population": "double precision"
+                        },
+                        not_null_columns=["zensus_population_id", "year", "population"]
                     ),
                 ]
             },

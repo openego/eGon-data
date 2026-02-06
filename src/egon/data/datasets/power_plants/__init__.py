@@ -45,16 +45,7 @@ import egon.data.datasets.power_plants.pv_ground_mounted as pv_ground_mounted
 import egon.data.datasets.power_plants.wind_farms as wind_onshore
 import egon.data.datasets.power_plants.wind_offshore as wind_offshore
 
-from egon_validation import(
-    RowCountValidation,
-    DataTypeValidation,
-    NotNullAndNotNaNValidation,
-    WholeTableNotNullAndNotNaNValidation,
-    ValueSetValidation,
-    SRIDUniqueNonZero
-)
-
-from egon.data.validation import resolve_boundary_dependence
+from egon.data.validation import TableValidation, resolve_boundary_dependence
 
 Base = declarative_base()
 
@@ -1638,18 +1629,14 @@ class PowerPlants(Dataset):
             tasks=tasks,
             validation={
                 "data-quality": [
-                    RowCountValidation(
-                        table="supply.egon_power_plants",
-                        rule_id="ROW_COUNT.egon_power_plants",
-                        expected_count=resolve_boundary_dependence(
-                            {"Schleswig-Holstein":1102,
-                             "Everything": 1103}
-                        )
-                    ),
-                    DataTypeValidation(
-                        table="supply.egon_power_plants",
-                        rule_id="DATA_TYPES.egon_power_plants",
-                        column_types={
+                    TableValidation(
+                        table_name="supply.egon_power_plants",
+                        row_count=resolve_boundary_dependence({
+                            "Schleswig-Holstein": 1102,
+                            "Everything": 1103
+                        }),
+                        geometry_columns=["geom"],
+                        data_type_columns={
                             "id": "bigint",
                             "sources": "jsonb",
                             "source_id": "jsonb",
@@ -1660,12 +1647,9 @@ class PowerPlants(Dataset):
                             "weather_cell_id": "integer",
                             "scenario": "character varying",
                             "geom": "geometry"
-                        }
-                    ),
-                    NotNullAndNotNaNValidation(
-                        table="supply.egon_power_plants",
-                        rule_id="NOT_NAN.egon_power_plants",
-                        columns=["id",
+                        },
+                        not_null_columns=[
+                            "id",
                             "sources",
                             "source_id",
                             "carrier",
@@ -1674,36 +1658,16 @@ class PowerPlants(Dataset):
                             "voltage_level",
                             "weather_cell_id",
                             "scenario",
-                            "geom"]
-                    ),
-                    WholeTableNotNullAndNotNaNValidation(
-                        table="supply.egon_power_plants",
-                        rule_id="TABLE_NOT_NAN.egon_power_plants"
-                    ),
-                    ValueSetValidation(
-                        table="supply.egon_power_plants",
-                        rule_id="VALUE_SET_VALIDATION_CARRIER.egon_power_plants",
-                        column="carrier",
-                        expected_values=["others",
-                            "gas",
-                            "biomass",
-                            "run_of_river",
-                            "wind_onshore",
-                            "oil",
-                            "wind_offshore",
-                            "solar",
-                            "reservoir"]
-                    ),
-                    ValueSetValidation(
-                        table="supply.egon_power_plants",
-                        rule_id="VALUE_SET_VALIDATION_SCENARIO.egon_power_plants",
-                        column="scenario",
-                        expected_values=["eGon2035", "eGon100RE"]
-                    ),
-                    SRIDUniqueNonZero(
-                        table="supply.egon_power_plants",
-                        rule_id="SRIDUniqueNonZero.egon_power_plants.geom",
-                        column="geom"
+                            "geom"
+                        ],
+                        value_set_columns={
+                            "carrier": [
+                                "others", "gas", "biomass", "run_of_river",
+                                "wind_onshore", "oil", "wind_offshore",
+                                "solar", "reservoir"
+                            ],
+                            "scenario": ["eGon2035", "eGon100RE"]
+                        }
                     ),
                 ]
             },

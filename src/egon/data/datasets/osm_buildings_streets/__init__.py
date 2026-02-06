@@ -7,13 +7,7 @@ import os
 
 from egon.data import db
 from egon.data.datasets import Dataset
-from egon_validation import (
-    RowCountValidation,
-    DataTypeValidation,
-    WholeTableNotNullAndNotNaNValidation,
-    SRIDUniqueNonZero
-)
-from egon.data.validation.resolver import resolve_boundary_dependence
+from egon.data.validation import TableValidation, resolve_boundary_dependence
 
 
 def execute_sql_script(script):
@@ -220,196 +214,144 @@ class OsmBuildingsStreets(Dataset):
             ),
             validation={
                 "data_quality": [
-                    RowCountValidation(
-                        table="boundaries.egon_map_zensus_buildings_filtered",
-                        rule_id="ROW_COUNT.egon_map_zensus_buildings_filtered",
-                        expected_count=resolve_boundary_dependence({"Schleswig-Holstein":1010387,
-                                        "Everything":28070301})
+                    TableValidation(
+                        table_name="boundaries.egon_map_zensus_buildings_filtered",
+                        row_count=resolve_boundary_dependence({
+                            "Schleswig-Holstein": 1010387,
+                            "Everything": 28070301
+                        }),
+                        data_type_columns={
+                            "id": "integer",
+                            "grid_id": "character varying",
+                            "cell_id": "integer"
+                        }
                     ),
-                    DataTypeValidation(
-                        table="boundaries.egon_map_zensus_buildings_filtered",
-                        rule_id="DATA_TYPES.egon_map_zensus_buildings_filtered",
-                        column_types={"id": "integer", "grid_id": "character varying", "cell_id": "integer"}
+                    TableValidation(
+                        table_name="boundaries.egon_map_zensus_buildings_residential",
+                        row_count=resolve_boundary_dependence({
+                            "Schleswig-Holstein": 989967,
+                            "Everything": 27477467
+                        }),
+                        data_type_columns={
+                            "id": "integer",
+                            "grid_id": "character varying",
+                            "cell_id": "integer"
+                        }
                     ),
-                    WholeTableNotNullAndNotNaNValidation(
-                        table="boundaries.egon_map_zensus_buildings_filtered",
-                        rule_id="TABLE_NOT_NAN.egon_map_zensus_buildings_filtered"
+                    TableValidation(
+                        table_name="openstreetmap.osm_amenities_not_in_buildings",
+                        row_count=resolve_boundary_dependence({
+                            "Schleswig-Holstein": 3142,
+                            "Everything": 79928
+                        }),
+                        geometry_columns=["geom_amenity"],
+                        data_type_columns={
+                            "osm_id": "bigint",
+                            "amenity": "text",
+                            "name": "text",
+                            "geom_amenity": "geometry",
+                            "tags": "hstore",
+                            "egon_amenity_id": "integer"
+                        }
                     ),
-                    RowCountValidation(
-                        table="boundaries.egon_map_zensus_buildings_residential",
-                        rule_id="ROW_COUNT.egon_map_zensus_buildings_residential",
-                        expected_count=resolve_boundary_dependence({"Schleswig-Holstein":989967,
-                                        "Everything":27477467})
+                    TableValidation(
+                        table_name="openstreetmap.osm_amenities_shops_filtered",
+                        row_count=resolve_boundary_dependence({
+                            "Schleswig-Holstein": 27438,
+                            "Everything": 700315
+                        }),
+                        geometry_columns=["geom_amenity"],
+                        data_type_columns={
+                            "osm_id": "bigint",
+                            "amenity": "text",
+                            "name": "text",
+                            "geom_amenity": "geometry",
+                            "tags": "hstore",
+                            "egon_amenity_id": "integer"
+                        }
                     ),
-                    DataTypeValidation(
-                        table="boundaries.egon_map_zensus_buildings_residential",
-                        rule_id="DATA_TYPES.egon_map_zensus_buildings_residential",
-                        column_types={"id": "integer", "grid_id": "character varying", "cell_id": "integer"}
+                    TableValidation(
+                        table_name="openstreetmap.osm_buildings",
+                        row_count=resolve_boundary_dependence({
+                            "Schleswig-Holstein": 1298230,
+                            "Everything": 34328483
+                        }),
+                        geometry_columns=["geom_building", "geom_point"],
+                        data_type_columns={
+                            "osm_id": "bigint",
+                            "amenity": "text",
+                            "building": "text",
+                            "name": "text",
+                            "geom_building": "geometry",
+                            "area": "double precision",
+                            "geom_point": "geometry",
+                            "tags": "hstore",
+                            "id": "integer"
+                        }
                     ),
-                    WholeTableNotNullAndNotNaNValidation(
-                        table="boundaries.egon_map_zensus_buildings_residential",
-                        rule_id="TABLE_NOT_NAN.egon_map_zensus_buildings_residential"
+                    TableValidation(
+                        table_name="openstreetmap.osm_buildings_filtered",
+                        row_count=resolve_boundary_dependence({
+                            "Schleswig-Holstein": 1169881,
+                            "Everything": 31619905
+                        }),
+                        geometry_columns=["geom_building", "geom_point"],
+                        data_type_columns={
+                            "osm_id": "bigint",
+                            "amenity": "text",
+                            "building": "text",
+                            "name": "text",
+                            "geom_building": "geometry",
+                            "area": "double precision",
+                            "geom_point": "geometry",
+                            "tags": "hstore",
+                            "id": "integer"
+                        }
                     ),
-                    RowCountValidation(
-                        table="openstreetmap.osm_amenities_not_in_buildings",
-                        rule_id="ROW_COUNT.osm_amenities_not_in_buildings",
-                        expected_count=resolve_boundary_dependence({"Schleswig-Holstein": 3142,
-                                        "Everything": 79928})
+                    TableValidation(
+                        table_name="openstreetmap.osm_buildings_residential",
+                        row_count=resolve_boundary_dependence({
+                            "Schleswig-Holstein": 1130929,
+                            "Everything": 30713011
+                        }),
+                        geometry_columns=["geom_building", "geom_point"],
+                        data_type_columns={
+                            "osm_id": "bigint",
+                            "amenity": "text",
+                            "building": "text",
+                            "name": "text",
+                            "geom_building": "geometry",
+                            "area": "double precision",
+                            "geom_point": "geometry",
+                            "tags": "hstore",
+                            "id": "integer"
+                        }
                     ),
-                    DataTypeValidation(
-                        table="openstreetmap.osm_amenities_not_in_buildings",
-                        rule_id="DATA_TYPES.osm_amenities_not_in_buildings",
-                        column_types={
-                            "osm_id": "bigint", "amenity": "text", "name": "text", "geom_amenity": "geometry",
-                            "tags": "hstore", "egon_amenity_id": "integer" }
+                    TableValidation(
+                        table_name="openstreetmap.osm_buildings_synthetic",
+                        row_count=resolve_boundary_dependence({
+                            "Schleswig-Holstein": 9498,
+                            "Everything": 706911
+                        }),
+                        geometry_columns=["geom_building", "geom_point"],
+                        data_type_columns={
+                            "id": "character varying",
+                            "cell_id": "character varying",
+                            "geom_building": "geometry",
+                            "geom_point": "geometry",
+                            "n_amenities_inside": "integer",
+                            "building": "character varying",
+                            "area": "real"
+                        }
                     ),
-                    WholeTableNotNullAndNotNaNValidation(
-                        table="openstreetmap.osm_amenities_not_in_buildings",
-                        rule_id="TABLE_NOT_NAN.osm_amenities_not_in_buildings"
-                    ),
-                    SRIDUniqueNonZero(
-                        table="openstreetmap.osm_amenities_not_in_buildings",
-                        rule_id="SRIDUniqueNonZero.osm_amenities_not_in_buildings.geom_amenity",
-                        geom="geom_amenity"
-                    ),
-                    RowCountValidation(
-                        table="openstreetmap.osm_amenities_shops_filtered",
-                        rule_id="ROW_COUNT.osm_amenities_shops_filtered",
-                        expected_count=resolve_boundary_dependence({"Schleswig-Holstein": 27438, "Everything": 700315})
-                    ),
-                    DataTypeValidation(
-                        table="openstreetmap.osm_amenities_shops_filtered",
-                        rule_id="DATA_TYPES.osm_amenities_shops_filtered",
-                        column_types={
-                            "osm_id": "bigint", "amenity": "text", "name": "text", "geom_amenity": "geometry",
-                            "tags": "hstore", "egon_amenity_id": "integer"}
-                    ),
-                    WholeTableNotNullAndNotNaNValidation(
-                        table="openstreetmap.osm_amenities_shops_filtered",
-                        rule_id="TABLE_NOT_NAN.osm_amenities_shops_filtered"
-                    ),
-                    SRIDUniqueNonZero(
-                        table="openstreetmap.osm_amenities_shops_filtered",
-                        rule_id="SRIDUniqueNonZero.osm_amenities_shops_filtered.geom_amenity",
-                        geom="geom_amenity"
-                    ),
-                    RowCountValidation(
-                        table="openstreetmap.osm_buildings",
-                        rule_id="ROW_COUNT.osm_buildings",
-                        expected_count=resolve_boundary_dependence({"Schleswig-Holstein": 1298230, "Everything": 34328483})
-                    ),
-                    DataTypeValidation(
-                        table="openstreetmap.osm_buildings",
-                        rule_id="DATA_TYPES.osm_buildings",
-                        column_types={
-                            "osm_id": "bigint", "amenity": "text", "building": "text", "name": "text",
-                            "geom_building": "geometry", "area": "double precision", "geom_point": "geometry",
-                            "tags": "hstore", "id": "integer"}
-                    ),
-                    WholeTableNotNullAndNotNaNValidation(
-                        table="openstreetmap.osm_buildings",
-                        rule_id="TABLE_NOT_NAN.osm_buildings"
-                    ),
-                    SRIDUniqueNonZero(
-                        table="openstreetmap.osm_buildings",
-                        rule_id="SRIDUniqueNonZero.osm_buildings.geom_building",
-                        geom="geom_building"
-                    ),
-                    SRIDUniqueNonZero(
-                        table="openstreetmap.osm_buildings",
-                        rule_id="SRIDUniqueNonZero.osm_buildings.geom_point",
-                        geom="geom_point"
-                    ),
-                    RowCountValidation(
-                        table="openstreetmap.osm_buildings_filtered",
-                        rule_id="ROW_COUNT.osm_buildings_filtered",
-                        expected_count=resolve_boundary_dependence({"Schleswig-Holstein": 1169881, "Everything": 31619905})
-                    ),
-                    DataTypeValidation(
-                        table="openstreetmap.osm_buildings_filtered",
-                        rule_id="DATA_TYPES.osm_buildings_filtered",
-                        column_types={
-                            "osm_id": "bigint", "amenity": "text", "building": "text", "name": "text",
-                            "geom_building": "geometry", "area": "double precision", "geom_point": "geometry",
-                            "tags": "hstore", "id": "integer"}
-                    ),
-                    WholeTableNotNullAndNotNaNValidation(
-                        table="openstreetmap.osm_buildings_filtered",
-                        rule_id="TABLE_NOT_NAN.osm_buildings_filtered"
-                    ),
-                    SRIDUniqueNonZero(
-                        table="openstreetmap.osm_buildings_filtered",
-                        rule_id="SRIDUniqueNonZero.osm_buildings_filtered.geom_building",
-                        geom="geom_building"
-                    ),
-                    SRIDUniqueNonZero(
-                        table="openstreetmap.osm_buildings_filtered",
-                        rule_id="SRIDUniqueNonZero.osm_buildings_filtered.geom_point",
-                        geom="geom_point"
-                    ),
-                    RowCountValidation(
-                        table="openstreetmap.osm_buildings_residential",
-                        rule_id="ROW_COUNT.osm_buildings_residential",
-                        expected_count=resolve_boundary_dependence({"Schleswig-Holstein": 1130929, "Everything": 30713011})
-                    ),
-                    DataTypeValidation(
-                        table="openstreetmap.osm_buildings_residential",
-                        rule_id="DATA_TYPES.osm_buildings_residential",
-                        column_types={
-                            "osm_id": "bigint", "amenity": "text", "building": "text", "name": "text",
-                            "geom_building": "geometry", "area": "double precision", "geom_point": "geometry",
-                            "tags": "hstore", "id": "integer"}
-                    ),
-                    WholeTableNotNullAndNotNaNValidation(
-                        table="openstreetmap.osm_buildings_residential",
-                        rule_id="TABLE_NOT_NAN.osm_buildings_residential"
-                    ),
-                    SRIDUniqueNonZero(
-                        table="openstreetmap.osm_buildings_residential",
-                        rule_id="SRIDUniqueNonZero.osm_buildings_residential.geom_building",
-                        geom="geom_building"
-                    ),
-                    SRIDUniqueNonZero(
-                        table="openstreetmap.osm_buildings_residential",
-                        rule_id="SRIDUniqueNonZero.osm_buildings_residential.geom_point",
-                        geom="geom_point"
-                    ),
-                    RowCountValidation(
-                        table="openstreetmap.osm_buildings_synthetic",
-                        rule_id="ROW_COUNT.osm_buildings_synthetic",
-                        expected_count=resolve_boundary_dependence({"Schleswig-Holstein": 9498, "Everything": 706911})
-                    ),
-                    DataTypeValidation(
-                        table="openstreetmap.osm_buildings_synthetic",
-                        rule_id="DATA_TYPES.osm_buildings_synthetic",
-                        column_types={
-                            "id": "character varying", "cell_id": "character varying", "geom_building": "geometry",
-                            "geom_point": "geometry", "n_amenities_inside": "integer", "building": "character varying",
-                            "area": "real"}
-                    ),
-                    WholeTableNotNullAndNotNaNValidation(
-                        table="openstreetmap.osm_buildings_synthetic",
-                        rule_id="TABLE_NOT_NAN.osm_buildings_synthetic"
-                    ),
-                    SRIDUniqueNonZero(
-                        table="openstreetmap.osm_buildings_synthetic",
-                        rule_id="SRIDUniqueNonZero.osm_buildings_synthetic.geom_building",
-                        geom="geom_building"
-                    ),
-                    SRIDUniqueNonZero(
-                        table="openstreetmap.osm_buildings_synthetic",
-                        rule_id="SRIDUniqueNonZero.osm_buildings_synthetic.geom_point",
-                        geom="geom_point"
-                    ),
-                    RowCountValidation(
-                        table="openstreetmap.osm_buildings_with_amenities",
-                        rule_id="ROW_COUNT.osm_buildings_with_amenities",
-                        expected_count=resolve_boundary_dependence({"Schleswig-Holstein": 24314, "Everything": 621385})
-                    ),
-                    DataTypeValidation(
-                        table="openstreetmap.osm_buildings_with_amenities",
-                        rule_id="DATA_TYPES.osm_buildings_with_amenities",
-                        column_types={
+                    TableValidation(
+                        table_name="openstreetmap.osm_buildings_with_amenities",
+                        row_count=resolve_boundary_dependence({
+                            "Schleswig-Holstein": 24314,
+                            "Everything": 621385
+                        }),
+                        geometry_columns=["geom_building", "geom_amenity", "geom_point"],
+                        data_type_columns={
                             "osm_id_amenity": "bigint",
                             "osm_id_building": "bigint",
                             "id": "integer",
@@ -422,36 +364,17 @@ class OsmBuildingsStreets(Dataset):
                             "tags_building": "hstore",
                             "tags_amenity": "hstore",
                             "n_amenities_inside": "bigint",
-                            "apartment_count": "numeric"}
+                            "apartment_count": "numeric"
+                        }
                     ),
-                    WholeTableNotNullAndNotNaNValidation(
-                        table="openstreetmap.osm_buildings_with_amenities",
-                        rule_id="TABLE_NOT_NAN.osm_buildings_with_amenities"
-                    ),
-                    SRIDUniqueNonZero(
-                        table="openstreetmap.osm_buildings_with_amenities",
-                        rule_id="SRIDUniqueNonZero.osm_buildings_with_amenities.geom_building",
-                        geom="geom_building"
-                    ),
-                    SRIDUniqueNonZero(
-                        table="openstreetmap.osm_buildings_with_amenities",
-                        rule_id="SRIDUniqueNonZero.osm_buildings_with_amenities.geom_amenity",
-                        geom="geom_amenity"
-                    ),
-                    SRIDUniqueNonZero(
-                        table="openstreetmap.osm_buildings_with_amenities",
-                        rule_id="SRIDUniqueNonZero.osm_buildings_with_amenities.geom_point",
-                        geom="geom_point"
-                    ),
-                    RowCountValidation(
-                        table="openstreetmap.osm_buildings_without_amenities",
-                        rule_id="ROW_COUNT.osm_buildings_without_amenities",
-                        expected_count=resolve_boundary_dependence({"Schleswig-Holstein": 1152146, "Everything": 31151277})
-                    ),
-                    DataTypeValidation(
-                        table="openstreetmap.osm_buildings_without_amenities",
-                        rule_id="DATA_TYPES.osm_buildings_without_amenities",
-                        column_types={
+                    TableValidation(
+                        table_name="openstreetmap.osm_buildings_without_amenities",
+                        row_count=resolve_boundary_dependence({
+                            "Schleswig-Holstein": 1152146,
+                            "Everything": 31151277
+                        }),
+                        geometry_columns=["geom_building", "geom_point"],
+                        data_type_columns={
                             "osm_id": "bigint",
                             "id": "integer",
                             "building": "text",
@@ -460,45 +383,23 @@ class OsmBuildingsStreets(Dataset):
                             "geom_point": "geometry",
                             "name": "text",
                             "tags": "hstore",
-                            "apartment_count": "numeric"}
+                            "apartment_count": "numeric"
+                        }
                     ),
-                    WholeTableNotNullAndNotNaNValidation(
-                        table="openstreetmap.osm_buildings_without_amenities",
-                        rule_id="TABLE_NOT_NAN.osm_buildings_without_amenities"
-                    ),
-                    SRIDUniqueNonZero(
-                        table="openstreetmap.osm_buildings_without_amenities",
-                        rule_id="SRIDUniqueNonZero.osm_buildings_without_amenities.geom_building",
-                        geom="geom_building"
-                    ),
-                    SRIDUniqueNonZero(
-                        table="openstreetmap.osm_buildings_without_amenities",
-                        rule_id="SRIDUniqueNonZero.osm_buildings_without_amenities.geom_point",
-                        geom="geom_point"
-                    ),
-                    RowCountValidation(
-                        table="openstreetmap.osm_ways_with_segments",
-                        rule_id="ROW_COUNT.osm_ways_with_segments",
-                        expected_count=resolve_boundary_dependence({"Schleswig-Holstein": 263427, "Everything": 6716196})
-                    ),
-                    DataTypeValidation(
-                        table="openstreetmap.osm_ways_with_segments",
-                        rule_id="DATA_TYPES.osm_ways_with_segments",
-                        column_types={
+                    TableValidation(
+                        table_name="openstreetmap.osm_ways_with_segments",
+                        row_count=resolve_boundary_dependence({
+                            "Schleswig-Holstein": 263427,
+                            "Everything": 6716196
+                        }),
+                        geometry_columns=["geom"],
+                        data_type_columns={
                             "osm_id": "bigint",
                             "nodes": "array",
                             "highway": "text",
                             "geom": "geometry",
-                            "length_segments": "array"}
-                    ),
-                    WholeTableNotNullAndNotNaNValidation(
-                        table="openstreetmap.osm_ways_with_segments",
-                        rule_id="TABLE_NOT_NAN.osm_ways_with_segments"
-                    ),
-                    SRIDUniqueNonZero(
-                        table="openstreetmap.osm_ways_with_segments",
-                        rule_id="SRIDUniqueNonZero.osm_ways_with_segments.geom",
-                        geom="geom"
+                            "length_segments": "array"
+                        }
                     ),
                 ]
             },
