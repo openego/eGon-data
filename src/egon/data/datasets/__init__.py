@@ -428,6 +428,7 @@ class Dataset:
                 p.set_downstream(first)
 
         self.register()
+        self.register_sources_and_targets()
 
     def __init_subclass__(cls) -> None:
         # Warn about missing or invalid class attributes
@@ -531,7 +532,7 @@ def load_sources_and_targets(
     sources = DatasetSources(**raw_sources)
     targets = DatasetTargets(**raw_targets)
 
-    self.register_sources_and_targets()
+    
 
     return sources, targets
 
