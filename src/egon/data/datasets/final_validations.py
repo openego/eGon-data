@@ -113,6 +113,8 @@ class FinalValidations(Dataset):
     name: str = "FinalValidations"
     #:
     version: str = "0.0.1.dev"
+    #:
+    create_finalize_task: bool = True
 
     def __init__(self, dependencies):
         super().__init__(

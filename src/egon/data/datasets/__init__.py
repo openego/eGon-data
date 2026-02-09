@@ -207,6 +207,7 @@ class Dataset:
     tasks: Tasks = ()
     validation: Dict[str, List] = field(default_factory=dict)
     on_validation_failure: str = "continue"
+    create_finalize_task: bool = False
 
     def check_version(self, after_execution=()):
         scenario_names = config.settings()["egon-data"]["--scenarios"]
@@ -299,7 +300,7 @@ class Dataset:
                     for vtask in validation_tasks:
                         last_task.set_downstream(vtask)
 
-        if len(self.tasks.last) > 1:
+        if self.create_finalize_task and len(self.tasks.last) > 1:
             # Explicitly create single final task, because we can't know
             # which of the multiple tasks finishes last.
             # Save current state before re-creating Tasks_ (validation tasks
@@ -324,9 +325,8 @@ class Dataset:
             # Set ALL current last tasks as upstream of finalize
             for task in current_last_tasks:
                 task.set_downstream(finalize)
-        # Due to the `if`-block above, there'll now always be exactly
-        # one task in `self.tasks.last` which the next line just
-        # selects.
+        # Select one task from `self.tasks.last` to handle version update.
+        # With finalize task there's exactly one; otherwise pick first alphabetically.
         last = sorted(list(self.tasks.last), key=lambda t: t.task_id)[0]
         for task in self.tasks.values():
             task.dataset = self
