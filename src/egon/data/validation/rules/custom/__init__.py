@@ -1,15 +1,7 @@
 """Custom validation rules for eGon data."""
 
-from .sanity import (
-    ResidentialElectricityAnnualSum,
-    ResidentialElectricityHhRefinement,
-    CtsElectricityDemandShare,
-    CtsHeatDemandShare,
-)
+from .sanity import *  # noqa: F401, F403
+from . import sanity
 
-__all__ = [
-    "ResidentialElectricityAnnualSum",
-    "ResidentialElectricityHhRefinement",
-    "CtsElectricityDemandShare",
-    "CtsHeatDemandShare",
-]
+# Re-export everything from sanity
+__all__ = sanity.__all__
