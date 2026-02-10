@@ -114,8 +114,8 @@ def add_metadata():
                 "encoding": "UTF-8",
                 "schema": {
                     "fields": generate_resource_fields_from_db_table(
-                        target_conf["schema"],
-                        target_conf["table"],
+                        target_schema,
+                        target_table,
                     ),
                     "primaryKey": "cp_id",
                 },
@@ -157,6 +157,6 @@ def add_metadata():
 
     db.submit_comment(
         f"'{json.dumps(meta)}'",
-        target_conf["schema"],
-        target_conf["table"],
+        target_schema,
+        target_table,
     )
