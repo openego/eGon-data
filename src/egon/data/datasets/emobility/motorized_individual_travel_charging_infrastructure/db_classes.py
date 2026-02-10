@@ -49,7 +49,8 @@ def add_metadata():
     """
     sources, targets = load_sources_and_targets("MITChargingInfrastructure")
     
-    target_conf = targets.charging_infrastructure
+    full_table_name = targets.tables["charging_infrastructure"]
+    target_schema, target_table = full_table_name.split(".")
     
     contris = contributors(["kh", "kh"])
 
