@@ -5,11 +5,10 @@ eTraGo.
 
 import geopandas as gpd
 import pandas as pd
-from egon.data import db, config
+
+from egon.data import config, db
 from egon.data.datasets import Dataset, DatasetSources, DatasetTargets
-from egon.data.datasets.scenario_parameters import (
-    get_sector_parameters,
-)
+from egon.data.datasets.scenario_parameters import get_sector_parameters
 
 
 class StorageEtrago(Dataset):
@@ -38,6 +37,7 @@ class StorageEtrago(Dataset):
     * :py:class:`grid.egon_etrago_storage <egon.data.datasets.etrago_setup.EgonPfHvStorage>` is extended
 
     """
+
     sources = DatasetSources(
         tables={
             "storage": "supply.egon_storages",
@@ -47,6 +47,7 @@ class StorageEtrago(Dataset):
             "hv-substation": "grid.egon_hvmv_substation",
         }
     )
+
     targets = DatasetTargets(
         tables={
             "storage": "grid.egon_etrago_storage"
@@ -56,8 +57,7 @@ class StorageEtrago(Dataset):
     #:
     name: str = "StorageEtrago"
     #:
-    version: str = "0.0.13"
-
+    version: str = "0.0.9"
 
     def __init__(self, dependencies):
         super().__init__(
@@ -66,9 +66,9 @@ class StorageEtrago(Dataset):
             dependencies=dependencies,
             tasks=(insert_PHES, extendable_batteries),
         )
-def insert_PHES():
-    # Get datasets configuration
 
+
+def insert_PHES():
     engine = db.engine()
 
     scenario = config.settings()["egon-data"]["--scenarios"]
@@ -94,14 +94,11 @@ def insert_PHES():
             """
         )
 
-        # Select unused index of buses
-        next_bus_id = db.next_etrago_id("storage")
-
         # Add missing PHES specific information suitable for eTraGo selected from scenario_parameter table
         parameters = get_sector_parameters("electricity", scn)["efficiency"][
             "pumped_hydro"
         ]
-        phes["storage_id"] = range(next_bus_id, next_bus_id + len(phes))
+        phes["storage_id"] = db.next_etrago_id("storage", len(phes))
         phes["max_hours"] = parameters["max_hours"]
         phes["efficiency_store"] = parameters["store"]
         phes["efficiency_dispatch"] = parameters["dispatch"]
@@ -121,6 +118,7 @@ def insert_PHES():
 def extendable_batteries_per_scenario(scenario):
     engine = db.engine()
 
+    # Delete outdated data on extendable battetries inside Germany from database
     db.execute_sql(
         f"""
         DELETE FROM {StorageEtrago.targets.tables['storage']}
@@ -132,7 +130,6 @@ def extendable_batteries_per_scenario(scenario):
         """
     )
 
-    # 1. Get Grid Buses
     extendable_batteries = db.select_dataframe(
         f"""
         SELECT bus_id as bus, scn_name FROM
@@ -147,6 +144,7 @@ def extendable_batteries_per_scenario(scenario):
         """
     )
 
+    # Select information on allocated capacities for home batteries from database
     home_batteries = db.select_dataframe(
         f"""
         SELECT el_capacity as p_nom_min, bus_id as bus FROM
@@ -156,34 +154,53 @@ def extendable_batteries_per_scenario(scenario):
         """
     )
 
-
-    extendable_batteries = extendable_batteries.merge(
-        right=home_batteries, left_on="bus", right_on="bus", how="outer"
-    )
-
-   
-    extendable_batteries["scn_name"] = extendable_batteries["scn_name"].fillna(scenario)
-    extendable_batteries["p_nom_min"] = extendable_batteries["p_nom_min"].fillna(0)
-
-
-    
+    # Update index
     extendable_batteries["storage_id"] = db.next_etrago_id(
         "storage", len(extendable_batteries.index)
     )
 
+    # Set parameters
     extendable_batteries["p_nom_extendable"] = True
+
+    extendable_batteries["capital_cost"] = get_sector_parameters(
+        "electricity", scenario
+    )["capital_cost"]["battery"]
+
+    extendable_batteries["lifetime"] = get_sector_parameters(
+        "electricity", scenario
+    )["lifetime"]["battery storage"]
+
+    extendable_batteries["max_hours"] = get_sector_parameters(
+        "electricity", scenario
+    )["efficiency"]["battery"]["max_hours"]
+
+    extendable_batteries["efficiency_store"] = get_sector_parameters(
+        "electricity", scenario
+    )["efficiency"]["battery"]["store"]
+
+    extendable_batteries["efficiency_dispatch"] = get_sector_parameters(
+        "electricity", scenario
+    )["efficiency"]["battery"]["dispatch"]
+
+    extendable_batteries["standing_loss"] = get_sector_parameters(
+        "electricity", scenario
+    )["efficiency"]["battery"]["standing_loss"]
+
+    extendable_batteries["cyclic_state_of_charge"] = get_sector_parameters(
+        "electricity", scenario
+    )["efficiency"]["battery"]["cyclic_state_of_charge"]
+
     extendable_batteries["carrier"] = "battery"
 
-    params = get_sector_parameters("electricity", scenario)
+    # Merge dataframes to fill p_nom_min column
+    extendable_batteries = extendable_batteries.merge(
+        right=home_batteries, left_on="bus", right_on="bus", how="outer"
+    )
+    extendable_batteries["p_nom_min"] = extendable_batteries[
+        "p_nom_min"
+    ].fillna(0)
 
-    extendable_batteries["capital_cost"] = params["capital_cost"]["battery"]
-    extendable_batteries["lifetime"] = params["lifetime"]["battery storage"]
-    extendable_batteries["max_hours"] = params["efficiency"]["battery"]["max_hours"]
-    extendable_batteries["efficiency_store"] = params["efficiency"]["battery"]["store"]
-    extendable_batteries["efficiency_dispatch"] = params["efficiency"]["battery"]["dispatch"]
-    extendable_batteries["standing_loss"] = params["efficiency"]["battery"]["standing_loss"]
-    extendable_batteries["cyclic_state_of_charge"] = params["efficiency"]["battery"]["cyclic_state_of_charge"]
-
+    # Write data to db
     extendable_batteries.to_sql(
         StorageEtrago.targets.get_table_name("storage"),
         engine,
