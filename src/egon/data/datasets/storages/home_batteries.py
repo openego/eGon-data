@@ -137,7 +137,13 @@ def allocate_home_batteries_to_buildings():
         ].itertuples(index=False):
             pv_df = db.select_dataframe(sql.format(scenario, bus_id))
 
-            grid_ratio = bat_cap / pv_df.capacity.sum()
+            pv_sum = pv_df.capacity.sum()
+
+            if pv_sum > 0:
+                grid_ratio = bat_cap / pv_sum
+            else:
+                
+                continue
 
             if grid_ratio > cbat_ppv_ratio:
                 logger.warning(
@@ -340,22 +346,6 @@ def add_metadata():
         f"'{json.dumps(meta)}'",
         targets.get_table_schema("home_batteries"),
         targets.get_table_name("home_batteries").split('.')[-1],
-    )
-
-
-def create_table(df):
-    """Create mapping table home battery <-> building id"""
-    engine = db.engine()
-
-    EgonHomeBatteries.__table__.drop(bind=engine, checkfirst=True)
-    EgonHomeBatteries.__table__.create(bind=engine, checkfirst=True)
-
-    df.reset_index().to_sql(
-        name=EgonHomeBatteries.__table__.name,
-        schema=EgonHomeBatteries.__table__.schema,
-        con=engine,
-        if_exists="append",
-        index=False,
     )
 
 
