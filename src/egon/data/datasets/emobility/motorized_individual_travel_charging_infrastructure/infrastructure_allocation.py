@@ -57,9 +57,8 @@ def write_to_db(
 
         gdf = gdf.assign(weight=gdf.weight.div(gdf.weight.sum()))
 
-    target_conf = targets.charging_infrastructure
-    target_table = target_conf["table"]
-    target_schema = target_conf["schema"]
+    full_table_name = targets.tables["charging_infrastructure"]
+    target_schema, target_table = full_table_name.split(".")
 
     max_id = db.select_dataframe(
         f"""
