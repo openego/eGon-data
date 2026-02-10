@@ -56,7 +56,7 @@ class StorageEtrago(Dataset):
     #:
     name: str = "StorageEtrago"
     #:
-    version: str = "0.0.12"
+    version: str = "0.0.13"
 
 
     def __init__(self, dependencies):
@@ -119,24 +119,20 @@ def insert_PHES():
 
 
 def extendable_batteries_per_scenario(scenario):
-    # Get datasets configuration
-
-
-
     engine = db.engine()
 
-    # Delete outdated data on extendable battetries inside Germany from database
     db.execute_sql(
         f"""
         DELETE FROM {StorageEtrago.targets.tables['storage']}
         WHERE carrier = 'battery'
         AND scn_name = '{scenario}'
         AND bus IN (SELECT bus_id FROM {StorageEtrago.sources.tables['bus']}
-                       WHERE scn_name = '{scenario}'
-                       AND country = 'DE');
+                        WHERE scn_name = '{scenario}'
+                        AND country = 'DE');
         """
     )
 
+    # 1. Get Grid Buses
     extendable_batteries = db.select_dataframe(
         f"""
         SELECT bus_id as bus, scn_name FROM
@@ -144,14 +140,13 @@ def extendable_batteries_per_scenario(scenario):
         WHERE carrier = 'AC'
         AND scn_name = '{scenario}'
         AND (bus_id IN (SELECT bus_id
-                       FROM {StorageEtrago.sources.tables['ehv-substation']})
+                        FROM {StorageEtrago.sources.tables['ehv-substation']})
         OR bus_id IN (SELECT bus_id
-                       FROM {StorageEtrago.sources.tables['hv-substation']}
+                        FROM {StorageEtrago.sources.tables['hv-substation']}
         ))
         """
     )
 
-    # Select information on allocated capacities for home batteries from database
     home_batteries = db.select_dataframe(
         f"""
         SELECT el_capacity as p_nom_min, bus_id as bus FROM
@@ -161,53 +156,34 @@ def extendable_batteries_per_scenario(scenario):
         """
     )
 
-    # Update index
-    extendable_batteries["storage_id"] = (
-        extendable_batteries.index + db.next_etrago_id("storage")
-    )
 
-    # Set parameters
-    extendable_batteries["p_nom_extendable"] = True
-
-    extendable_batteries["capital_cost"] = get_sector_parameters(
-        "electricity", scenario
-    )["capital_cost"]["battery"]
-
-    extendable_batteries["lifetime"] = get_sector_parameters(
-        "electricity", scenario
-    )["lifetime"]["battery storage"]
-
-    extendable_batteries["max_hours"] = get_sector_parameters(
-        "electricity", scenario
-    )["efficiency"]["battery"]["max_hours"]
-
-    extendable_batteries["efficiency_store"] = get_sector_parameters(
-        "electricity", scenario
-    )["efficiency"]["battery"]["store"]
-
-    extendable_batteries["efficiency_dispatch"] = get_sector_parameters(
-        "electricity", scenario
-    )["efficiency"]["battery"]["dispatch"]
-
-    extendable_batteries["standing_loss"] = get_sector_parameters(
-        "electricity", scenario
-    )["efficiency"]["battery"]["standing_loss"]
-
-    extendable_batteries["cyclic_state_of_charge"] = get_sector_parameters(
-        "electricity", scenario
-    )["efficiency"]["battery"]["cyclic_state_of_charge"]
-
-    extendable_batteries["carrier"] = "battery"
-
-    # Merge dataframes to fill p_nom_min column
     extendable_batteries = extendable_batteries.merge(
         right=home_batteries, left_on="bus", right_on="bus", how="outer"
     )
-    extendable_batteries["p_nom_min"] = extendable_batteries[
-        "p_nom_min"
-    ].fillna(0)
 
-    # Write data to db
+   
+    extendable_batteries["scn_name"] = extendable_batteries["scn_name"].fillna(scenario)
+    extendable_batteries["p_nom_min"] = extendable_batteries["p_nom_min"].fillna(0)
+
+
+    
+    extendable_batteries["storage_id"] = db.next_etrago_id(
+        "storage", len(extendable_batteries.index)
+    )
+
+    extendable_batteries["p_nom_extendable"] = True
+    extendable_batteries["carrier"] = "battery"
+
+    params = get_sector_parameters("electricity", scenario)
+
+    extendable_batteries["capital_cost"] = params["capital_cost"]["battery"]
+    extendable_batteries["lifetime"] = params["lifetime"]["battery storage"]
+    extendable_batteries["max_hours"] = params["efficiency"]["battery"]["max_hours"]
+    extendable_batteries["efficiency_store"] = params["efficiency"]["battery"]["store"]
+    extendable_batteries["efficiency_dispatch"] = params["efficiency"]["battery"]["dispatch"]
+    extendable_batteries["standing_loss"] = params["efficiency"]["battery"]["standing_loss"]
+    extendable_batteries["cyclic_state_of_charge"] = params["efficiency"]["battery"]["cyclic_state_of_charge"]
+
     extendable_batteries.to_sql(
         StorageEtrago.targets.get_table_name("storage"),
         engine,
