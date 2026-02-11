@@ -40,7 +40,7 @@ def run_egon_truck():
         )
     )
 
-    scenarios = sources.original_data["constants"]["scenarios"]
+    scenarios = sources.files["original_data"]["constants"]["scenarios"]
 
     for scenario in scenarios:
         total_hydrogen_consumption = calculate_total_hydrogen_consumption(
