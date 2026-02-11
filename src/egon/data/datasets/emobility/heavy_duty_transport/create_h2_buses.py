@@ -22,7 +22,7 @@ def insert_hgv_h2_demand():
     Insert list of hgv H2 demand (one per NUTS3) in database.
     """
     sources, targets = load_sources_and_targets("HeavyDutyTransport")
-    scenarios = sources.original_data["constants"]["scenarios"]
+    scenarios = sources.files["original_data"]["constants"]["scenarios"]
     
     for scenario in scenarios:
         delete_old_entries(scenario)
@@ -43,7 +43,7 @@ def insert_hgv_h2_demand():
 
 def kg_per_year_to_mega_watt(df: pd.DataFrame | gpd.GeoDataFrame):
     sources, targets = load_sources_and_targets("HeavyDutyTransport")
-    constants = sources.original_data["constants"]
+    constants = sources.files["original_data"]["constants"]
     
     energy_value = constants["energy_value_h2"]
     fac = constants["fac"]
@@ -124,7 +124,7 @@ def delete_old_entries(scenario: str):
 
     """
     sources, targets = load_sources_and_targets("HeavyDutyTransport")
-    carrier = sources.original_data["constants"]["carrier"]
+    carrier = sources.files["original_data"]["constants"]["carrier"]
 
     # Clean tables
     db.execute_sql(
@@ -149,7 +149,7 @@ def delete_old_entries(scenario: str):
 
 def assign_h2_buses(scenario: str = "eGon2035"):
     sources, targets = load_sources_and_targets("HeavyDutyTransport")
-    carrier = sources.original_data["constants"]["carrier"]
+    carrier = sources.files["original_data"]["constants"]["carrier"]
 
     hgv_h2_demand_gdf = read_hgv_h2_demand(scenario=scenario)
 
@@ -185,13 +185,13 @@ def read_hgv_h2_demand(scenario: str = "eGon2035"):
                 WHERE gf = 4
                 """
 
-    srid = sources.original_data["tables"]["srid"]
+    srid = sources.files["original_data"]["tables"]["srid"]
 
     gdf_vg250 = db.select_geodataframe(sql_vg250, index_col="nuts3", epsg=srid)
 
     gdf_vg250["geometry"] = gdf_vg250.geom.centroid
 
-    srid_buses = sources.original_data["tables"]["srid_buses"]
+    srid_buses = sources.files["original_data"]["tables"]["srid_buses"]
 
     return gpd.GeoDataFrame(
         df.merge(gdf_vg250[["geometry"]], left_index=True, right_index=True),

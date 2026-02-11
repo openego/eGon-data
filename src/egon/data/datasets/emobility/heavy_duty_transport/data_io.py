@@ -30,7 +30,7 @@ def boundary_gdf():
     Get outer boundary from database.
     """
     sources, targets = load_sources_and_targets("HeavyDutyTransport")
-    srid = sources.original_data["tables"]["srid"]
+    srid = sources.files["original_data"]["tables"]["srid"]
 
     gdf = select_geodataframe(
         """
@@ -51,7 +51,7 @@ def bast_gdf():
     sources, targets = load_sources_and_targets("HeavyDutyTransport")
     
     # Access embedded original_data
-    config_sources = sources.original_data["original_data"]["sources"]
+    config_sources = sources.files["original_data"]["original_data"]["sources"]
     
     file = config_sources["BAST"]["file"]
 
@@ -68,7 +68,7 @@ def bast_gdf():
     )
 
     init_srid = config_sources["BAST"]["srid"]
-    final_srid = sources.original_data["tables"]["srid"]
+    final_srid = sources.files["original_data"]["tables"]["srid"]
 
     gdf = gpd.GeoDataFrame(
         df[relevant_columns[0]],
@@ -87,7 +87,7 @@ def bast_gdf():
 def nuts3_gdf():
     """Read in NUTS3 geo shapes."""
     sources, targets = load_sources_and_targets("HeavyDutyTransport")
-    srid = sources.original_data["tables"]["srid"]
+    srid = sources.files["original_data"]["tables"]["srid"]
     sql = """
         SELECT nuts as nuts3, geometry FROM boundaries.vg250_krs
         WHERE gf = 4

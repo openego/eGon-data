@@ -67,8 +67,8 @@ def calculate_total_hydrogen_consumption(scenario: str = "eGon2035"):
     """Calculate the total hydrogen demand for trucking in Germany."""
     sources, targets = load_sources_and_targets("HeavyDutyTransport")
     
-    constants = sources.original_data["constants"]
-    hgv_mileage = sources.original_data["hgv_mileage"]
+    constants = sources.files["original_data"]["constants"]
+    hgv_mileage = sources.files["original_data"]["hgv_mileage"]
 
     leakage = constants["leakage"]
     leakage_rate = constants["leakage_rate"]
@@ -144,11 +144,11 @@ def voronoi(
     
     sources, targets = load_sources_and_targets("HeavyDutyTransport")
 
-    config_sources = sources.original_data["original_data"]["sources"]
+    config_sources = sources.files["original_data"]["original_data"]["sources"]
     
     relevant_columns = config_sources["BAST"]["relevant_columns"]
     truck_col = relevant_columns[0]
-    srid = sources.original_data["tables"]["srid"]
+    srid = sources.files["original_data"]["tables"]["srid"]
 
     # convert the boundary geometry into a union of the polygon
     # convert the Geopandas GeoSeries of Point objects to NumPy array of coordinates.
