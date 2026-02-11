@@ -70,7 +70,7 @@ def download_hgv_data():
     response = requests.get(url)
 
     with open(file_path, "w") as f:
-        writer = csv.writer(f)
+        writer = csv.writer(f, delimiter=";") 
         for line in response.iter_lines():
             writer.writerow(line.decode("ISO-8859-1").split(";"))
 
@@ -160,7 +160,7 @@ class HeavyDutyTransport(Dataset):
     #:
     name: str = "HeavyDutyTransport"
     #:
-    version: str = "0.0.22"
+    version: str = "0.0.23"
 
     def __init__(self, dependencies):
         super().__init__(
