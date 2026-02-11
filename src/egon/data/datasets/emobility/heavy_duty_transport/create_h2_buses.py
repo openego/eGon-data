@@ -10,23 +10,21 @@ import numpy as np
 import pandas as pd
 
 from egon.data import config, db
+from egon.data.datasets import load_sources_and_targets
 from egon.data.datasets.emobility.heavy_duty_transport.db_classes import (
     EgonHeavyDutyTransportVoronoi,
 )
 
-DATASET_CFG = config.datasets()["mobility_hgv"]
-CARRIER = DATASET_CFG["constants"]["carrier"]
-SCENARIOS = DATASET_CFG["constants"]["scenarios"]
-ENERGY_VALUE = DATASET_CFG["constants"]["energy_value_h2"]
-FAC = DATASET_CFG["constants"]["fac"]
-HOURS_PER_YEAR = DATASET_CFG["constants"]["hours_per_year"]
 
 
 def insert_hgv_h2_demand():
     """
     Insert list of hgv H2 demand (one per NUTS3) in database.
     """
-    for scenario in SCENARIOS:
+    sources, targets = load_sources_and_targets("HeavyDutyTransport")
+    scenarios = sources.original_data["constants"]["scenarios"]
+    
+    for scenario in scenarios:
         delete_old_entries(scenario)
 
         hgv_gdf = assign_h2_buses(scenario=scenario)
@@ -43,15 +41,21 @@ def insert_hgv_h2_demand():
             index=False,
         )
 
-
 def kg_per_year_to_mega_watt(df: pd.DataFrame | gpd.GeoDataFrame):
+    sources, targets = load_sources_and_targets("HeavyDutyTransport")
+    constants = sources.original_data["constants"]
+    
+    energy_value = constants["energy_value_h2"]
+    fac = constants["fac"]
+    hours_per_year = constants["hours_per_year"]
+
     df = df.assign(
-        p_set=df.hydrogen_consumption * ENERGY_VALUE * FAC / HOURS_PER_YEAR,
+        p_set=df.hydrogen_consumption * energy_value * fac / hours_per_year,
         q_set=np.nan,
         temp_id=1,
     )
 
-    df.p_set = [[p_set] * HOURS_PER_YEAR for p_set in df.p_set]
+    df.p_set = [[p_set] * hours_per_year for p_set in df.p_set]
 
     logger.debug(str(df.columns))
 
@@ -119,13 +123,16 @@ def delete_old_entries(scenario: str):
         Name of the scenario.
 
     """
+    sources, targets = load_sources_and_targets("HeavyDutyTransport")
+    carrier = sources.original_data["constants"]["carrier"]
+
     # Clean tables
     db.execute_sql(
         f"""
         DELETE FROM grid.egon_etrago_load_timeseries
         WHERE "load_id" IN (
             SELECT load_id FROM grid.egon_etrago_load
-            WHERE carrier = '{CARRIER}'
+            WHERE carrier = '{carrier}'
             AND scn_name = '{scenario}'
         )
         """
@@ -134,19 +141,22 @@ def delete_old_entries(scenario: str):
     db.execute_sql(
         f"""
         DELETE FROM grid.egon_etrago_load
-        WHERE carrier = '{CARRIER}'
+        WHERE carrier = '{carrier}'
         AND scn_name = '{scenario}'
         """
     )
 
 
 def assign_h2_buses(scenario: str = "eGon2035"):
+    sources, targets = load_sources_and_targets("HeavyDutyTransport")
+    carrier = sources.original_data["constants"]["carrier"]
+
     hgv_h2_demand_gdf = read_hgv_h2_demand(scenario=scenario)
 
     hgv_h2_demand_gdf = db.assign_gas_bus_id(hgv_h2_demand_gdf, scenario, "H2")
 
     # Add carrier
-    c = {"carrier": CARRIER}
+    c = {"carrier": carrier}
     hgv_h2_demand_gdf = hgv_h2_demand_gdf.assign(**c)
 
     # Remove useless columns
@@ -158,6 +168,8 @@ def assign_h2_buses(scenario: str = "eGon2035"):
 
 
 def read_hgv_h2_demand(scenario: str = "eGon2035"):
+    sources, targets = load_sources_and_targets("HeavyDutyTransport")
+    
     with db.session_scope() as session:
         query = session.query(
             EgonHeavyDutyTransportVoronoi.nuts3,
@@ -173,13 +185,13 @@ def read_hgv_h2_demand(scenario: str = "eGon2035"):
                 WHERE gf = 4
                 """
 
-    srid = DATASET_CFG["tables"]["srid"]
+    srid = sources.original_data["tables"]["srid"]
 
     gdf_vg250 = db.select_geodataframe(sql_vg250, index_col="nuts3", epsg=srid)
 
     gdf_vg250["geometry"] = gdf_vg250.geom.centroid
 
-    srid_buses = DATASET_CFG["tables"]["srid_buses"]
+    srid_buses = sources.original_data["tables"]["srid_buses"]
 
     return gpd.GeoDataFrame(
         df.merge(gdf_vg250[["geometry"]], left_index=True, right_index=True),

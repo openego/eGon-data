@@ -12,15 +12,18 @@ from shapely.ops import unary_union
 import geopandas as gpd
 
 from egon.data import config, db
+from egon.data.datasets import load_sources_and_targets
 from egon.data.datasets.emobility.heavy_duty_transport.data_io import get_data
 from egon.data.datasets.emobility.heavy_duty_transport.db_classes import (
     EgonHeavyDutyTransportVoronoi,
 )
 
-DATASET_CFG = config.datasets()["mobility_hgv"]
 
 
 def run_egon_truck():
+    
+    sources, targets = load_sources_and_targets("HeavyDutyTransport")
+    
     boundary_gdf, bast_gdf, nuts3_gdf = get_data()
 
     bast_gdf_within = bast_gdf.dropna().loc[
@@ -37,7 +40,7 @@ def run_egon_truck():
         )
     )
 
-    scenarios = DATASET_CFG["constants"]["scenarios"]
+    scenarios = sources.original_data["constants"]["scenarios"]
 
     for scenario in scenarios:
         total_hydrogen_consumption = calculate_total_hydrogen_consumption(
@@ -62,8 +65,10 @@ def run_egon_truck():
 
 def calculate_total_hydrogen_consumption(scenario: str = "eGon2035"):
     """Calculate the total hydrogen demand for trucking in Germany."""
-    constants = DATASET_CFG["constants"]
-    hgv_mileage = DATASET_CFG["hgv_mileage"]
+    sources, targets = load_sources_and_targets("HeavyDutyTransport")
+    
+    constants = sources.original_data["constants"]
+    hgv_mileage = sources.original_data["hgv_mileage"]
 
     leakage = constants["leakage"]
     leakage_rate = constants["leakage_rate"]
@@ -136,11 +141,14 @@ def voronoi(
 ):
     """Building a Voronoi Field from points and a boundary."""
     logger.info("Building Voronoi Field.")
+    
+    sources, targets = load_sources_and_targets("HeavyDutyTransport")
 
-    sources = DATASET_CFG["original_data"]["sources"]
-    relevant_columns = sources["BAST"]["relevant_columns"]
+    config_sources = sources.original_data["original_data"]["sources"]
+    
+    relevant_columns = config_sources["BAST"]["relevant_columns"]
     truck_col = relevant_columns[0]
-    srid = DATASET_CFG["tables"]["srid"]
+    srid = sources.original_data["tables"]["srid"]
 
     # convert the boundary geometry into a union of the polygon
     # convert the Geopandas GeoSeries of Point objects to NumPy array of coordinates.
