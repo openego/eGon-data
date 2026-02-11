@@ -20,7 +20,7 @@ from loguru import logger
 import requests
 
 from egon.data import config, db
-from egon.data.datasets import Dataset, DatasetSource, DatasetTargets
+from egon.data.datasets import Dataset, DatasetSources, DatasetTargets
 from egon.data.datasets.emobility.heavy_duty_transport.create_h2_buses import (
     insert_hgv_h2_demand,
 )
@@ -103,7 +103,7 @@ class HeavyDutyTransport(Dataset):
     *mobility_hgv*.
 
     """
-    sources = DatasetSource(
+    sources = DatasetSources(
         urls={
             "BAST": "https://www.bast.de/DE/Themen/Digitales/HF_1/Massnahmen/verkehrszaehlung/Daten/2020_1/Jawe2020.csv?view=renderTcDataExportCSV&strTyp=A"
         },
