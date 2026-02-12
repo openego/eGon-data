@@ -18,7 +18,7 @@ import pandas as pd
 import seaborn as sns
 
 from egon.data import config, db, logger
-from egon.data.datasets import Dataset, DatasetSources, DatasetTargets
+from egon.data.datasets import Dataset, DatasetSources, DatasetTargets, load_sources_and_targets
 from egon.data.datasets.electricity_demand_timeseries.cts_buildings import (
     EgonCtsElectricityDemandBuildingShare,
     EgonCtsHeatDemandBuildingShare,
@@ -32,7 +32,6 @@ from egon.data.datasets.emobility.motorized_individual_travel.db_classes import 
     EgonEvTrip,
 )
 from egon.data.datasets.emobility.motorized_individual_travel.helpers import (
-    DATASET_CFG,
     read_simbev_metadata_file,
 )
 from egon.data.datasets.etrago_setup import (
@@ -815,7 +814,7 @@ def sanitycheck_emobility_mit():
     -------
     None
     """
-
+    sources_mit, targets_mit = load_sources_and_targets("MotorizedIndividualTravel")
     def check_ev_allocation():
         # Get target number for scenario
         ev_count_target = scenario_variation_parameters["ev_count"]
@@ -1322,7 +1321,7 @@ def sanitycheck_emobility_mit():
     print("=====================================================")
 
     for scenario_name in ["eGon2035", "eGon100RE"]:
-        scenario_var_name = DATASET_CFG["scenario"]["variation"][scenario_name]
+        scenario_var_name = sources_mit.original_data["scenario"]["variation"][scenario_name]
 
         print("")
         print(f"SCENARIO: {scenario_name}, VARIATION: {scenario_var_name}")
