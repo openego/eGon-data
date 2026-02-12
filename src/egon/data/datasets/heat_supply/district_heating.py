@@ -27,13 +27,12 @@ def capacity_per_district_heating_category(district_heating_areas, scenario):
         Installed capacities per technology and size category
 
     """
-    sources = config.datasets()["heat_supply"]["sources"]
+    sources, targets = load_sources_and_targets("HeatSupply")
 
     target_values = db.select_dataframe(
         f"""
         SELECT capacity, split_part(carrier, 'urban_central_', 2) as technology
-        FROM {sources['scenario_capacities']['schema']}.
-        {sources['scenario_capacities']['table']}
+        FROM {sources.tables['scenario_capacities']}
         WHERE carrier IN (
             'urban_central_heat_pump',
             'urban_central_resistive_heater',
@@ -126,7 +125,7 @@ def select_district_heating_areas(scenario):
 
     """
 
-    sources = config.datasets()["heat_supply"]["sources"]
+    sources, targets = load_sources_and_targets("HeatSupply")
 
     max_demand_medium_district_heating = 96000
 
@@ -137,8 +136,7 @@ def select_district_heating_areas(scenario):
          SELECT id as district_heating_id,
          residential_and_service_demand as demand,
          geom_polygon as geom
-         FROM {sources['district_heating_areas']['schema']}.
-        {sources['district_heating_areas']['table']}
+         FROM {sources.tables['district_heating_areas']}
          WHERE scenario = '{scenario}'
          """,
         index_col="district_heating_id",
@@ -196,7 +194,7 @@ def cascade_per_technology(
         List of plants per district heating grid for the selected technology
 
     """
-    sources = config.datasets()["heat_supply"]["sources"]
+    sources, targets = load_sources_and_targets("HeatSupply")
 
     tech = technologies[technologies.priority == technologies.priority.max()]
 
@@ -206,10 +204,8 @@ def cascade_per_technology(
         # Select chp plants from database
         gdf_chp = db.select_geodataframe(
             f"""SELECT a.geom, th_capacity as capacity, c.area_id
-            FROM {sources['chp']['schema']}.
-            {sources['chp']['table']} a,
-            {sources['district_heating_areas']['schema']}.
-            {sources['district_heating_areas']['table']} c
+            FROM {sources.tables['chp']} a,
+            {sources.tables['district_heating_areas']} c
             WHERE a.district_heating = True
             AND a.district_heating_area_id = c.area_id
             AND a.scenario = '{scenario}'
@@ -432,7 +428,7 @@ def backup_resistive_heaters(scenario):
 
     """
 
-    #sources, targets = load_sources_and_targets("HeatSupply")
+    sources, targets = load_sources_and_targets("HeatSupply")
 
     # Select district heating areas from database
     district_heating_areas = select_district_heating_areas(scenario)
@@ -441,7 +437,7 @@ def backup_resistive_heaters(scenario):
     target_value = db.select_dataframe(
         f"""
         SELECT capacity
-        FROM supply.egon_scenario_capacities
+        FROM {sources.tables['scenario_capacities']}
         WHERE carrier = 'urban_central_resistive_heater'
         AND scenario_name = '{scenario}'
         """
@@ -450,7 +446,7 @@ def backup_resistive_heaters(scenario):
     distributed = db.select_dataframe(
         f"""
         SELECT SUM(capacity) as capacity
-        FROM supply.egon_district_heating
+        FROM {targets.tables['district_heating_supply']}
         WHERE carrier = 'resistive_heater'
         AND scenario = '{scenario}'
         """
