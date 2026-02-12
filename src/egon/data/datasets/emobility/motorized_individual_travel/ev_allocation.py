@@ -13,6 +13,7 @@ import numpy as np
 import pandas as pd
 
 from egon.data import config, db
+from egon.data.datasets import load_sources_and_targets
 from egon.data.datasets.emobility.motorized_individual_travel.db_classes import (
     EgonEvCountMunicipality,
     EgonEvCountMvGridDistrict,
@@ -23,7 +24,6 @@ from egon.data.datasets.emobility.motorized_individual_travel.db_classes import 
 from egon.data.datasets.emobility.motorized_individual_travel.helpers import (
     COLUMNS_KBA,
     CONFIG_EV,
-    TESTMODE_OFF,
     read_kba_data,
     read_rs7_data,
 )
@@ -201,6 +201,11 @@ def calc_evs_per_municipality(ev_data, rs7_data):
     rs7_data : pandas.DataFrame
         RegioStaR7 data
     """
+    sources, targets = load_sources_and_targets("MotorizedIndividualTravel")
+    
+    testmode_off = (
+        config.settings()["egon-data"]["--dataset-boundary"] == "Everything"
+    )
     with db.session_scope() as session:
         query = session.query(
             Vg250GemPopulation.ags_0.label("ags"),
@@ -241,7 +246,7 @@ def calc_evs_per_municipality(ev_data, rs7_data):
     )
 
     # Fix missing ags in mun data if not in testmode
-    if TESTMODE_OFF:
+    if testmode_off:
         rs7_data = fix_missing_ags_municipality_regiostar(muns, rs7_data)
 
     # Merge municipality, EV data and pop per district
@@ -420,6 +425,11 @@ def allocate_evs_numbers():
     -------
 
     """
+    sources, targets = load_sources_and_targets("MotorizedIndividualTravel")
+    
+    testmode_off = (
+        config.settings()["egon-data"]["--dataset-boundary"] == "Everything"
+    )
     # Import
     kba_data = read_kba_data()
     rs7_data = read_rs7_data()
@@ -449,7 +459,7 @@ def allocate_evs_numbers():
                 scenario_variation_parameters, kba_data
             )
             # Check EV results if not in testmode
-            if TESTMODE_OFF:
+            if testmode_off:
                 validate_electric_vehicles_numbers(
                     "EV count in registration districts",
                     ev_data,
@@ -477,7 +487,7 @@ def allocate_evs_numbers():
             print("Calculate EV numbers for municipalities...")
             ev_data_muns = calc_evs_per_municipality(ev_data, rs7_data)
             # Check EV results if not in testmode
-            if TESTMODE_OFF:
+            if testmode_off:
                 validate_electric_vehicles_numbers(
                     "EV count in municipalities",
                     ev_data_muns,
@@ -504,7 +514,7 @@ def allocate_evs_numbers():
             print("Calculate EV numbers for grid districts...")
             ev_data_mvgds = calc_evs_per_grid_district(ev_data_muns)
             # Check EV results if not in testmode
-            if TESTMODE_OFF:
+            if testmode_off:
                 validate_electric_vehicles_numbers(
                     "EV count in grid districts",
                     ev_data_mvgds,
@@ -537,6 +547,11 @@ def allocate_evs_to_grid_districts():
     counts per EV type in :class:`EgonEvCountMvGridDistrict`.
     Results are written to :class:`EgonEvMvGridDistrict`.
     """
+    sources, targets = load_sources_and_targets("MotorizedIndividualTravel")
+    
+    testmode_off = (
+        config.settings()["egon-data"]["--dataset-boundary"] == "Everything"
+    )
 
     def get_random_evs(row):
         """Get random EV sample for EV type and RS7 region"""
@@ -619,7 +634,7 @@ def allocate_evs_to_grid_districts():
         )
 
         # Check EV result sums for all scenario variations if not in testmode
-        if TESTMODE_OFF:
+        if testmode_off:
             print("  Validating results...")
             ev_per_mvgd_counts_per_scn = (
                 ev_per_mvgd.drop(columns=["bus_id"])

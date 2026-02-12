@@ -9,6 +9,7 @@ import numpy as np
 import pandas as pd
 
 import egon.data.config
+from egon.data.datasets import load_sources_and_targets
 
 TESTMODE_OFF = (
     egon.data.config.settings()["egon-data"]["--dataset-boundary"]
@@ -20,7 +21,6 @@ DATA_BUNDLE_DIR = Path(
     "data_bundle_egon_data",
     "emobility",
 )
-DATASET_CFG = egon.data.config.datasets()["emobility_mit"]
 COLUMNS_KBA = [
     "reg_district",
     "total",
@@ -87,22 +87,18 @@ MVGD_MIN_COUNT = 3600 if TESTMODE_OFF else 150
 
 def read_kba_data():
     """Read KBA data from CSV"""
-    return pd.read_csv(
-        WORKING_DIR
-        / egon.data.config.datasets()["emobility_mit"]["original_data"][
-            "sources"
-        ]["KBA"]["file_processed"]
-    )
+    sources, targets = load_sources_and_targets("MotorizedIndividualTravel")
+    file_processed = sources.original_data["original_data"]["sources"]["KBA"]["file_processed"]
+    
+    return pd.read_csv(WORKING_DIR / file_processed)
 
 
 def read_rs7_data():
     """Read RegioStaR7 data from CSV"""
-    return pd.read_csv(
-        WORKING_DIR
-        / egon.data.config.datasets()["emobility_mit"]["original_data"][
-            "sources"
-        ]["RS7"]["file_processed"]
-    )
+    sources, targets = load_sources_and_targets("MotorizedIndividualTravel")
+    file_processed = sources.original_data["original_data"]["sources"]["RS7"]["file_processed"]
+    
+    return pd.read_csv(WORKING_DIR / file_processed)
 
 
 def read_simbev_metadata_file(scenario_name, section):
@@ -123,7 +119,9 @@ def read_simbev_metadata_file(scenario_name, section):
     pd.DataFrame
         Config data
     """
-    trips_cfg = DATASET_CFG["original_data"]["sources"]["trips"]
+    sources, targets = load_sources_and_targets("MotorizedIndividualTravel")
+    trips_cfg = sources.original_data["original_data"]["sources"]["trips"]
+    
     meta_file = DATA_BUNDLE_DIR / Path(
         "mit_trip_data",
         trips_cfg[scenario_name]["file"].split(".")[0],

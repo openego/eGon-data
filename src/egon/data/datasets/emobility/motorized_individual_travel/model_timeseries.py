@@ -40,15 +40,14 @@ from sqlalchemy.sql import func
 import numpy as np
 import pandas as pd
 
-from egon.data import db
+from egon.data import config, db
+from egon.data.datasets import load_sources_and_targets
 from egon.data.datasets.emobility.motorized_individual_travel.db_classes import (  # noqa: E501
     EgonEvMvGridDistrict,
     EgonEvPool,
     EgonEvTrip,
 )
 from egon.data.datasets.emobility.motorized_individual_travel.helpers import (
-    DATASET_CFG,
-    MVGD_MIN_COUNT,
     WORKING_DIR,
     read_simbev_metadata_file,
     reduce_mem_usage,
@@ -83,6 +82,7 @@ def data_preprocessing(
     pd.Dataframe
         Trip data
     """
+    sources, targets = load_sources_and_targets("MotorizedIndividualTravel")
     # get ev data for given profiles
     ev_data_df = ev_data_df.loc[
         ev_data_df.ev_id.isin(scenario_data.ev_id.unique())
@@ -153,7 +153,7 @@ def data_preprocessing(
             35040
         )
 
-    if DATASET_CFG["model_timeseries"]["reduce_memory"]:
+    if sources.original_data["model_timeseries"]["reduce_memory"]:
         return reduce_mem_usage(ev_data_df)
 
     return ev_data_df
@@ -183,6 +183,7 @@ def generate_load_time_series(
     pd.DataFrame
         time series of the load and the flex potential
     """
+    sources, targets = load_sources_and_targets("MotorizedIndividualTravel")
     # Get duplicates dict
     profile_counter = Counter(scenario_data.ev_id)
 
@@ -368,7 +369,7 @@ def generate_load_time_series(
         decimal=-1,
     )
 
-    if DATASET_CFG["model_timeseries"]["reduce_memory"]:
+    if sources.original_data["model_timeseries"]["reduce_memory"]:
         return reduce_mem_usage(load_time_series_df)
     return load_time_series_df
 
@@ -529,6 +530,7 @@ def write_model_data_to_db(
     -------
     None
     """
+    sources, targets = load_sources_and_targets("MotorizedIndividualTravel")
 
     def calc_initial_ev_soc(bus_id: int, scenario_name: str) -> pd.DataFrame:
         """Calculate an average initial state of charge for EVs in MV grid
@@ -760,7 +762,7 @@ def write_model_data_to_db(
 
             else:
                 # Get lowflex scenario name
-                lowflex_scenario_name = DATASET_CFG["scenario"]["lowflex"][
+                lowflex_scenario_name = sources.original_data["scenario"]["lowflex"][
                     "names"
                 ][scenario_name]
                 write_load(
@@ -842,7 +844,7 @@ def write_model_data_to_db(
     hourly_load_time_series_df = hourly_load_time_series_df[:8760]
 
     # Create lowflex scenario?
-    write_lowflex_model = DATASET_CFG["scenario"]["lowflex"][
+    write_lowflex_model = sources.original_data["scenario"]["lowflex"][
         "create_lowflex_scenario"
     ]
 
@@ -857,7 +859,7 @@ def write_model_data_to_db(
         write_to_db(write_lowflex_model=True)
 
     # Export to working dir if requested
-    if DATASET_CFG["model_timeseries"]["export_results_to_csv"]:
+    if sources.original_data["model_timeseries"]["export_results_to_csv"]:
         write_to_file()
 
 
@@ -1021,11 +1023,12 @@ def generate_model_data_bunch(scenario_name: str, bunch: range) -> None:
         parallelization. See
         :meth:`egon.data.datasets.emobility.motorized_individual_travel.MotorizedIndividualTravel.generate_model_data_tasks`
     """
+    sources, targets = load_sources_and_targets("MotorizedIndividualTravel")
     # Get list of grid districts / substations for this bunch
     mvgd_bus_ids = load_grid_district_ids().iloc[bunch]
 
     # Get scenario variation name
-    scenario_var_name = DATASET_CFG["scenario"]["variation"][scenario_name]
+    scenario_var_name = sources.original_data["scenario"]["variation"][scenario_name]
 
     print(
         f"SCENARIO: {scenario_name}, "
@@ -1103,9 +1106,13 @@ def generate_model_data_status2019_remaining():
     """Generates timeseries for status2019 scenario for grid districts which
     has not been processed in the parallel tasks before.
     """
+    testmode_off = (
+        config.settings()["egon-data"]["--dataset-boundary"] == "Everything"
+    )
+    mvgd_min_count = 3600 if testmode_off else 150
     generate_model_data_bunch(
         scenario_name="status2019",
-        bunch=range(MVGD_MIN_COUNT, len(load_grid_district_ids())),
+        bunch=range(mvgd_min_count, len(load_grid_district_ids())),
     )
 
 
@@ -1113,9 +1120,13 @@ def generate_model_data_status2023_remaining():
     """Generates timeseries for status2023 scenario for grid districts which
     has not been processed in the parallel tasks before.
     """
+    testmode_off = (
+        config.settings()["egon-data"]["--dataset-boundary"] == "Everything"
+    )
+    mvgd_min_count = 3600 if testmode_off else 150
     generate_model_data_bunch(
         scenario_name="status2023",
-        bunch=range(MVGD_MIN_COUNT, len(load_grid_district_ids())),
+        bunch=range(mvgd_min_count, len(load_grid_district_ids())),
     )
 
 
@@ -1123,9 +1134,13 @@ def generate_model_data_eGon2035_remaining():
     """Generates timeseries for eGon2035 scenario for grid districts which
     has not been processed in the parallel tasks before.
     """
+    testmode_off = (
+        config.settings()["egon-data"]["--dataset-boundary"] == "Everything"
+    )
+    mvgd_min_count = 3600 if testmode_off else 150
     generate_model_data_bunch(
         scenario_name="eGon2035",
-        bunch=range(MVGD_MIN_COUNT, len(load_grid_district_ids())),
+        bunch=range(mvgd_min_count, len(load_grid_district_ids())),
     )
 
 
@@ -1133,7 +1148,11 @@ def generate_model_data_eGon100RE_remaining():
     """Generates timeseries for eGon100RE scenario for grid districts which
     has not been processed in the parallel tasks before.
     """
+    testmode_off = (
+        config.settings()["egon-data"]["--dataset-boundary"] == "Everything"
+    )
+    mvgd_min_count = 3600 if testmode_off else 150
     generate_model_data_bunch(
         scenario_name="eGon100RE",
-        bunch=range(MVGD_MIN_COUNT, len(load_grid_district_ids())),
+        bunch=range(mvgd_min_count, len(load_grid_district_ids())),
     )
