@@ -492,14 +492,14 @@ class MotorizedIndividualTravel(Dataset):
     #:
     name: str = "MotorizedIndividualTravel"
     #:
-    version: str = "0.0.9"
+    version: str = "0.0.10"
 
     def __init__(self, dependencies):
         def generate_model_data_tasks(scenario_name):
             """Dynamically generate tasks for model data creation.
             """
             # Use class attributes directly
-            mit_original_data = MotorizedIndividualTravel.sources.files["original_data"]["original_data"]
+            mit_original_data = MotorizedIndividualTravel.sources.files["original_data"]
             
             parallel_tasks = mit_original_data["model_timeseries"].get(
                 "parallel_tasks", 1
