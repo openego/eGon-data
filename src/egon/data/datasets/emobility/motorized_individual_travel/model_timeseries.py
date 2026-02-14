@@ -153,7 +153,7 @@ def data_preprocessing(
             35040
         )
 
-    if sources.original_data["model_timeseries"]["reduce_memory"]:
+    if sources.files["original_data"]["model_timeseries"]["reduce_memory"]:
         return reduce_mem_usage(ev_data_df)
 
     return ev_data_df
@@ -369,7 +369,7 @@ def generate_load_time_series(
         decimal=-1,
     )
 
-    if sources.original_data["model_timeseries"]["reduce_memory"]:
+    if sources.files["original_data"]["model_timeseries"]["reduce_memory"]:
         return reduce_mem_usage(load_time_series_df)
     return load_time_series_df
 
@@ -762,7 +762,7 @@ def write_model_data_to_db(
 
             else:
                 # Get lowflex scenario name
-                lowflex_scenario_name = sources.original_data["scenario"]["lowflex"][
+                lowflex_scenario_name = sources.files["original_data"]["scenario"]["lowflex"][
                     "names"
                 ][scenario_name]
                 write_load(
@@ -844,7 +844,7 @@ def write_model_data_to_db(
     hourly_load_time_series_df = hourly_load_time_series_df[:8760]
 
     # Create lowflex scenario?
-    write_lowflex_model = sources.original_data["scenario"]["lowflex"][
+    write_lowflex_model = sources.files["original_data"]["scenario"]["lowflex"][
         "create_lowflex_scenario"
     ]
 
@@ -859,7 +859,7 @@ def write_model_data_to_db(
         write_to_db(write_lowflex_model=True)
 
     # Export to working dir if requested
-    if sources.original_data["model_timeseries"]["export_results_to_csv"]:
+    if sources.files["original_data"]["model_timeseries"]["export_results_to_csv"]:
         write_to_file()
 
 
@@ -1028,7 +1028,7 @@ def generate_model_data_bunch(scenario_name: str, bunch: range) -> None:
     mvgd_bus_ids = load_grid_district_ids().iloc[bunch]
 
     # Get scenario variation name
-    scenario_var_name = sources.original_data["scenario"]["variation"][scenario_name]
+    scenario_var_name = sources.files["original_data"]["scenario"]["variation"][scenario_name]
 
     print(
         f"SCENARIO: {scenario_name}, "
