@@ -45,7 +45,7 @@ class HouseholdElectricityDemand(Dataset):
     #:
     name: str = "HouseholdElectricityDemand"
     #:
-    version: str = "0.0.6"
+    version: str = "0.0.7"
     
     targets = DatasetTargets(
         tables={
