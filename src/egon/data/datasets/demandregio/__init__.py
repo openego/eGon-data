@@ -602,7 +602,6 @@ def insert_hh_demand(scenario, year, engine):
             get_sector_parameters("electricity", scenario=scenario)[
                 "annual_demand"
             ]["households"]
-            * 1e6
             / ec_hh.sum().sum()
         )
 
