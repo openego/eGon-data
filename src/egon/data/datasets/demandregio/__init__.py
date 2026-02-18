@@ -597,7 +597,7 @@ def insert_hh_demand(scenario, year, engine):
 
     # Scale to meet target value
     # For status2019 and eGon2021 the final demand from demandregio is kept
-    if scenario not in ["status2019", "eGon2021", "status2023"]:
+    if scenario not in ["status2019", "eGon2021"]:
         ec_hh *= (
             get_sector_parameters("electricity", scenario=scenario)[
                 "annual_demand"
@@ -869,7 +869,7 @@ def insert_cts_ind_demands():
 
         # target values per scenario in MWh
         # for eGon2021 and status2019 demandregio-data is used without scaling
-        if scn not in ["eGon2021", "status2019", "status2023"]:
+        if scn not in ["eGon2021", "status2019"]:
             target_values = {
                 "CTS": get_sector_parameters("electricity", scenario=scn)[
                     "annual_demand"
