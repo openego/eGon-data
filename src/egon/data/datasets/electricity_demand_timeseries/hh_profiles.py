@@ -239,70 +239,36 @@ class HouseholdDemands(Dataset):
     #:
     name: str = "Household Demands"
     #:
-    version: str = "0.0.14"
+    version: str = "0.0.15"
     sources = DatasetSources(
         tables={
-            "demandregio_hh": {
-                "schema": "demand", 
-                "table": "egon_demandregio_hh",
-            },
-            "destatis_zensus_population_per_ha_inside_germany": {
-                "schema": "society",
-                "table": "destatis_zensus_population_per_ha_inside_germany",
-            },
-            "destatis_zensus_population_per_ha": {
-                "schema": "society",
-                "table": "destatis_zensus_population_per_ha",
-            },
-            "egon_destatis_zensus_household_per_ha": {
-                "schema": "society",
-                "table": "egon_destatis_zensus_household_per_ha",
-            },
-            "egon_map_zensus_vg250": {
-                "schema": "boundaries", 
-                "table": "egon_map_zensus_vg250",
-            },
-            "vg250_lan": {
-                "schema": "boundaries",
-                "table": "vg250_lan",
-            },
-            "demandregio_household_load_profiles": {
-                "schema": "demand",
-                "table": "demandregio_household_load_profiles",
-            },
+            "demandregio_hh": "demand.egon_demandregio_hh",
+            "destatis_zensus_population_per_ha_inside_germany": "society.destatis_zensus_population_per_ha_inside_germany",
+            "destatis_zensus_population_per_ha": "society.destatis_zensus_population_per_ha",
+            "egon_destatis_zensus_household_per_ha": "society.egon_destatis_zensus_household_per_ha",
+            "egon_map_zensus_vg250": "boundaries.egon_map_zensus_vg250",
+            "vg250_lan": "boundaries.vg250_lan",
+            "demandregio_household_load_profiles": "demand.demandregio_household_load_profiles",
         },
         files={
             "household_electricity_demand_profiles": {
                 "path_testmode": "hh_el_load_profiles_2511.hdf",
                 "path": "hh_el_load_profiles_100k.hdf",
             },
-            "zensus_household_types": {
-                "path": "Zensus2011_Personen.csv",
-            },
+            "zensus_household_types": {"path": "Zensus2011_Personen.csv"},
         },
- 
     )
+
 
     targets = DatasetTargets(
         tables={
-            "iee_household_load_profiles": {
-                "schema": "demand", 
-                "table": "iee_household_load_profiles",
-            },
-            "hh_profiles_in_census_cells": {
-                "schema": "demand",
-                "table": "egon_household_electricity_profile_in_census_cell",
-            },
-            "zensus_household_per_ha_refined": {
-                "schema": "society",
-                "table": "egon_destatis_zensus_household_per_ha_refined",
-            },
-            "etrago_electricity_households": {
-                "schema": "demand",
-                "table": "egon_etrago_electricity_households",
-            },
+            "iee_household_load_profiles": "demand.iee_household_load_profiles",
+            "hh_profiles_in_census_cells": "demand.egon_household_electricity_profile_in_census_cell",
+            "zensus_household_per_ha_refined": "society.egon_destatis_zensus_household_per_ha_refined",
+            "etrago_electricity_households": "demand.egon_etrago_electricity_households",
         }
     )
+
 
 
     def __init__(self, dependencies):
@@ -927,7 +893,7 @@ def inhabitants_to_households(df_hh_people_distribution_abs):
     df_hh_size = db.select_dataframe(
         sql=f"""
                 SELECT characteristics_text, SUM(quantity) as summe
-                FROM {HouseholdDemands.sources.tables["egon_destatis_zensus_household_per_ha"]["schema"]}.{HouseholdDemands.sources.tables["egon_destatis_zensus_household_per_ha"]["table"]} as egon_d
+                FROM {HouseholdDemands.sources.tables["egon_destatis_zensus_household_per_ha"]} as egon_d
                 WHERE attribute = 'HHGROESS_KLASS' AND quantity_q < 2
                 GROUP BY characteristics_text """,
         index_col="characteristics_text",
@@ -1078,7 +1044,7 @@ def get_census_households_grid():
         sql=f"""
                 SELECT grid_id, attribute, characteristics_code,
                  characteristics_text, quantity
-                 FROM {HouseholdDemands.sources.tables["egon_destatis_zensus_household_per_ha"]["schema"]}.{HouseholdDemands.sources.tables["egon_destatis_zensus_household_per_ha"]["table"]}
+                 FROM {HouseholdDemands.sources.tables["egon_destatis_zensus_household_per_ha"]}
                 WHERE attribute = 'HHTYP_FAM' AND quantity_q <2"""
     )
     df_census_households_grid = df_census_households_grid.drop(
@@ -1097,12 +1063,12 @@ def get_census_households_grid():
                          as insgesamt_minus_fam
                     FROM (
                         SELECT  grid_id, SUM(quantity) as quantity_sum_fam
-                        FROM {HouseholdDemands.sources.tables["egon_destatis_zensus_household_per_ha"]["schema"]}.{HouseholdDemands.sources.tables["egon_destatis_zensus_household_per_ha"]["table"]}
+                        FROM {HouseholdDemands.sources.tables["egon_destatis_zensus_household_per_ha"]}
                         WHERE attribute = 'HHTYP_FAM'
                         GROUP BY grid_id) as t1
                     Full JOIN (
                         SELECT grid_id, sum(quantity) as quantity_gesamt
-                        FROM {HouseholdDemands.sources.tables["egon_destatis_zensus_household_per_ha"]["schema"]}.{HouseholdDemands.sources.tables["egon_destatis_zensus_household_per_ha"]["table"]}
+                        FROM {HouseholdDemands.sources.tables["egon_destatis_zensus_household_per_ha"]}
                         WHERE attribute = 'INSGESAMT'
                         GROUP BY grid_id) as t2 ON t1.grid_id = t2.grid_id
                         ) as joined
@@ -1117,12 +1083,13 @@ def get_census_households_grid():
                     then quantity_gesamt end) as quantity
                     FROM (
                         SELECT  grid_id, SUM(quantity) as quantity_sum_fam
-                        FROM {HouseholdDemands.sources.tables["egon_destatis_zensus_household_per_ha"]["schema"]}.{HouseholdDemands.sources.tables["egon_destatis_zensus_household_per_ha"]["table"]}
+                        FROM {HouseholdDemands.sources.tables["egon_destatis_zensus_household_per_ha"]}
+
                         WHERE attribute = 'HHTYP_FAM'
                         GROUP BY grid_id) as t1
                     Full JOIN (
                         SELECT grid_id, sum(quantity) as quantity_gesamt
-                        FROM {HouseholdDemands.sources.tables["egon_destatis_zensus_household_per_ha"]["schema"]}.{HouseholdDemands.sources.tables["egon_destatis_zensus_household_per_ha"]["table"]}
+                        FROM {HouseholdDemands.sources.tables["egon_destatis_zensus_household_per_ha"]}
                         WHERE attribute = 'INSGESAMT'
                         GROUP BY grid_id) as t2 ON t1.grid_id = t2.grid_id
                         ) as t12
@@ -1149,10 +1116,10 @@ def get_census_households_grid():
                 SELECT pop.grid_id, pop.id as cell_id, pop.population,
                  vg250.vg250_nuts3 as nuts3, lan.nuts as nuts1, lan.gen
                 FROM
-                {HouseholdDemands.sources.tables["destatis_zensus_population_per_ha_inside_germany"]["schema"]}.{HouseholdDemands.sources.tables["destatis_zensus_population_per_ha_inside_germany"]["table"]} as pop
-                LEFT JOIN {HouseholdDemands.sources.tables["egon_map_zensus_vg250"]["schema"]}.{HouseholdDemands.sources.tables["egon_map_zensus_vg250"]["table"]} as vg250
+                {HouseholdDemands.sources.tables["destatis_zensus_population_per_ha_inside_germany"]} as pop
+                LEFT JOIN {HouseholdDemands.sources.tables["egon_map_zensus_vg250"]} as vg250
                 ON (pop.id=vg250.zensus_population_id)
-                LEFT JOIN {HouseholdDemands.sources.tables["vg250_lan"]["schema"]}.{HouseholdDemands.sources.tables["vg250_lan"]["table"]} as lan
+                LEFT JOIN {HouseholdDemands.sources.tables["vg250_lan"]} as lan
                 ON (LEFT(vg250.vg250_nuts3, 3) = lan.nuts)
                 WHERE lan.gf = 4 """
     )
@@ -1714,7 +1681,7 @@ def houseprofiles_in_census_cells():
     df_demand_regio = db.select_dataframe(
         sql=f"""
                 SELECT year, nuts3, SUM (demand) as demand_mWha
-                FROM {HouseholdDemands.sources.tables["demandregio_hh"]["schema"]}.{HouseholdDemands.sources.tables["demandregio_hh"]["table"]} as egon_d
+                FROM {HouseholdDemands.sources.tables["demandregio_hh"]} as egon_d
                 GROUP BY nuts3, year
                 ORDER BY year""",
         index_col=["year", "nuts3"],
@@ -1912,7 +1879,7 @@ def get_demand_regio_hh_profiles_from_db(year):
 
     query = f"""
     Select * 
-    FROM {HouseholdDemands.sources.tables["demandregio_household_load_profiles"]["schema"]}.{HouseholdDemands.sources.tables["demandregio_household_load_profiles"]["table"]}  
+    FROM {HouseholdDemands.sources.tables["demandregio_household_load_profiles"]}
     Where year = year"""
 
     df_profile_loads = pd.read_sql(query, db.engine(), index_col="id")
@@ -1973,7 +1940,7 @@ def mv_grid_district_HH_electricity_load(scenario_name, scenario_year):
         # Import demand regio timeseries demand per nuts3 area
         dr_series = pd.read_sql_query(
             f"""
-            SELECT year, nuts3, load_in_mwh FROM {HouseholdDemands.sources.tables["demandregio_household_load_profiles"]["schema"]}.{HouseholdDemands.sources.tables["demandregio_household_load_profiles"]["table"]}
+            SELECT year, nuts3, load_in_mwh FROM {HouseholdDemands.sources.tables["demandregio_household_load_profiles"]}
             """,
             con=engine,
         )
@@ -1985,7 +1952,7 @@ def mv_grid_district_HH_electricity_load(scenario_name, scenario_year):
         # Population data per cell_id is used to scale the demand per nuts3
         population = pd.read_sql_query(
             f"""
-            SELECT grid_id, population FROM {HouseholdDemands.sources.tables["destatis_zensus_population_per_ha"]["schema"]}.{HouseholdDemands.sources.tables["destatis_zensus_population_per_ha"]["table"]}
+            SELECT grid_id, population FROM {HouseholdDemands.sources.tables["destatis_zensus_population_per_ha"]}
             """,
             con=engine,
         )

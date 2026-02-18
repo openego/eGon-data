@@ -230,81 +230,34 @@ class CtsDemandBuildings(Dataset):
     #:
     name: str = "CtsDemandBuildings"
     #:
-    version: str = "0.0.7"
+    version: str = "0.0.8"
     sources = DatasetSources(
         tables={
-            "osm_buildings_filtered": {
-                "schema": "openstreetmap",
-                "table": "osm_buildings_filtered",
-            },
-            "osm_amenities_shops_filtered": {
-                "schema": "openstreetmap",
-                "table": "osm_amenities_shops_filtered",
-            },
-            "osm_amenities_not_in_buildings_filtered": {
-                "schema": "openstreetmap",
-                "table": "osm_amenities_not_in_buildings_filtered",
-            },
-            "osm_buildings_synthetic": {
-                "schema": "openstreetmap",
-                "table": "osm_buildings_synthetic",
-            },    
-            "map_zensus_buildings_filtered_all": {
-                "schema": "boundaries",
-                "table": "egon_map_zensus_buildings_filtered_all",
-             },
-
-            "zensus_electricity": {
-                "schema": "demand",
-                "table": "egon_demandregio_zensus_electricity",
-            },
-            "peta_heat": {
-                "schema": "demand",
-                "table": "egon_peta_heat",
-            },
-            "etrago_electricity_cts": {
-                "schema": "demand",
-                "table": "egon_etrago_electricity_cts",
-            },
-            "etrago_heat_cts": {
-                "schema": "demand",
-                "table": "egon_etrago_heat_cts",
-            },
+            "osm_buildings_filtered": "openstreetmap.osm_buildings_filtered",
+            "osm_amenities_shops_filtered": "openstreetmap.osm_amenities_shops_filtered",
+            "osm_amenities_not_in_buildings_filtered": "openstreetmap.osm_amenities_not_in_buildings_filtered",
+            "osm_buildings_synthetic": "openstreetmap.osm_buildings_synthetic",
+            "map_zensus_buildings_filtered_all": "boundaries.egon_map_zensus_buildings_filtered_all",
+            "zensus_electricity": "demand.egon_demandregio_zensus_electricity",
+            "peta_heat": "demand.egon_peta_heat",
+            "etrago_electricity_cts": "demand.egon_etrago_electricity_cts",
+            "etrago_heat_cts": "demand.egon_etrago_heat_cts",
         }
     )
+
 
     targets = DatasetTargets(
-        tables={        
-            "cts_buildings": {
-                "schema": "openstreetmap",
-                "table": "egon_cts_buildings",
-            },
-            "cts_electricity_building_share": {
-                "schema": "demand",
-                "table": "egon_cts_electricity_demand_building_share",
-            },
-            "cts_heat_building_share": {
-                "schema": "demand",
-                "table": "egon_cts_heat_demand_building_share",
-            },
-            "osm_buildings_synthetic": {
-                "schema": "openstreetmap",
-                "table": "osm_buildings_synthetic",
-            },
-            "building_electricity_peak_loads": {
-                "schema": "demand",
-                "table": "egon_building_electricity_peak_loads",
-            },
-            "building_heat_peak_loads": {
-                "schema": "demand",
-                "table": "egon_building_heat_peak_loads",
-            },
-            "map_zensus_mvgd_buildings": {
-                "schema": "boundaries",
-                "table": "egon_map_zensus_mvgd_buildings",
-            },
+        tables={
+            "cts_buildings": "openstreetmap.egon_cts_buildings",
+            "cts_electricity_building_share": "demand.egon_cts_electricity_demand_building_share",
+            "cts_heat_building_share": "demand.egon_cts_heat_demand_building_share",
+            "osm_buildings_synthetic": "openstreetmap.osm_buildings_synthetic",
+            "building_electricity_peak_loads": "demand.egon_building_electricity_peak_loads",
+            "building_heat_peak_loads": "demand.egon_building_heat_peak_loads",
+            "map_zensus_mvgd_buildings": "boundaries.egon_map_zensus_mvgd_buildings",
         }
     )
+
 
 
     def __init__(self, dependencies):
