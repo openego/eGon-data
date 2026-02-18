@@ -8,7 +8,7 @@ __author__      = "nesnoj"
 */
 
 ------------------------
--- Scenario: eGon2021 --
+-- Scenario: status2023 --
 ------------------------
 
 -- Add industrial consumption and peak load
@@ -31,7 +31,7 @@ UPDATE demand.egon_loadarea AS t1
                         openstreetmap.osm_landuse as landuse,
                         demand.egon_osm_ind_load_curves_individual as ind_osm
                     WHERE
-                        ind_osm.scn_name = 'eGon2021' AND
+                        ind_osm.scn_name = 'status2023' AND
                         ind_osm.voltage_level in (4,5,6,7) AND
                         ind_osm.osm_id = landuse.id
                     GROUP BY landuse.id
@@ -62,7 +62,7 @@ UPDATE demand.egon_loadarea AS t1
                         demand.egon_industrial_sites as ind_sites,
                         demand.egon_sites_ind_load_curves_individual as ind_loads
                     WHERE
-                        ind_loads.scn_name = 'eGon2021' AND
+                        ind_loads.scn_name = 'status2023' AND
                         ind_loads.voltage_level in (4,5,6,7) AND
                         ind_loads.site_id = ind_sites.id
                 ) AS b
