@@ -108,14 +108,18 @@ class DatasetSources:
         try:
             return self.tables[key].split(".", 1)[0]
         except (KeyError, AttributeError, IndexError):
-            raise ValueError(f"Invalid table reference: {self.tables.get(key)}")
+            raise ValueError(
+                f"Invalid table reference: {self.tables.get(key)}"
+            )
 
     def get_table_name(self, key: str) -> str:
         """Returns the table name of the table identified by key."""
         try:
             return self.tables[key].split(".", 1)[1]
         except (KeyError, AttributeError, IndexError):
-            raise ValueError(f"Invalid table reference: {self.tables.get(key)}")
+            raise ValueError(
+                f"Invalid table reference: {self.tables.get(key)}"
+            )
 
     def to_dict(self):
         return {
@@ -145,14 +149,18 @@ class DatasetTargets:
         try:
             return self.tables[key].split(".", 1)[0]
         except (KeyError, AttributeError, IndexError):
-            raise ValueError(f"Invalid table reference: {self.tables.get(key)}")
+            raise ValueError(
+                f"Invalid table reference: {self.tables.get(key)}"
+            )
 
     def get_table_name(self, key: str) -> str:
         """Returns the table name of the table identified by key."""
         try:
             return self.tables[key].split(".", 1)[1]
         except (KeyError, AttributeError, IndexError):
-            raise ValueError(f"Invalid table reference: {self.tables.get(key)}")
+            raise ValueError(
+                f"Invalid table reference: {self.tables.get(key)}"
+            )
 
     def to_dict(self):
         return {
@@ -319,8 +327,12 @@ class Dataset:
             name=self.name,
             version=self.version,
             scenarios=config.settings()["egon-data"]["--scenarios"],
-            sources=self.sources.to_dict() if hasattr(self.sources, "to_dict") else dict(self.sources),
-            targets=self.targets.to_dict() if hasattr(self.targets, "to_dict") else dict(self.targets),
+            sources=self.sources.to_dict()
+            if hasattr(self.sources, "to_dict")
+            else dict(self.sources),
+            targets=self.targets.to_dict()
+            if hasattr(self.targets, "to_dict")
+            else dict(self.targets),
         )
 
         dependencies = (
@@ -352,40 +364,38 @@ class Dataset:
 
         class_sources = getattr(type(self), "sources", None)
 
-        if not isinstance(class_sources, DatasetSources):
-            logger.warning(
-                f"Dataset '{type(self).__name__}' has no valid class-level 'sources' attribute. "
-                "Defaulting to empty DatasetSources().",
-                stacklevel=2
-            )
-            self.sources = DatasetSources()
-        else:
+        if isinstance(class_sources, DatasetSources):
             self.sources = class_sources
             if self.sources.empty():
                 logger.warning(
-                    f"Dataset '{type(self).__name__}' defines 'sources', but it is empty. "
-                    "Please check if this is intentional.",
-                    stacklevel=2
+                    f"Dataset '{type(self).__name__}' defines empty sources."
                 )
 
-
-        class_targets = getattr(type(self), "targets", None)
-
-        if not isinstance(class_targets, DatasetTargets):
-            logger.warning(
-                f"Dataset '{type(self).__name__}' has no valid class-level 'targets' attribute. "
-                "Defaulting to empty DatasetTargets().",
-                stacklevel=2
-            )
-            self.targets = DatasetTargets()
         else:
+            logger.warning(
+                f"Dataset '{type(self).__name__}' has no valid sources."
+                " Using empty."
+            )
+            self.sources = DatasetSources()
+            
+        # ---- TARGETS ----
+        class_targets = getattr(type(self), "targets", None)
+        if isinstance(class_targets, DatasetTargets):
             self.targets = class_targets
             if self.targets.empty():
                 logger.warning(
-                    f"Dataset '{type(self).__name__}' defines 'targets', but it is empty. "
-                    "Please check if this is intentional.",
-                    stacklevel=2
+                    f"Dataset '{type(self).__name__}' defines empty targets."
                 )
+                
+        else:
+            logger.warning(
+                f"Dataset '{type(self).__name__}' has no valid targets."
+                "Using empty."
+            )
+            self.targets = DatasetTargets()
+
+        self.register_sources_and_targets()
+        
         if not isinstance(self.tasks, Tasks_):
             self.tasks = Tasks_(self.tasks)
         if len(self.tasks.last) > 1:
@@ -428,26 +438,24 @@ class Dataset:
                 p.set_downstream(first)
 
         self.register()
-        self.register_sources_and_targets()
+        
 
     def __init_subclass__(cls) -> None:
         # Warn about missing or invalid class attributes
         if not isinstance(getattr(cls, "sources", None), DatasetSources):
             logger.warning(
-                f"Dataset '{cls.__name__}' does not define a valid class-level 'sources'.",
-                stacklevel=2
+                f"Dataset '{cls.__name__}' does not define valid 'sources'.",
+                stacklevel=2,
             )
         if not isinstance(getattr(cls, "targets", None), DatasetTargets):
             logger.warning(
-                f"Dataset '{cls.__name__}' does not define a valid class-level 'targets'.",
-                stacklevel=2
+                f"Dataset '{cls.__name__}' does not define valid 'targets'.",
+                stacklevel=2,
             )
 
     def register(self):
         with db.session_scope() as session:
-            existing = session.query(Model).filter_by(
-                name=self.name
-            ).first()
+            existing = session.query(Model).filter_by(name=self.name).first()
 
             if not existing:
                 entry = Model(
@@ -455,7 +463,7 @@ class Dataset:
                     version="will be filled after execution",
                     scenarios="{}",
                     sources=self.sources.to_dict(),
-                    targets=self.targets.to_dict()
+                    targets=self.targets.to_dict(),
                 )
                 session.add(entry)
 
@@ -471,10 +479,10 @@ class Dataset:
                 .order_by(Model.epoch.desc())
                 .first()
             )
-    
+        
             sources_dict = self.sources.to_dict()
             targets_dict = self.targets.to_dict()
-    
+        
             if dataset is None:
                 # first registration
                 dataset = Model(
@@ -486,17 +494,17 @@ class Dataset:
                 )
                 session.add(dataset)
                 return
-    
+        
             updated = False
-    
+        
             if (dataset.sources or {}) != sources_dict:
                 dataset.sources = sources_dict
                 updated = True
-    
+        
             if (dataset.targets or {}) != targets_dict:
                 dataset.targets = targets_dict
                 updated = True
-    
+        
             if updated:
                 session.add(dataset)
 
@@ -515,11 +523,7 @@ def load_sources_and_targets(
         Tuple[DatasetSources, DatasetTargets]
     """
     with db.session_scope() as session:
-        dataset_entry = (
-            session.query(Model)
-            .filter_by(name=name)
-            .first()
-        )
+        dataset_entry = session.query(Model).filter_by(name=name).first()
 
         if dataset_entry is None:
             raise ValueError(f"Dataset '{name}' not found in the database.")
