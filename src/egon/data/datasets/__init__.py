@@ -394,7 +394,6 @@ class Dataset:
             )
             self.targets = DatasetTargets()
 
-        self.register_sources_and_targets()
         
         if not isinstance(self.tasks, Tasks_):
             self.tasks = Tasks_(self.tasks)
@@ -438,6 +437,7 @@ class Dataset:
                 p.set_downstream(first)
 
         self.register()
+        self.register_sources_and_targets()
         
 
     def __init_subclass__(cls) -> None:
