@@ -128,7 +128,7 @@ UPDATE demand.egon_loadarea AS t1
     WHERE   t1.id = t2.id;
 
 ------------------------
--- Scenario: eGon2021 --
+-- Scenario: status2023 --
 ------------------------
 -- Update values for status quo scenario
 
@@ -153,7 +153,7 @@ UPDATE demand.egon_loadarea AS t1
                             sum(demand) as demand
                         FROM demand.egon_demandregio_hh
                         WHERE
-                            scenario = 'eGon2021'
+                            scenario = 'status2023'
                         GROUP BY nuts3
                         ORDER BY nuts3
                     ) AS a,

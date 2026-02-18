@@ -128,7 +128,7 @@ UPDATE demand.egon_loadarea AS t1
     WHERE   t1.id = t2.id;
 
 ------------------------
--- Scenario: eGon2021 --
+-- Scenario: status2023 --
 ------------------------
 -- Update values for status quo scenario
 
@@ -156,7 +156,7 @@ UPDATE demand.egon_loadarea AS t1
                             wz in (
                                 SELECT wz FROM demand.egon_demandregio_wz WHERE sector = 'CTS'
                             ) AND
-                            scenario = 'eGon2021'
+                            scenario = 'status2023'
                         GROUP BY nuts3
                         ORDER BY nuts3
                     ) AS a,
