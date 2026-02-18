@@ -776,6 +776,9 @@ def insert_cts_ind(scenario, year, engine, target_values):
                 f"No scaling factors for scenario {scenario}."
                 "Data from demandregio is used without scaling."
             )
+        # fix status2023: revert demand scaling from above as it is already in MWh
+        if scenario == "status2023":
+            ec_cts_ind /= 1e3
         # include new largescale consumers according to NEP 2021
         if scenario == "eGon2035":
             ec_cts_ind = adjust_cts_ind_nep(ec_cts_ind, sector)
