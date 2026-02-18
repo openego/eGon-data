@@ -34,7 +34,7 @@ def map_all_used_buildings():
     scenarios = config.settings()["egon-data"]["--scenarios"]
     
     cts_s, cts_t = load_sources_and_targets("CtsDemandBuildings")
-    hh_s, hh_t = load_sources_and_targets("HouseholdDemands")
+    hh_s, hh_t = load_sources_and_targets("Household Demands")
     hts_s, hts_t = load_sources_and_targets("HeatTimeSeries")
 
     EgonMapZensusMvgdBuildings.__table__.drop(
