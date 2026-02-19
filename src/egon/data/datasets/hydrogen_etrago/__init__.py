@@ -53,23 +53,25 @@ class HydrogenBusEtrago(Dataset):
     #:
     name: str = "HydrogenBusEtrago"
     #:
-    version: str = "0.0.4"
+    version: str = "0.0.5"
     
     sources = DatasetSources(
         tables={
-            "saltcavern_data": {"schema": "grid", "table": "egon_saltstructures_storage_potential"},
-            "buses": {"schema": "grid", "table": "egon_etrago_bus"},
-            "H2_AC_map": {"schema": "grid", "table": "egon_etrago_ac_h2"},
-            "vg250_federal_states": {"schema": "boundaries", "table": "vg250_lan"},
-            "saltcaverns": {"schema": "boundaries", "table": "inspee_saltstructures"},
+            "saltcavern_data": "grid.egon_saltstructures_storage_potential",
+            "buses": "grid.egon_etrago_bus",
+            "H2_AC_map": "grid.egon_etrago_ac_h2",
+            "vg250_federal_states": "boundaries.vg250_lan",
+            "saltcaverns": "boundaries.inspee_saltstructures",
+
         },
     )
 
     targets = DatasetTargets(
         tables={
-            "hydrogen_buses": {"schema": "grid", "table": "egon_etrago_bus"},
-            "H2_AC_map": {"schema": "grid", "table": "egon_etrago_ac_h2"},
-            "storage_potential": {"schema": "grid", "table": "egon_saltstructures_storage_potential"},
+            "hydrogen_buses": "grid.egon_etrago_bus",
+            "H2_AC_map": "grid.egon_etrago_ac_h2",
+            "storage_potential": "grid.egon_saltstructures_storage_potential",
+
         },
     )
 
@@ -113,18 +115,19 @@ class HydrogenStoreEtrago(Dataset):
     #:
     name: str = "HydrogenStoreEtrago"
     #:
-    version: str = "0.0.6"
+    version: str = "0.0.7"
     
     sources = DatasetSources(
         tables={
-            "saltcavern_data": {"schema": "grid", "table": "egon_saltstructures_storage_potential"},
-            "buses": {"schema": "grid", "table": "egon_etrago_bus"},
-            "H2_AC_map": {"schema": "grid", "table": "egon_etrago_ac_h2"},
+            "saltcavern_data": "grid.egon_saltstructures_storage_potential",
+            "buses": "grid.egon_etrago_bus",
+            "H2_AC_map": "grid.egon_etrago_ac_h2",
+
         },
     )
     targets = DatasetTargets(
         tables={
-            "hydrogen_stores": {"schema": "grid", "table": "egon_etrago_store"},
+            "hydrogen_stores": "grid.egon_etrago_store",
         },
     )
 
@@ -164,68 +167,31 @@ class HydrogenPowerLinkEtrago(Dataset):
     #:
     name: str = "HydrogenPowerLinkEtrago"
     #:
-    version: str = "0.0.6"
+    version: str = "0.0.7"
     
     sources = DatasetSources(
         tables={
-            "buses": {"schema": "grid", "table": "egon_etrago_bus"},
-            "links": {"schema": "grid", "table": "egon_etrago_link"},
-            "H2_AC_map": {"schema": "grid", "table": "egon_etrago_ac_h2"},
-            "ehv_substation": {
-                "schema": "grid",
-                "table": "egon_ehv_substation",
-            },
-            "hvmv_substation": {
-                "schema": "grid",
-                "table": "egon_hvmv_substation",
-            },
-            "loads": {
-                "schema": "grid",
-                "table": "egon_etrago_load",
-            },
-            "load_timeseries": {
-                "schema": "grid",
-                "table": "egon_etrago_load_timeseries",
-            },
-            "mv_districts": {
-                "schema": "grid",
-                "table": "egon_mv_grid_district",
-            },
-            "ehv_voronoi": {
-                "schema": "grid",
-                "table": "egon_ehv_substation_voronoi",
-            },
-            "district_heating_area": {
-                "schema": "demand",
-                "table": "egon_district_heating_areas",
-            },
-            "o2_load_profile": {
-                "schema": "demand",
-                "table": "egon_demandregio_timeseries_cts_ind",
-            },
+            "buses": "grid.egon_etrago_bus",
+            "links": "grid.egon_etrago_link",
+            "H2_AC_map": "grid.egon_etrago_ac_h2",
+            "ehv_substation": "grid.egon_ehv_substation",
+            "hvmv_substation": "grid.egon_hvmv_substation",
+            "loads": "grid.egon_etrago_load",
+            "load_timeseries": "grid.egon_etrago_load_timeseries",
+            "mv_districts": "grid.egon_mv_grid_district",
+            "ehv_voronoi": "grid.egon_ehv_substation_voronoi",
+            "district_heating_area": "demand.egon_district_heating_areas",
+            "o2_load_profile": "demand.egon_demandregio_timeseries_cts_ind",
         },
     )
     targets = DatasetTargets(
         tables={
-            "hydrogen_links": {"schema": "grid", "table": "egon_etrago_link"},
-            "loads": {
-                "schema": "grid",
-                "table": "egon_etrago_load",
-            },
-            "load_timeseries": {
-                "schema": "grid",
-                "table": "egon_etrago_load_timeseries",
-            },
-            "generators": {
-                "schema": "grid",
-                "table": "egon_etrago_generator",
-            },
-            "buses": {
-                "schema": "grid",
-                "table": "egon_etrago_bus",
-            },
+            "hydrogen_links": "grid.egon_etrago_link",
+            "loads": "grid.egon_etrago_load",
+            "load_timeseries": "grid.egon_etrago_load_timeseries",
+            "generators": "grid.egon_etrago_generator",
+            "buses": "grid.egon_etrago_bus",
         },
-        
     )
 
     def __init__(self, dependencies):
@@ -263,17 +229,17 @@ class HydrogenMethaneLinkEtrago(Dataset):
     #:
     name: str = "HydrogenMethaneLinkEtrago"
     #:
-    version: str = "0.0.6"
+    version: str = "0.0.7"
     
     sources = DatasetSources(
         tables={
-            "buses": {"schema": "grid", "table": "egon_etrago_bus"},
-            "links": {"schema": "grid", "table": "egon_etrago_link"},
+            "buses": "grid.egon_etrago_bus",
+            "links": "grid.egon_etrago_link",
         },
     )
     targets = DatasetTargets(
         tables={
-            "hydrogen_links": {"schema": "grid", "table": "egon_etrago_link"},
+            "hydrogen_links": "grid.egon_etrago_link",
         },
     )
 
@@ -311,7 +277,7 @@ class HydrogenGridEtrago(Dataset):
     #:
     name: str = "HydrogenGridEtrago"
     #:
-    version: str = "0.0.3"
+    version: str = "0.0.4"
     
     sources = DatasetSources(
         urls={
@@ -325,14 +291,14 @@ class HydrogenGridEtrago(Dataset):
             "pipes_of_further_h2_grid_operators": "Anlage_2_Wasserstoffkernetz_weitere_Leitungen.xlsx",
         },
         tables={
-            "buses": {"schema": "grid", "table": "egon_etrago_bus"},
-            "links": {"schema": "grid", "table": "egon_etrago_link"},
+            "buses": "grid.egon_etrago_bus",
+            "links": "grid.egon_etrago_link",
         },
     )
     
     targets = DatasetTargets(
         tables={
-            "hydrogen_links": {"schema": "grid", "table": "egon_etrago_link"},
+            "hydrogen_links": "grid.egon_etrago_link",
         },
     )
 

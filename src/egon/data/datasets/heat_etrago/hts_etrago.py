@@ -12,8 +12,8 @@ from egon.data.db import next_etrago_id
 
 
 def hts_to_etrago(scenario):
-    sources = HtsEtragoTable.sources.tables
-    targets = HtsEtragoTable.targets.tables
+    sources = HtsEtragoTable.sources
+    targets = HtsEtragoTable.targets
     carriers = ["central_heat", "rural_heat", "rural_gas_boiler"]
 
     if "status" in scenario:
@@ -26,10 +26,8 @@ def hts_to_etrago(scenario):
             bus_area = db.select_dataframe(
                 f"""
                  SELECT bus_id, area_id, id FROM
-                 {sources['heat_buses']['schema']}.
-                 {sources['heat_buses']['table']}
-                 JOIN {sources['district_heating_areas']['schema']}.
-                     {sources['district_heating_areas']['table']}
+                 {sources.tables["heat_buses"]}
+                 JOIN {sources.tables["district_heating_areas"]}
                  ON ST_Transform(ST_Centroid(geom_polygon), 4326) = geom
                  WHERE carrier = '{carrier}'
                  AND scenario='{scenario}'
@@ -42,8 +40,7 @@ def hts_to_etrago(scenario):
             disct_time_series = db.select_dataframe(
                 f"""
                                 SELECT * FROM 
-                                {sources['district_heating_timeseries']['schema']}.
-                                {sources['district_heating_timeseries']['table']}
+                                {sources.tables["district_heating_timeseries"]}
                                 WHERE scenario ='{scenario}'                                
                                 """
             )
@@ -56,19 +53,15 @@ def hts_to_etrago(scenario):
             # interlinking heat_bus_id and mv_grid bus_id
             bus_sub = db.select_dataframe(
                 f"""
-                 SELECT {sources['heat_buses']['schema']}.
-                 {sources['heat_buses']['table']}.bus_id as heat_bus_id, 
-                 {sources['egon_mv_grid_district']['schema']}.
-                             {sources['egon_mv_grid_district']['table']}.bus_id as 
-                             bus_id FROM
-                 {sources['heat_buses']['schema']}.
-                 {sources['heat_buses']['table']}
-                 JOIN {sources['egon_mv_grid_district']['schema']}.
-                             {sources['egon_mv_grid_district']['table']}
-                 ON ST_Transform(ST_Centroid({sources['egon_mv_grid_district']['schema']}.
-                             {sources['egon_mv_grid_district']['table']}.geom),  
-                                 4326) = {sources['heat_buses']['schema']}.
-                                         {sources['heat_buses']['table']}.geom
+                 SELECT 
+                     {sources.tables["heat_buses"]}.bus_id as heat_bus_id,
+                     {sources.tables["egon_mv_grid_district"]}.bus_id as bus_id
+                FROM {sources.tables["heat_buses"]}
+                JOIN {sources.tables["egon_mv_grid_district"]}
+                ON ST_Transform(
+                        ST_Centroid({sources.tables["egon_mv_grid_district"]}.geom),
+                        4326
+                    ) = {sources.tables["heat_buses"]}.geom
                  WHERE carrier = '{carrier}'
                  AND scn_name = '{scenario}'
                  """
@@ -78,9 +71,8 @@ def hts_to_etrago(scenario):
             # individual heating time series
             ind_time_series = db.select_dataframe(
                 f"""
-                SELECT scenario, bus_id, dist_aggregated_mw FROM 
-                {sources['individual_heating_timeseries']['schema']}.
-                {sources['individual_heating_timeseries']['table']}
+                SELECT scenario, bus_id, dist_aggregated_mw
+                FROM {sources.tables["individual_heating_timeseries"]}
                 WHERE scenario ='{scenario}'
                 AND carrier = 'heat_pump'
                 """
@@ -102,9 +94,8 @@ def hts_to_etrago(scenario):
             # Select rural heat demand coverd by individual gas boilers
             ind_time_series = db.select_dataframe(
                 f"""
-                SELECT * FROM 
-                {sources['individual_heating_timeseries']['schema']}.
-                {sources['individual_heating_timeseries']['table']}
+                SELECT * 
+                FROM {sources.tables["individual_heating_timeseries"]}
                 WHERE scenario ='{scenario}'
                 AND carrier = 'CH4'
                 """
@@ -113,18 +104,16 @@ def hts_to_etrago(scenario):
             # Select geoetry of medium voltage grid districts
             mvgd_geom = db.select_geodataframe(
                 f"""
-                SELECT bus_id, ST_CENTROID(geom) as geom FROM 
-                {sources['egon_mv_grid_district']['schema']}.
-                {sources['egon_mv_grid_district']['table']}
+                SELECT bus_id, ST_CENTROID(geom) as geom
+                FROM {sources.tables["egon_mv_grid_district"]}
                 """
             )
 
             # Select geometry of gas (CH4) voronoi
             gas_voronoi = db.select_geodataframe(
                 f"""
-                SELECT bus_id, geom FROM 
-                {sources['ch4_voronoi']['schema']}.
-                {sources['ch4_voronoi']['table']}
+                SELECT bus_id, geom
+                FROM {sources.tables["ch4_voronoi"]}
                 WHERE scn_name = '{scenario}'
                 AND carrier = 'CH4'
                 """
@@ -165,12 +154,11 @@ def hts_to_etrago(scenario):
         # Delete existing data from database
         db.execute_sql(
             f"""
-            DELETE FROM {targets['loads']['schema']}.{targets['loads']['table']}
+            DELETE FROM {targets.tables["loads"]}
             WHERE scn_name = '{scenario}'
             AND carrier = '{carrier}'
             AND bus IN (
-                SELECT bus_id FROM {sources['heat_buses']['schema']}.
-                                   {sources['heat_buses']['table']}
+                SELECT bus_id FROM {sources.tables["heat_buses"]}
                 WHERE country = 'DE'
                 AND scn_name = '{scenario}'
                 )
@@ -179,12 +167,10 @@ def hts_to_etrago(scenario):
 
         db.execute_sql(
             f"""
-            DELETE FROM
-            {targets['load_timeseries']['schema']}.{targets['load_timeseries']['table']}
+            DELETE FROM {targets.tables["load_timeseries"]}
             WHERE scn_name = '{scenario}'
             AND load_id NOT IN (
-            SELECT load_id FROM
-            {targets['loads']['schema']}.{targets['loads']['table']}
+            SELECT load_id FROM {targets.tables["loads"]}
             WHERE scn_name = '{scenario}')
             """
         )
@@ -201,8 +187,8 @@ def hts_to_etrago(scenario):
         etrago_load["sign"] = -1
 
         etrago_load.to_sql(
-            targets["loads"]["table"],
-            schema=targets["loads"]["schema"],
+            targets.get_table_name("loads"),
+            schema=targets.get_table_schema("loads"),
             con=db.engine(),
             if_exists="append",
             index=False,
@@ -215,8 +201,8 @@ def hts_to_etrago(scenario):
         etrago_load_timeseries["p_set"] = bus_ts.loc[:, "dist_aggregated_mw"]
 
         etrago_load_timeseries.to_sql(
-            targets["load_timeseries"]["table"],
-            schema=targets["load_timeseries"]["schema"],
+            targets.get_table_name("load_timeseries"),
+            schema=targets.get_table_schema("load_timeseries"),
             con=db.engine(),
             if_exists="append",
             index=False,
@@ -258,48 +244,24 @@ class HtsEtragoTable(Dataset):
     #:
     name: str = "HtsEtragoTable"
     #:
-    version: str = "0.0.8"
+    version: str = "0.0.9"
     
     sources = DatasetSources(
         tables={
-            # buses coming from HeatEtrago (used as source here)
-            "heat_buses": {"schema": "grid", "table": "egon_etrago_bus"},
-            # polygons & MV grid districts
-            "district_heating_areas": {
-                "schema": "demand",
-                "table": "egon_district_heating_areas",
-            },
-            "egon_mv_grid_district": {
-                "schema": "grid",
-                "table": "egon_mv_grid_district",
-            },
-            # gas voronoi for CH4
-            "ch4_voronoi": {
-                "schema": "grid",
-                "table": "egon_gas_voronoi",
-            },
-            # time series inputs
-            "district_heating_timeseries": {
-                "schema": "demand",
-                "table": "egon_timeseries_district_heating",
-            },
-            "individual_heating_timeseries": {
-                "schema": "demand",
-                "table": "egon_etrago_timeseries_individual_heating",
-            },
+            "heat_buses": "grid.egon_etrago_bus",
+            "district_heating_areas": "demand.egon_district_heating_areas",
+            "egon_mv_grid_district": "grid.egon_mv_grid_district",
+            "ch4_voronoi": "grid.egon_gas_voronoi",
+            "district_heating_timeseries": "demand.egon_timeseries_district_heating",
+            "individual_heating_timeseries": "demand.egon_etrago_timeseries_individual_heating",
         },
     )
 
+    
     targets = DatasetTargets(
         tables={
-            "loads": {
-                "schema": "grid",
-                "table": "egon_etrago_load",
-            },
-            "load_timeseries": {
-                "schema": "grid",
-                "table": "egon_etrago_load_timeseries",
-            },
+            "loads": "grid.egon_etrago_load",
+            "load_timeseries": "grid.egon_etrago_load_timeseries",
         },
     )
 

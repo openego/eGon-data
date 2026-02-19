@@ -75,7 +75,7 @@ class HeatDemandImport(Dataset):
     #:
     name: str = "heat-demands"
     #:
-    version: str = "0.0.6"
+    version: str = "0.0.7"
 
     sources = DatasetSources(
         tables={
@@ -98,10 +98,7 @@ class HeatDemandImport(Dataset):
 
     targets = DatasetTargets(
         tables={
-            "heat_demand": {
-                "schema": "demand",
-                "table": "egon_peta_heat",
-            }
+            "heat_demand": "demand.egon_peta_heat",
         },
         files={
             "scenario_dir": "heat_scenario_raster",
@@ -527,8 +524,7 @@ def heat_demand_to_db_table():
     )
 
     db.execute_sql(
-        f"DELETE FROM {HeatDemandImport.targets.tables['heat_demand']['schema']}."
-        f"{HeatDemandImport.targets.tables['heat_demand']['table']};"
+        f"DELETE FROM {HeatDemandImport.targets.tables['heat_demand']};"
     )
 
 
@@ -586,7 +582,7 @@ def adjust_residential_heat_to_zensus(scenario):
     # Select overall residential heat demand
     overall_demand = db.select_dataframe(
         f"""SELECT SUM(demand) as overall_demand
-        FROM  {HeatDemandImport.targets.tables['heat_demand']['schema']}.{HeatDemandImport.targets.tables['heat_demand']['table']}
+        FROM  {HeatDemandImport.targets.tables['heat_demand']}
         WHERE scenario = {'scenario'} and sector = 'residential'
         """
     ).overall_demand[0]
@@ -594,7 +590,7 @@ def adjust_residential_heat_to_zensus(scenario):
     # Select heat demand in populated cells
     df = db.select_dataframe(
         f"""SELECT *
-        FROM  {HeatDemandImport.targets.tables['heat_demand']['schema']}.{HeatDemandImport.targets.tables['heat_demand']['table']}
+        FROM  {HeatDemandImport.targets.tables['heat_demand']}
         WHERE scenario = {'scenario'} and sector = 'residential'
         AND zensus_population_id IN (
             SELECT id
@@ -608,7 +604,7 @@ def adjust_residential_heat_to_zensus(scenario):
 
     # Drop residential heat demands
     db.execute_sql(
-        f"""DELETE FROM {HeatDemandImport.targets.tables['heat_demand']['schema']}.{HeatDemandImport.targets.tables['heat_demand']['table']}
+        f"""DELETE FROM {HeatDemandImport.targets.tables['heat_demand']}
              WHERE scenario = {'scenario'} and sector = 'residential'"""
     )
 
@@ -757,13 +753,12 @@ def scenario_data_import():
     # drop table if exists
     # can be removed when table structure doesn't change anymore
     db.execute_sql(
-         f"DROP TABLE IF EXISTS {HeatDemandImport.targets.tables['heat_demand']['schema']}."
-         f"{HeatDemandImport.targets.tables['heat_demand']['table']} CASCADE"
+         f"DROP TABLE IF EXISTS {HeatDemandImport.targets.tables['heat_demand']} CASCADE"
     )
 
     db.execute_sql(
-         f"DROP SEQUENCE IF EXISTS {HeatDemandImport.targets.tables['heat_demand']['schema']}."
-         f"{HeatDemandImport.targets.tables['heat_demand']['table']}_seq CASCADE"
+         f"DROP SEQUENCE IF EXISTS {HeatDemandImport.targets.get_table_schema('heat_demand')}."
+         f"{HeatDemandImport.targets.get_table_name('heat_demand')}_seq CASCADE"
     )
 
     # create table

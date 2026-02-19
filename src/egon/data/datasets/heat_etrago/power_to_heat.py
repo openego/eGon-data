@@ -29,11 +29,9 @@ def insert_individual_power_to_heat(scenario):
     # Delete existing entries
     db.execute_sql(
         f"""
-        DELETE FROM {targets.tables['heat_link_timeseries']['schema']}.
-        {targets.tables['heat_link_timeseries']['table']}
+        DELETE FROM {targets.tables["heat_link_timeseries"]}
         WHERE link_id IN (
-            SELECT link_id FROM {targets.tables['heat_links']['schema']}.
-        {targets.tables['heat_links']['table']}
+            SELECT link_id FROM {targets.tables["heat_links"]}
         WHERE carrier IN ('individual_heat_pump', 'rural_heat_pump',
                           'rural_resisitive_heater')
         AND scn_name = '{scenario}')
@@ -42,20 +40,17 @@ def insert_individual_power_to_heat(scenario):
     )
     db.execute_sql(
         f"""
-        DELETE FROM {targets.tables['heat_links']['schema']}.
-        {targets.tables['heat_links']['table']}
+        DELETE FROM {targets.tables["heat_links"]}
         WHERE carrier IN ('individual_heat_pump', 'rural_heat_pump',
                           'rural_resisitive_heater')
         AND bus0 IN 
         (SELECT bus_id 
-         FROM {targets.tables['heat_buses']['schema']}.
-         {targets.tables['heat_buses']['table']}
+         FROM {targets.tables["heat_buses"]}
          WHERE scn_name = '{scenario}'
          AND country = 'DE')
         AND bus1 IN 
         (SELECT bus_id 
-         FROM {targets.tables['heat_buses']['schema']}.
-         {targets.tables['heat_buses']['table']}
+         FROM {targets.tables["heat_buses"]}
          WHERE scn_name = '{scenario}'
          AND country = 'DE')
         """
@@ -66,19 +61,15 @@ def insert_individual_power_to_heat(scenario):
         f"""
         SELECT mv_grid_id as power_bus,
         a.carrier, capacity, b.bus_id as heat_bus, d.feedin as cop
-        FROM {sources.tables['individual_heating_supply']['schema']}.
-            {sources.tables['individual_heating_supply']['table']} a
-        JOIN {targets.tables['heat_buses']['schema']}.
-        {targets.tables['heat_buses']['table']} b
+        FROM {sources.tables["individual_heating_supply"]} a
+        JOIN {targets.tables["heat_buses"]} b
         ON ST_Intersects(
             ST_Buffer(ST_Transform(ST_Centroid(a.geometry), 4326), 0.00000001),
             geom)
-        JOIN {sources.tables['weather_cells']['schema']}.
-            {sources.tables['weather_cells']['table']} c
+        JOIN {sources.tables["weather_cells"]} c
         ON ST_Intersects(
             b.geom, c.geom)
-        JOIN {sources.tables['feedin_timeseries']['schema']}.
-            {sources.tables['feedin_timeseries']['table']} d
+        JOIN {sources.tables["feedin_timeseries"]} d
         ON c.w_id = d.w_id
         WHERE scenario = '{scenario}'
         AND scn_name  = '{scenario}'
@@ -110,10 +101,8 @@ def insert_individual_power_to_heat(scenario):
         f"""
         SELECT mv_grid_id as power_bus,
         a.carrier, capacity, b.bus_id as heat_bus
-        FROM {sources.tables['individual_heating_supply']['schema']}.
-            {sources.tables['individual_heating_supply']['table']} a
-        JOIN {targets.tables['heat_buses']['schema']}.
-        {targets.tables['heat_buses']['table']} b
+        FROM {sources.tables["individual_heating_supply"]} a
+        JOIN {targets.tables["heat_buses"]} b
         ON ST_Intersects(
             ST_Buffer(ST_Transform(ST_Centroid(a.geometry), 4326), 0.00000001),
             geom)
@@ -160,11 +149,9 @@ def insert_central_power_to_heat(scenario):
     # Delete existing entries
     db.execute_sql(
         f"""
-        DELETE FROM {targets.tables['heat_link_timeseries']['schema']}.
-        {targets.tables['heat_link_timeseries']['table']}
+        DELETE FROM {targets.tables["heat_link_timeseries"]}
         WHERE link_id IN (
-            SELECT link_id FROM {targets.tables['heat_links']['schema']}.
-        {targets.tables['heat_links']['table']}
+            SELECT link_id FROM {targets.tables["heat_links"]}
         WHERE carrier = 'central_heat_pump'
         AND scn_name = '{scenario}')
         AND scn_name = '{scenario}'
@@ -173,19 +160,16 @@ def insert_central_power_to_heat(scenario):
 
     db.execute_sql(
         f"""
-        DELETE FROM {targets.tables['heat_links']['schema']}.
-        {targets.tables['heat_links']['table']}
+        DELETE FROM {targets.tables["heat_links"]}
         WHERE carrier = 'central_heat_pump'
         AND bus0 IN 
         (SELECT bus_id 
-         FROM {targets.tables['heat_buses']['schema']}.
-         {targets.tables['heat_buses']['table']}
+         FROM {targets.tables["heat_buses"]}
          WHERE scn_name = '{scenario}'
          AND country = 'DE')
         AND bus1 IN 
         (SELECT bus_id 
-         FROM {targets.tables['heat_buses']['schema']}.
-         {targets.tables['heat_buses']['table']}
+         FROM {targets.tables["heat_buses"]}
          WHERE scn_name = '{scenario}'
          AND country = 'DE')
         """
@@ -195,14 +179,11 @@ def insert_central_power_to_heat(scenario):
     central_heat_pumps = db.select_geodataframe(
         f"""
         SELECT a.index, a.district_heating_id, a.carrier, a.category, a.capacity, a.geometry, a.scenario, d.feedin as cop 
-        FROM {sources.tables['district_heating_supply']['schema']}.
-            {sources.tables['district_heating_supply']['table']} a
-        JOIN {sources.tables['weather_cells']['schema']}.
-            {sources.tables['weather_cells']['table']} c
+        FROM {sources.tables["district_heating_supply"]} a
+        JOIN {sources.tables["weather_cells"]} c
         ON ST_Intersects(
             ST_Transform(a.geometry, 4326), c.geom)
-        JOIN {sources.tables['feedin_timeseries']['schema']}.
-            {sources.tables['feedin_timeseries']['table']} d
+        JOIN {sources.tables["feedin_timeseries"]} d
         ON c.w_id = d.w_id
         WHERE scenario = '{scenario}'
         AND a.carrier = 'heat_pump'
@@ -242,19 +223,16 @@ def insert_central_power_to_heat(scenario):
     # Delete existing entries
     db.execute_sql(
         f"""
-        DELETE FROM {targets.tables['heat_links']['schema']}.
-        {targets.tables['heat_links']['table']}
+        DELETE FROM {targets.tables["heat_links"]}
         WHERE carrier = 'central_resistive_heater'
         AND bus0 IN 
         (SELECT bus_id 
-         FROM {targets.tables['heat_buses']['schema']}.
-         {targets.tables['heat_buses']['table']}
+         FROM {targets.tables["heat_buses"]}
          WHERE scn_name = '{scenario}'
          AND country = 'DE')
         AND bus1 IN 
         (SELECT bus_id 
-         FROM {targets.tables['heat_buses']['schema']}.
-         {targets.tables['heat_buses']['table']}
+         FROM {targets.tables["heat_buses"]}
          WHERE scn_name = '{scenario}'
          AND country = 'DE')
         """
@@ -264,8 +242,7 @@ def insert_central_power_to_heat(scenario):
         f"""
         SELECT district_heating_id, carrier, category, SUM(capacity) as capacity, 
                geometry, scenario
-        FROM {sources.tables['district_heating_supply']['schema']}.
-            {sources.tables['district_heating_supply']['table']}
+        FROM {sources.tables["district_heating_supply"]}
         WHERE scenario = '{scenario}'
         AND carrier = 'resistive_heater'
         GROUP BY (district_heating_id, carrier, category, geometry, scenario)
@@ -347,8 +324,7 @@ def insert_power_to_heat_per_level(
     # Select geometry of buses
     geom_buses = db.select_geodataframe(
         f"""
-        SELECT bus_id, geom FROM {targets.tables['heat_buses']['schema']}.
-        {targets.tables['heat_buses']['table']}
+        SELECT bus_id, geom FROM {targets.tables["heat_buses"]}
         WHERE scn_name = '{scenario}'
         """,
         index_col="bus_id",
@@ -393,8 +369,8 @@ def insert_power_to_heat_per_level(
 
     # Insert data into database
     links.to_postgis(
-        targets.tables["heat_links"]["table"],
-        schema=targets.tables["heat_links"]["schema"],
+        targets.get_table_name("heat_links"),
+        schema=targets.get_table_schema("heat_links"),
         if_exists="append",
         con=db.engine(),
     )
@@ -414,8 +390,8 @@ def insert_power_to_heat_per_level(
 
         # Insert time-dependent data to database
         links_timeseries.to_sql(
-            targets.tables["heat_link_timeseries"]["table"],
-            schema=targets.tables["heat_link_timeseries"]["schema"],
+            targets.get_table_name("heat_link_timeseries"),
+            schema=targets.get_table_schema("heat_link_timeseries"),
             if_exists="append",
             con=db.engine(),
             index=False,
@@ -496,10 +472,8 @@ def assign_electrical_bus(
     heat_buses = db.select_dataframe(
         f"""
         SELECT bus_id, area_id, id FROM
-        {targets.tables['heat_buses']['schema']}.
-        {targets.tables['heat_buses']['table']}
-        JOIN {sources.tables['district_heating_areas']['schema']}.
-            {sources.tables['district_heating_areas']['table']}
+        {targets.tables["heat_buses"]}
+        JOIN {sources.tables["district_heating_areas"]}
         ON ST_Intersects(
         ST_Transform(ST_Buffer(
         ST_Centroid(geom_polygon), 0.0000001), 4326), geom)
@@ -516,8 +490,7 @@ def assign_electrical_bus(
     mv_grid_district = db.select_geodataframe(
         f"""
         SELECT bus_id, geom FROM
-        {sources.tables['egon_mv_grid_district']['schema']}.
-        {sources.tables['egon_mv_grid_district']['table']}
+        {sources.tables["egon_mv_grid_district"]}
         """,
         epsg=4326,
     )
@@ -527,13 +500,11 @@ def assign_electrical_bus(
         f"""
         SELECT area_id, a.zensus_population_id,
         geom_point as geom, sum(a.demand) as demand
-        FROM {sources.tables['map_district_heating_areas']['schema']}.
-            {sources.tables['map_district_heating_areas']['table']} b
-        JOIN {sources.tables['heat_demand']['schema']}.
-            {sources.tables['heat_demand']['table']} a
+        FROM {sources.tables["map_district_heating_areas"]} b
+        JOIN {sources.tables["heat_demand"]} a
         ON b.zensus_population_id = a.zensus_population_id
-        JOIN {sources.tables['zensus_population']['schema']}.{sources.tables['zensus_population']['table']}
-        ON {sources.tables['zensus_population']['schema']}.{sources.tables['zensus_population']['table']}.id = a.zensus_population_id
+        JOIN {sources.tables["zensus_population"]}
+        ON {sources.tables["zensus_population"]}.id = a.zensus_population_id
         WHERE a.scenario = '{scenario}'
         AND b.scenario = '{scenario}'
         GROUP BY (area_id, a.zensus_population_id, geom_point)

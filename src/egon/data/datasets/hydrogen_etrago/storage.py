@@ -51,7 +51,7 @@ def insert_H2_overground_storage():
         storages = db.select_geodataframe(
             f"""
             SELECT bus_id, scn_name, geom
-            FROM {sources.tables["buses"]["schema"]}.{sources.tables["buses"]["table"]} 
+            FROM {sources.tables["buses"]}
             WHERE carrier IN ('H2', 'H2_grid')
             AND scn_name = '{scn_name}' AND country = 'DE'
             """,
@@ -78,12 +78,12 @@ def insert_H2_overground_storage():
         # Clean table
         db.execute_sql(
             f"""
-            DELETE FROM {targets.tables["hydrogen_stores"]["schema"]}.{targets.tables["hydrogen_stores"]["table"]}
+            DELETE FROM {targets.tables["hydrogen_stores"]}
             WHERE carrier = '{carrier}' 
             AND scn_name = '{scn_name}' 
             AND bus not IN (
                 SELECT bus_id 
-                FROM {sources.tables["buses"]["schema"]}.{sources.tables["buses"]["table"]}
+                FROM {sources.tables["buses"]}
                 WHERE scn_name = '{scn_name}' AND country != 'DE'
             );
             """
@@ -97,9 +97,9 @@ def insert_H2_overground_storage():
 
         # Insert data to db
         storages.to_sql(
-            targets.tables["hydrogen_stores"]["table"],
+            targets.get_table_name("hydrogen_stores"),
             db.engine(),
-            schema=targets.tables["hydrogen_stores"]["schema"],
+            schema=targets.get_table_schema("hydrogen_stores"),
             index=False,
             if_exists="append",
         )
@@ -131,7 +131,7 @@ def insert_H2_saltcavern_storage():
         storage_potentials = db.select_geodataframe(
             f"""
             SELECT *
-            FROM {sources.tables["saltcavern_data"]["schema"]}.{sources.tables["saltcavern_data"]["table"]}
+            FROM {sources.tables["saltcavern_data"]}
             """,
             geom_col="geometry",
         )
@@ -140,7 +140,7 @@ def insert_H2_saltcavern_storage():
         H2_AC_bus_map = db.select_dataframe(
             f"""
             SELECT *
-            FROM {sources.tables["H2_AC_map"]["schema"]}.{sources.tables["H2_AC_map"]["table"]}
+            FROM {sources.tables["H2_AC_map"]}
             """,
         )
 
@@ -185,12 +185,12 @@ def insert_H2_saltcavern_storage():
         # Clean table
         db.execute_sql(
             f"""
-            DELETE FROM {targets.tables["hydrogen_stores"]["schema"]}.{targets.tables["hydrogen_stores"]["table"]}
+            DELETE FROM {targets.tables["hydrogen_stores"]}
             WHERE carrier = '{carrier}' 
             AND scn_name = '{scn_name}' 
             AND bus not IN (
                 SELECT bus_id 
-                FROM {sources.tables["buses"]["schema"]}.{sources.tables["buses"]["table"]}
+                FROM {sources.tables["buses"]}
                 WHERE scn_name = '{scn_name}' AND country != 'DE'
             );
             """
@@ -203,9 +203,9 @@ def insert_H2_saltcavern_storage():
 
         # # Insert data to db
         storages.to_sql(
-            targets.tables["hydrogen_stores"]["table"],
+            targets.get_table_name("hydrogen_stores"),
             db.engine(),
-            schema=targets.tables["hydrogen_stores"]["schema"],
+            schema=targets.get_table_schema("hydrogen_stores"),
             index=False,
             if_exists="append",
         )
@@ -224,7 +224,7 @@ def calculate_and_map_saltcavern_storage_potential():
     vg250_data = db.select_geodataframe(
         f""" 
         SELECT * 
-        FROM {sources.tables['vg250_federal_states']['schema']}.{sources.tables['vg250_federal_states']['table']}
+        FROM {sources.tables["vg250_federal_states"]}
         WHERE gf = '4'
         """,
         index_col="id",
@@ -235,7 +235,7 @@ def calculate_and_map_saltcavern_storage_potential():
     saltcavern_data = db.select_geodataframe(
         f"""
         SELECT *
-        FROM {sources.tables['saltcaverns']['schema']}.{sources.tables['saltcaverns']['table']}
+        FROM {sources.tables["saltcaverns"]}
         """,
         geom_col="geometry",
     )
@@ -420,9 +420,9 @@ def write_saltcavern_potential():
     
 
     potential_areas.to_crs(epsg=4326).to_postgis(
-        targets.tables["storage_potential"]["table"],
+        targets.get_table_name("storage_potential"),
         db.engine(),
-        schema=targets.tables["storage_potential"]["schema"],
+        schema=targets.get_table_schema("storage_potential"),
         index=True,
         if_exists="replace",
         dtype={"geometry": Geometry()},

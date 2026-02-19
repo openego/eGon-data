@@ -319,6 +319,7 @@ def create():
         All IDP pool as classified as per household stock and temperature class
 
     """
+    sources, _ = load_sources_and_targets("HeatTimeSeries")
     idp_list = idp_pool_generator()
     stock = ["MFH", "SFH"]
     class_list = [2, 3, 4, 5, 6, 7, 8, 9, 10]
@@ -346,9 +347,9 @@ def create():
     idp_df = idp_df.reset_index(drop=True)
 
     idp_df.to_sql(
-        "egon_heat_idp_pool",
+        sources.get_table_name("idp_pool"),
         con=db.engine(),
-        schema="demand",
+        schema=sources.get_table_schema("idp_pool"),
         if_exists="replace",
         index=True,
         dtype={

@@ -180,11 +180,10 @@ def insert_power_to_h2_to_power():
         def export_o2_buses_to_db(df):
             max_bus_id = db.next_etrago_id("bus")
             next_bus_id = count(start=max_bus_id, step=1)
-            schema = targets.tables["buses"]["schema"]
-            table_name = targets.tables["buses"]["table"]
+            
 
             db.execute_sql(
-                f"DELETE FROM {schema}.{table_name} WHERE carrier = 'O2' AND scn_name='{SCENARIO_NAME}'"
+                f"DELETE FROM {targets.tables['buses']} WHERE carrier = 'O2' AND scn_name='{SCENARIO_NAME}'"
             )
             df = df.copy(deep=True)
             result = []
@@ -211,9 +210,9 @@ def insert_power_to_h2_to_power():
                 )
             result_df = pd.DataFrame(result)
             result_df.to_sql(
-                table_name,
+                targets.get_table_name("buses"),
                 engine,
-                schema=schema,
+                schema=targets.get_table_schema("buses"),
                 if_exists="append",
                 index=False,
             )
@@ -232,47 +231,47 @@ def insert_power_to_h2_to_power():
         queries = {
             WWTP: f"""
                     SELECT bus_id AS id, geom, type AS ka_id
-                    FROM {sources.tables["buses"]["schema"]}.{sources.tables["buses"]["table"]}
+                    FROM {sources.tables["buses"]}
                     WHERE carrier in ('O2') AND scn_name = '{SCENARIO_NAME}'
                     """,
             H2: f"""
                     SELECT bus_id AS id, geom 
-                    FROM {sources.tables["buses"]["schema"]}.{sources.tables["buses"]["table"]}
+                    FROM {sources.tables["buses"]}
                     WHERE carrier in ('H2_grid', 'H2')
                     AND scn_name = '{SCENARIO_NAME}'
                     AND country = 'DE'
                     """,
             H2GRID: f"""
                     SELECT link_id, geom, bus0, bus1
-                    FROM {sources.tables["links"]["schema"]}.{sources.tables["links"]["table"]}
+                    FROM {sources.tables["links"]}
                     WHERE carrier in ('H2_grid') AND scn_name  = '{SCENARIO_NAME}'
                     """,
             AC: f"""
                     SELECT bus_id AS id, geom
-                    FROM {sources.tables["buses"]["schema"]}.{sources.tables["buses"]["table"]}
+                    FROM {sources.tables["buses"]}
                     WHERE carrier in ('AC')
                     AND scn_name = '{SCENARIO_NAME}'
                     AND v_nom = '110'
                     """,
             ACSUB_HVMV: f"""
                     SELECT bus_id AS id, point AS geom
-                    FROM {sources.tables["hvmv_substation"]["schema"]}.{sources.tables["hvmv_substation"]["table"]}
+                    FROM {sources.tables["hvmv_substation"]}
                     """,
             ACSUB_EHV: f"""
                     SELECT bus_id AS id, point AS geom
-                    FROM {sources.tables["ehv_substation"]["schema"]}.{sources.tables["ehv_substation"]["table"]}
+                    FROM {sources.tables["ehv_substation"]}
                     """,
             ACZONE_HVMV: f"""
                     SELECT bus_id AS id, ST_Transform(geom, 4326) as geom
-                    FROM {sources.tables["mv_districts"]["schema"]}.{sources.tables["mv_districts"]["table"]}
+                    FROM {sources.tables["mv_districts"]}
                     """,
             ACZONE_EHV: f"""
                     SELECT bus_id AS id, ST_Transform(geom, 4326) as geom
-                    FROM {sources.tables["ehv_voronoi"]["schema"]}.{sources.tables["ehv_voronoi"]["table"]}
+                    FROM {sources.tables["ehv_voronoi"]}
                     """,
             HEAT_BUS: f"""
         			SELECT bus_id AS id, geom
-        			FROM {sources.tables["buses"]["schema"]}.{sources.tables["buses"]["table"]}
+        			FROM {sources.tables["buses"]}
         			WHERE carrier in ('central_heat')
                     AND scn_name = '{SCENARIO_NAME}'
                     AND country = 'DE'
@@ -289,11 +288,11 @@ def insert_power_to_h2_to_power():
         with engine.connect() as conn:
             conn.execute(
                 text(
-                    f"""DELETE FROM {sources.tables["links"]["schema"]}.{sources.tables["links"]["table"]}
+                    f"""DELETE FROM {sources.tables["links"]}
                             WHERE carrier IN ('power_to_H2', 'H2_to_power', 'PtH2_waste_heat', 'PtH2_O2') 
                             AND scn_name = '{SCENARIO_NAME}' AND bus0 IN (
                               SELECT bus_id
-                              FROM {sources.tables["buses"]["schema"]}.{sources.tables["buses"]["table"]}
+                              FROM {sources.tables["buses"]}
                               WHERE country = 'DE'
                             )
                             """
@@ -337,7 +336,7 @@ def insert_power_to_h2_to_power():
                 HEAT_AREA
             ] = f"""
                      SELECT area_id, geom_polygon as geom
-                     FROM {sources.tables["district_heating_area"]["schema"]}.{sources.tables["district_heating_area"]["table"]}   
+                     FROM {sources.tables["district_heating_area"]}   
                      WHERE scenario = '{SCENARIO_NAME}'
                      """
             dfs[HEAT_AREA] = gpd.read_postgis(
@@ -378,7 +377,7 @@ def insert_power_to_h2_to_power():
                 HEAT_LOAD
             ] = f"""
                     SELECT bus, load_id 
-                    	FROM {sources.tables["loads"]["schema"]}.{sources.tables["loads"]["table"]}
+                    	FROM {sources.tables["loads"]}
                     WHERE carrier in ('central_heat')
                     AND scn_name = '{SCENARIO_NAME}'
                     """
@@ -390,7 +389,7 @@ def insert_power_to_h2_to_power():
                 HEAT_TIMESERIES
             ] = f"""
                 SELECT load_id, p_set
-                FROM {sources.tables["load_timeseries"]["schema"]}.{sources.tables["load_timeseries"]["table"]}
+                FROM {sources.tables["load_timeseries"]}
                 WHERE load_id IN {load_ids}
                 AND scn_name = '{SCENARIO_NAME}'
                 """
@@ -1063,8 +1062,6 @@ def insert_power_to_h2_to_power():
             return power_to_H2, H2_to_power, power_to_Heat, power_to_O2
 
         def export_links_to_db(df, carrier):
-            schema = targets.tables["hydrogen_links"]["schema"]
-            table_name = targets.tables["hydrogen_links"]["table"]
             
             gdf = gpd.GeoDataFrame(df, geometry="geom").set_crs(METRIC_CRS)
             gdf = gdf.to_crs(epsg=DATA_CRS)
@@ -1072,24 +1069,24 @@ def insert_power_to_h2_to_power():
 
             try:
                 gdf.to_postgis(
-                    name=table_name,
+                    name=targets.get_table_name("hydrogen_links"),
                     con=engine,
-                    schema=schema,
+                    schema=targets.get_table_schema("hydrogen_links"),
                     if_exists="append",
                     index=False,
                 )
-                print(f"Links have been exported to {schema}.{table_name}")
+                print(f"Links have been exported to {targets.tables['hydrogen_links']}")
             except Exception as e:
                 print(f"Error while exporting link data: {e}")
 
         def insert_o2_load_points(df):
             new_id = db.next_etrago_id("load")
             next_load_id = count(start=new_id, step=1)
-            schema = targets.tables["loads"]["schema"]
-            table_name = targets.tables["loads"]["table"]
+            
             with engine.connect() as conn:
                 conn.execute(
-                    f"DELETE FROM {schema}.{table_name} WHERE carrier = 'O2' AND scn_name = '{SCENARIO_NAME}'"
+                    f"DELETE FROM {targets.tables['loads']} "
+                    f"WHERE carrier = 'O2' AND scn_name = '{SCENARIO_NAME}'"
                 )
             df = df.copy(deep=True)
             df = df.drop_duplicates(subset="bus1", keep="first")
@@ -1107,19 +1104,19 @@ def insert_power_to_h2_to_power():
                 )
             df = pd.DataFrame(result)
             df[["scn_name", "load_id", "bus", "carrier"]].to_sql(
-                table_name,
+                targets.get_table_name("loads"),
                 engine,
-                schema=schema,
+                schema=targets.get_table_schema("loads"),
                 if_exists="append",
                 index=False,
             )
-            print(f"O2 load data exported to: {table_name}")
+            print(f"O2 load data exported to: {targets.get_table_name('loads')}")
             return df
 
         def insert_o2_load_timeseries(df):
             query_o2_timeseries = f"""
                     SELECT load_curve
-            			FROM {sources.tables["o2_load_profile"]["schema"]}.{sources.tables["o2_load_profile"]["table"]}
+            			FROM {sources.tables["o2_load_profile"]}
             			WHERE slp = 'G3' AND wz = 3
                         """
 
@@ -1131,7 +1128,7 @@ def insert_power_to_h2_to_power():
             with engine.connect() as conn:
                 conn.execute(
                     f"""
-                    DELETE FROM {targets.tables["load_timeseries"]["schema"]}.{targets.tables["load_timeseries"]["table"]}  
+                    DELETE FROM {targets.tables["load_timeseries"]}
                     WHERE load_id IN {tuple(df.load_id.values)} 
                     AND scn_name = '{SCENARIO_NAME}'
                     """
@@ -1162,9 +1159,9 @@ def insert_power_to_h2_to_power():
                 lambda x: x.tolist() if isinstance(x, np.ndarray) else x
             )
             timeseries_df[["scn_name", "load_id", "temp_id", "p_set"]].to_sql(
-                targets.tables["load_timeseries"]["table"],
+                targets.get_table_name("load_timeseries"),
                 engine,
-                schema=targets.tables["load_timeseries"]["schema"],
+                schema=targets.get_table_schema("load_timeseries"),
                 if_exists="append",
                 index=False,
             )
@@ -1175,11 +1172,12 @@ def insert_power_to_h2_to_power():
             new_id = db.next_etrago_id("generator")
             next_generator_id = count(start=new_id, step=1)
 
-            grid = targets.tables["generators"]["schema"]
-            table_name = targets.tables["generators"]["table"]
+            grid = targets.get_table_schema("generators")
+            table_name = targets.get_table_name("generators")
             with engine.connect() as conn:
                 conn.execute(
-                    f"DELETE FROM {grid}.{table_name} WHERE carrier = 'O2' AND scn_name = '{SCENARIO_NAME}'"
+                    f"DELETE FROM {targets.tables['generators']} "
+                    f"WHERE carrier = 'O2' AND scn_name = '{SCENARIO_NAME}'"
                 )
             df = df.copy(deep=True)
             df = df.drop_duplicates(subset="bus1", keep="first")
@@ -1213,7 +1211,7 @@ def insert_power_to_h2_to_power():
                 AC_LOAD
             ] = f"""
                                 SELECT bus, load_id 
-                        			FROM {sources.tables["loads"]["schema"]}.{sources.tables["loads"]["table"]}
+                        			FROM {sources.tables["loads"]}
                                 WHERE scn_name = '{SCENARIO_NAME}'
                                 """
             dfs[AC_LOAD] = pd.read_sql(queries[AC_LOAD], engine)
@@ -1229,7 +1227,7 @@ def insert_power_to_h2_to_power():
                     select_query = text(
                         f"""
                         SELECT p_set 
-                        FROM {sources.tables["load_timeseries"]["schema"]}.{sources.tables["load_timeseries"]["table"]}
+                        FROM {sources.tables["load_timeseries"]}
                         WHERE load_id = :load_id and scn_name= :SCENARIO_NAME
                         """
                     )
@@ -1258,7 +1256,7 @@ def insert_power_to_h2_to_power():
                                 ).tolist()
                                 update_query = text(
                                     f"""
-                                     UPDATE {targets.tables["load_timeseries"]["schema"]}.{targets.tables["load_timeseries"]["table"]}
+                                     UPDATE {targets.tables["load_timeseries"]}
                                      SET p_set = :adjusted_p_set
                                      WHERE load_id = :load_id AND scn_name = :SCENARIO_NAME
                                  """
@@ -1284,9 +1282,9 @@ def insert_power_to_h2_to_power():
             with engine.connect() as conn:
                 conn.execute(
                     f"""
-                    DELETE FROM {targets.tables['buses']['schema']}.{targets.tables['buses']['table']}
+                    DELETE FROM {targets.tables["buses"]}
                     WHERE carrier = 'O2' AND scn_name = '{SCENARIO_NAME}'
-                    AND bus_id NOT IN (SELECT bus1 FROM {targets.tables['hydrogen_links']['schema']}.{targets.tables['hydrogen_links']['table']}  
+                    AND bus_id NOT IN (SELECT bus1 FROM {targets.tables["hydrogen_links"]} 
                                        WHERE carrier = 'PtH2_O2')
                     """
                 )

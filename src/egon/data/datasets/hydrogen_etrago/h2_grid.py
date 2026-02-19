@@ -53,7 +53,7 @@ def insert_h2_pipelines(scn_name):
 
     h2_buses_df = pd.read_sql(
         f"""
-    SELECT bus_id, x, y FROM {sources.tables['buses']['schema']}.{sources.tables['buses']['table']}
+    SELECT bus_id, x, y FROM {sources.tables["buses"]}
     WHERE carrier in ('H2_grid')
     AND scn_name = '{scn_name}'   
     """,
@@ -63,11 +63,11 @@ def insert_h2_pipelines(scn_name):
     # Delete old entries
     db.execute_sql(
         f"""
-        DELETE FROM {target['schema']}.{target['table']}
+        DELETE FROM {targets.tables["hydrogen_links"]}
         WHERE "carrier" = 'H2_grid'
         AND scn_name = '{scn_name}' AND bus0 IN (
           SELECT bus_id
-          FROM {sources.tables['buses']['schema']}.{sources.tables['buses']['table']}
+          FROM {sources.tables["buses"]}
           WHERE country = 'DE'
         )
         """
@@ -277,9 +277,9 @@ def insert_h2_pipelines(scn_name):
 
         # Insert data to db
         H2_grid_final.to_postgis(
-            target["table"],
+            targets.get_table_name("hydrogen_links"),
             con,
-            schema=target["schema"],
+            schema=targets.get_table_schema("hydrogen_links"),
             if_exists="append",
             dtype={"geom": Geometry()},
         )
@@ -631,19 +631,19 @@ def connect_saltcavern_to_h2_grid(scn_name):
 
     db.execute_sql(
         f"""
-           DELETE FROM {targets.tables['hydrogen_links']['schema']}.{targets.tables['hydrogen_links']['table']}  
+           DELETE FROM {targets.tables["hydrogen_links"]}
            WHERE "carrier" in ('H2_saltcavern')
            AND scn_name = '{scn_name}';    
            """
     )
     h2_buses_query = f"""SELECT bus_id, x, y,ST_Transform(geom, 32632) as geom 
-                        FROM  {sources.tables['buses']['schema']}.{sources.tables['buses']['table']}
+                        FROM  {sources.tables["buses"]}
                         WHERE carrier = 'H2_grid' AND scn_name = '{scn_name}'
                     """
     h2_buses = gpd.read_postgis(h2_buses_query, engine)
 
     salt_caverns_query = f"""SELECT bus_id, x, y, ST_Transform(geom, 32632) as geom 
-                            FROM  {sources.tables['buses']['schema']}.{sources.tables['buses']['table']}
+                            FROM  {sources.tables["buses"]}
                             WHERE carrier = 'H2_saltcavern'  AND scn_name = '{scn_name}'
                         """
     salt_caverns = gpd.read_postgis(salt_caverns_query, engine)
@@ -692,9 +692,9 @@ def connect_saltcavern_to_h2_grid(scn_name):
     links_df = gpd.GeoDataFrame(links, geometry="geom", crs=4326)
 
     links_df.to_postgis(
-        targets.tables["hydrogen_links"]["table"],
+        targets.get_table_name("hydrogen_links"),
         engine,
-        schema=targets.tables["hydrogen_links"]["schema"],
+        schema=targets.get_table_schema("hydrogen_links"),
         index=False,
         if_exists="append",
         dtype={"geom": Geometry()},
@@ -720,7 +720,7 @@ def connect_h2_grid_to_neighbour_countries(scn_name):
     h2_buses_df = gpd.read_postgis(
         f"""
     SELECT bus_id, x, y, geom  
-    FROM {sources.tables['buses']['schema']}.{sources.tables['buses']['table']}
+    FROM {sources.tables["buses"]}
     WHERE carrier in ('H2_grid')
     AND scn_name = '{scn_name}'
 
@@ -731,7 +731,7 @@ def connect_h2_grid_to_neighbour_countries(scn_name):
     h2_links_df = pd.read_sql(
         f"""
     SELECT link_id, bus0, bus1, p_nom 
-    FROM {sources.tables['links']['schema']}.{sources.tables['links']['table']}
+    FROM {sources.tables["links"]}
     WHERE carrier in ('H2_grid')
     AND scn_name = '{scn_name}'
 
@@ -742,7 +742,7 @@ def connect_h2_grid_to_neighbour_countries(scn_name):
     abroad_buses_df = gpd.read_postgis(
         f"""
         SELECT bus_id, x, y, geom, country 
-        FROM {sources.tables['buses']['schema']}.{sources.tables['buses']['table']}
+        FROM {sources.tables["buses"]}
         WHERE carrier = 'H2' AND scn_name = '{scn_name}' AND country != 'DE'
         """,
         engine,
@@ -866,9 +866,9 @@ def connect_h2_grid_to_neighbour_countries(scn_name):
     )
 
     connection_links_df.to_postgis(
-        name=targets.tables["hydrogen_links"]["table"],
+        name=targets.get_table_name("hydrogen_links"),
         con=engine,
-        schema=targets.tables["hydrogen_links"]["schema"],
+        schema=targets.get_table_schema("hydrogen_links"),
         if_exists="append",
         index=False,
     )

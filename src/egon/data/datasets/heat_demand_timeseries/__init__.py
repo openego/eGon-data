@@ -1078,9 +1078,7 @@ def store_national_profiles():
     df["urban central"] = db.select_dataframe(
         f"""
         SELECT sum(nullif(demand, 'NaN')) as "urban central"
-
-        FROM {HeatTimeSeries.targets.tables['district_heating_timeseries']['schema']}.
-         {HeatTimeSeries.targets.tables['district_heating_timeseries']['table']},
+        FROM {HeatTimeSeries.targets.tables['district_heating_timeseries']},
         UNNEST (dist_aggregated_mw) WITH ORDINALITY as demand
 
         WHERE scenario = '{scenario}'
@@ -1155,8 +1153,7 @@ def metadata():
     ]
 
     meta_district = {
-        "name": f"{HeatTimeSeries.targets.tables['district_heating_timeseries']['schema']}."
-         f"{HeatTimeSeries.targets.tables['district_heating_timeseries']['table']}",
+        "name": f"{HeatTimeSeries.targets.tables['district_heating_timeseries']}",
         "title": "eGon heat demand time series for district heating grids",
         "id": "WILL_BE_SET_AT_PUBLICATION",
         "description": "Heat demand time series for district heating grids",
@@ -1188,8 +1185,7 @@ def metadata():
         "resources": [
             {
                 "profile": "tabular-data-resource",
-                "name": f"{HeatTimeSeries.targets.tables['district_heating_timeseries']['schema']}."
-                f"{HeatTimeSeries.targets.tables['district_heating_timeseries']['table']}",
+                "name": f"{HeatTimeSeries.targets.tables['district_heating_timeseries']}",
                 "path": None,
                 "format": "PostgreSQL",
                 "encoding": "UTF-8",
@@ -1254,7 +1250,7 @@ class HeatTimeSeries(Dataset):
     #:
     name: str = "HeatTimeSeries"
     #:
-    version: str = "0.0.16"
+    version: str = "0.0.17"
 
     sources = DatasetSources(
         tables={
@@ -1274,24 +1270,13 @@ class HeatTimeSeries(Dataset):
 
     targets = DatasetTargets(
         tables={
-            "district_heating_timeseries": {
-                "schema": "demand",
-                "table": "egon_timeseries_district_heating",
-            },
-            "etrago_timeseries_individual_heating": {
-                "schema": "demand",
-                "table": "egon_etrago_timeseries_individual_heating",
-            },
-            "individual_heating_peak_loads": {
-                "schema": "demand",
-                "table": "egon_individual_heating_peak_loads",
-            },
-            "etrago_heat_cts": {
-                "schema": "demand",
-                "table": "egon_etrago_heat_cts",
-            },
+            "district_heating_timeseries": "demand.egon_timeseries_district_heating",
+            "etrago_timeseries_individual_heating": "demand.egon_etrago_timeseries_individual_heating",
+            "individual_heating_peak_loads": "demand.egon_individual_heating_peak_loads",
+            "etrago_heat_cts": "demand.egon_etrago_heat_cts",
         }
     )
+
 
     def __init__(self, dependencies):
         super().__init__(

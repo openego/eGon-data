@@ -64,7 +64,7 @@ def insert_hydrogen_buses(scn_name):
 
     db.execute_sql(
         f"""
-        DELETE FROM {target_buses['schema']}.{target_buses['table']}
+        DELETE FROM {target_buses}
         WHERE scn_name = '{scn_name}'
         AND carrier = 'H2' AND country = 'DE'
         """
@@ -79,8 +79,8 @@ def insert_hydrogen_buses(scn_name):
     h2_buses.bus_id = range(next_bus_id, next_bus_id + len(h2_input))
 
     h2_buses.to_postgis(
-        target_buses["table"],
-        schema=target_buses["schema"],
+        targets.get_table_name("hydrogen_buses"),
+        schema=targets.get_table_schema("hydrogen_buses"),
         if_exists="append",
         con=db.engine(),
         dtype={"geom": Geometry()},
@@ -91,7 +91,7 @@ def insert_hydrogen_buses(scn_name):
 
     sql_CH4_buses = f"""
             SELECT bus_id, x, y, ST_Transform(geom, 32632) as geom
-            FROM {target_buses["schema"]}.{target_buses["table"]}
+            FROM {target_buses}
             WHERE carrier = 'CH4'
             AND scn_name = '{scn_name}' AND country = 'DE'
             """
@@ -131,8 +131,8 @@ def insert_hydrogen_buses(scn_name):
     )
     # Insert data to db
     additional_H2_buses.to_postgis(
-        target_buses["table"],
-        schema=target_buses["schema"],
+        targets.get_table_name("hydrogen_buses"),
+        schema=targets.get_table_schema("hydrogen_buses"),
         con=db.engine(),
         if_exists="append",
         dtype={"geom": Geometry()},
@@ -173,19 +173,19 @@ def insert_H2_buses_from_saltcavern(gdf, carrier, sources, targets, scn_name):
 
     """
     target_buses = targets.tables["hydrogen_buses"]
-    target_map = targets.tables["H2_AC_map"]
+    
     # electrical buses related to saltcavern storage
     el_buses = db.select_dataframe(
         f"""
         SELECT bus_id
-        FROM  {sources.tables['saltcavern_data']['schema']}.{sources.tables['saltcavern_data']['table']}"""
+        FROM {sources.tables["saltcavern_data"]}"""
     )["bus_id"]
 
     # locations of electrical buses (filtering not necessarily required)
     locations = db.select_geodataframe(
         f"""
         SELECT bus_id, geom
-        FROM  {sources.tables['buses']['schema']}.{sources.tables['buses']['table']} 
+        FROM {sources.tables["buses"]}
         WHERE scn_name = '{scn_name}'
         AND country = 'DE'""",
         index_col="bus_id",
@@ -212,9 +212,9 @@ def insert_H2_buses_from_saltcavern(gdf, carrier, sources, targets, scn_name):
 
     # Insert data to db
     gdf_H2_cavern.to_sql(
-        target_map["table"],
+        targets.get_table_name("H2_AC_map"),
         db.engine(),
-        schema=target_map["schema"],
+        schema=targets.get_table_schema("H2_AC_map"),
         index=False,
         if_exists="replace",
     )

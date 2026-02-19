@@ -54,10 +54,10 @@ def insert_h2_to_ch4_to_h2():
 
         db.execute_sql(
             f"""
-           DELETE FROM {target_links["schema"]}.{target_links["table"]} WHERE "carrier" in ('H2_to_CH4', 'CH4_to_H2')
+           DELETE FROM {target_links} WHERE "carrier" in ('H2_to_CH4', 'CH4_to_H2')
            AND scn_name = '{scn_name}' AND bus0 IN (
              SELECT bus_id
-             FROM {target_buses["schema"]}.{target_buses["table"]}
+             FROM {target_buses}
              WHERE country = 'DE'
              )
            """
@@ -65,13 +65,13 @@ def insert_h2_to_ch4_to_h2():
 
         sql_CH4_buses = f"""
                 SELECT bus_id, x, y, ST_Transform(geom, 32632) as geom
-                FROM {target_buses["schema"]}.{target_buses["table"]} 
+                FROM {target_buses}
                 WHERE carrier = 'CH4'
                 AND scn_name = '{scn_name}' AND country = 'DE'
                 """
         sql_H2_buses = f"""
                 SELECT bus_id, x, y, ST_Transform(geom, 32632) as geom
-                FROM {target_buses["schema"]}.{target_buses["table"]} 
+                FROM {target_buses}
                 WHERE carrier in ('H2')
                 AND scn_name = '{scn_name}' AND country = 'DE'
                 """
@@ -151,9 +151,9 @@ def insert_h2_to_ch4_to_h2():
             table["link_id"] = range(new_id, new_id + len(table))
 
             table.to_postgis(
-                target_links["table"],
+                targets.get_table_name("hydrogen_links"),
                 con,
-                schema=target_links["schema"],
+                schema=targets.get_table_schema("hydrogen_links"),
                 index=False,
                 if_exists="append",
                 dtype={"geom": Geometry()},
