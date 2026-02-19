@@ -57,14 +57,17 @@ def insert_hydrogen_buses(scn_name):
         lambda wkb_hex: loads(bytes.fromhex(wkb_hex))
     )
 
-    target_buses = targets.tables["hydrogen_buses"]
+    target_buses = {
+        "schema": targets.get_table_schema("hydrogen_buses"),
+        "table": targets.get_table_name("hydrogen_buses"),
+    }
     h2_buses = initialise_bus_insertion(
         "H2_grid", target_buses, scenario=scn_name
     )
 
     db.execute_sql(
         f"""
-        DELETE FROM {target_buses}
+        DELETE FROM {targets.tables["hydrogen_buses"]}
         WHERE scn_name = '{scn_name}'
         AND carrier = 'H2' AND country = 'DE'
         """
@@ -91,7 +94,7 @@ def insert_hydrogen_buses(scn_name):
 
     sql_CH4_buses = f"""
             SELECT bus_id, x, y, ST_Transform(geom, 32632) as geom
-            FROM {target_buses}
+            FROM {targets.tables["hydrogen_buses"]}
             WHERE carrier = 'CH4'
             AND scn_name = '{scn_name}' AND country = 'DE'
             """
@@ -172,7 +175,11 @@ def insert_H2_buses_from_saltcavern(gdf, carrier, sources, targets, scn_name):
     None
 
     """
-    target_buses = targets.tables["hydrogen_buses"]
+    target_buses = {
+        "schema": targets.get_table_schema("hydrogen_buses"),
+        "table": targets.get_table_name("hydrogen_buses"),
+    }
+
     
     # electrical buses related to saltcavern storage
     el_buses = db.select_dataframe(
