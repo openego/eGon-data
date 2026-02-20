@@ -230,7 +230,7 @@ class CtsDemandBuildings(Dataset):
     #:
     name: str = "CtsDemandBuildings"
     #:
-    version: str = "0.0.8"
+    version: str = "0.0.9"
     sources = DatasetSources(
         tables={
             "osm_buildings_filtered": "openstreetmap.osm_buildings_filtered",

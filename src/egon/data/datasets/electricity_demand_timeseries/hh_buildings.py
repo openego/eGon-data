@@ -1233,7 +1233,7 @@ class setup(Dataset):
     #:
     name: str = "Demand_Building_Assignment"
     #:
-    version: str = "0.0.10"
+    version: str = "0.0.11"
     #:
     sources = DatasetSources(
        tables={
