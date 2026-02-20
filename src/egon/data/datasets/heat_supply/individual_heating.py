@@ -458,7 +458,7 @@ class HeatPumps2035(Dataset):
 
         super().__init__(
             name=self.version,
-            version="0.0.3",
+            version="0.0.4",
             dependencies=dependencies,
             tasks=tasks_HeatPumps2035,
         )
