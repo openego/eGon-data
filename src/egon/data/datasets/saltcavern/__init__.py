@@ -25,8 +25,9 @@ def to_postgres():
 
     """
 
-    schema = SaltcavernData.targets.tables["saltcaverns"]["schema"]
-    table = SaltcavernData.targets.tables["saltcaverns"]["table"]
+    targets = SaltcavernData.targets
+    schema = targets.get_table_schema("saltcaverns")
+    table = targets.get_table_name("saltcaverns")
     # Create target schema
     db.execute_sql(f"CREATE SCHEMA IF NOT EXISTS {schema};")
 
@@ -99,7 +100,7 @@ class SaltcavernData(Dataset):
     #:
     name: str = "SaltcavernData"
     #:
-    version: str = "0.0.2"
+    version: str = "0.0.3"
     
     
     sources = DatasetSources(
@@ -110,13 +111,9 @@ class SaltcavernData(Dataset):
 
     targets = DatasetTargets(
         tables={
-            "saltcaverns": {
-                "schema": "boundaries",
-                "table": "inspee_saltstructures",
-            },
+            "saltcaverns": "boundaries.inspee_saltstructures",
         }
     )
-
     def __init__(self, dependencies):
         super().__init__(
             name=self.name,

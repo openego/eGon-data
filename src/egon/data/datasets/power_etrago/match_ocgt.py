@@ -50,8 +50,7 @@ def insert_open_cycle_gas_turbines_per_scenario(scn_name):
 
     buses = tuple(
         db.select_dataframe(
-            f"""SELECT bus_id FROM {sources.tables["etrago_bus"]["schema"]}.
-            {sources.tables["etrago_bus"]["table"]}
+            f"""SELECT bus_id FROM {sources.tables["etrago_bus"]}
             WHERE scn_name = '{scn_name}' AND country = 'DE';
         """
         )["bus_id"]
@@ -60,7 +59,7 @@ def insert_open_cycle_gas_turbines_per_scenario(scn_name):
     # Delete old entries
     db.execute_sql(
         f"""
-        DELETE FROM {targets.tables["etrago_link"]["schema"]}.{targets.tables["etrago_link"]["table"]}
+        DELETE FROM {targets.tables["etrago_link"]}
         WHERE "carrier" = '{carrier}'
         AND scn_name = '{scn_name}'
         AND bus0 IN {buses} AND bus1 IN {buses};
@@ -84,9 +83,9 @@ def insert_open_cycle_gas_turbines_per_scenario(scn_name):
 
     # Insert data to db
     gdf.to_postgis(
-        targets.tables["etrago_link"]["table"],
+        targets.get_table_name("etrago_link"),
         engine,
-        schema=targets.tables["etrago_link"]["schema"],
+        schema=targets.get_table_schema("etrago_link"),
         index=False,
         if_exists="append",
         dtype={"topo": Geometry()},
@@ -111,11 +110,11 @@ def map_buses(scn_name):
     sources, _ = load_sources_and_targets("OpenCycleGasTurbineEtrago")
     # Create dataframes containing all gas buses and all the HV power buses
     sql_AC = f"""SELECT bus_id, el_capacity as p_nom, geom
-                FROM {sources.tables["power_plants"]["schema"]}.{sources.tables["power_plants"]["table"]}
+                FROM {sources.tables["power_plants"]}
                 WHERE carrier = 'gas' AND scenario = '{scn_name}';
                 """
     sql_gas = f"""SELECT bus_id, scn_name, geom
-                FROM {sources.tables["etrago_bus"]["schema"]}.{sources.tables["etrago_bus"]["table"]}
+                FROM {sources.tables["etrago_bus"]}
                 WHERE carrier = 'CH4' AND scn_name = '{scn_name}'
                 AND country = 'DE';"""
 

@@ -40,12 +40,10 @@ def create_table():
     """
     engine = db.engine()
     db.execute_sql(
-        f"CREATE SCHEMA IF NOT EXISTS {ScenarioParameters.targets.tables['egon_scenario_parameters']['schema']};"
+        f"CREATE SCHEMA IF NOT EXISTS {ScenarioParameters.targets.get_table_schema('egon_scenario_parameters')};"
     )
     db.execute_sql(
-        f"DROP TABLE IF EXISTS "
-        f"{ScenarioParameters.targets.tables['egon_scenario_parameters']['schema']}."
-        f"{ScenarioParameters.targets.tables['egon_scenario_parameters']['table']} CASCADE;"
+        f"DROP TABLE IF EXISTS {ScenarioParameters.targets.tables['egon_scenario_parameters']} CASCADE;"
     )
     EgonScenario.__table__.create(bind=engine, checkfirst=True)
 
@@ -75,8 +73,7 @@ def insert_scenarios():
     """
 
     db.execute_sql(
-        f"DELETE FROM {ScenarioParameters.targets.tables['egon_scenario_parameters']['schema']}."
-        f"{ScenarioParameters.targets.tables['egon_scenario_parameters']['table']} CASCADE;"
+        f"DELETE FROM {ScenarioParameters.targets.tables['egon_scenario_parameters']} CASCADE;"
     )
 
     session = sessionmaker(bind=db.engine())()
@@ -216,16 +213,13 @@ def get_sector_parameters(sector, scenario=None):
         if (
             scenario
             in db.select_dataframe(
-                f"SELECT name FROM "
-                f"{ScenarioParameters.targets.tables['egon_scenario_parameters']['schema']}."
-                f"{ScenarioParameters.targets.tables['egon_scenario_parameters']['table']}"
+                f"SELECT name FROM {ScenarioParameters.targets.tables['egon_scenario_parameters']}"
             ).name.values
         ):
             values = db.select_dataframe(
                 f"""
                     SELECT {sector}_parameters as val
-                    FROM {ScenarioParameters.targets.tables['egon_scenario_parameters']['schema']}.
-                         {ScenarioParameters.targets.tables['egon_scenario_parameters']['table']}
+                    FROM {ScenarioParameters.targets.tables['egon_scenario_parameters']}
                     WHERE name = '{scenario}';"""
             ).val[0]
         else:
@@ -237,8 +231,7 @@ def get_sector_parameters(sector, scenario=None):
                     db.select_dataframe(
                         f"""
                         SELECT {sector}_parameters as val
-                        FROM {ScenarioParameters.targets.tables['egon_scenario_parameters']['schema']}.
-                             {ScenarioParameters.targets.tables['egon_scenario_parameters']['table']}
+                        FROM {ScenarioParameters.targets.tables['egon_scenario_parameters']}
                         WHERE name='eGon2035'"""
                     ).val[0],
                     index=["eGon2035"],
@@ -247,8 +240,7 @@ def get_sector_parameters(sector, scenario=None):
                     db.select_dataframe(
                         f"""
                         SELECT {sector}_parameters as val
-                        FROM {ScenarioParameters.targets.tables['egon_scenario_parameters']['schema']}.
-                             {ScenarioParameters.targets.tables['egon_scenario_parameters']['table']}
+                        FROM {ScenarioParameters.targets.tables['egon_scenario_parameters']}
                         WHERE name='eGon100RE'"""
                     ).val[0],
                     index=["eGon100RE"],
@@ -257,8 +249,7 @@ def get_sector_parameters(sector, scenario=None):
                     db.select_dataframe(
                         f"""
                         SELECT {sector}_parameters as val
-                        FROM {ScenarioParameters.targets.tables['egon_scenario_parameters']['schema']}.
-                             {ScenarioParameters.targets.tables['egon_scenario_parameters']['table']}
+                        FROM {ScenarioParameters.targets.tables['egon_scenario_parameters']}
                         WHERE name='eGon2021'"""
                     ).val[0],
                     index=["eGon2021"],
@@ -309,7 +300,7 @@ class ScenarioParameters(Dataset):
     #:
     name: str = "ScenarioParameters"
     #:
-    version: str = "0.0.20"
+    version: str = "0.0.21"
     
     
     sources = DatasetSources(
@@ -322,10 +313,7 @@ class ScenarioParameters(Dataset):
 
     targets = DatasetTargets(
         tables={
-            "egon_scenario_parameters": {
-                "schema": "scenario",
-                "table": "egon_scenario_parameters",
-            }
+            "egon_scenario_parameters": "scenario.egon_scenario_parameters",
         },
         files={
             "pypsa_zip": "pypsa_technology_data_egon_data.zip",

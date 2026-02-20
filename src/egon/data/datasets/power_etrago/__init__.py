@@ -29,31 +29,19 @@ class OpenCycleGasTurbineEtrago(Dataset):
     #:
     name: str = "OpenCycleGasTurbineEtrago"
     #:
-    version: str = "0.0.3"
+    version: str = "0.0.4"
     
     sources = DatasetSources(
         tables={
-            "power_plants": {
-                "schema": "supply",
-                "table": "egon_power_plants",
-            },
-            "etrago_bus": {
-                "schema": "grid",
-                "table": "egon_etrago_bus",
-            },
-            "etrago_link": {
-                "schema": "grid",
-                "table": "egon_etrago_link",
-            },
+            "power_plants": "supply.egon_power_plants",
+            "etrago_bus": "grid.egon_etrago_bus",
+            "etrago_link": "grid.egon_etrago_link",
         }
     )
 
     targets = DatasetTargets(
         tables={
-            "etrago_link": {
-                "schema": "grid",
-                "table": "egon_etrago_link",
-            },
+            "etrago_link": "grid.egon_etrago_link",
         }
     )
 

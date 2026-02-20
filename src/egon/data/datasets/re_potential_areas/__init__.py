@@ -55,8 +55,8 @@ class EgonRePotentialAreaWind(Base):
 def create_tables():
     """Create tables for RE potential areas"""
 
-    schema = re_potential_area_setup.targets.tables["egon_re_potential_area_wind"]["schema"]
-
+    targets = re_potential_area_setup.targets
+    schema = targets.get_table_schema("egon_re_potential_area_wind")
 
     db.execute_sql(f"CREATE SCHEMA IF NOT EXISTS {schema};")
     engine = db.engine()
@@ -108,8 +108,8 @@ def insert_data():
         data.rename(columns={"geometry": "geom"}, inplace=True)
         data.set_geometry("geom", inplace=True)
 
-        schema = re_potential_area_setup.targets.tables["egon_re_potential_area_wind"]["schema"]
-
+        targets = re_potential_area_setup.targets
+        schema = targets.get_table_schema("egon_re_potential_area_wind")
         # create database table from geopandas dataframe
         data[["id", "geom"]].to_postgis(
             table,
@@ -140,7 +140,7 @@ class re_potential_area_setup(Dataset):
     #:
     name: str = "RePotentialAreas"
     #:
-    version: str = "0.0.3"
+    version: str = "0.0.4"
     #:
     tasks = (create_tables, insert_data)
 
@@ -158,20 +158,12 @@ class re_potential_area_setup(Dataset):
     
     targets = DatasetTargets(
         tables={
-            "egon_re_potential_area_pv_agriculture": {
-                "schema": "supply",
-                "table": "egon_re_potential_area_pv_agriculture"
-            },
-            "egon_re_potential_area_pv_road_railway": {
-                "schema": "supply",
-                "table": "egon_re_potential_area_pv_road_railway"
-            },
-            "egon_re_potential_area_wind": {
-                "schema": "supply",
-                "table": "egon_re_potential_area_wind"
-            }
+            "egon_re_potential_area_pv_agriculture": "supply.egon_re_potential_area_pv_agriculture",
+            "egon_re_potential_area_pv_road_railway": "supply.egon_re_potential_area_pv_road_railway",
+            "egon_re_potential_area_wind": "supply.egon_re_potential_area_wind",
         }
     )
+
 
     def __init__(self, dependencies):
         super().__init__(

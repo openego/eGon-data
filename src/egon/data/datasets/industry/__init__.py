@@ -93,46 +93,40 @@ def create_tables():
     -------
     None.
     """
-
+    targets = IndustrialDemandCurves.targets
     # Create target schema
     db.execute_sql("CREATE SCHEMA IF NOT EXISTS demand;")
-
+    
     # Drop tables and sequences before recreating them
 
     db.execute_sql(
     f"""DROP TABLE IF EXISTS
-        {IndustrialDemandCurves.targets.tables["sites"]["schema"]}.
-        {IndustrialDemandCurves.targets.tables["sites"]["table"]} CASCADE;"""
+        {targets.tables["sites"]} CASCADE;"""
     )
 
     db.execute_sql(
     f"""DROP TABLE IF EXISTS
-        {IndustrialDemandCurves.targets.tables["osm"]["schema"]}.
-        {IndustrialDemandCurves.targets.tables["osm"]["table"]} CASCADE;"""
+        {targets.tables["osm"]} CASCADE;"""
     )
 
     db.execute_sql(
     f"""DROP TABLE IF EXISTS
-        {IndustrialDemandCurves.targets.tables["osm_load"]["schema"]}.
-        {IndustrialDemandCurves.targets.tables["osm_load"]["table"]} CASCADE;"""
+        {targets.tables["osm_load"]} CASCADE;"""
     )
 
     db.execute_sql(
     f"""DROP TABLE IF EXISTS
-        {IndustrialDemandCurves.targets.tables["osm_load_individual"]["schema"]}.
-        {IndustrialDemandCurves.targets.tables["osm_load_individual"]["table"]} CASCADE;"""
+        {targets.tables["osm_load_individual"]} CASCADE;"""
     )
 
     db.execute_sql(
     f"""DROP TABLE IF EXISTS
-        {IndustrialDemandCurves.targets.tables["sites_load"]["schema"]}.
-        {IndustrialDemandCurves.targets.tables["sites_load"]["table"]} CASCADE;"""
+        {targets.tables["sites_load"]} CASCADE;"""
     )
 
     db.execute_sql(
     f"""DROP TABLE IF EXISTS
-        {IndustrialDemandCurves.targets.tables["sites_load_individual"]["schema"]}.
-        {IndustrialDemandCurves.targets.tables["sites_load_individual"]["table"]} CASCADE;"""
+        {targets.tables["sites_load_individual"]} CASCADE;"""
     )
 
     engine = db.engine()
@@ -171,25 +165,23 @@ def industrial_demand_distr():
     """
 
     # Read information from configuration file
-    sources = IndustrialDemandCurves.sources.tables
-
-    target_sites = IndustrialDemandCurves.targets.tables["sites"]
-    target_osm = IndustrialDemandCurves.targets.tables["osm"]
+    sources = IndustrialDemandCurves.sources
+    targets = IndustrialDemandCurves.targets
+    
 
     # Delete data from table
 
     db.execute_sql(
-    f"""DELETE FROM {target_sites['schema']}.{target_sites['table']}"""
+    f"""DELETE FROM {targets.tables["sites"]}"""
     )
     db.execute_sql(
-    f"""DELETE FROM {target_osm['schema']}.{target_osm['table']}"""
+    f"""DELETE FROM {targets.tables["osm"]}"""
     )
 
     for scn in settings()["egon-data"]["--scenarios"]:
         boundaries = db.select_geodataframe(
-            f"""SELECT nuts, geometry FROM
-                {sources["vg250_krs"]["schema"]}.
-                {sources["vg250_krs"]["table"]}""",
+            f"""SELECT nuts, geometry 
+            FROM {sources.tables["vg250_krs"]}""",
             index_col="nuts",
             geom_col="geometry",
             epsg=3035,
@@ -197,14 +189,13 @@ def industrial_demand_distr():
 
         # Select industrial landuse polygons
         landuse = db.select_geodataframe(
-            f"""SELECT id, area_ha, geom FROM
-                {sources["osm_landuse"]["schema"]}.
-                {sources["osm_landuse"]["table"]}
+            f"""SELECT id, area_ha, geom 
+                FROM {sources.tables["osm_landuse"]}
                 WHERE sector = 3
                 AND NOT ST_Intersects(
                     geom,
                     (SELECT ST_UNION(ST_Transform(geom,3035)) FROM
-                     {sources["industrial_sites"]["schema"]}.{sources["industrial_sites"]["table"]}))
+                     {sources.tables["industrial_sites"]}))
                 AND name NOT LIKE '%%kraftwerk%%'
                 AND name NOT LIKE '%%Stadtwerke%%'
                 AND name NOT LIKE '%%Müllverbrennung%%'
@@ -241,7 +232,7 @@ def industrial_demand_distr():
         # Select data on industrial sites
         sites = db.select_dataframe(
             f"""SELECT id, wz, nuts3 FROM
-                {sources["industrial_sites"]["schema"]}.{sources["industrial_sites"]["table"]}""",
+                {sources.tables["industrial_sites"]}""",
             index_col=None,
         )
         # Count number of industrial sites per subsector (wz) and nuts3
@@ -252,12 +243,12 @@ def industrial_demand_distr():
 
         # Select industrial demands on nuts3 level from local database
         demand_nuts3_import = db.select_dataframe(
-            f"""SELECT nuts3, demand, wz FROM
-                {sources["demandregio"]["schema"]}.{sources["demandregio"]["table"]}
+            f"""SELECT nuts3, demand, wz 
+                FROM {sources.tables["demandregio"]}
                 WHERE scenario = '{scn}'
                 AND demand > 0
                 AND wz IN
-                    (SELECT wz FROM {sources["wz"]["schema"]}.{sources["wz"]["table"]}
+                    (SELECT wz FROM {sources.tables["wz"]}
                          WHERE sector = 'industry')"""
         )
 
@@ -380,17 +371,17 @@ def industrial_demand_distr():
         # Write data to db
 
         sites[["scenario", "wz", "demand"]].to_sql(
-            target_sites["table"],
+            targets.get_table_name("sites"),
             con=db.engine(),
-            schema=target_sites["schema"],
+            schema=targets.get_table_schema("sites"),
             if_exists="append",
         )
         
 
         landuse[["osm_id", "scenario", "wz", "demand"]].to_sql(
-            target_osm["table"],
+            targets.get_table_name("osm"),
             con=db.engine(),
-            schema=target_osm["schema"],
+            schema=targets.get_table_schema("osm"),
             if_exists="append",
         )
 
@@ -427,34 +418,34 @@ class IndustrialDemandCurves(Dataset):
     #:
     name: str = "Industrial_demand_curves"
     #:
-    version: str = "0.0.7"
+    version: str = "0.0.8"
     
     sources = DatasetSources(
         tables={
-            "demandregio": {"schema": "demand", "table": "egon_demandregio_cts_ind"},
-            "wz": {"schema": "demand", "table": "egon_demandregio_wz"},
-            "osm_landuse": {"schema": "openstreetmap", "table": "osm_landuse"},
-            "industrial_sites": {"schema": "demand", "table": "egon_industrial_sites"},
-            "vg250_krs": {"schema": "boundaries", "table": "vg250_krs"},
-            "osm": {"schema": "demand", "table": "egon_demandregio_osm_ind_electricity"},
-            "sites": {"schema": "demand", "table": "egon_demandregio_sites_ind_electricity"},
-            "sites_geom": {"schema": "demand", "table": "egon_industrial_sites"},
-            "demandregio_industry": {"schema": "demand", "table": "egon_demandregio_cts_ind"},
-            "demandregio_wz": {"schema": "demand", "table": "egon_demandregio_wz"},
-            "demandregio_timeseries": {"schema": "demand", "table": "egon_demandregio_timeseries_cts_ind"},
-            "hvmv_substation": {"schema": "grid", "table": "egon_hvmv_substation"},
-            "egon_mv_grid_district": {"schema": "grid", "table": "egon_mv_grid_district"},
-            "egon_ehv_voronoi": {"schema": "grid", "table": "egon_ehv_substation_voronoi"},
+            "demandregio": "demand.egon_demandregio_cts_ind",
+            "wz": "demand.egon_demandregio_wz",
+            "osm_landuse": "openstreetmap.osm_landuse",
+            "industrial_sites": "demand.egon_industrial_sites",
+            "vg250_krs": "boundaries.vg250_krs",
+            "osm": "demand.egon_demandregio_osm_ind_electricity",
+            "sites": "demand.egon_demandregio_sites_ind_electricity",
+            "sites_geom": "demand.egon_industrial_sites",
+            "demandregio_industry": "demand.egon_demandregio_cts_ind",
+            "demandregio_wz": "demand.egon_demandregio_wz",
+            "demandregio_timeseries": "demand.egon_demandregio_timeseries_cts_ind",
+            "hvmv_substation": "grid.egon_hvmv_substation",
+            "egon_mv_grid_district": "grid.egon_mv_grid_district",
+            "egon_ehv_voronoi": "grid.egon_ehv_substation_voronoi",
         }
     )
     targets = DatasetTargets(
         tables={
-            "osm": {"schema": "demand", "table": "egon_demandregio_osm_ind_electricity"},
-            "sites": {"schema": "demand", "table": "egon_demandregio_sites_ind_electricity"},
-            "osm_load": {"schema": "demand", "table": "egon_osm_ind_load_curves"},
-            "osm_load_individual": {"schema": "demand", "table": "egon_osm_ind_load_curves_individual"},
-            "sites_load": {"schema": "demand", "table": "egon_sites_ind_load_curves"},
-            "sites_load_individual": {"schema": "demand", "table": "egon_sites_ind_load_curves_individual"},
+            "osm": "demand.egon_demandregio_osm_ind_electricity",
+            "sites": "demand.egon_demandregio_sites_ind_electricity",
+            "osm_load": "demand.egon_osm_ind_load_curves",
+            "osm_load_individual": "demand.egon_osm_ind_load_curves_individual",
+            "sites_load": "demand.egon_sites_ind_load_curves",
+            "sites_load_individual": "demand.egon_sites_ind_load_curves_individual",
         }
     )
     

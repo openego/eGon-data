@@ -57,30 +57,21 @@ class OsmLanduse(Dataset):
     #:
     name: str = "OsmLanduse"
     #:
-    version: str = "0.0.2"
+    version: str = "0.0.3"
     
     sources = DatasetSources(
         files={
             "osm_landuse_extraction": "osm_landuse_extraction.sql"
         },
         tables={
-            "osm_polygons": {
-                "schema": "openstreetmap",
-                "table": "osm_polygon",
-            },
-            "vg250": {
-                "schema": "boundaries",
-                "table": "vg250_sta_union",
-            },
-        }
+            "osm_polygons": "openstreetmap.osm_polygon",
+            "vg250": "boundaries.vg250_sta_union",
+        },
     )
 
     targets = DatasetTargets(
         tables={
-            "osm_landuse": {
-                "schema": "openstreetmap",
-                "table": "osm_landuse",
-            }
+            "osm_landuse": "openstreetmap.osm_landuse",
         }
     )
 
@@ -124,7 +115,7 @@ class LoadArea(Dataset):
     #:
     name: str = "LoadArea"
     #:
-    version: str = "0.0.3"
+    version: str = "0.0.4"
     
     sources = DatasetSources(
         files={
@@ -138,27 +129,15 @@ class LoadArea(Dataset):
             "drop_temp_tables": "drop_temp_tables.sql",
         },
         tables={
-            "osm_landuse": {
-                "schema": "openstreetmap",
-                "table": "osm_landuse",
-            },
-            "zensus_population": {
-                "schema": "society",
-                "table": "destatis_zensus_population_per_ha_inside_germany",
-            },
-            "vg250": {
-                "schema": "boundaries",
-                "table": "vg250_sta_union",
-            },
+            "osm_landuse": "openstreetmap.osm_landuse",
+            "zensus_population": "society.destatis_zensus_population_per_ha_inside_germany",
+            "vg250": "boundaries.vg250_sta_union",
         }
     )
 
     targets = DatasetTargets(
         tables={
-            "egon_loadarea": {
-                "schema": "demand",
-                "table": "egon_loadarea",
-            }
+            "egon_loadarea": "demand.egon_loadarea",
         }
     )
 
@@ -197,18 +176,16 @@ def create_landuse_table():
     -------
     None.
     """
-    #cfg = egon.data.config.datasets()["landuse"]["target"]
 
     # Create schema if not exists
     db.execute_sql(
-        f"CREATE SCHEMA IF NOT EXISTS {OsmLanduse.targets.tables['osm_landuse']['schema']};"
+        f"CREATE SCHEMA IF NOT EXISTS {OsmLanduse.targets.get_table_schema('osm_landuse')};"
     )
 
     # Drop tables
     db.execute_sql(
         f"DROP TABLE IF EXISTS "
-        f"{OsmLanduse.targets.tables['osm_landuse']['schema']}."
-        f"{OsmLanduse.targets.tables['osm_landuse']['table']} CASCADE;"
+        f"{OsmLanduse.targets.tables['osm_landuse']} CASCADE;"
     )
 
     engine = db.engine()
