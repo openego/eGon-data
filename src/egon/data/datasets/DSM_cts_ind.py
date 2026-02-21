@@ -134,72 +134,34 @@ class DsmPotential(Dataset):
     #:
     name: str = "DsmPotential"
     #:
-    version: str = "0.0.10"
+    version: str = "0.0.11"
     
     sources = DatasetSources(
         tables={
-            "cts_loadcurves": {
-                "schema": "demand",
-                "table": "egon_etrago_electricity_cts",
-            },
-            "ind_osm_loadcurves": {
-                "schema": "demand",
-                "table": "egon_osm_ind_load_curves",
-            },
-            "ind_osm_loadcurves_individual": {
-                "schema": "demand",
-                "table": "egon_osm_ind_load_curves_individual",
-            },
-            "ind_sites_loadcurves": {
-                "schema": "demand",
-                "table": "egon_sites_ind_load_curves",
-            },
-            "ind_sites_loadcurves_individual": {
-                "schema": "demand",
-                "table": "egon_sites_ind_load_curves_individual",
-            },
-            "ind_sites": {"schema": "demand", "table": "egon_industrial_sites"},
-            "ind_sites_schmidt": {
-                "schema": "demand",
-                "table": "egon_schmidt_industrial_sites",
-            },
-            "demandregio_ind_sites": {
-                "schema": "demand",
-                "table": "egon_demandregio_sites_ind_electricity",
-            },
+            "cts_loadcurves": "demand.egon_etrago_electricity_cts",
+            "ind_osm_loadcurves": "demand.egon_osm_ind_load_curves",
+            "ind_osm_loadcurves_individual": "demand.egon_osm_ind_load_curves_individual",
+            "ind_sites_loadcurves": "demand.egon_sites_ind_load_curves",
+            "ind_sites_loadcurves_individual": "demand.egon_sites_ind_load_curves_individual",
+            "ind_sites": "demand.egon_industrial_sites",
+            "ind_sites_schmidt": "demand.egon_schmidt_industrial_sites",
+            "demandregio_ind_sites": "demand.egon_demandregio_sites_ind_electricity",
         }
     )
     targets = DatasetTargets(
         tables={
-            "bus": {"schema": "grid", "table": "egon_etrago_bus"},
-            "link": {"schema": "grid", "table": "egon_etrago_link"},
-            "link_timeseries": {
-                "schema": "grid",
-                "table": "egon_etrago_link_timeseries",
-            },
-            "store": {"schema": "grid", "table": "egon_etrago_store"},
-            "store_timeseries": {
-                "schema": "grid",
-                "table": "egon_etrago_store_timeseries",
-            },
-            "cts_loadcurves_dsm": {
-                "schema": "demand",
-                "table": "egon_etrago_electricity_cts_dsm_timeseries",
-            },
-            "ind_osm_loadcurves_individual_dsm": {
-                "schema": "demand",
-                "table": "egon_osm_ind_load_curves_individual_dsm_timeseries",
-            },
-            "demandregio_ind_sites_dsm": {
-                "schema": "demand",
-                "table": "egon_demandregio_sites_ind_electricity_dsm_timeseries",
-            },
-            "ind_sites_loadcurves_individual": {
-                "schema": "demand",
-                "table": "egon_sites_ind_load_curves_individual_dsm_timeseries",
-            },
+            "bus": "grid.egon_etrago_bus",
+            "link": "grid.egon_etrago_link",
+            "link_timeseries": "grid.egon_etrago_link_timeseries",
+            "store": "grid.egon_etrago_store",
+            "store_timeseries": "grid.egon_etrago_store_timeseries",
+            "cts_loadcurves_dsm": "demand.egon_etrago_electricity_cts_dsm_timeseries",
+            "ind_osm_loadcurves_individual_dsm": "demand.egon_osm_ind_load_curves_individual_dsm_timeseries",
+            "demandregio_ind_sites_dsm": "demand.egon_demandregio_sites_ind_electricity_dsm_timeseries",
+            "ind_sites_loadcurves_individual": "demand.egon_sites_ind_load_curves_individual_dsm_timeseries",
         }
     )
+    
 
     def __init__(self, dependencies):
         super().__init__(
@@ -212,10 +174,8 @@ class DsmPotential(Dataset):
 
 # Datasets
 class EgonEtragoElectricityCtsDsmTimeseries(Base):
-    target = DsmPotential.targets.tables["cts_loadcurves_dsm"]
-
-    __tablename__ = target["table"]
-    __table_args__ = {"schema": target["schema"]}
+    __tablename__ = DsmPotential.targets.get_table_name("cts_loadcurves_dsm")
+    __table_args__ = {"schema": DsmPotential.targets.get_table_schema("cts_loadcurves_dsm")}
 
     bus = Column(Integer, primary_key=True, index=True)
     scn_name = Column(String, primary_key=True, index=True)
@@ -227,10 +187,8 @@ class EgonEtragoElectricityCtsDsmTimeseries(Base):
 
 
 class EgonOsmIndLoadCurvesIndividualDsmTimeseries(Base):
-    target = DsmPotential.targets.tables["ind_osm_loadcurves_individual_dsm"]
-
-    __tablename__ = target["table"]
-    __table_args__ = {"schema": target["schema"]}
+    __tablename__ = DsmPotential.targets.get_table_name("ind_osm_loadcurves_individual_dsm")
+    __table_args__ = {"schema": DsmPotential.targets.get_table_schema("ind_osm_loadcurves_individual_dsm")}
 
     osm_id = Column(Integer, primary_key=True, index=True)
     scn_name = Column(String, primary_key=True, index=True)
@@ -243,10 +201,8 @@ class EgonOsmIndLoadCurvesIndividualDsmTimeseries(Base):
 
 
 class EgonDemandregioSitesIndElectricityDsmTimeseries(Base):
-    target = DsmPotential.targets.tables["demandregio_ind_sites_dsm"]
-
-    __tablename__ = target["table"]
-    __table_args__ = {"schema": target["schema"]}
+    __tablename__ = DsmPotential.targets.get_table_name("demandregio_ind_sites_dsm")
+    __table_args__ = {"schema": DsmPotential.targets.get_table_schema("demandregio_ind_sites_dsm")}
 
     industrial_sites_id = Column(Integer, primary_key=True, index=True)
     scn_name = Column(String, primary_key=True, index=True)
@@ -260,10 +216,8 @@ class EgonDemandregioSitesIndElectricityDsmTimeseries(Base):
 
 
 class EgonSitesIndLoadCurvesIndividualDsmTimeseries(Base):
-    target = DsmPotential.targets.tables["ind_sites_loadcurves_individual"]
-
-    __tablename__ = target["table"]
-    __table_args__ = {"schema": target["schema"]}
+    __tablename__ = DsmPotential.targets.get_table_name("ind_sites_loadcurves_individual")
+    __table_args__ = {"schema": DsmPotential.targets.get_table_schema("ind_sites_loadcurves_individual")}
 
     site_id = Column(Integer, primary_key=True, index=True)
     scn_name = Column(String, primary_key=True, index=True)
@@ -279,7 +233,7 @@ def add_metadata_individual():
     targets = DsmPotential.targets.tables
 
     targets = {
-        k: v for k, v in targets.items() if "dsm_timeseries" in v["table"]
+        k: v for k, v in targets.items() if "dsm_timeseries" in v
     }
 
     title_dict = {
@@ -370,9 +324,8 @@ def add_metadata_individual():
     contris[0]["comment"] = "Add metadata to dataset."
     contris[1]["comment"] = "Add workflow to generate dataset."
 
-    for t_dict in targets.values():
-        schema = t_dict["schema"]
-        table = t_dict["table"]
+    for table_str in targets.values():
+        schema, table = table_str.split('.')
         name = f"{schema}.{table}"
 
         meta = {
@@ -479,11 +432,10 @@ def cts_data_import(cts_cool_vent_ac_share):
 
     # import load data
 
-    sources = DsmPotential.sources.tables["cts_loadcurves"]
+    source = DsmPotential.sources.tables["cts_loadcurves"]
 
     ts = db.select_dataframe(
-        f"""SELECT bus_id, scn_name, p_set FROM
-        {sources['schema']}.{sources['table']}"""
+        f"""SELECT bus_id, scn_name, p_set FROM {source}"""
     )
 
     # identify relevant columns and prepare df to be returned
@@ -520,12 +472,12 @@ def ind_osm_data_import(ind_vent_cool_share):
 
     # import load data
 
-    sources = DsmPotential.sources.tables["ind_osm_loadcurves"]
+    source = DsmPotential.sources.tables["ind_osm_loadcurves"]
 
     dsm = db.select_dataframe(
         f"""
         SELECT bus, scn_name, p_set FROM
-        {sources["schema"]}.{sources["table"]}
+        {source}
         """
     )
 
@@ -556,12 +508,12 @@ def ind_osm_data_import_individual(ind_vent_cool_share):
 
     # import load data
 
-    sources = DsmPotential.sources.tables["ind_osm_loadcurves_individual"]
+    source = DsmPotential.sources.tables["ind_osm_loadcurves_individual"]
 
     dsm = db.select_dataframe(
         f"""
         SELECT osm_id, bus_id as bus, scn_name, p_set FROM
-        {sources["schema"]}.{sources["table"]}
+        {source}
         """
     )
 
@@ -594,12 +546,12 @@ def ind_sites_vent_data_import(ind_vent_share, wz):
 
     # import load data
 
-    sources = DsmPotential.sources.tables["ind_sites_loadcurves"]
+    source = DsmPotential.sources.tables["ind_sites_loadcurves"]
 
     dsm = db.select_dataframe(
         f"""
         SELECT bus, scn_name, p_set FROM
-        {sources["schema"]}.{sources["table"]}
+        {source}
         WHERE wz = {wz}
         """
     )
@@ -631,12 +583,12 @@ def ind_sites_vent_data_import_individual(ind_vent_share, wz):
 
     # import load data
 
-    sources = DsmPotential.sources.tables["ind_sites_loadcurves_individual"]
+    source = DsmPotential.sources.tables["ind_sites_loadcurves_individual"]
 
     dsm = db.select_dataframe(
         f"""
         SELECT site_id, bus_id as bus, scn_name, p_set FROM
-        {sources["schema"]}.{sources["table"]}
+        {source}
         WHERE wz = {wz}
         """
     )
@@ -664,7 +616,7 @@ def calc_ind_site_timeseries(scenario):
 
     demands_ind_sites = db.select_dataframe(
     f"""SELECT industrial_sites_id, wz, demand
-        FROM {source1["schema"]}.{source1["table"]}
+        FROM {source1}
         WHERE scenario = '{scenario}'
         AND demand > 0
         """
@@ -675,7 +627,7 @@ def calc_ind_site_timeseries(scenario):
 
     demand_area = db.select_geodataframe(
         f"""SELECT id, geom, subsector FROM
-            {source2["schema"]}.{source2["table"]}""",
+            {source2}""",
         index_col="id",
         geom_col="geom",
         epsg=3035,
@@ -733,10 +685,8 @@ def relate_to_schmidt_sites(dsm):
     source = DsmPotential.sources.tables["ind_sites_schmidt"]
 
     schmidt = db.select_dataframe(
-        f"""SELECT application, geom FROM
-            {source["schema"]}.{source["table"]}"""
+        f"""SELECT application, geom FROM {source}"""
     )
-
     # relate calculated timeseries (dsm) to Schmidt's industrial sites
 
     applications = np.unique(schmidt["application"])
@@ -924,8 +874,7 @@ def create_dsm_components(
     # get original buses and add copy of relevant information
     target1 = DsmPotential.targets.tables["bus"]
     original_buses = db.select_geodataframe(
-        f"""SELECT bus_id, v_nom, scn_name, x, y, geom FROM
-            {target1["schema"]}.{target1["table"]}""",
+        f"""SELECT bus_id, v_nom, scn_name, x, y, geom FROM {target1}""",
         geom_col="geom",
         epsg=4326,
     )
@@ -978,7 +927,7 @@ def create_dsm_components(
 
     # set link_id
     target2 = DsmPotential.targets.tables["link"]
-    sql = f"""SELECT link_id FROM {target2["schema"]}.{target2["table"]}"""
+    sql = f"""SELECT link_id FROM {target2}"""
     max_id = pd.read_sql_query(sql, con)
     max_id = max_id["link_id"].max()
     if np.isnan(max_id):
@@ -1015,7 +964,7 @@ def create_dsm_components(
 
     # set store_id
     target3 = DsmPotential.targets.tables["store"]
-    sql = f"""SELECT store_id FROM {target3["schema"]}.{target3["table"]}"""
+    sql = f"""SELECT store_id FROM {target3}"""
     max_id = pd.read_sql_query(sql, con)
     max_id = max_id["store_id"].max()
     if np.isnan(max_id):
@@ -1152,7 +1101,7 @@ def data_export(dsm_buses, dsm_links, dsm_stores, carrier):
         Remark to be filled in column 'carrier' identifying DSM-potential
     """
 
-    targets = DsmPotential.targets.tables
+    targets = DsmPotential.targets
 
     # dsm_buses
 
@@ -1171,9 +1120,9 @@ def data_export(dsm_buses, dsm_links, dsm_stores, carrier):
 
     # insert into database
     insert_buses.to_postgis(
-        targets["bus"]["table"],
+        targets.get_table_name("bus"),
         con=db.engine(),
-        schema=targets["bus"]["schema"],
+        schema=targets.get_table_schema("bus"),
         if_exists="append",
         index=False,
         dtype={"geom": "geometry"},
@@ -1191,9 +1140,9 @@ def data_export(dsm_buses, dsm_links, dsm_stores, carrier):
 
     # insert into database
     insert_links.to_sql(
-        targets["link"]["table"],
+        targets.get_table_name("link"),
         con=db.engine(),
-        schema=targets["link"]["schema"],
+        schema=targets.get_table_schema("link"),
         if_exists="append",
         index=False,
     )
@@ -1207,13 +1156,13 @@ def data_export(dsm_buses, dsm_links, dsm_stores, carrier):
 
     # insert into database
     insert_links_timeseries.to_sql(
-        targets["link_timeseries"]["table"],
+        targets.get_table_name("link_timeseries"),
         con=db.engine(),
-        schema=targets["link_timeseries"]["schema"],
+        schema=targets.get_table_schema("link_timeseries"),
         if_exists="append",
         index=False,
     )
-
+    
     # dsm_stores
 
     insert_stores = pd.DataFrame(index=dsm_stores.index)
@@ -1225,9 +1174,9 @@ def data_export(dsm_buses, dsm_links, dsm_stores, carrier):
 
     # insert into database
     insert_stores.to_sql(
-        targets["store"]["table"],
+        targets.get_table_name("store"),
         con=db.engine(),
-        schema=targets["store"]["schema"],
+        schema=targets.get_table_schema("store"),
         if_exists="append",
         index=False,
     )
@@ -1241,9 +1190,9 @@ def data_export(dsm_buses, dsm_links, dsm_stores, carrier):
 
     # insert into database
     insert_stores_timeseries.to_sql(
-        targets["store_timeseries"]["table"],
+        targets.get_table_name("store_timeseries"),
         con=db.engine(),
-        schema=targets["store_timeseries"]["schema"],
+        schema=targets.get_table_schema("store_timeseries"),
         if_exists="append",
         index=False,
     )
@@ -1264,7 +1213,7 @@ def delete_dsm_entries(carrier):
     # buses
 
     sql = (
-        f"DELETE FROM {targets['bus']['schema']}.{targets['bus']['table']} b "
+        f"DELETE FROM {targets['bus']} b "
         f"WHERE (b.carrier LIKE '{carrier}');"
     )
     db.execute_sql(sql)
@@ -1272,10 +1221,10 @@ def delete_dsm_entries(carrier):
     # links
 
     sql = f"""
-        DELETE FROM {targets['link_timeseries']['schema']}.{targets['link_timeseries']['table']} t
+        DELETE FROM {targets['link_timeseries']} t
         WHERE t.link_id IN
         (
-            SELECT l.link_id FROM {targets['link']['schema']}.{targets['link']['table']} l
+            SELECT l.link_id FROM {targets['link']} l
             WHERE l.carrier LIKE '{carrier}'
         );
         """
@@ -1283,7 +1232,7 @@ def delete_dsm_entries(carrier):
     db.execute_sql(sql)
 
     sql = f"""
-        DELETE FROM {targets['link']['schema']}.{targets['link']['table']} l
+        DELETE FROM {targets['link']} l
         WHERE (l.carrier LIKE '{carrier}');
         """
 
@@ -1292,10 +1241,10 @@ def delete_dsm_entries(carrier):
     # stores
 
     sql = f"""
-        DELETE FROM {targets['store_timeseries']['schema']}.{targets['store_timeseries']['table']} t
+        DELETE FROM {targets['store_timeseries']} t
         WHERE t.store_id IN
         (
-            SELECT s.store_id FROM {targets['store']['schema']}.{targets['store']['table']} s
+            SELECT s.store_id FROM {targets['store']} s
             WHERE s.carrier LIKE '{carrier}'
         );
         """
@@ -1303,7 +1252,7 @@ def delete_dsm_entries(carrier):
     db.execute_sql(sql)
 
     sql = f"""
-        DELETE FROM {targets['store']['schema']}.{targets['store']['table']} s
+        DELETE FROM {targets['store']} s
         WHERE (s.carrier LIKE '{carrier}');
         """
 
