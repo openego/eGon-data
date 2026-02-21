@@ -40,7 +40,7 @@ class Calculate_dlr(Dataset):
     #:
     name: str = "dlr"
     #:
-    version: str = "0.0.3"
+    version: str = "0.0.4"
     
     sources = DatasetSources(
         files={
@@ -48,13 +48,13 @@ class Calculate_dlr(Dataset):
             "weather_cutout": "data_bundle_egon_data/cutouts/germany-{weather_year}-era5.nc",
         },
         tables={
-            "trans_lines": {"schema": "grid", "table": "egon_etrago_line"},
-            "line_timeseries": {"schema": "grid", "table": "egon_etrago_line_timeseries"},
+            "trans_lines": "grid.egon_etrago_line",
+            "line_timeseries": "grid.egon_etrago_line_timeseries",
         },
     )
     targets = DatasetTargets(
         tables={
-            "line_timeseries": {"schema": "grid", "table": "egon_etrago_line_timeseries"}
+            "line_timeseries": "grid.egon_etrago_line_timeseries"
         }
     )
 
@@ -93,8 +93,7 @@ def dlr():
 
         sql = f"""
         SELECT scn_name, line_id, topo, s_nom FROM
-        {Calculate_dlr.sources.tables["trans_lines"]["schema"]}.
-        {Calculate_dlr.sources.tables["trans_lines"]["table"]}
+        {Calculate_dlr.sources.tables["trans_lines"]}
         """
         df = gpd.GeoDataFrame.from_postgis(
             sql, con, crs="EPSG:4326", geom_col="topo"
@@ -165,15 +164,14 @@ def dlr():
         # Delete existing data
         db.execute_sql(
             f"""
-            DELETE FROM {Calculate_dlr.sources.tables["line_timeseries"]["schema"]}.
-            {Calculate_dlr.sources.tables["line_timeseries"]["table"]};
+            DELETE FROM {Calculate_dlr.targets.tables["line_timeseries"]};
             """
         )
 
         # Insert into database
         trans_lines.to_sql(
-            Calculate_dlr.targets.tables["line_timeseries"]["table"],
-            schema=Calculate_dlr.targets.tables["line_timeseries"]["schema"],
+            name=Calculate_dlr.targets.get_table_name("line_timeseries"),
+            schema=Calculate_dlr.targets.get_table_schema("line_timeseries"),
             con=db.engine(),
             if_exists="append",
             index=False,
