@@ -88,7 +88,7 @@ class DemandRegio(Dataset):
     #:
     name: str = "DemandRegio"
     #:
-    version: str = "0.0.18"
+    version: str = "0.0.19"
 
     def __init__(self, dependencies):
         super().__init__(
