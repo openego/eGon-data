@@ -30,27 +30,18 @@ class ZensusMvGridDistricts(Dataset):
     #:
     name: str = "ZensusMvGridDistricts"
     #:
-    version: str = "0.0.2"
+    version: str = "0.0.3"
     
     sources = DatasetSources(
         tables={
-            "zensus_population": {
-                "schema": "society",
-                "table": "destatis_zensus_population_per_ha",
-            },
-            "egon_mv_grid_district": {
-                "schema": "grid",
-                "table": "egon_mv_grid_district",
-            },
+            "zensus_population": "society.destatis_zensus_population_per_ha",
+            "egon_mv_grid_district": "grid.egon_mv_grid_district",
         }
     )
 
     targets = DatasetTargets(
         tables={
-            "map": {
-                "schema": "boundaries",
-                "table": "egon_map_zensus_grid_districts",
-            }
+            "map": "boundaries.egon_map_zensus_grid_districts",
         }
     )
 
@@ -95,35 +86,33 @@ def mapping():
     MapZensusGridDistricts.__table__.drop(bind=db.engine(), checkfirst=True)
     MapZensusGridDistricts.__table__.create(bind=db.engine(), checkfirst=True)
 
-    sources = ZensusMvGridDistricts.sources.tables
-    target = ZensusMvGridDistricts.targets.tables["map"]
+    sources = ZensusMvGridDistricts.sources
+    targets = ZensusMvGridDistricts.targets
     
     # Delete existsing data
-    db.execute_sql(f"DELETE FROM {target['schema']}.{target['table']}")
+    db.execute_sql(f"DELETE FROM {targets.tables['map']}")
 
     # Select zensus cells
     zensus = db.select_geodataframe(
-        f"""SELECT id as zensus_population_id, geom_point FROM
-        {sources['zensus_population']['schema']}.
-        {sources['zensus_population']['table']}""",
+        f"SELECT id as zensus_population_id, geom_point FROM {sources.tables['zensus_population']}",
         geom_col="geom_point",
     )
 
     grid_districts = db.select_geodataframe(
-        f"""SELECT bus_id, geom
-        FROM {sources['egon_mv_grid_district']['schema']}.
-        {sources['egon_mv_grid_district']['table']}""",
+        f"SELECT bus_id, geom FROM {sources.tables['egon_mv_grid_district']}",
         geom_col="geom",
         epsg=3035,
     )
 
     # Join mv grid districts with zensus cells
-    join = gpd.sjoin(zensus, grid_districts, how="inner", op="intersects")
+    join = gpd.sjoin(
+        zensus, grid_districts, how="inner", predicate="intersects"
+    )
 
     # Insert results to database
     join[["zensus_population_id", "bus_id"]].to_sql(
-        target["table"],
-        schema=target["schema"],
+        targets.get_table_name("map"),
+        schema=targets.get_table_schema("map"),
         con=db.engine(),
         if_exists="replace",
     )

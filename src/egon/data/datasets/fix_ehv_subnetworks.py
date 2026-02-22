@@ -36,21 +36,21 @@ class FixEhvSubnetworks(Dataset):
     #:
     name: str = "FixEhvSubnetworks"
     #:
-    version: str = "0.0.3"
+    version: str = "0.0.4"
     
     sources = DatasetSources(
         tables={
-            "buses":        {"schema": "grid", "table": "egon_etrago_bus"},
-            "lines":        {"schema": "grid", "table": "egon_etrago_line"},
-            "transformers": {"schema": "grid", "table": "egon_etrago_transformer"},
+            "buses": "grid.egon_etrago_bus",
+            "lines": "grid.egon_etrago_line",
+            "transformers": "grid.egon_etrago_transformer",
         }
     )
 
     targets = DatasetTargets(
         tables={
-            "buses":        {"schema": "grid", "table": "egon_etrago_bus"},
-            "lines":        {"schema": "grid", "table": "egon_etrago_line"},
-            "transformers": {"schema": "grid", "table": "egon_etrago_transformer"},
+            "buses": "grid.egon_etrago_bus",
+            "lines": "grid.egon_etrago_line",
+            "transformers": "grid.egon_etrago_transformer",
         }
     )
 
@@ -67,7 +67,7 @@ def select_bus_id(x, y, v_nom, scn_name, carrier, find_closest=False):
     bus_id = db.select_dataframe(
         f"""
         SELECT bus_id
-        FROM {FixEhvSubnetworks.sources.tables['buses']['schema']}.{FixEhvSubnetworks.sources.tables['buses']['table']}
+        FROM {FixEhvSubnetworks.sources.tables['buses']}
         WHERE x = {x}
         AND y = {y}
         AND v_nom = {v_nom}
@@ -83,7 +83,7 @@ def select_bus_id(x, y, v_nom, scn_name, carrier, find_closest=False):
             bus_id = db.select_dataframe(
                 f"""
             SELECT bus_id, st_distance(geom, 'SRID=4326;POINT({x} {y})'::geometry)
-            FROM {FixEhvSubnetworks.sources.tables['buses']['schema']}.{FixEhvSubnetworks.sources.tables['buses']['table']}
+            FROM {FixEhvSubnetworks.sources.tables['buses']}
             WHERE v_nom = {v_nom}
             AND scn_name = '{scn_name}'
             AND carrier = '{carrier}'
@@ -119,8 +119,8 @@ def add_bus(x, y, v_nom, scn_name):
     gdf.index.name = "bus_id"
 
     gdf.reset_index().to_postgis(
-        FixEhvSubnetworks.targets.tables['buses']['table'],
-        schema=FixEhvSubnetworks.targets.tables['buses']['schema'],
+        FixEhvSubnetworks.targets.get_table_name("buses"),
+        schema=FixEhvSubnetworks.targets.get_table_schema("buses"),
         con=db.engine(), if_exists="append"
     )
 
@@ -131,7 +131,7 @@ def drop_bus(x, y, v_nom, scn_name):
     if bus is not None:
         db.execute_sql(
             f"""
-            DELETE FROM {FixEhvSubnetworks.targets.tables['buses']['schema']}.{FixEhvSubnetworks.targets.tables['buses']['table']}
+            DELETE FROM {FixEhvSubnetworks.targets.tables['buses']}
             WHERE
             scn_name = '{scn_name}'
             AND bus_id = {bus}
@@ -194,8 +194,8 @@ def add_line(x0, y0, x1, y1, v_nom, scn_name, cables):
     gdf["capital_cost"] = (cost_per_km * gdf["length"]) * (gdf["cables"] / 3)
     gdf.index.name = "line_id"
     gdf.reset_index().to_postgis(
-        FixEhvSubnetworks.targets.tables['lines']['table'],
-        schema=FixEhvSubnetworks.targets.tables['lines']['schema'],
+        FixEhvSubnetworks.targets.get_table_name("lines"),
+        schema=FixEhvSubnetworks.targets.get_table_schema("lines"),
         con=db.engine(), if_exists="append"
     )
 
@@ -208,7 +208,7 @@ def drop_line(x0, y0, x1, y1, v_nom, scn_name):
     if (bus0 is not None) and (bus1 is not None):
         db.execute_sql(
             f"""
-            DELETE FROM {FixEhvSubnetworks.targets.tables['lines']['schema']}.{FixEhvSubnetworks.targets.tables['lines']['table']}
+            DELETE FROM {FixEhvSubnetworks.targets.tables['lines']}
             WHERE
             scn_name = '{scn_name}'
             AND bus0 = {bus0}
@@ -248,8 +248,8 @@ def add_trafo(x, y, v_nom0, v_nom1, scn_name, n=1):
     gdf.index.name = "trafo_id"
 
     gdf.reset_index().to_postgis(
-        FixEhvSubnetworks.targets.tables['transformers']['table'],
-        schema=FixEhvSubnetworks.targets.tables['transformers']['schema'],
+        FixEhvSubnetworks.targets.get_table_name("transformers"),
+        schema=FixEhvSubnetworks.targets.get_table_schema("transformers"),
         con=db.engine(),
         if_exists="append",
     )
@@ -262,7 +262,7 @@ def drop_trafo(x, y, v_nom0, v_nom1, scn_name):
     if (bus0 is not None) and (bus1 is not None):
         db.execute_sql(
             f"""
-            DELETE FROM {FixEhvSubnetworks.targets.tables['transformers']['schema']}.{FixEhvSubnetworks.targets.tables['transformers']['table']}
+            DELETE FROM {FixEhvSubnetworks.targets.tables['transformers']}
             WHERE
             scn_name = '{scn_name}'
             AND bus0 = {bus0}

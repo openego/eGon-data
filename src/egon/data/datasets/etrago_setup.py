@@ -134,7 +134,7 @@ def get_meta(
 
 class EtragoSetup(Dataset):
     name: str = "EtragoSetup"
-    version: str = "0.0.13"
+    version: str = "0.0.14"
 
     sources = DatasetSources(
         tables={},
@@ -143,82 +143,25 @@ class EtragoSetup(Dataset):
 
     targets = DatasetTargets(
         tables={
-            "bus": {
-                "schema": "grid",
-                "table": "egon_etrago_bus",
-            },
-            "bus_timeseries": {
-                "schema": "grid",
-                "table": "egon_etrago_bus_timeseries",
-            },
-            "generator": {
-                "schema": "grid",
-                "table": "egon_etrago_generator",
-            },
-            "generator_timeseries": {
-                "schema": "grid",
-                "table": "egon_etrago_generator_timeseries",
-            },
-            "line": {
-                "schema": "grid",
-                "table": "egon_etrago_line",
-            },
-            "line_timeseries": {
-                "schema": "grid",
-                "table": "egon_etrago_line_timeseries",
-            },
-            "link": {
-                "schema": "grid",
-                "table": "egon_etrago_link",
-            },
-            "link_timeseries": {
-                "schema": "grid",
-                "table": "egon_etrago_link_timeseries",
-            },
-            "load": {
-                "schema": "grid",
-                "table": "egon_etrago_load",
-            },
-            "load_timeseries": {
-                "schema": "grid",
-                "table": "egon_etrago_load_timeseries",
-            },
-            "carrier": {
-                "schema": "grid",
-                "table": "egon_etrago_carrier",
-            },
-            "storage": {
-                "schema": "grid",
-                "table": "egon_etrago_storage",
-            },
-            "storage_timeseries": {
-                "schema": "grid",
-                "table": "egon_etrago_storage_timeseries",
-            },
-            "store": {
-                "schema": "grid",
-                "table": "egon_etrago_store",
-            },
-            "store_timeseries": {
-                "schema": "grid",
-                "table": "egon_etrago_store_timeseries",
-            },
-            "temp_resolution": {
-                "schema": "grid",
-                "table": "egon_etrago_temp_resolution",
-            },
-            "transformer": {
-                "schema": "grid",
-                "table": "egon_etrago_transformer",
-            },
-            "transformer_timeseries": {
-                "schema": "grid",
-                "table": "egon_etrago_transformer_timeseries",
-            },
-            "hv_busmap": {
-                "schema": "grid",
-                "table": "egon_etrago_hv_busmap",
-            },
+            "bus": "grid.egon_etrago_bus",
+            "bus_timeseries": "grid.egon_etrago_bus_timeseries",
+            "generator": "grid.egon_etrago_generator",
+            "generator_timeseries": "grid.egon_etrago_generator_timeseries",
+            "line": "grid.egon_etrago_line",
+            "line_timeseries": "grid.egon_etrago_line_timeseries",
+            "link": "grid.egon_etrago_link",
+            "link_timeseries": "grid.egon_etrago_link_timeseries",
+            "load": "grid.egon_etrago_load",
+            "load_timeseries": "grid.egon_etrago_load_timeseries",
+            "carrier": "grid.egon_etrago_carrier",
+            "storage": "grid.egon_etrago_storage",
+            "storage_timeseries": "grid.egon_etrago_storage_timeseries",
+            "store": "grid.egon_etrago_store",
+            "store_timeseries": "grid.egon_etrago_store_timeseries",
+            "temp_resolution": "grid.egon_etrago_temp_resolution",
+            "transformer": "grid.egon_etrago_transformer",
+            "transformer_timeseries": "grid.egon_etrago_transformer_timeseries",
+            "hv_busmap": "grid.egon_etrago_hv_busmap",
         }
     )
 
@@ -975,7 +918,7 @@ def create_tables():
     -------
     None.
     """
-    schema = EtragoSetup.targets.tables["bus"]["schema"]
+    schema = EtragoSetup.targets.get_table_schema("bus")
     db.execute_sql(f"CREATE SCHEMA IF NOT EXISTS {schema};")
 
     engine = db.engine()
@@ -1063,8 +1006,8 @@ def create_tables():
 
 def temp_resolution():
     """Insert temporal resolution for eTraGo"""
-    schema = EtragoSetup.targets.tables['temp_resolution']['schema']
-    table  = EtragoSetup.targets.tables['temp_resolution']['table']
+    schema = EtragoSetup.targets.get_table_schema("temp_resolution")
+    table = EtragoSetup.targets.get_table_name("temp_resolution")
     db.execute_sql(
         f"""
         INSERT INTO {schema}.{table}
@@ -1076,8 +1019,8 @@ def temp_resolution():
 
 def insert_carriers():
     """Insert list of carriers into eTraGo table"""
-    schema = EtragoSetup.targets.tables['carrier']['schema']
-    table  = EtragoSetup.targets.tables['carrier']['table']
+    schema = EtragoSetup.targets.get_table_schema("carrier")
+    table  = EtragoSetup.targets.get_table_name("carrier")
     db.execute_sql(
         f"""
         DELETE FROM {schema}.{table};
@@ -1138,8 +1081,8 @@ def insert_carriers():
 
     # Insert data into database
     df.to_sql(
-        EtragoSetup.targets.tables["carrier"]["table"],
-        schema=EtragoSetup.targets.tables["carrier"]["schema"],
+        EtragoSetup.targets.get_table_name("carrier"),
+        schema=EtragoSetup.targets.get_table_schema("carrier"),
         con=db.engine(),
         if_exists="append",
         index=False,
@@ -1154,8 +1097,7 @@ def check_carriers():
     used in any eTraGo table.
     """
     carriers = db.select_dataframe(
-        f"SELECT name FROM {EtragoSetup.targets.tables['carrier']['schema']}."
-        f"{EtragoSetup.targets.tables['carrier']['table']}"
+        f"SELECT name FROM {EtragoSetup.targets.tables['carrier']}"
     )["name"]
     
     unknown_carriers = {}
@@ -1163,8 +1105,7 @@ def check_carriers():
 
     for table in tables:
         data = db.select_dataframe(
-            f"SELECT carrier FROM {EtragoSetup.targets.tables[table]['schema']}."
-            f"{EtragoSetup.targets.tables[table]['table']}"
+            f"SELECT carrier FROM {EtragoSetup.targets.tables[table]}"
         )
         unknown_carriers[table] = data[~data["carrier"].isin(carriers)][
             "carrier"
@@ -1203,7 +1144,7 @@ def link_geom_from_buses(df, scn_name):
     geom_buses = db.select_geodataframe(
         f"""
         SELECT bus_id, geom
-        FROM {EtragoSetup.targets.tables['bus']['schema']}.{EtragoSetup.targets.tables['bus']['table']}
+        FROM {EtragoSetup.targets.tables['bus']}
         WHERE scn_name = '{scn_name}';
         """,
         index_col="bus_id",

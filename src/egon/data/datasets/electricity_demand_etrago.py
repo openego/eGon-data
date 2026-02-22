@@ -34,8 +34,7 @@ def demands_per_bus(scenario):
     # Select data on CTS electricity demands per bus
     cts_curves = db.select_dataframe(
         f"""SELECT bus_id AS bus, p_set FROM
-                {ElectricalLoadEtrago.sources.tables['cts_curves']['schema']}.
-                {ElectricalLoadEtrago.sources.tables['cts_curves']['table']}
+                {ElectricalLoadEtrago.sources.tables['cts_curves']}
                 WHERE scn_name = '{scenario}'""",
     )
 
@@ -43,8 +42,7 @@ def demands_per_bus(scenario):
 
     ind_curves_osm = db.select_dataframe(
         f"""SELECT bus, p_set FROM
-                {ElectricalLoadEtrago.sources.tables['osm_curves']['schema']}.
-                {ElectricalLoadEtrago.sources.tables['osm_curves']['table']}
+                {ElectricalLoadEtrago.sources.tables['osm_curves']}
                 WHERE scn_name = '{scenario}'""",
     )
 
@@ -52,8 +50,7 @@ def demands_per_bus(scenario):
 
     ind_curves_sites = db.select_dataframe(
         f"""SELECT bus, p_set FROM
-                {ElectricalLoadEtrago.sources.tables['sites_curves']['schema']}.
-                {ElectricalLoadEtrago.sources.tables['sites_curves']['table']}
+                {ElectricalLoadEtrago.sources.tables['sites_curves']}
                 WHERE scn_name = '{scenario}'""",
     )
 
@@ -61,8 +58,7 @@ def demands_per_bus(scenario):
 
     hh_curves = db.select_dataframe(
         f"""SELECT bus_id AS bus, p_set FROM
-                {ElectricalLoadEtrago.sources.tables['household_curves']['schema']}.
-                {ElectricalLoadEtrago.sources.tables['household_curves']['table']}
+                {ElectricalLoadEtrago.sources.tables['household_curves']}
                 WHERE scn_name = '{scenario}'""",
     )
 
@@ -166,19 +162,19 @@ def export_to_db():
     None.
 
     """
-
+    sources = ElectricalLoadEtrago.sources
+    targets = ElectricalLoadEtrago.targets
     for scenario in egon.data.config.settings()["egon-data"]["--scenarios"]:
         # Delete existing data from database
         db.execute_sql(
             f"""
             DELETE FROM
-            {ElectricalLoadEtrago.targets.tables['etrago_load']['schema']}.{ElectricalLoadEtrago.targets.tables['etrago_load']['table']}
+            {targets.tables['etrago_load']}
             WHERE scn_name = '{scenario}'
             AND carrier = 'AC'
             AND bus IN (
                 SELECT bus_id FROM
-                {ElectricalLoadEtrago.sources.tables['etrago_buses']['schema']}.
-                {ElectricalLoadEtrago.sources.tables['etrago_buses']['table']}
+                {sources.tables['etrago_buses']}
                 WHERE country = 'DE'
                 AND carrier = 'AC'
                 AND scn_name = '{scenario}')
@@ -187,12 +183,11 @@ def export_to_db():
         db.execute_sql(
             f"""
             DELETE FROM
-            {ElectricalLoadEtrago.targets.tables['etrago_load_curves']['schema']}.{ElectricalLoadEtrago.targets.tables['etrago_load_curves']['table']}
+            {targets.tables['etrago_load_curves']}
             WHERE scn_name = '{scenario}'
             AND load_id NOT IN (
             SELECT load_id FROM
-            {ElectricalLoadEtrago.targets.tables['etrago_load']['schema']}.
-            {ElectricalLoadEtrago.targets.tables['etrago_load']['table']}
+            {targets.tables['etrago_load']}
             WHERE scn_name = '{scenario}')
             """
         )
@@ -245,16 +240,16 @@ def export_to_db():
 
         # Insert data into database
         load.to_sql(
-            ElectricalLoadEtrago.targets.tables["etrago_load"]["table"],
-            schema=ElectricalLoadEtrago.targets.tables["etrago_load"]["schema"],
+            targets.get_table_name("etrago_load"),
+            schema=targets.get_table_schema("etrago_load"),
             con=db.engine(),
             if_exists="append",
         )
 
 
         load_timeseries.to_sql(
-            ElectricalLoadEtrago.targets.tables["etrago_load_curves"]["table"],
-            schema=ElectricalLoadEtrago.targets.tables["etrago_load_curves"]["schema"],
+            targets.get_table_name("etrago_load_curves"),
+            schema=targets.get_table_schema("etrago_load_curves"),
             con=db.engine(),
             if_exists="append",
         )
@@ -283,44 +278,22 @@ class ElectricalLoadEtrago(Dataset):
     #:
     name: str = "Electrical_load_etrago"
     #:
-    version: str = "0.0.9"
+    version: str = "0.0.10"
     
     sources = DatasetSources(
         tables={
-            
-            "cts_curves": {
-                "schema": "demand",    
-                "table": "egon_etrago_electricity_cts",          
-            },
-            "osm_curves": {
-                "schema": "demand",      
-                "table": "egon_osm_ind_load_curves",
-            },
-            "sites_curves": {
-                "schema": "demand",      
-                "table": "egon_sites_ind_load_curves",
-            },
-            "household_curves": {
-                "schema": "demand",      
-                "table": "egon_etrago_electricity_households",
-            },
-            "etrago_buses": {
-                "schema": "grid",
-                "table": "egon_etrago_bus",
-            },
+            "cts_curves": "demand.egon_etrago_electricity_cts",
+            "osm_curves": "demand.egon_osm_ind_load_curves",
+            "sites_curves": "demand.egon_sites_ind_load_curves",
+            "household_curves": "demand.egon_etrago_electricity_households",
+            "etrago_buses": "grid.egon_etrago_bus",
         },
     )
 
     targets = DatasetTargets(
         tables={
-            "etrago_load": {
-                "schema": "grid",
-                "table": "egon_etrago_load",
-            },
-            "etrago_load_curves": {
-                "schema": "grid",
-                "table": "egon_etrago_load_timeseries",
-            },
+            "etrago_load": "grid.egon_etrago_load",
+            "etrago_load_curves": "grid.egon_etrago_load_timeseries",
         },
     )
 

@@ -45,35 +45,20 @@ class CH4Production(Dataset):
     name: str = "CH4Production"
     #:
 
-    version: str = "0.0.10"
+    version: str = "0.0.11"
     
     sources = DatasetSources(
         tables={
-            "buses": {
-                "schema": "grid",
-                "table": "egon_etrago_bus",
-            },
-            "gas_voronoi": {
-                "schema": "grid",
-                "table": "egon_gas_voronoi",
-            },
-            "vg250_sta_union": {
-                "schema": "boundaries",
-                "table": "vg250_sta_union",
-            },
+            "buses": "grid.egon_etrago_bus",
+            "gas_voronoi": "grid.egon_gas_voronoi",
+            "vg250_sta_union": "boundaries.vg250_sta_union",
         },
     )
 
     targets = DatasetTargets(
         tables={
-            "stores": {
-                "schema": "grid",
-                "table": "egon_etrago_generator",
-            },
-            "biogas_generator": {
-                "schema": "grid",
-                "table": "egon_biogas_generator",
-            },
+            "stores": "grid.egon_etrago_generator",
+            "biogas_generator": "grid.egon_biogas_generator",
         }
     )
 
@@ -264,21 +249,21 @@ def load_biogas_generators(scn_name):
     if boundary != "Everything":
         db.execute_sql(
             f"""
-              DROP TABLE IF EXISTS {CH4Production.targets.tables['biogas_generator']['schema']}.{CH4Production.targets.tables['biogas_generator']['table']} CASCADE;
+              DROP TABLE IF EXISTS {CH4Production.targets.tables['biogas_generator']} CASCADE;
             """
         )
         biogas_generators_list.to_postgis(
-            CH4Production.targets.tables["biogas_generator"]["table"],
+            CH4Production.targets.get_table_name("biogas_generator"),
             engine,
-            schema=CH4Production.targets.tables["biogas_generator"]["schema"],
+            schema=CH4Production.targets.get_table_schema("biogas_generator"),
             index=False,
             if_exists="replace",
         )
 
         sql = f"""
             SELECT *
-            FROM {CH4Production.targets.tables['biogas_generator']['schema']}.{CH4Production.targets.tables['biogas_generator']['table']} AS egon_biogas_generator,
-                 {CH4Production.sources.tables['vg250_sta_union']['schema']}.{CH4Production.sources.tables['vg250_sta_union']['table']} AS vg
+            FROM {CH4Production.targets.tables['biogas_generator']} AS egon_biogas_generator,
+                 {CH4Production.sources.tables['vg250_sta_union']} AS vg
             WHERE ST_Transform(vg.geometry,4326) && egon_biogas_generator.geom
               AND ST_Contains(ST_Transform(vg.geometry,4326), egon_biogas_generator.geom)
         """
@@ -290,7 +275,7 @@ def load_biogas_generators(scn_name):
         )
         db.execute_sql(
             f"""
-              DROP TABLE IF EXISTS {CH4Production.targets.tables['biogas_generator']['schema']}.{CH4Production.targets.tables['biogas_generator']['table']} CASCADE;
+              DROP TABLE IF EXISTS {CH4Production.targets.tables['biogas_generator']} CASCADE;
             """
         )
 
@@ -353,7 +338,8 @@ def import_gas_generators():
     """
     # Connect to local database
     engine = db.engine()
-
+    sources = CH4Production.sources
+    targets = CH4Production.targets
     # Select source and target from dataset configuration
 
 
@@ -361,11 +347,11 @@ def import_gas_generators():
         # Clean table
         db.execute_sql(
             f"""
-            DELETE FROM {CH4Production.targets.tables['stores']['schema']}.{CH4Production.targets.tables['stores']['table']}
+            DELETE FROM {targets.tables['stores']}
             WHERE "carrier" = 'CH4' AND
             scn_name = '{scn_name}' AND bus not IN (
                 SELECT bus_id
-                FROM {CH4Production.sources.tables['buses']['schema']}.{CH4Production.sources.tables['buses']['table']}
+                FROM {sources.tables['buses']}
                 WHERE scn_name = '{scn_name}' AND country != 'DE'
             );
             """
@@ -407,7 +393,7 @@ def import_gas_generators():
             CH4_generators_list = db.select_dataframe(
                 f"""
                 SELECT bus_id as bus, scn_name, carrier
-                FROM {CH4Production.sources.tables['gas_voronoi']['schema']}.{CH4Production.sources.tables['gas_voronoi']['table']}
+                FROM {sources.tables['gas_voronoi']}
                 WHERE scn_name = '{scn_name}'
                 AND carrier = 'CH4'
                 """
@@ -458,9 +444,9 @@ def import_gas_generators():
 
         # Insert data to db
         CH4_generators_list.to_sql(
-            CH4Production.targets.tables["stores"]["table"],
+            targets.get_table_name("stores"),
             engine,
-            schema=CH4Production.targets.tables["stores"]["schema"],
+            schema=targets.get_table_schema("stores"),
             index=False,
             if_exists="append",
         )

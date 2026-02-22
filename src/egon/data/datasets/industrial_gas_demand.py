@@ -48,30 +48,24 @@ class IndustrialGasDemand(Dataset):
 
     """
     name: str = "IndustrialGasDemand"
-    version: str = "0.0.8"
+    version: str = "0.0.9"
 
     sources = DatasetSources(
         tables={
-            "region_mapping_json": "datasets/gas_data/demand/region_corr.json",
-            "industrial_demand_folder": "datasets/gas_data/demand",  
             "boundaries_vg250_krs": "boundaries.vg250_krs",
             "egon_etrago_bus": "grid.egon_etrago_bus",
-        },      
+        },
         files={
-            "industrial_gas_bundle_src": "data_bundle_egon_data/industrial_gas_demand"  
-        }
+            "region_mapping_json": "./datasets/gas_data/demand/region_corr.json",
+            "industrial_demand_folder": "./datasets/gas_data/demand",
+            "industrial_gas_bundle_src": "./data_bundle_egon_data/industrial_gas_demand",
+        },
     )
 
     targets = DatasetTargets(
         tables={
-            "etrago_load": {
-                "schema": "grid",
-                "table": "egon_etrago_load"
-            },
-            "etrago_load_timeseries": {
-                "schema": "grid",
-                "table": "egon_etrago_load_timeseries"
-            }
+            "etrago_load": "grid.egon_etrago_load",
+            "etrago_load_timeseries": "grid.egon_etrago_load_timeseries",
         }
     )
 
@@ -171,13 +165,13 @@ def read_industrial_demand(scn_name, carrier):
         Dataframe containing the industrial gas demand time series
 
     """
-    target_file = Path(IndustrialGasDemand.sources.tables["region_mapping_json"])
+    target_file = Path(IndustrialGasDemand.sources.files["region_mapping_json"])
     df_corr = pd.read_json(target_file)
     df_corr = df_corr.loc[:, ["id_region", "name_short"]]
     df_corr.set_index("id_region", inplace=True)
 
     target_file = (
-    Path(IndustrialGasDemand.sources.tables["industrial_demand_folder"])
+    Path(IndustrialGasDemand.sources.files["industrial_demand_folder"])
     / f"{carrier}_{scn_name}.json"
     )
     industrial_loads = pd.read_json(target_file)
@@ -327,15 +321,17 @@ def delete_old_entries(scn_name):
     None
 
     """
+    targets = IndustrialGasDemand.targets
+    sources = IndustrialGasDemand.sources
     # Clean tables
     db.execute_sql(
         f"""
-        DELETE FROM {IndustrialGasDemand.targets.tables['etrago_load_timeseries']['schema']}.{IndustrialGasDemand.targets.tables['etrago_load_timeseries']['table']}
+        DELETE FROM {targets.tables['etrago_load_timeseries']}
         WHERE "load_id" IN (
-            SELECT load_id FROM {IndustrialGasDemand.targets.tables['etrago_load']['schema']}.{IndustrialGasDemand.targets.tables['etrago_load']['table']}
+            SELECT load_id FROM {targets.tables['etrago_load']}
             WHERE "carrier" IN ('CH4_for_industry', 'H2_for_industry') AND
             scn_name = '{scn_name}' AND bus not IN (
-                SELECT bus_id FROM {IndustrialGasDemand.sources.tables['egon_etrago_bus']}
+                SELECT bus_id FROM {sources.tables['egon_etrago_bus']}
                 WHERE scn_name = '{scn_name}' AND country != 'DE'
             )
         );
@@ -344,12 +340,12 @@ def delete_old_entries(scn_name):
 
     db.execute_sql(
         f"""
-        DELETE FROM {IndustrialGasDemand.targets.tables['etrago_load']['schema']}.{IndustrialGasDemand.targets.tables['etrago_load']['table']}
+        DELETE FROM {targets.tables['etrago_load']}
         WHERE "load_id" IN (
-            SELECT load_id FROM {IndustrialGasDemand.targets.tables['etrago_load']['schema']}.{IndustrialGasDemand.targets.tables['etrago_load']['table']}
+            SELECT load_id FROM {targets.tables['etrago_load']}
             WHERE "carrier" IN ('CH4_for_industry', 'H2_for_industry') AND
             scn_name = '{scn_name}' AND bus not IN (
-                SELECT bus_id FROM {IndustrialGasDemand.sources.tables['egon_etrago_bus']}
+                SELECT bus_id FROM {sources.tables['egon_etrago_bus']}
                 WHERE scn_name = '{scn_name}' AND country != 'DE'
             )
         );
@@ -385,7 +381,7 @@ def insert_new_entries(industrial_gas_demand, scn_name):
         the database with their time series
 
     """
-
+    targets = IndustrialGasDemand.targets
     new_id = db.next_etrago_id("load")
     industrial_gas_demand["load_id"] = range(
         new_id, new_id + len(industrial_gas_demand)
@@ -403,9 +399,9 @@ def insert_new_entries(industrial_gas_demand, scn_name):
     engine = db.engine()
     # Insert data to db
     egon_etrago_load_gas.to_sql(
-        IndustrialGasDemand.targets.tables['etrago_load']['table'],
+        targets.get_table_name("etrago_load"),
         engine,
-        schema=IndustrialGasDemand.targets.tables['etrago_load']['schema'],
+        schema=targets.get_table_schema("etrago_load"),
         index=False,
         if_exists="append",
     )
@@ -657,6 +653,7 @@ def insert_industrial_gas_demand_time_series(egon_etrago_load_gas):
     None
 
     """
+    targets = IndustrialGasDemand.targets
     egon_etrago_load_gas_timeseries = egon_etrago_load_gas
 
     # Connect to local database
@@ -670,9 +667,9 @@ def insert_industrial_gas_demand_time_series(egon_etrago_load_gas):
 
     # Insert data to db
     egon_etrago_load_gas_timeseries.to_sql(
-        IndustrialGasDemand.targets.tables['etrago_load_timeseries']['table'],
+        targets.get_table_name("etrago_load_timeseries"),
         engine,
-        schema=IndustrialGasDemand.targets.tables['etrago_load_timeseries']['schema'],
+        schema=targets.get_table_schema("etrago_load_timeseries"),
         index=False,
         if_exists="append",
     )
@@ -698,7 +695,7 @@ def download_industrial_gas_demand():
 
         # Read and save data
         result_corr = requests.get(correspondance_url)
-        target_file = Path(IndustrialGasDemand.sources.tables["region_mapping_json"])
+        target_file = Path(IndustrialGasDemand.sources.files["region_mapping_json"])
         os.makedirs(os.path.dirname(target_file), exist_ok=True)
         pd.read_json(result_corr.content).to_json(target_file)
 
@@ -720,7 +717,7 @@ def download_industrial_gas_demand():
                 # Read and save data
                 result = requests.get(request)
                 target_file = (
-                    Path(IndustrialGasDemand.sources.tables["industrial_demand_folder"])
+                    Path(IndustrialGasDemand.sources.files["industrial_demand_folder"])
                     / f"{carrier}_{scn_name}.json"
                 )
                 pd.read_json(result.content).to_json(target_file)
@@ -734,6 +731,6 @@ def download_industrial_gas_demand():
         )
         shutil.copytree(
             IndustrialGasDemand.sources.files["industrial_gas_bundle_src"],
-            IndustrialGasDemand.sources.tables["industrial_demand_folder"],
+            IndustrialGasDemand.sources.files["industrial_demand_folder"],
             dirs_exist_ok=True,
         )

@@ -112,15 +112,11 @@ def insert_capacities_status_quo(scenario: str) -> None:
     None.
 
     """
-
-    targets = ScenarioCapacities.targets.tables
-
+    targets = ScenarioCapacities.targets
     # Delete rows if already exist
     db.execute_sql(
         f"""
-        DELETE FROM
-        {targets['scenario_capacities']['schema']}.
-        {targets['scenario_capacities']['table']}
+        DELETE FROM {targets.tables['scenario_capacities']}
         WHERE scenario_name = '{scenario}'
         """
     )
@@ -146,9 +142,7 @@ def insert_capacities_status_quo(scenario: str) -> None:
 
     db.execute_sql(
         f"""
-        INSERT INTO
-        {targets['scenario_capacities']['schema']}.
-        {targets['scenario_capacities']['table']}
+        INSERT INTO {targets.tables['scenario_capacities']}
         (component, carrier, capacity, nuts, scenario_name)
         VALUES (
             'link',
@@ -176,9 +170,7 @@ def insert_capacities_status_quo(scenario: str) -> None:
 
     db.execute_sql(
         f"""
-        INSERT INTO
-        {targets['scenario_capacities']['schema']}.
-        {targets['scenario_capacities']['table']}
+        INSERT INTO {targets.tables['scenario_capacities']}
         (component, carrier, capacity, nuts, scenario_name)
         VALUES (
             'storage_units',
@@ -200,19 +192,15 @@ def insert_capacities_per_federal_state_nep():
     None.
 
     """
-
     sources = ScenarioCapacities.sources
-    targets = ScenarioCapacities.targets.tables
-
+    targets = ScenarioCapacities.targets
     # Connect to local database
     engine = db.engine()
 
     # Delete rows if already exist
     db.execute_sql(
         f"""
-        DELETE FROM
-        {targets['scenario_capacities']['schema']}.
-        {targets['scenario_capacities']['table']}
+        DELETE FROM {targets.tables['scenario_capacities']}
         WHERE scenario_name = 'eGon2035'
         AND nuts != 'DE'
         """
@@ -283,7 +271,7 @@ def insert_capacities_per_federal_state_nep():
     map_nuts = pd.read_sql(
         f"""
         SELECT DISTINCT ON (nuts) gen, nuts
-        FROM {sources.tables['boundaries']['schema']}.{sources.tables['boundaries']['table']}
+        FROM {sources.tables['boundaries']}
         """,
         engine,
         index_col="gen",
@@ -365,9 +353,9 @@ def insert_capacities_per_federal_state_nep():
 
     # Insert data to db
     insert_data.to_sql(
-        targets["scenario_capacities"]["table"],
+        targets.get_table_name("scenario_capacities"),
         engine,
-        schema=targets["scenario_capacities"]["schema"],
+        schema=targets.get_table_schema("scenario_capacities"),
         if_exists="append",
         index=insert_data.index,
     )
@@ -385,14 +373,12 @@ def population_share():
         Share of population in testmode
 
     """
-
     sources = ScenarioCapacities.sources
-
     return (
         pd.read_sql(
             f"""
             SELECT SUM(population)
-            FROM {sources.tables['zensus_population']['schema']}.{sources.tables['zensus_population']['table']}
+            FROM {sources.tables['zensus_population']}
             WHERE population>0
             """,
             con=db.engine(),
@@ -488,9 +474,8 @@ def insert_nep_list_powerplants(export=True):
     kw_liste_nep : pandas.DataFrame
         List of conventional power plants from nep if export=False
     """
-
     sources = ScenarioCapacities.sources
-    targets = ScenarioCapacities.targets.tables
+    targets = ScenarioCapacities.targets
 
     # Connect to local database
     engine = db.engine()
@@ -567,9 +552,9 @@ def insert_nep_list_powerplants(export=True):
     if export is True:
         # Insert data to db
         kw_liste_nep.to_sql(
-            targets["nep_conventional_powerplants"]["table"],
+            targets.get_table_name("nep_conventional_powerplants"),
             engine,
-            schema=targets["nep_conventional_powerplants"]["schema"],
+            schema=targets.get_table_schema("nep_conventional_powerplants"),
             if_exists="replace",
         )
     else:
@@ -584,9 +569,7 @@ def district_heating_input():
     None.
 
     """
-
     sources = ScenarioCapacities.sources
-
     # import data to dataframe
     file = Path(".") / sources.files["eGon2035_capacities"]
     df = pd.read_excel(
@@ -664,10 +647,8 @@ def eGon100_capacities():
     None.
 
     """
-
     sources = ScenarioCapacities.sources
-    targets = ScenarioCapacities.targets.tables
-
+    targets = ScenarioCapacities.targets
     # read-in installed capacities
     cwd = Path(".")
 
@@ -854,15 +835,14 @@ def eGon100_capacities():
 
         db.execute_sql(
             f"""
-            DELETE FROM
-            {targets['scenario_capacities']['schema']}.{targets['scenario_capacities']['table']}
+            DELETE FROM {targets.tables['scenario_capacities']}
             WHERE scenario_name='{df_year["scenario_name"].unique()[0]}'
             """
         )
 
         df_year.to_sql(
-            targets["scenario_capacities"]["table"],
-            schema=targets["scenario_capacities"]["schema"],
+            targets.get_table_name("scenario_capacities"),
+            schema=targets.get_table_schema("scenario_capacities"),
             con=db.engine(),
             if_exists="append",
             index=False,
@@ -1021,7 +1001,7 @@ class ScenarioCapacities(Dataset):
     #:
     name: str = "ScenarioCapacities"
     #:
-    version: str = "0.0.20"
+    version: str = "0.0.21"
     sources = DatasetSources(
         files={
             "eGon2035_capacities": "data_bundle_egon_data/nep2035_version2021/NEP2035_V2021_scnC2035.xlsx",
@@ -1029,29 +1009,18 @@ class ScenarioCapacities(Dataset):
             "eGon100RE_capacities": "data_bundle_egon_data/pypsa_eur/csvs/nodal_capacities.csv",
         },
         tables={
-            "boundaries": {
-                "schema": "boundaries",
-                "table": "vg250_lan",
-            },
-            "zensus_population": {
-                "schema": "society",
-                "table": "destatis_zensus_population_per_ha",
-            },
+            "boundaries": "boundaries.vg250_lan",
+            "zensus_population": "society.destatis_zensus_population_per_ha",
         },
     )
 
     targets = DatasetTargets(
         tables={
-            "scenario_capacities": {
-                "schema": "supply",
-                "table": "egon_scenario_capacities",
-            },
-            "nep_conventional_powerplants": {
-                "schema": "supply",
-                "table": "egon_nep_2021_conventional_powerplants",
-            },
+            "scenario_capacities": "supply.egon_scenario_capacities",
+            "nep_conventional_powerplants": "supply.egon_nep_2021_conventional_powerplants",
         }
     )
+    
     def __init__(self, dependencies):
         super().__init__(
             name=self.name,

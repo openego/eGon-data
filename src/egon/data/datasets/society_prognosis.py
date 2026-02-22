@@ -15,7 +15,7 @@ Base = declarative_base()
 # ############################################################
 class SocietyPrognosis(Dataset):
     name: str = "SocietyPrognosis"
-    version: str = "0.0.4"
+    version: str = "0.0.5"
 
     sources = DatasetSources(
         tables={
@@ -29,14 +29,8 @@ class SocietyPrognosis(Dataset):
 
     targets = DatasetTargets(
         tables={
-            "population_prognosis": {
-                "schema": "society",
-                "table": "egon_population_prognosis"
-            },
-            "household_prognosis": {
-                "schema": "society",
-                "table": "egon_household_prognosis"
-            }
+            "population_prognosis": "society.egon_population_prognosis",
+            "household_prognosis": "society.egon_household_prognosis",
         }
     )
 
@@ -68,7 +62,9 @@ class EgonHouseholdPrognosis(Base):
 def create_tables():
     """Create table to map zensus grid and administrative districts (nuts3)"""
     engine = db.engine()
-    db.execute_sql("CREATE SCHEMA IF NOT EXISTS society;")
+    db.execute_sql(
+        f"CREATE SCHEMA IF NOT EXISTS {SocietyPrognosis.targets.get_table_schema('population_prognosis')};"
+    )
     EgonPopulationPrognosis.__table__.create(bind=engine, checkfirst=True)
     EgonHouseholdPrognosis.__table__.create(bind=engine, checkfirst=True)
 
@@ -110,10 +106,10 @@ def zensus_population():
         .population.apply(lambda grp: grp / grp.sum())
         .fillna(0)
     ).values
-
+    
+    targets = SocietyPrognosis.targets
     db.execute_sql(
-        f"DELETE FROM {SocietyPrognosis.targets.tables['population_prognosis']['schema']}."
-        f"{SocietyPrognosis.targets.tables['population_prognosis']['table']}"
+        f"DELETE FROM {targets.tables['population_prognosis']}"
     )
     # Scale to pogosis values from demandregio
     for year in [2035, 2050]:
@@ -135,8 +131,8 @@ def zensus_population():
 
         # Insert to database
         df.to_sql(
-             SocietyPrognosis.targets.tables["population_prognosis"]["table"],
-             schema=SocietyPrognosis.targets.tables["population_prognosis"]["schema"],
+             targets.get_table_name("population_prognosis"),
+             schema=targets.get_table_schema("population_prognosis"),
              con=local_engine,
              if_exists="append",
         )
@@ -213,10 +209,9 @@ def zensus_household():
         .fillna(0)
         .values
     )
-
+    targets = SocietyPrognosis.targets
     db.execute_sql(
-        f"DELETE FROM {SocietyPrognosis.targets.tables['household_prognosis']['schema']}."
-        f"{SocietyPrognosis.targets.tables['household_prognosis']['table']}"
+        f"DELETE FROM {targets.tables['household_prognosis']}"
     )
 
     # Apply prognosis function
@@ -232,8 +227,8 @@ def zensus_household():
 
         # Insert into database
         household_prognosis_per_year(prognosis_nuts3, zensus, year).to_sql(
-            SocietyPrognosis.targets.tables["household_prognosis"]["table"],
-            schema=SocietyPrognosis.targets.tables["household_prognosis"]["schema"],
+            targets.get_table_name("household_prognosis"),
+            schema=targets.get_table_schema("household_prognosis"),
             con=local_engine,
             if_exists="append",
         )

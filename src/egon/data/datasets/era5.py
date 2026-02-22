@@ -43,35 +43,25 @@ class WeatherData(Dataset):
     #:
     name: str = "Era5"
     #:
-    version: str = "0.0.6"
+    version: str = "0.0.7"
     
     sources = DatasetSources(
         files={},
         tables={
-            "vg250_bbox": {
-                "schema": "boundaries",
-                "table": "vg250_sta_bbox",
-            },
+            "vg250_bbox": "boundaries.vg250_sta_bbox",
         },
     )
 
-
     targets = DatasetTargets(
         tables={
-            "weather_cells": {
-                "schema": "supply",
-                "table": "egon_era5_weather_cells",
-            },
-            "renewable_feedin": {
-                "schema": "supply",
-                "table": "egon_era5_renewable_feedin",
-            },
+            "weather_cells": "supply.egon_era5_weather_cells",
+            "renewable_feedin": "supply.egon_era5_renewable_feedin",
         },
         files={
             "weather_data": {
                 "path": "data_bundle_egon_data/cutouts"
             }
-        }
+        },
     )
 
     def __init__(self, dependencies):
@@ -112,12 +102,12 @@ class EgonRenewableFeedIn(Base):
 
 def create_tables():
     db.execute_sql(
-        f"CREATE SCHEMA IF NOT EXISTS {WeatherData.targets.tables['weather_cells']['schema']};"
+        f"CREATE SCHEMA IF NOT EXISTS {WeatherData.targets.get_table_schema('weather_cells')};"
     )
     engine = db.engine()
     db.execute_sql(
         f"""
-        DROP TABLE IF EXISTS {WeatherData.targets.tables['weather_cells']['schema']}.{WeatherData.targets.tables['weather_cells']['table']} CASCADE;
+        DROP TABLE IF EXISTS {WeatherData.targets.tables['weather_cells']} CASCADE;
         """
     )
     EgonEra5Cells.__table__.create(bind=engine, checkfirst=True)
@@ -144,9 +134,7 @@ def import_cutout(boundary="Europe"):
         elif boundary == "Germany":
             geom_de = (
                 gpd.read_postgis(
-                    f"SELECT geometry as geom FROM "
-                    f"{WeatherData.sources.tables['vg250_bbox']['schema']}."
-                    f"{WeatherData.sources.tables['vg250_bbox']['table']}",
+                    f"SELECT geometry as geom FROM {WeatherData.sources.tables['vg250_bbox']}",
                     db.engine(),
                 )
                 .to_crs(4326)
@@ -220,8 +208,7 @@ def insert_weather_cells():
     """
 
     db.execute_sql(
-        f"DELETE FROM {WeatherData.targets.tables['weather_cells']['schema']}."
-        f"{WeatherData.targets.tables['weather_cells']['table']}"
+        f"DELETE FROM {WeatherData.targets.tables['weather_cells']}"
     )
 
     cutout = import_cutout()
@@ -231,14 +218,13 @@ def insert_weather_cells():
     )
 
     df.to_postgis(
-        WeatherData.targets.tables["weather_cells"]["table"],
-        schema=WeatherData.targets.tables["weather_cells"]["schema"],
+        WeatherData.targets.get_table_name("weather_cells"),
+        schema=WeatherData.targets.get_table_schema("weather_cells"),
         con=db.engine(),
         if_exists="append",
     )
 
     db.execute_sql(
-        f"UPDATE {WeatherData.targets.tables['weather_cells']['schema']}."
-        f"{WeatherData.targets.tables['weather_cells']['table']} "
+        f"UPDATE {WeatherData.targets.tables['weather_cells']} "
         f"SET geom_point=ST_Centroid(geom);"
-    )
+    )   

@@ -51,31 +51,19 @@ class RenewableFeedin(Dataset):
     #:
     name: str = "RenewableFeedin"
     #:
-    version: str = "0.0.9"
+    version: str = "0.0.10"
     
     sources = DatasetSources(
         tables={
-            "weather_cells": {
-                "schema": "supply",
-                "table": "egon_era5_weather_cells",
-            },
-            "vg250_lan_union": {
-                "schema": "boundaries",
-                "table": "vg250_lan_union",
-            },
+            "weather_cells": "supply.egon_era5_weather_cells",
+            "vg250_lan_union": "boundaries.vg250_lan_union",
         }
     )
 
     targets = DatasetTargets(
         tables={
-            "feedin_table": {
-                "schema": "supply",
-                "table": "egon_era5_renewable_feedin",
-            },
-            "map_zensus_weather_cell": {
-                "schema": "boundaries",
-                "table": "egon_map_zensus_weather_cell",
-            },
+            "feedin_table": "supply.egon_era5_renewable_feedin",
+            "map_zensus_weather_cell": "boundaries.egon_map_zensus_weather_cell",
         }
     )
 
@@ -100,10 +88,8 @@ engine = db.engine()
 
 
 class MapZensusWeatherCell(Base):
-    __tablename__ = RenewableFeedin.targets.tables["map_zensus_weather_cell"]["table"]
-    __table_args__ = {
-        "schema": RenewableFeedin.targets.tables["map_zensus_weather_cell"]["schema"]
-    }
+    __tablename__ = "egon_map_zensus_weather_cell"
+    __table_args__ = {"schema": "boundaries"}
 
     zensus_population_id = Column(
         Integer,
@@ -125,11 +111,11 @@ def weather_cells_in_germany(geom_column="geom"):
     """
 
     
-    cfg = RenewableFeedin.sources.tables
+    sources = RenewableFeedin.sources
 
     return db.select_geodataframe(
         f"""SELECT w_id, geom_point, geom
-        FROM {cfg['weather_cells']['schema']}.{cfg['weather_cells']['table']}
+        FROM {sources.tables['weather_cells']}
         WHERE ST_Intersects('SRID=4326;
         POLYGON((5 56, 15.5 56, 15.5 47, 5 47, 5 56))', geom)""",
         geom_col=geom_column,
@@ -147,11 +133,11 @@ def offshore_weather_cells(geom_column="geom"):
 
     """
 
-    cfg = RenewableFeedin.sources.tables
+    sources = RenewableFeedin.sources
 
     return db.select_geodataframe(
         f"""SELECT w_id, geom_point, geom
-        FROM {cfg['weather_cells']['schema']}.{cfg['weather_cells']['table']}
+        FROM {sources.tables['weather_cells']}
         WHERE ST_Intersects('SRID=4326;
         POLYGON((5.5 55.5, 14.5 55.5, 14.5 53.5, 5.5 53.5, 5.5 55.5))',
          geom)""",
@@ -173,15 +159,15 @@ def federal_states_per_weather_cell():
         Index, points and federal state of weather cells inside Germany
 
     """
+    sources = RenewableFeedin.sources
 
-    cfg = RenewableFeedin.sources.tables
 
     # Select weather cells and ferear states from database
     weather_cells = weather_cells_in_germany(geom_column="geom_point")
 
     federal_states = db.select_geodataframe(
         f"""SELECT gen, geometry
-            FROM {cfg['vg250_lan_union']['schema']}.{cfg['vg250_lan_union']['table']}""",
+            FROM {sources.tables['vg250_lan_union']}""",
         geom_col="geometry",
         index_col="gen",
     )
@@ -375,7 +361,7 @@ def wind():
     """
 
     
-    cfg = RenewableFeedin.targets.tables
+    targets = RenewableFeedin.targets
 
     # Get weather cells with turbine type
     weather_cells = turbine_per_weather_cell()
@@ -407,15 +393,14 @@ def wind():
 
     db.execute_sql(
         f"""
-                   DELETE FROM {cfg['feedin_table']['schema']}.
-                   {cfg['feedin_table']['table']}
+                   DELETE FROM {targets.tables['feedin_table']}
                    WHERE carrier = 'wind_onshore'"""
     )
 
     # Insert values into database
     df.to_sql(
-        cfg["feedin_table"]["table"],
-        schema=cfg["feedin_table"]["schema"],
+        targets.get_table_name("feedin_table"),
+        schema=targets.get_table_schema("feedin_table"),
         con=db.engine(),
         if_exists="append",
     )
@@ -530,7 +515,7 @@ def heat_pump_cop():
 
     # Load configuration
     
-    cfg = RenewableFeedin.targets.tables
+    targets = RenewableFeedin.targets
 
     # Get weather cells in Germany
     weather_cells = weather_cells_in_germany()
@@ -565,15 +550,14 @@ def heat_pump_cop():
     # Delete existing rows for carrier
     db.execute_sql(
         f"""
-            DELETE FROM {cfg['feedin_table']['schema']}.
-            {cfg['feedin_table']['table']}
+            DELETE FROM {targets.tables['feedin_table']}
             WHERE carrier = '{carrier}'"""
     )
 
     # Insert values into database
     df.to_sql(
-        cfg["feedin_table"]["table"],
-        schema=cfg["feedin_table"]["schema"],
+        targets.get_table_name("feedin_table"),
+        schema=targets.get_table_schema("feedin_table"),
         con=db.engine(),
         if_exists="append",
     )
@@ -600,7 +584,7 @@ def insert_feedin(data, carrier, weather_year):
     data = data.transpose().to_pandas()
 
     # Load configuration
-    cfg = RenewableFeedin.targets.tables
+    targets = RenewableFeedin.targets
 
     # Initialize DataFrame
     df = pd.DataFrame(
@@ -619,15 +603,14 @@ def insert_feedin(data, carrier, weather_year):
     # Delete existing rows for carrier
     db.execute_sql(
         f"""
-            DELETE FROM {cfg['feedin_table']['schema']}.
-            {cfg['feedin_table']['table']}
+            DELETE FROM {targets.tables['feedin_table']}
             WHERE carrier = '{carrier}'"""
     )
 
     # Insert values into database
     df.to_sql(
-        cfg["feedin_table"]["table"],
-        schema=cfg["feedin_table"]["schema"],
+        targets.get_table_name("feedin_table"),
+        schema=targets.get_table_schema("feedin_table"),
         con=db.engine(),
         if_exists="append",
     )
@@ -771,8 +754,9 @@ def add_metadata():
     meta_json = "'" + json.dumps(meta) + "'"
 
     # Add metadata as a comment to the table
+    targets = RenewableFeedin.targets
     db.submit_comment(
         meta_json,
-        RenewableFeedin.targets.tables["feedin_table"]["schema"],
-        RenewableFeedin.targets.tables["feedin_table"]["table"],
+        targets.get_table_schema("feedin_table"),
+        targets.get_table_name("feedin_table"),
     )

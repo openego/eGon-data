@@ -30,21 +30,21 @@ class Egon_etrago_gen(Dataset):
     #:
     name: str = "etrago_generators"
     #:
-    version: str = "0.0.9"
+    version: str = "0.0.10"
     
     sources = DatasetSources(
         tables={
-            "power_plants":      {"schema": "supply", "table": "egon_power_plants"},
-            "renewable_feedin":  {"schema": "supply", "table": "egon_era5_renewable_feedin"},
-            "weather_cells":     {"schema": "supply", "table": "egon_era5_weather_cells"},
-            "bus":               {"schema": "grid", "table": "egon_etrago_bus"},
+            "power_plants": "supply.egon_power_plants",
+            "renewable_feedin": "supply.egon_era5_renewable_feedin",
+            "weather_cells": "supply.egon_era5_weather_cells",
+            "bus": "grid.egon_etrago_bus",
         }
     )
 
     targets = DatasetTargets(
         tables={
-            "etrago_generators": {"schema": "grid", "table": "egon_etrago_generator"},
-            "etrago_gen_time":   {"schema": "grid", "table": "egon_etrago_generator_timeseries"},
+            "etrago_generators": "grid.egon_etrago_generator",
+            "etrago_gen_time": "grid.egon_etrago_generator_timeseries",
         }
     )
 
@@ -178,8 +178,8 @@ def fill_etrago_gen_table(etrago_pp2, etrago_gen_orig, cfg, con):
     )
 
     etrago_pp.to_sql(
-        name=cfg.targets.tables['etrago_generators']['table'],
-        schema=cfg.targets.tables['etrago_generators']['schema'],
+        name=cfg.targets.get_table_name("etrago_generators"),
+        schema=cfg.targets.get_table_schema("etrago_generators"),
         con=con,
         if_exists="append",
     )
@@ -217,8 +217,8 @@ def fill_etrago_gen_time_table(
     etrago_pp_time["temp_id"] = 1
 
     etrago_pp_time.to_sql(
-        name=cfg.targets.tables['etrago_gen_time']['table'],
-        schema=cfg.targets.tables['etrago_gen_time']['schema'],
+        name=cfg.targets.get_table_name("etrago_gen_time"),
+        schema=cfg.targets.get_table_schema("etrago_gen_time"),
         con=con,
         if_exists="append",
     )
@@ -228,7 +228,7 @@ def fill_etrago_gen_time_table(
 
 def load_tables(con, cfg):
     sql = f"""
-    SELECT * FROM {cfg.sources.tables['power_plants']['schema']}.{cfg.sources.tables['power_plants']['table']}
+    SELECT * FROM {cfg.sources.tables["power_plants"]}
     WHERE carrier != 'gas'
     """
 
@@ -238,28 +238,28 @@ def load_tables(con, cfg):
     )
 
     sql = f"""
-    SELECT * FROM {cfg.sources.tables['renewable_feedin']['schema']}.{cfg.sources.tables['renewable_feedin']['table']}
+    SELECT * FROM {cfg.sources.tables['renewable_feedin']}
     """
 
 
     renew_feedin = pd.read_sql(sql, con)
 
     sql = f"""
-    SELECT * FROM {cfg.sources.tables['weather_cells']['schema']}.{cfg.sources.tables['weather_cells']['table']}
+    SELECT * FROM {cfg.sources.tables['weather_cells']}
     """
 
 
     weather_cells = gpd.GeoDataFrame.from_postgis(sql, con, crs="EPSG:4326")
 
     sql = f"""
-    SELECT * FROM {cfg.targets.tables['etrago_generators']['schema']}.{cfg.targets.tables['etrago_generators']['table']}
+    SELECT * FROM {cfg.targets.tables['etrago_generators']}
     """
 
 
     etrago_gen_orig = pd.read_sql(sql, con)
 
     sql = f"""
-    SELECT * FROM {cfg.targets.tables['etrago_gen_time']['schema']}.{cfg.targets.tables['etrago_gen_time']['table']}
+    SELECT * FROM {cfg.targets.tables['etrago_gen_time']}
     """
 
 
@@ -312,11 +312,11 @@ def delete_previuos_gen(cfg, con, etrago_gen_orig, power_plants):
 
         if carrier_delete:
             db.execute_sql(
-                f"""DELETE FROM {cfg.targets.tables['etrago_generators']['schema']}.{cfg.targets.tables['etrago_generators']['table']}
+                f"""DELETE FROM {cfg.targets.tables['etrago_generators']}
                     WHERE carrier IN {*carrier_delete,}
                       AND bus IN (
                           SELECT bus_id
-                          FROM {cfg.sources.tables['bus']['schema']}.{cfg.sources.tables['bus']['table']}
+                          FROM {cfg.sources.tables['bus']}
                           WHERE country = 'DE'
                            AND carrier = 'AC'
                            AND scn_name = '{scn_name}'
@@ -327,10 +327,11 @@ def delete_previuos_gen(cfg, con, etrago_gen_orig, power_plants):
 
 
             db.execute_sql(
-                f"""DELETE FROM {cfg.targets.tables['etrago_gen_time']['schema']}.{cfg.targets.tables['etrago_gen_time']['table']}
+                f"""DELETE FROM {cfg.targets.tables['etrago_gen_time']}
                     WHERE generator_id NOT IN (
                             SELECT generator_id
-                            FROM {cfg.targets.tables['etrago_generators']['schema']}.{cfg.targets.tables['etrago_generators']['table']})
+                            FROM {cfg.targets.tables['etrago_generators']}
+                        )
                         AND scn_name ='{scn_name}'
                 """
             )

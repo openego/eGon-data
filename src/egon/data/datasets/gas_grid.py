@@ -243,11 +243,11 @@ def insert_CH4_nodes_list(gas_nodes_list, scn_name="eGon2035"):
     gas_nodes_list = gas_nodes_list.drop(
         columns=["NUTS1", "param", "country_code"]
     )
-
+    targets = GasNodesAndPipes.targets
     # Insert data to db
     db.execute_sql(
         f"""
-    DELETE FROM {GasNodesAndPipes.targets.tables["buses"]["schema"]}.{GasNodesAndPipes.targets.tables["buses"]["table"]}
+    DELETE FROM {targets.tables["buses"]}
     WHERE "carrier" = 'CH4' AND scn_name = '{c['scn_name']}' AND country = 'DE';
     """
     )
@@ -255,9 +255,9 @@ def insert_CH4_nodes_list(gas_nodes_list, scn_name="eGon2035"):
     # Insert CH4 data to db
     print(gas_nodes_list)
     gas_nodes_list.to_postgis(
-        GasNodesAndPipes.targets.tables["buses"]["table"],
+        targets.get_table_name("buses"),
         engine,
-        schema=GasNodesAndPipes.targets.tables["buses"]["schema"],
+        schema=targets.get_table_schema("buses"),
         index=False,
         if_exists="append",
         dtype={"geom": Geometry()},
@@ -305,7 +305,7 @@ def define_gas_buses_abroad(scn_name="eGon2035"):
     if scn_name == "eGon100RE":
         gdf_abroad_buses = geopandas.read_postgis(
             f"""
-            SELECT * FROM {GasNodesAndPipes.targets.tables["buses"]["schema"]}.{GasNodesAndPipes.targets.tables["buses"]["table"]}
+            SELECT * FROM {GasNodesAndPipes.targets.tables["buses"]}
             WHERE "carrier" = '{gas_carrier}' AND scn_name = '{scn_name}' AND country != 'DE';
             """,
             con=engine,
@@ -350,7 +350,7 @@ def define_gas_buses_abroad(scn_name="eGon2035"):
     else:
         db.execute_sql(
             f"""
-        DELETE FROM {GasNodesAndPipes.targets.tables["buses"]["schema"]}.{GasNodesAndPipes.targets.tables["buses"]["table"]}
+        DELETE FROM {GasNodesAndPipes.targets.tables["buses"]}
         WHERE "carrier" = '{gas_carrier}' AND scn_name = '{scn_name}' AND country != 'DE';
         """
         )
@@ -468,13 +468,13 @@ def insert_gas_buses_abroad(scn_name="eGon2035"):
     gdf_abroad_buses = define_gas_buses_abroad(scn_name)
 
     print(gdf_abroad_buses)
-
+    targets = GasNodesAndPipes.targets
     # Insert to db
     if scn_name == "eGon100RE":
         gdf_abroad_buses[gdf_abroad_buses["country"] == "DE"].to_postgis(
-            GasNodesAndPipes.targets.tables["buses"]["table"],
+            targets.get_table_name("buses"),
             engine,
-            schema=GasNodesAndPipes.targets.tables["buses"]["schema"],
+            schema=targets.get_table_schema("buses"),
             index=False,
             if_exists="append",
             dtype={"geom": Geometry()},
@@ -483,14 +483,14 @@ def insert_gas_buses_abroad(scn_name="eGon2035"):
     else:
         db.execute_sql(
             f"""
-        DELETE FROM {GasNodesAndPipes.targets.tables["buses"]["schema"]}.{GasNodesAndPipes.targets.tables["buses"]["table"]}
+        DELETE FROM {targets.tables["buses"]}
         WHERE "carrier" = '{gas_carrier}' AND scn_name = '{scn_name}' AND country != 'DE';
         """
         )
         gdf_abroad_buses.to_postgis(
-            GasNodesAndPipes.targets.tables["buses"]["table"],
+            targets.get_table_name("buses"),
             engine,
-            schema=GasNodesAndPipes.targets.tables["buses"]["schema"],
+            schema=targets.get_table_schema("buses"),
             index=False,
             if_exists="append",
             dtype={"geom": Geometry()},
@@ -939,21 +939,21 @@ def insert_gas_pipeline_list(gas_pipelines_list, scn_name="eGon2035"):
     gas_carrier = "CH4"
 
     engine = db.engine()
-
+    targets = GasNodesAndPipes.targets
     # Clean db
     db.execute_sql(
-        f"""DELETE FROM {GasNodesAndPipes.targets.tables["links"]["schema"]}.{GasNodesAndPipes.targets.tables["links"]["table"]}
+        f"""DELETE FROM {targets.tables["links"]}
         WHERE "carrier" = '{gas_carrier}'
         AND scn_name = '{scn_name}'
         AND link_id IN(
-            SELECT link_id FROM {GasNodesAndPipes.targets.tables["links"]["schema"]}.{GasNodesAndPipes.targets.tables["links"]["table"]}
+            SELECT link_id FROM {targets.tables["links"]}
             WHERE bus0 IN (
-                SELECT bus_id FROM {GasNodesAndPipes.targets.tables["buses"]["schema"]}.{GasNodesAndPipes.targets.tables["buses"]["table"]}
+                SELECT bus_id FROM {targets.tables["buses"]}
                 WHERE country = 'DE'
                 AND scn_name = '{scn_name}'
                 )
             AND bus1 IN (
-                SELECT bus_id FROM {GasNodesAndPipes.targets.tables["buses"]["schema"]}.{GasNodesAndPipes.targets.tables["buses"]["table"]}
+                SELECT bus_id FROM {targets.tables["buses"]}
                 WHERE country = 'DE'
                 AND scn_name = '{scn_name}'
                 )
@@ -964,34 +964,32 @@ def insert_gas_pipeline_list(gas_pipelines_list, scn_name="eGon2035"):
     print(gas_pipelines_list)
     # Insert data to db
     gas_pipelines_list.to_postgis(
-        GasNodesAndPipes.targets.tables["gas_link"]["table"],
+        targets.get_table_name("gas_link"),
         engine,
-        schema=GasNodesAndPipes.targets.tables["gas_link"]["schema"],
+        schema=targets.get_table_schema("gas_link"),
         index=False,
         if_exists="replace",
         dtype={"geom": Geometry(), "topo": Geometry()},
     )
 
+
     db.execute_sql(
         f"""
         SELECT UpdateGeometrySRID(
-            '{GasNodesAndPipes.targets.tables["gas_link"]["schema"]}',
-            '{GasNodesAndPipes.targets.tables["gas_link"]["table"]}',
+            '{targets.get_table_schema("gas_link")}',
+            '{targets.get_table_name("gas_link")}',
             'topo',
             4326
         );
-
-        INSERT INTO {GasNodesAndPipes.targets.tables["links"]["schema"]}.{GasNodesAndPipes.targets.tables["links"]["table"]}
+    
+        INSERT INTO {targets.tables["links"]}
             (scn_name, link_id, carrier, bus0, bus1, p_min_pu,
              p_nom, p_nom_extendable, length, geom, topo)
-        SELECT scn_name,
-               link_id, carrier,
-               bus0, bus1, p_min_pu,
-               p_nom, p_nom_extendable, length,
-               geom, topo
-        FROM {GasNodesAndPipes.targets.tables["gas_link"]["schema"]}.{GasNodesAndPipes.targets.tables["gas_link"]["table"]};
-
-        DROP TABLE {GasNodesAndPipes.targets.tables["gas_link"]["schema"]}.{GasNodesAndPipes.targets.tables["gas_link"]["table"]};
+        SELECT scn_name, link_id, carrier, bus0, bus1, p_min_pu,
+               p_nom, p_nom_extendable, length, geom, topo
+        FROM {targets.tables["gas_link"]};
+    
+        DROP TABLE {targets.tables["gas_link"]};
         """
     )
 
@@ -1007,20 +1005,20 @@ def remove_isolated_gas_buses(scn_name="eGon2035"):
     None
 
     """
-    #targets = config.datasets()["gas_grid"]["targets"]
+    targets = GasNodesAndPipes.targets
 
     db.execute_sql(
         f"""
-        DELETE FROM {GasNodesAndPipes.targets.tables["buses"]["schema"]}.{GasNodesAndPipes.targets.tables["buses"]["table"]}
+        DELETE FROM {targets.tables["buses"]}
         WHERE "carrier" = 'CH4'
         AND scn_name = '{scn_name}'
         AND country = 'DE'
         AND "bus_id" NOT IN
-            (SELECT bus0 FROM {GasNodesAndPipes.targets.tables["links"]["schema"]}.{GasNodesAndPipes.targets.tables["links"]["table"]}
+            (SELECT bus0 FROM {targets.tables["links"]}
             WHERE scn_name = '{scn_name}'
             AND carrier = 'CH4')
         AND "bus_id" NOT IN
-            (SELECT bus1 FROM {GasNodesAndPipes.targets.tables["links"]["schema"]}.{GasNodesAndPipes.targets.tables["links"]["table"]}
+            (SELECT bus1 FROM {targets.tables["links"]}
             WHERE scn_name = '{scn_name}'
             AND carrier = 'CH4');
     """
@@ -1088,17 +1086,17 @@ def insert_gas_data_status(scn_name):
     None.
 
     """
-
+    targets = GasNodesAndPipes.targets
     # delete old entries
     db.execute_sql(
         f"""
-        DELETE FROM {GasNodesAndPipes.targets.tables["links"]["schema"]}.{GasNodesAndPipes.targets.tables["links"]["table"]}
+        DELETE FROM {targets.tables["links"]}
         WHERE carrier = 'CH4' AND scn_name = '{scn_name}'
         """
     )
     db.execute_sql(
         f"""
-        DELETE FROM {GasNodesAndPipes.targets.tables["buses"]["schema"]}.{GasNodesAndPipes.targets.tables["buses"]["table"]}
+        DELETE FROM {targets.tables["buses"]}
         WHERE carrier = 'CH4' AND scn_name = '{scn_name}'
         """
     )
@@ -1127,7 +1125,7 @@ def insert_gas_data_status(scn_name):
     gdf.index.name = "bus_id"
 
     gdf.reset_index().to_postgis(
-        GasNodesAndPipes.targets.tables["buses"]["table"], schema=GasNodesAndPipes.targets.tables["buses"]["schema"], con=db.engine(), if_exists="append"
+        targets.get_table_name("buses"), schema=targets.get_table_schema("buses"), con=db.engine(), if_exists="append"
     )
 
 
@@ -1155,7 +1153,7 @@ class GasNodesAndPipes(Dataset):
     #:
     name: str = "GasNodesAndPipes"
     #:
-    version: str = "0.0.13"
+    version: str = "0.0.14"
 
     tasks = ()
 
@@ -1197,9 +1195,9 @@ class GasNodesAndPipes(Dataset):
     
     targets = DatasetTargets(
         tables={
-            "buses": {"schema": "grid", "table": "egon_etrago_bus"},
-            "links": {"schema": "grid", "table": "egon_etrago_link"},
-            "gas_link": {"schema": "grid", "table": "egon_etrago_gas_link"},
+            "buses": "grid.egon_etrago_bus",
+            "links": "grid.egon_etrago_link",
+            "gas_link": "grid.egon_etrago_gas_link",
         },
         files={
             "scigrid_gas_data_dir": {"path": "./datasets/gas_data"},

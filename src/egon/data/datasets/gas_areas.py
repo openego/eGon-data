@@ -45,32 +45,21 @@ class GasAreaseGon2035(Dataset):
     #:
     name: str = "GasAreaseGon2035"
     #:
-    version: str = "0.0.4"
+    version: str = "0.0.5"
 
     # Dataset sources (input tables)
     sources = DatasetSources(
         tables={
-            "vg250_sta_union": {
-                "schema": "boundaries",
-                "table": "vg250_sta_union",
-            },
-            "egon_etrago_bus": {
-                "schema": "grid",
-                "table": "egon_etrago_bus",
-            },
+            "vg250_sta_union": "boundaries.vg250_sta_union",
+            "egon_etrago_bus": "grid.egon_etrago_bus",
         }
     )
 
-    # Dataset targets (output tables)
     targets = DatasetTargets(
         tables={
-            "ch4_voronoi": {
-                "schema": "grid",
-                "table": "egon_gas_voronoi",
-            },
+            "ch4_voronoi": "grid.egon_gas_voronoi",
         }
     )
-
     def __init__(self, dependencies):
         super().__init__(
             name=self.name,
@@ -103,29 +92,19 @@ class GasAreaseGon100RE(Dataset):
     #:
     name: str = "GasAreaseGon100RE"
     #:
-    version: str = "0.0.3"
+    version: str = "0.0.5"
 
     # Same sources as GasAreaseGon2035
     sources = DatasetSources(
         tables={
-            "vg250_sta_union": {
-                "schema": "boundaries",
-                "table": "vg250_sta_union",
-            },
-            "egon_etrago_bus": {
-                "schema": "grid",
-                "table": "egon_etrago_bus",
-            },
+            "vg250_sta_union": "boundaries.vg250_sta_union",
+            "egon_etrago_bus": "grid.egon_etrago_bus",
         }
     )
 
-    # Same target table
     targets = DatasetTargets(
         tables={
-            "ch4_voronoi": {
-                "schema": "grid",
-                "table": "egon_gas_voronoi",
-            },
+            "ch4_voronoi": "grid.egon_gas_voronoi",
         }
     )
 
@@ -283,7 +262,8 @@ def create_voronoi(scn_name, carrier):
         Name of the carrier
 
     """
-
+    targets = GasAreaseGon2035.targets
+    sources = GasAreaseGon2035.sources
     engine = db.engine()
 
     table_exist = (
@@ -292,8 +272,8 @@ def create_voronoi(scn_name, carrier):
                 f"""
     SELECT *
     FROM information_schema.tables
-    WHERE table_schema = '{GasAreaseGon2035.targets.tables["ch4_voronoi"]["schema"]}'
-        AND table_name = '{GasAreaseGon2035.targets.tables["ch4_voronoi"]["table"]}'
+    WHERE table_schema = '{targets.get_table_schema("ch4_voronoi")}'
+        AND table_name = '{targets.get_table_name("ch4_voronoi")}'
     LIMIT 1;
         """,
                 engine,
@@ -308,7 +288,7 @@ def create_voronoi(scn_name, carrier):
     boundary = db.select_geodataframe(
         f"""
             SELECT id, geometry
-            FROM {GasAreaseGon2035.sources.tables["vg250_sta_union"]["schema"]}.{GasAreaseGon2035.sources.tables["vg250_sta_union"]["table"]};
+            FROM {sources.tables["vg250_sta_union"]};
         """,
         geom_col="geometry",
     ).to_crs(epsg=4326)
@@ -325,7 +305,7 @@ def create_voronoi(scn_name, carrier):
 
     db.execute_sql(
         f"""
-        DELETE FROM {GasAreaseGon2035.targets.tables["ch4_voronoi"]["schema"]}.{GasAreaseGon2035.targets.tables["ch4_voronoi"]["table"]}
+        DELETE FROM {targets.tables["ch4_voronoi"]}
         WHERE "carrier" IN ('{carrier_strings}') and "scn_name" = '{scn_name}';
         """
     )
@@ -333,7 +313,7 @@ def create_voronoi(scn_name, carrier):
     buses = db.select_geodataframe(
         f"""
             SELECT bus_id, geom
-            FROM {GasAreaseGon100RE.sources.tables['egon_etrago_bus']['schema']}.{GasAreaseGon100RE.sources.tables['egon_etrago_bus']['table']}
+            FROM {sources.tables["egon_etrago_bus"]}
             WHERE scn_name = '{scn_name}'
             AND country = 'DE'
             AND carrier IN ('{carrier_strings}');
@@ -363,9 +343,9 @@ def create_voronoi(scn_name, carrier):
 
     # Insert data to db
     gdf.set_crs(epsg=4326).to_postgis(
-        GasAreaseGon2035.targets.tables["ch4_voronoi"]["table"],
+        targets.get_table_name("ch4_voronoi"),
         engine,
-        schema=GasAreaseGon2035.targets.tables["ch4_voronoi"]["schema"],
+        schema=targets.get_table_schema("ch4_voronoi"),
         index=False,
         if_exists="append",
         dtype={"geom": Geometry},
@@ -389,7 +369,7 @@ class GasAreas(Dataset):
     #:
     name: str = "GasAreas"
     #:
-    version: str = "0.0.4"
+    version: str = "0.0.5"
 
     tasks = (create_gas_voronoi_table,)
     extra_dependencies = ()

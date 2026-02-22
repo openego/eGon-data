@@ -36,22 +36,13 @@ Base = declarative_base()
 class ZensusVg250(Dataset):
     
     name: str = "ZensusVg250"
-    version: str = "0.0.4"
+    version: str = "0.0.5"
 
     sources = DatasetSources(
         tables={
-            "zensus_population": {
-                "schema": "society",
-                "table": "destatis_zensus_population_per_ha",
-            },
-            "vg250_municipalities": {
-                "schema": "boundaries",
-                "table": "vg250_gem",
-            },
-            "map_zensus_vg250": {
-                "schema": "boundaries",
-                "table": "egon_map_zensus_vg250",
-            },
+            "zensus_population": "society.destatis_zensus_population_per_ha",
+            "vg250_municipalities": "boundaries.vg250_gem",
+            "map_zensus_vg250": "boundaries.egon_map_zensus_vg250",
         },
         urls={
             "vg250_original_data": "https://daten.gdz.bkg.bund.de/produkte/vg/vg250_ebenen_0101/2020/vg250_01-01.geo84.shape.ebenen.zip"
@@ -59,18 +50,9 @@ class ZensusVg250(Dataset):
     )
     targets = DatasetTargets(
         tables={
-            "map": {
-                "schema": "boundaries",
-                "table": "egon_map_zensus_vg250",
-            },
-            "zensus_inside_germany": {
-                "schema": "society",
-                "table": "destatis_zensus_population_per_ha_inside_germany",
-            },
-            "vg250_gem_population": {
-                "schema": "boundaries",
-                "table": "vg250_gem_population",
-            },
+            "map": "boundaries.egon_map_zensus_vg250",
+            "zensus_inside_germany": "society.destatis_zensus_population_per_ha_inside_germany",
+            "vg250_gem_population": "boundaries.vg250_gem_population",
         }
     )
          
@@ -217,29 +199,26 @@ def map_zensus_vg250():
     MapZensusVg250.__table__.drop(bind=db.engine(), checkfirst=True)
     MapZensusVg250.__table__.create(bind=db.engine(), checkfirst=True)
 
-    sources = ZensusVg250.sources.tables
-    target = ZensusVg250.targets.tables["map"]
+    sources = ZensusVg250.sources
+    targets = ZensusVg250.targets
 
     local_engine = db.engine()
 
-    db.execute_sql(f"DELETE FROM {target['schema']}.{target['table']}")
+    db.execute_sql(f"DELETE FROM {targets.tables['map']}")
     
     gdf = db.select_geodataframe(
-        f"""SELECT * FROM
-        {sources['zensus_population']['schema']}.
-        {sources['zensus_population']['table']}""",
+        f"SELECT * FROM {sources.tables['zensus_population']}",
         geom_col="geom_point",
     )
 
     gdf_boundaries = db.select_geodataframe(
-        f"""SELECT * FROM  {sources['vg250_municipalities']['schema']}.
-        {sources['vg250_municipalities']['table']}""",
+        f"SELECT * FROM {sources.tables['vg250_municipalities']}",
         geom_col="geometry",
         epsg=3035,
     )
 
     # Join vg250 with zensus cells
-    join = gpd.sjoin(gdf, gdf_boundaries, how="inner", op="intersects")
+    join = gpd.sjoin(gdf, gdf_boundaries, how="inner", predicate="intersects")
 
     # Deal with cells that don't interect with boundaries (e.g. at borders)
     missing_cells = gdf[(~gdf.id.isin(join.id_left)) & (gdf.population > 0)]
@@ -253,7 +232,7 @@ def map_zensus_vg250():
         boundaries_buffer = gdf_boundaries.copy()
         boundaries_buffer.geometry = boundaries_buffer.geometry.buffer(buffer)
         join_missing = gpd.sjoin(
-            missing_cells, boundaries_buffer, how="inner", op="intersects"
+            missing_cells, boundaries_buffer, how="inner", predicate="intersects"
         )
         join = pd.concat([join, join_missing])
         missing_cells = gdf[
@@ -283,8 +262,8 @@ def map_zensus_vg250():
     ].set_geometry(
         "zensus_geom"
     ).to_postgis(
-        target["table"],
-        schema=target["schema"],
+        targets.get_table_name("map"),
+        schema=targets.get_table_schema("map"),
         con=local_engine,
         if_exists="replace",
     )
@@ -353,10 +332,11 @@ def population_in_municipalities():
     Vg250GemPopulation.__table__.create(bind=engine_local_db, checkfirst=True)
 
     srid = 3035
-
+    sources = ZensusVg250.sources
+    targets = ZensusVg250.targets
+    
     gem = db.select_geodataframe(
-        f"SELECT * FROM {ZensusVg250.sources.tables['vg250_municipalities']['schema']}."
-        f"{ZensusVg250.sources.tables['vg250_municipalities']['table']}",
+        f"SELECT * FROM {sources.tables['vg250_municipalities']}",
         geom_col="geometry",
         epsg=srid,
         index_col="id",
@@ -368,14 +348,10 @@ def population_in_municipalities():
 
     population = db.select_dataframe(
         f"""SELECT id, population, vg250_municipality_id
-        FROM {ZensusVg250.sources.tables['zensus_population']['schema']}.
-        {ZensusVg250.sources.tables['zensus_population']['table']}
-        INNER JOIN {ZensusVg250.sources.tables['map_zensus_vg250']['schema']}.
-        {ZensusVg250.sources.tables['map_zensus_vg250']['table']} ON (
-             {ZensusVg250.sources.tables['zensus_population']['schema']}.
-             {ZensusVg250.sources.tables['zensus_population']['table']}.id =
-             {ZensusVg250.sources.tables['map_zensus_vg250']['schema']}.
-             {ZensusVg250.sources.tables['map_zensus_vg250']['table']}.zensus_population_id)
+        FROM {sources.tables['zensus_population']}
+        INNER JOIN {sources.tables['map_zensus_vg250']} ON (
+         {sources.tables['zensus_population']}.id =
+         {sources.tables['map_zensus_vg250']}.zensus_population_id)
         WHERE population > 0"""
     )
 
@@ -390,8 +366,8 @@ def population_in_municipalities():
     gem["population_density"] = gem["population_total"] / gem["area_km2"]
 
     gem.reset_index().to_postgis(
-        ZensusVg250.targets.tables["vg250_gem_population"]["table"],
-        schema=ZensusVg250.targets.tables["vg250_gem_population"]["schema"],
+        targets.get_table_name("vg250_gem_population"),
+        schema=targets.get_table_schema("vg250_gem_population"),
         con=db.engine(),
         if_exists="replace",
     )
