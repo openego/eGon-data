@@ -218,7 +218,7 @@ def map_zensus_vg250():
     )
 
     # Join vg250 with zensus cells
-    join = gpd.sjoin(gdf, gdf_boundaries, how="inner", predicate="intersects")
+    join = gpd.sjoin(gdf, gdf_boundaries, how="inner", op="intersects")
 
     # Deal with cells that don't interect with boundaries (e.g. at borders)
     missing_cells = gdf[(~gdf.id.isin(join.id_left)) & (gdf.population > 0)]
@@ -232,7 +232,7 @@ def map_zensus_vg250():
         boundaries_buffer = gdf_boundaries.copy()
         boundaries_buffer.geometry = boundaries_buffer.geometry.buffer(buffer)
         join_missing = gpd.sjoin(
-            missing_cells, boundaries_buffer, how="inner", predicate="intersects"
+            missing_cells, boundaries_buffer, how="inner", op="intersects"
         )
         join = pd.concat([join, join_missing])
         missing_cells = gdf[
