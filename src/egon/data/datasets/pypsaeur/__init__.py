@@ -34,7 +34,7 @@ class PreparePypsaEur(Dataset):
     def __init__(self, dependencies):
         super().__init__(
             name="PreparePypsaEur",
-            version="0.0.42",
+            version="0.0.43",
             dependencies=dependencies,
             tasks=(
                 download,
