@@ -43,11 +43,13 @@ def download_mastr_data():
 
 def download_mastr_geocoding():
     """Download MaStR_geocoding data from Zenodo."""
-    zenodo_files_url = "https://zenodo.org/records/17279317/files/mastr_geocoding_dump_2025-02-09_14783581.gpkg?download=1"
-    WORKING_DIR_MASTR_GEOCODING = Path(".", "mastr_geocoding")
-    dump_file_name = egon.data.config.datasets()["mastr_new"][
-        "dump_geocoding_name"
-    ]
+    data_config = egon.data.config.datasets()["mastr_new"]
+    zenodo_files_url = (
+        f"https://zenodo.org/record/"
+        f"{data_config['geocoding_deposit_id']}/files/"
+    )
+    WORKING_DIR_MASTR_GEOCODING = Path(".", data_config["geocoding_path"])
+    dump_file_name = data_config["dump_geocoding_name"]
     if not os.path.exists(WORKING_DIR_MASTR_GEOCODING):
         WORKING_DIR_MASTR_GEOCODING.mkdir(exist_ok=True, parents=True)
 
@@ -59,6 +61,7 @@ def download_mastr_geocoding():
         )
     else:
         print("mastr_geocoding was already present. Download skipped")
+
 
 # pylint: disable=too-many-locals
 def extract_and_preprocess_mastr():

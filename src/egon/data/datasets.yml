@@ -329,8 +329,8 @@ mastr_new:
   status2019_date_max: "2019-12-31 23:59:00"
   status2023_date_max: "2023-12-31 23:59:00"
   dump_geocoding_name: "mastr_geocoding_dump_2025-02-09_14783581.gpkg"
-  geocoding_path:
-    - "mastr_geocoding"
+  geocoding_deposit_id: 17279317
+  geocoding_path: "mastr_geocoding"
 
 re_potential_areas:
   target:
