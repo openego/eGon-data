@@ -197,5 +197,5 @@ class re_potential_area_setup(Dataset):
                     ),
                 ]
             },
-            on_validation_failure="continue"
+            proceed_on_validation_failure=True
         )

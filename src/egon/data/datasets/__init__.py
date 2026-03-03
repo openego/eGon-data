@@ -206,7 +206,7 @@ class Dataset:
     #: automatically be converted to :class:`Tasks_`.
     tasks: Tasks = ()
     validation: Dict[str, List] = field(default_factory=dict)
-    on_validation_failure: str = "continue"
+    proceed_on_validation_failure: bool = False
     create_finalize_task: bool = False
 
     def check_version(self, after_execution=()):
@@ -280,7 +280,7 @@ class Dataset:
             validation_tasks = create_validation_tasks(
                 validation_dict=self.validation,
                 dataset_name=self.name,
-                on_failure=self.on_validation_failure
+                proceed_on_validation_failure=self.proceed_on_validation_failure
             )
 
             # Add validation tasks to existing Tasks_ without re-processing dependencies

@@ -232,7 +232,7 @@ class HeatPumpsPypsaEur(Dataset):
                     ),
                 ]
             },
-            on_validation_failure="continue"
+            proceed_on_validation_failure=True
         )
 
 
@@ -499,7 +499,7 @@ class HeatPumps2035(Dataset):
                     ),
                 ]
             },
-            on_validation_failure="continue"
+            proceed_on_validation_failure=True
         )
 
 

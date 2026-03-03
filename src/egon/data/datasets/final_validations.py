@@ -1858,5 +1858,5 @@ class FinalValidations(Dataset):
                     ),
                 ]
             },
-            on_validation_failure="continue"  # Continue pipeline even if validations fail
+            proceed_on_validation_failure=True  # Continue pipeline even if validations fail
         )

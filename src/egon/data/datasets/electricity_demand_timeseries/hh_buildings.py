@@ -1274,5 +1274,5 @@ class setup(Dataset):
                     ),
                 ]
             },
-            on_validation_failure="continue"
+            proceed_on_validation_failure=True
         )

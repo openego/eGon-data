@@ -20,7 +20,7 @@ def run_validation_task(
     specs: Sequence[ValidationSpec],
     task_name: str,
     dataset_name: str,
-    on_failure: str,
+    proceed_on_validation_failure: bool,
     **context: Any,
 ) -> Dict[str, int]:
     """
@@ -83,7 +83,7 @@ def run_validation_task(
 
     logger.info("Complete: %s/%s passed", total - failed, total)
 
-    if failed > 0 and on_failure == "fail":
+    if failed > 0 and not proceed_on_validation_failure:
         raise Exception(f"{failed}/{total} validations failed")
 
     return {"total": total, "passed": total - failed, "failed": failed}
@@ -92,7 +92,7 @@ def run_validation_task(
 def create_validation_tasks(
     validation_dict: Dict[str, Sequence[ValidationSpec]],
     dataset_name: str,
-    on_failure: str = "continue",
+    proceed_on_validation_failure: bool = False,
 ) -> List[PythonOperator]:
     """
     Creates one PythonOperator per task_name in validation_dict.
@@ -115,7 +115,7 @@ def create_validation_tasks(
             specs=specs,
             task_name=task_name,
             dataset_name=dataset_name,
-            on_failure=on_failure,
+            proceed_on_validation_failure=proceed_on_validation_failure,
         )
 
         tasks.append(
