@@ -81,6 +81,16 @@ def run_validation_task(
     total = len(results)
     failed = sum(1 for r in results if not r.success)
 
+    # Log individual rule results
+    for r in results:
+        status = "PASSED" if r.success else "FAILED"
+        rule_id = getattr(r, "rule_id", "unknown")
+        message = getattr(r, "message", "")
+        if r.success:
+            logger.info("Rule %s: %s", rule_id, status)
+        else:
+            logger.warning("Rule %s: %s - %s", rule_id, status, message)
+
     logger.info("Complete: %s/%s passed", total - failed, total)
 
     if failed > 0 and not proceed_on_validation_failure:
