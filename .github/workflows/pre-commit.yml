@@ -1,0 +1,28 @@
+name: Pre-commit Checks
+
+on:
+  push:
+    branches:
+      - '**'
+  pull_request:
+    branches:
+      - dev
+      - main
+
+jobs:
+  pre-commit:
+    runs-on: ubuntu-latest
+    name: Run pre-commit hooks
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.10'
+
+      - name: Run pre-commit
+        uses: pre-commit/action@v3.0.1
+        with:
+          extra_args: --all-files --show-diff-on-failure
