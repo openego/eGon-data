@@ -19,7 +19,6 @@ from egon.data import db, logger
 from egon.data.datasets import Dataset, wrapped_partial
 from egon.data.datasets.mastr import (
     WORKING_DIR_MASTR_NEW,
-    WORKING_DIR_MASTR_OLD,
 )
 from egon.data.datasets.power_plants.conventional import (
     match_nep_no_chp,
@@ -119,12 +118,15 @@ def scale_prox2now(df, target, level="federal_state"):
     if level == "federal_state":
         df.loc[:, "Nettonennleistung"] = (
             (
-                df.groupby(df.Bundesland)
-                .Nettonennleistung.apply(lambda grp: grp / grp.sum())
-                .mul(target[df.Bundesland.values].values)
+                df.groupby("Bundesland").Nettonennleistung.apply(
+                    lambda grp: grp / grp.sum()
+                )
             )
             .reset_index(level=[0])
             .Nettonennleistung
+        )
+        df["Nettonennleistung"] = df.apply(
+            lambda x: x["Nettonennleistung"] * target[x["Bundesland"]], axis=1
         )
     else:
         df.loc[:, "Nettonennleistung"] = df.Nettonennleistung * (
@@ -250,7 +252,7 @@ def insert_biomass_plants(scenario):
 
     # import data for MaStR
     mastr = pd.read_csv(
-        WORKING_DIR_MASTR_OLD / cfg["sources"]["mastr_biomass"]
+        WORKING_DIR_MASTR_NEW / cfg["sources"]["mastr_biomass"]
     ).query("EinheitBetriebsstatus=='InBetrieb'")
 
     # Drop entries without federal state or 'AusschließlichWirtschaftszone'
@@ -280,7 +282,7 @@ def insert_biomass_plants(scenario):
     # Assign bus_id
     if len(mastr_loc) > 0:
         mastr_loc["voltage_level"] = assign_voltage_level(
-            mastr_loc, cfg, WORKING_DIR_MASTR_OLD
+            mastr_loc, cfg, WORKING_DIR_MASTR_NEW
         )
         mastr_loc = assign_bus_id(mastr_loc, cfg)
 
@@ -431,9 +433,7 @@ def assign_voltage_level(mastr_loc, cfg, mastr_working_dir):
 
     if "LokationMastrNummer" in mastr_loc.columns:
         # Adjust column names to format of MaStR location dataset
-        if mastr_working_dir == WORKING_DIR_MASTR_OLD:
-            cols = ["LokationMastrNummer", "Spannungsebene"]
-        elif mastr_working_dir == WORKING_DIR_MASTR_NEW:
+        if mastr_working_dir == WORKING_DIR_MASTR_NEW:
             cols = ["MaStRNummer", "Spannungsebene"]
         else:
             raise ValueError("Invalid MaStR working directory!")
@@ -664,7 +664,7 @@ def allocate_conventional_non_chp_power_plants():
             mastr["voltage_level"] = assign_voltage_level(
                 mastr.rename({"el_capacity": "Nettonennleistung"}, axis=1),
                 cfg,
-                WORKING_DIR_MASTR_OLD,
+                WORKING_DIR_MASTR_NEW,
             )
 
             # Initalize DataFrame for matching power plants
@@ -872,15 +872,15 @@ def allocate_other_power_plants():
 
     # Select power plants representing carrier 'others' from MaStR files
     mastr_sludge = pd.read_csv(
-        WORKING_DIR_MASTR_OLD / cfg["sources"]["mastr_gsgk"]
+        WORKING_DIR_MASTR_NEW / cfg["sources"]["mastr_gsgk"]
     ).query(
         """EinheitBetriebsstatus=='InBetrieb'and Energietraeger=='Klärschlamm'"""  # noqa: E501
     )
     mastr_geothermal = pd.read_csv(
-        WORKING_DIR_MASTR_OLD / cfg["sources"]["mastr_gsgk"]
+        WORKING_DIR_MASTR_NEW / cfg["sources"]["mastr_gsgk"]
     ).query(
         "EinheitBetriebsstatus=='InBetrieb' and Energietraeger=='Geothermie' "
-        "and Technologie == 'ORCOrganicRankineCycleAnlage'"
+        "and Technologie == 'ORC (Organic Rankine Cycle)-Anlage'"
     )
 
     mastr_sg = pd.concat([mastr_sludge, mastr_geothermal])
@@ -965,6 +965,24 @@ def allocate_other_power_plants():
 
 
 def discard_not_available_generators(gen, max_date):
+    # map column names in case they are still in German
+    if (
+        ("DatumEndgueltigeStilllegung" in gen.columns)
+        | ("Inbetriebnahmedatum" in gen.columns)
+        | ("DatumEndgueltigeStilllegung" in gen.columns)
+    ):
+        gen.rename(
+            columns={
+                "DatumEndgueltigeStilllegung": "decommissioning_date",
+                "Inbetriebnahmedatum": "commissioning_date",
+                "EinheitBetriebsstatus": "status",
+            },
+            inplace=True,
+        )
+
+    gen["decommissioning_date"] = pd.to_datetime(gen["decommissioning_date"])
+    gen["commissioning_date"] = pd.to_datetime(gen["commissioning_date"])
+
     gen["decommissioning_date"] = pd.to_datetime(gen["decommissioning_date"])
     gen["commissioning_date"] = pd.to_datetime(gen["commissioning_date"])
     # drop plants that are commissioned after the max date
@@ -973,11 +991,9 @@ def discard_not_available_generators(gen, max_date):
     # drop decommissioned plants while keeping the ones decommissioned
     # after the max date
     gen.loc[(gen["decommissioning_date"] > max_date), "status"] = "InBetrieb"
-
     gen = gen.loc[
         gen["status"].isin(["InBetrieb", "VoruebergehendStillgelegt"])
     ]
-
     # drop unnecessary columns
     gen = gen.drop(columns=["commissioning_date", "decommissioning_date"])
 
@@ -1045,6 +1061,8 @@ def power_plants_status_quo(scn_name="status2019"):
     con = db.engine()
     cfg = egon.data.config.datasets()["power_plants"]
 
+    max_date = pd.Timestamp(year=int(scn_name[-4:]), month=12, day=31)
+
     db.execute_sql(
         f"""
         DELETE FROM {cfg['target']['schema']}.{cfg['target']['table']}
@@ -1109,6 +1127,7 @@ def power_plants_status_quo(scn_name="status2019"):
     )
 
     hydro = convert_master_info(hydro)
+    hydro = discard_not_available_generators(hydro, max_date)
     hydro["carrier"] = hydro["plant_type"].replace(
         to_replace={
             "Laufwasseranlage": "run_of_river",
@@ -1139,6 +1158,8 @@ def power_plants_status_quo(scn_name="status2019"):
     # drop chp generators
     biomass["th_capacity"] = biomass["th_capacity"].fillna(0)
     biomass = biomass[biomass.th_capacity == 0]
+
+    biomass = discard_not_available_generators(biomass, max_date)
 
     biomass = fill_missing_bus_and_geom(
         biomass, "biomass", geom_municipalities, mv_grid_districts
@@ -1172,6 +1193,9 @@ def power_plants_status_quo(scn_name="status2019"):
         "Freifläche": "solar",
         "Bauliche Anlagen (Hausdach, Gebäude und Fassade)": "solar_rooftop",
     }
+
+    solar = discard_not_available_generators(solar, max_date)
+
     solar["carrier"] = solar["site_type"].replace(to_replace=map_solar)
 
     solar = fill_missing_bus_and_geom(
@@ -1200,6 +1224,8 @@ def power_plants_status_quo(scn_name="status2019"):
         geom_col="geom",
     )
 
+    wind_onshore = discard_not_available_generators(wind_onshore, max_date)
+
     wind_onshore = fill_missing_bus_and_geom(
         wind_onshore, "wind_onshore", geom_municipalities, mv_grid_districts
     )
@@ -1221,7 +1247,7 @@ def power_plants_status_quo(scn_name="status2019"):
 
 
 def get_conventional_power_plants_non_chp(scn_name):
-
+    max_date = pd.Timestamp(year=int(scn_name[-4:]), month=12, day=31)
     cfg = egon.data.config.datasets()["power_plants"]
     # Write conventional power plants in supply.egon_power_plants
     common_columns = [
@@ -1237,12 +1263,12 @@ def get_conventional_power_plants_non_chp(scn_name):
     ]
     # import nuclear power plants
     nuclear = pd.read_csv(
-        WORKING_DIR_MASTR_OLD / cfg["sources"]["mastr_nuclear"],
+        WORKING_DIR_MASTR_NEW / cfg["sources"]["mastr_nuclear"],
         usecols=common_columns,
     )
     # import combustion power plants
     comb = pd.read_csv(
-        WORKING_DIR_MASTR_OLD / cfg["sources"]["mastr_combustion"],
+        WORKING_DIR_MASTR_NEW / cfg["sources"]["mastr_combustion"],
         usecols=common_columns + ["ThermischeNutzleistung"],
     )
 
@@ -1260,35 +1286,10 @@ def get_conventional_power_plants_non_chp(scn_name):
         )
     ]
 
-    # drop plants that are decommissioned
-    conv["DatumEndgueltigeStilllegung"] = pd.to_datetime(
-        conv["DatumEndgueltigeStilllegung"]
-    )
-
-    # keep plants that were decommissioned after the max date
-    conv.loc[
-        (
-            conv.DatumEndgueltigeStilllegung
-            > egon.data.config.datasets()["mastr_new"][f"{scn_name}_date_max"]
-        ),
-        "EinheitBetriebsstatus",
-    ] = "InBetrieb"
-
-    conv = conv.loc[conv.EinheitBetriebsstatus == "InBetrieb"]
-
-    conv = conv.drop(
-        columns=["EinheitBetriebsstatus", "DatumEndgueltigeStilllegung"]
-    )
+    conv = discard_not_available_generators(conv, max_date)
 
     # convert from KW to MW
     conv["Nettonennleistung"] = conv["Nettonennleistung"] / 1000
-
-    # drop generators installed after 2019
-    conv["Inbetriebnahmedatum"] = pd.to_datetime(conv["Inbetriebnahmedatum"])
-    conv = conv[
-        conv["Inbetriebnahmedatum"]
-        < egon.data.config.datasets()["mastr_new"][f"{scn_name}_date_max"]
-    ]
 
     conv_cap_chp = (
         conv.groupby("Energietraeger")["Nettonennleistung"].sum() / 1e3
@@ -1303,7 +1304,6 @@ def get_conventional_power_plants_non_chp(scn_name):
     logger.info("Dropped CHP generators in GW")
     logger.info(conv_cap_chp - conv_cap_no_chp)
 
-    # rename carriers
     # rename carriers
     conv["Energietraeger"] = conv["Energietraeger"].replace(
         to_replace={
@@ -1396,7 +1396,7 @@ def import_gas_gen_egon100():
     ).iat[0, 0]
 
     conv = pd.read_csv(
-        WORKING_DIR_MASTR_OLD / cfg["sources"]["mastr_combustion"],
+        WORKING_DIR_MASTR_NEW / cfg["sources"]["mastr_combustion"],
         usecols=[
             "EinheitMastrNummer",
             "Energietraeger",
@@ -1616,7 +1616,7 @@ class PowerPlants(Dataset):
     #:
     name: str = "PowerPlants"
     #:
-    version: str = "0.0.29"
+    version: str = "0.0.31"
 
     def __init__(self, dependencies):
         super().__init__(

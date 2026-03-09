@@ -276,6 +276,9 @@ def extension_to_areas(
                         selected_chp.th_capacity * flh
                     )
                 areas = areas[areas.demand > 0]
+            else:
+                print(f"{additional_capacity} MW are not matched to an area.")
+                break
 
         else:
             print(f"{additional_capacity} MW are not matched to an area.")
