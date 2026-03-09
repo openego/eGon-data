@@ -10,6 +10,9 @@ Added
 
 * Make egon-data runnable in python 3.10
   `#1352 <https://github.com/openego/egon-data/issues/1352>`_
+* Add CI workflow to enforce pre-commit hooks (isort, black, flake8) on
+  every push and pull request; update hook versions and fix isort repo URL
+  `#1254 <https://github.com/openego/eGon-data/issues/1254>`_
 
 Changed
 -------
