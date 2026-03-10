@@ -380,6 +380,11 @@ def electricity(scenario):
             "wind_offshore": read_costs(costs, "offwind", "VOM"),
             "wind_onshore": read_costs(costs, "onwind", "VOM"),
             "solar": read_costs(costs, "solar", "VOM"),
+            # According to https://www.aemo.com.au/-/media/Files/Electricity/NEM/Planning_and_Forecasting/Inputs-Assumptions-Methodologies/2019/Report-Pumped-Hydro-Cost-Modelling.pdf
+            # for hydro generation all operations and maintenance costs might
+            # be categorized as fixed rather than variable.
+            "run_of_river": 0,
+            "reservoir": 0,
         }
 
         parameters["annual_demand"] = {
@@ -531,6 +536,11 @@ def electricity(scenario):
             "wind_offshore": read_costs(costs, "offwind", "VOM"),
             "wind_onshore": read_costs(costs, "onwind", "VOM"),
             "solar": read_costs(costs, "solar", "VOM"),
+            # According to https://www.aemo.com.au/-/media/Files/Electricity/NEM/Planning_and_Forecasting/Inputs-Assumptions-Methodologies/2019/Report-Pumped-Hydro-Cost-Modelling.pdf
+            # for hydro generation all operations and maintenance costs might
+            # be categorized as fixed rather than variable.
+            "run_of_river": 0,
+            "reservoir": 0,
         }
 
         parameters["annual_demand"] = {
@@ -727,6 +737,11 @@ def electricity(scenario):
             "wind_offshore": read_costs(costs, "offwind", "VOM"),
             "wind_onshore": read_costs(costs, "onwind", "VOM"),
             "solar": read_costs(costs, "solar", "VOM"),
+            # According to https://www.aemo.com.au/-/media/Files/Electricity/NEM/Planning_and_Forecasting/Inputs-Assumptions-Methodologies/2019/Report-Pumped-Hydro-Cost-Modelling.pdf
+            # for hydro generation all operations and maintenance costs might
+            # be categorized as fixed rather than variable.
+            "run_of_river": 0,
+            "reservoir": 0,
         }
 
         if scenario == "status2023":
