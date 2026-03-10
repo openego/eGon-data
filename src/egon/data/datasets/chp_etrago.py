@@ -116,9 +116,7 @@ def insert_egon100re():
         "eGon100RE",
     )
     # Set index
-    chp_el["link_id"] = range(
-        db.next_etrago_id("link"), len(chp_el) + db.next_etrago_id("link")
-    )
+    chp_el["link_id"] = db.next_etrago_id("link", len(chp_el))
 
     # Add marginal cost which is only VOM in case of gas chp
     chp_el["marginal_cost"] = get_sector_parameters("gas", "eGon100RE")[
@@ -148,9 +146,7 @@ def insert_egon100re():
         "eGon100RE",
     )
 
-    chp_heat["link_id"] = range(
-        db.next_etrago_id("link"), len(chp_heat) + db.next_etrago_id("link")
-    )
+    chp_heat["link_id"] = db.next_etrago_id("link", len(chp_heat))
 
     chp_heat.to_postgis(
         ChpEtrago.targets.get_table_name("link"),
@@ -232,9 +228,7 @@ def insert_scenario(scenario):
         scenario,
     )
     # Set index
-    chp_el["link_id"] = range(
-        db.next_etrago_id("link"), len(chp_el) + db.next_etrago_id("link")
-    )
+    chp_el["link_id"] = db.next_etrago_id("link", len(chp_el))
 
     # Add marginal cost which is only VOM in case of gas chp
     chp_el["marginal_cost"] = get_sector_parameters("gas", scenario)[
@@ -264,9 +258,7 @@ def insert_scenario(scenario):
         scenario,
     )
 
-    chp_heat["link_id"] = range(
-        db.next_etrago_id("link"), len(chp_heat) + db.next_etrago_id("link")
-    )
+    chp_heat["link_id"] = db.next_etrago_id("link", len(chp_heat))
 
     chp_heat.to_postgis(
         ChpEtrago.targets.get_table_name("link"),
@@ -289,11 +281,8 @@ def insert_scenario(scenario):
         },
     )
 
-    chp_el_gen["generator_id"] = range(
-        db.next_etrago_id("generator"),
-        len(chp_el_gen) + db.next_etrago_id("generator"),
-    )
-
+    chp_el_gen["generator_id"] = db.next_etrago_id(
+        "generator", len(chp_el_gen))
     # Add marginal cost
     chp_el_gen["marginal_cost"] = (
         pd.Series(
@@ -327,10 +316,8 @@ def insert_scenario(scenario):
         },
     )
 
-    chp_heat_gen["generator_id"] = range(
-        db.next_etrago_id("generator"),
-        len(chp_heat_gen) + db.next_etrago_id("generator"),
-    )
+    chp_heat_gen["generator_id"] = db.next_etrago_id(
+        "generator", len(chp_heat_gen))
 
     chp_heat_gen.to_sql(
         ChpEtrago.targets.get_table_name("generator"),
@@ -377,9 +364,7 @@ def insert_scenario(scenario):
         scenario,
     )
 
-    chp_el_ind["link_id"] = range(
-        db.next_etrago_id("link"), len(chp_el_ind) + db.next_etrago_id("link")
-    )
+    chp_el_ind["link_id"] = db.next_etrago_id("link", len(chp_el_ind))
 
     # Add marginal cost which is only VOM in case of gas chp
     chp_el_ind["marginal_cost"] = get_sector_parameters("gas", scenario)[
@@ -406,10 +391,8 @@ def insert_scenario(scenario):
         },
     )
 
-    chp_el_ind_gen["generator_id"] = range(
-        db.next_etrago_id("generator"),
-        len(chp_el_ind_gen) + db.next_etrago_id("generator"),
-    )
+    chp_el_ind_gen["generator_id"] = db.next_etrago_id(
+        "generator", len(chp_el_ind_gen))
 
     # Add marginal cost
     chp_el_ind_gen["marginal_cost"] = (

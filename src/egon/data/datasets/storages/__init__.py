@@ -17,7 +17,6 @@ from egon.data.datasets.scenario_parameters import get_sector_parameters
 from egon.data.datasets.electrical_neighbours import entsoe_to_bus_etrago
 from egon.data.datasets.mastr import (
     WORKING_DIR_MASTR_NEW,
-    WORKING_DIR_MASTR_OLD,
 )
 from egon.data.datasets.mv_grid_districts import Vg250GemClean
 from egon.data.datasets.power_plants import assign_bus_id, assign_voltage_level
@@ -174,7 +173,7 @@ def allocate_pumped_hydro(scn, export=True):
     mastr["voltage_level"] = assign_voltage_level(
         mastr.rename({"el_capacity": "Nettonennleistung"}, axis=1),
         Storages.sources,
-        WORKING_DIR_MASTR_OLD,
+        WORKING_DIR_MASTR_NEW,
     )
 
     # Initalize DataFrame for matching power plants

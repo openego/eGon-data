@@ -36,7 +36,6 @@ from egon.data.datasets import Dataset, DatasetSources, DatasetTargets
 
 
 class IndustrialGasDemand(Dataset):
-    
     """
     Download the industrial gas demands from the opendata.ffe database
 
@@ -47,6 +46,8 @@ class IndustrialGasDemand(Dataset):
       * :py:class:`ScenarioParameters <egon.data.datasets.scenario_parameters.ScenarioParameters>`
 
     """
+
+    #:
     name: str = "IndustrialGasDemand"
     version: str = "0.0.9"
 
@@ -74,9 +75,8 @@ class IndustrialGasDemand(Dataset):
             name=self.name,
             version=self.version,
             dependencies=dependencies,
-            tasks=(download_industrial_gas_demand,),
+            tasks=(download_industrial_gas_demand),
         )
-
 
 
 class IndustrialGasDemandeGon2035(Dataset):
@@ -108,7 +108,7 @@ class IndustrialGasDemandeGon2035(Dataset):
             name=self.name,
             version=self.version,
             dependencies=dependencies,
-            tasks=(insert_industrial_gas_demand_egon2035,),
+            tasks=(insert_industrial_gas_demand_egon2035),
         )
 
 
@@ -141,7 +141,7 @@ class IndustrialGasDemandeGon100RE(Dataset):
             name=self.name,
             version=self.version,
             dependencies=dependencies,
-            tasks=(insert_industrial_gas_demand_egon100RE,),
+            tasks=(insert_industrial_gas_demand_egon100RE),
         )
 
 
@@ -382,10 +382,8 @@ def insert_new_entries(industrial_gas_demand, scn_name):
 
     """
     targets = IndustrialGasDemand.targets
-    new_id = db.next_etrago_id("load")
-    industrial_gas_demand["load_id"] = range(
-        new_id, new_id + len(industrial_gas_demand)
-    )
+    industrial_gas_demand["load_id"] = db.next_etrago_id(
+        "load", len(industrial_gas_demand))
 
     # Add missing columns
     c = {"scn_name": scn_name, "sign": -1}

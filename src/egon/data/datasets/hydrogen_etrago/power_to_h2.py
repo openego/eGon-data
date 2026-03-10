@@ -9,12 +9,12 @@ These links are modelling:
     from AC
   * Fuel cells (carrier name: 'H2_to_power'): techonology to produce
     power from H2
-  * Waste_heat usage (carrier name: 'PtH2_waste_heat'): Components to use 
+  * Waste_heat usage (carrier name: 'PtH2_waste_heat'): Components to use
     waste heat as by-product from electrolysis
-  * Oxygen usage (carrier name: 'PtH2_O2'): Components to use 
+  * Oxygen usage (carrier name: 'PtH2_O2'): Components to use
     oxygen as by-product from elctrolysis
-    
- 
+
+
 """
 from itertools import count
 from pathlib import Path
@@ -178,9 +178,6 @@ def insert_power_to_h2_to_power():
         FUEL_CELL_LIFETIME = scn_params_gas["lifetime"]["H2_to_power"]
 
         def export_o2_buses_to_db(df):
-            max_bus_id = db.next_etrago_id("bus")
-            next_bus_id = count(start=max_bus_id, step=1)
-            
 
             db.execute_sql(
                 f"DELETE FROM {targets.tables['buses']} WHERE carrier = 'O2' AND scn_name='{SCENARIO_NAME}'"
@@ -188,7 +185,7 @@ def insert_power_to_h2_to_power():
             df = df.copy(deep=True)
             result = []
             for _, row in df.iterrows():
-                bus_id = next(next_bus_id)
+                bus_id = db.next_etrago_id("bus")
                 result.append(
                     {
                         "scn_name": SCENARIO_NAME,
@@ -863,9 +860,6 @@ def insert_power_to_h2_to_power():
             power_to_Heat = pd.DataFrame(columns=etrago_columns)
             power_to_O2 = pd.DataFrame(columns=etrago_columns)
 
-            max_link_id = db.next_etrago_id("link")
-            next_max_link_id = count(start=max_link_id, step=1)
-
             ####poower_to_H2
             for idx, row in links_h2.iterrows():
                 capital_cost_H2 = (
@@ -881,7 +875,7 @@ def insert_power_to_h2_to_power():
 
                 power_to_H2_entry = {
                     "scn_name": SCENARIO_NAME,
-                    "link_id": next(next_max_link_id),
+                    "link_id": db.next_etrago_id("link"),
                     "bus0": row["bus_AC"],
                     "bus1": row["bus_h2"],
                     "carrier": "power_to_H2",
@@ -924,7 +918,7 @@ def insert_power_to_h2_to_power():
                 capital_cost_H2tP = capital_cost_AC + capital_cost_H2
                 H2_to_power_entry = {
                     "scn_name": SCENARIO_NAME,
-                    "link_id": next(next_max_link_id),
+                    "link_id": db.next_etrago_id("link"),
                     "bus0": row["bus_h2"],
                     "bus1": row["bus_AC"],
                     "carrier": "H2_to_power",
@@ -965,7 +959,7 @@ def insert_power_to_h2_to_power():
 
                 power_to_heat_entry = {
                     "scn_name": SCENARIO_NAME,
-                    "link_id": next(next_max_link_id),
+                    "link_id": db.next_etrago_id("link"),
                     "bus0": row["bus_AC"],
                     "bus1": row["bus_heat"],
                     "carrier": "PtH2_waste_heat",
@@ -1027,7 +1021,7 @@ def insert_power_to_h2_to_power():
 
                 power_to_o2_entry = {
                     "scn_name": SCENARIO_NAME,
-                    "link_id": next(next_max_link_id),
+                    "link_id": db.next_etrago_id("link"),
                     "bus0": row["bus_AC"],
                     "bus1": row["bus_O2"],
                     "carrier": "PtH2_O2",
@@ -1080,9 +1074,7 @@ def insert_power_to_h2_to_power():
                 print(f"Error while exporting link data: {e}")
 
         def insert_o2_load_points(df):
-            new_id = db.next_etrago_id("load")
-            next_load_id = count(start=new_id, step=1)
-            
+
             with engine.connect() as conn:
                 conn.execute(
                     f"DELETE FROM {targets.tables['loads']} "
@@ -1092,7 +1084,7 @@ def insert_power_to_h2_to_power():
             df = df.drop_duplicates(subset="bus1", keep="first")
             result = []
             for _, row in df.iterrows():
-                load_id = next(next_load_id)
+                load_id = db.next_etrago_id("load")
                 result.append(
                     {
                         "scn_name": SCENARIO_NAME,
@@ -1169,8 +1161,6 @@ def insert_power_to_h2_to_power():
             return timeseries_df
 
         def insert_o2_generators(df):
-            new_id = db.next_etrago_id("generator")
-            next_generator_id = count(start=new_id, step=1)
 
             grid = targets.get_table_schema("generators")
             table_name = targets.get_table_name("generators")
@@ -1183,7 +1173,7 @@ def insert_power_to_h2_to_power():
             df = df.drop_duplicates(subset="bus1", keep="first")
             result = []
             for _, row in df.iterrows():
-                generator_id = next(next_generator_id)
+                generator_id = db.next_etrago_id("generator")
                 result.append(
                     {
                         "scn_name": SCENARIO_NAME,

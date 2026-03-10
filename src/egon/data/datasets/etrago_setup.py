@@ -170,9 +170,12 @@ class EtragoSetup(Dataset):
             name=self.name,
             version=self.version,
             dependencies=dependencies,
-            tasks=(create_tables, {temp_resolution, insert_carriers}),
+            tasks=(
+                create_tables,
+                create_etrago_id_sequences,
+                {temp_resolution, insert_carriers},
+            ),
         )
-
 
 
 class EgonPfHvBus(Base):
@@ -1004,6 +1007,40 @@ def create_tables():
     EgonPfHvBusmap.__table__.create(bind=engine, checkfirst=True)
 
 
+def create_etrago_id_sequences():
+    """
+    Forcefully recreate all required PostgreSQL sequences for etrago components.
+    Drops existing sequences and creates them fresh, starting from 1.
+
+    This ensures that no stale or misaligned sequences remain from earlier states.
+
+    Notes
+    -----
+    - All sequences are named grid.etrago_{component}_id_seq
+    - Existing sequences will be dropped with CASCADE
+    - New sequences will start from 1 (default PostgreSQL behavior)
+    """
+    components = [
+        "bus",
+        "line",
+        "transformer",
+        "load",
+        "storage",
+        "generator",
+        "link",
+        "store",
+    ]
+
+    for component in components:
+        sequence_name = f"grid.etrago_{component}_id_seq"
+
+        drop_query = f"DROP SEQUENCE IF EXISTS {sequence_name} CASCADE;"
+        create_query = f"CREATE SEQUENCE {sequence_name};"
+
+        print(f"Recreating sequence: {sequence_name}")
+        db.execute_sql(drop_query)
+        db.execute_sql(create_query)
+
 def temp_resolution():
     """Insert temporal resolution for eTraGo"""
     schema = EtragoSetup.targets.get_table_schema("temp_resolution")
@@ -1026,6 +1063,7 @@ def insert_carriers():
         DELETE FROM {schema}.{table};
         """
     )
+
     # List carrier names from all components
     df = pd.DataFrame(
         data={
@@ -1104,6 +1142,7 @@ def check_carriers():
     tables = ["bus", "store", "storage", "link", "line", "generator", "load"]
 
     for table in tables:
+        # Delete existing entries
         data = db.select_dataframe(
             f"SELECT carrier FROM {EtragoSetup.targets.tables[table]}"
         )
@@ -1150,7 +1189,7 @@ def link_geom_from_buses(df, scn_name):
         index_col="bus_id",
         epsg=4326,
     )
-    
+
     # Create geometry columns for bus0 and bus1
     df["geom_0"] = geom_buses.geom[df.bus0.values].values
     df["geom_1"] = geom_buses.geom[df.bus1.values].values

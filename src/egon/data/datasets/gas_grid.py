@@ -103,15 +103,13 @@ def define_gas_nodes_list():
         Dataframe containing the gas nodes in Europe
 
     """
-    # Select next id value
-    new_id = db.next_etrago_id("bus")
 
     target_file = (
     Path(GasNodesAndPipes.targets.files["scigrid_gas_data_dir"]["path"])
     / "data"
     / GasNodesAndPipes.sources.tables["scigrid_gas"]["files"]["nodes"]
     )
-    
+
     gas_nodes_list = pd.read_csv(
         target_file,
         delimiter=";",
@@ -132,7 +130,7 @@ def define_gas_nodes_list():
 
     gas_nodes_list = gas_nodes_list.rename(columns={"lat": "y", "long": "x"})
 
-    gas_nodes_list["bus_id"] = range(new_id, new_id + len(gas_nodes_list))
+    gas_nodes_list["bus_id"] = db.next_etrago_id("bus", len(gas_nodes_list))
     gas_nodes_list = gas_nodes_list.set_index("id")
 
     return gas_nodes_list
@@ -321,7 +319,7 @@ def define_gas_buses_abroad(scn_name="eGon2035"):
                 data={
                     "scn_name": scn_name,
                     "bus_id": (
-                        db.next_etrago_id("bus") + len(gdf_abroad_buses) + 1
+                        db.next_etrago_id("bus")
                     ),
                     "x": 10.4234469,
                     "y": 51.0834196,
@@ -359,9 +357,6 @@ def define_gas_buses_abroad(scn_name="eGon2035"):
         gdf_abroad_buses = central_buses_pypsaeur(sources, scenario=scn_name)
         gdf_abroad_buses = gdf_abroad_buses.drop_duplicates(subset=["country"])
 
-        # Select next id value
-        new_id = db.next_etrago_id("bus")
-
         gdf_abroad_buses = gdf_abroad_buses.drop(
             columns=[
                 "v_nom",
@@ -381,9 +376,8 @@ def define_gas_buses_abroad(scn_name="eGon2035"):
         )
         gdf_abroad_buses["scn_name"] = scn_name
         gdf_abroad_buses["carrier"] = gas_carrier
-        gdf_abroad_buses["bus_id"] = range(
-            new_id, new_id + len(gdf_abroad_buses)
-        )
+        gdf_abroad_buses["bus_id"] = db.next_etrago_id(
+            "bus", len(gdf_abroad_buses))
 
         # Add central bus in Russia
         gdf_abroad_buses = pd.concat(
@@ -393,7 +387,7 @@ def define_gas_buses_abroad(scn_name="eGon2035"):
                     index=["RU"],
                     data={
                         "scn_name": scn_name,
-                        "bus_id": (new_id + len(gdf_abroad_buses) + 1),
+                        "bus_id": db.next_etrago_id("bus"),
                         "x": 41,
                         "y": 55,
                         "country": "RU",
@@ -414,7 +408,7 @@ def define_gas_buses_abroad(scn_name="eGon2035"):
                         index=[gdf_abroad_buses.index.max() + 1],
                         data={
                             "scn_name": scn_name,
-                            "bus_id": (new_id + len(gdf_abroad_buses) + 1),
+                            "bus_id": db.next_etrago_id("bus"),
                             "x": 10.4234469,
                             "y": 51.0834196,
                             "country": "DE",
@@ -542,9 +536,6 @@ def define_gas_pipeline_list(
 
     gas_carrier = "CH4"
 
-    # Select next id value
-    new_id = db.next_etrago_id("link")
-
     classification_file = Path(
         GasNodesAndPipes.sources.files["pipeline_classification"]["path"]
     )
@@ -632,10 +623,7 @@ def define_gas_pipeline_list(
     gas_pipelines_list.at["new_pipe", "long"] = "[7.041677, 7.093251]"
     gas_pipelines_list.at["new_pipe", "country_code"] = "['DE', 'DE']"
 
-    gas_pipelines_list["link_id"] = range(
-        new_id, new_id + len(gas_pipelines_list)
-    )
-    gas_pipelines_list["link_id"] = gas_pipelines_list["link_id"].astype(int)
+    gas_pipelines_list["link_id"] = db.next_etrago_id("link", len(gas_pipelines_list))
 
     # Cut data to federal state if in testmode
     NUTS1 = []
@@ -972,7 +960,6 @@ def insert_gas_pipeline_list(gas_pipelines_list, scn_name="eGon2035"):
         dtype={"geom": Geometry(), "topo": Geometry()},
     )
 
-
     db.execute_sql(
         f"""
         SELECT UpdateGeometrySRID(
@@ -1101,11 +1088,9 @@ def insert_gas_data_status(scn_name):
         """
     )
 
-    # Select next id value
-    new_id = db.next_etrago_id("bus")
 
     df = pd.DataFrame(
-        index=[new_id],
+        index=[db.next_etrago_id("bus")],
         data={
             "scn_name": scn_name,
             "v_nom": 1,

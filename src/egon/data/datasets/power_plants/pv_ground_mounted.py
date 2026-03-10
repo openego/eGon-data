@@ -197,7 +197,7 @@ def insert():
 
         # check intersection of small areas with other potential areas
         overlay = gpd.sjoin(potentials_rora, small_buffers)
-        o = overlay["index_right"]
+        o = overlay["id_right"]
         o.drop_duplicates(inplace=True)
 
         # add small areas to big ones if buffer intersects
@@ -240,7 +240,7 @@ def insert():
 
         # check intersection of small areas with other potential areas
         overlay = gpd.sjoin(potentials_agri, small_buffers)
-        o = overlay["index_right"]
+        o = overlay["id_right"]
         o.drop_duplicates(inplace=True)
 
         # add small areas to big ones if buffer intersects
@@ -277,7 +277,7 @@ def insert():
         # if areas intersect, keep road & railway potential areas and drop
         # agricultural ones
         overlay = gpd.sjoin(potentials_rora, potentials_agri)
-        o = overlay["index_right"]
+        o = overlay["id_right"]
         o.drop_duplicates(inplace=True)
         for i in range(0, len(o)):
             index = o.iloc[i]
@@ -323,7 +323,8 @@ def insert():
 
         # check intersection of potential areas with exisiting PVs (MaStR)
         overlay = gpd.sjoin(pvs, potentials)
-        o = overlay["index_right"]
+
+        o = overlay["id"]
         o.drop_duplicates(inplace=True)
 
         # define selected potentials areas
@@ -489,7 +490,7 @@ def insert():
 
         # ### examine potential area per grid district
         anz = len(overlay)
-        anz_distr = len(overlay["index_right"].unique())
+        anz_distr = len(overlay["bus_id"].unique())
         size = 137500  # m2 Fläche für > 5,5 MW: (5500 kW / (0,04 kW/m2))
         anz_big = len(overlay[overlay["area"] >= size])
         anz_small = len(overlay[overlay["area"] < size])
@@ -505,7 +506,7 @@ def insert():
         print(" ")
 
         for index, dist in distr.iterrows():
-            pots = overlay[overlay["index_right"] == index]["geom"].index
+            pots = overlay[overlay["bus_id"] == index]["geom"].index
             p = gpd.GeoSeries(index=pots)
             for i in pots:
                 p.loc[i] = potentials["geom"].loc[i]
@@ -1067,8 +1068,8 @@ def insert():
             overlay_agri = gpd.sjoin(pv_agri, distr)
 
             for index, row in distr.iterrows():
-                o_rora = overlay_rora[overlay_rora["index_right"] == index]
-                o_agri = overlay_agri[overlay_agri["index_right"] == index]
+                o_rora = overlay_rora[overlay_rora["bus_id"] == index]
+                o_agri = overlay_agri[overlay_agri["bus_id"] == index]
                 cap_rora = o_rora["installed capacity in kW"].sum() / 1000
                 cap_agri = o_agri["installed capacity in kW"].sum() / 1000
             distr["capacity"].loc[index] = (
@@ -1118,8 +1119,8 @@ def insert():
             overlay_agri = gpd.sjoin(pv_agri_100RE, distr)
 
             for index, row in distr.iterrows():
-                o_rora = overlay_rora[overlay_rora["index_right"] == index]
-                o_agri = overlay_agri[overlay_agri["index_right"] == index]
+                o_rora = overlay_rora[overlay_rora["bus_id"] == index]
+                o_agri = overlay_agri[overlay_agri["bus_id"] == index]
                 cap_rora = o_rora["installed capacity in kW"].sum() / 1000
                 cap_agri = o_agri["installed capacity in kW"].sum() / 1000
             distr["capacity"].loc[index] = (

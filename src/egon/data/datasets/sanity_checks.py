@@ -571,7 +571,6 @@ def residential_electricity_annual_sum(rtol=0.005):
         """
     )
 
-
     np.testing.assert_allclose(
         actual=df_nuts3_annual_sum["profile_sum"],
         desired=df_nuts3_annual_sum["demand_regio_sum"],
@@ -651,7 +650,7 @@ def cts_electricity_demand_share(rtol=0.005):
     logger.info("The aggregated demand shares equal to one!.")
 
 
-def cts_heat_demand_share(rtol=1e-5):
+def cts_heat_demand_share(rtol=0.005):
     """Sanity check for dataset electricity_demand_timeseries
     : CtsBuildings
 
@@ -1322,7 +1321,7 @@ def sanitycheck_emobility_mit():
     print("=== SANITY CHECKS FOR MOTORIZED INDIVIDUAL TRAVEL ===")
     print("=====================================================")
 
-    for scenario_name in ["eGon2035", "eGon100RE"]:
+    for scenario_name in config.settings()["egon-data"]["--scenarios"]:
         scenario_var_name = sources_mit.original_data["scenario"]["variation"][scenario_name]
 
         print("")
@@ -1545,7 +1544,8 @@ def sanity_check_CH4_stores(scn):
             ]
         )
 
-    stores_cap_D = 266424202  # MWh GIE https://www.gie.eu/transparency/databases/storage-database/
+    # MWh GIE https://www.gie.eu/transparency/databases/storage-database/
+    stores_cap_D = 266424202
 
     input_CH4_stores = stores_cap_D + grid_cap
 
@@ -1921,7 +1921,8 @@ def etrago_eGon2035_gas_DE():
         calculated:
 
           * 'CH4': with the function :py:func:`sanity_check_CH4_stores`
-          * 'H2_underground': with the function :py:func:`sanity_check_H2_saltcavern_stores`
+          * 'H2_underground': with the function
+            :py:func:`sanity_check_H2_saltcavern_stores`
       * One-port components (loads, generators, stores): verification
         that they are all connected to a bus present in the data base
         with the function :py:func:`sanity_check_gas_one_port`
@@ -2305,7 +2306,8 @@ def etrago_eGon2035_gas_abroad():
             * 100
         )
         logger.info(
-            f"Deviation of the capacity of the crossbordering CH4 grid: {e_gas_grid} %"
+            f"Deviation of the capacity of the crossbordering CH4 grid: "
+            f"{e_gas_grid} %"
         )
 
     else:

@@ -192,6 +192,9 @@ def import_mastr() -> None:
     # remove failed requests
     geocoding_gdf = geocoding_gdf.loc[geocoding_gdf.geometry.is_valid]
 
+    # remove unnecesary columns
+    geocoding_gdf.drop(columns="geocode_source", inplace=True)
+
     EgonMastrGeocoded.__table__.drop(bind=engine, checkfirst=True)
     EgonMastrGeocoded.__table__.create(bind=engine, checkfirst=True)
 
@@ -355,17 +358,6 @@ def import_mastr() -> None:
             federal_state_data(geocoding_gdf.crs).dissolve().at[0, "geom"]
         )
 
-        # drop units installed after reference date from cfg
-        # (eGon2021 scenario)
-        len_old = len(units)
-        ts = pd.Timestamp(
-            sources.files["status2023_date_max"]
-        )
-        units = units.loc[pd.to_datetime(units.Inbetriebnahmedatum) <= ts]
-        logger.debug(
-            f"{len_old - len(units)} units installed after {ts} dropped..."
-        )
-
         # drop not operating units
         len_old = len(units)
         units = units.loc[
@@ -430,7 +422,10 @@ def import_mastr() -> None:
         ok_units = units.loc[mask]
 
         units.loc[mask, "zip_and_municipality"] = (
-            ok_units.Postleitzahl.astype(int).astype(str).str.zfill(5)
+            ok_units.Postleitzahl.astype(float)
+            .astype(int)
+            .astype(str)
+            .str.zfill(5)
             + " "
             + ok_units.Gemeinde.astype(str).str.rstrip().str.lstrip()
             + ", Deutschland"
@@ -504,12 +499,15 @@ def import_mastr() -> None:
             ],
             inplace=True,
         )
+
         mapping = cols_mapping["all"].copy()
         mapping.update(cols_mapping[tech])
         mapping.update({"geometry": "geom"})
         units.rename(columns=mapping, inplace=True)
         units["voltage_level"] = units.voltage_level.fillna(-1).astype(int)
-
+        units["postcode"] = units["postcode"].apply(
+            lambda x: int(float(x)) if not pd.isna(x) else pd.NA
+        )
         units.set_geometry("geom", inplace=True)
         units["id"] = range(len(units))
 

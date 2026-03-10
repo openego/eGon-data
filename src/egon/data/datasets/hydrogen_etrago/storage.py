@@ -90,8 +90,7 @@ def insert_H2_overground_storage():
         )
 
         # Select next id value
-        new_id = db.next_etrago_id("store")
-        storages["store_id"] = range(new_id, new_id + len(storages))
+        storages["store_id"] = db.next_etrago_id("store", len(storages))
         storages = storages.reset_index(drop=True)
 
 
@@ -197,8 +196,7 @@ def insert_H2_saltcavern_storage():
         )
 
         # Select next id value
-        new_id = db.next_etrago_id("store")
-        storages["store_id"] = range(new_id, new_id + len(storages))
+        storages["store_id"] = db.next_etrago_id("store", len(storages))
         storages = storages.reset_index(drop=True)
 
         # # Insert data to db

@@ -9,7 +9,7 @@ import pandas as pd
 from egon.data import config, db
 from egon.data.datasets import load_sources_and_targets
 from egon.data.datasets.chp.small_chp import assign_use_case
-from egon.data.datasets.mastr import WORKING_DIR_MASTR_OLD
+from egon.data.datasets.mastr import WORKING_DIR_MASTR_NEW
 from egon.data.datasets.power_plants import (
     assign_bus_id,
     assign_voltage_level,
@@ -125,7 +125,7 @@ def select_chp_from_mastr(sources):
 
     # Read-in data from MaStR
     MaStR_konv = pd.read_csv(
-        WORKING_DIR_MASTR_OLD / sources.files["mastr_combustion"],
+        WORKING_DIR_MASTR_NEW / sources["mastr_combustion"],
         delimiter=",",
         usecols=[
             "Nettonennleistung",
@@ -349,7 +349,7 @@ def insert_large_chp(sources, target, EgonChp):
     MaStR_konv["voltage_level"] = assign_voltage_level(
         MaStR_konv.rename({"el_capacity": "Nettonennleistung"}, axis=1),
         sources,
-        WORKING_DIR_MASTR_OLD,
+        WORKING_DIR_MASTR_NEW,
     )
 
     # Initalize DataFrame for match CHPs
@@ -400,11 +400,10 @@ def insert_large_chp(sources, target, EgonChp):
     MaStR_konv["geometry"] = geopandas.points_from_xy(
         MaStR_konv["Laengengrad"], MaStR_konv["Breitengrad"]
     )
-    
     MaStR_konv["voltage_level"] = assign_voltage_level(
         MaStR_konv.rename({"el_capacity": "Nettonennleistung"}, axis=1),
         sources,
-        WORKING_DIR_MASTR_OLD,
+        WORKING_DIR_MASTR_NEW,
     )
 
     # Match CHP from NEP list with aggregated MaStR units

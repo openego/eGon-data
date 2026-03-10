@@ -115,11 +115,11 @@ def mapping():
 
     # Join mv grid districts and federal states
     df = pd.DataFrame(
-        gpd.sjoin(mv_grid_districts, federal_states)["index_right"]
+        gpd.sjoin(mv_grid_districts, federal_states)["gen"]
     )
 
     # Rename columns
-    df.rename({"index_right": "vg250_lan"}, axis=1, inplace=True)
+    df.rename({"gen": "vg250_lan"}, axis=1, inplace=True)
 
     # Insert to database
     df.to_sql(

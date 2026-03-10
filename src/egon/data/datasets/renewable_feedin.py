@@ -161,7 +161,6 @@ def federal_states_per_weather_cell():
     """
     sources = RenewableFeedin.sources
 
-
     # Select weather cells and ferear states from database
     weather_cells = weather_cells_in_germany(geom_column="geom_point")
 
@@ -175,7 +174,7 @@ def federal_states_per_weather_cell():
     # Map federal state and onshore wind turbine to weather cells
     weather_cells["federal_state"] = gpd.sjoin(
         weather_cells, federal_states
-    ).index_right
+    ).gen
 
     # Assign a federal state to each cell inside Germany
     buffer = 1000
@@ -189,7 +188,7 @@ def federal_states_per_weather_cell():
 
         weather_cells.loc[cells.index, "federal_state"] = gpd.sjoin(
             cells, federal_states
-        ).index_right
+        ).gen
 
         buffer += 200
 

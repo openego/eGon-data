@@ -160,11 +160,7 @@ def buses(scenario, sources, targets):
 
     central_buses = central_buses_pypsaeur(sources, scenario)
 
-    next_bus_id = db.next_etrago_id("bus") + 1
-
-    central_buses["bus_id"] = central_buses.reset_index().index + next_bus_id
-
-    next_bus_id += len(central_buses)
+    central_buses["bus_id"] = db.next_etrago_id("bus", len(central_buses))
 
     # if in test mode, add bus in center of Germany
     if config.settings()["egon-data"]["--dataset-boundary"] != "Everything":
@@ -172,10 +168,10 @@ def buses(scenario, sources, targets):
             [
                 central_buses,
                 pd.DataFrame(
-                    index=[central_buses.bus_id.max() + 1],
+                    index=[db.next_etrago_id("bus")],
                     data={
                         "scn_name": scenario,
-                        "bus_id": next_bus_id,
+                        "bus_id": db.next_etrago_id("bus"),
                         "x": 10.4234469,
                         "y": 51.0834196,
                         "country": "DE",
@@ -186,7 +182,6 @@ def buses(scenario, sources, targets):
             ],
             ignore_index=True,
         )
-        next_bus_id += 1
 
     # Add buses for other voltage levels
     foreign_buses = get_cross_border_buses(scenario, sources)
@@ -200,10 +195,10 @@ def buses(scenario, sources, targets):
                 [
                     central_buses,
                     pd.DataFrame(
-                        index=[next_bus_id],
+                        index=[db.next_etrago_id("bus")],
                         data={
                             "scn_name": scenario,
-                            "bus_id": next_bus_id,
+                            "bus_id": db.next_etrago_id("bus"),
                             "x": central_buses[
                                 central_buses.country == cntr
                             ].x.unique()[0],
@@ -218,17 +213,16 @@ def buses(scenario, sources, targets):
                 ],
                 ignore_index=True,
             )
-            next_bus_id += 1
 
         if 220.0 in vnom_per_country[cntr]:
             central_buses = pd.concat(
                 [
                     central_buses,
                     pd.DataFrame(
-                        index=[next_bus_id],
+                        index=[db.next_etrago_id("bus")],
                         data={
                             "scn_name": scenario,
-                            "bus_id": next_bus_id,
+                            "bus_id": db.next_etrago_id("bus"),
                             "x": central_buses[
                                 central_buses.country == cntr
                             ].x.unique()[0],
@@ -243,7 +237,6 @@ def buses(scenario, sources, targets):
                 ],
                 ignore_index=True,
             )
-            next_bus_id += 1
 
     # Add geometry column
     central_buses = gpd.GeoDataFrame(
@@ -324,11 +317,8 @@ def lines_between_foreign_countries(scenario, sources, targets, central_buses):
     lines_to_add.loc[:, "lifetime"] = get_sector_parameters(
         "electricity", scenario
     )["lifetime"]["ac_ehv_overhead_line"]
-    lines_to_add.loc[:, "line_id"] = (
-        lines_to_add.reset_index().index.astype(int)
-        + db.next_etrago_id("line")
-        + 1
-    )
+    lines_to_add.loc[:, "line_id"] = db.next_etrago_id(
+        "line", len(lines_to_add.index))
 
     links_to_add = network.links[
         (network.links.bus0.isin(central_buses_pypsaeur.index))
@@ -338,11 +328,8 @@ def lines_between_foreign_countries(scenario, sources, targets, central_buses):
     links_to_add.loc[:, "lifetime"] = get_sector_parameters(
         "electricity", scenario
     )["lifetime"]["dc_overhead_line"]
-    links_to_add.loc[:, "link_id"] = (
-        links_to_add.reset_index().index.astype(int)
-        + db.next_etrago_id("link")
-        + 1
-    )
+    links_to_add.loc[:, "link_id"] = db.next_etrago_id(
+        "link", len(links_to_add.index))
 
     for df in [lines_to_add, links_to_add]:
         df.loc[:, "scn_name"] = scenario
@@ -494,9 +481,7 @@ def cross_border_lines(scenario, sources, targets, central_buses):
 
     if config.settings()["egon-data"]["--dataset-boundary"] == "Everything":
         new_lines = new_lines[~new_lines.country.isnull()]
-    new_lines.line_id = range(
-        db.next_etrago_id("line"), db.next_etrago_id("line") + len(new_lines)
-    )
+    new_lines.line_id = db.next_etrago_id("line", len(new_lines.index))
 
     # Set bus in center of foreign countries as bus1
     for i, row in new_lines.iterrows():
@@ -781,7 +766,7 @@ def foreign_dc_lines(scenario, sources, targets, central_buses):
                 pd.DataFrame(
                     index=[1],
                     data={
-                        "link_id": db.next_etrago_id("link") + 1,
+                        "link_id": db.next_etrago_id("link"),
                         "bus0": converter_bentwisch,
                         "bus1": central_buses[
                             (central_buses.country == "DK")
@@ -1727,8 +1712,7 @@ def insert_storage_units_sq(scn_name="status2019"):
         "cyclic_state_of_charge"
     ]
 
-    next_id = int(db.next_etrago_id("storage"))
-    sto_sq["storage_id"] = range(next_id, next_id + len(sto_sq))
+    sto_sq["storage_id"] = db.next_etrago_id("store", len(sto_sq))
 
     # Delete entrances without any installed capacity
     sto_sq = sto_sq[sto_sq["p_nom"] > 0]
@@ -1800,8 +1784,7 @@ def insert_storage_units_sq(scn_name="status2019"):
         "cyclic_state_of_charge"
     ]
 
-    next_id = int(db.next_etrago_id("storage"))
-    bat_sq["storage_id"] = range(next_id, next_id + len(bat_sq))
+    bat_sq["storage_id"] = db.next_etrago_id("storage", len(bat_sq))
 
     # Delete entrances without any installed capacity
     bat_sq = bat_sq[bat_sq["p_nom"] > 0]

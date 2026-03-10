@@ -224,7 +224,7 @@ def industrial_demand_distr():
         )
 
         # Rename column
-        landuse = landuse.rename({"index_right": "nuts3"}, axis=1)
+        landuse = landuse.rename({"nuts": "nuts3"}, axis=1)
 
         landuse_nuts3 = landuse[["area_ha", "nuts3"]]
         landuse_nuts3 = landuse_nuts3.groupby(["nuts3"]).sum().reset_index()
@@ -376,7 +376,6 @@ def industrial_demand_distr():
             schema=targets.get_table_schema("sites"),
             if_exists="append",
         )
-        
 
         landuse[["osm_id", "scenario", "wz", "demand"]].to_sql(
             targets.get_table_name("osm"),
@@ -414,7 +413,7 @@ class IndustrialDemandCurves(Dataset):
       * :py:class:`demand.egon_sites_ind_load_curves_individual <egon.data.datasets.industry.DemandCurvesSitesIndustryIndividual>` is created and filled
 
     """
-    
+
     #:
     name: str = "Industrial_demand_curves"
     #:
