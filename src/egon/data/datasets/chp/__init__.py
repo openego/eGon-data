@@ -3,7 +3,6 @@ The central module containing all code dealing with combined heat and power
 (CHP) plants.
 """
 
-from pathlib import Path
 import datetime
 import json
 import time
@@ -16,7 +15,6 @@ from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.orm import sessionmaker
 import geopandas as gpd
 import pandas as pd
-import pypsa
 
 from egon.data import config, db
 from egon.data.datasets import Dataset, wrapped_partial
@@ -46,7 +44,6 @@ from egon.data.metadata import (
     meta_metadata,
     sources,
 )
-
 from egon.data.validation import TableValidation, resolve_boundary_dependence
 
 Base = declarative_base()
@@ -97,26 +94,26 @@ def metadata():
     fields_df = pd.DataFrame(data=fields).set_index("name")
     fields_df.loc["id", "description"] = "Unique identifyer"
     fields_df.loc["sources", "description"] = "List of sources"
-    fields_df.loc["source_id", "description"] = (
-        "Names of sources, e.g. MaStr_id"
-    )
+    fields_df.loc[
+        "source_id", "description"
+    ] = "Names of sources, e.g. MaStr_id"
     fields_df.loc["carrier", "description"] = "Energy carrier"
-    fields_df.loc["district_heating", "description"] = (
-        "Used in district heating or not"
-    )
-    fields_df.loc["el_capacity", "description"] = (
-        "Installed electrical capacity"
-    )
+    fields_df.loc[
+        "district_heating", "description"
+    ] = "Used in district heating or not"
+    fields_df.loc[
+        "el_capacity", "description"
+    ] = "Installed electrical capacity"
     fields_df.loc["th_capacity", "description"] = "Installed thermal capacity"
-    fields_df.loc["electrical_bus_id", "description"] = (
-        "Index of corresponding electricity bus"
-    )
-    fields_df.loc["district_heating_area_id", "description"] = (
-        "Index of corresponding district heating bus"
-    )
-    fields_df.loc["ch4_bus_id", "description"] = (
-        "Index of corresponding methane bus"
-    )
+    fields_df.loc[
+        "electrical_bus_id", "description"
+    ] = "Index of corresponding electricity bus"
+    fields_df.loc[
+        "district_heating_area_id", "description"
+    ] = "Index of corresponding district heating bus"
+    fields_df.loc[
+        "ch4_bus_id", "description"
+    ] = "Index of corresponding methane bus"
     fields_df.loc["voltage_level", "description"] = "Voltage level"
     fields_df.loc["scenario", "description"] = "Name of scenario"
     fields_df.loc["geom", "description"] = "Location of CHP plant"
@@ -523,8 +520,9 @@ def insert_chp_statusquo(scn="status2019"):
 
     print(
         f"""
-          CHPs with a total installed electrical capacity of {dropped_capacity} kW are dropped
-          because of missing or wrong location data
+          CHPs with a total installed electrical capacity of
+          {dropped_capacity} kW are dropped because of missing or wrong
+          location data
           """
     )
 
@@ -819,28 +817,40 @@ class Chp(Dataset):
     """
     Extract combined heat and power plants for each scenario
 
-    This dataset creates combined heat and power (CHP) plants for each scenario and defines their use case.
-    The method bases on existing CHP plants from Marktstammdatenregister. For the eGon2035 scenario,
-    a list of CHP plans from the grid operator is used for new largescale CHP plants. CHP < 10MW are
-    randomly distributed.
-    Depending on the distance to a district heating grid, it is decided if the CHP is used to
-    supply a district heating grid or used by an industrial site.
+    This dataset creates combined heat and power (CHP) plants for each
+    scenario and defines their use case. The method bases on existing CHP
+    plants from Marktstammdatenregister. For the eGon2035 scenario,
+    a list of CHP plans from the grid operator is used for new largescale
+    CHP plants. CHP < 10MW are randomly distributed.
+    Depending on the distance to a district heating grid, it is decided if
+    the CHP is used to supply a district heating grid or used by an
+    industrial site.
 
 
     *Dependencies*
-      * :py:class:`GasAreaseGon100RE <egon.data.datasets.gas_areas.GasAreaseGon100RE>`
-      * :py:class:`GasAreaseGon2035 <egon.data.datasets.gas_areas.GasAreaseGon2035>`
-      * :py:class:`DistrictHeatingAreas <egon.data.datasets.district_heating_areas.DistrictHeatingAreas>`
-      * :py:class:`IndustrialDemandCurves <egon.data.datasets.industry.IndustrialDemandCurves>`
+      * :py:class:`GasAreaseGon100RE
+        <egon.data.datasets.gas_areas.GasAreaseGon100RE>`
+      * :py:class:`GasAreaseGon2035
+        <egon.data.datasets.gas_areas.GasAreaseGon2035>`
+      * :py:class:`DistrictHeatingAreas
+        <egon.data.datasets.district_heating_areas.DistrictHeatingAreas>`
+      * :py:class:`IndustrialDemandCurves
+        <egon.data.datasets.industry.IndustrialDemandCurves>`
       * :py:class:`OsmLanduse <egon.data.datasets.loadarea.OsmLanduse>`
-      * :py:func:`download_mastr_data <egon.data.datasets.mastr.download_mastr_data>`
-      * :py:func:`define_mv_grid_districts <egon.data.datasets.mv_grid_districts.define_mv_grid_districts>`
-      * :py:class:`ScenarioCapacities <egon.data.datasets.scenario_capacities.ScenarioCapacities>`
+      * :py:func:`download_mastr_data
+        <egon.data.datasets.mastr.download_mastr_data>`
+      * :py:func:`define_mv_grid_districts
+        <egon.data.datasets.mv_grid_districts.define_mv_grid_districts>`
+      * :py:class:`ScenarioCapacities
+        <egon.data.datasets.scenario_capacities.ScenarioCapacities>`
 
 
     *Resulting tables*
-      * :py:class:`supply.egon_chp_plants <egon.data.datasets.chp.EgonChp>` is created and filled
-      * :py:class:`supply.egon_mastr_conventional_without_chp <egon.data.datasets.chp.EgonMaStRConventinalWithoutChp>` is created and filled
+      * :py:class:`supply.egon_chp_plants
+        <egon.data.datasets.chp.EgonChp>` is created and filled
+      * :py:class:`supply.egon_mastr_conventional_without_chp
+        <egon.data.datasets.chp.EgonMaStRConventinalWithoutChp>`
+        is created and filled
 
     """
 
@@ -859,10 +869,9 @@ class Chp(Dataset):
                 "data-quality": [
                     TableValidation(
                         table_name="supply.egon_chp_plants",
-                        row_count=resolve_boundary_dependence({
-                            "Schleswig-Holstein": 1720,
-                            "Everything": 40197
-                        }),
+                        row_count=resolve_boundary_dependence(
+                            {"Schleswig-Holstein": 1720, "Everything": 40197}
+                        ),
                         geometry_columns=["geom"],
                         data_type_columns={
                             "id": "integer",
@@ -877,20 +886,35 @@ class Chp(Dataset):
                             "ch4_bus_id": "integer",
                             "voltage_level": "integer",
                             "scenario": "character varying",
-                            "geom": "geometry"
+                            "geom": "geometry",
                         },
                         not_null_columns=[
-                            "id", "sources", "source_id", "carrier", "district_heating",
-                            "el_capacity", "th_capacity", "electrical_bus_id",
-                            "district_heating_area_id", "ch4_bus_id", "voltage_level",
-                            "scenario", "geom"
+                            "id",
+                            "sources",
+                            "source_id",
+                            "carrier",
+                            "district_heating",
+                            "el_capacity",
+                            "th_capacity",
+                            "electrical_bus_id",
+                            "district_heating_area_id",
+                            "ch4_bus_id",
+                            "voltage_level",
+                            "scenario",
+                            "geom",
                         ],
                         value_set_columns={
-                            "carrier": ["oil", "others", "gas", "gas extended", "biomass"],
-                            "scenario": ["eGon2035", "eGon100RE"]
-                        }
+                            "carrier": [
+                                "oil",
+                                "others",
+                                "gas",
+                                "gas extended",
+                                "biomass",
+                            ],
+                            "scenario": ["eGon2035", "eGon100RE"],
+                        },
                     ),
                 ]
             },
-            proceed_on_validation_failure=True
+            proceed_on_validation_failure=True,
         )

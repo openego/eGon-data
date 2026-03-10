@@ -26,12 +26,10 @@ from egon.data.datasets.heat_supply.individual_heating import (
 from egon.data.metadata import (
     context,
     generate_resource_fields_from_sqla_model,
-    license_ccby,
     license_egon_data_odbl,
     meta_metadata,
     sources,
 )
-
 from egon.data.validation import TableValidation, resolve_boundary_dependence
 
 # Will later be imported from another file.
@@ -208,17 +206,17 @@ def metadata():
 
     fields_df = pd.DataFrame(data=fields).set_index("name")
     fields_df.loc["index", "description"] = "Unique identifyer"
-    fields_df.loc["district_heating_id", "description"] = (
-        "Index of the corresponding district heating grid"
-    )
+    fields_df.loc[
+        "district_heating_id", "description"
+    ] = "Index of the corresponding district heating grid"
     fields_df.loc["carrier", "description"] = "Name of energy carrier"
-    fields_df.loc["category", "description"] = (
-        "Size-category of district heating grid"
-    )
+    fields_df.loc[
+        "category", "description"
+    ] = "Size-category of district heating grid"
     fields_df.loc["capacity", "description"] = "Installed heating capacity"
-    fields_df.loc["geometry", "description"] = (
-        "Location of thermal power plant"
-    )
+    fields_df.loc[
+        "geometry", "description"
+    ] = "Location of thermal power plant"
     fields_df.loc["scenario", "description"] = "Name of corresponing scenario"
 
     fields_df.loc["capacity", "unit"] = "MW_th"
@@ -289,15 +287,15 @@ def metadata():
 
     fields_df = pd.DataFrame(data=fields).set_index("name")
     fields_df.loc["index", "description"] = "Unique identifyer"
-    fields_df.loc["mv_grid_id", "description"] = (
-        "Index of the corresponding mv grid district"
-    )
+    fields_df.loc[
+        "mv_grid_id", "description"
+    ] = "Index of the corresponding mv grid district"
     fields_df.loc["carrier", "description"] = "Name of energy carrier"
     fields_df.loc["category", "description"] = "Size-category"
     fields_df.loc["capacity", "description"] = "Installed heating capacity"
-    fields_df.loc["geometry", "description"] = (
-        "Location of thermal power plant"
-    )
+    fields_df.loc[
+        "geometry", "description"
+    ] = "Location of thermal power plant"
     fields_df.loc["scenario", "description"] = "Name of corresponing scenario"
 
     fields_df.loc["capacity", "unit"] = "MW_th"
@@ -410,10 +408,9 @@ class HeatSupply(Dataset):
                 "data-quality": [
                     TableValidation(
                         table_name="supply.egon_district_heating",
-                        row_count=resolve_boundary_dependence({
-                            "Schleswig-Holstein": 402,
-                            "Everything": 9090
-                        }),
+                        row_count=resolve_boundary_dependence(
+                            {"Schleswig-Holstein": 402, "Everything": 9090}
+                        ),
                         geometry_columns=["geometry"],
                         data_type_columns={
                             "index": "integer",
@@ -422,7 +419,7 @@ class HeatSupply(Dataset):
                             "category": "character varying",
                             "capacity": "double precision",
                             "geometry": "geometry",
-                            "scenario": "character varying"
+                            "scenario": "character varying",
                         },
                         not_null_columns=[
                             "index",
@@ -431,19 +428,25 @@ class HeatSupply(Dataset):
                             "category",
                             "capacity",
                             "geometry",
-                            "scenario"
+                            "scenario",
                         ],
                         value_set_columns={
-                            "carrier": ["geo_thermal", "CHP", "gas_boiler", "resistive_heater", "heat_pump", "solar_thermal_collector"],
-                            "scenario": ["eGon2035"]
-                        }
+                            "carrier": [
+                                "geo_thermal",
+                                "CHP",
+                                "gas_boiler",
+                                "resistive_heater",
+                                "heat_pump",
+                                "solar_thermal_collector",
+                            ],
+                            "scenario": ["eGon2035"],
+                        },
                     ),
                     TableValidation(
                         table_name="supply.egon_individual_heating",
-                        row_count=resolve_boundary_dependence({
-                            "Schleswig-Holstein": 396,
-                            "Everything": 7692
-                        }),
+                        row_count=resolve_boundary_dependence(
+                            {"Schleswig-Holstein": 396, "Everything": 7692}
+                        ),
                         geometry_columns=["geometry"],
                         data_type_columns={
                             "index": "integer",
@@ -452,7 +455,7 @@ class HeatSupply(Dataset):
                             "category": "character varying",
                             "capacity": "double precision",
                             "geometry": "geometry",
-                            "scenario": "character varying"
+                            "scenario": "character varying",
                         },
                         not_null_columns=[
                             "index",
@@ -461,16 +464,16 @@ class HeatSupply(Dataset):
                             "category",
                             "capacity",
                             "geometry",
-                            "scenario"
+                            "scenario",
                         ],
                         value_set_columns={
                             "carrier": ["gas_boiler", "heat_pump"],
-                            "scenario": ["eGon2035"]
-                        }
+                            "scenario": ["eGon2035"],
+                        },
                     ),
                 ]
             },
-            proceed_on_validation_failure=True
+            proceed_on_validation_failure=True,
         )
 
 

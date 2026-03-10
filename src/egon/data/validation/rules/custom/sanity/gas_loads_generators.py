@@ -5,11 +5,11 @@ Validates gas demand and generation capacity against reference data.
 """
 
 from pathlib import Path
-from typing import Optional, Any
-
-import pandas as pd
+from typing import Any, Optional
 import ast
+
 from egon_validation.rules.base import DataFrameRule, RuleResult, Severity
+import pandas as pd
 
 
 class GasLoadsCapacity(DataFrameRule):
@@ -22,9 +22,16 @@ class GasLoadsCapacity(DataFrameRule):
     expected values from external sources.
     """
 
-    def __init__(self, table: str, rule_id: str, scenario: str = "eGon2035",
-                 carrier: str = "CH4_for_industry", rtol: float = 0.10,
-                 expected_load: Optional[Any] = None, **kwargs):
+    def __init__(
+        self,
+        table: str,
+        rule_id: str,
+        scenario: str = "eGon2035",
+        carrier: str = "CH4_for_industry",
+        rtol: float = 0.10,
+        expected_load: Optional[Any] = None,
+        **kwargs,
+    ):
         """
         Parameters
         ----------
@@ -42,9 +49,15 @@ class GasLoadsCapacity(DataFrameRule):
             Expected load in TWh. If None, calculates from reference data.
             Can be boundary-dependent via resolve_boundary_dependence().
         """
-        super().__init__(rule_id=rule_id, table=table, scenario=scenario,
-                         carrier=carrier, rtol=rtol, expected_load=expected_load,
-                         **kwargs)
+        super().__init__(
+            rule_id=rule_id,
+            table=table,
+            scenario=scenario,
+            carrier=carrier,
+            rtol=rtol,
+            expected_load=expected_load,
+            **kwargs,
+        )
         self.kind = "sanity"
         self.scenario = scenario
         self.carrier = carrier
@@ -101,7 +114,9 @@ class GasLoadsCapacity(DataFrameRule):
             input_gas_demand = pd.concat(
                 [input_gas_demand, df_corr], axis=1, join="inner"
             )
-            input_gas_demand["NUTS0"] = (input_gas_demand["name_short"].str)[0:2]
+            input_gas_demand["NUTS0"] = (input_gas_demand["name_short"].str)[
+                0:2
+            ]
             input_gas_demand = input_gas_demand[
                 input_gas_demand["NUTS0"].str.match("DE")
             ]
@@ -141,7 +156,7 @@ class GasLoadsCapacity(DataFrameRule):
                 severity=Severity.WARNING,
                 schema=self.schema,
                 table_name=self.table_name,
-                rule_class=self.__class__.__name__
+                rule_class=self.__class__.__name__,
             )
 
         observed_load = float(df["load_twh"].values[0])
@@ -162,7 +177,7 @@ class GasLoadsCapacity(DataFrameRule):
                     severity=Severity.ERROR,
                     schema=self.schema,
                     table_name=self.table_name,
-                    rule_class=self.__class__.__name__
+                    rule_class=self.__class__.__name__,
                 )
 
         # Calculate relative deviation
@@ -189,7 +204,7 @@ class GasLoadsCapacity(DataFrameRule):
                 severity=Severity.INFO,
                 schema=self.schema,
                 table_name=self.table_name,
-                rule_class=self.__class__.__name__
+                rule_class=self.__class__.__name__,
             )
         else:
             return RuleResult(
@@ -208,7 +223,7 @@ class GasLoadsCapacity(DataFrameRule):
                 severity=Severity.ERROR,
                 schema=self.schema,
                 table_name=self.table_name,
-                rule_class=self.__class__.__name__
+                rule_class=self.__class__.__name__,
             )
 
 
@@ -221,9 +236,16 @@ class GasGeneratorsCapacity(DataFrameRule):
     and the Biogaspartner Einspeiseatlas.
     """
 
-    def __init__(self, table: str, rule_id: str, scenario: str = "eGon2035",
-                 carrier: str = "CH4", rtol: float = 0.10,
-                 expected_capacity: Optional[Any] = None, **kwargs):
+    def __init__(
+        self,
+        table: str,
+        rule_id: str,
+        scenario: str = "eGon2035",
+        carrier: str = "CH4",
+        rtol: float = 0.10,
+        expected_capacity: Optional[Any] = None,
+        **kwargs,
+    ):
         """
         Parameters
         ----------
@@ -241,9 +263,15 @@ class GasGeneratorsCapacity(DataFrameRule):
             Expected capacity in MW. If None, calculates from reference data.
             Can be boundary-dependent via resolve_boundary_dependence().
         """
-        super().__init__(rule_id=rule_id, table=table, scenario=scenario,
-                         carrier=carrier, rtol=rtol, expected_capacity=expected_capacity,
-                         **kwargs)
+        super().__init__(
+            rule_id=rule_id,
+            table=table,
+            scenario=scenario,
+            carrier=carrier,
+            rtol=rtol,
+            expected_capacity=expected_capacity,
+            **kwargs,
+        )
         self.kind = "sanity"
         self.scenario = scenario
         self.carrier = carrier
@@ -328,7 +356,9 @@ class GasGeneratorsCapacity(DataFrameRule):
             return float(total_generation)
 
         except Exception as e:
-            raise ValueError(f"Error reading reference generation data: {str(e)}")
+            raise ValueError(
+                f"Error reading reference generation data: {str(e)}"
+            )
 
     def evaluate_df(self, df, ctx):
         """
@@ -353,11 +383,14 @@ class GasGeneratorsCapacity(DataFrameRule):
                 table=self.table,
                 kind=self.kind,
                 success=False,
-                message=f"No {self.carrier} generators found for scenario {self.scenario}",
+                message=(
+                    f"No {self.carrier} generators found for scenario "
+                    f"{self.scenario}"
+                ),
                 severity=Severity.WARNING,
                 schema=self.schema,
                 table_name=self.table_name,
-                rule_class=self.__class__.__name__
+                rule_class=self.__class__.__name__,
             )
 
         observed_capacity = float(df["p_nom_germany"].values[0])
@@ -378,12 +411,14 @@ class GasGeneratorsCapacity(DataFrameRule):
                     severity=Severity.ERROR,
                     schema=self.schema,
                     table_name=self.table_name,
-                    rule_class=self.__class__.__name__
+                    rule_class=self.__class__.__name__,
                 )
 
         # Calculate relative deviation
         rtol = self.params.get("rtol", 0.10)
-        deviation = abs(observed_capacity - expected_capacity) / expected_capacity
+        deviation = (
+            abs(observed_capacity - expected_capacity) / expected_capacity
+        )
 
         success = deviation <= rtol
         deviation_pct = deviation * 100
@@ -405,7 +440,7 @@ class GasGeneratorsCapacity(DataFrameRule):
                 severity=Severity.INFO,
                 schema=self.schema,
                 table_name=self.table_name,
-                rule_class=self.__class__.__name__
+                rule_class=self.__class__.__name__,
             )
         else:
             return RuleResult(
@@ -417,12 +452,14 @@ class GasGeneratorsCapacity(DataFrameRule):
                 observed=observed_capacity,
                 expected=expected_capacity,
                 message=(
-                    f"{self.carrier} generator capacity deviation too large for {self.scenario}: "
-                    f"{observed_capacity:.2f} vs {expected_capacity:.2f} MW expected "
-                    f"(deviation: {deviation_pct:.2f}%, tolerance: {rtol*100:.2f}%)"
+                    f"{self.carrier} generator capacity deviation too large "
+                    f"for {self.scenario}: {observed_capacity:.2f} vs "
+                    f"{expected_capacity:.2f} MW expected "
+                    f"(deviation: {deviation_pct:.2f}%, "
+                    f"tolerance: {rtol*100:.2f}%)"
                 ),
                 severity=Severity.ERROR,
                 schema=self.schema,
                 table_name=self.table_name,
-                rule_class=self.__class__.__name__
+                rule_class=self.__class__.__name__,
             )

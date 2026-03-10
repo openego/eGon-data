@@ -13,6 +13,7 @@ import os
 import random
 
 from airflow.operators.python import PythonOperator
+from egon_validation import ArrayCardinalityValidation
 from psycopg2.extensions import AsIs, register_adapter
 from sqlalchemy import ARRAY, REAL, Column, Integer, String
 from sqlalchemy.ext.declarative import declarative_base
@@ -49,8 +50,6 @@ from egon.data.datasets.heat_demand_timeseries.idp_pool import (
 
 # get zensus cells with district heating
 from egon.data.datasets.zensus_mv_grid_districts import MapZensusGridDistricts
-
-from egon_validation import ArrayCardinalityValidation
 from egon.data.validation import TableValidation, resolve_boundary_dependence
 
 engine = db.engine()
@@ -232,7 +231,7 @@ class HeatPumpsPypsaEur(Dataset):
                     ),
                 ]
             },
-            proceed_on_validation_failure=True
+            proceed_on_validation_failure=True,
         )
 
 
@@ -482,24 +481,26 @@ class HeatPumps2035(Dataset):
                     ),
                     TableValidation(
                         table_name="demand.egon_building_heat_peak_loads",
-                        row_count=resolve_boundary_dependence({
-                            "Schleswig-Holstein": 732858,
-                            "Everything": 42128819
-                        }),
+                        row_count=resolve_boundary_dependence(
+                            {
+                                "Schleswig-Holstein": 732858,
+                                "Everything": 42128819,
+                            }
+                        ),
                         data_type_columns={
                             "building_id": "integer",
                             "scenario": "character varying",
                             "sector": "character varying",
-                            "peak_load_in_w": "real"
+                            "peak_load_in_w": "real",
                         },
                         value_set_columns={
                             "scenario": ["eGon2035", "eGon100RE"],
-                            "sector": ["residential+cts"]
-                        }
+                            "sector": ["residential+cts"],
+                        },
                     ),
                 ]
             },
-            proceed_on_validation_failure=True
+            proceed_on_validation_failure=True,
         )
 
 
@@ -2349,9 +2350,9 @@ def determine_hp_cap_peak_load_mvgd_ts_pypsa_eur(mvgd_ids):
             [df_heat_mvgd_ts_db, df_heat_mvgd_ts], axis=0, ignore_index=True
         )
 
-        df_hp_min_cap_mv_grid_pypsa_eur_sec.loc[mvgd] = (
-            hp_min_cap_mv_grid_pypsa_eur_sec
-        )
+        df_hp_min_cap_mv_grid_pypsa_eur_sec.loc[
+            mvgd
+        ] = hp_min_cap_mv_grid_pypsa_eur_sec
 
     # ################ export to db and csv ######################
     logger.info(f"MVGD={min(mvgd_ids)} : {max(mvgd_ids)} | Write data to db.")

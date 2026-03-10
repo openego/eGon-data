@@ -18,9 +18,9 @@ from egon.data.datasets.scenario_parameters import (
     EgonScenario,
     get_sector_parameters,
 )
+from egon.data.validation import TableValidation, resolve_boundary_dependence
 import egon.data.config
 import egon.data.datasets.scenario_parameters.parameters as scenario_parameters
-from egon.data.validation import resolve_boundary_dependence, TableValidation
 
 try:
     from disaggregator import config, data, spatial, temporal
@@ -92,20 +92,19 @@ class DemandRegio(Dataset):
                 "data_quality": [
                     TableValidation(
                         table_name="demand.egon_demandregio_hh",
-                        row_count=resolve_boundary_dependence({
-                            "Schleswig-Holstein": 180,
-                            "Everything": 7218
-                        }),
+                        row_count=resolve_boundary_dependence(
+                            {"Schleswig-Holstein": 180, "Everything": 7218}
+                        ),
                         data_type_columns={
                             "nuts3": "character varying",
                             "hh_size": "integer",
                             "scenario": "character varying",
                             "year": "integer",
-                            "demand": "double precision"
+                            "demand": "double precision",
                         },
                         value_set_columns={
                             "scenario": ["eGon2035", "eGon100RE", "eGon2021"]
-                        }
+                        },
                     ),
                     TableValidation(
                         table_name="demand.egon_demandregio_wz",
@@ -113,15 +112,13 @@ class DemandRegio(Dataset):
                         data_type_columns={
                             "wz": "integer",
                             "sector": "character varying",
-                            "definition": "character varying"
+                            "definition": "character varying",
                         },
-                        value_set_columns={
-                            "sector": ["industry", "CTS"]
-                        }
+                        value_set_columns={"sector": ["industry", "CTS"]},
                     ),
                 ]
             },
-            proceed_on_validation_failure=True
+            proceed_on_validation_failure=True,
         )
 
 

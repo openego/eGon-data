@@ -9,9 +9,8 @@ import pandas as pd
 
 from egon.data import db
 from egon.data.datasets import Dataset
-import egon.data.config
-
 from egon.data.validation import TableValidation, resolve_boundary_dependence
+import egon.data.config
 
 # will be later imported from another file ###
 Base = declarative_base()
@@ -28,27 +27,39 @@ class SocietyPrognosis(Dataset):
                 "data-quality": [
                     TableValidation(
                         table_name="society.egon_household_prognosis",
-                        row_count=resolve_boundary_dependence({"Everything": 5319490}),
+                        row_count=resolve_boundary_dependence(
+                            {"Everything": 5319490}
+                        ),
                         data_type_columns={
                             "zensus_population_id": "integer",
                             "year": "integer",
-                            "households": "double precision"
+                            "households": "double precision",
                         },
-                        not_null_columns=["zensus_population_id", "year", "households"]
+                        not_null_columns=[
+                            "zensus_population_id",
+                            "year",
+                            "households",
+                        ],
                     ),
                     TableValidation(
                         table_name="society.egon_population_prognosis",
-                        row_count=resolve_boundary_dependence({"Everything": 6355446}),
+                        row_count=resolve_boundary_dependence(
+                            {"Everything": 6355446}
+                        ),
                         data_type_columns={
                             "zensus_population_id": "integer",
                             "year": "integer",
-                            "population": "double precision"
+                            "population": "double precision",
                         },
-                        not_null_columns=["zensus_population_id", "year", "population"]
+                        not_null_columns=[
+                            "zensus_population_id",
+                            "year",
+                            "population",
+                        ],
                     ),
                 ]
             },
-            proceed_on_validation_failure=True
+            proceed_on_validation_failure=True,
         )
 
 

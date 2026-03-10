@@ -14,9 +14,8 @@ import geopandas as gpd
 from egon.data import db
 from egon.data.datasets import Dataset
 from egon.data.datasets.scenario_parameters import get_sector_parameters
-import egon.data.config
-
 from egon.data.validation import TableValidation
+import egon.data.config
 
 # will be later imported from another file ###
 Base = declarative_base()
@@ -67,13 +66,13 @@ class WeatherData(Dataset):
                         data_type_columns={
                             "w_id": "integer",
                             "geom": "geometry",
-                            "geom_point": "geometry"
+                            "geom_point": "geometry",
                         },
-                        not_null_columns=["w_id", "geom", "geom_point"]
+                        not_null_columns=["w_id", "geom", "geom_point"],
                     ),
                 ]
             },
-            proceed_on_validation_failure=True
+            proceed_on_validation_failure=True,
         )
 
 

@@ -5,8 +5,8 @@ Validates that home battery capacities are correctly aggregated
 from building-level to bus-level in the storages table.
 """
 
-import pandas as pd
 from egon_validation.rules.base import DataFrameRule, RuleResult, Severity
+import pandas as pd
 
 from egon.data import config
 from egon.data.validation.rules.custom.sanity.utils import get_cbat_pbat_ratio
@@ -113,7 +113,7 @@ class HomeBatteriesAggregation(DataFrameRule):
                 severity=Severity.WARNING,
                 schema=self.schema,
                 table_name=self.table_name,
-                rule_class=self.__class__.__name__
+                rule_class=self.__class__.__name__,
             )
 
         # Check for buses that exist in only one source
@@ -123,13 +123,13 @@ class HomeBatteriesAggregation(DataFrameRule):
         if not missing_in_storage.empty or not missing_in_buildings.empty:
             violations = []
             if not missing_in_storage.empty:
-                bus_list = missing_in_storage['bus_id'].tolist()[:5]
+                bus_list = missing_in_storage["bus_id"].tolist()[:5]
                 violations.append(
                     f"{len(missing_in_storage)} bus(es) in buildings "
                     f"but not in storage: {bus_list}"
                 )
             if not missing_in_buildings.empty:
-                bus_list = missing_in_buildings['bus_id'].tolist()[:5]
+                bus_list = missing_in_buildings["bus_id"].tolist()[:5]
                 violations.append(
                     f"{len(missing_in_buildings)} bus(es) in storage "
                     f"but not in buildings: {bus_list}"
@@ -147,7 +147,7 @@ class HomeBatteriesAggregation(DataFrameRule):
                 severity=Severity.ERROR,
                 schema=self.schema,
                 table_name=self.table_name,
-                rule_class=self.__class__.__name__
+                rule_class=self.__class__.__name__,
             )
 
         # Check if p_nom values match
@@ -157,9 +157,9 @@ class HomeBatteriesAggregation(DataFrameRule):
         cap_mismatch = df[df["storage_capacity"] != df["building_capacity"]]
 
         # Combine mismatches
-        mismatches = pd.concat(
-            [p_nom_mismatch, cap_mismatch]
-        ).drop_duplicates(subset=["bus_id"])
+        mismatches = pd.concat([p_nom_mismatch, cap_mismatch]).drop_duplicates(
+            subset=["bus_id"]
+        )
 
         if not mismatches.empty:
             # Calculate maximum differences
@@ -170,8 +170,11 @@ class HomeBatteriesAggregation(DataFrameRule):
 
             # Get all violations
             cols = [
-                "bus_id", "storage_p_nom", "building_p_nom",
-                "storage_capacity", "building_capacity"
+                "bus_id",
+                "storage_p_nom",
+                "building_p_nom",
+                "storage_capacity",
+                "building_capacity",
             ]
             all_violations = mismatches[cols].to_dict(orient="records")
 
@@ -193,7 +196,7 @@ class HomeBatteriesAggregation(DataFrameRule):
                 severity=Severity.ERROR,
                 schema=self.schema,
                 table_name=self.table_name,
-                rule_class=self.__class__.__name__
+                rule_class=self.__class__.__name__,
             )
 
         # All checks passed
@@ -211,6 +214,5 @@ class HomeBatteriesAggregation(DataFrameRule):
             ),
             schema=self.schema,
             table_name=self.table_name,
-            rule_class=self.__class__.__name__
+            rule_class=self.__class__.__name__,
         )
-

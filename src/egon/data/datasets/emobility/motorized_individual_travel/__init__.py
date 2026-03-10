@@ -31,7 +31,6 @@ from egon.data.datasets.emobility.motorized_individual_travel.db_classes import 
     EgonEvMvGridDistrict,
     EgonEvPool,
     EgonEvTrip,
-    add_metadata,
 )
 from egon.data.datasets.emobility.motorized_individual_travel.ev_allocation import (  # noqa: E501
     allocate_evs_numbers,
@@ -55,7 +54,6 @@ from egon.data.datasets.emobility.motorized_individual_travel.model_timeseries i
     generate_model_data_status2023_remaining,
     read_simbev_metadata_file,
 )
-
 from egon.data.validation import TableValidation, resolve_boundary_dependence
 
 
@@ -144,12 +142,12 @@ def download_and_preprocess():
         inplace=True,
     )
     kba_data = kba_data.dropna()
-    kba_data[["ags_reg_district", "reg_district"]] = (
-        kba_data.reg_district.str.split(
-            pat=" ",
-            n=1,
-            expand=True,
-        )
+    kba_data[
+        ["ags_reg_district", "reg_district"]
+    ] = kba_data.reg_district.str.split(
+        pat=" ",
+        n=1,
+        expand=True,
     )
     kba_data.ags_reg_district = kba_data.ags_reg_district.astype("int")
 
@@ -497,10 +495,9 @@ class MotorizedIndividualTravel(Dataset):
                     # egon_ev_count_municipality
                     TableValidation(
                         table_name="demand.egon_ev_count_municipality",
-                        row_count=resolve_boundary_dependence({
-                            "Schleswig-Holstein": 1108,
-                            "Everything": 44012
-                        }),
+                        row_count=resolve_boundary_dependence(
+                            {"Schleswig-Holstein": 1108, "Everything": 44012}
+                        ),
                         data_type_columns={
                             "scenario": "character varying",
                             "scenario_variation": "character varying",
@@ -511,7 +508,7 @@ class MotorizedIndividualTravel(Dataset):
                             "phev_mini": "integer",
                             "phev_medium": "integer",
                             "phev_luxury": "integer",
-                            "rs7_id": "smallint"
+                            "rs7_id": "smallint",
                         },
                         value_set_columns={
                             "scenario": ["eGon2035", "eGon100RE"],
@@ -519,17 +516,16 @@ class MotorizedIndividualTravel(Dataset):
                                 "Mobility Transition 2050",
                                 "NEP C 2035",
                                 "Electrification 2050",
-                                "Reference 2050"
-                            ]
-                        }
+                                "Reference 2050",
+                            ],
+                        },
                     ),
                     # egon_ev_count_mv_grid_district
                     TableValidation(
                         table_name="demand.egon_ev_count_mv_grid_district",
-                        row_count=resolve_boundary_dependence({
-                            "Schleswig-Holstein": 197,
-                            "Everything": 15348
-                        }),
+                        row_count=resolve_boundary_dependence(
+                            {"Schleswig-Holstein": 197, "Everything": 15348}
+                        ),
                         data_type_columns={
                             "scenario": "character varying",
                             "scenario_variation": "character varying",
@@ -540,7 +536,7 @@ class MotorizedIndividualTravel(Dataset):
                             "phev_mini": "integer",
                             "phev_medium": "integer",
                             "phev_luxury": "integer",
-                            "rs7_id": "smallint"
+                            "rs7_id": "smallint",
                         },
                         value_set_columns={
                             "scenario": ["eGon2035", "eGon100RE"],
@@ -548,17 +544,16 @@ class MotorizedIndividualTravel(Dataset):
                                 "Mobility Transition 2050",
                                 "NEP C 2035",
                                 "Electrification 2050",
-                                "Reference 2050"
-                            ]
-                        }
+                                "Reference 2050",
+                            ],
+                        },
                     ),
                     # egon_ev_count_registration_district
                     TableValidation(
                         table_name="demand.egon_ev_count_registration_district",
-                        row_count=resolve_boundary_dependence({
-                            "Schleswig-Holstein": 400,
-                            "Everything": 1600
-                        }),
+                        row_count=resolve_boundary_dependence(
+                            {"Schleswig-Holstein": 400, "Everything": 1600}
+                        ),
                         data_type_columns={
                             "scenario": "character varying",
                             "scenario_variation": "character varying",
@@ -569,7 +564,7 @@ class MotorizedIndividualTravel(Dataset):
                             "bev_luxury": "integer",
                             "phev_mini": "integer",
                             "phev_medium": "integer",
-                            "phev_luxury": "integer"
+                            "phev_luxury": "integer",
                         },
                         value_set_columns={
                             "scenario": ["eGon2035", "eGon100RE"],
@@ -577,23 +572,25 @@ class MotorizedIndividualTravel(Dataset):
                                 "Mobility Transition 2050",
                                 "NEP C 2035",
                                 "Electrification 2050",
-                                "Reference 2050"
-                            ]
-                        }
+                                "Reference 2050",
+                            ],
+                        },
                     ),
                     # egon_ev_mv_grid_district
                     TableValidation(
                         table_name="demand.egon_ev_mv_grid_district",
-                        row_count=resolve_boundary_dependence({
-                            "Schleswig-Holstein": 534891,
-                            "Everything": 125609556
-                        }),
+                        row_count=resolve_boundary_dependence(
+                            {
+                                "Schleswig-Holstein": 534891,
+                                "Everything": 125609556,
+                            }
+                        ),
                         data_type_columns={
                             "id": "integer",
                             "scenario": "character varying",
                             "scenario_variation": "character varying",
                             "bus_id": "integer",
-                            "egon_ev_pool_ev_id": "integer"
+                            "egon_ev_pool_ev_id": "integer",
                         },
                         value_set_columns={
                             "scenario": ["eGon2035", "eGon100RE"],
@@ -601,39 +598,44 @@ class MotorizedIndividualTravel(Dataset):
                                 "Mobility Transition 2050",
                                 "NEP C 2035",
                                 "Electrification 2050",
-                                "Reference 2050"
-                            ]
-                        }
+                                "Reference 2050",
+                            ],
+                        },
                     ),
                     # egon_ev_pool
                     TableValidation(
                         table_name="demand.egon_ev_pool",
-                        row_count=resolve_boundary_dependence({
-                            "Schleswig-Holstein": 7000,
-                            "Everything": 65376
-                        }),
+                        row_count=resolve_boundary_dependence(
+                            {"Schleswig-Holstein": 7000, "Everything": 65376}
+                        ),
                         data_type_columns={
                             "scenario": "character varying",
                             "ev_id": "integer",
                             "rs7_id": "smallint",
                             "type": "character varying",
-                            "simbev_ev_id": "integer"
+                            "simbev_ev_id": "integer",
                         },
                         value_set_columns={
                             "scenario": ["eGon2035", "eGon100RE"],
                             "type": [
-                                "bev_mini", "bev_medium", "bev_luxury",
-                                "phev_mini", "phev_medium", "phev_luxury"
-                            ]
-                        }
+                                "bev_mini",
+                                "bev_medium",
+                                "bev_luxury",
+                                "phev_mini",
+                                "phev_medium",
+                                "phev_luxury",
+                            ],
+                        },
                     ),
                     # egon_ev_trip
                     TableValidation(
                         table_name="demand.egon_ev_trip",
-                        row_count=resolve_boundary_dependence({
-                            "Schleswig-Holstein": 11642066,
-                            "Everything": 108342188
-                        }),
+                        row_count=resolve_boundary_dependence(
+                            {
+                                "Schleswig-Holstein": 11642066,
+                                "Everything": 108342188,
+                            }
+                        ),
                         data_type_columns={
                             "scenario": "character varying",
                             "event_id": "integer",
@@ -651,19 +653,24 @@ class MotorizedIndividualTravel(Dataset):
                             "park_end": "integer",
                             "drive_start": "integer",
                             "drive_end": "integer",
-                            "consumption": "real"
+                            "consumption": "real",
                         },
                         value_set_columns={
                             "scenario": ["eGon2035", "eGon100RE"],
                             "location": [
-                                "0_work", "1_business", "2_school",
-                                "3_shopping", "4_private/ridesharing",
-                                "5_leisure", "6_home", "7_charging_hub",
-                                "driving"
-                            ]
-                        }
+                                "0_work",
+                                "1_business",
+                                "2_school",
+                                "3_shopping",
+                                "4_private/ridesharing",
+                                "5_leisure",
+                                "6_home",
+                                "7_charging_hub",
+                                "driving",
+                            ],
+                        },
                     ),
                 ]
             },
-            proceed_on_validation_failure=True
+            proceed_on_validation_failure=True,
         )

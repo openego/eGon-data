@@ -166,7 +166,10 @@ def create_sql_functions():
     """
 
     # Create function: utmzone(geometry)
-    # source: http://www.gistutor.com/postgresqlpostgis/6-advanced-postgresqlpostgis-tutorials/58-postgis-buffer-latlong-and-other-projections-using-meters-units-custom-stbuffermeters-function.html
+    # source: http://www.gistutor.com/postgresqlpostgis/
+    # 6-advanced-postgresqlpostgis-tutorials/
+    # 58-postgis-buffer-latlong-and-other-projections-using-meters-units
+    # -custom-stbuffermeters-function.html
     db.execute_sql(
         """
         DROP FUNCTION IF EXISTS utmzone(geometry) CASCADE;
@@ -208,14 +211,17 @@ def create_sql_functions():
         DECLARE
         way  geometry;
         BEGIN
-            way = (SELECT ST_SetSRID
-                   (ST_MakePoint((max(lon) + min(lon))/200.0,(max(lat) + min(lat))/200.0),900913)
+            way = (SELECT ST_SetSRID(
+                ST_MakePoint(
+                    (max(lon) + min(lon))/200.0,
+                    (max(lat) + min(lat))/200.0
+                ), 900913)
                    FROM openstreetmap.osm_nodes
                    WHERE id in (SELECT unnest(nodes)
                      FROM openstreetmap.osm_ways
                      WHERE id in (SELECT trim(leading 'w' from member)::bigint
-			                     FROM (SELECT unnest(members) as member) t
-	                               WHERE member~E'[w,1,2,3,4,5,6,7,8,9,0]')));
+                                             FROM (SELECT unnest(members) as member) t
+                                       WHERE member~E'[w,1,2,3,4,5,6,7,8,9,0]')));
         RETURN way;
         END;
         $$ LANGUAGE plpgsql;

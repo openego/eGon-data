@@ -4,14 +4,14 @@ Sanity check validation rules for eMobility: motorized individual travel.
 Validates EV allocation, trip data, and model data in eTraGo tables.
 """
 
+from egon_validation.rules.base import Rule, RuleResult, Severity
+from sqlalchemy import Numeric
+from sqlalchemy.sql import and_, cast, func, or_
 import numpy as np
 import pandas as pd
-from sqlalchemy.sql import and_, cast, func, or_
-from sqlalchemy import Numeric
-from egon_validation.rules.base import Rule, RuleResult, Severity
 
 from egon.data import config, db
-from egon.data.datasets.emobility.motorized_individual_travel.db_classes import (
+from egon.data.datasets.emobility.motorized_individual_travel.db_classes import (  # noqa: E501
     EgonEvCountMunicipality,
     EgonEvCountMvGridDistrict,
     EgonEvCountRegistrationDistrict,
@@ -33,7 +33,6 @@ from egon.data.datasets.etrago_setup import (
 )
 from egon.data.datasets.scenario_parameters import get_sector_parameters
 
-
 TESTMODE_OFF = (
     config.settings()["egon-data"]["--dataset-boundary"] == "Everything"
 )
@@ -51,7 +50,9 @@ class EVAllocationCount(Rule):
     def __init__(
         self, table: str, rule_id: str, scenario: str = "eGon2035", **kwargs
     ):
-        super().__init__(rule_id=rule_id, table=table, scenario=scenario, **kwargs)
+        super().__init__(
+            rule_id=rule_id, table=table, scenario=scenario, **kwargs
+        )
         self.kind = "sanity"
         self.scenario = scenario
 
@@ -68,11 +69,13 @@ class EVAllocationCount(Rule):
                 severity=Severity.INFO,
                 schema=self.schema,
                 table_name=self.table_name,
-                rule_class=self.__class__.__name__
+                rule_class=self.__class__.__name__,
             )
 
         try:
-            scenario_var_name = DATASET_CFG["scenario"]["variation"][self.scenario]
+            scenario_var_name = DATASET_CFG["scenario"]["variation"][
+                self.scenario
+            ]
             scenario_variation_parameters = get_sector_parameters(
                 "mobility", scenario=self.scenario
             )["motorized_individual_travel"][scenario_var_name]
@@ -120,11 +123,14 @@ class EVAllocationCount(Rule):
                     table=self.table,
                     kind=self.kind,
                     success=False,
-                    message=f"EV count mismatch for {self.scenario}: {'; '.join(errors)}",
+                    message=(
+                        f"EV count mismatch for {self.scenario}: "
+                        f"{'; '.join(errors)}"
+                    ),
                     severity=Severity.ERROR,
                     schema=self.schema,
                     table_name=self.table_name,
-                    rule_class=self.__class__.__name__
+                    rule_class=self.__class__.__name__,
                 )
 
             return RuleResult(
@@ -139,7 +145,7 @@ class EVAllocationCount(Rule):
                 severity=Severity.INFO,
                 schema=self.schema,
                 table_name=self.table_name,
-                rule_class=self.__class__.__name__
+                rule_class=self.__class__.__name__,
             )
 
         except Exception as e:
@@ -153,7 +159,7 @@ class EVAllocationCount(Rule):
                 severity=Severity.ERROR,
                 schema=self.schema,
                 table_name=self.table_name,
-                rule_class=self.__class__.__name__
+                rule_class=self.__class__.__name__,
             )
 
 
@@ -167,7 +173,9 @@ class EVGridDistrictAllocation(Rule):
     def __init__(
         self, table: str, rule_id: str, scenario: str = "eGon2035", **kwargs
     ):
-        super().__init__(rule_id=rule_id, table=table, scenario=scenario, **kwargs)
+        super().__init__(
+            rule_id=rule_id, table=table, scenario=scenario, **kwargs
+        )
         self.kind = "sanity"
         self.scenario = scenario
 
@@ -180,15 +188,19 @@ class EVGridDistrictAllocation(Rule):
                 table=self.table,
                 kind=self.kind,
                 success=True,
-                message="Testmode is on, skipping grid district allocation check",
+                message=(
+                    "Testmode is on, skipping grid district allocation check"
+                ),
                 severity=Severity.INFO,
                 schema=self.schema,
                 table_name=self.table_name,
-                rule_class=self.__class__.__name__
+                rule_class=self.__class__.__name__,
             )
 
         try:
-            scenario_var_name = DATASET_CFG["scenario"]["variation"][self.scenario]
+            scenario_var_name = DATASET_CFG["scenario"]["variation"][
+                self.scenario
+            ]
             scenario_variation_parameters = get_sector_parameters(
                 "mobility", scenario=self.scenario
             )["motorized_individual_travel"][scenario_var_name]
@@ -201,10 +213,13 @@ class EVGridDistrictAllocation(Rule):
                     ),
                 ).filter(
                     EgonEvMvGridDistrict.scenario == self.scenario,
-                    EgonEvMvGridDistrict.scenario_variation == scenario_var_name,
+                    EgonEvMvGridDistrict.scenario_variation
+                    == scenario_var_name,
                 )
             ev_count_alloc = (
-                pd.read_sql(query.statement, query.session.bind, index_col=None)
+                pd.read_sql(
+                    query.statement, query.session.bind, index_col=None
+                )
                 .iloc[0]
                 .ev_count
             )
@@ -219,11 +234,14 @@ class EVGridDistrictAllocation(Rule):
                     success=True,
                     observed=ev_count_alloc,
                     expected=ev_count_target,
-                    message=f"EVs allocated to grid districts valid for {self.scenario}",
+                    message=(
+                        f"EVs allocated to grid districts valid for "
+                        f"{self.scenario}"
+                    ),
                     severity=Severity.INFO,
                     schema=self.schema,
                     table_name=self.table_name,
-                    rule_class=self.__class__.__name__
+                    rule_class=self.__class__.__name__,
                 )
             else:
                 return RuleResult(
@@ -235,13 +253,14 @@ class EVGridDistrictAllocation(Rule):
                     observed=ev_count_alloc,
                     expected=ev_count_target,
                     message=(
-                        f"EVs allocated to grid districts mismatch for {self.scenario}: "
-                        f"{ev_count_alloc} vs {ev_count_target}"
+                        f"EVs allocated to grid districts mismatch for "
+                        f"{self.scenario}: {ev_count_alloc} vs "
+                        f"{ev_count_target}"
                     ),
                     severity=Severity.ERROR,
                     schema=self.schema,
                     table_name=self.table_name,
-                    rule_class=self.__class__.__name__
+                    rule_class=self.__class__.__name__,
                 )
 
         except Exception as e:
@@ -255,7 +274,7 @@ class EVGridDistrictAllocation(Rule):
                 severity=Severity.ERROR,
                 schema=self.schema,
                 table_name=self.table_name,
-                rule_class=self.__class__.__name__
+                rule_class=self.__class__.__name__,
             )
 
 
@@ -270,7 +289,9 @@ class EVTripTimeranges(Rule):
     def __init__(
         self, table: str, rule_id: str, scenario: str = "eGon2035", **kwargs
     ):
-        super().__init__(rule_id=rule_id, table=table, scenario=scenario, **kwargs)
+        super().__init__(
+            rule_id=rule_id, table=table, scenario=scenario, **kwargs
+        )
         self.kind = "sanity"
         self.scenario = scenario
 
@@ -313,7 +334,7 @@ class EVTripTimeranges(Rule):
                     severity=Severity.INFO,
                     schema=self.schema,
                     table_name=self.table_name,
-                    rule_class=self.__class__.__name__
+                    rule_class=self.__class__.__name__,
                 )
             else:
                 return RuleResult(
@@ -331,7 +352,7 @@ class EVTripTimeranges(Rule):
                     severity=Severity.ERROR,
                     schema=self.schema,
                     table_name=self.table_name,
-                    rule_class=self.__class__.__name__
+                    rule_class=self.__class__.__name__,
                 )
 
         except Exception as e:
@@ -345,7 +366,7 @@ class EVTripTimeranges(Rule):
                 severity=Severity.ERROR,
                 schema=self.schema,
                 table_name=self.table_name,
-                rule_class=self.__class__.__name__
+                rule_class=self.__class__.__name__,
             )
 
 
@@ -360,7 +381,9 @@ class EVTripChargingDemand(Rule):
     def __init__(
         self, table: str, rule_id: str, scenario: str = "eGon2035", **kwargs
     ):
-        super().__init__(rule_id=rule_id, table=table, scenario=scenario, **kwargs)
+        super().__init__(
+            rule_id=rule_id, table=table, scenario=scenario, **kwargs
+        )
         self.kind = "sanity"
         self.scenario = scenario
 
@@ -408,7 +431,7 @@ class EVTripChargingDemand(Rule):
                     severity=Severity.INFO,
                     schema=self.schema,
                     table_name=self.table_name,
-                    rule_class=self.__class__.__name__
+                    rule_class=self.__class__.__name__,
                 )
             else:
                 return RuleResult(
@@ -426,7 +449,7 @@ class EVTripChargingDemand(Rule):
                     severity=Severity.ERROR,
                     schema=self.schema,
                     table_name=self.table_name,
-                    rule_class=self.__class__.__name__
+                    rule_class=self.__class__.__name__,
                 )
 
         except Exception as e:
@@ -440,7 +463,7 @@ class EVTripChargingDemand(Rule):
                 severity=Severity.ERROR,
                 schema=self.schema,
                 table_name=self.table_name,
-                rule_class=self.__class__.__name__
+                rule_class=self.__class__.__name__,
             )
 
 
@@ -455,14 +478,18 @@ class EVModelComponentsCreated(Rule):
     def __init__(
         self, table: str, rule_id: str, scenario: str = "eGon2035", **kwargs
     ):
-        super().__init__(rule_id=rule_id, table=table, scenario=scenario, **kwargs)
+        super().__init__(
+            rule_id=rule_id, table=table, scenario=scenario, **kwargs
+        )
         self.kind = "sanity"
         self.scenario = scenario
 
     def evaluate(self, engine, ctx):
         """Evaluate model components creation."""
         try:
-            scenario_var_name = DATASET_CFG["scenario"]["variation"][self.scenario]
+            scenario_var_name = DATASET_CFG["scenario"]["variation"][
+                self.scenario
+            ]
 
             # Get MVGDs which got EV allocated
             with db.session_scope() as session:
@@ -472,12 +499,15 @@ class EVModelComponentsCreated(Rule):
                     )
                     .filter(
                         EgonEvMvGridDistrict.scenario == self.scenario,
-                        EgonEvMvGridDistrict.scenario_variation == scenario_var_name,
+                        EgonEvMvGridDistrict.scenario_variation
+                        == scenario_var_name,
                     )
                     .group_by(EgonEvMvGridDistrict.bus_id)
                 )
             mvgds_with_ev = (
-                pd.read_sql(query.statement, query.session.bind, index_col=None)
+                pd.read_sql(
+                    query.statement, query.session.bind, index_col=None
+                )
                 .bus_id.sort_values()
                 .to_list()
             )
@@ -498,7 +528,8 @@ class EVModelComponentsCreated(Rule):
                     )
                     .join(
                         EgonPfHvStoreTimeseries,
-                        EgonPfHvStoreTimeseries.store_id == EgonPfHvStore.store_id,
+                        EgonPfHvStoreTimeseries.store_id
+                        == EgonPfHvStore.store_id,
                     )
                     .filter(
                         EgonPfHvLoad.carrier == "land_transport_EV",
@@ -532,7 +563,9 @@ class EVModelComponentsCreated(Rule):
             # Check if all required components exist (no NaN)
             if model_components.drop_duplicates().isna().any().any():
                 missing = model_components.drop_duplicates().isna().any()
-                errors.append(f"Missing components: {missing[missing].index.tolist()}")
+                errors.append(
+                    f"Missing components: {missing[missing].index.tolist()}"
+                )
 
             if errors:
                 return RuleResult(
@@ -548,7 +581,7 @@ class EVModelComponentsCreated(Rule):
                     severity=Severity.ERROR,
                     schema=self.schema,
                     table_name=self.table_name,
-                    rule_class=self.__class__.__name__
+                    rule_class=self.__class__.__name__,
                 )
 
             return RuleResult(
@@ -566,7 +599,7 @@ class EVModelComponentsCreated(Rule):
                 severity=Severity.INFO,
                 schema=self.schema,
                 table_name=self.table_name,
-                rule_class=self.__class__.__name__
+                rule_class=self.__class__.__name__,
             )
 
         except Exception as e:
@@ -580,7 +613,7 @@ class EVModelComponentsCreated(Rule):
                 severity=Severity.ERROR,
                 schema=self.schema,
                 table_name=self.table_name,
-                rule_class=self.__class__.__name__
+                rule_class=self.__class__.__name__,
             )
 
 
@@ -592,7 +625,9 @@ class EVModelTimeseriesLength(Rule):
     def __init__(
         self, table: str, rule_id: str, scenario: str = "eGon2035", **kwargs
     ):
-        super().__init__(rule_id=rule_id, table=table, scenario=scenario, **kwargs)
+        super().__init__(
+            rule_id=rule_id, table=table, scenario=scenario, **kwargs
+        )
         self.kind = "sanity"
         self.scenario = scenario
 
@@ -628,14 +663,17 @@ class EVModelTimeseriesLength(Rule):
             with db.session_scope() as session:
                 for node, attrs in model_ts_dict.items():
                     subquery = (
-                        session.query(getattr(attrs["table"], attrs["column_id"]))
+                        session.query(
+                            getattr(attrs["table"], attrs["column_id"])
+                        )
                         .filter(attrs["table"].carrier == attrs["carrier"])
                         .filter(attrs["table"].scn_name == self.scenario)
                         .subquery()
                     )
 
                     cols = [
-                        getattr(attrs["table_ts"], c) for c in attrs["columns_ts"]
+                        getattr(attrs["table_ts"], c)
+                        for c in attrs["columns_ts"]
                     ]
                     query = session.query(
                         getattr(attrs["table_ts"], attrs["column_id"]), *cols
@@ -657,7 +695,8 @@ class EVModelTimeseriesLength(Rule):
                         ][col].apply(len)
                         if len(invalid_ts) > 0:
                             errors.append(
-                                f"{node}.{col}: {len(invalid_ts)} rows != 8760 steps"
+                                f"{node}.{col}: {len(invalid_ts)} "
+                                f"rows != 8760 steps"
                             )
 
             if errors:
@@ -674,7 +713,7 @@ class EVModelTimeseriesLength(Rule):
                     severity=Severity.ERROR,
                     schema=self.schema,
                     table_name=self.table_name,
-                    rule_class=self.__class__.__name__
+                    rule_class=self.__class__.__name__,
                 )
 
             return RuleResult(
@@ -683,11 +722,13 @@ class EVModelTimeseriesLength(Rule):
                 table=self.table,
                 kind=self.kind,
                 success=True,
-                message=f"All EV timeseries have 8760 steps for {self.scenario}",
+                message=(
+                    f"All EV timeseries have 8760 steps for {self.scenario}"
+                ),
                 severity=Severity.INFO,
                 schema=self.schema,
                 table_name=self.table_name,
-                rule_class=self.__class__.__name__
+                rule_class=self.__class__.__name__,
             )
 
         except Exception as e:
@@ -701,7 +742,7 @@ class EVModelTimeseriesLength(Rule):
                 severity=Severity.ERROR,
                 schema=self.schema,
                 table_name=self.table_name,
-                rule_class=self.__class__.__name__
+                rule_class=self.__class__.__name__,
             )
 
 
@@ -714,18 +755,29 @@ class EVModelEnergyDemand(Rule):
     """
 
     def __init__(
-        self, table: str, rule_id: str, scenario: str = "eGon2035",
-        rtol: float = 0.1, **kwargs
+        self,
+        table: str,
+        rule_id: str,
+        scenario: str = "eGon2035",
+        rtol: float = 0.1,
+        **kwargs,
     ):
-        super().__init__(rule_id=rule_id, table=table, scenario=scenario,
-                         rtol=rtol, **kwargs)
+        super().__init__(
+            rule_id=rule_id,
+            table=table,
+            scenario=scenario,
+            rtol=rtol,
+            **kwargs,
+        )
         self.kind = "sanity"
         self.scenario = scenario
 
     def evaluate(self, engine, ctx):
         """Evaluate total energy demand."""
         try:
-            scenario_var_name = DATASET_CFG["scenario"]["variation"][self.scenario]
+            scenario_var_name = DATASET_CFG["scenario"]["variation"][
+                self.scenario
+            ]
 
             # Get EV count allocated
             with db.session_scope() as session:
@@ -735,10 +787,13 @@ class EVModelEnergyDemand(Rule):
                     ),
                 ).filter(
                     EgonEvMvGridDistrict.scenario == self.scenario,
-                    EgonEvMvGridDistrict.scenario_variation == scenario_var_name,
+                    EgonEvMvGridDistrict.scenario_variation
+                    == scenario_var_name,
                 )
             ev_count_alloc = (
-                pd.read_sql(query.statement, query.session.bind, index_col=None)
+                pd.read_sql(
+                    query.statement, query.session.bind, index_col=None
+                )
                 .iloc[0]
                 .ev_count
             )
@@ -779,12 +834,13 @@ class EVModelEnergyDemand(Rule):
                     expected=total_energy_approx,
                     message=(
                         f"EV energy demand valid for {self.scenario}: "
-                        f"{total_energy_model:.2f} TWh (approx: {total_energy_approx:.2f} TWh)"
+                        f"{total_energy_model:.2f} TWh "
+                        f"(approx: {total_energy_approx:.2f} TWh)"
                     ),
                     severity=Severity.INFO,
                     schema=self.schema,
                     table_name=self.table_name,
-                    rule_class=self.__class__.__name__
+                    rule_class=self.__class__.__name__,
                 )
             else:
                 return RuleResult(
@@ -796,13 +852,14 @@ class EVModelEnergyDemand(Rule):
                     observed=total_energy_model,
                     expected=total_energy_approx,
                     message=(
-                        f"EV energy demand deviates >10% for {self.scenario}: "
-                        f"{total_energy_model:.2f} vs {total_energy_approx:.2f} TWh"
+                        f"EV energy demand deviates >10% for "
+                        f"{self.scenario}: {total_energy_model:.2f} vs "
+                        f"{total_energy_approx:.2f} TWh"
                     ),
                     severity=Severity.ERROR,
                     schema=self.schema,
                     table_name=self.table_name,
-                    rule_class=self.__class__.__name__
+                    rule_class=self.__class__.__name__,
                 )
 
         except Exception as e:
@@ -816,7 +873,7 @@ class EVModelEnergyDemand(Rule):
                 severity=Severity.ERROR,
                 schema=self.schema,
                 table_name=self.table_name,
-                rule_class=self.__class__.__name__
+                rule_class=self.__class__.__name__,
             )
 
 
@@ -828,19 +885,32 @@ class EVModelStorageCapacity(Rule):
     """
 
     def __init__(
-        self, table: str, rule_id: str, scenario: str = "eGon2035",
-        rtol: float = 0.01, **kwargs
+        self,
+        table: str,
+        rule_id: str,
+        scenario: str = "eGon2035",
+        rtol: float = 0.01,
+        **kwargs,
     ):
-        super().__init__(rule_id=rule_id, table=table, scenario=scenario,
-                         rtol=rtol, **kwargs)
+        super().__init__(
+            rule_id=rule_id,
+            table=table,
+            scenario=scenario,
+            rtol=rtol,
+            **kwargs,
+        )
         self.kind = "sanity"
         self.scenario = scenario
 
     def evaluate(self, engine, ctx):
         """Evaluate storage capacity."""
         try:
-            scenario_var_name = DATASET_CFG["scenario"]["variation"][self.scenario]
-            meta_tech_data = read_simbev_metadata_file(self.scenario, "tech_data")
+            scenario_var_name = DATASET_CFG["scenario"]["variation"][
+                self.scenario
+            ]
+            meta_tech_data = read_simbev_metadata_file(
+                self.scenario, "tech_data"
+            )
 
             # Load storage capacity from model
             with db.session_scope() as session:
@@ -863,17 +933,19 @@ class EVModelStorageCapacity(Rule):
                     session.query(
                         EgonEvMvGridDistrict.bus_id,
                         EgonEvPool.type,
-                        func.count(EgonEvMvGridDistrict.egon_ev_pool_ev_id).label(
-                            "count"
-                        ),
+                        func.count(
+                            EgonEvMvGridDistrict.egon_ev_pool_ev_id
+                        ).label("count"),
                     )
                     .join(
                         EgonEvPool,
-                        EgonEvPool.ev_id == EgonEvMvGridDistrict.egon_ev_pool_ev_id,
+                        EgonEvPool.ev_id
+                        == EgonEvMvGridDistrict.egon_ev_pool_ev_id,
                     )
                     .filter(
                         EgonEvMvGridDistrict.scenario == self.scenario,
-                        EgonEvMvGridDistrict.scenario_variation == scenario_var_name,
+                        EgonEvMvGridDistrict.scenario_variation
+                        == scenario_var_name,
                         EgonEvPool.scenario == self.scenario,
                     )
                     .group_by(EgonEvMvGridDistrict.bus_id, EgonEvPool.type)
@@ -892,7 +964,9 @@ class EVModelStorageCapacity(Rule):
             ).sum()
 
             rtol = self.params.get("rtol", 0.01)
-            if np.allclose(storage_capacity_model, storage_capacity_simbev, rtol=rtol):
+            if np.allclose(
+                storage_capacity_model, storage_capacity_simbev, rtol=rtol
+            ):
                 return RuleResult(
                     rule_id=self.rule_id,
                     task=self.task,
@@ -908,7 +982,7 @@ class EVModelStorageCapacity(Rule):
                     severity=Severity.INFO,
                     schema=self.schema,
                     table_name=self.table_name,
-                    rule_class=self.__class__.__name__
+                    rule_class=self.__class__.__name__,
                 )
             else:
                 return RuleResult(
@@ -920,13 +994,14 @@ class EVModelStorageCapacity(Rule):
                     observed=storage_capacity_model,
                     expected=storage_capacity_simbev,
                     message=(
-                        f"EV storage capacity deviates >1% for {self.scenario}: "
-                        f"{storage_capacity_model:.1f} vs {storage_capacity_simbev:.1f} GWh"
+                        f"EV storage capacity deviates >1% for "
+                        f"{self.scenario}: {storage_capacity_model:.1f} vs "
+                        f"{storage_capacity_simbev:.1f} GWh"
                     ),
                     severity=Severity.ERROR,
                     schema=self.schema,
                     table_name=self.table_name,
-                    rule_class=self.__class__.__name__
+                    rule_class=self.__class__.__name__,
                 )
 
         except Exception as e:
@@ -940,7 +1015,7 @@ class EVModelStorageCapacity(Rule):
                 severity=Severity.ERROR,
                 schema=self.schema,
                 table_name=self.table_name,
-                rule_class=self.__class__.__name__
+                rule_class=self.__class__.__name__,
             )
 
 
@@ -952,7 +1027,9 @@ class EVModelSoCConstraint(Rule):
     def __init__(
         self, table: str, rule_id: str, scenario: str = "eGon2035", **kwargs
     ):
-        super().__init__(rule_id=rule_id, table=table, scenario=scenario, **kwargs)
+        super().__init__(
+            rule_id=rule_id, table=table, scenario=scenario, **kwargs
+        )
         self.kind = "sanity"
         self.scenario = scenario
 
@@ -998,7 +1075,7 @@ class EVModelSoCConstraint(Rule):
                     severity=Severity.INFO,
                     schema=self.schema,
                     table_name=self.table_name,
-                    rule_class=self.__class__.__name__
+                    rule_class=self.__class__.__name__,
                 )
             else:
                 return RuleResult(
@@ -1017,7 +1094,7 @@ class EVModelSoCConstraint(Rule):
                     severity=Severity.ERROR,
                     schema=self.schema,
                     table_name=self.table_name,
-                    rule_class=self.__class__.__name__
+                    rule_class=self.__class__.__name__,
                 )
 
         except Exception as e:
@@ -1031,7 +1108,7 @@ class EVModelSoCConstraint(Rule):
                 severity=Severity.ERROR,
                 schema=self.schema,
                 table_name=self.table_name,
-                rule_class=self.__class__.__name__
+                rule_class=self.__class__.__name__,
             )
 
 
@@ -1043,9 +1120,7 @@ class EVLowflexDrivingLoad(Rule):
     Only for eGon2035 vs eGon2035_lowflex comparison.
     """
 
-    def __init__(
-        self, table: str, rule_id: str, rtol: float = 0.01, **kwargs
-    ):
+    def __init__(self, table: str, rule_id: str, rtol: float = 0.01, **kwargs):
         super().__init__(rule_id=rule_id, table=table, rtol=rtol, **kwargs)
         self.kind = "sanity"
 
@@ -1076,7 +1151,9 @@ class EVLowflexDrivingLoad(Rule):
             model_driving_load = pd.read_sql(
                 query.statement, query.session.bind, index_col=None
             )
-            driving_load = np.array(model_driving_load.p_set.to_list()).sum(axis=0)
+            driving_load = np.array(model_driving_load.p_set.to_list()).sum(
+                axis=0
+            )
 
             # Load charging load (eGon2035_lowflex)
             with db.session_scope() as session:
@@ -1107,7 +1184,9 @@ class EVLowflexDrivingLoad(Rule):
             )
 
             rtol = self.params.get("rtol", 0.01)
-            if np.allclose(driving_load.sum(), driving_load_theoretical, rtol=rtol):
+            if np.allclose(
+                driving_load.sum(), driving_load_theoretical, rtol=rtol
+            ):
                 return RuleResult(
                     rule_id=self.rule_id,
                     task=self.task,
@@ -1123,7 +1202,7 @@ class EVLowflexDrivingLoad(Rule):
                     severity=Severity.INFO,
                     schema=self.schema,
                     table_name=self.table_name,
-                    rule_class=self.__class__.__name__
+                    rule_class=self.__class__.__name__,
                 )
             else:
                 return RuleResult(
@@ -1142,7 +1221,7 @@ class EVLowflexDrivingLoad(Rule):
                     severity=Severity.ERROR,
                     schema=self.schema,
                     table_name=self.table_name,
-                    rule_class=self.__class__.__name__
+                    rule_class=self.__class__.__name__,
                 )
 
         except Exception as e:
@@ -1156,5 +1235,5 @@ class EVLowflexDrivingLoad(Rule):
                 severity=Severity.ERROR,
                 schema=self.schema,
                 table_name=self.table_name,
-                rule_class=self.__class__.__name__
+                rule_class=self.__class__.__name__,
             )

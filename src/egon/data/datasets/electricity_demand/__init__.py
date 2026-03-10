@@ -10,12 +10,6 @@ import pandas as pd
 from egon.data import db
 from egon.data.datasets import Dataset
 from egon.data.datasets.electricity_demand.temporal import insert_cts_load
-from egon.data.validation.rules.custom.sanity import (
-    ResidentialElectricityAnnualSum,
-    ResidentialElectricityHhRefinement,
-)
-from egon.data.validation import resolve_boundary_dependence, TableValidation
-
 from egon.data.datasets.electricity_demand_timeseries.hh_buildings import (
     HouseholdElectricityProfilesOfBuildings,
     get_iee_hh_demand_profiles_raw,
@@ -24,6 +18,11 @@ from egon.data.datasets.electricity_demand_timeseries.hh_profiles import (
     HouseholdElectricityProfilesInCensusCells,
 )
 from egon.data.datasets.zensus_vg250 import DestatisZensusPopulationPerHa
+from egon.data.validation import TableValidation, resolve_boundary_dependence
+from egon.data.validation.rules.custom.sanity import (
+    ResidentialElectricityAnnualSum,
+    ResidentialElectricityHhRefinement,
+)
 import egon.data.config
 
 # will be later imported from another file ###
@@ -64,33 +63,35 @@ class HouseholdElectricityDemand(Dataset):
                     ResidentialElectricityAnnualSum(
                         table="demand.egon_demandregio_zensus_electricity",
                         rule_id="SANITY_RESIDENTIAL_ELECTRICITY_ANNUAL_SUM",
-                        rtol=0.005
+                        rtol=0.005,
                     ),
                     ResidentialElectricityHhRefinement(
                         table="society.egon_destatis_zensus_household_per_ha_refined",
                         rule_id="SANITY_RESIDENTIAL_HH_REFINEMENT",
-                        rtol=1e-5
+                        rtol=1e-5,
                     ),
                     TableValidation(
                         table_name="demand.egon_demandregio_zensus_electricity",
-                        row_count=resolve_boundary_dependence({
-                            "Schleswig-Holstein": 154525,
-                            "Everything": 7355160
-                        }),
+                        row_count=resolve_boundary_dependence(
+                            {
+                                "Schleswig-Holstein": 154525,
+                                "Everything": 7355160,
+                            }
+                        ),
                         data_type_columns={
                             "zensus_population_id": "integer",
                             "scenario": "character varying",
                             "sector": "character varying",
-                            "demand": "double precision"
+                            "demand": "double precision",
                         },
                         value_set_columns={
                             "scenario": ["eGon2035", "eGon100RE"],
-                            "sector": ["residential", "service"]
-                        }
+                            "sector": ["residential", "service"],
+                        },
                     ),
                 ]
             },
-            proceed_on_validation_failure=True
+            proceed_on_validation_failure=True,
         )
 
 

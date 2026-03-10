@@ -32,9 +32,10 @@ from egon.data.datasets.storages.pumped_hydro import (
     select_nep_pumped_hydro,
 )
 from egon.data.db import session_scope
-
-from egon.data.validation import resolve_boundary_dependence, TableValidation
-from egon.data.validation.rules.custom.sanity.home_batteries import HomeBatteriesAggregation
+from egon.data.validation import TableValidation, resolve_boundary_dependence
+from egon.data.validation.rules.custom.sanity.home_batteries import (
+    HomeBatteriesAggregation,
+)
 
 Base = declarative_base()
 
@@ -107,19 +108,18 @@ class Storages(Dataset):
                     HomeBatteriesAggregation(
                         table="supply.egon_home_batteries",
                         rule_id="SANITY_HOME_BATTERIES_AGGREGATION_EGON2035",
-                        scenario="eGon2035"
+                        scenario="eGon2035",
                     ),
                     HomeBatteriesAggregation(
                         table="supply.egon_home_batteries",
                         rule_id="SANITY_HOME_BATTERIES_AGGREGATION_EGON100RE",
-                        scenario="eGon100RE"
+                        scenario="eGon100RE",
                     ),
                     TableValidation(
                         table_name="supply.egon_storages",
-                        row_count=resolve_boundary_dependence({
-                            "Schleswig-Holstein": 199,
-                            "Everything": 7748
-                        }),
+                        row_count=resolve_boundary_dependence(
+                            {"Schleswig-Holstein": 199, "Everything": 7748}
+                        ),
                         geometry_columns=["geom"],
                         data_type_columns={
                             "id": "bigint",
@@ -130,21 +130,27 @@ class Storages(Dataset):
                             "bus_id": "integer",
                             "voltage_level": "integer",
                             "scenario": "character varying",
-                            "geom": "geometry"
+                            "geom": "geometry",
                         },
                         not_null_columns=[
-                            "id", "sources", "source_id", "carrier",
-                            "el_capacity", "bus_id", "voltage_level",
-                            "scenario", "geom"
+                            "id",
+                            "sources",
+                            "source_id",
+                            "carrier",
+                            "el_capacity",
+                            "bus_id",
+                            "voltage_level",
+                            "scenario",
+                            "geom",
                         ],
                         value_set_columns={
                             "scenario": ["eGon2035", "eGon100RE"],
-                            "carrier": ["home_battery", "pumped_hydro"]
-                        }
+                            "carrier": ["home_battery", "pumped_hydro"],
+                        },
                     ),
                 ]
             },
-            proceed_on_validation_failure=True
+            proceed_on_validation_failure=True,
         )
 
 
@@ -768,9 +774,9 @@ def home_batteries_per_scenario(scenario):
     else:
         source = "p-e-s"
 
-    battery["source"] = (
-        f"{source} capacity allocated based in installed PV rooftop capacity"
-    )
+    battery[
+        "source"
+    ] = f"{source} capacity allocated based in installed PV rooftop capacity"
 
     # Insert into target table
     session = sessionmaker(bind=db.engine())()

@@ -5,17 +5,16 @@ from __future__ import annotations
 from collections import abc
 from dataclasses import dataclass, field
 from functools import partial, reduce, update_wrapper
-from typing import Callable, Iterable, Set, Tuple, Union
+from typing import Callable, Dict, Iterable, List, Set, Tuple, Union
 import re
 
 from airflow.models.baseoperator import BaseOperator as Operator
 from airflow.operators.python import PythonOperator
 from sqlalchemy import Column, ForeignKey, Integer, String, Table, orm, tuple_
 from sqlalchemy.ext.declarative import declarative_base
-from typing import Dict, List
-from egon.data.validation import create_validation_tasks
 
 from egon.data import config, db, logger
+from egon.data.validation import create_validation_tasks
 
 try:
     from egon_validation.rules.base import Rule
@@ -280,7 +279,7 @@ class Dataset:
             validation_tasks = create_validation_tasks(
                 validation_dict=self.validation,
                 dataset_name=self.name,
-                proceed_on_validation_failure=self.proceed_on_validation_failure
+                proceed_on_validation_failure=self.proceed_on_validation_failure,
             )
 
             # Add validation tasks to existing Tasks_ without re-processing dependencies
@@ -296,7 +295,9 @@ class Dataset:
                 self.tasks.last = set(validation_tasks)
 
                 # Set up dependencies: original last tasks -> validation tasks
-                for last_task in sorted(original_last_tasks, key=lambda t: t.task_id):
+                for last_task in sorted(
+                    original_last_tasks, key=lambda t: t.task_id
+                ):
                     for vtask in validation_tasks:
                         last_task.set_downstream(vtask)
 
@@ -351,4 +352,3 @@ class Dataset:
         for p in predecessors:
             for first in self.tasks.first:
                 p.set_downstream(first)
-

@@ -39,7 +39,6 @@ from egon.data.datasets.scenario_parameters import (
     get_sector_parameters,
 )
 from egon.data.metadata import context, license_ccby, meta_metadata, sources
-
 from egon.data.validation import TableValidation, resolve_boundary_dependence
 
 # import time
@@ -88,25 +87,24 @@ class DistrictHeatingAreas(Dataset):
                 "data_quality": [
                     TableValidation(
                         table_name="demand.egon_district_heating_areas",
-                        row_count=resolve_boundary_dependence({
-                            "Schleswig-Holstein": 100,
-                            "Everything": 6335
-                        }),
+                        row_count=resolve_boundary_dependence(
+                            {"Schleswig-Holstein": 100, "Everything": 6335}
+                        ),
                         geometry_columns=["geom_polygon"],
                         data_type_columns={
                             "id": "integer",
                             "area_id": "integer",
                             "scenario": "character varying",
                             "geom_polygon": "geometry",
-                            "residential_and_service_demand": "double precision"
+                            "residential_and_service_demand": "double precision",
                         },
                         value_set_columns={
                             "scenario": ["eGon2035", "eGon100RE"]
-                        }
+                        },
                     ),
                 ]
             },
-            proceed_on_validation_failure=True
+            proceed_on_validation_failure=True,
         )
 
 
@@ -593,12 +591,12 @@ def district_heating_areas(scenario_name, plotting=False):
     census_plus_heat_demand = load_census_data(
         minimum_connection_rate=minimum_connection_rate
     )[0].copy()
-    census_plus_heat_demand["residential_and_service_demand"] = (
-        heat_demand_cells.loc[
-            census_plus_heat_demand.index.values,
-            "residential_and_service_demand",
-        ]
-    )
+    census_plus_heat_demand[
+        "residential_and_service_demand"
+    ] = heat_demand_cells.loc[
+        census_plus_heat_demand.index.values,
+        "residential_and_service_demand",
+    ]
 
     cells = area_grouping(
         census_plus_heat_demand,
@@ -638,9 +636,9 @@ def district_heating_areas(scenario_name, plotting=False):
     new_areas = new_areas[new_areas.index.isin(PSDs.index)].sort_values(
         "residential_and_service_demand", ascending=False
     )
-    new_areas["Cumulative_Sum"] = (
-        new_areas.residential_and_service_demand.cumsum()
-    )
+    new_areas[
+        "Cumulative_Sum"
+    ] = new_areas.residential_and_service_demand.cumsum()
     # select cells to be supplied with district heating until district
     # heating share is reached
     new_areas = new_areas[new_areas["Cumulative_Sum"] <= diff]

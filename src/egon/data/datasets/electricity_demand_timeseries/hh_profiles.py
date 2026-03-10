@@ -25,9 +25,8 @@ from egon.data import db
 from egon.data.datasets import Dataset
 from egon.data.datasets.scenario_parameters import get_scenario_year
 from egon.data.datasets.zensus_mv_grid_districts import MapZensusGridDistricts
+from egon.data.validation import TableValidation, resolve_boundary_dependence
 import egon.data.config
-
-from egon.data.validation import resolve_boundary_dependence, TableValidation
 
 Base = declarative_base()
 engine = db.engine()
@@ -306,48 +305,51 @@ class HouseholdDemands(Dataset):
                 "data_quality": [
                     TableValidation(
                         table_name="demand.egon_household_electricity_profile_in_census_cell",
-                        row_count=resolve_boundary_dependence({
-                            "Schleswig-Holstein": 143521,
-                            "Everything": 3177723
-                        }),
-                        data_type_columns=resolve_boundary_dependence({
-                            "Schleswig-Holstein": {
-                                "cell_id": "integer",
-                                "grid_id": "character varying",
-                                "cell_profile_ids": "array",
-                                "nuts3": "character varying",
-                                "nuts1": "character varying",
-                                "factor_2019": "double precision",
-                                "factor_2023": "double precision",
-                                "factor_2035": "double precision",
-                                "factor_2050": "double precision"
-                            },
-                            "Everything": {
-                                "cell_id": "integer",
-                                "grid_id": "character varying",
-                                "cell_profile_ids": "character varying",
-                                "nuts3": "character varying",
-                                "nuts1": "character varying",
-                                "factor_2035": "double precision",
-                                "factor_2050": "double precision"
+                        row_count=resolve_boundary_dependence(
+                            {
+                                "Schleswig-Holstein": 143521,
+                                "Everything": 3177723,
                             }
-                        })
+                        ),
+                        data_type_columns=resolve_boundary_dependence(
+                            {
+                                "Schleswig-Holstein": {
+                                    "cell_id": "integer",
+                                    "grid_id": "character varying",
+                                    "cell_profile_ids": "array",
+                                    "nuts3": "character varying",
+                                    "nuts1": "character varying",
+                                    "factor_2019": "double precision",
+                                    "factor_2023": "double precision",
+                                    "factor_2035": "double precision",
+                                    "factor_2050": "double precision",
+                                },
+                                "Everything": {
+                                    "cell_id": "integer",
+                                    "grid_id": "character varying",
+                                    "cell_profile_ids": "character varying",
+                                    "nuts3": "character varying",
+                                    "nuts1": "character varying",
+                                    "factor_2035": "double precision",
+                                    "factor_2050": "double precision",
+                                },
+                            }
+                        ),
                     ),
                     TableValidation(
                         table_name="demand.iee_household_load_profiles",
-                        row_count=resolve_boundary_dependence({
-                            "Schleswig-Holstein": 2511,
-                            "Everything": 1000000
-                        }),
+                        row_count=resolve_boundary_dependence(
+                            {"Schleswig-Holstein": 2511, "Everything": 1000000}
+                        ),
                         data_type_columns={
                             "id": "integer",
                             "type": "character",
-                            "load_in_wh": "array"
-                        }
+                            "load_in_wh": "array",
+                        },
                     ),
                 ]
             },
-            proceed_on_validation_failure=True
+            proceed_on_validation_failure=True,
         )
 
 
@@ -1330,15 +1332,15 @@ def refine_census_data_at_cell_level(
         right_on=["cell_id", "characteristics_code"],
     )
 
-    df_census_households_grid_refined["characteristics_code"] = (
-        df_census_households_grid_refined["characteristics_code"].astype(int)
-    )
-    df_census_households_grid_refined["hh_5types"] = (
-        df_census_households_grid_refined["hh_5types"].astype(int)
-    )
-    df_census_households_grid_refined["hh_10types"] = (
-        df_census_households_grid_refined["hh_10types"].astype(int)
-    )
+    df_census_households_grid_refined[
+        "characteristics_code"
+    ] = df_census_households_grid_refined["characteristics_code"].astype(int)
+    df_census_households_grid_refined[
+        "hh_5types"
+    ] = df_census_households_grid_refined["hh_5types"].astype(int)
+    df_census_households_grid_refined[
+        "hh_10types"
+    ] = df_census_households_grid_refined["hh_10types"].astype(int)
 
     return df_census_households_grid_refined
 
@@ -1453,9 +1455,9 @@ def assign_hh_demand_profiles_to_cells(df_zensus_cells, df_iee_profiles):
         df_hh_profiles_in_census_cells.at[grid_id, "cell_id"] = df_cell.loc[
             :, "cell_id"
         ].unique()[0]
-        df_hh_profiles_in_census_cells.at[grid_id, "cell_profile_ids"] = (
-            cell_profile_ids
-        )
+        df_hh_profiles_in_census_cells.at[
+            grid_id, "cell_profile_ids"
+        ] = cell_profile_ids
         df_hh_profiles_in_census_cells.at[grid_id, "nuts3"] = df_cell.loc[
             :, "nuts3"
         ].unique()[0]
@@ -1724,10 +1726,10 @@ def houseprofiles_in_census_cells():
     ].astype(int)
 
     # Cast profile ids back to initial str format
-    df_hh_profiles_in_census_cells["cell_profile_ids"] = (
-        df_hh_profiles_in_census_cells["cell_profile_ids"].apply(
-            lambda x: list(map(gen_profile_names, x))
-        )
+    df_hh_profiles_in_census_cells[
+        "cell_profile_ids"
+    ] = df_hh_profiles_in_census_cells["cell_profile_ids"].apply(
+        lambda x: list(map(gen_profile_names, x))
     )
 
     # Write allocation table into database

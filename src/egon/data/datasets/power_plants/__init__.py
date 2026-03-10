@@ -2,9 +2,7 @@
 allocation of data on conventional and renewable power plants.
 """
 
-from pathlib import Path
 import logging
-from pydoc import resolve
 
 from geoalchemy2 import Geometry
 from shapely.geometry import Point
@@ -38,14 +36,13 @@ from egon.data.datasets.power_plants.pv_rooftop import pv_rooftop_per_mv_grid
 from egon.data.datasets.power_plants.pv_rooftop_buildings import (
     pv_rooftop_to_buildings,
 )
+from egon.data.validation import TableValidation, resolve_boundary_dependence
 import egon.data.config
 import egon.data.datasets.power_plants.assign_weather_data as assign_weather_data  # noqa: E501
 import egon.data.datasets.power_plants.metadata as pp_metadata
 import egon.data.datasets.power_plants.pv_ground_mounted as pv_ground_mounted
 import egon.data.datasets.power_plants.wind_farms as wind_onshore
 import egon.data.datasets.power_plants.wind_offshore as wind_offshore
-
-from egon.data.validation import TableValidation, resolve_boundary_dependence
 
 Base = declarative_base()
 
@@ -344,7 +341,7 @@ def insert_hydro_plants(scenario):
                             """,
                     con=db.engine(),
                 ).capacity[0]
-            except:
+            except Exception:
                 logger.info(
                     f"No assigned capacity for {carrier} in {scenario}"
                 )
@@ -1332,9 +1329,9 @@ def get_conventional_power_plants_non_chp(scn_name):
     conv["geom"] = gpd.points_from_xy(
         conv.Laengengrad, conv.Breitengrad, crs=4326
     )
-    conv.loc[(conv.Laengengrad.isna() | conv.Breitengrad.isna()), "geom"] = (
-        Point()
-    )
+    conv.loc[
+        (conv.Laengengrad.isna() | conv.Breitengrad.isna()), "geom"
+    ] = Point()
     conv = gpd.GeoDataFrame(conv, geometry="geom")
 
     # assign voltage level by capacity
@@ -1447,9 +1444,9 @@ def import_gas_gen_egon100():
     conv["geom"] = gpd.points_from_xy(
         conv.Laengengrad, conv.Breitengrad, crs=4326
     )
-    conv.loc[(conv.Laengengrad.isna() | conv.Breitengrad.isna()), "geom"] = (
-        Point()
-    )
+    conv.loc[
+        (conv.Laengengrad.isna() | conv.Breitengrad.isna()), "geom"
+    ] = Point()
     conv = gpd.GeoDataFrame(conv, geometry="geom")
 
     conv = fill_missing_bus_and_geom(
@@ -1631,10 +1628,9 @@ class PowerPlants(Dataset):
                 "data-quality": [
                     TableValidation(
                         table_name="supply.egon_power_plants",
-                        row_count=resolve_boundary_dependence({
-                            "Schleswig-Holstein": 1102,
-                            "Everything": 1103
-                        }),
+                        row_count=resolve_boundary_dependence(
+                            {"Schleswig-Holstein": 1102, "Everything": 1103}
+                        ),
                         geometry_columns=["geom"],
                         data_type_columns={
                             "id": "bigint",
@@ -1646,7 +1642,7 @@ class PowerPlants(Dataset):
                             "voltage_level": "integer",
                             "weather_cell_id": "integer",
                             "scenario": "character varying",
-                            "geom": "geometry"
+                            "geom": "geometry",
                         },
                         not_null_columns=[
                             "id",
@@ -1658,18 +1654,24 @@ class PowerPlants(Dataset):
                             "voltage_level",
                             "weather_cell_id",
                             "scenario",
-                            "geom"
+                            "geom",
                         ],
                         value_set_columns={
                             "carrier": [
-                                "others", "gas", "biomass", "run_of_river",
-                                "wind_onshore", "oil", "wind_offshore",
-                                "solar", "reservoir"
+                                "others",
+                                "gas",
+                                "biomass",
+                                "run_of_river",
+                                "wind_onshore",
+                                "oil",
+                                "wind_offshore",
+                                "solar",
+                                "reservoir",
                             ],
-                            "scenario": ["eGon2035", "eGon100RE"]
-                        }
+                            "scenario": ["eGon2035", "eGon100RE"],
+                        },
                     ),
                 ]
             },
-            proceed_on_validation_failure=True
+            proceed_on_validation_failure=True,
         )

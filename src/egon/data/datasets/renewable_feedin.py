@@ -22,9 +22,8 @@ from egon.data.datasets.era5 import (
 from egon.data.datasets.scenario_parameters import get_sector_parameters
 from egon.data.datasets.zensus_vg250 import DestatisZensusPopulationPerHa
 from egon.data.metadata import context, license_ccby, meta_metadata, sources
-import egon.data.config
-
 from egon.data.validation import TableValidation, resolve_boundary_dependence
+import egon.data.config
 
 
 class RenewableFeedin(Dataset):
@@ -70,24 +69,34 @@ class RenewableFeedin(Dataset):
                 "data-quality": [
                     TableValidation(
                         table_name="supply.egon_era5_renewable_feedin",
-                        row_count=resolve_boundary_dependence({
-                            "Schleswig-Holstein": 5224,
-                            "Everything": 6102
-                        }),
+                        row_count=resolve_boundary_dependence(
+                            {"Schleswig-Holstein": 5224, "Everything": 6102}
+                        ),
                         data_type_columns={
                             "w_id": "integer",
                             "weather_year": "integer",
                             "carrier": "character varying",
-                            "feedin": "array"
+                            "feedin": "array",
                         },
-                        not_null_columns=["w_id", "weather_year", "carrier", "feedin"],
+                        not_null_columns=[
+                            "w_id",
+                            "weather_year",
+                            "carrier",
+                            "feedin",
+                        ],
                         value_set_columns={
-                            "carrier": ["wind_onshore", "solar_thermal", "heat_pump_cop", "wind_offshore", "pv"]
-                        }
+                            "carrier": [
+                                "wind_onshore",
+                                "solar_thermal",
+                                "heat_pump_cop",
+                                "wind_offshore",
+                                "pv",
+                            ]
+                        },
                     ),
                 ]
             },
-            proceed_on_validation_failure = True
+            proceed_on_validation_failure=True,
         )
 
 

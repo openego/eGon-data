@@ -3,12 +3,11 @@
 """
 
 from airflow.providers.common.sql.operators.sql import SQLExecuteQueryOperator
+from egon_validation import ArrayCardinalityValidation
 from importlib_resources import files
 from sqlalchemy.ext.declarative import declarative_base
 
 from egon.data.datasets import Dataset
-
-from egon_validation import ArrayCardinalityValidation
 
 Base = declarative_base()
 
@@ -32,7 +31,7 @@ class LowFlexScenario(Dataset):
                 },
             ),
             validation={
-                "data-quality":[
+                "data-quality": [
                     ArrayCardinalityValidation(
                         table="grid.egon_etrago_bus_timeseries",
                         rule_id="ARRAY.egon_etrago_bus_timeseries",
@@ -41,5 +40,5 @@ class LowFlexScenario(Dataset):
                     ),
                 ]
             },
-            proceed_on_validation_failure=True
+            proceed_on_validation_failure=True,
         )

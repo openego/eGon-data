@@ -22,7 +22,7 @@ class HeatDemandValidation(DataFrameRule):
         rule_id: str,
         scenario: str = "eGon2035",
         rtol: float = 0.02,
-        **kwargs
+        **kwargs,
     ):
         """
         Parameters
@@ -41,7 +41,7 @@ class HeatDemandValidation(DataFrameRule):
             table=table,
             scenario=scenario,
             rtol=rtol,
-            **kwargs
+            **kwargs,
         )
         self.kind = "sanity"
         self.scenario = scenario
@@ -98,7 +98,11 @@ class HeatDemandValidation(DataFrameRule):
         RuleResult
             Validation result with success/failure status
         """
-        if df.empty or df["output_demand_twh"].isna().all() or df["input_demand_twh"].isna().all():
+        if (
+            df.empty
+            or df["output_demand_twh"].isna().all()
+            or df["input_demand_twh"].isna().all()
+        ):
             return RuleResult(
                 rule_id=self.rule_id,
                 task=self.task,
@@ -109,7 +113,7 @@ class HeatDemandValidation(DataFrameRule):
                 severity=Severity.ERROR,
                 schema=self.schema,
                 table_name=self.table_name,
-                rule_class=self.__class__.__name__
+                rule_class=self.__class__.__name__,
             )
 
         output_twh = float(df["output_demand_twh"].values[0])
@@ -134,12 +138,13 @@ class HeatDemandValidation(DataFrameRule):
                 message=(
                     f"Heat demand valid for {self.scenario}: "
                     f"{output_twh:.2f} TWh vs {input_twh:.2f} TWh expected "
-                    f"(deviation: {deviation_pct:.2f}%, tolerance: {self.rtol*100:.2f}%)"
+                    f"(deviation: {deviation_pct:.2f}%, "
+                    f"tolerance: {self.rtol*100:.2f}%)"
                 ),
                 severity=Severity.INFO,
                 schema=self.schema,
                 table_name=self.table_name,
-                rule_class=self.__class__.__name__
+                rule_class=self.__class__.__name__,
             )
         else:
             return RuleResult(
@@ -159,5 +164,5 @@ class HeatDemandValidation(DataFrameRule):
                 severity=Severity.ERROR,
                 schema=self.schema,
                 table_name=self.table_name,
-                rule_class=self.__class__.__name__
+                rule_class=self.__class__.__name__,
             )

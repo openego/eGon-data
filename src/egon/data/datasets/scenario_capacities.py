@@ -23,7 +23,6 @@ from egon.data.metadata import (
     meta_metadata,
     sources,
 )
-
 from egon.data.validation import TableValidation, resolve_boundary_dependence
 
 Base = declarative_base()
@@ -909,18 +908,18 @@ def add_metadata():
 
     # Set descriptions and units
     fields.loc["index", "description"] = "Index"
-    fields.loc["component", "description"] = (
-        "Name of representative PyPSA component"
-    )
+    fields.loc[
+        "component", "description"
+    ] = "Name of representative PyPSA component"
     fields.loc["carrier", "description"] = "Name of carrier"
     fields.loc["capacity", "description"] = "Installed capacity"
     fields.loc["capacity", "unit"] = "MW"
-    fields.loc["nuts", "description"] = (
-        "NUTS region, either federal state or Germany"
-    )
-    fields.loc["scenario_name", "description"] = (
-        "Name of corresponding eGon scenario"
-    )
+    fields.loc[
+        "nuts", "description"
+    ] = "NUTS region, either federal state or Germany"
+    fields.loc[
+        "scenario_name", "description"
+    ] = "Name of corresponding eGon scenario"
 
     # Reformat pandas.DataFrame to dict
     fields = fields.reset_index().to_dict(orient="records")
@@ -951,7 +950,9 @@ def add_metadata():
                 "© Übertragungsnetzbetreiber; "
                 "© Bundesamt für Kartographie und Geodäsie 2020 (Daten verändert); "
                 "© Statistische Ämter des Bundes und der Länder 2014; "
-                "© Jonathan Amme, Clara Büttner, Ilka Cußmann, Julian Endres, Carlos Epia, Stephan Günther, Ulf Müller, Amélia Nadal, Guido Pleßmann, Francesco Witte",
+                "© Jonathan Amme, Clara Büttner, Ilka Cußmann, Julian Endres, "
+                "Carlos Epia, Stephan Günther, Ulf Müller, Amélia Nadal, "
+                "Guido Pleßmann, Francesco Witte",
             )
         ],
         "contributors": [
@@ -1057,10 +1058,9 @@ class ScenarioCapacities(Dataset):
                 "data-quality": [
                     TableValidation(
                         table_name="supply.egon_nep_2021_conventional_powerplants",
-                        row_count=resolve_boundary_dependence({
-                            "Schleswig-Holstein": 34,
-                            "Everything": 737
-                        }),
+                        row_count=resolve_boundary_dependence(
+                            {"Schleswig-Holstein": 34, "Everything": 737}
+                        ),
                         data_type_columns={
                             "index": "bigint",
                             "bnetza_id": "text",
@@ -1082,49 +1082,89 @@ class ScenarioCapacities(Dataset):
                             "c2035_capacity": "double precision",
                             "b2040_chp": "text",
                             "b2040_capacity": "double precision",
-                            "carrier": "text"
+                            "carrier": "text",
                         },
                         not_null_columns=[
-                            "index", "bnetza_id", "name", "name_unit", "carrier_nep",
-                            "chp", "postcode", "city", "federal_state", "commissioned",
-                            "status", "capacity", "a2035_chp", "a2035_capacity",
-                            "b2035_chp", "b2035_capacity", "c2035_chp", "c2035_capacity",
-                            "b2040_chp", "b2040_capacity", "carrier"
-                        ]
+                            "index",
+                            "bnetza_id",
+                            "name",
+                            "name_unit",
+                            "carrier_nep",
+                            "chp",
+                            "postcode",
+                            "city",
+                            "federal_state",
+                            "commissioned",
+                            "status",
+                            "capacity",
+                            "a2035_chp",
+                            "a2035_capacity",
+                            "b2035_chp",
+                            "b2035_capacity",
+                            "c2035_chp",
+                            "c2035_capacity",
+                            "b2040_chp",
+                            "b2040_capacity",
+                            "carrier",
+                        ],
                     ),
                     TableValidation(
                         table_name="supply.egon_scenario_capacities",
-                        row_count=resolve_boundary_dependence({
-                            "Schleswig-Holstein": 17,
-                            "Everything": 236
-                        }),
+                        row_count=resolve_boundary_dependence(
+                            {"Schleswig-Holstein": 17, "Everything": 236}
+                        ),
                         data_type_columns={
                             "index": "integer",
                             "component": "character varying",
                             "carrier": "character varying",
                             "capacity": "double precision",
                             "nuts": "character varying",
-                            "scenario_name": "character varying"
+                            "scenario_name": "character varying",
                         },
                         not_null_columns=[
-                            "index", "component", "carrier", "capacity", "nuts", "scenario_name"
+                            "index",
+                            "component",
+                            "carrier",
+                            "capacity",
+                            "nuts",
+                            "scenario_name",
                         ],
                         value_set_columns={
                             "carrier": [
-                                "pumped_hydro", "gas_for_industry", "gas_for_industry_CC",
-                                "biogas_to_gas", "Sabatier", "urban_central_gas_CHP", "solar",
-                                "reservoir", "biogas", "residential_rural_heat_pump",
-                                "urban_central_solar_thermal_collector", "oil",
-                                "urban_central_resistive_heater", "wind_offshore", "battery",
-                                "others", "gas", "wind_onshore", "small_chp", "Li_ion",
-                                "urban_central_heat_pump", "urban_central_geo_thermal", "SMR",
-                                "biomass", "hydro", "run_of_river", "rural_solar_thermal",
-                                "solar_rooftop", "BEV_charger"
+                                "pumped_hydro",
+                                "gas_for_industry",
+                                "gas_for_industry_CC",
+                                "biogas_to_gas",
+                                "Sabatier",
+                                "urban_central_gas_CHP",
+                                "solar",
+                                "reservoir",
+                                "biogas",
+                                "residential_rural_heat_pump",
+                                "urban_central_solar_thermal_collector",
+                                "oil",
+                                "urban_central_resistive_heater",
+                                "wind_offshore",
+                                "battery",
+                                "others",
+                                "gas",
+                                "wind_onshore",
+                                "small_chp",
+                                "Li_ion",
+                                "urban_central_heat_pump",
+                                "urban_central_geo_thermal",
+                                "SMR",
+                                "biomass",
+                                "hydro",
+                                "run_of_river",
+                                "rural_solar_thermal",
+                                "solar_rooftop",
+                                "BEV_charger",
                             ],
-                            "scenario_name": ["eGon2035", "eGon100RE"]
-                        }
+                            "scenario_name": ["eGon2035", "eGon100RE"],
+                        },
                     ),
                 ]
             },
-            proceed_on_validation_failure=True
+            proceed_on_validation_failure=True,
         )

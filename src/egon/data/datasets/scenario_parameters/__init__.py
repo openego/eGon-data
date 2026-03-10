@@ -14,10 +14,9 @@ import pandas as pd
 
 from egon.data import db
 from egon.data.datasets import Dataset
+from egon.data.validation import TableValidation, resolve_boundary_dependence
 import egon.data.config
 import egon.data.datasets.scenario_parameters.parameters as parameters
-
-from egon.data.validation import TableValidation, resolve_boundary_dependence
 
 Base = declarative_base()
 
@@ -269,7 +268,10 @@ def download_pypsa_technology_data():
     sources = egon.data.config.datasets()["pypsa-technology-data"]["sources"][
         "zenodo"
     ]
-    url = f"""https://zenodo.org/record/{sources['deposit_id']}/files/{sources['file']}"""
+    url = (
+        f"https://zenodo.org/record/{sources['deposit_id']}/"
+        f"files/{sources['file']}"
+    )
     target_file = egon.data.config.datasets()["pypsa-technology-data"][
         "targets"
     ]["file"]
@@ -285,10 +287,11 @@ class ScenarioParameters(Dataset):
     """
     Create and fill table with central parameters for each scenario
 
-    This dataset creates and fills a table in the database that includes central parameters
-    for each scenarios. These parameters are mostly from extrernal sources, they are defined
-    and referenced within this dataset.
-    The table is acced by various datasets to access the parameters for all sectors.
+    This dataset creates and fills a table in the database that includes
+    central parameters for each scenarios. These parameters are mostly from
+    extrernal sources, they are defined and referenced within this dataset.
+    The table is acced by various datasets to access the parameters for all
+    sectors.
 
 
     *Dependencies*
@@ -296,7 +299,8 @@ class ScenarioParameters(Dataset):
 
 
     *Resulting tables*
-      * :py:class:`scenario.egon_scenario_parameters <egon.data.datasets.scenario_parameters.EgonScenario>` is created and filled
+      * :py:class:`scenario.egon_scenario_parameters \
+<egon.data.datasets.scenario_parameters.EgonScenario>` is created and filled
 
 
     """
@@ -320,10 +324,9 @@ class ScenarioParameters(Dataset):
                 "data-quality": [
                     TableValidation(
                         table_name="scenario.egon_scenario_parameters",
-                        row_count=resolve_boundary_dependence({
-                            "Schleswig-Holstein": 5,
-                            "Everything": 3
-                        }),
+                        row_count=resolve_boundary_dependence(
+                            {"Schleswig-Holstein": 5, "Everything": 3}
+                        ),
                         data_type_columns={
                             "name": "character varying",
                             "global_parameters": "jsonb",
@@ -331,10 +334,10 @@ class ScenarioParameters(Dataset):
                             "gas_parameters": "jsonb",
                             "heat_parameters": "jsonb",
                             "mobility_parameters": "jsonb",
-                            "description": "character varying"
-                        }
+                            "description": "character varying",
+                        },
                     )
                 ]
             },
-            proceed_on_validation_failure = True
+            proceed_on_validation_failure=True,
         )

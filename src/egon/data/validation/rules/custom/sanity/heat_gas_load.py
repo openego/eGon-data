@@ -9,9 +9,9 @@ comparison table without pass/fail logic. These rules add threshold-based
 validation per carrier.
 """
 
+from egon_validation.rules.base import Rule, RuleResult, Severity
 import numpy as np
 import pandas as pd
-from egon_validation.rules.base import Rule, RuleResult, Severity
 
 from egon.data import db
 from egon.data.datasets.pypsaeur import read_network
@@ -26,8 +26,13 @@ class HeatGasLoadPypsaEurComparison(Rule):
     """
 
     def __init__(
-        self, table: str, rule_id: str, scenario: str = "eGon100RE",
-        carrier: str = None, rtol: float = 0.10, **kwargs
+        self,
+        table: str,
+        rule_id: str,
+        scenario: str = "eGon100RE",
+        carrier: str = None,
+        rtol: float = 0.10,
+        **kwargs,
     ):
         """
         Parameters
@@ -44,8 +49,14 @@ class HeatGasLoadPypsaEurComparison(Rule):
         rtol : float
             Relative tolerance for deviation (default: 0.10 = 10%)
         """
-        super().__init__(rule_id=rule_id, table=table, scenario=scenario,
-                         carrier=carrier, rtol=rtol, **kwargs)
+        super().__init__(
+            rule_id=rule_id,
+            table=table,
+            scenario=scenario,
+            carrier=carrier,
+            rtol=rtol,
+            **kwargs,
+        )
         self.kind = "sanity"
         self.scenario = scenario
         self.carrier = carrier
@@ -129,7 +140,9 @@ class HeatGasLoadPypsaEurComparison(Rule):
         ]
         german_loads_timeseries = df_load_timeseries[filtered_columns]
         if "DE0 0" in german_loads_timeseries.columns:
-            german_loads_timeseries = german_loads_timeseries.drop(columns=["DE0 0"])
+            german_loads_timeseries = german_loads_timeseries.drop(
+                columns=["DE0 0"]
+            )
         german_loads_timeseries = german_loads_timeseries.mul(
             n.snapshot_weightings.generators, axis=0
         ).sum()
@@ -177,7 +190,9 @@ class HeatGasLoadPypsaEurComparison(Rule):
 
         # Combine p_set and timeseries dataframes
         german_loads_timeseries_df = german_loads_timeseries.to_frame()
-        german_loads_timeseries_df["carrier"] = german_loads_timeseries_df.index
+        german_loads_timeseries_df[
+            "carrier"
+        ] = german_loads_timeseries_df.index
         german_loads_timeseries_df.set_index("carrier", inplace=True)
 
         german_load_static_p_set_df = german_load_static_p_set.to_frame()
@@ -220,7 +235,7 @@ class HeatGasLoadPypsaEurComparison(Rule):
                     severity=Severity.WARNING,
                     schema=self.schema,
                     table_name=self.table_name,
-                    rule_class=self.__class__.__name__
+                    rule_class=self.__class__.__name__,
                 )
 
             # Build comparison dataframe
@@ -229,14 +244,18 @@ class HeatGasLoadPypsaEurComparison(Rule):
             )
 
             loads_capacities = pd.DataFrame(
-                index=list(carriers_loads), columns=["pypsa_eur", self.scenario]
+                index=list(carriers_loads),
+                columns=["pypsa_eur", self.scenario],
             )
             loads_capacities[self.scenario] = loads_etrago.groupby(
                 "carrier"
             ).total_p_set_timeseries.sum()
             loads_capacities["pypsa_eur"] = loads_pypsa["p_set"]
             loads_capacities["diff_pct"] = (
-                (loads_capacities[self.scenario] - loads_capacities["pypsa_eur"])
+                (
+                    loads_capacities[self.scenario]
+                    - loads_capacities["pypsa_eur"]
+                )
                 / loads_capacities["pypsa_eur"].replace(0, np.nan)
             ) * 100
 
@@ -255,7 +274,7 @@ class HeatGasLoadPypsaEurComparison(Rule):
                         severity=Severity.WARNING,
                         schema=self.schema,
                         table_name=self.table_name,
-                        rule_class=self.__class__.__name__
+                        rule_class=self.__class__.__name__,
                     )
 
                 row = loads_capacities.loc[self.carrier]
@@ -277,7 +296,7 @@ class HeatGasLoadPypsaEurComparison(Rule):
                         severity=Severity.INFO,
                         schema=self.schema,
                         table_name=self.table_name,
-                        rule_class=self.__class__.__name__
+                        rule_class=self.__class__.__name__,
                     )
 
                 success = abs(diff_pct / 100) <= rtol
@@ -289,7 +308,9 @@ class HeatGasLoadPypsaEurComparison(Rule):
                         table=self.table,
                         kind=self.kind,
                         success=True,
-                        observed=float(observed) if not pd.isna(observed) else None,
+                        observed=float(observed)
+                        if not pd.isna(observed)
+                        else None,
                         expected=float(expected),
                         message=(
                             f"{self.carrier} load for {self.scenario}: "
@@ -298,7 +319,7 @@ class HeatGasLoadPypsaEurComparison(Rule):
                         severity=Severity.INFO,
                         schema=self.schema,
                         table_name=self.table_name,
-                        rule_class=self.__class__.__name__
+                        rule_class=self.__class__.__name__,
                     )
                 else:
                     return RuleResult(
@@ -307,7 +328,9 @@ class HeatGasLoadPypsaEurComparison(Rule):
                         table=self.table,
                         kind=self.kind,
                         success=False,
-                        observed=float(observed) if not pd.isna(observed) else None,
+                        observed=float(observed)
+                        if not pd.isna(observed)
+                        else None,
                         expected=float(expected),
                         message=(
                             f"{self.carrier} load deviation for {self.scenario}: "
@@ -316,7 +339,7 @@ class HeatGasLoadPypsaEurComparison(Rule):
                         severity=Severity.ERROR,
                         schema=self.schema,
                         table_name=self.table_name,
-                        rule_class=self.__class__.__name__
+                        rule_class=self.__class__.__name__,
                     )
 
             # Validate all carriers
@@ -348,7 +371,7 @@ class HeatGasLoadPypsaEurComparison(Rule):
                     severity=Severity.ERROR,
                     schema=self.schema,
                     table_name=self.table_name,
-                    rule_class=self.__class__.__name__
+                    rule_class=self.__class__.__name__,
                 )
 
             return RuleResult(
@@ -364,7 +387,7 @@ class HeatGasLoadPypsaEurComparison(Rule):
                 severity=Severity.INFO,
                 schema=self.schema,
                 table_name=self.table_name,
-                rule_class=self.__class__.__name__
+                rule_class=self.__class__.__name__,
             )
 
         except Exception as e:
@@ -378,5 +401,5 @@ class HeatGasLoadPypsaEurComparison(Rule):
                 severity=Severity.ERROR,
                 schema=self.schema,
                 table_name=self.table_name,
-                rule_class=self.__class__.__name__
+                rule_class=self.__class__.__name__,
             )

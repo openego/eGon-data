@@ -59,7 +59,11 @@ def download_zip(url: str, target: Path, chunk_size: int | None = 128) -> None:
         Size of chunks to download
 
     """
-    r = requests.get(url, stream=True, headers={"User-Agent": "Mozilla/5.0 (X11; Linux x86_64)"})
+    r = requests.get(
+        url,
+        stream=True,
+        headers={"User-Agent": "Mozilla/5.0 (X11; Linux x86_64)"},
+    )
 
     target.parent.mkdir(parents=True, exist_ok=True)
 
