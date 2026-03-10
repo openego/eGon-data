@@ -348,18 +348,18 @@ def zensus_misc_to_postgres():
     dataset = settings()["egon-data"]["--dataset-boundary"]
     docker_db_config = db.credentials()
 
-    for key, file_path in ZensusMiscellaneous.sources.files.items():
+    for key, file_path in ZensusMiscellaneous.targets.files.items():
         zip_path = Path(file_path).resolve()
 
         with zipfile.ZipFile(zip_path) as zf:
             csvfiles = [n for n in zf.namelist() if n.lower().endswith(".csv")]
             for filename in csvfiles:
                 zf.extract(filename)
-                filename_insert = (
-                    filename
-                    if dataset == "Everything"
-                    else filter_zensus_misc(filename, dataset)
-                )
+
+                if dataset == "Everything":
+                    filename_insert = filename
+                else:
+                    filename_insert = filter_zensus_misc(filename, dataset)
 
                 host = ["-h", f"{docker_db_config['HOST']}"]
                 port = ["-p", f"{docker_db_config['PORT']}"]
