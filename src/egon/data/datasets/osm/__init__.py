@@ -35,7 +35,7 @@ import egon.data.subprocess as subprocess
 
 def download():
     """Download OpenStreetMap `.pbf` file."""
-    
+
     download_directory = Path(".") / "openstreetmap"
     # Create the folder, if it does not exists already
     if not os.path.exists(download_directory):
@@ -46,13 +46,15 @@ def download():
         target_filename = Path(OpenStreetMap.targets.files["germany"])
     else:
         source_url = OpenStreetMap.sources.urls["schleswig-holstein"]
-        target_filename = Path(OpenStreetMap.targets.files["schleswig-holstein"])
-        
+        target_filename = Path(
+            OpenStreetMap.targets.files["schleswig-holstein"]
+        )
+
     target_file = download_directory / target_filename
 
     if not os.path.isfile(target_file):
         urlretrieve(source_url, target_file)
-        
+
 
 def to_postgres(cache_size=4096):
     """Import OSM data from a Geofabrik `.pbf` file into a PostgreSQL database.
@@ -71,24 +73,28 @@ def to_postgres(cache_size=4096):
 
     # Drop old target tables (the list is in OpenStreetMap.targets.tables)
     for table in OpenStreetMap.targets.tables:
-        db.execute_sql(f"DROP TABLE IF EXISTS {OpenStreetMap.schema}.{table} CASCADE;")
-        
+        db.execute_sql(
+            f"DROP TABLE IF EXISTS {OpenStreetMap.schema}.{table} CASCADE;"
+        )
+
     if settings()["egon-data"]["--dataset-boundary"] == "Everything":
         input_filename = Path(OpenStreetMap.targets.files["germany"])
         logger.info("Using Everything DE dataset.")
     else:
-        input_filename = Path(OpenStreetMap.targets.files["schleswig-holstein"])
+        input_filename = Path(
+            OpenStreetMap.targets.files["schleswig-holstein"]
+        )
         logger.info("Using testmode SH dataset.")
 
     input_file = Path(".") / "openstreetmap" / input_filename
     style_file = (
-    Path(".") / "openstreetmap" / OpenStreetMap.sources.files["stylefile"]
+        Path(".") / "openstreetmap" / OpenStreetMap.sources.files["stylefile"]
     )
     with resources.path(
         "egon.data.datasets.osm", OpenStreetMap.sources.files["stylefile"]
     ) as p:
         shutil.copy(p, style_file)
-        
+
     # Prepare osm2pgsql command
     cmd = [
         "osm2pgsql",
@@ -120,14 +126,11 @@ def to_postgres(cache_size=4096):
         env={"PGPASSWORD": docker_db_config["POSTGRES_PASSWORD"]},
         cwd=Path(__file__).parent,
     )
-      
 
 
 def add_metadata():
     """Writes metadata JSON string into table comment."""
-    
 
-    
     if settings()["egon-data"]["--dataset-boundary"] == "Everything":
         osm_url = OpenStreetMap.sources.urls["germany"]
         input_filename = OpenStreetMap.targets.files["germany"]
@@ -135,15 +138,14 @@ def add_metadata():
         osm_url = OpenStreetMap.sources.urls["schleswig-holstein"]
         input_filename = OpenStreetMap.targets.files["schleswig-holstein"]
 
-    (spatial_extend, osm_data_date) = re.compile(
-        "^([\\w-]*).*-(\\d+)$"
-    ).findall(Path(input_filename).name.split(".")[0])[0]
+    spatial_extend, osm_data_date = re.compile("^([\\w-]*).*-(\\d+)$").findall(
+        Path(input_filename).name.split(".")[0]
+    )[0]
     osm_data_date = datetime.datetime.strptime(
         osm_data_date, "%y%m%d"
     ).strftime("%y-%m-%d")
 
     licenses = [license_odbl(attribution="© OpenStreetMap contributors")]
-
 
     for table in OpenStreetMap.targets.tables:
         schema_table = ".".join([OpenStreetMap.schema, table])
@@ -272,33 +274,31 @@ def modify_tables():
         for statement in sql_statements:
             db.execute_sql(statement)
 
-    db.execute_sql(
-        f"CREATE SCHEMA IF NOT EXISTS {OpenStreetMap.schema};"
-    )
+    db.execute_sql(f"CREATE SCHEMA IF NOT EXISTS {OpenStreetMap.schema};")
 
     for out_table in OpenStreetMap.targets.tables:
         db.execute_sql(
-            f"DROP TABLE IF EXISTS "
-            f"{OpenStreetMap.schema}.{out_table};"
+            f"DROP TABLE IF EXISTS " f"{OpenStreetMap.schema}.{out_table};"
         )
 
         sql_statement = (
             f"ALTER TABLE public.{out_table} "
-           f"SET SCHEMA {OpenStreetMap.schema};"
+            f"SET SCHEMA {OpenStreetMap.schema};"
         )
 
         db.execute_sql(sql_statement)
-        
+
+
 class OpenStreetMap(Dataset):
-    
+
     #:
     name: str = "OpenStreetMap"
     #:
     version: str = "0.0.7"
-    
+
     table_prefix: str = "osm"
     schema: str = "openstreetmap"
-    
+
     sources = DatasetSources(
         files={"stylefile": "oedb.style"},
         urls={
@@ -339,7 +339,6 @@ class OpenStreetMap(Dataset):
     See documentation section :ref:`osm-ref` for more information.
 
     """
-    
 
     def __init__(self, dependencies):
         super().__init__(
