@@ -35,17 +35,17 @@ def download_mastr_data():
 
     if not os.path.exists(
         Path(
-            mastr_data_setup.targets.files["mastr_new"]["download_dir"]["path"]
+            mastr_data_setup.targets.files["mastr"]["download_dir"]["path"]
         )
     ):
         Path(
-            mastr_data_setup.targets.files["mastr_new"]["download_dir"]["path"]
+            mastr_data_setup.targets.files["mastr"]["download_dir"]["path"]
         ).mkdir(exist_ok=True, parents=True)
 
     download(
-        dataset_name="mastr_new",
+        dataset_name="mastr",
         download_dir=Path(
-            mastr_data_setup.targets.files["mastr_new"]["download_dir"]["path"]
+            mastr_data_setup.targets.files["mastr"]["download_dir"]["path"]
         ),
     )
 
@@ -118,9 +118,9 @@ def extract_and_preprocess_mastr():
 
     # Extract mastr
     path = Path(
-        mastr_data_setup.targets.files["mastr_new"]["download_dir"]["path"]
+        mastr_data_setup.targets.files["mastr"]["download_dir"]["path"]
     )
-    dump_file_name = mastr_data_setup.sources.urls["mastr_new"]["zenodo"][
+    dump_file_name = mastr_data_setup.sources.urls["mastr"]["zenodo"][
         "dump_name"
     ]
     raw_data_path = path / dump_file_name
@@ -304,22 +304,6 @@ class mastr_data_setup(Dataset):
         urls={
             "mastr": {
                 "zenodo": {
-                    "deposit_id": "10480930",
-                    "file_basename": "bnetza_mastr",
-                    "technologies": [
-                        "wind",
-                        "hydro",
-                        "solar",
-                        "biomass",
-                        "combustion",
-                        "nuclear",
-                        "gsgk",
-                        "storage",
-                    ],
-                }
-            },
-            "mastr_new": {
-                "zenodo": {
                     "deposit_id": "14783581",
                     "file_basename": "bnetza_mastr",
                     "dump_name": "bnetza_open_mastr_2025-02-09",
@@ -345,9 +329,6 @@ class mastr_data_setup(Dataset):
     targets = DatasetTargets(
         files={
             "mastr": {
-                "download_dir": {"path": "./bnetza_mastr/dump_2021-05-03"},
-            },
-            "mastr_new": {
                 "download_dir": {"path": "./bnetza_mastr/dump_2025-02-09"},
             },
             "geocoding": "mastr_geocoding",
