@@ -33,7 +33,6 @@ import numpy as np
 import pandas as pd
 
 from egon.data import config, db
-from egon.data.datasets.mastr import WORKING_DIR_MASTR_NEW
 from egon.data.datasets.power_plants.mastr_db_classes import (
     EgonMastrGeocoded,
     EgonPowerPlantsBiomass,
@@ -163,7 +162,7 @@ def infer_voltage_level(
 def import_mastr() -> None:
     """Import MaStR data into database"""
     sources, targets = load_sources_and_targets("PowerPlants")
-    
+
     engine = db.engine()
 
     # import geocoded data
@@ -174,7 +173,7 @@ def import_mastr() -> None:
     path = list(path.iterdir())[0]
 
     deposit_id_geocoding = int(path.parts[-1].split(".")[0].split("_")[-1])
-    
+
     deposit_id_mastr = int(sources.files["mastr_deposit_id"])
 
     if deposit_id_geocoding != deposit_id_mastr:
@@ -272,15 +271,14 @@ def import_mastr() -> None:
     }
 
     source_files = {
-        "pv": WORKING_DIR_MASTR_NEW / sources.files["mastr_pv"],
-        "wind": WORKING_DIR_MASTR_NEW / sources.files["mastr_wind"],
-        "biomass": WORKING_DIR_MASTR_NEW / sources.files["mastr_biomass"],
-        "hydro": WORKING_DIR_MASTR_NEW / sources.files["mastr_hydro"],
-        "combustion": WORKING_DIR_MASTR_NEW
-        / sources.files["mastr_combustion"],
-        "gsgk": WORKING_DIR_MASTR_NEW / sources.files["mastr_gsgk"],
-        "nuclear": WORKING_DIR_MASTR_NEW / sources.files["mastr_nuclear"],
-        "storage": WORKING_DIR_MASTR_NEW / sources.files["mastr_storage"],
+        "pv": sources.files["mastr_pv"],
+        "wind": sources.files["mastr_wind"],
+        "biomass": sources.files["mastr_biomass"],
+        "hydro": sources.files["mastr_hydro"],
+        "combustion": sources.files["mastr_combustion"],
+        "gsgk": sources.files["mastr_gsgk"],
+        "nuclear": sources.files["mastr_nuclear"],
+        "storage": sources.files["mastr_storage"],
     }
 
     target_table_keys = {
@@ -306,7 +304,7 @@ def import_mastr() -> None:
 
     # import locations
     locations = pd.read_csv(
-        WORKING_DIR_MASTR_NEW / sources.files["mastr_location"],
+        sources.files["mastr_location"],
         index_col=None,
     )
 
@@ -532,7 +530,7 @@ def import_mastr() -> None:
         logger.info(f"Writing {len(units)} units to DB...")
 
         target_key = target_table_keys[tech]
-        
+
         units.to_postgis(
             name=targets.get_table_name(target_key),
             con=engine,
