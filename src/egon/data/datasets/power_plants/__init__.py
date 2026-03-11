@@ -1588,14 +1588,14 @@ class PowerPlants(Dataset):
             # --- Config/Meta values ---
             "osm_config": "https://download.geofabrik.de/europe/germany-240101.osm.pbf",
             "nep_2035": "NEP2035_V2021_scnC2035.xlsx",
-            "mastr_deposit_id": "10491882",
+            "mastr_deposit_id": "14783581",
             "data_bundle_deposit_id": "16576506",
             "status2023_date_max": "2023-12-31 23:59:00", 
             "status2019_date_max": "2019-12-31 23:59:00",
             "egon2021_date_max": "2021-12-31 23:59:00",
             "eGon2035_date_max": "2035-01-01", 
             "eGon100RE_date_max": "2050-01-01",
-            "mastr_geocoding_path": "data_bundle_egon_data/mastr_geocoding",
+            "mastr_geocoding_path": "mastr_geocoding",
         }
     )
 

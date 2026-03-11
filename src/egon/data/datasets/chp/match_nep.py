@@ -125,7 +125,7 @@ def select_chp_from_mastr(sources):
 
     # Read-in data from MaStR
     MaStR_konv = pd.read_csv(
-        WORKING_DIR_MASTR_NEW / sources["mastr_combustion"],
+        WORKING_DIR_MASTR_NEW / sources.files["mastr_combustion"],
         delimiter=",",
         usecols=[
             "Nettonennleistung",
