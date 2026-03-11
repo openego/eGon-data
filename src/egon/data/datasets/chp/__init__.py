@@ -28,9 +28,6 @@ from egon.data.datasets.chp.small_chp import (
     extension_to_areas,
     select_target,
 )
-from egon.data.datasets.mastr import (
-    WORKING_DIR_MASTR_NEW,
-)
 from egon.data.datasets.power_plants import (
     assign_bus_id,
     assign_voltage_level,
@@ -364,7 +361,7 @@ def insert_biomass_chp(scenario):
 
     # import data for MaStR
     mastr = pd.read_csv(
-        WORKING_DIR_MASTR_NEW / Chp.sources.files["mastr_biomass"]
+        Chp.sources.files["mastr_biomass"]
     ).query("EinheitBetriebsstatus=='InBetrieb'")
 
     # Drop entries without federal state or 'AusschließlichWirtschaftszone'
@@ -394,7 +391,7 @@ def insert_biomass_chp(scenario):
     # Assign bus_id
     if len(mastr_loc) > 0:
         mastr_loc["voltage_level"] = assign_voltage_level(
-            mastr_loc, Chp.sources, WORKING_DIR_MASTR_NEW
+            mastr_loc, Chp.sources
         )
         mastr_loc = assign_bus_id(mastr_loc, Chp.sources)
     mastr_loc = assign_use_case(mastr_loc, Chp.sources, scenario)
@@ -428,11 +425,11 @@ def insert_chp_statusquo(scn="status2019"):
 
     # import data for MaStR
     mastr = pd.read_csv(
-        WORKING_DIR_MASTR_NEW / Chp.sources.files["mastr_combustion"]
+        Chp.sources.files["mastr_combustion"]
     )
 
     mastr_biomass = pd.read_csv(
-        WORKING_DIR_MASTR_NEW / Chp.sources.files["mastr_biomass"]
+        Chp.sources.files["mastr_biomass"]
     )
 
     mastr = pd.concat([mastr, mastr_biomass]).reset_index(drop=True)
@@ -524,7 +521,7 @@ def insert_chp_statusquo(scn="status2019"):
     # Assign bus_id
     if len(mastr) > 0:
         mastr["voltage_level"] = assign_voltage_level(
-            mastr, Chp.sources, WORKING_DIR_MASTR_NEW
+            mastr, Chp.sources
         )
 
         gas_bus_id = db.assign_gas_bus_id(mastr, scn, "CH4").bus
@@ -815,9 +812,9 @@ class Chp(Dataset):
             "scenario_capacities": "supply.egon_scenario_capacities",
         },
         files={
-            "mastr_combustion": "bnetza_mastr_combustion_cleaned.csv",
-            "mastr_location": "location_elec_generation_raw.csv",
-            "mastr_biomass": "bnetza_mastr_biomass_cleaned.csv",
+            "mastr_combustion": "./bnetza_mastr/dump_2025-02-09/bnetza_mastr_combustion_cleaned.csv",
+            "mastr_location": "./bnetza_mastr/dump_2025-02-09/location_elec_generation_raw.csv",
+            "mastr_biomass": "./bnetza_mastr/dump_2025-02-09/bnetza_mastr_biomass_cleaned.csv",
         },
     )
     targets = DatasetTargets(

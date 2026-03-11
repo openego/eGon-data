@@ -7,8 +7,6 @@ import numpy as np
 import pandas as pd
 
 from egon.data import db
-from egon.data.datasets.mastr import WORKING_DIR_MASTR_NEW
-import egon.data.config
 from egon.data.datasets import load_sources_and_targets
 
 
@@ -196,14 +194,14 @@ def generate_wind_farms(sources):
     wf_areas = gpd.GeoDataFrame.from_postgis(sql, con)
     # bus has the connection points of the wind farms
     bus = pd.read_csv(
-        WORKING_DIR_MASTR_NEW / sources.files["mastr_location"],
+        sources.files["mastr_location"],
         index_col="MaStRNummer",
     )
     # Drop all the rows without connection point
     bus.dropna(subset=["NetzanschlusspunktMastrNummer"], inplace=True)
     # wea has info of each wind turbine in Germany.
     # <--- REFACTORING: Use sources.files['mastr_wind']
-    wea = pd.read_csv(WORKING_DIR_MASTR_NEW / sources.files["mastr_wind"])
+    wea = pd.read_csv(sources.files["mastr_wind"])
 
     # Delete all the rows without information about geographical location
     wea = wea[(pd.notna(wea["Laengengrad"])) & (pd.notna(wea["Breitengrad"]))]

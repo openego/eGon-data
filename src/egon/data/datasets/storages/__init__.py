@@ -15,9 +15,7 @@ from egon.data import config, db
 from egon.data.datasets import Dataset, DatasetSources, DatasetTargets
 from egon.data.datasets.scenario_parameters import get_sector_parameters
 from egon.data.datasets.electrical_neighbours import entsoe_to_bus_etrago
-from egon.data.datasets.mastr import (
-    WORKING_DIR_MASTR_NEW,
-)
+
 from egon.data.datasets.mv_grid_districts import Vg250GemClean
 from egon.data.datasets.power_plants import assign_bus_id, assign_voltage_level
 from egon.data.datasets.scenario_parameters import get_sector_parameters
@@ -54,7 +52,7 @@ class Storages(Dataset):
     
     sources = DatasetSources(
         files={
-            "mastr_storage": "bnetza_mastr_storage_cleaned.csv",
+            "mastr_storage": "./bnetza_mastr/dump_2025-02-09/bnetza_mastr_storage_cleaned.csv",
             "nep_capacities": "NEP2035_V2021_scnC2035.xlsx",
             "mastr_location": "location_elec_generation_raw.csv",
         },
@@ -173,7 +171,6 @@ def allocate_pumped_hydro(scn, export=True):
     mastr["voltage_level"] = assign_voltage_level(
         mastr.rename({"el_capacity": "Nettonennleistung"}, axis=1),
         Storages.sources,
-        WORKING_DIR_MASTR_NEW,
     )
 
     # Initalize DataFrame for matching power plants
@@ -368,7 +365,7 @@ def allocate_storage_units_sq(scn_name, storage_types):
     for storage_type in storage_types:
         # Read-in data from MaStR
         mastr_ph = pd.read_csv(
-            WORKING_DIR_MASTR_NEW / Storages.sources.files["mastr_storage"],
+            Storages.sources.files["mastr_storage"],
             delimiter=",",
             usecols=[
                 "Nettonennleistung",

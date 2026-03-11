@@ -5,7 +5,6 @@ import numpy as np
 import pandas as pd
 
 from egon.data import db
-from egon.data.datasets.mastr import WORKING_DIR_MASTR_NEW
 import egon.data.config
 from egon.data.datasets import load_sources_and_targets
 
@@ -27,7 +26,7 @@ def insert():
 
         # get relevant pv plants: ground mounted
         df = pd.read_csv(
-            WORKING_DIR_MASTR_NEW / sources.files["mastr_pv"],
+            sources.files["mastr_pv"],
             usecols=[
                 "Lage",
                 "Laengengrad",
@@ -80,7 +79,7 @@ def insert():
         mastr["voltage_level"] = pd.Series(dtype=int)
         
         lvl = pd.read_csv(
-            WORKING_DIR_MASTR_NEW / sources.files["mastr_location"],
+            sources.files["mastr_location"],
             usecols=["Spannungsebene", "MaStRNummer"],
         )
 

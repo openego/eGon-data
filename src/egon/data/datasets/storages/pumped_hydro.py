@@ -11,7 +11,6 @@ import pandas as pd
 from egon.data import config, db
 from egon.data.datasets.chp.match_nep import match_nep_chp
 from egon.data.datasets.chp.small_chp import assign_use_case
-from egon.data.datasets.mastr import WORKING_DIR_MASTR_NEW
 from egon.data.datasets.power_plants import (
     assign_bus_id,
     assign_voltage_level,
@@ -94,7 +93,7 @@ def select_mastr_pumped_hydro():
 
     # Read-in data from MaStR
     mastr_ph = pd.read_csv(
-        WORKING_DIR_MASTR_NEW / sources.files["mastr_storage"],
+        sources.files["mastr_storage"],
         delimiter=",",
         usecols=[
             "Nettonennleistung",
