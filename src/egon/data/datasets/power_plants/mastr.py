@@ -33,6 +33,7 @@ import numpy as np
 import pandas as pd
 
 from egon.data import config, db
+from egon.data.datasets import load_sources_and_targets
 from egon.data.datasets.power_plants.mastr_db_classes import (
     EgonMastrGeocoded,
     EgonPowerPlantsBiomass,
@@ -48,7 +49,6 @@ from egon.data.datasets.power_plants.mastr_db_classes import (
 from egon.data.datasets.power_plants.pv_rooftop_buildings import (
     federal_state_data,
 )
-from egon.data.datasets import load_sources_and_targets
 
 TESTMODE_OFF = (
     config.settings()["egon-data"]["--dataset-boundary"] == "Everything"
