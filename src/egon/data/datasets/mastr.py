@@ -11,8 +11,6 @@ import zipfile
 import pandas as pd
 from egon.data.datasets import Dataset, DatasetSources, DatasetTargets
 
-WORKING_DIR_MASTR_NEW = Path(".", "bnetza_mastr", "dump_2025-02-09")
-
 
 def download_mastr_data():
     """Download MaStR data from Zenodo."""

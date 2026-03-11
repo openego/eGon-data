@@ -20,9 +20,6 @@ from egon.data.datasets import Dataset, wrapped_partial
 
 from egon.data.datasets import DatasetSources, DatasetTargets
 
-from egon.data.datasets.mastr import (
-    WORKING_DIR_MASTR_NEW,
-)
 from egon.data.datasets.power_plants.conventional import (
     match_nep_no_chp,
     select_nep_power_plants,
@@ -251,9 +248,9 @@ def insert_biomass_plants(scenario):
     target = select_target("biomass", scenario)
 
     # import data for MaStR
-    mastr = pd.read_csv(
-        WORKING_DIR_MASTR_NEW / PowerPlants.sources.files["mastr_biomass"]
-    ).query("EinheitBetriebsstatus=='InBetrieb'")
+    mastr = pd.read_csv(PowerPlants.sources.files["mastr_biomass"]).query(
+        "EinheitBetriebsstatus=='InBetrieb'"
+    )
 
     # Drop entries without federal state or 'AusschließlichWirtschaftszone'
     mastr = mastr[
@@ -282,7 +279,7 @@ def insert_biomass_plants(scenario):
     # Assign bus_id
     if len(mastr_loc) > 0:
         mastr_loc["voltage_level"] = assign_voltage_level(
-            mastr_loc, PowerPlants.sources.files, WORKING_DIR_MASTR_NEW
+            mastr_loc, PowerPlants.sources.files
         )
         mastr_loc = assign_bus_id(mastr_loc, PowerPlants.sources.tables)
 
@@ -351,9 +348,9 @@ def insert_hydro_plants(scenario):
             target = select_target(carrier, scenario)
 
         # import data for MaStR
-        mastr = pd.read_csv(
-            WORKING_DIR_MASTR_NEW / PowerPlants.sources.files["mastr_hydro"]
-        ).query("EinheitBetriebsstatus=='InBetrieb'")
+        mastr = pd.read_csv(PowerPlants.sources.files["mastr_hydro"]).query(
+            "EinheitBetriebsstatus=='InBetrieb'"
+        )
 
         # Choose only plants with specific carriers
         mastr = mastr[mastr.ArtDerWasserkraftanlage.isin(map_carrier[carrier])]
@@ -386,7 +383,8 @@ def insert_hydro_plants(scenario):
         # Assign bus_id and voltage level
         if len(mastr_loc) > 0:
             mastr_loc["voltage_level"] = assign_voltage_level(
-                mastr_loc, PowerPlants.sources.files, WORKING_DIR_MASTR_NEW
+                mastr_loc,
+                PowerPlants.sources.files,
             )
             mastr_loc = assign_bus_id(mastr_loc, PowerPlants.sources.tables)
 
@@ -408,7 +406,7 @@ def insert_hydro_plants(scenario):
         session.commit()
 
 
-def assign_voltage_level(mastr_loc, sources, mastr_working_dir):
+def assign_voltage_level(mastr_loc, sources):
     """Assigns voltage level to power plants.
 
     If location data inluding voltage level is available from
@@ -431,14 +429,11 @@ def assign_voltage_level(mastr_loc, sources, mastr_working_dir):
 
     if "LokationMastrNummer" in mastr_loc.columns:
         # Adjust column names to format of MaStR location dataset
-        if mastr_working_dir == WORKING_DIR_MASTR_NEW:
-            cols = ["MaStRNummer", "Spannungsebene"]
-        else:
-            raise ValueError("Invalid MaStR working directory!")
+        cols = ["MaStRNummer", "Spannungsebene"]
 
         location = (
             pd.read_csv(
-                mastr_working_dir / PowerPlants.sources.files["mastr_location"],
+                PowerPlants.sources.files["mastr_location"],
                 usecols=cols,
             )
             .rename(columns={"MaStRNummer": "LokationMastrNummer"})
@@ -666,7 +661,6 @@ def allocate_conventional_non_chp_power_plants():
             mastr["voltage_level"] = assign_voltage_level(
                 mastr.rename({"el_capacity": "Nettonennleistung"}, axis=1),
                 PowerPlants.sources.files,
-                WORKING_DIR_MASTR_NEW,
             )
 
             # Initalize DataFrame for matching power plants
@@ -874,13 +868,11 @@ def allocate_other_power_plants():
     )
 
     # Select power plants representing carrier 'others' from MaStR files
-    mastr_sludge = pd.read_csv(
-        WORKING_DIR_MASTR_NEW / PowerPlants.sources.files["mastr_gsgk"]
-    ).query(
+    mastr_sludge = pd.read_csv(PowerPlants.sources.files["mastr_gsgk"]).query(
         """EinheitBetriebsstatus=='InBetrieb' and Energietraeger=='Klärschlamm'"""
     )
     mastr_geothermal = pd.read_csv(
-        WORKING_DIR_MASTR_NEW / PowerPlants.sources.files["mastr_gsgk"]
+        PowerPlants.sources.files["mastr_gsgk"]
     ).query(
         "EinheitBetriebsstatus=='InBetrieb' and Energietraeger=='Geothermie' "
         "and Technologie == 'ORC (Organic Rankine Cycle)-Anlage'"
@@ -1268,12 +1260,12 @@ def get_conventional_power_plants_non_chp(scn_name):
     ]
     # import nuclear power plants
     nuclear = pd.read_csv(
-        WORKING_DIR_MASTR_NEW / PowerPlants.sources.files["mastr_nuclear"],
+        PowerPlants.sources.files["mastr_nuclear"],
         usecols=common_columns,
     )
     # import combustion power plants
     comb = pd.read_csv(
-        WORKING_DIR_MASTR_NEW / PowerPlants.sources.files["mastr_combustion"],
+        PowerPlants.sources.files["mastr_combustion"],
         usecols=common_columns + ["ThermischeNutzleistung"],
     )
 
@@ -1403,7 +1395,7 @@ def import_gas_gen_egon100():
     ).iat[0, 0]
 
     conv = pd.read_csv(
-        WORKING_DIR_MASTR_NEW / PowerPlants.sources.files["mastr_combustion"],
+        PowerPlants.sources.files["mastr_combustion"],
         usecols=[
             "EinheitMastrNummer",
             "Energietraeger",
@@ -1576,15 +1568,15 @@ class PowerPlants(Dataset):
             "potential_area_pv_agriculture": "supply.egon_re_potential_area_pv_agriculture",
         },
         files={
-            'mastr_biomass': "bnetza_mastr_biomass_cleaned.csv",
-            'mastr_combustion': "bnetza_mastr_combustion_cleaned.csv",
-            'mastr_gsgk': "bnetza_mastr_gsgk_cleaned.csv",
-            'mastr_hydro': "bnetza_mastr_hydro_cleaned.csv",
-            'mastr_location': "location_elec_generation_raw.csv", 
-            'mastr_nuclear': "bnetza_mastr_nuclear_cleaned.csv",
-            'mastr_pv': "bnetza_mastr_solar_cleaned.csv",
-            'mastr_storage': "bnetza_mastr_storage_cleaned.csv",
-            'mastr_wind': "bnetza_mastr_wind_cleaned.csv", 
+            'mastr_biomass': "./bnetza_mastr/dump_2025-02-09/bnetza_mastr_biomass_cleaned.csv",
+            'mastr_combustion': "./bnetza_mastr/dump_2025-02-09/bnetza_mastr_combustion_cleaned.csv",
+            'mastr_gsgk': "./bnetza_mastr/dump_2025-02-09/bnetza_mastr_gsgk_cleaned.csv",
+            'mastr_hydro': "./bnetza_mastr/dump_2025-02-09/bnetza_mastr_hydro_cleaned.csv",
+            'mastr_location': "./bnetza_mastr/dump_2025-02-09/location_elec_generation_raw.csv", 
+            'mastr_nuclear': "./bnetza_mastr/dump_2025-02-09/bnetza_mastr_nuclear_cleaned.csv",
+            'mastr_pv': "./bnetza_mastr/dump_2025-02-09/bnetza_mastr_solar_cleaned.csv",
+            'mastr_storage': "./bnetza_mastr/dump_2025-02-09/bnetza_mastr_storage_cleaned.csv",
+            'mastr_wind': "./bnetza_mastr/dump_2025-02-09/bnetza_mastr_wind_cleaned.csv", 
             # --- Config/Meta values ---
             "osm_config": "https://download.geofabrik.de/europe/germany-240101.osm.pbf",
             "nep_2035": "NEP2035_V2021_scnC2035.xlsx",
