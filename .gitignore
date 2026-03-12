@@ -69,37 +69,3 @@ docs/_build
 
 # Mypy Cache
 .mypy_cache/
-
-
-# Local data and backups
-/data_bundle*
-/datasets/
-/demandregio*
-/pypsa_technology_data_egon_data.zip
-/PyPSA-technology-data-94085a8/
-/industrial_sites/
-/openstreetmap/
-/tyndp/
-/vg250/
-/bnetza_mastr/
-*.orig
-*.pid*
-*.csv
-*.sql
-*.zip
-*.yaml
-
-# Python and IDE folders
-/airflow/
-/.spyproject/
-/docker/
-
-# Other
-/hstore_Extension
-et --hard ORIG_HEAD
-git status
-
-*__BACKUP*
-*__BASE*
-*__LOCAL*
-*__REMOTE*
