@@ -2936,7 +2936,7 @@ tasks = ()
 
 if "eGon2035" in SCENARIOS:
     tasks = tasks + (
-        etrago_eGon2035_electricity,
+        {etrago_eGon2035_electricity,
         etrago_eGon2035_heat,
         residential_electricity_annual_sum,
         residential_electricity_hh_refinement,
@@ -2947,15 +2947,15 @@ if "eGon2035" in SCENARIOS:
         sanitycheck_home_batteries,
         etrago_eGon2035_gas_DE,
         etrago_eGon2035_gas_abroad,
-        sanitycheck_dsm,
+        sanitycheck_dsm,},
     )
 
 if "eGon100RE" in SCENARIOS:
     tasks = tasks + (
-        electrical_load_100RE,
+        {electrical_load_100RE,
         generators_links_storages_stores_100RE,
         etrago_timeseries_length,
-        heat_gas_load_egon100RE,
+        heat_gas_load_egon100RE,},
     )
 
 
