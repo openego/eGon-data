@@ -16,6 +16,7 @@ import egon.data.config
 class ZensusMvGridDistricts(Dataset):
     """
     Maps zensus cells to MV grid districts and writes it to database.
+    Using zensus 2022 data.
 
     *Dependencies*
       * :py:class:`ZensusPopulation <egon.data.datasets.zensus.ZensusPopulation>`
@@ -25,12 +26,12 @@ class ZensusMvGridDistricts(Dataset):
       * :py:class:`boundaries.egon_map_zensus_grid_districts <MapZensusGridDistricts>`
         is created and filled
 
-    """
+    """  # noqa: E501
 
     #:
     name: str = "ZensusMvGridDistricts"
     #:
-    version: str = "0.0.2"
+    version: str = "0.0.3"
 
     def __init__(self, dependencies):
         super().__init__(

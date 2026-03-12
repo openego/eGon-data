@@ -1,4 +1,5 @@
-"""The central module containing all code dealing with importing Zensus data.
+"""
+The central module containing all code dealing with importing Zensus data.
 """
 
 from pathlib import Path
@@ -22,7 +23,7 @@ class ZensusPopulation(Dataset):
     def __init__(self, dependencies):
         super().__init__(
             name="ZensusPopulation",
-            version="0.0.2",
+            version="0.0.3",
             dependencies=dependencies,
             tasks=(
                 create_zensus_pop_table,
@@ -35,7 +36,7 @@ class ZensusMiscellaneous(Dataset):
     def __init__(self, dependencies):
         super().__init__(
             name="ZensusMiscellaneous",
-            version="0.0.1",
+            version="0.0.2",
             dependencies=dependencies,
             tasks=(
                 create_zensus_misc_tables,
@@ -516,7 +517,8 @@ def create_combined_zensus_table():
 
 
 def adjust_zensus_misc():
-    """Delete unpopulated cells in zensus-households, -buildings and -apartments
+    """Delete unpopulated cells in zensus-households, -buildings and
+    -apartments
 
     Some unpopulated zensus cells are listed in:
     - egon_destatis_zensus_household_per_ha

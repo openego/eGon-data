@@ -1,5 +1,6 @@
 """
-Filtering and preprocessing of buildings, streets and amenities from OpenStreetMap
+Filtering and preprocessing of buildings, streets and amenities from
+OpenStreetMap
 
 """
 
@@ -50,7 +51,8 @@ def extend_buildings_residential():
 
 def create_buildings_filtered_zensus_mapping():
     print(
-        "Create census mapping table for filtered buildings in populated areas..."
+        "Create census mapping table for filtered"
+        "buildings in populated areas..."
     )
     execute_sql_script("osm_buildings_filtered_zensus_mapping.sql")
 
@@ -111,7 +113,7 @@ class OsmBuildingsStreets(Dataset):
     This dataset on buildings and amenities is required by several tasks in the
     pipeline, such as the distribution of household demand profiles or PV home
     systems to buildings. This data is enriched by population and apartments from
-    Zensus 2011. Those derived datasets and the data on streets will be used in the
+    Zensus 2022. Those derived datasets and the data on streets will be used in the
     DIstribution Network Generat0r
     `ding0 <https://github.com/openego/ding0>`_ e.g. to cluster loads and create low
     voltage grids.
@@ -179,7 +181,7 @@ class OsmBuildingsStreets(Dataset):
       * Filtered streets: `openstreetmap.osm_ways_preprocessed`
       * Filtered streets w/ segments: `openstreetmap.osm_ways_with_segments`
 
-    """
+    """  # noqa: E501
 
     #:
     name: str = "OsmBuildingsStreets"
