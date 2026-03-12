@@ -20,37 +20,42 @@ def map_id_bus(scenario):
         id_bus = {
             "Büttel": "136034396",
             "Suchraum Gemeinden Ibbenbüren/Mettingen/Westerkappeln": "114319248",
-            "Suchraum Zensenbusch": "76185022",
             "Rommerskirchen": "24839976",
             "Oberzier": "26593929",
-            "Garrel/Ost": "23837631",
             "Diele": "177829920",
             "Dörpen/West": "142487746",
-            "Emden/Borßum": "34835258",
             "Hagermarsch": "79316833",
             "Hanekenfähr": "61918154",
             "Inhausen": "29420322",
             "Unterweser": "32076853",
             "Wehrendorf": "33411203",
-            "Rastede": "23837631",
             "Bentwisch": "32063539",
             "Lubmin": "460134233",
             "Suchraum Gemeinde Papendorf": "32063539",
             "Suchraum Gemeinden Brünzow/Kemnitz": "460134233",
             "inhausen": "29420322",
-            "Cloppenburg": "50643382",
         }
         if "200101" in osm_year:
             id_bus2 = {
                 "Heide/West": "289836713",
                 "Emden/Ost": "177829920",
                 "Wilhelmshaven 2": "23837631",
+                "Suchraum Zensenbusch": "76185022",
+                "Garrel/Ost": "23837631",
+                "Rastede": "23837631",
+                "Emden/Borßum": "34835258",
+                "Cloppenburg": "50643382",
             }
-        elif ("220101" in osm_year) | ("240101" in osm_year):
+        elif ("250101" in osm_year) | ("240101" in osm_year):
             id_bus2 = {
                 "Heide/West": "603661085",
-                "Emden/Ost": "34835258",
-                "Wilhelmshaven 2": "23744346",
+                "Emden/Ost": "1280178909",
+                "Wilhelmshaven 2": "637595524",
+                "Suchraum Zensenbusch": "24479003",
+                "Garrel/Ost": "24493551",
+                "Rastede": "1128250707",
+                "Emden/Borßum": "34835258",
+                "Cloppenburg": "24493551",
             }
         else:
             raise Exception(

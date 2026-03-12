@@ -85,6 +85,13 @@ def insert():
     farms = pd.DataFrame()
 
     if "eGon100RE" in target_power_df["scenario_name"].values:
+        # Delete old wind_onshore generators
+        db.execute_sql(
+            """DELETE FROM supply.egon_power_plants
+            WHERE carrier = 'wind_onshore'
+            AND scenario = 'eGon100RE'
+            """
+        )
         wind_farms_state, summary_state = wind_power_states(
             wf_areas,
             wf_areas_ni,
@@ -99,6 +106,13 @@ def insert():
         ]
 
     if "eGon2035" in target_power_df["scenario_name"].values:
+        # Delete old wind_onshore generators
+        db.execute_sql(
+            """DELETE FROM supply.egon_power_plants
+            WHERE carrier = 'wind_onshore'
+            AND scenario = 'eGon2035'
+            """
+        )
         # Fit wind farms scenarions for each one of the states
         for bundesland in target_power_df.index:
             state_wf = gpd.clip(
@@ -526,14 +540,6 @@ def wind_power_states(
         start=wind_farm_id,
         stop=wind_farm_id + len(insert_wind_farms),
         name="id",
-    )
-
-    # Delete old wind_onshore generators
-    db.execute_sql(
-        f"""DELETE FROM supply.egon_power_plants
-        WHERE carrier = 'wind_onshore'
-        AND scenario = '{scenario_year}'
-        """
     )
 
     # Insert into database

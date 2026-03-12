@@ -30,7 +30,6 @@ from egon.data.datasets.chp.small_chp import (
 )
 from egon.data.datasets.mastr import (
     WORKING_DIR_MASTR_NEW,
-    WORKING_DIR_MASTR_OLD,
 )
 from egon.data.datasets.power_plants import (
     assign_bus_id,
@@ -370,7 +369,7 @@ def insert_biomass_chp(scenario):
 
     # import data for MaStR
     mastr = pd.read_csv(
-        WORKING_DIR_MASTR_OLD / cfg["sources"]["mastr_biomass"]
+        WORKING_DIR_MASTR_NEW / cfg["sources"]["mastr_biomass"]
     ).query("EinheitBetriebsstatus=='InBetrieb'")
 
     # Drop entries without federal state or 'AusschließlichWirtschaftszone'
@@ -400,7 +399,7 @@ def insert_biomass_chp(scenario):
     # Assign bus_id
     if len(mastr_loc) > 0:
         mastr_loc["voltage_level"] = assign_voltage_level(
-            mastr_loc, cfg, WORKING_DIR_MASTR_OLD
+            mastr_loc, cfg, WORKING_DIR_MASTR_NEW
         )
         mastr_loc = assign_bus_id(mastr_loc, cfg)
     mastr_loc = assign_use_case(mastr_loc, cfg["sources"], scenario)
@@ -845,7 +844,7 @@ class Chp(Dataset):
     #:
     name: str = "Chp"
     #:
-    version: str = "0.0.10"
+    version: str = "0.0.11"
 
     def __init__(self, dependencies):
         super().__init__(

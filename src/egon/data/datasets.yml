@@ -1,13 +1,13 @@
 openstreetmap:
   original_data:
     source:
-      url: "https://download.geofabrik.de/europe/germany-240101.osm.pbf"
-      url_testmode: "https://download.geofabrik.de/europe/germany/schleswig-holstein-240101.osm.pbf"
+      url: "https://download.geofabrik.de/europe/germany-250101.osm.pbf"
+      url_testmode: "https://download.geofabrik.de/europe/germany/schleswig-holstein-250101.osm.pbf"
       stylefile: "oedb.style"
     target:
       table_prefix: "osm"
-      file: "germany-240101.osm.pbf"
-      file_testmode: "schleswig-holstein-240101.osm.pbf"
+      file: "germany-250101.osm.pbf"
+      file_testmode: "schleswig-holstein-250101.osm.pbf"
   processed:
     schema: "openstreetmap"
     tables:
@@ -322,14 +322,15 @@ mastr_new:
     - "solar"
     - "storage"
     - "wind"
+  dump_name: "bnetza_open_mastr_2025-02-09"
   file_basename: "bnetza_mastr"
-  deposit_id: 10491882
+  deposit_id: 14783581
   egon2021_date_max: "2021-12-31 23:59:00"
   status2019_date_max: "2019-12-31 23:59:00"
   status2023_date_max: "2023-12-31 23:59:00"
-  geocoding_path:
-    - "data_bundle_egon_data"
-    - "mastr_geocoding"
+  dump_geocoding_name: "mastr_geocoding_dump_2025-02-09_14783581.gpkg"
+  geocoding_deposit_id: 17279317
+  geocoding_path: "mastr_geocoding"
 
 re_potential_areas:
   target:

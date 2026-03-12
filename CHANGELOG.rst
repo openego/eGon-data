@@ -22,6 +22,10 @@ Changed
   `#1284 <https://github.com/openego/eGon-data/issues/1284>`_
 * Update zensus data to 2022. Data required conversion to 2011 format to keep code changes minimal. Conversion was done outside of egon-data. Databundle update is WIP.
   `#1240 <https://github.com/openego/eGon-data/issues/1240>`_
+* Unify and update to latest official open_mastr release
+  `#1274 <https://github.com/openego/eGon-data/issues/1274>`_
+* Use OSM data from 2025
+  `#1363 <https://github.com/openego/eGon-data/issues/1363>`_
 
 Bug Fixes
 ---------
@@ -33,6 +37,10 @@ Bug Fixes
 * Fix sanity checks of eMob MIT and mitigate those for el+heat demand
   `#1365 <https://github.com/openego/eGon-data/issues/1365>`_
   `#1354 <https://github.com/openego/eGon-data/issues/1354>`_
+* Fix chp.extension-XX working forever sometimes
+  `#1368 <https://github.com/openego/eGon-data/issues/1368>`_
+* Fix problem related to deprecated functions in the latest version of pgrouting
+  `#1392 <https://github.com/openego/eGon-data/issues/1392>`_
 
 
 Version 2.0.0 (2025-08-20)
