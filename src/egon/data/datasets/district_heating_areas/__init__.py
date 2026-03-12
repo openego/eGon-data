@@ -11,6 +11,7 @@ This module obtains the information from the census tables and the heat demand
 densities, demarcates so the current and future district heating areas. In the
 end it saves them in the database.
 """
+
 import datetime
 import json
 import os
@@ -74,7 +75,7 @@ class DistrictHeatingAreas(Dataset):
     name: str = "district-heating-areas"
     #:
     version: str = "0.0.5"
-    
+
     sources = DatasetSources(
         tables={
             "zensus_population": "society.destatis_zensus_population_per_ha",
@@ -153,36 +154,24 @@ def create_tables():
     db.execute_sql("CREATE SCHEMA IF NOT EXISTS demand;")
 
     # Drop tables
-    db.execute_sql(
-        """DROP TABLE IF EXISTS
-            demand.egon_district_heating_areas CASCADE;"""
-    )
+    db.execute_sql("""DROP TABLE IF EXISTS
+            demand.egon_district_heating_areas CASCADE;""")
 
-    db.execute_sql(
-        """DROP TABLE IF EXISTS
-            demand.egon_map_zensus_district_heating_areas CASCADE;"""
-    )
+    db.execute_sql("""DROP TABLE IF EXISTS
+            demand.egon_map_zensus_district_heating_areas CASCADE;""")
 
-    db.execute_sql(
-        """DROP TABLE IF EXISTS
-            demand.district_heating_areas CASCADE;"""
-    )
+    db.execute_sql("""DROP TABLE IF EXISTS
+            demand.district_heating_areas CASCADE;""")
 
-    db.execute_sql(
-        """DROP TABLE IF EXISTS
-            demand.map_zensus_district_heating_areas CASCADE;"""
-    )
+    db.execute_sql("""DROP TABLE IF EXISTS
+            demand.map_zensus_district_heating_areas CASCADE;""")
 
     # Drop sequences
-    db.execute_sql(
-        """DROP SEQUENCE IF EXISTS
-            demand.district_heating_areas_seq CASCADE;"""
-    )
+    db.execute_sql("""DROP SEQUENCE IF EXISTS
+            demand.district_heating_areas_seq CASCADE;""")
 
-    db.execute_sql(
-        """DROP SEQUENCE IF EXISTS
-            demand.egon_map_zensus_district_heating_areas_seq CASCADE;"""
-    )
+    db.execute_sql("""DROP SEQUENCE IF EXISTS
+            demand.egon_map_zensus_district_heating_areas_seq CASCADE;""")
 
     engine = db.engine()
     EgonDistrictHeatingAreas.__table__.create(bind=engine, checkfirst=True)
@@ -435,11 +424,9 @@ def area_grouping(
         minimum_total_demand is not None
         and "residential_and_service_demand" not in raw_polygons.columns
     ):
-        print(
-            """The minimum total heat demand criterium can only be applied
+        print("""The minimum total heat demand criterium can only be applied
               on geodataframe having a column named
-              'residential_and_service_demand' """
-        )
+              'residential_and_service_demand' """)
 
     if (
         maximum_total_demand
@@ -455,12 +442,10 @@ def area_grouping(
             join.area_id.isin(huge_areas_index[huge_areas_index].index)
         ]
 
-        nuts3_boundaries = db.select_geodataframe(
-            f"""
+        nuts3_boundaries = db.select_geodataframe(f"""
             SELECT gen, geometry as geom FROM
                 {DistrictHeatingAreas.sources.tables["vg250_krs"]}
-            """
-        )
+            """)
         join_2 = gpd.sjoin(
             cells_in_huge_areas,
             nuts3_boundaries,
@@ -642,16 +627,12 @@ def district_heating_areas(scenario_name, plotting=False):
     # heating share is reached
     new_areas = new_areas[new_areas["Cumulative_Sum"] <= diff]
 
-    print(
-        f"""Minimum heat demand density for cells with new district heat
+    print(f"""Minimum heat demand density for cells with new district heat
           supply in scenario {scenario_name} is
           {new_areas.residential_and_service_demand.tail(1).values[0]}
-          MWh / (ha a)."""
-    )
-    print(
-        f"""Number of cells with new district heat supply in scenario
-          {scenario_name} is {len(new_areas)}."""
-    )
+          MWh / (ha a).""")
+    print(f"""Number of cells with new district heat supply in scenario
+          {scenario_name} is {len(new_areas)}.""")
 
     # check = gpd.GeoDataFrame(
     #     cells[['residential_and_service_demand', 'geom_polygon']].append(
@@ -687,8 +668,12 @@ def district_heating_areas(scenario_name, plotting=False):
             WHERE scenario = '{scenario_name}'"""
     )
     scenario_dh_area[["scenario", "area_id", "zensus_population_id"]].to_sql(
-        DistrictHeatingAreas.targets.get_table_name("map_district_heating_areas"),
-        schema=DistrictHeatingAreas.targets.get_table_schema("map_district_heating_areas"),
+        DistrictHeatingAreas.targets.get_table_name(
+            "map_district_heating_areas"
+        ),
+        schema=DistrictHeatingAreas.targets.get_table_schema(
+            "map_district_heating_areas"
+        ),
         con=db.engine(),
         if_exists="append",
         index=False,
@@ -708,11 +693,9 @@ def district_heating_areas(scenario_name, plotting=False):
     # print(areas_dissolved.head())
 
     if len(areas_dissolved[areas_dissolved.area == 100 * 100]) > 0:
-        print(
-            f"""Number of district heating areas of single zensus cells:
+        print(f"""Number of district heating areas of single zensus cells:
               {len(areas_dissolved[areas_dissolved.area == 100*100])
-               }"""
-        )
+               }""")
         # print(f"""District heating areas ids of single zensus cells in
         #       district heating areas:
         #       {areas_dissolved[areas_dissolved.area == 100*100].index.values
@@ -731,7 +714,9 @@ def district_heating_areas(scenario_name, plotting=False):
         "zensus_population_id", axis="columns"
     ).to_postgis(
         DistrictHeatingAreas.targets.get_table_name("district_heating_areas"),
-        schema=DistrictHeatingAreas.targets.get_table_schema("district_heating_areas"),
+        schema=DistrictHeatingAreas.targets.get_table_schema(
+            "district_heating_areas"
+        ),
         con=db.engine(),
         if_exists="append",
     )
@@ -875,7 +860,9 @@ def add_metadata():
 
     db.submit_comment(
         meta_json,
-        DistrictHeatingAreas.targets.get_table_schema("district_heating_areas"),
+        DistrictHeatingAreas.targets.get_table_schema(
+            "district_heating_areas"
+        ),
         DistrictHeatingAreas.targets.get_table_name("district_heating_areas"),
     )
 
@@ -969,8 +956,12 @@ def add_metadata():
 
     db.submit_comment(
         meta_json,
-        DistrictHeatingAreas.targets.get_table_schema("map_district_heating_areas"),
-        DistrictHeatingAreas.targets.get_table_name("map_district_heating_areas"),
+        DistrictHeatingAreas.targets.get_table_schema(
+            "map_district_heating_areas"
+        ),
+        DistrictHeatingAreas.targets.get_table_name(
+            "map_district_heating_areas"
+        ),
     )
 
     return None
@@ -1008,7 +999,6 @@ def study_prospective_district_heating_areas():
 
     # create directory to store files
     results_path = DistrictHeatingAreas.targets.files["results_path"]
-
 
     if not os.path.exists(results_path):
         os.mkdir(results_path)

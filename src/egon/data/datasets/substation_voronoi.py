@@ -1,13 +1,12 @@
-"""The central module containing code to create substation voronois
+"""The central module containing code to create substation voronois"""
 
-"""
-
-import egon.data.config
-from egon.data import db
-from egon.data.datasets import Dataset,  DatasetSources, DatasetTargets
+from geoalchemy2.types import Geometry
 from sqlalchemy import Column, Integer, Sequence
 from sqlalchemy.ext.declarative import declarative_base
-from geoalchemy2.types import Geometry
+
+from egon.data import db
+from egon.data.datasets import Dataset, DatasetSources, DatasetTargets
+import egon.data.config
 
 Base = declarative_base()
 
@@ -31,6 +30,7 @@ class SubstationVoronoi(Dataset):
             "hvmv_substation_voronoi": "grid.egon_hvmv_substation_voronoi",
         }
     )
+
     def __init__(self, dependencies):
         super().__init__(
             name=self.name,
@@ -85,7 +85,6 @@ def create_tables():
         f"DROP TABLE IF EXISTS {targets.tables['ehv_substation_voronoi']} CASCADE;"
     )
 
-
     db.execute_sql(
         f"DROP TABLE IF EXISTS {targets.tables['hvmv_substation_voronoi']} CASCADE;"
     )
@@ -117,7 +116,7 @@ def substation_voronoi():
     substation_list = ["hvmv_substation", "ehv_substation"]
 
     for substation in substation_list:
-        
+
         sources = SubstationVoronoi.sources
         targets = SubstationVoronoi.targets
 
@@ -128,32 +127,25 @@ def substation_voronoi():
         view = "grid.egon_voronoi_no_borders"
 
         # Create view for Voronoi polygons without taking borders into account
-        db.execute_sql(
-            f"DROP VIEW IF EXISTS {view} CASCADE;"
-        )
+        db.execute_sql(f"DROP VIEW IF EXISTS {view} CASCADE;")
 
-        db.execute_sql(
-            f"""
+        db.execute_sql(f"""
             CREATE VIEW {view} AS
                SELECT (ST_Dump(ST_VoronoiPolygons(ST_collect(a.point)))).geom
                FROM {cfg_substation} a;
-            """
-        )
+            """)
 
         # Clip Voronoi with boundaries
-        db.execute_sql(
-            f"""
+        db.execute_sql(f"""
             INSERT INTO {cfg_voronoi} (geom)
             (SELECT ST_Multi(ST_Intersection(
                 ST_Transform(a.geometry, 4326), b.geom)) AS geom
              FROM {cfg_boundaries} a
              CROSS JOIN {view} b);
-            """
-        )
+            """)
 
         # Assign substation id as foreign key
-        db.execute_sql(
-            f"""
+        db.execute_sql(f"""
             UPDATE {cfg_voronoi}  AS t1
                 SET  	bus_id = t2.bus_id
 	            FROM	(SELECT	voi.id AS id,
@@ -165,14 +157,11 @@ def substation_voronoi():
 		           GROUP BY voi.id,sub.bus_id
 		           )AS t2
 	            WHERE  	t1.id = t2.id;
-            """
-        )
+            """)
 
-        db.execute_sql(
-            f"""
+        db.execute_sql(f"""
             CREATE INDEX  	{targets.get_table_name(substation + "_voronoi")}_idx
                 ON          {cfg_voronoi} USING gist (geom);
-            """
-        )
+            """)
 
         db.execute_sql(f"DROP VIEW IF EXISTS {view} CASCADE;")

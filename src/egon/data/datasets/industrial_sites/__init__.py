@@ -1,8 +1,8 @@
 """The central module containing all code dealing with the spatial
-   distribution of industrial electricity demands.
-   Industrial demands from DemandRegio are distributed from nuts3 level down
-   to osm landuse polygons and/or industrial sites also identified within this
-   processing step bringing three different inputs together.
+distribution of industrial electricity demands.
+Industrial demands from DemandRegio are distributed from nuts3 level down
+to osm landuse polygons and/or industrial sites also identified within this
+processing step bringing three different inputs together.
 
 """
 
@@ -123,12 +123,8 @@ def create_tables():
     None.
     """
 
-
-
     # Create target schema
     db.execute_sql("CREATE SCHEMA IF NOT EXISTS demand;")
-
-   
 
     db.execute_sql(
         f"""DROP TABLE IF EXISTS {MergeIndustrialSites.targets.tables['hotmaps']} CASCADE;"""
@@ -141,7 +137,6 @@ def create_tables():
     db.execute_sql(
         f"""DROP TABLE IF EXISTS {MergeIndustrialSites.targets.tables['schmidt']} CASCADE;"""
     )
-
 
     db.execute_sql(
         f"""DROP TABLE IF EXISTS {MergeIndustrialSites.targets.tables['sites']} CASCADE;"""
@@ -165,9 +160,7 @@ def create_tables():
 
 def download_hotmaps():
 
-
     download_directory = "industrial_sites"
-
 
     if not os.path.exists(download_directory):
         os.mkdir(download_directory)
@@ -176,14 +169,11 @@ def download_hotmaps():
     url = MergeIndustrialSites.sources.urls["hotmaps"]
 
     if not os.path.isfile(target_file):
-        subprocess.run(
-            f"curl {url} > {target_file}", shell=True
-        )
+        subprocess.run(f"curl {url} > {target_file}", shell=True)
 
 
 def download_seenergies():
     """Download csv file on s-eenergies' industrial sites."""
-
 
     download_directory = "industrial_sites"
     # Create the folder, if it does not exists already
@@ -191,7 +181,9 @@ def download_seenergies():
         os.mkdir(download_directory)
 
     # Use the new class attributes for the target file and source URL
-    target_file = Path(MergeIndustrialSites.targets.files["seenergies_download"])
+    target_file = Path(
+        MergeIndustrialSites.targets.files["seenergies_download"]
+    )
     url = MergeIndustrialSites.sources.urls["seenergies"]
 
     if not os.path.isfile(target_file):
@@ -200,7 +192,6 @@ def download_seenergies():
 
 def hotmaps_to_postgres():
     """Import hotmaps data to postgres database"""
-
 
     input_file = Path(MergeIndustrialSites.targets.files["hotmaps_download"])
 
@@ -300,13 +291,13 @@ def hotmaps_to_postgres():
     )
 
 
-
 def seenergies_to_postgres():
     """Import seenergies data to postgres database"""
     # Get information from data configuration file
 
-
-    input_file = Path(MergeIndustrialSites.targets.files["seenergies_download"])
+    input_file = Path(
+        MergeIndustrialSites.targets.files["seenergies_download"]
+    )
     engine = db.engine()
 
     db.execute_sql(
@@ -405,7 +396,6 @@ def seenergies_to_postgres():
 def schmidt_to_postgres():
     """Import data from Thesis by Danielle Schmidt to postgres database"""
     # Get information from data configuration file
-
 
     input_file = (
         Path(".")
@@ -511,8 +501,6 @@ def merge_inputs():
     (hotmaps, seenergies, Thesis Schmidt)
     """
 
-  
-
     # Insert data from Schmidt's Master thesis
     db.execute_sql(
         f"""INSERT INTO {MergeIndustrialSites.targets.tables['sites']}
@@ -546,7 +534,6 @@ def merge_inputs():
 
     # Insert data from Hotmaps
 
-
     db.execute_sql(
         f"""INSERT INTO {MergeIndustrialSites.targets.tables['sites']}
               (companyname, address, subsector, wz, geom)
@@ -574,17 +561,13 @@ def merge_inputs():
                               LOWER (SUBSTRING(s.companyname, 1, 3))))"""
     )
 
-
-
-    db.execute_sql(
-        f"""UPDATE {MergeIndustrialSites.targets.tables['sites']} s
+    db.execute_sql(f"""UPDATE {MergeIndustrialSites.targets.tables['sites']} s
               SET geom = g.geom
               FROM {MergeIndustrialSites.sources.tables['schmidt_processed']} g
               WHERE ST_DWithin (g.geom, s.geom, 0.01)
               AND (g.wz = s.wz)
               AND  (LOWER (SUBSTRING(g.plant, 1, 3)) =
-                    LOWER (SUBSTRING(s.companyname, 1, 3)));"""
-    )
+                    LOWER (SUBSTRING(s.companyname, 1, 3)));""")
 
 
 def map_nuts3():
@@ -594,13 +577,10 @@ def map_nuts3():
 
     """
 
-
-    db.execute_sql(
-        f"""UPDATE {MergeIndustrialSites.targets.tables['sites']} s
+    db.execute_sql(f"""UPDATE {MergeIndustrialSites.targets.tables['sites']} s
               SET nuts3 = krs.nuts
               FROM {MergeIndustrialSites.sources.tables['vg250_krs']} krs
-              WHERE ST_WITHIN(s.geom, ST_TRANSFORM(krs.geometry,4326));"""
-    )
+              WHERE ST_WITHIN(s.geom, ST_TRANSFORM(krs.geometry,4326));""")
 
 
 class MergeIndustrialSites(Dataset):
@@ -618,7 +598,7 @@ class MergeIndustrialSites(Dataset):
             "seenergies_processed": "demand.egon_seenergies_industrial_sites",
             "schmidt_processed": "demand.egon_schmidt_industrial_sites",
             "vg250_krs": "boundaries.vg250_krs",
-        }
+        },
     )
     targets = DatasetTargets(
         files={
@@ -630,8 +610,9 @@ class MergeIndustrialSites(Dataset):
             "seenergies": "demand.egon_seenergies_industrial_sites",
             "schmidt": "demand.egon_schmidt_industrial_sites",
             "sites": "demand.egon_industrial_sites",
-        }
+        },
     )
+
     def __init__(self, dependencies):
         super().__init__(
             name="Merge_industrial_sites",

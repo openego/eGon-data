@@ -8,9 +8,9 @@ from sqlalchemy.ext.declarative import declarative_base
 import pandas as pd
 
 from egon.data import db
+from egon.data.datasets import load_sources_and_targets
 import egon.data.config
 import egon.data.datasets.scenario_parameters.parameters as scenario_parameters
-from egon.data.datasets import load_sources_and_targets
 
 Base = declarative_base()
 
@@ -132,8 +132,7 @@ def calc_load_curves_cts(scenario):
 
     sources, _ = load_sources_and_targets("CtsElectricityDemand")
     # Select demands per cts branch and nuts3-region
-    demands_nuts = db.select_dataframe(
-        f"""SELECT nuts3, wz, demand
+    demands_nuts = db.select_dataframe(f"""SELECT nuts3, wz, demand
             FROM {sources.tables["demandregio_cts"]}
             WHERE scenario = '{scenario}'
             AND demand > 0
@@ -141,8 +140,7 @@ def calc_load_curves_cts(scenario):
                 SELECT wz FROM
                 {sources.tables["demandregio_wz"]}
                 WHERE sector = 'CTS')
-            """
-    ).set_index(["nuts3", "wz"])
+            """).set_index(["nuts3", "wz"])
 
     # Select cts demands per zensus cell including nuts3-region and substation
     demands_zensus = db.select_dataframe(
@@ -210,13 +208,11 @@ def insert_cts_load():
 
     for scenario in egon.data.config.settings()["egon-data"]["--scenarios"]:
         # Delete existing data from database
-        db.execute_sql(
-            f"""
+        db.execute_sql(f"""
             DELETE FROM
             {targets.tables["cts_demand_curves"]}
             WHERE scn_name = '{scenario}'
-            """
-        )
+            """)
 
         # Calculate cts load curves per mv substation (hvmv bus)
         data = calc_load_curves_cts(scenario)

@@ -22,7 +22,11 @@ import pandas as pd
 import saio
 
 from egon.data import config, db, logger
-from egon.data.datasets import Dataset, wrapped_partial
+from egon.data.datasets import (
+    Dataset,
+    load_sources_and_targets,
+    wrapped_partial,
+)
 from egon.data.datasets.district_heating_areas import (
     MapZensusDistrictHeatingAreas,
 )
@@ -49,9 +53,6 @@ from egon.data.datasets.heat_demand_timeseries.idp_pool import (
 
 # get zensus cells with district heating
 from egon.data.datasets.zensus_mv_grid_districts import MapZensusGridDistricts
-from egon.data.datasets import load_sources_and_targets
-
-
 
 engine = db.engine()
 Base = declarative_base()
@@ -637,14 +638,12 @@ def cascade_per_technology(
             )
         else:
             # Select target value for Germany
-            target = db.select_dataframe(
-                f"""
+            target = db.select_dataframe(f"""
                     SELECT SUM(capacity) AS capacity
                     FROM {sources.tables['scenario_capacities']} a
                     WHERE scenario_name = '{scenario}'
                     AND carrier = 'rural_heat_pump'
-                    """
-            )
+                    """)
 
             if not target.capacity[0]:
                 target.capacity[0] = 0
@@ -682,14 +681,12 @@ def cascade_per_technology(
 
     elif tech.index in ("gas_boiler", "resistive_heater", "solar_thermal"):
         # Select target value for Germany
-        target = db.select_dataframe(
-            f"""
+        target = db.select_dataframe(f"""
                 SELECT SUM(capacity) AS capacity
                 FROM {sources.tables['scenario_capacities']} a
                 WHERE scenario_name = '{scenario}'
                 AND carrier = 'rural_{tech.index[0]}'
-                """
-        )
+                """)
 
         if (
             config.settings()["egon-data"]["--dataset-boundary"]

@@ -29,12 +29,11 @@ from egon.data.metadata import (
     sources,
 )
 
-
 Base = declarative_base()
 
 
 class ZensusVg250(Dataset):
-    
+
     name: str = "ZensusVg250"
     version: str = "0.0.5"
 
@@ -55,7 +54,7 @@ class ZensusVg250(Dataset):
             "vg250_gem_population": "boundaries.vg250_gem_population",
         }
     )
-         
+
     def __init__(self, dependencies):
         super().__init__(
             name="ZensusVg250",
@@ -205,7 +204,7 @@ def map_zensus_vg250():
     local_engine = db.engine()
 
     db.execute_sql(f"DELETE FROM {targets.tables['map']}")
-    
+
     gdf = db.select_geodataframe(
         f"SELECT * FROM {sources.tables['zensus_population']}",
         geom_col="geom_point",
@@ -232,7 +231,10 @@ def map_zensus_vg250():
         boundaries_buffer = gdf_boundaries.copy()
         boundaries_buffer.geometry = boundaries_buffer.geometry.buffer(buffer)
         join_missing = gpd.sjoin(
-            missing_cells, boundaries_buffer, how="inner", predicate="intersects"
+            missing_cells,
+            boundaries_buffer,
+            how="inner",
+            predicate="intersects",
         )
         join = pd.concat([join, join_missing])
         missing_cells = gdf[
@@ -278,11 +280,9 @@ def inside_germany():
     engine_local_db = db.engine()
 
     # Create new table
-    db.execute_sql(
-        f"""
+    db.execute_sql(f"""
         DROP TABLE IF EXISTS {DestatisZensusPopulationPerHaInsideGermany.__table__.schema}.{DestatisZensusPopulationPerHaInsideGermany.__table__.name} CASCADE;
-        """
-    )
+        """)
     DestatisZensusPopulationPerHaInsideGermany.__table__.create(
         bind=engine_local_db, checkfirst=True
     )
@@ -334,7 +334,7 @@ def population_in_municipalities():
     srid = 3035
     sources = ZensusVg250.sources
     targets = ZensusVg250.targets
-    
+
     gem = db.select_geodataframe(
         f"SELECT * FROM {sources.tables['vg250_municipalities']}",
         geom_col="geometry",
@@ -545,7 +545,7 @@ def add_metadata_vg250_gem_pop():
 
     Creates a metdadata JSON string and writes it to the database table comment
     """
-    
+
     schema_table = ".".join(
         [
             Vg250GemPopulation.__table__.schema,

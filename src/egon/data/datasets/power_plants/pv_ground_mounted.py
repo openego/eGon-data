@@ -5,12 +5,13 @@ import numpy as np
 import pandas as pd
 
 from egon.data import db
-import egon.data.config
 from egon.data.datasets import load_sources_and_targets
+import egon.data.config
 
 
 def insert():
     sources, targets = load_sources_and_targets("PowerPlants")
+
     def mastr_existing_pv(pow_per_area):
         """Import MaStR data from csv-files.
 
@@ -77,7 +78,7 @@ def insert():
         # derive voltage level
 
         mastr["voltage_level"] = pd.Series(dtype=int)
-        
+
         lvl = pd.read_csv(
             sources.files["mastr_location"],
             usecols=["Spannungsebene", "MaStRNummer"],
@@ -404,7 +405,7 @@ def insert():
 
         if len(pv_pot_mv_to_hv) > 0:
             # import data for HV substations
-            
+
             sql = f"SELECT point, voltage FROM {sources.tables['hvmv_substation']}"
             hvmv_substation = gpd.GeoDataFrame.from_postgis(
                 sql, con, geom_col="point"
@@ -451,7 +452,7 @@ def insert():
             pv_pot = pd.concat([pv_pot_mv, pv_pot_hv])
 
         return pv_pot
-    
+
     def build_additional_pv(potentials, pv, pow_per_area, con):
         """Build additional pv parks if pv parks on selected potential areas
         do not hit the target value.

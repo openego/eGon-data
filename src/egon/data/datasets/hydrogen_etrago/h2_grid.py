@@ -19,22 +19,17 @@ import geopandas as gpd
 import numpy as np
 import pandas as pd
 
-from egon.data import db, config
+from egon.data import config, db
+from egon.data.datasets import load_sources_and_targets
 from egon.data.datasets.scenario_parameters import get_sector_parameters
 from egon.data.datasets.scenario_parameters.parameters import (
     annualize_capital_costs,
 )
 
-from egon.data.datasets import load_sources_and_targets
-
-
-
-
 
 def insert_h2_pipelines(scn_name):
     """Insert H2_grid based on input data from FNB-Gas."""
     sources, targets = load_sources_and_targets("HydrogenGridEtrago")
-    
 
     download_h2_grid_data()
     H2_grid_Neubau, H2_grid_Umstellung, H2_grid_Erweiterung = (
@@ -50,7 +45,6 @@ def insert_h2_pipelines(scn_name):
 
     target = targets.tables["hydrogen_links"]
 
-
     h2_buses_df = pd.read_sql(
         f"""
     SELECT bus_id, x, y FROM {sources.tables["buses"]}
@@ -61,8 +55,7 @@ def insert_h2_pipelines(scn_name):
     )
 
     # Delete old entries
-    db.execute_sql(
-        f"""
+    db.execute_sql(f"""
         DELETE FROM {targets.tables["hydrogen_links"]}
         WHERE "carrier" = 'H2_grid'
         AND scn_name = '{scn_name}' AND bus0 IN (
@@ -70,9 +63,7 @@ def insert_h2_pipelines(scn_name):
           FROM {sources.tables["buses"]}
           WHERE country = 'DE'
         )
-        """
-    )
-
+        """)
 
     for df in [H2_grid_Neubau, H2_grid_Umstellung, H2_grid_Erweiterung]:
 
@@ -484,12 +475,12 @@ def download_h2_grid_data():
     sources, _ = load_sources_and_targets("HydrogenGridEtrago")
     path = Path("datasets/h2_data")
     os.makedirs(path, exist_ok=True)
-    
-    
+
     target_file_Um = path / sources.files["converted_ch4_pipes"]
     target_file_Neu = path / sources.files["new_constructed_pipes"]
-    target_file_Erw = path / sources.files["pipes_of_further_h2_grid_operators"]
-
+    target_file_Erw = (
+        path / sources.files["pipes_of_further_h2_grid_operators"]
+    )
 
     for target_file in [target_file_Neu, target_file_Um, target_file_Erw]:
         if target_file is target_file_Um:
@@ -516,11 +507,9 @@ def read_h2_excel_sheets():
 
     """
     sources, _ = load_sources_and_targets("HydrogenGridEtrago")
-    path = Path(".") / "datasets" / "h2_data"    
+    path = Path(".") / "datasets" / "h2_data"
 
-    excel_file_Um = pd.ExcelFile(
-        path / sources.files["converted_ch4_pipes"]
-    )
+    excel_file_Um = pd.ExcelFile(path / sources.files["converted_ch4_pipes"])
     excel_file_Neu = pd.ExcelFile(
         path / sources.files["new_constructed_pipes"]
     )
@@ -623,16 +612,13 @@ def connect_saltcavern_to_h2_grid(scn_name):
     """
     sources, targets = load_sources_and_targets("HydrogenGridEtrago")
 
-
     engine = db.engine()
 
-    db.execute_sql(
-        f"""
+    db.execute_sql(f"""
            DELETE FROM {targets.tables["hydrogen_links"]}
            WHERE "carrier" in ('H2_saltcavern')
            AND scn_name = '{scn_name}';    
-           """
-    )
+           """)
     h2_buses_query = f"""SELECT bus_id, x, y,ST_Transform(geom, 32632) as geom 
                         FROM  {sources.tables["buses"]}
                         WHERE carrier = 'H2_grid' AND scn_name = '{scn_name}'
@@ -710,7 +696,6 @@ def connect_h2_grid_to_neighbour_countries(scn_name):
     sources, targets = load_sources_and_targets("HydrogenGridEtrago")
 
     engine = db.engine()
-   
 
     h2_buses_df = gpd.read_postgis(
         f"""

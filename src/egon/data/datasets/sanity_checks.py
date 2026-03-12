@@ -18,7 +18,12 @@ import pandas as pd
 import seaborn as sns
 
 from egon.data import config, db, logger
-from egon.data.datasets import Dataset, DatasetSources, DatasetTargets, load_sources_and_targets
+from egon.data.datasets import (
+    Dataset,
+    DatasetSources,
+    DatasetTargets,
+    load_sources_and_targets,
+)
 from egon.data.datasets.electricity_demand_timeseries.cts_buildings import (
     EgonCtsElectricityDemandBuildingShare,
     EgonCtsHeatDemandBuildingShare,
@@ -551,8 +556,7 @@ def residential_electricity_annual_sum(rtol=0.005):
     with initial scaling parameters from DemandRegio.
     """
 
-    df_nuts3_annual_sum = db.select_dataframe(
-        sql="""
+    df_nuts3_annual_sum = db.select_dataframe(sql="""
         SELECT dr.nuts3, dr.scenario, dr.demand_regio_sum, profiles.profile_sum
         FROM (
             SELECT scenario, SUM(demand) AS profile_sum, vg250_nuts3
@@ -568,8 +572,7 @@ def residential_electricity_annual_sum(rtol=0.005):
             GROUP BY year, scenario, nuts3
               ) AS dr
         ON profiles.vg250_nuts3 = dr.nuts3 and profiles.scenario  = dr.scenario
-        """
-    )
+        """)
 
     np.testing.assert_allclose(
         actual=df_nuts3_annual_sum["profile_sum"],
@@ -591,8 +594,7 @@ def residential_electricity_hh_refinement(rtol=1e-5):
     Check sum of aggregated household types after refinement method
     was applied and compare it to the original census values."""
 
-    df_refinement = db.select_dataframe(
-        sql="""
+    df_refinement = db.select_dataframe(sql="""
         SELECT refined.nuts3, refined.characteristics_code,
                 refined.sum_refined::int, census.sum_census::int
         FROM(
@@ -610,8 +612,7 @@ def residential_electricity_hh_refinement(rtol=1e-5):
             GROUP BY t.nuts3, t.characteristics_code    ) AS census
         ON refined.nuts3 = census.nuts3
         AND refined.characteristics_code = census.characteristics_code
-    """
-    )
+    """)
 
     np.testing.assert_allclose(
         actual=df_refinement["sum_refined"],
@@ -756,21 +757,20 @@ def sanitycheck_pv_rooftop_buildings():
         elif scenario == "eGon100RE":
             sources = SanityChecks.sources.tables
 
-
-            target = db.select_dataframe(
-                f"""
+            target = db.select_dataframe(f"""
                 SELECT capacity
                 FROM {sources["capacities"]} a
                 WHERE carrier = 'solar_rooftop'
                 AND scenario_name = '{scenario}'
-                """
-            ).capacity[0]
+                """).capacity[0]
 
             dataset = config.settings()["egon-data"]["--dataset-boundary"]
 
             if dataset == "Schleswig-Holstein":
 
-                path = Path(SanityChecks.sources.files["nep2035_capacities"]).resolve()
+                path = Path(
+                    SanityChecks.sources.files["nep2035_capacities"]
+                ).resolve()
 
                 total_2035 = (
                     pd.read_excel(
@@ -815,7 +815,10 @@ def sanitycheck_emobility_mit():
     -------
     None
     """
-    sources_mit, targets_mit = load_sources_and_targets("MotorizedIndividualTravel")
+    sources_mit, targets_mit = load_sources_and_targets(
+        "MotorizedIndividualTravel"
+    )
+
     def check_ev_allocation():
         # Get target number for scenario
         ev_count_target = scenario_variation_parameters["ev_count"]
@@ -1322,7 +1325,9 @@ def sanitycheck_emobility_mit():
     print("=====================================================")
 
     for scenario_name in config.settings()["egon-data"]["--scenarios"]:
-        scenario_var_name = sources_mit.files["original_data"]["scenario"]["variation"][scenario_name]
+        scenario_var_name = sources_mit.files["original_data"]["scenario"][
+            "variation"
+        ][scenario_name]
 
         print("")
         print(f"SCENARIO: {scenario_name}, VARIATION: {scenario_var_name}")
@@ -1364,8 +1369,6 @@ def sanitycheck_home_batteries():
 
     sources = SanityChecks.sources.tables
     targets = SanityChecks.targets.tables
-
-
 
     for scenario in scenarios:
         # get home battery capacity per mv grid id
@@ -1461,7 +1464,6 @@ def sanity_check_gas_buses(scn):
 
     # Deviation of the gas grid buses number
     target_file = Path(SanityChecks.sources.files["gas_nodes"]).resolve()
-
 
     Grid_buses_list = pd.read_csv(
         target_file,
@@ -2015,8 +2017,9 @@ def etrago_eGon2035_gas_DE():
             warning=False,
         )["p_nom_germany"].values[0]
 
-        target_file = Path(SanityChecks.sources.files["gas_productions"]).resolve()
-
+        target_file = Path(
+            SanityChecks.sources.files["gas_productions"]
+        ).resolve()
 
         NG_generators_list = pd.read_csv(
             target_file,
@@ -2039,7 +2042,6 @@ def etrago_eGon2035_gas_DE():
         target_file = Path(
             SanityChecks.sources.files["gas_biogaspartner_einspeiseatlas"]
         ).resolve()
-
 
         conversion_factor_b = 0.01083  # m^3/h to MWh/h
         p_biogas = (
@@ -2348,7 +2350,6 @@ def sanitycheck_dsm():
 
         targets = SanityChecks.targets.tables
 
-
         tables = [
             "cts_loadcurves_dsm",
             "ind_osm_loadcurves_individual_dsm",
@@ -2456,23 +2457,19 @@ def etrago_timeseries_length():
 
     for component in ["generator", "load", "link", "store", "storage"]:
 
-        columns = db.select_dataframe(
-            f"""
+        columns = db.select_dataframe(f"""
             SELECT *
             FROM information_schema.columns
             WHERE table_schema = 'grid'
             AND table_name = 'egon_etrago_{component}_timeseries'
-            """
-        )
+            """)
         columns = columns[columns.data_type == "ARRAY"].column_name.values
 
         for col in columns:
-            lengths = db.select_dataframe(
-                f"""
+            lengths = db.select_dataframe(f"""
                 SELECT array_length({col}, 1)
                 FROM grid.egon_etrago_{component}_timeseries;
-                """
-            )["array_length"]
+                """)["array_length"]
 
             if not lengths.dropna().empty:
                 assert (
@@ -2787,8 +2784,7 @@ def heat_gas_load_egon100RE(scn="eGon100RE"):
     }
 
     # filter out NaN values central_heat timeseries
-    NaN_load_ids = db.select_dataframe(
-        """
+    NaN_load_ids = db.select_dataframe("""
         SELECT load_id from grid.egon_etrago_load_timeseries
         WHERE load_id IN (Select load_id
             FROM grid.egon_etrago_load
@@ -2796,14 +2792,12 @@ def heat_gas_load_egon100RE(scn="eGon100RE"):
             bool_or(value::double precision::text = 'NaN')
         FROM unnest(p_set) AS value
         )
-       """
-    )
+       """)
     nan_load_list = tuple(NaN_load_ids["load_id"].tolist())
     nan_load_str = ",".join(map(str, nan_load_list))
 
     #####loads for eGon100RE
-    loads_etrago_timeseries = db.select_dataframe(
-        f"""
+    loads_etrago_timeseries = db.select_dataframe(f"""
             SELECT
                 l.carrier,
                 SUM(
@@ -2827,8 +2821,7 @@ def heat_gas_load_egon100RE(scn="eGon100RE"):
 
             GROUP BY
                 l.carrier
-        """
-    )
+        """)
 
     #####loads for pypsa_eur_network
     n = read_network()
@@ -2936,26 +2929,30 @@ tasks = ()
 
 if "eGon2035" in SCENARIOS:
     tasks = tasks + (
-        {etrago_eGon2035_electricity,
-        etrago_eGon2035_heat,
-        residential_electricity_annual_sum,
-        residential_electricity_hh_refinement,
-        cts_electricity_demand_share,
-        cts_heat_demand_share,
-        sanitycheck_emobility_mit,
-        sanitycheck_pv_rooftop_buildings,
-        sanitycheck_home_batteries,
-        etrago_eGon2035_gas_DE,
-        etrago_eGon2035_gas_abroad,
-        sanitycheck_dsm,},
+        {
+            etrago_eGon2035_electricity,
+            etrago_eGon2035_heat,
+            residential_electricity_annual_sum,
+            residential_electricity_hh_refinement,
+            cts_electricity_demand_share,
+            cts_heat_demand_share,
+            sanitycheck_emobility_mit,
+            sanitycheck_pv_rooftop_buildings,
+            sanitycheck_home_batteries,
+            etrago_eGon2035_gas_DE,
+            etrago_eGon2035_gas_abroad,
+            sanitycheck_dsm,
+        },
     )
 
 if "eGon100RE" in SCENARIOS:
     tasks = tasks + (
-        {electrical_load_100RE,
-        generators_links_storages_stores_100RE,
-        etrago_timeseries_length,
-        heat_gas_load_egon100RE,},
+        {
+            electrical_load_100RE,
+            generators_links_storages_stores_100RE,
+            etrago_timeseries_length,
+            heat_gas_load_egon100RE,
+        },
     )
 
 
@@ -2969,10 +2966,8 @@ class SanityChecks(Dataset):
         tables={
             # --- solar_rooftop -> scenario_capacities ---
             "capacities": "supply.egon_scenario_capacities",
-
             # --- home_batteries -> storage ---
             "storage": "supply.egon_storages",
-
             # --- etrago_electricity sources ---
             "cts_curves": "demand.egon_etrago_electricity_cts",
             "osm_curves": "demand.egon_osm_ind_load_curves",
@@ -2998,7 +2993,6 @@ class SanityChecks(Dataset):
         tables={
             # --- home_batteries target ---
             "home_batteries": "supply.egon_home_batteries",
-
             # --- DSM_CTS_industry targets (looped via targets[table]) ---
             "cts_loadcurves_dsm": "demand.egon_etrago_electricity_cts_dsm_timeseries",
             "ind_osm_loadcurves_individual_dsm": "demand.egon_osm_ind_load_curves_individual_dsm_timeseries",

@@ -96,17 +96,15 @@ def get_tracbev_data() -> None:
 
 
 class MITChargingInfrastructure(Dataset):
-    
-    
+
     sources = DatasetSources(
         urls={
             "tracbev": "https://zenodo.org/record/6466480/files/data.zip?download=1"
         },
         tables={
             "mv_grid_districts": "grid.egon_mv_grid_district",
-            "buildings": "demand.egon_map_houseprofiles_buildings"
+            "buildings": "demand.egon_map_houseprofiles_buildings",
         },
-     
         files={
             "tracbev_parameters": {
                 "tracbev_config": {
@@ -115,8 +113,8 @@ class MITChargingInfrastructure(Dataset):
                         "hpc_positions.gpkg",
                         "landuse.gpkg",
                         "poi_cluster.gpkg",
-                        "public_positions.gpkg"
-                    ]
+                        "public_positions.gpkg",
+                    ],
                 },
                 "work_weight_retail": 0.8,
                 "work_weight_commercial": 1.25,
@@ -126,28 +124,23 @@ class MITChargingInfrastructure(Dataset):
                 "multi_family_home_share": 0.4,
                 "multi_family_home_spots": 10,
                 "random_seed": 5,
-                
                 "cols_to_export": [
-                    "mv_grid_id", 
-                    "use_case", 
-                    "weight", 
-                    "geometry"
-                ]
+                    "mv_grid_id",
+                    "use_case",
+                    "weight",
+                    "geometry",
+                ],
             }
-        }
+        },
     )
 
     targets = DatasetTargets(
-        files={
-            "tracbev_download": "charging_infrastructure/data.zip"
-        },
+        files={"tracbev_download": "charging_infrastructure/data.zip"},
         tables={
             "charging_infrastructure": "grid.egon_emob_charging_infrastructure"
-        }
+        },
     )
- 
-    
-    
+
     """
     Preparation of static model data for charging infrastructure for
     motorized individual travel.

@@ -7,8 +7,9 @@ import geopandas as gpd
 import pandas as pd
 
 from egon.data import db
-import egon.data.config
 from egon.data.datasets import load_sources_and_targets
+import egon.data.config
+
 
 def select_nep_power_plants(carrier):
     """Select power plants with location from NEP's list of power plants
@@ -27,8 +28,7 @@ def select_nep_power_plants(carrier):
     sources, targets = load_sources_and_targets("PowerPlants")
 
     # Select plants with geolocation from list of conventional power plants
-    nep = db.select_dataframe(
-        f"""
+    nep = db.select_dataframe(f"""
         SELECT bnetza_id, name, carrier, capacity, postcode, city,
         federal_state, c2035_capacity
         FROM {sources.tables['nep_conv']}
@@ -37,8 +37,7 @@ def select_nep_power_plants(carrier):
         AND c2035_chp = 'Nein'
         AND c2035_capacity > 0
         AND postcode != 'None';
-        """
-    )
+        """)
 
     nep["postcode"] = nep["postcode"].astype(str)
     nep = nep[~nep["postcode"].str.contains("A")]

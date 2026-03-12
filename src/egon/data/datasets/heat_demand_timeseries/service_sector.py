@@ -11,8 +11,6 @@ except ImportError as e:
     pass
 from egon.data.datasets import load_sources_and_targets
 
-
-
 Base = declarative_base()
 
 
@@ -52,8 +50,7 @@ def cts_demand_per_aggregation_level(aggregation_level, scenario):
     """
     sources, targets = load_sources_and_targets("HeatTimeSeries")
 
-    demand_nuts = db.select_dataframe(
-        f"""
+    demand_nuts = db.select_dataframe(f"""
         SELECT demand, a.zensus_population_id, b.vg250_nuts3
         FROM {sources.tables["heat_demand_cts"]} a
         JOIN {sources.tables['map_zensus_vg250']} b
@@ -62,8 +59,7 @@ def cts_demand_per_aggregation_level(aggregation_level, scenario):
         WHERE a.sector = 'service'
         AND a.scenario = '{scenario}'
         ORDER BY a.zensus_population_id
-        """
-    )
+        """)
 
     if os.path.isfile("CTS_heat_demand_profile_nuts3.csv"):
         df_CTS_gas_2011 = pd.read_csv(
@@ -91,13 +87,11 @@ def cts_demand_per_aggregation_level(aggregation_level, scenario):
     CTS_per_zensus = CTS_per_zensus.drop("vg250_nuts3", axis=1)
 
     if aggregation_level == "district":
-        district_heating = db.select_dataframe(
-            f"""
+        district_heating = db.select_dataframe(f"""
             SELECT area_id, zensus_population_id
             FROM {sources.tables["district_heating_areas"]}
             WHERE scenario = '{scenario}'
-            """
-        )
+            """)
 
         CTS_per_district = pd.merge(
             CTS_per_zensus,
@@ -117,8 +111,7 @@ def cts_demand_per_aggregation_level(aggregation_level, scenario):
         # mv_grid = mv_grid.set_index("zensus_population_id")
         district_heating = district_heating.set_index("zensus_population_id")
 
-        mv_grid_ind = db.select_dataframe(
-            f"""
+        mv_grid_ind = db.select_dataframe(f"""
             SELECT bus_id, a.zensus_population_id
             FROM {sources.tables["map_zensus_grid_districts"]} a
 
@@ -127,8 +120,7 @@ def cts_demand_per_aggregation_level(aggregation_level, scenario):
 
 				WHERE c.scenario = '{scenario}'
 				AND c.sector = 'service'
-            """
-        )
+            """)
 
         mv_grid_ind = mv_grid_ind[
             ~mv_grid_ind.zensus_population_id.isin(
@@ -215,24 +207,20 @@ def CTS_demand_scale(aggregation_level):
         CTS_per_grid = CTS_per_grid.transpose()
         CTS_per_zensus = CTS_per_zensus.transpose()
 
-        demand = db.select_dataframe(
-            f"""
+        demand = db.select_dataframe(f"""
                 SELECT demand, zensus_population_id
                 FROM {sources.tables["heat_demand_cts"]}
                 WHERE sector = 'service'
                 AND scenario = '{scenario}'
                 ORDER BY zensus_population_id
-                """
-        )
+                """)
 
         if aggregation_level == "district":
-            district_heating = db.select_dataframe(
-                f"""
+            district_heating = db.select_dataframe(f"""
                 SELECT area_id, zensus_population_id
                 FROM {sources.tables["district_heating_areas"]}
                 WHERE scenario = '{scenario}'
-                """
-            )
+                """)
 
             CTS_demands_district = pd.merge(
                 demand,
@@ -271,8 +259,7 @@ def CTS_demand_scale(aggregation_level):
             )
             CTS_district = CTS_district.sort_index()
 
-            mv_grid_ind = db.select_dataframe(
-                f"""
+            mv_grid_ind = db.select_dataframe(f"""
                 SELECT bus_id, a.zensus_population_id
                 FROM {sources.tables["map_zensus_grid_districts"]} a
 
@@ -281,8 +268,7 @@ def CTS_demand_scale(aggregation_level):
 
 				WHERE c.scenario = '{scenario}'
 				AND c.sector = 'service'
-                """
-            )
+                """)
 
             mv_grid_ind = mv_grid_ind[
                 ~mv_grid_ind.zensus_population_id.isin(

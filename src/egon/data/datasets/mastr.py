@@ -9,6 +9,7 @@ import os
 import zipfile
 
 import pandas as pd
+
 from egon.data.datasets import Dataset, DatasetSources, DatasetTargets
 
 
@@ -32,9 +33,7 @@ def download_mastr_data():
             )
 
     if not os.path.exists(
-        Path(
-            mastr_data_setup.targets.files["mastr"]["download_dir"]["path"]
-        )
+        Path(mastr_data_setup.targets.files["mastr"]["download_dir"]["path"])
     ):
         Path(
             mastr_data_setup.targets.files["mastr"]["download_dir"]["path"]

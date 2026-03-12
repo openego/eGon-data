@@ -31,7 +31,7 @@ class Egon_etrago_gen(Dataset):
     name: str = "etrago_generators"
     #:
     version: str = "0.0.10"
-    
+
     sources = DatasetSources(
         tables={
             "power_plants": "supply.egon_power_plants",
@@ -61,7 +61,6 @@ def fill_etrago_generators():
     # Connect to the data base
     con = db.engine()
     cfg = Egon_etrago_gen  # use class-level sources/targets
-
 
     # Load required tables
     (
@@ -148,10 +147,8 @@ def add_marginal_costs(power_plants):
                 warning.append(carrier)
                 marginal_costs.at[carrier, "marginal_cost"] = 0
         if warning:
-            print(
-                f"""There are no marginal_cost values for: \n{warning}
-        in the scenario {scenario}. Missing values set to 0"""
-            )
+            print(f"""There are no marginal_cost values for: \n{warning}
+        in the scenario {scenario}. Missing values set to 0""")
         pp = pd.concat(
             [
                 pp,
@@ -231,7 +228,6 @@ def load_tables(con, cfg):
     WHERE carrier != 'gas'
     """
 
-
     power_plants = gpd.GeoDataFrame.from_postgis(
         sql, con, crs="EPSG:4326", index_col="id"
     )
@@ -240,13 +236,11 @@ def load_tables(con, cfg):
     SELECT * FROM {cfg.sources.tables['renewable_feedin']}
     """
 
-
     renew_feedin = pd.read_sql(sql, con)
 
     sql = f"""
     SELECT * FROM {cfg.sources.tables['weather_cells']}
     """
-
 
     weather_cells = gpd.GeoDataFrame.from_postgis(sql, con, crs="EPSG:4326")
 
@@ -254,14 +248,11 @@ def load_tables(con, cfg):
     SELECT * FROM {cfg.targets.tables['etrago_generators']}
     """
 
-
     etrago_gen_orig = pd.read_sql(sql, con)
 
     sql = f"""
     SELECT * FROM {cfg.targets.tables['etrago_gen_time']}
     """
-
-
 
     pp_time = pd.read_sql(sql, con)
 
@@ -323,7 +314,6 @@ def delete_previuos_gen(cfg, con, etrago_gen_orig, power_plants):
                       AND scn_name = '{scn_name}'
                 """
             )
-
 
             db.execute_sql(
                 f"""DELETE FROM {cfg.targets.tables['etrago_gen_time']}

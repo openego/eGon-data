@@ -27,10 +27,9 @@ import egon.data.subprocess as subproc
 
 
 class PreparePypsaEur(Dataset):
-    sources = DatasetSources(
-        files={"era5_weather_data": "cutouts"}
-    )
+    sources = DatasetSources(files={"era5_weather_data": "cutouts"})
     targets = DatasetTargets()
+
     def __init__(self, dependencies):
         super().__init__(
             name="PreparePypsaEur",
@@ -50,6 +49,7 @@ class RunPypsaEur(Dataset):
     targets = DatasetTargets(
         tables={"scenario_parameters": "scenario.egon_scenario_parameters"}
     )
+
     def __init__(self, dependencies):
         super().__init__(
             name="SolvePypsaEur",
@@ -98,13 +98,11 @@ def h2_neighbours_egon2035():
     """
     if "eGon2035" in config.settings()["egon-data"]["--scenarios"]:
         # Delete buses from previous executions
-        db.execute_sql(
-            """
+        db.execute_sql("""
             DELETE FROM grid.egon_etrago_bus WHERE carrier = 'H2'
             AND scn_name = 'eGon2035'
             AND country <> 'DE'
-            """
-        )
+            """)
 
         # Load calculated network for eGon2035
         n = read_network(planning_horizon=2035)
@@ -255,8 +253,8 @@ def download():
             copy_from = PreparePypsaEur.sources.files["era5_weather_data"]
             filename = "europe-2011-era5.nc"
             shutil.copy(
-        Path(copy_from) / filename, era5_pypsa_eur_path / filename
-    )
+                Path(copy_from) / filename, era5_pypsa_eur_path / filename
+            )
 
         # Workaround to download natura, shipdensity and globalenergymonitor
         # data, which is not working in the regular snakemake workflow.
@@ -520,8 +518,7 @@ def clean_database():
 
     # delete existing components and associated timeseries
     for comp in comp_one_port:
-        db.execute_sql(
-            f"""
+        db.execute_sql(f"""
             DELETE FROM {"grid.egon_etrago_" + comp + "_timeseries"}
             WHERE {comp + "_id"} IN (
                 SELECT {comp + "_id"} FROM {"grid.egon_etrago_" + comp}
@@ -537,8 +534,7 @@ def clean_database():
                 SELECT bus_id FROM grid.egon_etrago_bus
                 WHERE country != 'DE'
                 AND scn_name = '{scn_name}')
-            AND scn_name = '{scn_name}';"""
-        )
+            AND scn_name = '{scn_name}';""")
 
     comp_2_ports = [
         "line",
@@ -546,8 +542,7 @@ def clean_database():
     ]
 
     for comp, id in zip(comp_2_ports, ["line_id", "link_id"]):
-        db.execute_sql(
-            f"""
+        db.execute_sql(f"""
             DELETE FROM {"grid.egon_etrago_" + comp + "_timeseries"}
             WHERE scn_name = '{scn_name}'
             AND {id} IN (
@@ -577,17 +572,14 @@ def clean_database():
                 WHERE country != 'DE'
                 AND scn_name = '{scn_name}'
                 AND bus_id NOT IN (SELECT bus_i FROM osmtgmod_results.bus_data))
-            ;"""
-        )
+            ;""")
 
-    db.execute_sql(
-        f"""
+    db.execute_sql(f"""
         DELETE FROM grid.egon_etrago_bus
         WHERE scn_name = '{scn_name}'
         AND country <> 'DE'
         AND carrier <> 'AC'
-        """
-    )
+        """)
 
 
 def electrical_neighbours_egon100():
@@ -884,19 +876,15 @@ def neighbor_reduction():
     network_solved.buses.country = network_solved.buses.index.str[:2]
     neighbors = network_solved.buses[network_solved.buses.country != "DE"]
 
-    neighbors["new_index"] = (
-        db.next_etrago_id("bus", len(neighbors.index))
-    )
+    neighbors["new_index"] = db.next_etrago_id("bus", len(neighbors.index))
 
     # Use index of AC buses created by electrical_neigbors
-    foreign_ac_buses = db.select_dataframe(
-        """
+    foreign_ac_buses = db.select_dataframe("""
         SELECT * FROM grid.egon_etrago_bus
         WHERE carrier = 'AC' AND v_nom = 380
         AND country!= 'DE' AND scn_name ='eGon100RE'
         AND bus_id NOT IN (SELECT bus_i FROM osmtgmod_results.bus_data)
-        """
-    )
+        """)
     buses_with_defined_id = neighbors[
         (neighbors.carrier == "AC")
         & (neighbors.country.isin(foreign_ac_buses.country.values))
@@ -989,7 +977,8 @@ def neighbor_reduction():
         neighbors.loc[neighbor_gens.bus, "new_index"].reset_index().new_index
     )
     neighbor_gens.index = db.next_etrago_id(
-        "generator", len(neighbor_gens.index))
+        "generator", len(neighbor_gens.index)
+    )
 
     for i in neighbor_gens_t.columns:
         new_index = neighbor_gens[neighbor_gens["Generator"] == i].index
@@ -1033,7 +1022,8 @@ def neighbor_reduction():
         neighbors.loc[neighbor_stores.bus, "new_index"].reset_index().new_index
     )
     neighbor_stores.index = db.next_etrago_id(
-        "store", len(neighbor_stores.index))
+        "store", len(neighbor_stores.index)
+    )
 
     for i in neighbor_stores_t.columns:
         new_index = neighbor_stores[neighbor_stores["Store"] == i].index
@@ -1059,7 +1049,8 @@ def neighbor_reduction():
         .new_index
     )
     neighbor_storage.index = db.next_etrago_id(
-        "storage", len(neighbor_storage.index))
+        "storage", len(neighbor_storage.index)
+    )
 
     for i in neighbor_storage_t.columns:
         new_index = neighbor_storage[
@@ -1794,8 +1785,6 @@ def overwrite_H2_pipeline_share():
     scn_name = "eGon100RE"
     # Select source and target from dataset configuration
 
-
-
     n = read_network()
 
     H2_pipelines = n.links[n.links["carrier"] == "H2 pipeline retrofitted"]
@@ -1812,26 +1801,22 @@ def overwrite_H2_pipeline_share():
         "retrofitted_CH4pipeline-to-H2pipeline_share = " + str(H2_pipes_share)
     )
 
-    parameters = db.select_dataframe(
-        f"""
+    parameters = db.select_dataframe(f"""
         SELECT *
         FROM {RunPypsaEur.sources.tables['scenario_parameters']}
         WHERE name = '{scn_name}'
-        """
-    )
+        """)
 
     gas_param = parameters.loc[0, "gas_parameters"]
     gas_param["retrofitted_CH4pipeline-to-H2pipeline_share"] = H2_pipes_share
     gas_param = json.dumps(gas_param)
 
     # Update data in db
-    db.execute_sql(
-        f"""
+    db.execute_sql(f"""
     UPDATE {RunPypsaEur.targets.tables['scenario_parameters']}
     SET gas_parameters = '{gas_param}'
     WHERE name = '{scn_name}';
-    """
-    )
+    """)
 
 
 def update_electrical_timeseries_germany(network):
@@ -2080,10 +2065,8 @@ def drop_urban_decentral_heat(network):
                 f"{country} rural heat"
             ] += network.loads_t.p_set[f"{country} {carrier}"]
         else:
-            print(
-                f"""No time series available for {country} {carrier}.
-                  Using static p_set."""
-            )
+            print(f"""No time series available for {country} {carrier}.
+                  Using static p_set.""")
 
             network.loads_t.p_set[
                 f"{country} rural heat"
@@ -2385,12 +2368,10 @@ def execute():
             network.export_to_netcdf(network_path)
 
         else:
-            print(
-                f"""Adjustments on prenetworks are not implemented for
+            print(f"""Adjustments on prenetworks are not implemented for
                 foresight option {data_config['foresight']} and
                 year int(data_config['scenario']['planning_horizons'][0].
                 Please check the pypsaeur.execute function.
-                """
-            )
+                """)
     else:
         print("Pypsa-eur is not executed due to the settings of egon-data")

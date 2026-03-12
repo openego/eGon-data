@@ -9,9 +9,9 @@ import numpy as np
 import pandas as pd
 
 from egon.data import db
+from egon.data.datasets import load_sources_and_targets
 from egon.data.datasets.electricity_demand.temporal import calc_load_curve
 import egon.data.config
-from egon.data.datasets import load_sources_and_targets
 
 Base = declarative_base()
 
@@ -72,7 +72,6 @@ def identify_bus(load_curves, demand_area):
     """
 
     sources, _ = load_sources_and_targets("Industrial_demand_curves")
-
 
     # Select mv griddistrict
     griddistrict = db.select_geodataframe(
@@ -167,15 +166,12 @@ def calc_load_curves_ind_osm(scenario):
 
     sources, _ = load_sources_and_targets("Industrial_demand_curves")
 
-
     # Select demands per industrial branch and osm landuse area
-    demands_osm_area = db.select_dataframe(
-        f"""SELECT osm_id, wz, demand
+    demands_osm_area = db.select_dataframe(f"""SELECT osm_id, wz, demand
             FROM {sources.tables["osm"]}
             WHERE scenario = '{scenario}'
             AND demand > 0
-            """
-    ).set_index(["osm_id", "wz"])
+            """).set_index(["osm_id", "wz"])
 
     # Select industrial landuse polygons as demand area
     demand_area = db.select_geodataframe(
@@ -259,21 +255,17 @@ def insert_osm_ind_load():
 
     for scenario in egon.data.config.settings()["egon-data"]["--scenarios"]:
         # Delete existing data from database
-        db.execute_sql(
-            f"""
+        db.execute_sql(f"""
             DELETE FROM
             {targets.tables["osm_load"]}
             WHERE scn_name = '{scenario}'
-            """
-        )
+            """)
 
-        db.execute_sql(
-            f"""
+        db.execute_sql(f"""
             DELETE FROM
             {targets.tables["osm_load_individual"]}
             WHERE scn_name = '{scenario}'
-            """
-        )
+            """)
 
         # Calculate cts load curves per mv substation (hvmv bus)
         data, curves_individual = calc_load_curves_ind_osm(scenario)
@@ -324,7 +316,6 @@ def calc_load_curves_ind_sites(scenario):
 
     """
     sources, _ = load_sources_and_targets("Industrial_demand_curves")
-
 
     # Select demands per industrial site including the subsector information
     demands_ind_sites = db.select_dataframe(
@@ -421,25 +412,20 @@ def insert_sites_ind_load():
 
     _, targets = load_sources_and_targets("Industrial_demand_curves")
 
-
     for scenario in egon.data.config.settings()["egon-data"]["--scenarios"]:
         # Delete existing data from database
-        db.execute_sql(
-            f"""
+        db.execute_sql(f"""
             DELETE FROM
             {targets.tables["sites_load"]}
             WHERE scn_name = '{scenario}'
-            """
-        )
+            """)
 
         # Delete existing data from database
-        db.execute_sql(
-            f"""
+        db.execute_sql(f"""
             DELETE FROM
             {targets.tables["sites_load_individual"]}
             WHERE scn_name = '{scenario}'
-            """
-        )
+            """)
 
         # Calculate industrial load curves per bus
         data, curves_individual = calc_load_curves_ind_sites(scenario)

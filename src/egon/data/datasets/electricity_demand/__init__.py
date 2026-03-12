@@ -1,5 +1,5 @@
 """The central module containing all code dealing with processing
- data from demandRegio
+data from demandRegio
 
 """
 
@@ -46,14 +46,12 @@ class HouseholdElectricityDemand(Dataset):
     name: str = "HouseholdElectricityDemand"
     #:
     version: str = "0.0.8"
-    
+
     targets = DatasetTargets(
         tables={
             "household_demands_zensus": "demand.egon_demandregio_zensus_electricity",
         }
     )
-
-
 
     def __init__(self, dependencies):
         super().__init__(
@@ -97,7 +95,7 @@ class CtsElectricityDemand(Dataset):
     name: str = "CtsElectricityDemand"
     #:
     version: str = "0.0.4"
-    
+
     sources = DatasetSources(
         tables={
             "demandregio": "demand.egon_demandregio_cts_ind",
@@ -112,14 +110,12 @@ class CtsElectricityDemand(Dataset):
         }
     )
 
-
     targets = DatasetTargets(
         tables={
             "cts_demands_zensus": "demand.egon_demandregio_zensus_electricity",
             "cts_demand_curves": "demand.egon_etrago_electricity_cts",
         }
     )
-
 
     def __init__(self, dependencies):
         super().__init__(
@@ -286,8 +282,6 @@ def distribute_cts_demands():
 
     """
 
-    
-
     db.execute_sql(
         f"""DELETE FROM {CtsElectricityDemand.targets.tables["cts_demands_zensus"]}
         WHERE sector = 'service'"""
@@ -345,7 +339,9 @@ def distribute_cts_demands():
         # Insert data to target table
         peta[["scenario", "demand", "sector"]].to_sql(
             CtsElectricityDemand.targets.get_table_name("cts_demands_zensus"),
-            schema=CtsElectricityDemand.targets.get_table_schema("cts_demands_zensus"),
+            schema=CtsElectricityDemand.targets.get_table_schema(
+                "cts_demands_zensus"
+            ),
             con=db.engine(),
             if_exists="append",
         )

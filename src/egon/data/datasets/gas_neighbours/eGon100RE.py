@@ -18,11 +18,11 @@ Resulting tables
 import pandas as pd
 
 from egon.data import config, db
+from egon.data.datasets import load_sources_and_targets
 from egon.data.datasets.gas_neighbours.gas_abroad import (
     insert_gas_grid_capacities,
 )
 from egon.data.datasets.pypsaeur import read_network
-from egon.data.datasets import load_sources_and_targets
 
 countries = [
     "AT",

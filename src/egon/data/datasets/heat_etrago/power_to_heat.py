@@ -1,14 +1,12 @@
-"""The central module containing all code dealing with power to heat
-"""
+"""The central module containing all code dealing with power to heat"""
 
 from shapely.geometry import LineString
 import geopandas as gpd
 import pandas as pd
 
 from egon.data import db
-from egon.data.datasets.scenario_parameters import get_sector_parameters
 from egon.data.datasets import load_sources_and_targets
-
+from egon.data.datasets.scenario_parameters import get_sector_parameters
 
 
 def insert_individual_power_to_heat(scenario):
@@ -27,8 +25,7 @@ def insert_individual_power_to_heat(scenario):
     sources, targets = load_sources_and_targets("HeatEtrago")
 
     # Delete existing entries
-    db.execute_sql(
-        f"""
+    db.execute_sql(f"""
         DELETE FROM {targets.tables["heat_link_timeseries"]}
         WHERE link_id IN (
             SELECT link_id FROM {targets.tables["heat_links"]}
@@ -36,10 +33,8 @@ def insert_individual_power_to_heat(scenario):
                           'rural_resisitive_heater')
         AND scn_name = '{scenario}')
         AND scn_name = '{scenario}'
-        """
-    )
-    db.execute_sql(
-        f"""
+        """)
+    db.execute_sql(f"""
         DELETE FROM {targets.tables["heat_links"]}
         WHERE carrier IN ('individual_heat_pump', 'rural_heat_pump',
                           'rural_resisitive_heater')
@@ -53,12 +48,10 @@ def insert_individual_power_to_heat(scenario):
          FROM {targets.tables["heat_buses"]}
          WHERE scn_name = '{scenario}'
          AND country = 'DE')
-        """
-    )
+        """)
 
     # Select heat pumps for individual heating
-    heat_pumps = db.select_dataframe(
-        f"""
+    heat_pumps = db.select_dataframe(f"""
         SELECT mv_grid_id as power_bus,
         a.carrier, capacity, b.bus_id as heat_bus, d.feedin as cop
         FROM {sources.tables["individual_heating_supply"]} a
@@ -76,8 +69,7 @@ def insert_individual_power_to_heat(scenario):
         AND a.carrier = 'heat_pump'
         AND b.carrier = 'rural_heat'
         AND d.carrier = 'heat_pump_cop'
-        """
-    )
+        """)
 
     # Assign voltage level
     heat_pumps["voltage_level"] = 7
@@ -97,8 +89,7 @@ def insert_individual_power_to_heat(scenario):
 
     # Deal with rural resistive heaters
     # Select resisitve heaters for individual heating
-    resistive_heaters = db.select_dataframe(
-        f"""
+    resistive_heaters = db.select_dataframe(f"""
         SELECT mv_grid_id as power_bus,
         a.carrier, capacity, b.bus_id as heat_bus
         FROM {sources.tables["individual_heating_supply"]} a
@@ -110,8 +101,7 @@ def insert_individual_power_to_heat(scenario):
         AND scn_name  = '{scenario}'
         AND a.carrier = 'resistive_heater'
         AND b.carrier = 'rural_heat'
-        """
-    )
+        """)
 
     if resistive_heaters.empty:
         print(f"No rural resistive heaters in scenario {scenario}.")
@@ -147,19 +137,16 @@ def insert_central_power_to_heat(scenario):
     sources, targets = load_sources_and_targets("HeatEtrago")
 
     # Delete existing entries
-    db.execute_sql(
-        f"""
+    db.execute_sql(f"""
         DELETE FROM {targets.tables["heat_link_timeseries"]}
         WHERE link_id IN (
             SELECT link_id FROM {targets.tables["heat_links"]}
         WHERE carrier = 'central_heat_pump'
         AND scn_name = '{scenario}')
         AND scn_name = '{scenario}'
-        """
-    )
+        """)
 
-    db.execute_sql(
-        f"""
+    db.execute_sql(f"""
         DELETE FROM {targets.tables["heat_links"]}
         WHERE carrier = 'central_heat_pump'
         AND bus0 IN 
@@ -172,8 +159,7 @@ def insert_central_power_to_heat(scenario):
          FROM {targets.tables["heat_buses"]}
          WHERE scn_name = '{scenario}'
          AND country = 'DE')
-        """
-    )
+        """)
 
     # Select heat pumps in district heating
     central_heat_pumps = db.select_geodataframe(
@@ -221,8 +207,7 @@ def insert_central_power_to_heat(scenario):
     )
 
     # Delete existing entries
-    db.execute_sql(
-        f"""
+    db.execute_sql(f"""
         DELETE FROM {targets.tables["heat_links"]}
         WHERE carrier = 'central_resistive_heater'
         AND bus0 IN 
@@ -235,8 +220,7 @@ def insert_central_power_to_heat(scenario):
          FROM {targets.tables["heat_buses"]}
          WHERE scn_name = '{scenario}'
          AND country = 'DE')
-        """
-    )
+        """)
     # Select heat pumps in district heating
     central_resistive_heater = db.select_geodataframe(
         f"""

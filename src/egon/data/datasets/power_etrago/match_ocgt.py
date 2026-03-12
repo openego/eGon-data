@@ -2,15 +2,16 @@
 """
 Module containing the definition of the open cycle gas turbine links
 """
+
 from geoalchemy2.types import Geometry
 from scipy.spatial import cKDTree
 import numpy as np
 import pandas as pd
 
 from egon.data import config, db
+from egon.data.datasets import load_sources_and_targets
 from egon.data.datasets.etrago_setup import link_geom_from_buses
 from egon.data.datasets.scenario_parameters import get_sector_parameters
-from egon.data.datasets import load_sources_and_targets
 
 
 def insert_open_cycle_gas_turbines():
@@ -32,7 +33,7 @@ def insert_open_cycle_gas_turbines_per_scenario(scn_name):
 
     """
     sources, targets = load_sources_and_targets("OpenCycleGasTurbineEtrago")
-    
+
     # Connect to local database
     engine = db.engine()
 
@@ -57,14 +58,12 @@ def insert_open_cycle_gas_turbines_per_scenario(scn_name):
     )
 
     # Delete old entries
-    db.execute_sql(
-        f"""
+    db.execute_sql(f"""
         DELETE FROM {targets.tables["etrago_link"]}
         WHERE "carrier" = '{carrier}'
         AND scn_name = '{scn_name}'
         AND bus0 IN {buses} AND bus1 IN {buses};
-        """
-    )
+        """)
 
     # read carrier information from scnario parameter data
     scn_params = get_sector_parameters("gas", scn_name)

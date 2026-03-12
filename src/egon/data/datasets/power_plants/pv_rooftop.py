@@ -1,5 +1,4 @@
-"""The module containing all code dealing with pv rooftop distribution to MV grid level.
-"""
+"""The module containing all code dealing with pv rooftop distribution to MV grid level."""
 
 from pathlib import Path
 
@@ -65,30 +64,25 @@ def pv_rooftop_per_mv_grid_and_scenario(scenario, level):
     sources, targets = load_sources_and_targets("PowerPlants")
 
     # Delete existing rows
-    db.execute_sql(
-        f"""
+    db.execute_sql(f"""
         DELETE FROM {targets.tables['generators']}
         WHERE carrier IN ('solar_rooftop')
         AND scn_name = '{scenario}'
         AND bus IN (SELECT bus_id FROM
                     {sources.tables['egon_mv_grid_district']})
-        """
-    )
+        """)
 
-    db.execute_sql(
-        f"""
+    db.execute_sql(f"""
         DELETE FROM {targets.tables['generator_timeseries']}
         WHERE scn_name = '{scenario}'
         AND generator_id NOT IN (
             SELECT generator_id FROM
             grid.egon_etrago_generator
             WHERE scn_name = '{scenario}')
-        """
-    )
+        """)
 
     # Select demand per mv grid district
-    demand = db.select_dataframe(
-        f"""
+    demand = db.select_dataframe(f"""
          SELECT SUM(demand) as demand,
          b.bus_id, vg250_lan
          FROM {sources.tables['electricity_demand']} a
@@ -98,8 +92,7 @@ def pv_rooftop_per_mv_grid_and_scenario(scenario, level):
          ON c.bus_id = b.bus_id
          WHERE scenario = '{scenario}'
          GROUP BY (b.bus_id, vg250_lan)
-         """
-    )
+         """)
 
     # make sure only grid districts with any buildings are used
     valid_buildings_gdf = load_building_data()
@@ -145,14 +138,12 @@ def pv_rooftop_per_mv_grid_and_scenario(scenario, level):
         )
     else:
 
-        target = db.select_dataframe(
-            f"""
+        target = db.select_dataframe(f"""
             SELECT capacity
             FROM {sources.tables['scenario_capacities']} a
             WHERE carrier = 'solar_rooftop'
             AND scenario_name = '{scenario}'
-            """
-        )
+            """)
 
         if target.empty:
             print(f"No PV rooftop in scenario {scenario}")
@@ -164,7 +155,7 @@ def pv_rooftop_per_mv_grid_and_scenario(scenario, level):
 
         if dataset == "Schleswig-Holstein":
             # <--- REFACTORING: Use sources.files lookup instead of config.datasets()
-            
+
             path = Path(
                 f"./data_bundle_egon_data/nep2035_version2021/"
                 f"{sources.files['nep_2035_capacities']}"

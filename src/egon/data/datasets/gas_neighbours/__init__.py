@@ -2,9 +2,8 @@
 The central module containing definition of the datasets dealing with gas neighbours
 """
 
-from egon.data.datasets import Dataset, DatasetSources, DatasetTargets
 from egon.data import config
-
+from egon.data.datasets import Dataset, DatasetSources, DatasetTargets
 from egon.data.datasets.gas_neighbours.eGon100RE import (
     insert_gas_neigbours_eGon100RE,
 )
@@ -17,12 +16,10 @@ from egon.data.datasets.gas_neighbours.eGon2035 import (
 
 
 def no_gas_neighbours_required():
-    print(
-        """
+    print("""
           None of the required scenarios need the creation of
           foreign gas buses
-          """
-    )
+          """)
     return None
 
 
@@ -44,8 +41,7 @@ if tasks == ():
 
 
 class GasNeighbours(Dataset):
-    
-    
+
     sources = DatasetSources(
         files={
             "tyndp_capacities": "TYNDP-2020-Scenario-Datafile.xlsx.zip",

@@ -16,6 +16,7 @@ These links are modelling:
 
 
 """
+
 from itertools import count
 from pathlib import Path
 import math
@@ -29,9 +30,8 @@ import numpy as np
 import pandas as pd
 
 from egon.data import config, db
-from egon.data.datasets.scenario_parameters import get_sector_parameters
 from egon.data.datasets import load_sources_and_targets
-
+from egon.data.datasets.scenario_parameters import get_sector_parameters
 
 
 def insert_power_to_h2_to_power():
@@ -123,7 +123,6 @@ def insert_power_to_h2_to_power():
 
     # connet to PostgreSQL database (to localhost)
     engine = db.engine()
-    
 
     for SCENARIO_NAME in scenarios:
 
@@ -283,18 +282,14 @@ def insert_power_to_h2_to_power():
         }
 
         with engine.connect() as conn:
-            conn.execute(
-                text(
-                    f"""DELETE FROM {sources.tables["links"]}
+            conn.execute(text(f"""DELETE FROM {sources.tables["links"]}
                             WHERE carrier IN ('power_to_H2', 'H2_to_power', 'PtH2_waste_heat', 'PtH2_O2') 
                             AND scn_name = '{SCENARIO_NAME}' AND bus0 IN (
                               SELECT bus_id
                               FROM {sources.tables["buses"]}
                               WHERE country = 'DE'
                             )
-                            """
-                )
-            )
+                            """))
 
         def prepare_dataframes_for_spartial_queries():
 
@@ -329,9 +324,7 @@ def insert_power_to_h2_to_power():
             ]  # delete all abroad_links
 
             # prepare heat_buses for filtering
-            queries[
-                HEAT_AREA
-            ] = f"""
+            queries[HEAT_AREA] = f"""
                      SELECT area_id, geom_polygon as geom
                      FROM {sources.tables["district_heating_area"]}   
                      WHERE scenario = '{SCENARIO_NAME}'
@@ -370,21 +363,17 @@ def insert_power_to_h2_to_power():
                 dfs[HEAT_BUS]["area_geom"]
             )
 
-            queries[
-                HEAT_LOAD
-            ] = f"""
+            queries[HEAT_LOAD] = f"""
                     SELECT bus, load_id 
                     	FROM {sources.tables["loads"]}
                     WHERE carrier in ('central_heat')
                     AND scn_name = '{SCENARIO_NAME}'
                     """
-                    
+
             dfs[HEAT_LOAD] = pd.read_sql(queries[HEAT_LOAD], engine)
             load_ids = tuple(dfs[HEAT_LOAD]["load_id"])
 
-            queries[
-                HEAT_TIMESERIES
-            ] = f"""
+            queries[HEAT_TIMESERIES] = f"""
                 SELECT load_id, p_set
                 FROM {sources.tables["load_timeseries"]}
                 WHERE load_id IN {load_ids}
@@ -1056,7 +1045,7 @@ def insert_power_to_h2_to_power():
             return power_to_H2, H2_to_power, power_to_Heat, power_to_O2
 
         def export_links_to_db(df, carrier):
-            
+
             gdf = gpd.GeoDataFrame(df, geometry="geom").set_crs(METRIC_CRS)
             gdf = gdf.to_crs(epsg=DATA_CRS)
             gdf.p_nom = 0
@@ -1069,7 +1058,9 @@ def insert_power_to_h2_to_power():
                     if_exists="append",
                     index=False,
                 )
-                print(f"Links have been exported to {targets.tables['hydrogen_links']}")
+                print(
+                    f"Links have been exported to {targets.tables['hydrogen_links']}"
+                )
             except Exception as e:
                 print(f"Error while exporting link data: {e}")
 
@@ -1102,7 +1093,9 @@ def insert_power_to_h2_to_power():
                 if_exists="append",
                 index=False,
             )
-            print(f"O2 load data exported to: {targets.get_table_name('loads')}")
+            print(
+                f"O2 load data exported to: {targets.get_table_name('loads')}"
+            )
             return df
 
         def insert_o2_load_timeseries(df):
@@ -1118,13 +1111,11 @@ def insert_power_to_h2_to_power():
             base_load_profile = np.array(base_load_profile[0])
 
             with engine.connect() as conn:
-                conn.execute(
-                    f"""
+                conn.execute(f"""
                     DELETE FROM {targets.tables["load_timeseries"]}
                     WHERE load_id IN {tuple(df.load_id.values)} 
                     AND scn_name = '{SCENARIO_NAME}'
-                    """
-                )
+                    """)
 
             timeseries_list = []
 
@@ -1197,9 +1188,7 @@ def insert_power_to_h2_to_power():
 
         def adjust_ac_load_timeseries(df, o2_timeseries):
             # filter out affected ac_loads
-            queries[
-                AC_LOAD
-            ] = f"""
+            queries[AC_LOAD] = f"""
                                 SELECT bus, load_id 
                         			FROM {sources.tables["loads"]}
                                 WHERE scn_name = '{SCENARIO_NAME}'
@@ -1214,13 +1203,11 @@ def insert_power_to_h2_to_power():
             for _, row in ac_loads.iterrows():
                 with engine.connect() as conn:
 
-                    select_query = text(
-                        f"""
+                    select_query = text(f"""
                         SELECT p_set 
                         FROM {sources.tables["load_timeseries"]}
                         WHERE load_id = :load_id and scn_name= :SCENARIO_NAME
-                        """
-                    )
+                        """)
                     result = conn.execute(
                         select_query,
                         {
@@ -1244,13 +1231,11 @@ def insert_power_to_h2_to_power():
                                     np.array(original_p_set)
                                     - np.array(o2_p_set)
                                 ).tolist()
-                                update_query = text(
-                                    f"""
+                                update_query = text(f"""
                                      UPDATE {targets.tables["load_timeseries"]}
                                      SET p_set = :adjusted_p_set
                                      WHERE load_id = :load_id AND scn_name = :SCENARIO_NAME
-                                 """
-                                )
+                                 """)
                                 conn.execute(
                                     update_query,
                                     {
@@ -1270,14 +1255,12 @@ def insert_power_to_h2_to_power():
 
         def delete_unconnected_o2_buses():
             with engine.connect() as conn:
-                conn.execute(
-                    f"""
+                conn.execute(f"""
                     DELETE FROM {targets.tables["buses"]}
                     WHERE carrier = 'O2' AND scn_name = '{SCENARIO_NAME}'
                     AND bus_id NOT IN (SELECT bus1 FROM {targets.tables["hydrogen_links"]} 
                                        WHERE carrier = 'PtH2_O2')
-                    """
-                )
+                    """)
 
         def execute_PtH2_method():
 

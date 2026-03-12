@@ -8,12 +8,8 @@ import numpy as np
 import pandas as pd
 
 from egon.data import db
-import egon
 from egon.data.datasets import load_sources_and_targets
-
-
-
-
+import egon
 
 Base = declarative_base()
 
@@ -461,12 +457,10 @@ def select():
     )
 
     # Select daily heat demand shares per climate zone from table
-    temperature_classes = db.select_dataframe(
-        f"""
+    temperature_classes = db.select_dataframe(f"""
         SELECT climate_zone, day_of_year, temperature_class
         FROM {sources.tables["daily_heat_demand_per_climate_zone"]}
-        """
-    )
+        """)
 
     # Calculate annual heat demand per census cell
     annual_demand = annual_demand_generator(

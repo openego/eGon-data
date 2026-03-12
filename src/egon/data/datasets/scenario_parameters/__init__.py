@@ -1,5 +1,4 @@
-"""The central module containing all code dealing with scenario table.
-"""
+"""The central module containing all code dealing with scenario table."""
 
 from pathlib import Path
 from urllib.request import urlretrieve
@@ -216,42 +215,34 @@ def get_sector_parameters(sector, scenario=None):
                 f"SELECT name FROM {ScenarioParameters.targets.tables['egon_scenario_parameters']}"
             ).name.values
         ):
-            values = db.select_dataframe(
-                f"""
+            values = db.select_dataframe(f"""
                     SELECT {sector}_parameters as val
                     FROM {ScenarioParameters.targets.tables['egon_scenario_parameters']}
-                    WHERE name = '{scenario}';"""
-            ).val[0]
+                    WHERE name = '{scenario}';""").val[0]
         else:
             print(f"Scenario name {scenario} is not valid.")
     else:
         values = pd.concat(
             [
                 pd.DataFrame(
-                    db.select_dataframe(
-                        f"""
+                    db.select_dataframe(f"""
                         SELECT {sector}_parameters as val
                         FROM {ScenarioParameters.targets.tables['egon_scenario_parameters']}
-                        WHERE name='eGon2035'"""
-                    ).val[0],
+                        WHERE name='eGon2035'""").val[0],
                     index=["eGon2035"],
                 ),
                 pd.DataFrame(
-                    db.select_dataframe(
-                        f"""
+                    db.select_dataframe(f"""
                         SELECT {sector}_parameters as val
                         FROM {ScenarioParameters.targets.tables['egon_scenario_parameters']}
-                        WHERE name='eGon100RE'"""
-                    ).val[0],
+                        WHERE name='eGon100RE'""").val[0],
                     index=["eGon100RE"],
                 ),
                 pd.DataFrame(
-                    db.select_dataframe(
-                        f"""
+                    db.select_dataframe(f"""
                         SELECT {sector}_parameters as val
                         FROM {ScenarioParameters.targets.tables['egon_scenario_parameters']}
-                        WHERE name='eGon2021'"""
-                    ).val[0],
+                        WHERE name='eGon2021'""").val[0],
                     index=["eGon2021"],
                 ),
             ],
@@ -263,17 +254,21 @@ def get_sector_parameters(sector, scenario=None):
 
 def download_pypsa_technology_data():
     """Downlad PyPSA technology data results."""
-    data_path = Path(ScenarioParameters.targets.files["technology_data"]).parent
+    data_path = Path(
+        ScenarioParameters.targets.files["technology_data"]
+    ).parent
     # Delete folder if it already exists
     if data_path.exists() and data_path.is_dir():
         shutil.rmtree(data_path)
     # Retrieve files
     urlretrieve(
-    ScenarioParameters.sources.urls["pypsa_technology_data"]["url"],
-    ScenarioParameters.targets.files["pypsa_zip"],
+        ScenarioParameters.sources.urls["pypsa_technology_data"]["url"],
+        ScenarioParameters.targets.files["pypsa_zip"],
     )
 
-    with zipfile.ZipFile(ScenarioParameters.targets.files["pypsa_zip"], "r") as zip_ref:
+    with zipfile.ZipFile(
+        ScenarioParameters.targets.files["pypsa_zip"], "r"
+    ) as zip_ref:
         zip_ref.extractall(".")
 
 
@@ -301,8 +296,7 @@ class ScenarioParameters(Dataset):
     name: str = "ScenarioParameters"
     #:
     version: str = "0.0.21"
-    
-    
+
     sources = DatasetSources(
         urls={
             "pypsa_technology_data": {
@@ -319,7 +313,7 @@ class ScenarioParameters(Dataset):
             "pypsa_zip": "pypsa_technology_data_egon_data.zip",
             "data_dir": "PyPSA-technology-data-94085a8/outputs/",
             "technology_data": "pypsa_technology_data/technology_data.xlsx",
-        }
+        },
     )
 
     def __init__(self, dependencies):

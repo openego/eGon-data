@@ -202,7 +202,7 @@ def calc_evs_per_municipality(ev_data, rs7_data):
         RegioStaR7 data
     """
     sources, targets = load_sources_and_targets("MotorizedIndividualTravel")
-    
+
     testmode_off = (
         config.settings()["egon-data"]["--dataset-boundary"] == "Everything"
     )
@@ -426,7 +426,7 @@ def allocate_evs_numbers():
 
     """
     sources, targets = load_sources_and_targets("MotorizedIndividualTravel")
-    
+
     testmode_off = (
         config.settings()["egon-data"]["--dataset-boundary"] == "Everything"
     )
@@ -548,7 +548,7 @@ def allocate_evs_to_grid_districts():
     Results are written to :class:`EgonEvMvGridDistrict`.
     """
     sources, targets = load_sources_and_targets("MotorizedIndividualTravel")
-    
+
     testmode_off = (
         config.settings()["egon-data"]["--dataset-boundary"] == "Everything"
     )

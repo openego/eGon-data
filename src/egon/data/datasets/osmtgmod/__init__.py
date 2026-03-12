@@ -24,7 +24,6 @@ def run():
     sys.setrecursionlimit(5000)
     # execute osmTGmod
 
-
     if settings()["egon-data"]["--dataset-boundary"] == "Everything":
         target_path = Osmtgmod.sources.files["file"]
     else:
@@ -92,8 +91,6 @@ def import_osm_data():
             ]
         )
 
-
-
     if settings()["egon-data"]["--dataset-boundary"] == "Everything":
         target_path = Osmtgmod.sources.files["file"]
     else:
@@ -115,13 +112,11 @@ def import_osm_data():
     ]
 
     logging.info("Creating status table ...")
-    db.execute_sql(
-        """
+    db.execute_sql("""
         DROP TABLE IF EXISTS _db_status;
         CREATE TABLE _db_status (module TEXT, status BOOLEAN);
         INSERT INTO _db_status (module, status) VALUES ('grid_model', FALSE);
-        """
-    )
+        """)
 
     logging.info("Status table created.")
 
@@ -147,20 +142,16 @@ def import_osm_data():
         db.execute_sql(sqlfile)
         logging.info("Done.")
 
-    db.execute_sql(
-        """UPDATE _db_status SET status = TRUE
-            WHERE module = 'grid_model'; """
-    )
+    db.execute_sql("""UPDATE _db_status SET status = TRUE
+            WHERE module = 'grid_model'; """)
 
     logging.info("osmTGmod-database successfully built up!")
 
     logging.info("Importing OSM-data to database.")
 
     logging.info("Using pdf file: {}".format(filtered_osm_pbf_path_to_file))
-    logging.info(
-        f"""Assuming osmosis is avaliable at
-        {config['osm_data']['osmosis_path_to_binary']}"""
-    )
+    logging.info(f"""Assuming osmosis is avaliable at
+        {config['osm_data']['osmosis_path_to_binary']}""")
 
     # create directory to store osmosis' temp files
     osmosis_temp_dir = Path("osmTGmod") / "osmosis_temp/"
@@ -215,13 +206,10 @@ def osmtgmod(
         to existing substation. (see:)
         """
         print("Manually updating geometry of substation in Garenfeld")
-        db.execute_sql(
-            """DROP TRIGGER IF EXISTS
-            power_ways_update ON power_ways CASCADE """
-        )
+        db.execute_sql("""DROP TRIGGER IF EXISTS
+            power_ways_update ON power_ways CASCADE """)
 
-        db.execute_sql(
-            """
+        db.execute_sql("""
             UPDATE power_ways
             SET way =  (SELECT ST_SetSRID(ST_AsText(
                 '0102000000160000001612D5004A081E4020A8644A35B349407B0ACA'
@@ -238,8 +226,7 @@ def osmtgmod(
                 '20A8644A35B34940'), 4326))
             WHERE name = 'Garenfeld'
             AND id = 24667346
-            """
-        )
+            """)
 
     # ==============================================================
     # Setup logging
@@ -384,11 +371,9 @@ def osmtgmod(
             )
         )
         logging.info("Deleting all entries from transfer_busses table ...")
-        cur.execute(
-            """
+        cur.execute("""
         DELETE FROM transfer_busses;
-        """
-        )
+        """)
         conn.commit()
 
         with open(path_for_transfer_busses, "w") as this_file:
@@ -451,12 +436,10 @@ def osmtgmod(
     config_continue_run_at = -1
 
     if not config_continue_run:  # debugging - to be removed
-        cur.execute(
-            """drop table if exists debug;create table debug
+        cur.execute("""drop table if exists debug;create table debug
             (step_before int,max_bus_id int, num_bus int,max_branch_id int,
             num_branch int, num_110_bus int, num_220_bus int,
-            num_380_bus int)"""
-        )
+            num_380_bus int)""")
         conn.commit()
 
     # split sqlfile in commands seperated by ";", while not considering
@@ -490,8 +473,7 @@ def osmtgmod(
                 )
                 sys.exit()
             if i > 16:  # debugging - to be removed
-                cur.execute(
-                    """insert into debug values ({0},
+                cur.execute("""insert into debug values ({0},
                     (select max(id) from bus_data),(select count(*)
                     from bus_data),(select max(branch_id)
                     from branch_data),(select count(*)
@@ -499,10 +481,7 @@ def osmtgmod(
                     from bus_data where voltage = 110000),
                     (select count (*) from bus_data where voltage = 220000),
                     (select count (*)
-                    from bus_data where voltage = 380000))""".format(
-                        i
-                    )
-                )
+                    from bus_data where voltage = 380000))""".format(i))
                 conn.commit()
 
     logging.info("Power-script executed successfully.")
@@ -527,9 +506,7 @@ def osmtgmod(
         )
         query = "SELECT * FROM osmtgmod_results.%s " % (table,)
         outputquery = "COPY ({0}) TO STDOUT WITH DELIMITER \
-            ',' CSV HEADER".format(
-            query
-        )
+            ',' CSV HEADER".format(query)
         with open(filename, encoding="utf-8", mode="w") as fh:
             cur.copy_expert(outputquery, fh)
 
@@ -539,16 +516,13 @@ def osmtgmod(
 
 
 def to_pypsa():
-    db.execute_sql(
-        f"""
+    db.execute_sql(f"""
         -- CLEAN UP OF TABLES
         DELETE FROM {Osmtgmod.targets.tables['etrago_bus']}
         WHERE carrier = 'AC';
         DELETE FROM {Osmtgmod.targets.tables['etrago_line']};
         DELETE FROM {Osmtgmod.targets.tables['etrago_transformer']};
-        """
-
-    )
+        """)
 
     # for scenario_name in ["'eGon2035'", "'eGon100RE'", "'status2019'"]:
     scenario_list = egon.data.config.settings()["egon-data"]["--scenarios"]
@@ -565,8 +539,7 @@ def to_pypsa():
             "electricity", scenario_name.replace("'", "")
         )["lifetime"]
 
-        db.execute_sql(
-            f"""
+        db.execute_sql(f"""
             -- BUS DATA
             INSERT INTO {Osmtgmod.targets.tables['etrago_bus']}
                 (scn_name, bus_id, v_nom, geom, x, y, carrier, country)
@@ -796,8 +769,7 @@ def to_pypsa():
             AND bus_id NOT IN
             (SELECT bus1 FROM {Osmtgmod.targets.tables['etrago_transformer']} 
              WHERE scn_name = {scenario_name});
-            """
-        )
+            """)
 
 
 def reset_etrago_sequences_to_max_id():
@@ -850,8 +822,7 @@ def reset_etrago_sequences_to_max_id():
 
 
 def fix_transformer_snom():
-    db.execute_sql(
-     f"""
+    db.execute_sql(f"""
      UPDATE {Osmtgmod.targets.tables['etrago_transformer']} AS t
      SET s_nom = CAST(
          LEAST(
@@ -896,7 +867,7 @@ class Osmtgmod(Dataset):
     name: str = "Osmtgmod"
     #:
     version: str = "0.0.12"
-    
+
     sources = DatasetSources(
         files={
             "file": "germany-250101.osm.pbf",
@@ -909,7 +880,7 @@ class Osmtgmod(Dataset):
             "osmtgmod_results_meta": "osmtgmod_results.results_metadata",
             "ehv_transfer_buses": "grid.egon_ehv_transfer_buses",
             "hvmv_transfer_buses": "grid.egon_hvmv_transfer_buses",
-        }
+        },
     )
 
     targets = DatasetTargets(

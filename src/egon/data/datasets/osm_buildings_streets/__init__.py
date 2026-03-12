@@ -185,7 +185,7 @@ class OsmBuildingsStreets(Dataset):
     name: str = "OsmBuildingsStreets"
     #:
     version: str = "0.0.9"
-    
+
     sources = DatasetSources(
         tables={
             "osm_polygon": "openstreetmap.osm_polygon",

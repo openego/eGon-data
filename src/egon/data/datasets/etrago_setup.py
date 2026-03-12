@@ -136,10 +136,7 @@ class EtragoSetup(Dataset):
     name: str = "EtragoSetup"
     version: str = "0.0.14"
 
-    sources = DatasetSources(
-        tables={},
-        files={}
-    )
+    sources = DatasetSources(tables={}, files={})
 
     targets = DatasetTargets(
         tables={
@@ -932,34 +929,34 @@ def create_tables():
     db.execute_sql(f"DROP TABLE IF EXISTS {schema}.egon_pf_hv_carrier;")
     db.execute_sql(f"DROP TABLE IF EXISTS {schema}.egon_pf_hv_generator;")
     db.execute_sql(
-    f"DROP TABLE IF EXISTS {schema}.egon_pf_hv_generator_timeseries;"
+        f"DROP TABLE IF EXISTS {schema}.egon_pf_hv_generator_timeseries;"
     )
     db.execute_sql(f"DROP TABLE IF EXISTS {schema}.egon_pf_hv_line;")
     db.execute_sql(
-    f"DROP TABLE IF EXISTS {schema}.egon_pf_hv_line_timeseries;"
+        f"DROP TABLE IF EXISTS {schema}.egon_pf_hv_line_timeseries;"
     )
     db.execute_sql(f"DROP TABLE IF EXISTS {schema}.egon_pf_hv_link;")
     db.execute_sql(
-    f"DROP TABLE IF EXISTS {schema}.egon_pf_hv_link_timeseries;"
+        f"DROP TABLE IF EXISTS {schema}.egon_pf_hv_link_timeseries;"
     )
     db.execute_sql(f"DROP TABLE IF EXISTS {schema}.egon_pf_hv_load;")
     db.execute_sql(
-    f"DROP TABLE IF EXISTS {schema}.egon_pf_hv_load_timeseries;"
+        f"DROP TABLE IF EXISTS {schema}.egon_pf_hv_load_timeseries;"
     )
     db.execute_sql(f"DROP TABLE IF EXISTS {schema}.egon_pf_hv_storage;")
     db.execute_sql(
-    f"DROP TABLE IF EXISTS {schema}.egon_pf_hv_storage_timeseries;"
+        f"DROP TABLE IF EXISTS {schema}.egon_pf_hv_storage_timeseries;"
     )
     db.execute_sql(f"DROP TABLE IF EXISTS {schema}.egon_pf_hv_store;")
     db.execute_sql(
-    f"DROP TABLE IF EXISTS {schema}.egon_pf_hv_store_timeseries;"
+        f"DROP TABLE IF EXISTS {schema}.egon_pf_hv_store_timeseries;"
     )
     db.execute_sql(
-    f"DROP TABLE IF EXISTS {schema}.egon_pf_hv_temp_resolution;"
+        f"DROP TABLE IF EXISTS {schema}.egon_pf_hv_temp_resolution;"
     )
     db.execute_sql(f"DROP TABLE IF EXISTS {schema}.egon_pf_hv_transformer;")
     db.execute_sql(
-    f"DROP TABLE IF EXISTS {schema}.egon_pf_hv_transformer_timeseries;"
+        f"DROP TABLE IF EXISTS {schema}.egon_pf_hv_transformer_timeseries;"
     )
     ##########################################################################
 
@@ -1041,28 +1038,25 @@ def create_etrago_id_sequences():
         db.execute_sql(drop_query)
         db.execute_sql(create_query)
 
+
 def temp_resolution():
     """Insert temporal resolution for eTraGo"""
     schema = EtragoSetup.targets.get_table_schema("temp_resolution")
     table = EtragoSetup.targets.get_table_name("temp_resolution")
-    db.execute_sql(
-        f"""
+    db.execute_sql(f"""
         INSERT INTO {schema}.{table}
         (temp_id, timesteps, resolution, start_time)
         SELECT 1, 8760, 'h', TIMESTAMP '2011-01-01 00:00:00';
-        """
-    )
+        """)
 
 
 def insert_carriers():
     """Insert list of carriers into eTraGo table"""
     schema = EtragoSetup.targets.get_table_schema("carrier")
-    table  = EtragoSetup.targets.get_table_name("carrier")
-    db.execute_sql(
-        f"""
+    table = EtragoSetup.targets.get_table_name("carrier")
+    db.execute_sql(f"""
         DELETE FROM {schema}.{table};
-        """
-    )
+        """)
 
     # List carrier names from all components
     df = pd.DataFrame(
@@ -1126,6 +1120,7 @@ def insert_carriers():
         index=False,
     )
 
+
 def check_carriers():
     """Check if any eTraGo table has carriers not included in the carrier table.
 
@@ -1137,7 +1132,7 @@ def check_carriers():
     carriers = db.select_dataframe(
         f"SELECT name FROM {EtragoSetup.targets.tables['carrier']}"
     )["name"]
-    
+
     unknown_carriers = {}
     tables = ["bus", "store", "storage", "link", "line", "generator", "load"]
 

@@ -245,7 +245,6 @@ class CtsDemandBuildings(Dataset):
         }
     )
 
-
     targets = DatasetTargets(
         tables={
             "cts_buildings": "openstreetmap.egon_cts_buildings",
@@ -257,8 +256,6 @@ class CtsDemandBuildings(Dataset):
             "map_zensus_mvgd_buildings": "boundaries.egon_map_zensus_mvgd_buildings",
         }
     )
-
-
 
     def __init__(self, dependencies):
         super().__init__(

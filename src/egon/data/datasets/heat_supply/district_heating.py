@@ -7,8 +7,8 @@ import geopandas as gpd
 import pandas as pd
 
 from egon.data import config, db
-from egon.data.datasets.heat_supply.geothermal import calc_geothermal_costs
 from egon.data.datasets import load_sources_and_targets
+from egon.data.datasets.heat_supply.geothermal import calc_geothermal_costs
 
 
 def capacity_per_district_heating_category(district_heating_areas, scenario):
@@ -435,23 +435,19 @@ def backup_resistive_heaters(scenario):
     district_heating_areas = select_district_heating_areas(scenario)
 
     # Select target value
-    target_value = db.select_dataframe(
-        f"""
+    target_value = db.select_dataframe(f"""
         SELECT capacity
         FROM {sources.tables['scenario_capacities']}
         WHERE carrier = 'urban_central_resistive_heater'
         AND scenario_name = '{scenario}'
-        """
-    ).capacity[0]
+        """).capacity[0]
 
-    distributed = db.select_dataframe(
-        f"""
+    distributed = db.select_dataframe(f"""
         SELECT SUM(capacity) as capacity
         FROM {targets.tables['district_heating_supply']}
         WHERE carrier = 'resistive_heater'
         AND scenario = '{scenario}'
-        """
-    ).capacity[0]
+        """).capacity[0]
 
     if not distributed:
         distributed = 0

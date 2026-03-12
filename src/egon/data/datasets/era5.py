@@ -44,7 +44,7 @@ class WeatherData(Dataset):
     name: str = "Era5"
     #:
     version: str = "0.0.8"
-    
+
     sources = DatasetSources(
         files={},
         tables={
@@ -57,11 +57,7 @@ class WeatherData(Dataset):
             "weather_cells": "supply.egon_era5_weather_cells",
             "renewable_feedin": "supply.egon_era5_renewable_feedin",
         },
-        files={
-            "weather_data": {
-                "path": "data_bundle_egon_data/cutouts"
-            }
-        },
+        files={"weather_data": {"path": "data_bundle_egon_data/cutouts"}},
     )
 
     def __init__(self, dependencies):
@@ -105,11 +101,9 @@ def create_tables():
         f"CREATE SCHEMA IF NOT EXISTS {WeatherData.targets.get_table_schema('weather_cells')};"
     )
     engine = db.engine()
-    db.execute_sql(
-        f"""
+    db.execute_sql(f"""
         DROP TABLE IF EXISTS {WeatherData.targets.tables['weather_cells']} CASCADE;
-        """
-    )
+        """)
     EgonEra5Cells.__table__.create(bind=engine, checkfirst=True)
     EgonRenewableFeedIn.__table__.drop(bind=engine, checkfirst=True)
     EgonRenewableFeedIn.__table__.create(bind=engine, checkfirst=True)
@@ -227,4 +221,4 @@ def insert_weather_cells():
     db.execute_sql(
         f"UPDATE {WeatherData.targets.tables['weather_cells']} "
         f"SET geom_point=ST_Centroid(geom);"
-    )   
+    )

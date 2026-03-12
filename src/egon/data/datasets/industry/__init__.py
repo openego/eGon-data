@@ -12,8 +12,8 @@ import geopandas as gpd
 import pandas as pd
 
 from egon.data import db
-from egon.data.datasets import Dataset, DatasetSources, DatasetTargets
 from egon.data.config import settings
+from egon.data.datasets import Dataset, DatasetSources, DatasetTargets
 from egon.data.datasets.industry.temporal import (
     insert_osm_ind_load,
     insert_sites_ind_load,
@@ -96,38 +96,26 @@ def create_tables():
     targets = IndustrialDemandCurves.targets
     # Create target schema
     db.execute_sql("CREATE SCHEMA IF NOT EXISTS demand;")
-    
+
     # Drop tables and sequences before recreating them
 
-    db.execute_sql(
-    f"""DROP TABLE IF EXISTS
-        {targets.tables["sites"]} CASCADE;"""
-    )
+    db.execute_sql(f"""DROP TABLE IF EXISTS
+        {targets.tables["sites"]} CASCADE;""")
 
-    db.execute_sql(
-    f"""DROP TABLE IF EXISTS
-        {targets.tables["osm"]} CASCADE;"""
-    )
+    db.execute_sql(f"""DROP TABLE IF EXISTS
+        {targets.tables["osm"]} CASCADE;""")
 
-    db.execute_sql(
-    f"""DROP TABLE IF EXISTS
-        {targets.tables["osm_load"]} CASCADE;"""
-    )
+    db.execute_sql(f"""DROP TABLE IF EXISTS
+        {targets.tables["osm_load"]} CASCADE;""")
 
-    db.execute_sql(
-    f"""DROP TABLE IF EXISTS
-        {targets.tables["osm_load_individual"]} CASCADE;"""
-    )
+    db.execute_sql(f"""DROP TABLE IF EXISTS
+        {targets.tables["osm_load_individual"]} CASCADE;""")
 
-    db.execute_sql(
-    f"""DROP TABLE IF EXISTS
-        {targets.tables["sites_load"]} CASCADE;"""
-    )
+    db.execute_sql(f"""DROP TABLE IF EXISTS
+        {targets.tables["sites_load"]} CASCADE;""")
 
-    db.execute_sql(
-    f"""DROP TABLE IF EXISTS
-        {targets.tables["sites_load_individual"]} CASCADE;"""
-    )
+    db.execute_sql(f"""DROP TABLE IF EXISTS
+        {targets.tables["sites_load_individual"]} CASCADE;""")
 
     engine = db.engine()
 
@@ -167,16 +155,11 @@ def industrial_demand_distr():
     # Read information from configuration file
     sources = IndustrialDemandCurves.sources
     targets = IndustrialDemandCurves.targets
-    
 
     # Delete data from table
 
-    db.execute_sql(
-    f"""DELETE FROM {targets.tables["sites"]}"""
-    )
-    db.execute_sql(
-    f"""DELETE FROM {targets.tables["osm"]}"""
-    )
+    db.execute_sql(f"""DELETE FROM {targets.tables["sites"]}""")
+    db.execute_sql(f"""DELETE FROM {targets.tables["osm"]}""")
 
     for scn in settings()["egon-data"]["--scenarios"]:
         boundaries = db.select_geodataframe(
@@ -242,15 +225,13 @@ def industrial_demand_distr():
         )
 
         # Select industrial demands on nuts3 level from local database
-        demand_nuts3_import = db.select_dataframe(
-            f"""SELECT nuts3, demand, wz 
+        demand_nuts3_import = db.select_dataframe(f"""SELECT nuts3, demand, wz 
                 FROM {sources.tables["demandregio"]}
                 WHERE scenario = '{scn}'
                 AND demand > 0
                 AND wz IN
                     (SELECT wz FROM {sources.tables["wz"]}
-                         WHERE sector = 'industry')"""
-        )
+                         WHERE sector = 'industry')""")
 
         # Replace wz=17 and wz=18 by wz=1718 as a differentiation of these two
         # subsectors can't be performed
@@ -418,7 +399,7 @@ class IndustrialDemandCurves(Dataset):
     name: str = "Industrial_demand_curves"
     #:
     version: str = "0.0.8"
-    
+
     sources = DatasetSources(
         tables={
             "demandregio": "demand.egon_demandregio_cts_ind",
@@ -447,7 +428,7 @@ class IndustrialDemandCurves(Dataset):
             "sites_load_individual": "demand.egon_sites_ind_load_curves_individual",
         }
     )
-    
+
     def __init__(self, dependencies):
         super().__init__(
             name=self.name,

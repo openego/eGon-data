@@ -12,7 +12,12 @@ from sqlalchemy.ext.declarative import declarative_base
 import pandas as pd
 
 from egon.data import config, db
-from egon.data.datasets import Dataset, wrapped_partial
+from egon.data.datasets import (
+    Dataset,
+    DatasetSources,
+    DatasetTargets,
+    wrapped_partial,
+)
 from egon.data.datasets.generate_voronoi import get_voronoi_geodataframe
 from egon.data.metadata import (
     context,
@@ -22,7 +27,7 @@ from egon.data.metadata import (
     sources,
 )
 
-from egon.data.datasets import DatasetSources, DatasetTargets
+
 class GasAreaseGon2035(Dataset):
     """
     Create the gas voronoi table and the gas voronoi areas for eGon2035
@@ -60,6 +65,7 @@ class GasAreaseGon2035(Dataset):
             "ch4_voronoi": "grid.egon_gas_voronoi",
         }
     )
+
     def __init__(self, dependencies):
         super().__init__(
             name=self.name,
@@ -67,7 +73,6 @@ class GasAreaseGon2035(Dataset):
             dependencies=dependencies,
             tasks=(create_gas_voronoi_table, voronoi_egon2035),
         )
-
 
 
 class GasAreaseGon100RE(Dataset):
@@ -303,12 +308,10 @@ def create_voronoi(scn_name, carrier):
 
     carrier_strings = "', '".join(carriers)
 
-    db.execute_sql(
-        f"""
+    db.execute_sql(f"""
         DELETE FROM {targets.tables["ch4_voronoi"]}
         WHERE "carrier" IN ('{carrier_strings}') and "scn_name" = '{scn_name}';
-        """
-    )
+        """)
 
     buses = db.select_geodataframe(
         f"""

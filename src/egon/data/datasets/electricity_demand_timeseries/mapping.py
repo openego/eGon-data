@@ -27,12 +27,10 @@ class EgonMapZensusMvgdBuildings(Base):
     heat = Column(Boolean, index=True)
 
 
-
-
 def map_all_used_buildings():
     """This function maps all used buildings from OSM and synthetic ones."""
     scenarios = config.settings()["egon-data"]["--scenarios"]
-    
+
     cts_s, cts_t = load_sources_and_targets("CtsDemandBuildings")
     hh_s, hh_t = load_sources_and_targets("Household Demands")
     hts_s, hts_t = load_sources_and_targets("HeatTimeSeries")
@@ -42,8 +40,7 @@ def map_all_used_buildings():
     )
     EgonMapZensusMvgdBuildings.__table__.create(bind=db.engine())
 
-    db.execute_sql(
-        sql_string=f"""
+    db.execute_sql(sql_string=f"""
         INSERT INTO {EgonMapZensusMvgdBuildings.__table_args__["schema"]}.
         {EgonMapZensusMvgdBuildings.__tablename__}
             SELECT
@@ -101,5 +98,4 @@ def map_all_used_buildings():
 
 
 
-        """
-    )
+        """)

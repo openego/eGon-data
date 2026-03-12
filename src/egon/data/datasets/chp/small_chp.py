@@ -94,9 +94,7 @@ def existing_chp_smaller_10mw(sources, MaStR_konv, EgonChp):
         ).bus
 
         # Assign bus_id
-        mastr_chp["bus_id"] = assign_bus_id(
-            mastr_chp, sources
-        ).bus_id
+        mastr_chp["bus_id"] = assign_bus_id(mastr_chp, sources).bus_id
 
         mastr_chp = assign_use_case(mastr_chp, sources, "eGon2035")
 
@@ -161,7 +159,7 @@ def extension_to_areas(
 
     """
     sources, _ = load_sources_and_targets("Chp")
-    
+
     session = sessionmaker(bind=db.engine())()
 
     np.random.seed(seed=config.settings()["egon-data"]["--random-seed"])
@@ -325,8 +323,7 @@ def extension_district_heating(
 
     sources, targets = load_sources_and_targets("Chp")
 
-    existing_chp = db.select_dataframe(
-        f"""
+    existing_chp = db.select_dataframe(f"""
         SELECT el_capacity, th_capacity, voltage_level, b.area_id
         FROM
         {targets.tables['chp_table']} a,
@@ -343,14 +340,12 @@ def extension_district_heating(
         AND el_capacity < 10
         ORDER BY el_capacity, residential_and_service_demand
 
-        """
-    )
+        """)
 
     # Select all district heating areas without CHP
 
     try:
-        dh_areas = db.select_geodataframe(
-            f"""
+        dh_areas = db.select_geodataframe(f"""
             SELECT
             residential_and_service_demand as demand, area_id,
             ST_Transform(ST_PointOnSurface(geom_polygon), 4326)  as geom
@@ -367,8 +362,7 @@ def extension_district_heating(
                 FROM {targets.tables['chp_table']}
                 WHERE scenario = 'eGon2035'
                 AND district_heating = TRUE)
-            """
-        )
+            """)
     except:
         dh_areas = gpd.GeoDataFrame(
             columns=["demand", "area_id", "geom"]
@@ -446,8 +440,7 @@ def extension_industrial(federal_state, additional_capacity, flh_chp, EgonChp):
 
     sources, targets = load_sources_and_targets("Chp")
 
-    existing_chp = db.select_dataframe(
-        f"""
+    existing_chp = db.select_dataframe(f"""
         SELECT el_capacity, th_capacity, voltage_level
         FROM
         {targets.tables['chp_table']} a
@@ -456,12 +449,10 @@ def extension_industrial(federal_state, additional_capacity, flh_chp, EgonChp):
         AND el_capacity < 10
         ORDER BY el_capacity
 
-        """
-    )
+        """)
 
     # Select all industrial areas without CHP
-    industry_areas = db.select_geodataframe(
-        f"""
+    industry_areas = db.select_geodataframe(f"""
         SELECT
         SUM(demand) as demand, a.osm_id,
         ST_PointOnSurface(b.geom) as geom, b.name
@@ -495,8 +486,7 @@ def extension_industrial(federal_state, additional_capacity, flh_chp, EgonChp):
         GROUP BY (a.osm_id, b.geom, b.name)
         ORDER BY SUM(demand)
 
-        """
-    )
+        """)
 
     not_distributed_capacity = extension_to_areas(
         industry_areas,
@@ -538,15 +528,14 @@ def extension_per_federal_state(federal_state, EgonChp):
     """
 
     sources, targets = load_sources_and_targets("Chp")
-    
+
     # Get separate schema and table name for SQL construction
     target_schema = targets.get_table_schema("chp_table")
-    target_table_only = targets.get_table_name("chp_table").split('.')[-1]
+    target_table_only = targets.get_table_name("chp_table").split(".")[-1]
 
     capacity_targets = select_target("small_chp", "eGon2035")
 
-    existing_capacity = db.select_dataframe(
-        f"""
+    existing_capacity = db.select_dataframe(f"""
             SELECT SUM(el_capacity) as capacity, district_heating
             FROM {target_schema}.
             {target_table_only}
@@ -558,10 +547,11 @@ def extension_per_federal_state(federal_state, EgonChp):
             {sources.tables['vg250_lan']} b
             WHERE REPLACE(REPLACE(gen, '-', ''), 'ü', 'ue') ='{federal_state}'))
             GROUP BY district_heating
-            """
-    )
+            """)
 
-    print(f"Target capacity in {federal_state}: {capacity_targets[federal_state]}")
+    print(
+        f"Target capacity in {federal_state}: {capacity_targets[federal_state]}"
+    )
     print(
         f"Existing capacity in {federal_state}: {existing_capacity.capacity.sum()}"
     )
@@ -649,11 +639,11 @@ def assign_use_case(chp, sources, scenario):
 
 
     """
-    
-    table_landuse = sources.tables['osm_landuse']
-    table_polygon = sources.tables['osm_polygon']
-    table_dh = sources.tables['district_heating_areas']
-    
+
+    table_landuse = sources.tables["osm_landuse"]
+    table_polygon = sources.tables["osm_polygon"]
+    table_dh = sources.tables["district_heating_areas"]
+
     # Select osm industrial areas which don't include power or heat supply
     # (name not includes 'Stadtwerke', 'Kraftwerk', 'Müllverbrennung'...)
     landuse_industrial = db.select_geodataframe(

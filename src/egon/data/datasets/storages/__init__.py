@@ -1,5 +1,4 @@
-"""The central module containing all code dealing with power plant data.
-"""
+"""The central module containing all code dealing with power plant data."""
 
 from pathlib import Path
 
@@ -13,9 +12,7 @@ import pandas as pd
 
 from egon.data import config, db
 from egon.data.datasets import Dataset, DatasetSources, DatasetTargets
-from egon.data.datasets.scenario_parameters import get_sector_parameters
 from egon.data.datasets.electrical_neighbours import entsoe_to_bus_etrago
-
 from egon.data.datasets.mv_grid_districts import Vg250GemClean
 from egon.data.datasets.power_plants import assign_bus_id, assign_voltage_level
 from egon.data.datasets.scenario_parameters import get_sector_parameters
@@ -49,7 +46,7 @@ class EgonStorages(Base):
 
 
 class Storages(Dataset):
-    
+
     sources = DatasetSources(
         files={
             "mastr_storage": "./bnetza_mastr/dump_2025-02-09/bnetza_mastr_storage_cleaned.csv",
@@ -73,9 +70,9 @@ class Storages(Dataset):
             "storages": "supply.egon_storages",
             # Added for home_batteries.py
             "home_batteries": "supply.egon_home_batteries",
-            }
+        }
     )
-    
+
     """
     Allocates storage units such as pumped hydro and home batteries
 
@@ -135,10 +132,8 @@ def create_tables():
     """
     db.execute_sql(f"CREATE SCHEMA IF NOT EXISTS supply;")
     engine = db.engine()
-    db.execute_sql(
-        f"""DROP TABLE IF EXISTS
-        {Storages.targets.tables['storages']}"""
-    )
+    db.execute_sql(f"""DROP TABLE IF EXISTS
+        {Storages.targets.tables['storages']}""")
 
     db.execute_sql("""DROP SEQUENCE IF EXISTS pp_seq""")
     EgonStorages.__table__.create(bind=engine, checkfirst=True)
@@ -162,7 +157,6 @@ def allocate_pumped_hydro(scn, export=True):
     """
 
     carrier = "pumped_hydro"
-
 
     nep = select_nep_pumped_hydro(scn=scn)
     mastr = select_mastr_pumped_hydro()
@@ -306,11 +300,9 @@ def allocate_pumped_hydro(scn, export=True):
     power_plants = pd.concat([power_plants_hv, power_plants_ehv])
 
     # Delete existing units in the target table
-    db.execute_sql(
-        f""" DELETE FROM {Storages.targets.tables['storages']}
+    db.execute_sql(f""" DELETE FROM {Storages.targets.tables['storages']}
         WHERE carrier IN ('pumped_hydro')
-        AND scenario='{scn}';"""
-    )
+        AND scenario='{scn}';""")
 
     # If export = True export pumped_hydro plants to data base
 
@@ -588,12 +580,10 @@ def allocate_storage_units_sq(scn_name, storage_types):
         ] * mastr_ph.shape[0]
 
         # Delete existing units in the target table
-        db.execute_sql(
-            f""" DELETE FROM supply.egon_storages
+        db.execute_sql(f""" DELETE FROM supply.egon_storages
             WHERE carrier = '{storage_type}'
             AND scenario = '{scn_name}'
-            AND sources ->> 'el_capacity' = 'MaStR aggregated by location';"""
-        )
+            AND sources ->> 'el_capacity' = 'MaStR aggregated by location';""")
 
         with db.session_scope() as session:
             session.bulk_insert_mappings(
@@ -621,14 +611,12 @@ def allocate_pumped_hydro_eGon100RE():
 
     # Select installed capacity for pumped_hydro in eGon100RE scenario from
     # scenario capacities table
-    capacity = db.select_dataframe(
-        f"""
+    capacity = db.select_dataframe(f"""
         SELECT capacity
         FROM {Storages.sources.tables['capacities']}
         WHERE carrier = '{carrier}'
         AND scenario_name = 'eGon100RE';
-        """
-    )
+        """)
 
     if boundary == "Schleswig-Holstein":
         # Break capacity of pumped hydron plants down SH share in eGon2035
@@ -690,7 +678,7 @@ def home_batteries_per_scenario(scenario):
             Path(".")
             / "data_bundle_egon_data"
             / "nep2035_version2021"
-            /Storages.sources.files["nep_capacities"]
+            / Storages.sources.files["nep_capacities"]
         )
 
         capacities_nep = pd.read_excel(
@@ -703,17 +691,14 @@ def home_batteries_per_scenario(scenario):
         target = capacities_nep.Summe["PV-Batteriespeicher"] * 1000
 
     else:
-        target = db.select_dataframe(
-            f"""
+        target = db.select_dataframe(f"""
             SELECT capacity
             FROM {Storages.sources.tables['capacities']}
             WHERE scenario_name = '{scenario}'
             AND carrier = 'battery';
-            """
-        ).capacity[0]
+            """).capacity[0]
 
-    pv_rooftop = db.select_dataframe(
-        f"""
+    pv_rooftop = db.select_dataframe(f"""
         SELECT bus, p_nom, generator_id
         FROM {Storages.sources.tables['generators']}
         WHERE scn_name = '{scenario}'
@@ -721,8 +706,7 @@ def home_batteries_per_scenario(scenario):
         AND bus IN
             (SELECT bus_id FROM {Storages.sources.tables['bus']}
                WHERE scn_name = '{scenario}' AND country = 'DE' );
-        """
-    )
+        """)
 
     if dataset == "Schleswig-Holstein":
         target = target / 16

@@ -4,7 +4,6 @@ from pathlib import Path
 import csv
 import json
 import os
-
 import zipfile
 
 from shapely.geometry import Point, shape

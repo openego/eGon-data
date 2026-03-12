@@ -24,13 +24,11 @@ import numpy as np
 import pandas as pd
 
 from egon.data import db
+from egon.data.datasets import load_sources_and_targets
 from egon.data.datasets.etrago_helpers import (
     finalize_bus_insertion,
     initialise_bus_insertion,
 )
-from egon.data.datasets import load_sources_and_targets
-
-
 
 
 def insert_hydrogen_buses(scn_name):
@@ -65,13 +63,11 @@ def insert_hydrogen_buses(scn_name):
         "H2_grid", target_buses, scenario=scn_name
     )
 
-    db.execute_sql(
-        f"""
+    db.execute_sql(f"""
         DELETE FROM {targets.tables["hydrogen_buses"]}
         WHERE scn_name = '{scn_name}'
         AND carrier = 'H2' AND country = 'DE'
-        """
-    )
+        """)
 
     h2_buses.x = h2_input.x
     h2_buses.y = h2_input.y
@@ -178,13 +174,10 @@ def insert_H2_buses_from_saltcavern(gdf, carrier, sources, targets, scn_name):
         "table": targets.get_table_name("hydrogen_buses"),
     }
 
-    
     # electrical buses related to saltcavern storage
-    el_buses = db.select_dataframe(
-        f"""
+    el_buses = db.select_dataframe(f"""
         SELECT bus_id
-        FROM {sources.tables["saltcavern_data"]}"""
-    )["bus_id"]
+        FROM {sources.tables["saltcavern_data"]}""")["bus_id"]
 
     # locations of electrical buses (filtering not necessarily required)
     locations = db.select_geodataframe(

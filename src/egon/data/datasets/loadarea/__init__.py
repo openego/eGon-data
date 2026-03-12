@@ -56,11 +56,9 @@ class OsmLanduse(Dataset):
     name: str = "OsmLanduse"
     #:
     version: str = "0.0.3"
-    
+
     sources = DatasetSources(
-        files={
-            "osm_landuse_extraction": "osm_landuse_extraction.sql"
-        },
+        files={"osm_landuse_extraction": "osm_landuse_extraction.sql"},
         tables={
             "osm_polygons": "openstreetmap.osm_polygon",
             "vg250": "boundaries.vg250_sta_union",
@@ -72,7 +70,6 @@ class OsmLanduse(Dataset):
             "osm_landuse": "openstreetmap.osm_landuse",
         }
     )
-
 
     def __init__(self, dependencies):
         super().__init__(
@@ -114,7 +111,7 @@ class LoadArea(Dataset):
     name: str = "LoadArea"
     #:
     version: str = "0.0.4"
-    
+
     sources = DatasetSources(
         files={
             "osm_landuse_melt": "osm_landuse_melt.sql",
@@ -130,7 +127,7 @@ class LoadArea(Dataset):
             "osm_landuse": "openstreetmap.osm_landuse",
             "zensus_population": "society.destatis_zensus_population_per_ha_inside_germany",
             "vg250": "boundaries.vg250_sta_union",
-        }
+        },
     )
 
     targets = DatasetTargets(
@@ -139,7 +136,6 @@ class LoadArea(Dataset):
         }
     )
 
-    
     def __init__(self, dependencies):
         super().__init__(
             name=self.name,

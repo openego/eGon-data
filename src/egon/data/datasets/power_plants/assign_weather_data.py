@@ -1,9 +1,9 @@
 import geopandas as gpd
 
 from egon.data import db
+from egon.data.datasets import load_sources_and_targets
 from egon.data.datasets.power_plants.pv_rooftop_buildings import timer_func
 import egon.data.config
-from egon.data.datasets import load_sources_and_targets 
 
 
 def assign_bus_id(power_plants):

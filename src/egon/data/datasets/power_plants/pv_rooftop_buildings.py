@@ -2159,7 +2159,7 @@ def add_metadata():
     schema = "supply"
     table = "egon_power_plants_pv_roof_building"
     name = f"{schema}.{table}"
-    
+
     # <--- REFACTORING: Retrieve IDs from __init__.py files mapping
     deposit_id_mastr = dataset_sources.files["mastr_deposit_id"]
     deposit_id_data_bundle = dataset_sources.files["data_bundle_deposit_id"]
@@ -2416,9 +2416,7 @@ def pv_rooftop_to_buildings():
     status_quo = "status2023"  # FIXME: Hard coded
 
     # <--- REFACTORING: Use sources.files
-    ts = pd.Timestamp(
-        sources.files[f"{status_quo}_date_max"], tz="UTC"
-    )
+    ts = pd.Timestamp(sources.files[f"{status_quo}_date_max"], tz="UTC")
 
     mastr_gdf = mastr_gdf.loc[mastr_gdf.commissioning_date <= ts]
 

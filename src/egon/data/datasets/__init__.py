@@ -5,16 +5,16 @@ from __future__ import annotations
 from collections import abc
 from dataclasses import dataclass, field
 from functools import partial, reduce, update_wrapper
+from pathlib import Path
 from typing import Callable, Dict, Iterable, Set, Tuple, Union
+import json
 import re
 
-import json
-from pathlib import Path
 from airflow.models.baseoperator import BaseOperator as Operator
 from airflow.operators.python import PythonOperator
 from sqlalchemy import Column, ForeignKey, Integer, String, Table, orm, tuple_
-from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.dialects.postgresql import JSONB
+from sqlalchemy.ext.declarative import declarative_base
 
 from egon.data import config, db, logger
 

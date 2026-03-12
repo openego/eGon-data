@@ -70,10 +70,10 @@ def insert():
     # Create the shape for full Germany
     target_power_df.at["DE", "geom"] = target_power_df["geom"].unary_union
     target_power_df.at["DE", "name"] = "Germany"
-    
+
     # Generate WFs for Germany based on potential areas and existing WFs
     # Passing sources to helper function
-    wf_areas, wf_areas_ni = generate_wind_farms(sources) 
+    wf_areas, wf_areas_ni = generate_wind_farms(sources)
 
     # Change the columns "geometry" of this GeoDataFrames
     wf_areas.set_geometry("centroid", inplace=True)
@@ -88,12 +88,10 @@ def insert():
 
     if "eGon100RE" in target_power_df["scenario_name"].values:
         # Delete old wind_onshore generators
-        db.execute_sql(
-            """DELETE FROM supply.egon_power_plants
+        db.execute_sql("""DELETE FROM supply.egon_power_plants
             WHERE carrier = 'wind_onshore'
             AND scenario = 'eGon100RE'
-            """
-        )
+            """)
         wind_farms_state, summary_state = wind_power_states(
             wf_areas,
             wf_areas_ni,
@@ -102,7 +100,8 @@ def insert():
             "eGon100RE",
             "wind_onshore",
             "DE",
-            sources, targets
+            sources,
+            targets,
         )
         target_power_df = target_power_df[
             target_power_df["scenario_name"] != "eGon100RE"
@@ -110,12 +109,10 @@ def insert():
 
     if "eGon2035" in target_power_df["scenario_name"].values:
         # Delete old wind_onshore generators
-        db.execute_sql(
-            """DELETE FROM supply.egon_power_plants
+        db.execute_sql("""DELETE FROM supply.egon_power_plants
             WHERE carrier = 'wind_onshore'
             AND scenario = 'eGon2035'
-            """
-        )
+            """)
         # Fit wind farms scenarions for each one of the states
         for bundesland in target_power_df.index:
             state_wf = gpd.clip(
@@ -139,7 +136,8 @@ def insert():
                 scenario_year,
                 source,
                 fed_state,
-                sources, targets
+                sources,
+                targets,
             )
             summary_t = pd.concat([summary_t, summary_state])
             farms = pd.concat([farms, wind_farms_state])
@@ -147,6 +145,7 @@ def insert():
     generate_map(sources, targets)
 
     return
+
 
 def generate_wind_farms(sources):
     """Generate wind farms based on existing wind farms.
@@ -189,7 +188,7 @@ def generate_wind_farms(sources):
     # Connect to the data base
     con = db.engine()
     sql = f"SELECT geom FROM {sources.tables['wind_potential_areas']}"
-    
+
     # wf_areas has all the potential areas geometries for wind farms
     wf_areas = gpd.GeoDataFrame.from_postgis(sql, con)
     # bus has the connection points of the wind farms
@@ -291,7 +290,8 @@ def wind_power_states(
     scenario_year,
     source,
     fed_state,
-    sources, targets 
+    sources,
+    targets,
 ):
     """Import OSM data from a Geofabrik `.pbf` file into a PostgreSQL
     database.

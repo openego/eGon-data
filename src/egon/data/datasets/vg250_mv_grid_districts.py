@@ -1,5 +1,4 @@
-"""The module containing all code to map MV grid districts to federal states.
-"""
+"""The module containing all code to map MV grid districts to federal states."""
 
 from sqlalchemy import Column, Integer, String
 from sqlalchemy.ext.declarative import declarative_base
@@ -88,7 +87,7 @@ def mapping():
     create_tables()
 
     # Select sources and targets from dataset definition
-    
+
     sources = Vg250MvGridDistricts.sources
     targets = Vg250MvGridDistricts.targets
 
@@ -114,9 +113,7 @@ def mapping():
     )
 
     # Join mv grid districts and federal states
-    df = pd.DataFrame(
-        gpd.sjoin(mv_grid_districts, federal_states)["gen"]
-    )
+    df = pd.DataFrame(gpd.sjoin(mv_grid_districts, federal_states)["gen"])
 
     # Rename columns
     df.rename({"gen": "vg250_lan"}, axis=1, inplace=True)

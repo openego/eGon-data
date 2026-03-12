@@ -9,11 +9,9 @@ import numpy as np
 import pandas as pd
 
 from egon.data import config, db
+from egon.data.datasets import load_sources_and_targets
 from egon.data.datasets.scenario_parameters import get_sector_parameters
 import egon.data.datasets.era5 as era
-
-from egon.data.datasets import load_sources_and_targets
-
 
 Base = declarative_base()
 
@@ -136,7 +134,7 @@ def map_climate_zones_to_zensus():
         index_col="zensus_population_id",
         epsg=4326,
     )
-    
+
     # Join climate zones and census cells
     join = (
         census_cells.sjoin(temperature_zones)

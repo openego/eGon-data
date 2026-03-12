@@ -259,7 +259,6 @@ class HouseholdDemands(Dataset):
         },
     )
 
-
     targets = DatasetTargets(
         tables={
             "iee_household_load_profiles": "demand.iee_household_load_profiles",
@@ -268,8 +267,6 @@ class HouseholdDemands(Dataset):
             "etrago_electricity_households": "demand.egon_etrago_electricity_households",
         }
     )
-
-
 
     def __init__(self, dependencies):
         tasks = (
@@ -445,7 +442,7 @@ def get_iee_hh_demand_profiles_raw():
         Table with profiles in columns and time as index. A pd.MultiIndex is
         used to distinguish load profiles from different EUROSTAT household
         types.
-    """    
+    """
 
     def ve(s):
         raise (ValueError(s))
@@ -462,14 +459,15 @@ def get_iee_hh_demand_profiles_raw():
         )
     )
 
-    file_path = HouseholdDemands.sources.files["household_electricity_demand_profiles"][file_section]
+    file_path = HouseholdDemands.sources.files[
+        "household_electricity_demand_profiles"
+    ][file_section]
 
     download_directory = os.path.join(
         "data_bundle_egon_data", "household_electricity_demand_profiles"
     )
 
     hh_profiles_file = Path(".") / Path(download_directory) / Path(file_path)
-
 
     df_hh_profiles = pd.read_hdf(hh_profiles_file)
 
@@ -543,15 +541,16 @@ def get_census_households_nuts1_raw():
     pd.DataFrame
         Pre-processed zensus household data
     """
-    
-    file_path = HouseholdDemands.sources.files["zensus_household_types"]["path"]
+
+    file_path = HouseholdDemands.sources.files["zensus_household_types"][
+        "path"
+    ]
 
     download_directory = os.path.join(
         "data_bundle_egon_data", "zensus_households"
     )
 
     households_file = Path(".") / Path(download_directory) / Path(file_path)
-
 
     households_raw = pd.read_csv(
         households_file,
@@ -1040,20 +1039,17 @@ def get_census_households_grid():
 
     # Retrieve information about households for each census cell
     # Only use cell-data which quality (quantity_q<2) is acceptable
-    df_census_households_grid = db.select_dataframe(
-        sql=f"""
+    df_census_households_grid = db.select_dataframe(sql=f"""
                 SELECT grid_id, attribute, characteristics_code,
                  characteristics_text, quantity
                  FROM {HouseholdDemands.sources.tables["egon_destatis_zensus_household_per_ha"]}
-                WHERE attribute = 'HHTYP_FAM' AND quantity_q <2"""
-    )
+                WHERE attribute = 'HHTYP_FAM' AND quantity_q <2""")
     df_census_households_grid = df_census_households_grid.drop(
         columns=["attribute", "characteristics_text"]
     )
 
     # Missing data is detected
-    df_missing_data = db.select_dataframe(
-        sql=f"""
+    df_missing_data = db.select_dataframe(sql=f"""
                     SELECT count(joined.quantity_gesamt) as amount,
                      joined.quantity_gesamt as households
                     FROM(
@@ -1073,10 +1069,8 @@ def get_census_households_grid():
                         GROUP BY grid_id) as t2 ON t1.grid_id = t2.grid_id
                         ) as joined
                     WHERE quantity_sum_fam isnull
-                    Group by quantity_gesamt """
-    )
-    missing_cells = db.select_dataframe(
-        sql=f"""
+                    Group by quantity_gesamt """)
+    missing_cells = db.select_dataframe(sql=f"""
                     SELECT t12.grid_id, t12.quantity
                     FROM (
                     SELECT t2.grid_id, (case when quantity_sum_fam isnull
@@ -1093,8 +1087,7 @@ def get_census_households_grid():
                         WHERE attribute = 'INSGESAMT'
                         GROUP BY grid_id) as t2 ON t1.grid_id = t2.grid_id
                         ) as t12
-                    WHERE quantity is not null"""
-    )
+                    WHERE quantity is not null""")
 
     # Missing cells are substituted by average share of cells with same amount
     # of households.
@@ -1111,8 +1104,7 @@ def get_census_households_grid():
     )
 
     # Census cells with nuts3 and nuts1 information
-    df_grid_id = db.select_dataframe(
-        sql=f"""
+    df_grid_id = db.select_dataframe(sql=f"""
                 SELECT pop.grid_id, pop.id as cell_id, pop.population,
                  vg250.vg250_nuts3 as nuts3, lan.nuts as nuts1, lan.gen
                 FROM
@@ -1121,8 +1113,7 @@ def get_census_households_grid():
                 ON (pop.id=vg250.zensus_population_id)
                 LEFT JOIN {HouseholdDemands.sources.tables["vg250_lan"]} as lan
                 ON (LEFT(vg250.vg250_nuts3, 3) = lan.nuts)
-                WHERE lan.gf = 4 """
-    )
+                WHERE lan.gf = 4 """)
     df_grid_id = df_grid_id.drop_duplicates()
     df_grid_id = df_grid_id.reset_index(drop=True)
 

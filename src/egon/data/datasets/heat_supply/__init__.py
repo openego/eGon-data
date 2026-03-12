@@ -1,6 +1,4 @@
-"""The central module containing all code dealing with heat supply data
-
-"""
+"""The central module containing all code dealing with heat supply data"""
 
 import datetime
 import json
@@ -88,11 +86,9 @@ def district_heating():
     sources = HeatSupply.sources
     targets = HeatSupply.targets
 
-    db.execute_sql(
-        f"""
+    db.execute_sql(f"""
         DELETE FROM {HeatSupply.targets.tables["district_heating_supply"]}
-        """
-    )
+        """)
 
     for scenario in config.settings()["egon-data"]["--scenarios"]:
         supply = cascade_heat_supply(scenario, plotting=False)
@@ -111,8 +107,7 @@ def district_heating():
         # Do not check data for status quo as is it not listed in the table
         if "status" not in scenario:
             # Compare target value with sum of distributed heat supply
-            df_check = db.select_dataframe(
-                f"""
+            df_check = db.select_dataframe(f"""
                 SELECT a.carrier,
                 (SUM(a.capacity) - b.capacity) / SUM(a.capacity) as deviation
                 FROM {targets.tables['district_heating_supply']} a,
@@ -121,8 +116,7 @@ def district_heating():
                 AND b.scenario_name = '{scenario}'
                 AND b.carrier = CONCAT('urban_central_', a.carrier)
                 GROUP BY (a.carrier,  b.capacity);
-                """
-            )
+                """)
             # If the deviation is > 1%, throw an error
             assert (
                 df_check.deviation.abs().max() < 1
@@ -164,12 +158,10 @@ def individual_heating():
     targets = HeatSupply.targets
 
     for scenario in config.settings()["egon-data"]["--scenarios"]:
-        db.execute_sql(
-            f"""
+        db.execute_sql(f"""
             DELETE FROM {targets.tables['individual_heating_supply']}
             WHERE scenario = '{scenario}'
-            """
-        )
+            """)
         if scenario == "eGon2035":
             distribution_level = "federal_states"
         else:

@@ -15,7 +15,12 @@ import pandas as pd
 import yaml
 
 from egon.data import config, db
-from egon.data.datasets import Dataset, DatasetSources, DatasetTargets, wrapped_partial
+from egon.data.datasets import (
+    Dataset,
+    DatasetSources,
+    DatasetTargets,
+    wrapped_partial,
+)
 from egon.data.metadata import (
     context,
     generate_resource_fields_from_sqla_model,
@@ -114,12 +119,10 @@ def insert_capacities_status_quo(scenario: str) -> None:
     """
     targets = ScenarioCapacities.targets
     # Delete rows if already exist
-    db.execute_sql(
-        f"""
+    db.execute_sql(f"""
         DELETE FROM {targets.tables['scenario_capacities']}
         WHERE scenario_name = '{scenario}'
-        """
-    )
+        """)
 
     rural_heat_capacity = {
         # Rural heat capacity for 2019 according to NEP 2035, version 2021
@@ -140,8 +143,7 @@ def insert_capacities_status_quo(scenario: str) -> None:
     if config.settings()["egon-data"]["--dataset-boundary"] != "Everything":
         rural_heat_capacity *= population_share()
 
-    db.execute_sql(
-        f"""
+    db.execute_sql(f"""
         INSERT INTO {targets.tables['scenario_capacities']}
         (component, carrier, capacity, nuts, scenario_name)
         VALUES (
@@ -151,8 +153,7 @@ def insert_capacities_status_quo(scenario: str) -> None:
             'DE',
             '{scenario}'
             )
-        """
-    )
+        """)
 
     # Include small storages for scenario2019
     small_storages = {
@@ -168,8 +169,7 @@ def insert_capacities_status_quo(scenario: str) -> None:
         "status2023": 1300 * 1197 / 272,
     }[scenario]
 
-    db.execute_sql(
-        f"""
+    db.execute_sql(f"""
         INSERT INTO {targets.tables['scenario_capacities']}
         (component, carrier, capacity, nuts, scenario_name)
         VALUES (
@@ -179,8 +179,7 @@ def insert_capacities_status_quo(scenario: str) -> None:
             'DE',
             '{scenario}'
             )
-        """
-    )
+        """)
 
 
 def insert_capacities_per_federal_state_nep():
@@ -198,13 +197,11 @@ def insert_capacities_per_federal_state_nep():
     engine = db.engine()
 
     # Delete rows if already exist
-    db.execute_sql(
-        f"""
+    db.execute_sql(f"""
         DELETE FROM {targets.tables['scenario_capacities']}
         WHERE scenario_name = 'eGon2035'
         AND nuts != 'DE'
-        """
-    )
+        """)
 
     # read-in installed capacities per federal state of germany
     target_file = Path(".") / sources.files["eGon2035_capacities"]
@@ -668,7 +665,6 @@ def eGon100_capacities():
             / Path(sources.files["eGon100RE_capacities"]).name
         )
 
-
     else:
         target_file = cwd / sources.files["eGon100RE_capacities"]
     df = pd.read_csv(target_file, delimiter=",", skiprows=3)
@@ -833,12 +829,10 @@ def eGon100_capacities():
 
         df_year["nuts"] = "DE"
 
-        db.execute_sql(
-            f"""
+        db.execute_sql(f"""
             DELETE FROM {targets.tables['scenario_capacities']}
             WHERE scenario_name='{df_year["scenario_name"].unique()[0]}'
-            """
-        )
+            """)
 
         df_year.to_sql(
             targets.get_table_name("scenario_capacities"),
@@ -1020,7 +1014,7 @@ class ScenarioCapacities(Dataset):
             "nep_conventional_powerplants": "supply.egon_nep_2021_conventional_powerplants",
         }
     )
-    
+
     def __init__(self, dependencies):
         super().__init__(
             name=self.name,

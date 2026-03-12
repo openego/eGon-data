@@ -1,6 +1,4 @@
-"""The central module containing code to create substation tables
-
-"""
+"""The central module containing code to create substation tables"""
 
 from geoalchemy2.types import Geometry
 from sqlalchemy import Column, Float, Integer, Text
@@ -72,17 +70,13 @@ def create_tables():
     )
 
     # Drop tables
-    db.execute_sql(
-        f"""DROP TABLE IF EXISTS
+    db.execute_sql(f"""DROP TABLE IF EXISTS
             {EgonEhvSubstation.__table__.schema}.
-            {EgonEhvSubstation.__table__.name} CASCADE;"""
-    )
+            {EgonEhvSubstation.__table__.name} CASCADE;""")
 
-    db.execute_sql(
-        f"""DROP TABLE IF EXISTS
+    db.execute_sql(f"""DROP TABLE IF EXISTS
             {EgonHvmvSubstation.__table__.schema}.
-            {EgonHvmvSubstation.__table__.name} CASCADE;"""
-    )
+            {EgonHvmvSubstation.__table__.name} CASCADE;""")
 
     engine = db.engine()
     EgonEhvSubstation.__table__.create(bind=engine, checkfirst=True)
@@ -103,8 +97,7 @@ def extract():
     create_tables()
 
     # Extract eHV substations
-    db.execute_sql(
-        f"""
+    db.execute_sql(f"""
         INSERT INTO {EgonEhvSubstation.__table__.schema}.{EgonEhvSubstation.__table__.name}
         
         SELECT * FROM {sources.tables['ehv_transfer_buses']};
@@ -127,12 +120,10 @@ def extract():
 
         ALTER TABLE {EgonEhvSubstation.__table__.schema}.{EgonEhvSubstation.__table__.name}
         	DROP COLUMN otg_id;
-        """
-    )
+        """)
 
     # Extract HVMV substations
-    db.execute_sql(
-        f"""
+    db.execute_sql(f"""
         INSERT INTO {EgonHvmvSubstation.__table__.schema}.{EgonHvmvSubstation.__table__.name}
         
         SELECT * FROM {sources.tables['hvmv_transfer_buses']};
@@ -154,5 +145,4 @@ def extract():
         
         ALTER TABLE {EgonHvmvSubstation.__table__.schema}.{EgonHvmvSubstation.__table__.name}
         	DROP COLUMN otg_id;
-        """
-    )
+        """)

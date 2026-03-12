@@ -35,21 +35,12 @@ import rasterio
 
 from egon.data import db, subprocess
 from egon.data.datasets import Dataset, DatasetSources, DatasetTargets
-from egon.data.datasets.scenario_parameters import (
-    get_sector_parameters,
-)
-from egon.data.metadata import (
-    context,
-    license_ccby,
-    meta_metadata,
-    sources,
-)
+from egon.data.datasets.scenario_parameters import get_sector_parameters
+from egon.data.metadata import context, license_ccby, meta_metadata, sources
 import egon.data.config
 
 
-
 class HeatDemandImport(Dataset):
-
     """
     Insert the annual heat demand per census cell for each scenario
 
@@ -71,7 +62,6 @@ class HeatDemandImport(Dataset):
 
     """
 
-
     #:
     name: str = "heat-demands"
     #:
@@ -79,7 +69,7 @@ class HeatDemandImport(Dataset):
 
     sources = DatasetSources(
         tables={
-            "boundaries": "boundaries.vg250_sta_union",  
+            "boundaries": "boundaries.vg250_sta_union",
             "zensus_population": "society.destatis_zensus_population_per_ha",
         },
         urls={
@@ -104,7 +94,6 @@ class HeatDemandImport(Dataset):
             "scenario_dir": "heat_scenario_raster",
         },
     )
-
 
     def __init__(self, dependencies):
         super().__init__(
@@ -164,14 +153,17 @@ def download_peta5_0_1_heat_demands():
     target_file_res = HeatDemandImport.sources.files["peta_res_zip"]
 
     if not os.path.isfile(target_file_res):
-        urlretrieve(HeatDemandImport.sources.urls["peta_res_zip"], target_file_res)
+        urlretrieve(
+            HeatDemandImport.sources.urls["peta_res_zip"], target_file_res
+        )
 
     # service-sector heat demands 2015
 
-    
     target_file_ser = HeatDemandImport.sources.files["peta_ser_zip"]
     if not os.path.isfile(target_file_ser):
-        urlretrieve(HeatDemandImport.sources.urls["peta_ser_zip"], target_file_ser)
+        urlretrieve(
+            HeatDemandImport.sources.urls["peta_ser_zip"], target_file_ser
+        )
 
     return None
 
@@ -198,7 +190,9 @@ def unzip_peta5_0_1_heat_demands():
     filepath_zip_res = HeatDemandImport.sources.files["peta_res_zip"]
     filepath_zip_ser = HeatDemandImport.sources.files["peta_ser_zip"]
 
-    directory_to_extract_to = os.path.dirname(HeatDemandImport.sources.files["res_cutout_tif"])
+    directory_to_extract_to = os.path.dirname(
+        HeatDemandImport.sources.files["res_cutout_tif"]
+    )
 
     # Create the folder, if it does not exists already
     if not os.path.exists(directory_to_extract_to):
@@ -311,7 +305,9 @@ def cutout_heat_demand_germany():
         }
     )
 
-    with rasterio.open(HeatDemandImport.sources.files["res_cutout_tif"], "w", **out_meta) as dest:
+    with rasterio.open(
+        HeatDemandImport.sources.files["res_cutout_tif"], "w", **out_meta
+    ) as dest:
         dest.write(out_image)
 
     # Do the same for the service-sector
@@ -335,7 +331,9 @@ def cutout_heat_demand_germany():
         }
     )
 
-    with rasterio.open(HeatDemandImport.sources.files["ser_cutout_tif"], "w", **out_meta) as dest:
+    with rasterio.open(
+        HeatDemandImport.sources.files["ser_cutout_tif"], "w", **out_meta
+    ) as dest:
         dest.write(out_image)
 
     return None
@@ -448,7 +446,9 @@ def future_heat_demand_germany(scenario_name):
     )
     # Save the scenario's residential heat demands as tif file
     # Define the filename for export
-    res_result_filename = os.path.join(scenario_raster_directory, f"res_HD_{scenario_name}.tif")
+    res_result_filename = os.path.join(
+        scenario_raster_directory, f"res_HD_{scenario_name}.tif"
+    )
     # Open raster dataset in 'w' write mode using the adjusted meta data
     with rasterio.open(res_result_filename, "w", **res_profile) as dst:
         dst.write(res_scenario_raster.astype(rasterio.float32), 1)
@@ -466,7 +466,9 @@ def future_heat_demand_germany(scenario_name):
     ser_profile.update(dtype=rasterio.float32, count=1, compress="lzw")
     # Save the scenario's service-sector heat demands as tif file
     # Define the filename for export
-    ser_result_filename = os.path.join(scenario_raster_directory, f"ser_HD_{scenario_name}.tif")
+    ser_result_filename = os.path.join(
+        scenario_raster_directory, f"ser_HD_{scenario_name}.tif"
+    )
     # Open raster dataset in 'w' write mode using the adjusted meta data
     with rasterio.open(ser_result_filename, "w", **ser_profile) as dst:
         dst.write(ser_scenario_raster.astype(rasterio.float32), 1)
@@ -510,8 +512,8 @@ def heat_demand_to_db_table():
     sources = [
         path
         for pattern in (
-                HeatDemandImport.sources.files["scenario_res_glob"],
-                HeatDemandImport.sources.files["scenario_ser_glob"],
+            HeatDemandImport.sources.files["scenario_res_glob"],
+            HeatDemandImport.sources.files["scenario_ser_glob"],
         )
         for path in Path(".").glob(pattern)
     ]
@@ -526,7 +528,6 @@ def heat_demand_to_db_table():
     db.execute_sql(
         f"DELETE FROM {HeatDemandImport.targets.tables['heat_demand']};"
     )
-
 
     for source in sources:
         if not "2015" in source.stem:
@@ -753,12 +754,12 @@ def scenario_data_import():
     # drop table if exists
     # can be removed when table structure doesn't change anymore
     db.execute_sql(
-         f"DROP TABLE IF EXISTS {HeatDemandImport.targets.tables['heat_demand']} CASCADE"
+        f"DROP TABLE IF EXISTS {HeatDemandImport.targets.tables['heat_demand']} CASCADE"
     )
 
     db.execute_sql(
-         f"DROP SEQUENCE IF EXISTS {HeatDemandImport.targets.get_table_schema('heat_demand')}."
-         f"{HeatDemandImport.targets.get_table_name('heat_demand')}_seq CASCADE"
+        f"DROP SEQUENCE IF EXISTS {HeatDemandImport.targets.get_table_schema('heat_demand')}."
+        f"{HeatDemandImport.targets.get_table_name('heat_demand')}_seq CASCADE"
     )
 
     # create table

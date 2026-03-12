@@ -17,12 +17,9 @@ import geopandas as gpd
 import pandas as pd
 
 from egon.data import config, db
+from egon.data.datasets import load_sources_and_targets
 from egon.data.datasets.etrago_helpers import copy_and_modify_stores
 from egon.data.datasets.scenario_parameters import get_sector_parameters
-from egon.data.datasets import load_sources_and_targets
-
-
-
 
 
 def insert_H2_overground_storage():
@@ -38,7 +35,7 @@ def insert_H2_overground_storage():
 
     """
     sources, targets = load_sources_and_targets("HydrogenStoreEtrago")
-   
+
     s = config.settings()["egon-data"]["--scenarios"]
     scn = []
     if "eGon2035" in s:
@@ -76,8 +73,7 @@ def insert_H2_overground_storage():
         storages.drop(columns=["geom"], inplace=True)
 
         # Clean table
-        db.execute_sql(
-            f"""
+        db.execute_sql(f"""
             DELETE FROM {targets.tables["hydrogen_stores"]}
             WHERE carrier = '{carrier}' 
             AND scn_name = '{scn_name}' 
@@ -86,13 +82,11 @@ def insert_H2_overground_storage():
                 FROM {sources.tables["buses"]}
                 WHERE scn_name = '{scn_name}' AND country != 'DE'
             );
-            """
-        )
+            """)
 
         # Select next id value
         storages["store_id"] = db.next_etrago_id("store", len(storages))
         storages = storages.reset_index(drop=True)
-
 
         # Insert data to db
         storages.to_sql(
@@ -182,8 +176,7 @@ def insert_H2_saltcavern_storage():
         storages["lifetime"] = scn_params["lifetime"][carrier]
 
         # Clean table
-        db.execute_sql(
-            f"""
+        db.execute_sql(f"""
             DELETE FROM {targets.tables["hydrogen_stores"]}
             WHERE carrier = '{carrier}' 
             AND scn_name = '{scn_name}' 
@@ -192,8 +185,7 @@ def insert_H2_saltcavern_storage():
                 FROM {sources.tables["buses"]}
                 WHERE scn_name = '{scn_name}' AND country != 'DE'
             );
-            """
-        )
+            """)
 
         # Select next id value
         storages["store_id"] = db.next_etrago_id("store", len(storages))
@@ -415,7 +407,6 @@ def write_saltcavern_potential():
     """
     potential_areas = calculate_and_map_saltcavern_storage_potential()
     _, targets = load_sources_and_targets("HydrogenBusEtrago")
-    
 
     potential_areas.to_crs(epsg=4326).to_postgis(
         targets.get_table_name("storage_potential"),

@@ -28,11 +28,10 @@ def select_chp_from_nep(sources):
         CHP plants from NEP list
 
     """
-    table_nep = sources.tables['list_conv_pp']
+    table_nep = sources.tables["list_conv_pp"]
 
     # Select CHP plants with geolocation from list of conventional power plants
-    chp_NEP_data = db.select_dataframe(
-        f"""
+    chp_NEP_data = db.select_dataframe(f"""
         SELECT bnetza_id, name, carrier, chp, postcode, capacity, city,
         federal_state, c2035_chp, c2035_capacity
         FROM {table_nep}
@@ -40,8 +39,7 @@ def select_chp_from_nep(sources):
         AND (chp = 'Ja' OR c2035_chp = 'Ja')
         AND c2035_capacity > 0
         AND postcode != 'None'
-        """
-    )
+        """)
 
     # Removing CHP out of Germany
     chp_NEP_data["postcode"] = chp_NEP_data["postcode"].astype(str)
@@ -532,9 +530,7 @@ def insert_large_chp(sources, target, EgonChp):
     insert_chp_c = insert_chp.copy()
 
     # Assign bus_id
-    insert_chp["bus_id"] = assign_bus_id(
-        insert_chp, sources
-    ).bus_id
+    insert_chp["bus_id"] = assign_bus_id(insert_chp, sources).bus_id
 
     # Assign gas bus_id
     insert_chp["gas_bus_id"] = db.assign_gas_bus_id(
@@ -544,13 +540,11 @@ def insert_large_chp(sources, target, EgonChp):
     insert_chp = assign_use_case(insert_chp, sources, scenario="eGon2035")
 
     # Delete existing CHP in the target table
-    target_schema, target_table = target.split('.')[-2:]
+    target_schema, target_table = target.split(".")[-2:]
 
-    db.execute_sql(
-        f""" DELETE FROM {target_schema}.{target_table}
+    db.execute_sql(f""" DELETE FROM {target_schema}.{target_table}
         WHERE carrier IN ('gas', 'other_non_renewable', 'oil')
-        AND scenario='eGon2035';"""
-    )
+        AND scenario='eGon2035';""")
 
     # Insert into target table
     session = sessionmaker(bind=db.engine())()

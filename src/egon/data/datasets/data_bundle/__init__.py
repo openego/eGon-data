@@ -1,6 +1,4 @@
-"""The central module containing all code dealing with small scale input-data
-"""
-
+"""The central module containing all code dealing with small scale input-data"""
 
 from pathlib import Path
 from urllib.request import urlretrieve
@@ -38,7 +36,6 @@ def download():
 
 class DataBundle(Dataset):
 
-
     sources = DatasetSources(
         urls={
             "zenodo_data_bundle": {
@@ -48,16 +45,14 @@ class DataBundle(Dataset):
     )
 
     targets = DatasetTargets(
-        files={
-            "data_bundle": "data_bundle_egon_data.zip"
-        }
+        files={"data_bundle": "data_bundle_egon_data.zip"}
     )
-    
+
     def __init__(self, dependencies):
-        
+
         super().__init__(
             name="DataBundle",
-            version="0.0.3",   
+            version="0.0.3",
             dependencies=dependencies,
             tasks=(download,),
         )

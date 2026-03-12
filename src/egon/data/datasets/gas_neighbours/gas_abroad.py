@@ -39,8 +39,7 @@ def insert_gas_grid_capacities(Neighbouring_pipe_capacities_list, scn_name):
         carrier_link = "CH4"
         carrier_bus = "CH4"
 
-        db.execute_sql(
-            f"""
+        db.execute_sql(f"""
             DELETE FROM 
             {targets.tables['links']}
             WHERE "bus0" IN (
@@ -58,8 +57,7 @@ def insert_gas_grid_capacities(Neighbouring_pipe_capacities_list, scn_name):
             AND scn_name = '{scn_name}'
             AND carrier = '{carrier_link}'            
             ;
-            """
-        )
+            """)
 
     carriers = {
         "CH4": {"bus_inDE": "CH4", "bus_abroad": "CH4"},
@@ -68,8 +66,7 @@ def insert_gas_grid_capacities(Neighbouring_pipe_capacities_list, scn_name):
 
     if scn_name == "eGon100RE":
         for c in carriers:
-            db.execute_sql(
-                f"""
+            db.execute_sql(f"""
                 DELETE FROM
                 {targets.tables['links']}
                 WHERE ("bus0" IN (
@@ -98,8 +95,7 @@ def insert_gas_grid_capacities(Neighbouring_pipe_capacities_list, scn_name):
                 AND scn_name = '{scn_name}'
                 AND carrier = '{carriers[c]["bus_abroad"]}'
                 ;
-                """
-            )
+                """)
 
     # Insert data to db
     Neighbouring_pipe_capacities_list.set_geometry(
@@ -113,8 +109,7 @@ def insert_gas_grid_capacities(Neighbouring_pipe_capacities_list, scn_name):
         dtype={"geom": Geometry(), "topo": Geometry()},
     )
 
-    db.execute_sql(
-        f"""
+    db.execute_sql(f"""
     select UpdateGeometrySRID('grid', 'egon_etrago_gas_link', 'topo', 4326) ;
 
     INSERT INTO {targets.tables['links']} (
@@ -126,5 +121,4 @@ def insert_gas_grid_capacities(Neighbouring_pipe_capacities_list, scn_name):
     FROM grid.egon_etrago_gas_link;
 
     DROP TABLE grid.egon_etrago_gas_link;
-        """
-    )
+        """)

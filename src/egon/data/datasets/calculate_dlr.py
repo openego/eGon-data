@@ -41,7 +41,7 @@ class Calculate_dlr(Dataset):
     name: str = "dlr"
     #:
     version: str = "0.0.4"
-    
+
     sources = DatasetSources(
         files={
             "regions_shape": "data_bundle_egon_data/regions_dynamic_line_rating/Germany_regions.shp",
@@ -53,9 +53,7 @@ class Calculate_dlr(Dataset):
         },
     )
     targets = DatasetTargets(
-        tables={
-            "line_timeseries": "grid.egon_etrago_line_timeseries"
-        }
+        tables={"line_timeseries": "grid.egon_etrago_line_timeseries"}
     )
 
     def __init__(self, dependencies):
@@ -162,11 +160,9 @@ def dlr():
         trans_lines["temp_id"] = 1
 
         # Delete existing data
-        db.execute_sql(
-            f"""
+        db.execute_sql(f"""
             DELETE FROM {Calculate_dlr.targets.tables["line_timeseries"]};
-            """
-        )
+            """)
 
         # Insert into database
         trans_lines.to_sql(
@@ -197,8 +193,8 @@ def DLR_Regions(weather_year, regions_shape_path):
 
     # The data downloaded using Atlite is loaded in 'weather_data_raw'.
     weather_info_path = Path(
-    Calculate_dlr.sources.files["weather_cutout"].format(
-        weather_year=weather_year
+        Calculate_dlr.sources.files["weather_cutout"].format(
+            weather_year=weather_year
         )
     )
     weather_data_raw = xr.open_mfdataset(str(weather_info_path))

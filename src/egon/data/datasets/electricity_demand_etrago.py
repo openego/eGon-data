@@ -29,7 +29,6 @@ def demands_per_bus(scenario):
     """
 
     # Read information from configuration file
-    
 
     # Select data on CTS electricity demands per bus
     cts_curves = db.select_dataframe(
@@ -166,8 +165,7 @@ def export_to_db():
     targets = ElectricalLoadEtrago.targets
     for scenario in egon.data.config.settings()["egon-data"]["--scenarios"]:
         # Delete existing data from database
-        db.execute_sql(
-            f"""
+        db.execute_sql(f"""
             DELETE FROM
             {targets.tables['etrago_load']}
             WHERE scn_name = '{scenario}'
@@ -178,10 +176,8 @@ def export_to_db():
                 WHERE country = 'DE'
                 AND carrier = 'AC'
                 AND scn_name = '{scenario}')
-            """
-        )
-        db.execute_sql(
-            f"""
+            """)
+        db.execute_sql(f"""
             DELETE FROM
             {targets.tables['etrago_load_curves']}
             WHERE scn_name = '{scenario}'
@@ -189,8 +185,7 @@ def export_to_db():
             SELECT load_id FROM
             {targets.tables['etrago_load']}
             WHERE scn_name = '{scenario}')
-            """
-        )
+            """)
 
         curves = demands_per_bus(scenario)
 
@@ -243,7 +238,6 @@ def export_to_db():
             if_exists="append",
         )
 
-
         load_timeseries.to_sql(
             targets.get_table_name("etrago_load_curves"),
             schema=targets.get_table_schema("etrago_load_curves"),
@@ -276,7 +270,7 @@ class ElectricalLoadEtrago(Dataset):
     name: str = "Electrical_load_etrago"
     #:
     version: str = "0.0.10"
-    
+
     sources = DatasetSources(
         tables={
             "cts_curves": "demand.egon_etrago_electricity_cts",

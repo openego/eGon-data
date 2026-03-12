@@ -37,6 +37,7 @@ class StorageEtrago(Dataset):
     * :py:class:`grid.egon_etrago_storage <egon.data.datasets.etrago_setup.EgonPfHvStorage>` is extended
 
     """
+
     sources = DatasetSources(
         tables={
             "storage": "supply.egon_storages",
@@ -47,11 +48,7 @@ class StorageEtrago(Dataset):
         }
     )
 
-    targets = DatasetTargets(
-        tables={
-            "storage": "grid.egon_etrago_storage"
-        }
-    )
+    targets = DatasetTargets(tables={"storage": "grid.egon_etrago_storage"})
 
     #:
     name: str = "StorageEtrago"
@@ -73,16 +70,14 @@ def insert_PHES():
     scenario = config.settings()["egon-data"]["--scenarios"]
     for scn in scenario:
         # Delete outdated data on pumped hydro units (PHES) inside Germany from database
-        db.execute_sql(
-            f"""
+        db.execute_sql(f"""
             DELETE FROM {StorageEtrago.targets.tables['storage']}
             WHERE carrier = 'pumped_hydro'
             AND scn_name = '{scn}'
             AND bus IN (SELECT bus_id FROM {StorageEtrago.sources.tables['bus']}
                            WHERE scn_name = '{scn}'
                            AND country = 'DE');
-            """
-        )
+            """)
 
         # Select data on PSH units from database
         phes = db.select_dataframe(
@@ -118,19 +113,16 @@ def extendable_batteries_per_scenario(scenario):
     engine = db.engine()
 
     # Delete outdated data on extendable battetries inside Germany from database
-    db.execute_sql(
-        f"""
+    db.execute_sql(f"""
         DELETE FROM {StorageEtrago.targets.tables['storage']}
         WHERE carrier = 'battery'
         AND scn_name = '{scenario}'
         AND bus IN (SELECT bus_id FROM {StorageEtrago.sources.tables['bus']}
                         WHERE scn_name = '{scenario}'
                         AND country = 'DE');
-        """
-    )
+        """)
 
-    extendable_batteries = db.select_dataframe(
-        f"""
+    extendable_batteries = db.select_dataframe(f"""
         SELECT bus_id as bus, scn_name FROM
         {StorageEtrago.sources.tables['bus']}
         WHERE carrier = 'AC'
@@ -140,18 +132,15 @@ def extendable_batteries_per_scenario(scenario):
         OR bus_id IN (SELECT bus_id
                         FROM {StorageEtrago.sources.tables['hv-substation']}
         ))
-        """
-    )
+        """)
 
     # Select information on allocated capacities for home batteries from database
-    home_batteries = db.select_dataframe(
-        f"""
+    home_batteries = db.select_dataframe(f"""
         SELECT el_capacity as p_nom_min, bus_id as bus FROM
         {StorageEtrago.sources.tables['storage']}
         WHERE carrier = 'home_battery'
         AND scenario = '{scenario}';
-        """
-    )
+        """)
 
     # Update index
     extendable_batteries["storage_id"] = db.next_etrago_id(

@@ -12,7 +12,6 @@ from egon.data.datasets.mv_grid_districts import MvGridDistricts
 from egon.data.datasets.zensus_vg250 import DestatisZensusPopulationPerHa
 
 
-
 class ZensusMvGridDistricts(Dataset):
     """
     Maps zensus cells to MV grid districts and writes it to database.
@@ -31,7 +30,7 @@ class ZensusMvGridDistricts(Dataset):
     name: str = "ZensusMvGridDistricts"
     #:
     version: str = "0.0.3"
-    
+
     sources = DatasetSources(
         tables={
             "zensus_population": "society.destatis_zensus_population_per_ha",
@@ -88,7 +87,7 @@ def mapping():
 
     sources = ZensusMvGridDistricts.sources
     targets = ZensusMvGridDistricts.targets
-    
+
     # Delete existsing data
     db.execute_sql(f"DELETE FROM {targets.tables['map']}")
 

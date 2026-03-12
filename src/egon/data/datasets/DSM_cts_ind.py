@@ -135,7 +135,7 @@ class DsmPotential(Dataset):
     name: str = "DsmPotential"
     #:
     version: str = "0.0.11"
-    
+
     sources = DatasetSources(
         tables={
             "cts_loadcurves": "demand.egon_etrago_electricity_cts",
@@ -161,7 +161,6 @@ class DsmPotential(Dataset):
             "ind_sites_loadcurves_individual": "demand.egon_sites_ind_load_curves_individual_dsm_timeseries",
         }
     )
-    
 
     def __init__(self, dependencies):
         super().__init__(
@@ -175,7 +174,9 @@ class DsmPotential(Dataset):
 # Datasets
 class EgonEtragoElectricityCtsDsmTimeseries(Base):
     __tablename__ = DsmPotential.targets.get_table_name("cts_loadcurves_dsm")
-    __table_args__ = {"schema": DsmPotential.targets.get_table_schema("cts_loadcurves_dsm")}
+    __table_args__ = {
+        "schema": DsmPotential.targets.get_table_schema("cts_loadcurves_dsm")
+    }
 
     bus = Column(Integer, primary_key=True, index=True)
     scn_name = Column(String, primary_key=True, index=True)
@@ -187,8 +188,14 @@ class EgonEtragoElectricityCtsDsmTimeseries(Base):
 
 
 class EgonOsmIndLoadCurvesIndividualDsmTimeseries(Base):
-    __tablename__ = DsmPotential.targets.get_table_name("ind_osm_loadcurves_individual_dsm")
-    __table_args__ = {"schema": DsmPotential.targets.get_table_schema("ind_osm_loadcurves_individual_dsm")}
+    __tablename__ = DsmPotential.targets.get_table_name(
+        "ind_osm_loadcurves_individual_dsm"
+    )
+    __table_args__ = {
+        "schema": DsmPotential.targets.get_table_schema(
+            "ind_osm_loadcurves_individual_dsm"
+        )
+    }
 
     osm_id = Column(Integer, primary_key=True, index=True)
     scn_name = Column(String, primary_key=True, index=True)
@@ -201,8 +208,14 @@ class EgonOsmIndLoadCurvesIndividualDsmTimeseries(Base):
 
 
 class EgonDemandregioSitesIndElectricityDsmTimeseries(Base):
-    __tablename__ = DsmPotential.targets.get_table_name("demandregio_ind_sites_dsm")
-    __table_args__ = {"schema": DsmPotential.targets.get_table_schema("demandregio_ind_sites_dsm")}
+    __tablename__ = DsmPotential.targets.get_table_name(
+        "demandregio_ind_sites_dsm"
+    )
+    __table_args__ = {
+        "schema": DsmPotential.targets.get_table_schema(
+            "demandregio_ind_sites_dsm"
+        )
+    }
 
     industrial_sites_id = Column(Integer, primary_key=True, index=True)
     scn_name = Column(String, primary_key=True, index=True)
@@ -216,8 +229,14 @@ class EgonDemandregioSitesIndElectricityDsmTimeseries(Base):
 
 
 class EgonSitesIndLoadCurvesIndividualDsmTimeseries(Base):
-    __tablename__ = DsmPotential.targets.get_table_name("ind_sites_loadcurves_individual")
-    __table_args__ = {"schema": DsmPotential.targets.get_table_schema("ind_sites_loadcurves_individual")}
+    __tablename__ = DsmPotential.targets.get_table_name(
+        "ind_sites_loadcurves_individual"
+    )
+    __table_args__ = {
+        "schema": DsmPotential.targets.get_table_schema(
+            "ind_sites_loadcurves_individual"
+        )
+    }
 
     site_id = Column(Integer, primary_key=True, index=True)
     scn_name = Column(String, primary_key=True, index=True)
@@ -232,9 +251,7 @@ class EgonSitesIndLoadCurvesIndividualDsmTimeseries(Base):
 def add_metadata_individual():
     targets = DsmPotential.targets.tables
 
-    targets = {
-        k: v for k, v in targets.items() if "dsm_timeseries" in v
-    }
+    targets = {k: v for k, v in targets.items() if "dsm_timeseries" in v}
 
     title_dict = {
         "egon_etrago_electricity_cts_dsm_timeseries": (
@@ -325,7 +342,7 @@ def add_metadata_individual():
     contris[1]["comment"] = "Add workflow to generate dataset."
 
     for table_str in targets.values():
-        schema, table = table_str.split('.')
+        schema, table = table_str.split(".")
         name = f"{schema}.{table}"
 
         meta = {
@@ -474,12 +491,10 @@ def ind_osm_data_import(ind_vent_cool_share):
 
     source = DsmPotential.sources.tables["ind_osm_loadcurves"]
 
-    dsm = db.select_dataframe(
-        f"""
+    dsm = db.select_dataframe(f"""
         SELECT bus, scn_name, p_set FROM
         {source}
-        """
-    )
+        """)
 
     # calculate share of timeseries for cooling and ventilation out of
     # industry-data
@@ -510,12 +525,10 @@ def ind_osm_data_import_individual(ind_vent_cool_share):
 
     source = DsmPotential.sources.tables["ind_osm_loadcurves_individual"]
 
-    dsm = db.select_dataframe(
-        f"""
+    dsm = db.select_dataframe(f"""
         SELECT osm_id, bus_id as bus, scn_name, p_set FROM
         {source}
-        """
-    )
+        """)
 
     # calculate share of timeseries for cooling and ventilation out of
     # industry-data
@@ -548,13 +561,11 @@ def ind_sites_vent_data_import(ind_vent_share, wz):
 
     source = DsmPotential.sources.tables["ind_sites_loadcurves"]
 
-    dsm = db.select_dataframe(
-        f"""
+    dsm = db.select_dataframe(f"""
         SELECT bus, scn_name, p_set FROM
         {source}
         WHERE wz = {wz}
-        """
-    )
+        """)
 
     # calculate share of timeseries for ventilation
 
@@ -585,13 +596,11 @@ def ind_sites_vent_data_import_individual(ind_vent_share, wz):
 
     source = DsmPotential.sources.tables["ind_sites_loadcurves_individual"]
 
-    dsm = db.select_dataframe(
-        f"""
+    dsm = db.select_dataframe(f"""
         SELECT site_id, bus_id as bus, scn_name, p_set FROM
         {source}
         WHERE wz = {wz}
-        """
-    )
+        """)
 
     # calculate share of timeseries for ventilation
 
@@ -615,7 +624,7 @@ def calc_ind_site_timeseries(scenario):
     source1 = DsmPotential.sources.tables["demandregio_ind_sites"]
 
     demands_ind_sites = db.select_dataframe(
-    f"""SELECT industrial_sites_id, wz, demand
+        f"""SELECT industrial_sites_id, wz, demand
         FROM {source1}
         WHERE scenario = '{scenario}'
         AND demand > 0
@@ -1162,7 +1171,7 @@ def data_export(dsm_buses, dsm_links, dsm_stores, carrier):
         if_exists="append",
         index=False,
     )
-    
+
     # dsm_stores
 
     insert_stores = pd.DataFrame(index=dsm_stores.index)

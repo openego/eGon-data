@@ -21,11 +21,10 @@ from sqlalchemy import (
 from sqlalchemy.ext.declarative import declarative_base
 
 from egon.data import db
+from egon.data.datasets import Dataset, DatasetSources, DatasetTargets
 from egon.data.datasets.osmtgmod.substation import EgonHvmvSubstation
 from egon.data.datasets.substation_voronoi import EgonHvmvSubstationVoronoi
 from egon.data.db import session_scope
-from egon.data.datasets import Dataset, DatasetSources, DatasetTargets
-
 
 Base = declarative_base()
 metadata = Base.metadata
@@ -818,14 +817,13 @@ class mv_grid_districts_setup(Dataset):
     name: str = "MvGridDistricts"
     #:
     version: str = "0.0.5"
-    
+
     sources = DatasetSources(
         tables={
             "vg250_gem_clean": "boundaries.vg250_gem_clean",
             "hvmv_substation": "grid.egon_hvmv_substation",
             "hvmv_substation_voronoi": "grid.egon_hvmv_substation_voronoi",
         }
-   
     )
 
     targets = DatasetTargets(
@@ -833,7 +831,6 @@ class mv_grid_districts_setup(Dataset):
             "egon_mv_grid_district": "grid.egon_mv_grid_district",
         }
     )
-
 
     def __init__(self, dependencies):
         super().__init__(

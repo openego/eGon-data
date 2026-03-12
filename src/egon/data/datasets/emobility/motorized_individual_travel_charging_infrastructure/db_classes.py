@@ -27,6 +27,7 @@ class EgonEmobChargingInfrastructure(Base):
     """
     Class definition of table grid.egon_emob_charging_infrastructure.
     """
+
     __tablename__ = "egon_emob_charging_infrastructure"
     __table_args__ = {"schema": "grid"}
 
@@ -34,13 +35,9 @@ class EgonEmobChargingInfrastructure(Base):
     mv_grid_id = Column(Integer)
     use_case = Column(String)
     weight = Column(Float)
-    
+
     # SRID 3035 from YML)
-    geometry = Column(
-        Geometry(
-            srid=3035
-        )
-    )
+    geometry = Column(Geometry(srid=3035))
 
 
 def add_metadata():
@@ -48,10 +45,10 @@ def add_metadata():
     Add metadata to table grid.egon_emob_charging_infrastructure
     """
     sources, targets = load_sources_and_targets("MITChargingInfrastructure")
-    
+
     full_table_name = targets.tables["charging_infrastructure"]
     target_schema, target_table = full_table_name.split(".")
-    
+
     contris = contributors(["kh", "kh"])
 
     contris[0]["date"] = "2023-03-14"

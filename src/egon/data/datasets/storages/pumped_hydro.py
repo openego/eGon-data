@@ -9,6 +9,7 @@ import geopandas as gpd
 import pandas as pd
 
 from egon.data import config, db
+from egon.data.datasets import load_sources_and_targets
 from egon.data.datasets.chp.match_nep import match_nep_chp
 from egon.data.datasets.chp.small_chp import assign_use_case
 from egon.data.datasets.power_plants import (
@@ -18,7 +19,6 @@ from egon.data.datasets.power_plants import (
     select_target,
 )
 import egon.data.config
-from egon.data.datasets import load_sources_and_targets
 
 
 def select_nep_pumped_hydro(scn):
@@ -36,16 +36,14 @@ def select_nep_pumped_hydro(scn):
 
     if scn == "eGon2035":
         # Select plants with geolocation from list of conventional power plants
-        nep_ph = db.select_dataframe(
-            f"""
+        nep_ph = db.select_dataframe(f"""
             SELECT bnetza_id, name, carrier, postcode, capacity, city,
             federal_state, c2035_capacity
             FROM {sources.tables['nep_conv']}
             WHERE carrier = '{carrier}'
             AND c2035_capacity > 0
             AND postcode != 'None';
-            """
-        )
+            """)
         nep_ph.rename(
             columns={"c2035_capacity": "elec_capacity"}, inplace=True
         )
@@ -53,8 +51,7 @@ def select_nep_pumped_hydro(scn):
         # Select plants with geolocation from list of conventional power plants
         year = int(scn[-4:])
 
-        nep_ph = db.select_dataframe(
-            f"""
+        nep_ph = db.select_dataframe(f"""
             SELECT bnetza_id, name, carrier, postcode, capacity, city,
             federal_state
             FROM {sources.tables['nep_conv']}
@@ -62,8 +59,7 @@ def select_nep_pumped_hydro(scn):
             AND capacity > 0
             AND postcode != 'None'
             AND commissioned < '{year+1}';
-            """
-        )
+            """)
         nep_ph["elec_capacity"] = nep_ph["capacity"]
     else:
         raise SystemExit(f"{scn} not recognised")

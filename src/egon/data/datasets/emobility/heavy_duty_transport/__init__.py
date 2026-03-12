@@ -34,7 +34,6 @@ from egon.data.datasets.emobility.heavy_duty_transport.h2_demand_distribution im
 WORKING_DIR = Path(".", "heavy_duty_transport").resolve()
 
 
-
 def create_tables():
     """
     Drops existing :py:class:`demand.egon_heavy_duty_transport_voronoi <egon.data.datasets.emobility.heavy_duty_transport.db_classes.EgonHeavyDutyTransportVoronoi>` is extended
@@ -70,7 +69,7 @@ def download_hgv_data():
     response = requests.get(url)
 
     with open(file_path, "w") as f:
-        writer = csv.writer(f, delimiter=";") 
+        writer = csv.writer(f, delimiter=";")
         for line in response.iter_lines():
             writer.writerow(line.decode("ISO-8859-1").split(";"))
 
@@ -103,6 +102,7 @@ class HeavyDutyTransport(Dataset):
     *mobility_hgv*.
 
     """
+
     sources = DatasetSources(
         urls={
             "BAST": "https://www.bast.de/DE/Themen/Digitales/HF_1/Massnahmen/verkehrszaehlung/Daten/2020_1/Jawe2020.csv?view=renderTcDataExportCSV&strTyp=A"
@@ -117,15 +117,16 @@ class HeavyDutyTransport(Dataset):
                     "sources": {
                         "BAST": {
                             "file": "Jawe2020.csv",
-                            "relevant_columns": ["DTV_SV_MobisSo_Q", "Koor_WGS84_E", "Koor_WGS84_N"],
-                            "srid": 4326
+                            "relevant_columns": [
+                                "DTV_SV_MobisSo_Q",
+                                "Koor_WGS84_E",
+                                "Koor_WGS84_N",
+                            ],
+                            "srid": 4326,
                         }
                     }
                 },
-                "tables": {
-                    "srid": 3035,
-                    "srid_buses": 4326
-                },
+                "tables": {"srid": 3035, "srid_buses": 4326},
                 "constants": {
                     "leakage": True,
                     "leakage_rate": 0.005,
@@ -135,20 +136,18 @@ class HeavyDutyTransport(Dataset):
                     "carrier": "H2_hgv_load",
                     "energy_value_h2": 39.4,
                     "hours_per_year": 8760,
-                    "fac": 0.001
+                    "fac": 0.001,
                 },
                 "hgv_mileage": {
                     "eGon2035": 10000000000,
-                    "eGon100RE": 40000000000
-                }
+                    "eGon100RE": 40000000000,
+                },
             }
-        }
+        },
     )
 
     targets = DatasetTargets(
-        files={
-            "BAST_download": "heavy_duty_transport/Jawe2020.csv"
-        },
+        files={"BAST_download": "heavy_duty_transport/Jawe2020.csv"},
         tables={
             "voronoi": "demand.egon_heavy_duty_transport_voronoi",
             "etrago_load": "grid.egon_etrago_load",
@@ -156,7 +155,6 @@ class HeavyDutyTransport(Dataset):
         },
     )
 
-    
     #:
     name: str = "HeavyDutyTransport"
     #:

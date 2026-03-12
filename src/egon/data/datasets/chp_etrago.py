@@ -47,6 +47,7 @@ class ChpEtrago(Dataset):
             "generator": "grid.egon_etrago_generator",
         }
     )
+
     def __init__(self, dependencies):
         super().__init__(
             name=self.name,
@@ -58,9 +59,7 @@ class ChpEtrago(Dataset):
 
 def insert_egon100re():
 
-
-    db.execute_sql(
-        f"""
+    db.execute_sql(f"""
         DELETE FROM {ChpEtrago.targets.tables['link']}
         WHERE carrier LIKE '%%CHP%%'
         AND scn_name = 'eGon100RE'
@@ -74,12 +73,10 @@ def insert_egon100re():
          FROM {ChpEtrago.sources.tables['etrago_buses']}
          WHERE scn_name = 'eGon100RE'
          AND country = 'DE')
-        """
-    )
+        """)
 
     # Select all CHP plants used in district heating
-    chp_dh = db.select_dataframe(
-        f"""
+    chp_dh = db.select_dataframe(f"""
         SELECT electrical_bus_id, ch4_bus_id, a.carrier,
         SUM(el_capacity) AS el_capacity, SUM(th_capacity) AS th_capacity,
         c.bus_id as heat_bus_id
@@ -94,8 +91,7 @@ def insert_egon100re():
         AND c.carrier = 'central_heat'
         AND NOT district_heating_area_id IS NULL
         GROUP BY (electrical_bus_id, ch4_bus_id, a.carrier, c.bus_id)
-        """
-    )
+        """)
 
     if chp_dh.empty:
         print("No CHP for district heating in scenario eGon100RE")
@@ -158,9 +154,7 @@ def insert_egon100re():
 
 def insert_scenario(scenario):
 
-
-    db.execute_sql(
-        f"""
+    db.execute_sql(f"""
         DELETE FROM {ChpEtrago.targets.tables['link']}
         WHERE carrier LIKE '%%CHP%%'
         AND scn_name = '{scenario}'
@@ -174,18 +168,14 @@ def insert_scenario(scenario):
          FROM {ChpEtrago.sources.tables['etrago_buses']}
          WHERE scn_name = '{scenario}'
          AND country = 'DE')
-        """
-    )
-    db.execute_sql(
-        f"""
+        """)
+    db.execute_sql(f"""
         DELETE FROM {ChpEtrago.targets.tables['generator']}
         WHERE carrier LIKE '%%CHP%%'
         AND scn_name = '{scenario}'
-        """
-    )
+        """)
     # Select all CHP plants used in district heating
-    chp_dh = db.select_dataframe(
-        f"""
+    chp_dh = db.select_dataframe(f"""
         SELECT electrical_bus_id, ch4_bus_id, a.carrier,
         SUM(el_capacity) AS el_capacity, SUM(th_capacity) AS th_capacity,
         c.bus_id as heat_bus_id
@@ -200,8 +190,7 @@ def insert_scenario(scenario):
         AND c.carrier = 'central_heat'
         AND NOT district_heating_area_id IS NULL
         GROUP BY (electrical_bus_id, ch4_bus_id, a.carrier, c.bus_id)
-        """
-    )
+        """)
 
     chp_dh.loc[chp_dh[chp_dh.carrier == "gas extended"].index, "carrier"] = (
         "gas"
@@ -282,7 +271,8 @@ def insert_scenario(scenario):
     )
 
     chp_el_gen["generator_id"] = db.next_etrago_id(
-        "generator", len(chp_el_gen))
+        "generator", len(chp_el_gen)
+    )
     # Add marginal cost
     chp_el_gen["marginal_cost"] = (
         pd.Series(
@@ -317,7 +307,8 @@ def insert_scenario(scenario):
     )
 
     chp_heat_gen["generator_id"] = db.next_etrago_id(
-        "generator", len(chp_heat_gen))
+        "generator", len(chp_heat_gen)
+    )
 
     chp_heat_gen.to_sql(
         ChpEtrago.targets.get_table_name("generator"),
@@ -327,16 +318,14 @@ def insert_scenario(scenario):
         index=False,
     )
 
-    chp_industry = db.select_dataframe(
-        f"""
+    chp_industry = db.select_dataframe(f"""
         SELECT electrical_bus_id, ch4_bus_id, carrier,
         SUM(el_capacity) AS el_capacity, SUM(th_capacity) AS th_capacity
         FROM {ChpEtrago.sources.tables['chp_table']}
         WHERE scenario='{scenario}'
         AND district_heating_area_id IS NULL
         GROUP BY (electrical_bus_id, ch4_bus_id, carrier)
-        """
-    )
+        """)
 
     chp_industry.loc[
         chp_industry[chp_industry.carrier == "gas extended"].index, "carrier"
@@ -392,7 +381,8 @@ def insert_scenario(scenario):
     )
 
     chp_el_ind_gen["generator_id"] = db.next_etrago_id(
-        "generator", len(chp_el_ind_gen))
+        "generator", len(chp_el_ind_gen)
+    )
 
     # Add marginal cost
     chp_el_ind_gen["marginal_cost"] = (

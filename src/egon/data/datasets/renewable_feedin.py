@@ -14,14 +14,12 @@ import pandas as pd
 
 from egon.data import db
 from egon.data.datasets import Dataset, DatasetSources, DatasetTargets
-from egon.data.datasets.era5 import EgonEra5Cells, EgonRenewableFeedIn, import_cutout
-from egon.data.datasets.scenario_parameters import get_sector_parameters
-from egon.data.metadata import (
-    context,
-    license_ccby,
-    meta_metadata,
-    sources,
+from egon.data.datasets.era5 import (
+    EgonEra5Cells,
+    EgonRenewableFeedIn,
+    import_cutout,
 )
+from egon.data.datasets.scenario_parameters import get_sector_parameters
 from egon.data.datasets.zensus_vg250 import DestatisZensusPopulationPerHa
 from egon.data.metadata import context, license_ccby, meta_metadata, sources
 import egon.data.config
@@ -52,7 +50,7 @@ class RenewableFeedin(Dataset):
     name: str = "RenewableFeedin"
     #:
     version: str = "0.0.12"
-    
+
     sources = DatasetSources(
         tables={
             "weather_cells": "supply.egon_era5_weather_cells",
@@ -110,7 +108,6 @@ def weather_cells_in_germany(geom_column="geom"):
 
     """
 
-    
     sources = RenewableFeedin.sources
 
     return db.select_geodataframe(
@@ -359,7 +356,6 @@ def wind():
 
     """
 
-    
     targets = RenewableFeedin.targets
 
     # Get weather cells with turbine type
@@ -390,11 +386,9 @@ def wind():
         ]
         df.loc[idx, "feedin"] = timeseries.loc[idx, turbine].values
 
-    db.execute_sql(
-        f"""
+    db.execute_sql(f"""
                    DELETE FROM {targets.tables['feedin_table']}
-                   WHERE carrier = 'wind_onshore'"""
-    )
+                   WHERE carrier = 'wind_onshore'""")
 
     # Insert values into database
     df.to_sql(
@@ -513,7 +507,7 @@ def heat_pump_cop():
     carrier = "heat_pump_cop"
 
     # Load configuration
-    
+
     targets = RenewableFeedin.targets
 
     # Get weather cells in Germany
@@ -547,11 +541,9 @@ def heat_pump_cop():
     df.feedin = cop.values.tolist()
 
     # Delete existing rows for carrier
-    db.execute_sql(
-        f"""
+    db.execute_sql(f"""
             DELETE FROM {targets.tables['feedin_table']}
-            WHERE carrier = '{carrier}'"""
-    )
+            WHERE carrier = '{carrier}'""")
 
     # Insert values into database
     df.to_sql(
@@ -600,11 +592,9 @@ def insert_feedin(data, carrier, weather_year):
     df.feedin = data.values.tolist()
 
     # Delete existing rows for carrier
-    db.execute_sql(
-        f"""
+    db.execute_sql(f"""
             DELETE FROM {targets.tables['feedin_table']}
-            WHERE carrier = '{carrier}'"""
-    )
+            WHERE carrier = '{carrier}'""")
 
     # Insert values into database
     df.to_sql(

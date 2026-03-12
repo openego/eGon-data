@@ -11,8 +11,8 @@ isn't exported from this module, please file a bug, so we can fix this.
 
 from pathlib import Path
 from urllib.request import urlretrieve
-import datetime
 import codecs
+import datetime
 import json
 import os
 import time
@@ -23,12 +23,10 @@ import geopandas as gpd
 from egon.data import db
 from egon.data.config import settings
 from egon.data.datasets import Dataset, DatasetSources, DatasetTargets
-import egon.data.config
 from egon.data.metadata import (
     context,
-
-    meta_metadata,
     licenses_datenlizenz_deutschland,
+    meta_metadata,
 )
 import egon.data.config
 
@@ -43,17 +41,17 @@ def download_files():
 
     """
 
-
-
     download_directory = Path(".") / "vg250"
     # Create the folder, if it does not exist already
     if not os.path.exists(download_directory):
         os.mkdir(download_directory)
 
-    target_file = download_directory / Path(Vg250.sources.files["vg250_zip"]).name
+    target_file = (
+        download_directory / Path(Vg250.sources.files["vg250_zip"]).name
+    )
 
     if not os.path.isfile(target_file):
-        urlretrieve(Vg250.sources.urls['vg250_zip'], target_file)
+        urlretrieve(Vg250.sources.urls["vg250_zip"], target_file)
 
 
 def to_postgres():
@@ -66,12 +64,10 @@ def to_postgres():
 
     """
 
-
-
     # Create target schema
     db.execute_sql(f"CREATE SCHEMA IF NOT EXISTS boundaries;")
 
-    zip_file = Path(Vg250.sources.files['vg250_zip'])
+    zip_file = Path(Vg250.sources.files["vg250_zip"])
     engine_local_db = db.engine()
 
     # Extract shapefiles from zip archive and send it to postgres db
@@ -122,18 +118,17 @@ def to_postgres():
         db.execute_sql(
             f"ALTER TABLE {Vg250.targets.tables[table]} "
             f"ADD PRIMARY KEY (id);"
-            )
+        )
 
         # Add index on geometry column
         db.execute_sql(
             f"CREATE INDEX {table}_geometry_idx ON "
             f"{Vg250.targets.tables[table]} USING gist (geometry);"
-            )
+        )
 
 
 def add_metadata():
     """Writes metadata JSON string into table comment."""
-
 
     title_and_description = {
         "vg250_sta": {
@@ -469,7 +464,7 @@ def vg250_metadata_resources_fields():
 
 
 class Vg250(Dataset):
-    
+
     sources = DatasetSources(
         urls={
             "vg250_zip": "https://daten.gdz.bkg.bund.de/produkte/vg/vg250_ebenen_0101/2020/vg250_01-01.geo84.shape.ebenen.zip"
@@ -477,7 +472,7 @@ class Vg250(Dataset):
         files={
             # The downloaded file is a source for the 'to_postgres' step
             "vg250_zip": "vg250/vg250_01-01.geo84.shape.ebenen.zip"
-        }
+        },
     )
     targets = DatasetTargets(
         files={
@@ -491,9 +486,9 @@ class Vg250(Dataset):
             "vg250_krs": "boundaries.vg250_krs",
             "vg250_vwg": "boundaries.vg250_vwg",
             "vg250_gem": "boundaries.vg250_gem",
-        }
+        },
     )
-    
+
     file_table_map = {
         "VG250_STA.shp": "vg250_sta",
         "VG250_LAN.shp": "vg250_lan",
@@ -502,7 +497,7 @@ class Vg250(Dataset):
         "VG250_VWG.shp": "vg250_vwg",
         "VG250_GEM.shp": "vg250_gem",
     }
-    
+
     """
     Obtains and processes VG250 data and writes it to database.
 
@@ -540,11 +535,9 @@ class Vg250(Dataset):
     """
     filename = sources.urls["vg250_zip"]
 
-
     #:
     name: str = "VG250"
     version: str = f"{filename}-0.0.9"
-
 
     def __init__(self, dependencies):
         super().__init__(

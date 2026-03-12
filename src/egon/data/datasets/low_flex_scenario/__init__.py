@@ -1,6 +1,4 @@
-"""The central module to create low flex scenarios
-
-"""
+"""The central module to create low flex scenarios"""
 
 from airflow.providers.common.sql.operators.sql import SQLExecuteQueryOperator
 from importlib_resources import files
@@ -12,16 +10,11 @@ Base = declarative_base()
 
 
 class LowFlexScenario(Dataset):
-    
-    sources = DatasetSources(
-        files={
-            "low_flex_sql": "low_flex_eGon2035.sql"
-        }
-    )
+
+    sources = DatasetSources(files={"low_flex_sql": "low_flex_eGon2035.sql"})
 
     targets = DatasetTargets()
-    
-    
+
     def __init__(self, dependencies):
         super().__init__(
             name="low_flex_scenario",

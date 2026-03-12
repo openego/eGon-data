@@ -19,11 +19,10 @@ from egon.data.datasets.emobility.heavy_duty_transport.db_classes import (
 )
 
 
-
 def run_egon_truck():
-    
+
     sources, targets = load_sources_and_targets("HeavyDutyTransport")
-    
+
     boundary_gdf, bast_gdf, nuts3_gdf = get_data()
 
     bast_gdf_within = bast_gdf.dropna().loc[
@@ -66,7 +65,7 @@ def run_egon_truck():
 def calculate_total_hydrogen_consumption(scenario: str = "eGon2035"):
     """Calculate the total hydrogen demand for trucking in Germany."""
     sources, targets = load_sources_and_targets("HeavyDutyTransport")
-    
+
     constants = sources.files["original_data"]["constants"]
     hgv_mileage = sources.files["original_data"]["hgv_mileage"]
 
@@ -141,11 +140,11 @@ def voronoi(
 ):
     """Building a Voronoi Field from points and a boundary."""
     logger.info("Building Voronoi Field.")
-    
+
     sources, targets = load_sources_and_targets("HeavyDutyTransport")
 
     config_sources = sources.files["original_data"]["original_data"]["sources"]
-    
+
     relevant_columns = config_sources["BAST"]["relevant_columns"]
     truck_col = relevant_columns[0]
     srid = sources.files["original_data"]["tables"]["srid"]

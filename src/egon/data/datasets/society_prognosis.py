@@ -1,16 +1,19 @@
 """The central module containing all code dealing with processing and
 forecast Zensus data.
 """
-import numpy as np
-import egon.data.config
-import pandas as pd
-from egon.data import db
-from egon.data.datasets import Dataset, DatasetSources, DatasetTargets
+
 from sqlalchemy import Column, Float, Integer
 from sqlalchemy.ext.declarative import declarative_base
+import numpy as np
+import pandas as pd
+
+from egon.data import db
+from egon.data.datasets import Dataset, DatasetSources, DatasetTargets
+import egon.data.config
 
 # will be later imported from another file ###
 Base = declarative_base()
+
 
 # ############################################################
 class SocietyPrognosis(Dataset):
@@ -72,7 +75,6 @@ def create_tables():
 def zensus_population():
     """Bring population prognosis from DemandRegio to Zensus grid"""
 
-    
     local_engine = db.engine()
 
     # Input: Zensus2011 population data including the NUTS3-Code
@@ -83,7 +85,7 @@ def zensus_population():
             SELECT id
             FROM {SocietyPrognosis.sources.tables['zensus_population']})""",
         index_col="zensus_population_id",
-   )
+    )
 
     zensus = db.select_dataframe(
         f"""SELECT id, population
@@ -106,11 +108,9 @@ def zensus_population():
         .population.apply(lambda grp: grp / grp.sum())
         .fillna(0)
     ).values
-    
+
     targets = SocietyPrognosis.targets
-    db.execute_sql(
-        f"DELETE FROM {targets.tables['population_prognosis']}"
-    )
+    db.execute_sql(f"DELETE FROM {targets.tables['population_prognosis']}")
     # Scale to pogosis values from demandregio
     for year in [2035, 2050]:
         # Input: dataset on population prognosis on district-level (NUTS3)
@@ -131,10 +131,10 @@ def zensus_population():
 
         # Insert to database
         df.to_sql(
-             targets.get_table_name("population_prognosis"),
-             schema=targets.get_table_schema("population_prognosis"),
-             con=local_engine,
-             if_exists="append",
+            targets.get_table_name("population_prognosis"),
+            schema=targets.get_table_schema("population_prognosis"),
+            con=local_engine,
+            if_exists="append",
         )
 
 
@@ -180,7 +180,6 @@ def household_prognosis_per_year(prognosis_nuts3, zensus, year):
 
 def zensus_household():
     """Bring household prognosis from DemandRegio to Zensus grid"""
-    
 
     local_engine = db.engine()
 
@@ -210,9 +209,7 @@ def zensus_household():
         .values
     )
     targets = SocietyPrognosis.targets
-    db.execute_sql(
-        f"DELETE FROM {targets.tables['household_prognosis']}"
-    )
+    db.execute_sql(f"DELETE FROM {targets.tables['household_prognosis']}")
 
     # Apply prognosis function
     for year in [2035, 2050]:

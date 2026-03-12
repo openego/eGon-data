@@ -44,8 +44,9 @@ from sqlalchemy import Column, Float, Integer, String
 from sqlalchemy.ext.declarative import declarative_base
 import numpy as np
 import pandas as pd
-from egon.data.datasets import load_sources_and_targets
+
 from egon.data import config, db
+from egon.data.datasets import load_sources_and_targets
 from egon.data.datasets.scenario_parameters import get_sector_parameters
 from egon.data.metadata import (
     context,
@@ -64,8 +65,8 @@ CONSTANTS = {
     "cbat_ppv_ratio": 1,
     "rtol": 0.05,
     "max_it": 100,
-    "deposit_id_mastr": 10491882, 
-    "deposit_id_data_bundle": 16576506 
+    "deposit_id_mastr": 10491882,
+    "deposit_id_data_bundle": 16576506,
 }
 
 
@@ -100,7 +101,7 @@ def allocate_home_batteries_to_buildings():
     scenarios = config.settings()["egon-data"]["--scenarios"]
     if "status2019" in scenarios:
         scenarios.remove("status2019")
-        
+
     cbat_ppv_ratio = CONSTANTS["cbat_ppv_ratio"]
     rtol = CONSTANTS["rtol"]
     max_it = CONSTANTS["max_it"]
@@ -142,7 +143,7 @@ def allocate_home_batteries_to_buildings():
             if pv_sum > 0:
                 grid_ratio = bat_cap / pv_sum
             else:
-                
+
                 continue
 
             if grid_ratio > cbat_ppv_ratio:
@@ -225,7 +226,7 @@ def add_metadata():
     Add metadata to table supply.egon_home_batteries
     """
     _, targets = load_sources_and_targets("Storages")
-    
+
     deposit_id_mastr = CONSTANTS["deposit_id_mastr"]
     deposit_id_data_bundle = CONSTANTS["deposit_id_data_bundle"]
 
@@ -302,7 +303,9 @@ def add_metadata():
                     "fields": generate_resource_fields_from_db_table(
                         targets.get_table_schema("home_batteries"),
                         # FIX: Use [-1] to get the table name safely (works with or without 'schema.' prefix)
-                        targets.get_table_name("home_batteries").split('.')[-1],
+                        targets.get_table_name("home_batteries").split(".")[
+                            -1
+                        ],
                     ),
                     "primaryKey": "index",
                 },
@@ -345,7 +348,7 @@ def add_metadata():
     db.submit_comment(
         f"'{json.dumps(meta)}'",
         targets.get_table_schema("home_batteries"),
-        targets.get_table_name("home_batteries").split('.')[-1],
+        targets.get_table_name("home_batteries").split(".")[-1],
     )
 
 

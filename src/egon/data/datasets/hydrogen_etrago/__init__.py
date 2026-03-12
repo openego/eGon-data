@@ -54,7 +54,7 @@ class HydrogenBusEtrago(Dataset):
     name: str = "HydrogenBusEtrago"
     #:
     version: str = "0.0.5"
-    
+
     sources = DatasetSources(
         tables={
             "saltcavern_data": "grid.egon_saltstructures_storage_potential",
@@ -62,7 +62,6 @@ class HydrogenBusEtrago(Dataset):
             "H2_AC_map": "grid.egon_etrago_ac_h2",
             "vg250_federal_states": "boundaries.vg250_lan",
             "saltcaverns": "boundaries.inspee_saltstructures",
-
         },
     )
 
@@ -71,7 +70,6 @@ class HydrogenBusEtrago(Dataset):
             "hydrogen_buses": "grid.egon_etrago_bus",
             "H2_AC_map": "grid.egon_etrago_ac_h2",
             "storage_potential": "grid.egon_saltstructures_storage_potential",
-
         },
     )
 
@@ -116,13 +114,12 @@ class HydrogenStoreEtrago(Dataset):
     name: str = "HydrogenStoreEtrago"
     #:
     version: str = "0.0.7"
-    
+
     sources = DatasetSources(
         tables={
             "saltcavern_data": "grid.egon_saltstructures_storage_potential",
             "buses": "grid.egon_etrago_bus",
             "H2_AC_map": "grid.egon_etrago_ac_h2",
-
         },
     )
     targets = DatasetTargets(
@@ -168,7 +165,7 @@ class HydrogenPowerLinkEtrago(Dataset):
     name: str = "HydrogenPowerLinkEtrago"
     #:
     version: str = "0.0.7"
-    
+
     sources = DatasetSources(
         tables={
             "buses": "grid.egon_etrago_bus",
@@ -230,7 +227,7 @@ class HydrogenMethaneLinkEtrago(Dataset):
     name: str = "HydrogenMethaneLinkEtrago"
     #:
     version: str = "0.0.7"
-    
+
     sources = DatasetSources(
         tables={
             "buses": "grid.egon_etrago_bus",
@@ -278,7 +275,7 @@ class HydrogenGridEtrago(Dataset):
     name: str = "HydrogenGridEtrago"
     #:
     version: str = "0.0.4"
-    
+
     sources = DatasetSources(
         urls={
             "new_constructed_pipes": "https://fnb-gas.de/wp-content/uploads/2024/07/2024_07_22_Anlage3_FNB_Massnahmenliste_Neubau.xlsx",
@@ -295,7 +292,7 @@ class HydrogenGridEtrago(Dataset):
             "links": "grid.egon_etrago_link",
         },
     )
-    
+
     targets = DatasetTargets(
         tables={
             "hydrogen_links": "grid.egon_etrago_link",

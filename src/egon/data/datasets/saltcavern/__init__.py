@@ -57,14 +57,13 @@ def to_postgres():
         data.columns = [x.lower() for x in data.columns]
 
         # Drop table before inserting data
-        db.execute_sql(
-            f"DROP TABLE IF EXISTS {schema}.{table} CASCADE;")
+        db.execute_sql(f"DROP TABLE IF EXISTS {schema}.{table} CASCADE;")
 
         # create database table from geopandas dataframe
         data.to_postgis(
             table,
             engine_local_db,
-            schema= schema,
+            schema=schema,
             index=True,
             if_exists="replace",
             dtype={"geometry": Geometry()},
@@ -101,8 +100,7 @@ class SaltcavernData(Dataset):
     name: str = "SaltcavernData"
     #:
     version: str = "0.0.3"
-    
-    
+
     sources = DatasetSources(
         files={
             "inspee_saltstructures": "data_bundle_egon_data/hydrogen_storage_potential_saltstructures/Potenzialbewertung_InSpEE_InSpEE_DS.shp"
@@ -114,6 +112,7 @@ class SaltcavernData(Dataset):
             "saltcaverns": "boundaries.inspee_saltstructures",
         }
     )
+
     def __init__(self, dependencies):
         super().__init__(
             name=self.name,

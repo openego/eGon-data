@@ -1,5 +1,4 @@
-"""The central module containing all code dealing with heat sector in etrago
-"""
+"""The central module containing all code dealing with heat sector in etrago"""
 
 import geopandas as gpd
 import pandas as pd
@@ -30,14 +29,12 @@ def insert_buses(carrier, scenario):
     sources = HeatEtrago.sources
     targets = HeatEtrago.targets
     # Delete existing heat buses (central or rural)
-    db.execute_sql(
-        f"""
+    db.execute_sql(f"""
         DELETE FROM {targets.tables["heat_buses"]}
         WHERE scn_name = '{scenario}'
         AND carrier = '{carrier}'
         AND country = 'DE'
-        """
-    )
+        """)
 
     # initalize dataframe for heat buses
     heat_buses = (
@@ -62,8 +59,7 @@ def insert_buses(carrier, scenario):
     # otherwise create one heat bus per hvmv substation
     # which represents aggregated individual heating for etrago
     else:
-        mv_grids = db.select_geodataframe(
-            f"""
+        mv_grids = db.select_geodataframe(f"""
             SELECT ST_Centroid(geom) AS geom
             FROM {sources.tables["mv_grids"]}
             WHERE bus_id IN
@@ -78,8 +74,7 @@ def insert_buses(carrier, scenario):
                 	WHERE scenario = '{scenario}'
                 )
             )
-            """
-        )
+            """)
         heat_buses.geom = mv_grids.geom.to_crs(epsg=4326)
 
     # Insert values into dataframe
@@ -103,16 +98,13 @@ def insert_store(scenario, carrier):
     sources = HeatEtrago.sources
     targets = HeatEtrago.targets
 
-    db.execute_sql(
-        f"""
+    db.execute_sql(f"""
         DELETE FROM {targets.tables["heat_buses"]}
         WHERE carrier = '{carrier}_store'
         AND scn_name = '{scenario}'
         AND country = 'DE'
-        """
-    )
-    db.execute_sql(
-        f"""
+        """)
+    db.execute_sql(f"""
         DELETE FROM {targets.tables["heat_links"]}
         WHERE carrier LIKE '{carrier}_store%'
         AND scn_name = '{scenario}'
@@ -126,10 +118,8 @@ def insert_store(scenario, carrier):
          FROM {targets.tables["heat_buses"]}
          WHERE scn_name = '{scenario}'
          AND country = 'DE')
-        """
-    )
-    db.execute_sql(
-        f"""
+        """)
+    db.execute_sql(f"""
         DELETE FROM {targets.tables["heat_stores"]}
         WHERE carrier = '{carrier}_store'
         AND scn_name = '{scenario}'
@@ -138,8 +128,7 @@ def insert_store(scenario, carrier):
          FROM {targets.tables["heat_buses"]}
          WHERE scn_name = '{scenario}'
          AND country = 'DE')
-        """
-    )
+        """)
 
     dh_bus = db.select_geodataframe(
         f"""
@@ -225,8 +214,7 @@ def insert_store(scenario, carrier):
                 f"{carrier.split('_')[0]}_water_tank"
             ],
             "e_nom_extendable": True,
-            "store_id": db.next_etrago_id("store", len(water_tank_bus.index)
-            ),
+            "store_id": db.next_etrago_id("store", len(water_tank_bus.index)),
         }
     )
 
@@ -262,8 +250,7 @@ def insert_rural_direct_heat(scenario):
     sources = HeatEtrago.sources
     targets = HeatEtrago.targets
 
-    db.execute_sql(
-        f"""
+    db.execute_sql(f"""
         DELETE FROM {targets.tables["heat_generators"]}
         WHERE carrier IN ('rural_solar_thermal')
         AND scn_name = '{scenario}'
@@ -272,19 +259,16 @@ def insert_rural_direct_heat(scenario):
          FROM {targets.tables["heat_buses"]}
          WHERE scn_name = '{scenario}'
          AND country = 'DE')
-        """
-    )
+        """)
 
-    db.execute_sql(
-        f"""
+    db.execute_sql(f"""
         DELETE FROM {targets.tables["heat_generator_timeseries"]}
         WHERE scn_name = '{scenario}'
         AND generator_id NOT IN (
             SELECT generator_id
             FROM {targets.tables["heat_generators"]}
             WHERE scn_name = '{scenario}')
-        """
-    )
+        """)
 
     rural_solar_thermal = db.select_geodataframe(
         f"""
@@ -313,7 +297,9 @@ def insert_rural_direct_heat(scenario):
             "carrier": "rural_solar_thermal",
             "bus": rural_solar_thermal.heat_bus,
             "p_nom": rural_solar_thermal.capacity,
-            "generator_id": db.next_etrago_id("generator", len(rural_solar_thermal.index)),
+            "generator_id": db.next_etrago_id(
+                "generator", len(rural_solar_thermal.index)
+            ),
         }
     )
 
@@ -384,8 +370,7 @@ def insert_central_direct_heat(scenario):
     sources = HeatEtrago.sources
     targets = HeatEtrago.targets
 
-    db.execute_sql(
-        f"""
+    db.execute_sql(f"""
         DELETE FROM {targets.tables["heat_generators"]}
         WHERE carrier IN ('solar_thermal_collector', 'geo_thermal')
         AND scn_name = '{scenario}'
@@ -394,19 +379,16 @@ def insert_central_direct_heat(scenario):
          FROM {targets.tables["heat_buses"]}
          WHERE scn_name = '{scenario}'
          AND country = 'DE')
-        """
-    )
+        """)
 
-    db.execute_sql(
-        f"""
+    db.execute_sql(f"""
         DELETE FROM {targets.tables["heat_generator_timeseries"]}
         WHERE scn_name = '{scenario}'
         AND generator_id NOT IN (
             SELECT generator_id 
             FROM {targets.tables["heat_generators"]}
             WHERE scn_name = '{scenario}')
-        """
-    )
+        """)
 
     central_thermal = db.select_geodataframe(
         f"""
@@ -436,14 +418,15 @@ def insert_central_direct_heat(scenario):
         index_col="id",
     )
 
-
     generator = pd.DataFrame(
         data={
             "scn_name": scenario,
             "carrier": central_thermal.carrier,
             "bus": map_dh_id_bus_id.bus_id[central_thermal.index],
             "p_nom": central_thermal.capacity,
-            "generator_id": db.next_etrago_id("generator", len(central_thermal.index)),
+            "generator_id": db.next_etrago_id(
+                "generator", len(central_thermal.index)
+            ),
         }
     )
 
@@ -519,8 +502,7 @@ def insert_central_gas_boilers(scenario):
     sources = HeatEtrago.sources
     targets = HeatEtrago.targets
 
-    db.execute_sql(
-        f"""
+    db.execute_sql(f"""
         DELETE FROM {targets.tables["heat_links"]}
         WHERE carrier  LIKE '%central_gas_boiler%'
         AND scn_name = '{scenario}'
@@ -540,11 +522,9 @@ def insert_central_gas_boilers(scenario):
                 AND scn_name = '{scenario}'
                 )
             )
-        """
-    )
+        """)
 
-    central_boilers = db.select_dataframe(
-        f"""
+    central_boilers = db.select_dataframe(f"""
         SELECT c.bus_id as bus0, b.bus_id as bus1,
         capacity, a.carrier, scenario as scn_name
         FROM {sources.tables["district_heating_supply"]} a
@@ -558,8 +538,7 @@ def insert_central_gas_boilers(scenario):
         AND b.carrier='central_heat'
         AND c.carrier='CH4'
         AND c.scn_name = '{scenario}'
-        """
-    )
+        """)
 
     # Add LineString topology
     central_boilers = link_geom_from_buses(central_boilers, scenario)
@@ -581,7 +560,9 @@ def insert_central_gas_boilers(scenario):
     central_boilers.drop(["capacity"], axis=1, inplace=True)
 
     # Set index
-    central_boilers.index = db.next_etrago_id("link", len(central_boilers.index))
+    central_boilers.index = db.next_etrago_id(
+        "link", len(central_boilers.index)
+    )
     central_boilers.index.name = "link_id"
 
     # Set carrier name
@@ -612,8 +593,7 @@ def insert_rural_gas_boilers(scenario):
     sources = HeatEtrago.sources
     targets = HeatEtrago.targets
 
-    db.execute_sql(
-        f"""
+    db.execute_sql(f"""
         DELETE FROM {targets.tables["heat_links"]}
         WHERE carrier  = 'rural_gas_boiler'
         AND scn_name = '{scenario}'
@@ -627,11 +607,9 @@ def insert_rural_gas_boilers(scenario):
          FROM {targets.tables["heat_buses"]}
          WHERE scn_name = '{scenario}'
          AND country = 'DE')
-        """
-    )
+        """)
 
-    rural_boilers = db.select_dataframe(
-        f"""
+    rural_boilers = db.select_dataframe(f"""
         SELECT c.bus_id as bus0, b.bus_id as bus1,
         capacity, a.carrier, scenario as scn_name
         FROM {sources.tables["individual_heating_supply"]} a
@@ -645,8 +623,7 @@ def insert_rural_gas_boilers(scenario):
         AND b.carrier='rural_heat'
         AND c.carrier='CH4'
         AND c.scn_name = '{scenario}'
-        """
-    )
+        """)
 
     if rural_boilers.empty:
         print(f"No rural gas boilers in scenario {scenario}.")
@@ -754,7 +731,7 @@ class HeatEtrago(Dataset):
     name: str = "HeatEtrago"
     #:
     version: str = "0.0.15"
-    
+
     sources = DatasetSources(
         tables={
             "scenario_capacities": "supply.egon_scenario_capacities",
@@ -772,7 +749,6 @@ class HeatEtrago(Dataset):
             "zensus_population": "society.destatis_zensus_population_per_ha",
         },
     )
-
 
     targets = DatasetTargets(
         tables={

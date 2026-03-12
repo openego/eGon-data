@@ -145,7 +145,7 @@ class re_potential_area_setup(Dataset):
     tasks = (create_tables, insert_data)
 
     sources = DatasetSources(
-       files={
+        files={
             "potentialarea_pv_agriculture": "data_bundle_egon_data/re_potential_areas/potentialarea_pv_agriculture.gpkg",
             "potentialarea_pv_road_railway": "data_bundle_egon_data/re_potential_areas/potentialarea_pv_road_railway.gpkg",
             "potentialarea_wind": "data_bundle_egon_data/re_potential_areas/potentialarea_wind.gpkg",
@@ -155,7 +155,6 @@ class re_potential_area_setup(Dataset):
         }
     )
 
-    
     targets = DatasetTargets(
         tables={
             "egon_re_potential_area_pv_agriculture": "supply.egon_re_potential_area_pv_agriculture",
@@ -163,7 +162,6 @@ class re_potential_area_setup(Dataset):
             "egon_re_potential_area_wind": "supply.egon_re_potential_area_wind",
         }
     )
-
 
     def __init__(self, dependencies):
         super().__init__(

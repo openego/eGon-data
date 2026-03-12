@@ -1,11 +1,10 @@
-"""The central module containing all code dealing with downloading tyndp data
-"""
+"""The central module containing all code dealing with downloading tyndp data"""
 
+from urllib.request import urlretrieve
 import os
 
 from egon.data import config
 from egon.data.datasets import Dataset, DatasetSources, DatasetTargets
-from urllib.request import urlretrieve
 
 
 class Tyndp(Dataset):
@@ -29,13 +28,13 @@ class Tyndp(Dataset):
     name: str = "Tyndp"
     #:
     version: str = "0.0.3"
-    
+
     sources = DatasetSources(
         files={
             "capacities": "https://2020.entsos-tyndp-scenarios.eu/wp-content/uploads/2020/06/TYNDP-2020-Scenario-Datafile.xlsx.zip",
             "demand_2030": "https://eepublicdownloads.entsoe.eu/tyndp-documents/2020-data/Demand_TimeSeries_2030_DistributedEnergy.xlsx",
             "demand_2040": "https://eepublicdownloads.entsoe.eu/tyndp-documents/2020-data/Demand_TimeSeries_2040_DistributedEnergy.xlsx",
-       }
+        }
     )
 
     targets = DatasetTargets(
@@ -45,7 +44,6 @@ class Tyndp(Dataset):
             "demand_2040": "Demand_TimeSeries_2040_DistributedEnergy.xlsx",
         }
     )
-
 
     def __init__(self, dependencies):
         super().__init__(

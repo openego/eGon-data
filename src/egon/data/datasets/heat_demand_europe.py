@@ -36,8 +36,8 @@ class HeatDemandEurope(Dataset):
     """
 
     name: str = "heat-demands-europe"
-    version: str = "0.4.0"  
-    
+    version: str = "0.4.0"
+
     sources = DatasetSources(
         urls={
             "hotmaps_heat_demand": "https://gitlab.com/hotmaps/building-stock/-/raw/master/output_csv/3_indicator/1_Data_for_graphs/part_2_energy_demands/CSV_Actions_Total_energy_demand_by_building_type_in_2050_NUTS0.csv"

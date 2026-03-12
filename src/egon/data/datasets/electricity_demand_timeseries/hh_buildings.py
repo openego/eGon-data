@@ -235,7 +235,9 @@ def match_osm_and_zensus_data(
     egon_destatis_building_count = Table(
         sources.get_table_name("zensus_apartment_building_population_per_ha"),
         Base.metadata,
-        schema=sources.get_table_schema("zensus_apartment_building_population_per_ha"),
+        schema=sources.get_table_schema(
+            "zensus_apartment_building_population_per_ha"
+        ),
     )
     # get table metadata from db by name and schema
     inspect(engine).reflecttable(egon_destatis_building_count, None)
@@ -383,7 +385,9 @@ def generate_synthetic_buildings(missing_buildings, edge_length):
     destatis_zensus_population_per_ha_inside_germany = Table(
         sources.get_table_name("zensus_population_per_ha_inside_germany"),
         Base.metadata,
-        schema=sources.get_table_schema("zensus_population_per_ha_inside_germany"),
+        schema=sources.get_table_schema(
+            "zensus_population_per_ha_inside_germany"
+        ),
     )
     # get table metadata from db by name and schema
     inspect(engine).reflecttable(
@@ -826,7 +830,9 @@ def map_houseprofiles_to_buildings():
     egon_census_cells = Table(
         sources.get_table_name("zensus_apartment_building_population_per_ha"),
         Base.metadata,
-        schema=sources.get_table_schema("zensus_apartment_building_population_per_ha"),
+        schema=sources.get_table_schema(
+            "zensus_apartment_building_population_per_ha"
+        ),
     )
     inspect(engine).reflecttable(egon_census_cells, None)
 
@@ -1236,15 +1242,14 @@ class setup(Dataset):
     version: str = "0.0.11"
     #:
     sources = DatasetSources(
-       tables={
-           "hh_profiles_in_census_cells": "demand.egon_household_electricity_profile_in_census_cell",
-           "zensus_apartment_building_population_per_ha": "society.egon_destatis_zensus_apartment_building_population_per_ha",
-           "zensus_population_per_ha_inside_germany": "society.destatis_zensus_population_per_ha_inside_germany",
-           "osm_buildings": "openstreetmap.osm_buildings",
-           "osm_buildings_residential": "openstreetmap.osm_buildings_residential",
-          }
+        tables={
+            "hh_profiles_in_census_cells": "demand.egon_household_electricity_profile_in_census_cell",
+            "zensus_apartment_building_population_per_ha": "society.egon_destatis_zensus_apartment_building_population_per_ha",
+            "zensus_population_per_ha_inside_germany": "society.destatis_zensus_population_per_ha_inside_germany",
+            "osm_buildings": "openstreetmap.osm_buildings",
+            "osm_buildings_residential": "openstreetmap.osm_buildings_residential",
+        }
     )
-
 
     targets = DatasetTargets(
         tables={

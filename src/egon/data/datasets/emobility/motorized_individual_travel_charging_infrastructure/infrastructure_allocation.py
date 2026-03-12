@@ -60,11 +60,9 @@ def write_to_db(
     full_table_name = targets.tables["charging_infrastructure"]
     target_schema, target_table = full_table_name.split(".")
 
-    max_id = db.select_dataframe(
-        f"""
+    max_id = db.select_dataframe(f"""
         SELECT MAX(cp_id) FROM {target_schema}.{target_table}
-        """
-    )["max"][0]
+        """)["max"][0]
 
     if max_id is None:
         max_id = 0
@@ -164,7 +162,7 @@ def get_data() -> dict[gpd.GeoDataFrame]:
     """
     sources, targets = load_sources_and_targets("MITChargingInfrastructure")
     sources.constants = sources.files["tracbev_parameters"]
-    
+
     tracbev_cfg = sources.constants["tracbev_config"]
     srid = tracbev_cfg["srid"]
 
@@ -259,18 +257,10 @@ def get_data() -> dict[gpd.GeoDataFrame]:
         "industrial": sources.constants["work_weight_industrial"],
     }
 
-    data_dict["sfh_available"] = sources.constants[
-        "single_family_home_share"
-    ]
-    data_dict["sfh_avg_spots"] = sources.constants[
-        "single_family_home_spots"
-    ]
-    data_dict["mfh_available"] = sources.constants[
-        "multi_family_home_share"
-    ]
-    data_dict["mfh_avg_spots"] = sources.constants[
-        "multi_family_home_spots"
-    ]
+    data_dict["sfh_available"] = sources.constants["single_family_home_share"]
+    data_dict["sfh_avg_spots"] = sources.constants["single_family_home_spots"]
+    data_dict["mfh_available"] = sources.constants["multi_family_home_share"]
+    data_dict["mfh_avg_spots"] = sources.constants["multi_family_home_spots"]
 
     data_dict["random_seed"] = np.random.default_rng(
         sources.constants["random_seed"]

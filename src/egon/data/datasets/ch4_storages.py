@@ -7,6 +7,7 @@ in Germany and inserting them into the database. They are modelled as
 PyPSA stores and are not extendable.
 
 """
+
 from pathlib import Path
 from telnetlib import GA
 import ast
@@ -69,7 +70,7 @@ class CH4Storages(Dataset):
             version=self.version,
             dependencies=dependencies,
             tasks=(insert_ch4_storages),
-            #tasks=(notasks),
+            # tasks=(notasks),
         )
 
 
@@ -311,10 +312,8 @@ def insert_ch4_stores(scn_name):
     # Connect to local database
     engine = db.engine()
 
-
     # Clean table
-    db.execute_sql(
-        f"""
+    db.execute_sql(f"""
         DELETE FROM {CH4Storages.targets.tables['stores']}
         WHERE "carrier" = 'CH4'
         AND scn_name = '{scn_name}'
@@ -323,8 +322,7 @@ def insert_ch4_stores(scn_name):
             WHERE scn_name = '{scn_name}'
             AND country = 'DE'
             );
-        """
-    )
+        """)
 
     gas_storages_list = pd.concat(
         [
@@ -341,7 +339,8 @@ def insert_ch4_stores(scn_name):
     )
 
     gas_storages_list["store_id"] = db.next_etrago_id(
-        "store", len(gas_storages_list))
+        "store", len(gas_storages_list)
+    )
 
     # Insert data to db
     gas_storages_list.to_sql(

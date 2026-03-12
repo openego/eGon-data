@@ -20,10 +20,8 @@ import geopandas as gpd
 import numpy as np
 
 from egon.data import config, db
-from egon.data.datasets.scenario_parameters import get_sector_parameters
 from egon.data.datasets import load_sources_and_targets
-
-
+from egon.data.datasets.scenario_parameters import get_sector_parameters
 
 
 def insert_h2_to_ch4_to_h2():
@@ -39,29 +37,26 @@ def insert_h2_to_ch4_to_h2():
     None
 
     """
-    
+
     sources, targets = load_sources_and_targets("HydrogenMethaneLinkEtrago")
     scenarios = config.settings()["egon-data"]["--scenarios"]
     con = db.engine()
     target_links = targets.tables["hydrogen_links"]
     target_buses = sources.tables["buses"]
 
-
     if "status2019" in scenarios:
         scenarios.remove("status2019")
 
     for scn_name in scenarios:
 
-        db.execute_sql(
-            f"""
+        db.execute_sql(f"""
            DELETE FROM {target_links} WHERE "carrier" in ('H2_to_CH4', 'CH4_to_H2')
            AND scn_name = '{scn_name}' AND bus0 IN (
              SELECT bus_id
              FROM {target_buses}
              WHERE country = 'DE'
              )
-           """
-        )
+           """)
 
         sql_CH4_buses = f"""
                 SELECT bus_id, x, y, ST_Transform(geom, 32632) as geom

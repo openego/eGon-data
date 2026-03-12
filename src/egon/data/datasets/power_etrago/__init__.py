@@ -30,7 +30,7 @@ class OpenCycleGasTurbineEtrago(Dataset):
     name: str = "OpenCycleGasTurbineEtrago"
     #:
     version: str = "0.0.4"
-    
+
     sources = DatasetSources(
         tables={
             "power_plants": "supply.egon_power_plants",
@@ -44,7 +44,6 @@ class OpenCycleGasTurbineEtrago(Dataset):
             "etrago_link": "grid.egon_etrago_link",
         }
     )
-
 
     def __init__(self, dependencies):
         super().__init__(

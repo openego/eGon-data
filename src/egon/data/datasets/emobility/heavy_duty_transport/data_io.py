@@ -49,10 +49,10 @@ def bast_gdf():
     Reads BAST data.
     """
     sources, targets = load_sources_and_targets("HeavyDutyTransport")
-    
+
     # Access embedded original_data
     config_sources = sources.files["original_data"]["original_data"]["sources"]
-    
+
     file = config_sources["BAST"]["file"]
 
     path = WORKING_DIR / file
