@@ -70,7 +70,7 @@ def get_foreign_gas_bus_id(carrier="CH4"):
 
     """
     sources, _ = load_sources_and_targets("GasNeighbours")
-    
+
     scn_name = "eGon2035"
 
     bus_id = db.select_geodataframe(
@@ -471,7 +471,7 @@ def calc_capacity_per_year(df, lng, year):
 
 
 def insert_generators(gen):
-    """    
+    """
     Insert gas generators for foreign countries into the database.
     The marginal cost of the methane is calculated as the sum of the
     imported LNG cost, the conventional natural gas cost and the
@@ -490,13 +490,12 @@ def insert_generators(gen):
     None
     """
     sources, targets = load_sources_and_targets("GasNeighbours")
-    
+
     map_buses = get_map_buses()
     scn_params = get_sector_parameters("gas", "eGon2035")
 
     # Delete existing data
-    db.execute_sql(
-        f"""
+    db.execute_sql(f"""
         DELETE FROM
         {targets.tables['generators']}
         WHERE bus IN (
@@ -506,8 +505,7 @@ def insert_generators(gen):
             AND scn_name = 'eGon2035')
         AND scn_name = 'eGon2035'
         AND carrier = 'CH4';
-        """
-    )
+        """)
 
     # Set bus_id
     gen.loc[gen[gen["index"].isin(map_buses.keys())].index, "index"] = gen.loc[
@@ -542,7 +540,7 @@ def insert_generators(gen):
 
     # Insert data to db
     gen.to_sql(
-        targets.get_table_name("generators").split('.')[-1],
+        targets.get_table_name("generators").split(".")[-1],
         db.engine(),
         schema=targets.get_table_schema("generators"),
         index=False,
@@ -689,15 +687,14 @@ def insert_ch4_demand(global_demand, normalized_ch4_demandTS):
     None
     """
     sources, targets = load_sources_and_targets("GasNeighbours")
-    
+
     map_buses = get_map_buses()
 
     scn_name = "eGon2035"
     carrier = "CH4"
 
     # Delete existing data
-    db.execute_sql(
-        f"""
+    db.execute_sql(f"""
         DELETE FROM
         {targets.tables['load_timeseries']}
         WHERE "load_id" IN (
@@ -711,11 +708,9 @@ def insert_ch4_demand(global_demand, normalized_ch4_demandTS):
             AND scn_name = '{scn_name}'
             AND carrier = '{carrier}'
         );
-        """
-    )
+        """)
 
-    db.execute_sql(
-        f"""
+    db.execute_sql(f"""
         DELETE FROM
         {targets.tables['loads']}
         WHERE bus IN (
@@ -725,8 +720,7 @@ def insert_ch4_demand(global_demand, normalized_ch4_demandTS):
             AND scn_name = '{scn_name}')
         AND scn_name = '{scn_name}'
         AND carrier = '{carrier}'
-        """
-    )
+        """)
 
     # Set bus_id
     global_demand.loc[
@@ -754,7 +748,7 @@ def insert_ch4_demand(global_demand, normalized_ch4_demandTS):
 
     # Insert data to db
     global_demand.to_sql(
-        targets.get_table_name("loads").split('.')[-1],
+        targets.get_table_name("loads").split(".")[-1],
         db.engine(),
         schema=targets.get_table_schema("loads"),
         index=False,
@@ -787,7 +781,7 @@ def insert_ch4_demand(global_demand, normalized_ch4_demandTS):
 
     # Insert data to DB
     ch4_demand_TS.to_sql(
-        targets.get_table_name("load_timeseries").split('.')[-1],
+        targets.get_table_name("load_timeseries").split(".")[-1],
         db.engine(),
         schema=targets.get_table_schema("load_timeseries"),
         index=False,
@@ -922,8 +916,7 @@ def insert_storage(ch4_storage_capacities):
     sources, targets = load_sources_and_targets("GasNeighbours")
 
     # Clean table
-    db.execute_sql(
-        f"""
+    db.execute_sql(f"""
         DELETE FROM {targets.tables['stores']}
         WHERE "carrier" = 'CH4'
         AND scn_name = 'eGon2035'
@@ -933,14 +926,14 @@ def insert_storage(ch4_storage_capacities):
             WHERE scn_name = 'eGon2035'
             AND country != 'DE'
             );
-        """
-    )
+        """)
     # Add missing columns
     c = {"scn_name": "eGon2035", "carrier": "CH4"}
     ch4_storage_capacities = ch4_storage_capacities.assign(**c)
 
     ch4_storage_capacities["store_id"] = db.next_etrago_id(
-        "store", len(ch4_storage_capacities))
+        "store", len(ch4_storage_capacities)
+    )
     ch4_storage_capacities.drop(
         ["Country"],
         axis=1,
@@ -950,7 +943,7 @@ def insert_storage(ch4_storage_capacities):
     ch4_storage_capacities = ch4_storage_capacities.reset_index(drop=True)
     # Insert data to db
     ch4_storage_capacities.to_sql(
-        targets.get_table_name("stores").split('.')[-1],
+        targets.get_table_name("stores").split(".")[-1],
         db.engine(),
         schema=targets.get_table_schema("stores"),
         index=False,
@@ -1070,14 +1063,13 @@ def insert_power_to_h2_demand(global_power_to_h2_demand):
 
     """
     sources, targets = load_sources_and_targets("GasNeighbours")
-    
+
     map_buses = get_map_buses()
 
     scn_name = "eGon2035"
     carrier = "H2_for_industry"
 
-    db.execute_sql(
-        f"""
+    db.execute_sql(f"""
         DELETE FROM
         {targets.tables['loads']}
         WHERE bus IN (
@@ -1087,8 +1079,7 @@ def insert_power_to_h2_demand(global_power_to_h2_demand):
             AND scn_name = '{scn_name}')
         AND scn_name = '{scn_name}'
         AND carrier = '{carrier}'
-        """
-    )
+        """)
 
     # Set bus_id
     global_power_to_h2_demand.loc[
@@ -1115,7 +1106,8 @@ def insert_power_to_h2_demand(global_power_to_h2_demand):
     global_power_to_h2_demand = global_power_to_h2_demand.assign(**c)
 
     global_power_to_h2_demand["load_id"] = db.next_etrago_id(
-        "load", len(global_power_to_h2_demand))
+        "load", len(global_power_to_h2_demand)
+    )
 
     global_power_to_h2_demand = global_power_to_h2_demand.rename(
         columns={"GlobD_2035": "p_set"}
@@ -1128,7 +1120,7 @@ def insert_power_to_h2_demand(global_power_to_h2_demand):
 
     # Insert data to db
     global_power_to_h2_demand.to_sql(
-        targets.get_table_name("loads").split('.')[-1],
+        targets.get_table_name("loads").split(".")[-1],
         db.engine(),
         schema=targets.get_table_schema("loads"),
         index=False,
@@ -1290,7 +1282,8 @@ def calculate_ch4_grid_capacities():
     )
 
     Neighbouring_pipe_capacities_list["link_id"] = db.next_etrago_id(
-        "link", len(Neighbouring_pipe_capacities_list))
+        "link", len(Neighbouring_pipe_capacities_list)
+    )
 
     # Border crossing CH4 pipelines between DE and neighbouring countries
     DE_pipe_capacities_list = pipe_capacities_list[
@@ -1318,11 +1311,10 @@ def calculate_ch4_grid_capacities():
     DE_pipe_capacities_list = DE_pipe_capacities_list.set_index("country_code")
 
     schema_bus = sources.get_table_schema("buses")
-    table_bus = sources.get_table_name("buses").split('.')[-1]
+    table_bus = sources.get_table_name("buses").split(".")[-1]
     for country_code in [e for e in countries if e not in ("GB", "SE", "UK")]:
         # Select cross-bording links
-        cap_DE = db.select_dataframe(
-            f"""SELECT link_id, bus0, bus1
+        cap_DE = db.select_dataframe(f"""SELECT link_id, bus0, bus1
                 FROM {sources.tables['links']}
                     WHERE scn_name = 'eGon2035'
                     AND carrier = 'CH4'
@@ -1346,8 +1338,7 @@ def calculate_ch4_grid_capacities():
                             AND carrier = 'CH4'
                             AND scn_name = 'eGon2035'))
                     )
-            ;"""
-        )
+            ;""")
 
         cap_DE["p_nom"] = DE_pipe_capacities_list.at[
             country_code, "p_nom"
@@ -1491,7 +1482,7 @@ def grid():
 def calculate_ocgt_capacities():
     """
     Calculate gas turbine capacities abroad for eGon2035
-    
+
     Calculate gas turbine capacities abroad for eGon2035 based on TYNDP
     2020, scenario "Distributed Energy", interpolated between 2030 and 2040.
 
@@ -1571,21 +1562,17 @@ def insert_ocgt_abroad():
     df_ocgt["scn_name"] = scn_name
 
     buses = tuple(
-        db.select_dataframe(
-            f"""SELECT bus_id FROM grid.egon_etrago_bus
+        db.select_dataframe(f"""SELECT bus_id FROM grid.egon_etrago_bus
             WHERE scn_name = '{scn_name}' AND country != 'DE';
-        """
-        )["bus_id"]
+        """)["bus_id"]
     )
 
     # Delete old entries
-    db.execute_sql(
-        f"""
+    db.execute_sql(f"""
         DELETE FROM grid.egon_etrago_link WHERE "carrier" = '{carrier}'
         AND scn_name = '{scn_name}'
         AND bus0 IN {buses} AND bus1 IN {buses};
-        """
-    )
+        """)
 
     # read carrier information from scnario parameter data
     scn_params = get_sector_parameters("gas", scn_name)
