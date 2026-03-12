@@ -82,8 +82,6 @@ class Model(Base):
     version = Column(String, nullable=False)
     epoch = Column(Integer, default=0)
     scenarios = Column(String, nullable=False)
-    sources = Column(JSONB, nullable=True)
-    targets = Column(JSONB, nullable=True)
 
     dependencies = orm.relationship(
         "Model",
@@ -136,6 +134,7 @@ class DatasetSources:
             files=data.get("files", {}),
         )
 
+
 @dataclass
 class DatasetTargets:
     tables: Dict[str, str] = field(default_factory=dict)
@@ -173,6 +172,7 @@ class DatasetTargets:
             tables=data.get("tables", {}),
             files=data.get("files", {}),
         )
+
 
 #: A :class:`Task` is an Airflow :class:`Operator` or any
 #: :class:`Callable <typing.Callable>` taking no arguments and returning
@@ -327,12 +327,6 @@ class Dataset:
             name=self.name,
             version=self.version,
             scenarios=config.settings()["egon-data"]["--scenarios"],
-            sources=self.sources.to_dict()
-            if hasattr(self.sources, "to_dict")
-            else dict(self.sources),
-            targets=self.targets.to_dict()
-            if hasattr(self.targets, "to_dict")
-            else dict(self.targets),
         )
 
         dependencies = (
@@ -377,7 +371,7 @@ class Dataset:
                 " Using empty."
             )
             self.sources = DatasetSources()
-            
+
         # ---- TARGETS ----
         class_targets = getattr(type(self), "targets", None)
         if isinstance(class_targets, DatasetTargets):
@@ -386,7 +380,7 @@ class Dataset:
                 logger.warning(
                     f"Dataset '{type(self).__name__}' defines empty targets."
                 )
-                
+
         else:
             logger.warning(
                 f"Dataset '{type(self).__name__}' has no valid targets."
@@ -394,7 +388,6 @@ class Dataset:
             )
             self.targets = DatasetTargets()
 
-        
         if not isinstance(self.tasks, Tasks_):
             self.tasks = Tasks_(self.tasks)
         if len(self.tasks.last) > 1:
@@ -437,8 +430,6 @@ class Dataset:
                 p.set_downstream(first)
 
         self.register()
-        self.register_sources_and_targets()
-        
 
     def __init_subclass__(cls) -> None:
         # Warn about missing or invalid class attributes
@@ -454,65 +445,43 @@ class Dataset:
             )
 
     def register(self):
-        with db.session_scope() as session:
-            existing = session.query(Model).filter_by(name=self.name).first()
-
-            if not existing:
-                entry = Model(
-                    name=self.name,
-                    version="will be filled after execution",
-                    scenarios="{}",
-                    sources=self.sources.to_dict(),
-                    targets=self.targets.to_dict(),
-                )
-                session.add(entry)
-
-    def register_sources_and_targets(self) -> None:
         """
-        Insert or update sources and targets in the database early,
-        without touching versioning / epoch logic.
+        Register dataset sources and targets in a single transaction.
+        Only writes if sources or targets have changed.
+        Creates table if it doesn't exist yet.
         """
+        SourcesTargetsModel.__table__.create(bind=db.engine(), checkfirst=True)
+
         with db.session_scope() as session:
-            dataset = (
-                session.query(Model)
+            existing = (
+                session.query(SourcesTargetsModel)
                 .filter_by(name=self.name)
-                .order_by(Model.epoch.desc())
                 .first()
             )
-        
+
             sources_dict = self.sources.to_dict()
             targets_dict = self.targets.to_dict()
-        
-            if dataset is None:
-                # first registration
-                dataset = Model(
-                    name=self.name,
-                    version=self.version,
-                    scenarios=config.settings()["egon-data"]["--scenarios"],
-                    sources=sources_dict,
-                    targets=targets_dict,
+
+            if not existing:
+                session.add(
+                    SourcesTargetsModel(
+                        name=self.name,
+                        sources=sources_dict,
+                        targets=targets_dict,
+                    )
                 )
-                session.add(dataset)
-                return
-        
-            updated = False
-        
-            if (dataset.sources or {}) != sources_dict:
-                dataset.sources = sources_dict
-                updated = True
-        
-            if (dataset.targets or {}) != targets_dict:
-                dataset.targets = targets_dict
-                updated = True
-        
-            if updated:
-                session.add(dataset)
+            else:
+                if (existing.sources or {}) != sources_dict:
+                    existing.sources = sources_dict
+                if (existing.targets or {}) != targets_dict:
+                    existing.targets = targets_dict
+
 
 def load_sources_and_targets(
     name: str,
 ) -> tuple[DatasetSources, DatasetTargets]:
     """
-    Load DatasetSources and DatasetTargets from the datasets table.
+    Load DatasetSources and DatasetTargets from dataset_sources_targets table.
 
     Parameters
     ----------
@@ -523,22 +492,31 @@ def load_sources_and_targets(
         Tuple[DatasetSources, DatasetTargets]
     """
     with db.session_scope() as session:
-        dataset_entry = session.query(Model).filter_by(name=name).first()
+        entry = session.query(SourcesTargetsModel).filter_by(name=name).first()
 
-        if dataset_entry is None:
-            raise ValueError(f"Dataset '{name}' not found in the database.")
+        if entry is None:
+            raise ValueError(
+                f"Dataset '{name}' not found in dataset_sources_targets table."
+                " Make sure the dataset has been instantiated before"
+                " calling load_sources_and_targets()."
+            )
 
-        # Extract raw JSON dicts within the session
-        raw_sources = dict(dataset_entry.sources or {})
-        raw_targets = dict(dataset_entry.targets or {})
+        raw_sources = dict(entry.sources or {})
+        raw_targets = dict(entry.targets or {})
 
-    # Recreate objects *outside the session* (now safe)
     sources = DatasetSources(**raw_sources)
     targets = DatasetTargets(**raw_targets)
 
-    
-
     return sources, targets
+
+
+class SourcesTargetsModel(Base):
+    __tablename__ = "dataset_sources_targets"
+    __table_args__ = {"schema": "metadata"}
+
+    name = Column(String, primary_key=True)
+    sources = Column(JSONB)
+    targets = Column(JSONB)
 
 
 def export_dataset_io_to_json(
@@ -546,33 +524,24 @@ def export_dataset_io_to_json(
 ) -> None:
     """
     Export all sources and targets of datasets to a JSON file.
-
     Parameters
     ----------
     output_path : str
         Path to the output JSON file.
     """
-
     result = {}
-
     with db.session_scope() as session:
-        datasets = session.query(Model).all()
-
-        for dataset in datasets:
-            name = dataset.name
-
+        entries = session.query(SourcesTargetsModel).all()
+        for entry in entries:
+            name = entry.name
             try:
-                raw_sources = dict(dataset.sources or {})
-                raw_targets = dict(dataset.targets or {})
-
                 result[name] = {
-                    "sources": raw_sources,
-                    "targets": raw_targets,
+                    "sources": dict(entry.sources or {}),
+                    "targets": dict(entry.targets or {}),
                 }
             except Exception as e:
                 print(f"⚠️ Could not process dataset '{name}': {e}")
 
-    # Save to JSON
     output_file = Path(output_path)
     output_file.write_text(json.dumps(result, indent=2, ensure_ascii=False))
     print(f"✅ Dataset I/O overview written to {output_file.resolve()}")
