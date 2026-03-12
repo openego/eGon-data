@@ -899,8 +899,8 @@ class Osmtgmod(Dataset):
     
     sources = DatasetSources(
         files={
-            "file": "germany-240101.osm.pbf",
-            "file_testmode": "schleswig-holstein-240101.osm.pbf",
+            "file": "germany-250101.osm.pbf",
+            "file_testmode": "schleswig-holstein-250101.osm.pbf",
         },
         tables={
             "osmtgmod_bus": "osmtgmod_results.bus_data",
