@@ -1322,7 +1322,7 @@ def sanitycheck_emobility_mit():
     print("=====================================================")
 
     for scenario_name in config.settings()["egon-data"]["--scenarios"]:
-        scenario_var_name = sources_mit.original_data["scenario"]["variation"][scenario_name]
+        scenario_var_name = sources_mit.files["original_data"]["scenario"]["variation"][scenario_name]
 
         print("")
         print(f"SCENARIO: {scenario_name}, VARIATION: {scenario_var_name}")
