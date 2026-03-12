@@ -9,12 +9,11 @@ import geopandas as gpd
 import numpy as np
 import pandas as pd
 
-from egon.data import config, db
+from egon.data import db
 from egon.data.datasets import load_sources_and_targets
 from egon.data.datasets.emobility.heavy_duty_transport.db_classes import (
     EgonHeavyDutyTransportVoronoi,
 )
-
 
 
 def insert_hgv_h2_demand():
@@ -23,7 +22,7 @@ def insert_hgv_h2_demand():
     """
     sources, targets = load_sources_and_targets("HeavyDutyTransport")
     scenarios = sources.files["original_data"]["constants"]["scenarios"]
-    
+
     for scenario in scenarios:
         delete_old_entries(scenario)
 
@@ -41,10 +40,11 @@ def insert_hgv_h2_demand():
             index=False,
         )
 
+
 def kg_per_year_to_mega_watt(df: pd.DataFrame | gpd.GeoDataFrame):
     sources, targets = load_sources_and_targets("HeavyDutyTransport")
     constants = sources.files["original_data"]["constants"]
-    
+
     energy_value = constants["energy_value_h2"]
     fac = constants["fac"]
     hours_per_year = constants["hours_per_year"]
@@ -85,8 +85,9 @@ def insert_new_entries(hgv_h2_demand_gdf: gpd.GeoDataFrame):
         Load data to insert.
 
     """
-    start_id = db.next_etrago_id("load")
-    hgv_h2_demand_gdf["load_id"] = range(start_id, start_id + len(hgv_h2_demand_gdf))
+    hgv_h2_demand_gdf["load_id"] = db.next_etrago_id(
+        "load", len(hgv_h2_demand_gdf)
+    )
 
     # Add missing columns
     c = {"sign": -1, "type": np.nan, "p_set": np.nan, "q_set": np.nan}
@@ -127,24 +128,20 @@ def delete_old_entries(scenario: str):
     carrier = sources.files["original_data"]["constants"]["carrier"]
 
     # Clean tables
-    db.execute_sql(
-        f"""
+    db.execute_sql(f"""
         DELETE FROM grid.egon_etrago_load_timeseries
         WHERE "load_id" IN (
             SELECT load_id FROM grid.egon_etrago_load
             WHERE carrier = '{carrier}'
             AND scn_name = '{scenario}'
         )
-        """
-    )
+        """)
 
-    db.execute_sql(
-        f"""
+    db.execute_sql(f"""
         DELETE FROM grid.egon_etrago_load
         WHERE carrier = '{carrier}'
         AND scn_name = '{scenario}'
-        """
-    )
+        """)
 
 
 def assign_h2_buses(scenario: str = "eGon2035"):
@@ -169,7 +166,7 @@ def assign_h2_buses(scenario: str = "eGon2035"):
 
 def read_hgv_h2_demand(scenario: str = "eGon2035"):
     sources, targets = load_sources_and_targets("HeavyDutyTransport")
-    
+
     with db.session_scope() as session:
         query = session.query(
             EgonHeavyDutyTransportVoronoi.nuts3,
