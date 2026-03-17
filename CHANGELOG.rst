@@ -10,6 +10,8 @@ Added
 
 * Make egon-data runnable in python 3.10
   `#1352 <https://github.com/openego/egon-data/issues/1352>`_
+* Add standardized sources and targets definitions across dataset modules
+  `#1283 <https://github.com/openego/egon-data/issues/1283>`_
 
 Changed
 -------
