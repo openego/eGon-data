@@ -21,7 +21,6 @@ import requests
 
 from egon.data import config, db
 from egon.data.config import settings
-from egon.data.datasets import Dataset
 from egon.data.datasets.etrago_helpers import (
     finalize_bus_insertion,
     initialise_bus_insertion,
@@ -31,6 +30,7 @@ from egon.data.datasets.pypsaeur import prepared_network, read_network
 from egon.data.datasets.scenario_parameters import get_sector_parameters
 
 logger = logging.getLogger(__name__)
+from egon.data.datasets import Dataset, DatasetSources, DatasetTargets
 
 
 class IndustrialGasDemand(Dataset):
@@ -47,8 +47,26 @@ class IndustrialGasDemand(Dataset):
 
     #:
     name: str = "IndustrialGasDemand"
-    #:
-    version: str = "0.0.6"
+    version: str = "0.0.9"
+
+    sources = DatasetSources(
+        tables={
+            "boundaries_vg250_krs": "boundaries.vg250_krs",
+            "egon_etrago_bus": "grid.egon_etrago_bus",
+        },
+        files={
+            "region_mapping_json": "./datasets/gas_data/demand/region_corr.json",
+            "industrial_demand_folder": "./datasets/gas_data/demand",
+            "industrial_gas_bundle_src": "./data_bundle_egon_data/industrial_gas_demand",
+        },
+    )
+
+    targets = DatasetTargets(
+        tables={
+            "etrago_load": "grid.egon_etrago_load",
+            "etrago_load_timeseries": "grid.egon_etrago_load_timeseries",
+        }
+    )
 
     def __init__(self, dependencies):
         super().__init__(
@@ -145,15 +163,16 @@ def read_industrial_demand(scn_name, carrier):
         Dataframe containing the industrial gas demand time series
 
     """
-    target_file = Path(".") / "datasets/gas_data/demand/region_corr.json"
+    target_file = Path(
+        IndustrialGasDemand.sources.files["region_mapping_json"]
+    )
     df_corr = pd.read_json(target_file)
     df_corr = df_corr.loc[:, ["id_region", "name_short"]]
     df_corr.set_index("id_region", inplace=True)
 
     target_file = (
-        Path(".")
-        / "datasets/gas_data/demand"
-        / (carrier + "_" + scn_name + ".json")
+        Path(IndustrialGasDemand.sources.files["industrial_demand_folder"])
+        / f"{carrier}_{scn_name}.json"
     )
     industrial_loads = pd.read_json(target_file)
     industrial_loads = industrial_loads.loc[:, ["id_region", "values"]]
@@ -205,9 +224,9 @@ def read_industrial_demand(scn_name, carrier):
     industrial_loads_list = industrial_loads_list.set_index("nuts3")
 
     # Add the centroid point to each NUTS3 area
-    sql_vg250 = """SELECT nuts as nuts3, geometry as geom
-                    FROM boundaries.vg250_krs
-                    WHERE gf = 4 ;"""
+    sql_vg250 = f"""SELECT nuts as nuts3, geometry as geom
+                FROM {IndustrialGasDemand.sources.tables['boundaries_vg250_krs']}
+                WHERE gf = 4;"""
     gdf_vg250 = db.select_geodataframe(sql_vg250, epsg=4326)
 
     point = []
@@ -301,34 +320,32 @@ def delete_old_entries(scn_name):
     None
 
     """
+    targets = IndustrialGasDemand.targets
+    sources = IndustrialGasDemand.sources
     # Clean tables
-    db.execute_sql(
-        f"""
-        DELETE FROM grid.egon_etrago_load_timeseries
+    db.execute_sql(f"""
+        DELETE FROM {targets.tables['etrago_load_timeseries']}
         WHERE "load_id" IN (
-            SELECT load_id FROM grid.egon_etrago_load
+            SELECT load_id FROM {targets.tables['etrago_load']}
             WHERE "carrier" IN ('CH4_for_industry', 'H2_for_industry') AND
             scn_name = '{scn_name}' AND bus not IN (
-                SELECT bus_id FROM grid.egon_etrago_bus
+                SELECT bus_id FROM {sources.tables['egon_etrago_bus']}
                 WHERE scn_name = '{scn_name}' AND country != 'DE'
             )
         );
-        """
-    )
+        """)
 
-    db.execute_sql(
-        f"""
-        DELETE FROM grid.egon_etrago_load
+    db.execute_sql(f"""
+        DELETE FROM {targets.tables['etrago_load']}
         WHERE "load_id" IN (
-            SELECT load_id FROM grid.egon_etrago_load
+            SELECT load_id FROM {targets.tables['etrago_load']}
             WHERE "carrier" IN ('CH4_for_industry', 'H2_for_industry') AND
             scn_name = '{scn_name}' AND bus not IN (
-                SELECT bus_id FROM grid.egon_etrago_bus
+                SELECT bus_id FROM {sources.tables['egon_etrago_bus']}
                 WHERE scn_name = '{scn_name}' AND country != 'DE'
             )
         );
-        """
-    )
+        """)
 
 
 def insert_new_entries(industrial_gas_demand, scn_name):
@@ -359,8 +376,10 @@ def insert_new_entries(industrial_gas_demand, scn_name):
         the database with their time series
 
     """
+    targets = IndustrialGasDemand.targets
     industrial_gas_demand["load_id"] = db.next_etrago_id(
-        "load", len(industrial_gas_demand))
+        "load", len(industrial_gas_demand)
+    )
 
     # Add missing columns
     c = {"scn_name": scn_name, "sign": -1}
@@ -374,9 +393,9 @@ def insert_new_entries(industrial_gas_demand, scn_name):
     engine = db.engine()
     # Insert data to db
     egon_etrago_load_gas.to_sql(
-        "egon_etrago_load",
+        targets.get_table_name("etrago_load"),
         engine,
-        schema="grid",
+        schema=targets.get_table_schema("etrago_load"),
         index=False,
         if_exists="append",
     )
@@ -435,10 +454,8 @@ def insert_industrial_gas_demand_egon2035():
         )
         insert_industrial_gas_demand_time_series(industrial_gas_demand)
     else:
-        print(
-            """eGon2035 is not part of the scenario list. This task is not
-              executed"""
-        )
+        print("""eGon2035 is not part of the scenario list. This task is not
+              executed""")
 
 
 def insert_industrial_gas_demand_egon100RE():
@@ -604,10 +621,8 @@ def insert_industrial_gas_demand_egon100RE():
         )
         insert_industrial_gas_demand_time_series(industrial_gas_demand)
     else:
-        print(
-            """eGon100RE is not part of the scenario list. This task is not
-              executed"""
-        )
+        print("""eGon100RE is not part of the scenario list. This task is not
+              executed""")
 
 
 def insert_industrial_gas_demand_time_series(egon_etrago_load_gas):
@@ -628,6 +643,7 @@ def insert_industrial_gas_demand_time_series(egon_etrago_load_gas):
     None
 
     """
+    targets = IndustrialGasDemand.targets
     egon_etrago_load_gas_timeseries = egon_etrago_load_gas
 
     # Connect to local database
@@ -641,9 +657,9 @@ def insert_industrial_gas_demand_time_series(egon_etrago_load_gas):
 
     # Insert data to db
     egon_etrago_load_gas_timeseries.to_sql(
-        "egon_etrago_load_timeseries",
+        targets.get_table_name("etrago_load_timeseries"),
         engine,
-        schema="grid",
+        schema=targets.get_table_schema("etrago_load_timeseries"),
         index=False,
         if_exists="append",
     )
@@ -669,7 +685,9 @@ def download_industrial_gas_demand():
 
         # Read and save data
         result_corr = requests.get(correspondance_url)
-        target_file = Path(".") / "datasets/gas_data/demand/region_corr.json"
+        target_file = Path(
+            IndustrialGasDemand.sources.files["region_mapping_json"]
+        )
         os.makedirs(os.path.dirname(target_file), exist_ok=True)
         pd.read_json(result_corr.content).to_json(target_file)
 
@@ -691,21 +709,22 @@ def download_industrial_gas_demand():
                 # Read and save data
                 result = requests.get(request)
                 target_file = (
-                    Path(".")
-                    / "datasets/gas_data/demand"
-                    / (carrier + "_" + scn_name + ".json")
+                    Path(
+                        IndustrialGasDemand.sources.files[
+                            "industrial_demand_folder"
+                        ]
+                    )
+                    / f"{carrier}_{scn_name}.json"
                 )
                 pd.read_json(result.content).to_json(target_file)
     except:
-        logger.warning(
-            """
+        logger.warning("""
         Due to temporal problems in the FFE platform, data for the scenarios
         eGon2035 and eGon100RE are imported lately from csv files. Data for
         other scenarios is unfortunately unavailable.
-            """
-        )
+            """)
         shutil.copytree(
-            "data_bundle_egon_data/industrial_gas_demand",
-            "datasets/gas_data/demand",
+            IndustrialGasDemand.sources.files["industrial_gas_bundle_src"],
+            IndustrialGasDemand.sources.files["industrial_demand_folder"],
             dirs_exist_ok=True,
         )

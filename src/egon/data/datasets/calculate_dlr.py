@@ -15,7 +15,7 @@ import pandas as pd
 import xarray as xr
 
 from egon.data import config, db
-from egon.data.datasets import Dataset
+from egon.data.datasets import Dataset, DatasetSources, DatasetTargets
 from egon.data.datasets.scenario_parameters import get_sector_parameters
 
 
@@ -40,7 +40,21 @@ class Calculate_dlr(Dataset):
     #:
     name: str = "dlr"
     #:
-    version: str = "0.0.2"
+    version: str = "0.0.4"
+
+    sources = DatasetSources(
+        files={
+            "regions_shape": "data_bundle_egon_data/regions_dynamic_line_rating/Germany_regions.shp",
+            "weather_cutout": "data_bundle_egon_data/cutouts/germany-{weather_year}-era5.nc",
+        },
+        tables={
+            "trans_lines": "grid.egon_etrago_line",
+            "line_timeseries": "grid.egon_etrago_line_timeseries",
+        },
+    )
+    targets = DatasetTargets(
+        tables={"line_timeseries": "grid.egon_etrago_line_timeseries"}
+    )
 
     def __init__(self, dependencies):
         super().__init__(
@@ -59,16 +73,10 @@ def dlr():
     *No parameters required
 
     """
-    cfg = config.datasets()["dlr"]
     for scn in set(config.settings()["egon-data"]["--scenarios"]):
         weather_year = get_sector_parameters("global", scn)["weather_year"]
 
-        regions_shape_path = (
-            Path(".")
-            / "data_bundle_egon_data"
-            / "regions_dynamic_line_rating"
-            / "Germany_regions.shp"
-        )
+        regions_shape_path = Path(Calculate_dlr.sources.files["regions_shape"])
 
         # Calculate hourly DLR per region
         dlr_hourly_dic, dlr_hourly = DLR_Regions(
@@ -83,8 +91,7 @@ def dlr():
 
         sql = f"""
         SELECT scn_name, line_id, topo, s_nom FROM
-        {cfg['sources']['trans_lines']['schema']}.
-        {cfg['sources']['trans_lines']['table']}
+        {Calculate_dlr.sources.tables["trans_lines"]}
         """
         df = gpd.GeoDataFrame.from_postgis(
             sql, con, crs="EPSG:4326", geom_col="topo"
@@ -153,17 +160,14 @@ def dlr():
         trans_lines["temp_id"] = 1
 
         # Delete existing data
-        db.execute_sql(
-            f"""
-            DELETE FROM {cfg['sources']['line_timeseries']['schema']}.
-            {cfg['sources']['line_timeseries']['table']};
-            """
-        )
+        db.execute_sql(f"""
+            DELETE FROM {Calculate_dlr.targets.tables["line_timeseries"]};
+            """)
 
         # Insert into database
         trans_lines.to_sql(
-            f"{cfg['targets']['line_timeseries']['table']}",
-            schema=f"{cfg['targets']['line_timeseries']['schema']}",
+            name=Calculate_dlr.targets.get_table_name("line_timeseries"),
+            schema=Calculate_dlr.targets.get_table_schema("line_timeseries"),
             con=db.engine(),
             if_exists="append",
             index=False,
@@ -188,9 +192,10 @@ def DLR_Regions(weather_year, regions_shape_path):
     regions = regions.sort_values(by=["Region"])
 
     # The data downloaded using Atlite is loaded in 'weather_data_raw'.
-    file_name = f"germany-{weather_year}-era5.nc"
-    weather_info_path = (
-        Path(".") / "data_bundle_egon_data" / "cutouts" / file_name
+    weather_info_path = Path(
+        Calculate_dlr.sources.files["weather_cutout"].format(
+            weather_year=weather_year
+        )
     )
     weather_data_raw = xr.open_mfdataset(str(weather_info_path))
     weather_data_raw = weather_data_raw.rio.write_crs(4326)

@@ -16,10 +16,11 @@ import numpy as np
 import pandas as pd
 
 from egon.data import db, logger
-from egon.data.datasets import Dataset, wrapped_partial
-from egon.data.datasets.mastr import (
-    WORKING_DIR_MASTR_NEW,
-    WORKING_DIR_MASTR_OLD,
+from egon.data.datasets import (
+    Dataset,
+    DatasetSources,
+    DatasetTargets,
+    wrapped_partial,
 )
 from egon.data.datasets.power_plants.conventional import (
     match_nep_no_chp,
@@ -69,14 +70,13 @@ def create_tables():
     None.
     """
 
+    target_string = PowerPlants.targets.tables["power_plants"]
+    schema, table = target_string.split(".")
+
     # Tables for future scenarios
-    cfg = egon.data.config.datasets()["power_plants"]
-    db.execute_sql(f"CREATE SCHEMA IF NOT EXISTS {cfg['target']['schema']};")
+    db.execute_sql(f"CREATE SCHEMA IF NOT EXISTS {schema};")
     engine = db.engine()
-    db.execute_sql(
-        f"""DROP TABLE IF EXISTS
-        {cfg['target']['schema']}.{cfg['target']['table']}"""
-    )
+    db.execute_sql(f"DROP TABLE IF EXISTS {schema}.{table}")
 
     db.execute_sql("""DROP SEQUENCE IF EXISTS pp_seq""")
     EgonPowerPlants.__table__.create(bind=engine, checkfirst=True)
@@ -89,12 +89,10 @@ def create_tables():
         EgonPowerPlantsHydro,
     ]
     for t in tables:
-        db.execute_sql(
-            f"""
+        db.execute_sql(f"""
             DROP TABLE IF EXISTS {t.__table_args__['schema']}.
             {t.__tablename__} CASCADE;
-            """
-        )
+            """)
         t.__table__.create(bind=engine, checkfirst=True)
 
 
@@ -119,12 +117,15 @@ def scale_prox2now(df, target, level="federal_state"):
     if level == "federal_state":
         df.loc[:, "Nettonennleistung"] = (
             (
-                df.groupby(df.Bundesland)
-                .Nettonennleistung.apply(lambda grp: grp / grp.sum())
-                .mul(target[df.Bundesland.values].values)
+                df.groupby("Bundesland").Nettonennleistung.apply(
+                    lambda grp: grp / grp.sum()
+                )
             )
             .reset_index(level=[0])
             .Nettonennleistung
+        )
+        df["Nettonennleistung"] = df.apply(
+            lambda x: x["Nettonennleistung"] * target[x["Bundesland"]], axis=1
         )
     else:
         df.loc[:, "Nettonennleistung"] = df.Nettonennleistung * (
@@ -152,15 +153,14 @@ def select_target(carrier, scenario):
         Target values for carrier and scenario
 
     """
-    cfg = egon.data.config.datasets()["power_plants"]
 
     return (
         pd.read_sql(
             f"""SELECT DISTINCT ON (b.gen)
                          REPLACE(REPLACE(b.gen, '-', ''), 'ü', 'ue') as state,
                          a.capacity
-                         FROM {cfg['sources']['capacities']} a,
-                         {cfg['sources']['geom_federal_states']} b
+                         FROM {PowerPlants.sources.tables['capacities']} a,
+                         {PowerPlants.sources.tables['geom_federal_states']} b
                          WHERE a.nuts = b.nuts
                          AND scenario_name = '{scenario}'
                          AND carrier = '{carrier}'
@@ -190,7 +190,6 @@ def filter_mastr_geometry(mastr, federal_state=None):
         Power plants listed in MaStR with geometry inside German boundaries
 
     """
-    cfg = egon.data.config.datasets()["power_plants"]
 
     if type(mastr) == pd.core.frame.DataFrame:
         # Drop entries without geometry for insert
@@ -210,7 +209,7 @@ def filter_mastr_geometry(mastr, federal_state=None):
 
     # Drop entries outside of germany or federal state
     if not federal_state:
-        sql = f"SELECT geometry as geom FROM {cfg['sources']['geom_germany']}"
+        sql = f"SELECT geometry as geom FROM {PowerPlants.sources.tables['geom_germany']}"
     else:
         sql = f"""
         SELECT geometry as geom
@@ -243,15 +242,14 @@ def insert_biomass_plants(scenario):
     None.
 
     """
-    cfg = egon.data.config.datasets()["power_plants"]
 
     # import target values
     target = select_target("biomass", scenario)
 
     # import data for MaStR
-    mastr = pd.read_csv(
-        WORKING_DIR_MASTR_OLD / cfg["sources"]["mastr_biomass"]
-    ).query("EinheitBetriebsstatus=='InBetrieb'")
+    mastr = pd.read_csv(PowerPlants.sources.files["mastr_biomass"]).query(
+        "EinheitBetriebsstatus=='InBetrieb'"
+    )
 
     # Drop entries without federal state or 'AusschließlichWirtschaftszone'
     mastr = mastr[
@@ -259,7 +257,7 @@ def insert_biomass_plants(scenario):
             pd.read_sql(
                 f"""SELECT DISTINCT ON (gen)
         REPLACE(REPLACE(gen, '-', ''), 'ü', 'ue') as states
-        FROM {cfg['sources']['geom_federal_states']}""",
+        FROM {PowerPlants.sources.tables['geom_federal_states']}""",
                 con=db.engine(),
             ).states.values
         )
@@ -280,9 +278,9 @@ def insert_biomass_plants(scenario):
     # Assign bus_id
     if len(mastr_loc) > 0:
         mastr_loc["voltage_level"] = assign_voltage_level(
-            mastr_loc, cfg, WORKING_DIR_MASTR_OLD
+            mastr_loc, PowerPlants.sources.files
         )
-        mastr_loc = assign_bus_id(mastr_loc, cfg)
+        mastr_loc = assign_bus_id(mastr_loc, PowerPlants.sources.tables)
 
     # Insert entries with location
     session = sessionmaker(bind=db.engine())()
@@ -322,8 +320,6 @@ def insert_hydro_plants(scenario):
     None.
 
     """
-    cfg = egon.data.config.datasets()["power_plants"]
-
     # Map MaStR carriers to eGon carriers
     map_carrier = {
         "run_of_river": ["Laufwasseranlage"],
@@ -351,9 +347,9 @@ def insert_hydro_plants(scenario):
             target = select_target(carrier, scenario)
 
         # import data for MaStR
-        mastr = pd.read_csv(
-            WORKING_DIR_MASTR_NEW / cfg["sources"]["mastr_hydro"]
-        ).query("EinheitBetriebsstatus=='InBetrieb'")
+        mastr = pd.read_csv(PowerPlants.sources.files["mastr_hydro"]).query(
+            "EinheitBetriebsstatus=='InBetrieb'"
+        )
 
         # Choose only plants with specific carriers
         mastr = mastr[mastr.ArtDerWasserkraftanlage.isin(map_carrier[carrier])]
@@ -364,7 +360,7 @@ def insert_hydro_plants(scenario):
                 pd.read_sql(
                     f"""SELECT DISTINCT ON (gen)
             REPLACE(REPLACE(gen, '-', ''), 'ü', 'ue') as states
-            FROM {cfg['sources']['geom_federal_states']}""",
+            FROM {PowerPlants.sources.tables['geom_federal_states']}""",
                     con=db.engine(),
                 ).states.values
             )
@@ -386,9 +382,10 @@ def insert_hydro_plants(scenario):
         # Assign bus_id and voltage level
         if len(mastr_loc) > 0:
             mastr_loc["voltage_level"] = assign_voltage_level(
-                mastr_loc, cfg, WORKING_DIR_MASTR_NEW
+                mastr_loc,
+                PowerPlants.sources.files,
             )
-            mastr_loc = assign_bus_id(mastr_loc, cfg)
+            mastr_loc = assign_bus_id(mastr_loc, PowerPlants.sources.tables)
 
         # Insert entries with location
         session = sessionmaker(bind=db.engine())()
@@ -408,7 +405,7 @@ def insert_hydro_plants(scenario):
         session.commit()
 
 
-def assign_voltage_level(mastr_loc, cfg, mastr_working_dir):
+def assign_voltage_level(mastr_loc, sources):
     """Assigns voltage level to power plants.
 
     If location data inluding voltage level is available from
@@ -431,16 +428,11 @@ def assign_voltage_level(mastr_loc, cfg, mastr_working_dir):
 
     if "LokationMastrNummer" in mastr_loc.columns:
         # Adjust column names to format of MaStR location dataset
-        if mastr_working_dir == WORKING_DIR_MASTR_OLD:
-            cols = ["LokationMastrNummer", "Spannungsebene"]
-        elif mastr_working_dir == WORKING_DIR_MASTR_NEW:
-            cols = ["MaStRNummer", "Spannungsebene"]
-        else:
-            raise ValueError("Invalid MaStR working directory!")
+        cols = ["MaStRNummer", "Spannungsebene"]
 
         location = (
             pd.read_csv(
-                mastr_working_dir / cfg["sources"]["mastr_location"],
+                PowerPlants.sources.files["mastr_location"],
                 usecols=cols,
             )
             .rename(columns={"MaStRNummer": "LokationMastrNummer"})
@@ -522,7 +514,7 @@ def assign_voltage_level_by_capacity(mastr_loc):
     return mastr_loc.voltage_level
 
 
-def assign_bus_id(power_plants, cfg, drop_missing=False):
+def assign_bus_id(power_plants, sources, drop_missing=False):
     """Assigns bus_ids to power plants according to location and voltage level
 
     Parameters
@@ -539,14 +531,14 @@ def assign_bus_id(power_plants, cfg, drop_missing=False):
 
     mv_grid_districts = db.select_geodataframe(
         f"""
-        SELECT * FROM {cfg['sources']['egon_mv_grid_district']}
+        SELECT * FROM {PowerPlants.sources.tables['egon_mv_grid_district']}
         """,
         epsg=4326,
     )
 
     ehv_grid_districts = db.select_geodataframe(
         f"""
-        SELECT * FROM {cfg['sources']['ehv_voronoi']}
+        SELECT * FROM {PowerPlants.sources.tables['ehv_voronoi']}
         """,
         epsg=4326,
     )
@@ -598,14 +590,14 @@ def insert_hydro_biomass():
     None.
 
     """
-    cfg = egon.data.config.datasets()["power_plants"]
-    db.execute_sql(
-        f"""
-        DELETE FROM {cfg['target']['schema']}.{cfg['target']['table']}
+    target_string = PowerPlants.targets.tables["power_plants"]
+    schema, table = target_string.split(".")
+
+    db.execute_sql(f"""
+        DELETE FROM {schema}.{table}
         WHERE carrier IN ('biomass', 'reservoir', 'run_of_river')
         AND scenario IN ('eGon2035', 'eGon100RE')
-        """
-    )
+        """)
 
     s = egon.data.config.settings()["egon-data"]["--scenarios"]
     scenarios = []
@@ -638,16 +630,15 @@ def allocate_conventional_non_chp_power_plants():
 
     carrier = ["oil", "gas"]
 
-    cfg = egon.data.config.datasets()["power_plants"]
+    target_string = PowerPlants.targets.tables["power_plants"]
+    schema, table = target_string.split(".")
 
     # Delete existing plants in the target table
-    db.execute_sql(
-        f"""
-         DELETE FROM {cfg ['target']['schema']}.{cfg ['target']['table']}
+    db.execute_sql(f"""
+         DELETE FROM {schema}.{table}
          WHERE carrier IN ('gas', 'oil')
          AND scenario='eGon2035';
-         """
-    )
+         """)
 
     for carrier in carrier:
 
@@ -663,8 +654,7 @@ def allocate_conventional_non_chp_power_plants():
             # Assign voltage level to MaStR
             mastr["voltage_level"] = assign_voltage_level(
                 mastr.rename({"el_capacity": "Nettonennleistung"}, axis=1),
-                cfg,
-                WORKING_DIR_MASTR_OLD,
+                PowerPlants.sources.files,
             )
 
             # Initalize DataFrame for matching power plants
@@ -751,14 +741,14 @@ def allocate_conventional_non_chp_power_plants():
             # Load grid district polygons
             mv_grid_districts = db.select_geodataframe(
                 f"""
-            SELECT * FROM {cfg['sources']['egon_mv_grid_district']}
+            SELECT * FROM {PowerPlants.sources.tables['egon_mv_grid_district']}
             """,
                 epsg=4326,
             )
 
             ehv_grid_districts = db.select_geodataframe(
                 f"""
-            SELECT * FROM {cfg['sources']['ehv_voronoi']}
+            SELECT * FROM {PowerPlants.sources.tables['ehv_voronoi']}
             """,
                 epsg=4326,
             )
@@ -803,30 +793,27 @@ def allocate_other_power_plants():
     ):
         return
 
-    # Get configuration
-    cfg = egon.data.config.datasets()["power_plants"]
     boundary = egon.data.config.settings()["egon-data"]["--dataset-boundary"]
 
-    db.execute_sql(
-        f"""
-        DELETE FROM {cfg['target']['schema']}.{cfg['target']['table']}
+    target_string = PowerPlants.targets.tables["power_plants"]
+    schema, table = target_string.split(".")
+
+    db.execute_sql(f"""
+        DELETE FROM {schema}.{table}
         WHERE carrier ='others'
-        """
-    )
+        """)
 
     # Define scenario, carrier 'others' is only present in 'eGon2035'
     scenario = "eGon2035"
 
     # Select target values for carrier 'others'
-    target = db.select_dataframe(
-        f"""
+    target = db.select_dataframe(f"""
         SELECT sum(capacity) as capacity, carrier, scenario_name, nuts
-            FROM {cfg['sources']['capacities']}
+            FROM {PowerPlants.sources.tables['capacities']}
             WHERE scenario_name = '{scenario}'
             AND carrier = 'others'
             GROUP BY carrier, nuts, scenario_name;
-        """
-    )
+        """)
 
     # Assign name of federal state
 
@@ -871,16 +858,14 @@ def allocate_other_power_plants():
     )
 
     # Select power plants representing carrier 'others' from MaStR files
-    mastr_sludge = pd.read_csv(
-        WORKING_DIR_MASTR_OLD / cfg["sources"]["mastr_gsgk"]
-    ).query(
-        """EinheitBetriebsstatus=='InBetrieb'and Energietraeger=='Klärschlamm'"""  # noqa: E501
+    mastr_sludge = pd.read_csv(PowerPlants.sources.files["mastr_gsgk"]).query(
+        """EinheitBetriebsstatus=='InBetrieb' and Energietraeger=='Klärschlamm'"""
     )
     mastr_geothermal = pd.read_csv(
-        WORKING_DIR_MASTR_OLD / cfg["sources"]["mastr_gsgk"]
+        PowerPlants.sources.files["mastr_gsgk"]
     ).query(
         "EinheitBetriebsstatus=='InBetrieb' and Energietraeger=='Geothermie' "
-        "and Technologie == 'ORCOrganicRankineCycleAnlage'"
+        "and Technologie == 'ORC (Organic Rankine Cycle)-Anlage'"
     )
 
     mastr_sg = pd.concat([mastr_sludge, mastr_geothermal])
@@ -944,7 +929,7 @@ def allocate_other_power_plants():
     )
 
     # Assign bus_id
-    mastr_prox = assign_bus_id(mastr_prox, cfg)
+    mastr_prox = assign_bus_id(mastr_prox, PowerPlants.sources.tables)
     mastr_prox = mastr_prox.set_crs(4326, allow_override=True)
 
     # Insert into target table
@@ -965,6 +950,24 @@ def allocate_other_power_plants():
 
 
 def discard_not_available_generators(gen, max_date):
+    # map column names in case they are still in German
+    if (
+        ("DatumEndgueltigeStilllegung" in gen.columns)
+        | ("Inbetriebnahmedatum" in gen.columns)
+        | ("DatumEndgueltigeStilllegung" in gen.columns)
+    ):
+        gen.rename(
+            columns={
+                "DatumEndgueltigeStilllegung": "decommissioning_date",
+                "Inbetriebnahmedatum": "commissioning_date",
+                "EinheitBetriebsstatus": "status",
+            },
+            inplace=True,
+        )
+
+    gen["decommissioning_date"] = pd.to_datetime(gen["decommissioning_date"])
+    gen["commissioning_date"] = pd.to_datetime(gen["commissioning_date"])
+
     gen["decommissioning_date"] = pd.to_datetime(gen["decommissioning_date"])
     gen["commissioning_date"] = pd.to_datetime(gen["commissioning_date"])
     # drop plants that are commissioned after the max date
@@ -973,11 +976,9 @@ def discard_not_available_generators(gen, max_date):
     # drop decommissioned plants while keeping the ones decommissioned
     # after the max date
     gen.loc[(gen["decommissioning_date"] > max_date), "status"] = "InBetrieb"
-
     gen = gen.loc[
         gen["status"].isin(["InBetrieb", "VoruebergehendStillgelegt"])
     ]
-
     # drop unnecessary columns
     gen = gen.drop(columns=["commissioning_date", "decommissioning_date"])
 
@@ -999,11 +1000,9 @@ def fill_missing_bus_and_geom(
         .sum())}MW) were drop"""
     )
 
-    logger.info(
-        f"""{len(new_geom)} {carrier} generator(s) ({int(new_geom
+    logger.info(f"""{len(new_geom)} {carrier} generator(s) ({int(new_geom
         .sum())}MW) received a geom based on location
-          """
-    )
+          """)
     gens.drop(index=drop_id, inplace=True)
 
     # assign missing geometries based on location and buses based on geom
@@ -1035,26 +1034,26 @@ def power_plants_status_quo(scn_name="status2019"):
         return df
 
     def log_insert_capacity(df, tech):
-        logger.info(
-            f"""
+        logger.info(f"""
             {len(df)} {tech} generators with a total installed capacity of
             {int(df["el_capacity"].sum())} MW were inserted into the db
-              """
-        )
+              """)
 
     con = db.engine()
-    cfg = egon.data.config.datasets()["power_plants"]
 
-    db.execute_sql(
-        f"""
-        DELETE FROM {cfg['target']['schema']}.{cfg['target']['table']}
+    target_string = PowerPlants.targets.tables["power_plants"]
+    schema, table = target_string.split(".")
+
+    max_date = pd.Timestamp(year=int(scn_name[-4:]), month=12, day=31)
+
+    db.execute_sql(f"""
+        DELETE FROM {schema}.{table}
         WHERE carrier IN ('wind_onshore', 'solar', 'biomass',
                           'run_of_river', 'reservoir', 'solar_rooftop',
                           'wind_offshore', 'nuclear', 'coal', 'lignite', 'oil',
                           'gas')
         AND scenario = '{scn_name}'
-        """
-    )
+        """)
 
     # import municipalities to assign missing geom and bus_id
     geom_municipalities = gpd.GeoDataFrame.from_postgis(
@@ -1070,7 +1069,7 @@ def power_plants_status_quo(scn_name="status2019"):
 
     mv_grid_districts = gpd.GeoDataFrame.from_postgis(
         f"""
-        SELECT * FROM {cfg['sources']['egon_mv_grid_district']}
+        SELECT * FROM {PowerPlants.sources.tables['egon_mv_grid_district']}
         """,
         con,
     )
@@ -1098,7 +1097,7 @@ def power_plants_status_quo(scn_name="status2019"):
     # Hydro Power Plants
     #  ###################
     hydro = gpd.GeoDataFrame.from_postgis(
-        f"""SELECT *, city AS location FROM {cfg['sources']['hydro']}
+        f"""SELECT *, city AS location FROM {PowerPlants.sources.tables['hydro']}
         WHERE plant_type IN ('Laufwasseranlage', 'Speicherwasseranlage')""",
         con,
         geom_col="geom",
@@ -1109,6 +1108,7 @@ def power_plants_status_quo(scn_name="status2019"):
     )
 
     hydro = convert_master_info(hydro)
+    hydro = discard_not_available_generators(hydro, max_date)
     hydro["carrier"] = hydro["plant_type"].replace(
         to_replace={
             "Laufwasseranlage": "run_of_river",
@@ -1131,7 +1131,7 @@ def power_plants_status_quo(scn_name="status2019"):
     # Biomass
     #  ###################
     biomass = gpd.GeoDataFrame.from_postgis(
-        f"""SELECT *, city AS location FROM {cfg['sources']['biomass']}""",
+        f"""SELECT *, city AS location FROM {PowerPlants.sources.tables['biomass']}""",
         con,
         geom_col="geom",
     )
@@ -1139,6 +1139,8 @@ def power_plants_status_quo(scn_name="status2019"):
     # drop chp generators
     biomass["th_capacity"] = biomass["th_capacity"].fillna(0)
     biomass = biomass[biomass.th_capacity == 0]
+
+    biomass = discard_not_available_generators(biomass, max_date)
 
     biomass = fill_missing_bus_and_geom(
         biomass, "biomass", geom_municipalities, mv_grid_districts
@@ -1162,7 +1164,7 @@ def power_plants_status_quo(scn_name="status2019"):
     # Solar
     #  ###################
     solar = gpd.GeoDataFrame.from_postgis(
-        f"""SELECT *, city AS location FROM {cfg['sources']['pv']}
+        f"""SELECT *, city AS location FROM {PowerPlants.sources.tables['pv']}
         WHERE site_type IN ('Freifläche',
         'Bauliche Anlagen (Hausdach, Gebäude und Fassade)') """,
         con,
@@ -1172,6 +1174,9 @@ def power_plants_status_quo(scn_name="status2019"):
         "Freifläche": "solar",
         "Bauliche Anlagen (Hausdach, Gebäude und Fassade)": "solar_rooftop",
     }
+
+    solar = discard_not_available_generators(solar, max_date)
+
     solar["carrier"] = solar["site_type"].replace(to_replace=map_solar)
 
     solar = fill_missing_bus_and_geom(
@@ -1195,10 +1200,12 @@ def power_plants_status_quo(scn_name="status2019"):
     # Wind
     #  ###################
     wind_onshore = gpd.GeoDataFrame.from_postgis(
-        f"""SELECT *, city AS location FROM {cfg['sources']['wind']}""",
+        f"""SELECT *, city AS location FROM {PowerPlants.sources.tables['wind']}""",
         con,
         geom_col="geom",
     )
+
+    wind_onshore = discard_not_available_generators(wind_onshore, max_date)
 
     wind_onshore = fill_missing_bus_and_geom(
         wind_onshore, "wind_onshore", geom_municipalities, mv_grid_districts
@@ -1221,8 +1228,8 @@ def power_plants_status_quo(scn_name="status2019"):
 
 
 def get_conventional_power_plants_non_chp(scn_name):
+    max_date = pd.Timestamp(year=int(scn_name[-4:]), month=12, day=31)
 
-    cfg = egon.data.config.datasets()["power_plants"]
     # Write conventional power plants in supply.egon_power_plants
     common_columns = [
         "EinheitMastrNummer",
@@ -1237,12 +1244,12 @@ def get_conventional_power_plants_non_chp(scn_name):
     ]
     # import nuclear power plants
     nuclear = pd.read_csv(
-        WORKING_DIR_MASTR_OLD / cfg["sources"]["mastr_nuclear"],
+        PowerPlants.sources.files["mastr_nuclear"],
         usecols=common_columns,
     )
     # import combustion power plants
     comb = pd.read_csv(
-        WORKING_DIR_MASTR_OLD / cfg["sources"]["mastr_combustion"],
+        PowerPlants.sources.files["mastr_combustion"],
         usecols=common_columns + ["ThermischeNutzleistung"],
     )
 
@@ -1260,35 +1267,10 @@ def get_conventional_power_plants_non_chp(scn_name):
         )
     ]
 
-    # drop plants that are decommissioned
-    conv["DatumEndgueltigeStilllegung"] = pd.to_datetime(
-        conv["DatumEndgueltigeStilllegung"]
-    )
-
-    # keep plants that were decommissioned after the max date
-    conv.loc[
-        (
-            conv.DatumEndgueltigeStilllegung
-            > egon.data.config.datasets()["mastr_new"][f"{scn_name}_date_max"]
-        ),
-        "EinheitBetriebsstatus",
-    ] = "InBetrieb"
-
-    conv = conv.loc[conv.EinheitBetriebsstatus == "InBetrieb"]
-
-    conv = conv.drop(
-        columns=["EinheitBetriebsstatus", "DatumEndgueltigeStilllegung"]
-    )
+    conv = discard_not_available_generators(conv, max_date)
 
     # convert from KW to MW
     conv["Nettonennleistung"] = conv["Nettonennleistung"] / 1000
-
-    # drop generators installed after 2019
-    conv["Inbetriebnahmedatum"] = pd.to_datetime(conv["Inbetriebnahmedatum"])
-    conv = conv[
-        conv["Inbetriebnahmedatum"]
-        < egon.data.config.datasets()["mastr_new"][f"{scn_name}_date_max"]
-    ]
 
     conv_cap_chp = (
         conv.groupby("Energietraeger")["Nettonennleistung"].sum() / 1e3
@@ -1303,7 +1285,6 @@ def get_conventional_power_plants_non_chp(scn_name):
     logger.info("Dropped CHP generators in GW")
     logger.info(conv_cap_chp - conv_cap_no_chp)
 
-    # rename carriers
     # rename carriers
     conv["Energietraeger"] = conv["Energietraeger"].replace(
         to_replace={
@@ -1353,19 +1334,19 @@ def import_gas_gen_egon100():
         return
     con = db.engine()
     session = sessionmaker(bind=db.engine())()
-    cfg = egon.data.config.datasets()["power_plants"]
     scenario_date_max = "2045-12-31 23:59:00"
 
-    db.execute_sql(
-        f"""
-        DELETE FROM {cfg['target']['schema']}.{cfg['target']['table']}
+    target_string = PowerPlants.targets.tables["power_plants"]
+    schema, table = target_string.split(".")
+
+    db.execute_sql(f"""
+        DELETE FROM {schema}.{table}
         WHERE carrier = 'gas'
         AND bus_id IN (SELECT bus_id from grid.egon_etrago_bus
                 WHERE scn_name = '{scn_name}'
                 AND country = 'DE')
         AND scenario = '{scn_name}'
-        """
-    )
+        """)
 
     # import municipalities to assign missing geom and bus_id
     geom_municipalities = gpd.GeoDataFrame.from_postgis(
@@ -1381,7 +1362,7 @@ def import_gas_gen_egon100():
 
     mv_grid_districts = gpd.GeoDataFrame.from_postgis(
         f"""
-        SELECT * FROM {cfg['sources']['egon_mv_grid_district']}
+        SELECT * FROM {PowerPlants.sources.tables['egon_mv_grid_district']}
         """,
         con,
     )
@@ -1396,7 +1377,7 @@ def import_gas_gen_egon100():
     ).iat[0, 0]
 
     conv = pd.read_csv(
-        WORKING_DIR_MASTR_OLD / cfg["sources"]["mastr_combustion"],
+        PowerPlants.sources.files["mastr_combustion"],
         usecols=[
             "EinheitMastrNummer",
             "Energietraeger",
@@ -1483,12 +1464,10 @@ def import_gas_gen_egon100():
         session.add(entry)
     session.commit()
 
-    logging.info(
-        f"""
+    logging.info(f"""
           {len(conv)} gas generators with a total installed capacity of
           {conv.capacity.sum()}MW were inserted into the db
-          """
-    )
+          """)
 
     return
 
@@ -1544,6 +1523,74 @@ tasks += (pp_metadata.metadata,)
 
 
 class PowerPlants(Dataset):
+    sources = DatasetSources(
+        tables={
+            "geom_federal_states": "boundaries.vg250_lan",
+            "geom_germany": "boundaries.vg250_sta_union",
+            "egon_mv_grid_district": "grid.egon_mv_grid_district",
+            "ehv_voronoi": "grid.egon_ehv_substation_voronoi",
+            "capacities": "supply.egon_scenario_capacities",
+            "hydro": "supply.egon_power_plants_hydro",
+            "biomass": "supply.egon_power_plants_biomass",
+            "pv": "supply.egon_power_plants_pv",
+            "wind": "supply.egon_power_plants_wind",
+            "mastr_combustion_without_chp": "supply.egon_mastr_conventional_without_chp",
+            "nep_conv": "supply.egon_nep_2021_conventional_powerplants",
+            "buses_data": "osmtgmod_results.bus_data",
+            "storages": "supply.egon_storages",
+            "wind_potential_areas": "supply.egon_re_potential_area_wind",
+            "hvmv_substation": "grid.egon_hvmv_substation",
+            "electricity_demand": "demand.egon_demandregio_zensus_electricity",
+            "map_zensus_grid_districts": "boundaries.egon_map_zensus_grid_districts",
+            "map_grid_boundaries": "boundaries.egon_map_mvgriddistrict_vg250",
+            "federal_states": "boundaries.vg250_lan",  # Alias
+            "scenario_capacities": "supply.egon_scenario_capacities",  # Alias
+            "weather_cells": "supply.egon_era5_weather_cells",
+            "solar_feedin": "supply.egon_era5_renewable_feedin",
+            "potential_area_pv_road_railway": "supply.egon_re_potential_area_pv_road_railway",
+            "potential_area_pv_agriculture": "supply.egon_re_potential_area_pv_agriculture",
+        },
+        files={
+            "mastr_biomass": "./bnetza_mastr/dump_2025-02-09/bnetza_mastr_biomass_cleaned.csv",
+            "mastr_combustion": "./bnetza_mastr/dump_2025-02-09/bnetza_mastr_combustion_cleaned.csv",
+            "mastr_gsgk": "./bnetza_mastr/dump_2025-02-09/bnetza_mastr_gsgk_cleaned.csv",
+            "mastr_hydro": "./bnetza_mastr/dump_2025-02-09/bnetza_mastr_hydro_cleaned.csv",
+            "mastr_location": "./bnetza_mastr/dump_2025-02-09/location_elec_generation_raw.csv",
+            "mastr_nuclear": "./bnetza_mastr/dump_2025-02-09/bnetza_mastr_nuclear_cleaned.csv",
+            "mastr_pv": "./bnetza_mastr/dump_2025-02-09/bnetza_mastr_solar_cleaned.csv",
+            "mastr_storage": "./bnetza_mastr/dump_2025-02-09/bnetza_mastr_storage_cleaned.csv",
+            "mastr_wind": "./bnetza_mastr/dump_2025-02-09/bnetza_mastr_wind_cleaned.csv",
+            # --- Config/Meta values ---
+            "osm_config": "https://download.geofabrik.de/europe/germany-240101.osm.pbf",
+            "nep_2035": "NEP2035_V2021_scnC2035.xlsx",
+            "mastr_deposit_id": "14783581",
+            "data_bundle_deposit_id": "16576506",
+            "status2023_date_max": "2023-12-31 23:59:00",
+            "status2019_date_max": "2019-12-31 23:59:00",
+            "egon2021_date_max": "2021-12-31 23:59:00",
+            "eGon2035_date_max": "2035-01-01",
+            "eGon100RE_date_max": "2050-01-01",
+            "mastr_geocoding_path": "mastr_geocoding",
+        },
+    )
+
+    targets = DatasetTargets(
+        tables={
+            "power_plants": "supply.egon_power_plants",
+            "generators": "grid.egon_etrago_generator",
+            "generator_timeseries": "grid.egon_etrago_generator_timeseries",
+            "mastr_geocoded": "supply.egon_mastr_geocoded",
+            "power_plants_pv": "supply.egon_power_plants_pv",
+            "power_plants_wind": "supply.egon_power_plants_wind",
+            "power_plants_biomass": "supply.egon_power_plants_biomass",
+            "power_plants_hydro": "supply.egon_power_plants_hydro",
+            "power_plants_combustion": "supply.egon_power_plants_combustion",
+            "power_plants_gsgk": "supply.egon_power_plants_gsgk",
+            "power_plants_nuclear": "supply.egon_power_plants_nuclear",
+            "power_plants_storage": "supply.egon_power_plants_storage",
+        }
+    )
+
     """
     This dataset deals with the distribution and allocation of power plants
 
@@ -1616,7 +1663,7 @@ class PowerPlants(Dataset):
     #:
     name: str = "PowerPlants"
     #:
-    version: str = "0.0.29"
+    version: str = "0.0.37"
 
     def __init__(self, dependencies):
         super().__init__(

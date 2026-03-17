@@ -23,7 +23,8 @@ import geopandas as gpd
 import numpy as np
 import pandas as pd
 
-from egon.data import config, db
+from egon.data import db
+from egon.data.datasets import load_sources_and_targets
 from egon.data.datasets.etrago_helpers import (
     finalize_bus_insertion,
     initialise_bus_insertion,
@@ -42,6 +43,7 @@ def insert_hydrogen_buses(scn_name):
         Name of scenario
 
     """
+    sources, targets = load_sources_and_targets("HydrogenBusEtrago")
 
     h2_input = pd.read_csv(
         Path(".")
@@ -53,21 +55,19 @@ def insert_hydrogen_buses(scn_name):
         lambda wkb_hex: loads(bytes.fromhex(wkb_hex))
     )
 
-    sources = config.datasets()["etrago_hydrogen"]["sources"]
-    target_buses = config.datasets()["etrago_hydrogen"]["targets"][
-        "hydrogen_buses"
-    ]
+    target_buses = {
+        "schema": targets.get_table_schema("hydrogen_buses"),
+        "table": targets.get_table_name("hydrogen_buses"),
+    }
     h2_buses = initialise_bus_insertion(
         "H2_grid", target_buses, scenario=scn_name
     )
 
-    db.execute_sql(
-        f"""
-        DELETE FROM {target_buses['schema']}.{target_buses['table']}
+    db.execute_sql(f"""
+        DELETE FROM {targets.tables["hydrogen_buses"]}
         WHERE scn_name = '{scn_name}'
         AND carrier = 'H2' AND country = 'DE'
-        """
-    )
+        """)
 
     h2_buses.x = h2_input.x
     h2_buses.y = h2_input.y
@@ -77,8 +77,8 @@ def insert_hydrogen_buses(scn_name):
     h2_buses.bus_id = db.next_etrago_id("bus", len(h2_input))
 
     h2_buses.to_postgis(
-        target_buses["table"],
-        schema=target_buses["schema"],
+        targets.get_table_name("hydrogen_buses"),
+        schema=targets.get_table_schema("hydrogen_buses"),
         if_exists="append",
         con=db.engine(),
         dtype={"geom": Geometry()},
@@ -89,7 +89,7 @@ def insert_hydrogen_buses(scn_name):
 
     sql_CH4_buses = f"""
             SELECT bus_id, x, y, ST_Transform(geom, 32632) as geom
-            FROM {target_buses["schema"]}.{target_buses["table"]}
+            FROM {targets.tables["hydrogen_buses"]}
             WHERE carrier = 'CH4'
             AND scn_name = '{scn_name}' AND country = 'DE'
             """
@@ -128,8 +128,8 @@ def insert_hydrogen_buses(scn_name):
     )
     # Insert data to db
     additional_H2_buses.to_postgis(
-        target_buses["table"],
-        schema=target_buses["schema"],
+        targets.get_table_name("hydrogen_buses"),
+        schema=targets.get_table_schema("hydrogen_buses"),
         con=db.engine(),
         if_exists="append",
         dtype={"geom": Geometry()},
@@ -140,11 +140,11 @@ def insert_hydrogen_buses(scn_name):
         "H2_saltcavern", target_buses, scenario=scn_name
     )
     insert_H2_buses_from_saltcavern(
-        hydrogen_buses, "H2_saltcavern", sources, target_buses, scn_name
+        hydrogen_buses, "H2_saltcavern", sources, targets, scn_name
     )
 
 
-def insert_H2_buses_from_saltcavern(gdf, carrier, sources, target, scn_name):
+def insert_H2_buses_from_saltcavern(gdf, carrier, sources, targets, scn_name):
     """
     Insert the H2 buses based on saltcavern locations into the database.
 
@@ -157,9 +157,9 @@ def insert_H2_buses_from_saltcavern(gdf, carrier, sources, target, scn_name):
         GeoDataFrame containing the empty bus data.
     carrier : str
         Name of the carrier.
-    sources : dict
+    sources : DatasetSources
         Sources schema and table information.
-    target : dict
+    targets : DatasetTargets
         Target schema and table information.
     scn_name : str
         Name of the scenario.
@@ -169,20 +169,22 @@ def insert_H2_buses_from_saltcavern(gdf, carrier, sources, target, scn_name):
     None
 
     """
+    target_buses = {
+        "schema": targets.get_table_schema("hydrogen_buses"),
+        "table": targets.get_table_name("hydrogen_buses"),
+    }
+
     # electrical buses related to saltcavern storage
-    el_buses = db.select_dataframe(
-        f"""
+    el_buses = db.select_dataframe(f"""
         SELECT bus_id
-        FROM  {sources['saltcavern_data']['schema']}.
-        {sources['saltcavern_data']['table']}"""
-    )["bus_id"]
+        FROM {sources.tables["saltcavern_data"]}""")["bus_id"]
 
     # locations of electrical buses (filtering not necessarily required)
     locations = db.select_geodataframe(
         f"""
         SELECT bus_id, geom
-        FROM  {sources['buses']['schema']}.
-        {sources['buses']['table']} WHERE scn_name = '{scn_name}'
+        FROM {sources.tables["buses"]}
+        WHERE scn_name = '{scn_name}'
         AND country = 'DE'""",
         index_col="bus_id",
     ).to_crs(epsg=4326)
@@ -197,7 +199,7 @@ def insert_H2_buses_from_saltcavern(gdf, carrier, sources, target, scn_name):
 
     # create H2 bus data
     hydrogen_bus_ids = finalize_bus_insertion(
-        locations, carrier, target, scenario=scn_name
+        locations, carrier, target_buses, scenario=scn_name
     )
 
     gdf_H2_cavern = hydrogen_bus_ids[["bus_id"]].rename(
@@ -208,9 +210,9 @@ def insert_H2_buses_from_saltcavern(gdf, carrier, sources, target, scn_name):
 
     # Insert data to db
     gdf_H2_cavern.to_sql(
-        "egon_etrago_ac_h2",
+        targets.get_table_name("H2_AC_map"),
         db.engine(),
-        schema="grid",
+        schema=targets.get_table_schema("H2_AC_map"),
         index=False,
         if_exists="replace",
     )

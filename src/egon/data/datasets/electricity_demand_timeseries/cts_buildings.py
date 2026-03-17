@@ -21,7 +21,7 @@ import saio
 
 from egon.data import config, db
 from egon.data import logger as log
-from egon.data.datasets import Dataset
+from egon.data.datasets import Dataset, DatasetSources, DatasetTargets
 from egon.data.datasets.electricity_demand import (
     EgonDemandRegioZensusElectricity,
 )
@@ -230,7 +230,32 @@ class CtsDemandBuildings(Dataset):
     #:
     name: str = "CtsDemandBuildings"
     #:
-    version: str = "0.0.4"
+    version: str = "0.0.9"
+    sources = DatasetSources(
+        tables={
+            "osm_buildings_filtered": "openstreetmap.osm_buildings_filtered",
+            "osm_amenities_shops_filtered": "openstreetmap.osm_amenities_shops_filtered",
+            "osm_amenities_not_in_buildings_filtered": "openstreetmap.osm_amenities_not_in_buildings_filtered",
+            "osm_buildings_synthetic": "openstreetmap.osm_buildings_synthetic",
+            "map_zensus_buildings_filtered_all": "boundaries.egon_map_zensus_buildings_filtered_all",
+            "zensus_electricity": "demand.egon_demandregio_zensus_electricity",
+            "peta_heat": "demand.egon_peta_heat",
+            "etrago_electricity_cts": "demand.egon_etrago_electricity_cts",
+            "etrago_heat_cts": "demand.egon_etrago_heat_cts",
+        }
+    )
+
+    targets = DatasetTargets(
+        tables={
+            "cts_buildings": "openstreetmap.egon_cts_buildings",
+            "cts_electricity_building_share": "demand.egon_cts_electricity_demand_building_share",
+            "cts_heat_building_share": "demand.egon_cts_heat_demand_building_share",
+            "osm_buildings_synthetic": "openstreetmap.osm_buildings_synthetic",
+            "building_electricity_peak_loads": "demand.egon_building_electricity_peak_loads",
+            "building_heat_peak_loads": "demand.egon_building_heat_peak_loads",
+            "map_zensus_mvgd_buildings": "boundaries.egon_map_zensus_mvgd_buildings",
+        }
+    )
 
     def __init__(self, dependencies):
         super().__init__(

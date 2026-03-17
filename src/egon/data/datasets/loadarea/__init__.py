@@ -11,7 +11,7 @@ from sqlalchemy.dialects.postgresql import HSTORE
 from sqlalchemy.ext.declarative import declarative_base
 
 from egon.data import db
-from egon.data.datasets import Dataset
+from egon.data.datasets import Dataset, DatasetSources, DatasetTargets
 import egon.data.config
 
 # import importlib_resources as resources
@@ -58,7 +58,21 @@ class OsmLanduse(Dataset):
     #:
     name: str = "OsmLanduse"
     #:
-    version: str = "0.0.0"
+    version: str = "0.0.3"
+
+    sources = DatasetSources(
+        files={"osm_landuse_extraction": "osm_landuse_extraction.sql"},
+        tables={
+            "osm_polygons": "openstreetmap.osm_polygon",
+            "vg250": "boundaries.vg250_sta_union",
+        },
+    )
+
+    targets = DatasetTargets(
+        tables={
+            "osm_landuse": "openstreetmap.osm_landuse",
+        }
+    )
 
     def __init__(self, dependencies):
         super().__init__(
@@ -99,7 +113,31 @@ class LoadArea(Dataset):
     #:
     name: str = "LoadArea"
     #:
-    version: str = "0.0.2"
+    version: str = "0.0.4"
+
+    sources = DatasetSources(
+        files={
+            "osm_landuse_melt": "osm_landuse_melt.sql",
+            "census_cells_melt": "census_cells_melt.sql",
+            "osm_landuse_census_cells_melt": "osm_landuse_census_cells_melt.sql",
+            "loadareas_create": "loadareas_create.sql",
+            "loadareas_add_demand_hh": "loadareas_add_demand_hh.sql",
+            "loadareas_add_demand_cts": "loadareas_add_demand_cts.sql",
+            "loadareas_add_demand_ind": "loadareas_add_demand_ind.sql",
+            "drop_temp_tables": "drop_temp_tables.sql",
+        },
+        tables={
+            "osm_landuse": "openstreetmap.osm_landuse",
+            "zensus_population": "society.destatis_zensus_population_per_ha_inside_germany",
+            "vg250": "boundaries.vg250_sta_union",
+        },
+    )
+
+    targets = DatasetTargets(
+        tables={
+            "egon_loadarea": "demand.egon_loadarea",
+        }
+    )
 
     def __init__(self, dependencies):
         super().__init__(
@@ -123,7 +161,9 @@ class LoadArea(Dataset):
 
 def extract_osm_landuse():
     db.execute_sql_script(
-        os.path.dirname(__file__) + "/osm_landuse_extraction.sql"
+        os.path.dirname(__file__)
+        + "/"
+        + OsmLanduse.sources.files["osm_landuse_extraction"]
     )
 
 
@@ -133,15 +173,16 @@ def create_landuse_table():
     -------
     None.
     """
-    cfg = egon.data.config.datasets()["landuse"]["target"]
 
     # Create schema if not exists
-    db.execute_sql(f"""CREATE SCHEMA IF NOT EXISTS {cfg['schema']};""")
+    db.execute_sql(
+        f"CREATE SCHEMA IF NOT EXISTS {OsmLanduse.targets.get_table_schema('osm_landuse')};"
+    )
 
     # Drop tables
     db.execute_sql(
-        f"""DROP TABLE IF EXISTS
-            {cfg['schema']}.{cfg['table']} CASCADE;"""
+        f"DROP TABLE IF EXISTS "
+        f"{OsmLanduse.targets.tables['osm_landuse']} CASCADE;"
     )
 
     engine = db.engine()
@@ -162,7 +203,7 @@ def execute_sql_script(script):
 def osm_landuse_melt():
     """Melt all OSM landuse areas by: buffer, union, unbuffer"""
     print("Melting OSM landuse areas from openstreetmap.osm_landuse...")
-    execute_sql_script("osm_landuse_melt.sql")
+    execute_sql_script(LoadArea.sources.files["osm_landuse_melt"])
 
 
 def census_cells_melt():
@@ -171,7 +212,7 @@ def census_cells_melt():
         "Melting census cells from "
         "society.destatis_zensus_population_per_ha_inside_germany..."
     )
-    execute_sql_script("census_cells_melt.sql")
+    execute_sql_script(LoadArea.sources.files["census_cells_melt"])
 
 
 def osm_landuse_census_cells_melt():
@@ -181,7 +222,7 @@ def osm_landuse_census_cells_melt():
         "census cells from "
         "society.egon_destatis_zensus_cells_melted_cluster..."
     )
-    execute_sql_script("osm_landuse_census_cells_melt.sql")
+    execute_sql_script(LoadArea.sources.files["osm_landuse_census_cells_melt"])
 
 
 def loadareas_create():
@@ -196,27 +237,27 @@ def loadareas_create():
     * Check for Loadareas without AGS code.
     """
     print("Create initial load areas and add some sector stats...")
-    execute_sql_script("loadareas_create.sql")
+    execute_sql_script(LoadArea.sources.files["loadareas_create"])
 
 
 def loadareas_add_demand_hh():
     """Adds consumption and peak load to load areas for households"""
     print("Add consumption and peak loads to load areas for households...")
-    execute_sql_script("loadareas_add_demand_hh.sql")
+    execute_sql_script(LoadArea.sources.files["loadareas_add_demand_hh"])
 
 
 def loadareas_add_demand_cts():
     """Adds consumption and peak load to load areas for CTS"""
     print("Add consumption and peak loads to load areas for CTS...")
-    execute_sql_script("loadareas_add_demand_cts.sql")
+    execute_sql_script(LoadArea.sources.files["loadareas_add_demand_cts"])
 
 
 def loadareas_add_demand_ind():
     """Adds consumption and peak load to load areas for industry"""
     print("Add consumption and peak loads to load areas for industry...")
-    execute_sql_script("loadareas_add_demand_ind.sql")
+    execute_sql_script(LoadArea.sources.files["loadareas_add_demand_ind"])
 
 
 def drop_temp_tables():
     print("Dropping temp tables, views and sequences...")
-    execute_sql_script("drop_temp_tables.sql")
+    execute_sql_script(LoadArea.sources.files["drop_temp_tables"])

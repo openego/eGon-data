@@ -26,6 +26,7 @@ import numpy as np
 import pandas as pd
 
 from egon.data import config, db
+from egon.data.datasets import load_sources_and_targets
 from egon.data.datasets.electricity_demand_timeseries.hh_buildings import (
     OsmBuildingsSynthetic,
 )
@@ -1159,12 +1160,14 @@ def cap_per_bus_id(
     pandas.DataFrame
         DataFrame with total rooftop capacity per mv grid.
     """
-    if "status" in scenario:
-        sources = config.datasets()["solar_rooftop"]["sources"]
+    # <--- REFACTORING: Load sources/targets
+    sources, targets = load_sources_and_targets("PowerPlants")
 
+    if "status" in scenario:
+        # <--- REFACTORING: Use sources.tables
         sql = f"""
         SELECT bus_id, SUM(el_capacity) as capacity
-        FROM {sources['power_plants']['schema']}.{sources['power_plants']['table']}
+        FROM {sources.tables['power_plants']}
         WHERE carrier = 'solar_rooftop'
         AND scenario = '{scenario}'
         GROUP BY bus_id
@@ -1173,11 +1176,10 @@ def cap_per_bus_id(
         df = db.select_dataframe(sql, index_col="bus_id")
 
     else:
-        targets = config.datasets()["solar_rooftop"]["targets"]
-
+        # <--- REFACTORING: Use targets.tables
         sql = f"""
         SELECT bus as bus_id, control, p_nom as capacity
-        FROM {targets['generators']['schema']}.{targets['generators']['table']}
+        FROM {targets.tables['generators']}
         WHERE carrier = 'solar_rooftop'
         AND scn_name = '{scenario}'
         """  # noqa: E501
@@ -2149,13 +2151,16 @@ class EgonPowerPlantPvRoofBuilding(Base):
 
 
 def add_metadata():
+    # <--- REFACTORING: Load sources (renamed to avoid conflict with imports)
+    dataset_sources, dataset_targets = load_sources_and_targets("PowerPlants")
+
     schema = "supply"
     table = "egon_power_plants_pv_roof_building"
     name = f"{schema}.{table}"
-    deposit_id_mastr = config.datasets()["mastr_new"]["deposit_id"]
-    deposit_id_data_bundle = config.datasets()["data-bundle"]["sources"][
-        "zenodo"
-    ]["deposit_id"]
+
+    # <--- REFACTORING: Retrieve IDs from __init__.py files mapping
+    deposit_id_mastr = dataset_sources.files["mastr_deposit_id"]
+    deposit_id_data_bundle = dataset_sources.files["data_bundle_deposit_id"]
 
     contris = contributors(["kh", "kh"])
 
@@ -2185,9 +2190,8 @@ def add_metadata():
         },
         "temporal": {
             "referenceDate": (
-                config.datasets()["mastr_new"]["egon2021_date_max"].split(" ")[
-                    0
-                ]
+                # <--- REFACTORING: Retrieve date from __init__.py
+                dataset_sources.files["egon2021_date_max"].split(" ")[0]
             ),
             "timeseries": {},
         },
@@ -2399,14 +2403,15 @@ def infer_voltage_level(
 
 def pv_rooftop_to_buildings():
     """Main script, executed as task"""
+    # <--- REFACTORING: Load sources
+    sources, targets = load_sources_and_targets("PowerPlants")
 
     mastr_gdf = load_mastr_data()
 
     status_quo = "status2023"  # FIXME: Hard coded
 
-    ts = pd.Timestamp(
-        config.datasets()["mastr_new"][f"{status_quo}_date_max"], tz="UTC"
-    )
+    # <--- REFACTORING: Use sources.files
+    ts = pd.Timestamp(sources.files[f"{status_quo}_date_max"], tz="UTC")
 
     mastr_gdf = mastr_gdf.loc[mastr_gdf.commissioning_date <= ts]
 
@@ -2431,8 +2436,9 @@ def pv_rooftop_to_buildings():
         if scenario == status_quo:
             scenario_buildings_gdf = scenario_buildings_gdf_sq.copy()
         elif "status" in scenario:
+            # <--- REFACTORING: Use sources.files
             ts = pd.Timestamp(
-                config.datasets()["mastr_new"][f"{scenario}_date_max"],
+                sources.files[f"{scenario}_date_max"],
                 tz="UTC",
             )
 

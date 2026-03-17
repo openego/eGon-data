@@ -23,6 +23,7 @@ import pandas as pd
 import pypsa
 
 from egon.data import config, db
+from egon.data.datasets import load_sources_and_targets
 from egon.data.datasets.electrical_neighbours import (
     get_foreign_bus_id,
     get_map_buses,
@@ -68,7 +69,8 @@ def get_foreign_gas_bus_id(carrier="CH4"):
         List of mapped node_ids from TYNDP and etragos bus_id
 
     """
-    sources = config.datasets()["gas_neighbours"]["sources"]
+    sources, _ = load_sources_and_targets("GasNeighbours")
+
     scn_name = "eGon2035"
 
     bus_id = db.select_geodataframe(
@@ -83,7 +85,7 @@ def get_foreign_gas_bus_id(carrier="CH4"):
     )
 
     # insert installed capacities
-    file = zipfile.ZipFile(f"tyndp/{sources['tyndp_capacities']}")
+    file = zipfile.ZipFile(f"tyndp/{sources.files['tyndp_capacities']}")
 
     # Select buses in neighbouring countries as geodataframe
     buses = pd.read_excel(
@@ -204,11 +206,10 @@ def calc_capacities():
         Gas production capacities per foreign node
 
     """
-
-    sources = config.datasets()["gas_neighbours"]["sources"]
+    sources, _ = load_sources_and_targets("GasNeighbours")
 
     # insert installed capacities
-    file = zipfile.ZipFile(f"tyndp/{sources['tyndp_capacities']}")
+    file = zipfile.ZipFile(f"tyndp/{sources.files['tyndp_capacities']}")
     df0 = pd.read_excel(
         file.open("TYNDP-2020-Scenario-Datafile.xlsx").read(),
         sheet_name="Gas Data",
@@ -470,8 +471,7 @@ def calc_capacity_per_year(df, lng, year):
 
 
 def insert_generators(gen):
-    """Insert gas generators for foreign countries into the database
-
+    """
     Insert gas generators for foreign countries into the database.
     The marginal cost of the methane is calculated as the sum of the
     imported LNG cost, the conventional natural gas cost and the
@@ -488,27 +488,24 @@ def insert_generators(gen):
     Returns
     -------
     None
-
     """
-    sources = config.datasets()["gas_neighbours"]["sources"]
-    targets = config.datasets()["gas_neighbours"]["targets"]
+    sources, targets = load_sources_and_targets("GasNeighbours")
+
     map_buses = get_map_buses()
     scn_params = get_sector_parameters("gas", "eGon2035")
 
     # Delete existing data
-    db.execute_sql(
-        f"""
+    db.execute_sql(f"""
         DELETE FROM
-        {targets['generators']['schema']}.{targets['generators']['table']}
+        {targets.tables['generators']}
         WHERE bus IN (
             SELECT bus_id FROM
-            {sources['buses']['schema']}.{sources['buses']['table']}
+            {sources.tables['buses']}
             WHERE country != 'DE'
             AND scn_name = 'eGon2035')
         AND scn_name = 'eGon2035'
         AND carrier = 'CH4';
-        """
-    )
+        """)
 
     # Set bus_id
     gen.loc[gen[gen["index"].isin(map_buses.keys())].index, "index"] = gen.loc[
@@ -543,9 +540,9 @@ def insert_generators(gen):
 
     # Insert data to db
     gen.to_sql(
-        targets["generators"]["table"],
+        targets.get_table_name("generators").split(".")[-1],
         db.engine(),
-        schema=targets["generators"]["schema"],
+        schema=targets.get_table_schema("generators"),
         index=False,
         if_exists="append",
     )
@@ -563,12 +560,10 @@ def calc_global_ch4_demand(Norway_global_demand_1y):
     -------
     pandas.DataFrame
         Global (yearly) CH4 final demand per foreign node
-
     """
+    sources, _ = load_sources_and_targets("GasNeighbours")
 
-    sources = config.datasets()["gas_neighbours"]["sources"]
-
-    file = zipfile.ZipFile(f"tyndp/{sources['tyndp_capacities']}")
+    file = zipfile.ZipFile(f"tyndp/{sources.files['tyndp_capacities']}")
     df = pd.read_excel(
         file.open("TYNDP-2020-Scenario-Datafile.xlsx").read(),
         sheet_name="Gas Data",
@@ -690,51 +685,42 @@ def insert_ch4_demand(global_demand, normalized_ch4_demandTS):
     Returns
     -------
     None
-
     """
-    sources = config.datasets()["gas_neighbours"]["sources"]
-    targets = config.datasets()["gas_neighbours"]["targets"]
+    sources, targets = load_sources_and_targets("GasNeighbours")
+
     map_buses = get_map_buses()
 
     scn_name = "eGon2035"
     carrier = "CH4"
 
     # Delete existing data
-    db.execute_sql(
-        f"""
+    db.execute_sql(f"""
         DELETE FROM
-        {
-            targets['load_timeseries']['schema']
-        }.{
-            targets['load_timeseries']['table']
-        }
+        {targets.tables['load_timeseries']}
         WHERE "load_id" IN (
             SELECT load_id FROM
-            {targets['loads']['schema']}.{targets['loads']['table']}
+            {targets.tables['loads']}
             WHERE bus IN (
                 SELECT bus_id FROM
-                {sources['buses']['schema']}.{sources['buses']['table']}
+                {sources.tables['buses']}
                 WHERE country != 'DE'
                 AND scn_name = '{scn_name}')
             AND scn_name = '{scn_name}'
             AND carrier = '{carrier}'
         );
-        """
-    )
+        """)
 
-    db.execute_sql(
-        f"""
+    db.execute_sql(f"""
         DELETE FROM
-        {targets['loads']['schema']}.{targets['loads']['table']}
+        {targets.tables['loads']}
         WHERE bus IN (
             SELECT bus_id FROM
-            {sources['buses']['schema']}.{sources['buses']['table']}
+            {sources.tables['buses']}
             WHERE country != 'DE'
             AND scn_name = '{scn_name}')
         AND scn_name = '{scn_name}'
         AND carrier = '{carrier}'
-        """
-    )
+        """)
 
     # Set bus_id
     global_demand.loc[
@@ -762,9 +748,9 @@ def insert_ch4_demand(global_demand, normalized_ch4_demandTS):
 
     # Insert data to db
     global_demand.to_sql(
-        targets["loads"]["table"],
+        targets.get_table_name("loads").split(".")[-1],
         db.engine(),
-        schema=targets["loads"]["schema"],
+        schema=targets.get_table_schema("loads"),
         index=False,
         if_exists="append",
     )
@@ -795,9 +781,9 @@ def insert_ch4_demand(global_demand, normalized_ch4_demandTS):
 
     # Insert data to DB
     ch4_demand_TS.to_sql(
-        targets["load_timeseries"]["table"],
+        targets.get_table_name("load_timeseries").split(".")[-1],
         db.engine(),
-        schema=targets["load_timeseries"]["schema"],
+        schema=targets.get_table_schema("load_timeseries"),
         index=False,
         if_exists="append",
     )
@@ -926,31 +912,28 @@ def insert_storage(ch4_storage_capacities):
     Returns
     -------
     None
-
     """
-    sources = config.datasets()["gas_neighbours"]["sources"]
-    targets = config.datasets()["gas_neighbours"]["targets"]
+    sources, targets = load_sources_and_targets("GasNeighbours")
 
     # Clean table
-    db.execute_sql(
-        f"""
-        DELETE FROM {targets['stores']['schema']}.{targets['stores']['table']}
+    db.execute_sql(f"""
+        DELETE FROM {targets.tables['stores']}
         WHERE "carrier" = 'CH4'
         AND scn_name = 'eGon2035'
         AND bus IN (
             SELECT bus_id
-            FROM {sources['buses']['schema']}.{sources['buses']['table']}
+            FROM {sources.tables['buses']}
             WHERE scn_name = 'eGon2035'
             AND country != 'DE'
             );
-        """
-    )
+        """)
     # Add missing columns
     c = {"scn_name": "eGon2035", "carrier": "CH4"}
     ch4_storage_capacities = ch4_storage_capacities.assign(**c)
 
     ch4_storage_capacities["store_id"] = db.next_etrago_id(
-        "store", len(ch4_storage_capacities))
+        "store", len(ch4_storage_capacities)
+    )
     ch4_storage_capacities.drop(
         ["Country"],
         axis=1,
@@ -960,9 +943,9 @@ def insert_storage(ch4_storage_capacities):
     ch4_storage_capacities = ch4_storage_capacities.reset_index(drop=True)
     # Insert data to db
     ch4_storage_capacities.to_sql(
-        targets["stores"]["table"],
+        targets.get_table_name("stores").split(".")[-1],
         db.engine(),
-        schema=targets["stores"]["schema"],
+        schema=targets.get_table_schema("stores"),
         index=False,
         if_exists="append",
     )
@@ -982,9 +965,9 @@ def calc_global_power_to_h2_demand():
         Global hourly power-to-h2 demand per foreign node
 
     """
-    sources = config.datasets()["gas_neighbours"]["sources"]
+    sources, _ = load_sources_and_targets("GasNeighbours")
 
-    file = zipfile.ZipFile(f"tyndp/{sources['tyndp_capacities']}")
+    file = zipfile.ZipFile(f"tyndp/{sources.files['tyndp_capacities']}")
     df = pd.read_excel(
         file.open("TYNDP-2020-Scenario-Datafile.xlsx").read(),
         sheet_name="Gas Data",
@@ -1079,26 +1062,24 @@ def insert_power_to_h2_demand(global_power_to_h2_demand):
     None
 
     """
-    sources = config.datasets()["gas_neighbours"]["sources"]
-    targets = config.datasets()["gas_neighbours"]["targets"]
+    sources, targets = load_sources_and_targets("GasNeighbours")
+
     map_buses = get_map_buses()
 
     scn_name = "eGon2035"
     carrier = "H2_for_industry"
 
-    db.execute_sql(
-        f"""
+    db.execute_sql(f"""
         DELETE FROM
-        {targets['loads']['schema']}.{targets['loads']['table']}
+        {targets.tables['loads']}
         WHERE bus IN (
             SELECT bus_id FROM
-            {sources['buses']['schema']}.{sources['buses']['table']}
+            {sources.tables['buses']}
             WHERE country != 'DE'
             AND scn_name = '{scn_name}')
         AND scn_name = '{scn_name}'
         AND carrier = '{carrier}'
-        """
-    )
+        """)
 
     # Set bus_id
     global_power_to_h2_demand.loc[
@@ -1125,7 +1106,8 @@ def insert_power_to_h2_demand(global_power_to_h2_demand):
     global_power_to_h2_demand = global_power_to_h2_demand.assign(**c)
 
     global_power_to_h2_demand["load_id"] = db.next_etrago_id(
-        "load", len(global_power_to_h2_demand))
+        "load", len(global_power_to_h2_demand)
+    )
 
     global_power_to_h2_demand = global_power_to_h2_demand.rename(
         columns={"GlobD_2035": "p_set"}
@@ -1138,9 +1120,9 @@ def insert_power_to_h2_demand(global_power_to_h2_demand):
 
     # Insert data to db
     global_power_to_h2_demand.to_sql(
-        targets["loads"]["table"],
+        targets.get_table_name("loads").split(".")[-1],
         db.engine(),
-        schema=targets["loads"]["schema"],
+        schema=targets.get_table_schema("loads"),
         index=False,
         if_exists="append",
     )
@@ -1162,7 +1144,7 @@ def calculate_ch4_grid_capacities():
         country
 
     """
-    sources = config.datasets()["gas_neighbours"]["sources"]
+    sources, _ = load_sources_and_targets("GasNeighbours")
 
     # Download file
     basename = "ENTSOG_TYNDP_2020_Annex_C2_Capacities_per_country.xlsx"
@@ -1300,7 +1282,8 @@ def calculate_ch4_grid_capacities():
     )
 
     Neighbouring_pipe_capacities_list["link_id"] = db.next_etrago_id(
-        "link", len(Neighbouring_pipe_capacities_list))
+        "link", len(Neighbouring_pipe_capacities_list)
+    )
 
     # Border crossing CH4 pipelines between DE and neighbouring countries
     DE_pipe_capacities_list = pipe_capacities_list[
@@ -1327,37 +1310,35 @@ def calculate_ch4_grid_capacities():
     ].map(dict_cross_pipes_DE)
     DE_pipe_capacities_list = DE_pipe_capacities_list.set_index("country_code")
 
-    schema = sources["buses"]["schema"]
-    table = sources["buses"]["table"]
+    schema_bus = sources.get_table_schema("buses")
+    table_bus = sources.get_table_name("buses").split(".")[-1]
     for country_code in [e for e in countries if e not in ("GB", "SE", "UK")]:
         # Select cross-bording links
-        cap_DE = db.select_dataframe(
-            f"""SELECT link_id, bus0, bus1
-                FROM {sources['links']['schema']}.{sources['links']['table']}
+        cap_DE = db.select_dataframe(f"""SELECT link_id, bus0, bus1
+                FROM {sources.tables['links']}
                     WHERE scn_name = 'eGon2035'
                     AND carrier = 'CH4'
                     AND (("bus0" IN (
-                        SELECT bus_id FROM {schema}.{table}
+                        SELECT bus_id FROM {schema_bus}.{table_bus}
                             WHERE country = 'DE'
                             AND carrier = 'CH4'
                             AND scn_name = 'eGon2035')
-                        AND "bus1" IN (SELECT bus_id FROM {schema}.{table}
+                        AND "bus1" IN (SELECT bus_id FROM {schema_bus}.{table_bus}
                             WHERE country = '{country_code}'
                             AND carrier = 'CH4'
                             AND scn_name = 'eGon2035')
                     )
                     OR ("bus0" IN (
-                        SELECT bus_id FROM {schema}.{table}
+                        SELECT bus_id FROM {schema_bus}.{table_bus}
                             WHERE country = '{country_code}'
                             AND carrier = 'CH4'
                             AND scn_name = 'eGon2035')
-                        AND "bus1" IN (SELECT bus_id FROM {schema}.{table}
+                        AND "bus1" IN (SELECT bus_id FROM {schema_bus}.{table_bus}
                             WHERE country = 'DE'
                             AND carrier = 'CH4'
                             AND scn_name = 'eGon2035'))
                     )
-            ;"""
-        )
+            ;""")
 
         cap_DE["p_nom"] = DE_pipe_capacities_list.at[
             country_code, "p_nom"
@@ -1509,12 +1490,11 @@ def calculate_ocgt_capacities():
     -------
     df_ocgt: pandas.DataFrame
         Gas turbine capacities per foreign node
-
     """
-    sources = config.datasets()["gas_neighbours"]["sources"]
+    sources, _ = load_sources_and_targets("GasNeighbours")
 
     # insert installed capacities
-    file = zipfile.ZipFile(f"tyndp/{sources['tyndp_capacities']}")
+    file = zipfile.ZipFile(f"tyndp/{sources.files['tyndp_capacities']}")
     df = pd.read_excel(
         file.open("TYNDP-2020-Scenario-Datafile.xlsx").read(),
         sheet_name="Capacity",
@@ -1568,7 +1548,6 @@ def insert_ocgt_abroad():
     Returns
     -------
     None
-
     """
     scn_name = "eGon2035"
     carrier = "OCGT"
@@ -1583,21 +1562,17 @@ def insert_ocgt_abroad():
     df_ocgt["scn_name"] = scn_name
 
     buses = tuple(
-        db.select_dataframe(
-            f"""SELECT bus_id FROM grid.egon_etrago_bus
+        db.select_dataframe(f"""SELECT bus_id FROM grid.egon_etrago_bus
             WHERE scn_name = '{scn_name}' AND country != 'DE';
-        """
-        )["bus_id"]
+        """)["bus_id"]
     )
 
     # Delete old entries
-    db.execute_sql(
-        f"""
+    db.execute_sql(f"""
         DELETE FROM grid.egon_etrago_link WHERE "carrier" = '{carrier}'
         AND scn_name = '{scn_name}'
         AND bus0 IN {buses} AND bus1 IN {buses};
-        """
-    )
+        """)
 
     # read carrier information from scnario parameter data
     scn_params = get_sector_parameters("gas", scn_name)

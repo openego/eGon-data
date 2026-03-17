@@ -14,6 +14,7 @@ from sqlalchemy import (
 from sqlalchemy.ext.declarative import declarative_base
 
 from egon.data import config, db
+from egon.data.datasets import load_sources_and_targets
 from egon.data.metadata import (
     context,
     contributors,
@@ -307,7 +308,7 @@ class EgonPowerPlantsStorage(Base):
 
 
 def add_metadata():
-    technologies = config.datasets()["mastr_new"]["technologies"]
+    dataset_sources, targets = load_sources_and_targets("PowerPlants")
 
     target_tables = {
         "solar": EgonPowerPlantsPv,
@@ -320,10 +321,10 @@ def add_metadata():
         "storage": EgonPowerPlantsStorage,
     }
 
-    deposit_id_data_bundle = config.datasets()["data-bundle"]["sources"][
-        "zenodo"
-    ]["deposit_id"]
-    deposit_id_mastr = config.datasets()["mastr_new"]["deposit_id"]
+    technologies = list(target_tables.keys())
+
+    deposit_id_data_bundle = dataset_sources.files["data_bundle_deposit_id"]
+    deposit_id_mastr = dataset_sources.files["mastr_deposit_id"]
 
     contris = contributors(["kh", "kh"])
 
@@ -359,9 +360,8 @@ def add_metadata():
             },
             "temporal": {
                 "referenceDate": (
-                    config.datasets()["mastr_new"]["egon2021_date_max"].split(
-                        " "
-                    )[0]
+                    # <--- REFACTORING: Use sources.files
+                    dataset_sources.files["egon2021_date_max"].split(" ")[0]
                 ),
                 "timeseries": {},
             },
