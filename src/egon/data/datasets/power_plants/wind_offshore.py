@@ -6,15 +6,15 @@ import geopandas as gpd
 import pandas as pd
 
 from egon.data import db
+from egon.data.datasets import load_sources_and_targets
 import egon.data.config
 
 
-def map_id_bus(scenario):
+def map_id_bus(scenario, sources):
     # Import manually generated list of wind offshore farms with their
     # connection points (OSM_id)
-    osm_year = egon.data.config.datasets()["openstreetmap"]["original_data"][
-        "source"
-    ]["url"]
+
+    osm_year = sources.files["osm_config"]
 
     if scenario in ["eGon2035", "eGon100RE"]:
         id_bus = {
@@ -58,10 +58,8 @@ def map_id_bus(scenario):
                 "Cloppenburg": "24493551",
             }
         else:
-            raise Exception(
-                """The OSM year used is not yet compatible with
-                            this function"""
-            )
+            raise Exception("""The OSM year used is not yet compatible with
+                            this function""")
         id_bus = {**id_bus, **id_bus2}
 
     elif "status" in scenario:
@@ -165,30 +163,28 @@ def insert():
     ----------
     *No parameters required
     """
-    # Read file with all required input/output tables' names
-    cfg = egon.data.config.datasets()["power_plants"]
+    sources, targets = load_sources_and_targets("PowerPlants")
 
     scenarios = egon.data.config.settings()["egon-data"]["--scenarios"]
 
     for scenario in scenarios:
-        # Delete previous generators
-        db.execute_sql(
-            f"""
-            DELETE FROM {cfg['target']['schema']}.{cfg['target']['table']}
+
+        db.execute_sql(f"""
+            DELETE FROM {targets.tables['power_plants']}
             WHERE carrier = 'wind_offshore'
             AND scenario = '{scenario}'
-            """
-        )
+            """)
 
         # load file
         if scenario == "eGon2035":
+            filename = "NEP2035_V2021_scnC2035.xlsx"
+
             offshore_path = (
                 Path(".")
                 / "data_bundle_egon_data"
                 / "nep2035_version2021"
-                / cfg["sources"]["nep_2035"]
+                / filename
             )
-
             offshore = pd.read_excel(
                 offshore_path,
                 sheet_name="WInd_Offshore_NEP",
@@ -207,7 +203,7 @@ def insert():
                 Path(".")
                 / "data_bundle_egon_data"
                 / "nep2035_version2021"
-                / cfg["sources"]["nep_2035"]
+                / sources.files["nep_2035"]
             )
 
             offshore = pd.read_excel(
@@ -230,7 +226,7 @@ def insert():
                 Path(".")
                 / "data_bundle_egon_data"
                 / "wind_offshore_status2019"
-                / cfg["sources"]["wind_offshore_status2019"]
+                / sources.files["wind_offshore_status2019"]
             )
             offshore = pd.read_excel(
                 offshore_path,
@@ -257,7 +253,7 @@ def insert():
         else:
             raise ValueError(f"{scenario=} is not valid.")
 
-        id_bus = map_id_bus(scenario)
+        id_bus = map_id_bus(scenario, sources)
 
         # Match wind offshore table with the corresponding OSM_id
         offshore["osm_id"] = offshore["Netzverknuepfungspunkt"].map(id_bus)
@@ -265,7 +261,7 @@ def insert():
         buses = db.select_geodataframe(
             f"""
                 SELECT bus_i as bus_id, base_kv, geom as point, CAST(osm_substation_id AS text)
-                as osm_id FROM {cfg["sources"]["buses_data"]}
+                as osm_id FROM {sources.tables['buses_data']}
                 """,
             epsg=4326,
             geom_col="point",
@@ -310,14 +306,12 @@ def insert():
         # Scale capacities for eGon100RE
         if scenario == "eGon100RE":
             # Import capacity targets for wind_offshore per scenario
-            cap_100RE = db.select_dataframe(
-                f"""
+            cap_100RE = db.select_dataframe(f"""
                     SELECT SUM(capacity)
-                    FROM {cfg["sources"]["capacities"]}
+                    FROM {sources.tables['capacities']}
                     WHERE scenario_name = 'eGon100RE' AND
                     carrier = 'wind_offshore'
-                    """
-            ).iloc[0, 0]
+                    """).iloc[0, 0]
 
             # Scale capacities to match  target
             scale_factor = cap_100RE / offshore.el_capacity.sum()
@@ -353,10 +347,7 @@ def insert():
 
         # Look for the maximum id in the table egon_power_plants
         next_id = db.select_dataframe(
-            "SELECT MAX(id) FROM "
-            + cfg["target"]["schema"]
-            + "."
-            + cfg["target"]["table"]
+            f"SELECT MAX(id) FROM {targets.tables['power_plants']}"
         ).iloc[0, 0]
 
         if next_id:
@@ -371,15 +362,13 @@ def insert():
 
         # Insert into database
         offshore.reset_index().to_postgis(
-            cfg["target"]["table"],
-            schema=cfg["target"]["schema"],
+            targets.get_table_name("power_plants"),
+            schema=targets.get_table_schema("power_plants"),
             con=db.engine(),
             if_exists="append",
         )
 
-        logging.info(
-            f"""
+        logging.info(f"""
               {len(offshore)} wind_offshore generators with a total installed capacity of
               {offshore['el_capacity'].sum()}MW were inserted into the db
-              """
-        )
+              """)

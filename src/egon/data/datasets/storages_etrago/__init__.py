@@ -7,7 +7,7 @@ import geopandas as gpd
 import pandas as pd
 
 from egon.data import config, db
-from egon.data.datasets import Dataset
+from egon.data.datasets import Dataset, DatasetSources, DatasetTargets
 from egon.data.datasets.scenario_parameters import get_sector_parameters
 
 
@@ -38,6 +38,18 @@ class StorageEtrago(Dataset):
 
     """
 
+    sources = DatasetSources(
+        tables={
+            "storage": "supply.egon_storages",
+            "scenario_parameters": "scenario.egon_scenario_parameters",
+            "bus": "grid.egon_etrago_bus",
+            "ehv-substation": "grid.egon_ehv_substation",
+            "hv-substation": "grid.egon_hvmv_substation",
+        }
+    )
+
+    targets = DatasetTargets(tables={"storage": "grid.egon_etrago_storage"})
+
     #:
     name: str = "StorageEtrago"
     #:
@@ -53,30 +65,24 @@ class StorageEtrago(Dataset):
 
 
 def insert_PHES():
-    # Get datasets configuration
-    sources = config.datasets()["storage_etrago"]["sources"]
-    targets = config.datasets()["storage_etrago"]["targets"]
-
     engine = db.engine()
 
     scenario = config.settings()["egon-data"]["--scenarios"]
     for scn in scenario:
         # Delete outdated data on pumped hydro units (PHES) inside Germany from database
-        db.execute_sql(
-            f"""
-            DELETE FROM {targets['storage']['schema']}.{targets['storage']['table']}
+        db.execute_sql(f"""
+            DELETE FROM {StorageEtrago.targets.tables['storage']}
             WHERE carrier = 'pumped_hydro'
             AND scn_name = '{scn}'
-            AND bus IN (SELECT bus_id FROM {sources['bus']['schema']}.{sources['bus']['table']}
+            AND bus IN (SELECT bus_id FROM {StorageEtrago.sources.tables['bus']}
                            WHERE scn_name = '{scn}'
                            AND country = 'DE');
-            """
-        )
+            """)
 
         # Select data on PSH units from database
         phes = db.select_dataframe(
             f"""SELECT scenario as scn_name, bus_id as bus, carrier, el_capacity as p_nom
-            FROM {sources['storage']['schema']}.{sources['storage']['table']}
+            FROM {StorageEtrago.sources.tables['storage']}
             WHERE carrier = 'pumped_hydro'
             AND scenario= '{scn}'
             """
@@ -95,58 +101,46 @@ def insert_PHES():
 
         # Write data to db
         phes.to_sql(
-            targets["storage"]["table"],
+            StorageEtrago.targets.get_table_name("storage"),
             engine,
-            schema=targets["storage"]["schema"],
+            schema=StorageEtrago.targets.get_table_schema("storage"),
             if_exists="append",
             index=phes.index,
         )
 
 
 def extendable_batteries_per_scenario(scenario):
-    # Get datasets configuration
-    sources = config.datasets()["storage_etrago"]["sources"]
-    targets = config.datasets()["storage_etrago"]["targets"]
-
     engine = db.engine()
 
     # Delete outdated data on extendable battetries inside Germany from database
-    db.execute_sql(
-        f"""
-        DELETE FROM {targets['storage']['schema']}.{targets['storage']['table']}
+    db.execute_sql(f"""
+        DELETE FROM {StorageEtrago.targets.tables['storage']}
         WHERE carrier = 'battery'
         AND scn_name = '{scenario}'
-        AND bus IN (SELECT bus_id FROM {sources['bus']['schema']}.{sources['bus']['table']}
-                       WHERE scn_name = '{scenario}'
-                       AND country = 'DE');
-        """
-    )
+        AND bus IN (SELECT bus_id FROM {StorageEtrago.sources.tables['bus']}
+                        WHERE scn_name = '{scenario}'
+                        AND country = 'DE');
+        """)
 
-    extendable_batteries = db.select_dataframe(
-        f"""
+    extendable_batteries = db.select_dataframe(f"""
         SELECT bus_id as bus, scn_name FROM
-        {sources['bus']['schema']}.
-        {sources['bus']['table']}
+        {StorageEtrago.sources.tables['bus']}
         WHERE carrier = 'AC'
         AND scn_name = '{scenario}'
         AND (bus_id IN (SELECT bus_id
-                       FROM {sources['ehv-substation']['schema']}.{sources['ehv-substation']['table']})
+                        FROM {StorageEtrago.sources.tables['ehv-substation']})
         OR bus_id IN (SELECT bus_id
-                       FROM {sources['hv-substation']['schema']}.{sources['hv-substation']['table']}
+                        FROM {StorageEtrago.sources.tables['hv-substation']}
         ))
-        """
-    )
+        """)
 
     # Select information on allocated capacities for home batteries from database
-    home_batteries = db.select_dataframe(
-        f"""
+    home_batteries = db.select_dataframe(f"""
         SELECT el_capacity as p_nom_min, bus_id as bus FROM
-        {sources['storage']['schema']}.
-        {sources['storage']['table']}
+        {StorageEtrago.sources.tables['storage']}
         WHERE carrier = 'home_battery'
         AND scenario = '{scenario}';
-        """
-    )
+        """)
 
     # Update index
     extendable_batteries["storage_id"] = db.next_etrago_id(
@@ -196,9 +190,9 @@ def extendable_batteries_per_scenario(scenario):
 
     # Write data to db
     extendable_batteries.to_sql(
-        targets["storage"]["table"],
+        StorageEtrago.targets.get_table_name("storage"),
         engine,
-        schema=targets["storage"]["schema"],
+        schema=StorageEtrago.targets.get_table_schema("storage"),
         if_exists="append",
         index=False,
     )

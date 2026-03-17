@@ -22,7 +22,7 @@ import geopandas as gpd
 
 from egon.data import db
 from egon.data.config import settings
-from egon.data.datasets import Dataset
+from egon.data.datasets import Dataset, DatasetSources, DatasetTargets
 from egon.data.metadata import (
     context,
     licenses_datenlizenz_deutschland,
@@ -40,18 +40,18 @@ def download_files():
     *vg250/original_data/target/file*.
 
     """
-    data_config = egon.data.config.datasets()
-    vg250_config = data_config["vg250"]["original_data"]
 
     download_directory = Path(".") / "vg250"
     # Create the folder, if it does not exist already
     if not os.path.exists(download_directory):
         os.mkdir(download_directory)
 
-    target_file = download_directory / vg250_config["target"]["file"]
+    target_file = (
+        download_directory / Path(Vg250.sources.files["vg250_zip"]).name
+    )
 
     if not os.path.isfile(target_file):
-        urlretrieve(vg250_config["source"]["url"], target_file)
+        urlretrieve(Vg250.sources.urls["vg250_zip"], target_file)
 
 
 def to_postgres():
@@ -64,19 +64,14 @@ def to_postgres():
 
     """
 
-    # Get information from data configuration file
-    data_config = egon.data.config.datasets()
-    vg250_orig = data_config["vg250"]["original_data"]
-    vg250_processed = data_config["vg250"]["processed"]
-
     # Create target schema
-    db.execute_sql(f"CREATE SCHEMA IF NOT EXISTS {vg250_processed['schema']};")
+    db.execute_sql(f"CREATE SCHEMA IF NOT EXISTS boundaries;")
 
-    zip_file = Path(".") / "vg250" / vg250_orig["target"]["file"]
+    zip_file = Path(Vg250.sources.files["vg250_zip"])
     engine_local_db = db.engine()
 
     # Extract shapefiles from zip archive and send it to postgres db
-    for filename, table in vg250_processed["file_table_map"].items():
+    for filename, table in Vg250.file_table_map.items():
         # Open files and read .shp (within .zip) with geopandas
         data = gpd.read_file(
             f"zip://{zip_file}!vg250_01-01.geo84.shape.ebenen/"
@@ -107,36 +102,33 @@ def to_postgres():
 
         # Drop table before inserting data
         db.execute_sql(
-            f"DROP TABLE IF EXISTS "
-            f"{vg250_processed['schema']}.{table} CASCADE;"
+            f"DROP TABLE IF EXISTS {Vg250.targets.tables[table]} CASCADE;"
         )
 
         # create database table from geopandas dataframe
         data.to_postgis(
-            table,
+            Vg250.targets.get_table_name(table),
             engine_local_db,
-            schema=vg250_processed["schema"],
+            schema=Vg250.targets.get_table_schema(table),
             index=True,
             if_exists="replace",
             dtype={"geometry": Geometry()},
         )
 
         db.execute_sql(
-            f"ALTER TABLE {vg250_processed['schema']}.{table} "
+            f"ALTER TABLE {Vg250.targets.tables[table]} "
             f"ADD PRIMARY KEY (id);"
         )
 
         # Add index on geometry column
         db.execute_sql(
             f"CREATE INDEX {table}_geometry_idx ON "
-            f"{vg250_processed['schema']}.{table} USING gist (geometry);"
+            f"{Vg250.targets.tables[table]} USING gist (geometry);"
         )
 
 
 def add_metadata():
     """Writes metadata JSON string into table comment."""
-    # Prepare variables
-    vg250_config = egon.data.config.datasets()["vg250"]
 
     title_and_description = {
         "vg250_sta": {
@@ -186,12 +178,12 @@ def add_metadata():
         "mit ihren Grenzen, statistischen Schlüsselzahlen, Namen der "
         "Verwaltungseinheit sowie die spezifische Bezeichnung der "
         "Verwaltungsebene des jeweiligen Landes.",
-        "path": vg250_config["original_data"]["source"]["url"],
+        "path": Vg250.sources.urls["vg250_zip"],
         "licenses": licenses,
     }
 
-    for table in vg250_config["processed"]["file_table_map"].values():
-        schema_table = ".".join([vg250_config["processed"]["schema"], table])
+    for table in Vg250.file_table_map.values():
+        schema_table = Vg250.targets.tables[table]
         meta = {
             "name": schema_table,
             "title": title_and_description[table]["title"],
@@ -254,7 +246,7 @@ def add_metadata():
         meta_json = "'" + json.dumps(meta) + "'"
 
         db.submit_comment(
-            meta_json, vg250_config["processed"]["schema"], table
+            meta_json, Vg250.targets.get_table_schema(table), table
         )
 
 
@@ -472,6 +464,40 @@ def vg250_metadata_resources_fields():
 
 
 class Vg250(Dataset):
+
+    sources = DatasetSources(
+        urls={
+            "vg250_zip": "https://daten.gdz.bkg.bund.de/produkte/vg/vg250_ebenen_0101/2020/vg250_01-01.geo84.shape.ebenen.zip"
+        },
+        files={
+            # The downloaded file is a source for the 'to_postgres' step
+            "vg250_zip": "vg250/vg250_01-01.geo84.shape.ebenen.zip"
+        },
+    )
+    targets = DatasetTargets(
+        files={
+            # The downloaded file is a target of the 'download' step
+            "vg250_zip": "vg250/vg250_01-01.geo84.shape.ebenen.zip"
+        },
+        tables={
+            "vg250_sta": "boundaries.vg250_sta",
+            "vg250_lan": "boundaries.vg250_lan",
+            "vg250_rbz": "boundaries.vg250_rbz",
+            "vg250_krs": "boundaries.vg250_krs",
+            "vg250_vwg": "boundaries.vg250_vwg",
+            "vg250_gem": "boundaries.vg250_gem",
+        },
+    )
+
+    file_table_map = {
+        "VG250_STA.shp": "vg250_sta",
+        "VG250_LAN.shp": "vg250_lan",
+        "VG250_RBZ.shp": "vg250_rbz",
+        "VG250_KRS.shp": "vg250_krs",
+        "VG250_VWG.shp": "vg250_vwg",
+        "VG250_GEM.shp": "vg250_gem",
+    }
+
     """
     Obtains and processes VG250 data and writes it to database.
 
@@ -507,15 +533,11 @@ class Vg250(Dataset):
         created and filled
 
     """
-
-    filename = egon.data.config.datasets()["vg250"]["original_data"]["source"][
-        "url"
-    ]
+    filename = sources.urls["vg250_zip"]
 
     #:
     name: str = "VG250"
-    #:
-    version: str = filename + "-0.0.4"
+    version: str = f"{filename}-0.0.9"
 
     def __init__(self, dependencies):
         super().__init__(
