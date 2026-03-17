@@ -11,6 +11,7 @@ biogas), also stored in the table
 :py:class:`scenario.egon_scenario_parameters <egon.data.datasets.scenario_parameters.EgonScenario>`.
 
 """
+
 from pathlib import Path
 from urllib.request import urlretrieve
 import ast
@@ -21,7 +22,7 @@ import pandas as pd
 
 from egon.data import config, db
 from egon.data.config import settings
-from egon.data.datasets import Dataset
+from egon.data.datasets import Dataset, DatasetSources, DatasetTargets
 from egon.data.datasets.scenario_parameters import get_sector_parameters
 
 
@@ -45,7 +46,22 @@ class CH4Production(Dataset):
     name: str = "CH4Production"
     #:
 
-    version: str = "0.0.9"
+    version: str = "0.0.11"
+
+    sources = DatasetSources(
+        tables={
+            "buses": "grid.egon_etrago_bus",
+            "gas_voronoi": "grid.egon_gas_voronoi",
+            "vg250_sta_union": "boundaries.vg250_sta_union",
+        },
+    )
+
+    targets = DatasetTargets(
+        tables={
+            "stores": "grid.egon_etrago_generator",
+            "biogas_generator": "grid.egon_biogas_generator",
+        }
+    )
 
     def __init__(self, dependencies):
         super().__init__(
@@ -232,35 +248,33 @@ def load_biogas_generators(scn_name):
     # Cut data to federal state if in testmode
     boundary = settings()["egon-data"]["--dataset-boundary"]
     if boundary != "Everything":
-        db.execute_sql(
-            """
-              DROP TABLE IF EXISTS grid.egon_biogas_generator CASCADE;
-            """
-        )
+        db.execute_sql(f"""
+              DROP TABLE IF EXISTS {CH4Production.targets.tables['biogas_generator']} CASCADE;
+            """)
         biogas_generators_list.to_postgis(
-            "egon_biogas_generator",
+            CH4Production.targets.get_table_name("biogas_generator"),
             engine,
-            schema="grid",
+            schema=CH4Production.targets.get_table_schema("biogas_generator"),
             index=False,
             if_exists="replace",
         )
 
-        sql = """SELECT *
-            FROM grid.egon_biogas_generator, boundaries.vg250_sta_union  as vg
+        sql = f"""
+            SELECT *
+            FROM {CH4Production.targets.tables['biogas_generator']} AS egon_biogas_generator,
+                 {CH4Production.sources.tables['vg250_sta_union']} AS vg
             WHERE ST_Transform(vg.geometry,4326) && egon_biogas_generator.geom
-            AND ST_Contains(ST_Transform(vg.geometry,4326), egon_biogas_generator.geom)"""
-
+              AND ST_Contains(ST_Transform(vg.geometry,4326), egon_biogas_generator.geom)
+        """
         biogas_generators_list = gpd.GeoDataFrame.from_postgis(
             sql, con=engine, geom_col="geom", crs=4326
         )
         biogas_generators_list = biogas_generators_list.drop(
             columns=["id", "bez", "area_ha", "geometry"]
         )
-        db.execute_sql(
-            """
-              DROP TABLE IF EXISTS grid.egon_biogas_generator CASCADE;
-            """
-        )
+        db.execute_sql(f"""
+              DROP TABLE IF EXISTS {CH4Production.targets.tables['biogas_generator']} CASCADE;
+            """)
 
     # Insert p_nom
     conversion_factor = 0.01083  # m^3/h to MWh/h
@@ -321,23 +335,21 @@ def import_gas_generators():
     """
     # Connect to local database
     engine = db.engine()
-
+    sources = CH4Production.sources
+    targets = CH4Production.targets
     # Select source and target from dataset configuration
-    source = config.datasets()["gas_prod"]["source"]
-    target = config.datasets()["gas_prod"]["target"]
 
     for scn_name in config.settings()["egon-data"]["--scenarios"]:
         # Clean table
-        db.execute_sql(
-            f"""
-            DELETE FROM {target['stores']['schema']}.{target['stores']['table']}
+        db.execute_sql(f"""
+            DELETE FROM {targets.tables['stores']}
             WHERE "carrier" = 'CH4' AND
             scn_name = '{scn_name}' AND bus not IN (
-                SELECT bus_id FROM {source['buses']['schema']}.{source['buses']['table']}
+                SELECT bus_id
+                FROM {sources.tables['buses']}
                 WHERE scn_name = '{scn_name}' AND country != 'DE'
             );
-            """
-        )
+            """)
 
         if scn_name == "eGon2035":
             CH4_generators_list = pd.concat(
@@ -372,14 +384,12 @@ def import_gas_generators():
 
         elif "status" in scn_name:
             # Add one large CH4 generator at each CH4 bus
-            CH4_generators_list = db.select_dataframe(
-                f"""
+            CH4_generators_list = db.select_dataframe(f"""
                 SELECT bus_id as bus, scn_name, carrier
-                FROM grid.egon_gas_voronoi
+                FROM {sources.tables['gas_voronoi']}
                 WHERE scn_name = '{scn_name}'
                 AND carrier = 'CH4'
-                """
-            )
+                """)
 
             CH4_generators_list["marginal_cost"] = get_sector_parameters(
                 "gas", scn_name
@@ -420,14 +430,14 @@ def import_gas_generators():
             raise ValueError(f"{scn_name} is not a valid scenario name")
 
         CH4_generators_list["generator_id"] = db.next_etrago_id(
-            "generator",  len(CH4_generators_list)
-            )
+            "generator", len(CH4_generators_list)
+        )
 
         # Insert data to db
         CH4_generators_list.to_sql(
-            target["stores"]["table"],
+            targets.get_table_name("stores"),
             engine,
-            schema=target["stores"]["schema"],
+            schema=targets.get_table_schema("stores"),
             index=False,
             if_exists="append",
         )

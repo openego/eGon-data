@@ -7,6 +7,7 @@ import geopandas as gpd
 import pandas as pd
 
 from egon.data import db
+from egon.data.datasets import load_sources_and_targets
 import egon.data.config
 
 
@@ -24,29 +25,25 @@ def select_nep_power_plants(carrier):
         Waste power plants from NEP list
 
     """
-    cfg = egon.data.config.datasets()["power_plants"]
+    sources, targets = load_sources_and_targets("PowerPlants")
 
     # Select plants with geolocation from list of conventional power plants
-    nep = db.select_dataframe(
-        f"""
+    nep = db.select_dataframe(f"""
         SELECT bnetza_id, name, carrier, capacity, postcode, city,
         federal_state, c2035_capacity
-        FROM {cfg['sources']['nep_conv']}
+        FROM {sources.tables['nep_conv']}
         WHERE carrier = '{carrier}'
         AND chp = 'Nein'
         AND c2035_chp = 'Nein'
         AND c2035_capacity > 0
         AND postcode != 'None';
-        """
-    )
+        """)
 
-    # Removing plants out of Germany
     nep["postcode"] = nep["postcode"].astype(str)
     nep = nep[~nep["postcode"].str.contains("A")]
     nep = nep[~nep["postcode"].str.contains("L")]
     nep = nep[~nep["postcode"].str.contains("nan")]
 
-    # Remove the subunits from the bnetza_id
     nep["bnetza_id"] = nep["bnetza_id"].str[0:7]
 
     return nep
@@ -67,7 +64,8 @@ def select_no_chp_combustion_mastr(carrier):
         Power plants from NEP list
 
     """
-    cfg = egon.data.config.datasets()["power_plants"]
+    sources, targets = load_sources_and_targets("PowerPlants")
+
     # import data for MaStR
     mastr = db.select_geodataframe(
         f"""
@@ -78,7 +76,7 @@ def select_no_chp_combustion_mastr(carrier):
                 plz,
                 city,
                 federal_state
-            FROM {cfg['sources']['mastr_combustion_without_chp']}
+            FROM {sources.tables['mastr_combustion_without_chp']}
             WHERE carrier = '{carrier}';
         """,
         index_col=None,

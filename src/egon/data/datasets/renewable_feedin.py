@@ -14,7 +14,7 @@ import numpy as np
 import pandas as pd
 
 from egon.data import db
-from egon.data.datasets import Dataset
+from egon.data.datasets import Dataset, DatasetSources, DatasetTargets
 from egon.data.datasets.era5 import (
     EgonEra5Cells,
     EgonRenewableFeedIn,
@@ -52,7 +52,21 @@ class RenewableFeedin(Dataset):
     #:
     name: str = "RenewableFeedin"
     #:
-    version: str = "0.0.8"
+    version: str = "0.0.12"
+
+    sources = DatasetSources(
+        tables={
+            "weather_cells": "supply.egon_era5_weather_cells",
+            "vg250_lan_union": "boundaries.vg250_lan_union",
+        }
+    )
+
+    targets = DatasetTargets(
+        tables={
+            "feedin_table": "supply.egon_era5_renewable_feedin",
+            "map_zensus_weather_cell": "boundaries.egon_map_zensus_weather_cell",
+        }
+    )
 
     def __init__(self, dependencies):
         super().__init__(
@@ -97,16 +111,13 @@ def weather_cells_in_germany(geom_column="geom"):
 
     """
 
-    cfg = egon.data.config.datasets()["renewable_feedin"]["sources"]
+    sources = RenewableFeedin.sources
 
     return db.select_geodataframe(
         f"""SELECT w_id, geom_point, geom
-        FROM {cfg['weather_cells']['schema']}.
-        {cfg['weather_cells']['table']}
-        WHERE ST_Intersects(
-            'SRID=4326;\n     POLYGON((5 56, 15.5 56, 15.5 47, 5 47, 5 56))',
-            geom
-        )""",
+        FROM {sources.tables['weather_cells']}
+        WHERE ST_Intersects('SRID=4326;
+        POLYGON((5 56, 15.5 56, 15.5 47, 5 47, 5 56))', geom)""",
         geom_col=geom_column,
         index_col="w_id",
     )
@@ -122,16 +133,14 @@ def offshore_weather_cells(geom_column="geom"):
 
     """
 
-    cfg = egon.data.config.datasets()["renewable_feedin"]["sources"]
+    sources = RenewableFeedin.sources
 
     return db.select_geodataframe(
         f"""SELECT w_id, geom_point, geom
-        FROM {cfg['weather_cells']['schema']}.
-        {cfg['weather_cells']['table']}
-        WHERE ST_Intersects(
-            'SRID=4326;\n        POLYGON((5.5 55.5, 14.5 55.5, 14.5 53.5, 5.5 53.5, 5.5 55.5))',
-            geom
-        )""",  # noqa: E501
+        FROM {sources.tables['weather_cells']}
+        WHERE ST_Intersects('SRID=4326;
+        POLYGON((5.5 55.5, 14.5 55.5, 14.5 53.5, 5.5 53.5, 5.5 55.5))',
+         geom)""",
         geom_col=geom_column,
         index_col="w_id",
     )
@@ -150,16 +159,14 @@ def federal_states_per_weather_cell():
         Index, points and federal state of weather cells inside Germany
 
     """
-
-    cfg = egon.data.config.datasets()["renewable_feedin"]["sources"]
+    sources = RenewableFeedin.sources
 
     # Select weather cells and federal states from database
     weather_cells = weather_cells_in_germany(geom_column="geom_point")
 
     federal_states = db.select_geodataframe(
         f"""SELECT gen, geometry
-        FROM {cfg['vg250_lan_union']['schema']}.
-        {cfg['vg250_lan_union']['table']}""",
+            FROM {sources.tables['vg250_lan_union']}""",
         geom_col="geometry",
         index_col="gen",
     )
@@ -352,7 +359,7 @@ def wind():
 
     """
 
-    cfg = egon.data.config.datasets()["renewable_feedin"]["targets"]
+    targets = RenewableFeedin.targets
 
     # Get weather cells with turbine type
     weather_cells = turbine_per_weather_cell()
@@ -382,17 +389,14 @@ def wind():
         ]
         df.loc[idx, "feedin"] = timeseries.loc[idx, turbine].values
 
-    db.execute_sql(
-        f"""
-                   DELETE FROM {cfg['feedin_table']['schema']}.
-                   {cfg['feedin_table']['table']}
-                   WHERE carrier = 'wind_onshore'"""
-    )
+    db.execute_sql(f"""
+                   DELETE FROM {targets.tables['feedin_table']}
+                   WHERE carrier = 'wind_onshore'""")
 
     # Insert values into database
     df.to_sql(
-        cfg["feedin_table"]["table"],
-        schema=cfg["feedin_table"]["schema"],
+        targets.get_table_name("feedin_table"),
+        schema=targets.get_table_schema("feedin_table"),
         con=db.engine(),
         if_exists="append",
     )
@@ -506,7 +510,8 @@ def heat_pump_cop():
     carrier = "heat_pump_cop"
 
     # Load configuration
-    cfg = egon.data.config.datasets()["renewable_feedin"]
+
+    targets = RenewableFeedin.targets
 
     # Get weather cells in Germany
     weather_cells = weather_cells_in_germany()
@@ -539,17 +544,14 @@ def heat_pump_cop():
     df.feedin = cop.values.tolist()
 
     # Delete existing rows for carrier
-    db.execute_sql(
-        f"""
-                   DELETE FROM {cfg['targets']['feedin_table']['schema']}.
-                   {cfg['targets']['feedin_table']['table']}
-                   WHERE carrier = '{carrier}'"""
-    )
+    db.execute_sql(f"""
+            DELETE FROM {targets.tables['feedin_table']}
+            WHERE carrier = '{carrier}'""")
 
     # Insert values into database
     df.to_sql(
-        cfg["targets"]["feedin_table"]["table"],
-        schema=cfg["targets"]["feedin_table"]["schema"],
+        targets.get_table_name("feedin_table"),
+        schema=targets.get_table_schema("feedin_table"),
         con=db.engine(),
         if_exists="append",
     )
@@ -576,7 +578,7 @@ def insert_feedin(data, carrier, weather_year):
     data = data.transpose().to_pandas()
 
     # Load configuration
-    cfg = egon.data.config.datasets()["renewable_feedin"]
+    targets = RenewableFeedin.targets
 
     # Initialize DataFrame
     df = pd.DataFrame(
@@ -593,17 +595,14 @@ def insert_feedin(data, carrier, weather_year):
     df.feedin = data.values.tolist()
 
     # Delete existing rows for carrier
-    db.execute_sql(
-        f"""
-                   DELETE FROM {cfg['targets']['feedin_table']['schema']}.
-                   {cfg['targets']['feedin_table']['table']}
-                   WHERE carrier = '{carrier}'"""
-    )
+    db.execute_sql(f"""
+            DELETE FROM {targets.tables['feedin_table']}
+            WHERE carrier = '{carrier}'""")
 
     # Insert values into database
     df.to_sql(
-        cfg["targets"]["feedin_table"]["table"],
-        schema=cfg["targets"]["feedin_table"]["schema"],
+        targets.get_table_name("feedin_table"),
+        schema=targets.get_table_schema("feedin_table"),
         con=db.engine(),
         if_exists="append",
     )
@@ -753,8 +752,9 @@ def add_metadata():
     meta_json = json.dumps(meta)
 
     # Add metadata as a comment to the table
+    targets = RenewableFeedin.targets
     db.submit_comment(
         meta_json,
-        EgonRenewableFeedIn.__table__.schema,
-        EgonRenewableFeedIn.__table__.name,
+        targets.get_table_schema("feedin_table"),
+        targets.get_table_name("feedin_table"),
     )

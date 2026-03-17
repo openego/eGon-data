@@ -1,10 +1,10 @@
-"""Metadata for power plants table
-"""
+"""Metadata for power plants table"""
 
 import datetime
 import json
 
 from egon.data import db
+from egon.data.datasets import load_sources_and_targets
 from egon.data.metadata import (
     license_agpl,
     license_ccby,
@@ -20,9 +20,15 @@ def metadata():
     None.
 
     """
+    sources, targets = load_sources_and_targets("PowerPlants")
+
+    schema = targets.get_table_schema("power_plants")
+    table = targets.get_table_name("power_plants")
+    full_name = f"{schema}.{table}"
+
     meta = {
-        "name": "supply.egon_power_plants",
-        "title": "supply.egon_power_plants",
+        "name": full_name,
+        "title": full_name,
         "id": "",
         "description": "Database of powerplants ",
         "language": "en-GB",
@@ -164,7 +170,7 @@ def metadata():
         "resources": [
             {
                 "profile": "tabular-data-resource",
-                "name": "supply.egon_power_plants",
+                "name": full_name,  # <--- Updated
                 "path": "",
                 "format": "PostgreSQL",
                 "encoding": "UTF-8",
@@ -262,6 +268,4 @@ def metadata():
         },
     }
 
-    db.submit_comment(
-        "'" + json.dumps(meta) + "'", "supply", "egon_power_plants"
-    )
+    db.submit_comment("'" + json.dumps(meta) + "'", schema, table)

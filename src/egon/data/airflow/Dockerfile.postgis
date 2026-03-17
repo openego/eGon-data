@@ -1,6 +1,5 @@
-FROM postgres:16
+FROM postgis/postgis:16-3.4
 
-RUN apt-get update
-RUN apt-get install -y postgresql-16-postgis-3
-RUN apt-get update
-RUN apt-get install -y postgresql-16-pgrouting
+RUN apt-get update && apt-get install -y \
+    postgresql-16-pgrouting=3.8.* \
+    && rm -rf /var/lib/apt/lists/*

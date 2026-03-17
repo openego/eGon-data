@@ -1,21 +1,24 @@
-"""The central module to create low flex scenarios
-
-"""
+"""The central module to create low flex scenarios"""
 
 from airflow.providers.common.sql.operators.sql import SQLExecuteQueryOperator
 from importlib_resources import files
 from sqlalchemy.ext.declarative import declarative_base
 
-from egon.data.datasets import Dataset
+from egon.data.datasets import Dataset, DatasetSources, DatasetTargets
 
 Base = declarative_base()
 
 
 class LowFlexScenario(Dataset):
+
+    sources = DatasetSources(files={"low_flex_sql": "low_flex_eGon2035.sql"})
+
+    targets = DatasetTargets()
+
     def __init__(self, dependencies):
         super().__init__(
             name="low_flex_scenario",
-            version="0.0.2",
+            version="0.0.4",
             dependencies=dependencies,
             tasks=(
                 {
