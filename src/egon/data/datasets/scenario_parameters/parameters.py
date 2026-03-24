@@ -1,16 +1,13 @@
-"""The module containing all parameters for the scenario table
-"""
+"""The module containing all parameters for the scenario table"""
 
 import pandas as pd
 
-import egon.data.config
+from egon.data.datasets import load_sources_and_targets
 
 
 def read_csv(year):
-    source = egon.data.config.datasets()["pypsa-technology-data"]["targets"][
-        "data_dir"
-    ]
-
+    _, targets = load_sources_and_targets("ScenarioParameters")
+    source = targets.files["data_dir"]
     return pd.read_csv(f"{source}costs_{year}.csv")
 
 

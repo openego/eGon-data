@@ -15,7 +15,12 @@ import pandas as pd
 import requests
 
 from egon.data import config, db, logger
-from egon.data.datasets import Dataset, wrapped_partial
+from egon.data.datasets import (
+    Dataset,
+    DatasetSources,
+    DatasetTargets,
+    wrapped_partial,
+)
 from egon.data.datasets.fill_etrago_gen import add_marginal_costs
 from egon.data.datasets.fix_ehv_subnetworks import select_bus_id
 from egon.data.datasets.pypsaeur import prepared_network
@@ -42,22 +47,20 @@ def get_cross_border_buses(scenario, sources):
     return db.select_geodataframe(
         f"""
         SELECT *
-        FROM {sources['electricity_buses']['schema']}.
-            {sources['electricity_buses']['table']}
+        FROM {sources.tables['electricity_buses']}
         WHERE
-        NOT ST_INTERSECTS (
+        NOT ST_INTERSECTS(
             geom,
-            (SELECT ST_Transform(ST_Buffer(geometry, 5), 4326) FROM
-             {sources['german_borders']['schema']}.
-            {sources['german_borders']['table']}))
+            (SELECT ST_Transform(ST_Buffer(geometry, 5), 4326)
+              FROM {sources.tables['german_borders']}))
         AND (bus_id IN (
-            SELECT bus0 FROM
-            {sources['lines']['schema']}.{sources['lines']['table']})
-            OR bus_id IN (
-            SELECT bus1 FROM
-            {sources['lines']['schema']}.{sources['lines']['table']}))
+             SELECT bus0
+              FROM {sources.tables['lines']})
+             OR bus_id IN (
+             SELECT bus1
+             FROM {sources.tables['lines']}))
         AND scn_name = '{scenario}';
-        """,
+      """,
         epsg=4326,
     )
 
@@ -79,13 +82,13 @@ def get_cross_border_lines(scenario, sources):
     return db.select_geodataframe(
         f"""
     SELECT *
-    FROM {sources['lines']['schema']}.{sources['lines']['table']} a
+    FROM {sources.tables['lines']} a
     WHERE
     ST_INTERSECTS (
         a.topo,
         (SELECT ST_Transform(ST_boundary(geometry), 4326)
-         FROM {sources['german_borders']['schema']}.
-        {sources['german_borders']['table']}))
+         FROM {sources.tables['german_borders']})
+    )
     AND scn_name = '{scenario}';
     """,
         epsg=4326,
@@ -148,14 +151,12 @@ def buses(scenario, sources, targets):
 
     """
     sql_delete = f"""
-        DELETE FROM {sources['electricity_buses']['schema']}.
-            {sources['electricity_buses']['table']}
+        DELETE FROM {sources.tables['electricity_buses']}
         WHERE country != 'DE' AND scn_name = '{scenario}'
         AND carrier = 'AC'
         AND bus_id NOT IN (
             SELECT bus_i
-            FROM  {sources['osmtgmod_bus']['schema']}.
-            {sources['osmtgmod_bus']['table']})
+            FROM {sources.tables['osmtgmod_bus']})
         """
 
     # Delete existing buses
@@ -275,8 +276,8 @@ def buses(scenario, sources, targets):
         "status2023",
     ]:  # TODO: status2023 this is hardcoded shit
         central_buses.to_postgis(
-            targets["buses"]["table"],
-            schema=targets["buses"]["schema"],
+            targets.get_table_name("buses"),
+            schema=targets.get_table_schema("buses"),
             if_exists="append",
             con=db.engine(),
             index=False,
@@ -285,8 +286,8 @@ def buses(scenario, sources, targets):
     # (buses with another voltage_level or inside Germany in test mode)
     else:
         central_buses[central_buses.carrier == "AC"].to_postgis(
-            targets["buses"]["table"],
-            schema=targets["buses"]["schema"],
+            targets.get_table_name("buses"),
+            schema=targets.get_table_schema("buses"),
             if_exists="append",
             con=db.engine(),
             index=False,
@@ -295,7 +296,7 @@ def buses(scenario, sources, targets):
     return central_buses
 
 
-def lines_between_foreign_countries(scenario, sorces, targets, central_buses):
+def lines_between_foreign_countries(scenario, sources, targets, central_buses):
     # import network from pypsa-eur
     network = prepared_network()
 
@@ -321,7 +322,8 @@ def lines_between_foreign_countries(scenario, sorces, targets, central_buses):
         "electricity", scenario
     )["lifetime"]["ac_ehv_overhead_line"]
     lines_to_add.loc[:, "line_id"] = db.next_etrago_id(
-        "line", len(lines_to_add.index))
+        "line", len(lines_to_add.index)
+    )
 
     links_to_add = network.links[
         (network.links.bus0.isin(central_buses_pypsaeur.index))
@@ -332,7 +334,8 @@ def lines_between_foreign_countries(scenario, sorces, targets, central_buses):
         "electricity", scenario
     )["lifetime"]["dc_overhead_line"]
     links_to_add.loc[:, "link_id"] = db.next_etrago_id(
-        "link", len(links_to_add.index))
+        "link", len(links_to_add.index)
+    )
 
     for df in [lines_to_add, links_to_add]:
         df.loc[:, "scn_name"] = scenario
@@ -401,9 +404,9 @@ def lines_between_foreign_countries(scenario, sorces, targets, central_buses):
 
         gdf = gdf.set_index(f"{table_name}_id")
         gdf.to_postgis(
-            f"egon_etrago_{table_name}",
+            targets.get_table_name(f"{table_name}s"),
             db.engine(),
-            schema="grid",
+            schema=targets.get_table_schema(f"{table_name}s"),
             if_exists="append",
             index=True,
             index_label=f"{table_name}_id",
@@ -430,27 +433,21 @@ def cross_border_lines(scenario, sources, targets, central_buses):
 
     """
     # Delete existing data
-    db.execute_sql(
-        f"""
-        DELETE FROM {targets['lines']['schema']}.
-        {targets['lines']['table']}
+    db.execute_sql(f"""
+        DELETE FROM {targets.tables['lines']}
         WHERE scn_name = '{scenario}'
         AND line_id NOT IN (
             SELECT branch_id
-            FROM  {sources['osmtgmod_branch']['schema']}.
-            {sources['osmtgmod_branch']['table']}
+            FROM {sources.tables['osmtgmod_branch']}
               WHERE result_id = 1 and (link_type = 'line' or
                                        link_type = 'cable'))
         AND bus0 IN (
             SELECT bus_i
-            FROM  {sources['osmtgmod_bus']['schema']}.
-            {sources['osmtgmod_bus']['table']})
+            FROM {sources.tables['osmtgmod_bus']})
         AND bus1 NOT IN (
             SELECT bus_i
-            FROM  {sources['osmtgmod_bus']['schema']}.
-            {sources['osmtgmod_bus']['table']})
-        """
-    )
+            FROM {sources.tables['osmtgmod_bus']})
+        """)
 
     # Calculate cross-border busses and lines from osmtgmod
     foreign_buses = get_cross_border_buses(scenario, sources)
@@ -543,8 +540,8 @@ def cross_border_lines(scenario, sources, targets, central_buses):
 
     # Insert lines to the database
     new_lines.to_postgis(
-        targets["lines"]["table"],
-        schema=targets["lines"]["schema"],
+        targets.get_table_name("lines"),
+        schema=targets.get_table_schema("lines"),
         if_exists="append",
         con=db.engine(),
         index=False,
@@ -624,18 +621,14 @@ def central_transformer(scenario, sources, targets, central_buses, new_lines):
 
     """
     # Delete existing transformers in foreign countries
-    db.execute_sql(
-        f"""
-        DELETE FROM {targets['transformers']['schema']}.
-        {targets['transformers']['table']}
+    db.execute_sql(f"""
+        DELETE FROM {targets.tables['transformers']}
         WHERE scn_name = '{scenario}'
         AND trafo_id NOT IN (
             SELECT branch_id
-            FROM {sources['osmtgmod_branch']['schema']}.
-            {sources['osmtgmod_branch']['table']}
+            FROM {sources.tables['osmtgmod_branch']}
               WHERE result_id = 1 and link_type = 'transformer')
-        """
-    )
+        """)
 
     # Initalize the dataframe for transformers
     trafo = gpd.GeoDataFrame(
@@ -683,8 +676,8 @@ def central_transformer(scenario, sources, targets, central_buses, new_lines):
 
     # Insert transformers to the database
     trafo.to_sql(
-        targets["transformers"]["table"],
-        schema=targets["transformers"]["schema"],
+        targets.get_table_name("transformers"),
+        schema=targets.get_table_schema("transformers"),
         if_exists="append",
         con=db.engine(),
         index=False,
@@ -709,28 +702,23 @@ def foreign_dc_lines(scenario, sources, targets, central_buses):
 
     """
     # Delete existing dc lines to foreign countries
-    db.execute_sql(
-        f"""
-        DELETE FROM {targets['links']['schema']}.
-        {targets['links']['table']}
+    db.execute_sql(f"""
+        DELETE FROM {targets.tables['links']}
         WHERE scn_name = '{scenario}'
         AND carrier = 'DC'
         AND bus0 IN (
             SELECT bus_id
-            FROM {sources['electricity_buses']['schema']}.
-            {sources['electricity_buses']['table']}
+            FROM {sources.tables['electricity_buses']}
               WHERE scn_name = '{scenario}'
               AND carrier = 'AC'
               AND country = 'DE')
         AND bus1 IN (
             SELECT bus_id
-            FROM {sources['electricity_buses']['schema']}.
-            {sources['electricity_buses']['table']}
+            FROM {sources.tables['electricity_buses']}
               WHERE scn_name = '{scenario}'
               AND carrier = 'AC'
               AND country != 'DE')
-        """
-    )
+        """)
     capital_cost = get_sector_parameters("electricity", scenario)[
         "capital_cost"
     ]
@@ -812,8 +800,8 @@ def foreign_dc_lines(scenario, sources, targets, central_buses):
 
     # Insert DC lines to the database
     foreign_links.to_postgis(
-        targets["links"]["table"],
-        schema=targets["links"]["schema"],
+        targets.get_table_name("links"),
+        schema=targets.get_table_schema("links"),
         if_exists="append",
         con=db.engine(),
         index=False,
@@ -829,8 +817,8 @@ def grid():
 
     """
     # Select sources and targets from dataset configuration
-    sources = config.datasets()["electrical_neighbours"]["sources"]
-    targets = config.datasets()["electrical_neighbours"]["targets"]
+    sources = ElectricalNeighbours.sources
+    targets = ElectricalNeighbours.targets
 
     for scenario in config.settings()["egon-data"]["--scenarios"]:
         central_buses = buses(scenario, sources, targets)
@@ -910,25 +898,25 @@ def get_foreign_bus_id(scenario):
         List of mapped node_ids from TYNDP and etragos bus_id
 
     """
-
-    sources = config.datasets()["electrical_neighbours"]["sources"]
-
+    sources = ElectricalNeighbours.sources
     bus_id = db.select_geodataframe(
         f"""SELECT bus_id, ST_Buffer(geom, 1) as geom, country
-        FROM grid.egon_etrago_bus
+        FROM {sources.tables['electricity_buses']}
         WHERE scn_name = '{scenario}'
         AND carrier = 'AC'
         AND v_nom = 380.
         AND country != 'DE'
         AND bus_id NOT IN (
             SELECT bus_i
-            FROM osmtgmod_results.bus_data)
+            FROM {sources.tables['osmtgmod_bus']})
         """,
         epsg=3035,
     )
 
     # insert installed capacities
-    file = zipfile.ZipFile(f"tyndp/{sources['tyndp_capacities']}")
+    file = zipfile.ZipFile(
+        ElectricalNeighbours.sources.files["tyndp_capacities"]
+    )
 
     # Select buses in neighbouring countries as geodataframe
     buses = pd.read_excel(
@@ -963,8 +951,6 @@ def calc_capacities():
 
     """
 
-    sources = config.datasets()["electrical_neighbours"]["sources"]
-
     countries = [
         "AT",
         "BE",
@@ -980,7 +966,9 @@ def calc_capacities():
     ]
 
     # insert installed capacities
-    file = zipfile.ZipFile(f"tyndp/{sources['tyndp_capacities']}")
+    file = zipfile.ZipFile(
+        ElectricalNeighbours.sources.files["tyndp_capacities"]
+    )
     df = pd.read_excel(
         file.open("TYNDP-2020-Scenario-Datafile.xlsx").read(),
         sheet_name="Capacity",
@@ -1042,36 +1030,28 @@ def insert_generators_tyndp(capacities):
     None.
 
     """
-    targets = config.datasets()["electrical_neighbours"]["targets"]
+    targets = ElectricalNeighbours.targets
     map_buses = get_map_buses()
 
     # Delete existing data
-    db.execute_sql(
-        f"""
-        DELETE FROM
-        {targets['generators']['schema']}.{targets['generators']['table']}
+    db.execute_sql(f"""
+        DELETE FROM {targets.tables['generators']}
         WHERE bus IN (
-            SELECT bus_id FROM
-            {targets['buses']['schema']}.{targets['buses']['table']}
+            SELECT bus_id
+            FROM {targets.tables['buses']}
             WHERE country != 'DE'
             AND scn_name = 'eGon2035')
         AND scn_name = 'eGon2035'
         AND carrier != 'CH4'
-        """
-    )
+        """)
 
-    db.execute_sql(
-        f"""
-        DELETE FROM
-        {targets['generators_timeseries']['schema']}.
-        {targets['generators_timeseries']['table']}
+    db.execute_sql(f"""
+        DELETE FROM {targets.tables['generators_timeseries']}
         WHERE generator_id NOT IN (
-            SELECT generator_id FROM
-            {targets['generators']['schema']}.{targets['generators']['table']}
+            SELECT generator_id FROM {targets.tables['generators']}
         )
         AND scn_name = 'eGon2035'
-        """
-    )
+        """)
 
     # Select generators from TYNDP capacities
     gen = capacities[
@@ -1146,21 +1126,19 @@ def insert_storage_tyndp(capacities):
     None.
 
     """
-    targets = config.datasets()["electrical_neighbours"]["targets"]
+    targets = ElectricalNeighbours.targets
     map_buses = get_map_buses()
 
     # Delete existing data
-    db.execute_sql(
-        f"""
-        DELETE FROM {targets['storage']['schema']}.{targets['storage']['table']}
+    db.execute_sql(f"""
+        DELETE FROM {targets.tables['storage']}
         WHERE bus IN (
             SELECT bus_id FROM
-            {targets['buses']['schema']}.{targets['buses']['table']}
+            {targets.tables['buses']}
             WHERE country != 'DE'
             AND scn_name = 'eGon2035')
         AND scn_name = 'eGon2035'
-        """
-    )
+        """)
 
     # Add missing information suitable for eTraGo selected from scenario_parameter table
     parameters_pumped_hydro = scenario_parameters.electricity("eGon2035")[
@@ -1279,23 +1257,19 @@ def tyndp_demand():
     """
     map_buses = get_map_buses()
 
-    sources = config.datasets()["electrical_neighbours"]["sources"]
-    targets = config.datasets()["electrical_neighbours"]["targets"]
+    sources = ElectricalNeighbours.sources  # class attributes
+    targets = ElectricalNeighbours.targets
 
     # Delete existing data
-    db.execute_sql(
-        f"""
-        DELETE FROM {targets['loads']['schema']}.
-        {targets['loads']['table']}
+    db.execute_sql(f"""
+        DELETE FROM {targets.tables['loads']}
         WHERE
         scn_name = 'eGon2035'
         AND carrier = 'AC'
         AND bus NOT IN (
             SELECT bus_i
-            FROM  {sources['osmtgmod_bus']['schema']}.
-            {sources['osmtgmod_bus']['table']})
-        """
-    )
+            FROM {sources.tables['osmtgmod_bus']})
+        """)
 
     # Connect to database
     engine = db.engine()
@@ -1339,11 +1313,11 @@ def tyndp_demand():
 
     # Read in data from TYNDP for 2030 and 2040
     dataset_2030 = pd.read_excel(
-        f"tyndp/{sources['tyndp_demand_2030']}", sheet_name=nodes, skiprows=10
+        sources.files["tyndp_demand_2030"], sheet_name=nodes, skiprows=10
     )
 
     dataset_2040 = pd.read_excel(
-        f"tyndp/{sources['tyndp_demand_2040']}", sheet_name=None, skiprows=10
+        sources.files["tyndp_demand_2040"], sheet_name=None, skiprows=10
     )
 
     # Transform map_buses to pandas.Series and select only used values
@@ -1695,20 +1669,18 @@ def insert_storage_units_sq(scn_name="status2019"):
     sto_sq = df_gen_sq.loc[:, df_gen_sq.columns == "Hydro Pumped Storage"]
     sto_sq.rename(columns={"Hydro Pumped Storage": "p_nom"}, inplace=True)
 
-    targets = config.datasets()["electrical_neighbours"]["targets"]
+    targets = ElectricalNeighbours.targets
 
     # Delete existing data
-    db.execute_sql(
-        f"""
-        DELETE FROM {targets['storage']['schema']}.{targets['storage']['table']}
+    db.execute_sql(f"""
+        DELETE FROM {targets.tables['storage']}
         WHERE bus IN (
-            SELECT bus_id FROM
-            {targets['buses']['schema']}.{targets['buses']['table']}
+            SELECT bus_id 
+            FROM {targets.tables['buses']}
             WHERE country != 'DE'
             AND scn_name = '{scn_name}')
         AND scn_name = '{scn_name}'
-        """
-    )
+        """)
 
     # Add missing information suitable for eTraGo selected from scenario_parameter table
     parameters_pumped_hydro = get_sector_parameters(
@@ -1871,34 +1843,26 @@ def insert_generators_sq(scn_name="status2019"):
             )
         save_entsoe_data(df_gen_sq, file_path=file_path)
 
-    targets = config.datasets()["electrical_neighbours"]["targets"]
+    targets = ElectricalNeighbours.targets
     # Delete existing data
-    db.execute_sql(
-        f"""
-        DELETE FROM
-        {targets['generators']['schema']}.{targets['generators']['table']}
+    db.execute_sql(f"""
+        DELETE FROM {targets.tables['generators']}
         WHERE bus IN (
-            SELECT bus_id FROM
-            {targets['buses']['schema']}.{targets['buses']['table']}
+            SELECT bus_id
+            FROM {targets.tables['buses']}
             WHERE country != 'DE'
             AND scn_name = '{scn_name}')
         AND scn_name = '{scn_name}'
         AND carrier != 'CH4'
-        """
-    )
+        """)
 
-    db.execute_sql(
-        f"""
-        DELETE FROM
-        {targets['generators_timeseries']['schema']}.
-        {targets['generators_timeseries']['table']}
+    db.execute_sql(f"""
+        DELETE FROM {targets.tables['generators_timeseries']}
         WHERE generator_id NOT IN (
-            SELECT generator_id FROM
-            {targets['generators']['schema']}.{targets['generators']['table']}
+            SELECT generator_id FROM {targets.tables['generators']}
         )
         AND scn_name = '{scn_name}'
-        """
-    )
+        """)
     entsoe_to_bus = entsoe_to_bus_etrago(scn_name)
     carrier_entsoe = map_carriers_entsoe()
     df_gen_sq = df_gen_sq.groupby(axis=1, by=carrier_entsoe).sum()
@@ -1950,19 +1914,18 @@ def insert_generators_sq(scn_name="status2019"):
 
 def renewable_timeseries_pypsaeur(scn_name):
     # select generators from database to get index values
-    foreign_re_generators = db.select_dataframe(
-        f"""
+    targets = ElectricalNeighbours.targets
+    foreign_re_generators = db.select_dataframe(f"""
         SELECT generator_id, a.carrier, country, x, y
-        FROM grid.egon_etrago_generator a
-        JOIN  grid.egon_etrago_bus b
+        FROM {targets.tables['generators']} a
+        JOIN {targets.tables['buses']} b
         ON a.bus = b.bus_id
         WHERE a.scn_name = '{scn_name}'
         AND  b.scn_name = '{scn_name}'
         AND b.carrier = 'AC'
         AND b.country != 'DE'
         AND a.carrier IN ('wind_onshore', 'wind_offshore', 'solar')
-        """
-    )
+        """)
 
     # Import prepared network from pypsa-eur
     network = prepared_network()
@@ -2043,8 +2006,8 @@ def insert_loads_sq(scn_name="status2019"):
     None.
 
     """
-    sources = config.datasets()["electrical_neighbours"]["sources"]
-    targets = config.datasets()["electrical_neighbours"]["targets"]
+    sources = ElectricalNeighbours.sources
+    targets = ElectricalNeighbours.targets
 
     if scn_name == "status2019":
         year_start_end = {"year_start": "20190101", "year_end": "20200101"}
@@ -2071,38 +2034,28 @@ def insert_loads_sq(scn_name="status2019"):
         save_entsoe_data(df_load_sq, file_path=file_path)
 
     # Delete existing data
-    db.execute_sql(
-        f"""
-        DELETE FROM {targets['load_timeseries']['schema']}.
-        {targets['load_timeseries']['table']}
+    db.execute_sql(f"""
+        DELETE FROM {targets.tables['load_timeseries']}
         WHERE
         scn_name = '{scn_name}'
         AND load_id IN (
-        SELECT load_id FROM {targets['loads']['schema']}.
-        {targets['loads']['table']}
-        WHERE
-        scn_name = '{scn_name}'
-        AND carrier = 'AC'
-        AND bus NOT IN (
-            SELECT bus_i
-            FROM  {sources['osmtgmod_bus']['schema']}.
-            {sources['osmtgmod_bus']['table']}))
-        """
-    )
+            SELECT load_id FROM {targets.tables['loads']}
+            WHERE  scn_name = '{scn_name}'
+            AND carrier = 'AC'
+            AND bus NOT IN (
+                SELECT bus_i
+                FROM {sources.tables['osmtgmod_bus']}))
+        """)
 
-    db.execute_sql(
-        f"""
-        DELETE FROM {targets['loads']['schema']}.
-        {targets['loads']['table']}
+    db.execute_sql(f"""
+        DELETE FROM {targets.tables['loads']}
         WHERE
         scn_name = '{scn_name}'
         AND carrier = 'AC'
         AND bus NOT IN (
             SELECT bus_i
-            FROM  {sources['osmtgmod_bus']['schema']}.
-            {sources['osmtgmod_bus']['table']})
-        """
-    )
+            FROM {sources.tables['osmtgmod_bus']})
+        """)
 
     # get the corresponding bus per foreign country
     entsoe_to_bus = entsoe_to_bus_etrago(scn_name)
@@ -2193,7 +2146,36 @@ class ElectricalNeighbours(Dataset):
     #:
     name: str = "ElectricalNeighbours"
     #:
-    version: str = "0.0.11"
+    version: str = "0.0.14"
+
+    sources = DatasetSources(
+        tables={
+            "electricity_buses": "grid.egon_etrago_bus",
+            "lines": "grid.egon_etrago_line",
+            "german_borders": "boundaries.vg250_sta_union",
+            "osmtgmod_bus": "osmtgmod_results.bus_data",
+            "osmtgmod_branch": "osmtgmod_results.branch_data",
+        },
+        files={
+            "tyndp_capacities": "tyndp/TYNDP-2020-Scenario-Datafile.xlsx.zip",
+            "tyndp_demand_2030": "tyndp/Demand_TimeSeries_2030_DistributedEnergy.xlsx",
+            "tyndp_demand_2040": "tyndp/Demand_TimeSeries_2040_DistributedEnergy.xlsx",
+        },
+    )
+
+    targets = DatasetTargets(
+        tables={
+            "buses": "grid.egon_etrago_bus",
+            "lines": "grid.egon_etrago_line",
+            "links": "grid.egon_etrago_link",
+            "transformers": "grid.egon_etrago_transformer",
+            "loads": "grid.egon_etrago_load",
+            "load_timeseries": "grid.egon_etrago_load_timeseries",
+            "generators": "grid.egon_etrago_generator",
+            "generators_timeseries": "grid.egon_etrago_generator_timeseries",
+            "storage": "grid.egon_etrago_storage",
+        }
+    )
 
     def __init__(self, dependencies):
         super().__init__(

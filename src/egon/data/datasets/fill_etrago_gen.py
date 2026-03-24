@@ -3,7 +3,7 @@ import numpy as np
 import pandas as pd
 
 from egon.data import db
-from egon.data.datasets import Dataset
+from egon.data.datasets import Dataset, DatasetSources, DatasetTargets
 from egon.data.datasets.scenario_parameters import get_sector_parameters
 import egon.data.config
 
@@ -30,7 +30,23 @@ class Egon_etrago_gen(Dataset):
     #:
     name: str = "etrago_generators"
     #:
-    version: str = "0.0.8"
+    version: str = "0.0.10"
+
+    sources = DatasetSources(
+        tables={
+            "power_plants": "supply.egon_power_plants",
+            "renewable_feedin": "supply.egon_era5_renewable_feedin",
+            "weather_cells": "supply.egon_era5_weather_cells",
+            "bus": "grid.egon_etrago_bus",
+        }
+    )
+
+    targets = DatasetTargets(
+        tables={
+            "etrago_generators": "grid.egon_etrago_generator",
+            "etrago_gen_time": "grid.egon_etrago_generator_timeseries",
+        }
+    )
 
     def __init__(self, dependencies):
         super().__init__(
@@ -44,7 +60,7 @@ class Egon_etrago_gen(Dataset):
 def fill_etrago_generators():
     # Connect to the data base
     con = db.engine()
-    cfg = egon.data.config.datasets()["generators_etrago"]
+    cfg = Egon_etrago_gen  # use class-level sources/targets
 
     # Load required tables
     (
@@ -72,7 +88,10 @@ def fill_etrago_generators():
     etrago_pp = add_marginal_costs(etrago_pp)
 
     etrago_gen_table = fill_etrago_gen_table(
-        etrago_pp2=etrago_pp, etrago_gen_orig=etrago_gen_orig, cfg=cfg, con=con
+        etrago_pp2=etrago_pp,
+        etrago_gen_orig=etrago_gen_orig,
+        cfg=cfg,
+        con=con,
     )
 
     etrago_gen_time_table = fill_etrago_gen_time_table(
@@ -128,10 +147,8 @@ def add_marginal_costs(power_plants):
                 warning.append(carrier)
                 marginal_costs.at[carrier, "marginal_cost"] = 0
         if warning:
-            print(
-                f"""There are no marginal_cost values for: \n{warning}
-        in the scenario {scenario}. Missing values set to 0"""
-            )
+            print(f"""There are no marginal_cost values for: \n{warning}
+        in the scenario {scenario}. Missing values set to 0""")
         pp = pd.concat(
             [
                 pp,
@@ -157,11 +174,12 @@ def fill_etrago_gen_table(etrago_pp2, etrago_gen_orig, cfg, con):
     )
 
     etrago_pp.to_sql(
-        name=f"{cfg['targets']['etrago_generators']['table']}",
-        schema=f"{cfg['targets']['etrago_generators']['schema']}",
+        name=cfg.targets.get_table_name("etrago_generators"),
+        schema=cfg.targets.get_table_schema("etrago_generators"),
         con=con,
         if_exists="append",
     )
+
     return etrago_pp
 
 
@@ -195,51 +213,47 @@ def fill_etrago_gen_time_table(
     etrago_pp_time["temp_id"] = 1
 
     etrago_pp_time.to_sql(
-        name=f"{cfg['targets']['etrago_gen_time']['table']}",
-        schema=f"{cfg['targets']['etrago_gen_time']['schema']}",
+        name=cfg.targets.get_table_name("etrago_gen_time"),
+        schema=cfg.targets.get_table_schema("etrago_gen_time"),
         con=con,
         if_exists="append",
     )
+
     return etrago_pp_time
 
 
 def load_tables(con, cfg):
     sql = f"""
-    SELECT * FROM
-    {cfg['sources']['power_plants']['schema']}.
-    {cfg['sources']['power_plants']['table']}
+    SELECT * FROM {cfg.sources.tables["power_plants"]}
     WHERE carrier != 'gas'
     """
+
     power_plants = gpd.GeoDataFrame.from_postgis(
         sql, con, crs="EPSG:4326", index_col="id"
     )
 
     sql = f"""
-    SELECT * FROM
-    {cfg['sources']['renewable_feedin']['schema']}.
-    {cfg['sources']['renewable_feedin']['table']}
+    SELECT * FROM {cfg.sources.tables['renewable_feedin']}
     """
+
     renew_feedin = pd.read_sql(sql, con)
 
     sql = f"""
-    SELECT * FROM
-    {cfg['sources']['weather_cells']['schema']}.
-    {cfg['sources']['weather_cells']['table']}
+    SELECT * FROM {cfg.sources.tables['weather_cells']}
     """
+
     weather_cells = gpd.GeoDataFrame.from_postgis(sql, con, crs="EPSG:4326")
 
     sql = f"""
-    SELECT * FROM
-    {cfg['targets']['etrago_generators']['schema']}.
-    {cfg['targets']['etrago_generators']['table']}
+    SELECT * FROM {cfg.targets.tables['etrago_generators']}
     """
+
     etrago_gen_orig = pd.read_sql(sql, con)
 
     sql = f"""
-    SELECT * FROM
-    {cfg['targets']['etrago_gen_time']['schema']}.
-    {cfg['targets']['etrago_gen_time']['table']}
+    SELECT * FROM {cfg.targets.tables['etrago_gen_time']}
     """
+
     pp_time = pd.read_sql(sql, con)
 
     return power_plants, renew_feedin, weather_cells, etrago_gen_orig, pp_time
@@ -288,30 +302,27 @@ def delete_previuos_gen(cfg, con, etrago_gen_orig, power_plants):
 
         if carrier_delete:
             db.execute_sql(
-                f"""DELETE FROM
-                        {cfg['targets']['etrago_generators']['schema']}.
-                        {cfg['targets']['etrago_generators']['table']}
-                        WHERE carrier IN {*carrier_delete,}
-                        AND bus IN (
-                            SELECT bus_id FROM {cfg['sources']['bus']['schema']}.
-                            {cfg['sources']['bus']['table']}
-                            WHERE country = 'DE'
-                            AND carrier = 'AC'
-                            AND scn_name = '{scn_name}')
-                        AND scn_name ='{scn_name}'
-                        """
+                f"""DELETE FROM {cfg.targets.tables['etrago_generators']}
+                    WHERE carrier IN {*carrier_delete,}
+                      AND bus IN (
+                          SELECT bus_id
+                          FROM {cfg.sources.tables['bus']}
+                          WHERE country = 'DE'
+                           AND carrier = 'AC'
+                           AND scn_name = '{scn_name}'
+                      )
+                      AND scn_name = '{scn_name}'
+                """
             )
 
             db.execute_sql(
-                f"""DELETE FROM
-                        {cfg['targets']['etrago_gen_time']['schema']}.
-                        {cfg['targets']['etrago_gen_time']['table']}
-                        WHERE generator_id NOT IN (
-                            SELECT generator_id FROM
-                            {cfg['targets']['etrago_generators']['schema']}.
-                            {cfg['targets']['etrago_generators']['table']})
+                f"""DELETE FROM {cfg.targets.tables['etrago_gen_time']}
+                    WHERE generator_id NOT IN (
+                            SELECT generator_id
+                            FROM {cfg.targets.tables['etrago_generators']}
+                        )
                         AND scn_name ='{scn_name}'
-                        """
+                """
             )
 
 
