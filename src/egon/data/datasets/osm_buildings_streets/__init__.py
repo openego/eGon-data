@@ -6,7 +6,7 @@ Filtering and preprocessing of buildings, streets and amenities from OpenStreetM
 import os
 
 from egon.data import db
-from egon.data.datasets import Dataset
+from egon.data.datasets import Dataset, DatasetSources, DatasetTargets
 from egon.data.validation import TableValidation, resolve_boundary_dependence
 
 
@@ -197,7 +197,35 @@ class OsmBuildingsStreets(Dataset):
     #:
     name: str = "OsmBuildingsStreets"
     #:
-    version: str = "0.0.7"
+    version: str = "0.0.9"
+
+    sources = DatasetSources(
+        tables={
+            "osm_polygon": "openstreetmap.osm_polygon",
+            "osm_point": "openstreetmap.osm_point",
+            "osm_line": "openstreetmap.osm_line",
+            "osm_ways": "openstreetmap.osm_ways",
+            "zensus_apartments": "society.egon_destatis_zensus_apartment_building_population_per_ha",
+            "zensus_population": "society.destatis_zensus_population_per_ha",
+        }
+    )
+
+    targets = DatasetTargets(
+        tables={
+            "osm_buildings": "openstreetmap.osm_buildings",
+            "osm_buildings_filtered": "openstreetmap.osm_buildings_filtered",
+            "osm_buildings_residential": "openstreetmap.osm_buildings_residential",
+            "osm_amenities_shops_filtered": "openstreetmap.osm_amenities_shops_filtered",
+            "osm_buildings_with_amenities": "openstreetmap.osm_buildings_with_amenities",
+            "osm_buildings_without_amenities": "openstreetmap.osm_buildings_without_amenities",
+            "osm_amenities_not_in_buildings": "openstreetmap.osm_amenities_not_in_buildings",
+            "osm_ways_preprocessed": "openstreetmap.osm_ways_preprocessed",
+            "osm_ways_with_segments": "openstreetmap.osm_ways_with_segments",
+            "map_buildings_filtered": "boundaries.egon_map_zensus_buildings_filtered",
+            "map_buildings_filtered_all": "boundaries.egon_map_zensus_buildings_filtered_all",
+            "map_buildings_residential": "boundaries.egon_map_zensus_buildings_residential",
+        }
+    )
 
     def __init__(self, dependencies):
         super().__init__(

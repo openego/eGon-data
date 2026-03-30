@@ -6,11 +6,14 @@ from collections import abc
 from dataclasses import dataclass, field
 from functools import partial, reduce, update_wrapper
 from typing import Callable, Dict, Iterable, List, Set, Tuple, Union
+from pathlib import Path
+import json
 import re
 
 from airflow.models.baseoperator import BaseOperator as Operator
 from airflow.operators.python import PythonOperator
 from sqlalchemy import Column, ForeignKey, Integer, String, Table, orm, tuple_
+from sqlalchemy.dialects.postgresql import JSONB
 from sqlalchemy.ext.declarative import declarative_base
 
 from egon.data import config, db, logger
@@ -86,6 +89,7 @@ class Model(Base):
     version = Column(String, nullable=False)
     epoch = Column(Integer, default=0)
     scenarios = Column(String, nullable=False)
+
     dependencies = orm.relationship(
         "Model",
         secondary=DependencyGraph,
@@ -93,6 +97,88 @@ class Model(Base):
         secondaryjoin=id == DependencyGraph.c.dependency_id,
         backref=orm.backref("dependents", cascade="all, delete"),
     )
+
+
+@dataclass
+class DatasetSources:
+    tables: Dict[str, str] = field(default_factory=dict)
+    files: Dict[str, str] = field(default_factory=dict)
+    urls: Dict[str, str] = field(default_factory=dict)
+
+    def empty(self):
+        return not (self.tables or self.files or self.urls)
+
+    def get_table_schema(self, key: str) -> str:
+        """Returns the schema of the table identified by key."""
+        try:
+            return self.tables[key].split(".", 1)[0]
+        except (KeyError, AttributeError, IndexError):
+            raise ValueError(
+                f"Invalid table reference: {self.tables.get(key)}"
+            )
+
+    def get_table_name(self, key: str) -> str:
+        """Returns the table name of the table identified by key."""
+        try:
+            return self.tables[key].split(".", 1)[1]
+        except (KeyError, AttributeError, IndexError):
+            raise ValueError(
+                f"Invalid table reference: {self.tables.get(key)}"
+            )
+
+    def to_dict(self):
+        return {
+            "tables": self.tables,
+            "urls": self.urls,
+            "files": self.files,
+        }
+
+    @classmethod
+    def from_dict(cls, data):
+        return cls(
+            tables=data.get("tables", {}),
+            urls=data.get("urls", {}),
+            files=data.get("files", {}),
+        )
+
+
+@dataclass
+class DatasetTargets:
+    tables: Dict[str, str] = field(default_factory=dict)
+    files: Dict[str, str] = field(default_factory=dict)
+
+    def empty(self):
+        return not (self.tables or self.files)
+
+    def get_table_schema(self, key: str) -> str:
+        """Returns the schema of the table identified by key."""
+        try:
+            return self.tables[key].split(".", 1)[0]
+        except (KeyError, AttributeError, IndexError):
+            raise ValueError(
+                f"Invalid table reference: {self.tables.get(key)}"
+            )
+
+    def get_table_name(self, key: str) -> str:
+        """Returns the table name of the table identified by key."""
+        try:
+            return self.tables[key].split(".", 1)[1]
+        except (KeyError, AttributeError, IndexError):
+            raise ValueError(
+                f"Invalid table reference: {self.tables.get(key)}"
+            )
+
+    def to_dict(self):
+        return {
+            "tables": self.tables,
+            "files": self.files,
+        }
+
+    def from_dict(cls, data):
+        return cls(
+            tables=data.get("tables", {}),
+            files=data.get("files", {}),
+        )
 
 
 #: A :class:`Task` is an Airflow :class:`Operator` or any
@@ -196,6 +282,12 @@ class Dataset:
     #: and a sequential number in case the data changes without the date
     #: or region changing, for example due to implementation changes.
     version: str
+    #: The sources used by the datasets.
+    #: Could be tables, files and urls
+    sources: DatasetSources = field(init=False)
+    #: The targets created by the datasets.
+    #: Could be tables and files
+    targets: DatasetTargets = field(init=False)
     #: The first task(s) of this :class:`Dataset` will be marked as
     #: downstream of any of the listed dependencies. In case of bare
     #: :class:`Task`, a direct link will be created whereas for a
@@ -246,6 +338,7 @@ class Dataset:
             version=self.version,
             scenarios=config.settings()["egon-data"]["--scenarios"],
         )
+
         dependencies = (
             session.query(Model)
             .filter(
@@ -272,6 +365,39 @@ class Dataset:
 
     def __post_init__(self):
         self.dependencies = list(self.dependencies)
+
+        class_sources = getattr(type(self), "sources", None)
+
+        if isinstance(class_sources, DatasetSources):
+            self.sources = class_sources
+            if self.sources.empty():
+                logger.warning(
+                    f"Dataset '{type(self).__name__}' defines empty sources."
+                )
+
+        else:
+            logger.warning(
+                f"Dataset '{type(self).__name__}' has no valid sources."
+                " Using empty."
+            )
+            self.sources = DatasetSources()
+
+        # ---- TARGETS ----
+        class_targets = getattr(type(self), "targets", None)
+        if isinstance(class_targets, DatasetTargets):
+            self.targets = class_targets
+            if self.targets.empty():
+                logger.warning(
+                    f"Dataset '{type(self).__name__}' defines empty targets."
+                )
+
+        else:
+            logger.warning(
+                f"Dataset '{type(self).__name__}' has no valid targets."
+                "Using empty."
+            )
+            self.targets = DatasetTargets()
+
         if not isinstance(self.tasks, Tasks_):
             self.tasks = Tasks_(self.tasks)
             # Process validation configuration
@@ -352,3 +478,120 @@ class Dataset:
         for p in predecessors:
             for first in self.tasks.first:
                 p.set_downstream(first)
+
+        self.register()
+
+    def __init_subclass__(cls) -> None:
+        # Warn about missing or invalid class attributes
+        if not isinstance(getattr(cls, "sources", None), DatasetSources):
+            logger.warning(
+                f"Dataset '{cls.__name__}' does not define valid 'sources'.",
+                stacklevel=2,
+            )
+        if not isinstance(getattr(cls, "targets", None), DatasetTargets):
+            logger.warning(
+                f"Dataset '{cls.__name__}' does not define valid 'targets'.",
+                stacklevel=2,
+            )
+
+    def register(self):
+        """
+        Register dataset sources and targets in a single transaction.
+        Only writes if sources or targets have changed.
+        Creates table if it doesn't exist yet.
+        """
+        SourcesTargetsModel.__table__.create(bind=db.engine(), checkfirst=True)
+
+        with db.session_scope() as session:
+            existing = (
+                session.query(SourcesTargetsModel)
+                .filter_by(name=self.name)
+                .first()
+            )
+
+            sources_dict = self.sources.to_dict()
+            targets_dict = self.targets.to_dict()
+
+            if not existing:
+                session.add(
+                    SourcesTargetsModel(
+                        name=self.name,
+                        sources=sources_dict,
+                        targets=targets_dict,
+                    )
+                )
+            else:
+                if (existing.sources or {}) != sources_dict:
+                    existing.sources = sources_dict
+                if (existing.targets or {}) != targets_dict:
+                    existing.targets = targets_dict
+
+
+def load_sources_and_targets(
+    name: str,
+) -> tuple[DatasetSources, DatasetTargets]:
+    """
+    Load DatasetSources and DatasetTargets from dataset_sources_targets table.
+
+    Parameters
+    ----------
+        name (str): Name of the dataset.
+
+    Returns
+    -------
+        Tuple[DatasetSources, DatasetTargets]
+    """
+    with db.session_scope() as session:
+        entry = session.query(SourcesTargetsModel).filter_by(name=name).first()
+
+        if entry is None:
+            raise ValueError(
+                f"Dataset '{name}' not found in dataset_sources_targets table."
+                " Make sure the dataset has been instantiated before"
+                " calling load_sources_and_targets()."
+            )
+
+        raw_sources = dict(entry.sources or {})
+        raw_targets = dict(entry.targets or {})
+
+    sources = DatasetSources(**raw_sources)
+    targets = DatasetTargets(**raw_targets)
+
+    return sources, targets
+
+
+class SourcesTargetsModel(Base):
+    __tablename__ = "dataset_sources_targets"
+    __table_args__ = {"schema": "metadata"}
+
+    name = Column(String, primary_key=True)
+    sources = Column(JSONB)
+    targets = Column(JSONB)
+
+
+def export_dataset_io_to_json(
+    output_path: str = "dataset_io_overview.json",
+) -> None:
+    """
+    Export all sources and targets of datasets to a JSON file.
+    Parameters
+    ----------
+    output_path : str
+        Path to the output JSON file.
+    """
+    result = {}
+    with db.session_scope() as session:
+        entries = session.query(SourcesTargetsModel).all()
+        for entry in entries:
+            name = entry.name
+            try:
+                result[name] = {
+                    "sources": dict(entry.sources or {}),
+                    "targets": dict(entry.targets or {}),
+                }
+            except Exception as e:
+                print(f"⚠️ Could not process dataset '{name}': {e}")
+
+    output_file = Path(output_path)
+    output_file.write_text(json.dumps(result, indent=2, ensure_ascii=False))
+    print(f"✅ Dataset I/O overview written to {output_file.resolve()}")

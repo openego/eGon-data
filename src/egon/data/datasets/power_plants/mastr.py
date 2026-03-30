@@ -33,7 +33,7 @@ import numpy as np
 import pandas as pd
 
 from egon.data import config, db
-from egon.data.datasets.mastr import WORKING_DIR_MASTR_NEW
+from egon.data.datasets import load_sources_and_targets
 from egon.data.datasets.power_plants.mastr_db_classes import (
     EgonMastrGeocoded,
     EgonPowerPlantsBiomass,
@@ -161,16 +161,20 @@ def infer_voltage_level(
 
 def import_mastr() -> None:
     """Import MaStR data into database"""
+    sources, targets = load_sources_and_targets("PowerPlants")
+
     engine = db.engine()
 
     # import geocoded data
-    cfg = config.datasets()["mastr_new"]
-    path_parts = cfg["geocoding_path"]
-    path = Path(*["."] + path_parts).resolve()
+    path_parts = sources.files["mastr_geocoding_path"]
+    # Handle path if it's a string (from files dict) or list (if keeping original structure)
+    # Assuming "data_bundle_egon_data/mastr_geocoding" is a string path relative to root:
+    path = Path(path_parts).resolve()
     path = list(path.iterdir())[0]
 
     deposit_id_geocoding = int(path.parts[-1].split(".")[0].split("_")[-1])
-    deposit_id_mastr = cfg["deposit_id"]
+
+    deposit_id_mastr = int(sources.files["mastr_deposit_id"])
 
     if deposit_id_geocoding != deposit_id_mastr:
         raise AssertionError(
@@ -187,18 +191,19 @@ def import_mastr() -> None:
     # remove failed requests
     geocoding_gdf = geocoding_gdf.loc[geocoding_gdf.geometry.is_valid]
 
+    # remove unnecesary columns
+    geocoding_gdf.drop(columns="geocode_source", inplace=True)
+
     EgonMastrGeocoded.__table__.drop(bind=engine, checkfirst=True)
     EgonMastrGeocoded.__table__.create(bind=engine, checkfirst=True)
 
     geocoding_gdf.to_postgis(
-        name=EgonMastrGeocoded.__tablename__,
+        name=targets.get_table_name("mastr_geocoded"),
         con=engine,
         if_exists="append",
-        schema=EgonMastrGeocoded.__table_args__["schema"],
+        schema=targets.get_table_schema("mastr_geocoded"),
         index=True,
     )
-
-    cfg = config.datasets()["power_plants"]
 
     cols_mapping = {
         "all": {
@@ -266,26 +271,25 @@ def import_mastr() -> None:
     }
 
     source_files = {
-        "pv": WORKING_DIR_MASTR_NEW / cfg["sources"]["mastr_pv"],
-        "wind": WORKING_DIR_MASTR_NEW / cfg["sources"]["mastr_wind"],
-        "biomass": WORKING_DIR_MASTR_NEW / cfg["sources"]["mastr_biomass"],
-        "hydro": WORKING_DIR_MASTR_NEW / cfg["sources"]["mastr_hydro"],
-        "combustion": WORKING_DIR_MASTR_NEW
-        / cfg["sources"]["mastr_combustion"],
-        "gsgk": WORKING_DIR_MASTR_NEW / cfg["sources"]["mastr_gsgk"],
-        "nuclear": WORKING_DIR_MASTR_NEW / cfg["sources"]["mastr_nuclear"],
-        "storage": WORKING_DIR_MASTR_NEW / cfg["sources"]["mastr_storage"],
+        "pv": sources.files["mastr_pv"],
+        "wind": sources.files["mastr_wind"],
+        "biomass": sources.files["mastr_biomass"],
+        "hydro": sources.files["mastr_hydro"],
+        "combustion": sources.files["mastr_combustion"],
+        "gsgk": sources.files["mastr_gsgk"],
+        "nuclear": sources.files["mastr_nuclear"],
+        "storage": sources.files["mastr_storage"],
     }
 
-    target_tables = {
-        "pv": EgonPowerPlantsPv,
-        "wind": EgonPowerPlantsWind,
-        "biomass": EgonPowerPlantsBiomass,
-        "hydro": EgonPowerPlantsHydro,
-        "combustion": EgonPowerPlantsCombustion,
-        "gsgk": EgonPowerPlantsGsgk,
-        "nuclear": EgonPowerPlantsNuclear,
-        "storage": EgonPowerPlantsStorage,
+    target_table_keys = {
+        "pv": "power_plants_pv",
+        "wind": "power_plants_wind",
+        "biomass": "power_plants_biomass",
+        "hydro": "power_plants_hydro",
+        "combustion": "power_plants_combustion",
+        "gsgk": "power_plants_gsgk",
+        "nuclear": "power_plants_nuclear",
+        "storage": "power_plants_storage",
     }
 
     vlevel_mapping = {
@@ -300,14 +304,14 @@ def import_mastr() -> None:
 
     # import locations
     locations = pd.read_csv(
-        WORKING_DIR_MASTR_NEW / cfg["sources"]["mastr_location"],
+        sources.files["mastr_location"],
         index_col=None,
     )
 
     # import grid districts
     mv_grid_districts = db.select_geodataframe(
         f"""
-        SELECT * FROM {cfg['sources']['egon_mv_grid_district']}
+        SELECT * FROM {sources.tables['egon_mv_grid_district']}
         """,
         epsg=4326,
     )
@@ -350,17 +354,6 @@ def import_mastr() -> None:
         # get boundary
         boundary = (
             federal_state_data(geocoding_gdf.crs).dissolve().at[0, "geom"]
-        )
-
-        # drop units installed after reference date from cfg
-        # (eGon2021 scenario)
-        len_old = len(units)
-        ts = pd.Timestamp(
-            config.datasets()["mastr_new"]["status2023_date_max"]
-        )
-        units = units.loc[pd.to_datetime(units.Inbetriebnahmedatum) <= ts]
-        logger.debug(
-            f"{len_old - len(units)} units installed after {ts} dropped..."
         )
 
         # drop not operating units
@@ -427,7 +420,10 @@ def import_mastr() -> None:
         ok_units = units.loc[mask]
 
         units.loc[mask, "zip_and_municipality"] = (
-            ok_units.Postleitzahl.astype(int).astype(str).str.zfill(5)
+            ok_units.Postleitzahl.astype(float)
+            .astype(int)
+            .astype(str)
+            .str.zfill(5)
             + " "
             + ok_units.Gemeinde.astype(str).str.rstrip().str.lstrip()
             + ", Deutschland"
@@ -501,12 +497,15 @@ def import_mastr() -> None:
             ],
             inplace=True,
         )
+
         mapping = cols_mapping["all"].copy()
         mapping.update(cols_mapping[tech])
         mapping.update({"geometry": "geom"})
         units.rename(columns=mapping, inplace=True)
         units["voltage_level"] = units.voltage_level.fillna(-1).astype(int)
-
+        units["postcode"] = units["postcode"].apply(
+            lambda x: int(float(x)) if not pd.isna(x) else pd.NA
+        )
         units.set_geometry("geom", inplace=True)
         units["id"] = range(len(units))
 
@@ -530,11 +529,13 @@ def import_mastr() -> None:
         # write to DB
         logger.info(f"Writing {len(units)} units to DB...")
 
+        target_key = target_table_keys[tech]
+
         units.to_postgis(
-            name=target_tables[tech].__tablename__,
+            name=targets.get_table_name(target_key),
             con=engine,
             if_exists="append",
-            schema=target_tables[tech].__table_args__["schema"],
+            schema=targets.get_table_schema(target_key),
         )
 
     add_metadata()

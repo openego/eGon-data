@@ -14,7 +14,7 @@ import numpy as np
 import pandas as pd
 
 from egon.data import db
-from egon.data.datasets import Dataset
+from egon.data.datasets import Dataset, DatasetSources, DatasetTargets
 from egon.data.datasets.electricity_demand_timeseries.hh_profiles import (
     HouseholdElectricityProfilesInCensusCells,
     get_iee_hh_demand_profiles_raw,
@@ -28,7 +28,7 @@ import egon.data.config
 engine = db.engine()
 Base = declarative_base()
 
-data_config = egon.data.config.datasets()
+
 RANDOM_SEED = egon.data.config.settings()["egon-data"]["--random-seed"]
 np.random.seed(RANDOM_SEED)
 
@@ -232,10 +232,13 @@ def match_osm_and_zensus_data(
     ].set_index("cell_id")
 
     # query zensus building count
+    sources = setup.sources
     egon_destatis_building_count = Table(
-        "egon_destatis_zensus_apartment_building_population_per_ha",
+        sources.get_table_name("zensus_apartment_building_population_per_ha"),
         Base.metadata,
-        schema="society",
+        schema=sources.get_table_schema(
+            "zensus_apartment_building_population_per_ha"
+        ),
     )
     # get table metadata from db by name and schema
     inspect(engine).reflecttable(egon_destatis_building_count, None)
@@ -381,10 +384,13 @@ def generate_synthetic_buildings(missing_buildings, edge_length):
         Table with generated synthetic buildings, area, cell_id and geom data
 
     """
+    sources = setup.sources
     destatis_zensus_population_per_ha_inside_germany = Table(
-        "destatis_zensus_population_per_ha_inside_germany",
+        sources.get_table_name("zensus_population_per_ha_inside_germany"),
         Base.metadata,
-        schema="society",
+        schema=sources.get_table_schema(
+            "zensus_population_per_ha_inside_germany"
+        ),
     )
     # get table metadata from db by name and schema
     inspect(engine).reflecttable(
@@ -439,7 +445,11 @@ def generate_synthetic_buildings(missing_buildings, edge_length):
     )
 
     # get table metadata from db by name and schema
-    buildings = Table("osm_buildings", Base.metadata, schema="openstreetmap")
+    buildings = Table(
+        sources.get_table_name("osm_buildings"),
+        Base.metadata,
+        schema=sources.get_table_schema("osm_buildings"),
+    )
     inspect(engine).reflecttable(buildings, None)
 
     # get max number of building ids from non-filtered building table
@@ -641,7 +651,13 @@ def reduce_synthetic_buildings(
     Id's are adapted to continuous number sequence following
     openstreetmap.osm_buildings"""
 
-    buildings = Table("osm_buildings", Base.metadata, schema="openstreetmap")
+    sources = setup.sources
+
+    buildings = Table(
+        sources.get_table_name("osm_buildings"),
+        Base.metadata,
+        schema=sources.get_table_schema("osm_buildings"),
+    )
     # get table metadata from db by name and schema
     inspect(engine).reflecttable(buildings, None)
 
@@ -813,10 +829,13 @@ def map_houseprofiles_to_buildings():
 
     """
     # ========== Get census cells ==========
+    sources = setup.sources
     egon_census_cells = Table(
-        "egon_destatis_zensus_apartment_building_population_per_ha",
+        sources.get_table_name("zensus_apartment_building_population_per_ha"),
         Base.metadata,
-        schema="society",
+        schema=sources.get_table_schema(
+            "zensus_apartment_building_population_per_ha"
+        ),
     )
     inspect(engine).reflecttable(egon_census_cells, None)
 
@@ -831,10 +850,11 @@ def map_houseprofiles_to_buildings():
         )
 
     # ========== Get residential buildings ==========
+    sources = setup.sources
     egon_osm_buildings_residential = Table(
-        "osm_buildings_residential",
+        sources.get_table_name("osm_buildings_residential"),
         Base.metadata,
-        schema="openstreetmap",
+        schema=sources.get_table_schema("osm_buildings_residential"),
     )
     inspect(engine).reflecttable(egon_osm_buildings_residential, None)
 
@@ -1013,11 +1033,12 @@ def map_houseprofiles_to_buildings():
 
     # Write new buildings incl coord into db
     n_amenities_inside_type = OsmBuildingsSynthetic.n_amenities_inside.type
+    targets = setup.targets
     synthetic_buildings.to_postgis(
-        "osm_buildings_synthetic",
+        targets.get_table_name("osm_buildings_synthetic"),
         con=engine,
         if_exists="append",
-        schema="openstreetmap",
+        schema=targets.get_table_schema("osm_buildings_synthetic"),
         dtype={
             "id": OsmBuildingsSynthetic.id.type,
             "cell_id": OsmBuildingsSynthetic.cell_id.type,
@@ -1079,14 +1100,14 @@ def create_buildings_profiles_stats():
         .value_counts(["household_type"])
         .unstack(fill_value=0)
     )
-    df_buildings_and_profiles[
-        "households_total"
-    ] = df_buildings_and_profiles.sum(axis=1)
-
+    df_buildings_and_profiles["households_total"] = (
+        df_buildings_and_profiles.sum(axis=1)
+    )
+    targets = setup.targets
     # Write to DB
     df_buildings_and_profiles.to_sql(
-        name=HouseholdElectricityProfilesOfBuildingsStats.__table__.name,
-        schema=HouseholdElectricityProfilesOfBuildingsStats.__table__.schema,
+        name=targets.get_table_name("hh_profiles_of_buildings_stats"),
+        schema=targets.get_table_schema("hh_profiles_of_buildings_stats"),
         con=engine,
         if_exists="append",
     )
@@ -1221,8 +1242,27 @@ class setup(Dataset):
     #:
     name: str = "Demand_Building_Assignment"
     #:
-    version: str = "0.0.7"
+    version: str = "0.0.11"
     #:
+    sources = DatasetSources(
+        tables={
+            "hh_profiles_in_census_cells": "demand.egon_household_electricity_profile_in_census_cell",
+            "zensus_apartment_building_population_per_ha": "society.egon_destatis_zensus_apartment_building_population_per_ha",
+            "zensus_population_per_ha_inside_germany": "society.destatis_zensus_population_per_ha_inside_germany",
+            "osm_buildings": "openstreetmap.osm_buildings",
+            "osm_buildings_residential": "openstreetmap.osm_buildings_residential",
+        }
+    )
+
+    targets = DatasetTargets(
+        tables={
+            "osm_buildings_synthetic": "openstreetmap.osm_buildings_synthetic",
+            "hh_profiles_of_buildings": "demand.egon_household_electricity_profile_of_buildings",
+            "hh_profiles_of_buildings_stats": "demand.egon_household_electricity_profile_of_buildings_stats",
+            "building_electricity_peak_loads": "demand.egon_building_electricity_peak_loads",
+        }
+    )
+
     tasks = (
         map_houseprofiles_to_buildings,
         create_buildings_profiles_stats,

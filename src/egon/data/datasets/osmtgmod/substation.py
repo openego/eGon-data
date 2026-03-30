@@ -1,12 +1,11 @@
-"""The central module containing code to create substation tables
-
-"""
+"""The central module containing code to create substation tables"""
 
 from geoalchemy2.types import Geometry
 from sqlalchemy import Column, Float, Integer, Text
 from sqlalchemy.ext.declarative import declarative_base
 
 from egon.data import db
+from egon.data.datasets import load_sources_and_targets
 
 Base = declarative_base()
 
@@ -71,17 +70,13 @@ def create_tables():
     )
 
     # Drop tables
-    db.execute_sql(
-        f"""DROP TABLE IF EXISTS
+    db.execute_sql(f"""DROP TABLE IF EXISTS
             {EgonEhvSubstation.__table__.schema}.
-            {EgonEhvSubstation.__table__.name} CASCADE;"""
-    )
+            {EgonEhvSubstation.__table__.name} CASCADE;""")
 
-    db.execute_sql(
-        f"""DROP TABLE IF EXISTS
+    db.execute_sql(f"""DROP TABLE IF EXISTS
             {EgonHvmvSubstation.__table__.schema}.
-            {EgonHvmvSubstation.__table__.name} CASCADE;"""
-    )
+            {EgonHvmvSubstation.__table__.name} CASCADE;""")
 
     engine = db.engine()
     EgonEhvSubstation.__table__.create(bind=engine, checkfirst=True)
@@ -97,15 +92,15 @@ def extract():
     None.
 
     """
+    sources, targets = load_sources_and_targets("Osmtgmod")
     # Create tables for substations
     create_tables()
 
     # Extract eHV substations
-    db.execute_sql(
-        f"""
+    db.execute_sql(f"""
         INSERT INTO {EgonEhvSubstation.__table__.schema}.{EgonEhvSubstation.__table__.name}
         
-        SELECT * FROM grid.egon_ehv_transfer_buses;
+        SELECT * FROM {sources.tables['ehv_transfer_buses']};
         
         
         -- update ehv_substation table with new column of respective osmtgmod bus_i
@@ -114,9 +109,9 @@ def extract():
 
         -- fill table with bus_i from osmtgmod
         UPDATE {EgonEhvSubstation.__table__.schema}.{EgonEhvSubstation.__table__.name}
-        	SET otg_id = osmtgmod_results.bus_data.bus_i
-        	FROM osmtgmod_results.bus_data
-        	WHERE osmtgmod_results.bus_data.base_kv > 110 AND(SELECT TRIM(leading 'n' FROM TRIM(leading 'w' FROM TRIM(leading 'r' FROM grid.egon_ehv_substation.osm_id)))::BIGINT)=osmtgmod_results.bus_data.osm_substation_id; 
+        SET otg_id = {sources.tables['osmtgmod_bus']}.bus_i
+        FROM {sources.tables['osmtgmod_bus']}
+        WHERE {sources.tables['osmtgmod_bus']}.base_kv > 110 AND (SELECT TRIM(leading 'n' FROM TRIM(leading 'w' FROM TRIM(leading 'r' FROM {targets.tables['ehv_substation']}.osm_id)))::BIGINT) = {sources.tables['osmtgmod_bus']}.osm_substation_id; 
 
         DELETE FROM {EgonEhvSubstation.__table__.schema}.{EgonEhvSubstation.__table__.name} WHERE otg_id IS NULL;
 
@@ -125,15 +120,13 @@ def extract():
 
         ALTER TABLE {EgonEhvSubstation.__table__.schema}.{EgonEhvSubstation.__table__.name}
         	DROP COLUMN otg_id;
-        """
-    )
+        """)
 
     # Extract HVMV substations
-    db.execute_sql(
-        f"""
+    db.execute_sql(f"""
         INSERT INTO {EgonHvmvSubstation.__table__.schema}.{EgonHvmvSubstation.__table__.name}
         
-        SELECT * FROM grid.egon_hvmv_transfer_buses;
+        SELECT * FROM {sources.tables['hvmv_transfer_buses']};
         
         
         ALTER TABLE {EgonHvmvSubstation.__table__.schema}.{EgonHvmvSubstation.__table__.name}
@@ -141,9 +134,9 @@ def extract():
         
         -- fill table with bus_i from osmtgmod
         UPDATE {EgonHvmvSubstation.__table__.schema}.{EgonHvmvSubstation.__table__.name}
-        	SET 	otg_id = osmtgmod_results.bus_data.bus_i
-        	FROM 	osmtgmod_results.bus_data
-        	WHERE 	osmtgmod_results.bus_data.base_kv <= 110 AND (SELECT TRIM(leading 'n' FROM TRIM(leading 'w' FROM grid.egon_hvmv_substation.osm_id))::BIGINT)=osmtgmod_results.bus_data.osm_substation_id; 
+        	SET otg_id = {sources.tables['osmtgmod_bus']}.bus_i
+        	FROM {sources.tables['osmtgmod_bus']}
+        	WHERE {sources.tables['osmtgmod_bus']}.base_kv <= 110 AND (SELECT TRIM(leading 'n' FROM TRIM(leading 'w' FROM {targets.tables['hvmv_substation']}.osm_id))::BIGINT) = {sources.tables['osmtgmod_bus']}.osm_substation_id;
         
         DELETE FROM {EgonHvmvSubstation.__table__.schema}.{EgonHvmvSubstation.__table__.name} WHERE otg_id IS NULL;
         
@@ -152,5 +145,4 @@ def extract():
         
         ALTER TABLE {EgonHvmvSubstation.__table__.schema}.{EgonHvmvSubstation.__table__.name}
         	DROP COLUMN otg_id;
-        """
-    )
+        """)

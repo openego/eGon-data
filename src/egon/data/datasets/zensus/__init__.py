@@ -1,5 +1,4 @@
-"""The central module containing all code dealing with importing Zensus data.
-"""
+"""The central module containing all code dealing with importing Zensus data."""
 
 from pathlib import Path
 import csv
@@ -14,16 +13,30 @@ import requests
 
 from egon.data import db, subprocess
 from egon.data.config import settings
-from egon.data.datasets import Dataset
+from egon.data.datasets import Dataset, DatasetSources, DatasetTargets
 from egon.data.validation import TableValidation, resolve_boundary_dependence
 import egon.data.config
 
 
 class ZensusPopulation(Dataset):
+    sources = DatasetSources(
+        files={
+            "zensus_population": "data_bundle_egon_data/zensus_population/csv_Bevoelkerung_100m_Gitter.zip"
+        },
+        tables={
+            "boundaries_vg250_lan": "boundaries.vg250_lan",
+        },
+    )
+    targets = DatasetTargets(
+        tables={
+            "zensus_population": "society.destatis_zensus_population_per_ha"
+        },
+    )
+
     def __init__(self, dependencies):
         super().__init__(
             name="ZensusPopulation",
-            version="0.0.2",
+            version="0.0.4",
             dependencies=dependencies,
             tasks=(
                 create_zensus_pop_table,
@@ -93,10 +106,42 @@ class ZensusPopulation(Dataset):
 
 
 class ZensusMiscellaneous(Dataset):
+    sources = DatasetSources(
+        urls={
+            "zensus_households": (
+                "https://www.zensus2011.de/SharedDocs/Downloads/DE/"
+                "Pressemitteilung/DemografischeGrunddaten/"
+                "csv_Haushalte_100m_Gitter.zip?__blob=publicationFile&v=2"
+            ),
+            "zensus_buildings": (
+                "https://www.zensus2011.de/SharedDocs/Downloads/DE/"
+                "Pressemitteilung/DemografischeGrunddaten/"
+                "csv_Gebaeude_100m_Gitter.zip?__blob=publicationFile&v=2"
+            ),
+            "zensus_apartments": (
+                "https://www.zensus2011.de/SharedDocs/Downloads/DE/"
+                "Pressemitteilung/DemografischeGrunddaten/"
+                "csv_Wohnungen_100m_Gitter.zip?__blob=publicationFile&v=5"
+            ),
+        }
+    )
+    targets = DatasetTargets(
+        files={
+            "zensus_households": "data_bundle_egon_data/zensus_population/csv_Haushalte_100m_Gitter.zip",
+            "zensus_buildings": "data_bundle_egon_data/zensus_population/csv_Gebaeude_100m_Gitter.zip",
+            "zensus_apartments": "data_bundle_egon_data/zensus_population/csv_Wohnungen_100m_Gitter.zip",
+        },
+        tables={
+            "zensus_households": "society.egon_destatis_zensus_household_per_ha",
+            "zensus_buildings": "society.egon_destatis_zensus_building_per_ha",
+            "zensus_apartments": "society.egon_destatis_zensus_apartment_per_ha",
+        },
+    )
+
     def __init__(self, dependencies):
         super().__init__(
             name="ZensusMiscellaneous",
-            version="0.0.1",
+            version="0.0.2",
             dependencies=dependencies,
             tasks=(
                 create_zensus_misc_tables,
@@ -236,114 +281,30 @@ class ZensusMiscellaneous(Dataset):
         )
 
 
-def download_and_check(url, target_file, max_iteration=5):
-    """Download file from url (http) if it doesn't exist and check afterwards.
-    If bad zip remove file and re-download. Repeat until file is fine or
-    reached maximum iterations."""
-    bad_file = True
-    count = 0
-    while bad_file:
-
-        # download file if it doesn't exist
-        if not os.path.isfile(target_file):
-            # check if url
-            if url.lower().startswith("http"):
-                print("Downloading: ", url)
-                req = requests.get(
-                    url, headers={"User-Agent": "Mozilla/5.0"}, stream=True
-                )
-                open(target_file, "wb").write(req.content)
-            else:
-                raise ValueError("No http url")
-
-        # check zipfile
-        try:
-            with zipfile.ZipFile(target_file):
-                print(f"Zip file {target_file} is good.")
-            bad_file = False
-        except zipfile.BadZipFile as ex:
-            os.remove(target_file)
-            count += 1
-            if count > max_iteration:
-                raise StopIteration(
-                    f"Max iteration of {max_iteration} is exceeded"
-                ) from ex
-
-
-def download_zensus_pop():
-    """Download Zensus csv file on population per hectare grid cell."""
-
-    data_config = egon.data.config.datasets()
-    zensus_population_config = data_config["zensus_population"][
-        "original_data"
-    ]
-    download_directory = Path(".") / "zensus_population"
-    # Create the folder, if it does not exist already
-    if not os.path.exists(download_directory):
-        os.mkdir(download_directory)
-
-    target_file = (
-        download_directory / zensus_population_config["target"]["file"]
-    )
-
-    url = zensus_population_config["source"]["url"]
-    download_and_check(url, target_file, max_iteration=5)
-
-
-def download_zensus_misc():
-    """Download Zensus csv files on data per hectare grid cell."""
-
-    # Get data config
-    data_config = egon.data.config.datasets()
-    download_directory = Path(".") / "zensus_population"
-    # Create the folder, if it does not exist already
-    if not os.path.exists(download_directory):
-        os.mkdir(download_directory)
-    # Download remaining zensus data set on households, buildings, apartments
-
-    zensus_config = data_config["zensus_misc"]["original_data"]
-    zensus_misc_processed = data_config["zensus_misc"]["processed"]
-    zensus_url = zensus_config["source"]["url"]
-    zensus_files = zensus_misc_processed["file_table_map"].keys()
-    url_path_map = list(zip(zensus_url, zensus_files))
-
-    for url, path in url_path_map:
-        target_file_misc = download_directory / path
-
-        download_and_check(url, target_file_misc, max_iteration=5)
-
-
 def create_zensus_pop_table():
     """Create tables for zensus data in postgres database"""
 
-    # Get information from data configuration file
-    data_config = egon.data.config.datasets()
-    zensus_population_processed = data_config["zensus_population"]["processed"]
-
-    # Create target schema
-    db.execute_sql(
-        f"CREATE SCHEMA IF NOT EXISTS {zensus_population_processed['schema']};"
-    )
-
     # Create table for population data
-    population_table = (
-        f"{zensus_population_processed['schema']}"
-        f".{zensus_population_processed['table']}"
-    )
+    population_table = ZensusPopulation.targets.tables["zensus_population"]
+
+    db.execute_sql(f"""
+        CREATE SCHEMA IF NOT EXISTS
+        {ZensusPopulation.targets.get_table_schema("zensus_population")};
+        """)
 
     db.execute_sql(f"DROP TABLE IF EXISTS {population_table} CASCADE;")
 
     db.execute_sql(
-        f"CREATE TABLE {population_table}"
-        f""" (id        SERIAL NOT NULL,
+        f"CREATE TABLE {population_table}" f""" (id        SERIAL NOT NULL,
               grid_id    character varying(254) NOT NULL,
               x_mp       int,
               y_mp       int,
               population smallint,
               geom_point geometry(Point,3035),
               geom geometry (Polygon, 3035),
-              CONSTRAINT {zensus_population_processed['table']}_pkey
+              CONSTRAINT {population_table.split('.')[1]}_pkey
               PRIMARY KEY (id)
+    
         );
         """
     )
@@ -352,23 +313,16 @@ def create_zensus_pop_table():
 def create_zensus_misc_tables():
     """Create tables for zensus data in postgres database"""
 
-    # Get information from data configuration file
-    data_config = egon.data.config.datasets()
-    zensus_misc_processed = data_config["zensus_misc"]["processed"]
-
-    # Create target schema
-    db.execute_sql(
-        f"CREATE SCHEMA IF NOT EXISTS {zensus_misc_processed['schema']};"
-    )
-
     # Create tables for household, apartment and building
-    for table in zensus_misc_processed["file_table_map"].values():
-        misc_table = f"{zensus_misc_processed['schema']}.{table}"
-
-        db.execute_sql(f"DROP TABLE IF EXISTS {misc_table} CASCADE;")
+    for table in ZensusMiscellaneous.targets.tables:
+        table_name = ZensusMiscellaneous.targets.tables[table]
+        # Create target schema
         db.execute_sql(
-            f"CREATE TABLE {misc_table}"
-            f""" (id                 SERIAL,
+            f"CREATE SCHEMA IF NOT EXISTS {table_name.split('.')[0]};"
+        )
+        db.execute_sql(f"DROP TABLE IF EXISTS {table_name} CASCADE;")
+        db.execute_sql(
+            f"CREATE TABLE {table_name}" f""" (id                 SERIAL,
                   grid_id            VARCHAR(50),
                   grid_id_new        VARCHAR (50),
                   attribute          VARCHAR(50),
@@ -377,36 +331,10 @@ def create_zensus_misc_tables():
                   quantity           smallint,
                   quantity_q         smallint,
                   zensus_population_id int,
-                  CONSTRAINT {table}_pkey PRIMARY KEY (id)
+                  CONSTRAINT {table_name.split('.')[1]}_pkey PRIMARY KEY (id)
             );
             """
         )
-
-
-def target(source, dataset):
-    """Generate the target path corresponding to a source path.
-
-    Parameters
-    ----------
-    dataset: str
-        Toggles between production (`dataset='Everything'`) and test mode e.g.
-        (`dataset='Schleswig-Holstein'`).
-        In production mode, data covering entire Germany
-        is used. In the test mode a subset of this data is used for testing the
-        workflow.
-    Returns
-    -------
-    Path
-        Path to target csv-file
-
-    """
-    return Path(
-        os.path.join(Path("."), "data_bundle_egon_data", source.stem)
-        + "zensus_population"
-        + "."
-        + dataset
-        + source.suffix
-    )
 
 
 def select_geom():
@@ -417,7 +345,6 @@ def select_geom():
 
     """
     docker_db_config = db.credentials()
-
     geojson = subprocess.run(
         ["ogr2ogr"]
         + ["-s_srs", "epsg:4326"]
@@ -431,14 +358,16 @@ def select_geom():
             f" port={docker_db_config['PORT']}"
             f" dbname='{docker_db_config['POSTGRES_DB']}'"
         ]
-        + ["-sql", "SELECT ST_Union(geometry) FROM boundaries.vg250_lan"],
+        + [
+            "-sql",
+            f"SELECT ST_Union(geometry) FROM {ZensusPopulation.sources.tables['boundaries_vg250_lan']}",
+        ],
         text=True,
     )
     features = json.loads(geojson.stdout)["features"]
     assert (
         len(features) == 1
     ), f"Found {len(features)} geometry features, expected exactly one."
-
     return prep(shape(features[0]["geometry"]))
 
 
@@ -468,14 +397,17 @@ def filter_zensus_population(filename, dataset):
 
     schleswig_holstein = select_geom()
 
-    if not os.path.isfile(target(csv_file, dataset)):
+    # compute the filtered file path inline
+    filtered_target = (
+        csv_file.parent / f"{csv_file.stem}.{dataset}{csv_file.suffix}"
+    )
+    filtered_target.parent.mkdir(parents=True, exist_ok=True)
 
+    if not filtered_target.exists():
         with open(csv_file, mode="r", newline="") as input_lines:
             rows = csv.DictReader(input_lines, delimiter=";")
             gitter_ids = set()
-            with open(
-                target(csv_file, dataset), mode="w", newline=""
-            ) as destination:
+            with open(filtered_target, mode="w", newline="") as destination:
                 output = csv.DictWriter(
                     destination, delimiter=";", fieldnames=rows.fieldnames
                 )
@@ -487,7 +419,7 @@ def filter_zensus_population(filename, dataset):
                         Point(float(row["x_mp_100m"]), float(row["y_mp_100m"]))
                     )
                 )
-    return target(csv_file, dataset)
+    return filtered_target
 
 
 def filter_zensus_misc(filename, dataset):
@@ -515,18 +447,24 @@ def filter_zensus_misc(filename, dataset):
 
     gitter_ids = set(
         pd.read_sql(
-            "SELECT grid_id from society.destatis_zensus_population_per_ha",
+            f"SELECT grid_id FROM {ZensusPopulation.targets.tables['zensus_population']}",
             con=db.engine(),
         ).grid_id.values
     )
 
-    if not os.path.isfile(target(csv_file, dataset)):
+    # inline target path (no helper)
+    filtered_target = (
+        csv_file.parent / f"{csv_file.stem}.{dataset}{csv_file.suffix}"
+    )
+    filtered_target.parent.mkdir(parents=True, exist_ok=True)
+
+    if not filtered_target.exists():
         with open(
             csv_file, mode="r", newline="", encoding="iso-8859-1"
         ) as inputs:
             rows = csv.DictReader(inputs, delimiter=",")
             with open(
-                target(csv_file, dataset),
+                filtered_target,
                 mode="w",
                 newline="",
                 encoding="iso-8859-1",
@@ -538,36 +476,23 @@ def filter_zensus_misc(filename, dataset):
                 output.writerows(
                     row for row in rows if row["Gitter_ID_100m"] in gitter_ids
                 )
-    return target(csv_file, dataset)
+    return filtered_target
 
 
 def population_to_postgres():
     """Import Zensus population data to postgres database"""
-    # Get information from data configuration file
-    data_config = egon.data.config.datasets()
-    zensus_population_orig = data_config["zensus_population"]["original_data"]
-    zensus_population_processed = data_config["zensus_population"]["processed"]
-    input_file = (
-        Path(".")
-        / "data_bundle_egon_data"
-        / "zensus_population"
-        / zensus_population_orig["target"]["file"]
-    )
+    input_file = Path(
+        ZensusPopulation.sources.files["zensus_population"]
+    ).resolve()
     dataset = settings()["egon-data"]["--dataset-boundary"]
-
-    # Read database configuration from docker-compose.yml
     docker_db_config = db.credentials()
-
-    population_table = (
-        f"{zensus_population_processed['schema']}"
-        f".{zensus_population_processed['table']}"
-    )
+    population_table = ZensusPopulation.targets.tables["zensus_population"]
 
     with zipfile.ZipFile(input_file) as zf:
         for filename in zf.namelist():
-
+            if not filename.lower().endswith(".csv"):
+                continue
             zf.extract(filename)
-
             if dataset == "Everything":
                 filename_insert = filename
             else:
@@ -579,38 +504,32 @@ def population_to_postgres():
             user = ["-U", f"{docker_db_config['POSTGRES_USER']}"]
             command = [
                 "-c",
-                rf"\copy {population_table} (grid_id, x_mp, y_mp, population)"
-                rf" FROM '{filename_insert}' DELIMITER ';' CSV HEADER;",
+                rf"\copy {population_table} (grid_id, x_mp, y_mp, population) "
+                rf"FROM '{filename_insert}' DELIMITER ';' CSV HEADER;",
             ]
             subprocess.run(
                 ["psql"] + host + port + pgdb + user + command,
                 env={"PGPASSWORD": docker_db_config["POSTGRES_PASSWORD"]},
             )
 
-        os.remove(filename)
+            os.remove(filename)
 
     db.execute_sql(
         f"UPDATE {population_table} zs"
         " SET geom_point=ST_SetSRID(ST_MakePoint(zs.x_mp, zs.y_mp), 3035);"
     )
-
-    db.execute_sql(
-        f"UPDATE {population_table} zs"
-        """ SET geom=ST_SetSRID(
+    db.execute_sql(f"UPDATE {population_table} zs" """ SET geom=ST_SetSRID(
                 (ST_MakeEnvelope(zs.x_mp-50,zs.y_mp-50,zs.x_mp+50,zs.y_mp+50)),
                 3035
             );
-        """
-    )
-
+        """)
     db.execute_sql(
-        f"CREATE INDEX {zensus_population_processed['table']}_geom_idx ON"
+        f"CREATE INDEX {population_table.split('.')[1]}_geom_idx ON"
         f" {population_table} USING gist (geom);"
     )
-
     db.execute_sql(
         f"CREATE INDEX"
-        f" {zensus_population_processed['table']}_geom_point_idx"
+        f" {population_table.split('.')[1]}_geom_point_idx"
         f" ON  {population_table} USING gist (geom_point);"
     )
 
@@ -618,24 +537,14 @@ def population_to_postgres():
 def zensus_misc_to_postgres():
     """Import data on buildings, households and apartments to postgres db"""
 
-    # Get information from data configuration file
-    data_config = egon.data.config.datasets()
-    zensus_misc_processed = data_config["zensus_misc"]["processed"]
-    zensus_population_processed = data_config["zensus_population"]["processed"]
-    file_path = Path(".") / "data_bundle_egon_data" / "zensus_population"
     dataset = settings()["egon-data"]["--dataset-boundary"]
-
-    population_table = (
-        f"{zensus_population_processed['schema']}"
-        f".{zensus_population_processed['table']}"
-    )
-
-    # Read database configuration from docker-compose.yml
     docker_db_config = db.credentials()
 
-    for input_file, table in zensus_misc_processed["file_table_map"].items():
-        with zipfile.ZipFile(file_path / input_file) as zf:
-            csvfiles = [n for n in zf.namelist() if n.lower()[-3:] == "csv"]
+    for key, file_path in ZensusMiscellaneous.targets.files.items():
+        zip_path = Path(file_path).resolve()
+
+        with zipfile.ZipFile(zip_path) as zf:
+            csvfiles = [n for n in zf.namelist() if n.lower().endswith(".csv")]
             for filename in csvfiles:
                 zf.extract(filename)
 
@@ -650,7 +559,7 @@ def zensus_misc_to_postgres():
                 user = ["-U", f"{docker_db_config['POSTGRES_USER']}"]
                 command = [
                     "-c",
-                    rf"\copy {zensus_population_processed['schema']}.{table}"
+                    rf"\copy {ZensusMiscellaneous.targets.tables[key]}"
                     f"""(grid_id,
                         grid_id_new,
                         attribute,
@@ -667,26 +576,25 @@ def zensus_misc_to_postgres():
                     env={"PGPASSWORD": docker_db_config["POSTGRES_PASSWORD"]},
                 )
 
-            os.remove(filename)
+                os.remove(filename)
 
         db.execute_sql(
-            f"""UPDATE {zensus_population_processed['schema']}.{table} as b
+            f"""UPDATE {ZensusMiscellaneous.targets.tables[key]} as b
                     SET zensus_population_id = zs.id
-                    FROM {population_table} zs
+                    FROM {ZensusPopulation.targets.tables["zensus_population"]} zs
                     WHERE b.grid_id = zs.grid_id;"""
         )
 
         db.execute_sql(
-            f"""ALTER TABLE {zensus_population_processed['schema']}.{table}
-                    ADD CONSTRAINT {table}_fkey
+            f"""ALTER TABLE {ZensusMiscellaneous.targets.tables[key]}
+                    ADD CONSTRAINT
+                    {ZensusMiscellaneous.targets.get_table_name(key)}_fkey
                     FOREIGN KEY (zensus_population_id)
-                    REFERENCES {population_table}(id);"""
+                    REFERENCES {ZensusPopulation.targets.tables["zensus_population"]}(id);"""
         )
 
-    # Create combined table
+    # combined table
     create_combined_zensus_table()
-
-    # Delete entries for unpopulated cells
     adjust_zensus_misc()
 
 
@@ -725,21 +633,11 @@ def adjust_zensus_misc():
     None.
 
     """
-    # Get information from data configuration file
-    data_config = egon.data.config.datasets()
-    zensus_population_processed = data_config["zensus_population"]["processed"]
-    zensus_misc_processed = data_config["zensus_misc"]["processed"]
 
-    population_table = (
-        f"{zensus_population_processed['schema']}"
-        f".{zensus_population_processed['table']}"
-    )
-
-    for input_file, table in zensus_misc_processed["file_table_map"].items():
-        db.execute_sql(
-            f"""
-             DELETE FROM {zensus_population_processed['schema']}.{table} as b
+    for table in ZensusMiscellaneous.targets.tables:
+        db.execute_sql(f"""
+             DELETE FROM {ZensusMiscellaneous.targets.tables[table]} as b
              WHERE b.zensus_population_id IN (
-                 SELECT id FROM {population_table}
-                 WHERE population < 0);"""
-        )
+                 SELECT id FROM {
+                     ZensusPopulation.targets.tables["zensus_population"]}
+                 WHERE population < 0);""")

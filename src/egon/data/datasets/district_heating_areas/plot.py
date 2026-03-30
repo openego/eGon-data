@@ -7,6 +7,7 @@
 """
 Module containing all code creating with plots of district heating areas
 """
+
 import os
 
 from matplotlib import pyplot as plt

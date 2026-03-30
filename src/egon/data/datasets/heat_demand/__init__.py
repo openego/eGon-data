@@ -34,7 +34,7 @@ import geopandas as gpd
 import rasterio
 
 from egon.data import db, subprocess
-from egon.data.datasets import Dataset
+from egon.data.datasets import Dataset, DatasetSources, DatasetTargets
 from egon.data.datasets.scenario_parameters import get_sector_parameters
 from egon.data.metadata import context, license_ccby, meta_metadata, sources
 from egon.data.validation import TableValidation, resolve_boundary_dependence
@@ -66,7 +66,35 @@ class HeatDemandImport(Dataset):
     #:
     name: str = "heat-demands"
     #:
-    version: str = "0.0.4"
+    version: str = "0.0.7"
+
+    sources = DatasetSources(
+        tables={
+            "boundaries": "boundaries.vg250_sta_union",
+            "zensus_population": "society.destatis_zensus_population_per_ha",
+        },
+        urls={
+            "peta_res_zip": "https://arcgis.com/sharing/rest/content/items/d7d18b63250240a49eb81db972aa573e/data",
+            "peta_ser_zip": "https://arcgis.com/sharing/rest/content/items/52ff5e02111142459ed5c2fe3d80b3a0/data",
+        },
+        files={
+            "peta_res_zip": "Peta5_0_1_HD_res.zip",
+            "peta_ser_zip": "Peta5_0_1_HD_ser.zip",
+            "res_cutout_tif": "Peta_5_0_1/res_hd_2015_GER.tif",
+            "ser_cutout_tif": "Peta_5_0_1/ser_hd_2015_GER.tif",
+            "scenario_res_glob": "heat_scenario_raster/res_HD_*.tif",
+            "scenario_ser_glob": "heat_scenario_raster/ser_HD_*.tif",
+        },
+    )
+
+    targets = DatasetTargets(
+        tables={
+            "heat_demand": "demand.egon_peta_heat",
+        },
+        files={
+            "scenario_dir": "heat_scenario_raster",
+        },
+    )
 
     def __init__(self, dependencies):
         super().__init__(
@@ -153,30 +181,19 @@ def download_peta5_0_1_heat_demands():
 
     """
 
-    data_config = egon.data.config.datasets()
-
-    # residential heat demands 2015
-    peta5_resheatdemands_config = data_config["peta5_0_1_res_heat_demands"][
-        "original_data"
-    ]
-
-    target_file_res = peta5_resheatdemands_config["target"]["path"]
+    target_file_res = HeatDemandImport.sources.files["peta_res_zip"]
 
     if not os.path.isfile(target_file_res):
         urlretrieve(
-            peta5_resheatdemands_config["source"]["url"], target_file_res
+            HeatDemandImport.sources.urls["peta_res_zip"], target_file_res
         )
 
     # service-sector heat demands 2015
-    peta5_serheatdemands_config = data_config["peta5_0_1_ser_heat_demands"][
-        "original_data"
-    ]
 
-    target_file_ser = peta5_serheatdemands_config["target"]["path"]
-
+    target_file_ser = HeatDemandImport.sources.files["peta_ser_zip"]
     if not os.path.isfile(target_file_ser):
         urlretrieve(
-            peta5_serheatdemands_config["source"]["url"], target_file_ser
+            HeatDemandImport.sources.urls["peta_ser_zip"], target_file_ser
         )
 
     return None
@@ -201,21 +218,13 @@ def unzip_peta5_0_1_heat_demands():
 
     """
 
-    # Get information from data configuration file
-    data_config = egon.data.config.datasets()
-    peta5_res_heatdemands_orig = data_config["peta5_0_1_res_heat_demands"][
-        "original_data"
-    ]
-    # path to the downloaded residential heat demand 2015 data
-    filepath_zip_res = peta5_res_heatdemands_orig["target"]["path"]
+    filepath_zip_res = HeatDemandImport.sources.files["peta_res_zip"]
+    filepath_zip_ser = HeatDemandImport.sources.files["peta_ser_zip"]
 
-    peta5_ser_heatdemands_orig = data_config["peta5_0_1_ser_heat_demands"][
-        "original_data"
-    ]
-    # path to the downloaded service-sector heat demand 2015 data
-    filepath_zip_ser = peta5_ser_heatdemands_orig["target"]["path"]
+    directory_to_extract_to = os.path.dirname(
+        HeatDemandImport.sources.files["res_cutout_tif"]
+    )
 
-    directory_to_extract_to = "Peta_5_0_1"
     # Create the folder, if it does not exists already
     if not os.path.exists(directory_to_extract_to):
         os.mkdir(directory_to_extract_to)
@@ -274,8 +283,7 @@ def cutout_heat_demand_germany():
 
     # Load the German boundaries from the local database using a dissolved
     # dataset which provides one multipolygon
-    table_name = "vg250_sta_union"
-    schema = "boundaries"
+
     local_engine = db.engine()
 
     # Recommened way: gpd.read_postgis()
@@ -284,14 +292,10 @@ def cutout_heat_demand_germany():
     # using ST_Dump: https://postgis.net/docs/ST_Dump.html
 
     gdf_boundaries = gpd.read_postgis(
-        (
-            f"SELECT (ST_Dump(geometry)).geom As geometry"
-            f" FROM {schema}.{table_name}"
-        ),
+        f"SELECT (ST_Dump(geometry)).geom AS geometry FROM {HeatDemandImport.sources.tables['boundaries']}",
         local_engine,
         geom_col="geometry",
     )
-
     # rasterio wants the mask to be a GeoJSON-like dict or an object that
     # implements the Python geo interface protocol (such as a Shapely Polygon)
 
@@ -333,7 +337,7 @@ def cutout_heat_demand_germany():
     )
 
     with rasterio.open(
-        "Peta_5_0_1/res_hd_2015_GER.tif", "w", **out_meta
+        HeatDemandImport.sources.files["res_cutout_tif"], "w", **out_meta
     ) as dest:
         dest.write(out_image)
 
@@ -359,7 +363,7 @@ def cutout_heat_demand_germany():
     )
 
     with rasterio.open(
-        "Peta_5_0_1/ser_hd_2015_GER.tif", "w", **out_meta
+        HeatDemandImport.sources.files["ser_cutout_tif"], "w", **out_meta
     ) as dest:
         dest.write(out_image)
 
@@ -446,7 +450,7 @@ def future_heat_demand_germany(scenario_name):
         ser_hd_reduction = heat_parameters["DE_demand_reduction_service"]
 
     # Define the directory where the created rasters will be saved
-    scenario_raster_directory = "heat_scenario_raster"
+    scenario_raster_directory = HeatDemandImport.targets.files["scenario_dir"]
     if not os.path.exists(scenario_raster_directory):
         os.mkdir(scenario_raster_directory)
 
@@ -457,7 +461,7 @@ def future_heat_demand_germany(scenario_name):
     # the new file's profile, the profile of the source is adjusted.
 
     # Residential heat demands first
-    res_cutout = "Peta_5_0_1/res_hd_2015_GER.tif"
+    res_cutout = HeatDemandImport.sources.files["res_cutout_tif"]
 
     with rasterio.open(res_cutout) as src:  # open raster dataset
         res_hd_2015 = src.read(1)  # read as numpy array; band 1; masked=True??
@@ -473,15 +477,15 @@ def future_heat_demand_germany(scenario_name):
     )
     # Save the scenario's residential heat demands as tif file
     # Define the filename for export
-    res_result_filename = (
-        scenario_raster_directory + "/res_HD_" + scenario_name + ".tif"
+    res_result_filename = os.path.join(
+        scenario_raster_directory, f"res_HD_{scenario_name}.tif"
     )
     # Open raster dataset in 'w' write mode using the adjusted meta data
     with rasterio.open(res_result_filename, "w", **res_profile) as dst:
         dst.write(res_scenario_raster.astype(rasterio.float32), 1)
 
     # Do the same for the service-sector
-    ser_cutout = "Peta_5_0_1/ser_hd_2015_GER.tif"
+    ser_cutout = HeatDemandImport.sources.files["ser_cutout_tif"]
 
     with rasterio.open(ser_cutout) as src:  # open raster dataset
         ser_hd_2015 = src.read(1)  # read as numpy array; band 1; masked=True??
@@ -493,8 +497,8 @@ def future_heat_demand_germany(scenario_name):
     ser_profile.update(dtype=rasterio.float32, count=1, compress="lzw")
     # Save the scenario's service-sector heat demands as tif file
     # Define the filename for export
-    ser_result_filename = (
-        scenario_raster_directory + "/ser_HD_" + scenario_name + ".tif"
+    ser_result_filename = os.path.join(
+        scenario_raster_directory, f"ser_HD_{scenario_name}.tif"
     )
     # Open raster dataset in 'w' write mode using the adjusted meta data
     with rasterio.open(ser_result_filename, "w", **ser_profile) as dst:
@@ -536,14 +540,13 @@ def heat_demand_to_db_table():
         Define version number correctly
     """
 
-    # Define the raster file type to be imported
-    sources = ["*.tif"]
-    # Define the directory from with all raster files having the defined type
-    # will be imported
     sources = [
         path
-        for pattern in sources
-        for path in Path("heat_scenario_raster").glob(pattern)
+        for pattern in (
+            HeatDemandImport.sources.files["scenario_res_glob"],
+            HeatDemandImport.sources.files["scenario_ser_glob"],
+        )
+        for path in Path(".").glob(pattern)
     ]
 
     # Create the schema for the final table, if needed
@@ -553,7 +556,9 @@ def heat_demand_to_db_table():
         os.path.dirname(__file__), "raster2cells-and-centroids.sql"
     )
 
-    db.execute_sql("DELETE FROM demand.egon_peta_heat;")
+    db.execute_sql(
+        f"DELETE FROM {HeatDemandImport.targets.tables['heat_demand']};"
+    )
 
     for source in sources:
         if "2015" not in source.stem:
@@ -609,7 +614,7 @@ def adjust_residential_heat_to_zensus(scenario):
     # Select overall residential heat demand
     overall_demand = db.select_dataframe(
         f"""SELECT SUM(demand) as overall_demand
-        FROM  demand.egon_peta_heat
+        FROM  {HeatDemandImport.targets.tables['heat_demand']}
         WHERE scenario = {'scenario'} and sector = 'residential'
         """
     ).overall_demand[0]
@@ -617,11 +622,11 @@ def adjust_residential_heat_to_zensus(scenario):
     # Select heat demand in populated cells
     df = db.select_dataframe(
         f"""SELECT *
-        FROM  demand.egon_peta_heat
+        FROM  {HeatDemandImport.targets.tables['heat_demand']}
         WHERE scenario = {'scenario'} and sector = 'residential'
         AND zensus_population_id IN (
             SELECT id
-            FROM society.destatis_zensus_population_per_ha_inside_germany
+            FROM {HeatDemandImport.sources.tables['zensus_population']}
             )""",
         index_col="id",
     )
@@ -631,8 +636,8 @@ def adjust_residential_heat_to_zensus(scenario):
 
     # Drop residential heat demands
     db.execute_sql(
-        f"""DELETE FROM demand.egon_peta_heat
-        WHERE scenario = {'scenario'} and sector = 'residential'"""
+        f"""DELETE FROM {HeatDemandImport.targets.tables['heat_demand']}
+             WHERE scenario = {'scenario'} and sector = 'residential'"""
     )
 
     # Insert adjusted heat demands in populated cells
@@ -779,8 +784,15 @@ def scenario_data_import():
     db.execute_sql("CREATE SCHEMA IF NOT EXISTS demand;")
     # drop table if exists
     # can be removed when table structure doesn't change anymore
-    db.execute_sql("DROP TABLE IF EXISTS demand.egon_peta_heat CASCADE")
-    db.execute_sql("DROP SEQUENCE IF EXISTS demand.egon_peta_heat_seq CASCADE")
+    db.execute_sql(
+        f"DROP TABLE IF EXISTS {HeatDemandImport.targets.tables['heat_demand']} CASCADE"
+    )
+
+    db.execute_sql(
+        f"DROP SEQUENCE IF EXISTS {HeatDemandImport.targets.get_table_schema('heat_demand')}."
+        f"{HeatDemandImport.targets.get_table_name('heat_demand')}_seq CASCADE"
+    )
+
     # create table
     EgonPetaHeat.__table__.create(bind=db.engine(), checkfirst=True)
 

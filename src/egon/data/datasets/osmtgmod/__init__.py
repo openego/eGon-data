@@ -13,7 +13,7 @@ import psycopg2
 
 from egon.data import db, logger
 from egon.data.config import settings
-from egon.data.datasets import Dataset
+from egon.data.datasets import Dataset, DatasetSources, DatasetTargets
 from egon.data.datasets.osmtgmod.substation import extract
 from egon.data.datasets.scenario_parameters import get_sector_parameters
 import egon.data.config
@@ -24,13 +24,10 @@ def run():
     sys.setrecursionlimit(5000)
     # execute osmTGmod
 
-    data_config = egon.data.config.datasets()
-    osm_config = data_config["openstreetmap"]["original_data"]
-
     if settings()["egon-data"]["--dataset-boundary"] == "Everything":
-        target_path = osm_config["target"]["file"]
+        target_path = Osmtgmod.sources.files["file"]
     else:
-        target_path = osm_config["target"]["file_testmode"]
+        target_path = Osmtgmod.sources.files["file_testmode"]
 
     filtered_osm_pbf_path_to_file = os.path.join(
         egon.data.__path__[0], "datasets", "osm", target_path
@@ -94,13 +91,10 @@ def import_osm_data():
             ]
         )
 
-    data_config = egon.data.config.datasets()
-    osm_config = data_config["openstreetmap"]["original_data"]
-
     if settings()["egon-data"]["--dataset-boundary"] == "Everything":
-        target_path = osm_config["target"]["file"]
+        target_path = Osmtgmod.sources.files["file"]
     else:
-        target_path = osm_config["target"]["file_testmode"]
+        target_path = Osmtgmod.sources.files["file_testmode"]
 
     filtered_osm_pbf_path_to_file = Path(".") / "openstreetmap" / target_path
 
@@ -118,13 +112,11 @@ def import_osm_data():
     ]
 
     logging.info("Creating status table ...")
-    db.execute_sql(
-        """
+    db.execute_sql("""
         DROP TABLE IF EXISTS _db_status;
         CREATE TABLE _db_status (module TEXT, status BOOLEAN);
         INSERT INTO _db_status (module, status) VALUES ('grid_model', FALSE);
-        """
-    )
+        """)
 
     logging.info("Status table created.")
 
@@ -150,20 +142,16 @@ def import_osm_data():
         db.execute_sql(sqlfile)
         logging.info("Done.")
 
-    db.execute_sql(
-        """UPDATE _db_status SET status = TRUE
-            WHERE module = 'grid_model'; """
-    )
+    db.execute_sql("""UPDATE _db_status SET status = TRUE
+            WHERE module = 'grid_model'; """)
 
     logging.info("osmTGmod-database successfully built up!")
 
     logging.info("Importing OSM-data to database.")
 
     logging.info("Using pdf file: {}".format(filtered_osm_pbf_path_to_file))
-    logging.info(
-        f"""Assuming osmosis is avaliable at
-        {config['osm_data']['osmosis_path_to_binary']}"""
-    )
+    logging.info(f"""Assuming osmosis is avaliable at
+        {config['osm_data']['osmosis_path_to_binary']}""")
 
     # create directory to store osmosis' temp files
     osmosis_temp_dir = Path("osmTGmod") / "osmosis_temp/"
@@ -218,13 +206,10 @@ def osmtgmod(
         to existing substation. (see:)
         """
         print("Manually updating geometry of substation in Garenfeld")
-        db.execute_sql(
-            """DROP TRIGGER IF EXISTS
-            power_ways_update ON power_ways CASCADE """
-        )
+        db.execute_sql("""DROP TRIGGER IF EXISTS
+            power_ways_update ON power_ways CASCADE """)
 
-        db.execute_sql(
-            """
+        db.execute_sql("""
             UPDATE power_ways
             SET way =  (SELECT ST_SetSRID(ST_AsText(
                 '0102000000160000001612D5004A081E4020A8644A35B349407B0ACA'
@@ -241,8 +226,7 @@ def osmtgmod(
                 '20A8644A35B34940'), 4326))
             WHERE name = 'Garenfeld'
             AND id = 24667346
-            """
-        )
+            """)
 
     # ==============================================================
     # Setup logging
@@ -387,11 +371,9 @@ def osmtgmod(
             )
         )
         logging.info("Deleting all entries from transfer_busses table ...")
-        cur.execute(
-            """
+        cur.execute("""
         DELETE FROM transfer_busses;
-        """
-        )
+        """)
         conn.commit()
 
         with open(path_for_transfer_busses, "w") as this_file:
@@ -454,12 +436,10 @@ def osmtgmod(
     config_continue_run_at = -1
 
     if not config_continue_run:  # debugging - to be removed
-        cur.execute(
-            """drop table if exists debug;create table debug
+        cur.execute("""drop table if exists debug;create table debug
             (step_before int,max_bus_id int, num_bus int,max_branch_id int,
             num_branch int, num_110_bus int, num_220_bus int,
-            num_380_bus int)"""
-        )
+            num_380_bus int)""")
         conn.commit()
 
     # split sqlfile in commands seperated by ";", while not considering
@@ -493,8 +473,7 @@ def osmtgmod(
                 )
                 sys.exit()
             if i > 16:  # debugging - to be removed
-                cur.execute(
-                    """insert into debug values ({0},
+                cur.execute("""insert into debug values ({0},
                     (select max(id) from bus_data),(select count(*)
                     from bus_data),(select max(branch_id)
                     from branch_data),(select count(*)
@@ -502,10 +481,7 @@ def osmtgmod(
                     from bus_data where voltage = 110000),
                     (select count (*) from bus_data where voltage = 220000),
                     (select count (*)
-                    from bus_data where voltage = 380000))""".format(
-                        i
-                    )
-                )
+                    from bus_data where voltage = 380000))""".format(i))
                 conn.commit()
 
     logging.info("Power-script executed successfully.")
@@ -530,9 +506,7 @@ def osmtgmod(
         )
         query = "SELECT * FROM osmtgmod_results.%s " % (table,)
         outputquery = "COPY ({0}) TO STDOUT WITH DELIMITER \
-            ',' CSV HEADER".format(
-            query
-        )
+            ',' CSV HEADER".format(query)
         with open(filename, encoding="utf-8", mode="w") as fh:
             cur.copy_expert(outputquery, fh)
 
@@ -542,15 +516,13 @@ def osmtgmod(
 
 
 def to_pypsa():
-    db.execute_sql(
-        """
-            -- CLEAN UP OF TABLES
-            DELETE FROM grid.egon_etrago_bus
-            WHERE carrier = 'AC';
-            DELETE FROM grid.egon_etrago_line;
-            DELETE FROM grid.egon_etrago_transformer;
-            """
-    )
+    db.execute_sql(f"""
+        -- CLEAN UP OF TABLES
+        DELETE FROM {Osmtgmod.targets.tables['etrago_bus']}
+        WHERE carrier = 'AC';
+        DELETE FROM {Osmtgmod.targets.tables['etrago_line']};
+        DELETE FROM {Osmtgmod.targets.tables['etrago_transformer']};
+        """)
 
     # for scenario_name in ["'eGon2035'", "'eGon100RE'", "'status2019'"]:
     scenario_list = egon.data.config.settings()["egon-data"]["--scenarios"]
@@ -566,11 +538,11 @@ def to_pypsa():
         lifetime = get_sector_parameters(
             "electricity", scenario_name.replace("'", "")
         )["lifetime"]
-        db.execute_sql(
-            f"""
+
+        db.execute_sql(f"""
             -- BUS DATA
-            INSERT INTO grid.egon_etrago_bus (scn_name, bus_id, v_nom,
-                                             geom, x, y, carrier, country)
+            INSERT INTO {Osmtgmod.targets.tables['etrago_bus']}
+                (scn_name, bus_id, v_nom, geom, x, y, carrier, country)
             SELECT
               {scenario_name},
               bus_i AS bus_id,
@@ -580,21 +552,20 @@ def to_pypsa():
               ST_Y(geom) as y,
               'AC' as carrier,
               cntr_id
-              FROM osmtgmod_results.bus_data
-              WHERE result_id = 1;
+            FROM {Osmtgmod.sources.tables['osmtgmod_bus']}
+            WHERE result_id = 1;
 
 
             -- BRANCH DATA
-            INSERT INTO grid.egon_etrago_line (scn_name, line_id, bus0,
-                                              bus1, x, r, b, s_nom, s_nom_min, s_nom_extendable,
-                                              cables, v_nom,
-                                              geom, topo, carrier)
+            INSERT INTO {Osmtgmod.targets.tables['etrago_line']}
+                (scn_name, line_id, bus0, bus1, x, r, b, s_nom, s_nom_min, s_nom_extendable,
+                 cables, v_nom, geom, topo, carrier)
             SELECT
               {scenario_name},
               branch_id AS line_id,
               f_bus AS bus0,
               t_bus AS bus1,
-              br_x AS x,
+              br_x AS x, --- change base from 100MVA (osmtgmod) to the its individual s_nom (pypsa)
               br_r AS r,
               br_b as b,
               rate_a as s_nom,
@@ -605,22 +576,19 @@ def to_pypsa():
               geom,
               topo,
               'AC' as carrier
-              FROM osmtgmod_results.branch_data
-              WHERE result_id = 1 and (link_type = 'line' or
-                                       link_type = 'cable');
+              FROM {Osmtgmod.sources.tables['osmtgmod_branch']}
+              WHERE result_id = 1 AND (link_type = 'line' OR link_type = 'cable');
 
 
             -- TRANSFORMER DATA
-            INSERT INTO grid.egon_etrago_transformer (scn_name,
-                                                     trafo_id, bus0, bus1, x,
-                                                     s_nom, s_nom_min, s_nom_extendable, tap_ratio,
-                                                     phase_shift, geom, topo)
+            INSERT INTO {Osmtgmod.targets.tables['etrago_transformer']}
+                (scn_name, trafo_id, bus0, bus1, x, s_nom, s_nom_min, s_nom_extendable, tap_ratio, phase_shift, geom, topo)
             SELECT
               {scenario_name},
               branch_id AS trafo_id,
               f_bus AS bus0,
               t_bus AS bus1,
-              br_x/(100 * rate_a) AS x, --- change base from 100MVA (osmtgmod) to the its individual s_nom (pypsa)
+              br_x/(100 * rate_a) AS x,
               rate_a as s_nom,
               rate_a as s_nom_min,
               TRUE,
@@ -628,185 +596,180 @@ def to_pypsa():
               shift AS phase_shift,
               geom,
               topo
-              FROM osmtgmod_results.branch_data
-              WHERE result_id = 1 and link_type = 'transformer';
-
+              FROM {Osmtgmod.sources.tables['osmtgmod_branch']}
+              WHERE result_id = 1 AND link_type = 'transformer';
 
             -- per unit to absolute values
 
-            UPDATE grid.egon_etrago_line a
+            UPDATE {Osmtgmod.targets.tables['etrago_line']} a
             SET
-                 r = r * (((SELECT v_nom
-                            FROM grid.egon_etrago_bus b
-                            WHERE bus_id=bus1
-                            AND a.scn_name = b.scn_name
-                            )*1000)^2 / (100 * 10^6)),
-                 x = x * (((SELECT v_nom
-                            FROM grid.egon_etrago_bus b
-                            WHERE bus_id=bus1
-                            AND a.scn_name = b.scn_name
-                            )*1000)^2 / (100 * 10^6)),
-                 b = b * (((SELECT v_nom
-                            FROM grid.egon_etrago_bus b
-                            WHERE bus_id=bus1
-                            AND a.scn_name = b.scn_name
-                            )*1000)^2 / (100 * 10^6))
+                 r = r * (((SELECT v_nom 
+                            FROM {Osmtgmod.targets.tables['etrago_bus']} b
+                            WHERE bus_id = bus1 
+                            AND a.scn_name = b.scn_name)*1000)^2 / (100 * 10^6)),
+                 x = x * (((SELECT v_nom FROM {Osmtgmod.targets.tables['etrago_bus']} b
+                            WHERE bus_id = bus1
+                            AND a.scn_name = b.scn_name)*1000)^2 / (100 * 10^6)),
+                 b = b * (((SELECT v_nom FROM {Osmtgmod.targets.tables['etrago_bus']} b
+                            WHERE bus_id = bus1 
+                            AND a.scn_name = b.scn_name)*1000)^2 / (100 * 10^6))
             WHERE scn_name = {scenario_name};
 
-            -- calculate line length (in km) from geoms
-
-            UPDATE grid.egon_etrago_line a
-            SET
-                 length = result.length
-                 FROM
-                 (SELECT b.line_id, st_length(b.geom,false)/1000 as length
-                  from grid.egon_etrago_line b)
-                 as result
-            WHERE a.line_id = result.line_id
+            -- calculate line length in (km) from geoms
+            
+            UPDATE {Osmtgmod.targets.tables['etrago_line']} a
+            SET 
+                length = result.length
+                FROM (
+                SELECT b.line_id, ST_Length(b.geom,false)/1000 as length
+                FROM {Osmtgmod.targets.tables['etrago_line']} b) 
+                as result
+            WHERE a.line_id = result.line_id 
             AND scn_name = {scenario_name};
 
             -- set capital costs for eHV-lines
-            UPDATE grid.egon_etrago_line
+            UPDATE {Osmtgmod.targets.tables['etrago_line']}
             SET capital_cost = {capital_cost['ac_ehv_overhead_line']} * length
-            WHERE v_nom > 110
+            WHERE v_nom > 110 
             AND scn_name = {scenario_name};
-
+            
             -- set capital costs for HV-lines
-            UPDATE grid.egon_etrago_line
+
+            UPDATE {Osmtgmod.targets.tables['etrago_line']}
             SET capital_cost = {capital_cost['ac_hv_overhead_line']} * length
-            WHERE v_nom = 110
+            WHERE v_nom = 110 
             AND scn_name = {scenario_name};
 
             -- set capital costs for transformers
-            UPDATE grid.egon_etrago_transformer a
+            UPDATE {Osmtgmod.targets.tables['etrago_transformer']} a
             SET capital_cost = {capital_cost['transformer_380_220']}
-            WHERE (a.bus0 IN (
-                SELECT bus_id FROM grid.egon_etrago_bus
-                WHERE v_nom = 380)
+            WHERE (a.bus0 IN 
+                  (SELECT bus_id FROM {Osmtgmod.targets.tables['etrago_bus']} 
+                   WHERE v_nom = 380)
             AND a.bus1 IN (
-                SELECT bus_id FROM grid.egon_etrago_bus
-                WHERE v_nom = 220))
+                  SELECT bus_id FROM {Osmtgmod.targets.tables['etrago_bus']}
+                  WHERE v_nom = 220))
             OR (a.bus0 IN (
-                SELECT bus_id FROM grid.egon_etrago_bus
-                WHERE v_nom = 220)
+                  SELECT bus_id FROM {Osmtgmod.targets.tables['etrago_bus']}
+                  WHERE v_nom = 220)
             AND a.bus1 IN (
-                SELECT bus_id FROM grid.egon_etrago_bus
-                WHERE v_nom = 380))
+                  SELECT bus_id FROM {Osmtgmod.targets.tables['etrago_bus']}
+                  WHERE v_nom = 380))
             AND scn_name = {scenario_name};
 
-            UPDATE grid.egon_etrago_transformer a
+            UPDATE {Osmtgmod.targets.tables['etrago_transformer']} a
             SET capital_cost = {capital_cost['transformer_380_110']}
             WHERE (a.bus0 IN (
-                SELECT bus_id FROM grid.egon_etrago_bus
+                SELECT bus_id FROM {Osmtgmod.targets.tables['etrago_bus']}
                 WHERE v_nom = 380)
             AND a.bus1 IN (
-                SELECT bus_id FROM grid.egon_etrago_bus
+                SELECT bus_id FROM {Osmtgmod.targets.tables['etrago_bus']}
                 WHERE v_nom = 110))
             OR (a.bus0 IN (
-                SELECT bus_id FROM grid.egon_etrago_bus
+                SELECT bus_id FROM {Osmtgmod.targets.tables['etrago_bus']}
                 WHERE v_nom = 110)
             AND a.bus1 IN (
-                SELECT bus_id FROM grid.egon_etrago_bus
+                SELECT bus_id FROM {Osmtgmod.targets.tables['etrago_bus']}
                 WHERE v_nom = 380))
             AND scn_name = {scenario_name};
 
-            UPDATE grid.egon_etrago_transformer a
+            
+            UPDATE {Osmtgmod.targets.tables['etrago_transformer']} a
             SET capital_cost = {capital_cost['transformer_220_110']}
             WHERE (a.bus0 IN (
-                SELECT bus_id FROM grid.egon_etrago_bus
-                WHERE v_nom = 220)
+                  SELECT bus_id FROM {Osmtgmod.targets.tables['etrago_bus']}
+                  WHERE v_nom = 220)
             AND a.bus1 IN (
-                SELECT bus_id FROM grid.egon_etrago_bus
-                WHERE v_nom = 110))
+                  SELECT bus_id FROM {Osmtgmod.targets.tables['etrago_bus']}
+                  WHERE v_nom = 110))
             OR (a.bus0 IN (
-                SELECT bus_id FROM grid.egon_etrago_bus
-                WHERE v_nom = 110)
-            AND a.bus1 IN (
-                SELECT bus_id FROM grid.egon_etrago_bus
-                WHERE v_nom = 220))
+                  SELECT bus_id FROM {Osmtgmod.targets.tables['etrago_bus']} 
+                  WHERE v_nom = 110)
+            AND a.bus1 IN (SELECT bus_id FROM {Osmtgmod.targets.tables['etrago_bus']} 
+                  WHERE v_nom = 220))
             AND scn_name = {scenario_name};
 
             -- set lifetime for eHV-lines
-            UPDATE grid.egon_etrago_line
+            UPDATE {Osmtgmod.targets.tables['etrago_line']}
             SET lifetime = {lifetime['ac_ehv_overhead_line']}
-            WHERE v_nom > 110
-            AND scn_name = {scenario_name};
+            WHERE v_nom > 110 AND scn_name = {scenario_name};
+
 
             -- set capital costs for HV-lines
-            UPDATE grid.egon_etrago_line
+
+            UPDATE {Osmtgmod.targets.tables['etrago_line']}
             SET lifetime = {lifetime['ac_hv_overhead_line']}
-            WHERE v_nom = 110
-            AND scn_name = {scenario_name};
+            WHERE v_nom = 110 AND scn_name = {scenario_name};
 
             -- set capital costs for transformers
-            UPDATE grid.egon_etrago_transformer a
+            UPDATE {Osmtgmod.targets.tables['etrago_transformer']} a
             SET lifetime = {lifetime['transformer_380_220']}
             WHERE (a.bus0 IN (
-                SELECT bus_id FROM grid.egon_etrago_bus
-                WHERE v_nom = 380)
+                  SELECT bus_id FROM {Osmtgmod.targets.tables['etrago_bus']}
+                  WHERE v_nom = 380)
+             AND a.bus1 IN (
+                  SELECT bus_id FROM {Osmtgmod.targets.tables['etrago_bus']}
+                  WHERE v_nom = 220))
+             OR (a.bus0 IN (
+                  SELECT bus_id FROM {Osmtgmod.targets.tables['etrago_bus']}
+                  WHERE v_nom = 220)
             AND a.bus1 IN (
-                SELECT bus_id FROM grid.egon_etrago_bus
-                WHERE v_nom = 220))
-            OR (a.bus0 IN (
-                SELECT bus_id FROM grid.egon_etrago_bus
-                WHERE v_nom = 220)
-            AND a.bus1 IN (
-                SELECT bus_id FROM grid.egon_etrago_bus
-                WHERE v_nom = 380))
+                  SELECT bus_id FROM {Osmtgmod.targets.tables['etrago_bus']}
+                  WHERE v_nom = 380))
             AND scn_name = {scenario_name};
-
-            UPDATE grid.egon_etrago_transformer a
+            
+            UPDATE {Osmtgmod.targets.tables['etrago_transformer']} a
             SET lifetime = {lifetime['transformer_380_110']}
             WHERE (a.bus0 IN (
-                SELECT bus_id FROM grid.egon_etrago_bus
+                SELECT bus_id FROM {Osmtgmod.targets.tables['etrago_bus']}
                 WHERE v_nom = 380)
             AND a.bus1 IN (
-                SELECT bus_id FROM grid.egon_etrago_bus
+                SELECT bus_id FROM {Osmtgmod.targets.tables['etrago_bus']}
                 WHERE v_nom = 110))
             OR (a.bus0 IN (
-                SELECT bus_id FROM grid.egon_etrago_bus
+                SELECT bus_id FROM {Osmtgmod.targets.tables['etrago_bus']}
                 WHERE v_nom = 110)
             AND a.bus1 IN (
-                SELECT bus_id FROM grid.egon_etrago_bus
+                SELECT bus_id FROM {Osmtgmod.targets.tables['etrago_bus']}
                 WHERE v_nom = 380))
             AND scn_name = {scenario_name};
 
-            UPDATE grid.egon_etrago_transformer a
+            UPDATE {Osmtgmod.targets.tables['etrago_transformer']} a
             SET lifetime = {lifetime['transformer_220_110']}
             WHERE (a.bus0 IN (
-                SELECT bus_id FROM grid.egon_etrago_bus
-                WHERE v_nom = 220)
+                 SELECT bus_id FROM {Osmtgmod.targets.tables['etrago_bus']}
+                 WHERE v_nom = 220)
             AND a.bus1 IN (
-                SELECT bus_id FROM grid.egon_etrago_bus
-                WHERE v_nom = 110))
+                 SELECT bus_id FROM {Osmtgmod.targets.tables['etrago_bus']}
+                 WHERE v_nom = 110))
             OR (a.bus0 IN (
-                SELECT bus_id FROM grid.egon_etrago_bus
-                WHERE v_nom = 110)
+                 SELECT bus_id FROM {Osmtgmod.targets.tables['etrago_bus']}
+                 WHERE v_nom = 110)
             AND a.bus1 IN (
-                SELECT bus_id FROM grid.egon_etrago_bus
+                SELECT bus_id FROM {Osmtgmod.targets.tables['etrago_bus']}
                 WHERE v_nom = 220))
             AND scn_name = {scenario_name};
+            
 
             -- delete buses without connection to AC grid and generation or
             -- load assigned
 
-            DELETE FROM grid.egon_etrago_bus
-            WHERE scn_name={scenario_name}
-            AND carrier = 'AC'
+            DELETE FROM {Osmtgmod.targets.tables['etrago_bus']}
+            WHERE scn_name = {scenario_name}
+            AND carrier = 'AC' 
             AND bus_id NOT IN
-            (SELECT bus0 FROM grid.egon_etrago_line WHERE
-             scn_name={scenario_name})
+            (SELECT bus0 FROM {Osmtgmod.targets.tables['etrago_line']}
+             WHERE scn_name = {scenario_name})
             AND bus_id NOT IN
-            (SELECT bus1 FROM grid.egon_etrago_line WHERE
-             scn_name={scenario_name})
+            (SELECT bus1 FROM {Osmtgmod.targets.tables['etrago_line']}
+             WHERE scn_name = {scenario_name})
             AND bus_id NOT IN
-            (SELECT bus0 FROM grid.egon_etrago_transformer
-             WHERE scn_name={scenario_name})
+            (SELECT bus0 FROM {Osmtgmod.targets.tables['etrago_transformer']}
+             WHERE scn_name = {scenario_name})
             AND bus_id NOT IN
-            (SELECT bus1 FROM grid.egon_etrago_transformer
-             WHERE scn_name={scenario_name});
-                """
-        )
+            (SELECT bus1 FROM {Osmtgmod.targets.tables['etrago_transformer']} 
+             WHERE scn_name = {scenario_name});
+            """)
 
 
 def reset_etrago_sequences_to_max_id():
@@ -859,23 +822,21 @@ def reset_etrago_sequences_to_max_id():
 
 
 def fix_transformer_snom():
-    db.execute_sql(
-        """
-        UPDATE grid.egon_etrago_transformer AS t
-        SET s_nom = CAST(
-            LEAST(
-                (SELECT SUM(COALESCE(l.s_nom,0))
-                 FROM grid.egon_etrago_line AS l
-                 WHERE (l.bus0 = t.bus0 OR l.bus1 = t.bus0)
-                 AND l.scn_name = t.scn_name),
-                (SELECT SUM(COALESCE(l.s_nom,0))
-                 FROM grid.egon_etrago_line AS l
-                 WHERE (l.bus0 = t.bus1 OR l.bus1 = t.bus1)
-                 AND l.scn_name = t.scn_name)
-            ) AS smallint
-        );
-        """
-    )
+    db.execute_sql(f"""
+     UPDATE {Osmtgmod.targets.tables['etrago_transformer']} AS t
+     SET s_nom = CAST(
+         LEAST(
+             (SELECT SUM(COALESCE(l.s_nom,0))
+              FROM {Osmtgmod.targets.tables['etrago_line']} AS l
+              WHERE (l.bus0 = t.bus0 OR l.bus1 = t.bus0)
+              AND l.scn_name = t.scn_name),
+             (SELECT SUM(COALESCE(l.s_nom,0))
+              FROM {Osmtgmod.targets.tables['etrago_line']} AS l
+              WHERE (l.bus0 = t.bus1 OR l.bus1 = t.bus1)
+              AND l.scn_name = t.scn_name)
+         ) AS smallint
+     );
+     """)
 
 
 class Osmtgmod(Dataset):
@@ -905,7 +866,32 @@ class Osmtgmod(Dataset):
     #:
     name: str = "Osmtgmod"
     #:
-    version: str = "0.0.7"
+    version: str = "0.0.12"
+
+    sources = DatasetSources(
+        files={
+            "file": "germany-250101.osm.pbf",
+            "file_testmode": "schleswig-holstein-250101.osm.pbf",
+        },
+        tables={
+            "osmtgmod_bus": "osmtgmod_results.bus_data",
+            "osmtgmod_branch": "osmtgmod_results.branch_data",
+            "osmtgmod_dcline_data": "osmtgmod_results.dcline_data",
+            "osmtgmod_results_meta": "osmtgmod_results.results_metadata",
+            "ehv_transfer_buses": "grid.egon_ehv_transfer_buses",
+            "hvmv_transfer_buses": "grid.egon_hvmv_transfer_buses",
+        },
+    )
+
+    targets = DatasetTargets(
+        tables={
+            "etrago_bus": "grid.egon_etrago_bus",
+            "etrago_line": "grid.egon_etrago_line",
+            "etrago_transformer": "grid.egon_etrago_transformer",
+            "ehv_substation": "grid.egon_ehv_substation",
+            "hvmv_substation": "grid.egon_hvmv_substation",
+        }
+    )
 
     def __init__(self, dependencies):
         super().__init__(

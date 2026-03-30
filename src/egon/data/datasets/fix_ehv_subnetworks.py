@@ -1,5 +1,4 @@
-"""The central module containing all code dealing with fixing ehv subnetworks
-"""
+"""The central module containing all code dealing with fixing ehv subnetworks"""
 
 import geopandas as gpd
 import numpy as np
@@ -7,7 +6,7 @@ import pandas as pd
 
 from egon.data import config, db, logger
 from egon.data.config import settings
-from egon.data.datasets import Dataset
+from egon.data.datasets import Dataset, DatasetSources, DatasetTargets
 from egon.data.datasets.etrago_setup import link_geom_from_buses
 from egon.data.datasets.scenario_parameters import get_sector_parameters
 
@@ -36,45 +35,57 @@ class FixEhvSubnetworks(Dataset):
     #:
     name: str = "FixEhvSubnetworks"
     #:
-    version: str = "0.0.2"
+    version: str = "0.0.4"
+
+    sources = DatasetSources(
+        tables={
+            "buses": "grid.egon_etrago_bus",
+            "lines": "grid.egon_etrago_line",
+            "transformers": "grid.egon_etrago_transformer",
+        }
+    )
+
+    targets = DatasetTargets(
+        tables={
+            "buses": "grid.egon_etrago_bus",
+            "lines": "grid.egon_etrago_line",
+            "transformers": "grid.egon_etrago_transformer",
+        }
+    )
 
     def __init__(self, dependencies):
         super().__init__(
             name=self.name,
             version=self.version,
             dependencies=dependencies,
-            tasks=run,
+            tasks=(run,),
         )
 
 
 def select_bus_id(x, y, v_nom, scn_name, carrier, find_closest=False):
-    bus_id = db.select_dataframe(
-        f"""
+    bus_id = db.select_dataframe(f"""
         SELECT bus_id
-        FROM grid.egon_etrago_bus
+        FROM {FixEhvSubnetworks.sources.tables['buses']}
         WHERE x = {x}
         AND y = {y}
         AND v_nom = {v_nom}
         AND scn_name = '{scn_name}'
         AND carrier = '{carrier}'
-        """
-    )
+        """)
 
     if bus_id.empty:
         logger.info("No bus found")
         if find_closest:
             logger.info(f"Finding closest to x = {x}, y = {y}")
-            bus_id = db.select_dataframe(
-                f"""
+            bus_id = db.select_dataframe(f"""
             SELECT bus_id, st_distance(geom, 'SRID=4326;POINT({x} {y})'::geometry)
-            FROM grid.egon_etrago_bus
+            FROM {FixEhvSubnetworks.sources.tables['buses']}
             WHERE v_nom = {v_nom}
             AND scn_name = '{scn_name}'
             AND carrier = '{carrier}'
             ORDER BY st_distance
             Limit 1
-            """
-            )
+            """)
             logger.info(f"Bus ID = {bus_id.bus_id[0]} selected")
             return bus_id.bus_id[0]
         else:
@@ -103,7 +114,10 @@ def add_bus(x, y, v_nom, scn_name):
     gdf.index.name = "bus_id"
 
     gdf.reset_index().to_postgis(
-        "egon_etrago_bus", schema="grid", con=db.engine(), if_exists="append"
+        FixEhvSubnetworks.targets.get_table_name("buses"),
+        schema=FixEhvSubnetworks.targets.get_table_schema("buses"),
+        con=db.engine(),
+        if_exists="append",
     )
 
 
@@ -111,16 +125,14 @@ def drop_bus(x, y, v_nom, scn_name):
     bus = select_bus_id(x, y, v_nom, scn_name, carrier="AC")
 
     if bus is not None:
-        db.execute_sql(
-            f"""
-            DELETE FROM grid.egon_etrago_bus
+        db.execute_sql(f"""
+            DELETE FROM {FixEhvSubnetworks.targets.tables['buses']}
             WHERE
             scn_name = '{scn_name}'
             AND bus_id = {bus}
             AND v_nom = {v_nom}
             AND carrier = 'AC'
-            """
-        )
+            """)
 
 
 def add_line(x0, y0, x1, y1, v_nom, scn_name, cables):
@@ -176,7 +188,10 @@ def add_line(x0, y0, x1, y1, v_nom, scn_name, cables):
     gdf["capital_cost"] = (cost_per_km * gdf["length"]) * (gdf["cables"] / 3)
     gdf.index.name = "line_id"
     gdf.reset_index().to_postgis(
-        "egon_etrago_line", schema="grid", con=db.engine(), if_exists="append"
+        FixEhvSubnetworks.targets.get_table_name("lines"),
+        schema=FixEhvSubnetworks.targets.get_table_schema("lines"),
+        con=db.engine(),
+        if_exists="append",
     )
 
 
@@ -185,16 +200,14 @@ def drop_line(x0, y0, x1, y1, v_nom, scn_name):
     bus1 = select_bus_id(x1, y1, v_nom, scn_name, carrier="AC")
 
     if (bus0 is not None) and (bus1 is not None):
-        db.execute_sql(
-            f"""
-            DELETE FROM grid.egon_etrago_line
+        db.execute_sql(f"""
+            DELETE FROM {FixEhvSubnetworks.targets.tables['lines']}
             WHERE
             scn_name = '{scn_name}'
             AND bus0 = {bus0}
             AND bus1 = {bus1}
             AND v_nom = {v_nom}
-            """
-        )
+            """)
 
 
 def add_trafo(x, y, v_nom0, v_nom1, scn_name, n=1):
@@ -206,7 +219,7 @@ def add_trafo(x, y, v_nom0, v_nom1, scn_name, n=1):
     )
 
     df = pd.DataFrame(
-        index=[db.next_etrago_id("line")],
+        index=[db.next_etrago_id("transformer")],
         data={
             "bus0": bus0,
             "bus1": bus1,
@@ -227,8 +240,8 @@ def add_trafo(x, y, v_nom0, v_nom1, scn_name, n=1):
     gdf.index.name = "trafo_id"
 
     gdf.reset_index().to_postgis(
-        "egon_etrago_transformer",
-        schema="grid",
+        FixEhvSubnetworks.targets.get_table_name("transformers"),
+        schema=FixEhvSubnetworks.targets.get_table_schema("transformers"),
         con=db.engine(),
         if_exists="append",
     )
@@ -239,15 +252,13 @@ def drop_trafo(x, y, v_nom0, v_nom1, scn_name):
     bus1 = select_bus_id(x, y, v_nom1, scn_name, carrier="AC")
 
     if (bus0 is not None) and (bus1 is not None):
-        db.execute_sql(
-            f"""
-            DELETE FROM grid.egon_etrago_transformer
+        db.execute_sql(f"""
+            DELETE FROM {FixEhvSubnetworks.targets.tables['transformers']}
             WHERE
             scn_name = '{scn_name}'
             AND bus0 = {bus0}
             AND bus1 = {bus1}
-            """
-        )
+            """)
 
 
 def fix_subnetworks(scn_name):

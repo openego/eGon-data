@@ -1,6 +1,4 @@
-"""The central module containing code to create substation tables
-
-"""
+"""The central module containing code to create substation tables"""
 
 import os
 
@@ -9,7 +7,7 @@ from sqlalchemy import Column, Float, Integer, Sequence, Text
 from sqlalchemy.ext.declarative import declarative_base
 
 from egon.data import db
-from egon.data.datasets import Dataset
+from egon.data.datasets import Dataset, DatasetSources, DatasetTargets
 import egon.data.config
 
 # Uncomment to add validation rules:
@@ -82,10 +80,28 @@ class EgonHvmvTransferBuses(Base):
 
 
 class SubstationExtraction(Dataset):
+
+    sources = DatasetSources(
+        tables={
+            "osm_ways": "openstreetmap.osm_ways",
+            "osm_nodes": "openstreetmap.osm_nodes",
+            "osm_points": "openstreetmap.osm_point",
+            "osm_lines": "openstreetmap.osm_line",
+        }
+    )
+
+    targets = DatasetTargets(
+        tables={
+            "hvmv_substation": "grid.egon_hvmv_transfer_buses",
+            "ehv_substation": "grid.egon_ehv_transfer_buses",
+            "transfer_busses": "public.transfer_busses_complete",  # Assuming public schema
+        }
+    )
+
     def __init__(self, dependencies):
         super().__init__(
             name="substation_extraction",
-            version="0.0.2",
+            version="0.0.5",
             dependencies=dependencies,
             tasks=(
                 create_tables,
@@ -118,37 +134,23 @@ def create_tables():
     -------
     None.
     """
-    cfg_targets = egon.data.config.datasets()["substation_extraction"][
-        "targets"
-    ]
+
+    db.execute_sql("CREATE SCHEMA IF NOT EXISTS grid;")
 
     db.execute_sql(
-        f"CREATE SCHEMA IF NOT EXISTS {cfg_targets['hvmv_substation']['schema']};"
-    )
-
-    # Drop tables
-    db.execute_sql(
-        f"""DROP TABLE IF EXISTS
-            {cfg_targets['ehv_substation']['schema']}.
-            {cfg_targets['ehv_substation']['table']} CASCADE;"""
+        f"""DROP TABLE IF EXISTS {SubstationExtraction.targets.tables['ehv_substation']} CASCADE;"""
     )
 
     db.execute_sql(
-        f"""DROP TABLE IF EXISTS
-            {cfg_targets['hvmv_substation']['schema']}.
-            {cfg_targets['hvmv_substation']['table']} CASCADE;"""
+        f"""DROP TABLE IF EXISTS {SubstationExtraction.targets.tables['hvmv_substation']} CASCADE;"""
     )
 
     db.execute_sql(
-        f"""DROP SEQUENCE IF EXISTS
-            {cfg_targets['hvmv_substation']['schema']}.
-            {cfg_targets['hvmv_substation']['table']}_bus_id_seq CASCADE;"""
+        f"""DROP SEQUENCE IF EXISTS {SubstationExtraction.targets.tables['hvmv_substation']}_bus_id_seq CASCADE;"""
     )
 
     db.execute_sql(
-        f"""DROP SEQUENCE IF EXISTS
-            {cfg_targets['ehv_substation']['schema']}.
-            {cfg_targets['ehv_substation']['table']}_bus_id_seq CASCADE;"""
+        f"""DROP SEQUENCE IF EXISTS {SubstationExtraction.targets.tables['ehv_substation']}_bus_id_seq CASCADE;"""
     )
 
     engine = db.engine()
@@ -196,14 +198,12 @@ def create_sql_functions():
         END;
         $BODY$ LANGUAGE 'plpgsql' IMMUTABLE
         COST 100;
-        """
-    )
+        """)
 
     # Create function: relation_geometry
     # Function creates a geometry point from relation parts of type way
 
-    db.execute_sql(
-        """
+    db.execute_sql("""
         DROP FUNCTION IF EXISTS relation_geometry (members text[]) CASCADE;
         CREATE OR REPLACE FUNCTION relation_geometry (members text[])
         RETURNS geometry
@@ -225,13 +225,11 @@ def create_sql_functions():
         RETURN way;
         END;
         $$ LANGUAGE plpgsql;
-        """
-    )
+        """)
 
     # Create function: ST_Buffer_Meters(geometry, double precision)
 
-    db.execute_sql(
-        """
+    db.execute_sql("""
         DROP FUNCTION IF EXISTS ST_Buffer_Meters(geometry, double precision) CASCADE;
         CREATE OR REPLACE FUNCTION ST_Buffer_Meters(geometry, double precision)
         RETURNS geometry AS
@@ -248,27 +246,21 @@ def create_sql_functions():
         END;
         $BODY$ LANGUAGE 'plpgsql' IMMUTABLE
         COST 100;
-        """
-    )
+        """)
 
 
 def transfer_busses():
-    targets = egon.data.config.datasets()["substation_extraction"]["targets"]
 
-    db.execute_sql(
-        f"""
-        DROP TABLE IF EXISTS {targets['transfer_busses']['table']};
-        CREATE TABLE {targets['transfer_busses']['table']} AS
+    db.execute_sql(f"""
+        DROP TABLE IF EXISTS {SubstationExtraction.targets.tables['transfer_busses']};
+        CREATE TABLE {SubstationExtraction.targets.tables['transfer_busses']} AS
         SELECT DISTINCT ON (osm_id) * FROM
-        (SELECT * FROM {targets['ehv_substation']['schema']}.
-         {targets['ehv_substation']['table']}
+        (SELECT * FROM {SubstationExtraction.targets.tables['ehv_substation']}
         UNION SELECT bus_id, lon, lat, point, polygon, voltage,
         power_type, substation, osm_id, osm_www, frequency, subst_name,
         ref, operator, dbahn, status
-        FROM {targets['hvmv_substation']['schema']}.
-         {targets['hvmv_substation']['table']} ORDER BY osm_id) as foo;
-        """
-    )
+        FROM {SubstationExtraction.targets.tables['hvmv_substation']} ORDER BY osm_id) as foo;
+        """)
 
 
 def extract_ehv():

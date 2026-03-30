@@ -7,7 +7,7 @@ from sqlalchemy.ext.declarative import declarative_base
 import geopandas as gpd
 
 from egon.data import db
-from egon.data.datasets import Dataset
+from egon.data.datasets import Dataset, DatasetSources, DatasetTargets
 from egon.data.datasets.mv_grid_districts import MvGridDistricts
 from egon.data.datasets.zensus_vg250 import DestatisZensusPopulationPerHa
 from egon.data.validation import TableValidation, resolve_boundary_dependence
@@ -32,7 +32,20 @@ class ZensusMvGridDistricts(Dataset):
     #:
     name: str = "ZensusMvGridDistricts"
     #:
-    version: str = "0.0.2"
+    version: str = "0.0.3"
+
+    sources = DatasetSources(
+        tables={
+            "zensus_population": "society.destatis_zensus_population_per_ha",
+            "egon_mv_grid_district": "grid.egon_mv_grid_district",
+        }
+    )
+
+    targets = DatasetTargets(
+        tables={
+            "map": "boundaries.egon_map_zensus_grid_districts",
+        }
+    )
 
     def __init__(self, dependencies):
         super().__init__(
@@ -94,27 +107,20 @@ def mapping():
     MapZensusGridDistricts.__table__.drop(bind=db.engine(), checkfirst=True)
     MapZensusGridDistricts.__table__.create(bind=db.engine(), checkfirst=True)
 
-    # Get information from data configuration file
-    cfg = egon.data.config.datasets()["map_zensus_grid_districts"]
+    sources = ZensusMvGridDistricts.sources
+    targets = ZensusMvGridDistricts.targets
 
     # Delete existsing data
-    db.execute_sql(
-        f"""DELETE FROM
-        {cfg['targets']['map']['schema']}.{cfg['targets']['map']['table']}"""
-    )
+    db.execute_sql(f"DELETE FROM {targets.tables['map']}")
 
     # Select zensus cells
     zensus = db.select_geodataframe(
-        f"""SELECT id as zensus_population_id, geom_point FROM
-        {cfg['sources']['zensus_population']['schema']}.
-        {cfg['sources']['zensus_population']['table']}""",
+        f"SELECT id as zensus_population_id, geom_point FROM {sources.tables['zensus_population']}",
         geom_col="geom_point",
     )
 
     grid_districts = db.select_geodataframe(
-        f"""SELECT bus_id, geom
-        FROM {cfg['sources']['egon_mv_grid_district']['schema']}.
-        {cfg['sources']['egon_mv_grid_district']['table']}""",
+        f"SELECT bus_id, geom FROM {sources.tables['egon_mv_grid_district']}",
         geom_col="geom",
         epsg=3035,
     )
@@ -126,8 +132,8 @@ def mapping():
 
     # Insert results to database
     join[["zensus_population_id", "bus_id"]].to_sql(
-        cfg["targets"]["map"]["table"],
-        schema=cfg["targets"]["map"]["schema"],
+        targets.get_table_name("map"),
+        schema=targets.get_table_schema("map"),
         con=db.engine(),
         if_exists="replace",
     )
