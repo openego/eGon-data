@@ -149,50 +149,97 @@ class DsmPotential(Dataset):
             validation={
                 "data-quality": [
                     ArrayCardinalityValidation(
-                        table="demand.egon_demandregio_sites_ind_electricity_dsm_timeseries",
-                        rule_id="ARRAY_VALIDATION.egon_demandregio_sites_ind_electricity_dsm_timeseries",
+                        table=(
+                            "demand.egon_demandregio_sites_ind_"
+                            "electricity_dsm_timeseries"
+                        ),
+                        rule_id=(
+                            "ARRAY_VALIDATION.egon_demandregio_sites_ind_"
+                            "electricity_dsm_timeseries"
+                        ),
                         array_column="p_set",
                         expected_length=8760,
                     ),
                     ArrayCardinalityValidation(
-                        table="demand.egon_demandregio_sites_ind_electricity_dsm_timeseries",
-                        rule_id="ARRAY_VALIDATION.egon_demandregio_sites_ind_electricity_dsm_timeseries",
+                        table=(
+                            "demand.egon_demandregio_sites_ind_"
+                            "electricity_dsm_timeseries"
+                        ),
+                        rule_id=(
+                            "ARRAY_VALIDATION.egon_demandregio_sites_ind_"
+                            "electricity_dsm_timeseries"
+                        ),
                         array_column="p_max",
                         expected_length=8760,
                     ),
                     ArrayCardinalityValidation(
-                        table="demand.egon_demandregio_sites_ind_electricity_dsm_timeseries",
-                        rule_id="ARRAY_VALIDATION.egon_demandregio_sites_ind_electricity_dsm_timeseries",
+                        table=(
+                            "demand.egon_demandregio_sites_ind_"
+                            "electricity_dsm_timeseries"
+                        ),
+                        rule_id=(
+                            "ARRAY_VALIDATION.egon_demandregio_sites_ind_"
+                            "electricity_dsm_timeseries"
+                        ),
                         array_column="p_min",
                         expected_length=8760,
                     ),
                     ArrayCardinalityValidation(
-                        table="demand.egon_demandregio_sites_ind_electricity_dsm_timeseries",
-                        rule_id="ARRAY_VALIDATION.egon_demandregio_sites_ind_electricity_dsm_timeseries",
+                        table=(
+                            "demand.egon_demandregio_sites_ind_"
+                            "electricity_dsm_timeseries"
+                        ),
+                        rule_id=(
+                            "ARRAY_VALIDATION.egon_demandregio_sites_ind_"
+                            "electricity_dsm_timeseries"
+                        ),
                         array_column="e_max",
                         expected_length=8760,
                     ),
                     ArrayCardinalityValidation(
-                        table="demand.egon_demandregio_sites_ind_electricity_dsm_timeseries",
-                        rule_id="ARRAY_VALIDATION.egon_demandregio_sites_ind_electricity_dsm_timeseries",
+                        table=(
+                            "demand.egon_demandregio_sites_ind_"
+                            "electricity_dsm_timeseries"
+                        ),
+                        rule_id=(
+                            "ARRAY_VALIDATION.egon_demandregio_sites_ind_"
+                            "electricity_dsm_timeseries"
+                        ),
                         array_column="e_min",
                         expected_length=8760,
                     ),
                     ArrayCardinalityValidation(
-                        table="demand.egon_etrago_electricity_cts_dsm_timeseries",
-                        rule_id="ARRAY_VALIDATION.egon_etrago_electricity_cts_dsm_timeseries",
+                        table=(
+                            "demand.egon_etrago_electricity_cts_dsm_timeseries"
+                        ),
+                        rule_id=(
+                            "ARRAY_VALIDATION."
+                            "egon_etrago_electricity_cts_dsm_timeseries"
+                        ),
                         array_column="p_set",
                         expected_length=8760,
                     ),
                     ArrayCardinalityValidation(
-                        table="demand.egon_osm_ind_load_curves_individual_dsm_timeseries",
-                        rule_id="ARRAY_VALIDATION.egon_osm_ind_load_curves_individual_dsm_timeseries",
+                        table=(
+                            "demand.egon_osm_ind_load_curves_"
+                            "individual_dsm_timeseries"
+                        ),
+                        rule_id=(
+                            "ARRAY_VALIDATION.egon_osm_ind_load_curves_"
+                            "individual_dsm_timeseries"
+                        ),
                         array_column="p_set",
                         expected_length=8760,
                     ),
                     ArrayCardinalityValidation(
-                        table="demand.egon_sites_ind_load_curves_individual_dsm_timeseries",
-                        rule_id="ARRAY_VALIDATION.egon_sites_ind_load_curves_individual_dsm_timeseries",
+                        table=(
+                            "demand.egon_sites_ind_load_curves_"
+                            "individual_dsm_timeseries"
+                        ),
+                        rule_id=(
+                            "ARRAY_VALIDATION.egon_sites_ind_load_curves_"
+                            "individual_dsm_timeseries"
+                        ),
                         array_column="p_set",
                         expected_length=8760,
                     ),

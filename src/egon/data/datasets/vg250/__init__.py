@@ -452,7 +452,9 @@ def vg250_metadata_resources_fields():
             "unit": "none",
         },
         {
-            "description": "Seat of the administration (territorial code, deprecated column)",
+            "description": (
+                "Seat of the administration (territorial code, deprecated column)"
+            ),
             "name": "sdv_rs",
             "type": "string",
             "unit": "none",
@@ -534,10 +536,13 @@ class Vg250(Dataset):
                 "data_quality": [
                     TableValidation(
                         table_name="boundaries.vg250_krs",
-                        row_count=resolve_boundary_dependence({"Schleswig-Holstein": 27, "Everything": 537}),
+                        row_count=resolve_boundary_dependence({
+                            "Schleswig-Holstein": 27,
+                            "Everything": 537,
+                        }),
                         geometry_columns=["geometry"],
-                        data_type_columns=resolve_boundary_dependence(
-                            {"Schleswig-Holstein": {
+                        data_type_columns=resolve_boundary_dependence({
+                            "Schleswig-Holstein": {
                                 "id": "bigint",
                                 "ade": "integer",
                                 "gf": "integer",
@@ -565,7 +570,7 @@ class Vg250(Dataset):
                                 "rs": "text",
                                 "sdv_rs": "text",
                                 "rs_0": "text",
-                                "geometry": "geometry"
+                                "geometry": "geometry",
                             },
                             "Everything": {
                                 "id": "bigint",
@@ -595,9 +600,9 @@ class Vg250(Dataset):
                                 "rs": "text",
                                 "sdv_rs": "text",
                                 "rs_0": "text",
-                                "geometry": "geometry"
-                            }
-                            }),
+                                "geometry": "geometry",
+                            },
+                        }),
                         not_null_columns=["gf", "bsg"],
                         value_set_columns={"nbd": ["ja", "nein"]},
                     ),

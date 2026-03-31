@@ -738,9 +738,9 @@ with airflow.DAG(
         # These run after all data generation but before the validation report
         final_validations = FinalValidations(
             dependencies=[
-                insert_data_ch4_storages,  # CH4Storages - for CH4 store validation
-                insert_H2_storage,          # HydrogenStoreEtrago - for H2 saltcavern validation
-                storage_etrago,             # StorageEtrago - general storage validation
+                insert_data_ch4_storages,  # CH4Storages
+                insert_H2_storage,  # HydrogenStoreEtrago
+                storage_etrago,  # StorageEtrago
                 hts_etrago_table,
                 fill_etrago_generators,
                 household_electricity_demand_annual,
