@@ -10,10 +10,9 @@ from sqlalchemy.ext.declarative import declarative_base
 import geopandas as gpd
 
 from egon.data import db
-from egon.data.datasets import Dataset
-import egon.data.config
-
+from egon.data.datasets import Dataset, DatasetSources, DatasetTargets
 from egon.data.validation import TableValidation, resolve_boundary_dependence
+import egon.data.config
 
 Base = declarative_base()
 
@@ -57,10 +56,8 @@ class EgonRePotentialAreaWind(Base):
 def create_tables():
     """Create tables for RE potential areas"""
 
-    data_config = egon.data.config.datasets()
-    schema = data_config["re_potential_areas"]["target"].get(
-        "schema", "supply"
-    )
+    targets = re_potential_area_setup.targets
+    schema = targets.get_table_schema("egon_re_potential_area_wind")
 
     db.execute_sql(f"CREATE SCHEMA IF NOT EXISTS {schema};")
     engine = db.engine()
@@ -112,8 +109,8 @@ def insert_data():
         data.rename(columns={"geometry": "geom"}, inplace=True)
         data.set_geometry("geom", inplace=True)
 
-        schema = pa_config["target"].get("schema", "supply")
-
+        targets = re_potential_area_setup.targets
+        schema = targets.get_table_schema("egon_re_potential_area_wind")
         # create database table from geopandas dataframe
         data[["id", "geom"]].to_postgis(
             table,
@@ -144,9 +141,28 @@ class re_potential_area_setup(Dataset):
     #:
     name: str = "RePotentialAreas"
     #:
-    version: str = "0.0.1"
+    version: str = "0.0.4"
     #:
     tasks = (create_tables, insert_data)
+
+    sources = DatasetSources(
+        files={
+            "potentialarea_pv_agriculture": "data_bundle_egon_data/re_potential_areas/potentialarea_pv_agriculture.gpkg",
+            "potentialarea_pv_road_railway": "data_bundle_egon_data/re_potential_areas/potentialarea_pv_road_railway.gpkg",
+            "potentialarea_wind": "data_bundle_egon_data/re_potential_areas/potentialarea_wind.gpkg",
+            "potentialarea_pv_agriculture_SH": "data_bundle_egon_data/re_potential_areas/potentialarea_pv_agriculture_SH.gpkg",
+            "potentialarea_pv_road_railway_SH": "data_bundle_egon_data/re_potential_areas/potentialarea_pv_road_railway_SH.gpkg",
+            "potentialarea_wind_SH": "data_bundle_egon_data/re_potential_areas/potentialarea_wind_SH.gpkg",
+        }
+    )
+
+    targets = DatasetTargets(
+        tables={
+            "egon_re_potential_area_pv_agriculture": "supply.egon_re_potential_area_pv_agriculture",
+            "egon_re_potential_area_pv_road_railway": "supply.egon_re_potential_area_pv_road_railway",
+            "egon_re_potential_area_wind": "supply.egon_re_potential_area_wind",
+        }
+    )
 
     def __init__(self, dependencies):
         super().__init__(
@@ -158,44 +174,41 @@ class re_potential_area_setup(Dataset):
                 "data-quality": [
                     TableValidation(
                         table_name="supply.egon_re_potential_area_pv_agriculture",
-                        row_count=resolve_boundary_dependence({
-                            "Schleswig-Holstein": 388,
-                            "Everything": 8259
-                        }),
+                        row_count=resolve_boundary_dependence(
+                            {"Schleswig-Holstein": 388, "Everything": 8259}
+                        ),
                         geometry_columns=["geom"],
                         data_type_columns={
                             "id": "integer",
-                            "geom": "geometry"
+                            "geom": "geometry",
                         },
-                        not_null_columns=["id", "geom"]
+                        not_null_columns=["id", "geom"],
                     ),
                     TableValidation(
                         table_name="supply.egon_re_potential_area_pv_road_railway",
-                        row_count=resolve_boundary_dependence({
-                            "Schleswig-Holstein": 479,
-                            "Everything": 5159
-                        }),
+                        row_count=resolve_boundary_dependence(
+                            {"Schleswig-Holstein": 479, "Everything": 5159}
+                        ),
                         geometry_columns=["geom"],
                         data_type_columns={
                             "id": "integer",
-                            "geom": "geometry"
+                            "geom": "geometry",
                         },
-                        not_null_columns=["id", "geom"]
+                        not_null_columns=["id", "geom"],
                     ),
                     TableValidation(
                         table_name="supply.egon_re_potential_area_wind",
-                        row_count=resolve_boundary_dependence({
-                            "Schleswig-Holstein": 6306,
-                            "Everything": 120268
-                        }),
+                        row_count=resolve_boundary_dependence(
+                            {"Schleswig-Holstein": 6306, "Everything": 120268}
+                        ),
                         geometry_columns=["geom"],
                         data_type_columns={
                             "id": "integer",
-                            "geom": "geometry"
+                            "geom": "geometry",
                         },
-                        not_null_columns=["id", "geom"]
+                        not_null_columns=["id", "geom"],
                     ),
                 ]
             },
-            proceed_on_validation_failure=True
+            proceed_on_validation_failure=True,
         )

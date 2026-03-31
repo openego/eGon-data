@@ -5,17 +5,19 @@ Validates that distributed capacities in etrago tables match input capacities
 from scenario_capacities table.
 """
 
+from typing import List, Optional
+
 from egon_validation.rules.base import DataFrameRule, RuleResult, Severity
-from typing import Optional, List
 
 
 class ElectricityCapacityComparison(DataFrameRule):
     """
-    Compare distributed capacity with input capacity for electricity components.
+    Compare distributed capacity with input capacity for electricity.
 
-    Compares the total capacity in etrago tables (grid.egon_etrago_generator,
-    grid.egon_etrago_storage) against the input capacity from the scenario
-    capacities table (supply.egon_scenario_capacities).
+    Compares the total capacity in etrago tables
+    (grid.egon_etrago_generator, grid.egon_etrago_storage) against the
+    input capacity from the scenario capacities table
+    (supply.egon_scenario_capacities).
 
     This validation ensures that capacity distribution is correct and no
     capacity is lost or incorrectly added during the distribution process.
@@ -30,13 +32,14 @@ class ElectricityCapacityComparison(DataFrameRule):
         component_type: str = "generator",
         output_carriers: Optional[List[str]] = None,
         rtol: float = 0.10,
-        **kwargs
+        **kwargs,
     ):
         """
         Parameters
         ----------
         table : str
-            Target table (grid.egon_etrago_generator or grid.egon_etrago_storage)
+            Target table (grid.egon_etrago_generator or
+            grid.egon_etrago_storage)
         rule_id : str
             Unique identifier for this validation rule
         scenario : str
@@ -46,7 +49,7 @@ class ElectricityCapacityComparison(DataFrameRule):
         component_type : str
             Type of component ("generator", "storage", or "link")
         output_carriers : List[str], optional
-            List of carrier names in output table. If None, uses carrier parameter.
+            List of carrier names in output table. If None, uses carrier.
             Useful for biomass which maps to multiple output carriers.
         rtol : float
             Relative tolerance for capacity deviation (default: 0.10 = 10%)
@@ -59,7 +62,7 @@ class ElectricityCapacityComparison(DataFrameRule):
             component_type=component_type,
             output_carriers=output_carriers,
             rtol=rtol,
-            **kwargs
+            **kwargs,
         )
         self.kind = "sanity"
         self.scenario = scenario
@@ -156,11 +159,13 @@ class ElectricityCapacityComparison(DataFrameRule):
                 table=self.table,
                 kind=self.kind,
                 success=False,
-                message=f"No data found for {self.carrier} capacity comparison",
+                message=(
+                    f"No data found for {self.carrier} capacity comparison"
+                ),
                 severity=Severity.ERROR,
                 schema=self.schema,
                 table_name=self.table_name,
-                rule_class=self.__class__.__name__
+                rule_class=self.__class__.__name__,
             )
 
         output_capacity = float(df["output_capacity_mw"].values[0])
@@ -183,7 +188,7 @@ class ElectricityCapacityComparison(DataFrameRule):
                 severity=Severity.INFO,
                 schema=self.schema,
                 table_name=self.table_name,
-                rule_class=self.__class__.__name__
+                rule_class=self.__class__.__name__,
             )
 
         # Case 2: Input > 0 but output = 0 - ERROR
@@ -197,13 +202,14 @@ class ElectricityCapacityComparison(DataFrameRule):
                 observed=0.0,
                 expected=input_capacity,
                 message=(
-                    f"{self.carrier} {self.component_type} capacity was not distributed at all! "
-                    f"Input: {input_capacity:.2f} MW, Output: 0 MW for {self.scenario}"
+                    f"{self.carrier} {self.component_type} capacity was not "
+                    f"distributed at all! Input: {input_capacity:.2f} MW, "
+                    f"Output: 0 MW for {self.scenario}"
                 ),
                 severity=Severity.ERROR,
                 schema=self.schema,
                 table_name=self.table_name,
-                rule_class=self.__class__.__name__
+                rule_class=self.__class__.__name__,
             )
 
         # Case 3: Output > 0 but input = 0 - ERROR
@@ -217,14 +223,15 @@ class ElectricityCapacityComparison(DataFrameRule):
                 observed=output_capacity,
                 expected=0.0,
                 message=(
-                    f"{self.carrier} {self.component_type} capacity was distributed "
-                    f"even though no input was provided! "
-                    f"Output: {output_capacity:.2f} MW, Input: 0 MW for {self.scenario}"
+                    f"{self.carrier} {self.component_type} capacity was "
+                    f"distributed even though no input was provided! "
+                    f"Output: {output_capacity:.2f} MW, Input: 0 MW for "
+                    f"{self.scenario}"
                 ),
                 severity=Severity.ERROR,
                 schema=self.schema,
                 table_name=self.table_name,
-                rule_class=self.__class__.__name__
+                rule_class=self.__class__.__name__,
             )
 
         # Case 4: Both > 0 - Check deviation
@@ -243,14 +250,15 @@ class ElectricityCapacityComparison(DataFrameRule):
                 observed=output_capacity,
                 expected=input_capacity,
                 message=(
-                    f"{self.carrier} {self.component_type} capacity valid for {self.scenario}: "
-                    f"Output: {output_capacity:.2f} MW, Input: {input_capacity:.2f} MW, "
-                    f"Deviation: {error_pct:+.2f}% (tolerance: ±{self.rtol*100:.2f}%)"
+                    f"{self.carrier} {self.component_type} capacity valid for "
+                    f"{self.scenario}: Output: {output_capacity:.2f} MW, "
+                    f"Input: {input_capacity:.2f} MW, Deviation: "
+                    f"{error_pct:+.2f}% (tolerance: ±{self.rtol*100:.2f}%)"
                 ),
                 severity=Severity.INFO,
                 schema=self.schema,
                 table_name=self.table_name,
-                rule_class=self.__class__.__name__
+                rule_class=self.__class__.__name__,
             )
         else:
             return RuleResult(
@@ -262,12 +270,14 @@ class ElectricityCapacityComparison(DataFrameRule):
                 observed=output_capacity,
                 expected=input_capacity,
                 message=(
-                    f"{self.carrier} {self.component_type} capacity deviation too large for {self.scenario}: "
-                    f"Output: {output_capacity:.2f} MW, Input: {input_capacity:.2f} MW, "
-                    f"Deviation: {error_pct:+.2f}% (tolerance: ±{self.rtol*100:.2f}%)"
+                    f"{self.carrier} {self.component_type} capacity deviation "
+                    f"too large for {self.scenario}: "
+                    f"Output: {output_capacity:.2f} MW, "
+                    f"Input: {input_capacity:.2f} MW, Deviation: "
+                    f"{error_pct:+.2f}% (tolerance: ±{self.rtol*100:.2f}%)"
                 ),
                 severity=Severity.ERROR,
                 schema=self.schema,
                 table_name=self.table_name,
-                rule_class=self.__class__.__name__
+                rule_class=self.__class__.__name__,
             )

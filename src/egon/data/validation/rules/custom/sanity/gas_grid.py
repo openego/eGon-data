@@ -5,10 +5,10 @@ Validates gas bus connectivity, counts, and grid consistency.
 """
 
 from pathlib import Path
-from typing import List, Tuple, Optional, Any
+from typing import Any, List, Optional, Tuple
 
-import pandas as pd
 from egon_validation.rules.base import DataFrameRule, RuleResult, Severity
+import pandas as pd
 
 from egon.data.datasets.scenario_parameters import get_sector_parameters
 
@@ -25,8 +25,14 @@ class GasBusesIsolated(DataFrameRule):
     of the corresponding link carrier.
     """
 
-    def __init__(self, table: str, rule_id: str, scenario: str = "eGon2035",
-                 carrier: str = "CH4", **kwargs):
+    def __init__(
+        self,
+        table: str,
+        rule_id: str,
+        scenario: str = "eGon2035",
+        carrier: str = "CH4",
+        **kwargs,
+    ):
         """
         Parameters
         ----------
@@ -39,8 +45,13 @@ class GasBusesIsolated(DataFrameRule):
         carrier : str
             Bus carrier type ("CH4", "H2_grid", or "H2_saltcavern")
         """
-        super().__init__(rule_id=rule_id, table=table, scenario=scenario,
-                         carrier=carrier, **kwargs)
+        super().__init__(
+            rule_id=rule_id,
+            table=table,
+            scenario=scenario,
+            carrier=carrier,
+            **kwargs,
+        )
         self.kind = "sanity"
         self.scenario = scenario
         self.carrier = carrier
@@ -56,7 +67,7 @@ class GasBusesIsolated(DataFrameRule):
                 "CH4": "CH4",
                 "H2_grid": "H2_retrofit",
                 "H2_saltcavern": "H2_extension",
-            }
+            },
         }
 
     def get_query(self, ctx):
@@ -69,11 +80,17 @@ class GasBusesIsolated(DataFrameRule):
         """
         if self.scenario not in self.carrier_mapping:
             # Return empty query for unsupported scenarios
-            return "SELECT NULL as bus_id, NULL as carrier, NULL as country LIMIT 0"
+            return (
+                "SELECT NULL as bus_id, NULL as carrier, "
+                "NULL as country LIMIT 0"
+            )
 
         link_carrier = self.carrier_mapping[self.scenario].get(self.carrier)
         if not link_carrier:
-            return "SELECT NULL as bus_id, NULL as carrier, NULL as country LIMIT 0"
+            return (
+                "SELECT NULL as bus_id, NULL as carrier, "
+                "NULL as country LIMIT 0"
+            )
 
         return f"""
         SELECT bus_id, carrier, country
@@ -126,17 +143,17 @@ class GasBusesIsolated(DataFrameRule):
                 observed=0,
                 expected=0,
                 message=(
-                    f"No isolated {self.carrier} buses found for {self.scenario} "
-                    f"(all buses connected to grid)"
+                    f"No isolated {self.carrier} buses found for "
+                    f"{self.scenario} (all buses connected to grid)"
                 ),
                 severity=Severity.INFO,
                 schema=self.schema,
                 table_name=self.table_name,
-                rule_class=self.__class__.__name__
+                rule_class=self.__class__.__name__,
             )
         else:
             # Show sample of isolated buses (first 5)
-            sample_buses = df.head(5).to_dict(orient='records')
+            sample_buses = df.head(5).to_dict(orient="records")
 
             return RuleResult(
                 rule_id=self.rule_id,
@@ -147,13 +164,13 @@ class GasBusesIsolated(DataFrameRule):
                 observed=isolated_count,
                 expected=0,
                 message=(
-                    f"Found {isolated_count} isolated {self.carrier} buses for {self.scenario}. "
-                    f"Sample (first 5): {sample_buses}"
+                    f"Found {isolated_count} isolated {self.carrier} buses "
+                    f"for {self.scenario}. Sample (first 5): {sample_buses}"
                 ),
                 severity=Severity.ERROR,
                 schema=self.schema,
                 table_name=self.table_name,
-                rule_class=self.__class__.__name__
+                rule_class=self.__class__.__name__,
             )
 
 
@@ -169,9 +186,16 @@ class GasBusesCount(DataFrameRule):
     the SciGRID_gas reference data. Use None for a boundary to skip validation.
     """
 
-    def __init__(self, table: str, rule_id: str, scenario: str = "eGon2035",
-                 carrier: str = "CH4", rtol: float = 0.10,
-                 expected_count: Optional[Any] = None, **kwargs):
+    def __init__(
+        self,
+        table: str,
+        rule_id: str,
+        scenario: str = "eGon2035",
+        carrier: str = "CH4",
+        rtol: float = 0.10,
+        expected_count: Optional[Any] = None,
+        **kwargs,
+    ):
         """
         Parameters
         ----------
@@ -192,9 +216,15 @@ class GasBusesCount(DataFrameRule):
             - BoundaryDependent: boundary-specific expected counts
               Use None for a boundary to skip validation for that boundary.
         """
-        super().__init__(rule_id=rule_id, table=table, scenario=scenario,
-                         carrier=carrier, rtol=rtol, expected_count=expected_count,
-                         **kwargs)
+        super().__init__(
+            rule_id=rule_id,
+            table=table,
+            scenario=scenario,
+            carrier=carrier,
+            rtol=rtol,
+            expected_count=expected_count,
+            **kwargs,
+        )
         self.kind = "sanity"
         self.scenario = scenario
         self.carrier = carrier
@@ -237,7 +267,13 @@ class GasBusesCount(DataFrameRule):
         if expected_count is None:
             # Fall back to SciGRID_gas reference data
             try:
-                target_file = Path(".") / "datasets" / "gas_data" / "data" / "IGGIELGN_Nodes.csv"
+                target_file = (
+                    Path(".")
+                    / "datasets"
+                    / "gas_data"
+                    / "data"
+                    / "IGGIELGN_Nodes.csv"
+                )
                 grid_buses_df = pd.read_csv(
                     target_file,
                     delimiter=";",
@@ -259,7 +295,7 @@ class GasBusesCount(DataFrameRule):
                     severity=Severity.ERROR,
                     schema=self.schema,
                     table_name=self.table_name,
-                    rule_class=self.__class__.__name__
+                    rule_class=self.__class__.__name__,
                 )
 
         if df.empty or df["bus_count"].isna().all():
@@ -273,7 +309,7 @@ class GasBusesCount(DataFrameRule):
                 severity=Severity.WARNING,
                 schema=self.schema,
                 table_name=self.table_name,
-                rule_class=self.__class__.__name__
+                rule_class=self.__class__.__name__,
             )
 
         observed_count = int(df["bus_count"].values[0])
@@ -303,7 +339,7 @@ class GasBusesCount(DataFrameRule):
                 severity=Severity.INFO,
                 schema=self.schema,
                 table_name=self.table_name,
-                rule_class=self.__class__.__name__
+                rule_class=self.__class__.__name__,
             )
         else:
             return RuleResult(
@@ -315,14 +351,15 @@ class GasBusesCount(DataFrameRule):
                 observed=float(observed_count),
                 expected=float(expected_count),
                 message=(
-                    f"{self.carrier} bus count deviation too large for {self.scenario}: "
-                    f"{observed_count} vs {expected_count} expected "
-                    f"(deviation: {deviation_pct:.2f}%, tolerance: {rtol*100:.2f}%)"
+                    f"{self.carrier} bus count deviation too large for "
+                    f"{self.scenario}: {observed_count} vs {expected_count} "
+                    f"expected (deviation: {deviation_pct:.2f}%, "
+                    f"tolerance: {rtol*100:.2f}%)"
                 ),
                 severity=Severity.ERROR,
                 schema=self.schema,
                 table_name=self.table_name,
-                rule_class=self.__class__.__name__
+                rule_class=self.__class__.__name__,
             )
 
 
@@ -337,9 +374,16 @@ class GasOnePortConnections(DataFrameRule):
     orphaned components that would cause errors in network optimization.
     """
 
-    def __init__(self, table: str, rule_id: str, scenario: str = "eGon2035",
-                 component_type: str = "load", component_carrier: str = "CH4_for_industry",
-                 bus_conditions: List[Tuple[str, str]] = None, **kwargs):
+    def __init__(
+        self,
+        table: str,
+        rule_id: str,
+        scenario: str = "eGon2035",
+        component_type: str = "load",
+        component_carrier: str = "CH4_for_industry",
+        bus_conditions: List[Tuple[str, str]] = None,
+        **kwargs,
+    ):
         """
         Parameters
         ----------
@@ -361,10 +405,15 @@ class GasOnePortConnections(DataFrameRule):
             - [("CH4", "!= 'DE'")] - CH4 buses outside Germany
             - [("H2_grid", "= 'DE'"), ("AC", "!= 'DE'")] - H2_grid in DE OR AC abroad
         """
-        super().__init__(rule_id=rule_id, table=table, scenario=scenario,
-                         component_type=component_type,
-                         component_carrier=component_carrier,
-                         bus_conditions=bus_conditions or [], **kwargs)
+        super().__init__(
+            rule_id=rule_id,
+            table=table,
+            scenario=scenario,
+            component_type=component_type,
+            component_carrier=component_carrier,
+            bus_conditions=bus_conditions or [],
+            **kwargs,
+        )
         self.kind = "sanity"
         self.scenario = scenario
         self.component_type = component_type
@@ -375,7 +424,7 @@ class GasOnePortConnections(DataFrameRule):
         self.id_column_map = {
             "load": "load_id",
             "generator": "generator_id",
-            "store": "store_id"
+            "store": "store_id",
         }
 
     def get_query(self, ctx):
@@ -460,11 +509,11 @@ class GasOnePortConnections(DataFrameRule):
                 severity=Severity.INFO,
                 schema=self.schema,
                 table_name=self.table_name,
-                rule_class=self.__class__.__name__
+                rule_class=self.__class__.__name__,
             )
         else:
             # Show sample of disconnected components (first 5)
-            sample_components = df.head(5).to_dict(orient='records')
+            sample_components = df.head(5).to_dict(orient="records")
 
             return RuleResult(
                 rule_id=self.rule_id,
@@ -482,7 +531,7 @@ class GasOnePortConnections(DataFrameRule):
                 severity=Severity.ERROR,
                 schema=self.schema,
                 table_name=self.table_name,
-                rule_class=self.__class__.__name__
+                rule_class=self.__class__.__name__,
             )
 
 
@@ -499,8 +548,14 @@ class CH4GridCapacity(DataFrameRule):
     the imported SciGRID_gas data, accounting for any scenario-specific modifications.
     """
 
-    def __init__(self, table: str, rule_id: str, scenario: str = "eGon2035",
-                 rtol: float = 0.10, **kwargs):
+    def __init__(
+        self,
+        table: str,
+        rule_id: str,
+        scenario: str = "eGon2035",
+        rtol: float = 0.10,
+        **kwargs,
+    ):
         """
         Parameters
         ----------
@@ -513,8 +568,13 @@ class CH4GridCapacity(DataFrameRule):
         rtol : float
             Relative tolerance for capacity deviation (default: 0.10 = 10%)
         """
-        super().__init__(rule_id=rule_id, table=table, scenario=scenario,
-                         rtol=rtol, **kwargs)
+        super().__init__(
+            rule_id=rule_id,
+            table=table,
+            scenario=scenario,
+            rtol=rtol,
+            **kwargs,
+        )
         self.kind = "sanity"
         self.scenario = scenario
 
@@ -584,7 +644,8 @@ class CH4GridCapacity(DataFrameRule):
 
             # Filter for pipelines within Germany
             germany_pipelines = pipelines[
-                (pipelines["country_0"] == "DE") & (pipelines["country_1"] == "DE")
+                (pipelines["country_0"] == "DE")
+                & (pipelines["country_1"] == "DE")
             ].copy()
 
             # Extract diameter from param (matches define_gas_pipeline_list line 680)
@@ -592,7 +653,8 @@ class CH4GridCapacity(DataFrameRule):
                 lambda x: ast.literal_eval(x)["diameter_mm"]
             )
 
-            # Map diameter to pipe_class (matches define_gas_pipeline_list lines 842-855)
+            # Map diameter to pipe_class
+            # (matches define_gas_pipeline_list lines 842-855)
             def get_pipe_class(diameter):
                 if diameter >= 1000:
                     return "A"
@@ -609,9 +671,9 @@ class CH4GridCapacity(DataFrameRule):
                 else:  # diameter <= 100
                     return "G"
 
-            germany_pipelines["pipe_class"] = germany_pipelines["diameter"].apply(
-                get_pipe_class
-            )
+            germany_pipelines["pipe_class"] = germany_pipelines[
+                "diameter"
+            ].apply(get_pipe_class)
 
             # Read pipeline classification for capacity mapping
             classification_file = (
@@ -637,9 +699,9 @@ class CH4GridCapacity(DataFrameRule):
 
             # Calculate p_nom in MW (matches define_gas_pipeline_list lines 875-877)
             # Conversion: GWh/d * (1000 MW/GW) / (24 h/d) = MW
-            germany_pipelines["p_nom"] = (
-                germany_pipelines["max_transport_capacity_Gwh/d"] * (1000 / 24)
-            )
+            germany_pipelines["p_nom"] = germany_pipelines[
+                "max_transport_capacity_Gwh/d"
+            ] * (1000 / 24)
 
             # Sum total capacity
             total_p_nom = germany_pipelines["p_nom"].sum()
@@ -647,13 +709,17 @@ class CH4GridCapacity(DataFrameRule):
             # Adjust for eGon100RE (H2 retrofit share)
             if self.scenario == "eGon100RE":
                 scn_params = get_sector_parameters("gas", "eGon100RE")
-                h2_retrofit_share = scn_params["retrofitted_CH4pipeline-to-H2pipeline_share"]
+                h2_retrofit_share = scn_params[
+                    "retrofitted_CH4pipeline-to-H2pipeline_share"
+                ]
                 total_p_nom = total_p_nom * (1 - h2_retrofit_share)
 
             return float(total_p_nom)
 
         except Exception as e:
-            raise ValueError(f"Error reading SciGRID_gas reference data: {str(e)}")
+            raise ValueError(
+                f"Error reading SciGRID_gas reference data: {str(e)}"
+            )
 
     def evaluate_df(self, df, ctx):
         """
@@ -682,7 +748,7 @@ class CH4GridCapacity(DataFrameRule):
                 severity=Severity.WARNING,
                 schema=self.schema,
                 table_name=self.table_name,
-                rule_class=self.__class__.__name__
+                rule_class=self.__class__.__name__,
             )
 
         observed_capacity = float(df["total_p_nom"].values[0])
@@ -701,7 +767,7 @@ class CH4GridCapacity(DataFrameRule):
                 severity=Severity.ERROR,
                 schema=self.schema,
                 table_name=self.table_name,
-                rule_class=self.__class__.__name__
+                rule_class=self.__class__.__name__,
             )
 
         # Handle edge case: expected capacity is zero or very small
@@ -719,12 +785,14 @@ class CH4GridCapacity(DataFrameRule):
                 severity=Severity.WARNING,
                 schema=self.schema,
                 table_name=self.table_name,
-                rule_class=self.__class__.__name__
+                rule_class=self.__class__.__name__,
             )
 
         # Calculate relative deviation
         rtol = self.params.get("rtol", 0.10)
-        deviation = abs(observed_capacity - expected_capacity) / expected_capacity
+        deviation = (
+            abs(observed_capacity - expected_capacity) / expected_capacity
+        )
 
         success = deviation <= rtol
         deviation_pct = deviation * 100
@@ -746,7 +814,7 @@ class CH4GridCapacity(DataFrameRule):
                 severity=Severity.INFO,
                 schema=self.schema,
                 table_name=self.table_name,
-                rule_class=self.__class__.__name__
+                rule_class=self.__class__.__name__,
             )
         else:
             return RuleResult(
@@ -758,14 +826,16 @@ class CH4GridCapacity(DataFrameRule):
                 observed=observed_capacity,
                 expected=expected_capacity,
                 message=(
-                    f"CH4 grid capacity deviation too large for {self.scenario}: "
-                    f"{observed_capacity:.2f} vs {expected_capacity:.2f} GWh/d expected "
-                    f"(deviation: {deviation_pct:.2f}%, tolerance: {rtol*100:.2f}%)"
+                    f"CH4 grid capacity deviation too large for "
+                    f"{self.scenario}: {observed_capacity:.2f} vs "
+                    f"{expected_capacity:.2f} GWh/d expected "
+                    f"(deviation: {deviation_pct:.2f}%, "
+                    f"tolerance: {rtol*100:.2f}%)"
                 ),
                 severity=Severity.ERROR,
                 schema=self.schema,
                 table_name=self.table_name,
-                rule_class=self.__class__.__name__
+                rule_class=self.__class__.__name__,
             )
 
 
@@ -782,8 +852,14 @@ class GasLinksConnections(DataFrameRule):
     H2 conversion links, and power-to-gas links.
     """
 
-    def __init__(self, table: str, rule_id: str, scenario: str = "eGon2035",
-                 carrier: str = "CH4", **kwargs):
+    def __init__(
+        self,
+        table: str,
+        rule_id: str,
+        scenario: str = "eGon2035",
+        carrier: str = "CH4",
+        **kwargs,
+    ):
         """
         Parameters
         ----------
@@ -796,8 +872,13 @@ class GasLinksConnections(DataFrameRule):
         carrier : str
             Link carrier type to check (e.g., "CH4", "H2_feedin", "power_to_H2")
         """
-        super().__init__(rule_id=rule_id, table=table, scenario=scenario,
-                         carrier=carrier, **kwargs)
+        super().__init__(
+            rule_id=rule_id,
+            table=table,
+            scenario=scenario,
+            carrier=carrier,
+            **kwargs,
+        )
         self.kind = "sanity"
         self.scenario = scenario
         self.carrier = carrier
@@ -856,16 +937,17 @@ class GasLinksConnections(DataFrameRule):
                 observed=0,
                 expected=0,
                 message=(
-                    f"All {self.carrier} links connected to valid buses for {self.scenario}"
+                    f"All {self.carrier} links connected to valid buses "
+                    f"for {self.scenario}"
                 ),
                 severity=Severity.INFO,
                 schema=self.schema,
                 table_name=self.table_name,
-                rule_class=self.__class__.__name__
+                rule_class=self.__class__.__name__,
             )
         else:
             # Show sample of disconnected links (first 5)
-            sample_links = df.head(5).to_dict(orient='records')
+            sample_links = df.head(5).to_dict(orient="records")
 
             return RuleResult(
                 rule_id=self.rule_id,
@@ -883,5 +965,5 @@ class GasLinksConnections(DataFrameRule):
                 severity=Severity.ERROR,
                 schema=self.schema,
                 table_name=self.table_name,
-                rule_class=self.__class__.__name__
+                rule_class=self.__class__.__name__,
             )

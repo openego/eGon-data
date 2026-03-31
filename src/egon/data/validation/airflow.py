@@ -2,10 +2,10 @@
 
 from __future__ import annotations
 
-import logging
 from functools import partial
-import re
 from typing import Any, Dict, List, Sequence
+import logging
+import re
 
 from airflow.operators.python import PythonOperator
 from egon_validation import RunContext, run_validations
@@ -31,9 +31,10 @@ def run_validation_task(
       - easier stack traces
       - fewer closure surprises
     """
+    from datetime import datetime
     import os
     import time
-    from datetime import datetime
+
     from egon.data import db as egon_db
     from egon.data.config import settings
 

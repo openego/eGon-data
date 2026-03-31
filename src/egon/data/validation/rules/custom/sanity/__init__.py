@@ -1,72 +1,63 @@
 """Sanity check validation rules for eGon data quality."""
 
-from .residential_electricity import (
-    ResidentialElectricityAnnualSum,
-    ResidentialElectricityHhRefinement,
-)
-from .cts_demand import (
+from .cts_demand import (  # noqa: F401
     CtsElectricityDemandShare,
     CtsHeatDemandShare,
 )
-from .home_batteries import (
-    HomeBatteriesAggregation,
+from .dsm import DSMTimeseries  # noqa: F401
+from .electrical_load_sectors import (  # noqa: F401
+    ElectricalLoadSectorBreakdown,
 )
-from .gas_stores import (
+from .electricity_capacity import (  # noqa: F401
+    ElectricityCapacityComparison,
+)
+from .emobility_mit import (  # noqa: F401
+    EVAllocationCount,
+    EVGridDistrictAllocation,
+    EVLowflexDrivingLoad,
+    EVModelComponentsCreated,
+    EVModelEnergyDemand,
+    EVModelSoCConstraint,
+    EVModelStorageCapacity,
+    EVModelTimeseriesLength,
+    EVTripChargingDemand,
+    EVTripTimeranges,
+)
+from .gas_abroad import (  # noqa: F401
+    CH4GeneratorsAbroad,
+    CH4GridLinksAbroad,
+    CH4LoadsAbroad,
+    CH4StoresAbroad,
+    GasBusesIsolatedAbroad,
+    H2LoadsAbroad,
+)
+from .gas_grid import (  # noqa: F401
+    CH4GridCapacity,
+    GasBusesCount,
+    GasBusesIsolated,
+    GasLinksConnections,
+    GasOnePortConnections,
+)
+from .gas_loads_generators import (  # noqa: F401
+    GasGeneratorsCapacity,
+    GasLoadsCapacity,
+)
+from .gas_stores import (  # noqa: F401
     CH4StoresCapacity,
     H2SaltcavernStoresCapacity,
 )
-from .gas_grid import (
-    GasBusesIsolated,
-    GasBusesCount,
-    GasOnePortConnections,
-    CH4GridCapacity,
-    GasLinksConnections,
-)
-from .gas_loads_generators import (
-    GasLoadsCapacity,
-    GasGeneratorsCapacity,
-)
-from .electricity_capacity import (
-    ElectricityCapacityComparison,
-)
-from .heat_demand import (
-    HeatDemandValidation,
-)
-from .electrical_load_sectors import (
-    ElectricalLoadSectorBreakdown,
-)
-from .dsm import (
-    DSMTimeseries,
-)
-from .pv_rooftop import (
-    PvRooftopBuildingsValidation,
-)
-from .emobility_mit import (
-    EVAllocationCount,
-    EVGridDistrictAllocation,
-    EVTripTimeranges,
-    EVTripChargingDemand,
-    EVModelComponentsCreated,
-    EVModelTimeseriesLength,
-    EVModelEnergyDemand,
-    EVModelStorageCapacity,
-    EVModelSoCConstraint,
-    EVLowflexDrivingLoad,
-)
-from .gas_abroad import (
-    GasBusesIsolatedAbroad,
-    CH4LoadsAbroad,
-    H2LoadsAbroad,
-    CH4GeneratorsAbroad,
-    CH4StoresAbroad,
-    CH4GridLinksAbroad,
-)
-from .heat_gas_load import (
-    HeatGasLoadPypsaEurComparison,
+from .heat_demand import HeatDemandValidation  # noqa: F401
+from .heat_gas_load import HeatGasLoadPypsaEurComparison  # noqa: F401
+from .home_batteries import HomeBatteriesAggregation  # noqa: F401
+from .pv_rooftop import PvRooftopBuildingsValidation  # noqa: F401
+from .residential_electricity import (  # noqa: F401
+    ResidentialElectricityAnnualSum,
+    ResidentialElectricityHhRefinement,
 )
 
 # Auto-generate __all__ from imported names (excludes private/module names)
 __all__ = [
-    name for name in dir()
-    if not name.startswith('_') and isinstance(globals()[name], type)
+    name
+    for name in dir()
+    if not name.startswith("_") and isinstance(globals()[name], type)
 ]

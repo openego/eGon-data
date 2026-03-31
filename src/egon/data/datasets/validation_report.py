@@ -7,18 +7,21 @@ from individual dataset validation tasks executed during the pipeline run.
 """
 
 import os
+import os as _os
 import time
 
-from egon.data import logger, db as egon_db
-from egon.data.datasets import Dataset
 from egon_validation import RunContext
-from egon_validation.runner.aggregate import (
-    collect, build_coverage, write_outputs
-)
-from egon_validation.report.generate import generate
-from egon_validation.runner.coverage_analysis import discover_total_tables
 from egon_validation.config import ENV_DB_URL
-import os as _os
+from egon_validation.report.generate import generate
+from egon_validation.runner.aggregate import (
+    build_coverage,
+    collect,
+    write_outputs,
+)
+
+from egon.data import db as egon_db
+from egon.data import logger
+from egon.data.datasets import Dataset
 
 
 def generate_validation_report(**kwargs):
@@ -34,29 +37,28 @@ def generate_validation_report(**kwargs):
     """
     # Use same run_id as other validation tasks in the pipeline
     # This ensures all tasks read/write to the same directory
-    dag_run = kwargs.get('dag_run')
-    ti = kwargs.get('ti')
+    dag_run = kwargs.get("dag_run")
+    ti = kwargs.get("ti")
     run_id = (
-        os.environ.get('AIRFLOW_CTX_DAG_RUN_ID') or
-        kwargs.get('run_id') or
-        (ti and hasattr(ti, 'dag_run') and ti.dag_run.run_id) or
-        (dag_run and dag_run.run_id) or
-        f"pipeline_validation_report_{int(time.time())}"
+        os.environ.get("AIRFLOW_CTX_DAG_RUN_ID")
+        or kwargs.get("run_id")
+        or (ti and hasattr(ti, "dag_run") and ti.dag_run.run_id)
+        or (dag_run and dag_run.run_id)
+        or f"pipeline_validation_report_{int(time.time())}"
     )
 
     # Determine output directory at runtime (not import time)
     # Priority: EGON_VALIDATION_DIR env var > current working directory
     out_dir = os.path.join(
-        os.environ.get('EGON_VALIDATION_DIR', os.getcwd()),
-        "validation_runs"
+        os.environ.get("EGON_VALIDATION_DIR", os.getcwd()), "validation_runs"
     )
 
     try:
         ctx = RunContext(run_id=run_id, source="airflow", out_dir=out_dir)
-        logger.info("Starting pipeline validation report generation", extra={
-            "run_id": run_id,
-            "output_dir": out_dir
-        })
+        logger.info(
+            "Starting pipeline validation report generation",
+            extra={"run_id": run_id, "output_dir": out_dir},
+        )
 
         # Make database connection available for table counting
         # Set the database URL from egon.data configuration
@@ -77,14 +79,14 @@ def generate_validation_report(**kwargs):
         final_out_dir = write_outputs(ctx, collected, coverage)
         generate(ctx, final_out_dir)
 
-        report_path = os.path.join(final_out_dir, 'report.html')
+        report_path = os.path.join(final_out_dir, "report.html")
         logger.info(
             "Pipeline validation report generated successfully",
             extra={
                 "report_path": report_path,
                 "run_id": run_id,
-                "total_results": len(collected.get("items", []))
-            }
+                "total_results": len(collected.get("items", [])),
+            },
         )
 
     except FileNotFoundError as e:
@@ -96,11 +98,14 @@ def generate_validation_report(**kwargs):
 
         # Don't raise - this is acceptable if no validations were run
     except Exception as e:
-        logger.error("Pipeline validation report generation failed", extra={
-            "run_id": run_id,
-            "error": str(e),
-            "error_type": type(e).__name__
-        })
+        logger.error(
+            "Pipeline validation report generation failed",
+            extra={
+                "run_id": run_id,
+                "error": str(e),
+                "error_type": type(e).__name__,
+            },
+        )
         raise
 
 
@@ -118,6 +123,7 @@ class ValidationReport(Dataset):
     before sanity_checks in the DAG to ensure validation results are
     collected before final checks.
     """
+
     #:
     name: str = "ValidationReport"
     #:

@@ -21,7 +21,6 @@ from egon.data.datasets.gas_neighbours.eGon2035 import (
     import_ch4_demandTS,
 )
 
-
 TESTMODE_OFF = (
     config.settings()["egon-data"]["--dataset-boundary"] == "Everything"
 )
@@ -38,11 +37,20 @@ class GasBusesIsolatedAbroad(Rule):
     """
 
     def __init__(
-        self, table: str, rule_id: str, scenario: str = "eGon2035",
-        carrier: str = "CH4", **kwargs
+        self,
+        table: str,
+        rule_id: str,
+        scenario: str = "eGon2035",
+        carrier: str = "CH4",
+        **kwargs,
     ):
-        super().__init__(rule_id=rule_id, table=table, scenario=scenario,
-                         carrier=carrier, **kwargs)
+        super().__init__(
+            rule_id=rule_id,
+            table=table,
+            scenario=scenario,
+            carrier=carrier,
+            **kwargs,
+        )
         self.kind = "sanity"
         self.scenario = scenario
         self.carrier = carrier
@@ -60,7 +68,7 @@ class GasBusesIsolatedAbroad(Rule):
                 severity=Severity.INFO,
                 schema=self.schema,
                 table_name=self.table_name,
-                rule_class=self.__class__.__name__
+                rule_class=self.__class__.__name__,
             )
 
         try:
@@ -97,15 +105,16 @@ class GasBusesIsolatedAbroad(Rule):
                     observed=0,
                     expected=0,
                     message=(
-                        f"No isolated {self.carrier} buses abroad for {self.scenario}"
+                        f"No isolated {self.carrier} buses abroad for "
+                        f"{self.scenario}"
                     ),
                     severity=Severity.INFO,
                     schema=self.schema,
                     table_name=self.table_name,
-                    rule_class=self.__class__.__name__
+                    rule_class=self.__class__.__name__,
                 )
             else:
-                bus_ids = isolated_buses['bus_id'].tolist()[:10]
+                bus_ids = isolated_buses["bus_id"].tolist()[:10]
                 return RuleResult(
                     rule_id=self.rule_id,
                     task=self.task,
@@ -115,13 +124,14 @@ class GasBusesIsolatedAbroad(Rule):
                     observed=len(isolated_buses),
                     expected=0,
                     message=(
-                        f"Found {len(isolated_buses)} isolated {self.carrier} buses "
-                        f"abroad for {self.scenario}: {bus_ids}..."
+                        f"Found {len(isolated_buses)} isolated "
+                        f"{self.carrier} buses abroad for "
+                        f"{self.scenario}: {bus_ids}..."
                     ),
                     severity=Severity.WARNING,
                     schema=self.schema,
                     table_name=self.table_name,
-                    rule_class=self.__class__.__name__
+                    rule_class=self.__class__.__name__,
                 )
 
         except Exception as e:
@@ -135,7 +145,7 @@ class GasBusesIsolatedAbroad(Rule):
                 severity=Severity.ERROR,
                 schema=self.schema,
                 table_name=self.table_name,
-                rule_class=self.__class__.__name__
+                rule_class=self.__class__.__name__,
             )
 
 
@@ -150,11 +160,20 @@ class CH4LoadsAbroad(Rule):
     """
 
     def __init__(
-        self, table: str, rule_id: str, scenario: str = "eGon2035",
-        rtol: float = 0.10, **kwargs
+        self,
+        table: str,
+        rule_id: str,
+        scenario: str = "eGon2035",
+        rtol: float = 0.10,
+        **kwargs,
     ):
-        super().__init__(rule_id=rule_id, table=table, scenario=scenario,
-                         rtol=rtol, **kwargs)
+        super().__init__(
+            rule_id=rule_id,
+            table=table,
+            scenario=scenario,
+            rtol=rtol,
+            **kwargs,
+        )
         self.kind = "sanity"
         self.scenario = scenario
 
@@ -171,7 +190,7 @@ class CH4LoadsAbroad(Rule):
                 severity=Severity.INFO,
                 schema=self.schema,
                 table_name=self.table_name,
-                rule_class=self.__class__.__name__
+                rule_class=self.__class__.__name__,
             )
 
         try:
@@ -216,7 +235,7 @@ class CH4LoadsAbroad(Rule):
                     severity=Severity.WARNING,
                     schema=self.schema,
                     table_name=self.table_name,
-                    rule_class=self.__class__.__name__
+                    rule_class=self.__class__.__name__,
                 )
 
             rtol = self.params.get("rtol", 0.10)
@@ -234,13 +253,13 @@ class CH4LoadsAbroad(Rule):
                     observed=observed,
                     expected=expected,
                     message=(
-                        f"CH4 loads abroad for {self.scenario}: "
-                        f"deviation {deviation_pct:.2f}% (tolerance: {rtol*100:.2f}%)"
+                        f"CH4 loads abroad for {self.scenario}: deviation "
+                        f"{deviation_pct:.2f}% (tolerance: {rtol*100:.2f}%)"
                     ),
                     severity=Severity.INFO,
                     schema=self.schema,
                     table_name=self.table_name,
-                    rule_class=self.__class__.__name__
+                    rule_class=self.__class__.__name__,
                 )
             else:
                 return RuleResult(
@@ -258,7 +277,7 @@ class CH4LoadsAbroad(Rule):
                     severity=Severity.ERROR,
                     schema=self.schema,
                     table_name=self.table_name,
-                    rule_class=self.__class__.__name__
+                    rule_class=self.__class__.__name__,
                 )
 
         except Exception as e:
@@ -272,7 +291,7 @@ class CH4LoadsAbroad(Rule):
                 severity=Severity.ERROR,
                 schema=self.schema,
                 table_name=self.table_name,
-                rule_class=self.__class__.__name__
+                rule_class=self.__class__.__name__,
             )
 
 
@@ -287,11 +306,20 @@ class H2LoadsAbroad(Rule):
     """
 
     def __init__(
-        self, table: str, rule_id: str, scenario: str = "eGon2035",
-        rtol: float = 0.10, **kwargs
+        self,
+        table: str,
+        rule_id: str,
+        scenario: str = "eGon2035",
+        rtol: float = 0.10,
+        **kwargs,
     ):
-        super().__init__(rule_id=rule_id, table=table, scenario=scenario,
-                         rtol=rtol, **kwargs)
+        super().__init__(
+            rule_id=rule_id,
+            table=table,
+            scenario=scenario,
+            rtol=rtol,
+            **kwargs,
+        )
         self.kind = "sanity"
         self.scenario = scenario
 
@@ -308,7 +336,7 @@ class H2LoadsAbroad(Rule):
                 severity=Severity.INFO,
                 schema=self.schema,
                 table_name=self.table_name,
-                rule_class=self.__class__.__name__
+                rule_class=self.__class__.__name__,
             )
 
         try:
@@ -344,7 +372,7 @@ class H2LoadsAbroad(Rule):
                     severity=Severity.WARNING,
                     schema=self.schema,
                     table_name=self.table_name,
-                    rule_class=self.__class__.__name__
+                    rule_class=self.__class__.__name__,
                 )
 
             rtol = self.params.get("rtol", 0.10)
@@ -363,12 +391,13 @@ class H2LoadsAbroad(Rule):
                     expected=expected,
                     message=(
                         f"H2_for_industry loads abroad for {self.scenario}: "
-                        f"deviation {deviation_pct:.2f}% (tolerance: {rtol*100:.2f}%)"
+                        f"deviation {deviation_pct:.2f}% "
+                        f"(tolerance: {rtol*100:.2f}%)"
                     ),
                     severity=Severity.INFO,
                     schema=self.schema,
                     table_name=self.table_name,
-                    rule_class=self.__class__.__name__
+                    rule_class=self.__class__.__name__,
                 )
             else:
                 return RuleResult(
@@ -380,13 +409,14 @@ class H2LoadsAbroad(Rule):
                     observed=observed,
                     expected=expected,
                     message=(
-                        f"H2_for_industry loads abroad deviation for {self.scenario}: "
-                        f"{deviation_pct:.2f}% (tolerance: {rtol*100:.2f}%)"
+                        f"H2_for_industry loads abroad deviation for "
+                        f"{self.scenario}: {deviation_pct:.2f}% "
+                        f"(tolerance: {rtol*100:.2f}%)"
                     ),
                     severity=Severity.ERROR,
                     schema=self.schema,
                     table_name=self.table_name,
-                    rule_class=self.__class__.__name__
+                    rule_class=self.__class__.__name__,
                 )
 
         except Exception as e:
@@ -400,7 +430,7 @@ class H2LoadsAbroad(Rule):
                 severity=Severity.ERROR,
                 schema=self.schema,
                 table_name=self.table_name,
-                rule_class=self.__class__.__name__
+                rule_class=self.__class__.__name__,
             )
 
 
@@ -415,11 +445,20 @@ class CH4GeneratorsAbroad(Rule):
     """
 
     def __init__(
-        self, table: str, rule_id: str, scenario: str = "eGon2035",
-        rtol: float = 0.10, **kwargs
+        self,
+        table: str,
+        rule_id: str,
+        scenario: str = "eGon2035",
+        rtol: float = 0.10,
+        **kwargs,
     ):
-        super().__init__(rule_id=rule_id, table=table, scenario=scenario,
-                         rtol=rtol, **kwargs)
+        super().__init__(
+            rule_id=rule_id,
+            table=table,
+            scenario=scenario,
+            rtol=rtol,
+            **kwargs,
+        )
         self.kind = "sanity"
         self.scenario = scenario
 
@@ -436,7 +475,7 @@ class CH4GeneratorsAbroad(Rule):
                 severity=Severity.INFO,
                 schema=self.schema,
                 table_name=self.table_name,
-                rule_class=self.__class__.__name__
+                rule_class=self.__class__.__name__,
             )
 
         try:
@@ -472,7 +511,7 @@ class CH4GeneratorsAbroad(Rule):
                     severity=Severity.WARNING,
                     schema=self.schema,
                     table_name=self.table_name,
-                    rule_class=self.__class__.__name__
+                    rule_class=self.__class__.__name__,
                 )
 
             rtol = self.params.get("rtol", 0.10)
@@ -491,12 +530,13 @@ class CH4GeneratorsAbroad(Rule):
                     expected=expected,
                     message=(
                         f"CH4 generators abroad for {self.scenario}: "
-                        f"deviation {deviation_pct:.2f}% (tolerance: {rtol*100:.2f}%)"
+                        f"deviation {deviation_pct:.2f}% "
+                        f"(tolerance: {rtol*100:.2f}%)"
                     ),
                     severity=Severity.INFO,
                     schema=self.schema,
                     table_name=self.table_name,
-                    rule_class=self.__class__.__name__
+                    rule_class=self.__class__.__name__,
                 )
             else:
                 return RuleResult(
@@ -508,13 +548,14 @@ class CH4GeneratorsAbroad(Rule):
                     observed=observed,
                     expected=expected,
                     message=(
-                        f"CH4 generators abroad deviation for {self.scenario}: "
-                        f"{deviation_pct:.2f}% (tolerance: {rtol*100:.2f}%)"
+                        f"CH4 generators abroad deviation for "
+                        f"{self.scenario}: {deviation_pct:.2f}% "
+                        f"(tolerance: {rtol*100:.2f}%)"
                     ),
                     severity=Severity.ERROR,
                     schema=self.schema,
                     table_name=self.table_name,
-                    rule_class=self.__class__.__name__
+                    rule_class=self.__class__.__name__,
                 )
 
         except Exception as e:
@@ -528,7 +569,7 @@ class CH4GeneratorsAbroad(Rule):
                 severity=Severity.ERROR,
                 schema=self.schema,
                 table_name=self.table_name,
-                rule_class=self.__class__.__name__
+                rule_class=self.__class__.__name__,
             )
 
 
@@ -543,11 +584,20 @@ class CH4StoresAbroad(Rule):
     """
 
     def __init__(
-        self, table: str, rule_id: str, scenario: str = "eGon2035",
-        rtol: float = 0.10, **kwargs
+        self,
+        table: str,
+        rule_id: str,
+        scenario: str = "eGon2035",
+        rtol: float = 0.10,
+        **kwargs,
     ):
-        super().__init__(rule_id=rule_id, table=table, scenario=scenario,
-                         rtol=rtol, **kwargs)
+        super().__init__(
+            rule_id=rule_id,
+            table=table,
+            scenario=scenario,
+            rtol=rtol,
+            **kwargs,
+        )
         self.kind = "sanity"
         self.scenario = scenario
 
@@ -564,7 +614,7 @@ class CH4StoresAbroad(Rule):
                 severity=Severity.INFO,
                 schema=self.schema,
                 table_name=self.table_name,
-                rule_class=self.__class__.__name__
+                rule_class=self.__class__.__name__,
             )
 
         try:
@@ -600,7 +650,7 @@ class CH4StoresAbroad(Rule):
                     severity=Severity.WARNING,
                     schema=self.schema,
                     table_name=self.table_name,
-                    rule_class=self.__class__.__name__
+                    rule_class=self.__class__.__name__,
                 )
 
             rtol = self.params.get("rtol", 0.10)
@@ -619,12 +669,13 @@ class CH4StoresAbroad(Rule):
                     expected=expected,
                     message=(
                         f"CH4 stores abroad for {self.scenario}: "
-                        f"deviation {deviation_pct:.2f}% (tolerance: {rtol*100:.2f}%)"
+                        f"deviation {deviation_pct:.2f}% "
+                        f"(tolerance: {rtol*100:.2f}%)"
                     ),
                     severity=Severity.INFO,
                     schema=self.schema,
                     table_name=self.table_name,
-                    rule_class=self.__class__.__name__
+                    rule_class=self.__class__.__name__,
                 )
             else:
                 return RuleResult(
@@ -642,7 +693,7 @@ class CH4StoresAbroad(Rule):
                     severity=Severity.ERROR,
                     schema=self.schema,
                     table_name=self.table_name,
-                    rule_class=self.__class__.__name__
+                    rule_class=self.__class__.__name__,
                 )
 
         except Exception as e:
@@ -656,7 +707,7 @@ class CH4StoresAbroad(Rule):
                 severity=Severity.ERROR,
                 schema=self.schema,
                 table_name=self.table_name,
-                rule_class=self.__class__.__name__
+                rule_class=self.__class__.__name__,
             )
 
 
@@ -671,11 +722,20 @@ class CH4GridLinksAbroad(Rule):
     """
 
     def __init__(
-        self, table: str, rule_id: str, scenario: str = "eGon2035",
-        rtol: float = 0.10, **kwargs
+        self,
+        table: str,
+        rule_id: str,
+        scenario: str = "eGon2035",
+        rtol: float = 0.10,
+        **kwargs,
     ):
-        super().__init__(rule_id=rule_id, table=table, scenario=scenario,
-                         rtol=rtol, **kwargs)
+        super().__init__(
+            rule_id=rule_id,
+            table=table,
+            scenario=scenario,
+            rtol=rtol,
+            **kwargs,
+        )
         self.kind = "sanity"
         self.scenario = scenario
 
@@ -692,7 +752,7 @@ class CH4GridLinksAbroad(Rule):
                 severity=Severity.INFO,
                 schema=self.schema,
                 table_name=self.table_name,
-                rule_class=self.__class__.__name__
+                rule_class=self.__class__.__name__,
             )
 
         try:
@@ -735,7 +795,7 @@ class CH4GridLinksAbroad(Rule):
                     severity=Severity.WARNING,
                     schema=self.schema,
                     table_name=self.table_name,
-                    rule_class=self.__class__.__name__
+                    rule_class=self.__class__.__name__,
                 )
 
             rtol = self.params.get("rtol", 0.10)
@@ -754,12 +814,13 @@ class CH4GridLinksAbroad(Rule):
                     expected=expected,
                     message=(
                         f"CH4 grid links abroad for {self.scenario}: "
-                        f"deviation {deviation_pct:.2f}% (tolerance: {rtol*100:.2f}%)"
+                        f"deviation {deviation_pct:.2f}% "
+                        f"(tolerance: {rtol*100:.2f}%)"
                     ),
                     severity=Severity.INFO,
                     schema=self.schema,
                     table_name=self.table_name,
-                    rule_class=self.__class__.__name__
+                    rule_class=self.__class__.__name__,
                 )
             else:
                 return RuleResult(
@@ -771,13 +832,14 @@ class CH4GridLinksAbroad(Rule):
                     observed=observed,
                     expected=expected,
                     message=(
-                        f"CH4 grid links abroad deviation for {self.scenario}: "
-                        f"{deviation_pct:.2f}% (tolerance: {rtol*100:.2f}%)"
+                        f"CH4 grid links abroad deviation for "
+                        f"{self.scenario}: {deviation_pct:.2f}% "
+                        f"(tolerance: {rtol*100:.2f}%)"
                     ),
                     severity=Severity.ERROR,
                     schema=self.schema,
                     table_name=self.table_name,
-                    rule_class=self.__class__.__name__
+                    rule_class=self.__class__.__name__,
                 )
 
         except Exception as e:
@@ -791,5 +853,5 @@ class CH4GridLinksAbroad(Rule):
                 severity=Severity.ERROR,
                 schema=self.schema,
                 table_name=self.table_name,
-                rule_class=self.__class__.__name__
+                rule_class=self.__class__.__name__,
             )

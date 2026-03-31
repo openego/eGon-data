@@ -5,9 +5,9 @@ Validates that DSM link and store timeseries match the aggregated
 individual DSM data from CTS and industry tables.
 """
 
+from egon_validation.rules.base import Rule, RuleResult, Severity
 import numpy as np
 import pandas as pd
-from egon_validation.rules.base import Rule, RuleResult, Severity
 
 from egon.data import config, db
 
@@ -35,7 +35,9 @@ class DSMTimeseries(Rule):
     def __init__(
         self, table: str, rule_id: str, scenario: str = "eGon2035", **kwargs
     ):
-        super().__init__(rule_id=rule_id, table=table, scenario=scenario, **kwargs)
+        super().__init__(
+            rule_id=rule_id, table=table, scenario=scenario, **kwargs
+        )
         self.kind = "sanity"
         self.scenario = scenario
 
@@ -109,7 +111,10 @@ class DSMTimeseries(Rule):
         ts_df = db.select_dataframe(sql, index_col="link_id")
 
         if ts_df.empty:
-            return False, f"No DSM link timeseries found for scenario {self.scenario}"
+            return (
+                False,
+                f"No DSM link timeseries found for scenario {self.scenario}",
+            )
 
         # Calculate actual power values
         p_max_df = self._df_from_series(ts_df.p_max_pu).mul(meta_df.p_nom)
@@ -144,14 +149,21 @@ class DSMTimeseries(Rule):
         p_min_ok = np.allclose(p_min_df, individual_p_min_df, atol=atol)
 
         if p_max_ok and p_min_ok:
-            return True, "DSM link timeseries (p_min, p_max) match individual data"
+            return (
+                True,
+                "DSM link timeseries (p_min, p_max) match individual data",
+            )
 
         errors = []
         if not p_max_ok:
-            max_diff = np.abs(p_max_df.values - individual_p_max_df.values).max()
+            max_diff = np.abs(
+                p_max_df.values - individual_p_max_df.values
+            ).max()
             errors.append(f"p_max mismatch (max diff: {max_diff:.4f})")
         if not p_min_ok:
-            max_diff = np.abs(p_min_df.values - individual_p_min_df.values).max()
+            max_diff = np.abs(
+                p_min_df.values - individual_p_min_df.values
+            ).max()
             errors.append(f"p_min mismatch (max diff: {max_diff:.4f})")
 
         return False, "; ".join(errors)
@@ -190,7 +202,10 @@ class DSMTimeseries(Rule):
         ts_df = db.select_dataframe(sql, index_col="store_id")
 
         if ts_df.empty:
-            return False, f"No DSM store timeseries found for scenario {self.scenario}"
+            return (
+                False,
+                f"No DSM store timeseries found for scenario {self.scenario}",
+            )
 
         # Calculate actual energy values
         e_max_df = self._df_from_series(ts_df.e_max_pu).mul(meta_df.e_nom)
@@ -224,14 +239,21 @@ class DSMTimeseries(Rule):
         e_min_ok = np.allclose(e_min_df, individual_e_min_df)
 
         if e_max_ok and e_min_ok:
-            return True, "DSM store timeseries (e_min, e_max) match individual data"
+            return (
+                True,
+                "DSM store timeseries (e_min, e_max) match individual data",
+            )
 
         errors = []
         if not e_max_ok:
-            max_diff = np.abs(e_max_df.values - individual_e_max_df.values).max()
+            max_diff = np.abs(
+                e_max_df.values - individual_e_max_df.values
+            ).max()
             errors.append(f"e_max mismatch (max diff: {max_diff:.4f})")
         if not e_min_ok:
-            max_diff = np.abs(e_min_df.values - individual_e_min_df.values).max()
+            max_diff = np.abs(
+                e_min_df.values - individual_e_min_df.values
+            ).max()
             errors.append(f"e_min mismatch (max diff: {max_diff:.4f})")
 
         return False, "; ".join(errors)
@@ -263,15 +285,20 @@ class DSMTimeseries(Rule):
                     table=self.table,
                     kind=self.kind,
                     success=False,
-                    message=f"No individual DSM data found for scenario {self.scenario}",
+                    message=(
+                        f"No individual DSM data found for scenario "
+                        f"{self.scenario}"
+                    ),
                     severity=Severity.WARNING,
                     schema=self.schema,
                     table_name=self.table_name,
-                    rule_class=self.__class__.__name__
+                    rule_class=self.__class__.__name__,
                 )
 
             # Group by bus
-            groups = individual_ts_df[["bus"]].reset_index().groupby("bus").groups
+            groups = (
+                individual_ts_df[["bus"]].reset_index().groupby("bus").groups
+            )
 
             # Validate link timeseries (p_min, p_max)
             link_ok, link_msg = self._validate_link_timeseries(
@@ -297,7 +324,7 @@ class DSMTimeseries(Rule):
                     severity=Severity.INFO,
                     schema=self.schema,
                     table_name=self.table_name,
-                    rule_class=self.__class__.__name__
+                    rule_class=self.__class__.__name__,
                 )
 
             # Collect all errors
@@ -313,11 +340,14 @@ class DSMTimeseries(Rule):
                 table=self.table,
                 kind=self.kind,
                 success=False,
-                message=f"DSM timeseries mismatch for {self.scenario}: {'; '.join(errors)}",
+                message=(
+                    f"DSM timeseries mismatch for {self.scenario}: "
+                    f"{'; '.join(errors)}"
+                ),
                 severity=Severity.ERROR,
                 schema=self.schema,
                 table_name=self.table_name,
-                rule_class=self.__class__.__name__
+                rule_class=self.__class__.__name__,
             )
 
         except Exception as e:
@@ -331,5 +361,5 @@ class DSMTimeseries(Rule):
                 severity=Severity.ERROR,
                 schema=self.schema,
                 table_name=self.table_name,
-                rule_class=self.__class__.__name__
+                rule_class=self.__class__.__name__,
             )

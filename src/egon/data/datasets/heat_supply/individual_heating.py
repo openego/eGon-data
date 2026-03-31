@@ -13,6 +13,7 @@ import os
 import random
 
 from airflow.operators.python import PythonOperator
+from egon_validation import ArrayCardinalityValidation
 from psycopg2.extensions import AsIs, register_adapter
 from sqlalchemy import ARRAY, REAL, Column, Integer, String
 from sqlalchemy.ext.declarative import declarative_base
@@ -22,7 +23,11 @@ import pandas as pd
 import saio
 
 from egon.data import config, db, logger
-from egon.data.datasets import Dataset, wrapped_partial
+from egon.data.datasets import (
+    Dataset,
+    load_sources_and_targets,
+    wrapped_partial,
+)
 from egon.data.datasets.district_heating_areas import (
     MapZensusDistrictHeatingAreas,
 )
@@ -49,8 +54,6 @@ from egon.data.datasets.heat_demand_timeseries.idp_pool import (
 
 # get zensus cells with district heating
 from egon.data.datasets.zensus_mv_grid_districts import MapZensusGridDistricts
-
-from egon_validation import ArrayCardinalityValidation
 from egon.data.validation import TableValidation, resolve_boundary_dependence
 
 engine = db.engine()
@@ -155,7 +158,7 @@ class HeatPumpsPypsaEur(Dataset):
     #:
     name: str = "HeatPumpsPypsaEurSec"
     #:
-    version: str = "0.0.3"
+    version: str = "0.0.4"
 
     def __init__(self, dependencies):
         def dyn_parallel_tasks_pypsa_eur():
@@ -232,7 +235,7 @@ class HeatPumpsPypsaEur(Dataset):
                     ),
                 ]
             },
-            proceed_on_validation_failure=True
+            proceed_on_validation_failure=True,
         )
 
 
@@ -318,7 +321,7 @@ class HeatPumpsStatusQuo(Dataset):
 
         super().__init__(
             name="HeatPumpsStatusQuo",
-            version="0.0.4",
+            version="0.0.5",
             dependencies=dependencies,
             tasks=tasks,
         )
@@ -469,7 +472,7 @@ class HeatPumps2035(Dataset):
 
         super().__init__(
             name=self.version,
-            version="0.0.3",
+            version="0.0.4",
             dependencies=dependencies,
             tasks=tasks_HeatPumps2035,
             validation={
@@ -482,24 +485,26 @@ class HeatPumps2035(Dataset):
                     ),
                     TableValidation(
                         table_name="demand.egon_building_heat_peak_loads",
-                        row_count=resolve_boundary_dependence({
-                            "Schleswig-Holstein": 732858,
-                            "Everything": 42128819
-                        }),
+                        row_count=resolve_boundary_dependence(
+                            {
+                                "Schleswig-Holstein": 732858,
+                                "Everything": 42128819,
+                            }
+                        ),
                         data_type_columns={
                             "building_id": "integer",
                             "scenario": "character varying",
                             "sector": "character varying",
-                            "peak_load_in_w": "real"
+                            "peak_load_in_w": "real",
                         },
                         value_set_columns={
                             "scenario": ["eGon2035", "eGon100RE"],
-                            "sector": ["residential+cts"]
-                        }
+                            "sector": ["residential+cts"],
+                        },
                     ),
                 ]
             },
-            proceed_on_validation_failure=True
+            proceed_on_validation_failure=True,
         )
 
 
@@ -553,7 +558,7 @@ class HeatPumps2050(Dataset):
     #:
     name: str = "HeatPumps2050"
     #:
-    version: str = "0.0.3"
+    version: str = "0.0.4"
 
     def __init__(self, dependencies):
         tasks_HeatPumps2050 = set()
@@ -644,7 +649,7 @@ def cascade_per_technology(
         List of plants per mv grid for the selected technology
 
     """
-    sources = config.datasets()["heat_supply"]["sources"]
+    sources, targets = load_sources_and_targets("HeatSupply")
 
     tech = technologies[technologies.priority == technologies.priority.max()]
 
@@ -655,10 +660,8 @@ def cascade_per_technology(
             target = db.select_dataframe(
                 f"""
                     SELECT DISTINCT ON (gen) gen as state, capacity
-                    FROM {sources['scenario_capacities']['schema']}.
-                    {sources['scenario_capacities']['table']} a
-                    JOIN {sources['federal_states']['schema']}.
-                    {sources['federal_states']['table']} b
+                    FROM {sources.tables['scenario_capacities']} a
+                    JOIN {sources.tables['federal_states']} b
                     ON a.nuts = b.nuts
                     WHERE scenario_name = '{scenario}'
                     AND carrier = 'residential_rural_heat_pump'
@@ -678,15 +681,12 @@ def cascade_per_technology(
             )
         else:
             # Select target value for Germany
-            target = db.select_dataframe(
-                f"""
+            target = db.select_dataframe(f"""
                     SELECT SUM(capacity) AS capacity
-                    FROM {sources['scenario_capacities']['schema']}.
-                    {sources['scenario_capacities']['table']} a
+                    FROM {sources.tables['scenario_capacities']} a
                     WHERE scenario_name = '{scenario}'
                     AND carrier = 'rural_heat_pump'
-                    """
-            )
+                    """)
 
             if not target.capacity[0]:
                 target.capacity[0] = 0
@@ -724,15 +724,12 @@ def cascade_per_technology(
 
     elif tech.index in ("gas_boiler", "resistive_heater", "solar_thermal"):
         # Select target value for Germany
-        target = db.select_dataframe(
-            f"""
+        target = db.select_dataframe(f"""
                 SELECT SUM(capacity) AS capacity
-                FROM {sources['scenario_capacities']['schema']}.
-                {sources['scenario_capacities']['table']} a
+                FROM {sources.tables['scenario_capacities']} a
                 WHERE scenario_name = '{scenario}'
                 AND carrier = 'rural_{tech.index[0]}'
-                """
-        )
+                """)
 
         if (
             config.settings()["egon-data"]["--dataset-boundary"]
@@ -800,28 +797,24 @@ def cascade_heat_supply_indiv(scenario, distribution_level, plotting=True):
 
     """
 
-    sources = config.datasets()["heat_supply"]["sources"]
+    sources, targets = load_sources_and_targets("HeatSupply")
 
     # Select residential heat demand per mv grid district and federal state
     heat_per_mv = db.select_geodataframe(
         f"""
         SELECT d.bus_id as bus_id, SUM(demand) as demand,
         c.vg250_lan as state, d.geom
-        FROM {sources['heat_demand']['schema']}.
-        {sources['heat_demand']['table']} a
-        JOIN {sources['map_zensus_grid']['schema']}.
-        {sources['map_zensus_grid']['table']} b
+        FROM {sources.tables['heat_demand']} a
+        JOIN {sources.tables['map_zensus_grid']} b
         ON a.zensus_population_id = b.zensus_population_id
-        JOIN {sources['map_vg250_grid']['schema']}.
-        {sources['map_vg250_grid']['table']} c
+        JOIN {sources.tables['map_vg250_grid']} c
         ON b.bus_id = c.bus_id
-        JOIN {sources['mv_grids']['schema']}.
-        {sources['mv_grids']['table']} d
+        JOIN {sources.tables['mv_grids']} d
         ON d.bus_id = c.bus_id
         WHERE scenario = '{scenario}'
         AND a.zensus_population_id NOT IN (
             SELECT zensus_population_id
-            FROM {sources['map_dh']['schema']}.{sources['map_dh']['table']}
+            FROM {sources.tables['map_dh']}
             WHERE scenario = '{scenario}')
         GROUP BY d.bus_id, vg250_lan, geom
         """,
@@ -2349,9 +2342,9 @@ def determine_hp_cap_peak_load_mvgd_ts_pypsa_eur(mvgd_ids):
             [df_heat_mvgd_ts_db, df_heat_mvgd_ts], axis=0, ignore_index=True
         )
 
-        df_hp_min_cap_mv_grid_pypsa_eur_sec.loc[mvgd] = (
-            hp_min_cap_mv_grid_pypsa_eur_sec
-        )
+        df_hp_min_cap_mv_grid_pypsa_eur_sec.loc[
+            mvgd
+        ] = hp_min_cap_mv_grid_pypsa_eur_sec
 
     # ################ export to db and csv ######################
     logger.info(f"MVGD={min(mvgd_ids)} : {max(mvgd_ids)} | Write data to db.")

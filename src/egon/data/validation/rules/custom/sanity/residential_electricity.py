@@ -5,13 +5,15 @@ import numpy as np
 
 
 class ResidentialElectricityAnnualSum(DataFrameRule):
-    """Validate aggregated annual residential electricity demand matches DemandRegio at NUTS-3.
+    """Validate aggregated annual residential electricity demand.
 
-    Aggregates the annual demand of all census cells at NUTS3 to compare
-    with initial scaling parameters from DemandRegio.
+    Matches DemandRegio at NUTS-3. Aggregates the annual demand of all
+    census cells at NUTS3 to compare with initial scaling parameters
+    from DemandRegio.
 
     Args:
-        table: Primary table being validated (demand.egon_demandregio_zensus_electricity)
+        table: Primary table being validated
+            (demand.egon_demandregio_zensus_electricity)
         rule_id: Unique identifier for this validation rule
         rtol: Relative tolerance for comparison (default: 0.005 = 0.5%)
 
@@ -27,7 +29,9 @@ class ResidentialElectricityAnnualSum(DataFrameRule):
         ... }
     """
 
-    def __init__(self, table: str, rule_id: str, rtol: float = 0.005, **kwargs):
+    def __init__(
+        self, table: str, rule_id: str, rtol: float = 0.005, **kwargs
+    ):
         super().__init__(rule_id=rule_id, table=table, rtol=rtol, **kwargs)
         self.kind = "sanity"  # Override inferred kind
 
@@ -62,7 +66,14 @@ class ResidentialElectricityAnnualSum(DataFrameRule):
             )
 
             # Calculate actual max deviation for reporting
-            max_diff = ((df["profile_sum"] - df["demand_regio_sum"]) / df["demand_regio_sum"]).abs().max()
+            max_diff = (
+                (
+                    (df["profile_sum"] - df["demand_regio_sum"])
+                    / df["demand_regio_sum"]
+                )
+                .abs()
+                .max()
+            )
 
             return RuleResult(
                 rule_id=self.rule_id,
@@ -72,14 +83,29 @@ class ResidentialElectricityAnnualSum(DataFrameRule):
                 success=True,
                 observed=float(max_diff),
                 expected=rtol,
-                message=f"Aggregated annual residential electricity demand matches with DemandRegio at NUTS-3 (max deviation: {max_diff:.4%}, tolerance: {rtol:.4%})",
+                message=(
+                    f"Aggregated annual residential electricity demand "
+                    f"matches with DemandRegio at NUTS-3 "
+                    f"(max deviation: {max_diff:.4%}, tolerance: {rtol:.4%})"
+                ),
                 schema=self.schema,
                 table_name=self.table_name,
-                rule_class=self.__class__.__name__
+                rule_class=self.__class__.__name__,
             )
         except AssertionError:
-            max_diff = ((df["profile_sum"] - df["demand_regio_sum"]) / df["demand_regio_sum"]).abs().max()
-            violations = df[~np.isclose(df["profile_sum"], df["demand_regio_sum"], rtol=rtol)]
+            max_diff = (
+                (
+                    (df["profile_sum"] - df["demand_regio_sum"])
+                    / df["demand_regio_sum"]
+                )
+                .abs()
+                .max()
+            )
+            violations = df[
+                ~np.isclose(
+                    df["profile_sum"], df["demand_regio_sum"], rtol=rtol
+                )
+            ]
 
             return RuleResult(
                 rule_id=self.rule_id,
@@ -89,22 +115,27 @@ class ResidentialElectricityAnnualSum(DataFrameRule):
                 success=False,
                 observed=float(max_diff),
                 expected=rtol,
-                message=f"Demand mismatch: max deviation {max_diff:.4%} exceeds tolerance {rtol:.4%}. {len(violations)} NUTS-3 regions have mismatches.",
+                message=(
+                    f"Demand mismatch: max deviation {max_diff:.4%} exceeds "
+                    f"tolerance {rtol:.4%}. {len(violations)} NUTS-3 regions "
+                    f"have mismatches."
+                ),
                 severity=Severity.ERROR,
                 schema=self.schema,
                 table_name=self.table_name,
-                rule_class=self.__class__.__name__
+                rule_class=self.__class__.__name__,
             )
 
 
 class ResidentialElectricityHhRefinement(DataFrameRule):
-    """Validate aggregated household types after refinement match original census values.
+    """Validate aggregated household types after refinement.
 
     Checks sum of aggregated household types after refinement method
     was applied and compares it to the original census values.
 
     Args:
-        table: Primary table being validated (society.egon_destatis_zensus_household_per_ha_refined)
+        table: Primary table being validated
+            (society.egon_destatis_zensus_household_per_ha_refined)
         rule_id: Unique identifier for this validation rule
         rtol: Relative tolerance for comparison (default: 1e-5 = 0.001%)
 
@@ -156,7 +187,11 @@ class ResidentialElectricityHhRefinement(DataFrameRule):
                 verbose=False,
             )
 
-            max_diff = ((df["sum_refined"] - df["sum_census"]) / df["sum_census"]).abs().max()
+            max_diff = (
+                ((df["sum_refined"] - df["sum_census"]) / df["sum_census"])
+                .abs()
+                .max()
+            )
 
             return RuleResult(
                 rule_id=self.rule_id,
@@ -166,14 +201,23 @@ class ResidentialElectricityHhRefinement(DataFrameRule):
                 success=True,
                 observed=float(max_diff),
                 expected=rtol,
-                message=f"All aggregated household types match at NUTS-3 (max deviation: {max_diff:.6%}, tolerance: {rtol:.6%})",
+                message=(
+                    f"All aggregated household types match at NUTS-3 "
+                    f"(max deviation: {max_diff:.6%}, tolerance: {rtol:.6%})"
+                ),
                 schema=self.schema,
                 table_name=self.table_name,
-                rule_class=self.__class__.__name__
+                rule_class=self.__class__.__name__,
             )
         except AssertionError:
-            max_diff = ((df["sum_refined"] - df["sum_census"]) / df["sum_census"]).abs().max()
-            violations = df[~np.isclose(df["sum_refined"], df["sum_census"], rtol=rtol)]
+            max_diff = (
+                ((df["sum_refined"] - df["sum_census"]) / df["sum_census"])
+                .abs()
+                .max()
+            )
+            violations = df[
+                ~np.isclose(df["sum_refined"], df["sum_census"], rtol=rtol)
+            ]
 
             return RuleResult(
                 rule_id=self.rule_id,
@@ -183,9 +227,14 @@ class ResidentialElectricityHhRefinement(DataFrameRule):
                 success=False,
                 observed=float(max_diff),
                 expected=rtol,
-                message=f"Household refinement mismatch: max deviation {max_diff:.6%} exceeds tolerance {rtol:.6%}. {len(violations)} NUTS-3/characteristic combinations have mismatches.",
+                message=(
+                    f"Household refinement mismatch: max deviation "
+                    f"{max_diff:.6%} exceeds tolerance {rtol:.6%}. "
+                    f"{len(violations)} NUTS-3/characteristic combinations "
+                    f"have mismatches."
+                ),
                 severity=Severity.ERROR,
                 schema=self.schema,
                 table_name=self.table_name,
-                rule_class=self.__class__.__name__
+                rule_class=self.__class__.__name__,
             )

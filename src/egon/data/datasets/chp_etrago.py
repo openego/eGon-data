@@ -6,7 +6,7 @@ import geopandas as gpd
 import pandas as pd
 
 from egon.data import config, db
-from egon.data.datasets import Dataset
+from egon.data.datasets import Dataset, DatasetSources, DatasetTargets
 from egon.data.datasets.etrago_setup import link_geom_from_buses
 from egon.data.datasets.scenario_parameters import get_sector_parameters
 
@@ -33,7 +33,20 @@ class ChpEtrago(Dataset):
     #:
     name: str = "ChpEtrago"
     #:
-    version: str = "0.0.6"
+    version: str = "0.0.7"
+    sources = DatasetSources(
+        tables={
+            "chp_table": "supply.egon_chp_plants",
+            "district_heating_areas": "demand.egon_district_heating_areas",
+            "etrago_buses": "grid.egon_etrago_bus",
+        }
+    )
+    targets = DatasetTargets(
+        tables={
+            "link": "grid.egon_etrago_link",
+            "generator": "grid.egon_etrago_generator",
+        }
+    )
 
     def __init__(self, dependencies):
         super().__init__(
@@ -45,51 +58,40 @@ class ChpEtrago(Dataset):
 
 
 def insert_egon100re():
-    sources = config.datasets()["chp_etrago"]["sources"]
 
-    targets = config.datasets()["chp_etrago"]["targets"]
-
-    db.execute_sql(
-        f"""
-        DELETE FROM {targets['link']['schema']}.{targets['link']['table']}
+    db.execute_sql(f"""
+        DELETE FROM {ChpEtrago.targets.tables['link']}
         WHERE carrier LIKE '%%CHP%%'
         AND scn_name = 'eGon100RE'
         AND bus0 IN
         (SELECT bus_id
-         FROM {sources['etrago_buses']['schema']}.{sources['etrago_buses']['table']}
+         FROM {ChpEtrago.sources.tables['etrago_buses']}
          WHERE scn_name = 'eGon100RE'
          AND country = 'DE')
         AND bus1 IN
         (SELECT bus_id
-         FROM {sources['etrago_buses']['schema']}.{sources['etrago_buses']['table']}
+         FROM {ChpEtrago.sources.tables['etrago_buses']}
          WHERE scn_name = 'eGon100RE'
          AND country = 'DE')
-        """
-    )
+        """)
 
     # Select all CHP plants used in district heating
-    chp_dh = db.select_dataframe(
-        f"""
+    chp_dh = db.select_dataframe(f"""
         SELECT electrical_bus_id, ch4_bus_id, a.carrier,
         SUM(el_capacity) AS el_capacity, SUM(th_capacity) AS th_capacity,
         c.bus_id as heat_bus_id
-        FROM {sources['chp_table']['schema']}.
-        {sources['chp_table']['table']} a
-        JOIN {sources['district_heating_areas']['schema']}.
-        {sources['district_heating_areas']['table']}  b
+        FROM {ChpEtrago.sources.tables['chp_table']} a
+        JOIN {ChpEtrago.sources.tables['district_heating_areas']} b
         ON a.district_heating_area_id = b.area_id
         JOIN grid.egon_etrago_bus c
         ON ST_Transform(ST_Centroid(b.geom_polygon), 4326) = c.geom
-
         WHERE a.scenario='eGon100RE'
         AND b.scenario = 'eGon100RE'
         AND c.scn_name = 'eGon100RE'
         AND c.carrier = 'central_heat'
         AND NOT district_heating_area_id IS NULL
-        GROUP BY (
-            electrical_bus_id, ch4_bus_id, a.carrier, c.bus_id)
-        """
-    )
+        GROUP BY (electrical_bus_id, ch4_bus_id, a.carrier, c.bus_id)
+        """)
 
     if chp_dh.empty:
         print("No CHP for district heating in scenario eGon100RE")
@@ -100,7 +102,7 @@ def insert_egon100re():
         gpd.GeoDataFrame(
             index=chp_dh.index,
             data={
-                "scn_name": "eGon2035",
+                "scn_name": "eGon100RE",
                 "bus0": chp_dh.loc[:, "ch4_bus_id"].astype(int),
                 "bus1": chp_dh.loc[:, "electrical_bus_id"].astype(int),
                 "p_nom": chp_dh.loc[:, "el_capacity"],
@@ -119,8 +121,8 @@ def insert_egon100re():
 
     # Insert into database
     chp_el.to_postgis(
-        targets["link"]["table"],
-        schema=targets["link"]["schema"],
+        ChpEtrago.targets.get_table_name("link"),
+        schema=ChpEtrago.targets.get_table_schema("link"),
         con=db.engine(),
         if_exists="append",
     )
@@ -143,65 +145,52 @@ def insert_egon100re():
     chp_heat["link_id"] = db.next_etrago_id("link", len(chp_heat))
 
     chp_heat.to_postgis(
-        targets["link"]["table"],
-        schema=targets["link"]["schema"],
+        ChpEtrago.targets.get_table_name("link"),
+        schema=ChpEtrago.targets.get_table_schema("link"),
         con=db.engine(),
         if_exists="append",
     )
 
 
 def insert_scenario(scenario):
-    sources = config.datasets()["chp_etrago"]["sources"]
 
-    targets = config.datasets()["chp_etrago"]["targets"]
-
-    db.execute_sql(
-        f"""
-        DELETE FROM {targets['link']['schema']}.{targets['link']['table']}
+    db.execute_sql(f"""
+        DELETE FROM {ChpEtrago.targets.tables['link']}
         WHERE carrier LIKE '%%CHP%%'
         AND scn_name = '{scenario}'
         AND bus0 IN
         (SELECT bus_id
-         FROM {sources['etrago_buses']['schema']}.{sources['etrago_buses']['table']}
+         FROM {ChpEtrago.sources.tables['etrago_buses']}
          WHERE scn_name = '{scenario}'
          AND country = 'DE')
         AND bus1 IN
         (SELECT bus_id
-         FROM {sources['etrago_buses']['schema']}.{sources['etrago_buses']['table']}
+         FROM {ChpEtrago.sources.tables['etrago_buses']}
          WHERE scn_name = '{scenario}'
          AND country = 'DE')
-        """
-    )
-    db.execute_sql(
-        f"""
-        DELETE FROM {targets['generator']['schema']}.{targets['generator']['table']}
+        """)
+    db.execute_sql(f"""
+        DELETE FROM {ChpEtrago.targets.tables['generator']}
         WHERE carrier LIKE '%%CHP%%'
         AND scn_name = '{scenario}'
-        """
-    )
+        """)
     # Select all CHP plants used in district heating
-    chp_dh = db.select_dataframe(
-        f"""
+    chp_dh = db.select_dataframe(f"""
         SELECT electrical_bus_id, ch4_bus_id, a.carrier,
         SUM(el_capacity) AS el_capacity, SUM(th_capacity) AS th_capacity,
         c.bus_id as heat_bus_id
-        FROM {sources['chp_table']['schema']}.
-        {sources['chp_table']['table']} a
-        JOIN {sources['district_heating_areas']['schema']}.
-        {sources['district_heating_areas']['table']}  b
+        FROM {ChpEtrago.sources.tables['chp_table']} a
+        JOIN {ChpEtrago.sources.tables['district_heating_areas']} b
         ON a.district_heating_area_id = b.area_id
         JOIN grid.egon_etrago_bus c
         ON ST_Transform(ST_Centroid(b.geom_polygon), 4326) = c.geom
-
         WHERE a.scenario='{scenario}'
         AND b.scenario = '{scenario}'
         AND c.scn_name = '{scenario}'
         AND c.carrier = 'central_heat'
         AND NOT district_heating_area_id IS NULL
-        GROUP BY (
-            electrical_bus_id, ch4_bus_id, a.carrier, c.bus_id)
-        """
-    )
+        GROUP BY (electrical_bus_id, ch4_bus_id, a.carrier, c.bus_id)
+        """)
 
     chp_dh.loc[chp_dh[chp_dh.carrier == "gas extended"].index, "carrier"] = (
         "gas"
@@ -237,8 +226,8 @@ def insert_scenario(scenario):
 
     # Insert into database
     chp_el.to_postgis(
-        targets["link"]["table"],
-        schema=targets["link"]["schema"],
+        ChpEtrago.targets.get_table_name("link"),
+        schema=ChpEtrago.targets.get_table_schema("link"),
         con=db.engine(),
         if_exists="append",
     )
@@ -261,8 +250,8 @@ def insert_scenario(scenario):
     chp_heat["link_id"] = db.next_etrago_id("link", len(chp_heat))
 
     chp_heat.to_postgis(
-        targets["link"]["table"],
-        schema=targets["link"]["schema"],
+        ChpEtrago.targets.get_table_name("link"),
+        schema=ChpEtrago.targets.get_table_schema("link"),
         con=db.engine(),
         if_exists="append",
     )
@@ -282,7 +271,8 @@ def insert_scenario(scenario):
     )
 
     chp_el_gen["generator_id"] = db.next_etrago_id(
-        "generator", len(chp_el_gen))
+        "generator", len(chp_el_gen)
+    )
     # Add marginal cost
     chp_el_gen["marginal_cost"] = (
         pd.Series(
@@ -297,8 +287,8 @@ def insert_scenario(scenario):
     )
 
     chp_el_gen.to_sql(
-        targets["generator"]["table"],
-        schema=targets["generator"]["schema"],
+        ChpEtrago.targets.get_table_name("generator"),
+        schema=ChpEtrago.targets.get_table_schema("generator"),
         con=db.engine(),
         if_exists="append",
         index=False,
@@ -317,26 +307,25 @@ def insert_scenario(scenario):
     )
 
     chp_heat_gen["generator_id"] = db.next_etrago_id(
-        "generator", len(chp_heat_gen))
+        "generator", len(chp_heat_gen)
+    )
 
     chp_heat_gen.to_sql(
-        targets["generator"]["table"],
-        schema=targets["generator"]["schema"],
+        ChpEtrago.targets.get_table_name("generator"),
+        schema=ChpEtrago.targets.get_table_schema("generator"),
         con=db.engine(),
         if_exists="append",
         index=False,
     )
 
-    chp_industry = db.select_dataframe(
-        f"""
+    chp_industry = db.select_dataframe(f"""
         SELECT electrical_bus_id, ch4_bus_id, carrier,
         SUM(el_capacity) AS el_capacity, SUM(th_capacity) AS th_capacity
-        FROM {sources['chp_table']['schema']}.{sources['chp_table']['table']}
+        FROM {ChpEtrago.sources.tables['chp_table']}
         WHERE scenario='{scenario}'
         AND district_heating_area_id IS NULL
         GROUP BY (electrical_bus_id, ch4_bus_id, carrier)
-        """
-    )
+        """)
 
     chp_industry.loc[
         chp_industry[chp_industry.carrier == "gas extended"].index, "carrier"
@@ -372,8 +361,8 @@ def insert_scenario(scenario):
     ]["chp_gas"]
 
     chp_el_ind.to_postgis(
-        targets["link"]["table"],
-        schema=targets["link"]["schema"],
+        ChpEtrago.targets.get_table_name("link"),
+        schema=ChpEtrago.targets.get_table_schema("link"),
         con=db.engine(),
         if_exists="append",
     )
@@ -392,7 +381,8 @@ def insert_scenario(scenario):
     )
 
     chp_el_ind_gen["generator_id"] = db.next_etrago_id(
-        "generator", len(chp_el_ind_gen))
+        "generator", len(chp_el_ind_gen)
+    )
 
     # Add marginal cost
     chp_el_ind_gen["marginal_cost"] = (
@@ -407,8 +397,8 @@ def insert_scenario(scenario):
     chp_el_ind_gen["carrier"] = "industrial_" + chp_el_ind_gen.carrier + "_CHP"
 
     chp_el_ind_gen.to_sql(
-        targets["generator"]["table"],
-        schema=targets["generator"]["schema"],
+        ChpEtrago.targets.get_table_name("generator"),
+        schema=ChpEtrago.targets.get_table_schema("generator"),
         con=db.engine(),
         if_exists="append",
         index=False,

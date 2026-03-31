@@ -36,8 +36,8 @@ def get_cbat_pbat_ratio(scenario: str = "eGon2035"):
     if df.empty:
         # No home_battery data in storage table - get from scenario parameters
         # This matches the source in datasets/storages/home_batteries.py:112-114
-        return get_sector_parameters("electricity", scenario)[
-            "efficiency"
-        ]["battery"]["max_hours"]
+        return get_sector_parameters("electricity", scenario)["efficiency"][
+            "battery"
+        ]["max_hours"]
 
     return int(df.iat[0, 0])

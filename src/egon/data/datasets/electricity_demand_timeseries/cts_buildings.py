@@ -21,7 +21,7 @@ import saio
 
 from egon.data import config, db
 from egon.data import logger as log
-from egon.data.datasets import Dataset
+from egon.data.datasets import Dataset, DatasetSources, DatasetTargets
 from egon.data.datasets.electricity_demand import (
     EgonDemandRegioZensusElectricity,
 )
@@ -46,7 +46,6 @@ from egon.data.datasets.heat_demand import EgonPetaHeat
 from egon.data.datasets.heat_demand_timeseries import EgonEtragoHeatCts
 from egon.data.datasets.zensus_mv_grid_districts import MapZensusGridDistricts
 from egon.data.datasets.zensus_vg250 import DestatisZensusPopulationPerHa
-
 
 engine = db.engine()
 Base = declarative_base()
@@ -141,18 +140,37 @@ class CtsDemandBuildings(Dataset):
     For more information see data documentation on :ref:`disagg-cts-elec-ref`.
 
     *Dependencies*
-      * :py:class:`OsmBuildingsStreets <egon.data.datasets.osm_buildings_streets.OsmBuildingsStreets>`
-      * :py:class:`CtsElectricityDemand <egon.data.datasets.electricity_demand.CtsElectricityDemand>`
-      * :py:class:`hh_buildings <egon.data.datasets.electricity_demand_timeseries.hh_buildings>`
-      * :py:class:`HeatTimeSeries <egon.data.datasets.heat_demand_timeseries.HeatTimeSeries>` (more specifically the :func:`export_etrago_cts_heat_profiles <egon.data.datasets.heat_demand_timeseries.export_etrago_cts_heat_profiles>` task)
+      * :py:class:`OsmBuildingsStreets
+        <egon.data.datasets.osm_buildings_streets.OsmBuildingsStreets>`
+      * :py:class:`CtsElectricityDemand
+        <egon.data.datasets.electricity_demand.CtsElectricityDemand>`
+      * :py:class:`hh_buildings
+        <egon.data.datasets.electricity_demand_timeseries.hh_buildings>`
+      * :py:class:`HeatTimeSeries
+        <egon.data.datasets.heat_demand_timeseries.HeatTimeSeries>`
+        (more specifically the :func:`export_etrago_cts_heat_profiles
+        <egon.data.datasets.heat_demand_timeseries
+        .export_etrago_cts_heat_profiles>` task)
 
     *Resulting tables*
-      * :py:class:`openstreetmap.osm_buildings_synthetic <egon.data.datasets.electricity_demand_timeseries.hh_buildings.OsmBuildingsSynthetic>` is extended
-      * :py:class:`openstreetmap.egon_cts_buildings <egon.data.datasets.electricity_demand_timeseries.cts_buildings.CtsBuildings>` is created
-      * :py:class:`demand.egon_cts_electricity_demand_building_share <egon.data.datasets.electricity_demand_timeseries.cts_buildings.EgonCtsElectricityDemandBuildingShare>` is created
-      * :py:class:`demand.egon_cts_heat_demand_building_share <egon.data.datasets.electricity_demand_timeseries.cts_buildings.EgonCtsHeatDemandBuildingShare>` is created
-      * :py:class:`demand.egon_building_electricity_peak_loads <egon.data.datasets.electricity_demand_timeseries.hh_buildings.BuildingElectricityPeakLoads>` is extended
-      * :py:class:`boundaries.egon_map_zensus_mvgd_buildings <egon.data.datasets.electricity_demand_timeseries.mapping.EgonMapZensusMvgdBuildings>` is extended.
+      * :py:class:`openstreetmap.osm_buildings_synthetic
+        <egon.data.datasets.electricity_demand_timeseries.hh_buildings
+        .OsmBuildingsSynthetic>` is extended
+      * :py:class:`openstreetmap.egon_cts_buildings
+        <egon.data.datasets.electricity_demand_timeseries.cts_buildings
+        .CtsBuildings>` is created
+      * :py:class:`demand.egon_cts_electricity_demand_building_share
+        <egon.data.datasets.electricity_demand_timeseries.cts_buildings
+        .EgonCtsElectricityDemandBuildingShare>` is created
+      * :py:class:`demand.egon_cts_heat_demand_building_share
+        <egon.data.datasets.electricity_demand_timeseries.cts_buildings
+        .EgonCtsHeatDemandBuildingShare>` is created
+      * :py:class:`demand.egon_building_electricity_peak_loads
+        <egon.data.datasets.electricity_demand_timeseries.hh_buildings
+        .BuildingElectricityPeakLoads>` is extended
+      * :py:class:`boundaries.egon_map_zensus_mvgd_buildings
+        <egon.data.datasets.electricity_demand_timeseries.mapping
+        .EgonMapZensusMvgdBuildings>` is extended.
 
     **The following datasets from the database are mainly used for creation:**
 
@@ -231,7 +249,32 @@ class CtsDemandBuildings(Dataset):
     #:
     name: str = "CtsDemandBuildings"
     #:
-    version: str = "0.0.4"
+    version: str = "0.0.9"
+    sources = DatasetSources(
+        tables={
+            "osm_buildings_filtered": "openstreetmap.osm_buildings_filtered",
+            "osm_amenities_shops_filtered": "openstreetmap.osm_amenities_shops_filtered",
+            "osm_amenities_not_in_buildings_filtered": "openstreetmap.osm_amenities_not_in_buildings_filtered",
+            "osm_buildings_synthetic": "openstreetmap.osm_buildings_synthetic",
+            "map_zensus_buildings_filtered_all": "boundaries.egon_map_zensus_buildings_filtered_all",
+            "zensus_electricity": "demand.egon_demandregio_zensus_electricity",
+            "peta_heat": "demand.egon_peta_heat",
+            "etrago_electricity_cts": "demand.egon_etrago_electricity_cts",
+            "etrago_heat_cts": "demand.egon_etrago_heat_cts",
+        }
+    )
+
+    targets = DatasetTargets(
+        tables={
+            "cts_buildings": "openstreetmap.egon_cts_buildings",
+            "cts_electricity_building_share": "demand.egon_cts_electricity_demand_building_share",
+            "cts_heat_building_share": "demand.egon_cts_heat_demand_building_share",
+            "osm_buildings_synthetic": "openstreetmap.osm_buildings_synthetic",
+            "building_electricity_peak_loads": "demand.egon_building_electricity_peak_loads",
+            "building_heat_peak_loads": "demand.egon_building_heat_peak_loads",
+            "map_zensus_mvgd_buildings": "boundaries.egon_map_zensus_mvgd_buildings",
+        }
+    )
 
     def __init__(self, dependencies):
         super().__init__(
@@ -546,10 +589,12 @@ def buildings_with_amenities():
     df_amenities_in_buildings["n_amenities_inside"] = 1
 
     # sum amenities per building and cell
-    df_amenities_in_buildings["n_amenities_inside"] = (
-        df_amenities_in_buildings.groupby(["zensus_population_id", "id"])[
-            "n_amenities_inside"
-        ].transform("sum")
+    df_amenities_in_buildings[
+        "n_amenities_inside"
+    ] = df_amenities_in_buildings.groupby(["zensus_population_id", "id"])[
+        "n_amenities_inside"
+    ].transform(
+        "sum"
     )
     # drop duplicated buildings
     df_buildings_with_amenities = df_amenities_in_buildings.drop_duplicates(
@@ -1220,9 +1265,10 @@ def cts_buildings():
 
     log.info("Start logging!")
     # Buildings with amenities
-    df_buildings_with_amenities, df_lost_cells = (
-        buildings_with_amenities()
-    )  # TODO: status2023 this is fixed to 2023
+    (
+        df_buildings_with_amenities,
+        df_lost_cells,
+    ) = buildings_with_amenities()  # TODO: status2023 this is fixed to 2023
     log.info("Buildings with amenities selected!")
 
     # Median number of amenities per cell

@@ -1,6 +1,4 @@
-"""The central module containing all code dealing with heat supply data
-
-"""
+"""The central module containing all code dealing with heat supply data"""
 
 import datetime
 import json
@@ -12,7 +10,7 @@ from sqlalchemy.ext.declarative import declarative_base
 import pandas as pd
 
 from egon.data import config, db
-from egon.data.datasets import Dataset
+from egon.data.datasets import Dataset, DatasetSources, DatasetTargets
 from egon.data.datasets.district_heating_areas import EgonDistrictHeatingAreas
 from egon.data.datasets.heat_supply.district_heating import (
     backup_gas_boilers,
@@ -26,12 +24,10 @@ from egon.data.datasets.heat_supply.individual_heating import (
 from egon.data.metadata import (
     context,
     generate_resource_fields_from_sqla_model,
-    license_ccby,
     license_egon_data_odbl,
     meta_metadata,
     sources,
 )
-
 from egon.data.validation import TableValidation, resolve_boundary_dependence
 
 # Will later be imported from another file.
@@ -87,15 +83,12 @@ def district_heating():
     None.
 
     """
-    sources = config.datasets()["heat_supply"]["sources"]
-    targets = config.datasets()["heat_supply"]["targets"]
+    sources = HeatSupply.sources
+    targets = HeatSupply.targets
 
-    db.execute_sql(
-        f"""
-        DELETE FROM {targets['district_heating_supply']['schema']}.
-        {targets['district_heating_supply']['table']}
-        """
-    )
+    db.execute_sql(f"""
+        DELETE FROM {HeatSupply.targets.tables["district_heating_supply"]}
+        """)
 
     for scenario in config.settings()["egon-data"]["--scenarios"]:
         supply = cascade_heat_supply(scenario, plotting=False)
@@ -103,8 +96,10 @@ def district_heating():
         supply["scenario"] = scenario
 
         supply.to_postgis(
-            targets["district_heating_supply"]["table"],
-            schema=targets["district_heating_supply"]["schema"],
+            HeatSupply.targets.get_table_name("district_heating_supply"),
+            schema=HeatSupply.targets.get_table_schema(
+                "district_heating_supply"
+            ),
             con=db.engine(),
             if_exists="append",
         )
@@ -112,20 +107,16 @@ def district_heating():
         # Do not check data for status quo as is it not listed in the table
         if "status" not in scenario:
             # Compare target value with sum of distributed heat supply
-            df_check = db.select_dataframe(
-                f"""
+            df_check = db.select_dataframe(f"""
                 SELECT a.carrier,
                 (SUM(a.capacity) - b.capacity) / SUM(a.capacity) as deviation
-                FROM {targets['district_heating_supply']['schema']}.
-                {targets['district_heating_supply']['table']} a,
-                {sources['scenario_capacities']['schema']}.
-                {sources['scenario_capacities']['table']} b
+                FROM {targets.tables['district_heating_supply']} a,
+                {sources.tables['scenario_capacities']} b
                 WHERE a.scenario = '{scenario}'
                 AND b.scenario_name = '{scenario}'
                 AND b.carrier = CONCAT('urban_central_', a.carrier)
                 GROUP BY (a.carrier,  b.capacity);
-                """
-            )
+                """)
             # If the deviation is > 1%, throw an error
             assert (
                 df_check.deviation.abs().max() < 1
@@ -137,8 +128,8 @@ def district_heating():
         backup = backup_gas_boilers(scenario)
 
         backup.to_postgis(
-            targets["district_heating_supply"]["table"],
-            schema=targets["district_heating_supply"]["schema"],
+            targets.get_table_name("district_heating_supply"),
+            schema=targets.get_table_schema("district_heating_supply"),
             con=db.engine(),
             if_exists="append",
         )
@@ -149,8 +140,8 @@ def district_heating():
 
             if not backup_rh.empty:
                 backup_rh.to_postgis(
-                    targets["district_heating_supply"]["table"],
-                    schema=targets["district_heating_supply"]["schema"],
+                    targets.get_table_name("district_heating_supply"),
+                    schema=targets.get_table_schema("district_heating_supply"),
                     con=db.engine(),
                     if_exists="append",
                 )
@@ -164,16 +155,13 @@ def individual_heating():
     None.
 
     """
-    targets = config.datasets()["heat_supply"]["targets"]
+    targets = HeatSupply.targets
 
     for scenario in config.settings()["egon-data"]["--scenarios"]:
-        db.execute_sql(
-            f"""
-            DELETE FROM {targets['individual_heating_supply']['schema']}.
-            {targets['individual_heating_supply']['table']}
+        db.execute_sql(f"""
+            DELETE FROM {targets.tables['individual_heating_supply']}
             WHERE scenario = '{scenario}'
-            """
-        )
+            """)
         if scenario == "eGon2035":
             distribution_level = "federal_states"
         else:
@@ -186,8 +174,8 @@ def individual_heating():
         supply["scenario"] = scenario
 
         supply.to_postgis(
-            targets["individual_heating_supply"]["table"],
-            schema=targets["individual_heating_supply"]["schema"],
+            targets.get_table_name("individual_heating_supply"),
+            schema=targets.get_table_schema("individual_heating_supply"),
             con=db.engine(),
             if_exists="append",
         )
@@ -208,17 +196,17 @@ def metadata():
 
     fields_df = pd.DataFrame(data=fields).set_index("name")
     fields_df.loc["index", "description"] = "Unique identifyer"
-    fields_df.loc["district_heating_id", "description"] = (
-        "Index of the corresponding district heating grid"
-    )
+    fields_df.loc[
+        "district_heating_id", "description"
+    ] = "Index of the corresponding district heating grid"
     fields_df.loc["carrier", "description"] = "Name of energy carrier"
-    fields_df.loc["category", "description"] = (
-        "Size-category of district heating grid"
-    )
+    fields_df.loc[
+        "category", "description"
+    ] = "Size-category of district heating grid"
     fields_df.loc["capacity", "description"] = "Installed heating capacity"
-    fields_df.loc["geometry", "description"] = (
-        "Location of thermal power plant"
-    )
+    fields_df.loc[
+        "geometry", "description"
+    ] = "Location of thermal power plant"
     fields_df.loc["scenario", "description"] = "Name of corresponing scenario"
 
     fields_df.loc["capacity", "unit"] = "MW_th"
@@ -289,15 +277,15 @@ def metadata():
 
     fields_df = pd.DataFrame(data=fields).set_index("name")
     fields_df.loc["index", "description"] = "Unique identifyer"
-    fields_df.loc["mv_grid_id", "description"] = (
-        "Index of the corresponding mv grid district"
-    )
+    fields_df.loc[
+        "mv_grid_id", "description"
+    ] = "Index of the corresponding mv grid district"
     fields_df.loc["carrier", "description"] = "Name of energy carrier"
     fields_df.loc["category", "description"] = "Size-category"
     fields_df.loc["capacity", "description"] = "Installed heating capacity"
-    fields_df.loc["geometry", "description"] = (
-        "Location of thermal power plant"
-    )
+    fields_df.loc[
+        "geometry", "description"
+    ] = "Location of thermal power plant"
     fields_df.loc["scenario", "description"] = "Name of corresponing scenario"
 
     fields_df.loc["capacity", "unit"] = "MW_th"
@@ -391,7 +379,29 @@ class HeatSupply(Dataset):
     #:
     name: str = "HeatSupply"
     #:
-    version: str = "0.0.14"
+    version: str = "0.0.18"
+
+    sources = DatasetSources(
+        tables={
+            "scenario_capacities": "supply.egon_scenario_capacities",
+            "district_heating_areas": "demand.egon_district_heating_areas",
+            "chp": "supply.egon_chp_plants",
+            "federal_states": "boundaries.vg250_lan",
+            "heat_demand": "demand.egon_peta_heat",
+            "map_zensus_grid": "boundaries.egon_map_zensus_grid_districts",
+            "map_vg250_grid": "boundaries.egon_map_mvgriddistrict_vg250",
+            "mv_grids": "grid.egon_mv_grid_district",
+            "map_dh": "demand.egon_map_zensus_district_heating_areas",
+            "etrago_buses": "grid.egon_etrago_bus",
+        }
+    )
+
+    targets = DatasetTargets(
+        tables={
+            "district_heating_supply": "supply.egon_district_heating",
+            "individual_heating_supply": "supply.egon_individual_heating",
+        }
+    )
 
     def __init__(self, dependencies):
         super().__init__(
@@ -410,10 +420,9 @@ class HeatSupply(Dataset):
                 "data-quality": [
                     TableValidation(
                         table_name="supply.egon_district_heating",
-                        row_count=resolve_boundary_dependence({
-                            "Schleswig-Holstein": 402,
-                            "Everything": 9090
-                        }),
+                        row_count=resolve_boundary_dependence(
+                            {"Schleswig-Holstein": 402, "Everything": 9090}
+                        ),
                         geometry_columns=["geometry"],
                         data_type_columns={
                             "index": "integer",
@@ -422,7 +431,7 @@ class HeatSupply(Dataset):
                             "category": "character varying",
                             "capacity": "double precision",
                             "geometry": "geometry",
-                            "scenario": "character varying"
+                            "scenario": "character varying",
                         },
                         not_null_columns=[
                             "index",
@@ -431,19 +440,25 @@ class HeatSupply(Dataset):
                             "category",
                             "capacity",
                             "geometry",
-                            "scenario"
+                            "scenario",
                         ],
                         value_set_columns={
-                            "carrier": ["geo_thermal", "CHP", "gas_boiler", "resistive_heater", "heat_pump", "solar_thermal_collector"],
-                            "scenario": ["eGon2035"]
-                        }
+                            "carrier": [
+                                "geo_thermal",
+                                "CHP",
+                                "gas_boiler",
+                                "resistive_heater",
+                                "heat_pump",
+                                "solar_thermal_collector",
+                            ],
+                            "scenario": ["eGon2035"],
+                        },
                     ),
                     TableValidation(
                         table_name="supply.egon_individual_heating",
-                        row_count=resolve_boundary_dependence({
-                            "Schleswig-Holstein": 396,
-                            "Everything": 7692
-                        }),
+                        row_count=resolve_boundary_dependence(
+                            {"Schleswig-Holstein": 396, "Everything": 7692}
+                        ),
                         geometry_columns=["geometry"],
                         data_type_columns={
                             "index": "integer",
@@ -452,7 +467,7 @@ class HeatSupply(Dataset):
                             "category": "character varying",
                             "capacity": "double precision",
                             "geometry": "geometry",
-                            "scenario": "character varying"
+                            "scenario": "character varying",
                         },
                         not_null_columns=[
                             "index",
@@ -461,16 +476,16 @@ class HeatSupply(Dataset):
                             "category",
                             "capacity",
                             "geometry",
-                            "scenario"
+                            "scenario",
                         ],
                         value_set_columns={
                             "carrier": ["gas_boiler", "heat_pump"],
-                            "scenario": ["eGon2035"]
-                        }
+                            "scenario": ["eGon2035"],
+                        },
                     ),
                 ]
             },
-            proceed_on_validation_failure=True
+            proceed_on_validation_failure=True,
         )
 
 

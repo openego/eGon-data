@@ -2,24 +2,22 @@
 
 from __future__ import annotations
 
-import copy
-import logging
 from dataclasses import dataclass
 from typing import Any, List, Mapping, Optional, Sequence, Union
+import copy
+import logging
 
-from .resolver import BoundaryDependent
-
-from egon_validation.rules.base import Rule
 from egon_validation import (
-    RowCountValidation,
     DataTypeValidation,
     NotNullAndNotNaNValidation,
-    ValueSetValidation,
+    RowCountValidation,
     SRIDUniqueNonZero,
+    ValueSetValidation,
     WholeTableNotNullAndNotNaNValidation,
 )
+from egon_validation.rules.base import Rule
 
-from .resolver import resolve_value
+from .resolver import BoundaryDependent, resolve_value
 
 logger = logging.getLogger(__name__)
 
@@ -45,9 +43,13 @@ class TableValidation:
     table_name: str
     row_count: Optional[Any] = None
     geometry_columns: Optional[Sequence[str]] = None
-    data_type_columns: Optional[Union[Mapping[str, Any], BoundaryDependent]] = None
+    data_type_columns: Optional[
+        Union[Mapping[str, Any], BoundaryDependent]
+    ] = None
     not_null_columns: Optional[Sequence[str]] = None
-    value_set_columns: Optional[Union[Mapping[str, Any], BoundaryDependent]] = None
+    value_set_columns: Optional[
+        Union[Mapping[str, Any], BoundaryDependent]
+    ] = None
 
     def to_rules(self, boundary: str) -> List[Rule]:
         rules: List[Rule] = []
@@ -113,7 +115,7 @@ class TableValidation:
                     ValueSetValidation(
                         table=self.table_name,
                         rule_id=f"VALUE_SET_{str(col_name).upper()}"
-                                f".{table_suffix}",
+                        f".{table_suffix}",
                         column=str(col_name),
                         expected_values=expected_values,
                     )
@@ -191,7 +193,9 @@ def resolve_rule_params(rule: Rule, boundary: str) -> None:
             rule_id = getattr(rule, "rule_id", "<no-id>")
             logger.info(
                 "Rule %s: Resolved %s for boundary='%s'",
-                rule_id, name, boundary
+                rule_id,
+                name,
+                boundary,
             )
             params[name] = resolved
 

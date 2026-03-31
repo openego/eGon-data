@@ -5,11 +5,13 @@ import numpy as np
 import pandas as pd
 
 from egon.data import db
-from egon.data.datasets.mastr import WORKING_DIR_MASTR_NEW
+from egon.data.datasets import load_sources_and_targets
 import egon.data.config
 
 
 def insert():
+    sources, targets = load_sources_and_targets("PowerPlants")
+
     def mastr_existing_pv(pow_per_area):
         """Import MaStR data from csv-files.
 
@@ -20,14 +22,12 @@ def insert():
             pv farms depending on area in kW/m²
 
         """
-        # get config
-        cfg = egon.data.config.datasets()["power_plants"]
 
         # import MaStR data: locations, grid levels and installed capacities
 
         # get relevant pv plants: ground mounted
         df = pd.read_csv(
-            WORKING_DIR_MASTR_NEW / cfg["sources"]["mastr_pv"],
+            sources.files["mastr_pv"],
             usecols=[
                 "Lage",
                 "Laengengrad",
@@ -78,8 +78,9 @@ def insert():
         # derive voltage level
 
         mastr["voltage_level"] = pd.Series(dtype=int)
+
         lvl = pd.read_csv(
-            WORKING_DIR_MASTR_NEW / cfg["sources"]["mastr_location"],
+            sources.files["mastr_location"],
             usecols=["Spannungsebene", "MaStRNummer"],
         )
 
@@ -160,7 +161,7 @@ def insert():
         # roads and railway
         sql = (
             "SELECT id, geom FROM "
-            "supply.egon_re_potential_area_pv_road_railway"
+            f"{sources.tables['potential_area_pv_road_railway']}"
         )
         potentials_rora = gpd.GeoDataFrame.from_postgis(sql, con)
         potentials_rora = potentials_rora.set_index("id")
@@ -168,7 +169,7 @@ def insert():
         # agriculture
         sql = (
             "SELECT id, geom FROM "
-            "supply.egon_re_potential_area_pv_agriculture"
+            f"{sources.tables['potential_area_pv_agriculture']}"
         )
         potentials_agri = gpd.GeoDataFrame.from_postgis(sql, con)
         potentials_agri = potentials_agri.set_index("id")
@@ -405,7 +406,7 @@ def insert():
         if len(pv_pot_mv_to_hv) > 0:
             # import data for HV substations
 
-            sql = "SELECT point, voltage FROM grid.egon_hvmv_substation"
+            sql = f"SELECT point, voltage FROM {sources.tables['hvmv_substation']}"
             hvmv_substation = gpd.GeoDataFrame.from_postgis(
                 sql, con, geom_col="point"
             )
@@ -471,7 +472,7 @@ def insert():
         """
 
         # get MV grid districts
-        sql = "SELECT bus_id, geom FROM grid.egon_mv_grid_district"
+        sql = f"SELECT bus_id, geom FROM {sources.tables['egon_mv_grid_district']}"
         distr = gpd.GeoDataFrame.from_postgis(sql, con)
         distr = distr.set_index("bus_id")
 
@@ -755,7 +756,7 @@ def insert():
         pv_exist = gpd.GeoDataFrame(pv_exist, geometry="centroid", crs=3035)
 
         # German states
-        sql = "SELECT geometry as geom, gf FROM boundaries.vg250_lan"
+        sql = f"SELECT geometry as geom, gf FROM {sources.tables['geom_federal_states']}"
         land = gpd.GeoDataFrame.from_postgis(sql, con).to_crs(3035)
         land = land[(land["gf"] != 1) & (land["gf"] != 2)]
         land = land.unary_union
@@ -1189,7 +1190,7 @@ def insert():
         con = db.engine()
 
         # maximum ID in egon_power_plants
-        sql = "SELECT MAX(id) FROM supply.egon_power_plants"
+        sql = f"SELECT MAX(id) FROM {targets.tables['power_plants']}"
         max_id = pd.read_sql(sql, con)
         max_id = max_id["max"].iat[0]
         if max_id is None:
@@ -1225,8 +1226,8 @@ def insert():
 
         # insert into database
         insert_pv_parks.reset_index().to_postgis(
-            "egon_power_plants",
-            schema="supply",
+            targets.get_table_name("power_plants"),
+            schema=targets.get_table_schema("power_plants"),
             con=db.engine(),
             if_exists="append",
         )

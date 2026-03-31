@@ -41,6 +41,7 @@ from egon.data.datasets.emobility.motorized_individual_travel_charging_infrastru
 from egon.data.datasets.era5 import WeatherData
 from egon.data.datasets.etrago_setup import EtragoSetup
 from egon.data.datasets.fill_etrago_gen import Egon_etrago_gen
+from egon.data.datasets.final_validations import FinalValidations
 from egon.data.datasets.fix_ehv_subnetworks import FixEhvSubnetworks
 from egon.data.datasets.gas_areas import GasAreas
 from egon.data.datasets.gas_grid import GasNodesAndPipes
@@ -95,15 +96,13 @@ from egon.data.datasets.storages_etrago import StorageEtrago
 from egon.data.datasets.substation import SubstationExtraction
 from egon.data.datasets.substation_voronoi import SubstationVoronoi
 from egon.data.datasets.tyndp import Tyndp
+from egon.data.datasets.validation_report import ValidationReport
 from egon.data.datasets.vg250 import Vg250
 from egon.data.datasets.vg250_mv_grid_districts import Vg250MvGridDistricts
 from egon.data.datasets.zensus import ZensusMiscellaneous, ZensusPopulation
 from egon.data.datasets.zensus_mv_grid_districts import ZensusMvGridDistricts
 from egon.data.datasets.zensus_vg250 import ZensusVg250
 from egon.data.metadata import Json_Metadata
-
-from egon.data.datasets.validation_report import ValidationReport
-from egon.data.datasets.final_validations import FinalValidations
 
 # Set number of threads used by numpy and pandas
 set_numexpr_threads()
@@ -738,9 +737,9 @@ with airflow.DAG(
         # These run after all data generation but before the validation report
         final_validations = FinalValidations(
             dependencies=[
-                insert_data_ch4_storages,  # CH4Storages
-                insert_H2_storage,  # HydrogenStoreEtrago
-                storage_etrago,  # StorageEtrago
+                insert_data_ch4_storages,  # CH4Storages - for CH4 store validation
+                insert_H2_storage,  # HydrogenStoreEtrago - for H2 saltcavern validation
+                storage_etrago,  # StorageEtrago - general storage validation
                 hts_etrago_table,
                 fill_etrago_generators,
                 household_electricity_demand_annual,
@@ -755,7 +754,7 @@ with airflow.DAG(
         # Runs after all validations (including final_validations) are complete
         validation_report = ValidationReport(
             dependencies=[
-                final_validations,           # Wait for final validations
+                final_validations,  # Wait for final validations
             ]
         )
 

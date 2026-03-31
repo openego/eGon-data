@@ -8,8 +8,8 @@ expected scenario values.
 from math import isclose
 from pathlib import Path
 
-import pandas as pd
 from egon_validation.rules.base import Rule, RuleResult, Severity
+import pandas as pd
 
 from egon.data import config, db
 from egon.data.datasets.power_plants.pv_rooftop_buildings import (
@@ -34,11 +34,20 @@ class PvRooftopBuildingsValidation(Rule):
     """
 
     def __init__(
-        self, table: str, rule_id: str, scenario: str = "eGon2035",
-        rtol: float = 0.01, **kwargs
+        self,
+        table: str,
+        rule_id: str,
+        scenario: str = "eGon2035",
+        rtol: float = 0.01,
+        **kwargs,
     ):
-        super().__init__(rule_id=rule_id, table=table, scenario=scenario,
-                         rtol=rtol, **kwargs)
+        super().__init__(
+            rule_id=rule_id,
+            table=table,
+            scenario=scenario,
+            rtol=rtol,
+            **kwargs,
+        )
         self.kind = "sanity"
         self.scenario = scenario
 
@@ -69,12 +78,22 @@ class PvRooftopBuildingsValidation(Rule):
         missing_count = len(merge_df.loc[merge_df.building_area.isna()])
 
         if missing_count > 0:
-            return False, missing_count, merge_df, (
-                f"{missing_count} PV rooftop installations have no valid "
-                f"building assignment"
+            return (
+                False,
+                missing_count,
+                merge_df,
+                (
+                    f"{missing_count} PV rooftop installations have no valid "
+                    f"building assignment"
+                ),
             )
 
-        return True, 0, merge_df, "All PV installations assigned to valid buildings"
+        return (
+            True,
+            0,
+            merge_df,
+            "All PV installations assigned to valid buildings",
+        )
 
     def _get_expected_capacity_egon2035(self):
         """Get expected capacity for eGon2035 scenario."""
@@ -155,7 +174,7 @@ class PvRooftopBuildingsValidation(Rule):
                     severity=Severity.WARNING,
                     schema=self.schema,
                     table_name=self.table_name,
-                    rule_class=self.__class__.__name__
+                    rule_class=self.__class__.__name__,
                 )
 
             valid_buildings_gdf = load_building_data()
@@ -169,7 +188,12 @@ class PvRooftopBuildingsValidation(Rule):
             )
 
             # Check building assignment
-            bldg_ok, missing, merge_df, bldg_msg = self._check_building_assignment(
+            (
+                bldg_ok,
+                missing,
+                merge_df,
+                bldg_msg,
+            ) = self._check_building_assignment(
                 pv_roof_df, valid_buildings_gdf
             )
 
@@ -186,7 +210,7 @@ class PvRooftopBuildingsValidation(Rule):
                     severity=Severity.ERROR,
                     schema=self.schema,
                     table_name=self.table_name,
-                    rule_class=self.__class__.__name__
+                    rule_class=self.__class__.__name__,
                 )
 
             # Get observed capacity for this scenario
@@ -209,19 +233,21 @@ class PvRooftopBuildingsValidation(Rule):
                     severity=Severity.ERROR,
                     schema=self.schema,
                     table_name=self.table_name,
-                    rule_class=self.__class__.__name__
+                    rule_class=self.__class__.__name__,
                 )
 
             # Compare capacities
             rtol = self.params.get("rtol", 0.01)
             capacity_ok = isclose(
-                expected_capacity,
-                observed_capacity,
-                rel_tol=rtol
+                expected_capacity, observed_capacity, rel_tol=rtol
             )
 
             if capacity_ok:
-                deviation_pct = abs(observed_capacity - expected_capacity) / expected_capacity * 100
+                deviation_pct = (
+                    abs(observed_capacity - expected_capacity)
+                    / expected_capacity
+                    * 100
+                )
                 return RuleResult(
                     rule_id=self.rule_id,
                     task=self.task,
@@ -238,10 +264,14 @@ class PvRooftopBuildingsValidation(Rule):
                     severity=Severity.INFO,
                     schema=self.schema,
                     table_name=self.table_name,
-                    rule_class=self.__class__.__name__
+                    rule_class=self.__class__.__name__,
                 )
             else:
-                deviation_pct = abs(observed_capacity - expected_capacity) / expected_capacity * 100
+                deviation_pct = (
+                    abs(observed_capacity - expected_capacity)
+                    / expected_capacity
+                    * 100
+                )
                 return RuleResult(
                     rule_id=self.rule_id,
                     task=self.task,
@@ -258,7 +288,7 @@ class PvRooftopBuildingsValidation(Rule):
                     severity=Severity.ERROR,
                     schema=self.schema,
                     table_name=self.table_name,
-                    rule_class=self.__class__.__name__
+                    rule_class=self.__class__.__name__,
                 )
 
         except Exception as e:
@@ -272,5 +302,5 @@ class PvRooftopBuildingsValidation(Rule):
                 severity=Severity.ERROR,
                 schema=self.schema,
                 table_name=self.table_name,
-                rule_class=self.__class__.__name__
+                rule_class=self.__class__.__name__,
             )

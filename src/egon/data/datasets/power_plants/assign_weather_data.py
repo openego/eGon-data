@@ -1,11 +1,12 @@
 import geopandas as gpd
 
 from egon.data import db
+from egon.data.datasets import load_sources_and_targets
 from egon.data.datasets.power_plants.pv_rooftop_buildings import timer_func
 import egon.data.config
 
 
-def assign_bus_id(power_plants, cfg):
+def assign_bus_id(power_plants):
     """Assigns bus_ids to power plants according to location and voltage level
 
     Parameters
@@ -19,17 +20,18 @@ def assign_bus_id(power_plants, cfg):
         Power plants including voltage level and bus_id
 
     """
+    sources, targets = load_sources_and_targets("PowerPlants")
 
     mv_grid_districts = db.select_geodataframe(
         f"""
-        SELECT * FROM {cfg['sources']['egon_mv_grid_district']}
+        SELECT * FROM {sources.tables['egon_mv_grid_district']}
         """,
         epsg=4326,
     )
 
     ehv_grid_districts = db.select_geodataframe(
         f"""
-        SELECT * FROM {cfg['sources']['ehv_voronoi']}
+        SELECT * FROM {sources.tables['ehv_voronoi']}
         """,
         epsg=4326,
     )
@@ -71,15 +73,17 @@ def assign_bus_id(power_plants, cfg):
 
 
 @timer_func
+@timer_func
 def add_missing_bus_ids(scn_name):
     """Assign busses by spatal intersection of mvgrid districts or ehv voronois."""
+    sources, targets = load_sources_and_targets("PowerPlants")
 
     sql = f"""
                 -- Assign missing buses to mv grid district buses for HV and below
-                UPDATE supply.egon_power_plants AS epp
+                UPDATE {targets.tables['power_plants']} AS epp
                 SET bus_id = (
                     SELECT emgd.bus_id
-                    FROM grid.egon_mv_grid_district AS emgd
+                    FROM {sources.tables['egon_mv_grid_district']} AS emgd
                     WHERE ST_Intersects(ST_Transform(epp.geom, 4326), ST_Transform(emgd.geom, 4326))
                     ORDER BY ST_Transform(emgd.geom, 4326) <-> ST_Transform(epp.geom, 4326)
                     LIMIT 1
@@ -94,10 +98,10 @@ def add_missing_bus_ids(scn_name):
 
 
                 -- Assign missing buses to EHV buses for EHV
-                UPDATE supply.egon_power_plants AS epp
+                UPDATE {targets.tables['power_plants']} AS epp
                 SET bus_id = (
                     SELECT eesv.bus_id
-                    FROM grid.egon_ehv_substation_voronoi AS eesv
+                    FROM {sources.tables['ehv_voronoi']} AS eesv
                     WHERE ST_Intersects(ST_Transform(epp.geom, 4326), ST_Transform(eesv.geom, 4326))
                     ORDER BY ST_Transform(eesv.geom, 4326) <-> ST_Transform(epp.geom, 4326)
                     LIMIT 1
@@ -117,12 +121,14 @@ def add_missing_bus_ids(scn_name):
 
 
 @timer_func
+@timer_func
 def find_weather_id(scn_name):
+    sources, targets = load_sources_and_targets("PowerPlants")
 
-    sql = f"""UPDATE supply.egon_power_plants AS epp
+    sql = f"""UPDATE {targets.tables['power_plants']} AS epp
                 SET weather_cell_id = (
                     SELECT eewc.w_id
-                    FROM supply.egon_era5_weather_cells AS eewc
+                    FROM {sources.tables['weather_cells']} AS eewc
                     WHERE ST_Intersects(epp.geom, eewc.geom)
                     ORDER BY eewc.geom <-> epp.geom
                     LIMIT 1

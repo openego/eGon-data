@@ -2,9 +2,9 @@
 
 from __future__ import annotations
 
-import logging
 from dataclasses import dataclass
 from typing import Any, Dict
+import logging
 
 logger = logging.getLogger(__name__)
 
@@ -17,6 +17,7 @@ class BoundaryDependent:
     E.g. Schleswig-Holstein vs Everything. At validation runtime, the
     appropriate value is selected based on the current boundary setting.
     """
+
     values: Dict[str, Any]
 
     def resolve(self, boundary: str) -> Any:
@@ -27,7 +28,8 @@ class BoundaryDependent:
         if boundary in self.values:
             logger.debug(
                 "Resolved boundary-dependent value: %s -> %s",
-                boundary, self.values[boundary]
+                boundary,
+                self.values[boundary],
             )
             return self.values[boundary]
         raise KeyError(
@@ -67,8 +69,7 @@ def resolve_value(value: Any, boundary: str) -> Any:
     # Handle plain dicts with boundary keys (fallback for serialization issues)
     if isinstance(value, dict) and boundary in value:
         logger.debug(
-            "Resolved plain dict value: %s -> %s",
-            boundary, value[boundary]
+            "Resolved plain dict value: %s -> %s", boundary, value[boundary]
         )
         return value[boundary]
 

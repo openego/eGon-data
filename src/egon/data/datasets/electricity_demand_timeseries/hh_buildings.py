@@ -14,7 +14,7 @@ import numpy as np
 import pandas as pd
 
 from egon.data import db
-from egon.data.datasets import Dataset
+from egon.data.datasets import Dataset, DatasetSources, DatasetTargets
 from egon.data.datasets.electricity_demand_timeseries.hh_profiles import (
     HouseholdElectricityProfilesInCensusCells,
     get_iee_hh_demand_profiles_raw,
@@ -22,13 +22,13 @@ from egon.data.datasets.electricity_demand_timeseries.hh_profiles import (
 from egon.data.datasets.electricity_demand_timeseries.tools import (
     random_point_in_square,
 )
+from egon.data.validation import TableValidation, resolve_boundary_dependence
 import egon.data.config
-from egon.data.validation import resolve_boundary_dependence, TableValidation
 
 engine = db.engine()
 Base = declarative_base()
 
-data_config = egon.data.config.datasets()
+
 RANDOM_SEED = egon.data.config.settings()["egon-data"]["--random-seed"]
 np.random.seed(RANDOM_SEED)
 
@@ -232,10 +232,13 @@ def match_osm_and_zensus_data(
     ].set_index("cell_id")
 
     # query zensus building count
+    sources = setup.sources
     egon_destatis_building_count = Table(
-        "egon_destatis_zensus_apartment_building_population_per_ha",
+        sources.get_table_name("zensus_apartment_building_population_per_ha"),
         Base.metadata,
-        schema="society",
+        schema=sources.get_table_schema(
+            "zensus_apartment_building_population_per_ha"
+        ),
     )
     # get table metadata from db by name and schema
     inspect(engine).reflecttable(egon_destatis_building_count, None)
@@ -339,10 +342,12 @@ def match_osm_and_zensus_data(
     )
 
     # Update mising buildings
-    missing_buildings["building_count"] = (
-        missing_buildings.cell_profile_ids.div(
-            missing_buildings_temp.profile_building_rate
-        ).fillna(missing_buildings.building_count)
+    missing_buildings[
+        "building_count"
+    ] = missing_buildings.cell_profile_ids.div(
+        missing_buildings_temp.profile_building_rate
+    ).fillna(
+        missing_buildings.building_count
     )
     # ========== END Update profile/building rate in cells w/o bld using adjacent cells ==========
 
@@ -379,10 +384,13 @@ def generate_synthetic_buildings(missing_buildings, edge_length):
         Table with generated synthetic buildings, area, cell_id and geom data
 
     """
+    sources = setup.sources
     destatis_zensus_population_per_ha_inside_germany = Table(
-        "destatis_zensus_population_per_ha_inside_germany",
+        sources.get_table_name("zensus_population_per_ha_inside_germany"),
         Base.metadata,
-        schema="society",
+        schema=sources.get_table_schema(
+            "zensus_population_per_ha_inside_germany"
+        ),
     )
     # get table metadata from db by name and schema
     inspect(engine).reflecttable(
@@ -437,7 +445,11 @@ def generate_synthetic_buildings(missing_buildings, edge_length):
     )
 
     # get table metadata from db by name and schema
-    buildings = Table("osm_buildings", Base.metadata, schema="openstreetmap")
+    buildings = Table(
+        sources.get_table_name("osm_buildings"),
+        Base.metadata,
+        schema=sources.get_table_schema("osm_buildings"),
+    )
     inspect(engine).reflecttable(buildings, None)
 
     # get max number of building ids from non-filtered building table
@@ -572,9 +584,9 @@ def generate_mapping_table(
         .reset_index()
     )
     # add profile position as attribute by number of entries per cell (*)
-    mapping_profiles_to_buildings["profile"] = (
-        mapping_profiles_to_buildings.groupby(["cell_id"]).cumcount()
-    )
+    mapping_profiles_to_buildings[
+        "profile"
+    ] = mapping_profiles_to_buildings.groupby(["cell_id"]).cumcount()
     # get multiindex of profiles in cells (*)
     index_profiles = mapping_profiles_to_buildings.set_index(
         ["cell_id", "profile"]
@@ -589,9 +601,9 @@ def generate_mapping_table(
         profile_ids_per_cell_reduced.explode().reset_index()
     )
     # assign profile position by order of list
-    profile_ids_per_cell_reduced["profile"] = (
-        profile_ids_per_cell_reduced.groupby(["cell_id"]).cumcount()
-    )
+    profile_ids_per_cell_reduced[
+        "profile"
+    ] = profile_ids_per_cell_reduced.groupby(["cell_id"]).cumcount()
     profile_ids_per_cell_reduced = profile_ids_per_cell_reduced.set_index(
         ["cell_id", "profile"]
     )
@@ -639,7 +651,13 @@ def reduce_synthetic_buildings(
     Id's are adapted to continuous number sequence following
     openstreetmap.osm_buildings"""
 
-    buildings = Table("osm_buildings", Base.metadata, schema="openstreetmap")
+    sources = setup.sources
+
+    buildings = Table(
+        sources.get_table_name("osm_buildings"),
+        Base.metadata,
+        schema=sources.get_table_schema("osm_buildings"),
+    )
     # get table metadata from db by name and schema
     inspect(engine).reflecttable(buildings, None)
 
@@ -811,10 +829,13 @@ def map_houseprofiles_to_buildings():
 
     """
     # ========== Get census cells ==========
+    sources = setup.sources
     egon_census_cells = Table(
-        "egon_destatis_zensus_apartment_building_population_per_ha",
+        sources.get_table_name("zensus_apartment_building_population_per_ha"),
         Base.metadata,
-        schema="society",
+        schema=sources.get_table_schema(
+            "zensus_apartment_building_population_per_ha"
+        ),
     )
     inspect(engine).reflecttable(egon_census_cells, None)
 
@@ -829,10 +850,11 @@ def map_houseprofiles_to_buildings():
         )
 
     # ========== Get residential buildings ==========
+    sources = setup.sources
     egon_osm_buildings_residential = Table(
-        "osm_buildings_residential",
+        sources.get_table_name("osm_buildings_residential"),
         Base.metadata,
-        schema="openstreetmap",
+        schema=sources.get_table_schema("osm_buildings_residential"),
     )
     inspect(engine).reflecttable(egon_osm_buildings_residential, None)
 
@@ -851,9 +873,9 @@ def map_houseprofiles_to_buildings():
 
     # Copy buildings and set centroid as geom
     gdf_egon_osm_buildings_main = gdf_egon_osm_buildings.copy()
-    gdf_egon_osm_buildings_main["geom_point"] = (
-        gdf_egon_osm_buildings_main.centroid
-    )
+    gdf_egon_osm_buildings_main[
+        "geom_point"
+    ] = gdf_egon_osm_buildings_main.centroid
     gdf_egon_osm_buildings_main = gdf_egon_osm_buildings_main.drop(
         columns=["geom_building"]
     ).set_geometry("geom_point")
@@ -890,14 +912,14 @@ def map_houseprofiles_to_buildings():
         ]
     )
 
-    gdf_egon_osm_buildings_census_cells["geom_point"] = (
-        gdf_egon_osm_buildings_census_cells.centroid
-    )
+    gdf_egon_osm_buildings_census_cells[
+        "geom_point"
+    ] = gdf_egon_osm_buildings_census_cells.centroid
 
     # Add column with unique building ids using suffixes (building parts split by clipping)
-    gdf_egon_osm_buildings_census_cells["building_id_temp"] = (
-        gdf_egon_osm_buildings_census_cells["building_id"].astype(str)
-    )
+    gdf_egon_osm_buildings_census_cells[
+        "building_id_temp"
+    ] = gdf_egon_osm_buildings_census_cells["building_id"].astype(str)
     g = (
         gdf_egon_osm_buildings_census_cells.groupby("building_id_temp")
         .cumcount()
@@ -961,14 +983,14 @@ def map_houseprofiles_to_buildings():
     )
 
     # remove suffixes from buildings split into parts before to merge them back together
-    mapping_profiles_to_buildings["building_id"] = (
-        mapping_profiles_to_buildings.building_id.astype(str).apply(
-            lambda s: s.split("_")[0] if "_" in s else s
-        )
+    mapping_profiles_to_buildings[
+        "building_id"
+    ] = mapping_profiles_to_buildings.building_id.astype(str).apply(
+        lambda s: s.split("_")[0] if "_" in s else s
     )
-    mapping_profiles_to_buildings["building_id"] = (
-        mapping_profiles_to_buildings["building_id"].astype(int)
-    )
+    mapping_profiles_to_buildings[
+        "building_id"
+    ] = mapping_profiles_to_buildings["building_id"].astype(int)
 
     # reduce list to only used synthetic buildings
     synthetic_buildings = reduce_synthetic_buildings(
@@ -987,13 +1009,13 @@ def map_houseprofiles_to_buildings():
         how="left",
         suffixes=("_df1", "_df2"),
     ).dropna()
-    egon_map_zensus_buildings_residential_main["cell_id_df2"] = (
-        egon_map_zensus_buildings_residential_main["cell_id_df2"].astype(int)
-    )
+    egon_map_zensus_buildings_residential_main[
+        "cell_id_df2"
+    ] = egon_map_zensus_buildings_residential_main["cell_id_df2"].astype(int)
     mapping_profiles_to_buildings2 = mapping_profiles_to_buildings.copy()
-    mapping_profiles_to_buildings["cell_id"] = (
-        egon_map_zensus_buildings_residential_main["cell_id_df2"]
-    )
+    mapping_profiles_to_buildings[
+        "cell_id"
+    ] = egon_map_zensus_buildings_residential_main["cell_id_df2"]
 
     # Retain original values where no main building has been found
     # (centroid of building part not in a cell)
@@ -1011,11 +1033,12 @@ def map_houseprofiles_to_buildings():
 
     # Write new buildings incl coord into db
     n_amenities_inside_type = OsmBuildingsSynthetic.n_amenities_inside.type
+    targets = setup.targets
     synthetic_buildings.to_postgis(
-        "osm_buildings_synthetic",
+        targets.get_table_name("osm_buildings_synthetic"),
         con=engine,
         if_exists="append",
-        schema="openstreetmap",
+        schema=targets.get_table_schema("osm_buildings_synthetic"),
         dtype={
             "id": OsmBuildingsSynthetic.id.type,
             "cell_id": OsmBuildingsSynthetic.cell_id.type,
@@ -1080,11 +1103,11 @@ def create_buildings_profiles_stats():
     df_buildings_and_profiles["households_total"] = (
         df_buildings_and_profiles.sum(axis=1)
     )
-
+    targets = setup.targets
     # Write to DB
     df_buildings_and_profiles.to_sql(
-        name=HouseholdElectricityProfilesOfBuildingsStats.__table__.name,
-        schema=HouseholdElectricityProfilesOfBuildingsStats.__table__.schema,
+        name=targets.get_table_name("hh_profiles_of_buildings_stats"),
+        schema=targets.get_table_schema("hh_profiles_of_buildings_stats"),
         con=engine,
         if_exists="append",
     )
@@ -1219,8 +1242,27 @@ class setup(Dataset):
     #:
     name: str = "Demand_Building_Assignment"
     #:
-    version: str = "0.0.7"
+    version: str = "0.0.11"
     #:
+    sources = DatasetSources(
+        tables={
+            "hh_profiles_in_census_cells": "demand.egon_household_electricity_profile_in_census_cell",
+            "zensus_apartment_building_population_per_ha": "society.egon_destatis_zensus_apartment_building_population_per_ha",
+            "zensus_population_per_ha_inside_germany": "society.destatis_zensus_population_per_ha_inside_germany",
+            "osm_buildings": "openstreetmap.osm_buildings",
+            "osm_buildings_residential": "openstreetmap.osm_buildings_residential",
+        }
+    )
+
+    targets = DatasetTargets(
+        tables={
+            "osm_buildings_synthetic": "openstreetmap.osm_buildings_synthetic",
+            "hh_profiles_of_buildings": "demand.egon_household_electricity_profile_of_buildings",
+            "hh_profiles_of_buildings_stats": "demand.egon_household_electricity_profile_of_buildings_stats",
+            "building_electricity_peak_loads": "demand.egon_building_electricity_peak_loads",
+        }
+    )
+
     tasks = (
         map_houseprofiles_to_buildings,
         create_buildings_profiles_stats,
@@ -1237,42 +1279,53 @@ class setup(Dataset):
                 "data_quality": [
                     TableValidation(
                         table_name="demand.egon_building_electricity_peak_loads",
-                        row_count=resolve_boundary_dependence({
-                            "Schleswig-Holstein": 3029824,
-                            "Everything": 44683620
-                        }),
+                        row_count=resolve_boundary_dependence(
+                            {
+                                "Schleswig-Holstein": 3029824,
+                                "Everything": 44683620,
+                            }
+                        ),
                         data_type_columns={
                             "building_id": "integer",
                             "scenario": "character varying",
                             "sector": "character varying",
                             "peak_load_in_w": "real",
-                            "voltage_level": "integer"
+                            "voltage_level": "integer",
                         },
-                        value_set_columns=resolve_boundary_dependence({
-                            "Schleswig-Holstein": {
-                                "scenario": ["eGon2035", "eGon100RE", "status2019", "status2023"],
-                                "sector": ["cts", "residential"]
-                            },
-                            "Everything": {
-                                "scenario": ["eGon2035", "eGon100RE"],
-                                "sector": ["cts", "residential"]
+                        value_set_columns=resolve_boundary_dependence(
+                            {
+                                "Schleswig-Holstein": {
+                                    "scenario": [
+                                        "eGon2035",
+                                        "eGon100RE",
+                                        "status2019",
+                                        "status2023",
+                                    ],
+                                    "sector": ["cts", "residential"],
+                                },
+                                "Everything": {
+                                    "scenario": ["eGon2035", "eGon100RE"],
+                                    "sector": ["cts", "residential"],
+                                },
                             }
-                        })
+                        ),
                     ),
                     TableValidation(
                         table_name="demand.egon_household_electricity_profile_of_buildings",
-                        row_count=resolve_boundary_dependence({
-                            "Schleswig-Holstein": 1371592,
-                            "Everything": 38605221
-                        }),
+                        row_count=resolve_boundary_dependence(
+                            {
+                                "Schleswig-Holstein": 1371592,
+                                "Everything": 38605221,
+                            }
+                        ),
                         data_type_columns={
                             "id": "integer",
                             "building_id": "integer",
                             "cell_id": "integer",
-                            "profile_id": "character varying"
-                        }
+                            "profile_id": "character varying",
+                        },
                     ),
                 ]
             },
-            proceed_on_validation_failure=True
+            proceed_on_validation_failure=True,
         )

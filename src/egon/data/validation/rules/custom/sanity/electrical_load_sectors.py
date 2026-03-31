@@ -2,29 +2,39 @@
 Sanity check validation rules for electrical load sector breakdown.
 
 Validates that electrical loads are correctly disaggregated into sectors
-(residential, commercial, industrial) and that each sector matches expected values.
+(residential, commercial, industrial) and that each sector matches
+expected values.
 """
 
 from egon_validation.rules.base import DataFrameRule, RuleResult, Severity
-from egon.data import config, db
 import pandas as pd
+
+from egon.data import config, db
 
 
 class ElectricalLoadSectorBreakdown(DataFrameRule):
     """
-    Validate electrical load breakdown by sector (residential, commercial, industrial).
+    Validate electrical load breakdown by sector.
 
-    This rule checks that the electrical load for each sector matches expected values:
+    This rule checks that the electrical load for each sector matches
+    expected values:
     - Residential: 90.4 TWh (from household_curves)
     - Commercial: 146.7 TWh (from cts_curves)
     - Industrial: 382.9 TWh (from osm_curves + sites_curves)
     - Total: 620.0 TWh (from etrago AC loads)
 
-    Matches the original electrical_load_100RE() function from sanity_checks.py.
+    Matches the original electrical_load_100RE() function from
+    sanity_checks.py.
     """
 
-    def __init__(self, table: str, rule_id: str, scenario: str = "eGon100RE",
-                 rtol: float = 0.01, **kwargs):
+    def __init__(
+        self,
+        table: str,
+        rule_id: str,
+        scenario: str = "eGon100RE",
+        rtol: float = 0.01,
+        **kwargs,
+    ):
         """
         Parameters
         ----------
@@ -37,8 +47,13 @@ class ElectricalLoadSectorBreakdown(DataFrameRule):
         rtol : float
             Relative tolerance for load deviation (default: 0.01 = 1%)
         """
-        super().__init__(rule_id=rule_id, table=table, scenario=scenario,
-                         rtol=rtol, **kwargs)
+        super().__init__(
+            rule_id=rule_id,
+            table=table,
+            scenario=scenario,
+            rtol=rtol,
+            **kwargs,
+        )
         self.kind = "sanity"
         self.scenario = scenario
         self.rtol = rtol
@@ -50,7 +65,8 @@ class ElectricalLoadSectorBreakdown(DataFrameRule):
         Returns total load in TWh from etrago tables.
         """
         return f"""
-        SELECT SUM((SELECT SUM(p) FROM UNNEST(b.p_set) p))/1000000::numeric as load_twh
+        SELECT SUM((SELECT SUM(p) FROM UNNEST(b.p_set) p))
+            / 1000000::numeric as load_twh
         FROM grid.egon_etrago_load a
         JOIN grid.egon_etrago_load_timeseries b
             ON (a.load_id = b.load_id)
@@ -83,7 +99,7 @@ class ElectricalLoadSectorBreakdown(DataFrameRule):
                 {sources['cts_curves']['schema']}.
                 {sources['cts_curves']['table']}
                 WHERE scn_name = '{self.scenario}'""",
-            warning=False
+            warning=False,
         )
         commercial_twh = (
             cts_curves.apply(lambda x: sum(x["p_set"]), axis=1).sum() / 1000000
@@ -95,10 +111,11 @@ class ElectricalLoadSectorBreakdown(DataFrameRule):
                 {sources['osm_curves']['schema']}.
                 {sources['osm_curves']['table']}
                 WHERE scn_name = '{self.scenario}'""",
-            warning=False
+            warning=False,
         )
         industrial_osm_twh = (
-            ind_curves_osm.apply(lambda x: sum(x["p_set"]), axis=1).sum() / 1000000
+            ind_curves_osm.apply(lambda x: sum(x["p_set"]), axis=1).sum()
+            / 1000000
         )
 
         # Industrial load from industrial sites
@@ -107,10 +124,11 @@ class ElectricalLoadSectorBreakdown(DataFrameRule):
                 {sources['sites_curves']['schema']}.
                 {sources['sites_curves']['table']}
                 WHERE scn_name = '{self.scenario}'""",
-            warning=False
+            warning=False,
         )
         industrial_sites_twh = (
-            ind_curves_sites.apply(lambda x: sum(x["p_set"]), axis=1).sum() / 1000000
+            ind_curves_sites.apply(lambda x: sum(x["p_set"]), axis=1).sum()
+            / 1000000
         )
 
         # Total industrial
@@ -122,7 +140,7 @@ class ElectricalLoadSectorBreakdown(DataFrameRule):
                 {sources['household_curves']['schema']}.
                 {sources['household_curves']['table']}
                 WHERE scn_name = '{self.scenario}'""",
-            warning=False
+            warning=False,
         )
         residential_twh = (
             hh_curves.apply(lambda x: sum(x["p_set"]), axis=1).sum() / 1000000
@@ -131,7 +149,7 @@ class ElectricalLoadSectorBreakdown(DataFrameRule):
         return {
             "residential": residential_twh,
             "commercial": commercial_twh,
-            "industrial": industrial_twh
+            "industrial": industrial_twh,
         }
 
     def evaluate_df(self, df, ctx):
@@ -157,11 +175,14 @@ class ElectricalLoadSectorBreakdown(DataFrameRule):
                 table=self.table,
                 kind=self.kind,
                 success=False,
-                message=f"No electrical load data found for scenario {self.scenario}",
+                message=(
+                    f"No electrical load data found for scenario "
+                    f"{self.scenario}"
+                ),
                 severity=Severity.ERROR,
                 schema=self.schema,
                 table_name=self.table_name,
-                rule_class=self.__class__.__name__
+                rule_class=self.__class__.__name__,
             )
 
         # Get total AC load
@@ -181,7 +202,7 @@ class ElectricalLoadSectorBreakdown(DataFrameRule):
                 severity=Severity.ERROR,
                 schema=self.schema,
                 table_name=self.table_name,
-                rule_class=self.__class__.__name__
+                rule_class=self.__class__.__name__,
             )
 
         # Expected values (from original sanity_checks.py lines 2689-2694)
@@ -192,33 +213,39 @@ class ElectricalLoadSectorBreakdown(DataFrameRule):
             "residential": 90.4,
             "commercial": 146.7,
             "industrial": 382.9,
-            "total": 620.0
+            "total": 620.0,
         }
 
         # Build load summary dataframe
-        load_summary = pd.DataFrame({
-            "sector": ["residential", "commercial", "industrial", "total"],
-            "expected": [
-                expected_values["residential"],
-                expected_values["commercial"],
-                expected_values["industrial"],
-                expected_values["total"]
-            ],
-            "observed": [
-                sector_loads["residential"],
-                sector_loads["commercial"],
-                sector_loads["industrial"],
-                total_load_twh
-            ]
-        })
+        load_summary = pd.DataFrame(
+            {
+                "sector": ["residential", "commercial", "industrial", "total"],
+                "expected": [
+                    expected_values["residential"],
+                    expected_values["commercial"],
+                    expected_values["industrial"],
+                    expected_values["total"],
+                ],
+                "observed": [
+                    sector_loads["residential"],
+                    sector_loads["commercial"],
+                    sector_loads["industrial"],
+                    total_load_twh,
+                ],
+            }
+        )
 
-        load_summary["diff"] = load_summary["observed"] - load_summary["expected"]
+        load_summary["diff"] = (
+            load_summary["observed"] - load_summary["expected"]
+        )
         load_summary["diff_pct"] = (
             load_summary["diff"] / load_summary["observed"] * 100
         )
 
         # Check if all deviations are within tolerance (< 1% as in original)
-        violations = load_summary[load_summary["diff_pct"].abs() >= (self.rtol * 100)]
+        violations = load_summary[
+            load_summary["diff_pct"].abs() >= (self.rtol * 100)
+        ]
 
         if not violations.empty:
             # Format violation details
@@ -241,22 +268,25 @@ class ElectricalLoadSectorBreakdown(DataFrameRule):
                 observed=float(max_deviation),
                 expected=self.rtol * 100,
                 message=(
-                    f"Electrical load sector breakdown deviations exceed tolerance for {self.scenario}: "
+                    f"Electrical load sector breakdown deviations exceed "
+                    f"tolerance for {self.scenario}: "
                     f"{'; '.join(violation_details)}"
                 ),
                 severity=Severity.ERROR,
                 schema=self.schema,
                 table_name=self.table_name,
-                rule_class=self.__class__.__name__
+                rule_class=self.__class__.__name__,
             )
 
         # All sectors within tolerance
-        sector_summary = "; ".join([
-            f"{row['sector']}: {row['observed']:.2f} TWh "
-            f"(expected {row['expected']:.2f} TWh, "
-            f"deviation {row['diff_pct']:+.2f}%)"
-            for _, row in load_summary.iterrows()
-        ])
+        sector_summary = "; ".join(
+            [
+                f"{row['sector']}: {row['observed']:.2f} TWh "
+                f"(expected {row['expected']:.2f} TWh, "
+                f"deviation {row['diff_pct']:+.2f}%)"
+                for _, row in load_summary.iterrows()
+            ]
+        )
 
         return RuleResult(
             rule_id=self.rule_id,
@@ -267,9 +297,10 @@ class ElectricalLoadSectorBreakdown(DataFrameRule):
             observed=0.0,
             expected=0.0,
             message=(
-                f"Electrical load sector breakdown valid for {self.scenario}: {sector_summary}"
+                f"Electrical load sector breakdown valid for "
+                f"{self.scenario}: {sector_summary}"
             ),
             schema=self.schema,
             table_name=self.table_name,
-            rule_class=self.__class__.__name__
+            rule_class=self.__class__.__name__,
         )

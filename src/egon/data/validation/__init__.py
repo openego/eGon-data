@@ -10,6 +10,7 @@ Supports two configuration styles (can be mixed):
    validation_dict = {"task_name": [TableValidation(...), ...]}
 """
 
+from .airflow import create_validation_tasks, run_validation_task
 from .resolver import (
     BoundaryDependent,
     resolve_boundary_dependence,
@@ -22,10 +23,6 @@ from .specs import (
     expand_specs,
     prepare_rules,
     resolve_rule_params,
-)
-from .airflow import (
-    create_validation_tasks,
-    run_validation_task,
 )
 
 __all__ = [
