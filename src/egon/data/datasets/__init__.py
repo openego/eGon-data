@@ -14,6 +14,7 @@ from airflow.models.baseoperator import BaseOperator as Operator
 from airflow.operators.python import PythonOperator
 from sqlalchemy import Column, ForeignKey, Integer, String, Table, orm, tuple_
 from sqlalchemy.dialects.postgresql import JSONB
+from sqlalchemy.exc import OperationalError
 from sqlalchemy.ext.declarative import declarative_base
 
 from egon.data import config, db, logger
@@ -498,8 +499,14 @@ class Dataset:
         Register dataset sources and targets in a single transaction.
         Only writes if sources or targets have changed.
         Creates table if it doesn't exist yet.
+        Gracefully skips registration if no database is available.
         """
-        SourcesTargetsModel.__table__.create(bind=db.engine(), checkfirst=True)
+        try:
+            SourcesTargetsModel.__table__.create(
+                bind=db.engine(), checkfirst=True
+            )
+        except OperationalError:
+            return
 
         with db.session_scope() as session:
             existing = (
