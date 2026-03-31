@@ -11,6 +11,7 @@ import numpy as np
 import pandas as pd
 
 from egon.data import config, db
+from egon.data.datasets import load_sources_and_targets
 from egon.data.datasets.emobility.motorized_individual_travel.db_classes import (  # noqa: E501
     EgonEvCountMunicipality,
     EgonEvCountMvGridDistrict,
@@ -20,7 +21,6 @@ from egon.data.datasets.emobility.motorized_individual_travel.db_classes import 
     EgonEvTrip,
 )
 from egon.data.datasets.emobility.motorized_individual_travel.helpers import (
-    DATASET_CFG,
     read_simbev_metadata_file,
 )
 from egon.data.datasets.etrago_setup import (
@@ -36,6 +36,23 @@ from egon.data.datasets.scenario_parameters import get_sector_parameters
 TESTMODE_OFF = (
     config.settings()["egon-data"]["--dataset-boundary"] == "Everything"
 )
+
+
+def get_scenario_variation_name(scenario: str) -> str:
+    """Get the scenario variation name for a given scenario.
+
+    Parameters
+    ----------
+    scenario : str
+        Scenario name (e.g. "eGon2035", "eGon100RE")
+
+    Returns
+    -------
+    str
+        Scenario variation name (e.g. "NEP C 2035", "Reference 2050")
+    """
+    sources, _ = load_sources_and_targets("MotorizedIndividualTravel")
+    return sources.files["original_data"]["scenario"]["variation"][scenario]
 
 
 class EVAllocationCount(Rule):
@@ -73,9 +90,7 @@ class EVAllocationCount(Rule):
             )
 
         try:
-            scenario_var_name = DATASET_CFG["scenario"]["variation"][
-                self.scenario
-            ]
+            scenario_var_name = get_scenario_variation_name(self.scenario)
             scenario_variation_parameters = get_sector_parameters(
                 "mobility", scenario=self.scenario
             )["motorized_individual_travel"][scenario_var_name]
@@ -198,9 +213,7 @@ class EVGridDistrictAllocation(Rule):
             )
 
         try:
-            scenario_var_name = DATASET_CFG["scenario"]["variation"][
-                self.scenario
-            ]
+            scenario_var_name = get_scenario_variation_name(self.scenario)
             scenario_variation_parameters = get_sector_parameters(
                 "mobility", scenario=self.scenario
             )["motorized_individual_travel"][scenario_var_name]
@@ -487,9 +500,7 @@ class EVModelComponentsCreated(Rule):
     def evaluate(self, engine, ctx):
         """Evaluate model components creation."""
         try:
-            scenario_var_name = DATASET_CFG["scenario"]["variation"][
-                self.scenario
-            ]
+            scenario_var_name = get_scenario_variation_name(self.scenario)
 
             # Get MVGDs which got EV allocated
             with db.session_scope() as session:
@@ -775,9 +786,7 @@ class EVModelEnergyDemand(Rule):
     def evaluate(self, engine, ctx):
         """Evaluate total energy demand."""
         try:
-            scenario_var_name = DATASET_CFG["scenario"]["variation"][
-                self.scenario
-            ]
+            scenario_var_name = get_scenario_variation_name(self.scenario)
 
             # Get EV count allocated
             with db.session_scope() as session:
@@ -905,9 +914,7 @@ class EVModelStorageCapacity(Rule):
     def evaluate(self, engine, ctx):
         """Evaluate storage capacity."""
         try:
-            scenario_var_name = DATASET_CFG["scenario"]["variation"][
-                self.scenario
-            ]
+            scenario_var_name = get_scenario_variation_name(self.scenario)
             meta_tech_data = read_simbev_metadata_file(
                 self.scenario, "tech_data"
             )
