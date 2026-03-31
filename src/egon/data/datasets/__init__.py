@@ -17,7 +17,6 @@ from sqlalchemy.dialects.postgresql import JSONB
 from sqlalchemy.ext.declarative import declarative_base
 
 from egon.data import config, db, logger
-from egon.data.validation import create_validation_tasks
 
 try:
     from egon_validation.rules.base import Rule
@@ -400,6 +399,8 @@ class Dataset:
             self.tasks = Tasks_(self.tasks)
             # Process validation configuration
         if self.validation:
+            from egon.data.validation import create_validation_tasks
+
             validation_tasks = create_validation_tasks(
                 validation_dict=self.validation,
                 dataset_name=self.name,
