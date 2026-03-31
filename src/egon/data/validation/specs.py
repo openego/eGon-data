@@ -54,7 +54,11 @@ class TableValidation:
         table_suffix = self.table_name.split(".")[-1]
 
         # Resolve all boundary-dependent fields up-front
-        row_count = resolve_value(self.row_count, boundary) if self.row_count is not None else None
+        row_count = (
+            resolve_value(self.row_count, boundary)
+            if self.row_count is not None
+            else None
+        )
         data_type_columns = (
             resolve_value(self.data_type_columns, boundary)
             if self.data_type_columns is not None
@@ -154,7 +158,7 @@ def clone_rule(rule: Rule) -> Rule:
     return cloned
 
 
-def expand_specs(specs: Sequence[ValidationSpec]) -> List[Rule]:
+def expand_specs(specs: Sequence[ValidationSpec], boundary: str) -> List[Rule]:
     """
     Turn a mixed list of Rule/TableValidation into a plain list of Rules.
 
@@ -165,7 +169,7 @@ def expand_specs(specs: Sequence[ValidationSpec]) -> List[Rule]:
 
     for spec in specs:
         if isinstance(spec, TableValidation):
-            rules.extend(spec.to_rules())
+            rules.extend(spec.to_rules(boundary))
         else:
             rules.append(clone_rule(spec))
 
