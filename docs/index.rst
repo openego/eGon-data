@@ -10,6 +10,7 @@ Contents
    getting_started
    troubleshooting
    data
+   validation
    literature
    contributing
    authors
