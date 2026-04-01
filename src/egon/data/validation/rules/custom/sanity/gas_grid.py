@@ -92,25 +92,41 @@ class GasBusesIsolated(DataFrameRule):
                 "NULL as country LIMIT 0"
             )
 
-        return f"""
+        # Store link_carrier for get_params
+        self._link_carrier = link_carrier
+
+        return """
         SELECT bus_id, carrier, country
         FROM grid.egon_etrago_bus
-        WHERE scn_name = '{self.scenario}'
-        AND carrier = '{self.carrier}'
+        WHERE scn_name = :scenario
+        AND carrier = :carrier
         AND country = 'DE'
         AND bus_id NOT IN (
             SELECT bus0
             FROM grid.egon_etrago_link
-            WHERE scn_name = '{self.scenario}'
-            AND carrier = '{link_carrier}'
+            WHERE scn_name = :scenario
+            AND carrier = :link_carrier
         )
         AND bus_id NOT IN (
             SELECT bus1
             FROM grid.egon_etrago_link
-            WHERE scn_name = '{self.scenario}'
-            AND carrier = '{link_carrier}'
+            WHERE scn_name = :scenario
+            AND carrier = :link_carrier
         )
         """
+
+    def get_params(self, ctx):
+        """Return query parameters for parameterized queries."""
+        if self.scenario not in self.carrier_mapping:
+            return None
+        link_carrier = self.carrier_mapping[self.scenario].get(self.carrier)
+        if not link_carrier:
+            return None
+        return {
+            "scenario": self.scenario,
+            "carrier": self.carrier,
+            "link_carrier": link_carrier,
+        }
 
     def evaluate_df(self, df, ctx):
         """
@@ -235,14 +251,19 @@ class GasBusesCount(DataFrameRule):
 
         Returns a query that counts buses of the specified carrier
         in Germany for the specified scenario.
+        Uses parameterized queries to prevent SQL injection.
         """
-        return f"""
+        return """
         SELECT COUNT(*) as bus_count
         FROM grid.egon_etrago_bus
-        WHERE scn_name = '{self.scenario}'
+        WHERE scn_name = :scenario
         AND country = 'DE'
-        AND carrier = '{self.carrier}'
+        AND carrier = :carrier
         """
+
+    def get_params(self, ctx):
+        """Return query parameters for parameterized queries."""
+        return {"scenario": self.scenario, "carrier": self.carrier}
 
     def evaluate_df(self, df, ctx):
         """
@@ -597,27 +618,32 @@ class CH4GridCapacity(DataFrameRule):
 
         Returns a query that sums the p_nom of all CH4 links where both
         bus0 and bus1 are in Germany.
+        Uses parameterized queries to prevent SQL injection.
         """
-        return f"""
+        return """
         SELECT SUM(p_nom::numeric) as total_p_nom
         FROM grid.egon_etrago_link
-        WHERE scn_name = '{self.scenario}'
+        WHERE scn_name = :scenario
         AND carrier = 'CH4'
         AND bus0 IN (
             SELECT bus_id
             FROM grid.egon_etrago_bus
-            WHERE scn_name = '{self.scenario}'
+            WHERE scn_name = :scenario
             AND country = 'DE'
             AND carrier = 'CH4'
         )
         AND bus1 IN (
             SELECT bus_id
             FROM grid.egon_etrago_bus
-            WHERE scn_name = '{self.scenario}'
+            WHERE scn_name = :scenario
             AND country = 'DE'
             AND carrier = 'CH4'
         )
         """
+
+    def get_params(self, ctx):
+        """Return query parameters for parameterized queries."""
+        return {"scenario": self.scenario}
 
     def _get_reference_capacity(self):
         """
@@ -902,25 +928,30 @@ class GasLinksConnections(DataFrameRule):
 
         Returns a query that finds links where either bus0 or bus1
         does not exist in the bus table for the same scenario.
+        Uses parameterized queries to prevent SQL injection.
         """
-        return f"""
+        return """
         SELECT link_id, bus0, bus1, carrier, scn_name
         FROM grid.egon_etrago_link
-        WHERE scn_name = '{self.scenario}'
-        AND carrier = '{self.carrier}'
+        WHERE scn_name = :scenario
+        AND carrier = :carrier
         AND (
             bus0 NOT IN (
                 SELECT bus_id
                 FROM grid.egon_etrago_bus
-                WHERE scn_name = '{self.scenario}'
+                WHERE scn_name = :scenario
             )
             OR bus1 NOT IN (
                 SELECT bus_id
                 FROM grid.egon_etrago_bus
-                WHERE scn_name = '{self.scenario}'
+                WHERE scn_name = :scenario
             )
         )
         """
+
+    def get_params(self, ctx):
+        """Return query parameters for parameterized queries."""
+        return {"scenario": self.scenario, "carrier": self.carrier}
 
     def evaluate_df(self, df, ctx):
         """

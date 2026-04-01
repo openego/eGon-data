@@ -62,7 +62,7 @@ class HomeBatteriesAggregation(DataFrameRule):
                 el_capacity * {cbat_pbat_ratio} as storage_capacity
             FROM {storage_schema}.{storage_table}
             WHERE carrier = 'home_battery'
-            AND scenario = '{self.scenario}'
+            AND scenario = :scenario
         ),
         building_data AS (
             SELECT
@@ -70,7 +70,7 @@ class HomeBatteriesAggregation(DataFrameRule):
                 SUM(p_nom) as building_p_nom,
                 SUM(capacity) as building_capacity
             FROM {hb_schema}.{hb_table}
-            WHERE scenario = '{self.scenario}'
+            WHERE scenario = :scenario
             GROUP BY bus_id
         )
         SELECT
@@ -83,6 +83,10 @@ class HomeBatteriesAggregation(DataFrameRule):
         FULL OUTER JOIN building_data b ON s.bus_id = b.bus_id
         ORDER BY bus_id
         """
+
+    def get_params(self, ctx):
+        """Return query parameters for parameterized queries."""
+        return {"scenario": self.scenario}
 
     def evaluate_df(self, df, ctx):
         """
