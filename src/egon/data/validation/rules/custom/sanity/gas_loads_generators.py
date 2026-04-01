@@ -68,8 +68,9 @@ class GasLoadsCapacity(DataFrameRule):
 
         Returns a query that sums the annual load from timeseries data
         for the specified carrier in Germany, converting to TWh.
+        Uses parameterized queries to prevent SQL injection.
         """
-        return f"""
+        return """
         SELECT (SUM(
             (SELECT SUM(p)
             FROM UNNEST(b.p_set) p))/1000000)::numeric as load_twh
@@ -78,12 +79,16 @@ class GasLoadsCapacity(DataFrameRule):
         ON (a.load_id = b.load_id)
         JOIN grid.egon_etrago_bus c
         ON (a.bus=c.bus_id)
-        WHERE b.scn_name = '{self.scenario}'
-        AND a.scn_name = '{self.scenario}'
-        AND c.scn_name = '{self.scenario}'
+        WHERE b.scn_name = :scenario
+        AND a.scn_name = :scenario
+        AND c.scn_name = :scenario
         AND c.country = 'DE'
-        AND a.carrier = '{self.carrier}'
+        AND a.carrier = :carrier
         """
+
+    def get_params(self, ctx):
+        """Return query parameters for parameterized queries."""
+        return {"scenario": self.scenario, "carrier": self.carrier}
 
     def _get_reference_capacity(self):
         """
@@ -282,20 +287,25 @@ class GasGeneratorsCapacity(DataFrameRule):
 
         Returns a query that sums the p_nom of all gas generators
         in Germany for the specified carrier.
+        Uses parameterized queries to prevent SQL injection.
         """
-        return f"""
+        return """
         SELECT SUM(p_nom::numeric) as p_nom_germany
         FROM grid.egon_etrago_generator
-        WHERE scn_name = '{self.scenario}'
-        AND carrier = '{self.carrier}'
+        WHERE scn_name = :scenario
+        AND carrier = :carrier
         AND bus IN (
             SELECT bus_id
             FROM grid.egon_etrago_bus
-            WHERE scn_name = '{self.scenario}'
+            WHERE scn_name = :scenario
             AND country = 'DE'
-            AND carrier = '{self.carrier}'
+            AND carrier = :carrier
         )
         """
+
+    def get_params(self, ctx):
+        """Return query parameters for parameterized queries."""
+        return {"scenario": self.scenario, "carrier": self.carrier}
 
     def _get_reference_capacity(self):
         """

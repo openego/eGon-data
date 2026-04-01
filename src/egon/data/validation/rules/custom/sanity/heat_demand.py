@@ -55,17 +55,18 @@ class HeatDemandValidation(DataFrameRule):
         1. Sums rural_heat + central_heat timeseries from etrago_load
         2. Sums demand from egon_peta_heat
         3. Returns both values for comparison
+        Uses parameterized queries to prevent SQL injection.
         """
-        return f"""
+        return """
         WITH output_demand AS (
             SELECT
                 SUM((SELECT SUM(p) FROM UNNEST(b.p_set) p)) / 1000000 as demand_twh
             FROM grid.egon_etrago_load a
             JOIN grid.egon_etrago_load_timeseries b ON (a.load_id = b.load_id)
             JOIN grid.egon_etrago_bus c ON (a.bus = c.bus_id)
-            WHERE b.scn_name = '{self.scenario}'
-            AND a.scn_name = '{self.scenario}'
-            AND c.scn_name = '{self.scenario}'
+            WHERE b.scn_name = :scenario
+            AND a.scn_name = :scenario
+            AND c.scn_name = :scenario
             AND c.country = 'DE'
             AND a.carrier IN ('rural_heat', 'central_heat')
         ),
@@ -73,7 +74,7 @@ class HeatDemandValidation(DataFrameRule):
             SELECT
                 SUM(demand / 1000000) as demand_twh
             FROM demand.egon_peta_heat
-            WHERE scenario = '{self.scenario}'
+            WHERE scenario = :scenario
         )
         SELECT
             o.demand_twh as output_demand_twh,
@@ -81,6 +82,10 @@ class HeatDemandValidation(DataFrameRule):
         FROM output_demand o
         CROSS JOIN input_demand i
         """
+
+    def get_params(self, ctx):
+        """Return query parameters for parameterized queries."""
+        return {"scenario": self.scenario}
 
     def evaluate_df(self, df, ctx):
         """

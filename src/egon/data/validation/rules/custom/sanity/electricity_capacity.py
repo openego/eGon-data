@@ -79,8 +79,10 @@ class ElectricityCapacityComparison(DataFrameRule):
         1. Sums output capacity from etrago table for German buses
         2. Sums input capacity from scenario_capacities table
         3. Returns both values for comparison
+        Uses parameterized queries to prevent SQL injection.
         """
         # Build carrier filter for output table
+        # Note: output_carriers comes from internal config, not user input
         if len(self.output_carriers) == 1:
             carrier_filter = f"carrier = '{self.output_carriers[0]}'"
         else:
@@ -90,25 +92,25 @@ class ElectricityCapacityComparison(DataFrameRule):
         # Build bus filter based on component type
         # Links have bus0 and bus1, generators/storage have bus
         if self.component_type == "link":
-            bus_filter = f"""
+            bus_filter = """
             AND (bus0 IN (
                 SELECT bus_id
                 FROM grid.egon_etrago_bus
-                WHERE scn_name = '{self.scenario}'
+                WHERE scn_name = :scenario
                 AND country = 'DE'
             ) OR bus1 IN (
                 SELECT bus_id
                 FROM grid.egon_etrago_bus
-                WHERE scn_name = '{self.scenario}'
+                WHERE scn_name = :scenario
                 AND country = 'DE'
             ))
             """
         else:
-            bus_filter = f"""
+            bus_filter = """
             AND bus IN (
                 SELECT bus_id
                 FROM grid.egon_etrago_bus
-                WHERE scn_name = '{self.scenario}'
+                WHERE scn_name = :scenario
                 AND country = 'DE'
             )
             """
@@ -118,7 +120,7 @@ class ElectricityCapacityComparison(DataFrameRule):
             SELECT
                 COALESCE(SUM(p_nom::numeric), 0) as output_capacity_mw
             FROM {self.table}
-            WHERE scn_name = '{self.scenario}'
+            WHERE scn_name = :scenario
             AND {carrier_filter}
             {bus_filter}
         ),
@@ -126,8 +128,8 @@ class ElectricityCapacityComparison(DataFrameRule):
             SELECT
                 COALESCE(SUM(capacity::numeric), 0) as input_capacity_mw
             FROM supply.egon_scenario_capacities
-            WHERE carrier = '{self.carrier}'
-            AND scenario_name = '{self.scenario}'
+            WHERE carrier = :carrier
+            AND scenario_name = :scenario
         )
         SELECT
             o.output_capacity_mw,
@@ -135,6 +137,10 @@ class ElectricityCapacityComparison(DataFrameRule):
         FROM output_capacity o
         CROSS JOIN input_capacity i
         """
+
+    def get_params(self, ctx):
+        """Return query parameters for parameterized queries."""
+        return {"scenario": self.scenario, "carrier": self.carrier}
 
     def evaluate_df(self, df, ctx):
         """

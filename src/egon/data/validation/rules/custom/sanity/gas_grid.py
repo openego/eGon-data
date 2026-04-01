@@ -433,7 +433,7 @@ class GasOnePortConnections(DataFrameRule):
 
         Returns a query that finds components of the specified type and carrier
         that are NOT connected to any of the valid bus types specified in
-        bus_conditions.
+        bus_conditions. Uses parameterized queries to prevent SQL injection.
         """
         if not self.bus_conditions:
             # No bus conditions specified - skip validation
@@ -443,7 +443,7 @@ class GasOnePortConnections(DataFrameRule):
 
         # Build bus subqueries for each condition
         bus_subqueries = []
-        for bus_carrier, country_cond in self.bus_conditions:
+        for i, (_, country_cond) in enumerate(self.bus_conditions):
             # Only add country filter if condition is specified
             # Empty string means no country filter (matches original sanity_checks.py)
             if country_cond:
@@ -454,8 +454,8 @@ class GasOnePortConnections(DataFrameRule):
             subquery = f"""
                 (SELECT bus_id
                 FROM grid.egon_etrago_bus
-                WHERE scn_name = '{self.scenario}'
-                AND carrier = '{bus_carrier}'
+                WHERE scn_name = :scenario
+                AND carrier = :bus_carrier_{i}
                 {country_clause})
             """
             bus_subqueries.append(subquery)
@@ -467,10 +467,23 @@ class GasOnePortConnections(DataFrameRule):
         return f"""
         SELECT {id_column} as component_id, bus, carrier, scn_name
         FROM {self.table}
-        WHERE scn_name = '{self.scenario}'
-        AND carrier = '{self.component_carrier}'
+        WHERE scn_name = :scenario
+        AND carrier = :component_carrier
         AND {combined_condition}
         """
+
+    def get_params(self, ctx):
+        """Return query parameters for parameterized queries."""
+        if not self.bus_conditions:
+            return None
+
+        params = {
+            "scenario": self.scenario,
+            "component_carrier": self.component_carrier,
+        }
+        for i, (bus_carrier, _) in enumerate(self.bus_conditions):
+            params[f"bus_carrier_{i}"] = bus_carrier
+        return params
 
     def evaluate_df(self, df, ctx):
         """

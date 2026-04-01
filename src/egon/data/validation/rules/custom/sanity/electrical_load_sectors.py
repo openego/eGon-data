@@ -63,8 +63,9 @@ class ElectricalLoadSectorBreakdown(DataFrameRule):
         Query to get total AC electrical load for Germany.
 
         Returns total load in TWh from etrago tables.
+        Uses parameterized queries to prevent SQL injection.
         """
-        return f"""
+        return """
         SELECT SUM((SELECT SUM(p) FROM UNNEST(b.p_set) p))
             / 1000000::numeric as load_twh
         FROM grid.egon_etrago_load a
@@ -72,12 +73,16 @@ class ElectricalLoadSectorBreakdown(DataFrameRule):
             ON (a.load_id = b.load_id)
         JOIN grid.egon_etrago_bus c
             ON (a.bus = c.bus_id)
-        WHERE a.scn_name = '{self.scenario}'
-            AND b.scn_name = '{self.scenario}'
-            AND c.scn_name = '{self.scenario}'
+        WHERE a.scn_name = :scenario
+            AND b.scn_name = :scenario
+            AND c.scn_name = :scenario
             AND a.carrier = 'AC'
             AND c.country = 'DE'
         """
+
+    def get_params(self, ctx):
+        """Return query parameters for parameterized queries."""
+        return {"scenario": self.scenario}
 
     def _get_sector_loads(self):
         """
@@ -98,8 +103,9 @@ class ElectricalLoadSectorBreakdown(DataFrameRule):
             f"""SELECT bus_id AS bus, p_set FROM
                 {sources['cts_curves']['schema']}.
                 {sources['cts_curves']['table']}
-                WHERE scn_name = '{self.scenario}'""",
+                WHERE scn_name = :scenario""",
             warning=False,
+            params={"scenario": self.scenario},
         )
         commercial_twh = (
             cts_curves.apply(lambda x: sum(x["p_set"]), axis=1).sum() / 1000000
@@ -110,8 +116,9 @@ class ElectricalLoadSectorBreakdown(DataFrameRule):
             f"""SELECT bus, p_set FROM
                 {sources['osm_curves']['schema']}.
                 {sources['osm_curves']['table']}
-                WHERE scn_name = '{self.scenario}'""",
+                WHERE scn_name = :scenario""",
             warning=False,
+            params={"scenario": self.scenario},
         )
         industrial_osm_twh = (
             ind_curves_osm.apply(lambda x: sum(x["p_set"]), axis=1).sum()
@@ -123,8 +130,9 @@ class ElectricalLoadSectorBreakdown(DataFrameRule):
             f"""SELECT bus, p_set FROM
                 {sources['sites_curves']['schema']}.
                 {sources['sites_curves']['table']}
-                WHERE scn_name = '{self.scenario}'""",
+                WHERE scn_name = :scenario""",
             warning=False,
+            params={"scenario": self.scenario},
         )
         industrial_sites_twh = (
             ind_curves_sites.apply(lambda x: sum(x["p_set"]), axis=1).sum()
@@ -139,8 +147,9 @@ class ElectricalLoadSectorBreakdown(DataFrameRule):
             f"""SELECT bus_id AS bus, p_set FROM
                 {sources['household_curves']['schema']}.
                 {sources['household_curves']['table']}
-                WHERE scn_name = '{self.scenario}'""",
+                WHERE scn_name = :scenario""",
             warning=False,
+            params={"scenario": self.scenario},
         )
         residential_twh = (
             hh_curves.apply(lambda x: sum(x["p_set"]), axis=1).sum() / 1000000

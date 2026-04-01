@@ -60,20 +60,25 @@ class CH4StoresCapacity(DataFrameRule):
 
         Returns a query that sums all CH4 store capacities for German buses
         in the specified scenario.
+        Uses parameterized queries to prevent SQL injection.
         """
-        return f"""
+        return """
         SELECT SUM(e_nom::numeric) as e_nom_germany
         FROM grid.egon_etrago_store
-        WHERE scn_name = '{self.scenario}'
+        WHERE scn_name = :scenario
         AND carrier = 'CH4'
         AND bus IN (
             SELECT bus_id
             FROM grid.egon_etrago_bus
-            WHERE scn_name = '{self.scenario}'
+            WHERE scn_name = :scenario
             AND country = 'DE'
             AND carrier = 'CH4'
         )
         """
+
+    def get_params(self, ctx):
+        """Return query parameters for parameterized queries."""
+        return {"scenario": self.scenario}
 
     def evaluate_df(self, df, ctx):
         """
@@ -235,20 +240,25 @@ class H2SaltcavernStoresCapacity(DataFrameRule):
 
         Returns a query that sums all H2_underground store e_nom_max capacities
         for German H2_saltcavern buses in the specified scenario.
+        Uses parameterized queries to prevent SQL injection.
         """
-        return f"""
+        return """
         SELECT SUM(e_nom_max::numeric) as e_nom_max_germany
         FROM grid.egon_etrago_store
-        WHERE scn_name = '{self.scenario}'
+        WHERE scn_name = :scenario
         AND carrier = 'H2_underground'
         AND bus IN (
             SELECT bus_id
             FROM grid.egon_etrago_bus
-            WHERE scn_name = '{self.scenario}'
+            WHERE scn_name = :scenario
             AND country = 'DE'
             AND carrier = 'H2_saltcavern'
         )
         """
+
+    def get_params(self, ctx):
+        """Return query parameters for parameterized queries."""
+        return {"scenario": self.scenario}
 
     def evaluate_df(self, df, ctx):
         """

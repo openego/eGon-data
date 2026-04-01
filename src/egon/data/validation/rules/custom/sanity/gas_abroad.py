@@ -75,25 +75,33 @@ class GasBusesIsolatedAbroad(Rule):
             # Link carrier mapping (same as original)
             link_carrier = self.carrier  # CH4 -> CH4
 
-            sql = f"""
+            sql = """
             SELECT bus_id, carrier, country
             FROM grid.egon_etrago_bus
-            WHERE scn_name = '{self.scenario}'
-            AND carrier = '{self.carrier}'
+            WHERE scn_name = :scenario
+            AND carrier = :carrier
             AND country != 'DE'
             AND bus_id NOT IN
                 (SELECT bus0
                 FROM grid.egon_etrago_link
-                WHERE scn_name = '{self.scenario}'
-                AND carrier = '{link_carrier}')
+                WHERE scn_name = :scenario
+                AND carrier = :link_carrier)
             AND bus_id NOT IN
                 (SELECT bus1
                 FROM grid.egon_etrago_link
-                WHERE scn_name = '{self.scenario}'
-                AND carrier = '{link_carrier}')
+                WHERE scn_name = :scenario
+                AND carrier = :link_carrier)
             """
 
-            isolated_buses = db.select_dataframe(sql, warning=False)
+            isolated_buses = db.select_dataframe(
+                sql,
+                warning=False,
+                params={
+                    "scenario": self.scenario,
+                    "carrier": self.carrier,
+                    "link_carrier": link_carrier,
+                },
+            )
 
             if isolated_buses.empty:
                 return RuleResult(
@@ -205,7 +213,7 @@ class CH4LoadsAbroad(Rule):
             expected = input_CH4_demand_abroad["GlobD_2035"].sum()
 
             # Get observed data from database
-            sql = f"""
+            sql = """
             SELECT (SUM(
                 (SELECT SUM(p)
                 FROM UNNEST(b.p_set) p)))::numeric as load_mwh
@@ -214,14 +222,16 @@ class CH4LoadsAbroad(Rule):
             ON (a.load_id = b.load_id)
             JOIN grid.egon_etrago_bus c
             ON (a.bus=c.bus_id)
-            AND b.scn_name = '{self.scenario}'
-            AND a.scn_name = '{self.scenario}'
-            AND c.scn_name = '{self.scenario}'
+            AND b.scn_name = :scenario
+            AND a.scn_name = :scenario
+            AND c.scn_name = :scenario
             AND c.country != 'DE'
             AND a.carrier = 'CH4'
             """
 
-            result = db.select_dataframe(sql, warning=False)
+            result = db.select_dataframe(
+                sql, warning=False, params={"scenario": self.scenario}
+            )
             observed = float(result["load_mwh"].values[0] or 0)
 
             if expected == 0:
@@ -345,20 +355,22 @@ class H2LoadsAbroad(Rule):
             expected = input_power_to_h2_demand_abroad["GlobD_2035"].sum()
 
             # Get observed data from database
-            sql = f"""
+            sql = """
             SELECT SUM(p_set::numeric) as p_set_abroad
             FROM grid.egon_etrago_load
-            WHERE scn_name = '{self.scenario}'
+            WHERE scn_name = :scenario
             AND carrier = 'H2_for_industry'
             AND bus IN
                 (SELECT bus_id
                 FROM grid.egon_etrago_bus
-                WHERE scn_name = '{self.scenario}'
+                WHERE scn_name = :scenario
                 AND country != 'DE'
                 AND carrier = 'AC')
             """
 
-            result = db.select_dataframe(sql, warning=False)
+            result = db.select_dataframe(
+                sql, warning=False, params={"scenario": self.scenario}
+            )
             observed = float(result["p_set_abroad"].values[0] or 0)
 
             if expected == 0:
@@ -484,20 +496,22 @@ class CH4GeneratorsAbroad(Rule):
             expected = CH4_gen["cap_2035"].sum()
 
             # Get observed data from database
-            sql = f"""
+            sql = """
             SELECT SUM(p_nom::numeric) as p_nom_abroad
             FROM grid.egon_etrago_generator
-            WHERE scn_name = '{self.scenario}'
+            WHERE scn_name = :scenario
             AND carrier = 'CH4'
             AND bus IN
                 (SELECT bus_id
                 FROM grid.egon_etrago_bus
-                WHERE scn_name = '{self.scenario}'
+                WHERE scn_name = :scenario
                 AND country != 'DE'
                 AND carrier = 'CH4')
             """
 
-            result = db.select_dataframe(sql, warning=False)
+            result = db.select_dataframe(
+                sql, warning=False, params={"scenario": self.scenario}
+            )
             observed = float(result["p_nom_abroad"].values[0] or 0)
 
             if expected == 0:
@@ -623,20 +637,22 @@ class CH4StoresAbroad(Rule):
             expected = ch4_input_capacities["e_nom"].sum()
 
             # Get observed data from database
-            sql = f"""
+            sql = """
             SELECT SUM(e_nom::numeric) as e_nom_abroad
             FROM grid.egon_etrago_store
-            WHERE scn_name = '{self.scenario}'
+            WHERE scn_name = :scenario
             AND carrier = 'CH4'
             AND bus IN
                 (SELECT bus_id
                 FROM grid.egon_etrago_bus
-                WHERE scn_name = '{self.scenario}'
+                WHERE scn_name = :scenario
                 AND country != 'DE'
                 AND carrier = 'CH4')
             """
 
-            result = db.select_dataframe(sql, warning=False)
+            result = db.select_dataframe(
+                sql, warning=False, params={"scenario": self.scenario}
+            )
             observed = float(result["e_nom_abroad"].values[0] or 0)
 
             if expected == 0:
@@ -762,26 +778,30 @@ class CH4GridLinksAbroad(Rule):
 
             # Get observed data from database
             grid_carrier = "CH4"
-            sql = f"""
+            sql = """
             SELECT SUM(p_nom::numeric) as p_nom
             FROM grid.egon_etrago_link
-            WHERE scn_name = '{self.scenario}'
-            AND carrier = '{grid_carrier}'
+            WHERE scn_name = :scenario
+            AND carrier = :grid_carrier
             AND (bus0 IN
                 (SELECT bus_id
                 FROM grid.egon_etrago_bus
-                WHERE scn_name = '{self.scenario}'
+                WHERE scn_name = :scenario
                 AND country != 'DE'
-                AND carrier = '{grid_carrier}')
+                AND carrier = :grid_carrier)
             OR bus1 IN
                 (SELECT bus_id
                 FROM grid.egon_etrago_bus
-                WHERE scn_name = '{self.scenario}'
+                WHERE scn_name = :scenario
                 AND country != 'DE'
-                AND carrier = '{grid_carrier}'))
+                AND carrier = :grid_carrier))
             """
 
-            result = db.select_dataframe(sql, warning=False)
+            result = db.select_dataframe(
+                sql,
+                warning=False,
+                params={"scenario": self.scenario, "grid_carrier": grid_carrier},
+            )
             observed = float(result["p_nom"].values[0] or 0)
 
             if expected == 0:

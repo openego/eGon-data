@@ -111,18 +111,19 @@ class HeatGasLoadPypsaEurComparison(Rule):
                 LEFT JOIN
                     grid.egon_etrago_load_timeseries t ON l.load_id = t.load_id
                 WHERE
-                    l.scn_name = '{self.scenario}'
+                    l.scn_name = :scenario
                     AND l.carrier != 'AC'
                     AND l.bus IN (
                         SELECT bus_id
                         FROM grid.egon_etrago_bus
-                        WHERE scn_name = '{self.scenario}'
+                        WHERE scn_name = :scenario
                         AND country = 'DE'
                     )
                     {nan_filter}
                 GROUP BY
                     l.carrier
-            """
+            """,
+            params={"scenario": self.scenario},
         )
         return loads_etrago_timeseries
 

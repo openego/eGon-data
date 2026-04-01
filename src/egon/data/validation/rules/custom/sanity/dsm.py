@@ -70,10 +70,12 @@ class DSMTimeseries(Rule):
             sql = f"""
             SELECT bus, p_min, p_max, e_max, e_min
             FROM {target["schema"]}.{target["table"]}
-            WHERE scn_name = '{self.scenario}'
+            WHERE scn_name = :scenario
             ORDER BY bus
             """
-            df_list.append(db.select_dataframe(sql))
+            df_list.append(
+                db.select_dataframe(sql, params={"scenario": self.scenario})
+            )
 
         return pd.concat(df_list, ignore_index=True)
 
@@ -87,13 +89,15 @@ class DSMTimeseries(Rule):
             (success, message)
         """
         # Get link metadata
-        sql = f"""
+        sql = """
         SELECT link_id, bus0 as bus, p_nom FROM grid.egon_etrago_link
         WHERE carrier = 'dsm'
-        AND scn_name = '{self.scenario}'
+        AND scn_name = :scenario
         ORDER BY link_id
         """
-        meta_df = db.select_dataframe(sql, index_col="link_id")
+        meta_df = db.select_dataframe(
+            sql, index_col="link_id", params={"scenario": self.scenario}
+        )
 
         if meta_df.empty:
             return False, f"No DSM links found for scenario {self.scenario}"
@@ -101,14 +105,17 @@ class DSMTimeseries(Rule):
         link_ids = str(meta_df.index.tolist())[1:-1]
 
         # Get link timeseries
+        # Note: link_ids are integers from database, not user input
         sql = f"""
         SELECT link_id, p_min_pu, p_max_pu
         FROM grid.egon_etrago_link_timeseries
-        WHERE scn_name = '{self.scenario}'
+        WHERE scn_name = :scenario
         AND link_id IN ({link_ids})
         ORDER BY link_id
         """
-        ts_df = db.select_dataframe(sql, index_col="link_id")
+        ts_df = db.select_dataframe(
+            sql, index_col="link_id", params={"scenario": self.scenario}
+        )
 
         if ts_df.empty:
             return (
@@ -178,13 +185,15 @@ class DSMTimeseries(Rule):
             (success, message)
         """
         # Get store metadata
-        sql = f"""
+        sql = """
         SELECT store_id, bus, e_nom FROM grid.egon_etrago_store
         WHERE carrier = 'dsm'
-        AND scn_name = '{self.scenario}'
+        AND scn_name = :scenario
         ORDER BY store_id
         """
-        meta_df = db.select_dataframe(sql, index_col="store_id")
+        meta_df = db.select_dataframe(
+            sql, index_col="store_id", params={"scenario": self.scenario}
+        )
 
         if meta_df.empty:
             return False, f"No DSM stores found for scenario {self.scenario}"
@@ -192,14 +201,17 @@ class DSMTimeseries(Rule):
         store_ids = str(meta_df.index.tolist())[1:-1]
 
         # Get store timeseries
+        # Note: store_ids are integers from database, not user input
         sql = f"""
         SELECT store_id, e_min_pu, e_max_pu
         FROM grid.egon_etrago_store_timeseries
-        WHERE scn_name = '{self.scenario}'
+        WHERE scn_name = :scenario
         AND store_id IN ({store_ids})
         ORDER BY store_id
         """
-        ts_df = db.select_dataframe(sql, index_col="store_id")
+        ts_df = db.select_dataframe(
+            sql, index_col="store_id", params={"scenario": self.scenario}
+        )
 
         if ts_df.empty:
             return (
