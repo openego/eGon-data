@@ -113,7 +113,7 @@ class FinalValidations(Dataset):
     #:
     name: str = "FinalValidations"
     #:
-    version: str = "0.0.1.dev"
+    version: str = "0.0.1"
     #:
     create_finalize_task: bool = True
 

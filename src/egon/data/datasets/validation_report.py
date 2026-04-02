@@ -127,7 +127,7 @@ class ValidationReport(Dataset):
     #:
     name: str = "ValidationReport"
     #:
-    version: str = "0.0.2.dev"
+    version: str = "0.0.1"
 
     def __init__(self, dependencies):
         super().__init__(
