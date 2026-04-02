@@ -195,6 +195,7 @@ def create_tables():
     EgonDemandRegioPopulation.__table__.create(bind=engine, checkfirst=True)
     EgonDemandRegioHouseholds.__table__.create(bind=engine, checkfirst=True)
     EgonDemandRegioWz.__table__.create(bind=engine, checkfirst=True)
+    DemandRegioLoadProfiles.__table__.drop(bind=db.engine(), checkfirst=True)
     DemandRegioLoadProfiles.__table__.create(bind=db.engine(), checkfirst=True)
     EgonDemandRegioTimeseriesCtsInd.__table__.drop(
         bind=engine, checkfirst=True
