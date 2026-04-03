@@ -41,7 +41,8 @@ Bug Fixes
   `#1368 <https://github.com/openego/eGon-data/issues/1368>`_
 * Fix problem related to deprecated functions in the latest version of pgrouting
   `#1392 <https://github.com/openego/eGon-data/issues/1392>`_
-
+* Fix problem with atlite and xarray, era5 data is downloadable again
+  `#1250 <https://github.com/openego/eGon-data/issues/1250>`_
 
 Version 2.0.0 (2025-08-20)
 ==========================
