@@ -26,6 +26,9 @@ from egon.data.datasets import Dataset, DatasetSources, DatasetTargets
 from egon.data.datasets.scenario_parameters import get_scenario_year
 from egon.data.datasets.zensus_mv_grid_districts import MapZensusGridDistricts
 import egon.data.config
+from egon.data.datasets.electricity_demand_timeseries.lpg_hh_profiles import (
+    get_lpg_hh_demand_profiles_raw,
+)
 
 Base = declarative_base()
 engine = db.engine()
@@ -254,6 +257,10 @@ class HouseholdDemands(Dataset):
             "household_electricity_demand_profiles": {
                 "path_testmode": "hh_el_load_profiles_2511.hdf",
                 "path": "hh_el_load_profiles_100k.hdf",
+            },
+            "lpg_household_electricity_demand_profiles": {
+                "path_testmode": "hh_el_load_profiles_lpg_testmode.parquet",
+                "path": "hh_el_load_profiles_lpg_10k.parquet",
             },
             "zensus_household_types": {"path": "Zensus2011_Personen.csv"},
         },
@@ -1619,7 +1626,13 @@ def houseprofiles_in_census_cells():
     np.random.seed(RANDOM_SEED)
 
     # Read demand profiles from egon-data-bundle
-    df_iee_profiles = get_iee_hh_demand_profiles_raw()
+    source = egon.data.config.settings()["egon-data"][
+        "--household-electrical-demand-source"
+    ]
+    if source == "lpg":
+        df_iee_profiles = get_lpg_hh_demand_profiles_raw()
+    else:
+        df_iee_profiles = get_iee_hh_demand_profiles_raw()
 
     # Write raw profiles into db
     write_hh_profiles_to_db(df_iee_profiles)
@@ -1975,14 +1988,17 @@ def mv_grid_district_HH_electricity_load(scenario_name, scenario_year):
 
         mvgd_profiles.reset_index(inplace=True)
 
-    elif method == "bottom-up-profiles":
+    elif method in ("bottom-up-profiles", "lpg"):
         # convert profile ids to tuple (type, id) format
         cells["cell_profile_ids"] = cells["cell_profile_ids"].apply(
             lambda x: list(map(tuple_format, x))
         )
 
         # Read demand profiles from egon-data-bundle
-        df_iee_profiles = get_iee_hh_demand_profiles_raw()
+        if method == "lpg":
+            df_iee_profiles = get_lpg_hh_demand_profiles_raw()
+        else:
+            df_iee_profiles = get_iee_hh_demand_profiles_raw()
 
         # Process profiles for further use
         df_iee_profiles = set_multiindex_to_profiles(df_iee_profiles)

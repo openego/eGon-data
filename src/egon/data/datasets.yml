@@ -511,6 +511,10 @@ hh_demand_profiles:
       path_testmode: "hh_el_load_profiles_2511.hdf"
       path: "hh_el_load_profiles_100k.hdf"
 
+    lpg_household_electricity_demand_profiles:
+      path_testmode: "hh_el_load_profiles_lpg_testmode.parquet"
+      path: "hh_el_load_profiles_lpg_10k.parquet"
+
     zensus_household_types:
       path: "Zensus2011_Personen.csv"
 
