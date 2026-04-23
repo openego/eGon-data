@@ -7,15 +7,18 @@ names, so all downstream code in hh_profiles.py remains unchanged.
 """
 
 from pathlib import Path
+import logging
 import os
 
 import pandas as pd
 
 import egon.data.config
 
+logger = logging.getLogger(__name__)
+
 # Mapping from LPG household types (CHR/CHS series) to IEE bucket types
 # (SR, SO, SK, PR, PO, P1, P2, P3, OR, OO).
-CHR_TO_HH_TYPE = {
+CH_TO_HH_TYPE = {
     # SR — Single Retiree
     "CHR23": "SR",  # Single man over 65 years
     "CHR24": "SR",  # Single woman over 65 years
@@ -68,6 +71,7 @@ CHR_TO_HH_TYPE = {
     # P1 — Couple + 1 child
     "CHR03": "P1",  # Family, 1 child, both at work
     "CHR45": "P1",  # Family with 1 child, 1 at work, 1 at home
+    "CHR49": "P1",  # Family with 1 child, without work
     "CHR60": "P1",  # Family, 1 toddler, one at work, one at home
     "CHR61": "P1",  # Family, 1 child, both at work, early living pattern
     # P2 — Couple + 2 children
@@ -155,7 +159,13 @@ def get_lpg_hh_demand_profiles_raw():
 
     hh_profiles_file = Path(".") / Path(download_directory) / Path(file_path)
 
+    logger.info("Reading LPG household profiles from: %s", hh_profiles_file)
     df_lpg_profiles = pd.read_parquet(hh_profiles_file)
+    logger.debug(
+        "Loaded LPG profiles: %d profiles, %d timesteps",
+        df_lpg_profiles.shape[1],
+        df_lpg_profiles.shape[0],
+    )
 
     # Rename columns from LPG-type format to IEE bucket format.
     # Multiple household types map to the same bucket; IDs are renumbered
@@ -164,15 +174,19 @@ def get_lpg_hh_demand_profiles_raw():
     new_columns = []
     for col in df_lpg_profiles.columns:
         hh_type = col[:5]  # e.g. "CHR01" or "CHS04"
-        if hh_type not in CHR_TO_HH_TYPE:
+        if hh_type not in CH_TO_HH_TYPE:
             raise ValueError(
                 f"Unknown household type '{hh_type}' in LPG profiles file. "
-                "Update CHR_TO_HH_TYPE mapping."
+                "Update CH_TO_HH_TYPE mapping."
             )
-        bucket = CHR_TO_HH_TYPE[hh_type]
+        bucket = CH_TO_HH_TYPE[hh_type]
         idx = bucket_counters.get(bucket, -1) + 1
         bucket_counters[bucket] = idx
         new_columns.append(f"{bucket}a{idx:05d}")
     df_lpg_profiles.columns = new_columns
 
+    logger.debug(
+        "Remapped LPG columns to IEE buckets: %s",
+        sorted(set(c[:2] for c in new_columns)),
+    )
     return df_lpg_profiles
