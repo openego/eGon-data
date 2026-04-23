@@ -730,7 +730,16 @@ def get_building_peak_loads():
         df_buildings_and_profiles = df_buildings_and_profiles.fillna(np.nan)
 
         # Read demand profiles from egon-data-bundle
-        df_profiles = get_iee_hh_demand_profiles_raw()
+        source = egon.data.config.settings()["egon-data"][
+            "--household-electrical-demand-source"
+        ]
+        if source == "lpg":
+            from egon.data.datasets.electricity_demand_timeseries.lpg_hh_profiles import (
+                get_lpg_hh_demand_profiles_raw,
+            )
+            df_profiles = get_lpg_hh_demand_profiles_raw()
+        else:
+            df_profiles = get_iee_hh_demand_profiles_raw()
 
         def ve(s):
             raise (ValueError(s))
