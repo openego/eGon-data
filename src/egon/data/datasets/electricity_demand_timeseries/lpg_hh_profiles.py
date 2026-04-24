@@ -17,7 +17,7 @@ import egon.data.config
 logger = logging.getLogger(__name__)
 
 # Mapping from LPG household types (CHR/CHS series) to IEE bucket types
-# (SR, SO, SK, PR, PO, P1, P2, P3, OR, OO).
+# (SR, SO, SK, PR, PO, P1, P2, P3, OR, O0).
 CH_TO_HH_TYPE = {
     # SR — Single Retiree
     "CHR23": "SR",  # Single man over 65 years
@@ -91,8 +91,8 @@ CH_TO_HH_TYPE = {
     # OR — Multi-person household with seniors
     "CHR14": "OR",  # 3 adults: Couple, 30-64 + Senior at home
     "CHR15": "OR",  # Multigenerational Home
-    # OO — Multi-person household adults
-    "CHR52": "OO",  # Student Flatsharing
+    # O0 — Multi-person household adults
+    "CHR52": "O0",  # Student Flatsharing
 }
 
 
@@ -104,7 +104,7 @@ def get_lpg_hh_demand_profiles_raw():
     household archetypes of two series: CHR (CHR01-CHR61) and CHS (CHS01,
     CHS04, CHS12). All types are mapped to the same 10 Eurostat/IEE household
     type buckets used by the IEE profiles (SR, SO, SK, PR, PO, P1, P2, P3,
-    OR, OO) so all downstream processing remains unchanged.
+    OR, O0) so all downstream processing remains unchanged.
 
     Notes
     -----
