@@ -1369,7 +1369,7 @@ def get_cell_demand_profile_ids(df_cell, pool_size):
 
 
 # can be parallelized with grouping df_zensus_cells by grid_id/nuts3/nuts1
-def assign_hh_demand_profiles_to_cells(df_zensus_cells, df_iee_profiles):
+def assign_hh_demand_profiles_to_cells(df_zensus_cells, df_hh_demand_profiles):
     """
     Assign household demand profiles to each census cell.
 
@@ -1383,7 +1383,7 @@ def assign_hh_demand_profiles_to_cells(df_zensus_cells, df_iee_profiles):
     df_zensus_cells: pd.DataFrame
         Household type parameters. Each row representing one household. Hence,
         multiple rows per zensus cell.
-    df_iee_profiles: pd.DataFrame
+    df_hh_demand_profiles: pd.DataFrame
         Household load profile data
 
         * Index: Times steps as serial integers
@@ -1415,7 +1415,7 @@ def assign_hh_demand_profiles_to_cells(df_zensus_cells, df_iee_profiles):
         df_hh_profiles_in_census_cells.rename_axis("grid_id")
     )
 
-    pool_size = df_iee_profiles.groupby(level=0, axis=1).size()
+    pool_size = df_hh_demand_profiles.groupby(level=0, axis=1).size()
 
     # only use non zero entries
     df_zensus_cells = df_zensus_cells.loc[df_zensus_cells["hh_10types"] != 0]
@@ -1445,7 +1445,7 @@ def assign_hh_demand_profiles_to_cells(df_zensus_cells, df_iee_profiles):
 
 # can be parallelized with grouping df_zensus_cells by grid_id/nuts3/nuts1
 def adjust_to_demand_regio_nuts3_annual(
-    df_hh_profiles_in_census_cells, df_iee_profiles, df_demand_regio
+    df_hh_profiles_in_census_cells, df_hh_demand_profiles, df_demand_regio
 ):
     """
     Computes the profile scaling factor for alignment to demand regio data
@@ -1458,7 +1458,7 @@ def adjust_to_demand_regio_nuts3_annual(
     ----------
     df_hh_profiles_in_census_cells: pd.DataFrame
         Result of :func:`assign_hh_demand_profiles_to_cells`.
-    df_iee_profiles: pd.DataFrame
+    df_hh_demand_profiles: pd.DataFrame
         Household load profile data
 
         * Index: Times steps as serial integers
@@ -1483,7 +1483,7 @@ def adjust_to_demand_regio_nuts3_annual(
         # take all profiles of one nuts3, aggregate and sum
         # profiles in Wh
         nuts3_profiles_sum_annual = (
-            df_iee_profiles.loc[:, nuts3_profile_ids].sum().sum()
+            df_hh_demand_profiles.loc[:, nuts3_profile_ids].sum().sum()
         )
 
         # Scaling Factor
@@ -1505,7 +1505,7 @@ def adjust_to_demand_regio_nuts3_annual(
 
 
 def get_load_timeseries(
-    df_iee_profiles,
+    df_hh_demand_profiles,
     df_hh_profiles_in_census_cells,
     cell_ids,
     year,
@@ -1520,7 +1520,7 @@ def get_load_timeseries(
 
     Parameters
     ----------
-    df_iee_profiles: pd.DataFrame
+    df_hh_demand_profiles: pd.DataFrame
         Household load profile data in Wh
 
         * Index: Times steps as serial integers
@@ -1548,7 +1548,7 @@ def get_load_timeseries(
         Aggregated time series for given `cell_ids` or peak load of this time
         series in MWh.
     """
-    timesteps = len(df_iee_profiles)
+    timesteps = len(df_hh_demand_profiles)
     if aggregate:
         full_load = pd.Series(
             data=np.zeros(timesteps), dtype=np.float64, index=range(timesteps)
@@ -1565,7 +1565,7 @@ def get_load_timeseries(
     ):
         if aggregate:
             part_load = (
-                df_iee_profiles.loc[:, df["cell_profile_ids"].sum()].sum(
+                df_hh_demand_profiles.loc[:, df["cell_profile_ids"].sum()].sum(
                     axis=1
                 )
                 * factor
@@ -1574,7 +1574,7 @@ def get_load_timeseries(
             full_load = full_load.add(part_load)
         elif not aggregate:
             part_load = (
-                df_iee_profiles.loc[:, df["cell_profile_ids"].sum()]
+                df_hh_demand_profiles.loc[:, df["cell_profile_ids"].sum()]
                 * factor
                 / 1e6
             )  # from Wh to MWh
@@ -1634,17 +1634,17 @@ def houseprofiles_in_census_cells():
     ]
     logger.info("Household electrical demand source: %s", source)
     if source == "lpg":
-        df_iee_profiles = get_lpg_hh_demand_profiles_raw()
+        df_hh_demand_profiles = get_lpg_hh_demand_profiles_raw()
     else:
-        df_iee_profiles = get_iee_hh_demand_profiles_raw()
-    logger.debug("Profiles loaded: %d columns", len(df_iee_profiles.columns))
+        df_hh_demand_profiles = get_iee_hh_demand_profiles_raw()
+    logger.debug("Profiles loaded: %d columns", len(df_hh_demand_profiles.columns))
 
     # Write raw profiles into db
     logger.info("Writing raw household profiles to database")
-    write_hh_profiles_to_db(df_iee_profiles)
+    write_hh_profiles_to_db(df_hh_demand_profiles)
 
     # Process profiles for further use
-    df_iee_profiles = set_multiindex_to_profiles(df_iee_profiles)
+    df_hh_demand_profiles = set_multiindex_to_profiles(df_hh_demand_profiles)
 
     # Download zensus household NUTS-1 data with family type and age categories
     logger.info("Fetching census NUTS-1 household data")
@@ -1691,7 +1691,7 @@ def houseprofiles_in_census_cells():
     # Allocate profile ids to each cell by census data
     logger.info("Assigning household demand profiles to census cells")
     df_hh_profiles_in_census_cells = assign_hh_demand_profiles_to_cells(
-        df_census_households_grid_refined, df_iee_profiles
+        df_census_households_grid_refined, df_hh_demand_profiles
     )
     logger.debug(
         "Cells with profile assignments: %d", len(df_hh_profiles_in_census_cells)
@@ -1711,7 +1711,7 @@ def houseprofiles_in_census_cells():
     # Scale profiles to meet demand regio annual demand projections
     logger.info("Scaling profiles to demand regio NUTS-3 annual demand")
     df_hh_profiles_in_census_cells = adjust_to_demand_regio_nuts3_annual(
-        df_hh_profiles_in_census_cells, df_iee_profiles, df_demand_regio
+        df_hh_profiles_in_census_cells, df_hh_demand_profiles, df_demand_regio
     )
 
     df_hh_profiles_in_census_cells = (
@@ -2035,12 +2035,12 @@ def mv_grid_district_HH_electricity_load(scenario_name, scenario_year):
 
         # Read demand profiles from egon-data-bundle
         if method == "lpg":
-            df_iee_profiles = get_lpg_hh_demand_profiles_raw()
+            df_hh_demand_profiles = get_lpg_hh_demand_profiles_raw()
         else:
-            df_iee_profiles = get_iee_hh_demand_profiles_raw()
+            df_hh_demand_profiles = get_iee_hh_demand_profiles_raw()
 
         # Process profiles for further use
-        df_iee_profiles = set_multiindex_to_profiles(df_iee_profiles)
+        df_hh_demand_profiles = set_multiindex_to_profiles(df_hh_demand_profiles)
 
         # Create aggregated load profile for each MV grid district
         grid_districts = cells["bus_id"].unique()
@@ -2057,7 +2057,7 @@ def mv_grid_district_HH_electricity_load(scenario_name, scenario_year):
                     grid_district,
                 )
             mvgd_profile = get_load_timeseries(
-                df_iee_profiles=df_iee_profiles,
+                df_hh_demand_profiles=df_hh_demand_profiles,
                 df_hh_profiles_in_census_cells=data,
                 cell_ids=data.index,
                 year=scenario_year,
@@ -2139,10 +2139,10 @@ def get_scaled_profiles_from_db(
     )
     profile_ids = cell_demand_metadata.cell_profile_ids.sum()
 
-    df_iee_profiles = get_hh_profiles_from_db(profile_ids)
+    df_hh_demand_profiles = get_hh_profiles_from_db(profile_ids)
 
     scaled_profiles = get_load_timeseries(
-        df_iee_profiles=df_iee_profiles,
+        df_hh_demand_profiles=df_hh_demand_profiles,
         df_hh_profiles_in_census_cells=cell_demand_metadata,
         cell_ids=cell_demand_metadata.index.to_list(),
         year=year,
