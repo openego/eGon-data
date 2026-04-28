@@ -11,6 +11,7 @@ The cells are defined by the dataset Zensus 2011.
 
 from itertools import cycle, product
 from pathlib import Path
+import logging
 import os
 import random
 
@@ -29,6 +30,8 @@ import egon.data.config
 from egon.data.datasets.electricity_demand_timeseries.lpg_hh_profiles import (
     get_lpg_hh_demand_profiles_raw,
 )
+
+logger = logging.getLogger(__name__)
 
 Base = declarative_base()
 engine = db.engine()
@@ -1629,19 +1632,24 @@ def houseprofiles_in_census_cells():
     source = egon.data.config.settings()["egon-data"][
         "--household-electrical-demand-source"
     ]
+    logger.info("Household electrical demand source: %s", source)
     if source == "lpg":
         df_iee_profiles = get_lpg_hh_demand_profiles_raw()
     else:
         df_iee_profiles = get_iee_hh_demand_profiles_raw()
+    logger.debug("Profiles loaded: %d columns", len(df_iee_profiles.columns))
 
     # Write raw profiles into db
+    logger.info("Writing raw household profiles to database")
     write_hh_profiles_to_db(df_iee_profiles)
 
     # Process profiles for further use
     df_iee_profiles = set_multiindex_to_profiles(df_iee_profiles)
 
     # Download zensus household NUTS-1 data with family type and age categories
+    logger.info("Fetching census NUTS-1 household data")
     df_census_households_nuts1_raw = get_census_households_nuts1_raw()
+    logger.debug("NUTS-1 raw rows: %d", len(df_census_households_nuts1_raw))
 
     # Reduce age intervals and remove kids
     df_census_households_nuts1 = process_nuts1_census_data(
@@ -1661,7 +1669,9 @@ def houseprofiles_in_census_cells():
     )
 
     # Query census household grid data with family type
+    logger.info("Fetching census household grid data")
     df_census_households_grid = get_census_households_grid()
+    logger.debug("Census grid cells: %d", len(df_census_households_grid))
 
     # fill cells with missing household distribution values but population
     # by hh distribution value of random cell with same population value
@@ -1670,18 +1680,25 @@ def houseprofiles_in_census_cells():
     )
 
     # Refine census household grid data with additional NUTS-1 level attributes
+    logger.info("Refining census data at cell level")
     df_census_households_grid_refined = refine_census_data_at_cell_level(
         df_census_households_grid, df_census_households_nuts1
     )
+    logger.debug("Refined census rows: %d", len(df_census_households_grid_refined))
 
     write_refinded_households_to_db(df_census_households_grid_refined)
 
     # Allocate profile ids to each cell by census data
+    logger.info("Assigning household demand profiles to census cells")
     df_hh_profiles_in_census_cells = assign_hh_demand_profiles_to_cells(
         df_census_households_grid_refined, df_iee_profiles
     )
+    logger.debug(
+        "Cells with profile assignments: %d", len(df_hh_profiles_in_census_cells)
+    )
 
     # Annual household electricity demand on NUTS-3 level (demand regio)
+    logger.info("Fetching demand regio annual demand on NUTS-3 level")
     df_demand_regio = db.select_dataframe(
         sql=f"""
                 SELECT year, nuts3, SUM (demand) as demand_mWha
@@ -1692,6 +1709,7 @@ def houseprofiles_in_census_cells():
     )
 
     # Scale profiles to meet demand regio annual demand projections
+    logger.info("Scaling profiles to demand regio NUTS-3 annual demand")
     df_hh_profiles_in_census_cells = adjust_to_demand_regio_nuts3_annual(
         df_hh_profiles_in_census_cells, df_iee_profiles, df_demand_regio
     )
@@ -1711,6 +1729,10 @@ def houseprofiles_in_census_cells():
     )
 
     # Write allocation table into database
+    logger.info(
+        "Writing %d cell profile assignments to database",
+        len(df_hh_profiles_in_census_cells),
+    )
     HouseholdElectricityProfilesInCensusCells.__table__.drop(
         bind=engine, checkfirst=True
     )
@@ -1723,6 +1745,7 @@ def houseprofiles_in_census_cells():
             HouseholdElectricityProfilesInCensusCells,
             df_hh_profiles_in_census_cells.to_dict(orient="records"),
         )
+    logger.info("houseprofiles_in_census_cells completed")
 
 
 def get_houseprofiles_in_census_cells():
@@ -1882,7 +1905,7 @@ def get_demand_regio_hh_profiles_from_db(year):
     """
 
     query = f"""
-    Select * 
+    Select *
     FROM {HouseholdDemands.sources.tables["demandregio_household_load_profiles"]}
     Where year = year"""
 
@@ -1940,6 +1963,14 @@ def mv_grid_district_HH_electricity_load(scenario_name, scenario_year):
         "--household-electrical-demand-source"
     ]
 
+    logger.info(
+        "mv_grid_district_HH_electricity_load: scenario=%s year=%d method=%s cells=%d",
+        scenario_name,
+        scenario_year,
+        method,
+        len(cells),
+    )
+
     if method == "slp":
         # Import demand regio timeseries demand per nuts3 area
         dr_series = pd.read_sql_query(
@@ -1951,6 +1982,14 @@ def mv_grid_district_HH_electricity_load(scenario_name, scenario_year):
         dr_series = dr_series[dr_series["year"] == scenario_year]
         dr_series.drop(columns=["year"], inplace=True)
         dr_series.set_index("nuts3", inplace=True)
+        if dr_series.index.duplicated().any():
+            logger.warning(
+                "Duplicate nuts3 entries found in demandregio_household_load_profiles "
+                "for year=%d — keeping first occurrence. "
+                "The table may have been written multiple times.",
+                scenario_year,
+            )
+            dr_series = dr_series[~dr_series.index.duplicated(keep="first")]
         dr_series = dr_series.squeeze()
 
         # Population data per cell_id is used to scale the demand per nuts3
@@ -2004,8 +2043,19 @@ def mv_grid_district_HH_electricity_load(scenario_name, scenario_year):
         df_iee_profiles = set_multiindex_to_profiles(df_iee_profiles)
 
         # Create aggregated load profile for each MV grid district
+        grid_districts = cells["bus_id"].unique()
+        logger.info(
+            "Aggregating load profiles for %d MV grid districts", len(grid_districts)
+        )
         mvgd_profiles_dict = {}
-        for grid_district, data in cells.groupby("bus_id"):
+        for i, (grid_district, data) in enumerate(cells.groupby("bus_id")):
+            if i % 100 == 0:
+                logger.debug(
+                    "Processing grid district %d / %d (bus_id=%s)",
+                    i + 1,
+                    len(grid_districts),
+                    grid_district,
+                )
             mvgd_profile = get_load_timeseries(
                 df_iee_profiles=df_iee_profiles,
                 df_hh_profiles_in_census_cells=data,
@@ -2025,6 +2075,11 @@ def mv_grid_district_HH_electricity_load(scenario_name, scenario_year):
         mvgd_profiles.columns = ["bus_id", "p_set"]
 
     # Add remaining columns
+    logger.info(
+        "Writing %d MV grid district profiles to database (scenario=%s)",
+        len(mvgd_profiles),
+        scenario_name,
+    )
     mvgd_profiles["scn_name"] = scenario_name
 
     # Insert data into respective database table
