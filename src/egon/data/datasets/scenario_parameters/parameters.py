@@ -116,6 +116,56 @@ def global_settings(scenario):
             "interest_rate": 0.05,  # [p.u.]
         }
 
+    elif scenario == "reGon2037":
+        parameters = {
+            "weather_year": 2011,
+            "population_year": 2037,
+            "fuel_costs": {  # Netzentwicklungsplan Strom 2037, Version 2025, 2. Entwurf, p. 51, table 9
+                "oil": 34.4,  # [EUR/MWh]
+                "gas": 16.9,  # [EUR/MWh]
+                "coal": 5.9,  # [EUR/MWh]
+                "hydrogen": 47.6,  # [EUR/MWh]
+                "lignite": 4.0,  # [EUR/MWh]  Netzentwicklungsplan Strom 2035, Version 2021, 1. Entwurf, p. 40, table 8
+                "nuclear": 1.7,  # [EUR/MWh] Netzentwicklungsplan Strom 2035, Version 2021, 1. Entwurf, p. 40, table 8
+            },
+            "co2_costs": 152.7,  # [EUR/t_CO2]
+            "co2_emissions": {  # Netzentwicklungsplan Strom 2037, Version 2025, 2. Entwurf, p. 51, table 10
+                "waste": 0.165,  # [t_CO2/MW_th]
+                "lignite": 0.393,  # [t_CO2/MW_th]
+                "gas": 0.201,  # [t_CO2/MW_th]
+                "nuclear": 0.0,  # [t_CO2/MW_th]
+                "oil": 0.287,  # [t_CO2/MW_th]
+                "coal": 0.337,  # [t_CO2/MW_th]
+                "other_non_renewable": 0.268,  # [t_CO2/MW_th] Netzentwicklungsplan Strom 2035, Version 2021, 1. Entwurf, p. 40, table 8
+            },
+            "interest_rate": 0.05,  # [p.u.]
+        }
+
+    elif scenario == "reGon2045":
+        parameters = {
+            "weather_year": 2011,
+            "population_year": 2045,
+            "fuel_costs": {  # Netzentwicklungsplan Strom 2037, Version 2025, 2. Entwurf, p. 51, table 9
+                "oil": 31.8,  # [EUR/MWh]
+                "gas": 16.3,  # [EUR/MWh]
+                "coal": 5.3,  # [EUR/MWh]
+                "hydrogen": 51.0,  # [EUR/MWh]
+                "lignite": 4.0,  # [EUR/MWh]  Netzentwicklungsplan Strom 2035, Version 2021, 1. Entwurf, p. 40, table 8
+                "nuclear": 1.7,  # [EUR/MWh] Netzentwicklungsplan Strom 2035, Version 2021, 1. Entwurf, p. 40, table 8
+            },
+            "co2_costs": 172.5,  # [EUR/t_CO2]
+            "co2_emissions": {  # Netzentwicklungsplan Strom 2037, Version 2025, 2. Entwurf, p. 51, table 10
+                "waste": 0.165,  # [t_CO2/MW_th]
+                "lignite": 0.393,  # [t_CO2/MW_th]
+                "gas": 0.201,  # [t_CO2/MW_th]
+                "nuclear": 0.0,  # [t_CO2/MW_th]
+                "oil": 0.287,  # [t_CO2/MW_th]
+                "coal": 0.337,  # [t_CO2/MW_th]
+                "other_non_renewable": 0.268,  # [t_CO2/MW_th] Netzentwicklungsplan Strom 2035, Version 2021, 1. Entwurf, p. 40, table 8
+            },
+            "interest_rate": 0.05,  # [p.u.]
+        }
+
     elif scenario == "eGon2021":
         parameters = {
             "weather_year": 2011,

@@ -186,6 +186,52 @@ def insert_scenarios():
 
     session.commit()
 
+    # Scenario reGon2037
+    reGon2037 = EgonScenario(name="reGon2037")
+
+    reGon2037.description = """
+        The scenario reGon2037 is based on scenario C 2037 of the
+        Netzentwicklungsplan Strom, Version 2025.
+        Scenario C 2037 is characterized by an ambitious expansion of
+        renewable energies and a higher share of sector coupling.
+        """
+    reGon2037.global_parameters = parameters.global_settings(reGon2037.name)
+
+    reGon2037.electricity_parameters = parameters.electricity(reGon2037.name)
+
+    reGon2037.gas_parameters = parameters.gas(reGon2037.name)
+
+    reGon2037.heat_parameters = parameters.heat(reGon2037.name)
+
+    reGon2037.mobility_parameters = parameters.mobility(reGon2037.name)
+
+    session.add(reGon2037)
+
+    session.commit()
+    
+    # Scenario reGon2045
+    reGon2045 = EgonScenario(name="reGon2045")
+
+    reGon2045.description = """
+        The scenario reGon2045 is based on scenario C 2045 of the
+        Netzentwicklungsplan Strom, Version 2025.
+        Scenario C 2045 is characterized by an ambitious expansion of
+        renewable energies and a higher share of sector coupling.
+        """
+    reGon2045.global_parameters = parameters.global_settings(reGon2045.name)
+
+    reGon2045.electricity_parameters = parameters.electricity(reGon2045.name)
+
+    reGon2045.gas_parameters = parameters.gas(reGon2045.name)
+
+    reGon2045.heat_parameters = parameters.heat(reGon2045.name)
+
+    reGon2045.mobility_parameters = parameters.mobility(reGon2045.name)
+
+    session.add(reGon2045)
+
+    session.commit()
+
 
 def get_sector_parameters(sector, scenario=None):
     """Returns parameters for each sector as dictionary.
