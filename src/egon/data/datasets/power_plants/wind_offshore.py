@@ -16,7 +16,7 @@ def map_id_bus(scenario, sources):
 
     osm_year = sources.files["osm_config"]
 
-    if scenario in ["eGon2035", "eGon100RE"]:
+    if scenario in ["eGon2035", "eGon100RE", "eGon2037", "eGon2045"]:
         id_bus = {
             "Büttel": "136034396",
             "Suchraum Gemeinden Ibbenbüren/Mettingen/Westerkappeln": "114319248",
@@ -32,7 +32,7 @@ def map_id_bus(scenario, sources):
             "Bentwisch": "32063539",
             "Lubmin": "460134233",
             "Suchraum Gemeinde Papendorf": "32063539",
-            "Suchraum Gemeinden Brünzow/Kemnitz": "460134233",
+            "Suchraum Brünzow (Gemeinden Brünzow /Kemnitz)": "460134233",
             "inhausen": "29420322",
         }
         if "200101" in osm_year:
@@ -47,7 +47,7 @@ def map_id_bus(scenario, sources):
                 "Cloppenburg": "50643382",
             }
         elif ("250101" in osm_year) | ("240101" in osm_year):
-            id_bus2 = {
+            id_bus2 = { 
                 "Heide/West": "603661085",
                 "Emden/Ost": "1280178909",
                 "Wilhelmshaven 2": "637595524",
@@ -56,6 +56,25 @@ def map_id_bus(scenario, sources):
                 "Rastede": "1128250707",
                 "Emden/Borßum": "34835258",
                 "Cloppenburg": "24493551",
+                "Westerkappeln": "954305865",
+                "Niederrhein": "24462426",
+                "Kusenhorst": "29077623",
+                "Lippe": "957746797",
+                "Sechtem": "22766160",
+                "Suchraum Heide (Gemeinden Hemmings-tedt / Lieth / Lohe-Rickels-hof / Wöhrden)": "603661085",
+                "Suchraum Pöschendorf (Gemeinden Pöschen-dorf / Hadenfeld /Kaisborstel / Looft)": "258275257",
+                "Wiemersdorf / Hardebek": "1107961833",
+                "Suchraum BBS (Ämter Büchen / Breitenfelde / Schwarzenbek-Land)": "1089911133",
+                "Suchraum Brunsbüttel (Gemeinden Brunsbüttel / Büttel / St. Margarethen / Brokdorf)": "30622610",
+                "Suchraum Nüttermoor (Stadt Leer / Gemeinden Moormerland und Jemgum)": "1280178911",
+                "Samtgemeinde Sottrum": "955268864",
+                "Suchraum Rastede (Ovelgönne / Rastede / Wiefelstede / Westerstede)": "1128250704",
+                "Wilhelmshaven / Landkreis Friesland": "1134105414",
+                "Suchraum Gnewitz (Gemeinden Dettmanns-dorf / Gnewitz / Sanitz / Stadt Marlow)": "940919943",
+                "Suchraum Broderstorf (Gemeinden Broder-storf / Dummerstorf / Papendorf / Roggentin / Stadt Rostock)": "320635393",
+                "Suchraum Ried (Stadt Bürstadt / Gemeinden Biblis und Groß-Rohrheim)": "1223405794",
+                "Kriftel": "38661452",
+                "Blockland / Neu": "44717036",
             }
         else:
             raise Exception("""The OSM year used is not yet compatible with
