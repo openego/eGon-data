@@ -158,7 +158,7 @@ def import_cutout(boundary="Europe"):
             module="era5",
             x=xs,
             y=ys,
-            years=slice(weather_year, weather_year),
+            time=slice(f"{weather_year}-01-01", f"{weather_year}-12-31"),
         )
 
 
