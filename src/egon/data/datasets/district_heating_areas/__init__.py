@@ -482,28 +482,28 @@ def district_heating_areas(scenario_name, plotting=False):
     Create scenario specific district heating areas considering on census data.
 
     This function loads the district heating share from the scenario table and
-    demarcate the scenario specific district heating areas. To do so it
+    demarcate the scenario specific district heating areas. To do so, it
     uses the census data on flats currently supplied with district heat, which
-    are supplied selected first, if the estimated connection rate >= 30%.
+    are supplied selected first, if the estimated connection rate is >= 30%.
 
     All scenarios use the Prospective Supply Districts (PSDs) made for the
     eGon2035 scenario to identify the areas where additional district heating
-    supply is feasible. One PSD dataset is to defined which is constant over
+    supply is feasible. One PSD dataset is defined to be constant over
     the years to allow comparisons. Moreover, it is
     assumed that the eGon2035 PSD dataset is suitable, even though the heat
     demands will continue to decrease from 2035 to 2050, because district
     heating systems will be to planned and built before 2050, to exist in 2050.
 
     It is assumed that the connection rate in cells with district heating will
-    be a 100%. That is because later in project the number of buildings per
-    cell will be used and connection rates not being 0 or 100% will create
-    buildings which are not fully supplied by one technology.
+    be at 100%. That is so that later in the pipeline the number of buildings 
+    per cell will be used, and connection rates not being 0 or 100% will create
+    buildings, which are not fully supplied by one technology.
 
     The cell polygons which carry information (like heat demand etc.) are
     grouped into areas which are close to each other.
     Only cells with a minimum heat demand density (e.g. >100 GJ/(ha a)) are
     considered when creating PSDs. Therefore, the select_high_heat_demands()
-    function is used. There is minimum heat demand per PSDs to achieve a
+    function is used. There is a minimum heat demand per PSDs to achieve a
     certain size.
     While the grouping buffer for the creation of Prospective Supply Districts
     (PSDs) is 200m as in the sEEnergies project, the buffer for grouping census
