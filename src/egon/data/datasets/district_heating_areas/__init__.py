@@ -188,7 +188,7 @@ def load_census_data(minimum_connection_rate=0.3):
     """
     Load the heating type information from the census database table.
 
-    The census apartment and the census building table contains information
+    The census apartment and the census building table contain information
     about the heating type. The information are loaded from the apartment
     table, because they might be more useful when it comes to the estimation of
     the connection rates. Only cells with a connection rate equal to or larger
@@ -347,9 +347,9 @@ def area_grouping(
     Group polygons which are close to each other.
 
     This function creates buffers around the given cell polygons (called
-    "raw_polygons") and unions the intersecting buffer polygons. Afterwards, it
-    unions the cell polygons which are within one unified buffer polygon.
-    If requested, the cells being in areas fulfilling the minimum heat demand
+    "raw_polygons") and combines the intersecting buffer polygons. Afterwards, it
+    combines the cell polygons which are within one unified buffer polygon.
+    If requested, the cells in areas fulfilling the minimum heat demand
     criterium are selected.
 
     Parameters
@@ -483,21 +483,21 @@ def district_heating_areas(scenario_name, plotting=False):
 
     This function loads the district heating share from the scenario table and
     demarcate the scenario specific district heating areas. To do so, it
-    uses the census data on flats currently supplied with district heat, which
+    uses the census data on apartments currently supplied with district heat, which
     are supplied selected first, if the estimated connection rate is >= 30%.
 
     All scenarios use the Prospective Supply Districts (PSDs) made for the
     eGon2035 scenario to identify the areas where additional district heating
     supply is feasible. One PSD dataset is defined to be constant over
-    the years to allow comparisons. Moreover, it is
-    assumed that the eGon2035 PSD dataset is suitable, even though the heat
-    demands will continue to decrease from 2035 to 2050, because district
-    heating systems will be to planned and built before 2050, to exist in 2050.
+    the years to allow comparisons. Moreover, it is assumed that the eGon2035 
+    PSD dataset is suitable, even though the heat demands will continue to 
+    decrease from 2035 to 2050, because district heating systems will be
+    planned and built before 2050, to exist in 2050.
 
     It is assumed that the connection rate in cells with district heating will
-    be at 100%. That is so that later in the pipeline the number of buildings 
-    per cell will be used, and connection rates not being 0 or 100% will create
-    buildings, which are not fully supplied by one technology.
+    be at 100%. This is to prevent buildings which are not fully supplied by 
+    one technology. This happens when the connection rate for a building is 
+    not at 0 or 100%.
 
     The cell polygons which carry information (like heat demand etc.) are
     grouped into areas which are close to each other.
@@ -568,8 +568,9 @@ def district_heating_areas(scenario_name, plotting=False):
     heat_demand_cells = load_heat_demands(scenario_name)
 
     # Firstly, supply the cells which already have district heating according
-    # to 2011 Census data and which are within likely dh areas (created
-    # by the area grouping function), load only the first returned result: [0]
+    # to 2011 Census data and which are within likely district heating areas 
+    # (created by the area grouping function), load only the first returned 
+    # result: [0]
     min_hd_census = 10000 / 3.6  # in MWh
 
     census_plus_heat_demand = load_census_data(
@@ -971,13 +972,13 @@ def study_prospective_district_heating_areas():
     """
     Get information about Prospective Supply Districts for district heating.
 
-    This optional function executes the functions so that you can study the
+    This optional function executes the functions to allow studying the
     heat demand density data of different scenarios and compare them and the
-    resulting Prospective Supply Districts (PSDs) for district heating. This
-    functions saves local shapefiles, because these data are not written into
-    database. Moreover, heat density curves are drawn.
-    This function is tailor-made and includes the scenarios eGon2035 and
-    eGon100RE.
+    resulting Prospective Supply Districts (PSDs) for district heating. As the 
+    data is no written into the database, this function saves local shapefiles.
+    Additionally, heat density curves are drawn.
+    This function is tailor-made and includes the scenarios eGon2035, reGon2037
+    and reGon2045.
 
     Parameters
     ----------
@@ -1014,18 +1015,20 @@ def study_prospective_district_heating_areas():
     # VALUES ('eGon2015');
     # because egon2015 is not part of the regular EgonScenario table!
     HD_2035 = load_heat_demands("eGon2035")
-    HD_2050 = load_heat_demands("eGon100RE")
+    HD_2037 = load_heat_demands("reGon2037")
+    HD_2045 = load_heat_demands("reGon2045")
 
     # select only cells with heat demands > 100 GJ / (ha a)
     # HD_2015_above_100GJ = select_high_heat_demands(HD_2015)
     HD_2035_above_100GJ = select_high_heat_demands(HD_2035)
-    HD_2050_above_100GJ = select_high_heat_demands(HD_2050)
+    HD_2037_above_100GJ = select_high_heat_demands(HD_2037)
+    HD_2045_above_100GJ = select_high_heat_demands(HD_2045)
 
     # PSDs
     # grouping cells applying the 201m distance buffer, including heat demand
     # aggregation
-    # after decision for one year/scenario (here 2035), in the pipeline PSDs
-    # are only calculeated for the one selected year/scenario;
+    # after decision for one year/scenario (here 2037), in the pipeline PSDs
+    # are only calculated for the one selected year/scenario;
     # here you can see all years/scenarios:
     # PSD_2015_201m = area_grouping(HD_2015_above_100GJ, distance=200,
     #                               minimum_total_demand=(10000/3.6)
@@ -1037,10 +1040,18 @@ def study_prospective_district_heating_areas():
     # HD_2035.to_file(results_path+"HD_2035.shp")
     # HD_2035_above_100GJ.to_file(results_path+"HD_2035_above_100GJ.shp")
     PSD_2035_201m.to_file(results_path + "PSDs_2035based.shp")
-    PSD_2050_201m = area_grouping(
-        HD_2050_above_100GJ, distance=200, minimum_total_demand=(10000 / 3.6)
+    
+    PSD_2037_201m = area_grouping(
+        HD_2037_above_100GJ, distance=200, minimum_total_demand=(10000 / 3.6)
     ).dissolve("area_id", aggfunc="sum")
-    PSD_2050_201m.to_file(results_path + "PSDs_2050based.shp")
+    # HD_2037.to_file(results_path+"HD_2037.shp")
+    # HD_2037_above_100GJ.to_file(results_path+"HD_2037_above_100GJ.shp")
+    PSD_2037_201m.to_file(results_path + "PSDs_2037based.shp")
+    
+    PSD_2045_201m = area_grouping(
+        HD_2045_above_100GJ, distance=200, minimum_total_demand=(10000 / 3.6)
+    ).dissolve("area_id", aggfunc="sum")
+    PSD_2045_201m.to_file(results_path + "PSDs_2045based.shp")
 
     # plotting all cells - not considering census data
     # https://matplotlib.org/stable/api/_as_gen/matplotlib.pyplot.plot.html
@@ -1054,6 +1065,7 @@ def study_prospective_district_heating_areas():
     # ax.plot(HD_2015.Cumulative_Sum,
     #         HD_2015.residential_and_service_demand, label='eGon2015')
 
+    
     HD_2035 = HD_2035.sort_values(
         "residential_and_service_demand", ascending=False
     ).reset_index()
@@ -1066,16 +1078,29 @@ def study_prospective_district_heating_areas():
         label="eGon2035",
     )
 
-    HD_2050 = HD_2050.sort_values(
+    HD_2037 = HD_2037.sort_values(
         "residential_and_service_demand", ascending=False
     ).reset_index()
-    HD_2050["Cumulative_Sum"] = (
-        HD_2050.residential_and_service_demand.cumsum()
+    HD_2037["Cumulative_Sum"] = (
+        HD_2037.residential_and_service_demand.cumsum()
     ) / 1000000
     ax.plot(
-        HD_2050.Cumulative_Sum,
-        HD_2050.residential_and_service_demand,
-        label="eGon100RE",
+        HD_2037.Cumulative_Sum,
+        HD_2037.residential_and_service_demand,
+        label="reGon2037",
+    )
+
+
+    HD_2045 = HD_2045.sort_values(
+        "residential_and_service_demand", ascending=False
+    ).reset_index()
+    HD_2045["Cumulative_Sum"] = (
+        HD_2045.residential_and_service_demand.cumsum()
+    ) / 1000000
+    ax.plot(
+        HD_2045.Cumulative_Sum,
+        HD_2045.residential_and_service_demand,
+        label="reGon2045",
     )
 
     # add the district heating shares
@@ -1091,15 +1116,28 @@ def study_prospective_district_heating_areas():
         label="72TWh DH in 2035 in Germany => 14% DH",
         color="black",
     )
-    heat_parameters = get_sector_parameters("heat", "eGon100RE")
-    district_heating_share_100RE = heat_parameters["DE_district_heating_share"]
+    
+    heat_parameters = get_sector_parameters("heat", "reGon2037")
+    district_heating_share_2037 = heat_parameters["DE_district_heating_share"]
     plt.axvline(
-        x=HD_2050.residential_and_service_demand.sum()
+        x=HD_2037.residential_and_service_demand.sum()
         / 1000000
-        * district_heating_share_100RE,
+        * district_heating_share_2037,
+        ls=":",
+        lw=0.5,
+        label="XXTWh DH in 2037 in Germany => XX% DH",
+        color="black",
+    )
+    
+    heat_parameters = get_sector_parameters("heat", "reGon2045")
+    district_heating_share_2045 = heat_parameters["DE_district_heating_share"]
+    plt.axvline(
+        x=HD_2045.residential_and_service_demand.sum()
+        / 1000000
+        * district_heating_share_2045,
         ls="-.",
         lw=0.5,
-        label="75TWh DH in 100RE in Germany => 19% DH",
+        label="XXTWh DH in reGon2045 in Germany => XX% DH",
         color="black",
     )
 
@@ -1113,7 +1151,7 @@ def study_prospective_district_heating_areas():
     ax.plot(1, 0, ">k", transform=ax.get_yaxis_transform(), clip_on=False)
     ax.plot(0, 1, "^k", transform=ax.get_xaxis_transform(), clip_on=False)
 
-    ax.set(title="Heat Demand in eGo^n")
+    ax.set(title="Heat Demand in reGo^n")
     ax.set_xlabel("Cumulative Heat Demand [TWh / a]")
     ax.set_ylabel("Heat Demand Densities [MWh / (ha a)]")
 
@@ -1127,12 +1165,12 @@ def demarcation(plotting=True):
     """
     Load scenario specific district heating areas with metadata into database.
 
-    This function executes the functions that identifies the areas which will
-    be supplied with district heat in the two eGo^n scenarios. The creation of
-    heat demand density curve figures is optional. So is also the export of
-    scenario specific Prospective Supply Districts for district heating (PSDs)
-    as shapefiles including the creation of a figure showing the comparison
-    of sorted heat demand densities.
+    This function executes the functions that identify the areas which will
+    be supplied with district heating in the two reGo^n scenarios. The creation 
+    of heat demand density curve figures is optional. Just like the 
+    export of scenario specific Prospective Supply Districts for district 
+    heating (PSDs) as shapefiles including the creation of a figure showing 
+    the comparison of sorted heat demand densities.
 
     The method was executed for 2015, 2035 and 2050 to find out which
     scenario year defines the PSDs. The year 2035 was selected and
