@@ -17,7 +17,6 @@ def map_id_bus(scenario, sources):
     osm_year = sources.files["osm_config"]
 
     if scenario in ["eGon2035", "eGon100RE", "eGon2037", "eGon2045"]:
-        # 28 connection points present in BOTH NEP and FEP sheets
         id_bus = {
             "Büttel": "136034396",
             "Diele": "177829920",
@@ -31,6 +30,9 @@ def map_id_bus(scenario, sources):
             "Lubmin (50Hertz)": "460134233",
             "Gemeinde Papendorf": "32063539",
             "Rommerskirchen (Amprion)": "24839976",
+            "Oberzier": "26593929",
+            "Suchraum Gemeinden Brünzow/Kemnitz": "460134233",
+            "Suchraum Gemeinden Ibbenbüren/Mettingen/Westerkappeln": "114319248",
         }
         if "200101" in osm_year:
             id_bus2 = {
@@ -38,6 +40,10 @@ def map_id_bus(scenario, sources):
                 "Emden Ost": "177829920",
                 "Garrel / Ost (TenneT)": "23837631",
                 "Emden-Borssum": "34835258",
+                "Suchraum Zensenbusch": "76185022",
+                "Cloppenburg": "50643382",
+                "Wilhelmshaven 2": "23837631",
+                "Rastede": "23837631",
             }
         elif ("250101" in osm_year) | ("240101" in osm_year):
             id_bus2 = {
@@ -56,38 +62,31 @@ def map_id_bus(scenario, sources):
                 "Suchraum Kemnitz (50Hertz)": "460134233",
                 "Suchraum Ried (Amprion)": "1223405794",
                 "Kriftel (Amprion)": "38661452",
-                
-                "Suchraum Pöschendorf (50Hertz)": "258275257",
-                "Suchraum Pöschendorf (TenneT)": "258275257",
- 
+                "Suchraum Pöschendorf": "258275257",
+                "Cloppenburg": "24493551",
+                "Wilhelmshaven 2": "637595524",
+                "Suchraum Zensenbusch": "24479003",
+                "Rastede": "1128250707",
 
+                # NEP-only NVPs (no native wind park in FEP). Each is given a
+                # representative offshore wind park in assign_ONEP_areas() so its
+                # NEP capacity is included in the model.
                 "Wilhelmshaven / Landkreis Friesland": "1134105414",
                 "Suchraum Brunsbüttel (Gemeinden Brunsbüttel / Büttel / St. Margarethen / Brokdorf)": "30622610",
                 "Suchraum Rastede (Ovelgönne / Rastede / Wiefelstede / Westerstede)": "1128250704",
                 "Blockland / Neu": "44717036",
                 "Samtgemeinde Sottrum": "955268864",
- 
-
-                "Sengwarden": "1134105414",                  # Wilhelmshaven / Landkreis Friesland
-                "Sengwarden (TenneT)": "1134105414",         #  Wilhelmshaven / Landkreis Friesland
-                "Hochwöhrden (50Hertz)": "30622610",         # Suchraum Brunsbüttel
-                "Hochwörden (TenneT)": "603661085",          #  Heide West
-                "Großenmeer": "1128250704",                  #  Suchraum Rastede
-                "Großenmeer (TenneT)": "44717036",           #  Blockland / Neu
-                "Stilow (50Hertz)": "460134233",             #  Suchraum Kemnitz (50Hertz)
-                "Suchraum Werderland (TenneT)": "955268864", #  Samtgemeinde Sottrum
-                "Suchraum Esens (TenneT)": "1280178911",     #  Suchraum Nüttermoor (TenneT)
-                "Suchraum Esens (Amprion)": "1280178911",    #  Suchraum Nüttermoor (TenneT)
+                "Lippe": "957746797",
+                "Suchraum Zensenbusch": "24479003",
             }
-
         else:
             raise Exception("""The OSM year used is not yet compatible with
                             this function""")
         id_bus = {**id_bus, **id_bus2}
- 
+
     elif "status" in scenario:
         year = int(scenario[-4:])
- 
+
         id_bus = {
             "UW Inhausen": "29420322",
             "UW Bentwisch": "32063539",
@@ -100,35 +99,30 @@ def map_id_bus(scenario, sources):
             "UW Diele": "177829920",
             "UW Lubmin": "460134233",
         }
- 
+
         if year >= 2023:
             # No update needed as no new stations used for offshore wind
             # between 2019 and 2023
             pass
- 
+
         # TODO: If necessary add new stations when generating status quo > 2023
- 
+
     else:
         id_bus = {}
- 
+
     return id_bus
 
 
-
 def assign_ONEP_areas():
-    # Maps connection point name → representative wind park ID
-    # (Each NVP gets ONE representative wind park location since NEP aggregates
-    #  capacity per connection point. All wind parks at the same NVP share the
-    #  same geom in the database.)
     return {
-        # 28 connection points present in BOTH NEP and FEP sheets
+        # Connection points present in BOTH NEP and FEP sheets
         "Büttel": "NOR-4-1 (HelWin1)",
         "Diele": "NOR-6-1 (BorWin1)",
         "Dörpen West": "NOR-2-2 (DolWin1)",
         "Hagermarsch": "NOR-2-1 (Alpha Ventus)",
         "Hanekenfähr (Amprion)": "NOR-6-3 (BorWin4)",
         "Inhausen": "NOR-0-2 (Nordergründe)",
-        "Unterweser (TenneT)": "NOR-9-1 (BalWin1)",
+        "Unterweser (TenneT)": "NOR-12-1",
         "Wehrendorf (Amprion)": "NOR-9-1 (BalWin1)",
         "Bentwisch (50Hertz)": "OST-3-1 (Baltic1)",
         "Lubmin (50Hertz)": "OST-1-1 (Ostwind 1)",
@@ -147,36 +141,25 @@ def assign_ONEP_areas():
         "Suchraum Nüttermoor (TenneT)": "NOR-17-2",
         "Suchraum Ried (Amprion)": "NOR-17-1",
         "Kriftel (Amprion)": "NOR-16-4",
-        "Suchraum Pöschendorf (50Hertz)": "NOR-12-3",
-        "Suchraum Pöschendorf (TenneT)": "NOR-12-4",
- 
+        "Suchraum Pöschendorf": "NOR-12-3",
+        "Suchraum Gnewitz (50Hertz)": "OST-1-4",
+        "Suchraum Kemnitz (50Hertz)": "OST-2-4 (Ostwind4)",
 
-        "Wilhelmshaven / Landkreis Friesland": "NOR-9-2",
-        "Suchraum Brunsbüttel (Gemeinden Brunsbüttel / Büttel / St. Margarethen / Brokdorf)": "NOR-11-1",
-        "Suchraum Rastede (Ovelgönne / Rastede / Wiefelstede / Westerstede)": "NOR-13-1",
-        "Blockland / Neu": "NOR-14-1",
-        "Samtgemeinde Sottrum": "NOR-9-4 (BalWin5)",
- 
-
-        "Sengwarden": "NOR-9-2",                      #  Wilhelmshaven / Landkreis Friesland
-        "Sengwarden (TenneT)": "NOR-11-2",            #  Wilhelmshaven / Landkreis Friesland
-        "Hochwöhrden (50Hertz)": "NOR-11-1",          #  Suchraum Brunsbüttel
-        "Hochwörden (TenneT)": "NOR-12-2 (LanWin2)",  #  Heide West
-        "Großenmeer": "NOR-13-1",                     #  Suchraum Rastede
-        "Großenmeer (TenneT)": "NOR-14-1",            #  Blockland / Neu
-        "Stilow (50Hertz)": "OST-2-4 (Ostwind4)",     #  Suchraum Kemnitz (50Hertz)
-        "Suchraum Werderland (TenneT)": "NOR-9-4 (BalWin5)",  # → Samtgemeinde Sottrum
-        "Suchraum Esens (TenneT)": "NOR-19-1",        #  Suchraum Nüttermoor (TenneT)
-        "Suchraum Esens (Amprion)": "NOR-19-2",       #  Suchraum Nüttermoor (TenneT)
+        # NEP-only NVPs assigned a representative offshore wind park
+        # (so their NEP capacity is included; geom borrowed from a nearby FEP park)
+        "Wilhelmshaven / Landkreis Friesland": "NOR-9-2",       # Sengwarden area
+        "Suchraum Brunsbüttel (Gemeinden Brunsbüttel / Büttel / St. Margarethen / Brokdorf)": "NOR-11-1",  # Hochwöhrden area
+        "Suchraum Rastede (Ovelgönne / Rastede / Wiefelstede / Westerstede)": "NOR-13-1",  # Großenmeer area
+        "Blockland / Neu": "NOR-14-1",                          # Großenmeer (TenneT) area
+        "Samtgemeinde Sottrum": "NOR-9-4 (BalWin5)",            # Werderland area
+        "Lippe": "NOR-12-2 (LanWin2)",                          # Hochwörden area
+        "Suchraum Zensenbusch": "NOR-19-1",                     # Esens area
     }
-
-
-
 
 
 def map_ONEP_areas():
     return {
-        # Existing wind park coordinates (from original code)
+     
         "NOR-0-1 (Riffgat)": Point(6.5, 53.6),
         "NOR-0-2 (Nordergründe)": Point(8.07, 53.76),
         "NOR-1-1 (DolWin5)": Point(6.21, 54.06),
@@ -200,14 +183,15 @@ def map_ONEP_areas():
         "OST-1-1 (Ostwind 1)": Point(14.09, 54.82),
         "OST-1-2 (Ostwind 1)": Point(14.09, 54.82),
         "OST-1-3 (Ostwind 1)": Point(14.09, 54.82),
+        "OST-1-4": Point(14.09, 54.82),
         "OST-2-1 (Ostwind 2)": Point(14.09, 54.82),
         "OST-2-2 (Ostwind 2)": Point(14.09, 54.82),
         "OST-2-3 (Ostwind 2)": Point(14.09, 54.82),
         "OST-3-1 (Baltic1)": Point(13.16, 54.98),
         "OST-3-2 (Baltic2)": Point(13.16, 54.98),
         "OST-7-1 (nördlich Warnemünde)": Point(12.25, 54.5),
- 
-        # NEW wind park coordinates from Coordinates2.xlsx (NEP V2025)
+
+        
         "NOR-5-2": Point(7.01693, 55.0888),
         "NOR-5-3": Point(6.86276, 55.23015),
         "NOR-6-4": Point(6.02912, 54.42698),
@@ -237,9 +221,6 @@ def map_ONEP_areas():
     }
 
 
-
-
-
 def insert():
     """
     Include the offshore wind parks in egon-data.
@@ -263,14 +244,14 @@ def insert():
         # load file
         if scenario in ["eGon2035", "eGon2037", "eGon2045"]:
             filename = "NEP2035_2037_2045_V2025_2023_scnC2037.xlsx"
- 
+
             # Map scenario to its capacity column
             capacity_col = {
                 "eGon2035": "C 2035",
                 "eGon2037": "C 2037",
                 "eGon2045": "C 2045",
             }[scenario]
- 
+
             offshore_path = (
                 Path(".")
                 / "data_bundle_egon_data"
@@ -289,7 +270,6 @@ def insert():
             offshore.dropna(subset=["Netzverknuepfungspunkt"], inplace=True)
             offshore.rename(columns={capacity_col: "el_capacity"}, inplace=True)
             offshore = offshore[offshore["el_capacity"] > 0]
-
 
         elif scenario == "eGon100RE":
             offshore_path = (
@@ -385,30 +365,16 @@ def insert():
         # Overwrite geom for status2019 parks
         if scenario in ["eGon2035", "eGon100RE", "eGon2037", "eGon2045"]:
             offshore["Name ONEP/NEP"] = offshore["Netzverknuepfungspunkt"].map(
-            assign_ONEP_areas()
-        )
-
+                assign_ONEP_areas()
+            )
 
         offshore["geom"] = offshore["Name ONEP/NEP"].map(map_ONEP_areas())
         offshore["weather_cell_id"] = pd.NA
- 
+
         offshore.drop(["Name ONEP/NEP"], axis=1, inplace=True)
- 
-        # Drop rows with placeholder coordinates (Point(0, 0)) — these are
-        # TBD entries where the wind park coordinates are not yet assigned.
-        # This prevents fake data from being inserted into the database.
-        placeholder = Point(0, 0)
-        tbd_mask = offshore["geom"].apply(
-            lambda g: g is not None and g.equals(placeholder)
-        )
-        if tbd_mask.any():
-            skipped = offshore.loc[tbd_mask, "Netzverknuepfungspunkt"].tolist()
-            print(f"Skipping {len(skipped)} TBD entries (placeholder coords): {skipped}")
-            offshore = offshore.loc[~tbd_mask].copy()
- 
+
         if "status" in scenario:
             offshore.drop(["Inbetriebnahme"], axis=1, inplace=True)
-
 
         # Scale capacities for eGon100RE
         if scenario == "eGon100RE":
