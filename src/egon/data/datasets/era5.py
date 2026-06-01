@@ -57,7 +57,7 @@ class WeatherData(Dataset):
             "weather_cells": "supply.egon_era5_weather_cells",
             "renewable_feedin": "supply.egon_era5_renewable_feedin",
         },
-        files={"weather_data": {"path": "data_bundle_egon_data/cutouts"}},
+        files={"weather_data": {"path": "cutouts"}},
     )
 
     def __init__(self, dependencies):
