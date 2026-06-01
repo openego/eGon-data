@@ -33,7 +33,7 @@ from egon.data.metadata import (
 Base = declarative_base()
 
 
-class eGonScenarioCapacities(Base):
+class EgonScenarioCapacities(Base):
     __tablename__ = "regon_scenario_capacities"
     __table_args__ = {"schema": "supply"}
     index = Column(Integer, primary_key=True)
@@ -80,9 +80,9 @@ def create_table():
 
     engine = db.engine()
     db.execute_sql("CREATE SCHEMA IF NOT EXISTS supply;")
-    eGonScenarioCapacities.__table__.drop(bind=engine, checkfirst=True)
+    EgonScenarioCapacities.__table__.drop(bind=engine, checkfirst=True)
     NEP2021ConvPowerPlants.__table__.drop(bind=engine, checkfirst=True)
-    eGonScenarioCapacities.__table__.create(bind=engine, checkfirst=True)
+    EgonScenarioCapacities.__table__.create(bind=engine, checkfirst=True)
     NEP2021ConvPowerPlants.__table__.create(bind=engine, checkfirst=True)
 
 
@@ -591,7 +591,7 @@ def district_heating_input():
 
     # insert heatpumps and resistive heater as link
     for c in ["Grosswaermepumpe", "Elektrodenheizkessel"]:
-        entry = eGonScenarioCapacities(
+        entry = EgonScenarioCapacities(
             component="link",
             scenario_name="eGon2035",
             nuts="DE",
@@ -607,7 +607,7 @@ def district_heating_input():
 
     # insert solar- and geothermal as generator
     for c in ["Geothermie", "Solarthermie"]:
-        entry = eGonScenarioCapacities(
+        entry = EgonScenarioCapacities(
             component="generator",
             scenario_name="eGon2035",
             nuts="DE",
@@ -652,7 +652,7 @@ def add_metadata():
 
     # Import column names and datatypes
     fields = pd.DataFrame(
-        generate_resource_fields_from_sqla_model(eGonScenarioCapacities)
+        generate_resource_fields_from_sqla_model(EgonScenarioCapacities)
     ).set_index("name")
 
     # Set descriptions and units
@@ -735,8 +735,8 @@ def add_metadata():
     # Add metadata as a comment to the table
     db.submit_comment(
         meta_json,
-        eGonScenarioCapacities.__table__.schema,
-        eGonScenarioCapacities.__table__.name,
+        EgonScenarioCapacities.__table__.schema,
+        EgonScenarioCapacities.__table__.name,
     )
 
 
@@ -783,7 +783,7 @@ class ScenarioCapacities(Dataset):
 
 
     *Resulting tables*
-      * :py:class:`supply.egon_scenario_capacities <egon.data.datasets.scenario_capacities.eGonScenarioCapacities>` is created and filled
+      * :py:class:`supply.egon_scenario_capacities <egon.data.datasets.scenario_capacities.EgonScenarioCapacities>` is created and filled
       * :py:class:`supply.egon_nep_2021_conventional_powerplants <egon.data.datasets.scenario_capacities.NEP2021ConvPowerPlants>` is created and filled
 
     """
