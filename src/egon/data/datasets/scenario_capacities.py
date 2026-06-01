@@ -1,4 +1,5 @@
 """The central module containing all code dealing with importing data from
+Netzentwicklungsplan 2035, Version 2021, Szenario C, and
 Netzentwicklungsplan 2037/2045, Version 2025, Szenario C
 """
 
@@ -32,7 +33,7 @@ from egon.data.metadata import (
 Base = declarative_base()
 
 
-class reGonScenarioCapacities(Base):
+class eGonScenarioCapacities(Base):
     __tablename__ = "regon_scenario_capacities"
     __table_args__ = {"schema": "supply"}
     index = Column(Integer, primary_key=True)
@@ -42,8 +43,8 @@ class reGonScenarioCapacities(Base):
     nuts = Column(String(12))
     scenario_name = Column(String(50))
 
-class NEP2025ConvPowerPlants(Base):
-    __tablename__ = "regon_nep_2025_conventional_powerplants"
+class NEP2021ConvPowerPlants(Base):
+    __tablename__ = "egon_nep_2021_conventional_powerplants"
     __table_args__ = {"schema": "supply"}
     index = Column(String(50), primary_key=True)
     bnetza_id = Column(String(50))
@@ -79,10 +80,10 @@ def create_table():
 
     engine = db.engine()
     db.execute_sql("CREATE SCHEMA IF NOT EXISTS supply;")
-    reGonScenarioCapacities.__table__.drop(bind=engine, checkfirst=True)
-    NEP2025ConvPowerPlants.__table__.drop(bind=engine, checkfirst=True)
-    reGonScenarioCapacities.__table__.create(bind=engine, checkfirst=True)
-    NEP2025ConvPowerPlants.__table__.create(bind=engine, checkfirst=True)
+    eGonScenarioCapacities.__table__.drop(bind=engine, checkfirst=True)
+    NEP2021ConvPowerPlants.__table__.drop(bind=engine, checkfirst=True)
+    eGonScenarioCapacities.__table__.create(bind=engine, checkfirst=True)
+    NEP2021ConvPowerPlants.__table__.create(bind=engine, checkfirst=True)
 
 
 def nuts_mapping():
@@ -187,7 +188,8 @@ def insert_capacities_status_quo(scenario: str) -> None:
 
 def insert_capacities_per_federal_state_nep():
     """Inserts installed capacities per federal state according to
-    NEP 2037/2045 (version 2025), scenario 2037/2045 C and NEP 2035 (version 2021), scenario 2035 C
+    NEP 2035 (version 2021), scenario 2035 C, and
+    NEP 2037/2045 (version 2025), scenario 2037/2045 C 
 
     Returns
     -------
@@ -232,7 +234,7 @@ def insert_capacities_per_federal_state_nep():
 
     # Group and sum capacities per federal state
     df_windoff_fs = (
-        df_windoff[["Bundesland", "C 2037"]].groupby(["Bundesland"]).sum()
+        df_windoff[["Bundesland", "C 2035"]].groupby(["Bundesland"]).sum()
     )
 
     # List federal state with an assigned wind offshore capacity
@@ -589,7 +591,7 @@ def district_heating_input():
 
     # insert heatpumps and resistive heater as link
     for c in ["Grosswaermepumpe", "Elektrodenheizkessel"]:
-        entry = reGonScenarioCapacities(
+        entry = eGonScenarioCapacities(
             component="link",
             scenario_name="eGon2035",
             nuts="DE",
@@ -605,7 +607,7 @@ def district_heating_input():
 
     # insert solar- and geothermal as generator
     for c in ["Geothermie", "Solarthermie"]:
-        entry = reGonScenarioCapacities(
+        entry = eGonScenarioCapacities(
             component="generator",
             scenario_name="eGon2035",
             nuts="DE",
@@ -640,7 +642,7 @@ def insert_data_nep():
 
 
 def add_metadata():
-    """Add metdata to supply.regon_scenario_capacities
+    """Add metdata to supply.egon_scenario_capacities
 
     Returns
     -------
@@ -650,7 +652,7 @@ def add_metadata():
 
     # Import column names and datatypes
     fields = pd.DataFrame(
-        generate_resource_fields_from_sqla_model(reGonScenarioCapacities)
+        generate_resource_fields_from_sqla_model(eGonScenarioCapacities)
     ).set_index("name")
 
     # Set descriptions and units
@@ -672,7 +674,7 @@ def add_metadata():
     fields = fields.reset_index().to_dict(orient="records")
 
     meta = {
-        "name": "supply.regon_scenario_capacities",
+        "name": "supply.egon_scenario_capacities",
         "title": "reGon scenario capacities",
         "id": "WILL_BE_SET_AT_PUBLICATION",
         "description": (
@@ -712,7 +714,7 @@ def add_metadata():
         "resources": [
             {
                 "profile": "tabular-data-resource",
-                "name": "supply.regon_scenario_capacities",
+                "name": "supply.egon_scenario_capacities",
                 "path": None,
                 "format": "PostgreSQL",
                 "encoding": "UTF-8",
@@ -733,8 +735,8 @@ def add_metadata():
     # Add metadata as a comment to the table
     db.submit_comment(
         meta_json,
-        reGonScenarioCapacities.__table__.schema,
-        reGonScenarioCapacities.__table__.name,
+        eGonScenarioCapacities.__table__.schema,
+        eGonScenarioCapacities.__table__.name,
     )
 
 
@@ -781,8 +783,8 @@ class ScenarioCapacities(Dataset):
 
 
     *Resulting tables*
-      * :py:class:`supply.regon_scenario_capacities <egon.data.datasets.scenario_capacities.reGonScenarioCapacities>` is created and filled
-      * :py:class:`supply.regon_nep_2025_conventional_powerplants <egon.data.datasets.scenario_capacities.NEP2025ConvPowerPlants>` is created and filled
+      * :py:class:`supply.egon_scenario_capacities <egon.data.datasets.scenario_capacities.eGonScenarioCapacities>` is created and filled
+      * :py:class:`supply.egon_nep_2021_conventional_powerplants <egon.data.datasets.scenario_capacities.NEP2021ConvPowerPlants>` is created and filled
 
     """
 
@@ -805,8 +807,8 @@ class ScenarioCapacities(Dataset):
 
     targets = DatasetTargets(
         tables={
-            "scenario_capacities": "supply.regon_scenario_capacities",
-            "nep_conventional_powerplants": "supply.egon_nep_2025_conventional_powerplants",
+            "scenario_capacities": "supply.egon_scenario_capacities",
+            "nep_conventional_powerplants": "supply.egon_nep_2021_conventional_powerplants",
         }
     )
 
