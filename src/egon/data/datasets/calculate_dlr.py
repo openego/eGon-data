@@ -92,6 +92,7 @@ def dlr():
         sql = f"""
         SELECT scn_name, line_id, topo, s_nom FROM
         {Calculate_dlr.sources.tables["trans_lines"]}
+        WHERE scn_name = '{scn}'
         """
         df = gpd.GeoDataFrame.from_postgis(
             sql, con, crs="EPSG:4326", geom_col="topo"
@@ -161,7 +162,8 @@ def dlr():
 
         # Delete existing data
         db.execute_sql(f"""
-            DELETE FROM {Calculate_dlr.targets.tables["line_timeseries"]};
+            DELETE FROM {Calculate_dlr.targets.tables["line_timeseries"]}
+            WHERE scn_name = '{scn}'
             """)
 
         # Insert into database
