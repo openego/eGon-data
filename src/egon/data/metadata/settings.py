@@ -13,6 +13,9 @@ OEM_DATASET_ID = "egon-data"
 # to be used by the OMI tool to generate oemetadata python dict objects or
 # json files
 OEM_BASE_DIR = Path("code/eGon-data/src/egon/data/metadata/dataset_metadata/")
+# Where to write generated oemetadata JSON file (used to describe tabular
+# datapackages as used in frictionless and oemof datapackages)
+OEM_OUT_DIR = Path("workdir/oemetadata/")
 
 
 EGON_ATTRIBUTION: str = "© eGon development team"
