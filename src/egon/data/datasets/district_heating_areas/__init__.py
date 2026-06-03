@@ -12,12 +12,7 @@ then demarcates current and future district-heating areas. In the end it
 saves them in the database.
 """
 
-import datetime
-import json
 import os
-
-# for metadata creation
-import time
 
 from geoalchemy2.types import Geometry
 from matplotlib import pyplot as plt
@@ -39,9 +34,6 @@ from egon.data.datasets.scenario_parameters import (
     EgonScenario,
     get_sector_parameters,
 )
-from egon.data.metadata import context, license_ccby, sources
-
-# import time
 
 
 # class for airflow task management (and version control)
@@ -88,7 +80,7 @@ class DistrictHeatingAreas(Dataset):
     sources = DatasetSources(
         tables={
             "zensus_population": "society.destatis_zensus_population_per_ha",
-            "zensus_apartment": "society.egon_destatis_zensus_apartment_per_ha",
+            "zensus_apartment": "society.egon_destatis_zensus_apartment_per_ha",  # noqa: E501
             "peta_heat": "demand.egon_peta_heat",
             "vg250_krs": "boundaries.vg250_krs",
         }
@@ -97,7 +89,7 @@ class DistrictHeatingAreas(Dataset):
     targets = DatasetTargets(
         tables={
             "district_heating_areas": "demand.egon_district_heating_areas",
-            "map_district_heating_areas": "demand.egon_map_zensus_district_heating_areas",
+            "map_district_heating_areas": "demand.egon_map_zensus_district_heating_areas",  # noqa: E501
         },
         files={
             "results_path": "district_heating_areas/",
@@ -163,24 +155,36 @@ def create_tables():
     db.execute_sql("CREATE SCHEMA IF NOT EXISTS demand;")
 
     # Drop tables
-    db.execute_sql("""DROP TABLE IF EXISTS
-            demand.egon_district_heating_areas CASCADE;""")
+    db.execute_sql(
+        """DROP TABLE IF EXISTS
+            demand.egon_district_heating_areas CASCADE;"""
+    )
 
-    db.execute_sql("""DROP TABLE IF EXISTS
-            demand.egon_map_zensus_district_heating_areas CASCADE;""")
+    db.execute_sql(
+        """DROP TABLE IF EXISTS
+            demand.egon_map_zensus_district_heating_areas CASCADE;"""
+    )
 
-    db.execute_sql("""DROP TABLE IF EXISTS
-            demand.district_heating_areas CASCADE;""")
+    db.execute_sql(
+        """DROP TABLE IF EXISTS
+            demand.district_heating_areas CASCADE;"""
+    )
 
-    db.execute_sql("""DROP TABLE IF EXISTS
-            demand.map_zensus_district_heating_areas CASCADE;""")
+    db.execute_sql(
+        """DROP TABLE IF EXISTS
+            demand.map_zensus_district_heating_areas CASCADE;"""
+    )
 
     # Drop sequences
-    db.execute_sql("""DROP SEQUENCE IF EXISTS
-            demand.district_heating_areas_seq CASCADE;""")
+    db.execute_sql(
+        """DROP SEQUENCE IF EXISTS
+            demand.district_heating_areas_seq CASCADE;"""
+    )
 
-    db.execute_sql("""DROP SEQUENCE IF EXISTS
-            demand.egon_map_zensus_district_heating_areas_seq CASCADE;""")
+    db.execute_sql(
+        """DROP SEQUENCE IF EXISTS
+            demand.egon_map_zensus_district_heating_areas_seq CASCADE;"""
+    )
 
     engine = db.engine()
     EgonDistrictHeatingAreas.__table__.create(bind=engine, checkfirst=True)
@@ -433,9 +437,11 @@ def area_grouping(
         minimum_total_demand is not None
         and "residential_and_service_demand" not in raw_polygons.columns
     ):
-        print("""The minimum total heat demand criterium can only be applied
+        print(
+            """The minimum total heat demand criterium can only be applied
               on geodataframe having a column named
-              'residential_and_service_demand' """)
+              'residential_and_service_demand' """
+        )
 
     if (
         maximum_total_demand
@@ -451,10 +457,12 @@ def area_grouping(
             join.area_id.isin(huge_areas_index[huge_areas_index].index)
         ]
 
-        nuts3_boundaries = db.select_geodataframe(f"""
+        nuts3_boundaries = db.select_geodataframe(
+            f"""
             SELECT gen, geometry as geom FROM
                 {DistrictHeatingAreas.sources.tables["vg250_krs"]}
-            """)
+            """
+        )
         join_2 = gpd.sjoin(
             cells_in_huge_areas,
             nuts3_boundaries,
@@ -629,12 +637,16 @@ def district_heating_areas(scenario_name, plotting=False):
     # heating share is reached
     new_areas = new_areas[new_areas["Cumulative_Sum"] <= diff]
 
-    print(f"""Minimum heat demand density for cells with new district heat
+    print(
+        f"""Minimum heat demand density for cells with new district heat
           supply in scenario {scenario_name} is
           {new_areas.residential_and_service_demand.tail(1).values[0]}
-          MWh / (ha a).""")
-    print(f"""Number of cells with new district heat supply in scenario
-          {scenario_name} is {len(new_areas)}.""")
+          MWh / (ha a)."""
+    )
+    print(
+        f"""Number of cells with new district heat supply in scenario
+          {scenario_name} is {len(new_areas)}."""
+    )
 
     # group the resulting scenario specific district heating areas
     scenario_dh_area = area_grouping(
@@ -658,7 +670,7 @@ def district_heating_areas(scenario_name, plotting=False):
     scenario_dh_area["scenario"] = scenario_name
 
     db.execute_sql(
-        f"""DELETE FROM {DistrictHeatingAreas.targets.tables["map_district_heating_areas"]}
+        f"""DELETE FROM {DistrictHeatingAreas.targets.tables["map_district_heating_areas"]}  # noqa: E501
             WHERE scenario = '{scenario_name}'"""
     )
     scenario_dh_area[["scenario", "area_id", "zensus_population_id"]].to_sql(
@@ -684,9 +696,11 @@ def district_heating_areas(scenario_name, plotting=False):
     ]
 
     if len(areas_dissolved[areas_dissolved.area == 100 * 100]) > 0:
-        print(f"""Number of district heating areas of single zensus cells:
+        print(
+            f"""Number of district heating areas of single zensus cells:
               {len(areas_dissolved[areas_dissolved.area == 100*100])
-               }""")
+               }"""
+        )
         # print(f"""District heating areas ids of single zensus cells in
         #       district heating areas:
         #       {areas_dissolved[areas_dissolved.area == 100*100].index.values
@@ -694,11 +708,11 @@ def district_heating_areas(scenario_name, plotting=False):
         # print(f"""Zensus_population_ids of single zensus cells
         #       in district heating areas:
         #       {scenario_dh_area[scenario_dh_area.area_id.isin(
-        #           areas_dissolved[areas_dissolved.area == 100*100].index.values
+        #           areas_dissolved[areas_dissolved.area == 100*100].index.values  # noqa: E501
         #           )].index.values}""")
 
     db.execute_sql(
-        f"""DELETE FROM {DistrictHeatingAreas.targets.tables["district_heating_areas"]}
+        f"""DELETE FROM {DistrictHeatingAreas.targets.tables["district_heating_areas"]}  # noqa: E501
             WHERE scenario = '{scenario_name}'"""
     )
     areas_dissolved.reset_index().drop(
@@ -737,250 +751,6 @@ def district_heating_areas(scenario_name, plotting=False):
         plot_heat_density_sorted({scenario_name: collection}, scenario_name)
 
     return collection
-
-
-def add_metadata():
-    """
-    Write metadata JSON strings into table comments.
-
-    TODO
-    ----
-    Meta data must be checked and adjusted to the egon_data standard:
-      - Add context
-      - authors and institutions
-
-    """
-
-    # Prepare variables
-    license_district_heating_areas = [
-        license_ccby("© Europa-Universität Flensburg")
-    ]
-
-    # Metadata creation for district heating areas (polygons)
-    meta = {
-        "name": "district_heating_areas_metadata",
-        "title": ("eGo^n scenario-specific future district heating areas"),
-        "description": (
-            "Modelled future district heating areas for the supply of "
-            "residential and service-sector heat demands"
-        ),
-        "language": ["EN"],
-        "publicationDate": datetime.date.today().isoformat(),
-        "context": context(),
-        "spatial": {
-            "location": "",
-            "extent": "Germany",
-            "resolution": "",
-        },
-        "sources": [
-            sources()["peta"],
-            sources()["egon-data"],
-            sources()["zensus"],
-            sources()["vg250"],
-        ],
-        "resources": [
-            {
-                "profile": "tabular-data-resource",
-                "name": "egon_district_heating_areas",
-                "path": "",
-                "format": "PostgreSQL",
-                "encoding": "UTF-8",
-                "schema": {
-                    "fields": [
-                        {
-                            "name": "id",
-                            "description": "Unique identifier",
-                            "type": "serial",
-                            "unit": "none",
-                        },
-                        {
-                            "name": "area_id",
-                            "description": "District heating area id",
-                            "type": "integer",
-                            "unit": "none",
-                        },
-                        {
-                            "name": "scenario",
-                            "description": "scenario name",
-                            "type": "text",
-                            "unit": "none",
-                        },
-                        {
-                            "name": "residential_and_service_demand",
-                            "description": "annual heat demand",
-                            "type": "double precision",
-                            "unit": "MWh",
-                        },
-                        {
-                            "name": "geom_polygon",
-                            "description": (
-                                "geo information of multipolygons"
-                            ),
-                            "type": "geometry(MULTIPOLYGON, 3035)",
-                            "unit": "none",
-                        },
-                    ],
-                    "primaryKey": ["id"],
-                    "foreignKeys": [
-                        {
-                            "fields": ["scenario"],
-                            "reference": {
-                                "resource": (
-                                    "scenario.egon_scenario_parameters"
-                                ),
-                                "fields": ["name"],
-                            },
-                        }
-                    ],
-                },
-                "dialect": {
-                    "delimiter": "none",
-                    "decimalSeparator": ".",
-                },
-            }
-        ],
-        "licenses": license_district_heating_areas,
-        "contributors": [
-            {
-                "title": "EvaWie",
-                "email": "http://github.com/EvaWie",
-                "date": time.strftime("%Y-%m-%d"),
-                "object": None,
-                "comment": "Imported data",
-            },
-            {
-                "title": "Clara Büttner",
-                "email": "http://github.com/ClaraBuettner",
-                "date": time.strftime("%Y-%m-%d"),
-                "object": None,
-                "comment": "Updated metadata",
-            },
-        ],
-    }
-    meta_json = json.dumps(meta)
-
-    db.submit_comment(
-        meta_json,
-        DistrictHeatingAreas.targets.get_table_schema(
-            "district_heating_areas"
-        ),
-        DistrictHeatingAreas.targets.get_table_name("district_heating_areas"),
-    )
-
-    # Metadata creation for "id mapping" table
-    meta = {
-        "name": "map_zensus_district_heating_areas_metadata",
-        "title": (
-            "district heating area ids assigned to zensus_population_ids"
-        ),
-        "description": (
-            "Ids of scenario specific future district heating areas for "
-            "supply of residential and service-sector heat demands "
-            "assigned to zensus_population_ids"
-        ),
-        "language": ["EN"],
-        "publicationDate": datetime.date.today().isoformat(),
-        "context": context(),
-        "spatial": {
-            "location": "",
-            "extent": "Germany",
-            "resolution": "",
-        },
-        "sources": [
-            sources()["peta"],
-            sources()["egon-data"],
-            sources()["zensus"],
-            sources()["vg250"],
-        ],
-        # Add the license for the map table
-        "resources": [
-            {
-                "profile": "tabular-data-resource",
-                "name": "egon_map_zensus_district_heating_areas",
-                "path": "",
-                "format": "PostgreSQL",
-                "encoding": "UTF-8",
-                "schema": {
-                    "fields": [
-                        {
-                            "name": "id",
-                            "description": "Unique identifier",
-                            "type": "serial",
-                            "unit": "none",
-                        },
-                        {
-                            "name": "area_id",
-                            "description": "district heating area id",
-                            "type": "integer",
-                            "unit": "none",
-                        },
-                        {
-                            "name": "scenario",
-                            "description": "scenario name",
-                            "type": "text",
-                            "unit": "none",
-                        },
-                    ],
-                    "primaryKey": ["id"],
-                    "foreignKeys": [
-                        {
-                            "fields": ["zensus_population_id"],
-                            "reference": {
-                                "resource": (
-                                    "society.destatis_zensus_"
-                                    "population_per_ha"
-                                ),
-                                "fields": ["id"],
-                            },
-                        },
-                        {
-                            "fields": ["scenario"],
-                            "reference": {
-                                "resource": (
-                                    "scenario.egon_scenario_parameters"
-                                ),
-                                "fields": ["name"],
-                            },
-                        },
-                    ],
-                },
-                "dialect": {
-                    "delimiter": "none",
-                    "decimalSeparator": ".",
-                },
-            }
-        ],
-        "licenses": license_district_heating_areas,
-        "contributors": [
-            {
-                "title": "EvaWie",
-                "email": "http://github.com/EvaWie",
-                "date": time.strftime("%Y-%m-%d"),
-                "object": None,
-                "comment": "Imported data",
-            },
-            {
-                "title": "Clara Büttner",
-                "email": "http://github.com/ClaraBuettner",
-                "date": time.strftime("%Y-%m-%d"),
-                "object": None,
-                "comment": "Updated metadata",
-            },
-        ],
-    }
-    meta_json = json.dumps(meta)
-
-    db.submit_comment(
-        meta_json,
-        DistrictHeatingAreas.targets.get_table_schema(
-            "map_district_heating_areas"
-        ),
-        DistrictHeatingAreas.targets.get_table_name(
-            "map_district_heating_areas"
-        ),
-    )
-
-    return None
 
 
 def study_prospective_district_heating_areas():
@@ -1195,7 +965,5 @@ def demarcation(plotting=True):
         plot_heat_density_sorted(heat_density_per_scenario)
     # If you want to study/export the PSDs for all scenarios:
     # study_prospective_district_heating_areas()
-
-    add_metadata()
 
     return None

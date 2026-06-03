@@ -15,11 +15,7 @@ database with assigned census cell IDs.
 
 from pathlib import Path  # for database import
 from urllib.request import urlretrieve
-
-# for metadata creation
-import json
 import os
-import time
 import zipfile
 
 from jinja2 import Template
@@ -36,7 +32,6 @@ import rasterio
 from egon.data import db, subprocess
 from egon.data.datasets import Dataset, DatasetSources, DatasetTargets
 from egon.data.datasets.scenario_parameters import get_sector_parameters
-from egon.data.metadata import context, license_ccby, sources
 import egon.data.config
 
 
@@ -67,8 +62,8 @@ class HeatDemandImport(Dataset):
             "zensus_population": "society.destatis_zensus_population_per_ha",
         },
         urls={
-            "peta_res_zip": "https://arcgis.com/sharing/rest/content/items/d7d18b63250240a49eb81db972aa573e/data",
-            "peta_ser_zip": "https://arcgis.com/sharing/rest/content/items/52ff5e02111142459ed5c2fe3d80b3a0/data",
+            "peta_res_zip": "https://arcgis.com/sharing/rest/content/items/d7d18b63250240a49eb81db972aa573e/data",  # noqa: E501
+            "peta_ser_zip": "https://arcgis.com/sharing/rest/content/items/52ff5e02111142459ed5c2fe3d80b3a0/data",  # noqa: E501
         },
         files={
             "peta_res_zip": "Peta5_0_1_HD_res.zip",
@@ -255,7 +250,7 @@ def cutout_heat_demand_germany():
     # using ST_Dump: https://postgis.net/docs/ST_Dump.html
 
     gdf_boundaries = gpd.read_postgis(
-        f"SELECT (ST_Dump(geometry)).geom AS geometry FROM {HeatDemandImport.sources.tables['boundaries']}",
+        f"SELECT (ST_Dump(geometry)).geom AS geometry FROM {HeatDemandImport.sources.tables['boundaries']}",  # noqa: E501
         local_engine,
         geom_col="geometry",
     )
@@ -615,115 +610,6 @@ def adjust_residential_heat_to_zensus(scenario):
     return None
 
 
-def add_metadata():
-    """
-    Writes metadata JSON string into table comment.
-
-    """
-    # Metadata creation
-    meta = {
-        "name": "egon_peta_heat_metadata",
-        "title": "eGo_n scenario-specific future heat demand data",
-        "id": "WILL_BE_SET_AT_PUBLICATION",
-        "description": "Future heat demands per hectare grid cell of "
-        "the residential and service sector",
-        "language": ["EN"],
-        "context": context(),
-        "spatial": {
-            "location": None,
-            "extent": "Germany",
-            "resolution": "100x100m",
-        },
-        "sources": [
-            sources()["egon-data"],
-            sources()["peta"],
-            sources()["vg250"],
-            sources()["zensus"],
-        ],
-        "resources": [
-            {
-                "profile": "tabular-data-resource",
-                "name": "egon_peta_heat",
-                "path": "",
-                "format": "PostgreSQL",
-                "encoding": "UTF-8",
-                "schema": {
-                    "fields": [
-                        {
-                            "name": "id",
-                            "description": "Unique identifier",
-                            "type": "serial",
-                            "unit": "none",
-                        },
-                        {
-                            "name": "demand",
-                            "description": "annual heat demand",
-                            "type": "double precision",
-                            "unit": "MWh",
-                        },
-                        {
-                            "name": "sector",
-                            "description": "sector e.g. residential",
-                            "type": "text",
-                            "unit": "none",
-                        },
-                        {
-                            "name": "scenario",
-                            "description": "scenario name",
-                            "type": "text",
-                            "unit": "none",
-                        },
-                        {
-                            "name": "zensus_population_id",
-                            "description": "census cell id",
-                            "type": "integer",
-                            "unit": "none",
-                        },
-                    ],
-                    "primaryKey": ["id"],
-                    "foreignKeys": [
-                        {
-                            "fields": ["zensus_population_id"],
-                            "reference": {
-                                "resource": "society.destatis_zensus_population_per_ha",  # noqa: E501
-                                "fields": ["id"],
-                            },
-                        },
-                        {
-                            "fields": ["scenario"],
-                            "reference": {
-                                "resource": "scenario.egon_scenario_parameters",  # noqa: E501
-                                "fields": ["name"],
-                            },
-                        },
-                    ],
-                },
-                "dialect": {"delimiter": "none", "decimalSeparator": "."},
-            }
-        ],
-        "licenses": [license_ccby("© Europa-Universität Flensburg")],
-        "contributors": [
-            {
-                "title": "EvaWie",
-                "email": "http://github.com/EvaWie",
-                "date": time.strftime("%Y-%m-%d"),
-                "object": None,
-                "comment": "Imported data",
-            },
-            {
-                "title": "Clara Büttner",
-                "email": "http://github.com/ClaraBuettner",
-                "date": time.strftime("%Y-%m-%d"),
-                "object": None,
-                "comment": "Updated metadata",
-            },
-        ],
-    }
-    meta_json = json.dumps(meta)
-
-    db.submit_comment(meta_json, "demand", "egon_peta_heat")
-
-
 def scenario_data_import():
     """
     Call all heat demand import related functions.
@@ -751,11 +637,11 @@ def scenario_data_import():
     # drop table if exists
     # can be removed when table structure doesn't change anymore
     db.execute_sql(
-        f"DROP TABLE IF EXISTS {HeatDemandImport.targets.tables['heat_demand']} CASCADE"
+        f"DROP TABLE IF EXISTS {HeatDemandImport.targets.tables['heat_demand']} CASCADE"  # noqa: E501
     )
 
     db.execute_sql(
-        f"DROP SEQUENCE IF EXISTS {HeatDemandImport.targets.get_table_schema('heat_demand')}."
+        f"DROP SEQUENCE IF EXISTS {HeatDemandImport.targets.get_table_schema('heat_demand')}."  # noqa: E501
         f"{HeatDemandImport.targets.get_table_name('heat_demand')}_seq CASCADE"
     )
 
@@ -775,6 +661,4 @@ def scenario_data_import():
         adjust_residential_heat_to_zensus(scenario)
 
     # future_heat_demand_germany("eGon2015")
-    add_metadata()
-
     return None

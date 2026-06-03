@@ -3,9 +3,6 @@ Netzentwicklungsplan 2035, Version 2031, Szenario C.
 """
 
 from pathlib import Path
-import datetime
-import json
-import time
 
 from sqlalchemy import Column, Float, Integer, String
 from sqlalchemy.ext.declarative import declarative_base
@@ -20,12 +17,6 @@ from egon.data.datasets import (
     DatasetSources,
     DatasetTargets,
     wrapped_partial,
-)
-from egon.data.metadata import (
-    context,
-    generate_resource_fields_from_sqla_model,
-    license_ccby,
-    sources,
 )
 
 Base = declarative_base()
@@ -118,10 +109,12 @@ def insert_capacities_status_quo(scenario: str) -> None:
     """
     targets = ScenarioCapacities.targets
     # Delete rows if already exist
-    db.execute_sql(f"""
+    db.execute_sql(
+        f"""
         DELETE FROM {targets.tables['scenario_capacities']}
         WHERE scenario_name = '{scenario}'
-        """)
+        """
+    )
 
     rural_heat_capacity = {
         # Rural heat capacity for 2019 according to NEP 2035, v2021
@@ -142,7 +135,8 @@ def insert_capacities_status_quo(scenario: str) -> None:
     if config.settings()["egon-data"]["--dataset-boundary"] != "Everything":
         rural_heat_capacity *= population_share()
 
-    db.execute_sql(f"""
+    db.execute_sql(
+        f"""
         INSERT INTO {targets.tables['scenario_capacities']}
         (component, carrier, capacity, nuts, scenario_name)
         VALUES (
@@ -152,7 +146,8 @@ def insert_capacities_status_quo(scenario: str) -> None:
             'DE',
             '{scenario}'
             )
-        """)
+        """
+    )
 
     # Include small storages for scenario2019
     small_storages = {
@@ -168,7 +163,8 @@ def insert_capacities_status_quo(scenario: str) -> None:
         "status2023": 1300 * 1197 / 272,
     }[scenario]
 
-    db.execute_sql(f"""
+    db.execute_sql(
+        f"""
         INSERT INTO {targets.tables['scenario_capacities']}
         (component, carrier, capacity, nuts, scenario_name)
         VALUES (
@@ -178,7 +174,8 @@ def insert_capacities_status_quo(scenario: str) -> None:
             'DE',
             '{scenario}'
             )
-        """)
+        """
+    )
 
 
 def insert_capacities_per_federal_state_nep():
@@ -196,11 +193,13 @@ def insert_capacities_per_federal_state_nep():
     engine = db.engine()
 
     # Delete rows if already exist
-    db.execute_sql(f"""
+    db.execute_sql(
+        f"""
         DELETE FROM {targets.tables['scenario_capacities']}
         WHERE scenario_name = 'eGon2035'
         AND nuts != 'DE'
-        """)
+        """
+    )
 
     # read-in installed capacities per federal state of germany
     target_file = Path(".") / sources.files["eGon2035_capacities"]
@@ -848,10 +847,12 @@ def eGon100_capacities():
 
         df_year["nuts"] = "DE"
 
-        db.execute_sql(f"""
+        db.execute_sql(
+            f"""
             DELETE FROM {targets.tables['scenario_capacities']}
             WHERE scenario_name='{df_year["scenario_name"].unique()[0]}'
-            """)
+            """
+        )
 
         df_year.to_sql(
             targets.get_table_name("scenario_capacities"),
@@ -860,110 +861,6 @@ def eGon100_capacities():
             if_exists="append",
             index=False,
         )
-
-
-def add_metadata():
-    """Add metadata to supply.egon_scenario_capacities.
-
-    Returns
-    -------
-    None.
-
-    """
-
-    # Import column names and data types
-    fields = pd.DataFrame(
-        generate_resource_fields_from_sqla_model(EgonScenarioCapacities)
-    ).set_index("name")
-
-    # Set descriptions and units
-    fields.loc["index", "description"] = "Index"
-    fields.loc[
-        "component", "description"
-    ] = "Name of representative PyPSA component"
-    fields.loc["carrier", "description"] = "Name of carrier"
-    fields.loc["capacity", "description"] = "Installed capacity"
-    fields.loc["capacity", "unit"] = "MW"
-    fields.loc[
-        "nuts", "description"
-    ] = "NUTS region, either federal state or Germany"
-    fields.loc[
-        "scenario_name", "description"
-    ] = "Name of corresponding eGon scenario"
-
-    # Reformat pandas.DataFrame to dict
-    fields = fields.reset_index().to_dict(orient="records")
-
-    meta = {
-        "name": "supply.egon_scenario_capacities",
-        "title": "eGon scenario capacities",
-        "id": "WILL_BE_SET_AT_PUBLICATION",
-        "description": (
-            "Installed capacities of scenarios used in the eGon project"
-        ),
-        "language": ["de-DE"],
-        "publicationDate": datetime.date.today().isoformat(),
-        "context": context(),
-        "spatial": {
-            "location": None,
-            "extent": "Germany",
-            "resolution": None,
-        },
-        "sources": [
-            sources()["nep2021"],
-            sources()["vg250"],
-            sources()["zensus"],
-            sources()["egon-data"],
-        ],
-        "licenses": [
-            license_ccby(
-                (
-                    "© Übertragungsnetzbetreiber; "
-                    "© Bundesamt für Kartographie und Geodäsie 2020 "
-                    "(Daten verändert); "
-                    "© Statistische Ämter des Bundes und der Länder 2014; "
-                    "© Jonathan Amme, Clara Büttner, Ilka Cußmann, "
-                    "Julian Endres, Carlos Epia, Stephan Günther, "
-                    "Ulf Müller, Amélia Nadal, Guido Pleßmann, "
-                    "Francesco Witte"
-                )
-            )
-        ],
-        "contributors": [
-            {
-                "title": "Clara Büttner",
-                "email": "http://github.com/ClaraBuettner",
-                "date": time.strftime("%Y-%m-%d"),
-                "object": None,
-                "comment": "Imported data",
-            },
-        ],
-        "resources": [
-            {
-                "profile": "tabular-data-resource",
-                "name": "supply.egon_scenario_capacities",
-                "path": None,
-                "format": "PostgreSQL",
-                "encoding": "UTF-8",
-                "schema": {
-                    "fields": fields,
-                    "primaryKey": ["index"],
-                    "foreignKeys": [],
-                },
-                "dialect": {"delimiter": None, "decimalSeparator": "."},
-            }
-        ],
-    }
-
-    # Create json dump
-    meta_json = json.dumps(meta)
-
-    # Add metadata as a comment to the table
-    db.submit_comment(
-        meta_json,
-        EgonScenarioCapacities.__table__.schema,
-        EgonScenarioCapacities.__table__.name,
-    )
 
 
 tasks = (create_table,)
@@ -988,8 +885,6 @@ if status_quo or ("eGon2035" in scenarios):
 
 if "eGon100RE" in scenarios:
     tasks += (eGon100_capacities,)
-
-tasks += (add_metadata,)
 
 
 class ScenarioCapacities(Dataset):
@@ -1029,9 +924,9 @@ class ScenarioCapacities(Dataset):
     version: str = "0.0.21"
     sources = DatasetSources(
         files={
-            "eGon2035_capacities": "data_bundle_egon_data/nep2035_version2021/NEP2035_V2021_scnC2035.xlsx",
-            "eGon2035_list_conv_pp": "data_bundle_egon_data/nep2035_version2021/Kraftwerksliste_NEP_2021_konv.csv",
-            "eGon100RE_capacities": "data_bundle_egon_data/pypsa_eur/csvs/nodal_capacities.csv",
+            "eGon2035_capacities": "data_bundle_egon_data/nep2035_version2021/NEP2035_V2021_scnC2035.xlsx",  # noqa: E501
+            "eGon2035_list_conv_pp": "data_bundle_egon_data/nep2035_version2021/Kraftwerksliste_NEP_2021_konv.csv",  # noqa: E501
+            "eGon100RE_capacities": "data_bundle_egon_data/pypsa_eur/csvs/nodal_capacities.csv",  # noqa: E501
         },
         tables={
             "boundaries": "boundaries.vg250_lan",
@@ -1042,7 +937,7 @@ class ScenarioCapacities(Dataset):
     targets = DatasetTargets(
         tables={
             "scenario_capacities": "supply.egon_scenario_capacities",
-            "nep_conventional_powerplants": "supply.egon_nep_2021_conventional_powerplants",
+            "nep_conventional_powerplants": "supply.egon_nep_2021_conventional_powerplants",  # noqa: E501
         }
     )
 

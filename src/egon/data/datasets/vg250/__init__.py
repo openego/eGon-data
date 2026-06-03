@@ -12,10 +12,7 @@ isn't exported from this module, please file a bug, so we can fix this.
 from pathlib import Path
 from urllib.request import urlretrieve
 import codecs  # noqa: F401
-import datetime
-import json
 import os
-import time
 
 from geoalchemy2 import Geometry
 import geopandas as gpd
@@ -23,11 +20,6 @@ import geopandas as gpd
 from egon.data import db
 from egon.data.config import settings
 from egon.data.datasets import Dataset, DatasetSources, DatasetTargets
-from egon.data.metadata import (
-    context,
-    licenses_datenlizenz_deutschland
-)
-import egon.data.config
 
 
 def download_files():
@@ -62,7 +54,7 @@ def to_postgres():
     """
 
     # Create target schema
-    db.execute_sql(f"CREATE SCHEMA IF NOT EXISTS boundaries;")
+    db.execute_sql("CREATE SCHEMA IF NOT EXISTS boundaries;")
 
     zip_file = Path(Vg250.sources.files["vg250_zip"])
     engine_local_db = db.engine()
@@ -117,150 +109,13 @@ def to_postgres():
 
         db.execute_sql(
             f"ALTER TABLE {Vg250.targets.tables[table]} "
-            f"ADD PRIMARY KEY (id);"
+            "ADD PRIMARY KEY (id);"
         )
 
         # Add index on geometry column
         db.execute_sql(
             f"CREATE INDEX {table}_geometry_idx ON "
             f"{Vg250.targets.tables[table]} USING gist (geometry);"
-        )
-
-
-# TODO @jh:Move to metadata module, as yaml
-def add_metadata():
-    """Writes metadata JSON string into table comment."""
-
-    title_and_description = {
-        "vg250_sta": {
-            "title": "BKG - Verwaltungsgebiete 1:250.000 - Staat (STA)",
-            "description": "Staatsgrenzen der Bundesrepublik Deutschland",
-        },
-        "vg250_lan": {
-            "title": "BKG - Verwaltungsgebiete 1:250.000 - Länder (LAN)",
-            "description": (
-                "Landesgrenzen der Bundesländer in der "
-                "Bundesrepublik Deutschland"
-            ),
-        },
-        "vg250_rbz": {
-            "title": (
-                "BKG - Verwaltungsgebiete 1:250.000 - "
-                "Regierungsbezirke (RBZ)"
-            ),
-            "description": (
-                "Grenzen der Regierungsbezirke in der "
-                "Bundesrepublik Deutschland"
-            ),
-        },
-        "vg250_krs": {
-            "title": "BKG - Verwaltungsgebiete 1:250.000 - Kreise (KRS)",
-            "description": (
-                "Grenzen der Landkreise in der " "Bundesrepublik Deutschland"
-            ),
-        },
-        "vg250_vwg": {
-            "title": (
-                "BKG - Verwaltungsgebiete 1:250.000 - "
-                "Verwaltungsgemeinschaften (VWG)"
-            ),
-            "description": (
-                "Grenzen der Verwaltungsgemeinschaften in der "
-                "Bundesrepublik Deutschland"
-            ),
-        },
-        "vg250_gem": {
-            "title": "BKG - Verwaltungsgebiete 1:250.000 - Gemeinden (GEM)",
-            "description": (
-                "Grenzen der Gemeinden in der " "Bundesrepublik Deutschland"
-            ),
-        },
-    }
-
-    licenses = [
-        licenses_datenlizenz_deutschland(
-            attribution=(
-                "© Bundesamt für Kartographie und Geodäsie 2020 "
-                "(Daten verändert)"
-            )
-        )
-    ]
-
-    vg250_source = {
-        "title": "Verwaltungsgebiete 1:250 000 (Ebenen)",
-        "description": "Der Datenbestand umfasst sämtliche Verwaltungseinheiten der "
-        "hierarchischen Verwaltungsebenen vom Staat bis zu den Gemeinden "
-        "mit ihren Grenzen, statistischen Schlüsselzahlen, Namen der "
-        "Verwaltungseinheit sowie die spezifische Bezeichnung der "
-        "Verwaltungsebene des jeweiligen Landes.",
-        "path": Vg250.sources.urls["vg250_zip"],
-        "licenses": licenses,
-    }
-
-    for table in Vg250.file_table_map.values():
-        schema_table = Vg250.targets.tables[table]
-        meta = {
-            "name": schema_table,
-            "title": title_and_description[table]["title"],
-            "id": "WILL_BE_SET_AT_PUBLICATION",
-            "description": title_and_description[table]["title"],
-            "language": ["de-DE"],
-            "publicationDate": datetime.date.today().isoformat(),
-            "context": context(),
-            "spatial": {
-                "location": None,
-                "extent": "Germany",
-                "resolution": "1:250000",
-            },
-            "temporal": {
-                "referenceDate": "2020-01-01",
-                "timeseries": {
-                    "start": None,
-                    "end": None,
-                    "resolution": None,
-                    "alignment": None,
-                    "aggregationType": None,
-                },
-            },
-            "sources": [vg250_source],
-            "licenses": licenses,
-            "contributors": [
-                {
-                    "title": "Guido Pleßmann",
-                    "email": "http://github.com/gplssm",
-                    "date": time.strftime("%Y-%m-%d"),
-                    "object": None,
-                    "comment": "Imported data",
-                },
-                {
-                    "title": "Jonathan Amme",
-                    "email": "http://github.com/nesnoj",
-                    "date": time.strftime("%Y-%m-%d"),
-                    "object": None,
-                    "comment": "Metadata extended",
-                },
-            ],
-            "resources": [
-                {
-                    "profile": "tabular-data-resource",
-                    "name": schema_table,
-                    "path": None,
-                    "format": "PostgreSQL",
-                    "encoding": "UTF-8",
-                    "schema": {
-                        "fields": vg250_metadata_resources_fields(),
-                        "primaryKey": ["id"],
-                        "foreignKeys": [],
-                    },
-                    "dialect": {"delimiter": None, "decimalSeparator": "."},
-                }
-            ],
-        }
-
-        meta_json = json.dumps(meta)  # TODO @jh: Find me and remove
-
-        db.submit_comment(
-            meta_json, Vg250.targets.get_table_schema(table), table
         )
 
 
@@ -303,191 +158,11 @@ def cleaning_and_preperation():
     )
 
 
-def vg250_metadata_resources_fields():
-    """
-    Returns metadata string for VG250 tables.
-    """
-
-    return [
-        {
-            "description": "Index",
-            "name": "id",
-            "type": "integer",
-            "unit": "none",
-        },
-        {
-            "description": "Administrative level",
-            "name": "ade",
-            "type": "integer",
-            "unit": "none",
-        },
-        {
-            "description": "Geofactor",
-            "name": "gf",
-            "type": "integer",
-            "unit": "none",
-        },
-        {
-            "description": "Particular areas",
-            "name": "bsg",
-            "type": "integer",
-            "unit": "none",
-        },
-        {
-            "description": "Territorial code",
-            "name": "ars",
-            "type": "string",
-            "unit": "none",
-        },
-        {
-            "description": "Official Municipality Key",
-            "name": "ags",
-            "type": "string",
-            "unit": "none",
-        },
-        {
-            "description": "Seat of the administration (territorial code)",
-            "name": "sdv_ars",
-            "type": "string",
-            "unit": "none",
-        },
-        {
-            "description": "Geographical name",
-            "name": "gen",
-            "type": "string",
-            "unit": "none",
-        },
-        {
-            "description": "Designation of the administrative unit",
-            "name": "bez",
-            "type": "string",
-            "unit": "none",
-        },
-        {
-            "description": "Identifier",
-            "name": "ibz",
-            "type": "integer",
-            "unit": "none",
-        },
-        {
-            "description": "Note",
-            "name": "bem",
-            "type": "string",
-            "unit": "none",
-        },
-        {
-            "description": "Name generation",
-            "name": "nbd",
-            "type": "string",
-            "unit": "none",
-        },
-        {
-            "description": "Land (state)",
-            "name": "sn_l",
-            "type": "string",
-            "unit": "none",
-        },
-        {
-            "description": "Administrative district",
-            "name": "sn_r",
-            "type": "string",
-            "unit": "none",
-        },
-        {
-            "description": "District",
-            "name": "sn_k",
-            "type": "string",
-            "unit": "none",
-        },
-        {
-            "description": "Administrative association – front part",
-            "name": "sn_v1",
-            "type": "string",
-            "unit": "none",
-        },
-        {
-            "description": "Administrative association – rear part",
-            "name": "sn_v2",
-            "type": "string",
-            "unit": "none",
-        },
-        {
-            "description": "Municipality",
-            "name": "sn_g",
-            "type": "string",
-            "unit": "none",
-        },
-        {
-            "description": "Function of the 3rd key digit",
-            "name": "fk_s3",
-            "type": "string",
-            "unit": "none",
-        },
-        {
-            "description": "European statistics key",
-            "name": "nuts",
-            "type": "string",
-            "unit": "none",
-        },
-        {
-            "description": "Filled territorial code",
-            "name": "ars_0",
-            "type": "string",
-            "unit": "none",
-        },
-        {
-            "description": "Filled Official Municipality Key",
-            "name": "ags_0",
-            "type": "string",
-            "unit": "none",
-        },
-        {
-            "description": "Effectiveness",
-            "name": "wsk",
-            "type": "string",
-            "unit": "none",
-        },
-        {
-            "description": "DLM identifier",
-            "name": "debkg_id",
-            "type": "string",
-            "unit": "none",
-        },
-        {
-            "description": "Territorial code (deprecated column)",
-            "name": "rs",
-            "type": "string",
-            "unit": "none",
-        },
-        {
-            "description": (
-                "Seat of the administration (territorial code, "
-                "deprecated column)"
-            ),
-            "name": "sdv_rs",
-            "type": "string",
-            "unit": "none",
-        },
-        {
-            "description": "Filled territorial code (deprecated column)",
-            "name": "rs_0",
-            "type": "string",
-            "unit": "none",
-        },
-        {
-            "description": "Geometry of areas as WKB",
-            "name": "geometry",
-            "type": "Geometry(Polygon, srid=4326)",
-            "unit": "none",
-        },
-    ]
-
-
 class Vg250(Dataset):
 
     sources = DatasetSources(
         urls={
-            "vg250_zip": "https://daten.gdz.bkg.bund.de/produkte/vg/vg250_ebenen_0101/2020/vg250_01-01.geo84.shape.ebenen.zip"
+            "vg250_zip": "https://daten.gdz.bkg.bund.de/produkte/vg/vg250_ebenen_0101/2020/vg250_01-01.geo84.shape.ebenen.zip"  # noqa: E501
         },
         files={
             # The downloaded file is a source for the 'to_postgres' step
@@ -568,7 +243,6 @@ class Vg250(Dataset):
                 download_files,
                 to_postgres,
                 nuts_mview,
-                add_metadata,
                 cleaning_and_preperation,
             ),
         )

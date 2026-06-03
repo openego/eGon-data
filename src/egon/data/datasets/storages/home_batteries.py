@@ -34,9 +34,6 @@ The selection of buildings is done randomly until a result is reached which is
 close to achieving the sizing specification.
 """
 
-import datetime
-import json
-
 from loguru import logger
 from numpy.random import RandomState
 from sqlalchemy import Column, Float, Integer, String
@@ -47,18 +44,10 @@ import pandas as pd
 from egon.data import config, db
 from egon.data.datasets import load_sources_and_targets
 from egon.data.datasets.scenario_parameters import get_sector_parameters
-from egon.data.metadata import (
-    context,
-    contributors,
-    generate_resource_fields_from_db_table,
-    license_dedl,
-    license_odbl,
-    sources,
-)
 
 Base = declarative_base()
 
-# This block is added because they are constant and needs to be independant from config.dataset
+# This block is added because they are constant and needs to be independant from config.dataset  # noqa: E501
 CONSTANTS = {
     "cbat_ppv_ratio": 1,
     "rtol": 0.05,
@@ -204,8 +193,6 @@ def allocate_home_batteries_to_buildings():
 
     create_table(pd.concat(df_list, ignore_index=True))
 
-    add_metadata()
-
 
 class EgonHomeBatteries(Base):
     __tablename__ = "egon_home_batteries"
@@ -217,134 +204,6 @@ class EgonHomeBatteries(Base):
     building_id = Column(Integer)
     p_nom = Column(Float)
     capacity = Column(Float)
-
-
-def add_metadata():
-    """
-    Add metadata to table supply.egon_home_batteries
-    """
-    _, targets = load_sources_and_targets("Storages")
-
-    deposit_id_mastr = CONSTANTS["deposit_id_mastr"]
-    deposit_id_data_bundle = CONSTANTS["deposit_id_data_bundle"]
-
-    contris = contributors(["kh", "kh"])
-
-    contris[0]["date"] = "2023-03-15"
-
-    contris[0]["object"] = "metadata"
-    contris[1]["object"] = "dataset"
-
-    contris[0]["comment"] = "Add metadata to dataset."
-    contris[1]["comment"] = "Add workflow to generate dataset."
-
-    meta = {
-        "name": targets.get_table_name("home_batteries"),
-        "title": "eGon Home Batteries",
-        "id": "WILL_BE_SET_AT_PUBLICATION",
-        "description": "Home storage systems allocated to buildings",
-        "language": "en-US",
-        "keywords": ["battery", "batteries", "home", "storage", "building"],
-        "publicationDate": datetime.date.today().isoformat(),
-        "context": context(),
-        "spatial": {
-            "location": "none",
-            "extent": "Germany",
-            "resolution": "building",
-        },
-        "temporal": {
-            "referenceDate": "2021-12-31",
-            "timeseries": {},
-        },
-        "sources": [
-            {
-                "title": "Data bundle for egon-data",
-                "description": (
-                    "Data bundle for egon-data: A transparent and "
-                    "reproducible data processing pipeline for energy "
-                    "system modeling"
-                ),
-                "path": (
-                    "https://zenodo.org/record/"
-                    f"{deposit_id_data_bundle}#.Y_dWM4CZMVM"
-                ),
-                "licenses": [license_dedl(attribution="© Cußmann, Ilka")],
-            },
-            {
-                "title": ("open-MaStR power unit registry for eGo^n project"),
-                "description": (
-                    "Data from Marktstammdatenregister (MaStR) data using "
-                    "the data dump from 2022-11-17 for eGon-data."
-                ),
-                "path": (f"https://zenodo.org/record/{deposit_id_mastr}"),
-                "licenses": [license_dedl(attribution="© Amme, Jonathan")],
-            },
-            # 'sources()' correctly refers to the function from metadata
-            sources()["openstreetmap"],
-            sources()["era5"],
-            sources()["vg250"],
-            sources()["egon-data"],
-            sources()["nep2021"],
-            sources()["mastr"],
-            sources()["technology-data"],
-        ],
-        "licenses": [license_odbl("© eGon development team")],
-        "contributors": contris,
-        "resources": [
-            {
-                "profile": "tabular-data-resource",
-                "name": targets.get_table_name("home_batteries"),
-                "path": "None",
-                "format": "PostgreSQL",
-                "encoding": "UTF-8",
-                "schema": {
-                    "fields": generate_resource_fields_from_db_table(
-                        targets.get_table_schema("home_batteries"),
-                        # FIX: Use [-1] to get the table name safely (works with or without 'schema.' prefix)
-                        targets.get_table_name("home_batteries").split(".")[
-                            -1
-                        ],
-                    ),
-                    "primaryKey": "index",
-                },
-                "dialect": {"delimiter": "", "decimalSeparator": ""},
-            }
-        ],
-        "review": {"path": "", "badge": ""},
-        "_comment": {
-            "metadata": (
-                "Metadata documentation and explanation (https://github.com/"
-                "OpenEnergyPlatform/oemetadata/blob/master/metadata/v141/"
-                "metadata_key_description.md)"
-            ),
-            "dates": (
-                "Dates and time must follow the ISO8601 including time zone "
-                "(YYYY-MM-DD or YYYY-MM-DDThh:mm:ss±hh)"
-            ),
-            "units": "Use a space between numbers and units (100 m)",
-            "languages": (
-                "Languages must follow the IETF (BCP47) format (en-GB, en-US, "
-                "de-DE)"
-            ),
-            "licenses": (
-                "License name must follow the SPDX License List "
-                "(https://spdx.org/licenses/)"
-            ),
-            "review": (
-                "Following the OEP Data Review (https://github.com/"
-                "OpenEnergyPlatform/data-preprocessing/wiki)"
-            ),
-            "none": "If not applicable use (none)",
-        },
-    }
-
-    meta = json.dumps(meta)
-
-    db.submit_comment(
-        f"'{json.dumps(meta)}'",
-        targets.get_table_schema("home_batteries"),
-        targets.get_table_name("home_batteries").split(".")[-1],
-    )
 
 
 def create_table(df):

@@ -11,24 +11,14 @@ isn't exported from this module, please file a bug, so we can fix this.
 
 from pathlib import Path
 from urllib.request import urlretrieve
-import datetime
-import json
 import os
-import re
 import shutil
-import time
 
 import importlib_resources as resources
 
 from egon.data import db, logger
 from egon.data.config import settings
 from egon.data.datasets import Dataset, DatasetSources, DatasetTargets
-from egon.data.metadata import (
-    context,
-    generate_resource_fields_from_db_table,
-    license_odbl,
-)
-import egon.data.config
 import egon.data.subprocess as subprocess
 
 
@@ -127,107 +117,6 @@ def to_postgres(cache_size=4096):
     )
 
 
-def add_metadata():
-    """Writes metadata JSON string into table comment."""
-
-    if settings()["egon-data"]["--dataset-boundary"] == "Everything":
-        osm_url = OpenStreetMap.sources.urls["germany"]
-        input_filename = OpenStreetMap.targets.files["germany"]
-    else:
-        osm_url = OpenStreetMap.sources.urls["schleswig-holstein"]
-        input_filename = OpenStreetMap.targets.files["schleswig-holstein"]
-
-    spatial_extend, osm_data_date = re.compile("^([\\w-]*).*-(\\d+)$").findall(
-        Path(input_filename).name.split(".")[0]
-    )[0]
-    osm_data_date = datetime.datetime.strptime(
-        osm_data_date, "%y%m%d"
-    ).strftime("%y-%m-%d")
-
-    licenses = [license_odbl(attribution="© OpenStreetMap contributors")]
-
-    for table in OpenStreetMap.targets.tables:
-        schema_table = ".".join([OpenStreetMap.schema, table])
-        table_suffix = table.split("_")[1]
-        meta = {
-            "name": schema_table,
-            "title": f"OpenStreetMap (OSM) - Germany - {table_suffix}",
-            "id": "WILL_BE_SET_AT_PUBLICATION",
-            "description": (
-                "OpenStreetMap is a free, editable map of the whole world "
-                "that is being built by volunteers largely from scratch and "
-                "released with an open-content license.\n\n"
-                "The OpenStreetMap data here is the result of a PostgreSQL "
-                "database import using osm2pgsql with a custom style file."
-            ),
-            "language": ["en-EN", "de-DE"],
-            "publicationDate": datetime.date.today().isoformat(),
-            "context": context(),
-            "spatial": {
-                "location": None,
-                "extent": f"{spatial_extend}",
-                "resolution": None,
-            },
-            "temporal": {
-                "referenceDate": f"{osm_data_date}",
-                "timeseries": {
-                    "start": None,
-                    "end": None,
-                    "resolution": None,
-                    "alignment": None,
-                    "aggregationType": None,
-                },
-            },
-            "sources": [
-                {
-                    "title": "OpenStreetMap Data Extracts (Geofabrik)",
-                    "description": (
-                        "Full data extract of OpenStreetMap data for defined "
-                        "spatial extent at 'referenceDate'."
-                    ),
-                    "path": f"{osm_url}",
-                    "licenses": licenses,
-                }
-            ],
-            "licenses": licenses,
-            "contributors": [
-                {
-                    "title": "Guido Pleßmann",
-                    "email": "http://github.com/gplssm",
-                    "date": time.strftime("%Y-%m-%d"),
-                    "object": None,
-                    "comment": "Imported data",
-                },
-                {
-                    "title": "Jonathan Amme",
-                    "email": "http://github.com/nesnoj",
-                    "date": time.strftime("%Y-%m-%d"),
-                    "object": None,
-                    "comment": "Metadata extended",
-                },
-            ],
-            "resources": [
-                {
-                    "profile": "tabular-data-resource",
-                    "name": schema_table,
-                    "path": None,
-                    "format": "PostgreSQL",
-                    "encoding": "UTF-8",
-                    "schema": {
-                        "fields": generate_resource_fields_from_db_table(
-                            OpenStreetMap.schema, table
-                        ),
-                        "primaryKey": ["id"],
-                        "foreignKeys": [],
-                    },
-                    "dialect": {"delimiter": None, "decimalSeparator": "."},
-                }
-            ],
-        }
-        meta_json = json.dumps(meta)
-        db.submit_comment(meta_json, OpenStreetMap.schema, table)
-
-
 def modify_tables():
     """Adjust primary keys, indices and schema of OSM tables.
 
@@ -299,8 +188,8 @@ class OpenStreetMap(Dataset):
     sources = DatasetSources(
         files={"stylefile": "oedb.style"},
         urls={
-            "germany": "https://download.geofabrik.de/europe/germany-250101.osm.pbf",
-            "schleswig-holstein": "https://download.geofabrik.de/europe/germany/schleswig-holstein-250101.osm.pbf",
+            "germany": "https://download.geofabrik.de/europe/germany-250101.osm.pbf",  # noqa: E501
+            "schleswig-holstein": "https://download.geofabrik.de/europe/germany/schleswig-holstein-250101.osm.pbf",  # noqa: E501
         },
     )
     targets = DatasetTargets(
@@ -348,5 +237,5 @@ class OpenStreetMap(Dataset):
             name=self.name,
             version=self.version,
             dependencies=dependencies,
-            tasks=(download, to_postgres, modify_tables, add_metadata),
+            tasks=(download, to_postgres, modify_tables),
         )

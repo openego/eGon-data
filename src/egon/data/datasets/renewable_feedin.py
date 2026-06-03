@@ -3,10 +3,6 @@ Central module containing all code dealing with processing ERA5
 weather data.
 """
 
-import datetime
-import json
-import time
-
 from sqlalchemy import Column, ForeignKey, Integer
 from sqlalchemy.ext.declarative import declarative_base
 import geopandas as gpd
@@ -15,15 +11,9 @@ import pandas as pd
 
 from egon.data import db
 from egon.data.datasets import Dataset, DatasetSources, DatasetTargets
-from egon.data.datasets.era5 import (
-    EgonEra5Cells,
-    EgonRenewableFeedIn,
-    import_cutout,
-)
+from egon.data.datasets.era5 import EgonEra5Cells, import_cutout
 from egon.data.datasets.scenario_parameters import get_sector_parameters
 from egon.data.datasets.zensus_vg250 import DestatisZensusPopulationPerHa
-from egon.data.metadata import context, license_ccby, sources
-import egon.data.config
 
 
 class RenewableFeedin(Dataset):
@@ -64,7 +54,7 @@ class RenewableFeedin(Dataset):
     targets = DatasetTargets(
         tables={
             "feedin_table": "supply.egon_era5_renewable_feedin",
-            "map_zensus_weather_cell": "boundaries.egon_map_zensus_weather_cell",
+            "map_zensus_weather_cell": "boundaries.egon_map_zensus_weather_cell",  # noqa: E501
         }
     )
 
@@ -389,9 +379,11 @@ def wind():
         ]
         df.loc[idx, "feedin"] = timeseries.loc[idx, turbine].values
 
-    db.execute_sql(f"""
+    db.execute_sql(
+        f"""
                    DELETE FROM {targets.tables['feedin_table']}
-                   WHERE carrier = 'wind_onshore'""")
+                   WHERE carrier = 'wind_onshore'"""
+    )
 
     # Insert values into database
     df.to_sql(
@@ -544,9 +536,11 @@ def heat_pump_cop():
     df.feedin = cop.values.tolist()
 
     # Delete existing rows for carrier
-    db.execute_sql(f"""
+    db.execute_sql(
+        f"""
             DELETE FROM {targets.tables['feedin_table']}
-            WHERE carrier = '{carrier}'""")
+            WHERE carrier = '{carrier}'"""
+    )
 
     # Insert values into database
     df.to_sql(
@@ -595,9 +589,11 @@ def insert_feedin(data, carrier, weather_year):
     df.feedin = data.values.tolist()
 
     # Delete existing rows for carrier
-    db.execute_sql(f"""
+    db.execute_sql(
+        f"""
             DELETE FROM {targets.tables['feedin_table']}
-            WHERE carrier = '{carrier}'""")
+            WHERE carrier = '{carrier}'"""
+    )
 
     # Insert values into database
     df.to_sql(
@@ -651,110 +647,3 @@ def mapping_zensus_weather():
                 orient="records"
             ),
         )
-
-
-def add_metadata():
-    """Add metadata to supply.egon_era5_renewable_feedin.
-
-    Returns
-    -------
-    None.
-
-    """
-
-    # Import column names and datatypes
-    fields = [
-        {
-            "description": "Weather cell index",
-            "name": "w_id",
-            "type": "integer",
-            "unit": "none",
-        },
-        {
-            "description": "Weather year",
-            "name": "weather_year",
-            "type": "integer",
-            "unit": "none",
-        },
-        {
-            "description": "Energy carrier",
-            "name": "carrier",
-            "type": "string",
-            "unit": "none",
-        },
-        {
-            "description": "Weather-dependent feed-in time series",
-            "name": "feedin",
-            "type": "array",
-            "unit": "p.u.",
-        },
-    ]
-
-    meta = {
-        "name": "supply.egon_era5_renewable_feedin",
-        "title": "eGon feed-in time series for RES",
-        "id": "WILL_BE_SET_AT_PUBLICATION",
-        "description": "Weather-dependent feed-in time series for RES",
-        "language": ["EN"],
-        "publicationDate": datetime.date.today().isoformat(),
-        "context": context(),
-        "spatial": {
-            "location": None,
-            "extent": "Germany",
-            "resolution": None,
-        },
-        "sources": [
-            sources()["era5"],
-            sources()["vg250"],
-            sources()["egon-data"],
-        ],
-        "licenses": [
-            license_ccby(
-                (
-                    "© Bundesamt für Kartographie und Geodäsie 2020 "
-                    "(Daten verändert); "
-                    "© Copernicus Climate Change Service (C3S) "
-                    "Climate Data Store "
-                    "© Jonathan Amme, Clara Büttner, Ilka Cußmann, "
-                    "Julian Endres, Carlos Epia, Stephan Günther, "
-                    "Ulf Müller, Amélia Nadal, Guido Pleßmann, "
-                    "Francesco Witte"
-                )
-            )
-        ],
-        "contributors": [
-            {
-                "title": "Clara Büttner",
-                "email": "http://github.com/ClaraBuettner",
-                "date": time.strftime("%Y-%m-%d"),
-                "object": None,
-                "comment": "Imported data",
-            },
-        ],
-        "resources": [
-            {
-                "profile": "tabular-data-resource",
-                "name": "supply.egon_scenario_capacities",
-                "path": None,
-                "format": "PostgreSQL",
-                "encoding": "UTF-8",
-                "schema": {
-                    "fields": fields,
-                    "primaryKey": ["index"],
-                    "foreignKeys": [],
-                },
-                "dialect": {"delimiter": None, "decimalSeparator": "."},
-            }
-        ],
-    }
-
-    # Create json dump
-    meta_json = json.dumps(meta)
-
-    # Add metadata as a comment to the table
-    targets = RenewableFeedin.targets
-    db.submit_comment(
-        meta_json,
-        targets.get_table_schema("feedin_table"),
-        targets.get_table_name("feedin_table"),
-    )
