@@ -231,7 +231,7 @@ def insert():
     """
     sources, targets = load_sources_and_targets("PowerPlants")
 
-    scenarios = egon.data.config.settings()["egon-data"]["--scenarios"]
+    scenarios = ["eGon2035", "eGon2037", "eGon2045"]
 
     for scenario in scenarios:
 
