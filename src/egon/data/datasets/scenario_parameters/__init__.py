@@ -48,17 +48,8 @@ def create_table():
 
 
 def get_scenario_year(scenario_name):
-    """Derives scenarios year from scenario name. Scenario
-    eGon100RE is an exception as year is not in the name."""
-    try:
-        year = int(scenario_name[-4:])
-    except ValueError as e:
-        if e.args[0] == "invalid literal for int() with base 10: '00RE'":
-            year = 2050  # eGon100RE
-        else:
-            raise ValueError(
-                "The names of the scenarios do not end with the year!"
-            )
+    """Derives scenarios year from scenario name."""
+    year = int(scenario_name[-4:])
     return year
 
 
@@ -102,26 +93,6 @@ def insert_scenarios():
 
     session.commit()
 
-    # Scenario eGon100RE
-    egon100re = EgonScenario(name="eGon100RE")
-
-    egon100re.description = """
-        The long-term scenario eGon100RE represents a 100% renewable
-        energy secor in Germany.
-        """
-    egon100re.global_parameters = parameters.global_settings(egon100re.name)
-
-    egon100re.electricity_parameters = parameters.electricity(egon100re.name)
-
-    egon100re.gas_parameters = parameters.gas(egon100re.name)
-
-    egon100re.heat_parameters = parameters.heat(egon100re.name)
-
-    egon100re.mobility_parameters = parameters.mobility(egon100re.name)
-
-    session.add(egon100re)
-
-    session.commit()
 
     # Scenario eGon2021
     eGon2021 = EgonScenario(name="eGon2021")
@@ -281,8 +252,15 @@ def get_sector_parameters(sector, scenario=None):
                     db.select_dataframe(f"""
                         SELECT {sector}_parameters as val
                         FROM {ScenarioParameters.targets.tables['egon_scenario_parameters']}
-                        WHERE name='eGon100RE'""").val[0],
-                    index=["eGon100RE"],
+                        WHERE name='reGon2037'""").val[0],
+                    index=["reGon2037"],
+                ),
+                pd.DataFrame(
+                    db.select_dataframe(f"""
+                        SELECT {sector}_parameters as val
+                        FROM {ScenarioParameters.targets.tables['egon_scenario_parameters']}
+                        WHERE name='reGon2045'""").val[0],
+                    index=["reGon2045"],
                 ),
                 pd.DataFrame(
                     db.select_dataframe(f"""
