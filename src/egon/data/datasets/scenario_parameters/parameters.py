@@ -103,6 +103,7 @@ def global_settings(scenario):
                 "hydrogen": 47.6,  # [EUR/MWh]
                 "lignite": 4.0,  # [EUR/MWh]  Netzentwicklungsplan Strom 2035, Version 2021, 1. Entwurf, p. 40, table 8
                 "nuclear": 1.7,  # [EUR/MWh] Netzentwicklungsplan Strom 2035, Version 2021, 1. Entwurf, p. 40, table 8
+                "biomass": 40,  # Dummyvalue, ToDo: Find a suitable source
             },
             "co2_costs": 152.7,  # [EUR/t_CO2]
             "co2_emissions": {  # Netzentwicklungsplan Strom 2037, Version 2025, 2. Entwurf, p. 51, table 10
@@ -128,6 +129,7 @@ def global_settings(scenario):
                 "hydrogen": 51.0,  # [EUR/MWh]
                 "lignite": 4.0,  # [EUR/MWh]  Netzentwicklungsplan Strom 2035, Version 2021, 1. Entwurf, p. 40, table 8
                 "nuclear": 1.7,  # [EUR/MWh] Netzentwicklungsplan Strom 2035, Version 2021, 1. Entwurf, p. 40, table 8
+                "biomass": 40,  # Dummyvalue, ToDo: Find a suitable source
             },
             "co2_costs": 172.5,  # [EUR/t_CO2]
             "co2_emissions": {  # Netzentwicklungsplan Strom 2037, Version 2025, 2. Entwurf, p. 51, table 10

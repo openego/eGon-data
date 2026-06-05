@@ -402,7 +402,17 @@ def future_heat_demand_germany(scenario_name):
             / 3600
             / 226.588158  # TODO status2023 can values stay same?
         )
-    else: # TODO: [2026-06-04] Check if the reGon scenario 
+    elif scenario_name == "reGon2045":
+        heat_parameters = get_sector_parameters("heat", scenario=scenario_name)
+
+        # Calculate reduction share based on final energy demand and overall demand from Peta for 2015
+        res_hd_reduction = heat_parameters["DE_demand_residential_MWh"] / (
+            443.788483 * 1e6
+        )
+        ser_hd_reduction = heat_parameters["DE_demand_service_MWh"] / (
+            226.588158 * 1e6
+        )    
+    else: 
         heat_parameters = get_sector_parameters("heat", scenario=scenario_name)
 
         res_hd_reduction = heat_parameters["DE_demand_reduction_residential"]
