@@ -7,7 +7,6 @@ import pandas as pd
 import scipy.stats as stats
 
 from geoalchemy2 import Geometry
-from scipy.spatial import cKDTree
 from scipy.spatial.distance import cdist
 from shapely.geometry import LineString
 
@@ -15,19 +14,21 @@ from egon.data import config, db
 from egon.data.datasets import Dataset, DatasetSources, DatasetTargets
 
 
-TARGET_CAPACITY_MW = 19460   # 15680 (Szenario A), 19460 (Szenario B), 23240 (Szenario C)
+TARGET_CAPACITY_MW = (
+    19460  # 15680 (Szenario A), 19460 (Szenario B), 23240 (Szenario C)
+)
 MU = 3.297
 SIGMA = 1.325
 MAX_RZ_SIZE = 1000.0
 GENERATOR_RUNS = 1000
 RANDOM_SEED = 43
 
-#radii
+# radii
 RADIUS_STROM = 5000
 RADIUS_WAERME = 5000
 RADIUS_IXP = 50000
 
-# wheights 
+# Weights
 W_STROM = 1 / 3
 W_WAERME = 1 / 3
 W_IXP = 1 / 3
@@ -37,12 +38,15 @@ MW_PER_HA = 8.6
 ALPHA = 3.0
 MC_RUNS = 100
 
-#assumed parameter values for x, r,b (egon_line integration)
-#X_PER_KM_110KV = 0.29163337906660414
-#R_PER_KM_110KV = 0.0831925880581288
-#B_PER_KM_110KV = 1.3120960297359745e-05
-#S_NOM_DC_CONNECTION = 1040
+# Electrical parameters for AC data center connection lines
+# Values taken from scenario_parameters/parameters.py
+S_NOM_DC_CONNECTION_110KV = 260
+R_PER_KM_110KV = 0.109
+L_PER_KM_110KV = 1.2e-3
 
+S_NOM_DC_CONNECTION_380KV = 1790
+R_PER_KM_380KV = 0.028
+L_PER_KM_380KV = 0.8e-3
 
 
 def dist_score(dist, radius):
@@ -50,9 +54,23 @@ def dist_score(dist, radius):
     return np.where(dist < radius, (radius - dist) / radius, 0)
 
 
+def identify_voltage_level(df):
+    """Identify voltage level based on peak load."""
+    df["voltage_level"] = np.nan
+
+    df.loc[df["peak_load"] <= 0.1, "voltage_level"] = 7
+    df.loc[df["peak_load"] > 0.1, "voltage_level"] = 6
+    df.loc[df["peak_load"] > 0.2, "voltage_level"] = 5
+    df.loc[df["peak_load"] > 5.5, "voltage_level"] = 4
+    df.loc[df["peak_load"] > 20, "voltage_level"] = 3
+    df.loc[df["peak_load"] > 120, "voltage_level"] = 1
+
+    return df
+
+
 def generate_data_center_sizes():
     """Generate scenario-dependent data center sizes"""
-    
+
     np.random.seed(RANDOM_SEED)
     scale_param = np.exp(MU)
 
@@ -86,7 +104,6 @@ def generate_data_center_sizes():
             "Leistung_MW": ideal_scenario,
         }
     )
-
 
 
 def load_commercial_areas():
@@ -139,7 +156,7 @@ def create_data_center_allocation():
     waerme_raw = load_district_heating_areas()
     ixp_raw = load_internet_nodes()
     regio_raw = load_regional_factors()
-    
+
     def convert_percent(val):
         if pd.isna(val) or val == "-":
             return None
@@ -152,7 +169,6 @@ def create_data_center_allocation():
     regio_ref = regio_raw.copy()
     regio_ref["Faktor"] = regio_ref["Faktor"].apply(convert_percent)
     regio_ref = regio_ref.dropna(subset=["Faktor"])
-    
 
     strom_final = (
         gpd.sjoin_nearest(
@@ -237,10 +253,7 @@ def create_data_center_allocation():
     )
 
     rz_sizes_mw = (
-        rz_df["Leistung_MW"]
-        .astype(float)
-        .sort_values(ascending=False)
-        .values
+        rz_df["Leistung_MW"].astype(float).sort_values(ascending=False).values
     )
 
     num_areas = len(gewerbe_scored)
@@ -286,12 +299,21 @@ def create_data_center_allocation():
 
     rz_punkte = gewerbe_scored[gewerbe_scored["allocated_mw"] > 0].copy()
     rz_punkte["geometry"] = rz_punkte["geometry"].centroid
+    # Classify each allocated data center by peak load and assign the
+    # corresponding eTraGo connection voltage. Data centers up to 120 MW are
+    #  represented at 110 kV; data centers above 120 MW are represented at 380 kV.
+    rz_punkte["peak_load"] = rz_punkte["allocated_mw"]
+    rz_punkte = identify_voltage_level(rz_punkte)
+    rz_punkte = rz_punkte.drop(columns=["peak_load"])
+    rz_punkte["v_nom"] = np.where(rz_punkte["voltage_level"] == 1, 380, 110)
 
     return rz_punkte
 
 
-def get_existing_110kv_ac_buses(scenario):
-    """Get existing 110 kV AC buses from eTraGo."""
+####################
+# integration part inital draft
+def get_existing_ac_buses(scenario):
+    """Get existing 110 kV and 380 kV AC buses from eTraGo."""
     sources = DataCentersEtrago.sources
 
     return db.select_geodataframe(
@@ -300,49 +322,67 @@ def get_existing_110kv_ac_buses(scenario):
         FROM {sources.tables["buses"]}
         WHERE scn_name = '{scenario}'
         AND carrier = 'AC'
-        AND v_nom = 110
+        AND v_nom IN (110, 380)
         AND country = 'DE'
         """,
         geom_col="geom",
         epsg=4326,
     )
 
-####################
-#integration part inital draft
 
-def assign_nearest_110kv_bus(data_centers, existing_buses):
-    """Assign nearest existing 110 kV AC bus to every data center."""
+# double check the scenrio first
+
+
+def assign_nearest_bus(data_centers, existing_buses):
+    """Assign nearest existing AC bus with matching nominal voltage."""
     data_centers_projected = data_centers.to_crs(epsg=3035)
     existing_buses_projected = existing_buses.to_crs(epsg=3035)
 
-    bus_coords = np.array(
-        [(geom.x, geom.y) for geom in existing_buses_projected.geometry]
+    assigned_data_centers = []
+
+    for v_nom in [110, 380]:
+        assigned_data_centers.append(
+            gpd.sjoin_nearest(
+                data_centers_projected[
+                    data_centers_projected["v_nom"] == v_nom
+                ],
+                existing_buses_projected[
+                    existing_buses_projected["v_nom"] == v_nom
+                ][["bus_id", "geometry"]].rename(
+                    columns={"bus_id": "nearest_bus_id"}
+                ),
+                how="left",
+                distance_col="connection_length_km",
+            )
+        )
+
+    data_centers_projected = pd.concat(assigned_data_centers)
+    data_centers_projected["connection_length_km"] = (
+        data_centers_projected["connection_length_km"] / 1000
     )
-    dc_coords = np.array(
-        [(geom.x, geom.y) for geom in data_centers_projected.geometry]
+    data_centers_projected["nearest_bus_id"] = data_centers_projected[
+        "nearest_bus_id"
+    ].astype(int)
+    data_centers_projected["nearest_bus_geom"] = (
+        existing_buses_projected.set_index("bus_id")
+        .geometry[data_centers_projected["nearest_bus_id"]]
+        .values
     )
 
-    tree = cKDTree(bus_coords)
-    distances, nearest_idx = tree.query(dc_coords, k=1)
-
-    nearest_buses = existing_buses_projected.iloc[nearest_idx].reset_index(
-        drop=True
+    data_centers_projected = data_centers_projected.drop(
+        columns=["index_right"]
     )
-
-    data_centers_projected["nearest_bus_id"] = nearest_buses["bus_id"].values
-    data_centers_projected["nearest_bus_geom"] = nearest_buses.geometry.values
-    data_centers_projected["connection_length_km"] = distances / 1000
 
     return data_centers_projected.to_crs(epsg=4326)
 
 
 def create_data_center_buses(data_centers, scenario):
-    """Create new 110 kV AC buses for data centers."""
+    """Create new AC buses for data centers."""
     dc_buses = gpd.GeoDataFrame(
         {
             "scn_name": scenario,
             "bus_id": db.next_etrago_id("bus", len(data_centers)),
-            "v_nom": 110,
+            "v_nom": data_centers["v_nom"].values,
             "type": "data_center",
             "carrier": "AC",
             "geom": data_centers.geometry.values,
@@ -361,7 +401,7 @@ def create_data_center_buses(data_centers, scenario):
 
 
 def create_data_center_lines(data_centers, scenario):
-    """Create AC connection lines from data center buses to 110 kV buses."""
+    """Create AC connection lines from data center buses to existing AC buses."""
     data_centers_projected = data_centers.to_crs(epsg=3035)
 
     lines = []
@@ -377,13 +417,43 @@ def create_data_center_lines(data_centers, scenario):
                 "bus1": row.nearest_bus_id,
                 "type": "data_center_connection",
                 "carrier": "AC",
-                "v_nom": 110,
+                "v_nom": row.v_nom,
                 "length": length_km,
-                "x": X_PER_KM_110KV * length_km,
-                "r": R_PER_KM_110KV * length_km,
-                "b": B_PER_KM_110KV * length_km,
-                "s_nom": S_NOM_DC_CONNECTION,
-                "s_nom_min": S_NOM_DC_CONNECTION,
+                # Reactance x is calculated from the inductance L given in
+                # scenario_parameters/parameters.py:
+                # x = 2 * pi * f * L * length, with f = 50 Hz and L in H/km.
+                "x": 2
+                * np.pi
+                * 50
+                * (L_PER_KM_380KV if row.v_nom == 380 else L_PER_KM_110KV)
+                * length_km,
+                # Resistance r is calculated from R given in
+                # scenario_parameters/parameters.py:
+                # r = R_per_km * length.
+                "r": (R_PER_KM_380KV if row.v_nom == 380 else R_PER_KM_110KV)
+                * length_km,
+                # b is not set here because scenario_parameters does not
+                # provide capacitance/susceptance values. The eTraGo line
+                # table defines b with server_default="0.".
+                # s_nom defines the nominal apparent power capacity of the
+                # connection line. We use the standard/median capacities from
+                # scenario_parameters.py and existing eTraGo lines:
+                # 110 kV: median = 260 MVA, max = 1040 MVA
+                # 380 kV: median = 1790 MVA, max ≈ 7820 MVA
+                # The maximum values are not used because they likely represent
+                # special high-capacity or parallel-line cases, while the median
+                # values are the normal line capacities and are already sufficient
+                # for the modeled data center loads.
+                "s_nom": (
+                    S_NOM_DC_CONNECTION_380KV
+                    if row.v_nom == 380
+                    else S_NOM_DC_CONNECTION_110KV
+                ),
+                "s_nom_min": (
+                    S_NOM_DC_CONNECTION_380KV
+                    if row.v_nom == 380
+                    else S_NOM_DC_CONNECTION_110KV
+                ),
                 "s_nom_extendable": False,
                 "num_parallel": 1,
                 "topo": topo,
@@ -407,7 +477,7 @@ def create_data_center_loads(data_centers, scenario):
             "type": "data_center",
             "carrier": "AC",
             "p_set": data_centers["allocated_mw"].values,
-            "q_set": 0,
+            "q_set": None,
             "sign": -1,
         }
     )
@@ -418,11 +488,11 @@ def insert_data_centers(scenario):
     targets = DataCentersEtrago.targets
 
     data_centers = create_data_center_allocation()
-    existing_buses = get_existing_110kv_ac_buses(scenario)
-    data_centers = assign_nearest_110kv_bus(data_centers, existing_buses)
+    existing_buses = get_existing_ac_buses(scenario)
+    data_centers = assign_nearest_bus(data_centers, existing_buses)
 
     dc_buses, data_centers = create_data_center_buses(data_centers, scenario)
-    #dc_lines = create_data_center_lines(data_centers, scenario)
+    dc_lines = create_data_center_lines(data_centers, scenario)
     dc_loads = create_data_center_loads(data_centers, scenario)
 
     dc_buses.to_postgis(
@@ -434,15 +504,14 @@ def insert_data_centers(scenario):
         dtype={"geom": Geometry()},
     )
 
-    #dc_lines.to_postgis(
-     #   targets.get_table_name("lines"),
-     #   schema=targets.get_table_schema("lines"),
-     #   if_exists="append",
-      #  con=db.engine(),
-      #  index=False,
-      #  dtype={"topo": Geometry()},
-   # )
-
+    dc_lines.to_postgis(
+        targets.get_table_name("lines"),
+        schema=targets.get_table_schema("lines"),
+        if_exists="append",
+        con=db.engine(),
+        index=False,
+        dtype={"topo": Geometry()},
+    )
     dc_loads.to_sql(
         targets.get_table_name("loads"),
         schema=targets.get_table_schema("loads"),
@@ -472,11 +541,11 @@ class DataCentersEtrago(Dataset):
             "loads": "grid.egon_etrago_load",
         },
         files={
-            "commercial_areas": "Gewerbeflaechen.gpkg", #check openstreetmap.osm_landuse
-            "district_heating_areas": "Wärmenetze.gpkg", #check demand.egon_district_heating_areas
+            "commercial_areas": "Gewerbeflaechen.gpkg",  # check openstreetmap.osm_landuse
+            "district_heating_areas": "Wärmenetze.gpkg",  # check demand.egon_district_heating_areas
             "internet_nodes": "Internetknoten.gpkg",
             "regional_factors": "Regionalisierungsfaktoren.gpkg",
-            "substations": "Umspannwerke.gpkg", #check grid.egon_hmv_substation
+            "substations": "Umspannwerke.gpkg",  # check grid.egon_hmv_substation
         },
     )
 
@@ -495,4 +564,3 @@ class DataCentersEtrago(Dataset):
             dependencies=dependencies,
             tasks=(insert_data_centers_for_scenarios,),
         )
-
