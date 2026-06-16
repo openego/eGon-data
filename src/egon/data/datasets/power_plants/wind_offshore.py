@@ -16,7 +16,7 @@ def map_id_bus(scenario, sources):
 
     osm_year = sources.files["osm_config"]
 
-    if scenario in ["eGon2035", "eGon100RE", "eGon2037", "eGon2045"]:
+    if scenario in ["eGon2035", "eGon100RE", "reGon2037", "reGon2045"]:
         id_bus = {
             "Büttel": "136034396",
             "Diele": "177829920",
@@ -67,7 +67,6 @@ def map_id_bus(scenario, sources):
                 "Wilhelmshaven 2": "637595524",
                 "Suchraum Zensenbusch": "24479003",
                 "Rastede": "1128250707",
-
                 # NEP-only NVPs (no native wind park in FEP). Each is given a
                 # representative offshore wind park in assign_ONEP_areas() so its
                 # NEP capacity is included in the model.
@@ -80,8 +79,10 @@ def map_id_bus(scenario, sources):
                 "Suchraum Zensenbusch": "24479003",
             }
         else:
-            raise Exception("""The OSM year used is not yet compatible with
-                            this function""")
+            raise Exception(
+                """The OSM year used is not yet compatible with
+                            this function"""
+            )
         id_bus = {**id_bus, **id_bus2}
 
     elif "status" in scenario:
@@ -144,22 +145,20 @@ def assign_ONEP_areas():
         "Suchraum Pöschendorf": "NOR-12-3",
         "Suchraum Gnewitz (50Hertz)": "OST-1-4",
         "Suchraum Kemnitz (50Hertz)": "OST-2-4 (Ostwind4)",
-
         # NEP-only NVPs assigned a representative offshore wind park
         # (so their NEP capacity is included; geom borrowed from a nearby FEP park)
-        "Wilhelmshaven / Landkreis Friesland": "NOR-9-2",       # Sengwarden area
+        "Wilhelmshaven / Landkreis Friesland": "NOR-9-2",  # Sengwarden area
         "Suchraum Brunsbüttel (Gemeinden Brunsbüttel / Büttel / St. Margarethen / Brokdorf)": "NOR-11-1",  # Hochwöhrden area
         "Suchraum Rastede (Ovelgönne / Rastede / Wiefelstede / Westerstede)": "NOR-13-1",  # Großenmeer area
-        "Blockland / Neu": "NOR-14-1",                          # Großenmeer (TenneT) area
-        "Samtgemeinde Sottrum": "NOR-9-4 (BalWin5)",            # Werderland area
-        "Lippe": "NOR-12-2 (LanWin2)",                          # Hochwörden area
-        "Suchraum Zensenbusch": "NOR-19-1",                     # Esens area
+        "Blockland / Neu": "NOR-14-1",  # Großenmeer (TenneT) area
+        "Samtgemeinde Sottrum": "NOR-9-4 (BalWin5)",  # Werderland area
+        "Lippe": "NOR-12-2 (LanWin2)",  # Hochwörden area
+        "Suchraum Zensenbusch": "NOR-19-1",  # Esens area
     }
 
 
 def map_ONEP_areas():
     return {
-     
         "NOR-0-1 (Riffgat)": Point(6.5, 53.6),
         "NOR-0-2 (Nordergründe)": Point(8.07, 53.76),
         "NOR-1-1 (DolWin5)": Point(6.21, 54.06),
@@ -190,8 +189,6 @@ def map_ONEP_areas():
         "OST-3-1 (Baltic1)": Point(13.16, 54.98),
         "OST-3-2 (Baltic2)": Point(13.16, 54.98),
         "OST-7-1 (nördlich Warnemünde)": Point(12.25, 54.5),
-
-        
         "NOR-5-2": Point(7.01693, 55.0888),
         "NOR-5-3": Point(6.86276, 55.23015),
         "NOR-6-4": Point(6.02912, 54.42698),
@@ -231,25 +228,27 @@ def insert():
     """
     sources, targets = load_sources_and_targets("PowerPlants")
 
-    scenarios = ["eGon2035", "eGon2037", "eGon2045"]
+    scenarios = ["eGon2035", "reGon2037", "reGon2045"]
 
     for scenario in scenarios:
 
-        db.execute_sql(f"""
+        db.execute_sql(
+            f"""
             DELETE FROM {targets.tables['power_plants']}
             WHERE carrier = 'wind_offshore'
             AND scenario = '{scenario}'
-            """)
+            """
+        )
 
         # load file
-        if scenario in ["eGon2035", "eGon2037", "eGon2045"]:
+        if scenario in ["eGon2035", "reGon2037", "reGon2045"]:
             filename = "NEP2035_2037_2045_V2025_2023_scnC2037.xlsx"
 
             # Map scenario to its capacity column
             capacity_col = {
                 "eGon2035": "C 2035",
-                "eGon2037": "C 2037",
-                "eGon2045": "C 2045",
+                "reGon2037": "C 2037",
+                "reGon2045": "C 2045",
             }[scenario]
 
             offshore_path = (
@@ -268,7 +267,9 @@ def insert():
                 ],
             )
             offshore.dropna(subset=["Netzverknuepfungspunkt"], inplace=True)
-            offshore.rename(columns={capacity_col: "el_capacity"}, inplace=True)
+            offshore.rename(
+                columns={capacity_col: "el_capacity"}, inplace=True
+            )
             offshore = offshore[offshore["el_capacity"] > 0]
 
         elif scenario == "eGon100RE":
@@ -353,9 +354,10 @@ def insert():
                 (buses["osm_id"] == wind_park["osm_id"])
                 & (buses["base_kv"] == wind_park["Spannungsebene in kV"])
             ].empty:
-                bus_ind = buses[buses["osm_id"] == wind_park["osm_id"]].index[
-                    0
-                ]
+                bus_ind = buses[
+                    (buses["osm_id"] == wind_park["osm_id"])
+                    & (buses["base_kv"] == wind_park["Spannungsebene in kV"])
+                ].index[0]
                 offshore.at[index, "bus_id"] = buses.at[bus_ind, "bus_id"]
             else:
                 print(f'Wind offshore farm not found: {wind_park["osm_id"]}')
@@ -363,7 +365,7 @@ def insert():
         offshore.dropna(subset=["bus_id"], inplace=True)
 
         # Overwrite geom for status2019 parks
-        if scenario in ["eGon2035", "eGon100RE", "eGon2037", "eGon2045"]:
+        if scenario in ["eGon2035", "eGon100RE", "reGon2037", "reGon2045"]:
             offshore["Name ONEP/NEP"] = offshore["Netzverknuepfungspunkt"].map(
                 assign_ONEP_areas()
             )
@@ -379,12 +381,14 @@ def insert():
         # Scale capacities for eGon100RE
         if scenario == "eGon100RE":
             # Import capacity targets for wind_offshore per scenario
-            cap_100RE = db.select_dataframe(f"""
+            cap_100RE = db.select_dataframe(
+                f"""
                     SELECT SUM(capacity)
                     FROM {sources.tables['capacities']}
                     WHERE scenario_name = 'eGon100RE' AND
                     carrier = 'wind_offshore'
-                    """).iloc[0, 0]
+                    """
+            ).iloc[0, 0]
 
             # Scale capacities to match  target
             scale_factor = cap_100RE / offshore.el_capacity.sum()
@@ -441,7 +445,9 @@ def insert():
             if_exists="append",
         )
 
-        logging.info(f"""
+        logging.info(
+            f"""
               {len(offshore)} wind_offshore generators with a total installed capacity of
               {offshore['el_capacity'].sum()}MW were inserted into the db
-              """)
+              """
+        )
