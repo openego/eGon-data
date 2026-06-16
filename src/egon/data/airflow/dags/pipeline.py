@@ -84,6 +84,7 @@ from egon.data.datasets.osmtgmod import Osmtgmod
 from egon.data.datasets.power_etrago import OpenCycleGasTurbineEtrago
 from egon.data.datasets.power_plants import PowerPlants
 from egon.data.datasets.pypsaeur import PreparePypsaEur, RunPypsaEur
+from egon.data.datasets.rail_transport_demand import RailTransitDemand
 from egon.data.datasets.re_potential_areas import re_potential_area_setup
 from egon.data.datasets.renewable_feedin import RenewableFeedin
 from egon.data.datasets.saltcavern import SaltcavernData
@@ -697,6 +698,24 @@ with airflow.DAG(
                 setup_etrago,
                 zensus_mv_grid_districts,
                 zensus_vg250,
+            ]
+        )
+
+    with TaskGroup(
+        group_id="rail_transport_demand"
+    ) as rail_transport_demand_group:
+        # Rail transport electricity demand (reGon): converters (16.7-Hz
+        # traction) + DC rectifier Uw (tram/U-Bahn + S-Bahn) -> eTraGo loads.
+        # Builds on the OSM-derived grid (mv grid districts + EHV voronoi) and
+        # the prebuilt GeoPackage in the data bundle.
+        rail_transit_demand = RailTransitDemand(
+            dependencies=[
+                data_bundle,
+                osm,
+                mv_grid_districts,
+                substation_voronoi,
+                setup_etrago,
+                scenario_parameters,
             ]
         )
 
