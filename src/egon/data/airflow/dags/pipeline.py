@@ -101,6 +101,7 @@ from egon.data.datasets.zensus import ZensusMiscellaneous, ZensusPopulation
 from egon.data.datasets.zensus_mv_grid_districts import ZensusMvGridDistricts
 from egon.data.datasets.zensus_vg250 import ZensusVg250
 from egon.data.metadata import Json_Metadata
+from egon.data.datasets.data_centers_etrago import DataCentersEtrago
 
 # Set number of threads used by numpy and pandas
 set_numexpr_threads()
@@ -626,6 +627,9 @@ with airflow.DAG(
             dependencies=[power_plants, weather_data]
         )
 
+        # Data centers to eTraGo
+        data_centers_etrago = DataCentersEtrago(dependencies=[osmtgmod])
+
         # Heat to eTraGo
         heat_etrago = HeatEtrago(
             dependencies=[
@@ -724,6 +728,7 @@ with airflow.DAG(
                 storage_etrago,
                 hts_etrago_table,
                 fill_etrago_generators,
+                data_centers_etrago,
                 household_electricity_demand_annual,
                 cts_demand_buildings,
                 emobility_mit,
@@ -738,6 +743,7 @@ with airflow.DAG(
                 storage_etrago,
                 hts_etrago_table,
                 fill_etrago_generators,
+                data_centers_etrago,
                 household_electricity_demand_annual,
                 cts_demand_buildings,
                 emobility_mit,
