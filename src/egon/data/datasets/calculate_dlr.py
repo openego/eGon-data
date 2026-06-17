@@ -45,7 +45,7 @@ class Calculate_dlr(Dataset):
     sources = DatasetSources(
         files={
             "regions_shape": "data_bundle_egon_data/regions_dynamic_line_rating/Germany_regions.shp",
-            "weather_cutout": "data_bundle_egon_data/cutouts/germany-{weather_year}-era5.nc",
+            "weather_cutout": "cutouts/germany-{weather_year}-era5.nc",
         },
         tables={
             "trans_lines": "grid.egon_etrago_line",

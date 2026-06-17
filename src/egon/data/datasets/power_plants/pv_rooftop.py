@@ -158,7 +158,7 @@ def pv_rooftop_per_mv_grid_and_scenario(scenario, level):
 
             path = Path(
                 f"./data_bundle_egon_data/nep2035_version2021/"
-                f"{sources.files['nep_2035_capacities']}"
+                f"{sources.files['nep_2035']}"
             ).resolve()
 
             total_2035 = (
