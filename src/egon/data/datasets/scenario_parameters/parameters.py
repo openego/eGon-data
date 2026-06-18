@@ -1136,6 +1136,40 @@ def mobility(scenario):
             }
         }
 
+    # reGon rail-transport electricity demand scenarios.
+    # ``annual_demand`` is the GROSS rail energy in MWh (eGon unit convention;
+    # = 16.7-Hz traction + S-Bahn + U-Bahn + tram). The eGon load is the
+    # 50-Hz draw (~9.75 TWh, from the data bundle) scaled by
+    # total(scn) / total(status2024). The NEP reports Schiene+Bus COMBINED
+    # (no split): status2024 = 12.74 TWh (~10 + 0.56 + 2.18); the ~1.3 TWh
+    # remainder to NEP's 14 TWh is bus (excluded). Futures scale 12.74 by the
+    # NEP growth (rail-growth proxy). To update from a new NEP: adjust
+    # ``annual_demand`` (= 12.74 * nep_schiene_bus_twh / 14.0) and
+    # ``nep_schiene_bus_twh``.
+    elif scenario == "status2024":
+        parameters = {
+            "rail_transport_demand": {
+                "annual_demand": 12.74 * 1e6,  # MWh
+                "nep_schiene_bus_twh": 14.0,
+            }
+        }
+
+    elif scenario == "reGon2037":
+        parameters = {
+            "rail_transport_demand": {
+                "annual_demand": 14.469 * 1e6,  # MWh, 12.74 * 15.9 / 14
+                "nep_schiene_bus_twh": 15.9,
+            }
+        }
+
+    elif scenario == "reGon2045":
+        parameters = {
+            "rail_transport_demand": {
+                "annual_demand": 15.379 * 1e6,  # MWh, 12.74 * 16.9 / 14
+                "nep_schiene_bus_twh": 16.9,
+            }
+        }
+
     else:
         print(f"Scenario name {scenario} is not valid.")
         parameters = dict()
