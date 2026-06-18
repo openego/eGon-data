@@ -186,6 +186,27 @@ def insert_scenarios():
 
     session.commit()
 
+    # reGon rail-transport scenarios (status2024 / reGon2037 / reGon2045).
+    # For now only the mobility sector carries the rail-transport demand; the
+    # other sectors are left empty until reGon defines them. These scenarios
+    # are intended to grow into full scenarios (electricity, gas, heat, ...),
+    # so extend the sector parameters here once that data is available.
+    regon_scenarios = [
+        ("status2024", "reGon status-quo rail-transport demand (2024)."),
+        ("reGon2037", "reGon rail-transport demand scaled to NEP 2037."),
+        ("reGon2045", "reGon rail-transport demand scaled to NEP 2045."),
+    ]
+    for scn_name, descr in regon_scenarios:
+        scn = EgonScenario(name=scn_name)
+        scn.description = descr
+        scn.global_parameters = {}
+        scn.electricity_parameters = {}
+        scn.gas_parameters = {}
+        scn.heat_parameters = {}
+        scn.mobility_parameters = parameters.mobility(scn_name)
+        session.add(scn)
+        session.commit()
+
 
 def get_sector_parameters(sector, scenario=None):
     """Returns parameters for each sector as dictionary.
@@ -279,7 +300,7 @@ class ScenarioParameters(Dataset):
     This dataset creates and fills a table in the database that includes central parameters
     for each scenarios. These parameters are mostly from extrernal sources, they are defined
     and referenced within this dataset.
-    The table is acced by various datasets to access the parameters for all sectors.
+    The table is accessed by various datasets to access the parameters for all sectors.
 
 
     *Dependencies*
@@ -295,7 +316,7 @@ class ScenarioParameters(Dataset):
     #:
     name: str = "ScenarioParameters"
     #:
-    version: str = "0.0.21"
+    version: str = "0.0.22"
 
     sources = DatasetSources(
         urls={
