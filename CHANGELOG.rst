@@ -12,6 +12,9 @@ Added
   `#1352 <https://github.com/openego/egon-data/issues/1352>`_
 * Add standardized sources and targets definitions across dataset modules
   `#1283 <https://github.com/openego/egon-data/issues/1283>`_
+* Add rail-transport electricity demand dataset (RailTransitDemand) and
+  reGon scenarios (status2024, reGon2037, reGon2045)
+  `#1414 <https://github.com/openego/eGon-data/issues/1414>`_
 
 Changed
 -------
