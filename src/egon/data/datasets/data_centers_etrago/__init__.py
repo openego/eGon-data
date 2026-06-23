@@ -329,6 +329,20 @@ def get_existing_ac_buses(scenario):
         epsg=4326,
     )
 
+def get_existing_central_heat_buses(scenario):
+    """Get existing central heat buses from eTraGo."""
+    sources = DataCentersEtrago.sources
+
+    return db.select_geodataframe(
+        f"""
+        SELECT bus_id, carrier, x, y, geom
+        FROM {sources.tables["buses"]}
+        WHERE scn_name = '{scenario}'
+        AND carrier = 'central_heat'
+        """,
+        geom_col="geom",
+        epsg=4326,
+    )
 
 # double check the scenrio first
 
@@ -375,6 +389,32 @@ def assign_nearest_bus(data_centers, existing_buses):
 
     return data_centers_projected.to_crs(epsg=4326)
 
+def assign_nearest_heat_bus(data_centers, central_heat_buses):
+    """Assign nearest existing central heat bus to each data center."""
+    data_centers_projected = data_centers.to_crs(epsg=3035)
+    central_heat_buses_projected = central_heat_buses.to_crs(epsg=3035)
+
+    data_centers_projected = gpd.sjoin_nearest(
+        data_centers_projected,
+        central_heat_buses_projected[["bus_id", "geometry"]].rename(
+            columns={"bus_id": "central_heat_bus_id"}
+        ),
+        how="left",
+        distance_col="distance_to_heat_bus_km",
+    )
+
+    data_centers_projected["distance_to_heat_bus_km"] = (
+        data_centers_projected["distance_to_heat_bus_km"] / 1000
+    )
+    data_centers_projected["central_heat_bus_id"] = data_centers_projected[
+        "central_heat_bus_id"
+    ].astype(int)
+
+    data_centers_projected = data_centers_projected.drop(
+        columns=["index_right"]
+    )
+
+    return data_centers_projected.to_crs(epsg=4326)
 
 def create_data_center_buses(data_centers, scenario):
     """Create new AC buses for data centers."""
@@ -510,9 +550,11 @@ def insert_data_centers(scenario):
     delete_existing_data_centers(scenario)
     data_centers = create_data_center_allocation()
     existing_buses = get_existing_ac_buses(scenario)
+    central_heat_buses = get_existing_central_heat_buses(scenario)
     data_centers = assign_nearest_bus(data_centers, existing_buses)
 
     dc_buses, data_centers = create_data_center_buses(data_centers, scenario)
+    data_centers = assign_nearest_heat_bus(data_centers, central_heat_buses)
     dc_lines = create_data_center_lines(data_centers, scenario)
     dc_loads = create_data_center_loads(data_centers, scenario)
 
