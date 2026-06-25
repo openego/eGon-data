@@ -701,13 +701,10 @@ with airflow.DAG(
             ]
         )
 
-    with TaskGroup(
-        group_id="rail_transport_demand"
-    ) as rail_transport_demand_group:
-        # Rail transport electricity demand (reGon): converters (16.7-Hz
-        # traction) + DC rectifier Uw (tram/U-Bahn + S-Bahn) -> eTraGo loads.
-        # Builds on the OSM-derived grid (mv grid districts + EHV voronoi) and
-        # the prebuilt GeoPackage in the data bundle.
+        # Rail transport electricity demand (reGon): 16.7-Hz traction
+        # converters + DC rectifier Uw (tram/U-Bahn + S-Bahn) -> eTraGo
+        # loads. Builds on eGon's OSM-derived grid (MV grid districts + EHV
+        # voronoi) and the curated profiles/weights in the data bundle.
         rail_transit_demand = RailTransitDemand(
             dependencies=[
                 data_bundle,
