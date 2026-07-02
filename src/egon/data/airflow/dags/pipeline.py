@@ -757,6 +757,7 @@ with airflow.DAG(
                 household_electricity_demand_annual,
                 cts_demand_buildings,
                 emobility_mit,
+                rail_transit_demand,
                 low_flex_scenario,
             ]
         )
