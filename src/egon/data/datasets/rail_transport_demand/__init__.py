@@ -184,6 +184,9 @@ def _bundle_points() -> gpd.GeoDataFrame:
 def _assign_bus(pts: gpd.GeoDataFrame) -> gpd.GeoDataFrame:
     """HöS/HS -> EHV voronoi bus, MS -> MV grid district bus (nearest fb)."""
     src = RailTransitDemand.sources.tables
+    # Each gdf carries only bus_id + its own active geometry. sjoin joins on
+    # the active geometry of each frame, so the differing column names
+    # (pts: 'geometry', districts: 'geom') do not matter.
     poly = {
         "mv": db.select_geodataframe(
             f"SELECT bus_id, geom FROM {src['mv_grid_districts']}", epsg=3035
@@ -197,14 +200,14 @@ def _assign_bus(pts: gpd.GeoDataFrame) -> gpd.GeoDataFrame:
         sub = pts[pts["bus_level"] == level]
         if sub.empty:
             continue
-        j = gpd.sjoin(
-            sub, p[["bus_id", "geometry"]], how="left", predicate="within"
-        ).drop(columns="index_right")
+        j = gpd.sjoin(sub, p, how="left", predicate="within").drop(
+            columns="index_right"
+        )
         miss = j["bus_id"].isna()
         if miss.any():
-            nn = gpd.sjoin_nearest(
-                j[miss].drop(columns="bus_id"), p[["bus_id", "geometry"]]
-            ).drop(columns="index_right")
+            nn = gpd.sjoin_nearest(j[miss].drop(columns="bus_id"), p).drop(
+                columns="index_right"
+            )
             j.loc[nn.index, "bus_id"] = nn["bus_id"].values
         out.append(j)
     res = gpd.GeoDataFrame(pd.concat(out))
