@@ -1361,6 +1361,102 @@ def sanitycheck_emobility_mit():
     print("=====================================================")
 
 
+def sanitycheck_rail_transport_demand():
+    """Sanity checks for the reGon rail transport electricity demand.
+
+    Validates the ``RailTransitDemand`` output in the eTraGo load tables for
+    the reGon scenarios (status2024 / reGon2037 / reGon2045):
+
+    1. Loads exist for every rail carrier and reference a valid grid bus
+       (from egon_mv_grid_district / egon_ehv_substation_voronoi).
+    2. Each load has a full 8760-hour, non-negative, NaN-free p_set series
+       (p_set is in MW; the load sign is -1).
+    3. The annual energy scales between scenarios exactly as the
+       scenario_parameters demand ratio total(scn) / total(status2024).
+    """
+    from egon.data.datasets.rail_transport_demand import (
+        BASE_SCENARIO,
+        CARRIERS,
+        SCENARIOS,
+    )
+
+    carriers = tuple(sorted(set(CARRIERS.values())))
+    logger.info("Sanity checks: reGon rail transport demand ...")
+
+    # valid grid buses the dataset assigns its loads to
+    valid_buses = set(
+        db.select_dataframe(
+            """
+            SELECT bus_id FROM grid.egon_mv_grid_district
+            UNION
+            SELECT bus_id FROM grid.egon_ehv_substation_voronoi
+            """
+        )["bus_id"]
+    )
+
+    energy = {}
+    for scn in SCENARIOS:
+        loads = db.select_dataframe(
+            f"""
+            SELECT load_id, bus, carrier, sign
+            FROM grid.egon_etrago_load
+            WHERE scn_name = '{scn}' AND carrier IN {carriers}
+            """
+        )
+
+        # 1. loads exist for every carrier + basic integrity
+        assert not loads.empty, f"No rail loads for scenario '{scn}'."
+        missing = set(carriers) - set(loads["carrier"])
+        assert not missing, f"'{scn}': missing rail carriers {missing}."
+        assert (loads["sign"] == -1).all(), f"'{scn}': load sign must be -1."
+        bad_bus = ~loads["bus"].isin(valid_buses)
+        bad_bus_msg = (
+            f"'{scn}': {int(bad_bus.sum())} rail loads on unknown buses."
+        )
+        assert not bad_bus.any(), bad_bus_msg
+
+        # 2. timeseries integrity (8760 h, no NaN, non-negative)
+        ts = db.select_dataframe(
+            f"""
+            SELECT p_set
+            FROM grid.egon_etrago_load_timeseries
+            WHERE scn_name = '{scn}' AND load_id IN (
+                SELECT load_id FROM grid.egon_etrago_load
+                WHERE scn_name = '{scn}' AND carrier IN {carriers})
+            """
+        )
+        ts_msg = f"'{scn}': {len(loads)} loads but {len(ts)} timeseries."
+        assert len(ts) == len(loads), ts_msg
+        total = 0.0
+        for p_set in ts["p_set"]:
+            arr = np.asarray(p_set, dtype=float)
+            size_msg = f"'{scn}': p_set has {arr.size} steps (want 8760)."
+            assert arr.size == 8760, size_msg
+            assert not np.isnan(arr).any(), f"'{scn}': NaN in p_set."
+            assert (arr >= 0).all(), f"'{scn}': negative p_set value."
+            total += arr.sum()  # MWh (hourly steps -> MW == MWh/h)
+        energy[scn] = total
+        logger.info(f"  {scn}: {len(loads)} loads, {total / 1e6:.3f} TWh.")
+
+    # 3. energy scales as the scenario_parameters demand ratio
+    base = get_sector_parameters("mobility", BASE_SCENARIO)[
+        "rail_transport_demand"
+    ]["annual_demand"]
+    assert energy[BASE_SCENARIO] > 0, "Base scenario has zero rail energy."
+    for scn in SCENARIOS:
+        demand = get_sector_parameters("mobility", scn)[
+            "rail_transport_demand"
+        ]["annual_demand"]
+        expected = demand / base
+        actual = energy[scn] / energy[BASE_SCENARIO]
+        ratio_msg = (
+            f"'{scn}': energy ratio {actual:.4f} != expected "
+            f"{expected:.4f} from scenario_parameters."
+        )
+        assert isclose(actual, expected, rel_tol=1e-3), ratio_msg
+    logger.info("Rail transport demand sanity checks passed.")
+
+
 def sanitycheck_home_batteries():
     # get constants
     constants = config.datasets()["home_batteries"]["constants"]
@@ -2955,12 +3051,17 @@ if "eGon100RE" in SCENARIOS:
         },
     )
 
+# reGon rail transport demand checks. Its own scenarios (status2024,
+# reGon2037, reGon2045) are always produced by RailTransitDemand,
+# independent of the configured SCENARIOS, so register unconditionally.
+tasks = tasks + (sanitycheck_rail_transport_demand,)
+
 
 class SanityChecks(Dataset):
     #:
     name: str = "SanityChecks"
     #:
-    version: str = "0.0.11"
+    version: str = "0.0.12"
 
     sources = DatasetSources(
         tables={
