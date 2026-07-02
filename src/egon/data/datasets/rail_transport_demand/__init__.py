@@ -259,7 +259,7 @@ def insert_rail_demand():
         # p_set [MW]: profile sums to 1 over 8760 h, so energy_mwh_a [MWh] *
         # profile[h] is the MWh in hour h = average MW (dt = 1 h).
         p_set = pts.apply(
-            lambda r: (
+            lambda r, factor=factor: (
                 r["energy_mwh_a"] * factor * prof[r["profile"]].to_numpy()
             )
             .round(4)
