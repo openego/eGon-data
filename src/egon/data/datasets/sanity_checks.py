@@ -24,6 +24,7 @@ from egon.data.datasets import (
     DatasetTargets,
     load_sources_and_targets,
 )
+from egon.data.datasets import rail_transport_demand as rail_demand
 from egon.data.datasets.electricity_demand_timeseries.cts_buildings import (
     EgonCtsElectricityDemandBuildingShare,
     EgonCtsHeatDemandBuildingShare,
@@ -1361,7 +1362,7 @@ def sanitycheck_emobility_mit():
     print("=====================================================")
 
 
-def sanitycheck_rail_transport_demand():
+def sanitycheck_rail_transport_demand():  # pylint: disable=too-many-locals
     """Sanity checks for the reGon rail transport electricity demand.
 
     Validates the ``RailTransitDemand`` output in the eTraGo load tables for
@@ -1374,13 +1375,7 @@ def sanitycheck_rail_transport_demand():
     3. The annual energy scales between scenarios exactly as the
        scenario_parameters demand ratio total(scn) / total(status2024).
     """
-    from egon.data.datasets.rail_transport_demand import (
-        BASE_SCENARIO,
-        CARRIERS,
-        SCENARIOS,
-    )
-
-    carriers = tuple(sorted(set(CARRIERS.values())))
+    carriers = tuple(sorted(set(rail_demand.CARRIERS.values())))
     logger.info("Sanity checks: reGon rail transport demand ...")
 
     # valid grid buses the dataset assigns its loads to
@@ -1395,7 +1390,7 @@ def sanitycheck_rail_transport_demand():
     )
 
     energy = {}
-    for scn in SCENARIOS:
+    for scn in rail_demand.SCENARIOS:
         loads = db.select_dataframe(
             f"""
             SELECT load_id, bus, carrier, sign
@@ -1439,16 +1434,17 @@ def sanitycheck_rail_transport_demand():
         logger.info(f"  {scn}: {len(loads)} loads, {total / 1e6:.3f} TWh.")
 
     # 3. energy scales as the scenario_parameters demand ratio
-    base = get_sector_parameters("mobility", BASE_SCENARIO)[
+    base_scn = rail_demand.BASE_SCENARIO
+    base = get_sector_parameters("mobility", base_scn)[
         "rail_transport_demand"
     ]["annual_demand"]
-    assert energy[BASE_SCENARIO] > 0, "Base scenario has zero rail energy."
-    for scn in SCENARIOS:
+    assert energy[base_scn] > 0, "Base scenario has zero rail energy."
+    for scn in rail_demand.SCENARIOS:
         demand = get_sector_parameters("mobility", scn)[
             "rail_transport_demand"
         ]["annual_demand"]
         expected = demand / base
-        actual = energy[scn] / energy[BASE_SCENARIO]
+        actual = energy[scn] / energy[base_scn]
         ratio_msg = (
             f"'{scn}': energy ratio {actual:.4f} != expected "
             f"{expected:.4f} from scenario_parameters."
