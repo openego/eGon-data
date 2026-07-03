@@ -13,7 +13,6 @@ from shapely.geometry import LineString
 from egon.data import config, db
 from egon.data.datasets import Dataset, DatasetSources, DatasetTargets
 
-
 TARGET_CAPACITY_MW = (
     19460  # 15680 (Szenario A), 19460 (Szenario B), 23240 (Szenario C)
 )
@@ -109,24 +108,40 @@ def generate_data_center_sizes():
 def load_commercial_areas():
     sources = DataCentersEtrago.sources
 
-    return gpd.read_file(
-        sources.files["commercial_areas"],
+    return db.select_geodataframe(
+        f"""
+        SELECT geom
+        FROM {sources.tables["commercial_areas"]}
+        WHERE sector_name IN ('industrial', 'retail')
+        """,
+        geom_col="geom",
+        epsg=3035,
     ).to_crs(epsg=25832)
 
 
 def load_substations():
     sources = DataCentersEtrago.sources
 
-    return gpd.read_file(
-        sources.files["substations"],
+    return db.select_geodataframe(
+        f"""
+        SELECT point
+        FROM {sources.tables["substations"]}
+        """,
+        geom_col="point",
+        epsg=4326,
     ).to_crs(epsg=25832)
 
 
 def load_district_heating_areas():
     sources = DataCentersEtrago.sources
 
-    return gpd.read_file(
-        sources.files["district_heating_areas"],
+    return db.select_geodataframe(
+        f"""
+        SELECT geom_polygon, residential_and_service_demand
+        FROM {sources.tables["district_heating_areas"]}
+        """,
+        geom_col="geom_polygon",
+        epsg=3035,
     ).to_crs(epsg=25832)
 
 
@@ -329,6 +344,7 @@ def get_existing_ac_buses(scenario):
         epsg=4326,
     )
 
+
 def get_existing_central_heat_buses(scenario):
     """Get existing central heat buses from eTraGo."""
     sources = DataCentersEtrago.sources
@@ -343,6 +359,7 @@ def get_existing_central_heat_buses(scenario):
         geom_col="geom",
         epsg=4326,
     )
+
 
 # double check the scenrio first
 
@@ -389,6 +406,7 @@ def assign_nearest_bus(data_centers, existing_buses):
 
     return data_centers_projected.to_crs(epsg=4326)
 
+
 def assign_nearest_heat_bus(data_centers, central_heat_buses):
     """Assign nearest existing central heat bus to each data center."""
     data_centers_projected = data_centers.to_crs(epsg=3035)
@@ -415,6 +433,7 @@ def assign_nearest_heat_bus(data_centers, central_heat_buses):
     )
 
     return data_centers_projected.to_crs(epsg=4326)
+
 
 def create_data_center_buses(data_centers, scenario):
     """Create new AC buses for data centers."""
@@ -527,8 +546,7 @@ def delete_existing_data_centers(scenario):
     """Delete previously inserted data center components before rerun."""
     targets = DataCentersEtrago.targets
 
-    db.execute_sql(
-        f"""
+    db.execute_sql(f"""
         DELETE FROM {targets.tables["loads"]}
         WHERE scn_name = '{scenario}'
         AND type = 'data_center';
@@ -540,8 +558,7 @@ def delete_existing_data_centers(scenario):
         DELETE FROM {targets.tables["buses"]}
         WHERE scn_name = '{scenario}'
         AND type = 'data_center';
-        """
-    )
+        """)
 
 
 def insert_data_centers(scenario):
@@ -602,23 +619,26 @@ class DataCentersEtrago(Dataset):
             "buses": "grid.egon_etrago_bus",
             "lines": "grid.egon_etrago_line",
             "loads": "grid.egon_etrago_load",
+            "commercial_areas": "openstreetmap.osm_landuse",
+            "district_heating_areas": "demand.egon_district_heating_areas",
+            "substations": "grid.egon_hvmv_substation",
         },
         files={
-            "commercial_areas": "Gewerbeflaechen.gpkg",   
-            # Potential eGon replacement: openstreetmap.osm_landuse with sector_name IN ('industrial', 'retail'). 
-            #This provides similar commercial/industrial candidate areas, but the result will differ because eGon OSM contains many more polygons (157819 vs 32752) with different geometries, areas, and classification.
-            "district_heating_areas": "Wärmenetze.gpkg",  
-            # Potential eGon replacement: demand.egon_district_heating_areas filtered by scenario. The required fields for original workflow are available (geometry and residential_and_service_demand). 
-            #However, replacing the file would change results because the scenario counts differ:  Wärmenetze.gpkg has eGon2035 = 2250, eGon100RE = 3785, status2019 = 0, while demand.egon_district_heating_areas has eGon2035 = 2550, eGon100RE = 8762, status2019 = 1868. 
-            #Therefore, the eGon table is structurally suitable but not identical to original file input.
-            ## Potential eGon-native replacement: demand.egon_district_heating_areas filtered by the active scenario, using geometry and residential_and_service_demand. Since district heating areas are scenario-dependent, a scenario-specific filter would be methodologically cleaner than using mixed scenario data. 
-            #This may lead to different allocation results compared to the original exported input file.
+            "commercial_areas": "Gewerbeflaechen.gpkg",
+            # Potential eGon replacement: openstreetmap.osm_landuse with sector_name IN ('industrial', 'retail').
+            # This provides similar commercial/industrial candidate areas, but the result will differ because eGon OSM contains many more polygons (157819 vs 32752) with different geometries, areas, and classification.
+            "district_heating_areas": "Wärmenetze.gpkg",
+            # Potential eGon replacement: demand.egon_district_heating_areas filtered by scenario. The required fields for original workflow are available (geometry and residential_and_service_demand).
+            # However, replacing the file would change results because the scenario counts differ:  Wärmenetze.gpkg has eGon2035 = 2250, eGon100RE = 3785, status2019 = 0, while demand.egon_district_heating_areas has eGon2035 = 2550, eGon100RE = 8762, status2019 = 1868.
+            # Therefore, the eGon table is structurally suitable but not identical to original file input.
+            ## Potential eGon-native replacement: demand.egon_district_heating_areas filtered by the active scenario, using geometry and residential_and_service_demand. Since district heating areas are scenario-dependent, a scenario-specific filter would be methodologically cleaner than using mixed scenario data.
+            # This may lead to different allocation results compared to the original exported input file.
             "internet_nodes": "Internetknoten.gpkg",
             "regional_factors": "Regionalisierungsfaktoren.gpkg",
-            # Original input containing pre-defined regional Faktor values for selected grid/location points. 
-            #The exact factor methodology comes from the original external source/PDF, not from this code. 
-            #In the allocation, the factor is used only as an electricity-location score modifier via score_regio_strom = 1.2 - Faktor. Therefore, lower Faktor values increase the electricity suitability score. 
-            "substations": "Umspannwerke.gpkg",  
+            # Original input containing pre-defined regional Faktor values for selected grid/location points.
+            # The exact factor methodology comes from the original external source/PDF, not from this code.
+            # In the allocation, the factor is used only as an electricity-location score modifier via score_regio_strom = 1.2 - Faktor. Therefore, lower Faktor values increase the electricity suitability score.
+            "substations": "Umspannwerke.gpkg",
             # Candidate eGon replacement: grid.egon_hvmv_substation.
             # originl's inpu layer contains HV + EHV substations, not only EHV.
             # Therefore, grid.egon_hvmv_substation is closer than grid.egon_ehv_substation:
