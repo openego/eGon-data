@@ -13,6 +13,7 @@ from egon.data.datasets.ch4_storages import CH4Storages
 from egon.data.datasets.chp import Chp
 from egon.data.datasets.chp_etrago import ChpEtrago
 from egon.data.datasets.data_bundle import DataBundle
+from egon.data.datasets.data_centers_etrago import DataCentersEtrago
 from egon.data.datasets.demandregio import DemandRegio
 from egon.data.datasets.district_heating_areas import DistrictHeatingAreas
 from egon.data.datasets.DSM_cts_ind import DsmPotential
@@ -101,7 +102,6 @@ from egon.data.datasets.zensus import ZensusMiscellaneous, ZensusPopulation
 from egon.data.datasets.zensus_mv_grid_districts import ZensusMvGridDistricts
 from egon.data.datasets.zensus_vg250 import ZensusVg250
 from egon.data.metadata import Json_Metadata
-from egon.data.datasets.data_centers_etrago import DataCentersEtrago
 
 # Set number of threads used by numpy and pandas
 set_numexpr_threads()
@@ -627,9 +627,6 @@ with airflow.DAG(
             dependencies=[power_plants, weather_data]
         )
 
-        # Data centers to eTraGo
-        data_centers_etrago = DataCentersEtrago(dependencies=[osmtgmod])
-
         # Heat to eTraGo
         heat_etrago = HeatEtrago(
             dependencies=[
@@ -638,6 +635,16 @@ with airflow.DAG(
                 renewable_feedin,
                 setup_etrago,
                 heat_time_series,
+            ]
+        )
+
+        # Data centers to eTraGo
+        data_centers_etrago = DataCentersEtrago(
+            dependencies=[
+                osm_landuse,
+                osmtgmod,
+                district_heating_areas,
+                heat_etrago,
             ]
         )
 
