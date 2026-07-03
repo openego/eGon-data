@@ -1564,6 +1564,7 @@ class PowerPlants(Dataset):
             "osm_config": "https://download.geofabrik.de/europe/germany-240101.osm.pbf",
             "nep_2035": "NEP2035_V2021_scnC2035.xlsx",
             "mastr_deposit_id": "14783581",
+	    "wind_offshore_status2019": "windoffshore_status2019.xlsx",
             "data_bundle_deposit_id": "16576506",
             "status2023_date_max": "2023-12-31 23:59:00",
             "status2019_date_max": "2019-12-31 23:59:00",
