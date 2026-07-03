@@ -116,44 +116,23 @@ def insert_scenarios():
 
     session.commit()
 
-    # Scenario status2019
-    status2019 = EgonScenario(name="status2019")
+    # Scenario status2024
+    status2024 = EgonScenario(name="status2024")
 
-    status2019.description = """
-        Status quo ante scenario for 2019 for validation use within the project PoWerD.
+    status2024.description = """
+        Status quo ante scenario for 2024.
         """
-    status2019.global_parameters = parameters.global_settings(status2019.name)
+    status2024.global_parameters = parameters.global_settings(status2024.name)
 
-    status2019.electricity_parameters = parameters.electricity(status2019.name)
+    status2024.electricity_parameters = parameters.electricity(status2024.name)
 
-    status2019.gas_parameters = parameters.gas(status2019.name)
+    status2024.gas_parameters = parameters.gas(status2024.name)
 
-    status2019.heat_parameters = parameters.heat(status2019.name)
+    status2024.heat_parameters = parameters.heat(status2024.name)
 
-    status2019.mobility_parameters = parameters.mobility(status2019.name)
+    status2024.mobility_parameters = parameters.mobility(status2024.name)
 
-    session.add(status2019)
-
-    session.commit()
-
-    # Scenario status2023
-    status2023 = EgonScenario(name="status2023")
-
-    status2023.description = """
-        Status quo ante scenario for 2023.
-        """
-    # TODO status2023 all settings from 2019 are used
-    status2023.global_parameters = parameters.global_settings(status2023.name)
-
-    status2023.electricity_parameters = parameters.electricity(status2019.name)
-
-    status2023.gas_parameters = parameters.gas(status2019.name)
-
-    status2023.heat_parameters = parameters.heat(status2019.name)
-
-    status2023.mobility_parameters = parameters.mobility(status2023.name)
-
-    session.add(status2023)
+    session.add(status2024)
 
     session.commit()
 
@@ -319,7 +298,7 @@ class ScenarioParameters(Dataset):
     #:
     name: str = "ScenarioParameters"
     #:
-    version: str = "0.0.21"
+    version: str = "0.0.22"
 
     sources = DatasetSources(
         urls={

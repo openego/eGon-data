@@ -150,10 +150,10 @@ def global_settings(scenario):
             "population_year": 2021,
         }
 
-    elif scenario == "status2023":
+    elif scenario == "status2024":
         parameters = {
-            "weather_year": 2023,
-            "population_year": 2019,  # TODO: check if possible for 2023
+            "weather_year": 2011,
+            "population_year": 2019,  # TODO: check if possible for 2024
             "fuel_costs": {
                 # TYNDP 2020, data for 2023 (https://2020.entsos-tyndp-scenarios.eu/fuel-commodities-and-carbon-prices/)
                 "oil": 16.4 * 3.6,  # [EUR/MWh]
@@ -174,32 +174,6 @@ def global_settings(scenario):
                 "nuclear": 0.0,  # [t_CO2/MW_th]
                 "oil": 0.288,  # [t_CO2/MW_th]
                 "coal": 0.337,  # [t_CO2/MW_th]
-                "other_non_renewable": 0.268,  # [t_CO2/MW_th]
-            },
-            "interest_rate": 0.05,  # [p.u.]
-        }
-
-    elif scenario == "status2019":
-        parameters = {
-            "weather_year": 2011,
-            "population_year": 2019,
-            "fuel_costs": {  # TYNDP 2020, data for 2020 (https://2020.entsos-tyndp-scenarios.eu/fuel-commodities-and-carbon-prices/)
-                "oil": 12.9 * 3.6,  # [EUR/MWh]
-                "gas": 5.6 * 3.6,  # [EUR/MWh]
-                "coal": 3.0 * 3.6,  # [EUR/MWh]
-                "lignite": 1.1 * 3.6,  # [EUR/MWh]
-                "nuclear": 0.47 * 3.6,  # [EUR/MWh]
-                "biomass": read_costs(read_csv(2020), "biomass", "fuel"),
-            },
-            "co2_costs": 24.7,  # [EUR/t_CO2], source:
-            # https://de.statista.com/statistik/daten/studie/1304069/umfrage/preisentwicklung-von-co2-emissionsrechten-in-eu/
-            "co2_emissions": {  # Netzentwicklungsplan Strom 2035, Version 2021, 1. Entwurf, p. 40, table 8
-                "waste": 0.165,  # [t_CO2/MW_th]
-                "lignite": 0.393,  # [t_CO2/MW_th]
-                "gas": 0.201,  # [t_CO2/MW_th]
-                "nuclear": 0.0,  # [t_CO2/MW_th]
-                "oil": 0.288,  # [t_CO2/MW_th]
-                "coal": 0.335,  # [t_CO2/MW_th]
                 "other_non_renewable": 0.268,  # [t_CO2/MW_th]
             },
             "interest_rate": 0.05,  # [p.u.]
@@ -754,8 +728,8 @@ def electricity(scenario):
     elif scenario == "eGon2021":
         parameters = {}
 
-    elif (scenario == "status2019") or (scenario == "status2023"):
-        costs = read_csv(2020)
+    elif scenario == "status2024":
+        costs = read_csv(2025)
 
         parameters = {"grid_topology": "Status Quo"}
         # Insert effciencies in p.u.
@@ -887,7 +861,7 @@ def electricity(scenario):
             parameters["capital_cost"][comp] = annualize_capital_costs(
                 parameters["overnight_cost"][comp],
                 parameters["lifetime"][comp],
-                global_settings("status2019")["interest_rate"],
+                global_settings("status2024")["interest_rate"],
             )
 
         parameters["capital_cost"]["battery"] = (
@@ -939,12 +913,11 @@ def electricity(scenario):
             "solar": read_costs(costs, "solar", "VOM"),
         }
 
-        if scenario == "status2023":
-            parameters["annual_demand"] = {
-                "households": 130.48 * 1e6,  # MWh, source: BDEW 2023
-                "CTS": 121.16 * 1e6,  # MWh
-                "industry": 200.38 * 1e6,  # MWh
-            }
+        parameters["annual_demand"] = {
+            "households": 130.48 * 1e6,  # MWh, source: BDEW 2023
+            "CTS": 121.16 * 1e6,  # MWh
+            "industry": 200.38 * 1e6,  # MWh
+        }
 
     else:
         print(f"Scenario name {scenario} is not valid.")
@@ -1214,8 +1187,8 @@ def gas(scenario):
     elif scenario == "eGon2021":
         parameters = {}
 
-    elif scenario == "status2019":
-        costs = read_csv(2020)
+    elif scenario == "status2024":
+        costs = read_csv(2025)
         parameters = {
             "main_gas_carrier": "CH4",
         }
@@ -1312,26 +1285,10 @@ def mobility(scenario):
     elif scenario == "eGon2021":
         parameters = {}
 
-    elif scenario == "status2019":
+    elif scenario == "status2024":
         parameters = {
             "motorized_individual_travel": {
-                "status2019": {
-                    "ev_count": 200000,
-                    "bev_mini_share": 0.1589,
-                    "bev_medium_share": 0.3533,
-                    "bev_luxury_share": 0.1053,
-                    "phev_mini_share": 0.0984,
-                    "phev_medium_share": 0.2189,
-                    "phev_luxury_share": 0.0652,
-                    "model_parameters": {},
-                }
-            }
-        }
-
-    elif scenario == "status2023":
-        parameters = {
-            "motorized_individual_travel": {
-                "status2023": {
+                "status2024": {
                     "ev_count": 2577664,
                     "bev_mini_share": 0.1535,
                     "bev_medium_share": 0.3412,
@@ -1533,19 +1490,20 @@ def heat(scenario):
     elif scenario == "eGon2021":
         parameters = {}
 
-    elif scenario == "status2019":
+    elif scenario == "status2024":
         parameters = {
-            "DE_demand_residential_TJ": 1658400
-            + 383300,  # [TJ], space heating + hot water, source: AG Energiebilanzen 2019 (https://ag-energiebilanzen.de/wp-content/uploads/2020/10/ageb_20v_v1.pdf)
-            "DE_demand_service_TJ": 567300
-            + 71500,  # [TJ], space heating + hot water, source: AG Energiebilanzen 2019 (https://ag-energiebilanzen.de/wp-content/uploads/2020/10/ageb_20v_v1.pdf)
+            #  source: AG Energiebilanzen 2022  https://ag-energiebilanzen.de/wp-content/uploads/2023/01/AGEB_22p2_rev-1.pdf
+            "DE_demand_residential_TJ": 1754.2 * 1e3
+            + 407.5 * 1e3,  # [TJ], Endenergieverbrauch Haushalte 2.1 Raumwärme + Warmwasser
+            "DE_demand_service_TJ": 668.4 * 1e3
+            + 44.3 * 1e3,  # [TJ], Endenergieverbrauch GHD 3.1 Raumwärme + Warmwasser
             "DE_district_heating_share": (189760 + 38248)
             / (
                 1658400 + 383300 + 567300 + 71500
-            ),  # [TJ], source: AG Energiebilanzen 2019 (https://ag-energiebilanzen.de/wp-content/uploads/2021/11/bilanz19d.xlsx)
+            ),  # [TJ], source: AG Energiebilanzen 2019 (https://ag-energiebilanzen.de/wp-content/uploads/2021/11/bilanz19d.xlsx) # TODO status2024 needs update
         }
 
-        costs = read_csv(2020)
+        costs = read_csv(2025)
 
         # Insert marginal_costs in EUR/MWh
         # marginal cost can include fuel, C02 and operation and maintenance costs
@@ -1569,44 +1527,6 @@ def heat(scenario):
                 costs, "central gas boiler", "efficiency"
             ),
         }
-
-    # elif scenario == "status2023":
-    #     parameters = {
-    #         #  source: AG Energiebilanzen 2022  https://ag-energiebilanzen.de/wp-content/uploads/2023/01/AGEB_22p2_rev-1.pdf
-    #         "DE_demand_residential_TJ": 1754.2 * 1e3
-    #         + 407.5 * 1e3,  # [TJ], Endenergieverbrauch Haushalte 2.1 Raumwärme + Warmwasser
-    #         "DE_demand_service_TJ": 668.4 * 1e3
-    #         + 44.3 * 1e3 ,  # [TJ], Endenergieverbrauch GHD 3.1 Raumwärme + Warmwasser
-    #         "DE_district_heating_share": (189760 + 38248)
-    #         / (
-    #             1658400 + 383300 + 567300 + 71500
-    #         ),  # [TJ], source: AG Energiebilanzen 2019 (https://ag-energiebilanzen.de/wp-content/uploads/2021/11/bilanz19d.xlsx)
-    #     } # TODO status2023 needs update
-    #
-    #     costs = read_csv(2020)
-    #
-    #     # Insert marginal_costs in EUR/MWh
-    #     # marginal cost can include fuel, C02 and operation and maintenance costs
-    #     parameters["marginal_cost"] = {
-    #         "central_heat_pump": read_costs(
-    #             costs, "central air-sourced heat pump", "VOM"
-    #         ),
-    #         "central_gas_chp": read_costs(costs, "central gas CHP", "VOM"),
-    #         "central_gas_boiler": read_costs(
-    #             costs, "central gas boiler", "VOM"
-    #         ),
-    #         "central_resistive_heater": read_costs(
-    #             costs, "central resistive heater", "VOM"
-    #         ),
-    #         "rural_heat_pump": 0,  # Danish Energy Agency, Technology Data for Individual Heating Plants
-    #     }
-    #
-    #     # Insert efficiency in p.u.
-    #     parameters["efficiency"] = {
-    #         "central_gas_boiler": read_costs(
-    #             costs, "central gas boiler", "efficiency"
-    #         ),
-    #     }
 
     else:
         print(f"Scenario name {scenario} is not valid.")
