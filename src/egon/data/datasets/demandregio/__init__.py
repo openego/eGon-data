@@ -39,7 +39,7 @@ class DemandRegio(Dataset):
     using DemandRegio's diaggregator and input data. To bring the resulting
     data in line with other data used in eGon-data and the eGon project in
     general some data needed to be adjusted or extended, e.g. in function
-    :py:func:`adjust_ind_pes` or function :py:func:`adjust_cts_ind_nep`. The
+    :py:func:`adjust_cts_ind_nep`. The
     resulting data is written into newly created tables.
 
     *Dependencies*
@@ -295,122 +295,6 @@ def match_nuts3_bl():
     return df.set_index("nuts")
 
 
-def adjust_ind_pes(ec_cts_ind):
-    """
-    Adjust electricity demand of industrial consumers due to electrification
-    of process heat based on assumptions of pypsa-eur-sec.
-
-    Parameters
-    ----------
-    ec_cts_ind : pandas.DataFrame
-        Industrial demand without additional electrification
-
-    Returns
-    -------
-    ec_cts_ind : pandas.DataFrame
-        Industrial demand with additional electrification
-
-    """
-
-    pes_path = Path("data_bundle_egon_data")
-
-    # All file paths now use the new class attributes
-    demand_today = pd.read_csv(
-        pes_path / DemandRegio.sources.files["pes_demand_today"],
-        header=None,
-    ).transpose()
-
-    # Filter data
-    demand_today[1].fillna("carrier", inplace=True)
-    demand_today = demand_today[
-        (demand_today[0] == "DE") | (demand_today[1] == "carrier")
-    ].drop([0, 2], axis="columns")
-
-    demand_today = (
-        demand_today.transpose()
-        .set_index(0)
-        .transpose()
-        .set_index("carrier")
-        .transpose()
-        .loc["electricity"]
-        .astype(float)
-    )
-
-    # Calculate future industrial demand from pypsa-eur-sec
-    # based on production and energy demands per carrier ('sector ratios')
-    prod_tomorrow = pd.read_csv(
-        pes_path / DemandRegio.sources.files["pes_production_tomorrow"]
-    )
-    prod_tomorrow = prod_tomorrow[prod_tomorrow["kton/a"] == "DE"].set_index(
-        "kton/a"
-    )
-
-    sector_ratio = (
-        pd.read_csv(pes_path / DemandRegio.sources.files["pes_sector_ratios"])
-        .set_index("MWh/tMaterial")
-        .loc["elec"]
-    )
-
-    demand_tomorrow = prod_tomorrow.multiply(
-        sector_ratio.div(1000)
-    ).transpose()["DE"]
-
-    # Calculate changes of electrical demand per sector in pypsa-eur-sec
-    change = pd.DataFrame(
-        (demand_tomorrow / demand_today)
-        / (demand_tomorrow / demand_today).sum()
-    )
-
-    # Drop rows without changes
-    change = change[~change[0].isnull()]
-
-    # Map industrial branches of pypsa-eur-sec to WZ2008 used in demandregio
-    change["wz"] = change.index.map(
-        {
-            "Alumina production": 24,
-            "Aluminium - primary production": 24,
-            "Aluminium - secondary production": 24,
-            "Ammonia": 20,
-            "Basic chemicals (without ammonia)": 20,
-            "Cement": 23,
-            "Ceramics & other NMM": 23,
-            "Electric arc": 24,
-            "Food, beverages and tobacco": 10,
-            "Glass production": 23,
-            "Integrated steelworks": 24,
-            "Machinery Equipment": 28,
-            "Other Industrial Sectors": 32,
-            "Other chemicals": 20,
-            "Other non-ferrous metals": 24,
-            "Paper production": 17,
-            "Pharmaceutical products etc.": 21,
-            "Printing and media reproduction": 18,
-            "Pulp production": 17,
-            "Textiles and leather": 13,
-            "Transport Equipment": 29,
-            "Wood and wood products": 16,
-        }
-    )
-
-    # Group by WZ2008
-    shares_per_wz = change.groupby("wz")[0].sum()
-
-    # Calculate addtional demands needed to meet future demand of pypsa-eur-sec
-    addtional_mwh = shares_per_wz.multiply(
-        demand_tomorrow.sum() * 1000000 - ec_cts_ind.sum().sum()
-    )
-
-    # Calulate overall industrial demand for eGon100RE
-    final_mwh = addtional_mwh + ec_cts_ind[addtional_mwh.index].sum()
-
-    # Linear scale the industrial demands per nuts3 and wz to meet final demand
-    ec_cts_ind[addtional_mwh.index] *= (
-        final_mwh / ec_cts_ind[addtional_mwh.index].sum()
-    )
-
-    return ec_cts_ind
-
-
 def adjust_cts_ind_nep(ec_cts_ind, sector):
     """Add electrical demand of new largescale CTS und industrial consumers
     according to NEP 2021, scneario C 2035. Values per federal state are
@@ -480,8 +364,9 @@ def disagg_households_power(scenario, year, original=False, **kwargs):
         },
     )
 
-    if scenario == "eGon100RE":
-        # chose demand per household size from survey without DHW
+    if scenario == "reGon2045":
+        # chose demand per household size from survey without DHW, since
+        # heat/hot water demand is covered separately in this scenario
         power_per_HH = demand_per_hh_size["without_DHW"] / 1e3
 
         # calculate demand per nuts3 in 2011
@@ -491,7 +376,7 @@ def disagg_households_power(scenario, year, original=False, **kwargs):
         # according to JRC in 2011 (136.6-(20.14+9.41) TWh)
         power_per_HH *= (136.6 - (20.14 + 9.41)) * 1e6 / df_2011.sum().sum()
 
-        # calculate demand per nuts3 in 2050
+        # calculate demand per nuts3 in the scenario year
         df = data.households_per_size(year=year) * power_per_HH
 
     # Bottom-Up: Power demand by household sizes in [MWh/a] for each scenario
@@ -590,8 +475,8 @@ def insert_hh_demand(scenario, year, engine):
     ec_hh = disagg_households_power(scenario, year)
 
     # Scale to meet target value
-    # For status2019 and eGon2021 the final demand from demandregio is kept
-    if scenario not in ["status2019", "eGon2021"]:
+    # For eGon2021 the final demand from demandregio is kept
+    if scenario != "eGon2021":
         ec_hh *= (
             get_sector_parameters("electricity", scenario=scenario)[
                 "annual_demand"
@@ -606,12 +491,7 @@ def insert_hh_demand(scenario, year, engine):
     # insert into database
     for hh_size in ec_hh.columns:
         df = pd.DataFrame(ec_hh[hh_size])
-        df["year"] = (
-            2023 if scenario == "status2023" else year
-        )  # TODO status2023
-        # adhoc fix until ffeopendata servers are up and population_year
-        # can be set
-
+        df["year"] = year
         df["scenario"] = scenario
         df["hh_size"] = hh_size
         df = df.rename({hh_size: "demand"}, axis="columns")
@@ -655,17 +535,9 @@ def insert_hh_demand(scenario, year, engine):
         def change_year(dt, year):
             return dt.replace(year=year)
 
-        year = 2023 if scenario == "status2023" else year  # TODO status2023
         hh_load_timeseries.index = hh_load_timeseries.index.map(
             lambda dt: change_year(dt, year)
         )
-
-        if scenario == "status2023":
-            hh_load_timeseries = hh_load_timeseries.shift(24 * 2)
-
-            hh_load_timeseries.iloc[: 24 * 7] = hh_load_timeseries.iloc[
-                24 * 7 : 24 * 7 * 2
-            ].values
 
     write_demandregio_hh_profiles_to_db(hh_load_timeseries)
 
@@ -691,14 +563,8 @@ def insert_cts_ind(scenario, year, engine, target_values):
     """
     # targets = egon.data.config.datasets()["demandregio_cts_ind_demand"]["targets"]
 
-    wz_table = pd.read_sql(
-        f"SELECT wz, sector FROM {DemandRegio.targets.tables['wz_definitions']}",
-        con=engine,
-        index_col="wz",
-    )
-
     # Workaround: Since the disaggregator does not work anymore, data from
-    # previous runs is used for eGon2035 and eGon100RE
+    # previous runs is used for eGon2035
     if scenario == "eGon2035":
         file2035_path = (
             Path("data_bundle_egon_data")
@@ -706,42 +572,6 @@ def insert_cts_ind(scenario, year, engine, target_values):
             / "egon_demandregio_cts_ind_egon2035.csv"
         )
         ec_cts_ind2 = pd.read_csv(file2035_path)
-        ec_cts_ind2.to_sql(
-            DemandRegio.targets.get_table_name("cts_ind_demand"),
-            engine,
-            schema=DemandRegio.targets.get_table_schema("cts_ind_demand"),
-            if_exists="append",
-            index=False,
-        )
-        return
-
-    if scenario == "eGon100RE":
-        ec_cts_ind2 = pd.read_csv(
-            Path("data_bundle_egon_data")
-            / "demand_regio_backup"
-            / "egon_demandregio_cts_ind.csv"
-        )
-
-        ec_cts_ind2["sector"] = ec_cts_ind2["wz"].map(wz_table["sector"])
-        factor_ind = target_values["industry"] / (
-            ec_cts_ind2[ec_cts_ind2["sector"] == "industry"]["demand"].sum()
-            / 1000
-        )
-        factor_cts = target_values["CTS"] / (
-            ec_cts_ind2[ec_cts_ind2["sector"] == "CTS"]["demand"].sum() / 1000
-        )
-
-        ec_cts_ind2["demand"] = ec_cts_ind2.apply(
-            lambda x: (
-                x["demand"] * factor_ind
-                if x["sector"] == "industry"
-                else x["demand"] * factor_cts
-            ),
-            axis=1,
-        )
-
-        ec_cts_ind2.drop(columns=["sector"], inplace=True)
-
         ec_cts_ind2.to_sql(
             DemandRegio.targets.get_table_name("cts_ind_demand"),
             engine,
@@ -777,9 +607,6 @@ def insert_cts_ind(scenario, year, engine, target_values):
         # include new largescale consumers according to NEP 2021
         if scenario == "eGon2035":
             ec_cts_ind = adjust_cts_ind_nep(ec_cts_ind, sector)
-        # include new industrial demands due to sector coupling
-        if (scenario == "eGon100RE") & (sector == "industry"):
-            ec_cts_ind = adjust_ind_pes(ec_cts_ind)
 
         # Select demands for nuts3-regions in boundaries (needed for testmode)
         ec_cts_ind = data_in_boundaries(ec_cts_ind)
@@ -820,11 +647,7 @@ def insert_household_demand():
         db.execute_sql(f"DELETE FROM {DemandRegio.targets.tables[table_key]};")
 
     for scn in scenarios:
-        year = (
-            2023
-            if scn == "status2023"
-            else scenario_parameters.global_settings(scn)["population_year"]
-        )
+        year = scenario_parameters.global_settings(scn)["population_year"]
 
         # Insert demands of private households
         insert_hh_demand(scn, year, engine)
@@ -862,8 +685,8 @@ def insert_cts_ind_demands():
             year = 2035
 
         # target values per scenario in MWh
-        # for eGon2021 and status2019 demandregio-data is used without scaling
-        if scn not in ["eGon2021", "status2019"]:
+        # for eGon2021 demandregio-data is used without scaling
+        if scn != "eGon2021":
             target_values = {
                 "CTS": get_sector_parameters("electricity", scenario=scn)[
                     "annual_demand"
