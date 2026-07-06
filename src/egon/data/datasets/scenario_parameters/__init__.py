@@ -93,7 +93,6 @@ def insert_scenarios():
 
     session.commit()
 
-
     # Scenario eGon2021
     eGon2021 = EgonScenario(name="eGon2021")
 
@@ -158,7 +157,7 @@ def insert_scenarios():
     session.add(reGon2037)
 
     session.commit()
-    
+
     # Scenario reGon2045
     reGon2045 = EgonScenario(name="reGon2045")
 
@@ -211,41 +210,51 @@ def get_sector_parameters(sector, scenario=None):
                 f"SELECT name FROM {ScenarioParameters.targets.tables['egon_scenario_parameters']}"
             ).name.values
         ):
-            values = db.select_dataframe(f"""
+            values = db.select_dataframe(
+                f"""
                     SELECT {sector}_parameters as val
                     FROM {ScenarioParameters.targets.tables['egon_scenario_parameters']}
-                    WHERE name = '{scenario}';""").val[0]
+                    WHERE name = '{scenario}';"""
+            ).val[0]
         else:
             print(f"Scenario name {scenario} is not valid.")
     else:
         values = pd.concat(
             [
                 pd.DataFrame(
-                    db.select_dataframe(f"""
+                    db.select_dataframe(
+                        f"""
                         SELECT {sector}_parameters as val
                         FROM {ScenarioParameters.targets.tables['egon_scenario_parameters']}
-                        WHERE name='eGon2035'""").val[0],
+                        WHERE name='eGon2035'"""
+                    ).val[0],
                     index=["eGon2035"],
                 ),
                 pd.DataFrame(
-                    db.select_dataframe(f"""
+                    db.select_dataframe(
+                        f"""
                         SELECT {sector}_parameters as val
                         FROM {ScenarioParameters.targets.tables['egon_scenario_parameters']}
-                        WHERE name='reGon2037'""").val[0],
+                        WHERE name='reGon2037'"""
+                    ).val[0],
                     index=["reGon2037"],
                 ),
                 pd.DataFrame(
-                    db.select_dataframe(f"""
+                    db.select_dataframe(
+                        f"""
                         SELECT {sector}_parameters as val
                         FROM {ScenarioParameters.targets.tables['egon_scenario_parameters']}
-                        WHERE name='reGon2045'""").val[0],
+                        WHERE name='reGon2045'"""
+                    ).val[0],
                     index=["reGon2045"],
                 ),
                 pd.DataFrame(
-                    db.select_dataframe(f"""
+                    db.select_dataframe(
+                        f"""
                         SELECT {sector}_parameters as val
                         FROM {ScenarioParameters.targets.tables['egon_scenario_parameters']}
-                        WHERE name='eGon2021'""").val[0],
+                        WHERE name='eGon2021'"""
+                    ).val[0],
                     index=["eGon2021"],
                 ),
             ],
