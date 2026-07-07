@@ -481,7 +481,6 @@ def insert_hh_demand(scenario, year, engine):
             get_sector_parameters("electricity", scenario=scenario)[
                 "annual_demand"
             ]["households"]
-            * 1e6
             / ec_hh.sum().sum()
         )
 
@@ -596,7 +595,7 @@ def insert_cts_ind(scenario, year, engine, target_values):
         if target_values:
             if sector in target_values.keys():
                 ec_cts_ind *= (
-                    target_values[sector] * 1e3 / ec_cts_ind.sum().sum()
+                    target_values[sector] / ec_cts_ind.sum().sum()
                 )
         else:
             print(
