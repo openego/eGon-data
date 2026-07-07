@@ -219,6 +219,11 @@ def get_sector_parameters(sector, scenario=None):
         else:
             print(f"Scenario name {scenario} is not valid.")
     else:
+        scenario_names = (
+            egon.data.config.settings()["egon-data"]["--scenarios"]
+            + ["eGon2021"]
+        )
+
         values = pd.concat(
             [
                 pd.DataFrame(
@@ -226,37 +231,11 @@ def get_sector_parameters(sector, scenario=None):
                         f"""
                         SELECT {sector}_parameters as val
                         FROM {ScenarioParameters.targets.tables['egon_scenario_parameters']}
-                        WHERE name='eGon2035'"""
+                        WHERE name='{scn}'"""
                     ).val[0],
-                    index=["eGon2035"],
-                ),
-                pd.DataFrame(
-                    db.select_dataframe(
-                        f"""
-                        SELECT {sector}_parameters as val
-                        FROM {ScenarioParameters.targets.tables['egon_scenario_parameters']}
-                        WHERE name='reGon2037'"""
-                    ).val[0],
-                    index=["reGon2037"],
-                ),
-                pd.DataFrame(
-                    db.select_dataframe(
-                        f"""
-                        SELECT {sector}_parameters as val
-                        FROM {ScenarioParameters.targets.tables['egon_scenario_parameters']}
-                        WHERE name='reGon2045'"""
-                    ).val[0],
-                    index=["reGon2045"],
-                ),
-                pd.DataFrame(
-                    db.select_dataframe(
-                        f"""
-                        SELECT {sector}_parameters as val
-                        FROM {ScenarioParameters.targets.tables['egon_scenario_parameters']}
-                        WHERE name='eGon2021'"""
-                    ).val[0],
-                    index=["eGon2021"],
-                ),
+                    index=[scn],
+                )
+                for scn in scenario_names
             ],
             ignore_index=True,
         )
