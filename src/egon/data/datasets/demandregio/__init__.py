@@ -98,7 +98,7 @@ class DemandRegio(Dataset):
     #:
     name: str = "DemandRegio"
     #:
-    version: str = "0.0.20"
+    version: str = "0.0.21"
 
     def __init__(self, dependencies):
         super().__init__(
@@ -644,6 +644,14 @@ def insert_household_demand():
 
     for table_key in ["hh_demand"]:  # Assuming this is the only target here
         db.execute_sql(f"DELETE FROM {DemandRegio.targets.tables[table_key]};")
+
+    # Not registered as a DemandRegio target, but written to (per scenario)
+    # by insert_hh_demand below. Must be cleared here too, otherwise re-runs
+    # append duplicate (year, nuts3) rows on top of previous runs' data.
+    db.execute_sql(
+        f"DELETE FROM {DemandRegioLoadProfiles.__table__.schema}."
+        f"{DemandRegioLoadProfiles.__table__.name};"
+    )
 
     for scn in scenarios:
         year = scenario_parameters.global_settings(scn)["population_year"]
