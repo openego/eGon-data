@@ -60,7 +60,7 @@ class Storages(Dataset):
             "egon_mv_grid_district": "grid.egon_mv_grid_district",
             "ehv_voronoi": "grid.egon_ehv_substation_voronoi",
             # Added for pumped_hydro.py
-            "nep_conv": "supply.egon_nep_2021_conventional_powerplants",
+            "nep_conv": "supply.egon_nep_conventional_powerplants",
             # Added for home_batteries.py
             "etrago_storage": "grid.egon_etrago_storage",
         },

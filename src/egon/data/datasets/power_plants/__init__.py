@@ -1535,7 +1535,7 @@ class PowerPlants(Dataset):
             "pv": "supply.egon_power_plants_pv",
             "wind": "supply.egon_power_plants_wind",
             "mastr_combustion_without_chp": "supply.egon_mastr_conventional_without_chp",
-            "nep_conv": "supply.egon_nep_2021_conventional_powerplants",
+            "nep_conv": "supply.egon_nep_conventional_powerplants",
             "buses_data": "osmtgmod_results.bus_data",
             "storages": "supply.egon_storages",
             "wind_potential_areas": "supply.egon_re_potential_area_wind",
