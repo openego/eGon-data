@@ -176,12 +176,12 @@ from sqlalchemy.orm import Session
 )
 @click.option(
     "--scenarios",
-    default=["status2023", "eGon2035"],
+    default=["status2024", "reGon2037"],
     metavar="SCENARIOS",
     help=(
         "Scenario name for which a data model shall be created."
         " If you want to create multiple scenarios, set the parameter multiple"
-        " times, e.g. --scenarios eGon2035 --scenarios status2023"
+        " times, e.g. --scenarios reGon2037 --scenarios status2024"
         ),
     multiple=True,
     show_default=True,
