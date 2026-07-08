@@ -26,6 +26,11 @@ Changed
   `#1274 <https://github.com/openego/eGon-data/issues/1274>`_
 * Use OSM data from 2025
   `#1363 <https://github.com/openego/eGon-data/issues/1363>`_
+* Adapt electricity demand timeseries to new scenarios: generalize
+  DemandRegio's sector parameter lookup and the household demand
+  factor columns to the configured scenarios, and remove obsolete
+  status2019/status2023/eGon100RE handling
+  `#1433 <https://github.com/openego/eGon-data/issues/1433>`_
 
 Bug Fixes
 ---------
@@ -41,7 +46,8 @@ Bug Fixes
   `#1368 <https://github.com/openego/eGon-data/issues/1368>`_
 * Fix problem related to deprecated functions in the latest version of pgrouting
   `#1392 <https://github.com/openego/eGon-data/issues/1392>`_
-
+* Fix problem with atlite and xarray, era5 data is downloadable again
+  `#1250 <https://github.com/openego/eGon-data/issues/1250>`_
 
 Version 2.0.0 (2025-08-20)
 ==========================

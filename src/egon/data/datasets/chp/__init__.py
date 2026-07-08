@@ -565,7 +565,7 @@ def insert_chp_egon100re():
 
     # select target values from pypsa-eur-sec
     additional_capacity = db.select_dataframe(
-        """
+        f""" # noqa: S608
         SELECT capacity
         FROM {Chp.sources.tables['scenario_capacities']}
         WHERE scenario_name = 'eGon100RE'
