@@ -1272,6 +1272,24 @@ mobility_hgv:
       # https://www.langfristszenarien.de/enertile-explorer-wAssets/docs/LFS3_Langbericht_Verkehr_final.pdf#page=17
       eGon100RE: 40000000000
 
+mobility_hgv_charging:
+  original_data:
+    sources:
+      # Path to the Stage A output folder produced by energy_distribution_depots.py
+      # e.g. "/storage/MS_egon_data/HGV/output/energy_distribution_C_2037_<timestamp>"
+      stage_a_run_dir: "path/to/stage_a_run_dir"
+    lowflex:
+      create_lowflex_scenario: False
+      names:
+        reGon2037: "reGon2037_lowflex"
+        reGon2045: "reGon2045_lowflex"
+  constants:
+    scenarios:
+      reGon2037: "C 2037"
+      reGon2045: "C 2045"
+    carrier: "land_transport_HGV"
+    srid: 3035
+
 home_batteries:
   constants:
     scenarios:

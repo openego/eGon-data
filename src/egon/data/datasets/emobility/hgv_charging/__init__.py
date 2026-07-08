@@ -1,0 +1,106 @@
+"""
+HGV charging integration for egon-data (Stage B).
+
+Reads Stage A output files (sites, charging points, events, profiles) and writes:
+  - demand.egon_hgv_charging_site      (Table 1)
+  - demand.egon_hgv_charging_point     (Table 2)
+  - demand.egon_hgv_charging_event     (Table 3)
+  - demand.egon_hgv_profile            (Table 4)
+  - grid.egon_etrago_load              (extended)
+  - grid.egon_etrago_load_timeseries   (extended)
+
+Scenarios:
+  reGon2037 → Stage A "C 2037"
+  reGon2045 → Stage A "C 2045"
+"""
+
+from loguru import logger
+
+from egon.data import db
+from egon.data.datasets import Dataset, DatasetSources, DatasetTargets
+from egon.data.datasets.emobility.hgv_charging.db_classes import (
+    EgonHgvChargingEvent,
+    EgonHgvChargingPoint,
+    EgonHgvChargingSite,
+    EgonHgvProfile,
+)
+from egon.data.datasets.emobility.hgv_charging.etrago_integration import write_etrago
+from egon.data.datasets.emobility.hgv_charging.fill_tables import fill_hgv_tables
+from egon.data.datasets.emobility.hgv_charging.spatial_assignment import (
+    spatial_assignment,
+)
+
+# Mapping: egon-data scenario name → Stage A scenario string
+SCENARIO_MAP = {
+    "reGon2037": "C 2037",
+    "reGon2045": "C 2045",
+}
+
+
+def create_tables():
+    """Drop and recreate Tables 1–4. Table 5 is created during eDisGo integration."""
+    engine = db.engine()
+    for model in [
+        EgonHgvChargingSite,
+        EgonHgvChargingPoint,
+        EgonHgvChargingEvent,
+        EgonHgvProfile,
+    ]:
+        model.__table__.drop(bind=engine, checkfirst=True)
+        model.__table__.create(bind=engine, checkfirst=True)
+    logger.debug("Created HGV charging tables.")
+
+
+class HGVCharging(Dataset):
+    """
+    Integrates HGV charging demand into egon-data.
+
+    Reads Stage A output files (sites, charging points, events, profiles) and
+    populates four new demand tables plus extends egon_etrago_load / _timeseries.
+
+    *Dependencies*
+      * :py:class:`MvGridDistricts <egon.data.datasets.mv_grid_districts>`
+      * :py:class:`EtragoSetup <egon.data.datasets.etrago_setup.EtragoSetup>`
+      * :py:class:`Vg250 <egon.data.datasets.vg250.Vg250>`
+      * :py:class:`ScenarioParameters <egon.data.datasets.scenario_parameters.ScenarioParameters>`
+
+    *Configuration*
+
+    The config of this dataset is in *datasets.yml* under *mobility_hgv_charging*.
+    Set ``original_data.sources.stage_a_run_dir`` to the Stage A output folder.
+    """
+
+    sources = DatasetSources(
+        tables={
+            "mv_grid_district": "grid.egon_mv_grid_district",
+            "etrago_load": "grid.egon_etrago_load",
+            "etrago_load_timeseries": "grid.egon_etrago_load_timeseries",
+        },
+    )
+
+    targets = DatasetTargets(
+        tables={
+            "charging_site": "demand.egon_hgv_charging_site",
+            "charging_point": "demand.egon_hgv_charging_point",
+            "charging_event": "demand.egon_hgv_charging_event",
+            "profile": "demand.egon_hgv_profile",
+            "etrago_load": "grid.egon_etrago_load",
+            "etrago_load_timeseries": "grid.egon_etrago_load_timeseries",
+        },
+    )
+
+    name: str = "HGVCharging"
+    version: str = "0.0.1"
+
+    def __init__(self, dependencies):
+        super().__init__(
+            name=self.name,
+            version=self.version,
+            dependencies=dependencies,
+            tasks=(
+                create_tables,
+                fill_hgv_tables,
+                spatial_assignment,
+                write_etrago,
+            ),
+        )

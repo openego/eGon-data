@@ -163,6 +163,7 @@ def generate_load_time_series(
     ev_data_df: pd.DataFrame,
     run_config: pd.DataFrame,
     scenario_data: pd.DataFrame,
+    reduce_memory: bool = None,
 ) -> pd.DataFrame:
     """Calculate the load time series from the given trip data. A dumb
     charging strategy is assumed where each EV starts charging immediately
@@ -177,13 +178,18 @@ def generate_load_time_series(
         simBEV metadata: run config
     scenario_data : pd.Dataframe
         EV per grid district
+    reduce_memory : bool, optional
+        If None (default), read from datasets.yml config. Pass False to skip
+        memory reduction (e.g. when called from non-MIV contexts).
 
     Returns
     -------
     pd.DataFrame
         time series of the load and the flex potential
     """
-    sources, targets = load_sources_and_targets("MotorizedIndividualTravel")
+    if reduce_memory is None:
+        sources, targets = load_sources_and_targets("MotorizedIndividualTravel")
+        reduce_memory = sources.files["original_data"]["model_timeseries"]["reduce_memory"]
     # Get duplicates dict
     profile_counter = Counter(scenario_data.ev_id)
 
@@ -359,7 +365,7 @@ def generate_load_time_series(
 
     # validate load timeseries
     np.testing.assert_almost_equal(
-        load_time_series_df.load_time_series.sum() / 4,
+        load_time_series_df.load_time_series.sum() / (60 / int(run_config.stepsize)),
         (
             ev_data_df.ev_id.apply(lambda _: profile_counter[_])
             * ev_data_df.charging_demand
@@ -369,7 +375,7 @@ def generate_load_time_series(
         decimal=-1,
     )
 
-    if sources.files["original_data"]["model_timeseries"]["reduce_memory"]:
+    if reduce_memory:
         return reduce_mem_usage(load_time_series_df)
     return load_time_series_df
 
