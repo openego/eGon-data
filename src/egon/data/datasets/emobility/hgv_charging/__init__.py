@@ -1,7 +1,8 @@
 """
-HGV charging integration for egon-data (Stage B).
+HGV charging integration for egon-data.
 
-Reads Stage A output files (sites, charging points, events, profiles) and writes:
+Reads precomputed HGV charging demand input files (sites, charging points,
+events, profiles) and writes:
   - demand.egon_hgv_charging_site      (Table 1)
   - demand.egon_hgv_charging_point     (Table 2)
   - demand.egon_hgv_charging_event     (Table 3)
@@ -10,13 +11,16 @@ Reads Stage A output files (sites, charging points, events, profiles) and writes
   - grid.egon_etrago_load_timeseries   (extended)
 
 Scenarios:
-  reGon2037 → Stage A "C 2037"
-  reGon2045 → Stage A "C 2045"
+  reGon2037 → input data "C 2037"
+  reGon2045 → input data "C 2045"
+
+Only scenarios that are both in SCENARIO_MAP and in the pipeline's configured
+--scenarios are processed (see active_scenario_map()).
 """
 
 from loguru import logger
 
-from egon.data import db
+from egon.data import config, db
 from egon.data.datasets import Dataset, DatasetSources, DatasetTargets
 from egon.data.datasets.emobility.hgv_charging.db_classes import (
     EgonHgvChargingEvent,
@@ -30,11 +34,17 @@ from egon.data.datasets.emobility.hgv_charging.spatial_assignment import (
     spatial_assignment,
 )
 
-# Mapping: egon-data scenario name → Stage A scenario string
+# Mapping: egon-data scenario name → input-data scenario string
 SCENARIO_MAP = {
     "reGon2037": "C 2037",
     "reGon2045": "C 2045",
 }
+
+
+def active_scenario_map() -> dict:
+    """SCENARIO_MAP filtered to the scenarios configured via --scenarios."""
+    active = set(config.settings()["egon-data"]["--scenarios"])
+    return {k: v for k, v in SCENARIO_MAP.items() if k in active}
 
 
 def create_tables():
@@ -55,19 +65,22 @@ class HGVCharging(Dataset):
     """
     Integrates HGV charging demand into egon-data.
 
-    Reads Stage A output files (sites, charging points, events, profiles) and
-    populates four new demand tables plus extends egon_etrago_load / _timeseries.
+    Reads precomputed HGV charging demand input files (sites, charging points,
+    events, profiles) and populates four new demand tables plus extends
+    egon_etrago_load / _timeseries.
 
     *Dependencies*
       * :py:class:`MvGridDistricts <egon.data.datasets.mv_grid_districts>`
       * :py:class:`EtragoSetup <egon.data.datasets.etrago_setup.EtragoSetup>`
       * :py:class:`Vg250 <egon.data.datasets.vg250.Vg250>`
       * :py:class:`ScenarioParameters <egon.data.datasets.scenario_parameters.ScenarioParameters>`
+      * :py:class:`Osmtgmod <egon.data.datasets.osmtgmod.Osmtgmod>`
 
     *Configuration*
 
     The config of this dataset is in *datasets.yml* under *mobility_hgv_charging*.
-    Set ``original_data.sources.stage_a_run_dir`` to the Stage A output folder.
+    Set ``original_data.sources.hgv_input_dir`` to the directory holding one
+    subfolder per scenario with the input files.
     """
 
     sources = DatasetSources(

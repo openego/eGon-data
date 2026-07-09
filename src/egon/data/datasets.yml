@@ -1228,56 +1228,17 @@ charging_infrastructure:
         - "weight"
         - "geometry"
 
-mobility_hgv:
-    original_data:
-      sources:
-        BAST:
-          url: "https://www.bast.de/DE/Themen/Digitales/HF_1/Massnahmen/verkehrszaehlung/Daten/2020_1/Jawe2020.csv?view=renderTcDataExportCSV&strTyp=A"
-          file: "Jawe2020.csv"
-          relevant_columns: ["DTV_SV_MobisSo_Q", "Koor_WGS84_E", "Koor_WGS84_N"]
-          srid: 4326
-    tables:
-      srid: 3035
-      srid_buses: 4326
-    constants:
-      # leakage rate / losses - constant
-      # https://www.energy.gov/eere/fuelcells/doe-technical-targets-hydrogen-delivery
-      # --> 0.5%
-      leakage: True
-      leakage_rate: 0.005
-      # Hydrogen
-      # HGV traffic hydrogen consumption in kg per 100 km
-      # Assumption: 30L Diesel / 100 km --> kgH2/100 km
-      hydrogen_consumption: 6.68
-      # share of FCEV trucks
-      # within the egon project the flat guess is 100%
-      fcev_share: 1.
-      scenarios:
-        - "eGon2035"
-        - "eGon100RE"
-      carrier: "H2_hgv_load"
-      energy_value_h2: 39.4  # kWh/kg
-      hours_per_year: 8760
-      fac: 0.001
-    hgv_mileage:
-      # NEP data
-      # https://www.netzentwicklungsplan.de/sites/default/files/paragraphs-files/NEP_2035_V2021_2_Entwurf_Teil1.pdf
-      # total amount of HGVs  - Scenario C 2035
-      # hgv_amount = 100000
-      # HGV traffic annual mileage per vehicle
-      # hgv_mean_mileage = 100000
-      # Total mileage
-      eGon2035: 10000000000
-      # Langfristszenarien
-      # https://www.langfristszenarien.de/enertile-explorer-wAssets/docs/LFS3_Langbericht_Verkehr_final.pdf#page=17
-      eGon100RE: 40000000000
-
 mobility_hgv_charging:
   original_data:
     sources:
-      # Path to the Stage A output folder produced by energy_distribution_depots.py
-      # e.g. "/storage/MS_egon_data/HGV/output/energy_distribution_C_2037_<timestamp>"
-      stage_a_run_dir: "path/to/stage_a_run_dir"
+      # Path to the precomputed HGV charging demand data (sites, charging points,
+      # charging events, profiles), produced externally by energy_distribution_depots.py.
+      # Resolved relative to the egon-data working directory (see WORKING_DIR in
+      # emobility/hgv_charging/__init__.py). One subfolder per scenario.
+      # TODO: once this data is added to the shared data bundle, move it under
+      # data_bundle_egon_data/hgv_charging/input/<scenario> and update
+      # WORKING_DIR/hgv_input_dir accordingly.
+      hgv_input_dir: "hgv_charging/input"
     lowflex:
       create_lowflex_scenario: False
       names:

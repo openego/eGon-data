@@ -22,7 +22,7 @@ import numpy as np
 import pandas as pd
 
 from egon.data import config, db
-from egon.data.datasets.emobility.hgv_charging import SCENARIO_MAP
+from egon.data.datasets.emobility.hgv_charging import active_scenario_map
 from egon.data.datasets.etrago_setup import (
     EgonPfHvBus,
     EgonPfHvLink,
@@ -54,10 +54,10 @@ def _lowflex_config() -> dict:
 
 
 def write_etrago():
-    """Write eTraGo HGV load and flex model for all scenarios."""
+    """Write eTraGo HGV load and flex model for all active scenarios."""
     lowflex = _lowflex_config()
 
-    for egon_scn in SCENARIO_MAP:
+    for egon_scn in active_scenario_map():
         logger.info(f"Writing eTraGo HGV load for scenario {egon_scn}")
 
         sites, cps, events, profiles = _load_data(egon_scn)

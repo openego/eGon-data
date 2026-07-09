@@ -1,10 +1,11 @@
 """
-Read Stage A output files and populate Tables 1–4.
+Read the precomputed HGV charging demand input files and populate Tables 1–4.
 
-Stage A files live in the run folder configured via datasets.yml:
-  mobility_hgv_charging.original_data.sources.stage_a_run_dir
+Input files live in one subfolder per scenario under the directory configured
+via datasets.yml:
+  mobility_hgv_charging.original_data.sources.hgv_input_dir
 
-For each scenario the Stage A string (e.g. "C 2037") is mapped to the
+For each scenario the input-data string (e.g. "C 2037") is mapped to the
 egon-data scenario name ("reGon2037") before writing to the DB.
 """
 
@@ -16,35 +17,32 @@ import geopandas as gpd
 import pandas as pd
 
 from egon.data import config, db
-from egon.data.datasets.emobility.hgv_charging import SCENARIO_MAP
+from egon.data.datasets.emobility.hgv_charging import active_scenario_map
 
 
-def _run_dir() -> Path:
+def _input_dir() -> Path:
     cfg = config.datasets()["mobility_hgv_charging"]
-    return Path(cfg["original_data"]["sources"]["stage_a_run_dir"])
+    return Path(cfg["original_data"]["sources"]["hgv_input_dir"])
 
 
 def fill_hgv_tables():
-    """Read Stage A files and write Tables 1–4 for all scenarios."""
-    run_dir = _run_dir()
+    """Read input files and write Tables 1–4 for all active scenarios."""
+    input_dir = _input_dir()
     engine = db.engine()
 
-    # Invert map: Stage A string → egon-data scenario name
-    stage_a_to_egon = {v: k for k, v in SCENARIO_MAP.items()}
+    for egon_scn, data_scn in active_scenario_map().items():
+        scenario_dir = input_dir / egon_scn
+        logger.info(f"Filling HGV tables for scenario {egon_scn} ({data_scn}) from {scenario_dir}")
 
-    # Read all Stage A files once (they contain all scenarios)
-    sites_all = gpd.read_file(run_dir / "sites.gpkg")
-    cps_all = pd.read_csv(run_dir / "charging_points.csv")
-    events_all = pd.read_csv(run_dir / "charging_events.csv")
-    profiles_all = pd.read_csv(run_dir / "profiles.csv")
+        sites_all = gpd.read_file(scenario_dir / "sites.gpkg")
+        cps_all = pd.read_csv(scenario_dir / "charging_points.csv")
+        events_all = pd.read_csv(scenario_dir / "charging_events.csv")
+        profiles_all = pd.read_csv(scenario_dir / "profiles.csv")
 
-    for egon_scn, stage_a_scn in SCENARIO_MAP.items():
-        logger.info(f"Filling HGV tables for scenario {egon_scn} ({stage_a_scn})")
-
-        _write_sites(sites_all, egon_scn, stage_a_scn, engine)
-        _write_charging_points(cps_all, egon_scn, stage_a_scn, engine)
-        _write_charging_events(events_all, egon_scn, stage_a_scn, engine)
-        _write_profiles(profiles_all, egon_scn, stage_a_scn, engine)
+        _write_sites(sites_all, egon_scn, data_scn, engine)
+        _write_charging_points(cps_all, egon_scn, data_scn, engine)
+        _write_charging_events(events_all, egon_scn, data_scn, engine)
+        _write_profiles(profiles_all, egon_scn, data_scn, engine)
 
 
 def _write_sites(sites_all, egon_scn, stage_a_scn, engine):

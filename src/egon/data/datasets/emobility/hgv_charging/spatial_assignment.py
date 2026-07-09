@@ -22,7 +22,7 @@ import geopandas as gpd
 import pandas as pd
 
 from egon.data import db
-from egon.data.datasets.emobility.hgv_charging import SCENARIO_MAP
+from egon.data.datasets.emobility.hgv_charging import active_scenario_map
 
 
 def _assign_voltage_level(p_set_mw: pd.Series) -> pd.Series:
@@ -37,14 +37,14 @@ def _assign_voltage_level(p_set_mw: pd.Series) -> pd.Series:
 
 
 def spatial_assignment():
-    """Assign mv_grid_id, bus_id, voltage_level to Table 1 for all scenarios."""
+    """Assign mv_grid_id, bus_id, voltage_level to Table 1 for all active scenarios."""
     mv_districts = db.select_geodataframe(
         "SELECT bus_id, geom FROM grid.egon_mv_grid_district",
         geom_col="geom",
         epsg=3035,
     )
 
-    for egon_scn in SCENARIO_MAP:
+    for egon_scn in active_scenario_map():
         logger.info(f"Spatial assignment for scenario {egon_scn}")
 
         sites = db.select_geodataframe(

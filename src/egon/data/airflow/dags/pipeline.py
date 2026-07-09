@@ -29,9 +29,6 @@ from egon.data.datasets.electricity_demand_timeseries import (
 from egon.data.datasets.electricity_demand_timeseries.cts_buildings import (
     CtsDemandBuildings,
 )
-from egon.data.datasets.emobility.heavy_duty_transport import (
-    HeavyDutyTransport,
-)
 from egon.data.datasets.emobility.hgv_charging import HGVCharging
 from egon.data.datasets.emobility.motorized_individual_travel import (
     MotorizedIndividualTravel,
@@ -684,11 +681,6 @@ with airflow.DAG(
         )
 
     with TaskGroup(group_id="mobility_demand") as mobility_demand_group:
-        # eMobility: heavy duty transport
-        heavy_duty_transport = HeavyDutyTransport(
-            dependencies=[vg250, setup_etrago, create_gas_polygons]
-        )
-
         # eMobility: HGV charging (BEV depots + highway)
         hgv_charging = HGVCharging(
             dependencies=[
@@ -696,6 +688,7 @@ with airflow.DAG(
                 setup_etrago,
                 vg250,
                 scenario_parameters,
+                osmtgmod,
             ]
         )
 
