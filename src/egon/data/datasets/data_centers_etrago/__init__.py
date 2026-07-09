@@ -636,7 +636,9 @@ class DataCenters(Dataset):
             "internet_nodes": (
                 "data_bundle_egon_data/data_centers/Internetknoten.gpkg"
             ),
-            "regional_factors": "Regionalisierungsfaktoren.gpkg",
+            "regional_factors": (
+                "data_bundle_egon_data/data_centers/Regionalisierungsfaktoren.gpkg"
+            ),
             # Original input containing pre-defined regional Faktor values for selected grid/location points.
             # The exact factor methodology comes from the original external source/PDF, not from this code.
             # In the allocation, the factor is used only as an electricity-location score modifier via score_regio_strom = 1.2 - Faktor. Therefore, lower Faktor values increase the electricity suitability score.
