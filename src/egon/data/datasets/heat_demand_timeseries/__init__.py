@@ -907,7 +907,7 @@ def individual_heating_per_mv_grid(method="python"):
         EgonEtragoTimeseriesIndividualHeating.__table__.create(
             bind=engine, checkfirst=True
         )
-        for scenario in ["eGon2035", "reGon2037", "reGon2045"]:
+        for scenario in config.settings()["egon-data"]["--scenarios"]:
             create_individual_heating_profile_python_like(scenario)
 
     else:
@@ -930,7 +930,7 @@ def individual_heating_per_mv_grid(method="python"):
             """)
 
         for index, row in ids.iterrows():
-            for scenario in ["eGon2035"]:
+            for scenario in config.settings()["egon-data"]["--scenarios"]:
                 series = create_individual_heat_per_mv_grid(
                     scenario, row.bus_id
                 )
