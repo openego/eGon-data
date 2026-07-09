@@ -74,7 +74,7 @@ class DistrictHeatingAreas(Dataset):
     #:
     name: str = "district-heating-areas"
     #:
-    version: str = "0.0.5"
+    version: str = "0.0.6"
 
     sources = DatasetSources(
         tables={
