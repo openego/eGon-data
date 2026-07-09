@@ -17,6 +17,7 @@ from egon.data.datasets.electricity_demand_timeseries.hh_buildings import (
 from egon.data.datasets.electricity_demand_timeseries.hh_profiles import (
     HouseholdElectricityProfilesInCensusCells,
 )
+from egon.data.datasets.scenario_parameters import get_scenario_year
 from egon.data.datasets.zensus_vg250 import DestatisZensusPopulationPerHa
 import egon.data.config
 
@@ -169,15 +170,22 @@ def get_annual_household_el_demand_cells():
     RAM > 32GB is necessary.
     """
 
+    scenarios = egon.data.config.settings()["egon-data"]["--scenarios"]
+
+    factor_columns = [
+        getattr(
+            HouseholdElectricityProfilesInCensusCells,
+            f"factor_{get_scenario_year(scn)}",
+        )
+        for scn in scenarios
+    ]
+
     with db.session_scope() as session:
         cells_query = (
             session.query(
                 HouseholdElectricityProfilesOfBuildings,
                 HouseholdElectricityProfilesInCensusCells.nuts3,
-                HouseholdElectricityProfilesInCensusCells.factor_2019,
-                HouseholdElectricityProfilesInCensusCells.factor_2023,
-                HouseholdElectricityProfilesInCensusCells.factor_2035,
-                HouseholdElectricityProfilesInCensusCells.factor_2050,
+                *factor_columns,
             )
             .filter(
                 HouseholdElectricityProfilesOfBuildings.cell_id
@@ -197,7 +205,6 @@ def get_annual_household_el_demand_cells():
         raise (ValueError(s))
 
     dataset = egon.data.config.settings()["egon-data"]["--dataset-boundary"]
-    scenarios = egon.data.config.settings()["egon-data"]["--scenarios"]
 
     iterate_over = (
         "nuts3"
@@ -218,27 +225,13 @@ def get_annual_household_el_demand_cells():
             columns=scenarios + ["zensus_population_id"]
         )
 
-        if "eGon2035" in scenarios:
-            df_annual_demand_iter["eGon2035"] = (
+        for scn in scenarios:
+            year = get_scenario_year(scn)
+            df_annual_demand_iter[scn] = (
                 df_profiles.loc[:, df["profile_id"]].sum(axis=0)
-                * df["factor_2035"].values
-            )
-        if "eGon100RE" in scenarios:
-            df_annual_demand_iter["eGon100RE"] = (
-                df_profiles.loc[:, df["profile_id"]].sum(axis=0)
-                * df["factor_2050"].values
-            )
-        if "status2019" in scenarios:
-            df_annual_demand_iter["status2019"] = (
-                df_profiles.loc[:, df["profile_id"]].sum(axis=0)
-                * df["factor_2019"].values
+                * df[f"factor_{year}"].values
             )
 
-        if "status2023" in scenarios:
-            df_annual_demand_iter["status2023"] = (
-                df_profiles.loc[:, df["profile_id"]].sum(axis=0)
-                * df["factor_2023"].values
-            )
         df_annual_demand_iter["zensus_population_id"] = df["cell_id"].values
         df_annual_demand = pd.concat([df_annual_demand, df_annual_demand_iter])
 
