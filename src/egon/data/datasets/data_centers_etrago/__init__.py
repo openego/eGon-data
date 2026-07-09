@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
-"""Integrate future data center demand into eTraGo."""
+"""Integrate future data center demand"""
 
 import geopandas as gpd
 import numpy as np
@@ -106,7 +106,7 @@ def generate_data_center_sizes():
 
 
 def load_commercial_areas():
-    sources = DataCentersEtrago.sources
+    sources = DataCenters.sources
 
     return db.select_geodataframe(
         f"""
@@ -120,7 +120,7 @@ def load_commercial_areas():
 
 
 def load_substations():
-    sources = DataCentersEtrago.sources
+    sources = DataCenters.sources
 
     return db.select_geodataframe(
         f"""
@@ -133,7 +133,7 @@ def load_substations():
 
 
 def load_district_heating_areas():
-    sources = DataCentersEtrago.sources
+    sources = DataCenters.sources
 
     return db.select_geodataframe(
         f"""
@@ -147,7 +147,7 @@ def load_district_heating_areas():
 
 def load_internet_nodes():
     """Load original internet node input."""
-    sources = DataCentersEtrago.sources
+    sources = DataCenters.sources
 
     return gpd.read_file(
         sources.files["internet_nodes"],
@@ -156,7 +156,7 @@ def load_internet_nodes():
 
 def load_regional_factors():
     """Load original regional factor input."""
-    sources = DataCentersEtrago.sources
+    sources = DataCenters.sources
 
     return gpd.read_file(
         sources.files["regional_factors"],
@@ -329,7 +329,7 @@ def create_data_center_allocation():
 # integration part inital draft
 def get_existing_ac_buses(scenario):
     """Get existing 110 kV and 380 kV AC buses from eTraGo."""
-    sources = DataCentersEtrago.sources
+    sources = DataCenters.sources
 
     return db.select_geodataframe(
         f"""
@@ -347,7 +347,7 @@ def get_existing_ac_buses(scenario):
 
 def get_existing_central_heat_buses(scenario):
     """Get existing central heat buses from eTraGo."""
-    sources = DataCentersEtrago.sources
+    sources = DataCenters.sources
 
     return db.select_geodataframe(
         f"""
@@ -544,7 +544,7 @@ def create_data_center_loads(data_centers, scenario):
 
 def delete_existing_data_centers(scenario):
     """Delete previously inserted data center components before rerun."""
-    targets = DataCentersEtrago.targets
+    targets = DataCenters.targets
 
     db.execute_sql(f"""
         DELETE FROM {targets.tables["loads"]}
@@ -563,7 +563,7 @@ def delete_existing_data_centers(scenario):
 
 def insert_data_centers(scenario):
     """Insert data center buses, lines and loads into eTraGo tables."""
-    targets = DataCentersEtrago.targets
+    targets = DataCenters.targets
     delete_existing_data_centers(scenario)
     data_centers = create_data_center_allocation()
     existing_buses = get_existing_ac_buses(scenario)
@@ -608,10 +608,10 @@ def insert_data_centers_for_scenarios():
             insert_data_centers(scenario)
 
 
-class DataCentersEtrago(Dataset):
-    """Integrate future data center demand into eTraGo."""
+class DataCenters(Dataset):
+    """Integrate future data center demand"""
 
-    name: str = "DataCentersEtrago"
+    name: str = "DataCenters"
     version: str = "0.0.1"
 
     sources = DatasetSources(
@@ -633,7 +633,9 @@ class DataCentersEtrago(Dataset):
             # Therefore, the eGon table is structurally suitable but not identical to original file input.
             ## Potential eGon-native replacement: demand.egon_district_heating_areas filtered by the active scenario, using geometry and residential_and_service_demand. Since district heating areas are scenario-dependent, a scenario-specific filter would be methodologically cleaner than using mixed scenario data.
             # This may lead to different allocation results compared to the original exported input file.
-            "internet_nodes": "Internetknoten.gpkg",
+            "internet_nodes": (
+                "data_bundle_egon_data/data_centers/Internetknoten.gpkg"
+            ),
             "regional_factors": "Regionalisierungsfaktoren.gpkg",
             # Original input containing pre-defined regional Faktor values for selected grid/location points.
             # The exact factor methodology comes from the original external source/PDF, not from this code.
