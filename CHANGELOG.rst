@@ -31,6 +31,10 @@ Changed
   factor columns to the configured scenarios, and remove obsolete
   status2019/status2023/eGon100RE handling
   `#1433 <https://github.com/openego/eGon-data/issues/1433>`_
+* Adapt heat_demand TaskGroup to new scenarios: generalize district
+  heating areas and heat demand timeseries to the configured scenarios,
+  and remove obsolete status2019/eGon100RE handling
+  `#1413 <https://github.com/openego/eGon-data/issues/1413>`_
 
 Bug Fixes
 ---------
