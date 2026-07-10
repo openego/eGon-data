@@ -222,128 +222,140 @@ def insert_capacities_per_federal_state_nep():
     # kicks statusquo entries from list
     scenarios = [s for s in config.settings()["egon-data"]["--scenarios"] if "status" not in str(s).lower()]
     
+    # Scenario-specific configuration for file paths, sheet names and wind offshore column
+    scenario_config = {
+        "eGon2035": {
+            "file": sources.files["eGon2035_capacities"],
+            "sheet_main": "1.Entwurf_NEP2035_V2021",
+            "sheet_draft": "Entwurf_des_Szenariorahmens",
+            "windoff_col": "C 2035",
+        },
+        "reGon2037": {
+            "file": sources.files["reGon_capacities"],
+            "sheet_main": "2.Entwurf_NEP2037C_V2025",
+            "sheet_draft": "Entwurf_des_Szenariorahmens2037",
+            "windoff_col": "C 2037",
+        },
+        "reGon2045": {
+            "file": sources.files["reGon_capacities"],
+            "sheet_main": "2.Entwurf_NEP2045C_V2025",
+            "sheet_draft": "Entwurf_des_Szenariorahmens2045",
+            "windoff_col": "C 2045",
+        },
+    }
+    
+    # sort NEP-carriers:
+    rename_carrier = {
+        "Wind onshore": "wind_onshore",
+        "Wind offshore": "wind_offshore",
+        "sonstige Konventionelle": "others",
+        "Speicherwasser": "reservoir",
+        "Laufwasser": "run_of_river",
+        "Biomasse": "biomass",
+        "Erdgas": "gas",
+        "Kuppelgas": "gas",
+        "PV (Aufdach)": "solar_rooftop",
+        "PV (Freiflaeche)": "solar",
+        "Pumpspeicher": "pumped_hydro",
+        "sonstige EE": "others",
+        "Oel": "oil",
+        "Haushaltswaermepumpen": "residential_rural_heat_pump",
+        "KWK < 10 MW": "small_chp",
+    }
+    # 'Elektromobilitaet gesamt': 'transport',
+    # 'Elektromobilitaet privat': 'transport'}
+
+    # nuts1 to federal state in Germany
+    map_nuts = pd.read_sql(
+        f"""
+        SELECT DISTINCT ON (nuts) gen, nuts
+        FROM {sources.tables['boundaries']}
+        """,
+        engine,
+        index_col="gen",
+    )
+
+    scaled_carriers = [
+        "Haushaltswaermepumpen",
+        "PV (Aufdach)",
+        "PV (Freiflaeche)",
+    ]
+    
     insert_data = pd.DataFrame()
+    for scenario in scenarios:
+        if scenario not in scenario_config:
+            continue
+    
+        cfg = scenario_config[scenario]
+        target_file = Path(".") / cfg["file"]
+        
+        # Load main NEP capacity table and draft scenario report
+        df = pd.read_excel(target_file, sheet_name=cfg["sheet_main"], index_col="Unnamed: 0")
+        df_draft = pd.read_excel(target_file, sheet_name=cfg["sheet_draft"], index_col="Unnamed: 0")
+        
+        # Load wind offshore data and drop rows without federal state or grid connection point
+        df_windoff = pd.read_excel(
+            target_file, sheet_name="WInd_Offshore_NEP"
+        ).dropna(subset=["Bundesland", "Netzverknuepfungspunkt"])
+        # Remove trailing whitespace from federal state column
+        df_windoff["Bundesland"] = df_windoff["Bundesland"].str.strip()
+        # Sum wind offshore capacities per federal state
+        df_windoff_fs = df_windoff[["Bundesland", cfg["windoff_col"]]].groupby("Bundesland").sum()
+        
+        # Overwrite wind offshore capacities in main df with more accurate
+        # values from the wind offshore sheet (convert MW to GW)
+        for state in df_windoff_fs.index:
+            df.at["Wind offshore", state] = df_windoff_fs.at[state, cfg["windoff_col"]] / 1000
+    
+        for bl in map_nuts.index:
+            # Extract capacity data for the current federal state
+            data = pd.DataFrame(df[bl])
+            
+            # For carriers without direct federal state distribution in the final
+            # NEP report, scale the draft distribution to match the final national total
+            for c in scaled_carriers:
+                data.loc[c, bl] = df_draft.loc[c, bl] / df_draft.loc[c, "Summe"] * df.loc[c, "Summe"]
+    
+            # Split combined hydro entry into run of river and reservoir
+            # using the distribution from the draft scenario report
+            if data.loc["Lauf- und Speicherwasser", bl] > 0:
+                for c in ["Speicherwasser", "Laufwasser"]:
+                    data.loc[c, bl] = (
+                        data.loc["Lauf- und Speicherwasser", bl]
+                        * df_draft.loc[c, bl]
+                        / df_draft.loc[["Speicherwasser", "Laufwasser"], bl].sum()
+                    )
+                    
+            # Map NEP carrier names to internal names and aggregate by carrier
+            data["carrier"] = data.index.map(rename_carrier)
+            data = data.groupby(data.carrier)[bl].sum().reset_index()
+            
+            # Add metadata columns
+            data["component"] = "generator"
+            data["nuts"] = map_nuts.nuts[bl]
+            data["scenario"] = scenario
+            
+            # Convert heat pump count to GW installed capacity
+            # assuming 5 kW_el per heat pump (source: Entwurf des Szenariorahmens NEP 2035,
+            # version 2021, page 47)
+            data.loc[data.carrier == "residential_rural_heat_pump", bl] *= 5e-6
+            data.loc[data.carrier == "residential_rural_heat_pump", "component"] = "link"
+            
+            # Rename capacity column and convert from GW to MW
+            data = data.rename(columns={bl: "capacity"})
+            data.capacity *= 1e3
+            
+            # Append federal state data to the full insert DataFrame
+            insert_data = pd.concat([insert_data, data])
+    
     # read-in installed capacities per federal state of germany
     for scenario in scenarios:
         if scenario == "eGon2035":
             target_file = Path(".") / sources.files["eGon2035_capacities"]
         
-            df = pd.read_excel(
-                target_file,
-                sheet_name="1.Entwurf_NEP2035_V2021",
-                index_col="Unnamed: 0",
-            )
-        
-            df_draft = pd.read_excel(
-                target_file,
-                sheet_name="Entwurf_des_Szenariorahmens",
-                index_col="Unnamed: 0",
-            )
-        
-            # Import data on wind offshore capacities
-            df_windoff = pd.read_excel(
-                target_file,
-                sheet_name="WInd_Offshore_NEP",
-            ).dropna(subset=["Bundesland", "Netzverknuepfungspunkt"])
-        
-            # Remove trailing whitespace from column Bundesland
-            df_windoff["Bundesland"] = df_windoff["Bundesland"].str.strip()
-        
-            # Group and sum capacities per federal state
-            df_windoff_fs = (
-                df_windoff[["Bundesland", "C 2035"]].groupby(["Bundesland"]).sum()
-            )
-        
             # List federal state with an assigned wind offshore capacity
             index_list = list(df_windoff_fs.index.values)
-    
-            # Overwrite capacities in df_windoff with more accurate values from
-            # df_windoff_fs
         
-            for state in index_list:
-                df.at["Wind offshore", state] = (
-                    df_windoff_fs.at[state, "C 2035"] / 1000
-                )
-        
-            # sort NEP-carriers:
-            rename_carrier = {
-                "Wind onshore": "wind_onshore",
-                "Wind offshore": "wind_offshore",
-                "sonstige Konventionelle": "others",
-                "Speicherwasser": "reservoir",
-                "Laufwasser": "run_of_river",
-                "Biomasse": "biomass",
-                "Erdgas": "gas",
-                "Kuppelgas": "gas",
-                "PV (Aufdach)": "solar_rooftop",
-                "PV (Freiflaeche)": "solar",
-                "Pumpspeicher": "pumped_hydro",
-                "sonstige EE": "others",
-                "Oel": "oil",
-                "Haushaltswaermepumpen": "residential_rural_heat_pump",
-                "KWK < 10 MW": "small_chp",
-            }
-            # 'Elektromobilitaet gesamt': 'transport',
-            # 'Elektromobilitaet privat': 'transport'}
-        
-            # nuts1 to federal state in Germany
-            map_nuts = pd.read_sql(
-                f"""
-                SELECT DISTINCT ON (nuts) gen, nuts
-                FROM {sources.tables['boundaries']}
-                """,
-                engine,
-                index_col="gen",
-            )
-        
-            scaled_carriers = [
-                "Haushaltswaermepumpen",
-                "PV (Aufdach)",
-                "PV (Freiflaeche)",
-            ]
-        
-            for bl in map_nuts.index:
-                data = pd.DataFrame(df[bl])
-        
-                # if distribution to federal states is not provided,
-                # use data from draft of scenario report
-                for c in scaled_carriers:
-                    data.loc[c, bl] = (
-                        df_draft.loc[c, bl]
-                        / df_draft.loc[c, "Summe"]
-                        * df.loc[c, "Summe"]
-                    )
-        
-                # split hydro into run of river and reservoir
-                # according to draft of scenario report
-                if data.loc["Lauf- und Speicherwasser", bl] > 0:
-                    for c in ["Speicherwasser", "Laufwasser"]:
-                        data.loc[c, bl] = (
-                            data.loc["Lauf- und Speicherwasser", bl]
-                            * df_draft.loc[c, bl]
-                            / df_draft.loc[["Speicherwasser", "Laufwasser"], bl].sum()
-                        )
-        
-                data["carrier"] = data.index.map(rename_carrier)
-                data = data.groupby(data.carrier)[bl].sum().reset_index()
-                data["component"] = "generator"
-                data["nuts"] = map_nuts.nuts[bl]
-                data["scenario"] = scenario
-        
-                # According to NEP, each heatpump has 5kW_el installed capacity
-                # source: Entwurf des Szenariorahmens NEP 2035, version 2021, page 47
-                data.loc[data.carrier == "residential_rural_heat_pump", bl] *= 5e-6
-                data.loc[
-                    data.carrier == "residential_rural_heat_pump", "component"
-                ] = "link"
-        
-                data = data.rename(columns={bl: "capacity"})
-        
-                # convert GW to MW
-                data.capacity *= 1e3
-        
-                insert_data = pd.concat([insert_data, data])
-    
         
         if scenario == "reGon2037":
             target_file = Path(".") / sources.files["reGon_capacities"]
@@ -384,43 +396,6 @@ def insert_capacities_per_federal_state_nep():
                 df.at["Wind offshore", state] = (
                     df_windoff_fs.at[state, "C 2037"] / 1000
                 )
-        
-            # sort NEP-carriers:
-            rename_carrier = {
-                "Wind onshore": "wind_onshore",
-                "Wind offshore": "wind_offshore",
-                "sonstige Konventionelle": "others",
-                "Speicherwasser": "reservoir",
-                "Laufwasser": "run_of_river",
-                "Biomasse": "biomass",
-                "Erdgas": "gas",
-                "Kuppelgas": "gas",
-                "PV (Aufdach)": "solar_rooftop",
-                "PV (Freiflaeche)": "solar",
-                "Pumpspeicher": "pumped_hydro",
-                "sonstige EE": "others",
-                "Oel": "oil",
-                "Haushaltswaermepumpen": "residential_rural_heat_pump",
-                "KWK < 10 MW": "small_chp",
-            }
-            # 'Elektromobilitaet gesamt': 'transport',
-            # 'Elektromobilitaet privat': 'transport'}
-        
-            # nuts1 to federal state in Germany
-            map_nuts = pd.read_sql(
-                f"""
-                SELECT DISTINCT ON (nuts) gen, nuts
-                FROM {sources.tables['boundaries']}
-                """,
-                engine,
-                index_col="gen",
-            )
-        
-            scaled_carriers = [
-                "Haushaltswaermepumpen",
-                "PV (Aufdach)",
-                "PV (Freiflaeche)",
-            ]
         
             for bl in map_nuts.index:
                 data = pd.DataFrame(df[bl])
@@ -503,43 +478,6 @@ def insert_capacities_per_federal_state_nep():
                 df.at["Wind offshore", state] = (
                     df_windoff_fs.at[state, "C 2045"] / 1000
                 )
-        
-            # sort NEP-carriers:
-            rename_carrier = {
-                "Wind onshore": "wind_onshore",
-                "Wind offshore": "wind_offshore",
-                "sonstige Konventionelle": "others",
-                "Speicherwasser": "reservoir",
-                "Laufwasser": "run_of_river",
-                "Biomasse": "biomass",
-                "Erdgas": "gas",
-                "Kuppelgas": "gas",
-                "PV (Aufdach)": "solar_rooftop",
-                "PV (Freiflaeche)": "solar",
-                "Pumpspeicher": "pumped_hydro",
-                "sonstige EE": "others",
-                "Oel": "oil",
-                "Haushaltswaermepumpen": "residential_rural_heat_pump",
-                "KWK < 10 MW": "small_chp",
-            }
-            # 'Elektromobilitaet gesamt': 'transport',
-            # 'Elektromobilitaet privat': 'transport'}
-        
-            # nuts1 to federal state in Germany
-            map_nuts = pd.read_sql(
-                f"""
-                SELECT DISTINCT ON (nuts) gen, nuts
-                FROM {sources.tables['boundaries']}
-                """,
-                engine,
-                index_col="gen",
-            )
-        
-            scaled_carriers = [
-                "Haushaltswaermepumpen",
-                "PV (Aufdach)",
-                "PV (Freiflaeche)",
-            ]
         
             for bl in map_nuts.index:
                 data = pd.DataFrame(df[bl])
@@ -763,8 +701,9 @@ def insert_nep_list_powerplants(export=True):
 
     # kicks statusquo entries from list
     scenarios = [s for s in config.settings()["egon-data"]["--scenarios"] if "status" not in str(s).lower()]
-    ran = False
+    
     # iterates over all scenarios except for status_quo scenarios
+    ran = False
     for scenario in scenarios:
         if scenario == "eGon2035":
             # Read-in data from csv-file
