@@ -174,7 +174,6 @@ def dlr():
             if_exists="append",
             index=False,
         )
-        return 0
 
 
 def DLR_Regions(weather_year, regions_shape_path):

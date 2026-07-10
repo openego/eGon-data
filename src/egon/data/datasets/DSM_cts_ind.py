@@ -722,18 +722,9 @@ def ind_sites_data_import():
         columns=["bus_id", "scenario_name", "p_set", "application", "id"]
     )
 
-    # scenario eGon2035
-    if "eGon2035" in scenarios:
-        dsm_2035 = calc_ind_site_timeseries("eGon2035").reset_index()
-        dsm = pd.concat([dsm, dsm_2035], ignore_index=True)
-    # scenario reGon2037
-    if "reGon2037" in scenarios:
-        dsm_2037 = calc_ind_site_timeseries("reGon2037").reset_index()
-        dsm = pd.concat([dsm, dsm_2037], ignore_index=True)
-    # scenario reGon2045
-    if "reGon2045" in scenarios:
-        dsm_2045 = calc_ind_site_timeseries("reGon2045").reset_index()
-        dsm = pd.concat([dsm, dsm_2045], ignore_index=True)
+    for scenario in scenarios:
+        dsm_scenario = calc_ind_site_timeseries(scenario).reset_index()
+        dsm = pd.concat([dsm, dsm_scenario], ignore_index=True)
 
     dsm.index = range(len(dsm))
     # relate calculated timeseries to Schmidt's industrial sites
