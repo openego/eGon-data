@@ -19,7 +19,6 @@ from egon.data.datasets import (
     Dataset,
     DatasetSources,
     DatasetTargets,
-    wrapped_partial,
 )
 from egon.data.datasets.fill_etrago_gen import add_marginal_costs
 from egon.data.datasets.fix_ehv_subnetworks import select_bus_id
@@ -1395,6 +1394,7 @@ def tyndp_demand():
             session.add(entry_ts)
             session.commit()
 
+
 def get_entsoe_token():
     """Check for token in home dir. If not exists, check in working dir"""
     token_path = path.join(path.expanduser("~"), ".entsoe-token")
@@ -2125,32 +2125,16 @@ def insert_loads_sq():
                 session.commit()
 
 
-tasks = (grid,)
-
-insert_per_scenario = set()
-
-for scn_name in config.settings()["egon-data"]["--scenarios"]:
-
-    if scn_name == "eGon2035":
-        insert_per_scenario.update([tyndp_generation, tyndp_demand])
-
-    if "status" in scn_name:
-        postfix = f"_{scn_name.split('status')[-1]}"
-        insert_per_scenario.update(
-            [
-                wrapped_partial(
-                    insert_generators_sq, scn_name=scn_name, postfix=postfix
-                ),
-                wrapped_partial(
-                    insert_loads_sq, scn_name=scn_name, postfix=postfix
-                ),
-                wrapped_partial(
-                    insert_storage_units_sq, scn_name=scn_name, postfix=postfix
-                ),
-            ]
-        )
-
-tasks = tasks + (insert_per_scenario,)
+tasks = (
+    grid,
+    {
+        tyndp_generation,
+        tyndp_demand,
+        insert_generators_sq,
+        insert_loads_sq,
+        insert_storage_units_sq,
+    },
+)
 
 
 class ElectricalNeighbours(Dataset):
