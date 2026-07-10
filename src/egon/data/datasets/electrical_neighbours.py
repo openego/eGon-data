@@ -269,29 +269,14 @@ def buses(scenario, sources, targets):
         errors="ignore",
     )
 
-    # Insert all central buses for eGon2035
-    if scenario in [
-        "eGon2035",
-        "status2019",
-        "status2023",
-    ]:  # TODO: status2023 this is hardcoded shit
-        central_buses.to_postgis(
-            targets.get_table_name("buses"),
-            schema=targets.get_table_schema("buses"),
-            if_exists="append",
-            con=db.engine(),
-            index=False,
-        )
-    # Insert only buses for eGon100RE that are not coming from pypsa-eur-sec
-    # (buses with another voltage_level or inside Germany in test mode)
-    else:
-        central_buses[central_buses.carrier == "AC"].to_postgis(
-            targets.get_table_name("buses"),
-            schema=targets.get_table_schema("buses"),
-            if_exists="append",
-            con=db.engine(),
-            index=False,
-        )
+    # Insert all central buses for the scenario
+    central_buses.to_postgis(
+        targets.get_table_name("buses"),
+        schema=targets.get_table_schema("buses"),
+        if_exists="append",
+        con=db.engine(),
+        index=False,
+    )
 
     return central_buses
 
@@ -833,10 +818,9 @@ def grid():
 
         foreign_dc_lines(scenario, sources, targets, central_buses)
 
-        if scenario != "eGon100RE":
-            lines_between_foreign_countries(
-                scenario, sources, targets, central_buses
-            )
+        lines_between_foreign_countries(
+            scenario, sources, targets, central_buses
+        )
 
 
 def map_carriers_tyndp():
