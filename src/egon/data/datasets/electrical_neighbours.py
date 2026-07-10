@@ -24,7 +24,10 @@ from egon.data.datasets import (
 from egon.data.datasets.fill_etrago_gen import add_marginal_costs
 from egon.data.datasets.fix_ehv_subnetworks import select_bus_id
 from egon.data.datasets.pypsaeur import prepared_network
-from egon.data.datasets.scenario_parameters import get_sector_parameters
+from egon.data.datasets.scenario_parameters import (
+    get_scenario_year,
+    get_sector_parameters,
+)
 from egon.data.db import session_scope
 import egon.data.datasets.etrago_setup as etrago
 import egon.data.datasets.scenario_parameters.parameters as scenario_parameters
@@ -925,8 +928,18 @@ def get_foreign_bus_id(scenario):
     return buses.set_index("node_id").bus_id
 
 
-def calc_capacities():
+def calc_capacities(scenario):
     """Calculates installed capacities from TYNDP data
+
+    TYNDP-2020 only provides data points for 2030 and 2040, so the
+    capacities for the scenario's target year (from
+    :py:func:`get_scenario_year`) are obtained by linearly interpolating
+    (or, beyond 2040, extrapolating) between those two data points.
+
+    Parameters
+    ----------
+    scenario : str
+        Scenario for which the capacities are calculated
 
     Returns
     -------
@@ -978,21 +991,31 @@ def calc_capacities():
         .set_index(["Node/Line", "Generator_ID"])
     )
 
-    # interpolate linear between 2030 and 2040 for 2035 accordning to
-    # scenario report of TSO's and the approval by BNetzA
-    df_2035 = pd.DataFrame(index=df_2030.index)
-    df_2035["cap_2030"] = df_2030.Value
-    df_2035["cap_2040"] = df_2040.Value
-    df_2035.fillna(0.0, inplace=True)
-    df_2035["cap_2035"] = (
-        df_2035["cap_2030"] + (df_2035["cap_2040"] - df_2035["cap_2030"]) / 2
+    # Interpolate linearly between 2030 and 2040 for the scenario year
+    # (extrapolating beyond 2040 for later scenario years), analogous to
+    # the interpolation to 2035 accordning to scenario report of TSO's and
+    # the approval by BNetzA
+    year = get_scenario_year(scenario)
+    weight = (year - 2030) / (2040 - 2030)
+
+    df_capacities = pd.DataFrame(index=df_2030.index)
+    df_capacities["cap_2030"] = df_2030.Value
+    df_capacities["cap_2040"] = df_2040.Value
+    df_capacities.fillna(0.0, inplace=True)
+    df_capacities["cap"] = (
+        df_capacities["cap_2030"]
+        + (df_capacities["cap_2040"] - df_capacities["cap_2030"]) * weight
+    ).clip(lower=0)
+    df_capacities = df_capacities.reset_index()
+    df_capacities["carrier"] = df_capacities.Generator_ID.map(
+        map_carriers_tyndp()
     )
-    df_2035 = df_2035.reset_index()
-    df_2035["carrier"] = df_2035.Generator_ID.map(map_carriers_tyndp())
 
     # group capacities by new carriers
     grouped_capacities = (
-        df_2035.groupby(["carrier", "Node/Line"]).cap_2035.sum().reset_index()
+        df_capacities.groupby(["carrier", "Node/Line"])
+        .cap.sum()
+        .reset_index()
     )
 
     # choose capacities for considered countries
@@ -1001,13 +1024,15 @@ def calc_capacities():
     ]
 
 
-def insert_generators_tyndp(capacities):
+def insert_generators_tyndp(capacities, scenario):
     """Insert generators for foreign countries based on TYNDP-data
 
     Parameters
     ----------
     capacities : pandas.DataFrame
         Installed capacities per foreign node and energy carrier
+    scenario : str
+        Scenario for which the generators are inserted
 
     Returns
     -------
@@ -1024,8 +1049,8 @@ def insert_generators_tyndp(capacities):
             SELECT bus_id
             FROM {targets.tables['buses']}
             WHERE country != 'DE'
-            AND scn_name = 'eGon2035')
-        AND scn_name = 'eGon2035'
+            AND scn_name = '{scenario}')
+        AND scn_name = '{scenario}'
         AND carrier != 'CH4'
         """)
 
@@ -1034,7 +1059,7 @@ def insert_generators_tyndp(capacities):
         WHERE generator_id NOT IN (
             SELECT generator_id FROM {targets.tables['generators']}
         )
-        AND scn_name = 'eGon2035'
+        AND scn_name = '{scenario}'
         """)
 
     # Select generators from TYNDP capacities
@@ -1065,13 +1090,13 @@ def insert_generators_tyndp(capacities):
     )
 
     gen.loc[:, "bus"] = (
-        get_foreign_bus_id(scenario="eGon2035")
+        get_foreign_bus_id(scenario=scenario)
         .loc[gen.loc[:, "Node/Line"]]
         .values
     )
 
     # Add scenario column
-    gen["scenario"] = "eGon2035"
+    gen["scenario"] = scenario
 
     # Add marginal costs
     gen = add_marginal_costs(gen)
@@ -1084,7 +1109,7 @@ def insert_generators_tyndp(capacities):
             generator_id=int(db.next_etrago_id("generator")),
             bus=row.bus,
             carrier=row.carrier,
-            p_nom=row.cap_2035,
+            p_nom=row.cap,
             marginal_cost=row.marginal_cost,
         )
 
@@ -1093,17 +1118,18 @@ def insert_generators_tyndp(capacities):
 
     # assign generators time-series data
 
-    renewable_timeseries_pypsaeur("eGon2035")
+    renewable_timeseries_pypsaeur(scenario)
 
 
-def insert_storage_tyndp(capacities):
+def insert_storage_tyndp(capacities, scenario):
     """Insert storage units for foreign countries based on TYNDP-data
 
     Parameters
     ----------
     capacities : pandas.DataFrame
         Installed capacities per foreign node and energy carrier
-
+    scenario : str
+        Scenario for which the storage units are inserted
 
     Returns
     -------
@@ -1120,16 +1146,16 @@ def insert_storage_tyndp(capacities):
             SELECT bus_id FROM
             {targets.tables['buses']}
             WHERE country != 'DE'
-            AND scn_name = 'eGon2035')
-        AND scn_name = 'eGon2035'
+            AND scn_name = '{scenario}')
+        AND scn_name = '{scenario}'
         """)
 
     # Add missing information suitable for eTraGo selected from scenario_parameter table
-    parameters_pumped_hydro = scenario_parameters.electricity("eGon2035")[
+    parameters_pumped_hydro = scenario_parameters.electricity(scenario)[
         "efficiency"
     ]["pumped_hydro"]
 
-    parameters_battery = scenario_parameters.electricity("eGon2035")[
+    parameters_battery = scenario_parameters.electricity(scenario)[
         "efficiency"
     ]["battery"]
 
@@ -1146,7 +1172,7 @@ def insert_storage_tyndp(capacities):
     )
 
     store.loc[:, "bus"] = (
-        get_foreign_bus_id(scenario="eGon2035")
+        get_foreign_bus_id(scenario=scenario)
         .loc[store.loc[:, "Node/Line"]]
         .values
     )
@@ -1173,7 +1199,7 @@ def insert_storage_tyndp(capacities):
     session = sessionmaker(bind=db.engine())()
     for i, row in store.iterrows():
         entry = etrago.EgonPfHvStorage(
-            scn_name="eGon2035",
+            scn_name=scenario,
             storage_id=int(db.next_etrago_id("storage")),
             bus=row.bus,
             max_hours=row.max_hours,
@@ -1181,7 +1207,7 @@ def insert_storage_tyndp(capacities):
             efficiency_dispatch=row.dispatch,
             standing_loss=row.standing_loss,
             carrier=row.carrier,
-            p_nom=row.cap_2035,
+            p_nom=row.cap,
         )
 
         session.add(entry)
@@ -1215,24 +1241,30 @@ def get_map_buses():
 
 
 def tyndp_generation():
-    """Insert data from TYNDP 2020 accordning to NEP 2021
-    Scenario 'Distributed Energy', linear interpolate between 2030 and 2040
+    """Insert data from TYNDP 2020 for all configured scenarios that are
+    not status-quo scenarios (i.e. 'Distributed Energy', linearly
+    interpolated/extrapolated between 2030 and 2040 to each scenario's year).
 
     Returns
     -------
     None.
     """
+    for scenario in config.settings()["egon-data"]["--scenarios"]:
+        if "status" in scenario:
+            continue
 
-    capacities = calc_capacities()
+        capacities = calc_capacities(scenario)
 
-    insert_generators_tyndp(capacities)
+        insert_generators_tyndp(capacities, scenario)
 
-    insert_storage_tyndp(capacities)
+        insert_storage_tyndp(capacities, scenario)
 
 
 def tyndp_demand():
-    """Copy load timeseries data from TYNDP 2020.
-    According to NEP 2021, the data for 2030 and 2040 is interpolated linearly.
+    """Copy load timeseries data from TYNDP 2020 for all configured
+    scenarios that are not status-quo scenarios. The data for 2030 and 2040
+    is interpolated (or, beyond 2040, extrapolated) linearly to each
+    scenario's year.
 
     Returns
     -------
@@ -1243,21 +1275,6 @@ def tyndp_demand():
 
     sources = ElectricalNeighbours.sources  # class attributes
     targets = ElectricalNeighbours.targets
-
-    # Delete existing data
-    db.execute_sql(f"""
-        DELETE FROM {targets.tables['loads']}
-        WHERE
-        scn_name = 'eGon2035'
-        AND carrier = 'AC'
-        AND bus NOT IN (
-            SELECT bus_i
-            FROM {sources.tables['osmtgmod_bus']})
-        """)
-
-    # Connect to database
-    engine = db.engine()
-    session = sessionmaker(bind=engine)()
 
     nodes = [
         "AT00",
@@ -1282,18 +1299,6 @@ def tyndp_demand():
         "UK00",
         "UKNI",
     ]
-    # Assign etrago bus_id to TYNDP nodes
-    buses = pd.DataFrame({"nodes": nodes})
-    buses.loc[buses[buses.nodes.isin(map_buses.keys())].index, "nodes"] = (
-        buses[buses.nodes.isin(map_buses.keys())].nodes.map(map_buses)
-    )
-    buses.loc[:, "bus"] = (
-        get_foreign_bus_id(scenario="eGon2035")
-        .loc[buses.loc[:, "nodes"]]
-        .values
-    )
-    buses.set_index("nodes", inplace=True)
-    buses = buses[~buses.index.duplicated(keep="first")]
 
     # Read in data from TYNDP for 2030 and 2040
     dataset_2030 = pd.read_excel(
@@ -1308,50 +1313,87 @@ def tyndp_demand():
     map_series = pd.Series(map_buses)
     map_series = map_series[map_series.index.isin(nodes)]
 
-    # Calculate and insert demand timeseries per etrago bus_id
-    for bus in buses.index:
-        nodes = [bus]
+    for scenario in config.settings()["egon-data"]["--scenarios"]:
+        if "status" in scenario:
+            continue
 
-        if bus in map_series.values:
-            nodes.extend(list(map_series[map_series == bus].index.values))
+        weight = (get_scenario_year(scenario) - 2030) / (2040 - 2030)
 
-        load_id = db.next_etrago_id("load")
+        # Connect to database
+        engine = db.engine()
+        session = sessionmaker(bind=engine)()
 
-        # Some etrago bus_ids represent multiple TYNDP nodes,
-        # in this cases the loads are summed
-        data_2030 = pd.Series(index=range(8760), data=0.0)
-        for node in nodes:
-            data_2030 = dataset_2030[node][2011] + data_2030
+        # Delete existing data
+        db.execute_sql(f"""
+            DELETE FROM {targets.tables['loads']}
+            WHERE
+            scn_name = '{scenario}'
+            AND carrier = 'AC'
+            AND bus NOT IN (
+                SELECT bus_i
+                FROM {sources.tables['osmtgmod_bus']})
+            """)
 
-        try:
-            data_2040 = pd.Series(index=range(8760), data=0.0)
-
-            for node in nodes:
-                data_2040 = dataset_2040[node][2011] + data_2040
-        except:
-            data_2040 = data_2030
-
-        # According to the NEP, data for 2030 and 2040 is linear interpolated
-        data_2035 = ((data_2030 + data_2040) / 2)[:8760]
-
-        entry = etrago.EgonPfHvLoad(
-            scn_name="eGon2035",
-            load_id=int(load_id),
-            carrier="AC",
-            bus=int(buses.bus[bus]),
+        # Assign etrago bus_id to TYNDP nodes
+        buses = pd.DataFrame({"nodes": nodes})
+        buses.loc[
+            buses[buses.nodes.isin(map_buses.keys())].index, "nodes"
+        ] = buses[buses.nodes.isin(map_buses.keys())].nodes.map(map_buses)
+        buses.loc[:, "bus"] = (
+            get_foreign_bus_id(scenario=scenario)
+            .loc[buses.loc[:, "nodes"]]
+            .values
         )
+        buses.set_index("nodes", inplace=True)
+        buses = buses[~buses.index.duplicated(keep="first")]
 
-        entry_ts = etrago.EgonPfHvLoadTimeseries(
-            scn_name="eGon2035",
-            load_id=int(load_id),
-            temp_id=1,
-            p_set=list(data_2035.values),
-        )
+        # Calculate and insert demand timeseries per etrago bus_id
+        for bus in buses.index:
+            bus_nodes = [bus]
 
-        session.add(entry)
-        session.add(entry_ts)
-        session.commit()
+            if bus in map_series.values:
+                bus_nodes.extend(
+                    list(map_series[map_series == bus].index.values)
+                )
 
+            load_id = db.next_etrago_id("load")
+
+            # Some etrago bus_ids represent multiple TYNDP nodes,
+            # in this cases the loads are summed
+            data_2030 = pd.Series(index=range(8760), data=0.0)
+            for node in bus_nodes:
+                data_2030 = dataset_2030[node][2011] + data_2030
+
+            try:
+                data_2040 = pd.Series(index=range(8760), data=0.0)
+
+                for node in bus_nodes:
+                    data_2040 = dataset_2040[node][2011] + data_2040
+            except:
+                data_2040 = data_2030
+
+            # Interpolate/extrapolate linearly to the scenario's year
+            data_target = (
+                data_2030 + (data_2040 - data_2030) * weight
+            ).clip(lower=0)[:8760]
+
+            entry = etrago.EgonPfHvLoad(
+                scn_name=scenario,
+                load_id=int(load_id),
+                carrier="AC",
+                bus=int(buses.bus[bus]),
+            )
+
+            entry_ts = etrago.EgonPfHvLoadTimeseries(
+                scn_name=scenario,
+                load_id=int(load_id),
+                temp_id=1,
+                p_set=list(data_target.values),
+            )
+
+            session.add(entry)
+            session.add(entry_ts)
+            session.commit()
 
 def get_entsoe_token():
     """Check for token in home dir. If not exists, check in working dir"""
