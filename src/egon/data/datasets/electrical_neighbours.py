@@ -1560,7 +1560,10 @@ def entsoe_historic_demand(year_start="20190101", year_end="20200101"):
     if dfs:
         df = pd.concat(dfs, axis=1)
         df.columns = [c for c in countries if c not in not_retrieved]
-        df.index = pd.date_range(year_start, periods=8760, freq="H")
+        df.index = pd.date_range(year_start, periods=len(df), freq="H")
+        # Drop the leap day to keep a consistent 8760-hour year, matching
+        # the model's fixed temporal resolution (see etrago_setup.temp_resolution)
+        df = df[~((df.index.month == 2) & (df.index.day == 29))]
     else:
         df = pd.DataFrame()
     return df, not_retrieved
