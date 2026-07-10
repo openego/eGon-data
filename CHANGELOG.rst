@@ -35,6 +35,10 @@ Changed
   heating areas and heat demand timeseries to the configured scenarios,
   and remove obsolete status2019/eGon100RE handling
   `#1413 <https://github.com/openego/eGon-data/issues/1413>`_
+* Adapt electricity_flexibility TaskGroup to new scenarios: generalize
+  dynamic line rating and DSM potential calculations to the configured
+  scenarios, and remove obsolete status2019/eGon100RE handling
+  `#1424 <https://github.com/openego/eGon-data/issues/1424>`_
 
 Bug Fixes
 ---------
@@ -52,6 +56,9 @@ Bug Fixes
   `#1392 <https://github.com/openego/eGon-data/issues/1392>`_
 * Fix problem with atlite and xarray, era5 data is downloadable again
   `#1250 <https://github.com/openego/eGon-data/issues/1250>`_
+* Fix dynamic line rating only being calculated for a single scenario
+  due to a stray early return inside the per-scenario loop
+  `#1424 <https://github.com/openego/eGon-data/issues/1424>`_
 
 Version 2.0.0 (2025-08-20)
 ==========================
