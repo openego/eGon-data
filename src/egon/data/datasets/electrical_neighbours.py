@@ -1522,6 +1522,13 @@ def entsoe_historic_demand(year_start="20190101", year_end="20200101"):
         "GB",
     ]
 
+    # No GB data after Brexit
+    if int(year_start[:4]) > 2021:
+        logger.warning(
+            "No GB data after Brexit. GB is dropped from entsoe query!"
+        )
+        countries = [c for c in countries if c != "GB"]
+
     # todo: define wanted countries
 
     not_retrieved = []
