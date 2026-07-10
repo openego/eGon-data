@@ -35,6 +35,13 @@ Changed
   heating areas and heat demand timeseries to the configured scenarios,
   and remove obsolete status2019/eGon100RE handling
   `#1413 <https://github.com/openego/eGon-data/issues/1413>`_
+* Adapt Electricity_Neighbors TaskGroup to new scenarios: generalize
+  foreign bus/line/generator/load/storage insertion to the configured
+  scenarios, extend TYNDP-based generation/storage/demand to reGon2037 and
+  reGon2045 via linear interpolation/extrapolation of the existing
+  2030/2040 data points, and remove obsolete
+  status2019/status2023/eGon100RE handling
+  `#1438 <https://github.com/openego/eGon-data/issues/1438>`_
 
 Bug Fixes
 ---------
