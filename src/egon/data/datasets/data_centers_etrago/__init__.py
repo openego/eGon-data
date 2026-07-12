@@ -108,7 +108,7 @@ def generate_data_center_sizes():
 def load_commercial_areas():
     sources = DataCenters.sources
 
-    return db.select_geodataframe(
+    gdf = db.select_geodataframe(
         f"""
         SELECT geom
         FROM {sources.tables["commercial_areas"]}
@@ -118,11 +118,13 @@ def load_commercial_areas():
         epsg=3035,
     ).to_crs(epsg=25832)
 
+    return gdf.rename_geometry("geometry")
+
 
 def load_substations():
     sources = DataCenters.sources
 
-    return db.select_geodataframe(
+    gdf = db.select_geodataframe(
         f"""
         SELECT point
         FROM {sources.tables["substations"]}
@@ -131,11 +133,13 @@ def load_substations():
         epsg=4326,
     ).to_crs(epsg=25832)
 
+    return gdf.rename_geometry("geometry")
+
 
 def load_district_heating_areas():
     sources = DataCenters.sources
 
-    return db.select_geodataframe(
+    gdf = db.select_geodataframe(
         f"""
         SELECT geom_polygon, residential_and_service_demand
         FROM {sources.tables["district_heating_areas"]}
@@ -143,6 +147,8 @@ def load_district_heating_areas():
         geom_col="geom_polygon",
         epsg=3035,
     ).to_crs(epsg=25832)
+
+    return gdf.rename_geometry("geometry")
 
 
 def load_internet_nodes():
@@ -331,7 +337,7 @@ def get_existing_ac_buses(scenario):
     """Get existing 110 kV and 380 kV AC buses from eTraGo."""
     sources = DataCenters.sources
 
-    return db.select_geodataframe(
+    gdf = db.select_geodataframe(
         f"""
         SELECT bus_id, v_nom, carrier, x, y, geom
         FROM {sources.tables["buses"]}
@@ -344,12 +350,13 @@ def get_existing_ac_buses(scenario):
         epsg=4326,
     )
 
+    return gdf.rename_geometry("geometry")
 
 def get_existing_central_heat_buses(scenario):
     """Get existing central heat buses from eTraGo."""
     sources = DataCenters.sources
 
-    return db.select_geodataframe(
+    gdf = db.select_geodataframe(
         f"""
         SELECT bus_id, carrier, x, y, geom
         FROM {sources.tables["buses"]}
@@ -359,6 +366,8 @@ def get_existing_central_heat_buses(scenario):
         geom_col="geom",
         epsg=4326,
     )
+
+    return gdf.rename_geometry("geometry")
 
 
 # double check the scenrio first
