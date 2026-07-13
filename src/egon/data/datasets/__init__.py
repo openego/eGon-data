@@ -14,6 +14,7 @@ from airflow.models.baseoperator import BaseOperator as Operator
 from airflow.operators.python import PythonOperator
 from sqlalchemy import Column, ForeignKey, Integer, String, Table, orm, tuple_
 from sqlalchemy.dialects.postgresql import JSONB
+from sqlalchemy.exc import ProgrammingError
 from sqlalchemy.ext.declarative import declarative_base
 
 from egon.data import config, db, logger
@@ -450,7 +451,12 @@ class Dataset:
         Only writes if sources or targets have changed.
         Creates table if it doesn't exist yet.
         """
-        SourcesTargetsModel.__table__.create(bind=db.engine(), checkfirst=True)
+        try:
+            SourcesTargetsModel.__table__.create(bind=db.engine(), checkfirst=True)
+        except ProgrammingError:
+            # Another concurrent DAG-parse process already created the
+            # table between our checkfirst check and the CREATE TABLE.
+            pass
 
         with db.session_scope() as session:
             existing = (
