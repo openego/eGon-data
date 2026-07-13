@@ -14,7 +14,7 @@ from egon.data import config, db
 from egon.data.datasets import Dataset, DatasetSources, DatasetTargets
 
 TARGET_CAPACITY_MW = (
-    19460  # 15680 (Szenario A), 19460 (Szenario B), 23240 (Szenario C)
+    400  # 15680 (Szenario A), 19460 (Szenario B), 23240 (Szenario C)
 )
 MU = 3.297
 SIGMA = 1.325
