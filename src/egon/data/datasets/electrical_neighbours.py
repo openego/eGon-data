@@ -2084,6 +2084,14 @@ def insert_loads_sq(scn_name="status2019"):
             session.commit()
 
 
+def no_neighbour_tasks_required():
+    print("""
+          None of the configured scenarios require additional
+          electrical-neighbour tasks.
+          """)
+    return None
+
+
 tasks = (grid,)
 
 insert_per_scenario = set()
@@ -2108,6 +2116,9 @@ for scn_name in config.settings()["egon-data"]["--scenarios"]:
                 ),
             ]
         )
+
+if insert_per_scenario == set():
+    insert_per_scenario = {no_neighbour_tasks_required}
 
 tasks = tasks + (insert_per_scenario,)
 
