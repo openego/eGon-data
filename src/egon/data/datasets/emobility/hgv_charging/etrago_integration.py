@@ -22,7 +22,7 @@ import numpy as np
 import pandas as pd
 
 from egon.data import config, db
-from egon.data.datasets.emobility.hgv_charging import active_scenario_map
+from egon.data.datasets.emobility.hgv_charging.scenarios import active_scenario_map
 from egon.data.datasets.etrago_setup import (
     EgonPfHvBus,
     EgonPfHvLink,

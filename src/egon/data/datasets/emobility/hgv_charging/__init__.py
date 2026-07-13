@@ -20,7 +20,7 @@ Only scenarios that are both in SCENARIO_MAP and in the pipeline's configured
 
 from loguru import logger
 
-from egon.data import config, db
+from egon.data import db
 from egon.data.datasets import Dataset, DatasetSources, DatasetTargets
 from egon.data.datasets.emobility.hgv_charging.db_classes import (
     EgonHgvChargingEvent,
@@ -30,21 +30,13 @@ from egon.data.datasets.emobility.hgv_charging.db_classes import (
 )
 from egon.data.datasets.emobility.hgv_charging.etrago_integration import write_etrago
 from egon.data.datasets.emobility.hgv_charging.fill_tables import fill_hgv_tables
+from egon.data.datasets.emobility.hgv_charging.scenarios import (
+    SCENARIO_MAP,
+    active_scenario_map,
+)
 from egon.data.datasets.emobility.hgv_charging.spatial_assignment import (
     spatial_assignment,
 )
-
-# Mapping: egon-data scenario name → input-data scenario string
-SCENARIO_MAP = {
-    "reGon2037": "C 2037",
-    "reGon2045": "C 2045",
-}
-
-
-def active_scenario_map() -> dict:
-    """SCENARIO_MAP filtered to the scenarios configured via --scenarios."""
-    active = set(config.settings()["egon-data"]["--scenarios"])
-    return {k: v for k, v in SCENARIO_MAP.items() if k in active}
 
 
 def create_tables():

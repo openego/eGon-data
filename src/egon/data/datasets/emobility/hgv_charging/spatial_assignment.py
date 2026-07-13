@@ -22,7 +22,7 @@ import geopandas as gpd
 import pandas as pd
 
 from egon.data import db
-from egon.data.datasets.emobility.hgv_charging import active_scenario_map
+from egon.data.datasets.emobility.hgv_charging.scenarios import active_scenario_map
 
 
 def _assign_voltage_level(p_set_mw: pd.Series) -> pd.Series:
