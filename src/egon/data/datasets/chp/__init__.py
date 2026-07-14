@@ -423,7 +423,7 @@ def insert_biomass_chp(scenario):
     session.commit()
 
 
-def insert_chp_statusquo(scn="status2019"):
+def insert_chp_statusquo(scn="status2024"):
 
     # import data for MaStR
     mastr = pd.read_csv(Chp.sources.files["mastr_combustion"])
@@ -551,8 +551,8 @@ def insert_chp_statusquo(scn="status2019"):
     session.commit()
 
 
-def insert_chp_egon2035():
-    """Insert CHP plants for eGon2035 considering NEP and MaStR data
+def insert_chp():
+    """Insert CHP plants for eGon2035, reGon2037 and reGon2045 considering NEP and MaStR data
 
     Returns
     -------
@@ -728,31 +728,23 @@ tasks = (create_tables,)
 
 insert_per_scenario = set()
 
-if "status2019" in config.settings()["egon-data"]["--scenarios"]:
+scenarios = config.settings()["egon-data"]["--scenarios"]
+  
+if "status2024" in scenarios:
     insert_per_scenario.add(
         wrapped_partial(
-            insert_chp_statusquo, scn="status2019", postfix="_2019"
+            insert_chp_statusquo, scn="status2024", postfix="_2024"
         )
     )
 
-if "status2023" in config.settings()["egon-data"]["--scenarios"]:
-    insert_per_scenario.add(
-        wrapped_partial(
-            insert_chp_statusquo, scn="status2023", postfix="_2023"
-        )
-    )
-
-if "eGon2035" in config.settings()["egon-data"]["--scenarios"]:
-    insert_per_scenario.add(insert_chp_egon2035)
-
-if "eGon100RE" in config.settings()["egon-data"]["--scenarios"]:
-    insert_per_scenario.add(insert_chp_egon100re)
+if any(s in scenarios for s in ["eGon2035", "reGon2037", "reGon2045"]):
+    insert_per_scenario.add(insert_chp)
 
 tasks = tasks + (insert_per_scenario, assign_heat_bus)
 
 extension = set()
 
-if "eGon2035" in config.settings()["egon-data"]["--scenarios"]:
+if any(s in scenarios for s in ["eGon2035", "reGon2037", "reGon2045"]):
     # Add one task per federal state for small CHP extension
     if (
         config.settings()["egon-data"]["--dataset-boundary"]
