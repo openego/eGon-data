@@ -86,7 +86,7 @@ def _load_data(egon_scn: str):
         sites_rows = session.execute(
             f"""
             SELECT site_id, location_type, bus_id, mv_grid_id, voltage_level,
-                   el_demand_N2_mwh, el_demand_N3_mwh, el_demand_N3S_mwh,
+                   "el_demand_N2_mwh", "el_demand_N3_mwh", "el_demand_N3S_mwh",
                    el_demand_day_mwh, el_demand_night_mwh,
                    p_set_aggregated_mw
             FROM demand.egon_hgv_charging_site
