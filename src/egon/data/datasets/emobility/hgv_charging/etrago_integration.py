@@ -15,7 +15,7 @@ Flex model (bus + link + store + driving load, written for flex scenarios):
   Highway day is always excluded from the flex model.
 """
 
-from collections import Counter
+from collections import Counter, namedtuple
 
 from loguru import logger
 import numpy as np
@@ -384,6 +384,9 @@ def _calc_e_initial(events: pd.DataFrame) -> float:
     return float((first["soc_start"] * first["bat_cap"]).sum() / total_bat)
 
 
+AcBus = namedtuple("AcBus", ["bus_id", "x", "y", "geom"])
+
+
 def _get_etrago_bus(bus_id: int, scenario: str):
     """Fetch geometry and coordinates of an AC eTraGo bus."""
     with db.session_scope() as session:
@@ -392,7 +395,12 @@ def _get_etrago_bus(bus_id: int, scenario: str):
             EgonPfHvBus.scn_name == scenario,
             EgonPfHvBus.carrier == "AC",
         ).first()
-    return result
+        if result is None:
+            return None
+        # Extract scalars while the session is still open — the ORM
+        # instance itself would be detached (and its attributes expired)
+        # once this session closes.
+        return AcBus(bus_id=result.bus_id, x=result.x, y=result.y, geom=result.geom)
 
 
 def _write_flex_components(scenario: str, ac_bus, ts_df: pd.DataFrame,
