@@ -136,19 +136,9 @@ def insert_capacities_status_quo(scenario: str) -> None:
         """)
 
     rural_heat_capacity = {
-        # Rural heat capacity for 2019 according to NEP 2035, version 2021
-        "status2019": 1e6 * 5e-3,
-        # Rural heat capacity for 2023 according to NEP 2037, version 2023
-        # 1.2 Mio. for 2020
-        # https://www.netzentwicklungsplan.de/sites/default/files/2023-07/
-        # NEP_2037_2045_V2023_2_Entwurf_Teil1_1.pdf#page=25
-        # and 3 kW per heat pump
-        # https://www.netzentwicklungsplan.de/sites/default/files/2022-11/
-        # NEP_2035_V2021_2_Entwurf_Teil1.pdf#page=33
-        # plus 0.15 Mio. 2021 and 0.24 Mio. in 2022
-        # https://www.enercity.de/magazin/unsere-welt/waermepumpen-boom
-        # plus 0.2 Mio. in H1 2023 -> Assumption 2023: 2 * 0.2 Mio = 0.4 Mio.
-        "status2023": (1.2 + 0.15 + 0.24 + 0.4) * 1e6 * 3e-3,
+        # Convert heat pump count to MW installed capacity
+        # assuming 5 kW_el per heat pump (source: Entwurf des Szenariorahmens NEP 2035,
+        # version 2021, page 47)
         # Rural heat capacity for 2024 according to NEP 2037/2045, version 2025, table 1
         "status2024": 2e6 * 5e-3,
     }[scenario]
@@ -168,18 +158,9 @@ def insert_capacities_status_quo(scenario: str) -> None:
             )
         """)
 
-    # Include small storages for scenario2019
+    # Include small storages for status2024
     small_storages = {
         # MW for Germany
-        "status2019": 600,
-        # 1.3 GW in 2020/2021
-        # https://www.netzentwicklungsplan.de/sites/default/files/2023-07/
-        # NEP_2037_2045_V2023_2_Entwurf_Teil1_1.pdf#page=25
-        # Installed quantity 2020: 272,000
-        # Installed quantity 2023: 1,197,000
-        # https://www.photovoltaik.eu/solarspeicher/
-        # bsw-speicherkapazitaet-von-heimspeichern-2023-verdoppelt
-        "status2023": 1300 * 1197 / 272,
         # small storage capacity for 2024 according to NEP 2037/2045, version 2025, table 1
         "status2024": 9900,
     }[scenario]
