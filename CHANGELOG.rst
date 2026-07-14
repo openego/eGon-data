@@ -31,6 +31,11 @@ Changed
   factor columns to the configured scenarios, and remove obsolete
   status2019/status2023/eGon100RE handling
   `#1433 <https://github.com/openego/eGon-data/issues/1433>`_
+* Adapt scenario_capacities to new scenarios; implementing the 
+  new Kraftwerksliste from the NEP2025; remove obsolete 
+  scenario (status2019/status2023/eGon100RE) handling
+  `#1415 <https://github.com/openego/eGon-data/issues/1415>`_
+
 
 Bug Fixes
 ---------
