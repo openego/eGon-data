@@ -7,6 +7,11 @@ via datasets.yml:
 
 For each scenario the input-data string (e.g. "C 2037") is mapped to the
 egon-data scenario name ("reGon2037") before writing to the DB.
+
+The input data covers all of Germany regardless of --dataset-boundary, so
+sites outside the configured boundary are dropped here (before charging
+points/events/profiles are written) -- otherwise spatial_assignment.py would
+force-match every out-of-region site to the nearest in-region MV grid bus.
 """
 
 import json
@@ -25,10 +30,24 @@ def _input_dir() -> Path:
     return Path(cfg["original_data"]["sources"]["hgv_input_dir"])
 
 
+def _boundary_geom():
+    """Return the configured --dataset-boundary geometry, or None for 'Everything'."""
+    boundary = config.settings()["egon-data"]["--dataset-boundary"]
+    if boundary == "Everything":
+        return None
+    sta = db.select_geodataframe(
+        f"SELECT geometry FROM boundaries.vg250_sta WHERE gen = '{boundary}'",
+        geom_col="geometry",
+        epsg=3035,
+    )
+    return sta.union_all() if hasattr(sta, "union_all") else sta.unary_union
+
+
 def fill_hgv_tables():
     """Read input files and write Tables 1–4 for all active scenarios."""
     input_dir = _input_dir()
     engine = db.engine()
+    boundary_geom = _boundary_geom()
 
     for egon_scn, data_scn in active_scenario_map().items():
         scenario_dir = input_dir / egon_scn
@@ -38,6 +57,18 @@ def fill_hgv_tables():
         cps_all = pd.read_csv(scenario_dir / "charging_points.csv")
         events_all = pd.read_csv(scenario_dir / "charging_events.csv")
         profiles_all = pd.read_csv(scenario_dir / "profiles.csv")
+
+        if boundary_geom is not None:
+            sites_all = sites_all.to_crs(3035)
+            n_before = len(sites_all)
+            sites_all = sites_all[sites_all.within(boundary_geom)]
+            logger.info(
+                f"  Restricted sites to configured boundary: "
+                f"{len(sites_all)}/{n_before} kept"
+            )
+            keep_ids = set(sites_all["site_id"])
+            cps_all = cps_all[cps_all["site_id"].isin(keep_ids)]
+            events_all = events_all[events_all["site_id"].isin(keep_ids)]
 
         _write_sites(sites_all, egon_scn, data_scn, engine)
         _write_charging_points(cps_all, egon_scn, data_scn, engine)
