@@ -16,7 +16,6 @@ from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.orm import sessionmaker
 import geopandas as gpd
 import pandas as pd
-import pypsa
 
 from egon.data import config, db
 from egon.data.datasets import (
@@ -30,7 +29,6 @@ from egon.data.datasets.chp.small_chp import (
     assign_use_case,
     existing_chp_smaller_10mw,
     extension_per_federal_state,
-    extension_to_areas,
     select_target,
 )
 from egon.data.datasets.power_plants import (
@@ -39,7 +37,6 @@ from egon.data.datasets.power_plants import (
     filter_mastr_geometry,
     scale_prox2now,
 )
-from egon.data.datasets.pypsaeur import read_network
 from egon.data.metadata import (
     context,
     generate_resource_fields_from_sqla_model,
@@ -654,76 +651,6 @@ def extension_SH():
     extension_per_federal_state("SchleswigHolstein", EgonChp)
 
 
-def insert_chp_egon100re():
-    """Insert CHP plants for eGon100RE considering results from pypsa-eur-sec
-
-    Returns
-    -------
-    None.
-
-    """
-
-    db.execute_sql(f"""
-        DELETE FROM {Chp.targets.tables['chp_table']}
-        WHERE scenario = 'eGon100RE'
-        """)
-
-    # select target values from pypsa-eur-sec
-    additional_capacity = db.select_dataframe(f""" # noqa: S608
-        SELECT capacity
-        FROM {Chp.sources.tables['scenario_capacities']}
-        WHERE scenario_name = 'eGon100RE'
-        AND carrier = 'urban_central_gas_CHP'
-        """).capacity[0]
-
-    if config.settings()["egon-data"]["--dataset-boundary"] != "Everything":
-        additional_capacity /= 16
-
-    network = read_network()
-
-    chp_index = "DE0 0 urban central gas CHP-2045"
-
-    standard_chp_th = 10
-    standard_chp_el = (
-        standard_chp_th
-        * network.links.loc[chp_index, "efficiency"]
-        / network.links.loc[chp_index, "efficiency2"]
-    )
-
-    areas = db.select_geodataframe(f"""
-            SELECT
-            residential_and_service_demand as demand, area_id,
-            ST_Transform(ST_PointOnSurface(geom_polygon), 4326)  as geom
-            FROM
-            {Chp.sources.tables['district_heating_areas']}
-            WHERE scenario = 'eGon100RE'
-            """)
-
-    existing_chp = pd.DataFrame(
-        data={
-            "el_capacity": standard_chp_el,
-            "th_capacity": standard_chp_th,
-            "voltage_level": 5,
-        },
-        index=range(1),
-    )
-
-    flh = (
-        network.links_t.p0[chp_index].sum()
-        / network.links.p_nom_opt[chp_index]
-    )
-
-    extension_to_areas(
-        areas,
-        additional_capacity,
-        existing_chp,
-        flh,
-        EgonChp,
-        district_heating=True,
-        scenario="eGon100RE",
-    )
-
-
 tasks = (create_tables,)
 
 insert_per_scenario = set()
@@ -817,7 +744,6 @@ class Chp(Dataset):
 
 
     *Dependencies*
-      * :py:class:`GasAreaseGon100RE <egon.data.datasets.gas_areas.GasAreaseGon100RE>`
       * :py:class:`GasAreaseGon2035 <egon.data.datasets.gas_areas.GasAreaseGon2035>`
       * :py:class:`DistrictHeatingAreas <egon.data.datasets.district_heating_areas.DistrictHeatingAreas>`
       * :py:class:`IndustrialDemandCurves <egon.data.datasets.industry.IndustrialDemandCurves>`
