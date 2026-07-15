@@ -67,6 +67,7 @@ def settings() -> dict[str, dict[str, str]]:
                 "--database-password": "data",
                 "--database-port": "59734",
                 "--database-user": "egon",
+                "--database-directory": "database-data",
                 "--dataset-boundary": "Everything",
                 "--docker-container-name":
                     "egon-data-local-database-container",
