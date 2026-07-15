@@ -356,10 +356,11 @@ def insert_biomass_chp(scenario):
 
     """
 
-    # import target values from NEP 2021, scneario C 2035
+    # import target values from NEP 2021, scenario C 2035
+    # or from NEP2025, scenario C 2037/2045
     target = select_target("biomass", scenario)
 
-    # import data for MaStR
+    # import data from MaStR
     mastr = pd.read_csv(Chp.sources.files["mastr_biomass"]).query(
         "EinheitBetriebsstatus=='InBetrieb'"
     )
@@ -377,8 +378,9 @@ def insert_biomass_chp(scenario):
             ).states.values
         )
     ]
-    # Scaling will be done per federal state in case of eGon2035 scenario.
-    if scenario == "eGon2035":
+    # Scaling is done per federal state in case of eGon2035, reGon2037 and 
+    # reGon2045 scenario.
+    if scenario in ["eGon2035", "reGon2037", "reGon2045"]:
         level = "federal_state"
     else:
         level = "country"
@@ -396,6 +398,8 @@ def insert_biomass_chp(scenario):
         mastr_loc = assign_bus_id(mastr_loc, Chp.sources)
     mastr_loc = assign_use_case(mastr_loc, Chp.sources, scenario)
 
+    nep_version = "NEP 2021" if scenario == "eGon2035" else "NEP 2025"
+
     # Insert entries with location
     session = sessionmaker(bind=db.engine())()
     for i, row in mastr_loc.iterrows():
@@ -403,7 +407,7 @@ def insert_biomass_chp(scenario):
             entry = EgonChp(
                 sources={
                     "chp": "MaStR",
-                    "el_capacity": "MaStR scaled with NEP 2021",
+                    "el_capacity": f"MaStR scaled with {nep_version}",
                     "th_capacity": "MaStR",
                 },
                 source_id={"MastrNummer": row.EinheitMastrNummer},
@@ -422,7 +426,7 @@ def insert_biomass_chp(scenario):
 
 def insert_chp_statusquo(scn="status2024"):
 
-    # import data for MaStR
+    # import data from MaStR
     mastr = pd.read_csv(Chp.sources.files["mastr_combustion"])
 
     mastr_biomass = pd.read_csv(Chp.sources.files["mastr_biomass"])
@@ -470,8 +474,8 @@ def insert_chp_statusquo(scn="status2024"):
         GROUP BY gen"""
     ).set_index("gen")
 
-    # Assing Laengengrad and Breitengrad to chps without location data
-    # based on the centroid of the municipaltiy
+    # Assigning degree of longitude (Laengengrad) and latitude (Breitengrad) to 
+    # chps without location data based on the centroid of the municipaltiy
     idx_no_location = mastr[
         (mastr.Laengengrad.isnull())
         & (mastr.Gemeinde.isin(geom_municipalities.index))
@@ -556,8 +560,11 @@ def insert_chp():
     None.
 
     """
-
-    insert_biomass_chp("eGon2035")
+    
+    # filters scenarios for all non-status-scenarios
+    scenarios = [s for s in config.settings()["egon-data"]["--scenarios"] if "status" not in str(s).lower()]
+    for scenario in scenarios:
+        insert_biomass_chp(scenario)
 
     # Insert large CHPs based on NEP's list of conventional power plants
     MaStR_konv = insert_large_chp(
@@ -736,7 +743,7 @@ class Chp(Dataset):
     Extract combined heat and power plants for each scenario
 
     This dataset creates combined heat and power (CHP) plants for each scenario and defines their use case.
-    The method bases on existing CHP plants from Marktstammdatenregister. For the eGon2035 scenario,
+    The method is based on existing CHP plants from Marktstammdatenregister. For the eGon2035 scenario,
     a list of CHP plans from the grid operator is used for new largescale CHP plants. CHP < 10MW are
     randomly distributed.
     Depending on the distance to a district heating grid, it is decided if the CHP is used to
@@ -762,7 +769,7 @@ class Chp(Dataset):
     #:
     name: str = "Chp"
     #:
-    version: str = "0.0.12"
+    version: str = "0.0.13"
 
     def __init__(self, dependencies):
         super().__init__(
