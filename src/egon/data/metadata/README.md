@@ -1,23 +1,31 @@
-# egon-data Metadata
+# egon-data metadata
 
-The metadata module provides all metadata related functionality used to create/update metadata for all datasets used in the eGon-data pipeline. Functionality defined will be imported into the dataset task.
+OEMetadata v2 metadata for all tables published by the eGon-data
+pipeline, processed with [OMI](https://github.com/OpenEnergyPlatform/omi).
 
-The metadata module is/offers:
+The version-controlled split-YAML store under `dataset_metadata/` is the
+authoritative source of metadata content (one OEMetadata dataset per DAG
+task group, one resource YAML per published table, task-group → dataset-id
+mapping in `dataset_metadata/dataset_ids.yaml`).
 
-    - the central place to configuring the metadata generation using the oemetadata builder
-    - it provides a metadata-template system which applies information like the project context description to all dataset resources by default to ease handling redundant information.
-    - Metadata can be setup using YAML files or dict data structures when working in python code using the OMI package
-    - A central functionality to upload metadata to the internal database as SQL comment on table <---## We could also use a jsonb column to avoid parsing metadata from string
-    - Provides a simple way to fill the metadata structure with content while keep oemetadata specification compliance
-    - Validate metadata against the json schema specification
-    - Create a single datapackage which lists all metadata from its resources as defined in a dataset dependency list. It represents the dataset which is then either patly or fully published on the OEP.
-    - Store generated metadata
+Contents of this package:
 
-The metadata module is used in dataset modules:
+- `settings.py` — store paths and the OEMetadata version.
+- `inventory.py` — static enumeration of declared
+  `DatasetSources`/`DatasetTargets` per pipeline class (AST-based, no
+  airflow/DB imports).
+- `cli.py` — the `egon-data metadata status|init|export` developer
+  commands.
+- `__init__.py` — the `Json_Metadata` pipeline task that assembles,
+  validates and publishes metadata at the end of every run.
+- `results/` — legacy OEMetadata v1.5 JSON documents kept as the
+  recovery source for the bulk migration.
+- `script/` — one-off migration scripts (v1.5 → v2 conversion, JSON →
+  split-YAML).
 
-    - To add individual metadata elements using the predefined structure offered by the metadata module
-    - Add information about the data model derived from the technical schema as implemented in the database reading form sqlalchemy definitions
+Documentation:
 
-Additional use cases
-
-    - Well described metadata is used in the process to upload datasets to the OEP
+- Developer how-to (add a dataset, edit metadata, release runs):
+  `docs/metadata_howto.rst`
+- Technical reference (architecture, design decisions, run-time flow):
+  `docs/metadata.rst`
