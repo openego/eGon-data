@@ -1,6 +1,0 @@
-version: OEMetadata-2.0
-dataset:
-  name: 'egon-data-for-regon'
-  title: 'Data resources used in egon-data pipeline.'
-  description: ''
-  '@id': null

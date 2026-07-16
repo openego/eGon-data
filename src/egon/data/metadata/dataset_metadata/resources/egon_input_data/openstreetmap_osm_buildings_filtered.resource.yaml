@@ -1,9 +1,9 @@
 '@id': null
-name: demand.egon_cts_heat_demand_building_share
-title: Heat demand profile share of egon cts buildings
+name: openstreetmap.osm_buildings_filtered
+title: eGon filtered buildings from openstreetmap
 path: WILL_BE_SET_AT_PUBLICATION
-description: Heat demand profile share of egon cts buildings for two scenarios with
-  bus_id
+description: Tag filtered list of buildings from OpenStreetMap which might have electricity
+  or heat demand - (c) OpenStreetMap contributors
 subject:
 - name: ''
   '@id': null
@@ -30,7 +30,7 @@ spatial:
     - 0
     crs: ''
 temporal:
-  referenceDate: '2023-03-13'
+  referenceDate: '2022-01-01'
   timeseries:
   - start: ''
     end: ''
@@ -95,35 +95,6 @@ sources:
       Share-Alike, Keep open!'
     attribution: © OpenStreetMap contributors
     copyrightStatement: null
-- title: Peta5 0 1 HD ser
-  authors: []
-  description: modelled Heat Demand distribution (in GJ per hectare grid cell) for
-    service-sector heat demands for space heating, hot water and process heat for
-    the year 2015 using HRE4 data and the combined top-down bottom-up approach of
-    HRE4
-  publicationYear: null
-  path: https://s-eenergies-open-data-euf.hub.arcgis.com/search
-  sourceLicenses:
-  - name: Creative Commons Attribution 4.0 International
-    title: CC BY 4.0
-    path: https://creativecommons.org/licenses/by/4.0/
-    instruction: 'You are free: To Share, To Adapt; As long as you: Attribute!'
-    attribution: \u00a9 Flensburg, Halmstad and Aalborg universities
-    copyrightStatement: null
-- title: Peta5 0 1 HD res
-  authors: []
-  description: modelled Heat Demand distribution (in GJ per hectare grid cell) for
-    residential heat demands for space heating and hot water for the year 2015 using
-    HRE4 data and the combined top-down bottom-up approach of HRE4
-  publicationYear: null
-  path: https://s-eenergies-open-data-euf.hub.arcgis.com/search
-  sourceLicenses:
-  - name: Creative Commons Attribution 4.0 International
-    title: CC BY 4.0
-    path: https://creativecommons.org/licenses/by/4.0/
-    instruction: 'You are free: To Share, To Adapt; As long as you: Attribute!'
-    attribution: \u00a9 Flensburg, Halmstad and Aalborg universities
-    copyrightStatement: null
 contributors:
 - title: nailend
   path: null
@@ -132,7 +103,7 @@ contributors:
   - ''
   date: '2023-03-13'
   object: metadata
-  comment: create metadata
+  comment: Created metadata
 - title: Open Energy Platform oemetadata conversion to v2
   path: https://github.com/OpenEnergyPlatform
   role:
@@ -148,65 +119,76 @@ format: PostgreSQL
 encoding: UTF-8
 schema:
   fields:
-  - name: building_id
-    description: 'Building id (reference to: openstreetmap.osm_buildings_filtered.id,
-      openstreetmap.osm_buildings_synthetic.id, boundaries.egon_map_zensus_mvgd_building)'
-    type: integer
+  - name: osm_id
+    description: Openstreetmap identifier
+    type: bigint
     nullable: false
     unit: none
     isAbout: []
     valueReference: []
-  - name: scenario
-    description: Scenario (eGon100RE, eGon2035)
-    type: character varying
+  - name: amenitiy
+    description: Type of amenitiy if given
+    type: text
     nullable: true
     unit: none
     isAbout: []
     valueReference: []
-  - name: bus_id
-    description: 'MVGD bus_id (reference to: demand.egon_etrago_heat_cts.bus_id, grid.egon_hvmv_substation.bus_id,
-      grid.egon_mv_grid_district.bus_id)'
+  - name: building
+    description: Type of building
+    type: text
+    nullable: true
+    unit: none
+    isAbout: []
+    valueReference: []
+  - name: name
+    description: Name of the building if given
+    type: text
+    nullable: true
+    unit: none
+    isAbout: []
+    valueReference: []
+  - name: geom_building
+    description: 'Polygon of the building (CRS: ERTS89/EPSG:3035)'
+    type: geometry
+    nullable: true
+    unit: none
+    isAbout: []
+    valueReference: []
+  - name: area
+    description: Surface area of building
+    type: double precision
+    nullable: true
+    unit: m^2
+    isAbout: []
+    valueReference: []
+  - name: geom_point
+    description: 'Centroid of the building (CRS: ERTS89/EPSG:3035)'
+    type: geometry
+    nullable: true
+    unit: none
+    isAbout: []
+    valueReference: []
+  - name: tags
+    description: Opensteetmap tags assigned to the building
+    type: hstore
+    nullable: true
+    unit: none
+    isAbout: []
+    valueReference: []
+  - name: id
+    description: 'Unique identifyer and project internal building id (reference to:
+      demand.egon_hp_capacity_buildings.building_id, demand.egon_cts_heat_demand_building_share.building_id,
+      demand.egon_cts_electricity_demand_building_share.building_id, demand.egon_household_electricity_profile_of_buildings.building_id,
+      demand.egon_building_heat_peak_loads.building_id, demand.egon_building_electricity_peak_loads.building_id,
+      boundaries.egon_map_zensus_mvgd_buildings.building_id)'
     type: integer
     nullable: false
     unit: none
-    isAbout: []
-    valueReference: []
-  - name: profile_share
-    description: 'Profile share of MVGD heat profile '
-    type: real
-    nullable: true
-    unit: None
     isAbout: []
     valueReference: []
   primaryKey:
-  - b
-  - u
-  - i
-  - l
-  - d
-  - i
-  - n
-  - g
-  - _
-  - i
-  - d
-  - ','
-  - ' '
-  - s
-  - c
-  - e
-  - n
-  - a
-  - r
-  - i
-  - o
-  foreignKeys:
-  - fields:
-    - ''
-    reference:
-      resource: ''
-      fields:
-      - ''
+  - id
+  foreignKeys: []
 dialect:
   delimiter: ''
   decimalSeparator: .

@@ -1,12 +1,15 @@
 '@id': null
-name: openstreetmap.osm_buildings_synthetic
-title: eGon synthetic residential buildings
+name: boundaries.egon_map_zensus_mvgd_buildings
+title: eGon buildings mapping table
 path: WILL_BE_SET_AT_PUBLICATION
-description: ' List of generated synthetic buildings '
+description: Mapping table for all used buildings via project internal building_id.
+  Additional info about if it is a synthetic or a openstreetmap building, where it
+  is located (census cell_id, mvgd_id), in which sector (residential, cts) the building
+  is used, if there are heat or electricity profiles.
 subject:
 - name: ''
   '@id': null
-publicationDate: '2022-09-14'
+publicationDate: '2023-03-13'
 embargoPeriod:
   start: ''
   end: ''
@@ -29,7 +32,7 @@ spatial:
     - 0
     crs: ''
 temporal:
-  referenceDate: '2022-09-14'
+  referenceDate: '2023-03-13'
   timeseries:
   - start: ''
     end: ''
@@ -95,30 +98,14 @@ sources:
     attribution: © OpenStreetMap contributors
     copyrightStatement: null
 contributors:
-- title: ClaraBuettner
-  path: null
-  organization: null
-  roles:
-  - ''
-  date: '2022-09-12'
-  object: metadata
-  comment: Create metadata
 - title: nailend
   path: null
   organization: null
   roles:
   - ''
-  date: '2022-09-12'
+  date: '2023-03-13'
   object: metadata
-  comment: Updated metadata
-- title: nesnoj
-  path: null
-  organization: null
-  roles:
-  - ''
-  date: '2022-09-14'
-  object: metadata
-  comment: Update metadata
+  comment: create metadata
 - title: Open Energy Platform oemetadata conversion to v2
   path: https://github.com/OpenEnergyPlatform
   role:
@@ -134,66 +121,60 @@ format: PostgreSQL
 encoding: UTF-8
 schema:
   fields:
-  - name: id
-    description: 'Unique identifyer and project internal building id (reference to:
-      openstreetmap.osm_buildings_residential.id, demand.egon_household_electricity_profile_of_buildings.building_id)'
-    type: character varying
-    nullable: false
-    unit: none
-    isAbout: []
-    valueReference: []
-  - name: area
-    description: Surface area of building
-    type: real
-    nullable: true
-    unit: m^2
-    isAbout: []
-    valueReference: []
-  - name: building
-    description: Type of building (residential or cts)
-    type: character varying(11)
-    nullable: true
-    unit: none
-    isAbout: []
-    valueReference: []
-  - name: cell_id
-    description: 'Census cell id (reference to: society.destatis_zensus_population_per_ha_inside_germany.id)'
-    type: character varying
-    nullable: false
-    unit: none
-    isAbout: []
-    valueReference: []
-  - name: geom_building
-    description: 'Polygon of building (CRS: ERTS89/EPSG:3035)'
-    type: geometry
-    nullable: true
-    unit: none
-    isAbout: []
-    valueReference: []
-  - name: geom_point
-    description: 'Centroid of building (CRS: ERTS89/EPSG:3035)'
-    type: geometry
-    nullable: true
-    unit: none
-    isAbout: []
-    valueReference: []
-  - name: n_amenities_inside
-    description: Number of amenities inside the building (always zero if not cts building)
+  - name: building_id
+    description: 'Building id (reference to: openstreetmap.osm_buildings_filtered.id,
+      openstreetmap.osm_buildings_synthetic.id)'
     type: integer
     nullable: false
     unit: none
     isAbout: []
     valueReference: []
+  - name: sector
+    description: Sector (cts, residential)
+    type: characters varying
+    nullable: true
+    unit: none
+    isAbout: []
+    valueReference: []
+  - name: zensus_population_id
+    description: 'Zensus population id (reference to: society.destatis_zensus_population_per_ha.id)'
+    type: integer
+    nullable: false
+    unit: none
+    isAbout: []
+    valueReference: []
+  - name: bus_id
+    description: 'MVGD bus id (reference to: grid.egon_hvmv_substation.bus_id, grid.egon_mv_grid_district.bus_id)'
+    type: integer
+    nullable: false
+    unit: none
+    isAbout: []
+    valueReference: []
+  - name: electricity
+    description: True if respectives electricity demand profile exists
+    type: bool
+    nullable: true
+    unit: None
+    isAbout: []
+    valueReference: []
+  - name: heat
+    description: True if respectives heat demand profile exists
+    type: bool
+    nullable: true
+    unit: None
+    isAbout: []
+    valueReference: []
+  - name: osm
+    description: is OSM building if true else syntheticaly created
+    type: bool
+    nullable: true
+    unit: None
+    isAbout: []
+    valueReference: []
   primaryKey:
-  - i
-  - d
-  foreignKeys:
-  - fields:
-    - ''
-    reference:
-      resource: ''
-      fields:
-      - ''
+  - building_id
+  - sector
+  foreignKeys: []
 dialect:
   delimiter: ''
   decimalSeparator: .

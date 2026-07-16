@@ -228,42 +228,10 @@ schema:
     isAbout: []
     valueReference: []
   primaryKey:
-  - b
-  - u
-  - i
-  - l
-  - d
-  - i
-  - n
-  - g
-  - _
-  - i
-  - d
-  - ','
-  - ' '
-  - s
-  - c
-  - e
-  - n
-  - a
-  - r
-  - i
-  - o
-  - ','
-  - ' '
-  - s
-  - e
-  - c
-  - t
-  - o
-  - r
-  foreignKeys:
-  - fields:
-    - ''
-    reference:
-      resource: ''
-      fields:
-      - ''
+  - building_id
+  - scenario
+  - sector
+  foreignKeys: []
 dialect:
   delimiter: ''
   decimalSeparator: .

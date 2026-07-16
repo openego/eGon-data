@@ -1,13 +1,13 @@
 '@id': null
-name: openstreetmap.osm_buildings_filtered
-title: eGon filtered buildings from openstreetmap
+name: demand.egon_household_electricity_profile_of_buildings
+title: eGon household electricity profiles of buildings
 path: WILL_BE_SET_AT_PUBLICATION
-description: Tag filtered list of buildings from OpenStreetMap which might have electricity
-  or heat demand - (c) OpenStreetMap contributors
+description: 'Mapping table for residential electricity profiles to buildings via
+  project internal building_id and corresponding census cell_id. '
 subject:
 - name: ''
   '@id': null
-publicationDate: '2023-03-13'
+publicationDate: '2022-09-14'
 embargoPeriod:
   start: ''
   end: ''
@@ -30,7 +30,7 @@ spatial:
     - 0
     crs: ''
 temporal:
-  referenceDate: '2022-01-01'
+  referenceDate: '2022-09-14'
   timeseries:
   - start: ''
     end: ''
@@ -96,14 +96,30 @@ sources:
     attribution: © OpenStreetMap contributors
     copyrightStatement: null
 contributors:
+- title: ClaraBuettner
+  path: null
+  organization: null
+  roles:
+  - ''
+  date: '2022-09-12'
+  object: metadata
+  comment: Create metadata
 - title: nailend
   path: null
   organization: null
   roles:
   - ''
-  date: '2023-03-13'
+  date: '2022-09-12'
   object: metadata
-  comment: Created metadata
+  comment: Updated metadata
+- title: nesnoj
+  path: null
+  organization: null
+  roles:
+  - ''
+  date: '2022-09-14'
+  object: metadata
+  comment: Update metadata
 - title: Open Energy Platform oemetadata conversion to v2
   path: https://github.com/OpenEnergyPlatform
   role:
@@ -119,83 +135,38 @@ format: PostgreSQL
 encoding: UTF-8
 schema:
   fields:
-  - name: osm_id
-    description: Openstreetmap identifier
-    type: bigint
-    nullable: false
-    unit: none
-    isAbout: []
-    valueReference: []
-  - name: amenitiy
-    description: Type of amenitiy if given
-    type: text
-    nullable: true
-    unit: none
-    isAbout: []
-    valueReference: []
-  - name: building
-    description: Type of building
-    type: text
-    nullable: true
-    unit: none
-    isAbout: []
-    valueReference: []
-  - name: name
-    description: Name of the building if given
-    type: text
-    nullable: true
-    unit: none
-    isAbout: []
-    valueReference: []
-  - name: geom_building
-    description: 'Polygon of the building (CRS: ERTS89/EPSG:3035)'
-    type: geometry
-    nullable: true
-    unit: none
-    isAbout: []
-    valueReference: []
-  - name: area
-    description: Surface area of building
-    type: double precision
-    nullable: true
-    unit: m^2
-    isAbout: []
-    valueReference: []
-  - name: geom_point
-    description: 'Centroid of the building (CRS: ERTS89/EPSG:3035)'
-    type: geometry
-    nullable: true
-    unit: none
-    isAbout: []
-    valueReference: []
-  - name: tags
-    description: Opensteetmap tags assigned to the building
-    type: hstore
-    nullable: true
-    unit: none
-    isAbout: []
-    valueReference: []
   - name: id
-    description: 'Unique identifyer and project internal building id (reference to:
-      demand.egon_hp_capacity_buildings.building_id, demand.egon_cts_heat_demand_building_share.building_id,
-      demand.egon_cts_electricity_demand_building_share.building_id, demand.egon_household_electricity_profile_of_buildings.building_id,
-      demand.egon_building_heat_peak_loads.building_id, demand.egon_building_electricity_peak_loads.building_id,
-      boundaries.egon_map_zensus_mvgd_buildings.building_id)'
+    description: Unique identifier
     type: integer
     nullable: false
     unit: none
     isAbout: []
     valueReference: []
+  - name: building_id
+    description: 'Building id (reference to: openstreetmap.osm_buildings_residential.id,
+      openstreetmap.osm_buildings_synthetic.id)'
+    type: integer
+    nullable: false
+    unit: none
+    isAbout: []
+    valueReference: []
+  - name: cell_id
+    description: 'Census cell id (reference to: society.destatis_zensus_population_per_ha_inside_germany.id)'
+    type: integer
+    nullable: false
+    unit: none
+    isAbout: []
+    valueReference: []
+  - name: profile_id
+    description: 'ID of iee household profiles (reference to: iee_household_load_profiles.type)'
+    type: character varying
+    nullable: false
+    unit: none
+    isAbout: []
+    valueReference: []
   primaryKey:
-  - i
-  - d
-  foreignKeys:
-  - fields:
-    - ''
-    reference:
-      resource: ''
-      fields:
-      - ''
+  - id
+  foreignKeys: []
 dialect:
   delimiter: ''
   decimalSeparator: .

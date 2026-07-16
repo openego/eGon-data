@@ -1,9 +1,9 @@
 '@id': null
-name: society.egon_destatis_zensus_apartment_building_population_per_ha
-title: eGon - Zensus 2011 - Apartments, Buildings, Population per hectar
+name: demand.egon_building_electricity_peak_loads
+title: Electricity peak loads for egon buildings
 path: WILL_BE_SET_AT_PUBLICATION
-description: Apartments, Buildings, Population from national census in Germany in
-  2011.
+description: 'Electricity peak load table of residential and cts buildings with voltage
+  level for two scenarios '
 subject:
 - name: ''
   '@id': null
@@ -21,8 +21,8 @@ spatial:
   extent:
     name: Germany
     '@id': null
-    resolutionValue: '1'
-    resolutionUnit: ha
+    resolutionValue: Buildings
+    resolutionUnit: ''
     boundingBox:
     - 0
     - 0
@@ -30,7 +30,7 @@ spatial:
     - 0
     crs: ''
 temporal:
-  referenceDate: ''
+  referenceDate: '2023-03-13'
   timeseries:
   - start: ''
     end: ''
@@ -39,6 +39,48 @@ temporal:
     alignment: ''
     aggregationType: ''
 sources:
+- title: 'Data bundle for egon-data: A transparent and reproducible data processing
+    pipeline for energy system modeling'
+  authors: []
+  description: egon-data provides a transparent and reproducible open data based data
+    processing pipeline for generating data models suitable for energy system modeling.
+    The data is customized for the requirements of the research project eGon. The
+    research project aims to develop tools for an open and cross-sectoral planning
+    of transmission and distribution grids. For further information please visit the
+    eGon project website or its Github repository.  egon-data retrieves and processes
+    data from several different external input sources. As not all data dependencies
+    can be downloaded automatically from external sources we provide a data bundle
+    to be downloaded by egon-data.
+  publicationYear: null
+  path: https://doi.org/10.5281/zenodo.6630616
+  sourceLicenses:
+  - name: CC-BY-4.0
+    title: Creative Commons Attribution 4.0 International
+    path: https://creativecommons.org/licenses/by/4.0/legalcode
+    instruction: 'You are free: To Share, To Create, To Adapt; As long as you: Attribute.'
+    attribution: © eGon-data developers, © Leibniz Institute for Applied Geophysics,
+      © Fraunhofer IEE, © BGR Hannover, © Danielle Schmidt, © Übertragungsnetzbetreiber,
+      © DIW Berlin, © Reiner Lemoine Institut, © Statistisches Bundesamt, Wiesbaden
+      2008, © Statistische Ämter des Bundes und der Länder 2021
+    copyrightStatement: null
+- title: eGon-data
+  authors: []
+  description: Workflow to download, process and generate data sets suitable for the
+    further research conducted in the project eGon (https://ego-n.org/)
+  publicationYear: null
+  path: https://github.com/openego/eGon-data
+  sourceLicenses:
+  - name: AGPL-3.0 License
+    title: GNU Affero General Public License v3.0
+    path: https://www.gnu.org/licenses/agpl-3.0.de.html
+    instruction: Permissions of this strongest copyleft license are conditioned on
+      making available complete source code of licensed works and modifications, which
+      include larger works using a licensed work, under the same license. Copyright
+      and license notices must be preserved. Contributors provide an express grant
+      of patent rights. When a modified version is used to provide a service over
+      a network, the complete source code of the modified version must be made available.
+    attribution: © eGon-data developers
+    copyrightStatement: null
 - title: Statistisches Bundesamt (Destatis) - Ergebnisse des Zensus 2011 zum Download
   authors: []
   description: Als Download bieten wir Ihnen auf dieser Seite zus\u00e4tzlich zur
@@ -100,6 +142,36 @@ sources:
       mit dem Hinweis zu versehen, dass die Daten ge\u00e4ndert wurden.
     attribution: \u00a9 Statistisches Bundesamt, Wiesbaden 2015 (im Auftrag der Herausgebergemeinschaft)
     copyrightStatement: null
+- title: OpenStreetMap Data Extracts (Geofabrik)
+  authors: []
+  description: Full data extract of OpenStreetMap data for defined spatial extent
+    at 2022-01-01
+  publicationYear: null
+  path: https://download.geofabrik.de/europe/germany-210101.osm.pbf
+  sourceLicenses:
+  - name: ODbL-1.0
+    title: Open Data Commons Open Database License 1.0
+    path: https://opendatacommons.org/licenses/odbl/1.0/
+    instruction: 'You are free: To Share, To Create, To Adapt; As long as you: Attribute,
+      Share-Alike, Keep open!'
+    attribution: © OpenStreetMap contributors
+    copyrightStatement: null
+- title: DemandRegio
+  authors: []
+  description: Harmonisierung und Entwicklung von Verfahren zur regionalen und zeitlichen
+    Auflösung von Energienachfragen
+  publicationYear: null
+  path: https://doi.org/10.34805/ffe-119-20
+  sourceLicenses:
+  - name: CC-BY-4.0
+    title: Creative Commons Attribution 4.0 International
+    path: https://creativecommons.org/licenses/by/4.0/legalcode
+    instruction: 'You are free: To Share, To Create, To Adapt; As long as you: Attribute.'
+    attribution: © eGon-data developers, © Leibniz Institute for Applied Geophysics,
+      © Fraunhofer IEE, © BGR Hannover, © Danielle Schmidt, © Übertragungsnetzbetreiber,
+      © DIW Berlin, © Reiner Lemoine Institut, © Statistisches Bundesamt, Wiesbaden
+      2008, © Statistische Ämter des Bundes und der Länder 2021
+    copyrightStatement: null
 contributors:
 - title: nailend
   path: null
@@ -108,7 +180,7 @@ contributors:
   - ''
   date: '2023-03-13'
   object: metadata
-  comment: Create metadata
+  comment: create metadata
 - title: Open Energy Platform oemetadata conversion to v2
   path: https://github.com/OpenEnergyPlatform
   role:
@@ -124,67 +196,47 @@ format: PostgreSQL
 encoding: UTF-8
 schema:
   fields:
-  - name: grid_id
-    description: Grid number of source
-    type: string
-    nullable: false
-    unit: none
-    isAbout: []
-    valueReference: []
-  - name: zensus_population_id
-    description: Unique identifier
+  - name: building_id
+    description: 'Building id (reference to: openstreetmap.osm_buildings_filtered.id,
+      openstreetmap.osm_buildings_synthetic.id, boundaries.egon_map_zensus_mvgd_building)'
     type: integer
     nullable: false
     unit: none
     isAbout: []
     valueReference: []
-  - name: building_count
-    description: 'Number of buildings within zensus cell '
-    type: smallint
+  - name: scenario
+    description: Scenario (eGon100RE, eGon2035)
+    type: character varying
     nullable: true
     unit: none
     isAbout: []
     valueReference: []
-  - name: apartment_count
-    description: Number of appartments within zensus cells
-    type: smallint
+  - name: sector
+    description: Sector (cts, residential)
+    type: characters varying
     nullable: true
     unit: none
     isAbout: []
     valueReference: []
-  - name: population
-    description: Number of registred residents
-    type: integer
+  - name: peak_load_in_w
+    description: Peak load value
+    type: real
     nullable: true
-    unit: resident
+    unit: W
     isAbout: []
     valueReference: []
-  - name: geom
-    description: 'Geometry of zensus cell (CRS: ERTS89/EPSG:3035)'
-    type: Geometry
+  - name: voltage_level
+    description: Voltage level of building connection after MitnetzStrom Classification
+    type: int
     nullable: true
-    unit: none
-    isAbout: []
-    valueReference: []
-  - name: geom_point
-    description: 'Geometry centroid of zensus cell (CRS: ERTS89/EPSG:3035)'
-    type: Geometry
-    nullable: true
-    unit: none
+    unit: None
     isAbout: []
     valueReference: []
   primaryKey:
-  - n
-  - o
-  - n
-  - e
-  foreignKeys:
-  - fields:
-    - ''
-    reference:
-      resource: ''
-      fields:
-      - ''
+  - building_id
+  - scenario
+  - sector
+  foreignKeys: []
 dialect:
   delimiter: ''
   decimalSeparator: .

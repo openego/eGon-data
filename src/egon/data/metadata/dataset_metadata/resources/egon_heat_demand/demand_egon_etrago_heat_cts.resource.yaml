@@ -1,9 +1,9 @@
 '@id': null
-name: demand.egon_cts_electricity_demand_building_share
-title: Electricity demand profile share of egon cts buildings
+name: demand.egon_etrago_heat_cts
+title: MV cts heat demand profiles
 path: WILL_BE_SET_AT_PUBLICATION
-description: Electricity demand profile share of egon cts buildings for two scenarios
-  with bus_id
+description: Aggregated heat demand profile of cts sector at mvgd bus level for two
+  scenarios. Values are given in MWh.
 subject:
 - name: ''
   '@id': null
@@ -21,8 +21,8 @@ spatial:
   extent:
     name: Germany
     '@id': null
-    resolutionValue: Buildings
-    resolutionUnit: ''
+    resolutionValue: MV
+    resolutionUnit: Grid
     boundingBox:
     - 0
     - 0
@@ -32,12 +32,12 @@ spatial:
 temporal:
   referenceDate: '2023-03-13'
   timeseries:
-  - start: ''
-    end: ''
-    resolutionValue: ''
-    resolutionUnit: ''
-    alignment: ''
-    aggregationType: ''
+  - start: '2016-01-01'
+    end: '2016-12-31'
+    resolutionValue: '1'
+    resolutionUnit: h
+    alignment: left
+    aggregationType: sum
 sources:
 - title: 'Data bundle for egon-data: A transparent and reproducible data processing
     pipeline for energy system modeling'
@@ -80,6 +80,36 @@ sources:
       of patent rights. When a modified version is used to provide a service over
       a network, the complete source code of the modified version must be made available.
     attribution: © eGon-data developers
+    copyrightStatement: null
+- title: Verwaltungsgebiete 1:250 000 (Ebenen)
+  authors: []
+  description: Der Datenbestand umfasst sämtliche Verwaltungseinheiten der hierarchischen
+    Verwaltungsebenen vom Staat bis zu den Gemeinden mit ihren Grenzen, statistischen
+    Schlüsselzahlen, Namen der Verwaltungseinheit sowie die spezifische Bezeichnung
+    der Verwaltungsebene des jeweiligen Landes.
+  publicationYear: null
+  path: https://daten.gdz.bkg.bund.de/produkte/vg/vg250_ebenen_0101/2020/vg250_01-01.geo84.shape.ebenen.zip
+  sourceLicenses:
+  - name: dl-by-de/2.0
+    title: Datenlizenz Deutschland – Namensnennung – Version 2.0
+    path: www.govdata.de/dl-de/by-2-0
+    instruction: Jede Nutzung ist unter den Bedingungen dieser „Datenlizenz Deutschland
+      - Namensnennung - Version 2.0 zulässig.Die bereitgestellten Daten und Metadaten
+      dürfen für die kommerzielle und nicht kommerzielle Nutzung insbesondere:(1)
+      vervielfältigt, ausgedruckt, präsentiert, verändert, bearbeitet sowie an Dritte
+      übermittelt werden; (2) mit eigenen Daten und Daten Anderer zusammengeführt
+      und zu selbständigen neuen Datensätzen verbunden werden; (3) in interne und
+      externe Geschäftsprozesse, Produkte und Anwendungen in öffentlichen und nicht
+      öffentlichen elektronischen Netzwerken eingebunden werden.Bei der Nutzung ist
+      sicherzustellen, dass folgende Angaben als Quellenvermerk enthalten sind:(1)
+      Bezeichnung des Bereitstellers nach dessen Maßgabe,(2) der Vermerk Datenlizenz
+      Deutschland – Namensnennung – Version 2.0 oder dl-de/by-2-0 mit Verweis auf
+      den Lizenztext unter www.govdata.de/dl-de/by-2-0 sowie(3) einen Verweis auf
+      den Datensatz (URI).Dies gilt nur soweit die datenhaltende Stelle die Angaben(1)
+      bis (3) zum Quellenvermerk bereitstellt.Veränderungen, Bearbeitungen, neue Gestaltungen
+      oder sonstige Abwandlungen sind im Quellenvermerk mit dem Hinweis zu versehen,
+      dass die Daten geändert wurden.
+    attribution: © Bundesamt für Kartographie und Geodäsie 2020 (Daten verändert)
     copyrightStatement: null
 - title: Statistisches Bundesamt (Destatis) - Ergebnisse des Zensus 2011 zum Download
   authors: []
@@ -142,35 +172,41 @@ sources:
       mit dem Hinweis zu versehen, dass die Daten ge\u00e4ndert wurden.
     attribution: \u00a9 Statistisches Bundesamt, Wiesbaden 2015 (im Auftrag der Herausgebergemeinschaft)
     copyrightStatement: null
-- title: OpenStreetMap Data Extracts (Geofabrik)
+- title: ERA5 global reanalysis
   authors: []
-  description: Full data extract of OpenStreetMap data for defined spatial extent
-    at 2022-01-01
+  description: ERA5 is the fifth generation ECMWF reanalysis for the global climate
+    and weather for the past 4 to 7 decades. Currently data is available from 1950,
+    split into Climate Data Store entries for 1950-1978 (preliminary back extension)
+    and from 1979 onwards (final release plus timely updates, this page). ERA5 replaces
+    the ERA-Interim reanalysis. See the online ERA5 documentation (https://confluence.ecmwf.int/display/CKB/ERA5%3A+data+documentation#ERA5:datadocumentation-Dataupdatefrequency)
+    for more information.
   publicationYear: null
-  path: https://download.geofabrik.de/europe/germany-210101.osm.pbf
+  path: https://confluence.ecmwf.int/display/CKB/ERA5%3A+data+documentation#ERA5:datadocumentation-Dataupdatefrequency
   sourceLicenses:
-  - name: ODbL-1.0
-    title: Open Data Commons Open Database License 1.0
-    path: https://opendatacommons.org/licenses/odbl/1.0/
-    instruction: 'You are free: To Share, To Create, To Adapt; As long as you: Attribute,
-      Share-Alike, Keep open!'
-    attribution: © OpenStreetMap contributors
+  - name: Licence to use Copernicus Products
+    title: Licence to use Copernicus Products
+    path: https://cds.climate.copernicus.eu/api/v2/terms/static/licence-to-use-copernicus-products.pdf
+    instruction: 'This Licence is free of charge, worldwide, non-exclusive, royalty
+      free and perpetual. Access to Copernicus Products is given for any purpose in
+      so far as it is lawful, whereas use may include, but is not limited to: reproduction;
+      distribution; communication to the public; adaptation, modification and combination
+      with other data and information; or any combination of the foregoing'
+    attribution: © Copernicus Climate Change Service (C3S) Climate Data Store
     copyrightStatement: null
-- title: DemandRegio
+- title: Peta5 0 1 HD ser
   authors: []
-  description: Harmonisierung und Entwicklung von Verfahren zur regionalen und zeitlichen
-    Auflösung von Energienachfragen
+  description: modelled Heat Demand distribution (in GJ per hectare grid cell) for
+    service-sector heat demands for space heating, hot water and process heat for
+    the year 2015 using HRE4 data and the combined top-down bottom-up approach of
+    HRE4
   publicationYear: null
-  path: https://doi.org/10.34805/ffe-119-20
+  path: https://s-eenergies-open-data-euf.hub.arcgis.com/search
   sourceLicenses:
-  - name: CC-BY-4.0
-    title: Creative Commons Attribution 4.0 International
-    path: https://creativecommons.org/licenses/by/4.0/legalcode
-    instruction: 'You are free: To Share, To Create, To Adapt; As long as you: Attribute.'
-    attribution: © eGon-data developers, © Leibniz Institute for Applied Geophysics,
-      © Fraunhofer IEE, © BGR Hannover, © Danielle Schmidt, © Übertragungsnetzbetreiber,
-      © DIW Berlin, © Reiner Lemoine Institut, © Statistisches Bundesamt, Wiesbaden
-      2008, © Statistische Ämter des Bundes und der Länder 2021
+  - name: Creative Commons Attribution 4.0 International
+    title: CC BY 4.0
+    path: https://creativecommons.org/licenses/by/4.0/
+    instruction: 'You are free: To Share, To Adapt; As long as you: Attribute!'
+    attribution: \u00a9 Flensburg, Halmstad and Aalborg universities
     copyrightStatement: null
 contributors:
 - title: nailend
@@ -180,7 +216,7 @@ contributors:
   - ''
   date: '2023-03-13'
   object: metadata
-  comment: create metadata
+  comment: Create metadata
 - title: Open Energy Platform oemetadata conversion to v2
   path: https://github.com/OpenEnergyPlatform
   role:
@@ -196,65 +232,32 @@ format: PostgreSQL
 encoding: UTF-8
 schema:
   fields:
-  - name: building_id
-    description: 'Building id (reference to: openstreetmap.osm_buildings_filtered.id,
-      openstreetmap.osm_buildings_synthetic.id, boundaries.egon_map_zensus_mvgd_building)'
-    type: integer
-    nullable: false
-    unit: none
-    isAbout: []
-    valueReference: []
-  - name: scenario
-    description: 'Scenario (eGon100RE, eGon2035) (reference: demand.egon_etrago_electricity_cts.scn_name)'
-    type: character varying
-    nullable: true
-    unit: none
-    isAbout: []
-    valueReference: []
   - name: bus_id
-    description: 'MVGD bus_id (reference to: demand.egon_etrago_electricity_cts.bus_id,
+    description: 'MV bus_id  (reference: demand.egon_cts_heat_demand_building_share.bus_id,
       grid.egon_hvmv_substation.bus_id, grid.egon_mv_grid_district.bus_id)'
     type: integer
     nullable: false
     unit: none
     isAbout: []
     valueReference: []
-  - name: profile_share
-    description: Profile share of MVGD elctricity profile
-    type: real
+  - name: scn_name
+    description: 'Scenario name (reference: demand.egon_cts_heat_demand_building_share.scenario)'
+    type: character varying
     nullable: true
-    unit: None
+    unit: none
+    isAbout: []
+    valueReference: []
+  - name: p_set
+    description: Cts heat demand load timeseries for one year (8760 hours) in MWh
+    type: array of real
+    nullable: true
+    unit: MWh
     isAbout: []
     valueReference: []
   primaryKey:
-  - b
-  - u
-  - i
-  - l
-  - d
-  - i
-  - n
-  - g
-  - _
-  - i
-  - d
-  - ','
-  - ' '
-  - s
-  - c
-  - e
-  - n
-  - a
-  - r
-  - i
-  - o
-  foreignKeys:
-  - fields:
-    - ''
-    reference:
-      resource: ''
-      fields:
-      - ''
+  - id
+  - scn_name
+  foreignKeys: []
 dialect:
   delimiter: ''
   decimalSeparator: .

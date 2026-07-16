@@ -1,29 +1,27 @@
 '@id': null
-name: boundaries.egon_map_zensus_mvgd_buildings
-title: eGon buildings mapping table
+name: demand.egon_heat_timeseries_selected_profiles
+title: eGon selected intra-day profiles per building
 path: WILL_BE_SET_AT_PUBLICATION
-description: Mapping table for all used buildings via project internal building_id.
-  Additional info about if it is a synthetic or a openstreetmap building, where it
-  is located (census cell_id, mvgd_id), in which sector (residential, cts) the building
-  is used, if there are heat or electricity profiles.
+description: List of selected intra-day-profiles for each residential building in
+  Germany
 subject:
 - name: ''
   '@id': null
-publicationDate: '2023-03-13'
+publicationDate: '2022-09-14'
 embargoPeriod:
   start: ''
   end: ''
   isActive: false
 spatial:
   location:
-    address: ''
+    address: none
     '@id': null
     latitude: ''
     longitude: ''
   extent:
     name: Germany
     '@id': null
-    resolutionValue: Buildings
+    resolutionValue: buildings
     resolutionUnit: ''
     boundingBox:
     - 0
@@ -32,7 +30,7 @@ spatial:
     - 0
     crs: ''
 temporal:
-  referenceDate: '2023-03-13'
+  referenceDate: '2022-09-14'
   timeseries:
   - start: ''
     end: ''
@@ -86,7 +84,7 @@ sources:
 - title: OpenStreetMap Data Extracts (Geofabrik)
   authors: []
   description: Full data extract of OpenStreetMap data for defined spatial extent
-    at 2022-01-01
+    at ''referenceDate''
   publicationYear: null
   path: https://download.geofabrik.de/europe/germany-210101.osm.pbf
   sourceLicenses:
@@ -98,14 +96,22 @@ sources:
     attribution: © OpenStreetMap contributors
     copyrightStatement: null
 contributors:
-- title: nailend
+- title: ClaraBuettner
   path: null
   organization: null
   roles:
   - ''
-  date: '2023-03-13'
+  date: '2022-09-12'
   object: metadata
-  comment: create metadata
+  comment: Create metadata
+- title: nesnoj
+  path: null
+  organization: null
+  roles:
+  - ''
+  date: '2022-09-14'
+  object: metadata
+  comment: Update metadata
 - title: Open Energy Platform oemetadata conversion to v2
   path: https://github.com/OpenEnergyPlatform
   role:
@@ -122,85 +128,32 @@ encoding: UTF-8
 schema:
   fields:
   - name: building_id
-    description: 'Building id (reference to: openstreetmap.osm_buildings_filtered.id,
-      openstreetmap.osm_buildings_synthetic.id)'
+    description: Index of the corresponding building
     type: integer
     nullable: false
     unit: none
     isAbout: []
     valueReference: []
-  - name: sector
-    description: Sector (cts, residential)
-    type: characters varying
-    nullable: true
+  - name: selected_idp_profiles
+    description: List of selected profiles for each day in the year
+    type: array of integer
+    nullable: false
     unit: none
     isAbout: []
     valueReference: []
   - name: zensus_population_id
-    description: 'Zensus population id (reference to: society.destatis_zensus_population_per_ha.id)'
+    description: Index of corresponding census cell
     type: integer
     nullable: false
     unit: none
-    isAbout: []
-    valueReference: []
-  - name: bus_id
-    description: 'MVGD bus id (reference to: grid.egon_hvmv_substation.bus_id, grid.egon_mv_grid_district.bus_id)'
-    type: integer
-    nullable: false
-    unit: none
-    isAbout: []
-    valueReference: []
-  - name: electricity
-    description: True if respectives electricity demand profile exists
-    type: bool
-    nullable: true
-    unit: None
-    isAbout: []
-    valueReference: []
-  - name: heat
-    description: True if respectives heat demand profile exists
-    type: bool
-    nullable: true
-    unit: None
-    isAbout: []
-    valueReference: []
-  - name: osm
-    description: is OSM building if true else syntheticaly created
-    type: bool
-    nullable: true
-    unit: None
     isAbout: []
     valueReference: []
   primaryKey:
-  - b
-  - u
-  - i
-  - l
-  - d
-  - i
-  - n
-  - g
-  - _
-  - i
-  - d
-  - ','
-  - ' '
-  - s
-  - e
-  - c
-  - t
-  - o
-  - r
-  foreignKeys:
-  - fields:
-    - ''
-    reference:
-      resource: ''
-      fields:
-      - ''
+  - building_id
+  foreignKeys: []
 dialect:
   delimiter: ''
-  decimalSeparator: .
+  decimalSeparator: ''
 review:
   path: ''
   badge: ''

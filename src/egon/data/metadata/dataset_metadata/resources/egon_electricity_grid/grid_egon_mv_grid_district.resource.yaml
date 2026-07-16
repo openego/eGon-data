@@ -164,19 +164,8 @@ schema:
     isAbout: []
     valueReference: []
   primaryKey:
-  - b
-  - u
-  - s
-  - _
-  - i
-  - d
-  foreignKeys:
-  - fields:
-    - ''
-    reference:
-      resource: ''
-      fields:
-      - ''
+  - bus_id
+  foreignKeys: []
 dialect:
   delimiter: ''
   decimalSeparator: .
