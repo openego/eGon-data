@@ -35,6 +35,17 @@ Changed
   heating areas and heat demand timeseries to the configured scenarios,
   and remove obsolete status2019/eGon100RE handling
   `#1413 <https://github.com/openego/eGon-data/issues/1413>`_
+* Adapt electricity_flexibility TaskGroup to new scenarios: generalize
+  dynamic line rating and DSM potential calculations to the configured
+  scenarios, and remove obsolete status2019/eGon100RE handling
+  `#1424 <https://github.com/openego/eGon-data/issues/1424>`_
+* Adapt Electricity_Neighbors TaskGroup to new scenarios: generalize
+  foreign bus/line/generator/load/storage insertion to the configured
+  scenarios, extend TYNDP-based generation/storage/demand to reGon2037 and
+  reGon2045 via linear interpolation/extrapolation of the existing
+  2030/2040 data points, and remove obsolete
+  status2019/status2023/eGon100RE handling
+  `#1438 <https://github.com/openego/eGon-data/issues/1438>`_
 
 Bug Fixes
 ---------
@@ -52,6 +63,9 @@ Bug Fixes
   `#1392 <https://github.com/openego/eGon-data/issues/1392>`_
 * Fix problem with atlite and xarray, era5 data is downloadable again
   `#1250 <https://github.com/openego/eGon-data/issues/1250>`_
+* Fix dynamic line rating only being calculated for a single scenario
+  due to a stray early return inside the per-scenario loop
+  `#1424 <https://github.com/openego/eGon-data/issues/1424>`_
 
 Version 2.0.0 (2025-08-20)
 ==========================

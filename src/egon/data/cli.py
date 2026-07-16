@@ -33,6 +33,7 @@ import importlib_resources as resources
 import yaml
 
 from egon.data import logger
+from egon.data.config import settings
 import egon.data
 import egon.data.airflow
 import egon.data.config as config
@@ -88,6 +89,18 @@ import egon.data.config as config
     default="data",
     metavar="PW",
     help=("Specify the password used to access the local database."),
+    show_default=True,
+)
+@click.option(
+    "--database-directory",
+    default="database-data",
+    metavar="DIRECTORY",
+    help=(
+        "Specify the directory used to save the local database relative"
+        " to the docker directory (default directory)."
+        " e.g. '../database-data/'"
+        " to reach the current working directory."
+    ),
     show_default=True,
 )
 @click.option(
@@ -374,7 +387,11 @@ def egon_data(context, **kwargs):
         gid=os.getgid(),
         uid=os.getuid(),
     )
-    (Path(".") / "docker" / "database-data").mkdir(parents=True, exist_ok=True)
+
+    path_directory = (
+        Path(".") / "docker" / settings()["egon-data"]["--database-directory"]
+    )
+    path_directory.mkdir(parents=True, exist_ok=True)
 
     # Copy webserver_config.py to disable authentification on webinterface
     shutil.copy2(
