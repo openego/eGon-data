@@ -1,6 +1,8 @@
 from contextlib import contextmanager
 import codecs
 import functools
+import json
+import logging
 import os
 import time
 
@@ -8,6 +10,7 @@ from psycopg2.errors import DeadlockDetected, UniqueViolation
 from sqlalchemy import create_engine, text
 from sqlalchemy.exc import IntegrityError, OperationalError
 from sqlalchemy.orm import sessionmaker
+from sqlalchemy.sql import quoted_name
 import geopandas as gpd
 import pandas as pd
 
@@ -73,36 +76,38 @@ def execute_sql(sql_string):
         con.execute(text(sql_string))
 
 
-def submit_comment(json, schema, table):
-    """Add comment to table.
-
-    We use `Open Energy Metadata <https://github.com/OpenEnergyPlatform/
-    oemetadata/blob/develop/metadata/v141/metadata_key_description.md>`_
-    standard for describing our data. Metadata is stored as JSON in the table
-    comment.
-
-    Parameters
-    ----------
-    json : str
-        JSON string reflecting comment
-    schema : str
-        The target table's database schema
-    table : str
-        Database table on which to put the given comment
-    """
-    prefix_str = "COMMENT ON TABLE {0}.{1} IS ".format(schema, table)
-
-    check_json_str = (
-        "SELECT obj_description('{0}.{1}'::regclass)::json".format(
-            schema, table
-        )
+def submit_comment(metadata, schema, table):
+    # normalize to JSON text
+    json_str = (
+        json.dumps(metadata, ensure_ascii=False)
+        if not isinstance(metadata, str)
+        else json.dumps(json.loads(metadata), ensure_ascii=False)
     )
 
-    execute_sql(prefix_str + json + ";")
+    ident = f"{quoted_name(schema, True)}.{quoted_name(table, True)}"
+    stmt = text(f"COMMENT ON TABLE {ident} IS :comment")
 
-    # Query table comment and cast it into JSON
-    # The query throws an error if JSON is invalid
-    execute_sql(check_json_str)
+    with engine().begin() as conn:
+        # fail early if table isn’t there
+        if (
+            conn.execute(
+                text("SELECT to_regclass(:reg)"),
+                {"reg": f"{schema}.{table}"},
+            ).scalar()
+            is None
+        ):
+            logging.warning("Table %s.%s does not exist", schema, table)
+            return None
+
+        conn.execute(stmt, {"comment": json_str})
+
+        # ✅ validation (no cast directly on a bind)
+        conn.execute(
+            text("SELECT obj_description(to_regclass(:reg))::json"),
+            {"reg": f"{schema}.{table}"},
+        )
+
+        logging.info("Metadata comment for %s.%s stored.", schema, table)
 
 
 def execute_sql_script(script, encoding="utf-8-sig"):

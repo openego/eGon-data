@@ -1,0 +1,173 @@
+'@id': null
+name: demand.egon_daily_heat_demand_per_climate_zone
+title: eGon daily heat demand share per climate zone
+path: WILL_BE_SET_AT_PUBLICATION
+description: Share of daily heat demands per climate zone
+subject:
+- name: ''
+  '@id': null
+publicationDate: '2022-09-14'
+embargoPeriod:
+  start: ''
+  end: ''
+  isActive: false
+spatial:
+  location:
+    address: ''
+    '@id': null
+    latitude: ''
+    longitude: ''
+  extent:
+    name: Germany
+    '@id': null
+    resolutionValue: climate
+    resolutionUnit: zones
+    boundingBox:
+    - 0
+    - 0
+    - 0
+    - 0
+    crs: ''
+temporal:
+  referenceDate: '2022-09-14'
+  timeseries:
+  - start: ''
+    end: ''
+    resolutionValue: ''
+    resolutionUnit: ''
+    alignment: ''
+    aggregationType: ''
+sources:
+- title: eGon-data
+  authors: []
+  description: Workflow to download, process and generate data sets suitable for the
+    further research conducted in the project eGon (https://ego-n.org/)
+  publicationYear: null
+  path: https://github.com/openego/eGon-data
+  sourceLicenses:
+  - name: AGPL-3.0 License
+    title: GNU Affero General Public License v3.0
+    path: https://www.gnu.org/licenses/agpl-3.0.de.html
+    instruction: Permissions of this strongest copyleft license are conditioned on
+      making available complete source code of licensed works and modifications, which
+      include larger works using a licensed work, under the same license. Copyright
+      and license notices must be preserved. Contributors provide an express grant
+      of patent rights. When a modified version is used to provide a service over
+      a network, the complete source code of the modified version must be made available.
+    attribution: © eGon-data developers
+    copyrightStatement: null
+- title: 'Data bundle for egon-data: A transparent and reproducible data processing
+    pipeline for energy system modeling'
+  authors: []
+  description: egon-data provides a transparent and reproducible open data based data
+    processing pipeline for generating data models suitable for energy system modeling.
+    The data is customized for the requirements of the research project eGon. The
+    research project aims to develop tools for an open and cross-sectoral planning
+    of transmission and distribution grids. For further information please visit the
+    eGon project website or its Github repository.  egon-data retrieves and processes
+    data from several different external input sources. As not all data dependencies
+    can be downloaded automatically from external sources we provide a data bundle
+    to be downloaded by egon-data.
+  publicationYear: null
+  path: https://doi.org/10.5281/zenodo.6630616
+  sourceLicenses:
+  - name: CC-BY-4.0
+    title: Creative Commons Attribution 4.0 International
+    path: https://creativecommons.org/licenses/by/4.0/legalcode
+    instruction: 'You are free: To Share, To Create, To Adapt; As long as you: Attribute.'
+    attribution: © eGon-data developers, © Leibniz Institute for Applied Geophysics,
+      © Fraunhofer IEE, © BGR Hannover, © Danielle Schmidt, © Übertragungsnetzbetreiber,
+      © DIW Berlin, © Reiner Lemoine Institut, © Statistisches Bundesamt, Wiesbaden
+      2008, © Statistische Ämter des Bundes und der Länder 2021
+    copyrightStatement: null
+- title: ERA5 global reanalysis
+  authors: []
+  description: ERA5 is the fifth generation ECMWF reanalysis for the global climate
+    and weather for the past 4 to 7 decades. Currently data is available from 1950,
+    split into Climate Data Store entries for 1950-1978 (preliminary back extension)
+    and from 1979 onwards (final release plus timely updates, this page). ERA5 replaces
+    the ERA-Interim reanalysis. See the online ERA5 documentation (https://confluence.ecmwf.int/display/CKB/ERA5%3A+data+documentation#ERA5:datadocumentation-Dataupdatefrequency)
+    for more information.
+  publicationYear: null
+  path: https://confluence.ecmwf.int/display/CKB/ERA5%3A+data+documentation#ERA5:datadocumentation-Dataupdatefrequency
+  sourceLicenses:
+  - name: Licence to use Copernicus Products
+    title: Licence to use Copernicus Products
+    path: https://cds.climate.copernicus.eu/api/v2/terms/static/licence-to-use-copernicus-products.pdf
+    instruction: 'This Licence is free of charge, worldwide, non-exclusive, royalty
+      free and perpetual. Access to Copernicus Products is given for any purpose in
+      so far as it is lawful, whereas use may include, but is not limited to: reproduction;
+      distribution; communication to the public; adaptation, modification and combination
+      with other data and information; or any combination of the foregoing'
+    attribution: © Copernicus Climate Change Service (C3S) Climate Data Store
+    copyrightStatement: null
+contributors:
+- title: ClaraBuettner
+  path: null
+  organization: null
+  roles:
+  - ''
+  date: '2022-09-12'
+  object: metadata
+  comment: Create metadata
+- title: nesnoj
+  path: null
+  organization: null
+  roles:
+  - ''
+  date: '2022-09-14'
+  object: metadata
+  comment: Update metadata
+- title: Open Energy Platform oemetadata conversion to v2
+  path: https://github.com/OpenEnergyPlatform
+  role:
+  - platform-maintainer
+  organization: OpenEnergyFamily
+  date: '2021-09-01'
+  object: conversion of all metadata to oemetadata  version 2.0.4
+  comment: The conversion was done by the OpenEnergyFamily team using the OMI software.We
+    did our best to mitigate data loss. Most unexpected or incorrect metadata propertyentries
+    will be lost.
+type: Table
+format: PostgreSQL
+encoding: UTF-8
+schema:
+  fields:
+  - name: climate_zone
+    description: Name of the corresponding climate zone
+    type: str
+    nullable: true
+    unit: none
+    isAbout: []
+    valueReference: []
+  - name: daily_demand_share
+    description: Share of annual heat demand for each day
+    type: double precision
+    nullable: true
+    unit: per unit
+    isAbout: []
+    valueReference: []
+  - name: day_of_year
+    description: Number of day in the year
+    type: integer
+    nullable: true
+    unit: none
+    isAbout: []
+    valueReference: []
+  - name: temperature_class
+    description: Temperature class (considering the mean outside temeperature during
+      the day)
+    type: integer
+    nullable: true
+    unit: none
+    isAbout: []
+    valueReference: []
+  primaryKey:
+  - climate_zone
+  foreignKeys: []
+dialect:
+  delimiter: ''
+  decimalSeparator: ''
+review:
+  path: ''
+  badge: ''

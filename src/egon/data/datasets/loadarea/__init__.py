@@ -14,6 +14,9 @@ from egon.data import db
 from egon.data.datasets import Dataset, DatasetSources, DatasetTargets
 import egon.data.config
 
+# import importlib_resources as resources
+
+
 # will be later imported from another file ###
 Base = declarative_base()
 
@@ -105,7 +108,7 @@ class LoadArea(Dataset):
       * voltage levels 4-7
       * only demand from ind. sites+osm located in LA!
 
-    """
+    """  # noqa: E501
 
     #:
     name: str = "LoadArea"

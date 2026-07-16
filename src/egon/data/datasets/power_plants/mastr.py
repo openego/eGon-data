@@ -34,18 +34,7 @@ import pandas as pd
 
 from egon.data import config, db
 from egon.data.datasets import load_sources_and_targets
-from egon.data.datasets.power_plants.mastr_db_classes import (
-    EgonMastrGeocoded,
-    EgonPowerPlantsBiomass,
-    EgonPowerPlantsCombustion,
-    EgonPowerPlantsGsgk,
-    EgonPowerPlantsHydro,
-    EgonPowerPlantsNuclear,
-    EgonPowerPlantsPv,
-    EgonPowerPlantsStorage,
-    EgonPowerPlantsWind,
-    add_metadata,
-)
+from egon.data.datasets.power_plants.mastr_db_classes import EgonMastrGeocoded
 from egon.data.datasets.power_plants.pv_rooftop_buildings import (
     federal_state_data,
 )
@@ -167,8 +156,8 @@ def import_mastr() -> None:
 
     # import geocoded data
     path_parts = sources.files["mastr_geocoding_path"]
-    # Handle path if it's a string (from files dict) or list (if keeping original structure)
-    # Assuming "data_bundle_egon_data/mastr_geocoding" is a string path relative to root:
+    # Handle path if it's a string (from files dict) or list (if keeping original structure)  # noqa: E501
+    # Assuming "data_bundle_egon_data/mastr_geocoding" is a string path relative to root:  # noqa: E501
     path = Path(path_parts).resolve()
     path = list(path.iterdir())[0]
 
@@ -449,9 +438,9 @@ def import_mastr() -> None:
             parse_df = parse_df.loc[parse_df.drop_this]
 
             if not parse_df.empty:
-                units.loc[parse_df.index, "zip_and_municipality"] = (
-                    parse_df.zip_and_municipality
-                )
+                units.loc[
+                    parse_df.index, "zip_and_municipality"
+                ] = parse_df.zip_and_municipality
 
         # add geocoding to missing
         units = units.merge(
@@ -537,5 +526,3 @@ def import_mastr() -> None:
             if_exists="append",
             schema=targets.get_table_schema(target_key),
         )
-
-    add_metadata()

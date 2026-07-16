@@ -31,7 +31,6 @@ from egon.data.datasets.emobility.motorized_individual_travel.db_classes import 
     EgonEvMvGridDistrict,
     EgonEvPool,
     EgonEvTrip,
-    add_metadata,
 )
 from egon.data.datasets.emobility.motorized_individual_travel.ev_allocation import (  # noqa: E501
     allocate_evs_numbers,
@@ -40,8 +39,6 @@ from egon.data.datasets.emobility.motorized_individual_travel.ev_allocation impo
 from egon.data.datasets.emobility.motorized_individual_travel.helpers import (
     COLUMNS_KBA,
     DATA_BUNDLE_DIR,
-    MVGD_MIN_COUNT,
-    TESTMODE_OFF,
     TRIP_COLUMN_MAPPING,
     WORKING_DIR,
 )
@@ -141,12 +138,12 @@ def download_and_preprocess():
         inplace=True,
     )
     kba_data = kba_data.dropna()
-    kba_data[["ags_reg_district", "reg_district"]] = (
-        kba_data.reg_district.str.split(
-            pat=" ",
-            n=1,
-            expand=True,
-        )
+    kba_data[
+        ["ags_reg_district", "reg_district"]
+    ] = kba_data.reg_district.str.split(
+        pat=" ",
+        n=1,
+        expand=True,
     )
     kba_data.ags_reg_district = kba_data.ags_reg_district.astype("int")
 
@@ -347,9 +344,9 @@ def write_metadata_to_db():
 
 class MotorizedIndividualTravel(Dataset):
     """
-    Class to set up static and timeseries data for motorized individual travel (MIT).
+    Class to set up static and timeseries data for motorized individual travel (MIT).  # noqa: E501
 
-    For more information see data documentation on :ref:`mobility-demand-mit-ref`.
+    For more information see data documentation on :ref:`mobility-demand-mit-ref`.  # noqa: E501
 
     *Dependencies*
       * :py:class:`DataBundle <egon.data.datasets.data_bundle.DataBundle>`
@@ -361,13 +358,13 @@ class MotorizedIndividualTravel(Dataset):
       * :py:class:`ZensusMvGridDistricts
         <egon.data.datasets.zensus_mv_grid_districts.ZensusMvGridDistricts>`
       * :py:class:`ZensusVg250 <egon.data.datasets.zensus_vg250.ZensusVg250>`
-      * :py:class:`StorageEtrago <egon.data.datasets.storages_etrago.StorageEtrago>`
+      * :py:class:`StorageEtrago <egon.data.datasets.storages_etrago.StorageEtrago>`  # noqa: E501
       * :py:class:`HtsEtragoTable
         <egon.data.datasets.heat_etrago.hts_etrago.HtsEtragoTable>`
       * :py:class:`ChpEtrago <egon.data.datasets.chp_etrago.ChpEtrago>`
       * :py:class:`DsmPotential <egon.data.datasets.DSM_cts_ind.DsmPotential>`
       * :py:class:`HeatEtrago <egon.data.datasets.heat_etrago.HeatEtrago>`
-      * :py:class:`Egon_etrago_gen <egon.data.datasets.fill_etrago_gen.Egon_etrago_gen>`
+      * :py:class:`Egon_etrago_gen <egon.data.datasets.fill_etrago_gen.Egon_etrago_gen>`  # noqa: E501
       * :py:class:`OpenCycleGasTurbineEtrago
         <egon.data.datasets.power_etrago.OpenCycleGasTurbineEtrago>`
       * :py:class:`HydrogenStoreEtrago
@@ -376,24 +373,24 @@ class MotorizedIndividualTravel(Dataset):
         <egon.data.datasets.hydrogen_etrago.HydrogenPowerLinkEtrago>`
       * :py:class:`HydrogenMethaneLinkEtrago
         <egon.data.datasets.hydrogen_etrago.HydrogenMethaneLinkEtrago>`
-      * :py:class:`GasAreaseGon100RE <egon.data.datasets.gas_areas.GasAreaseGon100RE>`
+      * :py:class:`GasAreaseGon100RE <egon.data.datasets.gas_areas.GasAreaseGon100RE>`  # noqa: E501
       * :py:class:`CH4Production <egon.data.datasets.ch4_prod.CH4Production>`
       * :py:class:`CH4Storages <egon.data.datasets.ch4_storages.CH4Storages>`
 
     *Resulting Tables*
-      * :py:class:`EgonEvPool <egon.data.datasets.emobility.motorized_individual_travel.db_classes.EgonEvPool>`
+      * :py:class:`EgonEvPool <egon.data.datasets.emobility.motorized_individual_travel.db_classes.EgonEvPool>`  # noqa: E501
         is created and filled
-      * :py:class:`EgonEvTrip <egon.data.datasets.emobility.motorized_individual_travel.db_classes.EgonEvTrip>`
+      * :py:class:`EgonEvTrip <egon.data.datasets.emobility.motorized_individual_travel.db_classes.EgonEvTrip>`  # noqa: E501
         is created and filled
-      * :py:class:`EgonEvCountRegistrationDistrict <egon.data.datasets.emobility.motorized_individual_travel.db_classes.EgonEvCountRegistrationDistrict>`
+      * :py:class:`EgonEvCountRegistrationDistrict <egon.data.datasets.emobility.motorized_individual_travel.db_classes.EgonEvCountRegistrationDistrict>`  # noqa: E501
         is created and filled
-      * :py:class:`EgonEvCountMunicipality <egon.data.datasets.emobility.motorized_individual_travel.db_classes.EgonEvCountMunicipality>`
+      * :py:class:`EgonEvCountMunicipality <egon.data.datasets.emobility.motorized_individual_travel.db_classes.EgonEvCountMunicipality>`  # noqa: E501
         is created and filled
-      * :py:class:`EgonEvCountMvGridDistrict <egon.data.datasets.emobility.motorized_individual_travel.db_classes.EgonEvCountMvGridDistrict>`
+      * :py:class:`EgonEvCountMvGridDistrict <egon.data.datasets.emobility.motorized_individual_travel.db_classes.EgonEvCountMvGridDistrict>`  # noqa: E501
         is created and filled
-      * :py:class:`EgonEvMvGridDistrict <egon.data.datasets.emobility.motorized_individual_travel.db_classes.EgonEvMvGridDistrict>`
+      * :py:class:`EgonEvMvGridDistrict <egon.data.datasets.emobility.motorized_individual_travel.db_classes.EgonEvMvGridDistrict>`  # noqa: E501
         is created and filled
-      * :py:class:`EgonEvMetadata <egon.data.datasets.emobility.motorized_individual_travel.db_classes.EgonEvMetadata>`
+      * :py:class:`EgonEvMetadata <egon.data.datasets.emobility.motorized_individual_travel.db_classes.EgonEvMetadata>`  # noqa: E501
         is created and filled
 
     *Configuration*
@@ -405,25 +402,25 @@ class MotorizedIndividualTravel(Dataset):
 
     sources = DatasetSources(
         urls={
-            "KBA": "https://www.kba.de/SharedDocs/Downloads/DE/Statistik/Fahrzeuge/FZ1/fz1_2021.xlsx?__blob=publicationFile&v=2",
-            "RS7": "https://www.bmv.de/SharedDocs/DE/Anlage/G/regiostar-referenzdateien.xlsx?__blob=publicationFile",
+            "KBA": "https://www.kba.de/SharedDocs/Downloads/DE/Statistik/Fahrzeuge/FZ1/fz1_2021.xlsx?__blob=publicationFile&v=2",  # noqa: E501
+            "RS7": "https://www.bmv.de/SharedDocs/DE/Anlage/G/regiostar-referenzdateien.xlsx?__blob=publicationFile",  # noqa: E501
         },
         files={
-            "trips_status2019": "mit_trip_data/eGon2035_RS7_min2k_2022-06-01_175429_simbev_run.tar.gz",
-            "trips_status2023": "mit_trip_data/eGon2035_RS7_min2k_2022-06-01_175429_simbev_run.tar.gz",
-            "trips_eGon2035": "mit_trip_data/eGon2035_RS7_min2k_2022-06-01_175429_simbev_run.tar.gz",
-            "trips_eGon100RE": "mit_trip_data/eGon100RE_RS7_min2k_2022-06-01_175444_simbev_run.tar.gz",
+            "trips_status2019": "mit_trip_data/eGon2035_RS7_min2k_2022-06-01_175429_simbev_run.tar.gz",  # noqa: E501
+            "trips_status2023": "mit_trip_data/eGon2035_RS7_min2k_2022-06-01_175429_simbev_run.tar.gz",  # noqa: E501
+            "trips_eGon2035": "mit_trip_data/eGon2035_RS7_min2k_2022-06-01_175429_simbev_run.tar.gz",  # noqa: E501
+            "trips_eGon100RE": "mit_trip_data/eGon100RE_RS7_min2k_2022-06-01_175444_simbev_run.tar.gz",  # noqa: E501
             "original_data": {
                 "original_data": {
                     "sources": {
                         "RS7": {
-                            "url": "https://www.bmv.de/SharedDocs/DE/Anlage/G/regiostar-referenzdateien.xlsx?__blob=publicationFile",
+                            "url": "https://www.bmv.de/SharedDocs/DE/Anlage/G/regiostar-referenzdateien.xlsx?__blob=publicationFile",  # noqa: E501
                             "file": "regiostar-referenzdateien.xlsx",
-                            "file_processed": "regiostar-referenzdateien_preprocessed.csv",
+                            "file_processed": "regiostar-referenzdateien_preprocessed.csv",  # noqa: E501
                             "sheet": "ReferenzGebietsstand2020",
                         },
                         "KBA": {
-                            "url": "https://www.kba.de/SharedDocs/Downloads/DE/Statistik/Fahrzeuge/FZ1/fz1_2021.xlsx?__blob=publicationFile&v=2",
+                            "url": "https://www.kba.de/SharedDocs/Downloads/DE/Statistik/Fahrzeuge/FZ1/fz1_2021.xlsx?__blob=publicationFile&v=2",  # noqa: E501
                             "file": "fz1_2021.xlsx",
                             "file_processed": "fz1_2021_preprocessed.csv",
                             "sheet": "FZ1.1",
@@ -432,19 +429,19 @@ class MotorizedIndividualTravel(Dataset):
                         },
                         "trips": {
                             "status2019": {
-                                "file": "eGon2035_RS7_min2k_2022-06-01_175429_simbev_run.tar.gz",
+                                "file": "eGon2035_RS7_min2k_2022-06-01_175429_simbev_run.tar.gz",  # noqa: E501
                                 "file_metadata": "metadata_simbev_run.json",
                             },
                             "status2023": {
-                                "file": "eGon2035_RS7_min2k_2022-06-01_175429_simbev_run.tar.gz",
+                                "file": "eGon2035_RS7_min2k_2022-06-01_175429_simbev_run.tar.gz",  # noqa: E501
                                 "file_metadata": "metadata_simbev_run.json",
                             },
                             "eGon2035": {
-                                "file": "eGon2035_RS7_min2k_2022-06-01_175429_simbev_run.tar.gz",
+                                "file": "eGon2035_RS7_min2k_2022-06-01_175429_simbev_run.tar.gz",  # noqa: E501
                                 "file_metadata": "metadata_simbev_run.json",
                             },
                             "eGon100RE": {
-                                "file": "eGon100RE_RS7_min2k_2022-06-01_175444_simbev_run.tar.gz",
+                                "file": "eGon100RE_RS7_min2k_2022-06-01_175444_simbev_run.tar.gz",  # noqa: E501
                                 "file_metadata": "metadata_simbev_run.json",
                             },
                         },
@@ -480,14 +477,14 @@ class MotorizedIndividualTravel(Dataset):
     targets = DatasetTargets(
         files={
             "KBA_download": "motorized_individual_travel/fz1_2021.xlsx",
-            "KBA_processed": "motorized_individual_travel/fz1_2021_preprocessed.csv",
-            "RS7_download": "motorized_individual_travel/regiostar-referenzdateien.xlsx",
-            "RS7_processed": "motorized_individual_travel/regiostar-referenzdateien_preprocessed.csv",
+            "KBA_processed": "motorized_individual_travel/fz1_2021_preprocessed.csv",  # noqa: E501
+            "RS7_download": "motorized_individual_travel/regiostar-referenzdateien.xlsx",  # noqa: E501
+            "RS7_processed": "motorized_individual_travel/regiostar-referenzdateien_preprocessed.csv",  # noqa: E501
         },
         tables={
             "ev_pool": "emobility.egon_ev_pool",
             "ev_trip": "emobility.egon_ev_trip",
-            "ev_count_reg_district": "emobility.egon_ev_count_registration_district",
+            "ev_count_reg_district": "emobility.egon_ev_count_registration_district",  # noqa: E501
             "ev_count_municipality": "emobility.egon_ev_count_municipality",
             "ev_count_mv_grid": "emobility.egon_ev_count_mv_grid_district",
             "ev_mv_grid": "emobility.egon_ev_mv_grid_district",

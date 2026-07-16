@@ -1,0 +1,169 @@
+'@id': null
+name: society.destatis_zensus_population_per_ha
+title: DESTATIS - Zensus 2011 - Population per hectar
+path: WILL_BE_SET_AT_PUBLICATION
+description: National census in Germany in 2011.
+subject:
+- name: ''
+  '@id': null
+publicationDate: '2022-08-06'
+embargoPeriod:
+  start: ''
+  end: ''
+  isActive: false
+spatial:
+  location:
+    address: ''
+    '@id': null
+    latitude: ''
+    longitude: ''
+  extent:
+    name: Germany
+    '@id': null
+    resolutionValue: '1'
+    resolutionUnit: ha
+    boundingBox:
+    - 0
+    - 0
+    - 0
+    - 0
+    crs: ''
+temporal:
+  referenceDate: ''
+  timeseries:
+  - start: ''
+    end: ''
+    resolutionValue: ''
+    resolutionUnit: ''
+    alignment: ''
+    aggregationType: ''
+sources:
+- title: Statistisches Bundesamt (Destatis) - Ergebnisse des Zensus 2011 zum Download
+  authors: []
+  description: Als Download bieten wir Ihnen auf dieser Seite zus\u00e4tzlich zur
+    Zensusdatenbank CSV- und teilweise Excel-Tabellen mit umfassenden Personen-, Haushalts-
+    und Familien- sowie Geb\u00e4ude- und Wohnungsmerkmalen. Die Ergebnisse liegen
+    auf Bundes-, L\u00e4nder-, Kreis- und Gemeindeebene vor. Au\u00dferdem sind einzelne
+    Ergebnisse f\u00fcr Gitterzellen verf\u00fcgbar.
+  publicationYear: null
+  path: https://www.zensus2011.de/DE/Home/Aktuelles/DemografischeGrunddaten.html
+  sourceLicenses:
+  - name: dl-by-de/2.0
+    title: Datenlizenz Deutschland \u2013 Namensnennung \u2013 Version 2.0
+    path: www.govdata.de/dl-de/by-2-0
+    instruction: Jede Nutzung ist unter den Bedingungen dieser \u201eDatenlizenz Deutschland
+      - Namensnennung - Version 2.0 zul\u00e4ssig.\nDie bereitgestellten Daten und
+      Metadaten d\u00fcrfen f\u00fcr die kommerzielle und nicht kommerzielle Nutzung
+      insbesondere:(1) vervielf\u00e4ltigt, ausgedruckt, pr\u00e4sentiert, ver\u00e4ndert,
+      bearbeitet sowie an Dritte \u00fcbermittelt werden;\n (2) mit eigenen Daten
+      und Daten Anderer zusammengef\u00fchrt und zu selbst\u00e4ndigen neuen Datens\u00e4tzen
+      verbunden werden;\n (3) in interne und externe Gesch\u00e4ftsprozesse, Produkte
+      und Anwendungen in \u00f6ffentlichen und nicht \u00f6ffentlichen elektronischen
+      Netzwerken eingebunden werden.\nBei der Nutzung ist sicherzustellen, dass folgende
+      Angaben als Quellenvermerk enthalten sind:\n(1) Bezeichnung des Bereitstellers
+      nach dessen Ma\u00dfgabe,\n(2) der Vermerk Datenlizenz Deutschland \u2013 Namensnennung
+      \u2013 Version 2.0 oder dl-de/by-2-0 mit Verweis auf den Lizenztext unter www.govdata.de/dl-de/by-2-0
+      sowie\n(3) einen Verweis auf den Datensatz (URI).Dies gilt nur soweit die datenhaltende
+      Stelle die Angaben(1) bis (3) zum Quellenvermerk bereitstellt.\nVer\u00e4nderungen,
+      Bearbeitungen, neue Gestaltungen oder sonstige Abwandlungen sind im Quellenvermerk
+      mit dem Hinweis zu versehen, dass die Daten ge\u00e4ndert wurden.
+    attribution: \u00a9 Statistische \u00c4mter des Bundes und der L\u00e4nder 2014
+    copyrightStatement: null
+- title: Dokumentation - Zensus 2011 - Methoden und Verfahren
+  authors: []
+  description: Diese Publikation beschreibt ausf\u00fchrlich die Methoden und Verfahren
+    des registergest\u00fctzten Zensus 2011; von der Datengewinnung und -aufbereitung
+    bis hin zur Ergebniserstellung und Geheimhaltung. Der vorliegende Band wurde von
+    den Statistischen \u00c4mtern des Bundes und der L\u00e4nder im Juni 2015 ver\u00f6ffentlicht.
+  publicationYear: null
+  path: https://www.destatis.de/DE/Publikationen/Thematisch/Bevoelkerung/Zensus/ZensusBuLaMethodenVerfahren5121105119004.pdf?__blob=publicationFile
+  sourceLicenses:
+  - name: dl-by-de/2.0
+    title: Datenlizenz Deutschland \u2013 Namensnennung \u2013 Version 2.0
+    path: www.govdata.de/dl-de/by-2-0
+    instruction: Jede Nutzung ist unter den Bedingungen dieser \u201eDatenlizenz Deutschland
+      - Namensnennung - Version 2.0 zul\u00e4ssig.\nDie bereitgestellten Daten und
+      Metadaten d\u00fcrfen f\u00fcr die kommerzielle und nicht kommerzielle Nutzung
+      insbesondere:(1) vervielf\u00e4ltigt, ausgedruckt, pr\u00e4sentiert, ver\u00e4ndert,
+      bearbeitet sowie an Dritte \u00fcbermittelt werden;\n (2) mit eigenen Daten
+      und Daten Anderer zusammengef\u00fchrt und zu selbst\u00e4ndigen neuen Datens\u00e4tzen
+      verbunden werden;\n (3) in interne und externe Gesch\u00e4ftsprozesse, Produkte
+      und Anwendungen in \u00f6ffentlichen und nicht \u00f6ffentlichen elektronischen
+      Netzwerken eingebunden werden.\nBei der Nutzung ist sicherzustellen, dass folgende
+      Angaben als Quellenvermerk enthalten sind:\n(1) Bezeichnung des Bereitstellers
+      nach dessen Ma\u00dfgabe,\n(2) der Vermerk Datenlizenz Deutschland \u2013 Namensnennung
+      \u2013 Version 2.0 oder dl-de/by-2-0 mit Verweis auf den Lizenztext unter www.govdata.de/dl-de/by-2-0
+      sowie\n(3) einen Verweis auf den Datensatz (URI).Dies gilt nur soweit die datenhaltende
+      Stelle die Angaben(1) bis (3) zum Quellenvermerk bereitstellt.\nVer\u00e4nderungen,
+      Bearbeitungen, neue Gestaltungen oder sonstige Abwandlungen sind im Quellenvermerk
+      mit dem Hinweis zu versehen, dass die Daten ge\u00e4ndert wurden.
+    attribution: \u00a9 Statistisches Bundesamt, Wiesbaden 2015 (im Auftrag der Herausgebergemeinschaft)
+    copyrightStatement: null
+contributors:
+- title: nailend
+  path: null
+  organization: null
+  roles:
+  - ''
+  date: '2023-03-13'
+  object: metadata
+  comment: Create metadata
+- title: Open Energy Platform oemetadata conversion to v2
+  path: https://github.com/OpenEnergyPlatform
+  role:
+  - platform-maintainer
+  organization: OpenEnergyFamily
+  date: '2021-09-01'
+  object: conversion of all metadata to oemetadata  version 2.0.4
+  comment: The conversion was done by the OpenEnergyFamily team using the OMI software.We
+    did our best to mitigate data loss. Most unexpected or incorrect metadata propertyentries
+    will be lost.
+type: Table
+format: PostgreSQL
+encoding: UTF-8
+schema:
+  fields:
+  - name: id
+    description: Unique identifier
+    type: integer
+    nullable: false
+    unit: none
+    isAbout: []
+    valueReference: []
+  - name: grid_id
+    description: Grid number of source
+    type: string
+    nullable: false
+    unit: none
+    isAbout: []
+    valueReference: []
+  - name: population
+    description: Number of registred residents
+    type: integer
+    nullable: true
+    unit: resident
+    isAbout: []
+    valueReference: []
+  - name: geom_point
+    description: 'Geometry centroid of zensus cell (CRS: ERTS89/EPSG:3035)'
+    type: Geometry
+    nullable: true
+    unit: none
+    isAbout: []
+    valueReference: []
+  - name: geom
+    description: 'Geometry of zensus cell (CRS: ERTS89/EPSG:3035)'
+    type: Geometry
+    nullable: true
+    unit: none
+    isAbout: []
+    valueReference: []
+  primaryKey:
+  - id
+  foreignKeys: []
+dialect:
+  delimiter: ''
+  decimalSeparator: .
+review:
+  path: ''
+  badge: ''

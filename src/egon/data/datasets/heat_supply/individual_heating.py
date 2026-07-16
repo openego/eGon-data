@@ -24,6 +24,8 @@ import saio
 from egon.data import config, db, logger
 from egon.data.datasets import (
     Dataset,
+    DatasetSources,
+    DatasetTargets,
     load_sources_and_targets,
     wrapped_partial,
 )
@@ -158,6 +160,23 @@ class HeatPumpsPypsaEur(Dataset):
     #:
     version: str = "0.0.4"
 
+    sources = DatasetSources(
+        tables={
+            "map_zensus_grid_districts": "boundaries.egon_map_zensus_grid_districts",  # noqa: E501
+            "mv_grid_districts": "grid.egon_mv_grid_district",
+        },
+    )
+
+    targets = DatasetTargets(
+        tables={
+            "etrago_timeseries_individual_heating": "demand.egon_etrago_timeseries_individual_heating",  # noqa: E501
+            "building_heat_peak_loads": "demand.egon_building_heat_peak_loads",  # noqa: E501
+        },
+        files={
+            "minimum_hp_capacity": "input-pypsa-eur-sec/minimum_hp_capacity_mv_grid_100RE.csv",  # noqa: E501
+        },
+    )
+
     def __init__(self, dependencies):
         def dyn_parallel_tasks_pypsa_eur():
             """Dynamically generate tasks
@@ -227,6 +246,21 @@ class HeatPumpsPypsaEur(Dataset):
 
 
 class HeatPumpsStatusQuo(Dataset):
+    sources = DatasetSources(
+        tables={
+            "map_zensus_grid_districts": "boundaries.egon_map_zensus_grid_districts",  # noqa: E501
+            "mv_grid_districts": "grid.egon_mv_grid_district",
+        },
+    )
+
+    targets = DatasetTargets(
+        tables={
+            "hp_capacity_buildings": "demand.egon_hp_capacity_buildings",
+            "building_heat_peak_loads": "demand.egon_building_heat_peak_loads",  # noqa: E501
+            "etrago_timeseries_individual_heating": "demand.egon_etrago_timeseries_individual_heating",  # noqa: E501
+        },
+    )
+
     def __init__(self, dependencies):
         def dyn_parallel_tasks_status_quo(scenario):
             """Dynamically generate tasks
@@ -401,6 +435,21 @@ class HeatPumps2035(Dataset):
     #:
     version: str = "0.0.3"
 
+    sources = DatasetSources(
+        tables={
+            "map_zensus_grid_districts": "boundaries.egon_map_zensus_grid_districts",  # noqa: E501
+            "mv_grid_districts": "grid.egon_mv_grid_district",
+        },
+    )
+
+    targets = DatasetTargets(
+        tables={
+            "hp_capacity_buildings": "demand.egon_hp_capacity_buildings",
+            "building_heat_peak_loads": "demand.egon_building_heat_peak_loads",  # noqa: E501
+            "etrago_timeseries_individual_heating": "demand.egon_etrago_timeseries_individual_heating",  # noqa: E501
+        },
+    )
+
     def __init__(self, dependencies):
         def dyn_parallel_tasks_2035():
             """Dynamically generate tasks
@@ -516,6 +565,19 @@ class HeatPumps2050(Dataset):
     name: str = "HeatPumps2050"
     #:
     version: str = "0.0.4"
+
+    sources = DatasetSources(
+        tables={
+            "map_zensus_grid_districts": "boundaries.egon_map_zensus_grid_districts",  # noqa: E501
+            "mv_grid_districts": "grid.egon_mv_grid_district",
+        },
+    )
+
+    targets = DatasetTargets(
+        tables={
+            "hp_capacity_buildings": "demand.egon_hp_capacity_buildings",
+        },
+    )
 
     def __init__(self, dependencies):
         tasks_HeatPumps2050 = set()
@@ -638,12 +700,14 @@ def cascade_per_technology(
             )
         else:
             # Select target value for Germany
-            target = db.select_dataframe(f"""
+            target = db.select_dataframe(
+                f"""
                     SELECT SUM(capacity) AS capacity
                     FROM {sources.tables['scenario_capacities']} a
                     WHERE scenario_name = '{scenario}'
                     AND carrier = 'rural_heat_pump'
-                    """)
+                    """
+            )
 
             if not target.capacity[0]:
                 target.capacity[0] = 0
@@ -681,12 +745,14 @@ def cascade_per_technology(
 
     elif tech.index in ("gas_boiler", "resistive_heater", "solar_thermal"):
         # Select target value for Germany
-        target = db.select_dataframe(f"""
+        target = db.select_dataframe(
+            f"""
                 SELECT SUM(capacity) AS capacity
                 FROM {sources.tables['scenario_capacities']} a
                 WHERE scenario_name = '{scenario}'
                 AND carrier = 'rural_{tech.index[0]}'
-                """)
+                """
+        )
 
         if (
             config.settings()["egon-data"]["--dataset-boundary"]
@@ -2299,9 +2365,9 @@ def determine_hp_cap_peak_load_mvgd_ts_pypsa_eur(mvgd_ids):
             [df_heat_mvgd_ts_db, df_heat_mvgd_ts], axis=0, ignore_index=True
         )
 
-        df_hp_min_cap_mv_grid_pypsa_eur_sec.loc[mvgd] = (
-            hp_min_cap_mv_grid_pypsa_eur_sec
-        )
+        df_hp_min_cap_mv_grid_pypsa_eur_sec.loc[
+            mvgd
+        ] = hp_min_cap_mv_grid_pypsa_eur_sec
 
     # ################ export to db and csv ######################
     logger.info(f"MVGD={min(mvgd_ids)} : {max(mvgd_ids)} | Write data to db.")

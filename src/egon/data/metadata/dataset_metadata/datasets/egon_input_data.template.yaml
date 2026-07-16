@@ -1,0 +1,40 @@
+context:
+  grantNo: 03EI1002
+  fundingAgency: Bundesministerium f\u00fcr Wirtschaft und Energie
+  sourceCode: https://github.com/openego/eGon-data
+  documentation: https://egon-data.readthedocs.io/en/latest/
+  publisherLogo: https://ego-n.org/images/eGon_logo_noborder_transbg.svg
+  homepage: https://ego-n.org/
+  contact: https://ego-n.org/partners/
+  title: ''
+  fundingAgencyLogo: https://www.innovation-beratung-foerderung.de/INNO/Redaktion/DE/Bilder/Titelbilder/titel_foerderlogo_bmwi.jpg?__blob=normal&v=3
+  publisher: ''
+licenses:
+- name: dl-by-de/2.0
+  title: Datenlizenz Deutschland \u2013 Namensnennung \u2013 Version 2.0
+  path: www.govdata.de/dl-de/by-2-0
+  instruction: Jede Nutzung ist unter den Bedingungen dieser \u201eDatenlizenz Deutschland
+    - Namensnennung - Version 2.0 zul\u00e4ssig.\nDie bereitgestellten Daten und Metadaten
+    d\u00fcrfen f\u00fcr die kommerzielle und nicht kommerzielle Nutzung insbesondere:(1)
+    vervielf\u00e4ltigt, ausgedruckt, pr\u00e4sentiert, ver\u00e4ndert, bearbeitet
+    sowie an Dritte \u00fcbermittelt werden;\n (2) mit eigenen Daten und Daten Anderer
+    zusammengef\u00fchrt und zu selbst\u00e4ndigen neuen Datens\u00e4tzen verbunden
+    werden;\n (3) in interne und externe Gesch\u00e4ftsprozesse, Produkte und Anwendungen
+    in \u00f6ffentlichen und nicht \u00f6ffentlichen elektronischen Netzwerken eingebunden
+    werden.\nBei der Nutzung ist sicherzustellen, dass folgende Angaben als Quellenvermerk
+    enthalten sind:\n(1) Bezeichnung des Bereitstellers nach dessen Ma\u00dfgabe,\n(2)
+    der Vermerk Datenlizenz Deutschland \u2013 Namensnennung \u2013 Version 2.0 oder
+    dl-de/by-2-0 mit Verweis auf den Lizenztext unter www.govdata.de/dl-de/by-2-0
+    sowie\n(3) einen Verweis auf den Datensatz (URI).Dies gilt nur soweit die datenhaltende
+    Stelle die Angaben(1) bis (3) zum Quellenvermerk bereitstellt.\nVer\u00e4nderungen,
+    Bearbeitungen, neue Gestaltungen oder sonstige Abwandlungen sind im Quellenvermerk
+    mit dem Hinweis zu versehen, dass die Daten ge\u00e4ndert wurden.
+  attribution: \u00a9 Statistische \u00c4mter des Bundes und der L\u00e4nder 2014;
+    \u00a9 Statistisches Bundesamt, Wiesbaden 2015 (Daten ver\u00e4ndert)
+  copyrightStatement: null
+languages:
+- undefined
+topics:
+- 'model_draft'
+keywords:
+- 'egon-data-v2'

@@ -15,11 +15,7 @@ database with assigned census cell IDs.
 
 from pathlib import Path  # for database import
 from urllib.request import urlretrieve
-
-# for metadata creation
-import json
 import os
-import time
 import zipfile
 
 from jinja2 import Template
@@ -36,7 +32,6 @@ import rasterio
 from egon.data import db, subprocess
 from egon.data.datasets import Dataset, DatasetSources, DatasetTargets
 from egon.data.datasets.scenario_parameters import get_sector_parameters
-from egon.data.metadata import context, license_ccby, meta_metadata, sources
 import egon.data.config
 
 
@@ -45,21 +40,14 @@ class HeatDemandImport(Dataset):
     Insert the annual heat demand per census cell for each scenario
 
     This dataset downloads the heat demand raster data for private households
-    and CTS from Peta 5.0.1 (https://s-eenergies-open-data-euf.hub.arcgis.com/maps/d7d18b63250240a49eb81db972aa573e/about)
+    and CTS from Peta 5.0.1
+    (https://s-eenergies-open-data-euf.hub.arcgis.com/maps/d7d18b63250240a49eb81db972aa573e/about)
     and stores it into files in the working directory.
     The data from Peta 5.0.1 represents the status quo of the year 2015.
     To model future heat demands, the data is scaled to meet target values
     from external sources. These target values are defined for each scenario
-    in :py:class:`ScenarioParameters <egon.data.datasets.scenario_parameters.ScenarioParameters>`.
-
-    *Dependencies*
-      * :py:class:`ScenarioParameters <egon.data.datasets.scenario_parameters.ScenarioParameters>`
-      * :py:class:`Vg250 <egon.data.datasets.vg250.Vg250>`
-      * :py:class:`ZensusVg250 <egon.data.datasets.zensus_vg250.ZensusVg250>`
-
-    *Resulting tables*
-      * :py:class:`demand.egon_peta_heat <egon.data.datasets.heat_demand.EgonPetaHeat>` is created and filled
-
+    in :py:class:`ScenarioParameters
+    <egon.data.datasets.scenario_parameters.ScenarioParameters>`.
     """
 
     #:
@@ -73,8 +61,8 @@ class HeatDemandImport(Dataset):
             "zensus_population": "society.destatis_zensus_population_per_ha",
         },
         urls={
-            "peta_res_zip": "https://arcgis.com/sharing/rest/content/items/d7d18b63250240a49eb81db972aa573e/data",
-            "peta_ser_zip": "https://arcgis.com/sharing/rest/content/items/52ff5e02111142459ed5c2fe3d80b3a0/data",
+            "peta_res_zip": "https://arcgis.com/sharing/rest/content/items/d7d18b63250240a49eb81db972aa573e/data",  # noqa: E501
+            "peta_ser_zip": "https://arcgis.com/sharing/rest/content/items/52ff5e02111142459ed5c2fe3d80b3a0/data",  # noqa: E501
         },
         files={
             "peta_res_zip": "Peta5_0_1_HD_res.zip",
@@ -261,7 +249,7 @@ def cutout_heat_demand_germany():
     # using ST_Dump: https://postgis.net/docs/ST_Dump.html
 
     gdf_boundaries = gpd.read_postgis(
-        f"SELECT (ST_Dump(geometry)).geom AS geometry FROM {HeatDemandImport.sources.tables['boundaries']}",
+        f"SELECT (ST_Dump(geometry)).geom AS geometry FROM {HeatDemandImport.sources.tables['boundaries']}",  # noqa: E501
         local_engine,
         geom_col="geometry",
     )
@@ -378,7 +366,8 @@ def future_heat_demand_germany(scenario_name):
     elif scenario_name == "status2024":
         heat_parameters = get_sector_parameters("heat", scenario=scenario_name)
 
-        # Calculate reduction share based on final energy demand and overall demand from Peta for 2015
+        # Calculate reduction share based on final energy demand and overall
+        # demand from Peta for 2015
         res_hd_reduction = (
             heat_parameters["DE_demand_residential_TJ"] / 3600 / 443.788483
         )
@@ -388,14 +377,15 @@ def future_heat_demand_germany(scenario_name):
     elif scenario_name == "reGon2045":
         heat_parameters = get_sector_parameters("heat", scenario=scenario_name)
 
-        # Calculate reduction share based on final energy demand and overall demand from Peta for 2015
+        # Calculate reduction share based on final energy demand and overall
+        #  demand from Peta for 2015
         res_hd_reduction = heat_parameters["DE_demand_residential_MWh"] / (
             443.788483 * 1e6
         )
         ser_hd_reduction = heat_parameters["DE_demand_service_MWh"] / (
             226.588158 * 1e6
-        )    
-    else: 
+        )
+    else:
         heat_parameters = get_sector_parameters("heat", scenario=scenario_name)
 
         res_hd_reduction = heat_parameters["DE_demand_reduction_residential"]
@@ -408,7 +398,7 @@ def future_heat_demand_germany(scenario_name):
 
     # Open, read and adjust the cutout heat demand distributions for Germany
     # https://rasterio.readthedocs.io/en/latest/topics/writing.html
-    # https://gis.stackexchange.com/questions/338282/applying-equation-to-a-numpy-array-while-preserving-tiff-metadata-coordinates
+    # https://gis.stackexchange.com/questions/338282/applying-equation-to-a-numpy-array-while-preserving-tiff-metadata-coordinates # noqa: E501
     # Write an array as a raster band to a new 16-bit file. For
     # the new file's profile, the profile of the source is adjusted.
 
@@ -513,8 +503,9 @@ def heat_demand_to_db_table():
     )
 
     for source in sources:
-        if not "2015" in source.stem:
-            # Create a temporary table and fill the final table using the sql script
+        if "2015" not in source.stem:
+            # Create a temporary table and fill the final table using
+            # the sql script
             rasters = f"heat_demand_rasters_{source.stem.lower()}"
             import_rasters = subprocess.run(
                 ["raster2pgsql", "-e", "-s", "3035", "-I", "-C", "-F", "-a"]
@@ -525,11 +516,11 @@ def heat_demand_to_db_table():
             with engine.begin() as connection:
                 print(
                     f'CREATE TEMPORARY TABLE "{rasters}"'
-                    ' ("rid" serial PRIMARY KEY,"rast" raster,"filename" text);'
+                    ' ("rid" serial PRIMARY KEY,"rast" raster,"filename" text);'  # noqa: E501
                 )
                 connection.execute(
                     f'CREATE TEMPORARY TABLE "{rasters}"'
-                    ' ("rid" serial PRIMARY KEY,"rast" raster,"filename" text);'
+                    ' ("rid" serial PRIMARY KEY,"rast" raster,"filename" text);'  # noqa: E501
                 )
                 connection.execute(import_rasters)
                 connection.execute(f'ANALYZE "{rasters}"')
@@ -600,116 +591,6 @@ def adjust_residential_heat_to_zensus(scenario):
     return None
 
 
-def add_metadata():
-    """
-    Writes metadata JSON string into table comment.
-
-    """
-    # Metadata creation
-    meta = {
-        "name": "egon_peta_heat_metadata",
-        "title": "eGo_n scenario-specific future heat demand data",
-        "id": "WILL_BE_SET_AT_PUBLICATION",
-        "description": "Future heat demands per hectare grid cell of "
-        "the residential and service sector",
-        "language": ["EN"],
-        "context": context(),
-        "spatial": {
-            "location": None,
-            "extent": "Germany",
-            "resolution": "100x100m",
-        },
-        "sources": [
-            sources()["egon-data"],
-            sources()["peta"],
-            sources()["vg250"],
-            sources()["zensus"],
-        ],
-        "resources": [
-            {
-                "profile": "tabular-data-resource",
-                "name": "egon_peta_heat",
-                "path": "",
-                "format": "PostgreSQL",
-                "encoding": "UTF-8",
-                "schema": {
-                    "fields": [
-                        {
-                            "name": "id",
-                            "description": "Unique identifier",
-                            "type": "serial",
-                            "unit": "none",
-                        },
-                        {
-                            "name": "demand",
-                            "description": "annual heat demand",
-                            "type": "double precision",
-                            "unit": "MWh",
-                        },
-                        {
-                            "name": "sector",
-                            "description": "sector e.g. residential",
-                            "type": "text",
-                            "unit": "none",
-                        },
-                        {
-                            "name": "scenario",
-                            "description": "scenario name",
-                            "type": "text",
-                            "unit": "none",
-                        },
-                        {
-                            "name": "zensus_population_id",
-                            "description": "census cell id",
-                            "type": "integer",
-                            "unit": "none",
-                        },
-                    ],
-                    "primaryKey": ["id"],
-                    "foreignKeys": [
-                        {
-                            "fields": ["zensus_population_id"],
-                            "reference": {
-                                "resource": "society.destatis_zensus_population_per_ha",
-                                "fields": ["id"],
-                            },
-                        },
-                        {
-                            "fields": ["scenario"],
-                            "reference": {
-                                "resource": "scenario.egon_scenario_parameters",
-                                "fields": ["name"],
-                            },
-                        },
-                    ],
-                },
-                "dialect": {"delimiter": "none", "decimalSeparator": "."},
-            }
-        ],
-        "licenses": [license_ccby("© Europa-Universität Flensburg")],
-        "contributors": [
-            {
-                "title": "EvaWie",
-                "email": "http://github.com/EvaWie",
-                "date": time.strftime("%Y-%m-%d"),
-                "object": None,
-                "comment": "Imported data",
-            },
-            {
-                "title": "Clara Büttner",
-                "email": "http://github.com/ClaraBuettner",
-                "date": time.strftime("%Y-%m-%d"),
-                "object": None,
-                "comment": "Updated metadata",
-            },
-        ],
-        "metaMetadata": meta_metadata(),
-    }
-    meta_json = "'" + json.dumps(meta) + "'"
-
-    db.submit_comment(meta_json, "demand", "egon_peta_heat")
-
-
 def scenario_data_import():
     """
     Call all heat demand import related functions.
@@ -737,11 +618,11 @@ def scenario_data_import():
     # drop table if exists
     # can be removed when table structure doesn't change anymore
     db.execute_sql(
-        f"DROP TABLE IF EXISTS {HeatDemandImport.targets.tables['heat_demand']} CASCADE"
+        f"DROP TABLE IF EXISTS {HeatDemandImport.targets.tables['heat_demand']} CASCADE"  # noqa: E501
     )
 
     db.execute_sql(
-        f"DROP SEQUENCE IF EXISTS {HeatDemandImport.targets.get_table_schema('heat_demand')}."
+        f"DROP SEQUENCE IF EXISTS {HeatDemandImport.targets.get_table_schema('heat_demand')}."  # noqa: E501
         f"{HeatDemandImport.targets.get_table_name('heat_demand')}_seq CASCADE"
     )
 
@@ -761,6 +642,4 @@ def scenario_data_import():
         adjust_residential_heat_to_zensus(scenario)
 
     # future_heat_demand_germany("eGon2015")
-    add_metadata()
-
     return None

@@ -69,3 +69,10 @@ docs/_build
 
 # Mypy Cache
 .mypy_cache/
+
+# oemetadata
+/src/egon/data/metadata/results/converted
+
+# Dev Airflow DAGS for testing
+/src/egon/data/airflow/dags/mini_dag_zensu.py
+/src/egon/data/airflow/dags/pipeline_mini_dag_metadata.py

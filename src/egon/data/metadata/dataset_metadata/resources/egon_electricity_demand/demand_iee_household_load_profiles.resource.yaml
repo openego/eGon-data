@@ -1,0 +1,159 @@
+'@id': null
+name: demand.iee_household_load_profiles
+title: eGon pool of electricity household load profiles
+path: WILL_BE_SET_AT_PUBLICATION
+description: '100.000 annual profiles in hourly resolution of electricity demand of
+  private households for different household types (singles, couples, other) with
+  varying number of elderly and children. The profiles were created using a bottom-up
+  load profile generator by Fraunhofer IEE developed in the Bachelors thesis "Auswirkungen
+  verschiedener Haushaltslastprofile auf PV-Batterie-Systeme" by Jonas Haack, Fachhochschule
+  Flensburg, December 2012. The columns are named as follows: "<HH_TYPE_PREFIX>a<PROFILE_ID>",
+  e.g. P2a0000 is the first profile of a couples household with 2 children. See publication
+  below for the list of prefixes. Values are given in Wh.'
+subject:
+- name: ''
+  '@id': null
+publicationDate: '2022-09-14'
+embargoPeriod:
+  start: ''
+  end: ''
+  isActive: false
+spatial:
+  location:
+    address: ''
+    '@id': null
+    latitude: ''
+    longitude: ''
+  extent:
+    name: Germany
+    '@id': null
+    resolutionValue: ''
+    resolutionUnit: ''
+    boundingBox:
+    - 0
+    - 0
+    - 0
+    - 0
+    crs: ''
+temporal:
+  referenceDate: '2022-06-10'
+  timeseries:
+  - start: '2016-01-01'
+    end: '2016-12-31'
+    resolutionValue: '1'
+    resolutionUnit: h
+    alignment: left
+    aggregationType: sum
+sources:
+- title: 'Data bundle for egon-data: A transparent and reproducible data processing
+    pipeline for energy system modeling'
+  authors: []
+  description: egon-data provides a transparent and reproducible open data based data
+    processing pipeline for generating data models suitable for energy system modeling.
+    The data is customized for the requirements of the research project eGon. The
+    research project aims to develop tools for an open and cross-sectoral planning
+    of transmission and distribution grids. For further information please visit the
+    eGon project website or its Github repository.  egon-data retrieves and processes
+    data from several different external input sources. As not all data dependencies
+    can be downloaded automatically from external sources we provide a data bundle
+    to be downloaded by egon-data.
+  publicationYear: null
+  path: https://doi.org/10.5281/zenodo.6630616
+  sourceLicenses:
+  - name: CC-BY-4.0
+    title: Creative Commons Attribution 4.0 International
+    path: https://creativecommons.org/licenses/by/4.0/legalcode
+    instruction: 'You are free: To Share, To Create, To Adapt; As long as you: Attribute.'
+    attribution: © eGon-data developers, © Leibniz Institute for Applied Geophysics,
+      © Fraunhofer IEE, © BGR Hannover, © Danielle Schmidt, © Übertragungsnetzbetreiber,
+      © DIW Berlin, © Reiner Lemoine Institut, © Statistisches Bundesamt, Wiesbaden
+      2008, © Statistische Ämter des Bundes und der Länder 2021
+    copyrightStatement: null
+- title: eGon-data
+  authors: []
+  description: Workflow to download, process and generate data sets suitable for the
+    further research conducted in the project eGon (https://ego-n.org/)
+  publicationYear: null
+  path: https://github.com/openego/eGon-data
+  sourceLicenses:
+  - name: AGPL-3.0 License
+    title: GNU Affero General Public License v3.0
+    path: https://www.gnu.org/licenses/agpl-3.0.de.html
+    instruction: Permissions of this strongest copyleft license are conditioned on
+      making available complete source code of licensed works and modifications, which
+      include larger works using a licensed work, under the same license. Copyright
+      and license notices must be preserved. Contributors provide an express grant
+      of patent rights. When a modified version is used to provide a service over
+      a network, the complete source code of the modified version must be made available.
+    attribution: © eGon-data developers
+    copyrightStatement: null
+contributors:
+- title: ClaraBuettner
+  path: null
+  organization: null
+  roles:
+  - ''
+  date: '2022-09-12'
+  object: metadata
+  comment: Create metadata
+- title: nailend
+  path: null
+  organization: null
+  roles:
+  - ''
+  date: '2022-09-12'
+  object: metadata
+  comment: Updated metadata
+- title: nesnoj
+  path: null
+  organization: null
+  roles:
+  - ''
+  date: '2022-09-14'
+  object: metadata
+  comment: Update metadata
+- title: Open Energy Platform oemetadata conversion to v2
+  path: https://github.com/OpenEnergyPlatform
+  role:
+  - platform-maintainer
+  organization: OpenEnergyFamily
+  date: '2021-09-01'
+  object: conversion of all metadata to oemetadata  version 2.0.4
+  comment: The conversion was done by the OpenEnergyFamily team using the OMI software.We
+    did our best to mitigate data loss. Most unexpected or incorrect metadata propertyentries
+    will be lost.
+type: Table
+format: PostgreSQL
+encoding: UTF-8
+schema:
+  fields:
+  - name: id
+    description: Unique identifier
+    type: integer
+    nullable: false
+    unit: none
+    isAbout: []
+    valueReference: []
+  - name: type
+    description: Profile id
+    type: character(8)
+    nullable: true
+    unit: none
+    isAbout: []
+    valueReference: []
+  - name: load_in_wh
+    description: Residential demand load timeseries for one year (8760 hours) in Wh
+    type: array of real
+    nullable: true
+    unit: Wh
+    isAbout: []
+    valueReference: []
+  primaryKey:
+  - id
+  foreignKeys: []
+dialect:
+  delimiter: ''
+  decimalSeparator: .
+review:
+  path: ''
+  badge: ''

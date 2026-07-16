@@ -1,0 +1,43 @@
+# dataset_ids.yaml
+#
+# Maps eGon-data pipeline task groups (as defined by their group_id in
+# src/egon/data/airflow/dags/pipeline.py) to OEMetadata dataset ids.
+#
+# One OEMetadata dataset per data-producing task group (wayfinder ticket 010).
+# The dataset id is also the on-disk location in the split-YAML store:
+#   datasets/<id>.dataset.yaml, datasets/<id>.template.yaml, resources/<id>/
+#
+# This file makes the store self-describing: OMI and the `egon-data metadata`
+# CLI read it to resolve which dataset a table belongs to, without importing
+# eGon-data. It replaces the former single `OEM_DATASET_ID = "egon-data"`.
+#
+# A task group appears here whether or not it has metadata yet; datasets are
+# created on disk on demand by `egon-data metadata init`. The `metadata` task
+# group is intentionally absent (it produces no data tables).
+
+version: 1
+prefix: egon
+
+task_groups:
+  input_data: egon_input_data
+  setup: egon_setup
+  mapping: egon_mapping
+  electricity_grid: egon_electricity_grid
+  electricity_demand: egon_electricity_demand
+  electricity_supply: egon_electricity_supply
+  electricity_flexibility: egon_electricity_flexibility
+  electricity_neighbors: egon_electricity_neighbors
+  heat_demand: egon_heat_demand
+  heat_supply: egon_heat_supply
+  gas_grid: egon_gas_grid
+  gas_demand: egon_gas_demand
+  gas_supply: egon_gas_supply
+  gas_sector_coupling: egon_gas_sector_coupling
+  combined_heat_and_power: egon_combined_heat_and_power
+  mobility_demand: egon_mobility_demand
+  mobility_supply: egon_mobility_supply
+  load_areas: egon_load_areas
+  etrago_input: egon_etrago_input
+  scenario_capacities: egon_scenario_capacities
+  scenario_variants: egon_scenario_variants
+  sanity_checks: egon_sanity_checks

@@ -1,7 +1,7 @@
 """
 Motorized Individual Travel (MIT) Charging Infrastructure
 
-Main module for preparation of static model data for charging infrastructure for
+Main module for preparation of static model data for charging infrastructure for  # noqa: E501
 motorized individual travel.
 
 """
@@ -14,11 +14,10 @@ import zipfile
 from loguru import logger
 import requests
 
-from egon.data import config, db
+from egon.data import db
 from egon.data.datasets import Dataset, DatasetSources, DatasetTargets
 from egon.data.datasets.emobility.motorized_individual_travel_charging_infrastructure.db_classes import (  # noqa: E501
     EgonEmobChargingInfrastructure,
-    add_metadata,
 )
 from egon.data.datasets.emobility.motorized_individual_travel_charging_infrastructure.infrastructure_allocation import (  # noqa: E501
     run_tracbev,
@@ -99,7 +98,7 @@ class MITChargingInfrastructure(Dataset):
 
     sources = DatasetSources(
         urls={
-            "tracbev": "https://zenodo.org/record/6466480/files/data.zip?download=1"
+            "tracbev": "https://zenodo.org/record/6466480/files/data.zip?download=1"  # noqa: E501
         },
         tables={
             "mv_grid_districts": "grid.egon_mv_grid_district",
@@ -149,15 +148,15 @@ class MITChargingInfrastructure(Dataset):
 
     * Creation of DB tables
     * Download and preprocessing of vehicle registration data from zenodo
-    * Determination of all potential charging locations for the four charging use cases
+    * Determination of all potential charging locations for the four charging use cases  # noqa: E501
       home, work, public and hpc per MV grid district
     * Write results to DB
 
-    For more information see data documentation on :ref:`mobility-demand-mit-ref`.
+    For more information see data documentation on :ref:`mobility-demand-mit-ref`.  # noqa: E501
 
     *Dependencies*
-      * :py:class:`MvGridDistricts <egon.data.datasets.mv_grid_districts.mv_grid_districts_setup>`
-      * :py:func:`map_houseprofiles_to_buildings <egon.data.datasets.electricity_demand_timeseries.hh_buildings.map_houseprofiles_to_buildings>`
+      * :py:class:`MvGridDistricts <egon.data.datasets.mv_grid_districts.mv_grid_districts_setup>`  # noqa: E501
+      * :py:func:`map_houseprofiles_to_buildings <egon.data.datasets.electricity_demand_timeseries.hh_buildings.map_houseprofiles_to_buildings>`  # noqa: E501
 
     *Resulting tables*
       * :py:class:`grid.egon_emob_charging_infrastructure
@@ -172,11 +171,11 @@ class MITChargingInfrastructure(Dataset):
     *Charging Infrastructure*
 
     The charging infrastructure allocation is based on
-    `TracBEV <https://github.com/rl-institut/tracbev>`_. TracBEV is a tool for the
-    regional allocation of charging infrastructure. In practice this allows users to
-    use results generated via `SimBEV <https://github.com/rl-institut/simbev>`_ and
+    `TracBEV <https://github.com/rl-institut/tracbev>`_. TracBEV is a tool for the  # noqa: E501
+    regional allocation of charging infrastructure. In practice this allows users to  # noqa: E501
+    use results generated via `SimBEV <https://github.com/rl-institut/simbev>`_ and  # noqa: E501
     place the corresponding charging
-    points on a map. These are split into the four use cases home, work, public and hpc.
+    points on a map. These are split into the four use cases home, work, public and hpc.  # noqa: E501
 
     """
 
@@ -196,6 +195,5 @@ class MITChargingInfrastructure(Dataset):
                     get_tracbev_data,
                 },
                 run_tracbev,
-                add_metadata,
             ),
         )
