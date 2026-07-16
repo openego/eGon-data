@@ -73,6 +73,9 @@ class ZensusMiscellaneous(Dataset):
             "zensus_households": "society.egon_destatis_zensus_household_per_ha",
             "zensus_buildings": "society.egon_destatis_zensus_building_per_ha",
             "zensus_apartments": "society.egon_destatis_zensus_apartment_per_ha",
+            # Combined table created by create_combined_zensus_table()
+            # within zensus_misc_to_postgres.
+            "zensus_combined": "society.egon_destatis_zensus_apartment_building_population_per_ha",  # noqa: E501
         },
     )
 
@@ -94,15 +97,18 @@ def create_zensus_pop_table():
     # Create table for population data
     population_table = ZensusPopulation.targets.tables["zensus_population"]
 
-    db.execute_sql(f"""
+    db.execute_sql(
+        f"""
         CREATE SCHEMA IF NOT EXISTS
         {ZensusPopulation.targets.get_table_schema("zensus_population")};
-        """)
+        """
+    )
 
     db.execute_sql(f"DROP TABLE IF EXISTS {population_table} CASCADE;")
 
     db.execute_sql(
-        f"CREATE TABLE {population_table}" f""" (id        SERIAL NOT NULL,
+        f"CREATE TABLE {population_table}"
+        f""" (id        SERIAL NOT NULL,
               grid_id    character varying(254) NOT NULL,
               x_mp       int,
               y_mp       int,
@@ -111,7 +117,7 @@ def create_zensus_pop_table():
               geom geometry (Polygon, 3035),
               CONSTRAINT {population_table.split('.')[1]}_pkey
               PRIMARY KEY (id)
-    
+
         );
         """
     )
@@ -129,7 +135,8 @@ def create_zensus_misc_tables():
         )
         db.execute_sql(f"DROP TABLE IF EXISTS {table_name} CASCADE;")
         db.execute_sql(
-            f"CREATE TABLE {table_name}" f""" (id                 SERIAL,
+            f"CREATE TABLE {table_name}"
+            f""" (id                 SERIAL,
                   grid_id            VARCHAR(50),
                   grid_id_new        VARCHAR (50),
                   attribute          VARCHAR(50),
@@ -325,11 +332,14 @@ def population_to_postgres():
         f"UPDATE {population_table} zs"
         " SET geom_point=ST_SetSRID(ST_MakePoint(zs.x_mp, zs.y_mp), 3035);"
     )
-    db.execute_sql(f"UPDATE {population_table} zs" """ SET geom=ST_SetSRID(
+    db.execute_sql(
+        f"UPDATE {population_table} zs"
+        """ SET geom=ST_SetSRID(
                 (ST_MakeEnvelope(zs.x_mp-50,zs.y_mp-50,zs.x_mp+50,zs.y_mp+50)),
                 3035
             );
-        """)
+        """
+    )
     db.execute_sql(
         f"CREATE INDEX {population_table.split('.')[1]}_geom_idx ON"
         f" {population_table} USING gist (geom);"
@@ -442,9 +452,11 @@ def adjust_zensus_misc():
     """
 
     for table in ZensusMiscellaneous.targets.tables:
-        db.execute_sql(f"""
+        db.execute_sql(
+            f"""
              DELETE FROM {ZensusMiscellaneous.targets.tables[table]} as b
              WHERE b.zensus_population_id IN (
                  SELECT id FROM {
                      ZensusPopulation.targets.tables["zensus_population"]}
-                 WHERE population < 0);""")
+                 WHERE population < 0);"""
+        )

@@ -1093,6 +1093,13 @@ class HeatTimeSeries(Dataset):
             "etrago_timeseries_individual_heating": "demand.egon_etrago_timeseries_individual_heating",  # noqa: E501
             "individual_heating_peak_loads": "demand.egon_individual_heating_peak_loads",  # noqa: E501
             "etrago_heat_cts": "demand.egon_etrago_heat_cts",
+            # Intermediate tables produced by this dataset's own tasks and
+            # consumed by its later tasks (hence they also appear in
+            # `sources` above).
+            "climate_zones": "boundaries.egon_map_zensus_climate_zones",
+            "daily_heat_demand_per_climate_zone": "demand.egon_daily_heat_demand_per_climate_zone",  # noqa: E501
+            "selected_profiles": "demand.egon_heat_timeseries_selected_profiles",  # noqa: E501
+            "idp_pool": "demand.egon_heat_idp_pool",
         }
     )
 
