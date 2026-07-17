@@ -565,33 +565,34 @@ def insert_chp():
     scenarios = [s for s in config.settings()["egon-data"]["--scenarios"] if "status" not in str(s).lower()]
     for scenario in scenarios:
         insert_biomass_chp(scenario)
-
-    # Insert large CHPs based on NEP's list of conventional power plants
-    MaStR_konv = insert_large_chp(
-        Chp.sources, Chp.targets.tables["chp_table"], EgonChp
-    )
-
-    # Insert smaller CHPs (< 10MW) based on existing locations from MaStR
-    existing_chp_smaller_10mw(Chp.sources, MaStR_konv, EgonChp)
-
-    gpd.GeoDataFrame(
-        MaStR_konv[
-            [
-                "EinheitMastrNummer",
-                "el_capacity",
-                "geometry",
-                "carrier",
-                "plz",
-                "city",
-                "federal_state",
+    
+        # Insert large CHPs based on NEP's list of conventional power plants
+        MaStR_konv = insert_large_chp(
+            Chp.sources, Chp.targets.tables["chp_table"], EgonChp,
+            scenario
+        )
+    
+        # Insert smaller CHPs (< 10MW) based on existing locations from MaStR
+        existing_chp_smaller_10mw(Chp.sources, MaStR_konv, EgonChp)
+    
+        gpd.GeoDataFrame(
+            MaStR_konv[
+                [
+                    "EinheitMastrNummer",
+                    "el_capacity",
+                    "geometry",
+                    "carrier",
+                    "plz",
+                    "city",
+                    "federal_state",
+                ]
             ]
-        ]
-    ).to_postgis(
-        Chp.targets.get_table_name("mastr_conventional_without_chp"),
-        schema=Chp.targets.get_table_schema("mastr_conventional_without_chp"),
-        con=db.engine(),
-        if_exists="replace",
-    )
+        ).to_postgis(
+            Chp.targets.get_table_name("mastr_conventional_without_chp"),
+            schema=Chp.targets.get_table_schema("mastr_conventional_without_chp"),
+            con=db.engine(),
+            if_exists="replace",
+        )
 
 
 def extension_BW():

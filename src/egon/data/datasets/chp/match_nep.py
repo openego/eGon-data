@@ -19,7 +19,7 @@ from egon.data.datasets.scenario_capacities import map_carrier
 
 
 #####################################   NEP treatment   #################################
-def select_chp_from_nep(sources):
+def select_chp_from_nep(sources, scenario):
     """Select CHP plants with location from NEP's list of power plants
 
     Returns
@@ -29,82 +29,158 @@ def select_chp_from_nep(sources):
 
     """
     table_nep = sources.tables["list_conv_pp"]
-
-    # Select CHP plants with geolocation from list of conventional power plants
-    chp_NEP_data = db.select_dataframe(f"""
-        SELECT bnetza_id, name, carrier, chp, postcode, capacity, city,
-        federal_state, c2035_chp, c2035_capacity
-        FROM {table_nep}
-        WHERE bnetza_id != 'KW<10 MW'
-        AND (chp = 'Ja' OR c2035_chp = 'Ja')
-        AND c2035_capacity > 0
-        AND postcode != 'None'
-        """)
-
-    # Removing CHP out of Germany
-    chp_NEP_data["postcode"] = chp_NEP_data["postcode"].astype(str)
-    chp_NEP_data = chp_NEP_data[~chp_NEP_data["postcode"].str.contains("A")]
-    chp_NEP_data = chp_NEP_data[~chp_NEP_data["postcode"].str.contains("L")]
-    chp_NEP_data = chp_NEP_data[~chp_NEP_data["postcode"].str.contains("nan")]
-
-    # Remove the subunits from the bnetza_id
-    chp_NEP_data["bnetza_id"] = chp_NEP_data["bnetza_id"].str[0:7]
-
-    # Initalize DataFrame
-    chp_NEP = pd.DataFrame(
-        columns=[
-            "name",
-            "postcode",
-            "carrier",
-            "capacity",
-            "c2035_capacity",
-            "c2035_chp",
-            "city",
-        ]
-    )
-
-    # Insert rows from list without a name
-    chp_NEP = pd.concat(
-        [
-            chp_NEP,
-            (
-                chp_NEP_data[chp_NEP_data.name.isnull()].loc[
-                    :,
-                    [
-                        "name",
-                        "postcode",
-                        "carrier",
-                        "capacity",
-                        "c2035_capacity",
-                        "c2035_chp",
-                        "city",
-                        "federal_state",
-                    ],
-                ]
-            ),
-        ]
-    )
-    # Insert rows from list with a name
-    chp_NEP = pd.concat(
-        [
-            chp_NEP,
-            (
-                chp_NEP_data.groupby(
-                    [
-                        "carrier",
-                        "name",
-                        "postcode",
-                        "c2035_chp",
-                        "city",
-                        "federal_state",
-                    ],
-                    group_keys=False,
-                )[["capacity", "c2035_capacity", "city", "federal_state"]]
-                .sum(numeric_only=True)
-                .reset_index()
-            ),
-        ]
-    ).reset_index()
+    
+    if scenario == "eGon2035":
+        # Select CHP plants with geolocation from list of conventional power plants
+        chp_NEP_data = db.select_dataframe(f"""
+            SELECT bnetza_id, name, carrier, chp, postcode, capacity, city,
+            federal_state, c2035_chp, c2035_capacity
+            FROM {table_nep}
+            WHERE bnetza_id != 'KW<10 MW'
+            AND (chp = 'Ja' OR c2035_chp = 'Ja')
+            AND c2035_capacity > 0
+            AND postcode != 'None'
+            """)
+    
+        # Removing CHP out of Germany
+        chp_NEP_data["postcode"] = chp_NEP_data["postcode"].astype(str)
+        chp_NEP_data = chp_NEP_data[~chp_NEP_data["postcode"].str.contains("A")]
+        chp_NEP_data = chp_NEP_data[~chp_NEP_data["postcode"].str.contains("L")]
+        chp_NEP_data = chp_NEP_data[~chp_NEP_data["postcode"].str.contains("nan")]
+    
+        # Remove the subunits from the bnetza_id
+        chp_NEP_data["bnetza_id"] = chp_NEP_data["bnetza_id"].str[0:7]
+    
+        # Initalize DataFrame
+        chp_NEP = pd.DataFrame(
+            columns=[
+                "name",
+                "postcode",
+                "carrier",
+                "capacity",
+                "c2035_capacity",
+                "c2035_chp",
+                "city",
+            ]
+        )
+    
+        # Insert rows from list without a name
+        chp_NEP = pd.concat(
+            [
+                chp_NEP,
+                (
+                    chp_NEP_data[chp_NEP_data.name.isnull()].loc[
+                        :,
+                        [
+                            "name",
+                            "postcode",
+                            "carrier",
+                            "capacity",
+                            "c2035_capacity",
+                            "c2035_chp",
+                            "city",
+                            "federal_state",
+                        ],
+                    ]
+                ),
+            ]
+        )
+        # Insert rows from list with a name
+        chp_NEP = pd.concat(
+            [
+                chp_NEP,
+                (
+                    chp_NEP_data.groupby(
+                        [
+                            "carrier",
+                            "name",
+                            "postcode",
+                            "c2035_chp",
+                            "city",
+                            "federal_state",
+                        ],
+                        group_keys=False,
+                    )[["capacity", "c2035_capacity", "city", "federal_state"]]
+                    .sum(numeric_only=True)
+                    .reset_index()
+                ),
+            ]
+        ).reset_index()
+        
+    if scenario in ["reGon2037", "reGon2045"]:
+        # CHANGED: Automatically extract year from scenario name
+        year = int(scenario.replace("reGon", ""))
+        capacity_col = f"c{year}_capacity"
+        # Select CHP plants with geolocation from list of conventional power plants
+        chp_NEP_data = db.select_dataframe(f"""
+            SELECT name, carrier, chp, postcode, capacity, city,
+            federal_state, mastr-id, {capacity_col}
+            FROM {table_nep}
+            WHERE bnetza_id != 'KW<10 MW'
+            AND (chp = 'Ja')
+            AND {capacity_col} > 0
+            AND postcode != 'None'
+            """)
+    
+        # Removing CHP out of Germany
+        chp_NEP_data["postcode"] = chp_NEP_data["postcode"].astype(str)
+        chp_NEP_data = chp_NEP_data[~chp_NEP_data["postcode"].str.contains("A")]
+        chp_NEP_data = chp_NEP_data[~chp_NEP_data["postcode"].str.contains("L")]
+        chp_NEP_data = chp_NEP_data[~chp_NEP_data["postcode"].str.contains("nan")]
+    
+        # Initalize DataFrame
+        chp_NEP = pd.DataFrame(
+            columns=[
+                "name",
+                "postcode",
+                "carrier",
+                "capacity",
+                {capacity_col},
+                "chp",
+                "city",
+            ]
+        )
+    
+        # Insert rows from list without a name
+        chp_NEP = pd.concat(
+            [
+                chp_NEP,
+                (
+                    chp_NEP_data[chp_NEP_data.name.isnull()].loc[
+                        :,
+                        [
+                            "name",
+                            "postcode",
+                            "carrier",
+                            "capacity",
+                            {capacity_col},
+                            "city",
+                            "federal_state",
+                        ],
+                    ]
+                ),
+            ]
+        )
+        # Insert rows from list with a name
+        chp_NEP = pd.concat(
+            [
+                chp_NEP,
+                (
+                    chp_NEP_data.groupby(
+                        [
+                            "carrier",
+                            "name",
+                            "postcode",
+                            "city",
+                            "federal_state",
+                        ],
+                        group_keys=False,
+                    )[["capacity", {capacity_col}, "city", "federal_state"]]
+                    .sum(numeric_only=True)
+                    .reset_index()
+                ),
+            ]
+        ).reset_index()
 
     return chp_NEP.drop("index", axis=1)
 
@@ -335,9 +411,9 @@ def match_nep_chp(
 
 
 ################################################### Final table ###################################################
-def insert_large_chp(sources, target, EgonChp):
+def insert_large_chp(sources, target, EgonChp, scenario):
     # Select CHP from NEP list
-    chp_NEP = select_chp_from_nep(sources)
+    chp_NEP = select_chp_from_nep(sources, scenario)
 
     # Select CHP from MaStR
     MaStR_konv = select_chp_from_mastr(sources)
