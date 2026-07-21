@@ -554,7 +554,7 @@ def insert_nep_list_powerplants(export=True):
             # Adjust column names for Kraftwerksliste_Szenariorahmen from the NEP2025
             kw_liste_nep25 = kw_liste_nep25.rename(
                 columns={
-                    "MaStR-ID": "mastr-id",
+                    "MaStR-ID": "mastr_id",
                     "ÜNB" : "tso",
                     "Betreiber": "operator",
                     "Kraftwerksname": "name",
