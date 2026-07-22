@@ -108,79 +108,25 @@ def select_chp_from_nep(sources, scenario):
         ).reset_index()
         
     if scenario in ["reGon2037", "reGon2045"]:
-        # CHANGED: Automatically extract year from scenario name
+        # Automatically extract year from scenario name
         year = int(scenario.replace("reGon", ""))
         capacity_col = f"c{year}_capacity"
         # Select CHP plants with geolocation from list of conventional power plants
-        chp_NEP_data = db.select_dataframe(f"""
-            SELECT name, carrier, chp, postcode, capacity, city,
-            federal_state, mastr-id, {capacity_col}
+        chp_NEP = db.select_dataframe(f"""
+            SELECT name, postcode, carrier, capacity, chp, city,
+            mastr_id, federal_state, {capacity_col}
             FROM {table_nep}
-            WHERE bnetza_id != 'KW<10 MW'
-            AND (chp = 'Ja')
+            WHERE (chp = 'Ja')
             AND {capacity_col} > 0
             AND postcode != 'None'
+            AND mastr_id != 'NV'
             """)
     
         # Removing CHP out of Germany
-        chp_NEP_data["postcode"] = chp_NEP_data["postcode"].astype(str)
-        chp_NEP_data = chp_NEP_data[~chp_NEP_data["postcode"].str.contains("A")]
-        chp_NEP_data = chp_NEP_data[~chp_NEP_data["postcode"].str.contains("L")]
-        chp_NEP_data = chp_NEP_data[~chp_NEP_data["postcode"].str.contains("nan")]
-    
-        # Initalize DataFrame
-        chp_NEP = pd.DataFrame(
-            columns=[
-                "name",
-                "postcode",
-                "carrier",
-                "capacity",
-                {capacity_col},
-                "chp",
-                "city",
-            ]
-        )
-    
-        # Insert rows from list without a name
-        chp_NEP = pd.concat(
-            [
-                chp_NEP,
-                (
-                    chp_NEP_data[chp_NEP_data.name.isnull()].loc[
-                        :,
-                        [
-                            "name",
-                            "postcode",
-                            "carrier",
-                            "capacity",
-                            {capacity_col},
-                            "city",
-                            "federal_state",
-                        ],
-                    ]
-                ),
-            ]
-        )
-        # Insert rows from list with a name
-        chp_NEP = pd.concat(
-            [
-                chp_NEP,
-                (
-                    chp_NEP_data.groupby(
-                        [
-                            "carrier",
-                            "name",
-                            "postcode",
-                            "city",
-                            "federal_state",
-                        ],
-                        group_keys=False,
-                    )[["capacity", {capacity_col}, "city", "federal_state"]]
-                    .sum(numeric_only=True)
-                    .reset_index()
-                ),
-            ]
-        ).reset_index()
+        chp_NEP["postcode"] = chp_NEP["postcode"].astype(str)
+        chp_NEP = chp_NEP_data[~chp_NEP["postcode"].str.contains("A")]
+        chp_NEP = chp_NEP_data[~chp_NEP["postcode"].str.contains("L")]
+        chp_NEP = chp_NEP_data[~chp_NEP["postcode"].str.contains("nan")]
 
     return chp_NEP.drop("index", axis=1)
 
