@@ -16,7 +16,7 @@ from egon.data.datasets.power_plants import (
 )
 
 
-def insert_mastr_chp(mastr_chp, EgonChp):
+def insert_mastr_chp(mastr_chp, EgonChp, scenario):
     """Insert MaStR data from exising CHPs into database table
 
     Parameters
@@ -24,7 +24,7 @@ def insert_mastr_chp(mastr_chp, EgonChp):
     mastr_chp : pandas.DataFrame
         List of existing CHPs in MaStR.
     EgonChp : class
-        Class definition of daabase table for CHPs
+        Class definition of database table for CHPs
 
     Returns
     -------
@@ -48,7 +48,7 @@ def insert_mastr_chp(mastr_chp, EgonChp):
             ch4_bus_id=row.gas_bus_id,
             district_heating=row.district_heating,
             voltage_level=row.voltage_level,
-            scenario="eGon2035",
+            scenario=scenario,
             geom=f"SRID=4326;POINT({row.geometry.x} {row.geometry.y})",
         )
         session.add(entry)
@@ -99,7 +99,7 @@ def existing_chp_smaller_10mw(sources, MaStR_konv, EgonChp, scenario):
     
             mastr_chp = assign_use_case(mastr_chp, sources, scenario)
     
-            insert_mastr_chp(mastr_chp, EgonChp)
+            insert_mastr_chp(mastr_chp, EgonChp, scenario)
     if scenario in ["reGon2037", "reGon2045"]:
         # as MaStR is not yet grouped (done for eGon2035 in func:insert_large_chps)
         # it needs to be groupedin the same way
@@ -145,7 +145,7 @@ def existing_chp_smaller_10mw(sources, MaStR_konv, EgonChp, scenario):
     
             mastr_chp = assign_use_case(mastr_chp, sources, scenario)
     
-            insert_mastr_chp(mastr_chp, EgonChp)
+            insert_mastr_chp(mastr_chp, EgonChp, scenario)
         
 
 
