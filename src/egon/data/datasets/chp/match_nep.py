@@ -369,226 +369,314 @@ def insert_large_chp(sources, target, EgonChp, scenario):
         MaStR_konv.rename({"el_capacity": "Nettonennleistung"}, axis=1),
         sources,
     )
-
-    # Initalize DataFrame for match CHPs
-    chp_NEP_matched = geopandas.GeoDataFrame(
-        columns=[
-            "carrier",
-            "chp",
-            "el_capacity",
-            "th_capacity",
-            "scenario",
-            "geometry",
-            "MaStRNummer",
-            "source",
-            "voltage_level",
-        ]
-    )
-
-    # Match CHP from NEP list using PLZ, carrier and capacity
-    chp_NEP_matched, MaStR_konv, chp_NEP = match_nep_chp(
-        chp_NEP, MaStR_konv, chp_NEP_matched, buffer_capacity=0.1
-    )
-
-    # Match CHP from NEP list using first 4 numbers of PLZ,
-    # carrier and capacity
-    chp_NEP_matched, MaStR_konv, chp_NEP = match_nep_chp(
-        chp_NEP,
-        MaStR_konv,
-        chp_NEP_matched,
-        buffer_capacity=0.1,
-        consider_location="city",
-    )
-
-    # Aggregate units from MaStR to one power plant
-    MaStR_konv = (
-        MaStR_konv.groupby(
-            [
-                "plz",
-                "Laengengrad",
-                "Breitengrad",
+    # method needed due to Kraftwerksliste from the NEP2035, V.2021 not
+    # including MaStR-IDs
+    if scenario == "eGon2035":
+        # Initalize DataFrame for match CHPs
+        chp_NEP_matched = geopandas.GeoDataFrame(
+            columns=[
                 "carrier",
-                "city",
-                "federal_state",
+                "chp",
+                "el_capacity",
+                "th_capacity",
+                "scenario",
+                "geometry",
+                "MaStRNummer",
+                "source",
+                "voltage_level",
             ]
-        )[["el_capacity", "th_capacity", "EinheitMastrNummer"]]
-        .sum(numeric_only=False)
-        .reset_index()
-    )
-    MaStR_konv["geometry"] = geopandas.points_from_xy(
-        MaStR_konv["Laengengrad"], MaStR_konv["Breitengrad"]
-    )
-    MaStR_konv["voltage_level"] = assign_voltage_level(
-        MaStR_konv.rename({"el_capacity": "Nettonennleistung"}, axis=1),
-        sources,
-    )
-
-    # Match CHP from NEP list with aggregated MaStR units
-    chp_NEP_matched, MaStR_konv, chp_NEP = match_nep_chp(
-        chp_NEP, MaStR_konv, chp_NEP_matched, buffer_capacity=0.1
-    )
-
-    # Match CHP from NEP list with aggregated MaStR units
-    chp_NEP_matched, MaStR_konv, chp_NEP = match_nep_chp(
-        chp_NEP,
-        MaStR_konv,
-        chp_NEP_matched,
-        buffer_capacity=0.1,
-        consider_location="city",
-    )
-
-    # Aggregate units from NEP to one power plant
-    chp_NEP = (
-        chp_NEP.groupby(
-            ["postcode", "carrier", "city", "c2035_chp", "federal_state"]
-        )[["capacity", "c2035_capacity"]]
-        .sum()
-        .reset_index()
-    )
-
-    # Match CHP from NEP list with aggregated MaStR units
-    chp_NEP_matched, MaStR_konv, chp_NEP = match_nep_chp(
-        chp_NEP, MaStR_konv, chp_NEP_matched, buffer_capacity=0.1
-    )
-
-    # Match CHP from NEP list with aggregated MaStR units
-    chp_NEP_matched, MaStR_konv, chp_NEP = match_nep_chp(
-        chp_NEP,
-        MaStR_konv,
-        chp_NEP_matched,
-        buffer_capacity=0.1,
-        consider_location="city",
-    )
-
-    chp_NEP_matched, MaStR_konv, chp_NEP = match_nep_chp(
-        chp_NEP,
-        MaStR_konv,
-        chp_NEP_matched,
-        buffer_capacity=0.3,
-        consider_location="city",
-    )
-
-    chp_NEP_matched, MaStR_konv, chp_NEP = match_nep_chp(
-        chp_NEP,
-        MaStR_konv,
-        chp_NEP_matched,
-        buffer_capacity=0.3,
-        consider_location="city",
-        consider_carrier=False,
-    )
-
-    chp_NEP_matched, MaStR_konv, chp_NEP = match_nep_chp(
-        chp_NEP,
-        MaStR_konv,
-        chp_NEP_matched,
-        buffer_capacity=0.3,
-        consider_location="city",
-        consider_carrier=True,
-        consider_capacity=False,
-    )
-
-    chp_NEP_matched, MaStR_konv, chp_NEP = match_nep_chp(
-        chp_NEP,
-        MaStR_konv,
-        chp_NEP_matched,
-        consider_location="city",
-        consider_carrier=True,
-        consider_capacity=False,
-    )
-
-    chp_NEP_matched, MaStR_konv, chp_NEP = match_nep_chp(
-        chp_NEP,
-        MaStR_konv,
-        chp_NEP_matched,
-        consider_location="city",
-        consider_carrier=False,
-        consider_capacity=False,
-    )
-
-    chp_NEP_matched, MaStR_konv, chp_NEP = match_nep_chp(
-        chp_NEP,
-        MaStR_konv,
-        chp_NEP_matched,
-        consider_location="federal_state",
-        consider_carrier=False,
-        consider_capacity=False,
-    )
-
-    # Prepare geometry for database import
-    chp_NEP_matched["geometry_wkt"] = chp_NEP_matched["geometry"].apply(
-        lambda geom: geom.wkt
-    )
-
-    print(f"{chp_NEP_matched.el_capacity.sum()} MW matched")
-    print(f"{chp_NEP.c2035_capacity.sum()} MW not matched")
-
-    chp_NEP.to_csv("not_matched_chp.csv")
-
-    # Aggregate chp per location and carrier
-    # devided into numeric and not-numeric columns
-    numeric_cols = ["el_capacity", "th_capacity"]
-    agg_numeric = (
-        chp_NEP_matched.groupby(["carrier", "geometry_wkt", "voltage_level"])[
-            numeric_cols
-        ]
-        .sum()
-        .reset_index()
-    )
-
-    non_numeric_cols = ["geometry", "MaStRNummer", "source"]
-    agg_non_numeric = chp_NEP_matched.drop_duplicates(subset="geometry_wkt")[
-        ["geometry_wkt"] + non_numeric_cols
-    ].set_index("geometry_wkt")
-
-    merged = (
-        agg_numeric.set_index("geometry_wkt")
-        .join(agg_non_numeric, how="left")
-        .reset_index()
-    )
-
-    insert_chp = geopandas.GeoDataFrame(
-        merged, geometry="geometry", crs="EPSG:4326"
-    )
-    insert_chp_c = insert_chp.copy()
-
-    # Assign bus_id
-    insert_chp["bus_id"] = assign_bus_id(insert_chp, sources).bus_id
-
-    # Assign gas bus_id
-    insert_chp["gas_bus_id"] = db.assign_gas_bus_id(
-        insert_chp_c, "eGon2035", "CH4"
-    ).bus
-
-    insert_chp = assign_use_case(insert_chp, sources, scenario="eGon2035")
-
-    # Delete existing CHP in the target table
-    target_schema, target_table = target.split(".")[-2:]
-
-    db.execute_sql(f""" DELETE FROM {target_schema}.{target_table}
-        WHERE carrier IN ('gas', 'other_non_renewable', 'oil')
-        AND scenario='eGon2035';""")
-
-    # Insert into target table
-    session = sessionmaker(bind=db.engine())()
-    for i, row in insert_chp.iterrows():
-        entry = EgonChp(
-            sources={
-                "chp": "MaStR",
-                "el_capacity": row.source,
-                "th_capacity": "MaStR",
-            },
-            source_id={"MastrNummer": row.MaStRNummer},
-            carrier=row.carrier,
-            el_capacity=row.el_capacity,
-            th_capacity=row.th_capacity,
-            voltage_level=row.voltage_level,
-            electrical_bus_id=row.bus_id,
-            ch4_bus_id=row.gas_bus_id,
-            district_heating=row.district_heating,
-            scenario="eGon2035",
-            geom=f"SRID=4326;POINT({row.geometry.x} {row.geometry.y})",
         )
-        session.add(entry)
-    session.commit()
-
+        # Match CHP from NEP list using PLZ, carrier and capacity
+        chp_NEP_matched, MaStR_konv, chp_NEP = match_nep_chp(
+            chp_NEP, MaStR_konv, chp_NEP_matched, buffer_capacity=0.1
+        )
+        # Match CHP from NEP list using first 4 numbers of PLZ,
+        # carrier and capacity
+        chp_NEP_matched, MaStR_konv, chp_NEP = match_nep_chp(
+            chp_NEP,
+            MaStR_konv,
+            chp_NEP_matched,
+            buffer_capacity=0.1,
+            consider_location="city",
+        )
+        # Aggregate units from MaStR to one power plant
+        MaStR_konv = (
+            MaStR_konv.groupby(
+                [
+                    "plz",
+                    "Laengengrad",
+                    "Breitengrad",
+                    "carrier",
+                    "city",
+                    "federal_state",
+                ]
+            )[["el_capacity", "th_capacity", "EinheitMastrNummer"]]
+            .sum(numeric_only=False)
+            .reset_index()
+        )
+        MaStR_konv["geometry"] = geopandas.points_from_xy(
+            MaStR_konv["Laengengrad"], MaStR_konv["Breitengrad"]
+        )
+        MaStR_konv["voltage_level"] = assign_voltage_level(
+            MaStR_konv.rename({"el_capacity": "Nettonennleistung"}, axis=1),
+            sources,
+        )
+        # Match CHP from NEP list with aggregated MaStR units
+        chp_NEP_matched, MaStR_konv, chp_NEP = match_nep_chp(
+            chp_NEP, MaStR_konv, chp_NEP_matched, buffer_capacity=0.1
+        )
+        # Match CHP from NEP list with aggregated MaStR units
+        chp_NEP_matched, MaStR_konv, chp_NEP = match_nep_chp(
+            chp_NEP,
+            MaStR_konv,
+            chp_NEP_matched,
+            buffer_capacity=0.1,
+            consider_location="city",
+        )
+        # Aggregate units from NEP to one power plant
+        chp_NEP = (
+            chp_NEP.groupby(
+                ["postcode", "carrier", "city", "c2035_chp", "federal_state"]
+            )[["capacity", "c2035_capacity"]]
+            .sum()
+            .reset_index()
+        )
+        # Match CHP from NEP list with aggregated MaStR units
+        chp_NEP_matched, MaStR_konv, chp_NEP = match_nep_chp(
+            chp_NEP, MaStR_konv, chp_NEP_matched, buffer_capacity=0.1
+        )
+        # Match CHP from NEP list with aggregated MaStR units
+        chp_NEP_matched, MaStR_konv, chp_NEP = match_nep_chp(
+            chp_NEP,
+            MaStR_konv,
+            chp_NEP_matched,
+            buffer_capacity=0.1,
+            consider_location="city",
+        )
+        chp_NEP_matched, MaStR_konv, chp_NEP = match_nep_chp(
+            chp_NEP,
+            MaStR_konv,
+            chp_NEP_matched,
+            buffer_capacity=0.3,
+            consider_location="city",
+        )
+        chp_NEP_matched, MaStR_konv, chp_NEP = match_nep_chp(
+            chp_NEP,
+            MaStR_konv,
+            chp_NEP_matched,
+            buffer_capacity=0.3,
+            consider_location="city",
+            consider_carrier=False,
+        )
+        chp_NEP_matched, MaStR_konv, chp_NEP = match_nep_chp(
+            chp_NEP,
+            MaStR_konv,
+            chp_NEP_matched,
+            buffer_capacity=0.3,
+            consider_location="city",
+            consider_carrier=True,
+            consider_capacity=False,
+        )
+        chp_NEP_matched, MaStR_konv, chp_NEP = match_nep_chp(
+            chp_NEP,
+            MaStR_konv,
+            chp_NEP_matched,
+            consider_location="city",
+            consider_carrier=True,
+            consider_capacity=False,
+        )
+        chp_NEP_matched, MaStR_konv, chp_NEP = match_nep_chp(
+            chp_NEP,
+            MaStR_konv,
+            chp_NEP_matched,
+            consider_location="city",
+            consider_carrier=False,
+            consider_capacity=False,
+        )
+        chp_NEP_matched, MaStR_konv, chp_NEP = match_nep_chp(
+            chp_NEP,
+            MaStR_konv,
+            chp_NEP_matched,
+            consider_location="federal_state",
+            consider_carrier=False,
+            consider_capacity=False,
+        )
+        # Prepare geometry for database import
+        chp_NEP_matched["geometry_wkt"] = chp_NEP_matched["geometry"].apply(
+            lambda geom: geom.wkt
+        )
+        # check matched and unmatched capacity
+        print(f"{chp_NEP_matched.el_capacity.sum()} MW matched")
+        print(f"{chp_NEP.c2035_capacity.sum()} MW not matched")
+        chp_NEP.to_csv("not_matched_chp_{scenario}.csv")
+        # Aggregate chp per location and carrier
+        # devided into numeric and not-numeric columns
+        numeric_cols = ["el_capacity", "th_capacity"]
+        agg_numeric = (
+            chp_NEP_matched.groupby(["carrier", "geometry_wkt", "voltage_level"])[
+                numeric_cols
+            ]
+            .sum()
+            .reset_index()
+        )
+        non_numeric_cols = ["geometry", "MaStRNummer", "source"]
+        agg_non_numeric = chp_NEP_matched.drop_duplicates(subset="geometry_wkt")[
+            ["geometry_wkt"] + non_numeric_cols
+        ].set_index("geometry_wkt")
+        merged = (
+            agg_numeric.set_index("geometry_wkt")
+            .join(agg_non_numeric, how="left")
+            .reset_index()
+        )
+        insert_chp = geopandas.GeoDataFrame(
+            merged, geometry="geometry", crs="EPSG:4326"
+        )
+        insert_chp_c = insert_chp.copy()
+        # Assign bus_id
+        insert_chp["bus_id"] = assign_bus_id(insert_chp, sources).bus_id
+        # Assign gas bus_id
+        insert_chp["gas_bus_id"] = db.assign_gas_bus_id(
+            insert_chp_c, "eGon2035", "CH4"
+        ).bus
+        insert_chp = assign_use_case(insert_chp, sources, scenario="eGon2035")
+        # Delete existing CHP in the target table
+        target_schema, target_table = target.split(".")[-2:]
+        db.execute_sql(f""" DELETE FROM {target_schema}.{target_table}
+            WHERE carrier IN ('gas', 'other_non_renewable', 'oil')
+            AND scenario='eGon2035';""")
+        # Insert into target table
+        session = sessionmaker(bind=db.engine())()
+        for i, row in insert_chp.iterrows():
+            entry = EgonChp(
+                sources={
+                    "chp": "MaStR",
+                    "el_capacity": row.source,
+                    "th_capacity": "MaStR",
+                },
+                source_id={"MastrNummer": row.MaStRNummer},
+                carrier=row.carrier,
+                el_capacity=row.el_capacity,
+                th_capacity=row.th_capacity,
+                voltage_level=row.voltage_level,
+                electrical_bus_id=row.bus_id,
+                ch4_bus_id=row.gas_bus_id,
+                district_heating=row.district_heating,
+                scenario="eGon2035",
+                geom=f"SRID=4326;POINT({row.geometry.x} {row.geometry.y})",
+            )
+            session.add(entry)
+        session.commit()
+    # Kraftwerksliste from NEP2037, V.2025 includes MaStR-IDs
+    if scenario in ["reGon2037", "reGon2045"]:
+        # Automatically extract year from scenario name
+        year = int(scenario.replace("reGon", ""))
+        capacity_col = f"c{year}_capacity"
+        # matching NEP and MaStR through MaStR-IDs
+        chp_NEP_matched = (
+            chp_NEP.merge(
+                MaStR_konv,
+                left_on="mastr_id",
+                right_on="EinheitMastrNummer",
+                how="inner",
+            )
+            .rename(columns={
+                "EinheitMastrNummer": "MaStRNummer",
+                "carrier_x": "carrier"
+            })
+            .assign(
+                chp=True,
+                scenario=scenario,
+            )
+        )[["carrier", "Laengengrad", "Breitengrad", "MaStRNummer", "chp", 
+           capacity_col, "th_capacity", "scenario", "geometry", "voltage_level"]]
+        # grouping chp by carrier and geolocation, summening up their th. and
+        # el. capacity, and keeping first entry of voltage_level for grouped rows
+        chp_NEP_matched = (
+            chp_NEP_matched.groupby(
+                [
+                    "carrier",
+                    "Laengengrad",
+                    "Breitengrad",
+                ]
+                )[["th_capacity", capacity_col, "voltage_level"]]
+                .agg({
+                    "th_capacity": "sum",
+                    capacity_col: "sum",
+                    "voltage_level": "first",
+                })
+                .reset_index()
+                .rename(columns={capacity_col: "el_capacity"})
+            )
+        # deletes all rows from MaStR_konv matched with chp_NEP
+        MaStR_konv = MaStR_konv[~MaStR_konv["EinheitMastrNummer"].isin(chp_NEP_matched["MaStRNummer"])]
+        # writes unmatched rows into a csv-file
+        chp_NEP_unmatched = chp_NEP[~chp_NEP["mastr_id"].isin(chp_NEP_matched["MaStRNummer"])]
+        chp_NEP_unmatched.to_csv(f"not_matched_chp_{scenario}.csv", index=False)
+        print(f"{chp_NEP_matched.el_capacity.sum()} MW matched")
+        print(f"{chp_NEP_unmatched[capacity_col].sum()} MW not matched")
+        # Prepare geometry for database import
+        chp_NEP_matched["geometry_wkt"] = chp_NEP_matched["geometry"].apply(
+            lambda geom: geom.wkt
+        )
+        # Aggregate chp per location and carrier
+        # divided into numeric and not-numeric columns
+        numeric_cols = ["el_capacity", "th_capacity"]
+        agg_numeric = (
+            chp_NEP_matched.groupby(
+                [
+                    "carrier", 
+                    "geometry_wkt", 
+                    "voltage_level"
+                ]
+                )[numeric_cols]
+            .sum()
+            .reset_index()
+        )
+        non_numeric_cols = ["geometry", "MaStRNummer", "source"]
+        agg_non_numeric = chp_NEP_matched.drop_duplicates(subset="geometry_wkt")[
+            ["geometry_wkt"] + non_numeric_cols
+        ].set_index("geometry_wkt")
+        merged = (
+            agg_numeric.set_index("geometry_wkt")
+            .join(agg_non_numeric, how="left")
+            .reset_index()
+        )
+        insert_chp = geopandas.GeoDataFrame(
+            merged, geometry="geometry", crs="EPSG:4326"
+        )
+        insert_chp_c = insert_chp.copy()
+        # Assign bus_id
+        insert_chp["bus_id"] = assign_bus_id(insert_chp, sources).bus_id
+        # Assign gas bus_id
+        insert_chp["gas_bus_id"] = db.assign_gas_bus_id(
+            insert_chp_c, scenario, "CH4"
+        ).bus
+        insert_chp = assign_use_case(insert_chp, sources, scenario=scenario)
+        # Delete existing CHP in the target table
+        target_schema, target_table = target.split(".")[-2:]
+        db.execute_sql(f""" DELETE FROM {target_schema}.{target_table}
+            WHERE carrier IN ('gas', 'other_non_renewable', 'oil')
+            AND scenario={scenario};""")
+        # Insert into target table
+        session = sessionmaker(bind=db.engine())()
+        for i, row in insert_chp.iterrows():
+            entry = EgonChp(
+                sources={
+                    "chp": "MaStR",
+                    "el_capacity": row.source,
+                    "th_capacity": "MaStR",
+                },
+                source_id={"MastrNummer": row.MaStRNummer},
+                carrier=row.carrier,
+                el_capacity=row.el_capacity,
+                th_capacity=row.th_capacity,
+                voltage_level=row.voltage_level,
+                electrical_bus_id=row.bus_id,
+                ch4_bus_id=row.gas_bus_id,
+                district_heating=row.district_heating,
+                scenario=scenario,
+                geom=f"SRID=4326;POINT({row.geometry.x} {row.geometry.y})",
+            )
+            session.add(entry)
+        session.commit()
     return MaStR_konv
