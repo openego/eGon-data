@@ -551,7 +551,7 @@ def extension_industrial(federal_state, additional_capacity, flh_chp, EgonChp):
 def extension_per_federal_state(federal_state, EgonChp):
     """Adds new CHP plants to meet target value per federal state.
 
-    The additional capacity for CHPs < 10 MW is distributed discretly.
+    The additional capacity for CHPs < 10 MW is distributed discretely.
     Therefore, existing CHPs and their parameters from Marktstammdatenregister
     are randomly selected and allocated in a district heating grid.
     In order to generate a reasonable distribution, new CHPs can only
@@ -576,94 +576,96 @@ def extension_per_federal_state(federal_state, EgonChp):
     """
 
     sources, targets = load_sources_and_targets("Chp")
-
-    # Get separate schema and table name for SQL construction
-    target_schema = targets.get_table_schema("chp_table")
-    target_table_only = targets.get_table_name("chp_table").split(".")[-1]
-
-    capacity_targets = select_target("small_chp", "eGon2035")
-
-    existing_capacity = db.select_dataframe(f"""
-            SELECT SUM(el_capacity) as capacity, district_heating
-            FROM {target_schema}.
-            {target_table_only}
-            WHERE sources::json->>'el_capacity' = 'MaStR'
-            AND carrier != 'biomass'
-            AND scenario = 'eGon2035'
-            AND ST_Intersects(geom, (
-            SELECT ST_Union(geometry) FROM
-            {sources.tables['vg250_lan']} b
-            WHERE REPLACE(REPLACE(gen, '-', ''), 'ü', 'ue') ='{federal_state}'))
-            GROUP BY district_heating
-            """)
-
-    print(
-        f"Target capacity in {federal_state}: {capacity_targets[federal_state]}"
-    )
-    print(
-        f"Existing capacity in {federal_state}: {existing_capacity.capacity.sum()}"
-    )
-
-    additional_capacity = (
-        capacity_targets[federal_state] - existing_capacity.capacity.sum()
-    )
-
-    if additional_capacity > 0:
-        share_dh = (
-            existing_capacity[
-                existing_capacity.district_heating
-            ].capacity.values[0]
-            / existing_capacity.capacity.sum()
-        )
-
-        flh_chp = 6000
-
-        capacity_district_heating = additional_capacity * share_dh
-        capacity_industry = additional_capacity * (1 - share_dh)
-
-        print(f"Distributing {additional_capacity} MW_el in {federal_state}")
+    #load scenarios from config.-file
+    for scenario in config.settings()["egon-data"]["--dataset-boundary"]:
+    
+        # Get separate schema and table name for SQL construction
+        target_schema = targets.get_table_schema("chp_table")
+        target_table_only = targets.get_table_name("chp_table").split(".")[-1]
+    
+        capacity_targets = select_target("small_chp", scenario)
+    
+        existing_capacity = db.select_dataframe(f"""
+                SELECT SUM(el_capacity) as capacity, district_heating
+                FROM {target_schema}.
+                {target_table_only}
+                WHERE sources::json->>'el_capacity' = 'MaStR'
+                AND carrier != 'biomass'
+                AND scenario = '{scenario}'
+                AND ST_Intersects(geom, (
+                SELECT ST_Union(geometry) FROM
+                {sources.tables['vg250_lan']} b
+                WHERE REPLACE(REPLACE(gen, '-', ''), 'ü', 'ue') ='{federal_state}'))
+                GROUP BY district_heating
+                """)
+    
         print(
-            f"Distributing {capacity_district_heating} MW_el to district heating"
+            f"Target capacity in {federal_state}: {capacity_targets[federal_state]}"
         )
-        not_distributed_capacity_dh = extension_district_heating(
-            federal_state, capacity_district_heating, flh_chp, EgonChp
+        print(
+            f"Existing capacity in {federal_state}: {existing_capacity.capacity.sum()}"
         )
-
-        if not_distributed_capacity_dh > 1:
-            print(
-                f"{not_distributed_capacity_dh} MW_el were not matched to district "
-                "heating. This capacity is added to industry"
+    
+        additional_capacity = (
+            capacity_targets[federal_state] - existing_capacity.capacity.sum()
+        )
+    
+        if additional_capacity > 0:
+            share_dh = (
+                existing_capacity[
+                    existing_capacity.district_heating
+                ].capacity.values[0]
+                / existing_capacity.capacity.sum()
             )
-            capacity_industry += not_distributed_capacity_dh
-
-        print(f"Distributing {capacity_industry} MW_el to industry")
-        not_distributed_capacity_industry = extension_industrial(
-            federal_state,
-            additional_capacity * (1 - share_dh),
-            flh_chp,
-            EgonChp,
-        )
-
-        print(
-            f"{not_distributed_capacity_industry} MW_el were not matched to "
-            "industry. This capacity is added to district heating"
-        )
-
-        if not_distributed_capacity_industry > 1:
+    
+            flh_chp = 6000
+    
+            capacity_district_heating = additional_capacity * share_dh
+            capacity_industry = additional_capacity * (1 - share_dh)
+    
+            print(f"Distributing {additional_capacity} MW_el in {federal_state}")
+            print(
+                f"Distributing {capacity_district_heating} MW_el to district heating"
+            )
+            not_distributed_capacity_dh = extension_district_heating(
+                federal_state, capacity_district_heating, flh_chp, EgonChp
+            )
+    
+            if not_distributed_capacity_dh > 1:
+                print(
+                    f"{not_distributed_capacity_dh} MW_el were not matched to district "
+                    "heating. This capacity is added to industry"
+                )
+                capacity_industry += not_distributed_capacity_dh
+    
+            print(f"Distributing {capacity_industry} MW_el to industry")
+            not_distributed_capacity_industry = extension_industrial(
+                federal_state,
+                additional_capacity * (1 - share_dh),
+                flh_chp,
+                EgonChp,
+            )
+    
             print(
                 f"{not_distributed_capacity_industry} MW_el were not matched to "
                 "industry. This capacity is added to district heating"
             )
-
-            extension_district_heating(
-                federal_state,
-                not_distributed_capacity_industry,
-                flh_chp,
-                EgonChp,
-            )
-
-    else:
-        print("Decommissioning of CHP plants is not implemented.")
+    
+            if not_distributed_capacity_industry > 1:
+                print(
+                    f"{not_distributed_capacity_industry} MW_el were not matched to "
+                    "industry. This capacity is added to district heating"
+                )
+    
+                extension_district_heating(
+                    federal_state,
+                    not_distributed_capacity_industry,
+                    flh_chp,
+                    EgonChp,
+                )
+    
+        else:
+            print("Decommissioning of CHP plants is not implemented.")
 
 
 def assign_use_case(chp, sources, scenario):
