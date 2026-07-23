@@ -155,8 +155,8 @@ def extension_to_areas(
     existing_chp,
     flh,
     EgonChp,
+    scenario,
     district_heating=True,
-    scenario="eGon2035",
 ):
     """Builds new CHPs on potential industry or district heating areas.
 
@@ -198,6 +198,8 @@ def extension_to_areas(
         Assumed electrical or thermal full load hours.
     EgonChp : class
         ORM-class definition of CHP database-table.
+    scenario : str
+        Name o the scenario (e.g. 'reGon2037')
     district_heating : boolean, optional
         State if the areas are district heating areas. The default is True.
 
@@ -341,8 +343,9 @@ def extension_district_heating(
     additional_capacity,
     flh_chp,
     EgonChp,
+    scenario,
     areas_without_chp_only=False,
-):
+    ):
     """Build new CHP < 10 MW for district areas considering existing CHP
     and the heat demand.
 
@@ -362,6 +365,8 @@ def extension_district_heating(
     areas_without_chp_only : boolean, optional
         Set if CHPs are only assigned to district heating areas which don't
         have an existing CHP. The default is True.
+    scenario : str
+        Name o the scenario (e.g. 'reGon2037')
 
     Returns
     -------
@@ -376,8 +381,8 @@ def extension_district_heating(
         FROM
         {targets.tables['chp_table']} a,
         {sources.tables['district_heating_areas']} b
-        WHERE a.scenario = 'eGon2035'
-        AND b.scenario = 'eGon2035'
+        WHERE a.scenario = '{scenario}'
+        AND b.scenario = '{scenario}'
         AND district_heating = True
         AND ST_Intersects(
             ST_Transform(
@@ -399,7 +404,7 @@ def extension_district_heating(
             ST_Transform(ST_PointOnSurface(geom_polygon), 4326)  as geom
             FROM
             {sources.tables['district_heating_areas']}
-            WHERE scenario = 'eGon2035'
+            WHERE scenario = '{scenario}'
             AND ST_Intersects(ST_Transform(ST_Centroid(geom_polygon), 4326), (
                 SELECT ST_Union(d.geometry)
                 FROM
@@ -408,7 +413,7 @@ def extension_district_heating(
             AND area_id NOT IN (
                 SELECT district_heating_area_id
                 FROM {targets.tables['chp_table']}
-                WHERE scenario = 'eGon2035'
+                WHERE scenario = '{scenario}'
                 AND district_heating = TRUE)
             """)
     except:
@@ -432,8 +437,8 @@ def extension_district_heating(
                 FROM
                 {targets.tables['chp_table']} a,
                 {sources.tables['district_heating_areas']} b
-                WHERE b.scenario = 'eGon2035'
-                AND a.scenario = 'eGon2035'
+                WHERE b.scenario = '{scenario}'
+                AND a.scenario = '{scenario}'
                 AND ST_Intersects(
                     ST_Transform(ST_Centroid(geom_polygon), 4326),
                     (SELECT ST_Union(d.geometry)
@@ -456,13 +461,14 @@ def extension_district_heating(
         existing_chp,
         flh_chp,
         EgonChp,
+        scenario,
         district_heating=True,
     )
 
     return not_distributed_capacity
 
 
-def extension_industrial(federal_state, additional_capacity, flh_chp, EgonChp):
+def extension_industrial(federal_state, additional_capacity, flh_chp, EgonChp, scenario):
     """Build new CHP < 10 MW for industry considering existing CHP,
     osm landuse areas and electricity demands.
 
@@ -479,6 +485,8 @@ def extension_industrial(federal_state, additional_capacity, flh_chp, EgonChp):
         Assumed number of full load hours of electricity output.
     EgonChp : class
         ORM-class definition of CHP database-table.
+    scenario : str
+        Name o the scenario (e.g. 'reGon2037')
 
     Returns
     -------
@@ -492,7 +500,7 @@ def extension_industrial(federal_state, additional_capacity, flh_chp, EgonChp):
         SELECT el_capacity, th_capacity, voltage_level
         FROM
         {targets.tables['chp_table']} a
-        WHERE a.scenario = 'eGon2035'
+        WHERE a.scenario = '{scenario}'
         AND district_heating = False
         AND el_capacity < 10
         ORDER BY el_capacity
@@ -507,7 +515,7 @@ def extension_industrial(federal_state, additional_capacity, flh_chp, EgonChp):
         FROM
         {sources.tables['industrial_demand_osm']} a,
         {sources.tables['osm_landuse']} b
-        WHERE a.scenario = 'eGon2035'
+        WHERE a.scenario = '{scenario}'
         AND b.id = a.osm_id
         AND NOT ST_Intersects(
             ST_Transform(b.geom, 4326),
@@ -542,6 +550,7 @@ def extension_industrial(federal_state, additional_capacity, flh_chp, EgonChp):
         existing_chp,
         flh_chp,
         EgonChp,
+        scenario,
         district_heating=False,
     )
 
@@ -628,7 +637,8 @@ def extension_per_federal_state(federal_state, EgonChp):
                 f"Distributing {capacity_district_heating} MW_el to district heating"
             )
             not_distributed_capacity_dh = extension_district_heating(
-                federal_state, capacity_district_heating, flh_chp, EgonChp
+                federal_state, capacity_district_heating, flh_chp, EgonChp,
+                scenario,
             )
     
             if not_distributed_capacity_dh > 1:
@@ -644,6 +654,7 @@ def extension_per_federal_state(federal_state, EgonChp):
                 additional_capacity * (1 - share_dh),
                 flh_chp,
                 EgonChp,
+                scenario,
             )
     
             print(
