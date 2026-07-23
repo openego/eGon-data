@@ -187,7 +187,7 @@ def select_chp_from_mastr(sources):
         ),
     )
 
-    # Delete from Mastr_kov where carrier is not conventional
+    # Delete from Mastr_konv where carrier is not conventional
     MaStR_konv = MaStR_konv[MaStR_konv.carrier.isin(map_carrier().keys())]
 
     # Update carrier to match to eGon
@@ -291,7 +291,7 @@ def match_nep_chp(
                     )
                 ]
 
-            # Set geographic constraint, either chosse power plants
+            # Set geographic constraint, either choose power plants
             # with the same postcode, city or federal state
             if consider_location == "plz":
                 selected = selected[
