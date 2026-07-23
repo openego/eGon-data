@@ -181,7 +181,7 @@ def filter_mastr_geometry(mastr, federal_state=None):
     mastr : pandas.DataFrame
         All power plants listed in MaStR
     federal_state : str or None
-        Name of federal state whoes power plants are returned.
+        Name of federal state whose power plants are returned.
         If None, data for Germany is returned
 
     Returns

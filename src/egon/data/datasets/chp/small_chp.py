@@ -55,7 +55,7 @@ def insert_mastr_chp(mastr_chp, EgonChp):
     session.commit()
 
 
-def existing_chp_smaller_10mw(sources, MaStR_konv, EgonChp):
+def existing_chp_smaller_10mw(sources, MaStR_konv, EgonChp, scenario):
     """Insert existing small CHPs based on MaStR and target values
 
     Parameters
@@ -71,34 +71,82 @@ def existing_chp_smaller_10mw(sources, MaStR_konv, EgonChp):
         Capacity of new locations for small CHPs per federal state
 
     """
-
-    existsting_chp_smaller_10mw = MaStR_konv[
-        # (MaStR_konv.Nettonennleistung>0.1)
-        (MaStR_konv.el_capacity <= 10)
-        & (MaStR_konv.th_capacity > 0)
-    ]
-
-    targets = select_target("small_chp", "eGon2035")
-
-    for federal_state in targets.index:
-        mastr_chp = gpd.GeoDataFrame(
-            filter_mastr_geometry(existsting_chp_smaller_10mw, federal_state)
+    
+    if scenario == "eGon2035":
+        existsting_chp_smaller_10mw = MaStR_konv[
+            # (MaStR_konv.Nettonennleistung>0.1)
+            (MaStR_konv.el_capacity <= 10)
+            & (MaStR_konv.th_capacity > 0)
+        ]
+        # Select installed capacity per scenario and carrier
+        targets = select_target("small_chp", scenario)
+    
+        for federal_state in targets.index:
+            mastr_chp = gpd.GeoDataFrame(
+                filter_mastr_geometry(existsting_chp_smaller_10mw, federal_state)
+            )
+    
+            mastr_chp.crs = "EPSG:4326"
+    
+            # Assign gas bus_id
+            mastr_chp_c = mastr_chp.copy()
+            mastr_chp["gas_bus_id"] = db.assign_gas_bus_id(
+                mastr_chp_c, scenario, "CH4"
+            ).bus
+    
+            # Assign bus_id
+            mastr_chp["bus_id"] = assign_bus_id(mastr_chp, sources).bus_id
+    
+            mastr_chp = assign_use_case(mastr_chp, sources, scenario)
+    
+            insert_mastr_chp(mastr_chp, EgonChp)
+    if scenario in ["reGon2037", "reGon2045"]:
+        # as MaStR is not yet grouped (done for eGon2035 in func:insert_large_chps)
+        # it needs to be groupedin the same way
+        # Aggregate units from MaStR to one power plant
+        MaStR_konv = (
+            MaStR_konv.groupby(
+                [
+                    "plz",
+                    "Laengengrad",
+                    "Breitengrad",
+                    "carrier",
+                    "city",
+                    "federal_state",
+                ]
+            )[["el_capacity", "th_capacity", "EinheitMastrNummer"]]
+            .sum(numeric_only=False)
+            .reset_index()
         )
-
-        mastr_chp.crs = "EPSG:4326"
-
-        # Assign gas bus_id
-        mastr_chp_c = mastr_chp.copy()
-        mastr_chp["gas_bus_id"] = db.assign_gas_bus_id(
-            mastr_chp_c, "eGon2035", "CH4"
-        ).bus
-
-        # Assign bus_id
-        mastr_chp["bus_id"] = assign_bus_id(mastr_chp, sources).bus_id
-
-        mastr_chp = assign_use_case(mastr_chp, sources, "eGon2035")
-
-        insert_mastr_chp(mastr_chp, EgonChp)
+        
+        existsting_chp_smaller_10mw = MaStR_konv[
+            # (MaStR_konv.Nettonennleistung>0.1)
+            (MaStR_konv.el_capacity <= 10)
+            & (MaStR_konv.th_capacity > 0)
+        ]
+        # Select installed capacity per scenario and carrier
+        targets = select_target("small_chp", scenario)
+    
+        for federal_state in targets.index:
+            mastr_chp = gpd.GeoDataFrame(
+                filter_mastr_geometry(existsting_chp_smaller_10mw, federal_state)
+            )
+    
+            mastr_chp.crs = "EPSG:4326"
+    
+            # Assign gas bus_id
+            mastr_chp_c = mastr_chp.copy()
+            mastr_chp["gas_bus_id"] = db.assign_gas_bus_id(
+                mastr_chp_c, scenario, "CH4"
+            ).bus
+    
+            # Assign bus_id
+            mastr_chp["bus_id"] = assign_bus_id(mastr_chp, sources).bus_id
+    
+            mastr_chp = assign_use_case(mastr_chp, sources, scenario)
+    
+            insert_mastr_chp(mastr_chp, EgonChp)
+        
 
 
 def extension_to_areas(

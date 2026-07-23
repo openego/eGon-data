@@ -573,7 +573,7 @@ def insert_chp():
         )
     
         # Insert smaller CHPs (< 10MW) based on existing locations from MaStR
-        existing_chp_smaller_10mw(Chp.sources, MaStR_konv, EgonChp)
+        existing_chp_smaller_10mw(Chp.sources, MaStR_konv, EgonChp, scenario)
     
         gpd.GeoDataFrame(
             MaStR_konv[
