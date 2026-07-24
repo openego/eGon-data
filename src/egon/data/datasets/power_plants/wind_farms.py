@@ -9,6 +9,8 @@ import pandas as pd
 from egon.data import db
 from egon.data.datasets import load_sources_and_targets
 
+SCENARIOS = ["eGon2035", "reGon2037", "reGon2045"]
+
 
 def insert():
     """Main function. Import power objectives generate results calling the
@@ -48,29 +50,9 @@ def insert():
         target_power_df["carrier"] == "wind_onshore"
     ]
     target_power_df = target_power_df[
-        target_power_df["scenario_name"].isin(["eGon2035", "eGon100RE"])
+        target_power_df["scenario_name"].isin(SCENARIOS)
     ]
-    target_power_df.set_index("nuts", inplace=True)
-    target_power_df["geom"] = Point(0, 0)
-
-    # Join the geometries which belong to the same states
-    for std in target_power_df.index:
-        df = federal_std[federal_std["nuts"] == std]
-        if df.size > 0:
-            target_power_df.at[std, "name"] = df["gen"].iat[0]
-        else:
-            target_power_df.at[std, "name"] = np.nan
-        target_power_df.at[std, "geom"] = df.unary_union
-    target_power_df = gpd.GeoDataFrame(
-        target_power_df, geometry="geom", crs=4326
-    )
     target_power_df = target_power_df[target_power_df["capacity"] > 0]
-    target_power_df = target_power_df.to_crs(3035)
-
-    # Create the shape for full Germany
-    target_power_df.at["DE", "geom"] = target_power_df["geom"].unary_union
-    target_power_df.at["DE", "name"] = "Germany"
-
     # Generate WFs for Germany based on potential areas and existing WFs
     # Passing sources to helper function
     wf_areas, wf_areas_ni = generate_wind_farms(sources)
@@ -86,48 +68,42 @@ def insert():
     summary_t = pd.DataFrame()
     farms = pd.DataFrame()
 
-    if "eGon100RE" in target_power_df["scenario_name"].values:
-        # Delete old wind_onshore generators
-        db.execute_sql("""DELETE FROM supply.egon_power_plants
-            WHERE carrier = 'wind_onshore'
-            AND scenario = 'eGon100RE'
-            """)
-        wind_farms_state, summary_state = wind_power_states(
-            wf_areas,
-            wf_areas_ni,
-            mv_districts,
-            target_power_df.at["DE", "capacity"],
-            "eGon100RE",
-            "wind_onshore",
-            "DE",
-            sources,
-            targets,
-        )
-        target_power_df = target_power_df[
-            target_power_df["scenario_name"] != "eGon100RE"
-        ]
+    for scenario in SCENARIOS:
+        scn_df = target_power_df[
+            target_power_df["scenario_name"] == scenario
+        ].copy()
 
-    if "eGon2035" in target_power_df["scenario_name"].values:
+        scn_df.set_index("nuts", inplace=True)
+        scn_df["geom"] = Point(0, 0)
+
+        # Join the geometries which belong to the same states
+        for std in scn_df.index:
+            df = federal_std[federal_std["nuts"] == std]
+            if df.size > 0:
+                scn_df.at[std, "name"] = df["gen"].iat[0]
+            else:
+                scn_df.at[std, "name"] = np.nan
+            scn_df.at[std, "geom"] = df.unary_union
+        scn_df = gpd.GeoDataFrame(scn_df, geometry="geom", crs=4326)
+        scn_df = scn_df.to_crs(3035)
+
         # Delete old wind_onshore generators
-        db.execute_sql("""DELETE FROM supply.egon_power_plants
+        db.execute_sql(f"""DELETE FROM {targets.tables['power_plants']}
             WHERE carrier = 'wind_onshore'
-            AND scenario = 'eGon2035'
+            AND scenario = '{scenario}'
             """)
+
         # Fit wind farms scenarions for each one of the states
-        for bundesland in target_power_df.index:
-            state_wf = gpd.clip(
-                wf_areas, target_power_df.at[bundesland, "geom"]
-            )
-            state_wf_ni = gpd.clip(
-                wf_areas_ni, target_power_df.at[bundesland, "geom"]
-            )
+        for bundesland in scn_df.index:
+            state_wf = gpd.clip(wf_areas, scn_df.at[bundesland, "geom"])
+            state_wf_ni = gpd.clip(wf_areas_ni, scn_df.at[bundesland, "geom"])
             state_mv_districts = gpd.clip(
-                mv_districts, target_power_df.at[bundesland, "geom"]
+                mv_districts, scn_df.at[bundesland, "geom"]
             )
-            target_power = target_power_df.at[bundesland, "capacity"]
-            scenario_year = target_power_df.at[bundesland, "scenario_name"]
-            source = target_power_df.at[bundesland, "carrier"]
-            fed_state = target_power_df.at[bundesland, "name"]
+            target_power = scn_df.at[bundesland, "capacity"]
+            scenario_year = scn_df.at[bundesland, "scenario_name"]
+            source = scn_df.at[bundesland, "carrier"]
+            fed_state = scn_df.at[bundesland, "name"]
             wind_farms_state, summary_state = wind_power_states(
                 state_wf,
                 state_wf_ni,
@@ -352,32 +328,10 @@ def wind_power_states(
         "Hamburg",
     ]
 
-    if fed_state == "DE":
-        sql = f"""SELECT * FROM {sources.tables['geom_federal_states']}
-        WHERE gen in {tuple(north)}
-        """
-        north_states = gpd.GeoDataFrame.from_postgis(
-            sql, con, geom_col="geometry"
-        )
-        north_states.to_crs(3035, inplace=True)
-        state_wf["nord"] = state_wf.within(north_states.unary_union)
-        state_wf["inst capacity [MW]"] = state_wf.apply(
-            lambda x: (
-                power_north * x["area [km²]"]
-                if x["nord"]
-                else power_south * x["area [km²]"]
-            ),
-            axis=1,
-        )
+    if fed_state in north:
+        state_wf["inst capacity [MW]"] = power_north * state_wf["area [km²]"]
     else:
-        if fed_state in north:
-            state_wf["inst capacity [MW]"] = (
-                power_north * state_wf["area [km²]"]
-            )
-        else:
-            state_wf["inst capacity [MW]"] = (
-                power_south * state_wf["area [km²]"]
-            )
+        state_wf["inst capacity [MW]"] = power_south * state_wf["area [km²]"]
 
     # Divide selected areas based on voltage of connection points
     wf_mv = state_wf[
