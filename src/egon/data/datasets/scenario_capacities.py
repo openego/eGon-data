@@ -479,7 +479,7 @@ def map_carrier():
             "Mineralöl-\nProdukte": "oil",
             "Biomasse": "biomass",
             "Sonstige": "others",
-            "Erdgas/Wasserstoff": "gas", #TODO: is it wanted to ignore the potential hydrogen use in 2037? There is no entry solely fueled by gas in 2037; there is no gas in 2045
+            "Erdgas/Wasserstoff": "gas",
             "Wasserstoff": "hydrogen",
             "Wasser": "pumped_hydro",
         }
@@ -507,7 +507,11 @@ def insert_nep_list_powerplants(export=True):
 
     # Connect to local database
     engine = db.engine()
-
+    # Initialize both DataFrames as empty upfront.
+    # This guarantees they exist later,
+    # for their concat further down.
+    kw_liste_nep21 = pd.DataFrame()
+    kw_liste_nep25 = pd.DataFrame()
     # kicks statusquo entries from list
     scenarios = [s for s in config.settings()["egon-data"]["--scenarios"] if "status" not in str(s).lower()]
     
@@ -554,7 +558,7 @@ def insert_nep_list_powerplants(export=True):
             # Adjust column names for Kraftwerksliste_Szenariorahmen from the NEP2025
             kw_liste_nep25 = kw_liste_nep25.rename(
                 columns={
-                    "MaStR-ID": "mastr-id",
+                    "MaStR-ID": "mastr_id",
                     "ÜNB" : "tso",
                     "Betreiber": "operator",
                     "Kraftwerksname": "name",
