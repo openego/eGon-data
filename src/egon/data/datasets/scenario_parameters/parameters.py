@@ -1253,7 +1253,7 @@ def mobility(scenario):
             }
         }
 
-    if scenario == "reGon2037":
+    elif scenario == "reGon2037":
         # Source of total EV-numbers: NEP 2025 V.2, table.1, scenario C 2037
         parameters = {
             "motorized_individual_travel": {
