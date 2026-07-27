@@ -11,6 +11,7 @@ from egon.data import config, db
 from egon.data.datasets import load_sources_and_targets
 from egon.data.datasets.power_plants import (
     assign_bus_id,
+    assign_voltage_level,
     filter_mastr_geometry,
     select_target,
 )
@@ -102,7 +103,7 @@ def existing_chp_smaller_10mw(sources, MaStR_konv, EgonChp, scenario):
             insert_mastr_chp(mastr_chp, EgonChp, scenario)
     if scenario in ["reGon2037", "reGon2045"]:
         # as MaStR is not yet grouped (done for eGon2035 in func:insert_large_chps)
-        # it needs to be groupedin the same way
+        # it needs to be grouped in the same way
         # Aggregate units from MaStR to one power plant
         MaStR_konv = (
             MaStR_konv.groupby(
@@ -117,6 +118,11 @@ def existing_chp_smaller_10mw(sources, MaStR_konv, EgonChp, scenario):
             )[["el_capacity", "th_capacity", "EinheitMastrNummer"]]
             .sum(numeric_only=False)
             .reset_index()
+        )
+        
+        MaStR_konv["voltage_level"] = assign_voltage_level(
+            MaStR_konv.rename({"el_capacity": "Nettonennleistung"}, axis=1),
+            sources,
         )
         
         existsting_chp_smaller_10mw = MaStR_konv[
