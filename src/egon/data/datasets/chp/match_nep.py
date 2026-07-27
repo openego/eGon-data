@@ -609,7 +609,7 @@ def insert_large_chp(sources, target, EgonChp, scenario):
                     "Laengengrad",
                     "Breitengrad",
                 ]
-                )[["th_capacity", capacity_col, "voltage_level"]]
+                )[["th_capacity", capacity_col, "voltage_level", "MaStRNummer"]]
                 .agg({
                     "th_capacity": "sum",
                     capacity_col: "sum",
