@@ -639,6 +639,8 @@ def insert_large_chp(sources, target, EgonChp, scenario):
             .sum()
             .reset_index()
         )
+        # adds source-row for the electrical capacity
+        chp_NEP_matched["source"] = "from NEP2037, V.2025"
         non_numeric_cols = ["geometry", "MaStRNummer", "source"]
         agg_non_numeric = chp_NEP_matched.drop_duplicates(subset="geometry_wkt")[
             ["geometry_wkt"] + non_numeric_cols
