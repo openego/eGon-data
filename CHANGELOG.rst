@@ -35,7 +35,6 @@ Changed
   new Kraftwerksliste from the NEP2025; remove obsolete 
   scenario (status2019/status2023/eGon100RE) handling
   `#1415 <https://github.com/openego/eGon-data/issues/1415>`_
-
 * Adapt heat_demand TaskGroup to new scenarios: generalize district
   heating areas and heat demand timeseries to the configured scenarios,
   and remove obsolete status2019/eGon100RE handling
@@ -51,6 +50,11 @@ Changed
   2030/2040 data points, and remove obsolete
   status2019/status2023/eGon100RE handling
   `#1438 <https://github.com/openego/eGon-data/issues/1438>`_
+* Adapt combined_heat_and_power to reGon-scenarios: different handling of 
+  eGon-/reGon-scenarios due to the Kraftwerksliste from the NEP now
+  containing MaStR-IDs to match MaStR- with NEP-data. Remove all status-
+  quo (except status-quo2024) and eGon100RE mentions.
+  '#1447 <https://github.com/openego/eGon-data/issues/1447>'_
 
 Bug Fixes
 ---------
