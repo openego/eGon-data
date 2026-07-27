@@ -112,7 +112,7 @@ def select_chp_from_nep(sources, scenario):
         year = int(scenario.replace("reGon", ""))
         capacity_col = f"c{year}_capacity"
         # Select CHP plants with geolocation from list of conventional power plants
-        chp_NEP = db.select_dataframe(f"""
+        chp_NEP_data = db.select_dataframe(f"""
             SELECT name, postcode, carrier, capacity, chp, city,
             mastr_id, federal_state, {capacity_col}
             FROM {table_nep}
@@ -123,10 +123,10 @@ def select_chp_from_nep(sources, scenario):
             """)
     
         # Removing CHP out of Germany
-        chp_NEP["postcode"] = chp_NEP["postcode"].astype(str)
-        chp_NEP = chp_NEP_data[~chp_NEP["postcode"].str.contains("A")]
-        chp_NEP = chp_NEP_data[~chp_NEP["postcode"].str.contains("L")]
-        chp_NEP = chp_NEP_data[~chp_NEP["postcode"].str.contains("nan")]
+        chp_NEP_data["postcode"] = chp_NEP_data["postcode"].astype(str)
+        chp_NEP_data = chp_NEP_data[~chp_NEP_data["postcode"].str.contains("A")]
+        chp_NEP_data = chp_NEP_data[~chp_NEP_data["postcode"].str.contains("L")]
+        chp_NEP = chp_NEP_data[~chp_NEP_data["postcode"].str.contains("nan")]
 
     return chp_NEP.drop("index", axis=1)
 
