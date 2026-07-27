@@ -591,6 +591,15 @@ def insert_large_chp(sources, target, EgonChp, scenario):
             )
         )[["carrier", "Laengengrad", "Breitengrad", "MaStRNummer", "chp", 
            capacity_col, "th_capacity", "scenario", "geometry", "voltage_level"]]
+        
+        # deletes all rows from MaStR_konv matched with chp_NEP
+        MaStR_konv = MaStR_konv[~MaStR_konv["EinheitMastrNummer"].isin(chp_NEP_matched["MaStRNummer"])]
+        # writes unmatched rows into a csv-file
+        chp_NEP_unmatched = chp_NEP[~chp_NEP["mastr_id"].isin(chp_NEP_matched["MaStRNummer"])]
+        chp_NEP_unmatched.to_csv(f"not_matched_chp_{scenario}.csv", index=False)
+        print(f"{chp_NEP_matched.el_capacity.sum()} MW matched")
+        print(f"{chp_NEP_unmatched[capacity_col].sum()} MW not matched")
+        
         # grouping chp by carrier and geolocation, summening up their th. and
         # el. capacity, and keeping first entry of voltage_level for grouped rows
         chp_NEP_matched = (
@@ -605,17 +614,12 @@ def insert_large_chp(sources, target, EgonChp, scenario):
                     "th_capacity": "sum",
                     capacity_col: "sum",
                     "voltage_level": "first",
+                    "MaStRNummer": "first",
                 })
                 .reset_index()
                 .rename(columns={capacity_col: "el_capacity"})
             )
-        # deletes all rows from MaStR_konv matched with chp_NEP
-        MaStR_konv = MaStR_konv[~MaStR_konv["EinheitMastrNummer"].isin(chp_NEP_matched["MaStRNummer"])]
-        # writes unmatched rows into a csv-file
-        chp_NEP_unmatched = chp_NEP[~chp_NEP["mastr_id"].isin(chp_NEP_matched["MaStRNummer"])]
-        chp_NEP_unmatched.to_csv(f"not_matched_chp_{scenario}.csv", index=False)
-        print(f"{chp_NEP_matched.el_capacity.sum()} MW matched")
-        print(f"{chp_NEP_unmatched[capacity_col].sum()} MW not matched")
+
         # Prepare geometry for database import
         chp_NEP_matched["geometry_wkt"] = chp_NEP_matched["geometry"].apply(
             lambda geom: geom.wkt
