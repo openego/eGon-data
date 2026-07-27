@@ -508,8 +508,8 @@ def insert_large_chp(sources, target, EgonChp, scenario):
             lambda geom: geom.wkt
         )
         # check matched and unmatched capacity
-        print(f"{chp_NEP_matched.el_capacity.sum()} MW matched")
-        print(f"{chp_NEP.c2035_capacity.sum()} MW not matched")
+        print(f"{chp_NEP_matched.el_capacity.sum()} MW matched for {scenario}")
+        print(f"{chp_NEP.c2035_capacity.sum()} MW not matched for {scenario}")
         chp_NEP.to_csv("not_matched_chp_{scenario}.csv")
         # Aggregate chp per location and carrier
         # devided into numeric and not-numeric columns
@@ -665,7 +665,7 @@ def insert_large_chp(sources, target, EgonChp, scenario):
         target_schema, target_table = target.split(".")[-2:]
         db.execute_sql(f""" DELETE FROM {target_schema}.{target_table}
             WHERE carrier IN ('gas', 'other_non_renewable', 'oil')
-            AND scenario={scenario};""")
+            AND scenario='{scenario}';""")
         # Insert into target table
         session = sessionmaker(bind=db.engine())()
         for i, row in insert_chp.iterrows():
