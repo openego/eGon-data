@@ -126,7 +126,9 @@ def select_chp_from_nep(sources, scenario):
         chp_NEP_data["postcode"] = chp_NEP_data["postcode"].astype(str)
         chp_NEP_data = chp_NEP_data[~chp_NEP_data["postcode"].str.contains("A")]
         chp_NEP_data = chp_NEP_data[~chp_NEP_data["postcode"].str.contains("L")]
-        chp_NEP = chp_NEP_data[~chp_NEP_data["postcode"].str.contains("nan")]
+        chp_NEP_data = chp_NEP_data[~chp_NEP_data["postcode"].str.contains("nan")]
+        
+        chp_NEP = chp_NEP_data.reset_index()
 
     return chp_NEP.drop("index", axis=1)
 
