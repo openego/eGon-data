@@ -1026,7 +1026,7 @@ def fill_missing_bus_and_geom(
     return gens
 
 
-def power_plants_status_quo(scn_name="status2019"):
+def power_plants_status_quo(scn_name="status2024"):
     def convert_master_info(df):
         # Add further information
         df["sources"] = [{"el_capacity": "MaStR"}] * df.shape[0]
