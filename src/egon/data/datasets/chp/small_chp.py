@@ -591,8 +591,9 @@ def extension_per_federal_state(federal_state, EgonChp):
     """
 
     sources, targets = load_sources_and_targets("Chp")
-    #load scenarios from config.-file
-    for scenario in config.settings()["egon-data"]["--dataset-boundary"]:
+    #load scenarios from config.-file and delete statusquo-scenarios
+    scenarios = [s for s in config.settings()["egon-data"]["--scenarios"] if "status" not in str(s).lower()]
+    for scenario in scenarios:
     
         # Get separate schema and table name for SQL construction
         target_schema = targets.get_table_schema("chp_table")
