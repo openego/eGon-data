@@ -263,11 +263,8 @@ def insert_biomass_plants(scenario):
         )
     ]
 
-    # Scaling will be done per federal state in case of eGon2035 scenario.
-    if scenario == "eGon2035":
-        level = "federal_state"
-    else:
-        level = "country"
+    # Scaling will be done per federal state for all scenarios(former just in case of eGon2035 scenario)
+    level = "federal_state"
 
     # Choose only entries with valid geometries inside DE/test mode
     mastr_loc = filter_mastr_geometry(mastr).set_geometry("geometry")
@@ -328,23 +325,7 @@ def insert_hydro_plants(scenario):
 
     for carrier in map_carrier.keys():
         # import target values
-        if scenario == "eGon100RE":
-            try:
-                target = pd.read_sql(
-                    f"""SELECT capacity FROM supply.egon_scenario_capacities
-                            WHERE scenario_name = '{scenario}'
-                            AND carrier = '{carrier}'
-                            """,
-                    con=db.engine(),
-                ).capacity[0]
-            except:
-                logger.info(
-                    f"No assigned capacity for {carrier} in {scenario}"
-                )
-                continue
-
-        elif scenario == "eGon2035":
-            target = select_target(carrier, scenario)
+        target = select_target(carrier, scenario)
 
         # import data for MaStR
         mastr = pd.read_csv(PowerPlants.sources.files["mastr_hydro"]).query(
@@ -366,11 +347,8 @@ def insert_hydro_plants(scenario):
             )
         ]
 
-        # Scaling will be done per federal state in case of eGon2035 scenario.
-        if scenario == "eGon2035":
-            level = "federal_state"
-        else:
-            level = "country"
+        # Scaling will be done per federal state for all scenarios(former just in case of eGon2035 scenario)
+        level = "federal_state" 
 
         # Scale capacities to meet target values
         mastr = scale_prox2now(mastr, target, level=level)
@@ -596,16 +574,15 @@ def insert_hydro_biomass():
     db.execute_sql(f"""
         DELETE FROM {schema}.{table}
         WHERE carrier IN ('biomass', 'reservoir', 'run_of_river')
-        AND scenario IN ('eGon2035', 'eGon100RE')
+        AND scenario IN ('eGon2035', 'reGon2037', 'reGon2045');
         """)
 
     s = egon.data.config.settings()["egon-data"]["--scenarios"]
     scenarios = []
-    if "eGon2035" in s:
-        scenarios.append("eGon2035")
-        insert_biomass_plants("eGon2035")
-    if "eGon100RE" in s:
-        scenarios.append("eGon100RE")
+    for scn in ["eGon2035", "reGon2037", "reGon2045"]:
+        if scn in s:
+            scenarios.append(scn)
+            insert_biomass_plants(scn)
 
     for scenario in scenarios:
         insert_hydro_plants(scenario)
@@ -1487,9 +1464,9 @@ for scn_name in egon.data.config.settings()["egon-data"]["--scenarios"]:
             ),
         )
 
-if (
-    "eGon2035" in egon.data.config.settings()["egon-data"]["--scenarios"]
-    or "eGon100RE" in egon.data.config.settings()["egon-data"]["--scenarios"]
+if any(
+    scn in egon.data.config.settings()["egon-data"]["--scenarios"]
+    for scn in ["eGon2035", "reGon2037", "reGon2045"]
 ):
     tasks = tasks + (
         insert_hydro_biomass,
