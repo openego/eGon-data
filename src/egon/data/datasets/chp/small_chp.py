@@ -680,6 +680,7 @@ def extension_per_federal_state(federal_state, EgonChp):
                     not_distributed_capacity_industry,
                     flh_chp,
                     EgonChp,
+                    scenario,
                 )
     
         else:
