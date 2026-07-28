@@ -597,8 +597,9 @@ def insert_large_chp(sources, target, EgonChp, scenario):
         # writes unmatched rows into a csv-file
         chp_NEP_unmatched = chp_NEP[~chp_NEP["mastr_id"].isin(chp_NEP_matched["MaStRNummer"])]
         chp_NEP_unmatched.to_csv(f"not_matched_chp_{scenario}.csv", index=False)
-        print(f"{chp_NEP_matched[capacity_col].sum()} MW matched")
-        print(f"{chp_NEP_unmatched[capacity_col].sum()} MW not matched")
+        print(f"{chp_NEP_matched[capacity_col].sum()} MW matched for {scenario}")
+        print(f"{chp_NEP_unmatched[capacity_col].sum()} MW not matched for {scenario}")
+        print(f"{MaStR_konv.el_capacity.sum()} MW from MaStR not matched for {scenario}")
         
         # grouping chp by carrier and geolocation, summening up their th. and
         # el. capacity, and keeping first entry of voltage_level for grouped rows
