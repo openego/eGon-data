@@ -282,10 +282,12 @@ def insert_biomass_plants(scenario):
     # Insert entries with location
     session = sessionmaker(bind=db.engine())()
 
+    nep_version = "NEP 2021" if scenario == "eGon2035" else "NEP 2025"
+
     for i, row in mastr_loc.iterrows():
         if not row.ThermischeNutzleistung > 0:
             entry = EgonPowerPlants(
-                sources={"el_capacity": "MaStR scaled with NEP 2021"},
+                sources={"el_capacity": f"MaStR scaled with {nep_version}"},
                 source_id={"MastrNummer": row.EinheitMastrNummer},
                 carrier="biomass",
                 el_capacity=row.Nettonennleistung,
@@ -322,6 +324,8 @@ def insert_hydro_plants(scenario):
         "run_of_river": ["Laufwasseranlage"],
         "reservoir": ["Speicherwasseranlage"],
     }
+
+    nep_version = "NEP 2021" if scenario == "eGon2035" else "NEP 2025"
 
     for carrier in map_carrier.keys():
         # import target values
@@ -369,7 +373,7 @@ def insert_hydro_plants(scenario):
         session = sessionmaker(bind=db.engine())()
         for i, row in mastr_loc.iterrows():
             entry = EgonPowerPlants(
-                sources={"el_capacity": "MaStR scaled with NEP 2021"},
+                sources={"el_capacity": f"MaStR scaled with {nep_version}"},
                 source_id={"MastrNummer": row.EinheitMastrNummer},
                 carrier=carrier,
                 el_capacity=row.Nettonennleistung,
@@ -921,10 +925,12 @@ def allocate_other_power_plants():
         mastr_prox = mastr_prox.set_crs(4326, allow_override=True)
 
         # Insert into target table
+        nep_version = "NEP 2021" if scenario == "eGon2035" else "NEP 2025"
+
         session = sessionmaker(bind=db.engine())()
         for i, row in mastr_prox.iterrows():
             entry = EgonPowerPlants(
-                sources={"el_capacity": "MaStR scaled with NEP 2021"}
+                sources={"el_capacity": f"MaStR scaled with {nep_version}"},
                 source_id={"MastrNummer": row.EinheitMastrNummer},
                 carrier=row.carrier,
                 el_capacity=row.el_capacity,
