@@ -616,10 +616,10 @@ def extension_per_federal_state(federal_state, EgonChp):
                 """)
     
         print(
-            f"Target capacity in {federal_state}: {capacity_targets[federal_state]}"
+            f"Target capacity in {federal_state}: {capacity_targets[federal_state]for {scenario}}"
         )
         print(
-            f"Existing capacity in {federal_state}: {existing_capacity.capacity.sum()}"
+            f"Existing capacity in {federal_state}: {existing_capacity.capacity.sum() for {scenario}}"
         )
     
         additional_capacity = (
@@ -639,9 +639,9 @@ def extension_per_federal_state(federal_state, EgonChp):
             capacity_district_heating = additional_capacity * share_dh
             capacity_industry = additional_capacity * (1 - share_dh)
     
-            print(f"Distributing {additional_capacity} MW_el in {federal_state}")
+            print(f"Distributing {additional_capacity} MW_el in {federal_state} for {scenario}")
             print(
-                f"Distributing {capacity_district_heating} MW_el to district heating"
+                f"Distributing {capacity_district_heating} MW_el to district heating for {scenario}"
             )
             not_distributed_capacity_dh = extension_district_heating(
                 federal_state, capacity_district_heating, flh_chp, EgonChp,
@@ -651,11 +651,11 @@ def extension_per_federal_state(federal_state, EgonChp):
             if not_distributed_capacity_dh > 1:
                 print(
                     f"{not_distributed_capacity_dh} MW_el were not matched to district "
-                    "heating. This capacity is added to industry"
+                    "heating. This capacity is added to industry for {scenario}"
                 )
                 capacity_industry += not_distributed_capacity_dh
     
-            print(f"Distributing {capacity_industry} MW_el to industry")
+            print(f"Distributing {capacity_industry} MW_el to industry for {scenario}")
             not_distributed_capacity_industry = extension_industrial(
                 federal_state,
                 additional_capacity * (1 - share_dh),
@@ -666,13 +666,13 @@ def extension_per_federal_state(federal_state, EgonChp):
     
             print(
                 f"{not_distributed_capacity_industry} MW_el were not matched to "
-                "industry. This capacity is added to district heating"
+                "industry. This capacity is added to district heating for {scenario}"
             )
     
             if not_distributed_capacity_industry > 1:
                 print(
                     f"{not_distributed_capacity_industry} MW_el were not matched to "
-                    "industry. This capacity is added to district heating"
+                    "industry. This capacity is added to district heating for {scenario}"
                 )
     
                 extension_district_heating(
@@ -684,7 +684,7 @@ def extension_per_federal_state(federal_state, EgonChp):
                 )
     
         else:
-            print("Decommissioning of CHP plants is not implemented.")
+            print("Decommissioning of CHP plants is not implemented for {scenario}.")
 
 
 def assign_use_case(chp, sources, scenario):
