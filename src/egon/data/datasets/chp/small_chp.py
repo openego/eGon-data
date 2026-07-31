@@ -616,10 +616,10 @@ def extension_per_federal_state(federal_state, EgonChp):
                 """)
     
         print(
-            f"Target capacity in {federal_state}: {capacity_targets[federal_state]for {scenario}}"
+            f"Target capacity in {federal_state}: {capacity_targets[federal_state]} for {scenario}"
         )
         print(
-            f"Existing capacity in {federal_state}: {existing_capacity.capacity.sum() for {scenario}}"
+            f"Existing capacity in {federal_state}: {existing_capacity.capacity.sum()} for {scenario}"
         )
     
         additional_capacity = (
