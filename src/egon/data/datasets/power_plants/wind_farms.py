@@ -6,10 +6,16 @@ import geopandas as gpd
 import numpy as np
 import pandas as pd
 
-from egon.data import db
+from egon.data import config, db
 from egon.data.datasets import load_sources_and_targets
 
-SCENARIOS = ["eGon2035", "reGon2037", "reGon2045"]
+SUPPORTED_SCENARIOS = ["eGon2035", "reGon2037", "reGon2045"]
+
+SCENARIOS = [
+    scn
+    for scn in config.settings()["egon-data"]["--scenarios"]
+    if scn in SUPPORTED_SCENARIOS
+]
 
 
 def insert():
