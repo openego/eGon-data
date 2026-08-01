@@ -789,7 +789,7 @@ class Chp(Dataset):
 
     sources = DatasetSources(
         tables={
-            "list_conv_pp": "supply.egon_nep_2021_conventional_powerplants",
+            "list_conv_pp": "supply.egon_nep_conventional_powerplants",
             "egon_mv_grid_district": "grid.egon_mv_grid_district",
             "ehv_voronoi": "grid.egon_ehv_substation_voronoi",
             "etrago_buses": "grid.egon_etrago_bus",
