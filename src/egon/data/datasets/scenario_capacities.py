@@ -629,11 +629,12 @@ def insert_nep_list_powerplants(export=True):
             "Berlin": "BE",
             "Bayern": "BY",
         }
-
+        
         kw_liste_nep = kw_liste_nep[
             kw_liste_nep.federal_state.isin([map_states[boundary], np.nan])
         ]
-
+        
+        # scale all capacity to the respective population share
         for col in [
             "capacity",
             "a2035_capacity",
@@ -646,8 +647,10 @@ def insert_nep_list_powerplants(export=True):
             kw_liste_nep.loc[
                 kw_liste_nep[kw_liste_nep.federal_state.isnull()].index, col
             ] *= population_share()
-
+    
+    # Map NEP carrier names to internal eGon-data carrier names
     kw_liste_nep["carrier"] = map_carrier()[kw_liste_nep.carrier_nep].values
+    kw_liste_nep["chp"] = kw_liste_nep["chp"].replace("ja", "Ja")
 
     if export is True:
         # Insert data to db
@@ -897,7 +900,7 @@ class ScenarioCapacities(Dataset):
             "eGon2035_capacities": "data_bundle_egon_data/nep2035_version2021/NEP2035_V2021_scnC2035.xlsx",
             "eGon2035_list_conv_pp": "data_bundle_egon_data/nep2035_version2021/Kraftwerksliste_NEP_2021_konv.csv",
             "reGon_capacities": "data_bundle_egon_data/nep2037_version2025/NEP2037_V2025_scnC2037.xlsx",
-            "reGon_list_conv_pp": "data_bundle_egon_data/nep2037_version2025/Kraftwerksliste_NEP_2025_konv.xlsx",
+            "reGon_list_conv_pp": "data_bundle_egon_data/nep2037_version2025/Kraftwerksliste_Szenariorahmen.xlsx",
         },
         tables={
             "boundaries": "boundaries.vg250_lan",
