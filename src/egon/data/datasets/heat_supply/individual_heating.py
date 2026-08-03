@@ -399,10 +399,10 @@ class HeatPumps2035(Dataset):
     #:
     name: str = "HeatPumps2035"
     #:
-    version: str = "0.0.3"
+    version: str = "0.0.5"
 
     def __init__(self, dependencies):
-        def dyn_parallel_tasks_2035():
+        def dyn_parallel_tasks_2035(scenario):
             """Dynamically generate tasks
 
             The goal is to speed up tasks by parallelising bulks of mvgds.
@@ -428,26 +428,51 @@ class HeatPumps2035(Dataset):
                     PythonOperator(
                         task_id=(
                             "individual_heating."
-                            f"determine-hp-capacity-2035-"
+                            f"determine-hp-capacity-{scenario}-"
                             f"mvgd-bulk{i}"
                         ),
                         python_callable=split_mvgds_into_bulks,
                         op_kwargs={
                             "n": i,
                             "max_n": parallel_tasks,
+                            "scenario": scenario,
                             "func": determine_hp_cap_peak_load_mvgd_ts_2035,
                         },
                     )
                 )
             return tasks
 
-        if "eGon2035" in scenarios:
-            tasks_HeatPumps2035 = (
-                delete_heat_peak_loads_2035,
-                delete_hp_capacity_2035,
-                delete_mvgd_ts_2035,
-                {*dyn_parallel_tasks_2035()},
-            )
+        if any(
+            "status" not in scenario
+            for scenario in config.settings()["egon-data"]["--scenarios"]
+        ):
+            tasks_HeatPumps2035 = ()
+
+            for scenario in config.settings()["egon-data"]["--scenarios"]:
+                if "status" not in scenario:
+                    postfix = f"_{scenario}"
+
+                    tasks_HeatPumps2035 += (
+                        wrapped_partial(
+                            delete_heat_peak_loads_2035,
+                            scenario=scenario,
+                            postfix=postfix,
+                        ),
+                        wrapped_partial(
+                            delete_hp_capacity_2035,
+                            scenario=scenario,
+                            postfix=postfix,
+                        ),
+                        wrapped_partial(
+                            delete_mvgd_ts_2035,
+                            scenario=scenario,
+                            postfix=postfix,
+                        ),
+                    )
+
+                    tasks_HeatPumps2035 += (
+                        {*dyn_parallel_tasks_2035(scenario)},
+                    )
         else:
             tasks_HeatPumps2035 = (
                 PythonOperator(
@@ -458,8 +483,8 @@ class HeatPumps2035(Dataset):
             )
 
         super().__init__(
-            name=self.version,
-            version="0.0.4",
+            name=self.name,
+            version=self.version,
             dependencies=dependencies,
             tasks=tasks_HeatPumps2035,
         )
@@ -1900,9 +1925,10 @@ def catch_missing_buidings(buildings_decentral_heating, peak_load):
     return buildings_decentral_heating
 
 
-def determine_hp_cap_peak_load_mvgd_ts_2035(mvgd_ids):
+def determine_hp_cap_peak_load_mvgd_ts_2035(mvgd_ids, scenario):
     """
-    Main function to determine HP capacity per building in eGon2035 scenario.
+    Main function to determine HP capacity per building in the eGon2035,
+    reGon2037 or reGon2045 scenario.
     Further, creates heat demand time series for all buildings with heat pumps
     in MV grid, as well as for all buildings with gas boilers, used in eTraGo.
 
@@ -1910,6 +1936,8 @@ def determine_hp_cap_peak_load_mvgd_ts_2035(mvgd_ids):
     -----------
     mvgd_ids : list(int)
         List of MV grid IDs to determine data for.
+    scenario : str
+        Name of the scenario.
 
     """
 
@@ -1928,20 +1956,20 @@ def determine_hp_cap_peak_load_mvgd_ts_2035(mvgd_ids):
         # ############# aggregate residential and CTS demand profiles #####
 
         df_heat_ts = aggregate_residential_and_cts_profiles(
-            mvgd, scenario="eGon2035"
+            mvgd, scenario=scenario
         )
 
         # ##################### determine peak loads ###################
         logger.info(f"MVGD={mvgd} | Determine peak loads.")
 
-        peak_load_2035 = df_heat_ts.max().rename("eGon2035")
+        peak_load_2035 = df_heat_ts.max().rename(scenario)
 
         # ######## determine HP capacity per building #########
         logger.info(f"MVGD={mvgd} | Determine HP capacities.")
 
         buildings_decentral_heating = (
             get_buildings_with_decentral_heat_demand_in_mv_grid(
-                mvgd, scenario="eGon2035"
+                mvgd, scenario=scenario
             )
         )
 
@@ -1953,7 +1981,7 @@ def determine_hp_cap_peak_load_mvgd_ts_2035(mvgd_ids):
         )
 
         hp_cap_per_building_2035 = determine_hp_cap_buildings_pvbased_per_mvgd(
-            "eGon2035",
+            scenario,
             mvgd,
             peak_load_2035,
             buildings_decentral_heating,
@@ -1977,7 +2005,7 @@ def determine_hp_cap_peak_load_mvgd_ts_2035(mvgd_ids):
             data={
                 "carrier": ["heat_pump", "CH4"],
                 "bus_id": mvgd,
-                "scenario": ["eGon2035", "eGon2035"],
+                "scenario": [scenario, scenario],
                 "dist_aggregated_mw": [
                     df_mvgd_ts_2035_hp.to_list(),
                     df_mvgd_ts_2035_gas.to_list(),
@@ -2011,7 +2039,7 @@ def determine_hp_cap_peak_load_mvgd_ts_2035(mvgd_ids):
 
     export_to_db(df_peak_loads_db, df_heat_mvgd_ts_db, drop=False)
 
-    df_hp_cap_per_building_2035_db["scenario"] = "eGon2035"
+    df_hp_cap_per_building_2035_db["scenario"] = scenario
 
     # TODO debug duplicated building_ids
     duplicates = df_hp_cap_per_building_2035_db.loc[
@@ -2367,10 +2395,10 @@ def delete_hp_capacity_status_quo(scenario):
     delete_hp_capacity(scenario=scenario)
 
 
-def delete_hp_capacity_2035():
-    """Remove all hp capacities for the selected eGon2035"""
+def delete_hp_capacity_2035(scenario):
+    """Remove all hp capacities for the selected scenario"""
     EgonHpCapacityBuildings.__table__.create(bind=engine, checkfirst=True)
-    delete_hp_capacity(scenario="eGon2035")
+    delete_hp_capacity(scenario=scenario)
 
 
 def delete_mvgd_ts_status_quo(scenario):
@@ -2381,12 +2409,12 @@ def delete_mvgd_ts_status_quo(scenario):
     delete_mvgd_ts(scenario=scenario)
 
 
-def delete_mvgd_ts_2035():
-    """Remove all mvgd ts for the selected eGon2035"""
+def delete_mvgd_ts_2035(scenario):
+    """Remove all mvgd ts for the selected scenario"""
     EgonEtragoTimeseriesIndividualHeating.__table__.create(
         bind=engine, checkfirst=True
     )
-    delete_mvgd_ts(scenario="eGon2035")
+    delete_mvgd_ts(scenario=scenario)
 
 
 def delete_mvgd_ts_100RE():
@@ -2407,13 +2435,13 @@ def delete_heat_peak_loads_status_quo(scenario):
         ).delete(synchronize_session=False)
 
 
-def delete_heat_peak_loads_2035():
-    """Remove all heat peak loads for eGon2035."""
+def delete_heat_peak_loads_2035(scenario):
+    """Remove all heat peak loads for the selected scenario."""
     BuildingHeatPeakLoads.__table__.create(bind=engine, checkfirst=True)
     with db.session_scope() as session:
         # Buses
         session.query(BuildingHeatPeakLoads).filter(
-            BuildingHeatPeakLoads.scenario == "eGon2035"
+            BuildingHeatPeakLoads.scenario == scenario
         ).delete(synchronize_session=False)
 
 
