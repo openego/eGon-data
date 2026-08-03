@@ -176,7 +176,7 @@ class HeatPumpsStatusQuo(Dataset):
         )
 
 
-class HeatPumps2035(Dataset):
+class HeatPumpsCascade(Dataset):
     """
     Class for desaggregation of heat pump capcacities per MV grid district to individual
     buildings for the eGon2035, reGon2037 and reGon2045 scenarios.
@@ -246,9 +246,9 @@ class HeatPumps2035(Dataset):
     """
 
     #:
-    name: str = "HeatPumps2035"
+    name: str = "HeatPumpsCascade"
     #:
-    version: str = "0.0.5"
+    version: str = "0.0.6"
 
     def __init__(self, dependencies):
         def dyn_parallel_tasks_2035(scenario):
@@ -295,13 +295,13 @@ class HeatPumps2035(Dataset):
             "status" not in scenario
             for scenario in config.settings()["egon-data"]["--scenarios"]
         ):
-            tasks_HeatPumps2035 = ()
+            tasks_HeatPumpsCascade = ()
 
             for scenario in config.settings()["egon-data"]["--scenarios"]:
                 if "status" not in scenario:
                     postfix = f"_{scenario}"
 
-                    tasks_HeatPumps2035 += (
+                    tasks_HeatPumpsCascade += (
                         wrapped_partial(
                             delete_heat_peak_loads_2035,
                             scenario=scenario,
@@ -319,15 +319,18 @@ class HeatPumps2035(Dataset):
                         ),
                     )
 
-                    tasks_HeatPumps2035 += (
+                    tasks_HeatPumpsCascade += (
                         {*dyn_parallel_tasks_2035(scenario)},
                     )
         else:
-            tasks_HeatPumps2035 = (
+            tasks_HeatPumpsCascade = (
                 PythonOperator(
-                    task_id="HeatPumps2035_skipped",
+                    task_id="HeatPumpsCascade_skipped",
                     python_callable=skip_task,
-                    op_kwargs={"scn": "eGon2035", "task": "HeatPumps2035"},
+                    op_kwargs={
+                        "scn": "eGon2035/reGon2037/reGon2045",
+                        "task": "HeatPumpsCascade",
+                    },
                 ),
             )
 
@@ -335,7 +338,7 @@ class HeatPumps2035(Dataset):
             name=self.name,
             version=self.version,
             dependencies=dependencies,
-            tasks=tasks_HeatPumps2035,
+            tasks=tasks_HeatPumpsCascade,
         )
 
 

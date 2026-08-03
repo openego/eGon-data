@@ -83,7 +83,7 @@ proportional to the heat demand outside of district heating grids.
 The heat pump capacity per MV grid district is further disaggregated to individual
 buildings based on the building's peak heat demand.
 For the eGon2035, reGon2037 and reGon2045 scenarios this is conducted in the dataset
-:py:class:`HeatPumps2035 <egon.data.datasets.heat_supply.individual_heating.HeatPumps2035>`.
+:py:class:`HeatPumpsCascade <egon.data.datasets.heat_supply.individual_heating.HeatPumpsCascade>`.
 The heat pump capacity per building is written to database table
 :py:class:`demand.egon_hp_capacity_buildings
 <egon.data.datasets.heat_supply.individual_heating.EgonHpCapacityBuildings>`.
@@ -119,7 +119,7 @@ heat pump capacity.
 Drawbacks and limitations as well as challenges of the determination of the minimum
 required heat pump capacity and the disaggregation to individual buildings
 are discussed in the respective dataset docstring of
-:py:class:`HeatPumps2035 <egon.data.datasets.heat_supply.individual_heating.HeatPumps2035>`.
+:py:class:`HeatPumpsCascade <egon.data.datasets.heat_supply.individual_heating.HeatPumpsCascade>`.
 
 
 

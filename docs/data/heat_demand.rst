@@ -59,7 +59,7 @@ The share of each CTS building of the corresponding HV-MV substation's heat prof
 for each scenario written to the database table
 :py:class:`EgonCtsHeatDemandBuildingShare<egon.data.datasets.electricity_demand_timeseries.cts_buildings.EgonCtsHeatDemandBuildingShare>`.
 The peak heat demand per building, including residential and CTS demand, is calculated in the dataset
-:py:class:`HeatPumps2035 <egon.data.datasets.heat_supply.HeatPumps2035>`
+:py:class:`HeatPumpsCascade <egon.data.datasets.heat_supply.individual_heating.HeatPumpsCascade>`
 and written to table
 :py:class:`demand.egon_building_heat_peak_loads <egon.data.datasets.heat_supply.BuildingHeatPeakLoads>`.
 

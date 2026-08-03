@@ -55,7 +55,7 @@ from egon.data.datasets.heat_supply import (
     HeatSupply,
 )
 from egon.data.datasets.heat_supply.individual_heating import (
-    HeatPumps2035,
+    HeatPumpsCascade,
     HeatPumpsStatusQuo,
 )
 from egon.data.datasets.hydrogen_etrago import (
@@ -584,7 +584,7 @@ with airflow.DAG(
         )
 
         # Heat pump disaggregation for eGon2035, reGon2037 and reGon2045
-        heat_pumps_2035 = HeatPumps2035(
+        heat_pumps_cascade = HeatPumpsCascade(
             dependencies=[
                 cts_demand_buildings,
                 DistrictHeatingAreas,
@@ -632,7 +632,7 @@ with airflow.DAG(
                 heat_time_series,
                 mv_grid_districts,
                 heat_pumps_sq,
-                heat_pumps_2035,
+                heat_pumps_cascade,
             ]
         )
 
@@ -731,7 +731,7 @@ with airflow.DAG(
                 load_areas,
                 cts_demand_buildings,
                 sanity_checks,
-                heat_pumps_2035,
+                heat_pumps_cascade,
                 heat_pumps_sq,
             ]
         )
