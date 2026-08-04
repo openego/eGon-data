@@ -242,7 +242,7 @@ def allocate_pumped_hydro(scn, export=True):
 
     if nep.elec_capacity.sum() > 0:
         # Get location using geolocator and city information
-        located, unmatched = get_location(nep)
+        located, unmatched = get_location(nep, scn)
 
         # Bring both dataframes together
         matched = pd.concat(

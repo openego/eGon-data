@@ -18,6 +18,7 @@ from egon.data.datasets.power_plants import (
     filter_mastr_geometry,
     select_target,
 )
+from egon.data.datasets.scenario_parameters import get_scenario_year
 import egon.data.config
 
 
@@ -34,20 +35,7 @@ def select_nep_pumped_hydro(scn):
 
     carrier = "pumped_hydro"
 
-    if scn == "eGon2035":
-        # Select plants with geolocation from list of conventional power plants
-        nep_ph = db.select_dataframe(f"""
-            SELECT bnetza_id, name, carrier, postcode, capacity, city,
-            federal_state, c2035_capacity
-            FROM {sources.tables['nep_conv']}
-            WHERE carrier = '{carrier}'
-            AND c2035_capacity > 0
-            AND postcode != 'None';
-            """)
-        nep_ph.rename(
-            columns={"c2035_capacity": "elec_capacity"}, inplace=True
-        )
-    elif "status" in scn:
+    if "status" in scn:
         # Select plants with geolocation from list of conventional power plants
         year = int(scn[-4:])
 
@@ -62,7 +50,27 @@ def select_nep_pumped_hydro(scn):
             """)
         nep_ph["elec_capacity"] = nep_ph["capacity"]
     else:
-        raise SystemExit(f"{scn} not recognised")
+        # eGon2035, reGon2037, reGon2045 and future NEP-based scenarios:
+        # select plants with geolocation from list of conventional power
+        # plants using the NEP target capacity column for this scenario's
+        # year (e.g. c2035_capacity, c2037_capacity, c2045_capacity).
+        # eGon2035 plants are tagged 'eGon2035', reGon2037/reGon2045 share
+        # the same NEP2025 list (tagged 'reGon')
+        nep_scenario = "eGon2035" if scn == "eGon2035" else "reGon"
+        capacity_column = f"c{get_scenario_year(scn)}_capacity"
+
+        nep_ph = db.select_dataframe(f"""
+            SELECT bnetza_id, name, carrier, postcode, capacity, city,
+            federal_state, {capacity_column}
+            FROM {sources.tables['nep_conv']}
+            WHERE carrier = '{carrier}'
+            AND scenario = '{nep_scenario}'
+            AND {capacity_column} > 0
+            AND postcode != 'None';
+            """)
+        nep_ph.rename(
+            columns={capacity_column: "elec_capacity"}, inplace=True
+        )
 
     # Removing plants out of Germany
     nep_ph["postcode"] = nep_ph["postcode"].astype(str)
@@ -289,7 +297,7 @@ def match_storage_units(
     return matched, mastr, nep
 
 
-def get_location(unmatched):
+def get_location(unmatched, scn):
     """Gets a geolocation for units which couldn't be matched using MaStR data.
     Uses geolocator and the city name from NEP data to create longitude and
     latitude for a list of unmatched units.
@@ -299,6 +307,8 @@ def get_location(unmatched):
     unmatched : pandas.DataFrame
         storage units from NEP which are not matched to MaStR but containing
         a city information
+    scn : string, optional
+        Scenario name
 
     Returns
     -------
@@ -338,7 +348,7 @@ def get_location(unmatched):
     located = located.rename(
         columns={"elec_capacity": "el_capacity", "bnetza_id": "MaStRNummer"}
     )
-    located["scenario"] = "eGon2035"
+    located["scenario"] = scn
     located["source"] = "NEP power plants geolocated using city"
 
     unmatched = unmatched.drop(located.index.values)
