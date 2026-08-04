@@ -624,16 +624,31 @@ def home_batteries_per_scenario(scenario):
             index_col="Unnamed: 0",
         )
 
-        # Select target value in MW
+        # Select national target value in MW
         target = capacities_nep.Summe["PV-Batteriespeicher"] * 1000
 
+        if dataset == "Schleswig-Holstein":
+            # break down national target to SH's rough share
+            target = target / 16
+
     else:
-        target = db.select_dataframe(f"""
+        target_df = db.select_dataframe(f"""
             SELECT capacity
             FROM {Storages.sources.tables['capacities']}
             WHERE scenario_name = '{scenario}'
             AND carrier = 'battery';
-            """).capacity[0]
+            """)
+
+        # Sum over all returned federal states: status quo has a single
+        # national row (nuts='DE'), reGon2037/reGon2045 have one row per
+        # federal state which is already scoped to the active
+        # --dataset-boundary
+        target = target_df.capacity.sum()
+
+        if "status" in scenario and dataset == "Schleswig-Holstein":
+            # status quo target is always national (nuts='DE'), still
+            # needs to be broken down to SH's rough share in test mode
+            target = target / 16
 
     pv_rooftop = db.select_dataframe(f"""
         SELECT bus, p_nom, generator_id
@@ -644,9 +659,6 @@ def home_batteries_per_scenario(scenario):
             (SELECT bus_id FROM {Storages.sources.tables['bus']}
                WHERE scn_name = '{scenario}' AND country = 'DE' );
         """)
-
-    if dataset == "Schleswig-Holstein":
-        target = target / 16
 
     battery = pv_rooftop
     battery["p_nom_min"] = target * battery["p_nom"] / battery["p_nom"].sum()
