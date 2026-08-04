@@ -508,15 +508,22 @@ def allocate_storage_units_sq(scn_name, storage_types):
         mastr_ph = mastr_ph.dropna(subset="federal_state")
 
         # In test mode, keep only storage units within the active dataset
-        # boundary (mirrors select_mastr_pumped_hydro() in pumped_hydro.py)
+        # boundary (mirrors select_mastr_pumped_hydro() in pumped_hydro.py).
+        # Re-cast to a proper GeoDataFrame first: the preceding pd.concat()/
+        # pd.merge() calls silently degrade mastr_ph back to a plain
+        # DataFrame, which would send filter_mastr_geometry() down the
+        # wrong (Laengengrad/Breitengrad-rebuild) code path.
         if (
             config.settings()["egon-data"]["--dataset-boundary"]
             == "Schleswig-Holstein"
         ):
+            mastr_ph = gpd.GeoDataFrame(
+                mastr_ph, geometry="geometry", crs="EPSG:4326"
+            )
             mastr_ph = filter_mastr_geometry(
                 mastr_ph, federal_state="SchleswigHolstein"
             )
-            
+
         # Asign buses within germany
         mastr_ph = assign_bus_id(
             mastr_ph, sources=Storages.sources, drop_missing=True
