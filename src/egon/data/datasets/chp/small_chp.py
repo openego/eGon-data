@@ -277,9 +277,24 @@ def extension_to_areas(
                 # Assign bus_id
                 selected_areas["voltage_level"] = selected_chp["voltage_level"]
 
-                selected_areas.loc[:, "bus_id"] = assign_bus_id(
-                    selected_areas, sources
-                ).bus_id
+                selected_areas_with_bus = assign_bus_id(
+                    selected_areas, sources, drop_missing=True
+                )
+
+                # Skip this area if it could not be attached to any bus
+                # (e.g. it is not covered by any grid district) instead
+                # of failing the whole federal state extension
+                if len(selected_areas_with_bus) == 0:
+                    print(
+                        f"Area with id {id_area} could not be assigned "
+                        f"to a bus and is skipped."
+                    )
+                    areas = areas.drop(index=id_area)
+                    continue
+
+                selected_areas.loc[:, "bus_id"] = (
+                    selected_areas_with_bus.bus_id
+                )
 
                 entry = EgonChp(
                     sources={
