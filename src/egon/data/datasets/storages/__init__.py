@@ -14,7 +14,11 @@ from egon.data import config, db
 from egon.data.datasets import Dataset, DatasetSources, DatasetTargets
 from egon.data.datasets.electrical_neighbours import entsoe_to_bus_etrago
 from egon.data.datasets.mv_grid_districts import Vg250GemClean
-from egon.data.datasets.power_plants import assign_bus_id, assign_voltage_level
+from egon.data.datasets.power_plants import (
+    assign_bus_id,
+    assign_voltage_level,
+    filter_mastr_geometry,
+)
 from egon.data.datasets.scenario_parameters import get_sector_parameters
 from egon.data.datasets.storages.home_batteries import (
     allocate_home_batteries_to_buildings,
@@ -503,6 +507,16 @@ def allocate_storage_units_sq(scn_name, storage_types):
         # Keep only capacities within germany
         mastr_ph = mastr_ph.dropna(subset="federal_state")
 
+        # In test mode, keep only storage units within the active dataset
+        # boundary (mirrors select_mastr_pumped_hydro() in pumped_hydro.py)
+        if (
+            config.settings()["egon-data"]["--dataset-boundary"]
+            == "Schleswig-Holstein"
+        ):
+            mastr_ph = filter_mastr_geometry(
+                mastr_ph, federal_state="SchleswigHolstein"
+            )
+            
         # Asign buses within germany
         mastr_ph = assign_bus_id(
             mastr_ph, sources=Storages.sources, drop_missing=True
