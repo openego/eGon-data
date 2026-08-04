@@ -111,7 +111,7 @@ class Storages(Dataset):
     #:
     name: str = "Storages"
     #:
-    version: str = "0.0.10"
+    version: str = "0.0.12"
 
     def __init__(self, dependencies):
         super().__init__(
@@ -522,6 +522,19 @@ def allocate_storage_units_sq(scn_name, storage_types):
             )
             mastr_ph = filter_mastr_geometry(
                 mastr_ph, federal_state="SchleswigHolstein"
+            )
+
+            # mastr_ph_foreign is split off by a missing federal_state text
+            # field, not by actual geo-location - apply the same spatial
+            # filter here too, otherwise plants with a missing Bundesland
+            # entry (regardless of their real location) bypass the
+            # test-mode boundary entirely via the foreign-bus assignment
+            # below
+            mastr_ph_foreign = gpd.GeoDataFrame(
+                mastr_ph_foreign, geometry="geometry", crs="EPSG:4326"
+            )
+            mastr_ph_foreign = filter_mastr_geometry(
+                mastr_ph_foreign, federal_state="SchleswigHolstein"
             )
 
         # Asign buses within germany
