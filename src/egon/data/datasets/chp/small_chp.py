@@ -1,5 +1,5 @@
 """
-The module containing all code dealing with chp < 10MW.
+The module containing all code dealing with CHP < 10MW.
 """
 
 from sqlalchemy.orm import sessionmaker
@@ -11,12 +11,13 @@ from egon.data import config, db
 from egon.data.datasets import load_sources_and_targets
 from egon.data.datasets.power_plants import (
     assign_bus_id,
+    assign_voltage_level,
     filter_mastr_geometry,
     select_target,
 )
 
 
-def insert_mastr_chp(mastr_chp, EgonChp):
+def insert_mastr_chp(mastr_chp, EgonChp, scenario):
     """Insert MaStR data from exising CHPs into database table
 
     Parameters
@@ -24,7 +25,7 @@ def insert_mastr_chp(mastr_chp, EgonChp):
     mastr_chp : pandas.DataFrame
         List of existing CHPs in MaStR.
     EgonChp : class
-        Class definition of daabase table for CHPs
+        Class definition of database table for CHPs
 
     Returns
     -------
@@ -48,57 +49,110 @@ def insert_mastr_chp(mastr_chp, EgonChp):
             ch4_bus_id=row.gas_bus_id,
             district_heating=row.district_heating,
             voltage_level=row.voltage_level,
-            scenario="eGon2035",
+            scenario=scenario,
             geom=f"SRID=4326;POINT({row.geometry.x} {row.geometry.y})",
         )
         session.add(entry)
     session.commit()
 
 
-def existing_chp_smaller_10mw(sources, MaStR_konv, EgonChp):
+def existing_chp_smaller_10mw(sources, MaStR_konv, EgonChp, scenario):
     """Insert existing small CHPs based on MaStR and target values
 
     Parameters
     ----------
     MaStR_konv : pandas.DataFrame
-        List of conevntional CHPs in MaStR whoes locateion is not used
+        List of conventional CHPs in MaStR whose location is not used
     EgonChp : class
-        Class definition of daabase table for CHPs
+        Class definition of database table for CHPs
 
     Returns
     -------
-    additional_capacitiy : pandas.Series
-        Capacity of new locations for small chp per federal state
+    additional_capacity : pandas.Series
+        Capacity of new locations for small CHPs per federal state
 
     """
-
-    existsting_chp_smaller_10mw = MaStR_konv[
-        # (MaStR_konv.Nettonennleistung>0.1)
-        (MaStR_konv.el_capacity <= 10)
-        & (MaStR_konv.th_capacity > 0)
-    ]
-
-    targets = select_target("small_chp", "eGon2035")
-
-    for federal_state in targets.index:
-        mastr_chp = gpd.GeoDataFrame(
-            filter_mastr_geometry(existsting_chp_smaller_10mw, federal_state)
+    
+    if scenario == "eGon2035":
+        existsting_chp_smaller_10mw = MaStR_konv[
+            # (MaStR_konv.Nettonennleistung>0.1)
+            (MaStR_konv.el_capacity <= 10)
+            & (MaStR_konv.th_capacity > 0)
+        ]
+        # Select installed capacity per scenario and carrier
+        targets = select_target("small_chp", scenario)
+    
+        for federal_state in targets.index:
+            mastr_chp = gpd.GeoDataFrame(
+                filter_mastr_geometry(existsting_chp_smaller_10mw, federal_state)
+            )
+    
+            mastr_chp.crs = "EPSG:4326"
+    
+            # Assign gas bus_id
+            mastr_chp_c = mastr_chp.copy()
+            mastr_chp["gas_bus_id"] = db.assign_gas_bus_id(
+                mastr_chp_c, scenario, "CH4"
+            ).bus
+    
+            # Assign bus_id
+            mastr_chp["bus_id"] = assign_bus_id(mastr_chp, sources).bus_id
+    
+            mastr_chp = assign_use_case(mastr_chp, sources, scenario)
+    
+            insert_mastr_chp(mastr_chp, EgonChp, scenario)
+    if scenario in ["reGon2037", "reGon2045"]:
+        # as MaStR is not yet grouped (done for eGon2035 in func:insert_large_chps)
+        # it needs to be grouped in the same way
+        # Aggregate units from MaStR to one power plant
+        MaStR_konv = (
+            MaStR_konv.groupby(
+                [
+                    "plz",
+                    "Laengengrad",
+                    "Breitengrad",
+                    "carrier",
+                    "city",
+                    "federal_state",
+                ]
+            )[["el_capacity", "th_capacity", "EinheitMastrNummer"]]
+            .sum(numeric_only=False)
+            .reset_index()
         )
-
-        mastr_chp.crs = "EPSG:4326"
-
-        # Assign gas bus_id
-        mastr_chp_c = mastr_chp.copy()
-        mastr_chp["gas_bus_id"] = db.assign_gas_bus_id(
-            mastr_chp_c, "eGon2035", "CH4"
-        ).bus
-
-        # Assign bus_id
-        mastr_chp["bus_id"] = assign_bus_id(mastr_chp, sources).bus_id
-
-        mastr_chp = assign_use_case(mastr_chp, sources, "eGon2035")
-
-        insert_mastr_chp(mastr_chp, EgonChp)
+        
+        MaStR_konv["voltage_level"] = assign_voltage_level(
+            MaStR_konv.rename({"el_capacity": "Nettonennleistung"}, axis=1),
+            sources,
+        )
+        
+        existsting_chp_smaller_10mw = MaStR_konv[
+            # (MaStR_konv.Nettonennleistung>0.1)
+            (MaStR_konv.el_capacity <= 10)
+            & (MaStR_konv.th_capacity > 0)
+        ]
+        # Select installed capacity per scenario and carrier
+        targets = select_target("small_chp", scenario)
+    
+        for federal_state in targets.index:
+            mastr_chp = gpd.GeoDataFrame(
+                filter_mastr_geometry(existsting_chp_smaller_10mw, federal_state)
+            )
+    
+            mastr_chp.crs = "EPSG:4326"
+    
+            # Assign gas bus_id
+            mastr_chp_c = mastr_chp.copy()
+            mastr_chp["gas_bus_id"] = db.assign_gas_bus_id(
+                mastr_chp_c, scenario, "CH4"
+            ).bus
+    
+            # Assign bus_id
+            mastr_chp["bus_id"] = assign_bus_id(mastr_chp, sources).bus_id
+    
+            mastr_chp = assign_use_case(mastr_chp, sources, scenario)
+    
+            insert_mastr_chp(mastr_chp, EgonChp, scenario)
+        
 
 
 def extension_to_areas(
@@ -107,12 +161,12 @@ def extension_to_areas(
     existing_chp,
     flh,
     EgonChp,
+    scenario,
     district_heating=True,
-    scenario="eGon2035",
 ):
     """Builds new CHPs on potential industry or district heating areas.
 
-    This method can be used to distrectly extend and spatial allocate CHP
+    This method can be used to distcretly extend and spatial allocate CHP
     for industry or district heating areas.
     The following steps are running in a loop until the additional
     capacity is reached:
@@ -129,7 +183,7 @@ def extension_to_areas(
         demands are used.
 
         3. Randomly select one of the possible areas.
-        The areas are weighted by the annal demand, assuming that the
+        The areas are weighted by their annual demand, assuming that the
         possibility of building a CHP plant is higher when for large consumers.
 
         4. Insert allocated CHP plant into the database
@@ -150,6 +204,8 @@ def extension_to_areas(
         Assumed electrical or thermal full load hours.
     EgonChp : class
         ORM-class definition of CHP database-table.
+    scenario : str
+        Name o the scenario (e.g. 'reGon2037')
     district_heating : boolean, optional
         State if the areas are district heating areas. The default is True.
 
@@ -293,8 +349,9 @@ def extension_district_heating(
     additional_capacity,
     flh_chp,
     EgonChp,
+    scenario,
     areas_without_chp_only=False,
-):
+    ):
     """Build new CHP < 10 MW for district areas considering existing CHP
     and the heat demand.
 
@@ -314,6 +371,8 @@ def extension_district_heating(
     areas_without_chp_only : boolean, optional
         Set if CHPs are only assigned to district heating areas which don't
         have an existing CHP. The default is True.
+    scenario : str
+        Name o the scenario (e.g. 'reGon2037')
 
     Returns
     -------
@@ -328,8 +387,8 @@ def extension_district_heating(
         FROM
         {targets.tables['chp_table']} a,
         {sources.tables['district_heating_areas']} b
-        WHERE a.scenario = 'eGon2035'
-        AND b.scenario = 'eGon2035'
+        WHERE a.scenario = '{scenario}'
+        AND b.scenario = '{scenario}'
         AND district_heating = True
         AND ST_Intersects(
             ST_Transform(
@@ -351,7 +410,7 @@ def extension_district_heating(
             ST_Transform(ST_PointOnSurface(geom_polygon), 4326)  as geom
             FROM
             {sources.tables['district_heating_areas']}
-            WHERE scenario = 'eGon2035'
+            WHERE scenario = '{scenario}'
             AND ST_Intersects(ST_Transform(ST_Centroid(geom_polygon), 4326), (
                 SELECT ST_Union(d.geometry)
                 FROM
@@ -360,7 +419,7 @@ def extension_district_heating(
             AND area_id NOT IN (
                 SELECT district_heating_area_id
                 FROM {targets.tables['chp_table']}
-                WHERE scenario = 'eGon2035'
+                WHERE scenario = '{scenario}'
                 AND district_heating = TRUE)
             """)
     except:
@@ -384,8 +443,8 @@ def extension_district_heating(
                 FROM
                 {targets.tables['chp_table']} a,
                 {sources.tables['district_heating_areas']} b
-                WHERE b.scenario = 'eGon2035'
-                AND a.scenario = 'eGon2035'
+                WHERE b.scenario = '{scenario}'
+                AND a.scenario = '{scenario}'
                 AND ST_Intersects(
                     ST_Transform(ST_Centroid(geom_polygon), 4326),
                     (SELECT ST_Union(d.geometry)
@@ -408,13 +467,14 @@ def extension_district_heating(
         existing_chp,
         flh_chp,
         EgonChp,
+        scenario,
         district_heating=True,
     )
 
     return not_distributed_capacity
 
 
-def extension_industrial(federal_state, additional_capacity, flh_chp, EgonChp):
+def extension_industrial(federal_state, additional_capacity, flh_chp, EgonChp, scenario):
     """Build new CHP < 10 MW for industry considering existing CHP,
     osm landuse areas and electricity demands.
 
@@ -426,11 +486,13 @@ def extension_industrial(federal_state, additional_capacity, flh_chp, EgonChp):
     federal_state : str
         Name of the federal state.
     additional_capacity : float
-        Additional electrical capacity of new CHP plants in indsutry.
+        Additional electrical capacity of new CHP plants in industry.
     flh_chp : int
         Assumed number of full load hours of electricity output.
     EgonChp : class
         ORM-class definition of CHP database-table.
+    scenario : str
+        Name o the scenario (e.g. 'reGon2037')
 
     Returns
     -------
@@ -444,7 +506,7 @@ def extension_industrial(federal_state, additional_capacity, flh_chp, EgonChp):
         SELECT el_capacity, th_capacity, voltage_level
         FROM
         {targets.tables['chp_table']} a
-        WHERE a.scenario = 'eGon2035'
+        WHERE a.scenario = '{scenario}'
         AND district_heating = False
         AND el_capacity < 10
         ORDER BY el_capacity
@@ -459,7 +521,7 @@ def extension_industrial(federal_state, additional_capacity, flh_chp, EgonChp):
         FROM
         {sources.tables['industrial_demand_osm']} a,
         {sources.tables['osm_landuse']} b
-        WHERE a.scenario = 'eGon2035'
+        WHERE a.scenario = '{scenario}'
         AND b.id = a.osm_id
         AND NOT ST_Intersects(
             ST_Transform(b.geom, 4326),
@@ -494,6 +556,7 @@ def extension_industrial(federal_state, additional_capacity, flh_chp, EgonChp):
         existing_chp,
         flh_chp,
         EgonChp,
+        scenario,
         district_heating=False,
     )
 
@@ -503,13 +566,13 @@ def extension_industrial(federal_state, additional_capacity, flh_chp, EgonChp):
 def extension_per_federal_state(federal_state, EgonChp):
     """Adds new CHP plants to meet target value per federal state.
 
-    The additional capacity for CHPs < 10 MW is distributed discretly.
+    The additional capacity for CHPs < 10 MW is distributed discretely.
     Therefore, existing CHPs and their parameters from Marktstammdatenregister
     are randomly selected and allocated in a district heating grid.
     In order to generate a reasonable distribution, new CHPs can only
     be assigned to a district heating grid which needs additional supply
     technologies. This is estimated by the substraction of demand, and the
-    assumed dispatch oof a CHP considering the capacitiy and full load hours
+    assumed dispatch of a CHP considering the capacitiy and full load hours
     of each CHPs.
 
     Parameters
@@ -528,94 +591,100 @@ def extension_per_federal_state(federal_state, EgonChp):
     """
 
     sources, targets = load_sources_and_targets("Chp")
-
-    # Get separate schema and table name for SQL construction
-    target_schema = targets.get_table_schema("chp_table")
-    target_table_only = targets.get_table_name("chp_table").split(".")[-1]
-
-    capacity_targets = select_target("small_chp", "eGon2035")
-
-    existing_capacity = db.select_dataframe(f"""
-            SELECT SUM(el_capacity) as capacity, district_heating
-            FROM {target_schema}.
-            {target_table_only}
-            WHERE sources::json->>'el_capacity' = 'MaStR'
-            AND carrier != 'biomass'
-            AND scenario = 'eGon2035'
-            AND ST_Intersects(geom, (
-            SELECT ST_Union(geometry) FROM
-            {sources.tables['vg250_lan']} b
-            WHERE REPLACE(REPLACE(gen, '-', ''), 'ü', 'ue') ='{federal_state}'))
-            GROUP BY district_heating
-            """)
-
-    print(
-        f"Target capacity in {federal_state}: {capacity_targets[federal_state]}"
-    )
-    print(
-        f"Existing capacity in {federal_state}: {existing_capacity.capacity.sum()}"
-    )
-
-    additional_capacity = (
-        capacity_targets[federal_state] - existing_capacity.capacity.sum()
-    )
-
-    if additional_capacity > 0:
-        share_dh = (
-            existing_capacity[
-                existing_capacity.district_heating
-            ].capacity.values[0]
-            / existing_capacity.capacity.sum()
-        )
-
-        flh_chp = 6000
-
-        capacity_district_heating = additional_capacity * share_dh
-        capacity_industry = additional_capacity * (1 - share_dh)
-
-        print(f"Distributing {additional_capacity} MW_el in {federal_state}")
+    #load scenarios from config.-file and delete statusquo-scenarios
+    scenarios = [s for s in config.settings()["egon-data"]["--scenarios"] if "status" not in str(s).lower()]
+    for scenario in scenarios:
+    
+        # Get separate schema and table name for SQL construction
+        target_schema = targets.get_table_schema("chp_table")
+        target_table_only = targets.get_table_name("chp_table").split(".")[-1]
+    
+        capacity_targets = select_target("small_chp", scenario)
+    
+        existing_capacity = db.select_dataframe(f"""
+                SELECT SUM(el_capacity) as capacity, district_heating
+                FROM {target_schema}.
+                {target_table_only}
+                WHERE sources::json->>'el_capacity' = 'MaStR'
+                AND carrier != 'biomass'
+                AND scenario = '{scenario}'
+                AND ST_Intersects(geom, (
+                SELECT ST_Union(geometry) FROM
+                {sources.tables['vg250_lan']} b
+                WHERE REPLACE(REPLACE(gen, '-', ''), 'ü', 'ue') ='{federal_state}'))
+                GROUP BY district_heating
+                """)
+    
         print(
-            f"Distributing {capacity_district_heating} MW_el to district heating"
+            f"Target capacity in {federal_state}: {capacity_targets[federal_state]} for {scenario}"
         )
-        not_distributed_capacity_dh = extension_district_heating(
-            federal_state, capacity_district_heating, flh_chp, EgonChp
-        )
-
-        if not_distributed_capacity_dh > 1:
-            print(
-                f"{not_distributed_capacity_dh} MW_el were not matched to district "
-                "heating. This capacity is added to industry"
-            )
-            capacity_industry += not_distributed_capacity_dh
-
-        print(f"Distributing {capacity_industry} MW_el to industry")
-        not_distributed_capacity_industry = extension_industrial(
-            federal_state,
-            additional_capacity * (1 - share_dh),
-            flh_chp,
-            EgonChp,
-        )
-
         print(
-            f"{not_distributed_capacity_industry} MW_el were not matched to "
-            "industry. This capacity is added to district heating"
+            f"Existing capacity in {federal_state}: {existing_capacity.capacity.sum()} for {scenario}"
         )
-
-        if not_distributed_capacity_industry > 1:
-            print(
-                f"{not_distributed_capacity_industry} MW_el were not matched to "
-                "industry. This capacity is added to district heating"
+    
+        additional_capacity = (
+            capacity_targets[federal_state] - existing_capacity.capacity.sum()
+        )
+    
+        if additional_capacity > 0:
+            share_dh = (
+                existing_capacity[
+                    existing_capacity.district_heating
+                ].capacity.values[0]
+                / existing_capacity.capacity.sum()
             )
-
-            extension_district_heating(
+    
+            flh_chp = 6000
+    
+            capacity_district_heating = additional_capacity * share_dh
+            capacity_industry = additional_capacity * (1 - share_dh)
+    
+            print(f"Distributing {additional_capacity} MW_el in {federal_state} for {scenario}")
+            print(
+                f"Distributing {capacity_district_heating} MW_el to district heating for {scenario}"
+            )
+            not_distributed_capacity_dh = extension_district_heating(
+                federal_state, capacity_district_heating, flh_chp, EgonChp,
+                scenario,
+            )
+    
+            if not_distributed_capacity_dh > 1:
+                print(
+                    f"{not_distributed_capacity_dh} MW_el were not matched to district "
+                    "heating. This capacity is added to industry for {scenario}"
+                )
+                capacity_industry += not_distributed_capacity_dh
+    
+            print(f"Distributing {capacity_industry} MW_el to industry for {scenario}")
+            not_distributed_capacity_industry = extension_industrial(
                 federal_state,
-                not_distributed_capacity_industry,
+                additional_capacity * (1 - share_dh),
                 flh_chp,
                 EgonChp,
+                scenario,
             )
-
-    else:
-        print("Decommissioning of CHP plants is not implemented.")
+    
+            print(
+                f"{not_distributed_capacity_industry} MW_el were not matched to "
+                "industry. This capacity is added to district heating for {scenario}"
+            )
+    
+            if not_distributed_capacity_industry > 1:
+                print(
+                    f"{not_distributed_capacity_industry} MW_el were not matched to "
+                    "industry. This capacity is added to district heating for {scenario}"
+                )
+    
+                extension_district_heating(
+                    federal_state,
+                    not_distributed_capacity_industry,
+                    flh_chp,
+                    EgonChp,
+                    scenario,
+                )
+    
+        else:
+            print("Decommissioning of CHP plants is not implemented for {scenario}.")
 
 
 def assign_use_case(chp, sources, scenario):
@@ -624,7 +693,7 @@ def assign_use_case(chp, sources, scenario):
     A CHP plant is assigned to a district heating area if
     - it is closer than 1km to the borders of the district heating area
     - the name of the osm landuse area where the CHP is located indicates
-    that it feeds in to a district heating area (e.g. 'Stadtwerke')
+    that it feeds into a district heating area (e.g. 'Stadtwerke')
     - it is not closer than 100m to an industrial area
 
     Parameters
@@ -644,7 +713,7 @@ def assign_use_case(chp, sources, scenario):
     table_polygon = sources.tables["osm_polygon"]
     table_dh = sources.tables["district_heating_areas"]
 
-    # Select osm industrial areas which don't include power or heat supply
+    # Select osm industrial areas not including power or heat supply
     # (name not includes 'Stadtwerke', 'Kraftwerk', 'Müllverbrennung'...)
     landuse_industrial = db.select_geodataframe(
         f"""
@@ -661,7 +730,7 @@ def assign_use_case(chp, sources, scenario):
         """,
         epsg=4326,
     )
-    # Select osm polygons where a district heating chp is likely
+    # Select osm polygons where a district heating CHP is likely
     # (name includes 'Stadtwerke', 'Kraftwerk', 'Müllverbrennung'...)
     possible_dh_locations = db.select_geodataframe(
         f"""
@@ -679,7 +748,7 @@ def assign_use_case(chp, sources, scenario):
         epsg=4326,
     )
 
-    # Initilize district_heating argument
+    # Initialize district_heating argument
     chp["district_heating"] = False
     # chp.loc[chp[chp.Nettonennleistung <= 0.15].index, 'use_case'] = 'individual'
     # Select district heating areas with buffer of 1 km
@@ -693,30 +762,30 @@ def assign_use_case(chp, sources, scenario):
     )
 
     # Select all CHP closer than 1km to a district heating area
-    # these are possible district heating chp
-    # Chps which are not close to a district heating area get use_case='industrial'
+    # these are possible district heating CHP
+    # CHPs which are not close to a district heating area get use_case='industrial'
     close_to_dh = chp[chp.index.isin(gpd.sjoin(chp, district_heating).index)]
 
-    # All chp which are close to a district heating grid and intersect with
-    # osm polygons whoes name indicates that it could be a district heating location
-    # (e.g. Stadtwerke, Heizraftwerk, Müllverbrennung)
-    # are assigned as district heating chp
+    # All CHP which are close to a district heating grid and intersect with
+    # osm polygons whose name indicates that it could be a district heating location
+    # (e.g. Stadtwerke, Heizkraftwerk, Müllverbrennung)
+    # are assigned as district heating CHP
     district_heating_chp = chp[
         chp.index.isin(gpd.sjoin(close_to_dh, possible_dh_locations).index)
     ]
 
-    # Assigned district heating chps are dropped from list of possible
-    # district heating chp
+    # Assigned district heating CHPs are dropped from list of possible
+    # district heating CHP
     close_to_dh.drop(district_heating_chp.index, inplace=True)
 
     # Select all CHP closer than 100m to a industrial location its name
     # doesn't indicate that it could be a district heating location
-    # these chp get use_case='industrial'
+    # these CHP get use_case='industrial'
     close_to_industry = chp[
         chp.index.isin(gpd.sjoin(close_to_dh, landuse_industrial).index)
     ]
 
-    # Chp which are close to a district heating area and not close to an
+    # CHP which are close to a district heating area and not close to an
     # industrial location are assigned as district_heating_chp
     district_heating_chp = pd.concat(
         [
@@ -725,7 +794,7 @@ def assign_use_case(chp, sources, scenario):
         ]
     )
 
-    # Set district_heating = True for all district heating chp
+    # Set district_heating = True for all district heating CHP
     chp.loc[district_heating_chp.index, "district_heating"] = True
 
     return chp

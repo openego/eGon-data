@@ -630,11 +630,12 @@ def insert_nep_list_powerplants(export=True):
             "Berlin": "BE",
             "Bayern": "BY",
         }
-
+        
         kw_liste_nep = kw_liste_nep[
             kw_liste_nep.federal_state.isin([map_states[boundary], np.nan])
         ]
-
+        
+        # scale all capacity to the respective population share
         for col in [
             "capacity",
             "a2035_capacity",
@@ -647,8 +648,10 @@ def insert_nep_list_powerplants(export=True):
             kw_liste_nep.loc[
                 kw_liste_nep[kw_liste_nep.federal_state.isnull()].index, col
             ] *= population_share()
-
+    
+    # Map NEP carrier names to internal eGon-data carrier names
     kw_liste_nep["carrier"] = map_carrier()[kw_liste_nep.carrier_nep].values
+    kw_liste_nep["chp"] = kw_liste_nep["chp"].replace("ja", "Ja")
 
     if export is True:
         # Insert data to db

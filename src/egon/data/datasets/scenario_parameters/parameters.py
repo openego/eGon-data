@@ -571,7 +571,7 @@ def electricity(scenario):
         parameters["annual_demand"] = {
             "households": 83.0
             * 1e6,  # MWh source: NEP 2025 V.2; figure 6, Scenario C 2037
-            "CTS": 86.0
+            "CTS": 89.2
             * 1e6,  # MWh source: NEP 2025 V.2; figure 6, Scenario C 2037
             "industry": 309.1
             * 1e6,  # MWh source: NEP 2025 V.2; figure 6, Scenario C 2037
