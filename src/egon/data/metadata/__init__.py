@@ -670,6 +670,29 @@ def sources():
             "path": "https://zenodo.org/record/5743452#.YbCoz7so8go",
             "licenses": [license_ccby("© Übertragungsnetzbetreiber")],
         },
+         "nep2025": {
+             "title": (
+                 "Netzentwicklungsplan Strom 2037 mit Ausblick 2045, Version 2025, zweiter"
+                 " Entwurf"
+             ),
+             "description": (
+                 "Die vier deutschen Übertragungsnetzbetreiber zeigen"
+                 " mit diesem zweiten Entwurf des Netzentwicklungsplans"
+                 " 2037, Version 2025, den benötigten Netzausbau für die"
+                 " nächsten Jahre auf. Der NEP-Bericht beschreibt keine"
+                 " konkreten Trassenverläufe von Übertragungsleitungen,"
+                 " sondern er dokumentiert den notwendigen"
+                 " Übertragungsbedarf zwischen Netzknoten."
+                 " Das heißt, es werden Anfangs- und Endpunkte von"
+                 " zukünftigen Leitungsverbindungen definiert sowie"
+                 " konkrete Empfehlungen für den Aus- und Neubau der"
+                 " Übertragungsnetze an Land und auf See in Deutschland"
+                 " gemäß den Detailanforderungen im § 12 EnWG gegeben."
+             ),
+             "path": "folgt",
+             "licenses": [license_ccby("© Übertragungsnetzbetreiber")],
+         },
+
         "openffe_gas": {
             "title": (
                 "Load Curves of the Industry Sector"
