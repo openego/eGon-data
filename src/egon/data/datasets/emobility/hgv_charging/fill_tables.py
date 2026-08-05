@@ -91,6 +91,12 @@ def _write_sites(sites_all, egon_scn, stage_a_scn, engine):
             "el_demand_N2": "el_demand_N2_mwh",
             "el_demand_N3": "el_demand_N3_mwh",
             "el_demand_N3S": "el_demand_N3S_mwh",
+            "el_demand_night_N2": "el_demand_night_N2_mwh",
+            "el_demand_night_N3": "el_demand_night_N3_mwh",
+            "el_demand_night_N3S": "el_demand_night_N3S_mwh",
+            "el_demand_day_N2": "el_demand_day_N2_mwh",
+            "el_demand_day_N3": "el_demand_day_N3_mwh",
+            "el_demand_day_N3S": "el_demand_day_N3S_mwh",
         }
     )
 
@@ -99,11 +105,18 @@ def _write_sites(sites_all, egon_scn, stage_a_scn, engine):
     sites["bus_id"] = None
     sites["voltage_level"] = None
 
+    # Per-vehicle-class day/night columns (highway only) are kept alongside
+    # the combined el_demand_day_mwh/el_demand_night_mwh totals -- needed to
+    # check a highway site's night-only (event-backed) energy per vehicle
+    # class without an approximation. See EgonHgvChargingSite in
+    # db_classes.py and HGV/CONTEXT.md's "Highway site" entry.
     keep = [
         "site_id", "scenario", "location_type", "category_name", "geom",
         "area_m2", "N2", "N3", "N3S",
         "el_demand_N2_mwh", "el_demand_N3_mwh", "el_demand_N3S_mwh",
         "el_demand_day_mwh", "el_demand_night_mwh",
+        "el_demand_day_N2_mwh", "el_demand_day_N3_mwh", "el_demand_day_N3S_mwh",
+        "el_demand_night_N2_mwh", "el_demand_night_N3_mwh", "el_demand_night_N3S_mwh",
         "p_set_aggregated_mw", "mv_grid_id", "bus_id", "voltage_level", "carrier",
     ]
     sites = sites[[c for c in keep if c in sites.columns]]

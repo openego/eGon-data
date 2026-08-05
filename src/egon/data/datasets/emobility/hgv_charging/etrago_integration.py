@@ -72,7 +72,7 @@ def write_etrago():
         # --- Fixed load: all CPs for lowflex scenario ---
         if lowflex["create"] and egon_scn in lowflex["names"]:
             lowflex_scn = lowflex["names"][egon_scn]
-            _write_fixed_load(lowflex_scn, sites, cps, profiles, day_only=False)
+            _write_fixed_load(lowflex_scn, sites, cps, profiles, day_only=False, events=events)
             logger.info(f"  Wrote lowflex fixed loads for {lowflex_scn}")
 
         # --- Flex model: MV-aggregated and HV/EHV per-site ---
@@ -158,55 +158,92 @@ def _load_data(egon_scn: str):
 # Fixed load (profile-based)
 # ---------------------------------------------------------------------------
 
-def _build_bus_timeseries(sites, cps, profiles, day_only=False):
-    """Build profile-based timeseries per bus_id.
+def _build_bus_timeseries_day_only(sites, profiles):
+    """Build profile-based timeseries per bus_id, highway day CPs only.
 
-    day_only=True: only highway day CPs.
-    day_only=False: all CPs (depot + highway day + highway night).
+    Highway daytime (MCS) demand has NO real events at all by design
+    (distribute_energy_highway only builds ts_{vc} from
+    el_demand_night_{vc}), so there is nothing to sum here besides the
+    profile x annual_energy shape.
     """
     bus_ts = {}
-
-    if not day_only:
-        # Depot CPs
-        depot_cps = cps[cps["location_type"] == "depot"]
-        for bus_id, group in depot_cps.groupby("bus_id"):
-            ts = np.zeros(N_TIMESTEPS)
-            for _, cp in group.iterrows():
-                prof = profiles.get(cp["sector"])
-                if prof is None:
-                    logger.warning(f"  Missing profile for sector {cp['sector']}, skipping")
-                    continue
-                ts += prof * cp["el_demand_mwh"]
-            bus_ts[bus_id] = bus_ts.get(bus_id, np.zeros(N_TIMESTEPS)) + ts
-
-    # Highway CPs
     highway_sites = sites[sites["location_type"] == "highway"]
-    site_info = highway_sites.set_index("site_id")[
-        ["bus_id", "el_demand_day_mwh", "el_demand_night_mwh"]
-    ]
-    tod_sector_map = (
-        {"day": "hgv_highway_day"}
-        if day_only
-        else {"day": "hgv_highway_day", "night": "hgv_highway_night"}
-    )
+    site_info = highway_sites.set_index("site_id")[["bus_id", "el_demand_day_mwh"]]
 
     for site_id, site_row in site_info.iterrows():
         bus_id = site_row["bus_id"]
-        ts = np.zeros(N_TIMESTEPS)
-        for tod, sector in tod_sector_map.items():
-            prof = profiles.get(sector)
-            if prof is None:
-                logger.warning(f"  Missing profile {sector}, skipping site {site_id}")
-                continue
-            ts += prof * site_row[f"el_demand_{tod}_mwh"]
+        prof = profiles.get("hgv_highway_day")
+        if prof is None:
+            logger.warning(f"  Missing profile hgv_highway_day, skipping site {site_id}")
+            continue
+        ts = prof * site_row["el_demand_day_mwh"]
         bus_ts[bus_id] = bus_ts.get(bus_id, np.zeros(N_TIMESTEPS)) + ts
 
     return bus_ts
 
 
-def _write_fixed_load(scenario: str, sites, cps, profiles, day_only: bool):
-    """Write profile-based fixed loads to egon_etrago_load/_timeseries."""
-    bus_ts = _build_bus_timeseries(sites, cps, profiles, day_only=day_only)
+def _build_bus_timeseries_events(sites, cps, events):
+    """Build event-based ("dumb charging") timeseries per bus_id, depot +
+    highway night CPs -- for the lowflex fixed load.
+
+    Matches MIV's lowflex load exactly (model_timeseries.py: "lowflex: use
+    dumb charging load") -- each vehicle charges at full nominal power from
+    arrival until its own charge_end, summed per bus_id. NOT profile x
+    annual_energy, which has no MIV equivalent at this granularity and was
+    a HGV-only simplification that masked a real modelling issue (see next
+    paragraph).
+
+    Events clipped to the year boundary (park_start == 0) are dropped from
+    this sum entirely: such an event's true arrival was before the
+    simulated year began, so its clipped remainder has no valid place to be
+    shown at full power without concentrating an entire year's worth of
+    country-wide arrivals onto a single timestep (see HGV/DOCUMENTATION.md's
+    "Known limitations" section). This affects ~0.3% of events and is a
+    small, deliberate energy loss -- the flex model's driving_load is
+    untouched (matches MIV's regular-scenario behavior, which does not drop
+    these).
+    """
+    bus_ts = {}
+
+    real_events = events[events["location"] == "charging"].copy()
+    n_before = len(real_events)
+    real_events = real_events[real_events["park_start"] != 0]
+    n_dropped = n_before - len(real_events)
+    if n_dropped:
+        logger.info(
+            f"  Dropped {n_dropped:,} year-boundary-clipped events "
+            f"(park_start==0) from the lowflex fixed-load sum"
+        )
+
+    cp_to_bus = cps.merge(
+        sites[["site_id", "bus_id"]], on="site_id", how="left",
+    ).set_index("cp_id")["bus_id"]
+    real_events["bus_id"] = real_events["cp_id"].map(cp_to_bus)
+
+    for bus_id, group in real_events.groupby("bus_id"):
+        ev_data = _data_preprocessing_hgv(group)
+        ts = _generate_hgv_load_time_series(ev_data)
+        bus_ts[bus_id] = (
+            bus_ts.get(bus_id, np.zeros(N_TIMESTEPS)) + ts["load_time_series"].to_numpy()
+        )
+
+    return bus_ts
+
+
+def _write_fixed_load(scenario: str, sites, cps, profiles, day_only: bool, events=None):
+    """Write fixed loads to egon_etrago_load/_timeseries.
+
+    day_only=True:  profile-based (highway day only, see
+                    _build_bus_timeseries_day_only).
+    day_only=False: event-based dumb charging (depot + highway night, see
+                    _build_bus_timeseries_events) -- requires `events`.
+    """
+    if day_only:
+        bus_ts = _build_bus_timeseries_day_only(sites, profiles)
+    else:
+        if events is None:
+            raise ValueError("_write_fixed_load(day_only=False) requires events")
+        bus_ts = _build_bus_timeseries_events(sites, cps, events)
     if not bus_ts:
         return
 

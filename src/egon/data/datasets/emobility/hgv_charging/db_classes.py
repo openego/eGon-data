@@ -43,6 +43,18 @@ class EgonHgvChargingSite(Base):
     el_demand_N3S_mwh = Column(Float)
     el_demand_day_mwh = Column(Float)
     el_demand_night_mwh = Column(Float)
+    # Per-vehicle-class day/night split (highway sites only -- depot sites
+    # have no day/night split at all, N2/N3/N3S columns above already cover
+    # them). Needed to check a highway site's night-only energy (the only
+    # share with real charging events -- daytime/MCS has none) against
+    # events/flex-model energy without falling back to an approximation
+    # that applies the combined day/night ratio uniformly across classes.
+    el_demand_day_N2_mwh = Column(Float)
+    el_demand_day_N3_mwh = Column(Float)
+    el_demand_day_N3S_mwh = Column(Float)
+    el_demand_night_N2_mwh = Column(Float)
+    el_demand_night_N3_mwh = Column(Float)
+    el_demand_night_N3S_mwh = Column(Float)
     p_set_aggregated_mw = Column(Float)
     mv_grid_id = Column(Integer)
     bus_id = Column(BigInteger)
