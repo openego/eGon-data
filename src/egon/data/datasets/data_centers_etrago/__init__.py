@@ -14,7 +14,7 @@ from egon.data import config, db
 from egon.data.datasets import Dataset, DatasetSources, DatasetTargets
 
 TARGET_CAPACITY_MW = (
-    400  # 15680 (Szenario A), 19460 (Szenario B), 23240 (Szenario C)
+    19460  # 15680 (Szenario A), 19460 (Szenario B), 23240 (Szenario C)
 )
 MU = 3.297
 SIGMA = 1.325
@@ -612,6 +612,14 @@ def insert_data_centers(scenario):
 
 def insert_data_centers_for_scenarios():
     """Insert data centers for configured scenarios using Scenario B assumption."""
+    global TARGET_CAPACITY_MW
+
+    if (
+        config.settings()["egon-data"]["--dataset-boundary"]
+        == "Schleswig-Holstein"
+    ):
+        TARGET_CAPACITY_MW = TARGET_CAPACITY_MW / 16
+
     for scenario in config.settings()["egon-data"]["--scenarios"]:
         if scenario == "eGon2035":
             insert_data_centers(scenario)
@@ -633,30 +641,15 @@ class DataCenters(Dataset):
             "substations": "grid.egon_hvmv_substation",
         },
         files={
-            "commercial_areas": "Gewerbeflaechen.gpkg",
-            # Potential eGon replacement: openstreetmap.osm_landuse with sector_name IN ('industrial', 'retail').
-            # This provides similar commercial/industrial candidate areas, but the result will differ because eGon OSM contains many more polygons (157819 vs 32752) with different geometries, areas, and classification.
-            "district_heating_areas": "Wärmenetze.gpkg",
-            # Potential eGon replacement: demand.egon_district_heating_areas filtered by scenario. The required fields for original workflow are available (geometry and residential_and_service_demand).
-            # However, replacing the file would change results because the scenario counts differ:  Wärmenetze.gpkg has eGon2035 = 2250, eGon100RE = 3785, status2019 = 0, while demand.egon_district_heating_areas has eGon2035 = 2550, eGon100RE = 8762, status2019 = 1868.
-            # Therefore, the eGon table is structurally suitable but not identical to original file input.
-            ## Potential eGon-native replacement: demand.egon_district_heating_areas filtered by the active scenario, using geometry and residential_and_service_demand. Since district heating areas are scenario-dependent, a scenario-specific filter would be methodologically cleaner than using mixed scenario data.
-            # This may lead to different allocation results compared to the original exported input file.
             "internet_nodes": (
                 "data_bundle_egon_data/data_centers/Internetknoten.gpkg"
             ),
             "regional_factors": (
                 "data_bundle_egon_data/data_centers/Regionalisierungsfaktoren.gpkg"
             ),
-            # Original input containing pre-defined regional Faktor values for selected grid/location points.
-            # The exact factor methodology comes from the original external source/PDF, not from this code.
-            # In the allocation, the factor is used only as an electricity-location score modifier via score_regio_strom = 1.2 - Faktor. Therefore, lower Faktor values increase the electricity suitability score.
-            "substations": "Umspannwerke.gpkg",
-            # Candidate eGon replacement: grid.egon_hvmv_substation.
-            # originl's inpu layer contains HV + EHV substations, not only EHV.
-            # Therefore, grid.egon_hvmv_substation is closer than grid.egon_ehv_substation:
-            # it has similar columns and row count (~4093 vs Umspannwerke's 4291), while egon_ehv_substation
-            # only has ~452 rows. Suitable for eGon-native electricity-proximity scoring, but results may differ.
+            # Original input containing pre-defined regional Faktor values.
+            # The factor is used in the electricity-location score through:
+            # score_regio_strom = 1.2 - Faktor.
         },
     )
 
