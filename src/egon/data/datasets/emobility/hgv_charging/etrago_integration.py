@@ -15,7 +15,7 @@ Flex model (bus + link + store + driving load, written for flex scenarios):
   Highway day is always excluded from the flex model.
 """
 
-from collections import Counter, namedtuple
+from collections import namedtuple
 
 from loguru import logger
 import numpy as np
@@ -40,6 +40,7 @@ CARRIER_STORE = "battery_storage"     # EV battery store
 
 ETA_CP = 1.0
 N_TIMESTEPS = 8760
+TIMESTEP_HOURS = 1.0  # hourly resolution; driving_load's energy->power conversion assumes this
 
 
 def _lowflex_config() -> dict:
@@ -104,7 +105,7 @@ def _load_data(egon_scn: str):
 
         events_rows = session.execute(
             f"""
-            SELECT event_id, cp_id, site_id, vehicle_class, bat_cap,
+            SELECT event_id, cp_id, site_id, vehicle_class, bat_cap, slot_id,
                    location, use_case,
                    charging_capacity_nominal, charging_capacity_grid,
                    soc_start, soc_end, charging_demand,
@@ -131,7 +132,7 @@ def _load_data(egon_scn: str):
         "cp_id", "site_id", "vehicle_class", "sector", "time_of_day", "p_set_mw",
     ])
     events = pd.DataFrame(events_rows, columns=[
-        "event_id", "cp_id", "site_id", "vehicle_class", "bat_cap",
+        "event_id", "cp_id", "site_id", "vehicle_class", "bat_cap", "slot_id",
         "location", "use_case",
         "charging_capacity_nominal", "charging_capacity_grid",
         "soc_start", "soc_end", "charging_demand",
@@ -243,8 +244,16 @@ def _write_fixed_load(scenario: str, sites, cps, profiles, day_only: bool):
 def _data_preprocessing_hgv(events: pd.DataFrame) -> pd.DataFrame:
     """Compute derived columns needed by _generate_hgv_load_time_series.
 
-    Adds charging-event rows plus synthetic driving rows (one per charging event)
-    so that the energy charged leaves the store at departure.
+    Column derivation only — no row synthesis. Matches MIV's
+    data_preprocessing, which likewise only derives columns from simBEV's
+    already-complete event sequence; here, generate_charging_events
+    (HGV/energy_distribution_depots.py) is the equivalent upstream source
+    of a complete event sequence (charging events plus vacant events
+    filling every gap in each physical slot's chain — see HGV/CONTEXT.md
+    and HGV/docs/adr/0002). There is no separate driving-event row:
+    baseline SOC is 1.0 for every slot, and each charging event carries
+    its own arrival deficit and drives its own driving_load contribution
+    (added directly in _generate_hgv_load_time_series).
     """
     df = events.copy()
     df["charging_capacity_grid_MW"] = df["charging_capacity_grid"] / 1e3
@@ -271,49 +280,28 @@ def _data_preprocessing_hgv(events: pd.DataFrame) -> pd.DataFrame:
     # Rename cp_id → ev_id (profile_counter key in generate_load_time_series)
     df = df.rename(columns={"cp_id": "ev_id"})
 
-    # Synthetic driving rows: one per charging event, at departure timestep.
-    # location="driving", soc_start=1.0 (full after charging), soc_end=original soc_start,
-    # consumption=charging_demand removes energy from the store at drive_start.
-    drive_rows = df[["ev_id", "bat_cap", "soc_start", "charging_demand",
-                      "park_end", "drive_start", "drive_end"]].copy()
-    drive_rows["location"] = "driving"
-    drive_rows["charging_capacity_grid_MW"] = 0.0
-    drive_rows["last_timestep_charging_capacity_grid_MW"] = 0.0
-    drive_rows["charge_end"] = drive_rows["drive_start"]
-    drive_rows["last_timestep"] = drive_rows["drive_start"]
-    drive_rows["flex_charging_capacity_grid_MW"] = 0.0
-    drive_rows["flex_last_timestep_charging_capacity_grid_MW"] = 0.0
-    # After charging soc=1.0, after driving soc=original soc_start of charging event
-    drive_rows["soc_end"] = drive_rows["soc_start"]
-    drive_rows["soc_start"] = 1.0
-    drive_rows["consumption"] = drive_rows["charging_demand"]
-    # park_start/park_end for driving row = drive timestep (zero-duration)
-    drive_rows["park_start"] = drive_rows["drive_start"]
-    drive_rows["park_end"] = drive_rows["drive_start"]
-    drive_rows = drive_rows.drop(columns=["charging_demand"])
-
-    # Align columns
-    keep_cols = [
-        "ev_id", "drive_start", "drive_end", "park_start", "park_end",
-        "charge_end", "charging_capacity_grid_MW", "last_timestep",
-        "last_timestep_charging_capacity_grid_MW",
-        "flex_charging_capacity_grid_MW", "flex_last_timestep_charging_capacity_grid_MW",
-        "soc_start", "soc_end", "bat_cap", "location", "consumption",
-    ]
-    df_charging = df[keep_cols]
-    df_driving = drive_rows[keep_cols]
-
-    return pd.concat([df_charging, df_driving], ignore_index=True)
+    return df
 
 
 def _generate_hgv_load_time_series(ev_data_df: pd.DataFrame) -> pd.DataFrame:
     """Compute load and SoC band timeseries from preprocessed HGV event data.
 
     Adapted from MIV generate_load_time_series for hourly (8760-step) resolution.
-    All ev_count = 1 (no profile duplication for HGV).
-    """
-    profile_counter = Counter(ev_data_df["ev_id"])
+    ev_count is always 1 (no profile duplication for HGV): unlike MIV, ev_id here
+    is a charging point id, not a shared vehicle-profile id, so counting ev_id
+    occurrences would multiply each event's power by the number of unrelated
+    events that ever used the same charging point.
 
+    There is no separate driving-event row (see HGV/CONTEXT.md's "Charging
+    event"/"Vacant event" terms and HGV/docs/adr/0002). Baseline SOC is 1.0
+    for every physical slot: a charging event's own soc_start already
+    encodes its arrival deficit relative to that baseline, and it
+    registers its own driving_load contribution at its own park_start (the
+    energy it will use to drive away, replenished by this charging).
+    Vacant events (location="vacant") hit the soc_start == soc_end branch
+    below, holding the slot's SOC flat at 1.0 through every gap in its
+    chain.
+    """
     arrays = {k: np.zeros(N_TIMESTEPS) for k in [
         "load", "flex", "plugged_in", "plugged_in_flex",
         "soc_min_abs", "soc_max_abs", "driving_load",
@@ -334,7 +322,7 @@ def _generate_hgv_load_time_series(ev_data_df: pd.DataFrame) -> pd.DataFrame:
         flex_cap, flex_last_ts_cap,
         soc_start, soc_end, bat_cap, location, consumption,
     ) in ev_data_df[columns].itertuples():
-        ev_count = profile_counter[ev_id]
+        ev_count = 1
 
         arrays["load"][start:end] += cap * ev_count
         arrays["load"][last_ts] += last_ts_cap * ev_count
@@ -343,17 +331,10 @@ def _generate_hgv_load_time_series(ev_data_df: pd.DataFrame) -> pd.DataFrame:
         arrays["plugged_in"][start:park_end + 1] += cap * ev_count
         arrays["plugged_in_flex"][start:park_end + 1] += flex_cap * ev_count
 
-        if location == "driving":
-            n = drive_end - drive_start + 1
-            lin = np.linspace(soc_start, soc_end, n + 1)[1:]
-            arrays["soc_min_abs"][drive_start:drive_end + 1] += lin * bat_cap * ev_count
-            arrays["soc_max_abs"][drive_start:drive_end + 1] += lin * bat_cap * ev_count
-            if soc_start > soc_end:
-                arrays["driving_load"][drive_start:drive_end + 1] += (
-                    consumption * ev_count / n
-                )
-
-        elif soc_start == soc_end:
+        if soc_start == soc_end:
+            # Covers vacant events (location="vacant", flat at the 1.0
+            # baseline) and any real charging event that happened to arrive
+            # already full.
             arrays["soc_min_abs"][start:park_end + 1] += soc_start * bat_cap * ev_count
             arrays["soc_max_abs"][start:park_end + 1] += soc_end * bat_cap * ev_count
 
@@ -366,18 +347,30 @@ def _generate_hgv_load_time_series(ev_data_df: pd.DataFrame) -> pd.DataFrame:
                 arrays["soc_min_abs"][start:park_end + 1] += lin * bat_cap * ev_count
                 arrays["soc_max_abs"][start:park_end + 1] += lin * bat_cap * ev_count
 
+            # This vehicle's own driving load: the energy it will use to
+            # leave, registered at its own arrival (consumption == the
+            # charging_demand this event delivers — see energy_distribution_
+            # depots.py). One-hour draw at hourly resolution.
+            arrays["driving_load"][start] += consumption * ev_count / TIMESTEP_HOURS
+
     return pd.DataFrame({
-        "load_time_series": arrays["load"] / 1e3,          # kW → MW
-        "simultaneous_plugged_in_charging_capacity": arrays["plugged_in"] / 1e3,
-        "soc_min_absolute": arrays["soc_min_abs"] / 1e3,   # kWh → MWh
+        # cap/plugged_in accumulate charging_capacity_grid_MW, already MW — no further conversion
+        "load_time_series": arrays["load"],
+        "simultaneous_plugged_in_charging_capacity": arrays["plugged_in"],
+        "soc_min_absolute": arrays["soc_min_abs"] / 1e3,   # kWh → MWh (bat_cap is kWh)
         "soc_max_absolute": arrays["soc_max_abs"] / 1e3,
-        "driving_load_time_series": arrays["driving_load"] / 1e3,
+        "driving_load_time_series": arrays["driving_load"] / 1e3,  # consumption is kWh
     })
 
 
 def _calc_e_initial(events: pd.DataFrame) -> float:
-    """Capacity-weighted mean SoC of first event per CP (HGV analogue of MIV simbev_event_id==0)."""
-    first = events.sort_values("park_start").groupby("cp_id").first()
+    """Capacity-weighted mean SoC of first event per physical slot (HGV
+    analogue of MIV simbev_event_id==0). Grouped by (cp_id, slot_id), not
+    cp_id alone, so every physical slot contributes its own starting value
+    — a cp_id with multiple slots would otherwise be under-represented by
+    one slot's value standing in for all of them (see HGV/docs/adr/0002).
+    """
+    first = events.sort_values("park_start").groupby(["cp_id", "slot_id"]).first()
     total_bat = first["bat_cap"].sum()
     if total_bat == 0:
         return 0.5
@@ -513,7 +506,13 @@ def _run_flex_model(scenario: str, events_flex: pd.DataFrame, ac_bus):
     ev_data = _data_preprocessing_hgv(events_flex)
     ts_df = _generate_hgv_load_time_series(ev_data)
 
-    e_nom_mwh = float(events_flex["bat_cap"].sum() / 1e3)
+    # One bat_cap contribution per PHYSICAL SLOT, not per event row — a busy
+    # slot's many charging/vacant events would otherwise each add their own
+    # bat_cap, wildly inflating e_nom (same fix as _calc_e_initial, see
+    # docs/adr/0002).
+    e_nom_mwh = float(
+        events_flex.groupby(["cp_id", "slot_id"])["bat_cap"].first().sum() / 1e3
+    )
     e_initial = _calc_e_initial(events_flex)
 
     _write_flex_components(scenario, ac_bus, ts_df, e_nom_mwh, e_initial)

@@ -71,11 +71,13 @@ class EgonHgvChargingPoint(Base):
 
 
 class EgonHgvChargingEvent(Base):
-    """demand.egon_hgv_charging_event — individual parking/charging processes.
+    """demand.egon_hgv_charging_event — individual parking/charging/vacant
+    events, one row per physical slot per event (see docs/adr/0002).
 
     Column names mirror MIV egon_ev_trip. HGV-specific extras: cp_id, site_id,
-    vehicle_class, bat_cap. Columns computed internally by generate_load_time_series
-    (charge_end, last_timestep, flex_*) are NOT stored here.
+    vehicle_class, bat_cap, slot_id. Columns computed internally by
+    generate_load_time_series (charge_end, last_timestep, flex_*) are NOT
+    stored here.
     """
 
     __tablename__ = "egon_hgv_charging_event"
@@ -88,6 +90,12 @@ class EgonHgvChargingEvent(Base):
     site_id = Column(Integer)
     vehicle_class = Column(Text)
     bat_cap = Column(Float)
+    # Physical slot within cp_id this event is assigned to, from greedy slot
+    # assignment (energy_distribution_depots.py) — see docs/adr/0002. Needed
+    # to chain a slot's own events (and vacant events between them) into a
+    # continuous per-slot trajectory, and to group _calc_e_initial correctly
+    # when a cp_id has multiple slots.
+    slot_id = Column(Integer)
     # MIV-compatible columns
     location = Column(Text)
     use_case = Column(Text)

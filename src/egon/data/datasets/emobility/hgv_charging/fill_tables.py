@@ -144,7 +144,7 @@ def _write_charging_events(events_all, egon_scn, stage_a_scn, engine):
 
     keep = [
         "event_id", "scenario", "cp_id", "site_id", "vehicle_class", "bat_cap",
-        "location", "use_case",
+        "location", "use_case", "slot_id",
         "charging_capacity_nominal", "charging_capacity_grid", "charging_capacity_battery",
         "soc_start", "soc_end", "charging_demand",
         "park_start", "park_end", "drive_start", "drive_end", "consumption",
