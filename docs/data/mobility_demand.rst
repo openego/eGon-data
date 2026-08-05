@@ -125,3 +125,50 @@ The used approach is for each use case shortly described in the following:
   obtained from OSM [OSM]_. The locations are ranked randomly at the moment.
 
 The necessary input data is downloaded from `zenodo <https://zenodo.org/records/6466480>`_.
+
+
+.. _mobility-demand-hdt-ref:
+
+Heavy-duty transport
++++++++++++++++++++++
+
+In the context of the eGon project, it is assumed that all e-trucks will be
+completely hydrogen-powered. The hydrogen demand data of all e-trucks is set up
+in the :py:class:`HeavyDutyTransport<egon.data.datasets.emobility.heavy_duty_transport.HeavyDutyTransport>`
+dataset for both the eGon2035 and eGon100RE scenario.
+
+In both scenarios the hydrogen consumption is
+assumed to be 6.68 kgH2 per 100 km with an additional supply chain leakage rate of 0.5 %
+(see `here <https://www.energy.gov/eere/fuelcells/doe-technical-targets-hydrogen-delivery>`_).
+
+For the eGon2035 scenario the ramp-up figures are taken from the
+network development plan [NEP2021]_
+(Scenario C 2035). According to this, 100,000 e-trucks are
+expected in Germany in 2035, each covering an average of 100,000 km per year.
+In total this means 10 Billion km.
+
+For the eGon100RE scenario it is assumed that the heavy-duty transport is
+completely hydrogen-powered. The total freight traffic with 40 Billion km is
+taken from the
+`BMWK Langfristszenarien <https://www.langfristszenarien.de/enertile-explorer-wAssets/docs/LFS3_Langbericht_Verkehr_final.pdf#page=17>`_
+for heavy-duty vehicles larger 12 t allowed total weight (SNF > 12 t zGG).
+
+The total hydrogen demand is spatially distributed on the basis of traffic volume data from [BASt]_.
+For this purpose, first a voronoi partition of Germany using the traffic measuring points is created.
+Afterwards, the spatial shares of the Voronoi regions in each NUTS3 area are used to allocate
+hydrogen demand to the NUTS3 regions and are then aggregated per NUTS3 region.
+The refuelling is assumed to take place at a constant rate.
+Finally, to
+determine the hydrogen bus where the hydrogen demand is allocated to, the centroid
+of each NUTS3 region is used to determine the respective hydrogen Voronoi cell (see
+:py:class:`GasAreaseGon2035<egon.data.datasets.gas_areas.GasAreaseGon2035>` and
+:py:class:`GasAreaseGon100RE<egon.data.datasets.gas_areas.GasAreaseGon100RE>`) it is
+located in.
+
+.. note::
+   As of this restoration, only the eGon2035 scenario is active for
+   heavy-duty transport (see ``datasets.yml``'s ``mobility_hgv.original_data.
+   constants.scenarios`` and ``emobility/heavy_duty_transport/__init__.py``)
+   -- eGon100RE is not currently registered as an ``EgonScenario`` row in
+   this fork and would fail with a foreign-key error if enabled without
+   first registering it.
