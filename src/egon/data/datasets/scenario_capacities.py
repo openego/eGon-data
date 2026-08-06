@@ -674,58 +674,83 @@ def district_heating_input():
 
     """
     sources = ScenarioCapacities.sources
-    # import data to dataframe
-    file = Path(".") / sources.files["eGon2035_capacities"]
-    #TODO:Umgang mit der Kurzstudie_KWK diskutieren
-    df = pd.read_excel(
-        file, sheet_name="Kurzstudie_KWK", dtype={"Wert": float}
-    )
-    df.set_index(["Energietraeger", "Name"], inplace=True)
 
-    # Scale values to population share in testmode
-    if config.settings()["egon-data"]["--dataset-boundary"] != "Everything":
-        df.loc[
-            pd.IndexSlice[:, "Fernwaermeerzeugung"], "Wert"
-        ] *= population_share()
+    # The eGon2035 scenario has its own capacities file, while reGon2037
+    # and reGon2045 share the same "Kurzstudie_KWK" sheet (analogous to
+    # how reGon2045 reuses reGon2037's aggregated NEP capacities, see
+    # aggr_nep_capacities()).
+    file_per_scenario = {
+        "eGon2035": sources.files["eGon2035_capacities"],
+        "reGon2037": sources.files["reGon_capacities"],
+        "reGon2045": sources.files["reGon_capacities"],
+    }
+
+    scenarios = [
+        s
+        for s in config.settings()["egon-data"]["--scenarios"]
+        if s in file_per_scenario
+    ]
 
     # Connect to database
     engine = db.engine()
     session = sessionmaker(bind=engine)()
 
-    # insert heatpumps and resistive heater as link
-    for c in ["Grosswaermepumpe", "Elektrodenheizkessel"]:
-        entry = EgonScenarioCapacities(
-            component="link",
-            scenario_name="eGon2035",
-            nuts="DE",
-            carrier="urban_central_"
-            + ("heat_pump" if c == "Grosswaermepumpe" else "resistive_heater"),
-            capacity=df.loc[(c, "Fernwaermeerzeugung"), "Wert"]
-            * 1e6
-            / df.loc[(c, "Volllaststunden"), "Wert"]
-            / df.loc[(c, "Wirkungsgrad"), "Wert"],
+    for scenario in scenarios:
+        # import data to dataframe
+        file = Path(".") / file_per_scenario[scenario]
+        #TODO:Umgang mit der Kurzstudie_KWK diskutieren
+        df = pd.read_excel(
+            file, sheet_name="Kurzstudie_KWK", dtype={"Wert": float}
         )
+        df.set_index(["Energietraeger", "Name"], inplace=True)
 
-        session.add(entry)
+        # Scale values to population share in testmode
+        if (
+            config.settings()["egon-data"]["--dataset-boundary"]
+            != "Everything"
+        ):
+            df.loc[
+                pd.IndexSlice[:, "Fernwaermeerzeugung"], "Wert"
+            ] *= population_share()
 
-    # insert solar- and geothermal as generator
-    for c in ["Geothermie", "Solarthermie"]:
-        entry = EgonScenarioCapacities(
-            component="generator",
-            scenario_name="eGon2035",
-            nuts="DE",
-            carrier="urban_central_"
-            + (
-                "solar_thermal_collector"
-                if c == "Solarthermie"
-                else "geo_thermal"
-            ),
-            capacity=df.loc[(c, "Fernwaermeerzeugung"), "Wert"]
-            * 1e6
-            / df.loc[(c, "Volllaststunden"), "Wert"],
-        )
+        # insert heatpumps and resistive heater as link
+        for c in ["Grosswaermepumpe", "Elektrodenheizkessel"]:
+            entry = EgonScenarioCapacities(
+                component="link",
+                scenario_name=scenario,
+                nuts="DE",
+                carrier="urban_central_"
+                + (
+                    "heat_pump"
+                    if c == "Grosswaermepumpe"
+                    else "resistive_heater"
+                ),
+                capacity=df.loc[(c, "Fernwaermeerzeugung"), "Wert"]
+                * 1e6
+                / df.loc[(c, "Volllaststunden"), "Wert"]
+                / df.loc[(c, "Wirkungsgrad"), "Wert"],
+            )
 
-        session.add(entry)
+            session.add(entry)
+
+        # insert solar- and geothermal as generator
+        for c in ["Geothermie", "Solarthermie"]:
+            entry = EgonScenarioCapacities(
+                component="generator",
+                scenario_name=scenario,
+                nuts="DE",
+                carrier="urban_central_"
+                + (
+                    "solar_thermal_collector"
+                    if c == "Solarthermie"
+                    else "geo_thermal"
+                ),
+                capacity=df.loc[(c, "Fernwaermeerzeugung"), "Wert"]
+                * 1e6
+                / df.loc[(c, "Volllaststunden"), "Wert"],
+            )
+
+            session.add(entry)
 
     session.commit()
 
