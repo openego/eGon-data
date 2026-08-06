@@ -71,11 +71,20 @@ class HGVCharging(Dataset):
     *Configuration*
 
     The config of this dataset is in *datasets.yml* under *mobility_hgv_charging*.
-    Set ``original_data.sources.hgv_input_dir`` to the directory holding one
-    subfolder per scenario with the input files.
+    ``original_data.sources.hgv_input_dir`` points at the directory holding one
+    subfolder per scenario with the input files; it ships in the data bundle
+    (see :py:class:`DataBundle <egon.data.datasets.data_bundle.DataBundle>`)
+    and is resolved relative to the egon-data working directory.
     """
 
     sources = DatasetSources(
+        files={
+            # One subfolder per scenario (reGon2037, reGon2045), each holding
+            # sites.gpkg, charging_points.csv, charging_events.csv and
+            # profiles.csv. Read-only input from the data bundle -- kept in
+            # sync with datasets.yml's hgv_input_dir.
+            "hgv_input_dir": "data_bundle_egon_data/hgv_charging",
+        },
         tables={
             "mv_grid_district": "grid.egon_mv_grid_district",
             "etrago_load": "grid.egon_etrago_load",

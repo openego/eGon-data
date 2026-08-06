@@ -1,9 +1,13 @@
 """
 Read the precomputed HGV charging demand input files and populate Tables 1–4.
 
-Input files live in one subfolder per scenario under the directory configured
-via datasets.yml:
+Input files ship in the data bundle and live in one subfolder per scenario
+under the directory configured via datasets.yml:
   mobility_hgv_charging.original_data.sources.hgv_input_dir
+    -> data_bundle_egon_data/hgv_charging/<scenario>/
+Like every other data_bundle_egon_data path this is resolved relative to the
+egon-data working directory. The directory is read-only here; everything this
+module produces goes to the database.
 
 For each scenario the input-data string (e.g. "C 2037") is mapped to the
 egon-data scenario name ("reGon2037") before writing to the DB.

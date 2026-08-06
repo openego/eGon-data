@@ -695,6 +695,10 @@ with airflow.DAG(
         # eMobility: HGV charging (BEV depots + highway)
         hgv_charging = HGVCharging(
             dependencies=[
+                # The precomputed HGV charging input files ship in the data
+                # bundle (data_bundle_egon_data/hgv_charging/<scenario>), so
+                # this must not run before the bundle has been downloaded.
+                data_bundle,
                 mv_grid_districts,
                 setup_etrago,
                 vg250,
