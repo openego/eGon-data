@@ -39,11 +39,11 @@ MC_RUNS = 100
 
 # Electrical parameters for AC data center connection lines
 # Values taken from scenario_parameters/parameters.py
-S_NOM_DC_CONNECTION_110KV = 260
+S_NOM_DATA_CENTER_CONNECTION_110KV = 260
 R_PER_KM_110KV = 0.109
 L_PER_KM_110KV = 1.2e-3
 
-S_NOM_DC_CONNECTION_380KV = 1790
+S_NOM_DATA_CENTER_CONNECTION_380KV = 1790
 R_PER_KM_380KV = 0.028
 L_PER_KM_380KV = 0.8e-3
 
@@ -332,7 +332,7 @@ def create_data_center_allocation():
 
 
 ####################
-# integration part inital draft
+# Electrical integration part 
 def get_existing_ac_buses(scenario):
     """Get existing 110 kV and 380 kV AC buses from eTraGo."""
     sources = DataCenters.sources
@@ -352,6 +352,7 @@ def get_existing_ac_buses(scenario):
 
     return gdf.rename_geometry("geometry")
 
+
 def get_existing_central_heat_buses(scenario):
     """Get existing central heat buses from eTraGo."""
     sources = DataCenters.sources
@@ -368,9 +369,6 @@ def get_existing_central_heat_buses(scenario):
     )
 
     return gdf.rename_geometry("geometry")
-
-
-# double check the scenrio first
 
 
 def assign_nearest_bus(data_centers, existing_buses):
@@ -446,7 +444,7 @@ def assign_nearest_heat_bus(data_centers, central_heat_buses):
 
 def create_data_center_buses(data_centers, scenario):
     """Create new AC buses for data centers."""
-    dc_buses = gpd.GeoDataFrame(
+    data_center_buses = gpd.GeoDataFrame(
         {
             "scn_name": scenario,
             "bus_id": db.next_etrago_id("bus", len(data_centers)),
@@ -460,12 +458,12 @@ def create_data_center_buses(data_centers, scenario):
         crs="EPSG:4326",
     )
 
-    dc_buses["x"] = dc_buses.geom.x
-    dc_buses["y"] = dc_buses.geom.y
+    data_center_buses["x"] = data_center_buses.geom.x
+    data_center_buses["y"] = data_center_buses.geom.y
 
-    data_centers["dc_bus_id"] = dc_buses["bus_id"].values
+    data_centers["data_center_bus_id"] = data_center_buses["bus_id"].values
 
-    return dc_buses, data_centers
+    return data_center_buses, data_centers
 
 
 def create_data_center_lines(data_centers, scenario):
@@ -481,7 +479,7 @@ def create_data_center_lines(data_centers, scenario):
         lines.append(
             {
                 "scn_name": scenario,
-                "bus0": row.dc_bus_id,
+                "bus0": row.data_center_bus_id,
                 "bus1": row.nearest_bus_id,
                 "type": "data_center_connection",
                 "carrier": "AC",
@@ -513,14 +511,14 @@ def create_data_center_lines(data_centers, scenario):
                 # values are the normal line capacities and are already sufficient
                 # for the modeled data center loads.
                 "s_nom": (
-                    S_NOM_DC_CONNECTION_380KV
+                    S_NOM_DATA_CENTER_CONNECTION_380KV
                     if row.v_nom == 380
-                    else S_NOM_DC_CONNECTION_110KV
+                    else S_NOM_DATA_CENTER_CONNECTION_110KV
                 ),
                 "s_nom_min": (
-                    S_NOM_DC_CONNECTION_380KV
+                    S_NOM_DATA_CENTER_CONNECTION_380KV
                     if row.v_nom == 380
-                    else S_NOM_DC_CONNECTION_110KV
+                    else S_NOM_DATA_CENTER_CONNECTION_110KV
                 ),
                 "s_nom_extendable": False,
                 "num_parallel": 1,
@@ -528,11 +526,11 @@ def create_data_center_lines(data_centers, scenario):
             }
         )
 
-    dc_lines = gpd.GeoDataFrame(lines, geometry="topo", crs="EPSG:3035")
-    dc_lines = dc_lines.to_crs(epsg=4326)
-    dc_lines["line_id"] = db.next_etrago_id("line", len(dc_lines))
+    data_center_lines = gpd.GeoDataFrame(lines, geometry="topo", crs="EPSG:3035")
+    data_center_lines = data_center_lines.to_crs(epsg=4326)
+    data_center_lines["line_id"] = db.next_etrago_id("line", len(data_center_lines))
 
-    return dc_lines
+    return data_center_lines
 
 
 def create_data_center_loads(data_centers, scenario):
@@ -541,7 +539,7 @@ def create_data_center_loads(data_centers, scenario):
         {
             "scn_name": scenario,
             "load_id": db.next_etrago_id("load", len(data_centers)),
-            "bus": data_centers["dc_bus_id"].values,
+            "bus": data_centers["data_center_bus_id"].values,
             "type": "data_center",
             "carrier": "AC",
             "p_set": data_centers["allocated_mw"].values,
@@ -579,12 +577,12 @@ def insert_data_centers(scenario):
     central_heat_buses = get_existing_central_heat_buses(scenario)
     data_centers = assign_nearest_bus(data_centers, existing_buses)
 
-    dc_buses, data_centers = create_data_center_buses(data_centers, scenario)
+    data_center_buses, data_centers = create_data_center_buses(data_centers, scenario)
     data_centers = assign_nearest_heat_bus(data_centers, central_heat_buses)
-    dc_lines = create_data_center_lines(data_centers, scenario)
-    dc_loads = create_data_center_loads(data_centers, scenario)
+    data_center_lines = create_data_center_lines(data_centers, scenario)
+    data_center_loads = create_data_center_loads(data_centers, scenario)
 
-    dc_buses.to_postgis(
+    data_center_buses.to_postgis(
         targets.get_table_name("buses"),
         schema=targets.get_table_schema("buses"),
         if_exists="append",
@@ -593,7 +591,7 @@ def insert_data_centers(scenario):
         dtype={"geom": Geometry()},
     )
 
-    dc_lines.to_postgis(
+    data_center_lines.to_postgis(
         targets.get_table_name("lines"),
         schema=targets.get_table_schema("lines"),
         if_exists="append",
@@ -601,7 +599,7 @@ def insert_data_centers(scenario):
         index=False,
         dtype={"topo": Geometry()},
     )
-    dc_loads.to_sql(
+    data_center_loads.to_sql(
         targets.get_table_name("loads"),
         schema=targets.get_table_schema("loads"),
         if_exists="append",
@@ -613,6 +611,7 @@ def insert_data_centers(scenario):
 def insert_data_centers_for_scenarios():
     """Insert data centers for configured scenarios using Scenario B assumption."""
     global TARGET_CAPACITY_MW
+    
 
     if (
         config.settings()["egon-data"]["--dataset-boundary"]
