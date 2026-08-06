@@ -8,36 +8,46 @@ import pandas as pd
 
 from egon.data import db
 from egon.data.datasets import load_sources_and_targets
+from egon.data.datasets.scenario_parameters import get_scenario_year
 import egon.data.config
 
 
-def select_nep_power_plants(carrier):
+def select_nep_power_plants(carrier, scn):
     """Select power plants with location from NEP's list of power plants
 
     Parameters
     ----------
     carrier : str
         Name of energy carrier
+    scn : str
+        Name of scenario
 
     Returns
     -------
     pandas.DataFrame
-        Waste power plants from NEP list
+        Power plants from NEP list
 
     """
     sources, targets = load_sources_and_targets("PowerPlants")
 
+    # eGon2035 plants are tagged 'eGon2035' in the NEP list, reGon2037/reGon2045
+    # share the same NEP2025 list (tagged 'reGon') but use different target
+    # capacity columns for their respective target year
+    nep_scenario = "eGon2035" if scn == "eGon2035" else "reGon"
+    capacity_column = f"c{get_scenario_year(scn)}_capacity"
+
     # Select plants with geolocation from list of conventional power plants
     nep = db.select_dataframe(f"""
         SELECT bnetza_id, name, carrier, capacity, postcode, city,
-        federal_state, c2035_capacity
+        federal_state, {capacity_column}
         FROM {sources.tables['nep_conv']}
         WHERE carrier = '{carrier}'
+        AND scenario = '{nep_scenario}'
         AND chp = 'Nein'
-        AND c2035_chp = 'Nein'
-        AND c2035_capacity > 0
+        AND {capacity_column} > 0
         AND postcode != 'None';
         """)
+    nep = nep.rename(columns={capacity_column: "elec_capacity"})
 
     nep["postcode"] = nep["postcode"].astype(str)
     nep = nep[~nep["postcode"].str.contains("A")]
@@ -91,6 +101,7 @@ def match_nep_no_chp(
     nep,
     mastr,
     matched,
+    scn,
     buffer_capacity=0.1,
     consider_location="plz",
     consider_carrier=True,
@@ -197,8 +208,8 @@ def match_nep_no_chp(
                                     1
                                 ),
                                 "carrier": ET,
-                                "el_capacity": row.c2035_capacity,
-                                "scenario": "eGon2035",
+                                "el_capacity": row.elec_capacity,
+                                "scenario": scn,
                                 "geometry": selected.geometry.head(1),
                                 "voltage_level": selected.voltage_level.head(
                                     1
