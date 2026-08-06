@@ -20,7 +20,6 @@ from egon.data.datasets import (
     Dataset,
     DatasetSources,
     DatasetTargets,
-    wrapped_partial,
 )
 from egon.data.metadata import (
     context,
@@ -330,39 +329,43 @@ def insert_capacities_per_federal_state_nep():
             # Append federal state data to the full insert DataFrame
             insert_data = pd.concat([insert_data, data])
     
-    # Get aggregated capacities from nep's power plant list for certain carrier
+    # Nothing was collected because none of the scenarios covered by the
+    # NEP report (eGon2035, reGon2037, reGon2045) is part of the configured
+    # scenarios
+    if not insert_data.empty:
+        # Get aggregated capacities from nep's power plant list for
+        # certain carrier
+        carriers = ["oil", "others", "pumped_hydro"]
 
-    carriers = ["oil", "others", "pumped_hydro"]
+        capacities_list = aggr_nep_capacities(carriers)
 
-    capacities_list = aggr_nep_capacities(carriers)
+        # Filter by carrier
+        updated = insert_data[insert_data["carrier"].isin(carriers)]
 
-    # Filter by carrier
-    updated = insert_data[insert_data["carrier"].isin(carriers)]
-    
-    # Merge to replace capacities for carriers "oil", "others" and
-    # "pumped_hydro"
-    updated = (
-        updated.merge(capacities_list, on=["carrier", "nuts", "scenario"], how="left")
-        .fillna(0)
-        .drop(["capacity_x"], axis=1)
-        .rename(columns={"capacity_y": "capacity"})
-    )
+        # Merge to replace capacities for carriers "oil", "others" and
+        # "pumped_hydro"
+        updated = (
+            updated.merge(capacities_list, on=["carrier", "nuts", "scenario"], how="left")
+            .fillna(0)
+            .drop(["capacity_x"], axis=1)
+            .rename(columns={"capacity_y": "capacity"})
+        )
 
-    # Remove updated entries from df
-    original = insert_data[~insert_data["carrier"].isin(carriers)]
+        # Remove updated entries from df
+        original = insert_data[~insert_data["carrier"].isin(carriers)]
 
-    # Join dfs
-    insert_data = pd.concat([original, updated])
-    insert_data = insert_data.rename(columns={"scenario": "scenario_name"})
+        # Join dfs
+        insert_data = pd.concat([original, updated])
+        insert_data = insert_data.rename(columns={"scenario": "scenario_name"})
 
-    # Insert data to db
-    insert_data.to_sql(
-        targets.get_table_name("scenario_capacities"),
-        engine,
-        schema=targets.get_table_schema("scenario_capacities"),
-        if_exists="append",
-        index=insert_data.index,
-    )
+        # Insert data to db
+        insert_data.to_sql(
+            targets.get_table_name("scenario_capacities"),
+            engine,
+            schema=targets.get_table_schema("scenario_capacities"),
+            if_exists="append",
+            index=insert_data.index,
+        )
 
     # Add district heating data according to energy and full load hours
     district_heating_input()
@@ -515,7 +518,24 @@ def insert_nep_list_powerplants(export=True):
     kw_liste_nep25 = pd.DataFrame()
     # kicks statusquo entries from list
     scenarios = [s for s in config.settings()["egon-data"]["--scenarios"] if "status" not in str(s).lower()]
-    
+
+    # Nothing to do if none of the scenarios covered by the NEP power plant
+    # lists (eGon2035, reGon2037, reGon2045) is part of the configured
+    # scenarios
+    if not any(s in scenarios for s in ["eGon2035", "reGon2037", "reGon2045"]):
+        if export:
+            return
+        return pd.DataFrame(
+            columns=[
+                "federal_state",
+                "scenario",
+                "carrier",
+                "c2035_capacity",
+                "c2037_capacity",
+                "c2045_capacity",
+            ]
+        )
+
     # iterates over all scenarios except for status_quo scenarios
     ran = False
     for scenario in scenarios:
@@ -755,19 +775,33 @@ def district_heating_input():
     session.commit()
 
 
-def insert_data_nep():
-    """Overall function for importing scenario input data for eGon2035 scenario
+def insert_capacities_status_quo_scn():
+    """Insert status quo capacities for all configured status quo scenarios
 
     Returns
     -------
     None.
 
     """
-    
+    for scenario in config.settings()["egon-data"]["--scenarios"]:
+        if "status" in scenario:
+            insert_capacities_status_quo(scenario)
+
+
+def insert_data_nep():
+    """Overall function for importing scenario input data for eGon2035,
+    reGon2037 and reGon2045 scenarios
+
+    Returns
+    -------
+    None.
+
+    """
+
     insert_nep_list_powerplants(export=True)
-        
+
     insert_capacities_per_federal_state_nep()
-    
+
 
 
 def add_metadata():
@@ -869,28 +903,12 @@ def add_metadata():
     )
 
 
-tasks = (create_table,)
-
-scenarios = config.settings()["egon-data"]["--scenarios"]
-
-status_quo = False
-
-for scenario in scenarios:
-    if "status" in scenario:
-        tasks += (
-            wrapped_partial(
-                insert_capacities_status_quo,
-                scenario=scenario,
-                postfix=f"_{scenario[-2:]}",
-            ),
-        )
-        status_quo = True
-
-if status_quo or any(s in scenarios for s in ["eGon2035", "reGon2037", "reGon2045"]):
-    tasks += (insert_data_nep,)
-
-
-tasks += (add_metadata,)
+tasks = (
+    create_table,
+    insert_capacities_status_quo_scn,
+    insert_data_nep,
+    add_metadata,
+)
 
 
 class ScenarioCapacities(Dataset):
@@ -920,7 +938,7 @@ class ScenarioCapacities(Dataset):
     #:
     name: str = "ScenarioCapacities"
     #:
-    version: str = "0.0.22"
+    version: str = "0.0.23"
     sources = DatasetSources(
         files={
             "eGon2035_capacities": "data_bundle_egon_data/nep2035_version2021/NEP2035_V2021_scnC2035.xlsx",
