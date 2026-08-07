@@ -314,7 +314,7 @@ def insert():
     """Insert combined heat and power plants into eTraGo tables.
 
     Gas CHP plants are modeled as links to the gas grid,
-    biomass CHP plants (only in eGon2035) are modeled as generators
+    other CHP plants are modeled as generators
 
     Returns
     -------
@@ -323,8 +323,4 @@ def insert():
     """
 
     for scenario in config.settings()["egon-data"]["--scenarios"]:
-        if scenario != "eGon100RE":
-            insert_scenario(scenario)
-
-        else:
-            insert_egon100re()
+        insert_scenario(scenario)
