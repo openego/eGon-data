@@ -50,11 +50,15 @@ Changed
   2030/2040 data points, and remove obsolete
   status2019/status2023/eGon100RE handling
   `#1438 <https://github.com/openego/eGon-data/issues/1438>`_
-* Adapt combined_heat_and_power to reGon-scenarios: different handling of 
+* Adapt combined_heat_and_power to reGon-scenarios: different handling of
   eGon-/reGon-scenarios due to the Kraftwerksliste from the NEP now
   containing MaStR-IDs to match MaStR- with NEP-data. Remove all status-
   quo (except status-quo2024) and eGon100RE mentions.
   '#1447 <https://github.com/openego/eGon-data/issues/1447>'_
+* Adapt eTraGo_Input TaskGroup to new scenarios: generalize CHP-to-eTraGo
+  insertion to the configured scenarios, and remove obsolete eGon100RE
+  handling
+  `#1450 <https://github.com/openego/eGon-data/issues/1450>`_
 
 Bug Fixes
 ---------
