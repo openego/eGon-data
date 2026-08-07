@@ -1287,12 +1287,10 @@ mobility_hgv_charging:
     sources:
       # Path to the precomputed HGV charging demand data (sites, charging points,
       # charging events, profiles), produced externally by energy_distribution_depots.py.
-      # Resolved relative to the egon-data working directory (see WORKING_DIR in
-      # emobility/hgv_charging/__init__.py). One subfolder per scenario.
-      # TODO: once this data is added to the shared data bundle, move it under
-      # data_bundle_egon_data/hgv_charging/input/<scenario> and update
-      # WORKING_DIR/hgv_input_dir accordingly.
-      hgv_input_dir: "hgv_charging/input"
+      # Ships in the data bundle and is resolved relative to the egon-data
+      # working directory. One subfolder per scenario.
+      # Kept in sync with HGVCharging.sources in emobility/hgv_charging/__init__.py.
+      hgv_input_dir: "data_bundle_egon_data/hgv_charging"
     lowflex:
       create_lowflex_scenario: False
       names:
