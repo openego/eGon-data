@@ -33,7 +33,7 @@ class ChpEtrago(Dataset):
     #:
     name: str = "ChpEtrago"
     #:
-    version: str = "0.0.7"
+    version: str = "0.0.8"
     sources = DatasetSources(
         tables={
             "chp_table": "supply.egon_chp_plants",
