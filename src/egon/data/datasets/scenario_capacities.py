@@ -136,11 +136,12 @@ def insert_capacities_status_quo(scenario: str) -> None:
         """)
 
     rural_heat_capacity = {
-        # Convert heat pump count to MW installed capacity
-        # assuming 5 kW_el per heat pump (source: Entwurf des Szenariorahmens NEP 2035,
-        # version 2021, page 47)
-        # Rural heat capacity for 2024 according to NEP 2037/2045, version 2025, table 1
-        "status2024": 2e6 * 5e-3,
+
+        # Rural heat capacity for status2024: 2 Mio. heat pumps, 5 kW average.
+        # TODO: VERIFY — heat-pump count (2e6) and 5 kW average size are
+        #  placeholders and must be confirmed against a primary source
+        #  (e.g. NEP 2025 / BWP).
+        "status2024": 2e6 * 5e-3,  # = 10 000 MW
     }[scenario]
 
     if config.settings()["egon-data"]["--dataset-boundary"] != "Everything":

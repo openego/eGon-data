@@ -1198,6 +1198,16 @@ emobility_mit:
 demand_timeseries_mvgd:
   parallel_tasks: 10
 
+heat_pumps_status_quo:
+  # Status-quo-type scenarios (e.g. status2024) don't yet have their own
+  # demand/PV data. Maps each such scenario to the existing scenario whose
+  # data is read as a stand-in. Update here (not in code) once real data for
+  # a status-quo scenario is inserted.
+  demand_source_scenario:
+    status2024: "eGon2035"
+  pv_source_scenario:
+    status2024: "status_quo"
+
 charging_infrastructure:
   original_data:
     sources:

@@ -43,6 +43,7 @@ from egon.data.datasets.electricity_demand_timeseries.tools import (
     write_table_to_postgres,
 )
 from egon.data.datasets.heat_demand import EgonPetaHeat
+from egon.data.datasets.scenario_parameters import demand_source_scenario
 from egon.data.datasets.heat_demand_timeseries import EgonEtragoHeatCts
 from egon.data.datasets.zensus_mv_grid_districts import MapZensusGridDistricts
 from egon.data.datasets.zensus_vg250 import DestatisZensusPopulationPerHa
@@ -1076,13 +1077,21 @@ def calc_cts_building_profiles(
         # df_cts_profiles = calc_load_curves_cts(scenario)
 
     elif sector == "heat":
+        # Status-quo-type scenarios don't yet have their own heat demand
+        # data; read from the configured source scenario instead (see
+        # scenario_parameters.demand_source_scenario).
+        demand_scenario = demand_source_scenario(scenario)
+
         # Get cts building heat demand share of selected buildings
         with db.session_scope() as session:
             cells_query = (
                 session.query(
                     EgonCtsHeatDemandBuildingShare,
                 )
-                .filter(EgonCtsHeatDemandBuildingShare.scenario == scenario)
+                .filter(
+                    EgonCtsHeatDemandBuildingShare.scenario
+                    == demand_scenario
+                )
                 .filter(EgonCtsHeatDemandBuildingShare.bus_id.in_(bus_ids))
             )
 
@@ -1097,7 +1106,7 @@ def calc_cts_building_profiles(
         with db.session_scope() as session:
             cells_query = (
                 session.query(EgonEtragoHeatCts).filter(
-                    EgonEtragoHeatCts.scn_name == scenario
+                    EgonEtragoHeatCts.scn_name == demand_scenario
                 )
             ).filter(EgonEtragoHeatCts.bus_id.in_(bus_ids))
 
@@ -1112,7 +1121,7 @@ def calc_cts_building_profiles(
         for bus_id in bus_ids:
             if bus_id in df_cts_substation_profiles.index:
                 # get peta demand to scale load profile to
-                peta_cts_demand = get_peta_demand(bus_id, scenario)
+                peta_cts_demand = get_peta_demand(bus_id, demand_scenario)
                 scaling_factor = (
                     peta_cts_demand.demand.sum()
                     / df_cts_substation_profiles.loc[bus_id, :].sum()

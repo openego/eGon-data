@@ -50,6 +50,10 @@ from egon.data.datasets.heat_demand_timeseries.daily import (
 from egon.data.datasets.heat_demand_timeseries.idp_pool import (
     EgonHeatTimeseries,
 )
+from egon.data.datasets.scenario_parameters import (
+    demand_source_scenario,
+    pv_source_scenario,
+)
 
 # get zensus cells with district heating
 from egon.data.datasets.zensus_mv_grid_districts import MapZensusGridDistricts
@@ -756,6 +760,8 @@ def cascade_heat_supply_indiv(scenario, distribution_level, plotting=True):
 
     sources, targets = load_sources_and_targets("HeatSupply")
 
+    demand_scenario = demand_source_scenario(scenario)
+
     # Select residential heat demand per mv grid district and federal state
     heat_per_mv = db.select_geodataframe(
         f"""
@@ -768,11 +774,11 @@ def cascade_heat_supply_indiv(scenario, distribution_level, plotting=True):
         ON b.bus_id = c.bus_id
         JOIN {sources.tables['mv_grids']} d
         ON d.bus_id = c.bus_id
-        WHERE scenario = '{scenario}'
+        WHERE scenario = '{demand_scenario}'
         AND a.zensus_population_id NOT IN (
             SELECT zensus_population_id
             FROM {sources.tables['map_dh']}
-            WHERE scenario = '{scenario}')
+            WHERE scenario = '{demand_scenario}')
         GROUP BY d.bus_id, vg250_lan, geom
         """,
         index_col="bus_id",
@@ -1046,7 +1052,7 @@ def calc_residential_heat_profiles_per_mvgd(mvgd, scenario):
         "demand_ts",
     ]
 
-    df_peta_demand = get_peta_demand(mvgd, scenario)
+    df_peta_demand = get_peta_demand(mvgd, demand_source_scenario(scenario))
     df_peta_demand = reduce_mem_usage(df_peta_demand)
 
     # TODO maybe return empty dataframe
@@ -1188,7 +1194,8 @@ def get_zensus_cells_with_decentral_heat_demand_in_mv_grid(
         query = session.query(
             MapZensusDistrictHeatingAreas.zensus_population_id,
         ).filter(
-            MapZensusDistrictHeatingAreas.scenario == scenario,
+            MapZensusDistrictHeatingAreas.scenario
+            == demand_source_scenario(scenario),
             MapZensusDistrictHeatingAreas.zensus_population_id.in_(
                 zensus_population_ids
             ),
@@ -1447,7 +1454,7 @@ def determine_minimum_hp_capacity_per_building(
 
 
 def determine_buildings_with_hp_in_mv_grid(
-    hp_cap_mv_grid, min_hp_cap_per_building
+    hp_cap_mv_grid, min_hp_cap_per_building, scenario="eGon2035"
 ):
     """
     Distributes given total heat pump capacity to buildings based on their peak
@@ -1460,6 +1467,10 @@ def determine_buildings_with_hp_in_mv_grid(
     min_hp_cap_per_building : pd.Series
         Pandas series with minimum required heat pump capacity per building
          in MW.
+    scenario : str
+        Name of the scenario. Determines which scenario's PV rooftop data is
+        used to weight buildings (via
+        :func:`~.scenario_parameters.pv_source_scenario`).
 
     Returns
     -------
@@ -1479,7 +1490,8 @@ def determine_buildings_with_hp_in_mv_grid(
             egon_power_plants_pv_roof_building.building_id
         ).filter(
             egon_power_plants_pv_roof_building.building_id.in_(building_ids),
-            egon_power_plants_pv_roof_building.scenario == "eGon2035",
+            egon_power_plants_pv_roof_building.scenario
+            == pv_source_scenario(scenario),
         )
 
         buildings_with_pv = pd.read_sql(
@@ -1650,7 +1662,7 @@ def determine_hp_cap_buildings_pvbased_per_mvgd(
 
         # select buildings that will have a heat pump
         buildings_with_hp = determine_buildings_with_hp_in_mv_grid(
-            hp_cap_grid, min_hp_cap_buildings
+            hp_cap_grid, min_hp_cap_buildings, scenario=scenario
         )
 
         # distribute total heat pump capacity to all buildings with HP
