@@ -253,7 +253,8 @@ def insert():
         # executing insert() for status scenarios. (Issue#1480) 
         if "status" in scenario:
             logging.warning(
-                f"Skipping wind_offshore.insert() for status scenario"
+                "Skipping wind_offshore.insert() for status scenario"
+            )
             continue
 
         # load file
