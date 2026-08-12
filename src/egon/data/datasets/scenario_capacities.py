@@ -711,6 +711,7 @@ def district_heating_input():
 
     """
     sources = ScenarioCapacities.sources
+    targets = ScenarioCapacities.targets
 
     # The eGon2035 scenario has its own capacities file, while reGon2037
     # and reGon2045 share the same "Kurzstudie_KWK" sheet (analogous to
@@ -733,6 +734,21 @@ def district_heating_input():
     session = sessionmaker(bind=engine)()
 
     for scenario in scenarios:
+        # Delete rows if already existing to keep this function idempotent.
+        # Scoped to these four carriers only, since other functions write
+        # other rows for the same scenario_name.
+        db.execute_sql(
+            f"""
+            DELETE FROM {targets.tables['scenario_capacities']}
+            WHERE scenario_name = '{scenario}'
+            AND carrier IN (
+                'urban_central_heat_pump',
+                'urban_central_resistive_heater',
+                'urban_central_geo_thermal',
+                'urban_central_solar_thermal_collector')
+            """
+        )
+
         # import data to dataframe
         file = Path(".") / file_per_scenario[scenario]
         #TODO:Umgang mit der Kurzstudie_KWK diskutieren
