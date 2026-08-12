@@ -19,7 +19,9 @@ from egon.data.datasets.power_plants import (
     assign_voltage_level,
     filter_mastr_geometry,
 )
-from egon.data.datasets.scenario_parameters import get_sector_parameters
+from egon.data.datasets.power_plants.pv_rooftop_buildings import (
+    SCENARIO_TIMESTAMP,
+)
 from egon.data.datasets.storages.home_batteries import (
     allocate_home_batteries_to_buildings,
 )
@@ -348,8 +350,14 @@ def allocate_storage_units_sq(scn_name, storage_types):
     -------
 
     """
-    scn_parameters = get_sector_parameters("global", scn_name)
-    scenario_date_max = str(scn_parameters["weather_year"]) + "-12-31 23:59:00"
+    # NOTE: previously derived from get_sector_parameters(...)["weather_year"],
+    # which is a fixed representative meteorological year (e.g. 2011) used
+    # for feed-in time series - not the scenario's real calendar reference
+    # date. That mismatch silently filtered out almost all real storage
+    # units. SCENARIO_TIMESTAMP holds the actual per-scenario reference date.
+    scenario_date_max = SCENARIO_TIMESTAMP[scn_name].strftime(
+        "%Y-%m-%d %H:%M:%S"
+    )
 
     map_storage = {
         "battery": "Batterie",
@@ -732,8 +740,10 @@ def allocate_battery_storage_sq(scn_name):
       * 'BESS' (voltage_level 1-5 - MV and above, grid-scale battery energy
         storage systems, not tied to individual buildings)
     """
-    scn_parameters = get_sector_parameters("global", scn_name)
-    scenario_date_max = str(scn_parameters["weather_year"]) + "-12-31 23:59:00"
+    # see allocate_storage_units_sq() for why this isn't weather_year
+    scenario_date_max = SCENARIO_TIMESTAMP[scn_name].strftime(
+        "%Y-%m-%d %H:%M:%S"
+    )
 
     sql = """
         SELECT gens_id AS source_id, capacity AS el_capacity, voltage_level,
