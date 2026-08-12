@@ -404,9 +404,20 @@ def aggr_nep_capacities(carriers):
 
     """
     # Get list of power plants from nep
-    nep_capacities = insert_nep_list_powerplants(export=False)[
-        ["federal_state", "scenario", "carrier", "c2035_capacity", "c2037_capacity", "c2045_capacity"]
-    ]
+    # Depending on the configured scenarios, only one of the NEP power plant
+    # lists may have been loaded, so not all capacity columns are present.
+    # Missing ones are added as NaN, which yields empty per-scenario
+    # aggregations below.
+    nep_capacities = insert_nep_list_powerplants(export=False).reindex(
+        columns=[
+            "federal_state",
+            "scenario",
+            "carrier",
+            "c2035_capacity",
+            "c2037_capacity",
+            "c2045_capacity",
+        ]
+    )
 
     # Sum up capacities per federal state and carrier for eGon2035
     capacities_list_eGon = (
@@ -656,14 +667,20 @@ def insert_nep_list_powerplants(export=True):
         ]
         
         # scale all capacity to the respective population share
+        # Only columns of the NEP lists that were actually loaded are
+        # present, depending on the configured scenarios
         for col in [
-            "capacity",
-            "a2035_capacity",
-            "b2035_capacity",
-            "c2035_capacity",
-            "b2040_capacity",
-            "c2037_capacity",
-            "c2045_capacity",
+            c
+            for c in [
+                "capacity",
+                "a2035_capacity",
+                "b2035_capacity",
+                "c2035_capacity",
+                "b2040_capacity",
+                "c2037_capacity",
+                "c2045_capacity",
+            ]
+            if c in kw_liste_nep.columns
         ]:
             kw_liste_nep.loc[
                 kw_liste_nep[kw_liste_nep.federal_state.isnull()].index, col
