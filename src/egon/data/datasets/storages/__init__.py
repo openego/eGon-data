@@ -3,7 +3,7 @@
 from pathlib import Path
 
 from geoalchemy2 import Geometry
-from sqlalchemy import BigInteger, Column, Float, Integer, Sequence, String
+from sqlalchemy import BigInteger, Column, Float, Integer, Sequence, String, DateTime
 from sqlalchemy.dialects.postgresql import JSONB
 from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.orm import sessionmaker
@@ -45,6 +45,7 @@ class EgonStorages(Base):
     el_capacity = Column(Float)
     bus_id = Column(Integer)
     voltage_level = Column(Integer)
+    commissioning_date = Column(DateTime)
     scenario = Column(String)
     geom = Column(Geometry("POINT", 4326))
 
@@ -722,6 +723,70 @@ def home_batteries_per_scenario(scenario):
     session.commit()
 
 
+def allocate_battery_storage_sq(scn_name):
+    """
+    Allocate real battery storage units from MaStR (supply.egon_power_plants_storage)
+    for the given scenario. Split into two carriers by grid connection voltage
+    level:
+      * 'home_battery' (voltage_level 6, 7 - LV / building-connected)
+      * 'BESS' (voltage_level 1-5 - MV and above, grid-scale battery energy
+        storage systems, not tied to individual buildings)
+    """
+    scn_parameters = get_sector_parameters("global", scn_name)
+    scenario_date_max = str(scn_parameters["weather_year"]) + "-12-31 23:59:00"
+
+    sql = """
+        SELECT gens_id AS source_id, capacity AS el_capacity, voltage_level,
+               bus_id, commissioning_date, decommissioning_date, geom
+        FROM supply.egon_power_plants_storage
+        WHERE technology = 'Batterie'
+    """
+    mastr = db.select_geodataframe(sql, geom_col="geom", epsg=4326)
+
+    mastr["commissioning_date"] = pd.to_datetime(mastr["commissioning_date"], errors="coerce")
+    mastr.loc[mastr["commissioning_date"] < "1990-01-01", "commissioning_date"] = pd.NaT
+    decommissioning_date = pd.to_datetime(mastr["decommissioning_date"], errors="coerce")
+
+    # keep only units already commissioned and not (yet) decommissioned
+    # as of the scenario's reference date
+    mastr = mastr.loc[
+        (mastr["commissioning_date"] < scenario_date_max)
+        & (decommissioning_date.isna() | (decommissioning_date > scenario_date_max))
+    ]
+
+    mastr["carrier"] = "BESS"
+    mastr.loc[mastr.voltage_level.isin([6, 7]), "carrier"] = "home_battery"
+    mastr["scenario"] = scn_name
+    mastr["source_id"] = mastr["source_id"].apply(lambda x: {"MastrNummer": x})
+    mastr["sources"] = [{"el_capacity": "MaStR"}] * mastr.shape[0]
+
+    db.execute_sql(f"""
+        DELETE FROM supply.egon_storages
+        WHERE carrier IN ('BESS', 'home_battery')
+        AND scenario = '{scn_name}'
+        AND sources ->> 'el_capacity' = 'MaStR';""")
+
+    with db.session_scope() as session:
+        session.bulk_insert_mappings(
+            EgonStorages,
+            mastr.assign(geom=mastr["geom"].apply(lambda x: x.wkb_hex))[
+                [
+                    "source_id",
+                    "el_capacity",
+                    "voltage_level",
+                    "bus_id",
+                    "carrier",
+                    "scenario",
+                    "commissioning_date",
+                    "geom",
+                    "sources",
+                ]
+            ].to_dict(orient="records"),
+        )
+
+    return mastr
+
+
 def allocate_pv_home_batteries_to_grids():
     for scn in config.settings()["egon-data"]["--scenarios"]:
         home_batteries_per_scenario(scn)
@@ -740,4 +805,6 @@ def allocate_pumped_hydro_scn():
 def allocate_other_storage_units():
     for scn in config.settings()["egon-data"]["--scenarios"]:
         if "status" in scn:
-            allocate_storage_units_sq(scn_name=scn, storage_types=["battery"])
+            allocate_battery_storage_sq(scn_name=scn)
+
+
