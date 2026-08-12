@@ -248,6 +248,14 @@ def insert():
             """
         )
 
+        # TODO: Quickfix - skip status scenarios for now.
+        # Geometry is missing for some offshore plants while 
+        # executing insert() for status scenarios. (Issue#1480) 
+        if "status" in scenario:
+            logging.warning(
+                f"Skipping wind_offshore.insert() for status scenario"
+            continue
+
         # load file
         if scenario in ["eGon2035", "reGon2037", "reGon2045"]:
             # Map scenario to its capacity column
