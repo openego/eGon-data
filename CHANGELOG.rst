@@ -55,6 +55,14 @@ Changed
   containing MaStR-IDs to match MaStR- with NEP-data. Remove all status-
   quo (except status-quo2024) and eGon100RE mentions.
   '#1447 <https://github.com/openego/eGon-data/issues/1447>'_
+* Adapt eMobility MIT to the reGon scenarios: add trip, scenario
+  variation and lowflex configuration for status2024, reGon2037 and
+  reGon2045, replace the per-scenario ``generate_model_data_*_remaining``
+  tasks with one generically generated task per configured scenario,
+  derive the flexible/dumb charging distinction from the scenario name
+  instead of a hard-coded scenario list, and remove obsolete
+  status2019/status2023/eGon100RE handling
+  `#1483 <https://github.com/openego/eGon-data/issues/1483>`_
 
 Bug Fixes
 ---------
@@ -80,6 +88,11 @@ Bug Fixes
   sources/targets; registration is now skipped with a warning when no
   database is available
   `#1435 <https://github.com/openego/eGon-data/issues/1435>`_
+* Fix eMobility MIT writing a duplicate ``land_transport_EV`` load for
+  dumb charging scenarios: the lowflex pass took the same branch as the
+  regular pass and inserted a second identical load under the scenario's
+  own name, doubling transport demand in status quo scenarios
+  `#1483 <https://github.com/openego/eGon-data/issues/1483>`_
 
 Version 2.0.0 (2025-08-20)
 ==========================
