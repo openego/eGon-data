@@ -486,9 +486,6 @@ class MotorizedIndividualTravel(Dataset):
                     "export_results_to_csv": True,
                     "parallel_tasks": 10,
                 },
-                "demand_timeseries_mvgd": {
-                    "parallel_tasks": 10,
-                },
             },
         },
     )
