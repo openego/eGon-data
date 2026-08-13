@@ -1294,7 +1294,8 @@ def mobility(scenario):
 
     elif scenario == "status2024":
         parameters = {
-            # Source of total EV-numbers: KBA BEV+PHEV 01.01.2025, https://www.kba.de/SharedDocs/Downloads/DE/Pressemitteilungen/2025/pm_10_2025_bestand_01_25.pdf?__blob=publicationFile&v=2
+            # Source of total EV-numbers: KBA BEV+PHEV 01.01.2025
+            # https://www.kba.de/SharedDocs/Downloads/DE/Pressemitteilungen/2025/pm_10_2025_bestand_01_25.pdf?__blob=publicationFile&v=2
             "motorized_individual_travel": {
                 "status2024": {
                     "ev_count": 2619066,
