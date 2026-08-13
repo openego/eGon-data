@@ -922,8 +922,7 @@ def electricity(scenario):
         parameters["annual_demand"] = {
             "households": 110.5
             * 1e6,  # MWh source: NEP 2025 V.2; figure 6, 2024
-            "CTS": 111.6
-            * 1e6,  # MWh source: NEP 2025 V.2; figure 6, 2024
+            "CTS": 111.6 * 1e6,  # MWh source: NEP 2025 V.2; figure 6, 2024
             "industry": 188.1
             * 1e6,  # MWh source: NEP 2025 V.2; figure 6, 2024
         }
@@ -1261,7 +1260,7 @@ def mobility(scenario):
         parameters = {
             "motorized_individual_travel": {
                 "NEP C 2037": {
-                    "ev_count": 37800000,
+                    "ev_count": 34100000,
                     "bev_mini_share": 0.1589,
                     "bev_medium_share": 0.3533,
                     "bev_luxury_share": 0.1053,
@@ -1278,7 +1277,7 @@ def mobility(scenario):
         parameters = {
             "motorized_individual_travel": {
                 "NEP C 2045": {
-                    "ev_count": 44900000,
+                    "ev_count": 40600000,
                     "bev_mini_share": 0.1589,
                     "bev_medium_share": 0.3533,
                     "bev_luxury_share": 0.1053,
@@ -1297,7 +1296,7 @@ def mobility(scenario):
         parameters = {
             "motorized_individual_travel": {
                 "status2024": {
-                    "ev_count": 2577664,
+                    "ev_count": 2619066,  # MWh source: KBA BEV+PHEV 01.01.2025, https://www.kba.de/SharedDocs/Downloads/DE/Pressemitteilungen/2025/pm_10_2025_bestand_01_25.pdf?__blob=publicationFile&v=2
                     "bev_mini_share": 0.1535,
                     "bev_medium_share": 0.3412,
                     "bev_luxury_share": 0.1017,
