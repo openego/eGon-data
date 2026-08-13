@@ -2,7 +2,7 @@
 Generate timeseries for eTraGo and pypsa-eur-sec
 
 Call order
-* generate_model_data_eGon2035() / generate_model_data_eGon100RE()
+* generate_model_data_bunch() / generate_model_data_remaining()
 
   * generate_model_data()
 
@@ -15,20 +15,21 @@ Call order
 
 Notes
 -----
-# TODO REWORK
-Share of EV with access to private charging infrastructure (`flex_share`) for
-use cases work and home are not supported by simBEV v0.1.2 and are applied here
-(after simulation). Applying those fixed shares post-simulation introduces
-small errors compared to application during simBEV's trip generation.
+Scenarios are modelled in one of two ways, cf. :func:`is_flexible`:
 
-Values (cf. `flex_share` in scenario parameters
-:func:`egon.data.datasets.scenario_parameters.parameters.mobility`) were
-linearly extrapolated based upon
-https://nationale-leitstelle.de/wp-content/pdf/broschuere-lis-2025-2030-final.pdf
-(p.92):
+* Flexible (smart) charging, e.g. reGon2037 and reGon2045: the EV fleet is
+  represented by a dedicated bus, a `BEV_charger` link, a `battery_storage`
+  store and a load carrying the driving load. A lowflex counterpart holding
+  the dumb charging load is written in addition.
+* Dumb charging only, e.g. status2024: a single load on the MV grid
+  district's AC bus. As there is no flexibility to strip, no lowflex
+  counterpart is written.
 
-* eGon2035: home=0.8, work=1.0
-* eGon100RE: home=1.0, work=1.0
+Flexibility is credited to every charging event at home and at work, i.e.
+all EVs are assumed to have access to private charging infrastructure
+(see :func:`data_preprocessing`). Earlier versions applied scenario
+specific shares (`flex_share`) here, but those parameters no longer exist
+in :func:`egon.data.datasets.scenario_parameters.parameters.mobility`.
 """
 
 from collections import Counter
@@ -755,15 +756,16 @@ def write_model_data_to_db(
                 )
 
         # Call DB writing functions for regular or lowflex scenario
-        # * use corresponding scenario name as defined in datasets.yml
+        # * use corresponding scenario name as defined in the dataset's
+        #   sources
         # * no storage for lowflex scenario
         # * load timeseries:
         #   * regular (flex): use driving load
         #   * lowflex: use dumb charging load
-        #   * status2019: also dumb charging
-        #   * status2023: also dumb charging
+        #   * dumb charging scenarios (cf. `is_flexible`): also dumb
+        #     charging, written once under the scenario's own name
 
-        if scenario_name in ["status2019", "status2023"]:
+        if not is_flexible(scenario_name):
             write_load(
                 scenario_name=scenario_name,
                 connection_bus_id=etrago_bus.bus_id,
@@ -1133,57 +1135,20 @@ def generate_model_data_bunch(scenario_name: str, bunch: range) -> None:
         )
 
 
-def generate_model_data_status2019_remaining():
-    """Generates timeseries for status2019 scenario for grid districts which
-    has not been processed in the parallel tasks before.
+def generate_model_data_remaining(scenario_name: str) -> None:
+    """Generates timeseries for a scenario for grid districts which have
+    not been processed in the parallel tasks before.
+
+    Parameters
+    ----------
+    scenario_name : str
+        Scenario name
     """
     testmode_off = (
         config.settings()["egon-data"]["--dataset-boundary"] == "Everything"
     )
     mvgd_min_count = 3600 if testmode_off else 150
     generate_model_data_bunch(
-        scenario_name="status2019",
-        bunch=range(mvgd_min_count, len(load_grid_district_ids())),
-    )
-
-
-def generate_model_data_status2023_remaining():
-    """Generates timeseries for status2023 scenario for grid districts which
-    has not been processed in the parallel tasks before.
-    """
-    testmode_off = (
-        config.settings()["egon-data"]["--dataset-boundary"] == "Everything"
-    )
-    mvgd_min_count = 3600 if testmode_off else 150
-    generate_model_data_bunch(
-        scenario_name="status2023",
-        bunch=range(mvgd_min_count, len(load_grid_district_ids())),
-    )
-
-
-def generate_model_data_eGon2035_remaining():
-    """Generates timeseries for eGon2035 scenario for grid districts which
-    has not been processed in the parallel tasks before.
-    """
-    testmode_off = (
-        config.settings()["egon-data"]["--dataset-boundary"] == "Everything"
-    )
-    mvgd_min_count = 3600 if testmode_off else 150
-    generate_model_data_bunch(
-        scenario_name="eGon2035",
-        bunch=range(mvgd_min_count, len(load_grid_district_ids())),
-    )
-
-
-def generate_model_data_eGon100RE_remaining():
-    """Generates timeseries for eGon100RE scenario for grid districts which
-    has not been processed in the parallel tasks before.
-    """
-    testmode_off = (
-        config.settings()["egon-data"]["--dataset-boundary"] == "Everything"
-    )
-    mvgd_min_count = 3600 if testmode_off else 150
-    generate_model_data_bunch(
-        scenario_name="eGon100RE",
+        scenario_name=scenario_name,
         bunch=range(mvgd_min_count, len(load_grid_district_ids())),
     )
