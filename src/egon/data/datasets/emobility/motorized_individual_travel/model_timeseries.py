@@ -64,6 +64,28 @@ from egon.data.datasets.etrago_setup import (
 from egon.data.datasets.mv_grid_districts import MvGridDistricts
 
 
+def is_flexible(scenario_name: str) -> bool:
+    """Whether a scenario models flexible (smart) charging.
+
+    Status quo scenarios are modelled with dumb charging only: a plain
+    load on the MV grid district's AC bus, without the `BEV_charger` link
+    and `battery_storage` store which represent the flexibility. They
+    therefore also have no lowflex counterpart, as there is nothing to
+    strip.
+
+    Parameters
+    ----------
+    scenario_name : str
+        Scenario name
+
+    Returns
+    -------
+    bool
+        True if the scenario models flexible charging
+    """
+    return "status" not in scenario_name
+
+
 def data_preprocessing(
     scenario_data: pd.DataFrame, ev_data_df: pd.DataFrame
 ) -> pd.DataFrame:
@@ -852,9 +874,14 @@ def write_model_data_to_db(
     initial_soc_mean = calc_initial_ev_soc(bus_id, scenario_name)
 
     # Write to database: regular and lowflex scenario
-    write_to_db(write_lowflex_model=False)
+    #
+    # Dumb charging scenarios have no lowflex counterpart, so the second
+    # pass is skipped for them. Without that guard `write_to_db` would
+    # take the same branch twice and write a duplicate load under the
+    # scenario's own name (see `is_flexible`).
     print("    Writing flex scenario...")
-    if write_lowflex_model is True:
+    write_to_db(write_lowflex_model=False)
+    if write_lowflex_model is True and is_flexible(scenario_name):
         print("    Writing lowflex scenario...")
         write_to_db(write_lowflex_model=True)
 
