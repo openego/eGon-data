@@ -32,6 +32,7 @@ from egon.data.datasets.electricity_demand_timeseries.cts_buildings import (
 from egon.data.datasets.emobility.heavy_duty_transport import (
     HeavyDutyTransport,
 )
+from egon.data.datasets.emobility.hgv_charging import HGVCharging
 from egon.data.datasets.emobility.motorized_individual_travel import (
     MotorizedIndividualTravel,
 )
@@ -686,9 +687,27 @@ with airflow.DAG(
         )
 
     with TaskGroup(group_id="mobility_demand") as mobility_demand_group:
-        # eMobility: heavy duty transport
+        # eMobility: heavy duty transport (hydrogen/FCEV HGVs -- eGon2035,
+        # eGon100RE only; the fully-electrified HGV scenarios (reGon2037,
+        # reGon2045) are covered separately by hgv_charging below, which
+        # does not model hydrogen fueling)
         heavy_duty_transport = HeavyDutyTransport(
             dependencies=[vg250, setup_etrago, create_gas_polygons]
+        )
+
+        # eMobility: HGV charging (BEV depots + highway)
+        hgv_charging = HGVCharging(
+            dependencies=[
+                # The precomputed HGV charging input files ship in the data
+                # bundle (data_bundle_egon_data/hgv_charging/<scenario>), so
+                # this must not run before the bundle has been downloaded.
+                data_bundle,
+                mv_grid_districts,
+                setup_etrago,
+                vg250,
+                scenario_parameters,
+                osmtgmod,
+            ]
         )
 
         # eMobility: motorized individual travel

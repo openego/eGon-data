@@ -14,7 +14,11 @@ from airflow.models.baseoperator import BaseOperator as Operator
 from airflow.operators.python import PythonOperator
 from sqlalchemy import Column, ForeignKey, Integer, String, Table, orm, tuple_
 from sqlalchemy.dialects.postgresql import JSONB
+
 from sqlalchemy.exc import OperationalError
+
+from sqlalchemy.exc import IntegrityError, ProgrammingError
+
 from sqlalchemy.ext.declarative import declarative_base
 
 from egon.data import config, db, logger
@@ -450,7 +454,6 @@ class Dataset:
         Register dataset sources and targets in a single transaction.
         Only writes if sources or targets have changed.
         Creates table if it doesn't exist yet.
-
         Constructing a `Dataset` (e.g. while importing the pipeline DAG,
         or in unit tests) must not require a live database connection, so
         registration is skipped with a warning if the database is
