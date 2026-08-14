@@ -80,6 +80,11 @@ Bug Fixes
 * Fix dynamic line rating only being calculated for a single scenario
   due to a stray early return inside the per-scenario loop
   `#1424 <https://github.com/openego/eGon-data/issues/1424>`_
+* Fix automated tests failing on all branches because constructing a
+  Dataset unconditionally opened a database connection to register its
+  sources/targets; registration is now skipped with a warning when no
+  database is available
+  `#1435 <https://github.com/openego/eGon-data/issues/1435>`_
 
 Version 2.0.0 (2025-08-20)
 ==========================

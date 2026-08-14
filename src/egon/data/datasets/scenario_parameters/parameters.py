@@ -920,9 +920,12 @@ def electricity(scenario):
         }
 
         parameters["annual_demand"] = {
-            "households": 130.48 * 1e6,  # MWh, source: BDEW 2023
-            "CTS": 121.16 * 1e6,  # MWh
-            "industry": 200.38 * 1e6,  # MWh
+            "households": 110.5
+            * 1e6,  # MWh source: NEP 2025 V.2; figure 6, 2024
+            "CTS": 111.6
+            * 1e6,  # MWh source: NEP 2025 V.2; figure 6, 2024
+            "industry": 188.1
+            * 1e6,  # MWh source: NEP 2025 V.2; figure 6, 2024
         }
 
     else:
