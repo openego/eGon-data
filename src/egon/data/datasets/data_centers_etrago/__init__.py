@@ -1,5 +1,6 @@
 # -*- coding: utf-8 -*-
-"""Integrate future data center demand"""
+"""Allocate future data center capacities and integrate data center buses,
+loads, connection lines and waste-heat links into the database."""
 
 import geopandas as gpd
 import numpy as np
@@ -8,7 +9,7 @@ import scipy.stats as stats
 
 from geoalchemy2 import Geometry
 from scipy.spatial.distance import cdist
-from shapely.geometry import LineString
+from shapely.geometry import LineString, MultiLineString
 
 from egon.data import config, db
 from egon.data.datasets import Dataset, DatasetSources, DatasetTargets
@@ -47,6 +48,9 @@ S_NOM_DATA_CENTER_CONNECTION_380KV = 1790
 R_PER_KM_380KV = 0.028
 L_PER_KM_380KV = 0.8e-3
 
+# Data center waste heat
+REUSABLE_HEAT_FACTOR = 0.20
+
 
 def dist_score(dist, radius):
     """Calculate distance score used in allocation method."""
@@ -69,6 +73,8 @@ def identify_voltage_level(df):
 
 def generate_data_center_sizes():
     """Generate scenario-dependent data center sizes"""
+    # Generate a representative distribution of individual data center capacities
+    # whose total capacity matches the scenario target.
 
     np.random.seed(RANDOM_SEED)
     scale_param = np.exp(MU)
@@ -171,6 +177,9 @@ def load_regional_factors():
 
 def create_data_center_allocation():
     """Run data center allocation workflow and return rz_punkte."""
+    # Allocate generated data center capacities to suitable commercial areas
+    # based on electricity, district-heating, and internet-location criteria.
+    
     rz_df = generate_data_center_sizes()
     gewerbe_raw = load_commercial_areas()
     strom_raw = load_substations()
@@ -434,13 +443,23 @@ def assign_nearest_heat_bus(data_centers, central_heat_buses):
     data_centers_projected["central_heat_bus_id"] = data_centers_projected[
         "central_heat_bus_id"
     ].astype(int)
+    
+    # Get geometry of the assigned heat bus for the waste-heat link.
+    central_heat_bus_geom = (
+        central_heat_buses.set_index("bus_id")
+        .geometry[data_centers_projected["central_heat_bus_id"]]
+        .values
+    )
 
     data_centers_projected = data_centers_projected.drop(
         columns=["index_right"]
     )
 
-    return data_centers_projected.to_crs(epsg=4326)
+    data_centers_projected = data_centers_projected.to_crs(epsg=4326)
 
+    data_centers_projected["central_heat_bus_geom"] = central_heat_bus_geom
+
+    return data_centers_projected
 
 def create_data_center_buses(data_centers, scenario):
     """Create new AC buses for data centers."""
@@ -548,12 +567,48 @@ def create_data_center_loads(data_centers, scenario):
         }
     )
 
+def create_data_center_heat_links(data_centers, scenario):
+    """Create waste-heat links from data center AC buses to central heat buses."""
+
+    links = []
+
+    for _, row in data_centers.iterrows():
+        topo = LineString(
+            [
+                (row.geometry.x, row.geometry.y),
+                (row.central_heat_bus_geom.x, row.central_heat_bus_geom.y),
+            ]
+        )
+
+        links.append(
+            {
+                "scn_name": scenario,
+                "link_id": db.next_etrago_id("link"),
+                "bus0": row.data_center_bus_id,
+                "bus1": row.central_heat_bus_id,
+                "carrier": "data_center_waste_heat",
+                "efficiency": 1,
+                # Assume 20% of the data center electrical capacity is reusable waste heat.
+                # The resulting heat-link capacity is fixed and not optimized by eTraGo.
+                "p_nom": row.allocated_mw * REUSABLE_HEAT_FACTOR,
+                "p_nom_extendable": False,
+                "geom": MultiLineString([topo]),
+                "topo": topo,
+            }
+        )
+
+    return gpd.GeoDataFrame(links, geometry="geom", crs="EPSG:4326")
+
 
 def delete_existing_data_centers(scenario):
     """Delete previously inserted data center components before rerun."""
     targets = DataCenters.targets
 
     db.execute_sql(f"""
+        DELETE FROM {targets.tables["links"]}
+        WHERE scn_name = '{scenario}'
+        AND carrier = 'data_center_waste_heat';
+        
         DELETE FROM {targets.tables["loads"]}
         WHERE scn_name = '{scenario}'
         AND type = 'data_center';
@@ -569,7 +624,7 @@ def delete_existing_data_centers(scenario):
 
 
 def insert_data_centers(scenario):
-    """Insert data center buses, lines and loads into eTraGo tables."""
+    """Insert data center buses, lines, loads and heat links into the database."""
     targets = DataCenters.targets
     delete_existing_data_centers(scenario)
     data_centers = create_data_center_allocation()
@@ -581,6 +636,8 @@ def insert_data_centers(scenario):
     data_centers = assign_nearest_heat_bus(data_centers, central_heat_buses)
     data_center_lines = create_data_center_lines(data_centers, scenario)
     data_center_loads = create_data_center_loads(data_centers, scenario)
+    data_center_heat_links = create_data_center_heat_links(
+    data_centers, scenario)
 
     data_center_buses.to_postgis(
         targets.get_table_name("buses"),
@@ -602,6 +659,14 @@ def insert_data_centers(scenario):
     data_center_loads.to_sql(
         targets.get_table_name("loads"),
         schema=targets.get_table_schema("loads"),
+        if_exists="append",
+        con=db.engine(),
+        index=False,
+    )
+    
+    data_center_heat_links.to_postgis(
+        targets.get_table_name("links"),
+        schema=targets.get_table_schema("links"),
         if_exists="append",
         con=db.engine(),
         index=False,
@@ -657,6 +722,7 @@ class DataCenters(Dataset):
             "buses": "grid.egon_etrago_bus",
             "lines": "grid.egon_etrago_line",
             "loads": "grid.egon_etrago_load",
+            "links": "grid.egon_etrago_link",
         },
     )
 
