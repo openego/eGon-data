@@ -80,6 +80,9 @@ Bug Fixes
   sources/targets; registration is now skipped with a warning when no
   database is available
   `#1435 <https://github.com/openego/eGon-data/issues/1435>`_
+* Fix ONEP area key lookup so status scenarios work in wind offshore:
+  accept both plain codes and codes with a bracketed description
+  `#1480 <https://github.com/openego/eGon-data/issues/1480>`_
 
 Version 2.0.0 (2025-08-20)
 ==========================
