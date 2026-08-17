@@ -179,3 +179,11 @@ of each NUTS3 region is used to determine the respective hydrogen Voronoi cell (
 :py:class:`GasAreaseGon2035<egon.data.datasets.gas_areas.GasAreaseGon2035>` and
 :py:class:`GasAreaseGon100RE<egon.data.datasets.gas_areas.GasAreaseGon100RE>`) it is
 located in.
+
+.. note::
+   As of this restoration, only the eGon2035 scenario is active for
+   heavy-duty transport (see ``datasets.yml``'s ``mobility_hgv.original_data.
+   constants.scenarios`` and ``emobility/heavy_duty_transport/__init__.py``)
+   -- eGon100RE is not currently registered as an ``EgonScenario`` row in
+   this fork and would fail with a foreign-key error if enabled without
+   first registering it.

@@ -12,6 +12,10 @@ Added
   `#1352 <https://github.com/openego/egon-data/issues/1352>`_
 * Add standardized sources and targets definitions across dataset modules
   `#1283 <https://github.com/openego/egon-data/issues/1283>`_
+* Add electric HGV charging demand model (vehicle classes N2, N3, N3S) for the
+  NEP-2025-aligned scenarios reGon2037 and reGon2045, as a sibling dataset to
+  the hydrogen-based HeavyDutyTransport
+  `#1436 <https://github.com/openego/eGon-data/issues/1436>`_
 
 Changed
 -------
