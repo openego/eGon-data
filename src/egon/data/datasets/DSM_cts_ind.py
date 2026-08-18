@@ -1061,13 +1061,13 @@ def aggregate_components(df_dsm_buses, df_dsm_links, df_dsm_stores):
     df_dsm_stores["bus"] = bus_id
 
     # select new link_ids for aggregated links
-    link_id = db.next_etrago_id("Link", len(df_dsm_links.index))
+    link_id = db.next_etrago_id("link", len(df_dsm_links.index))
 
     df_dsm_links["link_id"] = link_id
 
     # select new store_ids to aggregated stores
 
-    store_id = db.next_etrago_id("Store", len(df_dsm_stores.index))
+    store_id = db.next_etrago_id("store", len(df_dsm_stores.index))
 
     df_dsm_stores["store_id"] = store_id
 
