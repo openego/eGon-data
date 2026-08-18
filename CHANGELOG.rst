@@ -102,6 +102,14 @@ Bug Fixes
   regular pass and inserted a second identical load under the scenario's
   own name, doubling transport demand in status quo scenarios
   `#1483 <https://github.com/openego/eGon-data/issues/1483>`_
+* Fix eTraGo ID sequences getting out of sync with the IDs actually
+  written, which made concurrent inserts fail with ``duplicate key value
+  violates unique constraint``: ``h2_neighbours_egon2035`` derived a range
+  of IDs from a single reserved one, and foreign pumped hydro storages
+  drew their ``storage_id`` from the ``store`` sequence. ``next_etrago_id``
+  now ignores the case of the component name and always returns a list
+  when a count is given
+  `#1487 <https://github.com/openego/eGon-data/issues/1487>`_
 
 Version 2.0.0 (2025-08-20)
 ==========================
