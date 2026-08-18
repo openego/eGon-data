@@ -29,7 +29,10 @@ from egon.data.datasets.emobility.hgv_charging.db_classes import (
     EgonHgvProfile,
 )
 from egon.data.datasets.emobility.hgv_charging.etrago_integration import write_etrago
-from egon.data.datasets.emobility.hgv_charging.fill_tables import fill_hgv_tables
+from egon.data.datasets.emobility.hgv_charging.fill_tables import (
+    extract_input_data,
+    fill_hgv_tables,
+)
 from egon.data.datasets.emobility.hgv_charging.scenarios import (
     SCENARIO_MAP,
     active_scenario_map,
@@ -113,6 +116,7 @@ class HGVCharging(Dataset):
             dependencies=dependencies,
             tasks=(
                 create_tables,
+                extract_input_data,
                 fill_hgv_tables,
                 spatial_assignment,
                 write_etrago,

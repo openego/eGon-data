@@ -19,6 +19,8 @@ force-match every out-of-region site to the nearest in-region MV grid bus.
 """
 
 import json
+import shutil
+import zipfile
 from pathlib import Path
 
 from loguru import logger
@@ -32,6 +34,86 @@ from egon.data.datasets.emobility.hgv_charging.scenarios import active_scenario_
 def _input_dir() -> Path:
     cfg = config.datasets()["mobility_hgv_charging"]
     return Path(cfg["original_data"]["sources"]["hgv_input_dir"])
+
+
+# The four files each scenario folder must contain. Kept here (rather than
+# inlined in fill_hgv_tables) because extract_input_data() needs the same
+# list to decide whether a scenario is already unpacked.
+INPUT_FILES = (
+    "sites.gpkg",
+    "charging_points.csv",
+    "charging_events.csv",
+    "profiles.csv",
+)
+
+
+def extract_input_data():
+    """Unpack the per-scenario input zips shipped in the data bundle.
+
+    The data bundle ships one zip per scenario (``<scenario>.zip``) next to
+    the scenario folders, because charging_events.csv alone is ~17 GB
+    unzipped. For each active scenario:
+
+    * all four files already present -> nothing to do. This is what makes
+      manually placed input data work: drop the files into
+      ``<hgv_input_dir>/<scenario>/`` and no zip is needed at all.
+    * files missing and ``<scenario>.zip`` present -> extract it.
+    * files missing and no zip -> raise, naming both accepted locations,
+      rather than letting fill_hgv_tables fail later on a missing file.
+
+    Extraction never overwrites existing files, so a manual copy always wins
+    over the bundled zip.
+    """
+    input_dir = _input_dir()
+
+    for egon_scn in active_scenario_map():
+        scenario_dir = input_dir / egon_scn
+        missing = [f for f in INPUT_FILES if not (scenario_dir / f).exists()]
+
+        if not missing:
+            logger.info(
+                f"HGV input for {egon_scn}: all {len(INPUT_FILES)} files "
+                f"already present in {scenario_dir}, skipping extraction."
+            )
+            continue
+
+        archive = input_dir / f"{egon_scn}.zip"
+        if not archive.exists():
+            raise FileNotFoundError(
+                f"No HGV input data for scenario '{egon_scn}'. Missing "
+                f"{missing} in {scenario_dir} and no archive at {archive}. "
+                f"Either let the data bundle provide {archive.name} or place "
+                f"the files in {scenario_dir} manually."
+            )
+
+        logger.info(
+            f"HGV input for {egon_scn}: missing {missing}, "
+            f"extracting {archive} -> {scenario_dir}"
+        )
+        scenario_dir.mkdir(parents=True, exist_ok=True)
+        with zipfile.ZipFile(archive, "r") as zip_ref:
+            # Some zips carry a top-level <scenario>/ folder, others hold the
+            # four files flat; normalise both to <scenario_dir>/<file>.
+            for member in zip_ref.infolist():
+                if member.is_dir():
+                    continue
+                name = Path(member.filename).name
+                if name not in INPUT_FILES:
+                    continue
+                target = scenario_dir / name
+                if target.exists():
+                    continue
+                with zip_ref.open(member) as src, open(target, "wb") as dst:
+                    shutil.copyfileobj(src, dst)
+
+        still_missing = [
+            f for f in INPUT_FILES if not (scenario_dir / f).exists()
+        ]
+        if still_missing:
+            raise FileNotFoundError(
+                f"{archive} did not provide {still_missing} for scenario "
+                f"'{egon_scn}'; got {sorted(p.name for p in scenario_dir.iterdir())}."
+            )
 
 
 def _boundary_geom():
