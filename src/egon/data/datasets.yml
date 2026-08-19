@@ -1199,14 +1199,20 @@ demand_timeseries_mvgd:
   parallel_tasks: 10
 
 heat_pumps_status_quo:
-  # Status-quo-type scenarios (e.g. status2024) don't yet have their own
-  # demand/PV data. Maps each such scenario to the existing scenario whose
-  # data is read as a stand-in. Update here (not in code) once real data for
-  # a status-quo scenario is inserted.
+  # Maps a status-quo scenario to the scenario whose demand/PV data is read.
+  # These existed because status-quo scenarios originally had no data of their
+  # own and proxied eGon2035. Both now resolve to themselves: real status2024
+  # data is present in egon_peta_heat, egon_map_zensus_district_heating_areas
+  # and egon_power_plants_pv_roof_building.
+  #
+  # Only point a mapping at another scenario if this database genuinely lacks
+  # the data, and never at a scenario absent from the target table: the lookup
+  # then matches nothing and fails silently (see pv_source_scenario history --
+  # "status_quo" matched no rows, so PV weighting had no effect at all).
   demand_source_scenario:
-    status2024: "eGon2035"
+    status2024: "status2024"
   pv_source_scenario:
-    status2024: "status_quo"
+    status2024: "status2024"
 
 charging_infrastructure:
   original_data:
