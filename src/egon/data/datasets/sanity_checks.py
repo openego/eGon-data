@@ -2926,10 +2926,14 @@ def heat_gas_load_egon100RE(scn="eGon100RE"):
 
 
 def no_sanity_checks_required():
-    print("""
-          Sanity checks are not yet implemented for the configured
-          scenarios.
-          """)
+    print(
+        f"""
+          None of the configured scenarios ({", ".join(SCENARIOS)})
+          have sanity checks implemented. Sanity checks currently only
+          cover the 'eGon2035' and 'eGon100RE' scenarios, so nothing is
+          checked for this run.
+          """
+    )
     return None
 
 
@@ -2963,8 +2967,10 @@ if "eGon100RE" in SCENARIOS:
         },
     )
 
-if tasks == ():
-    tasks = tasks + (no_sanity_checks_required,)
+if not tasks:
+    # `Dataset` requires at least one task, so fall back to a no-op when
+    # none of the configured scenarios have sanity checks implemented.
+    tasks = (no_sanity_checks_required,)
 
 
 class SanityChecks(Dataset):
