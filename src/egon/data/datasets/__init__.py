@@ -14,6 +14,11 @@ from airflow.models.baseoperator import BaseOperator as Operator
 from airflow.operators.python import PythonOperator
 from sqlalchemy import Column, ForeignKey, Integer, String, Table, orm, tuple_
 from sqlalchemy.dialects.postgresql import JSONB
+from sqlalchemy.exc import (
+    IntegrityError,
+    OperationalError,
+    ProgrammingError,
+)
 from sqlalchemy.ext.declarative import declarative_base
 
 from egon.data import config, db, logger
@@ -449,32 +454,54 @@ class Dataset:
         Register dataset sources and targets in a single transaction.
         Only writes if sources or targets have changed.
         Creates table if it doesn't exist yet.
+
+        Constructing a `Dataset` (e.g. while importing the pipeline DAG,
+        or in unit tests) must not require a live database connection, so
+        registration is skipped with a warning if the database is
+        unavailable.
         """
-        SourcesTargetsModel.__table__.create(bind=db.engine(), checkfirst=True)
-
-        with db.session_scope() as session:
-            existing = (
-                session.query(SourcesTargetsModel)
-                .filter_by(name=self.name)
-                .first()
-            )
-
-            sources_dict = self.sources.to_dict()
-            targets_dict = self.targets.to_dict()
-
-            if not existing:
-                session.add(
-                    SourcesTargetsModel(
-                        name=self.name,
-                        sources=sources_dict,
-                        targets=targets_dict,
-                    )
+        try:
+            try:
+                SourcesTargetsModel.__table__.create(
+                    bind=db.engine(), checkfirst=True
                 )
-            else:
-                if (existing.sources or {}) != sources_dict:
-                    existing.sources = sources_dict
-                if (existing.targets or {}) != targets_dict:
-                    existing.targets = targets_dict
+            except (ProgrammingError, IntegrityError):
+                # Another concurrent DAG-parse process already created the
+                # table (or its implicit pg_type row) between our checkfirst
+                # check and the CREATE TABLE. Postgres raises this either as
+                # a ProgrammingError ("relation already exists") or an
+                # IntegrityError (UniqueViolation on pg_type_typname_nsp_index),
+                # depending on how far the racing CREATE got.
+                pass
+
+            with db.session_scope() as session:
+                existing = (
+                    session.query(SourcesTargetsModel)
+                    .filter_by(name=self.name)
+                    .first()
+                )
+
+                sources_dict = self.sources.to_dict()
+                targets_dict = self.targets.to_dict()
+
+                if not existing:
+                    session.add(
+                        SourcesTargetsModel(
+                            name=self.name,
+                            sources=sources_dict,
+                            targets=targets_dict,
+                        )
+                    )
+                else:
+                    if (existing.sources or {}) != sources_dict:
+                        existing.sources = sources_dict
+                    if (existing.targets or {}) != targets_dict:
+                        existing.targets = targets_dict
+        except OperationalError as e:
+            logger.warning(
+                f"Could not register sources/targets for '{self.name}' "
+                f"(database unavailable): {e}. Skipping registration."
+            )
 
 
 def load_sources_and_targets(

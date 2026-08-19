@@ -12,6 +12,10 @@ Added
   `#1352 <https://github.com/openego/egon-data/issues/1352>`_
 * Add standardized sources and targets definitions across dataset modules
   `#1283 <https://github.com/openego/egon-data/issues/1283>`_
+* Add electric HGV charging demand model (vehicle classes N2, N3, N3S) for the
+  NEP-2025-aligned scenarios reGon2037 and reGon2045, as a sibling dataset to
+  the hydrogen-based HeavyDutyTransport
+  `#1436 <https://github.com/openego/eGon-data/issues/1436>`_
 
 Changed
 -------
@@ -75,6 +79,19 @@ Bug Fixes
 * Fix dynamic line rating only being calculated for a single scenario
   due to a stray early return inside the per-scenario loop
   `#1424 <https://github.com/openego/eGon-data/issues/1424>`_
+* Fix automated tests failing on all branches because constructing a
+  Dataset unconditionally opened a database connection to register its
+  sources/targets; registration is now skipped with a warning when no
+  database is available
+  `#1435 <https://github.com/openego/eGon-data/issues/1435>`_
+* Fix eTraGo ID sequences getting out of sync with the IDs actually
+  written, which made concurrent inserts fail with ``duplicate key value
+  violates unique constraint``: ``h2_neighbours_egon2035`` derived a range
+  of IDs from a single reserved one, and foreign pumped hydro storages
+  drew their ``storage_id`` from the ``store`` sequence. ``next_etrago_id``
+  now ignores the case of the component name and always returns a list
+  when a count is given
+  `#1487 <https://github.com/openego/eGon-data/issues/1487>`_
 
 Version 2.0.0 (2025-08-20)
 ==========================
