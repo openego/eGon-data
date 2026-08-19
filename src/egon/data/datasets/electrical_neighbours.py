@@ -32,6 +32,46 @@ import egon.data.datasets.etrago_setup as etrago
 import egon.data.datasets.scenario_parameters.parameters as scenario_parameters
 
 
+# Latitude/longitude of TYNDP
+# "Nodes - Dict" sheet of TYNDP-2020-Scenario-Datafile.xlsx
+# (https://2020.entsos-tyndp-scenarios.eu), restricted to the node_id
+# prefixes used in eGon-data
+TYNDP_NODE_COORDINATES = {
+    "AT00": (47.64, 14.84),
+    "BE00": (50.8, 4.72),
+    "CH00": (46.95, 8.09),
+    "CZ00": (49.85, 15.43),
+    "DK00": (56.113, 9.096),
+    "DKE1": (55.51, 11.8),
+    "DKKF": (54.76, 12.32),
+    "DKW1": (55.99, 9.16),
+    "FR00": (47.1, 2.4),
+    "FR15": (42.12, 9.11),
+    "LU00": (49.671, 6.113),
+    "LUB1": (49.92, 5.87),
+    "LUF1": (49.64, 5.97),
+    "LUG1": (49.65, 6.27),
+    "LUV1": (49.96, 6.13),
+    "NL00": (52.23, 5.63),
+    "NO00": (61.3701, 9.3031),
+    "NOM1": (63.21, 10.26),
+    "NON1": (68.82, 17.31),
+    "NOS0": (60.16, 7.85),
+    "NOS1": (58.72, 4.44),
+    "PL00": (52.32, 19.17),
+    "PLE0": (51.41, 15.88),
+    "PLI0": (51.41, 15.88),
+    "RU00": (64.736, 104.062),
+    "SE00": (66.2188, 19),
+    "SE01": (67.13, 20.2),
+    "SE02": (63.13, 15.5),
+    "SE03": (59.71, 14.8),
+    "SE04": (56.13, 13.57),
+    "UK00": (53.81, -1.75),
+    "UKNI": (54.58, -6.63),
+}
+
+
 def get_cross_border_buses(scenario, sources):
     """Returns buses from osmTGmod which are outside of Germany.
 
@@ -899,16 +939,13 @@ def get_foreign_bus_id(scenario):
         epsg=3035,
     )
 
-    # insert installed capacities
-    file = zipfile.ZipFile(
-        ElectricalNeighbours.sources.files["tyndp_capacities"]
-    )
-
     # Select buses in neighbouring countries as geodataframe
-    buses = pd.read_excel(
-        file.open("TYNDP-2020-Scenario-Datafile.xlsx").read(),
-        sheet_name="Nodes - Dict",
-    ).query("longitude==longitude")
+    buses = pd.DataFrame(
+        [
+            {"node_id": node_id, "latitude": lat, "longitude": lon}
+            for node_id, (lat, lon) in TYNDP_NODE_COORDINATES.items()
+        ]
+    )
     buses = gpd.GeoDataFrame(
         buses,
         crs=4326,
