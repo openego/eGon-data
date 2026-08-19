@@ -1197,6 +1197,20 @@ emobility_mit:
 
 demand_timeseries_mvgd:
   parallel_tasks: 10
+  # Ordered chain of scenarios along which the fixed floor for heat pumps
+  # propagates: each scenario inherits its predecessor's *result*, so a building
+  # with a heat pump keeps it (at exactly the inherited capacity) in every later
+  # link. Only capacity beyond the inherited stock is newly distributed.
+  # eGon2035 is deliberately absent: it is a legacy scenario built on the 2021
+  # NEP, not part of the reGon (2025 NEP) timeline, and keeps its independent
+  # PV-weighted distribution.
+  # Extend this list to add a scenario to the chain (e.g. reGon2050) - no Python
+  # change is needed. HeatPumpsCascade builds its task order from this list, so
+  # the order here defines the chain direction.
+  hp_floor_chain:
+    - "status2024"
+    - "reGon2037"
+    - "reGon2045"
 
 charging_infrastructure:
   original_data:

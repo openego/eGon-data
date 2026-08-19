@@ -88,6 +88,36 @@ class EgonHpCapacityBuildings(Base):
     hp_capacity = Column(REAL)
 
 
+def order_scenarios_by_hp_floor_chain(scenarios):
+    """
+    Orders scenarios so that the heat pump floor chain runs in its declared
+    direction.
+
+    Scenarios on the chain (see :func:`get_hp_floor_chain`) come first, in
+    chain order, because each inherits its predecessor's result and therefore
+    cannot be distributed before it. Scenarios off the chain keep their
+    relative order from the input and follow, as they neither inherit a floor
+    nor pass one on.
+
+    Parameters
+    -----------
+    scenarios : list of str
+        Scenario names, e.g. as selected in the pipeline config.
+
+    Returns
+    --------
+    list of str
+        The same scenarios, reordered.
+
+    """
+    chain = get_hp_floor_chain()
+
+    on_chain = [s for s in chain if s in scenarios]
+    off_chain = [s for s in scenarios if s not in chain]
+
+    return on_chain + off_chain
+
+
 class HeatPumpsStatusQuo(Dataset):
     def __init__(self, dependencies):
         def dyn_parallel_tasks_status_quo(scenario):
@@ -184,9 +214,20 @@ class HeatPumpsCascade(Dataset):
     The heat pump capacity per MV grid district is disaggregated to buildings
     with individual heating based on the buildings heat peak demand. The buildings are
     chosen randomly until the target capacity per MV grid district is reached. Buildings
-    with PV rooftop have a higher probability to be assigned a heat pump. As the
-    building's heat peak load is not previously determined, it is as well done in this
-    dataset. Further, as determining heat peak load requires heat load
+    with PV rooftop have a higher probability to be assigned a heat pump.
+
+    For scenarios on the heat pump floor chain declared in `datasets.yml`
+    (`status2024` -> `reGon2037` -> `reGon2045`), the assignment is *floored*: a
+    building that had a heat pump in the previous link keeps exactly its inherited
+    capacity, and only the remaining capacity of the MV grid district is distributed
+    over the other buildings. This makes the heat pump stock monotonically
+    non-decreasing along the scenario timeline. `eGon2035` is deliberately not on the
+    chain and keeps its independent distribution. Because each link inherits its
+    predecessor's result, the scenarios on the chain are processed in chain order and
+    re-running one link invalidates everything downstream of it.
+
+    As the building's heat peak load is not previously determined, it is as well done
+    in this dataset. Further, as determining heat peak load requires heat load
     profiles of the buildings to be set up, this task is also utilised to set up
     aggregated heat load profiles of all buildings with heat pumps within a grid as
     well as for all buildings with a gas boiler (i.e. all buildings with decentral
@@ -248,7 +289,7 @@ class HeatPumpsCascade(Dataset):
     #:
     name: str = "HeatPumpsCascade"
     #:
-    version: str = "0.0.6"
+    version: str = "0.0.7"
 
     def __init__(self, dependencies):
         def dyn_parallel_tasks_2035(scenario):
@@ -297,7 +338,17 @@ class HeatPumpsCascade(Dataset):
         ):
             tasks_HeatPumpsCascade = ()
 
-            for scenario in config.settings()["egon-data"]["--scenarios"]:
+            # The floor chain is inherently sequential: reGon2045 must not be
+            # distributed before reGon2037 has been written, or it would floor
+            # against no rows and reGon2037 would then floor against its own
+            # successor - silently inverting the chain. Ordering the scenarios
+            # by the chain declared in datasets.yml is what encodes the
+            # direction; the Dataset task-graph API turns this flat tuple into
+            # the required ordering, as all of one scenario's parallel bulks
+            # complete before any task of the next begins.
+            for scenario in order_scenarios_by_hp_floor_chain(
+                config.settings()["egon-data"]["--scenarios"]
+            ):
                 if "status" not in scenario:
                     postfix = f"_{scenario}"
 
@@ -1344,6 +1395,169 @@ def desaggregate_hp_capacity(min_hp_cap_per_building, hp_cap_mv_grid):
     return hp_cap_per_building
 
 
+def get_hp_floor_chain():
+    """
+    Returns the ordered scenario chain along which the fixed heat pump floor
+    propagates.
+
+    The chain is declared in the dataset config `datasets.yml` rather than
+    hardcoded here, because which scenarios floor against which is a modelling
+    choice. Scenarios not on the chain (notably `eGon2035`) neither inherit a
+    floor nor pass one on.
+
+    Returns
+    --------
+    list of str
+        Scenario names in chain order, e.g.
+        ``["status2024", "reGon2037", "reGon2045"]``. Empty if no chain is
+        configured.
+
+    """
+    return list(
+        config.datasets()["demand_timeseries_mvgd"].get("hp_floor_chain", [])
+    )
+
+
+def get_hp_floor_predecessors(scenario):
+    """
+    Returns the predecessors of a scenario on the floor chain, nearest first.
+
+    Parameters
+    -----------
+    scenario : str
+        Name of the scenario.
+
+    Returns
+    --------
+    list of str
+        Scenario names preceding `scenario` on the chain, ordered from nearest
+        to furthest. Empty if `scenario` is not on the chain or is its first
+        link.
+
+    """
+    chain = get_hp_floor_chain()
+
+    if scenario not in chain:
+        return []
+
+    return chain[: chain.index(scenario)][::-1]
+
+
+def get_inherited_hp_capacity(scenario, building_ids):
+    """
+    Returns the fixed heat pump capacity a scenario inherits from the floor
+    chain.
+
+    The floor a scenario inherits is its predecessor's *result*. Because
+    scenarios are selected independently, a run can omit a middle link of the
+    chain (e.g. `[status2024, reGon2045]`). In that case the floor walks back
+    along the chain to the nearest predecessor that actually has rows, which is
+    a weaker but still valid constraint in the monotonic direction the chain
+    assumes. If walking back exhausts the chain and no predecessor has any
+    rows, the scenario is distributed unfloored and a warning is logged, since
+    running a single future scenario standalone is a legitimate way to test
+    the distribution itself.
+
+    Parameters
+    -----------
+    scenario : str
+        Name of the scenario.
+    building_ids : pd.Index(int)
+        Building IDs (as int) of buildings with decentral heating system in the
+        given MV grid.
+
+    Returns
+    --------
+    pd.Series
+        Inherited heat pump capacity in MW per building, indexed by building
+        ID. Contains only buildings that are both in `building_ids` and had a
+        heat pump in the inherited scenario. Empty if the scenario is
+        unfloored.
+
+    """
+    empty = pd.Series(dtype="float64", name="hp_capacity")
+    empty.index.name = "building_id"
+
+    predecessors = get_hp_floor_predecessors(scenario)
+
+    if not predecessors:
+        return empty
+
+    for predecessor in predecessors:
+        with db.session_scope() as session:
+            query = session.query(
+                EgonHpCapacityBuildings.building_id,
+                EgonHpCapacityBuildings.hp_capacity,
+            ).filter(
+                EgonHpCapacityBuildings.scenario == predecessor,
+                EgonHpCapacityBuildings.building_id.in_(
+                    building_ids.tolist()
+                ),
+            )
+
+            inherited = pd.read_sql(
+                query.statement, query.session.bind, index_col="building_id"
+            ).hp_capacity
+
+        # An empty result for one MV grid does not prove the predecessor was
+        # never written, so fall back to the next link only if the predecessor
+        # scenario holds no rows at all.
+        if not inherited.empty:
+            if predecessor != predecessors[0]:
+                logger.info(
+                    f"Scenario {scenario} inherits its heat pump floor from "
+                    f"{predecessor}, as the nearer link(s) "
+                    f"{predecessors[: predecessors.index(predecessor)]} hold "
+                    f"no data in this run."
+                )
+            return inherited.rename("hp_capacity")
+
+        if scenario_has_hp_capacity(predecessor):
+            # Predecessor exists but has no heat pumps among these buildings -
+            # a valid empty floor, not a missing link.
+            return empty
+
+    logger.warning(
+        f"No predecessor of scenario {scenario} on the heat pump floor chain "
+        f"{get_hp_floor_chain()} holds any data (tried {predecessors}). "
+        f"{scenario} is distributed UNFLOORED: its heat pump assignment is "
+        f"drawn independently and buildings may lose heat pumps relative to "
+        f"earlier scenarios. Include an earlier link of the chain in "
+        f"'--scenarios' to floor it."
+    )
+
+    return empty
+
+
+def scenario_has_hp_capacity(scenario):
+    """
+    Returns whether a scenario has any heat pump capacity rows at all.
+
+    Used to tell a predecessor that was never run (walk further back along the
+    floor chain) from one that was run but has no heat pumps in the MV grid at
+    hand (a valid empty floor).
+
+    Parameters
+    -----------
+    scenario : str
+        Name of the scenario.
+
+    Returns
+    --------
+    bool
+        True if the scenario has at least one row in
+        :py:class:`EgonHpCapacityBuildings`.
+
+    """
+    with db.session_scope() as session:
+        return (
+            session.query(EgonHpCapacityBuildings.building_id)
+            .filter(EgonHpCapacityBuildings.scenario == scenario)
+            .first()
+            is not None
+        )
+
+
 def determine_hp_cap_buildings_pvbased_per_mvgd(
     scenario, mv_grid_id, peak_heat_demand, building_ids
 ):
@@ -1363,6 +1577,18 @@ def determine_hp_cap_buildings_pvbased_per_mvgd(
         Building IDs (as int) of buildings with decentral heating system in
         given MV grid.
 
+    Notes
+    -----
+    For scenarios on the heat pump floor chain (see
+    :func:`get_hp_floor_chain`), buildings that had a heat pump in the
+    inherited scenario keep **exactly**
+    their inherited capacity and are exempt from the proportional scaling in
+    :func:`desaggregate_hp_capacity`. Only the remaining budget (`hp_cap_grid`
+    minus the inherited capacity in this grid) is distributed over the
+    not-yet-equipped buildings, using the PV-weighted selection unchanged. This
+    keeps both invariants exact: every floored building holds its inherited
+    capacity, and the distributed total still equals `hp_cap_grid`.
+
     """
 
     hp_cap_grid = get_total_heat_pump_capacity_of_mv_grid(scenario, mv_grid_id)
@@ -1375,15 +1601,48 @@ def determine_hp_cap_buildings_pvbased_per_mvgd(
             peak_heat_demand
         )
 
-        # select buildings that will have a heat pump
-        buildings_with_hp = determine_buildings_with_hp_in_mv_grid(
-            hp_cap_grid, min_hp_cap_buildings, scenario
+        # capacity inherited from the previous link of the floor chain is fixed
+        # and exempt from scaling; only the remainder is distributed
+        inherited_hp_cap = get_inherited_hp_capacity(scenario, building_ids)
+        inherited_cap = inherited_hp_cap.sum()
+
+        # honouring the floor and hitting the capacity target are mutually
+        # exclusive if the inherited stock exceeds the grid's own target
+        if inherited_cap > hp_cap_grid:
+            raise ValueError(
+                f"Inherited heat pump capacity ({inherited_cap:.4f} MW) in MV "
+                f"grid {mv_grid_id} exceeds the capacity target of scenario "
+                f"{scenario} ({hp_cap_grid:.4f} MW). The fixed floor cannot "
+                f"be honoured while meeting the target."
+            )
+
+        remaining_cap_grid = hp_cap_grid - inherited_cap
+        min_hp_cap_remaining = min_hp_cap_buildings.drop(
+            inherited_hp_cap.index, errors="ignore"
         )
 
-        # distribute total heat pump capacity to all buildings with HP
-        hp_cap_per_building = desaggregate_hp_capacity(
-            min_hp_cap_buildings.loc[buildings_with_hp], hp_cap_grid
+        hp_cap_per_building = pd.Series(dtype="float64")
+        hp_cap_per_building.index.name = "building_id"
+
+        if remaining_cap_grid > 0.0 and not min_hp_cap_remaining.empty:
+            # select additional buildings that will have a heat pump
+            buildings_with_hp = determine_buildings_with_hp_in_mv_grid(
+                remaining_cap_grid, min_hp_cap_remaining, scenario
+            )
+
+            # the remaining budget can be too small for any further building,
+            # in which case it stays with the floored buildings' fixed capacity
+            if len(buildings_with_hp) > 0:
+                # distribute the remaining capacity to the selected buildings
+                hp_cap_per_building = desaggregate_hp_capacity(
+                    min_hp_cap_remaining.loc[buildings_with_hp],
+                    remaining_cap_grid,
+                )
+
+        hp_cap_per_building = pd.concat(
+            [inherited_hp_cap, hp_cap_per_building]
         )
+        hp_cap_per_building.index.name = "building_id"
 
         return hp_cap_per_building.rename("hp_capacity")
 

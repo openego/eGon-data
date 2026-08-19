@@ -12,6 +12,11 @@ Added
   `#1352 <https://github.com/openego/egon-data/issues/1352>`_
 * Add standardized sources and targets definitions across dataset modules
   `#1283 <https://github.com/openego/egon-data/issues/1283>`_
+* Add a fixed floor for heat pumps along the scenario chain
+  status2024 -> reGon2037 -> reGon2045, so a building with a heat pump keeps it
+  (at exactly its inherited capacity) in later scenarios. eGon2035 is not on the
+  chain and keeps its independent distribution.
+  `#1477 <https://github.com/openego/eGon-data/issues/1477>`_
 
 Changed
 -------
