@@ -183,7 +183,7 @@ def create_data_center_allocation():
     """Run data center allocation workflow and return rz_punkte."""
     # Allocate generated data center capacities to suitable commercial areas
     # based on electricity, district-heating, and internet-location criteria.
-    
+
     rz_df = generate_data_center_sizes()
     gewerbe_raw = load_commercial_areas()
     strom_raw = load_substations()
@@ -345,7 +345,7 @@ def create_data_center_allocation():
 
 
 ####################
-# Electrical integration part 
+# Electrical integration part
 def get_existing_ac_buses(scenario):
     """Get existing 110 kV and 380 kV AC buses from eTraGo."""
     sources = DataCenters.sources
@@ -447,7 +447,7 @@ def assign_nearest_heat_bus(data_centers, central_heat_buses):
     data_centers_projected["central_heat_bus_id"] = data_centers_projected[
         "central_heat_bus_id"
     ].astype(int)
-    
+
     # Get geometry of the assigned heat bus for the waste-heat link.
     central_heat_bus_geom = (
         central_heat_buses.set_index("bus_id")
@@ -464,6 +464,7 @@ def assign_nearest_heat_bus(data_centers, central_heat_buses):
     data_centers_projected["central_heat_bus_geom"] = central_heat_bus_geom
 
     return data_centers_projected
+
 
 def create_data_center_buses(data_centers, scenario):
     """Create new AC buses for data centers."""
@@ -549,9 +550,13 @@ def create_data_center_lines(data_centers, scenario):
             }
         )
 
-    data_center_lines = gpd.GeoDataFrame(lines, geometry="topo", crs="EPSG:3035")
+    data_center_lines = gpd.GeoDataFrame(
+        lines, geometry="topo", crs="EPSG:3035"
+    )
     data_center_lines = data_center_lines.to_crs(epsg=4326)
-    data_center_lines["line_id"] = db.next_etrago_id("line", len(data_center_lines))
+    data_center_lines["line_id"] = db.next_etrago_id(
+        "line", len(data_center_lines)
+    )
 
     return data_center_lines
 
@@ -570,6 +575,7 @@ def create_data_center_loads(data_centers, scenario):
             "sign": -1,
         }
     )
+
 
 def create_data_center_heat_links(data_centers, scenario):
     """Create waste-heat links from data center AC buses to central heat buses."""
@@ -636,12 +642,15 @@ def insert_data_centers(scenario):
     central_heat_buses = get_existing_central_heat_buses(scenario)
     data_centers = assign_nearest_bus(data_centers, existing_buses)
 
-    data_center_buses, data_centers = create_data_center_buses(data_centers, scenario)
+    data_center_buses, data_centers = create_data_center_buses(
+        data_centers, scenario
+    )
     data_centers = assign_nearest_heat_bus(data_centers, central_heat_buses)
     data_center_lines = create_data_center_lines(data_centers, scenario)
     data_center_loads = create_data_center_loads(data_centers, scenario)
     data_center_heat_links = create_data_center_heat_links(
-    data_centers, scenario)
+        data_centers, scenario
+    )
 
     data_center_buses.to_postgis(
         targets.get_table_name("buses"),
@@ -667,7 +676,7 @@ def insert_data_centers(scenario):
         con=db.engine(),
         index=False,
     )
-    
+
     data_center_heat_links.to_postgis(
         targets.get_table_name("links"),
         schema=targets.get_table_schema("links"),
@@ -680,7 +689,6 @@ def insert_data_centers(scenario):
 def insert_data_centers_for_scenarios():
     """Insert data centers for configured scenarios using Scenario B assumption."""
     global TARGET_CAPACITY_MW
-    
 
     if (
         config.settings()["egon-data"]["--dataset-boundary"]
