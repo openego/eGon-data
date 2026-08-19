@@ -312,7 +312,7 @@ class HeatPumpsStatusQuo(Dataset):
 
         super().__init__(
             name="HeatPumpsStatusQuo",
-            version="0.0.5",
+            version="0.0.6",
             dependencies=dependencies,
             tasks=tasks,
         )
@@ -652,11 +652,11 @@ def cascade_per_technology(
             if not target.capacity[0]:
                 target.capacity[0] = 0
 
-            if (
-                config.settings()["egon-data"]["--dataset-boundary"]
-                == "Schleswig-Holstein"
-            ):
-                target.capacity[0] /= 16
+            # No testmode scaling here: the 'rural_heat_pump' target is already
+            # reduced to the dataset boundary by population_share() when it is
+            # inserted in scenario_capacities.insert_capacities_status_quo().
+            # Dividing by 16 again applied the boundary reduction twice and made
+            # the distributed capacity ~16x too low.
 
             heat_per_mv["share"] = (
                 heat_per_mv.remaining_demand
@@ -1494,9 +1494,12 @@ def determine_buildings_with_hp_in_mv_grid(
             == pv_source_scenario(scenario),
         )
 
-        buildings_with_pv = pd.read_sql(
-            query.statement, query.session.bind, index_col=None
-        ).building_id.values
+        buildings_with_pv = (
+            pd.read_sql(query.statement, query.session.bind, index_col=None)
+            .building_id.drop_duplicates()
+            .sort_values()
+            .values
+        )
     # set different weights for buildings with PV and without PV
     weight_with_pv = 1.5
     weight_without_pv = 1.0
@@ -1556,7 +1559,11 @@ def determine_buildings_with_hp_in_mv_grid(
             min_cap_buildings_wo_hp <= remaining_hp_cap
         ].index
 
-    return buildings_with_hp
+    # Guard against duplicated building ids reaching the caller. A duplicate
+    # would be allocated capacity twice and then silently dropped by
+    # drop_duplicates() in the bulk export, losing that capacity from the
+    # grid's budget without any rescaling.
+    return buildings_with_hp.drop_duplicates()
 
 
 def desaggregate_hp_capacity(min_hp_cap_per_building, hp_cap_mv_grid):
