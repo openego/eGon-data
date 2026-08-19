@@ -49,6 +49,10 @@ R_PER_KM_380KV = 0.028
 L_PER_KM_380KV = 0.8e-3
 
 # Data center waste heat
+# Assume 20% reusable waste heat based on EnEfG § 11(2):
+# data centers operating from 1 July 2028 must provide at least 20%
+# planned reused energy.
+# Source: https://www.gesetze-im-internet.de/enefg/__11.html
 REUSABLE_HEAT_FACTOR = 0.20
 
 
