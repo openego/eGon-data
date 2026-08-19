@@ -55,9 +55,7 @@ from egon.data.datasets.heat_supply import (
     HeatSupply,
 )
 from egon.data.datasets.heat_supply.individual_heating import (
-    HeatPumps2035,
-    HeatPumps2050,
-    HeatPumpsPypsaEur,
+    HeatPumpsCascade,
     HeatPumpsStatusQuo,
 )
 from egon.data.datasets.hydrogen_etrago import (
@@ -566,15 +564,6 @@ with airflow.DAG(
 
     with TaskGroup(group_id="heat_supply") as heat_supply_group:
 
-        # Minimum heat pump capacity for pypsa-eur
-        heat_pumps_pypsa_eur = HeatPumpsPypsaEur(
-            dependencies=[
-                cts_demand_buildings,
-                DistrictHeatingAreas,
-                heat_time_series,
-            ]
-        )
-
         # Heat supply
         heat_supply = HeatSupply(
             dependencies=[
@@ -597,24 +586,14 @@ with airflow.DAG(
             ]
         )
 
-        # Heat pump disaggregation for eGon2035
-        heat_pumps_2035 = HeatPumps2035(
+        # Heat pump disaggregation for eGon2035, reGon2037 and reGon2045
+        heat_pumps_cascade = HeatPumpsCascade(
             dependencies=[
                 cts_demand_buildings,
                 DistrictHeatingAreas,
                 heat_supply,
                 heat_time_series,
-                heat_pumps_pypsa_eur,
                 power_plants,
-            ]
-        )
-
-        # Heat pump disaggregation for eGon100RE
-        heat_pumps_2050 = HeatPumps2050(
-            dependencies=[
-                run_pypsaeur,
-                heat_pumps_pypsa_eur,
-                heat_supply,
             ]
         )
 
@@ -656,7 +635,7 @@ with airflow.DAG(
                 heat_time_series,
                 mv_grid_districts,
                 heat_pumps_sq,
-                heat_pumps_2035,
+                heat_pumps_cascade,
             ]
         )
 
@@ -761,6 +740,8 @@ with airflow.DAG(
             dependencies=[
                 load_areas,
                 cts_demand_buildings,
-                heat_pumps_2050,
+                #sanity_checks,
+                heat_pumps_cascade,
+                heat_pumps_sq,
             ]
         )
