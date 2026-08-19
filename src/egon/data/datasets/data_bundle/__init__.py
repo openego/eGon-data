@@ -5,7 +5,7 @@ from urllib.request import urlretrieve
 import shutil
 import zipfile
 
-from egon.data import config
+from egon.data import config, logger
 from egon.data.datasets import Dataset, DatasetSources, DatasetTargets
 
 
@@ -17,6 +17,28 @@ def download():
 
     """
     data_bundle_path = Path(".") / "data_bundle_egon_data"
+
+    # Local development escape hatch: re-extracting the bundle costs tens of
+    # GB of disk churn and the contents never change between runs. Set
+    #
+    #   --skip-data-bundle-extraction: true
+    #
+    # in egon-data.configuration.yaml to reuse an already extracted bundle.
+    # Absent from the config (the default) the dataset behaves as before.
+    if config.settings()["egon-data"].get(
+        "--skip-data-bundle-extraction", False
+    ):
+        if data_bundle_path.exists() and data_bundle_path.is_dir():
+            logger.info(
+                f"Reusing existing data bundle at {data_bundle_path} "
+                f"because '--skip-data-bundle-extraction' is set."
+            )
+            return
+        logger.warning(
+            f"'--skip-data-bundle-extraction' is set but "
+            f"{data_bundle_path} does not exist. Extracting anyway."
+        )
+
     # Delete folder if it already exists
     if data_bundle_path.exists() and data_bundle_path.is_dir():
         shutil.rmtree(data_bundle_path)
