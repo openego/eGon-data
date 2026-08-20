@@ -55,6 +55,11 @@ Changed
   containing MaStR-IDs to match MaStR- with NEP-data. Remove all status-
   quo (except status-quo2024) and eGon100RE mentions.
   '#1447 <https://github.com/openego/eGon-data/issues/1447>'_
+* Adapt Heat_Supply TaskGroup to new scenarios: extend the eGon2035
+  NEP-based cascade (heat pump capacity target + remainder gas boilers)
+  to reGon2037 and reGon2045, make PV-rooftop-based building weighting
+  scenario-aware, and remove obsolete eGon100RE/pypsa-eur-sec handling
+  `#1449 <https://github.com/openego/eGon-data/issues/1449>`_
 * Adapt eTraGo_Input TaskGroup to new scenarios: generalize CHP-to-eTraGo
   insertion to the configured scenarios, and remove obsolete eGon100RE
   handling
@@ -79,6 +84,19 @@ Bug Fixes
 * Fix dynamic line rating only being calculated for a single scenario
   due to a stray early return inside the per-scenario loop
   `#1424 <https://github.com/openego/eGon-data/issues/1424>`_
+* Fix automated tests failing on all branches because constructing a
+  Dataset unconditionally opened a database connection to register its
+  sources/targets; registration is now skipped with a warning when no
+  database is available
+  `#1435 <https://github.com/openego/eGon-data/issues/1435>`_
+* Fix eTraGo ID sequences getting out of sync with the IDs actually
+  written, which made concurrent inserts fail with ``duplicate key value
+  violates unique constraint``: ``h2_neighbours_egon2035`` derived a range
+  of IDs from a single reserved one, and foreign pumped hydro storages
+  drew their ``storage_id`` from the ``store`` sequence. ``next_etrago_id``
+  now ignores the case of the component name and always returns a list
+  when a count is given
+  `#1487 <https://github.com/openego/eGon-data/issues/1487>`_
 
 Version 2.0.0 (2025-08-20)
 ==========================

@@ -162,10 +162,10 @@ def individual_heating():
             DELETE FROM {targets.tables['individual_heating_supply']}
             WHERE scenario = '{scenario}'
             """)
-        if scenario == "eGon2035":
-            distribution_level = "federal_states"
-        else:
+        if "status" in scenario:
             distribution_level = "national"
+        else:
+            distribution_level = "federal_states"
 
         supply = cascade_heat_supply_indiv(
             scenario, distribution_level=distribution_level, plotting=False
@@ -379,7 +379,7 @@ class HeatSupply(Dataset):
     #:
     name: str = "HeatSupply"
     #:
-    version: str = "0.0.18"
+    version: str = "0.0.19"
 
     sources = DatasetSources(
         tables={
