@@ -27,13 +27,17 @@ class Tyndp(Dataset):
     #:
     name: str = "Tyndp"
     #:
-    version: str = "0.0.4"
+    version: str = "0.0.5"
 
     sources = DatasetSources(
         files={
             "capacities_2035": "https://2024-data.entsos-tyndp-scenarios.eu/files/scenarios-outputs/DE2035CY2009.zip",
             "capacities_2040": "https://2024-data.entsos-tyndp-scenarios.eu/files/scenarios-outputs/DE2040CY2009.zip",
             "capacities_2050": "https://2024-data.entsos-tyndp-scenarios.eu/files/scenarios-outputs/DE2050CY2009.zip",
+            # TYNDP 2020 capacities file, kept only for gas_neighbours'
+            # gas-sector code, which has not yet been migrated to TYNDP
+            # 2024 and still reads this file directly.
+            "capacities_2020_gas_legacy": "https://2020.entsos-tyndp-scenarios.eu/wp-content/uploads/2020/06/TYNDP-2020-Scenario-Datafile.xlsx.zip",
             "demand_2030": "https://eepublicdownloads.entsoe.eu/tyndp-documents/2020-data/Demand_TimeSeries_2030_DistributedEnergy.xlsx",
             "demand_2040": "https://eepublicdownloads.entsoe.eu/tyndp-documents/2020-data/Demand_TimeSeries_2040_DistributedEnergy.xlsx",
         }
@@ -44,6 +48,9 @@ class Tyndp(Dataset):
             "capacities_2035": "DE2035CY2009.zip",
             "capacities_2040": "DE2040CY2009.zip",
             "capacities_2050": "DE2050CY2009.zip",
+            # Filename expected by gas_neighbours (grid.egon_data.datasets
+            # .gas_neighbours.eGon2035), see comment on the source above.
+            "capacities_2020_gas_legacy": "TYNDP-2020-Scenario-Datafile.xlsx.zip",
             "demand_2030": "Demand_TimeSeries_2030_DistributedEnergy.xlsx",
             "demand_2040": "Demand_TimeSeries_2040_DistributedEnergy.xlsx",
         }
@@ -59,7 +66,10 @@ class Tyndp(Dataset):
 
 
 def download():
-    """Download input data from TYNDP 2024
+    """Download input data from TYNDP 2024, plus the legacy TYNDP 2020
+    capacities file still required by the not-yet-migrated gas_neighbours
+    module.
+
     Returns
     -------
     None.
@@ -72,6 +82,7 @@ def download():
         "capacities_2035",
         "capacities_2040",
         "capacities_2050",
+        "capacities_2020_gas_legacy",
         "demand_2030",
         "demand_2040",
     ]:
