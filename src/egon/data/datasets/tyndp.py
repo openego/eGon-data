@@ -27,7 +27,7 @@ class Tyndp(Dataset):
     #:
     name: str = "Tyndp"
     #:
-    version: str = "0.0.5"
+    version: str = "0.0.6"
 
     sources = DatasetSources(
         files={
@@ -38,8 +38,7 @@ class Tyndp(Dataset):
             # gas-sector code, which has not yet been migrated to TYNDP
             # 2024 and still reads this file directly.
             "capacities_2020_gas_legacy": "https://2020.entsos-tyndp-scenarios.eu/wp-content/uploads/2020/06/TYNDP-2020-Scenario-Datafile.xlsx.zip",
-            "demand_2030": "https://eepublicdownloads.entsoe.eu/tyndp-documents/2020-data/Demand_TimeSeries_2030_DistributedEnergy.xlsx",
-            "demand_2040": "https://eepublicdownloads.entsoe.eu/tyndp-documents/2020-data/Demand_TimeSeries_2040_DistributedEnergy.xlsx",
+            "demand": "https://2024-data.entsos-tyndp-scenarios.eu/files/scenarios-inputs/Demand-Profiles.zip",
         }
     )
 
@@ -51,8 +50,7 @@ class Tyndp(Dataset):
             # Filename expected by gas_neighbours (grid.egon_data.datasets
             # .gas_neighbours.eGon2035), see comment on the source above.
             "capacities_2020_gas_legacy": "TYNDP-2020-Scenario-Datafile.xlsx.zip",
-            "demand_2030": "Demand_TimeSeries_2030_DistributedEnergy.xlsx",
-            "demand_2040": "Demand_TimeSeries_2040_DistributedEnergy.xlsx",
+            "demand": "Demand-Profiles.zip",
         }
     )
 
@@ -83,8 +81,7 @@ def download():
         "capacities_2040",
         "capacities_2050",
         "capacities_2020_gas_legacy",
-        "demand_2030",
-        "demand_2040",
+        "demand",
     ]:
         source_url = Tyndp.sources.files[dataset]
         target_file = Tyndp.targets.files[dataset]
