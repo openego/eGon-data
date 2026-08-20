@@ -1740,7 +1740,7 @@ def insert_storage_units_sq():
             "cyclic_state_of_charge"
         ]
 
-        sto_sq["storage_id"] = db.next_etrago_id("store", len(sto_sq))
+        sto_sq["storage_id"] = db.next_etrago_id("storage", len(sto_sq))
 
         # Delete entrances without any installed capacity
         sto_sq = sto_sq[sto_sq["p_nom"] > 0]
@@ -2189,7 +2189,7 @@ class ElectricalNeighbours(Dataset):
     #:
     name: str = "ElectricalNeighbours"
     #:
-    version: str = "0.0.15"
+    version: str = "0.0.16"
 
     sources = DatasetSources(
         tables={

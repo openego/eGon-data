@@ -227,34 +227,46 @@ def select_geodataframe(sql, index_col=None, geom_col="geom", epsg=3035):
     return gdf
 
 
-def next_etrago_id(component, count=1):
+def next_etrago_id(component, count=None):
     """
     Reserve one or more unique IDs from a PostgreSQL sequence specific to the
     given component.
 
+    Every ID written to an ``grid.egon_etrago_*`` table must be reserved
+    here, one call per ID. Deriving further IDs from a reserved one (e.g.
+    via :func:`range`) leaves the sequence behind the IDs actually
+    written, so the next IDs it hands out are already taken and inserts
+    fail with a unique violation, cf. `#1487
+    <https://github.com/openego/eGon-data/issues/1487>`_.
+
     Parameters
     ----------
     component : str
-        Name of the component (e.g., 'line', 'transformer', etc.).
+        Name of the component (e.g., 'line', 'transformer', etc.). Case is
+        ignored.
     count : int, optional
-        Number of IDs to reserve. Defaults to 1.
+        Number of IDs to reserve. If omitted, a single ID is returned as a
+        scalar.
 
     Returns
     -------
     int or list of int
-        A single ID (if count == 1) or a list of IDs.
+        A single ID if `count` is omitted, otherwise a list of `count`
+        IDs. Note that a list is returned even for ``count=1``, so the
+        result can be assigned to a DataFrame index regardless of length.
     """
 
-    sequence_name = f"grid.etrago_{component}_id_seq"
+    sequence_name = f"grid.etrago_{component.lower()}_id_seq"
 
     # Fetch the next `count` IDs from the sequence
     id_query = f"""
-        SELECT nextval('{sequence_name}') FROM generate_series(1, {count})
+        SELECT nextval('{sequence_name}')
+        FROM generate_series(1, {1 if count is None else count})
     """
     ids_df = select_dataframe(id_query)
     ids = ids_df["nextval"].tolist()
 
-    return ids[0] if count == 1 else ids
+    return ids[0] if count is None else ids
 
 
 def check_db_unique_violation(func):
