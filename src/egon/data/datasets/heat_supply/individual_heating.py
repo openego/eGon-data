@@ -58,6 +58,12 @@ from egon.data.datasets.zensus_mv_grid_districts import MapZensusGridDistricts
 engine = db.engine()
 Base = declarative_base()
 
+#: Absolute tolerance in MW when comparing heat pump capacities. Capacities are
+#: derived from peak heat demands through several float operations, so exact
+#: equality is not meaningful. 1e-9 MW is one microwatt, far below any
+#: physically relevant difference.
+FLOOR_TOLERANCE = 1e-9
+
 
 class EgonEtragoTimeseriesIndividualHeating(Base):
     """
@@ -293,7 +299,7 @@ class HeatPumpsCascade(Dataset):
     #:
     name: str = "HeatPumpsCascade"
     #:
-    version: str = "0.0.7"
+    version: str = "0.0.8"
 
     def __init__(self, dependencies):
         def dyn_parallel_tasks_2035(scenario):
@@ -1597,14 +1603,23 @@ def determine_hp_cap_buildings_pvbased_per_mvgd(
     Notes
     -----
     For scenarios on the heat pump floor chain (see
-    :func:`get_hp_floor_chain`), buildings that had a heat pump in the
-    inherited scenario keep **exactly**
-    their inherited capacity and are exempt from the proportional scaling in
-    :func:`desaggregate_hp_capacity`. Only the remaining budget (`hp_cap_grid`
-    minus the inherited capacity in this grid) is distributed over the
-    not-yet-equipped buildings, using the PV-weighted selection unchanged. This
-    keeps both invariants exact: every floored building holds its inherited
-    capacity, and the distributed total still equals `hp_cap_grid`.
+    :func:`get_hp_floor_chain`), buildings that had a heat pump in the inherited
+    scenario keep **at least** their inherited capacity: the floor is a lower
+    bound, not a fixed value. Where the building's own peak heat demand has
+    grown since the inherited scenario, its capacity is raised to the minimum
+    the sizing rule requires for the current scenario
+    (:func:`determine_minimum_hp_capacity_per_building`); a heat pump kept at
+    its inherited size would otherwise be unable to cover the building's heat
+    demand.
+
+    Floored buildings are then exempt from the proportional scaling in
+    :func:`desaggregate_hp_capacity`, and only the remaining budget
+    (`hp_cap_grid` minus the floored capacity in this grid, after any
+    up-scaling) is distributed over the not-yet-equipped buildings using the
+    PV-weighted selection unchanged. Up-scaling therefore reduces the budget
+    available for new heat pumps rather than adding to the grid total: both
+    invariants stay exact -- every floored building satisfies the sizing rule,
+    and the distributed total still equals `hp_cap_grid`.
 
     """
 
@@ -1618,24 +1633,50 @@ def determine_hp_cap_buildings_pvbased_per_mvgd(
             peak_heat_demand
         )
 
-        # capacity inherited from the previous link of the floor chain is fixed
-        # and exempt from scaling; only the remainder is distributed
+        # Capacity inherited from the previous link of the floor chain is a
+        # lower bound, not a fixed value: raise it to the minimum this
+        # scenario's sizing rule requires where the building's peak heat demand
+        # has grown, so an inherited heat pump still covers its building.
         inherited_hp_cap = get_inherited_hp_capacity(scenario, building_ids)
-        inherited_cap = inherited_hp_cap.sum()
 
-        # honouring the floor and hitting the capacity target are mutually
-        # exclusive if the inherited stock exceeds the grid's own target
-        if inherited_cap > hp_cap_grid:
-            raise ValueError(
-                f"Inherited heat pump capacity ({inherited_cap:.4f} MW) in MV "
-                f"grid {mv_grid_id} exceeds the capacity target of scenario "
-                f"{scenario} ({hp_cap_grid:.4f} MW). The fixed floor cannot "
-                f"be honoured while meeting the target."
+        if not inherited_hp_cap.empty:
+            required = min_hp_cap_buildings.reindex(inherited_hp_cap.index)
+            floored_hp_cap = inherited_hp_cap.combine(
+                required.fillna(0.0), max
             )
 
-        remaining_cap_grid = hp_cap_grid - inherited_cap
+            n_scaled_up = int(
+                (floored_hp_cap > inherited_hp_cap + FLOOR_TOLERANCE).sum()
+            )
+            if n_scaled_up:
+                logger.info(
+                    f"MVGD={mv_grid_id} | Scenario {scenario}: raised "
+                    f"{n_scaled_up} of {len(inherited_hp_cap)} inherited heat "
+                    f"pumps to the minimum size required by their current peak "
+                    f"heat demand (+"
+                    f"{(floored_hp_cap.sum() - inherited_hp_cap.sum()):.4f} "
+                    f"MW)."
+                )
+        else:
+            floored_hp_cap = inherited_hp_cap
+
+        floored_cap = floored_hp_cap.sum()
+
+        # honouring the floor and hitting the capacity target are mutually
+        # exclusive if the floored stock exceeds the grid's own target
+        if floored_cap > hp_cap_grid:
+            raise ValueError(
+                f"Heat pump capacity required by the floor "
+                f"({floored_cap:.4f} MW, of which "
+                f"{inherited_hp_cap.sum():.4f} MW inherited) in MV grid "
+                f"{mv_grid_id} exceeds the capacity target of scenario "
+                f"{scenario} ({hp_cap_grid:.4f} MW). The floor cannot be "
+                f"honoured while meeting the target."
+            )
+
+        remaining_cap_grid = hp_cap_grid - floored_cap
         min_hp_cap_remaining = min_hp_cap_buildings.drop(
-            inherited_hp_cap.index, errors="ignore"
+            floored_hp_cap.index, errors="ignore"
         )
 
         hp_cap_per_building = pd.Series(dtype="float64")
@@ -1647,8 +1688,9 @@ def determine_hp_cap_buildings_pvbased_per_mvgd(
                 remaining_cap_grid, min_hp_cap_remaining, scenario
             )
 
-            # the remaining budget can be too small for any further building,
-            # in which case it stays with the floored buildings' fixed capacity
+            # the remaining budget can be too small for any further
+            # building, in which case the grid's capacity stays entirely
+            # with the floored buildings
             if len(buildings_with_hp) > 0:
                 # distribute the remaining capacity to the selected buildings
                 hp_cap_per_building = desaggregate_hp_capacity(
@@ -1657,7 +1699,7 @@ def determine_hp_cap_buildings_pvbased_per_mvgd(
                 )
 
         hp_cap_per_building = pd.concat(
-            [inherited_hp_cap, hp_cap_per_building]
+            [floored_hp_cap, hp_cap_per_building]
         )
         hp_cap_per_building.index.name = "building_id"
 
