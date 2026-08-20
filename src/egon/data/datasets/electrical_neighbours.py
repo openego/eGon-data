@@ -1438,11 +1438,133 @@ def tyndp_generation():
         insert_storage_tyndp(capacities, scenario)
 
 
+def _select_tyndp_demand_member(zip_file, scenario, year):
+    """Select the electricity market demand workbook for one TYNDP 2024
+    scenario/year from the downloaded demand-profiles zip archive.
+
+    Parameters
+    ----------
+    zip_file : zipfile.ZipFile
+        Open TYNDP demand-profiles zip archive
+    scenario : str
+        TYNDP scenario folder, e.g. "DE" for Distributed Energy
+    year : int
+        TYNDP anchor year (2030, 2040 or 2050)
+
+    Returns
+    -------
+    str
+        Name of the electricity market demand .xlsx member
+
+    """
+    target = (
+        f"Demand Profiles/{scenario}/{year}/"
+        f"ELECTRICITY_MARKET {scenario} {year}.xlsx"
+    )
+    candidates = [name for name in zip_file.namelist() if name == target]
+    if len(candidates) != 1:
+        raise ValueError(
+            f"Expected exactly one TYNDP electricity demand file at "
+            f"'{target}' in {zip_file.filename}, found: {candidates}"
+        )
+    return candidates[0]
+
+
+def _tyndp_demand_climate_year_column(df, node, year, climate_year=2009):
+    """Select the climate-year column for one node's demand sheet
+
+    A few TYNDP 2024 demand sheets have their climate-year header labels
+    shifted by one column relative to the actual data (confirmed for
+    node "UK00" in the 2040/2050 demand files: the column labelled 2009
+    is entirely empty, while the real data sits one column over, under
+    the label 2008). If the nominal column is completely empty, fall
+    back to the nearest fully populated column instead of silently
+    returning an all-empty series.
+
+    Parameters
+    ----------
+    df : pandas.DataFrame
+        One node's demand sheet, as read by :py:func:`read_tyndp_demand`
+    node : str
+        TYNDP node code (only used for the warning message)
+    year : int
+        TYNDP anchor year (only used for the warning message)
+    climate_year : int
+        Nominal climate-year column to select
+
+    Returns
+    -------
+    pandas.Series
+        8760 hourly MW values for the requested climate year
+
+    """
+    if not df[climate_year].isna().all():
+        return df[climate_year]
+
+    candidates = [
+        c
+        for c in range(climate_year - 2, climate_year + 3)
+        if c in df.columns and c != climate_year and df[c].notna().all()
+    ]
+    fallback = (
+        min(candidates, key=lambda c: abs(c - climate_year))
+        if candidates
+        else None
+    )
+    if fallback is None:
+        raise ValueError(
+            f"No populated climate-year column found near {climate_year} "
+            f"for node {node!r}, year {year}"
+        )
+    logger.warning(
+        f"TYNDP demand column {climate_year} is empty for node {node!r}, "
+        f"year {year}; using column {fallback} instead (known ENTSO-E "
+        "header/data misalignment)."
+    )
+    return df[fallback]
+
+
+@functools.lru_cache(maxsize=None)
+def read_tyndp_demand(year, nodes):
+    """Read hourly electricity demand for one TYNDP 2024 anchor year
+
+    Reads climate year 2009 demand timeseries from the "Distributed
+    Energy" scenario's downloaded demand-profiles zip, for the given
+    anchor year (2030, 2040 or 2050).
+
+    Parameters
+    ----------
+    year : int
+        TYNDP 2024 anchor year (2030, 2040 or 2050)
+    nodes : tuple
+        TYNDP node codes to read demand timeseries for
+
+    Returns
+    -------
+    dict
+        Mapping of node code to a pandas.Series of 8760 hourly MW values
+
+    """
+    outer_zip = zipfile.ZipFile(
+        ElectricalNeighbours.sources.files["tyndp_demand"]
+    )
+    member = _select_tyndp_demand_member(outer_zip, "DE", year)
+    sheets = pd.read_excel(
+        io.BytesIO(outer_zip.read(member)),
+        sheet_name=list(nodes),
+        skiprows=11,
+    )
+    return {
+        node: _tyndp_demand_climate_year_column(sheets[node], node, year)
+        for node in nodes
+    }
+
+
 def tyndp_demand():
-    """Copy load timeseries data from TYNDP 2020 for all configured
-    scenarios that are not status-quo scenarios. The data for 2030 and 2040
-    is interpolated (or, beyond 2040, extrapolated) linearly to each
-    scenario's year.
+    """Copy load timeseries data from TYNDP 2024 for all configured
+    scenarios that are not status-quo scenarios. The data for 2030, 2040
+    and 2050 is interpolated (or, outside that range, extrapolated)
+    linearly to each scenario's year.
 
     Returns
     -------
@@ -1454,7 +1576,7 @@ def tyndp_demand():
     sources = ElectricalNeighbours.sources  # class attributes
     targets = ElectricalNeighbours.targets
 
-    nodes = [
+    nodes = (
         "AT00",
         "BE00",
         "CH00",
@@ -1476,15 +1598,6 @@ def tyndp_demand():
         "PL00",
         "UK00",
         "UKNI",
-    ]
-
-    # Read in data from TYNDP for 2030 and 2040
-    dataset_2030 = pd.read_excel(
-        sources.files["tyndp_demand_2030"], sheet_name=nodes, skiprows=10
-    )
-
-    dataset_2040 = pd.read_excel(
-        sources.files["tyndp_demand_2040"], sheet_name=None, skiprows=10
     )
 
     # Transform map_buses to pandas.Series and select only used values
@@ -1495,7 +1608,12 @@ def tyndp_demand():
         if "status" in scenario:
             continue
 
-        weight = (get_scenario_year(scenario) - 2030) / (2040 - 2030)
+        year = get_scenario_year(scenario)
+        lo, hi = _bracket_tyndp_years(year, anchors=(2030, 2040, 2050))
+        weight = (year - lo) / (hi - lo)
+
+        dataset_lo = read_tyndp_demand(lo, nodes)
+        dataset_hi = read_tyndp_demand(hi, nodes)
 
         # Connect to database
         engine = db.engine()
@@ -1538,22 +1656,18 @@ def tyndp_demand():
 
             # Some etrago bus_ids represent multiple TYNDP nodes,
             # in this cases the loads are summed
-            data_2030 = pd.Series(index=range(8760), data=0.0)
+            data_lo = pd.Series(index=range(8760), data=0.0)
             for node in bus_nodes:
-                data_2030 = dataset_2030[node][2011] + data_2030
+                data_lo = dataset_lo[node] + data_lo
 
-            try:
-                data_2040 = pd.Series(index=range(8760), data=0.0)
-
-                for node in bus_nodes:
-                    data_2040 = dataset_2040[node][2011] + data_2040
-            except:
-                data_2040 = data_2030
+            data_hi = pd.Series(index=range(8760), data=0.0)
+            for node in bus_nodes:
+                data_hi = dataset_hi[node] + data_hi
 
             # Interpolate/extrapolate linearly to the scenario's year
-            data_target = (
-                data_2030 + (data_2040 - data_2030) * weight
-            ).clip(lower=0)[:8760]
+            data_target = (data_lo + (data_hi - data_lo) * weight).clip(
+                lower=0
+            )[:8760]
 
             entry = etrago.EgonPfHvLoad(
                 scn_name=scenario,
@@ -2360,7 +2474,7 @@ class ElectricalNeighbours(Dataset):
     #:
     name: str = "ElectricalNeighbours"
     #:
-    version: str = "0.0.17"
+    version: str = "0.0.18"
 
     sources = DatasetSources(
         tables={
@@ -2374,8 +2488,7 @@ class ElectricalNeighbours(Dataset):
             "tyndp_capacities_2035": "tyndp/DE2035CY2009.zip",
             "tyndp_capacities_2040": "tyndp/DE2040CY2009.zip",
             "tyndp_capacities_2050": "tyndp/DE2050CY2009.zip",
-            "tyndp_demand_2030": "tyndp/Demand_TimeSeries_2030_DistributedEnergy.xlsx",
-            "tyndp_demand_2040": "tyndp/Demand_TimeSeries_2040_DistributedEnergy.xlsx",
+            "tyndp_demand": "tyndp/Demand-Profiles.zip",
         },
     )
 
