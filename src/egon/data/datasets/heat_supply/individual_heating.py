@@ -47,6 +47,10 @@ from egon.data.datasets.heat_demand_timeseries.daily import (
 from egon.data.datasets.heat_demand_timeseries.idp_pool import (
     EgonHeatTimeseries,
 )
+from egon.data.datasets.scenario_parameters import (
+    demand_source_scenario,
+    pv_source_scenario,
+)
 
 # get zensus cells with district heating
 from egon.data.datasets.zensus_mv_grid_districts import MapZensusGridDistricts
@@ -200,7 +204,7 @@ class HeatPumpsStatusQuo(Dataset):
 
         super().__init__(
             name="HeatPumpsStatusQuo",
-            version="0.0.5",
+            version="0.0.6",
             dependencies=dependencies,
             tasks=tasks,
         )
@@ -499,11 +503,11 @@ def cascade_per_technology(
             if not target.capacity[0]:
                 target.capacity[0] = 0
 
-            if (
-                config.settings()["egon-data"]["--dataset-boundary"]
-                == "Schleswig-Holstein"
-            ):
-                target.capacity[0] /= 16
+            # No testmode scaling here: the 'rural_heat_pump' target is already
+            # reduced to the dataset boundary by population_share() when it is
+            # inserted in scenario_capacities.insert_capacities_status_quo().
+            # Dividing by 16 again applied the boundary reduction twice and made
+            # the distributed capacity ~16x too low.
 
             heat_per_mv["share"] = (
                 heat_per_mv.remaining_demand
@@ -582,6 +586,8 @@ def cascade_heat_supply_indiv(scenario, distribution_level, plotting=True):
 
     sources, targets = load_sources_and_targets("HeatSupply")
 
+    demand_scenario = demand_source_scenario(scenario)
+
     # Select residential heat demand per mv grid district and federal state
     heat_per_mv = db.select_geodataframe(
         f"""
@@ -594,11 +600,11 @@ def cascade_heat_supply_indiv(scenario, distribution_level, plotting=True):
         ON b.bus_id = c.bus_id
         JOIN {sources.tables['mv_grids']} d
         ON d.bus_id = c.bus_id
-        WHERE scenario = '{scenario}'
+        WHERE scenario = '{demand_scenario}'
         AND a.zensus_population_id NOT IN (
             SELECT zensus_population_id
             FROM {sources.tables['map_dh']}
-            WHERE scenario = '{scenario}')
+            WHERE scenario = '{demand_scenario}')
         GROUP BY d.bus_id, vg250_lan, geom
         """,
         index_col="bus_id",
@@ -855,7 +861,7 @@ def calc_residential_heat_profiles_per_mvgd(mvgd, scenario):
         "demand_ts",
     ]
 
-    df_peta_demand = get_peta_demand(mvgd, scenario)
+    df_peta_demand = get_peta_demand(mvgd, demand_source_scenario(scenario))
     df_peta_demand = reduce_mem_usage(df_peta_demand)
 
     # TODO maybe return empty dataframe
@@ -997,7 +1003,8 @@ def get_zensus_cells_with_decentral_heat_demand_in_mv_grid(
         query = session.query(
             MapZensusDistrictHeatingAreas.zensus_population_id,
         ).filter(
-            MapZensusDistrictHeatingAreas.scenario == scenario,
+            MapZensusDistrictHeatingAreas.scenario
+            == demand_source_scenario(scenario),
             MapZensusDistrictHeatingAreas.zensus_population_id.in_(
                 zensus_population_ids
             ),
@@ -1270,7 +1277,9 @@ def determine_buildings_with_hp_in_mv_grid(
         Pandas series with minimum required heat pump capacity per building
          in MW.
     scenario : str
-        Name of the scenario.
+        Name of the scenario. Determines which scenario's PV rooftop data is
+        used to weight buildings (via
+        :func:`~.scenario_parameters.pv_source_scenario`).
 
     Returns
     -------
@@ -1290,12 +1299,16 @@ def determine_buildings_with_hp_in_mv_grid(
             egon_power_plants_pv_roof_building.building_id
         ).filter(
             egon_power_plants_pv_roof_building.building_id.in_(building_ids),
-            egon_power_plants_pv_roof_building.scenario == scenario,
+            egon_power_plants_pv_roof_building.scenario
+            == pv_source_scenario(scenario),
         )
 
-        buildings_with_pv = pd.read_sql(
-            query.statement, query.session.bind, index_col=None
-        ).building_id.values
+        buildings_with_pv = (
+            pd.read_sql(query.statement, query.session.bind, index_col=None)
+            .building_id.drop_duplicates()
+            .sort_values()
+            .values
+        )
     # set different weights for buildings with PV and without PV
     weight_with_pv = 1.5
     weight_without_pv = 1.0
@@ -1355,7 +1368,11 @@ def determine_buildings_with_hp_in_mv_grid(
             min_cap_buildings_wo_hp <= remaining_hp_cap
         ].index
 
-    return buildings_with_hp
+    # Guard against duplicated building ids reaching the caller. A duplicate
+    # would be allocated capacity twice and then silently dropped by
+    # drop_duplicates() in the bulk export, losing that capacity from the
+    # grid's budget without any rescaling.
+    return buildings_with_hp.drop_duplicates()
 
 
 def desaggregate_hp_capacity(min_hp_cap_per_building, hp_cap_mv_grid):
