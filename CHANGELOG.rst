@@ -60,6 +60,8 @@ Changed
   to reGon2037 and reGon2045, make PV-rooftop-based building weighting
   scenario-aware, and remove obsolete eGon100RE/pypsa-eur-sec handling
   `#1449 <https://github.com/openego/eGon-data/issues/1449>`_
+* Unify NEP input data into a single ``NEP`` folder in the data bundle
+  `#1479 <https://github.com/openego/eGon-data/issues/1479>`_
 
 Bug Fixes
 ---------

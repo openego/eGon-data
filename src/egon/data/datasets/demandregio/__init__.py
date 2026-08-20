@@ -72,7 +72,7 @@ class DemandRegio(Dataset):
         files={
             "wz_cts": "WZ_definition/CTS_WZ_definition.csv",
             "wz_industry": "WZ_definition/ind_WZ_definition.csv",
-            "new_consumers_2035": "new_largescale_consumers_nep.csv",
+            "new_consumers_2035": "NEP/new_largescale_consumers_nep.csv",
             "cache_zip": "demand_regio_backup/cache.zip",
             "dbdump_zip": "demand_regio_backup/status2019-egon-demandregio-cts-ind.zip",
         },
