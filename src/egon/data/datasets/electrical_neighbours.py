@@ -1196,9 +1196,19 @@ def calc_capacities(scenario):
     )
 
     # choose capacities for considered countries
-    return grouped_capacities[
+    grouped_capacities = grouped_capacities[
         grouped_capacities["Node/Line"].str[:2].isin(countries)
     ]
+
+    # Drop zero-capacity rows. Unlike TYNDP 2020's sparse long-format
+    # sheet, TYNDP 2024's wide-format "Yearly Outputs" sheet has a row
+    # for every (technology, node) pair system-wide, including ones
+    # that don't apply at a given node (e.g. "Wind Offshore" for
+    # landlocked Austria) with value 0. Besides being pointless to
+    # model, such rows can crash renewable_timeseries_pypsaeur(), which
+    # assumes every inserted generator has a nearby match in the
+    # PyPSA-Eur network of the same carrier.
+    return grouped_capacities[grouped_capacities["cap"] > 0]
 
 
 def insert_generators_tyndp(capacities, scenario):
