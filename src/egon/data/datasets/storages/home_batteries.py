@@ -214,7 +214,7 @@ def match_real_batteries_to_buildings(scenario):
             nn = (
                 gpd.sjoin_nearest(
                     remaining,
-                    candidates[["building_id", "geometry"]],
+                    candidates[["building_id", "geom"]],
                     distance_col="dist",
                 )
                 .sort_values("dist")
