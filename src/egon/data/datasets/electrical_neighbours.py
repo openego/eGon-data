@@ -3,6 +3,8 @@
 from os import path
 from pathlib import Path
 import datetime
+import functools
+import io
 import logging
 import os.path
 import zipfile
@@ -30,6 +32,46 @@ from egon.data.datasets.scenario_parameters import (
 from egon.data.db import session_scope
 import egon.data.datasets.etrago_setup as etrago
 import egon.data.datasets.scenario_parameters.parameters as scenario_parameters
+
+
+# Latitude/longitude of TYNDP
+# "Nodes - Dict" sheet of TYNDP-2020-Scenario-Datafile.xlsx
+# (https://2020.entsos-tyndp-scenarios.eu), restricted to the node_id
+# prefixes used in eGon-data
+TYNDP_NODE_COORDINATES = {
+    "AT00": (47.64, 14.84),
+    "BE00": (50.8, 4.72),
+    "CH00": (46.95, 8.09),
+    "CZ00": (49.85, 15.43),
+    "DK00": (56.113, 9.096),
+    "DKE1": (55.51, 11.8),
+    "DKKF": (54.76, 12.32),
+    "DKW1": (55.99, 9.16),
+    "FR00": (47.1, 2.4),
+    "FR15": (42.12, 9.11),
+    "LU00": (49.671, 6.113),
+    "LUB1": (49.92, 5.87),
+    "LUF1": (49.64, 5.97),
+    "LUG1": (49.65, 6.27),
+    "LUV1": (49.96, 6.13),
+    "NL00": (52.23, 5.63),
+    "NO00": (61.3701, 9.3031),
+    "NOM1": (63.21, 10.26),
+    "NON1": (68.82, 17.31),
+    "NOS0": (60.16, 7.85),
+    "NOS1": (58.72, 4.44),
+    "PL00": (52.32, 19.17),
+    "PLE0": (51.41, 15.88),
+    "PLI0": (51.41, 15.88),
+    "RU00": (64.736, 104.062),
+    "SE00": (66.2188, 19),
+    "SE01": (67.13, 20.2),
+    "SE02": (63.13, 15.5),
+    "SE03": (59.71, 14.8),
+    "SE04": (56.13, 13.57),
+    "UK00": (53.81, -1.75),
+    "UKNI": (54.58, -6.63),
+}
 
 
 def get_cross_border_buses(scenario, sources):
@@ -833,45 +875,58 @@ def map_carriers_tyndp():
         Carrier from TYNDP and eGon
     """
     return {
-        "Battery": "battery",
-        "DSR": "demand_side_response",
-        "Gas CCGT new": "gas",
-        "Gas CCGT old 2": "gas",
-        "Gas CCGT present 1": "gas",
-        "Gas CCGT present 2": "gas",
-        "Gas conventional old 1": "gas",
-        "Gas conventional old 2": "gas",
-        "Gas OCGT new": "gas",
-        "Gas OCGT old": "gas",
-        "Gas CCGT old 1": "gas",
-        "Gas CCGT old 2 Bio": "biogas",
-        "Gas conventional old 2 Bio": "biogas",
-        "Hard coal new": "coal",
-        "Hard coal old 1": "coal",
-        "Hard coal old 2": "coal",
-        "Hard coal old 2 Bio": "coal",
-        "Heavy oil old 1": "oil",
-        "Heavy oil old 1 Bio": "oil",
-        "Heavy oil old 2": "oil",
-        "Light oil": "oil",
-        "Lignite new": "lignite",
+        "Nuclear": "nuclear",
+        # Lignite
         "Lignite old 1": "lignite",
         "Lignite old 2": "lignite",
-        "Lignite old 1 Bio": "lignite",
-        "Lignite old 2 Bio": "lignite",
-        "Nuclear": "nuclear",
-        "Offshore Wind": "wind_offshore",
-        "Onshore Wind": "wind_onshore",
-        "Other non-RES": "others",
-        "Other RES": "others",
-        "P2G": "power_to_gas",
-        "PS Closed": "pumped_hydro",
-        "PS Open": "reservoir",
-        "Reservoir": "reservoir",
+        "Lignite new": "lignite",
+        "Lignite CCS": "lignite",
+        "Lignite biofuel": "biomass",
+        # Hard coal
+        "Hard coal old 1": "coal",
+        "Hard coal old 2": "coal",
+        "Hard coal new": "coal",
+        "Hard coal CCS": "coal",
+        "Hard Coal biofuel": "biomass",
+        # Gas
+        "Gas conventional old 1": "gas",
+        "Gas conventional old 2": "gas",
+        "Gas CCGT old 1": "gas",
+        "Gas CCGT old 2": "gas",
+        "Gas CCGT new": "gas",
+        "Gas CCGT CCS": "gas",
+        "Gas CCGT present 1": "gas",
+        "Gas CCGT present 2": "gas",
+        "Gas OCGT old": "gas",
+        "Gas OCGT new": "gas",
+        "Gas biofuel": "biogas",
+        # Oil
+        "Light oil": "oil",
+        "Heavy oil old 1": "oil",
+        "Heavy oil old 2": "oil",
+        "Light oil biofuel": "biomass",
+        "Heavy oil biofuel": "biomass",
+        "Oil shale old": "oil",
+        "Oil shale new": "oil",
+        "Oil shale biofuel": "biomass",
+        # Hydro
         "Run-of-River": "run_of_river",
-        "Solar PV": "solar",
-        "Solar Thermal": "others",
-        "Waste": "Other RES",
+        "Reservoir": "reservoir",
+        "Pondage": "reservoir",
+        "Pump Storage - Open Loop (turbine)": "reservoir",
+        "Pump Storage - Open Loop (pump)": "reservoir",
+        "Pump Storage - Closed Loop (turbine)": "pumped_hydro",
+        "Pump Storage - Closed Loop (pump)": "pumped_hydro",
+        # Wind / Solar
+        "Wind Onshore": "wind_onshore",
+        "Wind Offshore": "wind_offshore",
+        "Solar (Photovoltaic)": "solar",
+        "Solar (Thermal)": "others",
+        # Other renewable/non-renewable
+        "Others renewable": "others",
+        "Others non-renewable": "others",
+        # Storage
+        "Battery Storage discharge (gen.)": "battery",
     }
 
 
@@ -899,16 +954,13 @@ def get_foreign_bus_id(scenario):
         epsg=3035,
     )
 
-    # insert installed capacities
-    file = zipfile.ZipFile(
-        ElectricalNeighbours.sources.files["tyndp_capacities"]
-    )
-
     # Select buses in neighbouring countries as geodataframe
-    buses = pd.read_excel(
-        file.open("TYNDP-2020-Scenario-Datafile.xlsx").read(),
-        sheet_name="Nodes - Dict",
-    ).query("longitude==longitude")
+    buses = pd.DataFrame(
+        [
+            {"node_id": node_id, "latitude": lat, "longitude": lon}
+            for node_id, (lat, lon) in TYNDP_NODE_COORDINATES.items()
+        ]
+    )
     buses = gpd.GeoDataFrame(
         buses,
         crs=4326,
@@ -927,13 +979,164 @@ def get_foreign_bus_id(scenario):
     return buses.set_index("node_id").bus_id
 
 
+def _select_tyndp_capacity_member(zip_file):
+    """Select the main electricity output file from a TYNDP 2024 zip
+
+    Each TYNDP 2024 scenario/year zip contains several .xlsb workbooks:
+    the main electricity results plus separate H2, offshore and
+    Heat/SynthFuels sector files, whose exact names shift per year (e.g.
+    "MMStandardOutputFile_DE2035_Plexos_CY2009_v11_SoS.xlsb"), plus
+    macOS "__MACOSX/._..." resource-fork artifacts that also happen to
+    end in ".xlsb". The main file is selected by excluding the other
+    sectors' name fragments and those artifacts, rather than hardcoding
+    the changing prefix.
+
+    Parameters
+    ----------
+    zip_file : zipfile.ZipFile
+        Open TYNDP scenario/year zip archive
+
+    Returns
+    -------
+    str
+        Name of the main electricity .xlsb member
+
+    """
+    excluded_tokens = ("_H2_", "_offshore_", "_Heat_SynthFuels_")
+    candidates = [
+        name
+        for name in zip_file.namelist()
+        if name.endswith(".xlsb")
+        and not any(token in name for token in excluded_tokens)
+        and "__MACOSX" not in name
+        and not name.rsplit("/", 1)[-1].startswith("._")
+    ]
+    if len(candidates) != 1:
+        raise ValueError(
+            "Expected exactly one main TYNDP electricity .xlsb file in "
+            f"{zip_file.filename}, found: {candidates}"
+        )
+    return candidates[0]
+
+
+def _extract_output_block(raw, output_type, header_row=5, data_start_row=6):
+    """Extract one "Output type" block from a TYNDP 2024 "Yearly Outputs" sheet
+
+    The sheet is laid out with node/zone identifiers as columns and a
+    block of technology rows per "Output type" (e.g. "Installed
+    Capacities [MW]", "Annual generation [GWh]", ...). The "Output type"
+    label is only populated on each block's first row, so it needs to be
+    forward-filled before filtering to the requested block.
+
+    Parameters
+    ----------
+    raw : pandas.DataFrame
+        Sheet read with ``header=None`` (raw grid, no header inference)
+    output_type : str
+        "Output type" block to extract, e.g. "Installed Capacities [MW]"
+    header_row : int
+        Row index holding the node/zone column identifiers
+    data_start_row : int
+        First row index of the data (below the header row)
+
+    Returns
+    -------
+    pandas.DataFrame
+        Columns: Node/Line, Generator_ID, Value
+
+    """
+    header = raw.iloc[header_row]
+    node_cols = [
+        c
+        for c in raw.columns[2:]
+        if isinstance(header[c], str)
+        and " " not in header[c]
+        and not header[c].endswith("RETE")
+    ]
+
+    data = raw.iloc[data_start_row:].copy()
+    data[0] = data[0].ffill()
+    block = data[data[0] == output_type]
+
+    long_df = block.melt(
+        id_vars=[1],
+        value_vars=node_cols,
+        var_name="_col",
+        value_name="Value",
+    )
+    long_df["Node/Line"] = long_df["_col"].map(header)
+    long_df = long_df.rename(columns={1: "Generator_ID"})
+
+    return long_df[["Node/Line", "Generator_ID", "Value"]].dropna(
+        subset=["Value"]
+    )
+
+
+@functools.lru_cache(maxsize=None)
+def read_tyndp_capacities(year):
+    """Read installed capacities for one TYNDP 2024 anchor year
+
+    Reads the "Installed Capacities [MW]" block from the "Distributed
+    Energy" scenario's downloaded zip for the given anchor year (2035,
+    2040 or 2050), climate year 2009.
+
+    Parameters
+    ----------
+    year : int
+        TYNDP 2024 anchor year (2035, 2040 or 2050)
+
+    Returns
+    -------
+    pandas.DataFrame
+        Columns: Node/Line, Generator_ID, Value
+
+    """
+    outer_zip = zipfile.ZipFile(
+        ElectricalNeighbours.sources.files[f"tyndp_capacities_{year}"]
+    )
+    member = _select_tyndp_capacity_member(outer_zip)
+    raw = pd.read_excel(
+        io.BytesIO(outer_zip.read(member)),
+        sheet_name="Yearly Outputs",
+        header=None,
+        engine="pyxlsb",
+    )
+    return _extract_output_block(raw, "Installed Capacities [MW]")
+
+
+def _bracket_tyndp_years(year, anchors=(2035, 2040, 2050)):
+    """Select the pair of TYNDP 2024 anchor years bracketing a scenario year
+
+    Parameters
+    ----------
+    year : int
+        Scenario's target year
+    anchors : tuple
+        TYNDP 2024 anchor years with published data
+
+    Returns
+    -------
+    tuple
+        (lower, upper) anchor years to interpolate/extrapolate between
+
+    """
+    lo, mid, hi = anchors
+    if year < lo or year > hi:
+        logger.warning(
+            f"Scenario year {year} is outside TYNDP 2024's anchor range "
+            f"[{lo}, {hi}]; extrapolating from the nearest bracket."
+        )
+    return (lo, mid) if year <= mid else (mid, hi)
+
+
 def calc_capacities(scenario):
     """Calculates installed capacities from TYNDP data
 
-    TYNDP-2020 only provides data points for 2030 and 2040, so the
+    TYNDP-2024 provides data points for 2035, 2040 and 2050, so the
     capacities for the scenario's target year (from
     :py:func:`get_scenario_year`) are obtained by linearly interpolating
-    (or, beyond 2040, extrapolating) between those two data points.
+    (or, outside that range, extrapolating) between the two closest of
+    those data points.
 
     Parameters
     ----------
@@ -961,49 +1164,24 @@ def calc_capacities(scenario):
         "UK",
     ]
 
-    # insert installed capacities
-    file = zipfile.ZipFile(
-        ElectricalNeighbours.sources.files["tyndp_capacities"]
-    )
-    df = pd.read_excel(
-        file.open("TYNDP-2020-Scenario-Datafile.xlsx").read(),
-        sheet_name="Capacity",
-    )
-
-    # differneces between different climate years are very small (<1MW)
-    # choose 1984 because it is the mean value
-    df_2030 = (
-        df.rename({"Climate Year": "Climate_Year"}, axis="columns")
-        .query(
-            'Scenario == "Distributed Energy" & Year == 2030 & '
-            "Climate_Year == 1984"
-        )
-        .set_index(["Node/Line", "Generator_ID"])
-    )
-
-    df_2040 = (
-        df.rename({"Climate Year": "Climate_Year"}, axis="columns")
-        .query(
-            'Scenario == "Distributed Energy" & Year == 2040 & '
-            "Climate_Year == 1984"
-        )
-        .set_index(["Node/Line", "Generator_ID"])
-    )
-
-    # Interpolate linearly between 2030 and 2040 for the scenario year
-    # (extrapolating beyond 2040 for later scenario years), analogous to
-    # the interpolation to 2035 accordning to scenario report of TSO's and
-    # the approval by BNetzA
     year = get_scenario_year(scenario)
-    weight = (year - 2030) / (2040 - 2030)
+    lo, hi = _bracket_tyndp_years(year)
+    weight = (year - lo) / (hi - lo)
 
-    df_capacities = pd.DataFrame(index=df_2030.index)
-    df_capacities["cap_2030"] = df_2030.Value
-    df_capacities["cap_2040"] = df_2040.Value
+    df_lo = read_tyndp_capacities(lo).set_index(
+        ["Node/Line", "Generator_ID"]
+    )
+    df_hi = read_tyndp_capacities(hi).set_index(
+        ["Node/Line", "Generator_ID"]
+    )
+
+    df_capacities = pd.DataFrame(index=df_lo.index.union(df_hi.index))
+    df_capacities["cap_lo"] = df_lo.Value
+    df_capacities["cap_hi"] = df_hi.Value
     df_capacities.fillna(0.0, inplace=True)
     df_capacities["cap"] = (
-        df_capacities["cap_2030"]
-        + (df_capacities["cap_2040"] - df_capacities["cap_2030"]) * weight
+        df_capacities["cap_lo"]
+        + (df_capacities["cap_hi"] - df_capacities["cap_lo"]) * weight
     ).clip(lower=0)
     df_capacities = df_capacities.reset_index()
     df_capacities["carrier"] = df_capacities.Generator_ID.map(
@@ -1018,9 +1196,19 @@ def calc_capacities(scenario):
     )
 
     # choose capacities for considered countries
-    return grouped_capacities[
+    grouped_capacities = grouped_capacities[
         grouped_capacities["Node/Line"].str[:2].isin(countries)
     ]
+
+    # Drop zero-capacity rows. Unlike TYNDP 2020's sparse long-format
+    # sheet, TYNDP 2024's wide-format "Yearly Outputs" sheet has a row
+    # for every (technology, node) pair system-wide, including ones
+    # that don't apply at a given node (e.g. "Wind Offshore" for
+    # landlocked Austria) with value 0. Besides being pointless to
+    # model, such rows can crash renewable_timeseries_pypsaeur(), which
+    # assumes every inserted generator has a nearby match in the
+    # PyPSA-Eur network of the same carrier.
+    return grouped_capacities[grouped_capacities["cap"] > 0]
 
 
 def insert_generators_tyndp(capacities, scenario):
@@ -1240,9 +1428,10 @@ def get_map_buses():
 
 
 def tyndp_generation():
-    """Insert data from TYNDP 2020 for all configured scenarios that are
+    """Insert data from TYNDP 2024 for all configured scenarios that are
     not status-quo scenarios (i.e. 'Distributed Energy', linearly
-    interpolated/extrapolated between 2030 and 2040 to each scenario's year).
+    interpolated/extrapolated between 2035, 2040 and 2050 to each
+    scenario's year).
 
     Returns
     -------
@@ -1259,11 +1448,133 @@ def tyndp_generation():
         insert_storage_tyndp(capacities, scenario)
 
 
+def _select_tyndp_demand_member(zip_file, scenario, year):
+    """Select the electricity market demand workbook for one TYNDP 2024
+    scenario/year from the downloaded demand-profiles zip archive.
+
+    Parameters
+    ----------
+    zip_file : zipfile.ZipFile
+        Open TYNDP demand-profiles zip archive
+    scenario : str
+        TYNDP scenario folder, e.g. "DE" for Distributed Energy
+    year : int
+        TYNDP anchor year (2030, 2040 or 2050)
+
+    Returns
+    -------
+    str
+        Name of the electricity market demand .xlsx member
+
+    """
+    target = (
+        f"Demand Profiles/{scenario}/{year}/"
+        f"ELECTRICITY_MARKET {scenario} {year}.xlsx"
+    )
+    candidates = [name for name in zip_file.namelist() if name == target]
+    if len(candidates) != 1:
+        raise ValueError(
+            f"Expected exactly one TYNDP electricity demand file at "
+            f"'{target}' in {zip_file.filename}, found: {candidates}"
+        )
+    return candidates[0]
+
+
+def _tyndp_demand_climate_year_column(df, node, year, climate_year=2009):
+    """Select the climate-year column for one node's demand sheet
+
+    A few TYNDP 2024 demand sheets have their climate-year header labels
+    shifted by one column relative to the actual data (confirmed for
+    node "UK00" in the 2040/2050 demand files: the column labelled 2009
+    is entirely empty, while the real data sits one column over, under
+    the label 2008). If the nominal column is completely empty, fall
+    back to the nearest fully populated column instead of silently
+    returning an all-empty series.
+
+    Parameters
+    ----------
+    df : pandas.DataFrame
+        One node's demand sheet, as read by :py:func:`read_tyndp_demand`
+    node : str
+        TYNDP node code (only used for the warning message)
+    year : int
+        TYNDP anchor year (only used for the warning message)
+    climate_year : int
+        Nominal climate-year column to select
+
+    Returns
+    -------
+    pandas.Series
+        8760 hourly MW values for the requested climate year
+
+    """
+    if not df[climate_year].isna().all():
+        return df[climate_year]
+
+    candidates = [
+        c
+        for c in range(climate_year - 2, climate_year + 3)
+        if c in df.columns and c != climate_year and df[c].notna().all()
+    ]
+    fallback = (
+        min(candidates, key=lambda c: abs(c - climate_year))
+        if candidates
+        else None
+    )
+    if fallback is None:
+        raise ValueError(
+            f"No populated climate-year column found near {climate_year} "
+            f"for node {node!r}, year {year}"
+        )
+    logger.warning(
+        f"TYNDP demand column {climate_year} is empty for node {node!r}, "
+        f"year {year}; using column {fallback} instead (known ENTSO-E "
+        "header/data misalignment)."
+    )
+    return df[fallback]
+
+
+@functools.lru_cache(maxsize=None)
+def read_tyndp_demand(year, nodes):
+    """Read hourly electricity demand for one TYNDP 2024 anchor year
+
+    Reads climate year 2009 demand timeseries from the "Distributed
+    Energy" scenario's downloaded demand-profiles zip, for the given
+    anchor year (2030, 2040 or 2050).
+
+    Parameters
+    ----------
+    year : int
+        TYNDP 2024 anchor year (2030, 2040 or 2050)
+    nodes : tuple
+        TYNDP node codes to read demand timeseries for
+
+    Returns
+    -------
+    dict
+        Mapping of node code to a pandas.Series of 8760 hourly MW values
+
+    """
+    outer_zip = zipfile.ZipFile(
+        ElectricalNeighbours.sources.files["tyndp_demand"]
+    )
+    member = _select_tyndp_demand_member(outer_zip, "DE", year)
+    sheets = pd.read_excel(
+        io.BytesIO(outer_zip.read(member)),
+        sheet_name=list(nodes),
+        skiprows=11,
+    )
+    return {
+        node: _tyndp_demand_climate_year_column(sheets[node], node, year)
+        for node in nodes
+    }
+
+
 def tyndp_demand():
-    """Copy load timeseries data from TYNDP 2020 for all configured
-    scenarios that are not status-quo scenarios. The data for 2030 and 2040
-    is interpolated (or, beyond 2040, extrapolated) linearly to each
-    scenario's year.
+    """Copy load timeseries data from TYNDP 2024 for all configured
+    scenarios that are not status-quo scenarios. The data for 2030, 2040
+    and 2050 is interpolated (or, outside that range, extrapolated)
+    linearly to each scenario's year.
 
     Returns
     -------
@@ -1275,7 +1586,7 @@ def tyndp_demand():
     sources = ElectricalNeighbours.sources  # class attributes
     targets = ElectricalNeighbours.targets
 
-    nodes = [
+    nodes = (
         "AT00",
         "BE00",
         "CH00",
@@ -1297,15 +1608,6 @@ def tyndp_demand():
         "PL00",
         "UK00",
         "UKNI",
-    ]
-
-    # Read in data from TYNDP for 2030 and 2040
-    dataset_2030 = pd.read_excel(
-        sources.files["tyndp_demand_2030"], sheet_name=nodes, skiprows=10
-    )
-
-    dataset_2040 = pd.read_excel(
-        sources.files["tyndp_demand_2040"], sheet_name=None, skiprows=10
     )
 
     # Transform map_buses to pandas.Series and select only used values
@@ -1316,7 +1618,12 @@ def tyndp_demand():
         if "status" in scenario:
             continue
 
-        weight = (get_scenario_year(scenario) - 2030) / (2040 - 2030)
+        year = get_scenario_year(scenario)
+        lo, hi = _bracket_tyndp_years(year, anchors=(2030, 2040, 2050))
+        weight = (year - lo) / (hi - lo)
+
+        dataset_lo = read_tyndp_demand(lo, nodes)
+        dataset_hi = read_tyndp_demand(hi, nodes)
 
         # Connect to database
         engine = db.engine()
@@ -1359,22 +1666,18 @@ def tyndp_demand():
 
             # Some etrago bus_ids represent multiple TYNDP nodes,
             # in this cases the loads are summed
-            data_2030 = pd.Series(index=range(8760), data=0.0)
+            data_lo = pd.Series(index=range(8760), data=0.0)
             for node in bus_nodes:
-                data_2030 = dataset_2030[node][2011] + data_2030
+                data_lo = dataset_lo[node] + data_lo
 
-            try:
-                data_2040 = pd.Series(index=range(8760), data=0.0)
-
-                for node in bus_nodes:
-                    data_2040 = dataset_2040[node][2011] + data_2040
-            except:
-                data_2040 = data_2030
+            data_hi = pd.Series(index=range(8760), data=0.0)
+            for node in bus_nodes:
+                data_hi = dataset_hi[node] + data_hi
 
             # Interpolate/extrapolate linearly to the scenario's year
-            data_target = (
-                data_2030 + (data_2040 - data_2030) * weight
-            ).clip(lower=0)[:8760]
+            data_target = (data_lo + (data_hi - data_lo) * weight).clip(
+                lower=0
+            )[:8760]
 
             entry = etrago.EgonPfHvLoad(
                 scn_name=scenario,
@@ -1740,7 +2043,7 @@ def insert_storage_units_sq():
             "cyclic_state_of_charge"
         ]
 
-        sto_sq["storage_id"] = db.next_etrago_id("store", len(sto_sq))
+        sto_sq["storage_id"] = db.next_etrago_id("storage", len(sto_sq))
 
         # Delete entrances without any installed capacity
         sto_sq = sto_sq[sto_sq["p_nom"] > 0]
@@ -2181,7 +2484,7 @@ class ElectricalNeighbours(Dataset):
     #:
     name: str = "ElectricalNeighbours"
     #:
-    version: str = "0.0.15"
+    version: str = "0.0.18"
 
     sources = DatasetSources(
         tables={
@@ -2192,9 +2495,10 @@ class ElectricalNeighbours(Dataset):
             "osmtgmod_branch": "osmtgmod_results.branch_data",
         },
         files={
-            "tyndp_capacities": "tyndp/TYNDP-2020-Scenario-Datafile.xlsx.zip",
-            "tyndp_demand_2030": "tyndp/Demand_TimeSeries_2030_DistributedEnergy.xlsx",
-            "tyndp_demand_2040": "tyndp/Demand_TimeSeries_2040_DistributedEnergy.xlsx",
+            "tyndp_capacities_2035": "tyndp/DE2035CY2009.zip",
+            "tyndp_capacities_2040": "tyndp/DE2040CY2009.zip",
+            "tyndp_capacities_2050": "tyndp/DE2050CY2009.zip",
+            "tyndp_demand": "tyndp/Demand-Profiles.zip",
         },
     )
 

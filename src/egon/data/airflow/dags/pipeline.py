@@ -55,9 +55,7 @@ from egon.data.datasets.heat_supply import (
     HeatSupply,
 )
 from egon.data.datasets.heat_supply.individual_heating import (
-    HeatPumps2035,
-    HeatPumps2050,
-    HeatPumpsPypsaEur,
+    HeatPumpsCascade,
     HeatPumpsStatusQuo,
 )
 from egon.data.datasets.hydrogen_etrago import (
@@ -87,7 +85,10 @@ from egon.data.datasets.pypsaeur import PreparePypsaEur, RunPypsaEur
 from egon.data.datasets.re_potential_areas import re_potential_area_setup
 from egon.data.datasets.renewable_feedin import RenewableFeedin
 from egon.data.datasets.saltcavern import SaltcavernData
-from egon.data.datasets.sanity_checks import SanityChecks
+
+# SanityChecks import is unused while it's excluded from the pipeline,
+# see the comment near its former TaskGroup below.
+# from egon.data.datasets.sanity_checks import SanityChecks
 from egon.data.datasets.scenario_capacities import ScenarioCapacities
 from egon.data.datasets.scenario_parameters import ScenarioParameters
 from egon.data.datasets.storages import Storages
@@ -563,15 +564,6 @@ with airflow.DAG(
 
     with TaskGroup(group_id="heat_supply") as heat_supply_group:
 
-        # Minimum heat pump capacity for pypsa-eur
-        heat_pumps_pypsa_eur = HeatPumpsPypsaEur(
-            dependencies=[
-                cts_demand_buildings,
-                DistrictHeatingAreas,
-                heat_time_series,
-            ]
-        )
-
         # Heat supply
         heat_supply = HeatSupply(
             dependencies=[
@@ -594,24 +586,14 @@ with airflow.DAG(
             ]
         )
 
-        # Heat pump disaggregation for eGon2035
-        heat_pumps_2035 = HeatPumps2035(
+        # Heat pump disaggregation for eGon2035, reGon2037 and reGon2045
+        heat_pumps_cascade = HeatPumpsCascade(
             dependencies=[
                 cts_demand_buildings,
                 DistrictHeatingAreas,
                 heat_supply,
                 heat_time_series,
-                heat_pumps_pypsa_eur,
                 power_plants,
-            ]
-        )
-
-        # Heat pump disaggregation for eGon100RE
-        heat_pumps_2050 = HeatPumps2050(
-            dependencies=[
-                run_pypsaeur,
-                heat_pumps_pypsa_eur,
-                heat_supply,
             ]
         )
 
@@ -653,7 +635,7 @@ with airflow.DAG(
                 heat_time_series,
                 mv_grid_districts,
                 heat_pumps_sq,
-                heat_pumps_2035,
+                heat_pumps_cascade,
             ]
         )
 
@@ -730,20 +712,27 @@ with airflow.DAG(
             ]
         )
 
-    with TaskGroup(group_id="sanity_checks") as sanity_checks_group:
-        # ########## Keep this dataset at the end
-        # Sanity Checks
-        sanity_checks = SanityChecks(
-            dependencies=[
-                storage_etrago,
-                hts_etrago_table,
-                fill_etrago_generators,
-                household_electricity_demand_annual,
-                cts_demand_buildings,
-                emobility_mit,
-                low_flex_scenario,
-            ]
-        )
+    # SanityChecks is temporarily excluded from the pipeline: its task
+    # list is only populated for the obsolete "eGon2035"/"eGon100RE"
+    # scenario names and is empty for the current default scenarios
+    # ("status2024", "reGon2037"), which crashes Dataset construction.
+    # Re-enable once sanity_checks.py is migrated to the new scenario
+    # names.
+    #
+    # with TaskGroup(group_id="sanity_checks") as sanity_checks_group:
+    #     # ########## Keep this dataset at the end
+    #     # Sanity Checks
+    #     sanity_checks = SanityChecks(
+    #         dependencies=[
+    #             storage_etrago,
+    #             hts_etrago_table,
+    #             fill_etrago_generators,
+    #             household_electricity_demand_annual,
+    #             cts_demand_buildings,
+    #             emobility_mit,
+    #             low_flex_scenario,
+    #         ]
+    #     )
 
     with TaskGroup(group_id="metadata") as metadata_group:
         # upload json metadata at the end
@@ -751,7 +740,8 @@ with airflow.DAG(
             dependencies=[
                 load_areas,
                 cts_demand_buildings,
-                sanity_checks,
-                heat_pumps_2050,
+                #sanity_checks,
+                heat_pumps_cascade,
+                heat_pumps_sq,
             ]
         )
