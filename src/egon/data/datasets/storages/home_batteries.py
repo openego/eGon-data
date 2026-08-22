@@ -109,7 +109,7 @@ def _load_buildings_with_geom(building_ids):
         WHERE id IN ({ids});
         """,
         geom_col="geom",
-        epsg=4326,
+        epsg=3035,
     )
     synthetic = db.select_geodataframe(
         f"""
@@ -118,13 +118,13 @@ def _load_buildings_with_geom(building_ids):
         WHERE id::bigint IN ({ids});
         """,
         geom_col="geom",
-        epsg=4326,
+        epsg=3035,
     )
 
     return gpd.GeoDataFrame(
         pd.concat([filtered, synthetic], ignore_index=True),
         geometry="geom",
-        crs=4326,
+        crs=3035,
     )
 
 
@@ -144,7 +144,7 @@ def _load_buildings_in_grid(bus_id):
         WHERE g.bus_id = {bus_id} AND ST_Within(s.geom_point, g.geom);
         """,
         geom_col="geom",
-        epsg=4326,
+        epsg=3035,
     )
 
 
@@ -173,7 +173,7 @@ def match_real_batteries_to_buildings(scenario):
         AND sources ->> 'el_capacity' = 'MaStR';
         """,
         geom_col="geom",
-        epsg=4326,
+        epsg=3035,
     )
 
     if real_batteries.empty:
@@ -188,7 +188,7 @@ def match_real_batteries_to_buildings(scenario):
     pv_buildings = gpd.GeoDataFrame(
         pv_buildings_df.merge(pv_geoms, on="building_id"),
         geometry="geom",
-        crs=4326,
+        crs=3035,
     )
 
     cbat_pbat_ratio = get_sector_parameters("electricity", scenario)[
@@ -537,4 +537,5 @@ def create_table(df):
         con=engine,
         if_exists="append",
         index=False,
+        dtype={"sources": JSONB},
     )
