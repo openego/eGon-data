@@ -3,6 +3,7 @@
 from pathlib import Path
 
 from geoalchemy2 import Geometry
+from loguru import logger
 from sqlalchemy import BigInteger, Column, Float, Integer, Sequence, String, DateTime
 from sqlalchemy.dialects.postgresql import JSONB
 from sqlalchemy.ext.declarative import declarative_base
@@ -706,6 +707,36 @@ def home_batteries_per_scenario(scenario):
     battery = pv_rooftop
     battery["p_nom_min"] = target * battery["p_nom"] / battery["p_nom"].sum()
     battery = battery.drop(columns=["p_nom"])
+
+    # Subtract already-existing real battery capacity per bus (from
+    # allocate_battery_storage_sq(), tagged sources->>'el_capacity'='MaStR')
+    # to avoid double-counting real + modeled capacity at the same bus. For
+    # scenarios without a real carry-forward yet (currently all but
+    # status2024), this query returns nothing and p_nom_min stays unchanged.
+    real_capacity = db.select_dataframe(f"""
+        SELECT bus_id AS bus, sum(el_capacity) AS real_capacity
+        FROM {Storages.targets.tables['storages']}
+        WHERE carrier = 'home_battery'
+        AND scenario = '{scenario}'
+        AND sources ->> 'el_capacity' = 'MaStR'
+        GROUP BY bus_id;
+        """)
+
+    battery = battery.merge(real_capacity, on="bus", how="left")
+    battery["real_capacity"] = battery["real_capacity"].fillna(0)
+
+    over_covered = battery["real_capacity"] > battery["p_nom_min"]
+    if over_covered.any():
+        logger.warning(
+            f"In {over_covered.sum()} grid(s) in scenario {scenario}, real "
+            f"home battery capacity already exceeds the modeled target. "
+            f"No additional (modeled) capacity will be added there."
+        )
+
+    battery["p_nom_min"] = (
+        battery["p_nom_min"] - battery["real_capacity"]
+    ).clip(lower=0)
+    battery = battery.drop(columns=["real_capacity"])
 
     battery["carrier"] = "home_battery"
     battery["scenario"] = scenario

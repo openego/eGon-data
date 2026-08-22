@@ -41,7 +41,9 @@ from loguru import logger
 from numpy.random import RandomState
 from omi.dialects import get_dialect
 from sqlalchemy import Column, Float, Integer, String
+from sqlalchemy.dialects.postgresql import JSONB
 from sqlalchemy.ext.declarative import declarative_base
+import geopandas as gpd
 import numpy as np
 import pandas as pd
 
@@ -92,6 +94,157 @@ def get_cbat_pbat_ratio():
     return int(db.select_dataframe(sql).iat[0, 0])
 
 
+def _load_buildings_with_geom(building_ids):
+    """
+    Load point geometries for a set of building IDs from both OSM buildings
+    tables (osm_buildings_filtered uses bigint IDs, osm_buildings_synthetic
+    uses text IDs that are numeric strings and can be cast to bigint).
+    """
+    ids = ",".join(str(int(b)) for b in building_ids)
+
+    filtered = db.select_geodataframe(
+        f"""
+        SELECT id AS building_id, geom_point AS geom
+        FROM openstreetmap.osm_buildings_filtered
+        WHERE id IN ({ids});
+        """,
+        geom_col="geom",
+        epsg=4326,
+    )
+    synthetic = db.select_geodataframe(
+        f"""
+        SELECT id::bigint AS building_id, geom_point AS geom
+        FROM openstreetmap.osm_buildings_synthetic
+        WHERE id::bigint IN ({ids});
+        """,
+        geom_col="geom",
+        epsg=4326,
+    )
+
+    return gpd.GeoDataFrame(
+        pd.concat([filtered, synthetic], ignore_index=True),
+        geometry="geom",
+        crs=4326,
+    )
+
+
+def _load_buildings_in_grid(bus_id):
+    """
+    Fallback candidate pool: all buildings (with or without pv) located
+    within the mv grid district of bus_id.
+    """
+    return db.select_geodataframe(
+        f"""
+        SELECT b.id AS building_id, b.geom_point AS geom
+        FROM openstreetmap.osm_buildings_filtered b, grid.egon_mv_grid_district g
+        WHERE g.bus_id = {bus_id} AND ST_Within(b.geom_point, g.geom)
+        UNION ALL
+        SELECT s.id::bigint AS building_id, s.geom_point AS geom
+        FROM openstreetmap.osm_buildings_synthetic s, grid.egon_mv_grid_district g
+        WHERE g.bus_id = {bus_id} AND ST_Within(s.geom_point, g.geom);
+        """,
+        geom_col="geom",
+        epsg=4326,
+    )
+
+
+def match_real_batteries_to_buildings(scenario):
+    """
+    Match real (MaStR) home batteries to buildings via nearest-neighbor
+    spatial matching within their grid. Prefers pv-equipped buildings;
+    falls back to the nearest building overall in that grid once pv
+    candidates run out, so every real battery still gets a building.
+    """
+    columns = [
+        "scenario",
+        "bus_id",
+        "building_id",
+        "capacity",
+        "p_nom",
+        "sources",
+    ]
+
+    real_batteries = db.select_geodataframe(
+        f"""
+        SELECT bus_id, el_capacity, geom
+        FROM supply.egon_storages
+        WHERE carrier = 'home_battery'
+        AND scenario = '{scenario}'
+        AND sources ->> 'el_capacity' = 'MaStR';
+        """,
+        geom_col="geom",
+        epsg=4326,
+    )
+
+    if real_batteries.empty:
+        return pd.DataFrame(columns=columns)
+
+    pv_buildings_df = db.select_dataframe(f"""
+        SELECT DISTINCT building_id, bus_id
+        FROM supply.egon_power_plants_pv_roof_building
+        WHERE scenario = '{scenario}';
+        """)
+    pv_geoms = _load_buildings_with_geom(pv_buildings_df.building_id.unique())
+    pv_buildings = gpd.GeoDataFrame(
+        pv_buildings_df.merge(pv_geoms, on="building_id"),
+        geometry="geom",
+        crs=4326,
+    )
+
+    cbat_pbat_ratio = get_sector_parameters("electricity", scenario)[
+        "efficiency"
+    ]["battery"]["max_hours"]
+
+    matched = []
+
+    for bus_id, remaining in real_batteries.groupby("bus_id"):
+        candidates = pv_buildings.loc[pv_buildings.bus_id == bus_id].copy()
+
+        while not remaining.empty:
+            if candidates.empty:
+                candidates = _load_buildings_in_grid(bus_id)
+
+                if candidates.empty:
+                    logger.warning(
+                        f"No building found in grid {bus_id} to match "
+                        f"{len(remaining)} real home batteries to; skipped."
+                    )
+                    break
+
+            nn = (
+                gpd.sjoin_nearest(
+                    remaining,
+                    candidates[["building_id", "geometry"]],
+                    distance_col="dist",
+                )
+                .sort_values("dist")
+                .drop_duplicates(subset="building_id", keep="first")
+            )
+
+            matched.append(nn)
+
+            remaining = remaining.drop(index=nn.index)
+            candidates = candidates.loc[
+                ~candidates.building_id.isin(nn.building_id)
+            ]
+
+    if not matched:
+        return pd.DataFrame(columns=columns)
+
+    result = pd.concat(matched, ignore_index=True)
+
+    return pd.DataFrame(
+        {
+            "scenario": scenario,
+            "bus_id": result.bus_id,
+            "building_id": result.building_id,
+            "p_nom": result.el_capacity,
+            "capacity": result.el_capacity * cbat_pbat_ratio,
+            "sources": [{"el_capacity": "MaStR"}] * len(result),
+        }
+    )
+
+
 def allocate_home_batteries_to_buildings():
     """
     Allocate home battery storage systems to buildings with pv rooftop systems
@@ -107,12 +260,24 @@ def allocate_home_batteries_to_buildings():
     df_list = []
 
     for scenario in scenarios:
+        # Match real batteries to their nearest building first, so the
+        # modeled (residual) sampling below can exclude buildings already
+        # taken and never assigns both a real and a modeled battery to the
+        # same building.
+        real_matches = match_real_batteries_to_buildings(scenario)
+        df_list.append(real_matches)
+        used_building_ids = set(real_matches.building_id)
+
         # get home battery capacity per mv grid id
+        # Only the modeled (residual) rows - real batteries (tagged
+        # sources->>'el_capacity'='MaStR') are handled separately above and
+        # matched directly to their own building rather than sampled here.
         sql = f"""
         SELECT el_capacity as p_nom_min, bus_id as bus FROM
         {targets.tables["storages"]}
         WHERE carrier = 'home_battery'
-        AND scenario = '{scenario}';
+        AND scenario = '{scenario}'
+        AND sources ->> 'el_capacity' != 'MaStR';
         """
         cbat_pbat_ratio = get_sector_parameters("electricity", scenario)[
             "efficiency"
@@ -135,6 +300,7 @@ def allocate_home_batteries_to_buildings():
             ["bus", "bat_cap"]
         ].itertuples(index=False):
             pv_df = db.select_dataframe(sql.format(scenario, bus_id))
+            pv_df = pv_df.loc[~pv_df.building_id.isin(used_building_ids)]
 
             pv_sum = pv_df.capacity.sum()
 
@@ -198,6 +364,13 @@ def allocate_home_batteries_to_buildings():
                 / cbat_pbat_ratio,
                 scenario=scenario,
                 bus_id=bus_id,
+                sources=[
+                    {
+                        "el_capacity": "NEP capacity allocated based in "
+                        "installed PV rooftop capacity"
+                    }
+                ]
+                * len(pv_df),
             )
 
             df_list.append(bat_df)
@@ -217,6 +390,7 @@ class EgonHomeBatteries(Base):
     building_id = Column(Integer)
     p_nom = Column(Float)
     capacity = Column(Float)
+    sources = Column(JSONB)
 
 
 def add_metadata():
