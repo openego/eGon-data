@@ -31,6 +31,7 @@ from egon.data.datasets.power_plants.mastr import (
     EgonPowerPlantsBiomass,
     EgonPowerPlantsHydro,
     EgonPowerPlantsPv,
+    EgonPowerPlantsStorage,
     EgonPowerPlantsWind,
     import_mastr,
 )
@@ -87,6 +88,7 @@ def create_tables():
         EgonPowerPlantsPv,
         EgonPowerPlantsBiomass,
         EgonPowerPlantsHydro,
+        EgonPowerPlantsStorage,
     ]
     for t in tables:
         db.execute_sql(f"""
