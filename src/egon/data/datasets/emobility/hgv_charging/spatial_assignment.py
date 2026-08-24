@@ -1,7 +1,7 @@
 """
 Spatial assignment for HGV charging sites.
 
-Assigns mv_grid_id, bus_id, and voltage_level to demand.egon_hgv_charging_site
+Assigns mv_grid_id, bus_id, and voltage_level to demand.egon_ev_hgv_charging_site
 for each scenario.
 
 Voltage level thresholds follow industry/temporal.py:identify_voltage_level():
@@ -50,7 +50,7 @@ def spatial_assignment():
         sites = db.select_geodataframe(
             f"""
             SELECT site_id, p_set_aggregated_mw, geom
-            FROM demand.egon_hgv_charging_site
+            FROM demand.egon_ev_hgv_charging_site
             WHERE scenario = '{egon_scn}'
             """,
             geom_col="geom",
@@ -95,7 +95,7 @@ def spatial_assignment():
             for _, row in joined.iterrows():
                 session.execute(
                     """
-                    UPDATE demand.egon_hgv_charging_site
+                    UPDATE demand.egon_ev_hgv_charging_site
                     SET mv_grid_id = :mv_grid_id,
                         bus_id = :bus_id,
                         voltage_level = :voltage_level

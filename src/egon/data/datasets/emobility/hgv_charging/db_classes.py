@@ -1,6 +1,6 @@
 """
 SQLAlchemy ORM classes for HGV charging tables (Tables 1–4).
-Table 5 (egon_hgv_charging_flex) is created during eDisGo integration.
+Table 5 (egon_ev_hgv_charging_flex) is created during eDisGo integration.
 """
 
 from geoalchemy2 import Geometry
@@ -24,9 +24,9 @@ Base = declarative_base()
 
 
 class EgonHgvChargingSite(Base):
-    """demand.egon_hgv_charging_site — one row per physical site per scenario."""
+    """demand.egon_ev_hgv_charging_site — one row per physical site per scenario."""
 
-    __tablename__ = "egon_hgv_charging_site"
+    __tablename__ = "egon_ev_hgv_charging_site"
     __table_args__ = {"schema": "demand"}
 
     site_id = Column(Integer, primary_key=True)
@@ -63,13 +63,13 @@ class EgonHgvChargingSite(Base):
 
 
 class EgonHgvChargingPoint(Base):
-    """demand.egon_hgv_charging_point — one row per (site × vehicle_class × time_of_day) per scenario.
+    """demand.egon_ev_hgv_charging_point — one row per (site × vehicle_class × time_of_day) per scenario.
 
     cp_id maps 1:1 to one eDisGo charging_park_id and one edisgo_id in the MV topology.
     num_cp is the number of physical chargers in the group (metadata).
     """
 
-    __tablename__ = "egon_hgv_charging_point"
+    __tablename__ = "egon_ev_hgv_charging_point"
     __table_args__ = {"schema": "demand"}
 
     cp_id = Column(Integer, primary_key=True)
@@ -83,7 +83,7 @@ class EgonHgvChargingPoint(Base):
 
 
 class EgonHgvChargingEvent(Base):
-    """demand.egon_hgv_charging_event — individual parking/charging/vacant
+    """demand.egon_ev_hgv_charging_event — individual parking/charging/vacant
     events, one row per physical slot per event (see docs/adr/0002).
 
     Column names mirror MIV egon_ev_trip. HGV-specific extras: cp_id, site_id,
@@ -92,7 +92,7 @@ class EgonHgvChargingEvent(Base):
     stored here.
     """
 
-    __tablename__ = "egon_hgv_charging_event"
+    __tablename__ = "egon_ev_hgv_charging_event"
     __table_args__ = {"schema": "demand"}
 
     event_id = Column(Integer, primary_key=True)
@@ -125,16 +125,16 @@ class EgonHgvChargingEvent(Base):
 
 
 class EgonHgvProfile(Base):
-    """demand.egon_hgv_profile — normalized 8760-h demand shapes per sector.
+    """demand.egon_ev_hgv_profile — normalized 8760-h demand shapes per sector.
 
     All profiles sum to 1 independently (depot, highway day, highway night).
     Multiply profile[t] * annual_consumption_mwh to get MW at each 1-h timestep
     (since profile sums to 1 and each step = 1 h, the product is MWh/h = MW).
     For highway CPs, annual_consumption_mwh is el_demand_day_mwh or el_demand_night_mwh
-    from egon_hgv_charging_site.
+    from egon_ev_hgv_charging_site.
     """
 
-    __tablename__ = "egon_hgv_profile"
+    __tablename__ = "egon_ev_hgv_profile"
     __table_args__ = {"schema": "demand"}
 
     sector = Column(Text, primary_key=True)

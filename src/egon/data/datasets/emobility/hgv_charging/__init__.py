@@ -3,10 +3,10 @@ HGV charging integration for egon-data.
 
 Reads precomputed HGV charging demand input files (sites, charging points,
 events, profiles) and writes:
-  - demand.egon_hgv_charging_site      (Table 1)
-  - demand.egon_hgv_charging_point     (Table 2)
-  - demand.egon_hgv_charging_event     (Table 3)
-  - demand.egon_hgv_profile            (Table 4)
+  - demand.egon_ev_hgv_charging_site      (Table 1)
+  - demand.egon_ev_hgv_charging_point     (Table 2)
+  - demand.egon_ev_hgv_charging_event     (Table 3)
+  - demand.egon_ev_hgv_profile            (Table 4)
   - grid.egon_etrago_load              (extended)
   - grid.egon_etrago_load_timeseries   (extended)
 
@@ -97,10 +97,10 @@ class HGVCharging(Dataset):
 
     targets = DatasetTargets(
         tables={
-            "charging_site": "demand.egon_hgv_charging_site",
-            "charging_point": "demand.egon_hgv_charging_point",
-            "charging_event": "demand.egon_hgv_charging_event",
-            "profile": "demand.egon_hgv_profile",
+            "charging_site": "demand.egon_ev_hgv_charging_site",
+            "charging_point": "demand.egon_ev_hgv_charging_point",
+            "charging_event": "demand.egon_ev_hgv_charging_event",
+            "profile": "demand.egon_ev_hgv_profile",
             "etrago_load": "grid.egon_etrago_load",
             "etrago_load_timeseries": "grid.egon_etrago_load_timeseries",
         },

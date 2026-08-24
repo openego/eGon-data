@@ -90,7 +90,7 @@ def _load_data(egon_scn: str):
                    "el_demand_N2_mwh", "el_demand_N3_mwh", "el_demand_N3S_mwh",
                    el_demand_day_mwh, el_demand_night_mwh,
                    p_set_aggregated_mw
-            FROM demand.egon_hgv_charging_site
+            FROM demand.egon_ev_hgv_charging_site
             WHERE scenario = '{egon_scn}'
             """
         ).fetchall()
@@ -98,7 +98,7 @@ def _load_data(egon_scn: str):
         cps_rows = session.execute(
             f"""
             SELECT cp_id, site_id, vehicle_class, sector, time_of_day, p_set_mw
-            FROM demand.egon_hgv_charging_point
+            FROM demand.egon_ev_hgv_charging_point
             WHERE scenario = '{egon_scn}'
             """
         ).fetchall()
@@ -110,7 +110,7 @@ def _load_data(egon_scn: str):
                    charging_capacity_nominal, charging_capacity_grid,
                    soc_start, soc_end, charging_demand,
                    park_start, park_end, drive_start, drive_end, consumption
-            FROM demand.egon_hgv_charging_event
+            FROM demand.egon_ev_hgv_charging_event
             WHERE scenario = '{egon_scn}'
             """
         ).fetchall()
@@ -118,7 +118,7 @@ def _load_data(egon_scn: str):
         prof_rows = session.execute(
             f"""
             SELECT sector, profile
-            FROM demand.egon_hgv_profile
+            FROM demand.egon_ev_hgv_profile
             WHERE scenario = '{egon_scn}'
             """
         ).fetchall()

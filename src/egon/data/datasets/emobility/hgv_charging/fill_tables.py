@@ -208,7 +208,7 @@ def _write_sites(sites_all, egon_scn, stage_a_scn, engine):
     sites = sites[[c for c in keep if c in sites.columns]]
 
     sites.to_postgis(
-        "egon_hgv_charging_site",
+        "egon_ev_hgv_charging_site",
         engine,
         schema="demand",
         if_exists="append",
@@ -228,7 +228,7 @@ def _write_charging_points(cps_all, egon_scn, stage_a_scn, engine):
     cps = cps[[c for c in keep if c in cps.columns]]
 
     cps.to_sql(
-        "egon_hgv_charging_point",
+        "egon_ev_hgv_charging_point",
         engine,
         schema="demand",
         if_exists="append",
@@ -251,7 +251,7 @@ def _write_charging_events(events_all, egon_scn, stage_a_scn, engine):
     events = events[[c for c in keep if c in events.columns]]
 
     events.to_sql(
-        "egon_hgv_charging_event",
+        "egon_ev_hgv_charging_event",
         engine,
         schema="demand",
         if_exists="append",
@@ -271,7 +271,7 @@ def _write_profiles(profiles_all, egon_scn, stage_a_scn, engine):
     profiles = profiles[[c for c in keep if c in profiles.columns]]
 
     profiles.to_sql(
-        "egon_hgv_profile",
+        "egon_ev_hgv_profile",
         engine,
         schema="demand",
         if_exists="append",
