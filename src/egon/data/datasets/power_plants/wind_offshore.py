@@ -248,15 +248,6 @@ def insert():
             """
         )
 
-        # TODO: Quickfix - skip status scenarios for now.
-        # Geometry is missing for some offshore plants while 
-        # executing insert() for status scenarios. (Issue#1480) 
-        if "status" in scenario:
-            logging.warning(
-                "Skipping wind_offshore.insert() for status scenario"
-            )
-            continue
-
         # load file
         if scenario in ["eGon2035", "reGon2037", "reGon2045"]:
             # Map scenario to its capacity column
@@ -364,7 +355,12 @@ def insert():
                 assign_ONEP_areas()
             )
 
-        offshore["geom"] = offshore["Name ONEP/NEP"].map(map_ONEP_areas())
+        onep = map_ONEP_areas()
+        onep_lookup = {
+            **onep,
+            **{k.split(" (")[0]: v for k, v in onep.items()},
+        }
+        offshore["geom"] = offshore["Name ONEP/NEP"].map(onep_lookup)
         offshore["weather_cell_id"] = pd.NA
 
         offshore.drop(["Name ONEP/NEP"], axis=1, inplace=True)
