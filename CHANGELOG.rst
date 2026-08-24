@@ -93,6 +93,13 @@ Bug Fixes
   now ignores the case of the component name and always returns a list
   when a count is given
   `#1487 <https://github.com/openego/eGon-data/issues/1487>`_
+* Fix ``fill_etrago_gen`` crashing with an ``IndexError`` for offshore wind
+  power plants sited at ONEP/NEP connection points west of 5.5° longitude,
+  which fell outside the hardcoded ``Germany-offshore`` ERA5 cutout extent
+  and therefore had no ``wind_offshore`` feed-in timeseries; the cutout and
+  the matching weather-cell filter in ``renewable_feedin.py`` now cover the
+  full extent of the connection points defined in ``map_ONEP_areas()``
+  `#1498 <https://github.com/openego/eGon-data/issues/1498>`_
 
 Version 2.0.0 (2025-08-20)
 ==========================
