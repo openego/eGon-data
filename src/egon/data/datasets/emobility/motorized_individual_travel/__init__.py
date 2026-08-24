@@ -48,10 +48,7 @@ from egon.data.datasets.emobility.motorized_individual_travel.helpers import (
 from egon.data.datasets.emobility.motorized_individual_travel.model_timeseries import (  # noqa: E501
     delete_model_data_from_db,
     generate_model_data_bunch,
-    generate_model_data_eGon100RE_remaining,
-    generate_model_data_eGon2035_remaining,
-    generate_model_data_status2019_remaining,
-    generate_model_data_status2023_remaining,
+    generate_model_data_remaining,
     read_simbev_metadata_file,
 )
 
@@ -409,10 +406,10 @@ class MotorizedIndividualTravel(Dataset):
             "RS7": "https://www.bmv.de/SharedDocs/DE/Anlage/G/regiostar-referenzdateien.xlsx?__blob=publicationFile",
         },
         files={
-            "trips_status2019": "mit_trip_data/eGon2035_RS7_min2k_2022-06-01_175429_simbev_run.tar.gz",
-            "trips_status2023": "mit_trip_data/eGon2035_RS7_min2k_2022-06-01_175429_simbev_run.tar.gz",
+            "trips_status2024": "mit_trip_data/eGon2035_RS7_min2k_2022-06-01_175429_simbev_run.tar.gz",
             "trips_eGon2035": "mit_trip_data/eGon2035_RS7_min2k_2022-06-01_175429_simbev_run.tar.gz",
-            "trips_eGon100RE": "mit_trip_data/eGon100RE_RS7_min2k_2022-06-01_175444_simbev_run.tar.gz",
+            "trips_reGon2037": "mit_trip_data/eGon2035_RS7_min2k_2022-06-01_175429_simbev_run.tar.gz",
+            "trips_reGon2045": "mit_trip_data/eGon100RE_RS7_min2k_2022-06-01_175444_simbev_run.tar.gz",
             "original_data": {
                 "original_data": {
                     "sources": {
@@ -431,19 +428,31 @@ class MotorizedIndividualTravel(Dataset):
                             "skiprows": 8,
                         },
                         "trips": {
-                            "status2019": {
-                                "file": "eGon2035_RS7_min2k_2022-06-01_175429_simbev_run.tar.gz",
-                                "file_metadata": "metadata_simbev_run.json",
-                            },
-                            "status2023": {
-                                "file": "eGon2035_RS7_min2k_2022-06-01_175429_simbev_run.tar.gz",
-                                "file_metadata": "metadata_simbev_run.json",
-                            },
                             "eGon2035": {
                                 "file": "eGon2035_RS7_min2k_2022-06-01_175429_simbev_run.tar.gz",
                                 "file_metadata": "metadata_simbev_run.json",
                             },
-                            "eGon100RE": {
+                            # No dedicated simBEV runs exist for the
+                            # reGon scenarios and status2024 yet, so the
+                            # existing runs are reused by horizon: the
+                            # eGon2035 run for the nearer-term fleets,
+                            # the eGon100RE run for 2045. Profiles are
+                            # drawn with replacement, so the larger
+                            # fleets simply resample the pool more
+                            # often. Note that the battery and charging
+                            # power assumptions recorded in
+                            # `metadata_simbev_run.json` (and hence in
+                            # `EgonEvMetadata`) are those of the reused
+                            # run, not of the target year.
+                            "status2024": {
+                                "file": "eGon2035_RS7_min2k_2022-06-01_175429_simbev_run.tar.gz",
+                                "file_metadata": "metadata_simbev_run.json",
+                            },
+                            "reGon2037": {
+                                "file": "eGon2035_RS7_min2k_2022-06-01_175429_simbev_run.tar.gz",
+                                "file_metadata": "metadata_simbev_run.json",
+                            },
+                            "reGon2045": {
                                 "file": "eGon100RE_RS7_min2k_2022-06-01_175444_simbev_run.tar.gz",
                                 "file_metadata": "metadata_simbev_run.json",
                             },
@@ -451,26 +460,30 @@ class MotorizedIndividualTravel(Dataset):
                     },
                 },
                 "scenario": {
+                    # Must match the scenario variation keys returned by
+                    # `egon.data.datasets.scenario_parameters.parameters
+                    # .mobility`
                     "variation": {
-                        "status2019": "status2019",
-                        "status2023": "status2023",
+                        "status2024": "status2024",
                         "eGon2035": "NEP C 2035",
-                        "eGon100RE": "Reference 2050",
+                        "reGon2037": "NEP C 2037",
+                        "reGon2045": "NEP C 2045",
                     },
+                    # Only scenarios modelling flexible charging get a
+                    # lowflex counterpart, cf.
+                    # `model_timeseries.is_flexible`
                     "lowflex": {
                         "create_lowflex_scenario": True,
                         "names": {
                             "eGon2035": "eGon2035_lowflex",
-                            "eGon100RE": "eGon100RE_lowflex",
+                            "reGon2037": "reGon2037_lowflex",
+                            "reGon2045": "reGon2045_lowflex",
                         },
                     },
                 },
                 "model_timeseries": {
                     "reduce_memory": True,
                     "export_results_to_csv": True,
-                    "parallel_tasks": 10,
-                },
-                "demand_timeseries_mvgd": {
                     "parallel_tasks": 10,
                 },
             },
@@ -498,7 +511,7 @@ class MotorizedIndividualTravel(Dataset):
     #:
     name: str = "MotorizedIndividualTravel"
     #:
-    version: str = "0.0.11"
+    version: str = "0.0.12"
 
     def __init__(self, dependencies):
         def generate_model_data_tasks(scenario_name):
@@ -539,14 +552,20 @@ class MotorizedIndividualTravel(Dataset):
                     )
                 )
 
-            if scenario_name == "status2019":
-                tasks.add(generate_model_data_status2019_remaining)
-            if scenario_name == "status2023":
-                tasks.add(generate_model_data_status2023_remaining)
-            elif scenario_name == "eGon2035":
-                tasks.add(generate_model_data_eGon2035_remaining)
-            elif scenario_name == "eGon100RE":
-                tasks.add(generate_model_data_eGon100RE_remaining)
+            # Grid districts beyond the parallel bunches above are
+            # processed by one additional task per scenario. Generating
+            # it for every configured scenario (rather than dispatching
+            # on scenario name) makes it impossible to silently drop
+            # those grid districts when a new scenario is added.
+            tasks.add(
+                PythonOperator(
+                    task_id=(
+                        f"generate_model_data_{scenario_name}_remaining"
+                    ),
+                    python_callable=generate_model_data_remaining,
+                    op_kwargs={"scenario_name": scenario_name},
+                )
+            )
             return tasks
 
         tasks = (
