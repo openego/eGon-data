@@ -85,6 +85,9 @@ Bug Fixes
   sources/targets; registration is now skipped with a warning when no
   database is available
   `#1435 <https://github.com/openego/eGon-data/issues/1435>`_
+* Fix ONEP area key lookup so status scenarios work in wind offshore:
+  accept both plain codes and codes with a bracketed description
+  `#1480 <https://github.com/openego/eGon-data/issues/1480>`_
 * Fix eTraGo ID sequences getting out of sync with the IDs actually
   written, which made concurrent inserts fail with ``duplicate key value
   violates unique constraint``: ``h2_neighbours_egon2035`` derived a range
