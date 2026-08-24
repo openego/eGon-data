@@ -79,6 +79,10 @@ Changed
   instead of a hard-coded scenario list, and remove obsolete
   status2019/status2023/eGon100RE handling
   `#1483 <https://github.com/openego/eGon-data/issues/1483>`_
+* Adapt eTraGo_Input TaskGroup to new scenarios: generalize CHP-to-eTraGo
+  insertion to the configured scenarios, and remove obsolete eGon100RE
+  handling
+  `#1450 <https://github.com/openego/eGon-data/issues/1450>`_
 
 Bug Fixes
 ---------
