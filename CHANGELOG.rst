@@ -50,7 +50,7 @@ Changed
   2030/2040 data points, and remove obsolete
   status2019/status2023/eGon100RE handling
   `#1438 <https://github.com/openego/eGon-data/issues/1438>`_
-* Adapt combined_heat_and_power to reGon-scenarios: different handling of 
+* Adapt combined_heat_and_power to reGon-scenarios: different handling of
   eGon-/reGon-scenarios due to the Kraftwerksliste from the NEP now
   containing MaStR-IDs to match MaStR- with NEP-data. Remove all status-
   quo (except status-quo2024) and eGon100RE mentions.
@@ -93,6 +93,9 @@ Bug Fixes
   sources/targets; registration is now skipped with a warning when no
   database is available
   `#1435 <https://github.com/openego/eGon-data/issues/1435>`_
+* Fix ONEP area key lookup so status scenarios work in wind offshore:
+  accept both plain codes and codes with a bracketed description
+  `#1480 <https://github.com/openego/eGon-data/issues/1480>`_
 * Fix eTraGo ID sequences getting out of sync with the IDs actually
   written, which made concurrent inserts fail with ``duplicate key value
   violates unique constraint``: ``h2_neighbours_egon2035`` derived a range
@@ -101,6 +104,13 @@ Bug Fixes
   now ignores the case of the component name and always returns a list
   when a count is given
   `#1487 <https://github.com/openego/eGon-data/issues/1487>`_
+* Fix ``fill_etrago_gen`` crashing with an ``IndexError`` for offshore wind
+  power plants sited at ONEP/NEP connection points west of 5.5° longitude,
+  which fell outside the hardcoded ``Germany-offshore`` ERA5 cutout extent
+  and therefore had no ``wind_offshore`` feed-in timeseries; the cutout and
+  the matching weather-cell filter in ``renewable_feedin.py`` now cover the
+  full extent of the connection points defined in ``map_ONEP_areas()``
+  `#1498 <https://github.com/openego/eGon-data/issues/1498>`_
 * Fix eMobility MIT writing a duplicate ``land_transport_EV`` load for
   dumb charging scenarios: the lowflex pass took the same branch as the
   regular pass and inserted a second identical load under the scenario's
