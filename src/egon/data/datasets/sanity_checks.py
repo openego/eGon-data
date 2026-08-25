@@ -1373,7 +1373,10 @@ def sanitycheck_rail_transport_demand():  # pylint: disable=too-many-locals
     2. Each load has a full 8760-hour, non-negative, NaN-free p_set series
        (p_set is in MW; the load sign is -1).
     3. The annual energy scales between scenarios exactly as the
-       scenario_parameters demand ratio total(scn) / total(status2024).
+       scenario_parameters gross-demand ratio total(scn) / total(status2024).
+    4. The annual energy MATCHES ``annual_demand`` (the 50-Hz draw) within
+       1 % -- check 3 compares scenarios against each other and would pass
+       even if every bundle energy were off by a common factor.
     """
     carriers = tuple(sorted(set(rail_demand.CARRIERS.values())))
     logger.info("Sanity checks: reGon rail transport demand ...")
@@ -1433,16 +1436,16 @@ def sanitycheck_rail_transport_demand():  # pylint: disable=too-many-locals
         energy[scn] = total
         logger.info(f"  {scn}: {len(loads)} loads, {total / 1e6:.3f} TWh.")
 
-    # 3. energy scales as the scenario_parameters demand ratio
+    # 3. energy scales as the scenario_parameters gross-demand ratio
     base_scn = rail_demand.BASE_SCENARIO
     base = get_sector_parameters("mobility", base_scn)[
         "rail_transport_demand"
-    ]["annual_demand"]
+    ]["gross_rail_demand"]
     assert energy[base_scn] > 0, "Base scenario has zero rail energy."
     for scn in rail_demand.SCENARIOS:
         demand = get_sector_parameters("mobility", scn)[
             "rail_transport_demand"
-        ]["annual_demand"]
+        ]["gross_rail_demand"]
         expected = demand / base
         actual = energy[scn] / energy[base_scn]
         ratio_msg = (
@@ -1450,6 +1453,24 @@ def sanitycheck_rail_transport_demand():  # pylint: disable=too-many-locals
             f"{expected:.4f} from scenario_parameters."
         )
         assert isclose(actual, expected, rel_tol=1e-3), ratio_msg
+
+    # 4. LEVEL, not just ratio: the written energy must match the 50-Hz draw
+    #    declared in the scenario parameters. Check 3 alone would pass even if
+    #    every bundle energy were off by a common factor.
+    #    Tolerance 1 %: the bundle anchors are deliberately rounded (7.0 and
+    #    0.56 TWh instead of the measured 7.0336 and 0.5654), a systematic
+    #    -0.39 %, so an exact comparison is not possible here.
+    for scn in rail_demand.SCENARIOS:
+        draw = get_sector_parameters("mobility", scn)["rail_transport_demand"][
+            "annual_demand"
+        ]
+        level_msg = (
+            f"'{scn}': written rail energy {energy[scn] / 1e6:.4f} TWh "
+            f"deviates from annual_demand {draw / 1e6:.4f} TWh by "
+            f"{abs(energy[scn] - draw) / draw * 100:.2f} % (max 1 %)."
+        )
+        assert isclose(energy[scn], draw, rel_tol=0.01), level_msg
+
     logger.info("Rail transport demand sanity checks passed.")
 
 

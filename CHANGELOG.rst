@@ -13,7 +13,10 @@ Added
 * Add standardized sources and targets definitions across dataset modules
   `#1283 <https://github.com/openego/egon-data/issues/1283>`_
 * Add rail-transport electricity demand dataset (RailTransitDemand) and
-  reGon scenarios (status2024, reGon2037, reGon2045)
+  reGon scenarios (status2024, reGon2037, reGon2045). The mobility sector
+  carries two rail figures: ``annual_demand`` is the 50-Hz draw that is
+  written as load, ``gross_rail_demand`` the total rail consumption used as
+  the scenario-scaling reference.
   `#1414 <https://github.com/openego/eGon-data/issues/1414>`_
 
 Changed

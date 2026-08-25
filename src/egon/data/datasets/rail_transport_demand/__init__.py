@@ -15,9 +15,11 @@ Done here:
     city's energy distributed over its nearby rectifiers (else centroid).
   - Bus assignment by coupling level: HöS/HS -> EHV substation voronoi bus,
     MS -> MV grid district bus.
-  - Per-scenario scaling from the rail-transport demand totals stored in the
-    scenario_parameters (mobility sector): status2024 is used 1:1, the futures
-    scale by total(scn) / total(status2024).
+  - Per-scenario scaling from the GROSS rail consumption stored in the
+    scenario_parameters (mobility sector, ``gross_rail_demand``): status2024
+    is used 1:1, the futures scale by total(scn) / total(status2024). The
+    sibling key ``annual_demand`` holds the 50-Hz DRAW, i.e. what is written
+    here, and is what the sanity check verifies the level against.
   - Load profiles re-indexed to the eGon weather year 2011 (weekday order
     differs from 2025!), then scaled to absolute MW:
         p_set[h] = energy_mwh_a * factor(scn) * profile_2011[h]
@@ -49,6 +51,9 @@ CARRIERS = {
 #: sector). NEP figures live there, not here (see scenario_parameters).
 BASE_SCENARIO = "status2024"
 SCENARIOS = ("status2024", "reGon2037", "reGon2045")
+
+#: bundle ``grid_level`` -> the polygon layer the bus is taken from
+BUS_LEVELS = {"HöS/HS": "ehv", "MS": "mv"}
 
 #: max distance [m] from a city centroid to attach its DC rectifiers
 DC_CITY_RADIUS_M = 25_000
@@ -85,7 +90,7 @@ _OSM_SUBSTATIONS_SQL = """
 
 class RailTransitDemand(Dataset):
     name: str = "RailTransitDemand"
-    version: str = "0.0.3"
+    version: str = "0.0.4"
 
     sources = DatasetSources(
         tables={
@@ -114,8 +119,25 @@ class RailTransitDemand(Dataset):
         )
 
 
+def _declares_16_7_only(freq: str) -> bool:
+    """True if the frequency tag says 16.7 Hz and nothing else.
+
+    Such a substation belongs to the 16.7-Hz traction island (an Unterwerk),
+    which does not couple to the public grid at all -- it can never be a DC
+    rectifier. Note that the tag is NOT split on commas here: ``16,7`` is a
+    decimal comma, so splitting would destroy the token.
+    """
+    freq = (freq or "").strip()
+    if not _RE_16_7.search(freq):
+        return False
+    # a standalone 0 or 50 means the object also handles DC or 50 Hz
+    return not re.search(r"(?<![\d.,])(?:0|50)(?![\d.,])", freq)
+
+
 def _is_dc_rectifier(row) -> bool:
     """Substation that feeds a DC traction net (tram/U-Bahn/S-Bahn)."""
+    if _declares_16_7_only(row["frequency"]):
+        return False
     volt = set(re.findall(r"\d+", row["voltage"] or ""))
     freq = re.split(r"[;,]", row["frequency"] or "")
     if "50" in freq and "0" in freq:  # 50 Hz -> DC rectifier
@@ -136,14 +158,26 @@ def _osm_dc_rectifiers() -> gpd.GeoDataFrame:
     return rect
 
 
+def _check_bus_levels(df, fname: str) -> None:
+    """Fail loudly if the bundle carries a grid_level we cannot map."""
+    bad = df.loc[df["bus_level"].isna()]
+    if not bad.empty:
+        raise ValueError(
+            f"{fname}: unknown grid_level(s) "
+            f"{sorted(set(bad['grid_level']))}; expected "
+            f"{sorted(BUS_LEVELS)}."
+        )
+
+
 def _bundle_points() -> gpd.GeoDataFrame:
     """Load points from the bundle: converters (curated) + DC per city."""
     conv = pd.read_csv(BUNDLE / "converter_load_points.csv")
     conv = gpd.GeoDataFrame(
         conv, geometry=gpd.points_from_xy(conv.lon, conv.lat), crs=4326
     ).to_crs(3035)
-    conv["bus_level"] = "ehv"
+    conv["bus_level"] = conv["grid_level"].map(BUS_LEVELS)
     conv["carrier"] = conv["profile"].map(CARRIERS)
+    _check_bus_levels(conv, "converter_load_points.csv")
     conv = conv[
         ["energy_mwh_a", "profile", "carrier", "bus_level", "geometry"]
     ]
@@ -159,13 +193,19 @@ def _bundle_points() -> gpd.GeoDataFrame:
         )
         near = rect[rect.distance(centroid) <= DC_CITY_RADIUS_M]
         carrier = CARRIERS[c["profile"]]
+        level = BUS_LEVELS.get(c["grid_level"])
+        if level is None:
+            raise ValueError(
+                f"dc_city_energy.csv: unknown grid_level "
+                f"'{c['grid_level']}' for '{c['place']}'."
+            )
         if len(near):  # split city energy equally over its rectifiers
             e = c["energy_mwh_a"] / len(near)
             for g in near.geometry:
-                rows.append((e, c["profile"], carrier, "mv", g))
+                rows.append((e, c["profile"], carrier, level, g))
         else:  # no rectifier mapped -> load at city centroid
             rows.append(
-                (c["energy_mwh_a"], c["profile"], carrier, "mv", centroid)
+                (c["energy_mwh_a"], c["profile"], carrier, level, centroid)
             )
     dc = gpd.GeoDataFrame(
         rows,
@@ -247,14 +287,17 @@ def insert_rail_demand():
     pts = _assign_bus(_bundle_points())
     prof = _profiles_2011()
     carriers = tuple(sorted(set(CARRIERS.values())))
+    # The scenario factor is the ratio of the GROSS rail consumption, not of
+    # the written draw: it is unit-invariant, and ``annual_demand`` now holds
+    # the draw so that it can be checked against what we actually write.
     base_mwh = get_sector_parameters("mobility", BASE_SCENARIO)[
         "rail_transport_demand"
-    ]["annual_demand"]
+    ]["gross_rail_demand"]
 
     for scn in SCENARIOS:
         scn_mwh = get_sector_parameters("mobility", scn)[
             "rail_transport_demand"
-        ]["annual_demand"]
+        ]["gross_rail_demand"]
         factor = scn_mwh / base_mwh
         # p_set [MW]: profile sums to 1 over 8760 h, so energy_mwh_a [MWh] *
         # profile[h] is the MWh in hour h = average MW (dt = 1 h).
