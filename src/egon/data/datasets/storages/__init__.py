@@ -3,7 +3,8 @@
 from pathlib import Path
 
 from geoalchemy2 import Geometry
-from sqlalchemy import BigInteger, Column, Float, Integer, Sequence, String
+from loguru import logger
+from sqlalchemy import BigInteger, Column, Float, Integer, Sequence, String, DateTime
 from sqlalchemy.dialects.postgresql import JSONB
 from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.orm import sessionmaker
@@ -18,6 +19,10 @@ from egon.data.datasets.power_plants import (
     assign_bus_id,
     assign_voltage_level,
     filter_mastr_geometry,
+)
+from egon.data.datasets.power_plants.pv_rooftop_buildings import (
+    SCENARIO_TIMESTAMP,
+    determine_end_of_life_gens,
 )
 from egon.data.datasets.scenario_parameters import get_sector_parameters
 from egon.data.datasets.storages.home_batteries import (
@@ -45,6 +50,7 @@ class EgonStorages(Base):
     el_capacity = Column(Float)
     bus_id = Column(Integer)
     voltage_level = Column(Integer)
+    commissioning_date = Column(DateTime)
     scenario = Column(String)
     geom = Column(Geometry("POINT", 4326))
 
@@ -111,7 +117,7 @@ class Storages(Dataset):
     #:
     name: str = "Storages"
     #:
-    version: str = "0.0.12"
+    version: str = "0.0.13"
 
     def __init__(self, dependencies):
         super().__init__(
@@ -347,10 +353,22 @@ def allocate_storage_units_sq(scn_name, storage_types):
     -------
 
     """
-    scn_parameters = get_sector_parameters("global", scn_name)
-    scenario_date_max = str(scn_parameters["weather_year"]) + "-12-31 23:59:00"
+    # NOTE: previously derived from get_sector_parameters(...)["weather_year"],
+    # which is a fixed representative meteorological year (e.g. 2011) used
+    # for feed-in time series - not the scenario's real calendar reference
+    # date. That mismatch silently filtered out almost all real storage
+    # units. SCENARIO_TIMESTAMP holds the actual per-scenario reference date.
+    scenario_date_max = SCENARIO_TIMESTAMP[scn_name].strftime(
+        "%Y-%m-%d %H:%M:%S"
+    )
 
     map_storage = {
+        # "battery" is now dead: this function is only ever called with
+        # storage_types=["pumped_hydro"] (see allocate_pumped_hydro_scn()).
+        # Real battery storage is handled by allocate_battery_storage()
+        # instead, reading from egon_power_plants_storage rather than
+        # re-parsing this CSV. "compressed_air"/"flywheel"/"other" were
+        # already no used before 
         "battery": "Batterie",
         "pumped_hydro": "Pumpspeicher",
         "compressed_air": "Druckluft",
@@ -698,6 +716,36 @@ def home_batteries_per_scenario(scenario):
     battery["p_nom_min"] = target * battery["p_nom"] / battery["p_nom"].sum()
     battery = battery.drop(columns=["p_nom"])
 
+    # Subtract already-existing real battery capacity per bus (from
+    # allocate_battery_storage(), tagged sources->>'el_capacity'='MaStR')
+    # to avoid double-counting real + modeled capacity at the same bus. For
+    # scenarios without a real carry-forward yet (currently all but
+    # status2024), this query returns nothing and p_nom_min stays unchanged.
+    real_capacity = db.select_dataframe(f"""
+        SELECT bus_id AS bus, sum(el_capacity) AS real_capacity
+        FROM {Storages.targets.tables['storages']}
+        WHERE carrier = 'home_battery'
+        AND scenario = '{scenario}'
+        AND sources ->> 'el_capacity' = 'MaStR'
+        GROUP BY bus_id;
+        """)
+
+    battery = battery.merge(real_capacity, on="bus", how="left")
+    battery["real_capacity"] = battery["real_capacity"].fillna(0)
+
+    over_covered = battery["real_capacity"] > battery["p_nom_min"]
+    if over_covered.any():
+        logger.warning(
+            f"In {over_covered.sum()} grid(s) in scenario {scenario}, real "
+            f"home battery capacity already exceeds the modeled target. "
+            f"No additional (modeled) capacity will be added there."
+        )
+
+    battery["p_nom_min"] = (
+        battery["p_nom_min"] - battery["real_capacity"]
+    ).clip(lower=0)
+    battery = battery.drop(columns=["real_capacity"])
+
     battery["carrier"] = "home_battery"
     battery["scenario"] = scenario
 
@@ -722,6 +770,103 @@ def home_batteries_per_scenario(scenario):
     session.commit()
 
 
+def allocate_battery_storage(scn_name):
+    """
+    Allocate real battery storage units from MaStR (supply.egon_power_plants_storage)
+    for the given scenario. Split into two carriers by grid connection voltage
+    level:
+      * 'home_battery' (voltage_level 6, 7 - LV / building-connected) - carried
+        forward into all scenarios, aged with the scenario-specific assumed
+        battery storage lifetime (see determine_end_of_life_gens() below).
+      * 'BESS' (voltage_level 1-5 - MV and above, grid-scale battery energy
+        storage systems, not tied to individual buildings) - only for status
+        quo scenarios; carrying grid-scale storage forward into future
+        scenarios is out of scope here (tracked separately, see #1472).
+    """
+    # see allocate_storage_units_sq() for why this isn't weather_year
+    scenario_date_max = SCENARIO_TIMESTAMP[scn_name].strftime(
+        "%Y-%m-%d %H:%M:%S"
+    )
+
+    sql = """
+        SELECT gens_id AS source_id, capacity AS el_capacity, voltage_level,
+               bus_id, commissioning_date, decommissioning_date, geom
+        FROM supply.egon_power_plants_storage
+        WHERE technology = 'Batterie'
+    """
+    mastr = db.select_geodataframe(sql, geom_col="geom", epsg=4326)
+
+    mastr["commissioning_date"] = pd.to_datetime(mastr["commissioning_date"], errors="coerce")
+    mastr.loc[mastr["commissioning_date"] < "1990-01-01", "commissioning_date"] = pd.NaT
+    decommissioning_date = pd.to_datetime(mastr["decommissioning_date"], errors="coerce")
+
+    # keep only units already commissioned and not (yet) decommissioned
+    # as of the scenario's reference date
+    mastr = mastr.loc[
+        (mastr["commissioning_date"] < scenario_date_max)
+        & (decommissioning_date.isna() | (decommissioning_date > scenario_date_max))
+    ]
+
+    # Age units against the scenario's own assumed battery storage lifetime
+    # (applied uniformly, including status2024, to also weed out implausibly
+    # old registrations there). Real, reported decommissionings are handled
+    # above already; this additionally covers units MaStR still lists as
+    # "in Betrieb" but that are statistically past their expected lifetime.
+    lifetime = pd.Timedelta(
+        get_sector_parameters("electricity", scn_name)["lifetime"][
+            "battery storage"
+        ]
+        * 365,
+        unit="D",
+    )
+    # determine_end_of_life_gens() expects a "capacity" column (PV
+    # convention); rename around the call, for batteries it is "el_capacity".
+    mastr = determine_end_of_life_gens(
+        mastr.rename(columns={"el_capacity": "capacity"}),
+        SCENARIO_TIMESTAMP[scn_name].tz_localize(None),
+        lifetime,
+    ).rename(columns={"capacity": "el_capacity"})
+    mastr = mastr.loc[~mastr.end_of_life].drop(columns=["age", "end_of_life"])
+
+    mastr["carrier"] = "BESS"
+    mastr.loc[mastr.voltage_level.isin([6, 7]), "carrier"] = "home_battery"
+
+    if "status" not in scn_name:
+        # Grid-scale battery carry-forward into future scenarios is out of
+        # scope here (see #1472) - only home batteries get carried forward.
+        mastr = mastr.loc[mastr.carrier == "home_battery"]
+
+    mastr["scenario"] = scn_name
+    mastr["source_id"] = mastr["source_id"].apply(lambda x: {"MastrNummer": x})
+    mastr["sources"] = [{"el_capacity": "MaStR"}] * mastr.shape[0]
+
+    db.execute_sql(f"""
+        DELETE FROM supply.egon_storages
+        WHERE carrier IN ('BESS', 'home_battery')
+        AND scenario = '{scn_name}'
+        AND sources ->> 'el_capacity' = 'MaStR';""")
+
+    with db.session_scope() as session:
+        session.bulk_insert_mappings(
+            EgonStorages,
+            mastr.assign(geom=mastr["geom"].apply(lambda x: x.wkb_hex))[
+                [
+                    "source_id",
+                    "el_capacity",
+                    "voltage_level",
+                    "bus_id",
+                    "carrier",
+                    "scenario",
+                    "commissioning_date",
+                    "geom",
+                    "sources",
+                ]
+            ].to_dict(orient="records"),
+        )
+
+    return mastr
+
+
 def allocate_pv_home_batteries_to_grids():
     for scn in config.settings()["egon-data"]["--scenarios"]:
         home_batteries_per_scenario(scn)
@@ -738,6 +883,10 @@ def allocate_pumped_hydro_scn():
 
 
 def allocate_other_storage_units():
+    # Runs for all scenarios now: allocate_battery_storage() itself keeps
+    # 'BESS' (grid-scale) restricted to status quo scenarios (see #1472),
+    # while 'home_battery' is aged and carried forward into every scenario.
     for scn in config.settings()["egon-data"]["--scenarios"]:
-        if "status" in scn:
-            allocate_storage_units_sq(scn_name=scn, storage_types=["battery"])
+        allocate_battery_storage(scn_name=scn)
+
+
