@@ -112,17 +112,21 @@ def insert_PHES():
 def extendable_batteries_per_scenario(scenario):
     engine = db.engine()
 
-    # Delete outdated data on extendable battetries inside Germany from database
+    # Delete outdated data on extendable batteries inside Germany from
+    # database - covers 'BESS'/'home_battery' (the two carriers this
+    # function now writes) plus the old undifferentiated
+    # 'battery' carrier it used to write, to clean up stale rows left over
+    # from before this split.
     db.execute_sql(f"""
         DELETE FROM {StorageEtrago.targets.tables['storage']}
-        WHERE carrier = 'battery'
+        WHERE carrier IN ('battery', 'BESS', 'home_battery')
         AND scn_name = '{scenario}'
         AND bus IN (SELECT bus_id FROM {StorageEtrago.sources.tables['bus']}
                         WHERE scn_name = '{scenario}'
                         AND country = 'DE');
         """)
 
-    extendable_batteries = db.select_dataframe(f"""
+    substation_buses = db.select_dataframe(f"""
         SELECT bus_id as bus, scn_name FROM
         {StorageEtrago.sources.tables['bus']}
         WHERE carrier = 'AC'
@@ -134,59 +138,69 @@ def extendable_batteries_per_scenario(scenario):
         ))
         """)
 
-    # Select information on allocated capacities for home batteries from database
-    home_batteries = db.select_dataframe(f"""
-        SELECT el_capacity as p_nom_min, bus_id as bus FROM
-        {StorageEtrago.sources.tables['storage']}
-        WHERE carrier = 'home_battery'
-        AND scenario = '{scenario}';
-        """)
+    # Efficiency/max_hours/standing_loss/cyclic_state_of_charge are shared
+    # between BESS and home_battery - identical in the source cost data,
+    # Only capital_cost/lifetime differ per carrier.
+    efficiency = get_sector_parameters("electricity", scenario)["efficiency"][
+        "battery"
+    ]
+    capital_cost = get_sector_parameters("electricity", scenario)[
+        "capital_cost"
+    ]
+    lifetime = get_sector_parameters("electricity", scenario)["lifetime"]
 
-    # Update index
-    extendable_batteries["storage_id"] = db.next_etrago_id(
-        "storage", len(extendable_batteries.index)
-    )
+    carriers = {
+        "BESS": {
+            "capital_cost": capital_cost["BESS"],
+            "lifetime": lifetime["BESS storage"],
+        },
+        "home_battery": {
+            "capital_cost": capital_cost["home_battery"],
+            "lifetime": lifetime["home battery storage"],
+        },
+    }
 
-    # Set parameters
-    extendable_batteries["p_nom_extendable"] = True
+    extendable_batteries = pd.DataFrame()
 
-    extendable_batteries["capital_cost"] = get_sector_parameters(
-        "electricity", scenario
-    )["capital_cost"]["BESS"]
+    for carrier, params in carriers.items():
+        # Aggregate per bus
+        allocated_capacity = db.select_dataframe(f"""
+            SELECT bus_id as bus, SUM(el_capacity) as p_nom_min FROM
+            {StorageEtrago.sources.tables['storage']}
+            WHERE carrier = '{carrier}'
+            AND scenario = '{scenario}'
+            GROUP BY bus_id;
+            """)
 
-    extendable_batteries["lifetime"] = get_sector_parameters(
-        "electricity", scenario
-    )["lifetime"]["BESS storage"]
+        batteries = substation_buses.copy()
+        batteries["storage_id"] = db.next_etrago_id(
+            "storage", len(batteries.index)
+        )
+        batteries["p_nom_extendable"] = True
+        batteries["capital_cost"] = params["capital_cost"]
+        batteries["lifetime"] = params["lifetime"]
+        batteries["max_hours"] = efficiency["max_hours"]
+        batteries["efficiency_store"] = efficiency["store"]
+        batteries["efficiency_dispatch"] = efficiency["dispatch"]
+        batteries["standing_loss"] = efficiency["standing_loss"]
+        batteries["cyclic_state_of_charge"] = efficiency[
+            "cyclic_state_of_charge"
+        ]
+        batteries["carrier"] = carrier
 
-    extendable_batteries["max_hours"] = get_sector_parameters(
-        "electricity", scenario
-    )["efficiency"]["battery"]["max_hours"]
+        # Merge to fill p_nom_min column. Left merge: only keep the
+        # eligible substation buses - a real/modeled battery bus with no
+        # matching substation (e.g. an unmatched MaStR location) must not
+        # create a storage row with NULL scn_name/storage_id.
+        batteries = batteries.merge(
+            right=allocated_capacity,
+            left_on="bus",
+            right_on="bus",
+            how="left",
+        )
+        batteries["p_nom_min"] = batteries["p_nom_min"].fillna(0)
 
-    extendable_batteries["efficiency_store"] = get_sector_parameters(
-        "electricity", scenario
-    )["efficiency"]["battery"]["store"]
-
-    extendable_batteries["efficiency_dispatch"] = get_sector_parameters(
-        "electricity", scenario
-    )["efficiency"]["battery"]["dispatch"]
-
-    extendable_batteries["standing_loss"] = get_sector_parameters(
-        "electricity", scenario
-    )["efficiency"]["battery"]["standing_loss"]
-
-    extendable_batteries["cyclic_state_of_charge"] = get_sector_parameters(
-        "electricity", scenario
-    )["efficiency"]["battery"]["cyclic_state_of_charge"]
-
-    extendable_batteries["carrier"] = "battery"
-
-    # Merge dataframes to fill p_nom_min column
-    extendable_batteries = extendable_batteries.merge(
-        right=home_batteries, left_on="bus", right_on="bus", how="outer"
-    )
-    extendable_batteries["p_nom_min"] = extendable_batteries[
-        "p_nom_min"
-    ].fillna(0)
+        extendable_batteries = pd.concat([extendable_batteries, batteries])
 
     # Write data to db
     extendable_batteries.to_sql(
