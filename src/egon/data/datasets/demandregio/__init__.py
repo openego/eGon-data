@@ -364,7 +364,7 @@ def disagg_households_power(scenario, year, original=False, **kwargs):
         },
     )
 
-    if scenario == "reGon2045":
+    if scenario in ("reGon2037", "reGon2045"):
         # chose demand per household size from survey without DHW, since
         # heat/hot water demand is covered separately in this scenario
         power_per_HH = demand_per_hh_size["without_DHW"] / 1e3
