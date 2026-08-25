@@ -117,7 +117,7 @@ class Storages(Dataset):
     #:
     name: str = "Storages"
     #:
-    version: str = "0.0.12"
+    version: str = "0.0.13"
 
     def __init__(self, dependencies):
         super().__init__(
@@ -363,6 +363,12 @@ def allocate_storage_units_sq(scn_name, storage_types):
     )
 
     map_storage = {
+        # "battery" is now dead: this function is only ever called with
+        # storage_types=["pumped_hydro"] (see allocate_pumped_hydro_scn()).
+        # Real battery storage is handled by allocate_battery_storage()
+        # instead, reading from egon_power_plants_storage rather than
+        # re-parsing this CSV. "compressed_air"/"flywheel"/"other" were
+        # already no used before 
         "battery": "Batterie",
         "pumped_hydro": "Pumpspeicher",
         "compressed_air": "Druckluft",
