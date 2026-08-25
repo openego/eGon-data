@@ -85,10 +85,9 @@ from egon.data.datasets.pypsaeur import PreparePypsaEur, RunPypsaEur
 from egon.data.datasets.re_potential_areas import re_potential_area_setup
 from egon.data.datasets.renewable_feedin import RenewableFeedin
 from egon.data.datasets.saltcavern import SaltcavernData
-
-# SanityChecks import is unused while it's excluded from the pipeline,
-# see the comment near its former TaskGroup below.
-# from egon.data.datasets.sanity_checks import SanityChecks
+from egon.data.datasets.sanity_checks.electricity_demand import (
+    ElectricityDemandSanityCheck,
+)
 from egon.data.datasets.scenario_capacities import ScenarioCapacities
 from egon.data.datasets.scenario_parameters import ScenarioParameters
 from egon.data.datasets.storages import Storages
@@ -312,6 +311,18 @@ with airflow.DAG(
                 cts_electricity_demand_annual,
                 demand_curves_industry,
                 hh_demand_buildings_setup,
+            ]
+        )
+
+        electricity_demand_sanity_check = ElectricityDemandSanityCheck(
+            dependencies=[
+                demandregio,
+                hh_demand_profiles_setup,
+                hh_demand_buildings_setup,
+                household_electricity_demand_annual,
+                cts_electricity_demand_annual,
+                demand_curves_industry,
+                electrical_load_etrago,
             ]
         )
 
@@ -716,8 +727,8 @@ with airflow.DAG(
     # list is only populated for the obsolete "eGon2035"/"eGon100RE"
     # scenario names and is empty for the current default scenarios
     # ("status2024", "reGon2037"), which crashes Dataset construction.
-    # Re-enable once sanity_checks.py is migrated to the new scenario
-    # names.
+    # Re-enable once sanity_checks_legacy.py is migrated to the new
+    # scenario names.
     #
     # with TaskGroup(group_id="sanity_checks") as sanity_checks_group:
     #     # ########## Keep this dataset at the end

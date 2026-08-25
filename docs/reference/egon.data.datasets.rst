@@ -26,7 +26,7 @@ datasets
    egon.data.datasets.mastr
    egon.data.datasets.mv_grid_districts
    egon.data.datasets.renewable_feedin
-   egon.data.datasets.sanity_checks
+   egon.data.datasets.sanity_checks_legacy
    egon.data.datasets.scenario_capacities
    egon.data.datasets.society_prognosis
    egon.data.datasets.substation_voronoi
