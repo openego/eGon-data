@@ -152,11 +152,11 @@ def extendable_batteries_per_scenario(scenario):
 
     extendable_batteries["capital_cost"] = get_sector_parameters(
         "electricity", scenario
-    )["capital_cost"]["battery"]
+    )["capital_cost"]["BESS"]
 
     extendable_batteries["lifetime"] = get_sector_parameters(
         "electricity", scenario
-    )["lifetime"]["battery storage"]
+    )["lifetime"]["BESS storage"]
 
     extendable_batteries["max_hours"] = get_sector_parameters(
         "electricity", scenario
