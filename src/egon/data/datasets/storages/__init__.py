@@ -781,9 +781,9 @@ def allocate_battery_storage(scn_name):
       * 'BESS' (voltage_level 1-5 - MV and above, grid-scale battery energy
         storage systems, not tied to individual buildings) - only for status
         quo scenarios; carrying grid-scale storage forward into future
-        scenarios is out of scope here (tracked separately, see #1472).
+        scenarios is out of scope here (tracked separately, see #1478).
     """
-    # see allocate_storage_units_sq() for why this isn't weather_year
+
     scenario_date_max = SCENARIO_TIMESTAMP[scn_name].strftime(
         "%Y-%m-%d %H:%M:%S"
     )
@@ -833,7 +833,7 @@ def allocate_battery_storage(scn_name):
 
     if "status" not in scn_name:
         # Grid-scale battery carry-forward into future scenarios is out of
-        # scope here (see #1472) - only home batteries get carried forward.
+        # scope here (see #1478) - only home batteries get carried forward.
         mastr = mastr.loc[mastr.carrier == "home_battery"]
 
     mastr["scenario"] = scn_name
@@ -884,7 +884,7 @@ def allocate_pumped_hydro_scn():
 
 def allocate_other_storage_units():
     # Runs for all scenarios now: allocate_battery_storage() itself keeps
-    # 'BESS' (grid-scale) restricted to status quo scenarios (see #1472),
+    # 'BESS' (grid-scale) restricted to status quo scenarios (see #1478),
     # while 'home_battery' is aged and carried forward into every scenario.
     for scn in config.settings()["egon-data"]["--scenarios"]:
         allocate_battery_storage(scn_name=scn)
