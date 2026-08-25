@@ -242,6 +242,7 @@ def insert_capacities_per_federal_state_nep():
         "Haushaltswaermepumpen": "residential_rural_heat_pump",
         "KWK < 10 MW": "small_chp",
         "PV-Batteriespeicher": "battery",
+        "Großbatteriespeicher": "BESS",
     }
     # 'Elektromobilitaet gesamt': 'transport',
     # 'Elektromobilitaet privat': 'transport'}
