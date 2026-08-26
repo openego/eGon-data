@@ -779,9 +779,12 @@ def allocate_battery_storage(scn_name):
         forward into all scenarios, aged with the scenario-specific assumed
         battery storage lifetime (see determine_end_of_life_gens() below).
       * 'BESS' (voltage_level 1-5 - MV and above, grid-scale battery energy
-        storage systems, not tied to individual buildings) - only for status
-        quo scenarios; carrying grid-scale storage forward into future
-        scenarios is out of scope here (tracked separately, see #1478).
+        storage systems, not tied to individual buildings) - like
+        home_battery, real capacity is now aged and carried forward into
+        every scenario. A modeled/residual BESS component analogous to
+        home_batteries_per_scenario() (target minus real capacity,
+        distributed spatially) is not yet implemented - open decision on
+        the distribution method, see #1478.
     """
 
     scenario_date_max = SCENARIO_TIMESTAMP[scn_name].strftime(
@@ -814,7 +817,7 @@ def allocate_battery_storage(scn_name):
     # "in Betrieb" but that are statistically past their expected lifetime.
     lifetime = pd.Timedelta(
         get_sector_parameters("electricity", scn_name)["lifetime"][
-            "battery storage"
+            "BESS storage"
         ]
         * 365,
         unit="D",
@@ -830,11 +833,6 @@ def allocate_battery_storage(scn_name):
 
     mastr["carrier"] = "BESS"
     mastr.loc[mastr.voltage_level.isin([6, 7]), "carrier"] = "home_battery"
-
-    if "status" not in scn_name:
-        # Grid-scale battery carry-forward into future scenarios is out of
-        # scope here (see #1478) - only home batteries get carried forward.
-        mastr = mastr.loc[mastr.carrier == "home_battery"]
 
     mastr["scenario"] = scn_name
     mastr["source_id"] = mastr["source_id"].apply(lambda x: {"MastrNummer": x})
@@ -883,9 +881,9 @@ def allocate_pumped_hydro_scn():
 
 
 def allocate_other_storage_units():
-    # Runs for all scenarios now: allocate_battery_storage() itself keeps
-    # 'BESS' (grid-scale) restricted to status quo scenarios (see #1478),
-    # while 'home_battery' is aged and carried forward into every scenario.
+    # Both 'BESS' and 'home_battery' are aged and carried forward into
+    # every scenario now (real MaStR capacity only for BESS - no modeled
+    # residual component yet, see #1478).
     for scn in config.settings()["egon-data"]["--scenarios"]:
         allocate_battery_storage(scn_name=scn)
 
