@@ -1,7 +1,5 @@
 """The central module containing all code dealing with power plant data."""
 
-from pathlib import Path
-
 from geoalchemy2 import Geometry
 from sqlalchemy import BigInteger, Column, Float, Integer, Sequence, String
 from sqlalchemy.dialects.postgresql import JSONB
@@ -54,7 +52,6 @@ class Storages(Dataset):
     sources = DatasetSources(
         files={
             "mastr_storage": "./bnetza_mastr/dump_2025-02-09/bnetza_mastr_storage_cleaned.csv",
-            "nep_capacities": "NEP2035_V2021_scnC2035.xlsx",
             "mastr_location": "location_elec_generation_raw.csv",
         },
         tables={
@@ -630,7 +627,8 @@ def allocate_storage_units_sq(scn_name, storage_types):
 def home_batteries_per_scenario(scenario):
     """Allocates home batteries which define a lower boundary for extendable
     battery storage units. The overall installed capacity is taken from NEP
-    for eGon2035 scenario. The spatial distribution of installed battery
+    (supply.egon_scenario_capacities, carrier='home_battery'), the same way
+    for all scenarios. The spatial distribution of installed battery
     capacities is based on the installed pv rooftop capacity.
 
     Parameters
@@ -644,45 +642,27 @@ def home_batteries_per_scenario(scenario):
 
     dataset = config.settings()["egon-data"]["--dataset-boundary"]
 
-    if scenario == "eGon2035":
-        target_file = (
-            Path(".")
-            / "data_bundle_egon_data"
-            / "nep2035_version2021"
-            / Storages.sources.files["nep_capacities"]
-        )
+    target_df = db.select_dataframe(f"""
+        SELECT capacity
+        FROM {Storages.sources.tables['capacities']}
+        WHERE scenario_name = '{scenario}'
+        AND carrier = 'home_battery';
+        """)
 
-        capacities_nep = pd.read_excel(
-            target_file,
-            sheet_name="1.Entwurf_NEP2035_V2021",
-            index_col="Unnamed: 0",
-        )
+    # Sum over all returned federal states: status2024 and eGon2035 each
+    # have a single national row (nuts='DE') - their underlying NEP source
+    # files provide no federal-state breakdown for home batteries -
+    # reGon2037/reGon2045 have one row per federal state which is already
+    # scoped to the active --dataset-boundary
+    target = target_df.capacity.sum()
 
-        # Select national target value in MW
-        target = capacities_nep.Summe["PV-Batteriespeicher"] * 1000
-
-        if dataset == "Schleswig-Holstein":
-            # break down national target to SH's rough share
-            target = target / 16
-
-    else:
-        target_df = db.select_dataframe(f"""
-            SELECT capacity
-            FROM {Storages.sources.tables['capacities']}
-            WHERE scenario_name = '{scenario}'
-            AND carrier = 'battery';
-            """)
-
-        # Sum over all returned federal states: status quo has a single
-        # national row (nuts='DE'), reGon2037/reGon2045 have one row per
-        # federal state which is already scoped to the active
-        # --dataset-boundary
-        target = target_df.capacity.sum()
-
-        if "status" in scenario and dataset == "Schleswig-Holstein":
-            # status quo target is always national (nuts='DE'), still
-            # needs to be broken down to SH's rough share in test mode
-            target = target / 16
+    if (
+        ("status" in scenario or scenario == "eGon2035")
+        and dataset == "Schleswig-Holstein"
+    ):
+        # national-only target, still needs to be broken down to SH's
+        # rough share in test mode
+        target = target / 16
 
     pv_rooftop = db.select_dataframe(f"""
         SELECT bus, p_nom, generator_id
