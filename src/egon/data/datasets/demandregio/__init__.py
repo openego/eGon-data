@@ -562,24 +562,6 @@ def insert_cts_ind(scenario, year, engine, target_values):
     """
     # targets = egon.data.config.datasets()["demandregio_cts_ind_demand"]["targets"]
 
-    # Workaround: Since the disaggregator does not work anymore, data from
-    # previous runs is used for eGon2035
-    if scenario == "eGon2035":
-        file2035_path = (
-            Path("data_bundle_egon_data")
-            / "demand_regio_backup"
-            / "egon_demandregio_cts_ind_egon2035.csv"
-        )
-        ec_cts_ind2 = pd.read_csv(file2035_path)
-        ec_cts_ind2.to_sql(
-            DemandRegio.targets.get_table_name("cts_ind_demand"),
-            engine,
-            schema=DemandRegio.targets.get_table_schema("cts_ind_demand"),
-            if_exists="append",
-            index=False,
-        )
-        return
-
     for sector in ["CTS", "industry"]:
         # get demands per nuts3 and wz of demandregio
         ec_cts_ind = spatial.disagg_CTS_industry(
