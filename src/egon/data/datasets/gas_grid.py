@@ -1135,7 +1135,7 @@ class GasNodesAndPipes(Dataset):
     #:
     name: str = "GasNodesAndPipes"
     #:
-    version: str = "0.0.14"
+    version: str = "0.0.15"
 
     tasks = ()
 
