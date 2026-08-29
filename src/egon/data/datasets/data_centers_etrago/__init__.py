@@ -14,6 +14,17 @@ from shapely.geometry import LineString, MultiLineString
 from egon.data import config, db
 from egon.data.datasets import Dataset, DatasetSources, DatasetTargets
 
+# Data center target capacities for Scenarios A, B and C are derived from
+# the data center electricity demand in the NEP 2037/2045 draft (p. 32)
+# using 5,000 full-load hours from the Szenariorahmen NEP 2037/2045
+# draft (p. 45).
+# This results in:
+# Scenario A: 15.68 GW
+# Scenario B: 19.46 GW
+# Scenario C: 23.24 GW
+# Sources:
+# https://www.netzentwicklungsplan.de/sites/default/files/2025-12/NEP_2037_2045_V2025_1_Entwurf.pdf
+# https://www.netzentwicklungsplan.de/sites/default/files/2024-07/Szenariorahmenentwurf_NEP2037_2025_1.pdf
 TARGET_CAPACITY_MW = (
     19460  # 15680 (Szenario A), 19460 (Szenario B), 23240 (Szenario C)
 )
@@ -160,7 +171,9 @@ def load_district_heating_areas():
 
     return gdf.rename_geometry("geometry")
 
-
+# Internet exchange locations are based on PeeringDB facilities in Germany.
+# Source:
+# https://www.peeringdb.com/advanced_search?country__in=DE&reftag=fac
 def load_internet_nodes():
     """Load original internet node input."""
     sources = DataCenters.sources
@@ -169,7 +182,12 @@ def load_internet_nodes():
         sources.files["internet_nodes"],
     ).to_crs(epsg=25832)
 
-
+# Original input containing pre-defined regional Faktor values.
+# The factor is used in the electricity-location score through:
+# score_regio_strom = 1.2 - Faktor.
+# Regional factors are based on the Baukostenzuschuss data from
+# Netztransparenz.de, published by the German transmission system
+# operators 50Hertz, Amprion, TenneT and TransnetBW.
 def load_regional_factors():
     """Load original regional factor input."""
     sources = DataCenters.sources
@@ -720,12 +738,13 @@ class DataCenters(Dataset):
             "internet_nodes": (
                 "data_bundle_egon_data/data_centers/Internetknoten.gpkg"
             ),
+            # Source: PeeringDB facilities in Germany.
+            # https://www.peeringdb.com/advanced_search?country__in=DE&reftag=fac
             "regional_factors": (
                 "data_bundle_egon_data/data_centers/Regionalisierungsfaktoren.gpkg"
             ),
-            # Original input containing pre-defined regional Faktor values.
-            # The factor is used in the electricity-location score through:
-            # score_regio_strom = 1.2 - Faktor.
+            # Source: Netztransparenz.de Baukostenzuschuss data, published by
+            # 50Hertz, Amprion, TenneT and TransnetBW.
         },
     )
 
