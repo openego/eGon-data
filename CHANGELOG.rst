@@ -16,7 +16,10 @@ Added
   reGon scenarios (status2024, reGon2037, reGon2045). The mobility sector
   carries two rail figures: ``annual_demand`` is the 50-Hz draw that is
   written as load, ``gross_rail_demand`` the total rail consumption used as
-  the scenario-scaling reference.
+  the scenario-scaling reference. The dataset reports its classification,
+  centroid-fallback and bus-assignment counts, and the sanity check reports
+  the energy per carrier and whether ``grid.egon_etrago_bus`` carries the
+  referenced buses for the reGon scenarios.
   `#1414 <https://github.com/openego/eGon-data/issues/1414>`_
 
 Changed

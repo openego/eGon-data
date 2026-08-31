@@ -1377,6 +1377,11 @@ def sanitycheck_rail_transport_demand():  # pylint: disable=too-many-locals
     4. The annual energy MATCHES ``annual_demand`` (the 50-Hz draw) within
        1 % -- check 3 compares scenarios against each other and would pass
        even if every bundle energy were off by a common factor.
+
+    It also REPORTS (without failing) whether grid.egon_etrago_bus carries
+    the referenced buses for the scenario the loads are written under. The
+    bus assignment uses scenario-independent grid tables, so check 1 passes
+    either way, while an eTraGo export could still fail.
     """
     carriers = tuple(sorted(set(rail_demand.CARRIERS.values())))
     logger.info("Sanity checks: reGon rail transport demand ...")
@@ -1413,10 +1418,37 @@ def sanitycheck_rail_transport_demand():  # pylint: disable=too-many-locals
         )
         assert not bad_bus.any(), bad_bus_msg
 
+        # 1b. does the eTraGo bus table know these buses FOR THIS SCENARIO?
+        #     Reported, not asserted: whether the reGon scenarios get their
+        #     own bus rows is an open question, and a hard failure here would
+        #     mask the rest of the checks.
+        scn_buses = set(
+            db.select_dataframe(
+                f"""
+                SELECT bus_id FROM grid.egon_etrago_bus
+                WHERE scn_name = '{scn}'
+                """
+            )["bus_id"]
+        )
+        if not scn_buses:
+            logger.warning(
+                f"  '{scn}': grid.egon_etrago_bus has no rows for this "
+                f"scenario; the rail loads reference buses no eTraGo export "
+                f"can resolve."
+            )
+        else:
+            unknown = sorted(set(loads["bus"]) - scn_buses)
+            if unknown:
+                logger.warning(
+                    f"  '{scn}': {len(unknown)} of "
+                    f"{loads['bus'].nunique()} rail load buses are missing "
+                    f"from grid.egon_etrago_bus (e.g. {unknown[:5]})."
+                )
+
         # 2. timeseries integrity (8760 h, no NaN, non-negative)
         ts = db.select_dataframe(
             f"""
-            SELECT p_set
+            SELECT load_id, p_set
             FROM grid.egon_etrago_load_timeseries
             WHERE scn_name = '{scn}' AND load_id IN (
                 SELECT load_id FROM grid.egon_etrago_load
@@ -1425,16 +1457,27 @@ def sanitycheck_rail_transport_demand():  # pylint: disable=too-many-locals
         )
         ts_msg = f"'{scn}': {len(loads)} loads but {len(ts)} timeseries."
         assert len(ts) == len(loads), ts_msg
+        carrier_of = loads.set_index("load_id")["carrier"].to_dict()
         total = 0.0
-        for p_set in ts["p_set"]:
+        per_carrier = dict.fromkeys(carriers, 0.0)
+        for load_id, p_set in zip(ts["load_id"], ts["p_set"]):
             arr = np.asarray(p_set, dtype=float)
             size_msg = f"'{scn}': p_set has {arr.size} steps (want 8760)."
             assert arr.size == 8760, size_msg
             assert not np.isnan(arr).any(), f"'{scn}': NaN in p_set."
             assert (arr >= 0).all(), f"'{scn}': negative p_set value."
             total += arr.sum()  # MWh (hourly steps -> MW == MWh/h)
+            per_carrier[carrier_of[load_id]] += arr.sum()
         energy[scn] = total
         logger.info(f"  {scn}: {len(loads)} loads, {total / 1e6:.3f} TWh.")
+        # per carrier, because the three tiers have separate anchors and a
+        # tier-sized error is invisible in the total
+        for carrier in carriers:
+            n_loads = int((loads["carrier"] == carrier).sum())
+            logger.info(
+                f"    {carrier}: {n_loads} loads, "
+                f"{per_carrier[carrier] / 1e6:.4f} TWh."
+            )
 
     # 3. energy scales as the scenario_parameters gross-demand ratio
     base_scn = rail_demand.BASE_SCENARIO
@@ -3078,7 +3121,7 @@ class SanityChecks(Dataset):
     #:
     name: str = "SanityChecks"
     #:
-    version: str = "0.0.12"
+    version: str = "0.0.13"
 
     sources = DatasetSources(
         tables={

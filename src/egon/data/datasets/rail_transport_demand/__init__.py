@@ -90,7 +90,7 @@ _OSM_SUBSTATIONS_SQL = """
 
 class RailTransitDemand(Dataset):
     name: str = "RailTransitDemand"
-    version: str = "0.0.4"
+    version: str = "0.0.5"
 
     sources = DatasetSources(
         tables={
@@ -155,6 +155,12 @@ def _osm_dc_rectifiers() -> gpd.GeoDataFrame:
         _OSM_SUBSTATIONS_SQL, geom_col="geom", epsg=3035
     )
     rect = subs[subs.apply(_is_dc_rectifier, axis=1)].reset_index(drop=True)
+    # classification counts are a validation figure (see the sanity check and
+    # the method paper), and nothing else persists them
+    print(
+        f"rail DC rectifiers: {len(rect)} of {len(subs)} OSM substations "
+        f"classified as DC rectifier Unterwerke."
+    )
     return rect
 
 
@@ -185,6 +191,7 @@ def _bundle_points() -> gpd.GeoDataFrame:
     cities = pd.read_csv(BUNDLE / "dc_city_energy.csv")
     rect = _osm_dc_rectifiers()
     rows = []
+    at_centroid = []  # city/system rows without a single mapped rectifier
     for _, c in cities.iterrows():
         centroid = (
             gpd.GeoSeries(gpd.points_from_xy([c.lon], [c.lat]), crs=4326)
@@ -204,6 +211,7 @@ def _bundle_points() -> gpd.GeoDataFrame:
             for g in near.geometry:
                 rows.append((e, c["profile"], carrier, level, g))
         else:  # no rectifier mapped -> load at city centroid
+            at_centroid.append(c["energy_mwh_a"])
             rows.append(
                 (c["energy_mwh_a"], c["profile"], carrier, level, centroid)
             )
@@ -217,6 +225,11 @@ def _bundle_points() -> gpd.GeoDataFrame:
             "geometry",
         ],
         crs=3035,
+    )
+    print(
+        f"rail DC points: {len(dc)} load points from {len(cities)} "
+        f"city/system rows; {len(at_centroid)} rows without a mapped "
+        f"rectifier carry {sum(at_centroid) / 1e6:.4f} TWh at the centroid."
     )
     return gpd.GeoDataFrame(pd.concat([conv, dc], ignore_index=True), crs=3035)
 
@@ -243,12 +256,22 @@ def _assign_bus(pts: gpd.GeoDataFrame) -> gpd.GeoDataFrame:
         j = gpd.sjoin(sub, p, how="left", predicate="within").drop(
             columns="index_right"
         )
+        # a point on a shared polygon border matches twice, which would
+        # duplicate the load point -- keep the first match per point
+        j = j[~j.index.duplicated()]
         miss = j["bus_id"].isna()
         if miss.any():
             nn = gpd.sjoin_nearest(j[miss].drop(columns="bus_id"), p).drop(
                 columns="index_right"
             )
+            nn = nn[~nn.index.duplicated()]  # equidistant polygons
             j.loc[nn.index, "bus_id"] = nn["bus_id"].values
+        # how often the fallback bites is a validation figure: points outside
+        # every polygon (coastline, district borders)
+        print(
+            f"rail bus assignment ({level}): {len(j)} points, "
+            f"{int(miss.sum())} via nearest-neighbour fallback."
+        )
         out.append(j)
     res = gpd.GeoDataFrame(pd.concat(out))
     res["bus_id"] = res["bus_id"].astype(int)
