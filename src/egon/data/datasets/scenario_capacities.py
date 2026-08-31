@@ -688,7 +688,11 @@ def insert_nep_list_powerplants(export=True):
     
     # Map NEP carrier names to internal eGon-data carrier names
     kw_liste_nep["carrier"] = map_carrier()[kw_liste_nep.carrier_nep].values
-    kw_liste_nep["chp"] = kw_liste_nep["chp"].replace("ja", "Ja")
+    # The NEP2021 list uses "Ja"/"Nein", the NEP2025 list uses "ja"/"nein".
+    # Downstream queries filter on the capitalized form, so normalize both.
+    kw_liste_nep["chp"] = kw_liste_nep["chp"].replace(
+        {"ja": "Ja", "nein": "Nein"}
+    )
 
     if export is True:
         # Insert data to db
@@ -971,7 +975,7 @@ class ScenarioCapacities(Dataset):
     #:
     name: str = "ScenarioCapacities"
     #:
-    version: str = "0.0.23"
+    version: str = "0.0.24"
     sources = DatasetSources(
         files={
             "eGon2035_capacities": "data_bundle_egon_data/nep2035_version2021/NEP2035_V2021_scnC2035.xlsx",
