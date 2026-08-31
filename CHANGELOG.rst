@@ -139,6 +139,22 @@ Bug Fixes
   compared to earlier runs: the previous choice was arbitrary, so
   fixing it necessarily settles some assignments differently
   `#804 <https://github.com/openego/eGon-data/issues/804>`_
+* Make the input egon-data hands to osmTGmod reproducible.
+  ``transfer_busses_complete`` was built with ``DISTINCT ON (osm_id)``
+  one level above the subquery holding its ``ORDER BY``, so which of
+  several rows sharing an ``osm_id`` survived was left to the query
+  planner. Such duplicates are common: a substation can appear in both
+  source tables, and ``hvmv_substation.sql`` unions the ``osm_polygon``
+  and ``osm_line`` geometry of the same way, which yields two rows with
+  a different centroid - the one value osmTGmod reads. The table is now
+  built with a deterministic total order, its CSV export is ordered by
+  ``osm_id`` so the rows reach osmTGmod's ``transfer_busses`` table in a
+  fixed order, and the ``bus_id`` sequences of both transfer bus tables
+  are filled in a reproducible order instead of in scan order. Note
+  that this does not close the issue on its own: should osmTGmod's
+  abstraction be non-deterministic internally, its results will still
+  differ despite identical input
+  `#769 <https://github.com/openego/eGon-data/issues/769>`_
 
 Version 2.0.0 (2025-08-20)
 ==========================

@@ -180,7 +180,11 @@ CREATE VIEW 		grid.egon_final_result AS
 -- insert results
 INSERT INTO grid.egon_hvmv_transfer_buses (lon, lat, point, polygon, voltage, power_type, substation, osm_id, osm_www, frequency, subst_name, ref, operator, dbahn, status)
 	SELECT lon, lat, point, polygon, voltage, power_type, substation, osm_id, osm_www, frequency, subst_name, ref, operator, dbahn, status
-	FROM grid.egon_final_result;
+	FROM grid.egon_final_result
+	-- Order explicitly so that the bus_id sequence is filled in a
+	-- reproducible order instead of in scan order, see
+	-- https://github.com/openego/eGon-data/issues/769
+	ORDER BY osm_id;
 
 -- update voltage level if split by '/' instead of ';' or contains '--'
 UPDATE grid.egon_hvmv_transfer_buses

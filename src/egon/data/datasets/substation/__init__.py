@@ -91,7 +91,7 @@ class SubstationExtraction(Dataset):
     def __init__(self, dependencies):
         super().__init__(
             name="substation_extraction",
-            version="0.0.5",
+            version="0.0.6",
             dependencies=dependencies,
             tasks=(
                 create_tables,
@@ -220,6 +220,36 @@ def create_sql_functions():
 
 
 def transfer_busses():
+    """Combine EHV and HV/MV transfer buses into one table for osmTGmod.
+
+    The EHV and HV/MV transfer buses are unioned and reduced to a single
+    row per ``osm_id``.
+
+    ``DISTINCT ON`` and ``ORDER BY`` have to live in the *same* query:
+    PostgreSQL only defines which row of a group survives a
+    ``DISTINCT ON`` if that very query is ordered. Ordering the subquery
+    instead, as this used to do, leaves the choice to the query planner,
+    cf. `#769 <https://github.com/openego/eGon-data/issues/769>`_.
+
+    Duplicate ``osm_id``\\ s are the rule rather than the exception here:
+    a substation can show up in both source tables, and
+    ``hvmv_substation.sql`` unions the ``osm_polygon`` and ``osm_line``
+    geometries of the same way, which yields two rows whose centroid -
+    the one value osmTGmod actually reads - differs.
+
+    The tie is broken on ``status`` first, which is 1 where the voltage
+    was tagged explicitly, and then on the content of the row, so that
+    the choice is stable across runs. ``bus_id`` is only the key of last
+    resort, and only usable as one because ``hvmv_substation.sql`` and
+    ``ehv_substation.sql`` now fill their sequences in a defined order -
+    do not drop the ``ORDER BY`` from those two ``INSERT``\\ s without
+    also revisiting this.
+
+    Careful when touching the column list: osmTGmod reads the CSV export
+    of this table by hardcoded column index (see
+    :py:func:`egon.data.datasets.osmtgmod.osmtgmod`), so neither the
+    order nor the number of columns may change.
+    """
 
     db.execute_sql(f"""
         DROP TABLE IF EXISTS {SubstationExtraction.targets.tables['transfer_busses']};
@@ -229,7 +259,9 @@ def transfer_busses():
         UNION SELECT bus_id, lon, lat, point, polygon, voltage,
         power_type, substation, osm_id, osm_www, frequency, subst_name,
         ref, operator, dbahn, status
-        FROM {SubstationExtraction.targets.tables['hvmv_substation']} ORDER BY osm_id) as foo;
+        FROM {SubstationExtraction.targets.tables['hvmv_substation']}) as foo
+        ORDER BY osm_id, status, ST_AsBinary(point), voltage,
+                 ST_AsBinary(polygon), bus_id;
         """)
 
 

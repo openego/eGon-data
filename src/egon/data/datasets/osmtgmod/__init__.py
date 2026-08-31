@@ -377,9 +377,18 @@ def osmtgmod(
         conn.commit()
 
         with open(path_for_transfer_busses, "w") as this_file:
+            # Order explicitly. The rows of this export are inserted into
+            # osmTGmod's `transfer_busses` table one by one below, so the
+            # order they are copied in becomes their physical order there
+            # and thereby part of osmTGmod's input, cf. `#769
+            # <https://github.com/openego/eGon-data/issues/769>`_.
+            # `osm_id` is unique in `transfer_busses_complete`, so this is
+            # a total order.
             cur.copy_expert(
-                """COPY transfer_busses_complete to
-                STDOUT WITH CSV HEADER""",
+                """COPY (
+                    SELECT * FROM transfer_busses_complete
+                    ORDER BY osm_id
+                ) TO STDOUT WITH CSV HEADER""",
                 this_file,
             )
             conn.commit()
@@ -866,7 +875,7 @@ class Osmtgmod(Dataset):
     #:
     name: str = "Osmtgmod"
     #:
-    version: str = "0.0.12"
+    version: str = "0.0.13"
 
     sources = DatasetSources(
         files={
