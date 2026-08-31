@@ -132,7 +132,10 @@ Bug Fixes
   centroids and by ``bus_id`` so that a total order remains even for
   symmetric geometries. The same treatment is applied where a cut
   polygon containing several substations left ``UPDATE ... FROM`` to
-  pick one of them unpredictably. Note that grid districts change
+  pick one of them unpredictably. The two ``sum()`` aggregates computing
+  ``area`` are ordered as well, because adding ``double precision``
+  values is not associative and the column otherwise wobbled by an ULP
+  on an otherwise byte-identical geometry. Note that grid districts change
   compared to earlier runs: the previous choice was arbitrary, so
   fixing it necessarily settles some assignments differently
   `#804 <https://github.com/openego/eGon-data/issues/804>`_

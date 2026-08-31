@@ -18,6 +18,7 @@ from sqlalchemy import (
     String,
     func,
 )
+from sqlalchemy.dialects.postgresql import aggregate_order_by
 from sqlalchemy.ext.declarative import declarative_base
 
 from egon.data import db
@@ -569,9 +570,17 @@ def merge_polygons_to_grid_district():
             func.ST_Multi(
                 func.ST_Union(VoronoiMunicipalityCutsAssigned.geom)
             ).label("geom"),
-            func.sum(func.ST_Area(VoronoiMunicipalityCutsAssigned.geom)).label(
-                "area"
-            ),
+            # Order the summands. Adding `double precision` values is not
+            # associative, so an unordered `sum` over a group differs in
+            # its last bits depending on the order the aggregate happens
+            # to see the rows in. Ordering by the value itself makes the
+            # sum a function of the multiset alone.
+            func.sum(
+                aggregate_order_by(
+                    func.ST_Area(VoronoiMunicipalityCutsAssigned.geom),
+                    func.ST_Area(VoronoiMunicipalityCutsAssigned.geom),
+                )
+            ).label("area"),
         ).group_by(VoronoiMunicipalityCutsAssigned.bus_id)
 
         joined_municipality_parts_insert = (
@@ -663,7 +672,13 @@ def merge_polygons_to_grid_district():
                     -0.1,
                 )
             ).label("geom"),
-            func.sum(MvGridDistrictsDissolved.area).label("area"),
+            # Ordered for the same reason as in step 1.
+            func.sum(
+                aggregate_order_by(
+                    MvGridDistrictsDissolved.area,
+                    MvGridDistrictsDissolved.area,
+                )
+            ).label("area"),
         ).group_by(MvGridDistrictsDissolved.bus_id)
 
         joined_mv_grid_district_parts_insert = (
@@ -835,7 +850,7 @@ class mv_grid_districts_setup(Dataset):
     #:
     name: str = "MvGridDistricts"
     #:
-    version: str = "0.0.6"
+    version: str = "0.0.7"
 
     sources = DatasetSources(
         tables={
