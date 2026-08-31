@@ -310,6 +310,14 @@ def split_multi_substation_municipalities():
                 EgonHvmvSubstation.bus_id,
                 EgonHvmvSubstation.point,
             )
+            # A cut polygon containing more than one substation yields one
+            # row per substation. `UPDATE ... FROM` would then pick one of
+            # them unpredictably, so reduce to the lowest `bus_id` here.
+            .distinct(VoronoiMunicipalityCuts.id)
+            .order_by(
+                VoronoiMunicipalityCuts.id,
+                EgonHvmvSubstation.bus_id,
+            )
             .subquery()
         )
         session.query(VoronoiMunicipalityCuts).filter(
@@ -435,8 +443,8 @@ def assign_substation_municipality_fragments(
 
         * "touches": Only polygons that touch another polygon from
           `with_substation` are considered
-        * "within": Only polygons within a radius of 100 km of polygons
-          without substation are considered for assignment
+        * "min_distance": Only polygons within a radius of 100 km of
+          polygons without substation are considered for assignment
     session: SQLAlchemy session
         SQLAlchemy session object
 
@@ -459,7 +467,28 @@ def assign_substation_municipality_fragments(
         )
     else:
         raise ValueError(f"Invalid input for 'strategy': {strategy}")
-    cut_0subst_nearest_neighbor_sub = (
+    # Select one single assignment polygon (with substation) for each of
+    # the polygons without a substation.
+    #
+    # `DISTINCT ON` and `ORDER BY` have to live in the *same* query:
+    # PostgreSQL only defines which row of a group survives a
+    # `DISTINCT ON` if that very query is ordered. Ordering a subquery and
+    # applying `DISTINCT ON` one level above leaves the choice to the query
+    # planner, which is one of the causes of `#804
+    # <https://github.com/openego/eGon-data/issues/804>`_.
+    #
+    # The ordering keys are, in order of precedence:
+    #
+    # 1. `id`, which has to match `DISTINCT ON`,
+    # 2. the distance between the polygons. This is always 0 for the
+    #    "touches" strategy, so it only discriminates for "min_distance",
+    # 3. the distance between the polygon centroids, which breaks the ties
+    #    left by the previous key,
+    # 4. `bus_id`, to stay deterministic even for symmetric geometries.
+    #    Besides `bus_id`, the only columns taken from `with_substation`
+    #    are `subst_count` and `geom_sub`, both of which are functionally
+    #    dependent on `bus_id`, so ordering by it pins down the whole row.
+    cut_0subst_nearest_neighbor = (
         (
             session.query(
                 *[
@@ -476,33 +505,18 @@ def assign_substation_municipality_fragments(
         )
         .filter(without_substation.c.ags_0 == with_substation.c.ags_0)
         .filter(neighboring_criterion)
+        .distinct(without_substation.c.id)
         .order_by(
             without_substation.c.id,
             func.ST_Distance(
                 without_substation.c.geom, with_substation.c.geom
             ),
+            func.ST_Distance(
+                func.ST_Centroid(without_substation.c.geom),
+                func.ST_Centroid(with_substation.c.geom),
+            ),
+            with_substation.c.bus_id,
         )
-        .subquery()
-    )
-
-    # Group by id of cut polygons which is unique. The reason that multiple
-    # rows for each id exist is that assignment to multiple polygon with
-    # a substations would be possible. The are ordered by distance
-    cut_0subst_nearest_neighbor_grouped = (
-        session.query(cut_0subst_nearest_neighbor_sub.c.id)
-        .group_by(cut_0subst_nearest_neighbor_sub.c.id)
-        .subquery()
-    )
-
-    # Select one single assignment polygon (with substation) for each of
-    # the polygons without a substation
-    cut_0subst_nearest_neighbor = (
-        session.query(cut_0subst_nearest_neighbor_sub)
-        .filter(
-            cut_0subst_nearest_neighbor_sub.c.id
-            == cut_0subst_nearest_neighbor_grouped.c.id
-        )
-        .distinct(cut_0subst_nearest_neighbor_sub.c.id)
         .subquery()
     )
 
@@ -708,7 +722,15 @@ def nearest_polygon_with_substation(
         raise ValueError(f"Invalid input for 'strategy': {strategy}")
 
     # Find nearest neighboring polygon from with_substation for each
-    # polygon from without_substation
+    # polygon from without_substation and keep exactly one candidate per
+    # polygon.
+    #
+    # `DISTINCT ON` and `ORDER BY` have to live in the *same* query, see
+    # the comment in :py:func:`assign_substation_municipality_fragments`
+    # for the reasoning and for the ordering keys, which are identical
+    # here. Note that `ST_Distance` is 0 for every candidate of the
+    # "touches" strategy, so without the two subsequent keys the choice
+    # would be a plain tie.
     all_nearest_neighbors = (
         session.query(
             without_substation.c.id,
@@ -719,34 +741,31 @@ def nearest_polygon_with_substation(
             ),
         )
         .filter(neighboring_criterion)
+        .distinct(without_substation.c.id)
         .order_by(
             without_substation.c.id,
             func.ST_Distance(
                 without_substation.c.geom, with_substation.c.geom
             ),
-            # with_substation.c.id
             func.ST_Distance(
                 func.ST_Centroid(without_substation.c.geom),
                 func.ST_Centroid(with_substation.c.geom),
             ),
+            with_substation.c.bus_id,
         )
         .subquery()
     )
 
-    # Save list of newly assigned polygons
-    newly_assigned = (
-        session.query(all_nearest_neighbors.c.id)
-        .distinct(all_nearest_neighbors.c.id)
-        .all()
-    )
+    # Save list of newly assigned polygons. `all_nearest_neighbors` already
+    # holds exactly one row per polygon, so no de-duplication is needed.
+    newly_assigned = session.query(all_nearest_neighbors.c.id).all()
     newly_assigned_ids = [i for i, in newly_assigned]
 
-    # Take only one candidate polygon for assgning it
     nearest_neighbors = session.query(
         all_nearest_neighbors.c.bus_id,
         all_nearest_neighbors.c.geom,
         all_nearest_neighbors.c.area,
-    ).distinct(all_nearest_neighbors.c.id)
+    )
 
     # Insert polygons with newly assigned substation
     assigned_polygons_insert = (
