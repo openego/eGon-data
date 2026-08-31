@@ -529,7 +529,7 @@ def create_individual_heat_per_mv_grid(scenario="eGon2035", mv_grid_id=1564):
     return df
 
 
-def calulate_peak_load(df, scenario):
+def calculate_peak_load(df, scenario):
     # peat load in W_th
     data = (
         df.groupby("building_id")
@@ -656,7 +656,7 @@ def create_individual_heating_peak_loads(scenario="eGon2035"):
                 )
             )
 
-        calulate_peak_load(slice_df, scenario)
+        calculate_peak_load(slice_df, scenario)
 
     print(f"Time to create peak loads per building for {scenario}")
     print(datetime.now() - start_time)
@@ -898,14 +898,6 @@ def individual_heating_per_mv_grid_tables(method="python"):
     )
 
 
-def individual_heating_per_mv_grid_2035(method="python"):
-    create_individual_heating_profile_python_like("eGon2035")
-
-
-def individual_heating_per_mv_grid_100(method="python"):
-    create_individual_heating_profile_python_like("eGon100RE")
-
-
 def individual_heating_per_mv_grid(method="python"):
     if method == "python":
         engine = db.engine()
@@ -915,9 +907,8 @@ def individual_heating_per_mv_grid(method="python"):
         EgonEtragoTimeseriesIndividualHeating.__table__.create(
             bind=engine, checkfirst=True
         )
-
-        create_individual_heating_profile_python_like("eGon2035")
-        create_individual_heating_profile_python_like("eGon100RE")
+        for scenario in config.settings()["egon-data"]["--scenarios"]:
+            create_individual_heating_profile_python_like(scenario)
 
     else:
         engine = db.engine()
@@ -939,7 +930,7 @@ def individual_heating_per_mv_grid(method="python"):
             """)
 
         for index, row in ids.iterrows():
-            for scenario in ["eGon2035", "eGon100RE"]:
+            for scenario in config.settings()["egon-data"]["--scenarios"]:
                 series = create_individual_heat_per_mv_grid(
                     scenario, row.bus_id
                 )
@@ -976,92 +967,6 @@ def individual_heating_per_mv_grid(method="python"):
             if_exists="append",
             index=False,
         )
-
-
-def store_national_profiles():
-    scenario = "eGon100RE"
-
-    df = db.select_dataframe(f"""
-
-        SELECT SUM(building_demand_per_hour) as "residential rural"
-        FROM
-
-        (
-        SELECT demand.demand  / building.count *
-        c.daily_demand_share * hourly_demand as building_demand_per_hour,
-        ordinality + 24* (c.day_of_year-1) as hour_of_year,
-        demand_profile.building_id,
-        c.day_of_year,
-        ordinality
-
-        FROM
-
-        (SELECT zensus_population_id, demand FROM
-        {HeatTimeSeries.sources.tables['heat_demand_cts']}
-        WHERE scenario = '{scenario}'
-        AND sector = 'residential'
-       ) as demand
-
-        JOIN {HeatTimeSeries.sources.tables['climate_zones']} b
-        ON demand.zensus_population_id = b.zensus_population_id
-
-        JOIN {HeatTimeSeries.sources.tables['daily_heat_demand_per_climate_zone']} c
-        ON c.climate_zone = b.climate_zone
-
-        JOIN (
-        SELECT e.idp, ordinality as day, zensus_population_id, building_id
-        FROM {HeatTimeSeries.sources.tables['selected_profiles']} d,
-        UNNEST (d.selected_idp_profiles) WITH ORDINALITY as selected_idp
-        JOIN {HeatTimeSeries.sources.tables['idp_pool']} e
-        ON selected_idp = e.index
-        )  demand_profile
-        ON (demand_profile.day = c.day_of_year AND
-            demand_profile.zensus_population_id = b.zensus_population_id)
-
-        JOIN (SELECT COUNT(building_id), zensus_population_id
-        FROM {HeatTimeSeries.sources.tables['selected_profiles']}
-        WHERE zensus_population_id IN(
-        SELECT zensus_population_id FROM
-        {HeatTimeSeries.sources.tables['selected_profiles']}
-        )
-        GROUP BY zensus_population_id) building
-        ON building.zensus_population_id = b.zensus_population_id,
-
-        UNNEST(demand_profile.idp) WITH ORDINALITY as hourly_demand
-        )   result
-
-
-        GROUP BY hour_of_year
-
-        """)
-
-    CTS_demand_dist, CTS_demand_grid, CTS_demand_zensus = CTS_demand_scale(
-        aggregation_level="district"
-    )
-
-    df["service rural"] = (
-        CTS_demand_dist.loc[CTS_demand_dist.scenario == scenario]
-        .drop("scenario", axis=1)
-        .sum()
-    )
-
-    df["urban central"] = db.select_dataframe(f"""
-        SELECT sum(nullif(demand, 'NaN')) as "urban central"
-        FROM {HeatTimeSeries.targets.tables['district_heating_timeseries']},
-        UNNEST (dist_aggregated_mw) WITH ORDINALITY as demand
-
-        WHERE scenario = '{scenario}'
-
-        GROUP BY ordinality
-
-        """)
-
-    folder = Path(".") / "input-pypsa-eur-sec"
-    # Create the folder, if it does not exists already
-    if not os.path.exists(folder):
-        os.mkdir(folder)
-
-    df.to_csv(folder / f"heat_demand_timeseries_DE_{scenario}.csv")
 
 
 def export_etrago_cts_heat_profiles():
@@ -1233,7 +1138,7 @@ class HeatTimeSeries(Dataset):
     #:
     name: str = "HeatTimeSeries"
     #:
-    version: str = "0.0.17"
+    version: str = "0.0.18"
 
     sources = DatasetSources(
         tables={
@@ -1275,7 +1180,6 @@ class HeatTimeSeries(Dataset):
                 select,
                 district_heating,
                 metadata,
-                store_national_profiles,
             ),
             validation={
                 "data_quality": [

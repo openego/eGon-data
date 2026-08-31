@@ -1,6 +1,6 @@
 """
-Household electricity demand time series for scenarios eGon2035 and eGon100RE at
-census cell level are set up.
+Household electricity demand time series for scenarios eGon2035, reGon2037,
+reGon2045 and status2024 at census cell level are set up.
 
 Electricity demand data for households in Germany in 1-hourly resolution for
 an entire year. Spatially, the data is resolved to 100 x 100 m cells and
@@ -14,7 +14,6 @@ from pathlib import Path
 import os
 import random
 
-from airflow.operators.python import PythonOperator
 from sqlalchemy import ARRAY, Column, Float, Integer, String
 from sqlalchemy.dialects.postgresql import CHAR, INTEGER, REAL
 from sqlalchemy.ext.declarative import declarative_base
@@ -68,10 +67,10 @@ class HouseholdElectricityProfilesInCensusCells(Base):
     cell_profile_ids = Column(ARRAY(String, dimensions=1))
     nuts3 = Column(String)
     nuts1 = Column(String)
-    factor_2019 = Column(Float)
-    factor_2023 = Column(Float)
+    factor_2024 = Column(Float)
     factor_2035 = Column(Float)
-    factor_2050 = Column(Float)
+    factor_2037 = Column(Float)
+    factor_2045 = Column(Float)
 
 
 class EgonDestatisZensusHouseholdPerHaRefined(Base):
@@ -112,8 +111,8 @@ class EgonEtragoElectricityHouseholds(Base):
 
 class HouseholdDemands(Dataset):
     """
-    Household electricity demand time series for scenarios eGon2035 and eGon100RE at
-    census cell level are set up.
+    Household electricity demand time series for scenarios eGon2035,
+    reGon2037, reGon2045 and status2024 at census cell level are set up.
 
     Electricity demand data for households in Germany in 1-hourly resolution for
     an entire year. Spatially, the data is resolved to 100 x 100 m cells and
@@ -270,64 +269,15 @@ class HouseholdDemands(Dataset):
     )
 
     def __init__(self, dependencies):
-        tasks = (
-            create_table,
-            houseprofiles_in_census_cells,
-        )
-
-        if (
-            "status2019"
-            in egon.data.config.settings()["egon-data"]["--scenarios"]
-        ):
-            mv_hh_electricity_load_2035 = PythonOperator(
-                task_id="MV-hh-electricity-load-2019",
-                python_callable=mv_grid_district_HH_electricity_load,
-                op_args=["status2019", 2019],
-            )
-
-            tasks = tasks + (mv_hh_electricity_load_2035,)
-
-        if (
-            "status2023"
-            in egon.data.config.settings()["egon-data"]["--scenarios"]
-        ):
-            mv_hh_electricity_load_2035 = PythonOperator(
-                task_id="MV-hh-electricity-load-2023",
-                python_callable=mv_grid_district_HH_electricity_load,
-                op_args=["status2023", 2023],
-            )
-
-            tasks = tasks + (mv_hh_electricity_load_2035,)
-
-        if (
-            "eGon2035"
-            in egon.data.config.settings()["egon-data"]["--scenarios"]
-        ):
-            mv_hh_electricity_load_2035 = PythonOperator(
-                task_id="MV-hh-electricity-load-2035",
-                python_callable=mv_grid_district_HH_electricity_load,
-                op_args=["eGon2035", 2035],
-            )
-
-            tasks = tasks + (mv_hh_electricity_load_2035,)
-
-        if (
-            "eGon100RE"
-            in egon.data.config.settings()["egon-data"]["--scenarios"]
-        ):
-            mv_hh_electricity_load_2050 = PythonOperator(
-                task_id="MV-hh-electricity-load-2050",
-                python_callable=mv_grid_district_HH_electricity_load,
-                op_args=["eGon100RE", 2050],
-            )
-
-            tasks = tasks + (mv_hh_electricity_load_2050,)
-
         super().__init__(
             name=self.name,
             version=self.version,
             dependencies=dependencies,
-            tasks=tasks,
+            tasks=(
+                create_table,
+                houseprofiles_in_census_cells,
+                mv_hh_electricity_load,
+            ),
             validation={
                 "data_quality": [
                     TableValidation(
@@ -1347,15 +1297,15 @@ def refine_census_data_at_cell_level(
         right_on=["cell_id", "characteristics_code"],
     )
 
-    df_census_households_grid_refined[
-        "characteristics_code"
-    ] = df_census_households_grid_refined["characteristics_code"].astype(int)
-    df_census_households_grid_refined[
-        "hh_5types"
-    ] = df_census_households_grid_refined["hh_5types"].astype(int)
-    df_census_households_grid_refined[
-        "hh_10types"
-    ] = df_census_households_grid_refined["hh_10types"].astype(int)
+    df_census_households_grid_refined["characteristics_code"] = (
+        df_census_households_grid_refined["characteristics_code"].astype(int)
+    )
+    df_census_households_grid_refined["hh_5types"] = (
+        df_census_households_grid_refined["hh_5types"].astype(int)
+    )
+    df_census_households_grid_refined["hh_10types"] = (
+        df_census_households_grid_refined["hh_10types"].astype(int)
+    )
 
     return df_census_households_grid_refined
 
@@ -1439,6 +1389,11 @@ def assign_hh_demand_profiles_to_cells(df_zensus_cells, df_iee_profiles):
         cell.
     """
 
+    factor_columns = [
+        f"factor_{get_scenario_year(scn)}"
+        for scn in egon.data.config.settings()["egon-data"]["--scenarios"]
+    ]
+
     df_hh_profiles_in_census_cells = pd.DataFrame(
         index=df_zensus_cells.grid_id.unique(),
         columns=[
@@ -1446,9 +1401,8 @@ def assign_hh_demand_profiles_to_cells(df_zensus_cells, df_iee_profiles):
             "cell_id",
             "nuts3",
             "nuts1",
-            "factor_2035",
-            "factor_2050",
-        ],
+        ]
+        + factor_columns,
     )
 
     df_hh_profiles_in_census_cells = (
@@ -1470,9 +1424,9 @@ def assign_hh_demand_profiles_to_cells(df_zensus_cells, df_iee_profiles):
         df_hh_profiles_in_census_cells.at[grid_id, "cell_id"] = df_cell.loc[
             :, "cell_id"
         ].unique()[0]
-        df_hh_profiles_in_census_cells.at[
-            grid_id, "cell_profile_ids"
-        ] = cell_profile_ids
+        df_hh_profiles_in_census_cells.at[grid_id, "cell_profile_ids"] = (
+            cell_profile_ids
+        )
         df_hh_profiles_in_census_cells.at[grid_id, "nuts3"] = df_cell.loc[
             :, "nuts3"
         ].unique()[0]
@@ -1512,7 +1466,7 @@ def adjust_to_demand_regio_nuts3_annual(
     -------
     pd.DataFrame
         Returns the same data as :func:`assign_hh_demand_profiles_to_cells`,
-        but with filled columns `factor_2035` and `factor_2050`.
+        but with filled `factor_<year>` columns for each configured scenario.
     """
     for nuts3_id, df_nuts3 in df_hh_profiles_in_census_cells.groupby(
         by="nuts3"
@@ -1741,10 +1695,10 @@ def houseprofiles_in_census_cells():
     ].astype(int)
 
     # Cast profile ids back to initial str format
-    df_hh_profiles_in_census_cells[
-        "cell_profile_ids"
-    ] = df_hh_profiles_in_census_cells["cell_profile_ids"].apply(
-        lambda x: list(map(gen_profile_names, x))
+    df_hh_profiles_in_census_cells["cell_profile_ids"] = (
+        df_hh_profiles_in_census_cells["cell_profile_ids"].apply(
+            lambda x: list(map(gen_profile_names, x))
+        )
     )
 
     # Write allocation table into database
@@ -1818,16 +1772,25 @@ def get_cell_demand_metadata_from_db(attribute, list_of_identifiers):
     if not isinstance(list_of_identifiers, list):
         raise KeyError("'list_of_identifiers' is not a list!")
 
+    base_columns = [
+        HouseholdElectricityProfilesInCensusCells.cell_id,
+        HouseholdElectricityProfilesInCensusCells.cell_profile_ids,
+        HouseholdElectricityProfilesInCensusCells.nuts3,
+        HouseholdElectricityProfilesInCensusCells.nuts1,
+    ]
+    factor_columns = [
+        getattr(
+            HouseholdElectricityProfilesInCensusCells,
+            f"factor_{get_scenario_year(scn)}",
+        )
+        for scn in egon.data.config.settings()["egon-data"]["--scenarios"]
+    ]
+
     # Query profile ids and scaling factors for specific attributes
     with db.session_scope() as session:
         if attribute == "nuts3":
             cells_query = session.query(
-                HouseholdElectricityProfilesInCensusCells.cell_id,
-                HouseholdElectricityProfilesInCensusCells.cell_profile_ids,
-                HouseholdElectricityProfilesInCensusCells.nuts3,
-                HouseholdElectricityProfilesInCensusCells.nuts1,
-                HouseholdElectricityProfilesInCensusCells.factor_2035,
-                HouseholdElectricityProfilesInCensusCells.factor_2050,
+                *base_columns, *factor_columns
             ).filter(
                 HouseholdElectricityProfilesInCensusCells.nuts3.in_(
                     list_of_identifiers
@@ -1835,12 +1798,7 @@ def get_cell_demand_metadata_from_db(attribute, list_of_identifiers):
             )
         elif attribute == "nuts1":
             cells_query = session.query(
-                HouseholdElectricityProfilesInCensusCells.cell_id,
-                HouseholdElectricityProfilesInCensusCells.cell_profile_ids,
-                HouseholdElectricityProfilesInCensusCells.nuts3,
-                HouseholdElectricityProfilesInCensusCells.nuts1,
-                HouseholdElectricityProfilesInCensusCells.factor_2035,
-                HouseholdElectricityProfilesInCensusCells.factor_2050,
+                *base_columns, *factor_columns
             ).filter(
                 HouseholdElectricityProfilesInCensusCells.nuts1.in_(
                     list_of_identifiers
@@ -1848,12 +1806,7 @@ def get_cell_demand_metadata_from_db(attribute, list_of_identifiers):
             )
         elif attribute == "cell_id":
             cells_query = session.query(
-                HouseholdElectricityProfilesInCensusCells.cell_id,
-                HouseholdElectricityProfilesInCensusCells.cell_profile_ids,
-                HouseholdElectricityProfilesInCensusCells.nuts3,
-                HouseholdElectricityProfilesInCensusCells.nuts1,
-                HouseholdElectricityProfilesInCensusCells.factor_2035,
-                HouseholdElectricityProfilesInCensusCells.factor_2050,
+                *base_columns, *factor_columns
             ).filter(
                 HouseholdElectricityProfilesInCensusCells.cell_id.in_(
                     list_of_identifiers
@@ -1926,6 +1879,18 @@ def get_demand_regio_hh_profiles_from_db(year):
     df_profile_loads = pd.read_sql(query, db.engine(), index_col="id")
 
     return df_profile_loads
+
+
+def mv_hh_electricity_load():
+    """Calculate MV grid district household electricity load per scenario.
+
+    Loops over the scenarios configured via ``--scenarios`` and triggers
+    :func:`mv_grid_district_HH_electricity_load` for each of them.
+    """
+    for scenario in egon.data.config.settings()["egon-data"]["--scenarios"]:
+        mv_grid_district_HH_electricity_load(
+            scenario, get_scenario_year(scenario)
+        )
 
 
 def mv_grid_district_HH_electricity_load(scenario_name, scenario_year):

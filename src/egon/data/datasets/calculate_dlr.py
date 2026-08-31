@@ -40,12 +40,12 @@ class Calculate_dlr(Dataset):
     #:
     name: str = "dlr"
     #:
-    version: str = "0.0.4"
+    version: str = "0.0.5"
 
     sources = DatasetSources(
         files={
             "regions_shape": "data_bundle_egon_data/regions_dynamic_line_rating/Germany_regions.shp",
-            "weather_cutout": "data_bundle_egon_data/cutouts/germany-{weather_year}-era5.nc",
+            "weather_cutout": "cutouts/germany-{weather_year}-era5.nc",
         },
         tables={
             "trans_lines": "grid.egon_etrago_line",
@@ -92,6 +92,7 @@ def dlr():
         sql = f"""
         SELECT scn_name, line_id, topo, s_nom FROM
         {Calculate_dlr.sources.tables["trans_lines"]}
+        WHERE scn_name = '{scn}'
         """
         df = gpd.GeoDataFrame.from_postgis(
             sql, con, crs="EPSG:4326", geom_col="topo"
@@ -161,7 +162,8 @@ def dlr():
 
         # Delete existing data
         db.execute_sql(f"""
-            DELETE FROM {Calculate_dlr.targets.tables["line_timeseries"]};
+            DELETE FROM {Calculate_dlr.targets.tables["line_timeseries"]}
+            WHERE scn_name = '{scn}'
             """)
 
         # Insert into database
@@ -172,7 +174,6 @@ def dlr():
             if_exists="append",
             index=False,
         )
-        return 0
 
 
 def DLR_Regions(weather_year, regions_shape_path):

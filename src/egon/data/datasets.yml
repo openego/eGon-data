@@ -328,6 +328,7 @@ mastr_new:
   egon2021_date_max: "2021-12-31 23:59:00"
   status2019_date_max: "2019-12-31 23:59:00"
   status2023_date_max: "2023-12-31 23:59:00"
+  status2024_date_max: "2024-12-31 23:59:00"
   dump_geocoding_name: "mastr_geocoding_dump_2025-02-09_14783581.gpkg"
   geocoding_deposit_id: 17279317
   geocoding_path: "mastr_geocoding"
@@ -441,7 +442,7 @@ landuse:
 era5_weather_data:
   targets:
     weather_data:
-      path: 'data_bundle_egon_data/cutouts'
+      path: 'cutouts'
     weather_cells:
       schema: 'supply'
       table: 'egon_era5_weather_cells'

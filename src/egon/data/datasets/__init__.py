@@ -5,8 +5,8 @@ from __future__ import annotations
 from collections import abc
 from dataclasses import dataclass, field
 from functools import partial, reduce, update_wrapper
-from typing import Callable, Dict, Iterable, List, Set, Tuple, Union
 from pathlib import Path
+from typing import Callable, Dict, Iterable, Set, Tuple, Union, List
 import json
 import re
 
@@ -89,6 +89,7 @@ class Model(Base):
     version = Column(String, nullable=False)
     epoch = Column(Integer, default=0)
     scenarios = Column(String, nullable=False)
+
     dependencies = orm.relationship(
         "Model",
         secondary=DependencyGraph,
@@ -337,6 +338,7 @@ class Dataset:
             version=self.version,
             scenarios=config.settings()["egon-data"]["--scenarios"],
         )
+
         dependencies = (
             session.query(Model)
             .filter(
@@ -499,38 +501,45 @@ class Dataset:
         Register dataset sources and targets in a single transaction.
         Only writes if sources or targets have changed.
         Creates table if it doesn't exist yet.
-        Gracefully skips registration if no database is available.
+
+        Constructing a `Dataset` (e.g. while importing the pipeline DAG,
+        or in unit tests) must not require a live database connection, so
+        registration is skipped with a warning if the database is
+        unavailable.
         """
         try:
             SourcesTargetsModel.__table__.create(
                 bind=db.engine(), checkfirst=True
             )
-        except OperationalError:
-            return
 
-        with db.session_scope() as session:
-            existing = (
-                session.query(SourcesTargetsModel)
-                .filter_by(name=self.name)
-                .first()
-            )
-
-            sources_dict = self.sources.to_dict()
-            targets_dict = self.targets.to_dict()
-
-            if not existing:
-                session.add(
-                    SourcesTargetsModel(
-                        name=self.name,
-                        sources=sources_dict,
-                        targets=targets_dict,
-                    )
+            with db.session_scope() as session:
+                existing = (
+                    session.query(SourcesTargetsModel)
+                    .filter_by(name=self.name)
+                    .first()
                 )
-            else:
-                if (existing.sources or {}) != sources_dict:
-                    existing.sources = sources_dict
-                if (existing.targets or {}) != targets_dict:
-                    existing.targets = targets_dict
+
+                sources_dict = self.sources.to_dict()
+                targets_dict = self.targets.to_dict()
+
+                if not existing:
+                    session.add(
+                        SourcesTargetsModel(
+                            name=self.name,
+                            sources=sources_dict,
+                            targets=targets_dict,
+                        )
+                    )
+                else:
+                    if (existing.sources or {}) != sources_dict:
+                        existing.sources = sources_dict
+                    if (existing.targets or {}) != targets_dict:
+                        existing.targets = targets_dict
+        except OperationalError as e:
+            logger.warning(
+                f"Could not register sources/targets for '{self.name}' "
+                f"(database unavailable): {e}. Skipping registration."
+            )
 
 
 def load_sources_and_targets(

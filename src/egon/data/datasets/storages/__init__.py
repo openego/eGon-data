@@ -14,7 +14,11 @@ from egon.data import config, db
 from egon.data.datasets import Dataset, DatasetSources, DatasetTargets
 from egon.data.datasets.electrical_neighbours import entsoe_to_bus_etrago
 from egon.data.datasets.mv_grid_districts import Vg250GemClean
-from egon.data.datasets.power_plants import assign_bus_id, assign_voltage_level
+from egon.data.datasets.power_plants import (
+    assign_bus_id,
+    assign_voltage_level,
+    filter_mastr_geometry,
+)
 from egon.data.datasets.scenario_parameters import get_sector_parameters
 from egon.data.datasets.storages.home_batteries import (
     allocate_home_batteries_to_buildings,
@@ -64,7 +68,7 @@ class Storages(Dataset):
             "egon_mv_grid_district": "grid.egon_mv_grid_district",
             "ehv_voronoi": "grid.egon_ehv_substation_voronoi",
             # Added for pumped_hydro.py
-            "nep_conv": "supply.egon_nep_2021_conventional_powerplants",
+            "nep_conv": "supply.egon_nep_conventional_powerplants",
             # Added for home_batteries.py
             "etrago_storage": "grid.egon_etrago_storage",
         },
@@ -111,7 +115,7 @@ class Storages(Dataset):
     #:
     name: str = "Storages"
     #:
-    version: str = "0.0.10"
+    version: str = "0.0.12"
 
     def __init__(self, dependencies):
         super().__init__(
@@ -294,7 +298,7 @@ def allocate_pumped_hydro(scn, export=True):
 
     if nep.elec_capacity.sum() > 0:
         # Get location using geolocator and city information
-        located, unmatched = get_location(nep)
+        located, unmatched = get_location(nep, scn)
 
         # Bring both dataframes together
         matched = pd.concat(
@@ -555,6 +559,36 @@ def allocate_storage_units_sq(scn_name, storage_types):
         # Keep only capacities within germany
         mastr_ph = mastr_ph.dropna(subset="federal_state")
 
+        # In test mode, keep only storage units within the active dataset
+        # boundary (mirrors select_mastr_pumped_hydro() in pumped_hydro.py).
+        # Re-cast to a proper GeoDataFrame first: the preceding pd.concat()/
+        # pd.merge() calls silently degrade mastr_ph back to a plain
+        # DataFrame, which would send filter_mastr_geometry() down the
+        # wrong (Laengengrad/Breitengrad-rebuild) code path.
+        if (
+            config.settings()["egon-data"]["--dataset-boundary"]
+            == "Schleswig-Holstein"
+        ):
+            mastr_ph = gpd.GeoDataFrame(
+                mastr_ph, geometry="geometry", crs="EPSG:4326"
+            )
+            mastr_ph = filter_mastr_geometry(
+                mastr_ph, federal_state="SchleswigHolstein"
+            )
+
+            # mastr_ph_foreign is split off by a missing federal_state text
+            # field, not by actual geo-location - apply the same spatial
+            # filter here too, otherwise plants with a missing Bundesland
+            # entry (regardless of their real location) bypass the
+            # test-mode boundary entirely via the foreign-bus assignment
+            # below
+            mastr_ph_foreign = gpd.GeoDataFrame(
+                mastr_ph_foreign, geometry="geometry", crs="EPSG:4326"
+            )
+            mastr_ph_foreign = filter_mastr_geometry(
+                mastr_ph_foreign, federal_state="SchleswigHolstein"
+            )
+
         # Asign buses within germany
         mastr_ph = assign_bus_id(
             mastr_ph, sources=Storages.sources, drop_missing=True
@@ -644,69 +678,6 @@ def allocate_storage_units_sq(scn_name, storage_types):
             )
 
 
-def allocate_pumped_hydro_eGon100RE():
-    """Allocates pumped_hydro plants for eGon100RE scenario based on a
-    prox-to-now method applied on allocated pumped-hydro plants in the eGon2035
-    scenario.
-
-    Parameters
-    ----------
-    None
-
-    Returns
-    -------
-    None
-    """
-
-    carrier = "pumped_hydro"
-    boundary = config.settings()["egon-data"]["--dataset-boundary"]
-
-    # Select installed capacity for pumped_hydro in eGon100RE scenario from
-    # scenario capacities table
-    capacity = db.select_dataframe(f"""
-        SELECT capacity
-        FROM {Storages.sources.tables['capacities']}
-        WHERE carrier = '{carrier}'
-        AND scenario_name = 'eGon100RE';
-        """)
-
-    if boundary == "Schleswig-Holstein":
-        # Break capacity of pumped hydron plants down SH share in eGon2035
-        capacity_phes = capacity.iat[0, 0] * 0.0176
-
-    elif boundary == "Everything":
-        # Select national capacity for pumped hydro
-        capacity_phes = capacity.iat[0, 0]
-
-    else:
-        raise ValueError(f"'{boundary}' is not a valid dataset boundary.")
-
-    # Get allocation of pumped_hydro plants in eGon2035 scenario as the
-    # reference for the distribution in eGon100RE scenario
-    allocation = allocate_pumped_hydro(scn="status2019", export=False)
-
-    scaling_factor = capacity_phes / allocation.el_capacity.sum()
-
-    power_plants = allocation.copy()
-    power_plants["scenario"] = "eGon100RE"
-    power_plants["el_capacity"] = allocation.el_capacity * scaling_factor
-
-    # Insert into target table
-    session = sessionmaker(bind=db.engine())()
-    for i, row in power_plants.iterrows():
-        entry = EgonStorages(
-            sources={"el_capacity": row.source},
-            source_id={"MastrNummer": row.MaStRNummer},
-            carrier=row.carrier,
-            el_capacity=row.el_capacity,
-            voltage_level=row.voltage_level,
-            bus_id=row.bus_id,
-            scenario=row.scenario,
-            geom=f"SRID=4326;POINT({row.geometry.x} {row.geometry.y})",
-        )
-        session.add(entry)
-    session.commit()
-
 
 def home_batteries_per_scenario(scenario):
     """Allocates home batteries which define a lower boundary for extendable
@@ -739,16 +710,31 @@ def home_batteries_per_scenario(scenario):
             index_col="Unnamed: 0",
         )
 
-        # Select target value in MW
+        # Select national target value in MW
         target = capacities_nep.Summe["PV-Batteriespeicher"] * 1000
 
+        if dataset == "Schleswig-Holstein":
+            # break down national target to SH's rough share
+            target = target / 16
+
     else:
-        target = db.select_dataframe(f"""
+        target_df = db.select_dataframe(f"""
             SELECT capacity
             FROM {Storages.sources.tables['capacities']}
             WHERE scenario_name = '{scenario}'
             AND carrier = 'battery';
-            """).capacity[0]
+            """)
+
+        # Sum over all returned federal states: status quo has a single
+        # national row (nuts='DE'), reGon2037/reGon2045 have one row per
+        # federal state which is already scoped to the active
+        # --dataset-boundary
+        target = target_df.capacity.sum()
+
+        if "status" in scenario and dataset == "Schleswig-Holstein":
+            # status quo target is always national (nuts='DE'), still
+            # needs to be broken down to SH's rough share in test mode
+            target = target / 16
 
     pv_rooftop = db.select_dataframe(f"""
         SELECT bus, p_nom, generator_id
@@ -760,9 +746,6 @@ def home_batteries_per_scenario(scenario):
                WHERE scn_name = '{scenario}' AND country = 'DE' );
         """)
 
-    if dataset == "Schleswig-Holstein":
-        target = target / 16
-
     battery = pv_rooftop
     battery["p_nom_min"] = target * battery["p_nom"] / battery["p_nom"].sum()
     battery = battery.drop(columns=["p_nom"])
@@ -770,11 +753,7 @@ def home_batteries_per_scenario(scenario):
     battery["carrier"] = "home_battery"
     battery["scenario"] = scenario
 
-    if (scenario == "eGon2035") | ("status" in scenario):
-        source = "NEP"
-
-    else:
-        source = "p-e-s"
+    source = "NEP"
 
     battery[
         "source"
@@ -802,14 +781,12 @@ def allocate_pv_home_batteries_to_grids():
 
 def allocate_pumped_hydro_scn():
     for scn in config.settings()["egon-data"]["--scenarios"]:
-        if scn == "eGon2035":
-            allocate_pumped_hydro(scn="eGon2035")
-        elif scn == "eGon100RE":
-            allocate_pumped_hydro_eGon100RE()
-        elif "status" in scn:
+        if "status" in scn:
             allocate_storage_units_sq(
                 scn_name=scn, storage_types=["pumped_hydro"]
             )
+        else:
+            allocate_pumped_hydro(scn=scn, export=True)
 
 
 def allocate_other_storage_units():

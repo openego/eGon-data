@@ -1,7 +1,5 @@
 """The module containing all code dealing with pv rooftop distribution to MV grid level."""
 
-from pathlib import Path
-
 from loguru import logger
 from numpy import isclose
 import geopandas as gpd
@@ -13,7 +11,6 @@ from egon.data.datasets.power_plants.pv_rooftop_buildings import (
     PV_CAP_PER_SQ_M,
     ROOF_FACTOR,
     load_building_data,
-    scenario_data,
 )
 from egon.data.datasets.scenario_parameters import get_sector_parameters
 
@@ -32,28 +29,22 @@ def pv_rooftop_per_mv_grid():
 
     """
     s = config.settings()["egon-data"]["--scenarios"]
-    if "eGon2035" in s:
-        pv_rooftop_per_mv_grid_and_scenario(
-            scenario="eGon2035", level="federal_state"
-        )
-    if "eGon100RE" in s:
-        pv_rooftop_per_mv_grid_and_scenario(
-            scenario="eGon100RE", level="national"
-        )
+    for scn in ["eGon2035", "reGon2037", "reGon2045"]:
+         if scn in s:
+             pv_rooftop_per_mv_grid_and_scenario(scenario=scn)
 
 
-def pv_rooftop_per_mv_grid_and_scenario(scenario, level):
+def pv_rooftop_per_mv_grid_and_scenario(scenario):
     """Intergate solar rooftop per mv grid district
 
     The target capacity is distributed to the mv grid districts linear to
-    the residential and service electricity demands.
+    the residential and service electricity demands, based on the target
+    capacity per federal state.
 
     Parameters
     ----------
-    scenario : str, optional
+    scenario : str
         Name of the scenario
-    level : str, optional
-        Choose level of target values.
 
     Returns
     -------
@@ -108,78 +99,33 @@ def pv_rooftop_per_mv_grid_and_scenario(scenario, level):
     bus_ids = valid_buildings_gdf.bus_id.unique()
     demand = demand.loc[demand.bus_id.isin(bus_ids)]
 
-    # Distribute to mv grids per federal state or Germany
-    if level == "federal_state":
-        targets_per_federal_state = db.select_dataframe(
-            f"""
-            SELECT DISTINCT ON (gen) capacity, gen
-            FROM {sources.tables['scenario_capacities']} a
-            JOIN {sources.tables['federal_states']} b
-            ON a.nuts = b.nuts
-            WHERE carrier = 'solar_rooftop'
-            AND scenario_name = '{scenario}'
-            """,
-            index_col="gen",
-        )
+    # Distribute target capacity per federal state to mv grids
+    targets_per_federal_state = db.select_dataframe(
+        f"""
+        SELECT DISTINCT ON (gen) capacity, gen
+        FROM {sources.tables['scenario_capacities']} a
+        JOIN {sources.tables['federal_states']} b
+        ON a.nuts = b.nuts
+        WHERE carrier = 'solar_rooftop'
+        AND scenario_name = '{scenario}'
+        """,
+        index_col="gen",
+    )
 
-        demand["share_federal_state"] = demand.groupby(
-            "vg250_lan",
-            group_keys=False,
-        ).demand.apply(lambda grp: grp / grp.sum())
+    demand["share_federal_state"] = demand.groupby(
+        "vg250_lan",
+        group_keys=False,
+    ).demand.apply(lambda grp: grp / grp.sum())
 
-        demand["target_federal_state"] = targets_per_federal_state.capacity[
-            demand.vg250_lan
-        ].values
+    demand["target_federal_state"] = targets_per_federal_state.capacity[
+        demand.vg250_lan
+    ].values
 
-        demand.set_index("bus_id", inplace=True)
+    demand.set_index("bus_id", inplace=True)
 
-        capacities = demand["share_federal_state"].mul(
-            demand["target_federal_state"]
-        )
-    else:
-
-        target = db.select_dataframe(f"""
-            SELECT capacity
-            FROM {sources.tables['scenario_capacities']} a
-            WHERE carrier = 'solar_rooftop'
-            AND scenario_name = '{scenario}'
-            """)
-
-        if target.empty:
-            print(f"No PV rooftop in scenario {scenario}")
-            return
-        else:
-            target = target.capacity[0]
-
-        dataset = config.settings()["egon-data"]["--dataset-boundary"]
-
-        if dataset == "Schleswig-Holstein":
-            # <--- REFACTORING: Use sources.files lookup instead of config.datasets()
-
-            path = Path(
-                f"./data_bundle_egon_data/nep2035_version2021/"
-                f"{sources.files['nep_2035_capacities']}"
-            ).resolve()
-
-            total_2035 = (
-                pd.read_excel(
-                    path,
-                    sheet_name="1.Entwurf_NEP2035_V2021",
-                    index_col="Unnamed: 0",
-                ).at["PV (Aufdach)", "Summe"]
-                * 1000
-            )
-            sh_2035 = scenario_data(scenario="eGon2035").capacity.sum()
-
-            share = sh_2035 / total_2035
-
-            target *= share
-
-        demand["share_country"] = demand.demand / demand.demand.sum()
-
-        demand.set_index("bus_id", inplace=True)
-
-        capacities = demand["share_country"].mul(target)
+    capacities = demand["share_federal_state"].mul(
+        demand["target_federal_state"]
+    )
 
     # Store data in dataframe
     pv_rooftop = pd.DataFrame(

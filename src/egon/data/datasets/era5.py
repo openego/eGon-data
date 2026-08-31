@@ -44,7 +44,7 @@ class WeatherData(Dataset):
     #:
     name: str = "Era5"
     #:
-    version: str = "0.0.8"
+    version: str = "0.0.9"
 
     sources = DatasetSources(
         files={},
@@ -58,7 +58,7 @@ class WeatherData(Dataset):
             "weather_cells": "supply.egon_era5_weather_cells",
             "renewable_feedin": "supply.egon_era5_renewable_feedin",
         },
-        files={"weather_data": {"path": "data_bundle_egon_data/cutouts"}},
+        files={"weather_data": {"path": "cutouts"}},
     )
 
     def __init__(self, dependencies):
@@ -161,8 +161,8 @@ def import_cutout(boundary="Europe"):
             ys = slice(geom_de.bounds.miny[0], geom_de.bounds.maxy[0])
 
         elif boundary == "Germany-offshore":
-            xs = slice(5.5, 14.5)
-            ys = slice(55.5, 53.5)
+            xs = slice(3.0, 14.5)
+            ys = slice(56.0, 53.0)
 
         else:
             print(
@@ -181,7 +181,7 @@ def import_cutout(boundary="Europe"):
             module="era5",
             x=xs,
             y=ys,
-            years=slice(weather_year, weather_year),
+            time=slice(f"{weather_year}-01-01", f"{weather_year}-12-31"),
         )
 
 

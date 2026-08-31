@@ -43,7 +43,7 @@ dependencies = [
   "apache-airflow>2.0",
   "apache-airflow[postgres]",
   "apache-airflow-providers-sendgrid",
-  "atlite==0.2.11",
+  "atlite==0.4.1",
   "cdsapi",
   "click<8.1",
   "disaggregator @ git+https://github.com/openego/disaggregator.git@features/update-cache-directory#egg=disaggregator",
@@ -73,6 +73,7 @@ dependencies = [
   "pyaml",
   "pypsa==0.20.1",
   "pydantic<2.0",
+  "pyxlsb",
   "rasterio",
   "requests",
   "rioxarray",
@@ -85,7 +86,7 @@ dependencies = [
   "sqlalchemy",
   "tabulate>=0.8.10",  # Python 3.10-safe
   "wtforms",
-  "xarray==2023.1.0",
+  "xarray==2024.07.0",
   "xlrd",
   "fuzzywuzzy",
 ]

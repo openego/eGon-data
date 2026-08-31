@@ -99,8 +99,6 @@ def allocate_home_batteries_to_buildings():
     sources, targets = load_sources_and_targets("Storages")
 
     scenarios = config.settings()["egon-data"]["--scenarios"]
-    if "status2019" in scenarios:
-        scenarios.remove("status2019")
 
     cbat_ppv_ratio = CONSTANTS["cbat_ppv_ratio"]
     rtol = CONSTANTS["rtol"]

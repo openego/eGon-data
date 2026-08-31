@@ -50,7 +50,7 @@ class RenewableFeedin(Dataset):
     #:
     name: str = "RenewableFeedin"
     #:
-    version: str = "0.0.12"
+    version: str = "0.0.13"
 
     sources = DatasetSources(
         tables={
@@ -169,7 +169,7 @@ def offshore_weather_cells(geom_column="geom"):
         f"""SELECT w_id, geom_point, geom
         FROM {sources.tables['weather_cells']}
         WHERE ST_Intersects('SRID=4326;
-        POLYGON((5.5 55.5, 14.5 55.5, 14.5 53.5, 5.5 53.5, 5.5 55.5))',
+        POLYGON((3.0 56.0, 14.5 56.0, 14.5 53.0, 3.0 53.0, 3.0 56.0))',
          geom)""",
         geom_col=geom_column,
         index_col="w_id",

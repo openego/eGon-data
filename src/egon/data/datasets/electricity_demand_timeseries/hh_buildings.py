@@ -22,6 +22,7 @@ from egon.data.datasets.electricity_demand_timeseries.hh_profiles import (
 from egon.data.datasets.electricity_demand_timeseries.tools import (
     random_point_in_square,
 )
+from egon.data.datasets.scenario_parameters import get_scenario_year
 from egon.data.validation import TableValidation, resolve_boundary_dependence
 import egon.data.config
 
@@ -342,12 +343,10 @@ def match_osm_and_zensus_data(
     )
 
     # Update mising buildings
-    missing_buildings[
-        "building_count"
-    ] = missing_buildings.cell_profile_ids.div(
-        missing_buildings_temp.profile_building_rate
-    ).fillna(
-        missing_buildings.building_count
+    missing_buildings["building_count"] = (
+        missing_buildings.cell_profile_ids.div(
+            missing_buildings_temp.profile_building_rate
+        ).fillna(missing_buildings.building_count)
     )
     # ========== END Update profile/building rate in cells w/o bld using adjacent cells ==========
 
@@ -584,9 +583,9 @@ def generate_mapping_table(
         .reset_index()
     )
     # add profile position as attribute by number of entries per cell (*)
-    mapping_profiles_to_buildings[
-        "profile"
-    ] = mapping_profiles_to_buildings.groupby(["cell_id"]).cumcount()
+    mapping_profiles_to_buildings["profile"] = (
+        mapping_profiles_to_buildings.groupby(["cell_id"]).cumcount()
+    )
     # get multiindex of profiles in cells (*)
     index_profiles = mapping_profiles_to_buildings.set_index(
         ["cell_id", "profile"]
@@ -601,9 +600,9 @@ def generate_mapping_table(
         profile_ids_per_cell_reduced.explode().reset_index()
     )
     # assign profile position by order of list
-    profile_ids_per_cell_reduced[
-        "profile"
-    ] = profile_ids_per_cell_reduced.groupby(["cell_id"]).cumcount()
+    profile_ids_per_cell_reduced["profile"] = (
+        profile_ids_per_cell_reduced.groupby(["cell_id"]).cumcount()
+    )
     profile_ids_per_cell_reduced = profile_ids_per_cell_reduced.set_index(
         ["cell_id", "profile"]
     )
@@ -708,15 +707,22 @@ def get_building_peak_loads():
     RAM > 32GB is necessary.
     """
 
+    scenarios = egon.data.config.settings()["egon-data"]["--scenarios"]
+
+    factor_columns = [
+        getattr(
+            HouseholdElectricityProfilesInCensusCells,
+            f"factor_{get_scenario_year(scn)}",
+        )
+        for scn in scenarios
+    ]
+
     with db.session_scope() as session:
         cells_query = (
             session.query(
                 HouseholdElectricityProfilesOfBuildings,
                 HouseholdElectricityProfilesInCensusCells.nuts3,
-                HouseholdElectricityProfilesInCensusCells.factor_2019,
-                HouseholdElectricityProfilesInCensusCells.factor_2023,
-                HouseholdElectricityProfilesInCensusCells.factor_2035,
-                HouseholdElectricityProfilesInCensusCells.factor_2050,
+                *factor_columns,
             )
             .filter(
                 HouseholdElectricityProfilesOfBuildings.cell_id
@@ -769,17 +775,11 @@ def get_building_peak_loads():
 
             df_building_peak_load_nuts3 = pd.DataFrame(
                 [
-                    df_building_peak_load_nuts3 * df["factor_2019"].unique(),
-                    df_building_peak_load_nuts3 * df["factor_2023"].unique(),
-                    df_building_peak_load_nuts3 * df["factor_2035"].unique(),
-                    df_building_peak_load_nuts3 * df["factor_2050"].unique(),
+                    df_building_peak_load_nuts3
+                    * df[f"factor_{get_scenario_year(scn)}"].unique()
+                    for scn in scenarios
                 ],
-                index=[
-                    "status2019",
-                    "status2023",
-                    "eGon2035",
-                    "eGon100RE",
-                ],
+                index=scenarios,
             ).T
 
             df_building_peak_loads = pd.concat(
@@ -873,9 +873,9 @@ def map_houseprofiles_to_buildings():
 
     # Copy buildings and set centroid as geom
     gdf_egon_osm_buildings_main = gdf_egon_osm_buildings.copy()
-    gdf_egon_osm_buildings_main[
-        "geom_point"
-    ] = gdf_egon_osm_buildings_main.centroid
+    gdf_egon_osm_buildings_main["geom_point"] = (
+        gdf_egon_osm_buildings_main.centroid
+    )
     gdf_egon_osm_buildings_main = gdf_egon_osm_buildings_main.drop(
         columns=["geom_building"]
     ).set_geometry("geom_point")
@@ -912,14 +912,14 @@ def map_houseprofiles_to_buildings():
         ]
     )
 
-    gdf_egon_osm_buildings_census_cells[
-        "geom_point"
-    ] = gdf_egon_osm_buildings_census_cells.centroid
+    gdf_egon_osm_buildings_census_cells["geom_point"] = (
+        gdf_egon_osm_buildings_census_cells.centroid
+    )
 
     # Add column with unique building ids using suffixes (building parts split by clipping)
-    gdf_egon_osm_buildings_census_cells[
-        "building_id_temp"
-    ] = gdf_egon_osm_buildings_census_cells["building_id"].astype(str)
+    gdf_egon_osm_buildings_census_cells["building_id_temp"] = (
+        gdf_egon_osm_buildings_census_cells["building_id"].astype(str)
+    )
     g = (
         gdf_egon_osm_buildings_census_cells.groupby("building_id_temp")
         .cumcount()
@@ -983,14 +983,14 @@ def map_houseprofiles_to_buildings():
     )
 
     # remove suffixes from buildings split into parts before to merge them back together
-    mapping_profiles_to_buildings[
-        "building_id"
-    ] = mapping_profiles_to_buildings.building_id.astype(str).apply(
-        lambda s: s.split("_")[0] if "_" in s else s
+    mapping_profiles_to_buildings["building_id"] = (
+        mapping_profiles_to_buildings.building_id.astype(str).apply(
+            lambda s: s.split("_")[0] if "_" in s else s
+        )
     )
-    mapping_profiles_to_buildings[
-        "building_id"
-    ] = mapping_profiles_to_buildings["building_id"].astype(int)
+    mapping_profiles_to_buildings["building_id"] = (
+        mapping_profiles_to_buildings["building_id"].astype(int)
+    )
 
     # reduce list to only used synthetic buildings
     synthetic_buildings = reduce_synthetic_buildings(
@@ -1009,13 +1009,13 @@ def map_houseprofiles_to_buildings():
         how="left",
         suffixes=("_df1", "_df2"),
     ).dropna()
-    egon_map_zensus_buildings_residential_main[
-        "cell_id_df2"
-    ] = egon_map_zensus_buildings_residential_main["cell_id_df2"].astype(int)
+    egon_map_zensus_buildings_residential_main["cell_id_df2"] = (
+        egon_map_zensus_buildings_residential_main["cell_id_df2"].astype(int)
+    )
     mapping_profiles_to_buildings2 = mapping_profiles_to_buildings.copy()
-    mapping_profiles_to_buildings[
-        "cell_id"
-    ] = egon_map_zensus_buildings_residential_main["cell_id_df2"]
+    mapping_profiles_to_buildings["cell_id"] = (
+        egon_map_zensus_buildings_residential_main["cell_id_df2"]
+    )
 
     # Retain original values where no main building has been found
     # (centroid of building part not in a cell)
