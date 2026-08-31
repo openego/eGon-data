@@ -116,6 +116,26 @@ Bug Fixes
   regular pass and inserted a second identical load under the scenario's
   own name, doubling transport demand in status quo scenarios
   `#1483 <https://github.com/openego/eGon-data/issues/1483>`_
+* Fix MV grid district geometries differing between egon-data runs even
+  for identical substation input. Municipalities and municipality
+  fragments without a substation of their own are assigned to the
+  "nearest" neighbouring polygon, but the deciding queries applied
+  ``DISTINCT ON`` one level above the subquery holding their
+  ``ORDER BY``. PostgreSQL leaves the surviving row of such a query to
+  the planner, so the assignment silently changed whenever the plan did.
+  On top of that the primary ordering key, the distance between the two
+  polygons, is exactly 0 for every candidate of the ``touches`` strategy
+  and hence could not break any tie -- on a Schleswig-Holstein run 78 %
+  of these assignments have at least two candidates at distance 0.
+  ``DISTINCT ON`` and ``ORDER BY`` now live in the same query, and the
+  ordering keys are extended by the distance between the polygon
+  centroids and by ``bus_id`` so that a total order remains even for
+  symmetric geometries. The same treatment is applied where a cut
+  polygon containing several substations left ``UPDATE ... FROM`` to
+  pick one of them unpredictably. Note that grid districts change
+  compared to earlier runs: the previous choice was arbitrary, so
+  fixing it necessarily settles some assignments differently
+  `#804 <https://github.com/openego/eGon-data/issues/804>`_
 
 Version 2.0.0 (2025-08-20)
 ==========================
