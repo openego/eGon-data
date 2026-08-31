@@ -835,7 +835,7 @@ class mv_grid_districts_setup(Dataset):
     #:
     name: str = "MvGridDistricts"
     #:
-    version: str = "0.0.5"
+    version: str = "0.0.6"
 
     sources = DatasetSources(
         tables={
