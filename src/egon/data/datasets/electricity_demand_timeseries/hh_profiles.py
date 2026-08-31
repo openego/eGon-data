@@ -1602,7 +1602,7 @@ def houseprofiles_in_census_cells():
     """
     Allocate household electricity demand profiles for each census cell.
 
-    Creates table `demand.egon_household_electricity_profile_in_census_cell` that maps
+    Creates table demand.egon_household_electricity_profile_in_census_cell` that maps
     household electricity demand profiles to census cells. Each row represents one cell
     and contains a list of profile IDs. This table is fundamental
     for creating subsequent data like demand profiles on MV grid level or for

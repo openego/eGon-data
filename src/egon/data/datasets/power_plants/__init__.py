@@ -330,23 +330,7 @@ def insert_hydro_plants(scenario):
 
     for carrier in map_carrier.keys():
         # import target values
-        if scenario == "eGon100RE":
-            try:
-                target = pd.read_sql(
-                    f"""SELECT capacity FROM supply.egon_scenario_capacities
-                            WHERE scenario_name = '{scenario}'
-                            AND carrier = '{carrier}'
-                            """,
-                    con=db.engine(),
-                ).capacity[0]
-            except:
-                logger.info(
-                    f"No assigned capacity for {carrier} in {scenario}"
-                )
-                continue
-
-        elif scenario == "eGon2035":
-            target = select_target(carrier, scenario)
+        target = select_target(carrier, scenario)
 
         # import data for MaStR
         mastr = pd.read_csv(PowerPlants.sources.files["mastr_hydro"]).query(
@@ -1339,150 +1323,6 @@ def get_conventional_power_plants_non_chp(scn_name):
     return conv
 
 
-def import_gas_gen_egon100():
-    scn_name = "eGon100RE"
-    if scn_name not in egon.data.config.settings()["egon-data"]["--scenarios"]:
-        return
-    con = db.engine()
-    session = sessionmaker(bind=db.engine())()
-    scenario_date_max = "2045-12-31 23:59:00"
-
-    target_string = PowerPlants.targets.tables["power_plants"]
-    schema, table = target_string.split(".")
-
-    db.execute_sql(f"""
-        DELETE FROM {schema}.{table}
-        WHERE carrier = 'gas'
-        AND bus_id IN (SELECT bus_id from grid.egon_etrago_bus
-                WHERE scn_name = '{scn_name}'
-                AND country = 'DE')
-        AND scenario = '{scn_name}'
-        """)
-
-    # import municipalities to assign missing geom and bus_id
-    geom_municipalities = gpd.GeoDataFrame.from_postgis(
-        """
-        SELECT gen, ST_UNION(geometry) as geom
-        FROM boundaries.vg250_gem
-        GROUP BY gen
-        """,
-        con,
-        geom_col="geom",
-    ).set_index("gen")
-    geom_municipalities["geom"] = geom_municipalities["geom"].centroid
-
-    mv_grid_districts = gpd.GeoDataFrame.from_postgis(
-        f"""
-        SELECT * FROM {PowerPlants.sources.tables['egon_mv_grid_district']}
-        """,
-        con,
-    )
-    mv_grid_districts.geom = mv_grid_districts.geom.to_crs(4326)
-
-    target = db.select_dataframe(
-        f"""
-        SELECT capacity FROM supply.egon_scenario_capacities
-        WHERE scenario_name = '{scn_name}'
-        AND carrier = 'gas'
-        """,
-    ).iat[0, 0]
-
-    conv = pd.read_csv(
-        PowerPlants.sources.files["mastr_combustion"],
-        usecols=[
-            "EinheitMastrNummer",
-            "Energietraeger",
-            "Nettonennleistung",
-            "Laengengrad",
-            "Breitengrad",
-            "Gemeinde",
-            "Inbetriebnahmedatum",
-            "EinheitBetriebsstatus",
-            "DatumEndgueltigeStilllegung",
-            "ThermischeNutzleistung",
-        ],
-    )
-
-    conv = conv[conv.Energietraeger == "Erdgas"]
-
-    conv.rename(
-        columns={
-            "Inbetriebnahmedatum": "commissioning_date",
-            "EinheitBetriebsstatus": "status",
-            "DatumEndgueltigeStilllegung": "decommissioning_date",
-            "EinheitMastrNummer": "gens_id",
-            "Energietraeger": "carrier",
-            "Nettonennleistung": "capacity",
-            "Gemeinde": "location",
-        },
-        inplace=True,
-    )
-
-    conv = discard_not_available_generators(conv, scenario_date_max)
-
-    # convert from KW to MW
-    conv["capacity"] = conv["capacity"] / 1000
-
-    # drop chp generators
-    conv["ThermischeNutzleistung"] = conv["ThermischeNutzleistung"].fillna(0)
-    conv = conv[conv.ThermischeNutzleistung == 0]
-
-    # rename carriers
-    map_carrier_conv = {"Erdgas": "gas"}
-    conv["carrier"] = conv["carrier"].map(map_carrier_conv)
-
-    conv["bus_id"] = np.nan
-
-    conv["geom"] = gpd.points_from_xy(
-        conv.Laengengrad, conv.Breitengrad, crs=4326
-    )
-    conv.loc[(conv.Laengengrad.isna() | conv.Breitengrad.isna()), "geom"] = (
-        Point()
-    )
-    conv = gpd.GeoDataFrame(conv, geometry="geom")
-
-    conv = fill_missing_bus_and_geom(
-        conv, "conventional", geom_municipalities, mv_grid_districts
-    )
-    conv["voltage_level"] = np.nan
-
-    conv["voltage_level"] = assign_voltage_level_by_capacity(
-        conv.rename(columns={"capacity": "Nettonennleistung"})
-    )
-
-    conv["capacity"] = conv["capacity"] * (target / conv["capacity"].sum())
-
-    max_id = db.select_dataframe(
-        """
-            SELECT max(id) FROM supply.egon_power_plants
-            """,
-    ).iat[0, 0]
-
-    conv["id"] = range(max_id + 1, max_id + 1 + len(conv))
-
-    for i, row in conv.iterrows():
-        entry = EgonPowerPlants(
-            id=row.id,
-            sources={"el_capacity": "MaStR"},
-            source_id={"MastrNummer": row.gens_id},
-            carrier=row.carrier,
-            el_capacity=row.capacity,
-            scenario=scn_name,
-            bus_id=row.bus_id,
-            voltage_level=row.voltage_level,
-            geom=row.geom,
-        )
-        session.add(entry)
-    session.commit()
-
-    logging.info(f"""
-          {len(conv)} gas generators with a total installed capacity of
-          {conv.capacity.sum()}MW were inserted into the db
-          """)
-
-    return
-
-
 tasks = (
     create_tables,
     import_mastr,
@@ -1570,8 +1410,8 @@ class PowerPlants(Dataset):
             "mastr_wind": "./bnetza_mastr/dump_2025-02-09/bnetza_mastr_wind_cleaned.csv",
             # --- Config/Meta values ---
             "osm_config": "https://download.geofabrik.de/europe/germany-240101.osm.pbf",
-            "nep_2035": "NEP2035_V2021_scnC2035.xlsx",
-            "nep_2037": "NEP2037_V2025_scnC2037.xlsx",
+            "nep_2035": "NEP_V2021_scnC2035.xlsx",
+            "nep_2037": "NEP_V2025_scnC2037.xlsx",
             "mastr_deposit_id": "14783581",
 	    "wind_offshore_status2019": "windoffshore_status2019.xlsx",
             "data_bundle_deposit_id": "16576506",

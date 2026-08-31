@@ -58,7 +58,7 @@ class Storages(Dataset):
     sources = DatasetSources(
         files={
             "mastr_storage": "./bnetza_mastr/dump_2025-02-09/bnetza_mastr_storage_cleaned.csv",
-            "nep_capacities": "NEP2035_V2021_scnC2035.xlsx",
+            "nep_capacities": "NEP_V2021_scnC2035.xlsx",
             "mastr_location": "location_elec_generation_raw.csv",
         },
         tables={
@@ -700,7 +700,7 @@ def home_batteries_per_scenario(scenario):
         target_file = (
             Path(".")
             / "data_bundle_egon_data"
-            / "nep2035_version2021"
+            / "NEP"
             / Storages.sources.files["nep_capacities"]
         )
 
@@ -755,9 +755,9 @@ def home_batteries_per_scenario(scenario):
 
     source = "NEP"
 
-    battery[
-        "source"
-    ] = f"{source} capacity allocated based in installed PV rooftop capacity"
+    battery["source"] = (
+        f"{source} capacity allocated based in installed PV rooftop capacity"
+    )
 
     # Insert into target table
     session = sessionmaker(bind=db.engine())()
