@@ -50,7 +50,7 @@ The download is implemented in :class:`MastrData<egon.data.datasets.mastr.MastrD
 ETHOS.BUILDA
 ------------
 
-`ETHOS.BUILDA <https://doi.org/10.5281/zenodo.13771740>`_ is a synthetic
+`ETHOS.BUILDA <https://doi.org/10.5281/zenodo.13771740>`__ is a synthetic
 building stock for Germany, published under ODbL-1.0 and requiring attribution
 of TABULA. It supplies one point per residential building together with
 construction year, size class, refurbishment state and TABULA type, published
@@ -61,6 +61,18 @@ which OSM tags alone do not answer reliably, and to carry the building
 attributes downstream. The download and import is implemented in
 :class:`EthosBuilda<egon.data.datasets.ethos_builda.EthosBuilda>`, the
 intersection in :ref:`building-data-ref`.
+
+.. warning::
+   The four attributes are modelled, not observed, and their provenance differs
+   sharply. **`refurbishment_state` is a random draw** from federal-state
+   statistics for every building in the dataset -- it reproduces the
+   distribution of a state but says nothing about an individual building, so do
+   not evaluate it per building. `construction_year` is estimated by a model for
+   about two thirds of the buildings, `size_class` largely likewise, and
+   `tabula_type` is composed deterministically from the other three. The
+   per-attribute provenance is kept in the columns
+   `construction_year_lineage` and `size_class_lineage`; the other two are
+   constant across the dataset and therefore documented rather than stored.
 
 .. _osm-ref:
 
@@ -114,6 +126,27 @@ The data processing steps are:
   ETHOS attributes. Resulting table:
 
   * Residential buildings: `openstreetmap.osm_buildings_residential`
+
+  Column `source` tells how a building was classified, which is the first thing
+  to look at when a result surprises you:
+
+  * `ethos_intersect` -- an ETHOS point lies inside the polygon
+  * `ethos_nearest` -- nearest ETHOS point within 10 m of the polygon
+  * `osm_tagging` -- no ETHOS point, but the `building` tag is residential
+  * `census_gap_fill` -- added by the next step below, not by the intersection
+
+  .. note::
+     Two known limitations of the classification. Buildings whose residential
+     use is only expressed through `amenity` -- care homes tagged
+     `amenity=nursing_home` or `amenity=social_facility` on a
+     `building=yes` polygon -- are **no longer** classified as residential
+     unless ETHOS happens to cover them; the previous tag-based filter did
+     catch them. They remain in `osm_buildings_filtered` and are therefore
+     still counted, but as CTS rather than residential. Conversely, where an
+     ETHOS point lands on an obvious ancillary building (garage, shed,
+     carport), that building is classified residential on purpose: the point
+     belongs to a real dwelling and merely sits on the neighbouring polygon,
+     so discarding it would lose the dwelling altogether.
 
 * Create a mapping table for building's OSM IDs to the Zensus cells the
   building's centroid is located in.
