@@ -715,7 +715,7 @@ def insert_data_centers_for_scenarios():
         TARGET_CAPACITY_MW = TARGET_CAPACITY_MW / 16
 
     for scenario in config.settings()["egon-data"]["--scenarios"]:
-        if scenario == "eGon2035":
+        if scenario == "reGon2037":
             insert_data_centers(scenario)
 
 
