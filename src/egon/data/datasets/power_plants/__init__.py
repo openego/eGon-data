@@ -1511,7 +1511,7 @@ class PowerPlants(Dataset):
     #:
     name: str = "PowerPlants"
     #:
-    version: str = "0.0.37"
+    version: str = "0.0.38"
 
     def __init__(self, dependencies):
         super().__init__(
