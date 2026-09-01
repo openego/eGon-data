@@ -35,6 +35,50 @@ Changed
   `#1274 <https://github.com/openego/eGon-data/issues/1274>`_
 * Use OSM data from 2025
   `#1363 <https://github.com/openego/eGon-data/issues/1363>`_
+* Adapt electricity demand timeseries to new scenarios: generalize
+  DemandRegio's sector parameter lookup and the household demand
+  factor columns to the configured scenarios, and remove obsolete
+  status2019/status2023/eGon100RE handling
+  `#1433 <https://github.com/openego/eGon-data/issues/1433>`_
+* Adapt scenario_capacities to new scenarios; implementing the 
+  new Kraftwerksliste from the NEP2025; remove obsolete 
+  scenario (status2019/status2023/eGon100RE) handling
+  `#1415 <https://github.com/openego/eGon-data/issues/1415>`_
+* Adapt heat_demand TaskGroup to new scenarios: generalize district
+  heating areas and heat demand timeseries to the configured scenarios,
+  and remove obsolete status2019/eGon100RE handling
+  `#1413 <https://github.com/openego/eGon-data/issues/1413>`_
+* Adapt electricity_flexibility TaskGroup to new scenarios: generalize
+  dynamic line rating and DSM potential calculations to the configured
+  scenarios, and remove obsolete status2019/eGon100RE handling
+  `#1424 <https://github.com/openego/eGon-data/issues/1424>`_
+* Adapt Electricity_Neighbors TaskGroup to new scenarios: generalize
+  foreign bus/line/generator/load/storage insertion to the configured
+  scenarios, extend TYNDP-based generation/storage/demand to reGon2037 and
+  reGon2045 via linear interpolation/extrapolation of the existing
+  2030/2040 data points, and remove obsolete
+  status2019/status2023/eGon100RE handling
+  `#1438 <https://github.com/openego/eGon-data/issues/1438>`_
+* Adapt combined_heat_and_power to reGon-scenarios: different handling of
+  eGon-/reGon-scenarios due to the Kraftwerksliste from the NEP now
+  containing MaStR-IDs to match MaStR- with NEP-data. Remove all status-
+  quo (except status-quo2024) and eGon100RE mentions.
+  '#1447 <https://github.com/openego/eGon-data/issues/1447>'_
+* Adapt Heat_Supply TaskGroup to new scenarios: extend the eGon2035
+  NEP-based cascade (heat pump capacity target + remainder gas boilers)
+  to reGon2037 and reGon2045, make PV-rooftop-based building weighting
+  scenario-aware, and remove obsolete eGon100RE/pypsa-eur-sec handling
+  `#1449 <https://github.com/openego/eGon-data/issues/1449>`_
+* Unify NEP input data into a single ``NEP`` folder in the data bundle
+  `#1479 <https://github.com/openego/eGon-data/issues/1479>`_
+* Adapt eMobility MIT to the reGon scenarios: add trip, scenario
+  variation and lowflex configuration for status2024, reGon2037 and
+  reGon2045, replace the per-scenario ``generate_model_data_*_remaining``
+  tasks with one generically generated task per configured scenario,
+  derive the flexible/dumb charging distinction from the scenario name
+  instead of a hard-coded scenario list, and remove obsolete
+  status2019/status2023/eGon100RE handling
+  `#1483 <https://github.com/openego/eGon-data/issues/1483>`_
 
 Bug Fixes
 ---------
@@ -52,6 +96,47 @@ Bug Fixes
   `#1392 <https://github.com/openego/eGon-data/issues/1392>`_
 * Fix problem with atlite and xarray, era5 data is downloadable again
   `#1250 <https://github.com/openego/eGon-data/issues/1250>`_
+* Fix dynamic line rating only being calculated for a single scenario
+  due to a stray early return inside the per-scenario loop
+  `#1424 <https://github.com/openego/eGon-data/issues/1424>`_
+* Fix automated tests failing on all branches because constructing a
+  Dataset unconditionally opened a database connection to register its
+  sources/targets; registration is now skipped with a warning when no
+  database is available
+  `#1435 <https://github.com/openego/eGon-data/issues/1435>`_
+* Fix ONEP area key lookup so status scenarios work in wind offshore:
+  accept both plain codes and codes with a bracketed description
+  `#1480 <https://github.com/openego/eGon-data/issues/1480>`_
+* Fix eTraGo ID sequences getting out of sync with the IDs actually
+  written, which made concurrent inserts fail with ``duplicate key value
+  violates unique constraint``: ``h2_neighbours_egon2035`` derived a range
+  of IDs from a single reserved one, and foreign pumped hydro storages
+  drew their ``storage_id`` from the ``store`` sequence. ``next_etrago_id``
+  now ignores the case of the component name and always returns a list
+  when a count is given
+  `#1487 <https://github.com/openego/eGon-data/issues/1487>`_
+* Fix ``fill_etrago_gen`` crashing with an ``IndexError`` for offshore wind
+  power plants sited at ONEP/NEP connection points west of 5.5° longitude,
+  which fell outside the hardcoded ``Germany-offshore`` ERA5 cutout extent
+  and therefore had no ``wind_offshore`` feed-in timeseries; the cutout and
+  the matching weather-cell filter in ``renewable_feedin.py`` now cover the
+  full extent of the connection points defined in ``map_ONEP_areas()``
+  `#1498 <https://github.com/openego/eGon-data/issues/1498>`_
+* Fix eMobility MIT writing a duplicate ``land_transport_EV`` load for
+  dumb charging scenarios: the lowflex pass took the same branch as the
+  regular pass and inserted a second identical load under the scenario's
+  own name, doubling transport demand in status quo scenarios
+  `#1483 <https://github.com/openego/eGon-data/issues/1483>`_
+* Fix conventional non-CHP and pumped hydro power plant allocation for the
+  reGon2037/reGon2045 scenarios: the NEP2025 Kraftwerksliste has no
+  ``bnetza_id`` column (only ``mastr_id``) and stores the CHP flag as
+  lowercase ``ja``/``nein``, so ``select_nep_power_plants`` /
+  ``select_nep_pumped_hydro`` crashed with ``UndefinedColumn`` and, once
+  that was worked around, allocated nothing because every ``chp = 'Nein'``
+  filter missed. ``bnetza_id`` is now only selected for eGon2035,
+  pumped hydro uses ``mastr_id`` for the reGon path, and the CHP flag is
+  normalized to ``Ja``/``Nein`` on import
+  `#1510 <https://github.com/openego/eGon-data/issues/1510>`_
 
 Version 2.0.0 (2025-08-20)
 ==========================
