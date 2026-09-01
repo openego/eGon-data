@@ -21,6 +21,8 @@
  *      of the polygon's representative point     -> source = ethos_nearest
  *   3. Remainder: building tag on the
  *      residential whitelist                     -> source = osm_tagging
+ *   3b. Remainder: care home identified by amenity
+ *      alone (deviation, see below)               -> source = osm_amenity
  *
  * The 10 m threshold is his, calibrated over radii of 1 to 30 m; recomputed in
  * EPSG:3035 without his per-state decomposition, the knee stays at 9 m.
@@ -37,13 +39,20 @@
  *   - Stage 3 omits building='yes'. With it, 531,674 buildings return and the
  *     result lands at 1.33 x Zensus 2022, back in the overestimation the
  *     intersection is meant to remove.
+ *   - Care homes tagged only via amenity are recovered in stage 3b. The
+ *     previous tag-based filter matched them; the reference whitelist names
+ *     the values but checks them against the building column, where OSM does
+ *     not put them, so it never matches. 80 buildings in SH (0.013 %).
  *   - Obvious ancillary buildings (garage, shed, carport, ...) are kept when
  *     ETHOS hits them (~500 in SH, 0.08 %): the point belongs to a real
  *     dwelling and merely sits on the wrong polygon, so dropping it would
  *     lose the building altogether.
  *
- * Result on Schleswig-Holstein: 618,208 buildings = 0.713 x Zensus 2022,
- * against 607,490 = 0.700 for his reference run.
+ * Result on Schleswig-Holstein: 618,288 buildings = 0.713 x Zensus 2022,
+ * against 607,490 = 0.700 for his reference run. By source:
+ * ethos_intersect 579,076 - osm_tagging 38,084 - ethos_nearest 1,048 -
+ * osm_amenity 80. The census gap filler adds a further 866 rows in the next
+ * task, which the reference method has no counterpart for.
  */
 
 DROP TABLE IF EXISTS openstreetmap.osm_buildings_residential;
@@ -119,12 +128,45 @@ s3 AS (
                          'assisted_living','nursing_home','retirement_home')
 ),
 
+-- ------------------------------------------------------- Stage 3b (amenity) ---
+-- Care homes whose residential use is expressed ONLY through amenity, on an
+-- uninformative building=yes polygon. They fall through both rules above:
+-- stage 3 drops building='yes' on purpose, and the whitelist is checked
+-- against the building column, where OSM practically never puts these values
+-- (8 buildings in Schleswig-Holstein).
+--
+-- These clauses are the ones the previous tag-based filter used, kept verbatim.
+-- Gated by amenity, so this does NOT reintroduce the building='yes'
+-- overestimation: measured on SH it recovers 80 buildings (0.013 %), while
+-- allowing building='yes' generally would add 531,674.
+--
+-- This is a deliberate DEVIATION from the reference implementation, not a
+-- reproduction of it: its whitelist names these values but never matches them.
+s3b AS (
+    SELECT b.id AS building_id,
+           NULL::text             AS ethos_id,
+           NULL::double precision AS match_distance
+    FROM openstreetmap.osm_buildings b
+    WHERE NOT EXISTS (SELECT 1 FROM s1  WHERE s1.building_id  = b.id)
+      AND NOT EXISTS (SELECT 1 FROM s2  WHERE s2.building_id  = b.id)
+      AND NOT EXISTS (SELECT 1 FROM s3  WHERE s3.building_id  = b.id)
+      AND (
+            b.amenity IN ('retirement_home', 'nursing_home',
+                          'assisted_living', 'group_home')
+         OR (b.amenity = 'social_facility'
+             AND (b.tags::hstore -> 'social_facility')
+                 IN ('nursing_home', 'assisted_living', 'group_home'))
+      )
+),
+
 matched AS (
     SELECT building_id, ethos_id, match_distance, 'ethos_intersect'::text AS source FROM s1
     UNION ALL
     SELECT building_id, ethos_id, match_distance, 'ethos_nearest'         AS source FROM s2
     UNION ALL
     SELECT building_id, ethos_id, match_distance, 'osm_tagging'           AS source FROM s3
+    UNION ALL
+    SELECT building_id, ethos_id, match_distance, 'osm_amenity'           AS source FROM s3b
 )
 
 SELECT

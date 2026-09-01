@@ -21,9 +21,10 @@ Changed
 
 * Determine residential buildings by intersecting OSM buildings with
   ETHOS.BUILDA instead of filtering by OSM tags alone, keeping the ETHOS
-  attributes and the provenance of each match, and read residential
-  buildings alongside the filtered ones in the household load area demand,
-  the building mapping and the PV rooftop potentials
+  attributes and the provenance of each match, retain the previous filter's
+  amenity-based capture of care homes, and read residential buildings
+  alongside the filtered ones in the household load area demand, the
+  building mapping and the PV rooftop potentials
   `#1310 <https://github.com/openego/eGon-data/issues/1310>`_
 * Set annual electricity demands in scenario parameters
   `#1359 <https://github.com/openego/eGon-data/issues/1359>`_

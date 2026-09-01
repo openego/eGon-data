@@ -133,17 +133,19 @@ The data processing steps are:
   * `ethos_intersect` -- an ETHOS point lies inside the polygon
   * `ethos_nearest` -- nearest ETHOS point within 10 m of the polygon
   * `osm_tagging` -- no ETHOS point, but the `building` tag is residential
+  * `osm_amenity` -- no ETHOS point and an uninformative `building` tag, but a
+    care-home `amenity` (see below)
   * `census_gap_fill` -- added by the next step below, not by the intersection
 
   .. note::
-     Two known limitations of the classification. Buildings whose residential
-     use is only expressed through `amenity` -- care homes tagged
-     `amenity=nursing_home` or `amenity=social_facility` on a
-     `building=yes` polygon -- are **no longer** classified as residential
-     unless ETHOS happens to cover them; the previous tag-based filter did
-     catch them. They remain in `osm_buildings_filtered` and are therefore
-     still counted, but as CTS rather than residential. Conversely, where an
-     ETHOS point lands on an obvious ancillary building (garage, shed,
+     Two properties of the classification worth knowing. Care homes whose
+     residential use is expressed only through `amenity` -- tagged
+     `amenity=nursing_home` or `amenity=social_facility` on an uninformative
+     `building=yes` polygon -- are matched by a dedicated branch and carry
+     `source = 'osm_amenity'`. Without it they would fall through both rules:
+     the tag whitelist deliberately excludes `building=yes`, and it is checked
+     against the `building` column, where OSM does not put these values. And
+     where an ETHOS point lands on an obvious ancillary building (garage, shed,
      carport), that building is classified residential on purpose: the point
      belongs to a real dwelling and merely sits on the neighbouring polygon,
      so discarding it would lose the dwelling altogether.
