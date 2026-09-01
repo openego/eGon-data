@@ -972,7 +972,7 @@ class ScenarioCapacities(Dataset):
     #:
     name: str = "ScenarioCapacities"
     #:
-    version: str = "0.0.23"
+    version: str = "0.0.24"
     sources = DatasetSources(
         files={
             "eGon2035_capacities": "data_bundle_egon_data/nep2035_version2021/NEP2035_V2021_scnC2035.xlsx",
