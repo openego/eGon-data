@@ -68,6 +68,8 @@ Changed
   to reGon2037 and reGon2045, make PV-rooftop-based building weighting
   scenario-aware, and remove obsolete eGon100RE/pypsa-eur-sec handling
   `#1449 <https://github.com/openego/eGon-data/issues/1449>`_
+* Unify NEP input data into a single ``NEP`` folder in the data bundle
+  `#1479 <https://github.com/openego/eGon-data/issues/1479>`_
 * Adapt eMobility MIT to the reGon scenarios: add trip, scenario
   variation and lowflex configuration for status2024, reGon2037 and
   reGon2045, replace the per-scenario ``generate_model_data_*_remaining``
