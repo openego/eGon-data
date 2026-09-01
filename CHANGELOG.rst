@@ -118,6 +118,16 @@ Bug Fixes
   regular pass and inserted a second identical load under the scenario's
   own name, doubling transport demand in status quo scenarios
   `#1483 <https://github.com/openego/eGon-data/issues/1483>`_
+* Fix conventional non-CHP and pumped hydro power plant allocation for the
+  reGon2037/reGon2045 scenarios: the NEP2025 Kraftwerksliste has no
+  ``bnetza_id`` column (only ``mastr_id``) and stores the CHP flag as
+  lowercase ``ja``/``nein``, so ``select_nep_power_plants`` /
+  ``select_nep_pumped_hydro`` crashed with ``UndefinedColumn`` and, once
+  that was worked around, allocated nothing because every ``chp = 'Nein'``
+  filter missed. ``bnetza_id`` is now only selected for eGon2035,
+  pumped hydro uses ``mastr_id`` for the reGon path, and the CHP flag is
+  normalized to ``Ja``/``Nein`` on import
+  `#1510 <https://github.com/openego/eGon-data/issues/1510>`_
 
 Version 2.0.0 (2025-08-20)
 ==========================
