@@ -716,11 +716,10 @@ def home_batteries_per_scenario(scenario):
     battery["p_nom_min"] = target * battery["p_nom"] / battery["p_nom"].sum()
     battery = battery.drop(columns=["p_nom"])
 
-    # Subtract already-existing real battery capacity per bus (from
-    # allocate_battery_storage(), tagged sources->>'el_capacity'='MaStR')
-    # to avoid double-counting real + modeled capacity at the same bus. For
-    # scenarios without a real carry-forward yet (currently all but
-    # status2024), this query returns nothing and p_nom_min stays unchanged.
+    # Subtract already-existing real battery capacity per bus from the 
+    # NEP target to avoid double-counting real + modeled capacity at the 
+    # same bus. SO just modeled capacities are spartially distributed 
+    # according PV-capacities
     real_capacity = db.select_dataframe(f"""
         SELECT bus_id AS bus, sum(el_capacity) AS real_capacity
         FROM {Storages.targets.tables['storages']}
@@ -783,8 +782,15 @@ def allocate_battery_storage(scn_name):
         home_battery, real capacity is now aged and carried forward into
         every scenario. A modeled/residual BESS component analogous to
         home_batteries_per_scenario() (target minus real capacity,
-        distributed spatially) is not yet implemented - open decision on
-        the distribution method, see #1478.
+        distributed spatially) is deliberately not implemented (decision
+        2026-08-31): eTraGo already allows extendable BESS capacity above
+        this real-capacity floor at every substation bus (see
+        storages_etrago.extendable_batteries_per_scenario()), so further
+        capacity growth is left to eTraGo's own cost optimization rather
+        than a hand-modeled spatial heuristic here. An explicit lower-bound
+        constraint tied to the NEP 'Großbatteriespeicher' target in
+        egon_scenario_capacities (currently unused) is a possible future
+        enhancement on the eTraGo side, not planned for now.
     """
 
     scenario_date_max = SCENARIO_TIMESTAMP[scn_name].strftime(
