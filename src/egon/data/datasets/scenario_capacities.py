@@ -169,7 +169,7 @@ def insert_capacities_status_quo(scenario: str) -> None:
         (component, carrier, capacity, nuts, scenario_name)
         VALUES (
             'storage_units',
-            'battery',
+            'home_battery',
             {small_storages},
             'DE',
             '{scenario}'
@@ -196,7 +196,7 @@ def insert_capacities_per_federal_state_nep():
     db.execute_sql(f"""
         DELETE FROM {targets.tables['scenario_capacities']}
         WHERE scenario_name IN ('eGon2035', 'reGon2037', 'reGon2045')
-        AND nuts != 'DE'
+        AND (nuts != 'DE' OR carrier IN ('home_battery', 'BESS'))
         """)
     
     # kicks statusquo entries from list
@@ -241,7 +241,8 @@ def insert_capacities_per_federal_state_nep():
         "Oel": "oil",
         "Haushaltswaermepumpen": "residential_rural_heat_pump",
         "KWK < 10 MW": "small_chp",
-        "PV-Batteriespeicher": "battery",
+        "PV-Batteriespeicher": "home_battery",
+        "Großbatteriespeicher": "BESS",
     }
     # 'Elektromobilitaet gesamt': 'transport',
     # 'Elektromobilitaet privat': 'transport'}
@@ -261,7 +262,19 @@ def insert_capacities_per_federal_state_nep():
         "PV (Aufdach)",
         "PV (Freiflaeche)",
     ]
-    
+
+    # 'PV-Batteriespeicher' (home battery) and 'Großbatteriespeicher' (BESS)
+    # have no federal-state breakdown at all in the eGon2035 source file -
+    # neither in the main sheet (only the national 'Summe' is filled) nor
+    # in the draft report (no matching row exists there either), so the
+    # scaled_carriers mechanism above cannot be used for them. Handled
+    # below via a single national (nuts='DE') row instead, analogous to
+    # how status2024's small-storage capacity is inserted in
+    # insert_capacities_status_quo(). Not needed for reGon2037/reGon2045,
+    # whose (newer) source file already has real per-federal-state values
+    # for both carriers.
+    national_only_carriers = ["PV-Batteriespeicher", "Großbatteriespeicher"]
+
     insert_data = pd.DataFrame()
     for scenario in scenarios:
         if scenario not in scenario_config:
@@ -287,11 +300,33 @@ def insert_capacities_per_federal_state_nep():
         # values from the wind offshore sheet (convert MW to GW)
         for state in df_windoff_fs.index:
             df.at["Wind offshore", state] = df_windoff_fs.at[state, cfg["windoff_col"]] / 1000
-    
+
+        # Insert 'national_only_carriers' as a single nuts='DE' row instead
+        # of a per-federal-state breakdown (see comment above their
+        # definition)
+        if scenario == "eGon2035":
+            insert_data = pd.concat([
+                insert_data,
+                pd.DataFrame({
+                    "carrier": [rename_carrier[c] for c in national_only_carriers],
+                    "capacity": [
+                        df.loc[c, "Summe"] * 1e3 for c in national_only_carriers
+                    ],
+                    "component": "storage_units",
+                    "nuts": "DE",
+                    "scenario": scenario,
+                }),
+            ])
+
         for bl in map_nuts.index:
             # Extract capacity data for the current federal state
             data = pd.DataFrame(df[bl])
-            
+
+            # Handled above as a single national row instead, see comment
+            # at national_only_carriers' definition
+            if scenario == "eGon2035":
+                data = data.drop(index=national_only_carriers, errors="ignore")
+
             # For carriers without direct federal state distribution in the final
             # NEP report, scale the draft distribution to match the final national total
             for c in scaled_carriers:
@@ -321,7 +356,13 @@ def insert_capacities_per_federal_state_nep():
             # version 2021, page 47)
             data.loc[data.carrier == "residential_rural_heat_pump", bl] *= 5e-6
             data.loc[data.carrier == "residential_rural_heat_pump", "component"] = "link"
-            
+
+            # Storage carriers, mislabeled "generator" by the default above
+            data.loc[
+                data.carrier.isin(["home_battery", "BESS", "pumped_hydro"]),
+                "component",
+            ] = "storage_units"
+
             # Rename capacity column and convert from GW to MW
             data = data.rename(columns={bl: "capacity"})
             data.capacity *= 1e3

@@ -72,6 +72,9 @@ Changed
   instead of a hard-coded scenario list, and remove obsolete
   status2019/status2023/eGon100RE handling
   `#1483 <https://github.com/openego/eGon-data/issues/1483>`_
+* Allign Methodology for laoding NEP target values for Battery storage for all scenarios
+  `#1471 <https://github.com/openego/eGon-data/issues/1471>`_
+
 
 Bug Fixes
 ---------
