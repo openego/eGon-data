@@ -2439,7 +2439,11 @@ def pv_rooftop_to_buildings():
 
     for scenario in SCENARIOS:
         if scenario == status_quo:
-            scenario_buildings_gdf = scenario_buildings_gdf_sq.copy()
+            # status-quo rows are already seeded into all_buildings_gdf above;
+            # other scenarios' allocate_scenarios() calls still rely on
+            # scenario_buildings_gdf_sq / desagg_mastr_gdf as an input, so
+            # those variables are kept intact
+            continue
         elif "status" in scenario:
             # <--- REFACTORING: Use sources.files
             ts = pd.Timestamp(
