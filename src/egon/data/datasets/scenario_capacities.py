@@ -196,7 +196,7 @@ def insert_capacities_per_federal_state_nep():
     db.execute_sql(f"""
         DELETE FROM {targets.tables['scenario_capacities']}
         WHERE scenario_name IN ('eGon2035', 'reGon2037', 'reGon2045')
-        AND nuts != 'DE'
+        AND (nuts != 'DE' OR carrier IN ('home_battery', 'BESS'))
         """)
     
     # kicks statusquo entries from list
@@ -312,7 +312,7 @@ def insert_capacities_per_federal_state_nep():
                     "capacity": [
                         df.loc[c, "Summe"] * 1e3 for c in national_only_carriers
                     ],
-                    "component": "generator",
+                    "component": "storage_units",
                     "nuts": "DE",
                     "scenario": scenario,
                 }),
@@ -356,7 +356,13 @@ def insert_capacities_per_federal_state_nep():
             # version 2021, page 47)
             data.loc[data.carrier == "residential_rural_heat_pump", bl] *= 5e-6
             data.loc[data.carrier == "residential_rural_heat_pump", "component"] = "link"
-            
+
+            # Storage carriers, mislabeled "generator" by the default above
+            data.loc[
+                data.carrier.isin(["home_battery", "BESS", "pumped_hydro"]),
+                "component",
+            ] = "storage_units"
+
             # Rename capacity column and convert from GW to MW
             data = data.rename(columns={bl: "capacity"})
             data.capacity *= 1e3
