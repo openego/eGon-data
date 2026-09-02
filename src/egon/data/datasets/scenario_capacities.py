@@ -628,7 +628,7 @@ def insert_nep_list_powerplants(export=True):
             target_file = Path(".") / sources.files["reGon_list_conv_pp"]
             kw_liste_nep25 = pd.read_excel(target_file, decimal=",")
             
-            # Adjust column names for Kraftwerksliste_Szenariorahmen from the NEP2025
+            # Adjust column names for Kraftwerksliste_NEP_V2025_Szenariorahmen from the NEP2025
             kw_liste_nep25 = kw_liste_nep25.rename(
                 columns={
                     "MaStR-ID": "mastr_id",
@@ -1015,10 +1015,10 @@ class ScenarioCapacities(Dataset):
     version: str = "0.0.24"
     sources = DatasetSources(
         files={
-            "eGon2035_capacities": "data_bundle_egon_data/nep2035_version2021/NEP2035_V2021_scnC2035.xlsx",
-            "eGon2035_list_conv_pp": "data_bundle_egon_data/nep2035_version2021/Kraftwerksliste_NEP_2021_konv.csv",
-            "reGon_capacities": "data_bundle_egon_data/nep2037_version2025/NEP2037_V2025_scnC2037.xlsx",
-            "reGon_list_conv_pp": "data_bundle_egon_data/nep2037_version2025/Kraftwerksliste_Szenariorahmen.xlsx",
+            "eGon2035_capacities": "data_bundle_egon_data/NEP/NEP_V2021_scnC2035.xlsx",
+            "eGon2035_list_conv_pp": "data_bundle_egon_data/NEP/Kraftwerksliste_NEP_V2021_konv.csv",
+            "reGon_capacities": "data_bundle_egon_data/NEP/NEP_V2025_scnC2037.xlsx",
+            "reGon_list_conv_pp": "data_bundle_egon_data/NEP/Kraftwerksliste_NEP_V2025_Szenariorahmen.xlsx",
         },
         tables={
             "boundaries": "boundaries.vg250_lan",
