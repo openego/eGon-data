@@ -10,6 +10,8 @@ from egon.data import db
 from egon.data.datasets import Dataset, DatasetSources, DatasetTargets
 from egon.data.datasets.mv_grid_districts import MvGridDistricts
 from egon.data.datasets.zensus_vg250 import DestatisZensusPopulationPerHa
+from egon.data.validation import TableValidation, resolve_boundary_dependence
+import egon.data.config
 
 
 class ZensusMvGridDistricts(Dataset):
@@ -18,7 +20,8 @@ class ZensusMvGridDistricts(Dataset):
 
     *Dependencies*
       * :py:class:`ZensusPopulation <egon.data.datasets.zensus.ZensusPopulation>`
-      * :py:class:`MvGridDistricts <egon.data.datasets.mv_grid_districts.mv_grid_districts_setup>`
+      * :py:class:`MvGridDistricts \
+<egon.data.datasets.mv_grid_districts.mv_grid_districts_setup>`
 
     *Resulting tables*
       * :py:class:`boundaries.egon_map_zensus_grid_districts <MapZensusGridDistricts>`
@@ -50,6 +53,25 @@ class ZensusMvGridDistricts(Dataset):
             version=self.version,
             dependencies=dependencies,
             tasks=(mapping),
+            validation={
+                "data_quality": [
+                    TableValidation(
+                        table_name="boundaries.egon_map_zensus_grid_districts",
+                        row_count=resolve_boundary_dependence(
+                            {
+                                "Schleswig-Holstein": 1562025,
+                                "Everything": 35718586,
+                            }
+                        ),
+                        data_type_columns={
+                            "index": "bigint",
+                            "zensus_population_id": "bigint",
+                            "bus_id": "bigint",
+                        },
+                    ),
+                ]
+            },
+            proceed_on_validation_failure=True,
         )
 
 

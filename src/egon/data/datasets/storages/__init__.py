@@ -34,6 +34,10 @@ from egon.data.datasets.storages.pumped_hydro import (
     select_nep_pumped_hydro,
 )
 from egon.data.db import session_scope
+from egon.data.validation import TableValidation, resolve_boundary_dependence
+from egon.data.validation.rules.custom.sanity.home_batteries import (
+    HomeBatteriesAggregation,
+)
 
 Base = declarative_base()
 
@@ -128,6 +132,54 @@ class Storages(Dataset):
                 allocate_pv_home_batteries_to_grids,
                 allocate_home_batteries_to_buildings,
             ),
+            validation={
+                "sanity_home_batteries_aggregation": [
+                    HomeBatteriesAggregation(
+                        table="supply.egon_home_batteries",
+                        rule_id="SANITY_HOME_BATTERIES_AGGREGATION_EGON2035",
+                        scenario="eGon2035",
+                    ),
+                    HomeBatteriesAggregation(
+                        table="supply.egon_home_batteries",
+                        rule_id="SANITY_HOME_BATTERIES_AGGREGATION_EGON100RE",
+                        scenario="eGon100RE",
+                    ),
+                    TableValidation(
+                        table_name="supply.egon_storages",
+                        row_count=resolve_boundary_dependence(
+                            {"Schleswig-Holstein": 199, "Everything": 7748}
+                        ),
+                        geometry_columns=["geom"],
+                        data_type_columns={
+                            "id": "bigint",
+                            "sources": "jsonb",
+                            "source_id": "jsonb",
+                            "carrier": "character varying",
+                            "el_capacity": "double precision",
+                            "bus_id": "integer",
+                            "voltage_level": "integer",
+                            "scenario": "character varying",
+                            "geom": "geometry",
+                        },
+                        not_null_columns=[
+                            "id",
+                            "sources",
+                            "source_id",
+                            "carrier",
+                            "el_capacity",
+                            "bus_id",
+                            "voltage_level",
+                            "scenario",
+                            "geom",
+                        ],
+                        value_set_columns={
+                            "scenario": ["eGon2035", "eGon100RE"],
+                            "carrier": ["home_battery", "pumped_hydro"],
+                        },
+                    ),
+                ]
+            },
+            proceed_on_validation_failure=True,
         )
 
 

@@ -37,6 +37,7 @@ from egon.data import db, subprocess
 from egon.data.datasets import Dataset, DatasetSources, DatasetTargets
 from egon.data.datasets.scenario_parameters import get_sector_parameters
 from egon.data.metadata import context, license_ccby, meta_metadata, sources
+from egon.data.validation import TableValidation, resolve_boundary_dependence
 import egon.data.config
 
 
@@ -102,6 +103,36 @@ class HeatDemandImport(Dataset):
             version=self.version,  # maybe rethink the naming
             dependencies=dependencies,
             tasks=(scenario_data_import),
+            validation={
+                "data_quality": [
+                    TableValidation(
+                        table_name="demand.egon_peta_heat",
+                        row_count=resolve_boundary_dependence(
+                            {
+                                "Schleswig-Holstein": 139250,
+                                "Everything": 6836426,
+                            }
+                        ),
+                        data_type_columns={
+                            "id": "integer",
+                            "demand": "double precision",
+                            "sector": "character varying",
+                            "scenario": "character varying",
+                            "zensus_pupulation_id": "integer",
+                        },
+                        value_set_columns={
+                            "scenario": resolve_boundary_dependence(
+                                {
+                                    "Schleswig-Holstein": ["eGon2035"],
+                                    "Everything": ["eGon2035", "eGon100RE"],
+                                }
+                            ),
+                            "sector": ["residential", "service"],
+                        },
+                    ),
+                ]
+            },
+            proceed_on_validation_failure=True,
         )
 
 
@@ -513,7 +544,7 @@ def heat_demand_to_db_table():
     )
 
     for source in sources:
-        if not "2015" in source.stem:
+        if "2015" not in source.stem:
             # Create a temporary table and fill the final table using the sql script
             rasters = f"heat_demand_rasters_{source.stem.lower()}"
             import_rasters = subprocess.run(

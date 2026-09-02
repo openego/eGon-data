@@ -10,6 +10,16 @@ from egon.data import db
 from egon.data.datasets import Dataset, DatasetSources, DatasetTargets
 import egon.data.config
 
+# Uncomment to add validation rules:
+# from egon_validation import (
+#     RowCountValidation,
+#     DataTypeValidation,
+#     NotNullAndNotNaNValidation,
+#     WholeTableNotNullAndNotNaNValidation,
+#     ValueSetValidation,
+#     SRIDUniqueNonZero,
+# )
+
 Base = declarative_base()
 
 
@@ -102,6 +112,19 @@ class SubstationExtraction(Dataset):
                 },
                 transfer_busses,
             ),
+            # Validation placeholder - add rules here. See vg250/__init__.py
+            # for examples of RowCountValidation, DataTypeValidation, etc.
+            validation={
+                # "<task_name>": [
+                #     RowCountValidation(
+                #         table="<schema>.<table_name>",
+                #         rule_id="ROW_COUNT.<table_name>",
+                #         expected_count=resolve_boundary_dependence(
+                #         {"Schleswig-Holstein": X, "Everything": Y})
+                #     ),
+                # ]
+            },
+            proceed_on_validation_failure=True,
         )
 
 
@@ -145,8 +168,12 @@ def create_sql_functions():
     """
 
     # Create function: utmzone(geometry)
-    # source: http://www.gistutor.com/postgresqlpostgis/6-advanced-postgresqlpostgis-tutorials/58-postgis-buffer-latlong-and-other-projections-using-meters-units-custom-stbuffermeters-function.html
-    db.execute_sql("""
+    # source: http://www.gistutor.com/postgresqlpostgis/
+    # 6-advanced-postgresqlpostgis-tutorials/
+    # 58-postgis-buffer-latlong-and-other-projections-using-meters-units
+    # -custom-stbuffermeters-function.html
+    db.execute_sql(
+        """
         DROP FUNCTION IF EXISTS utmzone(geometry) CASCADE;
         CREATE OR REPLACE FUNCTION utmzone(geometry)
         RETURNS integer AS
@@ -184,14 +211,17 @@ def create_sql_functions():
         DECLARE
         way  geometry;
         BEGIN
-            way = (SELECT ST_SetSRID
-                   (ST_MakePoint((max(lon) + min(lon))/200.0,(max(lat) + min(lat))/200.0),900913)
+            way = (SELECT ST_SetSRID(
+                ST_MakePoint(
+                    (max(lon) + min(lon))/200.0,
+                    (max(lat) + min(lat))/200.0
+                ), 900913)
                    FROM openstreetmap.osm_nodes
                    WHERE id in (SELECT unnest(nodes)
                      FROM openstreetmap.osm_ways
                      WHERE id in (SELECT trim(leading 'w' from member)::bigint
-			                     FROM (SELECT unnest(members) as member) t
-	                               WHERE member~E'[w,1,2,3,4,5,6,7,8,9,0]')));
+                                             FROM (SELECT unnest(members) as member) t
+                                       WHERE member~E'[w,1,2,3,4,5,6,7,8,9,0]')));
         RETURN way;
         END;
         $$ LANGUAGE plpgsql;

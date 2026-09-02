@@ -8,6 +8,8 @@ Unreleased
 Added
 -----
 
+* Integrate egon-validation framework for data quality checks
+  `PR #1375 <https://github.com/openego/eGon-data/pull/1375>`_
 * Make egon-data runnable in python 3.10
   `#1352 <https://github.com/openego/egon-data/issues/1352>`_
 * Add standardized sources and targets definitions across dataset modules

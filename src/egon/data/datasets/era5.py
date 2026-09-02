@@ -14,6 +14,7 @@ import geopandas as gpd
 from egon.data import db
 from egon.data.datasets import Dataset, DatasetSources, DatasetTargets
 from egon.data.datasets.scenario_parameters import get_sector_parameters
+from egon.data.validation import TableValidation
 import egon.data.config
 
 # will be later imported from another file ###
@@ -65,7 +66,29 @@ class WeatherData(Dataset):
             name=self.name,
             version=self.version,
             dependencies=dependencies,
-            tasks=({create_tables, download_era5}, insert_weather_cells),
+            tasks=(
+                {
+                    create_tables,
+                    download_era5
+                },
+                insert_weather_cells,
+            ),  # download_era5 should be included once issue #1250 is solved
+            validation={
+                "data-quality": [
+                    TableValidation(
+                        table_name="supply.egon_era5_weather_cells",
+                        row_count=29673,
+                        geometry_columns=["geom", "geom_point"],
+                        data_type_columns={
+                            "w_id": "integer",
+                            "geom": "geometry",
+                            "geom_point": "geometry",
+                        },
+                        not_null_columns=["w_id", "geom", "geom_point"],
+                    ),
+                ]
+            },
+            proceed_on_validation_failure=True,
         )
 
 
