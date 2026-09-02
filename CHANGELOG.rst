@@ -14,6 +14,8 @@ Added
   `#1352 <https://github.com/openego/egon-data/issues/1352>`_
 * Add standardized sources and targets definitions across dataset modules
   `#1283 <https://github.com/openego/egon-data/issues/1283>`_
+* Use MaStR data for home_batteries for allocation for all scenarios (status + future)
+  `#1470 <https://github.com/openego/eGon-data/issues/1470>`_
 
 Changed
 -------
@@ -72,6 +74,9 @@ Changed
   instead of a hard-coded scenario list, and remove obsolete
   status2019/status2023/eGon100RE handling
   `#1483 <https://github.com/openego/eGon-data/issues/1483>`_
+* Allign Methodology for laoding NEP target values for Battery storage for all scenarios
+  `#1471 <https://github.com/openego/eGon-data/issues/1471>`_
+
 
 Bug Fixes
 ---------
