@@ -12,6 +12,11 @@ Added
   `#1352 <https://github.com/openego/egon-data/issues/1352>`_
 * Add standardized sources and targets definitions across dataset modules
   `#1283 <https://github.com/openego/egon-data/issues/1283>`_
+* Add a fixed floor for heat pumps along the scenario chain
+  status2024 -> reGon2037 -> reGon2045, so a building with a heat pump keeps it
+  (at exactly its inherited capacity) in later scenarios. eGon2035 is not on the
+  chain and keeps its independent distribution.
+  `#1477 <https://github.com/openego/eGon-data/issues/1477>`_
 * Use MaStR data for home_batteries for allocation for all scenarios (status + future)
   `#1470 <https://github.com/openego/eGon-data/issues/1470>`_
 * Add electric HGV charging demand model (vehicle classes N2, N3, N3S) for the
@@ -83,6 +88,19 @@ Changed
 Bug Fixes
 ---------
 
+* Run the heat pump floor chain in order across datasets: HeatPumpsCascade now
+  depends on HeatPumpsStatusQuo, so cascade scenarios can no longer read a
+  status quo that is still being written and silently lose their inherited
+  floor. A partially written predecessor is detected and raises instead of
+  being treated as an empty floor.
+  `#1477 <https://github.com/openego/eGon-data/issues/1477>`_
+* Exclude buildings with zero heat peak load from heat pump allocation, so they
+  no longer end up in egon_hp_capacity_buildings with a capacity of 0.
+  `#1477 <https://github.com/openego/eGon-data/issues/1477>`_
+* Create the heat pump output tables in a single shared task instead of racing
+  checkfirst=True creates from the per-scenario delete tasks, which could fail
+  with a UniqueViolation under the LocalExecutor.
+  `#1477 <https://github.com/openego/eGon-data/issues/1477>`_
 * Fix URL of BASt traffic data
   `#1347 <https://github.com/openego/eGon-data/issues/1347>`_
 * Discard scenario_path tasks
