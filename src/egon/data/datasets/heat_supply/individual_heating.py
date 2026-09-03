@@ -174,9 +174,10 @@ class HeatPumpsStatusQuo(Dataset):
             "status" in scenario
             for scenario in config.settings()["egon-data"]["--scenarios"]
         ):
-            # Create the output tables once, upstream of every delete task,
-            # so no two scenario tasks race a checkfirst=True create.
-            tasks = (create_hp_output_tables,)
+            # The output tables are created by HeatSupply
+            # (create_hp_output_tables), upstream of this dataset, so the
+            # deletes below can assume they exist.
+            tasks = ()
 
             for scenario in config.settings()["egon-data"]["--scenarios"]:
                 if "status" in scenario:
@@ -348,9 +349,9 @@ class HeatPumpsCascade(Dataset):
             "status" not in scenario
             for scenario in config.settings()["egon-data"]["--scenarios"]
         ):
-            # Create the output tables once, upstream of every delete task,
-            # so no two scenario tasks race a checkfirst=True create.
-            tasks_HeatPumpsCascade = (create_hp_output_tables,)
+            # The output tables are created by HeatSupply
+            # (create_hp_output_tables), upstream of this dataset.
+            tasks_HeatPumpsCascade = ()
 
             # The floor chain is inherently sequential: reGon2045 must not be
             # distributed before reGon2037 has been written, or it would floor
@@ -2303,16 +2304,28 @@ def split_mvgds_into_bulks(n, max_n, func, scenario=None):
 
 def create_hp_output_tables():
     """
-    Create the output tables of this dataset if they do not exist yet.
+    Create the heat pump output tables if they do not exist yet.
 
-    Runs once, upstream of every scenario-specific delete task. The deletes
-    used to create their own tables with ``checkfirst=True``, which is a
-    non-atomic check-then-create: the status quo and the cascade task for the
-    same table could run concurrently under the LocalExecutor, both see the
-    table missing and both issue a CREATE TABLE, so the loser failed with a
-    UniqueViolation on ``pg_type_typname_nsp_index`` and took all downstream
-    bulk tasks with it. Creating the tables in a single shared task removes
-    the race instead of racing more carefully.
+    Registered as a task of :py:class:`HeatSupply
+    <egon.data.datasets.heat_supply.HeatSupply>` rather than of the datasets
+    that fill these tables. Both :py:class:`HeatPumpsStatusQuo` and
+    :py:class:`HeatPumpsCascade` write all three, so a create task in either
+    of them is either registered twice -- Airflow rejects the duplicate task
+    id -- or missing entirely when that dataset takes its ``skip_task``
+    branch because its own scenario type is not configured. HeatSupply is
+    upstream of both, so one task there covers every configuration.
+
+    This replaces the ``checkfirst=True`` creates that the per-scenario
+    delete tasks used to do themselves. That is a non-atomic
+    check-then-create: two delete tasks for different scenarios could both
+    see a table missing and both issue a CREATE TABLE, and the loser failed
+    with a UniqueViolation on ``pg_type_typname_nsp_index``, taking all
+    downstream bulk tasks with it.
+
+    Deliberately separate from :py:func:`HeatSupply.create_tables
+    <egon.data.datasets.heat_supply.create_tables>`, which DROPs its tables
+    before creating them -- doing that to the heat pump output would discard
+    the rows every later scenario inherits its floor from.
 
     """
     EgonHpCapacityBuildings.__table__.create(bind=engine, checkfirst=True)

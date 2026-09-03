@@ -20,6 +20,7 @@ from egon.data.datasets.heat_supply.district_heating import (
 from egon.data.datasets.heat_supply.geothermal import potential_germany
 from egon.data.datasets.heat_supply.individual_heating import (
     cascade_heat_supply_indiv,
+    create_hp_output_tables,
 )
 from egon.data.metadata import (
     context,
@@ -379,7 +380,7 @@ class HeatSupply(Dataset):
     #:
     name: str = "HeatSupply"
     #:
-    version: str = "0.0.19"
+    version: str = "0.0.20"
 
     sources = DatasetSources(
         tables={
@@ -409,7 +410,18 @@ class HeatSupply(Dataset):
             version=self.version,
             dependencies=dependencies,
             tasks=(
-                create_tables,
+                # create_hp_output_tables is owned by this dataset rather than
+                # by HeatPumpsStatusQuo/HeatPumpsCascade: both of those write
+                # the same three tables, so a create task in either of them is
+                # either registered twice (duplicate task id) or absent when
+                # its own scenario type is not configured. Creating them here,
+                # upstream of both, is unconditional and race-free. It is a
+                # separate task from create_tables because create_tables DROPS
+                # its tables, which must never happen to the heat pump output.
+                {
+                    create_tables,
+                    create_hp_output_tables,
+                },
                 {
                     district_heating,
                     individual_heating,
