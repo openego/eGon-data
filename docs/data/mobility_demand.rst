@@ -3,12 +3,16 @@
 Motorized individual travel
 ++++++++++++++++++++++++++++
 
-The electricity demand data of motorized individual travel (MIT) for both the eGon2035
-and eGon100RE scenario is set up in the
+The electricity demand data of motorized individual travel (MIT) is set up for all
+configured scenarios in the
 :py:class:`MotorizedIndividualTravel<egon.data.datasets.emobility.motorized_individual_travel.MotorizedIndividualTravel>`
 dataset.
-For the eGon2035, the workflow is visualised in figure :ref:`mit-model`. The workflow
-for the eGon100RE scenario is analogous to the workflow for the eGon2035 scenario.
+The workflow is visualised in figure :ref:`mit-model` and is analogous for each
+scenario. Scenarios differ in the assumed number of EVs and in whether flexible
+(smart) charging is modelled: status quo scenarios are modelled with dumb charging
+only, while projection scenarios additionally get a charging link, a battery store
+and a lowflex counterpart
+(cf. :py:func:`is_flexible<egon.data.datasets.emobility.motorized_individual_travel.model_timeseries.is_flexible>`).
 In a first step, pre-generated SimBEV trip data, including information on driving, parking and
 (user-oriented) charging times is downloaded.
 In the second step, the number of EVs in each MV grid district in the future scenarios is determined.
@@ -20,7 +24,7 @@ In the following, these steps are explained in more detail.
   :name: mit-model
   :width: 800
 
-  Workflow to set up charging demand data for MIT in the eGon2035 scenario
+  Workflow to set up charging demand data for MIT
 
 
 The trip data are generated using a modified version of
@@ -61,9 +65,20 @@ The metadata is as well written to the database table
     "PHEV", "medium", 11, 40, 20, 0.1782
     "PHEV", "luxury", 11, 120, 30, 0.2138
 
-The assumed total number of EVs in Germany is 15.1 million in the eGon2035 scenario (according
-to the network development plan [NEP2021]_ (Scenario C 2035)) and 25 million in the
-eGon100RE scenario (own assumption).
+The assumed total number of EVs in Germany is 2.62 million in the status2024 scenario
+(BEV and PHEV stock as of 01.01.2025 according to [KBA2025]_), 34.1 million in the
+reGon2037 scenario and 40.6 million in the reGon2045 scenario (both according to the
+network development plan [NEP2025]_, Scenario C). The numbers per scenario are defined
+in :py:func:`mobility<egon.data.datasets.scenario_parameters.parameters.mobility>`.
+
+.. note::
+
+   No dedicated SimBEV runs exist for the reGon scenarios yet. They reuse the
+   pre-generated trip data of the earlier scenarios by horizon (reGon2037 reuses the
+   eGon2035 run, reGon2045 the eGon100RE run). As EV profiles are drawn from the pool
+   with replacement, the larger fleets simply resample the pool more often, but the
+   vehicle and charging power assumptions are those of the reused run rather than of
+   the target year.
 To spatially disaggregate the charging demand, the total number of EVs per EV type
 is first allocated to MV grid districts based on vehicle registration [KBA]_ and population [Census]_ data
 (see function :py:func:`allocate_evs_numbers<egon.data.datasets.emobility.motorized_individual_travel.ev_allocation.allocate_evs_numbers>`).
