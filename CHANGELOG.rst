@@ -84,6 +84,19 @@ Changed
 Bug Fixes
 ---------
 
+* Run the heat pump floor chain in order across datasets: HeatPumpsCascade now
+  depends on HeatPumpsStatusQuo, so cascade scenarios can no longer read a
+  status quo that is still being written and silently lose their inherited
+  floor. A partially written predecessor is detected and raises instead of
+  being treated as an empty floor.
+  `#1477 <https://github.com/openego/eGon-data/issues/1477>`_
+* Exclude buildings with zero heat peak load from heat pump allocation, so they
+  no longer end up in egon_hp_capacity_buildings with a capacity of 0.
+  `#1477 <https://github.com/openego/eGon-data/issues/1477>`_
+* Create the heat pump output tables in a single shared task instead of racing
+  checkfirst=True creates from the per-scenario delete tasks, which could fail
+  with a UniqueViolation under the LocalExecutor.
+  `#1477 <https://github.com/openego/eGon-data/issues/1477>`_
 * Fix URL of BASt traffic data
   `#1347 <https://github.com/openego/eGon-data/issues/1347>`_
 * Discard scenario_path tasks

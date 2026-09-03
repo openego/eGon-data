@@ -587,11 +587,19 @@ with airflow.DAG(
         )
 
         # Heat pump disaggregation for eGon2035, reGon2037 and reGon2045
+        # heat_pumps_sq is a dependency because the heat pump floor chain
+        # starts at status2024: the cascade scenarios read their predecessor's
+        # capacities straight from the database, so the status quo has to be
+        # fully written before any cascade bulk starts. Without this edge both
+        # datasets are siblings and run concurrently, and cascade grids
+        # processed during the overlap find no predecessor rows and silently
+        # lose their floor.
         heat_pumps_cascade = HeatPumpsCascade(
             dependencies=[
                 cts_demand_buildings,
                 DistrictHeatingAreas,
                 heat_supply,
+                heat_pumps_sq,
                 heat_time_series,
                 power_plants,
             ]

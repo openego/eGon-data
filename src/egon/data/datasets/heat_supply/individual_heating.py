@@ -174,7 +174,9 @@ class HeatPumpsStatusQuo(Dataset):
             "status" in scenario
             for scenario in config.settings()["egon-data"]["--scenarios"]
         ):
-            tasks = ()
+            # Create the output tables once, upstream of every delete task,
+            # so no two scenario tasks race a checkfirst=True create.
+            tasks = (create_hp_output_tables,)
 
             for scenario in config.settings()["egon-data"]["--scenarios"]:
                 if "status" in scenario:
@@ -210,7 +212,7 @@ class HeatPumpsStatusQuo(Dataset):
 
         super().__init__(
             name="HeatPumpsStatusQuo",
-            version="0.0.6",
+            version="0.0.7",
             dependencies=dependencies,
             tasks=tasks,
         )
@@ -299,7 +301,7 @@ class HeatPumpsCascade(Dataset):
     #:
     name: str = "HeatPumpsCascade"
     #:
-    version: str = "0.0.8"
+    version: str = "0.0.9"
 
     def __init__(self, dependencies):
         def dyn_parallel_tasks_2035(scenario):
@@ -346,7 +348,9 @@ class HeatPumpsCascade(Dataset):
             "status" not in scenario
             for scenario in config.settings()["egon-data"]["--scenarios"]
         ):
-            tasks_HeatPumpsCascade = ()
+            # Create the output tables once, upstream of every delete task,
+            # so no two scenario tasks race a checkfirst=True create.
+            tasks_HeatPumpsCascade = (create_hp_output_tables,)
 
             # The floor chain is inherently sequential: reGon2045 must not be
             # distributed before reGon2037 has been written, or it would floor
@@ -356,6 +360,15 @@ class HeatPumpsCascade(Dataset):
             # direction; the Dataset task-graph API turns this flat tuple into
             # the required ordering, as all of one scenario's parallel bulks
             # complete before any task of the next begins.
+            #
+            # This only orders the scenarios *within* this dataset. The first
+            # link of the chain (status2024) is written by HeatPumpsStatusQuo,
+            # a separate dataset, so the edge from it to this one has to be
+            # declared as a dependency in the pipeline - see
+            # egon.data.airflow.dags.pipeline. Without it the two datasets are
+            # siblings and Airflow may run them concurrently, which lets a
+            # cascade bulk read a status quo grid that has not been committed
+            # yet and silently lose its floor.
             for scenario in order_scenarios_by_hp_floor_chain(
                 config.settings()["egon-data"]["--scenarios"]
             ):
@@ -1466,6 +1479,90 @@ def get_hp_floor_predecessors(scenario):
     return chain[: chain.index(scenario)][::-1]
 
 
+def get_scenario_peak_load_buildings(scenario):
+    """
+    Returns the buildings a scenario has written peak loads for.
+
+    A bulk writes the peak loads of every building it processed, so this is
+    how far that scenario has got.
+
+    Parameters
+    -----------
+    scenario : str
+        Name of the scenario.
+
+    Returns
+    --------
+    pd.Index(int)
+        Building IDs the scenario has written peak loads for.
+
+    """
+    with db.session_scope() as session:
+        query = session.query(BuildingHeatPeakLoads.building_id).filter(
+            BuildingHeatPeakLoads.scenario == scenario
+        )
+        written = pd.read_sql(
+            query.statement, query.session.bind, index_col=None
+        )
+
+    return pd.Index(written["building_id"].unique())
+
+
+def assert_predecessor_complete(scenario, predecessor):
+    """
+    Raises if a floor chain predecessor has only been written in part.
+
+    :func:`get_inherited_hp_capacity` reads its floor straight from
+    :py:class:`EgonHpCapacityBuildings`, with no synchronisation beyond the
+    task graph. If the predecessor is still being written while this scenario
+    is distributed, a building whose rows have not been committed yet looks
+    exactly like a building that legitimately never had a heat pump: the floor
+    comes back empty, the building is resized from its own peak load alone,
+    and the chain silently loses capacity instead of failing. That is
+    invisible in the result afterwards, so it is checked before the floor is
+    trusted.
+
+    Completeness is measured against the buildings this scenario itself has
+    processed: both links of the chain cover the same building stock, so a
+    predecessor that is missing buildings the current scenario already has is
+    still being written. Heat pump rows cannot be used for this - a building
+    legitimately has no row if it got no heat pump - which is exactly the
+    ambiguity this resolves.
+
+    Parameters
+    -----------
+    scenario : str
+        Name of the scenario being distributed.
+    predecessor : str
+        Name of the predecessor whose completeness is asserted.
+
+    Raises
+    -------
+    RuntimeError
+        If the predecessor has processed fewer buildings than `scenario`.
+
+    """
+    written = get_scenario_peak_load_buildings(predecessor)
+    expected = get_scenario_peak_load_buildings(scenario)
+
+    # The current scenario is itself mid-run, so this compares against what it
+    # has written so far: a predecessor that is behind *that* is unambiguously
+    # incomplete. It is a lower bound on completeness, not a proof of it.
+    missing = expected.difference(written)
+
+    if not missing.empty:
+        raise RuntimeError(
+            f"Scenario {scenario} is floored on {predecessor}, but "
+            f"{predecessor} has only written peak loads for {len(written)} "
+            f"buildings against {len(expected)} already written for "
+            f"{scenario} ({len(missing)} missing, e.g. "
+            f"{sorted(missing)[:5]}). Distributing {scenario} now would "
+            f"silently drop the inherited floor for those buildings. "
+            f"{predecessor} must be complete before {scenario} starts - "
+            f"check their dependencies in egon.data.airflow.dags.pipeline."
+        )
+
+
 def get_inherited_hp_capacity(scenario, building_ids):
     """
     Returns the fixed heat pump capacity a scenario inherits from the floor
@@ -1536,8 +1633,11 @@ def get_inherited_hp_capacity(scenario, building_ids):
             return inherited.rename("hp_capacity")
 
         if scenario_has_hp_capacity(predecessor):
-            # Predecessor exists but has no heat pumps among these buildings -
-            # a valid empty floor, not a missing link.
+            # Predecessor exists but has no heat pumps among these buildings.
+            # That is a valid empty floor only if the predecessor is actually
+            # finished - a partially written one is indistinguishable from it
+            # here and would silently unfloor this grid, so make sure.
+            assert_predecessor_complete(scenario, predecessor)
             return empty
 
     logger.warning(
@@ -1559,6 +1659,9 @@ def scenario_has_hp_capacity(scenario):
     Used to tell a predecessor that was never run (walk further back along the
     floor chain) from one that was run but has no heat pumps in the MV grid at
     hand (a valid empty floor).
+
+    Note this says nothing about *completeness* - see
+    :func:`assert_predecessor_complete` for that.
 
     Parameters
     -----------
@@ -1820,7 +1923,10 @@ def catch_missing_buidings(buildings_decentral_heating, peak_load):
     """
     Check for missing buildings and reduce the list of buildings with
     decentral heating if no peak loads available. This should only happen
-    in case of cutout SH
+    in case of cutout SH.
+
+    Buildings whose peak load is present but sums to zero are dropped as
+    well: they would otherwise be eligible for a heat pump of capacity 0.
 
     Parameters
     -----------
@@ -1841,6 +1947,25 @@ def catch_missing_buidings(buildings_decentral_heating, peak_load):
         )
         logger.info(f"Dropped buildings: {diff.values}")
         buildings_decentral_heating = buildings_decentral_heating.drop(diff)
+
+    # Drop buildings whose peak load is present but zero. Their minimum heat
+    # pump capacity evaluates to 0, so they can still be drawn by the
+    # PV-weighted selection and end up in egon_hp_capacity_buildings with
+    # hp_capacity = 0 - a "heat pump" that is no heat pump. Filtering them out
+    # of the candidate pool keeps the selection on buildings that can actually
+    # carry a capacity.
+    zero_peak_load = peak_load[peak_load <= 0].index
+    diff_zero = buildings_decentral_heating.intersection(zero_peak_load)
+
+    if not diff_zero.empty:
+        logger.warning(
+            f"Dropped {len(diff_zero)} building ids due to zero peak "
+            f"loads. {len(buildings_decentral_heating) - len(diff_zero)} left."
+        )
+        logger.info(f"Dropped buildings: {diff_zero.values}")
+        buildings_decentral_heating = buildings_decentral_heating.drop(
+            diff_zero
+        )
 
     return buildings_decentral_heating
 
@@ -2176,6 +2301,27 @@ def split_mvgds_into_bulks(n, max_n, func, scenario=None):
         func(mvgd_ids)
 
 
+def create_hp_output_tables():
+    """
+    Create the output tables of this dataset if they do not exist yet.
+
+    Runs once, upstream of every scenario-specific delete task. The deletes
+    used to create their own tables with ``checkfirst=True``, which is a
+    non-atomic check-then-create: the status quo and the cascade task for the
+    same table could run concurrently under the LocalExecutor, both see the
+    table missing and both issue a CREATE TABLE, so the loser failed with a
+    UniqueViolation on ``pg_type_typname_nsp_index`` and took all downstream
+    bulk tasks with it. Creating the tables in a single shared task removes
+    the race instead of racing more carefully.
+
+    """
+    EgonHpCapacityBuildings.__table__.create(bind=engine, checkfirst=True)
+    EgonEtragoTimeseriesIndividualHeating.__table__.create(
+        bind=engine, checkfirst=True
+    )
+    BuildingHeatPeakLoads.__table__.create(bind=engine, checkfirst=True)
+
+
 def delete_hp_capacity(scenario):
     """Remove all hp capacities for the selected scenario
 
@@ -2212,35 +2358,26 @@ def delete_mvgd_ts(scenario):
 
 def delete_hp_capacity_status_quo(scenario):
     """Remove all hp capacities for the selected status quo"""
-    EgonHpCapacityBuildings.__table__.create(bind=engine, checkfirst=True)
     delete_hp_capacity(scenario=scenario)
 
 
 def delete_hp_capacity_2035(scenario):
     """Remove all hp capacities for the selected scenario"""
-    EgonHpCapacityBuildings.__table__.create(bind=engine, checkfirst=True)
     delete_hp_capacity(scenario=scenario)
 
 
 def delete_mvgd_ts_status_quo(scenario):
     """Remove all mvgd ts for the selected status quo"""
-    EgonEtragoTimeseriesIndividualHeating.__table__.create(
-        bind=engine, checkfirst=True
-    )
     delete_mvgd_ts(scenario=scenario)
 
 
 def delete_mvgd_ts_2035(scenario):
     """Remove all mvgd ts for the selected scenario"""
-    EgonEtragoTimeseriesIndividualHeating.__table__.create(
-        bind=engine, checkfirst=True
-    )
     delete_mvgd_ts(scenario=scenario)
 
 
 def delete_heat_peak_loads_status_quo(scenario):
     """Remove all heat peak loads for status quo."""
-    BuildingHeatPeakLoads.__table__.create(bind=engine, checkfirst=True)
     with db.session_scope() as session:
         # Buses
         session.query(BuildingHeatPeakLoads).filter(
@@ -2250,7 +2387,6 @@ def delete_heat_peak_loads_status_quo(scenario):
 
 def delete_heat_peak_loads_2035(scenario):
     """Remove all heat peak loads for the selected scenario."""
-    BuildingHeatPeakLoads.__table__.create(bind=engine, checkfirst=True)
     with db.session_scope() as session:
         # Buses
         session.query(BuildingHeatPeakLoads).filter(
