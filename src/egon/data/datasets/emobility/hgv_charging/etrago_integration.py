@@ -193,27 +193,30 @@ def _build_bus_timeseries_events(sites, cps, events):
     a HGV-only simplification that masked a real modelling issue (see next
     paragraph).
 
-    Events clipped to the year boundary (park_start == 0) are dropped from
-    this sum entirely: such an event's true arrival was before the
-    simulated year began, so its clipped remainder has no valid place to be
-    shown at full power without concentrating an entire year's worth of
-    country-wide arrivals onto a single timestep (see HGV/DOCUMENTATION.md's
-    "Known limitations" section). This affects ~0.3% of events and is a
-    small, deliberate energy loss -- the flex model's driving_load is
-    untouched (matches MIV's regular-scenario behavior, which does not drop
-    these).
+    Events clipped to the year boundary (park_start == 0) are KEPT in this
+    sum. A filter here previously dropped them, justified by the spike that
+    such events cause in the flex model's driving_load -- but that failure
+    mode belongs to driving_load alone, which lands each event's whole
+    energy on a single timestep (consumption / TIMESTEP_HOURS) and is
+    therefore unbounded (1757 MW at hour 0 on the SH reGon2037 run, ~1200x
+    its own mean). This sum accumulates only the rated charger power
+    (`cap`) per event per hour, so it is bounded by installed charger
+    capacity: 6,555 simultaneous arrivals cannot draw more than their
+    chargers physically allow -- 380 MW at hour 0, against ~0.17% of annual
+    charging energy that dropping them would discard. (driving_load keeps
+    these events too; its spike is a separate, still-open limitation.)
+
+    Keeping them slightly overstates hour 0 and the hours just after (those
+    vehicles really arrived before the year began, so they would already be
+    partway charged), but it conserves energy and keeps lowflex describing
+    the same fleet as flex. The physically exact fix is a partial event with
+    a reduced remaining charging_demand, which belongs in
+    generate_charging_events (Stage A), not in a filter here. See
+    HGV/DOCUMENTATION.md "Known limitations".
     """
     bus_ts = {}
 
     real_events = events[events["location"] == "charging"].copy()
-    n_before = len(real_events)
-    real_events = real_events[real_events["park_start"] != 0]
-    n_dropped = n_before - len(real_events)
-    if n_dropped:
-        logger.info(
-            f"  Dropped {n_dropped:,} year-boundary-clipped events "
-            f"(park_start==0) from the lowflex fixed-load sum"
-        )
 
     cp_to_bus = cps.merge(
         sites[["site_id", "bus_id"]], on="site_id", how="left",
