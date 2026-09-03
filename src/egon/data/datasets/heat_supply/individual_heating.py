@@ -1883,6 +1883,12 @@ def determine_hp_cap_peak_load_mvgd_ts_2035(mvgd_ids, scenario):
         logger.info(f"MVGD={mvgd} | Determine peak loads.")
 
         peak_load_2035 = df_heat_ts.max().rename(scenario)
+        # If df_heat_ts has no columns (mvgd has no decentral heating
+        # buildings), the index name is lost and reset_index() below
+        # would create a stray "index" column instead of "building_id",
+        # which export_to_db's melt() then turns into bogus scenario
+        # rows with NULL peak loads.
+        peak_load_2035.index.name = "building_id"
 
         # ######## determine HP capacity per building #########
         logger.info(f"MVGD={mvgd} | Determine HP capacities.")
@@ -2020,6 +2026,12 @@ def determine_hp_cap_peak_load_mvgd_ts_status_quo(mvgd_ids, scenario):
         logger.info(f"MVGD={mvgd} | Determine peak loads.")
 
         peak_load_status_quo = df_heat_ts.max().rename(scenario)
+        # If df_heat_ts has no columns (mvgd has no decentral heating
+        # buildings), the index name is lost and reset_index() below
+        # would create a stray "index" column instead of "building_id",
+        # which export_to_db's melt() then turns into bogus scenario
+        # rows with NULL peak loads.
+        peak_load_status_quo.index.name = "building_id"
 
         # ######## determine HP capacity per building #########
         logger.info(f"MVGD={mvgd} | Determine HP capacities.")

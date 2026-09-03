@@ -17,6 +17,8 @@ Added
   (at exactly its inherited capacity) in later scenarios. eGon2035 is not on the
   chain and keeps its independent distribution.
   `#1477 <https://github.com/openego/eGon-data/issues/1477>`_
+* Use MaStR data for home_batteries for allocation for all scenarios (status + future)
+  `#1470 <https://github.com/openego/eGon-data/issues/1470>`_
 
 Changed
 -------
@@ -65,6 +67,19 @@ Changed
   to reGon2037 and reGon2045, make PV-rooftop-based building weighting
   scenario-aware, and remove obsolete eGon100RE/pypsa-eur-sec handling
   `#1449 <https://github.com/openego/eGon-data/issues/1449>`_
+* Unify NEP input data into a single ``NEP`` folder in the data bundle
+  `#1479 <https://github.com/openego/eGon-data/issues/1479>`_
+* Adapt eMobility MIT to the reGon scenarios: add trip, scenario
+  variation and lowflex configuration for status2024, reGon2037 and
+  reGon2045, replace the per-scenario ``generate_model_data_*_remaining``
+  tasks with one generically generated task per configured scenario,
+  derive the flexible/dumb charging distinction from the scenario name
+  instead of a hard-coded scenario list, and remove obsolete
+  status2019/status2023/eGon100RE handling
+  `#1483 <https://github.com/openego/eGon-data/issues/1483>`_
+* Allign Methodology for laoding NEP target values for Battery storage for all scenarios
+  `#1471 <https://github.com/openego/eGon-data/issues/1471>`_
+
 
 Bug Fixes
 ---------
@@ -90,6 +105,9 @@ Bug Fixes
   sources/targets; registration is now skipped with a warning when no
   database is available
   `#1435 <https://github.com/openego/eGon-data/issues/1435>`_
+* Fix ONEP area key lookup so status scenarios work in wind offshore:
+  accept both plain codes and codes with a bracketed description
+  `#1480 <https://github.com/openego/eGon-data/issues/1480>`_
 * Fix eTraGo ID sequences getting out of sync with the IDs actually
   written, which made concurrent inserts fail with ``duplicate key value
   violates unique constraint``: ``h2_neighbours_egon2035`` derived a range
@@ -98,6 +116,28 @@ Bug Fixes
   now ignores the case of the component name and always returns a list
   when a count is given
   `#1487 <https://github.com/openego/eGon-data/issues/1487>`_
+* Fix ``fill_etrago_gen`` crashing with an ``IndexError`` for offshore wind
+  power plants sited at ONEP/NEP connection points west of 5.5° longitude,
+  which fell outside the hardcoded ``Germany-offshore`` ERA5 cutout extent
+  and therefore had no ``wind_offshore`` feed-in timeseries; the cutout and
+  the matching weather-cell filter in ``renewable_feedin.py`` now cover the
+  full extent of the connection points defined in ``map_ONEP_areas()``
+  `#1498 <https://github.com/openego/eGon-data/issues/1498>`_
+* Fix eMobility MIT writing a duplicate ``land_transport_EV`` load for
+  dumb charging scenarios: the lowflex pass took the same branch as the
+  regular pass and inserted a second identical load under the scenario's
+  own name, doubling transport demand in status quo scenarios
+  `#1483 <https://github.com/openego/eGon-data/issues/1483>`_
+* Fix conventional non-CHP and pumped hydro power plant allocation for the
+  reGon2037/reGon2045 scenarios: the NEP2025 Kraftwerksliste has no
+  ``bnetza_id`` column (only ``mastr_id``) and stores the CHP flag as
+  lowercase ``ja``/``nein``, so ``select_nep_power_plants`` /
+  ``select_nep_pumped_hydro`` crashed with ``UndefinedColumn`` and, once
+  that was worked around, allocated nothing because every ``chp = 'Nein'``
+  filter missed. ``bnetza_id`` is now only selected for eGon2035,
+  pumped hydro uses ``mastr_id`` for the reGon path, and the CHP flag is
+  normalized to ``Ja``/``Nein`` on import
+  `#1510 <https://github.com/openego/eGon-data/issues/1510>`_
 
 Version 2.0.0 (2025-08-20)
 ==========================
