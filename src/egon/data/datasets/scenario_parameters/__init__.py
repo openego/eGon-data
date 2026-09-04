@@ -181,7 +181,6 @@ def insert_scenarios():
 
     session.commit()
 
-
 def get_sector_parameters(sector, scenario=None):
     """Returns parameters for each sector as dictionary.
 
@@ -270,7 +269,7 @@ class ScenarioParameters(Dataset):
     This dataset creates and fills a table in the database that includes central parameters
     for each scenarios. These parameters are mostly from extrernal sources, they are defined
     and referenced within this dataset.
-    The table is acced by various datasets to access the parameters for all sectors.
+    The table is accessed by various datasets to access the parameters for all sectors.
 
 
     *Dependencies*
@@ -286,7 +285,7 @@ class ScenarioParameters(Dataset):
     #:
     name: str = "ScenarioParameters"
     #:
-    version: str = "0.0.24"
+    version: str = "0.0.25"
 
     sources = DatasetSources(
         urls={
