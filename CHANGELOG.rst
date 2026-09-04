@@ -12,6 +12,15 @@ Added
   `#1352 <https://github.com/openego/egon-data/issues/1352>`_
 * Add standardized sources and targets definitions across dataset modules
   `#1283 <https://github.com/openego/egon-data/issues/1283>`_
+* Add rail-transport electricity demand dataset (RailTransitDemand) and
+  reGon scenarios (status2024, reGon2037, reGon2045). The mobility sector
+  carries two rail figures: ``annual_demand`` is the 50-Hz draw that is
+  written as load, ``gross_rail_demand`` the total rail consumption used as
+  the scenario-scaling reference. The dataset reports its classification,
+  centroid-fallback and bus-assignment counts, and the sanity check reports
+  the energy per carrier and whether ``grid.egon_etrago_bus`` carries the
+  referenced buses for the reGon scenarios.
+  `#1414 <https://github.com/openego/eGon-data/issues/1414>`_
 * Add a fixed floor for heat pumps along the scenario chain
   status2024 -> reGon2037 -> reGon2045, so a building with a heat pump keeps it
   (at exactly its inherited capacity) in later scenarios. eGon2035 is not on the

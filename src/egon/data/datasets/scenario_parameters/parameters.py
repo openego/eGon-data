@@ -1239,6 +1239,29 @@ def mobility(scenario):
     :mod:`egon.data.datasets.emobility.motorized_individual_travel`.
     """
 
+    # ``rail_transport_demand`` below carries two distinct quantities,
+    # deliberately kept apart:
+    #
+    # ``annual_demand``     the 50-Hz DRAW = what the RailTransitDemand dataset
+    #                       writes as load (eGon convention: annual_demand is
+    #                       the demand the model carries). status2024 = 9.7438
+    #                       TWh, the sum of the data-bundle anchors (7.0
+    #                       traction + 0.56 S-Bahn + 2.1838 tram/U-Bahn).
+    # ``gross_rail_demand`` total rail electricity CONSUMPTION, i.e. the draw
+    #                       plus the ~3.4 TWh generated inside the 16.7-Hz
+    #                       traction grid, which never crosses the 50-Hz
+    #                       boundary. Used ONLY as the reference for scenario
+    #                       scaling, never as a level.
+    #
+    # The NEP reports Schiene+Bus COMBINED (no split): 14.0 TWh for 2024, of
+    # which 12.74 is rail (= 10.04 traction + 0.56 + 2.18) and the ~1.26 TWh
+    # remainder is bus (excluded). Futures scale by the NEP ratio
+    # total(scn) / total(status2024) as a rail-growth proxy; the ratio is
+    # unit-invariant, so it is the same whether taken from the gross or the
+    # draw figures.
+    #
+    # To update from a new NEP: adjust ``nep_schiene_bus_twh`` and both
+    # demands (= status2024 value * nep_schiene_bus_twh / 14.0).
     if scenario == "eGon2035":
         parameters = {
             "motorized_individual_travel": {
@@ -1269,7 +1292,14 @@ def mobility(scenario):
                     "phev_luxury_share": 0.0652,
                     "model_parameters": {},
                 }
-            }
+            },
+            "rail_transport_demand": {
+                # MWh, 9.7438 * 15.9 / 14
+                "annual_demand": 11.0662 * 1e6,
+                # MWh, 12.74 * 15.9 / 14
+                "gross_rail_demand": 14.469 * 1e6,
+                "nep_schiene_bus_twh": 15.9,
+            },
         }
 
     elif scenario == "reGon2045":
@@ -1286,7 +1316,14 @@ def mobility(scenario):
                     "phev_luxury_share": 0.0652,
                     "model_parameters": {},
                 },
-            }
+            },
+            "rail_transport_demand": {
+                # MWh, 9.7438 * 16.9 / 14
+                "annual_demand": 11.7622 * 1e6,
+                # MWh, 12.74 * 16.9 / 14
+                "gross_rail_demand": 15.379 * 1e6,
+                "nep_schiene_bus_twh": 16.9,
+            },
         }
 
     elif scenario == "eGon2021":
@@ -1307,7 +1344,12 @@ def mobility(scenario):
                     "phev_luxury_share": 0.0688,
                     "model_parameters": {},
                 }
-            }
+            },
+            "rail_transport_demand": {
+                "annual_demand": 9.7438 * 1e6,  # MWh, 50-Hz draw
+                "gross_rail_demand": 12.74 * 1e6,  # MWh, consumption
+                "nep_schiene_bus_twh": 14.0,
+            },
         }
 
     else:
