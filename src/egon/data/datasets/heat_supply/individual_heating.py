@@ -58,7 +58,9 @@ Base = declarative_base()
 # required heat pump capacity (see determine_minimum_hp_capacity_per_building)
 # falls below this threshold are not assigned a heat pump and keep their gas
 # boiler instead, avoiding unrealistically small heat pumps being distributed.
-MIN_HP_CAPACITY = 3.5 / 1000  # MW (3.5 kW)
+# Taken from "Deutsche Energie-Agentur (dena, 2026): KWW-Technikkatalog
+# Wärmeplanung. Version 1.1. Berlin."
+MIN_HP_CAPACITY = 5 / 1000  # MW (5 kW)
 
 
 class EgonEtragoTimeseriesIndividualHeating(Base):
