@@ -54,6 +54,12 @@ from egon.data.datasets.zensus_mv_grid_districts import MapZensusGridDistricts
 engine = db.engine()
 Base = declarative_base()
 
+# Smallest heat pump capacity available on the market. Buildings whose
+# required heat pump capacity (see determine_minimum_hp_capacity_per_building)
+# falls below this threshold are not assigned a heat pump and keep their gas
+# boiler instead, avoiding unrealistically small heat pumps being distributed.
+MIN_HP_CAPACITY = 3.5 / 1000  # MW (3.5 kW)
+
 
 class EgonEtragoTimeseriesIndividualHeating(Base):
     """
@@ -1352,6 +1358,15 @@ def determine_hp_cap_buildings_pvbased_per_mvgd(
     rooftop are more likely to be assigned), as well
     as their respective HP capacity in MW.
 
+    Buildings whose required minimum heat pump capacity (see
+    :func:`determine_minimum_hp_capacity_per_building`) is below
+    :data:`MIN_HP_CAPACITY` are excluded from the pool of candidate
+    buildings, since no heat pump that small is available on the market.
+    They remain supplied by a gas boiler. The excluded capacity is not
+    lost: :func:`desaggregate_hp_capacity` always scales the remaining,
+    selected buildings up so that the MV grid's total heat pump capacity
+    target is still met exactly.
+
     Parameters
     -----------
     mv_grid_id : int
@@ -1375,6 +1390,18 @@ def determine_hp_cap_buildings_pvbased_per_mvgd(
             peak_heat_demand
         )
 
+        # Drop buildings whose required heat pump capacity is below the
+        # smallest heat pump size available on the market. These buildings
+        # keep their gas boiler instead of getting an undersized heat pump.
+        min_hp_cap_buildings = min_hp_cap_buildings[
+            min_hp_cap_buildings >= MIN_HP_CAPACITY
+        ]
+
+    if (
+        len(building_ids) > 0
+        and hp_cap_grid > 0.0
+        and not min_hp_cap_buildings.empty
+    ):
         # select buildings that will have a heat pump
         buildings_with_hp = determine_buildings_with_hp_in_mv_grid(
             hp_cap_grid, min_hp_cap_buildings, scenario
