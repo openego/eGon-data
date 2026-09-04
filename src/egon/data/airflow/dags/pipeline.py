@@ -84,6 +84,7 @@ from egon.data.datasets.osmtgmod import Osmtgmod
 from egon.data.datasets.power_etrago import OpenCycleGasTurbineEtrago
 from egon.data.datasets.power_plants import PowerPlants
 from egon.data.datasets.pypsaeur import PreparePypsaEur, RunPypsaEur
+from egon.data.datasets.rail_transport_demand import RailTransitDemand
 from egon.data.datasets.re_potential_areas import re_potential_area_setup
 from egon.data.datasets.renewable_feedin import RenewableFeedin
 from egon.data.datasets.saltcavern import SaltcavernData
@@ -705,6 +706,21 @@ with airflow.DAG(
             ]
         )
 
+        # Rail transport electricity demand (reGon): 16.7-Hz traction
+        # converters + DC rectifier Uw (tram/U-Bahn + S-Bahn) -> eTraGo
+        # loads. Builds on eGon's OSM-derived grid (MV grid districts + EHV
+        # voronoi) and the curated profiles/weights in the data bundle.
+        rail_transit_demand = RailTransitDemand(
+            dependencies=[
+                data_bundle,
+                osm,
+                mv_grid_districts,
+                substation_voronoi,
+                setup_etrago,
+                scenario_parameters,
+            ]
+        )
+
     with TaskGroup(group_id="load_areas") as load_areas_group:
         # Create load areas
         load_areas = LoadArea(
@@ -742,6 +758,13 @@ with airflow.DAG(
     # Re-enable once sanity_checks.py is migrated to the new scenario
     # names.
     #
+    # NOTE (#1414): that specific blocker no longer applies once this
+    # branch is in -- sanitycheck_rail_transport_demand registers
+    # UNCONDITIONALLY, so the task list is never empty. Re-enabling is
+    # therefore possible, but it is upstream's call and untested here, so
+    # the block stays commented out and the rail check does not run in the
+    # DAG. Uncomment to get it back, dependency included.
+    #
     # with TaskGroup(group_id="sanity_checks") as sanity_checks_group:
     #     # ########## Keep this dataset at the end
     #     # Sanity Checks
@@ -753,6 +776,7 @@ with airflow.DAG(
     #             household_electricity_demand_annual,
     #             cts_demand_buildings,
     #             emobility_mit,
+    #             rail_transit_demand,
     #             low_flex_scenario,
     #         ]
     #     )
