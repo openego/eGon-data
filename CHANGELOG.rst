@@ -35,6 +35,11 @@ Added
   NEP-2025-aligned scenarios reGon2037 and reGon2045, as a sibling dataset to
   the hydrogen-based HeavyDutyTransport
   `#1436 <https://github.com/openego/eGon-data/issues/1436>`_
+* Distinguish grid-scale battery storage (new carrier 'BESS') from home batteries
+  throughout the pipeline: real MaStR-based BESS carry-forward (aged, all scenarios)
+  alongside home batteries, and separate eTraGo carriers/cost parameters
+  ('BESS' vs'home_battery') instead of one generic 'battery' carrier
+  `#1478 <https://github.com/openego/eGon-data/issues/1478>`_
 
 Changed
 -------
