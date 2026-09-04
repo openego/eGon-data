@@ -118,6 +118,7 @@ class OsmBuildingsStreets(Dataset):
 
     *Dependencies*
       * :py:class:`OpenStreetMap <egon.data.datasets.osm.OpenStreetMap>`
+      * :py:class:`EthosBuilda <egon.data.datasets.ethos_builda.EthosBuilda>`
       * :py:class:`ZensusMiscellaneous <egon.data.datasets.zensus.ZensusMiscellaneous>`
 
     *Resulting Tables*
@@ -142,11 +143,20 @@ class OsmBuildingsStreets(Dataset):
       * All buildings: `openstreetmap.osm_buildings`
       * Filtered buildings: `openstreetmap.osm_buildings_filtered`
       * Residential buildings: `openstreetmap.osm_buildings_residential`
-        * 1st step: Filter by tags (see `osm_buildings_filter_residential.sql`)
+        * 1st step: Intersect with ETHOS.BUILDA, which supplies one point per
+          residential building, in a three step cascade -- point inside the
+          polygon, nearest neighbour within 10 m, and OSM tags for what is
+          left (see `osm_buildings_filter_residential.sql`). Filtering by tags
+          alone overestimated the stock by about a third against Zensus 2022.
         * 2nd step: Table is extended by finding census cells with population
           but no residential buildings and extended by commercial/retail/office/
           hotel buildings (see `osm_buildings_extend_residential.sql`) since they
           often include apartments as well.
+        * Each building carries the provenance of its match in `source`
+          (`ethos_intersect`, `ethos_nearest`, `osm_tagging` or
+          `census_gap_fill`), the matched `ethos_id`, the `match_distance` and
+          the ETHOS attributes `construction_year`, `size_class`,
+          `refurbishment_state` and `tabula_type`.
     * Extract amenities and filter using relevant tags, e.g. shops and restaurants,
       see script `osm_amenities_shops_preprocessing.sql` for the full list of tags.
       Resulting table: `openstreetmap.osm_amenities_shops_filtered`
@@ -184,7 +194,7 @@ class OsmBuildingsStreets(Dataset):
     #:
     name: str = "OsmBuildingsStreets"
     #:
-    version: str = "0.0.9"
+    version: str = "0.0.11"
 
     sources = DatasetSources(
         tables={
@@ -194,6 +204,7 @@ class OsmBuildingsStreets(Dataset):
             "osm_ways": "openstreetmap.osm_ways",
             "zensus_apartments": "society.egon_destatis_zensus_apartment_building_population_per_ha",
             "zensus_population": "society.destatis_zensus_population_per_ha",
+            "ethos_builda_buildings": "society.egon_ethos_builda_buildings",
         }
     )
 

@@ -12,12 +12,22 @@ Added
   `#1352 <https://github.com/openego/egon-data/issues/1352>`_
 * Add standardized sources and targets definitions across dataset modules
   `#1283 <https://github.com/openego/egon-data/issues/1283>`_
+* Add dataset EthosBuilda, importing the ETHOS.BUILDA synthetic building
+  stock from Zenodo
+  `#1310 <https://github.com/openego/eGon-data/issues/1310>`_
 * Use MaStR data for home_batteries for allocation for all scenarios (status + future)
   `#1470 <https://github.com/openego/eGon-data/issues/1470>`_
 
 Changed
 -------
 
+* Determine residential buildings by intersecting OSM buildings with
+  ETHOS.BUILDA instead of filtering by OSM tags alone, keeping the ETHOS
+  attributes and the provenance of each match, retain the previous filter's
+  amenity-based capture of care homes, and read residential buildings
+  alongside the filtered ones in the household load area demand, the
+  building mapping and the PV rooftop potentials
+  `#1310 <https://github.com/openego/eGon-data/issues/1310>`_
 * Set annual electricity demands in scenario parameters
   `#1359 <https://github.com/openego/eGon-data/issues/1359>`_
 * Introduce TaskGroups to group Datasets in the pipeline
