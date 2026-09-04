@@ -14,6 +14,12 @@ Added
   `#1283 <https://github.com/openego/egon-data/issues/1283>`_
 * Use MaStR data for home_batteries for allocation for all scenarios (status + future)
   `#1470 <https://github.com/openego/eGon-data/issues/1470>`_
+* Distinguish grid-scale battery storage (new carrier 'BESS') from home batteries
+  throughout the pipeline: real MaStR-based BESS carry-forward (aged, all scenarios) 
+  alongside home batteries, and separate eTraGo carriers/cost parameters 
+  ('BESS' vs'home_battery') instead of one generic 'battery' carrier
+  `#1478 <https://github.com/openego/eGon-data/issues/1478>`_
+
 
 Changed
 -------
