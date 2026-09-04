@@ -15,6 +15,8 @@ Added
 * Add dataset EthosBuilda, importing the ETHOS.BUILDA synthetic building
   stock from Zenodo
   `#1310 <https://github.com/openego/eGon-data/issues/1310>`_
+* Use MaStR data for home_batteries for allocation for all scenarios (status + future)
+  `#1470 <https://github.com/openego/eGon-data/issues/1470>`_
 
 Changed
 -------
@@ -70,6 +72,8 @@ Changed
   to reGon2037 and reGon2045, make PV-rooftop-based building weighting
   scenario-aware, and remove obsolete eGon100RE/pypsa-eur-sec handling
   `#1449 <https://github.com/openego/eGon-data/issues/1449>`_
+* Unify NEP input data into a single ``NEP`` folder in the data bundle
+  `#1479 <https://github.com/openego/eGon-data/issues/1479>`_
 * Adapt eMobility MIT to the reGon scenarios: add trip, scenario
   variation and lowflex configuration for status2024, reGon2037 and
   reGon2045, replace the per-scenario ``generate_model_data_*_remaining``
@@ -78,6 +82,9 @@ Changed
   instead of a hard-coded scenario list, and remove obsolete
   status2019/status2023/eGon100RE handling
   `#1483 <https://github.com/openego/eGon-data/issues/1483>`_
+* Allign Methodology for laoding NEP target values for Battery storage for all scenarios
+  `#1471 <https://github.com/openego/eGon-data/issues/1471>`_
+
 
 Bug Fixes
 ---------
@@ -126,6 +133,16 @@ Bug Fixes
   regular pass and inserted a second identical load under the scenario's
   own name, doubling transport demand in status quo scenarios
   `#1483 <https://github.com/openego/eGon-data/issues/1483>`_
+* Fix conventional non-CHP and pumped hydro power plant allocation for the
+  reGon2037/reGon2045 scenarios: the NEP2025 Kraftwerksliste has no
+  ``bnetza_id`` column (only ``mastr_id``) and stores the CHP flag as
+  lowercase ``ja``/``nein``, so ``select_nep_power_plants`` /
+  ``select_nep_pumped_hydro`` crashed with ``UndefinedColumn`` and, once
+  that was worked around, allocated nothing because every ``chp = 'Nein'``
+  filter missed. ``bnetza_id`` is now only selected for eGon2035,
+  pumped hydro uses ``mastr_id`` for the reGon path, and the CHP flag is
+  normalized to ``Ja``/``Nein`` on import
+  `#1510 <https://github.com/openego/eGon-data/issues/1510>`_
 
 Version 2.0.0 (2025-08-20)
 ==========================
