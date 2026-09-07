@@ -387,7 +387,7 @@ def assign_gas_bus_id(dataframe, scn_name, carrier):
     # TODO(LB, 2026-07-23): scn_name fixed to eGon2035 as this function will
     # otherwise fail, when calling the reGon-scenarios. This needs to be deleted
     # in the future.
-    scn_name = "eGon2035"
+    scn_name = "status2024"
     
     voronoi = select_geodataframe(
         f"""
