@@ -31,6 +31,7 @@ from egon.data.datasets.power_plants.mastr import (
     EgonPowerPlantsBiomass,
     EgonPowerPlantsHydro,
     EgonPowerPlantsPv,
+    EgonPowerPlantsStorage,
     EgonPowerPlantsWind,
     import_mastr,
 )
@@ -87,6 +88,7 @@ def create_tables():
         EgonPowerPlantsPv,
         EgonPowerPlantsBiomass,
         EgonPowerPlantsHydro,
+        EgonPowerPlantsStorage,
     ]
     for t in tables:
         db.execute_sql(f"""
@@ -1409,8 +1411,8 @@ class PowerPlants(Dataset):
             "mastr_wind": "./bnetza_mastr/dump_2025-02-09/bnetza_mastr_wind_cleaned.csv",
             # --- Config/Meta values ---
             "osm_config": "https://download.geofabrik.de/europe/germany-240101.osm.pbf",
-            "nep_2035": "NEP2035_V2021_scnC2035.xlsx",
-            "nep_2037": "NEP2037_V2025_scnC2037.xlsx",
+            "nep_2035": "NEP_V2021_scnC2035.xlsx",
+            "nep_2037": "NEP_V2025_scnC2037.xlsx",
             "mastr_deposit_id": "14783581",
 	    "wind_offshore_status2019": "windoffshore_status2019.xlsx",
             "data_bundle_deposit_id": "16576506",
@@ -1510,7 +1512,7 @@ class PowerPlants(Dataset):
     #:
     name: str = "PowerPlants"
     #:
-    version: str = "0.0.37"
+    version: str = "0.0.38"
 
     def __init__(self, dependencies):
         super().__init__(

@@ -36,9 +36,14 @@ def select_nep_power_plants(carrier, scn):
     nep_scenario = "eGon2035" if scn == "eGon2035" else "reGon"
     capacity_column = f"c{get_scenario_year(scn)}_capacity"
 
+    # The NEP2021 Kraftwerksliste (eGon2035) carries a "bnetza_id" column; the
+    # NEP2025 list (reGon2037/reGon2045) does not. It is only passed through and
+    # never used for the allocation, so only select it where it exists.
+    id_column = "bnetza_id, " if nep_scenario == "eGon2035" else ""
+
     # Select plants with geolocation from list of conventional power plants
     nep = db.select_dataframe(f"""
-        SELECT bnetza_id, name, carrier, capacity, postcode, city,
+        SELECT {id_column}name, carrier, capacity, postcode, city,
         federal_state, {capacity_column}
         FROM {sources.tables['nep_conv']}
         WHERE carrier = '{carrier}'
@@ -54,7 +59,8 @@ def select_nep_power_plants(carrier, scn):
     nep = nep[~nep["postcode"].str.contains("L")]
     nep = nep[~nep["postcode"].str.contains("nan")]
 
-    nep["bnetza_id"] = nep["bnetza_id"].str[0:7]
+    if "bnetza_id" in nep.columns:
+        nep["bnetza_id"] = nep["bnetza_id"].str[0:7]
 
     return nep
 
