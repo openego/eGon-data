@@ -35,6 +35,9 @@ from egon.data.datasets.emobility.heavy_duty_transport import (
 from egon.data.datasets.emobility.motorized_individual_travel import (
     MotorizedIndividualTravel,
 )
+from egon.data.datasets.emobility.public_bus_charging import (
+    PublicBusCharging,
+)
 from egon.data.datasets.emobility.motorized_individual_travel_charging_infrastructure import (  # noqa: E501
     MITChargingInfrastructure,
 )
@@ -668,6 +671,27 @@ with airflow.DAG(
         # eMobility: heavy duty transport
         heavy_duty_transport = HeavyDutyTransport(
             dependencies=[vg250, setup_etrago, create_gas_polygons]
+        )
+
+        # eMobility: public buses (vehicle class M3). Static depot loads;
+        # no flexibility, so no flex/lowflex model. Only status2024,
+        # reGon2037 and reGon2045 carry bus data.
+        public_bus_charging = PublicBusCharging(
+            dependencies=[
+                # Depot locations and hourly series ship in the data bundle
+                # (data_bundle_egon_data/bus_charging), so this must not run
+                # before the bundle has been downloaded.
+                data_bundle,
+                mv_grid_districts,
+                # egon_ehv_substation_voronoi, for any depot above 120 MW
+                substation_voronoi,
+                setup_etrago,
+                scenario_parameters,
+                # egon_etrago_bus must be populated (osmtgmod's to_pypsa) --
+                # mv_grid_districts only guarantees substation.extract.
+                osmtgmod,
+                vg250,
+            ]
         )
 
         # eMobility: motorized individual travel
