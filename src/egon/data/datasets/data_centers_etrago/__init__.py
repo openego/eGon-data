@@ -372,7 +372,7 @@ def get_existing_ac_buses(scenario):
         f"""
         SELECT bus_id, v_nom, carrier, x, y, geom
         FROM {sources.tables["buses"]}
-        WHERE scn_name = '{scenario}'
+        WHERE scn_name = 'eGon2035'
         AND carrier = 'AC'
         AND v_nom IN (110, 380)
         AND country = 'DE'
@@ -392,7 +392,7 @@ def get_existing_central_heat_buses(scenario):
         f"""
         SELECT bus_id, carrier, x, y, geom
         FROM {sources.tables["buses"]}
-        WHERE scn_name = '{scenario}'
+        WHERE scn_name = 'eGon2035'
         AND carrier = 'central_heat'
         """,
         geom_col="geom",
