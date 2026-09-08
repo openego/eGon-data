@@ -2977,8 +2977,8 @@ class SanityChecks(Dataset):
         files={
             # --- scenario_input -> eGon2035.capacities ---
             "nep2035_capacities": (
-                "data_bundle_egon_data/nep2035_version2021/"
-                "NEP2035_V2021_scnC2035.xlsx"
+                "data_bundle_egon_data/NEP/"
+                "NEP_V2021_scnC2035.xlsx"
             ),
             "gas_nodes": "datasets/gas_data/data/IGGIELGN_Nodes.csv",
             "gas_productions": "datasets/gas_data/data/IGGIELGN_Productions.csv",
