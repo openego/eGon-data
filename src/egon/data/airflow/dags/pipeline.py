@@ -442,7 +442,7 @@ with airflow.DAG(
             ]
         )
 
-        # Create gas voronoi eGon2035
+        # Create gas voronoi
         create_gas_polygons = GasAreas(
             dependencies=[setup_etrago, insert_hydrogen_buses, vg250]
         )

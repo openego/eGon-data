@@ -176,6 +176,5 @@ The refuelling is assumed to take place at a constant rate.
 Finally, to
 determine the hydrogen bus where the hydrogen demand is allocated to, the centroid
 of each NUTS3 region is used to determine the respective hydrogen Voronoi cell (see
-:py:class:`GasAreaseGon2035<egon.data.datasets.gas_areas.GasAreaseGon2035>` and
-:py:class:`GasAreaseGon100RE<egon.data.datasets.gas_areas.GasAreaseGon100RE>`) it is
+:py:class:`GasAreas<egon.data.datasets.gas_areas.GasAreas>` it is
 located in.
