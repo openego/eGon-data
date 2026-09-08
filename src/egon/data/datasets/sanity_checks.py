@@ -52,7 +52,7 @@ from egon.data.datasets.gas_grid import (
     define_gas_nodes_list,
     define_gas_pipeline_list,
 )
-from egon.data.datasets.gas_neighbours.eGon2035 import (
+from egon.data.datasets.gas_neighbours.eGon_scenarios import (
     calc_capacities,
     calc_ch4_storage_capacities,
     calc_global_ch4_demand,
@@ -2216,7 +2216,7 @@ def etrago_eGon2035_gas_abroad():
 
         # Generators
         logger.info("GENERATORS ")
-        CH4_gen = calc_capacities()
+        CH4_gen = calc_capacities(scn)
         input_CH4_gen = CH4_gen["cap_2035"].sum()
 
         output_CH4_gen = db.select_dataframe(
@@ -2245,7 +2245,7 @@ def etrago_eGon2035_gas_abroad():
 
         # Stores
         logger.info("STORES")
-        ch4_input_capacities = calc_ch4_storage_capacities()
+        ch4_input_capacities = calc_ch4_storage_capacities(scn)
         input_CH4_stores = ch4_input_capacities["e_nom"].sum()
 
         output_CH4_stores = db.select_dataframe(

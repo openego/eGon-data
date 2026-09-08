@@ -38,6 +38,30 @@ Added
 Changed
 -------
 
+* Adapt the Gas_Grid TaskGroup to the new scenarios: CH4 buses
+  and pipelines, gas voronoi areas, H2 buses, the H2 core grid,
+  H2 stores and the foreign gas system are now built for every
+  configured scenario that has a gas grid. Merge
+  ``GasAreaseGon2035``/``GasAreaseGon100RE`` into a single
+  ``GasAreas`` dataset. Remove the ``assign_gas_bus_id``
+  workaround that pinned every scenario to eGon2035's gas
+  voronoi cells
+  `#1444 <https://github.com/openego/eGon-data/issues/1444>`_
+  `#1463 <https://github.com/openego/eGon-data/issues/1463>`_
+
+  .. note::
+
+     Known limitations: the foreign gas data in
+     ``gas_neighbours`` is still the TYNDP 2030/2040 midpoint
+     originally computed for eGon2035, so reGon2037 receives
+     eGon2035 proxy values. reGon2045 is not included yet: its
+     gas parameters define no ``marginal_cost['CH4']``.
+     Electrolysis, fuel-cell and SMR links
+     (``HydrogenPowerLinkEtrago``, ``HydrogenMethaneLinkEtrago``)
+     are unchanged and still eGon2035/eGon100RE only; that
+     migration is tracked separately.
+
+
 * Set annual electricity demands in scenario parameters
   `#1359 <https://github.com/openego/eGon-data/issues/1359>`_
 * Introduce TaskGroups to group Datasets in the pipeline
