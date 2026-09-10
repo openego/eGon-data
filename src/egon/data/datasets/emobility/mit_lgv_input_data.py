@@ -190,22 +190,32 @@ def input_file(scenario_name: str, key: str) -> Path:
     return path
 
 
+def missing_input_files(scenario_name: str) -> list:
+    """Delivered files that are not (yet) in the scenario directory."""
+    directory = scenario_input_dir(scenario_name)
+    return [
+        name
+        for name in INPUT_FILES.values()
+        if not (directory / name).is_file()
+    ]
+
+
+def is_extracted(scenario_name: str) -> bool:
+    """Whether the scenario's archive has already been extracted."""
+    return not missing_input_files(scenario_name)
+
+
 def verify_extracted_files(scenario_name: str) -> None:
     """Check that the extracted archive is complete.
 
     Raises with all missing names at once rather than letting the first
     read fail somewhere in the middle of an import.
     """
-    directory = scenario_input_dir(scenario_name)
-    missing = [
-        name
-        for name in INPUT_FILES.values()
-        if not (directory / name).is_file()
-    ]
+    missing = missing_input_files(scenario_name)
     if missing:
         raise FileNotFoundError(
             f"Input data for scenario '{scenario_name}' is incomplete: "
-            f"{missing} missing in {directory}."
+            f"{missing} missing in {scenario_input_dir(scenario_name)}."
         )
 
 
@@ -277,16 +287,26 @@ def download_and_extract_scenario(scenario_name: str) -> Path:
     archive = INPUT_DATA_DIR / f"{scenario_name}.zip"
     directory = scenario_input_dir(scenario_name)
 
+    # Nothing to do at all: check before taking the lock, so a run that
+    # only reads existing data never waits behind a download.
+    if is_extracted(scenario_name):
+        print(
+            f"Input data for scenario '{scenario_name}' already "
+            f"extracted to {directory}, nothing to do."
+        )
+        return directory
+
     with _DownloadLock(INPUT_DATA_DIR / f"{scenario_name}.lock"):
-        try:
-            verify_extracted_files(scenario_name)
+        # The two steps are decided independently, and both are
+        # re-checked here: while this process waited for the lock,
+        # another one may have downloaded the archive, extracted it, or
+        # both.
+        if is_extracted(scenario_name):
             print(
                 f"Input data for scenario '{scenario_name}' already "
-                f"extracted to {directory}, skipping download."
+                f"extracted to {directory}, skipping extraction."
             )
             return directory
-        except FileNotFoundError:
-            pass
 
         if archive.is_file():
             print(f"Archive {archive} already present, skipping download.")
@@ -298,11 +318,19 @@ def download_and_extract_scenario(scenario_name: str) -> Path:
             # Zenodo under Python 3.10 / urllib3 2.5 and writes the
             # error page without checking the status code, which
             # surfaces much later as a corrupt zip.
+            #
+            # Download to a temporary name and rename only once it is
+            # complete, so an interrupted download is not mistaken for
+            # a usable archive on the next run.
             partial = archive.with_suffix(".zip.part")
             urlretrieve(url, partial)
             partial.replace(archive)
 
-        print(f"Extracting {archive} to {INPUT_DATA_DIR}...")
+        print(
+            f"Extracting {archive} to {INPUT_DATA_DIR} "
+            f"({len(missing_input_files(scenario_name))} of "
+            f"{len(INPUT_FILES)} files missing)..."
+        )
         with zipfile.ZipFile(archive, "r") as zip_ref:
             zip_ref.extractall(INPUT_DATA_DIR)
 
