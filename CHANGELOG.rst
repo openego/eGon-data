@@ -37,6 +37,9 @@ Added
 
 Changed
 -------
+* Adapt the Gas_Supply TaskGroup to the new scenarios.
+  Pending is treatment for reGon2045 parameters.
+
 
 * Adapt the Gas_Grid TaskGroup to the new scenarios: CH4 buses
   and pipelines, gas voronoi areas, H2 buses, the H2 core grid,
