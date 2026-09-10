@@ -16,6 +16,7 @@ import pandas as pd
 
 from egon.data import config, db
 from egon.data.datasets import load_sources_and_targets
+from egon.data.datasets.emobility.mit_lgv_input_data import legacy_scenarios
 from egon.data.datasets.emobility.motorized_individual_travel_charging_infrastructure.use_cases import (  # noqa: E501
     home,
     hpc,
@@ -60,9 +61,11 @@ def write_to_db(
     full_table_name = targets.tables["charging_infrastructure"]
     target_schema, target_table = full_table_name.split(".")
 
-    max_id = db.select_dataframe(f"""
+    max_id = db.select_dataframe(
+        f"""
         SELECT MAX(cp_id) FROM {target_schema}.{target_table}
-        """)["max"][0]
+        """
+    )["max"][0]
 
     if max_id is None:
         max_id = 0
@@ -86,7 +89,18 @@ def write_to_db(
 def run_tracbev():
     """
     Wrapper function to run charging infrastructure allocation
+
+    Legacy methodology only: scenarios on the new methodology import the
+    delivered charging sites instead, cf.
+    :func:`.charging_location_import.import_charging_locations`.
     """
+    if not legacy_scenarios(config.settings()["egon-data"]["--scenarios"]):
+        print(
+            "No scenario on the legacy methodology configured, skipping "
+            "the TracBEV run."
+        )
+        return
+
     data_dict = get_data()
 
     run_tracbev_potential(data_dict)
