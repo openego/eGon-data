@@ -114,7 +114,7 @@ class Storages(Dataset):
     #:
     name: str = "Storages"
     #:
-    version: str = "0.0.13"
+    version: str = "0.0.14"
 
     def __init__(self, dependencies):
         super().__init__(
@@ -360,6 +360,12 @@ def allocate_storage_units_sq(scn_name, storage_types):
     )
 
     map_storage = {
+        # "battery" is now dead: this function is only ever called with
+        # storage_types=["pumped_hydro"] (see allocate_pumped_hydro_scn()).
+        # Real battery storage is handled by allocate_battery_storage()
+        # instead, reading from egon_power_plants_storage rather than
+        # re-parsing this CSV. "compressed_air"/"flywheel"/"other" were
+        # already no used before 
         "battery": "Batterie",
         "pumped_hydro": "Pumpspeicher",
         "compressed_air": "Druckluft",
@@ -690,11 +696,10 @@ def home_batteries_per_scenario(scenario):
     battery["p_nom_min"] = target * battery["p_nom"] / battery["p_nom"].sum()
     battery = battery.drop(columns=["p_nom"])
 
-    # Subtract already-existing real battery capacity per bus (from
-    # allocate_battery_storage(), tagged sources->>'el_capacity'='MaStR')
-    # to avoid double-counting real + modeled capacity at the same bus. For
-    # scenarios without a real carry-forward yet (currently all but
-    # status2024), this query returns nothing and p_nom_min stays unchanged.
+    # Subtract already-existing real battery capacity per bus from the 
+    # NEP target to avoid double-counting real + modeled capacity at the 
+    # same bus. SO just modeled capacities are spartially distributed 
+    # according PV-capacities
     real_capacity = db.select_dataframe(f"""
         SELECT bus_id AS bus, sum(el_capacity) AS real_capacity
         FROM {Storages.targets.tables['storages']}
@@ -753,11 +758,21 @@ def allocate_battery_storage(scn_name):
         forward into all scenarios, aged with the scenario-specific assumed
         battery storage lifetime (see determine_end_of_life_gens() below).
       * 'BESS' (voltage_level 1-5 - MV and above, grid-scale battery energy
-        storage systems, not tied to individual buildings) - only for status
-        quo scenarios; carrying grid-scale storage forward into future
-        scenarios is out of scope here (tracked separately, see #1472).
+        storage systems, not tied to individual buildings) - like
+        home_battery, real capacity is now aged and carried forward into
+        every scenario. A modeled/residual BESS component analogous to
+        home_batteries_per_scenario() (target minus real capacity,
+        distributed spatially) is deliberately not implemented (decision
+        2026-08-31): eTraGo already allows extendable BESS capacity above
+        this real-capacity floor at every substation bus (see
+        storages_etrago.extendable_batteries_per_scenario()), so further
+        capacity growth is left to eTraGo's own cost optimization rather
+        than a hand-modeled spatial heuristic here. An explicit lower-bound
+        constraint tied to the NEP 'Großbatteriespeicher' target in
+        egon_scenario_capacities (currently unused) is a possible future
+        enhancement on the eTraGo side, not planned for now.
     """
-    # see allocate_storage_units_sq() for why this isn't weather_year
+
     scenario_date_max = SCENARIO_TIMESTAMP[scn_name].strftime(
         "%Y-%m-%d %H:%M:%S"
     )
@@ -788,7 +803,7 @@ def allocate_battery_storage(scn_name):
     # "in Betrieb" but that are statistically past their expected lifetime.
     lifetime = pd.Timedelta(
         get_sector_parameters("electricity", scn_name)["lifetime"][
-            "battery storage"
+            "BESS storage"
         ]
         * 365,
         unit="D",
@@ -804,11 +819,6 @@ def allocate_battery_storage(scn_name):
 
     mastr["carrier"] = "BESS"
     mastr.loc[mastr.voltage_level.isin([6, 7]), "carrier"] = "home_battery"
-
-    if "status" not in scn_name:
-        # Grid-scale battery carry-forward into future scenarios is out of
-        # scope here (see #1472) - only home batteries get carried forward.
-        mastr = mastr.loc[mastr.carrier == "home_battery"]
 
     mastr["scenario"] = scn_name
     mastr["source_id"] = mastr["source_id"].apply(lambda x: {"MastrNummer": x})
@@ -857,9 +867,9 @@ def allocate_pumped_hydro_scn():
 
 
 def allocate_other_storage_units():
-    # Runs for all scenarios now: allocate_battery_storage() itself keeps
-    # 'BESS' (grid-scale) restricted to status quo scenarios (see #1472),
-    # while 'home_battery' is aged and carried forward into every scenario.
+    # Both 'BESS' and 'home_battery' are aged and carried forward into
+    # every scenario now (real MaStR capacity only for BESS - no modeled
+    # residual component yet, see #1478).
     for scn in config.settings()["egon-data"]["--scenarios"]:
         allocate_battery_storage(scn_name=scn)
 
