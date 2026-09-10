@@ -79,6 +79,9 @@ Changed
 Bug Fixes
 ---------
 
+* Fixes distribution of small heat pumps due to incremental small heat demands 
+  by implementing a minimal heat demand for the installation of a heat pump
+  `#1496 <https://github.com/openego/eGon-data/issues/1496>`_
 * Fix URL of BASt traffic data
   `#1347 <https://github.com/openego/eGon-data/issues/1347>`_
 * Discard scenario_path tasks
