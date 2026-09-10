@@ -1366,7 +1366,8 @@ def sanitycheck_rail_transport_demand():  # pylint: disable=too-many-locals
     """Sanity checks for the reGon rail transport electricity demand.
 
     Validates the ``RailTransitDemand`` output in the eTraGo load tables for
-    the reGon scenarios (status2024 / reGon2037 / reGon2045):
+    the reGon scenarios this run builds (see
+    :py:func:`rail_transport_demand.configured_scenarios`):
 
     1. Loads exist for every rail carrier and reference a valid grid bus
        (from egon_mv_grid_district / egon_ehv_substation_voronoi).
@@ -1378,10 +1379,11 @@ def sanitycheck_rail_transport_demand():  # pylint: disable=too-many-locals
        1 % -- check 3 compares scenarios against each other and would pass
        even if every bundle energy were off by a common factor.
 
-    It also REPORTS (without failing) whether grid.egon_etrago_bus carries
-    the referenced buses for the scenario the loads are written under. The
-    bus assignment uses scenario-independent grid tables, so check 1 passes
-    either way, while an eTraGo export could still fail.
+    5. ``grid.egon_etrago_bus`` carries the referenced buses FOR THE
+       SCENARIO the loads are written under. The bus assignment uses
+       scenario-independent grid tables, so check 1 passes either way while
+       an eTraGo export would still fail -- which is why this needs an
+       assertion of its own.
     """
     carriers = tuple(sorted(set(rail_demand.CARRIERS.values())))
     logger.info("Sanity checks: reGon rail transport demand ...")
@@ -1398,7 +1400,7 @@ def sanitycheck_rail_transport_demand():  # pylint: disable=too-many-locals
     )
 
     energy = {}
-    for scn in rail_demand.SCENARIOS:
+    for scn in rail_demand.configured_scenarios():
         loads = db.select_dataframe(
             f"""
             SELECT load_id, bus, carrier, sign
@@ -1419,9 +1421,11 @@ def sanitycheck_rail_transport_demand():  # pylint: disable=too-many-locals
         assert not bad_bus.any(), bad_bus_msg
 
         # 1b. does the eTraGo bus table know these buses FOR THIS SCENARIO?
-        #     Reported, not asserted: whether the reGon scenarios get their
-        #     own bus rows is an open question, and a hard failure here would
-        #     mask the rest of the checks.
+        #     Asserted since the full DE run of 2026-09 answered the question
+        #     this used to hold open: reGon2045 was not configured, carried
+        #     483 rail loads and no bus rows at all. Reporting it was the
+        #     right call while the answer was unknown; keeping it a warning
+        #     now would only hide a broken export behind a green check.
         scn_buses = set(
             db.select_dataframe(
                 f"""
@@ -1430,20 +1434,18 @@ def sanitycheck_rail_transport_demand():  # pylint: disable=too-many-locals
                 """
             )["bus_id"]
         )
-        if not scn_buses:
-            logger.warning(
-                f"  '{scn}': grid.egon_etrago_bus has no rows for this "
-                f"scenario; the rail loads reference buses no eTraGo export "
-                f"can resolve."
-            )
-        else:
-            unknown = sorted(set(loads["bus"]) - scn_buses)
-            if unknown:
-                logger.warning(
-                    f"  '{scn}': {len(unknown)} of "
-                    f"{loads['bus'].nunique()} rail load buses are missing "
-                    f"from grid.egon_etrago_bus (e.g. {unknown[:5]})."
-                )
+        no_bus_msg = (
+            f"'{scn}': grid.egon_etrago_bus has no rows for this scenario; "
+            f"the rail loads reference buses no eTraGo export can resolve."
+        )
+        assert scn_buses, no_bus_msg
+        unknown = sorted(set(loads["bus"]) - scn_buses)
+        unknown_msg = (
+            f"'{scn}': {len(unknown)} of {loads['bus'].nunique()} rail load "
+            f"buses are missing from grid.egon_etrago_bus "
+            f"(e.g. {unknown[:5]})."
+        )
+        assert not unknown, unknown_msg
 
         # 2. timeseries integrity (8760 h, no NaN, non-negative)
         ts = db.select_dataframe(
@@ -1479,23 +1481,33 @@ def sanitycheck_rail_transport_demand():  # pylint: disable=too-many-locals
                 f"{per_carrier[carrier] / 1e6:.4f} TWh."
             )
 
-    # 3. energy scales as the scenario_parameters gross-demand ratio
+    # 3. energy scales as the scenario_parameters gross-demand ratio.
+    #    Possible only when the base scenario is part of the run -- the ratio
+    #    is measured against it. Check 4 verifies the absolute level of every
+    #    configured scenario either way, so skipping this loses the weaker of
+    #    the two checks, not the load-bearing one.
     base_scn = rail_demand.BASE_SCENARIO
-    base = get_sector_parameters("mobility", base_scn)[
-        "rail_transport_demand"
-    ]["gross_rail_demand"]
-    assert energy[base_scn] > 0, "Base scenario has zero rail energy."
-    for scn in rail_demand.SCENARIOS:
-        demand = get_sector_parameters("mobility", scn)[
+    if base_scn not in energy:
+        logger.info(
+            f"  base scenario '{base_scn}' is not configured; skipping the "
+            f"inter-scenario ratio check."
+        )
+    else:
+        base = get_sector_parameters("mobility", base_scn)[
             "rail_transport_demand"
         ]["gross_rail_demand"]
-        expected = demand / base
-        actual = energy[scn] / energy[base_scn]
-        ratio_msg = (
-            f"'{scn}': energy ratio {actual:.4f} != expected "
-            f"{expected:.4f} from scenario_parameters."
-        )
-        assert isclose(actual, expected, rel_tol=1e-3), ratio_msg
+        assert energy[base_scn] > 0, "Base scenario has zero rail energy."
+        for scn in rail_demand.configured_scenarios():
+            demand = get_sector_parameters("mobility", scn)[
+                "rail_transport_demand"
+            ]["gross_rail_demand"]
+            expected = demand / base
+            actual = energy[scn] / energy[base_scn]
+            ratio_msg = (
+                f"'{scn}': energy ratio {actual:.4f} != expected "
+                f"{expected:.4f} from scenario_parameters."
+            )
+            assert isclose(actual, expected, rel_tol=1e-3), ratio_msg
 
     # 4. LEVEL, not just ratio: the written energy must match the 50-Hz draw
     #    declared in the scenario parameters. Check 3 alone would pass even if
@@ -1503,7 +1515,7 @@ def sanitycheck_rail_transport_demand():  # pylint: disable=too-many-locals
     #    Tolerance 1 %: the bundle anchors are deliberately rounded (7.0 and
     #    0.56 TWh instead of the measured 7.0336 and 0.5654), a systematic
     #    -0.39 %, so an exact comparison is not possible here.
-    for scn in rail_demand.SCENARIOS:
+    for scn in rail_demand.configured_scenarios():
         draw = get_sector_parameters("mobility", scn)["rail_transport_demand"][
             "annual_demand"
         ]
@@ -3121,7 +3133,7 @@ class SanityChecks(Dataset):
     #:
     name: str = "SanityChecks"
     #:
-    version: str = "0.0.13"
+    version: str = "0.0.14"
 
     sources = DatasetSources(
         tables={

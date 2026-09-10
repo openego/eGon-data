@@ -32,7 +32,7 @@ import re
 import geopandas as gpd
 import pandas as pd
 
-from egon.data import db
+from egon.data import config, db
 from egon.data.datasets import Dataset, DatasetSources, DatasetTargets
 from egon.data.datasets.scenario_parameters import get_sector_parameters
 
@@ -51,6 +51,26 @@ CARRIERS = {
 #: sector). NEP figures live there, not here (see scenario_parameters).
 BASE_SCENARIO = "status2024"
 SCENARIOS = ("status2024", "reGon2037", "reGon2045")
+
+
+def configured_scenarios():
+    """The scenarios of :data:`SCENARIOS` that this run actually builds.
+
+    :data:`SCENARIOS` names the scenarios this dataset knows how to scale;
+    ``--scenarios`` decides which of them a run builds. Both are needed: a
+    scenario this dataset does not know cannot be scaled, and a scenario the
+    run does not build has no grid to attach loads to.
+
+    Writing loads for a scenario the run leaves out attaches them to buses
+    that ``grid.egon_etrago_bus`` has no rows for. On the full DE run of
+    2026-09, configured for status2024 and reGon2037, ``reGon2045`` held 483
+    rail loads and nothing else at all -- every other dataset had honoured
+    the configuration, so the loads sat in a scenario without a grid and no
+    eTraGo export could have resolved them.
+    """
+    configured = config.settings()["egon-data"]["--scenarios"]
+    return [scn for scn in SCENARIOS if scn in configured]
+
 
 #: bundle ``grid_level`` -> the polygon layer the bus is taken from
 BUS_LEVELS = {"HöS/HS": "ehv", "MS": "mv"}
@@ -90,7 +110,7 @@ _OSM_SUBSTATIONS_SQL = """
 
 class RailTransitDemand(Dataset):
     name: str = "RailTransitDemand"
-    version: str = "0.0.5"
+    version: str = "0.0.6"
 
     sources = DatasetSources(
         tables={
@@ -317,7 +337,16 @@ def insert_rail_demand():
         "rail_transport_demand"
     ]["gross_rail_demand"]
 
-    for scn in SCENARIOS:
+    scenarios = configured_scenarios()
+    if not scenarios:
+        print(
+            "  rail_transport_demand: none of "
+            f"{list(SCENARIOS)} is configured in --scenarios, "
+            "no loads written."
+        )
+        return
+
+    for scn in scenarios:
         scn_mwh = get_sector_parameters("mobility", scn)[
             "rail_transport_demand"
         ]["gross_rail_demand"]
