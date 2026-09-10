@@ -26,7 +26,7 @@ from egon.data.datasets import Dataset, DatasetSources, DatasetTargets
 # https://www.netzentwicklungsplan.de/sites/default/files/2025-12/NEP_2037_2045_V2025_1_Entwurf.pdf
 # https://www.netzentwicklungsplan.de/sites/default/files/2024-07/Szenariorahmenentwurf_NEP2037_2025_1.pdf
 TARGET_CAPACITY_MW = (
-    19460  # 15680 (Szenario A), 19460 (Szenario B), 23240 (Szenario C)
+    23240  # 15680 (Szenario A), 19460 (Szenario B), 23240 (Szenario C)
 )
 MU = 3.297
 SIGMA = 1.325
@@ -65,6 +65,16 @@ L_PER_KM_380KV = 0.8e-3
 # planned reused energy.
 # Source: https://www.gesetze-im-internet.de/enefg/__11.html
 REUSABLE_HEAT_FACTOR = 0.20
+
+# UKPN data center load-profile parameters
+# Profiles are filtered by annual utilisation and converted to hourly resoluion
+# load time series. The annual demand target follows from 5,000 full-load hours.
+# using 5,000 full-load hours from the Szenariorahmen NEP 2037/2045
+# draft (p. 45).
+FULL_LOAD_HOURS = 5000
+MIN_UTILISATION = 0.55
+MAX_UTILISATION = 0.90
+LOAD_PROFILE_RANDOM_SEED = 43
 
 
 def dist_score(dist, radius):
@@ -196,7 +206,27 @@ def load_regional_factors():
         sources.files["regional_factors"],
     ).to_crs(epsg=25832)
 
+def load_ukpn_profiles():
+    """Load UKPN data center demand profiles for 2025."""
+    sources = DataCenters.sources
 
+    profiles = pd.read_csv(
+        sources.files["ukpn_profiles"]
+    )
+
+    # UTC gives a continuous time index without daylight-saving gaps or duplicates.
+    profiles["utc_timestamp"] = pd.to_datetime(
+        profiles["utc_timestamp"],
+        utc=True,
+    )
+
+    profiles = profiles[
+        profiles["utc_timestamp"].dt.year == 2025
+    ].copy()
+
+    return profiles
+
+    
 def create_data_center_allocation():
     """Run data center allocation workflow and return rz_punkte."""
     # Allocate generated data center capacities to suitable commercial areas
@@ -364,7 +394,7 @@ def create_data_center_allocation():
 
 ####################
 # Electrical integration part
-def get_existing_ac_buses(scenario):
+def get_existing_ac_buses():
     """Get existing 110 kV and 380 kV AC buses from eTraGo."""
     sources = DataCenters.sources
 
@@ -384,7 +414,7 @@ def get_existing_ac_buses(scenario):
     return gdf.rename_geometry("geometry")
 
 
-def get_existing_central_heat_buses(scenario):
+def get_existing_central_heat_buses():
     """Get existing central heat buses from eTraGo."""
     sources = DataCenters.sources
 
@@ -633,6 +663,15 @@ def delete_existing_data_centers(scenario):
     targets = DataCenters.targets
 
     db.execute_sql(f"""
+        DELETE FROM {targets.tables["load_timeseries"]}
+        WHERE scn_name = '{scenario}'
+        AND load_id IN (
+            SELECT load_id
+            FROM {targets.tables["loads"]}
+            WHERE scn_name = '{scenario}'
+            AND type = 'data_center'
+        );
+        
         DELETE FROM {targets.tables["links"]}
         WHERE scn_name = '{scenario}'
         AND carrier = 'data_center_waste_heat';
@@ -656,8 +695,8 @@ def insert_data_centers(scenario):
     targets = DataCenters.targets
     delete_existing_data_centers(scenario)
     data_centers = create_data_center_allocation()
-    existing_buses = get_existing_ac_buses(scenario)
-    central_heat_buses = get_existing_central_heat_buses(scenario)
+    existing_buses = get_existing_ac_buses()
+    central_heat_buses = get_existing_central_heat_buses()
     data_centers = assign_nearest_bus(data_centers, existing_buses)
 
     data_center_buses, data_centers = create_data_center_buses(
@@ -703,9 +742,226 @@ def insert_data_centers(scenario):
         index=False,
     )
 
+####################
+# Load time-series integration part
+
+def get_valid_ukpn_sites(profiles):
+    """Select plausible UKPN data center profiles with near-complete annual data."""
+
+    site_stats = (
+        profiles
+        .groupby(
+            [
+                "cleansed_voltage_level",
+                "anonymised_data_centre_name",
+            ]
+        )["hh_utilisation_ratio"]
+        .agg(["mean", "count"])
+    )
+
+    # Keep sites with plausible annual utilisation and almost complete 2025 data.
+    valid_sites = site_stats[
+        (site_stats["mean"] >= MIN_UTILISATION)
+        & (site_stats["mean"] <= MAX_UTILISATION)
+        & (site_stats["count"] >= 17500)
+    ].copy()
+
+    return valid_sites
+
+def get_ukpn_site_pools(valid_sites):
+    """Split valid UKPN profiles into HV and EHV site pools."""
+
+    hv_sites = valid_sites.loc[
+        "High Voltage Import"
+    ].index.tolist()
+
+    ehv_sites = valid_sites.loc[
+        "Extra-High Voltage Import"
+    ].index.tolist()
+
+    return hv_sites, ehv_sites
+
+def assign_ukpn_profiles(
+    data_centers,
+    profiles,
+    hv_sites,
+    ehv_sites,
+):
+    """Assign and prepare one UKPN load profile for each modeled data center."""
+
+    rng = np.random.default_rng(LOAD_PROFILE_RANDOM_SEED)
+    raw_profiles = {}
+
+    # Stable ordering keeps the random profile assignment reproducible.
+    data_centers = data_centers.sort_values("load_id")
+
+    for _, row in data_centers.iterrows():
+
+        if row.v_nom == 110:
+            selected_site = rng.choice(hv_sites)
+
+        elif row.v_nom == 380:
+            selected_site = rng.choice(ehv_sites)
+
+        else:
+            raise ValueError(
+                f"Unsupported voltage level: {row.v_nom}"
+            )
+
+        profile = (
+            profiles[
+                profiles["anonymised_data_centre_name"] == selected_site
+            ]
+            .set_index("utc_timestamp")["hh_utilisation_ratio"]
+            .sort_index()
+        )
+
+        full_index = pd.date_range(
+            start="2025-01-01 00:00:00+00:00",
+            end="2025-12-31 23:30:00+00:00",
+            freq="30min",
+        )
+
+        # Fill the few missing half-hours before converting to hourly resolution.
+        profile = profile.reindex(full_index).ffill()
+
+        # Convert half-hourly UKPN utilisation to hourly eTraGo resolution.
+        profile = profile.resample("1h").mean()
+
+        raw_profiles[row.load_id] = (
+            profile.to_numpy()
+            * row.allocated_mw
+        )
+
+    return raw_profiles
+
+def scale_data_center_profiles(
+    raw_profiles,
+    target_capacity_mw,
+):
+    """Scale all data center profiles to the annual demand target."""
+
+    raw_total_mwh = sum(
+        profile.sum()
+        for profile in raw_profiles.values()
+    )
+
+    # Annual demand target follows from installed capacity and 5,000 full-load hours.
+    target_total_mwh = (
+        target_capacity_mw
+        * FULL_LOAD_HOURS
+    )
+
+    scaling_factor = (
+        target_total_mwh
+        / raw_total_mwh
+    )
+
+    scaled_profiles = {
+        load_id: profile * scaling_factor
+        for load_id, profile in raw_profiles.items()
+    }
+
+    return scaled_profiles
+
+def create_data_center_load_timeseries(
+    scaled_profiles,
+    scenario,
+):
+    """Create load time-series rows for data centers."""
+
+    timeseries = []
+
+    for load_id, profile in scaled_profiles.items():
+        timeseries.append(
+            {
+                "scn_name": scenario,
+                "load_id": load_id,
+                "temp_id": 1,
+                "p_set": profile.tolist(),
+                "q_set": None,
+            }
+        )
+
+    return pd.DataFrame(timeseries)
+
+def load_data_centers_for_timeseries(scenario):
+    """Load created data center loads with their voltage and capacity."""
+
+    sources = DataCenters.sources
+
+    # The load p_set is the allocated data center capacity created earlier.
+    data_centers = db.select_dataframe(
+        f"""
+        SELECT
+            l.load_id,
+            l.p_set AS allocated_mw,
+            b.v_nom
+        FROM {sources.tables["loads"]} AS l
+        JOIN {sources.tables["buses"]} AS b
+        ON l.bus = b.bus_id
+        AND l.scn_name = b.scn_name
+        WHERE l.scn_name = '{scenario}'
+        AND l.type = 'data_center'
+        AND b.type = 'data_center'
+        """
+    )
+
+    return data_centers
+
+def insert_data_center_load_timeseries(scenario):
+    """Create and insert hourly load time series for the modeled data centers."""
+
+    targets = DataCenters.targets
+
+    profiles = load_ukpn_profiles()
+    valid_sites = get_valid_ukpn_sites(profiles)
+    hv_sites, ehv_sites = get_ukpn_site_pools(valid_sites)
+
+    data_centers = load_data_centers_for_timeseries(scenario)
+
+    raw_profiles = assign_ukpn_profiles(
+        data_centers,
+        profiles,
+        hv_sites,
+        ehv_sites,
+    )
+
+    # Use the actual created data center capacity as the annual scaling basis.
+    scaled_profiles = scale_data_center_profiles(
+        raw_profiles,
+        data_centers["allocated_mw"].sum(),
+    )
+
+    load_timeseries = create_data_center_load_timeseries(
+        scaled_profiles,
+        scenario,
+    )
+
+    # Remove existing data center time series before rerun.
+    db.execute_sql(
+        f"""
+        DELETE FROM {targets.tables["load_timeseries"]}
+        WHERE scn_name = '{scenario}'
+        AND load_id IN (
+            SELECT load_id
+            FROM {targets.tables["loads"]}
+            WHERE scn_name = '{scenario}'
+            AND type = 'data_center'
+        );
+        """
+    )
+
+    load_timeseries.to_sql(
+        targets.get_table_name("load_timeseries"),
+        schema=targets.get_table_schema("load_timeseries"),
+        if_exists="append",
+        con=db.engine(),
+        index=False,
+    )
 
 def insert_data_centers_for_scenarios():
-    """Insert data centers for configured scenarios using Scenario B assumption."""
+    """Insert data center components for configured scenarios."""
     global TARGET_CAPACITY_MW
 
     if (
@@ -717,6 +973,14 @@ def insert_data_centers_for_scenarios():
     for scenario in config.settings()["egon-data"]["--scenarios"]:
         if scenario == "reGon2037":
             insert_data_centers(scenario)
+            
+def insert_data_center_load_timeseries_for_scenarios():
+    """Insert data center load time series for configured scenarios."""
+
+    for scenario in config.settings()["egon-data"]["--scenarios"]:
+        if scenario == "reGon2037":
+            insert_data_center_load_timeseries(scenario)
+            
 
 
 class DataCenters(Dataset):
@@ -745,6 +1009,11 @@ class DataCenters(Dataset):
             ),
             # Source: Netztransparenz.de Baukostenzuschuss data, published by
             # 50Hertz, Amprion, TenneT and TransnetBW.
+            "ukpn_profiles": (
+                "data_bundle_egon_data/data_centers/ukpn-data-centre-demand-profiles.csv"
+             # Individual half-hourly UKPN data center demand profiles used to derive
+             # hourly load time series for the modeled data centers.
+            ),
         },
     )
 
@@ -754,6 +1023,7 @@ class DataCenters(Dataset):
             "lines": "grid.egon_etrago_line",
             "loads": "grid.egon_etrago_load",
             "links": "grid.egon_etrago_link",
+            "load_timeseries": "grid.egon_etrago_load_timeseries",
         },
     )
 
@@ -762,5 +1032,8 @@ class DataCenters(Dataset):
             name=self.name,
             version=self.version,
             dependencies=dependencies,
-            tasks=(insert_data_centers_for_scenarios,),
+            tasks=(
+                insert_data_centers_for_scenarios,
+                insert_data_center_load_timeseries_for_scenarios,
+            ),
         )
