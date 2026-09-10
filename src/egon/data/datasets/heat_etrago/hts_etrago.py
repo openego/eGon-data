@@ -214,7 +214,7 @@ class HtsEtragoTable(Dataset):
       * :py:class:`DistrictHeatingAreas <egon.data.datasets.district_heating_areas.DistrictHeatingAreas>`
       * :py:class:`HeatEtrago <egon.data.datasets.heat_etrago.HeatEtrago>`
       * :py:class:`MvGridDistricts <egon.data.datasets.mv_grid_districts.mv_grid_districts_setup>`
-      * :py:class:`HeatPumps2035 <egon.data.datasets.heat_supply.individual_heating.HeatPumps2035>`
+      * :py:class:`HeatPumpsCascade <egon.data.datasets.heat_supply.individual_heating.HeatPumpsCascade>`
       * :py:class:`HeatTimeSeries <egon.data.datasets.heat_demand_timeseries.HeatTimeSeries>`
 
     *Resulting tables*

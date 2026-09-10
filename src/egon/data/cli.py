@@ -30,6 +30,7 @@ from psycopg2 import OperationalError as PSPGOE
 import egon.data
 import egon.data.airflow
 import egon.data.config as config
+from egon.data.config import settings
 import importlib_resources as resources
 from egon.data import logger
 from sqlalchemy import create_engine
@@ -87,6 +88,18 @@ from sqlalchemy.orm import Session
     default="data",
     metavar="PW",
     help=("Specify the password used to access the local database."),
+    show_default=True,
+)
+@click.option(
+    "--database-directory",
+    default="database-data",
+    metavar="DIRECTORY",
+    help=(
+        "Specify the directory used to save the local database relative"
+        " to the docker directory (default directory)."
+        " e.g. '../database-data/'"
+        " to reach the current working directory."
+    ),
     show_default=True,
 )
 @click.option(
@@ -176,12 +189,12 @@ from sqlalchemy.orm import Session
 )
 @click.option(
     "--scenarios",
-    default=["status2023", "eGon2035"],
+    default=["status2024", "reGon2037"],
     metavar="SCENARIOS",
     help=(
         "Scenario name for which a data model shall be created."
         " If you want to create multiple scenarios, set the parameter multiple"
-        " times, e.g. --scenarios eGon2035 --scenarios status2023"
+        " times, e.g. --scenarios reGon2037 --scenarios status2024"
         ),
     multiple=True,
     show_default=True,
@@ -363,7 +376,9 @@ def egon_data(context, **kwargs):
         gid=os.getgid(),
         uid=os.getuid(),
     )
-    (Path(".") / "docker" / "database-data").mkdir(parents=True, exist_ok=True)
+
+    path_directory = (Path(".") / "docker" / settings()["egon-data"]["--database-directory"])
+    path_directory.mkdir(parents=True, exist_ok=True)
 
     # Copy webserver_config.py to disable authentification on webinterface
     shutil.copy2(

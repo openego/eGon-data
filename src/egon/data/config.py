@@ -67,13 +67,14 @@ def settings() -> dict[str, dict[str, str]]:
                 "--database-password": "data",
                 "--database-port": "59734",
                 "--database-user": "egon",
+                "--database-directory": "database-data",
                 "--dataset-boundary": "Everything",
                 "--docker-container-name":
                     "egon-data-local-database-container",
                 "--jobs": 1,
                 "--random-seed": 42,
                 "--processes-per-task": 1,
-                "--scenarios": ["status2019", "eGon2035"],
+                "--scenarios": ["status2024", "reGon2037"],
                 "--run-pypsa-eur": False,
             }
         }

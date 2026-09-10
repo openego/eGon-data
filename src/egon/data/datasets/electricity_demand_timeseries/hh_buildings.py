@@ -22,6 +22,7 @@ from egon.data.datasets.electricity_demand_timeseries.hh_profiles import (
 from egon.data.datasets.electricity_demand_timeseries.tools import (
     random_point_in_square,
 )
+from egon.data.datasets.scenario_parameters import get_scenario_year
 import egon.data.config
 
 engine = db.engine()
@@ -705,15 +706,22 @@ def get_building_peak_loads():
     RAM > 32GB is necessary.
     """
 
+    scenarios = egon.data.config.settings()["egon-data"]["--scenarios"]
+
+    factor_columns = [
+        getattr(
+            HouseholdElectricityProfilesInCensusCells,
+            f"factor_{get_scenario_year(scn)}",
+        )
+        for scn in scenarios
+    ]
+
     with db.session_scope() as session:
         cells_query = (
             session.query(
                 HouseholdElectricityProfilesOfBuildings,
                 HouseholdElectricityProfilesInCensusCells.nuts3,
-                HouseholdElectricityProfilesInCensusCells.factor_2019,
-                HouseholdElectricityProfilesInCensusCells.factor_2023,
-                HouseholdElectricityProfilesInCensusCells.factor_2035,
-                HouseholdElectricityProfilesInCensusCells.factor_2050,
+                *factor_columns,
             )
             .filter(
                 HouseholdElectricityProfilesOfBuildings.cell_id
@@ -766,17 +774,11 @@ def get_building_peak_loads():
 
             df_building_peak_load_nuts3 = pd.DataFrame(
                 [
-                    df_building_peak_load_nuts3 * df["factor_2019"].unique(),
-                    df_building_peak_load_nuts3 * df["factor_2023"].unique(),
-                    df_building_peak_load_nuts3 * df["factor_2035"].unique(),
-                    df_building_peak_load_nuts3 * df["factor_2050"].unique(),
+                    df_building_peak_load_nuts3
+                    * df[f"factor_{get_scenario_year(scn)}"].unique()
+                    for scn in scenarios
                 ],
-                index=[
-                    "status2019",
-                    "status2023",
-                    "eGon2035",
-                    "eGon100RE",
-                ],
+                index=scenarios,
             ).T
 
             df_building_peak_loads = pd.concat(

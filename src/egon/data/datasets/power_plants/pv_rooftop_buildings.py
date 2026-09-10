@@ -1,6 +1,6 @@
 """
 Distribute MaStR PV rooftop capacities to OSM and synthetic buildings. Generate
-new PV rooftop generators for scenarios eGon2035 and eGon100RE.
+new PV rooftop generators for scenarios eGon2035, reGon2037 and reGon2045.
 
 See documentation section :ref:`pv-rooftop-ref` for more information.
 
@@ -68,10 +68,10 @@ Q = 5
 # Scenario Data
 SCENARIOS = config.settings()["egon-data"]["--scenarios"]
 SCENARIO_TIMESTAMP = {
-    "status2019": pd.Timestamp("2020-01-01", tz="UTC"),
-    "status2023": pd.Timestamp("2024-01-01", tz="UTC"),
+    "status2024": pd.Timestamp("2025-01-01", tz="UTC"),
     "eGon2035": pd.Timestamp("2035-01-01", tz="UTC"),
-    "eGon100RE": pd.Timestamp("2050-01-01", tz="UTC"),
+    "reGon2037": pd.Timestamp("2037-01-01", tz="UTC"),
+    "reGon2045": pd.Timestamp("2045-01-01", tz="UTC"),
 }
 PV_ROOFTOP_LIFETIME = pd.Timedelta(20 * 365, unit="D")
 
@@ -2413,7 +2413,7 @@ def pv_rooftop_to_buildings():
 
     mastr_gdf = load_mastr_data()
 
-    status_quo = "status2023"  # FIXME: Hard coded
+    status_quo = "status2024"
 
     # <--- REFACTORING: Use sources.files
     ts = pd.Timestamp(sources.files[f"{status_quo}_date_max"], tz="UTC")

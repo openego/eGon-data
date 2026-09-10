@@ -431,7 +431,7 @@ def annual_demand_generator(scenario):
 def select():
     """
 
-    Random assignment of intray-day profiles to each day based on their temeprature class
+    Random assignment of intray-day profiles to each day based on their temperature class
     and household stock count
 
     Returns

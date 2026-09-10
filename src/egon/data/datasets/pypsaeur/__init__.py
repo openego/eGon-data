@@ -53,7 +53,7 @@ class RunPypsaEur(Dataset):
     def __init__(self, dependencies):
         super().__init__(
             name="SolvePypsaEur",
-            version="0.0.43",
+            version="0.0.44",
             dependencies=dependencies,
             tasks=(
                 prepare_network_2,
@@ -127,11 +127,7 @@ def h2_neighbours_egon2035():
         # Adjust dataframe to the database table format
         h2_bus["scn_name"] = "eGon2035"
 
-        bus_id = db.next_etrago_id("bus")  # will be change in PR1287
-        ### Delete when PR1287 is merged ###
-        bus_id = range(bus_id, bus_id + len(h2_bus.index))
-        ####################################
-        h2_bus["bus_id"] = bus_id
+        h2_bus["bus_id"] = db.next_etrago_id("bus", len(h2_bus.index))
 
         h2_bus.drop(
             columns=[

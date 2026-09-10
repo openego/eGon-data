@@ -134,7 +134,7 @@ class DsmPotential(Dataset):
     #:
     name: str = "DsmPotential"
     #:
-    version: str = "0.0.11"
+    version: str = "0.0.12"
 
     sources = DatasetSources(
         tables={
@@ -722,14 +722,9 @@ def ind_sites_data_import():
         columns=["bus_id", "scenario_name", "p_set", "application", "id"]
     )
 
-    # scenario eGon2035
-    if "eGon2035" in scenarios:
-        dsm_2035 = calc_ind_site_timeseries("eGon2035").reset_index()
-        dsm = pd.concat([dsm, dsm_2035], ignore_index=True)
-    # scenario eGon100RE
-    if "eGon100RE" in scenarios:
-        dsm_100 = calc_ind_site_timeseries("eGon100RE").reset_index()
-        dsm = pd.concat([dsm, dsm_100], ignore_index=True)
+    for scenario in scenarios:
+        dsm_scenario = calc_ind_site_timeseries(scenario).reset_index()
+        dsm = pd.concat([dsm, dsm_scenario], ignore_index=True)
 
     dsm.index = range(len(dsm))
     # relate calculated timeseries to Schmidt's industrial sites
@@ -908,22 +903,17 @@ def create_dsm_components(
     dsm_id = max_id + 1
     bus_id = pd.Series(index=dsm_buses.index, dtype=int)
 
-    # Get number of DSM buses for both scenarios
+    # Get number of DSM buses per scenario
     rows_per_scenario = (
         dsm_buses.groupby("scn_name").count().original_bus.to_dict()
     )
 
     # Assignment of DSM ids
-    bus_id.iloc[: rows_per_scenario.get("eGon2035", 0)] = range(
-        dsm_id, dsm_id + rows_per_scenario.get("eGon2035", 0)
-    )
-
-    bus_id.iloc[
-        rows_per_scenario.get("eGon2035", 0) : rows_per_scenario.get(
-            "eGon2035", 0
-        )
-        + rows_per_scenario.get("eGon100RE", 0)
-    ] = range(dsm_id, dsm_id + rows_per_scenario.get("eGon100RE", 0))
+    offset = 0
+    for scn in sorted(rows_per_scenario.keys()):
+        count = rows_per_scenario[scn]
+        bus_id.iloc[offset : offset + count] = range(dsm_id, dsm_id + count)
+        offset += count
 
     dsm_buses["bus_id"] = bus_id
 
@@ -945,16 +935,11 @@ def create_dsm_components(
     link_id = pd.Series(index=dsm_buses.index, dtype=int)
 
     # Assignment of link ids
-    link_id.iloc[: rows_per_scenario.get("eGon2035", 0)] = range(
-        dsm_id, dsm_id + rows_per_scenario.get("eGon2035", 0)
-    )
-
-    link_id.iloc[
-        rows_per_scenario.get("eGon2035", 0) : rows_per_scenario.get(
-            "eGon2035", 0
-        )
-        + rows_per_scenario.get("eGon100RE", 0)
-    ] = range(dsm_id, dsm_id + rows_per_scenario.get("eGon100RE", 0))
+    offset = 0
+    for scn in sorted(rows_per_scenario.keys()):
+        count = rows_per_scenario[scn]
+        link_id.iloc[offset : offset + count] = range(dsm_id, dsm_id + count)
+        offset += count
 
     dsm_links["link_id"] = link_id
 
@@ -982,16 +967,11 @@ def create_dsm_components(
     store_id = pd.Series(index=dsm_buses.index, dtype=int)
 
     # Assignment of store ids
-    store_id.iloc[: rows_per_scenario.get("eGon2035", 0)] = range(
-        dsm_id, dsm_id + rows_per_scenario.get("eGon2035", 0)
-    )
-
-    store_id.iloc[
-        rows_per_scenario.get("eGon2035", 0) : rows_per_scenario.get(
-            "eGon2035", 0
-        )
-        + rows_per_scenario.get("eGon100RE", 0)
-    ] = range(dsm_id, dsm_id + rows_per_scenario.get("eGon100RE", 0))
+    offset = 0
+    for scn in sorted(rows_per_scenario.keys()):
+        count = rows_per_scenario[scn]
+        store_id.iloc[offset : offset + count] = range(dsm_id, dsm_id + count)
+        offset += count
 
     dsm_stores["store_id"] = store_id
 
@@ -1081,13 +1061,13 @@ def aggregate_components(df_dsm_buses, df_dsm_links, df_dsm_stores):
     df_dsm_stores["bus"] = bus_id
 
     # select new link_ids for aggregated links
-    link_id = db.next_etrago_id("Link", len(df_dsm_links.index))
+    link_id = db.next_etrago_id("link", len(df_dsm_links.index))
 
     df_dsm_links["link_id"] = link_id
 
     # select new store_ids to aggregated stores
 
-    store_id = db.next_etrago_id("Store", len(df_dsm_stores.index))
+    store_id = db.next_etrago_id("store", len(df_dsm_stores.index))
 
     df_dsm_stores["store_id"] = store_id
 

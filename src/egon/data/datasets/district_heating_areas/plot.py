@@ -8,12 +8,24 @@
 Module containing all code creating with plots of district heating areas
 """
 
+from itertools import cycle
 import os
 
 from matplotlib import pyplot as plt
-import pandas as pd
 
 from egon.data.datasets.scenario_parameters import get_sector_parameters
+
+# (share color, curve color) pairs, cycled over whichever scenarios are
+# actually passed in, so this doesn't need to be updated for every new
+# or discarded scenario.
+COLOR_PALETTE = [
+    ("darkblue", "blue"),
+    ("darkred", "red"),
+    ("darkgreen", "green"),
+    ("darkorange", "orange"),
+    ("purple", "violet"),
+    ("saddlebrown", "sandybrown"),
+]
 
 # heat_denisty_per_scenario = {}
 # heat_denisty_per_scenario['eGon2035'] = district_heating_areas(
@@ -56,20 +68,11 @@ def plot_heat_density_sorted(heat_denisty_per_scenario, scenario_name=None):
 
     fig, ax = plt.subplots(1, 1)
 
-    colors = pd.DataFrame(
-        columns=["share", "curve"],
-        index=["status2019", "status2023", "eGon2035", "eGon100RE"],
-    )
-
-    colors["share"]["eGon2035"] = "darkblue"
-    colors["curve"]["eGon2035"] = "blue"
-    colors["share"]["eGon100RE"] = "red"
-    colors["curve"]["eGon100RE"] = "orange"
-    colors["share"]["status2019"] = "darkgreen"
-    colors["curve"]["status2019"] = "green"
-    colors["share"]["status2023"] = "darkgrey"
-    colors["curve"]["status2023"] = "grey"
-    # TODO status2023 set plotting=False?
+    palette = cycle(COLOR_PALETTE)
+    colors = {
+        scenario: dict(zip(["share", "curve"], next(palette)))
+        for scenario in heat_denisty_per_scenario.keys()
+    }
 
     for scenario in heat_denisty_per_scenario.keys():
 
@@ -90,7 +93,7 @@ def plot_heat_density_sorted(heat_denisty_per_scenario, scenario_name=None):
             ls="--",
             lw=0.5,
             label=(f"{scenario}: District Heating Share of {procent} %"),
-            color=colors["share"][scenario],
+            color=colors[scenario]["share"],
         )
         # add the sorted heat demand density curve
 
@@ -98,7 +101,7 @@ def plot_heat_density_sorted(heat_denisty_per_scenario, scenario_name=None):
             collection.Cumulative_Sum,
             collection.residential_and_service_demand,
             label=f"{scenario}: Heat demand densities, sorted",
-            color=colors["curve"][scenario],
+            color=colors[scenario]["curve"],
         )
 
         # annotations
@@ -119,7 +122,7 @@ def plot_heat_density_sorted(heat_denisty_per_scenario, scenario_name=None):
             bbox=dict(
                 boxstyle="round, pad=0.5",
                 fc="none",
-                ec=colors["share"][scenario],  # lw=2
+                ec=colors[scenario]["share"],  # lw=2
             ),
         )
         ax.text(
@@ -132,7 +135,7 @@ def plot_heat_density_sorted(heat_denisty_per_scenario, scenario_name=None):
             bbox=dict(
                 boxstyle="round, pad=0.5",
                 fc="none",
-                ec=colors["share"][scenario],  # lw=2
+                ec=colors[scenario]["share"],  # lw=2
             ),
         )
 
