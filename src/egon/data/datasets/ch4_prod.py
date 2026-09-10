@@ -350,13 +350,19 @@ def import_gas_generators():
             );
             """)
 
-        if scn_name == "eGon2035" or scn_name == "reGon2037":
-            CH4_generators_list = pd.concat(
-                [
-                    load_NG_generators(scn_name),
-                    load_biogas_generators(scn_name),
-                ]
-            )
+        if scn_name in ["eGon2035", "reGon2037", "reGon2045"]:
+
+            if scn_name in ["eGon2035", "reGon2037"]:
+                CH4_generators_list = pd.concat(
+                    [
+                        load_NG_generators(scn_name),
+                        load_biogas_generators(scn_name),
+                    ]
+                )
+
+            # TO DO: check only biogas for reGon2045
+            if scn_name == "reGon2045":
+                CH4_generators_list = load_biogas_generators(scn_name)
 
             # Add missing columns
             c = {"scn_name": scn_name, "carrier": "CH4"}
@@ -394,10 +400,6 @@ def import_gas_generators():
                 "gas", scn_name
             )["marginal_cost"]["CH4"]
             CH4_generators_list["p_nom"] = 100000
-
-        # elif scn_name == "reGon2045":
-        # TO DO: empty table
-        # CH4_generators_list = []
 
         else:
             raise ValueError(f"{scn_name} is not a valid scenario name")
