@@ -53,6 +53,32 @@ def get_scenario_year(scenario_name):
     return year
 
 
+def demand_source_scenario(scenario):
+    """Resolve the scenario to query scenario-dependent demand tables for.
+
+    Status-quo-type scenarios don't yet have their own demand data and
+    instead read from an existing scenario as a stand-in, configured in
+    ``datasets.yml`` under ``heat_pumps_status_quo.demand_source_scenario``.
+    """
+    mapping = egon.data.config.datasets()["heat_pumps_status_quo"][
+        "demand_source_scenario"
+    ]
+    return mapping.get(scenario, scenario)
+
+
+def pv_source_scenario(scenario):
+    """Resolve the scenario to query the PV rooftop table for.
+
+    Status-quo-type scenarios don't yet have their own PV data and instead
+    read from an existing scenario as a stand-in, configured in
+    ``datasets.yml`` under ``heat_pumps_status_quo.pv_source_scenario``.
+    """
+    mapping = egon.data.config.datasets()["heat_pumps_status_quo"][
+        "pv_source_scenario"
+    ]
+    return mapping.get(scenario, scenario)
+
+
 def insert_scenarios():
     """Insert scenarios and their parameters to scenario table
 

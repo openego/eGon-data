@@ -1197,6 +1197,36 @@ emobility_mit:
 
 demand_timeseries_mvgd:
   parallel_tasks: 10
+  # Ordered chain of scenarios along which the fixed floor for heat pumps
+  # propagates: each scenario inherits its predecessor's *result*, so a building
+  # with a heat pump keeps it (at exactly the inherited capacity) in every later
+  # link. Only capacity beyond the inherited stock is newly distributed.
+  # eGon2035 is deliberately absent: it is a legacy scenario built on the 2021
+  # NEP, not part of the reGon (2025 NEP) timeline, and keeps its independent
+  # PV-weighted distribution.
+  # Extend this list to add a scenario to the chain (e.g. reGon2050) - no Python
+  # change is needed. HeatPumpsCascade builds its task order from this list, so
+  # the order here defines the chain direction.
+  hp_floor_chain:
+    - "status2024"
+    - "reGon2037"
+    - "reGon2045"
+
+heat_pumps_status_quo:
+  # Maps a status-quo scenario to the scenario whose demand/PV data is read.
+  # These existed because status-quo scenarios originally had no data of their
+  # own and proxied eGon2035. Both now resolve to themselves: real status2024
+  # data is present in egon_peta_heat, egon_map_zensus_district_heating_areas
+  # and egon_power_plants_pv_roof_building.
+  #
+  # Only point a mapping at another scenario if this database genuinely lacks
+  # the data, and never at a scenario absent from the target table: the lookup
+  # then matches nothing and fails silently (see pv_source_scenario history --
+  # "status_quo" matched no rows, so PV weighting had no effect at all).
+  demand_source_scenario:
+    status2024: "status2024"
+  pv_source_scenario:
+    status2024: "status2024"
 
 charging_infrastructure:
   original_data:
