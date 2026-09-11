@@ -1005,6 +1005,7 @@ def electricity(scenario):
     return parameters
 
 
+# TO DO: check gas parameters for reGon2037 and reGon2045
 def gas(scenario):
     """Returns paramaters of the gas sector for the selected scenario.
 
