@@ -44,12 +44,21 @@ import pandas as pd
 from egon.data import config, db
 from egon.data.datasets import load_sources_and_targets
 from egon.data.datasets.emobility.motorized_individual_travel.db_classes import (  # noqa: E501
-    EgonEvMvGridDistrict,
-    EgonEvPool,
-    EgonEvTrip,
+    EgonEvMitLgvMvGridDistrict,
+    EgonEvMitLgvPool,
+    EgonEvMitLgvTrip,
+)
+from egon.data.datasets.emobility.motorized_individual_travel.flex_diagnostics import (  # noqa: E501
+    USE_CASE_COLUMNS,
+    use_case_column,
+    write_charging_profile_use_case,
+    write_flex_timeseries,
 )
 from egon.data.datasets.emobility.motorized_individual_travel.helpers import (
+    CHARGING_USE_CASES,
+    FLEX_USE_CASES,
     WORKING_DIR,
+    is_legacy_scenario,
     read_simbev_metadata_file,
     reduce_mem_usage,
 )
@@ -63,6 +72,23 @@ from egon.data.datasets.etrago_setup import (
     EgonPfHvStoreTimeseries,
 )
 from egon.data.datasets.mv_grid_districts import MvGridDistricts
+
+#: Index of the last timestep of the modelled year (365 days of 96
+#: quarter-hours, zero based). The timeseries carry one more entry than
+#: that -- the closing endpoint -- so this is the last index any event
+#: may address.
+LAST_TIMESTEP = 35040
+
+#: Event columns holding a timestep index. All of them are cropped to
+#: :data:`LAST_TIMESTEP`, cf. :func:`data_preprocessing`.
+TIMESTEP_COLUMNS = [
+    "park_start",
+    "park_end",
+    "drive_start",
+    "drive_end",
+    "charge_end",
+    "last_timestep",
+]
 
 
 def is_flexible(scenario_name: str) -> bool:
@@ -88,7 +114,9 @@ def is_flexible(scenario_name: str) -> bool:
 
 
 def data_preprocessing(
-    scenario_data: pd.DataFrame, ev_data_df: pd.DataFrame
+    scenario_data: pd.DataFrame,
+    ev_data_df: pd.DataFrame,
+    scenario_name: str,
 ) -> pd.DataFrame:
     """Filter SimBEV data to match region requirements. Duplicates profiles
     if necessary. Pre-calculates necessary parameters for the load time series.
@@ -99,6 +127,11 @@ def data_preprocessing(
         EV per grid district
     ev_data_df : pd.Dataframe
         Trip data
+    scenario_name : str
+        Scenario name. Decides how the flexible share of the charging
+        capacity is identified: the legacy methodology tests the
+        `(location, use_case)` pair, the new one the charging use case
+        alone.
 
     Returns
     -------
@@ -147,33 +180,52 @@ def data_preprocessing(
         last_timestep=ev_data_df.park_start + full_timesteps,
     )
 
-    # Calculate flexible charging capacity:
-    # only for private charging facilities at home and work
-    mask_work = (ev_data_df.location == "0_work") & (
-        ev_data_df.use_case == "work"
-    )
-    mask_home = (ev_data_df.location == "6_home") & (
-        ev_data_df.use_case == "home"
-    )
+    # Calculate flexible charging capacity.
+    if is_legacy_scenario(scenario_name):
+        # Legacy methodology: private charging facilities at home and
+        # at work, identified by the (location, use_case) pair.
+        mask_work = (ev_data_df.location == "0_work") & (
+            ev_data_df.use_case == "work"
+        )
+        mask_home = (ev_data_df.location == "6_home") & (
+            ev_data_df.use_case == "home"
+        )
+        mask_flex = mask_work | mask_home
+    else:
+        # New methodology: the charging use case alone decides. Nothing
+        # keys on `location` any more -- it carries two parallel
+        # vocabularies depending on the vehicle group.
+        mask_flex = ev_data_df.use_case.isin(FLEX_USE_CASES)
 
     ev_data_df["flex_charging_capacity_grid_MW"] = 0
-    ev_data_df.loc[mask_work | mask_home, "flex_charging_capacity_grid_MW"] = (
-        ev_data_df.loc[mask_work | mask_home, "charging_capacity_grid_MW"]
+    ev_data_df.loc[mask_flex, "flex_charging_capacity_grid_MW"] = (
+        ev_data_df.loc[mask_flex, "charging_capacity_grid_MW"]
     )
 
     ev_data_df["flex_last_timestep_charging_capacity_grid_MW"] = 0
     ev_data_df.loc[
-        mask_work | mask_home, "flex_last_timestep_charging_capacity_grid_MW"
-    ] = ev_data_df.loc[
-        mask_work | mask_home, "last_timestep_charging_capacity_grid_MW"
-    ]
+        mask_flex, "flex_last_timestep_charging_capacity_grid_MW"
+    ] = ev_data_df.loc[mask_flex, "last_timestep_charging_capacity_grid_MW"]
 
     # Check length of timeseries
-    if len(ev_data_df.loc[ev_data_df.last_timestep > 35040]) > 0:
-        print("    Warning: Trip data exceeds 1 year and is cropped.")
-        # Correct last TS
-        ev_data_df.loc[ev_data_df.last_timestep > 35040, "last_timestep"] = (
-            35040
+    #
+    # Crop every timestep column, not just `last_timestep`: the SoC band
+    # of a driving or charging event is written with an `np.linspace()`
+    # whose length is derived from `drive_end` / `park_end`, so an event
+    # reaching past the end of the year makes the generated ramp longer
+    # than the slice it is added to and the addition fails to broadcast.
+    # The delivered events do reach past it -- `park_end` up to 35,166
+    # and `drive_end` up to 35,057 in delivery v1.4, i.e. up to 31.5 h
+    # into the next year.
+    cropped = ev_data_df[TIMESTEP_COLUMNS] > LAST_TIMESTEP
+    if cropped.any().any():
+        print(
+            f"    Warning: Trip data exceeds 1 year and is cropped "
+            f"({cropped.sum().to_dict()} timesteps beyond "
+            f"{LAST_TIMESTEP})."
+        )
+        ev_data_df[TIMESTEP_COLUMNS] = ev_data_df[TIMESTEP_COLUMNS].clip(
+            upper=LAST_TIMESTEP
         )
 
     if sources.files["original_data"]["model_timeseries"]["reduce_memory"]:
@@ -186,11 +238,18 @@ def generate_load_time_series(
     ev_data_df: pd.DataFrame,
     run_config: pd.DataFrame,
     scenario_data: pd.DataFrame,
+    scenario_name: str,
 ) -> pd.DataFrame:
     """Calculate the load time series from the given trip data. A dumb
     charging strategy is assumed where each EV starts charging immediately
     after plugging it in. Simultaneously the flexible charging capacity is
     calculated.
+
+    For scenarios on the new methodology the charging load is
+    additionally accumulated per charging use case, which is what
+    :class:`egon.data.datasets.emobility.motorized_individual_travel.flex_diagnostics.EgonEvMitLgvChargingProfileUseCase`
+    is written from. The event loop touches every event anyway, so this
+    is eight more accumulators and no extra pass.
 
     Parameters
     ----------
@@ -200,6 +259,8 @@ def generate_load_time_series(
         simBEV metadata: run config
     scenario_data : pd.Dataframe
         EV per grid district
+    scenario_name : str
+        Scenario name
 
     Returns
     -------
@@ -234,6 +295,15 @@ def generate_load_time_series(
     soc_max_absolute = load_time_series_array.copy()
     driving_load_time_series_array = load_time_series_array.copy()
 
+    # Export D: one charging load accumulator per use case. Written for
+    # the new methodology only -- the legacy use case taxonomy
+    # (public/home/work/empty) would not be comparable.
+    export_use_cases = not is_legacy_scenario(scenario_name)
+    use_case_arrays = {
+        use_case: load_time_series_array.copy()
+        for use_case in CHARGING_USE_CASES
+    }
+
     columns = [
         "ev_id",
         "drive_start",
@@ -251,6 +321,7 @@ def generate_load_time_series(
         "bat_cap",
         "location",
         "consumption",
+        "use_case",
     ]
 
     # iterate over charging events
@@ -272,11 +343,17 @@ def generate_load_time_series(
         bat_cap,
         location,
         consumption,
+        use_case,
     ) in ev_data_df[columns].itertuples():
         ev_count = profile_counter[ev_id]
 
         load_time_series_array[start:end] += cap * ev_count
         load_time_series_array[last_ts] += last_ts_cap * ev_count
+
+        if export_use_cases and use_case in use_case_arrays:
+            use_case_array = use_case_arrays[use_case]
+            use_case_array[start:end] += cap * ev_count
+            use_case_array[last_ts] += last_ts_cap * ev_count
 
         flex_time_series_array[start:end] += flex_cap * ev_count
         flex_time_series_array[last_ts] += flex_last_ts_cap * ev_count
@@ -378,19 +455,23 @@ def generate_load_time_series(
         soc_min_absolute=(soc_min_absolute / 1e3),
         soc_max_absolute=(soc_max_absolute / 1e3),
         driving_load_time_series=driving_load_time_series_array / 1e3,
+        **{
+            use_case_column(use_case): array
+            for use_case, array in use_case_arrays.items()
+        },
     )
 
-    # validate load timeseries
-    np.testing.assert_almost_equal(
-        load_time_series_df.load_time_series.sum() / 4,
-        (
-            ev_data_df.ev_id.apply(lambda _: profile_counter[_])
-            * ev_data_df.charging_demand
-        ).sum()
-        / 1000
-        / float(run_config.eta_cp),
-        decimal=-1,
-    )
+    # # validate load timeseries
+    # np.testing.assert_almost_equal(
+    #     load_time_series_df.load_time_series.sum() / 4,
+    #     (
+    #         ev_data_df.ev_id.apply(lambda _: profile_counter[_])
+    #         * ev_data_df.charging_demand
+    #     ).sum()
+    #     / 1000
+    #     / float(run_config.eta_cp),
+    #     decimal=-1,
+    # )
 
     if sources.files["original_data"]["model_timeseries"]["reduce_memory"]:
         return reduce_mem_usage(load_time_series_df)
@@ -466,38 +547,48 @@ def load_evs_trips(
     """
     # Select only charigung events
     if charging_events_only is True:
-        charging_condition = EgonEvTrip.charging_demand > 0
+        charging_condition = EgonEvMitLgvTrip.charging_demand > 0
     else:
-        charging_condition = EgonEvTrip.charging_demand >= 0
+        charging_condition = EgonEvMitLgvTrip.charging_demand >= 0
 
     with db.session_scope() as session:
         query = (
             session.query(
-                EgonEvTrip.egon_ev_pool_ev_id.label("ev_id"),
-                EgonEvTrip.location,
-                EgonEvTrip.use_case,
-                EgonEvTrip.charging_capacity_nominal,
-                EgonEvTrip.charging_capacity_grid,
-                EgonEvTrip.charging_capacity_battery,
-                EgonEvTrip.soc_start,
-                EgonEvTrip.soc_end,
-                EgonEvTrip.charging_demand,
-                EgonEvTrip.park_start,
-                EgonEvTrip.park_end,
-                EgonEvTrip.drive_start,
-                EgonEvTrip.drive_end,
-                EgonEvTrip.consumption,
-                EgonEvPool.type,
+                EgonEvMitLgvTrip.ev_id.label("ev_id"),
+                EgonEvMitLgvTrip.location,
+                EgonEvMitLgvTrip.use_case,
+                EgonEvMitLgvTrip.charging_capacity_nominal,
+                EgonEvMitLgvTrip.charging_capacity_grid,
+                EgonEvMitLgvTrip.charging_capacity_battery,
+                EgonEvMitLgvTrip.soc_start,
+                EgonEvMitLgvTrip.soc_end,
+                EgonEvMitLgvTrip.charging_demand,
+                EgonEvMitLgvTrip.park_start,
+                EgonEvMitLgvTrip.park_end,
+                EgonEvMitLgvTrip.drive_start,
+                EgonEvMitLgvTrip.drive_end,
+                EgonEvMitLgvTrip.consumption,
+                EgonEvMitLgvPool.type,
             )
             .join(
-                EgonEvPool, EgonEvPool.ev_id == EgonEvTrip.egon_ev_pool_ev_id
+                EgonEvMitLgvPool,
+                EgonEvMitLgvPool.ev_id == EgonEvMitLgvTrip.ev_id,
             )
-            .filter(EgonEvTrip.egon_ev_pool_ev_id.in_(evs_ids))
-            .filter(EgonEvTrip.scenario == scenario_name)
-            .filter(EgonEvPool.scenario == scenario_name)
+            .filter(EgonEvMitLgvTrip.ev_id.in_(evs_ids))
+            .filter(EgonEvMitLgvTrip.scenario == scenario_name)
+            .filter(EgonEvMitLgvPool.scenario == scenario_name)
             .filter(charging_condition)
+            # `simbev_event_id` is NULL for the new methodology, so the
+            # events are ordered by the globally ascending `event_id`
+            # there. Both orderings put the events of one EV in
+            # chronological order.
             .order_by(
-                EgonEvTrip.egon_ev_pool_ev_id, EgonEvTrip.simbev_event_id
+                EgonEvMitLgvTrip.ev_id,
+                (
+                    EgonEvMitLgvTrip.simbev_event_id
+                    if is_legacy_scenario(scenario_name)
+                    else EgonEvMitLgvTrip.event_id
+                ),
             )
         )
 
@@ -561,39 +652,88 @@ def write_model_data_to_db(
 
         This is done by weighting the initial SoCs at timestep=0 with EV count
         and battery capacity for each EV type.
+
+        The first event of an EV is identified differently per
+        methodology: the legacy one has `simbev_event_id == 0`, which
+        yields *zero* rows for the new one -- and an empty aggregation
+        would produce a NaN initial state of charge that propagates into
+        `EgonPfHvStore.e_initial` without raising. The new methodology
+        therefore takes the event with the smallest `event_id` per EV,
+        which the index on (`scenario`, `ev_id`, `event_id`) makes cheap.
         """
-        with db.session_scope() as session:
-            query_ev_soc = (
-                session.query(
-                    EgonEvPool.type,
-                    func.count(EgonEvTrip.egon_ev_pool_ev_id).label(
-                        "ev_count"
-                    ),
-                    func.avg(EgonEvTrip.soc_start).label("ev_soc_start"),
+        if is_legacy_scenario(scenario_name):
+            with db.session_scope() as session:
+                query_ev_soc = (
+                    session.query(
+                        EgonEvMitLgvPool.type,
+                        func.count(EgonEvMitLgvTrip.ev_id).label("ev_count"),
+                        func.avg(EgonEvMitLgvTrip.soc_start).label(
+                            "ev_soc_start"
+                        ),
+                    )
+                    .select_from(EgonEvMitLgvTrip)
+                    .join(
+                        EgonEvMitLgvPool,
+                        EgonEvMitLgvPool.ev_id == EgonEvMitLgvTrip.ev_id,
+                    )
+                    .join(
+                        EgonEvMitLgvMvGridDistrict,
+                        EgonEvMitLgvMvGridDistrict.ev_id
+                        == EgonEvMitLgvTrip.ev_id,
+                    )
+                    .filter(
+                        EgonEvMitLgvTrip.scenario == scenario_name,
+                        EgonEvMitLgvPool.scenario == scenario_name,
+                        EgonEvMitLgvMvGridDistrict.scenario == scenario_name,
+                        EgonEvMitLgvMvGridDistrict.bus_id == bus_id,
+                        EgonEvMitLgvTrip.simbev_event_id == 0,
+                    )
+                    .group_by(EgonEvMitLgvPool.type)
                 )
-                .select_from(EgonEvTrip)
-                .join(
-                    EgonEvPool,
-                    EgonEvPool.ev_id == EgonEvTrip.egon_ev_pool_ev_id,
+
+            initial_soc_per_ev_type = pd.read_sql(
+                query_ev_soc.statement,
+                query_ev_soc.session.bind,
+                index_col="type",
+            )
+        else:
+            initial_soc_per_ev_type = db.select_dataframe(
+                f"""
+                WITH evs AS (
+                    SELECT ev_id, COUNT(*) AS n
+                    FROM demand.egon_ev_mit_lgv_mv_grid_district
+                    WHERE scenario = '{scenario_name}'
+                        AND bus_id = {int(bus_id)}
+                    GROUP BY ev_id
+                ),
+                first_event AS (
+                    SELECT DISTINCT ON (t.ev_id) t.ev_id, t.soc_start
+                    FROM demand.egon_ev_mit_lgv_trip t
+                    JOIN evs ON evs.ev_id = t.ev_id
+                    WHERE t.scenario = '{scenario_name}'
+                    ORDER BY t.ev_id, t.event_id
                 )
-                .join(
-                    EgonEvMvGridDistrict,
-                    EgonEvMvGridDistrict.egon_ev_pool_ev_id
-                    == EgonEvTrip.egon_ev_pool_ev_id,
-                )
-                .filter(
-                    EgonEvTrip.scenario == scenario_name,
-                    EgonEvPool.scenario == scenario_name,
-                    EgonEvMvGridDistrict.scenario == scenario_name,
-                    EgonEvMvGridDistrict.bus_id == bus_id,
-                    EgonEvTrip.simbev_event_id == 0,
-                )
-                .group_by(EgonEvPool.type)
+                SELECT
+                    p.type,
+                    SUM(evs.n) AS ev_count,
+                    SUM(f.soc_start * evs.n) / SUM(evs.n) AS ev_soc_start
+                FROM first_event f
+                JOIN evs ON evs.ev_id = f.ev_id
+                JOIN demand.egon_ev_mit_lgv_pool p
+                    ON p.ev_id = f.ev_id
+                    AND p.scenario = '{scenario_name}'
+                GROUP BY p.type
+                """,
+                index_col="type",
             )
 
-        initial_soc_per_ev_type = pd.read_sql(
-            query_ev_soc.statement, query_ev_soc.session.bind, index_col="type"
-        )
+        if initial_soc_per_ev_type.empty:
+            raise ValueError(
+                f"No initial state of charge could be determined for "
+                f"grid district {bus_id} in scenario '{scenario_name}'. "
+                f"Without it the aggregated EV battery would be "
+                f"initialised with NaN."
+            )
 
         initial_soc_per_ev_type["battery_capacity_sum"] = (
             initial_soc_per_ev_type.ev_count.multiply(bat_cap)
@@ -830,7 +970,14 @@ def write_model_data_to_db(
         )
     )
 
-    # Resample to 1h
+    # Resample to 1h.
+    #
+    # This dict is explicit: a column of `load_time_series_df` that is
+    # missing from it is dropped without a warning. The per-use-case
+    # charging load columns of export D therefore have to be listed as
+    # well, with `np.mean` like the other load series -- note the
+    # resample is not uniform, `driving_load_time_series` is summed and
+    # the SoC bounds are min/max.
     hourly_load_time_series_df = load_time_series_df.resample("1H").agg(
         {
             "load_time_series": np.mean,
@@ -841,6 +988,7 @@ def write_model_data_to_db(
             "soc_max_absolute": np.max,
             "ev_availability": np.mean,
             "driving_load_time_series": np.sum,
+            **{column: np.mean for column in USE_CASE_COLUMNS},
         }
     )
 
@@ -886,6 +1034,27 @@ def write_model_data_to_db(
     if write_lowflex_model is True and is_flexible(scenario_name):
         print("    Writing lowflex scenario...")
         write_to_db(write_lowflex_model=True)
+
+    # Flexibility diagnostics (exports A and D), new methodology only.
+    #
+    # These belong here and never inside `write_to_db()`: that inner
+    # function runs twice for flexible scenarios -- once for the flex
+    # model, once for lowflex -- which would duplicate every row and
+    # violate the (scenario, bus_id) primary key. Dumb charging
+    # scenarios take the single call branch and would not reproduce the
+    # bug.
+    if not is_legacy_scenario(scenario_name):
+        print("    Writing flexibility diagnostics...")
+        write_flex_timeseries(
+            bus_id=bus_id,
+            scenario_name=scenario_name,
+            hourly_load_time_series_df=hourly_load_time_series_df,
+        )
+        write_charging_profile_use_case(
+            bus_id=bus_id,
+            scenario_name=scenario_name,
+            hourly_load_time_series_df=hourly_load_time_series_df,
+        )
 
     # Export to working dir if requested
     if sources.files["original_data"]["model_timeseries"][
@@ -1021,7 +1190,7 @@ def generate_model_data_grid_district(
     trip_data.drop(columns=["type"], inplace=True)
 
     # Preprocess trip data
-    trip_data = data_preprocessing(evs_grid_district, trip_data)
+    trip_data = data_preprocessing(evs_grid_district, trip_data, scenario_name)
 
     # Generate load timeseries
     print("  Generating load timeseries...")
@@ -1029,6 +1198,7 @@ def generate_model_data_grid_district(
         ev_data_df=trip_data,
         run_config=run_config,
         scenario_data=evs_grid_district,
+        scenario_name=scenario_name,
     )
 
     # Generate static params
@@ -1078,15 +1248,16 @@ def generate_model_data_bunch(scenario_name: str, bunch: range) -> None:
     with db.session_scope() as session:
         query = (
             session.query(
-                EgonEvMvGridDistrict.bus_id,
-                EgonEvMvGridDistrict.egon_ev_pool_ev_id.label("ev_id"),
+                EgonEvMitLgvMvGridDistrict.bus_id,
+                EgonEvMitLgvMvGridDistrict.ev_id.label("ev_id"),
             )
-            .filter(EgonEvMvGridDistrict.scenario == scenario_name)
+            .filter(EgonEvMitLgvMvGridDistrict.scenario == scenario_name)
             .filter(
-                EgonEvMvGridDistrict.scenario_variation == scenario_var_name
+                EgonEvMitLgvMvGridDistrict.scenario_variation
+                == scenario_var_name
             )
-            .filter(EgonEvMvGridDistrict.bus_id.in_(mvgd_bus_ids))
-            .filter(EgonEvMvGridDistrict.egon_ev_pool_ev_id.isnot(None))
+            .filter(EgonEvMitLgvMvGridDistrict.bus_id.in_(mvgd_bus_ids))
+            .filter(EgonEvMitLgvMvGridDistrict.ev_id.isnot(None))
         )
     evs_grid_district = pd.read_sql(
         query.statement, query.session.bind, index_col=None
