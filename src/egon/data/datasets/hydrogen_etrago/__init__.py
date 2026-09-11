@@ -45,7 +45,7 @@ class HydrogenBusEtrago(Dataset):
     #:
     name: str = "HydrogenBusEtrago"
     #:
-    version: str = "0.0.5"
+    version: str = "0.0.5.dev"
 
     sources = DatasetSources(
         tables={
@@ -105,7 +105,7 @@ class HydrogenStoreEtrago(Dataset):
     #:
     name: str = "HydrogenStoreEtrago"
     #:
-    version: str = "0.0.7"
+    version: str = "0.0.7.dev"
 
     sources = DatasetSources(
         tables={
@@ -155,7 +155,7 @@ class HydrogenPowerLinkEtrago(Dataset):
     #:
     name: str = "HydrogenPowerLinkEtrago"
     #:
-    version: str = "0.0.7"
+    version: str = "0.0.7.dev"
 
     sources = DatasetSources(
         tables={
@@ -216,7 +216,7 @@ class HydrogenMethaneLinkEtrago(Dataset):
     #:
     name: str = "HydrogenMethaneLinkEtrago"
     #:
-    version: str = "0.0.7"
+    version: str = "0.0.7.dev"
 
     sources = DatasetSources(
         tables={
@@ -264,7 +264,7 @@ class HydrogenGridEtrago(Dataset):
     #:
     name: str = "HydrogenGridEtrago"
     #:
-    version: str = "0.0.4"
+    version: str = "0.0.4.dev"
 
     sources = DatasetSources(
         urls={

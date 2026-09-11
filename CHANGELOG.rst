@@ -23,6 +23,9 @@ Added
 
 Changed
 -------
+* Adapt the Gas_Sector_Coupling TaskGroup to the new scenarios.
+  Pending treatment for reGon2045 parameters.
+  `#1452 <https://github.com/openego/eGon-data/issues/1452>`
 * Adapt the Gas_Demand TaskGroup to the new scenarios.
   Pending treatment for reGon2045.
   `#1446 <https://github.com/openego/eGon-data/issues/1446>`
