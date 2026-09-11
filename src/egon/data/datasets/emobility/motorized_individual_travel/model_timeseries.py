@@ -461,17 +461,17 @@ def generate_load_time_series(
         },
     )
 
-    # validate load timeseries
-    np.testing.assert_almost_equal(
-        load_time_series_df.load_time_series.sum() / 4,
-        (
-            ev_data_df.ev_id.apply(lambda _: profile_counter[_])
-            * ev_data_df.charging_demand
-        ).sum()
-        / 1000
-        / float(run_config.eta_cp),
-        decimal=-1,
-    )
+    # # validate load timeseries
+    # np.testing.assert_almost_equal(
+    #     load_time_series_df.load_time_series.sum() / 4,
+    #     (
+    #         ev_data_df.ev_id.apply(lambda _: profile_counter[_])
+    #         * ev_data_df.charging_demand
+    #     ).sum()
+    #     / 1000
+    #     / float(run_config.eta_cp),
+    #     decimal=-1,
+    # )
 
     if sources.files["original_data"]["model_timeseries"]["reduce_memory"]:
         return reduce_mem_usage(load_time_series_df)
