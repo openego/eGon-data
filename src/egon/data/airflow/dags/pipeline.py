@@ -35,11 +35,11 @@ from egon.data.datasets.emobility.heavy_duty_transport import (
 from egon.data.datasets.emobility.motorized_individual_travel import (
     MotorizedIndividualTravel,
 )
-from egon.data.datasets.emobility.public_bus_charging import (
-    PublicBusCharging,
-)
 from egon.data.datasets.emobility.motorized_individual_travel_charging_infrastructure import (  # noqa: E501
     MITChargingInfrastructure,
+)
+from egon.data.datasets.emobility.public_bus_charging import (
+    PublicBusCharging,
 )
 from egon.data.datasets.era5 import WeatherData
 from egon.data.datasets.etrago_setup import EtragoSetup

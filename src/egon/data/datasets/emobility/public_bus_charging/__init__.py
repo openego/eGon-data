@@ -52,9 +52,11 @@ class PublicBusCharging(Dataset):
     *Dependencies*
       * :py:class:`DataBundle <egon.data.datasets.data_bundle.DataBundle>`
       * :py:class:`MvGridDistricts <egon.data.datasets.mv_grid_districts>`
-      * :py:class:`SubstationVoronoi <egon.data.datasets.substation_voronoi.SubstationVoronoi>`
+      * :py:class:`SubstationVoronoi
+        <egon.data.datasets.substation_voronoi.SubstationVoronoi>`
       * :py:class:`EtragoSetup <egon.data.datasets.etrago_setup.EtragoSetup>`
-      * :py:class:`ScenarioParameters <egon.data.datasets.scenario_parameters.ScenarioParameters>`
+      * :py:class:`ScenarioParameters
+        <egon.data.datasets.scenario_parameters.ScenarioParameters>`
       * :py:class:`Osmtgmod <egon.data.datasets.osmtgmod.Osmtgmod>`
       * :py:class:`Vg250 <egon.data.datasets.vg250.Vg250>`
 

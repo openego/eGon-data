@@ -26,7 +26,7 @@ import geopandas as gpd
 import numpy as np
 import pandas as pd
 
-from egon.data import config, db
+from egon.data import db
 from egon.data.datasets.emobility.public_bus_charging.db_classes import (
     EgonEvBusChargingDepot,
 )
