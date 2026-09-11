@@ -23,7 +23,20 @@ Added
 
 Changed
 -------
-
+* Adapt the Gas_Sector_Coupling TaskGroup to the new scenarios.
+  Pending treatment for reGon2045 parameters.
+  `#1452 <https://github.com/openego/eGon-data/issues/1452>`
+* Adapt the Gas_Demand TaskGroup to the new scenarios.
+  Pending treatment for reGon2045.
+  `#1446 <https://github.com/openego/eGon-data/issues/1446>`
+* Adapt the Gas_Supply TaskGroup to the new scenarios.
+  Pending treatment for reGon2045 parameters.
+  `#1445 <https://github.com/openego/eGon-data/issues/1445>`
+* Adapt the Gas_Grid TaskGroup to the new scenarios. Unified
+  GasAreas into a single class. Removed the `assign_gas_bus_id`
+  limitation.
+  `#1444 <https://github.com/openego/eGon-data/issues/1444>`_
+  `#1463 <https://github.com/openego/eGon-data/issues/1463>`_
 * Set annual electricity demands in scenario parameters
   `#1359 <https://github.com/openego/eGon-data/issues/1359>`_
 * Introduce TaskGroups to group Datasets in the pipeline

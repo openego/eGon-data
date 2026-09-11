@@ -67,8 +67,7 @@ from egon.data.datasets.hydrogen_etrago import (
 )
 from egon.data.datasets.industrial_gas_demand import (
     IndustrialGasDemand,
-    IndustrialGasDemandeGon100RE,
-    IndustrialGasDemandeGon2035,
+    IndustrialGasDemandScenarios,
 )
 from egon.data.datasets.industrial_sites import MergeIndustrialSites
 from egon.data.datasets.industry import IndustrialDemandCurves
@@ -442,7 +441,7 @@ with airflow.DAG(
             ]
         )
 
-        # Create gas voronoi eGon2035
+        # Create gas voronoi
         create_gas_polygons = GasAreas(
             dependencies=[setup_etrago, insert_hydrogen_buses, vg250]
         )
@@ -492,18 +491,9 @@ with airflow.DAG(
         )
 
         # Assign industrial gas demand eGon2035
-        IndustrialGasDemandeGon2035(
+        IndustrialGasDemandScenarios(
             dependencies=[create_gas_polygons, industrial_gas_demand]
-        )
-
-        # Assign industrial gas demand eGon100RE
-        IndustrialGasDemandeGon100RE(
-            dependencies=[
-                create_gas_polygons,
-                industrial_gas_demand,
-                run_pypsaeur,
-            ]
-        )
+        ) # TO DO: decide on using pypsa-eur results as in Egon100RE
 
     with TaskGroup(
         group_id="combined_heat_and_power"

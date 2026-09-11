@@ -44,10 +44,9 @@ def insert_h2_to_ch4_to_h2():
     target_links = targets.tables["hydrogen_links"]
     target_buses = sources.tables["buses"]
 
-    if "status2019" in scenarios:
-        scenarios.remove("status2019")
-
     for scn_name in scenarios:
+        if scn_name not in ["eGon2035", "reGon2037", "reGon2045"]:
+            continue
 
         db.execute_sql(f"""
            DELETE FROM {target_links} WHERE "carrier" in ('H2_to_CH4', 'CH4_to_H2')
