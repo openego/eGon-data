@@ -126,7 +126,7 @@ def insert_power_to_h2_to_power():
 
     for SCENARIO_NAME in scenarios:
 
-        if SCENARIO_NAME not in ["eGon100RE", "eGon2035"]:
+        if SCENARIO_NAME not in ["eGon2035", "reGon2037", "reGon2045"]:
             continue
 
         scn_params_gas = get_sector_parameters("gas", SCENARIO_NAME)
@@ -147,12 +147,10 @@ def insert_power_to_h2_to_power():
         ELZ_LIFETIME_Y = scn_params_gas["lifetime"][
             "power_to_H2_system"
         ]  # [Year]
-        if SCENARIO_NAME == "eGon2035":
-            ELZ_OPEX = scn_params_gas["capital_cost"][
-                "power_to_H2_OPEX"
-            ]  # [EUR/MW/YEAR]
-        else:
-            ELZ_OPEX = 0  # [EUR/MW/YEAR] , for eGon100RE OPEX are already included in SYSTEM and STACK costs
+        # TO DO: adapt params for reGon2045
+        ELZ_OPEX = scn_params_gas["capital_cost"][
+            "power_to_H2_OPEX"
+        ]  # [EUR/MW/YEAR]
         H2_COST_PIPELINE = scn_params_gas["capital_cost"][
             "H2_pipeline"
         ]  # [EUR/MW/km/YEAR]
