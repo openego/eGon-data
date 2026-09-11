@@ -2438,6 +2438,14 @@ def insert_loads_sq():
                 session.commit()
 
 
+def no_neighbour_tasks_required():
+    print("""
+          None of the configured scenarios require additional
+          electrical-neighbour tasks.
+          """)
+    return None
+
+
 tasks = (
     grid,
     {

@@ -231,3 +231,11 @@ carrier ``land_transport_bus``.
    understates the affected depots' demand. The substitution is logged with the
    affected depot ids on every run and should be removed once the input data is
    corrected.
+
+.. note::
+   As of this restoration, only the eGon2035 scenario is active for
+   heavy-duty transport (see ``datasets.yml``'s ``mobility_hgv.original_data.
+   constants.scenarios`` and ``emobility/heavy_duty_transport/__init__.py``)
+   -- eGon100RE is not currently registered as an ``EgonScenario`` row in
+   this fork and would fail with a foreign-key error if enabled without
+   first registering it.
