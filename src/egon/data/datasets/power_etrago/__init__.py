@@ -16,7 +16,7 @@ class OpenCycleGasTurbineEtrago(Dataset):
     the function :py:func:`insert_open_cycle_gas_turbines <egon.data.datasets.power_etrago.match_ocgt.insert_open_cycle_gas_turbines>`.
 
     *Dependencies*
-      * :py:class:`GasAreaseGon2035 <egon.data.datasets.gas_areas.GasAreaseGon2035>`
+      * :py:class:`GasAreas <egon.data.datasets.gas_areas.GasAreas>`
       * :py:class:`GasNodesAndPipes <egon.data.datasets.gas_grid.GasNodesAndPipes>`
       * :py:class:`PowerPlants <egon.data.datasets.power_plants.PowerPlants>`
       * :py:class:`mastr_data_setup <egon.data.datasets.mastr.mastr_data_setup>`

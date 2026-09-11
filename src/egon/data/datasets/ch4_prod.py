@@ -34,7 +34,7 @@ class CH4Production(Dataset):
     the function :py:func:`import_gas_generators`.
 
     *Dependencies*
-      * :py:class:`GasAreaseGon2035 <egon.data.datasets.gas_areas.GasAreaseGon2035>`
+      * :py:class:`GasAreas <egon.data.datasets.gas_areas.GasAreas>`
       * :py:class:`GasNodesAndPipes <egon.data.datasets.gas_grid.GasNodesAndPipes>`
 
     *Resulting tables*

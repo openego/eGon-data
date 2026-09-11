@@ -85,7 +85,7 @@ class IndustrialGasDemandeGon2035(Dataset):
     function :py:func:`insert_industrial_gas_demand_egon2035`.
 
     *Dependencies*
-      * :py:class:`GasAreaseGon2035 <egon.data.datasets.gas_areas.GasAreaseGon2035>`
+      * :py:class:`GasAreas <egon.data.datasets.gas_areas.GasAreas>`
       * :py:class:`GasNodesAndPipes <egon.data.datasets.gas_grid.GasNodesAndPipes>`
       * :py:class:`HydrogenBusEtrago <egon.data.datasets.hydrogen_etrago.HydrogenBusEtrago>`
       * :py:class:`IndustrialGasDemand <IndustrialGasDemand>`
@@ -118,7 +118,6 @@ class IndustrialGasDemandeGon100RE(Dataset):
     function :py:func:`insert_industrial_gas_demand_egon100RE`.
 
     *Dependencies*
-      * :py:class:`GasAreaseGon100RE <egon.data.datasets.gas_areas.GasAreaseGon100RE>`
       * :py:class:`GasNodesAndPipes <egon.data.datasets.gas_grid.GasNodesAndPipes>`
       * :py:class:`HydrogenBusEtrago <egon.data.datasets.hydrogen_etrago.HydrogenBusEtrago>`
       * :py:class:`IndustrialGasDemand <IndustrialGasDemand>`
