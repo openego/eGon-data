@@ -288,6 +288,9 @@ class EgonPowerPlantsStorage(Base):
 
     status = Column(String, nullable=True)  # EinheitBetriebsstatus
     commissioning_date = Column(DateTime, nullable=True)  # Inbetriebnahmedatum
+    decommissioning_date = Column(
+        DateTime, nullable=True
+    )  # DatumEndgueltigeStilllegung
     postcode = Column(String(5), nullable=True)  # Postleitzahl
     city = Column(String(50), nullable=True)  # Ort
     municipality = Column(String, nullable=True)  # Gemeinde
