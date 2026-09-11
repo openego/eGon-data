@@ -26,6 +26,7 @@ from egon.data.datasets.fill_etrago_gen import add_marginal_costs
 from egon.data.datasets.fix_ehv_subnetworks import select_bus_id
 from egon.data.datasets.pypsaeur import prepared_network
 from egon.data.datasets.scenario_parameters import (
+    align_weekdays,
     get_scenario_year,
     get_sector_parameters,
 )
@@ -1535,12 +1536,17 @@ def _tyndp_demand_climate_year_column(df, node, year, climate_year=2009):
 
 
 @functools.lru_cache(maxsize=None)
-def read_tyndp_demand(year, nodes):
+def read_tyndp_demand(year, nodes, weather_year):
     """Read hourly electricity demand for one TYNDP 2024 anchor year
 
     Reads climate year 2009 demand timeseries from the "Distributed
     Energy" scenario's downloaded demand-profiles zip, for the given
     anchor year (2030, 2040 or 2050).
+
+    The TYNDP profiles follow the calendar given in their "Date" column
+    (2018, starting on a Monday), independent of the climate year. They
+    are aligned to the weekdays of the weather year, see
+    :py:func:`egon.data.datasets.scenario_parameters.align_weekdays`.
 
     Parameters
     ----------
@@ -1548,6 +1554,8 @@ def read_tyndp_demand(year, nodes):
         TYNDP 2024 anchor year (2030, 2040 or 2050)
     nodes : tuple
         TYNDP node codes to read demand timeseries for
+    weather_year : int
+        Weather year of the scenario, the profiles are aligned to
 
     Returns
     -------
@@ -1565,7 +1573,11 @@ def read_tyndp_demand(year, nodes):
         skiprows=11,
     )
     return {
-        node: _tyndp_demand_climate_year_column(sheets[node], node, year)
+        node: align_weekdays(
+            _tyndp_demand_climate_year_column(sheets[node], node, year),
+            source_year=pd.Timestamp(sheets[node]["Date"].iloc[0]).year,
+            target_year=weather_year,
+        )
         for node in nodes
     }
 
@@ -1621,9 +1633,12 @@ def tyndp_demand():
         year = get_scenario_year(scenario)
         lo, hi = _bracket_tyndp_years(year, anchors=(2030, 2040, 2050))
         weight = (year - lo) / (hi - lo)
+        weather_year = get_sector_parameters("global", scenario)[
+            "weather_year"
+        ]
 
-        dataset_lo = read_tyndp_demand(lo, nodes)
-        dataset_hi = read_tyndp_demand(hi, nodes)
+        dataset_lo = read_tyndp_demand(lo, nodes, weather_year)
+        dataset_hi = read_tyndp_demand(hi, nodes, weather_year)
 
         # Connect to database
         engine = db.engine()
@@ -1864,9 +1879,6 @@ def entsoe_historic_demand(year_start="20190101", year_end="20200101"):
         df = pd.concat(dfs, axis=1)
         df.columns = [c for c in countries if c not in not_retrieved]
         df.index = pd.date_range(year_start, periods=len(df), freq="H")
-        # Drop the leap day to keep a consistent 8760-hour year, matching
-        # the model's fixed temporal resolution (see etrago_setup.temp_resolution)
-        df = df[~((df.index.month == 2) & (df.index.day == 29))]
     else:
         df = pd.DataFrame()
     return df, not_retrieved
@@ -2387,6 +2399,16 @@ def insert_loads_sq():
                 )
             save_entsoe_data(df_load_sq, file_path=file_path)
 
+        # Align the measured loads to the weekdays of the weather year
+        if not df_load_sq.empty:
+            df_load_sq = align_weekdays(
+                df_load_sq,
+                source_year=year,
+                target_year=get_sector_parameters("global", scn_name)[
+                    "weather_year"
+                ],
+            )
+
         # Delete existing data
         db.execute_sql(f"""
             DELETE FROM {targets.tables['load_timeseries']}
@@ -2484,7 +2506,7 @@ class ElectricalNeighbours(Dataset):
     #:
     name: str = "ElectricalNeighbours"
     #:
-    version: str = "0.0.18"
+    version: str = "0.0.19"
 
     sources = DatasetSources(
         tables={
