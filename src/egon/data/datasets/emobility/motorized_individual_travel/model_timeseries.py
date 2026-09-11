@@ -73,6 +73,23 @@ from egon.data.datasets.etrago_setup import (
 )
 from egon.data.datasets.mv_grid_districts import MvGridDistricts
 
+#: Index of the last timestep of the modelled year (365 days of 96
+#: quarter-hours, zero based). The timeseries carry one more entry than
+#: that -- the closing endpoint -- so this is the last index any event
+#: may address.
+LAST_TIMESTEP = 35040
+
+#: Event columns holding a timestep index. All of them are cropped to
+#: :data:`LAST_TIMESTEP`, cf. :func:`data_preprocessing`.
+TIMESTEP_COLUMNS = [
+    "park_start",
+    "park_end",
+    "drive_start",
+    "drive_end",
+    "charge_end",
+    "last_timestep",
+]
+
 
 def is_flexible(scenario_name: str) -> bool:
     """Whether a scenario models flexible (smart) charging.
@@ -133,9 +150,7 @@ def data_preprocessing(
     # calculate time necessary to fulfill the charging demand and brutto
     # charging capacity in MVA
     ev_data_df = ev_data_df.assign(
-        charging_capacity_grid_MW=(
-            ev_data_df.charging_capacity_grid / 10**3
-        ),
+        charging_capacity_grid_MW=(ev_data_df.charging_capacity_grid / 10**3),
         minimum_charging_time=(
             ev_data_df.charging_demand
             / ev_data_df.charging_capacity_nominal
@@ -183,9 +198,9 @@ def data_preprocessing(
         mask_flex = ev_data_df.use_case.isin(FLEX_USE_CASES)
 
     ev_data_df["flex_charging_capacity_grid_MW"] = 0
-    ev_data_df.loc[
-        mask_flex, "flex_charging_capacity_grid_MW"
-    ] = ev_data_df.loc[mask_flex, "charging_capacity_grid_MW"]
+    ev_data_df.loc[mask_flex, "flex_charging_capacity_grid_MW"] = (
+        ev_data_df.loc[mask_flex, "charging_capacity_grid_MW"]
+    )
 
     ev_data_df["flex_last_timestep_charging_capacity_grid_MW"] = 0
     ev_data_df.loc[
@@ -193,12 +208,25 @@ def data_preprocessing(
     ] = ev_data_df.loc[mask_flex, "last_timestep_charging_capacity_grid_MW"]
 
     # Check length of timeseries
-    if len(ev_data_df.loc[ev_data_df.last_timestep > 35040]) > 0:
-        print("    Warning: Trip data exceeds 1 year and is cropped.")
-        # Correct last TS
-        ev_data_df.loc[
-            ev_data_df.last_timestep > 35040, "last_timestep"
-        ] = 35040
+    #
+    # Crop every timestep column, not just `last_timestep`: the SoC band
+    # of a driving or charging event is written with an `np.linspace()`
+    # whose length is derived from `drive_end` / `park_end`, so an event
+    # reaching past the end of the year makes the generated ramp longer
+    # than the slice it is added to and the addition fails to broadcast.
+    # The delivered events do reach past it -- `park_end` up to 35,166
+    # and `drive_end` up to 35,057 in delivery v1.4, i.e. up to 31.5 h
+    # into the next year.
+    cropped = ev_data_df[TIMESTEP_COLUMNS] > LAST_TIMESTEP
+    if cropped.any().any():
+        print(
+            f"    Warning: Trip data exceeds 1 year and is cropped "
+            f"({cropped.sum().to_dict()} timesteps beyond "
+            f"{LAST_TIMESTEP})."
+        )
+        ev_data_df[TIMESTEP_COLUMNS] = ev_data_df[TIMESTEP_COLUMNS].clip(
+            upper=LAST_TIMESTEP
+        )
 
     if sources.files["original_data"]["model_timeseries"]["reduce_memory"]:
         return reduce_mem_usage(ev_data_df)
@@ -704,13 +732,13 @@ def write_model_data_to_db(
                 f"initialised with NaN."
             )
 
-        initial_soc_per_ev_type[
-            "battery_capacity_sum"
-        ] = initial_soc_per_ev_type.ev_count.multiply(bat_cap)
-        initial_soc_per_ev_type[
-            "ev_soc_start_abs"
-        ] = initial_soc_per_ev_type.battery_capacity_sum.multiply(
-            initial_soc_per_ev_type.ev_soc_start
+        initial_soc_per_ev_type["battery_capacity_sum"] = (
+            initial_soc_per_ev_type.ev_count.multiply(bat_cap)
+        )
+        initial_soc_per_ev_type["ev_soc_start_abs"] = (
+            initial_soc_per_ev_type.battery_capacity_sum.multiply(
+                initial_soc_per_ev_type.ev_soc_start
+            )
         )
 
         return (
@@ -919,9 +947,9 @@ def write_model_data_to_db(
             results_dir / "ev_dsm_profile.csv"
         )
 
-        static_params_dict[
-            "load_land_transport_ev.p_set_MW"
-        ] = "ev_load_time_series.csv"
+        static_params_dict["load_land_transport_ev.p_set_MW"] = (
+            "ev_load_time_series.csv"
+        )
         static_params_dict["link_bev_charger.p_max_pu"] = "ev_availability.csv"
         static_params_dict["store_ev_battery.e_min_pu"] = "ev_dsm_profile.csv"
         static_params_dict["store_ev_battery.e_max_pu"] = "ev_dsm_profile.csv"
@@ -1254,7 +1282,10 @@ def generate_model_data_bunch(scenario_name: str, bunch: range) -> None:
             f"Processing grid district: bus {bus_id}... "
             f"({ctr}/{len(mvgd_bus_ids)})"
         )
-        (static_params, load_ts,) = generate_model_data_grid_district(
+        (
+            static_params,
+            load_ts,
+        ) = generate_model_data_grid_district(
             scenario_name=scenario_name,
             evs_grid_district=evs_grid_district[
                 evs_grid_district.bus_id == bus_id
