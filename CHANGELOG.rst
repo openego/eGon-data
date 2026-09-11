@@ -25,6 +25,8 @@ Added
   ``grid.egon_etrago_bus`` carries the referenced buses for the scenario
   each load is written under.
   `#1414 <https://github.com/openego/eGon-data/issues/1414>`_
+* Use MaStR data for home_batteries for allocation for all scenarios (status + future)
+  `#1470 <https://github.com/openego/eGon-data/issues/1470>`_
 
 Changed
 -------
@@ -83,6 +85,9 @@ Changed
   instead of a hard-coded scenario list, and remove obsolete
   status2019/status2023/eGon100RE handling
   `#1483 <https://github.com/openego/eGon-data/issues/1483>`_
+* Allign Methodology for laoding NEP target values for Battery storage for all scenarios
+  `#1471 <https://github.com/openego/eGon-data/issues/1471>`_
+
 
 Bug Fixes
 ---------
