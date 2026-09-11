@@ -230,10 +230,11 @@ class CtsDemandBuildings(Dataset):
     #:
     name: str = "CtsDemandBuildings"
     #:
-    version: str = "0.0.9"
+    version: str = "0.0.10"
     sources = DatasetSources(
         tables={
             "osm_buildings_filtered": "openstreetmap.osm_buildings_filtered",
+            "osm_buildings_residential": "openstreetmap.osm_buildings_residential",
             "osm_amenities_shops_filtered": "openstreetmap.osm_amenities_shops_filtered",
             "osm_amenities_not_in_buildings_filtered": "openstreetmap.osm_amenities_not_in_buildings_filtered",
             "osm_buildings_synthetic": "openstreetmap.osm_buildings_synthetic",

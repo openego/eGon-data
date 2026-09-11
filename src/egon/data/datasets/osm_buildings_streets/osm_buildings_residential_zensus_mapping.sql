@@ -21,3 +21,7 @@ CREATE TABLE boundaries.egon_map_zensus_buildings_residential as
         on ST_Within(bld.geom_point, zensus.geom)
     ) bld2
     where bld2.id is not null and bld2.grid_id is not null;
+
+-- the only one of the three census mapping tables without a primary key
+ALTER TABLE boundaries.egon_map_zensus_buildings_residential
+    ADD CONSTRAINT pk_egon_map_zensus_buildings_residential PRIMARY KEY (id);
