@@ -238,6 +238,7 @@ def generate_load_time_series(
     ev_data_df: pd.DataFrame,
     run_config: pd.DataFrame,
     scenario_data: pd.DataFrame,
+    scenario_name: str,
 ) -> pd.DataFrame:
     """Calculate the load time series from the given trip data. A dumb
     charging strategy is assumed where each EV starts charging immediately
@@ -258,6 +259,8 @@ def generate_load_time_series(
         simBEV metadata: run config
     scenario_data : pd.Dataframe
         EV per grid district
+    scenario_name : str
+        Scenario name
 
     Returns
     -------
