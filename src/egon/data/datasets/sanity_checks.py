@@ -29,12 +29,12 @@ from egon.data.datasets.electricity_demand_timeseries.cts_buildings import (
     EgonCtsHeatDemandBuildingShare,
 )
 from egon.data.datasets.emobility.motorized_individual_travel.db_classes import (  # noqa: E501
-    EgonEvCountMunicipality,
-    EgonEvCountMvGridDistrict,
-    EgonEvCountRegistrationDistrict,
-    EgonEvMvGridDistrict,
-    EgonEvPool,
-    EgonEvTrip,
+    EgonEvMitLgvCountMunicipality,
+    EgonEvMitLgvCountMvGridDistrict,
+    EgonEvMitLgvCountRegistrationDistrict,
+    EgonEvMitLgvMvGridDistrict,
+    EgonEvMitLgvPool,
+    EgonEvMitLgvTrip,
 )
 from egon.data.datasets.emobility.motorized_individual_travel.helpers import (
     read_simbev_metadata_file,
@@ -556,7 +556,8 @@ def residential_electricity_annual_sum(rtol=0.005):
     with initial scaling parameters from DemandRegio.
     """
 
-    df_nuts3_annual_sum = db.select_dataframe(sql="""
+    df_nuts3_annual_sum = db.select_dataframe(
+        sql="""
         SELECT dr.nuts3, dr.scenario, dr.demand_regio_sum, profiles.profile_sum
         FROM (
             SELECT scenario, SUM(demand) AS profile_sum, vg250_nuts3
@@ -572,7 +573,8 @@ def residential_electricity_annual_sum(rtol=0.005):
             GROUP BY year, scenario, nuts3
               ) AS dr
         ON profiles.vg250_nuts3 = dr.nuts3 and profiles.scenario  = dr.scenario
-        """)
+        """
+    )
 
     np.testing.assert_allclose(
         actual=df_nuts3_annual_sum["profile_sum"],
@@ -594,7 +596,8 @@ def residential_electricity_hh_refinement(rtol=1e-5):
     Check sum of aggregated household types after refinement method
     was applied and compare it to the original census values."""
 
-    df_refinement = db.select_dataframe(sql="""
+    df_refinement = db.select_dataframe(
+        sql="""
         SELECT refined.nuts3, refined.characteristics_code,
                 refined.sum_refined::int, census.sum_census::int
         FROM(
@@ -612,7 +615,8 @@ def residential_electricity_hh_refinement(rtol=1e-5):
             GROUP BY t.nuts3, t.characteristics_code    ) AS census
         ON refined.nuts3 = census.nuts3
         AND refined.characteristics_code = census.characteristics_code
-    """)
+    """
+    )
 
     np.testing.assert_allclose(
         actual=df_refinement["sum_refined"],
@@ -757,12 +761,14 @@ def sanitycheck_pv_rooftop_buildings():
         elif scenario == "eGon100RE":
             sources = SanityChecks.sources.tables
 
-            target = db.select_dataframe(f"""
+            target = db.select_dataframe(
+                f"""
                 SELECT capacity
                 FROM {sources["capacities"]} a
                 WHERE carrier = 'solar_rooftop'
                 AND scenario_name = '{scenario}'
-                """).capacity[0]
+                """
+            ).capacity[0]
 
             dataset = config.settings()["egon-data"]["--dataset-boundary"]
 
@@ -829,9 +835,9 @@ def sanitycheck_emobility_mit():
         with db.session_scope() as session:
             for table, level in zip(
                 [
-                    EgonEvCountMvGridDistrict,
-                    EgonEvCountMunicipality,
-                    EgonEvCountRegistrationDistrict,
+                    EgonEvMitLgvCountMvGridDistrict,
+                    EgonEvMitLgvCountMunicipality,
+                    EgonEvMitLgvCountRegistrationDistrict,
                 ],
                 ["Grid District", "Municipality", "Registration District"],
             ):
@@ -874,12 +880,11 @@ def sanitycheck_emobility_mit():
         # Get allocated EVs in grid districts
         with db.session_scope() as session:
             query = session.query(
-                func.count(EgonEvMvGridDistrict.egon_ev_pool_ev_id).label(
-                    "ev_count"
-                ),
+                func.count(EgonEvMitLgvMvGridDistrict.ev_id).label("ev_count"),
             ).filter(
-                EgonEvMvGridDistrict.scenario == scenario_name,
-                EgonEvMvGridDistrict.scenario_variation == scenario_var_name,
+                EgonEvMitLgvMvGridDistrict.scenario == scenario_name,
+                EgonEvMitLgvMvGridDistrict.scenario_variation
+                == scenario_var_name,
             )
         ev_count_alloc = (
             pd.read_sql(query.statement, query.session.bind, index_col=None)
@@ -888,7 +893,7 @@ def sanitycheck_emobility_mit():
         )
         print(
             f"    EVs allocated to Grid Districts "
-            f"(table: {EgonEvMvGridDistrict.__table__}) total count: "
+            f"(table: {EgonEvMitLgvMvGridDistrict.__table__}) total count: "
             f"{str(ev_count_alloc)}"
         )
 
@@ -914,17 +919,17 @@ def sanitycheck_emobility_mit():
         print("  Checking timeranges...")
         with db.session_scope() as session:
             query = session.query(
-                func.count(EgonEvTrip.event_id).label("cnt")
+                func.count(EgonEvMitLgvTrip.event_id).label("cnt")
             ).filter(
                 or_(
                     and_(
-                        EgonEvTrip.park_start > 0,
-                        EgonEvTrip.simbev_event_id == 0,
+                        EgonEvMitLgvTrip.park_start > 0,
+                        EgonEvMitLgvTrip.simbev_event_id == 0,
                     ),
-                    EgonEvTrip.park_end
+                    EgonEvMitLgvTrip.park_end
                     > (60 / int(meta_run_config.stepsize)) * 8760,
                 ),
-                EgonEvTrip.scenario == scenario_name,
+                EgonEvMitLgvTrip.scenario == scenario_name,
             )
         invalid_trips = pd.read_sql(
             query.statement, query.session.bind, index_col=None
@@ -934,7 +939,7 @@ def sanitycheck_emobility_mit():
             0,
             err_msg=(
                 f"{str(invalid_trips.iloc[0].cnt)} trips in table "
-                f"{EgonEvTrip.__table__} have invalid timesteps."
+                f"{EgonEvMitLgvTrip.__table__} have invalid timesteps."
             ),
         )
 
@@ -943,19 +948,23 @@ def sanitycheck_emobility_mit():
         print("  Compare charging demand with available power...")
         with db.session_scope() as session:
             query = session.query(
-                func.count(EgonEvTrip.event_id).label("cnt")
+                func.count(EgonEvMitLgvTrip.event_id).label("cnt")
             ).filter(
                 func.round(
                     cast(
-                        (EgonEvTrip.park_end - EgonEvTrip.park_start + 1)
-                        * EgonEvTrip.charging_capacity_nominal
+                        (
+                            EgonEvMitLgvTrip.park_end
+                            - EgonEvMitLgvTrip.park_start
+                            + 1
+                        )
+                        * EgonEvMitLgvTrip.charging_capacity_nominal
                         * (int(meta_run_config.stepsize) / 60),
                         Numeric,
                     ),
                     3,
                 )
-                < cast(EgonEvTrip.charging_demand, Numeric),
-                EgonEvTrip.scenario == scenario_name,
+                < cast(EgonEvMitLgvTrip.charging_demand, Numeric),
+                EgonEvMitLgvTrip.scenario == scenario_name,
             )
         invalid_trips = pd.read_sql(
             query.statement, query.session.bind, index_col=None
@@ -965,7 +974,7 @@ def sanitycheck_emobility_mit():
             0,
             err_msg=(
                 f"In {str(invalid_trips.iloc[0].cnt)} trips (table: "
-                f"{EgonEvTrip.__table__}) the charging demand cannot be "
+                f"{EgonEvMitLgvTrip.__table__}) the charging demand cannot be "
                 f"covered by available charging power."
             ),
         )
@@ -977,14 +986,14 @@ def sanitycheck_emobility_mit():
         with db.session_scope() as session:
             query = (
                 session.query(
-                    EgonEvMvGridDistrict.bus_id,
+                    EgonEvMitLgvMvGridDistrict.bus_id,
                 )
                 .filter(
-                    EgonEvMvGridDistrict.scenario == scenario_name,
-                    EgonEvMvGridDistrict.scenario_variation
+                    EgonEvMitLgvMvGridDistrict.scenario == scenario_name,
+                    EgonEvMitLgvMvGridDistrict.scenario_variation
                     == scenario_var_name,
                 )
-                .group_by(EgonEvMvGridDistrict.bus_id)
+                .group_by(EgonEvMitLgvMvGridDistrict.bus_id)
             )
         mvgds_with_ev = (
             pd.read_sql(query.statement, query.session.bind, index_col=None)
@@ -1038,7 +1047,7 @@ def sanitycheck_emobility_mit():
                 f"({str(len(mvgd_buses_with_ev))} in tables egon_etrago_*) "
                 f"differ from number of Grid Districts that got EVs "
                 f"allocated ({len(mvgds_with_ev)} in table "
-                f"{EgonEvMvGridDistrict.__table__})."
+                f"{EgonEvMitLgvMvGridDistrict.__table__})."
             ),
         )
 
@@ -1176,24 +1185,25 @@ def sanitycheck_emobility_mit():
         with db.session_scope() as session:
             query = (
                 session.query(
-                    EgonEvMvGridDistrict.bus_id,
-                    EgonEvPool.type,
-                    func.count(EgonEvMvGridDistrict.egon_ev_pool_ev_id).label(
+                    EgonEvMitLgvMvGridDistrict.bus_id,
+                    EgonEvMitLgvPool.type,
+                    func.count(EgonEvMitLgvMvGridDistrict.ev_id).label(
                         "count"
                     ),
                 )
                 .join(
-                    EgonEvPool,
-                    EgonEvPool.ev_id
-                    == EgonEvMvGridDistrict.egon_ev_pool_ev_id,
+                    EgonEvMitLgvPool,
+                    EgonEvMitLgvPool.ev_id == EgonEvMitLgvMvGridDistrict.ev_id,
                 )
                 .filter(
-                    EgonEvMvGridDistrict.scenario == scenario_name,
-                    EgonEvMvGridDistrict.scenario_variation
+                    EgonEvMitLgvMvGridDistrict.scenario == scenario_name,
+                    EgonEvMitLgvMvGridDistrict.scenario_variation
                     == scenario_var_name,
-                    EgonEvPool.scenario == scenario_name,
+                    EgonEvMitLgvPool.scenario == scenario_name,
                 )
-                .group_by(EgonEvMvGridDistrict.bus_id, EgonEvPool.type)
+                .group_by(
+                    EgonEvMitLgvMvGridDistrict.bus_id, EgonEvMitLgvPool.type
+                )
             )
         count_per_ev_all = pd.read_sql(
             query.statement, query.session.bind, index_col="bus_id"
@@ -1386,7 +1396,7 @@ def sanitycheck_home_batteries():
         )
 
         sql = f"""
-        SELECT * 
+        SELECT *
         FROM {targets["home_batteries"]}
         WHERE scenario = '{scenario}'
         """
@@ -2457,19 +2467,23 @@ def etrago_timeseries_length():
 
     for component in ["generator", "load", "link", "store", "storage"]:
 
-        columns = db.select_dataframe(f"""
+        columns = db.select_dataframe(
+            f"""
             SELECT *
             FROM information_schema.columns
             WHERE table_schema = 'grid'
             AND table_name = 'egon_etrago_{component}_timeseries'
-            """)
+            """
+        )
         columns = columns[columns.data_type == "ARRAY"].column_name.values
 
         for col in columns:
-            lengths = db.select_dataframe(f"""
+            lengths = db.select_dataframe(
+                f"""
                 SELECT array_length({col}, 1)
                 FROM grid.egon_etrago_{component}_timeseries;
-                """)["array_length"]
+                """
+            )["array_length"]
 
             if not lengths.dropna().empty:
                 assert (
@@ -2784,7 +2798,8 @@ def heat_gas_load_egon100RE(scn="eGon100RE"):
     }
 
     # filter out NaN values central_heat timeseries
-    NaN_load_ids = db.select_dataframe("""
+    NaN_load_ids = db.select_dataframe(
+        """
         SELECT load_id from grid.egon_etrago_load_timeseries
         WHERE load_id IN (Select load_id
             FROM grid.egon_etrago_load
@@ -2792,12 +2807,14 @@ def heat_gas_load_egon100RE(scn="eGon100RE"):
             bool_or(value::double precision::text = 'NaN')
         FROM unnest(p_set) AS value
         )
-       """)
+       """
+    )
     nan_load_list = tuple(NaN_load_ids["load_id"].tolist())
     nan_load_str = ",".join(map(str, nan_load_list))
 
     #####loads for eGon100RE
-    loads_etrago_timeseries = db.select_dataframe(f"""
+    loads_etrago_timeseries = db.select_dataframe(
+        f"""
             SELECT
                 l.carrier,
                 SUM(
@@ -2821,7 +2838,8 @@ def heat_gas_load_egon100RE(scn="eGon100RE"):
 
             GROUP BY
                 l.carrier
-        """)
+        """
+    )
 
     #####loads for pypsa_eur_network
     n = read_network()
@@ -2988,8 +3006,7 @@ class SanityChecks(Dataset):
         files={
             # --- scenario_input -> eGon2035.capacities ---
             "nep2035_capacities": (
-                "data_bundle_egon_data/NEP/"
-                "NEP_V2021_scnC2035.xlsx"
+                "data_bundle_egon_data/NEP/" "NEP_V2021_scnC2035.xlsx"
             ),
             "gas_nodes": "datasets/gas_data/data/IGGIELGN_Nodes.csv",
             "gas_productions": "datasets/gas_data/data/IGGIELGN_Productions.csv",
