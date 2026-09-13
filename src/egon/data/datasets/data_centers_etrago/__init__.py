@@ -865,6 +865,25 @@ def scale_data_center_profiles(
 
     return scaled_profiles
 
+def cap_and_redistribute_profiles(scaled_profiles, data_centers):
+    """Cap hourly loads at allocated capacity and redistribute excess energy."""
+
+    capacities = data_centers.set_index("load_id")["allocated_mw"]
+
+    for load_id, profile in scaled_profiles.items():
+        capacity = capacities.loc[load_id]
+
+        capped_profile = np.minimum(profile, capacity)
+        excess_energy = profile.sum() - capped_profile.sum()
+
+        if excess_energy > 0:
+            headroom = capacity - capped_profile
+            capped_profile += excess_energy * headroom / headroom.sum()
+
+        scaled_profiles[load_id] = capped_profile
+
+    return scaled_profiles
+
 def create_data_center_load_timeseries(
     scaled_profiles,
     scenario,
@@ -933,6 +952,12 @@ def insert_data_center_load_timeseries(scenario):
         raw_profiles,
         data_centers["allocated_mw"].sum(),
     )
+    
+    scaled_profiles = cap_and_redistribute_profiles(
+        scaled_profiles,
+        data_centers,
+    )
+
 
     load_timeseries = create_data_center_load_timeseries(
         scaled_profiles,
