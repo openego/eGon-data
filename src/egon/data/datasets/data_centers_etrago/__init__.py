@@ -167,13 +167,14 @@ def load_substations():
     return gdf.rename_geometry("geometry")
 
 
-def load_district_heating_areas():
+def load_district_heating_areas(scenario):
     sources = DataCenters.sources
 
     gdf = db.select_geodataframe(
         f"""
         SELECT geom_polygon, residential_and_service_demand
         FROM {sources.tables["district_heating_areas"]}
+        WHERE scenario = '{scenario}'
         """,
         geom_col="geom_polygon",
         epsg=3035,
@@ -227,7 +228,7 @@ def load_ukpn_profiles():
     return profiles
 
     
-def create_data_center_allocation():
+def create_data_center_allocation(scenario):
     """Run data center allocation workflow and return rz_punkte."""
     # Allocate generated data center capacities to suitable commercial areas
     # based on electricity, district-heating, and internet-location criteria.
@@ -235,7 +236,7 @@ def create_data_center_allocation():
     rz_df = generate_data_center_sizes()
     gewerbe_raw = load_commercial_areas()
     strom_raw = load_substations()
-    waerme_raw = load_district_heating_areas()
+    waerme_raw = load_district_heating_areas(scenario)
     ixp_raw = load_internet_nodes()
     regio_raw = load_regional_factors()
 
@@ -394,7 +395,7 @@ def create_data_center_allocation():
 
 ####################
 # Electrical integration part
-def get_existing_ac_buses():
+def get_existing_ac_buses(scenario):
     """Get existing 110 kV and 380 kV AC buses from eTraGo."""
     sources = DataCenters.sources
 
@@ -402,7 +403,7 @@ def get_existing_ac_buses():
         f"""
         SELECT bus_id, v_nom, carrier, x, y, geom
         FROM {sources.tables["buses"]}
-        WHERE scn_name = 'eGon2035'
+        WHERE scn_name = '{scenario}'
         AND carrier = 'AC'
         AND v_nom IN (110, 380)
         AND country = 'DE'
@@ -414,7 +415,7 @@ def get_existing_ac_buses():
     return gdf.rename_geometry("geometry")
 
 
-def get_existing_central_heat_buses():
+def get_existing_central_heat_buses(scenario):
     """Get existing central heat buses from eTraGo."""
     sources = DataCenters.sources
 
@@ -422,7 +423,7 @@ def get_existing_central_heat_buses():
         f"""
         SELECT bus_id, carrier, x, y, geom
         FROM {sources.tables["buses"]}
-        WHERE scn_name = 'eGon2035'
+        WHERE scn_name = '{scenario}'
         AND carrier = 'central_heat'
         """,
         geom_col="geom",
@@ -694,9 +695,9 @@ def insert_data_centers(scenario):
     """Insert data center buses, lines, loads and heat links into the database."""
     targets = DataCenters.targets
     delete_existing_data_centers(scenario)
-    data_centers = create_data_center_allocation()
-    existing_buses = get_existing_ac_buses()
-    central_heat_buses = get_existing_central_heat_buses()
+    data_centers = create_data_center_allocation(scenario)
+    existing_buses = get_existing_ac_buses(scenario)
+    central_heat_buses = get_existing_central_heat_buses(scenario)
     data_centers = assign_nearest_bus(data_centers, existing_buses)
 
     data_center_buses, data_centers = create_data_center_buses(
