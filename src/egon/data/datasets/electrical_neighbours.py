@@ -1535,6 +1535,12 @@ def _tyndp_demand_climate_year_column(df, node, year, climate_year=2009):
     return df[fallback]
 
 
+# Calendar year of the TYNDP 2024 demand profiles, independent of the
+# climate year. Not read from the "Date" column, since some sheets (e.g.
+# "PL00" in the 2040 and 2050 files) only give day and month there.
+TYNDP_DEMAND_CALENDAR_YEAR = 2018
+
+
 @functools.lru_cache(maxsize=None)
 def read_tyndp_demand(year, nodes, weather_year):
     """Read hourly electricity demand for one TYNDP 2024 anchor year
@@ -1543,9 +1549,9 @@ def read_tyndp_demand(year, nodes, weather_year):
     Energy" scenario's downloaded demand-profiles zip, for the given
     anchor year (2030, 2040 or 2050).
 
-    The TYNDP profiles follow the calendar given in their "Date" column
-    (2018, starting on a Monday), independent of the climate year. They
-    are aligned to the weekdays of the weather year, see
+    The TYNDP profiles follow the 2018 calendar (starting on a Monday),
+    independent of the climate year. They are aligned to the weekdays of
+    the weather year, see
     :py:func:`egon.data.datasets.scenario_parameters.align_weekdays`.
 
     Parameters
@@ -1575,7 +1581,7 @@ def read_tyndp_demand(year, nodes, weather_year):
     return {
         node: align_weekdays(
             _tyndp_demand_climate_year_column(sheets[node], node, year),
-            source_year=pd.Timestamp(sheets[node]["Date"].iloc[0]).year,
+            source_year=TYNDP_DEMAND_CALENDAR_YEAR,
             target_year=weather_year,
         )
         for node in nodes
