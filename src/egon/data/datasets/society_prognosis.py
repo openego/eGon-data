@@ -9,6 +9,7 @@ import pandas as pd
 
 from egon.data import db
 from egon.data.datasets import Dataset, DatasetSources, DatasetTargets
+from egon.data.validation import TableValidation, resolve_boundary_dependence
 import egon.data.config
 
 # will be later imported from another file ###
@@ -43,6 +44,43 @@ class SocietyPrognosis(Dataset):
             version=self.version,
             dependencies=dependencies,
             tasks=(create_tables, {zensus_population, zensus_household}),
+            validation={
+                "data-quality": [
+                    TableValidation(
+                        table_name="society.egon_household_prognosis",
+                        row_count=resolve_boundary_dependence(
+                            {"Everything": 5319490}
+                        ),
+                        data_type_columns={
+                            "zensus_population_id": "integer",
+                            "year": "integer",
+                            "households": "double precision",
+                        },
+                        not_null_columns=[
+                            "zensus_population_id",
+                            "year",
+                            "households",
+                        ],
+                    ),
+                    TableValidation(
+                        table_name="society.egon_population_prognosis",
+                        row_count=resolve_boundary_dependence(
+                            {"Everything": 6355446}
+                        ),
+                        data_type_columns={
+                            "zensus_population_id": "integer",
+                            "year": "integer",
+                            "population": "double precision",
+                        },
+                        not_null_columns=[
+                            "zensus_population_id",
+                            "year",
+                            "population",
+                        ],
+                    ),
+                ]
+            },
+            proceed_on_validation_failure=True,
         )
 
 

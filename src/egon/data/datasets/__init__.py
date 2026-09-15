@@ -6,7 +6,7 @@ from collections import abc
 from dataclasses import dataclass, field
 from functools import partial, reduce, update_wrapper
 from pathlib import Path
-from typing import Callable, Dict, Iterable, Set, Tuple, Union
+from typing import Callable, Dict, Iterable, Set, Tuple, Union, List
 import json
 import re
 
@@ -18,6 +18,12 @@ from sqlalchemy.exc import OperationalError
 from sqlalchemy.ext.declarative import declarative_base
 
 from egon.data import config, db, logger
+
+try:
+    from egon_validation.rules.base import Rule
+except ImportError:
+    Rule = None  # Type hint only
+
 
 Base = declarative_base()
 SCHEMA = "metadata"
@@ -290,6 +296,9 @@ class Dataset:
     #: The tasks of this :class:`Dataset`. A :class:`TaskGraph` will
     #: automatically be converted to :class:`Tasks_`.
     tasks: Tasks = ()
+    validation: Dict[str, List] = field(default_factory=dict)
+    proceed_on_validation_failure: bool = False
+    create_finalize_task: bool = False
 
     def check_version(self, after_execution=()):
         scenario_names = config.settings()["egon-data"]["--scenarios"]
@@ -391,21 +400,63 @@ class Dataset:
 
         if not isinstance(self.tasks, Tasks_):
             self.tasks = Tasks_(self.tasks)
-        if len(self.tasks.last) > 1:
+            # Process validation configuration
+        if self.validation:
+            from egon.data.validation import create_validation_tasks
+
+            validation_tasks = create_validation_tasks(
+                validation_dict=self.validation,
+                dataset_name=self.name,
+                proceed_on_validation_failure=self.proceed_on_validation_failure,
+            )
+
+            # Add validation tasks to existing Tasks_ without re-processing dependencies
+            if validation_tasks:
+                # Store original last tasks before adding validation
+                original_last_tasks = set(self.tasks.last)
+
+                # Add validation tasks to the Tasks_ dict
+                for vtask in validation_tasks:
+                    self.tasks[vtask.task_id] = vtask
+
+                # Update last to be validation tasks (they run after data tasks)
+                self.tasks.last = set(validation_tasks)
+
+                # Set up dependencies: original last tasks -> validation tasks
+                for last_task in sorted(
+                    original_last_tasks, key=lambda t: t.task_id
+                ):
+                    for vtask in validation_tasks:
+                        last_task.set_downstream(vtask)
+
+        if self.create_finalize_task and len(self.tasks.last) > 1:
             # Explicitly create single final task, because we can't know
             # which of the multiple tasks finishes last.
+            # Save current state before re-creating Tasks_ (validation tasks
+            # are in dict/last but not in graph, so they'd be lost otherwise)
+            current_last_tasks = set(self.tasks.last)
+            current_tasks_dict = dict(self.tasks)
+
             name = prefix(self)
             name = f"{name if name else f'{self.__module__}.'}{self.name}."
-            update_version = PythonOperator(
-                task_id=f"{name}update-version",
-                # Do nothing, because updating will be added later.
+            finalize = PythonOperator(
+                task_id=f"{name}finalize",
+                # Do nothing here; version update is added via check_version wrapper.
                 python_callable=lambda *xs, **ks: None,
             )
-            self.tasks = Tasks_((self.tasks.graph, update_version))
-        # Due to the `if`-block above, there'll now always be exactly
-        # one task in `self.tasks.last` which the next line just
-        # selects.
-        last = list(self.tasks.last)[0]
+            self.tasks = Tasks_((self.tasks.graph, finalize))
+
+            # Re-add tasks not in original graph (e.g., validation tasks)
+            for task_id, task in current_tasks_dict.items():
+                if task_id not in self.tasks:
+                    self.tasks[task_id] = task
+
+            # Set ALL current last tasks as upstream of finalize
+            for task in current_last_tasks:
+                task.set_downstream(finalize)
+        # Select one task from `self.tasks.last` to handle version update.
+        # With finalize task there's exactly one; otherwise pick first alphabetically.
+        last = sorted(list(self.tasks.last), key=lambda t: t.task_id)[0]
         for task in self.tasks.values():
             task.dataset = self
             cls = task.__class__

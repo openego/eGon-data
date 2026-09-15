@@ -7,19 +7,17 @@ import warnings
 
 from sqlalchemy import ARRAY, Column, Float, Integer, String, Text
 from sqlalchemy.ext.declarative import declarative_base
-import geopandas as gpd
 import numpy as np
 import pandas as pd
 
 from egon.data import config, db
-import egon.data.datasets.era5 as era
 
 try:
-    from disaggregator import temporal
-except ImportError as e:
+    from disaggregator import temporal  # noqa: F401
+except ImportError:
     pass
 
-from math import ceil
+from egon_validation import ArrayCardinalityValidation
 
 from egon.data.datasets import Dataset, DatasetSources, DatasetTargets
 from egon.data.datasets.heat_demand_timeseries.daily import (
@@ -36,6 +34,7 @@ from egon.data.metadata import (
     meta_metadata,
     sources,
 )
+from egon.data.validation import TableValidation, resolve_boundary_dependence
 
 Base = declarative_base()
 
@@ -726,7 +725,8 @@ def create_individual_heating_profile_python_like(scenario="eGon2035"):
     session = sessionmaker(bind=db.engine())()
 
     print(
-        f"Time to create overhead for time series for district heating scenario {scenario}"
+        f"Time to create overhead for time series for district heating "
+        f"scenario {scenario}"
     )
     print(datetime.now() - start_time)
 
@@ -1086,11 +1086,12 @@ class HeatTimeSeries(Dataset):
     Chooses heat demand profiles for each residential and CTS building
 
     This dataset creates heat demand profiles in an hourly resoultion.
-    Time series for CTS buildings are created using the SLP-gas method implemented
-    in the demandregio disagregator with the function :py:func:`export_etrago_cts_heat_profiles`
-    and stored in the database.
-    Time series for residential buildings are created based on a variety of synthetical created
-    individual demand profiles that are part of :py:class:`DataBundle <egon.data.datasets.data_bundle.DataBundle>`.
+    Time series for CTS buildings are created using the SLP-gas method
+    implemented in the demandregio disagregator with the function
+    :py:func:`export_etrago_cts_heat_profiles` and stored in the database.
+    Time series for residential buildings are created based on a variety
+    of synthetical created individual demand profiles that are part of
+    :py:class:`DataBundle <egon.data.datasets.data_bundle.DataBundle>`.
     This method is desribed within the functions and in this publication:
 
     C. Büttner, J. Amme, J. Endres, A. Malla, B. Schachler, I. Cußmann,
@@ -1102,21 +1103,35 @@ class HeatTimeSeries(Dataset):
     *Dependencies*
       * :py:class:`DataBundle <egon.data.datasets.data_bundle.DataBundle>`
       * :py:class:`DemandRegio <egon.data.datasets.demandregio.DemandRegio>`
-      * :py:class:`HeatDemandImport <egon.data.datasets.heat_demand.HeatDemandImport>`
-      * :py:class:`DistrictHeatingAreas <egon.data.datasets.district_heating_areas.DistrictHeatingAreas>`
+      * :py:class:`HeatDemandImport
+        <egon.data.datasets.heat_demand.HeatDemandImport>`
+      * :py:class:`DistrictHeatingAreas
+        <egon.data.datasets.district_heating_areas.DistrictHeatingAreas>`
       * :py:class:`Vg250 <egon.data.datasets.vg250.Vg250>`
-      * :py:class:`ZensusMvGridDistricts <egon.data.datasets.zensus_mv_grid_districts.ZensusMvGridDistricts>`
-      * :py:func:`hh_demand_buildings_setup <egon.data.datasets.electricity_demand_timeseries.hh_buildings.map_houseprofiles_to_buildings>`
+      * :py:class:`ZensusMvGridDistricts
+        <egon.data.datasets.zensus_mv_grid_districts.ZensusMvGridDistricts>`
+      * :py:func:`hh_demand_buildings_setup
+        <egon.data.datasets.electricity_demand_timeseries.hh_buildings
+        .map_houseprofiles_to_buildings>`
       * :py:class:`WeatherData <egon.data.datasets.era5.WeatherData>`
 
 
     *Resulting tables*
-      * :py:class:`demand.egon_timeseries_district_heating <egon.data.datasets.heat_demand_timeseries.EgonTimeseriesDistrictHeating>` is created and filled
-      * :py:class:`demand.egon_etrago_heat_cts <egon.data.datasets.heat_demand_timeseries.EgonEtragoHeatCts>` is created and filled
-      * :py:class:`demand.egon_heat_timeseries_selected_profiles <egon.data.datasets.heat_demand_timeseries.idp_pool.EgonHeatTimeseries>` is created and filled
-      * :py:class:`demand.egon_daily_heat_demand_per_climate_zone <egon.data.datasets.heat_demand_timeseries.daily.EgonDailyHeatDemandPerClimateZone>`
+      * :py:class:`demand.egon_timeseries_district_heating
+        <egon.data.datasets.heat_demand_timeseries
+        .EgonTimeseriesDistrictHeating>` is created and filled
+      * :py:class:`demand.egon_etrago_heat_cts
+        <egon.data.datasets.heat_demand_timeseries.EgonEtragoHeatCts>`
         is created and filled
-      * :py:class:`boundaries.egon_map_zensus_climate_zones <egon.data.datasets.heat_demand_timeseries.daily.EgonMapZensusClimateZones>` is created and filled
+      * :py:class:`demand.egon_heat_timeseries_selected_profiles
+        <egon.data.datasets.heat_demand_timeseries.idp_pool
+        .EgonHeatTimeseries>` is created and filled
+      * :py:class:`demand.egon_daily_heat_demand_per_climate_zone
+        <egon.data.datasets.heat_demand_timeseries.daily
+        .EgonDailyHeatDemandPerClimateZone>` is created and filled
+      * :py:class:`boundaries.egon_map_zensus_climate_zones
+        <egon.data.datasets.heat_demand_timeseries.daily
+        .EgonMapZensusClimateZones>` is created and filled
 
     """
 
@@ -1166,4 +1181,43 @@ class HeatTimeSeries(Dataset):
                 district_heating,
                 metadata,
             ),
+            validation={
+                "data_quality": [
+                    TableValidation(
+                        table_name="demand.egon_heat_idp_pool",
+                        row_count=459535,
+                        data_type_columns={
+                            "index": "bigint",
+                            "idp": "double precision[]",
+                        },
+                    ),
+                    TableValidation(
+                        table_name="demand.egon_heat_timeseries_selected_profiles",
+                        row_count=resolve_boundary_dependence(
+                            {
+                                "Schleswig-Holstein": 719936,
+                                "Everything": 20606259,
+                            }
+                        ),
+                        data_type_columns={
+                            "zensus_population_id": "integer",
+                            "bulding_id": "integer",
+                            "selected_idp_profiles": "array",
+                        },
+                    ),
+                    ArrayCardinalityValidation(
+                        table="demand.egon_heat_timeseries_selected_profiles",
+                        rule_id="ARRAY.egon_heat_timeseries_selected_profiles",
+                        array_column="selected_idp_profiles",
+                        expected_length=365,
+                    ),
+                    ArrayCardinalityValidation(
+                        table="demand.egon_timeseries_district_heating",
+                        rule_id="ARRAY.egon_timeseries_district_heating",
+                        array_column="dist_aggregated_mw",
+                        expected_length=8760,
+                    ),
+                ]
+            },
+            proceed_on_validation_failure=True,
         )
