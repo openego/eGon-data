@@ -65,8 +65,11 @@ class EgonEvMitLgvChargingLocation(Base):
     **Columns**
 
     location_id:
-        Provider-side id of the site. Unique across scenarios, but
-        **sparse** -- do not assume density.
+        Provider-side id of the site. Documented as unique across
+        scenarios and **sparse** -- do not assume density. Uniqueness
+        does not hold in delivery v1.5 `reGon2037`, where 91 ids are
+        delivered twice; the import drops the duplicates, cf.
+        :func:`.charging_location_import._deduplicate_staging`.
     charging_points:
         Number of charging points at the site.
     average_charging_capacity:
@@ -79,10 +82,13 @@ class EgonEvMitLgvChargingLocation(Base):
         Provider-side site id within the use case.
     is_synthetic_location:
         Whether the site is a fallback centroid rather than a real
-        candidate site. In delivery v1.4 all synthetic sites are
-        `highway_fast` municipality centroids, generated where a
-        municipality has no real candidate. Consumers placing high power
-        charging infrastructure need to be able to tell them apart.
+        candidate site. Synthetic sites are municipality centroids
+        generated where a municipality has no real candidate, and they
+        occur in **any** use case -- delivery v1.5 has 30,312 of them
+        in `reGon2037`, spread over seven of the eight. (Only in the
+        earlier deliveries, and still in v1.5 `status2024`, were they
+        all `highway_fast`.) Consumers placing charging infrastructure need
+        to be able to tell them apart, whatever the use case.
     mv_grid_id:
         MV grid district the site lies in, from a point-in-polygon join.
         NULL for sites outside every grid district; those are logged,
