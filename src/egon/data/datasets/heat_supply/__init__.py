@@ -371,8 +371,8 @@ class HeatSupply(Dataset):
 
 
     *Resulting tables*
-      * :py:class:`demand.egon_district_heating <egon.data.datasets.heat_supply.EgonDistrictHeatingSupply>` is created and filled
-      * :py:class:`demand.egon_individual_heating <egon.data.datasets.heat_supply.EgonIndividualHeatingSupply>` is created and filled
+      * :py:class:`supply.egon_district_heating <egon.data.datasets.heat_supply.EgonDistrictHeatingSupply>` is created and filled
+      * :py:class:`supply.egon_individual_heating <egon.data.datasets.heat_supply.EgonIndividualHeatingSupply>` is created and filled
 
     """
 
