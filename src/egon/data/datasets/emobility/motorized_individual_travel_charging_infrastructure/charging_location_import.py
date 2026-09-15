@@ -177,6 +177,8 @@ def _import_scenario(scenario_name: str) -> None:
         f"{EgonEvMitLgvChargingLocation.__table__.name}"
     )
 
+    _deduplicate_staging()
+
     logger.info("  Casting geometries...")
     db.execute_sql(
         f"""
@@ -237,14 +239,90 @@ def _import_scenario(scenario_name: str) -> None:
     _log_and_filter(scenario_name, table, imported)
 
 
+# TODO(#1460): remove once a delivery without duplicate `location_id`
+# is available. Delivery v1.5 ships 91 `location_id`s twice in
+# `reGon2037` (all of them synthetic `retail` / `work` municipality
+# centroids, cf. the note on `is_synthetic_location` in
+# :class:`.db_classes.EgonEvMitLgvChargingLocation`). The two rows of
+# such a pair agree on everything but `charging_points` and
+# `average_charging_capacity`, so they are not a repeated record and
+# the primary key cannot be widened to separate them either --
+# `(use_case, candidate_uid)` is duplicated for exactly the same ids.
+# `status2024` is unaffected. Reported to the provider; until it is
+# fixed the import keeps one row per `location_id` rather than failing
+# on the primary key of the target table.
+def _deduplicate_staging() -> None:
+    """Drop duplicate `location_id`s from the staging table.
+
+    The row with the most charging points wins, so the larger of two
+    sites survives; ties are broken by capacity and, finally, by
+    physical row order, which keeps the choice deterministic. Warns
+    with the numbers so a delivery that has the defect cannot pass
+    unnoticed.
+    """
+    duplicates = db.select_dataframe(
+        f"""
+        SELECT
+            COUNT(*) AS ids,
+            COALESCE(SUM(n) - COUNT(*), 0) AS extra_rows
+        FROM (
+            SELECT location_id, COUNT(*) AS n
+            FROM {STAGING_TABLE}
+            GROUP BY location_id
+            HAVING COUNT(*) > 1
+        ) d
+        """
+    ).iloc[0]
+
+    if not int(duplicates.ids):
+        return
+
+    logger.warning(
+        f"  {int(duplicates.ids)} location_id(s) are delivered more "
+        f"than once, {int(duplicates.extra_rows)} row(s) in excess. "
+        f"Keeping the row with the most charging points per "
+        f"location_id; the others are dropped."
+    )
+
+    db.execute_sql(
+        f"""
+        DELETE FROM {STAGING_TABLE} s
+        USING (
+            SELECT ctid
+            FROM (
+                SELECT
+                    ctid,
+                    ROW_NUMBER() OVER (
+                        PARTITION BY location_id
+                        ORDER BY
+                            charging_points DESC,
+                            average_charging_capacity DESC,
+                            ctid
+                    ) AS rn
+                FROM {STAGING_TABLE}
+                WHERE location_id IN (
+                    SELECT location_id
+                    FROM {STAGING_TABLE}
+                    GROUP BY location_id
+                    HAVING COUNT(*) > 1
+                )
+            ) ranked
+            WHERE rn > 1
+        ) dropped
+        WHERE s.ctid = dropped.ctid;
+        """
+    )
+
+
 def _log_and_filter(scenario_name: str, table: str, staged: int) -> None:
     """Report and, in test mode, drop the locations outside the boundary.
 
-    `is_synthetic_location` is reported separately: in delivery v1.4 all
-    synthetic sites are `highway_fast` municipality centroids generated
-    as a fallback where a municipality has no real candidate, and
-    consumers placing high power charging infrastructure need to be able
-    to tell them from real sites.
+    `is_synthetic_location` is reported separately: synthetic sites are
+    municipality centroids generated as a fallback where a municipality
+    has no real candidate, and consumers placing charging
+    infrastructure need to be able to tell them from real sites. They
+    are not confined to `highway_fast` -- in delivery v1.5 `reGon2037`
+    has them in seven of the eight use cases.
     """
     outside = db.select_dataframe(
         f"""
