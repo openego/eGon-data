@@ -65,8 +65,11 @@ class EgonEvMitLgvChargingLocation(Base):
     **Columns**
 
     location_id:
-        Provider-side id of the site. Unique across scenarios, but
-        **sparse** -- do not assume density.
+        Provider-side id of the site. Documented as unique across
+        scenarios and **sparse** -- do not assume density. Uniqueness
+        does not hold in delivery v1.5 `reGon2037`, where 91 ids are
+        delivered twice; the import drops the duplicates, cf.
+        :func:`.charging_location_import._deduplicate_staging`.
     charging_points:
         Number of charging points at the site.
     average_charging_capacity:
