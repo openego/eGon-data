@@ -240,11 +240,12 @@ def _import_scenario(scenario_name: str) -> None:
 def _log_and_filter(scenario_name: str, table: str, staged: int) -> None:
     """Report and, in test mode, drop the locations outside the boundary.
 
-    `is_synthetic_location` is reported separately: in delivery v1.4 all
-    synthetic sites are `highway_fast` municipality centroids generated
-    as a fallback where a municipality has no real candidate, and
-    consumers placing high power charging infrastructure need to be able
-    to tell them from real sites.
+    `is_synthetic_location` is reported separately: synthetic sites are
+    municipality centroids generated as a fallback where a municipality
+    has no real candidate, and consumers placing charging
+    infrastructure need to be able to tell them from real sites. They
+    are not confined to `highway_fast` -- in delivery v1.5 `reGon2037`
+    has them in seven of the eight use cases.
     """
     outside = db.select_dataframe(
         f"""
