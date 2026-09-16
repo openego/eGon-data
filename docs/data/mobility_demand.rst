@@ -279,18 +279,53 @@ Results are written to ``grid.egon_etrago_load`` and
 Known limitations
 -----------------
 
+These are ordered by how much they could move a result, not by how easy they
+are to state.
+
 .. warning::
+   **Where a city has no mapped rectifier, its entire DC energy sits on a
+   single point.** OSM maps tram and U-Bahn rectifier substations only
+   sparsely, and a city/system row without one falls back to the city
+   centroid. This is the largest placement uncertainty in the dataset, and it
+   is not marginal: in the source data more than half of the city/system rows
+   had no mapped rectifier, and the single largest load in the whole dataset --
+   the Munich U-Bahn at roughly 198 GWh a year -- is one of them, attached to
+   one MV bus at the city centre. The run logs how many rows fall back and how
+   much energy they carry; read that figure before using the result at city
+   resolution.
+
+   **The energy of the DC systems is the weakest anchor.** Tram and U-Bahn
+   consumption is not measured per city; it is calibrated. The 16.7-Hz traction
+   anchor and the two S-Bahn networks rest on reported figures, the tram and
+   U-Bahn figure does not.
+
+   **The 25 km radius and the equal split are settings, not derived values.**
+   A rectifier within the radius receives the same share as any other,
+   regardless of how much network it actually feeds. A weighting by network
+   length or population density would be defensible and is not implemented.
+
    **Rectifiers are not assigned per traction system.** Every city/system row
    draws on all DC rectifiers within its radius, so in cities that run both an
    S-Bahn and a tram network -- Berlin and Hamburg -- the two systems share the
-   same set of rectifiers. Energy per city and system is preserved; the
-   placement within the city is smeared between the two systems.
+   same set. On the full Germany run, every bus carrying S-Bahn load also
+   carried tram load. Energy per city and system is preserved; the placement
+   within the city is smeared between the two.
 
    **The hourly shape is assumed constant over time.** Future scenarios differ
    from the status quo by a scalar factor only. Changes in service frequency or
    operating hours are not represented.
 
-   **Several loads may share one bus.** A city's rectifiers often fall into the
-   same MV grid district, so the number of load rows exceeds the number of
-   buses. This is valid in PyPSA -- loads on a bus sum -- and the model result
-   is the same as for one aggregated load per bus and carrier.
+   **Nothing between input and output is persisted.** The dataset writes two
+   tables and holds everything in between in memory: which OSM object was
+   classified as a rectifier, which rectifiers a city was attached to, which
+   points fell back to a centroid or to a nearest neighbour. The summary counts
+   go to the run log, so the magnitudes are checkable, but there is no table to
+   query when you want to know why one particular city sits where it does.
+
+.. note::
+   **Several loads may share one bus, and that is not a problem.** A city's
+   rectifiers often fall into the same MV grid district, so the number of load
+   rows exceeds the number of buses -- on the full Germany run, 464 DC loads on
+   138 buses. This is valid in PyPSA, where loads on a bus sum, and the model
+   result is the same as for one aggregated load per bus and carrier. The
+   annual energy is split across those rows, not duplicated.
