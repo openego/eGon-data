@@ -150,6 +150,21 @@ The data processing steps are:
      belongs to a real dwelling and merely sits on the neighbouring polygon,
      so discarding it would lose the dwelling altogether.
 
+* Extend the residential buildings by a census gap fill, see script
+  `osm_buildings_extend_residential.sql`. Census cells that have population but
+  hold no residential building after the intersection are located, and the
+  buildings tagged `commercial`, `retail`, `office` or `hotel` in those cells
+  are added as residential -- such buildings often contain dwellings as well.
+  They carry `source = 'census_gap_fill'` and no ETHOS attributes, which keeps
+  their share measurable against the intersection.
+
+  This safety net predates ETHOS.BUILDA and was kept, because a populated cell
+  without a matched building can still occur. It is a safety net and not a
+  result carrier: on the full Germany run it contributes 12,721 buildings, or
+  0.07 % of the table. Note that the cells come from the Zensus 2011 grid,
+  which is a pipeline input -- not from the Zensus 2022 figures used to
+  validate the result.
+
 * Create a mapping table for building's OSM IDs to the Zensus cells the
   building's centroid is located in.
   Resulting tables:
@@ -164,6 +179,27 @@ The data processing steps are:
   the no. of apartments is to be allocated to. To make sure apartments are
   allocated to at least one building, a radius of 77m is used to catch building
   geometries.
+.. note::
+   **How the result compares to the census, and what the spread means.** On the
+   full Germany run of 2026-09, `openstreetmap.osm_buildings_residential` holds
+   18.9 million buildings, which is 0.95 times the 20.0 million buildings with
+   residential space that the Zensus 2022 counts. Filtering by OSM tags alone
+   gave 1.65 times on the same building base, so the intersection removes an
+   overestimation of about two thirds without turning it into an
+   underestimation.
+
+   Per federal state the result ranges from 0.61 to 1.18, which looks alarming
+   until it is decomposed. The spread is **inherited from ETHOS.BUILDA, not
+   produced by the intersection**: ETHOS itself ranges from 0.60 to 1.37 of the
+   census count per state, and its coverage correlates with the result at
+   r = 0.97. Where ETHOS derives its building base from OSM rather than from
+   official LoD2 city models, its coverage is poorest -- Mecklenburg-Vorpommern
+   0.60, Schleswig-Holstein 0.67 -- and the intersection returns slightly more
+   than ETHOS holds there, not less. Where ETHOS derives it from LoD2, it can
+   hold more points than the census holds buildings, because LoD2 splits
+   buildings differently than OSM; several points then fall into one OSM
+   polygon and count as one building.
+
 * Split filtered buildings into 3 datasets using the amenities' locations:
   temporary tables are created in script `osm_buildings_temp_tables.sql`, the
   final tables in `osm_buildings_amentities_results.sql`.
