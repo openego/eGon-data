@@ -39,6 +39,7 @@ from egon.data.datasets.power_plants.pv_rooftop import pv_rooftop_per_mv_grid
 from egon.data.datasets.power_plants.pv_rooftop_buildings import (
     pv_rooftop_to_buildings,
 )
+from egon.data.validation import TableValidation, resolve_boundary_dependence
 import egon.data.config
 import egon.data.datasets.power_plants.assign_weather_data as assign_weather_data  # noqa: E501
 import egon.data.datasets.power_plants.metadata as pp_metadata
@@ -1520,4 +1521,54 @@ class PowerPlants(Dataset):
             version=self.version,
             dependencies=dependencies,
             tasks=tasks,
+            validation={
+                "data-quality": [
+                    TableValidation(
+                        table_name="supply.egon_power_plants",
+                        row_count=resolve_boundary_dependence(
+                            {"Schleswig-Holstein": 1102, "Everything": 1103}
+                        ),
+                        geometry_columns=["geom"],
+                        data_type_columns={
+                            "id": "bigint",
+                            "sources": "jsonb",
+                            "source_id": "jsonb",
+                            "carrier": "character varying",
+                            "el_capacity": "double precision",
+                            "bus_id": "integer",
+                            "voltage_level": "integer",
+                            "weather_cell_id": "integer",
+                            "scenario": "character varying",
+                            "geom": "geometry",
+                        },
+                        not_null_columns=[
+                            "id",
+                            "sources",
+                            "source_id",
+                            "carrier",
+                            "el_capacity",
+                            "bus_id",
+                            "voltage_level",
+                            "weather_cell_id",
+                            "scenario",
+                            "geom",
+                        ],
+                        value_set_columns={
+                            "carrier": [
+                                "others",
+                                "gas",
+                                "biomass",
+                                "run_of_river",
+                                "wind_onshore",
+                                "oil",
+                                "wind_offshore",
+                                "solar",
+                                "reservoir",
+                            ],
+                            "scenario": ["eGon2035", "eGon100RE"],
+                        },
+                    ),
+                ]
+            },
+            proceed_on_validation_failure=True,
         )

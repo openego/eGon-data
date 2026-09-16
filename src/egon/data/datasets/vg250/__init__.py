@@ -29,6 +29,7 @@ from egon.data.metadata import (
     meta_metadata,
 )
 import egon.data.config
+from egon.data.validation import TableValidation, resolve_boundary_dependence
 
 
 def download_files():
@@ -443,7 +444,9 @@ def vg250_metadata_resources_fields():
             "unit": "none",
         },
         {
-            "description": "Seat of the administration (territorial code, deprecated column)",
+            "description": (
+                "Seat of the administration (territorial code, deprecated)"
+            ),
             "name": "sdv_rs",
             "type": "string",
             "unit": "none",
@@ -551,4 +554,81 @@ class Vg250(Dataset):
                 add_metadata,
                 cleaning_and_preperation,
             ),
+            validation={
+                "data_quality": [
+                    TableValidation(
+                        table_name="boundaries.vg250_krs",
+                        row_count=resolve_boundary_dependence({
+                            "Schleswig-Holstein": 27,
+                            "Everything": 537,
+                        }),
+                        geometry_columns=["geometry"],
+                        data_type_columns=resolve_boundary_dependence({
+                            "Schleswig-Holstein": {
+                                "id": "bigint",
+                                "ade": "integer",
+                                "gf": "integer",
+                                "bsg": "integer",
+                                "ars": "text",
+                                "ags": "text",
+                                "sdv_ars": "text",
+                                "gen": "text",
+                                "bez": "text",
+                                "ibz": "integer",
+                                "bem": "text",
+                                "nbd": "text",
+                                "sn_l": "text",
+                                "sn_r": "text",
+                                "sn_k": "text",
+                                "sn_v1": "text",
+                                "sn_v2": "text",
+                                "sn_g": "text",
+                                "fk_s3": "text",
+                                "nuts": "text",
+                                "ars_0": "text",
+                                "ags_0": "text",
+                                "wsk": "timestamp without time zone",
+                                "debkg_id": "text",
+                                "rs": "text",
+                                "sdv_rs": "text",
+                                "rs_0": "text",
+                                "geometry": "geometry",
+                            },
+                            "Everything": {
+                                "id": "bigint",
+                                "ade": "bigint",
+                                "gf": "bigint",
+                                "bsg": "bigint",
+                                "ars": "text",
+                                "ags": "text",
+                                "sdv_ars": "text",
+                                "gen": "text",
+                                "bez": "text",
+                                "ibz": "bigint",
+                                "bem": "text",
+                                "nbd": "text",
+                                "sn_l": "text",
+                                "sn_r": "text",
+                                "sn_k": "text",
+                                "sn_v1": "text",
+                                "sn_v2": "text",
+                                "sn_g": "text",
+                                "fk_s3": "text",
+                                "nuts": "text",
+                                "ars_0": "text",
+                                "ags_0": "text",
+                                "wsk": "text",
+                                "debkg_id": "text",
+                                "rs": "text",
+                                "sdv_rs": "text",
+                                "rs_0": "text",
+                                "geometry": "geometry",
+                            },
+                        }),
+                        not_null_columns=["gf", "bsg"],
+                        value_set_columns={"nbd": ["ja", "nein"]},
+                    ),
+                ]
+            },
+            proceed_on_validation_failure=True,
         )

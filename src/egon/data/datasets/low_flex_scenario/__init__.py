@@ -1,6 +1,7 @@
 """The central module to create low flex scenarios"""
 
 from airflow.providers.common.sql.operators.sql import SQLExecuteQueryOperator
+from egon_validation import ArrayCardinalityValidation
 from importlib_resources import files
 from sqlalchemy.ext.declarative import declarative_base
 
@@ -32,4 +33,15 @@ class LowFlexScenario(Dataset):
                     ),
                 },
             ),
+            validation={
+                "data-quality": [
+                    ArrayCardinalityValidation(
+                        table="grid.egon_etrago_bus_timeseries",
+                        rule_id="ARRAY.egon_etrago_bus_timeseries",
+                        array_column="v_mag_pu_set",
+                        expected_length=8760,
+                    ),
+                ]
+            },
+            proceed_on_validation_failure=True,
         )

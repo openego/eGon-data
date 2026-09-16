@@ -11,6 +11,7 @@ import geopandas as gpd
 
 from egon.data import db
 from egon.data.datasets import Dataset, DatasetSources, DatasetTargets
+from egon.data.validation import TableValidation, resolve_boundary_dependence
 import egon.data.config
 
 Base = declarative_base()
@@ -169,4 +170,45 @@ class re_potential_area_setup(Dataset):
             version=self.version,
             dependencies=dependencies,
             tasks=self.tasks,
+            validation={
+                "data-quality": [
+                    TableValidation(
+                        table_name="supply.egon_re_potential_area_pv_agriculture",
+                        row_count=resolve_boundary_dependence(
+                            {"Schleswig-Holstein": 388, "Everything": 8259}
+                        ),
+                        geometry_columns=["geom"],
+                        data_type_columns={
+                            "id": "integer",
+                            "geom": "geometry",
+                        },
+                        not_null_columns=["id", "geom"],
+                    ),
+                    TableValidation(
+                        table_name="supply.egon_re_potential_area_pv_road_railway",
+                        row_count=resolve_boundary_dependence(
+                            {"Schleswig-Holstein": 479, "Everything": 5159}
+                        ),
+                        geometry_columns=["geom"],
+                        data_type_columns={
+                            "id": "integer",
+                            "geom": "geometry",
+                        },
+                        not_null_columns=["id", "geom"],
+                    ),
+                    TableValidation(
+                        table_name="supply.egon_re_potential_area_wind",
+                        row_count=resolve_boundary_dependence(
+                            {"Schleswig-Holstein": 6306, "Everything": 120268}
+                        ),
+                        geometry_columns=["geom"],
+                        data_type_columns={
+                            "id": "integer",
+                            "geom": "geometry",
+                        },
+                        not_null_columns=["id", "geom"],
+                    ),
+                ]
+            },
+            proceed_on_validation_failure=True,
         )

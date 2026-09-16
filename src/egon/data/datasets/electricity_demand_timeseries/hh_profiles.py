@@ -24,6 +24,7 @@ from egon.data import db
 from egon.data.datasets import Dataset, DatasetSources, DatasetTargets
 from egon.data.datasets.scenario_parameters import get_scenario_year
 from egon.data.datasets.zensus_mv_grid_districts import MapZensusGridDistricts
+from egon.data.validation import TableValidation, resolve_boundary_dependence
 import egon.data.config
 
 Base = declarative_base()
@@ -277,6 +278,55 @@ class HouseholdDemands(Dataset):
                 houseprofiles_in_census_cells,
                 mv_hh_electricity_load,
             ),
+            validation={
+                "data_quality": [
+                    TableValidation(
+                        table_name="demand.egon_household_electricity_profile_in_census_cell",
+                        row_count=resolve_boundary_dependence(
+                            {
+                                "Schleswig-Holstein": 143521,
+                                "Everything": 3177723,
+                            }
+                        ),
+                        data_type_columns=resolve_boundary_dependence(
+                            {
+                                "Schleswig-Holstein": {
+                                    "cell_id": "integer",
+                                    "grid_id": "character varying",
+                                    "cell_profile_ids": "array",
+                                    "nuts3": "character varying",
+                                    "nuts1": "character varying",
+                                    "factor_2019": "double precision",
+                                    "factor_2023": "double precision",
+                                    "factor_2035": "double precision",
+                                    "factor_2050": "double precision",
+                                },
+                                "Everything": {
+                                    "cell_id": "integer",
+                                    "grid_id": "character varying",
+                                    "cell_profile_ids": "character varying",
+                                    "nuts3": "character varying",
+                                    "nuts1": "character varying",
+                                    "factor_2035": "double precision",
+                                    "factor_2050": "double precision",
+                                },
+                            }
+                        ),
+                    ),
+                    TableValidation(
+                        table_name="demand.iee_household_load_profiles",
+                        row_count=resolve_boundary_dependence(
+                            {"Schleswig-Holstein": 2511, "Everything": 1000000}
+                        ),
+                        data_type_columns={
+                            "id": "integer",
+                            "type": "character",
+                            "load_in_wh": "array",
+                        },
+                    ),
+                ]
+            },
+            proceed_on_validation_failure=True,
         )
 
 

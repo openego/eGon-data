@@ -44,6 +44,7 @@ from egon.data.metadata import (
     meta_metadata,
     sources,
 )
+from egon.data.validation import TableValidation, resolve_boundary_dependence
 
 Base = declarative_base()
 
@@ -778,4 +779,56 @@ class Chp(Dataset):
             version=self.version,
             dependencies=dependencies,
             tasks=tasks,
+            validation={
+                "data-quality": [
+                    TableValidation(
+                        table_name="supply.egon_chp_plants",
+                        row_count=resolve_boundary_dependence(
+                            {"Schleswig-Holstein": 1720, "Everything": 40197}
+                        ),
+                        geometry_columns=["geom"],
+                        data_type_columns={
+                            "id": "integer",
+                            "sources": "jsonb",
+                            "source_id": "jsonb",
+                            "carrier": "character varying",
+                            "district_heating": "boolean",
+                            "el_capacity": "double precision",
+                            "th_capacity": "double precision",
+                            "electrical_bus_id": "integer",
+                            "district_heating_area_id": "integer",
+                            "ch4_bus_id": "integer",
+                            "voltage_level": "integer",
+                            "scenario": "character varying",
+                            "geom": "geometry",
+                        },
+                        not_null_columns=[
+                            "id",
+                            "sources",
+                            "source_id",
+                            "carrier",
+                            "district_heating",
+                            "el_capacity",
+                            "th_capacity",
+                            "electrical_bus_id",
+                            "district_heating_area_id",
+                            "ch4_bus_id",
+                            "voltage_level",
+                            "scenario",
+                            "geom",
+                        ],
+                        value_set_columns={
+                            "carrier": [
+                                "oil",
+                                "others",
+                                "gas",
+                                "gas extended",
+                                "biomass",
+                            ],
+                            "scenario": ["eGon2035", "eGon100RE"],
+                        },
+                    ),
+                ]
+            },
+            proceed_on_validation_failure=True,
         )

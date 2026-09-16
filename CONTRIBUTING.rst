@@ -279,6 +279,22 @@ be saved locally, please use `CWD` to store the data. This is achieved by using
   filepath = Path(".") / "filename.csv"
   urlretrieve("https://url/to/file", filepath)
 
+Add validation
+--------------
+
+Validation ensures data quality and consistency throughout the pipeline. When
+creating or modifying datasets, consider adding validation rules to verify that
+the output data meets expected criteria such as row counts, data types, null
+constraints, and business logic requirements. Automated validation helps catch
+data issues early and provides structured reporting of any problems.
+
+For detailed information on how to add validation to your datasets, including
+examples for ``TableValidation`` and custom ``RuleValidation``, see the
+:doc:`validation` documentation. 
+The underlying validation framework is documented in the 
+`egon-validation repository <https://github.com/openego/egon-validation>`_.
+
+
 Add metadata
 ------------
 
