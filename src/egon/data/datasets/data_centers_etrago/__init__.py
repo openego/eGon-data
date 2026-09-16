@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 """Allocate future data center capacities and integrate data center buses,
-loads, connection lines and waste-heat links into the database."""
+loads, connection lines and reusable waste heat into the database."""
 
 import geopandas as gpd
 import numpy as np
@@ -9,7 +9,7 @@ import scipy.stats as stats
 
 from geoalchemy2 import Geometry
 from scipy.spatial.distance import cdist
-from shapely.geometry import LineString, MultiLineString
+from shapely.geometry import LineString
 
 from egon.data import config, db
 from egon.data.datasets import Dataset, DatasetSources, DatasetTargets
@@ -73,6 +73,13 @@ L_PER_KM_380KV = 0.8e-3
 # planned reused energy.
 # Source: https://www.gesetze-im-internet.de/enefg/__11.html
 REUSABLE_HEAT_FACTOR = 0.20
+
+# Waste heat can only be reused where a district heating network is close
+# enough to connect to. The same radius is used to score district-heating
+# proximity during the allocation (RADIUS_WAERME) and matches the maximum
+# connection distance assumed for electrolyser waste heat in
+# hydrogen_etrago/power_to_h2.py (max_buffer_heat).
+MAX_HEAT_CONNECTION_DISTANCE_M = RADIUS_WAERME
 
 # UKPN data center load-profile parameters
 # Profiles are filtered by annual utilisation and converted to hourly resoluion
@@ -195,7 +202,7 @@ def load_district_heating_areas(scenario):
 
     gdf = db.select_geodataframe(
         f"""
-        SELECT geom_polygon, residential_and_service_demand
+        SELECT area_id, geom_polygon, residential_and_service_demand
         FROM {sources.tables["district_heating_areas"]}
         WHERE scenario = '{scenario}'
         """,
@@ -438,22 +445,30 @@ def get_existing_ac_buses(scenario):
     return gdf.rename_geometry("geometry")
 
 
-def get_existing_central_heat_buses(scenario):
-    """Get existing central heat buses from eTraGo."""
+def get_central_heat_bus_per_area(scenario):
+    """Map each district heating area to its central heat bus."""
     sources = DataCenters.sources
 
-    gdf = db.select_geodataframe(
+    # heat_etrago.insert_buses() creates exactly one central heat bus per
+    # district heating area, placed at the centroid of the area. Matching the
+    # centroid back to the bus point therefore identifies the area's bus. The
+    # tiny buffer absorbs coordinate rounding and mirrors the join used in
+    # heat_etrago.insert_central_direct_heat().
+    return db.select_dataframe(
         f"""
-        SELECT bus_id, carrier, x, y, geom
-        FROM {sources.tables["buses"]}
-        WHERE scn_name = '{scenario}'
-        AND carrier = 'central_heat'
+        SELECT a.area_id, b.bus_id
+        FROM {sources.tables["district_heating_areas"]} AS a
+        JOIN {sources.tables["buses"]} AS b
+        ON ST_Intersects(
+            ST_Transform(
+                ST_Buffer(ST_Centroid(a.geom_polygon), 0.0000001), 4326),
+            b.geom)
+        WHERE a.scenario = '{scenario}'
+        AND b.scn_name = '{scenario}'
+        AND b.carrier = 'central_heat'
         """,
-        geom_col="geom",
-        epsg=4326,
+        index_col="area_id",
     )
-
-    return gdf.rename_geometry("geometry")
 
 
 def assign_nearest_bus(data_centers, existing_buses):
@@ -499,43 +514,35 @@ def assign_nearest_bus(data_centers, existing_buses):
     return data_centers_projected.to_crs(epsg=4326)
 
 
-def assign_nearest_heat_bus(data_centers, central_heat_buses):
-    """Assign nearest existing central heat bus to each data center."""
+def assign_district_heating_area(data_centers, district_heating_areas):
+    """Assign the nearest district heating area within the connection radius."""
+    # The distance is measured against the area polygons rather than the
+    # central heat buses: those buses sit at the centroid of their area, so a
+    # data center right next to a large network can be far from its bus.
     data_centers_projected = data_centers.to_crs(epsg=3035)
-    central_heat_buses_projected = central_heat_buses.to_crs(epsg=3035)
+    areas_projected = district_heating_areas.to_crs(epsg=3035)
 
-    data_centers_projected = gpd.sjoin_nearest(
-        data_centers_projected,
-        central_heat_buses_projected[["bus_id", "geometry"]].rename(
-            columns={"bus_id": "central_heat_bus_id"}
-        ),
-        how="left",
-        distance_col="distance_to_heat_bus_km",
+    assigned = (
+        gpd.sjoin_nearest(
+            data_centers_projected,
+            areas_projected[["area_id", "geometry"]],
+            how="left",
+            distance_col="distance_to_heat_area_m",
+        )
+        .drop(columns=["index_right"])
+        # sjoin_nearest repeats a data center once per tie when several areas
+        # are equidistant. Keep a single area per data center.
+        .drop_duplicates(subset=["load_id"])
     )
 
-    data_centers_projected["distance_to_heat_bus_km"] = (
-        data_centers_projected["distance_to_heat_bus_km"] / 1000
-    )
-    data_centers_projected["central_heat_bus_id"] = data_centers_projected[
-        "central_heat_bus_id"
-    ].astype(int)
+    assigned = assigned[
+        assigned["distance_to_heat_area_m"]
+        <= MAX_HEAT_CONNECTION_DISTANCE_M
+    ].copy()
 
-    # Get geometry of the assigned heat bus for the waste-heat link.
-    central_heat_bus_geom = (
-        central_heat_buses.set_index("bus_id")
-        .geometry[data_centers_projected["central_heat_bus_id"]]
-        .values
-    )
+    assigned["area_id"] = assigned["area_id"].astype(int)
 
-    data_centers_projected = data_centers_projected.drop(
-        columns=["index_right"]
-    )
-
-    data_centers_projected = data_centers_projected.to_crs(epsg=4326)
-
-    data_centers_projected["central_heat_bus_geom"] = central_heat_bus_geom
-
-    return data_centers_projected
+    return assigned
 
 
 def create_data_center_buses(data_centers, scenario):
@@ -648,37 +655,61 @@ def create_data_center_loads(data_centers, scenario):
     )
 
 
-def create_data_center_heat_links(data_centers, scenario):
-    """Create waste-heat links from data center AC buses to central heat buses."""
+def create_waste_heat_generators(data_centers, heat_bus_per_area, scenario):
+    """Create waste heat generators at the assigned central heat buses.
 
-    links = []
+    Waste heat is a byproduct of electricity the data center already consumes,
+    so it is modelled as a generator feeding the district heating bus rather
+    than as a link from the data center's AC bus. A link would withdraw grid
+    electricity a second time, on top of the data center load, and deliver heat
+    even while the data center is idle. This mirrors how non-dispatchable heat
+    sources are represented in heat_etrago.insert_central_direct_heat().
+    """
+    return pd.DataFrame(
+        {
+            "scn_name": scenario,
+            "generator_id": db.next_etrago_id(
+                "generator", len(data_centers)
+            ),
+            "bus": heat_bus_per_area.bus_id[data_centers["area_id"]].values,
+            "carrier": "data_center_waste_heat",
+            # Together with p_max_pu below this yields exactly
+            # REUSABLE_HEAT_FACTOR times the data center load in every hour,
+            # and therefore that share of its annual demand, which is what
+            # EnEfG § 11(2) requires.
+            "p_nom": (
+                data_centers["allocated_mw"].values * REUSABLE_HEAT_FACTOR
+            ),
+            "p_nom_extendable": False,
+            # The heat is a byproduct of demand that is paid for anyway, so
+            # reusing it carries no fuel or opportunity cost.
+            "marginal_cost": 0,
+        }
+    )
 
-    for _, row in data_centers.iterrows():
-        topo = LineString(
-            [
-                (row.geometry.x, row.geometry.y),
-                (row.central_heat_bus_geom.x, row.central_heat_bus_geom.y),
-            ]
+
+def create_waste_heat_timeseries(generators, data_centers, scenario):
+    """Bound waste heat availability by the data center's own hourly load."""
+    # p_max_pu is the data center load normalised by its allocated capacity.
+    # cap_and_redistribute_profiles() keeps the load at or below that capacity,
+    # so the ratio never exceeds 1. Because it is an upper bound rather than a
+    # fixed injection, unused waste heat is simply spilled instead of forcing
+    # heat into a district heating network that does not need it.
+    p_max_pu = [
+        (np.array(profile) / capacity).tolist()
+        for profile, capacity in zip(
+            data_centers["profile"], data_centers["allocated_mw"]
         )
+    ]
 
-        links.append(
-            {
-                "scn_name": scenario,
-                "link_id": db.next_etrago_id("link"),
-                "bus0": row.data_center_bus_id,
-                "bus1": row.central_heat_bus_id,
-                "carrier": "data_center_waste_heat",
-                "efficiency": 1,
-                # Assume 20% of the data center electrical capacity is reusable waste heat.
-                # The resulting heat-link capacity is fixed and not optimized by eTraGo.
-                "p_nom": row.allocated_mw * REUSABLE_HEAT_FACTOR,
-                "p_nom_extendable": False,
-                "geom": MultiLineString([topo]),
-                "topo": topo,
-            }
-        )
-
-    return gpd.GeoDataFrame(links, geometry="geom", crs="EPSG:4326")
+    return pd.DataFrame(
+        {
+            "scn_name": scenario,
+            "generator_id": generators["generator_id"].values,
+            "temp_id": 1,
+            "p_max_pu": p_max_pu,
+        }
+    )
 
 
 def delete_existing_data_centers(scenario):
@@ -695,10 +726,14 @@ def delete_existing_data_centers(scenario):
             AND type = 'data_center'
         );
         
+        -- Waste heat used to be modelled as a link from the data center AC bus
+        -- to the central heat bus. It is a generator at the heat bus now, see
+        -- create_waste_heat_generators(), but the delete is kept so databases
+        -- written by earlier versions of this dataset are cleaned up.
         DELETE FROM {targets.tables["links"]}
         WHERE scn_name = '{scenario}'
         AND carrier = 'data_center_waste_heat';
-        
+
         DELETE FROM {targets.tables["loads"]}
         WHERE scn_name = '{scenario}'
         AND type = 'data_center';
@@ -719,23 +754,18 @@ def delete_existing_data_centers(scenario):
 
 
 def insert_data_centers(scenario):
-    """Insert data center buses, lines, loads and heat links into the database."""
+    """Insert data center buses, lines and loads into the database."""
     targets = DataCenters.targets
     delete_existing_data_centers(scenario)
     data_centers = create_data_center_allocation(scenario)
     existing_buses = get_existing_ac_buses(scenario)
-    central_heat_buses = get_existing_central_heat_buses(scenario)
     data_centers = assign_nearest_bus(data_centers, existing_buses)
 
     data_center_buses, data_centers = create_data_center_buses(
         data_centers, scenario
     )
-    data_centers = assign_nearest_heat_bus(data_centers, central_heat_buses)
     data_center_lines = create_data_center_lines(data_centers, scenario)
     data_center_loads = create_data_center_loads(data_centers, scenario)
-    data_center_heat_links = create_data_center_heat_links(
-        data_centers, scenario
-    )
 
     data_center_buses.to_postgis(
         targets.get_table_name("buses"),
@@ -757,14 +787,6 @@ def insert_data_centers(scenario):
     data_center_loads.to_sql(
         targets.get_table_name("loads"),
         schema=targets.get_table_schema("loads"),
-        if_exists="append",
-        con=db.engine(),
-        index=False,
-    )
-
-    data_center_heat_links.to_postgis(
-        targets.get_table_name("links"),
-        schema=targets.get_table_schema("links"),
         if_exists="append",
         con=db.engine(),
         index=False,
@@ -1013,6 +1035,105 @@ def insert_data_center_load_timeseries(scenario):
         index=False,
     )
 
+####################
+# Waste heat integration part
+
+def delete_existing_waste_heat(scenario):
+    """Delete previously inserted waste heat generators before rerun."""
+    targets = DataCenters.targets
+
+    db.execute_sql(f"""
+        DELETE FROM {targets.tables["generator_timeseries"]}
+        WHERE scn_name = '{scenario}'
+        AND generator_id IN (
+            SELECT generator_id
+            FROM {targets.tables["generators"]}
+            WHERE scn_name = '{scenario}'
+            AND carrier = 'data_center_waste_heat'
+        );
+
+        DELETE FROM {targets.tables["generators"]}
+        WHERE scn_name = '{scenario}'
+        AND carrier = 'data_center_waste_heat';
+        """)
+
+
+def load_data_centers_for_waste_heat(scenario):
+    """Load created data center loads with their location and load profile."""
+    sources = DataCenters.sources
+
+    # The load p_set is the allocated data center capacity created earlier,
+    # while the time series holds the hourly load derived from it.
+    return db.select_geodataframe(
+        f"""
+        SELECT
+            l.load_id,
+            l.p_set AS allocated_mw,
+            t.p_set AS profile,
+            b.geom
+        FROM {sources.tables["loads"]} AS l
+        JOIN {sources.tables["buses"]} AS b
+        ON l.bus = b.bus_id
+        AND l.scn_name = b.scn_name
+        JOIN {sources.tables["load_timeseries"]} AS t
+        ON l.load_id = t.load_id
+        AND l.scn_name = t.scn_name
+        WHERE l.scn_name = '{scenario}'
+        AND l.type = 'data_center'
+        AND b.type = 'data_center'
+        """,
+        geom_col="geom",
+        epsg=4326,
+    ).rename_geometry("geometry")
+
+
+def insert_data_center_waste_heat(scenario):
+    """Create and insert reusable waste heat for the modeled data centers."""
+    targets = DataCenters.targets
+
+    delete_existing_waste_heat(scenario)
+
+    data_centers = load_data_centers_for_waste_heat(scenario)
+
+    if data_centers.empty:
+        print(f"No data center loads found in scenario {scenario}.")
+        return
+
+    data_centers = assign_district_heating_area(
+        data_centers, load_district_heating_areas(scenario)
+    )
+
+    if data_centers.empty:
+        print(
+            f"No data center within {MAX_HEAT_CONNECTION_DISTANCE_M} m of a "
+            f"district heating area in scenario {scenario}."
+        )
+        return
+
+    generators = create_waste_heat_generators(
+        data_centers, get_central_heat_bus_per_area(scenario), scenario
+    )
+    timeseries = create_waste_heat_timeseries(
+        generators, data_centers, scenario
+    )
+
+    generators.to_sql(
+        targets.get_table_name("generators"),
+        schema=targets.get_table_schema("generators"),
+        if_exists="append",
+        con=db.engine(),
+        index=False,
+    )
+
+    timeseries.to_sql(
+        targets.get_table_name("generator_timeseries"),
+        schema=targets.get_table_schema("generator_timeseries"),
+        if_exists="append",
+        con=db.engine(),
+        index=False,
+    )
+
+
 def insert_data_centers_for_scenarios():
     """Insert data center components for configured scenarios."""
     for scenario in config.settings()["egon-data"]["--scenarios"]:
@@ -1026,20 +1147,30 @@ def insert_data_center_load_timeseries_for_scenarios():
     for scenario in config.settings()["egon-data"]["--scenarios"]:
         if scenario in TARGET_CAPACITY_MW:
             insert_data_center_load_timeseries(scenario)
-            
+
+
+def insert_data_center_waste_heat_for_scenarios():
+    """Insert data center waste heat for configured scenarios."""
+
+    for scenario in config.settings()["egon-data"]["--scenarios"]:
+        if scenario in TARGET_CAPACITY_MW:
+            insert_data_center_waste_heat(scenario)
+
+
 
 
 class DataCenters(Dataset):
     """Integrate future data center demand"""
 
     name: str = "DataCenters"
-    version: str = "0.0.2"
+    version: str = "0.0.3"
 
     sources = DatasetSources(
         tables={
             "buses": "grid.egon_etrago_bus",
             "lines": "grid.egon_etrago_line",
             "loads": "grid.egon_etrago_load",
+            "load_timeseries": "grid.egon_etrago_load_timeseries",
             "commercial_areas": "openstreetmap.osm_landuse",
             "district_heating_areas": "demand.egon_district_heating_areas",
             "substations": "grid.egon_hvmv_substation",
@@ -1070,6 +1201,8 @@ class DataCenters(Dataset):
             "loads": "grid.egon_etrago_load",
             "links": "grid.egon_etrago_link",
             "load_timeseries": "grid.egon_etrago_load_timeseries",
+            "generators": "grid.egon_etrago_generator",
+            "generator_timeseries": "grid.egon_etrago_generator_timeseries",
         },
     )
 
@@ -1081,5 +1214,8 @@ class DataCenters(Dataset):
             tasks=(
                 insert_data_centers_for_scenarios,
                 insert_data_center_load_timeseries_for_scenarios,
+                # Waste heat availability follows the hourly load, so this
+                # runs once the load time series exist.
+                insert_data_center_waste_heat_for_scenarios,
             ),
         )
