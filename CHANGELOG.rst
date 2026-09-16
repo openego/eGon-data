@@ -19,6 +19,11 @@ Added
   alongside home batteries, and separate eTraGo carriers/cost parameters 
   ('BESS' vs'home_battery') instead of one generic 'battery' carrier
   `#1478 <https://github.com/openego/eGon-data/issues/1478>`_
+* Add new eMobility dataset for public buses (vehicle class M3): static depot
+  charging loads per scenario, written per-depot to
+  demand.egon_ev_bus_charging_depot for eDisGo and aggregated per eTraGo bus
+  under the new carrier 'land_transport_bus'
+  `#1461 <https://github.com/openego/eGon-data/issues/1461>`_
 
 
 Changed

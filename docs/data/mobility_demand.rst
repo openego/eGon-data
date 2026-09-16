@@ -179,3 +179,55 @@ of each NUTS3 region is used to determine the respective hydrogen Voronoi cell (
 :py:class:`GasAreaseGon2035<egon.data.datasets.gas_areas.GasAreaseGon2035>` and
 :py:class:`GasAreaseGon100RE<egon.data.datasets.gas_areas.GasAreaseGon100RE>`) it is
 located in.
+
+.. _mobility-demand-public-bus-ref:
+
+Public buses
+++++++++++++
+
+Electricity demand of public buses (vehicle class M3) is set up for the
+``status2024``, ``reGon2037`` and ``reGon2045`` scenarios by
+:py:class:`PublicBusCharging<egon.data.datasets.emobility.public_bus_charging.PublicBusCharging>`.
+The ``eGon2035`` and ``eGon100RE`` scenarios deliberately carry no public bus
+demand.
+
+Unlike motorized individual travel and heavy-duty transport, the charging
+demand is not generated within egon-data. Depot locations and a static hourly
+charging series per depot and scenario are produced externally and ship in the
+data bundle under ``data_bundle_egon_data/bus_charging/``. No flexibility is
+modelled: the series are taken as given, so no charging link or storage
+component is written and no lowflex scenario variant is created.
+
+Each depot is written per scenario to
+:py:class:`demand.egon_ev_bus_charging_depot<egon.data.datasets.emobility.public_bus_charging.db_classes.EgonEvBusChargingDepot>`
+with its geometry, grid connection voltage level and full 8760-step time
+series. This per-location detail is required by eDisGo, which cannot
+reconstruct a predefined series from an aggregate.
+
+The voltage level is derived per depot **and per scenario** from that
+scenario's own peak load, using the same thresholds as
+:py:func:`identify_voltage_level<egon.data.datasets.industry.temporal.identify_voltage_level>`.
+Because bus electrification grows steeply between the scenarios, the majority
+of depots cross a threshold: only 493 of the 1053 depots present in all three
+scenarios keep the same voltage level, and 560 are assigned a higher one.
+Consistent with the treatment of other growing loads in egon-data, connection
+upgrades between scenarios are not modelled as events.
+
+The grid connection point is found by a spatial join: depots at voltage levels
+3 to 7 against ``grid.egon_mv_grid_district``, and those at levels 1 or 2
+against ``grid.egon_ehv_substation_voronoi``. Since an MV grid district is the
+Voronoi cell of a single HV/MV substation, all depots within one district share
+that district's eTraGo bus. Depots that fall into no district are dropped
+rather than matched to the nearest one.
+
+For eTraGo, the depot series are summed per bus and written to
+``grid.egon_etrago_load`` and ``grid.egon_etrago_load_timeseries`` under the
+carrier ``land_transport_bus``.
+
+.. note::
+   The ``reGon2037`` and ``reGon2045`` input series each contain 1821 missing
+   values across 34 depots, all falling in the first three hours of a Sunday.
+   These are currently replaced with zero so that the pipeline can run, which
+   understates the affected depots' demand. The substitution is logged with the
+   affected depot ids on every run and should be removed once the input data is
+   corrected.
