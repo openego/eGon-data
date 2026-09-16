@@ -577,7 +577,6 @@ def create_data_center_lines(data_centers, scenario):
                 "scn_name": scenario,
                 "bus0": row.data_center_bus_id,
                 "bus1": row.nearest_bus_id,
-                "type": "data_center_connection",
                 "carrier": "AC",
                 "v_nom": row.v_nom,
                 "length": length_km,
@@ -706,7 +705,12 @@ def delete_existing_data_centers(scenario):
 
         DELETE FROM {targets.tables["lines"]}
         WHERE scn_name = '{scenario}'
-        AND type = 'data_center_connection';
+        AND bus0 IN (
+            SELECT bus_id
+            FROM {targets.tables["buses"]}
+            WHERE scn_name = '{scenario}'
+            AND type = 'data_center'
+        );
 
         DELETE FROM {targets.tables["buses"]}
         WHERE scn_name = '{scenario}'
