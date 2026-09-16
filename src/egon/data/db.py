@@ -384,6 +384,7 @@ def assign_gas_bus_id(dataframe, scn_name, carrier):
     res : pandas.DataFrame
         Dataframe including bus_id
     """
+
     voronoi = select_geodataframe(
         f"""
         SELECT bus_id, geom FROM grid.egon_gas_voronoi
