@@ -15,19 +15,27 @@ from egon.data import config, db
 from egon.data.datasets import Dataset, DatasetSources, DatasetTargets
 
 # Data center target capacities for Scenarios A, B and C are derived from
-# the data center electricity demand in the NEP 2037/2045 draft (p. 32)
-# using 5,000 full-load hours from the Szenariorahmen NEP 2037/2045
-# draft (p. 45).
+# the data center electricity demand ("davon aus neuen Rechenzentren") in the
+# NEP 2037/2045 draft (p. 32) using 5,000 full-load hours from the
+# Szenariorahmen NEP 2037/2045 draft (p. 45).
+# The NEP reports the same demand for 2037 and 2045 in every scenario, because
+# the set of considered data center projects does not differ between the two
+# target years ("Aufgrund der frühen Inbetriebnahmen unterscheidet sich die
+# Menge der berücksichtigten Projekte zwischen 2037 und 2045 nicht") and no
+# build-out beyond the registered projects is assumed.
 # This results in:
-# Scenario A: 15.68 GW
-# Scenario B: 19.46 GW
-# Scenario C: 23.24 GW
+# Scenario A: 78.4 TWh / 5,000 h = 15.68 GW (2037 and 2045)
+# Scenario B: 97.3 TWh / 5,000 h = 19.46 GW (2037 and 2045)
+# Scenario C: 116.2 TWh / 5,000 h = 23.24 GW (2037 and 2045)
 # Sources:
 # https://www.netzentwicklungsplan.de/sites/default/files/2025-12/NEP_2037_2045_V2025_1_Entwurf.pdf
 # https://www.netzentwicklungsplan.de/sites/default/files/2024-07/Szenariorahmenentwurf_NEP2037_2025_1.pdf
-TARGET_CAPACITY_MW = (
-    23240  # 15680 (Szenario A), 19460 (Szenario B), 23240 (Szenario C)
-)
+# The reGon scenarios follow NEP Scenario C, cf. the scenario descriptions in
+# scenario_parameters/__init__.py.
+TARGET_CAPACITY_MW = {
+    "reGon2037": 23240,  # Szenario C 2037
+    "reGon2045": 23240,  # Szenario C 2045
+}
 MU = 3.297
 SIGMA = 1.325
 MAX_RZ_SIZE = 1000.0
@@ -96,7 +104,22 @@ def identify_voltage_level(df):
     return df
 
 
-def generate_data_center_sizes():
+def get_target_capacity(scenario):
+    """Return the data center target capacity of a scenario in MW."""
+    target_capacity_mw = TARGET_CAPACITY_MW[scenario]
+
+    # The test mode only covers Schleswig-Holstein, one of the 16 federal
+    # states, so the national target is scaled down accordingly.
+    if (
+        config.settings()["egon-data"]["--dataset-boundary"]
+        == "Schleswig-Holstein"
+    ):
+        target_capacity_mw = target_capacity_mw / 16
+
+    return target_capacity_mw
+
+
+def generate_data_center_sizes(target_capacity_mw):
     """Generate scenario-dependent data center sizes"""
     # Generate a representative distribution of individual data center capacities
     # whose total capacity matches the scenario target.
@@ -109,15 +132,15 @@ def generate_data_center_sizes():
     for _ in range(GENERATOR_RUNS):
         current_sum = 0.0
 
-        while current_sum < TARGET_CAPACITY_MW:
+        while current_sum < target_capacity_mw:
             while True:
                 rz_size = stats.lognorm.rvs(s=SIGMA, scale=scale_param)
 
                 if rz_size <= MAX_RZ_SIZE:
                     break
 
-            if current_sum + rz_size > TARGET_CAPACITY_MW:
-                rz_size = TARGET_CAPACITY_MW - current_sum
+            if current_sum + rz_size > target_capacity_mw:
+                rz_size = target_capacity_mw - current_sum
 
             massive_pool.append(rz_size)
             current_sum += rz_size
@@ -126,7 +149,7 @@ def generate_data_center_sizes():
     massive_pool.sort()
 
     ideal_scenario = massive_pool[GENERATOR_RUNS // 2 :: GENERATOR_RUNS].copy()
-    ideal_scenario *= TARGET_CAPACITY_MW / np.sum(ideal_scenario)
+    ideal_scenario *= target_capacity_mw / np.sum(ideal_scenario)
 
     return pd.DataFrame(
         {
@@ -233,7 +256,7 @@ def create_data_center_allocation(scenario):
     # Allocate generated data center capacities to suitable commercial areas
     # based on electricity, district-heating, and internet-location criteria.
 
-    rz_df = generate_data_center_sizes()
+    rz_df = generate_data_center_sizes(get_target_capacity(scenario))
     gewerbe_raw = load_commercial_areas()
     strom_raw = load_substations()
     waerme_raw = load_district_heating_areas(scenario)
@@ -988,23 +1011,16 @@ def insert_data_center_load_timeseries(scenario):
 
 def insert_data_centers_for_scenarios():
     """Insert data center components for configured scenarios."""
-    global TARGET_CAPACITY_MW
-
-    if (
-        config.settings()["egon-data"]["--dataset-boundary"]
-        == "Schleswig-Holstein"
-    ):
-        TARGET_CAPACITY_MW = TARGET_CAPACITY_MW / 16
-
     for scenario in config.settings()["egon-data"]["--scenarios"]:
-        if scenario == "reGon2037":
+        if scenario in TARGET_CAPACITY_MW:
             insert_data_centers(scenario)
-            
+
+
 def insert_data_center_load_timeseries_for_scenarios():
     """Insert data center load time series for configured scenarios."""
 
     for scenario in config.settings()["egon-data"]["--scenarios"]:
-        if scenario == "reGon2037":
+        if scenario in TARGET_CAPACITY_MW:
             insert_data_center_load_timeseries(scenario)
             
 
@@ -1013,7 +1029,7 @@ class DataCenters(Dataset):
     """Integrate future data center demand"""
 
     name: str = "DataCenters"
-    version: str = "0.0.1"
+    version: str = "0.0.2"
 
     sources = DatasetSources(
         tables={
