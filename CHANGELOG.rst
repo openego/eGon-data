@@ -16,6 +16,12 @@ Added
   `#1283 <https://github.com/openego/egon-data/issues/1283>`_
 * Use MaStR data for home_batteries for allocation for all scenarios (status + future)
   `#1470 <https://github.com/openego/eGon-data/issues/1470>`_
+* Distinguish grid-scale battery storage (new carrier 'BESS') from home batteries
+  throughout the pipeline: real MaStR-based BESS carry-forward (aged, all scenarios) 
+  alongside home batteries, and separate eTraGo carriers/cost parameters 
+  ('BESS' vs'home_battery') instead of one generic 'battery' carrier
+  `#1478 <https://github.com/openego/eGon-data/issues/1478>`_
+
 
 Changed
 -------
@@ -64,6 +70,10 @@ Changed
   to reGon2037 and reGon2045, make PV-rooftop-based building weighting
   scenario-aware, and remove obsolete eGon100RE/pypsa-eur-sec handling
   `#1449 <https://github.com/openego/eGon-data/issues/1449>`_
+* Adapt eTraGo_Input TaskGroup to new scenarios: generalize CHP-to-eTraGo
+  insertion to the configured scenarios, and remove obsolete eGon100RE
+  handling
+  `#1450 <https://github.com/openego/eGon-data/issues/1450>`_
 * Unify NEP input data into a single ``NEP`` folder in the data bundle
   `#1479 <https://github.com/openego/eGon-data/issues/1479>`_
 * Adapt eMobility MIT to the reGon scenarios: add trip, scenario
