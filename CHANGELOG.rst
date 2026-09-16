@@ -23,7 +23,13 @@ Added
   reports its classification, centroid-fallback and bus-assignment counts,
   and the sanity check reports the energy per carrier and asserts that
   ``grid.egon_etrago_bus`` carries the referenced buses for the scenario
-  each load is written under.
+  each load is written under. Alongside the two eTraGo tables it writes
+  ``grid.egon_rail_transport_load_points``: one row per load row, carrying
+  the geometry the load was placed at and how it got there -- whether the
+  energy went to mapped rectifiers or stayed at a city centroid, and whether
+  the bus was found by containment or by nearest neighbour. Without it the
+  placement is a calculation that happens in memory and leaves only counts
+  in the run log.
   `#1414 <https://github.com/openego/eGon-data/issues/1414>`_
 * Use MaStR data for home_batteries for allocation for all scenarios (status + future)
   `#1470 <https://github.com/openego/eGon-data/issues/1470>`_
@@ -46,8 +52,8 @@ Changed
   factor columns to the configured scenarios, and remove obsolete
   status2019/status2023/eGon100RE handling
   `#1433 <https://github.com/openego/eGon-data/issues/1433>`_
-* Adapt scenario_capacities to new scenarios; implementing the 
-  new Kraftwerksliste from the NEP2025; remove obsolete 
+* Adapt scenario_capacities to new scenarios; implementing the
+  new Kraftwerksliste from the NEP2025; remove obsolete
   scenario (status2019/status2023/eGon100RE) handling
   `#1415 <https://github.com/openego/eGon-data/issues/1415>`_
 * Adapt heat_demand TaskGroup to new scenarios: generalize district

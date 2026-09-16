@@ -268,6 +268,33 @@ Processing steps
 Results are written to ``grid.egon_etrago_load`` and
 ``grid.egon_etrago_load_timeseries``.
 
+Alongside them, every load point is persisted to
+``grid.egon_rail_transport_load_points`` with the geometry it was placed at and
+how it got there. One row per load row, joinable on ``(scn_name, load_id)``:
+
+.. list-table::
+   :header-rows: 1
+   :widths: 25 75
+
+   * - Column
+     - Meaning
+   * - ``method``
+     - ``converter`` for the 16.7-Hz stations, ``dc_rectifier`` where a city's
+       energy was split over mapped rectifiers, ``dc_centroid`` where no
+       rectifier was mapped and the energy stayed at the city centroid
+   * - ``place``
+     - the city or site the point belongs to, where the input names one
+   * - ``bus_method``
+     - ``within`` if the point fell inside a polygon, ``nearest`` if it was
+       attached to the closest one
+   * - ``energy_mwh_a``
+     - the scaled annual energy of that point in this scenario
+   * - ``geom``
+     - the point itself, EPSG:3035 -- the table loads in QGIS as it is
+
+This is what makes a surprising result traceable: a load that looks misplaced
+can be asked why it sits where it does, rather than only counted.
+
 .. note::
    The dataset writes loads only for scenarios that the run actually builds
    (see
@@ -315,12 +342,12 @@ are to state.
    from the status quo by a scalar factor only. Changes in service frequency or
    operating hours are not represented.
 
-   **Nothing between input and output is persisted.** The dataset writes two
-   tables and holds everything in between in memory: which OSM object was
-   classified as a rectifier, which rectifiers a city was attached to, which
-   points fell back to a centroid or to a nearest neighbour. The summary counts
-   go to the run log, so the magnitudes are checkable, but there is no table to
-   query when you want to know why one particular city sits where it does.
+   **The rectifier classification itself is not persisted.** The load points
+   are (see above), so a city that sits at its centroid says so. What is not
+   stored is the full set of OSM substations the classifier looked at and
+   rejected: a rectifier that was classified but had no city within 25 km
+   leaves no row. Judging the classifier's recall therefore still means
+   re-running the query against OSM.
 
 .. note::
    **Several loads may share one bus, and that is not a problem.** A city's

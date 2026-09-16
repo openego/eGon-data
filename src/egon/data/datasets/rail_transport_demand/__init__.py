@@ -75,6 +75,17 @@ def configured_scenarios():
 #: bundle ``grid_level`` -> the polygon layer the bus is taken from
 BUS_LEVELS = {"HöS/HS": "ehv", "MS": "mv"}
 
+#: columns of the load-point frame, in the order both halves build them
+COLS = [
+    "energy_mwh_a",
+    "profile",
+    "carrier",
+    "bus_level",
+    "method",
+    "place",
+    "geometry",
+]
+
 #: max distance [m] from a city centroid to attach its DC rectifiers
 DC_CITY_RADIUS_M = 25_000
 #: DC output voltage levels that mark a rectifier substation
@@ -135,6 +146,8 @@ class RailTransitDemand(Dataset):
     *Resulting Tables*
       * grid.egon_etrago_load -- rows with carrier ``rail_*`` are added
       * grid.egon_etrago_load_timeseries -- one 8760-value row per load
+      * grid.egon_rail_transport_load_points -- one row per load row, with
+        its geometry and how it got there (``method``, ``bus_method``)
 
     **Details and Steps**
 
@@ -154,6 +167,8 @@ class RailTransitDemand(Dataset):
     * Scenarios differ by a scalar only: the ratio of the gross rail
       consumption in the scenario parameters. The hourly shape is identical in
       every scenario, and loads are written only for scenarios the run builds.
+    * Alongside the two eTraGo tables, every load point is persisted with its
+      provenance, so the placement can be inspected instead of only counted.
 
     See :ref:`mobility-demand-rail-ref` for the full description, including
     the known limitations.
@@ -161,7 +176,7 @@ class RailTransitDemand(Dataset):
 
     #:
     name: str = "RailTransitDemand"
-    version: str = "0.0.6"
+    version: str = "0.0.7"
 
     sources = DatasetSources(
         tables={
@@ -178,6 +193,7 @@ class RailTransitDemand(Dataset):
         tables={
             "etrago_load": "grid.egon_etrago_load",
             "etrago_load_timeseries": "grid.egon_etrago_load_timeseries",
+            "rail_load_points": "grid.egon_rail_transport_load_points",
         },
     )
 
@@ -255,9 +271,12 @@ def _bundle_points() -> gpd.GeoDataFrame:
     conv["bus_level"] = conv["grid_level"].map(BUS_LEVELS)
     conv["carrier"] = conv["profile"].map(CARRIERS)
     _check_bus_levels(conv, "converter_load_points.csv")
-    conv = conv[
-        ["energy_mwh_a", "profile", "carrier", "bus_level", "geometry"]
-    ]
+    # provenance for the load-point table: where this point came from, and
+    # which place it belongs to. The site column is optional -- a missing one
+    # costs a label, and must not cost the run.
+    conv["method"] = "converter"
+    conv["place"] = conv["site"] if "site" in conv.columns else None
+    conv = conv[COLS]
 
     cities = pd.read_csv(BUNDLE / "dc_city_energy.csv")
     rect = _osm_dc_rectifiers()
@@ -280,23 +299,31 @@ def _bundle_points() -> gpd.GeoDataFrame:
         if len(near):  # split city energy equally over its rectifiers
             e = c["energy_mwh_a"] / len(near)
             for g in near.geometry:
-                rows.append((e, c["profile"], carrier, level, g))
+                rows.append(
+                    (
+                        e,
+                        c["profile"],
+                        carrier,
+                        level,
+                        "dc_rectifier",
+                        c["place"],
+                        g,
+                    )
+                )
         else:  # no rectifier mapped -> load at city centroid
             at_centroid.append(c["energy_mwh_a"])
             rows.append(
-                (c["energy_mwh_a"], c["profile"], carrier, level, centroid)
+                (
+                    c["energy_mwh_a"],
+                    c["profile"],
+                    carrier,
+                    level,
+                    "dc_centroid",
+                    c["place"],
+                    centroid,
+                )
             )
-    dc = gpd.GeoDataFrame(
-        rows,
-        columns=[
-            "energy_mwh_a",
-            "profile",
-            "carrier",
-            "bus_level",
-            "geometry",
-        ],
-        crs=3035,
-    )
+    dc = gpd.GeoDataFrame(rows, columns=COLS, crs=3035)
     print(
         f"rail DC points: {len(dc)} load points from {len(cities)} "
         f"city/system rows; {len(at_centroid)} rows without a mapped "
@@ -331,12 +358,14 @@ def _assign_bus(pts: gpd.GeoDataFrame) -> gpd.GeoDataFrame:
         # duplicate the load point -- keep the first match per point
         j = j[~j.index.duplicated()]
         miss = j["bus_id"].isna()
+        j["bus_method"] = "within"
         if miss.any():
             nn = gpd.sjoin_nearest(j[miss].drop(columns="bus_id"), p).drop(
                 columns="index_right"
             )
             nn = nn[~nn.index.duplicated()]  # equidistant polygons
             j.loc[nn.index, "bus_id"] = nn["bus_id"].values
+            j.loc[nn.index, "bus_method"] = "nearest"
         # how often the fallback bites is a validation figure: points outside
         # every polygon (coastline, district borders)
         print(
@@ -373,6 +402,60 @@ def _profiles_2011() -> pd.DataFrame:
     fb = by_dh.reindex(list(zip(idx.weekday, idx.hour))).reset_index(drop=True)
     out = out.fillna(fb)
     return out[cols] / out[cols].sum()
+
+
+def _write_load_points(pts, ids, scn, factor) -> None:
+    """Persist the load points of one scenario, with their provenance.
+
+    The two eTraGo tables say *what* was written; this one says *why* it sits
+    where it does. Without it the placement is a calculation that happens in
+    memory and leaves no trace: which OSM object was classified as a rectifier,
+    which rectifiers a city was attached to, and which points fell back to a
+    city centroid or to a nearest bus are then only visible in the run log, as
+    counts, never per point.
+
+    One row per load row, joinable on ``(scn_name, load_id)``, and loadable in
+    QGIS as it carries the geometry.
+    """
+    tgt = RailTransitDemand.targets
+    table = tgt.tables["rail_load_points"]
+    db.execute_sql(
+        f"""
+        CREATE TABLE IF NOT EXISTS {table} (
+            scn_name      text              NOT NULL,
+            load_id       bigint            NOT NULL,
+            carrier       text,
+            place         text,
+            method        text,
+            bus_id        integer,
+            bus_level     text,
+            bus_method    text,
+            energy_mwh_a  double precision,
+            geom          geometry(Point, 3035),
+            PRIMARY KEY (scn_name, load_id)
+        );
+        DELETE FROM {table} WHERE scn_name = '{scn}';
+    """
+    )
+    out = pts[
+        ["carrier", "place", "method", "bus_id", "bus_level", "bus_method"]
+    ].copy()
+    out.insert(0, "load_id", ids)
+    out.insert(0, "scn_name", scn)
+    out["energy_mwh_a"] = (pts["energy_mwh_a"] * factor).round(4).values
+    # the column is named 'geom' here, as everywhere else in the schema, and
+    # to_postgis writes the geometry under its own name -- so it has to match
+    # the DDL above, not the name the frame carries internally.
+    out = gpd.GeoDataFrame(
+        out, geometry=pts["geometry"].values, crs=3035
+    ).rename_geometry("geom")
+    out.to_postgis(
+        tgt.get_table_name("rail_load_points"),
+        schema=tgt.get_table_schema("rail_load_points"),
+        con=db.engine(),
+        if_exists="append",
+        index=False,
+    )
 
 
 def insert_rail_demand():
@@ -454,6 +537,7 @@ def insert_rail_demand():
             con=db.engine(),
             if_exists="append",
         )
+        _write_load_points(pts, ids, scn, factor)
         twh = pts["energy_mwh_a"].sum() * factor / 1e6
         print(
             f"{scn}: {len(load)} rail loads, {twh:.2f} TWh "
