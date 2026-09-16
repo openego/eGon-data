@@ -109,6 +109,57 @@ _OSM_SUBSTATIONS_SQL = """
 
 
 class RailTransitDemand(Dataset):
+    """Electricity demand of electrified rail and urban public transport.
+
+    Writes the demand of three traction systems to eTraGo, one carrier each,
+    because they draw from the public grid at different places and levels:
+    ``rail_traction`` (16.7 Hz main line, at converter stations on EHV/HV),
+    ``rail_sbahn_dc`` and ``rail_transit_dc`` (both DC, at rectifier
+    substations on MV). The 16.7-Hz network is an island fed through only 19
+    converter stations, so all main-line traction demand of Germany enters the
+    model at 19 points; the DC systems are fed by many rectifiers per city.
+
+    *Dependencies*
+      * :py:class:`DataBundle
+        <egon.data.datasets.data_bundle.DataBundle>`
+      * :py:class:`OpenStreetMap <egon.data.datasets.osm.OpenStreetMap>`
+      * :py:func:`mv_grid_districts_setup
+        <egon.data.datasets.mv_grid_districts.mv_grid_districts_setup>`
+      * :py:class:`SubstationVoronoi
+        <egon.data.datasets.substation_voronoi.SubstationVoronoi>`
+      * :py:class:`EtragoSetup
+        <egon.data.datasets.etrago_setup.EtragoSetup>`
+      * :py:class:`ScenarioParameters
+        <egon.data.datasets.scenario_parameters.ScenarioParameters>`
+
+    *Resulting Tables*
+      * grid.egon_etrago_load -- rows with carrier ``rail_*`` are added
+      * grid.egon_etrago_load_timeseries -- one 8760-value row per load
+
+    **Details and Steps**
+
+    * The data bundle carries only what eGon cannot derive: the curated
+      16.7-Hz converter stations, the annual energy per city and DC system,
+      and the normalized hourly shapes. Everything else is computed here.
+    * DC rectifier Unterwerke are classified from eGon's OSM tables by their
+      ``frequency`` and ``voltage`` tags. Each city's energy is split equally
+      over the rectifiers within 25 km of its centroid; a city without a
+      mapped rectifier carries its energy at the centroid instead.
+    * Buses follow the coupling level: EHV/HV into the EHV substation voronoi
+      cells, MV into the MV grid districts, with a nearest-neighbour fallback
+      for points outside every polygon.
+    * The shapes are re-indexed onto weather year 2011 by (ISO week, weekday,
+      hour) and renormalized to sum 1, so ``energy_mwh_a * profile[h]`` is an
+      average power in MW.
+    * Scenarios differ by a scalar only: the ratio of the gross rail
+      consumption in the scenario parameters. The hourly shape is identical in
+      every scenario, and loads are written only for scenarios the run builds.
+
+    See :ref:`mobility-demand-rail-ref` for the full description, including
+    the known limitations.
+    """
+
+    #:
     name: str = "RailTransitDemand"
     version: str = "0.0.6"
 

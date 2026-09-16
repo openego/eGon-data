@@ -179,3 +179,118 @@ of each NUTS3 region is used to determine the respective hydrogen Voronoi cell (
 :py:class:`GasAreaseGon2035<egon.data.datasets.gas_areas.GasAreaseGon2035>` and
 :py:class:`GasAreaseGon100RE<egon.data.datasets.gas_areas.GasAreaseGon100RE>`) it is
 located in.
+
+.. _mobility-demand-rail-ref:
+
+Rail and public transport
++++++++++++++++++++++++++
+
+The electricity demand of electrified rail and urban public transport is set up
+in the
+:py:class:`RailTransitDemand<egon.data.datasets.rail_transport_demand.RailTransitDemand>`
+dataset. It covers three traction systems, each written as its own eTraGo
+carrier, because they draw from the public grid at different places and at
+different voltage levels:
+
+.. list-table::
+   :header-rows: 1
+   :widths: 30 25 20 25
+
+   * - System
+     - Carrier
+     - Coupling point
+     - Grid level
+   * - 16.7 Hz main-line traction
+     - ``rail_traction``
+     - converter stations
+     - EHV/HV
+   * - S-Bahn Berlin and Hamburg (DC)
+     - ``rail_sbahn_dc``
+     - rectifier substations
+     - MV
+   * - Tram, U-Bahn, Stadtbahn (DC)
+     - ``rail_transit_dc``
+     - rectifier substations
+     - MV
+
+The 16.7-Hz network is an island: it is fed from the public grid only through a
+small number of converter stations, so the whole main-line traction demand of
+Germany enters the model at 19 points. The DC systems, by contrast, are fed by
+many rectifier substations spread across each city.
+
+Input data
+----------
+
+The data bundle carries only what eGon cannot derive itself
+(``data_bundle_egon_data/rail_transport_demand/``):
+
+* ``converter_load_points.csv`` -- the 16.7-Hz converter stations with
+  coordinates, base energy and grid level. These are curated, because OSM
+  under-tags converter stations and they are too few and too important to
+  reconstruct heuristically.
+* ``dc_city_energy.csv`` -- annual energy per city and traction system, with
+  the city centroid.
+* ``load_profiles.csv`` -- normalized hourly shapes per system, derived from
+  measured load data.
+
+Everything else is computed from eGon's own tables.
+
+Processing steps
+----------------
+
+* **Classify DC rectifier substations from OSM.** Substations are read from
+  eGon's OSM tables and classified by their ``frequency`` and ``voltage`` tags:
+  a station that declares 16.7 Hz *and nothing else* belongs to the traction
+  island and can never be a rectifier, while a station that declares both 50 Hz
+  and 0 Hz, or carries a DC output voltage, is one. The run logs how many of
+  the OSM substations were classified.
+* **Distribute city energy over its rectifiers.** For each city and system, all
+  DC rectifiers within 25 km of the city centroid receive an equal share of
+  that city's annual energy. Where no rectifier is mapped, the full energy is
+  placed at the city centroid instead; the run logs how many rows fall back and
+  how much energy they carry.
+* **Assign a bus per coupling level.** Points at EHV/HV level are joined into
+  the EHV substation voronoi cells, points at MV level into the MV grid
+  districts. Points that fall outside every polygon -- along the coastline, for
+  instance -- are attached to the nearest one, and the run logs how often that
+  fallback bites.
+* **Re-index the load profiles onto weather year 2011.** The shapes are
+  measured on a recent year whose weekday sequence differs from 2011, so each
+  2011 hour takes the shape of the hour with the same ISO week, weekday and
+  hour of day, falling back to the (weekday, hour) mean. Each column is
+  renormalized to sum to 1 over the 8760 hours, which makes
+  ``p_set[h] = energy_mwh_a * profile[h]`` an average power in MW.
+* **Scale per scenario and write.** The scenario factor is the ratio of the
+  gross rail consumption stored in the scenario parameters,
+  ``total(scn) / total(status2024)``. Only the level is scaled -- the hourly
+  shape is identical in every scenario.
+
+Results are written to ``grid.egon_etrago_load`` and
+``grid.egon_etrago_load_timeseries``.
+
+.. note::
+   The dataset writes loads only for scenarios that the run actually builds
+   (see
+   :py:func:`configured_scenarios<egon.data.datasets.rail_transport_demand.configured_scenarios>`).
+   Writing them for a scenario left out by ``--scenarios`` would attach them to
+   buses that ``grid.egon_etrago_bus`` has no rows for, and no eTraGo export
+   could resolve them.
+
+Known limitations
+-----------------
+
+.. warning::
+   **Rectifiers are not assigned per traction system.** Every city/system row
+   draws on all DC rectifiers within its radius, so in cities that run both an
+   S-Bahn and a tram network -- Berlin and Hamburg -- the two systems share the
+   same set of rectifiers. Energy per city and system is preserved; the
+   placement within the city is smeared between the two systems.
+
+   **The hourly shape is assumed constant over time.** Future scenarios differ
+   from the status quo by a scalar factor only. Changes in service frequency or
+   operating hours are not represented.
+
+   **Several loads may share one bus.** A city's rectifiers often fall into the
+   same MV grid district, so the number of load rows exceeds the number of
+   buses. This is valid in PyPSA -- loads on a bus sum -- and the model result
+   is the same as for one aggregated load per bus and carrier.
