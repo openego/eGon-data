@@ -1,11 +1,10 @@
 """
-The central module containing all code dealing with the hydrogen buses
+The central module containing all code dealing with the hydrogen buses.
 
 In this module, the functions allowing to create the H2 buses in Germany
 for eTraGo are to be found.
-The H2 buses in the neighbouring countries (only present in eGon100RE)
-are defined in :py:mod:`pypsaeursec <egon.data.datasets.pypsaeursec>`.
-In both scenarios, there are two types of H2 buses in Germany:
+
+There are two types of H2 buses in Germany:
   * H2 buses: defined in :py:func:`insert_H2_buses_from_CH4_grid`,
     these buses are located at the places than the CH4 buses.
   * H2_saltcavern buses: defined in :py:func:`insert_H2_buses_from_saltcavern`,

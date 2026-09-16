@@ -12,6 +12,11 @@ Added
   `#1352 <https://github.com/openego/egon-data/issues/1352>`_
 * Add standardized sources and targets definitions across dataset modules
   `#1283 <https://github.com/openego/egon-data/issues/1283>`_
+* Add a fixed floor for heat pumps along the scenario chain
+  status2024 -> reGon2037 -> reGon2045, so a building with a heat pump keeps it
+  (at exactly its inherited capacity) in later scenarios. eGon2035 is not on the
+  chain and keeps its independent distribution.
+  `#1477 <https://github.com/openego/eGon-data/issues/1477>`_
 * Use MaStR data for home_batteries for allocation for all scenarios (status + future)
   `#1470 <https://github.com/openego/eGon-data/issues/1470>`_
 * Distinguish grid-scale battery storage (new carrier 'BESS') from home batteries
@@ -19,11 +24,33 @@ Added
   alongside home batteries, and separate eTraGo carriers/cost parameters 
   ('BESS' vs'home_battery') instead of one generic 'battery' carrier
   `#1478 <https://github.com/openego/eGon-data/issues/1478>`_
+* Add new eMobility dataset for public buses (vehicle class M3): static depot
+  charging loads per scenario, written per-depot to
+  demand.egon_ev_bus_charging_depot for eDisGo and aggregated per eTraGo bus
+  under the new carrier 'land_transport_bus'
+  `#1461 <https://github.com/openego/eGon-data/issues/1461>`_
 
+* Add electric HGV charging demand model (vehicle classes N2, N3, N3S) for the
+  NEP-2025-aligned scenarios reGon2037 and reGon2045, as a sibling dataset to
+  the hydrogen-based HeavyDutyTransport
+  `#1436 <https://github.com/openego/eGon-data/issues/1436>`_
 
 Changed
 -------
-
+* Adapt the Gas_Sector_Coupling TaskGroup to the new scenarios.
+  Pending treatment for reGon2045 parameters.
+  `#1452 <https://github.com/openego/eGon-data/issues/1452>`
+* Adapt the Gas_Demand TaskGroup to the new scenarios.
+  Pending treatment for reGon2045.
+  `#1446 <https://github.com/openego/eGon-data/issues/1446>`
+* Adapt the Gas_Supply TaskGroup to the new scenarios.
+  Pending treatment for reGon2045 parameters.
+  `#1445 <https://github.com/openego/eGon-data/issues/1445>`
+* Adapt the Gas_Grid TaskGroup to the new scenarios. Unified
+  GasAreas into a single class. Removed the `assign_gas_bus_id`
+  limitation.
+  `#1444 <https://github.com/openego/eGon-data/issues/1444>`_
+  `#1463 <https://github.com/openego/eGon-data/issues/1463>`_
 * Set annual electricity demands in scenario parameters
   `#1359 <https://github.com/openego/eGon-data/issues/1359>`_
 * Introduce TaskGroups to group Datasets in the pipeline
@@ -89,6 +116,19 @@ Changed
 Bug Fixes
 ---------
 
+* Run the heat pump floor chain in order across datasets: HeatPumpsCascade now
+  depends on HeatPumpsStatusQuo, so cascade scenarios can no longer read a
+  status quo that is still being written and silently lose their inherited
+  floor. A partially written predecessor is detected and raises instead of
+  being treated as an empty floor.
+  `#1477 <https://github.com/openego/eGon-data/issues/1477>`_
+* Exclude buildings with zero heat peak load from heat pump allocation, so they
+  no longer end up in egon_hp_capacity_buildings with a capacity of 0.
+  `#1477 <https://github.com/openego/eGon-data/issues/1477>`_
+* Create the heat pump output tables in a single shared task instead of racing
+  checkfirst=True creates from the per-scenario delete tasks, which could fail
+  with a UniqueViolation under the LocalExecutor.
+  `#1477 <https://github.com/openego/eGon-data/issues/1477>`_
 * Fix URL of BASt traffic data
   `#1347 <https://github.com/openego/eGon-data/issues/1347>`_
 * Discard scenario_path tasks

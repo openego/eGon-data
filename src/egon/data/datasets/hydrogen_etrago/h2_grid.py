@@ -1,5 +1,5 @@
 """
-The central module containing all code dealing with the H2 grid in eGon100RE
+The central module containing all code dealing with the H2 grid.
 
 """
 

@@ -32,11 +32,15 @@ from egon.data.datasets.electricity_demand_timeseries.cts_buildings import (
 from egon.data.datasets.emobility.heavy_duty_transport import (
     HeavyDutyTransport,
 )
+from egon.data.datasets.emobility.hgv_charging import HGVCharging
 from egon.data.datasets.emobility.motorized_individual_travel import (
     MotorizedIndividualTravel,
 )
 from egon.data.datasets.emobility.motorized_individual_travel_charging_infrastructure import (  # noqa: E501
     MITChargingInfrastructure,
+)
+from egon.data.datasets.emobility.public_bus_charging import (
+    PublicBusCharging,
 )
 from egon.data.datasets.era5 import WeatherData
 from egon.data.datasets.etrago_setup import EtragoSetup
@@ -67,8 +71,7 @@ from egon.data.datasets.hydrogen_etrago import (
 )
 from egon.data.datasets.industrial_gas_demand import (
     IndustrialGasDemand,
-    IndustrialGasDemandeGon100RE,
-    IndustrialGasDemandeGon2035,
+    IndustrialGasDemandScenarios,
 )
 from egon.data.datasets.industrial_sites import MergeIndustrialSites
 from egon.data.datasets.industry import IndustrialDemandCurves
@@ -442,7 +445,7 @@ with airflow.DAG(
             ]
         )
 
-        # Create gas voronoi eGon2035
+        # Create gas voronoi
         create_gas_polygons = GasAreas(
             dependencies=[setup_etrago, insert_hydrogen_buses, vg250]
         )
@@ -492,18 +495,9 @@ with airflow.DAG(
         )
 
         # Assign industrial gas demand eGon2035
-        IndustrialGasDemandeGon2035(
+        IndustrialGasDemandScenarios(
             dependencies=[create_gas_polygons, industrial_gas_demand]
-        )
-
-        # Assign industrial gas demand eGon100RE
-        IndustrialGasDemandeGon100RE(
-            dependencies=[
-                create_gas_polygons,
-                industrial_gas_demand,
-                run_pypsaeur,
-            ]
-        )
+        ) # TO DO: decide on using pypsa-eur results as in Egon100RE
 
     with TaskGroup(
         group_id="combined_heat_and_power"
@@ -587,11 +581,19 @@ with airflow.DAG(
         )
 
         # Heat pump disaggregation for eGon2035, reGon2037 and reGon2045
+        # heat_pumps_sq is a dependency because the heat pump floor chain
+        # starts at status2024: the cascade scenarios read their predecessor's
+        # capacities straight from the database, so the status quo has to be
+        # fully written before any cascade bulk starts. Without this edge both
+        # datasets are siblings and run concurrently, and cascade grids
+        # processed during the overlap find no predecessor rows and silently
+        # lose their floor.
         heat_pumps_cascade = HeatPumpsCascade(
             dependencies=[
                 cts_demand_buildings,
                 DistrictHeatingAreas,
                 heat_supply,
+                heat_pumps_sq,
                 heat_time_series,
                 power_plants,
             ]
@@ -665,9 +667,48 @@ with airflow.DAG(
         )
 
     with TaskGroup(group_id="mobility_demand") as mobility_demand_group:
-        # eMobility: heavy duty transport
+        # eMobility: heavy duty transport (hydrogen/FCEV HGVs -- eGon2035,
+        # eGon100RE only; the fully-electrified HGV scenarios (reGon2037,
+        # reGon2045) are covered separately by hgv_charging below, which
+        # does not model hydrogen fueling)
         heavy_duty_transport = HeavyDutyTransport(
             dependencies=[vg250, setup_etrago, create_gas_polygons]
+        )
+
+        # eMobility: HGV charging (BEV depots + highway)
+        hgv_charging = HGVCharging(
+            dependencies=[
+                # The precomputed HGV charging input files ship in the data
+                # bundle (data_bundle_egon_data/hgv_charging/<scenario>), so
+                # this must not run before the bundle has been downloaded.
+                data_bundle,
+                mv_grid_districts,
+                setup_etrago,
+                vg250,
+                scenario_parameters,
+                osmtgmod,
+            ]
+        )
+
+        # eMobility: public buses (vehicle class M3). Static depot loads;
+        # no flexibility, so no flex/lowflex model. Only status2024,
+        # reGon2037 and reGon2045 carry bus data.
+        public_bus_charging = PublicBusCharging(
+            dependencies=[
+                # Depot locations and hourly series ship in the data bundle
+                # (data_bundle_egon_data/bus_charging), so this must not run
+                # before the bundle has been downloaded.
+                data_bundle,
+                mv_grid_districts,
+                # egon_ehv_substation_voronoi, for any depot above 120 MW
+                substation_voronoi,
+                setup_etrago,
+                scenario_parameters,
+                # egon_etrago_bus must be populated (osmtgmod's to_pypsa) --
+                # mv_grid_districts only guarantees substation.extract.
+                osmtgmod,
+                vg250,
+            ]
         )
 
         # eMobility: motorized individual travel

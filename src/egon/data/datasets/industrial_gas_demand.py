@@ -47,7 +47,7 @@ class IndustrialGasDemand(Dataset):
 
     #:
     name: str = "IndustrialGasDemand"
-    version: str = "0.0.9"
+    version: str = "0.0.9.dev"
 
     sources = DatasetSources(
         tables={
@@ -77,15 +77,15 @@ class IndustrialGasDemand(Dataset):
         )
 
 
-class IndustrialGasDemandeGon2035(Dataset):
-    """Insert the hourly resolved industrial gas demands into the database for eGon2035
+class IndustrialGasDemandScenarios(Dataset):
+    """Insert the hourly resolved industrial gas demands into the database
 
     Insert the industrial methane and hydrogen demands and their
-    associated time series for the scenario eGon2035 by executing the
-    function :py:func:`insert_industrial_gas_demand_egon2035`.
+    associated time series for the scenarios by executing the
+    function :py:func:`insert_industrial_gas_demand`.
 
     *Dependencies*
-      * :py:class:`GasAreaseGon2035 <egon.data.datasets.gas_areas.GasAreaseGon2035>`
+      * :py:class:`GasAreas <egon.data.datasets.gas_areas.GasAreas>`
       * :py:class:`GasNodesAndPipes <egon.data.datasets.gas_grid.GasNodesAndPipes>`
       * :py:class:`HydrogenBusEtrago <egon.data.datasets.hydrogen_etrago.HydrogenBusEtrago>`
       * :py:class:`IndustrialGasDemand <IndustrialGasDemand>`
@@ -97,49 +97,16 @@ class IndustrialGasDemandeGon2035(Dataset):
     """
 
     #:
-    name: str = "IndustrialGasDemandeGon2035"
+    name: str = "IndustrialGasDemandScenarios"
     #:
-    version: str = "0.0.3"
+    version: str = "0.0.3.dev"
 
     def __init__(self, dependencies):
         super().__init__(
             name=self.name,
             version=self.version,
             dependencies=dependencies,
-            tasks=(insert_industrial_gas_demand_egon2035),
-        )
-
-
-class IndustrialGasDemandeGon100RE(Dataset):
-    """Insert the hourly resolved industrial gas demands into the database for eGon100RE
-
-    Insert the industrial methane and hydrogen demands and their
-    associated time series for the scenario eGon100RE by executing the
-    function :py:func:`insert_industrial_gas_demand_egon100RE`.
-
-    *Dependencies*
-      * :py:class:`GasAreaseGon100RE <egon.data.datasets.gas_areas.GasAreaseGon100RE>`
-      * :py:class:`GasNodesAndPipes <egon.data.datasets.gas_grid.GasNodesAndPipes>`
-      * :py:class:`HydrogenBusEtrago <egon.data.datasets.hydrogen_etrago.HydrogenBusEtrago>`
-      * :py:class:`IndustrialGasDemand <IndustrialGasDemand>`
-
-    *Resulting tables*
-      * :py:class:`grid.egon_etrago_load <egon.data.datasets.etrago_setup.EgonPfHvLoad>` is extended
-      * :py:class:`grid.egon_etrago_load_timeseries <egon.data.datasets.etrago_setup.EgonPfHvLoadTimeseries>` is extended
-
-    """
-
-    #:
-    name: str = "IndustrialGasDemandeGon100RE"
-    #:
-    version: str = "0.0.4"
-
-    def __init__(self, dependencies):
-        super().__init__(
-            name=self.name,
-            version=self.version,
-            dependencies=dependencies,
-            tasks=(insert_industrial_gas_demand_egon100RE),
+            tasks=(insert_industrial_gas_demand),
         )
 
 
@@ -147,8 +114,7 @@ def read_industrial_demand(scn_name, carrier):
     """Read the industrial gas demand data in Germany
 
     This function reads the methane or hydrogen industrial demand time
-    series previously downloaded in :py:func:`download_industrial_gas_demand` for
-    the scenarios eGon2035 or eGon100RE.
+    series previously downloaded in :py:func:`download_industrial_gas_demand`.
 
     Parameters
     ----------
@@ -246,7 +212,7 @@ def read_industrial_demand(scn_name, carrier):
 
 
 def read_and_process_demand(
-    scn_name="eGon2035", carrier=None, grid_carrier=None
+    scn_name, carrier, grid_carrier
 ):
     """Assign the industrial gas demand in Germany to buses
 
@@ -403,11 +369,11 @@ def insert_new_entries(industrial_gas_demand, scn_name):
     return industrial_gas_demand
 
 
-def insert_industrial_gas_demand_egon2035():
-    """Insert industrial gas demands into the database for eGon2035
+def insert_industrial_gas_demand():
+    """Insert industrial gas demands into the database
 
     Insert the industrial CH4 and H2 demands and their associated time
-    series into the database for the eGon2035 scenario. The data
+    series into the database for the scenarios. The data
     previously downloaded in :py:func:`download_industrial_gas_demand`
     is adjusted by executing the following steps:
 
@@ -424,205 +390,40 @@ def insert_industrial_gas_demand_egon2035():
     None
 
     """
-    if "eGon2035" in config.settings()["egon-data"]["--scenarios"]:
-        scn_name = "eGon2035"
-        delete_old_entries(scn_name)
+    for scn_name in config.settings()["egon-data"]["--scenarios"]:
+        if scn_name in ["eGon2035", "reGon2037"]:
 
-        industrial_gas_demand = pd.concat(
-            [
-                read_and_process_demand(
-                    scn_name=scn_name,
-                    carrier="CH4_for_industry",
-                    grid_carrier="CH4",
-                ),
-                read_and_process_demand(
-                    scn_name=scn_name,
-                    carrier="H2_for_industry",
-                    grid_carrier="H2",
-                ),
-            ]
-        )
+            delete_old_entries(scn_name)
 
-        industrial_gas_demand = (
-            industrial_gas_demand.groupby(["bus", "carrier"])["p_set"]
-            .apply(lambda x: [sum(y) for y in zip(*x)])
-            .reset_index(drop=False)
-        )
-
-        industrial_gas_demand = insert_new_entries(
-            industrial_gas_demand, scn_name
-        )
-        insert_industrial_gas_demand_time_series(industrial_gas_demand)
-    else:
-        print("""eGon2035 is not part of the scenario list. This task is not
-              executed""")
-
-
-def insert_industrial_gas_demand_egon100RE():
-    """Insert industrial gas demands into the database for eGon100RE
-
-    Insert the industrial CH4 and H2 demands and their associated time
-    series into the database for the eGon100RE scenario. The data,
-    previously downloaded in :py:func:`download_industrial_gas_demand`
-    are adapted by executing the following steps:
-
-    * Clean the database with the function :py:func:`delete_old_entries`
-    * Read and prepare the CH4 and the H2 industrial demands and their
-      associated time series in Germany with the function :py:func:`read_and_process_demand`
-    * Identify and adjust the total industrial CH4 and H2 loads for Germany
-      generated by PyPSA-Eur-Sec
-
-      * For CH4, the time series used is the one from H2, because
-        the industrial CH4 demand in the opendata.ffe database is 0
-      * In test mode, the total values are obtained by
-        evaluating the share of H2 demand in the test region
-        (NUTS1: DEF, Schleswig-Holstein) with respect to the H2
-        demand in full Germany model (NUTS0: DE). This task has been
-        outsourced to save processing cost.
-
-    * Aggregate the demands with the same properties at the same gas bus
-    * Insert the loads into the database by executing :py:func:`insert_new_entries`
-    * Insert the time series associated to the loads into the database
-      by executing :py:func:`insert_industrial_gas_demand_time_series`
-
-    Returns
-    -------
-    None
-
-    """
-    if "eGon100RE" in config.settings()["egon-data"]["--scenarios"]:
-        scn_name = "eGon100RE"
-        delete_old_entries(scn_name)
-
-        # read demands
-        industrial_gas_demand_CH4 = read_and_process_demand(
-            scn_name=scn_name, carrier="CH4_for_industry", grid_carrier="CH4"
-        )
-        industrial_gas_demand_H2 = read_and_process_demand(
-            scn_name=scn_name, carrier="H2_for_industry", grid_carrier="H2"
-        )
-
-        # adjust H2 and CH4 total demands (values from PES)
-        # CH4 demand = 0 in 100RE, therefore scale H2 ts
-        # fallback values see https://github.com/openego/eGon-data/issues/626
-        n = prepared_network()
-        solved_network = read_network()
-
-        try:
-            H2_total_PES = (
-                n.loads[n.loads["carrier"] == "H2 for industry"].loc[
-                    "DE0 0 H2 for industry", "p_set"
+            industrial_gas_demand = pd.concat(
+                [
+                    read_and_process_demand(
+                        scn_name=scn_name,
+                        carrier="CH4_for_industry",
+                        grid_carrier="CH4",
+                    ),
+                    read_and_process_demand(
+                        scn_name=scn_name,
+                        carrier="H2_for_industry",
+                        grid_carrier="H2",
+                    ),
                 ]
-                * 8760
-                # Add h2 demand of Fischer-Tropsch process from pypsa-eur
-                + solved_network.links_t.p0[
-                    solved_network.links.loc[
-                        solved_network.links.index.str.contains(
-                            "DE0 0 Fischer-Tropsch"
-                        )
-                    ].index
-                ]
-                .mul(solved_network.snapshot_weightings.generators, axis=0)
-                .sum()
-                .sum()
-                # Add h2 demand of methanolisation process from pypsa-eur
-                + solved_network.links_t.p0[
-                    solved_network.links.loc[
-                        solved_network.links.index.str.contains(
-                            "DE0 0 methanolisation"
-                        )
-                    ].index
-                ]
-                .mul(solved_network.snapshot_weightings.generators, axis=0)
-                .sum()
-                .sum()
-            )
-        except KeyError:
-            H2_total_PES = 42090000
-            print(
-                "Could not find data from PES-run, assigning fallback number."
             )
 
-        try:
-            CH4_total_PES = (
-                n.loads[n.loads["carrier"] == "gas for industry"].loc[
-                    "DE0 0 gas for industry", "p_set"
-                ]
-                * 8760
-            )
-        except KeyError:
-            CH4_total_PES = 105490000
-            print(
-                "Could not find data from PES-run, assigning fallback number."
+            industrial_gas_demand = (
+                industrial_gas_demand.groupby(["bus", "carrier"])["p_set"]
+                .apply(lambda x: [sum(y) for y in zip(*x)])
+                .reset_index(drop=False)
             )
 
-        boundary = settings()["egon-data"]["--dataset-boundary"]
-        if boundary != "Everything":
-            # modify values for test mode
-            # the values are obtained by evaluating the share of H2 demand in
-            # test region (NUTS1: DEF, Schleswig-Holstein) with respect to the H2
-            # demand in full Germany model (NUTS0: DE). The task has been outsourced
-            # to save processing cost
-            H2_total_PES *= 0.01855683050330346
-            CH4_total_PES *= 0.01855683050330346
-
-        H2_total = (
-            industrial_gas_demand_H2["p_set"].apply(sum).astype(float).sum()
-        )
-
-        industrial_gas_demand_CH4["p_set"] = industrial_gas_demand_H2[
-            "p_set"
-        ].apply(lambda x: [val / H2_total * CH4_total_PES for val in x])
-        industrial_gas_demand_H2["p_set"] = industrial_gas_demand_H2[
-            "p_set"
-        ].apply(lambda x: [val / H2_total * H2_total_PES for val in x])
-
-        # consistency check
-        total_CH4_distributed = sum(
-            [sum(x) for x in industrial_gas_demand_CH4["p_set"].to_list()]
-        )
-        total_H2_distributed = sum(
-            [sum(x) for x in industrial_gas_demand_H2["p_set"].to_list()]
-        )
-
-        print(
-            f"Total amount of industrial H2 demand distributed is "
-            f"{total_H2_distributed} MWh. Total amount of industrial CH4 demand "
-            f"distributed is {total_CH4_distributed} MWh."
-        )
-        msg = (
-            f"Total amount of industrial H2 demand from P-E-S is equal to "
-            f"{H2_total_PES}, which should be identical to the distributed amount "
-            f"of {total_H2_distributed}, but it is not."
-        )
-        assert round(H2_total_PES) == round(total_H2_distributed), msg
-
-        msg = (
-            f"Total amount of industrial CH4 demand from P-E-S is equal to "
-            f"{CH4_total_PES}, which should be identical to the distributed amount "
-            f"of {total_CH4_distributed}, but it is not."
-        )
-        assert round(CH4_total_PES) == round(total_CH4_distributed), msg
-
-        industrial_gas_demand = pd.concat(
-            [
-                industrial_gas_demand_CH4,
-                industrial_gas_demand_H2,
-            ]
-        )
-        industrial_gas_demand = (
-            industrial_gas_demand.groupby(["bus", "carrier"])["p_set"]
-            .apply(lambda x: [sum(y) for y in zip(*x)])
-            .reset_index(drop=False)
-        )
-
-        industrial_gas_demand = insert_new_entries(
-            industrial_gas_demand, scn_name
-        )
-        insert_industrial_gas_demand_time_series(industrial_gas_demand)
-    else:
-        print("""eGon100RE is not part of the scenario list. This task is not
-              executed""")
+            industrial_gas_demand = insert_new_entries(
+                industrial_gas_demand, scn_name
+            )
+            insert_industrial_gas_demand_time_series(industrial_gas_demand)
+        # TO DO: treatment for reGon2045
+        else:
+            print(f"""{scn_name} is not part of the scenario list. This task is not
+                executed""")
 
 
 def insert_industrial_gas_demand_time_series(egon_etrago_load_gas):
@@ -672,13 +473,14 @@ def download_industrial_gas_demand():
     the folder ./datasets/gas_data/demand
     These loads are hourly and NUTS3-level resolved. For more
     information on these data, refer to the `Extremos project documentation <https://opendata.ffe.de/project/extremos/>`_.
-
+    
     Returns
     -------
     None
 
     """
     try:
+        # TO DO: check source validity for new scenarios
         correspondance_url = (
             "http://opendata.ffe.de:3000/region?id_region_type=eq.38"
         )
@@ -696,31 +498,33 @@ def download_industrial_gas_demand():
             "http://opendata.ffe.de:3000/opendata?id_opendata=eq.66&&year=eq."
         )
 
-        for scn_name in ["eGon2035", "eGon100RE"]:
-            year = str(
-                get_sector_parameters("global", scn_name)["population_year"]
-            )
+        for scn_name in config.settings()["egon-data"]["--scenarios"]:
+            if scn_name in ["eGon2035", "reGon2037"]:
 
-            for carrier, internal_id in carriers.items():
-                # Download the data
-                datafilter = "&&internal_id=eq.{" + internal_id + "}"
-                request = url + year + datafilter
-
-                # Read and save data
-                result = requests.get(request)
-                target_file = (
-                    Path(
-                        IndustrialGasDemand.sources.files[
-                            "industrial_demand_folder"
-                        ]
-                    )
-                    / f"{carrier}_{scn_name}.json"
+                year = str(
+                    get_sector_parameters("global", scn_name)["population_year"]
                 )
-                pd.read_json(result.content).to_json(target_file)
+
+                for carrier, internal_id in carriers.items():
+                    # Download the data
+                    datafilter = "&&internal_id=eq.{" + internal_id + "}"
+                    request = url + year + datafilter
+
+                    # Read and save data
+                    result = requests.get(request)
+                    target_file = (
+                        Path(
+                            IndustrialGasDemand.sources.files[
+                                "industrial_demand_folder"
+                            ]
+                        )
+                        / f"{carrier}_{scn_name}.json"
+                    )
+                    pd.read_json(result.content).to_json(target_file)
     except:
         logger.warning("""
-        Due to temporal problems in the FFE platform, data for the scenarios
-        eGon2035 and eGon100RE are imported lately from csv files. Data for
+        Due to temporal problems in the FFE platform, data for scenarios
+         are imported lately from csv files. Data for
         other scenarios is unfortunately unavailable.
             """)
         shutil.copytree(
@@ -728,3 +532,13 @@ def download_industrial_gas_demand():
             IndustrialGasDemand.sources.files["industrial_demand_folder"],
             dirs_exist_ok=True,
         )
+        # Temporal patch: reuse 2035 data for the reGon scenarios until the source is decided.
+        folder = Path(
+            IndustrialGasDemand.sources.files["industrial_demand_folder"]
+        )
+        for scn_name in config.settings()["egon-data"]["--scenarios"]:
+            for carrier in ["H2_for_industry", "CH4_for_industry"]:
+                src = folder / f"{carrier}_eGon2035.json"
+                dst = folder / f"{carrier}_{scn_name}.json"
+                if src.is_file() and not dst.is_file():
+                    shutil.copy(src, dst)

@@ -134,7 +134,7 @@ def select_chp_from_nep(sources, scenario):
 
 
 #####################################   MaStR treatment   #################################
-def select_chp_from_mastr(sources):
+def select_chp_from_mastr(sources, scenario):
     """Select combustion CHP plants from MaStR
 
     Returns
@@ -176,9 +176,14 @@ def select_chp_from_mastr(sources):
             "ThermischeNutzleistung": "th_capacity",
         }
     )
-
-    # Select only CHP plants which are in operation
-    MaStR_konv = MaStR_konv[MaStR_konv.EinheitBetriebsstatus == "InBetrieb"]
+    
+    # due to deviations between the Kraftwerksliste 2025 and the MaStR-data
+    # the clipping of the MaStR-data is skipped
+    if scenario == "eGon2035":
+        # Select only CHP plants which are in operation
+        MaStR_konv = MaStR_konv[MaStR_konv.EinheitBetriebsstatus == "InBetrieb"]
+        # Drop individual CHP
+        MaStR_konv = MaStR_konv[(MaStR_konv["el_capacity"] >= 100)]
 
     # Insert geometry column
     MaStR_konv = MaStR_konv[~(MaStR_konv["Laengengrad"].isnull())]
@@ -194,9 +199,6 @@ def select_chp_from_mastr(sources):
 
     # Update carrier to match to eGon
     MaStR_konv["carrier"] = map_carrier()[MaStR_konv["carrier"].values].values
-
-    # Drop individual CHP
-    MaStR_konv = MaStR_konv[(MaStR_konv["el_capacity"] >= 100)]
 
     # Drop rows without post code and update datatype of postcode
     MaStR_konv = MaStR_konv[~MaStR_konv["plz"].isnull()]
@@ -364,7 +366,7 @@ def insert_large_chp(sources, target, EgonChp, scenario):
     chp_NEP = select_chp_from_nep(sources, scenario)
 
     # Select CHP from MaStR
-    MaStR_konv = select_chp_from_mastr(sources)
+    MaStR_konv = select_chp_from_mastr(sources, scenario)
 
     # Assign voltage level to MaStR
     MaStR_konv["voltage_level"] = assign_voltage_level(

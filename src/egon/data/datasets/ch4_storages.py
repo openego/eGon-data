@@ -31,12 +31,11 @@ class CH4Storages(Dataset):
     Inserts the gas stores in Germany
 
     Inserts the non extendable gas stores in Germany into the database
-    for the scnenarios eGon2035 and eGon100RE using the function
+    for the scnenariosusing the function
     :py:func:`insert_ch4_storages`.
 
     *Dependencies*
-      * :py:class:`GasAreaseGon2035 <egon.data.datasets.gas_areas.GasAreaseGon2035>`
-      * :py:class:`GasAreaseGon100RE <egon.data.datasets.gas_areas.GasAreaseGon100RE>`
+      * :py:class:`GasAreas <egon.data.datasets.gas_areas.GasAreas>`
       * :py:class:`GasNodesAndPipes <egon.data.datasets.gas_grid.GasNodesAndPipes>`
 
     *Resulting tables*
@@ -138,6 +137,7 @@ def import_installed_ch4_storages(scn_name):
     Gas_storages_list = Gas_storages_list.assign(end_year=end_year)
 
     # Adjust the storage capacities calculated by 'Median(max_workingGas_M_m3)'
+    # TO DO: check for values according to scenarios and transfer to parameters.py
     total_german_cap = 266424202  # MWh GIE https://www.gie.eu/transparency/databases/storage-database/
     ch4_estimated = Gas_storages_list[
         Gas_storages_list.method_cap == "Median(max_workingGas_M_m3)"
@@ -177,8 +177,9 @@ def import_installed_ch4_storages(scn_name):
         ]
 
     # Remove unused storage units
+    year = int(scn_name[-4:])
     Gas_storages_list = Gas_storages_list[
-        Gas_storages_list["end_year"] >= 2035
+        Gas_storages_list["end_year"] >= year
     ]
 
     Gas_storages_list = Gas_storages_list.rename(
@@ -227,13 +228,9 @@ def import_ch4_grid_capacity(scn_name):
     Defines the gas stores modelling the store capacity of the grid
 
     Define dataframe containing the modelling of the grid storage
-    capacity. The whole storage capacity of the grid (130000 MWh,
-    estimation of the Bundesnetzagentur) is split uniformly between
+    capacity. The whole storage capacity of the grid is split uniformly between
     all the German gas nodes of the grid (without consideration of the
     capacities of the pipes).
-    In eGon100RE, the storage capacity of the grid is split between H2
-    and CH4 stores, with the same share as the pipeline capacities (value
-    calculated in the p-e-s run).
 
     Parameters
     ----------
@@ -265,7 +262,11 @@ def import_ch4_grid_capacity(scn_name):
 
     # Add missing column
     Gas_storages_list["bus"] = Gas_storages_list["bus_id"]
-    if scn_name == "eGon100RE":
+
+    # TO DO: check for retrofitted_CH4pipeline-to-H2pipeline_share values for
+    # other scenarios and remove conditional
+    # Gas_storages_list["e_nom"] = Store_capacity * (1 - get_sector_parameters("gas", scn_name)["retrofitted_CH4pipeline-to-H2pipeline_share"])
+    if scn_name == "reGon2045":
         Gas_storages_list["e_nom"] = Store_capacity * (
             1
             - get_sector_parameters("gas", scn_name)[
@@ -361,5 +362,6 @@ def insert_ch4_storages():
     :py:func:`insert_ch4_stores` and has no return.
 
     """
-    insert_ch4_stores("eGon2035")
-    insert_ch4_stores("eGon100RE")
+    for scn_name in config.settings()["egon-data"]["--scenarios"]:
+        if scn_name in ["eGon2035", "reGon2037", "reGon2045"]:
+            insert_ch4_stores(scn_name)

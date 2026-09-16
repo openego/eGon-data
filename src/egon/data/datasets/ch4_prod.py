@@ -1,13 +1,12 @@
 # -*- coding: utf-8 -*-
 """
-The central module containing code dealing with importing CH4 production data for eGon2035.
+The central module containing code dealing with importing CH4 production data
 
-For eGon2035, the gas produced in Germany can be natural gas or biogas.
+For the scenarios, the gas produced in Germany can be natural gas or biogas.
 The source productions are geolocalised potentials described as PyPSA
 generators. These generators are not extendable and their overall
 production over the year is limited directly in eTraGo by values from
-the Netzentwicklungsplan Gas 2020–2030 (36 TWh natural gas and 10 TWh
-biogas), also stored in the table
+corresponding NEPs available via:
 :py:class:`scenario.egon_scenario_parameters <egon.data.datasets.scenario_parameters.EgonScenario>`.
 
 """
@@ -28,13 +27,13 @@ from egon.data.datasets.scenario_parameters import get_sector_parameters
 
 class CH4Production(Dataset):
     """
-    Insert the CH4 productions into the database for eGon2035
+    Insert the CH4 productions into the database
 
-    Insert the CH4 productions into the database for eGon2035 by using
+    Insert the CH4 productions into the database by using
     the function :py:func:`import_gas_generators`.
 
     *Dependencies*
-      * :py:class:`GasAreaseGon2035 <egon.data.datasets.gas_areas.GasAreaseGon2035>`
+      * :py:class:`GasAreas <egon.data.datasets.gas_areas.GasAreas>`
       * :py:class:`GasNodesAndPipes <egon.data.datasets.gas_grid.GasNodesAndPipes>`
 
     *Resulting tables*
@@ -303,7 +302,7 @@ def import_gas_generators():
     steps are followed:
 
     * cleaning of the database table grid.egon_etrago_generator of the
-      CH4 generators of the specific scenario (eGon2035),
+      CH4 generators of the specific scenario,
     * call of the functions :py:func:`load_NG_generators` and
       :py:func:`load_biogas_generators` that respectively return
       dataframes containing the natural- an bio-gas production units
@@ -351,13 +350,19 @@ def import_gas_generators():
             );
             """)
 
-        if scn_name == "eGon2035":
-            CH4_generators_list = pd.concat(
-                [
-                    load_NG_generators(scn_name),
-                    load_biogas_generators(scn_name),
-                ]
-            )
+        if scn_name in ["eGon2035", "reGon2037", "reGon2045"]:
+
+            if scn_name in ["eGon2035", "reGon2037"]:
+                CH4_generators_list = pd.concat(
+                    [
+                        load_NG_generators(scn_name),
+                        load_biogas_generators(scn_name),
+                    ]
+                )
+
+            # TO DO: check only biogas for reGon2045
+            if scn_name == "reGon2045":
+                CH4_generators_list = load_biogas_generators(scn_name)
 
             # Add missing columns
             c = {"scn_name": scn_name, "carrier": "CH4"}
@@ -395,36 +400,6 @@ def import_gas_generators():
                 "gas", scn_name
             )["marginal_cost"]["CH4"]
             CH4_generators_list["p_nom"] = 100000
-
-        elif scn_name == "eGon100RE":
-            CH4_generators_list = pd.concat(
-                [
-                    load_biogas_generators(scn_name),
-                ]
-            )
-
-            # Add missing columns
-            c = {"scn_name": scn_name, "carrier": "CH4"}
-            CH4_generators_list = CH4_generators_list.assign(**c)
-
-            # Match to associated CH4 bus
-            CH4_generators_list = db.assign_gas_bus_id(
-                CH4_generators_list, scn_name, "CH4"
-            )
-
-            # Remove useless columns
-            CH4_generators_list = CH4_generators_list.drop(
-                columns=["geom", "bus_id"]
-            )
-
-            # Aggregate ch4 productions with same properties at the same bus
-            CH4_generators_list = (
-                CH4_generators_list.groupby(
-                    ["bus", "carrier", "scn_name", "marginal_cost"]
-                )
-                .agg({"p_nom": "sum"})
-                .reset_index(drop=False)
-            )
 
         else:
             raise ValueError(f"{scn_name} is not a valid scenario name")

@@ -752,7 +752,7 @@ class Chp(Dataset):
 
 
     *Dependencies*
-      * :py:class:`GasAreaseGon2035 <egon.data.datasets.gas_areas.GasAreaseGon2035>`
+      * :py:class:`GasAreas <egon.data.datasets.gas_areas.GasAreas>`
       * :py:class:`DistrictHeatingAreas <egon.data.datasets.district_heating_areas.DistrictHeatingAreas>`
       * :py:class:`IndustrialDemandCurves <egon.data.datasets.industry.IndustrialDemandCurves>`
       * :py:class:`OsmLanduse <egon.data.datasets.loadarea.OsmLanduse>`
