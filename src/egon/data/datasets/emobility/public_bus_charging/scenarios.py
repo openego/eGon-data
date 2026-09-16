@@ -10,9 +10,9 @@ from egon.data import config
 
 #: eGon-data scenario name -> input CSV file name, relative to the input dir.
 SCENARIO_FILES = {
-    "status2024": "2024_depot_power_2024_reference_hourly.csv.gz",
-    "reGon2037": "depot_power_2037_hourly.csv.gz",
-    "reGon2045": "2045_depot_power_2011_hourly.csv.gz",
+    "status2024": "depot_power_2024_reference_hourly.csv",
+    "reGon2037": "depot_power_2037_hourly.csv",
+    "reGon2045": "depot_power_2045_hourly.csv",
 }
 
 

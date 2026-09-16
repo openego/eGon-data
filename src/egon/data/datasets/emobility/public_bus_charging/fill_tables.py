@@ -7,7 +7,7 @@ egon-data working directory, like every other ``data_bundle_egon_data``
 path::
 
     data_bundle_egon_data/bus_charging/depots.gpkg
-    data_bundle_egon_data/bus_charging/<per-scenario csv.gz>
+    data_bundle_egon_data/bus_charging/<per-scenario csv>
 
 ``depots.gpkg`` is shared by all scenarios and holds only scenario-neutral
 attributes. Its ``peak_power_mw`` / ``annual_energy_mwh`` / ``avg_power_mw``
