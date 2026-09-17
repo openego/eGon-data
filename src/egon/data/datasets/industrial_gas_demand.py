@@ -102,7 +102,7 @@ class IndustrialGasDemandScenarios(Dataset):
     #:
     name: str = "IndustrialGasDemandScenarios"
     #:
-    version: str = "0.0.4"
+    version: str = "0.0.5"
 
     def __init__(self, dependencies):
         super().__init__(
