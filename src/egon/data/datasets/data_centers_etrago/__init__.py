@@ -947,37 +947,31 @@ def get_valid_ukpn_sites(profiles):
 
     return valid_sites.index.tolist()
 
-def assign_ukpn_profiles(
-    data_centers,
-    profiles,
-    valid_sites,
-    weather_year,
-):
-    """Assign and prepare one UKPN load profile for each modeled data center."""
+def prepare_ukpn_profiles(profiles, valid_sites, weather_year):
+    """Convert each valid UKPN profile once into an hourly per-unit series.
 
-    rng = np.random.default_rng(LOAD_PROFILE_RANDOM_SEED)
-    raw_profiles = {}
+    There are far fewer usable sites than modeled data centers, so every
+    profile would otherwise be rebuilt once per data center that draws it.
+    """
 
-    # Stable ordering keeps the random profile assignment reproducible.
-    data_centers = data_centers.sort_values("load_id")
+    full_index = pd.date_range(
+        start=f"{UKPN_PROFILE_YEAR}-01-01 00:00:00+00:00",
+        end=f"{UKPN_PROFILE_YEAR}-12-31 23:30:00+00:00",
+        freq="30min",
+    )
 
-    for _, row in data_centers.iterrows():
+    grouped = (
+        profiles[
+            profiles["anonymised_data_centre_name"].isin(valid_sites)
+        ]
+        .set_index("utc_timestamp")
+        .sort_index()
+        .groupby("anonymised_data_centre_name")["hh_utilisation_ratio"]
+    )
 
-        selected_site = rng.choice(valid_sites)
+    prepared_profiles = {}
 
-        profile = (
-            profiles[
-                profiles["anonymised_data_centre_name"] == selected_site
-            ]
-            .set_index("utc_timestamp")["hh_utilisation_ratio"]
-            .sort_index()
-        )
-
-        full_index = pd.date_range(
-            start=f"{UKPN_PROFILE_YEAR}-01-01 00:00:00+00:00",
-            end=f"{UKPN_PROFILE_YEAR}-12-31 23:30:00+00:00",
-            freq="30min",
-        )
+    for site, profile in grouped:
 
         # Fill the few missing half-hours before converting to hourly resolution.
         profile = profile.reindex(full_index).ffill()
@@ -989,18 +983,33 @@ def assign_ukpn_profiles(
         # the measured profile is shifted by whole days onto that calendar.
         # Without it the weekends of the data centers would fall on other
         # model days than those of the timeseries built for the weather year.
-        profile = align_weekdays(
+        prepared_profiles[site] = align_weekdays(
             profile,
             source_year=UKPN_PROFILE_YEAR,
             target_year=weather_year,
-        )
+        ).to_numpy()
 
-        raw_profiles[row.load_id] = (
-            profile.to_numpy()
-            * row.allocated_mw
-        )
+    return prepared_profiles
 
-    return raw_profiles
+def assign_ukpn_profiles(
+    data_centers,
+    prepared_profiles,
+    valid_sites,
+):
+    """Assign one prepared UKPN load profile to each modeled data center."""
+
+    rng = np.random.default_rng(LOAD_PROFILE_RANDOM_SEED)
+
+    # Stable ordering keeps the random profile assignment reproducible.
+    data_centers = data_centers.sort_values("load_id")
+
+    # Multiplying the per-unit profile returns a new array, so data centers
+    # sharing a site do not share the array written to the database.
+    return {
+        row.load_id: prepared_profiles[rng.choice(valid_sites)]
+        * row.allocated_mw
+        for _, row in data_centers.iterrows()
+    }
 
 def scale_data_center_profiles(
     raw_profiles,
@@ -1077,11 +1086,16 @@ def build_data_center_load_profiles(data_centers, scenario):
     profiles = load_ukpn_profiles()
     valid_sites = get_valid_ukpn_sites(profiles)
 
-    raw_profiles = assign_ukpn_profiles(
-        data_centers,
+    prepared_profiles = prepare_ukpn_profiles(
         profiles,
         valid_sites,
         get_sector_parameters("global", scenario)["weather_year"],
+    )
+
+    raw_profiles = assign_ukpn_profiles(
+        data_centers,
+        prepared_profiles,
+        valid_sites,
     )
 
     # Use the actual created data center capacity as the annual scaling basis.
