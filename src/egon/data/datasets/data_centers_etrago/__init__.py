@@ -417,6 +417,21 @@ def create_data_center_allocation(scenario):
     gewerbe_scored["allocated_mw"] = history_mw[medoid_idx]
     gewerbe_scored["rz_count"] = history_count[medoid_idx]
 
+    # A data center that does not fit into any single commercial area is
+    # skipped by the loop above, which would silently put the scenario below
+    # the NEP target without any other symptom.
+    allocated_mw = gewerbe_scored["allocated_mw"].sum()
+    target_capacity_mw = get_target_capacity(scenario)
+
+    if not np.isclose(allocated_mw, target_capacity_mw, rtol=1e-6):
+        raise ValueError(
+            f"Allocated {allocated_mw:.1f} MW of data centers but the "
+            f"{scenario} target is {target_capacity_mw:.1f} MW. "
+            f"{int((rz_sizes_mw > (base_areas * MW_PER_HA).max()).sum())} of "
+            f"{len(rz_sizes_mw)} data centers are larger than the biggest "
+            "commercial area can host, so they could not be placed."
+        )
+
     rz_punkte = gewerbe_scored[gewerbe_scored["allocated_mw"] > 0].copy()
     rz_punkte["geometry"] = rz_punkte["geometry"].centroid
     # Classify each allocated data center by peak load and assign the
@@ -486,14 +501,32 @@ def assign_nearest_bus(data_centers, existing_buses):
     assigned_data_centers = []
 
     for v_nom in [110, 380]:
+        data_centers_at_level = data_centers_projected[
+            data_centers_projected["v_nom"] == v_nom
+        ]
+        buses_at_level = existing_buses_projected[
+            existing_buses_projected["v_nom"] == v_nom
+        ]
+
+        if data_centers_at_level.empty:
+            continue
+
+        # Without a bus at this voltage the join would return NaN bus ids and
+        # fail on the conversion to int below with no usable message. This is
+        # reachable in test mode, where the dataset boundary may not contain
+        # any 380 kV bus.
+        if buses_at_level.empty:
+            raise ValueError(
+                f"{len(data_centers_at_level)} data centers require a "
+                f"{v_nom} kV bus but none exists in this scenario. Reduce the "
+                "target capacity so that no data center exceeds the 380 kV "
+                "threshold, or run on a boundary that contains such buses."
+            )
+
         assigned_data_centers.append(
             gpd.sjoin_nearest(
-                data_centers_projected[
-                    data_centers_projected["v_nom"] == v_nom
-                ],
-                existing_buses_projected[
-                    existing_buses_projected["v_nom"] == v_nom
-                ][["bus_id", "geometry"]].rename(
+                data_centers_at_level,
+                buses_at_level[["bus_id", "geometry"]].rename(
                     columns={"bus_id": "nearest_bus_id"}
                 ),
                 how="left",
