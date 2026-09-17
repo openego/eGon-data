@@ -847,14 +847,17 @@ def insert_data_centers(scenario):
 def get_valid_ukpn_sites(profiles):
     """Select plausible UKPN data center profiles with near-complete annual data."""
 
+    # Sites are pooled across UKPN voltage levels rather than split into
+    # separate pools per level. UKPN's "High Voltage" and "Extra-High Voltage"
+    # classes describe the British 33/66 kV and 132 kV connection levels, which
+    # do not correspond to the German 110 kV and 380 kV levels modelled here.
+    # Splitting on them would also leave only two usable extra-high voltage
+    # profiles, so the data centers above the 380 kV threshold, which carry
+    # more than half of the national capacity, would all share two load shapes
+    # and their demand would be almost perfectly correlated.
     site_stats = (
         profiles
-        .groupby(
-            [
-                "cleansed_voltage_level",
-                "anonymised_data_centre_name",
-            ]
-        )["hh_utilisation_ratio"]
+        .groupby("anonymised_data_centre_name")["hh_utilisation_ratio"]
         .agg(["mean", "count"])
     )
 
@@ -863,28 +866,14 @@ def get_valid_ukpn_sites(profiles):
         (site_stats["mean"] >= MIN_UTILISATION)
         & (site_stats["mean"] <= MAX_UTILISATION)
         & (site_stats["count"] >= 17500)
-    ].copy()
+    ]
 
-    return valid_sites
-
-def get_ukpn_site_pools(valid_sites):
-    """Split valid UKPN profiles into HV and EHV site pools."""
-
-    hv_sites = valid_sites.loc[
-        "High Voltage Import"
-    ].index.tolist()
-
-    ehv_sites = valid_sites.loc[
-        "Extra-High Voltage Import"
-    ].index.tolist()
-
-    return hv_sites, ehv_sites
+    return valid_sites.index.tolist()
 
 def assign_ukpn_profiles(
     data_centers,
     profiles,
-    hv_sites,
-    ehv_sites,
+    valid_sites,
 ):
     """Assign and prepare one UKPN load profile for each modeled data center."""
 
@@ -896,16 +885,7 @@ def assign_ukpn_profiles(
 
     for _, row in data_centers.iterrows():
 
-        if row.v_nom == 110:
-            selected_site = rng.choice(hv_sites)
-
-        elif row.v_nom == 380:
-            selected_site = rng.choice(ehv_sites)
-
-        else:
-            raise ValueError(
-                f"Unsupported voltage level: {row.v_nom}"
-            )
+        selected_site = rng.choice(valid_sites)
 
         profile = (
             profiles[
@@ -1008,13 +988,11 @@ def build_data_center_load_profiles(data_centers):
 
     profiles = load_ukpn_profiles()
     valid_sites = get_valid_ukpn_sites(profiles)
-    hv_sites, ehv_sites = get_ukpn_site_pools(valid_sites)
 
     raw_profiles = assign_ukpn_profiles(
         data_centers,
         profiles,
-        hv_sites,
-        ehv_sites,
+        valid_sites,
     )
 
     # Use the actual created data center capacity as the annual scaling basis.
@@ -1084,7 +1062,7 @@ class DataCenters(Dataset):
     """Integrate future data center demand"""
 
     name: str = "DataCenters"
-    version: str = "0.0.4"
+    version: str = "0.0.5"
 
     sources = DatasetSources(
         tables={
