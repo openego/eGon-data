@@ -53,6 +53,17 @@ W_STROM = 1 / 3
 W_WAERME = 1 / 3
 W_IXP = 1 / 3
 
+# The regional factor scores the cost of a grid connection through
+# score_regio_strom = REGIO_SCORE_OFFSET - Faktor. Faktor runs from 0.2 to 1.0,
+# so the offset of 1.2 is a deliberate choice rather than a normalisation: it
+# leaves the most expensive regions a score of 0.2 instead of zero. Half of the
+# reference points sit at Faktor 0.8 and another tenth at 1.0, so normalising
+# the score to 0-1 would write off most of Germany. The consequence is that
+# this sub-score runs from 0.2 to 1.0 while the five others run from 0 to 1,
+# which gives the electricity category a small floor the other categories do
+# not have.
+REGIO_SCORE_OFFSET = 1.2
+
 # Monte-Carlo
 MW_PER_HA = 8.6
 ALPHA = 3.0
@@ -88,8 +99,14 @@ MAX_HEAT_CONNECTION_DISTANCE_M = RADIUS_WAERME
 # 5,000 full-load hours given in the Szenariorahmen NEP 2037/2045 draft
 # (p. 45).
 FULL_LOAD_HOURS = 5000
+# Bounds on the annual mean utilisation of a site.
 MIN_UTILISATION = 0.30
 MAX_UTILISATION = 0.90
+# A site cannot draw more than its own capacity, so a utilisation ratio above
+# one means the recorded capacity does not match the metered demand. Such a
+# site is dropped rather than clipped, because the error affects the whole
+# shape and not only the hours above the limit.
+MAX_PEAK_UTILISATION = 1.0
 LOAD_PROFILE_RANDOM_SEED = 43
 
 
@@ -211,8 +228,8 @@ def load_internet_nodes():
     ).to_crs(epsg=25832)
 
 # Original input containing pre-defined regional Faktor values.
-# The factor is used in the electricity-location score through:
-# score_regio_strom = 1.2 - Faktor.
+# The factor expresses how expensive a grid connection is in that region, so
+# it enters the electricity-location score inverted, see REGIO_SCORE_OFFSET.
 # Regional factors are based on the Baukostenzuschuss data from
 # Netztransparenz.de, published by the German transmission system
 # operators 50Hertz, Amprion, TenneT and TransnetBW.
@@ -309,7 +326,10 @@ def create_data_center_allocation(scenario):
     gewerbe_scored["score_dist_strom"] = dist_score(
         gewerbe_scored["dist_strom"], RADIUS_STROM
     )
-    gewerbe_scored["score_regio_strom"] = 1.2 - gewerbe_scored["Faktor"]
+    # Runs from 0.2 to 1.0 by design, not 0 to 1, cf. REGIO_SCORE_OFFSET.
+    gewerbe_scored["score_regio_strom"] = (
+        REGIO_SCORE_OFFSET - gewerbe_scored["Faktor"]
+    )
 
     gewerbe_scored["score_dist_waerme"] = dist_score(
         gewerbe_scored["dist_waerme"], RADIUS_WAERME
@@ -874,13 +894,15 @@ def get_valid_ukpn_sites(profiles):
     site_stats = (
         profiles
         .groupby("anonymised_data_centre_name")["hh_utilisation_ratio"]
-        .agg(["mean", "count"])
+        .agg(["mean", "count", "max"])
     )
 
-    # Keep sites with plausible annual utilisation and almost complete 2025 data.
+    # Keep sites with plausible annual utilisation, no half-hour above their
+    # own capacity, and almost complete 2025 data.
     valid_sites = site_stats[
         (site_stats["mean"] >= MIN_UTILISATION)
         & (site_stats["mean"] <= MAX_UTILISATION)
+        & (site_stats["max"] <= MAX_PEAK_UTILISATION)
         & (site_stats["count"] >= 17500)
     ]
 
