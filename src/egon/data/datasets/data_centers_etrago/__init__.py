@@ -641,18 +641,27 @@ def create_data_center_lines(data_centers, scenario):
 
 def create_data_center_loads(data_centers, scenario):
     """Create electricity loads for the new data center buses."""
-    return pd.DataFrame(
+    data_center_loads = pd.DataFrame(
         {
             "scn_name": scenario,
             "load_id": db.next_etrago_id("load", len(data_centers)),
             "bus": data_centers["data_center_bus_id"].values,
             "type": "data_center",
             "carrier": "AC",
-            "p_set": data_centers["allocated_mw"].values,
+            # p_set is deliberately left unset. The hourly demand goes to
+            # egon_etrago_load_timeseries instead, as in
+            # electricity_demand_etrago.py, which drops the column once a time
+            # series exists. A static p_set here would describe a data center
+            # drawing its full capacity around the clock, which is 8,760
+            # instead of FULL_LOAD_HOURS full-load hours.
             "q_set": None,
             "sign": -1,
         }
     )
+
+    data_centers["load_id"] = data_center_loads["load_id"].values
+
+    return data_center_loads, data_centers
 
 
 def create_waste_heat_generators(data_centers, heat_bus_per_area, scenario):
@@ -725,7 +734,20 @@ def delete_existing_data_centers(scenario):
             WHERE scn_name = '{scenario}'
             AND type = 'data_center'
         );
-        
+
+        DELETE FROM {targets.tables["generator_timeseries"]}
+        WHERE scn_name = '{scenario}'
+        AND generator_id IN (
+            SELECT generator_id
+            FROM {targets.tables["generators"]}
+            WHERE scn_name = '{scenario}'
+            AND carrier = 'data_center_waste_heat'
+        );
+
+        DELETE FROM {targets.tables["generators"]}
+        WHERE scn_name = '{scenario}'
+        AND carrier = 'data_center_waste_heat';
+
         -- Waste heat used to be modelled as a link from the data center AC bus
         -- to the central heat bus. It is a generator at the heat bus now, see
         -- create_waste_heat_generators(), but the delete is kept so databases
@@ -754,9 +776,16 @@ def delete_existing_data_centers(scenario):
 
 
 def insert_data_centers(scenario):
-    """Insert data center buses, lines and loads into the database."""
+    """Insert all data center components of one scenario into the database.
+
+    Buses, lines, loads, load time series and waste heat are built in one go so
+    that the allocated capacity of each data center stays in memory. Reading it
+    back from the database would mean storing it in the load table's p_set,
+    which describes demand rather than capacity, cf. create_data_center_loads().
+    """
     targets = DataCenters.targets
     delete_existing_data_centers(scenario)
+
     data_centers = create_data_center_allocation(scenario)
     existing_buses = get_existing_ac_buses(scenario)
     data_centers = assign_nearest_bus(data_centers, existing_buses)
@@ -765,7 +794,18 @@ def insert_data_centers(scenario):
         data_centers, scenario
     )
     data_center_lines = create_data_center_lines(data_centers, scenario)
-    data_center_loads = create_data_center_loads(data_centers, scenario)
+    data_center_loads, data_centers = create_data_center_loads(
+        data_centers, scenario
+    )
+
+    # The hourly load drives both the load time series and the waste heat
+    # available in each hour, so it is derived once and kept on the frame.
+    load_profiles = build_data_center_load_profiles(data_centers)
+    data_centers["profile"] = data_centers["load_id"].map(load_profiles)
+
+    load_timeseries = create_data_center_load_timeseries(
+        load_profiles, scenario
+    )
 
     data_center_buses.to_postgis(
         targets.get_table_name("buses"),
@@ -791,6 +831,15 @@ def insert_data_centers(scenario):
         con=db.engine(),
         index=False,
     )
+    load_timeseries.to_sql(
+        targets.get_table_name("load_timeseries"),
+        schema=targets.get_table_schema("load_timeseries"),
+        if_exists="append",
+        con=db.engine(),
+        index=False,
+    )
+
+    insert_data_center_waste_heat(data_centers, scenario)
 
 ####################
 # Load time-series integration part
@@ -954,40 +1003,12 @@ def create_data_center_load_timeseries(
 
     return pd.DataFrame(timeseries)
 
-def load_data_centers_for_timeseries(scenario):
-    """Load created data center loads with their voltage and capacity."""
-
-    sources = DataCenters.sources
-
-    # The load p_set is the allocated data center capacity created earlier.
-    data_centers = db.select_dataframe(
-        f"""
-        SELECT
-            l.load_id,
-            l.p_set AS allocated_mw,
-            b.v_nom
-        FROM {sources.tables["loads"]} AS l
-        JOIN {sources.tables["buses"]} AS b
-        ON l.bus = b.bus_id
-        AND l.scn_name = b.scn_name
-        WHERE l.scn_name = '{scenario}'
-        AND l.type = 'data_center'
-        AND b.type = 'data_center'
-        """
-    )
-
-    return data_centers
-
-def insert_data_center_load_timeseries(scenario):
-    """Create and insert hourly load time series for the modeled data centers."""
-
-    targets = DataCenters.targets
+def build_data_center_load_profiles(data_centers):
+    """Build hourly load profiles in MW for the modeled data centers."""
 
     profiles = load_ukpn_profiles()
     valid_sites = get_valid_ukpn_sites(profiles)
     hv_sites, ehv_sites = get_ukpn_site_pools(valid_sites)
-
-    data_centers = load_data_centers_for_timeseries(scenario)
 
     raw_profiles = assign_ukpn_profiles(
         data_centers,
@@ -1001,109 +1022,25 @@ def insert_data_center_load_timeseries(scenario):
         raw_profiles,
         data_centers["allocated_mw"].sum(),
     )
-    
-    scaled_profiles = cap_and_redistribute_profiles(
+
+    return cap_and_redistribute_profiles(
         scaled_profiles,
         data_centers,
     )
 
 
-    load_timeseries = create_data_center_load_timeseries(
-        scaled_profiles,
-        scenario,
-    )
-
-    # Remove existing data center time series before rerun.
-    db.execute_sql(
-        f"""
-        DELETE FROM {targets.tables["load_timeseries"]}
-        WHERE scn_name = '{scenario}'
-        AND load_id IN (
-            SELECT load_id
-            FROM {targets.tables["loads"]}
-            WHERE scn_name = '{scenario}'
-            AND type = 'data_center'
-        );
-        """
-    )
-
-    load_timeseries.to_sql(
-        targets.get_table_name("load_timeseries"),
-        schema=targets.get_table_schema("load_timeseries"),
-        if_exists="append",
-        con=db.engine(),
-        index=False,
-    )
-
 ####################
 # Waste heat integration part
 
-def delete_existing_waste_heat(scenario):
-    """Delete previously inserted waste heat generators before rerun."""
-    targets = DataCenters.targets
-
-    db.execute_sql(f"""
-        DELETE FROM {targets.tables["generator_timeseries"]}
-        WHERE scn_name = '{scenario}'
-        AND generator_id IN (
-            SELECT generator_id
-            FROM {targets.tables["generators"]}
-            WHERE scn_name = '{scenario}'
-            AND carrier = 'data_center_waste_heat'
-        );
-
-        DELETE FROM {targets.tables["generators"]}
-        WHERE scn_name = '{scenario}'
-        AND carrier = 'data_center_waste_heat';
-        """)
-
-
-def load_data_centers_for_waste_heat(scenario):
-    """Load created data center loads with their location and load profile."""
-    sources = DataCenters.sources
-
-    # The load p_set is the allocated data center capacity created earlier,
-    # while the time series holds the hourly load derived from it.
-    return db.select_geodataframe(
-        f"""
-        SELECT
-            l.load_id,
-            l.p_set AS allocated_mw,
-            t.p_set AS profile,
-            b.geom
-        FROM {sources.tables["loads"]} AS l
-        JOIN {sources.tables["buses"]} AS b
-        ON l.bus = b.bus_id
-        AND l.scn_name = b.scn_name
-        JOIN {sources.tables["load_timeseries"]} AS t
-        ON l.load_id = t.load_id
-        AND l.scn_name = t.scn_name
-        WHERE l.scn_name = '{scenario}'
-        AND l.type = 'data_center'
-        AND b.type = 'data_center'
-        """,
-        geom_col="geom",
-        epsg=4326,
-    ).rename_geometry("geometry")
-
-
-def insert_data_center_waste_heat(scenario):
+def insert_data_center_waste_heat(data_centers, scenario):
     """Create and insert reusable waste heat for the modeled data centers."""
     targets = DataCenters.targets
 
-    delete_existing_waste_heat(scenario)
-
-    data_centers = load_data_centers_for_waste_heat(scenario)
-
-    if data_centers.empty:
-        print(f"No data center loads found in scenario {scenario}.")
-        return
-
-    data_centers = assign_district_heating_area(
+    data_centers_at_heat = assign_district_heating_area(
         data_centers, load_district_heating_areas(scenario)
     )
 
-    if data_centers.empty:
+    if data_centers_at_heat.empty:
         print(
             f"No data center within {MAX_HEAT_CONNECTION_DISTANCE_M} m of a "
             f"district heating area in scenario {scenario}."
@@ -1111,10 +1048,12 @@ def insert_data_center_waste_heat(scenario):
         return
 
     generators = create_waste_heat_generators(
-        data_centers, get_central_heat_bus_per_area(scenario), scenario
+        data_centers_at_heat,
+        get_central_heat_bus_per_area(scenario),
+        scenario,
     )
     timeseries = create_waste_heat_timeseries(
-        generators, data_centers, scenario
+        generators, data_centers_at_heat, scenario
     )
 
     generators.to_sql(
@@ -1141,36 +1080,15 @@ def insert_data_centers_for_scenarios():
             insert_data_centers(scenario)
 
 
-def insert_data_center_load_timeseries_for_scenarios():
-    """Insert data center load time series for configured scenarios."""
-
-    for scenario in config.settings()["egon-data"]["--scenarios"]:
-        if scenario in TARGET_CAPACITY_MW:
-            insert_data_center_load_timeseries(scenario)
-
-
-def insert_data_center_waste_heat_for_scenarios():
-    """Insert data center waste heat for configured scenarios."""
-
-    for scenario in config.settings()["egon-data"]["--scenarios"]:
-        if scenario in TARGET_CAPACITY_MW:
-            insert_data_center_waste_heat(scenario)
-
-
-
-
 class DataCenters(Dataset):
     """Integrate future data center demand"""
 
     name: str = "DataCenters"
-    version: str = "0.0.3"
+    version: str = "0.0.4"
 
     sources = DatasetSources(
         tables={
             "buses": "grid.egon_etrago_bus",
-            "lines": "grid.egon_etrago_line",
-            "loads": "grid.egon_etrago_load",
-            "load_timeseries": "grid.egon_etrago_load_timeseries",
             "commercial_areas": "openstreetmap.osm_landuse",
             "district_heating_areas": "demand.egon_district_heating_areas",
             "substations": "grid.egon_hvmv_substation",
@@ -1211,11 +1129,5 @@ class DataCenters(Dataset):
             name=self.name,
             version=self.version,
             dependencies=dependencies,
-            tasks=(
-                insert_data_centers_for_scenarios,
-                insert_data_center_load_timeseries_for_scenarios,
-                # Waste heat availability follows the hourly load, so this
-                # runs once the load time series exist.
-                insert_data_center_waste_heat_for_scenarios,
-            ),
+            tasks=(insert_data_centers_for_scenarios,),
         )
