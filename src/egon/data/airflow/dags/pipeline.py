@@ -626,6 +626,7 @@ with airflow.DAG(
                 data_bundle,
                 osm_landuse,
                 osmtgmod,
+                scenario_parameters,
                 district_heating_areas,
                 heat_etrago,
             ]

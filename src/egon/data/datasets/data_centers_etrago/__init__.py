@@ -14,6 +14,10 @@ from shapely.geometry import LineString
 from egon.data import config, db
 from egon.data.datasets import Dataset, DatasetSources, DatasetTargets
 from egon.data.datasets.industry.temporal import identify_voltage_level
+from egon.data.datasets.scenario_parameters import (
+    align_weekdays,
+    get_sector_parameters,
+)
 
 # Data center target capacities for Scenarios A, B and C are derived from
 # the data center electricity demand ("davon aus neuen Rechenzentren") in the
@@ -99,6 +103,8 @@ MAX_HEAT_CONNECTION_DISTANCE_M = RADIUS_WAERME
 # 5,000 full-load hours given in the Szenariorahmen NEP 2037/2045 draft
 # (p. 45).
 FULL_LOAD_HOURS = 5000
+# Calendar year the UKPN profiles were measured in.
+UKPN_PROFILE_YEAR = 2025
 # Bounds on the annual mean utilisation of a site.
 MIN_UTILISATION = 0.30
 MAX_UTILISATION = 0.90
@@ -242,7 +248,7 @@ def load_regional_factors():
     ).to_crs(epsg=25832)
 
 def load_ukpn_profiles():
-    """Load UKPN data center demand profiles for 2025."""
+    """Load the UKPN data center demand profiles of UKPN_PROFILE_YEAR."""
     sources = DataCenters.sources
 
     profiles = pd.read_csv(
@@ -256,7 +262,7 @@ def load_ukpn_profiles():
     )
 
     profiles = profiles[
-        profiles["utc_timestamp"].dt.year == 2025
+        profiles["utc_timestamp"].dt.year == UKPN_PROFILE_YEAR
     ].copy()
 
     return profiles
@@ -869,7 +875,7 @@ def insert_data_centers(scenario):
 
     # The hourly load drives both the load time series and the waste heat
     # available in each hour, so it is derived once and kept on the frame.
-    load_profiles = build_data_center_load_profiles(data_centers)
+    load_profiles = build_data_center_load_profiles(data_centers, scenario)
     data_centers["profile"] = data_centers["load_id"].map(load_profiles)
 
     load_timeseries = create_data_center_load_timeseries(
@@ -945,6 +951,7 @@ def assign_ukpn_profiles(
     data_centers,
     profiles,
     valid_sites,
+    weather_year,
 ):
     """Assign and prepare one UKPN load profile for each modeled data center."""
 
@@ -967,8 +974,8 @@ def assign_ukpn_profiles(
         )
 
         full_index = pd.date_range(
-            start="2025-01-01 00:00:00+00:00",
-            end="2025-12-31 23:30:00+00:00",
+            start=f"{UKPN_PROFILE_YEAR}-01-01 00:00:00+00:00",
+            end=f"{UKPN_PROFILE_YEAR}-12-31 23:30:00+00:00",
             freq="30min",
         )
 
@@ -977,6 +984,16 @@ def assign_ukpn_profiles(
 
         # Convert half-hourly UKPN utilisation to hourly eTraGo resolution.
         profile = profile.resample("1h").mean()
+
+        # Every scenario timeseries shares the hours of the weather year, so
+        # the measured profile is shifted by whole days onto that calendar.
+        # Without it the weekends of the data centers would fall on other
+        # model days than those of the timeseries built for the weather year.
+        profile = align_weekdays(
+            profile,
+            source_year=UKPN_PROFILE_YEAR,
+            target_year=weather_year,
+        )
 
         raw_profiles[row.load_id] = (
             profile.to_numpy()
@@ -1054,7 +1071,7 @@ def create_data_center_load_timeseries(
 
     return pd.DataFrame(timeseries)
 
-def build_data_center_load_profiles(data_centers):
+def build_data_center_load_profiles(data_centers, scenario):
     """Build hourly load profiles in MW for the modeled data centers."""
 
     profiles = load_ukpn_profiles()
@@ -1064,6 +1081,7 @@ def build_data_center_load_profiles(data_centers):
         data_centers,
         profiles,
         valid_sites,
+        get_sector_parameters("global", scenario)["weather_year"],
     )
 
     # Use the actual created data center capacity as the annual scaling basis.
