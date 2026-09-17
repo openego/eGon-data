@@ -13,6 +13,7 @@ from shapely.geometry import LineString
 
 from egon.data import config, db
 from egon.data.datasets import Dataset, DatasetSources, DatasetTargets
+from egon.data.datasets.industry.temporal import identify_voltage_level
 
 # Data center target capacities for Scenarios A, B and C are derived from
 # the data center electricity demand ("davon aus neuen Rechenzentren") in the
@@ -82,10 +83,10 @@ REUSABLE_HEAT_FACTOR = 0.20
 MAX_HEAT_CONNECTION_DISTANCE_M = RADIUS_WAERME
 
 # UKPN data center load-profile parameters
-# Profiles are filtered by annual utilisation and converted to hourly resoluion
-# load time series. The annual demand target follows from 5,000 full-load hours.
-# using 5,000 full-load hours from the Szenariorahmen NEP 2037/2045
-# draft (p. 45).
+# Profiles are filtered by annual utilisation and converted to hourly
+# resolution load time series. The annual demand target follows from the
+# 5,000 full-load hours given in the Szenariorahmen NEP 2037/2045 draft
+# (p. 45).
 FULL_LOAD_HOURS = 5000
 MIN_UTILISATION = 0.30
 MAX_UTILISATION = 0.90
@@ -95,20 +96,6 @@ LOAD_PROFILE_RANDOM_SEED = 43
 def dist_score(dist, radius):
     """Calculate distance score used in allocation method."""
     return np.where(dist < radius, (radius - dist) / radius, 0)
-
-
-def identify_voltage_level(df):
-    """Identify voltage level based on peak load."""
-    df["voltage_level"] = np.nan
-
-    df.loc[df["peak_load"] <= 0.1, "voltage_level"] = 7
-    df.loc[df["peak_load"] > 0.1, "voltage_level"] = 6
-    df.loc[df["peak_load"] > 0.2, "voltage_level"] = 5
-    df.loc[df["peak_load"] > 5.5, "voltage_level"] = 4
-    df.loc[df["peak_load"] > 20, "voltage_level"] = 3
-    df.loc[df["peak_load"] > 120, "voltage_level"] = 1
-
-    return df
 
 
 def get_target_capacity(scenario):
@@ -495,6 +482,14 @@ def assign_nearest_bus(data_centers, existing_buses):
         )
 
     data_centers_projected = pd.concat(assigned_data_centers)
+
+    # sjoin_nearest repeats a data center once per tie when several buses are
+    # equidistant. Keep a single bus per data center, otherwise the duplicate
+    # would get its own bus, line and load further down.
+    data_centers_projected = data_centers_projected[
+        ~data_centers_projected.index.duplicated()
+    ]
+
     data_centers_projected["connection_length_km"] = (
         data_centers_projected["connection_length_km"] / 1000
     )
@@ -511,7 +506,19 @@ def assign_nearest_bus(data_centers, existing_buses):
         columns=["index_right"]
     )
 
-    return data_centers_projected.to_crs(epsg=4326)
+    data_centers_projected = data_centers_projected.to_crs(epsg=4326)
+
+    # to_crs only transforms the active geometry column, so the assigned bus
+    # geometry is converted explicitly and the whole frame stays in one CRS.
+    data_centers_projected["nearest_bus_geom"] = (
+        gpd.GeoSeries(
+            data_centers_projected["nearest_bus_geom"], crs="EPSG:3035"
+        )
+        .to_crs(epsg=4326)
+        .values
+    )
+
+    return data_centers_projected
 
 
 def assign_district_heating_area(data_centers, district_heating_areas):
@@ -573,10 +580,19 @@ def create_data_center_lines(data_centers, scenario):
     """Create AC connection lines from data center buses to existing AC buses."""
     data_centers_projected = data_centers.to_crs(epsg=3035)
 
+    # to_crs only transforms the active geometry column, so the assigned bus
+    # geometry is projected explicitly. Both ends have to be metric for the
+    # line length below.
+    nearest_bus_geom = gpd.GeoSeries(
+        data_centers["nearest_bus_geom"].values, crs=data_centers.crs
+    ).to_crs(epsg=3035)
+
     lines = []
 
-    for _, row in data_centers_projected.iterrows():
-        topo = LineString([row.geometry, row.nearest_bus_geom])
+    for (_, row), bus_geom in zip(
+        data_centers_projected.iterrows(), nearest_bus_geom
+    ):
+        topo = LineString([row.geometry, bus_geom])
         length_km = topo.length / 1000
 
         lines.append(
@@ -1072,20 +1088,20 @@ class DataCenters(Dataset):
             "substations": "grid.egon_hvmv_substation",
         },
         files={
+            # Internet exchange locations, from PeeringDB facilities in Germany.
+            # https://www.peeringdb.com/advanced_search?country__in=DE&reftag=fac
             "internet_nodes": (
                 "data_bundle_egon_data/data_centers/Internetknoten.gpkg"
             ),
-            # Source: PeeringDB facilities in Germany.
-            # https://www.peeringdb.com/advanced_search?country__in=DE&reftag=fac
+            # Regional factors, from the Netztransparenz.de Baukostenzuschuss
+            # data published by 50Hertz, Amprion, TenneT and TransnetBW.
             "regional_factors": (
                 "data_bundle_egon_data/data_centers/Regionalisierungsfaktoren.gpkg"
             ),
-            # Source: Netztransparenz.de Baukostenzuschuss data, published by
-            # 50Hertz, Amprion, TenneT and TransnetBW.
+            # Individual half-hourly UKPN data center demand profiles, used to
+            # derive hourly load time series for the modeled data centers.
             "ukpn_profiles": (
                 "data_bundle_egon_data/data_centers/ukpn-data-centre-demand-profiles.csv"
-             # Individual half-hourly UKPN data center demand profiles used to derive
-             # hourly load time series for the modeled data centers.
             ),
         },
     )
