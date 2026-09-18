@@ -482,6 +482,7 @@ def map_carrier():
             "Mineralöl-\nprodukte": "oil",
             "Braunkohle": "lignite",
             "Waerme": "others",
+            "Wärme": "others",
             "Mineraloelprodukte": "oil",
             "Mineralölprodukte": "oil",
             "NichtBiogenerAbfall": "others",
