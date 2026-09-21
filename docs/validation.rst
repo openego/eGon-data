@@ -260,3 +260,63 @@ The report includes:
 - Summary of all validation results (pass/fail counts)
 - Detailed results per rule with observed vs expected values
 - Filtering by severity, category, and status
+
+
+Running after a failed pipeline
+-------------------------------
+
+``FinalValidations`` and ``ValidationReport`` declare
+``trigger_rule = "all_done"``, so they still run when an upstream data task
+failed. The report is built from whatever results are on disk; if
+there are none, this is logged as a warning rather than failing the task.
+
+Both datasets also carry a ``.dev`` suffix in their version
+(``0.0.1.dev``). :meth:`Dataset.check_version` normally skips a dataset that
+has already run for the configured ``--scenarios``, and a version ending in
+``.dev`` is exempt from that check. This is needed because a validation task
+succeeds even when every one of its rules failed (see `How rule errors are
+handled`_): a broken run would otherwise register both datasets as executed,
+and the re-run after the fix would skip them, leaving an empty report.
+With ``.dev`` the rules are re-evaluated and the report rebuilt on every run.
+
+.. note::
+
+   The *per-dataset* validations are not exempt. They belong to the datasets
+   that produce the data, and those are skipped on a re-run once they have
+   completed for the configured scenarios -- their validation tasks are
+   skipped with them. Since results are written per DAG run
+   (``validation_runs/{run_id}/``), a report from a re-run contains the full
+   cross-cutting results from ``FinalValidations`` but only the per-dataset
+   results of those datasets that actually re-executed.
+
+   For a complete report, re-run the pipeline against a clean
+   ``metadata.datasets``.
+
+
+How rule errors are handled
+---------------------------
+
+A rule that raises does not fail its Airflow task. Errors are caught and
+converted into failed results at two levels:
+
+- ``DataFrameRule.evaluate`` wraps query and evaluation in ``try/except`` and
+  returns an error result with ``severity=ERROR``. All custom sanity rules
+  are ``DataFrameRule``\ s.
+- The runner catches ``SQLAlchemyError`` (including the
+  ``relation ... does not exist`` raised when an upstream task never created
+  the table) and returns a failed result with ``severity=WARNING``, and any
+  other exception with ``severity=ERROR``.
+
+A table that exists but is empty, or a query whose filters match nothing,
+likewise yields a failed result (``EMPTY TABLE`` / ``NO DATA FOUND``) rather
+than an error.
+
+Every failure is logged per rule, summarised as ``Complete: n/m passed`` and
+written to the report. With ``proceed_on_validation_failure=True`` the task
+then still reports success, so a run whose validations are entirely red looks
+green in Airflow -- read the report, not the task state.
+
+The task itself only fails on problems outside the rules: an unreachable
+database, a boundary missing from a
+:func:`resolve_boundary_dependence` mapping, or the output directory not
+being writable.
