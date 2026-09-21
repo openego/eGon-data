@@ -116,6 +116,13 @@ class FinalValidations(Dataset):
     version: str = "0.0.1"
     #:
     create_finalize_task: bool = True
+    #: Run the cross-cutting rules even when an upstream data task
+    #: failed, so that ValidationReport downstream has something to
+    #: report on. Without this, `all_success` would mark these tasks
+    #: `upstream_failed` and the report would cover only the per-dataset
+    #: validations, missing exactly the cross-cutting checks that explain
+    #: the failure.
+    trigger_rule: str = "all_done"
 
     def __init__(self, dependencies):
         super().__init__(
@@ -2148,4 +2155,5 @@ class FinalValidations(Dataset):
             },
             # Continue pipeline even if validations fail
             proceed_on_validation_failure=True,
+            trigger_rule=self.trigger_rule,
         )

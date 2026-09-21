@@ -122,12 +122,21 @@ class ValidationReport(Dataset):
     tasks that were executed during the pipeline run. It should be placed
     before sanity_checks in the DAG to ensure validation results are
     collected before final checks.
+
+    Runs with ``trigger_rule="all_done"``: a run in which an upstream data
+    task failed is exactly the run whose validation results are worth
+    reading, so the report is generated from whatever results are on disk
+    instead of being skipped as ``upstream_failed``. ``collect()`` already
+    copes with partial input and a missing results directory is downgraded
+    to a warning, see :func:`generate_validation_report`.
     """
 
     #:
     name: str = "ValidationReport"
     #:
-    version: str = "0.0.1"
+    version: str = "0.0.1.dev"
+    #:
+    trigger_rule: str = "all_done"
 
     def __init__(self, dependencies):
         super().__init__(
@@ -135,4 +144,5 @@ class ValidationReport(Dataset):
             version=self.version,
             dependencies=dependencies,
             tasks=tasks,
+            trigger_rule=self.trigger_rule,
         )

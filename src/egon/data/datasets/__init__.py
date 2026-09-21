@@ -6,12 +6,13 @@ from collections import abc
 from dataclasses import dataclass, field
 from functools import partial, reduce, update_wrapper
 from pathlib import Path
-from typing import Callable, Dict, Iterable, Set, Tuple, Union, List
+from typing import Callable, Dict, Iterable, Optional, Set, Tuple, Union, List
 import json
 import re
 
 from airflow.models.baseoperator import BaseOperator as Operator
 from airflow.operators.python import PythonOperator
+from airflow.utils.trigger_rule import TriggerRule
 from sqlalchemy import Column, ForeignKey, Integer, String, Table, orm, tuple_
 from sqlalchemy.dialects.postgresql import JSONB
 from sqlalchemy.exc import OperationalError
@@ -299,6 +300,19 @@ class Dataset:
     validation: Dict[str, List] = field(default_factory=dict)
     proceed_on_validation_failure: bool = False
     create_finalize_task: bool = False
+    #: Airflow trigger rule applied to *all* tasks of this
+    #: :class:`Dataset` -- its own tasks, the validation tasks generated
+    #: from :attr:`validation` and the ``finalize`` task. ``None`` keeps
+    #: Airflow's default, ``"all_success"``.
+    #:
+    #: Set this to ``"all_done"`` for datasets that must still run when
+    #: an upstream task failed, e.g. the validation report: a report is
+    #: most useful for exactly the run that broke, but with
+    #: ``all_success`` it is marked ``upstream_failed`` and never
+    #: generated. Note that subclasses must pass the value on to
+    #: ``super().__init__()``; a bare class attribute is overwritten by
+    #: the generated ``__init__``.
+    trigger_rule: Optional[str] = None
 
     def check_version(self, after_execution=()):
         scenario_names = config.settings()["egon-data"]["--scenarios"]
@@ -457,8 +471,19 @@ class Dataset:
         # Select one task from `self.tasks.last` to handle version update.
         # With finalize task there's exactly one; otherwise pick first alphabetically.
         last = sorted(list(self.tasks.last), key=lambda t: t.task_id)[0]
+
+        # Raises ValueError at DAG parse time on an unknown rule, which
+        # is where we want to hear about it.
+        trigger_rule = (
+            TriggerRule(self.trigger_rule)
+            if self.trigger_rule is not None
+            else None
+        )
+
         for task in self.tasks.values():
             task.dataset = self
+            if trigger_rule is not None:
+                task.trigger_rule = trigger_rule
             cls = task.__class__
             versioned = type(
                 f"{self.name[0].upper()}{self.name[1:]} (versioned)",
