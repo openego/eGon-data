@@ -927,7 +927,7 @@ def delete_existing_data_centers(scenario):
         """)
 
 
-def insert_data_centers(scenario):
+def insert_scenario_data_centers(scenario):
     """Insert all data center components of one scenario into the database.
 
     Buses, lines, loads, load time series and waste heat are built in one go so
@@ -1239,11 +1239,11 @@ def insert_data_center_waste_heat(data_centers, scenario):
     )
 
 
-def insert_data_centers_for_scenarios():
-    """Insert data center components for configured scenarios."""
+def insert_data_centers():
+    """Insert data center components for every configured target scenario."""
     for scenario in config.settings()["egon-data"]["--scenarios"]:
         if scenario in TARGET_CAPACITY_MW:
-            insert_data_centers(scenario)
+            insert_scenario_data_centers(scenario)
 
 
 class DataCenters(Dataset):
@@ -1295,5 +1295,5 @@ class DataCenters(Dataset):
             name=self.name,
             version=self.version,
             dependencies=dependencies,
-            tasks=(insert_data_centers_for_scenarios,),
+            tasks=(insert_data_centers,),
         )
