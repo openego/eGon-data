@@ -73,15 +73,21 @@ MW_PER_HA = 8.6
 ALPHA = 3.0
 MC_RUNS = 100
 
-# Electrical parameters for AC data center connection lines
-# Values taken from scenario_parameters/parameters.py
-S_NOM_DATA_CENTER_CONNECTION_110KV = 260
-R_PER_KM_110KV = 0.109
-L_PER_KM_110KV = 1.2e-3
+# Nominal voltages a data center may connect to. Data centers up to the extra
+# high voltage threshold of identify_voltage_level() connect at high voltage,
+# larger ones at extra high voltage. Both extra high voltage levels of the
+# German transmission grid are eligible; which one a data center uses follows
+# from the nearest bus, see assign_nearest_bus().
+HV_VOLTAGE = 110
+EHV_VOLTAGES = (220, 380)
+CONNECTION_VOLTAGES = (HV_VOLTAGE,) + EHV_VOLTAGES
 
-S_NOM_DATA_CENTER_CONNECTION_380KV = 1790
-R_PER_KM_380KV = 0.028
-L_PER_KM_380KV = 0.8e-3
+# A data center may only use a voltage whose standard connection line can
+# carry its allocated capacity. Without this a data center would be placed on
+# the nearest extra high voltage bus even where the 220 kV line to it is too
+# small, and the connection, not the data center, would set the limit. Lower
+# the share to keep planning headroom on the connection line.
+MAX_CONNECTION_LOADING = 1.0
 
 # Data center waste heat
 # Assume 20% reusable waste heat based on EnEfG § 11(2):
@@ -440,21 +446,57 @@ def create_data_center_allocation(scenario):
 
     rz_punkte = gewerbe_scored[gewerbe_scored["allocated_mw"] > 0].copy()
     rz_punkte["geometry"] = rz_punkte["geometry"].centroid
-    # Classify each allocated data center by peak load and assign the
-    # corresponding eTraGo connection voltage. Data centers up to 120 MW are
-    #  represented at 110 kV; data centers above 120 MW are represented at 380 kV.
+    # Classify each allocated data center by peak load. Voltage level 1 is the
+    # extra high voltage level of the eGon scheme, which identify_voltage_level
+    # assigns above 120 MW.
     rz_punkte["peak_load"] = rz_punkte["allocated_mw"]
     rz_punkte = identify_voltage_level(rz_punkte)
     rz_punkte = rz_punkte.drop(columns=["peak_load"])
-    rz_punkte["v_nom"] = np.where(rz_punkte["voltage_level"] == 1, 380, 110)
+    # The eGon voltage levels have no code for 220 kV, so they only tell extra
+    # high voltage from high voltage. The nominal voltage of a data center is
+    # therefore not fixed here: it is the voltage of the bus it ends up on,
+    # cf. assign_nearest_bus().
+    rz_punkte["ehv"] = rz_punkte["voltage_level"] == 1
 
     return rz_punkte
 
 
 ####################
 # Electrical integration part
+def get_connection_line_parameters(scenario):
+    """Return the overhead line parameters per nominal voltage.
+
+    The values describe the standard lines of the German transmission grid and
+    are read from the scenario rather than hard-coded, so that editing
+    scenario_parameters/parameters.py also changes the connection lines built
+    here. The ac_cable entries next to them are not used: a data center
+    connection is modelled as an overhead line.
+
+    s_nom is the standard capacity of a line at that voltage, not the largest
+    one in the grid. The maxima, around 1040 MVA at 110 kV and 7820 MVA at
+    380 kV, likely represent special high-capacity or parallel-line cases,
+    while these values are the normal line capacities.
+    """
+    electrical_parameters = get_sector_parameters("electricity", scenario)[
+        "electrical_parameters"
+    ]
+
+    return {
+        v_nom: {
+            "s_nom": electrical_parameters[f"ac_line_{v_nom}kV"]["s_nom"],
+            "r_per_km": electrical_parameters[f"ac_line_{v_nom}kV"]["R"],
+            # The scenario gives the inductance in mH/km, the reactance below
+            # is calculated with L in H/km.
+            "l_per_km": (
+                electrical_parameters[f"ac_line_{v_nom}kV"]["L"] / 1000
+            ),
+        }
+        for v_nom in CONNECTION_VOLTAGES
+    }
+
+
 def get_existing_ac_buses(scenario):
-    """Get existing 110 kV and 380 kV AC buses from eTraGo."""
+    """Get the existing German AC buses data centers may connect to."""
     sources = DataCenters.sources
 
     gdf = db.select_geodataframe(
@@ -463,7 +505,8 @@ def get_existing_ac_buses(scenario):
         FROM {sources.tables["buses"]}
         WHERE scn_name = '{scenario}'
         AND carrier = 'AC'
-        AND v_nom IN (110, 380)
+        AND v_nom IN ({", ".join(
+            str(v_nom) for v_nom in CONNECTION_VOLTAGES)})
         AND country = 'DE'
         """,
         geom_col="geom",
@@ -499,40 +542,87 @@ def get_central_heat_bus_per_area(scenario):
     )
 
 
-def assign_nearest_bus(data_centers, existing_buses):
-    """Assign nearest existing AC bus with matching nominal voltage."""
+def admissible_voltages(allocated_mw, ehv, line_parameters):
+    """Return the nominal voltages a data center of this size may connect to.
+
+    A data center below the extra high voltage threshold connects at high
+    voltage. Above it both extra high voltage levels are eligible, as long as
+    the standard connection line of a level can carry the data center.
+    """
+    candidates = EHV_VOLTAGES if ehv else (HV_VOLTAGE,)
+
+    return tuple(
+        v_nom
+        for v_nom in candidates
+        if allocated_mw
+        <= line_parameters[v_nom]["s_nom"] * MAX_CONNECTION_LOADING
+    )
+
+
+def assign_nearest_bus(data_centers, existing_buses, line_parameters):
+    """Assign the nearest existing AC bus a data center may connect to.
+
+    The data center takes the nominal voltage of that bus, so a data center
+    above the extra high voltage threshold ends up at 220 kV or at 380 kV,
+    whichever is nearer among the buses its size admits.
+    """
     data_centers_projected = data_centers.to_crs(epsg=3035)
     existing_buses_projected = existing_buses.to_crs(epsg=3035)
 
+    # Data centers are grouped by the voltages they may use, so that one
+    # spatial join covers every data center facing the same choice. The
+    # voltages are joined into a string because grouping on a column of
+    # tuples is ambiguous in pandas.
+    data_centers_projected["admissible_voltages"] = [
+        ",".join(
+            str(v_nom)
+            for v_nom in admissible_voltages(mw, ehv, line_parameters)
+        )
+        for mw, ehv in zip(
+            data_centers_projected["allocated_mw"],
+            data_centers_projected["ehv"],
+        )
+    ]
+
     assigned_data_centers = []
 
-    for v_nom in [110, 380]:
-        data_centers_at_level = data_centers_projected[
-            data_centers_projected["v_nom"] == v_nom
-        ]
+    for key, data_centers_at_level in data_centers_projected.groupby(
+        "admissible_voltages"
+    ):
+        voltages = [int(v_nom) for v_nom in key.split(",") if v_nom]
+
+        # No voltage can carry the data center. MAX_RZ_SIZE keeps every data
+        # center below the 380 kV line capacity, so this is only reachable
+        # after one of the two is changed.
+        if not voltages:
+            raise ValueError(
+                f"{len(data_centers_at_level)} data centers exceed the "
+                "capacity of every connection line of this scenario. Lower "
+                "MAX_RZ_SIZE or raise the line capacities in "
+                "scenario_parameters."
+            )
+
         buses_at_level = existing_buses_projected[
-            existing_buses_projected["v_nom"] == v_nom
+            existing_buses_projected["v_nom"].isin(voltages)
         ]
 
-        if data_centers_at_level.empty:
-            continue
-
-        # Without a bus at this voltage the join would return NaN bus ids and
-        # fail on the conversion to int below with no usable message. This is
-        # reachable in test mode, where the dataset boundary may not contain
-        # any 380 kV bus.
+        # Without a bus at these voltages the join would return NaN bus ids
+        # and fail on the conversion to int below with no usable message.
+        # This is reachable in test mode, where the dataset boundary may not
+        # contain any extra high voltage bus.
         if buses_at_level.empty:
             raise ValueError(
-                f"{len(data_centers_at_level)} data centers require a "
-                f"{v_nom} kV bus but none exists in this scenario. Reduce the "
-                "target capacity so that no data center exceeds the 380 kV "
-                "threshold, or run on a boundary that contains such buses."
+                f"{len(data_centers_at_level)} data centers require a bus at "
+                f"{' or '.join(str(v_nom) for v_nom in voltages)} kV but none"
+                " exists in this scenario. Reduce the target capacity so that"
+                " no data center exceeds the extra high voltage threshold, or"
+                " run on a boundary that contains such buses."
             )
 
         assigned_data_centers.append(
             gpd.sjoin_nearest(
                 data_centers_at_level,
-                buses_at_level[["bus_id", "geometry"]].rename(
+                buses_at_level[["bus_id", "v_nom", "geometry"]].rename(
                     columns={"bus_id": "nearest_bus_id"}
                 ),
                 how="left",
@@ -555,6 +645,14 @@ def assign_nearest_bus(data_centers, existing_buses):
     data_centers_projected["nearest_bus_id"] = data_centers_projected[
         "nearest_bus_id"
     ].astype(int)
+    # The connection voltage is the one of the assigned bus, which the spatial
+    # join brought along.
+    data_centers_projected["v_nom"] = data_centers_projected["v_nom"].astype(
+        int
+    )
+    data_centers_projected = data_centers_projected.drop(
+        columns=["admissible_voltages"]
+    )
     data_centers_projected["nearest_bus_geom"] = (
         existing_buses_projected.set_index("bus_id")
         .geometry[data_centers_projected["nearest_bus_id"]]
@@ -635,7 +733,7 @@ def create_data_center_buses(data_centers, scenario):
     return data_center_buses, data_centers
 
 
-def create_data_center_lines(data_centers, scenario):
+def create_data_center_lines(data_centers, scenario, line_parameters):
     """Create AC connection lines from data center buses to existing AC buses."""
     data_centers_projected = data_centers.to_crs(epsg=3035)
 
@@ -653,6 +751,7 @@ def create_data_center_lines(data_centers, scenario):
     ):
         topo = LineString([row.geometry, bus_geom])
         length_km = topo.length / 1000
+        parameters = line_parameters[int(row.v_nom)]
 
         lines.append(
             {
@@ -662,41 +761,19 @@ def create_data_center_lines(data_centers, scenario):
                 "carrier": "AC",
                 "v_nom": row.v_nom,
                 "length": length_km,
-                # Reactance x is calculated from the inductance L given in
-                # scenario_parameters/parameters.py:
+                # Reactance x is calculated from the inductance L given by
+                # get_connection_line_parameters():
                 # x = 2 * pi * f * L * length, with f = 50 Hz and L in H/km.
-                "x": 2
-                * np.pi
-                * 50
-                * (L_PER_KM_380KV if row.v_nom == 380 else L_PER_KM_110KV)
-                * length_km,
-                # Resistance r is calculated from R given in
-                # scenario_parameters/parameters.py:
+                "x": 2 * np.pi * 50 * parameters["l_per_km"] * length_km,
+                # Resistance r is calculated from R given by
+                # get_connection_line_parameters():
                 # r = R_per_km * length.
-                "r": (R_PER_KM_380KV if row.v_nom == 380 else R_PER_KM_110KV)
-                * length_km,
+                "r": parameters["r_per_km"] * length_km,
                 # b is not set here because scenario_parameters does not
                 # provide capacitance/susceptance values. The eTraGo line
                 # table defines b with server_default="0.".
-                # s_nom defines the nominal apparent power capacity of the
-                # connection line. We use the standard/median capacities from
-                # scenario_parameters.py and existing eTraGo lines:
-                # 110 kV: median = 260 MVA, max = 1040 MVA
-                # 380 kV: median = 1790 MVA, max ≈ 7820 MVA
-                # The maximum values are not used because they likely represent
-                # special high-capacity or parallel-line cases, while the median
-                # values are the normal line capacities and are already sufficient
-                # for the modeled data center loads.
-                "s_nom": (
-                    S_NOM_DATA_CENTER_CONNECTION_380KV
-                    if row.v_nom == 380
-                    else S_NOM_DATA_CENTER_CONNECTION_110KV
-                ),
-                "s_nom_min": (
-                    S_NOM_DATA_CENTER_CONNECTION_380KV
-                    if row.v_nom == 380
-                    else S_NOM_DATA_CENTER_CONNECTION_110KV
-                ),
+                "s_nom": parameters["s_nom"],
+                "s_nom_min": parameters["s_nom"],
                 "s_nom_extendable": False,
                 "num_parallel": 1,
                 "topo": topo,
@@ -861,14 +938,22 @@ def insert_data_centers(scenario):
     targets = DataCenters.targets
     delete_existing_data_centers(scenario)
 
+    # Read once here: the parameters are the same for every data center of
+    # the scenario, and get_sector_parameters() queries the database.
+    line_parameters = get_connection_line_parameters(scenario)
+
     data_centers = create_data_center_allocation(scenario)
     existing_buses = get_existing_ac_buses(scenario)
-    data_centers = assign_nearest_bus(data_centers, existing_buses)
+    data_centers = assign_nearest_bus(
+        data_centers, existing_buses, line_parameters
+    )
 
     data_center_buses, data_centers = create_data_center_buses(
         data_centers, scenario
     )
-    data_center_lines = create_data_center_lines(data_centers, scenario)
+    data_center_lines = create_data_center_lines(
+        data_centers, scenario, line_parameters
+    )
     data_center_loads, data_centers = create_data_center_loads(
         data_centers, scenario
     )
@@ -1165,7 +1250,7 @@ class DataCenters(Dataset):
     """Integrate future data center demand"""
 
     name: str = "DataCenters"
-    version: str = "0.0.5"
+    version: str = "0.0.6"
 
     sources = DatasetSources(
         tables={
