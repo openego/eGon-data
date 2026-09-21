@@ -112,8 +112,14 @@ class FinalValidations(Dataset):
 
     #:
     name: str = "FinalValidations"
-    #:
-    version: str = "0.0.1"
+    #: The ``.dev`` suffix exempts this dataset from
+    #: :meth:`Dataset.check_version`, so the rules are re-evaluated on
+    #: every run. Without it the dataset would be registered as executed
+    #: even by a run in which every rule errored out -- rule errors are
+    #: turned into failed results, not task failures, so the task always
+    #: succeeds -- and the re-run after the fix would skip it, leaving
+    #: the report with no cross-cutting results at all.
+    version: str = "0.0.1.dev"
     #:
     create_finalize_task: bool = True
     #: Run the cross-cutting rules even when an upstream data task
