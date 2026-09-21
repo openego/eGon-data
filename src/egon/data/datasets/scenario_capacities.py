@@ -735,6 +735,8 @@ def insert_nep_list_powerplants(export=True):
     kw_liste_nep["chp"] = kw_liste_nep["chp"].replace(
         {"ja": "Ja", "nein": "Nein"}
     )
+    # Convert postcode column to string to avoid issues with data types
+    kw_liste_nep["postcode"] = kw_liste_nep["postcode"].astype("string")
 
     if export is True:
         # Insert data to db

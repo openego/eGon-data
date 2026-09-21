@@ -27,7 +27,10 @@ from egon.data.datasets.etrago_helpers import (
 )
 from egon.data.datasets.etrago_setup import link_geom_from_buses
 from egon.data.datasets.pypsaeur import prepared_network, read_network
-from egon.data.datasets.scenario_parameters import get_sector_parameters
+from egon.data.datasets.scenario_parameters import (
+    align_weekdays,
+    get_sector_parameters,
+)
 
 logger = logging.getLogger(__name__)
 from egon.data.datasets import Dataset, DatasetSources, DatasetTargets
@@ -99,7 +102,7 @@ class IndustrialGasDemandeGon2035(Dataset):
     #:
     name: str = "IndustrialGasDemandeGon2035"
     #:
-    version: str = "0.0.3"
+    version: str = "0.0.4"
 
     def __init__(self, dependencies):
         super().__init__(
@@ -132,7 +135,7 @@ class IndustrialGasDemandeGon100RE(Dataset):
     #:
     name: str = "IndustrialGasDemandeGon100RE"
     #:
-    version: str = "0.0.4"
+    version: str = "0.0.5"
 
     def __init__(self, dependencies):
         super().__init__(
@@ -175,6 +178,17 @@ def read_industrial_demand(scn_name, carrier):
         / f"{carrier}_{scn_name}.json"
     )
     industrial_loads = pd.read_json(target_file)
+
+    # The FfE profiles are created for their own weather year (2012),
+    # align them to the weekdays of the scenario's weather year
+    (source_year,) = industrial_loads["year_weather"].unique()
+    weather_year = get_sector_parameters("global", scn_name)["weather_year"]
+    industrial_loads["values"] = industrial_loads["values"].apply(
+        lambda values: align_weekdays(
+            values, source_year=int(source_year), target_year=weather_year
+        ).tolist()
+    )
+
     industrial_loads = industrial_loads.loc[:, ["id_region", "values"]]
     industrial_loads.set_index("id_region", inplace=True)
 
