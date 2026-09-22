@@ -181,7 +181,7 @@ class DsmPotential(Dataset):
                         ),
                         rule_id=(
                             "ARRAY_VALIDATION.egon_demandregio_sites_ind"
-                            "_electricity_dsm_timeseries"
+                            "_electricity_dsm_timeseries.p_set"
                         ),
                         array_column="p_set",
                         expected_length=8760,
@@ -193,7 +193,7 @@ class DsmPotential(Dataset):
                         ),
                         rule_id=(
                             "ARRAY_VALIDATION.egon_demandregio_sites_ind"
-                            "_electricity_dsm_timeseries"
+                            "_electricity_dsm_timeseries.p_max"
                         ),
                         array_column="p_max",
                         expected_length=8760,
@@ -205,7 +205,7 @@ class DsmPotential(Dataset):
                         ),
                         rule_id=(
                             "ARRAY_VALIDATION.egon_demandregio_sites_ind"
-                            "_electricity_dsm_timeseries"
+                            "_electricity_dsm_timeseries.p_min"
                         ),
                         array_column="p_min",
                         expected_length=8760,
@@ -217,7 +217,7 @@ class DsmPotential(Dataset):
                         ),
                         rule_id=(
                             "ARRAY_VALIDATION.egon_demandregio_sites_ind"
-                            "_electricity_dsm_timeseries"
+                            "_electricity_dsm_timeseries.e_max"
                         ),
                         array_column="e_max",
                         expected_length=8760,
@@ -229,7 +229,7 @@ class DsmPotential(Dataset):
                         ),
                         rule_id=(
                             "ARRAY_VALIDATION.egon_demandregio_sites_ind"
-                            "_electricity_dsm_timeseries"
+                            "_electricity_dsm_timeseries.e_min"
                         ),
                         array_column="e_min",
                         expected_length=8760,
@@ -241,6 +241,7 @@ class DsmPotential(Dataset):
                         rule_id=(
                             "ARRAY_VALIDATION"
                             ".egon_etrago_electricity_cts_dsm_timeseries"
+                            ".p_set"
                         ),
                         array_column="p_set",
                         expected_length=8760,
@@ -253,6 +254,7 @@ class DsmPotential(Dataset):
                         rule_id=(
                             "ARRAY_VALIDATION"
                             ".egon_osm_ind_load_curves_individual_dsm_timeseries"
+                            ".p_set"
                         ),
                         array_column="p_set",
                         expected_length=8760,
@@ -267,6 +269,7 @@ class DsmPotential(Dataset):
                             "ARRAY_VALIDATION"
                             ".egon_sites_ind_load_curves_individual"
                             "_dsm_timeseries"
+                            ".p_set"
                         ),
                         array_column="p_set",
                         expected_length=8760,
