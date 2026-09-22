@@ -108,7 +108,7 @@ class DistrictHeatingAreas(Dataset):
                     TableValidation(
                         table_name="demand.egon_district_heating_areas",
                         row_count=resolve_boundary_dependence(
-                            {"Schleswig-Holstein": 100, "Everything": 6335}
+                            {"Schleswig-Holstein": 610, "Everything": 5371}
                         ),
                         geometry_columns=["geom_polygon"],
                         data_type_columns={
@@ -119,7 +119,12 @@ class DistrictHeatingAreas(Dataset):
                             "residential_and_service_demand": "double precision",
                         },
                         value_set_columns={
-                            "scenario": ["eGon2035", "eGon100RE"]
+                            "scenario": [
+                                "eGon2035",
+                                "reGon2037",
+                                "reGon2045",
+                                "status2024",
+                            ]
                         },
                     ),
                 ]
