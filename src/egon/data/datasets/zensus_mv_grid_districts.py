@@ -10,6 +10,7 @@ from egon.data import db
 from egon.data.datasets import Dataset, DatasetSources, DatasetTargets
 from egon.data.datasets.mv_grid_districts import MvGridDistricts
 from egon.data.datasets.zensus_vg250 import DestatisZensusPopulationPerHa
+import egon.data.config
 
 
 class ZensusMvGridDistricts(Dataset):
@@ -18,7 +19,8 @@ class ZensusMvGridDistricts(Dataset):
 
     *Dependencies*
       * :py:class:`ZensusPopulation <egon.data.datasets.zensus.ZensusPopulation>`
-      * :py:class:`MvGridDistricts <egon.data.datasets.mv_grid_districts.mv_grid_districts_setup>`
+      * :py:class:`MvGridDistricts \
+<egon.data.datasets.mv_grid_districts.mv_grid_districts_setup>`
 
     *Resulting tables*
       * :py:class:`boundaries.egon_map_zensus_grid_districts <MapZensusGridDistricts>`

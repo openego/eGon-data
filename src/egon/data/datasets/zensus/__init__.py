@@ -14,6 +14,8 @@ import requests
 from egon.data import db, subprocess
 from egon.data.config import settings
 from egon.data.datasets import Dataset, DatasetSources, DatasetTargets
+from egon.data.validation import TableValidation, resolve_boundary_dependence
+import egon.data.config
 
 
 class ZensusPopulation(Dataset):
@@ -79,12 +81,110 @@ class ZensusMiscellaneous(Dataset):
     def __init__(self, dependencies):
         super().__init__(
             name="ZensusMiscellaneous",
-            version="0.0.2",
+            version="0.0.3",
             dependencies=dependencies,
             tasks=(
                 create_zensus_misc_tables,
                 zensus_misc_to_postgres,
             ),
+            validation={
+                "data-quality": [
+                    TableValidation(
+                        table_name="society.egon_destatis_zensus_apartment_per_ha",
+                        row_count=resolve_boundary_dependence(
+                            {
+                                "Schleswig-Holstein": 1946300,
+                                "Everything": 51095280,
+                            }
+                        ),
+                        data_type_columns={
+                            "id": "integer",
+                            "grid_id": "character varying",
+                            "grid_id_new": "character varying",
+                            "attribute": "character varying",
+                            "characteristics_code": "smallint",
+                            "characteristics_text": "text",
+                            "quantity": "smallint",
+                            "quantity_q": "smallint",
+                            "zensus_population_id": "integer",
+                        },
+                        not_null_columns=[
+                            "id",
+                            "grid_id",
+                            "grid_id_new",
+                            "attribute",
+                            "characteristics_code",
+                            "characteristics_text",
+                            "quantity",
+                            "quantity_q",
+                            "zensus_population_id",
+                        ],
+                    ),
+                    TableValidation(
+                        table_name="society.egon_destatis_zensus_building_per_ha",
+                        row_count=resolve_boundary_dependence(
+                            {
+                                "Schleswig-Holstein": 978493,
+                                "Everything": 24297136,
+                            }
+                        ),
+                        data_type_columns={
+                            "id": "integer",
+                            "grid_id": "character varying",
+                            "grid_id_new": "character varying",
+                            "attribute": "character varying",
+                            "characteristics_code": "smallint",
+                            "characteristics_text": "text",
+                            "quantity": "smallint",
+                            "quantity_q": "smallint",
+                            "zensus_population_id": "integer",
+                        },
+                        not_null_columns=[
+                            "id",
+                            "grid_id",
+                            "grid_id_new",
+                            "attribute",
+                            "characteristics_code",
+                            "characteristics_text",
+                            "quantity",
+                            "quantity_q",
+                            "zensus_population_id",
+                        ],
+                    ),
+                    TableValidation(
+                        table_name="society.egon_destatis_zensus_household_per_ha",
+                        row_count=resolve_boundary_dependence(
+                            {
+                                "Schleswig-Holstein": 724970,
+                                "Everything": 18788917,
+                            }
+                        ),
+                        data_type_columns={
+                            "id": "integer",
+                            "grid_id": "character varying",
+                            "grid_id_new": "character varying",
+                            "attribute": "character varying",
+                            "characteristics_code": "smallint",
+                            "characteristics_text": "text",
+                            "quantity": "smallint",
+                            "quantity_q": "smallint",
+                            "zensus_population_id": "integer",
+                        },
+                        not_null_columns=[
+                            "id",
+                            "grid_id",
+                            "grid_id_new",
+                            "attribute",
+                            "characteristics_code",
+                            "characteristics_text",
+                            "quantity",
+                            "quantity_q",
+                            "zensus_population_id",
+                        ],
+                    ),
+                ]
+            },
+            proceed_on_validation_failure=True,
         )
 
 

@@ -187,3 +187,180 @@ located in.
    -- eGon100RE is not currently registered as an ``EgonScenario`` row in
    this fork and would fail with a foreign-key error if enabled without
    first registering it.
+
+.. _mobility-demand-rail-ref:
+
+Rail and public transport
++++++++++++++++++++++++++
+
+The electricity demand of electrified rail and urban public transport is set up
+in the
+:py:class:`RailTransitDemand<egon.data.datasets.rail_transport_demand.RailTransitDemand>`
+dataset. It covers three traction systems, each written as its own eTraGo
+carrier, because they draw from the public grid at different places and at
+different voltage levels:
+
+.. list-table::
+   :header-rows: 1
+   :widths: 30 25 20 25
+
+   * - System
+     - Carrier
+     - Coupling point
+     - Grid level
+   * - 16.7 Hz main-line traction
+     - ``rail_traction``
+     - converter stations
+     - EHV/HV
+   * - S-Bahn Berlin and Hamburg (DC)
+     - ``rail_sbahn_dc``
+     - rectifier substations
+     - MV
+   * - Tram, U-Bahn, Stadtbahn (DC)
+     - ``rail_transit_dc``
+     - rectifier substations
+     - MV
+
+The 16.7-Hz network is an island: it is fed from the public grid only through a
+small number of converter stations, so the whole main-line traction demand of
+Germany enters the model at 19 points. The DC systems, by contrast, are fed by
+many rectifier substations spread across each city.
+
+Input data
+----------
+
+The data bundle carries only what eGon cannot derive itself
+(``data_bundle_egon_data/rail_transport_demand/``):
+
+* ``converter_load_points.csv`` -- the 16.7-Hz converter stations with
+  coordinates, base energy and grid level. These are curated, because OSM
+  under-tags converter stations and they are too few and too important to
+  reconstruct heuristically.
+* ``dc_city_energy.csv`` -- annual energy per city and traction system, with
+  the city centroid.
+* ``load_profiles.csv`` -- normalized hourly shapes per system, derived from
+  measured load data.
+
+Everything else is computed from eGon's own tables.
+
+Processing steps
+----------------
+
+* **Classify DC rectifier substations from OSM.** Substations are read from
+  eGon's OSM tables and classified by their ``frequency`` and ``voltage`` tags:
+  a station that declares 16.7 Hz *and nothing else* belongs to the traction
+  island and can never be a rectifier, while a station that declares both 50 Hz
+  and 0 Hz, or carries a DC output voltage, is one. The run logs how many of
+  the OSM substations were classified.
+* **Distribute city energy over its rectifiers.** For each city and system, all
+  DC rectifiers within 25 km of the city centroid receive an equal share of
+  that city's annual energy. Where no rectifier is mapped, the full energy is
+  placed at the city centroid instead; the run logs how many rows fall back and
+  how much energy they carry.
+* **Assign a bus per coupling level.** Points at EHV/HV level are joined into
+  the EHV substation voronoi cells, points at MV level into the MV grid
+  districts. Points that fall outside every polygon -- along the coastline, for
+  instance -- are attached to the nearest one, and the run logs how often that
+  fallback bites.
+* **Re-index the load profiles onto weather year 2011.** The shapes are
+  measured on a recent year whose weekday sequence differs from 2011, so each
+  2011 hour takes the shape of the hour with the same ISO week, weekday and
+  hour of day, falling back to the (weekday, hour) mean. Each column is
+  renormalized to sum to 1 over the 8760 hours, which makes
+  ``p_set[h] = energy_mwh_a * profile[h]`` an average power in MW.
+* **Scale per scenario and write.** The scenario factor is the ratio of the
+  gross rail consumption stored in the scenario parameters,
+  ``total(scn) / total(status2024)``. Only the level is scaled -- the hourly
+  shape is identical in every scenario.
+
+Results are written to ``grid.egon_etrago_load`` and
+``grid.egon_etrago_load_timeseries``.
+
+Alongside them, every load point is persisted to
+``grid.egon_rail_transport_load_points`` with the geometry it was placed at and
+how it got there. One row per load row, joinable on ``(scn_name, load_id)``:
+
+.. list-table::
+   :header-rows: 1
+   :widths: 25 75
+
+   * - Column
+     - Meaning
+   * - ``method``
+     - ``converter`` for the 16.7-Hz stations, ``dc_rectifier`` where a city's
+       energy was split over mapped rectifiers, ``dc_centroid`` where no
+       rectifier was mapped and the energy stayed at the city centroid
+   * - ``place``
+     - the city or site the point belongs to, where the input names one
+   * - ``bus_method``
+     - ``within`` if the point fell inside a polygon, ``nearest`` if it was
+       attached to the closest one
+   * - ``energy_mwh_a``
+     - the scaled annual energy of that point in this scenario
+   * - ``geom``
+     - the point itself, EPSG:3035 -- the table loads in QGIS as it is
+
+This is what makes a surprising result traceable: a load that looks misplaced
+can be asked why it sits where it does, rather than only counted.
+
+.. note::
+   The dataset writes loads only for scenarios that the run actually builds
+   (see
+   :py:func:`configured_scenarios<egon.data.datasets.rail_transport_demand.configured_scenarios>`).
+   Writing them for a scenario left out by ``--scenarios`` would attach them to
+   buses that ``grid.egon_etrago_bus`` has no rows for, and no eTraGo export
+   could resolve them.
+
+Known limitations
+-----------------
+
+These are ordered by how much they could move a result, not by how easy they
+are to state.
+
+.. warning::
+   **Where a city has no mapped rectifier, its entire DC energy sits on a
+   single point.** OSM maps tram and U-Bahn rectifier substations only
+   sparsely, and a city/system row without one falls back to the city
+   centroid. This is the largest placement uncertainty in the dataset, and it
+   is not marginal: in the source data more than half of the city/system rows
+   had no mapped rectifier, and the single largest load in the whole dataset --
+   the Munich U-Bahn at roughly 198 GWh a year -- is one of them, attached to
+   one MV bus at the city centre. The run logs how many rows fall back and how
+   much energy they carry; read that figure before using the result at city
+   resolution.
+
+   **The energy of the DC systems is the weakest anchor.** Tram and U-Bahn
+   consumption is not measured per city; it is calibrated. The 16.7-Hz traction
+   anchor and the two S-Bahn networks rest on reported figures, the tram and
+   U-Bahn figure does not.
+
+   **The 25 km radius and the equal split are settings, not derived values.**
+   A rectifier within the radius receives the same share as any other,
+   regardless of how much network it actually feeds. A weighting by network
+   length or population density would be defensible and is not implemented.
+
+   **Rectifiers are not assigned per traction system.** Every city/system row
+   draws on all DC rectifiers within its radius, so in cities that run both an
+   S-Bahn and a tram network -- Berlin and Hamburg -- the two systems share the
+   same set. On the full Germany run, every bus carrying S-Bahn load also
+   carried tram load. Energy per city and system is preserved; the placement
+   within the city is smeared between the two.
+
+   **The hourly shape is assumed constant over time.** Future scenarios differ
+   from the status quo by a scalar factor only. Changes in service frequency or
+   operating hours are not represented.
+
+   **The rectifier classification itself is not persisted.** The load points
+   are (see above), so a city that sits at its centroid says so. What is not
+   stored is the full set of OSM substations the classifier looked at and
+   rejected: a rectifier that was classified but had no city within 25 km
+   leaves no row. Judging the classifier's recall therefore still means
+   re-running the query against OSM.
+
+.. note::
+   **Several loads may share one bus, and that is not a problem.** A city's
+   rectifiers often fall into the same MV grid district, so the number of load
+   rows exceeds the number of buses -- on the full Germany run, 464 DC loads on
+   138 buses. This is valid in PyPSA, where loads on a bus sum, and the model
+   result is the same as for one aggregated load per bus and carrier. The
+   annual energy is split across those rows, not duplicated.
