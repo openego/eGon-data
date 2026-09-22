@@ -21,8 +21,16 @@ develop-eggs
 lib
 lib64
 venv*/
+.venv*/
 pyvenv*/
 pip-wheel-metadata/
+
+# Local runtime config (contains DB credentials) and scratch/test scripts
+egon-data.configuration.yaml
+scratch/
+
+# Session planning docs (local use only, not project documentation)
+STATUS2024_HP_IMPLEMENTATION_PLAN.md
 
 # Installer logs
 pip-log.txt
