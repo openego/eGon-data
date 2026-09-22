@@ -19,6 +19,11 @@ from egon.data.datasets.electricity_demand_timeseries.hh_profiles import (
 )
 from egon.data.datasets.scenario_parameters import get_scenario_year
 from egon.data.datasets.zensus_vg250 import DestatisZensusPopulationPerHa
+from egon.data.validation import TableValidation, resolve_boundary_dependence
+from egon.data.validation.rules.custom.sanity import (
+    ResidentialElectricityAnnualSum,
+    ResidentialElectricityHhRefinement,
+)
 import egon.data.config
 
 # will be later imported from another file ###
@@ -46,7 +51,7 @@ class HouseholdElectricityDemand(Dataset):
     #:
     name: str = "HouseholdElectricityDemand"
     #:
-    version: str = "0.0.8"
+    version: str = "0.0.9"
 
     targets = DatasetTargets(
         tables={
@@ -60,6 +65,41 @@ class HouseholdElectricityDemand(Dataset):
             version=self.version,
             dependencies=dependencies,
             tasks=(create_tables, get_annual_household_el_demand_cells),
+            validation={
+                "data_quality": [
+                    ResidentialElectricityAnnualSum(
+                        table="demand.egon_demandregio_zensus_electricity",
+                        rule_id="SANITY_RESIDENTIAL_ELECTRICITY_ANNUAL_SUM",
+                        rtol=0.005,
+                    ),
+                    ResidentialElectricityHhRefinement(
+                        table="society.egon_destatis_zensus_household_per_ha_refined",
+                        rule_id="SANITY_RESIDENTIAL_HH_REFINEMENT",
+                        rtol=1e-5,
+                    ),
+                    TableValidation(
+                        table_name="demand.egon_demandregio_zensus_electricity",
+                        # Totals apply to 3 scenarios
+                        row_count=resolve_boundary_dependence(
+                            {
+                                "Schleswig-Holstein": 618316,
+                                "Everything": 7300010,
+                            }
+                        ),
+                        data_type_columns={
+                            "zensus_population_id": "integer",
+                            "scenario": "character varying",
+                            "sector": "character varying",
+                            "demand": "double precision",
+                        },
+                        value_set_columns={
+                            "scenario": ["status2024", "reGon2037", "reGon2045"],
+                            "sector": ["residential", "service"],
+                        },
+                    ),
+                ]
+            },
+            proceed_on_validation_failure=True,
         )
 
 

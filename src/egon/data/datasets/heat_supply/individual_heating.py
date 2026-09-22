@@ -10,6 +10,7 @@ The following main things are done in this module:
 import random
 
 from airflow.operators.python import PythonOperator
+from egon_validation import ArrayCardinalityValidation
 from psycopg2.extensions import AsIs, register_adapter
 from sqlalchemy import ARRAY, REAL, Column, Integer, String
 from sqlalchemy.ext.declarative import declarative_base
@@ -50,6 +51,7 @@ from egon.data.datasets.heat_demand_timeseries.idp_pool import (
 
 # get zensus cells with district heating
 from egon.data.datasets.zensus_mv_grid_districts import MapZensusGridDistricts
+from egon.data.validation import TableValidation, resolve_boundary_dependence
 
 engine = db.engine()
 Base = declarative_base()
@@ -248,7 +250,7 @@ class HeatPumpsCascade(Dataset):
     #:
     name: str = "HeatPumpsCascade"
     #:
-    version: str = "0.0.6"
+    version: str = "0.0.7"
 
     def __init__(self, dependencies):
         def dyn_parallel_tasks_2035(scenario):
@@ -339,6 +341,41 @@ class HeatPumpsCascade(Dataset):
             version=self.version,
             dependencies=dependencies,
             tasks=tasks_HeatPumpsCascade,
+            validation={
+                "data-quality": [
+                    ArrayCardinalityValidation(
+                        table="demand.egon_etrago_timeseries_individual_heating",
+                        rule_id="ARRAY_HEAT_PUMPS.egon_etrago_timeseries_individual_heating",
+                        array_column="dist_aggregated_mw",
+                        expected_length=8760,
+                    ),
+                    TableValidation(
+                        table_name="demand.egon_building_heat_peak_loads",
+                        row_count=resolve_boundary_dependence(
+                            {
+                                "Schleswig-Holstein": 2946766,
+                                "Everything": 40929667,
+                            }
+                        ),
+                        data_type_columns={
+                            "building_id": "integer",
+                            "scenario": "character varying",
+                            "sector": "character varying",
+                            "peak_load_in_w": "real",
+                        },
+                        value_set_columns={
+                            "scenario": [
+                                "eGon2035",
+                                "reGon2037",
+                                "reGon2045",
+                                "status2024",
+                            ],
+                            "sector": ["residential+cts"],
+                        },
+                    ),
+                ]
+            },
+            proceed_on_validation_failure=True,
         )
 
 

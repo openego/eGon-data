@@ -353,10 +353,11 @@ class ScenarioParameters(Dataset):
     """
     Create and fill table with central parameters for each scenario
 
-    This dataset creates and fills a table in the database that includes central parameters
-    for each scenarios. These parameters are mostly from extrernal sources, they are defined
-    and referenced within this dataset.
-    The table is acced by various datasets to access the parameters for all sectors.
+    This dataset creates and fills a table in the database that includes
+    central parameters for each scenarios. These parameters are mostly from
+    extrernal sources, they are defined and referenced within this dataset.
+    The table is acced by various datasets to access the parameters for all
+    sectors.
 
 
     *Dependencies*
@@ -364,7 +365,8 @@ class ScenarioParameters(Dataset):
 
 
     *Resulting tables*
-      * :py:class:`scenario.egon_scenario_parameters <egon.data.datasets.scenario_parameters.EgonScenario>` is created and filled
+      * :py:class:`scenario.egon_scenario_parameters \
+<egon.data.datasets.scenario_parameters.EgonScenario>` is created and filled
 
 
     """
