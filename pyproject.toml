@@ -80,7 +80,7 @@ dependencies = [
   "rtree",
   "saio",
   "seaborn",
-  "setuptools<81",
+  "setuptools>60.0",
   "shapely",
   "snakemake<7",
   "sqlalchemy",
