@@ -1281,8 +1281,8 @@ class setup(Dataset):
                         table_name="demand.egon_building_electricity_peak_loads",
                         row_count=resolve_boundary_dependence(
                             {
-                                "Schleswig-Holstein": 3029824,
-                                "Everything": 44683620,
+                                "Schleswig-Holstein": 3143728,
+                                "Everything": 43340882,
                             }
                         ),
                         data_type_columns={
@@ -1292,23 +1292,15 @@ class setup(Dataset):
                             "peak_load_in_w": "real",
                             "voltage_level": "integer",
                         },
-                        value_set_columns=resolve_boundary_dependence(
-                            {
-                                "Schleswig-Holstein": {
-                                    "scenario": [
-                                        "eGon2035",
-                                        "eGon100RE",
-                                        "status2019",
-                                        "status2023",
-                                    ],
-                                    "sector": ["cts", "residential"],
-                                },
-                                "Everything": {
-                                    "scenario": ["eGon2035", "eGon100RE"],
-                                    "sector": ["cts", "residential"],
-                                },
-                            }
-                        ),
+                        value_set_columns={
+                            "scenario": [
+                                "eGon2035",
+                                "reGon2037",
+                                "reGon2045",
+                                "status2024",
+                            ],
+                            "sector": ["cts", "residential"],
+                        },
                     ),
                     TableValidation(
                         table_name="demand.egon_household_electricity_profile_of_buildings",
