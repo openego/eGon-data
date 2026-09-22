@@ -1075,11 +1075,11 @@ class FinalValidations(Dataset):
                 # Heat demand validations
                 # Validates annual heat demand against peta_heat reference values
                 "heat_demand": [
-                    # Heat demand - eGon2035
+                    # Heat demand - reGon2037
                     HeatDemandValidation(
                         table="grid.egon_etrago_load",
-                        rule_id="SANITY_HEAT_DEMAND_EGON2035",
-                        scenario="eGon2035",
+                        rule_id="SANITY_HEAT_DEMAND_REGON2037",
+                        scenario="reGon2037",
                         rtol=0.02,  # 2% tolerance
                     ),
                 ],
