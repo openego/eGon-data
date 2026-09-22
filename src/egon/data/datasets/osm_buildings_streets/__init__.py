@@ -291,8 +291,8 @@ class OsmBuildingsStreets(Dataset):
                         table_name="boundaries.egon_map_zensus_buildings_residential",
                         row_count=resolve_boundary_dependence(
                             {
-                                "Schleswig-Holstein": 1002646,
-                                "Everything": 29482092,
+                                "Schleswig-Holstein": 586390,
+                                "Everything": 18193124,
                             }
                         ),
                         data_type_columns={
@@ -406,8 +406,8 @@ class OsmBuildingsStreets(Dataset):
                         table_name="openstreetmap.osm_buildings_residential",
                         row_count=resolve_boundary_dependence(
                             {
-                                "Schleswig-Holstein": 1147635,
-                                "Everything": 33005998,
+                                "Schleswig-Holstein": 619154,
+                                "Everything": 18937323,
                             }
                         ),
                         geometry_columns=["geom_building", "geom_point"],
@@ -421,6 +421,13 @@ class OsmBuildingsStreets(Dataset):
                             "geom_point": "geometry",
                             "tags": "hstore",
                             "id": "integer",
+                            "source": "text",
+                            "ethos_id": "text",
+                            "match_distance": "double precision",
+                            "construction_year": "integer",
+                            "size_class": "text",
+                            "refurbishment_state": "text",
+                            "tabula_type": "text",
                         },
                         not_null_columns=[
                             "osm_id",
