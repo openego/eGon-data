@@ -77,3 +77,13 @@ docs/_build
 
 # Mypy Cache
 .mypy_cache/
+
+# Metadata / OMI
+src/egon/data/metadata/results/converted/
+out.json
+
+# Test DAG´s / Dev Specific
+src/egon/data/airflow/dags/mini_dag_zensu.py
+src/egon/data/airflow/dags/pipeline_mini_dag_metadata.py
+src/egon/data/airflow/dags/pipeline_rail_minimal.py
+src/egon/data/airflow/dags/pipeline_rail_isolated.py

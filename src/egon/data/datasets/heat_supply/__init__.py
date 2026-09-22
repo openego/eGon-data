@@ -25,7 +25,6 @@ from egon.data.datasets.heat_supply.individual_heating import (
 from egon.data.metadata import (
     context,
     generate_resource_fields_from_sqla_model,
-    license_ccby,
     license_egon_data_odbl,
     meta_metadata,
     sources,
@@ -197,17 +196,17 @@ def metadata():
 
     fields_df = pd.DataFrame(data=fields).set_index("name")
     fields_df.loc["index", "description"] = "Unique identifyer"
-    fields_df.loc["district_heating_id", "description"] = (
-        "Index of the corresponding district heating grid"
-    )
+    fields_df.loc[
+        "district_heating_id", "description"
+    ] = "Index of the corresponding district heating grid"
     fields_df.loc["carrier", "description"] = "Name of energy carrier"
-    fields_df.loc["category", "description"] = (
-        "Size-category of district heating grid"
-    )
+    fields_df.loc[
+        "category", "description"
+    ] = "Size-category of district heating grid"
     fields_df.loc["capacity", "description"] = "Installed heating capacity"
-    fields_df.loc["geometry", "description"] = (
-        "Location of thermal power plant"
-    )
+    fields_df.loc[
+        "geometry", "description"
+    ] = "Location of thermal power plant"
     fields_df.loc["scenario", "description"] = "Name of corresponing scenario"
 
     fields_df.loc["capacity", "unit"] = "MW_th"
@@ -278,15 +277,15 @@ def metadata():
 
     fields_df = pd.DataFrame(data=fields).set_index("name")
     fields_df.loc["index", "description"] = "Unique identifyer"
-    fields_df.loc["mv_grid_id", "description"] = (
-        "Index of the corresponding mv grid district"
-    )
+    fields_df.loc[
+        "mv_grid_id", "description"
+    ] = "Index of the corresponding mv grid district"
     fields_df.loc["carrier", "description"] = "Name of energy carrier"
     fields_df.loc["category", "description"] = "Size-category"
     fields_df.loc["capacity", "description"] = "Installed heating capacity"
-    fields_df.loc["geometry", "description"] = (
-        "Location of thermal power plant"
-    )
+    fields_df.loc[
+        "geometry", "description"
+    ] = "Location of thermal power plant"
     fields_df.loc["scenario", "description"] = "Name of corresponing scenario"
 
     fields_df.loc["capacity", "unit"] = "MW_th"
