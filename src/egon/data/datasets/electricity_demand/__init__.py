@@ -79,10 +79,11 @@ class HouseholdElectricityDemand(Dataset):
                     ),
                     TableValidation(
                         table_name="demand.egon_demandregio_zensus_electricity",
+                        # Totals apply to 3 scenarios
                         row_count=resolve_boundary_dependence(
                             {
-                                "Schleswig-Holstein": 154525,
-                                "Everything": 7355160,
+                                "Schleswig-Holstein": 618316,
+                                "Everything": 7300010,
                             }
                         ),
                         data_type_columns={
@@ -92,7 +93,7 @@ class HouseholdElectricityDemand(Dataset):
                             "demand": "double precision",
                         },
                         value_set_columns={
-                            "scenario": ["eGon2035", "eGon100RE"],
+                            "scenario": ["status2024", "reGon2037", "reGon2045"],
                             "sector": ["residential", "service"],
                         },
                     ),
