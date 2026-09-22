@@ -58,6 +58,7 @@ datasets
    egon.data.datasets.power_etrago
    egon.data.datasets.power_plants
    egon.data.datasets.pypsaeursec
+   egon.data.datasets.rail_transport_demand
    egon.data.datasets.re_potential_areas
    egon.data.datasets.saltcavern
    egon.data.datasets.scenario_parameters

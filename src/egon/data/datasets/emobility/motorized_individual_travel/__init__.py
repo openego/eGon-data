@@ -31,7 +31,6 @@ from egon.data.datasets.emobility.motorized_individual_travel.db_classes import 
     EgonEvMvGridDistrict,
     EgonEvPool,
     EgonEvTrip,
-    add_metadata,
 )
 from egon.data.datasets.emobility.motorized_individual_travel.ev_allocation import (  # noqa: E501
     allocate_evs_numbers,
@@ -138,12 +137,12 @@ def download_and_preprocess():
         inplace=True,
     )
     kba_data = kba_data.dropna()
-    kba_data[["ags_reg_district", "reg_district"]] = (
-        kba_data.reg_district.str.split(
-            pat=" ",
-            n=1,
-            expand=True,
-        )
+    kba_data[
+        ["ags_reg_district", "reg_district"]
+    ] = kba_data.reg_district.str.split(
+        pat=" ",
+        n=1,
+        expand=True,
     )
     kba_data.ags_reg_district = kba_data.ags_reg_district.astype("int")
 

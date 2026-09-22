@@ -8,15 +8,42 @@ Unreleased
 Added
 -----
 
+* Integrate egon-validation framework for data quality checks
+  `PR #1375 <https://github.com/openego/eGon-data/pull/1375>`_
 * Make egon-data runnable in python 3.10
   `#1352 <https://github.com/openego/egon-data/issues/1352>`_
 * Add standardized sources and targets definitions across dataset modules
   `#1283 <https://github.com/openego/egon-data/issues/1283>`_
+* Add rail-transport electricity demand dataset (RailTransitDemand) and
+  reGon scenarios (status2024, reGon2037, reGon2045). The mobility sector
+  carries two rail figures: ``annual_demand`` is the 50-Hz draw that is
+  written as load, ``gross_rail_demand`` the total rail consumption used as
+  the scenario-scaling reference. Loads are written only for the scenarios
+  the run builds -- the intersection of the dataset's own list with
+  ``--scenarios`` -- because a scenario the run leaves out has no bus rows
+  in ``grid.egon_etrago_bus`` for the loads to attach to. The dataset
+  reports its classification, centroid-fallback and bus-assignment counts,
+  and the sanity check reports the energy per carrier and asserts that
+  ``grid.egon_etrago_bus`` carries the referenced buses for the scenario
+  each load is written under. Alongside the two eTraGo tables it writes
+  ``grid.egon_rail_transport_load_points``: one row per load row, carrying
+  the geometry the load was placed at and how it got there -- whether the
+  energy went to mapped rectifiers or stayed at a city centroid, and whether
+  the bus was found by containment or by nearest neighbour. Without it the
+  placement is a calculation that happens in memory and leaves only counts
+  in the run log.
+  `#1414 <https://github.com/openego/eGon-data/issues/1414>`_
 * Add dataset EthosBuilda, importing the ETHOS.BUILDA synthetic building
   stock from Zenodo
   `#1310 <https://github.com/openego/eGon-data/issues/1310>`_
 * Use MaStR data for home_batteries for allocation for all scenarios (status + future)
   `#1470 <https://github.com/openego/eGon-data/issues/1470>`_
+* Distinguish grid-scale battery storage (new carrier 'BESS') from home batteries
+  throughout the pipeline: real MaStR-based BESS carry-forward (aged, all scenarios) 
+  alongside home batteries, and separate eTraGo carriers/cost parameters 
+  ('BESS' vs'home_battery') instead of one generic 'battery' carrier
+  `#1478 <https://github.com/openego/eGon-data/issues/1478>`_
+
 
 Changed
 -------
@@ -43,8 +70,8 @@ Changed
   factor columns to the configured scenarios, and remove obsolete
   status2019/status2023/eGon100RE handling
   `#1433 <https://github.com/openego/eGon-data/issues/1433>`_
-* Adapt scenario_capacities to new scenarios; implementing the 
-  new Kraftwerksliste from the NEP2025; remove obsolete 
+* Adapt scenario_capacities to new scenarios; implementing the
+  new Kraftwerksliste from the NEP2025; remove obsolete
   scenario (status2019/status2023/eGon100RE) handling
   `#1415 <https://github.com/openego/eGon-data/issues/1415>`_
 * Adapt heat_demand TaskGroup to new scenarios: generalize district
@@ -72,6 +99,10 @@ Changed
   to reGon2037 and reGon2045, make PV-rooftop-based building weighting
   scenario-aware, and remove obsolete eGon100RE/pypsa-eur-sec handling
   `#1449 <https://github.com/openego/eGon-data/issues/1449>`_
+* Adapt eTraGo_Input TaskGroup to new scenarios: generalize CHP-to-eTraGo
+  insertion to the configured scenarios, and remove obsolete eGon100RE
+  handling
+  `#1450 <https://github.com/openego/eGon-data/issues/1450>`_
 * Unify NEP input data into a single ``NEP`` folder in the data bundle
   `#1479 <https://github.com/openego/eGon-data/issues/1479>`_
 * Adapt eMobility MIT to the reGon scenarios: add trip, scenario
