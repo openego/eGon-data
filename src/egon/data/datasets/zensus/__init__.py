@@ -46,23 +46,15 @@ class ZensusPopulation(Dataset):
 
 
 class ZensusMiscellaneous(Dataset):
+    # The census grid files are not downloaded; they come from the data
+    # bundle, like the population file in ZensusPopulation above. The
+    # zensus2011.de download URLs that used to stand here were never read
+    # and no longer describe where the data comes from (see #1318).
     sources = DatasetSources(
-        urls={
-            "zensus_households": (
-                "https://www.zensus2011.de/SharedDocs/Downloads/DE/"
-                "Pressemitteilung/DemografischeGrunddaten/"
-                "csv_Haushalte_100m_Gitter.zip?__blob=publicationFile&v=2"
-            ),
-            "zensus_buildings": (
-                "https://www.zensus2011.de/SharedDocs/Downloads/DE/"
-                "Pressemitteilung/DemografischeGrunddaten/"
-                "csv_Gebaeude_100m_Gitter.zip?__blob=publicationFile&v=2"
-            ),
-            "zensus_apartments": (
-                "https://www.zensus2011.de/SharedDocs/Downloads/DE/"
-                "Pressemitteilung/DemografischeGrunddaten/"
-                "csv_Wohnungen_100m_Gitter.zip?__blob=publicationFile&v=5"
-            ),
+        files={
+            "zensus_households": "data_bundle_egon_data/zensus_population/csv_Haushalte_100m_Gitter.zip",
+            "zensus_buildings": "data_bundle_egon_data/zensus_population/csv_Gebaeude_100m_Gitter.zip",
+            "zensus_apartments": "data_bundle_egon_data/zensus_population/csv_Wohnungen_100m_Gitter.zip",
         }
     )
     targets = DatasetTargets(
