@@ -11,22 +11,26 @@ Overview
 
 Validation in eGon-data supports two main approaches:
 
-1. **TableValidation** - Declarative validation specs for common checks (null values, data types, row counts, etc.)
-2. **RuleValidation** - Custom validation rules for complex business logic
+1. **TableValidation** - a declarative spec for common checks (row counts, data
+   types, NULL/NaN, value sets, geometries) that expands into several rules
+2. **Rule instances** - ``Rule`` subclasses, either the generic ones from
+   ``egon_validation`` or a custom class for complex business logic
 
-Both approaches produce structured results with pass/fail status, observed vs expected values,
-and detailed messages.
+Both produce structured results with pass/fail status, observed vs expected
+values and detailed messages.
 
 Adding Validation to a Dataset
 ==============================
 
-Validations are declared in the ``validation`` parameter of a Dataset:
+Validations are declared in the ``validation`` parameter of a Dataset. The
+keys of the dict become validation task names, the values are lists mixing
+``TableValidation`` specs and rule instances freely:
 
 .. code-block:: python
 
     from egon.data.datasets import Dataset
-    from egon.data.validation.specs import TableValidation, RuleValidation
-    from egon.data.validation.rules.custom.sanity import MyCustomRule
+    from egon.data.validation import TableValidation
+    from egon.data.validation.rules.custom.sanity import CH4StoresCapacity
 
     class MyDataset(Dataset):
         def __init__(self, dependencies):
@@ -38,20 +42,31 @@ Validations are declared in the ``validation`` parameter of a Dataset:
                 validation={
                     "data_quality": [
                         TableValidation(
-                            table="schema.my_table",
-                            not_null=["id", "value"],
-                            row_count={"min": 1},
+                            table_name="schema.my_table",
+                            row_count=1,
+                            not_null_columns=["id", "value"],
                         ),
-                        RuleValidation(
-                            rule=MyCustomRule(
-                                table="schema.my_table",
-                                rule_id="SANITY_MY_CHECK",
-                                scenario="eGon2035",
-                            ),
+                        CH4StoresCapacity(
+                            table="grid.egon_etrago_store",
+                            rule_id="SANITY_MY_CHECK",
+                            scenario="eGon2035",
                         ),
                     ],
                 },
+                proceed_on_validation_failure=True,
             )
+
+Rule instances go straight into the list; there is no wrapper class. Each key
+produces one Airflow task named
+``{dataset}.validate.{key}``, which runs after the dataset's own tasks.
+
+.. note::
+
+   Task names are used as directory names for the results, and rule ids as
+   directory names below them, so a ``rule_id`` must be unique within its
+   task. When several rules of the same class check different columns, suffix
+   the id with the column -- as ``TableValidation`` itself does for
+   geometries (``SRIDUniqueNonZero.<table>.<column>``).
 
 
 TableValidation
@@ -63,67 +78,92 @@ writing custom code.
 Available Checks
 ----------------
 
+Each field that is set adds one rule; ``rule_id``\ s are generated, so they
+must not be passed. Every ``TableValidation`` additionally always emits a
+``WholeTableNotNullAndNotNaNValidation``.
+
 .. list-table::
    :header-rows: 1
-   :widths: 20 30 50
+   :widths: 22 26 52
 
    * - Parameter
      - Type
-     - Description
-   * - ``table``
+     - Adds
+   * - ``table_name``
      - str
-     - Target table in format "schema.table" (required)
-   * - ``not_null``
-     - List[str]
-     - Columns that must not contain NULL values
-   * - ``data_types``
-     - Dict[str, str]
-     - Expected data types for columns (e.g., ``{"id": "integer", "name": "text"}``)
+     - Target table as ``"schema.table"`` (required)
    * - ``row_count``
-     - Dict
-     - Row count constraints: ``{"min": N}``, ``{"max": N}``, or ``{"exact": N}``
-   * - ``unique``
-     - List[str]
-     - Columns or column combinations that must be unique
-   * - ``foreign_keys``
-     - List[Dict]
-     - Foreign key references to validate
+     - int, or ``BoundaryDependent``
+     - ``RowCountValidation`` -- an **exact** expected count,
+       ``ROW_COUNT.<table>``
+   * - ``data_type_columns``
+     - Dict[str, str]
+     - ``DataTypeValidation`` with the expected PostgreSQL type per column,
+       e.g. ``{"bus_id": "bigint", "v_nom": "double precision"}``;
+       ``DATA_TYPES.<table>``
+   * - ``not_null_columns``
+     - Sequence[str]
+     - ``NotNullAndNotNaNValidation`` for the listed columns,
+       ``NOT_NAN.<table>``
+   * - ``geometry_columns``
+     - Sequence[str]
+     - one ``SRIDUniqueNonZero`` per column,
+       ``SRIDUniqueNonZero.<table>.<column>``
+   * - ``value_set_columns``
+     - Dict[str, list]
+     - one ``ValueSetValidation`` per column, asserting the column contains
+       only the listed values; ``VALUE_SET_<COLUMN>.<table>``
+   * - *(always)*
+     - --
+     - ``WholeTableNotNullAndNotNaNValidation``, ``TABLE_NOT_NAN.<table>``
+
+There is no ``unique`` or ``foreign_keys`` support. ``row_count`` is a single
+expected value, not a ``{"min": ...}`` mapping.
 
 Example
 -------
 
 .. code-block:: python
 
-    TableValidation(
-        table="grid.egon_etrago_bus",
-        not_null=["bus_id", "scn_name", "carrier"],
-        data_types={
-            "bus_id": "text",
-            "v_nom": "numeric",
-        },
-        row_count={"min": 100},
-        unique=["bus_id", "scn_name"],
+    from egon.data.validation import (
+        TableValidation,
+        resolve_boundary_dependence,
     )
 
+    TableValidation(
+        table_name="grid.egon_etrago_bus",
+        row_count=resolve_boundary_dependence(
+            {"Schleswig-Holstein": 6178, "Everything": 85710}
+        ),
+        geometry_columns=["geom"],
+        data_type_columns={
+            "bus_id": "bigint",
+            "v_nom": "double precision",
+        },
+        not_null_columns=["bus_id", "scn_name", "carrier"],
+        value_set_columns={"country": ["DE", "AT", "CH"]},
+    )
 
-RuleValidation
-==============
+This expands into six rules -- ``ROW_COUNT``, ``DATA_TYPES``, ``NOT_NAN``,
+``SRIDUniqueNonZero.egon_etrago_bus.geom``,
+``VALUE_SET_COUNTRY.egon_etrago_bus`` and the automatic
+``TABLE_NOT_NAN.egon_etrago_bus``.
 
-``RuleValidation`` wraps custom validation rules that implement complex business logic.
+Boundary-dependent values
+-------------------------
+
+``row_count``, ``data_type_columns`` and ``value_set_columns`` may be wrapped
+in :func:`resolve_boundary_dependence`, which defers the choice to task
+runtime, when ``--dataset-boundary`` is known:
 
 .. code-block:: python
 
-    from egon.data.validation.specs import RuleValidation
-    from egon.data.validation.rules.custom.sanity import CH4StoresCapacity
-
-    RuleValidation(
-        rule=CH4StoresCapacity(
-            table="grid.egon_etrago_store",
-            rule_id="SANITY_CH4_STORES_CAPACITY",
-            scenario="eGon2035",
-            rtol=0.02,
-        ),
+    row_count=resolve_boundary_dependence(
+        {"Schleswig-Holstein": 27, "Everything": 431}
     )
+
+Both keys are required -- an unlisted boundary raises ``KeyError`` rather than
+falling back.
 
 
 Writing Custom Validation Rules
