@@ -1526,7 +1526,10 @@ class PowerPlants(Dataset):
                     TableValidation(
                         table_name="supply.egon_power_plants",
                         row_count=resolve_boundary_dependence(
-                            {"Schleswig-Holstein": 1102, "Everything": 1103}
+                            {
+                                "Schleswig-Holstein": 127017,
+                                "Everything": 4046085,
+                            }
                         ),
                         geometry_columns=["geom"],
                         data_type_columns={
@@ -1543,29 +1546,33 @@ class PowerPlants(Dataset):
                         },
                         not_null_columns=[
                             "id",
-                            "sources",
-                            "source_id",
                             "carrier",
                             "el_capacity",
                             "bus_id",
                             "voltage_level",
-                            "weather_cell_id",
                             "scenario",
-                            "geom",
                         ],
                         value_set_columns={
                             "carrier": [
-                                "others",
-                                "gas",
                                 "biomass",
-                                "run_of_river",
-                                "wind_onshore",
+                                "coal",
+                                "gas",
+                                "lignite",
                                 "oil",
-                                "wind_offshore",
-                                "solar",
+                                "others",
                                 "reservoir",
+                                "run_of_river",
+                                "solar",
+                                "solar_rooftop",
+                                "wind_offshore",
+                                "wind_onshore",
                             ],
-                            "scenario": ["eGon2035", "eGon100RE"],
+                            "scenario": [
+                                "eGon2035",
+                                "reGon2037",
+                                "reGon2045",
+                                "status2024",
+                            ],
                         },
                     ),
                 ]
