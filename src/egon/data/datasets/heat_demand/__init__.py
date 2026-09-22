@@ -109,8 +109,8 @@ class HeatDemandImport(Dataset):
                         table_name="demand.egon_peta_heat",
                         row_count=resolve_boundary_dependence(
                             {
-                                "Schleswig-Holstein": 139250,
-                                "Everything": 6836426,
+                                "Schleswig-Holstein": 1078152,
+                                "Everything": 12465340,
                             }
                         ),
                         data_type_columns={
@@ -118,15 +118,15 @@ class HeatDemandImport(Dataset):
                             "demand": "double precision",
                             "sector": "character varying",
                             "scenario": "character varying",
-                            "zensus_pupulation_id": "integer",
+                            "zensus_population_id": "integer",
                         },
                         value_set_columns={
-                            "scenario": resolve_boundary_dependence(
-                                {
-                                    "Schleswig-Holstein": ["eGon2035"],
-                                    "Everything": ["eGon2035", "eGon100RE"],
-                                }
-                            ),
+                            "scenario": [
+                                "eGon2035",
+                                "reGon2037",
+                                "reGon2045",
+                                "status2024",
+                            ],
                             "sector": ["residential", "service"],
                         },
                     ),
