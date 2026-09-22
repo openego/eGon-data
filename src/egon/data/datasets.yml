@@ -1259,14 +1259,19 @@ charging_infrastructure:
         - "weight"
         - "geometry"
 
+# NOTE: this block is a reference copy, not read by any code path directly
+# (unlike mobility_hgv_charging's hgv_input_dir, which stage_b_standalone.py
+# does read) -- HeavyDutyTransport's real config lives in
+# emobility/heavy_duty_transport/__init__.py's own DatasetSources(files=...)
+# argument. Keep the two in sync if either changes.
 mobility_hgv:
-    original_data:
-      sources:
-        BAST:
-          url: "https://www.bast.de/DE/Themen/Digitales/HF_1/Massnahmen/verkehrszaehlung/Daten/2020_1/Jawe2020.csv?view=renderTcDataExportCSV&strTyp=A"
-          file: "Jawe2020.csv"
-          relevant_columns: ["DTV_SV_MobisSo_Q", "Koor_WGS84_E", "Koor_WGS84_N"]
-          srid: 4326
+  original_data:
+    sources:
+      BAST:
+        url: "https://www.bast.de/DE/Themen/Digitales/HF_1/Massnahmen/verkehrszaehlung/Daten/2020_1/Jawe2020.csv?view=renderTcDataExportCSV&strTyp=A"
+        file: "Jawe2020.csv"
+        relevant_columns: ["DTV_SV_MobisSo_Q", "Koor_WGS84_E", "Koor_WGS84_N"]
+        srid: 4326
     tables:
       srid: 3035
       srid_buses: 4326
@@ -1283,9 +1288,13 @@ mobility_hgv:
       # share of FCEV trucks
       # within the egon project the flat guess is 100%
       fcev_share: 1.
+      # eGon100RE is NOT registered as an EgonScenario row in this fork's
+      # scenario_parameters (see scenario_parameters/__init__.py) -- running
+      # it here would hit a foreign-key error the moment run_egon_truck()
+      # tries to write a row for it. Restricted to eGon2035 until eGon100RE
+      # is registered again.
       scenarios:
         - "eGon2035"
-        - "eGon100RE"
       carrier: "H2_hgv_load"
       energy_value_h2: 39.4  # kWh/kg
       hours_per_year: 8760
@@ -1302,6 +1311,27 @@ mobility_hgv:
       # Langfristszenarien
       # https://www.langfristszenarien.de/enertile-explorer-wAssets/docs/LFS3_Langbericht_Verkehr_final.pdf#page=17
       eGon100RE: 40000000000
+
+mobility_hgv_charging:
+  original_data:
+    sources:
+      # Path to the precomputed HGV charging demand data (sites, charging points,
+      # charging events, profiles), produced externally by energy_distribution_depots.py.
+      # Ships in the data bundle and is resolved relative to the egon-data
+      # working directory. One subfolder per scenario.
+      # Kept in sync with HGVCharging.sources in emobility/hgv_charging/__init__.py.
+      hgv_input_dir: "data_bundle_egon_data/hgv_charging"
+    lowflex:
+      create_lowflex_scenario: False
+      names:
+        reGon2037: "reGon2037_lowflex"
+        reGon2045: "reGon2045_lowflex"
+  constants:
+    scenarios:
+      reGon2037: "C 2037"
+      reGon2045: "C 2045"
+    carrier: "land_transport_HGV"
+    srid: 3035
 
 home_batteries:
   constants:
