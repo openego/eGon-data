@@ -168,15 +168,19 @@ def session_scoped(function):
     return wrapped
 
 
-def select_dataframe(sql, index_col=None, warning=True):
+def select_dataframe(sql, index_col=None, warning=True, params=None):
     """Select data from local database as pandas.DataFrame
 
     Parameters
     ----------
     sql : str
-        SQL query to be executed.
+        SQL query to be executed. Use :param_name placeholders for parameters.
     index_col : str, optional
         Column(s) to set as index(MultiIndex). The default is None.
+    warning : bool, optional
+        Print warning if no data returned. The default is True.
+    params : dict, optional
+        Parameters to bind to the query. The default is None.
 
     Returns
     -------
@@ -185,7 +189,7 @@ def select_dataframe(sql, index_col=None, warning=True):
 
     """
 
-    df = pd.read_sql(sql, engine(), index_col=index_col)
+    df = pd.read_sql(sql, engine(), index_col=index_col, params=params)
 
     if df.size == 0 and warning is True:
         print(f"WARNING: No data returned by statement: \n {sql}")
