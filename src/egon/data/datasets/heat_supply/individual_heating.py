@@ -353,8 +353,8 @@ class HeatPumpsCascade(Dataset):
                         table_name="demand.egon_building_heat_peak_loads",
                         row_count=resolve_boundary_dependence(
                             {
-                                "Schleswig-Holstein": 732858,
-                                "Everything": 42128819,
+                                "Schleswig-Holstein": 2946766,
+                                "Everything": 40929667,
                             }
                         ),
                         data_type_columns={
@@ -364,7 +364,12 @@ class HeatPumpsCascade(Dataset):
                             "peak_load_in_w": "real",
                         },
                         value_set_columns={
-                            "scenario": ["eGon2035", "eGon100RE"],
+                            "scenario": [
+                                "eGon2035",
+                                "reGon2037",
+                                "reGon2045",
+                                "status2024",
+                            ],
                             "sector": ["residential+cts"],
                         },
                     ),
