@@ -120,7 +120,7 @@ class DemandRegio(Dataset):
                     TableValidation(
                         table_name="demand.egon_demandregio_hh",
                         row_count=resolve_boundary_dependence(
-                            {"Schleswig-Holstein": 180, "Everything": 7218}
+                            {"Schleswig-Holstein": 540, "Everything": 7218}
                         ),
                         data_type_columns={
                             "nuts3": "character varying",
@@ -130,7 +130,7 @@ class DemandRegio(Dataset):
                             "demand": "double precision",
                         },
                         value_set_columns={
-                            "scenario": ["eGon2035", "eGon100RE", "eGon2021"]
+                            "scenario": ["status2024", "reGon2037", "reGon2045"]
                         },
                     ),
                     TableValidation(
