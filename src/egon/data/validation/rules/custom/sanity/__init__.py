@@ -4,6 +4,7 @@ from .cts_demand import (  # noqa: F401
     CtsElectricityDemandShare,
     CtsHeatDemandShare,
 )
+from .demandregio import DemandRegioScenarioDemand  # noqa: F401
 from .dsm import DSMTimeseries  # noqa: F401
 from .electrical_load_sectors import (  # noqa: F401
     ElectricalLoadSectorBreakdown,
