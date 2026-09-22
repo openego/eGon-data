@@ -132,7 +132,14 @@ class HeavyDutyTransport(Dataset):
                     "leakage_rate": 0.005,
                     "hydrogen_consumption": 6.68,
                     "fcev_share": 1.0,
-                    "scenarios": ["eGon2035", "eGon100RE"],
+                    # eGon100RE is not registered as an EgonScenario row in
+                    # this fork's scenario_parameters (see
+                    # scenario_parameters/__init__.py) -- running it here
+                    # would hit a foreign-key error the moment
+                    # run_egon_truck() tries to write a row for it.
+                    # Restricted to eGon2035 until eGon100RE is registered
+                    # again.
+                    "scenarios": ["eGon2035"],
                     "carrier": "H2_hgv_load",
                     "energy_value_h2": 39.4,
                     "hours_per_year": 8760,
@@ -158,7 +165,7 @@ class HeavyDutyTransport(Dataset):
     #:
     name: str = "HeavyDutyTransport"
     #:
-    version: str = "0.0.5"
+    version: str = "0.0.6"
 
     def __init__(self, dependencies):
         super().__init__(
