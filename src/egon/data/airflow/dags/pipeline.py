@@ -779,36 +779,6 @@ with airflow.DAG(
             ]
         )
 
-    # SanityChecks is temporarily excluded from the pipeline: its task
-    # list is only populated for the obsolete "eGon2035"/"eGon100RE"
-    # scenario names and is empty for the current default scenarios
-    # ("status2024", "reGon2037"), which crashes Dataset construction.
-    # Re-enable once sanity_checks.py is migrated to the new scenario
-    # names.
-    #
-    # NOTE (#1414): that specific blocker no longer applies once this
-    # branch is in -- sanitycheck_rail_transport_demand registers
-    # UNCONDITIONALLY, so the task list is never empty. Re-enabling is
-    # therefore possible, but it is upstream's call and untested here, so
-    # the block stays commented out and the rail check does not run in the
-    # DAG. Uncomment to get it back, dependency included.
-    #
-    # with TaskGroup(group_id="sanity_checks") as sanity_checks_group:
-    #     # ########## Keep this dataset at the end
-    #     # Sanity Checks
-    #     sanity_checks = SanityChecks(
-    #         dependencies=[
-    #             storage_etrago,
-    #             hts_etrago_table,
-    #             fill_etrago_generators,
-    #             household_electricity_demand_annual,
-    #             cts_demand_buildings,
-    #             emobility_mit,
-    #             rail_transit_demand,
-    #             low_flex_scenario,
-    #         ]
-    #     )
-
     with TaskGroup(group_id="metadata") as metadata_group:
         # upload json metadata at the end
         json_metadata = Json_Metadata(
