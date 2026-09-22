@@ -119,6 +119,7 @@ class OsmBuildingsStreets(Dataset):
 
     *Dependencies*
       * :py:class:`OpenStreetMap <egon.data.datasets.osm.OpenStreetMap>`
+      * :py:class:`EthosBuilda <egon.data.datasets.ethos_builda.EthosBuilda>`
       * :py:class:`ZensusMiscellaneous <egon.data.datasets.zensus.ZensusMiscellaneous>`
 
     *Resulting Tables*
@@ -142,9 +143,9 @@ class OsmBuildingsStreets(Dataset):
         (table has no associated python class)
       * boundaries.egon_map_zensus_buildings_filtered is created and filled
         (table has no associated python class)
-      * boundaries.egon_map_zensus_buildings_residential is created and filled
+      * boundaries.egon_map_zensus_buildings_filtered_all is created and filled
         (table has no associated python class)
-      * openstreetmap.osm_buildings is created and filled
+      * boundaries.egon_map_zensus_buildings_residential is created and filled
         (table has no associated python class)
 
     **Details and Steps**
@@ -155,11 +156,23 @@ class OsmBuildingsStreets(Dataset):
       * All buildings: `openstreetmap.osm_buildings`
       * Filtered buildings: `openstreetmap.osm_buildings_filtered`
       * Residential buildings: `openstreetmap.osm_buildings_residential`
-        * 1st step: Filter by tags (see `osm_buildings_filter_residential.sql`)
+        * 1st step: Intersect with ETHOS.BUILDA, which supplies one point per
+          residential building, in a four stage cascade -- point inside the
+          polygon, nearest neighbour within 10 m, OSM tags for what is left,
+          and care homes that express their residential use only through
+          `amenity` on an uninformative `building=yes` polygon (see
+          `osm_buildings_filter_residential.sql`). Filtering by tags alone
+          overestimated the stock by 65 % against Zensus 2022 (33.0 M against
+          20.0 M residential buildings); the cascade yields 18.9 M.
         * 2nd step: Table is extended by finding census cells with population
           but no residential buildings and extended by commercial/retail/office/
           hotel buildings (see `osm_buildings_extend_residential.sql`) since they
           often include apartments as well.
+        * Each building carries the provenance of its match in `source`
+          (`ethos_intersect`, `ethos_nearest`, `osm_tagging`, `osm_amenity`
+          or `census_gap_fill`), the matched `ethos_id`, the `match_distance`
+          and the ETHOS attributes `construction_year`, `size_class`,
+          `refurbishment_state` and `tabula_type`.
     * Extract amenities and filter using relevant tags, e.g. shops and restaurants,
       see script `osm_amenities_shops_preprocessing.sql` for the full list of tags.
       Resulting table: `openstreetmap.osm_amenities_shops_filtered`
@@ -197,7 +210,7 @@ class OsmBuildingsStreets(Dataset):
     #:
     name: str = "OsmBuildingsStreets"
     #:
-    version: str = "0.0.10"
+    version: str = "0.0.12"
 
     sources = DatasetSources(
         tables={
@@ -207,6 +220,7 @@ class OsmBuildingsStreets(Dataset):
             "osm_ways": "openstreetmap.osm_ways",
             "zensus_apartments": "society.egon_destatis_zensus_apartment_building_population_per_ha",
             "zensus_population": "society.destatis_zensus_population_per_ha",
+            "ethos_builda_buildings": "society.egon_ethos_builda_buildings",
         }
     )
 
@@ -277,8 +291,8 @@ class OsmBuildingsStreets(Dataset):
                         table_name="boundaries.egon_map_zensus_buildings_residential",
                         row_count=resolve_boundary_dependence(
                             {
-                                "Schleswig-Holstein": 1002646,
-                                "Everything": 29482092,
+                                "Schleswig-Holstein": 586390,
+                                "Everything": 18193124,
                             }
                         ),
                         data_type_columns={
@@ -392,8 +406,8 @@ class OsmBuildingsStreets(Dataset):
                         table_name="openstreetmap.osm_buildings_residential",
                         row_count=resolve_boundary_dependence(
                             {
-                                "Schleswig-Holstein": 1147635,
-                                "Everything": 33005998,
+                                "Schleswig-Holstein": 619154,
+                                "Everything": 18937323,
                             }
                         ),
                         geometry_columns=["geom_building", "geom_point"],
@@ -407,6 +421,13 @@ class OsmBuildingsStreets(Dataset):
                             "geom_point": "geometry",
                             "tags": "hstore",
                             "id": "integer",
+                            "source": "text",
+                            "ethos_id": "text",
+                            "match_distance": "double precision",
+                            "construction_year": "integer",
+                            "size_class": "text",
+                            "refurbishment_state": "text",
+                            "tabula_type": "text",
                         },
                         not_null_columns=[
                             "osm_id",

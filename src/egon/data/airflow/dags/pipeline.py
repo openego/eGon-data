@@ -43,6 +43,7 @@ from egon.data.datasets.emobility.public_bus_charging import (
     PublicBusCharging,
 )
 from egon.data.datasets.era5 import WeatherData
+from egon.data.datasets.ethos_builda import EthosBuilda
 from egon.data.datasets.etrago_setup import EtragoSetup
 from egon.data.datasets.fill_etrago_gen import Egon_etrago_gen
 from egon.data.datasets.final_validations import FinalValidations
@@ -164,9 +165,12 @@ with airflow.DAG(
             dependencies=[zensus_population, zensus_vg250, data_bundle]
         )
 
+        # ETHOS.BUILDA residential building data
+        ethos_builda = EthosBuilda(dependencies=[setup])
+
         # OSM (OpenStreetMap) buildings, streets and amenities
         osm_buildings_streets = OsmBuildingsStreets(
-            dependencies=[osm, zensus_miscellaneous]
+            dependencies=[osm, zensus_miscellaneous, ethos_builda]
         )
 
         # Import saltcavern storage potentials
