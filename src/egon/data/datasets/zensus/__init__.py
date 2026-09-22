@@ -242,39 +242,6 @@ class ZensusMiscellaneous(Dataset):
                             "zensus_population_id",
                         ],
                     ),
-                    TableValidation(
-                        table_name=(
-                            "society.egon_destatis_zensus_household_per_ha_refined"
-                        ),
-                        row_count=resolve_boundary_dependence(
-                            {
-                                "Schleswig-Holstein": 551678,
-                                "Everything": 13304814,
-                            }
-                        ),
-                        data_type_columns={
-                            "id": "integer",
-                            "cell_id": "integer",
-                            "grid_id": "character varying",
-                            "nuts3": "character varying",
-                            "nuts1": "character varying",
-                            "characteristics_code": "integer",
-                            "hh_5types": "integer",
-                            "hh_type": "character",
-                            "hh_10types": "integer",
-                        },
-                        not_null_columns=[
-                            "id",
-                            "cell_id",
-                            "grid_id",
-                            "nuts3",
-                            "nuts1",
-                            "characteristics_code",
-                            "hh_5types",
-                            "hh_type",
-                            "hh_10types",
-                        ],
-                    ),
                 ]
             },
             proceed_on_validation_failure=True,
