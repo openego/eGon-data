@@ -6,9 +6,16 @@ import geopandas as gpd
 import numpy as np
 import pandas as pd
 
-from egon.data import db
-from egon.data.datasets.mastr import WORKING_DIR_MASTR_NEW
-import egon.data.config
+from egon.data import config, db
+from egon.data.datasets import load_sources_and_targets
+
+SUPPORTED_SCENARIOS = ["eGon2035", "reGon2037", "reGon2045"]
+
+SCENARIOS = [
+    scn
+    for scn in config.settings()["egon-data"]["--scenarios"]
+    if scn in SUPPORTED_SCENARIOS
+]
 
 
 def insert():
@@ -20,11 +27,12 @@ def insert():
     *No parameters required
 
     """
+    sources, targets = load_sources_and_targets("PowerPlants")
 
     con = db.engine()
 
     # federal_std has the shapes of the German states
-    sql = "SELECT  gen, gf, nuts, geometry FROM boundaries.vg250_lan"
+    sql = f"SELECT  gen, gf, nuts, geometry FROM {sources.tables['geom_federal_states']}"
     federal_std = gpd.GeoDataFrame.from_postgis(
         sql, con, geom_col="geometry", crs=4326
     )
@@ -32,12 +40,12 @@ def insert():
     # target_power_df has the expected capacity of each federal state
     sql = (
         "SELECT  carrier, capacity, nuts, scenario_name FROM "
-        "supply.egon_scenario_capacities"
+        f"{sources.tables['capacities']}"
     )
     target_power_df = pd.read_sql(sql, con)
 
     # mv_districts has geographic info of medium voltage districts in Germany
-    sql = "SELECT geom FROM grid.egon_mv_grid_district"
+    sql = f"SELECT geom FROM {sources.tables['egon_mv_grid_district']}"
     mv_districts = gpd.GeoDataFrame.from_postgis(sql, con)
 
     # Delete all the water bodies from the federal states shapes
@@ -48,30 +56,12 @@ def insert():
         target_power_df["carrier"] == "wind_onshore"
     ]
     target_power_df = target_power_df[
-        target_power_df["scenario_name"].isin(["eGon2035", "eGon100RE"])
+        target_power_df["scenario_name"].isin(SCENARIOS)
     ]
-    target_power_df.set_index("nuts", inplace=True)
-    target_power_df["geom"] = Point(0, 0)
-
-    # Join the geometries which belong to the same states
-    for std in target_power_df.index:
-        df = federal_std[federal_std["nuts"] == std]
-        if df.size > 0:
-            target_power_df.at[std, "name"] = df["gen"].iat[0]
-        else:
-            target_power_df.at[std, "name"] = np.nan
-        target_power_df.at[std, "geom"] = df.unary_union
-    target_power_df = gpd.GeoDataFrame(
-        target_power_df, geometry="geom", crs=4326
-    )
     target_power_df = target_power_df[target_power_df["capacity"] > 0]
-    target_power_df = target_power_df.to_crs(3035)
-
-    # Create the shape for full Germany
-    target_power_df.at["DE", "geom"] = target_power_df["geom"].unary_union
-    target_power_df.at["DE", "name"] = "Germany"
     # Generate WFs for Germany based on potential areas and existing WFs
-    wf_areas, wf_areas_ni = generate_wind_farms()
+    # Passing sources to helper function
+    wf_areas, wf_areas_ni = generate_wind_farms(sources)
 
     # Change the columns "geometry" of this GeoDataFrames
     wf_areas.set_geometry("centroid", inplace=True)
@@ -84,50 +74,42 @@ def insert():
     summary_t = pd.DataFrame()
     farms = pd.DataFrame()
 
-    if "eGon100RE" in target_power_df["scenario_name"].values:
-        # Delete old wind_onshore generators
-        db.execute_sql(
-            """DELETE FROM supply.egon_power_plants
-            WHERE carrier = 'wind_onshore'
-            AND scenario = 'eGon100RE'
-            """
-        )
-        wind_farms_state, summary_state = wind_power_states(
-            wf_areas,
-            wf_areas_ni,
-            mv_districts,
-            target_power_df.at["DE", "capacity"],
-            "eGon100RE",
-            "wind_onshore",
-            "DE",
-        )
-        target_power_df = target_power_df[
-            target_power_df["scenario_name"] != "eGon100RE"
-        ]
+    for scenario in SCENARIOS:
+        scn_df = target_power_df[
+            target_power_df["scenario_name"] == scenario
+        ].copy()
 
-    if "eGon2035" in target_power_df["scenario_name"].values:
+        scn_df.set_index("nuts", inplace=True)
+        scn_df["geom"] = Point(0, 0)
+
+        # Join the geometries which belong to the same states
+        for std in scn_df.index:
+            df = federal_std[federal_std["nuts"] == std]
+            if df.size > 0:
+                scn_df.at[std, "name"] = df["gen"].iat[0]
+            else:
+                scn_df.at[std, "name"] = np.nan
+            scn_df.at[std, "geom"] = df.unary_union
+        scn_df = gpd.GeoDataFrame(scn_df, geometry="geom", crs=4326)
+        scn_df = scn_df.to_crs(3035)
+
         # Delete old wind_onshore generators
-        db.execute_sql(
-            """DELETE FROM supply.egon_power_plants
+        db.execute_sql(f"""DELETE FROM {targets.tables['power_plants']}
             WHERE carrier = 'wind_onshore'
-            AND scenario = 'eGon2035'
-            """
-        )
+            AND scenario = '{scenario}'
+            """)
+
         # Fit wind farms scenarions for each one of the states
-        for bundesland in target_power_df.index:
-            state_wf = gpd.clip(
-                wf_areas, target_power_df.at[bundesland, "geom"]
-            )
-            state_wf_ni = gpd.clip(
-                wf_areas_ni, target_power_df.at[bundesland, "geom"]
-            )
+        for bundesland in scn_df.index:
+            state_wf = gpd.clip(wf_areas, scn_df.at[bundesland, "geom"])
+            state_wf_ni = gpd.clip(wf_areas_ni, scn_df.at[bundesland, "geom"])
             state_mv_districts = gpd.clip(
-                mv_districts, target_power_df.at[bundesland, "geom"]
+                mv_districts, scn_df.at[bundesland, "geom"]
             )
-            target_power = target_power_df.at[bundesland, "capacity"]
-            scenario_year = target_power_df.at[bundesland, "scenario_name"]
-            source = target_power_df.at[bundesland, "carrier"]
-            fed_state = target_power_df.at[bundesland, "name"]
+            target_power = scn_df.at[bundesland, "capacity"]
+            scenario_year = scn_df.at[bundesland, "scenario_name"]
+            source = scn_df.at[bundesland, "carrier"]
+            fed_state = scn_df.at[bundesland, "name"]
             wind_farms_state, summary_state = wind_power_states(
                 state_wf,
                 state_wf_ni,
@@ -136,25 +118,26 @@ def insert():
                 scenario_year,
                 source,
                 fed_state,
+                sources,
+                targets,
             )
             summary_t = pd.concat([summary_t, summary_state])
             farms = pd.concat([farms, wind_farms_state])
 
-    generate_map()
+    generate_map(sources, targets)
 
     return
 
 
-def generate_wind_farms():
+def generate_wind_farms(sources):
     """Generate wind farms based on existing wind farms.
 
     Parameters
     ----------
-    *No parameters required
+    sources : DatasetSources
+        Contains information about database tables and file paths
 
     """
-    # get config
-    cfg = egon.data.config.datasets()["power_plants"]
 
     # Due to typos in some inputs, some areas of existing wind farms
     # should be discarded using perimeter and area filters
@@ -186,18 +169,20 @@ def generate_wind_farms():
 
     # Connect to the data base
     con = db.engine()
-    sql = "SELECT geom FROM supply.egon_re_potential_area_wind"
+    sql = f"SELECT geom FROM {sources.tables['wind_potential_areas']}"
+
     # wf_areas has all the potential areas geometries for wind farms
     wf_areas = gpd.GeoDataFrame.from_postgis(sql, con)
     # bus has the connection points of the wind farms
     bus = pd.read_csv(
-        WORKING_DIR_MASTR_NEW / cfg["sources"]["mastr_location"],
+        sources.files["mastr_location"],
         index_col="MaStRNummer",
     )
     # Drop all the rows without connection point
     bus.dropna(subset=["NetzanschlusspunktMastrNummer"], inplace=True)
     # wea has info of each wind turbine in Germany.
-    wea = pd.read_csv(WORKING_DIR_MASTR_NEW / cfg["sources"]["mastr_wind"])
+    # <--- REFACTORING: Use sources.files['mastr_wind']
+    wea = pd.read_csv(sources.files["mastr_wind"])
 
     # Delete all the rows without information about geographical location
     wea = wea[(pd.notna(wea["Laengengrad"])) & (pd.notna(wea["Breitengrad"]))]
@@ -287,6 +272,8 @@ def wind_power_states(
     scenario_year,
     source,
     fed_state,
+    sources,
+    targets,
 ):
     """Import OSM data from a Geofabrik `.pbf` file into a PostgreSQL
     database.
@@ -307,6 +294,8 @@ def wind_power_states(
         Type of energy genetor. Always "Wind_onshore" for this script.
     fed_state: str, mandatory
         Name of the state where the wind farms will be allocated
+    sources: DatasetSources, mandatory
+    targets: DatasetTargets, mandatory
 
     """
 
@@ -316,7 +305,8 @@ def wind_power_states(
                 return hvmv_substation.at[sub, "point"]
 
     con = db.engine()
-    sql = "SELECT point, voltage FROM grid.egon_hvmv_substation"
+    # <--- REFACTORING: Use sources.tables['hvmv_substation']
+    sql = f"SELECT point, voltage FROM {sources.tables['hvmv_substation']}"
     # hvmv_substation has the information about HV transmission lines in
     # Germany
     hvmv_substation = gpd.GeoDataFrame.from_postgis(sql, con, geom_col="point")
@@ -344,32 +334,10 @@ def wind_power_states(
         "Hamburg",
     ]
 
-    if fed_state == "DE":
-        sql = f"""SELECT * FROM boundaries.vg250_lan
-        WHERE gen in {tuple(north)}
-        """
-        north_states = gpd.GeoDataFrame.from_postgis(
-            sql, con, geom_col="geometry"
-        )
-        north_states.to_crs(3035, inplace=True)
-        state_wf["nord"] = state_wf.within(north_states.unary_union)
-        state_wf["inst capacity [MW]"] = state_wf.apply(
-            lambda x: (
-                power_north * x["area [km²]"]
-                if x["nord"]
-                else power_south * x["area [km²]"]
-            ),
-            axis=1,
-        )
+    if fed_state in north:
+        state_wf["inst capacity [MW]"] = power_north * state_wf["area [km²]"]
     else:
-        if fed_state in north:
-            state_wf["inst capacity [MW]"] = (
-                power_north * state_wf["area [km²]"]
-            )
-        else:
-            state_wf["inst capacity [MW]"] = (
-                power_south * state_wf["area [km²]"]
-            )
+        state_wf["inst capacity [MW]"] = power_south * state_wf["area [km²]"]
 
     # Divide selected areas based on voltage of connection points
     wf_mv = state_wf[
@@ -507,7 +475,7 @@ def wind_power_states(
             print(i)
 
     # Look for the maximum id in the table egon_power_plants
-    sql = "SELECT MAX(id) FROM supply.egon_power_plants"
+    sql = f"SELECT MAX(id) FROM {targets.tables['power_plants']}"
     max_id = pd.read_sql(sql, con)
     max_id = max_id["max"].iat[0]
     if max_id is None:
@@ -544,20 +512,21 @@ def wind_power_states(
 
     # Insert into database
     insert_wind_farms.reset_index().to_postgis(
-        "egon_power_plants",
-        schema="supply",
+        targets.get_table_name("power_plants"),
+        schema=targets.get_table_schema("power_plants"),
         con=db.engine(),
         if_exists="append",
     )
     return wind_farms, summary
 
 
-def generate_map():
+def generate_map(sources, targets):
     """Generates a map with the position of all the wind farms
 
     Parameters
     ----------
-    *No parameters required
+    sources: DatasetSources
+    targets: DatasetTargets
 
     """
     con = db.engine()
@@ -565,7 +534,7 @@ def generate_map():
     # Import wind farms from egon-data
     sql = (
         "SELECT  carrier, el_capacity, geom, scenario FROM "
-        "supply.egon_power_plants WHERE carrier = 'wind_onshore'"
+        f"{targets.tables['power_plants']} WHERE carrier = 'wind_onshore'"
     )
     wind_farms_t = gpd.GeoDataFrame.from_postgis(
         sql, con, geom_col="geom", crs=4326
@@ -576,7 +545,7 @@ def generate_map():
         wind_farms = wind_farms_t[wind_farms_t["scenario"] == scenario]
         # mv_districts has geographic info of medium voltage districts in
         # Germany
-        sql = "SELECT geom FROM grid.egon_mv_grid_district"
+        sql = f"SELECT geom FROM {sources.tables['egon_mv_grid_district']}"
         mv_districts = gpd.GeoDataFrame.from_postgis(sql, con)
         mv_districts = mv_districts.to_crs(3035)
 

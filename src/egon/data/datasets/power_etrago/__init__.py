@@ -2,7 +2,7 @@
 The central module containing all code dealing with open cycle gas turbine
 """
 
-from egon.data.datasets import Dataset
+from egon.data.datasets import Dataset, DatasetSources, DatasetTargets
 from egon.data.datasets.power_etrago.match_ocgt import (
     insert_open_cycle_gas_turbines,
 )
@@ -29,7 +29,21 @@ class OpenCycleGasTurbineEtrago(Dataset):
     #:
     name: str = "OpenCycleGasTurbineEtrago"
     #:
-    version: str = "0.0.2"
+    version: str = "0.0.4"
+
+    sources = DatasetSources(
+        tables={
+            "power_plants": "supply.egon_power_plants",
+            "etrago_bus": "grid.egon_etrago_bus",
+            "etrago_link": "grid.egon_etrago_link",
+        }
+    )
+
+    targets = DatasetTargets(
+        tables={
+            "etrago_link": "grid.egon_etrago_link",
+        }
+    )
 
     def __init__(self, dependencies):
         super().__init__(

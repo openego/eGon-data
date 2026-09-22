@@ -8,6 +8,7 @@ from sqlalchemy.ext.declarative import declarative_base
 import pandas as pd
 
 from egon.data import db
+from egon.data.datasets import load_sources_and_targets
 import egon.data.config
 import egon.data.datasets.scenario_parameters.parameters as scenario_parameters
 
@@ -56,15 +57,12 @@ def calc_load_curve(share_wz, scn, annual_demand=1):
     """
     year = int(scenario_parameters.global_settings(scn)["weather_year"])
 
-    sources = egon.data.config.datasets()["electrical_load_curves_cts"][
-        "sources"
-    ]
+    sources, _ = load_sources_and_targets("CtsElectricityDemand")
 
     # Select normalizes load curves per cts branch
     df_select = db.select_dataframe(
         f"""SELECT wz, load_curve
-        FROM {sources['demandregio_timeseries']['schema']}.
-            {sources['demandregio_timeseries']['table']}
+        FROM {sources.tables["demandregio_timeseries"]}
         WHERE year = {year}""",
         index_col="wz",
     ).transpose()
@@ -132,38 +130,29 @@ def calc_load_curves_cts(scenario):
 
     """
 
-    sources = egon.data.config.datasets()["electrical_load_curves_cts"][
-        "sources"
-    ]
-
+    sources, _ = load_sources_and_targets("CtsElectricityDemand")
     # Select demands per cts branch and nuts3-region
-    demands_nuts = db.select_dataframe(
-        f"""SELECT nuts3, wz, demand
-            FROM {sources['demandregio_cts']['schema']}.
-            {sources['demandregio_cts']['table']}
+    demands_nuts = db.select_dataframe(f"""SELECT nuts3, wz, demand
+            FROM {sources.tables["demandregio_cts"]}
             WHERE scenario = '{scenario}'
             AND demand > 0
             AND wz IN (
                 SELECT wz FROM
-                {sources['demandregio_wz']['schema']}.
-                {sources['demandregio_wz']['table']}
+                {sources.tables["demandregio_wz"]}
                 WHERE sector = 'CTS')
-            """
-    ).set_index(["nuts3", "wz"])
+            """).set_index(["nuts3", "wz"])
 
     # Select cts demands per zensus cell including nuts3-region and substation
     demands_zensus = db.select_dataframe(
         f"""SELECT a.zensus_population_id, a.demand,
             b.vg250_nuts3 as nuts3,
             c.bus_id
-            FROM {sources['zensus_electricity']['schema']}.
-            {sources['zensus_electricity']['table']} a
+            FROM {sources.tables["zensus_electricity"]} a
             INNER JOIN
-            {sources['map_vg250']['schema']}.{sources['map_vg250']['table']} b
+            {sources.tables["map_vg250"]} b
             ON (a.zensus_population_id = b.zensus_population_id)
             INNER JOIN
-            {sources['map_grid_districts']['schema']}.
-            {sources['map_grid_districts']['table']} c
+            {sources.tables["map_grid_districts"]} c
             ON (a.zensus_population_id = c.zensus_population_id)
             WHERE a.scenario = '{scenario}'
             AND a.sector = 'service'
@@ -213,22 +202,17 @@ def insert_cts_load():
 
     """
 
-    targets = egon.data.config.datasets()["electrical_load_curves_cts"][
-        "targets"
-    ]
+    _, targets = load_sources_and_targets("CtsElectricityDemand")
 
     create_table()
 
     for scenario in egon.data.config.settings()["egon-data"]["--scenarios"]:
         # Delete existing data from database
-        db.execute_sql(
-            f"""
+        db.execute_sql(f"""
             DELETE FROM
-            {targets['cts_demand_curves']['schema']}
-            .{targets['cts_demand_curves']['table']}
+            {targets.tables["cts_demand_curves"]}
             WHERE scn_name = '{scenario}'
-            """
-        )
+            """)
 
         # Calculate cts load curves per mv substation (hvmv bus)
         data = calc_load_curves_cts(scenario)
@@ -244,8 +228,8 @@ def insert_cts_load():
 
         # Insert into database
         load_ts_df.to_sql(
-            targets["cts_demand_curves"]["table"],
-            schema=targets["cts_demand_curves"]["schema"],
+            targets.get_table_name("cts_demand_curves"),
+            schema=targets.get_table_schema("cts_demand_curves"),
             con=db.engine(),
             if_exists="append",
         )

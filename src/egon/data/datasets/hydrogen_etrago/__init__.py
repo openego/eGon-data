@@ -16,7 +16,7 @@ related components abroad.
 """
 
 from egon.data import config
-from egon.data.datasets import Dataset
+from egon.data.datasets import Dataset, DatasetSources, DatasetTargets
 from egon.data.datasets.hydrogen_etrago.bus import insert_hydrogen_buses
 from egon.data.datasets.hydrogen_etrago.h2_grid import insert_h2_pipelines
 from egon.data.datasets.hydrogen_etrago.h2_to_ch4 import insert_h2_to_ch4_to_h2
@@ -53,7 +53,25 @@ class HydrogenBusEtrago(Dataset):
     #:
     name: str = "HydrogenBusEtrago"
     #:
-    version: str = "0.0.1"
+    version: str = "0.0.5"
+
+    sources = DatasetSources(
+        tables={
+            "saltcavern_data": "grid.egon_saltstructures_storage_potential",
+            "buses": "grid.egon_etrago_bus",
+            "H2_AC_map": "grid.egon_etrago_ac_h2",
+            "vg250_federal_states": "boundaries.vg250_lan",
+            "saltcaverns": "boundaries.inspee_saltstructures",
+        },
+    )
+
+    targets = DatasetTargets(
+        tables={
+            "hydrogen_buses": "grid.egon_etrago_bus",
+            "H2_AC_map": "grid.egon_etrago_ac_h2",
+            "storage_potential": "grid.egon_saltstructures_storage_potential",
+        },
+    )
 
     def __init__(self, dependencies):
         super().__init__(
@@ -95,7 +113,20 @@ class HydrogenStoreEtrago(Dataset):
     #:
     name: str = "HydrogenStoreEtrago"
     #:
-    version: str = "0.0.3"
+    version: str = "0.0.7"
+
+    sources = DatasetSources(
+        tables={
+            "saltcavern_data": "grid.egon_saltstructures_storage_potential",
+            "buses": "grid.egon_etrago_bus",
+            "H2_AC_map": "grid.egon_etrago_ac_h2",
+        },
+    )
+    targets = DatasetTargets(
+        tables={
+            "hydrogen_stores": "grid.egon_etrago_store",
+        },
+    )
 
     def __init__(self, dependencies):
         super().__init__(
@@ -133,7 +164,32 @@ class HydrogenPowerLinkEtrago(Dataset):
     #:
     name: str = "HydrogenPowerLinkEtrago"
     #:
-    version: str = "0.0.4"
+    version: str = "0.0.7"
+
+    sources = DatasetSources(
+        tables={
+            "buses": "grid.egon_etrago_bus",
+            "links": "grid.egon_etrago_link",
+            "H2_AC_map": "grid.egon_etrago_ac_h2",
+            "ehv_substation": "grid.egon_ehv_substation",
+            "hvmv_substation": "grid.egon_hvmv_substation",
+            "loads": "grid.egon_etrago_load",
+            "load_timeseries": "grid.egon_etrago_load_timeseries",
+            "mv_districts": "grid.egon_mv_grid_district",
+            "ehv_voronoi": "grid.egon_ehv_substation_voronoi",
+            "district_heating_area": "demand.egon_district_heating_areas",
+            "o2_load_profile": "demand.egon_demandregio_timeseries_cts_ind",
+        },
+    )
+    targets = DatasetTargets(
+        tables={
+            "hydrogen_links": "grid.egon_etrago_link",
+            "loads": "grid.egon_etrago_load",
+            "load_timeseries": "grid.egon_etrago_load_timeseries",
+            "generators": "grid.egon_etrago_generator",
+            "buses": "grid.egon_etrago_bus",
+        },
+    )
 
     def __init__(self, dependencies):
         super().__init__(
@@ -170,14 +226,26 @@ class HydrogenMethaneLinkEtrago(Dataset):
     #:
     name: str = "HydrogenMethaneLinkEtrago"
     #:
-    version: str = "0.0.5"
+    version: str = "0.0.7"
+
+    sources = DatasetSources(
+        tables={
+            "buses": "grid.egon_etrago_bus",
+            "links": "grid.egon_etrago_link",
+        },
+    )
+    targets = DatasetTargets(
+        tables={
+            "hydrogen_links": "grid.egon_etrago_link",
+        },
+    )
 
     def __init__(self, dependencies):
         super().__init__(
             name=self.name,
             version=self.version,
             dependencies=dependencies,
-            tasks=(insert_h2_to_ch4_to_h2),
+            tasks=(insert_h2_to_ch4_to_h2,),
         )
 
 
@@ -206,14 +274,37 @@ class HydrogenGridEtrago(Dataset):
     #:
     name: str = "HydrogenGridEtrago"
     #:
-    version: str = "0.0.2"
+    version: str = "0.0.4"
+
+    sources = DatasetSources(
+        urls={
+            "new_constructed_pipes": "https://fnb-gas.de/wp-content/uploads/2024/07/2024_07_22_Anlage3_FNB_Massnahmenliste_Neubau.xlsx",
+            "converted_ch4_pipes": "https://fnb-gas.de/wp-content/uploads/2024/07/2024_07_22_Anlage4_FNB_Massnahmenliste_Umstellung.xlsx",
+            "pipes_of_further_h2_grid_operators": "https://fnb-gas.de/wp-content/uploads/2024/07/2024_07_22_Anlage2_Leitungsmeldungen_weiterer_potenzieller_Wasserstoffnetzbetreiber.xlsx",
+        },
+        files={
+            "new_constructed_pipes": "Anlage_3_Wasserstoffkernnetz_Neubau.xlsx",
+            "converted_ch4_pipes": "Anlage_4_Wasserstoffkernnetz_Umstellung.xlsx",
+            "pipes_of_further_h2_grid_operators": "Anlage_2_Wasserstoffkernetz_weitere_Leitungen.xlsx",
+        },
+        tables={
+            "buses": "grid.egon_etrago_bus",
+            "links": "grid.egon_etrago_link",
+        },
+    )
+
+    targets = DatasetTargets(
+        tables={
+            "hydrogen_links": "grid.egon_etrago_link",
+        },
+    )
 
     def __init__(self, dependencies):
         super().__init__(
             name=self.name,
             version=self.version,
             dependencies=dependencies,
-            tasks=insert_h2_pipelines_for_scn,
+            tasks=(insert_h2_pipelines_for_scn,),
         )
 
 

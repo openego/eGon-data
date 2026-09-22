@@ -2,7 +2,7 @@
 Generate timeseries for eTraGo and pypsa-eur-sec
 
 Call order
-* generate_model_data_eGon2035() / generate_model_data_eGon100RE()
+* generate_model_data_bunch() / generate_model_data_remaining()
 
   * generate_model_data()
 
@@ -15,20 +15,21 @@ Call order
 
 Notes
 -----
-# TODO REWORK
-Share of EV with access to private charging infrastructure (`flex_share`) for
-use cases work and home are not supported by simBEV v0.1.2 and are applied here
-(after simulation). Applying those fixed shares post-simulation introduces
-small errors compared to application during simBEV's trip generation.
+Scenarios are modelled in one of two ways, cf. :func:`is_flexible`:
 
-Values (cf. `flex_share` in scenario parameters
-:func:`egon.data.datasets.scenario_parameters.parameters.mobility`) were
-linearly extrapolated based upon
-https://nationale-leitstelle.de/wp-content/pdf/broschuere-lis-2025-2030-final.pdf
-(p.92):
+* Flexible (smart) charging, e.g. reGon2037 and reGon2045: the EV fleet is
+  represented by a dedicated bus, a `BEV_charger` link, a `battery_storage`
+  store and a load carrying the driving load. A lowflex counterpart holding
+  the dumb charging load is written in addition.
+* Dumb charging only, e.g. status2024: a single load on the MV grid
+  district's AC bus. As there is no flexibility to strip, no lowflex
+  counterpart is written.
 
-* eGon2035: home=0.8, work=1.0
-* eGon100RE: home=1.0, work=1.0
+Flexibility is credited to every charging event at home and at work, i.e.
+all EVs are assumed to have access to private charging infrastructure
+(see :func:`data_preprocessing`). Earlier versions applied scenario
+specific shares (`flex_share`) here, but those parameters no longer exist
+in :func:`egon.data.datasets.scenario_parameters.parameters.mobility`.
 """
 
 from collections import Counter
@@ -40,15 +41,14 @@ from sqlalchemy.sql import func
 import numpy as np
 import pandas as pd
 
-from egon.data import db
+from egon.data import config, db
+from egon.data.datasets import load_sources_and_targets
 from egon.data.datasets.emobility.motorized_individual_travel.db_classes import (  # noqa: E501
     EgonEvMvGridDistrict,
     EgonEvPool,
     EgonEvTrip,
 )
 from egon.data.datasets.emobility.motorized_individual_travel.helpers import (
-    DATASET_CFG,
-    MVGD_MIN_COUNT,
     WORKING_DIR,
     read_simbev_metadata_file,
     reduce_mem_usage,
@@ -63,6 +63,28 @@ from egon.data.datasets.etrago_setup import (
     EgonPfHvStoreTimeseries,
 )
 from egon.data.datasets.mv_grid_districts import MvGridDistricts
+
+
+def is_flexible(scenario_name: str) -> bool:
+    """Whether a scenario models flexible (smart) charging.
+
+    Status quo scenarios are modelled with dumb charging only: a plain
+    load on the MV grid district's AC bus, without the `BEV_charger` link
+    and `battery_storage` store which represent the flexibility. They
+    therefore also have no lowflex counterpart, as there is nothing to
+    strip.
+
+    Parameters
+    ----------
+    scenario_name : str
+        Scenario name
+
+    Returns
+    -------
+    bool
+        True if the scenario models flexible charging
+    """
+    return "status" not in scenario_name
 
 
 def data_preprocessing(
@@ -83,6 +105,7 @@ def data_preprocessing(
     pd.Dataframe
         Trip data
     """
+    sources, targets = load_sources_and_targets("MotorizedIndividualTravel")
     # get ev data for given profiles
     ev_data_df = ev_data_df.loc[
         ev_data_df.ev_id.isin(scenario_data.ev_id.unique())
@@ -153,7 +176,7 @@ def data_preprocessing(
             35040
         )
 
-    if DATASET_CFG["model_timeseries"]["reduce_memory"]:
+    if sources.files["original_data"]["model_timeseries"]["reduce_memory"]:
         return reduce_mem_usage(ev_data_df)
 
     return ev_data_df
@@ -183,6 +206,7 @@ def generate_load_time_series(
     pd.DataFrame
         time series of the load and the flex potential
     """
+    sources, targets = load_sources_and_targets("MotorizedIndividualTravel")
     # Get duplicates dict
     profile_counter = Counter(scenario_data.ev_id)
 
@@ -368,7 +392,7 @@ def generate_load_time_series(
         decimal=-1,
     )
 
-    if DATASET_CFG["model_timeseries"]["reduce_memory"]:
+    if sources.files["original_data"]["model_timeseries"]["reduce_memory"]:
         return reduce_mem_usage(load_time_series_df)
     return load_time_series_df
 
@@ -529,6 +553,7 @@ def write_model_data_to_db(
     -------
     None
     """
+    sources, targets = load_sources_and_targets("MotorizedIndividualTravel")
 
     def calc_initial_ev_soc(bus_id: int, scenario_name: str) -> pd.DataFrame:
         """Calculate an average initial state of charge for EVs in MV grid
@@ -731,15 +756,16 @@ def write_model_data_to_db(
                 )
 
         # Call DB writing functions for regular or lowflex scenario
-        # * use corresponding scenario name as defined in datasets.yml
+        # * use corresponding scenario name as defined in the dataset's
+        #   sources
         # * no storage for lowflex scenario
         # * load timeseries:
         #   * regular (flex): use driving load
         #   * lowflex: use dumb charging load
-        #   * status2019: also dumb charging
-        #   * status2023: also dumb charging
+        #   * dumb charging scenarios (cf. `is_flexible`): also dumb
+        #     charging, written once under the scenario's own name
 
-        if scenario_name in ["status2019", "status2023"]:
+        if not is_flexible(scenario_name):
             write_load(
                 scenario_name=scenario_name,
                 connection_bus_id=etrago_bus.bus_id,
@@ -760,9 +786,9 @@ def write_model_data_to_db(
 
             else:
                 # Get lowflex scenario name
-                lowflex_scenario_name = DATASET_CFG["scenario"]["lowflex"][
-                    "names"
-                ][scenario_name]
+                lowflex_scenario_name = sources.files["original_data"][
+                    "scenario"
+                ]["lowflex"]["names"][scenario_name]
                 write_load(
                     scenario_name=lowflex_scenario_name,
                     connection_bus_id=etrago_bus.bus_id,
@@ -842,22 +868,29 @@ def write_model_data_to_db(
     hourly_load_time_series_df = hourly_load_time_series_df[:8760]
 
     # Create lowflex scenario?
-    write_lowflex_model = DATASET_CFG["scenario"]["lowflex"][
-        "create_lowflex_scenario"
-    ]
+    write_lowflex_model = sources.files["original_data"]["scenario"][
+        "lowflex"
+    ]["create_lowflex_scenario"]
 
     # Get initial average storage SoC
     initial_soc_mean = calc_initial_ev_soc(bus_id, scenario_name)
 
     # Write to database: regular and lowflex scenario
-    write_to_db(write_lowflex_model=False)
+    #
+    # Dumb charging scenarios have no lowflex counterpart, so the second
+    # pass is skipped for them. Without that guard `write_to_db` would
+    # take the same branch twice and write a duplicate load under the
+    # scenario's own name (see `is_flexible`).
     print("    Writing flex scenario...")
-    if write_lowflex_model is True:
+    write_to_db(write_lowflex_model=False)
+    if write_lowflex_model is True and is_flexible(scenario_name):
         print("    Writing lowflex scenario...")
         write_to_db(write_lowflex_model=True)
 
     # Export to working dir if requested
-    if DATASET_CFG["model_timeseries"]["export_results_to_csv"]:
+    if sources.files["original_data"]["model_timeseries"][
+        "export_results_to_csv"
+    ]:
         write_to_file()
 
 
@@ -1021,11 +1054,14 @@ def generate_model_data_bunch(scenario_name: str, bunch: range) -> None:
         parallelization. See
         :meth:`egon.data.datasets.emobility.motorized_individual_travel.MotorizedIndividualTravel.generate_model_data_tasks`
     """
+    sources, targets = load_sources_and_targets("MotorizedIndividualTravel")
     # Get list of grid districts / substations for this bunch
     mvgd_bus_ids = load_grid_district_ids().iloc[bunch]
 
     # Get scenario variation name
-    scenario_var_name = DATASET_CFG["scenario"]["variation"][scenario_name]
+    scenario_var_name = sources.files["original_data"]["scenario"][
+        "variation"
+    ][scenario_name]
 
     print(
         f"SCENARIO: {scenario_name}, "
@@ -1099,41 +1135,20 @@ def generate_model_data_bunch(scenario_name: str, bunch: range) -> None:
         )
 
 
-def generate_model_data_status2019_remaining():
-    """Generates timeseries for status2019 scenario for grid districts which
-    has not been processed in the parallel tasks before.
+def generate_model_data_remaining(scenario_name: str) -> None:
+    """Generates timeseries for a scenario for grid districts which have
+    not been processed in the parallel tasks before.
+
+    Parameters
+    ----------
+    scenario_name : str
+        Scenario name
     """
-    generate_model_data_bunch(
-        scenario_name="status2019",
-        bunch=range(MVGD_MIN_COUNT, len(load_grid_district_ids())),
+    testmode_off = (
+        config.settings()["egon-data"]["--dataset-boundary"] == "Everything"
     )
-
-
-def generate_model_data_status2023_remaining():
-    """Generates timeseries for status2023 scenario for grid districts which
-    has not been processed in the parallel tasks before.
-    """
+    mvgd_min_count = 3600 if testmode_off else 150
     generate_model_data_bunch(
-        scenario_name="status2023",
-        bunch=range(MVGD_MIN_COUNT, len(load_grid_district_ids())),
-    )
-
-
-def generate_model_data_eGon2035_remaining():
-    """Generates timeseries for eGon2035 scenario for grid districts which
-    has not been processed in the parallel tasks before.
-    """
-    generate_model_data_bunch(
-        scenario_name="eGon2035",
-        bunch=range(MVGD_MIN_COUNT, len(load_grid_district_ids())),
-    )
-
-
-def generate_model_data_eGon100RE_remaining():
-    """Generates timeseries for eGon100RE scenario for grid districts which
-    has not been processed in the parallel tasks before.
-    """
-    generate_model_data_bunch(
-        scenario_name="eGon100RE",
-        bunch=range(MVGD_MIN_COUNT, len(load_grid_district_ids())),
+        scenario_name=scenario_name,
+        bunch=range(mvgd_min_count, len(load_grid_district_ids())),
     )

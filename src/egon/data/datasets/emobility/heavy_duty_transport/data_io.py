@@ -9,9 +9,9 @@ import geopandas as gpd
 import pandas as pd
 
 from egon.data import config
+from egon.data.datasets import load_sources_and_targets
 from egon.data.db import select_geodataframe
 
-DATASET_CFG = config.datasets()["mobility_hgv"]
 WORKING_DIR = Path(".", "heavy_duty_transport").resolve()
 TESTMODE_OFF = (
     config.settings()["egon-data"]["--dataset-boundary"] == "Everything"
@@ -29,7 +29,8 @@ def boundary_gdf():
     """
     Get outer boundary from database.
     """
-    srid = DATASET_CFG["tables"]["srid"]
+    sources, targets = load_sources_and_targets("HeavyDutyTransport")
+    srid = sources.files["original_data"]["tables"]["srid"]
 
     gdf = select_geodataframe(
         """
@@ -47,23 +48,27 @@ def bast_gdf():
     """
     Reads BAST data.
     """
-    sources = DATASET_CFG["original_data"]["sources"]
-    file = sources["BAST"]["file"]
+    sources, targets = load_sources_and_targets("HeavyDutyTransport")
+
+    # Access embedded original_data
+    config_sources = sources.files["original_data"]["original_data"]["sources"]
+
+    file = config_sources["BAST"]["file"]
 
     path = WORKING_DIR / file
-    relevant_columns = sources["BAST"]["relevant_columns"]
+    relevant_columns = config_sources["BAST"]["relevant_columns"]
 
     df = pd.read_csv(
         path,
-        delimiter=r",",
+        delimiter=r";",
         decimal=r",",
         thousands=r".",
         encoding="ISO-8859-1",
         usecols=relevant_columns,
     )
 
-    init_srid = sources["BAST"]["srid"]
-    final_srid = DATASET_CFG["tables"]["srid"]
+    init_srid = config_sources["BAST"]["srid"]
+    final_srid = sources.files["original_data"]["tables"]["srid"]
 
     gdf = gpd.GeoDataFrame(
         df[relevant_columns[0]],
@@ -81,7 +86,8 @@ def bast_gdf():
 
 def nuts3_gdf():
     """Read in NUTS3 geo shapes."""
-    srid = DATASET_CFG["tables"]["srid"]
+    sources, targets = load_sources_and_targets("HeavyDutyTransport")
+    srid = sources.files["original_data"]["tables"]["srid"]
     sql = """
         SELECT nuts as nuts3, geometry FROM boundaries.vg250_krs
         WHERE gf = 4

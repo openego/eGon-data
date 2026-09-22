@@ -56,13 +56,11 @@ The disaggregation of the annual CTS heat demand per census cell to buildings is
 done analogous to the disaggregation of the electricity demand, which is in detail
 described in section :ref:`disagg-cts-elec-ref`.
 The share of each CTS building of the corresponding HV-MV substation's heat profile is
-for both the eGon2035 and eGon100RE scenario written to the database table
+for each scenario written to the database table
 :py:class:`EgonCtsHeatDemandBuildingShare<egon.data.datasets.electricity_demand_timeseries.cts_buildings.EgonCtsHeatDemandBuildingShare>`.
-The peak heat demand per building, including residential and CTS demand, in the two
-scenarios eGon2035 and eGon100RE is calculated in the datasets
-:py:class:`HeatPumps2035 <egon.data.datasets.heat_supply.HeatPumps2035>` and
-:py:class:`HeatPumpsPypsaEurSec <egon.data.datasets.heat_supply.HeatPumpsPypsaEurSec>`,
-respectively, and written to table
+The peak heat demand per building, including residential and CTS demand, is calculated in the dataset
+:py:class:`HeatPumpsCascade <egon.data.datasets.heat_supply.individual_heating.HeatPumpsCascade>`
+and written to table
 :py:class:`demand.egon_building_heat_peak_loads <egon.data.datasets.heat_supply.BuildingHeatPeakLoads>`.
 
 The hourly heat demand profiles are for both sectors created in the Dataset

@@ -41,11 +41,14 @@ from loguru import logger
 from numpy.random import RandomState
 from omi.dialects import get_dialect
 from sqlalchemy import Column, Float, Integer, String
+from sqlalchemy.dialects.postgresql import JSONB
 from sqlalchemy.ext.declarative import declarative_base
+import geopandas as gpd
 import numpy as np
 import pandas as pd
 
 from egon.data import config, db
+from egon.data.datasets import load_sources_and_targets
 from egon.data.datasets.scenario_parameters import get_sector_parameters
 from egon.data.metadata import (
     context,
@@ -59,6 +62,15 @@ from egon.data.metadata import (
 
 Base = declarative_base()
 
+# This block is added because they are constant and needs to be independant from config.dataset
+CONSTANTS = {
+    "cbat_ppv_ratio": 1,
+    "rtol": 0.05,
+    "max_it": 100,
+    "deposit_id_mastr": 10491882,
+    "deposit_id_data_bundle": 16576506,
+}
+
 
 def get_cbat_pbat_ratio():
     """
@@ -71,43 +83,201 @@ def get_cbat_pbat_ratio():
         Mean ratio between the storage capacity and the power of the pv
         rooftop system
     """
-    sources = config.datasets()["home_batteries"]["sources"]
+    sources, targets = load_sources_and_targets("Storages")
 
     sql = f"""
     SELECT max_hours
-    FROM {sources["etrago_storage"]["schema"]}
-    .{sources["etrago_storage"]["table"]}
+    FROM {sources.tables["etrago_storage"]}
     WHERE carrier = 'home_battery'
     """
 
     return int(db.select_dataframe(sql).iat[0, 0])
 
 
+def _load_buildings_with_geom(building_ids):
+    """
+    Load point geometries for a set of building IDs from both OSM buildings
+    tables (osm_buildings_filtered uses bigint IDs, osm_buildings_synthetic
+    uses text IDs that are numeric strings and can be cast to bigint).
+    """
+    ids = ",".join(str(int(b)) for b in building_ids)
+
+    filtered = db.select_geodataframe(
+        f"""
+        SELECT id AS building_id, geom_point AS geom
+        FROM openstreetmap.osm_buildings_filtered
+        WHERE id IN ({ids});
+        """,
+        geom_col="geom",
+        epsg=3035,
+    )
+    synthetic = db.select_geodataframe(
+        f"""
+        SELECT id::bigint AS building_id, geom_point AS geom
+        FROM openstreetmap.osm_buildings_synthetic
+        WHERE id::bigint IN ({ids});
+        """,
+        geom_col="geom",
+        epsg=3035,
+    )
+
+    return gpd.GeoDataFrame(
+        pd.concat([filtered, synthetic], ignore_index=True),
+        geometry="geom",
+        crs=3035,
+    )
+
+
+def _load_buildings_in_grid(bus_id):
+    """
+    Fallback candidate pool: all buildings (with or without pv) located
+    within the mv grid district of bus_id.
+    """
+    return db.select_geodataframe(
+        f"""
+        SELECT b.id AS building_id, b.geom_point AS geom
+        FROM openstreetmap.osm_buildings_filtered b, grid.egon_mv_grid_district g
+        WHERE g.bus_id = {bus_id} AND ST_Within(b.geom_point, g.geom)
+        UNION ALL
+        SELECT s.id::bigint AS building_id, s.geom_point AS geom
+        FROM openstreetmap.osm_buildings_synthetic s, grid.egon_mv_grid_district g
+        WHERE g.bus_id = {bus_id} AND ST_Within(s.geom_point, g.geom);
+        """,
+        geom_col="geom",
+        epsg=3035,
+    )
+
+
+def match_real_batteries_to_buildings(scenario):
+    """
+    Match real (MaStR) home batteries to buildings via nearest-neighbor
+    spatial matching within their grid. Prefers pv-equipped buildings;
+    falls back to the nearest building overall in that grid once pv
+    candidates run out, so every real battery still gets a building.
+    """
+    columns = [
+        "scenario",
+        "bus_id",
+        "building_id",
+        "capacity",
+        "p_nom",
+        "sources",
+    ]
+
+    real_batteries = db.select_geodataframe(
+        f"""
+        SELECT bus_id, el_capacity, geom
+        FROM supply.egon_storages
+        WHERE carrier = 'home_battery'
+        AND scenario = '{scenario}'
+        AND sources ->> 'el_capacity' = 'MaStR';
+        """,
+        geom_col="geom",
+        epsg=3035,
+    )
+
+    if real_batteries.empty:
+        return pd.DataFrame(columns=columns)
+
+    pv_buildings_df = db.select_dataframe(f"""
+        SELECT DISTINCT building_id, bus_id
+        FROM supply.egon_power_plants_pv_roof_building
+        WHERE scenario = '{scenario}';
+        """)
+    pv_geoms = _load_buildings_with_geom(pv_buildings_df.building_id.unique())
+    pv_buildings = gpd.GeoDataFrame(
+        pv_buildings_df.merge(pv_geoms, on="building_id"),
+        geometry="geom",
+        crs=3035,
+    )
+
+    cbat_pbat_ratio = get_sector_parameters("electricity", scenario)[
+        "efficiency"
+    ]["battery"]["max_hours"]
+
+    matched = []
+
+    for bus_id, remaining in real_batteries.groupby("bus_id"):
+        candidates = pv_buildings.loc[pv_buildings.bus_id == bus_id].copy()
+
+        while not remaining.empty:
+            if candidates.empty:
+                candidates = _load_buildings_in_grid(bus_id)
+
+                if candidates.empty:
+                    logger.warning(
+                        f"No building found in grid {bus_id} to match "
+                        f"{len(remaining)} real home batteries to; skipped."
+                    )
+                    break
+
+            nn = (
+                gpd.sjoin_nearest(
+                    remaining,
+                    candidates[["building_id", "geom"]],
+                    distance_col="dist",
+                )
+                .sort_values("dist")
+                .drop_duplicates(subset="building_id", keep="first")
+            )
+
+            matched.append(nn)
+
+            remaining = remaining.drop(index=nn.index)
+            candidates = candidates.loc[
+                ~candidates.building_id.isin(nn.building_id)
+            ]
+
+    if not matched:
+        return pd.DataFrame(columns=columns)
+
+    result = pd.concat(matched, ignore_index=True)
+
+    return pd.DataFrame(
+        {
+            "scenario": scenario,
+            "bus_id": result.bus_id,
+            "building_id": result.building_id,
+            "p_nom": result.el_capacity,
+            "capacity": result.el_capacity * cbat_pbat_ratio,
+            "sources": [{"el_capacity": "MaStR"}] * len(result),
+        }
+    )
+
+
 def allocate_home_batteries_to_buildings():
     """
     Allocate home battery storage systems to buildings with pv rooftop systems
     """
-    # get constants
-    constants = config.datasets()["home_batteries"]["constants"]
-    scenarios = config.settings()["egon-data"]["--scenarios"]
-    if "status2019" in scenarios:
-        scenarios.remove("status2019")
-    cbat_ppv_ratio = constants["cbat_ppv_ratio"]
-    rtol = constants["rtol"]
-    max_it = constants["max_it"]
+    sources, targets = load_sources_and_targets("Storages")
 
-    sources = config.datasets()["home_batteries"]["sources"]
+    scenarios = config.settings()["egon-data"]["--scenarios"]
+
+    cbat_ppv_ratio = CONSTANTS["cbat_ppv_ratio"]
+    rtol = CONSTANTS["rtol"]
+    max_it = CONSTANTS["max_it"]
 
     df_list = []
 
     for scenario in scenarios:
+        # Match real batteries to their nearest building first, so the
+        # modeled (residual) sampling below can exclude buildings already
+        # taken and never assigns both a real and a modeled battery to the
+        # same building.
+        real_matches = match_real_batteries_to_buildings(scenario)
+        df_list.append(real_matches)
+        used_building_ids = set(real_matches.building_id)
+
         # get home battery capacity per mv grid id
+        # Only the modeled (residual) rows - real batteries (tagged
+        # sources->>'el_capacity'='MaStR') are handled separately above and
+        # matched directly to their own building rather than sampled here.
         sql = f"""
         SELECT el_capacity as p_nom_min, bus_id as bus FROM
-        {sources["storage"]["schema"]}
-        .{sources["storage"]["table"]}
+        {targets.tables["storages"]}
         WHERE carrier = 'home_battery'
-        AND scenario = '{scenario}';
+        AND scenario = '{scenario}'
+        AND sources ->> 'el_capacity' != 'MaStR';
         """
         cbat_pbat_ratio = get_sector_parameters("electricity", scenario)[
             "efficiency"
@@ -130,8 +300,15 @@ def allocate_home_batteries_to_buildings():
             ["bus", "bat_cap"]
         ].itertuples(index=False):
             pv_df = db.select_dataframe(sql.format(scenario, bus_id))
+            pv_df = pv_df.loc[~pv_df.building_id.isin(used_building_ids)]
 
-            grid_ratio = bat_cap / pv_df.capacity.sum()
+            pv_sum = pv_df.capacity.sum()
+
+            if pv_sum > 0:
+                grid_ratio = bat_cap / pv_sum
+            else:
+
+                continue
 
             if grid_ratio > cbat_ppv_ratio:
                 logger.warning(
@@ -187,6 +364,13 @@ def allocate_home_batteries_to_buildings():
                 / cbat_pbat_ratio,
                 scenario=scenario,
                 bus_id=bus_id,
+                sources=[
+                    {
+                        "el_capacity": "NEP capacity allocated based in "
+                        "installed PV rooftop capacity"
+                    }
+                ]
+                * len(pv_df),
             )
 
             df_list.append(bat_df)
@@ -197,10 +381,8 @@ def allocate_home_batteries_to_buildings():
 
 
 class EgonHomeBatteries(Base):
-    targets = config.datasets()["home_batteries"]["targets"]
-
-    __tablename__ = targets["home_batteries"]["table"]
-    __table_args__ = {"schema": targets["home_batteries"]["schema"]}
+    __tablename__ = "egon_home_batteries"
+    __table_args__ = {"schema": "supply"}
 
     index = Column(Integer, primary_key=True, index=True)
     scenario = Column(String)
@@ -208,17 +390,17 @@ class EgonHomeBatteries(Base):
     building_id = Column(Integer)
     p_nom = Column(Float)
     capacity = Column(Float)
+    sources = Column(JSONB)
 
 
 def add_metadata():
     """
     Add metadata to table supply.egon_home_batteries
     """
-    targets = config.datasets()["home_batteries"]["targets"]
-    deposit_id_mastr = config.datasets()["mastr_new"]["deposit_id"]
-    deposit_id_data_bundle = config.datasets()["data-bundle"]["sources"][
-        "zenodo"
-    ]["deposit_id"]
+    _, targets = load_sources_and_targets("Storages")
+
+    deposit_id_mastr = CONSTANTS["deposit_id_mastr"]
+    deposit_id_data_bundle = CONSTANTS["deposit_id_data_bundle"]
 
     contris = contributors(["kh", "kh"])
 
@@ -231,10 +413,7 @@ def add_metadata():
     contris[1]["comment"] = "Add workflow to generate dataset."
 
     meta = {
-        "name": (
-            f"{targets['home_batteries']['schema']}."
-            f"{targets['home_batteries']['table']}"
-        ),
+        "name": targets.get_table_name("home_batteries"),
         "title": "eGon Home Batteries",
         "id": "WILL_BE_SET_AT_PUBLICATION",
         "description": "Home storage systems allocated to buildings",
@@ -274,6 +453,7 @@ def add_metadata():
                 "path": (f"https://zenodo.org/record/{deposit_id_mastr}"),
                 "licenses": [license_dedl(attribution="© Amme, Jonathan")],
             },
+            # 'sources()' correctly refers to the function from metadata
             sources()["openstreetmap"],
             sources()["era5"],
             sources()["vg250"],
@@ -287,17 +467,17 @@ def add_metadata():
         "resources": [
             {
                 "profile": "tabular-data-resource",
-                "name": (
-                    f"{targets['home_batteries']['schema']}."
-                    f"{targets['home_batteries']['table']}"
-                ),
+                "name": targets.get_table_name("home_batteries"),
                 "path": "None",
                 "format": "PostgreSQL",
                 "encoding": "UTF-8",
                 "schema": {
                     "fields": generate_resource_fields_from_db_table(
-                        targets["home_batteries"]["schema"],
-                        targets["home_batteries"]["table"],
+                        targets.get_table_schema("home_batteries"),
+                        # FIX: Use [-1] to get the table name safely (works with or without 'schema.' prefix)
+                        targets.get_table_name("home_batteries").split(".")[
+                            -1
+                        ],
                     ),
                     "primaryKey": "index",
                 },
@@ -339,8 +519,8 @@ def add_metadata():
 
     db.submit_comment(
         f"'{json.dumps(meta)}'",
-        targets["home_batteries"]["schema"],
-        targets["home_batteries"]["table"],
+        targets.get_table_schema("home_batteries"),
+        targets.get_table_name("home_batteries").split(".")[-1],
     )
 
 
@@ -357,4 +537,5 @@ def create_table(df):
         con=engine,
         if_exists="append",
         index=False,
+        dtype={"sources": JSONB},
     )

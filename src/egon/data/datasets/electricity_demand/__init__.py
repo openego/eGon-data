@@ -1,5 +1,5 @@
 """The central module containing all code dealing with processing
- data from demandRegio
+data from demandRegio
 
 """
 
@@ -8,7 +8,7 @@ from sqlalchemy.ext.declarative import declarative_base
 import pandas as pd
 
 from egon.data import db
-from egon.data.datasets import Dataset
+from egon.data.datasets import Dataset, DatasetSources, DatasetTargets
 from egon.data.datasets.electricity_demand.temporal import insert_cts_load
 from egon.data.datasets.electricity_demand_timeseries.hh_buildings import (
     HouseholdElectricityProfilesOfBuildings,
@@ -17,7 +17,13 @@ from egon.data.datasets.electricity_demand_timeseries.hh_buildings import (
 from egon.data.datasets.electricity_demand_timeseries.hh_profiles import (
     HouseholdElectricityProfilesInCensusCells,
 )
+from egon.data.datasets.scenario_parameters import get_scenario_year
 from egon.data.datasets.zensus_vg250 import DestatisZensusPopulationPerHa
+from egon.data.validation import TableValidation, resolve_boundary_dependence
+from egon.data.validation.rules.custom.sanity import (
+    ResidentialElectricityAnnualSum,
+    ResidentialElectricityHhRefinement,
+)
 import egon.data.config
 
 # will be later imported from another file ###
@@ -45,7 +51,13 @@ class HouseholdElectricityDemand(Dataset):
     #:
     name: str = "HouseholdElectricityDemand"
     #:
-    version: str = "0.0.5"
+    version: str = "0.0.9"
+
+    targets = DatasetTargets(
+        tables={
+            "household_demands_zensus": "demand.egon_demandregio_zensus_electricity",
+        }
+    )
 
     def __init__(self, dependencies):
         super().__init__(
@@ -53,6 +65,41 @@ class HouseholdElectricityDemand(Dataset):
             version=self.version,
             dependencies=dependencies,
             tasks=(create_tables, get_annual_household_el_demand_cells),
+            validation={
+                "data_quality": [
+                    ResidentialElectricityAnnualSum(
+                        table="demand.egon_demandregio_zensus_electricity",
+                        rule_id="SANITY_RESIDENTIAL_ELECTRICITY_ANNUAL_SUM",
+                        rtol=0.005,
+                    ),
+                    ResidentialElectricityHhRefinement(
+                        table="society.egon_destatis_zensus_household_per_ha_refined",
+                        rule_id="SANITY_RESIDENTIAL_HH_REFINEMENT",
+                        rtol=1e-5,
+                    ),
+                    TableValidation(
+                        table_name="demand.egon_demandregio_zensus_electricity",
+                        # Totals apply to 3 scenarios
+                        row_count=resolve_boundary_dependence(
+                            {
+                                "Schleswig-Holstein": 618316,
+                                "Everything": 7300010,
+                            }
+                        ),
+                        data_type_columns={
+                            "zensus_population_id": "integer",
+                            "scenario": "character varying",
+                            "sector": "character varying",
+                            "demand": "double precision",
+                        },
+                        value_set_columns={
+                            "scenario": ["status2024", "reGon2037", "reGon2045"],
+                            "sector": ["residential", "service"],
+                        },
+                    ),
+                ]
+            },
+            proceed_on_validation_failure=True,
         )
 
 
@@ -88,7 +135,28 @@ class CtsElectricityDemand(Dataset):
     #:
     name: str = "CtsElectricityDemand"
     #:
-    version: str = "0.0.2"
+    version: str = "0.0.4"
+
+    sources = DatasetSources(
+        tables={
+            "demandregio": "demand.egon_demandregio_cts_ind",
+            "demandregio_wz": "demand.egon_demandregio_wz",
+            "demandregio_cts": "demand.egon_demandregio_cts_ind",
+            "heat_demand_cts": "demand.egon_peta_heat",
+            "map_zensus_vg250": "boundaries.egon_map_zensus_vg250",
+            "demandregio_timeseries": "demand.egon_demandregio_timeseries_cts_ind",
+            "map_grid_districts": "boundaries.egon_map_zensus_grid_districts",
+            "map_vg250": "boundaries.egon_map_zensus_vg250",
+            "zensus_electricity": "demand.egon_demandregio_zensus_electricity",
+        }
+    )
+
+    targets = DatasetTargets(
+        tables={
+            "cts_demands_zensus": "demand.egon_demandregio_zensus_electricity",
+            "cts_demand_curves": "demand.egon_etrago_electricity_cts",
+        }
+    )
 
     def __init__(self, dependencies):
         super().__init__(
@@ -142,15 +210,22 @@ def get_annual_household_el_demand_cells():
     RAM > 32GB is necessary.
     """
 
+    scenarios = egon.data.config.settings()["egon-data"]["--scenarios"]
+
+    factor_columns = [
+        getattr(
+            HouseholdElectricityProfilesInCensusCells,
+            f"factor_{get_scenario_year(scn)}",
+        )
+        for scn in scenarios
+    ]
+
     with db.session_scope() as session:
         cells_query = (
             session.query(
                 HouseholdElectricityProfilesOfBuildings,
                 HouseholdElectricityProfilesInCensusCells.nuts3,
-                HouseholdElectricityProfilesInCensusCells.factor_2019,
-                HouseholdElectricityProfilesInCensusCells.factor_2023,
-                HouseholdElectricityProfilesInCensusCells.factor_2035,
-                HouseholdElectricityProfilesInCensusCells.factor_2050,
+                *factor_columns,
             )
             .filter(
                 HouseholdElectricityProfilesOfBuildings.cell_id
@@ -170,7 +245,6 @@ def get_annual_household_el_demand_cells():
         raise (ValueError(s))
 
     dataset = egon.data.config.settings()["egon-data"]["--dataset-boundary"]
-    scenarios = egon.data.config.settings()["egon-data"]["--scenarios"]
 
     iterate_over = (
         "nuts3"
@@ -191,27 +265,13 @@ def get_annual_household_el_demand_cells():
             columns=scenarios + ["zensus_population_id"]
         )
 
-        if "eGon2035" in scenarios:
-            df_annual_demand_iter["eGon2035"] = (
+        for scn in scenarios:
+            year = get_scenario_year(scn)
+            df_annual_demand_iter[scn] = (
                 df_profiles.loc[:, df["profile_id"]].sum(axis=0)
-                * df["factor_2035"].values
-            )
-        if "eGon100RE" in scenarios:
-            df_annual_demand_iter["eGon100RE"] = (
-                df_profiles.loc[:, df["profile_id"]].sum(axis=0)
-                * df["factor_2050"].values
-            )
-        if "status2019" in scenarios:
-            df_annual_demand_iter["status2019"] = (
-                df_profiles.loc[:, df["profile_id"]].sum(axis=0)
-                * df["factor_2019"].values
+                * df[f"factor_{year}"].values
             )
 
-        if "status2023" in scenarios:
-            df_annual_demand_iter["status2023"] = (
-                df_profiles.loc[:, df["profile_id"]].sum(axis=0)
-                * df["factor_2023"].values
-            )
         df_annual_demand_iter["zensus_population_id"] = df["cell_id"].values
         df_annual_demand = pd.concat([df_annual_demand, df_annual_demand_iter])
 
@@ -255,22 +315,15 @@ def distribute_cts_demands():
 
     """
 
-    sources = egon.data.config.datasets()["electrical_demands_cts"]["sources"]
-
-    target = egon.data.config.datasets()["electrical_demands_cts"]["targets"][
-        "cts_demands_zensus"
-    ]
-
     db.execute_sql(
-        f"""DELETE FROM {target['schema']}.{target['table']}
-                   WHERE sector = 'service'"""
+        f"""DELETE FROM {CtsElectricityDemand.targets.tables["cts_demands_zensus"]}
+        WHERE sector = 'service'"""
     )
 
     # Select match between zensus cells and nuts3 regions of vg250
     map_nuts3 = db.select_dataframe(
         f"""SELECT zensus_population_id, vg250_nuts3 as nuts3 FROM
-        {sources['map_zensus_vg250']['schema']}.
-        {sources['map_zensus_vg250']['table']}""",
+        {CtsElectricityDemand.sources.tables["map_zensus_vg250"]}""",
         index_col="zensus_population_id",
     )
 
@@ -280,8 +333,7 @@ def distribute_cts_demands():
         peta = db.select_dataframe(
             f"""SELECT zensus_population_id, demand as heat_demand,
             sector, scenario FROM
-            {sources['heat_demand_cts']['schema']}.
-            {sources['heat_demand_cts']['table']}
+            {CtsElectricityDemand.sources.tables["heat_demand_cts"]}
             WHERE scenario = '{scn}'
             AND sector = 'service'""",
             index_col="zensus_population_id",
@@ -299,13 +351,11 @@ def distribute_cts_demands():
         # Select forecasted electrical demands from demandregio table
         demand_nuts3 = db.select_dataframe(
             f"""SELECT nuts3, SUM(demand) as demand FROM
-            {sources['demandregio']['schema']}.
-            {sources['demandregio']['table']}
+            {CtsElectricityDemand.sources.tables["demandregio"]}
             WHERE scenario = '{scn}'
             AND wz IN (
                 SELECT wz FROM
-                {sources['demandregio_wz']['schema']}.
-                {sources['demandregio_wz']['table']}
+                {CtsElectricityDemand.sources.tables["demandregio_wz"]}
                 WHERE sector = 'CTS')
             GROUP BY nuts3""",
             index_col="nuts3",
@@ -321,8 +371,10 @@ def distribute_cts_demands():
 
         # Insert data to target table
         peta[["scenario", "demand", "sector"]].to_sql(
-            target["table"],
-            schema=target["schema"],
+            CtsElectricityDemand.targets.get_table_name("cts_demands_zensus"),
+            schema=CtsElectricityDemand.targets.get_table_schema(
+                "cts_demands_zensus"
+            ),
             con=db.engine(),
             if_exists="append",
         )

@@ -9,6 +9,7 @@ import numpy as np
 import pandas as pd
 
 from egon.data import config, db
+from egon.data.datasets import load_sources_and_targets
 from egon.data.datasets.scenario_parameters import get_sector_parameters
 import egon.data.datasets.era5 as era
 
@@ -107,6 +108,7 @@ def map_climate_zones_to_zensus():
     None.
 
     """
+    sources, targets = load_sources_and_targets("HeatTimeSeries")
     # Drop old table and create new one
     engine = db.engine()
     EgonMapZensusClimateZones.__table__.drop(bind=engine, checkfirst=True)
@@ -127,7 +129,7 @@ def map_climate_zones_to_zensus():
     census_cells = db.select_geodataframe(
         f"""
         SELECT id as zensus_population_id, geom_point as geom
-        FROM society.destatis_zensus_population_per_ha_inside_germany
+        FROM {sources.tables["zensus_population"]}
         """,
         index_col="zensus_population_id",
         epsg=4326,
@@ -281,6 +283,7 @@ def temperature_profile_extract():
         Temperatur profile of all TRY Climate Zones 2011
 
     """
+    sources, targets = load_sources_and_targets("HeatTimeSeries")
 
     cutout = era.import_cutout(boundary="Germany")
 
@@ -295,8 +298,8 @@ def temperature_profile_extract():
     )
 
     weather_cells = db.select_geodataframe(
-        """
-        SELECT geom FROM supply.egon_era5_weather_cells
+        f"""
+        SELECT geom FROM {sources.tables["era5_weather_cells"]}
         """,
         epsg=4326,
     )

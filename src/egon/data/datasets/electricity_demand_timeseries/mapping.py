@@ -3,6 +3,7 @@ from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.types import Boolean
 
 from egon.data import config, db
+from egon.data.datasets import load_sources_and_targets
 
 Base = declarative_base()
 
@@ -26,19 +27,20 @@ class EgonMapZensusMvgdBuildings(Base):
     heat = Column(Boolean, index=True)
 
 
-scenarios = config.settings()["egon-data"]["--scenarios"]
-
-
 def map_all_used_buildings():
     """This function maps all used buildings from OSM and synthetic ones."""
+    scenarios = config.settings()["egon-data"]["--scenarios"]
+
+    cts_s, cts_t = load_sources_and_targets("CtsDemandBuildings")
+    hh_s, hh_t = load_sources_and_targets("Household Demands")
+    hts_s, hts_t = load_sources_and_targets("HeatTimeSeries")
 
     EgonMapZensusMvgdBuildings.__table__.drop(
         bind=db.engine(), checkfirst=True
     )
     EgonMapZensusMvgdBuildings.__table__.create(bind=db.engine())
 
-    db.execute_sql(
-        sql_string=f"""
+    db.execute_sql(sql_string=f"""
         INSERT INTO {EgonMapZensusMvgdBuildings.__table_args__["schema"]}.
         {EgonMapZensusMvgdBuildings.__tablename__}
             SELECT
@@ -48,54 +50,52 @@ def map_all_used_buildings():
                 mvgd.bus_id::integer
             FROM (
                 SELECT "id"::integer, geom_point
-                FROM openstreetmap.osm_buildings_synthetic
+                FROM {cts_s.tables["osm_buildings_synthetic"]}
                 UNION
                 SELECT "id"::integer, geom_point
-                FROM openstreetmap.osm_buildings_filtered
+                FROM {cts_s.tables["osm_buildings_filtered"]}
             ) AS bld,
-                demand.egon_building_electricity_peak_loads AS peak,
-                society.destatis_zensus_population_per_ha
-                AS zensus,
-                boundaries.egon_map_zensus_grid_districts AS mvgd
+                {cts_t.tables["building_electricity_peak_loads"]} AS peak,
+                {hh_s.tables["destatis_zensus_population_per_ha"]} AS zensus,
+                {hts_s.tables["map_zensus_grid_districts"]} AS mvgd
             WHERE bld.id = peak.building_id
 -- Buildings do not change in the scenarios
                 AND peak.scenario = '{scenarios[0]}'
                 AND ST_Within(bld.geom_point, zensus.geom)
                 AND mvgd.zensus_population_id = zensus.id;
 
-        UPDATE boundaries.egon_map_zensus_mvgd_buildings
+        UPDATE {cts_t.tables["map_zensus_mvgd_buildings"]}
         SET     "osm" = TRUE;
 
-        UPDATE boundaries.egon_map_zensus_mvgd_buildings as bld
+        UPDATE {cts_t.tables["map_zensus_mvgd_buildings"]} as bld
         SET     "osm" = FALSE
         FROM (
             SELECT "id"::integer
-            FROM openstreetmap.osm_buildings_synthetic
+            FROM {cts_s.tables["osm_buildings_synthetic"]}
             ) as synth
         WHERE bld.building_id = synth.id;
 
-        UPDATE boundaries.egon_map_zensus_mvgd_buildings
+        UPDATE {cts_t.tables["map_zensus_mvgd_buildings"]}
         SET     "electricity" = TRUE;
 
-        UPDATE boundaries.egon_map_zensus_mvgd_buildings
+        UPDATE {cts_t.tables["map_zensus_mvgd_buildings"]}
         SET     "heat" = FALSE;
 
 -- Only residentials
-        UPDATE boundaries.egon_map_zensus_mvgd_buildings as bld
+        UPDATE {cts_t.tables["map_zensus_mvgd_buildings"]} as bld
         SET     "heat" = TRUE
         FROM (
             SELECT distinct(building_id)
-            FROM demand.egon_heat_timeseries_selected_profiles
+            FROM {hts_s.tables["selected_profiles"]}
             ) as heat
         WHERE bld.building_id = heat.building_id
          AND bld.sector = 'residential';
 
 -- All electricity cts also are heat cts also
-        UPDATE boundaries.egon_map_zensus_mvgd_buildings as bld
+        UPDATE {cts_t.tables["map_zensus_mvgd_buildings"]} as bld
         SET     "heat" = TRUE
         WHERE bld.sector = 'cts' AND electricity = TRUE;
 
 
 
-        """
-    )
+        """)

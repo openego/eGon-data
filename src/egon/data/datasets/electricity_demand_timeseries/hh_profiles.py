@@ -1,6 +1,6 @@
 """
-Household electricity demand time series for scenarios eGon2035 and eGon100RE at
-census cell level are set up.
+Household electricity demand time series for scenarios eGon2035, reGon2037,
+reGon2045 and status2024 at census cell level are set up.
 
 Electricity demand data for households in Germany in 1-hourly resolution for
 an entire year. Spatially, the data is resolved to 100 x 100 m cells and
@@ -14,7 +14,6 @@ from pathlib import Path
 import os
 import random
 
-from airflow.operators.python import PythonOperator
 from sqlalchemy import ARRAY, Column, Float, Integer, String
 from sqlalchemy.dialects.postgresql import CHAR, INTEGER, REAL
 from sqlalchemy.ext.declarative import declarative_base
@@ -22,9 +21,10 @@ import numpy as np
 import pandas as pd
 
 from egon.data import db
-from egon.data.datasets import Dataset
+from egon.data.datasets import Dataset, DatasetSources, DatasetTargets
 from egon.data.datasets.scenario_parameters import get_scenario_year
 from egon.data.datasets.zensus_mv_grid_districts import MapZensusGridDistricts
+from egon.data.validation import TableValidation, resolve_boundary_dependence
 import egon.data.config
 
 Base = declarative_base()
@@ -67,10 +67,10 @@ class HouseholdElectricityProfilesInCensusCells(Base):
     cell_profile_ids = Column(ARRAY(String, dimensions=1))
     nuts3 = Column(String)
     nuts1 = Column(String)
-    factor_2019 = Column(Float)
-    factor_2023 = Column(Float)
+    factor_2024 = Column(Float)
     factor_2035 = Column(Float)
-    factor_2050 = Column(Float)
+    factor_2037 = Column(Float)
+    factor_2045 = Column(Float)
 
 
 class EgonDestatisZensusHouseholdPerHaRefined(Base):
@@ -111,8 +111,8 @@ class EgonEtragoElectricityHouseholds(Base):
 
 class HouseholdDemands(Dataset):
     """
-    Household electricity demand time series for scenarios eGon2035 and
-    eGon100RE at census cell level are set up.
+    Household electricity demand time series for scenarios eGon2035,
+    reGon2037, reGon2045 and status2024 at census cell level are set up.
 
     Electricity demand data for households in Germany in 1-hourly resolution for
     an entire year. Spatially, the data is resolved to 100 x 100 m cells and
@@ -239,67 +239,81 @@ class HouseholdDemands(Dataset):
     #:
     name: str = "Household Demands"
     #:
-    version: str = "0.0.13"
+    version: str = "0.0.18"
+    sources = DatasetSources(
+        tables={
+            "demandregio_hh": "demand.egon_demandregio_hh",
+            "destatis_zensus_population_per_ha_inside_germany": "society.destatis_zensus_population_per_ha_inside_germany",
+            "destatis_zensus_population_per_ha": "society.destatis_zensus_population_per_ha",
+            "egon_destatis_zensus_household_per_ha": "society.egon_destatis_zensus_household_per_ha",
+            "egon_map_zensus_vg250": "boundaries.egon_map_zensus_vg250",
+            "vg250_lan": "boundaries.vg250_lan",
+            "demandregio_household_load_profiles": "demand.demandregio_household_load_profiles",
+        },
+        files={
+            "household_electricity_demand_profiles": {
+                "path_testmode": "hh_el_load_profiles_2511.hdf",
+                "path": "hh_el_load_profiles_100k.hdf",
+            },
+            "zensus_household_types": {"path": "Zensus2022_Personen.csv"},
+        },
+    )
+
+    targets = DatasetTargets(
+        tables={
+            "iee_household_load_profiles": "demand.iee_household_load_profiles",
+            "hh_profiles_in_census_cells": "demand.egon_household_electricity_profile_in_census_cell",
+            "zensus_household_per_ha_refined": "society.egon_destatis_zensus_household_per_ha_refined",
+            "etrago_electricity_households": "demand.egon_etrago_electricity_households",
+        }
+    )
 
     def __init__(self, dependencies):
-        tasks = (
-            create_table,
-            houseprofiles_in_census_cells,
-        )
-
-        if (
-            "status2019"
-            in egon.data.config.settings()["egon-data"]["--scenarios"]
-        ):
-            mv_hh_electricity_load_2035 = PythonOperator(
-                task_id="MV-hh-electricity-load-2019",
-                python_callable=mv_grid_district_HH_electricity_load,
-                op_args=["status2019", 2019],
-            )
-
-            tasks = tasks + (mv_hh_electricity_load_2035,)
-
-        if (
-            "status2023"
-            in egon.data.config.settings()["egon-data"]["--scenarios"]
-        ):
-            mv_hh_electricity_load_2035 = PythonOperator(
-                task_id="MV-hh-electricity-load-2023",
-                python_callable=mv_grid_district_HH_electricity_load,
-                op_args=["status2023", 2023],
-            )
-
-            tasks = tasks + (mv_hh_electricity_load_2035,)
-
-        if (
-            "eGon2035"
-            in egon.data.config.settings()["egon-data"]["--scenarios"]
-        ):
-            mv_hh_electricity_load_2035 = PythonOperator(
-                task_id="MV-hh-electricity-load-2035",
-                python_callable=mv_grid_district_HH_electricity_load,
-                op_args=["eGon2035", 2035],
-            )
-
-            tasks = tasks + (mv_hh_electricity_load_2035,)
-
-        if (
-            "eGon100RE"
-            in egon.data.config.settings()["egon-data"]["--scenarios"]
-        ):
-            mv_hh_electricity_load_2050 = PythonOperator(
-                task_id="MV-hh-electricity-load-2050",
-                python_callable=mv_grid_district_HH_electricity_load,
-                op_args=["eGon100RE", 2050],
-            )
-
-            tasks = tasks + (mv_hh_electricity_load_2050,)
-
         super().__init__(
             name=self.name,
             version=self.version,
             dependencies=dependencies,
-            tasks=tasks,
+            tasks=(
+                create_table,
+                houseprofiles_in_census_cells,
+                mv_hh_electricity_load,
+            ),
+            validation={
+                "data_quality": [
+                    TableValidation(
+                        table_name="demand.egon_household_electricity_profile_in_census_cell",
+                        row_count=resolve_boundary_dependence(
+                            {
+                                "Schleswig-Holstein": 143521,
+                                "Everything": 3177723,
+                            }
+                        ),
+                        data_type_columns={
+                            "cell_id": "integer",
+                            "grid_id": "character varying",
+                            "cell_profile_ids": "array",
+                            "nuts3": "character varying",
+                            "nuts1": "character varying",
+                            "factor_2024": "double precision",
+                            "factor_2035": "double precision",
+                            "factor_2037": "double precision",
+                            "factor_2045": "double precision",
+                        },
+                    ),
+                    TableValidation(
+                        table_name="demand.iee_household_load_profiles",
+                        row_count=resolve_boundary_dependence(
+                            {"Schleswig-Holstein": 2511, "Everything": 100000}
+                        ),
+                        data_type_columns={
+                            "id": "integer",
+                            "type": "character",
+                            "load_in_wh": "array",
+                        },
+                    ),
+                ]
+            },
+            proceed_on_validation_failure=True,
         )
 
 
@@ -415,9 +429,7 @@ def get_iee_hh_demand_profiles_raw():
         Table with profiles in columns and time as index. A pd.MultiIndex is
         used to distinguish load profiles from different EUROSTAT household
         types.
-    """  # noqa: E501
-    data_config = egon.data.config.datasets()
-    pa_config = data_config["hh_demand_profiles"]
+    """
 
     def ve(s):
         raise (ValueError(s))
@@ -434,17 +446,15 @@ def get_iee_hh_demand_profiles_raw():
         )
     )
 
-    file_path = pa_config["sources"]["household_electricity_demand_profiles"][
-        file_section
-    ]
+    file_path = HouseholdDemands.sources.files[
+        "household_electricity_demand_profiles"
+    ][file_section]
 
     download_directory = os.path.join(
         "data_bundle_egon_data", "household_electricity_demand_profiles"
     )
 
-    hh_profiles_file = (
-        Path(".") / Path(download_directory) / Path(file_path).name
-    )
+    hh_profiles_file = Path(".") / Path(download_directory) / Path(file_path)
 
     df_hh_profiles = pd.read_hdf(hh_profiles_file)
 
@@ -575,17 +585,15 @@ def get_census_households_nuts1_raw():
 
     """
 
-    data_config = egon.data.config.datasets()
-    pa_config = data_config["hh_demand_profiles"]
-    file_path = pa_config["sources"]["zensus_household_types"]["path"]
+    file_path = HouseholdDemands.sources.files["zensus_household_types"][
+        "path"
+    ]
 
     download_directory = os.path.join(
         "data_bundle_egon_data", "zensus_households"
     )
 
-    households_file = (
-        Path(".") / Path(download_directory) / Path(file_path).name
-    )
+    households_file = Path(".") / Path(download_directory) / Path(file_path)
 
     # ------------------------------------------------------------------
     # 1. Read raw CSV (Zensus 2022 layout)
@@ -1092,9 +1100,9 @@ def inhabitants_to_households(df_hh_people_distribution_abs):
     # As this is only used to estimate size of households for OR, OO
     # The hh types 1 P and 2 P households are dropped
     df_hh_size = db.select_dataframe(
-        sql="""
+        sql=f"""
                 SELECT characteristics_text, SUM(quantity) as summe
-                FROM society.egon_destatis_zensus_household_per_ha as egon_d
+                FROM {HouseholdDemands.sources.tables["egon_destatis_zensus_household_per_ha"]} as egon_d
                 WHERE attribute = 'HHGROESS_KLASS' AND quantity_q < 2
                 GROUP BY characteristics_text """,
         index_col="characteristics_text",
@@ -1242,20 +1250,17 @@ def get_census_households_grid():
 
     # Retrieve information about households for each census cell
     # Only use cell-data which quality (quantity_q<2) is acceptable
-    df_census_households_grid = db.select_dataframe(
-        sql="""
+    df_census_households_grid = db.select_dataframe(sql=f"""
                 SELECT grid_id, attribute, characteristics_code,
                  characteristics_text, quantity
-                FROM society.egon_destatis_zensus_household_per_ha
-                WHERE attribute = 'HHTYP_FAM' AND quantity_q <2"""
-    )
+                 FROM {HouseholdDemands.sources.tables["egon_destatis_zensus_household_per_ha"]}
+                WHERE attribute = 'HHTYP_FAM' AND quantity_q <2""")
     df_census_households_grid = df_census_households_grid.drop(
         columns=["attribute", "characteristics_text"]
     )
 
     # Missing data is detected
-    df_missing_data = db.select_dataframe(
-        sql="""
+    df_missing_data = db.select_dataframe(sql=f"""
                     SELECT count(joined.quantity_gesamt) as amount,
                      joined.quantity_gesamt as households
                     FROM(
@@ -1265,37 +1270,35 @@ def get_census_households_grid():
                          as insgesamt_minus_fam
                     FROM (
                         SELECT  grid_id, SUM(quantity) as quantity_sum_fam
-                        FROM society.egon_destatis_zensus_household_per_ha
+                        FROM {HouseholdDemands.sources.tables["egon_destatis_zensus_household_per_ha"]}
                         WHERE attribute = 'HHTYP_FAM'
                         GROUP BY grid_id) as t1
                     Full JOIN (
                         SELECT grid_id, sum(quantity) as quantity_gesamt
-                        FROM society.egon_destatis_zensus_household_per_ha
+                        FROM {HouseholdDemands.sources.tables["egon_destatis_zensus_household_per_ha"]}
                         WHERE attribute = 'INSGESAMT'
                         GROUP BY grid_id) as t2 ON t1.grid_id = t2.grid_id
                         ) as joined
                     WHERE quantity_sum_fam isnull
-                    Group by quantity_gesamt """
-    )
-    missing_cells = db.select_dataframe(
-        sql="""
+                    Group by quantity_gesamt """)
+    missing_cells = db.select_dataframe(sql=f"""
                     SELECT t12.grid_id, t12.quantity
                     FROM (
                     SELECT t2.grid_id, (case when quantity_sum_fam isnull
                     then quantity_gesamt end) as quantity
                     FROM (
                         SELECT  grid_id, SUM(quantity) as quantity_sum_fam
-                        FROM society.egon_destatis_zensus_household_per_ha
+                        FROM {HouseholdDemands.sources.tables["egon_destatis_zensus_household_per_ha"]}
+
                         WHERE attribute = 'HHTYP_FAM'
                         GROUP BY grid_id) as t1
                     Full JOIN (
                         SELECT grid_id, sum(quantity) as quantity_gesamt
-                        FROM society.egon_destatis_zensus_household_per_ha
+                        FROM {HouseholdDemands.sources.tables["egon_destatis_zensus_household_per_ha"]}
                         WHERE attribute = 'INSGESAMT'
                         GROUP BY grid_id) as t2 ON t1.grid_id = t2.grid_id
                         ) as t12
-                    WHERE quantity is not null"""
-    )
+                    WHERE quantity is not null""")
 
     # Missing cells are substituted by average share of cells with same amount
     # of households.
@@ -1312,18 +1315,16 @@ def get_census_households_grid():
     )
 
     # Census cells with nuts3 and nuts1 information
-    df_grid_id = db.select_dataframe(
-        sql="""
+    df_grid_id = db.select_dataframe(sql=f"""
                 SELECT pop.grid_id, pop.id as cell_id, pop.population,
                  vg250.vg250_nuts3 as nuts3, lan.nuts as nuts1, lan.gen
                 FROM
-                society.destatis_zensus_population_per_ha_inside_germany as pop
-                LEFT JOIN boundaries.egon_map_zensus_vg250 as vg250
+                {HouseholdDemands.sources.tables["destatis_zensus_population_per_ha_inside_germany"]} as pop
+                LEFT JOIN {HouseholdDemands.sources.tables["egon_map_zensus_vg250"]} as vg250
                 ON (pop.id=vg250.zensus_population_id)
-                LEFT JOIN boundaries.vg250_lan as lan
+                LEFT JOIN {HouseholdDemands.sources.tables["vg250_lan"]} as lan
                 ON (LEFT(vg250.vg250_nuts3, 3) = lan.nuts)
-                WHERE lan.gf = 4 """
-    )
+                WHERE lan.gf = 4 """)
     df_grid_id = df_grid_id.drop_duplicates()
     df_grid_id = df_grid_id.reset_index(drop=True)
 
@@ -1599,6 +1600,11 @@ def assign_hh_demand_profiles_to_cells(df_zensus_cells, df_iee_profiles):
         cell.
     """
 
+    factor_columns = [
+        f"factor_{get_scenario_year(scn)}"
+        for scn in egon.data.config.settings()["egon-data"]["--scenarios"]
+    ]
+
     df_hh_profiles_in_census_cells = pd.DataFrame(
         index=df_zensus_cells.grid_id.unique(),
         columns=[
@@ -1606,9 +1612,8 @@ def assign_hh_demand_profiles_to_cells(df_zensus_cells, df_iee_profiles):
             "cell_id",
             "nuts3",
             "nuts1",
-            "factor_2035",
-            "factor_2050",
-        ],
+        ]
+        + factor_columns,
     )
 
     df_hh_profiles_in_census_cells = (
@@ -1672,7 +1677,7 @@ def adjust_to_demand_regio_nuts3_annual(
     -------
     pd.DataFrame
         Returns the same data as :func:`assign_hh_demand_profiles_to_cells`,
-        but with filled columns `factor_2035` and `factor_2050`.
+        but with filled `factor_<year>` columns for each configured scenario.
     """
     for nuts3_id, df_nuts3 in df_hh_profiles_in_census_cells.groupby(
         by="nuts3"
@@ -1808,11 +1813,11 @@ def houseprofiles_in_census_cells():
     """
     Allocate household electricity demand profiles for each census cell.
 
-    Creates table `emand.egon_household_electricity_profile_in_census_cell`
-    that maps household electricity demand profiles to census cells. Each
-    row represents one cell and contains a list of profile IDs. This table
-    is fundamental for creating subsequent data like demand profiles on
-    MV grid level or for determining the peak load at load area level.
+    Creates table demand.egon_household_electricity_profile_in_census_cell` that maps
+    household electricity demand profiles to census cells. Each row represents one cell
+    and contains a list of profile IDs. This table is fundamental
+    for creating subsequent data like demand profiles on MV grid level or for
+    determining the peak load at load area level.
 
     Use :func:`get_houseprofiles_in_census_cells` to retrieve the data from
     the database as pandas.
@@ -1880,9 +1885,9 @@ def houseprofiles_in_census_cells():
 
     # Annual household electricity demand on NUTS-3 level (demand regio)
     df_demand_regio = db.select_dataframe(
-        sql="""
+        sql=f"""
                 SELECT year, nuts3, SUM (demand) as demand_mWha
-                FROM demand.egon_demandregio_hh as egon_d
+                FROM {HouseholdDemands.sources.tables["demandregio_hh"]} as egon_d
                 GROUP BY nuts3, year
                 ORDER BY year""",
         index_col=["year", "nuts3"],
@@ -1978,16 +1983,25 @@ def get_cell_demand_metadata_from_db(attribute, list_of_identifiers):
     if not isinstance(list_of_identifiers, list):
         raise KeyError("'list_of_identifiers' is not a list!")
 
+    base_columns = [
+        HouseholdElectricityProfilesInCensusCells.cell_id,
+        HouseholdElectricityProfilesInCensusCells.cell_profile_ids,
+        HouseholdElectricityProfilesInCensusCells.nuts3,
+        HouseholdElectricityProfilesInCensusCells.nuts1,
+    ]
+    factor_columns = [
+        getattr(
+            HouseholdElectricityProfilesInCensusCells,
+            f"factor_{get_scenario_year(scn)}",
+        )
+        for scn in egon.data.config.settings()["egon-data"]["--scenarios"]
+    ]
+
     # Query profile ids and scaling factors for specific attributes
     with db.session_scope() as session:
         if attribute == "nuts3":
             cells_query = session.query(
-                HouseholdElectricityProfilesInCensusCells.cell_id,
-                HouseholdElectricityProfilesInCensusCells.cell_profile_ids,
-                HouseholdElectricityProfilesInCensusCells.nuts3,
-                HouseholdElectricityProfilesInCensusCells.nuts1,
-                HouseholdElectricityProfilesInCensusCells.factor_2035,
-                HouseholdElectricityProfilesInCensusCells.factor_2050,
+                *base_columns, *factor_columns
             ).filter(
                 HouseholdElectricityProfilesInCensusCells.nuts3.in_(
                     list_of_identifiers
@@ -1995,12 +2009,7 @@ def get_cell_demand_metadata_from_db(attribute, list_of_identifiers):
             )
         elif attribute == "nuts1":
             cells_query = session.query(
-                HouseholdElectricityProfilesInCensusCells.cell_id,
-                HouseholdElectricityProfilesInCensusCells.cell_profile_ids,
-                HouseholdElectricityProfilesInCensusCells.nuts3,
-                HouseholdElectricityProfilesInCensusCells.nuts1,
-                HouseholdElectricityProfilesInCensusCells.factor_2035,
-                HouseholdElectricityProfilesInCensusCells.factor_2050,
+                *base_columns, *factor_columns
             ).filter(
                 HouseholdElectricityProfilesInCensusCells.nuts1.in_(
                     list_of_identifiers
@@ -2008,12 +2017,7 @@ def get_cell_demand_metadata_from_db(attribute, list_of_identifiers):
             )
         elif attribute == "cell_id":
             cells_query = session.query(
-                HouseholdElectricityProfilesInCensusCells.cell_id,
-                HouseholdElectricityProfilesInCensusCells.cell_profile_ids,
-                HouseholdElectricityProfilesInCensusCells.nuts3,
-                HouseholdElectricityProfilesInCensusCells.nuts1,
-                HouseholdElectricityProfilesInCensusCells.factor_2035,
-                HouseholdElectricityProfilesInCensusCells.factor_2050,
+                *base_columns, *factor_columns
             ).filter(
                 HouseholdElectricityProfilesInCensusCells.cell_id.in_(
                     list_of_identifiers
@@ -2078,12 +2082,26 @@ def get_demand_regio_hh_profiles_from_db(year):
          Selection of household demand profiles
     """
 
-    query = """Select * from demand.demandregio_household_load_profiles
+    query = f"""
+    Select * 
+    FROM {HouseholdDemands.sources.tables["demandregio_household_load_profiles"]}
     Where year = year"""
 
     df_profile_loads = pd.read_sql(query, db.engine(), index_col="id")
 
     return df_profile_loads
+
+
+def mv_hh_electricity_load():
+    """Calculate MV grid district household electricity load per scenario.
+
+    Loops over the scenarios configured via ``--scenarios`` and triggers
+    :func:`mv_grid_district_HH_electricity_load` for each of them.
+    """
+    for scenario in egon.data.config.settings()["egon-data"]["--scenarios"]:
+        mv_grid_district_HH_electricity_load(
+            scenario, get_scenario_year(scenario)
+        )
 
 
 def mv_grid_district_HH_electricity_load(scenario_name, scenario_year):
@@ -2138,9 +2156,8 @@ def mv_grid_district_HH_electricity_load(scenario_name, scenario_year):
     if method == "slp":
         # Import demand regio timeseries demand per nuts3 area
         dr_series = pd.read_sql_query(
-            """
-            SELECT year, nuts3, load_in_mwh
-            FROM demand.demandregio_household_load_profiles
+            f"""
+            SELECT year, nuts3, load_in_mwh FROM {HouseholdDemands.sources.tables["demandregio_household_load_profiles"]}
             """,
             con=engine,
         )
@@ -2151,9 +2168,8 @@ def mv_grid_district_HH_electricity_load(scenario_name, scenario_year):
 
         # Population data per cell_id is used to scale the demand per nuts3
         population = pd.read_sql_query(
-            """
-            SELECT grid_id, population
-            FROM society.destatis_zensus_population_per_ha
+            f"""
+            SELECT grid_id, population FROM {HouseholdDemands.sources.tables["destatis_zensus_population_per_ha"]}
             """,
             con=engine,
         )

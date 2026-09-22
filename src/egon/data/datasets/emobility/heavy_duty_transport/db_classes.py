@@ -10,7 +10,6 @@ from egon.data import config
 from egon.data.datasets.scenario_parameters import EgonScenario
 
 Base = declarative_base()
-DATASET_CFG = config.datasets()["mobility_hgv"]
 
 
 class EgonHeavyDutyTransportVoronoi(Base):
@@ -22,7 +21,7 @@ class EgonHeavyDutyTransportVoronoi(Base):
     __table_args__ = {"schema": "demand"}
 
     nuts3 = Column(String, primary_key=True)
-    geometry = Column(Geometry(srid=DATASET_CFG["tables"]["srid"]))
+    geometry = Column(Geometry(srid=3035))
     area = Column(Float)
     truck_traffic = Column(Float)
     normalized_truck_traffic = Column(Float)

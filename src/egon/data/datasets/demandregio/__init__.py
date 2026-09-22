@@ -13,10 +13,14 @@ import numpy as np
 import pandas as pd
 
 from egon.data import db, logger
-from egon.data.datasets import Dataset
+from egon.data.datasets import Dataset, DatasetSources, DatasetTargets
 from egon.data.datasets.scenario_parameters import (
     EgonScenario,
     get_sector_parameters,
+)
+from egon.data.validation import TableValidation, resolve_boundary_dependence
+from egon.data.validation.rules.custom.sanity import (
+    DemandRegioScenarioDemand,
 )
 import egon.data.config
 import egon.data.datasets.scenario_parameters.parameters as scenario_parameters
@@ -39,7 +43,7 @@ class DemandRegio(Dataset):
     using DemandRegio's diaggregator and input data. To bring the resulting
     data in line with other data used in eGon-data and the eGon project in
     general some data needed to be adjusted or extended, e.g. in function
-    :py:func:`adjust_ind_pes` or function :py:func:`adjust_cts_ind_nep`. The
+    :py:func:`adjust_cts_ind_nep`. The
     resulting data is written into newly created tables.
 
     *Dependencies*
@@ -68,10 +72,37 @@ class DemandRegio(Dataset):
 
     """
 
+    sources = DatasetSources(
+        files={
+            "wz_cts": "WZ_definition/CTS_WZ_definition.csv",
+            "wz_industry": "WZ_definition/ind_WZ_definition.csv",
+            "new_consumers_2035": "NEP/new_largescale_consumers_nep.csv",
+            "cache_zip": "demand_regio_backup/cache.zip",
+            "dbdump_zip": "demand_regio_backup/status2019-egon-demandregio-cts-ind.zip",
+        },
+        tables={
+            "vg250_krs": "boundaries.vg250_krs",
+        },
+    )
+    targets = DatasetTargets(
+        files={
+            "cache_dir": "demandregio/cache",
+            "dbdump_dir": "demandregio/dbdump",
+        },
+        tables={
+            "hh_demand": "demand.egon_demandregio_hh",
+            "cts_ind_demand": "demand.egon_demandregio_cts_ind",
+            "population": "society.egon_demandregio_population",
+            "households": "society.egon_demandregio_household",
+            "wz_definitions": "demand.egon_demandregio_wz",
+            "timeseries_cts_ind": "demand.egon_demandregio_timeseries_cts_ind",
+        },
+    )
+
     #:
     name: str = "DemandRegio"
     #:
-    version: str = "0.0.13"
+    version: str = "0.0.22"
 
     def __init__(self, dependencies):
         super().__init__(
@@ -87,6 +118,188 @@ class DemandRegio(Dataset):
                     insert_cts_ind_demands,
                 },
             ),
+            validation={
+                "scenario_demand": [
+                    # egon_demandregio_hh
+                    DemandRegioScenarioDemand(
+                        table="demand.egon_demandregio_hh",
+                        rule_id=(
+                            "SANITY_DEMANDREGIO_HH_TOTAL"
+                            ".status2024"
+                        ),
+                        scenario="status2024",
+                        sectors=["households"],
+                        expected_total=resolve_boundary_dependence(
+                            {
+                                "Schleswig-Holstein": 3873162.389263028,
+                                # derived from the scenario parameters
+                                "Everything": None,
+                            }
+                        ),
+                        rtol=0.01,
+                    ),
+                    DemandRegioScenarioDemand(
+                        table="demand.egon_demandregio_hh",
+                        rule_id=(
+                            "SANITY_DEMANDREGIO_HH_TOTAL"
+                            ".reGon2037"
+                        ),
+                        scenario="reGon2037",
+                        sectors=["households"],
+                        expected_total=resolve_boundary_dependence(
+                            {
+                                "Schleswig-Holstein": 2909253.19736499,
+                                # derived from the scenario parameters
+                                "Everything": None,
+                            }
+                        ),
+                        rtol=0.01,
+                    ),
+                    DemandRegioScenarioDemand(
+                        table="demand.egon_demandregio_hh",
+                        rule_id=(
+                            "SANITY_DEMANDREGIO_HH_TOTAL"
+                            ".reGon2045"
+                        ),
+                        scenario="reGon2045",
+                        sectors=["households"],
+                        expected_total=resolve_boundary_dependence(
+                            {
+                                "Schleswig-Holstein": 2665510.9863588307,
+                                # derived from the scenario parameters
+                                "Everything": None,
+                            }
+                        ),
+                        rtol=0.01,
+                    ),
+                    DemandRegioScenarioDemand(
+                        table="demand.egon_demandregio_hh",
+                        rule_id=(
+                            "SANITY_DEMANDREGIO_HH_TOTAL"
+                            ".eGon2035"
+                        ),
+                        scenario="eGon2035",
+                        sectors=["households"],
+                        expected_total=resolve_boundary_dependence(
+                            {
+                                "Schleswig-Holstein": 4171097.9576678765,
+                                # derived from the scenario parameters
+                                "Everything": None,
+                            }
+                        ),
+                        rtol=0.01,
+                    ),
+                    # egon_demandregio_cts_ind
+                    DemandRegioScenarioDemand(
+                        table="demand.egon_demandregio_cts_ind",
+                        rule_id=(
+                            "SANITY_DEMANDREGIO_CTS_IND_TOTAL"
+                            ".status2024"
+                        ),
+                        scenario="status2024",
+                        sectors=["CTS", "industry"],
+                        expected_total=resolve_boundary_dependence(
+                            {
+                                "Schleswig-Holstein": 6732645.137785152,
+                                # derived from the scenario parameters
+                                "Everything": None,
+                            }
+                        ),
+                        rtol=0.01,
+                    ),
+                    DemandRegioScenarioDemand(
+                        table="demand.egon_demandregio_cts_ind",
+                        rule_id=(
+                            "SANITY_DEMANDREGIO_CTS_IND_TOTAL"
+                            ".reGon2037"
+                        ),
+                        scenario="reGon2037",
+                        sectors=["CTS", "industry"],
+                        expected_total=resolve_boundary_dependence(
+                            {
+                                "Schleswig-Holstein": 8298335.424069942,
+                                # derived from the scenario parameters
+                                "Everything": None,
+                            }
+                        ),
+                        rtol=0.01,
+                    ),
+                    DemandRegioScenarioDemand(
+                        table="demand.egon_demandregio_cts_ind",
+                        rule_id=(
+                            "SANITY_DEMANDREGIO_CTS_IND_TOTAL"
+                            ".reGon2045"
+                        ),
+                        scenario="reGon2045",
+                        sectors=["CTS", "industry"],
+                        expected_total=resolve_boundary_dependence(
+                            {
+                                "Schleswig-Holstein": 8987343.08991006,
+                                # derived from the scenario parameters
+                                "Everything": None,
+                            }
+                        ),
+                        rtol=0.01,
+                    ),
+                    DemandRegioScenarioDemand(
+                        table="demand.egon_demandregio_cts_ind",
+                        rule_id=(
+                            "SANITY_DEMANDREGIO_CTS_IND_TOTAL"
+                            ".eGon2035"
+                        ),
+                        scenario="eGon2035",
+                        sectors=["CTS", "industry"],
+                        expected_total=resolve_boundary_dependence(
+                            {
+                                "Schleswig-Holstein": 8632346.141677318,
+                                # derived from the scenario parameters
+                                "Everything": None,
+                            }
+                        ),
+                        rtol=0.01,
+                    ),
+                ],
+                "data_quality": [
+                    TableValidation(
+                        table_name="demand.egon_demandregio_hh",
+                        row_count=resolve_boundary_dependence(
+                            {"Schleswig-Holstein": 450, "Everything": 7218}
+                        ),
+                        data_type_columns={
+                            "nuts3": "character varying",
+                            "hh_size": "integer",
+                            "scenario": "character varying",
+                            "year": "integer",
+                            "demand": "double precision",
+                        },
+                        # `scenario` has a foreign key onto
+                        # scenario.egon_scenario_parameters.name, so these are
+                        # the only values the column can hold. eGon2021 is
+                        # always written (insert_household_demand appends it to
+                        # the configured scenarios), so it must be listed.
+                        value_set_columns={
+                            "scenario": [
+                                "eGon2021",
+                                "eGon2035",
+                                "reGon2037",
+                                "reGon2045",
+                                "status2024",
+                            ]
+                        },
+                    ),
+                    TableValidation(
+                        table_name="demand.egon_demandregio_wz",
+                        row_count=87,
+                        data_type_columns={
+                            "wz": "integer",
+                            "sector": "character varying",
+                            "definition": "character varying",
+                        },
+                        value_set_columns={"sector": ["industry", "CTS"]},
+                    ),
+                ]
+            },
+            proceed_on_validation_failure=True,
         )
 
 
@@ -206,7 +419,7 @@ def data_in_boundaries(df):
     return df[
         df.index.isin(
             pd.read_sql(
-                "SELECT DISTINCT ON (nuts) nuts FROM boundaries.vg250_krs",
+                f"SELECT DISTINCT ON (nuts) nuts FROM {DemandRegio.sources.tables['vg250_krs']}",
                 engine,
             ).nuts
         )
@@ -214,36 +427,18 @@ def data_in_boundaries(df):
 
 
 def insert_cts_ind_wz_definitions():
-    """Insert demandregio's definitions of CTS and industrial branches
-
-    Returns
-    -------
-    None.
-
-    """
-
-    source = egon.data.config.datasets()["demandregio_cts_ind_demand"][
-        "sources"
-    ]
-
-    target = egon.data.config.datasets()["demandregio_cts_ind_demand"][
-        "targets"
-    ]["wz_definitions"]
+    """Insert demandregio's definitions of CTS and industrial branches"""
 
     engine = db.engine()
 
-    for sector in source["wz_definitions"]:
-        file_path = (
-            Path(".")
-            / "data_bundle_egon_data"
-            / "WZ_definition"
-            / source["wz_definitions"][sector]
-        )
+    # This dictionary replaces the logic from the old config file
+    wz_files = {"CTS": "wz_cts", "industry": "wz_industry"}
 
-        if sector == "CTS":
-            delimiter = ";"
-        else:
-            delimiter = ","
+    for sector, file_key in wz_files.items():
+        file_path = (
+            Path("data_bundle_egon_data") / DemandRegio.sources.files[file_key]
+        )
+        delimiter = ";" if sector == "CTS" else ","
         df = (
             pd.read_csv(file_path, delimiter=delimiter, header=None)
             .rename({0: "wz", 1: "definition"}, axis="columns")
@@ -251,9 +446,9 @@ def insert_cts_ind_wz_definitions():
         )
         df["sector"] = sector
         df.to_sql(
-            target["table"],
+            DemandRegio.targets.get_table_name("wz_definitions"),
             engine,
-            schema=target["schema"],
+            schema=DemandRegio.targets.get_table_schema("wz_definitions"),
             if_exists="append",
         )
 
@@ -286,127 +481,6 @@ def match_nuts3_bl():
     return df.set_index("nuts")
 
 
-def adjust_ind_pes(ec_cts_ind):
-    """
-    Adjust electricity demand of industrial consumers due to electrification
-    of process heat based on assumptions of pypsa-eur-sec.
-
-    Parameters
-    ----------
-    ec_cts_ind : pandas.DataFrame
-        Industrial demand without additional electrification
-
-    Returns
-    -------
-    ec_cts_ind : pandas.DataFrame
-        Industrial demand with additional electrification
-
-    """
-
-    pes_path = (
-        Path(".") / "data_bundle_powerd_data" / "pypsa_eur" / "resources"
-    )
-
-    sources = egon.data.config.datasets()["demandregio_cts_ind_demand"][
-        "sources"
-    ]["new_consumers_2050"]
-
-    # Extract today's industrial demand from pypsa-eur-sec
-    demand_today = pd.read_csv(
-        pes_path / sources["pes-demand-today"],
-        header=None,
-    ).transpose()
-
-    # Filter data
-    demand_today[1].fillna("carrier", inplace=True)
-    demand_today = demand_today[
-        (demand_today[0] == "DE") | (demand_today[1] == "carrier")
-    ].drop([0, 2], axis="columns")
-
-    demand_today = (
-        demand_today.transpose()
-        .set_index(0)
-        .transpose()
-        .set_index("carrier")
-        .transpose()
-        .loc["electricity"]
-        .astype(float)
-    )
-
-    # Calculate future industrial demand from pypsa-eur-sec
-    # based on production and energy demands per carrier ('sector ratios')
-    prod_tomorrow = pd.read_csv(pes_path / sources["pes-production-tomorrow"])
-
-    prod_tomorrow = prod_tomorrow[prod_tomorrow["kton/a"] == "DE"].set_index(
-        "kton/a"
-    )
-
-    sector_ratio = (
-        pd.read_csv(pes_path / sources["pes-sector-ratios"])
-        .set_index("MWh/tMaterial")
-        .loc["elec"]
-    )
-
-    demand_tomorrow = prod_tomorrow.multiply(
-        sector_ratio.div(1000)
-    ).transpose()["DE"]
-
-    # Calculate changes of electrical demand per sector in pypsa-eur-sec
-    change = pd.DataFrame(
-        (demand_tomorrow / demand_today)
-        / (demand_tomorrow / demand_today).sum()
-    )
-
-    # Drop rows without changes
-    change = change[~change[0].isnull()]
-
-    # Map industrial branches of pypsa-eur-sec to WZ2008 used in demandregio
-    change["wz"] = change.index.map(
-        {
-            "Alumina production": 24,
-            "Aluminium - primary production": 24,
-            "Aluminium - secondary production": 24,
-            "Ammonia": 20,
-            "Basic chemicals (without ammonia)": 20,
-            "Cement": 23,
-            "Ceramics & other NMM": 23,
-            "Electric arc": 24,
-            "Food, beverages and tobacco": 10,
-            "Glass production": 23,
-            "Integrated steelworks": 24,
-            "Machinery Equipment": 28,
-            "Other Industrial Sectors": 32,
-            "Other chemicals": 20,
-            "Other non-ferrous metals": 24,
-            "Paper production": 17,
-            "Pharmaceutical products etc.": 21,
-            "Printing and media reproduction": 18,
-            "Pulp production": 17,
-            "Textiles and leather": 13,
-            "Transport Equipment": 29,
-            "Wood and wood products": 16,
-        }
-    )
-
-    # Group by WZ2008
-    shares_per_wz = change.groupby("wz")[0].sum()
-
-    # Calculate addtional demands needed to meet future demand of pypsa-eur-sec
-    addtional_mwh = shares_per_wz.multiply(
-        demand_tomorrow.sum() * 1000000 - ec_cts_ind.sum().sum()
-    )
-
-    # Calulate overall industrial demand for eGon100RE
-    final_mwh = addtional_mwh + ec_cts_ind[addtional_mwh.index].sum()
-
-    # Linear scale the industrial demands per nuts3 and wz to meet final demand
-    ec_cts_ind[addtional_mwh.index] *= (
-        final_mwh / ec_cts_ind[addtional_mwh.index].sum()
-    )
-
-    return ec_cts_ind
-
-
 def adjust_cts_ind_nep(ec_cts_ind, sector):
     """Add electrical demand of new largescale CTS und industrial consumers
     according to NEP 2021, scneario C 2035. Values per federal state are
@@ -423,17 +497,10 @@ def adjust_cts_ind_nep(ec_cts_ind, sector):
         CTS or industry demand including new largescale consumers.
 
     """
-    sources = egon.data.config.datasets()["demandregio_cts_ind_demand"][
-        "sources"
-    ]
-
     file_path = (
-        Path(".")
-        / "data_bundle_egon_data"
-        / "nep2035_version2021"
-        / sources["new_consumers_2035"]
+        Path("data_bundle_egon_data")
+        / DemandRegio.sources.files["new_consumers_2035"]
     )
-
     # get data from NEP per federal state
     new_con = pd.read_csv(file_path, delimiter=";", decimal=",", index_col=0)
 
@@ -483,8 +550,9 @@ def disagg_households_power(scenario, year, original=False, **kwargs):
         },
     )
 
-    if scenario == "eGon100RE":
-        # chose demand per household size from survey without DHW
+    if scenario == "reGon2045":
+        # chose demand per household size from survey without DHW, since
+        # heat/hot water demand is covered separately in this scenario
         power_per_HH = demand_per_hh_size["without_DHW"] / 1e3
 
         # calculate demand per nuts3 in 2011
@@ -494,7 +562,7 @@ def disagg_households_power(scenario, year, original=False, **kwargs):
         # according to JRC in 2011 (136.6-(20.14+9.41) TWh)
         power_per_HH *= (136.6 - (20.14 + 9.41)) * 1e6 / df_2011.sum().sum()
 
-        # calculate demand per nuts3 in 2050
+        # calculate demand per nuts3 in the scenario year
         df = data.households_per_size(year=year) * power_per_HH
 
     # Bottom-Up: Power demand by household sizes in [MWh/a] for each scenario
@@ -588,21 +656,17 @@ def insert_hh_demand(scenario, year, engine):
     None.
 
     """
-    targets = egon.data.config.datasets()["demandregio_household_demand"][
-        "targets"
-    ]["household_demand"]
     # get spatial distribution of demands of private households per nuts
     # and size from demandregio
     ec_hh = disagg_households_power(scenario, year)
 
     # Scale to meet target value
-    # For status2019 and eGon2021 the final demand from demandregio is kept
-    if scenario not in ["status2019", "eGon2021"]:
+    # For eGon2021 the final demand from demandregio is kept
+    if scenario != "eGon2021":
         ec_hh *= (
             get_sector_parameters("electricity", scenario=scenario)[
                 "annual_demand"
             ]["households"]
-            * 1e6
             / ec_hh.sum().sum()
         )
 
@@ -612,19 +676,14 @@ def insert_hh_demand(scenario, year, engine):
     # insert into database
     for hh_size in ec_hh.columns:
         df = pd.DataFrame(ec_hh[hh_size])
-        df["year"] = (
-            2023 if scenario == "status2023" else year
-        )  # TODO status2023
-        # adhoc fix until ffeopendata servers are up and population_year
-        # can be set
-
+        df["year"] = year
         df["scenario"] = scenario
         df["hh_size"] = hh_size
         df = df.rename({hh_size: "demand"}, axis="columns")
         df.to_sql(
-            targets["table"],
+            DemandRegio.targets.get_table_name("hh_demand"),
             engine,
-            schema=targets["schema"],
+            schema=DemandRegio.targets.get_table_schema("hh_demand"),
             if_exists="append",
         )
 
@@ -648,9 +707,12 @@ def insert_hh_demand(scenario, year, engine):
             f"Couldnt get profiles from FFE, will use pickeld fallback! \n {e}"
         )
         hh_load_timeseries = pd.read_csv(
-            "data_bundle_egon_data/demand_regio_backup/df_load_profiles.csv",
+            Path("data_bundle_egon_data")
+            / "demand_regio_backup"
+            / "df_load_profiles.csv",
             index_col="time",
         )
+
         hh_load_timeseries.index = pd.to_datetime(
             hh_load_timeseries.index, format="%Y-%m-%d %H:%M:%S"
         )
@@ -658,17 +720,9 @@ def insert_hh_demand(scenario, year, engine):
         def change_year(dt, year):
             return dt.replace(year=year)
 
-        year = 2023 if scenario == "status2023" else year  # TODO status2023
         hh_load_timeseries.index = hh_load_timeseries.index.map(
             lambda dt: change_year(dt, year)
         )
-
-        if scenario == "status2023":
-            hh_load_timeseries = hh_load_timeseries.shift(24 * 2)
-
-            hh_load_timeseries.iloc[: 24 * 7] = hh_load_timeseries.iloc[
-                24 * 7 : 24 * 7 * 2
-            ].values
 
     write_demandregio_hh_profiles_to_db(hh_load_timeseries)
 
@@ -692,68 +746,7 @@ def insert_cts_ind(scenario, year, engine, target_values):
     None.
 
     """
-    targets = egon.data.config.datasets()["demandregio_cts_ind_demand"][
-        "targets"
-    ]
-
-    wz_table = pd.read_sql(
-        "SELECT wz, sector FROM demand.egon_demandregio_wz",
-        con=engine,
-        index_col="wz",
-    )
-
-    # Workaround: Since the disaggregator does not work anymore, data from
-    # previous runs is used for eGon2035 and eGon100RE
-    if scenario == "eGon2035":
-        file2035_path = (
-            Path(".")
-            / "data_bundle_egon_data"
-            / "demand_regio_backup"
-            / "egon_demandregio_cts_ind_egon2035.csv"
-        )
-        ec_cts_ind2 = pd.read_csv(file2035_path)
-        ec_cts_ind2.to_sql(
-            targets["cts_ind_demand"]["table"],
-            engine,
-            targets["cts_ind_demand"]["schema"],
-            if_exists="append",
-            index=False,
-        )
-        return
-
-    if scenario == "eGon100RE":
-        ec_cts_ind2 = pd.read_csv(
-            "data_bundle_egon_data/"
-            "demand_regio_backup/egon_demandregio_cts_ind.csv"
-        )
-        ec_cts_ind2["sector"] = ec_cts_ind2["wz"].map(wz_table["sector"])
-        factor_ind = target_values["industry"] / (
-            ec_cts_ind2[ec_cts_ind2["sector"] == "industry"]["demand"].sum()
-            / 1000
-        )
-        factor_cts = target_values["CTS"] / (
-            ec_cts_ind2[ec_cts_ind2["sector"] == "CTS"]["demand"].sum() / 1000
-        )
-
-        ec_cts_ind2["demand"] = ec_cts_ind2.apply(
-            lambda x: (
-                x["demand"] * factor_ind
-                if x["sector"] == "industry"
-                else x["demand"] * factor_cts
-            ),
-            axis=1,
-        )
-
-        ec_cts_ind2.drop(columns=["sector"], inplace=True)
-
-        ec_cts_ind2.to_sql(
-            targets["cts_ind_demand"]["table"],
-            engine,
-            targets["cts_ind_demand"]["schema"],
-            if_exists="append",
-            index=False,
-        )
-        return
+    # targets = egon.data.config.datasets()["demandregio_cts_ind_demand"]["targets"]
 
     for sector in ["CTS", "industry"]:
         # get demands per nuts3 and wz of demandregio
@@ -770,19 +763,17 @@ def insert_cts_ind(scenario, year, engine, target_values):
         if target_values:
             if sector in target_values.keys():
                 ec_cts_ind *= (
-                    target_values[sector] * 1e3 / ec_cts_ind.sum().sum()
+                    target_values[sector] / ec_cts_ind.sum().sum()
                 )
         else:
             print(
                 f"No scaling factors for scenario {scenario}."
                 "Data from demandregio is used without scaling."
             )
+
         # include new largescale consumers according to NEP 2021
         if scenario == "eGon2035":
             ec_cts_ind = adjust_cts_ind_nep(ec_cts_ind, sector)
-        # include new industrial demands due to sector coupling
-        if (scenario == "eGon100RE") & (sector == "industry"):
-            ec_cts_ind = adjust_ind_pes(ec_cts_ind)
 
         # Select demands for nuts3-regions in boundaries (needed for testmode)
         ec_cts_ind = data_in_boundaries(ec_cts_ind)
@@ -796,9 +787,9 @@ def insert_cts_ind(scenario, year, engine, target_values):
             df = df.rename({wz: "demand"}, axis="columns")
             df.index = df.index.rename("nuts3")
             df.to_sql(
-                targets["cts_ind_demand"]["table"],
+                DemandRegio.targets.get_table_name("cts_ind_demand"),
                 engine,
-                targets["cts_ind_demand"]["schema"],
+                schema=DemandRegio.targets.get_table_schema("cts_ind_demand"),
                 if_exists="append",
             )
 
@@ -812,26 +803,26 @@ def insert_household_demand():
     None.
 
     """
-    targets = egon.data.config.datasets()["demandregio_household_demand"][
-        "targets"
-    ]
+
     engine = db.engine()
 
     scenarios = egon.data.config.settings()["egon-data"]["--scenarios"]
 
     scenarios.append("eGon2021")
 
-    for t in targets:
-        db.execute_sql(
-            f"DELETE FROM {targets[t]['schema']}.{targets[t]['table']};"
-        )
+    for table_key in ["hh_demand"]:  # Assuming this is the only target here
+        db.execute_sql(f"DELETE FROM {DemandRegio.targets.tables[table_key]};")
+
+    # Not registered as a DemandRegio target, but written to (per scenario)
+    # by insert_hh_demand below. Must be cleared here too, otherwise re-runs
+    # append duplicate (year, nuts3) rows on top of previous runs' data.
+    db.execute_sql(
+        f"DELETE FROM {DemandRegioLoadProfiles.__table__.schema}."
+        f"{DemandRegioLoadProfiles.__table__.name};"
+    )
 
     for scn in scenarios:
-        year = (
-            2023
-            if scn == "status2023"
-            else scenario_parameters.global_settings(scn)["population_year"]
-        )
+        year = scenario_parameters.global_settings(scn)["population_year"]
 
         # Insert demands of private households
         insert_hh_demand(scn, year, engine)
@@ -846,15 +837,15 @@ def insert_cts_ind_demands():
     None.
 
     """
-    targets = egon.data.config.datasets()["demandregio_cts_ind_demand"][
-        "targets"
-    ]
+
     engine = db.engine()
 
-    for t in targets:
-        db.execute_sql(
-            f"DELETE FROM {targets[t]['schema']}.{targets[t]['table']};"
-        )
+    for table_key in [
+        "cts_ind_demand",
+        "wz_definitions",
+        "timeseries_cts_ind",
+    ]:
+        db.execute_sql(f"DELETE FROM {DemandRegio.targets.tables[table_key]};")
 
     insert_cts_ind_wz_definitions()
 
@@ -869,8 +860,8 @@ def insert_cts_ind_demands():
             year = 2035
 
         # target values per scenario in MWh
-        # for eGon2021 and status2019 demandregio-data is used without scaling
-        if scn not in ["eGon2021", "status2019"]:
+        # for eGon2021 demandregio-data is used without scaling
+        if scn != "eGon2021":
             target_values = {
                 "CTS": get_sector_parameters("electricity", scenario=scn)[
                     "annual_demand"
@@ -897,13 +888,11 @@ def insert_society_data():
     None.
 
     """
-    targets = egon.data.config.datasets()["demandregio_society"]["targets"]
+
     engine = db.engine()
 
-    for t in targets:
-        db.execute_sql(
-            f"DELETE FROM {targets[t]['schema']}.{targets[t]['table']};"
-        )
+    for table_key in ["population", "households"]:
+        db.execute_sql(f"DELETE FROM {DemandRegio.targets.tables[table_key]};")
 
     target_years = np.append(
         get_sector_parameters("global").population_year.values, 2018
@@ -916,9 +905,9 @@ def insert_society_data():
         # Select data for nuts3-regions in boundaries (needed for testmode)
         df_pop = data_in_boundaries(df_pop)
         df_pop.to_sql(
-            targets["population"]["table"],
+            DemandRegio.targets.get_table_name("population"),
             engine,
-            schema=targets["population"]["schema"],
+            schema=DemandRegio.targets.get_table_schema("population"),
             if_exists="append",
         )
 
@@ -932,9 +921,9 @@ def insert_society_data():
             df["hh_size"] = hh_size
             df = df.rename({hh_size: "households"}, axis="columns")
             df.to_sql(
-                targets["household"]["table"],
+                DemandRegio.targets.get_table_name("households"),
                 engine,
-                schema=targets["household"]["schema"],
+                schema=DemandRegio.targets.get_table_schema("households"),
                 if_exists="append",
             )
 
@@ -954,9 +943,6 @@ def insert_timeseries_per_wz(sector, year):
     None.
 
     """
-    targets = egon.data.config.datasets()["demandregio_cts_ind_demand"][
-        "targets"
-    ]
 
     if sector == "CTS":
         profiles = (
@@ -1002,20 +988,16 @@ def insert_timeseries_per_wz(sector, year):
 
     df.load_curve = profiles[df.slp].transpose().values.tolist()
 
-    db.execute_sql(
-        f"""
-                   DELETE FROM {targets['timeseries_cts_ind']['schema']}.
-                   {targets['timeseries_cts_ind']['table']}
+    db.execute_sql(f"""
+                   DELETE FROM {DemandRegio.targets.tables['timeseries_cts_ind']}
                    WHERE wz IN (
-                       SELECT wz FROM {targets['wz_definitions']['schema']}.
-                       {targets['wz_definitions']['table']}
+                       SELECT wz FROM {DemandRegio.targets.tables['wz_definitions']}
                        WHERE sector = '{sector}')
-                   """
-    )
+                   """)
 
     df.to_sql(
-        targets["timeseries_cts_ind"]["table"],
-        schema=targets["timeseries_cts_ind"]["schema"],
+        DemandRegio.targets.get_table_name("timeseries_cts_ind"),
+        schema=DemandRegio.targets.get_table_schema("timeseries_cts_ind"),
         con=db.engine(),
         if_exists="append",
     )

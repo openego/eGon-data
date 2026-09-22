@@ -1,15 +1,14 @@
-"""The module containing all code to map MV grid districts to federal states.
-"""
+"""The module containing all code to map MV grid districts to federal states."""
 
 from sqlalchemy import Column, Integer, String
 from sqlalchemy.ext.declarative import declarative_base
 import geopandas as gpd
 import pandas as pd
 
-from egon.data import config, db
+from egon.data import db
 
 Base = declarative_base()
-from egon.data.datasets import Dataset
+from egon.data.datasets import Dataset, DatasetSources, DatasetTargets
 
 
 class Vg250MvGridDistricts(Dataset):
@@ -29,7 +28,19 @@ class Vg250MvGridDistricts(Dataset):
     #:
     name: str = "Vg250MvGridDistricts"
     #:
-    version: str = "0.0.2"
+    version: str = "0.0.3"
+    sources = DatasetSources(
+        tables={
+            "egon_mv_grid_district": "grid.egon_mv_grid_district",
+            "federal_states": "boundaries.vg250_lan_union",
+        }
+    )
+
+    targets = DatasetTargets(
+        tables={
+            "map": "boundaries.egon_map_mvgriddistrict_vg250",
+        }
+    )
 
     def __init__(self, dependencies):
         super().__init__(
@@ -57,7 +68,9 @@ def create_tables():
 
     """
 
-    db.execute_sql("CREATE SCHEMA IF NOT EXISTS boundaries;")
+    db.execute_sql(
+        f"CREATE SCHEMA IF NOT EXISTS {Vg250MvGridDistricts.targets.get_table_schema('map')};"
+    )
     engine = db.engine()
     MapMvgriddistrictsVg250.__table__.drop(bind=engine, checkfirst=True)
     MapMvgriddistrictsVg250.__table__.create(bind=engine, checkfirst=True)
@@ -73,19 +86,19 @@ def mapping():
     # Create table
     create_tables()
 
-    # Select sources and targets from dataset configuration
-    sources = config.datasets()["map_mvgrid_vg250"]["sources"]
-    target = config.datasets()["map_mvgrid_vg250"]["targets"]["map"]
+    # Select sources and targets from dataset definition
+
+    sources = Vg250MvGridDistricts.sources
+    targets = Vg250MvGridDistricts.targets
 
     # Delete existing data
-    db.execute_sql(f"DELETE FROM {target['schema']}.{target['table']}")
+    db.execute_sql(f"DELETE FROM {targets.tables['map']}")
 
     # Select sources from database
     mv_grid_districts = db.select_geodataframe(
         f"""
         SELECT bus_id as bus_id, ST_Centroid(geom) as geom
-        FROM {sources['egon_mv_grid_district']['schema']}.
-        {sources['egon_mv_grid_district']['table']}
+        FROM {sources.tables['egon_mv_grid_district']}
         """,
         index_col="bus_id",
     )
@@ -93,25 +106,22 @@ def mapping():
     federal_states = db.select_geodataframe(
         f"""
         SELECT gen,geometry
-        FROM {sources['federal_states']['schema']}.
-        {sources['federal_states']['table']}
+        FROM {sources.tables['federal_states']}
         """,
         geom_col="geometry",
         index_col="gen",
     )
 
     # Join mv grid districts and federal states
-    df = pd.DataFrame(
-        gpd.sjoin(mv_grid_districts, federal_states)["gen"]
-    )
+    df = pd.DataFrame(gpd.sjoin(mv_grid_districts, federal_states)["gen"])
 
     # Rename columns
     df.rename({"gen": "vg250_lan"}, axis=1, inplace=True)
 
     # Insert to database
     df.to_sql(
-        target["table"],
-        schema=target["schema"],
+        targets.get_table_name("map"),
+        schema=targets.get_table_schema("map"),
         if_exists="append",
         con=db.engine(),
     )

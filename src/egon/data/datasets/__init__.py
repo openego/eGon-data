@@ -3,17 +3,28 @@
 from __future__ import annotations
 
 from collections import abc
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from functools import partial, reduce, update_wrapper
-from typing import Callable, Iterable, Set, Tuple, Union
+from pathlib import Path
+from typing import Callable, Dict, Iterable, Optional, Set, Tuple, Union, List
+import json
 import re
 
 from airflow.models.baseoperator import BaseOperator as Operator
 from airflow.operators.python import PythonOperator
+from airflow.utils.trigger_rule import TriggerRule
 from sqlalchemy import Column, ForeignKey, Integer, String, Table, orm, tuple_
+from sqlalchemy.dialects.postgresql import JSONB
+from sqlalchemy.exc import OperationalError
 from sqlalchemy.ext.declarative import declarative_base
 
 from egon.data import config, db, logger
+
+try:
+    from egon_validation.rules.base import Rule
+except ImportError:
+    Rule = None  # Type hint only
+
 
 Base = declarative_base()
 SCHEMA = "metadata"
@@ -79,6 +90,7 @@ class Model(Base):
     version = Column(String, nullable=False)
     epoch = Column(Integer, default=0)
     scenarios = Column(String, nullable=False)
+
     dependencies = orm.relationship(
         "Model",
         secondary=DependencyGraph,
@@ -86,6 +98,88 @@ class Model(Base):
         secondaryjoin=id == DependencyGraph.c.dependency_id,
         backref=orm.backref("dependents", cascade="all, delete"),
     )
+
+
+@dataclass
+class DatasetSources:
+    tables: Dict[str, str] = field(default_factory=dict)
+    files: Dict[str, str] = field(default_factory=dict)
+    urls: Dict[str, str] = field(default_factory=dict)
+
+    def empty(self):
+        return not (self.tables or self.files or self.urls)
+
+    def get_table_schema(self, key: str) -> str:
+        """Returns the schema of the table identified by key."""
+        try:
+            return self.tables[key].split(".", 1)[0]
+        except (KeyError, AttributeError, IndexError):
+            raise ValueError(
+                f"Invalid table reference: {self.tables.get(key)}"
+            )
+
+    def get_table_name(self, key: str) -> str:
+        """Returns the table name of the table identified by key."""
+        try:
+            return self.tables[key].split(".", 1)[1]
+        except (KeyError, AttributeError, IndexError):
+            raise ValueError(
+                f"Invalid table reference: {self.tables.get(key)}"
+            )
+
+    def to_dict(self):
+        return {
+            "tables": self.tables,
+            "urls": self.urls,
+            "files": self.files,
+        }
+
+    @classmethod
+    def from_dict(cls, data):
+        return cls(
+            tables=data.get("tables", {}),
+            urls=data.get("urls", {}),
+            files=data.get("files", {}),
+        )
+
+
+@dataclass
+class DatasetTargets:
+    tables: Dict[str, str] = field(default_factory=dict)
+    files: Dict[str, str] = field(default_factory=dict)
+
+    def empty(self):
+        return not (self.tables or self.files)
+
+    def get_table_schema(self, key: str) -> str:
+        """Returns the schema of the table identified by key."""
+        try:
+            return self.tables[key].split(".", 1)[0]
+        except (KeyError, AttributeError, IndexError):
+            raise ValueError(
+                f"Invalid table reference: {self.tables.get(key)}"
+            )
+
+    def get_table_name(self, key: str) -> str:
+        """Returns the table name of the table identified by key."""
+        try:
+            return self.tables[key].split(".", 1)[1]
+        except (KeyError, AttributeError, IndexError):
+            raise ValueError(
+                f"Invalid table reference: {self.tables.get(key)}"
+            )
+
+    def to_dict(self):
+        return {
+            "tables": self.tables,
+            "files": self.files,
+        }
+
+    def from_dict(cls, data):
+        return cls(
+            tables=data.get("tables", {}),
+            files=data.get("files", {}),
+        )
 
 
 #: A :class:`Task` is an Airflow :class:`Operator` or any
@@ -189,6 +283,12 @@ class Dataset:
     #: and a sequential number in case the data changes without the date
     #: or region changing, for example due to implementation changes.
     version: str
+    #: The sources used by the datasets.
+    #: Could be tables, files and urls
+    sources: DatasetSources = field(init=False)
+    #: The targets created by the datasets.
+    #: Could be tables and files
+    targets: DatasetTargets = field(init=False)
     #: The first task(s) of this :class:`Dataset` will be marked as
     #: downstream of any of the listed dependencies. In case of bare
     #: :class:`Task`, a direct link will be created whereas for a
@@ -197,6 +297,21 @@ class Dataset:
     #: The tasks of this :class:`Dataset`. A :class:`TaskGraph` will
     #: automatically be converted to :class:`Tasks_`.
     tasks: Tasks = ()
+    validation: Dict[str, List] = field(default_factory=dict)
+    proceed_on_validation_failure: bool = False
+    #: Airflow trigger rule applied to *all* tasks of this
+    #: :class:`Dataset` -- its own tasks, the validation tasks generated
+    #: from :attr:`validation` and the ``finalize`` task. ``None`` keeps
+    #: Airflow's default, ``"all_success"``.
+    #:
+    #: Set this to ``"all_done"`` for datasets that must still run when
+    #: an upstream task failed, e.g. the validation report: a report is
+    #: most useful for exactly the run that broke, but with
+    #: ``all_success`` it is marked ``upstream_failed`` and never
+    #: generated. Note that subclasses must pass the value on to
+    #: ``super().__init__()``; a bare class attribute is overwritten by
+    #: the generated ``__init__``.
+    trigger_rule: Optional[str] = None
 
     def check_version(self, after_execution=()):
         scenario_names = config.settings()["egon-data"]["--scenarios"]
@@ -236,6 +351,7 @@ class Dataset:
             version=self.version,
             scenarios=config.settings()["egon-data"]["--scenarios"],
         )
+
         dependencies = (
             session.query(Model)
             .filter(
@@ -262,25 +378,111 @@ class Dataset:
 
     def __post_init__(self):
         self.dependencies = list(self.dependencies)
+
+        class_sources = getattr(type(self), "sources", None)
+
+        if isinstance(class_sources, DatasetSources):
+            self.sources = class_sources
+            if self.sources.empty():
+                logger.warning(
+                    f"Dataset '{type(self).__name__}' defines empty sources."
+                )
+
+        else:
+            logger.warning(
+                f"Dataset '{type(self).__name__}' has no valid sources."
+                " Using empty."
+            )
+            self.sources = DatasetSources()
+
+        # ---- TARGETS ----
+        class_targets = getattr(type(self), "targets", None)
+        if isinstance(class_targets, DatasetTargets):
+            self.targets = class_targets
+            if self.targets.empty():
+                logger.warning(
+                    f"Dataset '{type(self).__name__}' defines empty targets."
+                )
+
+        else:
+            logger.warning(
+                f"Dataset '{type(self).__name__}' has no valid targets."
+                "Using empty."
+            )
+            self.targets = DatasetTargets()
+
         if not isinstance(self.tasks, Tasks_):
             self.tasks = Tasks_(self.tasks)
+            # Process validation configuration
+        if self.validation:
+            from egon.data.validation import create_validation_tasks
+
+            validation_tasks = create_validation_tasks(
+                validation_dict=self.validation,
+                dataset_name=self.name,
+                proceed_on_validation_failure=self.proceed_on_validation_failure,
+            )
+
+            # Add validation tasks to existing Tasks_ without re-processing dependencies
+            if validation_tasks:
+                # Store original last tasks before adding validation
+                original_last_tasks = set(self.tasks.last)
+
+                # Add validation tasks to the Tasks_ dict
+                for vtask in validation_tasks:
+                    self.tasks[vtask.task_id] = vtask
+
+                # Update last to be validation tasks (they run after data tasks)
+                self.tasks.last = set(validation_tasks)
+
+                # Set up dependencies: original last tasks -> validation tasks
+                for last_task in sorted(
+                    original_last_tasks, key=lambda t: t.task_id
+                ):
+                    for vtask in validation_tasks:
+                        last_task.set_downstream(vtask)
+
         if len(self.tasks.last) > 1:
             # Explicitly create single final task, because we can't know
             # which of the multiple tasks finishes last.
+            # Save current state before re-creating Tasks_ (validation tasks
+            # are in dict/last but not in graph, so they'd be lost otherwise)
+            current_last_tasks = set(self.tasks.last)
+            current_tasks_dict = dict(self.tasks)
+
             name = prefix(self)
             name = f"{name if name else f'{self.__module__}.'}{self.name}."
-            update_version = PythonOperator(
-                task_id=f"{name}update-version",
-                # Do nothing, because updating will be added later.
+            finalize = PythonOperator(
+                task_id=f"{name}finalize",
+                # Do nothing here; version update is added via check_version wrapper.
                 python_callable=lambda *xs, **ks: None,
             )
-            self.tasks = Tasks_((self.tasks.graph, update_version))
-        # Due to the `if`-block above, there'll now always be exactly
-        # one task in `self.tasks.last` which the next line just
-        # selects.
-        last = list(self.tasks.last)[0]
+            self.tasks = Tasks_((self.tasks.graph, finalize))
+
+            # Re-add tasks not in original graph (e.g., validation tasks)
+            for task_id, task in current_tasks_dict.items():
+                if task_id not in self.tasks:
+                    self.tasks[task_id] = task
+
+            # Set ALL current last tasks as upstream of finalize
+            for task in current_last_tasks:
+                task.set_downstream(finalize)
+        # Select one task from `self.tasks.last` to handle version update.
+        # With finalize task there's exactly one; otherwise pick first alphabetically.
+        last = sorted(list(self.tasks.last), key=lambda t: t.task_id)[0]
+
+        # Raises ValueError at DAG parse time on an unknown rule, which
+        # is where we want to hear about it.
+        trigger_rule = (
+            TriggerRule(self.trigger_rule)
+            if self.trigger_rule is not None
+            else None
+        )
+
         for task in self.tasks.values():
             task.dataset = self
+            if trigger_rule is not None:
+                task.trigger_rule = trigger_rule
             cls = task.__class__
             versioned = type(
                 f"{self.name[0].upper()}{self.name[1:]} (versioned)",
@@ -302,3 +504,133 @@ class Dataset:
         for p in predecessors:
             for first in self.tasks.first:
                 p.set_downstream(first)
+
+        self.register()
+
+    def __init_subclass__(cls) -> None:
+        # Warn about missing or invalid class attributes
+        if not isinstance(getattr(cls, "sources", None), DatasetSources):
+            logger.warning(
+                f"Dataset '{cls.__name__}' does not define valid 'sources'.",
+                stacklevel=2,
+            )
+        if not isinstance(getattr(cls, "targets", None), DatasetTargets):
+            logger.warning(
+                f"Dataset '{cls.__name__}' does not define valid 'targets'.",
+                stacklevel=2,
+            )
+
+    def register(self):
+        """
+        Register dataset sources and targets in a single transaction.
+        Only writes if sources or targets have changed.
+        Creates table if it doesn't exist yet.
+
+        Constructing a `Dataset` (e.g. while importing the pipeline DAG,
+        or in unit tests) must not require a live database connection, so
+        registration is skipped with a warning if the database is
+        unavailable.
+        """
+        try:
+            SourcesTargetsModel.__table__.create(
+                bind=db.engine(), checkfirst=True
+            )
+
+            with db.session_scope() as session:
+                existing = (
+                    session.query(SourcesTargetsModel)
+                    .filter_by(name=self.name)
+                    .first()
+                )
+
+                sources_dict = self.sources.to_dict()
+                targets_dict = self.targets.to_dict()
+
+                if not existing:
+                    session.add(
+                        SourcesTargetsModel(
+                            name=self.name,
+                            sources=sources_dict,
+                            targets=targets_dict,
+                        )
+                    )
+                else:
+                    if (existing.sources or {}) != sources_dict:
+                        existing.sources = sources_dict
+                    if (existing.targets or {}) != targets_dict:
+                        existing.targets = targets_dict
+        except OperationalError as e:
+            logger.warning(
+                f"Could not register sources/targets for '{self.name}' "
+                f"(database unavailable): {e}. Skipping registration."
+            )
+
+
+def load_sources_and_targets(
+    name: str,
+) -> tuple[DatasetSources, DatasetTargets]:
+    """
+    Load DatasetSources and DatasetTargets from dataset_sources_targets table.
+
+    Parameters
+    ----------
+        name (str): Name of the dataset.
+
+    Returns
+    -------
+        Tuple[DatasetSources, DatasetTargets]
+    """
+    with db.session_scope() as session:
+        entry = session.query(SourcesTargetsModel).filter_by(name=name).first()
+
+        if entry is None:
+            raise ValueError(
+                f"Dataset '{name}' not found in dataset_sources_targets table."
+                " Make sure the dataset has been instantiated before"
+                " calling load_sources_and_targets()."
+            )
+
+        raw_sources = dict(entry.sources or {})
+        raw_targets = dict(entry.targets or {})
+
+    sources = DatasetSources(**raw_sources)
+    targets = DatasetTargets(**raw_targets)
+
+    return sources, targets
+
+
+class SourcesTargetsModel(Base):
+    __tablename__ = "dataset_sources_targets"
+    __table_args__ = {"schema": "metadata"}
+
+    name = Column(String, primary_key=True)
+    sources = Column(JSONB)
+    targets = Column(JSONB)
+
+
+def export_dataset_io_to_json(
+    output_path: str = "dataset_io_overview.json",
+) -> None:
+    """
+    Export all sources and targets of datasets to a JSON file.
+    Parameters
+    ----------
+    output_path : str
+        Path to the output JSON file.
+    """
+    result = {}
+    with db.session_scope() as session:
+        entries = session.query(SourcesTargetsModel).all()
+        for entry in entries:
+            name = entry.name
+            try:
+                result[name] = {
+                    "sources": dict(entry.sources or {}),
+                    "targets": dict(entry.targets or {}),
+                }
+            except Exception as e:
+                print(f"⚠️ Could not process dataset '{name}': {e}")
+
+    output_file = Path(output_path)
+    output_file.write_text(json.dumps(result, indent=2, ensure_ascii=False))
+    print(f"✅ Dataset I/O overview written to {output_file.resolve()}")

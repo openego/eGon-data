@@ -197,16 +197,12 @@ def calc_usable_geothermal_potential(max_costs=2, min_costs=0):
             gt_potential_dh.loc[idx_demand_restriction, "demand"] / 3000
         )
 
-        print(
-            f"""Geothermal potential in Germany:
-              {round(gt_potential_dh["Q_flow"].sum()/1000, 3)} GW_th"""
-        )
-        print(
-            f"""
+        print(f"""Geothermal potential in Germany:
+              {round(gt_potential_dh["Q_flow"].sum()/1000, 3)} GW_th""")
+        print(f"""
             Geothermal potential in Germany close to large district heating:
                 {round(gt_potential_dh['installed_MW'].sum()/1000, 3)} GW_th
-            """
-        )
+            """)
 
         return gt_potential_dh["installed_MW"].sum()
     else:

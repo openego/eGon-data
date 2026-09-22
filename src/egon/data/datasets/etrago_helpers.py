@@ -1,5 +1,4 @@
-"""Module for repeated bus insertion tasks
-"""
+"""Module for repeated bus insertion tasks"""
 
 from geoalchemy2 import Geometry
 import geopandas as gpd
@@ -27,13 +26,11 @@ def initialise_bus_insertion(carrier, target, scenario="eGon2035"):
 
     """
     # Delete existing buses
-    db.execute_sql(
-        f"""
+    db.execute_sql(f"""
         DELETE FROM {target['schema']}.{target['table']}
         WHERE scn_name = '{scenario}'
         AND carrier = '{carrier}' AND country = 'DE'
-        """
-    )
+        """)
 
     # initalize dataframe for new buses
     return (
@@ -128,8 +125,7 @@ def copy_and_modify_links(from_scn, to_scn, carriers, sector):
             except KeyError:
                 pass
 
-    db.execute_sql(
-        f"""
+    db.execute_sql(f"""
         DELETE FROM grid.egon_etrago_link
         WHERE {where_clause} AND scn_name = '{to_scn}' AND
         bus0 NOT IN (
@@ -139,8 +135,7 @@ def copy_and_modify_links(from_scn, to_scn, carriers, sector):
             SELECT bus_id FROM grid.egon_etrago_bus
             WHERE scn_name = '{to_scn}' AND country != 'DE'
         );
-        """
-    )
+        """)
 
     gdf.to_postgis(
         "egon_etrago_link",
@@ -169,16 +164,14 @@ def copy_and_modify_stores(from_scn, to_scn, carriers, sector):
     """
     where_clause = "carrier IN " + str(tuple(carriers)).replace("',)", "')")
 
-    df = db.select_dataframe(
-        f"""
+    df = db.select_dataframe(f"""
         SELECT * FROM grid.egon_etrago_store
         WHERE {where_clause} AND scn_name = '{from_scn}' AND
         bus IN (
             SELECT bus_id FROM grid.egon_etrago_bus
             WHERE scn_name = '{from_scn}' AND country = 'DE'
         );
-        """
-    )
+        """)
 
     df["scn_name"] = to_scn
     scn_params = get_sector_parameters(sector, to_scn)
@@ -192,16 +185,14 @@ def copy_and_modify_stores(from_scn, to_scn, carriers, sector):
             except KeyError:
                 pass
 
-    db.execute_sql(
-        f"""
+    db.execute_sql(f"""
         DELETE FROM grid.egon_etrago_store
         WHERE {where_clause} AND scn_name = '{to_scn}' AND
         bus NOT IN (
             SELECT bus_id FROM grid.egon_etrago_bus
             WHERE scn_name = '{to_scn}' AND country != 'DE'
         );
-        """
-    )
+        """)
 
     df.to_sql(
         "egon_etrago_store",
@@ -245,13 +236,11 @@ def copy_and_modify_buses(from_scn, to_scn, filter_dict):
 
     gdf.loc[gdf["scn_name"] == from_scn, "scn_name"] = to_scn
 
-    db.execute_sql(
-        f"""
+    db.execute_sql(f"""
         DELETE FROM grid.egon_etrago_bus
         WHERE {where_clause} scn_name = '{to_scn}' AND
         country = 'DE'
-        """
-    )
+        """)
 
     gdf.to_postgis(
         "egon_etrago_bus",

@@ -1,5 +1,4 @@
-"""The central module containing all code dealing with scenario table.
-"""
+"""The central module containing all code dealing with scenario table."""
 
 from pathlib import Path
 from urllib.request import urlretrieve
@@ -13,7 +12,7 @@ from sqlalchemy.orm import sessionmaker
 import pandas as pd
 
 from egon.data import db
-from egon.data.datasets import Dataset
+from egon.data.datasets import Dataset, DatasetSources, DatasetTargets
 import egon.data.config
 import egon.data.datasets.scenario_parameters.parameters as parameters
 
@@ -39,25 +38,18 @@ def create_table():
     None.
     """
     engine = db.engine()
-    db.execute_sql("CREATE SCHEMA IF NOT EXISTS scenario;")
     db.execute_sql(
-        "DROP TABLE IF EXISTS scenario.egon_scenario_parameters CASCADE;"
+        f"CREATE SCHEMA IF NOT EXISTS {ScenarioParameters.targets.get_table_schema('egon_scenario_parameters')};"
+    )
+    db.execute_sql(
+        f"DROP TABLE IF EXISTS {ScenarioParameters.targets.tables['egon_scenario_parameters']} CASCADE;"
     )
     EgonScenario.__table__.create(bind=engine, checkfirst=True)
 
 
 def get_scenario_year(scenario_name):
-    """Derives scenarios year from scenario name. Scenario
-    eGon100RE is an exception as year is not in the name."""
-    try:
-        year = int(scenario_name[-4:])
-    except ValueError as e:
-        if e.args[0] == "invalid literal for int() with base 10: '00RE'":
-            year = 2050  # eGon100RE
-        else:
-            raise ValueError(
-                "The names of the scenarios do not end with the year!"
-            )
+    """Derives scenarios year from scenario name."""
+    year = int(scenario_name[-4:])
     return year
 
 
@@ -70,7 +62,9 @@ def insert_scenarios():
 
     """
 
-    db.execute_sql("DELETE FROM scenario.egon_scenario_parameters CASCADE;")
+    db.execute_sql(
+        f"DELETE FROM {ScenarioParameters.targets.tables['egon_scenario_parameters']} CASCADE;"
+    )
 
     session = sessionmaker(bind=db.engine())()
 
@@ -99,27 +93,6 @@ def insert_scenarios():
 
     session.commit()
 
-    # Scenario eGon100RE
-    egon100re = EgonScenario(name="eGon100RE")
-
-    egon100re.description = """
-        The long-term scenario eGon100RE represents a 100% renewable
-        energy secor in Germany.
-        """
-    egon100re.global_parameters = parameters.global_settings(egon100re.name)
-
-    egon100re.electricity_parameters = parameters.electricity(egon100re.name)
-
-    egon100re.gas_parameters = parameters.gas(egon100re.name)
-
-    egon100re.heat_parameters = parameters.heat(egon100re.name)
-
-    egon100re.mobility_parameters = parameters.mobility(egon100re.name)
-
-    session.add(egon100re)
-
-    session.commit()
-
     # Scenario eGon2021
     eGon2021 = EgonScenario(name="eGon2021")
 
@@ -142,44 +115,69 @@ def insert_scenarios():
 
     session.commit()
 
-    # Scenario status2019
-    status2019 = EgonScenario(name="status2019")
+    # Scenario status2024
+    status2024 = EgonScenario(name="status2024")
 
-    status2019.description = """
-        Status quo ante scenario for 2019 for validation use within the project PoWerD.
+    status2024.description = """
+        Status quo ante scenario for 2024.
         """
-    status2019.global_parameters = parameters.global_settings(status2019.name)
+    status2024.global_parameters = parameters.global_settings(status2024.name)
 
-    status2019.electricity_parameters = parameters.electricity(status2019.name)
+    status2024.electricity_parameters = parameters.electricity(status2024.name)
 
-    status2019.gas_parameters = parameters.gas(status2019.name)
+    status2024.gas_parameters = parameters.gas(status2024.name)
 
-    status2019.heat_parameters = parameters.heat(status2019.name)
+    status2024.heat_parameters = parameters.heat(status2024.name)
 
-    status2019.mobility_parameters = parameters.mobility(status2019.name)
+    status2024.mobility_parameters = parameters.mobility(status2024.name)
 
-    session.add(status2019)
+    session.add(status2024)
 
     session.commit()
 
-    # Scenario status2023
-    status2023 = EgonScenario(name="status2023")
+    # Scenario reGon2037
+    reGon2037 = EgonScenario(name="reGon2037")
 
-    status2023.description = """
-        Status quo ante scenario for 2023.
+    reGon2037.description = """
+        The scenario reGon2037 is based on scenario C 2037 of the
+        Netzentwicklungsplan Strom, Version 2025.
+        Scenario C 2037 is characterized by an ambitious expansion of
+        renewable energies and a higher share of sector coupling.
         """
-    # TODO status2023 all settings from 2019 are used
-    status2023.global_parameters = parameters.global_settings(status2023.name)
+    reGon2037.global_parameters = parameters.global_settings(reGon2037.name)
 
-    status2023.electricity_parameters = parameters.electricity(status2019.name)
+    reGon2037.electricity_parameters = parameters.electricity(reGon2037.name)
 
-    status2023.gas_parameters = parameters.gas(status2019.name)
+    reGon2037.gas_parameters = parameters.gas(reGon2037.name)
 
-    status2023.heat_parameters = parameters.heat(status2019.name)
+    reGon2037.heat_parameters = parameters.heat(reGon2037.name)
 
-    status2023.mobility_parameters = parameters.mobility(status2023.name)
+    reGon2037.mobility_parameters = parameters.mobility(reGon2037.name)
 
-    session.add(status2023)
+    session.add(reGon2037)
+
+    session.commit()
+
+    # Scenario reGon2045
+    reGon2045 = EgonScenario(name="reGon2045")
+
+    reGon2045.description = """
+        The scenario reGon2045 is based on scenario C 2045 of the
+        Netzentwicklungsplan Strom, Version 2025.
+        Scenario C 2045 is characterized by an ambitious expansion of
+        renewable energies and a higher share of sector coupling.
+        """
+    reGon2045.global_parameters = parameters.global_settings(reGon2045.name)
+
+    reGon2045.electricity_parameters = parameters.electricity(reGon2045.name)
+
+    reGon2045.gas_parameters = parameters.gas(reGon2045.name)
+
+    reGon2045.heat_parameters = parameters.heat(reGon2045.name)
+
+    reGon2045.mobility_parameters = parameters.mobility(reGon2045.name)
+
+    session.add(reGon2045)
 
     session.commit()
 
@@ -209,47 +207,35 @@ def get_sector_parameters(sector, scenario=None):
         if (
             scenario
             in db.select_dataframe(
-                "SELECT name FROM scenario.egon_scenario_parameters"
+                f"SELECT name FROM {ScenarioParameters.targets.tables['egon_scenario_parameters']}"
             ).name.values
         ):
             values = db.select_dataframe(
                 f"""
                     SELECT {sector}_parameters as val
-                    FROM scenario.egon_scenario_parameters
+                    FROM {ScenarioParameters.targets.tables['egon_scenario_parameters']}
                     WHERE name = '{scenario}';"""
             ).val[0]
         else:
             print(f"Scenario name {scenario} is not valid.")
     else:
+        scenario_names = (
+            egon.data.config.settings()["egon-data"]["--scenarios"]
+            + ["eGon2021"]
+        )
+
         values = pd.concat(
             [
                 pd.DataFrame(
                     db.select_dataframe(
                         f"""
-                    SELECT {sector}_parameters as val
-                    FROM scenario.egon_scenario_parameters
-                    WHERE name='eGon2035'"""
-                    ).val[0],
-                    index=["eGon2035"],
-                ),
-                pd.DataFrame(
-                    db.select_dataframe(
-                        f"""
                         SELECT {sector}_parameters as val
-                        FROM scenario.egon_scenario_parameters
-                        WHERE name='eGon100RE'"""
+                        FROM {ScenarioParameters.targets.tables['egon_scenario_parameters']}
+                        WHERE name='{scn}'"""
                     ).val[0],
-                    index=["eGon100RE"],
-                ),
-                pd.DataFrame(
-                    db.select_dataframe(
-                        f"""
-                        SELECT {sector}_parameters as val
-                        FROM scenario.egon_scenario_parameters
-                        WHERE name='eGon2021'"""
-                    ).val[0],
-                    index=["eGon2021"],
-                ),
+                    index=[scn],
+                )
+                for scn in scenario_names
             ],
             ignore_index=True,
         )
@@ -259,23 +245,21 @@ def get_sector_parameters(sector, scenario=None):
 
 def download_pypsa_technology_data():
     """Downlad PyPSA technology data results."""
-    data_path = Path(".") / "pypsa_technology_data"
+    data_path = Path(
+        ScenarioParameters.targets.files["technology_data"]
+    ).parent
     # Delete folder if it already exists
     if data_path.exists() and data_path.is_dir():
         shutil.rmtree(data_path)
-    # Get parameters from config and set download URL
-    sources = egon.data.config.datasets()["pypsa-technology-data"]["sources"][
-        "zenodo"
-    ]
-    url = f"""https://zenodo.org/record/{sources['deposit_id']}/files/{sources['file']}"""
-    target_file = egon.data.config.datasets()["pypsa-technology-data"][
-        "targets"
-    ]["file"]
-
     # Retrieve files
-    urlretrieve(url, target_file)
+    urlretrieve(
+        ScenarioParameters.sources.urls["pypsa_technology_data"]["url"],
+        ScenarioParameters.targets.files["pypsa_zip"],
+    )
 
-    with zipfile.ZipFile(target_file, "r") as zip_ref:
+    with zipfile.ZipFile(
+        ScenarioParameters.targets.files["pypsa_zip"], "r"
+    ) as zip_ref:
         zip_ref.extractall(".")
 
 
@@ -283,10 +267,11 @@ class ScenarioParameters(Dataset):
     """
     Create and fill table with central parameters for each scenario
 
-    This dataset creates and fills a table in the database that includes central parameters
-    for each scenarios. These parameters are mostly from extrernal sources, they are defined
-    and referenced within this dataset.
-    The table is acced by various datasets to access the parameters for all sectors.
+    This dataset creates and fills a table in the database that includes
+    central parameters for each scenarios. These parameters are mostly from
+    extrernal sources, they are defined and referenced within this dataset.
+    The table is acced by various datasets to access the parameters for all
+    sectors.
 
 
     *Dependencies*
@@ -294,7 +279,8 @@ class ScenarioParameters(Dataset):
 
 
     *Resulting tables*
-      * :py:class:`scenario.egon_scenario_parameters <egon.data.datasets.scenario_parameters.EgonScenario>` is created and filled
+      * :py:class:`scenario.egon_scenario_parameters \
+<egon.data.datasets.scenario_parameters.EgonScenario>` is created and filled
 
 
     """
@@ -302,7 +288,26 @@ class ScenarioParameters(Dataset):
     #:
     name: str = "ScenarioParameters"
     #:
-    version: str = "0.0.19"
+    version: str = "0.0.25"
+
+    sources = DatasetSources(
+        urls={
+            "pypsa_technology_data": {
+                "url": "https://zenodo.org/record/5544025/files/PyPSA/technology-data-v0.3.0.zip",
+            }
+        }
+    )
+
+    targets = DatasetTargets(
+        tables={
+            "egon_scenario_parameters": "scenario.egon_scenario_parameters",
+        },
+        files={
+            "pypsa_zip": "pypsa_technology_data_egon_data.zip",
+            "data_dir": "PyPSA-technology-data-94085a8/outputs/",
+            "technology_data": "pypsa_technology_data/technology_data.xlsx",
+        },
+    )
 
     def __init__(self, dependencies):
         super().__init__(

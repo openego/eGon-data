@@ -10,10 +10,7 @@ import zipfile
 
 import pandas as pd
 
-from egon.data.datasets import Dataset
-import egon.data.config
-
-WORKING_DIR_MASTR_NEW = Path(".", "bnetza_mastr", "dump_2025-02-09")
+from egon.data.datasets import Dataset, DatasetSources, DatasetTargets
 
 
 def download_mastr_data():
@@ -22,7 +19,7 @@ def download_mastr_data():
     def download(dataset_name, download_dir):
         print(f"Downloading dataset {dataset_name} to {download_dir} ...")
         # Get parameters from config and set download URL
-        data_config = egon.data.config.datasets()[dataset_name]
+        data_config = mastr_data_setup.sources.urls[dataset_name]["zenodo"]
         zenodo_files_url = (
             f"https://zenodo.org/record/" f"{data_config['deposit_id']}/files/"
         )
@@ -35,21 +32,31 @@ def download_mastr_data():
                 download_dir / dump_file_name,
             )
 
-    if not os.path.exists(WORKING_DIR_MASTR_NEW):
-        WORKING_DIR_MASTR_NEW.mkdir(exist_ok=True, parents=True)
+    if not os.path.exists(
+        Path(mastr_data_setup.targets.files["mastr"]["download_dir"]["path"])
+    ):
+        Path(
+            mastr_data_setup.targets.files["mastr"]["download_dir"]["path"]
+        ).mkdir(exist_ok=True, parents=True)
 
-    download(dataset_name="mastr_new", download_dir=WORKING_DIR_MASTR_NEW)
+    download(
+        dataset_name="mastr",
+        download_dir=Path(
+            mastr_data_setup.targets.files["mastr"]["download_dir"]["path"]
+        ),
+    )
 
 
 def download_mastr_geocoding():
     """Download MaStR_geocoding data from Zenodo."""
-    data_config = egon.data.config.datasets()["mastr_new"]
+    data_config = mastr_data_setup.sources.urls["geocoding"]
     zenodo_files_url = (
-        f"https://zenodo.org/record/"
-        f"{data_config['geocoding_deposit_id']}/files/"
+        f"https://zenodo.org/record/" f"{data_config['deposit_id']}/files/"
     )
-    WORKING_DIR_MASTR_GEOCODING = Path(".", data_config["geocoding_path"])
-    dump_file_name = data_config["dump_geocoding_name"]
+    WORKING_DIR_MASTR_GEOCODING = Path(
+        ".", mastr_data_setup.targets.files["geocoding"]
+    )
+    dump_file_name = data_config["dump_name"]
     if not os.path.exists(WORKING_DIR_MASTR_GEOCODING):
         WORKING_DIR_MASTR_GEOCODING.mkdir(exist_ok=True, parents=True)
 
@@ -107,14 +114,16 @@ def extract_and_preprocess_mastr():
     """
 
     # Extract mastr
-    data_config = egon.data.config.datasets()["mastr_new"]
-    dump_file_name = data_config["dump_name"]
-    raw_data_path = WORKING_DIR_MASTR_NEW / dump_file_name
+    path = Path(
+        mastr_data_setup.targets.files["mastr"]["download_dir"]["path"]
+    )
+    dump_file_name = mastr_data_setup.sources.urls["mastr"]["zenodo"][
+        "dump_name"
+    ]
+    raw_data_path = path / dump_file_name
 
-    with zipfile.ZipFile(
-        WORKING_DIR_MASTR_NEW / (dump_file_name + ".zip"), "r"
-    ) as zip_ref:
-        zip_ref.extractall(WORKING_DIR_MASTR_NEW)
+    with zipfile.ZipFile(path / (dump_file_name + ".zip"), "r") as zip_ref:
+        zip_ref.extractall(path)
 
     # prepocess mastr data
     wind = pd.read_csv(raw_data_path / "bnetza_mastr_wind_raw.csv")
@@ -157,7 +166,7 @@ def extract_and_preprocess_mastr():
     # Locations and grid conn. points
     cols_mapping = {"MastrNummer": "MaStRNummer"}
     loc_vlevel.rename(columns=cols_mapping).to_csv(
-        WORKING_DIR_MASTR_NEW / "location_elec_generation_raw.csv",
+        path / "location_elec_generation_raw.csv",
         index=None,
         encoding="UTF-8",
     )
@@ -198,13 +207,13 @@ def extract_and_preprocess_mastr():
 
     # Export data
     wind.rename(columns=cols_mapping).replace(values_renaming).to_csv(
-        WORKING_DIR_MASTR_NEW / "bnetza_mastr_wind_cleaned.csv",
+        path / "bnetza_mastr_wind_cleaned.csv",
         index=None,
         encoding="UTF-8",
     )
 
     solar.rename(columns=cols_mapping).replace(values_renaming).to_csv(
-        WORKING_DIR_MASTR_NEW / "bnetza_mastr_solar_cleaned.csv",
+        path / "bnetza_mastr_solar_cleaned.csv",
         index=None,
         encoding="UTF-8",
     )
@@ -212,25 +221,25 @@ def extract_and_preprocess_mastr():
     bio_with_th_power.rename(columns=cols_mapping).replace(
         values_renaming
     ).to_csv(
-        WORKING_DIR_MASTR_NEW / "bnetza_mastr_biomass_cleaned.csv",
+        path / "bnetza_mastr_biomass_cleaned.csv",
         index=None,
         encoding="UTF-8",
     )
 
     hydro.rename(columns=cols_mapping).replace(values_renaming).to_csv(
-        WORKING_DIR_MASTR_NEW / "bnetza_mastr_hydro_cleaned.csv",
+        path / "bnetza_mastr_hydro_cleaned.csv",
         index=None,
         encoding="UTF-8",
     )
 
     gsgk.rename(columns=cols_mapping).replace(values_renaming).to_csv(
-        WORKING_DIR_MASTR_NEW / "bnetza_mastr_gsgk_cleaned.csv",
+        path / "bnetza_mastr_gsgk_cleaned.csv",
         index=None,
         encoding="UTF-8",
     )
 
     storage.rename(columns=cols_mapping).replace(values_renaming).to_csv(
-        WORKING_DIR_MASTR_NEW / "bnetza_mastr_storage_cleaned.csv",
+        path / "bnetza_mastr_storage_cleaned.csv",
         index=None,
         encoding="UTF-8",
     )
@@ -238,13 +247,13 @@ def extract_and_preprocess_mastr():
     combustion_with_th_power.rename(columns=cols_mapping).replace(
         values_renaming
     ).to_csv(
-        WORKING_DIR_MASTR_NEW / "bnetza_mastr_combustion_cleaned.csv",
+        path / "bnetza_mastr_combustion_cleaned.csv",
         index=None,
         encoding="UTF-8",
     )
 
     nuclear.rename(columns=cols_mapping).replace(values_renaming).to_csv(
-        WORKING_DIR_MASTR_NEW / "bnetza_mastr_nuclear_cleaned.csv",
+        path / "bnetza_mastr_nuclear_cleaned.csv",
         index=None,
         encoding="UTF-8",
     )
@@ -280,12 +289,47 @@ class mastr_data_setup(Dataset):
     #:
     name: str = "MastrData"
     #:
-    version: str = "0.0.3"
+    version: str = "0.0.4"
     #:
     tasks = (
         download_mastr_data,
         extract_and_preprocess_mastr,
         download_mastr_geocoding,
+    )
+
+    sources = DatasetSources(
+        urls={
+            "mastr": {
+                "zenodo": {
+                    "deposit_id": "14783581",
+                    "file_basename": "bnetza_mastr",
+                    "dump_name": "bnetza_open_mastr_2025-02-09",
+                    "technologies": [
+                        "biomass",
+                        "combustion",
+                        "gsgk",
+                        "hydro",
+                        "nuclear",
+                        "solar",
+                        "storage",
+                        "wind",
+                    ],
+                }
+            },
+            "geocoding": {
+                "dump_name": "mastr_geocoding_dump_2025-02-09_14783581.gpkg",
+                "deposit_id": 17279317,
+            },
+        }
+    )
+
+    targets = DatasetTargets(
+        files={
+            "mastr": {
+                "download_dir": {"path": "./bnetza_mastr/dump_2025-02-09"},
+            },
+            "geocoding": "mastr_geocoding",
+        }
     )
 
     def __init__(self, dependencies):
