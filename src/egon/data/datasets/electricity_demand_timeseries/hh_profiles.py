@@ -239,7 +239,7 @@ class HouseholdDemands(Dataset):
     #:
     name: str = "Household Demands"
     #:
-    version: str = "0.0.17"
+    version: str = "0.0.18"
     sources = DatasetSources(
         tables={
             "demandregio_hh": "demand.egon_demandregio_hh",
@@ -2009,6 +2009,28 @@ def mv_grid_district_HH_electricity_load(scenario_name, scenario_year):
         # Reshape data: put MV grid ids in columns to a single index column
         mvgd_profiles = mvgd_profiles.reset_index()
         mvgd_profiles.columns = ["bus_id", "p_set"]
+
+    # Scale the profiles to the household demand of the scenario.
+    target = db.select_dataframe(
+        f"""SELECT SUM(demand) AS demand FROM
+                {HouseholdDemands.sources.tables['demandregio_hh']}
+                WHERE scenario = '{scenario_name}'""",
+    ).demand.iat[0]
+
+    profiles_sum = mvgd_profiles["p_set"].apply(sum).sum()
+
+    if not target or not profiles_sum:
+        raise ValueError(
+            f"Cannot scale the household demand profiles of scenario"
+            f" '{scenario_name}': the target demand from"
+            f" {HouseholdDemands.sources.tables['demandregio_hh']} is"
+            f" {target} MWh and the profiles sum to {profiles_sum} MWh."
+        )
+
+    factor = target / profiles_sum
+    mvgd_profiles["p_set"] = mvgd_profiles["p_set"].apply(
+        lambda p_set: [value * factor for value in p_set]
+    )
 
     # Add remaining columns
     mvgd_profiles["scn_name"] = scenario_name
