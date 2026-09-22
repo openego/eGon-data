@@ -69,8 +69,6 @@ class ZensusPopulation(Dataset):
                             "zensus_population_id",
                             "building_count",
                             "apartment_count",
-                            "geom",
-                            "geom_point",
                         ],
                     ),
                     TableValidation(
@@ -95,8 +93,6 @@ class ZensusPopulation(Dataset):
                             "id",
                             "grid_id",
                             "population",
-                            "geom_point",
-                            "geom",
                         ],
                     ),
                 ]

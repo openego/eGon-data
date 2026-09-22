@@ -815,7 +815,6 @@ class Chp(Dataset):
                             "ch4_bus_id",
                             "voltage_level",
                             "scenario",
-                            "geom",
                         ],
                         value_set_columns={
                             "carrier": [

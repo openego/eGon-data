@@ -84,7 +84,7 @@ class WeatherData(Dataset):
                             "geom": "geometry",
                             "geom_point": "geometry",
                         },
-                        not_null_columns=["w_id", "geom", "geom_point"],
+                        not_null_columns=["w_id"],
                     ),
                 ]
             },

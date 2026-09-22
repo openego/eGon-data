@@ -1329,7 +1329,6 @@ class FinalValidations(Dataset):
                             "v_mag_pu_max",
                             "x",
                             "y",
-                            "geom",
                         ],
                         value_set_columns={
                             "scn_name": [
@@ -1559,8 +1558,6 @@ class FinalValidations(Dataset):
                             "v_ang_min",
                             "v_ang_max",
                             "v_nom",
-                            "geom",
-                            "topo",
                         ],
                         value_set_columns={
                             "scn_name": [
@@ -1649,8 +1646,6 @@ class FinalValidations(Dataset):
                             "marginal_cost",
                             "length",
                             "terrain_factor",
-                            "geom",
-                            "topo",
                         ],
                         value_set_columns={
                             "scn_name": [
@@ -2087,8 +2082,6 @@ class FinalValidations(Dataset):
                             "v_ang_max",
                             "capital_cost",
                             "num_parallel",
-                            "geom",
-                            "topo",
                         ],
                         value_set_columns={
                             "scn_name": [
@@ -2127,8 +2120,6 @@ class FinalValidations(Dataset):
                             "bus_id",
                             "lon",
                             "lat",
-                            "point",
-                            "polygon",
                             "voltage",
                             "power_type",
                             "substation",

@@ -170,7 +170,6 @@ class Storages(Dataset):
                             "bus_id",
                             "voltage_level",
                             "scenario",
-                            "geom",
                         ],
                         value_set_columns={
                             "scenario": ["eGon2035", "eGon100RE"],

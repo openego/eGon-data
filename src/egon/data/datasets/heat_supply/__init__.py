@@ -439,7 +439,6 @@ class HeatSupply(Dataset):
                             "carrier",
                             "category",
                             "capacity",
-                            "geometry",
                             "scenario",
                         ],
                         value_set_columns={
@@ -475,7 +474,6 @@ class HeatSupply(Dataset):
                             "carrier",
                             "category",
                             "capacity",
-                            "geometry",
                             "scenario",
                         ],
                         value_set_columns={
