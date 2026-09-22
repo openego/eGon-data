@@ -81,7 +81,7 @@ class ZensusMiscellaneous(Dataset):
     def __init__(self, dependencies):
         super().__init__(
             name="ZensusMiscellaneous",
-            version="0.0.4",
+            version="0.0.5",
             dependencies=dependencies,
             tasks=(
                 create_zensus_misc_tables,
@@ -91,6 +91,10 @@ class ZensusMiscellaneous(Dataset):
                 "data-quality": [
                     TableValidation(
                         table_name="society.egon_destatis_zensus_apartment_per_ha",
+                        # TODO(#1240): Zensus 2011 values. Measured for 2022:
+                        # Schleswig-Holstein 1046577; Everything expected
+                        # 27431017 (27636192 CSV rows less 205175 cells with
+                        # no population row). Confirm against the DE run.
                         row_count=resolve_boundary_dependence(
                             {
                                 "Schleswig-Holstein": 1946300,
@@ -122,6 +126,9 @@ class ZensusMiscellaneous(Dataset):
                     ),
                     TableValidation(
                         table_name="society.egon_destatis_zensus_building_per_ha",
+                        # TODO(#1240): Zensus 2011 values. Measured for 2022:
+                        # Schleswig-Holstein 1155929; Everything expected
+                        # 27598064 (27843260 CSV rows less 245196).
                         row_count=resolve_boundary_dependence(
                             {
                                 "Schleswig-Holstein": 978493,
@@ -153,6 +160,9 @@ class ZensusMiscellaneous(Dataset):
                     ),
                     TableValidation(
                         table_name="society.egon_destatis_zensus_household_per_ha",
+                        # TODO(#1240): Zensus 2011 values. Measured for 2022:
+                        # Schleswig-Holstein 741638; Everything expected
+                        # 18752009 (18817992 CSV rows less 65983).
                         row_count=resolve_boundary_dependence(
                             {
                                 "Schleswig-Holstein": 724970,
@@ -549,3 +559,13 @@ def adjust_zensus_misc():
                  SELECT id FROM {
                      ZensusPopulation.targets.tables["zensus_population"]}
                  WHERE population < 0);""")
+
+        # Zensus 2022 marks unpopulated cells by omitting them from the
+        # population table, where Zensus 2011 listed them with
+        # population = -1. The DELETE above therefore no longer catches
+        # them and they would remain as rows with a NULL
+        # zensus_population_id. Remove them here so both releases end up
+        # with the same content: only cells that carry population.
+        db.execute_sql(f"""
+             DELETE FROM {ZensusMiscellaneous.targets.tables[table]} as b
+             WHERE b.zensus_population_id IS NULL;""")
