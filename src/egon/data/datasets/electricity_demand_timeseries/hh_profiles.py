@@ -501,14 +501,14 @@ def get_census_households_nuts1_raw():
     to exactly match the layout of the 2011 census file
     ``Zensus2011_Personen.csv``.
 
-    Data manually selected and retrieved from:
-    https://ergebnisse2011.zensus2022.de/datenbank/online
+    Data manually selected and retrieved from the Zensus 2022 database:
+    https://ergebnisse.zensus2022.de/datenbank/online
     For reproducing data selection, please do:
 
     * Search for: "1000A-3098"
     * You should find the dataset with title "Personen: Alter
       (11 Altersklassen) - Größe des privaten Haushalts - Typ des privaten
-      Haushalts Familien)"
+      Haushalts (nach Familien)"
     * Change filter settings from "Deutschland" to "Bundesländer"
     * Change filter settings for age groups to "11 Altersklassen"
     * Download the CSV file
@@ -516,11 +516,13 @@ def get_census_households_nuts1_raw():
     Data would be available in higher resolution
     ("Landkreise und kreisfreie Städte (412)").
 
-    The downloaded file is called '1000A-3098_de.csv'. It was then renmaed to
+    The downloaded file is called '1000A-3098_de.csv'. It was then renamed to
     "Zensus2022_Personen.csv" and added to the egon-data data bundle.
 
-    Quick access link:
-    https://ergebnisse.zensus2022.de/datenbank/online/url/eb8f6060
+    There is also a short link that jumps straight to the configured table,
+    https://ergebnisse.zensus2022.de/datenbank/online/url/eb8f6060, but these
+    short links are generated per session and may expire. The table code and
+    the filter settings above are the reliable way to reproduce the download.
 
     The returned DataFrame is intended to be a drop-in replacement for the
     original 2011 input of ``process_nuts1_census_data()`` and the subsequent
@@ -723,7 +725,11 @@ def get_census_households_nuts1_raw():
             pd.to_numeric(cleaned, errors="coerce").fillna(0).astype(int)
         )
 
-        # Add state name in the same format as in the 2011 file
+        # Add state name in the same format as in the 2011 file, e.g.
+        # "01 Schleswig-Holstein (Bundesland)". The leading code matters:
+        # process_nuts1_census_data() reduces this label with
+        # i.split()[1], so without it every state would collapse to
+        # "(Bundesland)" and the 16 states would silently merge into one.
         tmp["state"] = state + " (Bundesland)"
         records.append(tmp)
 
