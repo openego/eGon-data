@@ -383,7 +383,7 @@ def add_metadata_zensus_inside_ger():
         "title": "DESTATIS - Zensus 2022 - Population per hectar",
         "id": "WILL_BE_SET_AT_PUBLICATION",
         "description": (
-            "National census in Germany in 2011 with the bounds on Germanys "
+            "National census in Germany in 2022 with the bounds on Germanys "
             "borders."
         ),
         "language": ["en-EN", "de-DE"],
