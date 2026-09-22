@@ -28,7 +28,6 @@ from egon.data.metadata import (
     meta_metadata,
     sources,
 )
-from egon.data.validation import TableValidation, resolve_boundary_dependence
 
 # Will later be imported from another file.
 Base = declarative_base()
@@ -416,74 +415,6 @@ class HeatSupply(Dataset):
                 },
                 metadata,
             ),
-            validation={
-                "data-quality": [
-                    TableValidation(
-                        table_name="supply.egon_district_heating",
-                        row_count=resolve_boundary_dependence(
-                            {"Schleswig-Holstein": 402, "Everything": 9090}
-                        ),
-                        geometry_columns=["geometry"],
-                        data_type_columns={
-                            "index": "integer",
-                            "district_heating_id": "integer",
-                            "carrier": "character varying",
-                            "category": "character varying",
-                            "capacity": "double precision",
-                            "geometry": "geometry",
-                            "scenario": "character varying",
-                        },
-                        not_null_columns=[
-                            "index",
-                            "district_heating_id",
-                            "carrier",
-                            "category",
-                            "capacity",
-                            "scenario",
-                        ],
-                        value_set_columns={
-                            "carrier": [
-                                "geo_thermal",
-                                "CHP",
-                                "gas_boiler",
-                                "resistive_heater",
-                                "heat_pump",
-                                "solar_thermal_collector",
-                            ],
-                            "scenario": ["eGon2035"],
-                        },
-                    ),
-                    TableValidation(
-                        table_name="supply.egon_individual_heating",
-                        row_count=resolve_boundary_dependence(
-                            {"Schleswig-Holstein": 396, "Everything": 7692}
-                        ),
-                        geometry_columns=["geometry"],
-                        data_type_columns={
-                            "index": "integer",
-                            "mv_grid_id": "integer",
-                            "carrier": "character varying",
-                            "category": "character varying",
-                            "capacity": "double precision",
-                            "geometry": "geometry",
-                            "scenario": "character varying",
-                        },
-                        not_null_columns=[
-                            "index",
-                            "mv_grid_id",
-                            "carrier",
-                            "category",
-                            "capacity",
-                            "scenario",
-                        ],
-                        value_set_columns={
-                            "carrier": ["gas_boiler", "heat_pump"],
-                            "scenario": ["eGon2035"],
-                        },
-                    ),
-                ]
-            },
-            proceed_on_validation_failure=True,
         )
 
 

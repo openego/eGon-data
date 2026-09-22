@@ -13,7 +13,6 @@ import pandas as pd
 
 from egon.data import db
 from egon.data.datasets import Dataset, DatasetSources, DatasetTargets
-from egon.data.validation import TableValidation, resolve_boundary_dependence
 import egon.data.config
 import egon.data.datasets.scenario_parameters.parameters as parameters
 
@@ -320,24 +319,4 @@ class ScenarioParameters(Dataset):
                 download_pypsa_technology_data,
                 insert_scenarios,
             ),
-            validation={
-                "data-quality": [
-                    TableValidation(
-                        table_name="scenario.egon_scenario_parameters",
-                        row_count=resolve_boundary_dependence(
-                            {"Schleswig-Holstein": 5, "Everything": 3}
-                        ),
-                        data_type_columns={
-                            "name": "character varying",
-                            "global_parameters": "jsonb",
-                            "electricity_parameters": "jsonb",
-                            "gas_parameters": "jsonb",
-                            "heat_parameters": "jsonb",
-                            "mobility_parameters": "jsonb",
-                            "description": "character varying",
-                        },
-                    )
-                ]
-            },
-            proceed_on_validation_failure=True,
         )

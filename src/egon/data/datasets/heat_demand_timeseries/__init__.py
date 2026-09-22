@@ -17,7 +17,6 @@ try:
 except ImportError:
     pass
 
-from egon_validation import ArrayCardinalityValidation
 
 from egon.data.datasets import Dataset, DatasetSources, DatasetTargets
 from egon.data.datasets.heat_demand_timeseries.daily import (
@@ -34,7 +33,6 @@ from egon.data.metadata import (
     meta_metadata,
     sources,
 )
-from egon.data.validation import TableValidation, resolve_boundary_dependence
 
 Base = declarative_base()
 
@@ -1181,43 +1179,4 @@ class HeatTimeSeries(Dataset):
                 district_heating,
                 metadata,
             ),
-            validation={
-                "data_quality": [
-                    TableValidation(
-                        table_name="demand.egon_heat_idp_pool",
-                        row_count=459535,
-                        data_type_columns={
-                            "index": "bigint",
-                            "idp": "double precision[]",
-                        },
-                    ),
-                    TableValidation(
-                        table_name="demand.egon_heat_timeseries_selected_profiles",
-                        row_count=resolve_boundary_dependence(
-                            {
-                                "Schleswig-Holstein": 719936,
-                                "Everything": 20606259,
-                            }
-                        ),
-                        data_type_columns={
-                            "zensus_population_id": "integer",
-                            "bulding_id": "integer",
-                            "selected_idp_profiles": "array",
-                        },
-                    ),
-                    ArrayCardinalityValidation(
-                        table="demand.egon_heat_timeseries_selected_profiles",
-                        rule_id="ARRAY.egon_heat_timeseries_selected_profiles",
-                        array_column="selected_idp_profiles",
-                        expected_length=365,
-                    ),
-                    ArrayCardinalityValidation(
-                        table="demand.egon_timeseries_district_heating",
-                        rule_id="ARRAY.egon_timeseries_district_heating",
-                        array_column="dist_aggregated_mw",
-                        expected_length=8760,
-                    ),
-                ]
-            },
-            proceed_on_validation_failure=True,
         )

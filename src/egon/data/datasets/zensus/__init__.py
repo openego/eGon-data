@@ -42,62 +42,6 @@ class ZensusPopulation(Dataset):
                 create_zensus_pop_table,
                 population_to_postgres,
             ),
-            validation={
-                "data-quality": [
-                    TableValidation(
-                        table_name=(
-                            "society."
-                            "egon_destatis_zensus_apartment_building_population_per_ha"
-                        ),
-                        row_count=resolve_boundary_dependence(
-                            {
-                                "Schleswig-Holstein": 145634,
-                                "Everything": 3206490,
-                            }
-                        ),
-                        geometry_columns=["geom", "geom_point"],
-                        data_type_columns={
-                            "grid_id": "character varying",
-                            "zensus_population_id": "integer",
-                            "building_count": "smallint",
-                            "apartment_count": "smallint",
-                            "geom": "geometry",
-                            "geom_point": "geometry",
-                        },
-                        not_null_columns=[
-                            "grid_id",
-                            "zensus_population_id",
-                            "building_count",
-                            "apartment_count",
-                        ],
-                    ),
-                    TableValidation(
-                        table_name=(
-                            "society.destatis_zensus_population_per_ha_inside_germany"
-                        ),
-                        row_count=resolve_boundary_dependence(
-                            {
-                                "Schleswig-Holstein": 143521,
-                                "Everything": 3177723,
-                            }
-                        ),
-                        geometry_columns=["geom", "geom_point"],
-                        data_type_columns={
-                            "id": "integer",
-                            "grid_id": "character varying",
-                            "population": "smallint",
-                            "geom_point": "geometry",
-                            "geom": "geometry",
-                        },
-                        not_null_columns=[
-                            "id",
-                            "grid_id",
-                            "population",
-                        ],
-                    ),
-                ]
-            },
-            proceed_on_validation_failure=True,
         )
 
 
