@@ -10,16 +10,6 @@ from egon.data import db
 from egon.data.datasets import Dataset, DatasetSources, DatasetTargets
 import egon.data.config
 
-# Uncomment to add validation rules:
-# from egon_validation import (
-#     RowCountValidation,
-#     DataTypeValidation,
-#     NotNullAndNotNaNValidation,
-#     WholeTableNotNullAndNotNaNValidation,
-#     ValueSetValidation,
-#     SRIDUniqueNonZero,
-# )
-
 Base = declarative_base()
 
 
@@ -112,19 +102,6 @@ class SubstationExtraction(Dataset):
                 },
                 transfer_busses,
             ),
-            # Validation placeholder - add rules here. See vg250/__init__.py
-            # for examples of RowCountValidation, DataTypeValidation, etc.
-            validation={
-                # "<task_name>": [
-                #     RowCountValidation(
-                #         table="<schema>.<table_name>",
-                #         rule_id="ROW_COUNT.<table_name>",
-                #         expected_count=resolve_boundary_dependence(
-                #         {"Schleswig-Holstein": X, "Everything": Y})
-                #     ),
-                # ]
-            },
-            proceed_on_validation_failure=True,
         )
 
 
