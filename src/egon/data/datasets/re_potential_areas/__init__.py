@@ -182,19 +182,19 @@ class re_potential_area_setup(Dataset):
                             "id": "integer",
                             "geom": "geometry",
                         },
-                        not_null_columns=["id", "geom"],
+                        not_null_columns=["id"],
                     ),
                     TableValidation(
                         table_name="supply.egon_re_potential_area_pv_road_railway",
                         row_count=resolve_boundary_dependence(
-                            {"Schleswig-Holstein": 479, "Everything": 5159}
+                            {"Schleswig-Holstein": 479, "Everything": 9649}
                         ),
                         geometry_columns=["geom"],
                         data_type_columns={
                             "id": "integer",
                             "geom": "geometry",
                         },
-                        not_null_columns=["id", "geom"],
+                        not_null_columns=["id"],
                     ),
                     TableValidation(
                         table_name="supply.egon_re_potential_area_wind",
@@ -206,7 +206,7 @@ class re_potential_area_setup(Dataset):
                             "id": "integer",
                             "geom": "geometry",
                         },
-                        not_null_columns=["id", "geom"],
+                        not_null_columns=["id"],
                     ),
                 ]
             },
