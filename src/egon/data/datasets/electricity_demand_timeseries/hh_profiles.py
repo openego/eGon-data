@@ -288,35 +288,22 @@ class HouseholdDemands(Dataset):
                                 "Everything": 3177723,
                             }
                         ),
-                        data_type_columns=resolve_boundary_dependence(
-                            {
-                                "Schleswig-Holstein": {
-                                    "cell_id": "integer",
-                                    "grid_id": "character varying",
-                                    "cell_profile_ids": "array",
-                                    "nuts3": "character varying",
-                                    "nuts1": "character varying",
-                                    "factor_2019": "double precision",
-                                    "factor_2023": "double precision",
-                                    "factor_2035": "double precision",
-                                    "factor_2050": "double precision",
-                                },
-                                "Everything": {
-                                    "cell_id": "integer",
-                                    "grid_id": "character varying",
-                                    "cell_profile_ids": "character varying",
-                                    "nuts3": "character varying",
-                                    "nuts1": "character varying",
-                                    "factor_2035": "double precision",
-                                    "factor_2050": "double precision",
-                                },
-                            }
-                        ),
+                        data_type_columns={
+                            "cell_id": "integer",
+                            "grid_id": "character varying",
+                            "cell_profile_ids": "array",
+                            "nuts3": "character varying",
+                            "nuts1": "character varying",
+                            "factor_2024": "double precision",
+                            "factor_2035": "double precision",
+                            "factor_2037": "double precision",
+                            "factor_2045": "double precision",
+                        },
                     ),
                     TableValidation(
                         table_name="demand.iee_household_load_profiles",
                         row_count=resolve_boundary_dependence(
-                            {"Schleswig-Holstein": 2511, "Everything": 1000000}
+                            {"Schleswig-Holstein": 2511, "Everything": 100000}
                         ),
                         data_type_columns={
                             "id": "integer",
