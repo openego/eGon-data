@@ -1,13 +1,16 @@
 """
-The central module containing all code dealing with the hydrogen buses
+The central module containing all code dealing with the hydrogen buses.
 
 In this module, the functions allowing to create the H2 buses in Germany
 for eTraGo are to be found.
-The H2 buses in the neighbouring countries (only present in eGon100RE)
-are defined in :py:mod:`pypsaeursec <egon.data.datasets.pypsaeursec>`.
-In both scenarios, there are two types of H2 buses in Germany:
-  * H2 buses: defined in :py:func:`insert_H2_buses_from_CH4_grid`,
-    these buses are located at the places than the CH4 buses.
+
+There are three types of H2 buses in Germany, all created for each scenario
+with a CH4/H2 grid by :py:func:`insert_hydrogen_buses`:
+  * H2_grid buses: located at the nodes of the hydrogen core network
+    (Wasserstoffkernnetz) published by FNB-Gas.
+  * H2 buses: additional buses located at the CH4 buses that are more than
+    10 km away from the nearest H2_grid bus, to allow the coupling to the
+    CH4 grid (methanation and SMR).
   * H2_saltcavern buses: defined in :py:func:`insert_H2_buses_from_saltcavern`,
     these buses are located at the intersection of AC buses and
     potential for H2 saltcavern.
@@ -19,6 +22,7 @@ from pathlib import Path
 from geoalchemy2 import Geometry
 from scipy.spatial import cKDTree
 from shapely.wkb import loads
+from sqlalchemy import inspect
 import geopandas as gpd
 import numpy as np
 import pandas as pd
@@ -63,11 +67,13 @@ def insert_hydrogen_buses(scn_name):
         "H2_grid", target_buses, scenario=scn_name
     )
 
-    db.execute_sql(f"""
+    db.execute_sql(
+        f"""
         DELETE FROM {targets.tables["hydrogen_buses"]}
         WHERE scn_name = '{scn_name}'
         AND carrier = 'H2' AND country = 'DE'
-        """)
+        """
+    )
 
     h2_buses.x = h2_input.x
     h2_buses.y = h2_input.y
@@ -117,23 +123,24 @@ def insert_hydrogen_buses(scn_name):
                 }
             )
 
+    # only if there are CH4 buses far from the H2_grid buses
     if additional_H2_buses:
         additional_H2_buses = gpd.GeoDataFrame(
             additional_H2_buses, geometry="geom", crs=CH4_buses.crs
         )
-    additional_H2_buses = additional_H2_buses.to_crs(epsg=4326)
+        additional_H2_buses = additional_H2_buses.to_crs(epsg=4326)
 
-    additional_H2_buses["bus_id"] = db.next_etrago_id(
-        "bus", len(additional_H2_buses)
-    )
-    # Insert data to db
-    additional_H2_buses.to_postgis(
-        targets.get_table_name("hydrogen_buses"),
-        schema=targets.get_table_schema("hydrogen_buses"),
-        con=db.engine(),
-        if_exists="append",
-        dtype={"geom": Geometry()},
-    )
+        additional_H2_buses["bus_id"] = db.next_etrago_id(
+            "bus", len(additional_H2_buses)
+        )
+        # Insert data to db
+        additional_H2_buses.to_postgis(
+            targets.get_table_name("hydrogen_buses"),
+            schema=targets.get_table_schema("hydrogen_buses"),
+            con=db.engine(),
+            if_exists="append",
+            dtype={"geom": Geometry()},
+        )
 
     # insert h2_buses_from_saltcaverns
     hydrogen_buses = initialise_bus_insertion(
@@ -175,9 +182,11 @@ def insert_H2_buses_from_saltcavern(gdf, carrier, sources, targets, scn_name):
     }
 
     # electrical buses related to saltcavern storage
-    el_buses = db.select_dataframe(f"""
+    el_buses = db.select_dataframe(
+        f"""
         SELECT bus_id
-        FROM {sources.tables["saltcavern_data"]}""")["bus_id"]
+        FROM {sources.tables["saltcavern_data"]}"""
+    )["bus_id"]
 
     # locations of electrical buses (filtering not necessarily required)
     locations = db.select_geodataframe(
@@ -209,10 +218,21 @@ def insert_H2_buses_from_saltcavern(gdf, carrier, sources, targets, scn_name):
     gdf_H2_cavern["scn_name"] = hydrogen_bus_ids["scn_name"]
 
     # Insert data to db
+    map_table = targets.get_table_name("H2_AC_map")
+    map_schema = targets.get_table_schema("H2_AC_map")
+
+    if inspect(db.engine()).has_table(map_table, schema=map_schema):
+        db.execute_sql(
+            f"""
+            DELETE FROM {targets.tables["H2_AC_map"]}
+            WHERE scn_name = '{scn_name}'
+            """
+        )
+
     gdf_H2_cavern.to_sql(
-        targets.get_table_name("H2_AC_map"),
+        map_table,
         db.engine(),
-        schema=targets.get_table_schema("H2_AC_map"),
+        schema=map_schema,
         index=False,
-        if_exists="replace",
+        if_exists="append",
     )

@@ -695,14 +695,14 @@ etrago_hydrogen:
       table: 'egon_etrago_link'
     H2_grid:
       new_constructed_pipes:
-        url: 'https://fnb-gas.de/wp-content/uploads/2024/07/2024_07_22_Anlage3_FNB_Massnahmenliste_Neubau.xlsx'
-        path: "Anlage_3_Wasserstoffkernnetz_Neubau.xlsx"
+        url: 'https://fnb-gas.de/wp-content/uploads/2024/12/2024_12_10_Wasserstoff-Kernnetz_Anlage3_final_inoffiziell.xlsx'
+        path: "Anlage_3_Wasserstoffkernnetz_Neubau_2024_12_10.xlsx"
       converted_ch4_pipes:
-        url: 'https://fnb-gas.de/wp-content/uploads/2024/07/2024_07_22_Anlage4_FNB_Massnahmenliste_Umstellung.xlsx'
-        path: "Anlage_4_Wasserstoffkernnetz_Umstellung.xlsx"
+        url: 'https://fnb-gas.de/wp-content/uploads/2024/12/2024_12_10_Wasserstoff-Kernnetz_Anlage4_final_inoffiziell.xlsx'
+        path: "Anlage_4_Wasserstoffkernnetz_Umstellung_2024_12_10.xlsx"
       pipes_of_further_h2_grid_operators:
-        url: 'https://fnb-gas.de/wp-content/uploads/2024/07/2024_07_22_Anlage2_Leitungsmeldungen_weiterer_potenzieller_Wasserstoffnetzbetreiber.xlsx'
-        path: "Anlage_2_Wasserstoffkernetz_weitere_Leitungen.xlsx"
+        url: 'https://fnb-gas.de/wp-content/uploads/2024/12/2024_12_10_Wasserstoff-Kernnetz_Anlage2_final_inoffiziell.xlsx'
+        path: "Anlage_2_Wasserstoffkernetz_weitere_Leitungen_2024_12_10.xlsx"
   targets:
     hydrogen_buses:
       schema: 'grid'

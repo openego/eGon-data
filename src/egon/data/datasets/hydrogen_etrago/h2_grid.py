@@ -1,5 +1,5 @@
 """
-The central module containing all code dealing with the H2 grid in eGon100RE
+The central module containing all code dealing with the H2 grid.
 
 """
 
@@ -12,9 +12,12 @@ import re
 
 from fuzzywuzzy import process
 from geoalchemy2.types import Geometry
+from scipy.sparse import coo_matrix
+from scipy.sparse.csgraph import connected_components
 from scipy.spatial import cKDTree
 from shapely import wkb
 from shapely.geometry import LineString, MultiLineString, Point
+from shapely.ops import unary_union
 import geopandas as gpd
 import numpy as np
 import pandas as pd
@@ -31,10 +34,11 @@ def insert_h2_pipelines(scn_name):
     """Insert H2_grid based on input data from FNB-Gas."""
     sources, targets = load_sources_and_targets("HydrogenGridEtrago")
 
-    download_h2_grid_data()
-    H2_grid_Neubau, H2_grid_Umstellung, H2_grid_Erweiterung = (
-        read_h2_excel_sheets()
-    )
+    (
+        H2_grid_Neubau,
+        H2_grid_Umstellung,
+        H2_grid_Erweiterung,
+    ) = read_h2_excel_sheets()
     h2_bus_location = pd.read_csv(
         Path(".")
         / "data_bundle_egon_data"
@@ -49,23 +53,23 @@ def insert_h2_pipelines(scn_name):
         f"""
     SELECT bus_id, x, y FROM {sources.tables["buses"]}
     WHERE carrier in ('H2_grid')
-    AND scn_name = '{scn_name}'   
+    AND scn_name = '{scn_name}'
     """,
         con,
     )
 
-    # Delete old entries
-    db.execute_sql(f"""
+    # Delete all old entries
+    db.execute_sql(
+        f"""
         DELETE FROM {targets.tables["hydrogen_links"]}
         WHERE "carrier" = 'H2_grid'
-        AND scn_name = '{scn_name}' AND bus0 IN (
-          SELECT bus_id
-          FROM {sources.tables["buses"]}
-          WHERE country = 'DE'
-        )
-        """)
+        AND scn_name = '{scn_name}'
+        """
+    )
 
     for df in [H2_grid_Neubau, H2_grid_Umstellung, H2_grid_Erweiterung]:
+        # The list of the pipes converted from CH4 to H2
+        is_conversion = df is H2_grid_Umstellung
 
         if df is H2_grid_Neubau:
             df.rename(
@@ -126,7 +130,20 @@ def insert_h2_pipelines(scn_name):
             df, h2_bus_location, "Endpunkt\n(Ort)"
         )
 
-        # manuell adjustments based on Detailmaßnahmenkarte der FNB-Gas [https://fnb-gas.de/wasserstoffnetz-wasserstoff-kernnetz/]
+        # Length of the converted pipes that are georeferenced
+        if is_conversion:
+            georeferenced = (
+                df["Anfangspunkt_matched"].notna()
+                & df["Endpunkt_matched"].notna()
+                & (df["Anfangspunkt_matched"] != df["Endpunkt_matched"])
+            )
+            converted_km = float(
+                pd.to_numeric(
+                    df.loc[georeferenced, "Länge \n(km)"], errors="coerce"
+                ).sum()
+            )
+
+        # Manual adjustments based on Detailmaßnahmenkarte der FNB-Gas [https://fnb-gas.de/wasserstoffnetz-wasserstoff-kernnetz/]
         df = fix_h2_grid_infrastructure(df)
 
         df_merged = pd.merge(
@@ -145,6 +162,27 @@ def insert_h2_pipelines(scn_name):
             left_on="Endpunkt_matched",
             right_on="Ort",
         ).rename(columns={"geom": "geom_end", "x": "x_end", "y": "y_end"})
+
+        # Report the pipelines that can not be georeferenced
+        unmatched = df_merged[
+            df_merged["geom_start"].isna() | df_merged["geom_end"].isna()
+        ]
+        unmatched = unmatched[
+            ~unmatched["Anfangspunkt\n(Ort)"].isin(["nan", "---"])
+            & ~unmatched["Endpunkt\n(Ort)"].isin(["nan", "---"])
+        ]
+        if not unmatched.empty:
+            print(
+                f"{scn_name}: {len(unmatched)} pipelines of the FNB-Gas list "
+                "are not inserted, because an endpoint is not a node of the "
+                "H2 grid: "
+                + "; ".join(
+                    f"{row['Anfangspunkt' + chr(10) + '(Ort)']} -> "
+                    f"{row['Endpunkt' + chr(10) + '(Ort)']} "
+                    f"({row['Länge ' + chr(10) + '(km)']} km)"
+                    for _, row in unmatched.iterrows()
+                )
+            )
 
         H2_grid_df = df_merged.dropna(subset=["geom_start", "geom_end"])
         H2_grid_df = H2_grid_df[
@@ -271,6 +309,16 @@ def insert_h2_pipelines(scn_name):
             if_exists="append",
             dtype={"geom": Geometry()},
         )
+
+        # Remove the CH4 pipelines that are converted to H2
+        if is_conversion:
+            remove_ch4_pipes_in_conversion_corridors(
+                scn_name,
+                gpd.GeoSeries(H2_grid_df["topo"].tolist(), crs=4326),
+                converted_km,
+                sources,
+                targets,
+            )
 
     # connect saltcaverns to H2_grid
     connect_saltcavern_to_h2_grid(scn_name)
@@ -440,7 +488,7 @@ def calculate_H2_capacity(pressure, diameter):
         pressure = (float(pressures[0]) + float(pressures[1])) / 2
     else:
         try:
-            pressure = float(diameter)
+            pressure = float(pressure)
         except ValueError:
             pressure = 70  # averaqge value from data-source
 
@@ -457,15 +505,361 @@ def calculate_H2_capacity(pressure, diameter):
     return energy_flow
 
 
+#: Buffer (km) and minimal share of the length inside the buffer, used to
+#: flag the CH4 pipelines in the corridors of the converted pipelines
+CORRIDOR_BUFFER_KM = 5
+CORRIDOR_SHARE = 0.8
+
+
+def _to_metric(geometries):
+    geometries = gpd.GeoSeries(geometries.geometry)
+    if geometries.crs is None:
+        raise ValueError("The geometries need a crs.")
+    return (
+        geometries.to_crs(32632)
+        if geometries.crs.is_geographic
+        else (geometries)
+    )
+
+
+def _share_inside_corridors(corridors, pipes, buffer_km):
+    zone = unary_union(list(corridors.buffer(buffer_km * 1000)))
+    return pipes.apply(
+        lambda geom: (
+            geom.intersection(zone).length / geom.length
+            if geom.length > 0
+            else 0.0
+        )
+    )
+
+
+def flag_ch4_pipes_in_corridor(corridors, ch4_pipes, buffer_km, share):
+    """
+    Flag the CH4 pipelines that lie in the corridors of converted pipelines.
+
+    A CH4 pipeline is flagged if at least the given share of its length is
+    inside the buffer around the corridors. The corridors are the straight
+    lines between the end points of the CH4 pipelines that are converted to
+    H2 (see :py:func:`select_corridor_parameters` for the parameters).
+
+    Parameters
+    ----------
+    corridors : geopandas.GeoSeries
+        Straight lines between the end points of the converted pipelines
+    ch4_pipes : geopandas.GeoDataFrame or geopandas.GeoSeries
+        CH4 pipelines
+    buffer_km : float
+        Distance around the corridors in km
+    share : float
+        Minimal share (0 to 1) of the length of a pipeline inside the buffer
+
+    Returns
+    -------
+    pandas.Series
+        True for the flagged pipelines, with the index of ch4_pipes
+    """
+    corridors = _to_metric(corridors)
+    pipes = _to_metric(ch4_pipes)
+
+    return _share_inside_corridors(corridors, pipes, buffer_km) >= share
+
+
+def select_corridor_parameters(
+    corridors,
+    ch4_pipes,
+    target_km,
+    buffers_km=range(1, 11),
+    shares=(0.6, 0.7, 0.8, 0.9),
+    tolerance=0.1,
+    warn=True,
+):
+    """
+    Select buffer and share to flag the CH4 pipelines that are converted.
+
+    Offline calibration helper, not called from the pipeline: it produced
+    the :data:`CORRIDOR_BUFFER_KM` / :data:`CORRIDOR_SHARE` constants used
+    at runtime by :py:func:`remove_ch4_pipes_in_conversion_corridors`. Rerun
+    it by hand (e.g. in a notebook/REPL) and update those constants if the
+    FNB-Gas list or the converted length changes materially.
+
+    The FNB-Gas list of the conversion (Anlage 4) has no identifier that
+    matches the CH4 pipelines. Therefore the CH4 pipelines inside the
+    corridors of the converted pipelines are flagged (see
+    :py:func:`flag_ch4_pipes_in_corridor`). Buffer and share are selected
+    automatically, so that the total length of the flagged pipelines is
+    as close as possible to the length of the converted pipelines. If
+    several pairs are equally close, the largest share and then the
+    smallest buffer are preferred.
+
+    A single total does not fix two parameters. Therefore the table with all
+    pairs is returned as well, to check how sensitive the result is.
+
+    Parameters
+    ----------
+    corridors : geopandas.GeoSeries
+        Straight lines between the end points of the converted pipelines
+    ch4_pipes : geopandas.GeoDataFrame or geopandas.GeoSeries
+        CH4 pipelines
+    target_km : float
+        Length of the converted pipelines in km. Use the length of the list
+        before pipelines are split (:py:func:`replace_pipeline` repeats the
+        full length for both parts).
+    buffers_km : iterable of float, optional
+        Buffers to test in km. The default is 1 to 10 km.
+    shares : iterable of float, optional
+        Shares to test. The default is 0.6 to 0.9.
+    tolerance : float, optional
+        Relative deviation from the target above which a warning is printed.
+        The default is 0.1.
+    warn : bool, optional
+        Whether to print the warning. The default is True.
+
+    Returns
+    -------
+    best : dict
+        buffer_km, share, flagged_km and the relative deviation from the target
+    table : pandas.DataFrame
+        The same values for all tested pairs
+    """
+    corridors = _to_metric(corridors)
+    pipes = _to_metric(ch4_pipes)
+
+    if target_km <= 0 or corridors.empty or pipes.empty:
+        raise ValueError(
+            "A target length, corridors and CH4 pipelines are needed."
+        )
+
+    # Only pipelines close to a corridor can be flagged
+    near = pipes.distance(unary_union(list(corridors))) <= (
+        max(buffers_km) * 1000
+    )
+    pipes = pipes[near]
+    length_km = pipes.length / 1000
+
+    rows = []
+    for buffer_km in buffers_km:
+        share_inside = _share_inside_corridors(corridors, pipes, buffer_km)
+        for share in shares:
+            flagged_km = length_km[share_inside >= share].sum()
+            rows.append(
+                {
+                    "buffer_km": buffer_km,
+                    "share": share,
+                    "flagged_km": flagged_km,
+                    "deviation": abs(flagged_km - target_km) / target_km,
+                }
+            )
+    table = pd.DataFrame(rows)
+
+    best = (
+        table.assign(deviation_rounded=table["deviation"].round(3))
+        .sort_values(
+            ["deviation_rounded", "share", "buffer_km"],
+            ascending=[True, False, True],
+        )
+        .iloc[0]
+        .drop("deviation_rounded")
+    )
+
+    if warn and best["deviation"] > tolerance:
+        print(
+            f"Warning: the flagged length ({best['flagged_km']:.0f} km) "
+            f"deviates by {best['deviation']:.0%} from the converted length "
+            f"({target_km:.0f} km), even for the best pair."
+        )
+
+    return best.to_dict(), table
+
+
+def select_removable_ch4_pipes(links, countries, candidates):
+    """
+    Select the CH4 pipelines that can be removed without cutting off buses.
+
+    The candidates are removed one after the other, in the given order. A
+    candidate is only removed if afterwards no German bus has lost its
+    connection to a border point (a German bus with a link to a bus abroad)
+    or its last pipeline. Otherwise it is kept.
+
+    Parameters
+    ----------
+    links : pandas.DataFrame
+        All CH4 links of a scenario with the columns bus0 and bus1
+        (index: link_id), including the links to buses abroad
+    countries : pandas.Series
+        Country of every CH4 bus (index: bus_id)
+    candidates : list
+        link_id of the pipelines to remove, in the order of the removal
+
+    Returns
+    -------
+    removable : list
+        link_id of the pipelines that can be removed
+    kept : list
+        link_id of the candidates that are kept
+    """
+    position = pd.Series(np.arange(len(countries)), index=countries.index)
+    start = position[links["bus0"]].to_numpy()
+    end = position[links["bus1"]].to_numpy()
+    n_buses = len(countries)
+
+    german = (countries == "DE").to_numpy()
+    crossing = german[start] != german[end]
+
+    def connectivity(active):
+        """Buses connected to a border point and number of pipelines"""
+        border = np.zeros(n_buses, dtype=bool)
+        border[start[active & crossing & german[start]]] = True
+        border[end[active & crossing & german[end]]] = True
+
+        adjacency = coo_matrix(
+            (np.ones(active.sum()), (start[active], end[active])),
+            shape=(n_buses, n_buses),
+        )
+        labels = connected_components(adjacency, directed=False)[1]
+        connected = np.isin(labels, np.unique(labels[border]))
+        degree = np.bincount(
+            np.concatenate([start[active], end[active]]), minlength=n_buses
+        )
+        return connected, degree
+
+    row = pd.Series(np.arange(len(links)), index=links.index)
+    active = np.ones(len(links), dtype=bool)
+    connected_before, degree_before = connectivity(active)
+
+    removable, kept = [], []
+    for link_id in candidates:
+        active[row[link_id]] = False
+        connected, degree = connectivity(active)
+
+        lost_connection = (german & connected_before & ~connected).any()
+        lost_last_pipeline = (
+            german & (degree_before > 0) & (degree == 0)
+        ).any()
+
+        if lost_connection or lost_last_pipeline:
+            active[row[link_id]] = True
+            kept.append(link_id)
+        else:
+            removable.append(link_id)
+
+    return removable, kept
+
+
+def remove_ch4_pipes_in_conversion_corridors(
+    scn_name, corridors, converted_km, sources, targets
+):
+    """
+    Remove the CH4 pipelines that are converted to H2.
+
+    The FNB-Gas list has no identifier of the CH4 pipelines. Therefore the
+    CH4 pipelines in the corridors of the converted pipelines are flagged,
+    with the buffer :data:`CORRIDOR_BUFFER_KM` and share
+    :data:`CORRIDOR_SHARE` (calibrated offline with
+    :py:func:`select_corridor_parameters` against the December 2024 FNB-Gas
+    lists, see the module docstring / dev notes for that calibration). The
+    flagged pipelines are removed with :py:func:`select_removable_ch4_pipes`,
+    i.e. only as far as no bus is cut off from the border points or loses its
+    last pipeline. The other flagged pipelines are kept. Only the links are
+    removed, the CH4 buses are not changed.
+
+    Parameters
+    ----------
+    scn_name : str
+        Name of the scenario
+    corridors : geopandas.GeoSeries
+        Straight lines between the end points of the converted pipelines
+    converted_km : float
+        Length of the georeferenced converted pipelines in km
+    sources : DatasetSources
+        Sources of HydrogenGridEtrago with the tables of the buses and links
+    targets : DatasetTargets
+        Targets of HydrogenGridEtrago with the table of the links
+
+    Returns
+    -------
+    list or None
+        link_id of the removed pipelines, None if there is nothing to remove
+    """
+    buses = db.select_dataframe(
+        f"""
+        SELECT bus_id, country FROM {sources.tables["buses"]}
+        WHERE scn_name = '{scn_name}' AND carrier = 'CH4'
+        """,
+        index_col="bus_id",
+    )
+    links = db.select_geodataframe(
+        f"""
+        SELECT link_id, bus0, bus1, geom FROM {sources.tables["links"]}
+        WHERE scn_name = '{scn_name}' AND carrier = 'CH4'
+        """,
+        index_col="link_id",
+        geom_col="geom",
+        epsg=4326,
+    )
+    links = links[
+        links["bus0"].isin(buses.index) & links["bus1"].isin(buses.index)
+    ]
+
+    # The pipelines inside of Germany. The links to the buses abroad are only
+    # needed to know the border points.
+    german = buses.index[buses["country"] == "DE"]
+    pipes = links[links["bus0"].isin(german) & links["bus1"].isin(german)]
+
+    if pipes.empty or converted_km <= 0:
+        print(
+            f"{scn_name}: no CH4 pipelines or no converted pipelines, no "
+            "CH4 pipelines are removed."
+        )
+        return None
+
+    flagged = flag_ch4_pipes_in_corridor(
+        corridors, pipes, CORRIDOR_BUFFER_KM, CORRIDOR_SHARE
+    )
+    length_km = _to_metric(pipes).length / 1000
+
+    # Remove the longest pipelines first
+    candidates = length_km[flagged].sort_values(ascending=False).index
+    removable, kept = select_removable_ch4_pipes(
+        links[["bus0", "bus1"]], buses["country"], list(candidates)
+    )
+
+    if removable:
+        db.execute_sql(
+            f"""
+            DELETE FROM {targets.tables["hydrogen_links"]}
+            WHERE scn_name = '{scn_name}' AND carrier = 'CH4'
+            AND link_id IN ({", ".join(str(int(i)) for i in removable)})
+            """
+        )
+
+    flagged_km = length_km[candidates].sum()
+    deviation = abs(flagged_km - converted_km) / converted_km
+    print(
+        f"{scn_name}: {len(candidates)} of {len(pipes)} CH4 pipelines "
+        f"({flagged_km:.0f} of {length_km.sum():.0f} km) lie in the "
+        f"corridors (buffer {CORRIDOR_BUFFER_KM:g} km, share "
+        f"{CORRIDOR_SHARE:.0%}) of the pipelines converted to H2 "
+        f"({converted_km:.0f} km in the FNB-Gas list, {deviation:.0%} "
+        f"deviation). {len(removable)} pipelines "
+        f"({length_km[removable].sum():.0f} km) are removed. {len(kept)} "
+        f"pipelines ({length_km[kept].sum():.0f} km) are kept, because "
+        "their removal would cut off a bus."
+    )
+
+    return removable
+
+
 def download_h2_grid_data():
     """
     Download Input data for H2_grid from FNB-Gas (https://fnb-gas.de/wasserstoffnetz-wasserstoff-kernnetz/)
 
     The following data for H2 are downloaded into the folder
-    ./datasets/h2_data:
-      * Links (file Anlage_3_Wasserstoffkernnetz_Neubau.xlsx,
-                    Anlage_4_Wasserstoffkernnetz_Umstellung.xlsx,
-                    Anlage_2_Wasserstoffkernetz_weitere_Leitungen.xlsx)
+    ./datasets/h2_data (the file names are defined in the sources of
+    :py:class:`HydrogenGridEtrago <egon.data.datasets.hydrogen_etrago.HydrogenGridEtrago>`):
+      * Links (Anlage 3: new construction, Anlage 4: conversion of CH4
+        pipelines, Anlage 2: pipelines of further operators). The version of
+        2024-12-10 is used, which is the revision according to the approval
+        of the core network of 2024-10-22 (9_040 km).
 
     Returns
     -------
@@ -614,18 +1008,20 @@ def connect_saltcavern_to_h2_grid(scn_name):
 
     engine = db.engine()
 
-    db.execute_sql(f"""
+    db.execute_sql(
+        f"""
            DELETE FROM {targets.tables["hydrogen_links"]}
            WHERE "carrier" in ('H2_saltcavern')
-           AND scn_name = '{scn_name}';    
-           """)
-    h2_buses_query = f"""SELECT bus_id, x, y,ST_Transform(geom, 32632) as geom 
+           AND scn_name = '{scn_name}';
+           """
+    )
+    h2_buses_query = f"""SELECT bus_id, x, y,ST_Transform(geom, 32632) as geom
                         FROM  {sources.tables["buses"]}
                         WHERE carrier = 'H2_grid' AND scn_name = '{scn_name}'
                     """
     h2_buses = gpd.read_postgis(h2_buses_query, engine)
 
-    salt_caverns_query = f"""SELECT bus_id, x, y, ST_Transform(geom, 32632) as geom 
+    salt_caverns_query = f"""SELECT bus_id, x, y, ST_Transform(geom, 32632) as geom
                             FROM  {sources.tables["buses"]}
                             WHERE carrier = 'H2_saltcavern'  AND scn_name = '{scn_name}'
                         """
@@ -654,7 +1050,7 @@ def connect_saltcavern_to_h2_grid(scn_name):
             "lifetime": 25,
             "p_nom_extendable": True,
             "p_min_pu": -1,
-            "capital_cost": scn_params["overnight_cost"]["H2_pipeline"]
+            "capital_cost": scn_params["capital_cost"]["H2_pipeline"]
             * dist
             / 1000,
             "geom": MultiLineString(
@@ -699,7 +1095,7 @@ def connect_h2_grid_to_neighbour_countries(scn_name):
 
     h2_buses_df = gpd.read_postgis(
         f"""
-    SELECT bus_id, x, y, geom  
+    SELECT bus_id, x, y, geom
     FROM {sources.tables["buses"]}
     WHERE carrier in ('H2_grid')
     AND scn_name = '{scn_name}'
@@ -710,7 +1106,7 @@ def connect_h2_grid_to_neighbour_countries(scn_name):
 
     h2_links_df = pd.read_sql(
         f"""
-    SELECT link_id, bus0, bus1, p_nom 
+    SELECT link_id, bus0, bus1, p_nom
     FROM {sources.tables["links"]}
     WHERE carrier in ('H2_grid')
     AND scn_name = '{scn_name}'
@@ -721,7 +1117,7 @@ def connect_h2_grid_to_neighbour_countries(scn_name):
 
     abroad_buses_df = gpd.read_postgis(
         f"""
-        SELECT bus_id, x, y, geom, country 
+        SELECT bus_id, x, y, geom, country
         FROM {sources.tables["buses"]}
         WHERE carrier = 'H2' AND scn_name = '{scn_name}' AND country != 'DE'
         """,
@@ -785,6 +1181,21 @@ def connect_h2_grid_to_neighbour_countries(scn_name):
     )
     abroad_con_df = pd.concat([abroad_links_bus1, abroad_links_bus0])
 
+    scn_params = get_sector_parameters("gas", scn_name)
+    lifetime = scn_params["lifetime"]["H2_pipeline"]
+    overnight_cost = scn_params["overnight_cost"]["H2_pipeline"]
+
+    abroad_con_df["geom_metric"] = gpd.GeoSeries(
+        abroad_con_df["geom"].tolist(),
+        index=abroad_con_df.index,
+        crs=4326,
+    ).to_crs(epsg=32632)
+    abroad_buses_metric = gpd.GeoSeries(
+        abroad_buses_df["geom"].tolist(),
+        index=abroad_buses_df.index,
+        crs=4326,
+    ).to_crs(epsg=32632)
+
     connection_links = []
 
     for inland_name, country_code in abroad_con_buses:
@@ -801,15 +1212,15 @@ def connect_h2_grid_to_neighbour_countries(scn_name):
         if abroad_bus.empty:
             print(f"Warning: No Abroad-Bus found for {country_code}.")
             continue
+        abroad_bus_metric = abroad_buses_metric.loc[abroad_bus.index]
 
         for _, i_bus in inland_bus.iterrows():
-            abroad_bus["distance"] = abroad_bus["geom"].apply(
-                lambda g: i_bus["geom"].distance(g)
+            distance_km = (
+                abroad_bus_metric.distance(i_bus["geom_metric"]) / 1000
             )
 
-            nearest_abroad_bus = abroad_bus.loc[
-                abroad_bus["distance"].idxmin()
-            ]
+            nearest_abroad_bus = abroad_bus.loc[distance_km.idxmin()]
+            nearest_distance_km = distance_km.min()
             relevant_buses = inland_bus[
                 inland_bus["bus_id"] == i_bus["bus_id"]
             ]
@@ -823,7 +1234,16 @@ def connect_h2_grid_to_neighbour_countries(scn_name):
                 "bus0": i_bus["bus_id"],
                 "bus1": nearest_abroad_bus["bus_id"],
                 "p_nom": p_nom_value,
+                "p_nom_min": p_nom_value,
+                "p_nom_max": float("inf"),
+                "p_nom_extendable": False,
                 "p_min_pu": -1,
+                "lifetime": lifetime,
+                "capital_cost": annualize_capital_costs(
+                    overnight_cost * nearest_distance_km,
+                    lifetime,
+                    0.05,
+                ),
                 "geom": MultiLineString(
                     [
                         LineString(

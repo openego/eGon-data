@@ -400,7 +400,7 @@ class ScenarioParameters(Dataset):
     #:
     name: str = "ScenarioParameters"
     #:
-    version: str = "0.0.25"
+    version: str = "0.0.25.dev"
 
     sources = DatasetSources(
         urls={

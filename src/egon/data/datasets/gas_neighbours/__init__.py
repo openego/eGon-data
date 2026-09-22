@@ -3,11 +3,13 @@ The central module containing definition of the datasets dealing with gas neighb
 """
 
 from egon.data import config
-from egon.data.datasets import Dataset, DatasetSources, DatasetTargets
-from egon.data.datasets.gas_neighbours.eGon100RE import (
-    insert_gas_neigbours_eGon100RE,
+from egon.data.datasets import (
+    Dataset,
+    DatasetSources,
+    DatasetTargets,
+    wrapped_partial,
 )
-from egon.data.datasets.gas_neighbours.eGon2035 import (
+from egon.data.datasets.gas_neighbours.gas_scenarios import (
     grid,
     insert_ocgt_abroad,
     tyndp_gas_demand,
@@ -16,25 +18,34 @@ from egon.data.datasets.gas_neighbours.eGon2035 import (
 
 
 def no_gas_neighbours_required():
-    print("""
+    print(
+        """
           None of the required scenarios need the creation of
           foreign gas buses
-          """)
+          """
+    )
     return None
 
 
 tasks = ()
 
-if "eGon2035" in config.settings()["egon-data"]["--scenarios"]:
-    tasks = tasks + (
-        tyndp_gas_generation,
-        tyndp_gas_demand,
-        grid,
-        insert_ocgt_abroad,
-    )
+scenarios = config.settings()["egon-data"]["--scenarios"]
 
-if "eGon100RE" in config.settings()["egon-data"]["--scenarios"]:
-    tasks = tasks + (insert_gas_neigbours_eGon100RE,)
+for scn_name in scenarios:
+    if "status" not in scn_name:
+        tasks += tuple(
+            wrapped_partial(
+                function,
+                scn_name=scn_name,
+                postfix=f"_{scn_name}",
+            )
+            for function in (
+                tyndp_gas_generation,
+                tyndp_gas_demand,
+                grid,
+                insert_ocgt_abroad,
+            )
+        )
 
 if tasks == ():
     tasks = tasks + (no_gas_neighbours_required,)
@@ -76,7 +87,6 @@ class GasNeighbours(Dataset):
       * :py:class:`GasNodesAndPipes <egon.data.datasets.gas_grid.GasNodesAndPipes>`
       * :py:class:`ElectricalNeighbours <egon.data.datasets.electrical_neighbours.ElectricalNeighbours>`
       * :py:class:`HydrogenBusEtrago <egon.data.datasets.hydrogen_etrago.HydrogenBusEtrago>`
-      * :py:class:`GasAreaseGon100RE <egon.data.datasets.gas_areas.GasAreaseGon100RE>`
 
     *Resulting tables*
       * :py:class:`grid.egon_etrago_link <egon.data.datasets.etrago_setup.EgonPfHvLink>` is extended
@@ -89,7 +99,7 @@ class GasNeighbours(Dataset):
     #:
     name: str = "GasNeighbours"
     #:
-    version: str = "0.0.8"
+    version: str = "0.0.8.dev"
 
     def __init__(self, dependencies):
         super().__init__(
