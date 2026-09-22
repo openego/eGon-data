@@ -44,8 +44,8 @@ Added
 * Use MaStR data for home_batteries for allocation for all scenarios (status + future)
   `#1470 <https://github.com/openego/eGon-data/issues/1470>`_
 * Distinguish grid-scale battery storage (new carrier 'BESS') from home batteries
-  throughout the pipeline: real MaStR-based BESS carry-forward (aged, all scenarios) 
-  alongside home batteries, and separate eTraGo carriers/cost parameters 
+  throughout the pipeline: real MaStR-based BESS carry-forward (aged, all scenarios)
+  alongside home batteries, and separate eTraGo carriers/cost parameters
   ('BESS' vs'home_battery') instead of one generic 'battery' carrier
   `#1478 <https://github.com/openego/eGon-data/issues/1478>`_
 * Add new eMobility dataset for public buses (vehicle class M3): static depot
@@ -53,6 +53,14 @@ Added
   demand.egon_ev_bus_charging_depot for eDisGo and aggregated per eTraGo bus
   under the new carrier 'land_transport_bus'
   `#1461 <https://github.com/openego/eGon-data/issues/1461>`_
+* Write flexibility diagnostics alongside the eTraGo model for the new
+  eMobility methodology: the grid-side dumb charging load, its flexible
+  share and the driving load per MV grid district
+  (`demand.egon_ev_mit_lgv_flex_timeseries`), an annual energy balance
+  per grid district, charging use case and vehicle type
+  (`demand.egon_ev_mit_lgv_energy_balance`) and the charging load per
+  use case (`demand.egon_ev_mit_lgv_charging_profile_use_case`)
+  `#1460 <https://github.com/openego/eGon-data/issues/1460>`_
 
 * Add electric HGV charging demand model (vehicle classes N2, N3, N3S) for the
   NEP-2025-aligned scenarios reGon2037 and reGon2045, as a sibling dataset to
@@ -129,6 +137,19 @@ Changed
   `#1483 <https://github.com/openego/eGon-data/issues/1483>`_
 * Allign Methodology for laoding NEP target values for Battery storage for all scenarios
   `#1471 <https://github.com/openego/eGon-data/issues/1471>`_
+* Replace the eMobility dataset for motorized individual travel by a new
+  one covering vehicle class M1 (passenger cars) and N1 (light
+  commercial vehicles < 3.5 t). Vehicle pool, events, vehicle counts per
+  municipality, charging locations and the allocation of vehicles to
+  municipalities are delivered as input data and downloaded from Zenodo
+  instead of being derived from KBA registration statistics; the
+  charging infrastructure is generated together with the vehicles, so
+  events, vehicles and charging points are mutually consistent.
+  `eGon2035` keeps the previous methodology and input data. All tables
+  are renamed to the `egon_ev_mit_lgv_` prefix and the foreign key
+  column `egon_ev_pool_ev_id` to `ev_id`; `demand.egon_ev_mit_lgv_metadata`
+  now stores the simBEV and GeoLIS run configurations whole, as JSONB
+  `#1460 <https://github.com/openego/eGon-data/issues/1460>`_
 
 
 Bug Fixes
