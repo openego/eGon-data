@@ -299,7 +299,6 @@ class Dataset:
     tasks: Tasks = ()
     validation: Dict[str, List] = field(default_factory=dict)
     proceed_on_validation_failure: bool = False
-    create_finalize_task: bool = False
     #: Airflow trigger rule applied to *all* tasks of this
     #: :class:`Dataset` -- its own tasks, the validation tasks generated
     #: from :attr:`validation` and the ``finalize`` task. ``None`` keeps
@@ -443,7 +442,7 @@ class Dataset:
                     for vtask in validation_tasks:
                         last_task.set_downstream(vtask)
 
-        if self.create_finalize_task and len(self.tasks.last) > 1:
+        if len(self.tasks.last) > 1:
             # Explicitly create single final task, because we can't know
             # which of the multiple tasks finishes last.
             # Save current state before re-creating Tasks_ (validation tasks

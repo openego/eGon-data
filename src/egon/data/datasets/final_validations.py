@@ -120,8 +120,6 @@ class FinalValidations(Dataset):
     #: succeeds -- and the re-run after the fix would skip it, leaving
     #: the report with no cross-cutting results at all.
     version: str = "0.0.1.dev"
-    #:
-    create_finalize_task: bool = True
     #: Run the cross-cutting rules even when an upstream data task
     #: failed, so that ValidationReport downstream has something to
     #: report on. Without this, `all_success` would mark these tasks
