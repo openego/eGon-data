@@ -138,7 +138,7 @@ class DsmPotential(Dataset):
     #:
     name: str = "DsmPotential"
     #:
-    version: str = "0.0.12"
+    version: str = "0.0.13"
 
     sources = DatasetSources(
         tables={

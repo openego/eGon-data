@@ -250,7 +250,7 @@ class HeatPumpsCascade(Dataset):
     #:
     name: str = "HeatPumpsCascade"
     #:
-    version: str = "0.0.6"
+    version: str = "0.0.7"
 
     def __init__(self, dependencies):
         def dyn_parallel_tasks_2035(scenario):
