@@ -186,6 +186,15 @@ Bug Fixes
   year, they are now scaled in ``mv_grid_district_HH_electricity_load`` to
   ``demand.egon_demandregio_hh`` (110.5 TWh status2024, 83.0 TWh reGon2037)
   `#1527 <https://github.com/openego/eGon-data/issues/1527>`_
+* Align timeseries of other calendar years to the weather year 2011, so
+  that weekends fall on the same model days in all sectors: foreign
+  electricity demands from TYNDP (2018 calendar) and ENTSO-E (status
+  scenario year, the leap day is no longer dropped) and the industrial
+  gas demand from FfE (2012) are shifted by whole days to the weekdays of
+  2011. The CTS heat demand profiles are created for 2011 instead of 2017,
+  the 2011 temperatures are added to the demandregio cache in the data
+  bundle as the FfE API does not provide them
+  `#1523 <https://github.com/openego/eGon-data/issues/1523>`_
 
 Version 2.0.0 (2025-08-20)
 ==========================

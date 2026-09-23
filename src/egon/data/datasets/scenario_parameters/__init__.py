@@ -2,6 +2,8 @@
 
 from pathlib import Path
 from urllib.request import urlretrieve
+import calendar
+import datetime
 import shutil
 import zipfile
 
@@ -9,6 +11,7 @@ from sqlalchemy import VARCHAR, Column, String
 from sqlalchemy.dialects.postgresql import JSONB
 from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.orm import sessionmaker
+import numpy as np
 import pandas as pd
 
 from egon.data import db
@@ -241,6 +244,89 @@ def get_sector_parameters(sector, scenario=None):
         )
 
     return values
+
+
+def weekday_shift(source_year, target_year):
+    """Return the shift in days that aligns the weekdays of two years
+
+    The shift is the smallest one (between -3 and +3 days) for which day
+    ``i + shift`` of `source_year` has the same weekday as day ``i`` of
+    `target_year`.
+
+    Parameters
+    ----------
+    source_year : int
+        Calendar year the timeseries was created for
+    target_year : int
+        Calendar year the timeseries is aligned to
+
+    Returns
+    -------
+    int
+        Shift in days
+
+    """
+    delta = (
+        datetime.date(target_year, 1, 1).weekday()
+        - datetime.date(source_year, 1, 1).weekday()
+    )
+    return (delta + 3) % 7 - 3
+
+
+def align_weekdays(timeseries, source_year, target_year):
+    """Align an hourly timeseries of one year to the weekdays of another year
+
+    All scenarios share one time index: the hours of the weather year (see
+    ``weather_year`` in :py:func:`get_sector_parameters`), as defined in
+    :py:func:`egon.data.datasets.etrago_setup.temp_resolution`. Timeseries
+    that are only available for another calendar year (e.g. measured
+    ENTSO-E loads or TYNDP demand profiles) keep their own weekday order,
+    so their weekends would fall on different model days than those of
+    timeseries generated for the weather year.
+
+    The timeseries is shifted by whole days (at most three, see
+    :py:func:`weekday_shift`), so that every day of the result has the
+    weekday of the corresponding day in `target_year`. Days missing at the
+    beginning or end of the year are filled with the same weekday of the
+    adjacent week. Leap days are kept in their place; a surplus day is
+    removed at the end of the year. Weather and holidays of `source_year`
+    are not changed.
+
+    Parameters
+    ----------
+    timeseries : numpy.ndarray, list, pandas.Series or pandas.DataFrame
+        Hourly values of the full `source_year`, starting on January 1st,
+        00:00, with hours along the first axis. 365 days (8760 h) are
+        accepted for leap years as well, e.g. for data sets that dropped
+        December 31st.
+    source_year : int
+        Calendar year the timeseries was created for
+    target_year : int
+        Calendar year the timeseries is aligned to, usually the weather year
+
+    Returns
+    -------
+    numpy.ndarray, pandas.Series or pandas.DataFrame
+        Aligned timeseries with the number of hours of `target_year`. Lists
+        are returned as numpy arrays, pandas objects with a RangeIndex.
+
+    """
+    n_hours = len(timeseries)
+    n_source_days, remainder = divmod(n_hours, 24)
+    if remainder or n_source_days not in (365, 366):
+        raise ValueError(
+            f"Expected hourly values of a full year, got {n_hours} values."
+        )
+
+    n_target_days = 366 if calendar.isleap(target_year) else 365
+    days = np.arange(n_target_days) + weekday_shift(source_year, target_year)
+    days[days < 0] += 7
+    days[days >= n_source_days] -= 7
+    hours = (days[:, np.newaxis] * 24 + np.arange(24)).ravel()
+
+    if isinstance(timeseries, (pd.Series, pd.DataFrame)):
+        return timeseries.iloc[hours].reset_index(drop=True)
+    return np.asarray(timeseries)[hours]
 
 
 def download_pypsa_technology_data():
