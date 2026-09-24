@@ -10,6 +10,13 @@ from .etrago_generators import (  # noqa: F401
     EtragoGeneratorTimeseriesRange,
     EtragoGeneratorUniquePerBusCarrier,
 )
+from .ocgt_etrago import (  # noqa: F401
+    OcgtCapacity,
+    OcgtNepCapacity,
+    OcgtParameters,
+    OcgtPositiveCapacity,
+    OcgtScenarioCoverage,
+)
 from .residential_electricity import (  # noqa: F401
     ResidentialElectricityAnnualSum,
     ResidentialElectricityHhRefinement,
