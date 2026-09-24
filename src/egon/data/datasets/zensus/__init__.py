@@ -36,7 +36,7 @@ class ZensusPopulation(Dataset):
     def __init__(self, dependencies):
         super().__init__(
             name="ZensusPopulation",
-            version="0.0.4",
+            version="0.0.5",
             dependencies=dependencies,
             tasks=(
                 create_zensus_pop_table,
