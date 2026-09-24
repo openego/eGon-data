@@ -2452,7 +2452,7 @@ def pv_rooftop_to_buildings():
             )
 
             scenario_buildings_gdf = scenario_buildings_gdf_sq.loc[
-                scenario_buildings_gdf.commissioning_date <= ts
+                scenario_buildings_gdf_sq.commissioning_date <= ts
             ].copy()
 
         else:
