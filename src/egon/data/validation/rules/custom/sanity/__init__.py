@@ -1,6 +1,15 @@
 """Sanity check validation rules for eGon data quality."""
 
 from .demandregio import DemandRegioScenarioDemand  # noqa: F401
+from .etrago_generators import (  # noqa: F401
+    EtragoGeneratorCapacity,
+    EtragoGeneratorMarginalCost,
+    EtragoGeneratorPositiveCapacity,
+    EtragoGeneratorScenarioCoverage,
+    EtragoGeneratorTimeseriesCoverage,
+    EtragoGeneratorTimeseriesRange,
+    EtragoGeneratorUniquePerBusCarrier,
+)
 from .residential_electricity import (  # noqa: F401
     ResidentialElectricityAnnualSum,
     ResidentialElectricityHhRefinement,

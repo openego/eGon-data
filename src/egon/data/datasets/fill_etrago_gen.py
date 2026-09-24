@@ -4,8 +4,40 @@ import pandas as pd
 
 from egon.data import db
 from egon.data.datasets import Dataset, DatasetSources, DatasetTargets
-from egon.data.datasets.scenario_parameters import get_sector_parameters
+from egon.data.datasets.scenario_parameters import (
+    ScenarioParameters,
+    get_sector_parameters,
+)
+from egon.data.validation.rules.custom.sanity import (
+    EtragoGeneratorCapacity,
+    EtragoGeneratorMarginalCost,
+    EtragoGeneratorPositiveCapacity,
+    EtragoGeneratorScenarioCoverage,
+    EtragoGeneratorTimeseriesCoverage,
+    EtragoGeneratorTimeseriesRange,
+    EtragoGeneratorUniquePerBusCarrier,
+)
 import egon.data.config
+
+#: Carriers of ``supply.egon_power_plants`` that end up in the generator
+#: table; gas is not loaded by :func:`load_tables`.
+GENERATOR_CARRIERS = [
+    "biomass",
+    "coal",
+    "lignite",
+    "oil",
+    "others",
+    "reservoir",
+    "run_of_river",
+    "solar",
+    "solar_rooftop",
+    "wind_offshore",
+    "wind_onshore",
+]
+
+#: Scenarios the validation rules are built for; a scenario the run does
+#: not produce is skipped by the rules themselves.
+SCENARIOS = ["status2024", "eGon2035", "reGon2037", "reGon2045"]
 
 
 class Egon_etrago_gen(Dataset):
@@ -30,7 +62,7 @@ class Egon_etrago_gen(Dataset):
     #:
     name: str = "etrago_generators"
     #:
-    version: str = "0.0.10"
+    version: str = "0.0.11"
 
     sources = DatasetSources(
         tables={
@@ -49,11 +81,90 @@ class Egon_etrago_gen(Dataset):
     )
 
     def __init__(self, dependencies):
+        tables = {
+            "power_plants_table": self.sources.tables["power_plants"],
+            "bus_table": self.sources.tables["bus"],
+        }
         super().__init__(
             name=self.name,
             version=self.version,
             dependencies=dependencies,
             tasks=(fill_etrago_generators,),
+            validation={
+                "data_quality": [
+                    EtragoGeneratorScenarioCoverage(
+                        table="grid.egon_etrago_generator",
+                        rule_id="SANITY_ETRAGO_GENERATORS_SCENARIOS",
+                        carriers=GENERATOR_CARRIERS,
+                        bus_table=tables["bus_table"],
+                    ),
+                    *[
+                        EtragoGeneratorCapacity(
+                            table="grid.egon_etrago_generator",
+                            rule_id=f"SANITY_ETRAGO_GENERATORS_CAPACITY.{scn}",
+                            scenario=scn,
+                            **tables,
+                        )
+                        for scn in SCENARIOS
+                    ],
+                    *[
+                        EtragoGeneratorPositiveCapacity(
+                            table="grid.egon_etrago_generator",
+                            rule_id=f"SANITY_ETRAGO_GENERATORS_P_NOM.{scn}",
+                            scenario=scn,
+                            **tables,
+                        )
+                        for scn in SCENARIOS
+                    ],
+                    *[
+                        EtragoGeneratorUniquePerBusCarrier(
+                            table="grid.egon_etrago_generator",
+                            rule_id=f"SANITY_ETRAGO_GENERATORS_UNIQUE.{scn}",
+                            scenario=scn,
+                            **tables,
+                        )
+                        for scn in SCENARIOS
+                    ],
+                    *[
+                        EtragoGeneratorMarginalCost(
+                            table="grid.egon_etrago_generator",
+                            rule_id=(
+                                "SANITY_ETRAGO_GENERATORS_MARGINAL_COST"
+                                f".{scn}"
+                            ),
+                            scenario=scn,
+                            parameters_table=ScenarioParameters.targets.tables[
+                                "egon_scenario_parameters"
+                            ],
+                            **tables,
+                        )
+                        for scn in SCENARIOS
+                    ],
+                    *[
+                        EtragoGeneratorTimeseriesCoverage(
+                            table="grid.egon_etrago_generator",
+                            rule_id=(
+                                f"SANITY_ETRAGO_GENERATORS_TIMESERIES.{scn}"
+                            ),
+                            scenario=scn,
+                            timeseries_table="grid.egon_etrago_generator_timeseries",
+                            **tables,
+                        )
+                        for scn in SCENARIOS
+                    ],
+                    *[
+                        EtragoGeneratorTimeseriesRange(
+                            table="grid.egon_etrago_generator",
+                            rule_id=f"SANITY_ETRAGO_GENERATORS_P_MAX_PU.{scn}",
+                            scenario=scn,
+                            timeseries_table="grid.egon_etrago_generator_timeseries",
+                            **tables,
+                        )
+                        for scn in SCENARIOS
+                    ],
+                ]
+            },
+            proceed_on_validation_failure=True,
         )
 
 
