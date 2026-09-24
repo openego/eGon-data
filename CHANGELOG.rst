@@ -38,6 +38,9 @@ Added
   (at exactly its inherited capacity) in later scenarios. eGon2035 is not on the
   chain and keeps its independent distribution.
   `#1477 <https://github.com/openego/eGon-data/issues/1477>`_
+* Add dataset EthosBuilda, importing the ETHOS.BUILDA synthetic building
+  stock from Zenodo
+  `#1310 <https://github.com/openego/eGon-data/issues/1310>`_
 * Use MaStR data for home_batteries for allocation for all scenarios (status + future)
   `#1470 <https://github.com/openego/eGon-data/issues/1470>`_
 * Distinguish grid-scale battery storage (new carrier 'BESS') from home batteries
@@ -46,10 +49,21 @@ Added
   ('BESS' vs'home_battery') instead of one generic 'battery' carrier
   `#1478 <https://github.com/openego/eGon-data/issues/1478>`_
 
+* Add electric HGV charging demand model (vehicle classes N2, N3, N3S) for the
+  NEP-2025-aligned scenarios reGon2037 and reGon2045, as a sibling dataset to
+  the hydrogen-based HeavyDutyTransport
+  `#1436 <https://github.com/openego/eGon-data/issues/1436>`_
 
 Changed
 -------
 
+* Determine residential buildings by intersecting OSM buildings with
+  ETHOS.BUILDA instead of filtering by OSM tags alone, keeping the ETHOS
+  attributes and the provenance of each match, retain the previous filter's
+  amenity-based capture of care homes, and read residential buildings
+  alongside the filtered ones in the household load area demand, the
+  building mapping and the PV rooftop potentials
+  `#1310 <https://github.com/openego/eGon-data/issues/1310>`_
 * Set annual electricity demands in scenario parameters
   `#1359 <https://github.com/openego/eGon-data/issues/1359>`_
 * Introduce TaskGroups to group Datasets in the pipeline
@@ -182,6 +196,15 @@ Bug Fixes
   pumped hydro uses ``mastr_id`` for the reGon path, and the CHP flag is
   normalized to ``Ja``/``Nein`` on import
   `#1510 <https://github.com/openego/eGon-data/issues/1510>`_
+* Align timeseries of other calendar years to the weather year 2011, so
+  that weekends fall on the same model days in all sectors: foreign
+  electricity demands from TYNDP (2018 calendar) and ENTSO-E (status
+  scenario year, the leap day is no longer dropped) and the industrial
+  gas demand from FfE (2012) are shifted by whole days to the weekdays of
+  2011. The CTS heat demand profiles are created for 2011 instead of 2017,
+  the 2011 temperatures are added to the demandregio cache in the data
+  bundle as the FfE API does not provide them
+  `#1523 <https://github.com/openego/eGon-data/issues/1523>`_
 
 Version 2.0.0 (2025-08-20)
 ==========================

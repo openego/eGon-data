@@ -32,6 +32,7 @@ from egon.data.datasets.electricity_demand_timeseries.cts_buildings import (
 from egon.data.datasets.emobility.heavy_duty_transport import (
     HeavyDutyTransport,
 )
+from egon.data.datasets.emobility.hgv_charging import HGVCharging
 from egon.data.datasets.emobility.motorized_individual_travel import (
     MotorizedIndividualTravel,
 )
@@ -39,6 +40,7 @@ from egon.data.datasets.emobility.motorized_individual_travel_charging_infrastru
     MITChargingInfrastructure,
 )
 from egon.data.datasets.era5 import WeatherData
+from egon.data.datasets.ethos_builda import EthosBuilda
 from egon.data.datasets.etrago_setup import EtragoSetup
 from egon.data.datasets.fill_etrago_gen import Egon_etrago_gen
 from egon.data.datasets.final_validations import FinalValidations
@@ -160,9 +162,12 @@ with airflow.DAG(
             dependencies=[zensus_population, zensus_vg250, data_bundle]
         )
 
+        # ETHOS.BUILDA residential building data
+        ethos_builda = EthosBuilda(dependencies=[setup])
+
         # OSM (OpenStreetMap) buildings, streets and amenities
         osm_buildings_streets = OsmBuildingsStreets(
-            dependencies=[osm, zensus_miscellaneous]
+            dependencies=[osm, zensus_miscellaneous, ethos_builda]
         )
 
         # Import saltcavern storage potentials
@@ -676,9 +681,27 @@ with airflow.DAG(
         )
 
     with TaskGroup(group_id="mobility_demand") as mobility_demand_group:
-        # eMobility: heavy duty transport
+        # eMobility: heavy duty transport (hydrogen/FCEV HGVs -- eGon2035,
+        # eGon100RE only; the fully-electrified HGV scenarios (reGon2037,
+        # reGon2045) are covered separately by hgv_charging below, which
+        # does not model hydrogen fueling)
         heavy_duty_transport = HeavyDutyTransport(
             dependencies=[vg250, setup_etrago, create_gas_polygons]
+        )
+
+        # eMobility: HGV charging (BEV depots + highway)
+        hgv_charging = HGVCharging(
+            dependencies=[
+                # The precomputed HGV charging input files ship in the data
+                # bundle (data_bundle_egon_data/hgv_charging/<scenario>), so
+                # this must not run before the bundle has been downloaded.
+                data_bundle,
+                mv_grid_districts,
+                setup_etrago,
+                vg250,
+                scenario_parameters,
+                osmtgmod,
+            ]
         )
 
         # eMobility: motorized individual travel
@@ -763,36 +786,6 @@ with airflow.DAG(
                 final_validations,  # Wait for final validations
             ]
         )
-
-    # SanityChecks is temporarily excluded from the pipeline: its task
-    # list is only populated for the obsolete "eGon2035"/"eGon100RE"
-    # scenario names and is empty for the current default scenarios
-    # ("status2024", "reGon2037"), which crashes Dataset construction.
-    # Re-enable once sanity_checks.py is migrated to the new scenario
-    # names.
-    #
-    # NOTE (#1414): that specific blocker no longer applies once this
-    # branch is in -- sanitycheck_rail_transport_demand registers
-    # UNCONDITIONALLY, so the task list is never empty. Re-enabling is
-    # therefore possible, but it is upstream's call and untested here, so
-    # the block stays commented out and the rail check does not run in the
-    # DAG. Uncomment to get it back, dependency included.
-    #
-    # with TaskGroup(group_id="sanity_checks") as sanity_checks_group:
-    #     # ########## Keep this dataset at the end
-    #     # Sanity Checks
-    #     sanity_checks = SanityChecks(
-    #         dependencies=[
-    #             storage_etrago,
-    #             hts_etrago_table,
-    #             fill_etrago_generators,
-    #             household_electricity_demand_annual,
-    #             cts_demand_buildings,
-    #             emobility_mit,
-    #             rail_transit_demand,
-    #             low_flex_scenario,
-    #         ]
-    #     )
 
     with TaskGroup(group_id="metadata") as metadata_group:
         # upload json metadata at the end
