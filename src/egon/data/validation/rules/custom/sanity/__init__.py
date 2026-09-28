@@ -11,6 +11,12 @@ from .residential_electricity import (  # noqa: F401
     ResidentialElectricityAnnualSum,
     ResidentialElectricityHhRefinement,
 )
+from .storages import (  # noqa: F401
+    HomeBatteryAggregationComparison,
+    HomeBatteryCapacityComparison,
+    HomeBatteryDuplicateRows,
+    PumpedHydroCapacityComparison,
+)
 
 # Auto-generate __all__ from imported names (excludes private/module names)
 __all__ = [

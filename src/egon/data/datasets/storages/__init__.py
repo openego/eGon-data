@@ -33,6 +33,13 @@ from egon.data.datasets.storages.pumped_hydro import (
     select_mastr_pumped_hydro,
     select_nep_pumped_hydro,
 )
+from egon.data.validation import TableValidation, resolve_boundary_dependence
+from egon.data.validation.rules.custom.sanity import (
+    HomeBatteryAggregationComparison,
+    HomeBatteryCapacityComparison,
+    HomeBatteryDuplicateRows,
+    PumpedHydroCapacityComparison,
+)
 from egon.data.db import session_scope
 
 Base = declarative_base()
@@ -114,7 +121,7 @@ class Storages(Dataset):
     #:
     name: str = "Storages"
     #:
-    version: str = "0.0.14"
+    version: str = "0.0.15"
 
     def __init__(self, dependencies):
         super().__init__(
@@ -128,6 +135,102 @@ class Storages(Dataset):
                 allocate_pv_home_batteries_to_grids,
                 allocate_home_batteries_to_buildings,
             ),
+            validation={
+                "data-quality": [
+                    TableValidation(
+                        table_name="supply.egon_storages",
+                        # Row count depends on the active --scenarios.
+                        # Observed on SH_test_run_0726 / regon_dev_11-09
+                        # (2026-09-27).
+                        row_count=resolve_boundary_dependence(
+                            {
+                                "Schleswig-Holstein": 172301,
+                                "Everything": 3439173,
+                            }
+                        ),
+                        data_type_columns={
+                            "id": "bigint",
+                            "sources": "jsonb",
+                            "source_id": "jsonb",
+                            "carrier": "character varying",
+                            "el_capacity": "double precision",
+                            "bus_id": "integer",
+                            "scenario": "character varying",
+                        },
+                        not_null_columns=[
+                            "id",
+                            "sources",
+                            "source_id",
+                            "carrier",
+                            "el_capacity",
+                            "bus_id",
+                            "scenario",
+                        ],
+                        value_set_columns={
+                            "carrier": ["BESS", "home_battery", "pumped_hydro"],
+                            "scenario": [
+                                "eGon2035",
+                                "reGon2037",
+                                "reGon2045",
+                                "status2024",
+                            ],
+                        },
+                    ),
+                    TableValidation(
+                        table_name="supply.egon_home_batteries",
+                        # Row count depends on the active --scenarios.
+                        # Observed on SH_test_run_0726 / regon_dev_11-09
+                        # (2026-09-27).
+                        row_count=resolve_boundary_dependence(
+                            {
+                                "Schleswig-Holstein": 608007,
+                                "Everything": 8730797,
+                            }
+                        ),
+                        data_type_columns={
+                            "scenario": "character varying",
+                            "bus_id": "integer",
+                            "building_id": "integer",
+                            "p_nom": "double precision",
+                            "capacity": "double precision",
+                            "sources": "jsonb",
+                        },
+                        not_null_columns=[
+                            "scenario",
+                            "bus_id",
+                            "building_id",
+                            "p_nom",
+                            "capacity",
+                            "sources",
+                        ],
+                        value_set_columns={
+                            "scenario": [
+                                "eGon2035",
+                                "reGon2037",
+                                "reGon2045",
+                                "status2024",
+                            ],
+                        },
+                    ),
+                    PumpedHydroCapacityComparison(
+                        table="supply.egon_storages",
+                        rule_id="SANITY_PUMPED_HYDRO_CAPACITY",
+                    ),
+                    HomeBatteryCapacityComparison(
+                        table="supply.egon_storages",
+                        rule_id="SANITY_HOME_BATTERY_CAPACITY",
+                    ),
+                    HomeBatteryAggregationComparison(
+                        table="supply.egon_home_batteries",
+                        rule_id="SANITY_HOME_BATTERY_AGGREGATION",
+                    ),
+                    HomeBatteryDuplicateRows(
+                        table="supply.egon_home_batteries",
+                        rule_id="SANITY_HOME_BATTERY_DUPLICATES",
+                    ),
+                ]
+            },
+            proceed_on_validation_failure=True,
         )
 
 
