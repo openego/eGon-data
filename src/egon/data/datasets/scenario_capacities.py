@@ -3,12 +3,14 @@ Netzentwicklungsplan 2035, Version 2021, Szenario C, and
 Netzentwicklungsplan 2037/2045, Version 2025, Szenario C
 """
 
+from functools import lru_cache
 from pathlib import Path
+from urllib.request import urlretrieve
 import datetime
 import json
 import time
 
-from sqlalchemy import Column, Float, Integer, String
+from sqlalchemy import Boolean, Column, Float, Integer, String
 from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.orm import sessionmaker
 import numpy as np
@@ -397,6 +399,25 @@ def insert_capacities_per_federal_state_nep():
 
         # Join dfs
         insert_data = pd.concat([original, updated])
+
+        # Hydrogen power plants per federal state (reGon scenarios), inside
+        # the dataset boundary
+        hydrogen = pd.DataFrame(
+            [
+                {
+                    "carrier": "hydrogen",
+                    "capacity": capacity * 1e3,
+                    "component": "generator",
+                    "nuts": nuts_mapping()[state],
+                    "scenario": scenario,
+                }
+                for scenario, per_state in NEP2025_HYDROGEN_POWER_PLANTS.items()
+                if scenario in scenarios
+                for state, capacity in per_state.items()
+                if nuts_mapping()[state] in map_nuts.nuts.values
+            ]
+        )
+        insert_data = pd.concat([insert_data, hydrogen])
         insert_data = insert_data.rename(columns={"scenario": "scenario_name"})
 
         # Insert data to db
@@ -469,18 +490,27 @@ def aggr_nep_capacities(carriers):
         .reset_index()
         .rename(columns={"c2035_capacity": "capacity"})
     )
-    
-    # Sum up capacities per federal state and carrier for reGon scenarios
-    capacities_list_reGon2037 = (
-        nep_capacities[nep_capacities["scenario"] == "reGon"]
-        .groupby(["federal_state", "carrier", "scenario"])["c2037_capacity"]
-        .sum()
-        .to_frame()
-        .reset_index()
-        .rename(columns={"c2037_capacity": "capacity"})
-    )
-    
-    
+
+    # Sum up capacities per federal state and carrier for the reGon
+    # scenarios, from the capacity column of their target year
+    capacities_list_reGon = {
+        scenario: (
+            nep_capacities[nep_capacities["scenario"] == "reGon"]
+            .groupby(["federal_state", "carrier"])[column]
+            .sum()
+            .to_frame()
+            .reset_index()
+            .rename(columns={column: "capacity"})
+            .assign(scenario=scenario)
+        )
+        for scenario, column in [
+            ("reGon2037", "c2037_capacity"),
+            ("reGon2045", "c2045_capacity"),
+        ]
+    }
+    capacities_list_reGon2037 = capacities_list_reGon["reGon2037"]
+    capacities_list_reGon2045 = capacities_list_reGon["reGon2045"]
+
     # Neglect entries with carriers not in argument
     capacities_list_eGon = capacities_list_eGon[capacities_list_eGon.carrier.isin(carriers)]
     capacities_list_reGon2037 = capacities_list_reGon2037[capacities_list_reGon2037.carrier.isin(carriers)]
@@ -538,8 +568,412 @@ def map_carrier():
             "Erdgas/Wasserstoff": "gas",
             "Wasserstoff": "hydrogen",
             "Wasser": "pumped_hydro",
+            "Dampf": "others",
         }
     )
+
+
+# Federal states as written in the lists of the NEP 2025 and in the MaStR
+FEDERAL_STATE_CODES = {
+    "Baden-Württemberg": "BW",
+    "BadenWuerttemberg": "BW",
+    "Bayern": "BY",
+    "Berlin": "BE",
+    "Brandenburg": "BB",
+    "Bremen": "HB",
+    "Hamburg": "HH",
+    "Hessen": "HE",
+    "Mecklenburg-Vorpommern": "MV",
+    "MecklenburgVorpommern": "MV",
+    "Niedersachsen": "NI",
+    "Nordrhein-Westfalen": "NW",
+    "NordrheinWestfalen": "NW",
+    "Rheinland-Pfalz": "RP",
+    "RheinlandPfalz": "RP",
+    "Saarland": "SL",
+    "Sachsen": "SN",
+    "Sachsen-Anhalt": "ST",
+    "SachsenAnhalt": "ST",
+    "Schleswig-Holstein": "SH",
+    "SchleswigHolstein": "SH",
+    "Thüringen": "TH",
+    "Thueringen": "TH",
+}
+
+# Net capacity of H2 power plants per federal state [GW], scenario C: NEP
+# Strom 2037/2045 (2025), 2. Entwurf, Kap. 2, Abb. 15 (2037) and 18 (2045)
+# https://www.netzentwicklungsplan.de/sites/default/files/2026-03/NEP_2037_2045_V2025_2_Entwurf_Kap2.pdf
+NEP2025_HYDROGEN_POWER_PLANTS = {
+    "reGon2037": {
+        "BW": 1.8,
+        "BY": 5.8,
+        "BE": 1.3,
+        "BB": 2.1,
+        "HB": 0.0,
+        "HH": 0.2,
+        "HE": 2.5,
+        "MV": 0.2,
+        "NI": 2.9,
+        "NW": 17.6,
+        "RP": 0.3,
+        "SL": 2.1,
+        "SN": 2.1,
+        "ST": 0.9,
+        "SH": 0.4,
+        "TH": 0.2,
+    },
+    "reGon2045": {
+        "BW": 7.9,
+        "BY": 12.2,
+        "BE": 2.5,
+        "BB": 3.3,
+        "HB": 0.5,
+        "HH": 1.3,
+        "HE": 5.1,
+        "MV": 0.8,
+        "NI": 8.3,
+        "NW": 25.7,
+        "RP": 2.2,
+        "SL": 2.7,
+        "SN": 3.6,
+        "ST": 2.7,
+        "SH": 1.4,
+        "TH": 1.1,
+    },
+}
+
+# Units of the approved list with a deleted MaStR number: new number
+NEP2025_MASTR_REPLACEMENTS = {
+    # Kraftwerksgruppe Pfreimd (ENGIE): Pfreimd T1, R1, R2, R3
+    "SEE935182416977": "SEE909599581535",
+    "SEE942667598431": "SEE991322361361",
+    "SEE930411510563": "SEE972377801989",
+    "SEE968359064886": "SEE925690509520",
+    # AVA Velsen (Saarbrücken)
+    "SEE938035990372": "SEE959496642280",
+}
+
+# Reserve units of the approved list (not in the market model of the NEP
+# Strom, Kap. 2, p. 29); status: Kraftwerksliste of the BNetzA, 26 June 2026
+# https://www.bundesnetzagentur.de/DE/Fachthemen/ElektrizitaetundGas/Versorgungssicherheit/Erzeugungskapazitaeten/Kraftwerksliste/_DL/Kraftwerksliste.xlsx
+NEP2025_RESERVE_UNITS = {
+    # Kapazitätsreserve (§ 13e EnWG)
+    "SEE923304040681": "Gersteinwerk F GT (F1)",
+    "SEE932787342328": "Gersteinwerk G GT (G1)",
+    "SEE908672656115": "Gersteinwerk G DT (G2)",
+    "SEE964242179781": "Gersteinwerk K",
+    "SEE930596800480": "Gasturbinenkraftwerk Ahrensfelde GT A",
+    "SEE929797382345": "Gasturbinenkraftwerk Ahrensfelde GT B",
+    "SEE988046628214": "Gasturbinenkraftwerk Ahrensfelde GT C",
+    "SEE923527691592": "Gasturbinenkraftwerk Ahrensfelde GT D",
+    "SEE957496380690": "Gasturbinenkraftwerk Thyrow GT B",
+    "SEE980421575656": "Gasturbinenkraftwerk Thyrow GT C",
+    "SEE989393516094": "Gasturbinenkraftwerk Thyrow GT D",
+    "SEE983877705974": "Gasturbinenkraftwerk Thyrow GT E",
+    "SEE976333173899": "Gaskraftwerk Landesbergen - Gasturbine",
+    # Netzreserve (§ 13b EnWG)
+    "SEE988182827533": "Staudinger 4",
+    "SEE968136280119": "Rheinhafen-Dampfkraftwerk RDK 4S DT",
+    "SEE934927915690": "Rheinhafen-Dampfkraftwerk RDK 4S GT",
+    "SEE963398776042": "Darmstadt GT11",
+    "SEE996136363488": "Darmstadt GT12",
+    # besonderes netztechnisches Betriebsmittel (§ 11 (3) EnWG)
+    "SEE916274994887": "bnBm Gaskraftwerk Leipheim",
+}
+
+# Location (state, postcode, municipality) of the units without MaStR number
+NEP2025_LOCATIONS = {
+    # Natural gas new builds (§§ 38/39 GasNZV), municipality of the name
+    "BHKW Profen Village": ("ST", "06729", "Elsteraue"),
+    "Rechenzentrum Frechen": ("NW", "50226", "Frechen"),
+    "GKW Hanau": ("HE", "63450", "Hanau"),
+    "Voerde Schleusenstraße": ("NW", "46562", "Voerde"),
+    "Steag Herne Block 4": ("NW", "44649", "Herne"),
+    "GuD Marbach": ("BW", "71672", "Marbach am Neckar"),
+    # Other plants. Source, unless stated otherwise: location of the units
+    # of the same plant in the MaStR (dump 2025-02-09, raw files)
+    "MHKW": ("HB", "28219", "Bremen"),  # swb Entsorgung, MHKW_Gen4 49.2 MW
+    "Blockdammweg/Klingenberg": ("BE", "10317", "Berlin"),  # HKW Klingenberg
+    "Reuter West": ("BE", "13599", "Berlin"),  # HKW Reuter West
+    "FHKW Ludwigshafen": ("RP", "67063", "Ludwigshafen"),
+    "Erzhausen": ("NI", "37574", "Einbeck"),  # PSW Erzhausen, 200 MW
+    "Rudolf-Fettweis-Werk Oberstufe": ("BW", "76596", "Forbach"),
+    "Rudolf-Fettweis-Werk Unterstufe": ("BW", "76596", "Forbach"),
+    # Planned next to the Jochenstein plant (MaStR: Untergriesbach)
+    "Pumpspeicherwerk Riedl": ("BY", "94107", "Untergriesbach"),
+    # Klärschlammverbrennung at the Köhlbrandhöft treatment plant, source:
+    # https://de.wikipedia.org/wiki/VERA_Kl%C3%A4rschlammverbrennung
+    "VERA": ("HH", "20457", "Hamburg"),
+    # Planned pumped hydro in Einöden near Flintsbach am Inn, source:
+    # https://psw-einoeden.de/
+    "Einoeden": ("BY", "83126", "Flintsbach am Inn"),
+    # Planned pumped hydro Leutenberg/Probstzella (Vattenfall), source:
+    # https://group.vattenfall.com/de/newsroom/pressemitteilungen/2022/vattenfall-erwirbt-projektgesellschaft-fur-pumpspeicherkraftwerk-in-thuringen
+    "PSW Leutenberg": ("TH", "07338", "Leutenberg"),
+    # Naturstromspeicher Gaildorf, halted in 2024 but part of the approved
+    # list, source: https://de.wikipedia.org/wiki/Naturstromspeicher_Gaildorf
+    "Gaildorf": ("BW", "74405", "Gaildorf"),
+}
+
+
+def download_nep2025_power_plant_list():
+    """
+    Download the approved list of power plants of the NEP 2025 (Annex 1 of
+    the approval of the Szenariorahmen) and Annexes 2 and 3 of the
+    Szenariorahmen Gas/Wasserstoff 2025
+
+    Returns
+    -------
+    None
+
+    """
+    scenarios = config.settings()["egon-data"]["--scenarios"]
+    if not any(s in scenarios for s in ["reGon2037", "reGon2045"]):
+        return
+
+    for key in [
+        "reGon_list_conv_pp",
+        "reGon_h2_market_survey",
+        "reGon_gas_power_plants",
+    ]:
+        target_file = Path(ScenarioCapacities.sources.files[key])
+        if target_file.is_file():
+            continue
+
+        target_file.parent.mkdir(parents=True, exist_ok=True)
+        urlretrieve(ScenarioCapacities.sources.urls[key], target_file)
+
+
+def read_mastr_units(file, unit_ids, columns):
+    """Read the given units from a MaStR file
+
+    Parameters
+    ----------
+    file : str
+        Path of the MaStR file
+    unit_ids : list
+        MaStR numbers of the units (EinheitMastrNummer)
+    columns : list
+        Columns to read besides EinheitMastrNummer
+
+    Returns
+    -------
+    pandas.DataFrame
+        Units found in the file
+
+    """
+    # The storage file is large, so it is read in chunks
+    return pd.concat(
+        chunk[chunk.EinheitMastrNummer.isin(unit_ids)]
+        for chunk in pd.read_csv(
+            file,
+            usecols=["EinheitMastrNummer"] + columns,
+            dtype={"Postleitzahl": str},
+            chunksize=500_000,
+        )
+    )
+
+
+def read_nep2025_power_plant_list():
+    """Return a copy of the approved list of power plants of the NEP 2025
+
+    See :py:func:`load_nep2025_power_plant_list`. The list is read once
+    per process, as it is needed twice in :py:func:`insert_data_nep`.
+
+    Returns
+    -------
+    pandas.DataFrame
+        Power plants of the list
+
+    """
+    return load_nep2025_power_plant_list().copy()
+
+
+@lru_cache(maxsize=1)
+def load_nep2025_power_plant_list():
+    """
+    Read the approved list of power plants of the NEP 2025
+
+    Scenario C of Annex 1 of the approval of the Szenariorahmen
+    2025-2037/2045, without the reserve plants
+    (:py:data:`NEP2025_RESERVE_UNITS`), located with the MaStR. The flags
+    ``h2_site`` (natural gas units, Annex 3) and ``h2_conversion`` (hydrogen
+    projects, Annex 2) of the Szenariorahmen Gas/Wasserstoff 2025 link the
+    hydrogen projects to the natural gas units they replace.
+
+    Returns
+    -------
+    pandas.DataFrame
+        Power plants in the format of
+        :py:class:`NEPConvPowerPlants
+        <egon.data.datasets.scenario_capacities.NEPConvPowerPlants>`
+
+    """
+    sources = ScenarioCapacities.sources
+    file = sources.files["reGon_list_conv_pp"]
+
+    gas = pd.read_excel(file, sheet_name="Erdgas-Kraftwerke").rename(
+        columns={
+            "MaStR-Nr. der Stromerzeugungseinheit": "mastr_id",
+            "Anzeige-Name der Stromerzeugungseinheit": "name",
+            "Anlagenbetreiber": "operator",
+            "2037 Szenario 2 / B / C [MWel]": "c2037_capacity",
+        }
+    )
+    gas = gas[~gas.mastr_id.str.contains("Dummy")]
+    gas["carrier_nep"] = "Erdgas"
+    # scenario C has no natural gas plants in 2045
+    gas["c2045_capacity"] = 0.0
+    # The reserve plants are not market plants of the NEP Strom
+    reserve = gas.mastr_id.isin(NEP2025_RESERVE_UNITS)
+    print(
+        "Reserve plants of the NEP 2025 list not used in 2037: "
+        f"{gas.loc[reserve, 'c2037_capacity'].sum():.0f} MW, "
+        f"{', '.join(gas.loc[reserve, 'mastr_id'].map(NEP2025_RESERVE_UNITS))}."
+    )
+    gas.loc[reserve, "c2037_capacity"] = 0.0
+
+    # Sites reported in the hydrogen market survey. Units in planning
+    # (§§ 38/39 GasNZV) have no MaStR number in Annex 3 and are skipped.
+    gas_plants = pd.read_excel(
+        sources.files["reGon_gas_power_plants"], header=1
+    )
+    h2_sites = gas_plants.loc[
+        gas_plants["Standort in Marktabfrage Wasserstoff gemeldet"].eq("x"),
+        "MaStR-Nr. der Stromerzeugungseinheit",
+    ].dropna()
+    gas["h2_site"] = gas.mastr_id.isin(h2_sites)
+
+    others = pd.read_excel(
+        file, sheet_name="Sonstige Kraftwerke (Strom-NEP)"
+    ).rename(
+        columns={
+            "MaStR-ID": "mastr_id",
+            "Anlagenbetreiber": "operator",
+            "Anlagenname": "name",
+            "Blockname": "name_unit",
+            "Energieträger": "carrier_nep",
+            "2037 Szenario A / B / C [MWel]": "c2037_capacity",
+            "2045 Szenario A / B / C [MWel]": "c2045_capacity",
+        }
+    )
+
+    hydrogen = pd.read_excel(file, sheet_name="Wasserstoff-Kraftwerke").rename(
+        columns={
+            "Projektnummer": "name",
+            "Bundesland": "federal_state",
+            "2037 Szenario 2 / B / C [MWel]": "c2037_capacity",
+            "2045 Szenario 2 / B / C [MWel]": "c2045_capacity",
+        }
+    )
+    hydrogen["carrier_nep"] = "Wasserstoff"
+    hydrogen["federal_state"] = hydrogen.federal_state.map(FEDERAL_STATE_CODES)
+    hydrogen["chp"] = "Nein"
+
+    # Projects that replace a natural gas plant. The survey has seven rows
+    # per project with the same flag.
+    survey = pd.read_excel(sources.files["reGon_h2_market_survey"], header=1)
+    conversion = (
+        survey.groupby("Projekt-\nnummer")["Reduzierung des\nMethanbedarfs"]
+        .first()
+        .eq("ja")
+    )
+    hydrogen["h2_conversion"] = (
+        hydrogen.name.map(conversion).fillna(False).astype(bool)
+    )
+
+    units = pd.concat([gas, others], ignore_index=True)
+    units["name"] = units.name.str.strip()
+    units["mastr_id"] = units.mastr_id.replace(NEP2025_MASTR_REPLACEMENTS)
+
+    # Add the data of the units from the MaStR
+    columns = [
+        "Bundesland",
+        "Postleitzahl",
+        "Ort",
+        "Inbetriebnahmedatum",
+        "EinheitBetriebsstatus",
+        "Nettonennleistung",
+    ]
+    mastr = pd.concat(
+        [
+            read_mastr_units(
+                sources.files["mastr_combustion"],
+                units.mastr_id,
+                columns + ["ThermischeNutzleistung"],
+            ),
+            read_mastr_units(
+                sources.files["mastr_hydro"], units.mastr_id, columns
+            ),
+            read_mastr_units(
+                sources.files["mastr_storage"], units.mastr_id, columns
+            ),
+        ]
+    ).drop_duplicates(subset="EinheitMastrNummer")
+
+    units = units.merge(
+        mastr, left_on="mastr_id", right_on="EinheitMastrNummer", how="left"
+    )
+    units["federal_state"] = units.Bundesland.map(FEDERAL_STATE_CODES)
+    units["postcode"] = units.Postleitzahl
+    units["city"] = units.Ort
+    units["commissioned"] = units.Inbetriebnahmedatum.str[:4]
+    units["status"] = units.EinheitBetriebsstatus
+    # MaStR capacities are given in kW
+    units["capacity"] = units.Nettonennleistung / 1e3
+    units["chp"] = np.where(
+        units.ThermischeNutzleistung.fillna(0) > 0, "Ja", "Nein"
+    )
+
+    for name, (state, postcode, city) in NEP2025_LOCATIONS.items():
+        located = (units.name == name) & units.federal_state.isnull()
+        units.loc[located, "federal_state"] = state
+        units.loc[located, "postcode"] = postcode
+        units.loc[located, "city"] = city
+        units.loc[located, "status"] = np.where(
+            units.loc[located, "mastr_id"] == "Neubau §§38/39 GasNZV",
+            "Neubau §§38/39 GasNZV",
+            "not in the MaStR",
+        )
+
+    # Units without German federal state (abroad or unlocated) are dropped
+    missing = units.federal_state.isnull()
+    if missing.any():
+        dropped = units[
+            missing & (units.c2037_capacity + units.c2045_capacity > 0)
+        ]
+        print(
+            "Units of the NEP 2025 list without location in Germany are "
+            "dropped (MW in 2037 per carrier): "
+            f"{dropped.groupby('carrier_nep').c2037_capacity.sum().round().to_dict()}; "
+            f"units: {', '.join(dropped.name.astype(str))}"
+        )
+        units = units[~missing]
+
+    kw_liste = pd.concat([units, hydrogen], ignore_index=True)
+    kw_liste["scenario"] = "reGon"
+
+    return kw_liste[
+        [
+            "mastr_id",
+            "name",
+            "name_unit",
+            "operator",
+            "carrier_nep",
+            "chp",
+            "postcode",
+            "city",
+            "federal_state",
+            "commissioned",
+            "status",
+            "capacity",
+            "c2037_capacity",
+            "c2045_capacity",
+            "scenario",
+            "h2_site",
+            "h2_conversion",
+        ]
+    ]
 
 
 def insert_nep_list_powerplants(export=True):
@@ -622,64 +1056,15 @@ def insert_nep_list_powerplants(export=True):
             )
             # add scenario column
             kw_liste_nep21["scenario"] = "eGon2035"
-            
+
         elif scenario in ["reGon2037", "reGon2045"] and not ran:
-            # Read-in data from csv-file
-            target_file = Path(".") / sources.files["reGon_list_conv_pp"]
-            kw_liste_nep25 = pd.read_excel(target_file, decimal=",")
-            
-            # Adjust column names for Kraftwerksliste_NEP_V2025_Szenariorahmen from the NEP2025
-            kw_liste_nep25 = kw_liste_nep25.rename(
-                columns={
-                    "MaStR-ID": "mastr_id",
-                    "ÜNB" : "tso",
-                    "Betreiber": "operator",
-                    "Kraftwerksname": "name",
-                    "Blockname": "name_unit",
-                    "Energieträger": "carrier_nep",
-                    "Technologie": "technology",
-                    "KWK": "chp", # original column name from NEP2021 changed in NEP2025
-                    "PLZ": "postcode",
-                    "Ort": "city",
-                    "Bundesland": "federal_state",
-                    "Inbetriebnahmejahr": "commissioned",
-                    "Status aktuell": "status", # original column name from NEP2021 changed in NEP2025
-                    "Nettonennleistung [MW] 31.12.2023": "capacity",
-                    "Leistung [MW] 2037": "c2037_capacity",
-                    "Energieträger 2037": "carrier_nep_2037",
-                    "Leistung [MW] 2045": "c2045_capacity",
-                    "Energieträger 2045": "carrier_nep_2045",
-                }
-            )
-            
-            # rename federal states to shortcuts
-            kw_liste_nep25["federal_state"].replace({
-                "Baden-Wuerttemberg": "BW",
-                "Nordrhein-Westfalen": "NW",
-                "Hessen": "HE",
-                "Brandenburg": "BB",
-                "Bremen": "HB",
-                "Rheinland-Pfalz": "RP",
-                "Sachsen-Anhalt": "ST",
-                "Schleswig-Holstein": "SH",
-                "Mecklenburg-Vorpommern": "MV",
-                "Thueringen": "TH",
-                "Niedersachsen": "NI",
-                "Sachsen": "SN",
-                "Hamburg": "HH",
-                "Saarland": "SL",
-                "Berlin": "BE",
-                "Bayern": "BY",
-            }, inplace = True)
-            
-            
-            # add scenario column
-            kw_liste_nep25["scenario"] = "reGon"
-            
-            ran = True # ensures the data is only loaded once
-        
-    
-    kw_liste_nep = pd.concat([kw_liste_nep21, kw_liste_nep25], ignore_index=True)
+            kw_liste_nep25 = read_nep2025_power_plant_list()
+
+            ran = True  # ensures the data is only loaded once
+
+    kw_liste_nep = pd.concat(
+        [kw_liste_nep21, kw_liste_nep25], ignore_index=True
+    )
 
     # Cut data to federal state if in testmode
     boundary = config.settings()["egon-data"]["--dataset-boundary"]
@@ -702,11 +1087,11 @@ def insert_nep_list_powerplants(export=True):
             "Berlin": "BE",
             "Bayern": "BY",
         }
-        
+
         kw_liste_nep = kw_liste_nep[
             kw_liste_nep.federal_state.isin([map_states[boundary], np.nan])
         ]
-        
+
         # scale all capacity to the respective population share
         # Only columns of the NEP lists that were actually loaded are
         # present, depending on the configured scenarios
@@ -726,9 +1111,10 @@ def insert_nep_list_powerplants(export=True):
             kw_liste_nep.loc[
                 kw_liste_nep[kw_liste_nep.federal_state.isnull()].index, col
             ] *= population_share()
-    
+
     # Map NEP carrier names to internal eGon-data carrier names
     kw_liste_nep["carrier"] = map_carrier()[kw_liste_nep.carrier_nep].values
+
     # The NEP2021 list uses "Ja"/"Nein", the NEP2025 list uses "ja"/"nein".
     # Downstream queries filter on the capitalized form, so normalize both.
     kw_liste_nep["chp"] = kw_liste_nep["chp"].replace(
@@ -986,6 +1372,7 @@ def add_metadata():
 tasks = (
     create_table,
     insert_capacities_status_quo_scn,
+    download_nep2025_power_plant_list,
     insert_data_nep,
     add_metadata,
 )
@@ -1007,6 +1394,7 @@ class ScenarioCapacities(Dataset):
       * :py:class:`Vg250 <egon.data.datasets.vg250.Vg250>`
       * :py:class:`DataBundle <egon.data.datasets.data_bundle.DataBundle>`
       * :py:class:`ZensusPopulation <egon.data.datasets.zensus.ZensusPopulation>`
+      * :py:func:`mastr_data_setup <egon.data.datasets.mastr.mastr_data_setup>`
 
 
     *Resulting tables*
@@ -1018,13 +1406,23 @@ class ScenarioCapacities(Dataset):
     #:
     name: str = "ScenarioCapacities"
     #:
-    version: str = "0.0.24"
+    version: str = "0.0.25"
     sources = DatasetSources(
         files={
             "eGon2035_capacities": "data_bundle_egon_data/NEP/NEP_V2021_scnC2035.xlsx",
             "eGon2035_list_conv_pp": "data_bundle_egon_data/NEP/Kraftwerksliste_NEP_V2021_konv.csv",
             "reGon_capacities": "data_bundle_egon_data/NEP/NEP_V2025_scnC2037.xlsx",
-            "reGon_list_conv_pp": "data_bundle_egon_data/NEP/Kraftwerksliste_NEP_V2025_Szenariorahmen.xlsx",
+            "reGon_list_conv_pp": "nep_2025/Anlage1_Standorte_Kraftwerke.xlsx",
+            "reGon_h2_market_survey": "nep_2025/SR_Anlage2Gas.xlsx",
+            "reGon_gas_power_plants": "nep_2025/SR_Anlage3Gas.xlsx",
+            "mastr_combustion": "./bnetza_mastr/dump_2025-02-09/bnetza_mastr_combustion_cleaned.csv",
+            "mastr_hydro": "./bnetza_mastr/dump_2025-02-09/bnetza_mastr_hydro_cleaned.csv",
+            "mastr_storage": "./bnetza_mastr/dump_2025-02-09/bnetza_mastr_storage_cleaned.csv",
+        },
+        urls={
+            "reGon_list_conv_pp": "https://www.netzentwicklungsplan.de/sites/default/files/2025-05/Anlage1_Standorte_Kraftwerke_0.xlsx",
+            "reGon_h2_market_survey": "https://ko-nep.de/wp-content/uploads/2024/03/SR_Anlage2Gas.xlsx",
+            "reGon_gas_power_plants": "https://ko-nep.de/wp-content/uploads/2024/03/SR_Anlage3Gas.xlsx",
         },
         tables={
             "boundaries": "boundaries.vg250_lan",
