@@ -606,7 +606,7 @@ with airflow.DAG(
     with TaskGroup(group_id="etrago_input") as etrago_input_group:
 
         create_ocgt = OpenCycleGasTurbineEtrago(
-            dependencies=[create_gas_polygons, power_plants]
+            dependencies=[create_gas_polygons, power_plants, insert_hydrogen_buses]
         )
 
         # Fill eTraGo generators tables

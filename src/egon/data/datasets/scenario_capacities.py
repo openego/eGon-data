@@ -78,8 +78,10 @@ class NEPConvPowerPlants(Base):
     operator = Column(String(124))
     mastr_id = Column(String(24))
     scenario = Column(String(124))
-    
-    
+    # NEP 2025 only, see load_nep2025_power_plant_list()
+    h2_site = Column(Boolean)
+    h2_conversion = Column(Boolean)
+
 
 def create_table():
     """Create input tables for scenario setup
