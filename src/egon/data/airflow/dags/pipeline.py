@@ -654,10 +654,11 @@ with airflow.DAG(
         group_id="gas_sector_coupling"
     ) as gas_sector_coupling_group:
         # Power-to-H2-to-power chain installations
-        # with oxygen and waste_heat usage
+        # with waste_heat usage
         insert_power_to_h2_installations = HydrogenPowerLinkEtrago(
             dependencies=[
-                h2_infrastructure,
+                *h2_infrastructure,
+                industrial_gas_demand_scenarios,
                 mv_grid_districts,
                 heat_etrago,
                 substation_extraction,
@@ -667,7 +668,7 @@ with airflow.DAG(
 
         # Link between methane grid and respective hydrogen buses
         insert_h2_to_ch4_grid_links = HydrogenMethaneLinkEtrago(
-            dependencies=[h2_infrastructure, insert_power_to_h2_installations]
+            dependencies=[insert_hydrogen_buses]
         )
 
     with TaskGroup(group_id="mobility_demand") as mobility_demand_group:
