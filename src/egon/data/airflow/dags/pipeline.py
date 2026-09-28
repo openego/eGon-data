@@ -421,6 +421,7 @@ with airflow.DAG(
         scenario_capacities = ScenarioCapacities(
             dependencies=[
                 data_bundle,
+                mastr_data,
                 run_pypsaeur,
                 setup,
                 vg250,
@@ -467,8 +468,11 @@ with airflow.DAG(
 
         h2_infrastructure = [insert_h2_grid, insert_hydrogen_buses]
 
+    with TaskGroup(group_id="gas_supply") as gas_supply_group:
         # H2 steel tanks and saltcavern storage
-        insert_H2_storage = HydrogenStoreEtrago(dependencies=h2_infrastructure)
+        insert_H2_storage = HydrogenStoreEtrago(
+            dependencies=[insert_hydrogen_buses]
+        )
 
         # Gas abroad
         gas_abroad_insert_data = GasNeighbours(
@@ -477,11 +481,11 @@ with airflow.DAG(
                 prepare_pypsa_eur,
                 foreign_lines,
                 insert_hydrogen_buses,
+                insert_h2_grid,
                 run_pypsaeur,
             ]
         )
 
-    with TaskGroup(group_id="gas_supply") as gas_supply_group:
         # Import gas production
         gas_production_insert_data = CH4Production(
             dependencies=[create_gas_polygons]
