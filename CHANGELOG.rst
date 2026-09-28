@@ -146,6 +146,12 @@ Changed
   H2<->CH4 processes to the buses of the H2 core network. Remove H2 feed-in
   and oxygen links.
   `#1452 <https://github.com/openego/eGon-data/issues/1452>`_
+* Allocate the hydrogen power plants of the reGon scenarios to power plant
+  sites, following various measures (conversion of natural gas plants, new builds
+  according market survey and freed grid connections, distribute load-near
+  on plausible sites). Connect them to the H2 buses as OCGT links with their own 
+  efficiencies.
+  `#1465 <https://github.com/openego/eGon-data/issues/1465>`_
 
 Bug Fixes
 ---------
