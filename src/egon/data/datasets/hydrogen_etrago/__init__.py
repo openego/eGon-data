@@ -208,7 +208,7 @@ class HydrogenPowerLinkEtrago(Dataset):
     #:
     name: str = "HydrogenPowerLinkEtrago"
     #:
-    version: str = "0.0.8"
+    version: str = "0.0.9"
 
     sources = DatasetSources(
         tables={
@@ -262,7 +262,7 @@ class HydrogenMethaneLinkEtrago(Dataset):
     #:
     name: str = "HydrogenMethaneLinkEtrago"
     #:
-    version: str = "0.0.8"
+    version: str = "0.0.9"
 
     sources = DatasetSources(
         tables={
@@ -317,7 +317,7 @@ class HydrogenGridEtrago(Dataset):
     #:
     name: str = "HydrogenGridEtrago"
     #:
-    version: str = "0.0.5"
+    version: str = "0.0.6"
 
     sources = DatasetSources(
         urls={
