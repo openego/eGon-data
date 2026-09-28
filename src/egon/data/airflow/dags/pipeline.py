@@ -70,8 +70,7 @@ from egon.data.datasets.hydrogen_etrago import (
 )
 from egon.data.datasets.industrial_gas_demand import (
     IndustrialGasDemand,
-    IndustrialGasDemandeGon100RE,
-    IndustrialGasDemandeGon2035,
+    IndustrialGasDemandScenarios,
 )
 from egon.data.datasets.industrial_sites import MergeIndustrialSites
 from egon.data.datasets.industry import IndustrialDemandCurves
@@ -503,17 +502,12 @@ with airflow.DAG(
             dependencies=[scenario_parameters, data_bundle]
         )
 
-        # Assign industrial gas demand eGon2035
-        IndustrialGasDemandeGon2035(
-            dependencies=[create_gas_polygons, industrial_gas_demand]
-        )
-
-        # Assign industrial gas demand eGon100RE
-        IndustrialGasDemandeGon100RE(
+        # Assign industrial gas demand
+        industrial_gas_demand_scenarios = IndustrialGasDemandScenarios(
             dependencies=[
                 create_gas_polygons,
                 industrial_gas_demand,
-                run_pypsaeur,
+                insert_h2_grid,
             ]
         )
 
