@@ -128,7 +128,13 @@ Changed
   `#1444 <https://github.com/openego/eGon-data/issues/1444>`_
   `#1463 <https://github.com/openego/eGon-data/issues/1463>`_
   `#1500 <https://github.com/openego/eGon-data/issues/1500>`_
-
+* Adapt the gas_supply TaskGroup to the reGon scenarios. Update data sources
+  for hydrogen production according to NEP target values and existing measures,
+  including at federal-state level. Update biomethane fleet source. Differentiate
+  between pore and cavern infrastructure for H2 storage adaptation. Generalize
+  classes for scenario handling. Remove deprecated scenarios. Describe features
+  of gas stores and gas supply in documentation.
+  `#1445 <https://github.com/openego/eGon-data/issues/1445>`_
 
 Bug Fixes
 ---------
