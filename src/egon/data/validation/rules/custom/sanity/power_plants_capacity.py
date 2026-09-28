@@ -1,4 +1,5 @@
-"""Sanity check validation rules for the power plant capacity distribution."""
+"""Sanity check validation rules for the power plant capacity distribution
+and the buses power plants are connected to."""
 
 from egon_validation.rules.base import DataFrameRule, RuleResult, Severity
 
@@ -185,6 +186,116 @@ class PowerPlantsCapacityComparison(DataFrameRule):
                 f"{max_deviation:.2%}, tolerance {rtol:.2%})"
                 if success
                 else "Capacity mismatch: " + "; ".join(problems)
+            ),
+            severity=Severity.INFO if success else Severity.ERROR,
+            schema=self.schema,
+            table_name=self.table_name,
+            rule_class=self.__class__.__name__,
+        )
+
+
+#: Table holding the buses of all scenarios
+BUS_TABLE = "grid.egon_etrago_bus"
+
+
+class BusExists(DataFrameRule):
+    """Check that every unit is connected to an existing bus.
+
+    For every scenario in the table, the bus of each row is looked up in
+    grid.egon_etrago_bus with the same scenario (``scn_name``). Matching on
+    the scenario is needed since some buses only exist in one scenario.
+
+    The check fails if a row
+
+    * has no bus (``NULL``) or
+    * refers to a bus that does not exist in its scenario (e.g. ``-1``).
+
+    Args:
+        table: Table being validated
+        rule_id: Unique identifier for this validation rule
+        bus_column: Name of the bus column (default: "bus_id")
+        scenario_column: Name of the scenario column (default: "scenario")
+
+    Example:
+        >>> validation = {
+        ...     "data-quality": [
+        ...         BusExists(
+        ...             table="supply.egon_power_plants",
+        ...             rule_id="SANITY_POWER_PLANTS_BUS_EXISTS",
+        ...         )
+        ...     ]
+        ... }
+    """
+
+    def __init__(
+        self,
+        table: str,
+        rule_id: str,
+        bus_column: str = "bus_id",
+        scenario_column: str = "scenario",
+        **kwargs,
+    ):
+        super().__init__(
+            rule_id=rule_id,
+            table=table,
+            bus_column=bus_column,
+            scenario_column=scenario_column,
+            **kwargs,
+        )
+        self.kind = "sanity"
+
+    def get_query(self, ctx):
+        bus = self.params.get("bus_column", "bus_id")
+        scenario = self.params.get("scenario_column", "scenario")
+
+        return f"""
+        SELECT t.{scenario} AS scenario,
+               COUNT(*) AS n_rows,
+               COUNT(*) FILTER (WHERE t.{bus} IS NULL) AS n_null,
+               COUNT(*) FILTER (
+                   WHERE t.{bus} IS NOT NULL AND b.bus_id IS NULL
+               ) AS n_missing,
+               (ARRAY_AGG(DISTINCT t.{bus}) FILTER (
+                   WHERE t.{bus} IS NOT NULL AND b.bus_id IS NULL
+               ))[1:5] AS missing_bus_ids
+        FROM {self.table} AS t
+        LEFT JOIN {BUS_TABLE} AS b
+        ON b.bus_id = t.{bus} AND b.scn_name = t.{scenario}
+        GROUP BY t.{scenario}
+        ORDER BY t.{scenario}
+        """
+
+    def evaluate_df(self, df, ctx):
+        problems = []
+
+        for row in df.itertuples():
+            if row.n_null > 0:
+                problems.append(
+                    f"{row.scenario}: {int(row.n_null)} of "
+                    f"{int(row.n_rows)} rows without bus"
+                )
+            if row.n_missing > 0:
+                problems.append(
+                    f"{row.scenario}: {int(row.n_missing)} of "
+                    f"{int(row.n_rows)} rows with a bus missing in "
+                    f"{BUS_TABLE} (e.g. {list(row.missing_bus_ids)})"
+                )
+
+        success = not problems
+
+        return RuleResult(
+            rule_id=self.rule_id,
+            task=self.task,
+            table=self.table,
+            kind=self.kind,
+            success=success,
+            observed=float(df["n_null"].sum() + df["n_missing"].sum()),
+            expected=0.0,
+            message=(
+                f"All rows are connected to an existing bus in "
+                f"{len(df)} scenarios"
+                if success
+                else "Missing buses: " + "; ".join(problems)
             ),
             severity=Severity.INFO if success else Severity.ERROR,
             schema=self.schema,

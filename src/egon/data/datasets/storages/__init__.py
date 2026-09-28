@@ -35,6 +35,7 @@ from egon.data.datasets.storages.pumped_hydro import (
 )
 from egon.data.validation import TableValidation
 from egon.data.validation.rules.custom.sanity import (
+    BusExists,
     HomeBatteryAggregationComparison,
     HomeBatteryCapacityComparison,
     HomeBatteryDuplicateRows,
@@ -209,6 +210,14 @@ class Storages(Dataset):
                     HomeBatteryDuplicateRows(
                         table="supply.egon_home_batteries",
                         rule_id="SANITY_HOME_BATTERY_DUPLICATES",
+                    ),
+                    BusExists(
+                        table="supply.egon_storages",
+                        rule_id="SANITY_STORAGES_BUS_EXISTS",
+                    ),
+                    BusExists(
+                        table="supply.egon_home_batteries",
+                        rule_id="SANITY_HOME_BATTERY_BUS_EXISTS",
                     ),
                 ]
             },

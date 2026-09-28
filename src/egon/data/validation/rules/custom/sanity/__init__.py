@@ -1,7 +1,10 @@
 """Sanity check validation rules for eGon data quality."""
 
 from .demandregio import DemandRegioScenarioDemand  # noqa: F401
-from .power_plants_capacity import PowerPlantsCapacityComparison  
+from .power_plants_capacity import (  # noqa: F401
+    BusExists,
+    PowerPlantsCapacityComparison,
+)  
 from .pv_rooftop_buildings import (  
     PvRooftopCapacityComparison,
     PvRooftopDuplicateRows,

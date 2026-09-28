@@ -41,6 +41,7 @@ from egon.data.datasets.power_plants.pv_rooftop_buildings import (
 )
 from egon.data.validation import TableValidation
 from egon.data.validation.rules.custom.sanity import (
+    BusExists,
     PowerPlantsCapacityComparison,
     PvRooftopCapacityComparison,
     PvRooftopDuplicateRows,
@@ -1585,6 +1586,14 @@ class PowerPlants(Dataset):
                     PvRooftopDuplicateRows(
                         table="supply.egon_power_plants_pv_roof_building",
                         rule_id="SANITY_PV_ROOFTOP_DUPLICATES",
+                    ),
+                    BusExists(
+                        table="supply.egon_power_plants",
+                        rule_id="SANITY_POWER_PLANTS_BUS_EXISTS",
+                    ),
+                    BusExists(
+                        table="supply.egon_power_plants_pv_roof_building",
+                        rule_id="SANITY_PV_ROOFTOP_BUS_EXISTS",
                     ),
                 ]
             },
