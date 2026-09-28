@@ -219,6 +219,9 @@ KERNNETZ_COMMISSIONING_YEAR = {
     "KVS007-01": 2034,  # H2-2109
 }
 
+# Year of the methane network below
+NEP_CH4_NETWORK_YEAR = 2045
+
 # Sections of the methane network 2045: (number in Anhang 5, start,
 # end, length in km, nominal diameter DN in mm as given in the NEP)
 NEP_CH4_NETWORK_2045 = [
@@ -398,6 +401,13 @@ NEP_CH4_NETWORK_2045_NODES = {
     "Würselen": (6.1341, 50.8179),  # OpenStreetMap
     "Überackern": (12.8794, 48.2047),
 }
+
+# Year of the hydrogen network below
+NEP_H2_NETWORK_YEAR = 2045
+
+# Scenario of the NEP used for 2045 (scenario 2, "O45-Strom", numbering of
+# the approved Szenariorahmen)
+NEP_SCENARIO_2045 = "2"
 
 # Additional H2 sections 2045 (Anhang 6, p. 187-191, 193 sections, 7,912 km):
 # (number, start, end, kind, length [km], DN, DP [bar], NEP scenarios)
@@ -939,6 +949,9 @@ NEP_H2_NETWORK_2045_NODES = {
     "Zons": (6.8448, 51.1232),  # OpenStreetMap
     "Zopp": (6.1375, 50.8690),  # OpenStreetMap
 }
+
+# Commissioning year of the H2 measures beyond the core network (p. 171)
+NEP_H2_MEASURES_YEAR = 2036
 
 # Criteria of Anlage 3 of the measures used (modelling result 2037 of
 # NEP_SCENARIO_2045, section 6.4.2)
