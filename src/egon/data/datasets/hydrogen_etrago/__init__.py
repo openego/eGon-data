@@ -221,7 +221,6 @@ class HydrogenPowerLinkEtrago(Dataset):
             "loads": "grid.egon_etrago_load",
             "load_timeseries": "grid.egon_etrago_load_timeseries",
             "district_heating_area": "demand.egon_district_heating_areas",
-            "o2_load_profile": "demand.egon_demandregio_timeseries_cts_ind",
         },
     )
     targets = DatasetTargets(
