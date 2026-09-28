@@ -119,6 +119,15 @@ Changed
   `#1483 <https://github.com/openego/eGon-data/issues/1483>`_
 * Allign Methodology for laoding NEP target values for Battery storage for all scenarios
   `#1471 <https://github.com/openego/eGon-data/issues/1471>`_
+* Adapt the gas_grid TaskGroup to the reGon scenarios. Update data sources
+  for hydrogen core network and methane grid transformation (NEP Gas/H2 2025,
+  FNB 2024, TYNDP 2024). Improve models and parameters of the gas sector. Generalize
+  classes for scenario handling. Remove deprecated scenarios. Describe features
+  of gas grids in documentation.
+  `#1400 <https://github.com/openego/eGon-data/issues/1400>`_
+  `#1444 <https://github.com/openego/eGon-data/issues/1444>`_
+  `#1463 <https://github.com/openego/eGon-data/issues/1463>`_
+  `#1500 <https://github.com/openego/eGon-data/issues/1500>`_
 
 
 Bug Fixes
