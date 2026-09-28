@@ -135,6 +135,12 @@ Changed
   classes for scenario handling. Remove deprecated scenarios. Describe features
   of gas stores and gas supply in documentation.
   `#1445 <https://github.com/openego/eGon-data/issues/1445>`_
+* Adapt the gas_demand TaskGroup to the reGon scenarios. Update demand targets
+  according to NEP (status reads AG Energiebilanzen). Distribute the FfE data 
+  spatially and temporally, with local fallback values. Generalize classes for 
+  scenario handling. Remove deprecated scenarios. Describe features of gas demand 
+  in documentation.
+  `#1446 <https://github.com/openego/eGon-data/issues/1446>`_
 
 Bug Fixes
 ---------
