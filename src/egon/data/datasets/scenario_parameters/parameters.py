@@ -1005,6 +1005,10 @@ def electricity(scenario):
     return parameters
 
 
+# Wheter to include Russia in the gas sector or not.
+INCLUDE_RU = False
+
+
 def gas(scenario):
     """Returns paramaters of the gas sector for the selected scenario.
 
