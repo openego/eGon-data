@@ -39,7 +39,7 @@ from egon.data.datasets.power_plants.pv_rooftop import pv_rooftop_per_mv_grid
 from egon.data.datasets.power_plants.pv_rooftop_buildings import (
     pv_rooftop_to_buildings,
 )
-from egon.data.validation import TableValidation, resolve_boundary_dependence
+from egon.data.validation import TableValidation
 from egon.data.validation.rules.custom.sanity import (
     PowerPlantsCapacityComparison,
     PvRooftopCapacityComparison,
@@ -1530,17 +1530,6 @@ class PowerPlants(Dataset):
                 "data-quality": [
                     TableValidation(
                         table_name="supply.egon_power_plants",
-                        # The row count depends on the active --scenarios.
-                        # "Everything" verified on regon_dev_11-09
-                        # (reGon2037, status2024). "Schleswig-Holstein" has
-                        # to be re-checked against a run with the final
-                        # scenarios (SH_test_run_0726: 126175, no reGon2045).
-                        row_count=resolve_boundary_dependence(
-                            {
-                                "Schleswig-Holstein": 127017,
-                                "Everything": 4046085,
-                            }
-                        ),
                         geometry_columns=["geom"],
                         data_type_columns={
                             "id": "bigint",

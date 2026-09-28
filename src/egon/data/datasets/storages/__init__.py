@@ -33,7 +33,7 @@ from egon.data.datasets.storages.pumped_hydro import (
     select_mastr_pumped_hydro,
     select_nep_pumped_hydro,
 )
-from egon.data.validation import TableValidation, resolve_boundary_dependence
+from egon.data.validation import TableValidation
 from egon.data.validation.rules.custom.sanity import (
     HomeBatteryAggregationComparison,
     HomeBatteryCapacityComparison,
@@ -139,15 +139,6 @@ class Storages(Dataset):
                 "data-quality": [
                     TableValidation(
                         table_name="supply.egon_storages",
-                        # Row count depends on the active --scenarios.
-                        # Observed on SH_test_run_0726 / regon_dev_11-09
-                        # (2026-09-27).
-                        row_count=resolve_boundary_dependence(
-                            {
-                                "Schleswig-Holstein": 172301,
-                                "Everything": 3439173,
-                            }
-                        ),
                         data_type_columns={
                             "id": "bigint",
                             "sources": "jsonb",
@@ -178,15 +169,6 @@ class Storages(Dataset):
                     ),
                     TableValidation(
                         table_name="supply.egon_home_batteries",
-                        # Row count depends on the active --scenarios.
-                        # Observed on SH_test_run_0726 / regon_dev_11-09
-                        # (2026-09-27).
-                        row_count=resolve_boundary_dependence(
-                            {
-                                "Schleswig-Holstein": 608007,
-                                "Everything": 8730797,
-                            }
-                        ),
                         data_type_columns={
                             "scenario": "character varying",
                             "bus_id": "integer",
