@@ -20,7 +20,10 @@ import requests
 
 from egon.data import config, db
 from egon.data.config import settings
-from egon.data.datasets.scenario_parameters import get_sector_parameters
+from egon.data.datasets.scenario_parameters import (
+    align_weekdays,
+    get_sector_parameters,
+)
 
 logger = logging.getLogger(__name__)
 from egon.data.datasets import Dataset, DatasetSources, DatasetTargets
@@ -38,6 +41,7 @@ class IndustrialGasDemand(Dataset):
 
     """
 
+    #:
     name: str = "IndustrialGasDemand"
     version: str = "0.0.10"
 
@@ -94,7 +98,9 @@ class IndustrialGasDemandScenarios(Dataset):
 
     """
 
+    #:
     name: str = "IndustrialGasDemandScenarios"
+    #:
     version: str = "0.0.5"
 
     sources = DatasetSources(
@@ -160,6 +166,17 @@ def read_and_scale_regional_demand(scn_name, carrier):
         / f"{carrier}_{scn_name}.json"
     )
     industrial_loads = pd.read_json(target_file)
+
+    # The FfE profiles are created for their own weather year (2012),
+    # align them to the weekdays of the scenario's weather year
+    (source_year,) = industrial_loads["year_weather"].unique()
+    weather_year = get_sector_parameters("global", scn_name)["weather_year"]
+    industrial_loads["values"] = industrial_loads["values"].apply(
+        lambda values: align_weekdays(
+            values, source_year=int(source_year), target_year=weather_year
+        ).tolist()
+    )
+
     industrial_loads = industrial_loads.loc[:, ["id_region", "values"]]
     industrial_loads.set_index("id_region", inplace=True)
 
