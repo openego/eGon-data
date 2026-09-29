@@ -29,6 +29,8 @@ from rasterio.mask import mask
 from sqlalchemy import Column, Float, Integer, Sequence, String
 from sqlalchemy.ext.declarative import declarative_base
 import geopandas as gpd
+import numpy as np
+import pandas as pd
 
 # for raster operations
 import rasterio
@@ -66,12 +68,14 @@ class HeatDemandImport(Dataset):
     #:
     name: str = "heat-demands"
     #:
-    version: str = "0.0.8"
+    version: str = "0.0.9"
 
     sources = DatasetSources(
         tables={
             "boundaries": "boundaries.vg250_sta_union",
             "zensus_population": "society.destatis_zensus_population_per_ha",
+            "districts": "boundaries.vg250_krs",
+            "map_zensus_vg250": "boundaries.egon_map_zensus_vg250",
         },
         urls={
             "peta_res_zip": "https://arcgis.com/sharing/rest/content/items/d7d18b63250240a49eb81db972aa573e/data",
@@ -425,8 +429,8 @@ def future_heat_demand_germany(scenario_name):
         )
         ser_hd_reduction = heat_parameters["DE_demand_service_MWh"] / (
             226.588158 * 1e6
-        )    
-    else: 
+        )
+    else:
         heat_parameters = get_sector_parameters("heat", scenario=scenario_name)
 
         res_hd_reduction = heat_parameters["DE_demand_reduction_residential"]
@@ -501,6 +505,8 @@ def heat_demand_to_db_table():
     census population table), are genetated
     by the provided sql script (raster2cells-and-centroids.sql) and
     are stored in the table "demand.egon_peta_heat".
+    Service-sector rasters are imported by
+    :func:`service_heat_demand_to_db_table` instead.
 
     Parameters
     ----------
@@ -544,7 +550,11 @@ def heat_demand_to_db_table():
     )
 
     for source in sources:
-        if "2015" not in source.stem:
+        if "2015" in source.stem:
+            continue
+        if source.stem.startswith("ser_"):
+            service_heat_demand_to_db_table(source)
+        else:
             # Create a temporary table and fill the final table using the sql script
             rasters = f"heat_demand_rasters_{source.stem.lower()}"
             import_rasters = subprocess.run(
@@ -569,6 +579,94 @@ def heat_demand_to_db_table():
                         Template(convert.read()).render(source=rasters)
                     )
     return None
+
+
+def service_heat_demand_to_db_table(source):
+    """
+    Import a service-sector heat demand raster and assign it to census cells.
+
+    Every pixel of the raster is assigned to the nearest populated census
+    cell in its NUTS3 region. Census cells lie on the same 100 m grid as the
+    raster, so a pixel with population keeps its own cell. Zensus 2022 only
+    lists populated cells, so the demand of unpopulated pixels (e.g.
+    commercial areas) is moved to the nearest populated cell instead of
+    being lost.
+
+    Parameters
+    ----------
+    source : pathlib.Path
+        Service-sector heat demand raster, named "ser_HD_<scenario>.tif".
+
+    Returns
+    -------
+        None
+    """
+    scenario = source.stem.split("_", 2)[2]
+
+    # One point per pixel with demand, located at the pixel centre
+    with rasterio.open(source) as raster:
+        demand = raster.read(1, masked=True)
+        transform = raster.transform
+    rows, cols = np.nonzero(~np.ma.getmaskarray(demand))
+    xs, ys = rasterio.transform.xy(transform, rows, cols)
+    pixels = gpd.GeoDataFrame(
+        {"demand": demand.data[rows, cols]},
+        geometry=gpd.points_from_xy(xs, ys),
+        crs=3035,
+    )
+
+    # NUTS3 region of each pixel. Pixels outside all regions, e.g. on the
+    # coast, take the nearest region.
+    districts = (
+        db.select_geodataframe(
+            f"""SELECT nuts AS nuts3, geometry
+            FROM {HeatDemandImport.sources.tables['districts']}""",
+            geom_col="geometry",
+        )
+        .dissolve("nuts3")
+        .reset_index()
+    )
+    pixels = gpd.sjoin(pixels, districts, how="left", predicate="within")
+    pixels = pixels.drop(columns="index_right")
+    outside = pixels.nuts3.isna()
+    if outside.any():
+        nearest = gpd.sjoin_nearest(
+            pixels.loc[outside, ["demand", "geometry"]], districts
+        )
+        pixels.loc[outside, "nuts3"] = nearest.groupby(level=0).nuts3.first()
+
+    # Nearest populated census cell of the same NUTS3 region
+    cells = db.select_geodataframe(
+        f"""SELECT zensus_population_id, vg250_nuts3 AS nuts3, zensus_geom
+        FROM {HeatDemandImport.sources.tables['map_zensus_vg250']}""",
+        geom_col="zensus_geom",
+    )
+    assigned = []
+    for nuts3, pixels_nuts3 in pixels.groupby("nuts3"):
+        nearest = gpd.sjoin_nearest(
+            pixels_nuts3,
+            cells.loc[
+                cells.nuts3 == nuts3, ["zensus_population_id", "zensus_geom"]
+            ],
+        )
+        # A pixel between several cells is matched to each of them; keep one
+        assigned.append(nearest[~nearest.index.duplicated()])
+    assigned = pd.concat(assigned)
+
+    # Demand moved into a cell adds to the cell's own demand
+    heat_demand = (
+        assigned.groupby("zensus_population_id").demand.sum().reset_index()
+    )
+    heat_demand["sector"] = "service"
+    heat_demand["scenario"] = scenario
+
+    heat_demand.to_sql(
+        HeatDemandImport.targets.get_table_name("heat_demand"),
+        schema=HeatDemandImport.targets.get_table_schema("heat_demand"),
+        con=db.engine(),
+        if_exists="append",
+        index=False,
+    )
 
 
 def adjust_residential_heat_to_zensus(scenario):
