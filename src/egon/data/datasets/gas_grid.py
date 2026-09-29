@@ -1130,4 +1130,92 @@ class GasNodesAndPipes(Dataset):
             version=self.version,
             dependencies=dependencies,
             tasks=(download_SciGRID_gas_data, insert_gas_grid),
+            # Gas validation rules (#1526)
+            validation=self.validation_rules(),
+            proceed_on_validation_failure=True,
         )
+
+    @staticmethod
+    def validation_rules():
+        """
+        Return the validation rules of the dataset
+
+        Returns
+        -------
+        dict
+            Validation rules per validation task
+
+        """
+        from egon.data.validation.rules.custom.sanity.gas import (
+            GasBusReferences,
+            GasComponentTotal,
+            for_each_scenario,
+        )
+
+        return {
+            "sanity": [
+                # status2024 models Germany as a single CH4 bus without
+                # pipes and without neighbouring countries
+                *for_each_scenario(
+                    GasComponentTotal,
+                    "SANITY_GAS_CH4_BUSES_DE",
+                    table="grid.egon_etrago_bus",
+                    carriers=["CH4"],
+                    location="DE",
+                    expected={
+                        "status2024": 1,
+                        "eGon2035": 11,
+                        "reGon2037": 11,
+                        "reGon2045": 11,
+                    },
+                ),
+                *for_each_scenario(
+                    GasComponentTotal,
+                    "SANITY_GAS_CH4_BUSES_ABROAD",
+                    table="grid.egon_etrago_bus",
+                    carriers=["CH4"],
+                    location="abroad",
+                    expected={
+                        "status2024": 0,
+                        "eGon2035": 12,
+                        "reGon2037": 12,
+                        "reGon2045": 12,
+                    },
+                ),
+                # The pipes as inserted here; HydrogenGridEtrago removes the
+                # ones converted to H2 afterwards
+                *for_each_scenario(
+                    GasComponentTotal,
+                    "SANITY_GAS_CH4_PIPES_DE",
+                    table="grid.egon_etrago_link",
+                    carriers=["CH4"],
+                    location="DE",
+                    expected={
+                        "status2024": 0,
+                        "eGon2035": 13,
+                        "reGon2037": 13,
+                        "reGon2045": 13,
+                    },
+                ),
+                *for_each_scenario(
+                    GasComponentTotal,
+                    "SANITY_GAS_CH4_PIPES_DE_KM",
+                    table="grid.egon_etrago_link",
+                    carriers=["CH4"],
+                    location="DE",
+                    measure=("sum", "length"),
+                    expected={
+                        "status2024": 0,
+                        "eGon2035": 1494.608,
+                        "reGon2037": 1494.608,
+                        "reGon2045": 1494.608,
+                    },
+                ),
+                *for_each_scenario(
+                    GasBusReferences,
+                    "SANITY_GAS_CH4_PIPES_BUSES",
+                    table="grid.egon_etrago_link",
+                    carriers=["CH4"],
+                ),
+            ],
+        }

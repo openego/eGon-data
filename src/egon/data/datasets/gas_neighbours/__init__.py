@@ -150,4 +150,182 @@ class GasNeighbours(Dataset):
             version=self.version,
             dependencies=dependencies,
             tasks=(download_tyndp2024_gas_data, insert_gas_neighbours),
+            # Gas validation rules (#1526)
+            validation=self.validation_rules(),
+            proceed_on_validation_failure=True,
         )
+
+    @staticmethod
+    def validation_rules():
+        """
+        Return the validation rules of the dataset
+
+        Returns
+        -------
+        dict
+            Validation rules per validation task
+
+        """
+        from egon.data.validation.rules.custom.sanity.gas import (
+            TARGET_SCENARIOS,
+            GasBusReferences,
+            GasComponentTotal,
+            GasTimeseriesComplete,
+            for_each_scenario,
+        )
+
+        # No gas data abroad in status scenarios; same values for both
+        # dataset boundaries
+        totals = [
+            # rule id, table, carriers, location, measure, expected
+            (
+                "SANITY_GAS_CH4_LOADS_ABROAD",
+                "grid.egon_etrago_load",
+                ["CH4"],
+                "abroad",
+                "annual_energy",
+                {
+                    "status2024": 0,
+                    "eGon2035": 909306938.314,
+                    "reGon2037": 829480082.288,
+                    "reGon2045": 555563135.530,
+                },
+            ),
+            # Demand of the electrolysers abroad
+            (
+                "SANITY_GAS_H2_LOADS_ABROAD",
+                "grid.egon_etrago_load",
+                ["H2_for_industry"],
+                "abroad",
+                "annual_energy",
+                {
+                    "status2024": 0,
+                    "eGon2035": 258886478.000,
+                    "reGon2037": 388685542.400,
+                    "reGon2045": 760872307.500,
+                },
+            ),
+            (
+                "SANITY_GAS_CH4_GENERATORS_ABROAD",
+                "grid.egon_etrago_generator",
+                ["CH4"],
+                "abroad",
+                ("sum", "p_nom"),
+                {
+                    "status2024": 0,
+                    "eGon2035": 399754.008,
+                    "reGon2037": 392043.861,
+                    "reGon2045": 52702.742,
+                },
+            ),
+            (
+                "SANITY_GAS_CH4_STORES_ABROAD",
+                "grid.egon_etrago_store",
+                ["CH4"],
+                "abroad",
+                ("sum", "e_nom"),
+                {
+                    "status2024": 0,
+                    "eGon2035": 430271072.959,
+                    "reGon2037": 430271072.959,
+                    "reGon2045": 430271072.959,
+                },
+            ),
+            (
+                "SANITY_GAS_CH4_BORDER_LINKS",
+                "grid.egon_etrago_link",
+                ["CH4"],
+                "cross-border",
+                "count",
+                {
+                    "status2024": 0,
+                    "eGon2035": 2,
+                    "reGon2037": 2,
+                    "reGon2045": 2,
+                },
+            ),
+            (
+                "SANITY_GAS_CH4_BORDER_LINKS_P_NOM",
+                "grid.egon_etrago_link",
+                ["CH4"],
+                "cross-border",
+                ("sum", "p_nom"),
+                {
+                    "status2024": 0,
+                    "eGon2035": 4107.949,
+                    "reGon2037": 4107.949,
+                    "reGon2045": 4107.949,
+                },
+            ),
+            (
+                "SANITY_GAS_OCGT_ABROAD",
+                "grid.egon_etrago_link",
+                ["OCGT"],
+                "abroad",
+                ("sum", "p_nom"),
+                {
+                    "status2024": 0,
+                    "eGon2035": 129323.810,
+                    "reGon2037": 117439.048,
+                    "reGon2045": 85509.524,
+                },
+            ),
+        ]
+        return {
+            "sanity": [
+                *[
+                    rule
+                    for rule_id, table, carriers, location, measure, expected in totals
+                    for rule in for_each_scenario(
+                        GasComponentTotal,
+                        rule_id,
+                        table=table,
+                        carriers=carriers,
+                        location=location,
+                        measure=measure,
+                        expected=expected,
+                    )
+                ],
+                # The demand of the electrolysers abroad (H2_for_industry)
+                # is a constant p_set without a time series
+                *for_each_scenario(
+                    GasTimeseriesComplete,
+                    "SANITY_GAS_CH4_LOADS_ABROAD_TIMESERIES",
+                    scenarios=TARGET_SCENARIOS,
+                    table="grid.egon_etrago_load",
+                    carriers=["CH4"],
+                    location="abroad",
+                ),
+                *[
+                    rule
+                    for rule_id, table, carriers in [
+                        (
+                            "SANITY_GAS_NEIGHBOURS_LOADS_BUSES",
+                            "grid.egon_etrago_load",
+                            ["CH4", "H2_for_industry"],
+                        ),
+                        (
+                            "SANITY_GAS_NEIGHBOURS_GENERATORS_BUSES",
+                            "grid.egon_etrago_generator",
+                            ["CH4"],
+                        ),
+                        (
+                            "SANITY_GAS_NEIGHBOURS_STORES_BUSES",
+                            "grid.egon_etrago_store",
+                            ["CH4"],
+                        ),
+                        (
+                            "SANITY_GAS_NEIGHBOURS_LINKS_BUSES",
+                            "grid.egon_etrago_link",
+                            ["CH4", "OCGT"],
+                        ),
+                    ]
+                    for rule in for_each_scenario(
+                        GasBusReferences,
+                        rule_id,
+                        table=table,
+                        carriers=carriers,
+                    )
+                ],
+            ],
+        }

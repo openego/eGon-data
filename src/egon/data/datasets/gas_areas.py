@@ -308,4 +308,72 @@ class GasAreas(Dataset):
             version=self.version,
             dependencies=dependencies,
             tasks=(create_gas_voronoi_table, insert_gas_voronoi),
+            # Gas validation rules (#1526)
+            validation=self.validation_rules(),
+            proceed_on_validation_failure=True,
         )
+
+    @staticmethod
+    def validation_rules():
+        """
+        Return the validation rules of the dataset
+
+        Returns
+        -------
+        dict
+            Validation rules per validation task
+
+        """
+        from egon.data.validation import TableValidation
+        from egon.data.validation.rules.custom.sanity.gas import (
+            GAS_SCENARIOS,
+            GasVoronoiCoverage,
+            for_each_scenario,
+        )
+
+        return {
+            "data_quality": [
+                # No row count: it depends on --scenarios and the boundary,
+                # GasVoronoiCoverage checks the cells per scenario instead
+                TableValidation(
+                    table_name="grid.egon_gas_voronoi",
+                    geometry_columns=["geom"],
+                    data_type_columns={
+                        "scn_name": "text",
+                        "bus_id": "bigint",
+                        "carrier": "text",
+                        "geom": "geometry",
+                    },
+                    # Not "geom": the NaN test of this check does not work
+                    # on geometries; the whole table check covers it
+                    not_null_columns=["scn_name", "bus_id", "carrier"],
+                    value_set_columns={
+                        "scn_name": list(GAS_SCENARIOS),
+                        "carrier": ["CH4", "H2", "H2_saltcavern"],
+                    },
+                ),
+            ],
+            "sanity": [
+                *for_each_scenario(
+                    GasVoronoiCoverage,
+                    "SANITY_GAS_VORONOI_CH4",
+                    table="grid.egon_gas_voronoi",
+                    carrier="CH4",
+                    bus_carriers=["CH4"],
+                ),
+                *for_each_scenario(
+                    GasVoronoiCoverage,
+                    "SANITY_GAS_VORONOI_H2",
+                    table="grid.egon_gas_voronoi",
+                    carrier="H2",
+                    bus_carriers=["H2", "H2_grid"],
+                ),
+                *for_each_scenario(
+                    GasVoronoiCoverage,
+                    "SANITY_GAS_VORONOI_H2_SALTCAVERN",
+                    table="grid.egon_gas_voronoi",
+                    carrier="H2_saltcavern",
+                    bus_carriers=["H2_saltcavern"],
+                ),
+            ],
+        }
