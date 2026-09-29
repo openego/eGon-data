@@ -20,8 +20,6 @@ Literature
 
 .. [demandregio] F. Gotzens, B. Gillessen, S. Burges, W. Hennings, J. Müller-Kirchenbauer, S. Seim, P. Verwiebe, S. Tobias, F. Jetter, T. Limmer, 	DemandRegio - Harmonisierung und Entwicklung von Verfahren zur regionalen und zeitlichen Auflösung von Energienachfragen (2020). URL https://openaccess.ffe.de/10.34805/ffe-119-20
 
-.. [Einspeiseatlas] Deutsche Energie-Agentur: Biogaspartner Einspeiseatlas Deutschland (2021). URL https://www.biogaspartner.de/einspeiseatlas/
-
 .. [Energiereferenzprognose] Prognos AG, Energiewirtschaftliches Institut an der Universität zu Köln, Gesellschaft für Wirtschaftliche Strukturforschung mbH: Entwicklung der Energiemärkte – Energiereferenzprognose (2014)
 
 .. [EsterlDentzien] Katharina Esterl, Hannah Dentzien, Integration von Demand Side Management in eTraGo, Student Work, Hochschule Flensburg, URL https://ego-n.org/theses/2021_SP_Esterl_Dentzien_DSM-eTraGo.pdf
@@ -58,8 +56,6 @@ Literature
 
 .. [NEP2025] Übertragungsnetzbetreiber Deutschland: *Netzentwicklungsplan Strom 2037/2045*, Version 2025, 2. Entwurf. URL https://www.netzentwicklungsplan.de/
 
-.. [NEP_gas] FNB Gas: Netzentwicklungsplan Gas 2020–2030 (2021). URL https://fnb-gas.de/wp-content/uploads/2021/09/fnb_gas_nep_gas_2020_de-1.pdf
-
 .. [NOW2020] Nationale Leitstelle Ladeinfrastruktur, Ladeinfrastruktur nach 2025/2030: Szenarien für den Markthochlauf (2020). URL https://www.now-gmbh.de/wp-content/uploads/2020/11/Studie_Ladeinfrastruktur-nach-2025-2.pdf
 
 .. [OSM] Geofabrik GmbH and OpenStreetMap-Contributors, OpenStreetMap Data Extracts, Stand 01.01.2022 (2022). URL https://download.geofabrik.de/europe/germany-220101.osm.pbf
@@ -79,3 +75,37 @@ Literature
 .. [TYNDP] European Network of Transmission System Operators for Electricity, European Network of Transmission System Operators for Gas, Ten-Year Network Development Plans - “TYNDP 2020 Scenarios” (2020)
 
 .. [Wulff2020]  N. Wulff, F. Steck, H. C. Gils, C. Hoyer-Klick, B. van den Adel, J. E. Anderson, Comparing Power-System and User-Oriented Battery Electric Vehicle Charging Representation and Its Implications on Energy System Modeling, Energies (2020), 13, URL https://doi.org/10.3390/en13051093
+
+.. [AGEB2024] Arbeitsgemeinschaft Energiebilanzen: Energieverbrauch in Deutschland im Jahr 2024 (2025). URL https://ag-energiebilanzen.de/
+
+.. [BFE2019] Bundesamt für Energie: Schweizerische Gesamtenergiestatistik 2019 (2020). URL https://pubdb.bfe.admin.ch/fr/publication/download/10138
+
+.. [BNetzA_KWL] Bundesnetzagentur: Kraftwerksliste, Stand 26 June 2026 (2026). URL https://www.bundesnetzagentur.de/DE/Fachthemen/ElektrizitaetundGas/Versorgungssicherheit/Erzeugungskapazitaeten/Kraftwerksliste/_DL/Kraftwerksliste.xlsx
+
+.. [DEA_RF] Danish Energy Agency: Technology Data for Renewable Fuels, data sheets (August 2026). URL https://ens.dk/media/6444/download
+
+.. [EHB2021] Enagás, Energinet, Fluxys, Gasunie, GRTgaz, NET4GAS, OGE, ONTRAS, Snam, Swedegas, Teréga et al.: Extending the European Hydrogen Backbone, Appendix A, Table 3 (April 2021). URL https://ehb.eu/files/downloads/European-Hydrogen-Backbone-April-2021-V3.pdf
+
+.. [Einspeiseatlas2025] Deutsche Energie-Agentur: Einspeiseatlas Biogaspartner, Stand 9 October 2025 (2025). URL https://www.dena.de/fileadmin/biogaspartner/Dokumente/20251009_Einspeiseatlas_biogaspartner.xlsx
+
+.. [Eurostat] Eurostat: Complete energy balances (nrg_bal_c), data of 27 August 2026. URL https://ec.europa.eu/eurostat/databrowser/view/nrg_bal_c/default/table
+
+.. [INES2022] INES, DVGW, BVEG: Wasserstoff speichern – soviel ist sicher. Transformationspfade für Gasspeicher (2022).
+
+.. [BNetzA_IBN2026] Bundesnetzagentur: Übersicht Inbetriebnahmedaten H2-Netzausbauvorschlag, consultation of the NEP Gas und Wasserstoff 2025 (June 2026). URL https://www.bundesnetzagentur.de/DE/Fachthemen/ElektrizitaetundGas/NEP/Gas/DL/Inbetriebnahmedaten.xlsx
+
+.. [Kernnetz] FNB Gas: Wasserstoff-Kernnetz, lists of the approved core network, version of 10 December 2024. URL https://fnb-gas.de/wasserstoffnetz-wasserstoff-kernnetz/
+
+.. [NEP_GasH2_2025] Fernleitungsnetzbetreiber and Wasserstofftransportnetzbetreiber: Netzentwicklungsplan Gas und Wasserstoff 2025, überarbeiteter Entwurf (1 June 2026). URL https://ko-nep.de/wp-content/uploads/2024/02/2026_06_01_Ueberarbeiteter_Entwurf_NEP_Gas_Wasserstoff_2025.pdf
+
+.. [SR_GasH2_2025] Bundesnetzagentur: Genehmigung des Szenariorahmens für den Netzentwicklungsplan Gas und Wasserstoff 2025-2037/2045 (30 April 2025). URL https://ko-nep.de/
+
+.. [SR_GasH2_2025_Annexes] Fernleitungsnetzbetreiber: Szenariorahmen für den Netzentwicklungsplan Gas und Wasserstoff 2025, Anlage 2 "Ergebnisse der Marktabfrage für Wasserstoffprojekte" and Anlage 3 "Gaskraftwerksliste" (consultation, 2 September 2024). URL https://ko-nep.de/wp-content/uploads/2024/03/SR_Anlage2Gas.xlsx, https://ko-nep.de/wp-content/uploads/2024/03/SR_Anlage3Gas.xlsx
+
+.. [StromVKG] Deutscher Bundestag: Gesetz zur Sicherung der Versorgungssicherheit Strom und zur Bereitstellung neuer Kapazitäten, adopted 9 July 2026 (Kraftwerksstrategie). URL https://www.bundestag.de/dokumente/textarchiv/2026/kw28-de-versorgungssicherheit-strom-1192538
+
+.. [SR_Strom_2025] Bundesnetzagentur: Genehmigung des Szenariorahmens 2025-2037/2045 (Strom), with Annex 1 "Standortliste für Kraftwerke" (30 April 2025). URL https://www.netzentwicklungsplan.de/sites/default/files/2025-05/250430_Genehmigung_Szenariorahmen_2025.pdf
+
+.. [TYNDP2024_gas] ENTSOG: TYNDP 2024 - The Hydrogen and Natural Gas TYNDP, Annex C1 "Natural Gas Infrastructure Capacities" and Annex E "Analysis tables" (final version, 18 March 2026). URL https://tyndp2024.entsog.eu/downloads/
+
+.. [TYNDP2024_scenarios] ENTSO-E and ENTSOG: TYNDP 2024 Scenarios, demand scenarios after public consultation and electricity results of the scenario "Distributed Energy" (2024). URL https://2024.entsos-tyndp-scenarios.eu/download/

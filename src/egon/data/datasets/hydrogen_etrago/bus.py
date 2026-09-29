@@ -1,24 +1,24 @@
 """
-The central module containing all code dealing with the hydrogen buses
+The central module containing all code dealing with the hydrogen buses.
 
 In this module, the functions allowing to create the H2 buses in Germany
-for eTraGo are to be found.
-The H2 buses in the neighbouring countries (only present in eGon100RE)
-are defined in :py:mod:`pypsaeursec <egon.data.datasets.pypsaeursec>`.
-In both scenarios, there are two types of H2 buses in Germany:
-  * H2 buses: defined in :py:func:`insert_H2_buses_from_CH4_grid`,
-    these buses are located at the places than the CH4 buses.
-  * H2_saltcavern buses: defined in :py:func:`insert_H2_buses_from_saltcavern`,
-    these buses are located at the intersection of AC buses and
-    potential for H2 saltcavern.
+for eTraGo are to be found. There are three types of H2 buses in Germany,
+created by :py:func:`insert_hydrogen_buses`:
+
+* H2_grid buses: nodes of the hydrogen core network and of the NEP
+  sections with a pipeline in the scenario year,
+* H2 buses: at the CH4 buses more than 10 km from every H2_grid bus,
+* H2_saltcavern buses: defined in :py:func:`insert_H2_buses_from_saltcavern`,
+  these buses are located at the intersection of AC buses and
+  potential for H2 saltcavern.
 
 """
 
-from pathlib import Path
 
 from geoalchemy2 import Geometry
 from scipy.spatial import cKDTree
 from shapely.wkb import loads
+from sqlalchemy import inspect
 import geopandas as gpd
 import numpy as np
 import pandas as pd
@@ -28,6 +28,11 @@ from egon.data.datasets import load_sources_and_targets
 from egon.data.datasets.etrago_helpers import (
     finalize_bus_insertion,
     initialise_bus_insertion,
+)
+from egon.data.datasets.hydrogen_etrago.h2_grid import (
+    active_h2_grid_nodes,
+    nep_h2_nodes,
+    read_h2_grid_nodes,
 )
 
 
@@ -45,14 +50,29 @@ def insert_hydrogen_buses(scn_name):
     """
     sources, targets = load_sources_and_targets("HydrogenBusEtrago")
 
-    h2_input = pd.read_csv(
-        Path(".")
-        / "data_bundle_egon_data"
-        / "hydrogen_network"
-        / "h2_grid_nodes.csv"
-    )
+    h2_input = read_h2_grid_nodes()
     h2_input.geom = h2_input.geom.apply(
         lambda wkb_hex: loads(bytes.fromhex(wkb_hex))
+    )
+
+    # only the nodes with a pipeline in the scenario year
+    active = active_h2_grid_nodes(scn_name)
+    h2_input["Ort"] = h2_input["Ort"].astype(str).str.strip()
+    print(
+        f"{scn_name}: {len(h2_input) - h2_input.Ort.isin(active).sum()} of "
+        f"{len(h2_input)} nodes of the core network have no pipeline yet "
+        "and are not inserted."
+    )
+    h2_input = h2_input[h2_input.Ort.isin(active)]
+    # places with two names and the same coordinates are one bus
+    h2_input = h2_input.drop_duplicates(subset=["x", "y"]).reset_index(
+        drop=True
+    )
+
+    # nodes of the sections of the hydrogen network of the NEP beyond the
+    # core network
+    h2_input = pd.concat(
+        [h2_input, nep_h2_nodes(h2_input, scn_name)], ignore_index=True
     )
 
     target_buses = {
@@ -63,11 +83,13 @@ def insert_hydrogen_buses(scn_name):
         "H2_grid", target_buses, scenario=scn_name
     )
 
-    db.execute_sql(f"""
+    db.execute_sql(
+        f"""
         DELETE FROM {targets.tables["hydrogen_buses"]}
         WHERE scn_name = '{scn_name}'
         AND carrier = 'H2' AND country = 'DE'
-        """)
+        """
+    )
 
     h2_buses.x = h2_input.x
     h2_buses.y = h2_input.y
@@ -117,23 +139,24 @@ def insert_hydrogen_buses(scn_name):
                 }
             )
 
+    # only if there are CH4 buses far from the H2_grid buses
     if additional_H2_buses:
         additional_H2_buses = gpd.GeoDataFrame(
             additional_H2_buses, geometry="geom", crs=CH4_buses.crs
         )
-    additional_H2_buses = additional_H2_buses.to_crs(epsg=4326)
+        additional_H2_buses = additional_H2_buses.to_crs(epsg=4326)
 
-    additional_H2_buses["bus_id"] = db.next_etrago_id(
-        "bus", len(additional_H2_buses)
-    )
-    # Insert data to db
-    additional_H2_buses.to_postgis(
-        targets.get_table_name("hydrogen_buses"),
-        schema=targets.get_table_schema("hydrogen_buses"),
-        con=db.engine(),
-        if_exists="append",
-        dtype={"geom": Geometry()},
-    )
+        additional_H2_buses["bus_id"] = db.next_etrago_id(
+            "bus", len(additional_H2_buses)
+        )
+        # Insert data to db
+        additional_H2_buses.to_postgis(
+            targets.get_table_name("hydrogen_buses"),
+            schema=targets.get_table_schema("hydrogen_buses"),
+            con=db.engine(),
+            if_exists="append",
+            dtype={"geom": Geometry()},
+        )
 
     # insert h2_buses_from_saltcaverns
     hydrogen_buses = initialise_bus_insertion(
@@ -175,9 +198,11 @@ def insert_H2_buses_from_saltcavern(gdf, carrier, sources, targets, scn_name):
     }
 
     # electrical buses related to saltcavern storage
-    el_buses = db.select_dataframe(f"""
+    el_buses = db.select_dataframe(
+        f"""
         SELECT bus_id
-        FROM {sources.tables["saltcavern_data"]}""")["bus_id"]
+        FROM {sources.tables["saltcavern_data"]}"""
+    )["bus_id"]
 
     # locations of electrical buses (filtering not necessarily required)
     locations = db.select_geodataframe(
@@ -209,10 +234,21 @@ def insert_H2_buses_from_saltcavern(gdf, carrier, sources, targets, scn_name):
     gdf_H2_cavern["scn_name"] = hydrogen_bus_ids["scn_name"]
 
     # Insert data to db
+    map_table = targets.get_table_name("H2_AC_map")
+    map_schema = targets.get_table_schema("H2_AC_map")
+
+    if inspect(db.engine()).has_table(map_table, schema=map_schema):
+        db.execute_sql(
+            f"""
+            DELETE FROM {targets.tables["H2_AC_map"]}
+            WHERE scn_name = '{scn_name}'
+            """
+        )
+
     gdf_H2_cavern.to_sql(
-        targets.get_table_name("H2_AC_map"),
+        map_table,
         db.engine(),
-        schema=targets.get_table_schema("H2_AC_map"),
+        schema=map_schema,
         index=False,
-        if_exists="replace",
+        if_exists="append",
     )

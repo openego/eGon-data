@@ -11,19 +11,12 @@ These links are modelling:
     power from H2
   * Waste_heat usage (carrier name: 'PtH2_waste_heat'): Components to use
     waste heat as by-product from electrolysis
-  * Oxygen usage (carrier name: 'PtH2_O2'): Components to use
-    oxygen as by-product from elctrolysis
 
 
 """
 
-from itertools import count
-from pathlib import Path
-import math
-
 from shapely.geometry import LineString, MultiLineString, Point
 from shapely.strtree import STRtree
-from shapely.wkb import dumps
 from sqlalchemy import text
 import geopandas as gpd
 import numpy as np
@@ -33,20 +26,146 @@ from egon.data import config, db
 from egon.data.datasets import load_sources_and_targets
 from egon.data.datasets.scenario_parameters import get_sector_parameters
 
+#: Lower heating value of hydrogen [kWh/kg]
+H2_LHV = 33.33
+
+
+def bound_coproducts_by_electrolysis(
+    power_to_H2, power_to_Heat, efficiency, waste_heat_share
+):
+    """
+    Limit the waste heat links to what the electrolysers at the same AC bus
+    produce at full load
+
+    Parameters
+    ----------
+    power_to_H2 : pandas.DataFrame
+        Electrolyser links with "bus0" (AC bus) and "p_nom_max" [MW_el]
+    power_to_Heat : pandas.DataFrame
+        Waste heat links with "bus0"
+    efficiency : float
+        Efficiency of the electrolysis (LHV) [p.u.]
+    waste_heat_share : float
+        Waste heat per electrical input [p.u.]
+
+    Returns
+    -------
+    pandas.DataFrame
+        The waste heat links with the new p_nom_max
+
+    """
+    electrolysis = power_to_H2.groupby("bus0")["p_nom_max"].sum()  # [MW_el]
+
+    power_to_Heat = power_to_Heat.copy()
+    if not power_to_Heat.empty:
+        links_at_bus = power_to_Heat.groupby("bus0")["bus0"].transform("size")
+        power_to_Heat["p_nom_max"] = (
+            power_to_Heat["bus0"].map(electrolysis).fillna(0)
+            * waste_heat_share
+            / links_at_bus
+        )
+
+    return power_to_Heat
+
+
+def scale_electrolysis_to_nep(
+    power_to_H2, capacity, scn_name, sources, crs=4326
+):
+    """
+    Limit the electrolysers to the capacity of the NEP per federal state,
+    distributed by connection level
+
+    Parameters
+    ----------
+    power_to_H2 : pandas.DataFrame
+        Electrolyser links with the columns "topo" (line from the AC bus
+        to the H2 bus) and "p_nom_max"
+    capacity : dict or None
+        Capacity of the electrolysers per federal state [MW], see
+        "power_to_H2_capacity" in the scenario parameters
+    scn_name : str
+        Name of the scenario
+    sources : DatasetSources
+        Sources of HydrogenPowerLinkEtrago
+    crs : int
+        EPSG code of the column "topo"
+
+    Returns
+    -------
+    pandas.DataFrame
+        The electrolyser links with the new p_nom_max
+
+    """
+    if capacity is None:
+        print(
+            f"Warning: no NEP capacity of the electrolysers for {scn_name}, "
+            "the links are only limited by their connection level."
+        )
+        return power_to_H2
+
+    if power_to_H2.empty:
+        return power_to_H2
+
+    target = pd.Series(capacity, dtype=float)
+
+    # Federal state of the AC bus (nearest, for the coast and the border)
+    links = gpd.GeoDataFrame(
+        index=power_to_H2.index,
+        geometry=[Point(line.coords[0]) for line in power_to_H2["topo"]],
+        crs=crs,
+    ).to_crs(3035)
+    states = db.select_geodataframe(
+        f"""
+        SELECT gen, geometry AS geom
+        FROM {sources.tables['federal_states']}
+        WHERE gf = 4
+        """,
+        geom_col="geom",
+        epsg=3035,
+    )
+    located = gpd.sjoin_nearest(links, states[["gen", "geom"]], how="left")
+    located = located[~located.index.duplicated(keep="first")]
+    # A link without a state would silently keep its connection limit
+    if located["gen"].isna().any():
+        raise ValueError(
+            f"{scn_name}: {located['gen'].isna().sum()} electrolysers could "
+            "not be assigned to a federal state (check the CRS of 'topo')."
+        )
+
+    power_to_H2 = power_to_H2.copy()
+    connection_limit = power_to_H2["p_nom_max"].astype(float)
+
+    for state, index in located.groupby("gen").groups.items():
+        capacity = target.get(state, 0.0)
+        hostable = connection_limit[index].sum()
+        factor = min(1.0, capacity / hostable) if hostable > 0 else 0.0
+
+        power_to_H2.loc[index, "p_nom_max"] = connection_limit[index] * factor
+
+        print(
+            f"{scn_name}, {state}: electrolysers limited to "
+            f"{min(capacity, hostable):.0f} of {capacity:.0f} MW (NEP) "
+            f"over {len(index)} links"
+            + (
+                f" - the substations can only host {hostable:.0f} MW"
+                if capacity > hostable
+                else ""
+            )
+        )
+
+    return power_to_H2
+
 
 def insert_power_to_h2_to_power():
     """
     Insert electrolysis and fuel cells capacities into the database.
-    For electrolysis potential waste_heat- and oxygen-utilisation is
-    implemented if district_heating-/oxygen-demand is nearby electrolysis
-    location
+    For electrolysis potential waste_heat-utilisation is implemented if
+    district_heating-demand is nearby electrolysis location
 
     The potentials for power-to-H2 in electrolysis and H2-to-power in
     fuel cells are created between each HVMV Substaion (or each AC_BUS related
     to setting SUBSTATION) and closest H2-Bus (H2 and H2_saltcaverns) inside
     buffer-range of 30km.
-    For oxygen-usage all WWTP within MV-district and buffer-range of 10km
-    is connected to relevant HVMV Substation
     For heat-usage closest central-heat-bus inner an dynamic buffer is connected
     to relevant HVMV-Substation.
 
@@ -72,39 +191,15 @@ def insert_power_to_h2_to_power():
     DATA_CRS = 4326  # default CRS
     METRIC_CRS = 32632  # demanded CRS
 
-    ELEC_COST = 60  # [EUR/MWh]
-    O2_PRESSURE_ELZ = 13  # [bar]
-    FACTOR_AERATION_EC = (
-        0.6  # [%] aeration EC from total capacity of WWTP (PE)
-    )
-    FACTOR_O2_EC = 0.8  # [%] Oxygen EC from total aeration EC
-    O2_PRESSURE_MIN = 2  # [bar]
-    MOLAR_MASS_O2 = 0.0319988  # [kg/mol]
-    PIPELINE_DIAMETER_RANGE = [0.10, 0.15, 0.20, 0.25, 0.30, 0.40, 0.50]  # [m]
-    TEMPERATURE = 15 + 273.15  # [Kelvin] degree + 273.15
-    UNIVERSAL_GAS_CONSTANT = 8.3145  # [J/(mol·K)]
-
-    # Power to O2 (Wastewater Treatment Plants)
-    WWTP_SEC = {
-        "c5": 29.6,
-        "c4": 31.3,
-        "c3": 39.8,
-        "c2": 42.1,
-    }  # [kWh/year] Specific Energy Consumption
-
     H2 = "h2"
-    WWTP = "wwtp"
     AC = "ac"
     H2GRID = "h2_grid"
-    ACZONE_HVMV = "ac_zone_hvmv"
-    ACZONE_EHV = "ac_zone_ehv"
     ACSUB_HVMV = "ac_sub_hvmv"
     ACSUB_EHV = "ac_sub_ehv"
     HEAT_BUS = "heat_point"
     HEAT_LOAD = "heat_load"
     HEAT_TIMESERIES = "heat_timeseries"
     H2_BUSES_CH4 = "h2_buses_ch4"
-    AC_LOAD = "ac_load"
     HEAT_AREA = "heat_area"
 
     # buffer_range
@@ -113,7 +208,6 @@ def insert_power_to_h2_to_power():
     )
     max_buffer_heat = 5000  # [m] 5000/30000 for worstcase/bestcase-Szenario
     Buffer = {
-        "O2": 5000,  # [m]
         "H2_HVMV": 5000,
         "H2_EHV": 20000,
         "HVMV": 10000,
@@ -126,7 +220,9 @@ def insert_power_to_h2_to_power():
 
     for SCENARIO_NAME in scenarios:
 
-        if SCENARIO_NAME not in ["eGon100RE", "eGon2035"]:
+        # The status quo scenarios have no H2 system, see the concept of
+        # the scenarios: they model the gas system with a single CH4 bus
+        if "status" in SCENARIO_NAME:
             continue
 
         scn_params_gas = get_sector_parameters("gas", SCENARIO_NAME)
@@ -147,12 +243,9 @@ def insert_power_to_h2_to_power():
         ELZ_LIFETIME_Y = scn_params_gas["lifetime"][
             "power_to_H2_system"
         ]  # [Year]
-        if SCENARIO_NAME == "eGon2035":
-            ELZ_OPEX = scn_params_gas["capital_cost"][
-                "power_to_H2_OPEX"
-            ]  # [EUR/MW/YEAR]
-        else:
-            ELZ_OPEX = 0  # [EUR/MW/YEAR] , for eGon100RE OPEX are already included in SYSTEM and STACK costs
+        ELZ_OPEX = scn_params_gas["capital_cost"][
+            "power_to_H2_OPEX"
+        ]  # [EUR/MW/YEAR]
         H2_COST_PIPELINE = scn_params_gas["capital_cost"][
             "H2_pipeline"
         ]  # [EUR/MW/km/YEAR]
@@ -165,73 +258,18 @@ def insert_power_to_h2_to_power():
             "Heat_pipeline"
         ]  # [EUR/MW/YEAR]
 
-        O2_PIPELINE_COSTS = scn_params_gas["O2_capital_cost"]  # [EUR/km/YEAR]
-        O2_COST_EQUIPMENT = scn_params_gas["capital_cost"][
-            "O2_components"
-        ]  # [EUR/MW/YEAR]
-
         FUEL_CELL_COST = scn_params_gas["capital_cost"][
             "H2_to_power"
         ]  # [EUR/MW/YEAR]
         FUEL_CELL_EFF = scn_params_gas["efficiency"]["H2_to_power"]
         FUEL_CELL_LIFETIME = scn_params_gas["lifetime"]["H2_to_power"]
 
-        def export_o2_buses_to_db(df):
-
-            db.execute_sql(
-                f"DELETE FROM {targets.tables['buses']} WHERE carrier = 'O2' AND scn_name='{SCENARIO_NAME}'"
-            )
-            df = df.copy(deep=True)
-            result = []
-            for _, row in df.iterrows():
-                bus_id = db.next_etrago_id("bus")
-                result.append(
-                    {
-                        "scn_name": SCENARIO_NAME,
-                        "bus_id": bus_id,
-                        "v_nom": "110",
-                        "type": row["KA_ID"],
-                        "carrier": "O2",
-                        "x": row["Koord_Kläranlage_rw"],
-                        "y": row["Koord_Kläranlage_hw"],
-                        "geom": dumps(
-                            Point(
-                                row["Koord_Kläranlage_rw"],
-                                row["Koord_Kläranlage_hw"],
-                            ),
-                            srid=DATA_CRS,
-                        ),
-                        "country": "DE",
-                    }
-                )
-            result_df = pd.DataFrame(result)
-            result_df.to_sql(
-                targets.get_table_name("buses"),
-                engine,
-                schema=targets.get_table_schema("buses"),
-                if_exists="append",
-                index=False,
-            )
-
-        wwtp_spec = pd.read_csv(
-            Path(".")
-            / "data_bundle_egon_data"
-            / "hydrogen_network"
-            / "WWTP_spec.csv"
-        )
-        export_o2_buses_to_db(
-            wwtp_spec
-        )  # Call the function with the dataframe
+        HEAT_LIFETIME = scn_params_gas["lifetime"]["Heat_exchanger"]
 
         # dictionary of SQL queries
         queries = {
-            WWTP: f"""
-                    SELECT bus_id AS id, geom, type AS ka_id
-                    FROM {sources.tables["buses"]}
-                    WHERE carrier in ('O2') AND scn_name = '{SCENARIO_NAME}'
-                    """,
             H2: f"""
-                    SELECT bus_id AS id, geom 
+                    SELECT bus_id AS id, geom
                     FROM {sources.tables["buses"]}
                     WHERE carrier in ('H2_grid', 'H2')
                     AND scn_name = '{SCENARIO_NAME}'
@@ -257,14 +295,6 @@ def insert_power_to_h2_to_power():
                     SELECT bus_id AS id, point AS geom
                     FROM {sources.tables["ehv_substation"]}
                     """,
-            ACZONE_HVMV: f"""
-                    SELECT bus_id AS id, ST_Transform(geom, 4326) as geom
-                    FROM {sources.tables["mv_districts"]}
-                    """,
-            ACZONE_EHV: f"""
-                    SELECT bus_id AS id, ST_Transform(geom, 4326) as geom
-                    FROM {sources.tables["ehv_voronoi"]}
-                    """,
             HEAT_BUS: f"""
         			SELECT bus_id AS id, geom
         			FROM {sources.tables["buses"]}
@@ -281,15 +311,24 @@ def insert_power_to_h2_to_power():
             for key in queries.keys()
         }
 
-        with engine.connect() as conn:
-            conn.execute(text(f"""DELETE FROM {sources.tables["links"]}
-                            WHERE carrier IN ('power_to_H2', 'H2_to_power', 'PtH2_waste_heat', 'PtH2_O2') 
-                            AND scn_name = '{SCENARIO_NAME}' AND bus0 IN (
+        with engine.begin() as conn:
+            # By either end: the H2 buses may have new ids since the last run
+            conn.execute(
+                text(
+                    f"""DELETE FROM {sources.tables["links"]}
+                            WHERE carrier IN ('power_to_H2', 'H2_to_power', 'PtH2_waste_heat')
+                            AND scn_name = '{SCENARIO_NAME}' AND (bus0 IN (
                               SELECT bus_id
                               FROM {sources.tables["buses"]}
-                              WHERE country = 'DE'
-                            )
-                            """))
+                              WHERE country = 'DE' AND scn_name = '{SCENARIO_NAME}'
+                            ) OR bus1 IN (
+                              SELECT bus_id
+                              FROM {sources.tables["buses"]}
+                              WHERE country = 'DE' AND scn_name = '{SCENARIO_NAME}'
+                            ))
+                            """
+                )
+            )
 
         def prepare_dataframes_for_spartial_queries():
 
@@ -324,9 +363,11 @@ def insert_power_to_h2_to_power():
             ]  # delete all abroad_links
 
             # prepare heat_buses for filtering
-            queries[HEAT_AREA] = f"""
+            queries[
+                HEAT_AREA
+            ] = f"""
                      SELECT area_id, geom_polygon as geom
-                     FROM {sources.tables["district_heating_area"]}   
+                     FROM {sources.tables["district_heating_area"]}
                      WHERE scenario = '{SCENARIO_NAME}'
                      """
             dfs[HEAT_AREA] = gpd.read_postgis(
@@ -363,8 +404,10 @@ def insert_power_to_h2_to_power():
                 dfs[HEAT_BUS]["area_geom"]
             )
 
-            queries[HEAT_LOAD] = f"""
-                    SELECT bus, load_id 
+            queries[
+                HEAT_LOAD
+            ] = f"""
+                    SELECT bus, load_id
                     	FROM {sources.tables["loads"]}
                     WHERE carrier in ('central_heat')
                     AND scn_name = '{SCENARIO_NAME}'
@@ -373,7 +416,9 @@ def insert_power_to_h2_to_power():
             dfs[HEAT_LOAD] = pd.read_sql(queries[HEAT_LOAD], engine)
             load_ids = tuple(dfs[HEAT_LOAD]["load_id"])
 
-            queries[HEAT_TIMESERIES] = f"""
+            queries[
+                HEAT_TIMESERIES
+            ] = f"""
                 SELECT load_id, p_set
                 FROM {sources.tables["load_timeseries"]}
                 WHERE load_id IN {load_ids}
@@ -687,145 +732,7 @@ def insert_power_to_h2_to_power():
 
             return pd.DataFrame(results)
 
-        def find_o2_connections(df_o2, potential_locations, sub_id):
-
-            df_o2["hvmv_id"] = None
-            for _, district_row in dfs[ACZONE_HVMV].iterrows():
-                district_geom = district_row["geom"]
-                district_id = district_row["id"]
-
-                mask = df_o2["geom"].apply(lambda x: x.within(district_geom))
-                df_o2.loc[mask, "hvmv_id"] = district_id
-
-            df_o2["ehv_id"] = None
-            for _, district_row in dfs[ACZONE_EHV].iterrows():
-                district_geom = district_row["geom"]
-                district_id = district_row["id"]
-
-                mask = df_o2["geom"].apply(lambda x: x.within(district_geom))
-                df_o2.loc[mask, "ehv_id"] = district_id
-
-            intersection_geometries = potential_locations[
-                "intersection"
-            ].tolist()
-            intersection_tree = STRtree(intersection_geometries)
-
-            results = []
-
-            for _, o2_row in df_o2.iterrows():
-                o2_buffer = o2_row["geom"].buffer(Buffer["O2"])
-                o2_id = o2_row["id"]
-                o2_district_id = o2_row[sub_id]
-
-                possible_matches = intersection_tree.query(o2_buffer)
-
-                for match_idx in possible_matches:
-                    ac_row = potential_locations.iloc[match_idx]
-                    intersection_centroid = ac_row["intersection"].centroid
-
-                    if ac_row[
-                        "bus_AC"
-                    ] == o2_district_id and o2_buffer.intersects(
-                        ac_row["intersection"]
-                    ):
-                        distance = intersection_centroid.distance(
-                            o2_buffer.centroid
-                        )
-                        results.append(
-                            {
-                                "bus_AC": ac_row["bus_AC"],
-                                "bus_O2": o2_id,
-                                "geom_AC": ac_row["geom_AC"],
-                                "geom_O2": o2_row["geom"],
-                                "distance_O2": distance,
-                                "KA_ID": o2_row["ka_id"],
-                            }
-                        )
-
-            return pd.DataFrame(results)
-
-        def find_spec_for_ka_id(ka_id):
-            found_spec = wwtp_spec[wwtp_spec["KA_ID"] == ka_id]
-            if len(found_spec) > 1:
-                raise Exception("multiple spec for a ka_id")
-            found_spec = found_spec.iloc[0]
-            return {
-                "pe": found_spec["Nominalbelastung 2020 [EW]"],
-                "demand_o2": found_spec["Sauerstoff 2035 gesamt [t/a]"],
-            }
-
-        def calculate_wwtp_capacity(pe):  # [MWh/year]
-            c = "c2"
-            if pe > 100_000:
-                c = "c5"
-            elif pe > 10_000 and pe <= 100_000:
-                c = "c4"
-            elif pe > 2000 and pe <= 10_000:
-                c = "c3"
-            return pe * WWTP_SEC[c] / 1000
-
-        def gas_pipeline_size(
-            gas_volume_y, distance, input_pressure, molar_mass, min_pressure
-        ):
-            """
-                Parameters
-                ----------
-                gas_valume : kg/year
-                distance : km
-                input pressure : bar
-                min pressure : bar
-                molar mas : kg/mol
-                Returns
-            -------
-            Final pressure drop [bar] & pipeline diameter [m]
-            """
-
-            def _calculate_final_pressure(pipeline_diameter):
-                flow_rate = (
-                    (gas_volume_y / (8760 * molar_mass))
-                    * UNIVERSAL_GAS_CONSTANT
-                    * TEMPERATURE
-                    / (input_pressure * 100_000)
-                )  # m3/hour
-                flow_rate_s = flow_rate / 3600  # m3/second
-                pipeline_area = math.pi * (pipeline_diameter / 2) ** 2  # m2
-                gas_velocity = flow_rate_s / pipeline_area  # m/s
-                gas_density = (input_pressure * 1e5 * molar_mass) / (
-                    UNIVERSAL_GAS_CONSTANT * TEMPERATURE
-                )  # kg/m3
-                reynolds_number = (
-                    gas_density * gas_velocity * pipeline_diameter
-                ) / UNIVERSAL_GAS_CONSTANT
-                # Estimate Darcy friction factor using Moody's approximation
-                darcy_friction_factor = 0.0055 * (
-                    1 + (2 * 1e4 * (2.51 / reynolds_number)) ** (1 / 3)
-                )
-                # Darcy-Weisbach equation
-                pressure_drop = (
-                    (
-                        4
-                        * darcy_friction_factor
-                        * distance
-                        * 1000
-                        * gas_velocity**2
-                    )
-                    / (2 * pipeline_diameter)
-                ) / 1e5  # bar
-                return input_pressure - pressure_drop  # bar
-
-            for diameter in PIPELINE_DIAMETER_RANGE:
-                final_pressure = _calculate_final_pressure(diameter)
-                if final_pressure > min_pressure:
-                    return (round(final_pressure, 4), round(diameter, 4))
-            raise Exception("couldn't find a final pressure < min_pressure")
-
-        # O2 pipeline diameter cost range
-        def get_o2_pipeline_cost(o2_pipeline_diameter):
-            for diameter in sorted(O2_PIPELINE_COSTS.keys(), reverse=True):
-                if o2_pipeline_diameter >= float(diameter):
-                    return O2_PIPELINE_COSTS[diameter]
-
-        def create_link_dataframes(links_h2, links_heat, links_O2):
+        def create_link_dataframes(links_h2, links_heat):
 
             etrago_columns = [
                 "scn_name",
@@ -847,7 +754,6 @@ def insert_power_to_h2_to_power():
             power_to_H2 = pd.DataFrame(columns=etrago_columns)
             H2_to_power = pd.DataFrame(columns=etrago_columns)
             power_to_Heat = pd.DataFrame(columns=etrago_columns)
-            power_to_O2 = pd.DataFrame(columns=etrago_columns)
 
             ####poower_to_H2
             for idx, row in links_h2.iterrows():
@@ -953,7 +859,7 @@ def insert_power_to_h2_to_power():
                     "bus1": row["bus_heat"],
                     "carrier": "PtH2_waste_heat",
                     "efficiency": 1,
-                    "lifetime": 25,
+                    "lifetime": HEAT_LIFETIME,
                     "p_nom": 0,
                     "p_nom_max": float("inf"),
                     "p_nom_extendable": True,
@@ -980,74 +886,20 @@ def insert_power_to_h2_to_power():
                     ignore_index=True,
                 )
 
-            ####power_to_O2
-            for idx, row in links_O2.iterrows():
-                distance = row["distance_O2"] / 1000  # km
-                ka_id = row["KA_ID"]
-                spec = find_spec_for_ka_id(ka_id)
-                wwtp_ec = calculate_wwtp_capacity(spec["pe"])  # [MWh/year]
-                aeration_ec = wwtp_ec * FACTOR_AERATION_EC  # [MWh/year]
-                o2_ec = aeration_ec * FACTOR_O2_EC  # [MWh/year]
-                o2_ec_h = o2_ec / 8760  # [MWh/hour]
-                total_o2_demand = (
-                    spec["demand_o2"] * 1000
-                )  # kgO2/year pure O2 tonne* 1000
-                _, o2_pipeline_diameter = gas_pipeline_size(
-                    total_o2_demand,
-                    distance,
-                    O2_PRESSURE_ELZ,
-                    MOLAR_MASS_O2,
-                    O2_PRESSURE_MIN,
-                )
-                annualized_cost_o2_pipeline = get_o2_pipeline_cost(
-                    o2_pipeline_diameter
-                )  # [EUR/KM/YEAR]
-                annualized_cost_o2_component = O2_COST_EQUIPMENT  # EUR/MW/YEAR
-                capital_costs = (
-                    annualized_cost_o2_pipeline * distance / o2_ec_h
-                    + annualized_cost_o2_component
-                )
-
-                power_to_o2_entry = {
-                    "scn_name": SCENARIO_NAME,
-                    "link_id": db.next_etrago_id("link"),
-                    "bus0": row["bus_AC"],
-                    "bus1": row["bus_O2"],
-                    "carrier": "PtH2_O2",
-                    "efficiency": 1,
-                    "lifetime": 25,
-                    "p_nom": o2_ec_h,
-                    "p_nom_max": float("inf"),
-                    "p_nom_extendable": True,
-                    "capital_cost": capital_costs,
-                    "geom": MultiLineString(
-                        [
-                            LineString(
-                                [
-                                    (row["geom_AC"].x, row["geom_AC"].y),
-                                    (row["geom_O2"].x, row["geom_O2"].y),
-                                ]
-                            )
-                        ]
-                    ),
-                    "topo": LineString(
-                        [
-                            (row["geom_AC"].x, row["geom_AC"].y),
-                            (row["geom_O2"].x, row["geom_O2"].y),
-                        ]
-                    ),
-                }
-                power_to_O2 = pd.concat(
-                    [power_to_O2, pd.DataFrame([power_to_o2_entry])],
-                    ignore_index=True,
-                )
-
-            return power_to_H2, H2_to_power, power_to_Heat, power_to_O2
+            return power_to_H2, H2_to_power, power_to_Heat
 
         def export_links_to_db(df, carrier):
 
             gdf = gpd.GeoDataFrame(df, geometry="geom").set_crs(METRIC_CRS)
             gdf = gdf.to_crs(epsg=DATA_CRS)
+            # "topo" is built in the metric CRS like "geom"
+            gdf["topo"] = (
+                gpd.GeoSeries(
+                    df["topo"].values, index=gdf.index, crs=METRIC_CRS
+                )
+                .to_crs(epsg=DATA_CRS)
+                .tolist()
+            )
             gdf.p_nom = 0
 
             try:
@@ -1062,239 +914,102 @@ def insert_power_to_h2_to_power():
                     f"Links have been exported to {targets.tables['hydrogen_links']}"
                 )
             except Exception as e:
-                print(f"Error while exporting link data: {e}")
+                print(f"Error while exporting the {carrier} links: {e}")
+                raise
 
-        def insert_o2_load_points(df):
+        def connect_off_grid_h2_demand(potential_locations):
+            """
+            Electrolysers at the nearest substation for the H2 demand at H2 buses
+            without H2_grid link and without electrolyser candidate
 
-            with engine.connect() as conn:
-                conn.execute(
-                    f"DELETE FROM {targets.tables['loads']} "
-                    f"WHERE carrier = 'O2' AND scn_name = '{SCENARIO_NAME}'"
-                )
-            df = df.copy(deep=True)
-            df = df.drop_duplicates(subset="bus1", keep="first")
-            result = []
-            for _, row in df.iterrows():
-                load_id = db.next_etrago_id("load")
-                result.append(
-                    {
-                        "scn_name": SCENARIO_NAME,
-                        "load_id": load_id,
-                        "bus": row["bus1"],
-                        "carrier": "O2",
-                        "o2_load_el": row["p_nom"],
-                    }
-                )
-            df = pd.DataFrame(result)
-            df[["scn_name", "load_id", "bus", "carrier"]].to_sql(
-                targets.get_table_name("loads"),
-                engine,
-                schema=targets.get_table_schema("loads"),
-                if_exists="append",
-                index=False,
-            )
-            print(
-                f"O2 load data exported to: {targets.get_table_name('loads')}"
-            )
-            return df
-
-        def insert_o2_load_timeseries(df):
-            query_o2_timeseries = f"""
-                    SELECT load_curve
-            			FROM {sources.tables["o2_load_profile"]}
-            			WHERE slp = 'G3' AND wz = 3
-                        """
-
-            base_load_profile = pd.read_sql(query_o2_timeseries, engine)[
-                "load_curve"
-            ].values
-            base_load_profile = np.array(base_load_profile[0])
-
-            with engine.connect() as conn:
-                conn.execute(f"""
-                    DELETE FROM {targets.tables["load_timeseries"]}
-                    WHERE load_id IN {tuple(df.load_id.values)} 
+            """
+            demand_buses = set(
+                pd.read_sql(
+                    f"""
+                    SELECT DISTINCT bus FROM {sources.tables["loads"]}
+                    WHERE carrier = 'H2_for_industry'
                     AND scn_name = '{SCENARIO_NAME}'
-                    """)
+                    """,
+                    engine,
+                )["bus"]
+            )
+            # Buses reached by the H2 grid
+            grid_buses = set(dfs[H2GRID]["bus0"]) | set(dfs[H2GRID]["bus1"])
+            candidates = set(potential_locations["bus_h2"])
+            off_grid = dfs[H2][
+                dfs[H2]["id"].isin(demand_buses)
+                & ~dfs[H2]["id"].isin(grid_buses)
+                & ~dfs[H2]["id"].isin(candidates)
+            ]
+            if off_grid.empty:
+                return potential_locations
 
-            timeseries_list = []
-
-            for index, row in df.iterrows():
-                load_id = row["load_id"]  # ID aus der aktuellen Zeile
-                o2_load_el = row[
-                    "o2_load_el"
-                ]  # Nennleistung aus der aktuellen Zeile
-
-                modified_profile = base_load_profile * o2_load_el
-
-                timeseries_list.append(
+            substations = pd.concat(
+                [
+                    dfs[ACSUB_HVMV].assign(sub_type="HVMV"),
+                    dfs[ACSUB_EHV].assign(sub_type="EHV"),
+                ],
+                ignore_index=True,
+            )
+            rows = []
+            for _, h2_bus in off_grid.iterrows():
+                distance = substations["geom"].distance(h2_bus["geom"])
+                nearest = substations.loc[distance.idxmin()]
+                rows.append(
                     {
-                        "scn_name": SCENARIO_NAME,
-                        "load_id": load_id,
-                        "temp_id": 1,
-                        "p_set": modified_profile,
-                        "bus": row["bus"],
+                        "bus_h2": h2_bus["id"],
+                        "bus_AC": nearest["id"],
+                        "geom_h2": h2_bus["geom"],
+                        "geom_AC": nearest["geom"],
+                        "distance_h2": 0.0,
+                        "distance_ac": distance.min(),
+                        "intersection": h2_bus["geom"],
+                        "sub_type": nearest["sub_type"],
                     }
                 )
-
-            timeseries_df = pd.DataFrame(timeseries_list)
-            timeseries_df["p_set"] = timeseries_df["p_set"].apply(
-                lambda x: x.tolist() if isinstance(x, np.ndarray) else x
+            print(
+                f"{SCENARIO_NAME}: {len(rows)} H2 buses with industrial "
+                "demand are not reached by the H2 grid and get an "
+                "electrolyser at the nearest substation (mean distance "
+                f"{np.mean([r['distance_ac'] for r in rows]) / 1000:.1f} km)"
             )
-            timeseries_df[["scn_name", "load_id", "temp_id", "p_set"]].to_sql(
-                targets.get_table_name("load_timeseries"),
-                engine,
-                schema=targets.get_table_schema("load_timeseries"),
-                if_exists="append",
-                index=False,
+            return pd.concat(
+                [potential_locations, pd.DataFrame(rows)], ignore_index=True
             )
-
-            return timeseries_df
-
-        def insert_o2_generators(df):
-
-            grid = targets.get_table_schema("generators")
-            table_name = targets.get_table_name("generators")
-            with engine.connect() as conn:
-                conn.execute(
-                    f"DELETE FROM {targets.tables['generators']} "
-                    f"WHERE carrier = 'O2' AND scn_name = '{SCENARIO_NAME}'"
-                )
-            df = df.copy(deep=True)
-            df = df.drop_duplicates(subset="bus1", keep="first")
-            result = []
-            for _, row in df.iterrows():
-                generator_id = db.next_etrago_id("generator")
-                result.append(
-                    {
-                        "scn_name": SCENARIO_NAME,
-                        "generator_id": generator_id,
-                        "bus": row["bus1"],
-                        "carrier": "O2",
-                        "p_nom_extendable": "true",
-                        "marginal_cost": ELEC_COST,
-                    }
-                )
-            df = pd.DataFrame(result)
-            df.to_sql(
-                table_name,
-                engine,
-                schema=grid,
-                if_exists="append",
-                index=False,
-            )
-
-            print(f"generator data exported to: {table_name}")
-
-        def adjust_ac_load_timeseries(df, o2_timeseries):
-            # filter out affected ac_loads
-            queries[AC_LOAD] = f"""
-                                SELECT bus, load_id 
-                        			FROM {sources.tables["loads"]}
-                                WHERE scn_name = '{SCENARIO_NAME}'
-                                """
-            dfs[AC_LOAD] = pd.read_sql(queries[AC_LOAD], engine)
-            df = df.drop_duplicates(subset="bus1", keep="first")
-            ac_loads = pd.merge(
-                df, dfs[AC_LOAD], left_on="bus0", right_on="bus"
-            )
-
-            # reduce each affected ac_load with o2_timeseries
-            for _, row in ac_loads.iterrows():
-                with engine.connect() as conn:
-
-                    select_query = text(f"""
-                        SELECT p_set 
-                        FROM {sources.tables["load_timeseries"]}
-                        WHERE load_id = :load_id and scn_name= :SCENARIO_NAME
-                        """)
-                    result = conn.execute(
-                        select_query,
-                        {
-                            "load_id": row["load_id"],
-                            "SCENARIO_NAME": SCENARIO_NAME,
-                        },
-                    ).fetchone()
-
-                    if result:
-                        original_p_set = result["p_set"]
-                        o2_timeseries_row = o2_timeseries.loc[
-                            o2_timeseries["bus"] == row["bus1"]
-                        ]
-
-                        if not o2_timeseries_row.empty:
-                            o2_p_set = o2_timeseries_row.iloc[0]["p_set"]
-
-                            if len(original_p_set) == len(o2_p_set):
-                                # reduce ac_load with o2_load_timeseries
-                                adjusted_p_set = (
-                                    np.array(original_p_set)
-                                    - np.array(o2_p_set)
-                                ).tolist()
-                                update_query = text(f"""
-                                     UPDATE {targets.tables["load_timeseries"]}
-                                     SET p_set = :adjusted_p_set
-                                     WHERE load_id = :load_id AND scn_name = :SCENARIO_NAME
-                                 """)
-                                conn.execute(
-                                    update_query,
-                                    {
-                                        "adjusted_p_set": adjusted_p_set,
-                                        "load_id": row["load_id"],
-                                        "SCENARIO_NAME": SCENARIO_NAME,
-                                    },
-                                )
-                            else:
-                                print(
-                                    f"Length mismatch for load_id {row['load_id']}: original={len(original_p_set)}, o2={len(o2_p_set)}"
-                                )
-                        else:
-                            print(
-                                f"No matching o2_timeseries entry for load_id {row['load_id']}"
-                            )
-
-        def delete_unconnected_o2_buses():
-            with engine.connect() as conn:
-                conn.execute(f"""
-                    DELETE FROM {targets.tables["buses"]}
-                    WHERE carrier = 'O2' AND scn_name = '{SCENARIO_NAME}'
-                    AND bus_id NOT IN (SELECT bus1 FROM {targets.tables["hydrogen_links"]} 
-                                       WHERE carrier = 'PtH2_O2')
-                    """)
 
         def execute_PtH2_method():
 
-            h2_grid_geom_df, dfs[HEAT_BUS], dfs[H2_BUSES_CH4] = (
-                prepare_dataframes_for_spartial_queries()
-            )
+            (
+                h2_grid_geom_df,
+                dfs[HEAT_BUS],
+                dfs[H2_BUSES_CH4],
+            ) = prepare_dataframes_for_spartial_queries()
             potential_locations = find_h2_connection(h2_grid_geom_df)
+            potential_locations = connect_off_grid_h2_demand(
+                potential_locations
+            )
             heat_links = find_heat_connection(potential_locations)
-            o2_links_hvmv = find_o2_connections(
-                dfs[WWTP],
-                potential_locations[potential_locations.sub_type == "HVMV"],
-                "hvmv_id",
+            power_to_H2, H2_to_power, power_to_Heat = create_link_dataframes(
+                potential_locations, heat_links
             )
-            o2_links_ehv = find_o2_connections(
-                dfs[WWTP],
-                potential_locations[potential_locations.sub_type == "EHV"],
-                "ehv_id",
+            # Electrolysers: capacity of the NEP per federal state, see
+            # the function
+            power_to_H2 = scale_electrolysis_to_nep(
+                power_to_H2,
+                scn_params_gas.get("power_to_H2_capacity"),
+                SCENARIO_NAME,
+                sources,
+                crs=METRIC_CRS,
             )
-            o2_links = pd.concat(
-                [o2_links_hvmv, o2_links_ehv], ignore_index=True
-            )
-            power_to_H2, H2_to_power, power_to_Heat, power_to_O2 = (
-                create_link_dataframes(
-                    potential_locations, heat_links, o2_links
-                )
+            # Waste heat co-product: no more than the electrolysers produce
+            power_to_Heat = bound_coproducts_by_electrolysis(
+                power_to_H2,
+                power_to_Heat,
+                ELZ_EFF,
+                scn_params_gas["efficiency"]["power_to_Heat"],
             )
             export_links_to_db(power_to_H2, "power_to_H2")
             export_links_to_db(power_to_Heat, "PtH2_waste_heat")
-            export_links_to_db(power_to_O2, "PtH2_O2")
             export_links_to_db(H2_to_power, "H2_to_power")
-            o2_loads_df = insert_o2_load_points(power_to_O2)
-            o2_timeseries = insert_o2_load_timeseries(o2_loads_df)
-            insert_o2_generators(power_to_O2)
-            adjust_ac_load_timeseries(power_to_O2, o2_timeseries)
-            delete_unconnected_o2_buses()
 
         execute_PtH2_method()
