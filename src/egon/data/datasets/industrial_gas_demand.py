@@ -129,7 +129,96 @@ class IndustrialGasDemandScenarios(Dataset):
             version=self.version,
             dependencies=dependencies,
             tasks=(insert_industrial_gas_demand,),
+            # Gas validation rules (#1526)
+            validation=self.validation_rules(),
+            proceed_on_validation_failure=True,
         )
+
+    @staticmethod
+    def validation_rules():
+        """
+        Return the validation rules of the dataset
+
+        Returns
+        -------
+        dict
+            Validation rules per validation task
+
+        """
+        from egon.data.validation.rules.custom.sanity.gas import (
+            FROM_PARAMETERS,
+            GasBusReferences,
+            GasComponentTotal,
+            GasTimeseriesComplete,
+            for_each_scenario,
+        )
+
+        # Scaled to the national total, then cut to the boundary
+        carriers = ["CH4_for_industry", "H2_for_industry"]
+        return {
+            "sanity": [
+                # reGon2045 has no CH4 demand
+                *for_each_scenario(
+                    GasComponentTotal,
+                    "SANITY_GAS_CH4_INDUSTRY_DEMAND_DE",
+                    table="grid.egon_etrago_load",
+                    carriers=["CH4_for_industry"],
+                    measure="annual_energy",
+                    parameter=("gas", "industrial_gas_demand", "CH4"),
+                    expected={
+                        "status2024": {
+                            "Schleswig-Holstein": 5881118.043,
+                            "Everything": FROM_PARAMETERS,
+                        },
+                        "eGon2035": {
+                            "Schleswig-Holstein": 3421293.170,
+                            "Everything": FROM_PARAMETERS,
+                        },
+                        "reGon2037": {
+                            "Schleswig-Holstein": 2763878.950,
+                            "Everything": FROM_PARAMETERS,
+                        },
+                        "reGon2045": 0,
+                    },
+                ),
+                # status2024 has no H2
+                *for_each_scenario(
+                    GasComponentTotal,
+                    "SANITY_GAS_H2_INDUSTRY_DEMAND_DE",
+                    table="grid.egon_etrago_load",
+                    carriers=["H2_for_industry"],
+                    measure="annual_energy",
+                    parameter=("gas", "industrial_gas_demand", "H2"),
+                    expected={
+                        "status2024": 0,
+                        "eGon2035": {
+                            "Schleswig-Holstein": 1328841.194,
+                            "Everything": FROM_PARAMETERS,
+                        },
+                        "reGon2037": {
+                            "Schleswig-Holstein": 2844304.727,
+                            "Everything": FROM_PARAMETERS,
+                        },
+                        "reGon2045": {
+                            "Schleswig-Holstein": 12983417.818,
+                            "Everything": FROM_PARAMETERS,
+                        },
+                    },
+                ),
+                *for_each_scenario(
+                    GasTimeseriesComplete,
+                    "SANITY_GAS_INDUSTRY_DEMAND_TIMESERIES",
+                    table="grid.egon_etrago_load",
+                    carriers=carriers,
+                ),
+                *for_each_scenario(
+                    GasBusReferences,
+                    "SANITY_GAS_INDUSTRY_DEMAND_BUSES",
+                    table="grid.egon_etrago_load",
+                    carriers=carriers,
+                ),
+            ],
+        }
 
 
 def read_and_scale_regional_demand(scn_name, carrier):
