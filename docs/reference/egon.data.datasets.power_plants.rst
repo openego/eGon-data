@@ -7,6 +7,7 @@ power\_plants
 
    egon.data.datasets.power_plants.assign_weather_data
    egon.data.datasets.power_plants.conventional
+   egon.data.datasets.power_plants.hydrogen
    egon.data.datasets.power_plants.mastr
    egon.data.datasets.power_plants.pv_ground_mounted
    egon.data.datasets.power_plants.pv_rooftop
