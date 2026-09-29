@@ -75,6 +75,7 @@ from egon.data.datasets.industrial_gas_demand import (
 from egon.data.datasets.industrial_sites import MergeIndustrialSites
 from egon.data.datasets.industry import IndustrialDemandCurves
 from egon.data.datasets.loadarea import LoadArea, OsmLanduse
+
 from egon.data.datasets.low_flex_scenario import LowFlexScenario
 from egon.data.datasets.mastr import mastr_data_setup
 from egon.data.datasets.mv_grid_districts import mv_grid_districts_setup
@@ -766,6 +767,16 @@ with airflow.DAG(
                 cts_demand_buildings,
                 emobility_mit,
                 low_flex_scenario,
+                # Gas datasets that are not upstream of the ones above, so
+                # that the validation report collects their validations
+                gas_abroad_insert_data,
+                gas_production_insert_data,
+                industrial_gas_demand_scenarios,
+                insert_power_to_h2_installations,
+                insert_h2_to_ch4_grid_links,
+                # Links at gas buses checked by the final gas rules
+                chp_etrago,
+                create_ocgt,
             ]
         )
 
