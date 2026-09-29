@@ -616,7 +616,7 @@ class MotorizedIndividualTravel(Dataset):
     #:
     name: str = "MotorizedIndividualTravel"
     #:
-    version: str = "0.1.0"
+    version: str = "0.1.1"
 
     def __init__(self, dependencies):
         def generate_model_data_tasks(scenario_name):
