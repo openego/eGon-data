@@ -107,16 +107,26 @@ EVENT_COLUMN_MAPPING = {
     "charging_use_case": "use_case",
     "location": "location",
     "nominal_charging_capacity_kW": "charging_capacity_nominal",
-    "grid_charging_capacity_kW": "charging_capacity_grid",
-    "battery_charging_capacity_kW": "charging_capacity_battery",
     "soc_start": "soc_start",
     "soc_end": "soc_end",
-    "chargingdemand_kWh": "charging_demand",
+    "chargingdemand_battery_kWh": "charging_demand",
     "park_start_timesteps": "park_start",
     "park_end_timesteps": "park_end",
     "drive_start_timesteps": "drive_start",
     "drive_end_timesteps": "drive_end",
     "consumption_kWh": "consumption",
+}
+
+#: Columns of `demand.egon_ev_mit_lgv_trip` filled from a delivered
+#: column that is already mapped elsewhere in `EVENT_COLUMN_MAPPING`.
+#: Since the delivered nameplate power *is* the grid-side power, so
+#: both columns carry it.
+#:
+#: `charging_capacity_battery` is deliberately absent from both dicts
+#: and stays NULL for the new methodology: V2 delivers no battery-side
+#: nameplate power, and nothing in the model reads the column.
+EVENT_COLUMN_ALIASES = {
+    "charging_capacity_grid": "nominal_charging_capacity_kW",
 }
 
 TRIP_COLUMN_MAPPING = {

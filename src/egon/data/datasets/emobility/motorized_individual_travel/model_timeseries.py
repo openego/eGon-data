@@ -117,6 +117,7 @@ def data_preprocessing(
     scenario_data: pd.DataFrame,
     ev_data_df: pd.DataFrame,
     scenario_name: str,
+    run_config: pd.DataFrame,
 ) -> pd.DataFrame:
     """Filter SimBEV data to match region requirements. Duplicates profiles
     if necessary. Pre-calculates necessary parameters for the load time series.
@@ -131,7 +132,10 @@ def data_preprocessing(
         Scenario name. Decides how the flexible share of the charging
         capacity is identified: the legacy methodology tests the
         `(location, use_case)` pair, the new one the charging use case
-        alone.
+        alone. It also decides which side of the charger the nameplate
+        power refers to, see the charging time below.
+    run_config : pd.DataFrame
+        simBEV metadata: run config. Read for `eta_cp`.
 
     Returns
     -------
@@ -149,12 +153,26 @@ def data_preprocessing(
 
     # calculate time necessary to fulfill the charging demand and brutto
     # charging capacity in MVA
+    #
+    # `charging_demand` is the energy arriving at the battery. The
+    # nameplate power it has to be divided by must therefore be a
+    # battery-side power, which is what the legacy methodology delivers.
+    # The new methodology delivers a **grid-side**
+    # nameplate power, so it is scaled by `eta_cp` first --
+    # without that the charging window comes out `eta_cp` too short and
+    # the grid load ends up at battery level, i.e. ~10 % low.
+    battery_side_capacity = ev_data_df.charging_capacity_nominal
+    if not is_legacy_scenario(scenario_name):
+        battery_side_capacity = battery_side_capacity * float(
+            run_config.eta_cp
+        )
+
     ev_data_df = ev_data_df.assign(
-        charging_capacity_grid_MW=(ev_data_df.charging_capacity_grid / 10**3),
+        charging_capacity_grid_MW=(
+            ev_data_df.charging_capacity_grid / 10**3
+        ),
         minimum_charging_time=(
-            ev_data_df.charging_demand
-            / ev_data_df.charging_capacity_nominal
-            * 4
+            ev_data_df.charging_demand / battery_side_capacity * 4
         ),
         location=ev_data_df.location.str.replace("/", "_"),
     )
@@ -198,9 +216,9 @@ def data_preprocessing(
         mask_flex = ev_data_df.use_case.isin(FLEX_USE_CASES)
 
     ev_data_df["flex_charging_capacity_grid_MW"] = 0
-    ev_data_df.loc[mask_flex, "flex_charging_capacity_grid_MW"] = (
-        ev_data_df.loc[mask_flex, "charging_capacity_grid_MW"]
-    )
+    ev_data_df.loc[
+        mask_flex, "flex_charging_capacity_grid_MW"
+    ] = ev_data_df.loc[mask_flex, "charging_capacity_grid_MW"]
 
     ev_data_df["flex_last_timestep_charging_capacity_grid_MW"] = 0
     ev_data_df.loc[
@@ -461,17 +479,17 @@ def generate_load_time_series(
         },
     )
 
-    # # validate load timeseries
-    # np.testing.assert_almost_equal(
-    #     load_time_series_df.load_time_series.sum() / 4,
-    #     (
-    #         ev_data_df.ev_id.apply(lambda _: profile_counter[_])
-    #         * ev_data_df.charging_demand
-    #     ).sum()
-    #     / 1000
-    #     / float(run_config.eta_cp),
-    #     decimal=-1,
-    # )
+    # validate load timeseries
+    np.testing.assert_almost_equal(
+        load_time_series_df.load_time_series.sum() / 4,
+        (
+            ev_data_df.ev_id.apply(lambda _: profile_counter[_])
+            * ev_data_df.charging_demand
+        ).sum()
+        / 1000
+        / float(run_config.eta_cp),
+        decimal=-1,
+    )
 
     if sources.files["original_data"]["model_timeseries"]["reduce_memory"]:
         return reduce_mem_usage(load_time_series_df)
@@ -735,13 +753,13 @@ def write_model_data_to_db(
                 f"initialised with NaN."
             )
 
-        initial_soc_per_ev_type["battery_capacity_sum"] = (
-            initial_soc_per_ev_type.ev_count.multiply(bat_cap)
-        )
-        initial_soc_per_ev_type["ev_soc_start_abs"] = (
-            initial_soc_per_ev_type.battery_capacity_sum.multiply(
-                initial_soc_per_ev_type.ev_soc_start
-            )
+        initial_soc_per_ev_type[
+            "battery_capacity_sum"
+        ] = initial_soc_per_ev_type.ev_count.multiply(bat_cap)
+        initial_soc_per_ev_type[
+            "ev_soc_start_abs"
+        ] = initial_soc_per_ev_type.battery_capacity_sum.multiply(
+            initial_soc_per_ev_type.ev_soc_start
         )
 
         return (
@@ -932,7 +950,9 @@ def write_model_data_to_db(
                 write_load(
                     scenario_name=lowflex_scenario_name,
                     connection_bus_id=etrago_bus.bus_id,
-                    load_ts=hourly_load_time_series_df.load_time_series.to_list(),
+                    load_ts=(
+                        hourly_load_time_series_df.load_time_series.to_list()
+                    ),
                 )
 
     def write_to_file():
@@ -950,9 +970,9 @@ def write_model_data_to_db(
             results_dir / "ev_dsm_profile.csv"
         )
 
-        static_params_dict["load_land_transport_ev.p_set_MW"] = (
-            "ev_load_time_series.csv"
-        )
+        static_params_dict[
+            "load_land_transport_ev.p_set_MW"
+        ] = "ev_load_time_series.csv"
         static_params_dict["link_bev_charger.p_max_pu"] = "ev_availability.csv"
         static_params_dict["store_ev_battery.e_min_pu"] = "ev_dsm_profile.csv"
         static_params_dict["store_ev_battery.e_max_pu"] = "ev_dsm_profile.csv"
@@ -1190,7 +1210,9 @@ def generate_model_data_grid_district(
     trip_data.drop(columns=["type"], inplace=True)
 
     # Preprocess trip data
-    trip_data = data_preprocessing(evs_grid_district, trip_data, scenario_name)
+    trip_data = data_preprocessing(
+        evs_grid_district, trip_data, scenario_name, run_config
+    )
 
     # Generate load timeseries
     print("  Generating load timeseries...")
@@ -1285,10 +1307,7 @@ def generate_model_data_bunch(scenario_name: str, bunch: range) -> None:
             f"Processing grid district: bus {bus_id}... "
             f"({ctr}/{len(mvgd_bus_ids)})"
         )
-        (
-            static_params,
-            load_ts,
-        ) = generate_model_data_grid_district(
+        (static_params, load_ts,) = generate_model_data_grid_district(
             scenario_name=scenario_name,
             evs_grid_district=evs_grid_district[
                 evs_grid_district.bus_id == bus_id
