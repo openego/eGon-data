@@ -27,6 +27,7 @@ from egon.data.datasets.hydrogen_etrago.nep2025 import (
     KERNNETZ_COMMISSIONING_YEAR,
     NEP_CH4_NETWORK_2045,
     NEP_CH4_NETWORK_2045_NODES,
+    NEP_CH4_NETWORK_YEAR,
     NEP_H2_BORDER_POINTS,
     NEP_H2_HHV_PER_LHV,
     NEP_H2_LNG_TERMINALS,
@@ -34,8 +35,10 @@ from egon.data.datasets.hydrogen_etrago.nep2025 import (
     NEP_H2_MEASURES_2037_COMMISSIONING,
     NEP_H2_MEASURES_2037_NODES,
     NEP_H2_MEASURES_CRITERIA,
+    NEP_H2_MEASURES_YEAR,
     NEP_H2_NETWORK_2045,
     NEP_H2_NETWORK_2045_NODES,
+    NEP_H2_NETWORK_YEAR,
     NEP_H2_OTHER_IMPORT_PROJECTS,
     NEP_H2_OTHER_IMPORT_SITES,
     NEP_H2_OTHER_IMPORTS,
@@ -45,6 +48,7 @@ from egon.data.datasets.hydrogen_etrago.nep2025 import (
     NEP_H2_STORAGE_PROJECTS,
     NEP_KERNNETZ_DN_2045,
     NEP_KERNNETZ_NOT_IN_2045,
+    NEP_SCENARIO_2045,
 )
 from egon.data.datasets.scenario_parameters import (
     get_scenario_year,

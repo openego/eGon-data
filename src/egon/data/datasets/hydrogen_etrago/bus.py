@@ -14,7 +14,6 @@ created by :py:func:`insert_hydrogen_buses`:
 
 """
 
-from pathlib import Path
 
 from geoalchemy2 import Geometry
 from scipy.spatial import cKDTree
