@@ -65,6 +65,7 @@ from egon.data.datasets.emobility.motorized_individual_travel.ev_allocation impo
 )
 from egon.data.datasets.emobility.motorized_individual_travel.helpers import (
     EV_TYPES,
+    EVENT_COLUMN_ALIASES,
     EVENT_COLUMN_MAPPING,
     is_legacy_scenario,
     read_geolis_metadata_file,
@@ -557,8 +558,17 @@ def import_ev_events() -> None:
     `charging_use_case` is renamed to `use_case` on import (D12);
     `park_time_timesteps` is not imported, it is
     `park_end - park_start` and the model code ignores it.
+
+    `charging_capacity_grid` is filled from the delivered nameplate
+    power, which is grid-side (:data:`EVENT_COLUMN_ALIASES`).
+    `charging_capacity_battery` is left NULL -- new data delivers
+    no battery-side nameplate power.
     """
-    columns = ["scenario"] + list(EVENT_COLUMN_MAPPING.values())
+    columns = (
+        ["scenario"]
+        + list(EVENT_COLUMN_MAPPING.values())
+        + list(EVENT_COLUMN_ALIASES.keys())
+    )
 
     for scenario_name in new_scenarios():
         print(f"SCENARIO: {scenario_name}")
@@ -607,6 +617,12 @@ def import_ev_events() -> None:
                                 target: events.column(delivered)
                                 for delivered, target in (
                                     EVENT_COLUMN_MAPPING.items()
+                                )
+                            },
+                            **{
+                                target: events.column(delivered)
+                                for target, delivered in (
+                                    EVENT_COLUMN_ALIASES.items()
                                 )
                             },
                         }
