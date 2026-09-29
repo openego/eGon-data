@@ -44,6 +44,7 @@ class EgonScenarioCapacities(Base):
     nuts = Column(String(12))
     scenario_name = Column(String(50))
 
+
 class NEPConvPowerPlants(Base):
     __tablename__ = "egon_nep_conventional_powerplants"
     __table_args__ = {"schema": "supply"}
@@ -434,6 +435,7 @@ def insert_capacities_per_federal_state_nep():
     # Add district heating data according to energy and full load hours
     district_heating_input()
 
+
 def population_share():
     """Calulate share of population in testmode
 
@@ -514,20 +516,36 @@ def aggr_nep_capacities(carriers):
     capacities_list_reGon2045 = capacities_list_reGon["reGon2045"]
 
     # Neglect entries with carriers not in argument
-    capacities_list_eGon = capacities_list_eGon[capacities_list_eGon.carrier.isin(carriers)]
-    capacities_list_reGon2037 = capacities_list_reGon2037[capacities_list_reGon2037.carrier.isin(carriers)]
-     
+    capacities_list_eGon = capacities_list_eGon[
+        capacities_list_eGon.carrier.isin(carriers)
+    ]
+    capacities_list_reGon2037 = capacities_list_reGon2037[
+        capacities_list_reGon2037.carrier.isin(carriers)
+    ]
+    capacities_list_reGon2045 = capacities_list_reGon2045[
+        capacities_list_reGon2045.carrier.isin(carriers)
+    ]
+
     # Include NUTS code
-    capacities_list_eGon["nuts"] = capacities_list_eGon.federal_state.map(nuts_mapping())
-    capacities_list_reGon2037["nuts"] = capacities_list_reGon2037.federal_state.map(nuts_mapping())
-    
-    # works as capacities for 2037 and 2045 are the same
-    capacities_list_reGon2037["scenario"] = "reGon2037"
-    capacities_list_reGon2045 = capacities_list_reGon2037.copy()
-    capacities_list_reGon2045["scenario"] = "reGon2045"
-    
-    capacities_list = pd.concat([capacities_list_eGon, capacities_list_reGon2037, capacities_list_reGon2045], ignore_index=True)
-    
+    capacities_list_eGon["nuts"] = capacities_list_eGon.federal_state.map(
+        nuts_mapping()
+    )
+    capacities_list_reGon2037[
+        "nuts"
+    ] = capacities_list_reGon2037.federal_state.map(nuts_mapping())
+    capacities_list_reGon2045[
+        "nuts"
+    ] = capacities_list_reGon2045.federal_state.map(nuts_mapping())
+
+    capacities_list = pd.concat(
+        [
+            capacities_list_eGon,
+            capacities_list_reGon2037,
+            capacities_list_reGon2045,
+        ],
+        ignore_index=True,
+    )
+
     # Drop entries for foreign plants with nan values and federal_state column
     capacities_list = capacities_list.dropna(subset=["nuts"]).drop(
         columns=["federal_state"]
