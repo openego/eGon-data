@@ -85,17 +85,17 @@ the NEP 2037/2045 [NEP2025]_). The electricity side (scenario C) sets the
 electrolysers and the gas side follows it: scenario 2 of the NEP Gas und
 Wasserstoff 2025 [NEP_GasH2_2025]_ assumes 42 GW (2037) and 58 GW (2045), in
 line with scenario B of the NEP Strom, so reGon2045 has about 11 GW more
-domestic electrolysis than the gas NEP. Within a state it is distributed over 
-the links in proportion to their connection level (120 MW at HV/MV, 5000 MW 
-at EHV substations). If the substations of a state can not host its capacity, 
-this is reported and the state keeps less. The efficiency (LHV) comes from the 
-NEP (0.70 in 2037) and the literature, the costs from the technology data of 
+domestic electrolysis than the gas NEP. Within a state it is distributed over
+the links in proportion to their connection level (120 MW at HV/MV, 5000 MW
+at EHV substations). If the substations of a state can not host its capacity,
+this is reported and the state keeps less. The efficiency (LHV) comes from the
+NEP (0.70 in 2037) and the literature, the costs from the technology data of
 the Danish Energy Agency for renewable fuels [DEA_RF]_.
 
 H2 buses with industrial hydrogen demand that the core network does not reach
 (``H2`` buses at CH4 nodes, only in eGon2035, see the gas demand section) and
-that have no electrolyser candidate get an electrolyser at the nearest substation. 
-It counts towards the NEP capacity of the federal state; if the state capacity is 
+that have no electrolyser candidate get an electrolyser at the nearest substation.
+It counts towards the NEP capacity of the federal state; if the state capacity is
 too small, the demand at such a bus may not be met.
 
 **Fuel cells** (``H2_to_power``) are extendable links in the opposite
@@ -110,7 +110,7 @@ its operation is not coupled hour by hour to the operation of the
 electrolysers; this would need links with several outputs in eTraGo. The
 oxygen of the electrolysers is not modeled.
 
-The implementation is detailed in 
+The implementation is detailed in
 :py:mod:`power_to_h2 <egon.data.datasets.hydrogen_etrago.power_to_h2>`.
 
 Gas-fired and hydrogen power plants

@@ -57,7 +57,9 @@ class CH4Production(Dataset):
 
     """
 
+    #:
     name: str = "CH4Production"
+    #:
 
     version: str = "0.0.12"
 
