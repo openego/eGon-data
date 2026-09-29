@@ -36,7 +36,7 @@ scenario parameters (``industrial_gas_demand``):
      - 0
      - 202.3
      - Szenariorahmen Gas und Wasserstoff 2025, scenario 2 (no methane demand
-       in 2045, biomethane do not have a fixed demand)
+       in 2045, biomethane does not have a fixed demand)
 
 The target scenarios follow scenario 2 of the approved Szenariorahmen
 [SR_GasH2_2025]_ (based on the long-term scenario O45-Strom: hydrogen mainly in
