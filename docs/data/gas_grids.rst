@@ -8,9 +8,9 @@ core network (Wasserstoff-Kernnetz) of the FNB Gas [Kernnetz]_ is refined by it.
 Scenarios
 ~~~~~~~~~
 
-The gas sector is modeled for four scenarios: status2034, eGon2035, reGon2037 
-and reGon2045. The status quo scenario represents the actual system with a reduced 
-depth, the target scenarios follow the national planning documents with the same 
+The gas sector is modeled for four scenarios: status2024, eGon2035, reGon2037
+and reGon2045. The status quo scenario represents the actual system with a reduced
+depth, the target scenarios follow the national planning documents with the same
 methods:
 
 .. list-table:: Gas grids per scenario
@@ -62,15 +62,15 @@ the Kernnetz lists of the FNB Gas removes methane pipelines from the year it
 is commissioned (NEP Anlage 1b where given, otherwise the list): 133
 conversions (4807 km) by 2035 and 135 (4860 km) by 2037. The lists have no
 identifier of the SciGRID_gas pipelines. For every converted pipeline the CH4
-pipelines along the straight line between its end points are flagged 
-(corridor of 8 km, at least 30 % of the length of the CH4 pipeline inside, 
-same diameter class first), until the length of the converted pipeline is 
-reached (at most 1.3 times). The flagged pipelines are removed, longest first, 
-unless the removal would cut a German bus off from every border point or 
+pipelines along the straight line between its end points are flagged
+(corridor of 8 km, at least 30 % of the length of the CH4 pipeline inside,
+same diameter class first), until the length of the converted pipeline is
+reached (at most 1.3 times). The flagged pipelines are removed, longest first,
+unless the removal would cut a German bus off from every border point or
 remove its last pipeline; these pipelines are kept (about 1150 km in reGon2037).
-The pipelines of the methane network 2045 of the NEP (see below) are not 
-candidates: they remain methane pipelines, so they can not be the converted 
-ones, and the grid of the earlier scenarios stays consistent with the one of 
+The pipelines of the methane network 2045 of the NEP (see below) are not
+candidates: they remain methane pipelines, so they can not be the converted
+ones, and the grid of the earlier scenarios stays consistent with the one of
 2045. The CH4 buses are not changed.
 
 **Methane network 2045 (reGon2045).** The NEP lists the methane pipelines that
@@ -131,7 +131,7 @@ pipeline and the commissioning year of its first one (assumption). Parts
 connected to a neighbouring country (e.g. Freiburg via Fessenheim) keep that
 connection only. The same applies to measures of the NEP whose connection to
 the network the NEP does not name (e.g. Dernbach-Bendorf, Weißenhorn); in
-reGon2037 eleven (227 km) and in reGon2045 twelve (157 km) such connections of 
+reGon2037 eleven (227 km) and in reGon2045 twelve (157 km) such connections of
 5-44 km remain (accepted as assumptions).
 
 **Known limitation.** Pipelines whose start and end are the same named place
@@ -153,16 +153,16 @@ reGon2037 39 and reGon2045 40; the others end within one node. The NEP gives
 neither length nor DN/DP of these measures: the length is taken from
 Tabelle 29 of the NEP where given, for H2-233 (the former Kernnetz measure
 KLU121-01) from the FNB Gas application list of 22 July 2024, and otherwise
-estimated from the straight line (times 1.163, the median of the sections of 
-Anhang 6); DN/DP come from the SciGRID_gas pipelines along the route for 10 
-long measures, otherwise from the median of the conversions of Anhang 6 
-(DN 600 / 70 bar from 15 km, DN 400 / 70 bar below). Measures within one place 
+estimated from the straight line (times 1.163, the median of the sections of
+Anhang 6); DN/DP come from the SciGRID_gas pipelines along the route for 10
+long measures, otherwise from the median of the conversions of Anhang 6
+(DN 600 / 70 bar from 15 km, DN 400 / 70 bar below). Measures within one place
 and "Isarschiene Ost/West" (no end points published) are not placed.
 
 **Hydrogen network 2045 (reGon2045).** In addition, the sections of the NEP
 beyond the modeling result 2037 are inserted (Anhang 6: 193 sections,
 7912 km in all scenarios; the 191 sections / 7857 km of scenario 2 are used,
-``NEP_SCENARIO_2045`` in 
+``NEP_SCENARIO_2045`` in
 :py:mod:`nep2025 <egon.data.datasets.hydrogen_etrago.nep2025>`). End points
 more than 5 km from a node of the core network get their own ``H2_grid`` bus.
 Converted sections have the costs of a retrofitted pipeline. The Kernnetz
@@ -181,11 +181,11 @@ Grids abroad and cross-border capacities
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 Abroad, the target scenarios have one CH4 bus per neighbouring country (AT,
-BE, CH, CZ, DK, FR, GB, LU, NL, NO, PL, SE; RU is optional). The cross-border 
-capacities of the methane grid come from the TYNDP 2024 of ENTSOG, Annex C1 
-"Natural Gas Infrastructure Capacities" [TYNDP2024_gas]_ (cross-border points, 
-level "ADVANCED", interpolated between 2030, 2040 and 2050 to the year of the 
-scenario). The capacity of a border is distributed evenly over the pipelines 
+BE, CH, CZ, DK, FR, GB, LU, NL, NO, PL, SE; RU is optional). The cross-border
+capacities of the methane grid come from the TYNDP 2024 of ENTSOG, Annex C1
+"Natural Gas Infrastructure Capacities" [TYNDP2024_gas]_ (cross-border points,
+level "ADVANCED", interpolated between 2030, 2040 and 2050 to the year of the
+scenario). The capacity of a border is distributed evenly over the pipelines
 crossing it.
 
 The hydrogen grid is connected abroad at the cross-border points (GÜP) of the
@@ -197,7 +197,7 @@ exit 6.6 GWh/h (transit test, Tabelle 31); 2045 entry 138.5 GWh/h and exit
 30.3 GWh/h (Tabelle 36). The 2037 values are also used for eGon2035. All
 capacities of the NEP are Brennwert; they are divided by 1.18
 [SR_GasH2_2025]_ to the lower heating value of the model (2037 entry 52.9 GW
-and exit 5.6 GW, 2045 entry 117.4 GW and exit 25.7 GW). AquaDuctus ("Norway/UK" 
+and exit 5.6 GW, 2045 entry 117.4 GW and exit 25.7 GW). AquaDuctus ("Norway/UK"
 in the NEP) is split equally between NO and GB, Dornum/Emden is assigned to NO.
 
 The hydrogen buses abroad have no supply of their own, so the imports are
@@ -215,9 +215,9 @@ Stade, Brunsbüttel, Rostock and Lubmin), elsewhere the largest chemical site
 (Marl, Leuna, Schwedt, Böhlen, Burghausen; assumption). In total, the imports
 are 56.3 GW in 2037 (52.9 GW abroad, 3.4 GW other imports) and 151.9 GW in
 2045 (117.4 GW abroad, 16.7 GW LNG terminals, 17.8 GW other imports) on the
-lower heating value. The capacity is fixed to the entry capacity of the NEP; 
-the price is the hydrogen price of the NEP Strom, which is derived from the 
-natural gas price and the CO2 cost (47.6 EUR/MWh in 2037, 51.0 EUR/MWh in 2045, 
+lower heating value. The capacity is fixed to the entry capacity of the NEP;
+the price is the hydrogen price of the NEP Strom, which is derived from the
+natural gas price and the CO2 cost (47.6 EUR/MWh in 2037, 51.0 EUR/MWh in 2045,
 [NEP2025]_ Tabelle 9; same formula for eGon2035). There is no limit over the year.
 
 The implementation abroad is detailed in :py:mod:`gas_neighbours.gas_scenarios
