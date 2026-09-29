@@ -99,7 +99,78 @@ class CH4Production(Dataset):
             version=self.version,
             dependencies=dependencies,
             tasks=(download_biogas_data, import_gas_generators),
+            # Gas validation rules (#1526)
+            validation=self.validation_rules(),
+            proceed_on_validation_failure=True,
         )
+
+    @staticmethod
+    def validation_rules():
+        """
+        Return the validation rules of the dataset
+
+        Returns
+        -------
+        dict
+            Validation rules per validation task
+
+        """
+        from egon.data.validation.rules.custom.sanity.gas import (
+            GasBusReferences,
+            GasComponentTotal,
+            GasParameterMatch,
+            for_each_scenario,
+        )
+
+        return {
+            "sanity": [
+                # status2024: one slack generator at the single CH4 bus
+                *for_each_scenario(
+                    GasComponentTotal,
+                    "SANITY_GAS_CH4_GENERATORS_DE",
+                    table="grid.egon_etrago_generator",
+                    carriers=["CH4"],
+                    expected={
+                        "status2024": 1,
+                        "eGon2035": 5,
+                        "reGon2037": 5,
+                        "reGon2045": 4,
+                    },
+                ),
+                *for_each_scenario(
+                    GasComponentTotal,
+                    "SANITY_GAS_CH4_GENERATORS_DE_P_NOM",
+                    table="grid.egon_etrago_generator",
+                    carriers=["CH4"],
+                    measure=("sum", "p_nom"),
+                    expected={
+                        "status2024": STATUS_SLACK_P_NOM,
+                        "eGon2035": 11295.486,
+                        "reGon2037": 8795.486,
+                        "reGon2045": 45.486,
+                    },
+                ),
+                # Natural gas, biogas and LNG differ in the marginal cost only
+                *for_each_scenario(
+                    GasParameterMatch,
+                    "SANITY_GAS_CH4_GENERATORS_DE_MARGINAL_COST",
+                    table="grid.egon_etrago_generator",
+                    carriers=["CH4"],
+                    column="marginal_cost",
+                    parameter=[
+                        ("gas", "marginal_cost", "CH4"),
+                        ("gas", "marginal_cost", "biogas"),
+                        ("gas", "marginal_cost", "LNG"),
+                    ],
+                ),
+                *for_each_scenario(
+                    GasBusReferences,
+                    "SANITY_GAS_CH4_GENERATORS_BUSES",
+                    table="grid.egon_etrago_generator",
+                    carriers=["CH4"],
+                ),
+            ],
+        }
 
 
 def download_biogas_data():
