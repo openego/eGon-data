@@ -48,6 +48,8 @@ Added
   NEP-2025-aligned scenarios reGon2037 and reGon2045, as a sibling dataset to
   the hydrogen-based HeavyDutyTransport
   `#1436 <https://github.com/openego/eGon-data/issues/1436>`_
+* Add data center demand and waste heat for reGon2037 and reGon2045
+  `#1428 <https://github.com/openego/eGon-data/issues/1428>`_
 
 Changed
 -------
