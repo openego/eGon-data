@@ -18,6 +18,10 @@ from egon.data.datasets.scenario_parameters import (
     EgonScenario,
     get_sector_parameters,
 )
+from egon.data.validation import TableValidation, resolve_boundary_dependence
+from egon.data.validation.rules.custom.sanity import (
+    DemandRegioScenarioDemand,
+)
 import egon.data.config
 import egon.data.datasets.scenario_parameters.parameters as scenario_parameters
 
@@ -98,7 +102,7 @@ class DemandRegio(Dataset):
     #:
     name: str = "DemandRegio"
     #:
-    version: str = "0.0.21"
+    version: str = "0.0.22"
 
     def __init__(self, dependencies):
         super().__init__(
@@ -114,6 +118,188 @@ class DemandRegio(Dataset):
                     insert_cts_ind_demands,
                 },
             ),
+            validation={
+                "scenario_demand": [
+                    # egon_demandregio_hh
+                    DemandRegioScenarioDemand(
+                        table="demand.egon_demandregio_hh",
+                        rule_id=(
+                            "SANITY_DEMANDREGIO_HH_TOTAL"
+                            ".status2024"
+                        ),
+                        scenario="status2024",
+                        sectors=["households"],
+                        expected_total=resolve_boundary_dependence(
+                            {
+                                "Schleswig-Holstein": 3873162.389263028,
+                                # derived from the scenario parameters
+                                "Everything": None,
+                            }
+                        ),
+                        rtol=0.01,
+                    ),
+                    DemandRegioScenarioDemand(
+                        table="demand.egon_demandregio_hh",
+                        rule_id=(
+                            "SANITY_DEMANDREGIO_HH_TOTAL"
+                            ".reGon2037"
+                        ),
+                        scenario="reGon2037",
+                        sectors=["households"],
+                        expected_total=resolve_boundary_dependence(
+                            {
+                                "Schleswig-Holstein": 2909253.19736499,
+                                # derived from the scenario parameters
+                                "Everything": None,
+                            }
+                        ),
+                        rtol=0.01,
+                    ),
+                    DemandRegioScenarioDemand(
+                        table="demand.egon_demandregio_hh",
+                        rule_id=(
+                            "SANITY_DEMANDREGIO_HH_TOTAL"
+                            ".reGon2045"
+                        ),
+                        scenario="reGon2045",
+                        sectors=["households"],
+                        expected_total=resolve_boundary_dependence(
+                            {
+                                "Schleswig-Holstein": 2665510.9863588307,
+                                # derived from the scenario parameters
+                                "Everything": None,
+                            }
+                        ),
+                        rtol=0.01,
+                    ),
+                    DemandRegioScenarioDemand(
+                        table="demand.egon_demandregio_hh",
+                        rule_id=(
+                            "SANITY_DEMANDREGIO_HH_TOTAL"
+                            ".eGon2035"
+                        ),
+                        scenario="eGon2035",
+                        sectors=["households"],
+                        expected_total=resolve_boundary_dependence(
+                            {
+                                "Schleswig-Holstein": 4171097.9576678765,
+                                # derived from the scenario parameters
+                                "Everything": None,
+                            }
+                        ),
+                        rtol=0.01,
+                    ),
+                    # egon_demandregio_cts_ind
+                    DemandRegioScenarioDemand(
+                        table="demand.egon_demandregio_cts_ind",
+                        rule_id=(
+                            "SANITY_DEMANDREGIO_CTS_IND_TOTAL"
+                            ".status2024"
+                        ),
+                        scenario="status2024",
+                        sectors=["CTS", "industry"],
+                        expected_total=resolve_boundary_dependence(
+                            {
+                                "Schleswig-Holstein": 6732645.137785152,
+                                # derived from the scenario parameters
+                                "Everything": None,
+                            }
+                        ),
+                        rtol=0.01,
+                    ),
+                    DemandRegioScenarioDemand(
+                        table="demand.egon_demandregio_cts_ind",
+                        rule_id=(
+                            "SANITY_DEMANDREGIO_CTS_IND_TOTAL"
+                            ".reGon2037"
+                        ),
+                        scenario="reGon2037",
+                        sectors=["CTS", "industry"],
+                        expected_total=resolve_boundary_dependence(
+                            {
+                                "Schleswig-Holstein": 8298335.424069942,
+                                # derived from the scenario parameters
+                                "Everything": None,
+                            }
+                        ),
+                        rtol=0.01,
+                    ),
+                    DemandRegioScenarioDemand(
+                        table="demand.egon_demandregio_cts_ind",
+                        rule_id=(
+                            "SANITY_DEMANDREGIO_CTS_IND_TOTAL"
+                            ".reGon2045"
+                        ),
+                        scenario="reGon2045",
+                        sectors=["CTS", "industry"],
+                        expected_total=resolve_boundary_dependence(
+                            {
+                                "Schleswig-Holstein": 8987343.08991006,
+                                # derived from the scenario parameters
+                                "Everything": None,
+                            }
+                        ),
+                        rtol=0.01,
+                    ),
+                    DemandRegioScenarioDemand(
+                        table="demand.egon_demandregio_cts_ind",
+                        rule_id=(
+                            "SANITY_DEMANDREGIO_CTS_IND_TOTAL"
+                            ".eGon2035"
+                        ),
+                        scenario="eGon2035",
+                        sectors=["CTS", "industry"],
+                        expected_total=resolve_boundary_dependence(
+                            {
+                                "Schleswig-Holstein": 8632346.141677318,
+                                # derived from the scenario parameters
+                                "Everything": None,
+                            }
+                        ),
+                        rtol=0.01,
+                    ),
+                ],
+                "data_quality": [
+                    TableValidation(
+                        table_name="demand.egon_demandregio_hh",
+                        row_count=resolve_boundary_dependence(
+                            {"Schleswig-Holstein": 450, "Everything": 7218}
+                        ),
+                        data_type_columns={
+                            "nuts3": "character varying",
+                            "hh_size": "integer",
+                            "scenario": "character varying",
+                            "year": "integer",
+                            "demand": "double precision",
+                        },
+                        # `scenario` has a foreign key onto
+                        # scenario.egon_scenario_parameters.name, so these are
+                        # the only values the column can hold. eGon2021 is
+                        # always written (insert_household_demand appends it to
+                        # the configured scenarios), so it must be listed.
+                        value_set_columns={
+                            "scenario": [
+                                "eGon2021",
+                                "eGon2035",
+                                "reGon2037",
+                                "reGon2045",
+                                "status2024",
+                            ]
+                        },
+                    ),
+                    TableValidation(
+                        table_name="demand.egon_demandregio_wz",
+                        row_count=87,
+                        data_type_columns={
+                            "wz": "integer",
+                            "sector": "character varying",
+                            "definition": "character varying",
+                        },
+                        value_set_columns={"sector": ["industry", "CTS"]},
+                    ),
+                ]
+            },
+            proceed_on_validation_failure=True,
         )
 
 
