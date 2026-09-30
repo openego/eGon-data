@@ -89,6 +89,13 @@ CONNECTION_VOLTAGES = (HV_VOLTAGE,) + EHV_VOLTAGES
 # the share to keep planning headroom on the connection line.
 MAX_CONNECTION_LOADING = 1.0
 
+# A data center sits at the centroid of its commercial area, which can lie
+# right next to the grid bus it connects to. The length used for the line's
+# impedance is floored, because a line of almost no length has almost no
+# reactance, which makes the power flow ill-conditioned. The floor is in the
+# order of the shortest lines of the existing grid.
+MIN_CONNECTION_LENGTH_KM = 0.01
+
 # Data center waste heat
 # Assume 20% reusable waste heat based on EnEfG § 11(2):
 # data centers operating from 1 July 2028 must provide at least 20%
@@ -185,11 +192,17 @@ def generate_data_center_sizes(target_capacity_mw):
 def load_commercial_areas():
     sources = DataCenters.sources
 
+    # OSM also maps substations, power plants and generators as industrial
+    # land use. Such a site is not available for a data center, and the grid
+    # bus of a substation sits at the centroid of the substation's polygon, so
+    # a data center allocated there would sit on top of the bus it connects
+    # to. Areas carrying a power tag are therefore left out.
     gdf = db.select_geodataframe(
         f"""
         SELECT geom
         FROM {sources.tables["commercial_areas"]}
         WHERE sector_name IN ('industrial', 'retail')
+        AND (tags -> 'power') IS NULL
         """,
         geom_col="geom",
         epsg=3035,
@@ -750,7 +763,9 @@ def create_data_center_lines(data_centers, scenario, line_parameters):
         data_centers_projected.iterrows(), nearest_bus_geom
     ):
         topo = LineString([row.geometry, bus_geom])
-        length_km = topo.length / 1000
+        # topo keeps the real course of the line, only the length the
+        # impedance is calculated from is floored.
+        length_km = max(topo.length / 1000, MIN_CONNECTION_LENGTH_KM)
         parameters = line_parameters[int(row.v_nom)]
 
         lines.append(
@@ -1250,7 +1265,7 @@ class DataCenters(Dataset):
     """Integrate future data center demand"""
 
     name: str = "DataCenters"
-    version: str = "0.0.6"
+    version: str = "0.0.7"
 
     sources = DatasetSources(
         tables={
