@@ -36,7 +36,7 @@ class ZensusPopulation(Dataset):
     def __init__(self, dependencies):
         super().__init__(
             name="ZensusPopulation",
-            version="0.0.5",
+            version="0.0.7",
             dependencies=dependencies,
             tasks=(
                 create_zensus_pop_table,
@@ -73,7 +73,7 @@ class ZensusMiscellaneous(Dataset):
     def __init__(self, dependencies):
         super().__init__(
             name="ZensusMiscellaneous",
-            version="0.0.5",
+            version="0.0.8",
             dependencies=dependencies,
             tasks=(
                 create_zensus_misc_tables,
@@ -552,12 +552,12 @@ def adjust_zensus_misc():
                      ZensusPopulation.targets.tables["zensus_population"]}
                  WHERE population < 0);""")
 
-        # Zensus 2022 marks unpopulated cells by omitting them from the
-        # population table, where Zensus 2011 listed them with
-        # population = -1. The DELETE above therefore no longer catches
-        # them and they would remain as rows with a NULL
-        # zensus_population_id. Remove them here so both releases end up
-        # with the same content: only cells that carry population.
+        # Safety net for rows whose cell is missing from the population
+        # table: they keep a NULL zensus_population_id. The official Zensus
+        # 2022 grid omits unpopulated cells; the data bundle restores them
+        # with population = -1 (like Zensus 2011), so the DELETE above
+        # catches them. This one only matters for a population file without
+        # the full grid.
         db.execute_sql(f"""
              DELETE FROM {ZensusMiscellaneous.targets.tables[table]} as b
              WHERE b.zensus_population_id IS NULL;""")
