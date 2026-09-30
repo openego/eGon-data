@@ -83,14 +83,12 @@ class ZensusMiscellaneous(Dataset):
                 "data-quality": [
                     TableValidation(
                         table_name="society.egon_destatis_zensus_apartment_per_ha",
-                        # TODO(#1240): Zensus 2011 values. Measured for 2022:
-                        # Schleswig-Holstein 1046577; Everything expected
-                        # 27431017 (27636192 CSV rows less 205175 cells with
-                        # no population row). Confirm against the DE run.
+                        # Zensus 2022, measured on the SH and full-DE runs
+                        # (2026-09): CSV rows less rows in unpopulated cells.
                         row_count=resolve_boundary_dependence(
                             {
-                                "Schleswig-Holstein": 1946300,
-                                "Everything": 51095280,
+                                "Schleswig-Holstein": 1046577,
+                                "Everything": 27431017,
                             }
                         ),
                         data_type_columns={
@@ -118,13 +116,11 @@ class ZensusMiscellaneous(Dataset):
                     ),
                     TableValidation(
                         table_name="society.egon_destatis_zensus_building_per_ha",
-                        # TODO(#1240): Zensus 2011 values. Measured for 2022:
-                        # Schleswig-Holstein 1155929; Everything expected
-                        # 27598064 (27843260 CSV rows less 245196).
+                        # Zensus 2022, measured on the SH and full-DE runs.
                         row_count=resolve_boundary_dependence(
                             {
-                                "Schleswig-Holstein": 978493,
-                                "Everything": 24297136,
+                                "Schleswig-Holstein": 1155929,
+                                "Everything": 27598064,
                             }
                         ),
                         data_type_columns={
@@ -152,13 +148,11 @@ class ZensusMiscellaneous(Dataset):
                     ),
                     TableValidation(
                         table_name="society.egon_destatis_zensus_household_per_ha",
-                        # TODO(#1240): Zensus 2011 values. Measured for 2022:
-                        # Schleswig-Holstein 741638; Everything expected
-                        # 18752009 (18817992 CSV rows less 65983).
+                        # Zensus 2022, measured on the SH and full-DE runs.
                         row_count=resolve_boundary_dependence(
                             {
-                                "Schleswig-Holstein": 724970,
-                                "Everything": 18788917,
+                                "Schleswig-Holstein": 741638,
+                                "Everything": 18752009,
                             }
                         ),
                         data_type_columns={
