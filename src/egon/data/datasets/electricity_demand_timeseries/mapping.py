@@ -40,6 +40,10 @@ def map_all_used_buildings():
     )
     EgonMapZensusMvgdBuildings.__table__.create(bind=db.engine())
 
+    # Residential buildings are not a subset of osm_buildings_filtered
+    # since #1310: the ETHOS.BUILDA intersection matches buildings whose
+    # OSM tag is missing from the filter list, plus ancillary buildings
+    # that are kept on purpose. UNION deduplicates the overlap.
     db.execute_sql(sql_string=f"""
         INSERT INTO {EgonMapZensusMvgdBuildings.__table_args__["schema"]}.
         {EgonMapZensusMvgdBuildings.__tablename__}
@@ -54,6 +58,9 @@ def map_all_used_buildings():
                 UNION
                 SELECT "id"::integer, geom_point
                 FROM {cts_s.tables["osm_buildings_filtered"]}
+                UNION
+                SELECT "id"::integer, geom_point
+                FROM {cts_s.tables["osm_buildings_residential"]}
             ) AS bld,
                 {cts_t.tables["building_electricity_peak_loads"]} AS peak,
                 {hh_s.tables["destatis_zensus_population_per_ha"]} AS zensus,
