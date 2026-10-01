@@ -1114,6 +1114,42 @@ class ScenarioCapacities(Dataset):
                             ],
                         },
                     ),
+                    # Only columns shared by the NEP2021 (eGon2035) and
+                    # NEP2025 (reGon) power plant lists are checked, since
+                    # the list-specific columns only exist if the
+                    # corresponding scenario is part of the run. The
+                    # automatically added TABLE_NOT_NAN check is expected to
+                    # fail whenever eGon2035 is part of the run, as the
+                    # NEP2021 list contains NULLs and both lists leave the
+                    # other one's columns empty.
+                    TableValidation(
+                        table_name="supply.egon_nep_conventional_powerplants",
+                        data_type_columns={
+                            "index": "bigint",
+                            "name": "text",
+                            "name_unit": "text",
+                            "carrier_nep": "text",
+                            "chp": "text",
+                            "postcode": "text",
+                            "city": "text",
+                            "federal_state": "text",
+                            "status": "text",
+                            "capacity": "double precision",
+                            "scenario": "text",
+                            "carrier": "text",
+                        },
+                        not_null_columns=[
+                            "index",
+                            "carrier_nep",
+                            "status",
+                            "capacity",
+                            "scenario",
+                            "carrier",
+                        ],
+                        value_set_columns={
+                            "carrier": sorted(map_carrier().unique()),
+                        },
+                    ),
                 ]
             },
             proceed_on_validation_failure=True,
