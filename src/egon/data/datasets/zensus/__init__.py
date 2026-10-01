@@ -36,7 +36,7 @@ class ZensusPopulation(Dataset):
     def __init__(self, dependencies):
         super().__init__(
             name="ZensusPopulation",
-            version="0.0.4",
+            version="0.0.7",
             dependencies=dependencies,
             tasks=(
                 create_zensus_pop_table,
@@ -46,23 +46,15 @@ class ZensusPopulation(Dataset):
 
 
 class ZensusMiscellaneous(Dataset):
+    # The census grid files are not downloaded; they come from the data
+    # bundle, like the population file in ZensusPopulation above. The
+    # zensus2011.de download URLs that used to stand here were never read
+    # and no longer describe where the data comes from (see #1318).
     sources = DatasetSources(
-        urls={
-            "zensus_households": (
-                "https://www.zensus2011.de/SharedDocs/Downloads/DE/"
-                "Pressemitteilung/DemografischeGrunddaten/"
-                "csv_Haushalte_100m_Gitter.zip?__blob=publicationFile&v=2"
-            ),
-            "zensus_buildings": (
-                "https://www.zensus2011.de/SharedDocs/Downloads/DE/"
-                "Pressemitteilung/DemografischeGrunddaten/"
-                "csv_Gebaeude_100m_Gitter.zip?__blob=publicationFile&v=2"
-            ),
-            "zensus_apartments": (
-                "https://www.zensus2011.de/SharedDocs/Downloads/DE/"
-                "Pressemitteilung/DemografischeGrunddaten/"
-                "csv_Wohnungen_100m_Gitter.zip?__blob=publicationFile&v=5"
-            ),
+        files={
+            "zensus_households": "data_bundle_egon_data/zensus_population/csv_Haushalte_100m_Gitter.zip",
+            "zensus_buildings": "data_bundle_egon_data/zensus_population/csv_Gebaeude_100m_Gitter.zip",
+            "zensus_apartments": "data_bundle_egon_data/zensus_population/csv_Wohnungen_100m_Gitter.zip",
         }
     )
     targets = DatasetTargets(
@@ -81,7 +73,7 @@ class ZensusMiscellaneous(Dataset):
     def __init__(self, dependencies):
         super().__init__(
             name="ZensusMiscellaneous",
-            version="0.0.3",
+            version="0.0.8",
             dependencies=dependencies,
             tasks=(
                 create_zensus_misc_tables,
@@ -91,10 +83,12 @@ class ZensusMiscellaneous(Dataset):
                 "data-quality": [
                     TableValidation(
                         table_name="society.egon_destatis_zensus_apartment_per_ha",
+                        # Zensus 2022, measured on the SH and full-DE runs
+                        # (2026-09): CSV rows less rows in unpopulated cells.
                         row_count=resolve_boundary_dependence(
                             {
-                                "Schleswig-Holstein": 1946300,
-                                "Everything": 51095280,
+                                "Schleswig-Holstein": 1046577,
+                                "Everything": 27431017,
                             }
                         ),
                         data_type_columns={
@@ -122,10 +116,11 @@ class ZensusMiscellaneous(Dataset):
                     ),
                     TableValidation(
                         table_name="society.egon_destatis_zensus_building_per_ha",
+                        # Zensus 2022, measured on the SH and full-DE runs.
                         row_count=resolve_boundary_dependence(
                             {
-                                "Schleswig-Holstein": 978493,
-                                "Everything": 24297136,
+                                "Schleswig-Holstein": 1155929,
+                                "Everything": 27598064,
                             }
                         ),
                         data_type_columns={
@@ -153,10 +148,11 @@ class ZensusMiscellaneous(Dataset):
                     ),
                     TableValidation(
                         table_name="society.egon_destatis_zensus_household_per_ha",
+                        # Zensus 2022, measured on the SH and full-DE runs.
                         row_count=resolve_boundary_dependence(
                             {
-                                "Schleswig-Holstein": 724970,
-                                "Everything": 18788917,
+                                "Schleswig-Holstein": 741638,
+                                "Everything": 18752009,
                             }
                         ),
                         data_type_columns={
@@ -523,7 +519,8 @@ def create_combined_zensus_table():
 
 
 def adjust_zensus_misc():
-    """Delete unpopulated cells in zensus-households, -buildings and -apartments
+    """Delete unpopulated cells in zensus-households, -buildings and
+    -apartments
 
     Some unpopulated zensus cells are listed in:
     - egon_destatis_zensus_household_per_ha
@@ -548,3 +545,13 @@ def adjust_zensus_misc():
                  SELECT id FROM {
                      ZensusPopulation.targets.tables["zensus_population"]}
                  WHERE population < 0);""")
+
+        # Safety net for rows whose cell is missing from the population
+        # table: they keep a NULL zensus_population_id. The official Zensus
+        # 2022 grid omits unpopulated cells; the data bundle restores them
+        # with population = -1 (like Zensus 2011), so the DELETE above
+        # catches them. This one only matters for a population file without
+        # the full grid.
+        db.execute_sql(f"""
+             DELETE FROM {ZensusMiscellaneous.targets.tables[table]} as b
+             WHERE b.zensus_population_id IS NULL;""")

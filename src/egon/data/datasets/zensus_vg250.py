@@ -3,16 +3,7 @@ import json
 import time
 
 from geoalchemy2 import Geometry
-from sqlalchemy import (
-    BigInteger,
-    Column,
-    Float,
-    Integer,
-    SmallInteger,
-    String,
-    func,
-    select,
-)
+from sqlalchemy import BigInteger, Column, Float, Integer, SmallInteger, String
 from sqlalchemy.ext.declarative import declarative_base
 import geopandas as gpd
 import pandas as pd
@@ -20,9 +11,10 @@ import pandas as pd
 from egon.data import db
 from egon.data.datasets import Dataset, DatasetSources, DatasetTargets
 from egon.data.datasets.vg250 import vg250_metadata_resources_fields
+
+# TODO: keep for later generate_resource_fields_from_sqla_model
 from egon.data.metadata import (
     context,
-    generate_resource_fields_from_sqla_model,
     license_ccby,
     licenses_datenlizenz_deutschland,
     meta_metadata,
@@ -58,7 +50,7 @@ class ZensusVg250(Dataset):
     def __init__(self, dependencies):
         super().__init__(
             name="ZensusVg250",
-            version="0.0.4",
+            version="0.0.5",
             dependencies=dependencies,
             tasks=(
                 map_zensus_vg250,
@@ -305,17 +297,17 @@ def inside_germany():
             .filter(DestatisZensusPopulationPerHa.id.in_(cells_in_germany))
         )
 
-        # Insert above queried data into new table
-        insert = DestatisZensusPopulationPerHaInsideGermany.__table__.insert().from_select(
-            (
-                DestatisZensusPopulationPerHaInsideGermany.id,
-                DestatisZensusPopulationPerHaInsideGermany.grid_id,
-                DestatisZensusPopulationPerHaInsideGermany.population,
-                DestatisZensusPopulationPerHaInsideGermany.geom_point,
-                DestatisZensusPopulationPerHaInsideGermany.geom,
-            ),
-            q,
+        table = DestatisZensusPopulationPerHaInsideGermany.__table__
+
+        columns = (
+            table.c.id,
+            table.c.grid_id,
+            table.c.population,
+            table.c.geom_point,
+            table.c.geom,
         )
+
+        insert = table.insert().from_select(columns, q)
 
         # Execute and commit (trigger transactions in database)
         s.execute(insert)
@@ -388,10 +380,10 @@ def add_metadata_zensus_inside_ger():
 
     metadata = {
         "name": schema_table,
-        "title": "DESTATIS - Zensus 2011 - Population per hectar",
+        "title": "DESTATIS - Zensus 2022 - Population per hectar",
         "id": "WILL_BE_SET_AT_PUBLICATION",
         "description": (
-            "National census in Germany in 2011 with the bounds on Germanys "
+            "National census in Germany in 2022 with the bounds on Germanys "
             "borders."
         ),
         "language": ["en-EN", "de-DE"],
@@ -415,7 +407,7 @@ def add_metadata_zensus_inside_ger():
         "sources": [
             {
                 "title": "Statistisches Bundesamt (Destatis) - Ergebnisse des "
-                "Zensus 2011 zum Download",
+                "Zensus 2022 zum Download",
                 "description": (
                     "Als Download bieten wir Ihnen auf dieser Seite "
                     "zusätzlich zur Zensusdatenbank CSV- und "
@@ -436,18 +428,19 @@ def add_metadata_zensus_inside_ger():
                 ],
             },
             {
-                "title": "Dokumentation - Zensus 2011 - Methoden und Verfahren",
+                "title": "Dokumentation "
+                "- Zensus 2022 - Methoden und Verfahren",
                 "description": (
                     "Diese Publikation beschreibt ausführlich die "
                     "Methoden und Verfahren des registergestützten "
-                    "Zensus 2011; von der Datengewinnung und "
+                    "Zensus 2022; von der Datengewinnung und "
                     "-aufbereitung bis hin zur Ergebniserstellung"
                     " und Geheimhaltung. Der vorliegende Band wurde "
                     "von den Statistischen Ämtern des Bundes und "
                     "der Länder im Juni 2015 veröffentlicht."
                 ),
-                "path": "https://www.destatis.de/DE/Publikationen/Thematisch/Be"
-                "voelkerung/Zensus/ZensusBuLaMethodenVerfahren51211051"
+                "path": "https://www.destatis.de/DE/Publikationen/Thematisch"
+                "/Bevoelkerung/Zensus/ZensusBuLaMethodenVerfahren51211051"
                 "19004.pdf?__blob=publicationFile",
                 "licenses": [
                     licenses_datenlizenz_deutschland(
@@ -562,7 +555,8 @@ def add_metadata_vg250_gem_pop():
 
     vg250_source = {
         "title": "Verwaltungsgebiete 1:250 000 (Ebenen)",
-        "description": "Der Datenbestand umfasst sämtliche Verwaltungseinheiten der "
+        "description": "Der Datenbestand umfasst "
+        "sämtliche Verwaltungseinheiten der"
         "hierarchischen Verwaltungsebenen vom Staat bis zu den Gemeinden "
         "mit ihren Grenzen, statistischen Schlüsselzahlen, Namen der "
         "Verwaltungseinheit sowie die spezifische Bezeichnung der "
@@ -727,9 +721,12 @@ def add_metadata_vg250_zensus():
         ],
         "licenses": [
             license_ccby(
-                "© Bundesamt für Kartographie und Geodäsie 2020 (Daten verändert); "
+                "© Bundesamt für Kartographie und Geodäsie 2020"
+                " (Daten verändert); "
                 "© Statistische Ämter des Bundes und der Länder 2014 "
-                "© Jonathan Amme, Clara Büttner, Ilka Cußmann, Julian Endres, Carlos Epia, Stephan Günther, Ulf Müller, Amélia Nadal, Guido Pleßmann, Francesco Witte",
+                "© Jonathan Amme, Clara Büttner, Ilka Cußmann, Julian Endres, "
+                "Carlos Epia, Stephan Günther, Ulf Müller, Amélia Nadal, "
+                "Guido Pleßmann, Francesco Witte",
             )
         ],
         "contributors": [

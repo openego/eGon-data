@@ -5,9 +5,9 @@ reGon2045 and status2024 at census cell level are set up.
 Electricity demand data for households in Germany in 1-hourly resolution for
 an entire year. Spatially, the data is resolved to 100 x 100 m cells and
 provides individual and distinct time series for each household in a cell.
-The cells are defined by the dataset Zensus 2011.
+The cells are defined by the dataset Zensus 2022.
 
-"""
+"""  # noqa: E501
 
 from itertools import cycle, product
 from pathlib import Path
@@ -57,7 +57,7 @@ class HouseholdElectricityProfilesInCensusCells(Base):
     subsequent data like demand profiles on MV grid level or for determining
     the peak load at load area level.
 
-    """
+    """  # noqa: E501
 
     __tablename__ = "egon_household_electricity_profile_in_census_cell"
     __table_args__ = {"schema": "demand"}
@@ -76,7 +76,7 @@ class HouseholdElectricityProfilesInCensusCells(Base):
 class EgonDestatisZensusHouseholdPerHaRefined(Base):
     """
     Class definition of table society.egon_destatis_zensus_household_per_ha_refined.
-    """
+    """  # noqa: E501
 
     __tablename__ = "egon_destatis_zensus_household_per_ha_refined"
     __table_args__ = {"schema": "society"}
@@ -96,8 +96,8 @@ class EgonEtragoElectricityHouseholds(Base):
     """
     Class definition of table demand.egon_etrago_electricity_households.
 
-    The table contains household electricity demand profiles aggregated at MV grid
-    district level in MWh.
+    The table contains household electricity demand profiles aggregated
+    at MV grid district level in MWh.
     """
 
     __tablename__ = "egon_etrago_electricity_households"
@@ -117,7 +117,7 @@ class HouseholdDemands(Dataset):
     Electricity demand data for households in Germany in 1-hourly resolution for
     an entire year. Spatially, the data is resolved to 100 x 100 m cells and
     provides individual and distinct time series for each household in a cell.
-    The cells are defined by the dataset Zensus 2011.
+    The cells are defined by the dataset Zensus 2022.
 
     *Dependencies*
       * :py:class:`DemandRegio <egon.data.datasets.demandregio.DemandRegio>`
@@ -143,14 +143,14 @@ class HouseholdDemands(Dataset):
     * Electricity demand time series for household categories
       produced by demand profile generator (DPG) from Fraunhofer IEE
       (see :func:`get_iee_hh_demand_profiles_raw`)
-    * Spatial information about people living in households by Zensus 2011 at
+    * Spatial information about people living in households by Zensus 2022 at
       federal state level
 
         * Type of household (family status)
         * Age
         * Number of people
     * Spatial information about number of households per ha, categorized by type
-      of household (family status) with 5 categories (also from Zensus 2011)
+      of household (family status) with 5 categories (also from Zensus 2022)
     * Demand-Regio annual household demand at NUTS3 level
 
     *What is the goal?*
@@ -234,12 +234,12 @@ class HouseholdDemands(Dataset):
       and scale profiles use :py:func:`get_scaled_profiles_from_db`
 
 
-    """
+    """  # noqa: E501
 
     #:
     name: str = "Household Demands"
     #:
-    version: str = "0.0.17"
+    version: str = "0.0.18"
     sources = DatasetSources(
         tables={
             "demandregio_hh": "demand.egon_demandregio_hh",
@@ -255,7 +255,7 @@ class HouseholdDemands(Dataset):
                 "path_testmode": "hh_el_load_profiles_2511.hdf",
                 "path": "hh_el_load_profiles_100k.hdf",
             },
-            "zensus_household_types": {"path": "Zensus2011_Personen.csv"},
+            "zensus_household_types": {"path": "Zensus2022_Personen.csv"},
         },
     )
 
@@ -496,37 +496,95 @@ def set_multiindex_to_profiles(hh_profiles):
 
 
 def get_census_households_nuts1_raw():
-    """Get zensus age x household type data from egon-data-bundle
+    """
+    Load Zensus 2022 household data (table 1000A-3098_de.csv) and reshape it
+    to exactly match the layout of the 2011 census file
+    ``Zensus2011_Personen.csv``.
 
-    Dataset about household size with information about the categories:
-
-    * family type
-    * age class
-    * household size
-
-    for Germany in spatial resolution of federal states NUTS-1.
-
-    Data manually selected and retrieved from:
-    https://ergebnisse2011.zensus2022.de/datenbank/online
+    Data manually selected and retrieved from the Zensus 2022 database:
+    https://ergebnisse.zensus2022.de/datenbank/online
     For reproducing data selection, please do:
 
-    * Search for: "1000A-3016"
-    * or choose topic: "Bevölkerung kompakt"
-    * Choose table code: "1000A-3016" with title "Personen: Alter
+    * Search for: "1000A-3098"
+    * You should find the dataset with title "Personen: Alter
       (11 Altersklassen) - Größe des privaten Haushalts - Typ des privaten
-      Haushalts (nach Familien/Lebensform)"
-    * Change setting "GEOLK1" to "Bundesländer (16)"
+      Haushalts (nach Familien)"
+    * Change filter settings from "Deutschland" to "Bundesländer"
+    * Change filter settings for age groups to "11 Altersklassen"
+    * Download the CSV file
 
     Data would be available in higher resolution
-    ("Landkreise und kreisfreie Städte (412)"), but only after registration.
+    ("Landkreise und kreisfreie Städte (412)").
 
-    The downloaded file is called 'Zensus2011_Personen.csv'.
+    The downloaded file is called '1000A-3098_de.csv'. It was then renamed to
+    "Zensus2022_Personen.csv" and added to the egon-data data bundle.
 
+    There is also a short link that jumps straight to the configured table,
+    https://ergebnisse.zensus2022.de/datenbank/online/url/eb8f6060, but these
+    short links are generated per session and may expire. The table code and
+    the filter settings above are the reliable way to reproduce the download.
 
-    Returns
-    -------
-    pd.DataFrame
-        Pre-processed zensus household data
+    The returned DataFrame is intended to be a drop-in replacement for the
+    original 2011 input of ``process_nuts1_census_data()`` and the subsequent
+    functions in the egon-data household demand pipeline.
+
+    Returned structure
+    ------------------
+    * Index: pandas.MultiIndex with two levels:
+        - level 0: state label including code and suffix,
+          e.g. ``"01 Schleswig-Holstein (Bundesland)"``
+        - level 1: household type, one of
+          ``"Insgesamt"``,
+          ``"Einpersonenhaushalte (Singlehaushalte)"``,
+          ``"Paare ohne Kind(er)"``,
+          ``"Paare mit Kind(ern)"``,
+          ``"Alleinerziehende Elternteile"``,
+          ``"Mehrpersonenhaushalte ohne Kernfamilie"``
+
+    * Columns: pandas.MultiIndex with two levels:
+        - level 0: household size (hh_size),
+          exactly these labels and this order:
+              "Insgesamt",
+              "1 Person",
+              "2 Personen",
+              "3 Personen",
+              "4 Personen",
+              "5 Personen",
+              "6 und mehr Personen"
+        - level 1: age class (age),
+          exactly these labels and this order:
+              "Insgesamt",
+              "Unter 3",
+              "3 - 5",
+              "6 - 14",
+              "15 - 17",
+              "18 - 24",
+              "25 - 29",
+              "30 - 39",
+              "40 - 49",
+              "50 - 64",
+              "65 - 74",
+              "75 und älter"
+
+    Each cell contains an integer with the number of persons.
+
+    Parsing rules for Zensus value symbols
+    --------------------------------------
+    The source table uses special symbols in the numeric columns:
+
+    * ``"-"``  → exactly zero (or changed to zero)
+    * ``"."``  → unknown or confidential value (treated as 0 here)
+    * ``"(1234)"`` → numeric value 1234 with restricted information
+      (parentheses are stripped, numeric value is kept)
+    * The additional quality column marked with ``"e"`` is ignored.
+
+    This function:
+      * picks only the "Anzahl"-columns (values) for each state
+      * drops the quality (``"e"``) for "Endgültiger Wert" columns
+      * normalizes the symbols as described above and converts to integers
+      * aggregates the data into the same MultiIndex layout as the 2011 file
+        so that ``process_nuts1_census_data()`` can be used unchanged.
+
     """
 
     file_path = HouseholdDemands.sources.files["zensus_household_types"][
@@ -539,17 +597,188 @@ def get_census_households_nuts1_raw():
 
     households_file = Path(".") / Path(download_directory) / Path(file_path)
 
-    households_raw = pd.read_csv(
-        households_file,
-        sep=";",
-        decimal=".",
-        skiprows=5,
-        skipfooter=7,
-        index_col=[0, 1],
-        header=[0, 1],
-        encoding="latin1",
-        engine="python",
+    # ------------------------------------------------------------------
+    # 1. Read raw CSV (Zensus 2022 layout)
+    # ------------------------------------------------------------------
+    # Row 0: state codes/names (per state: 2 columns = value + quality "e")
+    # Row 1: "Personen"
+    # Row 2: "Anzahl"
+    # Row 3: reference date (e.g. "15.05.2022")
+    # Row 4+: data blocks (age class x household size x household type)
+    raw = pd.read_csv(households_file, sep=";", encoding="utf-8", header=None)
+
+    # ------------------------------------------------------------------
+    # 2. Detect the value columns for each state
+    # ------------------------------------------------------------------
+    # We only want the numeric "Anzahl" columns, not the quality ("e") columns.
+    # In row 0, only the first column of each pair has a state name.
+    header_states = raw.iloc[0]
+    value_cols: dict[int, str] = {}
+
+    for col_idx in range(3, raw.shape[1]):
+        val = header_states[col_idx]
+        if isinstance(val, str) and val.strip():
+            # This is the value column for a federal state
+            value_cols[col_idx] = val.strip()
+
+    # ------------------------------------------------------------------
+    # 3. Select the data part and normalize the "descriptor" columns
+    # ------------------------------------------------------------------
+    # Columns 0..2 describe the row:
+    #   0: age class (e.g. "Insgesamt", "Unter 3 Jahre", ...)
+    #   1: household size (e.g. "Insgesamt", "1 Person", "2 Personen", ...)
+    #   2: household type (e.g. "Einpersonenhaushalte (Singlehaushalte)", ...)
+    data = raw.iloc[4:].copy()
+    data.rename(
+        columns={0: "age_raw", 1: "hh_size", 2: "hh_type"}, inplace=True
     )
+
+    # Fill age class and household size downwards within each block
+    data["age_raw"] = data["age_raw"].ffill()
+    data["hh_size"] = data["hh_size"].ffill()
+
+    # Remove footer/license rows and "davon:" separator rows
+    age_str = data["age_raw"].astype(str)
+    footer_mask = (
+        age_str.str.startswith("_")
+        | age_str.str.startswith("©")
+        | age_str.str.startswith("Stand:")
+    )
+    data = data.loc[~footer_mask]
+    data = data[~data["age_raw"].eq("davon:")]
+
+    # ------------------------------------------------------------------
+    # 4. Map 2022 age labels to the 2011 age labels
+    # ------------------------------------------------------------------
+    age_map = {
+        "Insgesamt": "Insgesamt",
+        "Unter 3 Jahre": "Unter 3",
+        "3 bis 5 Jahre": "3 - 5",
+        "6 bis 14 Jahre": "6 - 14",
+        "15 bis 17 Jahre": "15 - 17",
+        "18 bis 24 Jahre": "18 - 24",
+        "25 bis 29 Jahre": "25 - 29",
+        "30 bis 39 Jahre": "30 - 39",
+        "40 bis 49 Jahre": "40 - 49",
+        "50 bis 64 Jahre": "50 - 64",
+        "65 bis 74 Jahre": "65 - 74",
+        "75 Jahre und älter": "75 und älter",
+    }
+    data["age"] = data["age_raw"].map(age_map)
+
+    # Keep only the household types that are also present in the 2011 table
+    # This does not remove data as no oteher types are present in
+    # the 2022 table.
+    valid_types = [
+        "Insgesamt",
+        "Einpersonenhaushalte (Singlehaushalte)",
+        "Paare ohne Kind(er)",
+        "Paare mit Kind(ern)",
+        "Alleinerziehende Elternteile",
+        "Mehrpersonenhaushalte ohne Kernfamilie",
+    ]
+    data = data[data["hh_type"].isin(valid_types)]
+
+    # ------------------------------------------------------------------
+    # 5. Helper to normalize Zensus numeric symbols
+    # ------------------------------------------------------------------
+    def clean_token(x: object) -> str:
+        """
+        Normalize a single Zensus value token to a numeric string.
+
+        Rules:
+        * NaN / empty       -> "0"
+        * "-"               -> "0"
+        * "."               -> "0"
+        * "(1234)"          -> "1234"
+        * any other content -> returned unchanged as string
+        """
+        if pd.isna(x):
+            return "0"
+
+        s = str(x).strip()
+
+        # Treat empty strings and special symbols as zero
+        if s in ("", "-", "."):
+            return "0"
+
+        # Strip simple outer parentheses used for confidentiality marks
+        if s.startswith("(") and s.endswith(")"):
+            inner = s[1:-1].strip()
+            if inner:
+                s = inner
+
+        return s
+
+    # ------------------------------------------------------------------
+    # 6. Build long-format table: one row per
+    #    (state, hh_type, hh_size, age, value)
+    # ------------------------------------------------------------------
+    records = []
+
+    for col_idx, state in value_cols.items():
+        tmp = data[["age", "hh_size", "hh_type"]].copy()
+
+        # Normalize symbols and convert to integer
+        cleaned = data[col_idx].map(clean_token)
+        tmp["value"] = (
+            pd.to_numeric(cleaned, errors="coerce").fillna(0).astype(int)
+        )
+
+        # Add state name in the same format as in the 2011 file, e.g.
+        # "01 Schleswig-Holstein (Bundesland)". The leading code matters:
+        # process_nuts1_census_data() reduces this label with
+        # i.split()[1], so without it every state would collapse to
+        # "(Bundesland)" and the 16 states would silently merge into one.
+        tmp["state"] = state + " (Bundesland)"
+        records.append(tmp)
+
+    long = pd.concat(records, ignore_index=True)
+
+    # ------------------------------------------------------------------
+    # 7. Pivot to the exact MultiIndex layout of the 2011 file
+    # ------------------------------------------------------------------
+    households_raw = long.pivot_table(
+        index=["state", "hh_type"],
+        columns=["hh_size", "age"],
+        values="value",
+        aggfunc="sum",
+    )
+
+    # Enforce the canonical column order and completeness
+    sizes = [
+        "Insgesamt",
+        "1 Person",
+        "2 Personen",
+        "3 Personen",
+        "4 Personen",
+        "5 Personen",
+        "6 und mehr Personen",
+    ]
+    ages = [
+        "Insgesamt",
+        "Unter 3",
+        "3 - 5",
+        "6 - 14",
+        "15 - 17",
+        "18 - 24",
+        "25 - 29",
+        "30 - 39",
+        "40 - 49",
+        "50 - 64",
+        "65 - 74",
+        "75 und älter",
+    ]
+    col_index = pd.MultiIndex.from_product([sizes, ages])
+
+    households_raw = (
+        households_raw.reindex(columns=col_index).fillna(0).astype(int)
+    )
+
+    # Match the style of the original 2011 loader:
+    # index/column names are not used downstream and can stay unnamed here.
+    households_raw.index = households_raw.index.set_names([None, None])
+    households_raw.columns = households_raw.columns.set_names([None, None])
 
     return households_raw
 
@@ -558,8 +787,8 @@ def create_missing_zensus_data(
     df_households_typ, df_missing_data, missing_cells
 ):
     """
-    Generate missing data as average share of the household types for cell groups with
-    the same amount of households.
+    Generate missing data as average share of the household types for
+    cell groups with the same amount of households.
 
     There is missing data for specific attributes in the zensus dataset because
     of secrecy reasons. Some cells with only small amount of households are
@@ -926,8 +1155,9 @@ def inhabitants_to_households(df_hh_people_distribution_abs):
 
 def impute_missing_hh_in_populated_cells(df_census_households_grid):
     """
-    Fills in missing household data in populated cells based on a random selection from
-    a subgroup of cells with the same population value.
+    Fills in missing household data in populated cells based on a
+    random selection from a subgroup of cells with the same
+    population value.
 
     There are cells without household data but a population. A randomly
     chosen household distribution is taken from a subgroup of cells with same
@@ -1004,8 +1234,8 @@ def impute_missing_hh_in_populated_cells(df_census_households_grid):
 
 def get_census_households_grid():
     """
-    Retrieves and adjusts census household data at 100x100m grid level, accounting for
-    missing or divergent data.
+    Retrieves and adjusts census household data at 100x100m grid level,
+    accounting for missing or divergent data.
 
     Query census household data at 100x100m grid level from database. As
     there is a divergence in the census household data depending which
@@ -1107,7 +1337,7 @@ def get_census_households_grid():
     # Merge household type and size data with considered (populated) census
     # cells how='right' is used as ids of unpopulated areas are removed
     # by df_grid_id or ancestors. See here:
-    # https://github.com/openego/eGon-data/blob/add4944456f22b8873504c5f579b61dca286e357/src/egon/data/datasets/zensus_vg250.py#L269
+    # https://github.com/openego/eGon-data/blob/add4944456f22b8873504c5f579b61dca286e357/src/egon/data/datasets/zensus_vg250.py#L269  # noqa: E501
     df_census_households_grid = pd.merge(
         df_census_households_grid,
         df_grid_id,
@@ -1187,8 +1417,8 @@ def refine_census_data_at_cell_level(
     df_census_households_nuts1,
 ):
     """
-    Processes and merges census data to specify household numbers and types per census
-    cell according to IEE profiles.
+    Processes and merges census data to specify household numbers and
+    types per census cell according to IEE profiles.
 
     The census data is processed to define the number and type of households
     per zensus cell. Two subsets of the census data are merged to fit the
@@ -1284,15 +1514,15 @@ def refine_census_data_at_cell_level(
         right_on=["cell_id", "characteristics_code"],
     )
 
-    df_census_households_grid_refined["characteristics_code"] = (
-        df_census_households_grid_refined["characteristics_code"].astype(int)
-    )
-    df_census_households_grid_refined["hh_5types"] = (
-        df_census_households_grid_refined["hh_5types"].astype(int)
-    )
-    df_census_households_grid_refined["hh_10types"] = (
-        df_census_households_grid_refined["hh_10types"].astype(int)
-    )
+    df_census_households_grid_refined[
+        "characteristics_code"
+    ] = df_census_households_grid_refined["characteristics_code"].astype(int)
+    df_census_households_grid_refined[
+        "hh_5types"
+    ] = df_census_households_grid_refined["hh_5types"].astype(int)
+    df_census_households_grid_refined[
+        "hh_10types"
+    ] = df_census_households_grid_refined["hh_10types"].astype(int)
 
     return df_census_households_grid_refined
 
@@ -1411,9 +1641,9 @@ def assign_hh_demand_profiles_to_cells(df_zensus_cells, df_iee_profiles):
         df_hh_profiles_in_census_cells.at[grid_id, "cell_id"] = df_cell.loc[
             :, "cell_id"
         ].unique()[0]
-        df_hh_profiles_in_census_cells.at[grid_id, "cell_profile_ids"] = (
-            cell_profile_ids
-        )
+        df_hh_profiles_in_census_cells.at[
+            grid_id, "cell_profile_ids"
+        ] = cell_profile_ids
         df_hh_profiles_in_census_cells.at[grid_id, "nuts3"] = df_cell.loc[
             :, "nuts3"
         ].unique()[0]
@@ -1682,10 +1912,10 @@ def houseprofiles_in_census_cells():
     ].astype(int)
 
     # Cast profile ids back to initial str format
-    df_hh_profiles_in_census_cells["cell_profile_ids"] = (
-        df_hh_profiles_in_census_cells["cell_profile_ids"].apply(
-            lambda x: list(map(gen_profile_names, x))
-        )
+    df_hh_profiles_in_census_cells[
+        "cell_profile_ids"
+    ] = df_hh_profiles_in_census_cells["cell_profile_ids"].apply(
+        lambda x: list(map(gen_profile_names, x))
     )
 
     # Write allocation table into database
@@ -2056,7 +2286,8 @@ def get_scaled_profiles_from_db(
 
     Notes
     -----
-    Aggregate == False option can use a lot of RAM if many profiles are selected
+    Aggregate == False option can use a lot of RAM if many profiles are
+    selected
 
 
     Returns
