@@ -232,7 +232,7 @@ class MITChargingInfrastructure(Dataset):
     #:
     name: str = "MITChargingInfrastructure"
     #:
-    version: str = "0.1.0"
+    version: str = "0.1.3"
 
     def __init__(self, dependencies):
         # This dataset stays independent of `MotorizedIndividualTravel`:
