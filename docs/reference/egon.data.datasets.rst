@@ -41,6 +41,7 @@ datasets
    egon.data.datasets.electricity_demand
    egon.data.datasets.electricity_demand_timeseries
    egon.data.datasets.emobility
+   egon.data.datasets.ethos_builda
    egon.data.datasets.gas_neighbours
    egon.data.datasets.heat_demand
    egon.data.datasets.heat_demand_timeseries

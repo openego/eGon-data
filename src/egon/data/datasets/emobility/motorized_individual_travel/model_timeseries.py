@@ -382,7 +382,7 @@ def generate_load_time_series(
 
     # validate load timeseries
     np.testing.assert_almost_equal(
-        load_time_series_df.load_time_series.sum() / 4,
+        load_time_series_df.load_time_series.sum() / (60 / int(run_config.stepsize)),
         (
             ev_data_df.ev_id.apply(lambda _: profile_counter[_])
             * ev_data_df.charging_demand

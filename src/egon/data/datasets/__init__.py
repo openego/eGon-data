@@ -15,7 +15,11 @@ from airflow.operators.python import PythonOperator
 from airflow.utils.trigger_rule import TriggerRule
 from sqlalchemy import Column, ForeignKey, Integer, String, Table, orm, tuple_
 from sqlalchemy.dialects.postgresql import JSONB
-from sqlalchemy.exc import OperationalError
+from sqlalchemy.exc import (
+    IntegrityError,
+    OperationalError,
+    ProgrammingError,
+)
 from sqlalchemy.ext.declarative import declarative_base
 
 from egon.data import config, db, logger
@@ -532,9 +536,18 @@ class Dataset:
         unavailable.
         """
         try:
-            SourcesTargetsModel.__table__.create(
-                bind=db.engine(), checkfirst=True
-            )
+            try:
+                SourcesTargetsModel.__table__.create(
+                    bind=db.engine(), checkfirst=True
+                )
+            except (ProgrammingError, IntegrityError):
+                # Another concurrent DAG-parse process already created the
+                # table (or its implicit pg_type row) between our checkfirst
+                # check and the CREATE TABLE. Postgres raises this either as
+                # a ProgrammingError ("relation already exists") or an
+                # IntegrityError (UniqueViolation on pg_type_typname_nsp_index),
+                # depending on how far the racing CREATE got.
+                pass
 
             with db.session_scope() as session:
                 existing = (
