@@ -11,6 +11,17 @@ from egon.data.datasets.heat_etrago.power_to_heat import (
     insert_individual_power_to_heat,
 )
 from egon.data.datasets.scenario_parameters import get_sector_parameters
+from egon.data.validation.rules.custom.sanity import (
+    HeatBuses,
+    HeatScenarioCoverage,
+    HeatStores,
+    HeatSupplyCapacity,
+    HeatTimeseries,
+)
+
+#: Scenarios the validation rules are built for; a scenario the run does
+#: not produce is skipped by the rules themselves.
+SCENARIOS = ["status2024", "eGon2035", "reGon2037", "reGon2045"]
 
 
 def insert_buses(carrier, scenario):
@@ -730,7 +741,7 @@ class HeatEtrago(Dataset):
     #:
     name: str = "HeatEtrago"
     #:
-    version: str = "0.0.15"
+    version: str = "0.0.16"
 
     sources = DatasetSources(
         tables={
@@ -767,4 +778,71 @@ class HeatEtrago(Dataset):
             version=self.version,
             dependencies=dependencies,
             tasks=(buses, supply, store),
+            validation={
+                "data_quality": [
+                    HeatScenarioCoverage(
+                        table="grid.egon_etrago_bus",
+                        rule_id="SANITY_HEAT_SCENARIOS",
+                    ),
+                    *[
+                        HeatSupplyCapacity(
+                            table="grid.egon_etrago_link",
+                            rule_id=f"SANITY_HEAT_CAPACITY.{scn}",
+                            scenario=scn,
+                            technologies=[
+                                "central_heat_pump",
+                                "central_resistive_heater",
+                                "solar_thermal_collector",
+                                "geo_thermal",
+                                "rural_heat_pump",
+                                "rural_resistive_heater",
+                                "rural_solar_thermal",
+                            ],
+                        )
+                        for scn in SCENARIOS
+                    ],
+                    *[
+                        # Warning only: gas boilers of supply areas whose
+                        # centroid does not match a heat bus are dropped
+                        HeatSupplyCapacity(
+                            table="grid.egon_etrago_link",
+                            rule_id=f"SANITY_HEAT_GAS_BOILER_CAPACITY.{scn}",
+                            scenario=scn,
+                            technologies=[
+                                "central_gas_boiler",
+                                "rural_gas_boiler",
+                            ],
+                            severity="WARNING",
+                        )
+                        for scn in SCENARIOS
+                    ],
+                    *[
+                        HeatBuses(
+                            table="grid.egon_etrago_bus",
+                            rule_id=f"SANITY_HEAT_BUSES.{scn}",
+                            scenario=scn,
+                        )
+                        for scn in SCENARIOS
+                    ],
+                    *[
+                        HeatTimeseries(
+                            table="grid.egon_etrago_link_timeseries",
+                            rule_id=f"SANITY_HEAT_TIMESERIES.{scn}",
+                            scenario=scn,
+                        )
+                        for scn in SCENARIOS
+                    ],
+                    *[
+                        HeatStores(
+                            table="grid.egon_etrago_store",
+                            rule_id=f"SANITY_HEAT_STORES.{scn}",
+                            scenario=scn,
+                            # status quo scenarios get no heat stores
+                            stores_expected=not scn.startswith("status"),
+                        )
+                        for scn in SCENARIOS
+                    ],
+                ]
+            },
+            proceed_on_validation_failure=True,
         )

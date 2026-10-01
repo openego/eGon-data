@@ -10,6 +10,13 @@ from .etrago_generators import (  # noqa: F401
     EtragoGeneratorTimeseriesRange,
     EtragoGeneratorUniquePerBusCarrier,
 )
+from .heat_etrago import (  # noqa: F401
+    HeatBuses,
+    HeatScenarioCoverage,
+    HeatStores,
+    HeatSupplyCapacity,
+    HeatTimeseries,
+)
 from .ocgt_etrago import (  # noqa: F401
     OcgtCapacity,
     OcgtNepCapacity,
