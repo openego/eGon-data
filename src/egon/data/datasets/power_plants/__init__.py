@@ -24,8 +24,12 @@ from egon.data.datasets import (
 )
 from egon.data.datasets.power_plants.conventional import (
     match_nep_no_chp,
+    match_nep_no_chp_by_mastr_id,
     select_nep_power_plants,
     select_no_chp_combustion_mastr,
+)
+from egon.data.datasets.power_plants.hydrogen import (
+    allocate_hydrogen_power_plants,
 )
 from egon.data.datasets.power_plants.mastr import (
     EgonPowerPlantsBiomass,
@@ -661,6 +665,12 @@ def allocate_conventional_non_chp_power_plants():
                         "source",
                         "voltage_level",
                     ]
+                )
+
+                # Match plants from NEP list by their MaStR number (NEP
+                # 2025 list only)
+                matched, mastr, nep = match_nep_no_chp_by_mastr_id(
+                    nep, mastr, matched, scn=scn
                 )
 
                 # Match combustion plants of a certain carrier from NEP list
@@ -1353,6 +1363,7 @@ if any(
     tasks = tasks + (
         insert_hydro_biomass,
         allocate_conventional_non_chp_power_plants,
+        allocate_hydrogen_power_plants,
         allocate_other_power_plants,
         {
             wind_onshore.insert,
@@ -1397,6 +1408,7 @@ class PowerPlants(Dataset):
             "wind_potential_areas": "supply.egon_re_potential_area_wind",
             "hvmv_substation": "grid.egon_hvmv_substation",
             "electricity_demand": "demand.egon_demandregio_zensus_electricity",
+            "zensus_population": "society.destatis_zensus_population_per_ha",
             "map_zensus_grid_districts": "boundaries.egon_map_zensus_grid_districts",
             "map_grid_boundaries": "boundaries.egon_map_mvgriddistrict_vg250",
             "federal_states": "boundaries.vg250_lan",  # Alias
@@ -1421,7 +1433,7 @@ class PowerPlants(Dataset):
             "nep_2035": "NEP_V2021_scnC2035.xlsx",
             "nep_2037": "NEP_V2025_scnC2037.xlsx",
             "mastr_deposit_id": "14783581",
-	    "wind_offshore_status2019": "windoffshore_status2019.xlsx",
+            "wind_offshore_status2019": "windoffshore_status2019.xlsx",
             "data_bundle_deposit_id": "16576506",
             "status2024_date_max": "2024-12-31 23:59:00",
             "egon2021_date_max": "2021-12-31 23:59:00",

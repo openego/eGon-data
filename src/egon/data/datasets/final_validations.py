@@ -292,6 +292,7 @@ class FinalValidations(Dataset):
                             ],
                             "carrier": [
                                 "CH4",
+                                "H2",
                                 "O2",
                                 "OCGT",
                                 "biomass",
