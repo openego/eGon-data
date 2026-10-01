@@ -317,6 +317,20 @@ def generate_load_time_series(
     # the new methodology only -- the legacy use case taxonomy
     # (public/home/work/empty) would not be comparable.
     export_use_cases = not is_legacy_scenario(scenario_name)
+
+    # Whether an event's end timestep belongs to that event.
+    #
+    # The legacy methodology emits disjoint intervals: the next event of
+    # a vehicle starts one timestep after this one ends, so the end
+    # timestep is this event's and the interval is closed.
+    #
+    # The delivered events of the new methodology **share** the boundary
+    # timestep -- the next event starts exactly where this one ends.
+    #
+    # Only the state-of-charge band and the plugged-in capacity are
+    # affected. The charging load is written over `charge_end`, which is
+    # a duration rather than an interval bound, and is unchanged.
+    end_offset = 1 if is_legacy_scenario(scenario_name) else 0
     use_case_arrays = {
         use_case: load_time_series_array.copy()
         for use_case in CHARGING_USE_CASES
@@ -376,12 +390,13 @@ def generate_load_time_series(
         flex_time_series_array[start:end] += flex_cap * ev_count
         flex_time_series_array[last_ts] += flex_last_ts_cap * ev_count
 
-        simultaneous_plugged_in_charging_capacity[start : park_end + 1] += (
+        park_stop = park_end + end_offset
+        simultaneous_plugged_in_charging_capacity[start:park_stop] += (
             cap * ev_count
         )
-        simultaneous_plugged_in_charging_capacity_flex[
-            start : park_end + 1
-        ] += (flex_cap * ev_count)
+        simultaneous_plugged_in_charging_capacity_flex[start:park_stop] += (
+            flex_cap * ev_count
+        )
 
         # ====================================================
         # min and max SoC constraints of aggregated EV battery
@@ -396,45 +411,36 @@ def generate_load_time_series(
             # soc_start * bat_cap * ev_count
 
             # Real band (decrease SoC while driving)
-            soc_min_absolute[drive_start : drive_end + 1] += (
-                np.linspace(soc_start, soc_end, drive_end - drive_start + 2)[
-                    1:
-                ]
+            drive_stop = drive_end + end_offset
+            drive_steps = drive_stop - drive_start
+            soc_ramp = (
+                np.linspace(soc_start, soc_end, drive_steps + 1)[1:]
                 * bat_cap
                 * ev_count
             )
-            soc_max_absolute[drive_start : drive_end + 1] += (
-                np.linspace(soc_start, soc_end, drive_end - drive_start + 2)[
-                    1:
-                ]
-                * bat_cap
-                * ev_count
-            )
+            soc_min_absolute[drive_start:drive_stop] += soc_ramp
+            soc_max_absolute[drive_start:drive_stop] += soc_ramp
 
             # Equal distribution of driving load
-            if soc_start > soc_end:  # reqd. for PHEV
-                driving_load_time_series_array[
-                    drive_start : drive_end + 1
-                ] += (consumption * ev_count) / (drive_end - drive_start + 1)
+            if soc_start > soc_end and drive_steps > 0:  # reqd. for PHEV
+                driving_load_time_series_array[drive_start:drive_stop] += (
+                    consumption * ev_count
+                ) / drive_steps
 
         # (II) Fix SoC bounds while parking w/o charging
         elif soc_start == soc_end:
-            soc_min_absolute[start : park_end + 1] += (
-                soc_start * bat_cap * ev_count
-            )
-            soc_max_absolute[start : park_end + 1] += (
-                soc_end * bat_cap * ev_count
-            )
+            soc_min_absolute[start:park_stop] += soc_start * bat_cap * ev_count
+            soc_max_absolute[start:park_stop] += soc_end * bat_cap * ev_count
 
         # (III) Set SoC bounds at start and end of parking while charging
         # for flexible and non-flexible events
         elif soc_start < soc_end:
             if flex_cap > 0:
                 # * "flex" (private charging only, band: SoC_min..SoC_max)
-                soc_min_absolute[start : park_end + 1] += (
+                soc_min_absolute[start:park_stop] += (
                     soc_start * bat_cap * ev_count
                 )
-                soc_max_absolute[start : park_end + 1] += (
+                soc_max_absolute[start:park_stop] += (
                     soc_end * bat_cap * ev_count
                 )
 
@@ -449,16 +455,13 @@ def generate_load_time_series(
             #   charging)
             # (SKIP THIS PART for "flex++" (private+public charging))
             elif flex_cap == 0:
-                soc_min_absolute[start : park_end + 1] += (
-                    np.linspace(soc_start, soc_end, park_end - start + 1)
+                charge_ramp = (
+                    np.linspace(soc_start, soc_end, park_stop - start)
                     * bat_cap
                     * ev_count
                 )
-                soc_max_absolute[start : park_end + 1] += (
-                    np.linspace(soc_start, soc_end, park_end - start + 1)
-                    * bat_cap
-                    * ev_count
-                )
+                soc_min_absolute[start:park_stop] += charge_ramp
+                soc_max_absolute[start:park_stop] += charge_ramp
 
     # Build timeseries
     load_time_series_df = load_time_series_df.assign(
