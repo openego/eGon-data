@@ -55,6 +55,15 @@ UPDATE demand.egon_loadarea AS t1
                             UNION
                             SELECT "id"::integer, geom_point
                             FROM openstreetmap.osm_buildings_filtered
+                            UNION
+                            -- residential buildings are not a subset of
+                            -- osm_buildings_filtered since #1310: ETHOS matches
+                            -- buildings whose tag is missing from the filter
+                            -- list, plus ancillary buildings that are kept on
+                            -- purpose. UNION (not UNION ALL) deduplicates the
+                            -- overlap, verified free of double counting.
+                            SELECT "id"::integer, geom_point
+                            FROM openstreetmap.osm_buildings_residential
                         ) AS bld
                     WHERE
                         peak.scenario = 'eGon2035' AND
@@ -115,6 +124,15 @@ UPDATE demand.egon_loadarea AS t1
                             UNION
                             SELECT "id"::integer, geom_point
                             FROM openstreetmap.osm_buildings_filtered
+                            UNION
+                            -- residential buildings are not a subset of
+                            -- osm_buildings_filtered since #1310: ETHOS matches
+                            -- buildings whose tag is missing from the filter
+                            -- list, plus ancillary buildings that are kept on
+                            -- purpose. UNION (not UNION ALL) deduplicates the
+                            -- overlap, verified free of double counting.
+                            SELECT "id"::integer, geom_point
+                            FROM openstreetmap.osm_buildings_residential
                         ) AS bld
                     WHERE
                         peak.scenario = 'eGon100RE' AND

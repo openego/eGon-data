@@ -260,7 +260,7 @@ def insert():
             offshore_path = (
                 Path(".")
                 / "data_bundle_egon_data"
-                / "nep2037_version2025"
+                / "NEP"
                 / sources.files["nep_2037"]
             )
             offshore = pd.read_excel(
