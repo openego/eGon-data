@@ -43,6 +43,11 @@ Added
   alongside home batteries, and separate eTraGo carriers/cost parameters 
   ('BESS' vs'home_battery') instead of one generic 'battery' carrier
   `#1478 <https://github.com/openego/eGon-data/issues/1478>`_
+* Add new eMobility dataset for public buses (vehicle class M3): static depot
+  charging loads per scenario, written per-depot to
+  demand.egon_ev_bus_charging_depot for eDisGo and aggregated per eTraGo bus
+  under the new carrier 'land_transport_bus'
+  `#1461 <https://github.com/openego/eGon-data/issues/1461>`_
 
 * Add electric HGV charging demand model (vehicle classes N2, N3, N3S) for the
   NEP-2025-aligned scenarios reGon2037 and reGon2045, as a sibling dataset to
@@ -54,6 +59,9 @@ Added
 Changed
 -------
 
+* Changes to improve the matching of the Kraftwerksliste from the NEP
+  and the corresponding MaStR-data for CHP. 
+  '#1494 <https://github.com/openego/eGon-data/issues/1494>`_
 * Determine residential buildings by intersecting OSM buildings with
   ETHOS.BUILDA instead of filtering by OSM tags alone, keeping the ETHOS
   attributes and the provenance of each match, retain the previous filter's
@@ -126,6 +134,9 @@ Changed
 Bug Fixes
 ---------
 
+* Fixes distribution of small heat pumps due to incremental small heat demands 
+  by implementing a minimal heat demand for the installation of a heat pump
+  `#1496 <https://github.com/openego/eGon-data/issues/1496>`_
 * Fix URL of BASt traffic data
   `#1347 <https://github.com/openego/eGon-data/issues/1347>`_
 * Discard scenario_path tasks
