@@ -72,10 +72,15 @@ Added
   NEP-2025-aligned scenarios reGon2037 and reGon2045, as a sibling dataset to
   the hydrogen-based HeavyDutyTransport
   `#1436 <https://github.com/openego/eGon-data/issues/1436>`_
+* Add data center demand and waste heat for reGon2037 and reGon2045
+  `#1428 <https://github.com/openego/eGon-data/issues/1428>`_
 
 Changed
 -------
 
+* Changes to improve the matching of the Kraftwerksliste from the NEP
+  and the corresponding MaStR-data for CHP. 
+  '#1494 <https://github.com/openego/eGon-data/issues/1494>`_
 * Determine residential buildings by intersecting OSM buildings with
   ETHOS.BUILDA instead of filtering by OSM tags alone, keeping the ETHOS
   attributes and the provenance of each match, retain the previous filter's
@@ -209,6 +214,9 @@ Bug Fixes
   checkfirst=True creates from the per-scenario delete tasks, which could fail
   with a UniqueViolation under the LocalExecutor.
   `#1477 <https://github.com/openego/eGon-data/issues/1477>`_
+* Fixes distribution of small heat pumps due to incremental small heat demands 
+  by implementing a minimal heat demand for the installation of a heat pump
+  `#1496 <https://github.com/openego/eGon-data/issues/1496>`_
 * Fix URL of BASt traffic data
   `#1347 <https://github.com/openego/eGon-data/issues/1347>`_
 * Discard scenario_path tasks
@@ -272,6 +280,14 @@ Bug Fixes
   the 2011 temperatures are added to the demandregio cache in the data
   bundle as the FfE API does not provide them
   `#1523 <https://github.com/openego/eGon-data/issues/1523>`_
+* Fix 123 TWh of household demand missing from ``grid.egon_etrago_load``:
+  ``ElectricalLoadEtrago`` now depends on the ``HouseholdDemands`` dataset,
+  not a bare task, and ``demands_per_bus`` raises on an empty source
+  `#1527 <https://github.com/openego/eGon-data/issues/1527>`_
+* Fix household profiles ignoring the scenario: fixed at 123.9 TWh for every
+  year, they are now scaled in ``mv_grid_district_HH_electricity_load`` to
+  ``demand.egon_demandregio_hh`` (110.5 TWh status2024, 83.0 TWh reGon2037)
+  `#1527 <https://github.com/openego/eGon-data/issues/1527>`_
 
 Version 2.0.0 (2025-08-20)
 ==========================

@@ -13,6 +13,7 @@ from egon.data.datasets.ch4_storages import CH4Storages
 from egon.data.datasets.chp import Chp
 from egon.data.datasets.chp_etrago import ChpEtrago
 from egon.data.datasets.data_bundle import DataBundle
+from egon.data.datasets.data_centers_etrago import DataCenters
 from egon.data.datasets.demandregio import DemandRegio
 from egon.data.datasets.district_heating_areas import DistrictHeatingAreas
 from egon.data.datasets.DSM_cts_ind import DsmPotential
@@ -323,6 +324,7 @@ with airflow.DAG(
                 cts_electricity_demand_annual,
                 demand_curves_industry,
                 hh_demand_buildings_setup,
+                hh_demand_profiles_setup,
             ]
         )
 
@@ -636,6 +638,18 @@ with airflow.DAG(
                 heat_time_series,
             ]
         )
+        
+        # Data centers to eTraGo
+        data_centers_demand = DataCenters(
+            dependencies=[
+                data_bundle,
+                osm_landuse,
+                osmtgmod,
+                scenario_parameters,
+                district_heating_areas,
+                heat_etrago,
+            ]
+        )
 
         # CHP to eTraGo
         chp_etrago = ChpEtrago(dependencies=[chp, heat_etrago])
@@ -779,6 +793,7 @@ with airflow.DAG(
                 storage_etrago,
                 hts_etrago_table,
                 fill_etrago_generators,
+                data_centers_demand,
                 household_electricity_demand_annual,
                 cts_demand_buildings,
                 emobility_mit,
