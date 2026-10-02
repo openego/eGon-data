@@ -8,14 +8,62 @@ Unreleased
 Added
 -----
 
+* Integrate egon-validation framework for data quality checks
+  `PR #1375 <https://github.com/openego/eGon-data/pull/1375>`_
 * Make egon-data runnable in python 3.10
   `#1352 <https://github.com/openego/egon-data/issues/1352>`_
 * Add standardized sources and targets definitions across dataset modules
   `#1283 <https://github.com/openego/egon-data/issues/1283>`_
+* Add rail-transport electricity demand dataset (RailTransitDemand) and
+  reGon scenarios (status2024, reGon2037, reGon2045). The mobility sector
+  carries two rail figures: ``annual_demand`` is the 50-Hz draw that is
+  written as load, ``gross_rail_demand`` the total rail consumption used as
+  the scenario-scaling reference. Loads are written only for the scenarios
+  the run builds -- the intersection of the dataset's own list with
+  ``--scenarios`` -- because a scenario the run leaves out has no bus rows
+  in ``grid.egon_etrago_bus`` for the loads to attach to. The dataset
+  reports its classification, centroid-fallback and bus-assignment counts,
+  and the sanity check reports the energy per carrier and asserts that
+  ``grid.egon_etrago_bus`` carries the referenced buses for the scenario
+  each load is written under. Alongside the two eTraGo tables it writes
+  ``grid.egon_rail_transport_load_points``: one row per load row, carrying
+  the geometry the load was placed at and how it got there -- whether the
+  energy went to mapped rectifiers or stayed at a city centroid, and whether
+  the bus was found by containment or by nearest neighbour. Without it the
+  placement is a calculation that happens in memory and leaves only counts
+  in the run log.
+  `#1414 <https://github.com/openego/eGon-data/issues/1414>`_
+* Add dataset EthosBuilda, importing the ETHOS.BUILDA synthetic building
+  stock from Zenodo
+  `#1310 <https://github.com/openego/eGon-data/issues/1310>`_
+* Use MaStR data for home_batteries for allocation for all scenarios (status + future)
+  `#1470 <https://github.com/openego/eGon-data/issues/1470>`_
+* Distinguish grid-scale battery storage (new carrier 'BESS') from home batteries
+  throughout the pipeline: real MaStR-based BESS carry-forward (aged, all scenarios) 
+  alongside home batteries, and separate eTraGo carriers/cost parameters 
+  ('BESS' vs'home_battery') instead of one generic 'battery' carrier
+  `#1478 <https://github.com/openego/eGon-data/issues/1478>`_
+* Add new eMobility dataset for public buses (vehicle class M3): static depot
+  charging loads per scenario, written per-depot to
+  demand.egon_ev_bus_charging_depot for eDisGo and aggregated per eTraGo bus
+  under the new carrier 'land_transport_bus'
+  `#1461 <https://github.com/openego/eGon-data/issues/1461>`_
+
+* Add electric HGV charging demand model (vehicle classes N2, N3, N3S) for the
+  NEP-2025-aligned scenarios reGon2037 and reGon2045, as a sibling dataset to
+  the hydrogen-based HeavyDutyTransport
+  `#1436 <https://github.com/openego/eGon-data/issues/1436>`_
 
 Changed
 -------
 
+* Determine residential buildings by intersecting OSM buildings with
+  ETHOS.BUILDA instead of filtering by OSM tags alone, keeping the ETHOS
+  attributes and the provenance of each match, retain the previous filter's
+  amenity-based capture of care homes, and read residential buildings
+  alongside the filtered ones in the household load area demand, the
+  building mapping and the PV rooftop potentials
+  `#1310 <https://github.com/openego/eGon-data/issues/1310>`_
 * Set annual electricity demands in scenario parameters
   `#1359 <https://github.com/openego/eGon-data/issues/1359>`_
 * Introduce TaskGroups to group Datasets in the pipeline
@@ -31,8 +79,8 @@ Changed
   factor columns to the configured scenarios, and remove obsolete
   status2019/status2023/eGon100RE handling
   `#1433 <https://github.com/openego/eGon-data/issues/1433>`_
-* Adapt scenario_capacities to new scenarios; implementing the 
-  new Kraftwerksliste from the NEP2025; remove obsolete 
+* Adapt scenario_capacities to new scenarios; implementing the
+  new Kraftwerksliste from the NEP2025; remove obsolete
   scenario (status2019/status2023/eGon100RE) handling
   `#1415 <https://github.com/openego/eGon-data/issues/1415>`_
 * Adapt heat_demand TaskGroup to new scenarios: generalize district
@@ -60,6 +108,23 @@ Changed
   to reGon2037 and reGon2045, make PV-rooftop-based building weighting
   scenario-aware, and remove obsolete eGon100RE/pypsa-eur-sec handling
   `#1449 <https://github.com/openego/eGon-data/issues/1449>`_
+* Adapt eTraGo_Input TaskGroup to new scenarios: generalize CHP-to-eTraGo
+  insertion to the configured scenarios, and remove obsolete eGon100RE
+  handling
+  `#1450 <https://github.com/openego/eGon-data/issues/1450>`_
+* Unify NEP input data into a single ``NEP`` folder in the data bundle
+  `#1479 <https://github.com/openego/eGon-data/issues/1479>`_
+* Adapt eMobility MIT to the reGon scenarios: add trip, scenario
+  variation and lowflex configuration for status2024, reGon2037 and
+  reGon2045, replace the per-scenario ``generate_model_data_*_remaining``
+  tasks with one generically generated task per configured scenario,
+  derive the flexible/dumb charging distinction from the scenario name
+  instead of a hard-coded scenario list, and remove obsolete
+  status2019/status2023/eGon100RE handling
+  `#1483 <https://github.com/openego/eGon-data/issues/1483>`_
+* Allign Methodology for laoding NEP target values for Battery storage for all scenarios
+  `#1471 <https://github.com/openego/eGon-data/issues/1471>`_
+
 
 Bug Fixes
 ---------
@@ -85,6 +150,9 @@ Bug Fixes
   sources/targets; registration is now skipped with a warning when no
   database is available
   `#1435 <https://github.com/openego/eGon-data/issues/1435>`_
+* Fix ONEP area key lookup so status scenarios work in wind offshore:
+  accept both plain codes and codes with a bracketed description
+  `#1480 <https://github.com/openego/eGon-data/issues/1480>`_
 * Fix eTraGo ID sequences getting out of sync with the IDs actually
   written, which made concurrent inserts fail with ``duplicate key value
   violates unique constraint``: ``h2_neighbours_egon2035`` derived a range
@@ -93,6 +161,37 @@ Bug Fixes
   now ignores the case of the component name and always returns a list
   when a count is given
   `#1487 <https://github.com/openego/eGon-data/issues/1487>`_
+* Fix ``fill_etrago_gen`` crashing with an ``IndexError`` for offshore wind
+  power plants sited at ONEP/NEP connection points west of 5.5° longitude,
+  which fell outside the hardcoded ``Germany-offshore`` ERA5 cutout extent
+  and therefore had no ``wind_offshore`` feed-in timeseries; the cutout and
+  the matching weather-cell filter in ``renewable_feedin.py`` now cover the
+  full extent of the connection points defined in ``map_ONEP_areas()``
+  `#1498 <https://github.com/openego/eGon-data/issues/1498>`_
+* Fix eMobility MIT writing a duplicate ``land_transport_EV`` load for
+  dumb charging scenarios: the lowflex pass took the same branch as the
+  regular pass and inserted a second identical load under the scenario's
+  own name, doubling transport demand in status quo scenarios
+  `#1483 <https://github.com/openego/eGon-data/issues/1483>`_
+* Fix conventional non-CHP and pumped hydro power plant allocation for the
+  reGon2037/reGon2045 scenarios: the NEP2025 Kraftwerksliste has no
+  ``bnetza_id`` column (only ``mastr_id``) and stores the CHP flag as
+  lowercase ``ja``/``nein``, so ``select_nep_power_plants`` /
+  ``select_nep_pumped_hydro`` crashed with ``UndefinedColumn`` and, once
+  that was worked around, allocated nothing because every ``chp = 'Nein'``
+  filter missed. ``bnetza_id`` is now only selected for eGon2035,
+  pumped hydro uses ``mastr_id`` for the reGon path, and the CHP flag is
+  normalized to ``Ja``/``Nein`` on import
+  `#1510 <https://github.com/openego/eGon-data/issues/1510>`_
+* Align timeseries of other calendar years to the weather year 2011, so
+  that weekends fall on the same model days in all sectors: foreign
+  electricity demands from TYNDP (2018 calendar) and ENTSO-E (status
+  scenario year, the leap day is no longer dropped) and the industrial
+  gas demand from FfE (2012) are shifted by whole days to the weekdays of
+  2011. The CTS heat demand profiles are created for 2011 instead of 2017,
+  the 2011 temperatures are added to the demandregio cache in the data
+  bundle as the FfE API does not provide them
+  `#1523 <https://github.com/openego/eGon-data/issues/1523>`_
 
 Version 2.0.0 (2025-08-20)
 ==========================

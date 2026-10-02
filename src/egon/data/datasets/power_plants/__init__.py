@@ -31,6 +31,7 @@ from egon.data.datasets.power_plants.mastr import (
     EgonPowerPlantsBiomass,
     EgonPowerPlantsHydro,
     EgonPowerPlantsPv,
+    EgonPowerPlantsStorage,
     EgonPowerPlantsWind,
     import_mastr,
 )
@@ -38,6 +39,7 @@ from egon.data.datasets.power_plants.pv_rooftop import pv_rooftop_per_mv_grid
 from egon.data.datasets.power_plants.pv_rooftop_buildings import (
     pv_rooftop_to_buildings,
 )
+from egon.data.validation import TableValidation, resolve_boundary_dependence
 import egon.data.config
 import egon.data.datasets.power_plants.assign_weather_data as assign_weather_data  # noqa: E501
 import egon.data.datasets.power_plants.metadata as pp_metadata
@@ -87,6 +89,7 @@ def create_tables():
         EgonPowerPlantsPv,
         EgonPowerPlantsBiomass,
         EgonPowerPlantsHydro,
+        EgonPowerPlantsStorage,
     ]
     for t in tables:
         db.execute_sql(f"""
@@ -1409,8 +1412,8 @@ class PowerPlants(Dataset):
             "mastr_wind": "./bnetza_mastr/dump_2025-02-09/bnetza_mastr_wind_cleaned.csv",
             # --- Config/Meta values ---
             "osm_config": "https://download.geofabrik.de/europe/germany-240101.osm.pbf",
-            "nep_2035": "NEP2035_V2021_scnC2035.xlsx",
-            "nep_2037": "NEP2037_V2025_scnC2037.xlsx",
+            "nep_2035": "NEP_V2021_scnC2035.xlsx",
+            "nep_2037": "NEP_V2025_scnC2037.xlsx",
             "mastr_deposit_id": "14783581",
 	    "wind_offshore_status2019": "windoffshore_status2019.xlsx",
             "data_bundle_deposit_id": "16576506",
@@ -1510,7 +1513,7 @@ class PowerPlants(Dataset):
     #:
     name: str = "PowerPlants"
     #:
-    version: str = "0.0.37"
+    version: str = "0.0.39"
 
     def __init__(self, dependencies):
         super().__init__(
@@ -1518,4 +1521,61 @@ class PowerPlants(Dataset):
             version=self.version,
             dependencies=dependencies,
             tasks=tasks,
+            validation={
+                "data-quality": [
+                    TableValidation(
+                        table_name="supply.egon_power_plants",
+                        row_count=resolve_boundary_dependence(
+                            {
+                                "Schleswig-Holstein": 127017,
+                                "Everything": 4046085,
+                            }
+                        ),
+                        geometry_columns=["geom"],
+                        data_type_columns={
+                            "id": "bigint",
+                            "sources": "jsonb",
+                            "source_id": "jsonb",
+                            "carrier": "character varying",
+                            "el_capacity": "double precision",
+                            "bus_id": "integer",
+                            "voltage_level": "integer",
+                            "weather_cell_id": "integer",
+                            "scenario": "character varying",
+                            "geom": "geometry",
+                        },
+                        not_null_columns=[
+                            "id",
+                            "carrier",
+                            "el_capacity",
+                            "bus_id",
+                            "voltage_level",
+                            "scenario",
+                        ],
+                        value_set_columns={
+                            "carrier": [
+                                "biomass",
+                                "coal",
+                                "gas",
+                                "lignite",
+                                "oil",
+                                "others",
+                                "reservoir",
+                                "run_of_river",
+                                "solar",
+                                "solar_rooftop",
+                                "wind_offshore",
+                                "wind_onshore",
+                            ],
+                            "scenario": [
+                                "eGon2035",
+                                "reGon2037",
+                                "reGon2045",
+                                "status2024",
+                            ],
+                        },
+                    ),
+                ]
+            },
+            proceed_on_validation_failure=True,
         )

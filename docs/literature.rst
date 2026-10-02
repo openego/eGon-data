@@ -40,6 +40,8 @@ Literature
 
 .. [KBA] Kraftfahrt-Bundesamt, Fahrzeugzulassungen (FZ) - Bestand an Kraftfahrzeugen und Kraftfahrzeuganhängern nach Zulassungsbezirken (2021). URL https://www.kba.de/SharedDocs/Downloads/DE/Statistik/Fahrzeuge/FZ1/fz1_2021.xlsx?__blob=publicationFile&v=2
 
+.. [KBA2025] Kraftfahrt-Bundesamt, Bestand an Kraftfahrzeugen und Kraftfahrzeuganhängern am 1. Januar 2025 (2025). URL https://www.kba.de/SharedDocs/Downloads/DE/Pressemitteilungen/2025/pm_10_2025_bestand_01_25.pdf?__blob=publicationFile&v=2
+
 .. [Kleinhans] D. Kleinhans, Towards a systematic characterization of the potential of demand side management, arXiv (2014), doi: 10.48550/ARXIV.1401.4121. URL https://arxiv.org/abs/1401.4121
 
 .. [Kunz] Kunz, Friedrich et al.: Electricity, heat, and gas sector data for modeling the German system, DIW Data Documentation (2017). URL https://www.diw.de/de/diw_01.c.574115.de/publikationen/data_documentation/2017_0092/electricity__heat_and_gas_sector_data_for_modelling_the_german_system.html
@@ -53,6 +55,8 @@ Literature
 .. [NEP2021] Übertragungsnetzbetreiber Deutschland (2021):  *Netzentwicklungsplan Strom 2035*, Version 2021, 1. Entwurf. 2021.
 
 .. [NEP2021a] Principles for the Expansion Planning of the German Transmission Network https://www.netzentwicklungsplan.de/
+
+.. [NEP2025] Übertragungsnetzbetreiber Deutschland: *Netzentwicklungsplan Strom 2037/2045*, Version 2025, 2. Entwurf. URL https://www.netzentwicklungsplan.de/
 
 .. [NEP_gas] FNB Gas: Netzentwicklungsplan Gas 2020–2030 (2021). URL https://fnb-gas.de/wp-content/uploads/2021/09/fnb_gas_nep_gas_2020_de-1.pdf
 

@@ -24,6 +24,7 @@ from egon.data import db
 from egon.data.datasets import Dataset, DatasetSources, DatasetTargets
 from egon.data.datasets.scenario_parameters import get_scenario_year
 from egon.data.datasets.zensus_mv_grid_districts import MapZensusGridDistricts
+from egon.data.validation import TableValidation, resolve_boundary_dependence
 import egon.data.config
 
 Base = declarative_base()
@@ -238,7 +239,7 @@ class HouseholdDemands(Dataset):
     #:
     name: str = "Household Demands"
     #:
-    version: str = "0.0.16"
+    version: str = "0.0.17"
     sources = DatasetSources(
         tables={
             "demandregio_hh": "demand.egon_demandregio_hh",
@@ -277,6 +278,42 @@ class HouseholdDemands(Dataset):
                 houseprofiles_in_census_cells,
                 mv_hh_electricity_load,
             ),
+            validation={
+                "data_quality": [
+                    TableValidation(
+                        table_name="demand.egon_household_electricity_profile_in_census_cell",
+                        row_count=resolve_boundary_dependence(
+                            {
+                                "Schleswig-Holstein": 143521,
+                                "Everything": 3177723,
+                            }
+                        ),
+                        data_type_columns={
+                            "cell_id": "integer",
+                            "grid_id": "character varying",
+                            "cell_profile_ids": "array",
+                            "nuts3": "character varying",
+                            "nuts1": "character varying",
+                            "factor_2024": "double precision",
+                            "factor_2035": "double precision",
+                            "factor_2037": "double precision",
+                            "factor_2045": "double precision",
+                        },
+                    ),
+                    TableValidation(
+                        table_name="demand.iee_household_load_profiles",
+                        row_count=resolve_boundary_dependence(
+                            {"Schleswig-Holstein": 2511, "Everything": 100000}
+                        ),
+                        data_type_columns={
+                            "id": "integer",
+                            "type": "character",
+                            "load_in_wh": "array",
+                        },
+                    ),
+                ]
+            },
+            proceed_on_validation_failure=True,
         )
 
 

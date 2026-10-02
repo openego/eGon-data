@@ -19,7 +19,7 @@ from sqlalchemy import (
 from sqlalchemy.dialects.postgresql import REAL
 from sqlalchemy.ext.declarative import declarative_base
 
-from egon.data import db
+from egon.data import config, db
 from egon.data.datasets.emobility.motorized_individual_travel.helpers import (
     read_simbev_metadata_file,
 )
@@ -302,9 +302,11 @@ def add_metadata():
     """
     # egon_ev_metadata
     schema = "demand"
-    meta_run_config = read_simbev_metadata_file("eGon100RE", "config").loc[
-        "basic"
-    ]
+    # The simBEV run config is only used to describe the parameters in
+    # the metadata string, so any configured scenario will do.
+    meta_run_config = read_simbev_metadata_file(
+        config.settings()["egon-data"]["--scenarios"][0], "config"
+    ).loc["basic"]
 
     contris = contributors(["kh", "kh"])
 
