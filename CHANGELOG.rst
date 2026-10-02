@@ -198,6 +198,14 @@ Bug Fixes
   the 2011 temperatures are added to the demandregio cache in the data
   bundle as the FfE API does not provide them
   `#1523 <https://github.com/openego/eGon-data/issues/1523>`_
+* Fix 123 TWh of household demand missing from ``grid.egon_etrago_load``:
+  ``ElectricalLoadEtrago`` now depends on the ``HouseholdDemands`` dataset,
+  not a bare task, and ``demands_per_bus`` raises on an empty source
+  `#1527 <https://github.com/openego/eGon-data/issues/1527>`_
+* Fix household profiles ignoring the scenario: fixed at 123.9 TWh for every
+  year, they are now scaled in ``mv_grid_district_HH_electricity_load`` to
+  ``demand.egon_demandregio_hh`` (110.5 TWh status2024, 83.0 TWh reGon2037)
+  `#1527 <https://github.com/openego/eGon-data/issues/1527>`_
 
 Version 2.0.0 (2025-08-20)
 ==========================
