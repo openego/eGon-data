@@ -2,6 +2,11 @@
 """Allocate future data center capacities and integrate data center buses,
 loads, connection lines and reusable waste heat into the database."""
 
+__copyright__ = "Europa-Universität Flensburg, Centre for Sustainable Energy Systems"
+__license__ = "GNU Affero General Public License Version 3 (AGPL-3.0)"
+__url__ = "https://github.com/openego/eGon-data/blob/main/LICENSE"
+__author__ = "VictorF42", "mheshammenisy", "CarlosEpia"
+
 import geopandas as gpd
 import numpy as np
 import pandas as pd
