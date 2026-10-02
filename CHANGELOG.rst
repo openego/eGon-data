@@ -57,6 +57,9 @@ Added
 Changed
 -------
 
+* Changes to improve the matching of the Kraftwerksliste from the NEP
+  and the corresponding MaStR-data for CHP. 
+  '#1494 <https://github.com/openego/eGon-data/issues/1494>`_
 * Determine residential buildings by intersecting OSM buildings with
   ETHOS.BUILDA instead of filtering by OSM tags alone, keeping the ETHOS
   attributes and the provenance of each match, retain the previous filter's
