@@ -501,14 +501,9 @@ class MotorizedIndividualTravel(Dataset):
             "KBA": "https://www.kba.de/SharedDocs/Downloads/DE/Statistik/Fahrzeuge/FZ1/fz1_2021.xlsx?__blob=publicationFile&v=2",
             "RS7": "https://www.bmv.de/SharedDocs/DE/Anlage/G/regiostar-referenzdateien.xlsx?__blob=publicationFile",
             # Delivered M1+N1 input data, one zip archive per scenario.
-            # Keyed by environment because Zenodo's sandbox and
-            # production are separate deployments with separate record
-            # ids -- switching is not a host substitution. The active
-            # set is picked by `ZENODO_ENVIRONMENT`.
             **{
-                f"input_data_{environment}_{scenario_name}": url
-                for environment, urls in ZENODO_URLS.items()
-                for scenario_name, url in urls.items()
+                f"input_data_{scenario_name}": url
+                for scenario_name, url in ZENODO_URLS.items()
             },
         },
         files={

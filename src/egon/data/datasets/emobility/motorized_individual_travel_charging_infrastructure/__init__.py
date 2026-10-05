@@ -131,9 +131,8 @@ class MITChargingInfrastructure(Dataset):
             # `egon.data.datasets.emobility.mit_lgv_input_data`, which
             # the MIT dataset reads them from as well.
             **{
-                f"input_data_{environment}_{scenario_name}": url
-                for environment, urls in ZENODO_URLS.items()
-                for scenario_name, url in urls.items()
+                f"input_data_{scenario_name}": url
+                for scenario_name, url in ZENODO_URLS.items()
             },
         },
         tables={

@@ -59,42 +59,19 @@ INPUT_FILES = {
     "metadata_geolis_run": GEOLIS_METADATA_FILE,
 }
 
-# Zenodo testing and production are separate deployments with separate
-# record ids, so the switch is not a host substitution -- the full URL
-# differs per scenario per environment. Flip ZENODO_ENVIRONMENT to
-# "zenodo" for production; that is the one edit needed.
-#
-# TODO(#1460): the records do not exist yet. Replace the PLACEHOLDER
-# record ids with the real ones; `grep -rn PLACEHOLDER src/` must come
-# back empty before this is released.
-ZENODO_ENVIRONMENT = "zenodo_sandbox"
+# Zenodo dataset
+ZENODO_RECORD = 23162886
 
 ZENODO_URLS = {
-    "zenodo_sandbox": {
-        "status2024": (
-            "https://sandbox.zenodo.org/record/PLACEHOLDER/files/"
-            "status2024.zip"
-        ),
-        "reGon2037": (
-            "https://sandbox.zenodo.org/record/PLACEHOLDER/files/"
-            "reGon2037.zip"
-        ),
-        "reGon2045": (
-            "https://sandbox.zenodo.org/record/PLACEHOLDER/files/"
-            "reGon2045.zip"
-        ),
-    },
-    "zenodo": {
-        "status2024": (
-            "https://zenodo.org/record/PLACEHOLDER/files/status2024.zip"
-        ),
-        "reGon2037": (
-            "https://zenodo.org/record/PLACEHOLDER/files/reGon2037.zip"
-        ),
-        "reGon2045": (
-            "https://zenodo.org/record/PLACEHOLDER/files/reGon2045.zip"
-        ),
-    },
+    "status2024": (
+        f"https://zenodo.org/record/{ZENODO_RECORD}/files/status2024.zip"
+    ),
+    "reGon2037": (
+        f"https://zenodo.org/record/{ZENODO_RECORD}/files/reGon2037.zip"
+    ),
+    "reGon2045": (
+        f"https://zenodo.org/record/{ZENODO_RECORD}/files/reGon2045.zip"
+    ),
 }
 
 #: Seconds a stale download lock is tolerated before it is broken. The
@@ -150,13 +127,12 @@ def zenodo_url(scenario_name: str) -> str:
         Complete URL of the zip archive
     """
     try:
-        return ZENODO_URLS[ZENODO_ENVIRONMENT][scenario_name]
+        return ZENODO_URLS[scenario_name]
     except KeyError:
         raise ValueError(
-            f"No Zenodo record configured for scenario "
-            f"'{scenario_name}' in environment '{ZENODO_ENVIRONMENT}'. "
+            f"No Zenodo record configured for scenario '{scenario_name}'. "
             f"Known scenarios: "
-            f"{sorted(ZENODO_URLS[ZENODO_ENVIRONMENT])}."
+            f"{sorted(ZENODO_URLS)}."
         )
 
 

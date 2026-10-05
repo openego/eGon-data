@@ -19,10 +19,7 @@ from sqlalchemy.dialects.postgresql import JSONB, REAL
 from sqlalchemy.ext.declarative import declarative_base
 
 from egon.data import config, db
-from egon.data.datasets.emobility.mit_lgv_input_data import (
-    ZENODO_ENVIRONMENT,
-    ZENODO_URLS,
-)
+from egon.data.datasets.emobility.mit_lgv_input_data import ZENODO_URLS
 from egon.data.datasets.emobility.motorized_individual_travel.helpers import (
     read_simbev_metadata_file,
 )
@@ -401,7 +398,7 @@ def _delivered_input_data_sources():
                 license_ccby(attribution="© Reiner Lemoine Institut")
             ],
         }
-        for scenario_name, url in ZENODO_URLS[ZENODO_ENVIRONMENT].items()
+        for scenario_name, url in ZENODO_URLS.items()
     ]
 
 

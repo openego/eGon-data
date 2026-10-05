@@ -20,10 +20,7 @@ from sqlalchemy.ext.declarative import declarative_base
 
 from egon.data import config, db
 from egon.data.datasets import load_sources_and_targets
-from egon.data.datasets.emobility.mit_lgv_input_data import (
-    ZENODO_ENVIRONMENT,
-    ZENODO_URLS,
-)
+from egon.data.datasets.emobility.mit_lgv_input_data import ZENODO_URLS
 from egon.data.datasets.mv_grid_districts import MvGridDistricts
 from egon.data.metadata import (
     context,
@@ -301,7 +298,7 @@ def _add_charging_location_metadata(contris):
                     license_ccby(attribution="© Reiner Lemoine Institut")
                 ],
             }
-            for scenario_name, url in ZENODO_URLS[ZENODO_ENVIRONMENT].items()
+            for scenario_name, url in ZENODO_URLS.items()
         ],
         "licenses": [
             license_odbl(attribution="© eGon development team"),
