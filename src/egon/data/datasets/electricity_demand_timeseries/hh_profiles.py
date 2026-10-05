@@ -284,8 +284,9 @@ class HouseholdDemands(Dataset):
                         table_name="demand.egon_household_electricity_profile_in_census_cell",
                         row_count=resolve_boundary_dependence(
                             {
-                                "Schleswig-Holstein": 143521,
-                                "Everything": 3177723,
+                                # One row per populated Zensus 2022 cell
+                                "Schleswig-Holstein": 138730,
+                                "Everything": 3088037,
                             }
                         ),
                         data_type_columns={

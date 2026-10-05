@@ -430,7 +430,9 @@ def population_share():
             """,
             con=db.engine(),
         )["sum"][0]
-        / 80324282
+        # Population of all populated cells in the Zensus 2022 grid for
+        # Germany (Zensus 2011: 80324282)
+        / 82570995
     )
 
 
