@@ -165,33 +165,27 @@ def match_osm_and_zensus_data(
     def find_adjacent_cells(row, adj_cell_radius):
         """
         Find adjacent cells for cell by iterating over census grid ids
-        (100mN...E...).
+        (Zensus 2022: CRS3035RES100mN...E..., Zensus 2011: 100mN...E...).
 
         Parameters
         ----------
         row : Dataframe row
-            Dataframe row
+            Dataframe row with the id prefix, the N and E coordinates and
+            the step between neighbouring cells in the units of the id
         adj_cell_radius : int
             distance of cells in each direction to find cells,
             e.g. adj_cell_radius=3 -> 7x7 cell matrix
 
         Returns
         -------
-        tuples of int
-            N coordinates, E coordinates in format
-            [(N_cell_1, E_cell_1), ..., (N_cell_n, E_cell_n)]
+        list of str
+            Grid ids of the cell and its adjacent cells
         """
+        offsets = np.arange(-adj_cell_radius, adj_cell_radius + 1) * row.step
         return [
-            f"100mN{_[0]}E{_[1]}"
+            f"{row.prefix}N{_[0]}E{_[1]}"
             for _ in np.array(
-                np.meshgrid(
-                    np.arange(
-                        row.N - adj_cell_radius, row.N + adj_cell_radius + 1
-                    ),
-                    np.arange(
-                        row.E - adj_cell_radius, row.E + adj_cell_radius + 1
-                    ),
-                )
+                np.meshgrid(row.N + offsets, row.E + offsets)
             ).T.reshape(-1, 2)
         ]
 
@@ -299,15 +293,18 @@ def match_osm_and_zensus_data(
         .loc[missing_buildings.index.unique()]
     )
 
-    # Extract coordinates
+    # Extract coordinates. Zensus 2022 ids give the lower-left corner in
+    # metres (neighbours are 100 apart), Zensus 2011 ids in hectometres
+    # (neighbours are 1 apart).
+    coordinates = missing_buildings_temp.grid_id.str.extract(
+        r"^(?P<prefix>.*100m)N(?P<N>\d+)E(?P<E>\d+)$"
+    )
+    coordinates[["N", "E"]] = coordinates[["N", "E"]].astype(int)
+    coordinates["step"] = np.where(
+        coordinates.prefix.str.startswith("CRS3035RES"), 100, 1
+    )
     missing_buildings_temp = pd.concat(
-        [
-            missing_buildings_temp,
-            missing_buildings_temp.grid_id.str.extract(r"100mN(\d+)E(\d+)")
-            .astype(int)
-            .rename(columns={0: "N", 1: "E"}),
-        ],
-        axis=1,
+        [missing_buildings_temp, coordinates], axis=1
     )
 
     # Find adjacent cells for cell
@@ -316,7 +313,7 @@ def match_osm_and_zensus_data(
     )
     missing_buildings_temp = (
         missing_buildings_temp.explode("cell_adj")
-        .drop(columns=["grid_id", "N", "E"])
+        .drop(columns=["grid_id", "prefix", "N", "E", "step"])
         .reset_index()
     )
 
@@ -1242,7 +1239,7 @@ class setup(Dataset):
     #:
     name: str = "Demand_Building_Assignment"
     #:
-    version: str = "0.0.12"
+    version: str = "0.0.13"
     #:
     sources = DatasetSources(
         tables={
