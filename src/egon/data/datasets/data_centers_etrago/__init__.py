@@ -2,14 +2,20 @@
 """Allocate future data center capacities and integrate data center buses,
 loads, connection lines and reusable waste heat into the database."""
 
+__copyright__ = "Europa-Universität Flensburg, Centre for Sustainable Energy Systems"
+__license__ = "GNU Affero General Public License Version 3 (AGPL-3.0)"
+__url__ = "https://github.com/openego/eGon-data/blob/main/LICENSE"
+__author__ = "VictorF42", "mheshammenisy", "CarlosEpia"
+
 import geopandas as gpd
 import numpy as np
 import pandas as pd
-import scipy.stats as stats
 
 from geoalchemy2 import Geometry
+from scipy import stats
 from scipy.spatial.distance import cdist
 from shapely.geometry import LineString
+from sqlalchemy import column, delete, func, select, table
 
 from egon.data import config, db
 from egon.data.datasets import Dataset, DatasetSources, DatasetTargets
@@ -88,6 +94,13 @@ CONNECTION_VOLTAGES = (HV_VOLTAGE,) + EHV_VOLTAGES
 # small, and the connection, not the data center, would set the limit. Lower
 # the share to keep planning headroom on the connection line.
 MAX_CONNECTION_LOADING = 1.0
+
+# A data center sits at the centroid of its commercial area, which can lie
+# right next to the grid bus it connects to. The length used for the line's
+# impedance is floored, because a line of almost no length has almost no
+# reactance, which makes the power flow ill-conditioned. The floor is in the
+# order of the shortest lines of the existing grid.
+MIN_CONNECTION_LENGTH_KM = 0.01
 
 # Data center waste heat
 # Assume 20% reusable waste heat based on EnEfG § 11(2):
@@ -182,15 +195,37 @@ def generate_data_center_sizes(target_capacity_mw):
     )
 
 
-def load_commercial_areas():
-    sources = DataCenters.sources
+def sql_table(name, *columns):
+    """Return a SQLAlchemy table for a 'schema.table' name and its columns.
 
+    The statements of this dataset are built from such tables rather than from
+    formatted strings, so values like the scenario name reach the database as
+    parameters.
+    """
+    schema, table_name = name.split(".")
+
+    return table(
+        table_name, *(column(name) for name in columns), schema=schema
+    )
+
+
+def load_commercial_areas():
+    areas = sql_table(
+        DataCenters.sources.tables["commercial_areas"],
+        "geom",
+        "sector_name",
+        "tags",
+    )
+
+    # OSM also maps substations, power plants and generators as industrial
+    # land use. Such a site is not available for a data center, and the grid
+    # bus of a substation sits at the centroid of the substation's polygon, so
+    # a data center allocated there would sit on top of the bus it connects
+    # to. Areas carrying a power tag are therefore left out.
     gdf = db.select_geodataframe(
-        f"""
-        SELECT geom
-        FROM {sources.tables["commercial_areas"]}
-        WHERE sector_name IN ('industrial', 'retail')
-        """,
+        select(areas.c.geom)
+        .where(areas.c.sector_name.in_(["industrial", "retail"]))
+        .where(areas.c.tags.op("->")("power").is_(None)),
         geom_col="geom",
         epsg=3035,
     ).to_crs(epsg=25832)
@@ -199,13 +234,12 @@ def load_commercial_areas():
 
 
 def load_substations():
-    sources = DataCenters.sources
+    substations = sql_table(
+        DataCenters.sources.tables["substations"], "point"
+    )
 
     gdf = db.select_geodataframe(
-        f"""
-        SELECT point
-        FROM {sources.tables["substations"]}
-        """,
+        select(substations.c.point),
         geom_col="point",
         epsg=4326,
     ).to_crs(epsg=25832)
@@ -214,14 +248,20 @@ def load_substations():
 
 
 def load_district_heating_areas(scenario):
-    sources = DataCenters.sources
+    areas = sql_table(
+        DataCenters.sources.tables["district_heating_areas"],
+        "area_id",
+        "geom_polygon",
+        "residential_and_service_demand",
+        "scenario",
+    )
 
     gdf = db.select_geodataframe(
-        f"""
-        SELECT area_id, geom_polygon, residential_and_service_demand
-        FROM {sources.tables["district_heating_areas"]}
-        WHERE scenario = '{scenario}'
-        """,
+        select(
+            areas.c.area_id,
+            areas.c.geom_polygon,
+            areas.c.residential_and_service_demand,
+        ).where(areas.c.scenario == scenario),
         geom_col="geom_polygon",
         epsg=3035,
     ).to_crs(epsg=25832)
@@ -274,32 +314,24 @@ def load_ukpn_profiles():
     return profiles
 
     
-def create_data_center_allocation(scenario):
-    """Run data center allocation workflow and return rz_punkte."""
-    # Allocate generated data center capacities to suitable commercial areas
-    # based on electricity, district-heating, and internet-location criteria.
+def convert_percent(val):
+    """Convert a percentage given as text, e.g. '80 %', into a share."""
+    if pd.isna(val) or val == "-":
+        return None
+    try:
+        s = str(val).replace("%", "").replace(",", ".").strip()
+        return float(s) / 100
+    except ValueError:
+        return None
 
-    rz_df = generate_data_center_sizes(get_target_capacity(scenario))
-    gewerbe_raw = load_commercial_areas()
-    strom_raw = load_substations()
-    waerme_raw = load_district_heating_areas(scenario)
-    ixp_raw = load_internet_nodes()
-    regio_raw = load_regional_factors()
 
-    def convert_percent(val):
-        if pd.isna(val) or val == "-":
-            return None
-        try:
-            s = str(val).replace("%", "").replace(",", ".").strip()
-            return float(s) / 100
-        except:
-            return None
-
+def add_regional_factors(strom_raw, regio_raw):
+    """Give every substation the regional factor of its nearest reference."""
     regio_ref = regio_raw.copy()
     regio_ref["Faktor"] = regio_ref["Faktor"].apply(convert_percent)
     regio_ref = regio_ref.dropna(subset=["Faktor"])
 
-    strom_final = (
+    return (
         gpd.sjoin_nearest(
             strom_raw.copy(),
             regio_ref[["geometry", "Faktor"]],
@@ -310,6 +342,11 @@ def create_data_center_allocation(scenario):
         .drop_duplicates(subset=["geometry"])
     )
 
+
+def join_nearest_infrastructure(
+    gewerbe_raw, strom_final, waerme_raw, ixp_raw
+):
+    """Attach the nearest substation, heating area and internet node."""
     gewerbe_final = gewerbe_raw[["geometry"]].copy()
     gewerbe_final["area_ha"] = gewerbe_final.geometry.area / 10000
 
@@ -333,6 +370,11 @@ def create_data_center_allocation(scenario):
             .drop_duplicates(subset=["geometry"])
         )
 
+    return gewerbe_final
+
+
+def score_commercial_areas(gewerbe_final, waerme_raw, ixp_raw):
+    """Score commercial areas by electricity, heat and internet location."""
     gewerbe_scored = gewerbe_final.copy()
 
     gewerbe_scored["score_dist_strom"] = dist_score(
@@ -384,16 +426,17 @@ def create_data_center_allocation(scenario):
         + W_IXP * gewerbe_scored["cat_score_ixp"]
     )
 
-    rz_sizes_mw = (
-        rz_df["Leistung_MW"].astype(float).sort_values(ascending=False).values
-    )
+    return gewerbe_scored
 
-    num_areas = len(gewerbe_scored)
-    base_areas = gewerbe_scored["area_ha"].values.copy()
-    base_scores = np.clip(gewerbe_scored["total_score"].values.copy(), 0, None)
 
-    history_mw = np.zeros((MC_RUNS, num_areas))
-    history_count = np.zeros((MC_RUNS, num_areas))
+def allocate_to_commercial_areas(rz_sizes_mw, base_areas, base_scores):
+    """Return the allocated capacity and data center count per area.
+
+    The data centers are placed in MC_RUNS random runs, of which the medoid,
+    i.e. the run closest to all others, is returned.
+    """
+    history_mw = np.zeros((MC_RUNS, len(base_areas)))
+    history_count = np.zeros((MC_RUNS, len(base_areas)))
 
     np.random.seed(RANDOM_SEED)
 
@@ -426,11 +469,45 @@ def create_data_center_allocation(scenario):
     distances = cdist(history_mw, history_mw, metric="cityblock")
     medoid_idx = np.argmin(distances.sum(axis=1))
 
-    gewerbe_scored["allocated_mw"] = history_mw[medoid_idx]
-    gewerbe_scored["rz_count"] = history_count[medoid_idx]
+    return history_mw[medoid_idx], history_count[medoid_idx]
+
+
+def create_data_center_allocation(scenario):
+    """Run data center allocation workflow and return rz_punkte."""
+    # Allocate generated data center capacities to suitable commercial areas
+    # based on electricity, district-heating, and internet-location criteria.
+
+    rz_df = generate_data_center_sizes(get_target_capacity(scenario))
+    gewerbe_raw = load_commercial_areas()
+    strom_raw = load_substations()
+    waerme_raw = load_district_heating_areas(scenario)
+    ixp_raw = load_internet_nodes()
+    regio_raw = load_regional_factors()
+
+    gewerbe_scored = score_commercial_areas(
+        join_nearest_infrastructure(
+            gewerbe_raw,
+            add_regional_factors(strom_raw, regio_raw),
+            waerme_raw,
+            ixp_raw,
+        ),
+        waerme_raw,
+        ixp_raw,
+    )
+
+    rz_sizes_mw = (
+        rz_df["Leistung_MW"].astype(float).sort_values(ascending=False).values
+    )
+    base_areas = gewerbe_scored["area_ha"].values.copy()
+    base_scores = np.clip(gewerbe_scored["total_score"].values.copy(), 0, None)
+
+    (
+        gewerbe_scored["allocated_mw"],
+        gewerbe_scored["rz_count"],
+    ) = allocate_to_commercial_areas(rz_sizes_mw, base_areas, base_scores)
 
     # A data center that does not fit into any single commercial area is
-    # skipped by the loop above, which would silently put the scenario below
+    # skipped by the allocation, which would silently put the scenario below
     # the NEP target without any other symptom.
     allocated_mw = gewerbe_scored["allocated_mw"].sum()
     target_capacity_mw = get_target_capacity(scenario)
@@ -497,18 +574,31 @@ def get_connection_line_parameters(scenario):
 
 def get_existing_ac_buses(scenario):
     """Get the existing German AC buses data centers may connect to."""
-    sources = DataCenters.sources
+    buses = sql_table(
+        DataCenters.sources.tables["buses"],
+        "bus_id",
+        "v_nom",
+        "carrier",
+        "x",
+        "y",
+        "geom",
+        "scn_name",
+        "country",
+    )
 
     gdf = db.select_geodataframe(
-        f"""
-        SELECT bus_id, v_nom, carrier, x, y, geom
-        FROM {sources.tables["buses"]}
-        WHERE scn_name = '{scenario}'
-        AND carrier = 'AC'
-        AND v_nom IN ({", ".join(
-            str(v_nom) for v_nom in CONNECTION_VOLTAGES)})
-        AND country = 'DE'
-        """,
+        select(
+            buses.c.bus_id,
+            buses.c.v_nom,
+            buses.c.carrier,
+            buses.c.x,
+            buses.c.y,
+            buses.c.geom,
+        )
+        .where(buses.c.scn_name == scenario)
+        .where(buses.c.carrier == "AC")
+        .where(buses.c.v_nom.in_(CONNECTION_VOLTAGES))
+        .where(buses.c.country == "DE"),
         geom_col="geom",
         epsg=4326,
     )
@@ -519,6 +609,15 @@ def get_existing_ac_buses(scenario):
 def get_central_heat_bus_per_area(scenario):
     """Map each district heating area to its central heat bus."""
     sources = DataCenters.sources
+    areas = sql_table(
+        sources.tables["district_heating_areas"],
+        "area_id",
+        "geom_polygon",
+        "scenario",
+    ).alias("a")
+    buses = sql_table(
+        sources.tables["buses"], "bus_id", "geom", "scn_name", "carrier"
+    ).alias("b")
 
     # heat_etrago.insert_buses() creates exactly one central heat bus per
     # district heating area, placed at the centroid of the area. Matching the
@@ -526,18 +625,24 @@ def get_central_heat_bus_per_area(scenario):
     # tiny buffer absorbs coordinate rounding and mirrors the join used in
     # heat_etrago.insert_central_direct_heat().
     return db.select_dataframe(
-        f"""
-        SELECT a.area_id, b.bus_id
-        FROM {sources.tables["district_heating_areas"]} AS a
-        JOIN {sources.tables["buses"]} AS b
-        ON ST_Intersects(
-            ST_Transform(
-                ST_Buffer(ST_Centroid(a.geom_polygon), 0.0000001), 4326),
-            b.geom)
-        WHERE a.scenario = '{scenario}'
-        AND b.scn_name = '{scenario}'
-        AND b.carrier = 'central_heat'
-        """,
+        select(areas.c.area_id, buses.c.bus_id)
+        .select_from(
+            areas.join(
+                buses,
+                func.ST_Intersects(
+                    func.ST_Transform(
+                        func.ST_Buffer(
+                            func.ST_Centroid(areas.c.geom_polygon), 0.0000001
+                        ),
+                        4326,
+                    ),
+                    buses.c.geom,
+                ),
+            )
+        )
+        .where(areas.c.scenario == scenario)
+        .where(buses.c.scn_name == scenario)
+        .where(buses.c.carrier == "central_heat"),
         index_col="area_id",
     )
 
@@ -750,7 +855,9 @@ def create_data_center_lines(data_centers, scenario, line_parameters):
         data_centers_projected.iterrows(), nearest_bus_geom
     ):
         topo = LineString([row.geometry, bus_geom])
-        length_km = topo.length / 1000
+        # topo keeps the real course of the line, only the length the
+        # impedance is calculated from is floored.
+        length_km = max(topo.length / 1000, MIN_CONNECTION_LENGTH_KM)
         parameters = line_parameters[int(row.v_nom)]
 
         lines.append(
@@ -875,56 +982,72 @@ def create_waste_heat_timeseries(generators, data_centers, scenario):
 
 def delete_existing_data_centers(scenario):
     """Delete previously inserted data center components before rerun."""
-    targets = DataCenters.targets
+    tables = DataCenters.targets.tables
 
-    db.execute_sql(f"""
-        DELETE FROM {targets.tables["load_timeseries"]}
-        WHERE scn_name = '{scenario}'
-        AND load_id IN (
-            SELECT load_id
-            FROM {targets.tables["loads"]}
-            WHERE scn_name = '{scenario}'
-            AND type = 'data_center'
-        );
+    buses = sql_table(tables["buses"], "scn_name", "bus_id", "type")
+    lines = sql_table(tables["lines"], "scn_name", "bus0")
+    loads = sql_table(tables["loads"], "scn_name", "load_id", "type")
+    load_timeseries = sql_table(
+        tables["load_timeseries"], "scn_name", "load_id"
+    )
+    generators = sql_table(
+        tables["generators"], "scn_name", "generator_id", "carrier"
+    )
+    generator_timeseries = sql_table(
+        tables["generator_timeseries"], "scn_name", "generator_id"
+    )
+    links = sql_table(tables["links"], "scn_name", "carrier")
 
-        DELETE FROM {targets.tables["generator_timeseries"]}
-        WHERE scn_name = '{scenario}'
-        AND generator_id IN (
-            SELECT generator_id
-            FROM {targets.tables["generators"]}
-            WHERE scn_name = '{scenario}'
-            AND carrier = 'data_center_waste_heat'
-        );
+    data_center_loads = (
+        select(loads.c.load_id)
+        .where(loads.c.scn_name == scenario)
+        .where(loads.c.type == "data_center")
+    )
+    waste_heat_generators = (
+        select(generators.c.generator_id)
+        .where(generators.c.scn_name == scenario)
+        .where(generators.c.carrier == "data_center_waste_heat")
+    )
+    data_center_buses = (
+        select(buses.c.bus_id)
+        .where(buses.c.scn_name == scenario)
+        .where(buses.c.type == "data_center")
+    )
 
-        DELETE FROM {targets.tables["generators"]}
-        WHERE scn_name = '{scenario}'
-        AND carrier = 'data_center_waste_heat';
-
-        -- Waste heat used to be modelled as a link from the data center AC bus
-        -- to the central heat bus. It is a generator at the heat bus now, see
-        -- create_waste_heat_generators(), but the delete is kept so databases
-        -- written by earlier versions of this dataset are cleaned up.
-        DELETE FROM {targets.tables["links"]}
-        WHERE scn_name = '{scenario}'
-        AND carrier = 'data_center_waste_heat';
-
-        DELETE FROM {targets.tables["loads"]}
-        WHERE scn_name = '{scenario}'
-        AND type = 'data_center';
-
-        DELETE FROM {targets.tables["lines"]}
-        WHERE scn_name = '{scenario}'
-        AND bus0 IN (
-            SELECT bus_id
-            FROM {targets.tables["buses"]}
-            WHERE scn_name = '{scenario}'
-            AND type = 'data_center'
-        );
-
-        DELETE FROM {targets.tables["buses"]}
-        WHERE scn_name = '{scenario}'
-        AND type = 'data_center';
-        """)
+    # The time series and lines are deleted before the rows they are found
+    # through. All deletes share one transaction.
+    with db.session_scope() as session:
+        for statement in (
+            delete(load_timeseries)
+            .where(load_timeseries.c.scn_name == scenario)
+            .where(load_timeseries.c.load_id.in_(data_center_loads)),
+            delete(generator_timeseries)
+            .where(generator_timeseries.c.scn_name == scenario)
+            .where(
+                generator_timeseries.c.generator_id.in_(waste_heat_generators)
+            ),
+            delete(generators)
+            .where(generators.c.scn_name == scenario)
+            .where(generators.c.carrier == "data_center_waste_heat"),
+            # Waste heat used to be modelled as a link from the data center AC
+            # bus to the central heat bus. It is a generator at the heat bus
+            # now, see create_waste_heat_generators(), but the delete is kept
+            # so databases written by earlier versions of this dataset are
+            # cleaned up.
+            delete(links)
+            .where(links.c.scn_name == scenario)
+            .where(links.c.carrier == "data_center_waste_heat"),
+            delete(loads)
+            .where(loads.c.scn_name == scenario)
+            .where(loads.c.type == "data_center"),
+            delete(lines)
+            .where(lines.c.scn_name == scenario)
+            .where(lines.c.bus0.in_(data_center_buses)),
+            delete(buses)
+            .where(buses.c.scn_name == scenario)
+            .where(buses.c.type == "data_center"),
+        ):
+            session.execute(statement)
 
 
 def insert_scenario_data_centers(scenario):
@@ -1250,7 +1373,7 @@ class DataCenters(Dataset):
     """Integrate future data center demand"""
 
     name: str = "DataCenters"
-    version: str = "0.0.6"
+    version: str = "0.0.7"
 
     sources = DatasetSources(
         tables={

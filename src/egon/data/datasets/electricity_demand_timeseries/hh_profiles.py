@@ -14,7 +14,7 @@ from pathlib import Path
 import os
 import random
 
-from sqlalchemy import ARRAY, Column, Float, Integer, String
+from sqlalchemy import ARRAY, Column, Float, Integer, String, func
 from sqlalchemy.dialects.postgresql import CHAR, INTEGER, REAL
 from sqlalchemy.ext.declarative import declarative_base
 import numpy as np
@@ -22,6 +22,7 @@ import pandas as pd
 
 from egon.data import db
 from egon.data.datasets import Dataset, DatasetSources, DatasetTargets
+from egon.data.datasets.demandregio import EgonDemandRegioHH
 from egon.data.datasets.scenario_parameters import get_scenario_year
 from egon.data.datasets.zensus_mv_grid_districts import MapZensusGridDistricts
 from egon.data.validation import TableValidation, resolve_boundary_dependence
@@ -2011,11 +2012,12 @@ def mv_grid_district_HH_electricity_load(scenario_name, scenario_year):
         mvgd_profiles.columns = ["bus_id", "p_set"]
 
     # Scale the profiles to the household demand of the scenario.
-    target = db.select_dataframe(
-        f"""SELECT SUM(demand) AS demand FROM
-                {HouseholdDemands.sources.tables['demandregio_hh']}
-                WHERE scenario = '{scenario_name}'""",
-    ).demand.iat[0]
+    with db.session_scope() as session:
+        target = (
+            session.query(func.sum(EgonDemandRegioHH.demand))
+            .filter(EgonDemandRegioHH.scenario == scenario_name)
+            .scalar()
+        )
 
     profiles_sum = mvgd_profiles["p_set"].apply(sum).sum()
 
