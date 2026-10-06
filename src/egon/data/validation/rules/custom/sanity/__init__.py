@@ -1,6 +1,14 @@
 """Sanity check validation rules for eGon data quality."""
 
 from .demandregio import DemandRegioScenarioDemand  # noqa: F401
+from .etrago_bus_table import (  # noqa: F401
+    BusTableAttributes,
+    BusTableConnected,
+    BusTableMvGridBuses,
+    BusTableNeighbourCoverage,
+    BusTableNetwork,
+    BusTableScenarioCoverage,
+)
 from .etrago_generator_table import (  # noqa: F401
     GeneratorTableBus,
     GeneratorTableBusCarrier,

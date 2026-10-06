@@ -14,6 +14,12 @@ from egon.data.validation import (
     resolve_boundary_dependence,
 )
 from egon.data.validation.rules.custom.sanity import (
+    BusTableAttributes,
+    BusTableConnected,
+    BusTableMvGridBuses,
+    BusTableNeighbourCoverage,
+    BusTableNetwork,
+    BusTableScenarioCoverage,
     GeneratorTableBus,
     GeneratorTableBusCarrier,
     GeneratorTableForeignAdequacy,
@@ -37,6 +43,9 @@ from egon.data.validation.rules.custom.sanity import (
     LoadTableTimeseriesCoverage,
     LoadTableTimeseriesValues,
 )
+from egon.data.validation.rules.custom.sanity.etrago_bus_table import (
+    NEIGHBOUR_COUNTRIES,
+)
 from egon.data.validation.rules.custom.sanity.etrago_load_table import (
     RAIL_CARRIERS,
 )
@@ -47,6 +56,7 @@ ETRAGO_SCENARIOS = ["status2024", "eGon2035", "reGon2037", "reGon2045"]
 
 GENERATOR_TABLE = "grid.egon_etrago_generator"
 LOAD_TABLE = "grid.egon_etrago_load"
+BUS_TABLE = "grid.egon_etrago_bus"
 
 
 def notasks():
@@ -105,6 +115,13 @@ class FinalValidations(Dataset):
       rail demand against the scenario parameters and loads on the heat
       buses and MV grid districts; AC demand with a plausible load factor
       in every neighbouring country.
+
+    ``etrago_bus_{all,germany,foreign}``
+      Sanity rules on the complete ``grid.egon_etrago_bus``, per scenario
+      (see :mod:`~egon.data.validation.rules.custom.sanity.etrago_bus_table`):
+      valid attributes and a branch at every bus, connected AC, CH4 and
+      H2_grid networks; a bus for every MV grid district; an AC bus in
+      every neighbouring country.
 
     *Dependencies*
       Should depend on all datasets whose data is validated by the rules
@@ -1276,6 +1293,64 @@ class FinalValidations(Dataset):
                         ("FOREIGN_COVERAGE", LoadTableForeignCoverage),
                         ("FOREIGN_PROFILE", LoadTableForeignProfile),
                     ]
+                    for scn in ETRAGO_SCENARIOS
+                ],
+                # grid.egon_etrago_bus, all datasets
+                "etrago_bus_all": [
+                    BusTableScenarioCoverage(
+                        table=BUS_TABLE,
+                        rule_id="SANITY_ETRAGO_BUS_SCENARIO_COVERAGE",
+                    ),
+                    *[
+                        rule(
+                            table=BUS_TABLE,
+                            rule_id=f"SANITY_ETRAGO_BUS_{check}.{scn}",
+                            scenario=scn,
+                        )
+                        for check, rule in [
+                            ("ATTRIBUTES", BusTableAttributes),
+                            ("CONNECTED", BusTableConnected),
+                        ]
+                        for scn in ETRAGO_SCENARIOS
+                    ],
+                    *[
+                        BusTableNetwork(
+                            table=BUS_TABLE,
+                            rule_id=f"SANITY_ETRAGO_BUS_{check}_NETWORK.{scn}",
+                            scenario=scn,
+                            carrier=carrier,
+                            serious_islands=carrier == "AC",
+                        )
+                        for check, carrier in [
+                            ("AC", "AC"),
+                            ("CH4", "CH4"),
+                            ("H2_GRID", "H2_grid"),
+                        ]
+                        for scn in ETRAGO_SCENARIOS
+                    ],
+                ],
+                "etrago_bus_germany": [
+                    BusTableMvGridBuses(
+                        table=BUS_TABLE,
+                        rule_id=f"SANITY_ETRAGO_BUS_MV_GRID_BUSES.{scn}",
+                        scenario=scn,
+                    )
+                    for scn in ETRAGO_SCENARIOS
+                ],
+                "etrago_bus_foreign": [
+                    BusTableNeighbourCoverage(
+                        table=BUS_TABLE,
+                        rule_id=(
+                            f"SANITY_ETRAGO_BUS_NEIGHBOUR_COVERAGE.{scn}"
+                        ),
+                        scenario=scn,
+                        countries=resolve_boundary_dependence(
+                            {
+                                "Schleswig-Holstein": None,
+                                "Everything": list(NEIGHBOUR_COUNTRIES),
+                            }
+                        ),
+                    )
                     for scn in ETRAGO_SCENARIOS
                 ],
             },

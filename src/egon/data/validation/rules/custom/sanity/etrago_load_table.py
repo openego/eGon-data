@@ -139,6 +139,9 @@ class LoadTableScenarioCoverage(DataFrameRule):
     are read when the rule runs, not when the DAG is built.
     """
 
+    #: Plural name of the rows in the checked table, used in the messages.
+    component = "loads"
+
     def __init__(self, table: str, rule_id: str, **kwargs):
         super().__init__(rule_id=rule_id, table=table, **kwargs)
         self.kind = "sanity"
@@ -160,20 +163,24 @@ class LoadTableScenarioCoverage(DataFrameRule):
         if missing:
             severity = Severity.ERROR
             message = (
-                f"Configured scenarios without loads: {', '.join(missing)}"
-                + (f"; scenarios with loads that are not configured: "
+                f"Configured scenarios without {self.component}: "
+                f"{', '.join(missing)}"
+                + (f"; scenarios with {self.component} that are not "
+                   f"configured: "
                    f"{', '.join(extra)}" if extra else "")
             )
         elif extra:
             severity = Severity.WARNING
             message = (
-                f"Loads exist for all configured scenarios, and also for "
+                f"{self.component.capitalize()} exist for all configured "
+                f"scenarios, and also for "
                 f"scenarios that are not configured: {', '.join(extra)}"
             )
         else:
             severity = Severity.INFO
             message = (
-                f"Loads exist for exactly the configured scenarios: "
+                f"{self.component.capitalize()} exist for exactly the "
+                f"configured scenarios: "
                 f"{', '.join(sorted(observed))}"
             )
         return RuleResult(
