@@ -178,7 +178,7 @@ def select_chp_from_mastr(sources, scenario):
     )
     
     # due to deviations between the Kraftwerksliste 2025 and the MaStR-data
-    # the clipping of the MaStR-data is skipped
+    # the clipping of the MaStR-data is skipped for the reGon-scenarios
     if scenario == "eGon2035":
         # Select only CHP plants which are in operation
         MaStR_konv = MaStR_konv[MaStR_konv.EinheitBetriebsstatus == "InBetrieb"]
