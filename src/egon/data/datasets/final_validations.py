@@ -13,6 +13,25 @@ from egon.data.validation import (
     TableValidation,
     resolve_boundary_dependence,
 )
+from egon.data.validation.rules.custom.sanity import (
+    GeneratorTableBus,
+    GeneratorTableBusCarrier,
+    GeneratorTableForeignAdequacy,
+    GeneratorTableForeignCoverage,
+    GeneratorTableMaxUnitSize,
+    GeneratorTableNationalCapacity,
+    GeneratorTablePNom,
+    GeneratorTableScenarioCoverage,
+    GeneratorTableStaticLimits,
+    GeneratorTableTimeseriesCoverage,
+    GeneratorTableTimeseriesValues,
+)
+
+#: Scenarios the per-scenario rules are built for; a scenario the run does
+#: not produce is skipped by the rules themselves.
+ETRAGO_SCENARIOS = ["status2024", "eGon2035", "reGon2037", "reGon2045"]
+
+GENERATOR_TABLE = "grid.egon_etrago_generator"
 
 
 def notasks():
@@ -40,7 +59,7 @@ class FinalValidations(Dataset):
     The validations are organized by category and run automatically as part of
     the dataset's validation tasks. Results are collected by ValidationReport.
 
-    Currently, two categories are defined:
+    Currently, these categories are defined:
 
     ``data-quality``
       One :class:`TableValidation` per eTraGo interface table: exact row
@@ -51,6 +70,16 @@ class FinalValidations(Dataset):
     ``timeseries_length``
       One :class:`ArrayCardinalityValidation` per array column that
       actually holds arrays, asserting the 8760 h resolution.
+
+    ``etrago_generator_{all,germany,foreign}``
+      Sanity rules on the complete ``grid.egon_etrago_generator`` and its
+      time series, per scenario (see
+      :mod:`~egon.data.validation.rules.custom.sanity.etrago_generator_table`):
+      a bus of the right carrier, valid ``p_nom`` and limits and a usable
+      ``p_max_pu`` series for every generator; the German capacity per
+      carrier against ``supply.egon_scenario_capacities`` and the largest
+      German unit; generation in every neighbouring country with a load,
+      and in proportion to its peak load.
 
     *Dependencies*
       Should depend on all datasets whose data is validated by the rules
@@ -306,6 +335,7 @@ class FinalValidations(Dataset):
                                 "central_others_CHP",
                                 "central_others_CHP_heat",
                                 "coal",
+                                "data_center_waste_heat",
                                 "geo_thermal",
                                 "industrial_biomass_CHP",
                                 "industrial_coal_CHP",
@@ -1064,6 +1094,76 @@ class FinalValidations(Dataset):
                             "bus_id",
                         ],
                     ),
+                ],
+                # grid.egon_etrago_generator(_timeseries), all datasets
+                "etrago_generator_all": [
+                    GeneratorTableScenarioCoverage(
+                        table=GENERATOR_TABLE,
+                        rule_id="SANITY_ETRAGO_GENERATOR_SCENARIO_COVERAGE",
+                    ),
+                    *[
+                        rule(
+                            table=GENERATOR_TABLE,
+                            rule_id=f"SANITY_ETRAGO_GENERATOR_{check}.{scn}",
+                            scenario=scn,
+                        )
+                        for check, rule in [
+                            ("BUS", GeneratorTableBus),
+                            ("BUS_CARRIER", GeneratorTableBusCarrier),
+                            ("P_NOM", GeneratorTablePNom),
+                            ("STATIC_LIMITS", GeneratorTableStaticLimits),
+                            (
+                                "TIMESERIES_COVERAGE",
+                                GeneratorTableTimeseriesCoverage,
+                            ),
+                            (
+                                "TIMESERIES_VALUES",
+                                GeneratorTableTimeseriesValues,
+                            ),
+                        ]
+                        for scn in ETRAGO_SCENARIOS
+                    ],
+                ],
+                "etrago_generator_germany": [
+                    *[
+                        GeneratorTableNationalCapacity(
+                            table=GENERATOR_TABLE,
+                            rule_id=(
+                                "SANITY_ETRAGO_GENERATOR_NATIONAL_CAPACITY."
+                                f"{scn}"
+                            ),
+                            scenario=scn,
+                            nuts=resolve_boundary_dependence(
+                                {
+                                    "Schleswig-Holstein": ["DEF"],
+                                    "Everything": None,
+                                }
+                            ),
+                        )
+                        for scn in ETRAGO_SCENARIOS
+                    ],
+                    *[
+                        GeneratorTableMaxUnitSize(
+                            table=GENERATOR_TABLE,
+                            rule_id=(
+                                f"SANITY_ETRAGO_GENERATOR_MAX_UNIT_SIZE.{scn}"
+                            ),
+                            scenario=scn,
+                        )
+                        for scn in ETRAGO_SCENARIOS
+                    ],
+                ],
+                "etrago_generator_foreign": [
+                    rule(
+                        table=GENERATOR_TABLE,
+                        rule_id=f"SANITY_ETRAGO_GENERATOR_{check}.{scn}",
+                        scenario=scn,
+                    )
+                    for check, rule in [
+                        ("FOREIGN_COVERAGE", GeneratorTableForeignCoverage),
+                        ("FOREIGN_ADEQUACY", GeneratorTableForeignAdequacy),
+                    ]
+                    for scn in ETRAGO_SCENARIOS
                 ],
             },
             # Continue pipeline even if validations fail

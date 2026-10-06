@@ -1,6 +1,19 @@
 """Sanity check validation rules for eGon data quality."""
 
 from .demandregio import DemandRegioScenarioDemand  # noqa: F401
+from .etrago_generator_table import (  # noqa: F401
+    GeneratorTableBus,
+    GeneratorTableBusCarrier,
+    GeneratorTableForeignAdequacy,
+    GeneratorTableForeignCoverage,
+    GeneratorTableMaxUnitSize,
+    GeneratorTableNationalCapacity,
+    GeneratorTablePNom,
+    GeneratorTableScenarioCoverage,
+    GeneratorTableStaticLimits,
+    GeneratorTableTimeseriesCoverage,
+    GeneratorTableTimeseriesValues,
+)
 from .etrago_generators import (  # noqa: F401
     EtragoGeneratorCapacity,
     EtragoGeneratorMarginalCost,
