@@ -15,6 +15,76 @@ FEEDIN_VALUE_RANGES = {
 }
 
 
+#: Table holding all zensus cells
+ZENSUS_TABLE = "society.destatis_zensus_population_per_ha"
+
+
+class ZensusWeatherCellMappingRowCount(DataFrameRule):
+    """Check that every zensus cell is mapped to exactly one weather cell.
+
+    Instead of a fixed row count, the number of rows in the mapping table
+    is compared to the number of cells in
+    society.destatis_zensus_population_per_ha. The check fails if a
+    zensus cell is missing in the mapping or mapped more than once.
+
+    Args:
+        table: Table being validated
+            (boundaries.egon_map_zensus_weather_cell)
+        rule_id: Unique identifier for this validation rule
+
+    Example:
+        >>> validation = {
+        ...     "data-quality": [
+        ...         ZensusWeatherCellMappingRowCount(
+        ...             table="boundaries.egon_map_zensus_weather_cell",
+        ...             rule_id="SANITY_ZENSUS_WEATHER_CELL_ROW_COUNT",
+        ...         )
+        ...     ]
+        ... }
+    """
+
+    def __init__(self, table: str, rule_id: str, **kwargs):
+        super().__init__(rule_id=rule_id, table=table, **kwargs)
+        self.kind = "sanity"
+
+    def get_query(self, ctx):
+        return f"""
+        SELECT (SELECT COUNT(*) FROM {ZENSUS_TABLE}) AS n_zensus,
+               COUNT(*) AS n_rows,
+               COUNT(DISTINCT zensus_population_id) AS n_distinct
+        FROM {self.table}
+        """
+
+    def evaluate_df(self, df, ctx):
+        row = df.iloc[0]
+        n_zensus = int(row["n_zensus"])
+        n_rows = int(row["n_rows"])
+        n_duplicates = n_rows - int(row["n_distinct"])
+
+        success = n_rows == n_zensus and n_duplicates == 0
+
+        return RuleResult(
+            rule_id=self.rule_id,
+            task=self.task,
+            table=self.table,
+            kind=self.kind,
+            success=success,
+            observed=float(n_rows),
+            expected=float(n_zensus),
+            message=(
+                f"All {n_zensus} zensus cells are mapped to a weather cell"
+                if success
+                else f"Expected {n_zensus} rows (one per cell in "
+                f"{ZENSUS_TABLE}), found {n_rows} "
+                f"({n_duplicates} duplicate zensus_population_id)"
+            ),
+            severity=Severity.INFO if success else Severity.ERROR,
+            schema=self.schema,
+            table_name=self.table_name,
+            rule_class=self.__class__.__name__,
+        )
+
+
 class RenewableFeedinTimeseries(DataFrameRule):
     """Validate the feed-in time series of supply.egon_era5_renewable_feedin.
 

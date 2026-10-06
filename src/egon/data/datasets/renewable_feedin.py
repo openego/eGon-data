@@ -25,6 +25,7 @@ from egon.data.metadata import context, license_ccby, meta_metadata, sources
 from egon.data.validation import TableValidation, resolve_boundary_dependence
 from egon.data.validation.rules.custom.sanity import (
     RenewableFeedinTimeseries,
+    ZensusWeatherCellMappingRowCount,
 )
 import egon.data.config
 
@@ -120,19 +121,17 @@ class RenewableFeedin(Dataset):
                     ),
                     TableValidation(
                         table_name="boundaries.egon_map_zensus_weather_cell",
-                        # Observed on SH_test_run_0726 / regon_dev_11-09
-                        # (2026-09-24)
-                        row_count=resolve_boundary_dependence(
-                            {
-                                "Schleswig-Holstein": 1579458,
-                                "Everything": 35785840,
-                            }
-                        ),
+                        # Row count is checked against the zensus table
+                        # by ZensusWeatherCellMappingRowCount below
                         data_type_columns={
                             "zensus_population_id": "integer",
                             "w_id": "integer",
                         },
                         not_null_columns=["zensus_population_id", "w_id"],
+                    ),
+                    ZensusWeatherCellMappingRowCount(
+                        table="boundaries.egon_map_zensus_weather_cell",
+                        rule_id="SANITY_ZENSUS_WEATHER_CELL_ROW_COUNT",
                     ),
                     RenewableFeedinTimeseries(
                         table="supply.egon_era5_renewable_feedin",

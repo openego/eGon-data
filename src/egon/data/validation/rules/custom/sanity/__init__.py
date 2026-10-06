@@ -9,7 +9,10 @@ from .pv_rooftop_buildings import (
     PvRooftopCapacityComparison,
     PvRooftopDuplicateRows,
 )
-from .renewable_feedin import RenewableFeedinTimeseries  # noqa: F401
+from .renewable_feedin import (  # noqa: F401
+    RenewableFeedinTimeseries,
+    ZensusWeatherCellMappingRowCount,
+)
 from .residential_electricity import (  # noqa: F401
     ResidentialElectricityAnnualSum,
     ResidentialElectricityHhRefinement,
