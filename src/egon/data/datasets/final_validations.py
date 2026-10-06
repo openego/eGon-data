@@ -25,6 +25,20 @@ from egon.data.validation.rules.custom.sanity import (
     GeneratorTableStaticLimits,
     GeneratorTableTimeseriesCoverage,
     GeneratorTableTimeseriesValues,
+    LoadTableAnnualDemand,
+    LoadTableBus,
+    LoadTableBusCarrier,
+    LoadTableDemandDefinition,
+    LoadTableForeignCoverage,
+    LoadTableForeignProfile,
+    LoadTableHeatCoverage,
+    LoadTableMvGridCoverage,
+    LoadTableScenarioCoverage,
+    LoadTableTimeseriesCoverage,
+    LoadTableTimeseriesValues,
+)
+from egon.data.validation.rules.custom.sanity.etrago_load_table import (
+    RAIL_CARRIERS,
 )
 
 #: Scenarios the per-scenario rules are built for; a scenario the run does
@@ -32,6 +46,7 @@ from egon.data.validation.rules.custom.sanity import (
 ETRAGO_SCENARIOS = ["status2024", "eGon2035", "reGon2037", "reGon2045"]
 
 GENERATOR_TABLE = "grid.egon_etrago_generator"
+LOAD_TABLE = "grid.egon_etrago_load"
 
 
 def notasks():
@@ -80,6 +95,16 @@ class FinalValidations(Dataset):
       carrier against ``supply.egon_scenario_capacities`` and the largest
       German unit; generation in every neighbouring country with a load,
       and in proportion to its peak load.
+
+    ``etrago_load_{all,germany,foreign}``
+      Sanity rules on the complete ``grid.egon_etrago_load`` and its time
+      series, per scenario (see
+      :mod:`~egon.data.validation.rules.custom.sanity.etrago_load_table`):
+      a bus of a permitted carrier, a demand defined exactly once and a
+      usable ``p_set`` series for every load; the German electricity and
+      rail demand against the scenario parameters and loads on the heat
+      buses and MV grid districts; AC demand with a plausible load factor
+      in every neighbouring country.
 
     *Dependencies*
       Should depend on all datasets whose data is validated by the rules
@@ -667,9 +692,13 @@ class FinalValidations(Dataset):
                                 "H2_for_industry",
                                 "O2",
                                 "central_heat",
+                                "data_center",
                                 "land_transport_EV",
                                 "land_transport_HGV",
                                 "land_transport_bus",
+                                "rail_sbahn_dc",
+                                "rail_traction",
+                                "rail_transit_dc",
                                 "rural_gas_boiler",
                                 "rural_heat",
                             ],
@@ -1162,6 +1191,90 @@ class FinalValidations(Dataset):
                     for check, rule in [
                         ("FOREIGN_COVERAGE", GeneratorTableForeignCoverage),
                         ("FOREIGN_ADEQUACY", GeneratorTableForeignAdequacy),
+                    ]
+                    for scn in ETRAGO_SCENARIOS
+                ],
+                # grid.egon_etrago_load(_timeseries), all datasets
+                "etrago_load_all": [
+                    LoadTableScenarioCoverage(
+                        table=LOAD_TABLE,
+                        rule_id="SANITY_ETRAGO_LOAD_SCENARIO_COVERAGE",
+                    ),
+                    *[
+                        rule(
+                            table=LOAD_TABLE,
+                            rule_id=f"SANITY_ETRAGO_LOAD_{check}.{scn}",
+                            scenario=scn,
+                        )
+                        for check, rule in [
+                            ("BUS", LoadTableBus),
+                            ("BUS_CARRIER", LoadTableBusCarrier),
+                            ("DEMAND_DEFINITION", LoadTableDemandDefinition),
+                            (
+                                "TIMESERIES_COVERAGE",
+                                LoadTableTimeseriesCoverage,
+                            ),
+                            ("TIMESERIES_VALUES", LoadTableTimeseriesValues),
+                        ]
+                        for scn in ETRAGO_SCENARIOS
+                    ],
+                ],
+                "etrago_load_germany": [
+                    *[
+                        LoadTableAnnualDemand(
+                            table=LOAD_TABLE,
+                            rule_id=(
+                                f"SANITY_ETRAGO_LOAD_{check}_DEMAND.{scn}"
+                            ),
+                            scenario=scn,
+                            carriers=carriers,
+                            parameter_column=column,
+                            parameter_path=path,
+                            enabled=resolve_boundary_dependence(
+                                {
+                                    "Schleswig-Holstein": False,
+                                    "Everything": True,
+                                }
+                            ),
+                        )
+                        for check, carriers, column, path in [
+                            (
+                                "ELECTRICITY",
+                                ["AC"],
+                                "electricity_parameters",
+                                ["annual_demand"],
+                            ),
+                            (
+                                "RAIL",
+                                list(RAIL_CARRIERS),
+                                "mobility_parameters",
+                                ["rail_transport_demand", "annual_demand"],
+                            ),
+                        ]
+                        for scn in ETRAGO_SCENARIOS
+                    ],
+                    *[
+                        rule(
+                            table=LOAD_TABLE,
+                            rule_id=f"SANITY_ETRAGO_LOAD_{check}.{scn}",
+                            scenario=scn,
+                        )
+                        for check, rule in [
+                            ("HEAT_COVERAGE", LoadTableHeatCoverage),
+                            ("MV_GRID_COVERAGE", LoadTableMvGridCoverage),
+                        ]
+                        for scn in ETRAGO_SCENARIOS
+                    ],
+                ],
+                "etrago_load_foreign": [
+                    rule(
+                        table=LOAD_TABLE,
+                        rule_id=f"SANITY_ETRAGO_LOAD_{check}.{scn}",
+                        scenario=scn,
+                    )
+                    for check, rule in [
+                        ("FOREIGN_COVERAGE", LoadTableForeignCoverage),
+                        ("FOREIGN_PROFILE", LoadTableForeignProfile),
                     ]
                     for scn in ETRAGO_SCENARIOS
                 ],

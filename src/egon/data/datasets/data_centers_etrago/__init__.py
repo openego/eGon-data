@@ -906,7 +906,10 @@ def create_data_center_loads(data_centers, scenario):
             "load_id": db.next_etrago_id("load", len(data_centers)),
             "bus": data_centers["data_center_bus_id"].values,
             "type": "data_center",
-            "carrier": "AC",
+            # A carrier of its own keeps the data center demand apart from the
+            # households, CTS and industry demand on the AC buses, which
+            # FinalValidations compares with the scenario's annual_demand.
+            "carrier": "data_center",
             # p_set is deliberately left unset. The hourly demand goes to
             # egon_etrago_load_timeseries instead, as in
             # electricity_demand_etrago.py, which drops the column once a time
@@ -1373,7 +1376,7 @@ class DataCenters(Dataset):
     """Integrate future data center demand"""
 
     name: str = "DataCenters"
-    version: str = "0.0.7"
+    version: str = "0.0.8"
 
     sources = DatasetSources(
         tables={

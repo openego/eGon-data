@@ -23,6 +23,19 @@ from .etrago_generators import (  # noqa: F401
     EtragoGeneratorTimeseriesRange,
     EtragoGeneratorUniquePerBusCarrier,
 )
+from .etrago_load_table import (  # noqa: F401
+    LoadTableAnnualDemand,
+    LoadTableBus,
+    LoadTableBusCarrier,
+    LoadTableDemandDefinition,
+    LoadTableForeignCoverage,
+    LoadTableForeignProfile,
+    LoadTableHeatCoverage,
+    LoadTableMvGridCoverage,
+    LoadTableScenarioCoverage,
+    LoadTableTimeseriesCoverage,
+    LoadTableTimeseriesValues,
+)
 from .heat_etrago import (  # noqa: F401
     HeatBuses,
     HeatScenarioCoverage,
