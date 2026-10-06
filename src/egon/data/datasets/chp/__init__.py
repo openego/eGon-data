@@ -44,6 +44,11 @@ from egon.data.metadata import (
     meta_metadata,
     sources,
 )
+from egon.data.validation import TableValidation, resolve_boundary_dependence
+from egon.data.validation.rules.custom.sanity import (
+    ChpBiomassCapacityLimit,
+    ScenarioReferentialIntegrity,
+)
 
 Base = declarative_base()
 
@@ -770,7 +775,7 @@ class Chp(Dataset):
     #:
     name: str = "Chp"
     #:
-    version: str = "0.0.15"
+    version: str = "0.0.16"
 
     def __init__(self, dependencies):
         super().__init__(
@@ -778,4 +783,156 @@ class Chp(Dataset):
             version=self.version,
             dependencies=dependencies,
             tasks=tasks,
+            validation={
+                "data-quality": [
+                    # source_id is empty for "gas extended", ch4_bus_id for
+                    # biomass and district_heating_area_id for CHP outside
+                    # of district heating areas. The automatically added
+                    # TABLE_NOT_NAN check is therefore expected to fail.
+                    TableValidation(
+                        table_name="supply.egon_chp_plants",
+                        geometry_columns=["geom"],
+                        data_type_columns={
+                            "id": "integer",
+                            "sources": "jsonb",
+                            "source_id": "jsonb",
+                            "carrier": "character varying",
+                            "district_heating": "boolean",
+                            "el_capacity": "double precision",
+                            "th_capacity": "double precision",
+                            "electrical_bus_id": "integer",
+                            "district_heating_area_id": "integer",
+                            "ch4_bus_id": "integer",
+                            "voltage_level": "integer",
+                            "scenario": "character varying",
+                            "geom": "geometry",
+                        },
+                        not_null_columns=[
+                            "id",
+                            "carrier",
+                            "district_heating",
+                            "el_capacity",
+                            "th_capacity",
+                            "electrical_bus_id",
+                            "voltage_level",
+                            "scenario",
+                        ],
+                        value_set_columns={
+                            "carrier": [
+                                "biomass",
+                                "coal",
+                                "gas",
+                                "gas extended",
+                                "lignite",
+                                "oil",
+                                "others",
+                            ],
+                            "scenario": [
+                                "eGon2035",
+                                "reGon2037",
+                                "reGon2045",
+                                "status2024",
+                            ],
+                        },
+                    ),
+                    # The district heating area exists for the same scenario
+                    ScenarioReferentialIntegrity(
+                        table="supply.egon_chp_plants",
+                        rule_id="SANITY_CHP_DISTRICT_HEATING_AREA",
+                        fk_column="district_heating_area_id",
+                        ref_table=self.sources.tables[
+                            "district_heating_areas"
+                        ],
+                        ref_column="area_id",
+                    ),
+                    # The electrical bus exists as AC bus for the same
+                    # scenario
+                    ScenarioReferentialIntegrity(
+                        table="supply.egon_chp_plants",
+                        rule_id="SANITY_CHP_ELECTRICAL_BUS",
+                        fk_column="electrical_bus_id",
+                        ref_table=self.sources.tables["etrago_buses"],
+                        ref_column="bus_id",
+                        ref_scenario_column="scn_name",
+                        ref_filter="carrier = 'AC'",
+                    ),
+                    # The gas bus exists as CH4 bus for the same scenario
+                    ScenarioReferentialIntegrity(
+                        table="supply.egon_chp_plants",
+                        rule_id="SANITY_CHP_CH4_BUS",
+                        fk_column="ch4_bus_id",
+                        ref_table=self.sources.tables["etrago_buses"],
+                        ref_column="bus_id",
+                        ref_scenario_column="scn_name",
+                        ref_filter="carrier = 'CH4'",
+                    ),
+                    # Biomass CHP stay within the biomass target, which they
+                    # share with the biomass power plants without heat output
+                    ChpBiomassCapacityLimit(
+                        table="supply.egon_chp_plants",
+                        rule_id="SANITY_CHP_BIOMASS_CAPACITY_LIMIT",
+                        capacities_table=self.sources.tables[
+                            "scenario_capacities"
+                        ],
+                    ),
+                    # The table is written by to_postgis, so its schema
+                    # differs from EgonMaStRConventinalWithoutChp (no id
+                    # column, plz as bigint).
+                    TableValidation(
+                        table_name=self.targets.tables[
+                            "mastr_conventional_without_chp"
+                        ],
+                        data_type_columns={
+                            "EinheitMastrNummer": "text",
+                            "el_capacity": "double precision",
+                            "carrier": "text",
+                            "plz": "bigint",
+                            "city": "text",
+                            "federal_state": "text",
+                            "source": "text",
+                            "geometry": "geometry",
+                        },
+                        # Quoted, as the rule does not quote column names
+                        not_null_columns=[
+                            '"EinheitMastrNummer"',
+                            "el_capacity",
+                            "carrier",
+                            "plz",
+                            "city",
+                            "federal_state",
+                            "source",
+                        ],
+                        value_set_columns={
+                            "carrier": sorted(map_carrier().unique()),
+                            "source": ["NEP2021", "NEP2025"],
+                            "federal_state": resolve_boundary_dependence(
+                                {
+                                    "Schleswig-Holstein": [
+                                        "SchleswigHolstein"
+                                    ],
+                                    "Everything": [
+                                        "BadenWuerttemberg",
+                                        "Bayern",
+                                        "Berlin",
+                                        "Brandenburg",
+                                        "Bremen",
+                                        "Hamburg",
+                                        "Hessen",
+                                        "MecklenburgVorpommern",
+                                        "Niedersachsen",
+                                        "NordrheinWestfalen",
+                                        "RheinlandPfalz",
+                                        "Saarland",
+                                        "Sachsen",
+                                        "SachsenAnhalt",
+                                        "SchleswigHolstein",
+                                        "Thueringen",
+                                    ],
+                                }
+                            ),
+                        },
+                    ),
+                ]
+            },
+            proceed_on_validation_failure=True,
         )
