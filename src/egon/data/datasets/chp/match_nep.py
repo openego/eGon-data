@@ -39,7 +39,7 @@ def select_chp_from_nep(sources, scenario):
             WHERE bnetza_id != 'KW<10 MW'
             AND (chp = 'Ja' OR c2035_chp = 'Ja')
             AND c2035_capacity > 0
-            AND postcode != 'None'
+            AND postcode IS NOT NULL
             """)
     
         # Removing CHP out of Germany
@@ -118,7 +118,7 @@ def select_chp_from_nep(sources, scenario):
             FROM {table_nep}
             WHERE (chp = 'Ja')
             AND {capacity_col} > 0
-            AND postcode != 'None'
+            AND postcode IS NOT NULL
             AND mastr_id != 'NV'
             """)
     
