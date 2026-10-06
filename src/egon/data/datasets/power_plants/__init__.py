@@ -636,7 +636,7 @@ def allocate_conventional_non_chp_power_plants():
 
             else:
 
-                mastr = select_no_chp_combustion_mastr(carrier)
+                mastr = select_no_chp_combustion_mastr(carrier, scn)
 
                 # Assign voltage level to MaStR
                 mastr["voltage_level"] = assign_voltage_level(
@@ -839,7 +839,7 @@ def allocate_other_power_plants():
         target = target.capacity
 
         # Select 'non chp' power plants from mastr table
-        mastr_combustion = select_no_chp_combustion_mastr("others")
+        mastr_combustion = select_no_chp_combustion_mastr("others", scenario)
 
         # Rename columns
         mastr_combustion = mastr_combustion.rename(

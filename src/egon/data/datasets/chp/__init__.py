@@ -10,7 +10,15 @@ import time
 
 from geoalchemy2 import Geometry
 from shapely.ops import nearest_points
-from sqlalchemy import Boolean, Column, Float, Integer, Sequence, String
+from sqlalchemy import (
+    BigInteger,
+    Boolean,
+    Column,
+    Float,
+    Integer,
+    Sequence,
+    String,
+)
 from sqlalchemy.dialects.postgresql import JSONB
 from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.orm import sessionmaker
@@ -74,11 +82,11 @@ class EgonChp(Base):
 class EgonMaStRConventinalWithoutChp(Base):
     __tablename__ = "egon_mastr_conventional_without_chp"
     __table_args__ = {"schema": "supply"}
-    id = Column(Integer, Sequence("mastr_conventional_seq"), primary_key=True)
-    EinheitMastrNummer = Column(String)
+    EinheitMastrNummer = Column(String, primary_key=True)
+    source = Column(String, primary_key=True)
     carrier = Column(String)
     el_capacity = Column(Float)
-    plz = Column(Integer)
+    plz = Column(BigInteger)
     city = Column(String)
     federal_state = Column(String)
     geometry = Column(Geometry("POINT", 4326))
@@ -568,30 +576,56 @@ def insert_chp():
     
     # filters scenarios for all non-status-scenarios
     scenarios = [s for s in config.settings()["egon-data"]["--scenarios"] if "status" not in str(s).lower()]
+
+    # NEP version of the list of power plants each scenario is based on
+    nep_source = {
+        "eGon2035": "NEP2021",
+        "reGon2037": "NEP2025",
+        "reGon2045": "NEP2025",
+    }
+    # Remaining MaStR units per NEP version
+    mastr_without_chp = {}
+
     for scenario in scenarios:
         insert_biomass_chp(scenario)
-    
+
         # Insert large CHPs based on NEP's list of conventional power plants
         MaStR_konv = insert_large_chp(
             Chp.sources, Chp.targets.tables["chp_table"], EgonChp,
             scenario
         )
-    
+
         # Insert smaller CHPs (< 10MW) based on existing locations from MaStR
         existing_chp_smaller_10mw(Chp.sources, MaStR_konv, EgonChp, scenario)
-    
+
+        # reGon2037 and reGon2045 share the NEP2025 list, whose capacities
+        # are the same for both years, so their remaining units are equal
+        source = nep_source[scenario]
+        if source not in mastr_without_chp:
+            mastr_without_chp[source] = (
+                gpd.GeoDataFrame(
+                    MaStR_konv[
+                        [
+                            "EinheitMastrNummer",
+                            "el_capacity",
+                            "geometry",
+                            "carrier",
+                            "plz",
+                            "city",
+                            "federal_state",
+                        ]
+                    ]
+                )
+                # The geometry of eGon2035 is created without CRS
+                .set_crs(4326, allow_override=True)
+                .assign(source=source)
+            )
+
+    # Write the remaining units of all NEP versions at once
+    if mastr_without_chp:
         gpd.GeoDataFrame(
-            MaStR_konv[
-                [
-                    "EinheitMastrNummer",
-                    "el_capacity",
-                    "geometry",
-                    "carrier",
-                    "plz",
-                    "city",
-                    "federal_state",
-                ]
-            ]
+            pd.concat(mastr_without_chp.values(), ignore_index=True),
+            crs=4326,
         ).to_postgis(
             Chp.targets.get_table_name("mastr_conventional_without_chp"),
             schema=Chp.targets.get_table_schema("mastr_conventional_without_chp"),
@@ -875,9 +909,8 @@ class Chp(Dataset):
                             "scenario_capacities"
                         ],
                     ),
-                    # The table is written by to_postgis, so its schema
-                    # differs from EgonMaStRConventinalWithoutChp (no id
-                    # column, plz as bigint).
+                    # The table is written by to_postgis, which does not
+                    # create the primary key of EgonMaStRConventinalWithoutChp
                     TableValidation(
                         table_name=self.targets.tables[
                             "mastr_conventional_without_chp"
