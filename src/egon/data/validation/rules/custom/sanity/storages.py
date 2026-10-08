@@ -284,6 +284,13 @@ class HomeBatteryDuplicateRows(DataFrameRule):
     identical in scenario, building, power, capacity and source count as
     duplicates. All scenarios in the table are checked.
 
+    Only modelled batteries (source other than MaStR) are checked. The
+    table has no unit id, so real batteries of the same size on the same
+    building cannot be told apart from duplicates. This happens when a
+    grid has fewer buildings than real batteries:
+    ``match_real_batteries_to_buildings()`` then reuses buildings
+    (observed: 42 batteries on the only building in grid 41079).
+
     Args:
         table: Primary table being validated (supply.egon_home_batteries)
         rule_id: Unique identifier for this validation rule
@@ -310,6 +317,7 @@ class HomeBatteryDuplicateRows(DataFrameRule):
             SELECT scenario, building_id, bus_id, p_nom, capacity,
                    sources, COUNT(*) AS n
             FROM {self.table}
+            WHERE sources ->> 'el_capacity' <> 'MaStR'
             GROUP BY scenario, building_id, bus_id, p_nom, capacity, sources
         ) AS grouped
         GROUP BY scenario
@@ -330,12 +338,12 @@ class HomeBatteryDuplicateRows(DataFrameRule):
             observed=float(total),
             expected=0.0,
             message=(
-                f"No duplicated rows in {len(df)} scenarios"
+                f"No duplicated modelled rows in {len(df)} scenarios"
                 if success
-                else "Duplicated rows: "
+                else "Duplicated modelled rows: "
                 + "; ".join(
                     f"{row.scenario}: {int(row.n_duplicates)} of "
-                    f"{int(row.n_rows)} rows"
+                    f"{int(row.n_rows)} modelled rows"
                     for row in duplicated.itertuples()
                 )
             ),
