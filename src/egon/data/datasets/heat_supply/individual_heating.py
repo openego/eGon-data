@@ -312,7 +312,7 @@ class HeatPumpsCascade(Dataset):
     #:
     name: str = "HeatPumpsCascade"
     #:
-    version: str = "0.0.9"
+    version: str = "0.0.10"
 
     def __init__(self, dependencies):
         def dyn_parallel_tasks_2035(scenario):
@@ -1742,10 +1742,13 @@ def determine_hp_cap_buildings_pvbased_per_mvgd(
     :func:`determine_minimum_hp_capacity_per_building`) is below
     :data:`MIN_HP_CAPACITY` are excluded from the pool of candidate
     buildings, since no heat pump that small is available on the market.
-    They remain supplied by a gas boiler. The excluded capacity is not
-    lost: :func:`desaggregate_hp_capacity` always scales the remaining,
-    selected buildings up so that the MV grid's total heat pump capacity
-    target is still met exactly.
+    They remain supplied by a gas boiler. The excluded capacity is normally
+    not lost: :func:`desaggregate_hp_capacity` scales the remaining, selected
+    buildings up so that the MV grid's total heat pump capacity target is
+    met exactly. Only if no candidate building can be selected at all (none
+    remain, all are below :data:`MIN_HP_CAPACITY`, or none fits into the
+    remaining capacity) does the grid fall short of its target; the
+    shortfall is not redistributed and is logged as a warning.
 
     Parameters
     -----------
@@ -1775,9 +1778,15 @@ def determine_hp_cap_buildings_pvbased_per_mvgd(
     (`hp_cap_grid` minus the floored capacity in this grid, after any
     up-scaling) is distributed over the not-yet-equipped buildings using the
     PV-weighted selection unchanged. Up-scaling therefore reduces the budget
-    available for new heat pumps rather than adding to the grid total: both
-    invariants stay exact -- every floored building satisfies the sizing rule,
-    and the distributed total still equals `hp_cap_grid`.
+    available for new heat pumps rather than adding to the grid total: every
+    floored building satisfies the sizing rule, and the distributed total
+    equals `hp_cap_grid` except in the shortfall case described above.
+
+    The grid target is a top-down pro-rata split of the state's target and
+    can fall below the floored capacity. The floor is then kept as a hard
+    lower bound: the grid's effective target is raised to the floored
+    capacity, no new heat pumps are added, and the overshoot is logged as a
+    warning.
 
     """
 
@@ -1820,29 +1829,34 @@ def determine_hp_cap_buildings_pvbased_per_mvgd(
 
         floored_cap = floored_hp_cap.sum()
 
-        # honouring the floor and hitting the capacity target are mutually
-        # exclusive if the floored stock exceeds the grid's own target
+        # The grid target is a top-down pro-rata split of the state's target
+        # and has no knowledge of the bottom-up floor, so it can fall below
+        # the floored stock where the grid's demand share shrank faster than
+        # its state's target grew. The floor is a hard lower bound, so raise
+        # the grid's effective target to it instead of failing the run.
         if floored_cap > hp_cap_grid:
-            raise ValueError(
-                f"Heat pump capacity required by the floor "
-                f"({floored_cap:.4f} MW, of which "
-                f"{inherited_hp_cap.sum():.4f} MW inherited) in MV grid "
-                f"{mv_grid_id} exceeds the capacity target of scenario "
-                f"{scenario} ({hp_cap_grid:.4f} MW). The floor cannot be "
-                f"honoured while meeting the target."
+            logger.warning(
+                f"MVGD={mv_grid_id} | Scenario {scenario}: heat pump capacity "
+                f"required by the floor ({floored_cap:.4f} MW, of which "
+                f"{inherited_hp_cap.sum():.4f} MW inherited) exceeds the "
+                f"grid's capacity target ({hp_cap_grid:.4f} MW). Raising the "
+                f"grid's effective target to the floor; the grid overshoots "
+                f"its target by {(floored_cap - hp_cap_grid):.4f} MW."
             )
+            hp_cap_grid = floored_cap
 
         remaining_cap_grid = hp_cap_grid - floored_cap
+        min_hp_cap_candidates = min_hp_cap_buildings.drop(
+            floored_hp_cap.index, errors="ignore"
+        )
         # Drop buildings whose required heat pump capacity is below the
         # smallest heat pump size available on the market. These buildings
         # keep their gas boiler instead of getting an undersized heat pump.
         # Only candidates for new heat pumps are filtered: inherited heat
         # pumps stay in place regardless of their size.
-        min_hp_cap_remaining = min_hp_cap_buildings[
-            min_hp_cap_buildings >= MIN_HP_CAPACITY
-        ].drop(
-            floored_hp_cap.index, errors="ignore"
-        )
+        min_hp_cap_remaining = min_hp_cap_candidates[
+            min_hp_cap_candidates >= MIN_HP_CAPACITY
+        ]
 
         hp_cap_per_building = pd.Series(dtype="float64")
         hp_cap_per_building.index.name = "building_id"
@@ -1867,6 +1881,30 @@ def determine_hp_cap_buildings_pvbased_per_mvgd(
             [floored_hp_cap, hp_cap_per_building]
         )
         hp_cap_per_building.index.name = "building_id"
+
+        # Capacity that could not be placed on any building is not
+        # redistributed; flag it so the shortfall against the grid's target
+        # is visible.
+        shortfall = hp_cap_grid - hp_cap_per_building.sum()
+        if shortfall > FLOOR_TOLERANCE:
+            if min_hp_cap_candidates.empty:
+                reason = "no candidate buildings without a heat pump remain"
+            elif min_hp_cap_remaining.empty:
+                reason = (
+                    f"all {len(min_hp_cap_candidates)} remaining candidate "
+                    f"buildings require less than the minimum heat pump "
+                    f"size of {MIN_HP_CAPACITY * 1e3:.0f} kW"
+                )
+            else:
+                reason = (
+                    f"none of the {len(min_hp_cap_remaining)} remaining "
+                    f"candidate buildings fits into the remaining capacity"
+                )
+            logger.warning(
+                f"MVGD={mv_grid_id} | Scenario {scenario}: "
+                f"{shortfall:.4f} MW of the grid's heat pump capacity target "
+                f"({hp_cap_grid:.4f} MW) could not be assigned: {reason}."
+            )
 
         return hp_cap_per_building.rename("hp_capacity")
 
