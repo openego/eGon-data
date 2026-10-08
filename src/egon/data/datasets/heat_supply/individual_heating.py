@@ -66,6 +66,14 @@ Base = declarative_base()
 #: physically relevant difference.
 FLOOR_TOLERANCE = 1e-9
 
+# Smallest heat pump capacity available on the market. Buildings whose
+# required heat pump capacity (see determine_minimum_hp_capacity_per_building)
+# falls below this threshold are not assigned a heat pump and keep their gas
+# boiler instead, avoiding unrealistically small heat pumps being distributed.
+# Taken from "Deutsche Energie-Agentur (dena, 2026): KWW-Technikkatalog
+# Wärmeplanung. Version 1.1. Berlin."
+MIN_HP_CAPACITY = 5 / 1000  # MW (5 kW)
+
 
 class EgonEtragoTimeseriesIndividualHeating(Base):
     """
@@ -215,7 +223,7 @@ class HeatPumpsStatusQuo(Dataset):
 
         super().__init__(
             name="HeatPumpsStatusQuo",
-            version="0.0.7",
+            version="0.0.8",
             dependencies=dependencies,
             tasks=tasks,
         )
@@ -1730,6 +1738,15 @@ def determine_hp_cap_buildings_pvbased_per_mvgd(
     rooftop are more likely to be assigned), as well
     as their respective HP capacity in MW.
 
+    Buildings whose required minimum heat pump capacity (see
+    :func:`determine_minimum_hp_capacity_per_building`) is below
+    :data:`MIN_HP_CAPACITY` are excluded from the pool of candidate
+    buildings, since no heat pump that small is available on the market.
+    They remain supplied by a gas boiler. The excluded capacity is not
+    lost: :func:`desaggregate_hp_capacity` always scales the remaining,
+    selected buildings up so that the MV grid's total heat pump capacity
+    target is still met exactly.
+
     Parameters
     -----------
     mv_grid_id : int
@@ -1816,7 +1833,14 @@ def determine_hp_cap_buildings_pvbased_per_mvgd(
             )
 
         remaining_cap_grid = hp_cap_grid - floored_cap
-        min_hp_cap_remaining = min_hp_cap_buildings.drop(
+        # Drop buildings whose required heat pump capacity is below the
+        # smallest heat pump size available on the market. These buildings
+        # keep their gas boiler instead of getting an undersized heat pump.
+        # Only candidates for new heat pumps are filtered: inherited heat
+        # pumps stay in place regardless of their size.
+        min_hp_cap_remaining = min_hp_cap_buildings[
+            min_hp_cap_buildings >= MIN_HP_CAPACITY
+        ].drop(
             floored_hp_cap.index, errors="ignore"
         )
 
