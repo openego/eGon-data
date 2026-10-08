@@ -39,6 +39,7 @@ from egon.data.datasets.power_plants.pv_rooftop import pv_rooftop_per_mv_grid
 from egon.data.datasets.power_plants.pv_rooftop_buildings import (
     pv_rooftop_to_buildings,
 )
+from egon.data.datasets.scenario_capacities import map_nep_version
 from egon.data.validation import TableValidation, resolve_boundary_dependence
 import egon.data.config
 import egon.data.datasets.power_plants.assign_weather_data as assign_weather_data  # noqa: E501
@@ -285,7 +286,7 @@ def insert_biomass_plants(scenario):
     # Insert entries with location
     session = sessionmaker(bind=db.engine())()
 
-    nep_version = "NEP 2021" if scenario == "eGon2035" else "NEP 2025"
+    nep_version = map_nep_version()[scenario]
 
     for i, row in mastr_loc.iterrows():
         if not row.ThermischeNutzleistung > 0:
@@ -328,7 +329,7 @@ def insert_hydro_plants(scenario):
         "reservoir": ["Speicherwasseranlage"],
     }
 
-    nep_version = "NEP 2021" if scenario == "eGon2035" else "NEP 2025"
+    nep_version = map_nep_version()[scenario]
 
     for carrier in map_carrier.keys():
         # import target values
@@ -636,7 +637,7 @@ def allocate_conventional_non_chp_power_plants():
 
             else:
 
-                mastr = select_no_chp_combustion_mastr(carrier)
+                mastr = select_no_chp_combustion_mastr(carrier, scn)
 
                 # Assign voltage level to MaStR
                 mastr["voltage_level"] = assign_voltage_level(
@@ -839,7 +840,7 @@ def allocate_other_power_plants():
         target = target.capacity
 
         # Select 'non chp' power plants from mastr table
-        mastr_combustion = select_no_chp_combustion_mastr("others")
+        mastr_combustion = select_no_chp_combustion_mastr("others", scenario)
 
         # Rename columns
         mastr_combustion = mastr_combustion.rename(
@@ -928,7 +929,7 @@ def allocate_other_power_plants():
         mastr_prox = mastr_prox.set_crs(4326, allow_override=True)
 
         # Insert into target table
-        nep_version = "NEP 2021" if scenario == "eGon2035" else "NEP 2025"
+        nep_version = map_nep_version()[scenario]
 
         session = sessionmaker(bind=db.engine())()
         for i, row in mastr_prox.iterrows():
@@ -1513,7 +1514,7 @@ class PowerPlants(Dataset):
     #:
     name: str = "PowerPlants"
     #:
-    version: str = "0.0.39"
+    version: str = "0.0.40"
 
     def __init__(self, dependencies):
         super().__init__(

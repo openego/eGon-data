@@ -10,7 +10,15 @@ import time
 
 from geoalchemy2 import Geometry
 from shapely.ops import nearest_points
-from sqlalchemy import Boolean, Column, Float, Integer, Sequence, String
+from sqlalchemy import (
+    BigInteger,
+    Boolean,
+    Column,
+    Float,
+    Integer,
+    Sequence,
+    String,
+)
 from sqlalchemy.dialects.postgresql import JSONB
 from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.orm import sessionmaker
@@ -37,12 +45,18 @@ from egon.data.datasets.power_plants import (
     filter_mastr_geometry,
     scale_prox2now,
 )
+from egon.data.datasets.scenario_capacities import map_nep_version
 from egon.data.metadata import (
     context,
     generate_resource_fields_from_sqla_model,
     license_egon_data_odbl,
     meta_metadata,
     sources,
+)
+from egon.data.validation import TableValidation, resolve_boundary_dependence
+from egon.data.validation.rules.custom.sanity import (
+    ChpBiomassCapacityLimit,
+    ScenarioReferentialIntegrity,
 )
 
 Base = declarative_base()
@@ -69,11 +83,11 @@ class EgonChp(Base):
 class EgonMaStRConventinalWithoutChp(Base):
     __tablename__ = "egon_mastr_conventional_without_chp"
     __table_args__ = {"schema": "supply"}
-    id = Column(Integer, Sequence("mastr_conventional_seq"), primary_key=True)
-    EinheitMastrNummer = Column(String)
+    EinheitMastrNummer = Column(String, primary_key=True)
+    source = Column(String, primary_key=True)
     carrier = Column(String)
     el_capacity = Column(Float)
-    plz = Column(Integer)
+    plz = Column(BigInteger)
     city = Column(String)
     federal_state = Column(String)
     geometry = Column(Geometry("POINT", 4326))
@@ -398,7 +412,7 @@ def insert_biomass_chp(scenario):
         mastr_loc = assign_bus_id(mastr_loc, Chp.sources)
     mastr_loc = assign_use_case(mastr_loc, Chp.sources, scenario)
 
-    nep_version = "NEP 2021" if scenario == "eGon2035" else "NEP 2025"
+    nep_version = map_nep_version()[scenario]
 
     # Insert entries with location
     session = sessionmaker(bind=db.engine())()
@@ -563,30 +577,50 @@ def insert_chp():
     
     # filters scenarios for all non-status-scenarios
     scenarios = [s for s in config.settings()["egon-data"]["--scenarios"] if "status" not in str(s).lower()]
+
+    # Remaining MaStR units per NEP version
+    mastr_without_chp = {}
+
     for scenario in scenarios:
         insert_biomass_chp(scenario)
-    
+
         # Insert large CHPs based on NEP's list of conventional power plants
         MaStR_konv = insert_large_chp(
             Chp.sources, Chp.targets.tables["chp_table"], EgonChp,
             scenario
         )
-    
+
         # Insert smaller CHPs (< 10MW) based on existing locations from MaStR
         existing_chp_smaller_10mw(Chp.sources, MaStR_konv, EgonChp, scenario)
-    
+
+        # reGon2037 and reGon2045 share the NEP2025 list, whose capacities
+        # are the same for both years, so their remaining units are equal
+        source = map_nep_version()[scenario]
+        if source not in mastr_without_chp:
+            mastr_without_chp[source] = (
+                gpd.GeoDataFrame(
+                    MaStR_konv[
+                        [
+                            "EinheitMastrNummer",
+                            "el_capacity",
+                            "geometry",
+                            "carrier",
+                            "plz",
+                            "city",
+                            "federal_state",
+                        ]
+                    ]
+                )
+                # The geometry of eGon2035 is created without CRS
+                .set_crs(4326, allow_override=True)
+                .assign(source=source)
+            )
+
+    # Write the remaining units of all NEP versions at once
+    if mastr_without_chp:
         gpd.GeoDataFrame(
-            MaStR_konv[
-                [
-                    "EinheitMastrNummer",
-                    "el_capacity",
-                    "geometry",
-                    "carrier",
-                    "plz",
-                    "city",
-                    "federal_state",
-                ]
-            ]
+            pd.concat(mastr_without_chp.values(), ignore_index=True),
+            crs=4326,
         ).to_postgis(
             Chp.targets.get_table_name("mastr_conventional_without_chp"),
             schema=Chp.targets.get_table_schema("mastr_conventional_without_chp"),
@@ -770,7 +804,7 @@ class Chp(Dataset):
     #:
     name: str = "Chp"
     #:
-    version: str = "0.0.15"
+    version: str = "0.0.17"
 
     def __init__(self, dependencies):
         super().__init__(
@@ -778,4 +812,155 @@ class Chp(Dataset):
             version=self.version,
             dependencies=dependencies,
             tasks=tasks,
+            validation={
+                "data-quality": [
+                    # source_id is empty for "gas extended", ch4_bus_id for
+                    # biomass and district_heating_area_id for CHP outside
+                    # of district heating areas. The automatically added
+                    # TABLE_NOT_NAN check is therefore expected to fail.
+                    TableValidation(
+                        table_name="supply.egon_chp_plants",
+                        geometry_columns=["geom"],
+                        data_type_columns={
+                            "id": "integer",
+                            "sources": "jsonb",
+                            "source_id": "jsonb",
+                            "carrier": "character varying",
+                            "district_heating": "boolean",
+                            "el_capacity": "double precision",
+                            "th_capacity": "double precision",
+                            "electrical_bus_id": "integer",
+                            "district_heating_area_id": "integer",
+                            "ch4_bus_id": "integer",
+                            "voltage_level": "integer",
+                            "scenario": "character varying",
+                            "geom": "geometry",
+                        },
+                        not_null_columns=[
+                            "id",
+                            "carrier",
+                            "district_heating",
+                            "el_capacity",
+                            "th_capacity",
+                            "electrical_bus_id",
+                            "voltage_level",
+                            "scenario",
+                        ],
+                        value_set_columns={
+                            "carrier": [
+                                "biomass",
+                                "coal",
+                                "gas",
+                                "gas extended",
+                                "lignite",
+                                "oil",
+                                "others",
+                            ],
+                            "scenario": [
+                                "eGon2035",
+                                "reGon2037",
+                                "reGon2045",
+                                "status2024",
+                            ],
+                        },
+                    ),
+                    # The district heating area exists for the same scenario
+                    ScenarioReferentialIntegrity(
+                        table="supply.egon_chp_plants",
+                        rule_id="SANITY_CHP_DISTRICT_HEATING_AREA",
+                        fk_column="district_heating_area_id",
+                        ref_table=self.sources.tables[
+                            "district_heating_areas"
+                        ],
+                        ref_column="area_id",
+                    ),
+                    # The electrical bus exists as AC bus for the same
+                    # scenario
+                    ScenarioReferentialIntegrity(
+                        table="supply.egon_chp_plants",
+                        rule_id="SANITY_CHP_ELECTRICAL_BUS",
+                        fk_column="electrical_bus_id",
+                        ref_table=self.sources.tables["etrago_buses"],
+                        ref_column="bus_id",
+                        ref_scenario_column="scn_name",
+                        ref_filter="carrier = 'AC'",
+                    ),
+                    # The gas bus exists as CH4 bus for the same scenario
+                    ScenarioReferentialIntegrity(
+                        table="supply.egon_chp_plants",
+                        rule_id="SANITY_CHP_CH4_BUS",
+                        fk_column="ch4_bus_id",
+                        ref_table=self.sources.tables["etrago_buses"],
+                        ref_column="bus_id",
+                        ref_scenario_column="scn_name",
+                        ref_filter="carrier = 'CH4'",
+                    ),
+                    # Biomass CHP stay within the biomass target, which they
+                    # share with the biomass power plants without heat output
+                    ChpBiomassCapacityLimit(
+                        table="supply.egon_chp_plants",
+                        rule_id="SANITY_CHP_BIOMASS_CAPACITY_LIMIT",
+                        capacities_table=self.sources.tables[
+                            "scenario_capacities"
+                        ],
+                    ),
+                    # The table is written by to_postgis, which does not
+                    # create the primary key of EgonMaStRConventinalWithoutChp
+                    TableValidation(
+                        table_name=self.targets.tables[
+                            "mastr_conventional_without_chp"
+                        ],
+                        data_type_columns={
+                            "EinheitMastrNummer": "text",
+                            "el_capacity": "double precision",
+                            "carrier": "text",
+                            "plz": "bigint",
+                            "city": "text",
+                            "federal_state": "text",
+                            "source": "text",
+                            "geometry": "geometry",
+                        },
+                        # Quoted, as the rule does not quote column names
+                        not_null_columns=[
+                            '"EinheitMastrNummer"',
+                            "el_capacity",
+                            "carrier",
+                            "plz",
+                            "city",
+                            "federal_state",
+                            "source",
+                        ],
+                        value_set_columns={
+                            "carrier": sorted(map_carrier().unique()),
+                            "source": sorted(map_nep_version().unique()),
+                            "federal_state": resolve_boundary_dependence(
+                                {
+                                    "Schleswig-Holstein": [
+                                        "SchleswigHolstein"
+                                    ],
+                                    "Everything": [
+                                        "BadenWuerttemberg",
+                                        "Bayern",
+                                        "Berlin",
+                                        "Brandenburg",
+                                        "Bremen",
+                                        "Hamburg",
+                                        "Hessen",
+                                        "MecklenburgVorpommern",
+                                        "Niedersachsen",
+                                        "NordrheinWestfalen",
+                                        "RheinlandPfalz",
+                                        "Saarland",
+                                        "Sachsen",
+                                        "SachsenAnhalt",
+                                        "SchleswigHolstein",
+                                        "Thueringen",
+                                    ],
+                                }
+                            ),
+                        },
+                    ),
+                ]
+            },
+            proceed_on_validation_failure=True,
         )

@@ -546,6 +546,24 @@ def map_carrier():
     )
 
 
+def map_nep_version():
+    """Map scenarios from eGon to the NEP version of their list of power plants
+
+    Returns
+    -------
+    pandas.Series
+        List of mapped NEP versions
+
+    """
+    return pd.Series(
+        data={
+            "eGon2035": "NEP2021",
+            "reGon2037": "NEP2025",
+            "reGon2045": "NEP2025",
+        }
+    )
+
+
 def insert_nep_list_powerplants(export=True):
     """Insert list of conventional powerplants attached to the approval
     of the scenario report by BNetzA

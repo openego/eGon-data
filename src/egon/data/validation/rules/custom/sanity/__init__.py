@@ -1,6 +1,8 @@
 """Sanity check validation rules for eGon data quality."""
 
+from .chp import ChpBiomassCapacityLimit  # noqa: F401
 from .demandregio import DemandRegioScenarioDemand  # noqa: F401
+from .references import ScenarioReferentialIntegrity  # noqa: F401
 from .residential_electricity import (  # noqa: F401
     ResidentialElectricityAnnualSum,
     ResidentialElectricityHhRefinement,

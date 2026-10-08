@@ -8,6 +8,7 @@ import pandas as pd
 
 from egon.data import db
 from egon.data.datasets import load_sources_and_targets
+from egon.data.datasets.scenario_capacities import map_nep_version
 from egon.data.datasets.scenario_parameters import get_scenario_year
 import egon.data.config
 
@@ -65,7 +66,7 @@ def select_nep_power_plants(carrier, scn):
     return nep
 
 
-def select_no_chp_combustion_mastr(carrier):
+def select_no_chp_combustion_mastr(carrier, scn):
     """Select power plants of a certain carrier from MaStR data which excludes
     all power plants used for allocation of CHP plants.
 
@@ -73,6 +74,8 @@ def select_no_chp_combustion_mastr(carrier):
     ----------
     carrier : str
         Name of energy carrier
+    scn : str
+        Name of scenario
 
     Returns
     -------
@@ -81,6 +84,10 @@ def select_no_chp_combustion_mastr(carrier):
 
     """
     sources, targets = load_sources_and_targets("PowerPlants")
+
+    # The remaining MaStR units depend on the NEP list the CHP allocation of
+    # the scenario is based on
+    source = map_nep_version()[scn]
 
     # import data for MaStR
     mastr = db.select_geodataframe(
@@ -93,7 +100,8 @@ def select_no_chp_combustion_mastr(carrier):
                 city,
                 federal_state
             FROM {sources.tables['mastr_combustion_without_chp']}
-            WHERE carrier = '{carrier}';
+            WHERE carrier = '{carrier}'
+            AND source = '{source}';
         """,
         index_col=None,
         geom_col="geometry",
