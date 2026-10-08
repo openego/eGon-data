@@ -1557,6 +1557,7 @@ class PowerPlants(Dataset):
                                 "biomass",
                                 "coal",
                                 "gas",
+                                "hydrogen",
                                 "lignite",
                                 "oil",
                                 "others",

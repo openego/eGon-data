@@ -26,6 +26,7 @@ COMPARED_CARRIERS = (
     "reservoir",
     "run_of_river",
     "biomass",
+    "hydrogen",
 )
 
 #: Carriers whose allocated capacity also includes supply.egon_chp_plants
