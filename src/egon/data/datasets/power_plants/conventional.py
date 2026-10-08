@@ -8,6 +8,7 @@ import pandas as pd
 
 from egon.data import db
 from egon.data.datasets import load_sources_and_targets
+from egon.data.datasets.scenario_capacities import map_nep_version
 from egon.data.datasets.scenario_parameters import get_scenario_year
 import egon.data.config
 
@@ -86,11 +87,7 @@ def select_no_chp_combustion_mastr(carrier, scn):
 
     # The remaining MaStR units depend on the NEP list the CHP allocation of
     # the scenario is based on
-    source = {
-        "eGon2035": "NEP2021",
-        "reGon2037": "NEP2025",
-        "reGon2045": "NEP2025",
-    }[scn]
+    source = map_nep_version()[scn]
 
     # import data for MaStR
     mastr = db.select_geodataframe(

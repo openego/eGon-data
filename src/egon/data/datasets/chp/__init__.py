@@ -45,6 +45,7 @@ from egon.data.datasets.power_plants import (
     filter_mastr_geometry,
     scale_prox2now,
 )
+from egon.data.datasets.scenario_capacities import map_nep_version
 from egon.data.metadata import (
     context,
     generate_resource_fields_from_sqla_model,
@@ -411,7 +412,7 @@ def insert_biomass_chp(scenario):
         mastr_loc = assign_bus_id(mastr_loc, Chp.sources)
     mastr_loc = assign_use_case(mastr_loc, Chp.sources, scenario)
 
-    nep_version = "NEP 2021" if scenario == "eGon2035" else "NEP 2025"
+    nep_version = map_nep_version()[scenario]
 
     # Insert entries with location
     session = sessionmaker(bind=db.engine())()
@@ -577,12 +578,6 @@ def insert_chp():
     # filters scenarios for all non-status-scenarios
     scenarios = [s for s in config.settings()["egon-data"]["--scenarios"] if "status" not in str(s).lower()]
 
-    # NEP version of the list of power plants each scenario is based on
-    nep_source = {
-        "eGon2035": "NEP2021",
-        "reGon2037": "NEP2025",
-        "reGon2045": "NEP2025",
-    }
     # Remaining MaStR units per NEP version
     mastr_without_chp = {}
 
@@ -600,7 +595,7 @@ def insert_chp():
 
         # reGon2037 and reGon2045 share the NEP2025 list, whose capacities
         # are the same for both years, so their remaining units are equal
-        source = nep_source[scenario]
+        source = map_nep_version()[scenario]
         if source not in mastr_without_chp:
             mastr_without_chp[source] = (
                 gpd.GeoDataFrame(
@@ -937,7 +932,7 @@ class Chp(Dataset):
                         ],
                         value_set_columns={
                             "carrier": sorted(map_carrier().unique()),
-                            "source": ["NEP2021", "NEP2025"],
+                            "source": sorted(map_nep_version().unique()),
                             "federal_state": resolve_boundary_dependence(
                                 {
                                     "Schleswig-Holstein": [
