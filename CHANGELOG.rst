@@ -33,6 +33,11 @@ Added
   placement is a calculation that happens in memory and leaves only counts
   in the run log.
   `#1414 <https://github.com/openego/eGon-data/issues/1414>`_
+* Add a fixed floor for heat pumps along the scenario chain
+  status2024 -> reGon2037 -> reGon2045, so a building with a heat pump keeps it
+  (at least at its inherited capacity) in later scenarios. eGon2035 is not on the
+  chain and keeps its independent distribution.
+  `#1477 <https://github.com/openego/eGon-data/issues/1477>`_
 * Add dataset EthosBuilda, importing the ETHOS.BUILDA synthetic building
   stock from Zenodo
   `#1310 <https://github.com/openego/eGon-data/issues/1310>`_
@@ -134,6 +139,25 @@ Changed
 Bug Fixes
 ---------
 
+* Run the heat pump floor chain in order across datasets: HeatPumpsCascade now
+  depends on HeatPumpsStatusQuo, so cascade scenarios can no longer read a
+  status quo that is still being written and silently lose their inherited
+  floor. A partially written predecessor is detected and raises instead of
+  being treated as an empty floor.
+  `#1477 <https://github.com/openego/eGon-data/issues/1477>`_
+* Raise an MV grid's heat pump capacity target to its inherited floor instead
+  of failing the run when the top-down target falls below the floor, and log
+  the overshoot as a warning. Also warn when part of a grid's target cannot be
+  assigned to any building, e.g. because all remaining candidates are below
+  the minimum heat pump size.
+  `#1477 <https://github.com/openego/eGon-data/issues/1477>`_
+* Exclude buildings with zero heat peak load from heat pump allocation, so they
+  no longer end up in egon_hp_capacity_buildings with a capacity of 0.
+  `#1477 <https://github.com/openego/eGon-data/issues/1477>`_
+* Create the heat pump output tables in a single shared task instead of racing
+  checkfirst=True creates from the per-scenario delete tasks, which could fail
+  with a UniqueViolation under the LocalExecutor.
+  `#1477 <https://github.com/openego/eGon-data/issues/1477>`_
 * Fixes distribution of small heat pumps due to incremental small heat demands 
   by implementing a minimal heat demand for the installation of a heat pump
   `#1496 <https://github.com/openego/eGon-data/issues/1496>`_
