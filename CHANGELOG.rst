@@ -41,7 +41,7 @@ Added
   `#1414 <https://github.com/openego/eGon-data/issues/1414>`_
 * Add a fixed floor for heat pumps along the scenario chain
   status2024 -> reGon2037 -> reGon2045, so a building with a heat pump keeps it
-  (at exactly its inherited capacity) in later scenarios. eGon2035 is not on the
+  (at least at its inherited capacity) in later scenarios. eGon2035 is not on the
   chain and keeps its independent distribution.
   `#1477 <https://github.com/openego/eGon-data/issues/1477>`_
 * Add dataset EthosBuilda, importing the ETHOS.BUILDA synthetic building
@@ -206,6 +206,12 @@ Bug Fixes
   status quo that is still being written and silently lose their inherited
   floor. A partially written predecessor is detected and raises instead of
   being treated as an empty floor.
+  `#1477 <https://github.com/openego/eGon-data/issues/1477>`_
+* Raise an MV grid's heat pump capacity target to its inherited floor instead
+  of failing the run when the top-down target falls below the floor, and log
+  the overshoot as a warning. Also warn when part of a grid's target cannot be
+  assigned to any building, e.g. because all remaining candidates are below
+  the minimum heat pump size.
   `#1477 <https://github.com/openego/eGon-data/issues/1477>`_
 * Exclude buildings with zero heat peak load from heat pump allocation, so they
   no longer end up in egon_hp_capacity_buildings with a capacity of 0.
