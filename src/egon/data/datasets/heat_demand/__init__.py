@@ -22,6 +22,7 @@ import os
 import time
 import zipfile
 
+from egon_validation import ReferentialIntegrityValidation
 from jinja2 import Template
 from rasterio.mask import mask
 
@@ -37,7 +38,11 @@ from egon.data import db, subprocess
 from egon.data.datasets import Dataset, DatasetSources, DatasetTargets
 from egon.data.datasets.scenario_parameters import get_sector_parameters
 from egon.data.metadata import context, license_ccby, meta_metadata, sources
-from egon.data.validation import TableValidation, resolve_boundary_dependence
+from egon.data.validation import TableValidation
+from egon.data.validation.rules.custom.sanity import (
+    HeatDemandScenarioCellConsistency,
+    HeatDemandUniqueCells,
+)
 import egon.data.config
 
 
@@ -107,12 +112,6 @@ class HeatDemandImport(Dataset):
                 "data_quality": [
                     TableValidation(
                         table_name="demand.egon_peta_heat",
-                        row_count=resolve_boundary_dependence(
-                            {
-                                "Schleswig-Holstein": 1078152,
-                                "Everything": 12465340,
-                            }
-                        ),
                         data_type_columns={
                             "id": "integer",
                             "demand": "double precision",
@@ -120,6 +119,13 @@ class HeatDemandImport(Dataset):
                             "scenario": "character varying",
                             "zensus_population_id": "integer",
                         },
+                        not_null_columns=[
+                            "id",
+                            "demand",
+                            "sector",
+                            "scenario",
+                            "zensus_population_id",
+                        ],
                         value_set_columns={
                             "scenario": [
                                 "eGon2035",
@@ -129,6 +135,24 @@ class HeatDemandImport(Dataset):
                             ],
                             "sector": ["residential", "service"],
                         },
+                    ),
+                    # Every zensus_population_id exists in the census table
+                    ReferentialIntegrityValidation(
+                        table="demand.egon_peta_heat",
+                        rule_id="SANITY_PETA_HEAT_ZENSUS_ID",
+                        fk_column="zensus_population_id",
+                        ref_table=self.sources.tables["zensus_population"],
+                        ref_column="id",
+                    ),
+                    # Each cell appears once per scenario and sector
+                    HeatDemandUniqueCells(
+                        table="demand.egon_peta_heat",
+                        rule_id="SANITY_PETA_HEAT_UNIQUE_CELLS",
+                    ),
+                    # All scenarios cover the same cells per sector
+                    HeatDemandScenarioCellConsistency(
+                        table="demand.egon_peta_heat",
+                        rule_id="SANITY_PETA_HEAT_SCENARIO_CELLS",
                     ),
                 ]
             },
