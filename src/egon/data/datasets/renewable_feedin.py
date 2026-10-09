@@ -22,6 +22,11 @@ from egon.data.datasets.era5 import (
 from egon.data.datasets.scenario_parameters import get_sector_parameters
 from egon.data.datasets.zensus_vg250 import DestatisZensusPopulationPerHa
 from egon.data.metadata import context, license_ccby, meta_metadata, sources
+from egon.data.validation import TableValidation, resolve_boundary_dependence
+from egon.data.validation.rules.custom.sanity import (
+    RenewableFeedinTimeseries,
+    ZensusWeatherCellMappingRowCount,
+)
 import egon.data.config
 
 
@@ -49,7 +54,7 @@ class RenewableFeedin(Dataset):
     #:
     name: str = "RenewableFeedin"
     #:
-    version: str = "0.0.13"
+    version: str = "0.0.14"
 
     sources = DatasetSources(
         tables={
@@ -78,6 +83,63 @@ class RenewableFeedin(Dataset):
                 wind_offshore,
                 mapping_zensus_weather,
             },
+            validation={
+                "data-quality": [
+                    TableValidation(
+                        table_name="supply.egon_era5_renewable_feedin",
+                        # Observed on SH_test_run_0726 / regon_dev_11-09
+                        # (2026-09-24). Of the 5 carriers, only
+                        # wind_onshore's row count actually differs
+                        # between boundaries (118 vs. 996)
+                        row_count=resolve_boundary_dependence(
+                            {
+                                "Schleswig-Holstein": 5502,
+                                "Everything": 6380,
+                            }
+                        ),
+                        data_type_columns={
+                            "w_id": "integer",
+                            "weather_year": "integer",
+                            "carrier": "character varying",
+                            "feedin": "ARRAY",
+                        },
+                        not_null_columns=[
+                            "w_id",
+                            "weather_year",
+                            "carrier",
+                            "feedin",
+                        ],
+                        value_set_columns={
+                            "carrier": [
+                                "heat_pump_cop",
+                                "pv",
+                                "solar_thermal",
+                                "wind_offshore",
+                                "wind_onshore",
+                            ],
+                        },
+                    ),
+                    TableValidation(
+                        table_name="boundaries.egon_map_zensus_weather_cell",
+                        # Row count is checked against the zensus table
+                        # by ZensusWeatherCellMappingRowCount below
+                        data_type_columns={
+                            "zensus_population_id": "integer",
+                            "w_id": "integer",
+                        },
+                        not_null_columns=["zensus_population_id", "w_id"],
+                    ),
+                    ZensusWeatherCellMappingRowCount(
+                        table="boundaries.egon_map_zensus_weather_cell",
+                        rule_id="SANITY_ZENSUS_WEATHER_CELL_ROW_COUNT",
+                    ),
+                    RenewableFeedinTimeseries(
+                        table="supply.egon_era5_renewable_feedin",
+                        rule_id="SANITY_RENEWABLE_FEEDIN_TIMESERIES",
+                    ),
+                ]
+            },
+            proceed_on_validation_failure=True,
         )
 
 

@@ -1,9 +1,27 @@
 """Sanity check validation rules for eGon data quality."""
 
 from .demandregio import DemandRegioScenarioDemand  # noqa: F401
+from .power_plants_capacity import (  # noqa: F401
+    BusExists,
+    PowerPlantsCapacityComparison,
+)  
+from .pv_rooftop_buildings import (  
+    PvRooftopCapacityComparison,
+    PvRooftopDuplicateRows,
+)
+from .renewable_feedin import (  # noqa: F401
+    RenewableFeedinTimeseries,
+    ZensusWeatherCellMappingRowCount,
+)
 from .residential_electricity import (  # noqa: F401
     ResidentialElectricityAnnualSum,
     ResidentialElectricityHhRefinement,
+)
+from .storages import (  # noqa: F401
+    HomeBatteryAggregationComparison,
+    HomeBatteryCapacityComparison,
+    HomeBatteryDuplicateRows,
+    PumpedHydroCapacityComparison,
 )
 
 # Auto-generate __all__ from imported names (excludes private/module names)
