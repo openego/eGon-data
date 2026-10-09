@@ -164,6 +164,9 @@ def insert_capacities_status_quo(scenario: str) -> None:
         "status2024": 9900,
     }[scenario]
 
+    if config.settings()["egon-data"]["--dataset-boundary"] != "Everything":
+        small_storages *= population_share()
+
     db.execute_sql(f"""
         INSERT INTO {targets.tables['scenario_capacities']}
         (component, carrier, capacity, nuts, scenario_name)
@@ -523,6 +526,7 @@ def map_carrier():
             "Mineralöl-\nprodukte": "oil",
             "Braunkohle": "lignite",
             "Waerme": "others",
+            "Wärme": "others",
             "Mineraloelprodukte": "oil",
             "Mineralölprodukte": "oil",
             "NichtBiogenerAbfall": "others",
