@@ -2015,16 +2015,17 @@ def determine_hp_cap_buildings_pvbased_per_mvgd(
             hp_cap_grid = floored_cap
 
         remaining_cap_grid = hp_cap_grid - floored_cap
+        min_hp_cap_candidates = min_hp_cap_buildings.drop(
+            floored_hp_cap.index, errors="ignore"
+        )
         # Drop buildings whose required heat pump capacity is below the
         # smallest heat pump size available on the market. These buildings
         # keep their gas boiler instead of getting an undersized heat pump.
         # Only candidates for new heat pumps are filtered: inherited heat
         # pumps stay in place regardless of their size.
-        min_hp_cap_remaining = min_hp_cap_buildings[
-            min_hp_cap_buildings >= MIN_HP_CAPACITY
-        ].drop(
-            floored_hp_cap.index, errors="ignore"
-        )
+        min_hp_cap_remaining = min_hp_cap_candidates[
+            min_hp_cap_candidates >= MIN_HP_CAPACITY
+        ]
 
         hp_cap_per_building = pd.Series(dtype="float64")
         hp_cap_per_building.index.name = "building_id"
