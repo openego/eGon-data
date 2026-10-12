@@ -56,6 +56,22 @@ from egon.data.datasets.scenario_parameters import (
 # get zensus cells with district heating
 from egon.data.datasets.zensus_mv_grid_districts import MapZensusGridDistricts
 from egon.data.validation import TableValidation, resolve_boundary_dependence
+from egon.data.validation.rules.custom.sanity import (
+    HeatPeakLoadRange,
+    HeatPumpCapacityRange,
+    HeatPumpCapacityTarget,
+    HeatPumpFloorContainment,
+    HeatPumpFloorNotReduced,
+    HeatPumpMinimumRows,
+    HeatPumpNotInDistrictHeating,
+    HeatPumpPeakLoadExists,
+    HeatPumpScenarioCoverage,
+    HeatPumpSizing,
+    HeatTimeseriesCoverage,
+    HeatTimeseriesEnergyBalance,
+    HeatTimeseriesHeatPumpCapacity,
+    HeatTimeseriesValues,
+)
 
 engine = db.engine()
 Base = declarative_base()
@@ -229,6 +245,190 @@ class HeatPumpsStatusQuo(Dataset):
         )
 
 
+#: Minimum number of buildings with a peak load per scenario: about 95 % of
+#: the counts measured on full runs (Schleswig-Holstein: 587,449-587,703;
+#: Everything: 17,252,137-17,255,330, 2026-10). A failed MV grid bulk (one
+#: of `parallel_tasks`, i.e. ~10 % of the grids) falls below.
+MIN_PEAK_LOAD_BUILDINGS = {
+    "Schleswig-Holstein": 558_000,
+    "Everything": 16_390_000,
+}
+
+#: Minimum number of buildings with a heat pump per scenario, about 95 % of
+#: the counts measured on full runs (2026-10). Scenarios without an entry are
+#: not checked.
+MIN_HP_BUILDINGS = {
+    "status2024": {"Schleswig-Holstein": 8_000, "Everything": 164_000},
+    "reGon2037": {"Schleswig-Holstein": 74_000, "Everything": 1_209_000},
+    "reGon2045": {"Schleswig-Holstein": 113_000, "Everything": 1_895_000},
+}
+
+
+def hp_validation_rules():
+    """
+    Validation rules for the heat pump tables of HeatPumpsStatusQuo and
+    HeatPumpsCascade.
+
+    Content checks cover the scenarios of the heat pump floor chain, one rule
+    instance per scenario. See
+    :mod:`egon.data.validation.rules.custom.sanity.individual_heat_pumps`.
+
+    Returns
+    -------
+    list
+        TableValidation specs and rule instances.
+    """
+    peak_loads = "demand.egon_building_heat_peak_loads"
+    hp_capacity = "demand.egon_hp_capacity_buildings"
+    timeseries = "demand.egon_etrago_timeseries_individual_heating"
+    scenarios = ["eGon2035", "reGon2037", "reGon2045", "status2024"]
+    chain = get_hp_floor_chain()
+
+    rules = [
+        TableValidation(
+            table_name=peak_loads,
+            data_type_columns={
+                "building_id": "integer",
+                "scenario": "character varying",
+                "sector": "character varying",
+                "peak_load_in_w": "real",
+            },
+            value_set_columns={
+                "scenario": scenarios,
+                "sector": ["residential+cts"],
+            },
+        ),
+        TableValidation(
+            table_name=hp_capacity,
+            data_type_columns={
+                "building_id": "integer",
+                "scenario": "character varying",
+                "hp_capacity": "real",
+            },
+            value_set_columns={"scenario": scenarios},
+        ),
+        TableValidation(
+            table_name=timeseries,
+            data_type_columns={
+                "bus_id": "integer",
+                "scenario": "character varying",
+                "carrier": "character varying",
+                "dist_aggregated_mw": "array",
+            },
+            value_set_columns={
+                "scenario": scenarios,
+                "carrier": ["heat_pump", "CH4"],
+            },
+        ),
+        ArrayCardinalityValidation(
+            table=timeseries,
+            rule_id=(
+                "ARRAY_HEAT_PUMPS.egon_etrago_timeseries_individual_heating"
+            ),
+            array_column="dist_aggregated_mw",
+            expected_length=8760,
+        ),
+        HeatPumpScenarioCoverage(
+            table=hp_capacity,
+            rule_id="SANITY_HP_SCENARIOS",
+            tables=[peak_loads, hp_capacity, timeseries],
+        ),
+    ]
+
+    for scn in chain:
+        rules += [
+            # Building peak loads
+            HeatPumpMinimumRows(
+                table=peak_loads,
+                rule_id=f"SANITY_HP_PEAK_LOAD_COUNT.{scn}",
+                scenario=scn,
+                min_rows=resolve_boundary_dependence(MIN_PEAK_LOAD_BUILDINGS),
+            ),
+            HeatPeakLoadRange(
+                table=peak_loads,
+                rule_id=f"SANITY_HP_PEAK_LOAD_RANGE.{scn}",
+                scenario=scn,
+            ),
+            # Heat pump capacity per building
+            HeatPumpCapacityRange(
+                table=hp_capacity,
+                rule_id=f"SANITY_HP_CAPACITY_RANGE.{scn}",
+                scenario=scn,
+            ),
+            HeatPumpPeakLoadExists(
+                table=hp_capacity,
+                rule_id=f"SANITY_HP_PEAK_LOAD_EXISTS.{scn}",
+                scenario=scn,
+            ),
+            HeatPumpSizing(
+                table=hp_capacity,
+                rule_id=f"SANITY_HP_SIZING_RULE.{scn}",
+                scenario=scn,
+            ),
+            HeatPumpCapacityTarget(
+                table=hp_capacity,
+                rule_id=f"SANITY_HP_CAPACITY_TARGET.{scn}",
+                scenario=scn,
+            ),
+            HeatPumpNotInDistrictHeating(
+                table=hp_capacity,
+                rule_id=f"SANITY_HP_NOT_IN_DH.{scn}",
+                scenario=scn,
+            ),
+            # Heat demand time series per MV grid
+            HeatTimeseriesCoverage(
+                table=timeseries,
+                rule_id=f"SANITY_HP_TIMESERIES_COVERAGE.{scn}",
+                scenario=scn,
+            ),
+            HeatTimeseriesValues(
+                table=timeseries,
+                rule_id=f"SANITY_HP_TIMESERIES_VALUES.{scn}",
+                scenario=scn,
+            ),
+            HeatTimeseriesHeatPumpCapacity(
+                table=timeseries,
+                rule_id=f"SANITY_HP_TIMESERIES_CAPACITY.{scn}",
+                scenario=scn,
+            ),
+        ]
+        if scn in MIN_HP_BUILDINGS:
+            rules.append(
+                HeatPumpMinimumRows(
+                    table=hp_capacity,
+                    rule_id=f"SANITY_HP_COUNT.{scn}",
+                    scenario=scn,
+                    min_rows=resolve_boundary_dependence(
+                        MIN_HP_BUILDINGS[scn]
+                    ),
+                )
+            )
+        if "status" not in scn:
+            # Status quo scenarios write no gas boiler series by design
+            rules.append(
+                HeatTimeseriesEnergyBalance(
+                    table=timeseries,
+                    rule_id=f"SANITY_HP_TIMESERIES_ENERGY.{scn}",
+                    scenario=scn,
+                )
+            )
+        if get_hp_floor_predecessors(scn):
+            rules += [
+                HeatPumpFloorContainment(
+                    table=hp_capacity,
+                    rule_id=f"SANITY_HP_FLOOR_CONTAINMENT.{scn}",
+                    scenario=scn,
+                ),
+                HeatPumpFloorNotReduced(
+                    table=hp_capacity,
+                    rule_id=f"SANITY_HP_FLOOR_NOT_REDUCED.{scn}",
+                    scenario=scn,
+                ),
+            ]
+
+    return rules
+
+
 class HeatPumpsCascade(Dataset):
     """
     Class for desaggregation of heat pump capcacities per MV grid district to individual
@@ -312,7 +512,7 @@ class HeatPumpsCascade(Dataset):
     #:
     name: str = "HeatPumpsCascade"
     #:
-    version: str = "0.0.10"
+    version: str = "0.0.11"
 
     def __init__(self, dependencies):
         def dyn_parallel_tasks_2035(scenario):
@@ -424,40 +624,9 @@ class HeatPumpsCascade(Dataset):
             version=self.version,
             dependencies=dependencies,
             tasks=tasks_HeatPumpsCascade,
-            validation={
-                "data-quality": [
-                    ArrayCardinalityValidation(
-                        table="demand.egon_etrago_timeseries_individual_heating",
-                        rule_id="ARRAY_HEAT_PUMPS.egon_etrago_timeseries_individual_heating",
-                        array_column="dist_aggregated_mw",
-                        expected_length=8760,
-                    ),
-                    TableValidation(
-                        table_name="demand.egon_building_heat_peak_loads",
-                        row_count=resolve_boundary_dependence(
-                            {
-                                "Schleswig-Holstein": 2946766,
-                                "Everything": 40929667,
-                            }
-                        ),
-                        data_type_columns={
-                            "building_id": "integer",
-                            "scenario": "character varying",
-                            "sector": "character varying",
-                            "peak_load_in_w": "real",
-                        },
-                        value_set_columns={
-                            "scenario": [
-                                "eGon2035",
-                                "reGon2037",
-                                "reGon2045",
-                                "status2024",
-                            ],
-                            "sector": ["residential+cts"],
-                        },
-                    ),
-                ]
-            },
+            # Validates the output of HeatPumpsStatusQuo as well: both write
+            # the same tables, and this dataset runs after it.
+            validation={"data-quality": hp_validation_rules()},
             proceed_on_validation_failure=True,
         )
 

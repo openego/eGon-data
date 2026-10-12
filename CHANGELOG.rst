@@ -44,6 +44,13 @@ Added
   (at least at its inherited capacity) in later scenarios. eGon2035 is not on the
   chain and keeps its independent distribution.
   `#1477 <https://github.com/openego/eGon-data/issues/1477>`_
+* Add validation rules for the individual heat pump tables
+  (``egon_building_heat_peak_loads``, ``egon_hp_capacity_buildings``,
+  ``egon_etrago_timeseries_individual_heating``) to HeatPumpsCascade: value
+  ranges, the sizing rule, capacity targets per federal state, the heat pump
+  floor chain, district heating overlap and the energy balance of the time
+  series. Replaces the scenario-dependent row count of the peak load table.
+  `#1526 <https://github.com/openego/eGon-data/issues/1526>`_
 * Add dataset EthosBuilda, importing the ETHOS.BUILDA synthetic building
   stock from Zenodo
   `#1310 <https://github.com/openego/eGon-data/issues/1310>`_
