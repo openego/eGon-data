@@ -1,6 +1,22 @@
 """Sanity check validation rules for eGon data quality."""
 
 from .demandregio import DemandRegioScenarioDemand  # noqa: F401
+from .individual_heat_pumps import (  # noqa: F401
+    HeatPeakLoadRange,
+    HeatPumpCapacityRange,
+    HeatPumpCapacityTarget,
+    HeatPumpFloorContainment,
+    HeatPumpFloorNotReduced,
+    HeatPumpMinimumRows,
+    HeatPumpNotInDistrictHeating,
+    HeatPumpPeakLoadExists,
+    HeatPumpScenarioCoverage,
+    HeatPumpSizing,
+    HeatTimeseriesCoverage,
+    HeatTimeseriesEnergyBalance,
+    HeatTimeseriesHeatPumpCapacity,
+    HeatTimeseriesValues,
+)
 from .residential_electricity import (  # noqa: F401
     ResidentialElectricityAnnualSum,
     ResidentialElectricityHhRefinement,
