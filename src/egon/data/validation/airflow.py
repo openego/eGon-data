@@ -3,7 +3,7 @@
 from __future__ import annotations
 
 from functools import partial
-from typing import Any, Dict, List, Sequence
+from typing import Any, Dict, List, Optional, Sequence
 import logging
 import re
 
@@ -103,6 +103,7 @@ def create_validation_tasks(
     validation_dict: Dict[str, Sequence[ValidationSpec]],
     dataset_name: str,
     proceed_on_validation_failure: bool = False,
+    task_prefix: Optional[str] = None,
 ) -> List[PythonOperator]:
     """
     Creates one PythonOperator per task_name in validation_dict.
@@ -111,13 +112,16 @@ def create_validation_tasks(
       - values can be List[TableValidation]
 
     Mixed lists also work.
+
+    Task IDs are ``<task_prefix>.validate.<task_name>``. ``task_prefix``
+    defaults to the dataset name.
     """
     if not validation_dict:
         return []
 
     tasks: List[PythonOperator] = []
 
-    safe_dataset = sanitize_airflow_key(dataset_name)
+    safe_dataset = sanitize_airflow_key(task_prefix or dataset_name)
 
     for task_name, specs in validation_dict.items():
         callable_for_airflow = partial(

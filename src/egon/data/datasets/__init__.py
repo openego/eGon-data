@@ -316,6 +316,10 @@ class Dataset:
     #: ``super().__init__()``; a bare class attribute is overwritten by
     #: the generated ``__init__``.
     trigger_rule: Optional[str] = None
+    #: Prefix of the validation task IDs generated from
+    #: :attr:`validation`, which are ``<prefix>.validate.<name>``.
+    #: ``None`` uses the dataset's :attr:`name`.
+    validation_task_prefix: Optional[str] = None
 
     def check_version(self, after_execution=()):
         scenario_names = config.settings()["egon-data"]["--scenarios"]
@@ -425,6 +429,7 @@ class Dataset:
                 validation_dict=self.validation,
                 dataset_name=self.name,
                 proceed_on_validation_failure=self.proceed_on_validation_failure,
+                task_prefix=self.validation_task_prefix,
             )
 
             # Add validation tasks to existing Tasks_ without re-processing dependencies
