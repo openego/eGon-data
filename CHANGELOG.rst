@@ -60,6 +60,14 @@ Added
   demand.egon_ev_bus_charging_depot for eDisGo and aggregated per eTraGo bus
   under the new carrier 'land_transport_bus'
   `#1461 <https://github.com/openego/eGon-data/issues/1461>`_
+* Add validation rules for the public bus charging tables
+  (``egon_ev_bus_charging_depot`` and the ``land_transport_bus`` loads in
+  ``egon_etrago_load``/``_timeseries``) to PublicBusCharging: column types and
+  values, depot count and annual energy per scenario, consistency of the
+  series with peak load and annual demand, voltage level and bus assignment,
+  comparison with the input files, hourly match of the eTraGo loads with the
+  depot sums, and no bus loads in scenarios without bus data.
+  `#1526 <https://github.com/openego/eGon-data/issues/1526>`_
 
 * Add electric HGV charging demand model (vehicle classes N2, N3, N3S) for the
   NEP-2025-aligned scenarios reGon2037 and reGon2045, as a sibling dataset to
