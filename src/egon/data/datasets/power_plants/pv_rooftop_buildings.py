@@ -2544,6 +2544,30 @@ def add_bus_ids_sq(
     return buildings_gdf
 
 
+def update_power_plants_bus_ids_sq():
+    """Take the bus of status_quo pv rooftop units in power plants table
+    from their building
+
+    The bus of the status quo pv rooftop units in supply.egon_power_plants,
+    which are aggregated to the eTraGo generators, is set to the bus of the
+    building the unit was allocated to. Thus eTraGo and the building level
+    use the same MV grid district. Units without a building keep the bus of
+    their MaStR location.
+    """
+    sources, targets = load_sources_and_targets("PowerPlants")
+
+    db.execute_sql(f"""
+        UPDATE {sources.tables['power_plants']} AS pp
+        SET bus_id = pv.bus_id
+        FROM {EgonPowerPlantPvRoofBuilding.__table__.fullname} AS pv
+        WHERE pp.carrier = 'solar_rooftop'
+        AND pp.scenario ~ '^status'
+        AND pv.scenario = pp.scenario
+        AND pv.gens_id = pp.source_id ->> 'MastrNummer'
+        AND pv.bus_id IS NOT NULL
+        """)
+
+
 def infer_voltage_level(
     units_gdf: gpd.GeoDataFrame,
 ) -> gpd.GeoDataFrame:
@@ -2666,3 +2690,6 @@ def pv_rooftop_to_buildings():
 
     # export scenario
     create_scenario_table(infer_voltage_level(all_buildings_gdf))
+
+    # use the bus of the building for status quo units in power plants table
+    update_power_plants_bus_ids_sq()
