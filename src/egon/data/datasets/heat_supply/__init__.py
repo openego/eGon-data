@@ -28,6 +28,13 @@ from egon.data.metadata import (
     meta_metadata,
     sources,
 )
+from egon.data.validation import TableValidation
+from egon.data.validation.rules.custom.sanity import (
+    DistrictHeatingSupplyAreaReference,
+    DistrictHeatingSupplyChpCapacity,
+    DistrictHeatingSupplyScenarioTarget,
+    DistrictHeatingSupplyUniqueCarrier,
+)
 
 # Will later be imported from another file.
 Base = declarative_base()
@@ -378,7 +385,7 @@ class HeatSupply(Dataset):
     #:
     name: str = "HeatSupply"
     #:
-    version: str = "0.0.19"
+    version: str = "0.0.20"
 
     sources = DatasetSources(
         tables={
@@ -415,6 +422,69 @@ class HeatSupply(Dataset):
                 },
                 metadata,
             ),
+            validation={
+                "data_quality": [
+                    TableValidation(
+                        table_name="supply.egon_district_heating",
+                        geometry_columns=["geometry"],
+                        data_type_columns={
+                            "index": "integer",
+                            "district_heating_id": "integer",
+                            "carrier": "character varying",
+                            "category": "character varying",
+                            "capacity": "double precision",
+                            "geometry": "geometry",
+                            "scenario": "character varying",
+                        },
+                        # geometry is covered by the whole-table rule;
+                        # the per-column rule compares with 'NaN', which
+                        # PostGIS cannot do for geometries
+                        not_null_columns=[
+                            "district_heating_id",
+                            "carrier",
+                            "category",
+                            "capacity",
+                            "scenario",
+                        ],
+                        value_set_columns={
+                            "carrier": [
+                                "CHP",
+                                "gas_boiler",
+                                "geo_thermal",
+                                "heat_pump",
+                                "resistive_heater",
+                                "solar_thermal_collector",
+                            ],
+                            "category": ["small", "medium", "large"],
+                            "scenario": [
+                                "eGon2035",
+                                "reGon2037",
+                                "reGon2045",
+                                "status2024",
+                            ],
+                        },
+                    ),
+                    DistrictHeatingSupplyAreaReference(
+                        table="supply.egon_district_heating",
+                        rule_id="SANITY_DH_SUPPLY_AREA_REFERENCE",
+                    ),
+                    DistrictHeatingSupplyUniqueCarrier(
+                        table="supply.egon_district_heating",
+                        rule_id="SANITY_DH_SUPPLY_UNIQUE_CARRIER",
+                    ),
+                    DistrictHeatingSupplyScenarioTarget(
+                        table="supply.egon_district_heating",
+                        rule_id="SANITY_DH_SUPPLY_SCENARIO_TARGET",
+                        rtol=0.01,
+                    ),
+                    DistrictHeatingSupplyChpCapacity(
+                        table="supply.egon_district_heating",
+                        rule_id="SANITY_DH_SUPPLY_CHP_CAPACITY",
+                        rtol=0.001,
+                    ),
+                ]
+            },
+            proceed_on_validation_failure=True,
         )
 
 
