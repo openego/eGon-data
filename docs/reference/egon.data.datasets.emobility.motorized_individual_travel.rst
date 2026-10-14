@@ -7,7 +7,9 @@ motorized\_individual\_travel
 
    egon.data.datasets.emobility.motorized_individual_travel.db_classes
    egon.data.datasets.emobility.motorized_individual_travel.ev_allocation
+   egon.data.datasets.emobility.motorized_individual_travel.flex_diagnostics
    egon.data.datasets.emobility.motorized_individual_travel.helpers
+   egon.data.datasets.emobility.motorized_individual_travel.mit_import
    egon.data.datasets.emobility.motorized_individual_travel.model_timeseries
    egon.data.datasets.emobility.motorized_individual_travel.tests
 

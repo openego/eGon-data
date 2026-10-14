@@ -15,15 +15,16 @@ import pandas as pd
 from egon.data import config, db
 from egon.data.datasets import load_sources_and_targets
 from egon.data.datasets.emobility.motorized_individual_travel.db_classes import (
-    EgonEvCountMunicipality,
-    EgonEvCountMvGridDistrict,
-    EgonEvCountRegistrationDistrict,
-    EgonEvMvGridDistrict,
-    EgonEvPool,
+    EgonEvMitLgvCountMunicipality,
+    EgonEvMitLgvCountMvGridDistrict,
+    EgonEvMitLgvCountRegistrationDistrict,
+    EgonEvMitLgvMvGridDistrict,
+    EgonEvMitLgvPool,
 )
 from egon.data.datasets.emobility.motorized_individual_travel.helpers import (
     COLUMNS_KBA,
     CONFIG_EV,
+    legacy_scenarios,
     read_kba_data,
     read_rs7_data,
 )
@@ -273,20 +274,25 @@ def calc_evs_per_municipality(ev_data, rs7_data):
     return ev_data_muns
 
 
-def calc_evs_per_grid_district(ev_data_muns):
-    """Calculate EVs per grid district by using population weighting
+def mvgd_population_shares():
+    """Population shares of municipalities in MV grid districts.
 
-    Parameters
-    ----------
-    ev_data_muns : pandas.DataFrame
-        EV data for municipalities
+    Used by both methodologies to split municipal quantities onto the
+    intersecting MV grid districts.
 
     Returns
     -------
     pandas.DataFrame
-        EV data for grid districts
-    """
+        One row per (`bus_id`, `ags`) pair with
 
+        * `pop_mun_in_mvgd`: population of the part of the municipality
+          that lies within the MV grid district
+        * `pop_share_mun_in_mvgd`: that population relative to the total
+          population of the MV grid district
+        * `pop_mun_total`: total population of the municipality
+        * `pop_mun_in_mvgd_of_mun_total`: `pop_mun_in_mvgd` relative to
+          the total population of the municipality
+    """
     # Read MVGDs with intersecting muns and aggregate pop for each
     # municipality part
     with db.session_scope() as session:
@@ -363,6 +369,24 @@ def calc_evs_per_grid_district(ev_data_muns):
         / mvgd_pop_per_mun_in_mvgd["pop_mun_total"]
     )
 
+    return mvgd_pop_per_mun_in_mvgd
+
+
+def calc_evs_per_grid_district(ev_data_muns):
+    """Calculate EVs per grid district by using population weighting
+
+    Parameters
+    ----------
+    ev_data_muns : pandas.DataFrame
+        EV data for municipalities
+
+    Returns
+    -------
+    pandas.DataFrame
+        EV data for grid districts
+    """
+    mvgd_pop_per_mun_in_mvgd = mvgd_population_shares()
+
     # Merge EV data
     ev_data_mvgds = mvgd_pop_per_mun_in_mvgd.merge(
         ev_data_muns, on="ags", how="left"
@@ -427,6 +451,16 @@ def allocate_evs_numbers():
     """
     sources, targets = load_sources_and_targets("MotorizedIndividualTravel")
 
+    scenarios = legacy_scenarios(config.settings()["egon-data"]["--scenarios"])
+    if not scenarios:
+        print(
+            "No scenario on the legacy methodology configured, skipping "
+            "the KBA based allocation. Scenarios on the new methodology "
+            "take the vehicle counts per municipality as delivered "
+            "input data."
+        )
+        return
+
     testmode_off = (
         config.settings()["egon-data"]["--dataset-boundary"] == "Everything"
     )
@@ -434,7 +468,7 @@ def allocate_evs_numbers():
     kba_data = read_kba_data()
     rs7_data = read_rs7_data()
 
-    for scenario_name in config.settings()["egon-data"]["--scenarios"]:
+    for scenario_name in scenarios:
         # Load scenario params
         scenario_parameters = get_sector_parameters(
             "mobility", scenario=scenario_name
@@ -474,8 +508,8 @@ def allocate_evs_numbers():
                 inplace=True,
             )
             ev_data.to_sql(
-                name=EgonEvCountRegistrationDistrict.__table__.name,
-                schema=EgonEvCountRegistrationDistrict.__table__.schema,
+                name=EgonEvMitLgvCountRegistrationDistrict.__table__.name,
+                schema=EgonEvMitLgvCountRegistrationDistrict.__table__.schema,
                 con=db.engine(),
                 if_exists="append",
                 index=False,
@@ -501,8 +535,8 @@ def allocate_evs_numbers():
                 ["scenario", "scenario_variation", "ags"], inplace=True
             )
             ev_data_muns.to_sql(
-                name=EgonEvCountMunicipality.__table__.name,
-                schema=EgonEvCountMunicipality.__table__.schema,
+                name=EgonEvMitLgvCountMunicipality.__table__.name,
+                schema=EgonEvMitLgvCountMunicipality.__table__.schema,
                 con=db.engine(),
                 if_exists="append",
                 index=False,
@@ -528,8 +562,8 @@ def allocate_evs_numbers():
                 ["scenario", "scenario_variation", "bus_id"], inplace=True
             )
             ev_data_mvgds.to_sql(
-                name=EgonEvCountMvGridDistrict.__table__.name,
-                schema=EgonEvCountMvGridDistrict.__table__.schema,
+                name=EgonEvMitLgvCountMvGridDistrict.__table__.name,
+                schema=EgonEvMitLgvCountMvGridDistrict.__table__.schema,
                 con=db.engine(),
                 if_exists="append",
                 index=False,
@@ -543,11 +577,21 @@ def allocate_evs_to_grid_districts():
     Each grid district in
     :class:`egon.data.datasets.mv_grid_districts.MvGridDistricts`
     is assigned a list of electric vehicles from the EV pool in
-    :class:`EgonEvPool` based on the RegioStar7 region and the
-    counts per EV type in :class:`EgonEvCountMvGridDistrict`.
-    Results are written to :class:`EgonEvMvGridDistrict`.
+    :class:`EgonEvMitLgvPool` based on the RegioStar7 region and the
+    counts per EV type in :class:`EgonEvMitLgvCountMvGridDistrict`.
+    Results are written to :class:`EgonEvMitLgvMvGridDistrict`.
     """
     sources, targets = load_sources_and_targets("MotorizedIndividualTravel")
+
+    scenarios = legacy_scenarios(config.settings()["egon-data"]["--scenarios"])
+    if not scenarios:
+        print(
+            "No scenario on the legacy methodology configured, skipping "
+            "the random draw from the EV pool. Scenarios on the new "
+            "methodology place the delivered vehicle instances instead, "
+            "see `mit_import.allocate_ev_instances_to_grid_districts`."
+        )
+        return
 
     testmode_off = (
         config.settings()["egon-data"]["--dataset-boundary"] == "Everything"
@@ -564,14 +608,14 @@ def allocate_evs_to_grid_districts():
             .ev_id.to_list()
         )
 
-    for scenario_name in config.settings()["egon-data"]["--scenarios"]:
+    for scenario_name in scenarios:
         print(f"SCENARIO: {scenario_name}")
 
         # Load EVs per grid district
         print("Loading EV counts for grid districts...")
         with db.session_scope() as session:
-            query = session.query(EgonEvCountMvGridDistrict).filter(
-                EgonEvCountMvGridDistrict.scenario == scenario_name
+            query = session.query(EgonEvMitLgvCountMvGridDistrict).filter(
+                EgonEvMitLgvCountMvGridDistrict.scenario == scenario_name
             )
         ev_per_mvgd = pd.read_sql(
             query.statement, query.session.bind, index_col=None
@@ -589,8 +633,8 @@ def allocate_evs_to_grid_districts():
         # Load EV pool
         print("  Loading EV pool...")
         with db.session_scope() as session:
-            query = session.query(EgonEvPool).filter(
-                EgonEvPool.scenario == scenario_name
+            query = session.query(EgonEvMitLgvPool).filter(
+                EgonEvMitLgvPool.scenario == scenario_name
             )
         ev_pool = pd.read_sql(
             query.statement,
@@ -601,31 +645,29 @@ def allocate_evs_to_grid_districts():
         # Draw EVs randomly for each grid district from pool
         print("  Draw EVs from pool for grid districts...")
         np.random.seed(RANDOM_SEED)
-        ev_per_mvgd["egon_ev_pool_ev_id"] = ev_per_mvgd.apply(
-            get_random_evs, axis=1
-        )
+        ev_per_mvgd["ev_id"] = ev_per_mvgd.apply(get_random_evs, axis=1)
         ev_per_mvgd.drop(columns=["rs7_id", "type", "count"], inplace=True)
 
         # EV lists to rows
-        ev_per_mvgd = ev_per_mvgd.explode("egon_ev_pool_ev_id")
+        ev_per_mvgd = ev_per_mvgd.explode("ev_id")
 
         # Check for empty entries
-        empty_ev_entries = ev_per_mvgd.egon_ev_pool_ev_id.isna().sum()
+        empty_ev_entries = ev_per_mvgd.ev_id.isna().sum()
         if empty_ev_entries > 0:
             print("====================================================")
             print(
                 f"WARNING: Found {empty_ev_entries} empty entries "
                 f"and will remove it:"
             )
-            print(ev_per_mvgd[ev_per_mvgd.egon_ev_pool_ev_id.isna()])
-            ev_per_mvgd = ev_per_mvgd[~ev_per_mvgd.egon_ev_pool_ev_id.isna()]
+            print(ev_per_mvgd[ev_per_mvgd.ev_id.isna()])
+            ev_per_mvgd = ev_per_mvgd[~ev_per_mvgd.ev_id.isna()]
             print("====================================================")
 
         # Write trips to DB
         print("  Writing allocated data to DB...")
         ev_per_mvgd.to_sql(
-            name=EgonEvMvGridDistrict.__table__.name,
-            schema=EgonEvMvGridDistrict.__table__.schema,
+            name=EgonEvMitLgvMvGridDistrict.__table__.name,
+            schema=EgonEvMitLgvMvGridDistrict.__table__.schema,
             con=db.engine(),
             if_exists="append",
             index=False,
