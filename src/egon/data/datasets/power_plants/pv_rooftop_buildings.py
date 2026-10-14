@@ -2403,28 +2403,36 @@ def add_weather_cell_id(buildings_gdf: gpd.GeoDataFrame) -> gpd.GeoDataFrame:
 
 def add_bus_ids_sq(
     buildings_gdf: gpd.GeoDataFrame,
+    valid_buildings_gdf: gpd.GeoDataFrame,
 ) -> gpd.GeoDataFrame:
     """Add bus ids for status_quo units
+
+    The bus is taken from the building the unit was allocated to
+    (boundaries.egon_map_zensus_mvgd_buildings), as it is done for the
+    future scenarios. The MaStR location is not used, as units are allocated
+    to buildings within their municipality and not within their MV grid
+    district, and as the location of small units is only a geocoded
+    postcode point.
 
     Parameters
     -----------
     buildings_gdf : geopandas.GeoDataFrame
         GeoDataFrame containing OSM buildings data with desaggregated PV
         plants.
+    valid_buildings_gdf : geopandas.GeoDataFrame
+        GeoDataFrame containing OSM buildings data with bus_id per building.
     Returns
     -------
     geopandas.GeoDataFrame
         GeoDataFrame containing OSM building data with bus_id per
         generator.
     """
-    grid_districts_gdf = grid_districts(EPSG)
-
     mask = buildings_gdf.scenario.str.startswith("status")
 
     buildings_gdf.loc[mask, "bus_id"] = (
-        buildings_gdf.loc[mask]
-        .sjoin(grid_districts_gdf, how="left")
-        .bus_id_right
+        buildings_gdf.loc[mask, "building_id"]
+        .astype(int)
+        .map(valid_buildings_gdf.bus_id)
     )
 
     return buildings_gdf
@@ -2548,7 +2556,7 @@ def pv_rooftop_to_buildings():
     all_buildings_gdf = add_weather_cell_id(all_buildings_gdf)
 
     # add bus IDs for status quo scenario
-    all_buildings_gdf = add_bus_ids_sq(all_buildings_gdf)
+    all_buildings_gdf = add_bus_ids_sq(all_buildings_gdf, desagg_buildings_gdf)
 
     # export scenario
     create_scenario_table(infer_voltage_level(all_buildings_gdf))
