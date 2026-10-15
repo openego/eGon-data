@@ -526,6 +526,13 @@ def _get_etrago_bus(bus_id: int, scenario: str):
 def _write_flex_components(scenario: str, ac_bus, ts_df: pd.DataFrame,
                            e_nom_mwh: float, e_initial: float):
     """Write bus + link + store + driving load for one aggregated HGV flex model."""
+    # Checked before anything is written, so a skipped model leaves no
+    # orphan bus behind.
+    p_nom = float(ts_df["simultaneous_plugged_in_charging_capacity"].max())
+    if p_nom == 0:
+        logger.warning("  p_nom = 0 for flex model, skipping")
+        return
+
     # New HGV bus co-located with AC substation
     hgv_bus_id = db.next_etrago_id("bus")
     with db.session_scope() as session:
@@ -540,10 +547,6 @@ def _write_flex_components(scenario: str, ac_bus, ts_df: pd.DataFrame,
         ))
 
     # Link: AC bus → HGV bus
-    p_nom = float(ts_df["simultaneous_plugged_in_charging_capacity"].max())
-    if p_nom == 0:
-        logger.warning("  p_nom = 0 for flex model, skipping")
-        return
     link_id = db.next_etrago_id("link")
     with db.session_scope() as session:
         session.add(EgonPfHvLink(
