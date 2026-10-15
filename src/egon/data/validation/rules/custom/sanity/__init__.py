@@ -8,6 +8,22 @@ from .heat_supply import (  # noqa: F401
     DistrictHeatingSupplyUniqueCarrier,
     IndividualHeatingSupplyHeatPumpTarget,
 )
+from .individual_heat_pumps import (  # noqa: F401
+    HeatPeakLoadRange,
+    HeatPumpCapacityRange,
+    HeatPumpCapacityTarget,
+    HeatPumpFloorContainment,
+    HeatPumpFloorNotReduced,
+    HeatPumpMinimumRows,
+    HeatPumpNotInDistrictHeating,
+    HeatPumpPeakLoadExists,
+    HeatPumpScenarioCoverage,
+    HeatPumpSizing,
+    HeatTimeseriesCoverage,
+    HeatTimeseriesEnergyBalance,
+    HeatTimeseriesHeatPumpCapacity,
+    HeatTimeseriesValues,
+)
 from .residential_electricity import (  # noqa: F401
     ResidentialElectricityAnnualSum,
     ResidentialElectricityHhRefinement,
