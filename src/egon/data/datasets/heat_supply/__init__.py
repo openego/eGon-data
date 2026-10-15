@@ -28,12 +28,14 @@ from egon.data.metadata import (
     meta_metadata,
     sources,
 )
-from egon.data.validation import TableValidation
+from egon_validation import ReferentialIntegrityValidation
+from egon.data.validation import TableValidation, resolve_boundary_dependence
 from egon.data.validation.rules.custom.sanity import (
     DistrictHeatingSupplyAreaReference,
     DistrictHeatingSupplyChpCapacity,
     DistrictHeatingSupplyScenarioTarget,
     DistrictHeatingSupplyUniqueCarrier,
+    IndividualHeatingSupplyHeatPumpTarget,
 )
 
 # Will later be imported from another file.
@@ -481,6 +483,54 @@ class HeatSupply(Dataset):
                         table="supply.egon_district_heating",
                         rule_id="SANITY_DH_SUPPLY_CHP_CAPACITY",
                         rtol=0.001,
+                    ),
+                    TableValidation(
+                        table_name="supply.egon_individual_heating",
+                        geometry_columns=["geometry"],
+                        data_type_columns={
+                            "index": "integer",
+                            "mv_grid_id": "integer",
+                            "carrier": "character varying",
+                            "category": "character varying",
+                            "capacity": "double precision",
+                            "geometry": "geometry",
+                            "scenario": "character varying",
+                        },
+                        # geometry is covered by the whole-table rule;
+                        # the per-column rule compares with 'NaN', which
+                        # PostGIS cannot do for geometries
+                        not_null_columns=[
+                            "mv_grid_id",
+                            "carrier",
+                            "capacity",
+                            "scenario",
+                        ],
+                        value_set_columns={
+                            "carrier": ["heat_pump", "gas_boiler"],
+                            "scenario": [
+                                "eGon2035",
+                                "reGon2037",
+                                "reGon2045",
+                                "status2024",
+                            ],
+                        },
+                    ),
+                    ReferentialIntegrityValidation(
+                        table="supply.egon_individual_heating",
+                        rule_id="FK_MV_GRID.egon_individual_heating",
+                        fk_column="mv_grid_id",
+                        ref_table="grid.egon_mv_grid_district",
+                        ref_column="bus_id",
+                    ),
+                    IndividualHeatingSupplyHeatPumpTarget(
+                        table="supply.egon_individual_heating",
+                        rule_id="SANITY_INDIV_SUPPLY_HEAT_PUMP_TARGET",
+                        # individual_heating() distributes 1/16 of the
+                        # national status quo target for Schleswig-Holstein
+                        national_share=resolve_boundary_dependence(
+                            {"Schleswig-Holstein": 1 / 16, "Everything": 1.0}
+                        ),
+                        rtol=0.01,
                     ),
                 ]
             },

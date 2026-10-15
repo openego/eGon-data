@@ -6,6 +6,7 @@ from .heat_supply import (  # noqa: F401
     DistrictHeatingSupplyChpCapacity,
     DistrictHeatingSupplyScenarioTarget,
     DistrictHeatingSupplyUniqueCarrier,
+    IndividualHeatingSupplyHeatPumpTarget,
 )
 from .residential_electricity import (  # noqa: F401
     ResidentialElectricityAnnualSum,

@@ -1,9 +1,10 @@
 """
-Sanity check validation rules for the district heating supply table.
+Sanity check validation rules for the heat supply tables
+``supply.egon_district_heating`` and ``supply.egon_individual_heating``.
 
-All rules work on every scenario present in ``supply.egon_district_heating``,
-so which scenarios are checked follows ``--scenarios`` without having to
-configure one rule per scenario.
+All rules work on every scenario present in the checked table, so which
+scenarios are checked follows ``--scenarios`` without having to configure
+one rule per scenario.
 """
 
 from egon_validation.rules.base import DataFrameRule, Severity
@@ -422,6 +423,192 @@ class DistrictHeatingSupplyChpCapacity(DataFrameRule):
                 f"Areas whose CHP capacity differs from the assigned plants "
                 f"by more than {rtol:.1%}: {n_mismatch} ({details})"
             ),
+            column="capacity",
+            severity=Severity.INFO if success else Severity.ERROR,
+        )
+
+
+class IndividualHeatingSupplyHeatPumpTarget(DataFrameRule):
+    """
+    Validate the individual heat pump capacity against its targets in
+    ``supply.egon_scenario_capacities``.
+
+    ``individual_heating()`` distributes heat pumps on one of two levels:
+
+    * per federal state, if the scenario has ``residential_rural_heat_pump``
+      targets per NUTS-1 region (reGon scenarios),
+    * nationally, from the ``rural_heat_pump`` total (status quo). For a
+      Schleswig-Holstein run the code divides that total by 16, so the
+      national target is multiplied by ``national_share``.
+
+    The rule picks the level per scenario from the targets that exist.
+    Federal states are only compared if at least one MV grid lies in them,
+    so a run with a smaller dataset boundary is not failed for states it
+    does not contain. Scenarios without any heat pump target are reported
+    as not checked.
+
+    Args:
+        table: Supply table (supply.egon_individual_heating)
+        rule_id: Unique identifier for this validation rule
+        capacity_table: Scenario capacity table
+            (default: supply.egon_scenario_capacities)
+        map_table: MV grid to federal state mapping
+            (default: boundaries.egon_map_mvgriddistrict_vg250)
+        state_table: Federal states (default: boundaries.vg250_lan)
+        national_share: Share of the national target distributed in this
+            run (default: 1.0). Use resolve_boundary_dependence to set
+            1/16 for Schleswig-Holstein.
+        rtol: Relative tolerance (default: 0.01 = 1 %)
+    """
+
+    def __init__(
+        self,
+        table: str,
+        rule_id: str,
+        capacity_table: str = "supply.egon_scenario_capacities",
+        map_table: str = "boundaries.egon_map_mvgriddistrict_vg250",
+        state_table: str = "boundaries.vg250_lan",
+        national_share=1.0,
+        rtol: float = 0.01,
+        **kwargs,
+    ):
+        super().__init__(
+            rule_id=rule_id,
+            table=table,
+            capacity_table=capacity_table,
+            map_table=map_table,
+            state_table=state_table,
+            national_share=national_share,
+            rtol=rtol,
+            **kwargs,
+        )
+        self.kind = "sanity"
+
+    def get_query(self, ctx):
+        return f"""
+        WITH scenarios AS (
+            SELECT DISTINCT scenario FROM {self.table}
+        ),
+        -- vg250_lan has extra rows such as 'Bayern (Bodensee)', the mapping
+        -- uses the plain state names
+        states AS (
+            SELECT DISTINCT m.vg250_lan AS state, l.nuts
+            FROM {self.params["map_table"]} AS m
+            JOIN {self.params["state_table"]} AS l ON l.gen = m.vg250_lan
+        ),
+        state_targets AS (
+            SELECT scenario_name AS scenario, nuts, sum(capacity) AS target
+            FROM {self.params["capacity_table"]}
+            WHERE carrier = 'residential_rural_heat_pump'
+            GROUP BY scenario_name, nuts
+        ),
+        state_distributed AS (
+            SELECT s.scenario, st.nuts, sum(s.capacity) AS distributed
+            FROM {self.table} AS s
+            JOIN {self.params["map_table"]} AS m ON m.bus_id = s.mv_grid_id
+            JOIN states AS st ON st.state = m.vg250_lan
+            WHERE s.carrier = 'heat_pump'
+            GROUP BY s.scenario, st.nuts
+        ),
+        national_targets AS (
+            SELECT scenario_name AS scenario, sum(capacity) AS target
+            FROM {self.params["capacity_table"]}
+            WHERE carrier = 'rural_heat_pump'
+            GROUP BY scenario_name
+        ),
+        national_distributed AS (
+            SELECT scenario, sum(capacity) AS distributed
+            FROM {self.table}
+            WHERE carrier = 'heat_pump'
+            GROUP BY scenario
+        )
+        SELECT
+            sc.scenario, 'state' AS level, st.state AS region,
+            t.target, coalesce(d.distributed, 0) AS distributed
+        FROM scenarios AS sc
+        JOIN state_targets AS t ON t.scenario = sc.scenario
+        JOIN (SELECT DISTINCT state, nuts FROM states) AS st
+          ON st.nuts = t.nuts
+        LEFT JOIN state_distributed AS d
+          ON d.scenario = sc.scenario AND d.nuts = t.nuts
+        UNION ALL
+        SELECT
+            sc.scenario, 'national', 'Germany',
+            t.target, coalesce(d.distributed, 0)
+        FROM scenarios AS sc
+        JOIN national_targets AS t ON t.scenario = sc.scenario
+        LEFT JOIN national_distributed AS d ON d.scenario = sc.scenario
+        WHERE sc.scenario NOT IN (SELECT scenario FROM state_targets)
+        UNION ALL
+        -- Scenarios without any target keep one row, so they are reported
+        -- instead of returning no rows
+        SELECT sc.scenario, NULL, NULL, NULL, 0
+        FROM scenarios AS sc
+        WHERE sc.scenario NOT IN (SELECT scenario FROM state_targets)
+        AND sc.scenario NOT IN (SELECT scenario FROM national_targets)
+        """
+
+    def evaluate_df(self, df, ctx):
+        rtol = float(self.params.get("rtol", 0.01))
+        share = float(self.params.get("national_share", 1.0))
+
+        unchecked = sorted(df.loc[df["level"].isna(), "scenario"].unique())
+        df = df[df["level"].notna()].copy()
+        skipped = (
+            f"; no heat pump targets for {unchecked}, not checked"
+            if unchecked
+            else ""
+        )
+        if df.empty:
+            return self.create_result(
+                success=True,
+                message=(
+                    f"No heat pump targets for scenarios {unchecked}; "
+                    f"check skipped"
+                ),
+                severity=Severity.INFO,
+            )
+
+        national = df["level"] == "national"
+        df.loc[national, "target"] = df.loc[national, "target"] * share
+
+        # A zero target cannot give a relative deviation; it only has to
+        # stay undistributed.
+        df["deviation"] = [
+            abs(d - t) / abs(t) if t else (0.0 if not d else float("inf"))
+            for d, t in zip(df["distributed"], df["target"])
+        ]
+        violations = df[df["deviation"] > rtol]
+        max_deviation = float(df["deviation"].max())
+        success = violations.empty
+
+        levels = "; ".join(
+            f"{scenario}: {grp['level'].iloc[0]} ({len(grp)} regions, "
+            f"{grp['distributed'].sum():.0f} of {grp['target'].sum():.0f} MW)"
+            for scenario, grp in df.groupby("scenario")
+        )
+        if success:
+            message = (
+                f"Heat pump capacity matches its targets ({levels}; max "
+                f"deviation {max_deviation:.3%}, tolerance {rtol:.2%})"
+                f"{skipped}"
+            )
+        else:
+            details = "; ".join(
+                f"{row.scenario}/{row.region}: {row.distributed:.1f} MW vs "
+                f"target {row.target:.1f} MW ({row.deviation:.2%})"
+                for row in violations.itertuples()
+            )
+            message = (
+                f"{len(violations)} regions deviate from their heat pump "
+                f"target by more than {rtol:.2%}: {details}{skipped}"
+            )
+
+        return self.create_result(
+            success=success,
+            observed=max_deviation,
+            expected=rtol,
+            message=message,
             column="capacity",
             severity=Severity.INFO if success else Severity.ERROR,
         )
