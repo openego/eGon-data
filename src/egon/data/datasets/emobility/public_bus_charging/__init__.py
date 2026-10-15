@@ -272,7 +272,4 @@ class PublicBusCharging(Dataset):
             ),
             validation={"data-quality": bus_validation_rules()},
             proceed_on_validation_failure=True,
-            # Name the validation task like the dataset's other tasks,
-            # which are prefixed with their module path.
-            validation_task_prefix=__name__.replace("egon.data.datasets.", ""),
         )
