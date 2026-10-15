@@ -17,6 +17,16 @@ from .individual_heat_pumps import (  # noqa: F401
     HeatTimeseriesHeatPumpCapacity,
     HeatTimeseriesValues,
 )
+from .public_bus_charging import (  # noqa: F401
+    PublicBusAnnualEnergy,
+    PublicBusBusAssignment,
+    PublicBusEtragoConsistency,
+    PublicBusInputConsistency,
+    PublicBusMinimumDepots,
+    PublicBusScenarioCoverage,
+    PublicBusSeriesConsistency,
+    PublicBusVoltageLevel,
+)
 from .residential_electricity import (  # noqa: F401
     ResidentialElectricityAnnualSum,
     ResidentialElectricityHhRefinement,
