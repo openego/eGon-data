@@ -107,7 +107,7 @@ class HGVCharging(Dataset):
     )
 
     name: str = "HGVCharging"
-    version: str = "0.0.1"
+    version: str = "0.0.2"
 
     def __init__(self, dependencies):
         super().__init__(

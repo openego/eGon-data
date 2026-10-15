@@ -61,6 +61,13 @@ def write_etrago():
     for egon_scn in active_scenario_map():
         logger.info(f"Writing eTraGo HGV load for scenario {egon_scn}")
 
+        # Rows from an earlier run would otherwise be duplicated. The
+        # lowflex name is cleared even if lowflex is now switched off, so
+        # no stale lowflex loads are left behind.
+        _delete_etrago_hgv(egon_scn)
+        if egon_scn in lowflex["names"]:
+            _delete_etrago_hgv(lowflex["names"][egon_scn])
+
         sites, cps, events, profiles = _load_data(egon_scn)
         if sites.empty:
             logger.warning(f"  No HGV sites found for scenario {egon_scn}")
@@ -79,6 +86,86 @@ def write_etrago():
         _write_flex_model(egon_scn, sites, cps, events)
 
         logger.info(f"  Done writing eTraGo HGV for {egon_scn}")
+
+
+def _delete_etrago_hgv(scenario: str):
+    """Delete everything write_etrago wrote for one scenario.
+
+    That is the HGV_charger buses with the stores, links and loads
+    attached to them, and the highway-day fixed loads on the AC buses.
+    Stores are selected by bus, not by carrier, because MIV writes
+    battery_storage stores too. land_transport_HGV and HGV_charger are
+    only written by this module.
+    """
+    with db.session_scope() as session:
+        hgv_buses = (
+            session.query(EgonPfHvBus.bus_id)
+            .filter(
+                EgonPfHvBus.scn_name == scenario,
+                EgonPfHvBus.carrier == CARRIER_BUS,
+            )
+            .subquery()
+        )
+
+        # Stores
+        stores = (
+            session.query(EgonPfHvStore.store_id)
+            .filter(
+                EgonPfHvStore.scn_name == scenario,
+                EgonPfHvStore.bus.in_(hgv_buses),
+            )
+            .subquery()
+        )
+        session.query(EgonPfHvStoreTimeseries).filter(
+            EgonPfHvStoreTimeseries.scn_name == scenario,
+            EgonPfHvStoreTimeseries.store_id.in_(stores),
+        ).delete(synchronize_session=False)
+        session.query(EgonPfHvStore).filter(
+            EgonPfHvStore.scn_name == scenario,
+            EgonPfHvStore.bus.in_(hgv_buses),
+        ).delete(synchronize_session=False)
+
+        # Links
+        links = (
+            session.query(EgonPfHvLink.link_id)
+            .filter(
+                EgonPfHvLink.scn_name == scenario,
+                EgonPfHvLink.carrier == CARRIER_LINK,
+            )
+            .subquery()
+        )
+        session.query(EgonPfHvLinkTimeseries).filter(
+            EgonPfHvLinkTimeseries.scn_name == scenario,
+            EgonPfHvLinkTimeseries.link_id.in_(links),
+        ).delete(synchronize_session=False)
+        session.query(EgonPfHvLink).filter(
+            EgonPfHvLink.scn_name == scenario,
+            EgonPfHvLink.carrier == CARRIER_LINK,
+        ).delete(synchronize_session=False)
+
+        # Loads: driving loads on HGV buses and fixed loads on AC buses
+        loads = (
+            session.query(EgonPfHvLoad.load_id)
+            .filter(
+                EgonPfHvLoad.scn_name == scenario,
+                EgonPfHvLoad.carrier == CARRIER_LOAD,
+            )
+            .subquery()
+        )
+        session.query(EgonPfHvLoadTimeseries).filter(
+            EgonPfHvLoadTimeseries.scn_name == scenario,
+            EgonPfHvLoadTimeseries.load_id.in_(loads),
+        ).delete(synchronize_session=False)
+        session.query(EgonPfHvLoad).filter(
+            EgonPfHvLoad.scn_name == scenario,
+            EgonPfHvLoad.carrier == CARRIER_LOAD,
+        ).delete(synchronize_session=False)
+
+        # Buses
+        session.query(EgonPfHvBus).filter(
+            EgonPfHvBus.scn_name == scenario,
+            EgonPfHvBus.carrier == CARRIER_BUS,
+        ).delete(synchronize_session=False)
 
 
 def _load_data(egon_scn: str):
