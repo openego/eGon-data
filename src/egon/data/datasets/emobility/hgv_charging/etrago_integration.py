@@ -42,6 +42,12 @@ ETA_CP = 1.0
 N_TIMESTEPS = 8760
 TIMESTEP_HOURS = 1.0  # hourly resolution; driving_load's energy->power conversion assumes this
 
+# Identifies one physical slot. slot_id alone is not unique within a cp_id:
+# a highway night CP (vehicle_class "all") is shared by N3 and N3S, and
+# Stage A numbers each class's slots from 0, so N3 slot 0 and N3S slot 0
+# are two different chargers.
+SLOT_KEY = ["cp_id", "vehicle_class", "slot_id"]
+
 
 def _lowflex_config() -> dict:
     """Read lowflex config from datasets.yml. Returns dict with keys:
@@ -492,12 +498,12 @@ def _generate_hgv_load_time_series(ev_data_df: pd.DataFrame) -> pd.DataFrame:
 
 def _calc_e_initial(events: pd.DataFrame) -> float:
     """Capacity-weighted mean SoC of first event per physical slot (HGV
-    analogue of MIV simbev_event_id==0). Grouped by (cp_id, slot_id), not
+    analogue of MIV simbev_event_id==0). Grouped by SLOT_KEY, not
     cp_id alone, so every physical slot contributes its own starting value
     — a cp_id with multiple slots would otherwise be under-represented by
     one slot's value standing in for all of them (see HGV/docs/adr/0002).
     """
-    first = events.sort_values("park_start").groupby(["cp_id", "slot_id"]).first()
+    first = events.sort_values("park_start").groupby(SLOT_KEY).first()
     total_bat = first["bat_cap"].sum()
     if total_bat == 0:
         return 0.5
@@ -641,7 +647,7 @@ def _run_flex_model(scenario: str, events_flex: pd.DataFrame, ac_bus):
     # bat_cap, wildly inflating e_nom (same fix as _calc_e_initial, see
     # docs/adr/0002).
     e_nom_mwh = float(
-        events_flex.groupby(["cp_id", "slot_id"])["bat_cap"].first().sum() / 1e3
+        events_flex.groupby(SLOT_KEY)["bat_cap"].first().sum() / 1e3
     )
     e_initial = _calc_e_initial(events_flex)
 
