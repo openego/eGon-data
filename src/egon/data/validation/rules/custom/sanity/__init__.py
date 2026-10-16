@@ -1,6 +1,33 @@
 """Sanity check validation rules for eGon data quality."""
 
 from .demandregio import DemandRegioScenarioDemand  # noqa: F401
+from .hgv_charging import (  # noqa: F401
+    HgvAnnualEnergy,
+    HgvChargingPointProfiles,
+    HgvChargingPointRange,
+    HgvChargingPointSites,
+    HgvDrivingLoadEnergy,
+    HgvEventContract,
+    HgvEventEnergy,
+    HgvEventReferences,
+    HgvHighwayDayLoad,
+    HgvHighwayDayPeak,
+    HgvLinkPower,
+    HgvMinimumSites,
+    HgvModelComponents,
+    HgvModelCount,
+    HgvOrphanTimeseries,
+    HgvProfiles,
+    HgvScenarioCoverage,
+    HgvSiteBusAssignment,
+    HgvSitePower,
+    HgvSiteValues,
+    HgvSlotChains,
+    HgvStoreCapacity,
+    HgvStoreInitial,
+    HgvTimeseriesExists,
+    HgvTimeseriesValues,
+)
 from .individual_heat_pumps import (  # noqa: F401
     HeatPeakLoadRange,
     HeatPumpCapacityRange,
