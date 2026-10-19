@@ -239,6 +239,10 @@ Bug Fixes
   year, they are now scaled in ``mv_grid_district_HH_electricity_load`` to
   ``demand.egon_demandregio_hh`` (110.5 TWh status2024, 83.0 TWh reGon2037)
   `#1527 <https://github.com/openego/eGon-data/issues/1527>`_
+* Fix the pipeline length used for the capital costs of ``PtH2_waste_heat``
+  links: ``find_heat_connection`` stored the distance of the last checked
+  electrolyser candidate instead of the nearest one
+  `#1554 <https://github.com/openego/eGon-data/issues/1554>`_
 
 Version 2.0.0 (2025-08-20)
 ==========================
