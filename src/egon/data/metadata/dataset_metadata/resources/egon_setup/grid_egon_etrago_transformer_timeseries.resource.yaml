@@ -89,44 +89,40 @@ format: PostgreSQL
 encoding: UTF-8
 schema:
   fields:
-  - name: ''
+  - name: s_max_pu
     description: The maximum allowed absolute flow per unit of s_nom for the OPF.
     type: static or series
     nullable: true
     unit: per unit
     isAbout: []
     valueReference: []
-    attribute: s_max_pu
     default: '1'
     status: Input (optional)
-  - name: ''
+  - name: temp_id
     description: Unique identifyier of temporal index
     type: integer
     nullable: true
     unit: n/a
     isAbout: []
     valueReference: []
-    attribute: temp_id
     default: n/a
     status: Input
-  - name: ''
+  - name: transformer_id
     description: null
     type: int
     nullable: true
     unit: none
     isAbout: []
     valueReference: []
-    attribute: transformer_id
     default: n/a
     status: null
-  - name: ''
+  - name: scn_name
     description: Name of the eGon scenario
     type: string
     nullable: true
     unit: n/a
     isAbout: []
     valueReference: []
-    attribute: scn_name
     default: n/a
     status: Input
   primaryKey:

@@ -298,13 +298,6 @@ schema:
     unit: ''
     isAbout: []
     valueReference: []
-  - name: ''
-    description: ''
-    type: ''
-    nullable: true
-    unit: ''
-    isAbout: []
-    valueReference: []
   primaryKey: []
   foreignKeys: []
 dialect:

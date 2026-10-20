@@ -328,77 +328,70 @@ format: PostgreSQL
 encoding: UTF-8
 schema:
   fields:
-  - name: ''
+  - name: store_id
     description: Unique name
     type: int
     nullable: true
     unit: none
     isAbout: []
     valueReference: []
-    attribute: store_id
     default: n/a
     status: Input (required)
-  - name: ''
+  - name: bus
     description: Name of bus to which store is attached.
     type: string
     nullable: true
     unit: none
     isAbout: []
     valueReference: []
-    attribute: bus
     default: n/a
     status: Input (required)
-  - name: ''
+  - name: type
     description: Placeholder for store type. Not yet implemented.
     type: string
     nullable: true
     unit: none
     isAbout: []
     valueReference: []
-    attribute: type
     default: n/a
     status: Input (optional)
-  - name: ''
+  - name: carrier
     description: Energy carrier of the Store, e.g. "heat" or "gas".
     type: string
     nullable: true
     unit: none
     isAbout: []
     valueReference: []
-    attribute: carrier
     default: n/a
     status: Input (optional)
-  - name: ''
+  - name: e_nom
     description: Nominal energy capacity.
     type: float
     nullable: true
     unit: MWh
     isAbout: []
     valueReference: []
-    attribute: e_nom
     default: '0'
     status: Input (optional)
-  - name: ''
+  - name: e_nom_extendable
     description: Switch to allow capacity e_nom to be extended in OPF.
     type: boolean
     nullable: true
     unit: none
     isAbout: []
     valueReference: []
-    attribute: e_nom_extendable
     default: 'False'
     status: Input (optional)
-  - name: ''
+  - name: e_nom_min
     description: If e_nom is extendable in OPF, set its minimum value.
     type: float
     nullable: true
     unit: MWh
     isAbout: []
     valueReference: []
-    attribute: e_nom_min
     default: '0'
     status: Input (optional)
-  - name: ''
+  - name: e_nom_max
     description: If e_nom is extendable in OPF, set its maximum value (e.g. limited
       by technical potential).
     type: float
@@ -406,40 +399,36 @@ schema:
     unit: MWh
     isAbout: []
     valueReference: []
-    attribute: e_nom_max
     default: inf
     status: Input (optional)
-  - name: ''
+  - name: e_min_pu
     description: Minimal value of e relative to e_nom for the OPF.
     type: static or series
     nullable: true
     unit: per unit
     isAbout: []
     valueReference: []
-    attribute: e_min_pu
     default: '0'
     status: Input (optional)
-  - name: ''
+  - name: e_max_pu
     description: Maximal value of e relative to e_nom for the OPF.
     type: static or series
     nullable: true
     unit: per unit
     isAbout: []
     valueReference: []
-    attribute: e_max_pu
     default: '1'
     status: Input (optional)
-  - name: ''
+  - name: e_initial
     description: Energy before the snapshots in the OPF.
     type: float
     nullable: true
     unit: MWh
     isAbout: []
     valueReference: []
-    attribute: e_initial
     default: '0'
     status: Input (optional)
-  - name: ''
+  - name: e_initial_per_period
     description: 'Switch: if True, then at the beginning of each investment period
       e is set to e_initial '
     type: boolean
@@ -447,10 +436,9 @@ schema:
     unit: none
     isAbout: []
     valueReference: []
-    attribute: e_initial_per_period
     default: 'False'
     status: Input (optional)
-  - name: ''
+  - name: e_cyclic
     description: 'Switch: if True, then e_initial is ignored and the initial energy
       is set to the final energy for the group of snapshots in the OPF.'
     type: boolean
@@ -458,10 +446,9 @@ schema:
     unit: none
     isAbout: []
     valueReference: []
-    attribute: e_cyclic
     default: 'False'
     status: Input (optional)
-  - name: ''
+  - name: e_cyclic_per_period
     description: 'Switch: if True, then the cyclic constraints are applied to each
       period (first snapshot level if multiindexed) separately.'
     type: boolean
@@ -469,97 +456,87 @@ schema:
     unit: none
     isAbout: []
     valueReference: []
-    attribute: e_cyclic_per_period
     default: 'True'
     status: Input (optional)
-  - name: ''
+  - name: p_set
     description: active power set point (for PF)
     type: static or series
     nullable: true
     unit: MW
     isAbout: []
     valueReference: []
-    attribute: p_set
     default: '0'
     status: Input (optional)
-  - name: ''
+  - name: q_set
     description: reactive power set point (for PF)
     type: static or series
     nullable: true
     unit: MVar
     isAbout: []
     valueReference: []
-    attribute: q_set
     default: '0'
     status: Input (optional)
-  - name: ''
+  - name: sign
     description: power sign
     type: float
     nullable: true
     unit: none
     isAbout: []
     valueReference: []
-    attribute: sign
     default: '1'
     status: Input (optional)
-  - name: ''
+  - name: marginal_cost
     description: Marginal cost of production of 1 MWh.
     type: static or series
     nullable: true
     unit: currency/MWh
     isAbout: []
     valueReference: []
-    attribute: marginal_cost
     default: '0'
     status: Input (optional)
-  - name: ''
+  - name: capital_cost
     description: Capital cost of extending e_nom by 1 MWh.
     type: float
     nullable: true
     unit: currency/MWh
     isAbout: []
     valueReference: []
-    attribute: capital_cost
     default: '0'
     status: Input (optional)
-  - name: ''
+  - name: standing_loss
     description: Losses per hour to energy.
     type: float
     nullable: true
     unit: per unit
     isAbout: []
     valueReference: []
-    attribute: standing_loss
     default: '0'
     status: Input (optional)
-  - name: ''
+  - name: build_year
     description: build year
     type: int
     nullable: true
     unit: year
     isAbout: []
     valueReference: []
-    attribute: build_year
     default: '0'
     status: Input (optional)
-  - name: ''
+  - name: lifetime
     description: lifetime
     type: float
     nullable: true
     unit: years
     isAbout: []
     valueReference: []
-    attribute: lifetime
     default: inf
     status: Input (optional)
-  - name: ''
+  - name: scn_name
     description: Name of the eGon scenario
     type: string
     nullable: true
     unit: n/a
     isAbout: []
     valueReference: []
-    attribute: scn_name
     default: n/a
     status: Input
   primaryKey:

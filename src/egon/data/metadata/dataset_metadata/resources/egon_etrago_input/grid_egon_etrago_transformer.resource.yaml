@@ -111,17 +111,16 @@ format: PostgreSQL
 encoding: UTF-8
 schema:
   fields:
-  - name: ''
+  - name: transformer_id
     description: Unique name
     type: int
     nullable: true
     unit: none
     isAbout: []
     valueReference: []
-    attribute: transformer_id
     default: n/a
     status: Input (required)
-  - name: ''
+  - name: bus0
     description: Name of first bus (typically higher voltage) to which transformer
       is attached.
     type: string
@@ -129,10 +128,9 @@ schema:
     unit: none
     isAbout: []
     valueReference: []
-    attribute: bus0
     default: n/a
     status: Input (required)
-  - name: ''
+  - name: bus1
     description: Name of second bus (typically lower voltage) to which transformer
       is attached.
     type: string
@@ -140,10 +138,9 @@ schema:
     unit: none
     isAbout: []
     valueReference: []
-    attribute: bus1
     default: n/a
     status: Input (required)
-  - name: ''
+  - name: type
     description: Name of 2-winding transformer standard type. If this is not an empty
       string "", then the transformer type impedance parameters are taken from the
       standard type along with "num_parallel". This will override any values set in
@@ -154,10 +151,9 @@ schema:
     unit: none
     isAbout: []
     valueReference: []
-    attribute: type
     default: n/a
     status: Input (optional)
-  - name: ''
+  - name: model
     description: Model used for admittance matrix; can be "t" or "pi"; since PyPSA
       Version 0.8.0 it defaults to "t" following physics and DIgSILENT PowerFactory;
       versions of PyPSA before 0.8.0 and some other power system tools, like MATPOWER,
@@ -167,10 +163,9 @@ schema:
     unit: none
     isAbout: []
     valueReference: []
-    attribute: model
     default: t
     status: ' Input (required)'
-  - name: ''
+  - name: x
     description: Series reactance (per unit, using s_nom as base power); must be non-zero
       for AC branch in linear power flow. Series impedance :math:`z = r + jx` must
       be non-zero for the non-linear power flow. Ignored if type defined.
@@ -179,10 +174,9 @@ schema:
     unit: per unit
     isAbout: []
     valueReference: []
-    attribute: x
     default: '0'
     status: Input (required)
-  - name: ''
+  - name: r
     description: Series resistance (per unit, using s_nom as base power); must be
       non-zero for DC branch in linear power flow. Series impedance :math:`z = r +
       jx` must be non-zero for the non-linear power flow. Ignored if type defined.
@@ -191,10 +185,9 @@ schema:
     unit: per unit
     isAbout: []
     valueReference: []
-    attribute: r
     default: '0'
     status: Input (required)
-  - name: ''
+  - name: g
     description: Shunt conductivity (per unit, using s_nom as base power). Ignored
       if type defined.
     type: float
@@ -202,10 +195,9 @@ schema:
     unit: per unit
     isAbout: []
     valueReference: []
-    attribute: g
     default: '0'
     status: Input (optional)
-  - name: ''
+  - name: b
     description: Shunt susceptance (per unit, using s_nom as base power). Ignored
       if type defined.
     type: float
@@ -213,40 +205,36 @@ schema:
     unit: per unit
     isAbout: []
     valueReference: []
-    attribute: b
     default: '0'
     status: Input (optional)
-  - name: ''
+  - name: s_nom
     description: Limit of apparent power which can pass through branch.
     type: float
     nullable: true
     unit: MVA
     isAbout: []
     valueReference: []
-    attribute: s_nom
     default: '0'
     status: Input (optional)
-  - name: ''
+  - name: s_nom_extendable
     description: Switch to allow capacity s_nom to be extended in OPF.
     type: boolean
     nullable: true
     unit: none
     isAbout: []
     valueReference: []
-    attribute: s_nom_extendable
     default: 'False'
     status: Input (optional)
-  - name: ''
+  - name: s_nom_min
     description: If s_nom is extendable in OPF, set its minimum value.
     type: float
     nullable: true
     unit: MVA
     isAbout: []
     valueReference: []
-    attribute: s_nom_min
     default: '0'
     status: Input (optional)
-  - name: ''
+  - name: s_nom_max
     description: If s_nom is extendable in OPF, set its maximum value (e.g. limited
       by potential).
     type: float
@@ -254,30 +242,27 @@ schema:
     unit: MVA
     isAbout: []
     valueReference: []
-    attribute: s_nom_max
     default: inf
     status: Input (optional)
-  - name: ''
+  - name: s_max_pu
     description: The maximum allowed absolute flow per unit of s_nom for the OPF.
     type: static or series
     nullable: true
     unit: per unit
     isAbout: []
     valueReference: []
-    attribute: s_max_pu
     default: '1'
     status: Input (optional)
-  - name: ''
+  - name: capital_cost
     description: Capital cost of extending s_nom by 1 MVA.
     type: float
     nullable: true
     unit: currency/MVA
     isAbout: []
     valueReference: []
-    attribute: capital_cost
     default: '0'
     status: Input (optional)
-  - name: ''
+  - name: num_parallel
     description: When "type" is set, this is the number of parallel transformers (can
       also be fractional). If "type" is empty "" this value is ignored.
     type: float
@@ -285,10 +270,9 @@ schema:
     unit: none
     isAbout: []
     valueReference: []
-    attribute: num_parallel
     default: '1'
     status: Input (optional)
-  - name: ''
+  - name: tap_ratio
     description: Ratio of per unit voltages at each bus for tap changed.  Ignored
       if type defined.
     type: float
@@ -296,10 +280,9 @@ schema:
     unit: per unit
     isAbout: []
     valueReference: []
-    attribute: tap_ratio
     default: '1'
     status: Input (optional)
-  - name: ''
+  - name: tap_side
     description: Defines if tap changer is modelled at the primary 0 side (usually
       high-voltage) or the secondary 1 side (usually low voltage) (must be 0 or 1,
       defaults to 0). Ignored if type defined.
@@ -308,10 +291,9 @@ schema:
     unit: none
     isAbout: []
     valueReference: []
-    attribute: tap_side
     default: '0'
     status: Input (optional)
-  - name: ''
+  - name: tap_position
     description: If the transformer has a type, determines position relative to the
       neutral tap position.
     type: int
@@ -319,40 +301,36 @@ schema:
     unit: none
     isAbout: []
     valueReference: []
-    attribute: tap_position
     default: '0'
     status: Input (optional)
-  - name: ''
+  - name: phase_shift
     description: Voltage phase angle shift.  Ignored if type defined.
     type: float
     nullable: true
     unit: Degrees
     isAbout: []
     valueReference: []
-    attribute: phase_shift
     default: '0'
     status: Input (optional)
-  - name: ''
+  - name: build_year
     description: build year
     type: int
     nullable: true
     unit: year
     isAbout: []
     valueReference: []
-    attribute: build_year
     default: '0'
     status: Input (optional)
-  - name: ''
+  - name: lifetime
     description: lifetime
     type: float
     nullable: true
     unit: years
     isAbout: []
     valueReference: []
-    attribute: lifetime
     default: inf
     status: Input (optional)
-  - name: ''
+  - name: v_ang_min
     description: Minimum voltage angle difference across the transformer. This is
       a placeholder attribute and is not currently used by any PyPSA functions.
     type: float
@@ -360,10 +338,9 @@ schema:
     unit: Degrees
     isAbout: []
     valueReference: []
-    attribute: v_ang_min
     default: -inf
     status: Input (optional)
-  - name: ''
+  - name: v_ang_max
     description: Maximum voltage angle difference across the transformer. This is
       a placeholder attribute and is not currently used by any PyPSA functions.
     type: float
@@ -371,17 +348,15 @@ schema:
     unit: Degrees
     isAbout: []
     valueReference: []
-    attribute: v_ang_max
     default: inf
     status: Input (optional)
-  - name: ''
+  - name: scn_name
     description: Name of the eGon scenario
     type: string
     nullable: true
     unit: n/a
     isAbout: []
     valueReference: []
-    attribute: scn_name
     default: n/a
     status: Input
   primaryKey:

@@ -84,47 +84,43 @@ format: PostgreSQL
 encoding: UTF-8
 schema:
   fields:
-  - name: ''
+  - name: link_id
     description: Unique name
     type: int
     nullable: true
     unit: none
     isAbout: []
     valueReference: []
-    attribute: link_id
     default: n/a
     status: Input (required)
-  - name: ''
+  - name: bus0
     description: Name of first bus to which link is attached.
     type: string
     nullable: true
     unit: none
     isAbout: []
     valueReference: []
-    attribute: bus0
     default: n/a
     status: Input (required)
-  - name: ''
+  - name: bus1
     description: Name of second bus to which link is attached.
     type: string
     nullable: true
     unit: none
     isAbout: []
     valueReference: []
-    attribute: bus1
     default: n/a
     status: Input (required)
-  - name: ''
+  - name: type
     description: Placeholder for link type. Not yet implemented.
     type: string
     nullable: true
     unit: none
     isAbout: []
     valueReference: []
-    attribute: type
     default: n/a
     status: Input (optional)
-  - name: ''
+  - name: carrier
     description: 'Energy carrier transported by the link: can be "DC" for electrical
       HVDC links, or "heat" or "gas" etc.'
     type: string
@@ -132,10 +128,9 @@ schema:
     unit: none
     isAbout: []
     valueReference: []
-    attribute: carrier
     default: n/a
     status: Input (optional)
-  - name: ''
+  - name: efficiency
     description: Efficiency of power transfer from bus0 to bus1. (Can be time-dependent
       to represent temperature-dependent Coefficient of Performance of a heat pump
       from an electric to a heat bus.)
@@ -144,60 +139,54 @@ schema:
     unit: per unit
     isAbout: []
     valueReference: []
-    attribute: efficiency
     default: '1'
     status: Input (optional)
-  - name: ''
+  - name: build_year
     description: build year
     type: int
     nullable: true
     unit: year
     isAbout: []
     valueReference: []
-    attribute: build_year
     default: '0'
     status: Input (optional)
-  - name: ''
+  - name: lifetime
     description: lifetime
     type: float
     nullable: true
     unit: years
     isAbout: []
     valueReference: []
-    attribute: lifetime
     default: inf
     status: Input (optional)
-  - name: ''
+  - name: p_nom
     description: Limit of active power which can pass through link.
     type: float
     nullable: true
     unit: MW
     isAbout: []
     valueReference: []
-    attribute: p_nom
     default: '0'
     status: Input (optional)
-  - name: ''
+  - name: p_nom_extendable
     description: Switch to allow capacity p_nom to be extended in OPF.
     type: boolean
     nullable: true
     unit: none
     isAbout: []
     valueReference: []
-    attribute: p_nom_extendable
     default: 'False'
     status: Input (optional)
-  - name: ''
+  - name: p_nom_min
     description: If p_nom is extendable in OPF, set its minimum value.
     type: float
     nullable: true
     unit: MW
     isAbout: []
     valueReference: []
-    attribute: p_nom_min
     default: '0'
     status: Input (optional)
-  - name: ''
+  - name: p_nom_max
     description: If p_nom is extendable in OPF, set its maximum value (e.g. limited
       by potential).
     type: float
@@ -205,20 +194,18 @@ schema:
     unit: MW
     isAbout: []
     valueReference: []
-    attribute: p_nom_max
     default: inf
     status: Input (optional)
-  - name: ''
+  - name: p_set
     description: The dispatch set point for p0 of the link in PF.
     type: static or series
     nullable: true
     unit: MW
     isAbout: []
     valueReference: []
-    attribute: p_set
     default: '0'
     status: Input (optional)
-  - name: ''
+  - name: p_min_pu
     description: Minimal dispatch (can also be negative) per unit of p_nom for the
       link in OPF.
     type: static or series
@@ -226,10 +213,9 @@ schema:
     unit: per unit of p_nom
     isAbout: []
     valueReference: []
-    attribute: p_min_pu
     default: '0'
     status: Input (optional)
-  - name: ''
+  - name: p_max_pu
     description: Maximal dispatch (can also be negative) per unit of p_nom for the
       link in OPF.
     type: static or series
@@ -237,20 +223,18 @@ schema:
     unit: per unit of p_nom
     isAbout: []
     valueReference: []
-    attribute: p_max_pu
     default: '1'
     status: Input (optional)
-  - name: ''
+  - name: capital_cost
     description: Capital cost of extending p_nom by 1 MW.
     type: float
     nullable: true
     unit: currency/MW
     isAbout: []
     valueReference: []
-    attribute: capital_cost
     default: '0'
     status: Input (optional)
-  - name: ''
+  - name: marginal_cost
     description: 'Marginal cost of transfering 1 MWh (before efficiency losses) from
       bus0 to bus1. NB: marginal cost only makes sense in OPF if p_max_pu >= 0.'
     type: static or series
@@ -258,30 +242,27 @@ schema:
     unit: currency/MWh
     isAbout: []
     valueReference: []
-    attribute: marginal_cost
     default: '0'
     status: Input (optional)
-  - name: ''
+  - name: length
     description: Length of line, useful for calculating the capital cost.
     type: float
     nullable: true
     unit: km
     isAbout: []
     valueReference: []
-    attribute: length
     default: '0'
     status: Input (optional)
-  - name: ''
+  - name: terrain_factor
     description: Terrain factor for increasing capital cost.
     type: float
     nullable: true
     unit: per unit
     isAbout: []
     valueReference: []
-    attribute: terrain_factor
     default: '1'
     status: Input (optional)
-  - name: ''
+  - name: ramp_limit_up
     description: Maximum active power increase from one snapshot to the next, per
       unit of the nominal power. Ignored if NaN.
     type: float
@@ -289,10 +270,9 @@ schema:
     unit: per unit
     isAbout: []
     valueReference: []
-    attribute: ramp_limit_up
     default: n/a
     status: Input (optional)
-  - name: ''
+  - name: ramp_limit_down
     description: Maximum active power decrease from one snapshot to the next, per
       unit of the nominal power. Ignored if NaN.
     type: float
@@ -300,17 +280,15 @@ schema:
     unit: per unit
     isAbout: []
     valueReference: []
-    attribute: ramp_limit_down
     default: n/a
     status: Input (optional)
-  - name: ''
+  - name: scn_name
     description: Name of the eGon scenario
     type: string
     nullable: true
     unit: n/a
     isAbout: []
     valueReference: []
-    attribute: scn_name
     default: n/a
     status: Input
   primaryKey:

@@ -88,6 +88,15 @@ def _clean(value):
         return value[1:-1]  # quoted twice by the legacy code
     if isinstance(value, dict) and isinstance(value.get("name"), dict):
         return _clean(value["name"])  # license nested in its own "name"
+    if (
+        isinstance(value, dict)
+        and not value.get("name")
+        and "attribute" in value
+    ):
+        # eTraGo fields were generated from PyPSA's component tables, which
+        # call the column "attribute" and its kind "static or series"
+        value = {**value, "name": value["attribute"]}
+        del value["attribute"]
     if isinstance(value, dict):
         return {
             k: (
@@ -108,6 +117,8 @@ def convert(comment: dict) -> dict:
     doc.setdefault("metaMetadata", {})["metadataVersion"] = "OEP-1.5.2"
     v2 = _clean(convert_metadata(doc, "OEMetadata-2.0"))
     resource = v2["resources"][0]
+    schema = resource.get("schema") or {}
+    schema["fields"] = [f for f in schema.get("fields", []) if f.get("name")]
     # OMI appends its generic conversion contributor; ours says what and from
     # where, so keep the original contributors plus one migration entry.
     resource["contributors"] = [

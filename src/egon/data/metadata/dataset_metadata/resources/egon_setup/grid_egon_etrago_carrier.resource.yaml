@@ -89,17 +89,16 @@ format: PostgreSQL
 encoding: UTF-8
 schema:
   fields:
-  - name: ''
+  - name: carrier_id
     description: Unique name
     type: int
     nullable: true
     unit: none
     isAbout: []
     valueReference: []
-    attribute: carrier_id
     default: n/a
     status: Input (required)
-  - name: ''
+  - name: co2_emissions
     description: Emissions in CO2-tonnes-equivalent per MWh of primary energy (e.g.
       methane has 0.2 tonnes_CO2/MWh_thermal).
     type: float
@@ -107,47 +106,42 @@ schema:
     unit: tonnes/MWh
     isAbout: []
     valueReference: []
-    attribute: co2_emissions
     default: 0.0
     status: Input (optional)
-  - name: ''
+  - name: color
     description: plotting color
     type: string
     nullable: true
     unit: none
     isAbout: []
     valueReference: []
-    attribute: color
     default: n/a
     status: Input (optional)
-  - name: ''
+  - name: nice_name
     description: More precise descriptive name
     type: string
     nullable: true
     unit: none
     isAbout: []
     valueReference: []
-    attribute: nice_name
     default: n/a
     status: Input (optional)
-  - name: ''
+  - name: max_growth
     description: maximum new installed capacity per investment period
     type: float
     nullable: true
     unit: MW
     isAbout: []
     valueReference: []
-    attribute: max_growth
     default: .inf
     status: Input (optional)
-  - name: ''
+  - name: scn_name
     description: Name of the eGon scenario
     type: string
     nullable: true
     unit: n/a
     isAbout: []
     valueReference: []
-    attribute: scn_name
     default: n/a
     status: Input
   primaryKey:

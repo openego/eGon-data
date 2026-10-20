@@ -194,37 +194,34 @@ format: PostgreSQL
 encoding: UTF-8
 schema:
   fields:
-  - name: ''
+  - name: bus_id
     description: Unique name
     type: int
     nullable: true
     unit: none
     isAbout: []
     valueReference: []
-    attribute: bus_id
     default: n/a
     status: Input (required)
-  - name: ''
+  - name: v_nom
     description: Nominal voltage
     type: float
     nullable: true
     unit: kV
     isAbout: []
     valueReference: []
-    attribute: v_nom
     default: '1'
     status: Input (optional)
-  - name: ''
+  - name: type
     description: Placeholder for bus type. Not yet implemented.
     type: string
     nullable: true
     unit: none
     isAbout: []
     valueReference: []
-    attribute: type
     default: n/a
     status: Input (optional)
-  - name: ''
+  - name: x
     description: Position (e.g. longitude); the Spatial Reference System Identifier
       (SRID) is set in network.srid.
     type: float
@@ -232,10 +229,9 @@ schema:
     unit: none
     isAbout: []
     valueReference: []
-    attribute: x
     default: '0'
     status: Input (optional)
-  - name: ''
+  - name: y
     description: Position (e.g. latitude); the Spatial Reference System Identifier
       (SRID) is set in network.srid.
     type: float
@@ -243,10 +239,9 @@ schema:
     unit: none
     isAbout: []
     valueReference: []
-    attribute: y
     default: '0'
     status: Input (optional)
-  - name: ''
+  - name: carrier
     description: 'Energy carrier: can be "AC" or "DC" for electrical buses, or "heat"
       or "gas".'
     type: string
@@ -254,10 +249,9 @@ schema:
     unit: none
     isAbout: []
     valueReference: []
-    attribute: carrier
     default: AC
     status: Input (optional)
-  - name: ''
+  - name: unit
     description: Unit of the bus’ carrier if the implicitly assumed unit ("MW") is
       inappropriate (e.g. "t/h", "MWh_th/h"). Only descriptive. Does not influence
       any PyPSA functions.
@@ -266,20 +260,18 @@ schema:
     unit: none
     isAbout: []
     valueReference: []
-    attribute: unit
     default: n/a
     status: Input (optional)
-  - name: ''
+  - name: v_mag_pu_set
     description: Voltage magnitude set point, per unit of v_nom.
     type: static or series
     nullable: true
     unit: per unit
     isAbout: []
     valueReference: []
-    attribute: v_mag_pu_set
     default: '1'
     status: Input (optional)
-  - name: ''
+  - name: v_mag_pu_min
     description: Minimum desired voltage, per unit of v_nom. This is a placeholder
       attribute and is not currently used by any PyPSA functions.
     type: float
@@ -287,10 +279,9 @@ schema:
     unit: per unit
     isAbout: []
     valueReference: []
-    attribute: v_mag_pu_min
     default: '0'
     status: Input (optional)
-  - name: ''
+  - name: v_mag_pu_max
     description: Maximum desired voltage, per unit of v_nom.  This is a placeholder
       attribute and is not currently used by any PyPSA functions.
     type: float
@@ -298,17 +289,15 @@ schema:
     unit: per unit
     isAbout: []
     valueReference: []
-    attribute: v_mag_pu_max
     default: inf
     status: Input (optional)
-  - name: ''
+  - name: scn_name
     description: Name of the eGon scenario
     type: string
     nullable: true
     unit: n/a
     isAbout: []
     valueReference: []
-    attribute: scn_name
     default: n/a
     status: Input
   primaryKey:

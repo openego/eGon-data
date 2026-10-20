@@ -161,77 +161,70 @@ format: PostgreSQL
 encoding: UTF-8
 schema:
   fields:
-  - name: ''
+  - name: storage_id
     description: Unique name
     type: int
     nullable: true
     unit: none
     isAbout: []
     valueReference: []
-    attribute: storage_id
     default: n/a
     status: Input (required)
-  - name: ''
+  - name: bus
     description: Name of bus to which storage unit is attached.
     type: string
     nullable: true
     unit: none
     isAbout: []
     valueReference: []
-    attribute: bus
     default: n/a
     status: Input (required)
-  - name: ''
+  - name: control
     description: P,Q,V control strategy for PF, must be "PQ", "PV" or "Slack".
     type: string
     nullable: true
     unit: none
     isAbout: []
     valueReference: []
-    attribute: control
     default: PQ
     status: Input (optional)
-  - name: ''
+  - name: type
     description: Placeholder for storage unit type. Not yet implemented.
     type: string
     nullable: true
     unit: none
     isAbout: []
     valueReference: []
-    attribute: type
     default: n/a
     status: Input (optional)
-  - name: ''
+  - name: p_nom
     description: Nominal power for limits in OPF.
     type: float
     nullable: true
     unit: MW
     isAbout: []
     valueReference: []
-    attribute: p_nom
     default: '0'
     status: Input (optional)
-  - name: ''
+  - name: p_nom_extendable
     description: Switch to allow capacity p_nom to be extended in OPF.
     type: boolean
     nullable: true
     unit: none
     isAbout: []
     valueReference: []
-    attribute: p_nom_extendable
     default: 'False'
     status: Input (optional)
-  - name: ''
+  - name: p_nom_min
     description: If p_nom is extendable in OPF, set its minimum value.
     type: float
     nullable: true
     unit: MW
     isAbout: []
     valueReference: []
-    attribute: p_nom_min
     default: '0'
     status: Input (optional)
-  - name: ''
+  - name: p_nom_max
     description: If p_nom is extendable in OPF, set its maximum value (e.g. limited
       by potential).
     type: float
@@ -239,10 +232,9 @@ schema:
     unit: MW
     isAbout: []
     valueReference: []
-    attribute: p_nom_max
     default: inf
     status: Input (optional)
-  - name: ''
+  - name: p_min_pu
     description: The minimum output for each snapshot per unit of p_nom for the OPF
       (negative sign implies storing mode withdrawing power from bus).
     type: static or series
@@ -250,50 +242,45 @@ schema:
     unit: per unit
     isAbout: []
     valueReference: []
-    attribute: p_min_pu
     default: '-1'
     status: Input (optional)
-  - name: ''
+  - name: p_max_pu
     description: The maximum output for each snapshot per unit of p_nom for the OPF.
     type: static or series
     nullable: true
     unit: per unit
     isAbout: []
     valueReference: []
-    attribute: p_max_pu
     default: '1'
     status: Input (optional)
-  - name: ''
+  - name: p_set
     description: active power set point (for PF)
     type: static or series
     nullable: true
     unit: MW
     isAbout: []
     valueReference: []
-    attribute: p_set
     default: '0'
     status: Input (optional)
-  - name: ''
+  - name: q_set
     description: reactive power set point (for PF)
     type: static or series
     nullable: true
     unit: MVar
     isAbout: []
     valueReference: []
-    attribute: q_set
     default: '0'
     status: Input (optional)
-  - name: ''
+  - name: sign
     description: power sign
     type: float
     nullable: true
     unit: none
     isAbout: []
     valueReference: []
-    attribute: sign
     default: '1'
     status: Input (optional)
-  - name: ''
+  - name: carrier
     description: Prime mover energy carrier (e.g. coal, gas, wind, solar); required
       for global constraints on primary energy in OPF
     type: string
@@ -301,60 +288,54 @@ schema:
     unit: none
     isAbout: []
     valueReference: []
-    attribute: carrier
     default: n/a
     status: Input (optional)
-  - name: ''
+  - name: marginal_cost
     description: Marginal cost of production of 1 MWh.
     type: static or series
     nullable: true
     unit: currency/MWh
     isAbout: []
     valueReference: []
-    attribute: marginal_cost
     default: '0'
     status: Input (optional)
-  - name: ''
+  - name: capital_cost
     description: Capital cost of extending p_nom by 1 MW.
     type: float
     nullable: true
     unit: currency/MW
     isAbout: []
     valueReference: []
-    attribute: capital_cost
     default: '0'
     status: Input (optional)
-  - name: ''
+  - name: build_year
     description: build year
     type: int
     nullable: true
     unit: year
     isAbout: []
     valueReference: []
-    attribute: build_year
     default: '0'
     status: Input (optional)
-  - name: ''
+  - name: lifetime
     description: lifetime
     type: float
     nullable: true
     unit: years
     isAbout: []
     valueReference: []
-    attribute: lifetime
     default: inf
     status: Input (optional)
-  - name: ''
+  - name: state_of_charge_initial
     description: State of charge before the snapshots in the OPF.
     type: float
     nullable: true
     unit: MWh
     isAbout: []
     valueReference: []
-    attribute: state_of_charge_initial
     default: '0'
     status: Input (optional)
-  - name: ''
+  - name: state_of_charge_initial_per_period
     description: 'Switch: if True, then state of charge at the beginning of an investment
       period is set to state_of_charge_initial'
     type: boolean
@@ -362,20 +343,18 @@ schema:
     unit: none
     isAbout: []
     valueReference: []
-    attribute: state_of_charge_initial_per_period
     default: 'False'
     status: Input (optional)
-  - name: ''
+  - name: state_of_charge_set
     description: State of charge set points for snapshots in the OPF.
     type: static or series
     nullable: true
     unit: MWh
     isAbout: []
     valueReference: []
-    attribute: state_of_charge_set
     default: n/a
     status: Input (optional)
-  - name: ''
+  - name: cyclic_state_of_charge
     description: 'Switch: if True, then state_of_charge_initial is ignored and the
       initial state of charge is set to the final state of charge for the group of
       snapshots in the OPF (soc[-1] = soc[len(snapshots)-1]).'
@@ -384,10 +363,9 @@ schema:
     unit: none
     isAbout: []
     valueReference: []
-    attribute: cyclic_state_of_charge
     default: 'False'
     status: Input (optional)
-  - name: ''
+  - name: cyclic_state_of_charge_per_period
     description: 'Switch: if True, then the cyclic constraints are applied to each
       period (first snapshot level if multiindexed) separately.'
     type: boolean
@@ -395,10 +373,9 @@ schema:
     unit: none
     isAbout: []
     valueReference: []
-    attribute: cyclic_state_of_charge_per_period
     default: 'True'
     status: Input (optional)
-  - name: ''
+  - name: max_hours
     description: Maximum state of charge capacity in terms of hours at full output
       capacity p_nom
     type: float
@@ -406,40 +383,36 @@ schema:
     unit: hours
     isAbout: []
     valueReference: []
-    attribute: max_hours
     default: '1'
     status: Input (optional)
-  - name: ''
+  - name: efficiency_store
     description: Efficiency of storage on the way into the storage.
     type: float
     nullable: true
     unit: per unit
     isAbout: []
     valueReference: []
-    attribute: efficiency_store
     default: '1'
     status: Input (optional)
-  - name: ''
+  - name: efficiency_dispatch
     description: Efficiency of storage on the way out of the storage.
     type: float
     nullable: true
     unit: per unit
     isAbout: []
     valueReference: []
-    attribute: efficiency_dispatch
     default: '1'
     status: Input (optional)
-  - name: ''
+  - name: standing_loss
     description: Losses per hour to state of charge.
     type: float
     nullable: true
     unit: per unit
     isAbout: []
     valueReference: []
-    attribute: standing_loss
     default: '0'
     status: Input (optional)
-  - name: ''
+  - name: inflow
     description: Inflow to the state of charge, e.g. due to river inflow in hydro
       reservoir.
     type: static or series
@@ -447,17 +420,15 @@ schema:
     unit: MW
     isAbout: []
     valueReference: []
-    attribute: inflow
     default: '0'
     status: Input (optional)
-  - name: ''
+  - name: scn_name
     description: Name of the eGon scenario
     type: string
     nullable: true
     unit: n/a
     isAbout: []
     valueReference: []
-    attribute: scn_name
     default: n/a
     status: Input
   primaryKey:
