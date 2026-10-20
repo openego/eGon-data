@@ -67,6 +67,31 @@ def _kwargs_of_call(call, kwarg_names):
     return out
 
 
+def _class_schema(cls):
+    """Return the class-level ``schema: str = "..."`` attribute, if any."""
+    for stmt in cls.body:
+        if (
+            isinstance(stmt, ast.AnnAssign)
+            and isinstance(stmt.target, ast.Name)
+            and stmt.target.id == "schema"
+            and isinstance(stmt.value, ast.Constant)
+        ):
+            return stmt.value.value
+    return None
+
+
+def _list_tables(call, schema):
+    """Resolve ``tables=[bare names]`` (e.g. OpenStreetMap) via ``schema``."""
+    for kw in call.keywords:
+        if kw.arg == "tables" and isinstance(kw.value, ast.List) and schema:
+            return {
+                e.value: f"{schema}.{e.value}"
+                for e in kw.value.elts
+                if isinstance(e, ast.Constant)
+            }
+    return {}
+
+
 def _is_call_to(node, names):
     return (
         isinstance(node, ast.Call)
@@ -86,6 +111,7 @@ def _scan_module(path: Path) -> list[ClassIO]:
         if not isinstance(cls, ast.ClassDef):
             continue
         io = None
+        schema = _class_schema(cls)
         for stmt in cls.body:
             if not isinstance(stmt, ast.Assign):
                 continue
@@ -95,7 +121,9 @@ def _scan_module(path: Path) -> list[ClassIO]:
             ):
                 io = io or ClassIO(name=cls.name, module=str(path))
                 parts = _kwargs_of_call(stmt.value, ("tables", "files"))
-                io.target_tables = parts["tables"]
+                io.target_tables = parts["tables"] or _list_tables(
+                    stmt.value, schema
+                )
                 io.target_files = parts["files"]
             if "sources" in names and _is_call_to(
                 stmt.value, {"DatasetSources"}
