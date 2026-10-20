@@ -207,14 +207,14 @@ schema:
   - name: scenario
     description: Scenario (eGon100RE, eGon2035)
     type: character varying
-    nullable: true
+    nullable: false
     unit: none
     isAbout: []
     valueReference: []
   - name: sector
     description: Sector (cts, residential)
-    type: characters varying
-    nullable: true
+    type: character varying
+    nullable: false
     unit: none
     isAbout: []
     valueReference: []
@@ -227,7 +227,7 @@ schema:
     valueReference: []
   - name: voltage_level
     description: Voltage level of building connection after MitnetzStrom Classification
-    type: int
+    type: integer
     nullable: true
     unit: None
     isAbout: []

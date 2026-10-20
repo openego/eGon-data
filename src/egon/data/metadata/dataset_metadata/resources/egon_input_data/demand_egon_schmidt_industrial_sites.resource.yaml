@@ -132,42 +132,52 @@ schema:
     description: 'TODO: Add description'
     type: integer
     unit: none
+    nullable: false
   - name: application
     description: 'TODO: Add description'
-    type: string
+    type: character varying(50)
     unit: none
+    nullable: true
   - name: plant
     description: 'TODO: Add description'
-    type: string
+    type: character varying(100)
     unit: none
+    nullable: true
   - name: landkreis_number
     description: 'TODO: Add description'
-    type: string
+    type: character varying(5)
     unit: none
+    nullable: true
   - name: annual_tonnes
     description: 'TODO: Add description'
-    type: number
+    type: double precision
     unit: none
+    nullable: true
   - name: capacity_production
     description: 'TODO: Add description'
-    type: string
+    type: character varying(10)
     unit: none
+    nullable: true
   - name: lat
     description: 'TODO: Add description'
-    type: number
+    type: double precision
     unit: none
+    nullable: true
   - name: lon
     description: 'TODO: Add description'
-    type: number
+    type: double precision
     unit: none
+    nullable: true
   - name: geom
     description: 'TODO: Add description'
-    type: string
+    type: geometry(Point,4326)
     unit: none
+    nullable: true
   - name: wz
     description: 'TODO: Add description'
     type: integer
     unit: none
+    nullable: true
 dialect:
   delimiter: ''
   decimalSeparator: ''

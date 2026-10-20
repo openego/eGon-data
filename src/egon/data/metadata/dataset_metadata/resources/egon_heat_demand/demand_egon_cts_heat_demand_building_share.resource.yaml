@@ -159,7 +159,7 @@ schema:
   - name: scenario
     description: Scenario (eGon100RE, eGon2035)
     type: character varying
-    nullable: true
+    nullable: false
     unit: none
     isAbout: []
     valueReference: []
@@ -167,7 +167,7 @@ schema:
     description: 'MVGD bus_id (reference to: demand.egon_etrago_heat_cts.bus_id, grid.egon_hvmv_substation.bus_id,
       grid.egon_mv_grid_district.bus_id)'
     type: integer
-    nullable: false
+    nullable: true
     unit: none
     isAbout: []
     valueReference: []

@@ -110,27 +110,27 @@ schema:
   - name: mv_grid_id
     description: ''
     type: integer
-    nullable: false
+    nullable: true
     unit: none
     isAbout: []
     valueReference: []
   - name: use_case
     description: ''
-    type: varchar
+    type: character varying
     nullable: true
     unit: none
     isAbout: []
     valueReference: []
   - name: weight
     description: ''
-    type: double_precision
+    type: double precision
     nullable: true
     unit: none
     isAbout: []
     valueReference: []
   - name: geometry
     description: ''
-    type: geometry(geometry,3035)
+    type: geometry(Geometry,3035)
     nullable: true
     unit: none
     isAbout: []

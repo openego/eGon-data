@@ -146,21 +146,21 @@ schema:
     description: 'Building id (reference to: openstreetmap.osm_buildings_residential.id,
       openstreetmap.osm_buildings_synthetic.id)'
     type: integer
-    nullable: false
+    nullable: true
     unit: none
     isAbout: []
     valueReference: []
   - name: cell_id
     description: 'Census cell id (reference to: society.destatis_zensus_population_per_ha_inside_germany.id)'
     type: integer
-    nullable: false
+    nullable: true
     unit: none
     isAbout: []
     valueReference: []
   - name: profile_id
     description: 'ID of iee household profiles (reference to: iee_household_load_profiles.type)'
     type: character varying
-    nullable: false
+    nullable: true
     unit: none
     isAbout: []
     valueReference: []

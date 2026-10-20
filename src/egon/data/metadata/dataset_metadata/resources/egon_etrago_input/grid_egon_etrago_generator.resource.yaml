@@ -284,10 +284,19 @@ format: PostgreSQL
 encoding: UTF-8
 schema:
   fields:
+  - name: scn_name
+    description: Name of the eGon scenario
+    type: character varying
+    nullable: false
+    unit: n/a
+    isAbout: []
+    valueReference: []
+    default: n/a
+    status: Input
   - name: generator_id
     description: Unique name
-    type: int
-    nullable: true
+    type: bigint
+    nullable: false
     unit: none
     isAbout: []
     valueReference: []
@@ -295,7 +304,7 @@ schema:
     status: Input (required)
   - name: bus
     description: name of bus to which generator is attached
-    type: string
+    type: bigint
     nullable: true
     unit: none
     isAbout: []
@@ -304,7 +313,7 @@ schema:
     status: Input (required)
   - name: control
     description: P,Q,V control strategy for PF, must be "PQ", "PV" or "Slack".
-    type: string
+    type: text
     nullable: true
     unit: none
     isAbout: []
@@ -313,7 +322,17 @@ schema:
     status: Input (optional)
   - name: type
     description: Placeholder for generator type. Not yet implemented.
-    type: string
+    type: text
+    nullable: true
+    unit: none
+    isAbout: []
+    valueReference: []
+    default: n/a
+    status: Input (optional)
+  - name: carrier
+    description: Prime mover energy carrier (e.g. coal, gas, wind, solar); required
+      for global constraints on primary energy in OPF
+    type: text
     nullable: true
     unit: none
     isAbout: []
@@ -322,7 +341,7 @@ schema:
     status: Input (optional)
   - name: p_nom
     description: Nominal power for limits in OPF.
-    type: float
+    type: double precision
     nullable: true
     unit: MW
     isAbout: []
@@ -340,7 +359,7 @@ schema:
     status: Input (optional)
   - name: p_nom_min
     description: If p_nom is extendable in OPF, set its minimum value.
-    type: float
+    type: double precision
     nullable: true
     unit: MW
     isAbout: []
@@ -350,7 +369,7 @@ schema:
   - name: p_nom_max
     description: If p_nom is extendable in OPF, set its maximum value (e.g. limited
       by technical potential).
-    type: float
+    type: double precision
     nullable: true
     unit: MW
     isAbout: []
@@ -363,7 +382,7 @@ schema:
       and compulsory feed-in; for conventional generators it represents a minimal
       dispatch). Note that if comittable is False and p_min_pu > 0, this represents
       a must-run condition.
-    type: static or series
+    type: double precision
     nullable: true
     unit: per unit
     isAbout: []
@@ -374,7 +393,7 @@ schema:
     description: The maximum output for each snapshot per unit of p_nom for the OPF
       (e.g. for variable renewable generators this can change due to weather conditions;
       for conventional generators it represents a maximum dispatch).
-    type: static or series
+    type: double precision
     nullable: true
     unit: per unit
     isAbout: []
@@ -383,7 +402,7 @@ schema:
     status: Input (optional)
   - name: p_set
     description: active power set point (for PF)
-    type: static or series
+    type: double precision
     nullable: true
     unit: MW
     isAbout: []
@@ -392,7 +411,7 @@ schema:
     status: Input (optional)
   - name: q_set
     description: reactive power set point (for PF)
-    type: static or series
+    type: double precision
     nullable: true
     unit: MVar
     isAbout: []
@@ -401,26 +420,16 @@ schema:
     status: Input (optional)
   - name: sign
     description: power sign
-    type: float
+    type: double precision
     nullable: true
     unit: none
     isAbout: []
     valueReference: []
     default: '1'
     status: Input (optional)
-  - name: carrier
-    description: Prime mover energy carrier (e.g. coal, gas, wind, solar); required
-      for global constraints on primary energy in OPF
-    type: string
-    nullable: true
-    unit: none
-    isAbout: []
-    valueReference: []
-    default: n/a
-    status: Input (optional)
   - name: marginal_cost
     description: Marginal cost of production of 1 MWh.
-    type: static or series
+    type: double precision
     nullable: true
     unit: currency/MWh
     isAbout: []
@@ -429,7 +438,7 @@ schema:
     status: Input (optional)
   - name: build_year
     description: build year
-    type: int
+    type: bigint
     nullable: true
     unit: year
     isAbout: []
@@ -438,7 +447,7 @@ schema:
     status: Input (optional)
   - name: lifetime
     description: lifetime
-    type: float
+    type: double precision
     nullable: true
     unit: years
     isAbout: []
@@ -447,7 +456,7 @@ schema:
     status: Input (optional)
   - name: capital_cost
     description: Capital cost of extending p_nom by 1 MW.
-    type: float
+    type: double precision
     nullable: true
     unit: currency/MW
     isAbout: []
@@ -458,7 +467,7 @@ schema:
     description: Ratio between primary energy and electrical energy, e.g. takes value
       0.4 MWh_elec/MWh_thermal for gas. This is required for global constraints on
       primary energy in OPF.
-    type: float
+    type: double precision
     nullable: true
     unit: per unit
     isAbout: []
@@ -476,7 +485,7 @@ schema:
     status: Input (optional)
   - name: start_up_cost
     description: Cost to start up the generator. Only read if committable is True.
-    type: float
+    type: double precision
     nullable: true
     unit: currency
     isAbout: []
@@ -485,7 +494,7 @@ schema:
     status: Input (optional)
   - name: shut_down_cost
     description: Cost to shut down the generator. Only read if committable is True.
-    type: float
+    type: double precision
     nullable: true
     unit: currency
     isAbout: []
@@ -495,7 +504,7 @@ schema:
   - name: min_up_time
     description: Minimum number of snapshots for status to be 1.  Only read if committable
       is True.
-    type: int
+    type: bigint
     nullable: true
     unit: snapshots
     isAbout: []
@@ -505,7 +514,7 @@ schema:
   - name: min_down_time
     description: Minimum number of snapshots for status to be 0.  Only read if committable
       is True.
-    type: int
+    type: bigint
     nullable: true
     unit: snapshots
     isAbout: []
@@ -515,7 +524,7 @@ schema:
   - name: up_time_before
     description: Number of snapshots that the generator was online before network.snapshots
       start. Only read if committable is True and min_up_time is non-zero.
-    type: int
+    type: bigint
     nullable: true
     unit: snapshots
     isAbout: []
@@ -525,7 +534,7 @@ schema:
   - name: down_time_before
     description: Number of snapshots that the generator was online before network.snapshots
       start. Only read if committable is True and min_down_time is non-zero.
-    type: int
+    type: bigint
     nullable: true
     unit: snapshots
     isAbout: []
@@ -535,7 +544,7 @@ schema:
   - name: ramp_limit_up
     description: Maximum active power increase from one snapshot to the next, per
       unit of the nominal power. Ignored if NaN.
-    type: float
+    type: double precision
     nullable: true
     unit: per unit
     isAbout: []
@@ -545,7 +554,7 @@ schema:
   - name: ramp_limit_down
     description: Maximum active power decrease from one snapshot to the next, per
       unit of the nominal power. Ignored if NaN.
-    type: float
+    type: double precision
     nullable: true
     unit: per unit
     isAbout: []
@@ -555,7 +564,7 @@ schema:
   - name: ramp_limit_start_up
     description: Maximum active power increase at start up, per unit of the nominal
       power.   Only read if committable is True.
-    type: float
+    type: double precision
     nullable: true
     unit: per unit
     isAbout: []
@@ -565,22 +574,18 @@ schema:
   - name: ramp_limit_shut_down
     description: Maximum active power decrease at shut down, per unit of the nominal
       power.   Only read if committable is True.
-    type: float
+    type: double precision
     nullable: true
     unit: per unit
     isAbout: []
     valueReference: []
     default: '1'
     status: Input (optional)
-  - name: scn_name
-    description: Name of the eGon scenario
-    type: string
+  - name: e_nom_max
+    description: 'TODO: Description missing in YAML metadata'
+    type: double precision
     nullable: true
-    unit: n/a
-    isAbout: []
-    valueReference: []
-    default: n/a
-    status: Input
+    unit: none
   primaryKey:
   - scn_name
   - generator_id

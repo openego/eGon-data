@@ -161,10 +161,19 @@ format: PostgreSQL
 encoding: UTF-8
 schema:
   fields:
+  - name: scn_name
+    description: Name of the eGon scenario
+    type: character varying
+    nullable: false
+    unit: n/a
+    isAbout: []
+    valueReference: []
+    default: n/a
+    status: Input
   - name: storage_id
     description: Unique name
-    type: int
-    nullable: true
+    type: bigint
+    nullable: false
     unit: none
     isAbout: []
     valueReference: []
@@ -172,7 +181,7 @@ schema:
     status: Input (required)
   - name: bus
     description: Name of bus to which storage unit is attached.
-    type: string
+    type: bigint
     nullable: true
     unit: none
     isAbout: []
@@ -181,7 +190,7 @@ schema:
     status: Input (required)
   - name: control
     description: P,Q,V control strategy for PF, must be "PQ", "PV" or "Slack".
-    type: string
+    type: text
     nullable: true
     unit: none
     isAbout: []
@@ -190,7 +199,17 @@ schema:
     status: Input (optional)
   - name: type
     description: Placeholder for storage unit type. Not yet implemented.
-    type: string
+    type: text
+    nullable: true
+    unit: none
+    isAbout: []
+    valueReference: []
+    default: n/a
+    status: Input (optional)
+  - name: carrier
+    description: Prime mover energy carrier (e.g. coal, gas, wind, solar); required
+      for global constraints on primary energy in OPF
+    type: text
     nullable: true
     unit: none
     isAbout: []
@@ -199,7 +218,7 @@ schema:
     status: Input (optional)
   - name: p_nom
     description: Nominal power for limits in OPF.
-    type: float
+    type: double precision
     nullable: true
     unit: MW
     isAbout: []
@@ -217,7 +236,7 @@ schema:
     status: Input (optional)
   - name: p_nom_min
     description: If p_nom is extendable in OPF, set its minimum value.
-    type: float
+    type: double precision
     nullable: true
     unit: MW
     isAbout: []
@@ -227,7 +246,7 @@ schema:
   - name: p_nom_max
     description: If p_nom is extendable in OPF, set its maximum value (e.g. limited
       by potential).
-    type: float
+    type: double precision
     nullable: true
     unit: MW
     isAbout: []
@@ -237,7 +256,7 @@ schema:
   - name: p_min_pu
     description: The minimum output for each snapshot per unit of p_nom for the OPF
       (negative sign implies storing mode withdrawing power from bus).
-    type: static or series
+    type: double precision
     nullable: true
     unit: per unit
     isAbout: []
@@ -246,7 +265,7 @@ schema:
     status: Input (optional)
   - name: p_max_pu
     description: The maximum output for each snapshot per unit of p_nom for the OPF.
-    type: static or series
+    type: double precision
     nullable: true
     unit: per unit
     isAbout: []
@@ -255,7 +274,7 @@ schema:
     status: Input (optional)
   - name: p_set
     description: active power set point (for PF)
-    type: static or series
+    type: double precision
     nullable: true
     unit: MW
     isAbout: []
@@ -264,7 +283,7 @@ schema:
     status: Input (optional)
   - name: q_set
     description: reactive power set point (for PF)
-    type: static or series
+    type: double precision
     nullable: true
     unit: MVar
     isAbout: []
@@ -273,26 +292,16 @@ schema:
     status: Input (optional)
   - name: sign
     description: power sign
-    type: float
+    type: double precision
     nullable: true
     unit: none
     isAbout: []
     valueReference: []
     default: '1'
     status: Input (optional)
-  - name: carrier
-    description: Prime mover energy carrier (e.g. coal, gas, wind, solar); required
-      for global constraints on primary energy in OPF
-    type: string
-    nullable: true
-    unit: none
-    isAbout: []
-    valueReference: []
-    default: n/a
-    status: Input (optional)
   - name: marginal_cost
     description: Marginal cost of production of 1 MWh.
-    type: static or series
+    type: double precision
     nullable: true
     unit: currency/MWh
     isAbout: []
@@ -301,7 +310,7 @@ schema:
     status: Input (optional)
   - name: capital_cost
     description: Capital cost of extending p_nom by 1 MW.
-    type: float
+    type: double precision
     nullable: true
     unit: currency/MW
     isAbout: []
@@ -310,7 +319,7 @@ schema:
     status: Input (optional)
   - name: build_year
     description: build year
-    type: int
+    type: bigint
     nullable: true
     unit: year
     isAbout: []
@@ -319,7 +328,7 @@ schema:
     status: Input (optional)
   - name: lifetime
     description: lifetime
-    type: float
+    type: double precision
     nullable: true
     unit: years
     isAbout: []
@@ -328,31 +337,12 @@ schema:
     status: Input (optional)
   - name: state_of_charge_initial
     description: State of charge before the snapshots in the OPF.
-    type: float
+    type: double precision
     nullable: true
     unit: MWh
     isAbout: []
     valueReference: []
     default: '0'
-    status: Input (optional)
-  - name: state_of_charge_initial_per_period
-    description: 'Switch: if True, then state of charge at the beginning of an investment
-      period is set to state_of_charge_initial'
-    type: boolean
-    nullable: true
-    unit: none
-    isAbout: []
-    valueReference: []
-    default: 'False'
-    status: Input (optional)
-  - name: state_of_charge_set
-    description: State of charge set points for snapshots in the OPF.
-    type: static or series
-    nullable: true
-    unit: MWh
-    isAbout: []
-    valueReference: []
-    default: n/a
     status: Input (optional)
   - name: cyclic_state_of_charge
     description: 'Switch: if True, then state_of_charge_initial is ignored and the
@@ -365,20 +355,19 @@ schema:
     valueReference: []
     default: 'False'
     status: Input (optional)
-  - name: cyclic_state_of_charge_per_period
-    description: 'Switch: if True, then the cyclic constraints are applied to each
-      period (first snapshot level if multiindexed) separately.'
-    type: boolean
+  - name: state_of_charge_set
+    description: State of charge set points for snapshots in the OPF.
+    type: double precision
     nullable: true
-    unit: none
+    unit: MWh
     isAbout: []
     valueReference: []
-    default: 'True'
+    default: n/a
     status: Input (optional)
   - name: max_hours
     description: Maximum state of charge capacity in terms of hours at full output
       capacity p_nom
-    type: float
+    type: double precision
     nullable: true
     unit: hours
     isAbout: []
@@ -387,7 +376,7 @@ schema:
     status: Input (optional)
   - name: efficiency_store
     description: Efficiency of storage on the way into the storage.
-    type: float
+    type: double precision
     nullable: true
     unit: per unit
     isAbout: []
@@ -396,7 +385,7 @@ schema:
     status: Input (optional)
   - name: efficiency_dispatch
     description: Efficiency of storage on the way out of the storage.
-    type: float
+    type: double precision
     nullable: true
     unit: per unit
     isAbout: []
@@ -405,7 +394,7 @@ schema:
     status: Input (optional)
   - name: standing_loss
     description: Losses per hour to state of charge.
-    type: float
+    type: double precision
     nullable: true
     unit: per unit
     isAbout: []
@@ -415,22 +404,13 @@ schema:
   - name: inflow
     description: Inflow to the state of charge, e.g. due to river inflow in hydro
       reservoir.
-    type: static or series
+    type: double precision
     nullable: true
     unit: MW
     isAbout: []
     valueReference: []
     default: '0'
     status: Input (optional)
-  - name: scn_name
-    description: Name of the eGon scenario
-    type: string
-    nullable: true
-    unit: n/a
-    isAbout: []
-    valueReference: []
-    default: n/a
-    status: Input
   primaryKey:
   - scn_name
   - storage_id

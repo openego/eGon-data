@@ -328,10 +328,19 @@ format: PostgreSQL
 encoding: UTF-8
 schema:
   fields:
+  - name: scn_name
+    description: Name of the eGon scenario
+    type: character varying
+    nullable: false
+    unit: n/a
+    isAbout: []
+    valueReference: []
+    default: n/a
+    status: Input
   - name: store_id
     description: Unique name
-    type: int
-    nullable: true
+    type: bigint
+    nullable: false
     unit: none
     isAbout: []
     valueReference: []
@@ -339,7 +348,7 @@ schema:
     status: Input (required)
   - name: bus
     description: Name of bus to which store is attached.
-    type: string
+    type: bigint
     nullable: true
     unit: none
     isAbout: []
@@ -348,7 +357,7 @@ schema:
     status: Input (required)
   - name: type
     description: Placeholder for store type. Not yet implemented.
-    type: string
+    type: text
     nullable: true
     unit: none
     isAbout: []
@@ -357,7 +366,7 @@ schema:
     status: Input (optional)
   - name: carrier
     description: Energy carrier of the Store, e.g. "heat" or "gas".
-    type: string
+    type: text
     nullable: true
     unit: none
     isAbout: []
@@ -366,7 +375,7 @@ schema:
     status: Input (optional)
   - name: e_nom
     description: Nominal energy capacity.
-    type: float
+    type: double precision
     nullable: true
     unit: MWh
     isAbout: []
@@ -384,7 +393,7 @@ schema:
     status: Input (optional)
   - name: e_nom_min
     description: If e_nom is extendable in OPF, set its minimum value.
-    type: float
+    type: double precision
     nullable: true
     unit: MWh
     isAbout: []
@@ -394,7 +403,7 @@ schema:
   - name: e_nom_max
     description: If e_nom is extendable in OPF, set its maximum value (e.g. limited
       by technical potential).
-    type: float
+    type: double precision
     nullable: true
     unit: MWh
     isAbout: []
@@ -403,7 +412,7 @@ schema:
     status: Input (optional)
   - name: e_min_pu
     description: Minimal value of e relative to e_nom for the OPF.
-    type: static or series
+    type: double precision
     nullable: true
     unit: per unit
     isAbout: []
@@ -412,31 +421,39 @@ schema:
     status: Input (optional)
   - name: e_max_pu
     description: Maximal value of e relative to e_nom for the OPF.
-    type: static or series
+    type: double precision
     nullable: true
     unit: per unit
     isAbout: []
     valueReference: []
     default: '1'
     status: Input (optional)
+  - name: p_set
+    description: active power set point (for PF)
+    type: double precision
+    nullable: true
+    unit: MW
+    isAbout: []
+    valueReference: []
+    default: '0'
+    status: Input (optional)
+  - name: q_set
+    description: reactive power set point (for PF)
+    type: double precision
+    nullable: true
+    unit: MVar
+    isAbout: []
+    valueReference: []
+    default: '0'
+    status: Input (optional)
   - name: e_initial
     description: Energy before the snapshots in the OPF.
-    type: float
+    type: double precision
     nullable: true
     unit: MWh
     isAbout: []
     valueReference: []
     default: '0'
-    status: Input (optional)
-  - name: e_initial_per_period
-    description: 'Switch: if True, then at the beginning of each investment period
-      e is set to e_initial '
-    type: boolean
-    nullable: true
-    unit: none
-    isAbout: []
-    valueReference: []
-    default: 'False'
     status: Input (optional)
   - name: e_cyclic
     description: 'Switch: if True, then e_initial is ignored and the initial energy
@@ -448,37 +465,9 @@ schema:
     valueReference: []
     default: 'False'
     status: Input (optional)
-  - name: e_cyclic_per_period
-    description: 'Switch: if True, then the cyclic constraints are applied to each
-      period (first snapshot level if multiindexed) separately.'
-    type: boolean
-    nullable: true
-    unit: none
-    isAbout: []
-    valueReference: []
-    default: 'True'
-    status: Input (optional)
-  - name: p_set
-    description: active power set point (for PF)
-    type: static or series
-    nullable: true
-    unit: MW
-    isAbout: []
-    valueReference: []
-    default: '0'
-    status: Input (optional)
-  - name: q_set
-    description: reactive power set point (for PF)
-    type: static or series
-    nullable: true
-    unit: MVar
-    isAbout: []
-    valueReference: []
-    default: '0'
-    status: Input (optional)
   - name: sign
     description: power sign
-    type: float
+    type: double precision
     nullable: true
     unit: none
     isAbout: []
@@ -487,7 +476,7 @@ schema:
     status: Input (optional)
   - name: marginal_cost
     description: Marginal cost of production of 1 MWh.
-    type: static or series
+    type: double precision
     nullable: true
     unit: currency/MWh
     isAbout: []
@@ -496,7 +485,7 @@ schema:
     status: Input (optional)
   - name: capital_cost
     description: Capital cost of extending e_nom by 1 MWh.
-    type: float
+    type: double precision
     nullable: true
     unit: currency/MWh
     isAbout: []
@@ -505,7 +494,7 @@ schema:
     status: Input (optional)
   - name: standing_loss
     description: Losses per hour to energy.
-    type: float
+    type: double precision
     nullable: true
     unit: per unit
     isAbout: []
@@ -514,7 +503,7 @@ schema:
     status: Input (optional)
   - name: build_year
     description: build year
-    type: int
+    type: bigint
     nullable: true
     unit: year
     isAbout: []
@@ -523,22 +512,13 @@ schema:
     status: Input (optional)
   - name: lifetime
     description: lifetime
-    type: float
+    type: double precision
     nullable: true
     unit: years
     isAbout: []
     valueReference: []
     default: inf
     status: Input (optional)
-  - name: scn_name
-    description: Name of the eGon scenario
-    type: string
-    nullable: true
-    unit: n/a
-    isAbout: []
-    valueReference: []
-    default: n/a
-    status: Input
   primaryKey:
   - scn_name
   - store_id

@@ -101,14 +101,17 @@ schema:
     description: 'TODO: Add description'
     type: integer
     unit: none
+    nullable: false
   - name: scenario
     description: 'TODO: Add description'
-    type: string
+    type: character varying
     unit: none
+    nullable: false
   - name: hp_capacity
     description: 'TODO: Add description'
-    type: number
+    type: real
     unit: none
+    nullable: true
 dialect:
   delimiter: ''
   decimalSeparator: ''

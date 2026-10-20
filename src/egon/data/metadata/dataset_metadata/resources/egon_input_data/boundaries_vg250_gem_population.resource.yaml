@@ -125,237 +125,236 @@ schema:
   fields:
   - name: id
     description: Index
-    type: integer
-    nullable: false
+    type: bigint
+    nullable: true
     unit: none
     isAbout: []
     valueReference: []
   - name: ade
     description: Administrative level
-    type: integer
+    type: bigint
     nullable: true
     unit: none
     isAbout: []
     valueReference: []
   - name: gf
     description: Geofactor
-    type: integer
+    type: bigint
     nullable: true
     unit: none
     isAbout: []
     valueReference: []
   - name: bsg
     description: Particular areas
-    type: integer
+    type: bigint
     nullable: true
     unit: none
     isAbout: []
     valueReference: []
   - name: ars
     description: Territorial code
-    type: string
+    type: text
     nullable: true
     unit: none
     isAbout: []
     valueReference: []
   - name: ags
     description: Official Municipality Key
-    type: string
+    type: text
     nullable: true
     unit: none
     isAbout: []
     valueReference: []
   - name: sdv_ars
     description: Seat of the administration (territorial code)
-    type: string
+    type: text
     nullable: true
     unit: none
     isAbout: []
     valueReference: []
   - name: gen
     description: Geographical name
-    type: string
+    type: text
     nullable: true
     unit: none
     isAbout: []
     valueReference: []
   - name: bez
     description: Designation of the administrative unit
-    type: string
+    type: text
     nullable: true
     unit: none
     isAbout: []
     valueReference: []
   - name: ibz
     description: Identifier
-    type: integer
+    type: bigint
     nullable: true
     unit: none
     isAbout: []
     valueReference: []
   - name: bem
     description: Note
-    type: string
+    type: text
     nullable: true
     unit: none
     isAbout: []
     valueReference: []
   - name: nbd
     description: Name generation
-    type: string
+    type: text
     nullable: true
     unit: none
     isAbout: []
     valueReference: []
   - name: sn_l
     description: Land (state)
-    type: string
+    type: text
     nullable: true
     unit: none
     isAbout: []
     valueReference: []
   - name: sn_r
     description: Administrative district
-    type: string
+    type: text
     nullable: true
     unit: none
     isAbout: []
     valueReference: []
   - name: sn_k
     description: District
-    type: string
+    type: text
     nullable: true
     unit: none
     isAbout: []
     valueReference: []
   - name: sn_v1
     description: Administrative association – front part
-    type: string
+    type: text
     nullable: true
     unit: none
     isAbout: []
     valueReference: []
   - name: sn_v2
     description: Administrative association – rear part
-    type: string
+    type: text
     nullable: true
     unit: none
     isAbout: []
     valueReference: []
   - name: sn_g
     description: Municipality
-    type: string
+    type: text
     nullable: true
     unit: none
     isAbout: []
     valueReference: []
   - name: fk_s3
     description: Function of the 3rd key digit
-    type: string
+    type: text
     nullable: true
     unit: none
     isAbout: []
     valueReference: []
   - name: nuts
     description: European statistics key
-    type: string
+    type: text
     nullable: true
     unit: none
     isAbout: []
     valueReference: []
   - name: ars_0
     description: Filled territorial code
-    type: string
+    type: text
     nullable: true
     unit: none
     isAbout: []
     valueReference: []
   - name: ags_0
     description: Filled Official Municipality Key
-    type: string
+    type: text
     nullable: true
     unit: none
     isAbout: []
     valueReference: []
   - name: wsk
     description: Effectiveness
-    type: string
+    type: timestamp without time zone
     nullable: true
     unit: none
     isAbout: []
     valueReference: []
   - name: debkg_id
     description: DLM identifier
-    type: string
-    nullable: false
+    type: text
+    nullable: true
     unit: none
     isAbout: []
     valueReference: []
   - name: rs
     description: Territorial code (deprecated column)
-    type: string
+    type: text
     nullable: true
     unit: none
     isAbout: []
     valueReference: []
   - name: sdv_rs
     description: Seat of the administration (territorial code, deprecated)
-    type: string
+    type: text
     nullable: true
     unit: none
     isAbout: []
     valueReference: []
   - name: rs_0
     description: Filled territorial code (deprecated column)
-    type: string
+    type: text
     nullable: true
     unit: none
     isAbout: []
     valueReference: []
   - name: geometry
     description: Geometry of areas as WKB
-    type: Geometry(Polygon, srid=4326)
+    type: geometry(Geometry,3035)
     nullable: true
     unit: none
     isAbout: []
     valueReference: []
   - name: area_ha
     description: Area in ha
-    type: float
+    type: double precision
     nullable: true
     unit: ha
     isAbout: []
     valueReference: []
   - name: area_km2
     description: Area in km2
-    type: float
+    type: double precision
     nullable: true
     unit: km2
     isAbout: []
     valueReference: []
   - name: population_total
     description: Number of inhabitants
-    type: integer
+    type: double precision
     nullable: true
     unit: none
     isAbout: []
     valueReference: []
   - name: cell_count
     description: Number of Zensus cells
-    type: integer
+    type: double precision
     nullable: true
     unit: none
     isAbout: []
     valueReference: []
   - name: population_density
     description: Number of inhabitants per km2
-    type: float
+    type: double precision
     nullable: true
     unit: inhabitants/km²
     isAbout: []
     valueReference: []
-  primaryKey:
-  - id
+  primaryKey: []
   foreignKeys: []
 dialect:
   delimiter: null

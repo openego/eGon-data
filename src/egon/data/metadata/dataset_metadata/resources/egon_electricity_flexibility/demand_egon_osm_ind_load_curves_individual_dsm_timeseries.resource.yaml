@@ -198,8 +198,8 @@ schema:
     valueReference: []
   - name: scn_name
     description: ''
-    type: varchar
-    nullable: true
+    type: character varying
+    nullable: false
     unit: none
     isAbout: []
     valueReference: []
@@ -212,42 +212,42 @@ schema:
     valueReference: []
   - name: p_set
     description: ''
-    type: array
+    type: double precision[]
     nullable: true
     unit: none
     isAbout: []
     valueReference: []
   - name: p_max
     description: ''
-    type: array
+    type: double precision[]
     nullable: true
     unit: none
     isAbout: []
     valueReference: []
   - name: p_min
     description: ''
-    type: array
+    type: double precision[]
     nullable: true
     unit: none
     isAbout: []
     valueReference: []
   - name: e_max
     description: ''
-    type: array
+    type: double precision[]
     nullable: true
     unit: none
     isAbout: []
     valueReference: []
   - name: e_min
     description: ''
-    type: array
+    type: double precision[]
     nullable: true
     unit: none
     isAbout: []
     valueReference: []
   primaryKey:
-  - scn_name
   - osm_id
+  - scn_name
   foreignKeys: []
 dialect:
   delimiter: ''

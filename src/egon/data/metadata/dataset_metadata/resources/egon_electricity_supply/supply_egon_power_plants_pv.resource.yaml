@@ -173,118 +173,118 @@ schema:
   - name: bus_id
     description: ''
     type: integer
-    nullable: false
+    nullable: true
     unit: none
     isAbout: []
     valueReference: []
   - name: gens_id
     description: ''
-    type: varchar
-    nullable: false
+    type: character varying
+    nullable: true
     unit: none
     isAbout: []
     valueReference: []
   - name: status
     description: ''
-    type: varchar
+    type: character varying
     nullable: true
     unit: none
     isAbout: []
     valueReference: []
   - name: commissioning_date
     description: ''
-    type: timestamp
+    type: timestamp without time zone
     nullable: true
     unit: none
     isAbout: []
     valueReference: []
   - name: decommissioning_date
     description: ''
-    type: timestamp
+    type: timestamp without time zone
     nullable: true
     unit: none
     isAbout: []
     valueReference: []
   - name: postcode
     description: ''
-    type: varchar(5)
+    type: character varying(5)
     nullable: true
     unit: none
     isAbout: []
     valueReference: []
   - name: city
     description: ''
-    type: varchar(50)
+    type: character varying(50)
     nullable: true
     unit: none
     isAbout: []
     valueReference: []
   - name: municipality
     description: ''
-    type: varchar
+    type: character varying
     nullable: true
     unit: none
     isAbout: []
     valueReference: []
   - name: federal_state
     description: ''
-    type: varchar(31)
+    type: character varying(31)
     nullable: true
     unit: none
     isAbout: []
     valueReference: []
   - name: site
     description: ''
-    type: varchar
+    type: character varying
     nullable: true
     unit: none
     isAbout: []
     valueReference: []
   - name: zip_and_municipality
     description: ''
-    type: varchar
+    type: character varying
     nullable: true
     unit: none
     isAbout: []
     valueReference: []
   - name: site_type
     description: ''
-    type: varchar(69)
+    type: character varying(69)
     nullable: true
     unit: none
     isAbout: []
     valueReference: []
   - name: usage_sector
     description: ''
-    type: varchar(36)
+    type: character varying(36)
     nullable: true
     unit: none
     isAbout: []
     valueReference: []
   - name: orientation_primary
     description: ''
-    type: varchar(11)
+    type: character varying(11)
     nullable: true
     unit: none
     isAbout: []
     valueReference: []
   - name: orientation_primary_angle
     description: ''
-    type: varchar(18)
+    type: character varying(18)
     nullable: true
     unit: none
     isAbout: []
     valueReference: []
   - name: orientation_secondary
     description: ''
-    type: varchar(11)
+    type: character varying(11)
     nullable: true
     unit: none
     isAbout: []
     valueReference: []
   - name: orientation_secondary_angle
     description: ''
-    type: varchar(18)
+    type: character varying(18)
     nullable: true
     unit: none
     isAbout: []
@@ -298,28 +298,28 @@ schema:
     valueReference: []
   - name: module_count
     description: ''
-    type: double_precision
+    type: double precision
     nullable: true
     unit: none
     isAbout: []
     valueReference: []
   - name: capacity
     description: ''
-    type: double_precision
+    type: double precision
     nullable: true
     unit: none
     isAbout: []
     valueReference: []
   - name: capacity_inverter
     description: ''
-    type: double_precision
+    type: double precision
     nullable: true
     unit: none
     isAbout: []
     valueReference: []
   - name: feedin_type
     description: ''
-    type: varchar(47)
+    type: character varying(47)
     nullable: true
     unit: none
     isAbout: []
@@ -347,7 +347,7 @@ schema:
     valueReference: []
   - name: geom
     description: ''
-    type: geometry(point,4326)
+    type: geometry(Point,4326)
     nullable: true
     unit: none
     isAbout: []

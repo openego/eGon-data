@@ -114,34 +114,42 @@ schema:
     description: 'TODO: Add description'
     type: integer
     unit: none
+    nullable: false
   - name: scenario
     description: 'TODO: Add description'
-    type: string
+    type: character varying
     unit: none
+    nullable: false
   - name: site_id
     description: 'TODO: Add description'
     type: integer
     unit: none
+    nullable: true
   - name: vehicle_class
     description: 'TODO: Add description'
-    type: string
+    type: text
     unit: none
+    nullable: true
   - name: num_cp
     description: 'TODO: Add description'
     type: integer
     unit: none
+    nullable: true
   - name: p_set_mw
     description: 'TODO: Add description'
-    type: number
+    type: double precision
     unit: none
+    nullable: true
   - name: sector
     description: 'TODO: Add description'
-    type: string
+    type: text
     unit: none
+    nullable: true
   - name: time_of_day
     description: 'TODO: Add description'
-    type: string
+    type: text
     unit: none
+    nullable: true
 dialect:
   delimiter: ''
   decimalSeparator: ''

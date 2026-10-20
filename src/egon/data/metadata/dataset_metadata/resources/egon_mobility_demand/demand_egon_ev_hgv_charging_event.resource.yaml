@@ -114,82 +114,102 @@ schema:
     description: 'TODO: Add description'
     type: integer
     unit: none
+    nullable: false
   - name: scenario
     description: 'TODO: Add description'
-    type: string
+    type: character varying
     unit: none
+    nullable: false
   - name: cp_id
     description: 'TODO: Add description'
     type: integer
     unit: none
+    nullable: true
   - name: site_id
     description: 'TODO: Add description'
     type: integer
     unit: none
+    nullable: true
   - name: vehicle_class
     description: 'TODO: Add description'
-    type: string
+    type: text
     unit: none
+    nullable: true
   - name: bat_cap
     description: 'TODO: Add description'
-    type: number
+    type: double precision
     unit: none
+    nullable: true
   - name: slot_id
     description: 'TODO: Add description'
     type: integer
     unit: none
+    nullable: true
   - name: location
     description: 'TODO: Add description'
-    type: string
+    type: text
     unit: none
+    nullable: true
   - name: use_case
     description: 'TODO: Add description'
-    type: string
+    type: text
     unit: none
+    nullable: true
   - name: charging_capacity_nominal
     description: 'TODO: Add description'
-    type: number
+    type: double precision
     unit: none
+    nullable: true
   - name: charging_capacity_grid
     description: 'TODO: Add description'
-    type: number
+    type: double precision
     unit: none
+    nullable: true
   - name: charging_capacity_battery
     description: 'TODO: Add description'
-    type: number
+    type: double precision
     unit: none
+    nullable: true
   - name: soc_start
     description: 'TODO: Add description'
-    type: number
+    type: double precision
     unit: none
+    nullable: true
   - name: soc_end
     description: 'TODO: Add description'
-    type: number
+    type: double precision
     unit: none
+    nullable: true
   - name: charging_demand
     description: 'TODO: Add description'
-    type: number
+    type: double precision
     unit: none
+    nullable: true
   - name: park_start
     description: 'TODO: Add description'
     type: integer
     unit: none
+    nullable: true
   - name: park_end
     description: 'TODO: Add description'
     type: integer
     unit: none
+    nullable: true
   - name: drive_start
     description: 'TODO: Add description'
     type: integer
     unit: none
+    nullable: true
   - name: drive_end
     description: 'TODO: Add description'
     type: integer
     unit: none
+    nullable: true
   - name: consumption
     description: 'TODO: Add description'
-    type: number
+    type: double precision
     unit: none
+    nullable: true
 dialect:
   delimiter: ''
   decimalSeparator: ''

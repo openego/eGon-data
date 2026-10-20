@@ -121,80 +121,99 @@ schema:
   fields:
   - name: index
     description: 'TODO: Add description'
-    type: integer
+    type: bigint
     unit: none
+    nullable: true
   - name: mastr_id
     description: 'TODO: Add description'
-    type: string
+    type: text
     unit: none
+    nullable: true
   - name: name
     description: 'TODO: Add description'
-    type: string
+    type: text
     unit: none
+    nullable: true
   - name: name_unit
     description: 'TODO: Add description'
-    type: string
+    type: text
     unit: none
+    nullable: true
   - name: operator
     description: 'TODO: Add description'
-    type: string
+    type: text
     unit: none
+    nullable: true
   - name: carrier_nep
     description: 'TODO: Add description'
-    type: string
+    type: text
     unit: none
+    nullable: true
   - name: chp
     description: 'TODO: Add description'
-    type: string
+    type: text
     unit: none
+    nullable: true
   - name: postcode
     description: 'TODO: Add description'
-    type: string
+    type: text
     unit: none
+    nullable: true
   - name: city
     description: 'TODO: Add description'
-    type: string
+    type: text
     unit: none
+    nullable: true
   - name: federal_state
     description: 'TODO: Add description'
-    type: string
+    type: text
     unit: none
+    nullable: true
   - name: commissioned
     description: 'TODO: Add description'
-    type: string
+    type: text
     unit: none
+    nullable: true
   - name: status
     description: 'TODO: Add description'
-    type: string
+    type: text
     unit: none
+    nullable: true
   - name: capacity
     description: 'TODO: Add description'
-    type: number
+    type: double precision
     unit: none
+    nullable: true
   - name: c2037_capacity
     description: 'TODO: Add description'
-    type: number
+    type: double precision
     unit: none
+    nullable: true
   - name: c2045_capacity
     description: 'TODO: Add description'
-    type: number
+    type: double precision
     unit: none
+    nullable: true
   - name: scenario
     description: 'TODO: Add description'
-    type: string
+    type: text
     unit: none
+    nullable: true
   - name: h2_site
     description: 'TODO: Add description'
     type: boolean
     unit: none
+    nullable: true
   - name: h2_conversion
     description: 'TODO: Add description'
     type: boolean
     unit: none
+    nullable: true
   - name: carrier
     description: 'TODO: Add description'
-    type: string
+    type: text
     unit: none
+    nullable: true
 dialect:
   delimiter: ''
   decimalSeparator: ''

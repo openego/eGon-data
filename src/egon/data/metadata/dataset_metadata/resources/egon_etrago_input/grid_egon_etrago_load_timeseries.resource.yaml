@@ -261,9 +261,36 @@ format: PostgreSQL
 encoding: UTF-8
 schema:
   fields:
+  - name: scn_name
+    description: Name of the eGon scenario
+    type: character varying
+    nullable: false
+    unit: n/a
+    isAbout: []
+    valueReference: []
+    default: n/a
+    status: Input
+  - name: load_id
+    description: null
+    type: bigint
+    nullable: false
+    unit: none
+    isAbout: []
+    valueReference: []
+    default: n/a
+    status: null
+  - name: temp_id
+    description: Unique identifyier of temporal index
+    type: integer
+    nullable: false
+    unit: n/a
+    isAbout: []
+    valueReference: []
+    default: n/a
+    status: Input
   - name: p_set
     description: Active power consumption (positive if the load is consuming power).
-    type: static or series
+    type: double precision[]
     nullable: true
     unit: MW
     isAbout: []
@@ -272,43 +299,17 @@ schema:
     status: Input (optional)
   - name: q_set
     description: Reactive power consumption (positive if the load is inductive).
-    type: static or series
+    type: double precision[]
     nullable: true
     unit: MVar
     isAbout: []
     valueReference: []
     default: 0.0
     status: Input (optional)
-  - name: temp_id
-    description: Unique identifyier of temporal index
-    type: integer
-    nullable: true
-    unit: n/a
-    isAbout: []
-    valueReference: []
-    default: n/a
-    status: Input
-  - name: load_id
-    description: null
-    type: int
-    nullable: true
-    unit: none
-    isAbout: []
-    valueReference: []
-    default: n/a
-    status: null
-  - name: scn_name
-    description: Name of the eGon scenario
-    type: string
-    nullable: true
-    unit: n/a
-    isAbout: []
-    valueReference: []
-    default: n/a
-    status: Input
   primaryKey:
   - scn_name
   - load_id
+  - temp_id
   foreignKeys: []
 dialect:
   delimiter: ''

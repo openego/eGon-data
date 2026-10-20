@@ -87,24 +87,29 @@ schema:
   fields:
   - name: scn_name
     description: 'TODO: Add description'
-    type: string
+    type: text
     unit: none
+    nullable: false
   - name: bus0
     description: 'TODO: Add description'
-    type: string
+    type: text
     unit: none
+    nullable: false
   - name: bus1
     description: 'TODO: Add description'
-    type: string
+    type: text
     unit: none
+    nullable: false
   - name: path_length
     description: 'TODO: Add description'
-    type: number
+    type: numeric
     unit: none
+    nullable: true
   - name: version
     description: 'TODO: Add description'
-    type: string
+    type: text
     unit: none
+    nullable: false
 dialect:
   delimiter: ''
   decimalSeparator: ''

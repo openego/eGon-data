@@ -84,32 +84,39 @@ schema:
   fields:
   - name: name
     description: 'TODO: Add description'
-    type: string
+    type: character varying
     unit: none
+    nullable: false
   - name: global_parameters
     description: 'TODO: Add description'
-    type: string
+    type: jsonb
     unit: none
+    nullable: true
   - name: electricity_parameters
     description: 'TODO: Add description'
-    type: string
+    type: jsonb
     unit: none
+    nullable: true
   - name: gas_parameters
     description: 'TODO: Add description'
-    type: string
+    type: jsonb
     unit: none
+    nullable: true
   - name: heat_parameters
     description: 'TODO: Add description'
-    type: string
+    type: jsonb
     unit: none
+    nullable: true
   - name: mobility_parameters
     description: 'TODO: Add description'
-    type: string
+    type: jsonb
     unit: none
+    nullable: true
   - name: description
     description: 'TODO: Add description'
-    type: string
+    type: character varying
     unit: none
+    nullable: true
 dialect:
   delimiter: ''
   decimalSeparator: ''

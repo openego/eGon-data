@@ -240,10 +240,19 @@ format: PostgreSQL
 encoding: UTF-8
 schema:
   fields:
+  - name: scn_name
+    description: Name of the eGon scenario
+    type: character varying
+    nullable: false
+    unit: n/a
+    isAbout: []
+    valueReference: []
+    default: n/a
+    status: Input
   - name: load_id
     description: Unique name
-    type: int
-    nullable: true
+    type: bigint
+    nullable: false
     unit: none
     isAbout: []
     valueReference: []
@@ -251,26 +260,26 @@ schema:
     status: Input (required)
   - name: bus
     description: Name of bus to which load is attached.
-    type: string
+    type: bigint
     nullable: true
     unit: none
     isAbout: []
     valueReference: []
     default: n/a
     status: Input (required)
-  - name: carrier
-    description: 'Energy carrier: can be "AC" or "DC" for electrical buses, or "heat"
-      or "gas".'
-    type: string
+  - name: type
+    description: Placeholder for load type. Not yet implemented.
+    type: text
     nullable: true
     unit: none
     isAbout: []
     valueReference: []
     default: n/a
     status: Input (optional)
-  - name: type
-    description: Placeholder for load type. Not yet implemented.
-    type: string
+  - name: carrier
+    description: 'Energy carrier: can be "AC" or "DC" for electrical buses, or "heat"
+      or "gas".'
+    type: text
     nullable: true
     unit: none
     isAbout: []
@@ -279,7 +288,7 @@ schema:
     status: Input (optional)
   - name: p_set
     description: Active power consumption (positive if the load is consuming power).
-    type: static or series
+    type: double precision
     nullable: true
     unit: MW
     isAbout: []
@@ -288,7 +297,7 @@ schema:
     status: Input (optional)
   - name: q_set
     description: Reactive power consumption (positive if the load is inductive).
-    type: static or series
+    type: double precision
     nullable: true
     unit: MVar
     isAbout: []
@@ -297,22 +306,13 @@ schema:
     status: Input (optional)
   - name: sign
     description: power sign (opposite sign to generator)
-    type: float
+    type: double precision
     nullable: true
     unit: none
     isAbout: []
     valueReference: []
     default: -1.0
     status: Input (optional)
-  - name: scn_name
-    description: Name of the eGon scenario
-    type: string
-    nullable: true
-    unit: n/a
-    isAbout: []
-    valueReference: []
-    default: n/a
-    status: Input
   primaryKey:
   - scn_name
   - load_id

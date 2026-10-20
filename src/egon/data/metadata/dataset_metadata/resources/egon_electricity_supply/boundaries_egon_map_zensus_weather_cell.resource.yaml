@@ -163,8 +163,8 @@ schema:
     valueReference: []
   - name: w_id
     description: 'Weather cell id (reference to: supply.egon_era5_weather_cells)'
-    type: Integer
-    nullable: false
+    type: integer
+    nullable: true
     unit: none
     isAbout: []
     valueReference: []

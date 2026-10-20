@@ -175,41 +175,41 @@ schema:
   - name: index
     description: Index
     type: integer
-    nullable: true
+    nullable: false
     unit: none
     isAbout: []
     valueReference: []
   - name: component
     description: Name of representative PyPSA component
-    type: varchar(25)
+    type: character varying(25)
     nullable: true
     unit: none
     isAbout: []
     valueReference: []
   - name: carrier
     description: Name of carrier
-    type: varchar(50)
+    type: character varying(50)
     nullable: true
     unit: none
     isAbout: []
     valueReference: []
   - name: capacity
     description: Installed capacity
-    type: float
+    type: double precision
     nullable: true
     unit: MW
     isAbout: []
     valueReference: []
   - name: nuts
     description: NUTS region, either federal state or Germany
-    type: varchar(12)
+    type: character varying(12)
     nullable: true
     unit: none
     isAbout: []
     valueReference: []
   - name: scenario_name
     description: Name of corresponding reGon scenario
-    type: varchar(50)
+    type: character varying(50)
     nullable: true
     unit: none
     isAbout: []

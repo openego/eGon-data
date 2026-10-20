@@ -154,34 +154,33 @@ schema:
   fields:
   - name: zensus_population_id
     description: Index of zensus population cell
-    type: integer
-    nullable: false
+    type: bigint
+    nullable: true
     unit: none
     isAbout: []
     valueReference: []
   - name: zensus_geom
     description: Gemetry of zensus cell
-    type: geometry(point,3035)
+    type: geometry(Point,3035)
     nullable: true
     unit: none
     isAbout: []
     valueReference: []
   - name: vg250_municipality_id
     description: Index of municipality
-    type: integer
-    nullable: false
+    type: bigint
+    nullable: true
     unit: none
     isAbout: []
     valueReference: []
   - name: vg250_nuts3
     description: NUTS3 region-code
-    type: varchar
+    type: text
     nullable: true
     unit: none
     isAbout: []
     valueReference: []
-  primaryKey:
-  - index
+  primaryKey: []
   foreignKeys: []
 dialect:
   delimiter: null

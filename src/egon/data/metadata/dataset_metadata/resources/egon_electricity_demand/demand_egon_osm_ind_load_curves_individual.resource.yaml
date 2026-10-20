@@ -164,30 +164,37 @@ schema:
     description: 'TODO: Add description'
     type: integer
     unit: none
+    nullable: false
   - name: bus_id
     description: 'TODO: Add description'
     type: integer
     unit: none
+    nullable: true
   - name: scn_name
     description: 'TODO: Add description'
-    type: string
+    type: character varying
     unit: none
+    nullable: false
   - name: p_set
     description: 'TODO: Add description'
-    type: array
+    type: double precision[]
     unit: none
+    nullable: true
   - name: peak_load
     description: 'TODO: Add description'
-    type: number
+    type: double precision
     unit: none
+    nullable: true
   - name: demand
     description: 'TODO: Add description'
-    type: number
+    type: double precision
     unit: none
+    nullable: true
   - name: voltage_level
     description: 'TODO: Add description'
     type: integer
     unit: none
+    nullable: true
 dialect:
   delimiter: ''
   decimalSeparator: ''

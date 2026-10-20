@@ -114,24 +114,24 @@ format: PostgreSQL
 encoding: UTF-8
 schema:
   fields:
-  - name: house
-    description: Type of residential house, either SFH (single family house) or MFH
-      (multi family house)
-    type: str
+  - name: index
+    description: Unique identifier
+    type: bigint
     nullable: true
     unit: none
     isAbout: []
     valueReference: []
   - name: idp
     description: Normalized intra-day-profile
-    type: array of double precision
-    nullable: false
+    type: double precision[]
+    nullable: true
     unit: per unit
     isAbout: []
     valueReference: []
-  - name: index
-    description: Unique identifier
-    type: integer
+  - name: house
+    description: Type of residential house, either SFH (single family house) or MFH
+      (multi family house)
+    type: character varying
     nullable: true
     unit: none
     isAbout: []
@@ -144,8 +144,7 @@ schema:
     unit: none
     isAbout: []
     valueReference: []
-  primaryKey:
-  - index
+  primaryKey: []
   foreignKeys: []
 dialect:
   delimiter: ''

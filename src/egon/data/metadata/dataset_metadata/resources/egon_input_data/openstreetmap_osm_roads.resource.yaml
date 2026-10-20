@@ -102,7 +102,7 @@ schema:
   - name: osm_id
     description: ''
     type: bigint
-    nullable: false
+    nullable: true
     unit: none
     isAbout: []
     valueReference: []
@@ -193,7 +193,7 @@ schema:
   - name: bridge
     description: ''
     type: text
-    nullable: false
+    nullable: true
     unit: none
     isAbout: []
     valueReference: []
@@ -480,7 +480,7 @@ schema:
   - name: sidewalk
     description: ''
     type: text
-    nullable: false
+    nullable: true
     unit: none
     isAbout: []
     valueReference: []
@@ -564,7 +564,7 @@ schema:
   - name: width
     description: ''
     type: text
-    nullable: false
+    nullable: true
     unit: none
     isAbout: []
     valueReference: []
@@ -640,7 +640,7 @@ schema:
     valueReference: []
   - name: geom
     description: ''
-    type: geometry(linestring,3857)
+    type: geometry(LineString,3857)
     nullable: true
     unit: none
     isAbout: []

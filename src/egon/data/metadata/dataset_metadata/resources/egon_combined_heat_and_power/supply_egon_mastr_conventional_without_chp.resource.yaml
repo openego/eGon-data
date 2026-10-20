@@ -171,32 +171,39 @@ schema:
   fields:
   - name: EinheitMastrNummer
     description: 'TODO: Add description'
-    type: string
+    type: text
     unit: none
+    nullable: true
   - name: el_capacity
     description: 'TODO: Add description'
-    type: number
+    type: double precision
     unit: none
+    nullable: true
   - name: geometry
     description: 'TODO: Add description'
-    type: string
+    type: geometry(Point,4326)
     unit: none
+    nullable: true
   - name: carrier
     description: 'TODO: Add description'
-    type: string
+    type: text
     unit: none
+    nullable: true
   - name: plz
     description: 'TODO: Add description'
-    type: integer
+    type: bigint
     unit: none
+    nullable: true
   - name: city
     description: 'TODO: Add description'
-    type: string
+    type: text
     unit: none
+    nullable: true
   - name: federal_state
     description: 'TODO: Add description'
-    type: string
+    type: text
     unit: none
+    nullable: true
 dialect:
   delimiter: ''
   decimalSeparator: ''

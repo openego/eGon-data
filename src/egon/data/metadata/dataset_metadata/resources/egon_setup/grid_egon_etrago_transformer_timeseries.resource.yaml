@@ -89,45 +89,42 @@ format: PostgreSQL
 encoding: UTF-8
 schema:
   fields:
+  - name: scn_name
+    description: Name of the eGon scenario
+    type: character varying
+    nullable: false
+    unit: n/a
+    isAbout: []
+    valueReference: []
+    default: n/a
+    status: Input
+  - name: trafo_id
+    description: 'TODO: Description missing in YAML metadata'
+    type: bigint
+    nullable: false
+    unit: none
+  - name: temp_id
+    description: Unique identifyier of temporal index
+    type: integer
+    nullable: false
+    unit: n/a
+    isAbout: []
+    valueReference: []
+    default: n/a
+    status: Input
   - name: s_max_pu
     description: The maximum allowed absolute flow per unit of s_nom for the OPF.
-    type: static or series
+    type: double precision[]
     nullable: true
     unit: per unit
     isAbout: []
     valueReference: []
     default: '1'
     status: Input (optional)
-  - name: temp_id
-    description: Unique identifyier of temporal index
-    type: integer
-    nullable: true
-    unit: n/a
-    isAbout: []
-    valueReference: []
-    default: n/a
-    status: Input
-  - name: transformer_id
-    description: null
-    type: int
-    nullable: true
-    unit: none
-    isAbout: []
-    valueReference: []
-    default: n/a
-    status: null
-  - name: scn_name
-    description: Name of the eGon scenario
-    type: string
-    nullable: true
-    unit: n/a
-    isAbout: []
-    valueReference: []
-    default: n/a
-    status: Input
   primaryKey:
   - scn_name
-  - transformer_id
+  - trafo_id
+  - temp_id
   foreignKeys: []
 dialect:
   delimiter: ''

@@ -201,20 +201,36 @@ format: PostgreSQL
 encoding: UTF-8
 schema:
   fields:
-  - name: efficiency
-    description: Efficiency of power transfer from bus0 to bus1. (Can be time-dependent
-      to represent temperature-dependent Coefficient of Performance of a heat pump
-      from an electric to a heat bus.)
-    type: static or series
-    nullable: true
-    unit: per unit
+  - name: scn_name
+    description: Name of the eGon scenario
+    type: character varying
+    nullable: false
+    unit: n/a
     isAbout: []
     valueReference: []
-    default: '1'
-    status: Input (optional)
+    default: n/a
+    status: Input
+  - name: link_id
+    description: null
+    type: bigint
+    nullable: false
+    unit: none
+    isAbout: []
+    valueReference: []
+    default: n/a
+    status: null
+  - name: temp_id
+    description: Unique identifyier of temporal index
+    type: integer
+    nullable: false
+    unit: n/a
+    isAbout: []
+    valueReference: []
+    default: n/a
+    status: Input
   - name: p_set
     description: The dispatch set point for p0 of the link in PF.
-    type: static or series
+    type: double precision[]
     nullable: true
     unit: MW
     isAbout: []
@@ -224,7 +240,7 @@ schema:
   - name: p_min_pu
     description: Minimal dispatch (can also be negative) per unit of p_nom for the
       link in OPF.
-    type: static or series
+    type: double precision[]
     nullable: true
     unit: per unit of p_nom
     isAbout: []
@@ -234,9 +250,20 @@ schema:
   - name: p_max_pu
     description: Maximal dispatch (can also be negative) per unit of p_nom for the
       link in OPF.
-    type: static or series
+    type: double precision[]
     nullable: true
     unit: per unit of p_nom
+    isAbout: []
+    valueReference: []
+    default: '1'
+    status: Input (optional)
+  - name: efficiency
+    description: Efficiency of power transfer from bus0 to bus1. (Can be time-dependent
+      to represent temperature-dependent Coefficient of Performance of a heat pump
+      from an electric to a heat bus.)
+    type: double precision[]
+    nullable: true
+    unit: per unit
     isAbout: []
     valueReference: []
     default: '1'
@@ -244,43 +271,17 @@ schema:
   - name: marginal_cost
     description: 'Marginal cost of transfering 1 MWh (before efficiency losses) from
       bus0 to bus1. NB: marginal cost only makes sense in OPF if p_max_pu >= 0.'
-    type: static or series
+    type: double precision[]
     nullable: true
     unit: currency/MWh
     isAbout: []
     valueReference: []
     default: '0'
     status: Input (optional)
-  - name: temp_id
-    description: Unique identifyier of temporal index
-    type: integer
-    nullable: true
-    unit: n/a
-    isAbout: []
-    valueReference: []
-    default: n/a
-    status: Input
-  - name: link_id
-    description: null
-    type: int
-    nullable: true
-    unit: none
-    isAbout: []
-    valueReference: []
-    default: n/a
-    status: null
-  - name: scn_name
-    description: Name of the eGon scenario
-    type: string
-    nullable: true
-    unit: n/a
-    isAbout: []
-    valueReference: []
-    default: n/a
-    status: Input
   primaryKey:
   - scn_name
   - link_id
+  - temp_id
   foreignKeys: []
 dialect:
   delimiter: ''

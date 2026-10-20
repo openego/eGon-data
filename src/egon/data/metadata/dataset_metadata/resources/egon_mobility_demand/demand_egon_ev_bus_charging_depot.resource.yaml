@@ -105,52 +105,64 @@ schema:
   fields:
   - name: depot_id
     description: 'TODO: Add description'
-    type: string
+    type: character varying
     unit: none
+    nullable: false
   - name: scenario
     description: 'TODO: Add description'
-    type: string
+    type: character varying
     unit: none
+    nullable: false
   - name: depot_name
     description: 'TODO: Add description'
-    type: string
+    type: text
     unit: none
+    nullable: true
   - name: depot_type
     description: 'TODO: Add description'
-    type: string
+    type: text
     unit: none
+    nullable: true
   - name: fleet_size
     description: 'TODO: Add description'
-    type: number
+    type: double precision
     unit: none
+    nullable: true
   - name: geom
     description: 'TODO: Add description'
-    type: string
+    type: geometry(Point,3035)
     unit: none
+    nullable: true
   - name: bus_id
     description: 'TODO: Add description'
-    type: integer
+    type: bigint
     unit: none
+    nullable: true
   - name: mv_grid_id
     description: 'TODO: Add description'
     type: integer
     unit: none
+    nullable: true
   - name: voltage_level
     description: 'TODO: Add description'
-    type: integer
+    type: smallint
     unit: none
+    nullable: true
   - name: peak_load_mw
     description: 'TODO: Add description'
-    type: number
+    type: double precision
     unit: none
+    nullable: true
   - name: annual_demand_mwh
     description: 'TODO: Add description'
-    type: number
+    type: double precision
     unit: none
+    nullable: true
   - name: p_set
     description: 'TODO: Add description'
-    type: array
+    type: double precision[]
     unit: none
+    nullable: true
 dialect:
   delimiter: ''
   decimalSeparator: ''

@@ -133,28 +133,34 @@ schema:
   fields:
   - name: osm_id
     description: 'TODO: Add description'
-    type: integer
+    type: bigint
     unit: none
+    nullable: true
   - name: amenity
     description: 'TODO: Add description'
-    type: string
+    type: text
     unit: none
+    nullable: true
   - name: name
     description: 'TODO: Add description'
-    type: string
+    type: text
     unit: none
+    nullable: true
   - name: geom_amenity
     description: 'TODO: Add description'
-    type: string
+    type: geometry
     unit: none
+    nullable: true
   - name: tags
     description: 'TODO: Add description'
-    type: string
+    type: hstore
     unit: none
+    nullable: true
   - name: egon_amenity_id
     description: 'TODO: Add description'
     type: integer
     unit: none
+    nullable: false
 dialect:
   delimiter: ''
   decimalSeparator: ''

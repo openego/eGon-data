@@ -106,38 +106,47 @@ schema:
     description: 'TODO: Add description'
     type: integer
     unit: none
+    nullable: false
   - name: osm_id
     description: 'TODO: Add description'
     type: integer
     unit: none
+    nullable: true
   - name: name
     description: 'TODO: Add description'
-    type: string
+    type: character varying
     unit: none
+    nullable: true
   - name: sector
     description: 'TODO: Add description'
     type: integer
     unit: none
+    nullable: true
   - name: sector_name
     description: 'TODO: Add description'
-    type: string
+    type: character varying(20)
     unit: none
+    nullable: true
   - name: area_ha
     description: 'TODO: Add description'
-    type: number
+    type: double precision
     unit: none
+    nullable: true
   - name: tags
     description: 'TODO: Add description'
-    type: string
+    type: hstore
     unit: none
+    nullable: true
   - name: vg250
     description: 'TODO: Add description'
-    type: string
+    type: character varying(10)
     unit: none
+    nullable: true
   - name: geom
     description: 'TODO: Add description'
-    type: string
+    type: geometry(MultiPolygon,3035)
     unit: none
+    nullable: true
 dialect:
   delimiter: ''
   decimalSeparator: ''

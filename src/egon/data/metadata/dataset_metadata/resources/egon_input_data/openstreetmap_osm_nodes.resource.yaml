@@ -109,14 +109,14 @@ schema:
   - name: lat
     description: ''
     type: integer
-    nullable: true
+    nullable: false
     unit: none
     isAbout: []
     valueReference: []
   - name: lon
     description: ''
     type: integer
-    nullable: true
+    nullable: false
     unit: none
     isAbout: []
     valueReference: []

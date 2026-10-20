@@ -230,75 +230,74 @@ schema:
   fields:
   - name: id
     description: Unique identifier for power plants
-    type: 'Integer '
+    type: bigint
     nullable: false
     unit: ''
     isAbout: []
     valueReference: []
   - name: sources
     description: sources of power plants
-    type: Dictionary
+    type: jsonb
     nullable: true
     unit: ''
     isAbout: []
     valueReference: []
   - name: source_id
     description: 'Unique Identifier of sources '
-    type: Dictionary
-    nullable: false
+    type: jsonb
+    nullable: true
     unit: ''
     isAbout: []
     valueReference: []
   - name: carrier
     description: Energy carrier such as biomass, wind_onshore
-    type: String
+    type: character varying
     nullable: true
     unit: ''
     isAbout: []
     valueReference: []
   - name: el_capacity
     description: Installed electrical capacity in MW
-    type: ''
+    type: double precision
     nullable: true
     unit: MW
     isAbout: []
     valueReference: []
   - name: bus_id
     description: bus ID where the power plant is connected
-    type: Integer
-    nullable: false
+    type: integer
+    nullable: true
     unit: ''
     isAbout: []
     valueReference: []
   - name: voltage_level
     description: voltage level of power plant
-    type: Integer
+    type: integer
     nullable: true
     unit: ''
     isAbout: []
     valueReference: []
   - name: weather_cell_id
     description: Unique identifier of the corresponding weather cell
-    type: Integer
-    nullable: false
+    type: integer
+    nullable: true
     unit: ''
     isAbout: []
     valueReference: []
   - name: scenario
     description: eGon scenario, for example eGon235 or eGon100RE
-    type: String
+    type: character varying
     nullable: true
     unit: ''
     isAbout: []
     valueReference: []
-  - name: geometry
+  - name: geom
     description: geometry of the power plant
-    type: String
+    type: geometry(Point,4326)
     nullable: true
-    unit: ''
-    isAbout: []
-    valueReference: []
-  primaryKey: []
+    unit: none
+  primaryKey:
+  - id
   foreignKeys: []
 dialect:
   delimiter: ''

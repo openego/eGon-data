@@ -146,20 +146,17 @@ schema:
   fields:
   - name: zensus_population_id
     description: 'Zensus population id (reference to: society.destatis_zensus_population_per_ha.id)'
-    type: integer
-    nullable: false
+    type: bigint
+    nullable: true
     unit: null
     isAbout: []
     valueReference: []
-  - name: w_id
-    description: 'Weather cell id (reference to: supply.egon_era5_weather_cells)'
-    type: Integer
-    nullable: false
+  - name: climate_zone
+    description: 'TODO: Description missing in YAML metadata'
+    type: text
+    nullable: true
     unit: none
-    isAbout: []
-    valueReference: []
-  primaryKey:
-  - zensus_population_id
+  primaryKey: []
   foreignKeys: []
 dialect:
   delimiter: ''

@@ -295,13 +295,13 @@ schema:
   - name: index
     description: ''
     type: integer
-    nullable: true
+    nullable: false
     unit: none
     isAbout: []
     valueReference: []
   - name: scenario
     description: ''
-    type: varchar
+    type: character varying
     nullable: true
     unit: none
     isAbout: []
@@ -309,27 +309,27 @@ schema:
   - name: bus_id
     description: ''
     type: integer
-    nullable: false
+    nullable: true
     unit: none
     isAbout: []
     valueReference: []
   - name: building_id
     description: ''
     type: integer
-    nullable: false
+    nullable: true
     unit: none
     isAbout: []
     valueReference: []
   - name: p_nom
     description: ''
-    type: double_precision
+    type: double precision
     nullable: true
     unit: none
     isAbout: []
     valueReference: []
   - name: capacity
     description: ''
-    type: double_precision
+    type: double precision
     nullable: true
     unit: none
     isAbout: []

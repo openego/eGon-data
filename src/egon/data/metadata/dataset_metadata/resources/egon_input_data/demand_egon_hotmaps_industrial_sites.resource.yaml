@@ -132,82 +132,102 @@ schema:
     description: 'TODO: Add description'
     type: integer
     unit: none
+    nullable: false
   - name: sitename
     description: 'TODO: Add description'
-    type: string
+    type: character varying
     unit: none
+    nullable: true
   - name: companyname
     description: 'TODO: Add description'
-    type: string
+    type: character varying(200)
     unit: none
+    nullable: true
   - name: address
     description: 'TODO: Add description'
-    type: string
+    type: character varying(170)
     unit: none
+    nullable: true
   - name: citycode
     description: 'TODO: Add description'
-    type: string
+    type: character varying(50)
     unit: none
+    nullable: true
   - name: city
     description: 'TODO: Add description'
-    type: string
+    type: character varying(50)
     unit: none
+    nullable: true
   - name: country
     description: 'TODO: Add description'
-    type: string
+    type: character varying(50)
     unit: none
+    nullable: true
   - name: location
     description: 'TODO: Add description'
-    type: string
+    type: character varying(130)
     unit: none
+    nullable: true
   - name: subsector
     description: 'TODO: Add description'
-    type: string
+    type: character varying(50)
     unit: none
+    nullable: true
   - name: datasource
     description: 'TODO: Add description'
-    type: string
+    type: character varying
     unit: none
+    nullable: true
   - name: emissions_ets_2014
     description: 'TODO: Add description'
-    type: number
+    type: double precision
     unit: none
+    nullable: true
   - name: emissions_eprtr_2014
     description: 'TODO: Add description'
-    type: number
+    type: double precision
     unit: none
+    nullable: true
   - name: production
     description: 'TODO: Add description'
-    type: number
+    type: double precision
     unit: none
+    nullable: true
   - name: fuel_demand
     description: 'TODO: Add description'
-    type: number
+    type: double precision
     unit: none
+    nullable: true
   - name: excess_heat_100_200C
     description: 'TODO: Add description'
-    type: number
+    type: double precision
     unit: none
+    nullable: true
   - name: excess_heat_200_500C
     description: 'TODO: Add description'
-    type: number
+    type: double precision
     unit: none
+    nullable: true
   - name: excess_heat_500C
     description: 'TODO: Add description'
-    type: number
+    type: double precision
     unit: none
+    nullable: true
   - name: excess_heat_total
     description: 'TODO: Add description'
-    type: number
+    type: double precision
     unit: none
+    nullable: true
   - name: geom
     description: 'TODO: Add description'
-    type: string
+    type: geometry(Point,4326)
     unit: none
+    nullable: true
   - name: wz
     description: 'TODO: Add description'
     type: integer
     unit: none
+    nullable: true
 dialect:
   delimiter: ''
   decimalSeparator: ''

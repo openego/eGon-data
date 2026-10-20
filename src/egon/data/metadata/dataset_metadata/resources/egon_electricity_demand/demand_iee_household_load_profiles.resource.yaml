@@ -143,7 +143,7 @@ schema:
     valueReference: []
   - name: load_in_wh
     description: Residential demand load timeseries for one year (8760 hours) in Wh
-    type: array of real
+    type: real[]
     nullable: true
     unit: Wh
     isAbout: []

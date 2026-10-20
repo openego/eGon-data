@@ -118,16 +118,19 @@ schema:
   fields:
   - name: bus_H2
     description: 'TODO: Add description'
-    type: integer
+    type: bigint
     unit: none
+    nullable: true
   - name: bus_AC
     description: 'TODO: Add description'
-    type: integer
+    type: bigint
     unit: none
+    nullable: true
   - name: scn_name
     description: 'TODO: Add description'
-    type: string
+    type: text
     unit: none
+    nullable: true
 dialect:
   delimiter: ''
   decimalSeparator: ''

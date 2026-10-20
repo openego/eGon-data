@@ -181,7 +181,7 @@ schema:
   fields:
   - name: id
     description: Unique identifier
-    type: serial
+    type: integer
     nullable: false
     unit: none
     isAbout: []
@@ -195,14 +195,14 @@ schema:
     valueReference: []
   - name: sector
     description: sector e.g. residential
-    type: text
+    type: character varying
     nullable: true
     unit: none
     isAbout: []
     valueReference: []
   - name: scenario
     description: scenario name
-    type: text
+    type: character varying
     nullable: true
     unit: none
     isAbout: []
@@ -210,7 +210,7 @@ schema:
   - name: zensus_population_id
     description: census cell id
     type: integer
-    nullable: false
+    nullable: true
     unit: none
     isAbout: []
     valueReference: []

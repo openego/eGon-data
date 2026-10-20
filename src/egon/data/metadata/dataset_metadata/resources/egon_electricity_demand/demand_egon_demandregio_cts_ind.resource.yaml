@@ -123,24 +123,29 @@ schema:
   fields:
   - name: nuts3
     description: 'TODO: Add description'
-    type: string
+    type: character varying(5)
     unit: none
+    nullable: false
   - name: wz
     description: 'TODO: Add description'
     type: integer
     unit: none
+    nullable: false
   - name: scenario
     description: 'TODO: Add description'
-    type: string
+    type: character varying
     unit: none
+    nullable: false
   - name: year
     description: 'TODO: Add description'
     type: integer
     unit: none
+    nullable: true
   - name: demand
     description: 'TODO: Add description'
-    type: number
+    type: double precision
     unit: none
+    nullable: true
 dialect:
   delimiter: ''
   decimalSeparator: ''

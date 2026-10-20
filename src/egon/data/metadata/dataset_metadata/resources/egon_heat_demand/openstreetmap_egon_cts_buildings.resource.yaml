@@ -156,26 +156,32 @@ schema:
     description: 'TODO: Add description'
     type: integer
     unit: none
+    nullable: false
   - name: id
     description: 'TODO: Add description'
     type: integer
     unit: none
+    nullable: true
   - name: zensus_population_id
     description: 'TODO: Add description'
     type: integer
     unit: none
+    nullable: true
   - name: geom_building
     description: 'TODO: Add description'
-    type: string
+    type: geometry(Polygon,3035)
     unit: none
+    nullable: true
   - name: n_amenities_inside
     description: 'TODO: Add description'
     type: integer
     unit: none
+    nullable: true
   - name: source
     description: 'TODO: Add description'
-    type: string
+    type: character varying
     unit: none
+    nullable: true
 dialect:
   delimiter: ''
   decimalSeparator: ''

@@ -131,42 +131,42 @@ schema:
     valueReference: []
   - name: sector
     description: Sector (cts, residential)
-    type: characters varying
-    nullable: true
+    type: character varying
+    nullable: false
     unit: none
     isAbout: []
     valueReference: []
   - name: zensus_population_id
     description: 'Zensus population id (reference to: society.destatis_zensus_population_per_ha.id)'
     type: integer
-    nullable: false
+    nullable: true
     unit: none
     isAbout: []
     valueReference: []
   - name: bus_id
     description: 'MVGD bus id (reference to: grid.egon_hvmv_substation.bus_id, grid.egon_mv_grid_district.bus_id)'
     type: integer
-    nullable: false
+    nullable: true
     unit: none
+    isAbout: []
+    valueReference: []
+  - name: osm
+    description: is OSM building if true else syntheticaly created
+    type: boolean
+    nullable: true
+    unit: None
     isAbout: []
     valueReference: []
   - name: electricity
     description: True if respectives electricity demand profile exists
-    type: bool
+    type: boolean
     nullable: true
     unit: None
     isAbout: []
     valueReference: []
   - name: heat
     description: True if respectives heat demand profile exists
-    type: bool
-    nullable: true
-    unit: None
-    isAbout: []
-    valueReference: []
-  - name: osm
-    description: is OSM building if true else syntheticaly created
-    type: bool
+    type: boolean
     nullable: true
     unit: None
     isAbout: []

@@ -135,38 +135,47 @@ schema:
     description: 'TODO: Add description'
     type: integer
     unit: none
+    nullable: false
   - name: cell_id
     description: 'TODO: Add description'
     type: integer
     unit: none
+    nullable: true
   - name: grid_id
     description: 'TODO: Add description'
-    type: string
+    type: character varying
     unit: none
+    nullable: true
   - name: nuts3
     description: 'TODO: Add description'
-    type: string
+    type: character varying
     unit: none
+    nullable: true
   - name: nuts1
     description: 'TODO: Add description'
-    type: string
+    type: character varying
     unit: none
+    nullable: true
   - name: characteristics_code
     description: 'TODO: Add description'
     type: integer
     unit: none
+    nullable: true
   - name: hh_5types
     description: 'TODO: Add description'
     type: integer
     unit: none
+    nullable: true
   - name: hh_type
     description: 'TODO: Add description'
-    type: string
+    type: character(2)
     unit: none
+    nullable: true
   - name: hh_10types
     description: 'TODO: Add description'
     type: integer
     unit: none
+    nullable: true
 dialect:
   delimiter: ''
   decimalSeparator: ''

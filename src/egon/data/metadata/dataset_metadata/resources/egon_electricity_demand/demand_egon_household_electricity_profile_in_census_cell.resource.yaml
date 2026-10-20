@@ -191,14 +191,14 @@ schema:
   - name: grid_id
     description: Descriptive ID of census cell given by Statistisches Bundesamt (Destatis)
     type: character varying
-    nullable: false
+    nullable: true
     unit: none
     isAbout: []
     valueReference: []
   - name: cell_profile_ids
     description: Household profile ids
-    type: array of integer
-    nullable: false
+    type: character varying[]
+    nullable: true
     unit: none
     isAbout: []
     valueReference: []
@@ -216,6 +216,11 @@ schema:
     unit: none
     isAbout: []
     valueReference: []
+  - name: factor_2024
+    description: 'TODO: Description missing in YAML metadata'
+    type: double precision
+    nullable: true
+    unit: none
   - name: factor_2035
     description: Scaling factor for all profiles in the respective census cell for
       scenario eGon2035
@@ -224,14 +229,16 @@ schema:
     unit: none
     isAbout: []
     valueReference: []
-  - name: factor_2050
-    description: Scaling factor for all profiles in the respective census cell for
-      scenario eGon100RE
+  - name: factor_2037
+    description: 'TODO: Description missing in YAML metadata'
     type: double precision
     nullable: true
     unit: none
-    isAbout: []
-    valueReference: []
+  - name: factor_2045
+    description: 'TODO: Description missing in YAML metadata'
+    type: double precision
+    nullable: true
+    unit: none
   primaryKey:
   - cell_id
   foreignKeys: []

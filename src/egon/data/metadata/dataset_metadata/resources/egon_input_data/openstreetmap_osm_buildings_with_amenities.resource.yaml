@@ -132,56 +132,69 @@ schema:
   fields:
   - name: osm_id_amenity
     description: 'TODO: Add description'
-    type: integer
+    type: bigint
     unit: none
+    nullable: true
   - name: osm_id_building
     description: 'TODO: Add description'
-    type: integer
+    type: bigint
     unit: none
+    nullable: true
   - name: id
     description: 'TODO: Add description'
     type: integer
     unit: none
+    nullable: true
   - name: building
     description: 'TODO: Add description'
-    type: string
+    type: text
     unit: none
+    nullable: true
   - name: area
     description: 'TODO: Add description'
-    type: number
+    type: double precision
     unit: none
+    nullable: true
   - name: geom_building
     description: 'TODO: Add description'
-    type: string
+    type: geometry
     unit: none
+    nullable: true
   - name: geom_amenity
     description: 'TODO: Add description'
-    type: string
+    type: geometry
     unit: none
+    nullable: true
   - name: geom_point
     description: 'TODO: Add description'
-    type: string
+    type: geometry
     unit: none
+    nullable: true
   - name: name
     description: 'TODO: Add description'
-    type: string
+    type: text
     unit: none
+    nullable: true
   - name: tags_building
     description: 'TODO: Add description'
-    type: string
+    type: hstore
     unit: none
+    nullable: true
   - name: tags_amenity
     description: 'TODO: Add description'
-    type: string
+    type: hstore
     unit: none
+    nullable: true
   - name: n_amenities_inside
     description: 'TODO: Add description'
-    type: integer
+    type: bigint
     unit: none
+    nullable: true
   - name: apartment_count
     description: 'TODO: Add description'
-    type: number
+    type: numeric
     unit: none
+    nullable: true
 dialect:
   delimiter: ''
   decimalSeparator: ''

@@ -105,32 +105,39 @@ schema:
   fields:
   - name: nuts3
     description: 'TODO: Add description'
-    type: string
+    type: character varying
     unit: none
+    nullable: false
   - name: geometry
     description: 'TODO: Add description'
-    type: string
+    type: geometry(Geometry,3035)
     unit: none
+    nullable: true
   - name: area
     description: 'TODO: Add description'
-    type: number
+    type: double precision
     unit: none
+    nullable: true
   - name: truck_traffic
     description: 'TODO: Add description'
-    type: number
+    type: double precision
     unit: none
+    nullable: true
   - name: normalized_truck_traffic
     description: 'TODO: Add description'
-    type: number
+    type: double precision
     unit: none
+    nullable: true
   - name: hydrogen_consumption
     description: 'TODO: Add description'
-    type: number
+    type: double precision
     unit: none
+    nullable: true
   - name: scenario
     description: 'TODO: Add description'
-    type: string
+    type: character varying
     unit: none
+    nullable: false
 dialect:
   delimiter: ''
   decimalSeparator: ''

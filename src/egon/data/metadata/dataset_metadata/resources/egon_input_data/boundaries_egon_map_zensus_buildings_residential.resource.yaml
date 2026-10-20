@@ -135,14 +135,17 @@ schema:
     description: 'TODO: Add description'
     type: integer
     unit: none
+    nullable: false
   - name: grid_id
     description: 'TODO: Add description'
-    type: string
+    type: character varying
     unit: none
+    nullable: true
   - name: cell_id
     description: 'TODO: Add description'
     type: integer
     unit: none
+    nullable: true
 dialect:
   delimiter: ''
   decimalSeparator: ''

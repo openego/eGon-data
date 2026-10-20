@@ -112,16 +112,19 @@ schema:
   fields:
   - name: sector
     description: 'TODO: Add description'
-    type: string
+    type: text
     unit: none
+    nullable: false
   - name: scenario
     description: 'TODO: Add description'
-    type: string
+    type: character varying
     unit: none
+    nullable: false
   - name: profile
     description: 'TODO: Add description'
-    type: array
+    type: double precision[]
     unit: none
+    nullable: true
 dialect:
   delimiter: ''
   decimalSeparator: ''

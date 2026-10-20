@@ -207,20 +207,25 @@ schema:
   - name: scn_name
     description: 'Scenario name (reference: demand.egon_cts_electricity_demand_building_share.scenario)'
     type: character varying
-    nullable: true
+    nullable: false
     unit: none
     isAbout: []
     valueReference: []
   - name: p_set
     description: Cts electricity demand load timeseries for one year (8760 hours)
       in MWh
-    type: array of real
+    type: double precision[]
     nullable: true
     unit: MWh
     isAbout: []
     valueReference: []
+  - name: q_set
+    description: 'TODO: Description missing in YAML metadata'
+    type: double precision[]
+    nullable: true
+    unit: none
   primaryKey:
-  - id
+  - bus_id
   - scn_name
   foreignKeys: []
 dialect:

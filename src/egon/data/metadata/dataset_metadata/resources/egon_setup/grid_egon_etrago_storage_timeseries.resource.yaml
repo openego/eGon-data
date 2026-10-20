@@ -89,28 +89,36 @@ format: PostgreSQL
 encoding: UTF-8
 schema:
   fields:
-  - name: p_min_pu
-    description: The minimum output for each snapshot per unit of p_nom for the OPF
-      (negative sign implies storing mode withdrawing power from bus).
-    type: static or series
-    nullable: true
-    unit: per unit
+  - name: scn_name
+    description: Name of the eGon scenario
+    type: character varying
+    nullable: false
+    unit: n/a
     isAbout: []
     valueReference: []
-    default: '-1'
-    status: Input (optional)
-  - name: p_max_pu
-    description: The maximum output for each snapshot per unit of p_nom for the OPF.
-    type: static or series
-    nullable: true
-    unit: per unit
+    default: n/a
+    status: Input
+  - name: storage_id
+    description: null
+    type: bigint
+    nullable: false
+    unit: none
     isAbout: []
     valueReference: []
-    default: '1'
-    status: Input (optional)
+    default: n/a
+    status: null
+  - name: temp_id
+    description: Unique identifyier of temporal index
+    type: integer
+    nullable: false
+    unit: n/a
+    isAbout: []
+    valueReference: []
+    default: n/a
+    status: Input
   - name: p_set
     description: active power set point (for PF)
-    type: static or series
+    type: double precision[]
     nullable: true
     unit: MW
     isAbout: []
@@ -119,25 +127,35 @@ schema:
     status: Input (optional)
   - name: q_set
     description: reactive power set point (for PF)
-    type: static or series
+    type: double precision[]
     nullable: true
     unit: MVar
     isAbout: []
     valueReference: []
     default: '0'
     status: Input (optional)
-  - name: marginal_cost
-    description: Marginal cost of production of 1 MWh.
-    type: static or series
+  - name: p_min_pu
+    description: The minimum output for each snapshot per unit of p_nom for the OPF
+      (negative sign implies storing mode withdrawing power from bus).
+    type: double precision[]
     nullable: true
-    unit: currency/MWh
+    unit: per unit
     isAbout: []
     valueReference: []
-    default: '0'
+    default: '-1'
+    status: Input (optional)
+  - name: p_max_pu
+    description: The maximum output for each snapshot per unit of p_nom for the OPF.
+    type: double precision[]
+    nullable: true
+    unit: per unit
+    isAbout: []
+    valueReference: []
+    default: '1'
     status: Input (optional)
   - name: state_of_charge_set
     description: State of charge set points for snapshots in the OPF.
-    type: static or series
+    type: double precision[]
     nullable: true
     unit: MWh
     isAbout: []
@@ -147,43 +165,26 @@ schema:
   - name: inflow
     description: Inflow to the state of charge, e.g. due to river inflow in hydro
       reservoir.
-    type: static or series
+    type: double precision[]
     nullable: true
     unit: MW
     isAbout: []
     valueReference: []
     default: '0'
     status: Input (optional)
-  - name: temp_id
-    description: Unique identifyier of temporal index
-    type: integer
+  - name: marginal_cost
+    description: Marginal cost of production of 1 MWh.
+    type: double precision[]
     nullable: true
-    unit: n/a
+    unit: currency/MWh
     isAbout: []
     valueReference: []
-    default: n/a
-    status: Input
-  - name: storage_id
-    description: null
-    type: int
-    nullable: true
-    unit: none
-    isAbout: []
-    valueReference: []
-    default: n/a
-    status: null
-  - name: scn_name
-    description: Name of the eGon scenario
-    type: string
-    nullable: true
-    unit: n/a
-    isAbout: []
-    valueReference: []
-    default: n/a
-    status: Input
+    default: '0'
+    status: Input (optional)
   primaryKey:
   - scn_name
   - storage_id
+  - temp_id
   foreignKeys: []
 dialect:
   delimiter: ''

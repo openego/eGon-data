@@ -133,40 +133,49 @@ schema:
   fields:
   - name: osm_id
     description: 'TODO: Add description'
-    type: integer
+    type: bigint
     unit: none
+    nullable: true
   - name: amenity
     description: 'TODO: Add description'
-    type: string
+    type: text
     unit: none
+    nullable: true
   - name: building
     description: 'TODO: Add description'
-    type: string
+    type: text
     unit: none
+    nullable: true
   - name: name
     description: 'TODO: Add description'
-    type: string
+    type: text
     unit: none
+    nullable: true
   - name: geom_building
     description: 'TODO: Add description'
-    type: string
+    type: geometry
     unit: none
+    nullable: true
   - name: area
     description: 'TODO: Add description'
-    type: number
+    type: double precision
     unit: none
+    nullable: true
   - name: geom_point
     description: 'TODO: Add description'
-    type: string
+    type: geometry
     unit: none
+    nullable: true
   - name: tags
     description: 'TODO: Add description'
-    type: string
+    type: hstore
     unit: none
+    nullable: true
   - name: id
     description: 'TODO: Add description'
     type: integer
     unit: none
+    nullable: false
 dialect:
   delimiter: ''
   decimalSeparator: ''

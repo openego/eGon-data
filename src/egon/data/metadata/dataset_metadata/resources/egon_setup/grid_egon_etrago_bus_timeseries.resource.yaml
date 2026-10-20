@@ -89,19 +89,10 @@ format: PostgreSQL
 encoding: UTF-8
 schema:
   fields:
-  - name: v_mag_pu_set
-    description: Voltage magnitude set point, per unit of v_nom.
-    type: static or series
-    nullable: true
-    unit: per unit
-    isAbout: []
-    valueReference: []
-    default: '1'
-    status: Input (optional)
-  - name: temp_id
-    description: Unique identifyier of temporal index
-    type: integer
-    nullable: true
+  - name: scn_name
+    description: Name of the eGon scenario
+    type: character varying
+    nullable: false
     unit: n/a
     isAbout: []
     valueReference: []
@@ -109,22 +100,22 @@ schema:
     status: Input
   - name: bus_id
     description: null
-    type: int
-    nullable: true
+    type: bigint
+    nullable: false
     unit: none
     isAbout: []
     valueReference: []
     default: n/a
     status: null
-  - name: scn_name
-    description: Name of the eGon scenario
-    type: string
+  - name: v_mag_pu_set
+    description: Voltage magnitude set point, per unit of v_nom.
+    type: double precision[]
     nullable: true
-    unit: n/a
+    unit: per unit
     isAbout: []
     valueReference: []
-    default: n/a
-    status: Input
+    default: '1'
+    status: Input (optional)
   primaryKey:
   - scn_name
   - bus_id

@@ -166,7 +166,7 @@ schema:
   - name: gens_id
     description: ''
     type: text
-    nullable: false
+    nullable: true
     unit: none
     isAbout: []
     valueReference: []
@@ -235,7 +235,7 @@ schema:
     valueReference: []
   - name: capacity
     description: ''
-    type: double_precision
+    type: double precision
     nullable: true
     unit: none
     isAbout: []
@@ -263,7 +263,7 @@ schema:
     valueReference: []
   - name: geom
     description: ''
-    type: geometry(point,4326)
+    type: geometry(Point,4326)
     nullable: true
     unit: none
     isAbout: []
@@ -285,19 +285,18 @@ schema:
   - name: id
     description: ''
     type: bigint
-    nullable: false
+    nullable: true
     unit: none
     isAbout: []
     valueReference: []
   - name: bus_id
     description: ''
     type: bigint
-    nullable: false
+    nullable: true
     unit: none
     isAbout: []
     valueReference: []
-  primaryKey:
-  - id
+  primaryKey: []
   foreignKeys: []
 dialect:
   delimiter: ''

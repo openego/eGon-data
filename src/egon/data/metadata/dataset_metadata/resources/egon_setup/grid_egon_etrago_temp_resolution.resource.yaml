@@ -84,20 +84,24 @@ schema:
   fields:
   - name: temp_id
     description: 'TODO: Add description'
-    type: integer
+    type: bigint
     unit: none
+    nullable: false
   - name: timesteps
     description: 'TODO: Add description'
-    type: integer
+    type: bigint
     unit: none
+    nullable: false
   - name: resolution
     description: 'TODO: Add description'
-    type: string
+    type: text
     unit: none
+    nullable: true
   - name: start_time
     description: 'TODO: Add description'
-    type: datetime
+    type: timestamp without time zone
     unit: none
+    nullable: true
 dialect:
   delimiter: ''
   decimalSeparator: ''

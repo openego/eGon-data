@@ -133,24 +133,29 @@ schema:
   fields:
   - name: osm_id
     description: 'TODO: Add description'
-    type: integer
+    type: bigint
     unit: none
+    nullable: false
   - name: nodes
     description: 'TODO: Add description'
-    type: array
+    type: bigint[]
     unit: none
+    nullable: true
   - name: highway
     description: 'TODO: Add description'
-    type: string
+    type: text
     unit: none
+    nullable: true
   - name: geom
     description: 'TODO: Add description'
-    type: string
+    type: geometry
     unit: none
+    nullable: true
   - name: length_segments
     description: 'TODO: Add description'
-    type: array
+    type: double precision[]
     unit: none
+    nullable: true
 dialect:
   delimiter: ''
   decimalSeparator: ''

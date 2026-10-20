@@ -110,13 +110,58 @@ format: PostgreSQL
 encoding: UTF-8
 schema:
   fields:
+  - name: scn_name
+    description: Name of the eGon scenario
+    type: character varying
+    nullable: false
+    unit: n/a
+    isAbout: []
+    valueReference: []
+    default: n/a
+    status: Input
+  - name: generator_id
+    description: null
+    type: integer
+    nullable: false
+    unit: none
+    isAbout: []
+    valueReference: []
+    default: n/a
+    status: null
+  - name: temp_id
+    description: Unique identifyier of temporal index
+    type: integer
+    nullable: false
+    unit: n/a
+    isAbout: []
+    valueReference: []
+    default: n/a
+    status: Input
+  - name: p_set
+    description: active power set point (for PF)
+    type: double precision[]
+    nullable: true
+    unit: MW
+    isAbout: []
+    valueReference: []
+    default: '0'
+    status: Input (optional)
+  - name: q_set
+    description: reactive power set point (for PF)
+    type: double precision[]
+    nullable: true
+    unit: MVar
+    isAbout: []
+    valueReference: []
+    default: '0'
+    status: Input (optional)
   - name: p_min_pu
     description: The minimum output for each snapshot per unit of p_nom for the OPF
       (e.g. for variable renewable generators this can change due to weather conditions
       and compulsory feed-in; for conventional generators it represents a minimal
       dispatch). Note that if comittable is False and p_min_pu > 0, this represents
       a must-run condition.
-    type: static or series
+    type: double precision[]
     nullable: true
     unit: per unit
     isAbout: []
@@ -127,70 +172,26 @@ schema:
     description: The maximum output for each snapshot per unit of p_nom for the OPF
       (e.g. for variable renewable generators this can change due to weather conditions;
       for conventional generators it represents a maximum dispatch).
-    type: static or series
+    type: double precision[]
     nullable: true
     unit: per unit
     isAbout: []
     valueReference: []
     default: '1'
     status: Input (optional)
-  - name: p_set
-    description: active power set point (for PF)
-    type: static or series
-    nullable: true
-    unit: MW
-    isAbout: []
-    valueReference: []
-    default: '0'
-    status: Input (optional)
-  - name: q_set
-    description: reactive power set point (for PF)
-    type: static or series
-    nullable: true
-    unit: MVar
-    isAbout: []
-    valueReference: []
-    default: '0'
-    status: Input (optional)
   - name: marginal_cost
     description: Marginal cost of production of 1 MWh.
-    type: static or series
+    type: double precision[]
     nullable: true
     unit: currency/MWh
     isAbout: []
     valueReference: []
     default: '0'
     status: Input (optional)
-  - name: temp_id
-    description: Unique identifyier of temporal index
-    type: integer
-    nullable: true
-    unit: n/a
-    isAbout: []
-    valueReference: []
-    default: n/a
-    status: Input
-  - name: generator_id
-    description: null
-    type: int
-    nullable: true
-    unit: none
-    isAbout: []
-    valueReference: []
-    default: n/a
-    status: null
-  - name: scn_name
-    description: Name of the eGon scenario
-    type: string
-    nullable: true
-    unit: n/a
-    isAbout: []
-    valueReference: []
-    default: n/a
-    status: Input
   primaryKey:
   - scn_name
   - generator_id
+  - temp_id
   foreignKeys: []
 dialect:
   delimiter: ''

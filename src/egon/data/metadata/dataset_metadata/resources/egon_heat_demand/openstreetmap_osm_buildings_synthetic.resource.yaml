@@ -142,11 +142,32 @@ schema:
     unit: none
     isAbout: []
     valueReference: []
-  - name: area
-    description: Surface area of building
-    type: real
+  - name: cell_id
+    description: 'Census cell id (reference to: society.destatis_zensus_population_per_ha_inside_germany.id)'
+    type: character varying
     nullable: true
-    unit: m^2
+    unit: none
+    isAbout: []
+    valueReference: []
+  - name: geom_building
+    description: 'Polygon of building (CRS: ERTS89/EPSG:3035)'
+    type: geometry(Polygon,3035)
+    nullable: true
+    unit: none
+    isAbout: []
+    valueReference: []
+  - name: geom_point
+    description: 'Centroid of building (CRS: ERTS89/EPSG:3035)'
+    type: geometry(Point,3035)
+    nullable: true
+    unit: none
+    isAbout: []
+    valueReference: []
+  - name: n_amenities_inside
+    description: Number of amenities inside the building (always zero if not cts building)
+    type: integer
+    nullable: true
+    unit: none
     isAbout: []
     valueReference: []
   - name: building
@@ -156,32 +177,11 @@ schema:
     unit: none
     isAbout: []
     valueReference: []
-  - name: cell_id
-    description: 'Census cell id (reference to: society.destatis_zensus_population_per_ha_inside_germany.id)'
-    type: character varying
-    nullable: false
-    unit: none
-    isAbout: []
-    valueReference: []
-  - name: geom_building
-    description: 'Polygon of building (CRS: ERTS89/EPSG:3035)'
-    type: geometry
+  - name: area
+    description: Surface area of building
+    type: real
     nullable: true
-    unit: none
-    isAbout: []
-    valueReference: []
-  - name: geom_point
-    description: 'Centroid of building (CRS: ERTS89/EPSG:3035)'
-    type: geometry
-    nullable: true
-    unit: none
-    isAbout: []
-    valueReference: []
-  - name: n_amenities_inside
-    description: Number of amenities inside the building (always zero if not cts building)
-    type: integer
-    nullable: false
-    unit: none
+    unit: m^2
     isAbout: []
     valueReference: []
   primaryKey:

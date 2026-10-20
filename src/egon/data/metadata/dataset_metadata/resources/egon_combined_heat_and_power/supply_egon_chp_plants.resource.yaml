@@ -194,13 +194,13 @@ schema:
   - name: source_id
     description: Names of sources, e.g. MaStr_id
     type: jsonb
-    nullable: false
+    nullable: true
     unit: none
     isAbout: []
     valueReference: []
   - name: carrier
     description: Energy carrier
-    type: varchar
+    type: character varying
     nullable: true
     unit: none
     isAbout: []
@@ -214,14 +214,14 @@ schema:
     valueReference: []
   - name: el_capacity
     description: Installed electrical capacity
-    type: float
+    type: double precision
     nullable: true
     unit: MW_el
     isAbout: []
     valueReference: []
   - name: th_capacity
     description: Installed thermal capacity
-    type: float
+    type: double precision
     nullable: true
     unit: MW_th
     isAbout: []
@@ -229,21 +229,21 @@ schema:
   - name: electrical_bus_id
     description: Index of corresponding electricity bus
     type: integer
-    nullable: false
+    nullable: true
     unit: none
     isAbout: []
     valueReference: []
   - name: district_heating_area_id
     description: Index of corresponding district heating bus
     type: integer
-    nullable: false
+    nullable: true
     unit: none
     isAbout: []
     valueReference: []
   - name: ch4_bus_id
     description: Index of corresponding methane bus
     type: integer
-    nullable: false
+    nullable: true
     unit: none
     isAbout: []
     valueReference: []
@@ -256,20 +256,20 @@ schema:
     valueReference: []
   - name: scenario
     description: Name of scenario
-    type: varchar
+    type: character varying
     nullable: true
     unit: none
     isAbout: []
     valueReference: []
   - name: geom
     description: Location of CHP plant
-    type: geometry(point,4326)
+    type: geometry(Point,4326)
     nullable: true
     unit: none
     isAbout: []
     valueReference: []
   primaryKey:
-  - index
+  - id
   foreignKeys: []
 dialect:
   delimiter: null

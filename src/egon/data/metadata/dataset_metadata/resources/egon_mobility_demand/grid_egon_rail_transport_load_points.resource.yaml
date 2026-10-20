@@ -76,8 +76,8 @@ sources:
     (19 curated 16.7-Hz converter stations with site, coordinates, grid level and
     base-year energy, 7.0 TWh), dc_city_energy.csv (62 rows for 51 places: annual
     DC energy per city and system with its centroid, 2.7437 TWh) and load_profiles.csv
-    (normalized hourly shapes per system, 2025). Licenses are declared per file
-    in the subfolder''s LICENSE.md.'
+    (normalized hourly shapes per system, 2025). Licenses are declared per file in
+    the subfolder''s LICENSE.md.'
   publicationYear: null
   path: https://doi.org/10.5281/zenodo.16576506
   sourceLicenses:
@@ -98,8 +98,8 @@ sources:
       to share and adapt; you must attribute.
     attribution: Published figures of the transit operators (SSB, üstra, BSAG, DVB,
       KVG Kassel, KVV, MVB, RSAG, VAG Freiburg, moBiel, CVAG) and MVG München (FOI
-      response via FragDenStaat); DB Energie GmbH, publications under § 23c EnWG
-      (2025); © DELFI e.V. (GTFS de_full via gtfs.de)
+      response via FragDenStaat); DB Energie GmbH, publications under § 23c EnWG (2025);
+      © DELFI e.V. (GTFS de_full via gtfs.de)
     copyrightStatement: null
 - title: Liste von Bahnstromanlagen in Deutschland (Wikipedia)
   authors: []
@@ -132,12 +132,12 @@ sources:
     copyrightStatement: null
 - title: DB Energie GmbH — publications under § 23c EnWG (2025)
   authors: []
-  description: 'Statutory network operator publications of the 16.7-Hz rail grid
-    and the DC S-Bahn grid: 15-minute load series and annual figures. The traction
-    anchor is the draw from the upstream (public) grid level, § 23c para. 3 no. 5,
-    HV level (7.0336 TWh, used rounded as 7.0 TWh); the S-Bahn anchor is no. 5, MV
-    level (0.5654 TWh, used as 0.56 TWh). The raw series are not redistributed; only
-    normalized hourly shapes derived from them are in the data bundle.'
+  description: 'Statutory network operator publications of the 16.7-Hz rail grid and
+    the DC S-Bahn grid: 15-minute load series and annual figures. The traction anchor
+    is the draw from the upstream (public) grid level, § 23c para. 3 no. 5, HV level
+    (7.0336 TWh, used rounded as 7.0 TWh); the S-Bahn anchor is no. 5, MV level (0.5654
+    TWh, used as 0.56 TWh). The raw series are not redistributed; only normalized
+    hourly shapes derived from them are in the data bundle.'
   publicationYear: '2025'
   path: https://www.dbenergie.de
   sourceLicenses: []
@@ -236,54 +236,64 @@ schema:
   - name: scn_name
     description: Scenario name (status2024, reGon2037 or reGon2045); only scenarios
       configured in the run are written
-    type: string
+    type: text
     unit: none
+    nullable: false
   - name: load_id
     description: eTraGo load id; together with scn_name it identifies the load in
       grid.egon_etrago_load and grid.egon_etrago_load_timeseries
-    type: integer
+    type: bigint
     unit: none
+    nullable: false
   - name: carrier
     description: 'Traction system: rail_traction (16.7-Hz main line), rail_sbahn_dc
       (DC S-Bahn) or rail_transit_dc (DC tram/U-Bahn)'
-    type: string
+    type: text
     unit: none
+    nullable: true
   - name: place
     description: Converter site name (method converter) or city whose DC energy the
       point carries (methods dc_rectifier, dc_centroid)
-    type: string
+    type: text
     unit: none
+    nullable: true
   - name: method
     description: 'How the point was located: converter (curated 16.7-Hz converter
       station from the data bundle), dc_rectifier (DC rectifier substation classified
       from OpenStreetMap, within 25 km of the city centroid; the city''s energy is
       split equally over these) or dc_centroid (no rectifier mapped, load at the city
       centroid)'
-    type: string
+    type: text
     unit: none
+    nullable: true
   - name: bus_id
     description: eTraGo bus the load is attached to (grid.egon_etrago_bus.bus_id)
     type: integer
     unit: none
+    nullable: true
   - name: bus_level
     description: 'Polygon layer the bus was taken from: ehv (EHV substation Voronoi
       cell, for EHV/HV coupling) or mv (MV grid district, for MV coupling)'
-    type: string
+    type: text
     unit: none
+    nullable: true
   - name: bus_method
     description: 'How the bus was found: within (point lies in the polygon) or nearest
       (nearest-neighbour fallback for points outside every polygon)'
-    type: string
+    type: text
     unit: none
+    nullable: true
   - name: energy_mwh_a
     description: Annual electricity drawn from the 50-Hz grid at this point in this
       scenario (base-year energy times the scenario factor, rounded to 4 decimals)
-    type: number
+    type: double precision
     unit: MWh
+    nullable: true
   - name: geom
     description: 'Location of the coupling point (CRS: ETRS89 / EPSG:3035)'
-    type: string
+    type: geometry(Point,3035)
     unit: none
+    nullable: true
 dialect:
   delimiter: ''
   decimalSeparator: ''

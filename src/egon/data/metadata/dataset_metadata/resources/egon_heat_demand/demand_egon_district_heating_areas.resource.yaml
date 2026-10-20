@@ -181,7 +181,7 @@ schema:
   fields:
   - name: id
     description: Unique identifier
-    type: serial
+    type: integer
     nullable: false
     unit: none
     isAbout: []
@@ -189,13 +189,20 @@ schema:
   - name: area_id
     description: District heating area id
     type: integer
-    nullable: false
+    nullable: true
     unit: none
     isAbout: []
     valueReference: []
   - name: scenario
     description: scenario name
-    type: text
+    type: character varying
+    nullable: true
+    unit: none
+    isAbout: []
+    valueReference: []
+  - name: geom_polygon
+    description: geo information of multipolygons
+    type: geometry(MultiPolygon,3035)
     nullable: true
     unit: none
     isAbout: []
@@ -203,15 +210,8 @@ schema:
   - name: residential_and_service_demand
     description: annual heat demand
     type: double precision
-    nullable: false
-    unit: MWh
-    isAbout: []
-    valueReference: []
-  - name: geom_polygon
-    description: geo information of multipolygons
-    type: geometry(MULTIPOLYGON, 3035)
     nullable: true
-    unit: none
+    unit: MWh
     isAbout: []
     valueReference: []
   primaryKey:

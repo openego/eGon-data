@@ -107,14 +107,17 @@ schema:
     description: 'TODO: Add description'
     type: integer
     unit: none
+    nullable: false
   - name: bus_id
     description: 'TODO: Add description'
     type: integer
     unit: none
+    nullable: true
   - name: geom
     description: 'TODO: Add description'
-    type: string
+    type: geometry(MultiPolygon,4326)
     unit: none
+    nullable: true
 dialect:
   delimiter: ''
   decimalSeparator: ''

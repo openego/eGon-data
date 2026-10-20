@@ -137,21 +137,10 @@ format: PostgreSQL
 encoding: UTF-8
 schema:
   fields:
-  - name: s_max_pu
-    description: The maximum allowed absolute flow per unit of s_nom for the OPF (e.g.
-      can be set <1 to approximate n-1 factor, or can be time-varying to represent
-      weather-dependent dynamic line rating for overhead lines).
-    type: static or series
-    nullable: true
-    unit: per unit
-    isAbout: []
-    valueReference: []
-    default: '1'
-    status: Input (optional)
-  - name: temp_id
-    description: Unique identifyier of temporal index
-    type: integer
-    nullable: true
+  - name: scn_name
+    description: Name of the eGon scenario
+    type: character varying
+    nullable: false
     unit: n/a
     isAbout: []
     valueReference: []
@@ -159,25 +148,37 @@ schema:
     status: Input
   - name: line_id
     description: null
-    type: int
-    nullable: true
+    type: bigint
+    nullable: false
     unit: none
     isAbout: []
     valueReference: []
     default: n/a
     status: null
-  - name: scn_name
-    description: Name of the eGon scenario
-    type: string
-    nullable: true
+  - name: temp_id
+    description: Unique identifyier of temporal index
+    type: integer
+    nullable: false
     unit: n/a
     isAbout: []
     valueReference: []
     default: n/a
     status: Input
+  - name: s_max_pu
+    description: The maximum allowed absolute flow per unit of s_nom for the OPF (e.g.
+      can be set <1 to approximate n-1 factor, or can be time-varying to represent
+      weather-dependent dynamic line rating for overhead lines).
+    type: double precision[]
+    nullable: true
+    unit: per unit
+    isAbout: []
+    valueReference: []
+    default: '1'
+    status: Input (optional)
   primaryKey:
   - scn_name
   - line_id
+  - temp_id
   foreignKeys: []
 dialect:
   delimiter: ''

@@ -100,10 +100,12 @@ schema:
     description: 'TODO: Add description'
     type: integer
     unit: none
+    nullable: false
   - name: vg250_lan
     description: 'TODO: Add description'
-    type: string
+    type: character varying
     unit: none
+    nullable: true
 dialect:
   delimiter: ''
   decimalSeparator: ''

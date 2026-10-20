@@ -181,7 +181,7 @@ schema:
   fields:
   - name: id
     description: Unique identifier
-    type: serial
+    type: integer
     nullable: false
     unit: none
     isAbout: []
@@ -189,17 +189,22 @@ schema:
   - name: area_id
     description: district heating area id
     type: integer
-    nullable: false
+    nullable: true
     unit: none
     isAbout: []
     valueReference: []
   - name: scenario
     description: scenario name
-    type: text
+    type: character varying
     nullable: true
     unit: none
     isAbout: []
     valueReference: []
+  - name: zensus_population_id
+    description: 'TODO: Description missing in YAML metadata'
+    type: integer
+    nullable: true
+    unit: none
   primaryKey:
   - id
   foreignKeys:

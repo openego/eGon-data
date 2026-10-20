@@ -135,7 +135,22 @@ schema:
   fields:
   - name: climate_zone
     description: Name of the corresponding climate zone
-    type: str
+    type: text
+    nullable: true
+    unit: none
+    isAbout: []
+    valueReference: []
+  - name: day_of_year
+    description: Number of day in the year
+    type: bigint
+    nullable: true
+    unit: none
+    isAbout: []
+    valueReference: []
+  - name: temperature_class
+    description: Temperature class (considering the mean outside temeperature during
+      the day)
+    type: bigint
     nullable: true
     unit: none
     isAbout: []
@@ -147,23 +162,7 @@ schema:
     unit: per unit
     isAbout: []
     valueReference: []
-  - name: day_of_year
-    description: Number of day in the year
-    type: integer
-    nullable: true
-    unit: none
-    isAbout: []
-    valueReference: []
-  - name: temperature_class
-    description: Temperature class (considering the mean outside temeperature during
-      the day)
-    type: integer
-    nullable: true
-    unit: none
-    isAbout: []
-    valueReference: []
-  primaryKey:
-  - climate_zone
+  primaryKey: []
   foreignKeys: []
 dialect:
   delimiter: ''

@@ -135,35 +135,35 @@ schema:
   fields:
   - name: id
     description: Unique identifier
-    type: none
+    type: integer
     nullable: false
     unit: integer
     isAbout: []
     valueReference: []
   - name: grid_id
     description: Grid number of source
-    type: string
+    type: character varying(254)
     nullable: false
     unit: none
     isAbout: []
     valueReference: []
   - name: population
     description: Number of registred residents
-    type: integer
+    type: smallint
     nullable: true
     unit: resident
     isAbout: []
     valueReference: []
   - name: geom_point
     description: Geometry centroid
-    type: Geometry
+    type: geometry(Point,3035)
     nullable: true
     unit: none
     isAbout: []
     valueReference: []
   - name: geom
     description: Geometry
-    type: Geometry
+    type: geometry(Polygon,3035)
     nullable: true
     unit: ''
     isAbout: []

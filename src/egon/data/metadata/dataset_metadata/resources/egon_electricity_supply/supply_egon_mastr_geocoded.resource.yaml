@@ -354,26 +354,32 @@ schema:
     description: 'TODO: Add description'
     type: integer
     unit: none
+    nullable: false
   - name: zip_and_municipality
     description: 'TODO: Add description'
-    type: string
+    type: character varying
     unit: none
+    nullable: true
   - name: latitude
     description: 'TODO: Add description'
-    type: number
+    type: double precision
     unit: none
+    nullable: true
   - name: longitude
     description: 'TODO: Add description'
-    type: number
+    type: double precision
     unit: none
+    nullable: true
   - name: altitude
     description: 'TODO: Add description'
-    type: number
+    type: double precision
     unit: none
+    nullable: true
   - name: geometry
     description: 'TODO: Add description'
-    type: string
+    type: geometry(Point,4326)
     unit: none
+    nullable: true
 dialect:
   delimiter: ''
   decimalSeparator: ''

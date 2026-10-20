@@ -183,20 +183,21 @@ schema:
     valueReference: []
   - name: scenario
     description: Name of scenario
-    type: str
-    nullable: true
+    type: text
+    nullable: false
     unit: none
     isAbout: []
     valueReference: []
   - name: dist_aggregated_mw
     description: Heat demand time series
-    type: array of floats
+    type: double precision[]
     nullable: true
     unit: MW
     isAbout: []
     valueReference: []
   primaryKey:
-  - index
+  - area_id
+  - scenario
   foreignKeys: []
 dialect:
   delimiter: null

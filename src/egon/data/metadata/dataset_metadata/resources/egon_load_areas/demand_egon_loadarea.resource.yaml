@@ -155,186 +155,232 @@ schema:
     description: 'TODO: Add description'
     type: integer
     unit: none
+    nullable: false
   - name: bus_id
     description: 'TODO: Add description'
     type: integer
     unit: none
+    nullable: true
   - name: area_ha
     description: 'TODO: Add description'
-    type: number
+    type: numeric
     unit: none
+    nullable: true
   - name: nuts
     description: 'TODO: Add description'
-    type: string
+    type: character varying(5)
     unit: none
+    nullable: true
   - name: rs_0
     description: 'TODO: Add description'
-    type: string
+    type: character varying(12)
     unit: none
+    nullable: true
   - name: ags_0
     description: 'TODO: Add description'
-    type: string
+    type: character varying(12)
     unit: none
+    nullable: true
   - name: zensus_sum
     description: 'TODO: Add description'
     type: integer
     unit: none
+    nullable: true
   - name: zensus_count
     description: 'TODO: Add description'
     type: integer
     unit: none
+    nullable: true
   - name: zensus_density
     description: 'TODO: Add description'
-    type: number
+    type: numeric
     unit: none
+    nullable: true
   - name: sector_area_residential
     description: 'TODO: Add description'
-    type: number
+    type: numeric
     unit: none
+    nullable: true
   - name: sector_area_cts
     description: 'TODO: Add description'
-    type: number
+    type: numeric
     unit: none
+    nullable: true
   - name: sector_area_industrial
     description: 'TODO: Add description'
-    type: number
+    type: numeric
     unit: none
+    nullable: true
   - name: sector_area_agricultural
     description: 'TODO: Add description'
-    type: number
+    type: numeric
     unit: none
+    nullable: true
   - name: sector_area_sum
     description: 'TODO: Add description'
-    type: number
+    type: numeric
     unit: none
+    nullable: true
   - name: sector_share_residential
     description: 'TODO: Add description'
-    type: number
+    type: numeric
     unit: none
+    nullable: true
   - name: sector_share_cts
     description: 'TODO: Add description'
-    type: number
+    type: numeric
     unit: none
+    nullable: true
   - name: sector_share_industrial
     description: 'TODO: Add description'
-    type: number
+    type: numeric
     unit: none
+    nullable: true
   - name: sector_share_agricultural
     description: 'TODO: Add description'
-    type: number
+    type: numeric
     unit: none
+    nullable: true
   - name: sector_share_sum
     description: 'TODO: Add description'
-    type: number
+    type: numeric
     unit: none
+    nullable: true
   - name: sector_count_residential
     description: 'TODO: Add description'
     type: integer
     unit: none
+    nullable: true
   - name: sector_count_cts
     description: 'TODO: Add description'
     type: integer
     unit: none
+    nullable: true
   - name: sector_count_industrial
     description: 'TODO: Add description'
     type: integer
     unit: none
+    nullable: true
   - name: sector_count_agricultural
     description: 'TODO: Add description'
     type: integer
     unit: none
+    nullable: true
   - name: sector_count_sum
     description: 'TODO: Add description'
     type: integer
     unit: none
+    nullable: true
   - name: sector_consumption_residential
     description: 'TODO: Add description'
-    type: number
+    type: double precision
     unit: none
+    nullable: true
   - name: sector_consumption_residential_2035
     description: 'TODO: Add description'
-    type: number
+    type: double precision
     unit: none
+    nullable: true
   - name: sector_consumption_residential_2050
     description: 'TODO: Add description'
-    type: number
+    type: double precision
     unit: none
+    nullable: true
   - name: sector_consumption_cts
     description: 'TODO: Add description'
-    type: number
+    type: double precision
     unit: none
+    nullable: true
   - name: sector_consumption_cts_2035
     description: 'TODO: Add description'
-    type: number
+    type: double precision
     unit: none
+    nullable: true
   - name: sector_consumption_cts_2050
     description: 'TODO: Add description'
-    type: number
+    type: double precision
     unit: none
+    nullable: true
   - name: sector_consumption_industrial
     description: 'TODO: Add description'
-    type: number
+    type: double precision
     unit: none
+    nullable: true
   - name: sector_consumption_industrial_2035
     description: 'TODO: Add description'
-    type: number
+    type: double precision
     unit: none
+    nullable: true
   - name: sector_consumption_industrial_2050
     description: 'TODO: Add description'
-    type: number
+    type: double precision
     unit: none
+    nullable: true
   - name: sector_peakload_cts
     description: 'TODO: Add description'
-    type: number
+    type: double precision
     unit: none
+    nullable: true
   - name: sector_peakload_cts_2035
     description: 'TODO: Add description'
-    type: number
+    type: double precision
     unit: none
+    nullable: true
   - name: sector_peakload_cts_2050
     description: 'TODO: Add description'
-    type: number
+    type: double precision
     unit: none
+    nullable: true
   - name: sector_peakload_residential
     description: 'TODO: Add description'
-    type: number
+    type: double precision
     unit: none
+    nullable: true
   - name: sector_peakload_residential_2035
     description: 'TODO: Add description'
-    type: number
+    type: double precision
     unit: none
+    nullable: true
   - name: sector_peakload_residential_2050
     description: 'TODO: Add description'
-    type: number
+    type: double precision
     unit: none
+    nullable: true
   - name: sector_peakload_industrial
     description: 'TODO: Add description'
-    type: number
+    type: double precision
     unit: none
+    nullable: true
   - name: sector_peakload_industrial_2035
     description: 'TODO: Add description'
-    type: number
+    type: double precision
     unit: none
+    nullable: true
   - name: sector_peakload_industrial_2050
     description: 'TODO: Add description'
-    type: number
+    type: double precision
     unit: none
+    nullable: true
   - name: geom_centroid
     description: 'TODO: Add description'
-    type: string
+    type: geometry(Point,3035)
     unit: none
+    nullable: true
   - name: geom_surfacepoint
     description: 'TODO: Add description'
-    type: string
+    type: geometry(Point,3035)
     unit: none
+    nullable: true
   - name: geom_centre
     description: 'TODO: Add description'
-    type: string
+    type: geometry(Point,3035)
     unit: none
+    nullable: true
   - name: geom
     description: 'TODO: Add description'
-    type: string
+    type: geometry(Polygon,3035)
     unit: none
+    nullable: true
 dialect:
   delimiter: ''
   decimalSeparator: ''

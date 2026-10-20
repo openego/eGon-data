@@ -144,7 +144,7 @@ schema:
     description: 'Repräsentativer Punkt des Gebäudes (CRS: ETRS89-LAEA / EPSG:3035).
       Aus der WKT-Spalte ''position'' der Quelle; das CRS ist dort bereits 3035 und
       wird nicht transformiert.'
-    type: geometry
+    type: geometry(Point,3035)
     nullable: true
     unit: none
     isAbout: []

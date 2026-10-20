@@ -122,21 +122,21 @@ schema:
     valueReference: []
   - name: parts
     description: ''
-    type: array
+    type: bigint[]
     nullable: true
     unit: none
     isAbout: []
     valueReference: []
   - name: members
     description: ''
-    type: array
+    type: text[]
     nullable: true
     unit: none
     isAbout: []
     valueReference: []
   - name: tags
     description: ''
-    type: array
+    type: text[]
     nullable: true
     unit: none
     isAbout: []

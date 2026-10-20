@@ -126,15 +126,15 @@ schema:
   fields:
   - name: grid_id
     description: Grid number of source
-    type: string
-    nullable: false
+    type: character varying
+    nullable: true
     unit: none
     isAbout: []
     valueReference: []
   - name: zensus_population_id
     description: Unique identifier
     type: integer
-    nullable: false
+    nullable: true
     unit: none
     isAbout: []
     valueReference: []
@@ -154,21 +154,21 @@ schema:
     valueReference: []
   - name: population
     description: Number of registred residents
-    type: integer
+    type: smallint
     nullable: true
     unit: resident
     isAbout: []
     valueReference: []
   - name: geom
     description: 'Geometry of zensus cell (CRS: ERTS89/EPSG:3035)'
-    type: Geometry
+    type: geometry(Polygon,3035)
     nullable: true
     unit: none
     isAbout: []
     valueReference: []
   - name: geom_point
     description: 'Geometry centroid of zensus cell (CRS: ERTS89/EPSG:3035)'
-    type: Geometry
+    type: geometry(Point,3035)
     nullable: true
     unit: none
     isAbout: []

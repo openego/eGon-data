@@ -111,19 +111,24 @@ format: PostgreSQL
 encoding: UTF-8
 schema:
   fields:
-  - name: transformer_id
-    description: Unique name
-    type: int
-    nullable: true
-    unit: none
+  - name: scn_name
+    description: Name of the eGon scenario
+    type: character varying
+    nullable: false
+    unit: n/a
     isAbout: []
     valueReference: []
     default: n/a
-    status: Input (required)
+    status: Input
+  - name: trafo_id
+    description: Unique name
+    type: bigint
+    nullable: false
+    unit: none
   - name: bus0
     description: Name of first bus (typically higher voltage) to which transformer
       is attached.
-    type: string
+    type: bigint
     nullable: true
     unit: none
     isAbout: []
@@ -133,7 +138,7 @@ schema:
   - name: bus1
     description: Name of second bus (typically lower voltage) to which transformer
       is attached.
-    type: string
+    type: bigint
     nullable: true
     unit: none
     isAbout: []
@@ -146,7 +151,7 @@ schema:
       standard type along with "num_parallel". This will override any values set in
       r, x, g, b, s_nom, tap_ratio, tap_side and phase_shift. If the string is empty,
       PyPSA will simply read r, x, etc.
-    type: string
+    type: text
     nullable: true
     unit: none
     isAbout: []
@@ -158,7 +163,7 @@ schema:
       Version 0.8.0 it defaults to "t" following physics and DIgSILENT PowerFactory;
       versions of PyPSA before 0.8.0 and some other power system tools, like MATPOWER,
       PYPOWER, PSS/SINCAL use the less physical "pi" model.
-    type: string
+    type: text
     nullable: true
     unit: none
     isAbout: []
@@ -169,7 +174,7 @@ schema:
     description: Series reactance (per unit, using s_nom as base power); must be non-zero
       for AC branch in linear power flow. Series impedance :math:`z = r + jx` must
       be non-zero for the non-linear power flow. Ignored if type defined.
-    type: float
+    type: numeric
     nullable: true
     unit: per unit
     isAbout: []
@@ -180,7 +185,7 @@ schema:
     description: Series resistance (per unit, using s_nom as base power); must be
       non-zero for DC branch in linear power flow. Series impedance :math:`z = r +
       jx` must be non-zero for the non-linear power flow. Ignored if type defined.
-    type: float
+    type: numeric
     nullable: true
     unit: per unit
     isAbout: []
@@ -190,7 +195,7 @@ schema:
   - name: g
     description: Shunt conductivity (per unit, using s_nom as base power). Ignored
       if type defined.
-    type: float
+    type: numeric
     nullable: true
     unit: per unit
     isAbout: []
@@ -200,7 +205,7 @@ schema:
   - name: b
     description: Shunt susceptance (per unit, using s_nom as base power). Ignored
       if type defined.
-    type: float
+    type: numeric
     nullable: true
     unit: per unit
     isAbout: []
@@ -209,7 +214,7 @@ schema:
     status: Input (optional)
   - name: s_nom
     description: Limit of apparent power which can pass through branch.
-    type: float
+    type: double precision
     nullable: true
     unit: MVA
     isAbout: []
@@ -227,7 +232,7 @@ schema:
     status: Input (optional)
   - name: s_nom_min
     description: If s_nom is extendable in OPF, set its minimum value.
-    type: float
+    type: double precision
     nullable: true
     unit: MVA
     isAbout: []
@@ -237,7 +242,7 @@ schema:
   - name: s_nom_max
     description: If s_nom is extendable in OPF, set its maximum value (e.g. limited
       by potential).
-    type: float
+    type: double precision
     nullable: true
     unit: MVA
     isAbout: []
@@ -246,28 +251,9 @@ schema:
     status: Input (optional)
   - name: s_max_pu
     description: The maximum allowed absolute flow per unit of s_nom for the OPF.
-    type: static or series
+    type: double precision
     nullable: true
     unit: per unit
-    isAbout: []
-    valueReference: []
-    default: '1'
-    status: Input (optional)
-  - name: capital_cost
-    description: Capital cost of extending s_nom by 1 MVA.
-    type: float
-    nullable: true
-    unit: currency/MVA
-    isAbout: []
-    valueReference: []
-    default: '0'
-    status: Input (optional)
-  - name: num_parallel
-    description: When "type" is set, this is the number of parallel transformers (can
-      also be fractional). If "type" is empty "" this value is ignored.
-    type: float
-    nullable: true
-    unit: none
     isAbout: []
     valueReference: []
     default: '1'
@@ -275,7 +261,7 @@ schema:
   - name: tap_ratio
     description: Ratio of per unit voltages at each bus for tap changed.  Ignored
       if type defined.
-    type: float
+    type: double precision
     nullable: true
     unit: per unit
     isAbout: []
@@ -286,7 +272,7 @@ schema:
     description: Defines if tap changer is modelled at the primary 0 side (usually
       high-voltage) or the secondary 1 side (usually low voltage) (must be 0 or 1,
       defaults to 0). Ignored if type defined.
-    type: int
+    type: bigint
     nullable: true
     unit: none
     isAbout: []
@@ -296,7 +282,7 @@ schema:
   - name: tap_position
     description: If the transformer has a type, determines position relative to the
       neutral tap position.
-    type: int
+    type: bigint
     nullable: true
     unit: none
     isAbout: []
@@ -305,7 +291,7 @@ schema:
     status: Input (optional)
   - name: phase_shift
     description: Voltage phase angle shift.  Ignored if type defined.
-    type: float
+    type: double precision
     nullable: true
     unit: Degrees
     isAbout: []
@@ -314,7 +300,7 @@ schema:
     status: Input (optional)
   - name: build_year
     description: build year
-    type: int
+    type: bigint
     nullable: true
     unit: year
     isAbout: []
@@ -323,7 +309,7 @@ schema:
     status: Input (optional)
   - name: lifetime
     description: lifetime
-    type: float
+    type: double precision
     nullable: true
     unit: years
     isAbout: []
@@ -333,7 +319,7 @@ schema:
   - name: v_ang_min
     description: Minimum voltage angle difference across the transformer. This is
       a placeholder attribute and is not currently used by any PyPSA functions.
-    type: float
+    type: double precision
     nullable: true
     unit: Degrees
     isAbout: []
@@ -343,25 +329,45 @@ schema:
   - name: v_ang_max
     description: Maximum voltage angle difference across the transformer. This is
       a placeholder attribute and is not currently used by any PyPSA functions.
-    type: float
+    type: double precision
     nullable: true
     unit: Degrees
     isAbout: []
     valueReference: []
     default: inf
     status: Input (optional)
-  - name: scn_name
-    description: Name of the eGon scenario
-    type: string
+  - name: capital_cost
+    description: Capital cost of extending s_nom by 1 MVA.
+    type: double precision
     nullable: true
-    unit: n/a
+    unit: currency/MVA
     isAbout: []
     valueReference: []
-    default: n/a
-    status: Input
+    default: '0'
+    status: Input (optional)
+  - name: num_parallel
+    description: When "type" is set, this is the number of parallel transformers (can
+      also be fractional). If "type" is empty "" this value is ignored.
+    type: double precision
+    nullable: true
+    unit: none
+    isAbout: []
+    valueReference: []
+    default: '1'
+    status: Input (optional)
+  - name: geom
+    description: 'TODO: Description missing in YAML metadata'
+    type: geometry(MultiLineString,4326)
+    nullable: true
+    unit: none
+  - name: topo
+    description: 'TODO: Description missing in YAML metadata'
+    type: geometry(LineString,4326)
+    nullable: true
+    unit: none
   primaryKey:
   - scn_name
-  - transformer_id
+  - trafo_id
   foreignKeys: []
 dialect:
   delimiter: ''

@@ -121,50 +121,62 @@ schema:
     description: 'TODO: Add description'
     type: integer
     unit: none
+    nullable: false
   - name: households_total
     description: 'TODO: Add description'
     type: integer
     unit: none
+    nullable: true
   - name: SR
     description: 'TODO: Add description'
     type: integer
     unit: none
+    nullable: true
   - name: SO
     description: 'TODO: Add description'
     type: integer
     unit: none
+    nullable: true
   - name: PR
     description: 'TODO: Add description'
     type: integer
     unit: none
+    nullable: true
   - name: PO
     description: 'TODO: Add description'
     type: integer
     unit: none
+    nullable: true
   - name: SK
     description: 'TODO: Add description'
     type: integer
     unit: none
+    nullable: true
   - name: P1
     description: 'TODO: Add description'
     type: integer
     unit: none
+    nullable: true
   - name: P2
     description: 'TODO: Add description'
     type: integer
     unit: none
+    nullable: true
   - name: P3
     description: 'TODO: Add description'
     type: integer
     unit: none
+    nullable: true
   - name: OR
     description: 'TODO: Add description'
     type: integer
     unit: none
+    nullable: true
   - name: OO
     description: 'TODO: Add description'
     type: integer
     unit: none
+    nullable: true
 dialect:
   delimiter: ''
   decimalSeparator: ''

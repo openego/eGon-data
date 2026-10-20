@@ -84,10 +84,19 @@ format: PostgreSQL
 encoding: UTF-8
 schema:
   fields:
+  - name: scn_name
+    description: Name of the eGon scenario
+    type: character varying
+    nullable: false
+    unit: n/a
+    isAbout: []
+    valueReference: []
+    default: n/a
+    status: Input
   - name: link_id
     description: Unique name
-    type: int
-    nullable: true
+    type: bigint
+    nullable: false
     unit: none
     isAbout: []
     valueReference: []
@@ -95,7 +104,7 @@ schema:
     status: Input (required)
   - name: bus0
     description: Name of first bus to which link is attached.
-    type: string
+    type: bigint
     nullable: true
     unit: none
     isAbout: []
@@ -104,7 +113,7 @@ schema:
     status: Input (required)
   - name: bus1
     description: Name of second bus to which link is attached.
-    type: string
+    type: bigint
     nullable: true
     unit: none
     isAbout: []
@@ -113,7 +122,7 @@ schema:
     status: Input (required)
   - name: type
     description: Placeholder for link type. Not yet implemented.
-    type: string
+    type: text
     nullable: true
     unit: none
     isAbout: []
@@ -123,7 +132,7 @@ schema:
   - name: carrier
     description: 'Energy carrier transported by the link: can be "DC" for electrical
       HVDC links, or "heat" or "gas" etc.'
-    type: string
+    type: text
     nullable: true
     unit: none
     isAbout: []
@@ -134,7 +143,7 @@ schema:
     description: Efficiency of power transfer from bus0 to bus1. (Can be time-dependent
       to represent temperature-dependent Coefficient of Performance of a heat pump
       from an electric to a heat bus.)
-    type: static or series
+    type: double precision
     nullable: true
     unit: per unit
     isAbout: []
@@ -143,7 +152,7 @@ schema:
     status: Input (optional)
   - name: build_year
     description: build year
-    type: int
+    type: bigint
     nullable: true
     unit: year
     isAbout: []
@@ -152,7 +161,7 @@ schema:
     status: Input (optional)
   - name: lifetime
     description: lifetime
-    type: float
+    type: double precision
     nullable: true
     unit: years
     isAbout: []
@@ -161,7 +170,7 @@ schema:
     status: Input (optional)
   - name: p_nom
     description: Limit of active power which can pass through link.
-    type: float
+    type: numeric
     nullable: true
     unit: MW
     isAbout: []
@@ -179,7 +188,7 @@ schema:
     status: Input (optional)
   - name: p_nom_min
     description: If p_nom is extendable in OPF, set its minimum value.
-    type: float
+    type: double precision
     nullable: true
     unit: MW
     isAbout: []
@@ -189,26 +198,17 @@ schema:
   - name: p_nom_max
     description: If p_nom is extendable in OPF, set its maximum value (e.g. limited
       by potential).
-    type: float
+    type: double precision
     nullable: true
     unit: MW
     isAbout: []
     valueReference: []
     default: inf
     status: Input (optional)
-  - name: p_set
-    description: The dispatch set point for p0 of the link in PF.
-    type: static or series
-    nullable: true
-    unit: MW
-    isAbout: []
-    valueReference: []
-    default: '0'
-    status: Input (optional)
   - name: p_min_pu
     description: Minimal dispatch (can also be negative) per unit of p_nom for the
       link in OPF.
-    type: static or series
+    type: double precision
     nullable: true
     unit: per unit of p_nom
     isAbout: []
@@ -218,16 +218,25 @@ schema:
   - name: p_max_pu
     description: Maximal dispatch (can also be negative) per unit of p_nom for the
       link in OPF.
-    type: static or series
+    type: double precision
     nullable: true
     unit: per unit of p_nom
     isAbout: []
     valueReference: []
     default: '1'
     status: Input (optional)
+  - name: p_set
+    description: The dispatch set point for p0 of the link in PF.
+    type: double precision
+    nullable: true
+    unit: MW
+    isAbout: []
+    valueReference: []
+    default: '0'
+    status: Input (optional)
   - name: capital_cost
     description: Capital cost of extending p_nom by 1 MW.
-    type: float
+    type: double precision
     nullable: true
     unit: currency/MW
     isAbout: []
@@ -237,7 +246,7 @@ schema:
   - name: marginal_cost
     description: 'Marginal cost of transfering 1 MWh (before efficiency losses) from
       bus0 to bus1. NB: marginal cost only makes sense in OPF if p_max_pu >= 0.'
-    type: static or series
+    type: double precision
     nullable: true
     unit: currency/MWh
     isAbout: []
@@ -246,7 +255,7 @@ schema:
     status: Input (optional)
   - name: length
     description: Length of line, useful for calculating the capital cost.
-    type: float
+    type: double precision
     nullable: true
     unit: km
     isAbout: []
@@ -255,42 +264,23 @@ schema:
     status: Input (optional)
   - name: terrain_factor
     description: Terrain factor for increasing capital cost.
-    type: float
+    type: double precision
     nullable: true
     unit: per unit
     isAbout: []
     valueReference: []
     default: '1'
     status: Input (optional)
-  - name: ramp_limit_up
-    description: Maximum active power increase from one snapshot to the next, per
-      unit of the nominal power. Ignored if NaN.
-    type: float
+  - name: geom
+    description: 'TODO: Description missing in YAML metadata'
+    type: geometry(MultiLineString,4326)
     nullable: true
-    unit: per unit
-    isAbout: []
-    valueReference: []
-    default: n/a
-    status: Input (optional)
-  - name: ramp_limit_down
-    description: Maximum active power decrease from one snapshot to the next, per
-      unit of the nominal power. Ignored if NaN.
-    type: float
+    unit: none
+  - name: topo
+    description: 'TODO: Description missing in YAML metadata'
+    type: geometry(LineString,4326)
     nullable: true
-    unit: per unit
-    isAbout: []
-    valueReference: []
-    default: n/a
-    status: Input (optional)
-  - name: scn_name
-    description: Name of the eGon scenario
-    type: string
-    nullable: true
-    unit: n/a
-    isAbout: []
-    valueReference: []
-    default: n/a
-    status: Input
+    unit: none
   primaryKey:
   - scn_name
   - link_id

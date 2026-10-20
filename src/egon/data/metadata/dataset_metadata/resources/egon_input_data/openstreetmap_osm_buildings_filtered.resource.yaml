@@ -122,17 +122,15 @@ schema:
   - name: osm_id
     description: Openstreetmap identifier
     type: bigint
-    nullable: false
-    unit: none
-    isAbout: []
-    valueReference: []
-  - name: amenitiy
-    description: Type of amenitiy if given
-    type: text
     nullable: true
     unit: none
     isAbout: []
     valueReference: []
+  - name: amenity
+    description: Type of amenitiy if given
+    type: text
+    nullable: true
+    unit: none
   - name: building
     description: Type of building
     type: text

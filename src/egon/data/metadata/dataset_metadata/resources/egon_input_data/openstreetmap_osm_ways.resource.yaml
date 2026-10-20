@@ -108,14 +108,14 @@ schema:
     valueReference: []
   - name: nodes
     description: ''
-    type: array
-    nullable: true
+    type: bigint[]
+    nullable: false
     unit: none
     isAbout: []
     valueReference: []
   - name: tags
     description: ''
-    type: array
+    type: text[]
     nullable: true
     unit: none
     isAbout: []

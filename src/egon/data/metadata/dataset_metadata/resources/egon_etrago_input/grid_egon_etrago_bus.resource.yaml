@@ -194,10 +194,19 @@ format: PostgreSQL
 encoding: UTF-8
 schema:
   fields:
+  - name: scn_name
+    description: Name of the eGon scenario
+    type: character varying
+    nullable: false
+    unit: n/a
+    isAbout: []
+    valueReference: []
+    default: n/a
+    status: Input
   - name: bus_id
     description: Unique name
-    type: int
-    nullable: true
+    type: bigint
+    nullable: false
     unit: none
     isAbout: []
     valueReference: []
@@ -205,7 +214,7 @@ schema:
     status: Input (required)
   - name: v_nom
     description: Nominal voltage
-    type: float
+    type: double precision
     nullable: true
     unit: kV
     isAbout: []
@@ -214,57 +223,26 @@ schema:
     status: Input (optional)
   - name: type
     description: Placeholder for bus type. Not yet implemented.
-    type: string
+    type: text
     nullable: true
     unit: none
     isAbout: []
     valueReference: []
     default: n/a
     status: Input (optional)
-  - name: x
-    description: Position (e.g. longitude); the Spatial Reference System Identifier
-      (SRID) is set in network.srid.
-    type: float
-    nullable: true
-    unit: none
-    isAbout: []
-    valueReference: []
-    default: '0'
-    status: Input (optional)
-  - name: y
-    description: Position (e.g. latitude); the Spatial Reference System Identifier
-      (SRID) is set in network.srid.
-    type: float
-    nullable: true
-    unit: none
-    isAbout: []
-    valueReference: []
-    default: '0'
-    status: Input (optional)
   - name: carrier
     description: 'Energy carrier: can be "AC" or "DC" for electrical buses, or "heat"
       or "gas".'
-    type: string
+    type: text
     nullable: true
     unit: none
     isAbout: []
     valueReference: []
     default: AC
     status: Input (optional)
-  - name: unit
-    description: Unit of the bus’ carrier if the implicitly assumed unit ("MW") is
-      inappropriate (e.g. "t/h", "MWh_th/h"). Only descriptive. Does not influence
-      any PyPSA functions.
-    type: string
-    nullable: true
-    unit: none
-    isAbout: []
-    valueReference: []
-    default: n/a
-    status: Input (optional)
   - name: v_mag_pu_set
     description: Voltage magnitude set point, per unit of v_nom.
-    type: static or series
+    type: double precision
     nullable: true
     unit: per unit
     isAbout: []
@@ -274,7 +252,7 @@ schema:
   - name: v_mag_pu_min
     description: Minimum desired voltage, per unit of v_nom. This is a placeholder
       attribute and is not currently used by any PyPSA functions.
-    type: float
+    type: double precision
     nullable: true
     unit: per unit
     isAbout: []
@@ -284,22 +262,43 @@ schema:
   - name: v_mag_pu_max
     description: Maximum desired voltage, per unit of v_nom.  This is a placeholder
       attribute and is not currently used by any PyPSA functions.
-    type: float
+    type: double precision
     nullable: true
     unit: per unit
     isAbout: []
     valueReference: []
     default: inf
     status: Input (optional)
-  - name: scn_name
-    description: Name of the eGon scenario
-    type: string
+  - name: x
+    description: Position (e.g. longitude); the Spatial Reference System Identifier
+      (SRID) is set in network.srid.
+    type: double precision
     nullable: true
-    unit: n/a
+    unit: none
     isAbout: []
     valueReference: []
-    default: n/a
-    status: Input
+    default: '0'
+    status: Input (optional)
+  - name: y
+    description: Position (e.g. latitude); the Spatial Reference System Identifier
+      (SRID) is set in network.srid.
+    type: double precision
+    nullable: true
+    unit: none
+    isAbout: []
+    valueReference: []
+    default: '0'
+    status: Input (optional)
+  - name: geom
+    description: 'TODO: Description missing in YAML metadata'
+    type: geometry(Point,4326)
+    nullable: true
+    unit: none
+  - name: country
+    description: 'TODO: Description missing in YAML metadata'
+    type: text
+    nullable: true
+    unit: none
   primaryKey:
   - scn_name
   - bus_id

@@ -93,14 +93,17 @@ schema:
     description: 'TODO: Add description'
     type: integer
     unit: none
+    nullable: false
   - name: geom
     description: 'TODO: Add description'
-    type: string
+    type: geometry(Polygon,4326)
     unit: none
+    nullable: true
   - name: geom_point
     description: 'TODO: Add description'
-    type: string
+    type: geometry(Point,4326)
     unit: none
+    nullable: true
 dialect:
   delimiter: ''
   decimalSeparator: ''

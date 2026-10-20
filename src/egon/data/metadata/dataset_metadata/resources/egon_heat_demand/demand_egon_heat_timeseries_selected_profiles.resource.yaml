@@ -127,6 +127,13 @@ format: PostgreSQL
 encoding: UTF-8
 schema:
   fields:
+  - name: zensus_population_id
+    description: Index of corresponding census cell
+    type: integer
+    nullable: false
+    unit: none
+    isAbout: []
+    valueReference: []
   - name: building_id
     description: Index of the corresponding building
     type: integer
@@ -136,19 +143,13 @@ schema:
     valueReference: []
   - name: selected_idp_profiles
     description: List of selected profiles for each day in the year
-    type: array of integer
-    nullable: false
-    unit: none
-    isAbout: []
-    valueReference: []
-  - name: zensus_population_id
-    description: Index of corresponding census cell
-    type: integer
-    nullable: false
+    type: integer[]
+    nullable: true
     unit: none
     isAbout: []
     valueReference: []
   primaryKey:
+  - zensus_population_id
   - building_id
   foreignKeys: []
 dialect:

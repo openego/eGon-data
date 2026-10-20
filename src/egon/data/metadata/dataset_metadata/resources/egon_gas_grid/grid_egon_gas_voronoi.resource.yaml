@@ -125,28 +125,28 @@ schema:
   fields:
   - name: scn_name
     description: Name of the scenario
-    type: str
-    nullable: true
+    type: text
+    nullable: false
     unit: null
     isAbout: []
     valueReference: []
   - name: bus_id
     description: Unique identifier
-    type: integer
+    type: bigint
     nullable: false
     unit: null
     isAbout: []
     valueReference: []
   - name: carrier
     description: Carrier of the voronoi cell
-    type: str
+    type: text
     nullable: true
     unit: null
     isAbout: []
     valueReference: []
   - name: geom
     description: Voronoi cell geometry
-    type: Geometry(Polygon, 4326)
+    type: geometry(Geometry,4326)
     nullable: true
     unit: null
     isAbout: []

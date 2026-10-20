@@ -111,10 +111,19 @@ format: PostgreSQL
 encoding: UTF-8
 schema:
   fields:
+  - name: scn_name
+    description: Name of the eGon scenario
+    type: character varying
+    nullable: false
+    unit: n/a
+    isAbout: []
+    valueReference: []
+    default: n/a
+    status: Input
   - name: line_id
     description: Unique name
-    type: int
-    nullable: true
+    type: bigint
+    nullable: false
     unit: none
     isAbout: []
     valueReference: []
@@ -122,7 +131,7 @@ schema:
     status: Input (required)
   - name: bus0
     description: Name of first bus to which branch is attached.
-    type: string
+    type: bigint
     nullable: true
     unit: none
     isAbout: []
@@ -131,7 +140,7 @@ schema:
     status: Input (required)
   - name: bus1
     description: Name of second bus to which branch is attached.
-    type: string
+    type: bigint
     nullable: true
     unit: none
     isAbout: []
@@ -144,7 +153,16 @@ schema:
       and divided/multiplied by num_parallel to compute x, r, etc. This will override
       any values set in r, x, and b. If the string is empty, PyPSA will simply read
       r, x, etc.
-    type: string
+    type: text
+    nullable: true
+    unit: none
+    isAbout: []
+    valueReference: []
+    default: n/a
+    status: Input (optional)
+  - name: carrier
+    description: Type of current, "AC" is the only valid value
+    type: text
     nullable: true
     unit: none
     isAbout: []
@@ -156,7 +174,7 @@ schema:
       flow. If the line has series inductance :math:`L` in Henries then :math:`x =
       2\pi f L` where :math:`f` is the frequency in Hertz. Series impedance :math:`z
       = r + jx` must be non-zero for the non-linear power flow. Ignored if type defined.
-    type: float
+    type: numeric
     nullable: true
     unit: Ohm
     isAbout: []
@@ -167,7 +185,7 @@ schema:
     description: Series resistance, must be non-zero for DC branch in linear power
       flow. Series impedance :math:`z = r + jx` must be non-zero for the non-linear
       power flow. Ignored if type defined.
-    type: float
+    type: numeric
     nullable: true
     unit: Ohm
     isAbout: []
@@ -176,7 +194,7 @@ schema:
     status: Input (required)
   - name: g
     description: Shunt conductivity. Shunt admittance is :math:`y = g + jb`.
-    type: float
+    type: numeric
     nullable: true
     unit: Siemens
     isAbout: []
@@ -187,7 +205,7 @@ schema:
     description: Shunt susceptance. If the line has shunt capacitance :math:`C` in
       Farads then :math:`b = 2\pi f C` where :math:`f` is the frequency in Hertz.
       Shunt admittance is :math:`y = g + jb`. Ignored if type defined.
-    type: float
+    type: numeric
     nullable: true
     unit: Siemens
     isAbout: []
@@ -196,7 +214,7 @@ schema:
     status: Input (optional)
   - name: s_nom
     description: Limit of apparent power which can pass through branch.
-    type: float
+    type: numeric
     nullable: true
     unit: MVA
     isAbout: []
@@ -214,7 +232,7 @@ schema:
     status: Input (optional)
   - name: s_nom_min
     description: If s_nom is extendable in OPF, set its minimum value.
-    type: float
+    type: double precision
     nullable: true
     unit: MVA
     isAbout: []
@@ -224,7 +242,7 @@ schema:
   - name: s_nom_max
     description: If s_nom is extendable in OPF, set its maximum value (e.g. limited
       by potential).
-    type: float
+    type: double precision
     nullable: true
     unit: MVA
     isAbout: []
@@ -235,25 +253,16 @@ schema:
     description: The maximum allowed absolute flow per unit of s_nom for the OPF (e.g.
       can be set <1 to approximate n-1 factor, or can be time-varying to represent
       weather-dependent dynamic line rating for overhead lines).
-    type: static or series
+    type: double precision
     nullable: true
     unit: per unit
     isAbout: []
     valueReference: []
     default: '1'
     status: Input (optional)
-  - name: capital_cost
-    description: Capital cost of extending s_nom by 1 MVA.
-    type: float
-    nullable: true
-    unit: currency/MVA
-    isAbout: []
-    valueReference: []
-    default: '0'
-    status: Input (optional)
   - name: build_year
     description: build year
-    type: int
+    type: bigint
     nullable: true
     unit: year
     isAbout: []
@@ -262,35 +271,40 @@ schema:
     status: Input (optional)
   - name: lifetime
     description: lifetime
-    type: float
+    type: double precision
     nullable: true
     unit: years
     isAbout: []
     valueReference: []
     default: inf
     status: Input (optional)
+  - name: capital_cost
+    description: Capital cost of extending s_nom by 1 MVA.
+    type: double precision
+    nullable: true
+    unit: currency/MVA
+    isAbout: []
+    valueReference: []
+    default: '0'
+    status: Input (optional)
   - name: length
     description: Length of line used when "type" is set, also useful for calculating
       the capital cost.
-    type: float
+    type: double precision
     nullable: true
     unit: km
     isAbout: []
     valueReference: []
     default: '0'
     status: Input (optional)
-  - name: carrier
-    description: Type of current, "AC" is the only valid value
-    type: string
+  - name: cables
+    description: 'TODO: Description missing in YAML metadata'
+    type: integer
     nullable: true
     unit: none
-    isAbout: []
-    valueReference: []
-    default: n/a
-    status: Input (optional)
   - name: terrain_factor
     description: Terrain factor for increasing capital cost.
-    type: float
+    type: double precision
     nullable: true
     unit: per unit
     isAbout: []
@@ -300,7 +314,7 @@ schema:
   - name: num_parallel
     description: When "type" is set, this is the number of parallel lines (can also
       be fractional). If "type" is empty "" this value is ignored.
-    type: float
+    type: double precision
     nullable: true
     unit: none
     isAbout: []
@@ -310,7 +324,7 @@ schema:
   - name: v_ang_min
     description: Minimum voltage angle difference across the line. This is a placeholder
       attribute and is not currently used by any PyPSA functions.
-    type: float
+    type: double precision
     nullable: true
     unit: Degrees
     isAbout: []
@@ -320,22 +334,28 @@ schema:
   - name: v_ang_max
     description: Maximum voltage angle difference across the line. This is a placeholder
       attribute and is not currently used by any PyPSA functions.
-    type: float
+    type: double precision
     nullable: true
     unit: Degrees
     isAbout: []
     valueReference: []
     default: inf
     status: Input (optional)
-  - name: scn_name
-    description: Name of the eGon scenario
-    type: string
+  - name: v_nom
+    description: 'TODO: Description missing in YAML metadata'
+    type: double precision
     nullable: true
-    unit: n/a
-    isAbout: []
-    valueReference: []
-    default: n/a
-    status: Input
+    unit: none
+  - name: geom
+    description: 'TODO: Description missing in YAML metadata'
+    type: geometry(MultiLineString,4326)
+    nullable: true
+    unit: none
+  - name: topo
+    description: 'TODO: Description missing in YAML metadata'
+    type: geometry(LineString,4326)
+    nullable: true
+    unit: none
   primaryKey:
   - scn_name
   - line_id

@@ -243,19 +243,19 @@ schema:
   - name: scn_name
     description: 'Scenario name (reference: demand.egon_cts_heat_demand_building_share.scenario)'
     type: character varying
-    nullable: true
+    nullable: false
     unit: none
     isAbout: []
     valueReference: []
   - name: p_set
     description: Cts heat demand load timeseries for one year (8760 hours) in MWh
-    type: array of real
+    type: double precision[]
     nullable: true
     unit: MWh
     isAbout: []
     valueReference: []
   primaryKey:
-  - id
+  - bus_id
   - scn_name
   foreignKeys: []
 dialect:

@@ -132,118 +132,147 @@ schema:
     description: 'TODO: Add description'
     type: integer
     unit: none
+    nullable: false
   - name: siteid
     description: 'TODO: Add description'
     type: integer
     unit: none
+    nullable: true
   - name: companyname
     description: 'TODO: Add description'
-    type: string
+    type: character varying(100)
     unit: none
+    nullable: true
   - name: address
     description: 'TODO: Add description'
-    type: string
+    type: character varying(100)
     unit: none
+    nullable: true
   - name: country
     description: 'TODO: Add description'
-    type: string
+    type: character varying(2)
     unit: none
+    nullable: true
   - name: eu28
     description: 'TODO: Add description'
-    type: string
+    type: character varying(3)
     unit: none
+    nullable: true
   - name: subsector
     description: 'TODO: Add description'
-    type: string
+    type: character varying(30)
     unit: none
+    nullable: true
   - name: lat
     description: 'TODO: Add description'
-    type: number
+    type: double precision
     unit: none
+    nullable: true
   - name: lon
     description: 'TODO: Add description'
-    type: number
+    type: double precision
     unit: none
+    nullable: true
   - name: nuts1
     description: 'TODO: Add description'
-    type: string
+    type: character varying(3)
     unit: none
+    nullable: true
   - name: nuts3
     description: 'TODO: Add description'
-    type: string
+    type: character varying(5)
     unit: none
+    nullable: true
   - name: excess_heat
     description: 'TODO: Add description'
-    type: string
+    type: character varying(3)
     unit: none
+    nullable: true
   - name: level_1_tj
     description: 'TODO: Add description'
-    type: number
+    type: double precision
     unit: none
+    nullable: true
   - name: level_2_tj
     description: 'TODO: Add description'
-    type: number
+    type: double precision
     unit: none
+    nullable: true
   - name: level_3_tj
     description: 'TODO: Add description'
-    type: number
+    type: double precision
     unit: none
+    nullable: true
   - name: level_1_r_tj
     description: 'TODO: Add description'
-    type: number
+    type: double precision
     unit: none
+    nullable: true
   - name: level_2_r_tj
     description: 'TODO: Add description'
-    type: number
+    type: double precision
     unit: none
+    nullable: true
   - name: level_3_r_tj
     description: 'TODO: Add description'
-    type: number
+    type: double precision
     unit: none
+    nullable: true
   - name: level_1_pj
     description: 'TODO: Add description'
-    type: number
+    type: double precision
     unit: none
+    nullable: true
   - name: level_2_pj
     description: 'TODO: Add description'
-    type: number
+    type: double precision
     unit: none
+    nullable: true
   - name: level_3_pj
     description: 'TODO: Add description'
-    type: number
+    type: double precision
     unit: none
+    nullable: true
   - name: level_1_r_pj
     description: 'TODO: Add description'
-    type: number
+    type: double precision
     unit: none
+    nullable: true
   - name: level_2_r_pj
     description: 'TODO: Add description'
-    type: number
+    type: double precision
     unit: none
+    nullable: true
   - name: level_3_r_pj
     description: 'TODO: Add description'
-    type: number
+    type: double precision
     unit: none
+    nullable: true
   - name: electricitydemand_tj
     description: 'TODO: Add description'
-    type: number
+    type: double precision
     unit: none
+    nullable: true
   - name: fueldemand_tj
     description: 'TODO: Add description'
-    type: number
+    type: double precision
     unit: none
+    nullable: true
   - name: globalid
     description: 'TODO: Add description'
-    type: string
+    type: character varying(50)
     unit: none
+    nullable: true
   - name: geom
     description: 'TODO: Add description'
-    type: string
+    type: geometry(Point,4326)
     unit: none
+    nullable: true
   - name: wz
     description: 'TODO: Add description'
     type: integer
     unit: none
+    nullable: true
 dialect:
   delimiter: ''
   decimalSeparator: ''
