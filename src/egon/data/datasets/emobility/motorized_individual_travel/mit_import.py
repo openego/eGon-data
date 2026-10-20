@@ -316,8 +316,6 @@ def _log_fleet_total(scenario_name: str, delivered_counts: pa.Table) -> None:
     )
 
 
-
-
 # ---------------------------------------------------------------------------
 # Test mode selection
 # ---------------------------------------------------------------------------
@@ -547,9 +545,7 @@ def import_location_events() -> None:
         passes = (
             1
             if keep is not None
-            else max(
-                1, math.ceil(n_rows * 8 / PLACEMENT_MEMORY_BUDGET_BYTES)
-            )
+            else max(1, math.ceil(n_rows * 8 / PLACEMENT_MEMORY_BUDGET_BYTES))
         )
         bounds = np.linspace(0, n_locations, passes + 1).astype("int64")
         print(

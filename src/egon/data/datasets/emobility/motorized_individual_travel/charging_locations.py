@@ -113,7 +113,9 @@ def _stage(scenario_name: str) -> int:
     int
         Number of delivered locations
     """
-    parquet_file = pq.ParquetFile(input_file(scenario_name, "ev_charging_location"))
+    parquet_file = pq.ParquetFile(
+        input_file(scenario_name, "ev_charging_location")
+    )
     columns = [
         "location_id",
         "charging_points",

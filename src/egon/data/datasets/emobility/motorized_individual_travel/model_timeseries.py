@@ -51,12 +51,14 @@ from egon.data.datasets.emobility.motorized_individual_travel.db_classes import 
 from egon.data.datasets.emobility.motorized_individual_travel.flex_diagnostics import (  # noqa: E501
     USE_CASE_COLUMNS,
     use_case_column,
-    write_charging_profile_use_case,
-    write_flex_timeseries,
 )
 from egon.data.datasets.emobility.motorized_individual_travel.helpers import (
+    BUS_CARRIER,
     CHARGING_USE_CASES,
     FLEX_USE_CASES,
+    LINK_CARRIERS,
+    LOAD_CARRIERS,
+    STORE_CARRIER,
     WORKING_DIR,
     is_legacy_scenario,
     read_simbev_metadata_file,
@@ -1058,27 +1060,6 @@ def write_model_data_to_db(
         print("    Writing lowflex scenario...")
         write_to_db(write_lowflex_model=True)
 
-    # Flexibility diagnostics (exports A and D), new methodology only.
-    #
-    # These belong here and never inside `write_to_db()`: that inner
-    # function runs twice for flexible scenarios -- once for the flex
-    # model, once for lowflex -- which would duplicate every row and
-    # violate the (scenario, bus_id) primary key. Dumb charging
-    # scenarios take the single call branch and would not reproduce the
-    # bug.
-    if not is_legacy_scenario(scenario_name):
-        print("    Writing flexibility diagnostics...")
-        write_flex_timeseries(
-            bus_id=bus_id,
-            scenario_name=scenario_name,
-            hourly_load_time_series_df=hourly_load_time_series_df,
-        )
-        write_charging_profile_use_case(
-            bus_id=bus_id,
-            scenario_name=scenario_name,
-            hourly_load_time_series_df=hourly_load_time_series_df,
-        )
-
     # Export to working dir if requested
     if sources.files["original_data"]["model_timeseries"][
         "export_results_to_csv"
@@ -1087,20 +1068,34 @@ def write_model_data_to_db(
 
 
 def delete_model_data_from_db():
-    """Delete all eMob MIT data from eTraGo PF tables"""
+    """Delete all eMob MIT data from eTraGo PF tables.
+
+    Covers both methodologies and all scenarios: the district models
+    (`BEV_charger`, `land_transport_EV`) and the transmission models of the
+    new methodology (`BEV_charger_transmission`,
+    `land_transport_EV_transmission`), with their `Li_ion` buses and
+    `battery_storage` stores.
+
+    * Links are matched by carrier and their AC end (`bus0`) only, not by
+      their `Li_ion` end: a link whose `Li_ion` bus an earlier, crashed run
+      already removed would otherwise never be matched again.
+    * Stores are matched on `Li_ion` buses only; other datasets write
+      `battery_storage` stores as well, e.g. HGVCharging on its
+      `HGV_charger` buses.
+    """
+    link_carriers = list(LINK_CARRIERS.values())
+    load_carriers = list(LOAD_CARRIERS.values())
+
     with db.session_scope() as session:
         subquery_bus_de = (
             session.query(EgonPfHvBus.bus_id)
             .filter(EgonPfHvBus.country == "DE")
             .subquery()
         )
-        # MIV stores sit on its own Li_ion buses only. Filtering stores by
-        # DE bus alone would also delete other datasets' battery_storage
-        # stores, e.g. HGVCharging's on its HGV_charger buses.
         subquery_bus_li_ion = (
             session.query(EgonPfHvBus.bus_id)
             .filter(
-                EgonPfHvBus.carrier == "Li_ion",
+                EgonPfHvBus.carrier == BUS_CARRIER,
                 EgonPfHvBus.country == "DE",
             )
             .subquery()
@@ -1110,9 +1105,8 @@ def delete_model_data_from_db():
         subquery = (
             session.query(EgonPfHvLink.link_id)
             .filter(
-                EgonPfHvLink.carrier == "BEV_charger",
+                EgonPfHvLink.carrier.in_(link_carriers),
                 EgonPfHvLink.bus0.in_(subquery_bus_de),
-                EgonPfHvLink.bus1.in_(subquery_bus_de),
             )
             .subquery()
         )
@@ -1123,16 +1117,15 @@ def delete_model_data_from_db():
 
         # Links
         session.query(EgonPfHvLink).filter(
-            EgonPfHvLink.carrier == "BEV_charger",
+            EgonPfHvLink.carrier.in_(link_carriers),
             EgonPfHvLink.bus0.in_(subquery_bus_de),
-            EgonPfHvLink.bus1.in_(subquery_bus_de),
         ).delete(synchronize_session=False)
 
         # Store TS
         subquery = (
             session.query(EgonPfHvStore.store_id)
             .filter(
-                EgonPfHvStore.carrier == "battery_storage",
+                EgonPfHvStore.carrier == STORE_CARRIER,
                 EgonPfHvStore.bus.in_(subquery_bus_li_ion),
             )
             .subquery()
@@ -1144,7 +1137,7 @@ def delete_model_data_from_db():
 
         # Stores
         session.query(EgonPfHvStore).filter(
-            EgonPfHvStore.carrier == "battery_storage",
+            EgonPfHvStore.carrier == STORE_CARRIER,
             EgonPfHvStore.bus.in_(subquery_bus_li_ion),
         ).delete(synchronize_session=False)
 
@@ -1152,7 +1145,7 @@ def delete_model_data_from_db():
         subquery = (
             session.query(EgonPfHvLoad.load_id)
             .filter(
-                EgonPfHvLoad.carrier == "land_transport_EV",
+                EgonPfHvLoad.carrier.in_(load_carriers),
                 EgonPfHvLoad.bus.in_(subquery_bus_de),
             )
             .subquery()
@@ -1164,13 +1157,13 @@ def delete_model_data_from_db():
 
         # Loads
         session.query(EgonPfHvLoad).filter(
-            EgonPfHvLoad.carrier == "land_transport_EV",
+            EgonPfHvLoad.carrier.in_(load_carriers),
             EgonPfHvLoad.bus.in_(subquery_bus_de),
         ).delete(synchronize_session=False)
 
         # Buses
         session.query(EgonPfHvBus).filter(
-            EgonPfHvBus.carrier == "Li_ion",
+            EgonPfHvBus.carrier == BUS_CARRIER,
             EgonPfHvBus.country == "DE",
         ).delete(synchronize_session=False)
 

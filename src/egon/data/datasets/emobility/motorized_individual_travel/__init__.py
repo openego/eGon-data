@@ -75,7 +75,6 @@ from egon.data.datasets.emobility.motorized_individual_travel.ev_allocation impo
 )
 from egon.data.datasets.emobility.motorized_individual_travel.flex_diagnostics import (  # noqa: E501
     log_diagnostics_checks,
-    write_energy_balance,
 )
 from egon.data.datasets.emobility.motorized_individual_travel.helpers import (
     COLUMNS_KBA,
@@ -99,6 +98,9 @@ from egon.data.datasets.emobility.motorized_individual_travel.model_timeseries i
     delete_model_data_from_db,
     generate_model_data_bunch,
     generate_model_data_remaining,
+)
+from egon.data.datasets.emobility.motorized_individual_travel.placement_model import (  # noqa: E501
+    generate_placement_models,
 )
 
 
@@ -628,17 +630,12 @@ class MotorizedIndividualTravel(Dataset):
     version: str = "0.1.3"
 
     def __init__(self, dependencies):
+        parallel_tasks = MotorizedIndividualTravel.sources.files[
+            "original_data"
+        ]["model_timeseries"].get("parallel_tasks", 1)
+
         def generate_model_data_tasks(scenario_name):
-            """Dynamically generate tasks for model data creation."""
-            # Use class attributes directly
-            mit_original_data = MotorizedIndividualTravel.sources.files[
-                "original_data"
-            ]
-
-            parallel_tasks = mit_original_data["model_timeseries"].get(
-                "parallel_tasks", 1
-            )
-
+            """Dynamically generate the legacy model data tasks."""
             # Replicate the logic for MVGD_MIN_COUNT locally
             testmode_off = (
                 config.settings()["egon-data"]["--dataset-boundary"]
@@ -667,10 +664,7 @@ class MotorizedIndividualTravel(Dataset):
                 )
 
             # Grid districts beyond the parallel bunches above are
-            # processed by one additional task per scenario. Generating
-            # it for every configured scenario (rather than dispatching
-            # on scenario name) makes it impossible to silently drop
-            # those grid districts when a new scenario is added.
+            # processed by one additional task per scenario.
             tasks.add(
                 PythonOperator(
                     task_id=(f"generate_model_data_{scenario_name}_remaining"),
@@ -679,6 +673,26 @@ class MotorizedIndividualTravel(Dataset):
                 )
             )
             return tasks
+
+        def generate_placement_model_tasks(scenario_name):
+            """One task per share of the scenario's AC buses, cf.
+            :func:`.placement_model.generate_placement_models`. The shares
+            are taken by bus id, so no bus can fall between two tasks."""
+            return {
+                PythonOperator(
+                    task_id=(
+                        f"generate_model_data_{scenario_name}_"
+                        f"part{part + 1}of{parallel_tasks}"
+                    ),
+                    python_callable=generate_placement_models,
+                    op_kwargs={
+                        "scenario_name": scenario_name,
+                        "part": part,
+                        "parts": parallel_tasks,
+                    },
+                )
+                for part in range(parallel_tasks)
+            }
 
         # Both methodologies are wired unconditionally: each task splits
         # the configured scenario list into legacy and new and no-ops for
@@ -720,12 +734,9 @@ class MotorizedIndividualTravel(Dataset):
         for scenario_name in config.settings()["egon-data"]["--scenarios"]:
             tasks_per_scenario.update(
                 generate_model_data_tasks(scenario_name=scenario_name)
+                if is_legacy_scenario(scenario_name)
+                else generate_placement_model_tasks(scenario_name)
             )
-
-        # The annual energy balance reads the imported tables and the
-        # allocation, not the timeseries, so it runs alongside the model
-        # data bunches rather than after them.
-        tasks_per_scenario.add(write_energy_balance)
 
         tasks = tasks + (
             tasks_per_scenario,

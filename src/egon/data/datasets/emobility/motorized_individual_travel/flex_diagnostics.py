@@ -1,21 +1,25 @@
 """
 Flexibility diagnostics of the new eMobility MIT/LGV methodology.
 
-The eTraGo model shape does not record which reference point the
-`land_transport_EV` load is measured against: it carries the *grid-side
+The `land_transport_EV` load of the eTraGo model carries the *grid-side
 charging energy* in dumb and lowflex scenarios but the *battery-side
 driving energy* in flexible ones. The three exports of this module write
-what the pipeline already computes but used to discard, so that
-cross-scenario and flex/lowflex comparisons are well defined without
-knowing which model shape a scenario got:
+both sides, per model and hour, so that cross-scenario and flex/lowflex
+comparisons are well defined without knowing which model shape a scenario
+got:
 
 * **A** -- :class:`EgonEvMitLgvFlexTimeseries`: the grid-side dumb
-  charging load, its flexible share and the battery-side driving load
-  per MV grid district and hour,
-* **B** -- :class:`EgonEvMitLgvEnergyBalance`: an annual energy balance
-  per grid district, charging use case and vehicle type,
-* **D** -- :class:`EgonEvMitLgvChargingProfileUseCase`: the grid-side
-  dumb charging load per grid district, hour *and* use case.
+  charging load, its flexible share and the battery-side driving load,
+* **B** -- :class:`EgonEvMitLgvEnergyBalance`: the annual energy per
+  charging use case and vehicle type,
+* **D** -- :class:`EgonEvMitLgvChargingProfileUseCase`: the grid-side dumb
+  charging load per charging use case.
+
+All three are keyed by the AC bus of the model and the model type
+(`district` or `transmission`); the transmission models on one bus are
+aggregated. They are written by
+:func:`.placement_model.generate_placement_models` from the same placements
+the eTraGo model is built from.
 
 Reference points
 ----------------
@@ -23,39 +27,20 @@ Over a year::
 
     Sum(driving_load) = eta_cp * Sum(charging_load_grid)
 
-is an identity, not an inconsistency. It holds up to two terms:
-
-1. `driving_load` is filled only where the state of charge actually
-   decreases, so PHEV kilometres driven on fuel never enter it;
-2. the annual battery state-of-charge drift of the fleet -- the store is
-   not cyclic and the delivered events carry the same drift (0.11 % on
-   delivery v1.4).
+holds exactly, up to the energy that dumb charging past the year end
+loses to the crop: the driving load *is* the deficit of the placements,
+i.e. their battery-side charging demand (ADR-0001).
 
 `charging_load_grid_flex` (export A) and `flexible` (export B) are a
 **potential, not a realised flexibility**: they are populated for dumb
-charging scenarios as well, which get no bus, link or store at all. Read
-as "share of charging that occurs at a use case eligible for flexible
-charging" the values are meaningful and comparable across scenarios;
-read as "flexibility the model used" they are wrong for dumb charging
-scenarios and incomplete for the others, where realised usage is the
-difference against the eTraGo result.
+charging scenarios as well, which get no bus, link or store at all.
 
-These tables are written for the new methodology only: the legacy
-use-case taxonomy (`public`/`home`/`work`/empty) would make exports B
-and D incomparable to the new scenarios.
+These tables are written for the new methodology only.
 """
 
 import json
 
-from sqlalchemy import (
-    BigInteger,
-    Boolean,
-    Column,
-    Float,
-    ForeignKey,
-    Integer,
-    String,
-)
+from sqlalchemy import BigInteger, Boolean, Column, Float, Integer, String
 from sqlalchemy.dialects.postgresql import ARRAY, REAL
 from sqlalchemy.ext.declarative import declarative_base
 
@@ -65,7 +50,6 @@ from egon.data.datasets.emobility.motorized_individual_travel.helpers import (
     FLEX_USE_CASES,
     is_legacy_scenario,
 )
-from egon.data.datasets.mv_grid_districts import MvGridDistricts
 
 Base = declarative_base()
 
@@ -87,9 +71,16 @@ class EgonEvMitLgvFlexTimeseries(Base):
     """
     Class definition of table demand.egon_ev_mit_lgv_flex_timeseries.
 
-    Export A: one row per MV grid district and scenario.
+    Export A: one row per scenario, AC bus and model type.
 
     **Columns**
+
+    bus_id:
+        AC bus of the model: an MV grid district's bus, or an EHV
+        substation's bus for transmission models at voltage levels 1-2.
+    model_type:
+        `district` or `transmission`; the transmission models on one bus
+        are aggregated.
 
     charging_load_grid:
         Grid-side charging load of the dumb charging schedule, hourly
@@ -122,9 +113,8 @@ class EgonEvMitLgvFlexTimeseries(Base):
     __table_args__ = {"schema": "demand"}
 
     scenario = Column(String, primary_key=True)
-    bus_id = Column(
-        Integer, ForeignKey(MvGridDistricts.bus_id), primary_key=True
-    )
+    bus_id = Column(Integer, primary_key=True)
+    model_type = Column(String(12), primary_key=True)
     charging_load_grid = Column(ARRAY(REAL))
     charging_load_grid_flex = Column(ARRAY(REAL))
     driving_load = Column(ARRAY(REAL))
@@ -134,13 +124,8 @@ class EgonEvMitLgvEnergyBalance(Base):
     """
     Class definition of table demand.egon_ev_mit_lgv_energy_balance.
 
-    Export B: annual energy balance per MV grid district, charging use
-    case and vehicle type. `use_case` is the empty string for driving
-    events and for parking events without charging.
-
-    Aggregable to municipality via
-    `demand.egon_ev_mit_lgv_mv_grid_district.ags`, to federal state or
-    to Germany.
+    Export B: annual energy balance per AC bus, model type, charging use
+    case and vehicle type, from the placements of the models.
 
     **Columns**
 
@@ -148,32 +133,27 @@ class EgonEvMitLgvEnergyBalance(Base):
         Whether the use case is eligible for flexible charging. This is
         eligibility, not realised usage.
     charging_demand_battery_mwh:
-        Charging energy at the battery side.
+        Charging energy at the battery side. This is also the deficit
+        energy, i.e. the driving load of the model.
     charging_demand_grid_mwh:
         Charging energy at the grid side, i.e. the battery side divided
         by `eta_cp` of the scenario.
-    driving_consumption_mwh:
-        Raw energy consumption of the driving events. Not
-        interchangeable with the modelled driving load of
-        :class:`EgonEvMitLgvFlexTimeseries`, which excludes PHEV
-        kilometres driven on fuel.
+    n_placements:
+        Number of placements.
     """
 
     __tablename__ = "egon_ev_mit_lgv_energy_balance"
     __table_args__ = {"schema": "demand"}
 
     scenario = Column(String, primary_key=True)
-    bus_id = Column(
-        Integer, ForeignKey(MvGridDistricts.bus_id), primary_key=True
-    )
+    bus_id = Column(Integer, primary_key=True)
+    model_type = Column(String(12), primary_key=True)
     use_case = Column(String(20), primary_key=True)
     type = Column(String(24), primary_key=True)
     flexible = Column(Boolean)
     charging_demand_battery_mwh = Column(Float)
     charging_demand_grid_mwh = Column(Float)
-    driving_consumption_mwh = Column(Float)
-    n_events = Column(BigInteger)
-    n_charging_events = Column(BigInteger)
+    n_placements = Column(BigInteger)
 
 
 class EgonEvMitLgvChargingProfileUseCase(Base):
@@ -182,21 +162,17 @@ class EgonEvMitLgvChargingProfileUseCase(Base):
     demand.egon_ev_mit_lgv_charging_profile_use_case.
 
     Export D: the grid-side charging load of the dumb charging schedule
-    per MV grid district, charging use case and hour, in MW.
+    per AC bus, model type, charging use case and hour, in MW.
 
-    Only use cases that actually occur in a grid district get a row --
-    `highway_fast` exists in a minority of grid districts -- so the
-    theoretical worst case of eight rows per grid district is not
-    reached in practice.
+    Only use cases that actually occur in a model get a row.
     """
 
     __tablename__ = "egon_ev_mit_lgv_charging_profile_use_case"
     __table_args__ = {"schema": "demand"}
 
     scenario = Column(String, primary_key=True)
-    bus_id = Column(
-        Integer, ForeignKey(MvGridDistricts.bus_id), primary_key=True
-    )
+    bus_id = Column(Integer, primary_key=True)
+    model_type = Column(String(12), primary_key=True)
     use_case = Column(String(20), primary_key=True)
     charging_load_grid = Column(ARRAY(REAL))
 
@@ -247,236 +223,149 @@ def eta_cp(scenario_name: str) -> float:
     return float(value.eta_cp.iloc[0])
 
 
-def write_flex_timeseries(
-    bus_id: int, scenario_name: str, hourly_load_time_series_df
-) -> None:
-    """Write export A for one MV grid district.
+def _delete(orm_class, scenario_name, bus_id, model_type, session) -> None:
+    """Delete one model's rows first, so a task retry does not hit the
+    primary key."""
+    session.query(orm_class).filter(
+        orm_class.scenario == scenario_name,
+        orm_class.bus_id == int(bus_id),
+        orm_class.model_type == model_type,
+    ).delete(synchronize_session=False)
 
-    Must be called from `write_model_data_to_db()` itself, never from
-    its nested `write_to_db()`: the latter runs twice for flexible
-    scenarios (once for the flex model, once for lowflex), which would
-    duplicate every row.
+
+def write_flex_timeseries(
+    scenario_name: str, bus_id: int, model_type: str, hourly: dict
+) -> None:
+    """Write export A for the models of one type on one AC bus.
 
     Parameters
     ----------
-    bus_id : int
-        ID of the MV grid district
     scenario_name : str
         Scenario name
-    hourly_load_time_series_df : pd.DataFrame
-        Hourly model timeseries of the grid district
+    bus_id : int
+        AC bus of the models
+    model_type : str
+        `district` or `transmission`
+    hourly : dict
+        Hourly series `dumb`, `dumb_flex` and `driving`, cf.
+        :func:`.placement_model.hourly_model`
     """
     with db.session_scope() as session:
-        # Delete first so a task retry does not hit the primary key.
-        session.query(EgonEvMitLgvFlexTimeseries).filter(
-            EgonEvMitLgvFlexTimeseries.scenario == scenario_name,
-            EgonEvMitLgvFlexTimeseries.bus_id == int(bus_id),
-        ).delete(synchronize_session=False)
+        _delete(
+            EgonEvMitLgvFlexTimeseries,
+            scenario_name,
+            bus_id,
+            model_type,
+            session,
+        )
         session.add(
             EgonEvMitLgvFlexTimeseries(
                 scenario=scenario_name,
                 bus_id=int(bus_id),
-                charging_load_grid=(
-                    hourly_load_time_series_df.load_time_series.astype(
-                        float
-                    ).to_list()
-                ),
-                charging_load_grid_flex=(
-                    hourly_load_time_series_df.flex_time_series.astype(
-                        float
-                    ).to_list()
-                ),
-                driving_load=(
-                    hourly_load_time_series_df.driving_load_time_series.astype(
-                        float
-                    ).to_list()
-                ),
+                model_type=model_type,
+                charging_load_grid=[float(_) for _ in hourly["dumb"]],
+                charging_load_grid_flex=[
+                    float(_) for _ in hourly["dumb_flex"]
+                ],
+                driving_load=[float(_) for _ in hourly["driving"]],
             )
         )
 
 
 def write_charging_profile_use_case(
-    bus_id: int, scenario_name: str, hourly_load_time_series_df
+    scenario_name: str, bus_id: int, model_type: str, hourly: dict
 ) -> None:
-    """Write export D for one MV grid district.
+    """Write export D for the models of one type on one AC bus.
 
-    Use cases that do not occur in the grid district are skipped, cf.
-    :class:`EgonEvMitLgvChargingProfileUseCase`.
+    Use cases that do not occur are skipped.
 
     Parameters
     ----------
-    bus_id : int
-        ID of the MV grid district
     scenario_name : str
         Scenario name
-    hourly_load_time_series_df : pd.DataFrame
-        Hourly model timeseries of the grid district
+    bus_id : int
+        AC bus of the models
+    model_type : str
+        `district` or `transmission`
+    hourly : dict
+        Hourly series `dumb_<use case>`, cf.
+        :func:`.placement_model.hourly_model`
     """
-    rows = []
-    for use_case in CHARGING_USE_CASES:
-        column = use_case_column(use_case)
-        if column not in hourly_load_time_series_df.columns:
-            # Missing rather than empty means the column was dropped
-            # somewhere between the event loop and the hourly resample,
-            # which would silently empty this export.
-            raise KeyError(
-                f"Column '{column}' missing from the hourly model "
-                f"timeseries of grid district {bus_id}. It has to be "
-                f"part of the `.agg()` dict of the hourly resample."
-            )
-        profile = hourly_load_time_series_df[column].astype(float)
-        if not (profile > 0).any():
-            continue
-        rows.append(
-            EgonEvMitLgvChargingProfileUseCase(
-                scenario=scenario_name,
-                bus_id=int(bus_id),
-                use_case=use_case,
-                charging_load_grid=profile.to_list(),
-            )
+    rows = [
+        EgonEvMitLgvChargingProfileUseCase(
+            scenario=scenario_name,
+            bus_id=int(bus_id),
+            model_type=model_type,
+            use_case=use_case,
+            charging_load_grid=[float(_) for _ in hourly[f"dumb_{use_case}"]],
         )
-
-    with db.session_scope() as session:
-        # Delete first so a task retry does not hit the primary key.
-        session.query(EgonEvMitLgvChargingProfileUseCase).filter(
-            EgonEvMitLgvChargingProfileUseCase.scenario == scenario_name,
-            EgonEvMitLgvChargingProfileUseCase.bus_id == int(bus_id),
-        ).delete(synchronize_session=False)
-        if rows:
-            session.add_all(rows)
-
-
-def write_energy_balance() -> None:
-    """Write export B for all configured new-methodology scenarios.
-
-    Runs once per scenario, not once per grid district, and depends only
-    on the imported tables plus the allocation -- not on the timeseries
-    generation.
-
-    Notes
-    -----
-    The event table (~72 million rows) must not be joined against the
-    vehicle instance table (up to ~40 million rows) directly; the
-    product would be ~1e11 rows. Both sides are aggregated first, cf.
-    the CTEs below.
-    """
-    scenarios = [
-        _
-        for _ in config.settings()["egon-data"]["--scenarios"]
-        if not is_legacy_scenario(_)
+        for use_case in CHARGING_USE_CASES
+        if (hourly[f"dumb_{use_case}"] > 0).any()
     ]
-    if not scenarios:
-        print(
-            "No scenario on the new methodology configured, skipping "
-            "the energy balance."
+    with db.session_scope() as session:
+        _delete(
+            EgonEvMitLgvChargingProfileUseCase,
+            scenario_name,
+            bus_id,
+            model_type,
+            session,
         )
-        return
+        session.add_all(rows)
 
-    flex_array = ", ".join(f"'{_}'" for _ in FLEX_USE_CASES)
 
-    for scenario_name in scenarios:
-        print(f"SCENARIO: {scenario_name}")
-        scenario_eta_cp = eta_cp(scenario_name)
-        print(f"  Writing energy balance (eta_cp = {scenario_eta_cp})...")
+def write_energy_balance_rows(
+    scenario_name: str, bus_id: int, model_type: str, balance
+) -> None:
+    """Write export B for the models of one type on one AC bus.
 
-        db.execute_sql(
-            f"""
-            DELETE FROM demand.egon_ev_mit_lgv_energy_balance
-            WHERE scenario = '{scenario_name}';
-
-            INSERT INTO demand.egon_ev_mit_lgv_energy_balance (
-                scenario, bus_id, use_case, type, flexible,
-                charging_demand_battery_mwh, charging_demand_grid_mwh,
-                driving_consumption_mwh, n_events, n_charging_events)
-            WITH ev_sums AS (
-                SELECT
-                    ev_id,
-                    COALESCE(use_case, '') AS use_case,
-                    COALESCE(
-                        SUM(charging_demand::double precision), 0
-                    ) AS charging_demand,
-                    COALESCE(
-                        SUM(consumption::double precision), 0
-                    ) AS consumption,
-                    COUNT(*) AS n_events,
-                    COUNT(*) FILTER (
-                        WHERE charging_demand > 0
-                    ) AS n_charging_events
-                FROM demand.egon_ev_mit_lgv_trip
-                WHERE scenario = '{scenario_name}'
-                GROUP BY ev_id, COALESCE(use_case, '')
-            ),
-            instances AS (
-                SELECT bus_id, ev_id, COUNT(*) AS n
-                FROM demand.egon_ev_mit_lgv_mv_grid_district
-                WHERE scenario = '{scenario_name}'
-                GROUP BY bus_id, ev_id
-            )
-            SELECT
-                '{scenario_name}',
-                i.bus_id,
-                s.use_case,
-                p.type,
-                s.use_case IN ({flex_array}) AS flexible,
-                SUM(s.charging_demand * i.n) / 1000.0,
-                SUM(s.charging_demand * i.n) / 1000.0
-                    / {scenario_eta_cp},
-                SUM(s.consumption * i.n) / 1000.0,
-                SUM(s.n_events * i.n),
-                SUM(s.n_charging_events * i.n)
-            FROM ev_sums s
-            JOIN instances i ON i.ev_id = s.ev_id
-            JOIN demand.egon_ev_mit_lgv_pool p
-                ON p.ev_id = s.ev_id AND p.scenario = '{scenario_name}'
-            GROUP BY i.bus_id, s.use_case, p.type;
-            """
+    Parameters
+    ----------
+    scenario_name : str
+        Scenario name
+    bus_id : int
+        AC bus of the models
+    model_type : str
+        `district` or `transmission`
+    balance : pandas.DataFrame
+        Columns `use_case`, `type`, `flexible`, `battery` and `grid`
+        (MWh) and `n_placements`
+    """
+    rows = [
+        EgonEvMitLgvEnergyBalance(
+            scenario=scenario_name,
+            bus_id=int(bus_id),
+            model_type=model_type,
+            use_case=row.use_case,
+            type=row.type,
+            flexible=bool(row.flexible),
+            charging_demand_battery_mwh=float(row.battery),
+            charging_demand_grid_mwh=float(row.grid),
+            n_placements=int(row.n_placements),
         )
-
-        summary = db.select_dataframe(
-            f"""
-            SELECT
-                COUNT(*) AS rows,
-                COUNT(DISTINCT bus_id) AS grid_districts,
-                SUM(charging_demand_grid_mwh) AS charging_grid_mwh,
-                SUM(charging_demand_grid_mwh) FILTER (
-                    WHERE flexible
-                ) AS charging_grid_flex_mwh,
-                SUM(driving_consumption_mwh) AS driving_mwh
-            FROM demand.egon_ev_mit_lgv_energy_balance
-            WHERE scenario = '{scenario_name}'
-            """
-        ).iloc[0]
-
-        flex_share = (
-            summary.charging_grid_flex_mwh / summary.charging_grid_mwh
-            if summary.charging_grid_mwh
-            else float("nan")
+        for row in balance.itertuples()
+    ]
+    with db.session_scope() as session:
+        _delete(
+            EgonEvMitLgvEnergyBalance,
+            scenario_name,
+            bus_id,
+            model_type,
+            session,
         )
-        print(
-            f"  {int(summary.rows)} rows in "
-            f"{int(summary.grid_districts)} grid districts; "
-            f"grid-side charging "
-            f"{summary.charging_grid_mwh / 1e6:.3f} TWh "
-            f"(flexible share {flex_share:.1%}), "
-            f"driving consumption "
-            f"{summary.driving_mwh / 1e6:.3f} TWh."
-        )
+        session.add_all(rows)
 
 
-def log_reference_point_check(tolerance: float = 0.01) -> None:
-    """Log the reference point identity of export A per grid district.
+def log_reference_point_check(tolerance: float = 1e-4) -> None:
+    """Log the reference point identity of export A per model.
 
-    Compares `Sum(driving_load)` against
-    `eta_cp * Sum(charging_load_grid)`. The identity is exact only up to
-    the PHEV fuel share and the annual battery state-of-charge drift, so
-    the residual is logged together with both terms rather than as a
-    bare pass/fail -- with either term omitted from the tolerance the
-    check reports a deviation for essentially every grid district.
+    Compares `Sum(driving_load)` against `eta_cp * Sum(charging_load_grid)`.
+    It holds exactly up to dumb charging cropped at the year end, which
+    the tolerance covers.
 
     Parameters
     ----------
     tolerance : float
-        Relative residual above which a grid district is listed
+        Relative residual above which a model is listed
     """
     scenarios = [
         _
@@ -495,6 +384,7 @@ def log_reference_point_check(tolerance: float = 0.01) -> None:
             f"""
             SELECT
                 bus_id,
+                model_type,
                 driving_sum,
                 {scenario_eta_cp} * charging_sum AS reference,
                 CASE WHEN charging_sum > 0
@@ -505,6 +395,7 @@ def log_reference_point_check(tolerance: float = 0.01) -> None:
             FROM (
                 SELECT
                     bus_id,
+                    model_type,
                     (SELECT SUM(v) FROM UNNEST(driving_load) v)
                         AS driving_sum,
                     (SELECT SUM(v) FROM UNNEST(charging_load_grid) v)
@@ -524,15 +415,18 @@ def log_reference_point_check(tolerance: float = 0.01) -> None:
         off = residuals[residuals.residual.abs() > tolerance]
         print(
             f"SCENARIO {scenario_name}: reference point check over "
-            f"{len(residuals)} grid districts. "
+            f"{len(residuals)} models. "
             f"Sum(driving_load) = {residuals.driving_sum.sum():.1f} MWh, "
             f"eta_cp * Sum(charging_load_grid) = "
             f"{residuals.reference.sum():.1f} MWh, "
             f"median residual {residuals.residual.median():.4%}, "
-            f"{len(off)} grid districts above {tolerance:.1%}."
+            f"{len(off)} models above {tolerance:.2%}."
         )
         if len(off) > 0:
-            print(f"  Grid districts above tolerance: {off.bus_id.to_list()}")
+            print(
+                "  Models above tolerance: "
+                f"{off[['bus_id', 'model_type']].to_dict('records')}"
+            )
 
 
 def log_use_case_consistency_check(tolerance: float = 1e-3) -> None:
@@ -560,6 +454,7 @@ def log_use_case_consistency_check(tolerance: float = 1e-3) -> None:
             WITH per_use_case AS (
                 SELECT
                     bus_id,
+                    model_type,
                     SUM(
                         (SELECT SUM(v) FROM UNNEST(charging_load_grid) v)
                     ) AS total,
@@ -570,11 +465,12 @@ def log_use_case_consistency_check(tolerance: float = 1e-3) -> None:
                     ) AS flex
                 FROM demand.egon_ev_mit_lgv_charging_profile_use_case
                 WHERE scenario = '{scenario_name}'
-                GROUP BY bus_id
+                GROUP BY bus_id, model_type
             ),
             aggregated AS (
                 SELECT
                     bus_id,
+                    model_type,
                     (SELECT SUM(v) FROM UNNEST(charging_load_grid) v)
                         AS total,
                     (SELECT SUM(v)
@@ -584,12 +480,14 @@ def log_use_case_consistency_check(tolerance: float = 1e-3) -> None:
             )
             SELECT
                 a.bus_id,
+                a.model_type,
                 a.total AS total_a,
                 COALESCE(d.total, 0) AS total_d,
                 a.flex AS flex_a,
                 COALESCE(d.flex, 0) AS flex_d
             FROM aggregated a
-            LEFT JOIN per_use_case d ON d.bus_id = a.bus_id
+            LEFT JOIN per_use_case d
+                ON d.bus_id = a.bus_id AND d.model_type = a.model_type
             """
         )
         if deviations.empty:
@@ -614,14 +512,14 @@ def log_use_case_consistency_check(tolerance: float = 1e-3) -> None:
         ]
         print(
             f"SCENARIO {scenario_name}: A/D consistency over "
-            f"{len(deviations)} grid districts, "
+            f"{len(deviations)} models, "
             f"{len(off)} above {tolerance:.2%}."
         )
         if len(off) > 0:
             print(
                 "  "
                 + json.dumps(
-                    off[["bus_id", "total_dev", "flex_dev"]]
+                    off[["bus_id", "model_type", "total_dev", "flex_dev"]]
                     .head(20)
                     .round(6)
                     .to_dict("records")
