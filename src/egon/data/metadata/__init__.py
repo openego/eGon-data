@@ -38,28 +38,36 @@ from egon.data.metadata.settings import OEM_BASE_DIR, OEM_OUT_DIR
 logger = logging.getLogger(__name__)
 
 
-def _inject_runtime_metadata(builder: MetadataBuilder) -> None:
+def _inject_runtime_metadata(
+    builder: MetadataBuilder, resources: list
+) -> None:
     """
-    Inject pipeline-specific runtime information into the OEMetadata builder.
+    Inject pipeline-specific runtime information into every resource.
 
-    Sets the publicationDate and appends a CI pipeline contributor entry
-    with values that are only known at pipeline execution time.
+    Sets each resource's publicationDate and appends a pipeline contributor
+    -- in OEMetadata v2 both are resource properties, so dataset-level
+    values would not reach the published per-table documents.
 
     Parameters
     ----------
     builder : omi.creation.builder.MetadataBuilder
         Initialized MetadataBuilder containing the base YAML metadata.
+    resources : list of dict
+        Resource dicts from the base metadata.
     """
     today_iso = datetime.date.today().isoformat()
-    builder.set_publication_date(today_iso)
-    builder.append_contributor_dataset(
-        {
-            "title": "CI Pipeline",
-            "organization": "egon-data",
-            "date": today_iso,
-            "comment": "Automated dataset generation run",
-        }
-    )
+    for resource in resources:
+        scope = builder.resource(resource["name"])
+        scope.set("publicationDate", today_iso)
+        scope.append_contributor(
+            {
+                "title": "eGon-data pipeline run",
+                "organization": "egon-data",
+                "roles": ["dataCollector"],
+                "date": today_iso,
+                "comment": "Automated dataset generation run",
+            }
+        )
 
 
 def _merge_database_schemas(
@@ -197,7 +205,7 @@ def upload_json_metadata():
         base_metadata = assemble_metadata_dict(OEM_BASE_DIR, dataset_id)
         builder = MetadataBuilder(base_metadata)
 
-        _inject_runtime_metadata(builder)
+        _inject_runtime_metadata(builder, base_metadata.get("resources", []))
         present = _merge_database_schemas(
             builder, engine, base_metadata.get("resources", [])
         )
