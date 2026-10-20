@@ -1,0 +1,163 @@
+name: grid.egon_gas_voronoi
+'@id': null
+title: Gas voronoi areas
+path: WILL_BE_SET_AT_PUBLICATION
+description: H2 and CH4 voronoi cells
+languages:
+- en-EN
+subject:
+- name: ''
+  '@id': null
+publicationDate: '2026-10-05'
+embargoPeriod:
+  start: ''
+  end: ''
+  isActive: false
+spatial:
+  location:
+    address: null
+    '@id': null
+    latitude: ''
+    longitude: ''
+  extent:
+    name: Germany
+    '@id': null
+    resolutionValue: ''
+    resolutionUnit: ''
+    boundingBox:
+    - 0
+    - 0
+    - 0
+    - 0
+    crs: ''
+temporal:
+  referenceDate: ''
+  timeseries:
+  - start: ''
+    end: ''
+    resolutionValue: ''
+    resolutionUnit: ''
+    alignment: ''
+    aggregationType: ''
+sources:
+- title: OpenStreetMap Data Extracts (Geofabrik)
+  authors: []
+  description: Full data extract of OpenStreetMap data for defined spatial extent
+    at "referenceDate"
+  publicationYear: null
+  path: https://download.geofabrik.de/europe/germany-210101.osm.pbf
+  sourceLicenses:
+  - name: ODbL-1.0
+    title: Open Data Commons Open Database License 1.0
+    path: https://opendatacommons.org/licenses/odbl/1.0/index.html
+    instruction: 'You are free: To Share, To Create, To Adapt; As long as you: Attribute,
+      Share-Alike, Keep open!'
+    attribution: © OpenStreetMap contributors
+    copyrightStatement: null
+- title: SciGRID_gas IGGIELGN
+  authors: []
+  description: The SciGRID_gas dataset represents the European gas transport network
+    (pressure levels of 20 bars and higher) including the geo-referenced transport
+    pipelines, compressor stations, LNG terminals, storage, production sites, gas
+    power plants, border points, and demand time series.
+  publicationYear: null
+  path: https://dx.doi.org/10.5281/zenodo.4896526
+  sourceLicenses:
+  - name: CC-BY-4.0
+    title: Creative Commons Attribution 4.0 International
+    path: https://creativecommons.org/licenses/by/4.0/legalcode
+    instruction: 'You are free: To Share, To Create, To Adapt; As long as you: Attribute.'
+    attribution: Jan Diettrich; Adam Pluta; Wided Medjroubi (DLR-VE)
+    copyrightStatement: null
+- title: 'Informationssystem Salz: Planungsgrundlagen, Auswahlkriterien und Potenzialabschätzung
+    für die Errichtung von Salzkavernen zur Speicherung von Erneuerbaren Energien
+    (Wasserstoff und Druckluft) – Doppelsalinare und flach lagernde Salzschichten.
+    Teilprojekt Bewertungskriterien und Potenzialabschätzung'
+  authors: []
+  description: 'Shapefiles corresponding to the data provided in figure 7-1 (Donadei,
+    S., et al., 2020, p. 7-5). The energy storage potential data are provided per
+    federal state in table 7-1 (Donadei, S., et al., 2020, p. 7-4). Note: Please include
+    all bgr data sources when using the data.'
+  publicationYear: null
+  path: https://dx.doi.org/10.5281/zenodo.4896526
+  sourceLicenses:
+  - name: geonutzv-de-2013-03-19
+    title: Verordnung zur Festlegung der Nutzungsbestimmungen für die Bereitstellung
+      von Geodaten des Bundes
+    path: https://www.gesetze-im-internet.de/geonutzv/
+    instruction: Geodaten und Geodatendienste, einschließlich zugehöriger Metadaten,
+      werden für alle derzeit bekannten sowie für alle zukünftig bekannten Zwecke
+      kommerzieller und nicht kommerzieller Nutzung geldleistungsfrei zur Verfügung
+      gestellt, soweit durch besondere Rechtsvorschrift nichts anderes bestimmt ist
+      oder vertragliche oder gesetzliche Rechte Dritter dem nicht entgegenstehen.
+    attribution: © BGR, Hannover, 2021
+    copyrightStatement: null
+licenses:
+- name: ODbL-1.0
+  title: Open Data Commons Open Database License 1.0
+  path: https://opendatacommons.org/licenses/odbl/1.0/index.html
+  instruction: 'You are free: To Share, To Create, To Adapt; As long as you: Attribute,
+    Share-Alike, Keep open!'
+  attribution: © eGon development team
+  copyrightStatement: null
+contributors:
+- title: Francesco Witte
+  path: null
+  organization: null
+  roles:
+  - ''
+  date: null
+  object: null
+  comment: null
+- title: eGon-data metadata migration
+  path: https://github.com/openego/eGon-data
+  roles:
+  - dataCurator
+  organization: null
+  date: '2026-10-20'
+  object: metadata
+  comment: Migrated from the OEMetadata v1.4 table comment of a full eGon-data run
+    to OEMetadata v2 with OMI.
+type: Table
+format: PostgreSQL
+encoding: UTF-8
+schema:
+  fields:
+  - name: scn_name
+    description: Name of the scenario
+    type: str
+    nullable: true
+    unit: null
+    isAbout: []
+    valueReference: []
+  - name: bus_id
+    description: Unique identifier
+    type: integer
+    nullable: false
+    unit: null
+    isAbout: []
+    valueReference: []
+  - name: carrier
+    description: Carrier of the voronoi cell
+    type: str
+    nullable: true
+    unit: null
+    isAbout: []
+    valueReference: []
+  - name: geom
+    description: Voronoi cell geometry
+    type: Geometry(Polygon, 4326)
+    nullable: true
+    unit: null
+    isAbout: []
+    valueReference: []
+  primaryKey:
+  - scn_name
+  - bus_id
+  foreignKeys: []
+dialect:
+  delimiter: null
+  decimalSeparator: .
+review:
+  path: ''
+  badge: ''
