@@ -104,14 +104,13 @@ def status_cmd(scope, strict):
 
     all_classes, scoped = _scoped_classes(scope)
     expected = expected_tables(scoped)
-    ds_ids = _dataset_ids_for(scoped)
 
     report = coverage_report(
         OEM_BASE_DIR,
         sorted(expected),
-        dataset_ids=sorted(set(ds_ids.values())) if scope else None,
     )
-    # with --scope, the dataset's tables outside the scope are not orphans
+    # the store is searched as a whole: a shared table lives in its owner's
+    # dataset, and tables expected elsewhere are not orphans
     produced_all = expected_tables(all_classes)
     report.orphans = [o for o in report.orphans if o not in produced_all]
     click.echo(report.summary())
