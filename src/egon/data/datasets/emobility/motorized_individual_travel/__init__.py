@@ -54,11 +54,15 @@ from egon.data.datasets.emobility.mit_lgv_input_data import (
 from egon.data.datasets.emobility.motorized_individual_travel import (
     flex_diagnostics,
 )
+from egon.data.datasets.emobility.motorized_individual_travel.charging_locations import (  # noqa: E501
+    import_charging_locations,
+)
 from egon.data.datasets.emobility.motorized_individual_travel.db_classes import (  # noqa: E501
+    EgonEvMitLgvChargingLocation,
     EgonEvMitLgvCountMunicipality,
     EgonEvMitLgvCountMvGridDistrict,
     EgonEvMitLgvCountRegistrationDistrict,
-    EgonEvMitLgvMappingEvMunicipality,
+    EgonEvMitLgvLocationEvents,
     EgonEvMitLgvMetadata,
     EgonEvMitLgvMvGridDistrict,
     EgonEvMitLgvPool,
@@ -84,12 +88,11 @@ from egon.data.datasets.emobility.motorized_individual_travel.helpers import (
     simbev_metadata_path,
 )
 from egon.data.datasets.emobility.motorized_individual_travel.mit_import import (  # noqa: E501
-    allocate_ev_instances_to_grid_districts,
     download_and_extract,
+    import_charging_events,
     import_ev_counts,
-    import_ev_events,
-    import_ev_municipality_mapping,
     import_ev_pool,
+    import_location_events,
     log_import_consistency,
 )
 from egon.data.datasets.emobility.motorized_individual_travel.model_timeseries import (  # noqa: E501
@@ -119,10 +122,6 @@ def create_tables():
     All tables are dropped and recreated, so every configured scenario
     has to be built in the same run.
 
-    Note that `demand.egon_ev_mit_lgv_charging_location` is *not* created
-    here: it is owned by the charging infrastructure dataset, which fills
-    it, and the two datasets run in parallel.
-
     Returns
     -------
     None
@@ -136,11 +135,26 @@ def create_tables():
         EgonEvMitLgvPool,
         EgonEvMitLgvTrip,
         EgonEvMitLgvMvGridDistrict,
-        EgonEvMitLgvMappingEvMunicipality,
+        EgonEvMitLgvChargingLocation,
+        EgonEvMitLgvLocationEvents,
         EgonEvMitLgvMetadata,
     ):
         table.__table__.drop(bind=engine, checkfirst=True)
         table.__table__.create(bind=engine, checkfirst=True)
+
+    # Placements are stored as int arrays of several GB per scenario;
+    # lz4 compresses them better and faster than the default pglz.
+    db.execute_sql(
+        f"ALTER TABLE {EgonEvMitLgvLocationEvents.__table__.schema}."
+        f"{EgonEvMitLgvLocationEvents.__table__.name} "
+        f"ALTER COLUMN event_ids SET COMPRESSION lz4;"
+    )
+
+    # The vehicle -> municipality mapping of the previous version of the
+    # new methodology is no longer written; remove a left-over table.
+    db.execute_sql(
+        "DROP TABLE IF EXISTS demand.egon_ev_mit_lgv_mapping_ev_municipality;"
+    )
 
     flex_diagnostics.create_tables()
 
@@ -681,22 +695,22 @@ class MotorizedIndividualTravel(Dataset):
                     extract_trip_file,
                     write_evs_trips_to_db,
                 ),
-                # Sequential rather than parallel: the event import
-                # alone is tens of millions of rows and the four would
-                # only compete for the same database.
+                # New methodology. Sequential: in test mode each step
+                # selects by the result of the previous one (locations
+                # inside the boundary -> their placements -> the events
+                # placed -> their profiles), and on a full run the imports
+                # would only compete for the same database.
                 (
                     download_and_extract,
+                    import_charging_locations,
+                    import_location_events,
+                    import_charging_events,
                     import_ev_pool,
                     import_ev_counts,
-                    import_ev_municipality_mapping,
-                    import_ev_events,
                 ),
             },
             write_metadata_to_db,
-            {
-                allocate_evs_to_grid_districts,
-                allocate_ev_instances_to_grid_districts,
-            },
+            allocate_evs_to_grid_districts,
             log_import_consistency,
             delete_model_data_from_db,
         )

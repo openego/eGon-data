@@ -5,9 +5,11 @@ DB tables / SQLAlchemy ORM classes for motorized individual travel
 import datetime
 import json
 
+from geoalchemy2 import Geometry
 from omi.dialects import get_dialect
 from sqlalchemy import (
     BigInteger,
+    Boolean,
     Column,
     ForeignKey,
     Index,
@@ -15,7 +17,7 @@ from sqlalchemy import (
     SmallInteger,
     String,
 )
-from sqlalchemy.dialects.postgresql import JSONB, REAL
+from sqlalchemy.dialects.postgresql import ARRAY, JSONB, REAL
 from sqlalchemy.ext.declarative import declarative_base
 
 from egon.data import config, db
@@ -66,6 +68,10 @@ class EgonEvMitLgvPool(Base):
     simbev_ev_id:
         id of EV as exported by simBEV. Legacy methodology only, NULL
         for the new one (D16).
+    n_vehicles:
+        Number of vehicles instantiated from the profile across all of
+        Germany, i.e. how often each of its charging events is placed.
+        New methodology only, NULL for the legacy one.
     """
 
     __tablename__ = "egon_ev_mit_lgv_pool"
@@ -77,6 +83,7 @@ class EgonEvMitLgvPool(Base):
     # `bev_light_duty_vehicle` is 22 characters, the longest value.
     type = Column(String(24))
     simbev_ev_id = Column(Integer)
+    n_vehicles = Column(Integer)
 
 
 class EgonEvMitLgvTrip(Base):
@@ -297,25 +304,132 @@ class EgonEvMitLgvMvGridDistrict(Base):
     ags = Column(Integer, index=True)
 
 
-class EgonEvMitLgvMappingEvMunicipality(Base):
+class EgonEvMitLgvChargingLocation(Base):
     """
-    Class definition of table
-    demand.egon_ev_mit_lgv_mapping_ev_municipality.
+    Class definition of table demand.egon_ev_mit_lgv_charging_location.
 
-    The delivered allocation of vehicle instances to municipalities: one
-    row per vehicle (D7). A pool EV occurring *n* times in the same
-    `ags` yields *n* rows with distinct `id`.
+    The charging locations delivered with the M1+N1 input data, generated
+    together with the vehicles and their events, and their assignment to
+    the grid. New methodology only.
 
-    New methodology only.
+    **Columns**
+
+    location_id:
+        Provider-side id of the location, unique per scenario.
+    charging_points:
+        Number of charging points at the location. A point is occupied
+        only while a vehicle charges, not while it stays parked.
+    average_charging_capacity:
+        Average charging capacity of a charging point, in kW.
+    use_case:
+        Charging use case of the location, one of depot, home_detached,
+        home_apartment, work, street, retail, urban_fast, highway_fast.
+    candidate_uid:
+        Provider-side id of the location within its use case.
+    is_synthetic_location:
+        Whether the location is a fallback centroid rather than a real
+        candidate site. Occurs in any use case.
+    mv_grid_id:
+        MV grid district the location lies in (point-in-polygon), or the
+        nearest one for a location outside every district, cf.
+        `assignment`.
+    grid_connection_id:
+        Groups the locations at exactly identical coordinates, which
+        share one grid connection. Unique per scenario.
+    voltage_level:
+        Voltage level (1-7) of the grid connection, from the summed
+        installed capacity of all its locations.
+    model_type:
+        `district` (voltage levels 4-7): part of the district model of
+        `mv_grid_id`; `transmission` (1-3): a model of its own per grid
+        connection.
+    bus_id:
+        eTraGo AC bus of the model: the MV grid district's bus for
+        voltage levels 3-7, the EHV substation's bus for levels 1-2.
+    assignment:
+        `within` if the location lies in `mv_grid_id`, `nearest` if it
+        was assigned to the nearest district.
+
+    Notes
+    -----
+    The placements -- which charging events happen at a location -- are
+    in :class:`EgonEvMitLgvLocationEvents`.
     """
 
-    __tablename__ = "egon_ev_mit_lgv_mapping_ev_municipality"
+    __tablename__ = "egon_ev_mit_lgv_charging_location"
+    __table_args__ = (
+        Index(
+            "idx_egon_ev_mit_lgv_charging_location_model",
+            "scenario",
+            "model_type",
+            "bus_id",
+        ),
+        Index(
+            "idx_egon_ev_mit_lgv_charging_location_connection",
+            "scenario",
+            "grid_connection_id",
+        ),
+        {"schema": "demand"},
+    )
+
+    location_id = Column(BigInteger, primary_key=True)
+    scenario = Column(String, ForeignKey(EgonScenario.name), primary_key=True)
+    charging_points = Column(Integer)
+    average_charging_capacity = Column(Integer)
+    use_case = Column(String(20))
+    candidate_uid = Column(String)
+    is_synthetic_location = Column(Boolean)
+    mv_grid_id = Column(
+        Integer, ForeignKey(MvGridDistricts.bus_id), index=True
+    )
+    grid_connection_id = Column(Integer)
+    voltage_level = Column(SmallInteger)
+    model_type = Column(String(12))
+    bus_id = Column(Integer)
+    assignment = Column(String(8))
+    geom = Column(Geometry("POINT", 3035))
+
+
+class EgonEvMitLgvLocationEvents(Base):
+    """
+    Class definition of table demand.egon_ev_mit_lgv_location_events.
+
+    The placements of the new methodology: one row per charging location,
+    listing the charging event of every placement there. A placement is
+    one vehicle's realisation of one charging event of its profile at one
+    location, so an event id repeats in an array when several vehicles
+    of the same profile charge at the location at the same time.
+
+    Folded from the delivered `ev_mapping_event_location.parquet`, which
+    has one row per placement (~5e8 for status2024, ~5e9 for each reGon
+    scenario) -- too many for one row each in the database.
+
+    **Columns**
+
+    event_ids:
+        Ids of the charging events, references
+        `demand.egon_ev_mit_lgv_trip.event_id` of the same scenario.
+
+    Notes
+    -----
+    The placements of the charging locations of one MV grid district::
+
+        SELECT cl.location_id, t.*
+        FROM demand.egon_ev_mit_lgv_location_events le
+        JOIN demand.egon_ev_mit_lgv_charging_location cl
+            USING (scenario, location_id)
+        CROSS JOIN unnest(le.event_ids) AS e(event_id)
+        JOIN demand.egon_ev_mit_lgv_trip t
+            ON t.scenario = le.scenario AND t.event_id = e.event_id
+        WHERE le.scenario = :scenario AND cl.mv_grid_id = :mv_grid_id;
+    """
+
+    __tablename__ = "egon_ev_mit_lgv_location_events"
     __table_args__ = {"schema": "demand"}
 
-    id = Column(BigInteger, primary_key=True)
     scenario = Column(String, ForeignKey(EgonScenario.name), primary_key=True)
-    ev_id = Column(Integer, nullable=False, index=True)
-    ags = Column(Integer, nullable=False, index=True)
+    location_id = Column(BigInteger, primary_key=True)
+    event_ids = Column(ARRAY(Integer))
 
 
 class EgonEvMitLgvMetadata(Base):

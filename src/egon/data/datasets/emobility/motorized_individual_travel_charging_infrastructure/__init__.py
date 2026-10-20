@@ -4,6 +4,11 @@ Motorized Individual Travel (MIT) Charging Infrastructure
 Main module for preparation of static model data for charging infrastructure for
 motorized individual travel.
 
+Legacy methodology (`eGon2035`) only. The charging locations of the new
+methodology are delivered with the vehicles and their events and imported
+by the MIT dataset itself, cf.
+:mod:`egon.data.datasets.emobility.motorized_individual_travel.charging_locations`.
+
 """
 
 from __future__ import annotations
@@ -16,17 +21,9 @@ import requests
 
 from egon.data import config, db
 from egon.data.datasets import Dataset, DatasetSources, DatasetTargets
-from egon.data.datasets.emobility.mit_lgv_input_data import (
-    ZENODO_URLS,
-    legacy_scenarios,
-)
-from egon.data.datasets.emobility.motorized_individual_travel_charging_infrastructure.charging_location_import import (  # noqa: E501
-    download_input_data,
-    import_charging_locations,
-)
+from egon.data.datasets.emobility.mit_lgv_input_data import legacy_scenarios
 from egon.data.datasets.emobility.motorized_individual_travel_charging_infrastructure.db_classes import (  # noqa: E501
     EgonEmobChargingInfrastructure,
-    EgonEvMitLgvChargingLocation,
     add_metadata,
 )
 from egon.data.datasets.emobility.motorized_individual_travel_charging_infrastructure.infrastructure_allocation import (  # noqa: E501
@@ -45,12 +42,10 @@ def create_tables() -> None:
     None
     """
     engine = db.engine()
-    for table in (
-        EgonEmobChargingInfrastructure,
-        EgonEvMitLgvChargingLocation,
-    ):
-        table.__table__.drop(bind=engine, checkfirst=True)
-        table.__table__.create(bind=engine, checkfirst=True)
+    EgonEmobChargingInfrastructure.__table__.drop(bind=engine, checkfirst=True)
+    EgonEmobChargingInfrastructure.__table__.create(
+        bind=engine, checkfirst=True
+    )
 
     logger.debug("Created tables.")
 
@@ -126,14 +121,6 @@ class MITChargingInfrastructure(Dataset):
     sources = DatasetSources(
         urls={
             "tracbev": "https://zenodo.org/record/6466480/files/data.zip?download=1",
-            # Delivered M1+N1 input data, one zip archive per scenario.
-            # Defined in
-            # `egon.data.datasets.emobility.mit_lgv_input_data`, which
-            # the MIT dataset reads them from as well.
-            **{
-                f"input_data_{scenario_name}": url
-                for scenario_name, url in ZENODO_URLS.items()
-            },
         },
         tables={
             "mv_grid_districts": "grid.egon_mv_grid_district",
@@ -174,7 +161,6 @@ class MITChargingInfrastructure(Dataset):
             "charging_infrastructure": (
                 "grid.egon_emob_charging_infrastructure"
             ),
-            "charging_location": ("demand.egon_ev_mit_lgv_charging_location"),
         },
     )
 
@@ -200,9 +186,6 @@ class MITChargingInfrastructure(Dataset):
       * :py:class:`grid.egon_emob_charging_infrastructure
         <egon.data.datasets.emobility.motorized_individual_travel_charging_infrastructure.db_classes.EgonEmobChargingInfrastructure>`
         is created and filled (legacy methodology only)
-      * :py:class:`demand.egon_ev_mit_lgv_charging_location
-        <egon.data.datasets.emobility.motorized_individual_travel_charging_infrastructure.db_classes.EgonEvMitLgvChargingLocation>`
-        is created and filled (new methodology only)
 
     *Configuration*
 
@@ -210,16 +193,13 @@ class MITChargingInfrastructure(Dataset):
 
     *Charging Infrastructure*
 
-    Two methodologies live side by side, dispatched per scenario by
-    :func:`egon.data.datasets.emobility.mit_lgv_input_data.is_legacy_scenario`.
+    This dataset serves the **legacy** methodology only. For scenarios on
+    the new one the charging locations are part of the delivered M1+N1
+    input data and are imported, together with their placements, by
+    :py:class:`MotorizedIndividualTravel
+    <egon.data.datasets.emobility.motorized_individual_travel.MotorizedIndividualTravel>`.
 
-    For scenarios on the **new** methodology the charging sites are part
-    of the delivered M1+N1 input data: they are generated together with
-    the vehicles and their events, so charging points, vehicles and
-    events are mutually consistent. The sites are imported as delivered
-    and additionally get an `mv_grid_id` from a point-in-polygon join.
-
-    For the **legacy** methodology the allocation is based on
+    For the legacy methodology the allocation is based on
     `TracBEV <https://github.com/rl-institut/tracbev>`_. TracBEV is a tool for the
     regional allocation of charging infrastructure. In practice this allows users to
     use results generated via `SimBEV <https://github.com/rl-institut/simbev>`_ and
@@ -231,28 +211,16 @@ class MITChargingInfrastructure(Dataset):
     #:
     name: str = "MITChargingInfrastructure"
     #:
-    version: str = "0.1.3"
+    version: str = "0.2.0"
 
     def __init__(self, dependencies):
-        # This dataset stays independent of `MotorizedIndividualTravel`:
-        # the event-to-location mapping is not imported, so it does not
-        # need the events to exist first. It fetches the shared input
-        # data archive itself; the download serialises against the MIT
-        # dataset with a lock file.
         super().__init__(
             name=self.name,
             version=self.version,
             dependencies=dependencies,
             tasks=(
-                {
-                    create_tables,
-                    get_tracbev_data,
-                    download_input_data,
-                },
-                {
-                    run_tracbev,
-                    import_charging_locations,
-                },
+                {create_tables, get_tracbev_data},
+                run_tracbev,
                 add_metadata,
             ),
         )

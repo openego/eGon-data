@@ -3,40 +3,33 @@ Import of the delivered M1+N1 input data (new methodology).
 
 The new methodology no longer derives the electric vehicle fleet from
 KBA registration statistics. One bundle per scenario is delivered as
-parquet, downloaded from Zenodo by
-:func:`download_and_extract`, imported into the database and finally
-allocated to MV grid districts by
-:func:`allocate_ev_instances_to_grid_districts`.
+parquet and imported into the database. The unit of the eTraGo model is
+the **placement** -- one vehicle's realisation of one charging event at
+one charging location (ADR-0001) -- so the import is organised around
+the charging locations:
 
 Call order::
 
     download_and_extract()
+    charging_locations.import_charging_locations()
+    import_location_events()      # placements, one array per location
+    import_charging_events()      # only the events placed somewhere
+    import_ev_pool()              # only the profiles of those events
+    import_ev_counts()
 
-      * import_ev_pool()
-      * import_ev_counts()
-      * import_ev_municipality_mapping()
-      * import_ev_events()
+In test mode the selection cascades along that order: locations inside
+the boundary, their placements, the events those reference and the
+profiles of those events. The result is exactly what a Germany-wide run
+would give for the districts inside the boundary.
 
-    allocate_ev_instances_to_grid_districts()
-
-Notes
------
-`ev_mapping_event_location.parquet` -- the mapping of charging events to
-charging locations -- is **not** imported. It carries one row per
-(charging event x drawn vehicle), i.e. ~5e8 rows for `status2024` and an
-estimated ~8e9 for `reGon2045`, which is roughly 440 GB in PostgreSQL
-against a ~350 GB budget for the whole pipeline. Nothing in the database
-needs it: charging locations carry their own `use_case`. Consumers read
-the parquet file from the extracted archive directly.
-
-Large files are read in row group chunks with pyarrow, filtered, and
-streamed into PostgreSQL via ``COPY ... FROM STDIN``. This keeps the
-throughput of a bulk import without multi-GB temporary CSV files and
-lets test mode push the boundary filter into the read.
+Large files are read in row group chunks with pyarrow and streamed into
+PostgreSQL via ``COPY ... FROM STDIN``.
 """
 
 from contextlib import contextmanager
 import io
+import math
+import struct
 
 from sqlalchemy import func
 import numpy as np
@@ -53,15 +46,11 @@ from egon.data.datasets.emobility.mit_lgv_input_data import (
     input_file,
 )
 from egon.data.datasets.emobility.motorized_individual_travel.db_classes import (  # noqa: E501
+    EgonEvMitLgvChargingLocation,
     EgonEvMitLgvCountMunicipality,
-    EgonEvMitLgvCountMvGridDistrict,
-    EgonEvMitLgvMappingEvMunicipality,
-    EgonEvMitLgvMvGridDistrict,
+    EgonEvMitLgvLocationEvents,
     EgonEvMitLgvPool,
     EgonEvMitLgvTrip,
-)
-from egon.data.datasets.emobility.motorized_individual_travel.ev_allocation import (  # noqa: E501
-    mvgd_population_shares,
 )
 from egon.data.datasets.emobility.motorized_individual_travel.helpers import (
     EV_TYPES,
@@ -78,6 +67,20 @@ from egon.data.datasets.zensus_vg250 import Vg250Gem
 #: groups of the delivery are ~750,000 rows, so this reads one group at
 #: a time.
 EVENT_CHUNK_SIZE = 1_000_000
+
+#: Rows read from `ev_mapping_event_location.parquet` per batch.
+PLACEMENT_BATCH_SIZE = 50_000_000
+
+#: Size of the sort keys of one pass of the placement import. One
+#: placement costs 8 bytes (one int64 key), so 8 GB fold 1 bn placements
+#: per pass over the file and the ~5 bn of a reGon scenario take five
+#: passes. Peak memory is about three times this, during the split into
+#: arrays.
+PLACEMENT_MEMORY_BUDGET_BYTES = 8 * 10**9
+
+#: Arrays written per binary `COPY`, and the element budget of one COPY.
+ARRAY_COPY_ROWS = 200_000
+ARRAY_COPY_ELEMENTS = 50_000_000
 
 
 def new_scenarios() -> list:
@@ -119,52 +122,6 @@ def boundary_ags():
     ags = pd.read_sql(query.statement, query.session.bind)
 
     return np.sort(ags.ags.astype("int64").unique())
-
-
-def selected_ev_ids(scenario_name: str):
-    """Pool EV ids that are used inside the dataset boundary.
-
-    Test mode filters the delivered municipality mapping to the AGS
-    inside the boundary; the selection then cascades to the pool and the
-    events, which is referentially consistent by construction.
-
-    Read from the parquet file rather than from the database so that the
-    import tasks stay independent of each other and can run in parallel.
-
-    Parameters
-    ----------
-    scenario_name : str
-        Scenario name
-
-    Returns
-    -------
-    numpy.ndarray or None
-        Sorted pool EV ids, or None when no filter is needed
-
-    Notes
-    -----
-    Expect this to shrink the event table far less than the region share
-    suggests. The pool is national and each profile is instantiated many
-    times across Germany, so more than half of all profiles are used
-    somewhere even in a single federal state.
-    """
-    ags = boundary_ags()
-    if ags is None:
-        return None
-
-    mapping = pq.read_table(
-        input_file(scenario_name, "ev_mapping_ev_municipality"),
-        columns=["ev_id", "ags"],
-        filters=[("ags", "in", ags.tolist())],
-    )
-    ev_ids = np.sort(pc.unique(mapping.column("ev_id")).to_numpy())
-
-    print(
-        f"  Test mode: {len(ags)} municipalities inside the boundary, "
-        f"{mapping.num_rows} vehicle instances, "
-        f"{len(ev_ids)} distinct pool EVs."
-    )
-    return ev_ids
 
 
 @contextmanager
@@ -272,58 +229,6 @@ def download_and_extract() -> None:
         print(f"  Input data ready in {directory}.")
 
 
-def import_ev_pool() -> None:
-    """Import `ev_pool.parquet` into `demand.egon_ev_mit_lgv_pool`.
-
-    Asserts that every vehicle type occurring in the pool has an entry
-    in the `tech_data` block of `metadata_simbev_run.json` (D11). A
-    missing entry would otherwise surface as a `KeyError` per grid
-    district deep inside the timeseries generation, once for every
-    parallel task.
-    """
-    for scenario_name in new_scenarios():
-        print(f"SCENARIO: {scenario_name}")
-        ev_ids = selected_ev_ids(scenario_name)
-
-        pool = pq.read_table(input_file(scenario_name, "ev_pool"))
-        if ev_ids is not None:
-            pool = pool.filter(_is_in(pool.column("ev_id"), ev_ids))
-
-        types = sorted(set(pool.column("type").to_pylist()))
-        tech_data = read_simbev_metadata_file(scenario_name, "tech_data")
-        missing = [_ for _ in types if _ not in tech_data.index]
-        if missing:
-            raise AssertionError(
-                f"Vehicle types {missing} occur in the EV pool of "
-                f"scenario '{scenario_name}' but have no `tech_data` "
-                f"entry in its metadata_simbev_run.json. Battery "
-                f"capacity and energy consumption of those types are "
-                f"unknown, so the model cannot be built."
-            )
-
-        unexpected = [_ for _ in types if _ not in EV_TYPES]
-        if unexpected:
-            print(
-                f"  WARNING: pool contains vehicle types that are not "
-                f"part of the documented taxonomy: {unexpected}."
-            )
-
-        print(f"  Importing {pool.num_rows} pool EVs of types {types}...")
-        _clear_scenario(_qualified(EgonEvMitLgvPool), scenario_name)
-        _copy_arrow_table(
-            pa.table(
-                {
-                    "scenario": _constant_column(scenario_name, pool.num_rows),
-                    "ev_id": pool.column("ev_id"),
-                    "rs7_id": pool.column("rs7_id"),
-                    "type": pool.column("type"),
-                }
-            ),
-            _qualified(EgonEvMitLgvPool),
-            ["scenario", "ev_id", "rs7_id", "type"],
-        )
-
-
 def import_ev_counts() -> None:
     """Import `ev_count_municipality.parquet`.
 
@@ -349,7 +254,6 @@ def import_ev_counts() -> None:
                 f"agreed taxonomy."
             )
 
-        delivered_ags = np.sort(delivered.column("ags").to_numpy())
         counts = delivered
         if ags is not None:
             counts = counts.filter(_is_in(counts.column("ags"), ags))
@@ -383,58 +287,7 @@ def import_ev_counts() -> None:
             columns,
         )
 
-        _log_ags_coverage(scenario_name, delivered_ags)
         _log_fleet_total(scenario_name, delivered)
-
-
-def _log_ags_coverage(scenario_name: str, delivered_ags) -> None:
-    """Log the two-way AGS difference against VG250.
-
-    Both directions matter because the municipality-to-grid-district
-    split joins on `ags`: an unmatched key on either side silently drops
-    vehicles.
-    """
-    with db.session_scope() as session:
-        query = session.query(func.distinct(Vg250Gem.ags).label("ags"))
-    vg250_ags = set(
-        pd.read_sql(query.statement, query.session.bind)
-        .ags.astype("int64")
-        .to_list()
-    )
-
-    delivered = set(int(_) for _ in delivered_ags)
-
-    if not testmode_off():
-        # VG250 holds only the municipalities inside the boundary, so
-        # every delivered municipality outside it would be reported as
-        # unknown. The two-way difference is only meaningful on a full
-        # run.
-        print(
-            f"  Test mode: {len(delivered)} municipalities delivered "
-            f"nationwide, {len(vg250_ags)} inside the boundary, "
-            f"{len(delivered & vg250_ags)} of those delivered, "
-            f"{len(vg250_ags - delivered)} inside the boundary without "
-            f"delivered vehicles. The full two-way AGS difference is "
-            f"only checked on a Germany-wide run."
-        )
-        return
-
-    unknown = sorted(delivered - vg250_ags)
-    without_vehicles = sorted(vg250_ags - delivered)
-
-    print(
-        f"  AGS coverage: {len(delivered)} municipalities delivered, "
-        f"{len(vg250_ags)} in VG250."
-    )
-    print(
-        f"    Delivered but unknown to VG250: {len(unknown)} "
-        f"(sample: {unknown[:10]})"
-    )
-    print(
-        f"    In VG250 but without delivered vehicles: "
-        f"{len(without_vehicles)} (sample: {without_vehicles[:10]}) -- "
-        f"harmless, those grid districts simply get none."
-    )
 
 
 def _log_fleet_total(scenario_name: str, delivered_counts: pa.Table) -> None:
@@ -463,106 +316,309 @@ def _log_fleet_total(scenario_name: str, delivered_counts: pa.Table) -> None:
     )
 
 
-def import_ev_municipality_mapping() -> None:
-    """Import `ev_mapping_ev_municipality.parquet`.
 
-    One row per vehicle: a pool EV occurring *n* times in the same `ags`
-    yields *n* rows with distinct `id`. This is what makes the
-    municipality-to-grid-district split an instance-level operation.
+
+# ---------------------------------------------------------------------------
+# Test mode selection
+# ---------------------------------------------------------------------------
+
+
+def _boundary_location_mask(scenario_name: str):
+    """Boolean lookup over the location id space: imported locations.
+
+    In test mode the location table holds only the locations inside the
+    boundary (cf. :mod:`.charging_locations`), so this is the boundary
+    filter of the placements. On a Germany-wide run no filter is needed.
+
+    Returns
+    -------
+    numpy.ndarray or None
+        `mask[location_id]` is True for locations to keep, or None
+    """
+    if testmode_off():
+        return None
+    location_ids = db.select_dataframe(
+        f"""
+        SELECT location_id
+        FROM {_qualified(EgonEvMitLgvChargingLocation)}
+        WHERE scenario = '{scenario_name}'
+        """
+    ).location_id.to_numpy(dtype="int64")
+    mask = np.zeros(int(location_ids.max(initial=0)) + 1, dtype=bool)
+    mask[location_ids] = True
+    return mask
+
+
+def _referenced_event_ids(scenario_name: str):
+    """Charging events placed at an imported location (test mode only).
+
+    Returns
+    -------
+    numpy.ndarray or None
+        Sorted event ids, or None when no filter is needed
+    """
+    if testmode_off():
+        return None
+    return np.sort(
+        db.select_dataframe(
+            f"""
+            SELECT DISTINCT UNNEST(event_ids) AS event_id
+            FROM {_qualified(EgonEvMitLgvLocationEvents)}
+            WHERE scenario = '{scenario_name}'
+            """
+        ).event_id.to_numpy(dtype="int64")
+    )
+
+
+def _referenced_ev_ids(scenario_name: str):
+    """Profiles of the imported charging events (test mode only).
+
+    Returns
+    -------
+    numpy.ndarray or None
+        Sorted pool EV ids, or None when no filter is needed
+    """
+    if testmode_off():
+        return None
+    return np.sort(
+        db.select_dataframe(
+            f"""
+            SELECT DISTINCT ev_id
+            FROM {_qualified(EgonEvMitLgvTrip)}
+            WHERE scenario = '{scenario_name}'
+            """
+        ).ev_id.to_numpy(dtype="int64")
+    )
+
+
+# ---------------------------------------------------------------------------
+# Placements
+# ---------------------------------------------------------------------------
+
+#: Binary COPY framing, cf. the PostgreSQL documentation of `COPY`.
+_COPY_HEADER = b"PGCOPY\n\xff\r\n\x00" + struct.pack(">ii", 0, 0)
+_COPY_TRAILER = struct.pack(">h", -1)
+#: OID of PostgreSQL's int4, the element type of `event_ids`.
+_INT4_OID = 23
+
+
+def _array_rows_binary(
+    scenario_name: str, location_ids, counts, event_ids
+) -> bytes:
+    """Encode (scenario, location_id, event_ids) rows for a binary COPY.
+
+    Parameters
+    ----------
+    scenario_name : str
+        Scenario name, the first column of every row
+    location_ids : numpy.ndarray
+        Location id of each row
+    counts : numpy.ndarray
+        Number of array elements of each row
+    event_ids : numpy.ndarray
+        The array elements of all rows, concatenated in row order
+
+    Returns
+    -------
+    bytes
+        Rows in PostgreSQL's binary COPY format, without header/trailer
+    """
+    scenario = scenario_name.encode()
+    prefix = np.zeros(
+        len(location_ids),
+        dtype=np.dtype(
+            [
+                ("n_fields", ">i2"),
+                ("scenario_length", ">i4"),
+                ("scenario", f"S{len(scenario)}"),
+                ("location_length", ">i4"),
+                ("location_id", ">i8"),
+                ("array_length", ">i4"),
+                ("n_dims", ">i4"),
+                ("has_null", ">i4"),
+                ("element_type", ">i4"),
+                ("dim_length", ">i4"),
+                ("lower_bound", ">i4"),
+            ]
+        ),
+    )
+    prefix["n_fields"] = 3
+    prefix["scenario_length"] = len(scenario)
+    prefix["scenario"] = scenario
+    prefix["location_length"] = 8
+    prefix["location_id"] = location_ids
+    prefix["array_length"] = 20 + 8 * counts
+    prefix["n_dims"] = 1
+    prefix["element_type"] = _INT4_OID
+    prefix["dim_length"] = counts
+    prefix["lower_bound"] = 1
+    prefix_bytes = prefix.view(np.uint8).reshape(len(location_ids), -1)
+
+    elements = np.empty(
+        len(event_ids), dtype=np.dtype([("length", ">i4"), ("value", ">i4")])
+    )
+    elements["length"] = 4
+    elements["value"] = event_ids
+    element_bytes = elements.view(np.uint8)
+    rows = np.split(element_bytes, np.cumsum(counts[:-1]) * 8)
+
+    parts = [None] * (2 * len(rows))
+    parts[0::2] = list(prefix_bytes)
+    parts[1::2] = rows
+    return np.concatenate(parts).tobytes()
+
+
+def _copy_arrays(scenario_name: str, location_ids, counts, event_ids) -> None:
+    """Write folded placements of one pass with binary COPYs."""
+    table = _qualified(EgonEvMitLgvLocationEvents)
+    statement = (
+        f"COPY {table} (scenario, location_id, event_ids) "
+        f"FROM STDIN WITH (FORMAT binary)"
+    )
+    ends = np.cumsum(counts)
+    starts = ends - counts
+
+    connection = db.engine().raw_connection()
+    try:
+        row = 0
+        while row < len(location_ids):
+            # Rows of this COPY: at most ARRAY_COPY_ROWS, and at most
+            # ARRAY_COPY_ELEMENTS elements unless a single row has more.
+            limit = np.searchsorted(
+                ends, starts[row] + ARRAY_COPY_ELEMENTS, side="right"
+            )
+            stop = min(row + ARRAY_COPY_ROWS, max(int(limit), row + 1))
+            payload = _array_rows_binary(
+                scenario_name,
+                location_ids[row:stop],
+                counts[row:stop],
+                event_ids[starts[row] : ends[stop - 1]],
+            )
+            with connection.cursor() as cursor:
+                cursor.copy_expert(
+                    statement,
+                    io.BytesIO(_COPY_HEADER + payload + _COPY_TRAILER),
+                )
+            row = stop
+        connection.commit()
+    except Exception:
+        connection.rollback()
+        raise
+    finally:
+        connection.close()
+
+
+def import_location_events() -> None:
+    """Fold `ev_mapping_event_location.parquet` into one event-id array per
+    charging location (`demand.egon_ev_mit_lgv_location_events`, ADR-0004).
+
+    The delivered file has one row per placement, ordered by vehicle, and
+    up to ~5 bn rows. It is folded without temporary files: each pass over
+    the file collects the placements of one range of location ids, sorts
+    them by one int64 key `location_id << 32 | event_id` in place and
+    writes the arrays. The number of passes follows from
+    :data:`PLACEMENT_MEMORY_BUDGET_BYTES`.
+
+    In test mode only the placements at the imported locations, i.e.
+    inside the boundary, are kept.
     """
     for scenario_name in new_scenarios():
         print(f"SCENARIO: {scenario_name}")
-        ags = boundary_ags()
-
-        source = input_file(scenario_name, "ev_mapping_ev_municipality")
-        parquet_file = pq.ParquetFile(source)
-        imported = 0
-
-        _clear_scenario(
-            _qualified(EgonEvMitLgvMappingEvMunicipality), scenario_name
+        source = pq.ParquetFile(
+            input_file(scenario_name, "ev_mapping_event_location")
         )
-        with _copy_target(
-            _qualified(EgonEvMitLgvMappingEvMunicipality),
-            ["scenario", "id", "ev_id", "ags"],
-        ) as write:
-            for group in range(parquet_file.num_row_groups):
-                mapping = parquet_file.read_row_group(group)
-                if ags is not None:
-                    mapping = mapping.filter(
-                        _is_in(mapping.column("ags"), ags)
-                    )
-                imported += mapping.num_rows
-                write(
-                    pa.table(
-                        {
-                            "scenario": _constant_column(
-                                scenario_name, mapping.num_rows
-                            ),
-                            "id": mapping.column("id"),
-                            "ev_id": mapping.column("ev_id"),
-                            "ags": mapping.column("ags"),
-                        }
-                    )
-                )
+        n_rows = source.metadata.num_rows
+        n_locations = (
+            int(
+                pc.max(
+                    pq.read_table(
+                        input_file(scenario_name, "ev_charging_location"),
+                        columns=["location_id"],
+                    ).column("location_id")
+                ).as_py()
+            )
+            + 1
+        )
+        keep = _boundary_location_mask(scenario_name)
+        if keep is not None:
+            keep = np.pad(keep, (0, max(0, n_locations - len(keep))))
 
-        print(f"  Imported {imported} vehicle instances.")
-        _log_geolis_counts(scenario_name)
-
-
-def _log_geolis_counts(scenario_name: str) -> None:
-    """Log the result counts stated by GeoLIS against what was imported.
-
-    The providers state them, so they are free assertions. In test mode
-    the imported counts are a subset by design and only the delivered
-    file counts are checked.
-    """
-    try:
-        geolis = read_geolis_metadata_file(scenario_name)
-    except FileNotFoundError as e:
-        print(f"  {e}")
-        return
-
-    stated = {
-        "n_vehicle_instances": geolis.get("n_vehicle_instances"),
-        "n_distinct_evs": geolis.get("n_distinct_evs"),
-        "n_event_rows": geolis.get("n_event_rows"),
-        "n_locations": geolis.get("n_locations"),
-    }
-    delivered = {
-        "n_vehicle_instances": pq.ParquetFile(
-            input_file(scenario_name, "ev_mapping_ev_municipality")
-        ).metadata.num_rows,
-        "n_distinct_evs": pq.ParquetFile(
-            input_file(scenario_name, "ev_pool")
-        ).metadata.num_rows,
-        "n_event_rows": pq.ParquetFile(
-            input_file(scenario_name, "ev_event")
-        ).metadata.num_rows,
-        "n_locations": pq.ParquetFile(
-            input_file(scenario_name, "ev_charging_location")
-        ).metadata.num_rows,
-    }
-
-    for key, value in stated.items():
-        status = "OK" if value == delivered[key] else "MISMATCH"
+        # In test mode the kept share is small; one pass suffices.
+        passes = (
+            1
+            if keep is not None
+            else max(
+                1, math.ceil(n_rows * 8 / PLACEMENT_MEMORY_BUDGET_BYTES)
+            )
+        )
+        bounds = np.linspace(0, n_locations, passes + 1).astype("int64")
         print(
-            f"    GeoLIS {key}: stated {value}, delivered "
-            f"{delivered[key]} [{status}]"
+            f"  Folding {n_rows} placements of {n_locations} location ids "
+            f"in {passes} pass(es)..."
         )
 
+        _clear_scenario(_qualified(EgonEvMitLgvLocationEvents), scenario_name)
+        written = 0
+        for low, high in zip(bounds[:-1], bounds[1:]):
+            keys = []
+            for batch in source.iter_batches(
+                batch_size=PLACEMENT_BATCH_SIZE,
+                columns=["event_id", "location_id"],
+            ):
+                location = batch.column(1).to_numpy().astype("int64")
+                selected = (location >= low) & (location < high)
+                if keep is not None:
+                    selected &= keep[location]
+                if not selected.any():
+                    continue
+                event = batch.column(0).to_numpy().astype("int64")
+                keys.append((location[selected] << 32) | event[selected])
+            if not keys:
+                continue
 
-def import_ev_events() -> None:
-    """Import `ev_event.parquet` into `demand.egon_ev_mit_lgv_trip`.
+            key = np.concatenate(keys)
+            del keys
+            key.sort()
+            location = key >> 32
+            starts = np.concatenate(
+                ([0], np.flatnonzero(location[1:] != location[:-1]) + 1)
+            )
+            location_ids = location[starts]
+            counts = np.diff(np.append(starts, len(location)))
+            del location, starts
+            event_ids = (key & 0xFFFFFFFF).astype("int32")
+            del key
 
-    Read in row group chunks and streamed into PostgreSQL.
+            _copy_arrays(scenario_name, location_ids, counts, event_ids)
+            written += len(event_ids)
+            print(
+                f"    location ids {low}-{high - 1}: {len(location_ids)} "
+                f"locations, {len(event_ids)} placements written "
+                f"({written} in total)..."
+            )
+        print(f"  Imported {written} placements.")
+
+
+# ---------------------------------------------------------------------------
+# Events, pool, counts
+# ---------------------------------------------------------------------------
+
+
+def import_charging_events() -> None:
+    """Import the charging events of `ev_event.parquet` into
+    `demand.egon_ev_mit_lgv_trip`.
+
+    Only events with a charging use case, i.e. charging demand, are
+    imported: the model is built from placements, and a placement's
+    deficit is its charging demand, so driving and parking events are not
+    needed (Q21). In test mode only the events placed at a location inside
+    the boundary are imported.
+
     `charging_use_case` is renamed to `use_case` on import (D12);
-    `park_time_timesteps` is not imported, it is
-    `park_end - park_start` and the model code ignores it.
-
-    `charging_capacity_grid` is filled from the delivered nameplate
-    power, which is grid-side (:data:`EVENT_COLUMN_ALIASES`).
-    `charging_capacity_battery` is left NULL -- new data delivers
-    no battery-side nameplate power.
+    `park_time_timesteps` is not imported. `charging_capacity_grid` is
+    filled from the delivered nameplate power, which is grid-side
+    (:data:`EVENT_COLUMN_ALIASES`); `charging_capacity_battery` stays
+    NULL.
     """
     columns = (
         ["scenario"]
@@ -572,7 +628,7 @@ def import_ev_events() -> None:
 
     for scenario_name in new_scenarios():
         print(f"SCENARIO: {scenario_name}")
-        ev_ids = selected_ev_ids(scenario_name)
+        referenced = _referenced_event_ids(scenario_name)
 
         pool_ev_ids = set(
             pq.read_table(
@@ -582,8 +638,7 @@ def import_ev_events() -> None:
             .to_pylist()
         )
 
-        source = input_file(scenario_name, "ev_event")
-        parquet_file = pq.ParquetFile(source)
+        parquet_file = pq.ParquetFile(input_file(scenario_name, "ev_event"))
         imported = 0
         orphans = set()
 
@@ -594,9 +649,12 @@ def import_ev_events() -> None:
                 columns=list(EVENT_COLUMN_MAPPING.keys()),
             ):
                 events = pa.Table.from_batches([batch])
-                if ev_ids is not None:
+                events = events.filter(
+                    pc.is_valid(events.column("charging_use_case"))
+                )
+                if referenced is not None:
                     events = events.filter(
-                        _is_in(events.column("ev_id"), ev_ids)
+                        _is_in(events.column("event_id"), referenced)
                     )
                 if events.num_rows == 0:
                     continue
@@ -628,418 +686,185 @@ def import_ev_events() -> None:
                         }
                     )
                 )
-                print(f"    {imported} events imported...")
 
-        print(f"  Imported {imported} events.")
+        print(f"  Imported {imported} charging events.")
         if orphans:
-            print(
-                f"  WARNING: {len(orphans)} ev_id values occur in "
-                f"ev_event but not in ev_pool (sample: "
-                f"{sorted(orphans)[:10]}). Their events have no vehicle "
-                f"type and will not reach the model."
+            raise ValueError(
+                f"{len(orphans)} ev_id values of charging events of "
+                f"scenario '{scenario_name}' are not in ev_pool (sample: "
+                f"{sorted(orphans)[:10]}). Their vehicle type, and so "
+                f"their battery capacity, is unknown."
             )
 
 
-def _largest_remainder_allocation(
-    instance_counts: pd.DataFrame, shares: pd.DataFrame
-) -> pd.DataFrame:
-    """Distribute municipal vehicle counts over MV grid districts.
+def import_ev_pool() -> None:
+    """Import `ev_pool.parquet` into `demand.egon_ev_mit_lgv_pool`.
 
-    Per (`ags`, `type`) the delivered instance count is distributed over
-    the intersecting grid districts by population share, using largest
-    remainder rounding. Municipal totals are preserved exactly and no
-    random number generator is involved: remainder ties are broken by
-    `bus_id`, so the result is reproducible.
+    Adds `n_vehicles`, the number of vehicles instantiated from each
+    profile across Germany, counted from
+    `ev_mapping_ev_municipality.parquet`. The municipality mapping itself
+    is not imported any more: the model is built from placements, not
+    from vehicles allocated to grid districts (Q12).
 
-    For the ~92 % of municipalities that lie inside a single grid
-    district this degenerates to a plain copy.
+    Asserts that every vehicle type occurring in the pool has an entry in
+    the `tech_data` block of `metadata_simbev_run.json` (D11).
 
-    Parameters
-    ----------
-    instance_counts : pandas.DataFrame
-        Columns `ags`, `type_code`, `count`
-    shares : pandas.DataFrame
-        Columns `ags`, `bus_id`, `share` (summing to 1 per `ags`)
-
-    Returns
-    -------
-    pandas.DataFrame
-        Columns `ags`, `type_code`, `bus_id`, `n`, sorted by
-        (`ags`, `type_code`, `bus_id`)
+    In test mode only the profiles of the imported charging events are
+    imported.
     """
-    allocation = instance_counts.merge(shares, on="ags", how="inner")
-    allocation = allocation.sort_values(
-        ["ags", "type_code", "bus_id"], kind="stable"
-    ).reset_index(drop=True)
-
-    exact = allocation["count"] * allocation["share"]
-    allocation["base"] = np.floor(exact).astype("int64")
-    allocation["remainder"] = exact - allocation["base"]
-
-    groups = allocation.groupby(["ags", "type_code"], sort=False)
-    leftover = groups["count"].transform("first") - groups["base"].transform(
-        "sum"
-    )
-    # `method="first"` breaks remainder ties by row order, which is
-    # bus_id order thanks to the sort above.
-    remainder_rank = groups["remainder"].rank(method="first", ascending=False)
-    allocation["n"] = allocation["base"] + (remainder_rank <= leftover).astype(
-        "int64"
-    )
-
-    return allocation[["ags", "type_code", "bus_id", "n"]]
-
-
-def allocate_ev_instances_to_grid_districts() -> None:
-    """Place the delivered vehicle instances in MV grid districts.
-
-    Writes `demand.egon_ev_mit_lgv_mv_grid_district` -- one row per
-    vehicle instance, carrying the municipality it came from -- and
-    aggregates `demand.egon_ev_mit_lgv_count_mv_grid_district`.
-
-    Vehicles in municipalities that VG250 does not know are dropped and
-    the loss is quantified in the log: an AGS vintage mismatch between
-    VG250 and the delivery is an ordinary occurrence -- municipalities
-    merge and are renumbered -- and aborting the pipeline on reference
-    data drift is a worse outcome than proceeding with a documented,
-    quantified loss. If the loss turns out material, the fix is an AGS
-    translation table, not a tolerance.
-    """
-    scenarios = new_scenarios()
-    if not scenarios:
-        print(
-            "No scenario on the new methodology configured, nothing to "
-            "allocate."
-        )
-        return
-
-    print("Loading population shares of municipalities in grid districts...")
-    population_shares = mvgd_population_shares()
-    shares = population_shares[
-        ["ags", "bus_id", "pop_mun_in_mvgd", "pop_mun_in_mvgd_of_mun_total"]
-    ].copy()
-    shares["ags"] = shares.ags.astype("int64")
-    shares["bus_id"] = shares.bus_id.astype("int64")
-
-    # Normalise so the shares of one municipality sum to exactly 1 --
-    # `pop_mun_in_mvgd_of_mun_total` is computed against the municipal
-    # total and can miss a fraction of a percent to rounding. A
-    # municipality without population in any of its grid districts would
-    # divide by zero; its vehicles are spread evenly instead, which is
-    # the only defensible split without a weight.
-    total = shares.groupby("ags")["pop_mun_in_mvgd_of_mun_total"].transform(
-        "sum"
-    )
-    unweighted = total <= 0
-    shares["share"] = shares.pop_mun_in_mvgd_of_mun_total / total
-    if unweighted.any():
-        parts = shares.groupby("ags")["bus_id"].transform("size")
-        shares.loc[unweighted, "share"] = 1 / parts[unweighted]
-        print(
-            f"  {shares.loc[unweighted, 'ags'].nunique()} municipalities "
-            f"have no population in any of their grid districts; their "
-            f"vehicles are spread evenly."
-        )
-
-    for scenario_name in scenarios:
+    for scenario_name in new_scenarios():
         print(f"SCENARIO: {scenario_name}")
-        _allocate_scenario(scenario_name, shares)
+        pool = pq.read_table(input_file(scenario_name, "ev_pool"))
 
-
-def _allocate_scenario(scenario_name: str, shares: pd.DataFrame) -> None:
-    """Place one scenario's vehicle instances in MV grid districts."""
-    ags_filter = boundary_ags()
-    variation = scenario_variation(scenario_name)
-    type_codes = {name: code for code, name in enumerate(EV_TYPES)}
-
-    print("  Loading the delivered vehicle instances...")
-    mapping = pq.read_table(
-        input_file(scenario_name, "ev_mapping_ev_municipality"),
-        columns=["id", "ev_id", "ags"],
-        filters=(
-            None
-            if ags_filter is None
-            else [("ags", "in", ags_filter.tolist())]
-        ),
-    )
-    pool = pq.read_table(
-        input_file(scenario_name, "ev_pool"), columns=["ev_id", "type"]
-    ).to_pandas()
-
-    ev_type_code = pd.Series(
-        pool.type.map(type_codes).to_numpy(), index=pool.ev_id.to_numpy()
-    )
-    unknown_types = pool.type[~pool.type.isin(type_codes)].unique()
-    if len(unknown_types) > 0:
-        raise ValueError(
-            f"Pool of scenario '{scenario_name}' contains vehicle types "
-            f"outside the documented taxonomy: {list(unknown_types)}. "
-            f"Add them to `EV_TYPES` and to the count tables first."
+        vehicle_profiles = (
+            pq.read_table(
+                input_file(scenario_name, "ev_mapping_ev_municipality"),
+                columns=["ev_id"],
+            )
+            .column("ev_id")
+            .to_numpy()
+            .astype("int64")
         )
-
-    ids = mapping.column("id").to_numpy()
-    ev_ids = mapping.column("ev_id").to_numpy()
-    ags = mapping.column("ags").to_numpy().astype("int64")
-    codes = ev_type_code.reindex(ev_ids).to_numpy(dtype="float64")
-    if np.isnan(codes).any():
-        missing = np.unique(ev_ids[np.isnan(codes)])
-        raise ValueError(
-            f"{len(missing)} ev_id values of the municipality mapping "
-            f"of scenario '{scenario_name}' are not in the EV pool "
-            f"(sample: {missing[:10].tolist()})."
+        pool_ev_ids = pool.column("ev_id").to_numpy().astype("int64")
+        n_vehicles = np.bincount(
+            vehicle_profiles,
+            minlength=int(max(pool_ev_ids.max(), vehicle_profiles.max())) + 1,
         )
-    codes = codes.astype("int64")
+        unknown = np.setdiff1d(np.unique(vehicle_profiles), pool_ev_ids)
+        if len(unknown):
+            raise ValueError(
+                f"{len(unknown)} ev_id values of the vehicles of scenario "
+                f"'{scenario_name}' are not in ev_pool (sample: "
+                f"{unknown[:10].tolist()})."
+            )
 
-    # One integer key per (ags, type) so the whole instance-level
-    # operation stays in numpy: `len(EV_TYPES) <= 16`.
-    keys = ags * 16 + codes
-    order = np.lexsort((ids, keys))
-    keys_sorted = keys[order]
-    unique_keys, counts = np.unique(keys_sorted, return_counts=True)
+        referenced = _referenced_ev_ids(scenario_name)
+        if referenced is not None:
+            pool = pool.filter(_is_in(pool.column("ev_id"), referenced))
+            pool_ev_ids = pool.column("ev_id").to_numpy().astype("int64")
 
-    instance_counts = pd.DataFrame(
-        {
-            "ags": unique_keys // 16,
-            "type_code": unique_keys % 16,
-            "count": counts,
-        }
-    )
+        types = sorted(set(pool.column("type").to_pylist()))
+        tech_data = read_simbev_metadata_file(scenario_name, "tech_data")
+        missing = [_ for _ in types if _ not in tech_data.index]
+        if missing:
+            raise AssertionError(
+                f"Vehicle types {missing} occur in the EV pool of "
+                f"scenario '{scenario_name}' but have no `tech_data` "
+                f"entry in its metadata_simbev_run.json. Battery "
+                f"capacity and energy consumption of those types are "
+                f"unknown, so the model cannot be built."
+            )
 
-    _log_vehicle_loss(scenario_name, instance_counts, shares, type_codes)
+        unexpected = [_ for _ in types if _ not in EV_TYPES]
+        if unexpected:
+            print(
+                f"  WARNING: pool contains vehicle types that are not "
+                f"part of the documented taxonomy: {unexpected}."
+            )
 
-    allocation = _largest_remainder_allocation(instance_counts, shares)
-
-    # Both sides are sorted by (ags, type_code) and their per-group
-    # totals agree, so repeating the grid district of each allocation
-    # row aligns it with the instances in `id` order.
-    placed = allocation[allocation.n > 0]
-    kept_keys = placed.ags.to_numpy() * 16 + placed.type_code.to_numpy()
-    kept_instances = np.isin(keys_sorted, np.unique(kept_keys))
-
-    bus_ids = np.repeat(placed.bus_id.to_numpy(), placed.n.to_numpy())
-    if bus_ids.size != kept_instances.sum():
-        raise AssertionError(
-            f"Allocation of scenario '{scenario_name}' produced "
-            f"{bus_ids.size} placements for {int(kept_instances.sum())} "
-            f"vehicle instances. The largest remainder split must "
-            f"preserve municipal totals exactly."
-        )
-
-    print(f"  Writing {bus_ids.size} vehicle instances to grid districts...")
-    _write_mv_grid_district(
-        scenario_name=scenario_name,
-        variation=variation,
-        bus_ids=bus_ids,
-        ev_ids=ev_ids[order][kept_instances],
-        ags=ags[order][kept_instances],
-    )
-    _write_grid_district_counts(
-        scenario_name=scenario_name,
-        variation=variation,
-        allocation=placed,
-        shares=shares,
-    )
-
-
-def _log_vehicle_loss(
-    scenario_name: str,
-    instance_counts: pd.DataFrame,
-    shares: pd.DataFrame,
-    type_codes: dict,
-) -> None:
-    """Quantify the vehicles lost to municipalities unknown to VG250."""
-    known = set(shares.ags.unique())
-    lost = instance_counts[~instance_counts.ags.isin(known)]
-    total = int(instance_counts["count"].sum())
-
-    if lost.empty:
         print(
-            f"  All {total} delivered vehicle instances are in "
-            f"municipalities known to VG250."
+            f"  Importing {pool.num_rows} profiles of types {types} "
+            f"({int(n_vehicles[pool_ev_ids].sum())} vehicles)..."
         )
+        _clear_scenario(_qualified(EgonEvMitLgvPool), scenario_name)
+        _copy_arrow_table(
+            pa.table(
+                {
+                    "scenario": _constant_column(scenario_name, pool.num_rows),
+                    "ev_id": pool.column("ev_id"),
+                    "rs7_id": pool.column("rs7_id"),
+                    "type": pool.column("type"),
+                    "n_vehicles": pa.array(n_vehicles[pool_ev_ids]),
+                }
+            ),
+            _qualified(EgonEvMitLgvPool),
+            ["scenario", "ev_id", "rs7_id", "type", "n_vehicles"],
+        )
+
+
+# ---------------------------------------------------------------------------
+# Logging
+# ---------------------------------------------------------------------------
+
+
+def _log_geolis_counts(scenario_name: str) -> None:
+    """Log the result counts stated by GeoLIS against the delivered files.
+
+    The providers state them, so they are free assertions.
+    """
+    try:
+        geolis = read_geolis_metadata_file(scenario_name)
+    except FileNotFoundError as e:
+        print(f"  {e}")
         return
 
-    names = {code: name for name, code in type_codes.items()}
-    per_type = (
-        lost.groupby("type_code")["count"]
-        .sum()
-        .rename(index=names)
-        .sort_values(ascending=False)
-    )
-    lost_ags = sorted(lost.ags.unique())
-    lost_total = int(lost["count"].sum())
+    delivered = {
+        "n_vehicle_instances": pq.ParquetFile(
+            input_file(scenario_name, "ev_mapping_ev_municipality")
+        ).metadata.num_rows,
+        "n_distinct_evs": pq.ParquetFile(
+            input_file(scenario_name, "ev_pool")
+        ).metadata.num_rows,
+        "n_event_rows": pq.ParquetFile(
+            input_file(scenario_name, "ev_event")
+        ).metadata.num_rows,
+        "n_locations": pq.ParquetFile(
+            input_file(scenario_name, "ev_charging_location")
+        ).metadata.num_rows,
+    }
 
-    print(
-        f"  WARNING: {len(lost_ags)} delivered municipalities are "
-        f"unknown to VG250 and their vehicles are dropped "
-        f"(sample: {lost_ags[:10]})."
-    )
-    print(f"    Vehicles lost per type: {per_type.to_dict()}")
-    print(
-        f"    Vehicles lost in total: {lost_total} of {total} "
-        f"({lost_total / total:.3%} of the delivered fleet of "
-        f"scenario '{scenario_name}')."
-    )
-    if total and lost_total / total > 0.005:
+    for key, value in delivered.items():
+        stated = geolis.get(key)
+        status = "OK" if stated == value else "MISMATCH"
         print(
-            "    This exceeds the ~0.5 % rule of thumb. Dropping is "
-            "then the wrong answer: an AGS vintage translation table "
-            "(delivered ags -> current VG250 ags) is needed."
+            f"    GeoLIS {key}: stated {stated}, delivered {value} "
+            f"[{status}]"
         )
-
-
-def _write_mv_grid_district(
-    scenario_name: str, variation: str, bus_ids, ev_ids, ags
-) -> None:
-    """Write the vehicle instances of one scenario, chunked."""
-    table = _qualified(EgonEvMitLgvMvGridDistrict)
-    columns = ["scenario", "scenario_variation", "bus_id", "ev_id", "ags"]
-    chunk = 2_000_000
-
-    _clear_scenario(table, scenario_name)
-    with _copy_target(table, columns) as write:
-        for start in range(0, bus_ids.size, chunk):
-            stop = min(start + chunk, bus_ids.size)
-            length = stop - start
-            write(
-                pa.table(
-                    {
-                        "scenario": _constant_column(scenario_name, length),
-                        "scenario_variation": _constant_column(
-                            variation, length
-                        ),
-                        "bus_id": pa.array(bus_ids[start:stop]),
-                        "ev_id": pa.array(ev_ids[start:stop]),
-                        "ags": pa.array(ags[start:stop]),
-                    }
-                )
-            )
-            print(f"    {stop} of {bus_ids.size} instances written...")
-
-
-def _write_grid_district_counts(
-    scenario_name: str,
-    variation: str,
-    allocation: pd.DataFrame,
-    shares: pd.DataFrame,
-) -> None:
-    """Aggregate and write the vehicle counts per MV grid district."""
-    names = {code: name for code, name in enumerate(EV_TYPES)}
-    counts = (
-        allocation.assign(type=allocation.type_code.map(names))
-        .pivot_table(
-            index="bus_id",
-            columns="type",
-            values="n",
-            aggfunc="sum",
-            fill_value=0,
-        )
-        .reindex(columns=list(EV_TYPES), fill_value=0)
-        .astype("int64")
-        .reset_index()
-    )
-
-    # RegioStaR7 id of a grid district: taken from the municipality with
-    # the highest population share in it, as in the legacy allocation.
-    rs7 = db.select_dataframe(
-        f"""
-        SELECT ags, rs7_id
-        FROM demand.egon_ev_mit_lgv_count_municipality
-        WHERE scenario = '{scenario_name}'
-        """
-    ).astype({"ags": "int64"})
-    dominant = (
-        shares.merge(rs7, on="ags", how="inner")
-        .sort_values(["bus_id", "pop_mun_in_mvgd"], ascending=[True, False])
-        .drop_duplicates("bus_id", keep="first")[["bus_id", "rs7_id"]]
-    )
-
-    counts = counts.merge(dominant, on="bus_id", how="left")
-    # Nullable so a grid district without a RegioStaR7 reference stays
-    # NULL rather than turning the column into floats.
-    counts["rs7_id"] = counts.rs7_id.astype("Int64")
-    counts["scenario"] = scenario_name
-    counts["scenario_variation"] = variation
-
-    print(
-        f"  Writing vehicle counts for {len(counts)} grid districts "
-        f"({int(counts[list(EV_TYPES)].sum().sum())} vehicles)."
-    )
-    _clear_scenario(_qualified(EgonEvMitLgvCountMvGridDistrict), scenario_name)
-    counts.to_sql(
-        name=EgonEvMitLgvCountMvGridDistrict.__table__.name,
-        schema=EgonEvMitLgvCountMvGridDistrict.__table__.schema,
-        con=db.engine(),
-        if_exists="append",
-        index=False,
-        method="multi",
-        chunksize=1000,
-    )
-
-    municipal_total = db.select_dataframe(
-        f"""
-        SELECT {' + '.join(f'COALESCE(SUM({_}), 0)' for _ in EV_TYPES)}
-                   AS total
-        FROM demand.egon_ev_mit_lgv_count_municipality
-        WHERE scenario = '{scenario_name}'
-        """
-    ).total.iloc[0]
-    grid_total = int(counts[list(EV_TYPES)].sum().sum())
-    print(
-        f"    Municipal total {int(municipal_total)} vs. grid district "
-        f"total {grid_total} "
-        f"({'match' if int(municipal_total) == grid_total else 'MISMATCH'}"
-        f" -- a difference is the vehicle loss logged above)."
-    )
 
 
 def log_import_consistency() -> None:
     """Log consistency information about the imported tables.
 
-    Non-fatal by design: the choice of what is fatal stays with the
-    validation concept that will replace the obsolete sanity checks.
+    Non-fatal by design: what is fatal is decided by the dataset's
+    validation rules.
     """
     for scenario_name in new_scenarios():
         print(f"SCENARIO: {scenario_name}")
         summary = db.select_dataframe(
             f"""
             SELECT
-                (SELECT COUNT(*) FROM demand.egon_ev_mit_lgv_pool
-                 WHERE scenario = '{scenario_name}') AS pool,
-                (SELECT COUNT(*) FROM demand.egon_ev_mit_lgv_trip
-                 WHERE scenario = '{scenario_name}') AS events,
+                (SELECT COUNT(*) FROM {_qualified(EgonEvMitLgvPool)}
+                 WHERE scenario = '{scenario_name}') AS profiles,
+                (SELECT COUNT(*) FROM {_qualified(EgonEvMitLgvTrip)}
+                 WHERE scenario = '{scenario_name}') AS charging_events,
                 (SELECT COUNT(*)
-                 FROM demand.egon_ev_mit_lgv_mapping_ev_municipality
-                 WHERE scenario = '{scenario_name}') AS instances,
+                 FROM {_qualified(EgonEvMitLgvChargingLocation)}
+                 WHERE scenario = '{scenario_name}') AS locations,
                 (SELECT COUNT(*)
-                 FROM demand.egon_ev_mit_lgv_mv_grid_district
-                 WHERE scenario = '{scenario_name}') AS placed,
-                (SELECT COUNT(*)
-                 FROM demand.egon_ev_mit_lgv_count_municipality
-                 WHERE scenario = '{scenario_name}') AS municipalities
+                 FROM {_qualified(EgonEvMitLgvLocationEvents)}
+                 WHERE scenario = '{scenario_name}') AS locations_used,
+                (SELECT SUM(CARDINALITY(event_ids))
+                 FROM {_qualified(EgonEvMitLgvLocationEvents)}
+                 WHERE scenario = '{scenario_name}') AS placements,
+                (SELECT SUM(p.n_vehicles)
+                 FROM {_qualified(EgonEvMitLgvTrip)} t
+                 JOIN {_qualified(EgonEvMitLgvPool)} p
+                    ON p.scenario = t.scenario AND p.ev_id = t.ev_id
+                 WHERE t.scenario = '{scenario_name}') AS expected
             """
         ).iloc[0]
         print(
-            f"  pool: {summary.pool}, events: {summary.events}, "
-            f"delivered instances: {summary.instances}, "
-            f"placed instances: {summary.placed}, "
-            f"municipalities: {summary.municipalities}"
+            f"  profiles: {summary.profiles}, charging events: "
+            f"{summary.charging_events}, locations: {summary.locations} "
+            f"({summary.locations_used} with placements), placements: "
+            f"{summary.placements}"
         )
-
-        orphans = db.select_dataframe(
-            f"""
-            SELECT COUNT(*) AS n FROM (
-                SELECT DISTINCT m.ev_id
-                FROM demand.egon_ev_mit_lgv_mapping_ev_municipality m
-                LEFT JOIN demand.egon_ev_mit_lgv_pool p
-                    ON p.ev_id = m.ev_id
-                    AND p.scenario = m.scenario
-                WHERE m.scenario = '{scenario_name}'
-                    AND p.ev_id IS NULL
-            ) o
-            """
-        ).n.iloc[0]
-        print(
-            f"  ev_id values of the municipality mapping missing from "
-            f"the pool: {int(orphans)}"
-        )
+        if testmode_off():
+            status = (
+                "OK" if summary.placements == summary.expected else "MISMATCH"
+            )
+            print(
+                f"  placements expected from the vehicles per profile: "
+                f"{summary.expected} [{status}]"
+            )
+        _log_geolis_counts(scenario_name)

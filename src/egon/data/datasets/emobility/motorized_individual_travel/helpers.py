@@ -97,6 +97,67 @@ INFLEX_USE_CASES = ("street", "retail", "urban_fast", "highway_fast")
 #: all vehicle groups.
 CHARGING_USE_CASES = FLEX_USE_CASES + INFLEX_USE_CASES
 
+#: Model a charging location belongs to in the eTraGo model, cf.
+#: :func:`voltage_level`: the aggregate of all distribution grid
+#: locations of one MV grid district, or a model of its own for a grid
+#: connection in the transmission grid.
+MODEL_DISTRICT = "district"
+MODEL_TRANSMISSION = "transmission"
+MODEL_TYPES = (MODEL_DISTRICT, MODEL_TRANSMISSION)
+
+#: eTraGo carriers per model type. The transmission model needs its own
+#: link and load carriers: eTraGo's distribution grid separation and
+#: eGo's hand-over to eDisGo select `BEV_charger` and
+#: `land_transport_EV` by carrier only (ADR-0003). Bus and store keep
+#: theirs, so all e-mobility store handling in eTraGo applies unchanged.
+BUS_CARRIER = "Li_ion"
+STORE_CARRIER = "battery_storage"
+LINK_CARRIERS = {
+    MODEL_DISTRICT: "BEV_charger",
+    MODEL_TRANSMISSION: "BEV_charger_transmission",
+}
+LOAD_CARRIERS = {
+    MODEL_DISTRICT: "land_transport_EV",
+    MODEL_TRANSMISSION: "land_transport_EV_transmission",
+}
+
+#: Lower bounds (exclusive, MW) of the voltage levels 1-6 by installed
+#: capacity of a grid connection; everything up to 0.1 MW is level 7.
+#: The thresholds of the HGV charging and public bus datasets and of
+#: `power_plants.assign_voltage_level_by_capacity`. There is no level 2
+#: by capacity.
+VOLTAGE_LEVEL_THRESHOLDS_MW = (
+    (120.0, 1),
+    (20.0, 3),
+    (5.5, 4),
+    (0.2, 5),
+    (0.1, 6),
+)
+#: Highest voltage level (lowest number) still modelled in the district
+#: model; levels 1-3 are transmission grid.
+DISTRICT_MODEL_MIN_LEVEL = 4
+
+
+def voltage_level_sql(capacity_mw: str) -> str:
+    """SQL `CASE` expression mapping an installed capacity to a level.
+
+    Parameters
+    ----------
+    capacity_mw : str
+        SQL expression of the installed capacity in MW
+
+    Returns
+    -------
+    str
+        SQL expression of the voltage level (1-7)
+    """
+    cases = " ".join(
+        f"WHEN {capacity_mw} > {threshold} THEN {level}"
+        for threshold, level in VOLTAGE_LEVEL_THRESHOLDS_MW
+    )
+    return f"(CASE {cases} ELSE 7 END)"
+
+
 #: `ev_event` column names as delivered, mapped to the columns of
 #: `demand.egon_ev_mit_lgv_trip`. `charging_use_case` becomes `use_case`
 #: (D12); `park_time_timesteps` is not imported -- it is
