@@ -1,0 +1,371 @@
+name: grid.egon_etrago_line
+'@id': null
+title: Line
+path: WILL_BE_SET_AT_PUBLICATION
+description: TODO
+languages:
+- en-EN
+subject:
+- name: ''
+  '@id': null
+publicationDate: '2026-10-02'
+embargoPeriod:
+  start: ''
+  end: ''
+  isActive: false
+spatial:
+  location:
+    address: null
+    '@id': null
+    latitude: ''
+    longitude: ''
+  extent:
+    name: Germany
+    '@id': null
+    resolutionValue: ''
+    resolutionUnit: ''
+    boundingBox:
+    - 0
+    - 0
+    - 0
+    - 0
+    crs: ''
+temporal:
+  referenceDate: ''
+  timeseries:
+  - start: ''
+    end: ''
+    resolutionValue: ''
+    resolutionUnit: ''
+    alignment: ''
+    aggregationType: ''
+sources:
+- title: eGon-data
+  authors: []
+  description: Workflow to download, process and generate data sets suitable for the
+    further research conducted in the project eGon (https://ego-n.org/)
+  publicationYear: null
+  path: https://github.com/openego/eGon-data
+  sourceLicenses:
+  - name: AGPL-3.0 License
+    title: GNU Affero General Public License v3.0
+    path: https://www.gnu.org/licenses/agpl-3.0.de.html
+    instruction: Permissions of this strongest copyleft license areconditioned on
+      making available complete source code of licensed works and modifications, which
+      include larger works using a licensedwork, under the same license. Copyright
+      and license notices must bepreserved. Contributors provide an express grant
+      of patent rights.When a modified version is used to provide a service over a
+      network,the complete source code of the modified version must be made available.
+    attribution: © eGon development team
+    copyrightStatement: null
+- title: OpenStreetMap Data Extracts (Geofabrik)
+  authors: []
+  description: Full data extract of OpenStreetMap data for defined spatial extent
+    at "referenceDate"
+  publicationYear: null
+  path: https://download.geofabrik.de/europe/germany-210101.osm.pbf
+  sourceLicenses:
+  - name: ODbL-1.0
+    title: Open Data Commons Open Database License 1.0
+    path: https://opendatacommons.org/licenses/odbl/1.0/index.html
+    instruction: 'You are free: To Share, To Create, To Adapt; As long as you: Attribute,
+      Share-Alike, Keep open!'
+    attribution: © OpenStreetMap contributors
+    copyrightStatement: null
+licenses:
+- name: ODbL-1.0
+  title: Open Data Commons Open Database License 1.0
+  path: https://opendatacommons.org/licenses/odbl/1.0/index.html
+  instruction: 'You are free: To Share, To Create, To Adapt; As long as you: Attribute,
+    Share-Alike, Keep open!'
+  attribution: © eGon development team
+  copyrightStatement: null
+contributors:
+- title: Ilka Cußmann
+  path: null
+  organization: null
+  roles:
+  - ''
+  date: null
+  object: null
+  comment: Added lines from osmTGmod tables
+- title: Clara Büttner
+  path: null
+  organization: null
+  roles:
+  - ''
+  date: null
+  object: null
+  comment: Added meta data
+- title: eGon-data metadata migration
+  path: https://github.com/openego/eGon-data
+  roles:
+  - dataCurator
+  organization: null
+  date: '2026-10-20'
+  object: metadata
+  comment: Migrated from the OEMetadata v1.4 table comment of a full eGon-data run
+    to OEMetadata v2 with OMI.
+type: Table
+format: PostgreSQL
+encoding: UTF-8
+schema:
+  fields:
+  - name: ''
+    description: Unique name
+    type: int
+    nullable: true
+    unit: none
+    isAbout: []
+    valueReference: []
+    attribute: line_id
+    default: n/a
+    status: Input (required)
+  - name: ''
+    description: Name of first bus to which branch is attached.
+    type: string
+    nullable: true
+    unit: none
+    isAbout: []
+    valueReference: []
+    attribute: bus0
+    default: n/a
+    status: Input (required)
+  - name: ''
+    description: Name of second bus to which branch is attached.
+    type: string
+    nullable: true
+    unit: none
+    isAbout: []
+    valueReference: []
+    attribute: bus1
+    default: n/a
+    status: Input (required)
+  - name: ''
+    description: Name of line standard type. If this is not an empty string "", then
+      the line standard type impedance parameters are multiplied with the line length
+      and divided/multiplied by num_parallel to compute x, r, etc. This will override
+      any values set in r, x, and b. If the string is empty, PyPSA will simply read
+      r, x, etc.
+    type: string
+    nullable: true
+    unit: none
+    isAbout: []
+    valueReference: []
+    attribute: type
+    default: n/a
+    status: Input (optional)
+  - name: ''
+    description: Series reactance, must be non-zero for AC branch in linear power
+      flow. If the line has series inductance :math:`L` in Henries then :math:`x =
+      2\pi f L` where :math:`f` is the frequency in Hertz. Series impedance :math:`z
+      = r + jx` must be non-zero for the non-linear power flow. Ignored if type defined.
+    type: float
+    nullable: true
+    unit: Ohm
+    isAbout: []
+    valueReference: []
+    attribute: x
+    default: '0'
+    status: Input (required)
+  - name: ''
+    description: Series resistance, must be non-zero for DC branch in linear power
+      flow. Series impedance :math:`z = r + jx` must be non-zero for the non-linear
+      power flow. Ignored if type defined.
+    type: float
+    nullable: true
+    unit: Ohm
+    isAbout: []
+    valueReference: []
+    attribute: r
+    default: '0'
+    status: Input (required)
+  - name: ''
+    description: Shunt conductivity. Shunt admittance is :math:`y = g + jb`.
+    type: float
+    nullable: true
+    unit: Siemens
+    isAbout: []
+    valueReference: []
+    attribute: g
+    default: '0'
+    status: Input (optional)
+  - name: ''
+    description: Shunt susceptance. If the line has shunt capacitance :math:`C` in
+      Farads then :math:`b = 2\pi f C` where :math:`f` is the frequency in Hertz.
+      Shunt admittance is :math:`y = g + jb`. Ignored if type defined.
+    type: float
+    nullable: true
+    unit: Siemens
+    isAbout: []
+    valueReference: []
+    attribute: b
+    default: '0'
+    status: Input (optional)
+  - name: ''
+    description: Limit of apparent power which can pass through branch.
+    type: float
+    nullable: true
+    unit: MVA
+    isAbout: []
+    valueReference: []
+    attribute: s_nom
+    default: '0'
+    status: Input (optional)
+  - name: ''
+    description: Switch to allow capacity s_nom to be extended in OPF.
+    type: boolean
+    nullable: true
+    unit: none
+    isAbout: []
+    valueReference: []
+    attribute: s_nom_extendable
+    default: 'False'
+    status: Input (optional)
+  - name: ''
+    description: If s_nom is extendable in OPF, set its minimum value.
+    type: float
+    nullable: true
+    unit: MVA
+    isAbout: []
+    valueReference: []
+    attribute: s_nom_min
+    default: '0'
+    status: Input (optional)
+  - name: ''
+    description: If s_nom is extendable in OPF, set its maximum value (e.g. limited
+      by potential).
+    type: float
+    nullable: true
+    unit: MVA
+    isAbout: []
+    valueReference: []
+    attribute: s_nom_max
+    default: inf
+    status: Input (optional)
+  - name: ''
+    description: The maximum allowed absolute flow per unit of s_nom for the OPF (e.g.
+      can be set <1 to approximate n-1 factor, or can be time-varying to represent
+      weather-dependent dynamic line rating for overhead lines).
+    type: static or series
+    nullable: true
+    unit: per unit
+    isAbout: []
+    valueReference: []
+    attribute: s_max_pu
+    default: '1'
+    status: Input (optional)
+  - name: ''
+    description: Capital cost of extending s_nom by 1 MVA.
+    type: float
+    nullable: true
+    unit: currency/MVA
+    isAbout: []
+    valueReference: []
+    attribute: capital_cost
+    default: '0'
+    status: Input (optional)
+  - name: ''
+    description: build year
+    type: int
+    nullable: true
+    unit: year
+    isAbout: []
+    valueReference: []
+    attribute: build_year
+    default: '0'
+    status: Input (optional)
+  - name: ''
+    description: lifetime
+    type: float
+    nullable: true
+    unit: years
+    isAbout: []
+    valueReference: []
+    attribute: lifetime
+    default: inf
+    status: Input (optional)
+  - name: ''
+    description: Length of line used when "type" is set, also useful for calculating
+      the capital cost.
+    type: float
+    nullable: true
+    unit: km
+    isAbout: []
+    valueReference: []
+    attribute: length
+    default: '0'
+    status: Input (optional)
+  - name: ''
+    description: Type of current, "AC" is the only valid value
+    type: string
+    nullable: true
+    unit: none
+    isAbout: []
+    valueReference: []
+    attribute: carrier
+    default: n/a
+    status: Input (optional)
+  - name: ''
+    description: Terrain factor for increasing capital cost.
+    type: float
+    nullable: true
+    unit: per unit
+    isAbout: []
+    valueReference: []
+    attribute: terrain_factor
+    default: '1'
+    status: Input (optional)
+  - name: ''
+    description: When "type" is set, this is the number of parallel lines (can also
+      be fractional). If "type" is empty "" this value is ignored.
+    type: float
+    nullable: true
+    unit: none
+    isAbout: []
+    valueReference: []
+    attribute: num_parallel
+    default: '1'
+    status: Input (optional)
+  - name: ''
+    description: Minimum voltage angle difference across the line. This is a placeholder
+      attribute and is not currently used by any PyPSA functions.
+    type: float
+    nullable: true
+    unit: Degrees
+    isAbout: []
+    valueReference: []
+    attribute: v_ang_min
+    default: -inf
+    status: Input (optional)
+  - name: ''
+    description: Maximum voltage angle difference across the line. This is a placeholder
+      attribute and is not currently used by any PyPSA functions.
+    type: float
+    nullable: true
+    unit: Degrees
+    isAbout: []
+    valueReference: []
+    attribute: v_ang_max
+    default: inf
+    status: Input (optional)
+  - name: ''
+    description: Name of the eGon scenario
+    type: string
+    nullable: true
+    unit: n/a
+    isAbout: []
+    valueReference: []
+    attribute: scn_name
+    default: n/a
+    status: Input
+  primaryKey:
+  - scn_name
+  - line_id
+  foreignKeys: []
+dialect:
+  delimiter: ''
+  decimalSeparator: ''
+review:
+  path: ''
+  badge: ''
