@@ -22,11 +22,10 @@ import json
 import math
 import sys
 
-import yaml
-
 from omi.conversion import convert_metadata
 from omi.creation.init import add_resource_from_oem_metadata
 from omi.validation import validate_metadata
+import yaml
 
 from egon.data.metadata.inventory import (
     expected_tables,
@@ -80,14 +79,21 @@ def _clean(value):
     """Replace NaN and the placeholder @id by None, undo legacy wrapping."""
     if isinstance(value, float) and math.isnan(value):
         return None
-    if isinstance(value, str) and len(value) > 1 and value[0] == value[-1] == '"':
+    if (
+        isinstance(value, str)
+        and len(value) > 1
+        and value[0] == value[-1] == '"'
+    ):
         return value[1:-1]  # quoted twice by the legacy code
     if isinstance(value, dict) and isinstance(value.get("name"), dict):
         return _clean(value["name"])  # license nested in its own "name"
     if isinstance(value, dict):
         return {
-            k: (None if k == "@id" and v == "WILL_BE_SET_AT_PUBLICATION"
-                else _clean(v))
+            k: (
+                None
+                if k == "@id" and v == "WILL_BE_SET_AT_PUBLICATION"
+                else _clean(v)
+            )
             for k, v in value.items()
         }
     if isinstance(value, list):
