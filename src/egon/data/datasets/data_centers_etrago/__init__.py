@@ -22,6 +22,16 @@ from egon.data.datasets.scenario_parameters import (
     align_weekdays,
     get_sector_parameters,
 )
+from egon.data.validation.rules.custom.sanity import (
+    DataCenterAnnualDemand,
+    DataCenterLoads,
+    DataCenterLoadTimeseries,
+    DataCenterPeakLoads,
+    DataCenterScenarioCoverage,
+    DataCenterWasteHeatGenerators,
+    DataCenterWasteHeatProfile,
+    DataCenterWasteHeatTimeseries,
+)
 
 # Data center target capacities for Scenarios A, B and C are derived from
 # the data center electricity demand ("davon aus neuen Rechenzentren") in the
@@ -1207,4 +1217,112 @@ class DataCenters(Dataset):
             version=self.version,
             dependencies=dependencies,
             tasks=(insert_data_centers,),
+            validation={
+                "data_quality": [
+                    DataCenterScenarioCoverage(
+                        rule_id="SANITY_DATA_CENTERS_COVERAGE",
+                    ),
+                    # reGon2037
+                    DataCenterLoads(
+                        rule_id=(
+                            "SANITY_DATA_CENTERS_LOADS"
+                            ".reGon2037"
+                        ),
+                        scenario="reGon2037",
+                    ),
+                    DataCenterLoadTimeseries(
+                        rule_id=(
+                            "SANITY_DATA_CENTERS_LOAD_TIMESERIES"
+                            ".reGon2037"
+                        ),
+                        scenario="reGon2037",
+                    ),
+                    DataCenterAnnualDemand(
+                        rule_id=(
+                            "SANITY_DATA_CENTERS_ANNUAL_DEMAND"
+                            ".reGon2037"
+                        ),
+                        scenario="reGon2037",
+                    ),
+                    DataCenterPeakLoads(
+                        rule_id=(
+                            "SANITY_DATA_CENTERS_PEAK_LOADS"
+                            ".reGon2037"
+                        ),
+                        scenario="reGon2037",
+                    ),
+                    DataCenterWasteHeatGenerators(
+                        rule_id=(
+                            "SANITY_DATA_CENTERS_WASTE_HEAT_GENERATORS"
+                            ".reGon2037"
+                        ),
+                        scenario="reGon2037",
+                    ),
+                    DataCenterWasteHeatTimeseries(
+                        rule_id=(
+                            "SANITY_DATA_CENTERS_WASTE_HEAT_TIMESERIES"
+                            ".reGon2037"
+                        ),
+                        scenario="reGon2037",
+                    ),
+                    DataCenterWasteHeatProfile(
+                        rule_id=(
+                            "SANITY_DATA_CENTERS_WASTE_HEAT_PROFILE"
+                            ".reGon2037"
+                        ),
+                        scenario="reGon2037",
+                    ),
+                    # reGon2045
+                    DataCenterLoads(
+                        rule_id=(
+                            "SANITY_DATA_CENTERS_LOADS"
+                            ".reGon2045"
+                        ),
+                        scenario="reGon2045",
+                    ),
+                    DataCenterLoadTimeseries(
+                        rule_id=(
+                            "SANITY_DATA_CENTERS_LOAD_TIMESERIES"
+                            ".reGon2045"
+                        ),
+                        scenario="reGon2045",
+                    ),
+                    DataCenterAnnualDemand(
+                        rule_id=(
+                            "SANITY_DATA_CENTERS_ANNUAL_DEMAND"
+                            ".reGon2045"
+                        ),
+                        scenario="reGon2045",
+                    ),
+                    DataCenterPeakLoads(
+                        rule_id=(
+                            "SANITY_DATA_CENTERS_PEAK_LOADS"
+                            ".reGon2045"
+                        ),
+                        scenario="reGon2045",
+                    ),
+                    DataCenterWasteHeatGenerators(
+                        rule_id=(
+                            "SANITY_DATA_CENTERS_WASTE_HEAT_GENERATORS"
+                            ".reGon2045"
+                        ),
+                        scenario="reGon2045",
+                    ),
+                    DataCenterWasteHeatTimeseries(
+                        rule_id=(
+                            "SANITY_DATA_CENTERS_WASTE_HEAT_TIMESERIES"
+                            ".reGon2045"
+                        ),
+                        scenario="reGon2045",
+                    ),
+                    DataCenterWasteHeatProfile(
+                        rule_id=(
+                            "SANITY_DATA_CENTERS_WASTE_HEAT_PROFILE"
+                            ".reGon2045"
+                        ),
+                        scenario="reGon2045",
+                    ),
+                ],
+            },
+            proceed_on_validation_failure=True,
         )
