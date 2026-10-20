@@ -11,6 +11,22 @@ The one-line summary: **declare your tables on your Dataset class, run
 two commands, fill in the TODOs in one YAML file, commit it with your
 code.**
 
+Quickstart: I have a new or changed table
+=========================================
+
+.. code-block:: bash
+
+   # 1. declare the table in DatasetTargets on your Dataset class (see below)
+   # 2. run your dataset locally, so the table exists in your database
+   egon-data metadata init --scope MyDataset     # 3. writes/updates the YAML
+   $EDITOR src/egon/data/metadata/dataset_metadata/resources/<id>/<schema>_<table>.resource.yaml
+                                                 # 4. replace every TODO
+   egon-data metadata status --scope MyDataset   # 5. "complete"? commit it
+                                                 #    together with your code
+
+The CI test job checks the whole store on every push, so a table without
+metadata or a YAML that is not valid OEMetadata fails the build.
+
 Cheat sheet
 ===========
 
@@ -21,6 +37,7 @@ see what's missing for my task group             ``egon-data metadata status --s
 create/update the YAML skeletons for my scope    ``egon-data metadata init --scope heat_demand``
 check the whole store (what CI checks)           ``egon-data metadata status``
 regenerate the per-table JSON files, no DB       ``egon-data metadata export``
+run exactly what CI runs                          ``pytest tests/test_metadata_store.py``
 ===============================================  ===================================================
 
 ``--scope`` accepts a task group (``heat_demand``), an OEMetadata
@@ -92,6 +109,17 @@ blanks and ``TODO``\ s. What actually matters:
 You can ignore the rest of the file; shared content (project context,
 default licenses, keywords) is inherited from the dataset template.
 
+Two things the template cannot know:
+
+- **The license of your data.** If your table is not under the eGon
+  default license, add a ``licenses:`` block to the resource — it
+  replaces the template's. Anything derived from OpenStreetMap is
+  ``ODbL-1.0`` with "© OpenStreetMap contributors"; name every upstream
+  whose attribution terms apply.
+- **Column types** are written by ``init`` from the database
+  (``bigint``, ``text``, ``geometry(Point,3035)``). Leave them as they
+  are; ``init`` corrects them when the table changes.
+
 **Step 5 — verify and commit:**
 
 .. code-block:: bash
@@ -106,6 +134,36 @@ code change**. Done — publication happens automatically from here on.
    If your task group is new (not yet in
    ``dataset_metadata/dataset_ids.yaml``), add one line there — task
    group name on the left, ``egon_<task_group>`` on the right.
+
+.. note::
+
+   If your dataset writes into a table another task group also writes
+   (typically ``grid.egon_etrago_load`` and the other eTraGo tables),
+   you do not create a second YAML: the table is documented once, by its
+   owner in ``table_owners`` (``dataset_ids.yaml``). Add a sentence about
+   your contribution to that resource's description instead.
+
+Worked example: ETHOS.BUILDA (#1310)
+------------------------------------
+
+The ETHOS.BUILDA integration added ``society.egon_ethos_builda_buildings``
+and rebuilt ``openstreetmap.osm_buildings_residential``. What it took:
+
+1. ``EthosBuilda`` and ``OsmBuildingsStreets`` already declared both
+   tables in ``DatasetTargets`` — nothing to register.
+2. Both YAMLs live in ``resources/egon_input_data/``, because both
+   classes are in the ``input_data`` task group. ``init`` would have
+   written the skeletons; here they were written from the agreed table
+   schema while no database was at hand, and ``init`` was run later
+   against a full run to confirm that columns and types match.
+3. Filled in: title, a description paragraph, one line per column, the
+   sources (the ETHOS.BUILDA archetype dataset, TABULA building
+   typology, Zensus 2011 buildings grid) and a ``licenses:`` block —
+   ODbL, because the residential table is derived from OpenStreetMap,
+   with attribution to every upstream (FZ Jülich, Statistische Ämter,
+   TABULA/EPISCOPE, OpenStreetMap contributors).
+4. ``egon-data metadata status --scope EthosBuilda`` → ``complete``;
+   committed with the dataset code.
 
 Use case 2: I want to edit or update existing metadata
 ======================================================
@@ -187,6 +245,18 @@ Troubleshooting
 
 ``[missing] my.table (produced by MyClass)`` in status
    No resource YAML exists yet → use case 1, step 3.
+
+``[ambiguous] my.table is produced by the task groups [...]``
+   Several task groups write this table. Decide which one documents it
+   and add ``my.table: <task group>`` under ``table_owners`` in
+   ``dataset_ids.yaml``.
+
+``tests/test_metadata_store.py`` fails in CI
+   The message names the table or dataset: a missing YAML (run
+   ``init``), an ambiguous shared table (see above), or a YAML that does
+   not assemble into valid OEMetadata (run
+   ``egon-data metadata export --scope <dataset id>`` locally to see the
+   validation error).
 
 ``[orphan] some.table``
    A YAML exists but no class declares the table in ``DatasetTargets``

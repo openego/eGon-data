@@ -42,6 +42,15 @@ Structural truth from the database, descriptive truth from humans
    the YAML files. The two are merged non-destructively: regeneration
    never overwrites human-written text.
 
+One table, one resource
+   A table written by several task groups (the eTraGo tables are written
+   by up to twelve) is documented exactly once, in the dataset of its
+   *owning* task group, named under ``table_owners`` in
+   ``dataset_ids.yaml``. The rule is "the group that creates the table",
+   with one exception: the ``grid.egon_etrago_*`` tables are created in
+   ``setup`` but published as eTraGo input. A shared table without an
+   owner is an error in ``status`` and in CI.
+
 Drift never breaks the pipeline
    If a table gains a column that the YAML does not describe, the run
    merges the column with a ``TODO`` description placeholder and logs a
@@ -59,7 +68,9 @@ several pipeline classes. OEMetadata datasets serve publication,
 findability and reproducibility; pipeline classes serve execution. The
 mapping between the two lives in one file:
 ``dataset_metadata/dataset_ids.yaml`` (task group → dataset id, ids
-follow ``egon_<task_group>``).
+follow ``egon_<task_group>``; plus ``table_owners`` for shared tables).
+Dataset classes that are not wired into the DAG produce nothing and are
+not expected to carry metadata.
 
 The metadata store
 ==================
@@ -68,7 +79,7 @@ Layout (`OMI's split-files convention
 <https://github.com/OpenEnergyPlatform/omi>`_)::
 
    src/egon/data/metadata/dataset_metadata/
-   ├── dataset_ids.yaml               # task group -> dataset id mapping
+   ├── dataset_ids.yaml               # task group -> dataset id, table owners
    ├── datasets/
    │   ├── egon_heat_demand.dataset.yaml    # dataset-level fields
    │   ├── egon_heat_demand.template.yaml   # shared per-resource content
@@ -89,6 +100,14 @@ Layout (`OMI's split-files convention
   ``sources`` (provenance), licenses, spatial/temporal extent. The
   ``name`` field inside is the real ``schema.table`` identifier; the
   filename replaces the dot with an underscore.
+- Field ``type`` values are the database's own type names (``bigint``,
+  ``text``, ``double precision``, ``geometry(Point,3035)``), as on the
+  OEP — ``init`` and the run task take them from PostgreSQL directly.
+- ``licenses`` in a resource *replaces* the template's default; use it
+  whenever a table's data is not under the eGon default license (e.g.
+  OSM-derived tables: ODbL with "© OpenStreetMap contributors").
+  ``keywords``, ``topics`` and ``languages`` are *added* to the
+  template's.
 
 Components
 ==========
@@ -103,7 +122,7 @@ Components
    by AST-parsing the source tree and ``pipeline.py`` — no airflow or
    database imports — so it runs in CI and on any checkout. This module
    answers "which tables must be documented" and "which dataset id does
-   a table belong to".
+   a table belong to" (including the owner of a shared table).
 
 ``egon.data.metadata.cli``
    The ``egon-data metadata status|init|export`` developer commands
@@ -154,6 +173,8 @@ Consequences:
 - Validation failures are real errors (the YAML no longer conforms to
   the OEMetadata schema); drift is never a failure.
 
+.. _metadata-coverage-states:
+
 Coverage states
 ===============
 
@@ -171,6 +192,10 @@ orphan
    target — either dead metadata or (more likely) a missing
    ``DatasetTargets`` declaration on the producer.
 
+ambiguous
+   A table is written by several task groups and ``table_owners`` does
+   not say which one documents it — CI-blocking like ``missing``.
+
 Additionally, consumed *source* tables that are produced inside eGon-data
 but have no metadata of their own are reported as provenance warnings.
 
@@ -178,18 +203,27 @@ Status and planned work
 =======================
 
 Implemented
-   Split store with per-task-group datasets, ``dataset_ids.yaml``,
-   static inventory, the three CLI commands, the multi-dataset run task
-   with drift-tolerant schema merge and per-table JSON export.
+   Split store with per-task-group datasets, ``dataset_ids.yaml`` with
+   table owners, static inventory, the three CLI commands, the
+   multi-dataset run task with drift-tolerant schema merge and per-table
+   JSON export, and the CI gate (``tests/test_metadata_store.py``, runs
+   in the normal test job without a database). Every table the pipeline
+   produces has metadata; how much of it is still ``TODO`` is shown by
+   ``egon-data metadata status``. How the store was filled from the
+   legacy metadata is described in :doc:`metadata_migration`.
+
+Requires
+   OMI ≥ 1.3.0 (creation helpers, database-native column types).
 
 Planned
    A JSONB metadata table (``metadata.oemetadata``) replacing the
    full-JSON table comments with a one-line pointer comment; minting the
-   ``@id`` IRI at publication time; a push interface beyond the OEP;
-   wiring ``status --strict`` into CI as the coverage gate.
+   ``@id`` IRI at publication time; a push interface beyond the OEP; one
+   store-wide template in OMI instead of one identical copy per dataset.
 
 .. toctree::
    :maxdepth: 1
    :hidden:
 
    metadata_howto
+   metadata_migration
