@@ -6,11 +6,10 @@ registration statistics. Instead, one bundle per scenario is delivered by
 the data providers, published on Zenodo as a single zip archive and
 downloaded by the pipeline itself.
 
-This module is deliberately free of imports from the two consuming
-datasets
-(:mod:`egon.data.datasets.emobility.motorized_individual_travel` and
-:mod:`egon.data.datasets.emobility.motorized_individual_travel_charging_infrastructure`)
-so that both can use it without an import cycle.
+This module is deliberately free of imports from the consuming dataset
+(:mod:`egon.data.datasets.emobility.motorized_individual_travel`), so that
+its submodules and the validation rules can use it without an import
+cycle.
 
 Notes
 -----
@@ -19,6 +18,7 @@ keeps taking its trip tarball from the data bundle, unchanged.
 """
 
 from pathlib import Path
+import json
 import os
 import time
 import zipfile
@@ -51,13 +51,75 @@ INPUT_FILES = {
     "ev_count_municipality": "ev_count_municipality.parquet",
     "ev_charging_location": "ev_charging_location.parquet",
     "ev_mapping_ev_municipality": "ev_mapping_ev_municipality.parquet",
-    # Not imported into the database (D1): ~5e8 rows for status2024 and
-    # an estimated ~8e9 for reGon2045. Consumers read the parquet file
-    # from the extracted archive directly.
+    # One row per placement (~5e8 for status2024, ~5e9 for each reGon
+    # scenario). Folded into one event-id array per charging location
+    # on import, cf. `mit_import.import_location_events()`.
     "ev_mapping_event_location": "ev_mapping_event_location.parquet",
     "metadata_simbev_run": SIMBEV_METADATA_FILE,
     "metadata_geolis_run": GEOLIS_METADATA_FILE,
 }
+
+#: Columns the importers read from each delivered parquet file. Checked
+#: against the parquet footers right after extraction, so a delivery
+#: with a missing or renamed column fails before the first import instead
+#: of hours into the run.
+REQUIRED_COLUMNS = {
+    "ev_pool": ["ev_id", "rs7_id", "type"],
+    "ev_event": [
+        "event_id",
+        "ev_id",
+        "charging_use_case",
+        "location",
+        "nominal_charging_capacity_kW",
+        "soc_start",
+        "soc_end",
+        "chargingdemand_battery_kWh",
+        "park_start_timesteps",
+        "park_end_timesteps",
+        "drive_start_timesteps",
+        "drive_end_timesteps",
+        "consumption_kWh",
+    ],
+    "ev_count_municipality": [
+        "ags",
+        "rs7_id",
+        "bev_mini",
+        "bev_medium",
+        "bev_luxury",
+        "phev_mini",
+        "phev_medium",
+        "phev_luxury",
+        "bev_commercial",
+        "phev_commercial",
+        "bev_light_duty_vehicle",
+    ],
+    "ev_charging_location": [
+        "location_id",
+        "charging_points",
+        "average_charging_capacity",
+        "use_case",
+        "candidate_uid",
+        "is_synthetic_location",
+        "geometry",
+    ],
+    "ev_mapping_ev_municipality": ["ev_id"],
+    "ev_mapping_event_location": ["event_id", "location_id"],
+}
+
+#: Keys of `metadata_geolis_run.json` that identify a delivery. Recorded
+#: next to every extraction, cf. :func:`delivery_identity`.
+DELIVERY_IDENTITY_KEYS = (
+    "consolidated_at",
+    "n_locations",
+    "n_event_rows",
+    "n_vehicle_instances",
+)
+
+#: Whether the input data may be fetched from Zenodo. Off while the
+#: current delivery (consolidated 8-15 October 2026) is not published
+#: yet: the scenario directories are then provided locally, e.g. as
+#: symlinks, in :data:`INPUT_DATA_DIR`.
+ZENODO_DOWNLOAD_ENABLED = False
 
 # Zenodo dataset
 ZENODO_RECORD = 23162886
@@ -176,16 +238,117 @@ def missing_input_files(scenario_name: str) -> list:
     ]
 
 
-def is_extracted(scenario_name: str) -> bool:
-    """Whether the scenario's archive has already been extracted."""
-    return not missing_input_files(scenario_name)
+def delivery_marker(scenario_name: str) -> Path:
+    """File recording which delivery a scenario directory holds.
+
+    Kept next to the scenario directory rather than inside it, so that a
+    directory symlinked to a read-only delivery folder works as well.
+    """
+    return INPUT_DATA_DIR / f"{scenario_name}.delivery.json"
+
+
+def delivery_identity(geolis_metadata: dict) -> dict:
+    """The identifying keys of a delivery's GeoLIS run metadata."""
+    return {key: geolis_metadata.get(key) for key in DELIVERY_IDENTITY_KEYS}
+
+
+def _archive_identity(archive: Path, scenario_name: str) -> dict:
+    """Delivery identity read from the GeoLIS metadata inside an archive."""
+    with zipfile.ZipFile(archive, "r") as zip_ref:
+        member = next(
+            (
+                _
+                for _ in zip_ref.namelist()
+                if _.endswith(f"{scenario_name}/{GEOLIS_METADATA_FILE}")
+            ),
+            None,
+        )
+        if member is None:
+            raise FileNotFoundError(
+                f"{GEOLIS_METADATA_FILE} for scenario '{scenario_name}' "
+                f"not found in {archive}."
+            )
+        return delivery_identity(json.loads(zip_ref.read(member)))
+
+
+def _directory_identity(scenario_name: str) -> dict:
+    """Delivery identity read from the extracted GeoLIS metadata."""
+    path = scenario_input_dir(scenario_name) / GEOLIS_METADATA_FILE
+    with open(path) as f:
+        return delivery_identity(json.load(f))
+
+
+def _recorded_identity(scenario_name: str):
+    """Delivery identity recorded at the last extraction, or None."""
+    marker = delivery_marker(scenario_name)
+    if not marker.is_file():
+        return None
+    with open(marker) as f:
+        return json.load(f)
+
+
+def _record_identity(scenario_name: str, identity: dict) -> None:
+    """Record which delivery the scenario directory holds."""
+    delivery_marker(scenario_name).parent.mkdir(parents=True, exist_ok=True)
+    with open(delivery_marker(scenario_name), "w") as f:
+        json.dump(identity, f, indent=2)
+
+
+def is_extracted(scenario_name: str, identity: dict = None) -> bool:
+    """Whether the scenario's delivery is completely extracted.
+
+    Complete file names alone are not enough: a left-over extraction of
+    an earlier delivery has the same names. With `identity` given, the
+    recorded delivery must match it too.
+
+    Parameters
+    ----------
+    scenario_name : str
+        Scenario name
+    identity : dict, optional
+        Delivery identity the extraction has to match, cf.
+        :func:`delivery_identity`
+    """
+    if missing_input_files(scenario_name):
+        return False
+    if identity is None:
+        return True
+    return _recorded_identity(scenario_name) == identity
+
+
+def missing_columns(scenario_name: str) -> dict:
+    """Columns the importers need that a delivered file does not have.
+
+    Reads the parquet footers only, no data.
+
+    Returns
+    -------
+    dict
+        File key -> list of missing column names, only for files that
+        miss any
+    """
+    # Imported here so that consumers needing only the constants do not
+    # pull in pyarrow.
+    import pyarrow.parquet as pq
+
+    missing = {}
+    for key, columns in REQUIRED_COLUMNS.items():
+        schema = pq.read_schema(
+            scenario_input_dir(scenario_name) / INPUT_FILES[key]
+        )
+        absent = [_ for _ in columns if _ not in schema.names]
+        if absent:
+            missing[INPUT_FILES[key]] = absent
+    return missing
 
 
 def verify_extracted_files(scenario_name: str) -> None:
-    """Check that the extracted archive is complete.
+    """Check that the extracted delivery is complete and readable.
 
-    Raises with all missing names at once rather than letting the first
-    read fail somewhere in the middle of an import.
+    Fails with everything that is missing at once -- file names first,
+    then the columns every importer reads -- rather than letting the
+    first read fail somewhere in the middle of an import. Three
+    deliveries so far shipped a missing or renamed column.
     """
     missing = missing_input_files(scenario_name)
     if missing:
@@ -194,14 +357,21 @@ def verify_extracted_files(scenario_name: str) -> None:
             f"{missing} missing in {scenario_input_dir(scenario_name)}."
         )
 
+    absent = missing_columns(scenario_name)
+    if absent:
+        raise ValueError(
+            f"Input data for scenario '{scenario_name}' lacks columns "
+            f"the import needs: {absent}. The delivery does not match "
+            f"the agreed format."
+        )
+
 
 class _DownloadLock:
     """Crude cross-process lock around the shared download directory.
 
-    The MIT and the charging infrastructure dataset are independent (D3)
-    and may therefore fetch and extract the same multi-GB archive
-    concurrently. Without mutual exclusion one would read a half-written
-    file.
+    Retried or concurrently started tasks may fetch and extract the same
+    multi-GB archive at the same time. Without mutual exclusion one would
+    read a half-written file.
     """
 
     def __init__(self, path: Path):
@@ -237,12 +407,49 @@ class _DownloadLock:
         return False
 
 
+def _use_local_delivery(scenario_name: str) -> Path:
+    """Use a scenario directory provided locally instead of downloaded.
+
+    The delivery identity is read from the directory itself. A change
+    against the recorded one is logged, so it is visible in the task log
+    which delivery a run used.
+    """
+    directory = scenario_input_dir(scenario_name)
+    if missing_input_files(scenario_name):
+        raise FileNotFoundError(
+            f"The Zenodo download is disabled "
+            f"(`ZENODO_DOWNLOAD_ENABLED`), so the input data for "
+            f"scenario '{scenario_name}' has to be provided in "
+            f"{directory.resolve()}, e.g. as a symlink to the delivered "
+            f"folder. Missing: {missing_input_files(scenario_name)}."
+        )
+
+    identity = _directory_identity(scenario_name)
+    recorded = _recorded_identity(scenario_name)
+    if recorded is None:
+        print(f"  Using delivery {identity} from {directory.resolve()}.")
+    elif recorded != identity:
+        print(
+            f"  WARNING: the delivery in {directory.resolve()} changed "
+            f"since the last run: {recorded} -> {identity}."
+        )
+    else:
+        print(f"  Using delivery {identity} (unchanged).")
+    _record_identity(scenario_name, identity)
+    return directory
+
+
 def download_and_extract_scenario(scenario_name: str) -> Path:
     """Download and extract the input data archive of one scenario.
 
     Both steps are idempotent: an existing zip is not fetched again and
-    a complete extraction is not repeated. A full-scenario archive is
-    several GB, so a re-run of the task must not re-fetch it.
+    an extraction of the *same* delivery is not repeated. A
+    full-scenario archive is several GB, so a re-run of the task must
+    not re-fetch it. An extraction of a different delivery -- same file
+    names, different content -- is replaced, cf. :func:`is_extracted`.
+
+    While :data:`ZENODO_DOWNLOAD_ENABLED` is off, the scenario directory
+    has to be provided locally and is only checked.
 
     Parameters
     ----------
@@ -254,6 +461,11 @@ def download_and_extract_scenario(scenario_name: str) -> Path:
     pathlib.Path
         The extracted scenario directory
     """
+    if not ZENODO_DOWNLOAD_ENABLED:
+        directory = _use_local_delivery(scenario_name)
+        verify_extracted_files(scenario_name)
+        return directory
+
     # Imported here so that module import does not pull in urllib for
     # consumers that only need the constants.
     from urllib.request import urlretrieve
@@ -263,27 +475,7 @@ def download_and_extract_scenario(scenario_name: str) -> Path:
     archive = INPUT_DATA_DIR / f"{scenario_name}.zip"
     directory = scenario_input_dir(scenario_name)
 
-    # Nothing to do at all: check before taking the lock, so a run that
-    # only reads existing data never waits behind a download.
-    if is_extracted(scenario_name):
-        print(
-            f"Input data for scenario '{scenario_name}' already "
-            f"extracted to {directory}, nothing to do."
-        )
-        return directory
-
     with _DownloadLock(INPUT_DATA_DIR / f"{scenario_name}.lock"):
-        # The two steps are decided independently, and both are
-        # re-checked here: while this process waited for the lock,
-        # another one may have downloaded the archive, extracted it, or
-        # both.
-        if is_extracted(scenario_name):
-            print(
-                f"Input data for scenario '{scenario_name}' already "
-                f"extracted to {directory}, skipping extraction."
-            )
-            return directory
-
         if archive.is_file():
             print(f"Archive {archive} already present, skipping download.")
         else:
@@ -302,13 +494,23 @@ def download_and_extract_scenario(scenario_name: str) -> Path:
             urlretrieve(url, partial)
             partial.replace(archive)
 
-        print(
-            f"Extracting {archive} to {INPUT_DATA_DIR} "
-            f"({len(missing_input_files(scenario_name))} of "
-            f"{len(INPUT_FILES)} files missing)..."
-        )
-        with zipfile.ZipFile(archive, "r") as zip_ref:
-            zip_ref.extractall(INPUT_DATA_DIR)
+        identity = _archive_identity(archive, scenario_name)
+        if is_extracted(scenario_name, identity):
+            print(
+                f"Delivery {identity} of scenario '{scenario_name}' "
+                f"already extracted to {directory}, skipping extraction."
+            )
+        else:
+            recorded = _recorded_identity(scenario_name)
+            if recorded is not None and recorded != identity:
+                print(
+                    f"Replacing the extraction of delivery {recorded} "
+                    f"by {identity}."
+                )
+            print(f"Extracting {archive} to {INPUT_DATA_DIR}...")
+            with zipfile.ZipFile(archive, "r") as zip_ref:
+                zip_ref.extractall(INPUT_DATA_DIR)
+            _record_identity(scenario_name, identity)
 
         verify_extracted_files(scenario_name)
 
