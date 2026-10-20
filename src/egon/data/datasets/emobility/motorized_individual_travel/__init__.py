@@ -17,16 +17,20 @@ Two methodologies live side by side, dispatched per scenario by
 :func:`egon.data.datasets.emobility.mit_lgv_input_data.is_legacy_scenario`:
 
 * the **new** one (`status2024`, `reGon2037`, `reGon2045`) imports one
-  delivered bundle per scenario -- vehicle pool, events, vehicle counts
-  per municipality, charging locations and the allocation of vehicles to
-  municipalities -- from Zenodo. It covers vehicle class M1 (passenger
-  cars) *and* N1 (light commercial vehicles < 3.5 t) and is generated
-  together with the charging infrastructure, so events, vehicles and
-  charging points are mutually consistent. See
-  :mod:`egon.data.datasets.emobility.motorized_individual_travel.mit_import`.
+  delivered bundle per scenario -- vehicle profiles, their charging
+  events, charging locations and the placements of every vehicle's
+  charging events at those locations. It covers vehicle class M1
+  (passenger cars) *and* N1 (light commercial vehicles < 3.5 t). The
+  eTraGo model is built from the **placements**: one district model per
+  MV grid district from its charging locations at voltage levels 4-7, and
+  one transmission model per grid connection at levels 1-3. See
+  :mod:`.charging_locations`, :mod:`.mit_import` and
+  :mod:`.placement_model`.
 * the **legacy** one (`eGon2035`) keeps the simBEV trip tarball from the
-  data bundle and derives the fleet from KBA registration statistics. It
-  is kept as a long term stable scenario and is not in the defaults.
+  data bundle, derives the fleet from KBA registration statistics and
+  builds one model per MV grid district from the vehicles allocated to it
+  (:mod:`.model_timeseries`). It is kept as a long term stable scenario
+  and is not in the defaults.
 
 Both write the same tables, discriminated by `scenario`. Note that they
 have to be built in the *same* run: :func:`create_tables` drops and
@@ -624,6 +628,9 @@ class MotorizedIndividualTravel(Dataset):
     For more information see data documentation on :ref:`mobility-demand-mit-ref`.
 
     *Dependencies*
+      * :py:class:`SubstationVoronoi
+        <egon.data.datasets.substation_voronoi.SubstationVoronoi>`
+      * :py:class:`Osmtgmod <egon.data.datasets.osmtgmod.Osmtgmod>`
       * :py:class:`DataBundle <egon.data.datasets.data_bundle.DataBundle>`
       * :py:class:`MvGridDistricts
         <egon.data.datasets.mv_grid_districts.mv_grid_districts_setup>`
@@ -656,32 +663,33 @@ class MotorizedIndividualTravel(Dataset):
       * :py:class:`EgonEvMitLgvPool <egon.data.datasets.emobility.motorized_individual_travel.db_classes.EgonEvMitLgvPool>`
         is created and filled
       * :py:class:`EgonEvMitLgvTrip <egon.data.datasets.emobility.motorized_individual_travel.db_classes.EgonEvMitLgvTrip>`
-        is created and filled
-      * :py:class:`EgonEvMitLgvCountRegistrationDistrict <egon.data.datasets.emobility.motorized_individual_travel.db_classes.EgonEvMitLgvCountRegistrationDistrict>`
-        is created and filled (legacy methodology only)
+        is created and filled (new methodology: charging events only)
       * :py:class:`EgonEvMitLgvCountMunicipality <egon.data.datasets.emobility.motorized_individual_travel.db_classes.EgonEvMitLgvCountMunicipality>`
         is created and filled
-      * :py:class:`EgonEvMitLgvCountMvGridDistrict <egon.data.datasets.emobility.motorized_individual_travel.db_classes.EgonEvMitLgvCountMvGridDistrict>`
-        is created and filled
-      * :py:class:`EgonEvMitLgvMvGridDistrict <egon.data.datasets.emobility.motorized_individual_travel.db_classes.EgonEvMitLgvMvGridDistrict>`
-        is created and filled
-      * :py:class:`EgonEvMitLgvMappingEvMunicipality <egon.data.datasets.emobility.motorized_individual_travel.db_classes.EgonEvMitLgvMappingEvMunicipality>`
+      * :py:class:`EgonEvMitLgvChargingLocation <egon.data.datasets.emobility.motorized_individual_travel.db_classes.EgonEvMitLgvChargingLocation>`
         is created and filled (new methodology only)
+      * :py:class:`EgonEvMitLgvLocationEvents <egon.data.datasets.emobility.motorized_individual_travel.db_classes.EgonEvMitLgvLocationEvents>`
+        is created and filled (new methodology only)
+      * :py:class:`EgonEvMitLgvCountRegistrationDistrict <egon.data.datasets.emobility.motorized_individual_travel.db_classes.EgonEvMitLgvCountRegistrationDistrict>`,
+        :py:class:`EgonEvMitLgvCountMvGridDistrict <egon.data.datasets.emobility.motorized_individual_travel.db_classes.EgonEvMitLgvCountMvGridDistrict>`
+        and :py:class:`EgonEvMitLgvMvGridDistrict <egon.data.datasets.emobility.motorized_individual_travel.db_classes.EgonEvMitLgvMvGridDistrict>`
+        are created and filled (legacy methodology only)
       * :py:class:`EgonEvMitLgvMetadata <egon.data.datasets.emobility.motorized_individual_travel.db_classes.EgonEvMitLgvMetadata>`
         is created and filled
-      * :py:class:`EgonEvMitLgvFlexTimeseries <egon.data.datasets.emobility.motorized_individual_travel.flex_diagnostics.EgonEvMitLgvFlexTimeseries>`
-        is created and filled (new methodology only)
-      * :py:class:`EgonEvMitLgvEnergyBalance <egon.data.datasets.emobility.motorized_individual_travel.flex_diagnostics.EgonEvMitLgvEnergyBalance>`
-        is created and filled (new methodology only)
-      * :py:class:`EgonEvMitLgvChargingProfileUseCase <egon.data.datasets.emobility.motorized_individual_travel.flex_diagnostics.EgonEvMitLgvChargingProfileUseCase>`
-        is created and filled (new methodology only)
+      * :py:class:`EgonEvMitLgvFlexTimeseries <egon.data.datasets.emobility.motorized_individual_travel.flex_diagnostics.EgonEvMitLgvFlexTimeseries>`,
+        :py:class:`EgonEvMitLgvEnergyBalance <egon.data.datasets.emobility.motorized_individual_travel.flex_diagnostics.EgonEvMitLgvEnergyBalance>`
+        and :py:class:`EgonEvMitLgvChargingProfileUseCase <egon.data.datasets.emobility.motorized_individual_travel.flex_diagnostics.EgonEvMitLgvChargingProfileUseCase>`
+        are created and filled (new methodology only)
+      * eTraGo: `Li_ion` buses, `BEV_charger` / `BEV_charger_transmission`
+        links, `battery_storage` stores and `land_transport_EV` /
+        `land_transport_EV_transmission` loads with their timeseries
 
     *Configuration*
 
     Sources and targets are declared as class attributes below. The
-    Zenodo records of the delivered M1+N1 input data live in
-    :mod:`egon.data.datasets.emobility.mit_lgv_input_data`, which both
-    this dataset and the charging infrastructure dataset read them from.
+    Zenodo records of the delivered M1+N1 input data and the switch for
+    their download live in
+    :mod:`egon.data.datasets.emobility.mit_lgv_input_data`.
 
     """
 

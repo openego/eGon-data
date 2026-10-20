@@ -465,7 +465,9 @@ class EgonEvMitLgvMetadata(Base):
 
     scenario = Column(String, primary_key=True, index=True)
     simbev_config = Column(JSONB)
-    geolis_config = Column(JSONB)
+    # SQL NULL rather than the JSON value `null` for eGon2035, which ships
+    # no GeoLIS run, so `geolis_config IS NULL` finds it.
+    geolis_config = Column(JSONB(none_as_null=True))
 
 
 def _simbev_sources():
@@ -635,8 +637,9 @@ def _submit_table_metadata(
 def add_metadata():
     """Add OEP metadata to all tables of the MIT/LGV dataset.
 
-    Covers the tables of both methodologies, the two tables imported
-    from the delivered bundle and the three flexibility diagnostics of
+    Covers the tables of both methodologies, the charging locations and
+    placements of the new methodology and the three flexibility
+    diagnostics of
     :mod:`egon.data.datasets.emobility.motorized_individual_travel.flex_diagnostics`.
     """
     schema = "demand"
@@ -701,7 +704,8 @@ def add_metadata():
                 "Pool of pre-generated vehicle profiles for motorized "
                 "individual travel (M1) and light commercial vehicles "
                 "(N1). Each row is one profile; profiles are "
-                "instantiated multiple times across Germany."
+                "instantiated multiple times across Germany, n_vehicles "
+                "times for the new methodology."
             ),
             "keywords": ["ev", "mit", "lgv", "simbev", "pool"],
             "primary_key": ["scenario", "ev_id"],
@@ -712,10 +716,11 @@ def add_metadata():
             "table": "egon_ev_mit_lgv_trip",
             "title": "eGon EV/LGV trip profiles",
             "description": (
-                "Driving and parking events of the vehicle profile "
-                "pool. use_case carries the charging use case of the "
-                "event and is NULL for driving events and for parking "
-                "events without charging."
+                "Events of the vehicle profile pool. New methodology: "
+                "charging events only, use_case being their charging use "
+                "case. Legacy methodology (eGon2035): driving and parking "
+                "events, use_case NULL for driving events and for "
+                "parking events without charging."
             ),
             "keywords": ["ev", "mit", "lgv", "simbev", "trip", "profiles"],
             "primary_key": ["scenario", "event_id"],
@@ -759,10 +764,10 @@ def add_metadata():
             "table": "egon_ev_mit_lgv_count_mv_grid_district",
             "title": "eGon EV/LGV count per MV grid district",
             "description": (
-                "Number of vehicles per type and MV grid district. The "
-                "columns bev_commercial, phev_commercial and "
-                "bev_light_duty_vehicle are NULL for scenarios on the "
-                "legacy methodology."
+                "Number of vehicles per type and MV grid district. "
+                "Legacy methodology (eGon2035) only: the new methodology "
+                "builds its model from placements at charging locations, "
+                "not from vehicles allocated to grid districts."
             ),
             "keywords": ["ev", "mit", "lgv", "count", "mv", "grid"],
             "primary_key": ["scenario", "scenario_variation", "bus_id"],
@@ -775,9 +780,7 @@ def add_metadata():
             "title": "eGon EV/LGV MV grid district",
             "description": (
                 "Allocation of vehicle instances to MV grid districts: "
-                "one row per vehicle. ags names the municipality the "
-                "vehicle was delivered for and is NULL for scenarios on "
-                "the legacy methodology."
+                "one row per vehicle. Legacy methodology (eGon2035) only."
             ),
             "keywords": ["ev", "mit", "lgv", "mv", "grid"],
             "primary_key": "id",
@@ -786,36 +789,74 @@ def add_metadata():
             "spatial": germany_grid_district,
         },
         {
-            "table": "egon_ev_mit_lgv_mapping_ev_municipality",
-            "title": "eGon EV/LGV vehicles per municipality",
+            "table": "egon_ev_mit_lgv_charging_location",
+            "title": "eGon EV/LGV charging locations",
             "description": (
-                "Delivered allocation of vehicle instances to "
-                "municipalities: one row per vehicle. New methodology "
-                "only. The companion mapping of charging events to "
-                "charging locations is not imported into the database; "
-                "it is available as ev_mapping_event_location.parquet "
-                "in the extracted input data archive."
+                "Charging locations for motorized individual travel (M1) "
+                "and light commercial vehicles (N1), delivered together "
+                "with the vehicle profiles and their events, and their "
+                "assignment to the grid. Locations at identical "
+                "coordinates form one grid connection (grid_connection_id) "
+                "whose summed installed capacity gives the voltage level. "
+                "mv_grid_id is the MV grid district the location lies in, "
+                "or the nearest one (assignment = nearest). model_type "
+                "district (voltage levels 4-7) puts the location into the "
+                "district model of its MV grid district, transmission "
+                "(levels 1-3) into a model of its own per grid connection. "
+                "bus_id is the eTraGo AC bus of the model: the district's "
+                "for levels 3-7, the EHV substation's for levels 1-2. "
+                "is_synthetic_location marks fallback centroids rather "
+                "than real candidate sites. Consumers placing charging "
+                "parks (e.g. eDisGo): one charging park per location, its "
+                "charging events in egon_ev_mit_lgv_location_events."
             ),
-            "keywords": ["ev", "mit", "lgv", "municipality", "mapping"],
-            "primary_key": ["id", "scenario"],
-            "sources": [sources()["egon-data"], sources()["vg250"]]
-            + simbev
-            + delivered,
+            "keywords": ["ev", "mit", "lgv", "charging", "location", "geolis"],
+            "primary_key": ["location_id", "scenario"],
+            "sources": [sources()["egon-data"]] + simbev + delivered,
             "licenses": [license_odbl()],
-            "spatial": germany_municipality,
+            "spatial": {
+                "location": "none",
+                "extent": "Germany",
+                "resolution": "1 m",
+            },
+        },
+        {
+            "table": "egon_ev_mit_lgv_location_events",
+            "title": "eGon EV/LGV placements per charging location",
+            "description": (
+                "The placements: one row per charging location with the "
+                "ids of the charging events of every vehicle charging "
+                "there (event_ids, references egon_ev_mit_lgv_trip). An "
+                "event id repeats when several vehicles of one profile "
+                "charge at the location at the same time. A charging "
+                "location's events: unnest(event_ids) joined with "
+                "egon_ev_mit_lgv_trip on (scenario, event_id), the "
+                "vehicle type and battery via egon_ev_mit_lgv_pool. "
+                "Timesteps are quarter hours of the simulated year; a "
+                "parking window is the half-open interval [park_start, "
+                "park_end). charging_demand is battery side, "
+                "charging_capacity_grid the grid-side nameplate power; "
+                "eta_cp is in egon_ev_mit_lgv_metadata. Flexible use "
+                "cases: depot, home_detached, home_apartment, work."
+            ),
+            "keywords": ["ev", "mit", "lgv", "charging", "placements"],
+            "primary_key": ["scenario", "location_id"],
+            "sources": [sources()["egon-data"]] + simbev + delivered,
+            "licenses": [license_odbl()],
         },
         {
             "table": "egon_ev_mit_lgv_flex_timeseries",
             "title": "eGon EV/LGV charging and driving load",
             "description": (
-                "Flexibility diagnostics per MV grid district: the "
-                "grid-side dumb charging load, the share of it that "
-                "occurs at a use case eligible for flexible charging, "
-                "and the battery-side driving load, all hourly for one "
-                "year. charging_load_grid_flex is a potential, not a "
-                "realised flexibility. Sum(driving_load) equals "
-                "eta_cp * Sum(charging_load_grid) up to the PHEV fuel "
-                "share and the annual battery state-of-charge drift."
+                "Flexibility diagnostics per AC bus and model type "
+                "(district or transmission, the transmission models of a "
+                "bus aggregated): the grid-side dumb charging load, the "
+                "share of it that occurs at a use case eligible for "
+                "flexible charging, and the battery-side driving load, "
+                "all hourly for one year. charging_load_grid_flex is a "
+                "potential, not a realised flexibility. Sum(driving_load) "
+                "equals eta_cp * Sum(charging_load_grid), up to dumb "
+                "charging cropped at the year end."
             ),
             "keywords": [
                 "ev",
@@ -825,7 +866,7 @@ def add_metadata():
                 "charging",
                 "timeseries",
             ],
-            "primary_key": ["scenario", "bus_id"],
+            "primary_key": ["scenario", "bus_id", "model_type"],
             "sources": everything + simbev + delivered,
             "licenses": [license_odbl()],
             "spatial": germany_grid_district,
@@ -834,15 +875,11 @@ def add_metadata():
             "table": "egon_ev_mit_lgv_energy_balance",
             "title": "eGon EV/LGV annual energy balance",
             "description": (
-                "Annual energy balance per MV grid district, charging "
-                "use case and vehicle type, carrying both the "
-                "battery-side and the grid-side charging energy. "
-                "driving_consumption_MWh is the raw consumption of the "
-                "events and is not interchangeable with the modelled "
-                "driving load of egon_ev_mit_lgv_flex_timeseries: the "
-                "latter is filled only where the state of charge "
-                "actually decreases, so PHEV kilometres driven on fuel "
-                "do not enter it."
+                "Annual energy balance per AC bus, model type, charging "
+                "use case and vehicle type, from the placements of the "
+                "models: battery-side charging energy (which is also the "
+                "deficit energy, i.e. the driving load), grid-side "
+                "charging energy and the number of placements."
             ),
             "keywords": [
                 "ev",
@@ -852,7 +889,13 @@ def add_metadata():
                 "use case",
                 "flexibility",
             ],
-            "primary_key": ["scenario", "bus_id", "use_case", "type"],
+            "primary_key": [
+                "scenario",
+                "bus_id",
+                "model_type",
+                "use_case",
+                "type",
+            ],
             "sources": everything + simbev + delivered,
             "licenses": [license_odbl()],
             "spatial": germany_grid_district,
@@ -861,10 +904,10 @@ def add_metadata():
             "table": "egon_ev_mit_lgv_charging_profile_use_case",
             "title": "eGon EV/LGV charging profile per use case",
             "description": (
-                "Grid-side dumb charging load per MV grid district, "
+                "Grid-side dumb charging load per AC bus, model type, "
                 "charging use case and hour. Only use cases that occur "
-                "in a grid district get a row. Aggregated over all use "
-                "cases this equals charging_load_grid of "
+                "in a model get a row. Aggregated over all use cases "
+                "this equals charging_load_grid of "
                 "egon_ev_mit_lgv_flex_timeseries."
             ),
             "keywords": [
@@ -875,7 +918,7 @@ def add_metadata():
                 "use case",
                 "timeseries",
             ],
-            "primary_key": ["scenario", "bus_id", "use_case"],
+            "primary_key": ["scenario", "bus_id", "model_type", "use_case"],
             "sources": everything + simbev + delivered,
             "licenses": [license_odbl()],
             "spatial": germany_grid_district,

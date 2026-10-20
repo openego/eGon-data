@@ -7,7 +7,8 @@ The electricity demand of motorized individual travel (MIT, vehicle class M1)
 and light commercial vehicles (LGV, vehicle class N1) is set up for all
 configured scenarios in the
 :py:class:`MotorizedIndividualTravel<egon.data.datasets.emobility.motorized_individual_travel.MotorizedIndividualTravel>`
-dataset, the corresponding charging sites in
+dataset, together with the charging locations of the new methodology. The
+charging sites of the legacy methodology are set up in
 :py:class:`MITChargingInfrastructure<egon.data.datasets.emobility.motorized_individual_travel_charging_infrastructure.MITChargingInfrastructure>`.
 The workflow is visualised in figure :ref:`mit-model` and is analogous for each
 scenario. Scenarios differ in the assumed number of vehicles and in whether
@@ -55,21 +56,26 @@ it is not part of the egon-data data bundle. The archives are extracted into
     :name: mit-input-data
 
     "``ev_pool``", "the pool of pre-generated vehicle profiles", ":py:class:`EgonEvMitLgvPool<egon.data.datasets.emobility.motorized_individual_travel.db_classes.EgonEvMitLgvPool>`"
-    "``ev_event``", "driving and parking events of all pool vehicles", ":py:class:`EgonEvMitLgvTrip<egon.data.datasets.emobility.motorized_individual_travel.db_classes.EgonEvMitLgvTrip>`"
+    "``ev_event``", "driving and parking events of all pool vehicles", ":py:class:`EgonEvMitLgvTrip<egon.data.datasets.emobility.motorized_individual_travel.db_classes.EgonEvMitLgvTrip>`, charging events only"
     "``ev_count_municipality``", "vehicles per type and municipality", ":py:class:`EgonEvMitLgvCountMunicipality<egon.data.datasets.emobility.motorized_individual_travel.db_classes.EgonEvMitLgvCountMunicipality>`"
-    "``ev_mapping_ev_municipality``", "one row per vehicle, giving its municipality", ":py:class:`EgonEvMitLgvMappingEvMunicipality<egon.data.datasets.emobility.motorized_individual_travel.db_classes.EgonEvMitLgvMappingEvMunicipality>`"
-    "``ev_charging_location``", "charging sites", ":py:class:`EgonEvMitLgvChargingLocation<egon.data.datasets.emobility.motorized_individual_travel_charging_infrastructure.db_classes.EgonEvMitLgvChargingLocation>`"
-    "``ev_mapping_event_location``", "charging events mapped to charging sites", "**no**, see below"
+    "``ev_mapping_ev_municipality``", "one row per vehicle, giving its profile and municipality", "counted per profile into ``n_vehicles`` of the pool"
+    "``ev_charging_location``", "charging locations", ":py:class:`EgonEvMitLgvChargingLocation<egon.data.datasets.emobility.motorized_individual_travel.db_classes.EgonEvMitLgvChargingLocation>`"
+    "``ev_mapping_event_location``", "one row per placement: a vehicle's charging event at a charging location", ":py:class:`EgonEvMitLgvLocationEvents<egon.data.datasets.emobility.motorized_individual_travel.db_classes.EgonEvMitLgvLocationEvents>`, folded per location"
     "``metadata_simbev_run.json``, ``metadata_geolis_run.json``", "run configurations and technical data per vehicle type", ":py:class:`EgonEvMitLgvMetadata<egon.data.datasets.emobility.motorized_individual_travel.db_classes.EgonEvMitLgvMetadata>`"
 
-``ev_mapping_event_location`` is the one file that is **not** imported. It
-carries one row per (charging event × drawn vehicle), which is about
-5·10\ :sup:`8` rows for ``status2024`` and an estimated 8·10\ :sup:`9` for
-``reGon2045`` — several hundred GB in PostgreSQL, against a budget of about
-350 GB for the entire pipeline. Nothing in the database needs it, because the
-charging locations carry their own ``use_case``. Consumers that do need it read
-``ev_mapping_event_location.parquet`` directly from the extracted scenario
-directory.
+``ev_mapping_event_location`` holds the **placements**: one row per vehicle and
+charging event, naming the charging location the vehicle charges at — about
+5·10\ :sup:`8` rows for ``status2024`` and 5·10\ :sup:`9` for each reGon
+scenario. One row each would take several hundred GB in PostgreSQL, so the
+import folds them into one array of event ids per charging location
+(:py:func:`import_location_events<egon.data.datasets.emobility.motorized_individual_travel.mit_import.import_location_events>`).
+The placements are the basis of the eTraGo model, cf.
+:ref:`mit-charging-time-series-ref`.
+
+Before the import, every extracted delivery is checked for completeness and
+for every column the importers read, and the delivery's identity (the GeoLIS
+consolidation time and result counts) is recorded, so a left-over extraction
+of an earlier delivery is not reused by mistake.
 
 The driving and parking profiles are generated with
 `SimBEV <https://github.com/rl-institut/simbev>`_ from MID survey data
@@ -85,8 +91,9 @@ runs are stored in
 :py:class:`EgonEvMitLgvMetadata<egon.data.datasets.emobility.motorized_individual_travel.db_classes.EgonEvMitLgvMetadata>`.
 
 Because the pool is national while the fleet is not, each profile is
-instantiated many times across Germany; the delivered
-``ev_mapping_ev_municipality`` records every instance separately.
+instantiated many times across Germany: ``n_vehicles`` of the pool counts the
+vehicles of each profile, and each of its charging events is placed once per
+vehicle.
 
 Vehicle types
 ~~~~~~~~~~~~~
@@ -151,30 +158,29 @@ downstream consumers have to handle both. Note that ``work`` as a *use case*
 occurs only for private vehicles: commercial workplace charging is classified
 as ``depot`` at ``arbeitsplatz``.
 
-Spatial allocation
-~~~~~~~~~~~~~~~~~~
+Charging locations and the grid
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-The allocation of vehicles to municipalities is delivered as input data, with
-one row per vehicle. egon-data only distributes those vehicles over the MV grid
-districts that intersect the municipality
-(:py:func:`allocate_ev_instances_to_grid_districts<egon.data.datasets.emobility.motorized_individual_travel.mit_import.allocate_ev_instances_to_grid_districts>`).
-Per municipality and vehicle type the count is split by population share using
-largest-remainder rounding and the individual vehicles are then handed out in
-``id`` order. No random number generator is involved, municipal totals are
-preserved exactly, and for the roughly 92 % of municipalities that lie inside a
-single grid district the split degenerates to a plain copy. The result is
-written to
-:py:class:`EgonEvMitLgvMvGridDistrict<egon.data.datasets.emobility.motorized_individual_travel.db_classes.EgonEvMitLgvMvGridDistrict>`,
-which records the municipality each vehicle came from, and aggregated into
-:py:class:`EgonEvMitLgvCountMvGridDistrict<egon.data.datasets.emobility.motorized_individual_travel.db_classes.EgonEvMitLgvCountMvGridDistrict>`.
+The new methodology does not allocate vehicles to grid districts: vehicles
+charge at locations spread over several districts, so the model is built
+from the charging locations instead
+(:py:mod:`charging_locations<egon.data.datasets.emobility.motorized_individual_travel.charging_locations>`).
 
-Vehicles in municipalities that the VG250 dataset [Census]_ does not know
-cannot be placed — the split joins on the municipality key — and are dropped.
-The number of affected municipalities, the number of vehicles lost per type and
-their share of the delivered fleet are written to the task log so the loss is
-quantified rather than silent.
+* Locations at exactly identical coordinates form one **grid connection**.
+  Its summed installed capacity (charging points × average charging capacity)
+  gives its **voltage level**, with the thresholds used for HGV charging and
+  public bus depots (> 120 MW: 1, > 20 MW: 3, > 5.5 MW: 4, > 0.2 MW: 5,
+  > 0.1 MW: 6, else 7).
+* Every grid connection gets the MV grid district it lies in; a connection
+  outside every district, e.g. on the coast, gets the nearest one, so that no
+  charging energy is lost.
+* Voltage levels 4–7 belong to the **district model** of their MV grid
+  district, on the district's HV/MV substation bus. Levels 1–3 are
+  **transmission charging locations** with a model of their own per grid
+  connection, on the district's bus (level 3) or on the bus of the EHV
+  substation whose Voronoi cell they lie in (levels 1–2).
 
-For the legacy methodology the total number of vehicles per type is instead
+For the legacy methodology the total number of vehicles per type is
 allocated to MV grid districts from vehicle registration [KBA]_ and population
 [Census]_ data
 (:py:func:`allocate_evs_numbers<egon.data.datasets.emobility.motorized_individual_travel.ev_allocation.allocate_evs_numbers>`),
@@ -189,20 +195,32 @@ reGon2045 scenario (both according to the network development plan [NEP2025]_,
 Scenario C). The numbers per scenario are defined in
 :py:func:`mobility<egon.data.datasets.scenario_parameters.parameters.mobility>`.
 For the new methodology these figures are a **cross-check only**: the delivered
-``ev_count_municipality`` is authoritative, and the import logs the difference
-between the two.
+vehicles are authoritative, and the import logs the difference between the
+two.
+
+.. _mit-charging-time-series-ref:
 
 Charging time series
 ~~~~~~~~~~~~~~~~~~~~
 
-On the basis of the vehicles assigned to each MV grid district and their event
-data, charging demand time series are determined. For inflexible charging (see
-lower right in figure :ref:`mit-model`) it is assumed that vehicles charge at
-full power as soon as they arrive at a charging station until they are fully
-charged. The respective charging power and demand is obtained from the event
-data. The individual charging demand time series are summed up to obtain the
-charging time series per MV grid district. The generation of time series to
-model flexible charging is described in section :ref:`flexible-charging-ref`.
+The unit of the new methodology's model is the **placement**: one vehicle's
+charging event at one charging location
+(:py:mod:`placement_model<egon.data.datasets.emobility.motorized_individual_travel.placement_model>`).
+A placement arrives with its **deficit**, its battery-side charging demand,
+and is back to full when it leaves; nothing of the vehicle is carried between
+placements. A model therefore needs only the placements of its own charging
+locations.
+
+* The dumb charging load assumes that vehicles charge at full power as soon as
+  they arrive until the deficit is recharged; it is written for status quo
+  scenarios and for the lowflex counterparts.
+* In flexible scenarios the deficit is taken from the store as driving load at
+  arrival, and the store band lets flexible placements recharge it anywhere
+  within their parking window, cf. :ref:`flexible-charging-ref`.
+
+For the legacy methodology the time series are determined from the vehicles
+assigned to each MV grid district and their event data
+(:py:mod:`model_timeseries<egon.data.datasets.emobility.motorized_individual_travel.model_timeseries>`).
 
 .. _mit-reference-points-ref:
 
@@ -225,20 +243,14 @@ The two differ by the charging point efficiency ``eta_cp``, so over a year
    \sum_t \mathrm{driving\_load}(t)
        = \eta_{cp} \cdot \sum_t \mathrm{charging\_load\_grid}(t)
 
-is an **identity, not an inconsistency**. It holds up to two terms that never
-cancel exactly:
-
-1. the driving load is only filled where the state of charge actually
-   decreases, so plug-in hybrid kilometres driven on fuel do not enter it. The
-   gap grows with the share of commercial plug-in hybrids;
-2. the annual battery state-of-charge drift of the fleet. The store is not
-   cyclic and the delivered events carry the same drift, which is in the order
-   of 0.1 % of the annual charging energy.
+is an **identity, not an inconsistency**. For the new methodology it holds
+exactly — the driving load *is* the deficit of the placements — up to dumb
+charging past the year end, which is cropped.
 
 To make comparisons across scenarios and between the flexible and the lowflex
 model well defined without knowing which model shape a scenario got, the
-pipeline writes both sides for every scenario on the new methodology, per MV
-grid district and hour, to
+pipeline writes both sides for every scenario on the new methodology, per AC
+bus, model type (district or transmission) and hour, to
 :py:class:`EgonEvMitLgvFlexTimeseries<egon.data.datasets.emobility.motorized_individual_travel.flex_diagnostics.EgonEvMitLgvFlexTimeseries>`:
 
 * ``charging_load_grid`` — the grid-side load of the dumb charging schedule,
@@ -255,15 +267,16 @@ Two further tables carry the same information at different resolutions:
 :py:class:`EgonEvMitLgvChargingProfileUseCase<egon.data.datasets.emobility.motorized_individual_travel.flex_diagnostics.EgonEvMitLgvChargingProfileUseCase>`
 splits ``charging_load_grid`` by charging use case, and
 :py:class:`EgonEvMitLgvEnergyBalance<egon.data.datasets.emobility.motorized_individual_travel.flex_diagnostics.EgonEvMitLgvEnergyBalance>`
-gives the annual energy balance per grid district, charging use case and
-vehicle type, carrying both the battery-side and the grid-side charging energy.
+gives the annual energy balance per AC bus, model type, charging use case and
+vehicle type, carrying both the battery-side and the grid-side charging energy
+and the number of placements.
 
 Post-processing an eTraGo result
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 With the dumb charging reference available, the flexibility a scenario actually
 used follows from the optimisation result. Let :math:`p(t)` be the dispatch of
-the ``BEV_charger`` link of a grid district, i.e. its grid-side charging power.
+the ``BEV_charger`` link of a model, i.e. its grid-side charging power.
 Then
 
 .. math::
@@ -304,26 +317,28 @@ Charging sites
 ~~~~~~~~~~~~~~
 
 For grid analyses of the MV and LV level, the charging demand needs to be
-further disaggregated within the MV grid districts. To this end, potential
-charging sites are determined. These potential charging sites are then used to
-allocate the charging demand of the vehicles in each MV grid district to
-specific charging points. This allocation is not done in eGon-data but in the
-`eDisGo <https://github.com/openego/eDisGo>`_ tool and further described in the
-`eDisGo documentation <https://edisgo.readthedocs.io/en/dev/features_in_detail.html#allocation-of-charging-demand>`_.
+further disaggregated within the MV grid districts, which is done in the
+`eDisGo <https://github.com/openego/eDisGo>`_ tool.
 
-For the new methodology the charging sites are part of the delivered input data
-and are imported into
-:py:class:`EgonEvMitLgvChargingLocation<egon.data.datasets.emobility.motorized_individual_travel_charging_infrastructure.db_classes.EgonEvMitLgvChargingLocation>`
-as delivered, with their number of charging points, their average charging
-capacity and their charging use case. Each site additionally gets the MV grid
-district it lies in from a point-in-polygon join; sites outside every grid
-district keep a NULL grid district and are logged rather than dropped. The flag
-``is_synthetic_location`` marks fallback centroids generated where a
-municipality has no real candidate site for a use case — consumers placing
-high-power charging infrastructure need to be able to tell them from real
-sites.
+For the new methodology the charging locations are part of the delivered input
+data and every charging event is already placed at one of them. They are stored
+in
+:py:class:`EgonEvMitLgvChargingLocation<egon.data.datasets.emobility.motorized_individual_travel.db_classes.EgonEvMitLgvChargingLocation>`
+with their number of charging points, average charging capacity, charging use
+case and grid assignment, and their placements in
+:py:class:`EgonEvMitLgvLocationEvents<egon.data.datasets.emobility.motorized_individual_travel.db_classes.EgonEvMitLgvLocationEvents>`,
+so a consumer can take one charging park per location with its charging events
+as they are. A charging point is occupied only while a vehicle charges, not
+while it stays parked. The flag ``is_synthetic_location`` marks fallback
+centroids generated where a municipality has no real candidate site for a use
+case — consumers placing charging infrastructure need to be able to tell them
+from real sites.
 
-For the legacy methodology the potential charging sites are determined in
+For the legacy methodology potential charging sites are determined, to which
+eDisGo allocates the charging demand of the vehicles in each MV grid district
+(see the
+`eDisGo documentation <https://edisgo.readthedocs.io/en/dev/features_in_detail.html#allocation-of-charging-demand>`_).
+They are determined in
 :py:class:`MITChargingInfrastructure<egon.data.datasets.emobility.motorized_individual_travel_charging_infrastructure.MITChargingInfrastructure>`
 and written to
 :py:class:`EgonEmobChargingInfrastructure<egon.data.datasets.emobility.motorized_individual_travel_charging_infrastructure.db_classes.EgonEmobChargingInfrastructure>`.
@@ -358,14 +373,11 @@ The necessary input data is downloaded from `zenodo <https://zenodo.org/records/
 Test mode
 ~~~~~~~~~
 
-With ``--dataset-boundary`` set to a federal state, the delivered municipality
-mapping is filtered to the municipalities inside the boundary and the selection
-cascades to the vehicle pool and the events; the charging locations are
-filtered spatially. Expect the event table to shrink far less than the region
-share suggests: the vehicle profile pool is national and each profile is
-instantiated many times across Germany, so more than half of all profiles are
-used somewhere even in a single federal state. This is not a defect and cannot
-be reduced without breaking referential integrity.
+With ``--dataset-boundary`` set to a federal state, the selection starts from
+the charging locations inside the boundary and cascades to their placements,
+the charging events those reference and the profiles of those events. The
+result is exactly what a Germany-wide run gives for the grid districts inside
+the boundary, including the charging of vehicles from outside.
 
 
 .. _mobility-demand-hdt-ref:

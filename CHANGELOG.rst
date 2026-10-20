@@ -150,11 +150,40 @@ Changed
   column `egon_ev_pool_ev_id` to `ev_id`; `demand.egon_ev_mit_lgv_metadata`
   now stores the simBEV and GeoLIS run configurations whole, as JSONB
   `#1460 <https://github.com/openego/eGon-data/issues/1460>`_
+* Build the M1/N1 eTraGo model of the new eMobility scenarios from
+  placements -- each vehicle's charging event at its delivered charging
+  location -- instead of vehicles allocated to MV grid districts, which
+  routinely charge outside their district. One district model per MV grid
+  district holds its charging locations at voltage levels 4-7; locations at
+  levels 1-3 (> 20 MW per grid connection) get a transmission model of
+  their own with the new carriers `BEV_charger_transmission` and
+  `land_transport_EV_transmission`, on the EHV substation bus above
+  120 MW. The store capacity is the peak plugged-in battery capacity.
+  Placements are stored as one event-id array per location
+  (`demand.egon_ev_mit_lgv_location_events`); only charging events are
+  imported; the vehicle allocation to grid districts is no longer written
+  for the new scenarios. The charging locations move from
+  `MITChargingInfrastructure` into `MotorizedIndividualTravel`, which also
+  gets validation rules
+  `#1460 <https://github.com/openego/eGon-data/issues/1460>`_
 
 
 Bug Fixes
 ---------
 
+* M1/N1: build the state-of-charge band and the plugged-in capacity on
+  half-open event intervals, as the delivered events share their boundary
+  timestep; the band previously exceeded the fleet battery capacity
+  (`e_max_pu > 1`). Bring the grid-side nameplate power and the
+  battery-side charging demand onto the same side of the charger
+  (`eta_cp`), which understated the charging load by 10 %, and re-enable
+  the load validation
+  `#1460 <https://github.com/openego/eGon-data/issues/1460>`_
+* M1/N1: recognise a left-over extraction of an earlier delivery instead
+  of importing it, fail on missing columns and on duplicate charging
+  location ids before the import, and delete eTraGo links orphaned by a
+  crashed run
+  `#1460 <https://github.com/openego/eGon-data/issues/1460>`_
 * Fixes distribution of small heat pumps due to incremental small heat demands 
   by implementing a minimal heat demand for the installation of a heat pump
   `#1496 <https://github.com/openego/eGon-data/issues/1496>`_

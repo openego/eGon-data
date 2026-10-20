@@ -19,17 +19,28 @@ using a storage model based on [Brown2018]_ and [Wulff2020]_.
 The used model is visualised in the upper right in figure :ref:`mit-model`.
 It is set up for every configured scenario that models flexible charging (cf.
 :py:func:`is_flexible<egon.data.datasets.emobility.motorized_individual_travel.model_timeseries.is_flexible>`);
-status quo scenarios get a plain load instead. Its parametrization is conducted in the
-:py:class:`MotorizedIndividualTravel<egon.data.datasets.emobility.motorized_individual_travel.MotorizedIndividualTravel>`
-dataset in the function
-:py:func:`generate_load_time_series<egon.data.datasets.emobility.motorized_individual_travel.model_timeseries.generate_load_time_series>`.
-The model consists of loads for static driving demands and stores for the fleet’s batteries.
-The stores are constrained by hourly lower and upper SoC limits.
-The lower SoC limit represents the inflexible charging demand while the
-SoC band between the lower and upper SoC limit represents the flexible charging demand.
-Further, the charging infrastructure is represented by unidirectional links from electricity
-buses to EV buses. Its maximum charging power per hour is set to the available charging power
-of grid-connected EVs.
+status quo scenarios get a plain load instead.
+Each model consists of a bus with a load for the driving demand, a store and a
+unidirectional link from the electricity bus. Its maximum charging power per
+hour is set to the charging power of the plugged-in vehicles. The stores are
+constrained by hourly lower and upper energy limits.
+
+For the new methodology the models are built from **placements**
+(:py:func:`generate_placement_models<egon.data.datasets.emobility.motorized_individual_travel.placement_model.generate_placement_models>`):
+one district model per MV grid district from its charging locations at voltage
+levels 4–7, and one transmission model per grid connection at voltage levels
+1–3, which carries the carriers ``BEV_charger_transmission`` and
+``land_transport_EV_transmission`` so that it is not counted as part of the
+distribution grid. A placement takes its deficit from the store at arrival as
+driving load; a flexible placement may recharge it anywhere within its parking
+window, an inflexible one along a fixed linear ramp over the parking window.
+The store's capacity is the peak battery capacity plugged in at the same time,
+and the store starts the year full.
+
+For the legacy methodology the parametrization is conducted per MV grid
+district from the vehicles allocated to it, in
+:py:func:`generate_load_time_series<egon.data.datasets.emobility.motorized_individual_travel.model_timeseries.generate_load_time_series>`;
+the store there represents the fleet's batteries.
 
 Note that the load written for a flexible scenario carries the *driving* energy,
 while the one written for its lowflex counterpart and for status quo scenarios
