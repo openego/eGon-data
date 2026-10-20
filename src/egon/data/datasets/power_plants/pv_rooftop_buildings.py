@@ -1,6 +1,6 @@
 """
 Distribute MaStR PV rooftop capacities to OSM and synthetic buildings. Generate
-new PV rooftop generators for scenarios eGon2035 and eGon100RE.
+new PV rooftop generators for scenarios eGon2035, reGon2037 and reGon2045.
 
 See documentation section :ref:`pv-rooftop-ref` for more information.
 
@@ -56,10 +56,10 @@ Q = 5
 # Scenario Data
 SCENARIOS = config.settings()["egon-data"]["--scenarios"]
 SCENARIO_TIMESTAMP = {
-    "status2019": pd.Timestamp("2020-01-01", tz="UTC"),
-    "status2023": pd.Timestamp("2024-01-01", tz="UTC"),
+    "status2024": pd.Timestamp("2025-01-01", tz="UTC"),
     "eGon2035": pd.Timestamp("2035-01-01", tz="UTC"),
-    "eGon100RE": pd.Timestamp("2050-01-01", tz="UTC"),
+    "reGon2037": pd.Timestamp("2037-01-01", tz="UTC"),
+    "reGon2045": pd.Timestamp("2045-01-01", tz="UTC"),
 }
 PV_ROOFTOP_LIFETIME = pd.Timedelta(20 * 365, unit="D")
 
@@ -362,12 +362,45 @@ class OsmBuildingsFiltered(Base):
     id = Column(BigInteger, primary_key=True, index=True)
 
 
+class OsmBuildingsResidential(Base):
+    """
+    Class definition of table openstreetmap.osm_buildings_residential.
+
+    Only the columns needed here are mapped; the table also carries the
+    ETHOS.BUILDA attributes and the provenance of the match, see
+    :py:mod:`osm_buildings_streets
+    <egon.data.datasets.osm_buildings_streets>`.
+    """
+
+    __tablename__ = "osm_buildings_residential"
+    __table_args__ = {"schema": "openstreetmap"}
+
+    osm_id = Column(BigInteger)
+    amenity = Column(String)
+    building = Column(String)
+    name = Column(String)
+    geom_building = Column(Geometry(srid=SRID), index=True)
+    area = Column(Float)
+    geom_point = Column(Geometry(srid=SRID), index=True)
+    tags = Column(HSTORE)
+    id = Column(BigInteger, primary_key=True, index=True)
+
+
 @timer_func
 def osm_buildings(
     to_crs: CRS,
 ) -> gpd.GeoDataFrame:
     """
     Read OSM buildings data from eGo^n Database.
+
+    Buildings come from `openstreetmap.osm_buildings_filtered` and
+    `openstreetmap.osm_buildings_residential`. Since #1310 the residential
+    table is not a subset of the filtered one: the ETHOS.BUILDA intersection
+    also matches buildings whose OSM tag is missing from the filter list, plus
+    ancillary buildings that are kept on purpose. The two overlap heavily, so
+    the returned frame has a non-unique index -- it is deduplicated in
+    :py:func:`load_building_data`, where the synthetic buildings are
+    concatenated as well.
 
     Parameters
     -----------
@@ -379,14 +412,30 @@ def osm_buildings(
         GeoDataFrame containing OSM buildings data.
     """
     with db.session_scope() as session:
-        query = session.query(
+        filtered_query = session.query(
             OsmBuildingsFiltered.id,
             OsmBuildingsFiltered.area,
             OsmBuildingsFiltered.geom_point.label("geom"),
         )
+        residential_query = session.query(
+            OsmBuildingsResidential.id,
+            OsmBuildingsResidential.area,
+            OsmBuildingsResidential.geom_point.label("geom"),
+        )
 
-    return gpd.read_postgis(
-        query.statement, query.session.bind, index_col="id"
+    filtered_gdf = gpd.read_postgis(
+        filtered_query.statement, filtered_query.session.bind, index_col="id"
+    )
+    residential_gdf = gpd.read_postgis(
+        residential_query.statement,
+        residential_query.session.bind,
+        index_col="id",
+    )
+
+    return gpd.GeoDataFrame(
+        pd.concat([filtered_gdf, residential_gdf]),
+        geometry="geom",
+        crs=filtered_gdf.crs,
     ).to_crs(to_crs)
 
 
@@ -496,9 +545,12 @@ def load_building_data():
     Tables:
 
     * `openstreetmap.osm_buildings_filtered` (from OSM)
+    * `openstreetmap.osm_buildings_residential` (from OSM x ETHOS.BUILDA)
     * `openstreetmap.osm_buildings_synthetic` (synthetic, created by us)
 
-    Use column `id` for both as it is unique hence you concat both datasets.
+    Use column `id` for all of them as it is unique across the OSM derived
+    tables and the synthetic ones. The filtered and the residential table
+    overlap, though, so the concatenated index is deduplicated below.
     If INCLUDE_SYNTHETIC_BUILDINGS is False synthetic buildings will not be
     loaded.
 
@@ -533,6 +585,18 @@ def load_building_data():
         buildings_gdf = osm_buildings_gdf.rename(
             columns={"area": "building_area"}
         )
+
+    # The filtered and the residential table overlap (#1310), and both are
+    # concatenated in pandas rather than unioned in SQL, so the index has to be
+    # deduplicated here. Without it, buildings_gdf.loc[building_ids] below
+    # returns the shared buildings twice and doubles their roof potential.
+    duplicates = buildings_gdf.index.duplicated()
+    if duplicates.any():
+        logger.debug(
+            f"Dropping {duplicates.sum()} buildings that appear in more than "
+            f"one source table."
+        )
+        buildings_gdf = buildings_gdf[~duplicates]
 
     if ONLY_BUILDINGS_WITH_DEMAND:
         building_ids = egon_building_peak_loads()
@@ -2267,7 +2331,7 @@ def pv_rooftop_to_buildings():
 
     mastr_gdf = load_mastr_data()
 
-    status_quo = "status2023"  # FIXME: Hard coded
+    status_quo = "status2024"
 
     # <--- REFACTORING: Use sources.files
     ts = pd.Timestamp(sources.files[f"{status_quo}_date_max"], tz="UTC")
@@ -2293,7 +2357,11 @@ def pv_rooftop_to_buildings():
 
     for scenario in SCENARIOS:
         if scenario == status_quo:
-            scenario_buildings_gdf = scenario_buildings_gdf_sq.copy()
+            # status-quo rows are already seeded into all_buildings_gdf above;
+            # other scenarios' allocate_scenarios() calls still rely on
+            # scenario_buildings_gdf_sq / desagg_mastr_gdf as an input, so
+            # those variables are kept intact
+            continue
         elif "status" in scenario:
             # <--- REFACTORING: Use sources.files
             ts = pd.Timestamp(
@@ -2302,7 +2370,7 @@ def pv_rooftop_to_buildings():
             )
 
             scenario_buildings_gdf = scenario_buildings_gdf_sq.loc[
-                scenario_buildings_gdf.commissioning_date <= ts
+                scenario_buildings_gdf_sq.commissioning_date <= ts
             ].copy()
 
         else:

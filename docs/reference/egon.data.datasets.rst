@@ -41,6 +41,7 @@ datasets
    egon.data.datasets.electricity_demand
    egon.data.datasets.electricity_demand_timeseries
    egon.data.datasets.emobility
+   egon.data.datasets.ethos_builda
    egon.data.datasets.gas_neighbours
    egon.data.datasets.heat_demand
    egon.data.datasets.heat_demand_timeseries
@@ -57,6 +58,7 @@ datasets
    egon.data.datasets.power_etrago
    egon.data.datasets.power_plants
    egon.data.datasets.pypsaeursec
+   egon.data.datasets.rail_transport_demand
    egon.data.datasets.re_potential_areas
    egon.data.datasets.saltcavern
    egon.data.datasets.scenario_parameters

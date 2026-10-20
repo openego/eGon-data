@@ -13,6 +13,7 @@ from egon.data.datasets.ch4_storages import CH4Storages
 from egon.data.datasets.chp import Chp
 from egon.data.datasets.chp_etrago import ChpEtrago
 from egon.data.datasets.data_bundle import DataBundle
+from egon.data.datasets.data_centers_etrago import DataCenters
 from egon.data.datasets.demandregio import DemandRegio
 from egon.data.datasets.district_heating_areas import DistrictHeatingAreas
 from egon.data.datasets.DSM_cts_ind import DsmPotential
@@ -32,15 +33,21 @@ from egon.data.datasets.electricity_demand_timeseries.cts_buildings import (
 from egon.data.datasets.emobility.heavy_duty_transport import (
     HeavyDutyTransport,
 )
+from egon.data.datasets.emobility.hgv_charging import HGVCharging
 from egon.data.datasets.emobility.motorized_individual_travel import (
     MotorizedIndividualTravel,
 )
 from egon.data.datasets.emobility.motorized_individual_travel_charging_infrastructure import (  # noqa: E501
     MITChargingInfrastructure,
 )
+from egon.data.datasets.emobility.public_bus_charging import (
+    PublicBusCharging,
+)
 from egon.data.datasets.era5 import WeatherData
+from egon.data.datasets.ethos_builda import EthosBuilda
 from egon.data.datasets.etrago_setup import EtragoSetup
 from egon.data.datasets.fill_etrago_gen import Egon_etrago_gen
+from egon.data.datasets.final_validations import FinalValidations
 from egon.data.datasets.fix_ehv_subnetworks import FixEhvSubnetworks
 from egon.data.datasets.gas_areas import GasAreas
 from egon.data.datasets.gas_grid import GasNodesAndPipes
@@ -55,9 +62,7 @@ from egon.data.datasets.heat_supply import (
     HeatSupply,
 )
 from egon.data.datasets.heat_supply.individual_heating import (
-    HeatPumps2035,
-    HeatPumps2050,
-    HeatPumpsPypsaEur,
+    HeatPumpsCascade,
     HeatPumpsStatusQuo,
 )
 from egon.data.datasets.hydrogen_etrago import (
@@ -84,10 +89,14 @@ from egon.data.datasets.osmtgmod import Osmtgmod
 from egon.data.datasets.power_etrago import OpenCycleGasTurbineEtrago
 from egon.data.datasets.power_plants import PowerPlants
 from egon.data.datasets.pypsaeur import PreparePypsaEur, RunPypsaEur
+from egon.data.datasets.rail_transport_demand import RailTransitDemand
 from egon.data.datasets.re_potential_areas import re_potential_area_setup
 from egon.data.datasets.renewable_feedin import RenewableFeedin
 from egon.data.datasets.saltcavern import SaltcavernData
-from egon.data.datasets.sanity_checks import SanityChecks
+
+# SanityChecks import is unused while it's excluded from the pipeline,
+# see the comment near its former TaskGroup below.
+# from egon.data.datasets.sanity_checks import SanityChecks
 from egon.data.datasets.scenario_capacities import ScenarioCapacities
 from egon.data.datasets.scenario_parameters import ScenarioParameters
 from egon.data.datasets.storages import Storages
@@ -95,6 +104,7 @@ from egon.data.datasets.storages_etrago import StorageEtrago
 from egon.data.datasets.substation import SubstationExtraction
 from egon.data.datasets.substation_voronoi import SubstationVoronoi
 from egon.data.datasets.tyndp import Tyndp
+from egon.data.datasets.validation_report import ValidationReport
 from egon.data.datasets.vg250 import Vg250
 from egon.data.datasets.vg250_mv_grid_districts import Vg250MvGridDistricts
 from egon.data.datasets.zensus import ZensusMiscellaneous, ZensusPopulation
@@ -156,9 +166,12 @@ with airflow.DAG(
             dependencies=[zensus_population, zensus_vg250, data_bundle]
         )
 
+        # ETHOS.BUILDA residential building data
+        ethos_builda = EthosBuilda(dependencies=[setup])
+
         # OSM (OpenStreetMap) buildings, streets and amenities
         osm_buildings_streets = OsmBuildingsStreets(
-            dependencies=[osm, zensus_miscellaneous]
+            dependencies=[osm, zensus_miscellaneous, ethos_builda]
         )
 
         # Import saltcavern storage potentials
@@ -311,6 +324,7 @@ with airflow.DAG(
                 cts_electricity_demand_annual,
                 demand_curves_industry,
                 hh_demand_buildings_setup,
+                hh_demand_profiles_setup,
             ]
         )
 
@@ -563,15 +577,6 @@ with airflow.DAG(
 
     with TaskGroup(group_id="heat_supply") as heat_supply_group:
 
-        # Minimum heat pump capacity for pypsa-eur
-        heat_pumps_pypsa_eur = HeatPumpsPypsaEur(
-            dependencies=[
-                cts_demand_buildings,
-                DistrictHeatingAreas,
-                heat_time_series,
-            ]
-        )
-
         # Heat supply
         heat_supply = HeatSupply(
             dependencies=[
@@ -594,24 +599,22 @@ with airflow.DAG(
             ]
         )
 
-        # Heat pump disaggregation for eGon2035
-        heat_pumps_2035 = HeatPumps2035(
+        # Heat pump disaggregation for eGon2035, reGon2037 and reGon2045
+        # heat_pumps_sq is a dependency because the heat pump floor chain
+        # starts at status2024: the cascade scenarios read their predecessor's
+        # capacities straight from the database, so the status quo has to be
+        # fully written before any cascade bulk starts. Without this edge both
+        # datasets are siblings and run concurrently, and cascade grids
+        # processed during the overlap find no predecessor rows and silently
+        # lose their floor.
+        heat_pumps_cascade = HeatPumpsCascade(
             dependencies=[
                 cts_demand_buildings,
                 DistrictHeatingAreas,
                 heat_supply,
+                heat_pumps_sq,
                 heat_time_series,
-                heat_pumps_pypsa_eur,
                 power_plants,
-            ]
-        )
-
-        # Heat pump disaggregation for eGon100RE
-        heat_pumps_2050 = HeatPumps2050(
-            dependencies=[
-                run_pypsaeur,
-                heat_pumps_pypsa_eur,
-                heat_supply,
             ]
         )
 
@@ -636,6 +639,18 @@ with airflow.DAG(
                 heat_time_series,
             ]
         )
+        
+        # Data centers to eTraGo
+        data_centers_demand = DataCenters(
+            dependencies=[
+                data_bundle,
+                osm_landuse,
+                osmtgmod,
+                scenario_parameters,
+                district_heating_areas,
+                heat_etrago,
+            ]
+        )
 
         # CHP to eTraGo
         chp_etrago = ChpEtrago(dependencies=[chp, heat_etrago])
@@ -653,7 +668,7 @@ with airflow.DAG(
                 heat_time_series,
                 mv_grid_districts,
                 heat_pumps_sq,
-                heat_pumps_2035,
+                heat_pumps_cascade,
             ]
         )
 
@@ -683,9 +698,48 @@ with airflow.DAG(
         )
 
     with TaskGroup(group_id="mobility_demand") as mobility_demand_group:
-        # eMobility: heavy duty transport
+        # eMobility: heavy duty transport (hydrogen/FCEV HGVs -- eGon2035,
+        # eGon100RE only; the fully-electrified HGV scenarios (reGon2037,
+        # reGon2045) are covered separately by hgv_charging below, which
+        # does not model hydrogen fueling)
         heavy_duty_transport = HeavyDutyTransport(
             dependencies=[vg250, setup_etrago, create_gas_polygons]
+        )
+
+        # eMobility: HGV charging (BEV depots + highway)
+        hgv_charging = HGVCharging(
+            dependencies=[
+                # The precomputed HGV charging input files ship in the data
+                # bundle (data_bundle_egon_data/hgv_charging/<scenario>), so
+                # this must not run before the bundle has been downloaded.
+                data_bundle,
+                mv_grid_districts,
+                setup_etrago,
+                vg250,
+                scenario_parameters,
+                osmtgmod,
+            ]
+        )
+
+        # eMobility: public buses (vehicle class M3). Static depot loads;
+        # no flexibility, so no flex/lowflex model. Only status2024,
+        # reGon2037 and reGon2045 carry bus data.
+        public_bus_charging = PublicBusCharging(
+            dependencies=[
+                # Depot locations and hourly series ship in the data bundle
+                # (data_bundle_egon_data/bus_charging), so this must not run
+                # before the bundle has been downloaded.
+                data_bundle,
+                mv_grid_districts,
+                # egon_ehv_substation_voronoi, for any depot above 120 MW
+                substation_voronoi,
+                setup_etrago,
+                scenario_parameters,
+                # egon_etrago_bus must be populated (osmtgmod's to_pypsa) --
+                # mv_grid_districts only guarantees substation.extract.
+                osmtgmod,
+                vg250,
+            ]
         )
 
         # eMobility: motorized individual travel
@@ -697,6 +751,21 @@ with airflow.DAG(
                 setup_etrago,
                 zensus_mv_grid_districts,
                 zensus_vg250,
+            ]
+        )
+
+        # Rail transport electricity demand (reGon): 16.7-Hz traction
+        # converters + DC rectifier Uw (tram/U-Bahn + S-Bahn) -> eTraGo
+        # loads. Builds on eGon's OSM-derived grid (MV grid districts + EHV
+        # voronoi) and the curated profiles/weights in the data bundle.
+        rail_transit_demand = RailTransitDemand(
+            dependencies=[
+                data_bundle,
+                osm,
+                mv_grid_districts,
+                substation_voronoi,
+                setup_etrago,
+                scenario_parameters,
             ]
         )
 
@@ -724,18 +793,21 @@ with airflow.DAG(
                 storage_etrago,
                 hts_etrago_table,
                 fill_etrago_generators,
+                data_centers_demand,
                 household_electricity_demand_annual,
                 cts_demand_buildings,
                 emobility_mit,
             ]
         )
 
-    with TaskGroup(group_id="sanity_checks") as sanity_checks_group:
-        # ########## Keep this dataset at the end
-        # Sanity Checks
-        sanity_checks = SanityChecks(
+    with TaskGroup(group_id="final_validations") as final_validations_group:
+        # Cross-cutting validations that check data consistency across datasets
+        # These run after all data generation but before the validation report
+        final_validations = FinalValidations(
             dependencies=[
-                storage_etrago,
+                insert_data_ch4_storages,  # CH4Storages - for CH4 store validation
+                insert_H2_storage,  # HydrogenStoreEtrago - for H2 saltcavern validation
+                storage_etrago,  # StorageEtrago - general storage validation
                 hts_etrago_table,
                 fill_etrago_generators,
                 household_electricity_demand_annual,
@@ -745,13 +817,23 @@ with airflow.DAG(
             ]
         )
 
+    with TaskGroup(group_id="validation_report") as validation_report_group:
+        # Generate validation report from all validation tasks
+        # Runs after all validations (including final_validations) are complete
+        validation_report = ValidationReport(
+            dependencies=[
+                final_validations,  # Wait for final validations
+            ]
+        )
+
     with TaskGroup(group_id="metadata") as metadata_group:
         # upload json metadata at the end
         json_metadata = Json_Metadata(
             dependencies=[
                 load_areas,
                 cts_demand_buildings,
-                sanity_checks,
-                heat_pumps_2050,
+                #sanity_checks,
+                heat_pumps_cascade,
+                heat_pumps_sq,
             ]
         )

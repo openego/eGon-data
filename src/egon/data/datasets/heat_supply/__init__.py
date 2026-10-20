@@ -1,5 +1,6 @@
 """The central module containing all code dealing with heat supply data"""
 
+
 from geoalchemy2.types import Geometry
 from sqlalchemy import Column, Float, ForeignKey, Integer, String
 from sqlalchemy.ext.declarative import declarative_base
@@ -15,6 +16,7 @@ from egon.data.datasets.heat_supply.district_heating import (
 from egon.data.datasets.heat_supply.geothermal import potential_germany
 from egon.data.datasets.heat_supply.individual_heating import (
     cascade_heat_supply_indiv,
+    create_hp_output_tables,
 )
 
 # Will later be imported from another file.
@@ -68,15 +70,14 @@ def district_heating():
     Returns
     -------
     None.
+
     """
     sources = HeatSupply.sources
     targets = HeatSupply.targets
 
-    db.execute_sql(
-        f"""
+    db.execute_sql(f"""
         DELETE FROM {HeatSupply.targets.tables["district_heating_supply"]}
-        """
-    )
+        """)
 
     for scenario in config.settings()["egon-data"]["--scenarios"]:
         supply = cascade_heat_supply(scenario, plotting=False)
@@ -95,8 +96,7 @@ def district_heating():
         # Do not check data for status quo as is it not listed in the table
         if "status" not in scenario:
             # Compare target value with sum of distributed heat supply
-            df_check = db.select_dataframe(
-                f"""
+            df_check = db.select_dataframe(f"""
                 SELECT a.carrier,
                 (SUM(a.capacity) - b.capacity) / SUM(a.capacity) as deviation
                 FROM {targets.tables['district_heating_supply']} a,
@@ -105,13 +105,13 @@ def district_heating():
                 AND b.scenario_name = '{scenario}'
                 AND b.carrier = CONCAT('urban_central_', a.carrier)
                 GROUP BY (a.carrier,  b.capacity);
-                """
-            )
+                """)
             # If the deviation is > 1%, throw an error
-            assert df_check.deviation.abs().max() < 1, (
-                "Unexpected deviation between target value and distributed "
-                f"heat supply: {df_check}"
-            )
+            assert (
+                df_check.deviation.abs().max() < 1
+            ), f"""Unexpected deviation between target value and distributed
+                heat supply: {df_check}
+            """
 
         # Add gas boilers as conventional backup capacities
         backup = backup_gas_boilers(scenario)
@@ -142,25 +142,22 @@ def individual_heating():
     Returns
     -------
     None.
+
     """
     targets = HeatSupply.targets
 
     for scenario in config.settings()["egon-data"]["--scenarios"]:
-        db.execute_sql(
-            f"""
+        db.execute_sql(f"""
             DELETE FROM {targets.tables['individual_heating_supply']}
             WHERE scenario = '{scenario}'
-            """
-        )
-        if scenario == "eGon2035":
-            distribution_level = "federal_states"
-        else:
+            """)
+        if "status" in scenario:
             distribution_level = "national"
+        else:
+            distribution_level = "federal_states"
 
         supply = cascade_heat_supply_indiv(
-            scenario,
-            distribution_level=distribution_level,
-            plotting=False,
+            scenario, distribution_level=distribution_level, plotting=False
         )
 
         supply["scenario"] = scenario
@@ -175,39 +172,33 @@ def individual_heating():
 
 class HeatSupply(Dataset):
     """
-    Select and store heat supply technologies for inidvidual and
-    district heating
+    Select and store heat supply technologies for inidvidual and district heating
 
-    This dataset distributes heat supply technologies to each district
-    heating grid and individual supplies buildings per medium voltage
-    grid district. National installed capacities are predefined from
-    external sources within :py:class:`ScenarioCapacities
-    <egon.data.datasets.scenario_capacities.ScenarioCapacities>`.
-    The further distribution is done using a cascade that follows a
-    specific order of supply technologies and the heat demand.
+    This dataset distributes heat supply technologies to each district heating grid
+    and individual supplies buildings per medium voltage grid district.
+    National installed capacities are predefined from external sources within
+    :py:class:`ScenarioCapacities <egon.data.datasets.scenario_capacities.ScenarioCapacities>`.
+    The further distribution is done using a cascade that follows a specific order of supply technologies
+    and the heat demand.
+
 
     *Dependencies*
-      * :py:class:`DataBundle
-        <egon.data.datasets.data_bundle.DataBundle>`
-      * :py:class:`DistrictHeatingAreas
-        <egon.data.datasets.district_heating_areas.DistrictHeatingAreas>`
-      * :py:class:`ZensusMvGridDistricts
-        <egon.data.datasets.zensus_mv_grid_districts.ZensusMvGridDistricts>`
+      * :py:class:`DataBundle <egon.data.datasets.data_bundle.DataBundle>`
+      * :py:class:`DistrictHeatingAreas <egon.data.datasets.district_heating_areas.DistrictHeatingAreas>`
+      * :py:class:`ZensusMvGridDistricts <egon.data.datasets.zensus_mv_grid_districts.ZensusMvGridDistricts>`
       * :py:class:`Chp <egon.data.datasets.chp.Chp>`
 
+
     *Resulting tables*
-      * :py:class:`demand.egon_district_heating
-        <egon.data.datasets.heat_supply.EgonDistrictHeatingSupply>` is
-        created and filled
-      * :py:class:`demand.egon_individual_heating
-        <egon.data.datasets.heat_supply.EgonIndividualHeatingSupply>` is
-        created and filled
+      * :py:class:`supply.egon_district_heating <egon.data.datasets.heat_supply.EgonDistrictHeatingSupply>` is created and filled
+      * :py:class:`supply.egon_individual_heating <egon.data.datasets.heat_supply.EgonIndividualHeatingSupply>` is created and filled
+
     """
 
     #:
     name: str = "HeatSupply"
     #:
-    version: str = "0.0.18"
+    version: str = "0.0.20"
 
     sources = DatasetSources(
         tables={
@@ -237,7 +228,18 @@ class HeatSupply(Dataset):
             version=self.version,
             dependencies=dependencies,
             tasks=(
-                create_tables,
+                # create_hp_output_tables is owned by this dataset rather than
+                # by HeatPumpsStatusQuo/HeatPumpsCascade: both of those write
+                # the same three tables, so a create task in either of them is
+                # either registered twice (duplicate task id) or absent when
+                # its own scenario type is not configured. Creating them here,
+                # upstream of both, is unconditional and race-free. It is a
+                # separate task from create_tables because create_tables DROPS
+                # its tables, which must never happen to the heat pump output.
+                {
+                    create_tables,
+                    create_hp_output_tables,
+                },
                 {
                     district_heating,
                     individual_heating,

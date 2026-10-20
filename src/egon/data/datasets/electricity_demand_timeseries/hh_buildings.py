@@ -23,6 +23,7 @@ from egon.data.datasets.electricity_demand_timeseries.tools import (
     random_point_in_square,
 )
 from egon.data.datasets.scenario_parameters import get_scenario_year
+from egon.data.validation import TableValidation, resolve_boundary_dependence
 import egon.data.config
 
 engine = db.engine()
@@ -1241,7 +1242,7 @@ class setup(Dataset):
     #:
     name: str = "Demand_Building_Assignment"
     #:
-    version: str = "0.0.11"
+    version: str = "0.0.12"
     #:
     sources = DatasetSources(
         tables={
@@ -1274,4 +1275,49 @@ class setup(Dataset):
             version=self.version,
             dependencies=dependencies,
             tasks=self.tasks,
+            validation={
+                "data_quality": [
+                    TableValidation(
+                        table_name="demand.egon_building_electricity_peak_loads",
+                        row_count=resolve_boundary_dependence(
+                            {
+                                "Schleswig-Holstein": 3143728,
+                                "Everything": 43340882,
+                            }
+                        ),
+                        data_type_columns={
+                            "building_id": "integer",
+                            "scenario": "character varying",
+                            "sector": "character varying",
+                            "peak_load_in_w": "real",
+                            "voltage_level": "integer",
+                        },
+                        value_set_columns={
+                            "scenario": [
+                                "eGon2035",
+                                "reGon2037",
+                                "reGon2045",
+                                "status2024",
+                            ],
+                            "sector": ["cts", "residential"],
+                        },
+                    ),
+                    TableValidation(
+                        table_name="demand.egon_household_electricity_profile_of_buildings",
+                        row_count=resolve_boundary_dependence(
+                            {
+                                "Schleswig-Holstein": 1371592,
+                                "Everything": 38605221,
+                            }
+                        ),
+                        data_type_columns={
+                            "id": "integer",
+                            "building_id": "integer",
+                            "cell_id": "integer",
+                            "profile_id": "character varying",
+                        },
+                    ),
+                ]
+            },
+            proceed_on_validation_failure=True,
         )

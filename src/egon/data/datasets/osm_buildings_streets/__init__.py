@@ -7,6 +7,7 @@ import os
 
 from egon.data import db
 from egon.data.datasets import Dataset, DatasetSources, DatasetTargets
+from egon.data.validation import TableValidation, resolve_boundary_dependence
 
 
 def execute_sql_script(script):
@@ -118,21 +119,34 @@ class OsmBuildingsStreets(Dataset):
 
     *Dependencies*
       * :py:class:`OpenStreetMap <egon.data.datasets.osm.OpenStreetMap>`
+      * :py:class:`EthosBuilda <egon.data.datasets.ethos_builda.EthosBuilda>`
       * :py:class:`ZensusMiscellaneous <egon.data.datasets.zensus.ZensusMiscellaneous>`
 
     *Resulting Tables*
-      * openstreetmap.osm_buildings is created and filled (table has no associated python class)
-      * openstreetmap.osm_buildings_filtered is created and filled (table has no associated python class)
-      * openstreetmap.osm_buildings_residential is created and filled (table has no associated python class)
-      * openstreetmap.osm_amenities_shops_filtered is created and filled (table has no associated python class)
-      * openstreetmap.osm_buildings_with_amenities is created and filled (table has no associated python class)
-      * openstreetmap.osm_buildings_without_amenities is created and filled (table has no associated python class)
-      * openstreetmap.osm_amenities_not_in_buildings is created and filled (table has no associated python class)
-      * openstreetmap.osm_ways_preprocessed is created and filled (table has no associated python class)
-      * openstreetmap.osm_ways_with_segments is created and filled (table has no associated python class)
-      * boundaries.egon_map_zensus_buildings_filtered is created and filled (table has no associated python class)
-      * boundaries.egon_map_zensus_buildings_residential is created and filled (table has no associated python class)
-      * openstreetmap.osm_buildings is created and filled (table has no associated python class)
+      * openstreetmap.osm_buildings is created and filled
+        (table has no associated python class)
+      * openstreetmap.osm_buildings_filtered is created and filled
+        (table has no associated python class)
+      * openstreetmap.osm_buildings_residential is created and filled
+        (table has no associated python class)
+      * openstreetmap.osm_amenities_shops_filtered is created and filled
+        (table has no associated python class)
+      * openstreetmap.osm_buildings_with_amenities is created and filled
+        (table has no associated python class)
+      * openstreetmap.osm_buildings_without_amenities is created and filled
+        (table has no associated python class)
+      * openstreetmap.osm_amenities_not_in_buildings is created and filled
+        (table has no associated python class)
+      * openstreetmap.osm_ways_preprocessed is created and filled
+        (table has no associated python class)
+      * openstreetmap.osm_ways_with_segments is created and filled
+        (table has no associated python class)
+      * boundaries.egon_map_zensus_buildings_filtered is created and filled
+        (table has no associated python class)
+      * boundaries.egon_map_zensus_buildings_filtered_all is created and filled
+        (table has no associated python class)
+      * boundaries.egon_map_zensus_buildings_residential is created and filled
+        (table has no associated python class)
 
     **Details and Steps**
 
@@ -142,11 +156,23 @@ class OsmBuildingsStreets(Dataset):
       * All buildings: `openstreetmap.osm_buildings`
       * Filtered buildings: `openstreetmap.osm_buildings_filtered`
       * Residential buildings: `openstreetmap.osm_buildings_residential`
-        * 1st step: Filter by tags (see `osm_buildings_filter_residential.sql`)
+        * 1st step: Intersect with ETHOS.BUILDA, which supplies one point per
+          residential building, in a four stage cascade -- point inside the
+          polygon, nearest neighbour within 10 m, OSM tags for what is left,
+          and care homes that express their residential use only through
+          `amenity` on an uninformative `building=yes` polygon (see
+          `osm_buildings_filter_residential.sql`). Filtering by tags alone
+          overestimated the stock by 65 % against Zensus 2022 (33.0 M against
+          20.0 M residential buildings); the cascade yields 18.9 M.
         * 2nd step: Table is extended by finding census cells with population
           but no residential buildings and extended by commercial/retail/office/
           hotel buildings (see `osm_buildings_extend_residential.sql`) since they
           often include apartments as well.
+        * Each building carries the provenance of its match in `source`
+          (`ethos_intersect`, `ethos_nearest`, `osm_tagging`, `osm_amenity`
+          or `census_gap_fill`), the matched `ethos_id`, the `match_distance`
+          and the ETHOS attributes `construction_year`, `size_class`,
+          `refurbishment_state` and `tabula_type`.
     * Extract amenities and filter using relevant tags, e.g. shops and restaurants,
       see script `osm_amenities_shops_preprocessing.sql` for the full list of tags.
       Resulting table: `openstreetmap.osm_amenities_shops_filtered`
@@ -184,7 +210,7 @@ class OsmBuildingsStreets(Dataset):
     #:
     name: str = "OsmBuildingsStreets"
     #:
-    version: str = "0.0.9"
+    version: str = "0.0.12"
 
     sources = DatasetSources(
         tables={
@@ -194,6 +220,7 @@ class OsmBuildingsStreets(Dataset):
             "osm_ways": "openstreetmap.osm_ways",
             "zensus_apartments": "society.egon_destatis_zensus_apartment_building_population_per_ha",
             "zensus_population": "society.destatis_zensus_population_per_ha",
+            "ethos_builda_buildings": "society.egon_ethos_builda_buildings",
         }
     )
 
@@ -239,4 +266,267 @@ class OsmBuildingsStreets(Dataset):
                 drop_temp_tables,
                 add_metadata,
             ),
+            validation={
+                "data_quality": [
+                    TableValidation(
+                        table_name="boundaries.egon_map_zensus_buildings_filtered",
+                        row_count=resolve_boundary_dependence(
+                            {
+                                "Schleswig-Holstein": 1024898,
+                                "Everything": 29988033,
+                            }
+                        ),
+                        data_type_columns={
+                            "id": "integer",
+                            "grid_id": "character varying",
+                            "cell_id": "integer",
+                        },
+                        not_null_columns=[
+                            "id",
+                            "grid_id",
+                            "cell_id",
+                        ],
+                    ),
+                    TableValidation(
+                        table_name="boundaries.egon_map_zensus_buildings_residential",
+                        row_count=resolve_boundary_dependence(
+                            {
+                                "Schleswig-Holstein": 586390,
+                                "Everything": 18193124,
+                            }
+                        ),
+                        data_type_columns={
+                            "id": "integer",
+                            "grid_id": "character varying",
+                            "cell_id": "integer",
+                        },
+                        not_null_columns=[
+                            "id",
+                            "grid_id",
+                            "cell_id",
+                        ],
+                    ),
+                    TableValidation(
+                        table_name="openstreetmap.osm_amenities_not_in_buildings",
+                        row_count=resolve_boundary_dependence(
+                            {"Schleswig-Holstein": 3241, "Everything": 86450}
+                        ),
+                        geometry_columns=["geom_amenity"],
+                        data_type_columns={
+                            "osm_id": "bigint",
+                            "amenity": "text",
+                            "name": "text",
+                            "geom_amenity": "geometry",
+                            "tags": "hstore",
+                            "egon_amenity_id": "integer",
+                        },
+                        not_null_columns=[
+                            "osm_id",
+                            "tags",
+                            "egon_amenity_id",
+                        ],
+                    ),
+                    TableValidation(
+                        table_name="openstreetmap.osm_amenities_shops_filtered",
+                        row_count=resolve_boundary_dependence(
+                            {"Schleswig-Holstein": 27982, "Everything": 776140}
+                        ),
+                        geometry_columns=["geom_amenity"],
+                        data_type_columns={
+                            "osm_id": "bigint",
+                            "amenity": "text",
+                            "name": "text",
+                            "geom_amenity": "geometry",
+                            "tags": "hstore",
+                            "egon_amenity_id": "integer",
+                        },
+                        not_null_columns=[
+                            "osm_id",
+                            "tags",
+                            "egon_amenity_id",
+                        ],
+                    ),
+                    TableValidation(
+                        table_name="openstreetmap.osm_buildings",
+                        row_count=resolve_boundary_dependence(
+                            {
+                                "Schleswig-Holstein": 1328203,
+                                "Everything": 37749682,
+                            }
+                        ),
+                        geometry_columns=["geom_building", "geom_point"],
+                        data_type_columns={
+                            "osm_id": "bigint",
+                            "amenity": "text",
+                            "building": "text",
+                            "name": "text",
+                            "geom_building": "geometry",
+                            "area": "double precision",
+                            "geom_point": "geometry",
+                            "tags": "hstore",
+                            "id": "integer",
+                        },
+                        not_null_columns=[
+                            "osm_id",
+                            "building",
+                            "area",
+                            "tags",
+                            "id",
+                        ],
+                    ),
+                    TableValidation(
+                        table_name="openstreetmap.osm_buildings_filtered",
+                        row_count=resolve_boundary_dependence(
+                            {
+                                "Schleswig-Holstein": 1189965,
+                                "Everything": 33951104,
+                            }
+                        ),
+                        geometry_columns=["geom_building", "geom_point"],
+                        data_type_columns={
+                            "osm_id": "bigint",
+                            "amenity": "text",
+                            "building": "text",
+                            "name": "text",
+                            "geom_building": "geometry",
+                            "area": "double precision",
+                            "geom_point": "geometry",
+                            "tags": "hstore",
+                            "id": "integer",
+                        },
+                        not_null_columns=[
+                            "osm_id",
+                            "building",
+                            "area",
+                            "tags",
+                            "id",
+                        ],
+                    ),
+                    TableValidation(
+                        table_name="openstreetmap.osm_buildings_residential",
+                        row_count=resolve_boundary_dependence(
+                            {
+                                "Schleswig-Holstein": 619154,
+                                "Everything": 18937323,
+                            }
+                        ),
+                        geometry_columns=["geom_building", "geom_point"],
+                        data_type_columns={
+                            "osm_id": "bigint",
+                            "amenity": "text",
+                            "building": "text",
+                            "name": "text",
+                            "geom_building": "geometry",
+                            "area": "double precision",
+                            "geom_point": "geometry",
+                            "tags": "hstore",
+                            "id": "integer",
+                            "source": "text",
+                            "ethos_id": "text",
+                            "match_distance": "double precision",
+                            "construction_year": "integer",
+                            "size_class": "text",
+                            "refurbishment_state": "text",
+                            "tabula_type": "text",
+                        },
+                        not_null_columns=[
+                            "osm_id",
+                            "building",
+                            "area",
+                            "tags",
+                            "id",
+                        ],
+                    ),
+                    TableValidation(
+                        table_name="openstreetmap.osm_buildings_with_amenities",
+                        row_count=resolve_boundary_dependence(
+                            {"Schleswig-Holstein": 24748, "Everything": 690708}
+                        ),
+                        geometry_columns=[
+                            "geom_building",
+                            "geom_amenity",
+                            "geom_point",
+                        ],
+                        data_type_columns={
+                            "osm_id_amenity": "bigint",
+                            "osm_id_building": "bigint",
+                            "id": "integer",
+                            "building": "text",
+                            "area": "double precision",
+                            "geom_building": "geometry",
+                            "geom_amenity": "geometry",
+                            "geom_point": "geometry",
+                            "name": "text",
+                            "tags_building": "hstore",
+                            "tags_amenity": "hstore",
+                            "n_amenities_inside": "bigint",
+                            "apartment_count": "numeric",
+                        },
+                        not_null_columns=[
+                            "osm_id_amenity",
+                            "osm_id_building",
+                            "id",
+                            "building",
+                            "area",
+                            "tags_building",
+                            "tags_amenity",
+                            "n_amenities_inside",
+                            "apartment_count",
+                        ],
+                    ),
+                    TableValidation(
+                        table_name="openstreetmap.osm_buildings_without_amenities",
+                        row_count=resolve_boundary_dependence(
+                            {
+                                "Schleswig-Holstein": 1171963,
+                                "Everything": 33434209,
+                            }
+                        ),
+                        geometry_columns=["geom_building", "geom_point"],
+                        data_type_columns={
+                            "osm_id": "bigint",
+                            "id": "integer",
+                            "building": "text",
+                            "area": "double precision",
+                            "geom_building": "geometry",
+                            "geom_point": "geometry",
+                            "name": "text",
+                            "tags": "hstore",
+                            "apartment_count": "numeric",
+                        },
+                        not_null_columns=[
+                            "osm_id",
+                            "id",
+                            "building",
+                            "area",
+                            "tags",
+                            "apartment_count",
+                        ],
+                    ),
+                    TableValidation(
+                        table_name="openstreetmap.osm_ways_with_segments",
+                        row_count=resolve_boundary_dependence(
+                            {
+                                "Schleswig-Holstein": 272206,
+                                "Everything": 7595864,
+                            }
+                        ),
+                        geometry_columns=["geom"],
+                        data_type_columns={
+                            "osm_id": "bigint",
+                            "nodes": "array",
+                            "highway": "text",
+                            "geom": "geometry",
+                            "length_segments": "array",
+                        },
+                        not_null_columns=[
+                            "osm_id",
+                            "nodes",
+                            "highway",
+                            "length_segments",
+                        ],
+                    ),
+                ]
+            },
+            proceed_on_validation_failure=True,
         )

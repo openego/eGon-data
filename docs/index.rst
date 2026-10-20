@@ -11,6 +11,7 @@ Contents
    troubleshooting
    data
    metadata
+   validation
    literature
    contributing
    authors

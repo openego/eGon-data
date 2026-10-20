@@ -43,7 +43,7 @@ class WeatherData(Dataset):
     #:
     name: str = "Era5"
     #:
-    version: str = "0.0.8"
+    version: str = "0.0.9"
 
     sources = DatasetSources(
         files={},
@@ -65,7 +65,13 @@ class WeatherData(Dataset):
             name=self.name,
             version=self.version,
             dependencies=dependencies,
-            tasks=({create_tables, download_era5}, insert_weather_cells),
+            tasks=(
+                {
+                    create_tables,
+                    download_era5
+                },
+                insert_weather_cells,
+            ),  # download_era5 should be included once issue #1250 is solved
         )
 
 
@@ -138,8 +144,8 @@ def import_cutout(boundary="Europe"):
             ys = slice(geom_de.bounds.miny[0], geom_de.bounds.maxy[0])
 
         elif boundary == "Germany-offshore":
-            xs = slice(5.5, 14.5)
-            ys = slice(55.5, 53.5)
+            xs = slice(3.0, 14.5)
+            ys = slice(56.0, 53.0)
 
         else:
             print(

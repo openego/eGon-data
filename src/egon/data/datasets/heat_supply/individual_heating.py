@@ -4,15 +4,13 @@ The following main things are done in this module:
 
 * ??
 * Desaggregation of heat pump capacities to individual buildings
-* Determination of minimum required heat pump capacity for pypsa-eur-sec
 
 """
 
-from pathlib import Path
-import os
 import random
 
 from airflow.operators.python import PythonOperator
+from egon_validation import ArrayCardinalityValidation
 from psycopg2.extensions import AsIs, register_adapter
 from sqlalchemy import ARRAY, REAL, Column, Integer, String
 from sqlalchemy.ext.declarative import declarative_base
@@ -52,14 +50,47 @@ from egon.data.datasets.heat_demand_timeseries.daily import (
 from egon.data.datasets.heat_demand_timeseries.idp_pool import (
     EgonHeatTimeseries,
 )
+from egon.data.datasets.scenario_parameters import (
+    demand_source_scenario,
+    pv_source_scenario,
+)
 
 # get zensus cells with district heating
 from egon.data.datasets.zensus_mv_grid_districts import MapZensusGridDistricts
+from egon.data.validation import TableValidation, resolve_boundary_dependence
+from egon.data.validation.rules.custom.sanity import (
+    HeatPeakLoadRange,
+    HeatPumpCapacityRange,
+    HeatPumpCapacityTarget,
+    HeatPumpFloorContainment,
+    HeatPumpFloorNotReduced,
+    HeatPumpMinimumRows,
+    HeatPumpNotInDistrictHeating,
+    HeatPumpPeakLoadExists,
+    HeatPumpScenarioCoverage,
+    HeatPumpSizing,
+    HeatTimeseriesCoverage,
+    HeatTimeseriesEnergyBalance,
+    HeatTimeseriesHeatPumpCapacity,
+    HeatTimeseriesValues,
+)
 
 engine = db.engine()
 Base = declarative_base()
 
-scenarios = config.settings()["egon-data"]["--scenarios"]
+#: Absolute tolerance in MW when comparing heat pump capacities. Capacities are
+#: derived from peak heat demands through several float operations, so exact
+#: equality is not meaningful. 1e-9 MW is one microwatt, far below any
+#: physically relevant difference.
+FLOOR_TOLERANCE = 1e-9
+
+# Smallest heat pump capacity available on the market. Buildings whose
+# required heat pump capacity (see determine_minimum_hp_capacity_per_building)
+# falls below this threshold are not assigned a heat pump and keep their gas
+# boiler instead, avoiding unrealistically small heat pumps being distributed.
+# Taken from "Deutsche Energie-Agentur (dena, 2026): KWW-Technikkatalog
+# Wärmeplanung. Version 1.1. Berlin."
+MIN_HP_CAPACITY = 5 / 1000  # MW (5 kW)
 
 
 class EgonEtragoTimeseriesIndividualHeating(Base):
@@ -95,154 +126,34 @@ class EgonHpCapacityBuildings(Base):
     hp_capacity = Column(REAL)
 
 
-class HeatPumpsPypsaEur(Dataset):
+def order_scenarios_by_hp_floor_chain(scenarios):
     """
-    Class to determine minimum heat pump capcacities per building for the PyPSA-EUR run.
+    Orders scenarios so that the heat pump floor chain runs in its declared
+    direction.
 
-    The goal is to ensure that the heat pump capacities determined in PyPSA-EUR are
-    sufficient to serve the heat demand of individual buildings after the
-    desaggregation from a few nodes in PyPSA-EUR to the individual buildings.
-    As the heat peak load is not previously determined, it is as well done in this
-    dataset. Further, as determining heat peak load requires heat load
-    profiles of the buildings to be set up, this task is also utilised to set up
-    heat load profiles of all buildings with heat pumps within a grid in the eGon100RE
-    scenario used in eTraGo.
+    Scenarios on the chain (see :func:`get_hp_floor_chain`) come first, in
+    chain order, because each inherits its predecessor's result and therefore
+    cannot be distributed before it. Scenarios off the chain keep their
+    relative order from the input and follow, as they neither inherit a floor
+    nor pass one on.
 
-    For more information see data documentation on :ref:`dec-heat-pumps-ref`.
+    Parameters
+    -----------
+    scenarios : list of str
+        Scenario names, e.g. as selected in the pipeline config.
 
-    *Dependencies*
-      * :py:class:`CtsDemandBuildings
-        <egon.data.datasets.electricity_demand_timeseries.cts_buildings.CtsDemandBuildings>`
-      * :py:class:`DistrictHeatingAreas
-        <egon.data.datasets.district_heating_areas.DistrictHeatingAreas>`
-      * :py:class:`HeatTimeSeries
-        <egon.data.datasets.heat_demand_timeseries.HeatTimeSeries>`
-
-    *Resulting tables*
-      * `input-pypsa-eur-sec/minimum_hp_capacity_mv_grid_100RE.csv` file is created,
-        containing the minimum required heat pump capacity per MV grid in MW as
-        input for PyPSA-EUR (created within :func:`export_min_cap_to_csv`)
-      * :py:class:`demand.egon_etrago_timeseries_individual_heating
-        <egon.data.datasets.heat_supply.individual_heating.EgonEtragoTimeseriesIndividualHeating>`
-        is created and filled
-      * :py:class:`demand.egon_building_heat_peak_loads
-        <egon.data.datasets.heat_supply.individual_heating.BuildingHeatPeakLoads>`
-        is created and filled
-
-    **What is the challenge?**
-
-    The main challenge lies in the set up of heat demand profiles per building in
-    :func:`aggregate_residential_and_cts_profiles()` as it takes alot of time and
-    in grids with a high number of buildings requires alot of RAM. Both runtime and RAM
-    usage needed to be improved several times. To speed up the process, tasks are set
-    up to run in parallel. This currently leads to alot of connections being opened and
-    at a certain point to a runtime error due to too many open connections.
-
-    **What are central assumptions during the data processing?**
-
-    Central assumption for determining the minimum required heat pump capacity
-    is that heat pumps can be dimensioned using an approach from the network development
-    plan that uses the building's peak heat demand and a fixed COP (see
-    data documentation on :ref:`dec-heat-pumps-ref`).
-
-    **Drawbacks and limitations of the data**
-
-    The heat demand profiles used here to determine the heat peak load have very few
-    very high peaks that lead to large heat pump capacities. This should be solved
-    somehow. Cutting off the peak is not possible, as the time series of each building
-    is not saved but generated on the fly. Also, just using smaller heat pumps would
-    lead to infeasibilities in eDisGo.
+    Returns
+    --------
+    list of str
+        The same scenarios, reordered.
 
     """
+    chain = get_hp_floor_chain()
 
-    #:
-    name: str = "HeatPumpsPypsaEurSec"
-    #:
-    version: str = "0.0.4"
+    on_chain = [s for s in chain if s in scenarios]
+    off_chain = [s for s in scenarios if s not in chain]
 
-    sources = DatasetSources(
-        tables={
-            "map_zensus_grid_districts": "boundaries.egon_map_zensus_grid_districts",  # noqa: E501
-            "mv_grid_districts": "grid.egon_mv_grid_district",
-        },
-    )
-
-    targets = DatasetTargets(
-        tables={
-            "etrago_timeseries_individual_heating": "demand.egon_etrago_timeseries_individual_heating",  # noqa: E501
-            "building_heat_peak_loads": "demand.egon_building_heat_peak_loads",  # noqa: E501
-        },
-        files={
-            "minimum_hp_capacity": "input-pypsa-eur-sec/minimum_hp_capacity_mv_grid_100RE.csv",  # noqa: E501
-        },
-    )
-
-    def __init__(self, dependencies):
-        def dyn_parallel_tasks_pypsa_eur():
-            """Dynamically generate tasks
-            The goal is to speed up tasks by parallelising bulks of mvgds.
-
-            The number of parallel tasks is defined via parameter
-            `parallel_tasks` in the dataset config `datasets.yml`.
-
-            Returns
-            -------
-            set of airflow.PythonOperators
-                The tasks. Each element is of
-                :func:`egon.data.datasets.heat_supply.individual_heating.
-                determine_hp_cap_peak_load_mvgd_ts_pypsa_eur`
-            """
-            parallel_tasks = config.datasets()["demand_timeseries_mvgd"].get(
-                "parallel_tasks", 1
-            )
-
-            tasks = set()
-
-            for i in range(parallel_tasks):
-                tasks.add(
-                    PythonOperator(
-                        task_id=(
-                            f"individual_heating."
-                            f"determine-hp-capacity-pypsa-eur-"
-                            f"mvgd-bulk{i}"
-                        ),
-                        python_callable=split_mvgds_into_bulks,
-                        op_kwargs={
-                            "n": i,
-                            "max_n": parallel_tasks,
-                            "func": determine_hp_cap_peak_load_mvgd_ts_pypsa_eur,  # noqa: E501
-                        },
-                    )
-                )
-            return tasks
-
-        tasks_HeatPumpsPypsaEur = set()
-
-        if "eGon100RE" in scenarios:
-            tasks_HeatPumpsPypsaEur = (
-                delete_pypsa_eur_sec_csv_file,
-                delete_mvgd_ts_100RE,
-                delete_heat_peak_loads_100RE,
-                {*dyn_parallel_tasks_pypsa_eur()},
-            )
-        else:
-            tasks_HeatPumpsPypsaEur = (
-                PythonOperator(
-                    task_id="HeatPumpsPypsaEur_skipped",
-                    python_callable=skip_task,
-                    op_kwargs={
-                        "scn": "eGon100RE",
-                        "task": "HeatPumpsPypsaEur",
-                    },
-                ),
-            )
-
-        super().__init__(
-            name=self.name,
-            version=self.version,
-            dependencies=dependencies,
-            tasks=tasks_HeatPumpsPypsaEur,
-        )
+    return on_chain + off_chain
 
 
 class HeatPumpsStatusQuo(Dataset):
@@ -306,6 +217,9 @@ class HeatPumpsStatusQuo(Dataset):
             "status" in scenario
             for scenario in config.settings()["egon-data"]["--scenarios"]
         ):
+            # The output tables are created by HeatSupply
+            # (create_hp_output_tables), upstream of this dataset, so the
+            # deletes below can assume they exist.
             tasks = ()
 
             for scenario in config.settings()["egon-data"]["--scenarios"]:
@@ -342,40 +256,224 @@ class HeatPumpsStatusQuo(Dataset):
 
         super().__init__(
             name="HeatPumpsStatusQuo",
-            version="0.0.5",
+            version="0.0.8",
             dependencies=dependencies,
             tasks=tasks,
         )
 
 
-class HeatPumps2035(Dataset):
+#: Minimum number of buildings with a peak load per scenario: about 95 % of
+#: the counts measured on full runs (Schleswig-Holstein: 587,449-587,703;
+#: Everything: 17,252,137-17,255,330, 2026-10). A failed MV grid bulk (one
+#: of `parallel_tasks`, i.e. ~10 % of the grids) falls below.
+MIN_PEAK_LOAD_BUILDINGS = {
+    "Schleswig-Holstein": 558_000,
+    "Everything": 16_390_000,
+}
+
+#: Minimum number of buildings with a heat pump per scenario, about 95 % of
+#: the counts measured on full runs (2026-10). Scenarios without an entry are
+#: not checked.
+MIN_HP_BUILDINGS = {
+    "status2024": {"Schleswig-Holstein": 8_000, "Everything": 164_000},
+    "reGon2037": {"Schleswig-Holstein": 74_000, "Everything": 1_209_000},
+    "reGon2045": {"Schleswig-Holstein": 113_000, "Everything": 1_895_000},
+}
+
+
+def hp_validation_rules():
+    """
+    Validation rules for the heat pump tables of HeatPumpsStatusQuo and
+    HeatPumpsCascade.
+
+    Content checks cover the scenarios of the heat pump floor chain, one rule
+    instance per scenario. See
+    :mod:`egon.data.validation.rules.custom.sanity.individual_heat_pumps`.
+
+    Returns
+    -------
+    list
+        TableValidation specs and rule instances.
+    """
+    peak_loads = "demand.egon_building_heat_peak_loads"
+    hp_capacity = "demand.egon_hp_capacity_buildings"
+    timeseries = "demand.egon_etrago_timeseries_individual_heating"
+    scenarios = ["eGon2035", "reGon2037", "reGon2045", "status2024"]
+    chain = get_hp_floor_chain()
+
+    rules = [
+        TableValidation(
+            table_name=peak_loads,
+            data_type_columns={
+                "building_id": "integer",
+                "scenario": "character varying",
+                "sector": "character varying",
+                "peak_load_in_w": "real",
+            },
+            value_set_columns={
+                "scenario": scenarios,
+                "sector": ["residential+cts"],
+            },
+        ),
+        TableValidation(
+            table_name=hp_capacity,
+            data_type_columns={
+                "building_id": "integer",
+                "scenario": "character varying",
+                "hp_capacity": "real",
+            },
+            value_set_columns={"scenario": scenarios},
+        ),
+        TableValidation(
+            table_name=timeseries,
+            data_type_columns={
+                "bus_id": "integer",
+                "scenario": "character varying",
+                "carrier": "character varying",
+                "dist_aggregated_mw": "array",
+            },
+            value_set_columns={
+                "scenario": scenarios,
+                "carrier": ["heat_pump", "CH4"],
+            },
+        ),
+        ArrayCardinalityValidation(
+            table=timeseries,
+            rule_id=(
+                "ARRAY_HEAT_PUMPS.egon_etrago_timeseries_individual_heating"
+            ),
+            array_column="dist_aggregated_mw",
+            expected_length=8760,
+        ),
+        HeatPumpScenarioCoverage(
+            table=hp_capacity,
+            rule_id="SANITY_HP_SCENARIOS",
+            tables=[peak_loads, hp_capacity, timeseries],
+        ),
+    ]
+
+    for scn in chain:
+        rules += [
+            # Building peak loads
+            HeatPumpMinimumRows(
+                table=peak_loads,
+                rule_id=f"SANITY_HP_PEAK_LOAD_COUNT.{scn}",
+                scenario=scn,
+                min_rows=resolve_boundary_dependence(MIN_PEAK_LOAD_BUILDINGS),
+            ),
+            HeatPeakLoadRange(
+                table=peak_loads,
+                rule_id=f"SANITY_HP_PEAK_LOAD_RANGE.{scn}",
+                scenario=scn,
+            ),
+            # Heat pump capacity per building
+            HeatPumpCapacityRange(
+                table=hp_capacity,
+                rule_id=f"SANITY_HP_CAPACITY_RANGE.{scn}",
+                scenario=scn,
+            ),
+            HeatPumpPeakLoadExists(
+                table=hp_capacity,
+                rule_id=f"SANITY_HP_PEAK_LOAD_EXISTS.{scn}",
+                scenario=scn,
+            ),
+            HeatPumpSizing(
+                table=hp_capacity,
+                rule_id=f"SANITY_HP_SIZING_RULE.{scn}",
+                scenario=scn,
+            ),
+            HeatPumpCapacityTarget(
+                table=hp_capacity,
+                rule_id=f"SANITY_HP_CAPACITY_TARGET.{scn}",
+                scenario=scn,
+            ),
+            HeatPumpNotInDistrictHeating(
+                table=hp_capacity,
+                rule_id=f"SANITY_HP_NOT_IN_DH.{scn}",
+                scenario=scn,
+            ),
+            # Heat demand time series per MV grid
+            HeatTimeseriesCoverage(
+                table=timeseries,
+                rule_id=f"SANITY_HP_TIMESERIES_COVERAGE.{scn}",
+                scenario=scn,
+            ),
+            HeatTimeseriesValues(
+                table=timeseries,
+                rule_id=f"SANITY_HP_TIMESERIES_VALUES.{scn}",
+                scenario=scn,
+            ),
+            HeatTimeseriesHeatPumpCapacity(
+                table=timeseries,
+                rule_id=f"SANITY_HP_TIMESERIES_CAPACITY.{scn}",
+                scenario=scn,
+            ),
+        ]
+        if scn in MIN_HP_BUILDINGS:
+            rules.append(
+                HeatPumpMinimumRows(
+                    table=hp_capacity,
+                    rule_id=f"SANITY_HP_COUNT.{scn}",
+                    scenario=scn,
+                    min_rows=resolve_boundary_dependence(
+                        MIN_HP_BUILDINGS[scn]
+                    ),
+                )
+            )
+        if "status" not in scn:
+            # Status quo scenarios write no gas boiler series by design
+            rules.append(
+                HeatTimeseriesEnergyBalance(
+                    table=timeseries,
+                    rule_id=f"SANITY_HP_TIMESERIES_ENERGY.{scn}",
+                    scenario=scn,
+                )
+            )
+        if get_hp_floor_predecessors(scn):
+            rules += [
+                HeatPumpFloorContainment(
+                    table=hp_capacity,
+                    rule_id=f"SANITY_HP_FLOOR_CONTAINMENT.{scn}",
+                    scenario=scn,
+                ),
+                HeatPumpFloorNotReduced(
+                    table=hp_capacity,
+                    rule_id=f"SANITY_HP_FLOOR_NOT_REDUCED.{scn}",
+                    scenario=scn,
+                ),
+            ]
+
+    return rules
+
+
+class HeatPumpsCascade(Dataset):
     """
     Class for desaggregation of heat pump capcacities per MV grid district to individual
-    buildings for eGon2035 scenario.
+    buildings for the eGon2035, reGon2037 and reGon2045 scenarios.
 
     The heat pump capacity per MV grid district is disaggregated to buildings
     with individual heating based on the buildings heat peak demand. The buildings are
     chosen randomly until the target capacity per MV grid district is reached. Buildings
-    with PV rooftop have a higher probability to be assigned a heat pump. As the
-    building's heat peak load is not previously determined, it is as well done in this
-    dataset. Further, as determining heat peak load requires heat load
+    with PV rooftop have a higher probability to be assigned a heat pump.
+
+    For scenarios on the heat pump floor chain declared in `datasets.yml`
+    (`status2024` -> `reGon2037` -> `reGon2045`), the assignment is *floored*: a
+    building that had a heat pump in the previous link keeps exactly its inherited
+    capacity, and only the remaining capacity of the MV grid district is distributed
+    over the other buildings. This makes the heat pump stock monotonically
+    non-decreasing along the scenario timeline. `eGon2035` is deliberately not on the
+    chain and keeps its independent distribution. Because each link inherits its
+    predecessor's result, the scenarios on the chain are processed in chain order and
+    re-running one link invalidates everything downstream of it.
+
+    As the building's heat peak load is not previously determined, it is as well done
+    in this dataset. Further, as determining heat peak load requires heat load
     profiles of the buildings to be set up, this task is also utilised to set up
     aggregated heat load profiles of all buildings with heat pumps within a grid as
     well as for all buildings with a gas boiler (i.e. all buildings with decentral
     heating system minus buildings with heat pump) needed in eTraGo.
 
     For more information see data documentation on :ref:`dec-heat-pumps-ref`.
-
-    Heat pump capacity per building in the eGon100RE scenario is set up in a separate
-    dataset, :py:class:`HeatPumps2050 <HeatPumps2050>`, as for one reason in case of the
-    eGon100RE scenario the minimum required heat pump capacity per building can directly
-    be determined using the peak heat demand per building determined in the dataset
-    :py:class:`HeatPumpsPypsaEurSec <HeatPumpsPypsaEurSec>`, whereas peak heat
-    demand data does not yet exist for the eGon2035 scenario. Another reason is,
-    that in case of the eGon100RE scenario all buildings with individual heating have a
-    heat pump whereas in the eGon2035 scenario buildings are randomly selected until the
-    installed heat pump capacity per MV grid is met. All other buildings with individual
-    heating but no heat pump are assigned a gas boiler.
 
     *Dependencies*
       * :py:class:`CtsDemandBuildings
@@ -385,8 +483,6 @@ class HeatPumps2035(Dataset):
       * :py:class:`HeatSupply <egon.data.datasets.heat_supply.HeatSupply>`
       * :py:class:`HeatTimeSeries
         <egon.data.datasets.heat_demand_timeseries.HeatTimeSeries>`
-      * :py:class:`HeatPumpsPypsaEurSec
-        <egon.data.datasets.heat_supply.individual_heating.HeatPumpsPypsaEurSec>`
       * :py:func:`pv_rooftop_to_buildings
         <egon.data.datasets.power_plants.pv_rooftop_buildings.pv_rooftop_to_buildings>`
 
@@ -431,9 +527,9 @@ class HeatPumps2035(Dataset):
     """
 
     #:
-    name: str = "HeatPumps2035"
+    name: str = "HeatPumpsCascade"
     #:
-    version: str = "0.0.3"
+    version: str = "0.0.11"
 
     sources = DatasetSources(
         tables={
@@ -451,7 +547,7 @@ class HeatPumps2035(Dataset):
     )
 
     def __init__(self, dependencies):
-        def dyn_parallel_tasks_2035():
+        def dyn_parallel_tasks_2035(scenario):
             """Dynamically generate tasks
 
             The goal is to speed up tasks by parallelising bulks of mvgds.
@@ -477,122 +573,81 @@ class HeatPumps2035(Dataset):
                     PythonOperator(
                         task_id=(
                             "individual_heating."
-                            f"determine-hp-capacity-2035-"
+                            f"determine-hp-capacity-{scenario}-"
                             f"mvgd-bulk{i}"
                         ),
                         python_callable=split_mvgds_into_bulks,
                         op_kwargs={
                             "n": i,
                             "max_n": parallel_tasks,
+                            "scenario": scenario,
                             "func": determine_hp_cap_peak_load_mvgd_ts_2035,
                         },
                     )
                 )
             return tasks
 
-        if "eGon2035" in scenarios:
-            tasks_HeatPumps2035 = (
-                delete_heat_peak_loads_2035,
-                delete_hp_capacity_2035,
-                delete_mvgd_ts_2035,
-                {*dyn_parallel_tasks_2035()},
-            )
+        if any(
+            "status" not in scenario
+            for scenario in config.settings()["egon-data"]["--scenarios"]
+        ):
+            # The output tables are created by HeatSupply
+            # (create_hp_output_tables), upstream of this dataset.
+            tasks_HeatPumpsCascade = ()
+
+            # The floor chain is inherently sequential: reGon2045 must not be
+            # distributed before reGon2037 has been written, or it would floor
+            # against no rows and reGon2037 would then floor against its own
+            # successor - silently inverting the chain. Ordering the scenarios
+            # by the chain declared in datasets.yml is what encodes the
+            # direction; the Dataset task-graph API turns this flat tuple into
+            # the required ordering, as all of one scenario's parallel bulks
+            # complete before any task of the next begins.
+            #
+            # This only orders the scenarios *within* this dataset. The first
+            # link of the chain (status2024) is written by HeatPumpsStatusQuo,
+            # a separate dataset, so the edge from it to this one has to be
+            # declared as a dependency in the pipeline - see
+            # egon.data.airflow.dags.pipeline. Without it the two datasets are
+            # siblings and Airflow may run them concurrently, which lets a
+            # cascade bulk read a status quo grid that has not been committed
+            # yet and silently lose its floor.
+            for scenario in order_scenarios_by_hp_floor_chain(
+                config.settings()["egon-data"]["--scenarios"]
+            ):
+                if "status" not in scenario:
+                    postfix = f"_{scenario}"
+
+                    tasks_HeatPumpsCascade += (
+                        wrapped_partial(
+                            delete_heat_peak_loads_2035,
+                            scenario=scenario,
+                            postfix=postfix,
+                        ),
+                        wrapped_partial(
+                            delete_hp_capacity_2035,
+                            scenario=scenario,
+                            postfix=postfix,
+                        ),
+                        wrapped_partial(
+                            delete_mvgd_ts_2035,
+                            scenario=scenario,
+                            postfix=postfix,
+                        ),
+                    )
+
+                    tasks_HeatPumpsCascade += (
+                        {*dyn_parallel_tasks_2035(scenario)},
+                    )
         else:
-            tasks_HeatPumps2035 = (
+            tasks_HeatPumpsCascade = (
                 PythonOperator(
-                    task_id="HeatPumps2035_skipped",
+                    task_id="HeatPumpsCascade_skipped",
                     python_callable=skip_task,
-                    op_kwargs={"scn": "eGon2035", "task": "HeatPumps2035"},
-                ),
-            )
-
-        super().__init__(
-            name=self.version,
-            version="0.0.4",
-            dependencies=dependencies,
-            tasks=tasks_HeatPumps2035,
-        )
-
-
-class HeatPumps2050(Dataset):
-    """
-    Class for desaggregation of heat pump capcacities per MV grid district to individual
-    buildings for eGon100RE scenario.
-
-    Optimised heat pump capacity from PyPSA-EUR run is disaggregated to all buildings
-    with individual heating (as heat pumps are the only option for individual heating
-    in the eGon100RE scenario) based on buildings heat peak demand. The heat peak demand
-    per building does in this dataset, in contrast to the
-    :py:class:`HeatPumps2035 <egon.data.datasets.pypsaeursec.HeatPumps2035>` dataset,
-    not need to be determined, as it was already determined in the
-    :py:class:`PypsaEurSec <egon.data.datasets.pypsaeursec.PypsaEurSec>` dataset.
-
-    For more information see data documentation on :ref:`dec-heat-pumps-ref`.
-
-    Heat pump capacity per building for the eGon2035 scenario is set up in a separate
-    dataset, :py:class:`HeatPumps2035 <HeatPumps2035>`. See there for further
-    information as to why.
-
-    *Dependencies*
-      * :py:class:`PypsaEurSec <egon.data.datasets.pypsaeursec.PypsaEurSec>`
-      * :py:class:`HeatPumpsPypsaEurSec
-        <egon.data.datasets.heat_supply.individual_heating.HeatPumpsPypsaEurSec>`
-      * :py:class:`HeatSupply <egon.data.datasets.heat_supply.HeatSupply>`
-
-    *Resulting tables*
-      * :py:class:`demand.egon_hp_capacity_buildings
-        <egon.data.datasets.heat_supply.individual_heating.EgonHpCapacityBuildings>`
-        is created (if it doesn't yet exist) and filled
-
-    **What are central assumptions during the data processing?**
-
-    Central assumption for desaggregating the heat pump capacity to individual buildings
-    is that heat pumps can be dimensioned using an approach from the network development
-    plan that uses the building's peak heat demand and a fixed COP (see
-    data documentation on :ref:`dec-heat-pumps-ref`).
-
-    **Drawbacks and limitations of the data**
-
-    The heat demand profiles used here to determine the heat peak load have very few
-    very high peaks that lead to large heat pump capacities. This should be solved
-    somehow. Cutting off the peak is not possible, as the time series of each building
-    is not saved but generated on the fly. Also, just using smaller heat pumps would
-    lead to infeasibilities in eDisGo.
-
-    """
-
-    #:
-    name: str = "HeatPumps2050"
-    #:
-    version: str = "0.0.4"
-
-    sources = DatasetSources(
-        tables={
-            "map_zensus_grid_districts": "boundaries.egon_map_zensus_grid_districts",  # noqa: E501
-            "mv_grid_districts": "grid.egon_mv_grid_district",
-        },
-    )
-
-    targets = DatasetTargets(
-        tables={
-            "hp_capacity_buildings": "demand.egon_hp_capacity_buildings",
-        },
-    )
-
-    def __init__(self, dependencies):
-        tasks_HeatPumps2050 = set()
-
-        if "eGon100RE" in scenarios:
-            tasks_HeatPumps2050 = (
-                delete_hp_capacity_100RE,
-                determine_hp_cap_buildings_eGon100RE,
-            )
-        else:
-            tasks_HeatPumps2050 = (
-                PythonOperator(
-                    task_id="HeatPumps2050_skipped",
-                    python_callable=skip_task,
-                    op_kwargs={"scn": "eGon100RE", "task": "HeatPumps2050"},
+                    op_kwargs={
+                        "scn": "eGon2035/reGon2037/reGon2045",
+                        "task": "HeatPumpsCascade",
+                    },
                 ),
             )
 
@@ -600,7 +655,11 @@ class HeatPumps2050(Dataset):
             name=self.name,
             version=self.version,
             dependencies=dependencies,
-            tasks=tasks_HeatPumps2050,
+            tasks=tasks_HeatPumpsCascade,
+            # Validates the output of HeatPumpsStatusQuo as well: both write
+            # the same tables, and this dataset runs after it.
+            validation={"data-quality": hp_validation_rules()},
+            proceed_on_validation_failure=True,
         )
 
 
@@ -700,23 +759,21 @@ def cascade_per_technology(
             )
         else:
             # Select target value for Germany
-            target = db.select_dataframe(
-                f"""
+            target = db.select_dataframe(f"""
                     SELECT SUM(capacity) AS capacity
                     FROM {sources.tables['scenario_capacities']} a
                     WHERE scenario_name = '{scenario}'
                     AND carrier = 'rural_heat_pump'
-                    """
-            )
+                    """)
 
             if not target.capacity[0]:
                 target.capacity[0] = 0
 
-            if (
-                config.settings()["egon-data"]["--dataset-boundary"]
-                == "Schleswig-Holstein"
-            ):
-                target.capacity[0] /= 16
+            # No testmode scaling here: the 'rural_heat_pump' target is already
+            # reduced to the dataset boundary by population_share() when it is
+            # inserted in scenario_capacities.insert_capacities_status_quo().
+            # Dividing by 16 again applied the boundary reduction twice and made
+            # the distributed capacity ~16x too low.
 
             heat_per_mv["share"] = (
                 heat_per_mv.remaining_demand
@@ -731,7 +788,7 @@ def cascade_per_technology(
             {"bus_id": "mv_grid_id", "share": "capacity"}, axis=1, inplace=True
         )
 
-    elif (tech.index == "gas_boiler") & (scenario == "eGon2035"):
+    elif (tech.index == "gas_boiler") & ("status" not in scenario):
         append_df = pd.DataFrame(
             data={
                 "capacity": heat_per_mv.remaining_demand.div(
@@ -741,33 +798,6 @@ def cascade_per_technology(
                 "mv_grid_id": heat_per_mv.index,
                 "scenario": scenario,
             }
-        )
-
-    elif tech.index in ("gas_boiler", "resistive_heater", "solar_thermal"):
-        # Select target value for Germany
-        target = db.select_dataframe(
-            f"""
-                SELECT SUM(capacity) AS capacity
-                FROM {sources.tables['scenario_capacities']} a
-                WHERE scenario_name = '{scenario}'
-                AND carrier = 'rural_{tech.index[0]}'
-                """
-        )
-
-        if (
-            config.settings()["egon-data"]["--dataset-boundary"]
-            == "Schleswig-Holstein"
-        ):
-            target.capacity[0] /= 16
-
-        heat_per_mv["share"] = (
-            heat_per_mv.remaining_demand / heat_per_mv.remaining_demand.sum()
-        )
-
-        append_df = heat_per_mv["share"].mul(target.capacity[0]).reset_index()
-
-        append_df.rename(
-            {"bus_id": "mv_grid_id", "share": "capacity"}, axis=1, inplace=True
         )
 
     else:
@@ -822,6 +852,8 @@ def cascade_heat_supply_indiv(scenario, distribution_level, plotting=True):
 
     sources, targets = load_sources_and_targets("HeatSupply")
 
+    demand_scenario = demand_source_scenario(scenario)
+
     # Select residential heat demand per mv grid district and federal state
     heat_per_mv = db.select_geodataframe(
         f"""
@@ -834,11 +866,11 @@ def cascade_heat_supply_indiv(scenario, distribution_level, plotting=True):
         ON b.bus_id = c.bus_id
         JOIN {sources.tables['mv_grids']} d
         ON d.bus_id = c.bus_id
-        WHERE scenario = '{scenario}'
+        WHERE scenario = '{demand_scenario}'
         AND a.zensus_population_id NOT IN (
             SELECT zensus_population_id
             FROM {sources.tables['map_dh']}
-            WHERE scenario = '{scenario}')
+            WHERE scenario = '{demand_scenario}')
         GROUP BY d.bus_id, vg250_lan, geom
         """,
         index_col="bus_id",
@@ -854,35 +886,18 @@ def cascade_heat_supply_indiv(scenario, distribution_level, plotting=True):
 
     # Set technology data according to
     # http://www.wbzu.de/seminare/infopool/infopool-bhkw
-    if scenario == "eGon2035":
-        technologies = pd.DataFrame(
-            index=["heat_pump", "gas_boiler"],
-            columns=["estimated_flh", "priority"],
-            data={"estimated_flh": [4000, 8000], "priority": [2, 1]},
-        )
-    elif scenario == "eGon100RE":
-        technologies = pd.DataFrame(
-            index=[
-                "heat_pump",
-                "resistive_heater",
-                "solar_thermal",
-                "gas_boiler",
-                "oil_boiler",
-            ],
-            columns=["estimated_flh", "priority"],
-            data={
-                "estimated_flh": [4000, 2000, 2000, 8000, 8000],
-                "priority": [5, 4, 3, 2, 1],
-            },
-        )
-    elif "status" in scenario:
+    if "status" in scenario:
         technologies = pd.DataFrame(
             index=["heat_pump"],
             columns=["estimated_flh", "priority"],
             data={"estimated_flh": [4000], "priority": [1]},
         )
     else:
-        raise ValueError(f"{scenario=} is not valid.")
+        technologies = pd.DataFrame(
+            index=["heat_pump", "gas_boiler"],
+            columns=["estimated_flh", "priority"],
+            data={"estimated_flh": [4000, 8000], "priority": [2, 1]},
+        )
 
     # In the beginning, the remaining demand equals demand
     heat_per_mv["remaining_demand"] = heat_per_mv["demand"]
@@ -910,14 +925,14 @@ def cascade_heat_supply_indiv(scenario, distribution_level, plotting=True):
 def get_peta_demand(mvgd, scenario):
     """
     Retrieve annual peta heat demand for residential buildings for either
-    eGon2035 or eGon100RE scenario.
+    the configured scenario.
 
     Parameters
     ----------
     mvgd : int
         MV grid ID.
     scenario : str
-        Possible options are eGon2035 or eGon100RE
+        Name of the scenario.
 
     Returns
     -------
@@ -1076,15 +1091,15 @@ def get_daily_demand_share(mvgd):
 
 def calc_residential_heat_profiles_per_mvgd(mvgd, scenario):
     """
-    Gets residential heat profiles per building in MV grid for either eGon2035
-    or eGon100RE scenario.
+    Gets residential heat profiles per building in MV grid for the given
+    scenario.
 
     Parameters
     ----------
     mvgd : int
         MV grid ID.
     scenario : str
-        Possible options are eGon2035 or eGon100RE.
+        Name of the scenario.
 
     Returns
     --------
@@ -1112,7 +1127,7 @@ def calc_residential_heat_profiles_per_mvgd(mvgd, scenario):
         "demand_ts",
     ]
 
-    df_peta_demand = get_peta_demand(mvgd, scenario)
+    df_peta_demand = get_peta_demand(mvgd, demand_source_scenario(scenario))
     df_peta_demand = reduce_mem_usage(df_peta_demand)
 
     # TODO maybe return empty dataframe
@@ -1221,7 +1236,7 @@ def get_zensus_cells_with_decentral_heat_demand_in_mv_grid(
     Parameters
     -----------
     scenario : str
-        Name of scenario. Can be either "eGon2035" or "eGon100RE".
+        Name of scenario.
     mv_grid_id : int
         ID of MV grid.
 
@@ -1254,7 +1269,8 @@ def get_zensus_cells_with_decentral_heat_demand_in_mv_grid(
         query = session.query(
             MapZensusDistrictHeatingAreas.zensus_population_id,
         ).filter(
-            MapZensusDistrictHeatingAreas.scenario == scenario,
+            MapZensusDistrictHeatingAreas.scenario
+            == demand_source_scenario(scenario),
             MapZensusDistrictHeatingAreas.zensus_population_id.in_(
                 zensus_population_ids
             ),
@@ -1284,7 +1300,7 @@ def get_residential_buildings_with_decentral_heat_demand_in_mv_grid(
     Parameters
     -----------
     scenario : str
-        Name of scenario. Can be either "eGon2035" or "eGon100RE".
+        Name of scenario.
     mv_grid_id : int
         ID of MV grid.
 
@@ -1336,7 +1352,7 @@ def get_cts_buildings_with_decentral_heat_demand_in_mv_grid(
     Parameters
     -----------
     scenario : str
-        Name of scenario. Can be either "eGon2035" or "eGon100RE".
+        Name of scenario.
     mv_grid_id : int
         ID of MV grid.
 
@@ -1387,7 +1403,7 @@ def get_buildings_with_decentral_heat_demand_in_mv_grid(mvgd, scenario):
     mvgd : int
         ID of MV grid.
     scenario : str
-        Name of scenario. Can be either "eGon2035" or "eGon100RE".
+        Name of scenario.
 
     Returns
     --------
@@ -1420,12 +1436,12 @@ def get_buildings_with_decentral_heat_demand_in_mv_grid(mvgd, scenario):
 def get_total_heat_pump_capacity_of_mv_grid(scenario, mv_grid_id):
     """
     Returns total heat pump capacity per grid that was previously defined
-    (by NEP or pypsa-eur-sec).
+    by the NEP-based cascade.
 
     Parameters
     -----------
     scenario : str
-        Name of scenario. Can be either "eGon2035" or "eGon100RE".
+        Name of scenario.
     mv_grid_id : int
         ID of MV grid.
 
@@ -1513,7 +1529,7 @@ def determine_minimum_hp_capacity_per_building(
 
 
 def determine_buildings_with_hp_in_mv_grid(
-    hp_cap_mv_grid, min_hp_cap_per_building
+    hp_cap_mv_grid, min_hp_cap_per_building, scenario
 ):
     """
     Distributes given total heat pump capacity to buildings based on their peak
@@ -1526,6 +1542,10 @@ def determine_buildings_with_hp_in_mv_grid(
     min_hp_cap_per_building : pd.Series
         Pandas series with minimum required heat pump capacity per building
          in MW.
+    scenario : str
+        Name of the scenario. Determines which scenario's PV rooftop data is
+        used to weight buildings (via
+        :func:`~.scenario_parameters.pv_source_scenario`).
 
     Returns
     -------
@@ -1545,12 +1565,16 @@ def determine_buildings_with_hp_in_mv_grid(
             egon_power_plants_pv_roof_building.building_id
         ).filter(
             egon_power_plants_pv_roof_building.building_id.in_(building_ids),
-            egon_power_plants_pv_roof_building.scenario == "eGon2035",
+            egon_power_plants_pv_roof_building.scenario
+            == pv_source_scenario(scenario),
         )
 
-        buildings_with_pv = pd.read_sql(
-            query.statement, query.session.bind, index_col=None
-        ).building_id.values
+        buildings_with_pv = (
+            pd.read_sql(query.statement, query.session.bind, index_col=None)
+            .building_id.drop_duplicates()
+            .sort_values()
+            .values
+        )
     # set different weights for buildings with PV and without PV
     weight_with_pv = 1.5
     weight_without_pv = 1.0
@@ -1610,7 +1634,11 @@ def determine_buildings_with_hp_in_mv_grid(
             min_cap_buildings_wo_hp <= remaining_hp_cap
         ].index
 
-    return buildings_with_hp
+    # Guard against duplicated building ids reaching the caller. A duplicate
+    # would be allocated capacity twice and then silently dropped by
+    # drop_duplicates() in the bulk export, losing that capacity from the
+    # grid's budget without any rescaling.
+    return buildings_with_hp.drop_duplicates()
 
 
 def desaggregate_hp_capacity(min_hp_cap_per_building, hp_cap_mv_grid):
@@ -1650,37 +1678,257 @@ def desaggregate_hp_capacity(min_hp_cap_per_building, hp_cap_mv_grid):
     return hp_cap_per_building
 
 
-def determine_min_hp_cap_buildings_pypsa_eur_sec(
-    peak_heat_demand, building_ids
-):
+def get_hp_floor_chain():
     """
-    Determines minimum required HP capacity in MV grid in MW as input for
-    pypsa-eur-sec.
+    Returns the ordered scenario chain along which the fixed heat pump floor
+    propagates.
+
+    The chain is declared in the dataset config `datasets.yml` rather than
+    hardcoded here, because which scenarios floor against which is a modelling
+    choice. Scenarios not on the chain (notably `eGon2035`) neither inherit a
+    floor nor pass one on.
+
+    Returns
+    --------
+    list of str
+        Scenario names in chain order, e.g.
+        ``["status2024", "reGon2037", "reGon2045"]``. Empty if no chain is
+        configured.
+
+    """
+    return list(
+        config.datasets()["demand_timeseries_mvgd"].get("hp_floor_chain", [])
+    )
+
+
+def get_hp_floor_predecessors(scenario):
+    """
+    Returns the predecessors of a scenario on the floor chain, nearest first.
 
     Parameters
-    ----------
-    peak_heat_demand : pd.Series
-        Series with peak heat demand per building in MW. Index contains the
-        building ID.
+    -----------
+    scenario : str
+        Name of the scenario.
+
+    Returns
+    --------
+    list of str
+        Scenario names preceding `scenario` on the chain, ordered from nearest
+        to furthest. Empty if `scenario` is not on the chain or is its first
+        link.
+
+    """
+    chain = get_hp_floor_chain()
+
+    if scenario not in chain:
+        return []
+
+    return chain[: chain.index(scenario)][::-1]
+
+
+def get_scenario_peak_load_buildings(scenario):
+    """
+    Returns the buildings a scenario has written peak loads for.
+
+    A bulk writes the peak loads of every building it processed, so this is
+    how far that scenario has got.
+
+    Parameters
+    -----------
+    scenario : str
+        Name of the scenario.
+
+    Returns
+    --------
+    pd.Index(int)
+        Building IDs the scenario has written peak loads for.
+
+    """
+    with db.session_scope() as session:
+        query = session.query(BuildingHeatPeakLoads.building_id).filter(
+            BuildingHeatPeakLoads.scenario == scenario
+        )
+        written = pd.read_sql(
+            query.statement, query.session.bind, index_col=None
+        )
+
+    return pd.Index(written["building_id"].unique())
+
+
+def assert_predecessor_complete(scenario, predecessor):
+    """
+    Raises if a floor chain predecessor has only been written in part.
+
+    :func:`get_inherited_hp_capacity` reads its floor straight from
+    :py:class:`EgonHpCapacityBuildings`, with no synchronisation beyond the
+    task graph. If the predecessor is still being written while this scenario
+    is distributed, a building whose rows have not been committed yet looks
+    exactly like a building that legitimately never had a heat pump: the floor
+    comes back empty, the building is resized from its own peak load alone,
+    and the chain silently loses capacity instead of failing. That is
+    invisible in the result afterwards, so it is checked before the floor is
+    trusted.
+
+    Completeness is measured against the buildings this scenario itself has
+    processed: both links of the chain cover the same building stock, so a
+    predecessor that is missing buildings the current scenario already has is
+    still being written. Heat pump rows cannot be used for this - a building
+    legitimately has no row if it got no heat pump - which is exactly the
+    ambiguity this resolves.
+
+    Parameters
+    -----------
+    scenario : str
+        Name of the scenario being distributed.
+    predecessor : str
+        Name of the predecessor whose completeness is asserted.
+
+    Raises
+    -------
+    RuntimeError
+        If the predecessor has processed fewer buildings than `scenario`.
+
+    """
+    written = get_scenario_peak_load_buildings(predecessor)
+    expected = get_scenario_peak_load_buildings(scenario)
+
+    # The current scenario is itself mid-run, so this compares against what it
+    # has written so far: a predecessor that is behind *that* is unambiguously
+    # incomplete. It is a lower bound on completeness, not a proof of it.
+    missing = expected.difference(written)
+
+    if not missing.empty:
+        raise RuntimeError(
+            f"Scenario {scenario} is floored on {predecessor}, but "
+            f"{predecessor} has only written peak loads for {len(written)} "
+            f"buildings against {len(expected)} already written for "
+            f"{scenario} ({len(missing)} missing, e.g. "
+            f"{sorted(missing)[:5]}). Distributing {scenario} now would "
+            f"silently drop the inherited floor for those buildings. "
+            f"{predecessor} must be complete before {scenario} starts - "
+            f"check their dependencies in egon.data.airflow.dags.pipeline."
+        )
+
+
+def get_inherited_hp_capacity(scenario, building_ids):
+    """
+    Returns the fixed heat pump capacity a scenario inherits from the floor
+    chain.
+
+    The floor a scenario inherits is its predecessor's *result*. Because
+    scenarios are selected independently, a run can omit a middle link of the
+    chain (e.g. `[status2024, reGon2045]`). In that case the floor walks back
+    along the chain to the nearest predecessor that actually has rows, which is
+    a weaker but still valid constraint in the monotonic direction the chain
+    assumes. If walking back exhausts the chain and no predecessor has any
+    rows, the scenario is distributed unfloored and a warning is logged, since
+    running a single future scenario standalone is a legitimate way to test
+    the distribution itself.
+
+    Parameters
+    -----------
+    scenario : str
+        Name of the scenario.
     building_ids : pd.Index(int)
-        Building IDs (as int) of buildings with decentral heating system in
+        Building IDs (as int) of buildings with decentral heating system in the
         given MV grid.
 
     Returns
     --------
-    float
-        Minimum required HP capacity in MV grid in MW.
+    pd.Series
+        Inherited heat pump capacity in MW per building, indexed by building
+        ID. Contains only buildings that are both in `building_ids` and had a
+        heat pump in the inherited scenario. Empty if the scenario is
+        unfloored.
 
     """
-    if len(building_ids) > 0:
-        peak_heat_demand = peak_heat_demand.loc[building_ids]
-        # determine minimum required heat pump capacity per building
-        min_hp_cap_buildings = determine_minimum_hp_capacity_per_building(
-            peak_heat_demand
+    empty = pd.Series(dtype="float64", name="hp_capacity")
+    empty.index.name = "building_id"
+
+    predecessors = get_hp_floor_predecessors(scenario)
+
+    if not predecessors:
+        return empty
+
+    for predecessor in predecessors:
+        with db.session_scope() as session:
+            query = session.query(
+                EgonHpCapacityBuildings.building_id,
+                EgonHpCapacityBuildings.hp_capacity,
+            ).filter(
+                EgonHpCapacityBuildings.scenario == predecessor,
+                EgonHpCapacityBuildings.building_id.in_(
+                    building_ids.tolist()
+                ),
+            )
+
+            inherited = pd.read_sql(
+                query.statement, query.session.bind, index_col="building_id"
+            ).hp_capacity
+
+        # An empty result for one MV grid does not prove the predecessor was
+        # never written, so fall back to the next link only if the predecessor
+        # scenario holds no rows at all.
+        if not inherited.empty:
+            if predecessor != predecessors[0]:
+                logger.info(
+                    f"Scenario {scenario} inherits its heat pump floor from "
+                    f"{predecessor}, as the nearer link(s) "
+                    f"{predecessors[: predecessors.index(predecessor)]} hold "
+                    f"no data in this run."
+                )
+            return inherited.rename("hp_capacity")
+
+        if scenario_has_hp_capacity(predecessor):
+            # Predecessor exists but has no heat pumps among these buildings.
+            # That is a valid empty floor only if the predecessor is actually
+            # finished - a partially written one is indistinguishable from it
+            # here and would silently unfloor this grid, so make sure.
+            assert_predecessor_complete(scenario, predecessor)
+            return empty
+
+    logger.warning(
+        f"No predecessor of scenario {scenario} on the heat pump floor chain "
+        f"{get_hp_floor_chain()} holds any data (tried {predecessors}). "
+        f"{scenario} is distributed UNFLOORED: its heat pump assignment is "
+        f"drawn independently and buildings may lose heat pumps relative to "
+        f"earlier scenarios. Include an earlier link of the chain in "
+        f"'--scenarios' to floor it."
+    )
+
+    return empty
+
+
+def scenario_has_hp_capacity(scenario):
+    """
+    Returns whether a scenario has any heat pump capacity rows at all.
+
+    Used to tell a predecessor that was never run (walk further back along the
+    floor chain) from one that was run but has no heat pumps in the MV grid at
+    hand (a valid empty floor).
+
+    Note this says nothing about *completeness* - see
+    :func:`assert_predecessor_complete` for that.
+
+    Parameters
+    -----------
+    scenario : str
+        Name of the scenario.
+
+    Returns
+    --------
+    bool
+        True if the scenario has at least one row in
+        :py:class:`EgonHpCapacityBuildings`.
+
+    """
+    with db.session_scope() as session:
+        return (
+            session.query(EgonHpCapacityBuildings.building_id)
+            .filter(EgonHpCapacityBuildings.scenario == scenario)
+            .first()
+            is not None
         )
-        return min_hp_cap_buildings.sum()
-    else:
-        return 0.0
 
 
 def determine_hp_cap_buildings_pvbased_per_mvgd(
@@ -1688,8 +1936,20 @@ def determine_hp_cap_buildings_pvbased_per_mvgd(
 ):
     """
     Determines which buildings in the MV grid will have a HP (buildings with PV
-    rooftop are more likely to be assigned) in the eGon2035 scenario, as well
+    rooftop are more likely to be assigned), as well
     as their respective HP capacity in MW.
+
+    Buildings whose required minimum heat pump capacity (see
+    :func:`determine_minimum_hp_capacity_per_building`) is below
+    :data:`MIN_HP_CAPACITY` are excluded from the pool of candidate
+    buildings, since no heat pump that small is available on the market.
+    They remain supplied by a gas boiler. The excluded capacity is normally
+    not lost: :func:`desaggregate_hp_capacity` scales the remaining, selected
+    buildings up so that the MV grid's total heat pump capacity target is
+    met exactly. Only if no candidate building can be selected at all (none
+    remain, all are below :data:`MIN_HP_CAPACITY`, or none fits into the
+    remaining capacity) does the grid fall short of its target; the
+    shortfall is not redistributed and is logged as a warning.
 
     Parameters
     -----------
@@ -1701,6 +1961,33 @@ def determine_hp_cap_buildings_pvbased_per_mvgd(
     building_ids : pd.Index(int)
         Building IDs (as int) of buildings with decentral heating system in
         given MV grid.
+
+    Notes
+    -----
+    For scenarios on the heat pump floor chain (see
+    :func:`get_hp_floor_chain`), buildings that had a heat pump in the inherited
+    scenario keep **at least** their inherited capacity: the floor is a lower
+    bound, not a fixed value. Where the building's own peak heat demand has
+    grown since the inherited scenario, its capacity is raised to the minimum
+    the sizing rule requires for the current scenario
+    (:func:`determine_minimum_hp_capacity_per_building`); a heat pump kept at
+    its inherited size would otherwise be unable to cover the building's heat
+    demand.
+
+    Floored buildings are then exempt from the proportional scaling in
+    :func:`desaggregate_hp_capacity`, and only the remaining budget
+    (`hp_cap_grid` minus the floored capacity in this grid, after any
+    up-scaling) is distributed over the not-yet-equipped buildings using the
+    PV-weighted selection unchanged. Up-scaling therefore reduces the budget
+    available for new heat pumps rather than adding to the grid total: every
+    floored building satisfies the sizing rule, and the distributed total
+    equals `hp_cap_grid` except in the shortfall case described above.
+
+    The grid target is a top-down pro-rata split of the state's target and
+    can fall below the floored capacity. The floor is then kept as a hard
+    lower bound: the grid's effective target is raised to the floored
+    capacity, no new heat pumps are added, and the overshoot is logged as a
+    warning.
 
     """
 
@@ -1714,126 +2001,116 @@ def determine_hp_cap_buildings_pvbased_per_mvgd(
             peak_heat_demand
         )
 
-        # select buildings that will have a heat pump
-        buildings_with_hp = determine_buildings_with_hp_in_mv_grid(
-            hp_cap_grid, min_hp_cap_buildings
-        )
+        # Capacity inherited from the previous link of the floor chain is a
+        # lower bound, not a fixed value: raise it to the minimum this
+        # scenario's sizing rule requires where the building's peak heat demand
+        # has grown, so an inherited heat pump still covers its building.
+        inherited_hp_cap = get_inherited_hp_capacity(scenario, building_ids)
 
-        # distribute total heat pump capacity to all buildings with HP
-        hp_cap_per_building = desaggregate_hp_capacity(
-            min_hp_cap_buildings.loc[buildings_with_hp], hp_cap_grid
+        if not inherited_hp_cap.empty:
+            required = min_hp_cap_buildings.reindex(inherited_hp_cap.index)
+            floored_hp_cap = inherited_hp_cap.combine(
+                required.fillna(0.0), max
+            )
+
+            n_scaled_up = int(
+                (floored_hp_cap > inherited_hp_cap + FLOOR_TOLERANCE).sum()
+            )
+            if n_scaled_up:
+                logger.info(
+                    f"MVGD={mv_grid_id} | Scenario {scenario}: raised "
+                    f"{n_scaled_up} of {len(inherited_hp_cap)} inherited heat "
+                    f"pumps to the minimum size required by their current peak "
+                    f"heat demand (+"
+                    f"{(floored_hp_cap.sum() - inherited_hp_cap.sum()):.4f} "
+                    f"MW)."
+                )
+        else:
+            floored_hp_cap = inherited_hp_cap
+
+        floored_cap = floored_hp_cap.sum()
+
+        # The grid target is a top-down pro-rata split of the state's target
+        # and has no knowledge of the bottom-up floor, so it can fall below
+        # the floored stock where the grid's demand share shrank faster than
+        # its state's target grew. The floor is a hard lower bound, so raise
+        # the grid's effective target to it instead of failing the run.
+        if floored_cap > hp_cap_grid:
+            logger.warning(
+                f"MVGD={mv_grid_id} | Scenario {scenario}: heat pump capacity "
+                f"required by the floor ({floored_cap:.4f} MW, of which "
+                f"{inherited_hp_cap.sum():.4f} MW inherited) exceeds the "
+                f"grid's capacity target ({hp_cap_grid:.4f} MW). Raising the "
+                f"grid's effective target to the floor; the grid overshoots "
+                f"its target by {(floored_cap - hp_cap_grid):.4f} MW."
+            )
+            hp_cap_grid = floored_cap
+
+        remaining_cap_grid = hp_cap_grid - floored_cap
+        min_hp_cap_candidates = min_hp_cap_buildings.drop(
+            floored_hp_cap.index, errors="ignore"
         )
+        # Drop buildings whose required heat pump capacity is below the
+        # smallest heat pump size available on the market. These buildings
+        # keep their gas boiler instead of getting an undersized heat pump.
+        # Only candidates for new heat pumps are filtered: inherited heat
+        # pumps stay in place regardless of their size.
+        min_hp_cap_remaining = min_hp_cap_candidates[
+            min_hp_cap_candidates >= MIN_HP_CAPACITY
+        ]
+
+        hp_cap_per_building = pd.Series(dtype="float64")
+        hp_cap_per_building.index.name = "building_id"
+
+        if remaining_cap_grid > 0.0 and not min_hp_cap_remaining.empty:
+            # select additional buildings that will have a heat pump
+            buildings_with_hp = determine_buildings_with_hp_in_mv_grid(
+                remaining_cap_grid, min_hp_cap_remaining, scenario
+            )
+
+            # the remaining budget can be too small for any further
+            # building, in which case the grid's capacity stays entirely
+            # with the floored buildings
+            if len(buildings_with_hp) > 0:
+                # distribute the remaining capacity to the selected buildings
+                hp_cap_per_building = desaggregate_hp_capacity(
+                    min_hp_cap_remaining.loc[buildings_with_hp],
+                    remaining_cap_grid,
+                )
+
+        hp_cap_per_building = pd.concat(
+            [floored_hp_cap, hp_cap_per_building]
+        )
+        hp_cap_per_building.index.name = "building_id"
+
+        # Capacity that could not be placed on any building is not
+        # redistributed; flag it so the shortfall against the grid's target
+        # is visible.
+        shortfall = hp_cap_grid - hp_cap_per_building.sum()
+        if shortfall > FLOOR_TOLERANCE:
+            if min_hp_cap_candidates.empty:
+                reason = "no candidate buildings without a heat pump remain"
+            elif min_hp_cap_remaining.empty:
+                reason = (
+                    f"all {len(min_hp_cap_candidates)} remaining candidate "
+                    f"buildings require less than the minimum heat pump "
+                    f"size of {MIN_HP_CAPACITY * 1e3:.0f} kW"
+                )
+            else:
+                reason = (
+                    f"none of the {len(min_hp_cap_remaining)} remaining "
+                    f"candidate buildings fits into the remaining capacity"
+                )
+            logger.warning(
+                f"MVGD={mv_grid_id} | Scenario {scenario}: "
+                f"{shortfall:.4f} MW of the grid's heat pump capacity target "
+                f"({hp_cap_grid:.4f} MW) could not be assigned: {reason}."
+            )
 
         return hp_cap_per_building.rename("hp_capacity")
 
     else:
         return pd.Series(dtype="float64").rename("hp_capacity")
-
-
-def determine_hp_cap_buildings_eGon100RE_per_mvgd(mv_grid_id):
-    """
-    Determines HP capacity per building in eGon100RE scenario.
-
-    In eGon100RE scenario all buildings without district heating get a heat
-    pump.
-
-    Returns
-    --------
-    pd.Series
-        Pandas series with heat pump capacity per building in MW.
-
-    """
-
-    hp_cap_grid = get_total_heat_pump_capacity_of_mv_grid(
-        "eGon100RE", mv_grid_id
-    )
-
-    if hp_cap_grid > 0.0:
-        # get buildings with decentral heating systems
-        building_ids = get_buildings_with_decentral_heat_demand_in_mv_grid(
-            mv_grid_id, scenario="eGon100RE"
-        )
-
-        logger.info(f"MVGD={mv_grid_id} | Get peak loads from DB")
-        df_peak_heat_demand = get_heat_peak_demand_per_building(
-            "eGon100RE", building_ids
-        )
-
-        logger.info(f"MVGD={mv_grid_id} | Determine HP capacities.")
-        # determine minimum required heat pump capacity per building
-        min_hp_cap_buildings = determine_minimum_hp_capacity_per_building(
-            df_peak_heat_demand, flexibility_factor=24 / 18, cop=1.7
-        )
-
-        logger.info(f"MVGD={mv_grid_id} | Desaggregate HP capacities.")
-        # distribute total heat pump capacity to all buildings with HP
-        hp_cap_per_building = desaggregate_hp_capacity(
-            min_hp_cap_buildings, hp_cap_grid
-        )
-
-        return hp_cap_per_building.rename("hp_capacity")
-    else:
-        return pd.Series(dtype="float64").rename("hp_capacity")
-
-
-def determine_hp_cap_buildings_eGon100RE():
-    """
-    Main function to determine HP capacity per building in eGon100RE scenario.
-
-    """
-
-    # ========== Register np datatypes with SQLA ==========
-    register_adapter(np.float64, adapt_numpy_float64)
-    register_adapter(np.int64, adapt_numpy_int64)
-    # =====================================================
-
-    with db.session_scope() as session:
-        query = (
-            session.query(
-                MapZensusGridDistricts.bus_id,
-            )
-            .filter(
-                MapZensusGridDistricts.zensus_population_id
-                == EgonPetaHeat.zensus_population_id
-            )
-            .distinct(MapZensusGridDistricts.bus_id)
-        )
-        mvgd_ids = pd.read_sql(
-            query.statement, query.session.bind, index_col=None
-        )
-    mvgd_ids = mvgd_ids.sort_values("bus_id")
-    mvgd_ids = mvgd_ids["bus_id"].values
-
-    df_hp_cap_per_building_100RE_db = pd.DataFrame(
-        columns=["building_id", "hp_capacity"]
-    )
-
-    for mvgd_id in mvgd_ids:
-        logger.info(f"MVGD={mvgd_id} | Start")
-
-        hp_cap_per_building_100RE = (
-            determine_hp_cap_buildings_eGon100RE_per_mvgd(mvgd_id)
-        )
-
-        if not hp_cap_per_building_100RE.empty:
-            df_hp_cap_per_building_100RE_db = pd.concat(
-                [
-                    df_hp_cap_per_building_100RE_db,
-                    hp_cap_per_building_100RE.reset_index(),
-                ],
-                axis=0,
-            )
-
-    logger.info(f"MVGD={min(mvgd_ids)} : {max(mvgd_ids)} | Write data to db.")
-    df_hp_cap_per_building_100RE_db["scenario"] = "eGon100RE"
-
-    EgonHpCapacityBuildings.__table__.create(bind=engine, checkfirst=True)
-
-    write_table_to_postgres(
-        df_hp_cap_per_building_100RE_db,
-        EgonHpCapacityBuildings,
-        drop=False,
-    )
 
 
 def aggregate_residential_and_cts_profiles(mvgd, scenario):
@@ -1846,7 +2123,7 @@ def aggregate_residential_and_cts_profiles(mvgd, scenario):
     mvgd : int
         MV grid ID.
     scenario : str
-        Possible options are eGon2035 or eGon100RE.
+        Name of the scenario.
 
     Returns
     --------
@@ -1943,45 +2220,14 @@ def export_to_db(df_peak_loads_db, df_heat_mvgd_ts_db, drop=False):
         )
 
 
-def export_min_cap_to_csv(df_hp_min_cap_mv_grid_pypsa_eur_sec):
-    """Export minimum capacity of heat pumps for pypsa eur sec to csv"""
-
-    df_hp_min_cap_mv_grid_pypsa_eur_sec.index.name = "mvgd_id"
-    df_hp_min_cap_mv_grid_pypsa_eur_sec = (
-        df_hp_min_cap_mv_grid_pypsa_eur_sec.to_frame(
-            name="min_hp_capacity"
-        ).reset_index()
-    )
-
-    folder = Path(".") / "input-pypsa-eur-sec"
-    file = folder / "minimum_hp_capacity_mv_grid_100RE.csv"
-    # Create the folder, if it does not exist already
-    if not os.path.exists(folder):
-        os.mkdir(folder)
-    if not file.is_file():
-        logger.info(f"Create {file}")
-        df_hp_min_cap_mv_grid_pypsa_eur_sec.to_csv(file, mode="w", header=True)
-    else:
-        df_hp_min_cap_mv_grid_pypsa_eur_sec.to_csv(
-            file, mode="a", header=False
-        )
-
-
-def delete_pypsa_eur_sec_csv_file():
-    """Delete pypsa eur sec minimum heat pump capacity csv before new run"""
-
-    folder = Path(".") / "input-pypsa-eur-sec"
-    file = folder / "minimum_hp_capacity_mv_grid_100RE.csv"
-    if file.is_file():
-        logger.info(f"Delete {file}")
-        os.remove(file)
-
-
 def catch_missing_buidings(buildings_decentral_heating, peak_load):
     """
     Check for missing buildings and reduce the list of buildings with
     decentral heating if no peak loads available. This should only happen
-    in case of cutout SH
+    in case of cutout SH.
+
+    Buildings whose peak load is present but sums to zero are dropped as
+    well: they would otherwise be eligible for a heat pump of capacity 0.
 
     Parameters
     -----------
@@ -2003,12 +2249,32 @@ def catch_missing_buidings(buildings_decentral_heating, peak_load):
         logger.info(f"Dropped buildings: {diff.values}")
         buildings_decentral_heating = buildings_decentral_heating.drop(diff)
 
+    # Drop buildings whose peak load is present but zero. Their minimum heat
+    # pump capacity evaluates to 0, so they can still be drawn by the
+    # PV-weighted selection and end up in egon_hp_capacity_buildings with
+    # hp_capacity = 0 - a "heat pump" that is no heat pump. Filtering them out
+    # of the candidate pool keeps the selection on buildings that can actually
+    # carry a capacity.
+    zero_peak_load = peak_load[peak_load <= 0].index
+    diff_zero = buildings_decentral_heating.intersection(zero_peak_load)
+
+    if not diff_zero.empty:
+        logger.warning(
+            f"Dropped {len(diff_zero)} building ids due to zero peak "
+            f"loads. {len(buildings_decentral_heating) - len(diff_zero)} left."
+        )
+        logger.info(f"Dropped buildings: {diff_zero.values}")
+        buildings_decentral_heating = buildings_decentral_heating.drop(
+            diff_zero
+        )
+
     return buildings_decentral_heating
 
 
-def determine_hp_cap_peak_load_mvgd_ts_2035(mvgd_ids):
+def determine_hp_cap_peak_load_mvgd_ts_2035(mvgd_ids, scenario):
     """
-    Main function to determine HP capacity per building in eGon2035 scenario.
+    Main function to determine HP capacity per building in the eGon2035,
+    reGon2037 or reGon2045 scenario.
     Further, creates heat demand time series for all buildings with heat pumps
     in MV grid, as well as for all buildings with gas boilers, used in eTraGo.
 
@@ -2016,6 +2282,8 @@ def determine_hp_cap_peak_load_mvgd_ts_2035(mvgd_ids):
     -----------
     mvgd_ids : list(int)
         List of MV grid IDs to determine data for.
+    scenario : str
+        Name of the scenario.
 
     """
 
@@ -2034,20 +2302,26 @@ def determine_hp_cap_peak_load_mvgd_ts_2035(mvgd_ids):
         # ############# aggregate residential and CTS demand profiles #####
 
         df_heat_ts = aggregate_residential_and_cts_profiles(
-            mvgd, scenario="eGon2035"
+            mvgd, scenario=scenario
         )
 
         # ##################### determine peak loads ###################
         logger.info(f"MVGD={mvgd} | Determine peak loads.")
 
-        peak_load_2035 = df_heat_ts.max().rename("eGon2035")
+        peak_load_2035 = df_heat_ts.max().rename(scenario)
+        # If df_heat_ts has no columns (mvgd has no decentral heating
+        # buildings), the index name is lost and reset_index() below
+        # would create a stray "index" column instead of "building_id",
+        # which export_to_db's melt() then turns into bogus scenario
+        # rows with NULL peak loads.
+        peak_load_2035.index.name = "building_id"
 
         # ######## determine HP capacity per building #########
         logger.info(f"MVGD={mvgd} | Determine HP capacities.")
 
         buildings_decentral_heating = (
             get_buildings_with_decentral_heat_demand_in_mv_grid(
-                mvgd, scenario="eGon2035"
+                mvgd, scenario=scenario
             )
         )
 
@@ -2059,7 +2333,7 @@ def determine_hp_cap_peak_load_mvgd_ts_2035(mvgd_ids):
         )
 
         hp_cap_per_building_2035 = determine_hp_cap_buildings_pvbased_per_mvgd(
-            "eGon2035",
+            scenario,
             mvgd,
             peak_load_2035,
             buildings_decentral_heating,
@@ -2083,7 +2357,7 @@ def determine_hp_cap_peak_load_mvgd_ts_2035(mvgd_ids):
             data={
                 "carrier": ["heat_pump", "CH4"],
                 "bus_id": mvgd,
-                "scenario": ["eGon2035", "eGon2035"],
+                "scenario": [scenario, scenario],
                 "dist_aggregated_mw": [
                     df_mvgd_ts_2035_hp.to_list(),
                     df_mvgd_ts_2035_gas.to_list(),
@@ -2117,7 +2391,7 @@ def determine_hp_cap_peak_load_mvgd_ts_2035(mvgd_ids):
 
     export_to_db(df_peak_loads_db, df_heat_mvgd_ts_db, drop=False)
 
-    df_hp_cap_per_building_2035_db["scenario"] = "eGon2035"
+    df_hp_cap_per_building_2035_db["scenario"] = scenario
 
     # TODO debug duplicated building_ids
     duplicates = df_hp_cap_per_building_2035_db.loc[
@@ -2178,6 +2452,12 @@ def determine_hp_cap_peak_load_mvgd_ts_status_quo(mvgd_ids, scenario):
         logger.info(f"MVGD={mvgd} | Determine peak loads.")
 
         peak_load_status_quo = df_heat_ts.max().rename(scenario)
+        # If df_heat_ts has no columns (mvgd has no decentral heating
+        # buildings), the index name is lost and reset_index() below
+        # would create a stray "index" column instead of "building_id",
+        # which export_to_db's melt() then turns into bogus scenario
+        # rows with NULL peak loads.
+        peak_load_status_quo.index.name = "building_id"
 
         # ######## determine HP capacity per building #########
         logger.info(f"MVGD={mvgd} | Determine HP capacities.")
@@ -2277,111 +2557,6 @@ def determine_hp_cap_peak_load_mvgd_ts_status_quo(mvgd_ids, scenario):
     )
 
 
-def determine_hp_cap_peak_load_mvgd_ts_pypsa_eur(mvgd_ids):
-    """
-    Main function to determine minimum required HP capacity in MV for
-    pypsa-eur-sec. Further, creates heat demand time series for all buildings
-    with heat pumps in MV grid in eGon100RE scenario, used in eTraGo.
-
-    Parameters
-    -----------
-    mvgd_ids : list(int)
-        List of MV grid IDs to determine data for.
-
-    """
-
-    # ========== Register np datatypes with SQLA ==========
-    register_adapter(np.float64, adapt_numpy_float64)
-    register_adapter(np.int64, adapt_numpy_int64)
-    # =====================================================
-
-    df_peak_loads_db = pd.DataFrame()
-    df_heat_mvgd_ts_db = pd.DataFrame()
-    df_hp_min_cap_mv_grid_pypsa_eur_sec = pd.Series(dtype="float64")
-
-    for mvgd in mvgd_ids:
-        logger.info(f"MVGD={mvgd} | Start")
-
-        # ############# aggregate residential and CTS demand profiles #####
-
-        df_heat_ts = aggregate_residential_and_cts_profiles(
-            mvgd, scenario="eGon100RE"
-        )
-
-        # ##################### determine peak loads ###################
-        logger.info(f"MVGD={mvgd} | Determine peak loads.")
-
-        peak_load_100RE = df_heat_ts.max().rename("eGon100RE")
-
-        # ######## determine minimum HP capacity pypsa-eur-sec ###########
-        logger.info(f"MVGD={mvgd} | Determine minimum HP capacity.")
-
-        buildings_decentral_heating = (
-            get_buildings_with_decentral_heat_demand_in_mv_grid(
-                mvgd, scenario="eGon100RE"
-            )
-        )
-
-        # Reduce list of decentral heating if no Peak load available
-        # TODO maybe remove after succesfull DE run
-        buildings_decentral_heating = catch_missing_buidings(
-            buildings_decentral_heating, peak_load_100RE
-        )
-
-        hp_min_cap_mv_grid_pypsa_eur_sec = (
-            determine_min_hp_cap_buildings_pypsa_eur_sec(
-                peak_load_100RE,
-                buildings_decentral_heating,
-            )
-        )
-
-        # ################ aggregated heat profiles ###################
-        logger.info(f"MVGD={mvgd} | Aggregate heat profiles.")
-
-        df_mvgd_ts_hp = df_heat_ts.loc[
-            :,
-            buildings_decentral_heating,
-        ].sum(axis=1)
-
-        df_heat_mvgd_ts = pd.DataFrame(
-            data={
-                "carrier": "heat_pump",
-                "bus_id": mvgd,
-                "scenario": "eGon100RE",
-                "dist_aggregated_mw": [df_mvgd_ts_hp.to_list()],
-            }
-        )
-
-        # ################ collect results ##################
-        logger.info(f"MVGD={mvgd} | Collect results.")
-
-        df_peak_loads_db = pd.concat(
-            [df_peak_loads_db, peak_load_100RE.reset_index()],
-            axis=0,
-            ignore_index=True,
-        )
-
-        df_heat_mvgd_ts_db = pd.concat(
-            [df_heat_mvgd_ts_db, df_heat_mvgd_ts], axis=0, ignore_index=True
-        )
-
-        df_hp_min_cap_mv_grid_pypsa_eur_sec.loc[
-            mvgd
-        ] = hp_min_cap_mv_grid_pypsa_eur_sec
-
-    # ################ export to db and csv ######################
-    logger.info(f"MVGD={min(mvgd_ids)} : {max(mvgd_ids)} | Write data to db.")
-
-    export_to_db(df_peak_loads_db, df_heat_mvgd_ts_db, drop=False)
-
-    logger.info(
-        f"MVGD={min(mvgd_ids)} : {max(mvgd_ids)} | Write "
-        f"pypsa-eur-sec min "
-        f"HP capacities to csv."
-    )
-    export_min_cap_to_csv(df_hp_min_cap_mv_grid_pypsa_eur_sec)
-
-
 def split_mvgds_into_bulks(n, max_n, func, scenario=None):
     """
     Generic function to split task into multiple parallel tasks,
@@ -2427,13 +2602,46 @@ def split_mvgds_into_bulks(n, max_n, func, scenario=None):
         func(mvgd_ids)
 
 
+def create_hp_output_tables():
+    """
+    Create the heat pump output tables if they do not exist yet.
+
+    Registered as a task of :py:class:`HeatSupply
+    <egon.data.datasets.heat_supply.HeatSupply>` rather than of the datasets
+    that fill these tables. Both :py:class:`HeatPumpsStatusQuo` and
+    :py:class:`HeatPumpsCascade` write all three, so a create task in either
+    of them is either registered twice -- Airflow rejects the duplicate task
+    id -- or missing entirely when that dataset takes its ``skip_task``
+    branch because its own scenario type is not configured. HeatSupply is
+    upstream of both, so one task there covers every configuration.
+
+    This replaces the ``checkfirst=True`` creates that the per-scenario
+    delete tasks used to do themselves. That is a non-atomic
+    check-then-create: two delete tasks for different scenarios could both
+    see a table missing and both issue a CREATE TABLE, and the loser failed
+    with a UniqueViolation on ``pg_type_typname_nsp_index``, taking all
+    downstream bulk tasks with it.
+
+    Deliberately separate from :py:func:`HeatSupply.create_tables
+    <egon.data.datasets.heat_supply.create_tables>`, which DROPs its tables
+    before creating them -- doing that to the heat pump output would discard
+    the rows every later scenario inherits its floor from.
+
+    """
+    EgonHpCapacityBuildings.__table__.create(bind=engine, checkfirst=True)
+    EgonEtragoTimeseriesIndividualHeating.__table__.create(
+        bind=engine, checkfirst=True
+    )
+    BuildingHeatPeakLoads.__table__.create(bind=engine, checkfirst=True)
+
+
 def delete_hp_capacity(scenario):
     """Remove all hp capacities for the selected scenario
 
     Parameters
     -----------
     scenario : string
-        Either eGon2035 or eGon100RE
+        Name of the scenario.
 
     """
 
@@ -2450,7 +2658,7 @@ def delete_mvgd_ts(scenario):
     Parameters
     -----------
     scenario : string
-        Either eGon2035 or eGon100RE
+        Name of the scenario.
 
     """
 
@@ -2461,51 +2669,28 @@ def delete_mvgd_ts(scenario):
         ).delete(synchronize_session=False)
 
 
-def delete_hp_capacity_100RE():
-    """Remove all hp capacities for the selected eGon100RE"""
-    EgonHpCapacityBuildings.__table__.create(bind=engine, checkfirst=True)
-    delete_hp_capacity(scenario="eGon100RE")
-
-
 def delete_hp_capacity_status_quo(scenario):
     """Remove all hp capacities for the selected status quo"""
-    EgonHpCapacityBuildings.__table__.create(bind=engine, checkfirst=True)
     delete_hp_capacity(scenario=scenario)
 
 
-def delete_hp_capacity_2035():
-    """Remove all hp capacities for the selected eGon2035"""
-    EgonHpCapacityBuildings.__table__.create(bind=engine, checkfirst=True)
-    delete_hp_capacity(scenario="eGon2035")
+def delete_hp_capacity_2035(scenario):
+    """Remove all hp capacities for the selected scenario"""
+    delete_hp_capacity(scenario=scenario)
 
 
 def delete_mvgd_ts_status_quo(scenario):
     """Remove all mvgd ts for the selected status quo"""
-    EgonEtragoTimeseriesIndividualHeating.__table__.create(
-        bind=engine, checkfirst=True
-    )
     delete_mvgd_ts(scenario=scenario)
 
 
-def delete_mvgd_ts_2035():
-    """Remove all mvgd ts for the selected eGon2035"""
-    EgonEtragoTimeseriesIndividualHeating.__table__.create(
-        bind=engine, checkfirst=True
-    )
-    delete_mvgd_ts(scenario="eGon2035")
-
-
-def delete_mvgd_ts_100RE():
-    """Remove all mvgd ts for the selected eGon100RE"""
-    EgonEtragoTimeseriesIndividualHeating.__table__.create(
-        bind=engine, checkfirst=True
-    )
-    delete_mvgd_ts(scenario="eGon100RE")
+def delete_mvgd_ts_2035(scenario):
+    """Remove all mvgd ts for the selected scenario"""
+    delete_mvgd_ts(scenario=scenario)
 
 
 def delete_heat_peak_loads_status_quo(scenario):
     """Remove all heat peak loads for status quo."""
-    BuildingHeatPeakLoads.__table__.create(bind=engine, checkfirst=True)
     with db.session_scope() as session:
         # Buses
         session.query(BuildingHeatPeakLoads).filter(
@@ -2513,21 +2698,12 @@ def delete_heat_peak_loads_status_quo(scenario):
         ).delete(synchronize_session=False)
 
 
-def delete_heat_peak_loads_2035():
-    """Remove all heat peak loads for eGon2035."""
-    BuildingHeatPeakLoads.__table__.create(bind=engine, checkfirst=True)
+def delete_heat_peak_loads_2035(scenario):
+    """Remove all heat peak loads for the selected scenario."""
     with db.session_scope() as session:
         # Buses
         session.query(BuildingHeatPeakLoads).filter(
-            BuildingHeatPeakLoads.scenario == "eGon2035"
+            BuildingHeatPeakLoads.scenario == scenario
         ).delete(synchronize_session=False)
 
 
-def delete_heat_peak_loads_100RE():
-    """Remove all heat peak loads for eGon100RE."""
-    BuildingHeatPeakLoads.__table__.create(bind=engine, checkfirst=True)
-    with db.session_scope() as session:
-        # Buses
-        session.query(BuildingHeatPeakLoads).filter(
-            BuildingHeatPeakLoads.scenario == "eGon100RE"
-        ).delete(synchronize_session=False)

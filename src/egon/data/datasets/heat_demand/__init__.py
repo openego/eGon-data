@@ -15,6 +15,8 @@ database with assigned census cell IDs.
 
 from pathlib import Path  # for database import
 from urllib.request import urlretrieve
+
+# for metadata creation
 import os
 import zipfile
 
@@ -32,6 +34,7 @@ import rasterio
 from egon.data import db, subprocess
 from egon.data.datasets import Dataset, DatasetSources, DatasetTargets
 from egon.data.datasets.scenario_parameters import get_sector_parameters
+from egon.data.validation import TableValidation, resolve_boundary_dependence
 import egon.data.config
 
 
@@ -40,20 +43,27 @@ class HeatDemandImport(Dataset):
     Insert the annual heat demand per census cell for each scenario
 
     This dataset downloads the heat demand raster data for private households
-    and CTS from Peta 5.0.1
-    (https://s-eenergies-open-data-euf.hub.arcgis.com/maps/d7d18b63250240a49eb81db972aa573e/about)
+    and CTS from Peta 5.0.1 (https://s-eenergies-open-data-euf.hub.arcgis.com/maps/d7d18b63250240a49eb81db972aa573e/about)
     and stores it into files in the working directory.
     The data from Peta 5.0.1 represents the status quo of the year 2015.
     To model future heat demands, the data is scaled to meet target values
     from external sources. These target values are defined for each scenario
-    in :py:class:`ScenarioParameters
-    <egon.data.datasets.scenario_parameters.ScenarioParameters>`.
+    in :py:class:`ScenarioParameters <egon.data.datasets.scenario_parameters.ScenarioParameters>`.
+
+    *Dependencies*
+      * :py:class:`ScenarioParameters <egon.data.datasets.scenario_parameters.ScenarioParameters>`
+      * :py:class:`Vg250 <egon.data.datasets.vg250.Vg250>`
+      * :py:class:`ZensusVg250 <egon.data.datasets.zensus_vg250.ZensusVg250>`
+
+    *Resulting tables*
+      * :py:class:`demand.egon_peta_heat <egon.data.datasets.heat_demand.EgonPetaHeat>` is created and filled
+
     """
 
     #:
     name: str = "heat-demands"
     #:
-    version: str = "0.0.7"
+    version: str = "0.0.8"
 
     sources = DatasetSources(
         tables={
@@ -61,8 +71,8 @@ class HeatDemandImport(Dataset):
             "zensus_population": "society.destatis_zensus_population_per_ha",
         },
         urls={
-            "peta_res_zip": "https://arcgis.com/sharing/rest/content/items/d7d18b63250240a49eb81db972aa573e/data",  # noqa: E501
-            "peta_ser_zip": "https://arcgis.com/sharing/rest/content/items/52ff5e02111142459ed5c2fe3d80b3a0/data",  # noqa: E501
+            "peta_res_zip": "https://arcgis.com/sharing/rest/content/items/d7d18b63250240a49eb81db972aa573e/data",
+            "peta_ser_zip": "https://arcgis.com/sharing/rest/content/items/52ff5e02111142459ed5c2fe3d80b3a0/data",
         },
         files={
             "peta_res_zip": "Peta5_0_1_HD_res.zip",
@@ -90,6 +100,36 @@ class HeatDemandImport(Dataset):
             version=self.version,  # maybe rethink the naming
             dependencies=dependencies,
             tasks=(scenario_data_import),
+            validation={
+                "data_quality": [
+                    TableValidation(
+                        table_name="demand.egon_peta_heat",
+                        row_count=resolve_boundary_dependence(
+                            {
+                                "Schleswig-Holstein": 1078152,
+                                "Everything": 12465340,
+                            }
+                        ),
+                        data_type_columns={
+                            "id": "integer",
+                            "demand": "double precision",
+                            "sector": "character varying",
+                            "scenario": "character varying",
+                            "zensus_population_id": "integer",
+                        },
+                        value_set_columns={
+                            "scenario": [
+                                "eGon2035",
+                                "reGon2037",
+                                "reGon2045",
+                                "status2024",
+                            ],
+                            "sector": ["residential", "service"],
+                        },
+                    ),
+                ]
+            },
+            proceed_on_validation_failure=True,
         )
 
 
@@ -249,7 +289,7 @@ def cutout_heat_demand_germany():
     # using ST_Dump: https://postgis.net/docs/ST_Dump.html
 
     gdf_boundaries = gpd.read_postgis(
-        f"SELECT (ST_Dump(geometry)).geom AS geometry FROM {HeatDemandImport.sources.tables['boundaries']}",  # noqa: E501
+        f"SELECT (ST_Dump(geometry)).geom AS geometry FROM {HeatDemandImport.sources.tables['boundaries']}",
         local_engine,
         geom_col="geometry",
     )
@@ -366,8 +406,7 @@ def future_heat_demand_germany(scenario_name):
     elif scenario_name == "status2024":
         heat_parameters = get_sector_parameters("heat", scenario=scenario_name)
 
-        # Calculate reduction share based on final energy demand and overall
-        # demand from Peta for 2015
+        # Calculate reduction share based on final energy demand and overall demand from Peta for 2015
         res_hd_reduction = (
             heat_parameters["DE_demand_residential_TJ"] / 3600 / 443.788483
         )
@@ -377,15 +416,14 @@ def future_heat_demand_germany(scenario_name):
     elif scenario_name == "reGon2045":
         heat_parameters = get_sector_parameters("heat", scenario=scenario_name)
 
-        # Calculate reduction share based on final energy demand and overall
-        #  demand from Peta for 2015
+        # Calculate reduction share based on final energy demand and overall demand from Peta for 2015
         res_hd_reduction = heat_parameters["DE_demand_residential_MWh"] / (
             443.788483 * 1e6
         )
         ser_hd_reduction = heat_parameters["DE_demand_service_MWh"] / (
             226.588158 * 1e6
-        )
-    else:
+        )    
+    else: 
         heat_parameters = get_sector_parameters("heat", scenario=scenario_name)
 
         res_hd_reduction = heat_parameters["DE_demand_reduction_residential"]
@@ -398,7 +436,7 @@ def future_heat_demand_germany(scenario_name):
 
     # Open, read and adjust the cutout heat demand distributions for Germany
     # https://rasterio.readthedocs.io/en/latest/topics/writing.html
-    # https://gis.stackexchange.com/questions/338282/applying-equation-to-a-numpy-array-while-preserving-tiff-metadata-coordinates # noqa: E501
+    # https://gis.stackexchange.com/questions/338282/applying-equation-to-a-numpy-array-while-preserving-tiff-metadata-coordinates
     # Write an array as a raster band to a new 16-bit file. For
     # the new file's profile, the profile of the source is adjusted.
 
@@ -504,8 +542,7 @@ def heat_demand_to_db_table():
 
     for source in sources:
         if "2015" not in source.stem:
-            # Create a temporary table and fill the final table using
-            # the sql script
+            # Create a temporary table and fill the final table using the sql script
             rasters = f"heat_demand_rasters_{source.stem.lower()}"
             import_rasters = subprocess.run(
                 ["raster2pgsql", "-e", "-s", "3035", "-I", "-C", "-F", "-a"]
@@ -516,11 +553,11 @@ def heat_demand_to_db_table():
             with engine.begin() as connection:
                 print(
                     f'CREATE TEMPORARY TABLE "{rasters}"'
-                    ' ("rid" serial PRIMARY KEY,"rast" raster,"filename" text);'  # noqa: E501
+                    ' ("rid" serial PRIMARY KEY,"rast" raster,"filename" text);'
                 )
                 connection.execute(
                     f'CREATE TEMPORARY TABLE "{rasters}"'
-                    ' ("rid" serial PRIMARY KEY,"rast" raster,"filename" text);'  # noqa: E501
+                    ' ("rid" serial PRIMARY KEY,"rast" raster,"filename" text);'
                 )
                 connection.execute(import_rasters)
                 connection.execute(f'ANALYZE "{rasters}"')
@@ -618,11 +655,11 @@ def scenario_data_import():
     # drop table if exists
     # can be removed when table structure doesn't change anymore
     db.execute_sql(
-        f"DROP TABLE IF EXISTS {HeatDemandImport.targets.tables['heat_demand']} CASCADE"  # noqa: E501
+        f"DROP TABLE IF EXISTS {HeatDemandImport.targets.tables['heat_demand']} CASCADE"
     )
 
     db.execute_sql(
-        f"DROP SEQUENCE IF EXISTS {HeatDemandImport.targets.get_table_schema('heat_demand')}."  # noqa: E501
+        f"DROP SEQUENCE IF EXISTS {HeatDemandImport.targets.get_table_schema('heat_demand')}."
         f"{HeatDemandImport.targets.get_table_name('heat_demand')}_seq CASCADE"
     )
 
@@ -641,5 +678,5 @@ def scenario_data_import():
     for scenario in egon.data.config.settings()["egon-data"]["--scenarios"]:
         adjust_residential_heat_to_zensus(scenario)
 
-    # future_heat_demand_germany("eGon2015")
+
     return None

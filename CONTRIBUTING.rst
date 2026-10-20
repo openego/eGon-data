@@ -279,6 +279,34 @@ be saved locally, please use `CWD` to store the data. This is achieved by using
   filepath = Path(".") / "filename.csv"
   urlretrieve("https://url/to/file", filepath)
 
+Add validation
+--------------
+
+Validation ensures data quality and consistency throughout the pipeline. When
+creating or modifying datasets, consider adding validation rules to verify that
+the output data meets expected criteria such as row counts, data types, null
+constraints, and business logic requirements. Automated validation helps catch
+data issues early and provides structured reporting of any problems.
+
+Validations are declared in the ``validation`` parameter of a
+:py:class:`egon.data.datasets.Dataset`:
+a ``TableValidation`` spec covers the common checks (row count, column types,
+NULL/NaN, value sets, geometries), while anything more involved is written as
+a rule class under ``egon.data.validation.rules.custom.sanity`` and put
+straight into the same list -- there is no wrapper class.
+
+Expected values such as row counts differ per ``--dataset-boundary``; wrap them
+in ``resolve_boundary_dependence`` so the right one is picked at runtime.
+Please measure them against a database that actually holds the data rather
+than carrying numbers over from an earlier run.
+
+For detailed information on how to add validation to your datasets, including
+examples for ``TableValidation`` and for writing custom rules, see the
+:doc:`validation` documentation.
+The underlying validation framework is documented in the
+`eGon-validation repository <https://github.com/openego/eGon-validation>`_.
+
+
 Add metadata
 ------------
 

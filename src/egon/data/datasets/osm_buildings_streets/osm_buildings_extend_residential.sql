@@ -8,9 +8,33 @@
 -- Mark commercial, retail, office, hotel buildings as residential in those   --
 -- cells.                                                                     --
 --------------------------------------------------------------------------------
+/*
+ * This safety net predates the ETHOS.BUILDA intersection and is kept: ETHOS
+ * covers residential buildings, so census cells with population but without a
+ * matched building can still occur. Those buildings carry
+ * source = 'census_gap_fill' and no ETHOS attributes, which makes their share
+ * measurable against the intersection.
+ *
+ * The column list is explicit because the target table is wider than
+ * osm_buildings_filtered since #1310; SELECT * would break here.
+ */
 
-INSERT INTO openstreetmap.osm_buildings_residential
-	SELECT *
+INSERT INTO openstreetmap.osm_buildings_residential (
+	id, osm_id, amenity, building, name,
+	geom_building, area, geom_point, tags,
+	source, ethos_id, match_distance,
+	construction_year, size_class, refurbishment_state, tabula_type
+)
+	SELECT
+		id, osm_id, amenity, building, name,
+		geom_building, area, geom_point, tags,
+		'census_gap_fill'      AS source,
+		NULL::text             AS ethos_id,
+		NULL::double precision AS match_distance,
+		NULL::int              AS construction_year,
+		NULL::text             AS size_class,
+		NULL::text             AS refurbishment_state,
+		NULL::text             AS tabula_type
 	FROM openstreetmap.osm_buildings_filtered
 	WHERE id IN (
 		SELECT id FROM (

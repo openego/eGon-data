@@ -2,6 +2,7 @@
 DB tables / SQLAlchemy ORM classes for motorized individual travel
 """
 
+
 from sqlalchemy import (
     Boolean,
     Column,
@@ -275,3 +276,4 @@ class EgonEvMetadata(Base):
     soc_min = Column(Float)
     grid_timeseries = Column(Boolean)
     grid_timeseries_by_usecase = Column(Boolean)
+

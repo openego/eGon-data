@@ -25,6 +25,7 @@ import pypsa
 from egon.data import config, db
 from egon.data.datasets import load_sources_and_targets
 from egon.data.datasets.electrical_neighbours import (
+    TYNDP_NODE_COORDINATES,
     get_foreign_bus_id,
     get_map_buses,
 )
@@ -69,8 +70,6 @@ def get_foreign_gas_bus_id(carrier="CH4"):
         List of mapped node_ids from TYNDP and etragos bus_id
 
     """
-    sources, _ = load_sources_and_targets("GasNeighbours")
-
     scn_name = "eGon2035"
 
     bus_id = db.select_geodataframe(
@@ -84,14 +83,13 @@ def get_foreign_gas_bus_id(carrier="CH4"):
         epsg=3035,
     )
 
-    # insert installed capacities
-    file = zipfile.ZipFile(f"tyndp/{sources.files['tyndp_capacities']}")
-
     # Select buses in neighbouring countries as geodataframe
-    buses = pd.read_excel(
-        file.open("TYNDP-2020-Scenario-Datafile.xlsx").read(),
-        sheet_name="Nodes - Dict",
-    ).query("longitude==longitude")
+    buses = pd.DataFrame(
+        [
+            {"node_id": node_id, "latitude": lat, "longitude": lon}
+            for node_id, (lat, lon) in TYNDP_NODE_COORDINATES.items()
+        ]
+    )
     buses = gpd.GeoDataFrame(
         buses,
         crs=4326,

@@ -11,7 +11,6 @@ isn't exported from this module, please file a bug, so we can fix this.
 
 from pathlib import Path
 from urllib.request import urlretrieve
-import codecs  # noqa: F401
 import os
 
 from geoalchemy2 import Geometry
@@ -20,6 +19,7 @@ import geopandas as gpd
 from egon.data import db
 from egon.data.config import settings
 from egon.data.datasets import Dataset, DatasetSources, DatasetTargets
+from egon.data.validation import TableValidation, resolve_boundary_dependence
 
 
 def download_files():
@@ -29,6 +29,7 @@ def download_files():
     Data is downloaded from source specified in *datasets.yml* in section
     *vg250/original_data/source/url* and saved to file specified in
     *vg250/original_data/target/file*.
+
     """
 
     download_directory = Path(".") / "vg250"
@@ -51,10 +52,11 @@ def to_postgres():
     Creates schema boundaries if it does not yet exist.
     Newly creates all tables specified as keys in *datasets.yml* in section
     *vg250/processed/file_table_map*.
+
     """
 
     # Create target schema
-    db.execute_sql("CREATE SCHEMA IF NOT EXISTS boundaries;")
+    db.execute_sql(f"CREATE SCHEMA IF NOT EXISTS boundaries;")
 
     zip_file = Path(Vg250.sources.files["vg250_zip"])
     engine_local_db = db.engine()
@@ -63,19 +65,16 @@ def to_postgres():
     for filename, table in Vg250.file_table_map.items():
         # Open files and read .shp (within .zip) with geopandas
         data = gpd.read_file(
-            "zip://"
-            f"{zip_file}!vg250_01-01.geo84.shape.ebenen/"
-            "vg250_ebenen_0101/"
-            f"{filename}"
+            f"zip://{zip_file}!vg250_01-01.geo84.shape.ebenen/"
+            f"vg250_ebenen_0101/{filename}"
         )
 
         boundary = settings()["egon-data"]["--dataset-boundary"]
         if boundary != "Everything":
             # read-in borders of federal state Schleswig-Holstein
             data_sta = gpd.read_file(
-                "zip://"
-                f"{zip_file}!vg250_01-01.geo84.shape.ebenen/"
-                "vg250_ebenen_0101/VG250_LAN.shp"
+                f"zip://{zip_file}!vg250_01-01.geo84.shape.ebenen/"
+                f"vg250_ebenen_0101/VG250_LAN.shp"
             ).query(f"GEN == '{boundary}'")
             data_sta.BEZ = "Bundesrepublik"
             data_sta.NUTS = "DE"
@@ -109,7 +108,7 @@ def to_postgres():
 
         db.execute_sql(
             f"ALTER TABLE {Vg250.targets.tables[table]} "
-            "ADD PRIMARY KEY (id);"
+            f"ADD PRIMARY KEY (id);"
         )
 
         # Add index on geometry column
@@ -122,12 +121,10 @@ def to_postgres():
 def nuts_mview():
     """
     Creates MView boundaries.vg250_lan_nuts_id.
+
     """
     db.execute_sql_script(
-        os.path.join(
-            os.path.dirname(__file__),
-            "vg250_lan_nuts_id_mview.sql",
-        )
+        os.path.join(os.path.dirname(__file__), "vg250_lan_nuts_id_mview.sql")
     )
 
 
@@ -136,8 +133,8 @@ def cleaning_and_preperation():
     Creates tables and MViews with cleaned and corrected geometry data.
 
     The following table is created:
-      * boundaries.vg250_gem_clean where municipalities (Gemeinden) that
-        are fragmented are cleaned from ringholes
+      * boundaries.vg250_gem_clean where municipalities (Gemeinden) that are fragmented
+        are cleaned from ringholes
 
     The following MViews are created:
       * boundaries.vg250_gem_hole
@@ -148,13 +145,11 @@ def cleaning_and_preperation():
       * boundaries.vg250_sta_invalid_geometry
       * boundaries.vg250_sta_tiny_buffer
       * boundaries.vg250_sta_union
+
     """
 
     db.execute_sql_script(
-        os.path.join(
-            os.path.dirname(__file__),
-            "cleaning_and_preparation.sql",
-        )
+        os.path.join(os.path.dirname(__file__), "cleaning_and_preparation.sql")
     )
 
 
@@ -162,7 +157,7 @@ class Vg250(Dataset):
 
     sources = DatasetSources(
         urls={
-            "vg250_zip": "https://daten.gdz.bkg.bund.de/produkte/vg/vg250_ebenen_0101/2020/vg250_01-01.geo84.shape.ebenen.zip"  # noqa: E501
+            "vg250_zip": "https://daten.gdz.bkg.bund.de/produkte/vg/vg250_ebenen_0101/2020/vg250_01-01.geo84.shape.ebenen.zip"
         },
         files={
             # The downloaded file is a source for the 'to_postgres' step
@@ -196,8 +191,8 @@ class Vg250(Dataset):
     """
     Obtains and processes VG250 data and writes it to database.
 
-    Original data is downloaded using :py:func:`download_files`
-    and written to database using :py:func:`to_postgres`.
+    Original data is downloaded using :py:func:`download_files` function and written
+    to database using :py:func:`to_postgres` function.
 
     *Dependencies*
       No dependencies
@@ -209,30 +204,30 @@ class Vg250(Dataset):
       * :py:func:`boundaries.vg250_rbz <to_postgres>` is created and filled
       * :py:func:`boundaries.vg250_sta <to_postgres>` is created and filled
       * :py:func:`boundaries.vg250_vwg <to_postgres>` is created and filled
-      * :py:func:`boundaries.vg250_lan_nuts_id <nuts_mview>` is created
-        and filled
-      * :py:func:`boundaries.vg250_gem_hole <cleaning_and_preperation>`
-        is created and filled
-      * :py:func:`boundaries.vg250_gem_valid <cleaning_and_preperation>`
-        is created and filled
-      * :py:func:`boundaries.vg250_krs_area <cleaning_and_preperation>`
-        is created and filled
-      * :py:func:`boundaries.vg250_lan_union <cleaning_and_preperation>`
-        is created and filled
-      * :py:func:`boundaries.vg250_sta_bbox <cleaning_and_preperation>`
-        is created and filled
-      * :py:func:`boundaries.vg250_sta_invalid_geometry
-        <cleaning_and_preperation>` is created and filled
-      * :py:func:`boundaries.vg250_sta_tiny_buffer
-        <cleaning_and_preperation>` is created and filled
-      * :py:func:`boundaries.vg250_sta_union <cleaning_and_preperation>`
-        is created and filled
+      * :py:func:`boundaries.vg250_lan_nuts_id <nuts_mview>` is created and filled
+      * :py:func:`boundaries.vg250_gem_hole <cleaning_and_preperation>` is created and
+        filled
+      * :py:func:`boundaries.vg250_gem_valid <cleaning_and_preperation>` is created and
+        filled
+      * :py:func:`boundaries.vg250_krs_area <cleaning_and_preperation>` is created and
+        filled
+      * :py:func:`boundaries.vg250_lan_union <cleaning_and_preperation>` is created and
+        filled
+      * :py:func:`boundaries.vg250_sta_bbox <cleaning_and_preperation>` is created and
+        filled
+      * :py:func:`boundaries.vg250_sta_invalid_geometry <cleaning_and_preperation>` is
+        created and filled
+      * :py:func:`boundaries.vg250_sta_tiny_buffer <cleaning_and_preperation>` is
+        created and filled
+      * :py:func:`boundaries.vg250_sta_union <cleaning_and_preperation>` is
+        created and filled
+
     """
     filename = sources.urls["vg250_zip"]
 
     #:
     name: str = "VG250"
-    version: str = f"{filename}-0.0.9"
+    version: str = f"{filename}-0.0.10"
 
     def __init__(self, dependencies):
         super().__init__(
@@ -245,4 +240,364 @@ class Vg250(Dataset):
                 nuts_mview,
                 cleaning_and_preperation,
             ),
+            validation={
+                "data_quality": [
+                    # boundaries.vg250_sta
+                    TableValidation(
+                        table_name="boundaries.vg250_sta",
+                        row_count=resolve_boundary_dependence(
+                            {
+                                "Schleswig-Holstein": 5,
+                                "Everything": 11,
+                            }
+                        ),
+                        geometry_columns=["geometry"],
+                        data_type_columns={
+                            "ade": "integer",
+                            "ags": "text",
+                            "ags_0": "text",
+                            "ars": "text",
+                            "ars_0": "text",
+                            "bem": "text",
+                            "bez": "text",
+                            "bsg": "integer",
+                            "debkg_id": "text",
+                            "fk_s3": "text",
+                            "gen": "text",
+                            "geometry": "geometry",
+                            "gf": "integer",
+                            "ibz": "integer",
+                            "id": "bigint",
+                            "nbd": "text",
+                            "nuts": "text",
+                            "rs": "text",
+                            "rs_0": "text",
+                            "sdv_ars": "text",
+                            "sdv_rs": "text",
+                            "sn_g": "text",
+                            "sn_k": "text",
+                            "sn_l": "text",
+                            "sn_r": "text",
+                            "sn_v1": "text",
+                            "sn_v2": "text",
+                            "wsk": "timestamp without time zone",
+                        },
+                        not_null_columns=[
+                            "ade",
+                            "ags",
+                            "ags_0",
+                            "ars",
+                            "ars_0",
+                            "bem",
+                            "bez",
+                            "bsg",
+                            "debkg_id",
+                            "fk_s3",
+                            "gen",
+                            "gf",
+                            "ibz",
+                            "id",
+                            "nbd",
+                            "nuts",
+                            "rs",
+                            "rs_0",
+                            "sdv_ars",
+                            "sdv_rs",
+                            "sn_g",
+                            "sn_k",
+                            "sn_l",
+                            "sn_r",
+                            "sn_v1",
+                            "sn_v2",
+                            "wsk",
+                        ],
+                        value_set_columns={"nbd": ["ja", "nein"]},
+                    ),
+                    # boundaries.vg250_lan
+                    TableValidation(
+                        table_name="boundaries.vg250_lan",
+                        row_count=resolve_boundary_dependence(
+                            {
+                                "Schleswig-Holstein": 5,
+                                "Everything": 35,
+                            }
+                        ),
+                        geometry_columns=["geometry"],
+                        data_type_columns={
+                            "ade": "integer",
+                            "ags": "text",
+                            "ags_0": "text",
+                            "ars": "text",
+                            "ars_0": "text",
+                            "bem": "text",
+                            "bez": "text",
+                            "bsg": "integer",
+                            "debkg_id": "text",
+                            "fk_s3": "text",
+                            "gen": "text",
+                            "geometry": "geometry",
+                            "gf": "integer",
+                            "ibz": "integer",
+                            "id": "bigint",
+                            "nbd": "text",
+                            "nuts": "text",
+                            "rs": "text",
+                            "rs_0": "text",
+                            "sdv_ars": "text",
+                            "sdv_rs": "text",
+                            "sn_g": "text",
+                            "sn_k": "text",
+                            "sn_l": "text",
+                            "sn_r": "text",
+                            "sn_v1": "text",
+                            "sn_v2": "text",
+                            "wsk": "timestamp without time zone",
+                        },
+                        not_null_columns=[
+                            "ade",
+                            "ags",
+                            "ags_0",
+                            "ars",
+                            "ars_0",
+                            "bem",
+                            "bez",
+                            "bsg",
+                            "debkg_id",
+                            "fk_s3",
+                            "gen",
+                            "gf",
+                            "ibz",
+                            "id",
+                            "nbd",
+                            "nuts",
+                            "rs",
+                            "rs_0",
+                            "sdv_ars",
+                            "sdv_rs",
+                            "sn_g",
+                            "sn_k",
+                            "sn_l",
+                            "sn_r",
+                            "sn_v1",
+                            "sn_v2",
+                            "wsk",
+                        ],
+                        value_set_columns={"nbd": ["ja", "nein"]},
+                    ),
+                    # boundaries.vg250_krs
+                    TableValidation(
+                        table_name="boundaries.vg250_krs",
+                        row_count=resolve_boundary_dependence(
+                            {
+                                "Schleswig-Holstein": 27,
+                                "Everything": 431,
+                            }
+                        ),
+                        geometry_columns=["geometry"],
+                        data_type_columns={
+                            "ade": "integer",
+                            "ags": "text",
+                            "ags_0": "text",
+                            "ars": "text",
+                            "ars_0": "text",
+                            "bem": "text",
+                            "bez": "text",
+                            "bsg": "integer",
+                            "debkg_id": "text",
+                            "fk_s3": "text",
+                            "gen": "text",
+                            "geometry": "geometry",
+                            "gf": "integer",
+                            "ibz": "integer",
+                            "id": "bigint",
+                            "nbd": "text",
+                            "nuts": "text",
+                            "rs": "text",
+                            "rs_0": "text",
+                            "sdv_ars": "text",
+                            "sdv_rs": "text",
+                            "sn_g": "text",
+                            "sn_k": "text",
+                            "sn_l": "text",
+                            "sn_r": "text",
+                            "sn_v1": "text",
+                            "sn_v2": "text",
+                            "wsk": "timestamp without time zone",
+                        },
+                        not_null_columns=[
+                            "ade",
+                            "ags",
+                            "ags_0",
+                            "ars",
+                            "ars_0",
+                            "bem",
+                            "bez",
+                            "bsg",
+                            "debkg_id",
+                            "fk_s3",
+                            "gen",
+                            "gf",
+                            "ibz",
+                            "id",
+                            "nbd",
+                            "nuts",
+                            "rs",
+                            "rs_0",
+                            "sdv_ars",
+                            "sdv_rs",
+                            "sn_g",
+                            "sn_k",
+                            "sn_l",
+                            "sn_r",
+                            "sn_v1",
+                            "sn_v2",
+                            "wsk",
+                        ],
+                        value_set_columns={"nbd": ["ja", "nein"]},
+                    ),
+                    # boundaries.vg250_vwg
+                    TableValidation(
+                        table_name="boundaries.vg250_vwg",
+                        row_count=resolve_boundary_dependence(
+                            {
+                                "Schleswig-Holstein": 205,
+                                "Everything": 4688,
+                            }
+                        ),
+                        geometry_columns=["geometry"],
+                        data_type_columns={
+                            "ade": "integer",
+                            "ags": "text",
+                            "ags_0": "text",
+                            "ars": "text",
+                            "ars_0": "text",
+                            "bem": "text",
+                            "bez": "text",
+                            "bsg": "integer",
+                            "debkg_id": "text",
+                            "fk_s3": "text",
+                            "gen": "text",
+                            "geometry": "geometry",
+                            "gf": "integer",
+                            "ibz": "integer",
+                            "id": "bigint",
+                            "nbd": "text",
+                            "nuts": "text",
+                            "rs": "text",
+                            "rs_0": "text",
+                            "sdv_ars": "text",
+                            "sdv_rs": "text",
+                            "sn_g": "text",
+                            "sn_k": "text",
+                            "sn_l": "text",
+                            "sn_r": "text",
+                            "sn_v1": "text",
+                            "sn_v2": "text",
+                            "wsk": "timestamp without time zone",
+                        },
+                        not_null_columns=[
+                            "ade",
+                            "ags",
+                            "ags_0",
+                            "ars",
+                            "ars_0",
+                            "bem",
+                            "bez",
+                            "bsg",
+                            "debkg_id",
+                            "fk_s3",
+                            "gen",
+                            "gf",
+                            "ibz",
+                            "id",
+                            "nbd",
+                            "nuts",
+                            "rs",
+                            "rs_0",
+                            "sdv_ars",
+                            "sdv_rs",
+                            "sn_g",
+                            "sn_k",
+                            "sn_l",
+                            "sn_r",
+                            "sn_v1",
+                            "sn_v2",
+                            "wsk",
+                        ],
+                        value_set_columns={"nbd": ["ja", "nein"]},
+                    ),
+                    # boundaries.vg250_gem
+                    TableValidation(
+                        table_name="boundaries.vg250_gem",
+                        row_count=resolve_boundary_dependence(
+                            {
+                                "Schleswig-Holstein": 1171,
+                                "Everything": 11135,
+                            }
+                        ),
+                        geometry_columns=["geometry"],
+                        data_type_columns={
+                            "ade": "integer",
+                            "ags": "text",
+                            "ags_0": "text",
+                            "ars": "text",
+                            "ars_0": "text",
+                            "bem": "text",
+                            "bez": "text",
+                            "bsg": "integer",
+                            "debkg_id": "text",
+                            "fk_s3": "text",
+                            "gen": "text",
+                            "geometry": "geometry",
+                            "gf": "integer",
+                            "ibz": "integer",
+                            "id": "bigint",
+                            "nbd": "text",
+                            "nuts": "text",
+                            "rs": "text",
+                            "rs_0": "text",
+                            "sdv_ars": "text",
+                            "sdv_rs": "text",
+                            "sn_g": "text",
+                            "sn_k": "text",
+                            "sn_l": "text",
+                            "sn_r": "text",
+                            "sn_v1": "text",
+                            "sn_v2": "text",
+                            "wsk": "timestamp without time zone",
+                        },
+                        not_null_columns=[
+                            "ade",
+                            "ags",
+                            "ags_0",
+                            "ars",
+                            "ars_0",
+                            "bem",
+                            "bez",
+                            "bsg",
+                            "debkg_id",
+                            "fk_s3",
+                            "gen",
+                            "gf",
+                            "ibz",
+                            "id",
+                            "nbd",
+                            "nuts",
+                            "rs",
+                            "rs_0",
+                            "sdv_ars",
+                            "sdv_rs",
+                            "sn_g",
+                            "sn_k",
+                            "sn_l",
+                            "sn_r",
+                            "sn_v1",
+                            "sn_v2",
+                            "wsk",
+                        ],
+                        value_set_columns={"nbd": ["ja", "nein"]},
+                    ),
+                ]
+            },
+            proceed_on_validation_failure=True,
         )

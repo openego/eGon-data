@@ -1,9 +1,8 @@
 """The central module containing all code dealing with power plant data."""
 
-from pathlib import Path
-
 from geoalchemy2 import Geometry
-from sqlalchemy import BigInteger, Column, Float, Integer, Sequence, String
+from loguru import logger
+from sqlalchemy import BigInteger, Column, Float, Integer, Sequence, String, DateTime
 from sqlalchemy.dialects.postgresql import JSONB
 from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.orm import sessionmaker
@@ -14,7 +13,15 @@ from egon.data import config, db
 from egon.data.datasets import Dataset, DatasetSources, DatasetTargets
 from egon.data.datasets.electrical_neighbours import entsoe_to_bus_etrago
 from egon.data.datasets.mv_grid_districts import Vg250GemClean
-from egon.data.datasets.power_plants import assign_bus_id, assign_voltage_level
+from egon.data.datasets.power_plants import (
+    assign_bus_id,
+    assign_voltage_level,
+    filter_mastr_geometry,
+)
+from egon.data.datasets.power_plants.pv_rooftop_buildings import (
+    SCENARIO_TIMESTAMP,
+    determine_end_of_life_gens,
+)
 from egon.data.datasets.scenario_parameters import get_sector_parameters
 from egon.data.datasets.storages.home_batteries import (
     allocate_home_batteries_to_buildings,
@@ -41,6 +48,7 @@ class EgonStorages(Base):
     el_capacity = Column(Float)
     bus_id = Column(Integer)
     voltage_level = Column(Integer)
+    commissioning_date = Column(DateTime)
     scenario = Column(String)
     geom = Column(Geometry("POINT", 4326))
 
@@ -50,7 +58,6 @@ class Storages(Dataset):
     sources = DatasetSources(
         files={
             "mastr_storage": "./bnetza_mastr/dump_2025-02-09/bnetza_mastr_storage_cleaned.csv",
-            "nep_capacities": "NEP2035_V2021_scnC2035.xlsx",
             "mastr_location": "location_elec_generation_raw.csv",
         },
         tables={
@@ -60,7 +67,7 @@ class Storages(Dataset):
             "egon_mv_grid_district": "grid.egon_mv_grid_district",
             "ehv_voronoi": "grid.egon_ehv_substation_voronoi",
             # Added for pumped_hydro.py
-            "nep_conv": "supply.egon_nep_2021_conventional_powerplants",
+            "nep_conv": "supply.egon_nep_conventional_powerplants",
             # Added for home_batteries.py
             "etrago_storage": "grid.egon_etrago_storage",
         },
@@ -107,7 +114,7 @@ class Storages(Dataset):
     #:
     name: str = "Storages"
     #:
-    version: str = "0.0.10"
+    version: str = "0.0.14"
 
     def __init__(self, dependencies):
         super().__init__(
@@ -242,7 +249,7 @@ def allocate_pumped_hydro(scn, export=True):
 
     if nep.elec_capacity.sum() > 0:
         # Get location using geolocator and city information
-        located, unmatched = get_location(nep)
+        located, unmatched = get_location(nep, scn)
 
         # Bring both dataframes together
         matched = pd.concat(
@@ -343,10 +350,22 @@ def allocate_storage_units_sq(scn_name, storage_types):
     -------
 
     """
-    scn_parameters = get_sector_parameters("global", scn_name)
-    scenario_date_max = str(scn_parameters["weather_year"]) + "-12-31 23:59:00"
+    # NOTE: previously derived from get_sector_parameters(...)["weather_year"],
+    # which is a fixed representative meteorological year (e.g. 2011) used
+    # for feed-in time series - not the scenario's real calendar reference
+    # date. That mismatch silently filtered out almost all real storage
+    # units. SCENARIO_TIMESTAMP holds the actual per-scenario reference date.
+    scenario_date_max = SCENARIO_TIMESTAMP[scn_name].strftime(
+        "%Y-%m-%d %H:%M:%S"
+    )
 
     map_storage = {
+        # "battery" is now dead: this function is only ever called with
+        # storage_types=["pumped_hydro"] (see allocate_pumped_hydro_scn()).
+        # Real battery storage is handled by allocate_battery_storage()
+        # instead, reading from egon_power_plants_storage rather than
+        # re-parsing this CSV. "compressed_air"/"flywheel"/"other" were
+        # already no used before 
         "battery": "Batterie",
         "pumped_hydro": "Pumpspeicher",
         "compressed_air": "Druckluft",
@@ -503,6 +522,36 @@ def allocate_storage_units_sq(scn_name, storage_types):
         # Keep only capacities within germany
         mastr_ph = mastr_ph.dropna(subset="federal_state")
 
+        # In test mode, keep only storage units within the active dataset
+        # boundary (mirrors select_mastr_pumped_hydro() in pumped_hydro.py).
+        # Re-cast to a proper GeoDataFrame first: the preceding pd.concat()/
+        # pd.merge() calls silently degrade mastr_ph back to a plain
+        # DataFrame, which would send filter_mastr_geometry() down the
+        # wrong (Laengengrad/Breitengrad-rebuild) code path.
+        if (
+            config.settings()["egon-data"]["--dataset-boundary"]
+            == "Schleswig-Holstein"
+        ):
+            mastr_ph = gpd.GeoDataFrame(
+                mastr_ph, geometry="geometry", crs="EPSG:4326"
+            )
+            mastr_ph = filter_mastr_geometry(
+                mastr_ph, federal_state="SchleswigHolstein"
+            )
+
+            # mastr_ph_foreign is split off by a missing federal_state text
+            # field, not by actual geo-location - apply the same spatial
+            # filter here too, otherwise plants with a missing Bundesland
+            # entry (regardless of their real location) bypass the
+            # test-mode boundary entirely via the foreign-bus assignment
+            # below
+            mastr_ph_foreign = gpd.GeoDataFrame(
+                mastr_ph_foreign, geometry="geometry", crs="EPSG:4326"
+            )
+            mastr_ph_foreign = filter_mastr_geometry(
+                mastr_ph_foreign, federal_state="SchleswigHolstein"
+            )
+
         # Asign buses within germany
         mastr_ph = assign_bus_id(
             mastr_ph, sources=Storages.sources, drop_missing=True
@@ -592,74 +641,12 @@ def allocate_storage_units_sq(scn_name, storage_types):
             )
 
 
-def allocate_pumped_hydro_eGon100RE():
-    """Allocates pumped_hydro plants for eGon100RE scenario based on a
-    prox-to-now method applied on allocated pumped-hydro plants in the eGon2035
-    scenario.
-
-    Parameters
-    ----------
-    None
-
-    Returns
-    -------
-    None
-    """
-
-    carrier = "pumped_hydro"
-    boundary = config.settings()["egon-data"]["--dataset-boundary"]
-
-    # Select installed capacity for pumped_hydro in eGon100RE scenario from
-    # scenario capacities table
-    capacity = db.select_dataframe(f"""
-        SELECT capacity
-        FROM {Storages.sources.tables['capacities']}
-        WHERE carrier = '{carrier}'
-        AND scenario_name = 'eGon100RE';
-        """)
-
-    if boundary == "Schleswig-Holstein":
-        # Break capacity of pumped hydron plants down SH share in eGon2035
-        capacity_phes = capacity.iat[0, 0] * 0.0176
-
-    elif boundary == "Everything":
-        # Select national capacity for pumped hydro
-        capacity_phes = capacity.iat[0, 0]
-
-    else:
-        raise ValueError(f"'{boundary}' is not a valid dataset boundary.")
-
-    # Get allocation of pumped_hydro plants in eGon2035 scenario as the
-    # reference for the distribution in eGon100RE scenario
-    allocation = allocate_pumped_hydro(scn="status2019", export=False)
-
-    scaling_factor = capacity_phes / allocation.el_capacity.sum()
-
-    power_plants = allocation.copy()
-    power_plants["scenario"] = "eGon100RE"
-    power_plants["el_capacity"] = allocation.el_capacity * scaling_factor
-
-    # Insert into target table
-    session = sessionmaker(bind=db.engine())()
-    for i, row in power_plants.iterrows():
-        entry = EgonStorages(
-            sources={"el_capacity": row.source},
-            source_id={"MastrNummer": row.MaStRNummer},
-            carrier=row.carrier,
-            el_capacity=row.el_capacity,
-            voltage_level=row.voltage_level,
-            bus_id=row.bus_id,
-            scenario=row.scenario,
-            geom=f"SRID=4326;POINT({row.geometry.x} {row.geometry.y})",
-        )
-        session.add(entry)
-    session.commit()
-
 
 def home_batteries_per_scenario(scenario):
     """Allocates home batteries which define a lower boundary for extendable
     battery storage units. The overall installed capacity is taken from NEP
-    for eGon2035 scenario. The spatial distribution of installed battery
+    (supply.egon_scenario_capacities, carrier='home_battery'), the same way
+    for all scenarios. The spatial distribution of installed battery
     capacities is based on the installed pv rooftop capacity.
 
     Parameters
@@ -673,30 +660,27 @@ def home_batteries_per_scenario(scenario):
 
     dataset = config.settings()["egon-data"]["--dataset-boundary"]
 
-    if scenario == "eGon2035":
-        target_file = (
-            Path(".")
-            / "data_bundle_egon_data"
-            / "nep2035_version2021"
-            / Storages.sources.files["nep_capacities"]
-        )
+    target_df = db.select_dataframe(f"""
+        SELECT capacity
+        FROM {Storages.sources.tables['capacities']}
+        WHERE scenario_name = '{scenario}'
+        AND carrier = 'home_battery';
+        """)
 
-        capacities_nep = pd.read_excel(
-            target_file,
-            sheet_name="1.Entwurf_NEP2035_V2021",
-            index_col="Unnamed: 0",
-        )
+    # Sum over all returned federal states: status2024 and eGon2035 each
+    # have a single national row (nuts='DE') - their underlying NEP source
+    # files provide no federal-state breakdown for home batteries -
+    # reGon2037/reGon2045 have one row per federal state which is already
+    # scoped to the active --dataset-boundary
+    target = target_df.capacity.sum()
 
-        # Select target value in MW
-        target = capacities_nep.Summe["PV-Batteriespeicher"] * 1000
-
-    else:
-        target = db.select_dataframe(f"""
-            SELECT capacity
-            FROM {Storages.sources.tables['capacities']}
-            WHERE scenario_name = '{scenario}'
-            AND carrier = 'battery';
-            """).capacity[0]
+    if (
+        ("status" in scenario or scenario == "eGon2035")
+        and dataset == "Schleswig-Holstein"
+    ):
+        # national-only target, still needs to be broken down to SH's
+        # rough share in test mode
+        target = target / 16
 
     pv_rooftop = db.select_dataframe(f"""
         SELECT bus, p_nom, generator_id
@@ -708,21 +692,43 @@ def home_batteries_per_scenario(scenario):
                WHERE scn_name = '{scenario}' AND country = 'DE' );
         """)
 
-    if dataset == "Schleswig-Holstein":
-        target = target / 16
-
     battery = pv_rooftop
     battery["p_nom_min"] = target * battery["p_nom"] / battery["p_nom"].sum()
     battery = battery.drop(columns=["p_nom"])
 
+    # Subtract already-existing real battery capacity per bus from the 
+    # NEP target to avoid double-counting real + modeled capacity at the 
+    # same bus. SO just modeled capacities are spartially distributed 
+    # according PV-capacities
+    real_capacity = db.select_dataframe(f"""
+        SELECT bus_id AS bus, sum(el_capacity) AS real_capacity
+        FROM {Storages.targets.tables['storages']}
+        WHERE carrier = 'home_battery'
+        AND scenario = '{scenario}'
+        AND sources ->> 'el_capacity' = 'MaStR'
+        GROUP BY bus_id;
+        """)
+
+    battery = battery.merge(real_capacity, on="bus", how="left")
+    battery["real_capacity"] = battery["real_capacity"].fillna(0)
+
+    over_covered = battery["real_capacity"] > battery["p_nom_min"]
+    if over_covered.any():
+        logger.warning(
+            f"In {over_covered.sum()} grid(s) in scenario {scenario}, real "
+            f"home battery capacity already exceeds the modeled target. "
+            f"No additional (modeled) capacity will be added there."
+        )
+
+    battery["p_nom_min"] = (
+        battery["p_nom_min"] - battery["real_capacity"]
+    ).clip(lower=0)
+    battery = battery.drop(columns=["real_capacity"])
+
     battery["carrier"] = "home_battery"
     battery["scenario"] = scenario
 
-    if (scenario == "eGon2035") | ("status" in scenario):
-        source = "NEP"
-
-    else:
-        source = "p-e-s"
+    source = "NEP"
 
     battery["source"] = (
         f"{source} capacity allocated based in installed PV rooftop capacity"
@@ -743,6 +749,108 @@ def home_batteries_per_scenario(scenario):
     session.commit()
 
 
+def allocate_battery_storage(scn_name):
+    """
+    Allocate real battery storage units from MaStR (supply.egon_power_plants_storage)
+    for the given scenario. Split into two carriers by grid connection voltage
+    level:
+      * 'home_battery' (voltage_level 6, 7 - LV / building-connected) - carried
+        forward into all scenarios, aged with the scenario-specific assumed
+        battery storage lifetime (see determine_end_of_life_gens() below).
+      * 'BESS' (voltage_level 1-5 - MV and above, grid-scale battery energy
+        storage systems, not tied to individual buildings) - like
+        home_battery, real capacity is now aged and carried forward into
+        every scenario. A modeled/residual BESS component analogous to
+        home_batteries_per_scenario() (target minus real capacity,
+        distributed spatially) is deliberately not implemented (decision
+        2026-08-31): eTraGo already allows extendable BESS capacity above
+        this real-capacity floor at every substation bus (see
+        storages_etrago.extendable_batteries_per_scenario()), so further
+        capacity growth is left to eTraGo's own cost optimization rather
+        than a hand-modeled spatial heuristic here. An explicit lower-bound
+        constraint tied to the NEP 'Großbatteriespeicher' target in
+        egon_scenario_capacities (currently unused) is a possible future
+        enhancement on the eTraGo side, not planned for now.
+    """
+
+    scenario_date_max = SCENARIO_TIMESTAMP[scn_name].strftime(
+        "%Y-%m-%d %H:%M:%S"
+    )
+
+    sql = """
+        SELECT gens_id AS source_id, capacity AS el_capacity, voltage_level,
+               bus_id, commissioning_date, decommissioning_date, geom
+        FROM supply.egon_power_plants_storage
+        WHERE technology = 'Batterie'
+    """
+    mastr = db.select_geodataframe(sql, geom_col="geom", epsg=4326)
+
+    mastr["commissioning_date"] = pd.to_datetime(mastr["commissioning_date"], errors="coerce")
+    mastr.loc[mastr["commissioning_date"] < "1990-01-01", "commissioning_date"] = pd.NaT
+    decommissioning_date = pd.to_datetime(mastr["decommissioning_date"], errors="coerce")
+
+    # keep only units already commissioned and not (yet) decommissioned
+    # as of the scenario's reference date
+    mastr = mastr.loc[
+        (mastr["commissioning_date"] < scenario_date_max)
+        & (decommissioning_date.isna() | (decommissioning_date > scenario_date_max))
+    ]
+
+    # Age units against the scenario's own assumed battery storage lifetime
+    # (applied uniformly, including status2024, to also weed out implausibly
+    # old registrations there). Real, reported decommissionings are handled
+    # above already; this additionally covers units MaStR still lists as
+    # "in Betrieb" but that are statistically past their expected lifetime.
+    lifetime = pd.Timedelta(
+        get_sector_parameters("electricity", scn_name)["lifetime"][
+            "BESS storage"
+        ]
+        * 365,
+        unit="D",
+    )
+    # determine_end_of_life_gens() expects a "capacity" column (PV
+    # convention); rename around the call, for batteries it is "el_capacity".
+    mastr = determine_end_of_life_gens(
+        mastr.rename(columns={"el_capacity": "capacity"}),
+        SCENARIO_TIMESTAMP[scn_name].tz_localize(None),
+        lifetime,
+    ).rename(columns={"capacity": "el_capacity"})
+    mastr = mastr.loc[~mastr.end_of_life].drop(columns=["age", "end_of_life"])
+
+    mastr["carrier"] = "BESS"
+    mastr.loc[mastr.voltage_level.isin([6, 7]), "carrier"] = "home_battery"
+
+    mastr["scenario"] = scn_name
+    mastr["source_id"] = mastr["source_id"].apply(lambda x: {"MastrNummer": x})
+    mastr["sources"] = [{"el_capacity": "MaStR"}] * mastr.shape[0]
+
+    db.execute_sql(f"""
+        DELETE FROM supply.egon_storages
+        WHERE carrier IN ('BESS', 'home_battery')
+        AND scenario = '{scn_name}'
+        AND sources ->> 'el_capacity' = 'MaStR';""")
+
+    with db.session_scope() as session:
+        session.bulk_insert_mappings(
+            EgonStorages,
+            mastr.assign(geom=mastr["geom"].apply(lambda x: x.wkb_hex))[
+                [
+                    "source_id",
+                    "el_capacity",
+                    "voltage_level",
+                    "bus_id",
+                    "carrier",
+                    "scenario",
+                    "commissioning_date",
+                    "geom",
+                    "sources",
+                ]
+            ].to_dict(orient="records"),
+        )
+
+    return mastr
+
+
 def allocate_pv_home_batteries_to_grids():
     for scn in config.settings()["egon-data"]["--scenarios"]:
         home_batteries_per_scenario(scn)
@@ -750,17 +858,19 @@ def allocate_pv_home_batteries_to_grids():
 
 def allocate_pumped_hydro_scn():
     for scn in config.settings()["egon-data"]["--scenarios"]:
-        if scn == "eGon2035":
-            allocate_pumped_hydro(scn="eGon2035")
-        elif scn == "eGon100RE":
-            allocate_pumped_hydro_eGon100RE()
-        elif "status" in scn:
+        if "status" in scn:
             allocate_storage_units_sq(
                 scn_name=scn, storage_types=["pumped_hydro"]
             )
+        else:
+            allocate_pumped_hydro(scn=scn, export=True)
 
 
 def allocate_other_storage_units():
+    # Both 'BESS' and 'home_battery' are aged and carried forward into
+    # every scenario now (real MaStR capacity only for BESS - no modeled
+    # residual component yet, see #1478).
     for scn in config.settings()["egon-data"]["--scenarios"]:
-        if "status" in scn:
-            allocate_storage_units_sq(scn_name=scn, storage_types=["battery"])
+        allocate_battery_storage(scn_name=scn)
+
+

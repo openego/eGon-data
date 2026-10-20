@@ -1,3 +1,4 @@
+from unittest import mock
 import os
 
 from sqlalchemy.ext.declarative import declarative_base
@@ -10,8 +11,57 @@ try:
 except ImportError as e:
     pass
 from egon.data.datasets import load_sources_and_targets
+from egon.data.datasets.scenario_parameters import get_sector_parameters
 
 Base = declarative_base()
+
+# Year of the CTS gas consumption per district and branch, which is used to
+# weight the branch profiles. It is available in the cached demandregio data,
+# data for the weather year 2011 is not.
+CTS_GAS_CONSUMPTION_YEAR = 2017
+
+
+def cts_heat_profiles_nuts3(year):
+    """Return hourly CTS heat demand profiles per NUTS3 region
+
+    The profiles are created by the disaggregator from gas standard load
+    profiles for the calendar and the temperatures of the given year. The
+    FfE API does not provide the temperatures of the weather year 2011, they
+    are read from the demandregio cache in the data bundle. The profiles are
+    cached in the working directory.
+
+    Parameters
+    ----------
+    year : int
+        Weather year
+
+    Returns
+    -------
+    pandas.DataFrame
+        Hourly CTS heat demand per NUTS3 region
+
+    """
+    file = f"CTS_heat_demand_profile_nuts3_{year}.csv"
+
+    if os.path.isfile(file):
+        df = pd.read_csv(file, index_col=0)
+        df.columns.name = "ags_lk"
+        df.index = pd.to_datetime(df.index)
+        return df.asfreq("H")
+
+    disagg_cts_industry = temporal.disagg_CTS_industry
+
+    with mock.patch.object(
+        temporal,
+        "disagg_CTS_industry",
+        lambda *args, **kwargs: disagg_cts_industry(
+            *args, **{**kwargs, "year": CTS_GAS_CONSUMPTION_YEAR}
+        ),
+    ):
+        df = temporal.disagg_temporal_gas_CTS(use_nuts3code=True, year=year)
+
+    df.to_csv(file)
+    return df
 
 
 def cts_demand_per_aggregation_level(aggregation_level, scenario):
@@ -61,20 +111,9 @@ def cts_demand_per_aggregation_level(aggregation_level, scenario):
         ORDER BY a.zensus_population_id
         """)
 
-    if os.path.isfile("CTS_heat_demand_profile_nuts3.csv"):
-        df_CTS_gas_2011 = pd.read_csv(
-            "CTS_heat_demand_profile_nuts3.csv", index_col=0
-        )
-        df_CTS_gas_2011.columns.name = "ags_lk"
-        df_CTS_gas_2011.index = pd.to_datetime(df_CTS_gas_2011.index)
-        df_CTS_gas_2011 = df_CTS_gas_2011.asfreq("H")
-    else:
-        df_CTS_gas_2011 = temporal.disagg_temporal_gas_CTS(
-            use_nuts3code=True, year=2017
-        )
-        df_CTS_gas_2011.to_csv("CTS_heat_demand_profile_nuts3.csv")
-
-    CTS_profile = df_CTS_gas_2011.transpose()
+    CTS_profile = cts_heat_profiles_nuts3(
+        get_sector_parameters("global", scenario)["weather_year"]
+    ).transpose()
 
     CTS_per_zensus = pd.merge(
         demand_nuts[["zensus_population_id", "vg250_nuts3"]],
