@@ -1,0 +1,279 @@
+name: supply.egon_district_heating
+'@id': null
+title: eGon heat supply for district heating grids
+path: WILL_BE_SET_AT_PUBLICATION
+description: Heat supply technologies for district heating grids
+languages:
+- EN
+subject:
+- name: ''
+  '@id': null
+publicationDate: '2026-10-06'
+embargoPeriod:
+  start: ''
+  end: ''
+  isActive: false
+spatial:
+  location:
+    address: null
+    '@id': null
+    latitude: ''
+    longitude: ''
+  extent:
+    name: Germany
+    '@id': null
+    resolutionValue: ''
+    resolutionUnit: ''
+    boundingBox:
+    - 0
+    - 0
+    - 0
+    - 0
+    crs: ''
+temporal:
+  referenceDate: ''
+  timeseries:
+  - start: ''
+    end: ''
+    resolutionValue: ''
+    resolutionUnit: ''
+    alignment: ''
+    aggregationType: ''
+sources:
+- title: ERA5 global reanalysis
+  authors: []
+  description: ERA5 is the fifth generation ECMWF reanalysis for the global climate
+    and weather for the past 4 to 7 decades. Currently data is available from 1950,
+    split into Climate Data Store entries for 1950-1978 (preliminary back extension)
+    and from 1979 onwards (final release plus timely updates, this page). ERA5 replaces
+    the ERA-Interim reanalysis. See the online ERA5 documentation (https://confluence.ecmwf.int/display/CKB/ERA5%3A+data+documentation#ERA5:datadocumentation-Dataupdatefrequency)
+    for more information.
+  publicationYear: null
+  path: https://confluence.ecmwf.int/display/CKB/ERA5%3A+data+documentation#ERA5:datadocumentation-Dataupdatefrequency
+  sourceLicenses:
+  - name: Licence to use Copernicus Products
+    title: Licence to use Copernicus Products
+    path: https://cds.climate.copernicus.eu/api/v2/terms/static/licence-to-use-copernicus-products.pdf
+    instruction: 'This Licence is free of charge, worldwide, non-exclusive, royalty
+      free and perpetual. Access to Copernicus Products is given for any purpose in
+      so far as it is lawful, whereas use may include, but is not limited to: reproduction;
+      distribution; communication to the public; adaptation, modification and combination
+      with other data and information; or any combination of the foregoing'
+    attribution: Copernicus Climate Change Service (C3S) Climate Data Store
+    copyrightStatement: null
+- title: Verwaltungsgebiete 1:250 000 (Ebenen)
+  authors: []
+  description: Der Datenbestand umfasst sämtliche Verwaltungseinheiten der hierarchischen
+    Verwaltungsebenen vom Staat bis zu den Gemeinden mit ihren Grenzen, statistischen
+    Schlüsselzahlen, Namen der Verwaltungseinheit sowie die spezifische Bezeichnung
+    der Verwaltungsebene des jeweiligen Landes.
+  publicationYear: null
+  path: https://daten.gdz.bkg.bund.de/produkte/vg/vg250_ebenen_0101/2020/vg250_01-01.geo84.shape.ebenen.zip
+  sourceLicenses:
+  - name: dl-by-de/2.0
+    title: Datenlizenz Deutschland – Namensnennung – Version 2.0
+    path: www.govdata.de/dl-de/by-2-0
+    instruction: "Jede Nutzung ist unter den Bedingungen dieser „Datenlizenz Deutschland\
+      \ - Namensnennung - Version 2.0 zulässig.\nDie bereitgestellten Daten und Metadaten\
+      \ dürfen für die kommerzielle und nicht kommerzielle Nutzung insbesondere:(1)\
+      \ vervielfältigt, ausgedruckt, präsentiert, verändert, bearbeitet sowie an Dritte\
+      \ übermittelt werden;\n (2) mit eigenen Daten und Daten Anderer zusammengeführt\
+      \ und zu selbständigen neuen Datensätzen verbunden werden;\n (3) in interne\
+      \ und externe Geschäftsprozesse, Produkte und Anwendungen in öffentlichen und\
+      \ nicht öffentlichen elektronischen Netzwerken eingebunden werden.\nBei der\
+      \ Nutzung ist sicherzustellen, dass folgende Angaben als Quellenvermerk enthalten\
+      \ sind:\n(1) Bezeichnung des Bereitstellers nach dessen Maßgabe,\n(2) der Vermerk\
+      \ Datenlizenz Deutschland – Namensnennung – Version 2.0 oder dl-de/by-2-0 mit\
+      \ Verweis auf den Lizenztext unter www.govdata.de/dl-de/by-2-0 sowie\n(3) einen\
+      \ Verweis auf den Datensatz (URI).Dies gilt nur soweit die datenhaltende Stelle\
+      \ die Angaben(1) bis (3) zum Quellenvermerk bereitstellt.\nVeränderungen, Bearbeitungen,\
+      \ neue Gestaltungen oder sonstige Abwandlungen sind im Quellenvermerk mit dem\
+      \ Hinweis zu versehen, dass die Daten geändert wurden."
+    attribution: © Bundesamt für Kartographie und Geodäsie 2020 (Daten verändert)
+    copyrightStatement: null
+- title: eGon-data
+  authors: []
+  description: Workflow to download, process and generate data sets suitable for the
+    further research conducted in the project eGon (https://ego-n.org/)
+  publicationYear: null
+  path: https://github.com/openego/eGon-data
+  sourceLicenses:
+  - name: AGPL-3.0 License
+    title: GNU Affero General Public License v3.0
+    path: https://www.gnu.org/licenses/agpl-3.0.de.html
+    instruction: Permissions of this strongest copyleft license areconditioned on
+      making available complete source code of licensed works and modifications, which
+      include larger works using a licensedwork, under the same license. Copyright
+      and license notices must bepreserved. Contributors provide an express grant
+      of patent rights.When a modified version is used to provide a service over a
+      network,the complete source code of the modified version must be made available.
+    attribution: © eGon development team
+    copyrightStatement: null
+- title: Data bundle for egon-data
+  authors: []
+  description: Zenodo repository to provide several different input data sets for
+    eGon-data
+  publicationYear: null
+  path: https://zenodo.org/record/10226009
+  sourceLicenses:
+  - name: CC-BY-4.0
+    title: Creative Commons Attribution 4.0 International
+    path: https://creativecommons.org/licenses/by/4.0/legalcode
+    instruction: 'You are free: To Share, To Create, To Adapt; As long as you: Attribute.'
+    attribution: © eGon development team
+    copyrightStatement: null
+- title: OpenStreetMap Data Extracts (Geofabrik)
+  authors: []
+  description: Full data extract of OpenStreetMap data for defined spatial extent
+    at "referenceDate"
+  publicationYear: null
+  path: https://download.geofabrik.de/europe/germany-210101.osm.pbf
+  sourceLicenses:
+  - name: ODbL-1.0
+    title: Open Data Commons Open Database License 1.0
+    path: https://opendatacommons.org/licenses/odbl/1.0/index.html
+    instruction: 'You are free: To Share, To Create, To Adapt; As long as you: Attribute,
+      Share-Alike, Keep open!'
+    attribution: © OpenStreetMap contributors
+    copyrightStatement: null
+- title: open-MaStR power unit registry
+  authors: []
+  description: 'Raw data download Marktstammdatenregister (MaStR) data using the webservice.
+    All data from the Marktstammdatenregister is included. There are duplicates included.
+    For further information read in the documentation of the original data source:
+    https://www.marktstammdatenregister.de/MaStRHilfe/subpages/statistik.html'
+  publicationYear: null
+  path: https://zenodo.org/record/10480930
+  sourceLicenses:
+  - name: dl-by-de/2.0
+    title: Datenlizenz Deutschland – Namensnennung – Version 2.0
+    path: www.govdata.de/dl-de/by-2-0
+    instruction: "Jede Nutzung ist unter den Bedingungen dieser „Datenlizenz Deutschland\
+      \ - Namensnennung - Version 2.0 zulässig.\nDie bereitgestellten Daten und Metadaten\
+      \ dürfen für die kommerzielle und nicht kommerzielle Nutzung insbesondere:(1)\
+      \ vervielfältigt, ausgedruckt, präsentiert, verändert, bearbeitet sowie an Dritte\
+      \ übermittelt werden;\n (2) mit eigenen Daten und Daten Anderer zusammengeführt\
+      \ und zu selbständigen neuen Datensätzen verbunden werden;\n (3) in interne\
+      \ und externe Geschäftsprozesse, Produkte und Anwendungen in öffentlichen und\
+      \ nicht öffentlichen elektronischen Netzwerken eingebunden werden.\nBei der\
+      \ Nutzung ist sicherzustellen, dass folgende Angaben als Quellenvermerk enthalten\
+      \ sind:\n(1) Bezeichnung des Bereitstellers nach dessen Maßgabe,\n(2) der Vermerk\
+      \ Datenlizenz Deutschland – Namensnennung – Version 2.0 oder dl-de/by-2-0 mit\
+      \ Verweis auf den Lizenztext unter www.govdata.de/dl-de/by-2-0 sowie\n(3) einen\
+      \ Verweis auf den Datensatz (URI).Dies gilt nur soweit die datenhaltende Stelle\
+      \ die Angaben(1) bis (3) zum Quellenvermerk bereitstellt.\nVeränderungen, Bearbeitungen,\
+      \ neue Gestaltungen oder sonstige Abwandlungen sind im Quellenvermerk mit dem\
+      \ Hinweis zu versehen, dass die Daten geändert wurden."
+    attribution: © 2021 Bundesnetzagentur für Elektrizität, Gas, Telekommunikation,
+      Post und Eisenbahnen
+    copyrightStatement: null
+- title: Pan-European Thermal Atlas, Peta version 5.0.1
+  authors: []
+  description: 'Modelled Heat Demand distribution (in GJ per hectare grid cell) for
+    residential and service heat demands for space heating and hot water for the year
+    2015 using HRE4 data and the combined top-down bottom-up approach of HRE4. National
+    sector-specific heat demand data, derived by the FORECAST model in HRE4 for residential
+    (delivered energy, for space heating and hot water) and service-sector (delivered
+    energy, for space heating, hot water and process heat) buildings for the year
+    2015, were distributed using modelled, spatial statistics based floor areas in
+    100x100m grids and a population grid. For further information please see the documentation
+    available on the Heat Roadmap Europe website, in particular D2.3 report: Methodologies
+    and assumptions used in the mapping.'
+  publicationYear: null
+  path: https://s-eenergies-open-data-euf.hub.arcgis.com/search
+  sourceLicenses:
+  - name: CC-BY-4.0
+    title: Creative Commons Attribution 4.0 International
+    path: https://creativecommons.org/licenses/by/4.0/legalcode
+    instruction: 'You are free: To Share, To Create, To Adapt; As long as you: Attribute.'
+    attribution: © Europa-Universität Flensburg, Halmstad University and Aalborg University
+    copyrightStatement: null
+licenses:
+- name: ODbL-1.0
+  title: Open Data Commons Open Database License 1.0
+  path: https://opendatacommons.org/licenses/odbl/1.0/index.html
+  instruction: 'You are free: To Share, To Create, To Adapt; As long as you: Attribute,
+    Share-Alike, Keep open!'
+  attribution: © eGon development team
+  copyrightStatement: null
+contributors:
+- title: Clara Büttner
+  path: null
+  organization: null
+  roles:
+  - ''
+  date: '2026-10-06'
+  object: null
+  comment: Imported data
+- title: eGon-data metadata migration
+  path: https://github.com/openego/eGon-data
+  roles:
+  - dataCurator
+  organization: null
+  date: '2026-10-20'
+  object: metadata
+  comment: Migrated from the OEMetadata v1.4 table comment of a full eGon-data run
+    to OEMetadata v2 with OMI.
+type: Table
+format: PostgreSQL
+encoding: UTF-8
+schema:
+  fields:
+  - name: index
+    description: Unique identifyer
+    type: integer
+    nullable: true
+    unit: none
+    isAbout: []
+    valueReference: []
+  - name: district_heating_id
+    description: Index of the corresponding district heating grid
+    type: integer
+    nullable: false
+    unit: none
+    isAbout: []
+    valueReference: []
+  - name: carrier
+    description: Name of energy carrier
+    type: varchar(25)
+    nullable: true
+    unit: none
+    isAbout: []
+    valueReference: []
+  - name: category
+    description: Size-category of district heating grid
+    type: varchar(25)
+    nullable: true
+    unit: none
+    isAbout: []
+    valueReference: []
+  - name: capacity
+    description: Installed heating capacity
+    type: float
+    nullable: true
+    unit: MW_th
+    isAbout: []
+    valueReference: []
+  - name: geometry
+    description: Location of thermal power plant
+    type: geometry(point,3035)
+    nullable: true
+    unit: none
+    isAbout: []
+    valueReference: []
+  - name: scenario
+    description: Name of corresponing scenario
+    type: varchar(50)
+    nullable: true
+    unit: none
+    isAbout: []
+    valueReference: []
+  primaryKey:
+  - index
+  foreignKeys: []
+dialect:
+  delimiter: null
+  decimalSeparator: .
+review:
+  path: ''
+  badge: ''
