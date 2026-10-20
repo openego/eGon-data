@@ -1,6 +1,28 @@
 """Sanity check validation rules for eGon data quality."""
 
 from .demandregio import DemandRegioScenarioDemand  # noqa: F401
+from .mit_charging import (  # noqa: F401
+    MitBandReachable,
+    MitBusByLevel,
+    MitDiagnostics,
+    MitEventArrayReferences,
+    MitEventArrayTotal,
+    MitEventArrayUseCase,
+    MitFallbackDistance,
+    MitImportCounts,
+    MitLinkParams,
+    MitLocationAssigned,
+    MitLowflexPair,
+    MitModelComponents,
+    MitModelEnergy,
+    MitOrphans,
+    MitScenarioCoverage,
+    MitStoreBand,
+    MitTechData,
+    MitTotalEnergy,
+    MitTransmissionModels,
+    MitVoltageLevel,
+)
 from .residential_electricity import (  # noqa: F401
     ResidentialElectricityAnnualSum,
     ResidentialElectricityHhRefinement,

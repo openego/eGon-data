@@ -41,6 +41,11 @@ import os
 import tarfile
 
 from airflow.operators.python import PythonOperator
+from egon_validation import (
+    DataTypeValidation,
+    NotNullAndNotNaNValidation,
+    ValueSetValidation,
+)
 from psycopg2.extensions import AsIs, register_adapter
 import numpy as np
 import pandas as pd
@@ -77,8 +82,11 @@ from egon.data.datasets.emobility.motorized_individual_travel.flex_diagnostics i
     log_diagnostics_checks,
 )
 from egon.data.datasets.emobility.motorized_individual_travel.helpers import (
+    CHARGING_USE_CASES,
     COLUMNS_KBA,
     DATA_BUNDLE_DIR,
+    EV_TYPES,
+    MODEL_TYPES,
     TRIP_COLUMN_MAPPING,
     WORKING_DIR,
     is_legacy_scenario,
@@ -102,6 +110,32 @@ from egon.data.datasets.emobility.motorized_individual_travel.model_timeseries i
 from egon.data.datasets.emobility.motorized_individual_travel.placement_model import (  # noqa: E501
     generate_placement_models,
 )
+from egon.data.validation import TableValidation
+from egon.data.validation.rules.custom.sanity import (
+    MitBandReachable,
+    MitBusByLevel,
+    MitDiagnostics,
+    MitEventArrayReferences,
+    MitEventArrayTotal,
+    MitEventArrayUseCase,
+    MitFallbackDistance,
+    MitImportCounts,
+    MitLinkParams,
+    MitLocationAssigned,
+    MitLowflexPair,
+    MitModelComponents,
+    MitModelEnergy,
+    MitOrphans,
+    MitScenarioCoverage,
+    MitStoreBand,
+    MitTechData,
+    MitTotalEnergy,
+    MitTransmissionModels,
+    MitVoltageLevel,
+)
+
+#: Scenarios on the new methodology, the ones the validation rules check.
+NEW_SCENARIOS = tuple(ZENODO_URLS)
 
 
 # ========== Register np datatypes with SQLA ==========
@@ -442,6 +476,145 @@ def write_metadata_to_db():
         session.add_all(rows)
 
 
+def mit_validation_rules():
+    """Validation rules for the tables written for the new scenarios.
+
+    Content checks run per scenario of :data:`NEW_SCENARIOS`, one rule
+    instance per scenario; eGon2035 is not checked. See
+    :mod:`egon.data.validation.rules.custom.sanity.mit_charging`.
+
+    Returns
+    -------
+    list
+        TableValidation specs and rule instances.
+    """
+    tables = MotorizedIndividualTravel.targets.tables
+    locations = tables["ev_charging_location"]
+    location_events = tables["ev_location_events"]
+    pool = tables["ev_pool"]
+    pool_suffix = pool.split(".")[-1]
+
+    # The pool's formal rules are listed one by one: simbev_ev_id is NULL
+    # for the new scenarios and n_vehicles for eGon2035 by design, which
+    # TableValidation's whole-table NOT NULL check would report.
+    rules = [
+        TableValidation(
+            table_name=locations,
+            geometry_columns=["geom"],
+            data_type_columns={
+                "location_id": "bigint",
+                "scenario": "character varying",
+                "charging_points": "integer",
+                "average_charging_capacity": "integer",
+                "use_case": "character varying",
+                "candidate_uid": "character varying",
+                "is_synthetic_location": "boolean",
+                "mv_grid_id": "integer",
+                "grid_connection_id": "integer",
+                "voltage_level": "smallint",
+                "model_type": "character varying",
+                "bus_id": "integer",
+                "assignment": "character varying",
+                "geom": "geometry",
+            },
+            not_null_columns=[
+                "location_id",
+                "scenario",
+                "charging_points",
+                "use_case",
+                "mv_grid_id",
+                "grid_connection_id",
+                "voltage_level",
+                "model_type",
+                "bus_id",
+                "assignment",
+            ],
+            value_set_columns={
+                "scenario": list(NEW_SCENARIOS),
+                "use_case": list(CHARGING_USE_CASES),
+                "model_type": list(MODEL_TYPES),
+                "assignment": ["within", "nearest"],
+            },
+        ),
+        TableValidation(
+            table_name=location_events,
+            data_type_columns={
+                "scenario": "character varying",
+                "location_id": "bigint",
+                "event_ids": "ARRAY",
+            },
+            not_null_columns=["scenario", "location_id", "event_ids"],
+            value_set_columns={"scenario": list(NEW_SCENARIOS)},
+        ),
+        DataTypeValidation(
+            table=pool,
+            rule_id=f"DATA_TYPES.{pool_suffix}",
+            column_types={
+                "scenario": "character varying",
+                "ev_id": "integer",
+                "rs7_id": "smallint",
+                "type": "character varying",
+                "simbev_ev_id": "integer",
+                "n_vehicles": "integer",
+            },
+        ),
+        NotNullAndNotNaNValidation(
+            table=pool,
+            rule_id=f"NOT_NAN.{pool_suffix}",
+            columns=["scenario", "ev_id", "type"],
+        ),
+        ValueSetValidation(
+            table=pool,
+            rule_id=f"VALUE_SET_TYPE.{pool_suffix}",
+            column="type",
+            expected_values=list(EV_TYPES),
+        ),
+        MitScenarioCoverage(
+            table="grid.egon_etrago_load",
+            rule_id="SANITY_MIT_SCENARIO_COVERAGE",
+        ),
+        MitOrphans(
+            table="grid.egon_etrago_link",
+            rule_id="SANITY_MIT_ORPHANS",
+        ),
+    ]
+
+    per_scenario = [
+        (MitImportCounts, locations, "IMPORT_COUNTS"),
+        (MitEventArrayTotal, location_events, "EVENT_ARRAY_TOTAL"),
+        (MitEventArrayReferences, location_events, "EVENT_ARRAY_REFERENCES"),
+        (MitEventArrayUseCase, location_events, "EVENT_ARRAY_USE_CASE"),
+        (MitTechData, pool, "TECH_DATA"),
+        (MitLocationAssigned, locations, "LOCATION_ASSIGNED"),
+        (MitFallbackDistance, locations, "FALLBACK_DISTANCE"),
+        (MitVoltageLevel, locations, "VOLTAGE_LEVEL"),
+        (MitBusByLevel, locations, "BUS_BY_LEVEL"),
+        (
+            MitTransmissionModels,
+            "grid.egon_etrago_link",
+            "TRANSMISSION_MODELS",
+        ),
+        (MitModelEnergy, "grid.egon_etrago_load", "MODEL_ENERGY"),
+        (MitTotalEnergy, "grid.egon_etrago_load", "TOTAL_ENERGY"),
+        (MitModelComponents, "grid.egon_etrago_bus", "MODEL_COMPONENTS"),
+        (MitStoreBand, "grid.egon_etrago_store", "STORE_BAND"),
+        (MitLinkParams, "grid.egon_etrago_link", "LINK_PARAMS"),
+        (MitBandReachable, "grid.egon_etrago_store", "BAND_REACHABLE"),
+        (MitLowflexPair, "grid.egon_etrago_load", "LOWFLEX_PAIR"),
+        (MitDiagnostics, tables["ev_flex_timeseries"], "DIAGNOSTICS"),
+    ]
+    for scenario in NEW_SCENARIOS:
+        for rule_class, table, check in per_scenario:
+            rules.append(
+                rule_class(
+                    table=table,
+                    rule_id=f"SANITY_MIT_{check}.{scenario}",
+                    scenario=scenario,
+                )
+            )
+    return rules
+
+
 class MotorizedIndividualTravel(Dataset):
     """
     Class to set up static and timeseries data for motorized individual travel
@@ -612,9 +785,10 @@ class MotorizedIndividualTravel(Dataset):
                 "demand.egon_ev_mit_lgv_count_mv_grid_district"
             ),
             "ev_mv_grid": "demand.egon_ev_mit_lgv_mv_grid_district",
-            "ev_mapping_ev_municipality": (
-                "demand.egon_ev_mit_lgv_mapping_ev_municipality"
+            "ev_charging_location": (
+                "demand.egon_ev_mit_lgv_charging_location"
             ),
+            "ev_location_events": "demand.egon_ev_mit_lgv_location_events",
             "ev_metadata": "demand.egon_ev_mit_lgv_metadata",
             "ev_flex_timeseries": "demand.egon_ev_mit_lgv_flex_timeseries",
             "ev_energy_balance": "demand.egon_ev_mit_lgv_energy_balance",
@@ -627,7 +801,7 @@ class MotorizedIndividualTravel(Dataset):
     #:
     name: str = "MotorizedIndividualTravel"
     #:
-    version: str = "0.1.3"
+    version: str = "0.2.0"
 
     def __init__(self, dependencies):
         parallel_tasks = MotorizedIndividualTravel.sources.files[
@@ -749,4 +923,6 @@ class MotorizedIndividualTravel(Dataset):
             version=self.version,
             dependencies=dependencies,
             tasks=tasks,
+            validation={"data-quality": mit_validation_rules()},
+            proceed_on_validation_failure=True,
         )
