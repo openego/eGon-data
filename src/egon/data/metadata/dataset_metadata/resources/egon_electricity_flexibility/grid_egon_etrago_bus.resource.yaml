@@ -1,0 +1,323 @@
+name: grid.egon_etrago_bus
+'@id': null
+title: Bus
+path: WILL_BE_SET_AT_PUBLICATION
+description: TODO
+languages:
+- en-EN
+subject:
+- name: ''
+  '@id': null
+publicationDate: '2026-10-02'
+embargoPeriod:
+  start: ''
+  end: ''
+  isActive: false
+spatial:
+  location:
+    address: null
+    '@id': null
+    latitude: ''
+    longitude: ''
+  extent:
+    name: Germany
+    '@id': null
+    resolutionValue: ''
+    resolutionUnit: ''
+    boundingBox:
+    - 0
+    - 0
+    - 0
+    - 0
+    crs: ''
+temporal:
+  referenceDate: ''
+  timeseries:
+  - start: ''
+    end: ''
+    resolutionValue: ''
+    resolutionUnit: ''
+    alignment: ''
+    aggregationType: ''
+sources:
+- title: eGon-data
+  authors: []
+  description: Workflow to download, process and generate data sets suitable for the
+    further research conducted in the project eGon (https://ego-n.org/)
+  publicationYear: null
+  path: https://github.com/openego/eGon-data
+  sourceLicenses:
+  - name: AGPL-3.0 License
+    title: GNU Affero General Public License v3.0
+    path: https://www.gnu.org/licenses/agpl-3.0.de.html
+    instruction: Permissions of this strongest copyleft license areconditioned on
+      making available complete source code of licensed works and modifications, which
+      include larger works using a licensedwork, under the same license. Copyright
+      and license notices must bepreserved. Contributors provide an express grant
+      of patent rights.When a modified version is used to provide a service over a
+      network,the complete source code of the modified version must be made available.
+    attribution: © eGon development team
+    copyrightStatement: null
+- title: OpenStreetMap Data Extracts (Geofabrik)
+  authors: []
+  description: Full data extract of OpenStreetMap data for defined spatial extent
+    at "referenceDate"
+  publicationYear: null
+  path: https://download.geofabrik.de/europe/germany-210101.osm.pbf
+  sourceLicenses:
+  - name: ODbL-1.0
+    title: Open Data Commons Open Database License 1.0
+    path: https://opendatacommons.org/licenses/odbl/1.0/index.html
+    instruction: 'You are free: To Share, To Create, To Adapt; As long as you: Attribute,
+      Share-Alike, Keep open!'
+    attribution: © OpenStreetMap contributors
+    copyrightStatement: null
+- title: Pan-European Thermal Atlas, Peta version 5.0.1
+  authors: []
+  description: 'Modelled Heat Demand distribution (in GJ per hectare grid cell) for
+    residential and service heat demands for space heating and hot water for the year
+    2015 using HRE4 data and the combined top-down bottom-up approach of HRE4. National
+    sector-specific heat demand data, derived by the FORECAST model in HRE4 for residential
+    (delivered energy, for space heating and hot water) and service-sector (delivered
+    energy, for space heating, hot water and process heat) buildings for the year
+    2015, were distributed using modelled, spatial statistics based floor areas in
+    100x100m grids and a population grid. For further information please see the documentation
+    available on the Heat Roadmap Europe website, in particular D2.3 report: Methodologies
+    and assumptions used in the mapping.'
+  publicationYear: null
+  path: https://s-eenergies-open-data-euf.hub.arcgis.com/search
+  sourceLicenses:
+  - name: CC-BY-4.0
+    title: Creative Commons Attribution 4.0 International
+    path: https://creativecommons.org/licenses/by/4.0/legalcode
+    instruction: 'You are free: To Share, To Create, To Adapt; As long as you: Attribute.'
+    attribution: © Europa-Universität Flensburg, Halmstad University and Aalborg University
+    copyrightStatement: null
+- title: SciGRID_gas IGGIELGN
+  authors: []
+  description: The SciGRID_gas dataset represents the European gas transport network
+    (pressure levels of 20 bars and higher) including the geo-referenced transport
+    pipelines, compressor stations, LNG terminals, storage, production sites, gas
+    power plants, border points, and demand time series.
+  publicationYear: null
+  path: https://dx.doi.org/10.5281/zenodo.4896526
+  sourceLicenses:
+  - name: CC-BY-4.0
+    title: Creative Commons Attribution 4.0 International
+    path: https://creativecommons.org/licenses/by/4.0/legalcode
+    instruction: 'You are free: To Share, To Create, To Adapt; As long as you: Attribute.'
+    attribution: Jan Diettrich; Adam Pluta; Wided Medjroubi (DLR-VE)
+    copyrightStatement: null
+- title: 'Informationssystem Salz: Planungsgrundlagen, Auswahlkriterien und Potenzialabschätzung
+    für die Errichtung von Salzkavernen zur Speicherung von Erneuerbaren Energien
+    (Wasserstoff und Druckluft) – Doppelsalinare und flach lagernde Salzschichten.
+    Teilprojekt Bewertungskriterien und Potenzialabschätzung'
+  authors: []
+  description: 'Shapefiles corresponding to the data provided in figure 7-1 (Donadei,
+    S., et al., 2020, p. 7-5). The energy storage potential data are provided per
+    federal state in table 7-1 (Donadei, S., et al., 2020, p. 7-4). Note: Please include
+    all bgr data sources when using the data.'
+  publicationYear: null
+  path: https://dx.doi.org/10.5281/zenodo.4896526
+  sourceLicenses:
+  - name: geonutzv-de-2013-03-19
+    title: Verordnung zur Festlegung der Nutzungsbestimmungen für die Bereitstellung
+      von Geodaten des Bundes
+    path: https://www.gesetze-im-internet.de/geonutzv/
+    instruction: Geodaten und Geodatendienste, einschließlich zugehöriger Metadaten,
+      werden für alle derzeit bekannten sowie für alle zukünftig bekannten Zwecke
+      kommerzieller und nicht kommerzieller Nutzung geldleistungsfrei zur Verfügung
+      gestellt, soweit durch besondere Rechtsvorschrift nichts anderes bestimmt ist
+      oder vertragliche oder gesetzliche Rechte Dritter dem nicht entgegenstehen.
+    attribution: © BGR, Hannover, 2021
+    copyrightStatement: null
+licenses:
+- name: ODbL-1.0
+  title: Open Data Commons Open Database License 1.0
+  path: https://opendatacommons.org/licenses/odbl/1.0/index.html
+  instruction: 'You are free: To Share, To Create, To Adapt; As long as you: Attribute,
+    Share-Alike, Keep open!'
+  attribution: © eGon development team
+  copyrightStatement: null
+contributors:
+- title: Ilka Cußmann
+  path: null
+  organization: null
+  roles:
+  - ''
+  date: null
+  object: null
+  comment: Added electricity substations
+- title: Clara Büttner
+  path: null
+  organization: null
+  roles:
+  - ''
+  date: null
+  object: null
+  comment: Added heat buses
+- title: Katharina Esterl
+  path: null
+  organization: null
+  roles:
+  - ''
+  date: null
+  object: null
+  comment: Added DSM buses
+- title: Amélia Nadal
+  path: null
+  organization: null
+  roles:
+  - ''
+  date: null
+  object: null
+  comment: Added CH4 sector buses
+- title: Francesco Witte
+  path: null
+  organization: null
+  roles:
+  - ''
+  date: null
+  object: null
+  comment: Added H2 sector buses
+- title: eGon-data metadata migration
+  path: https://github.com/openego/eGon-data
+  roles:
+  - dataCurator
+  organization: null
+  date: '2026-10-20'
+  object: metadata
+  comment: Migrated from the OEMetadata v1.4 table comment of a full eGon-data run
+    to OEMetadata v2 with OMI.
+type: Table
+format: PostgreSQL
+encoding: UTF-8
+schema:
+  fields:
+  - name: ''
+    description: Unique name
+    type: int
+    nullable: true
+    unit: none
+    isAbout: []
+    valueReference: []
+    attribute: bus_id
+    default: n/a
+    status: Input (required)
+  - name: ''
+    description: Nominal voltage
+    type: float
+    nullable: true
+    unit: kV
+    isAbout: []
+    valueReference: []
+    attribute: v_nom
+    default: '1'
+    status: Input (optional)
+  - name: ''
+    description: Placeholder for bus type. Not yet implemented.
+    type: string
+    nullable: true
+    unit: none
+    isAbout: []
+    valueReference: []
+    attribute: type
+    default: n/a
+    status: Input (optional)
+  - name: ''
+    description: Position (e.g. longitude); the Spatial Reference System Identifier
+      (SRID) is set in network.srid.
+    type: float
+    nullable: true
+    unit: none
+    isAbout: []
+    valueReference: []
+    attribute: x
+    default: '0'
+    status: Input (optional)
+  - name: ''
+    description: Position (e.g. latitude); the Spatial Reference System Identifier
+      (SRID) is set in network.srid.
+    type: float
+    nullable: true
+    unit: none
+    isAbout: []
+    valueReference: []
+    attribute: y
+    default: '0'
+    status: Input (optional)
+  - name: ''
+    description: 'Energy carrier: can be "AC" or "DC" for electrical buses, or "heat"
+      or "gas".'
+    type: string
+    nullable: true
+    unit: none
+    isAbout: []
+    valueReference: []
+    attribute: carrier
+    default: AC
+    status: Input (optional)
+  - name: ''
+    description: Unit of the bus’ carrier if the implicitly assumed unit ("MW") is
+      inappropriate (e.g. "t/h", "MWh_th/h"). Only descriptive. Does not influence
+      any PyPSA functions.
+    type: string
+    nullable: true
+    unit: none
+    isAbout: []
+    valueReference: []
+    attribute: unit
+    default: n/a
+    status: Input (optional)
+  - name: ''
+    description: Voltage magnitude set point, per unit of v_nom.
+    type: static or series
+    nullable: true
+    unit: per unit
+    isAbout: []
+    valueReference: []
+    attribute: v_mag_pu_set
+    default: '1'
+    status: Input (optional)
+  - name: ''
+    description: Minimum desired voltage, per unit of v_nom. This is a placeholder
+      attribute and is not currently used by any PyPSA functions.
+    type: float
+    nullable: true
+    unit: per unit
+    isAbout: []
+    valueReference: []
+    attribute: v_mag_pu_min
+    default: '0'
+    status: Input (optional)
+  - name: ''
+    description: Maximum desired voltage, per unit of v_nom.  This is a placeholder
+      attribute and is not currently used by any PyPSA functions.
+    type: float
+    nullable: true
+    unit: per unit
+    isAbout: []
+    valueReference: []
+    attribute: v_mag_pu_max
+    default: inf
+    status: Input (optional)
+  - name: ''
+    description: Name of the eGon scenario
+    type: string
+    nullable: true
+    unit: n/a
+    isAbout: []
+    valueReference: []
+    attribute: scn_name
+    default: n/a
+    status: Input
+  primaryKey:
+  - scn_name
+  - bus_id
+  foreignKeys: []
+dialect:
+  delimiter: ''
+  decimalSeparator: ''
+review:
+  path: ''
+  badge: ''

@@ -1,0 +1,268 @@
+name: grid.egon_etrago_store_timeseries
+'@id': null
+title: Store
+path: WILL_BE_SET_AT_PUBLICATION
+description: TODO
+languages:
+- en-EN
+subject:
+- name: ''
+  '@id': null
+publicationDate: '2026-10-02'
+embargoPeriod:
+  start: ''
+  end: ''
+  isActive: false
+spatial:
+  location:
+    address: null
+    '@id': null
+    latitude: ''
+    longitude: ''
+  extent:
+    name: Germany
+    '@id': null
+    resolutionValue: ''
+    resolutionUnit: ''
+    boundingBox:
+    - 0
+    - 0
+    - 0
+    - 0
+    crs: ''
+temporal:
+  referenceDate: ''
+  timeseries:
+  - start: ''
+    end: ''
+    resolutionValue: ''
+    resolutionUnit: ''
+    alignment: ''
+    aggregationType: ''
+sources:
+- title: null
+  authors: []
+  description: This script compiles assumptions on energy system technologies (such
+    as costs, efficiencies, lifetimes, etc.) for chosen years (e.g. [2020, 2030, 2050])
+    from a variety of sources into CSV files to be read by energy system modelling
+    software. The merged outputs have standardized cost years, technology names, units
+    and source information.
+  publicationYear: null
+  path: https://github.com/PyPSA/technology-data/tree/v0.3.0
+  sourceLicenses:
+  - name: AGPL-3.0 License
+    title: GNU Affero General Public License v3.0
+    path: https://www.gnu.org/licenses/agpl-3.0.de.html
+    instruction: Permissions of this strongest copyleft license areconditioned on
+      making available complete source code of licensed works and modifications, which
+      include larger works using a licensedwork, under the same license. Copyright
+      and license notices must bepreserved. Contributors provide an express grant
+      of patent rights.When a modified version is used to provide a service over a
+      network,the complete source code of the modified version must be made available.
+    attribution: © Marta Victoria (Aarhus University), Kun Zhu (Aarhus University),
+      Elisabeth Zeyen (TUB), Tom Brown (TUB)
+    copyrightStatement: null
+- title: Assessment of the regionalised demand response potential in Germany using
+    an open source tool and dataset
+  authors: []
+  description: With the expansion of renewable energies in Germany, imminent grid
+    congestion events occur more often. One approach for avoiding curtailment of renewable
+    energies is to cover excess feed-in by demand response. As curtailment is often
+    a local phenomenon, in this work we determine the regional demand response potential
+    for the 401 German administrative districts with a temporal resolution of 15 min,
+    including technical, socio-technical and economic restrictions.
+  publicationYear: null
+  path: https://doi.org/10.1016/j.adapen.2020.100001
+  sourceLicenses:
+  - name: CC-BY-4.0
+    title: Creative Commons Attribution 4.0 International
+    path: https://creativecommons.org/licenses/by/4.0/legalcode
+    instruction: 'You are free: To Share, To Create, To Adapt; As long as you: Attribute.'
+    attribution: © 2020 German Aerospace Center (DLR), Institute of Networked Energy
+      Systems.
+    copyrightStatement: null
+- title: 'Supplementary material to the masters thesis: NUTS-3 Regionalization of
+    Industrial Load Shifting Potential in Germany using a Time-Resolved Model'
+  authors: []
+  description: Supplementary material to the named masters thesis, containing data
+    on industrial processes for the estimation of NUTS-3 load shifting potential of
+    suitable electrically powered industrial processes (cement milling, mechanical
+    pulping, paper production, air separation).
+  publicationYear: null
+  path: https://zenodo.org/record/3613767
+  sourceLicenses:
+  - name: CC-BY-4.0
+    title: Creative Commons Attribution 4.0 International
+    path: https://creativecommons.org/licenses/by/4.0/legalcode
+    instruction: 'You are free: To Share, To Create, To Adapt; As long as you: Attribute.'
+    attribution: © 2019 Danielle Schmidt
+    copyrightStatement: null
+- title: null
+  authors: []
+  description: Georeferenced industrial sites of energy-intensive industry sectors
+    in EU28
+  publicationYear: null
+  path: https://gitlab.com/hotmaps/industrial_sites/industrial_sites_Industrial_Database
+  sourceLicenses:
+  - name: CC-BY-4.0
+    title: Creative Commons Attribution 4.0 International
+    path: https://creativecommons.org/licenses/by/4.0/legalcode
+    instruction: 'You are free: To Share, To Create, To Adapt; As long as you: Attribute.'
+    attribution: '© 2016-2018: Pia Manz, Tobias Fleiter'
+    copyrightStatement: null
+- title: OpenStreetMap Data Extracts (Geofabrik)
+  authors: []
+  description: Full data extract of OpenStreetMap data for defined spatial extent
+    at "referenceDate"
+  publicationYear: null
+  path: https://download.geofabrik.de/europe/germany-210101.osm.pbf
+  sourceLicenses:
+  - name: ODbL-1.0
+    title: Open Data Commons Open Database License 1.0
+    path: https://opendatacommons.org/licenses/odbl/1.0/index.html
+    instruction: 'You are free: To Share, To Create, To Adapt; As long as you: Attribute,
+      Share-Alike, Keep open!'
+    attribution: © OpenStreetMap contributors
+    copyrightStatement: null
+- title: DemandRegio
+  authors: []
+  description: Harmonisierung und Entwicklung von Verfahren zur regionalen und zeitlichen
+    Auflösung von Energienachfragen
+  publicationYear: null
+  path: https://doi.org/10.34805/ffe-119-20
+  sourceLicenses:
+  - name: CC-BY-4.0
+    title: Creative Commons Attribution 4.0 International
+    path: https://creativecommons.org/licenses/by/4.0/legalcode
+    instruction: 'You are free: To Share, To Create, To Adapt; As long as you: Attribute.'
+    attribution: © FZJ, TUB, FfE
+    copyrightStatement: null
+licenses:
+- name: ODbL-1.0
+  title: Open Data Commons Open Database License 1.0
+  path: https://opendatacommons.org/licenses/odbl/1.0/index.html
+  instruction: 'You are free: To Share, To Create, To Adapt; As long as you: Attribute,
+    Share-Alike, Keep open!'
+  attribution: © eGon development team
+  copyrightStatement: null
+contributors:
+- title: Katharina Esterl
+  path: null
+  organization: null
+  roles:
+  - ''
+  date: null
+  object: null
+  comment: Add DSM storage
+- title: Jonathan Amme
+  path: null
+  organization: null
+  roles:
+  - ''
+  date: null
+  object: null
+  comment: Add e-mobility storage
+- title: eGon-data metadata migration
+  path: https://github.com/openego/eGon-data
+  roles:
+  - dataCurator
+  organization: null
+  date: '2026-10-20'
+  object: metadata
+  comment: Migrated from the OEMetadata v1.4 table comment of a full eGon-data run
+    to OEMetadata v2 with OMI.
+type: Table
+format: PostgreSQL
+encoding: UTF-8
+schema:
+  fields:
+  - name: ''
+    description: Minimal value of e relative to e_nom for the OPF.
+    type: static or series
+    nullable: true
+    unit: per unit
+    isAbout: []
+    valueReference: []
+    attribute: e_min_pu
+    default: '0'
+    status: Input (optional)
+  - name: ''
+    description: Maximal value of e relative to e_nom for the OPF.
+    type: static or series
+    nullable: true
+    unit: per unit
+    isAbout: []
+    valueReference: []
+    attribute: e_max_pu
+    default: '1'
+    status: Input (optional)
+  - name: ''
+    description: active power set point (for PF)
+    type: static or series
+    nullable: true
+    unit: MW
+    isAbout: []
+    valueReference: []
+    attribute: p_set
+    default: '0'
+    status: Input (optional)
+  - name: ''
+    description: reactive power set point (for PF)
+    type: static or series
+    nullable: true
+    unit: MVar
+    isAbout: []
+    valueReference: []
+    attribute: q_set
+    default: '0'
+    status: Input (optional)
+  - name: ''
+    description: Marginal cost of production of 1 MWh.
+    type: static or series
+    nullable: true
+    unit: currency/MWh
+    isAbout: []
+    valueReference: []
+    attribute: marginal_cost
+    default: '0'
+    status: Input (optional)
+  - name: ''
+    description: Unique identifyier of temporal index
+    type: integer
+    nullable: true
+    unit: n/a
+    isAbout: []
+    valueReference: []
+    attribute: temp_id
+    default: n/a
+    status: Input
+  - name: ''
+    description: null
+    type: int
+    nullable: true
+    unit: none
+    isAbout: []
+    valueReference: []
+    attribute: store_id
+    default: n/a
+    status: null
+  - name: ''
+    description: Name of the eGon scenario
+    type: string
+    nullable: true
+    unit: n/a
+    isAbout: []
+    valueReference: []
+    attribute: scn_name
+    default: n/a
+    status: Input
+  primaryKey:
+  - scn_name
+  - store_id
+  foreignKeys: []
+dialect:
+  delimiter: ''
+  decimalSeparator: ''
+review:
+  path: ''
+  badge: ''

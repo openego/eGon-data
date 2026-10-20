@@ -1,0 +1,325 @@
+name: grid.egon_etrago_link
+'@id': null
+title: Link
+path: WILL_BE_SET_AT_PUBLICATION
+description: TODO
+languages:
+- en-EN
+subject:
+- name: ''
+  '@id': null
+publicationDate: '2026-10-02'
+embargoPeriod:
+  start: ''
+  end: ''
+  isActive: false
+spatial:
+  location:
+    address: null
+    '@id': null
+    latitude: ''
+    longitude: ''
+  extent:
+    name: Germany
+    '@id': null
+    resolutionValue: ''
+    resolutionUnit: ''
+    boundingBox:
+    - 0
+    - 0
+    - 0
+    - 0
+    crs: ''
+temporal:
+  referenceDate: ''
+  timeseries:
+  - start: ''
+    end: ''
+    resolutionValue: ''
+    resolutionUnit: ''
+    alignment: ''
+    aggregationType: ''
+sources:
+- title: ''
+  authors:
+  - ''
+  description: ''
+  publicationYear: ''
+  path: ''
+  sourceLicenses:
+  - name: ''
+    title: ''
+    path: ''
+    instruction: ''
+    attribution: ''
+    copyrightStatement: ''
+licenses:
+- name: ODbL-1.0
+  title: Open Data Commons Open Database License 1.0
+  path: https://opendatacommons.org/licenses/odbl/1.0/index.html
+  instruction: 'You are free: To Share, To Create, To Adapt; As long as you: Attribute,
+    Share-Alike, Keep open!'
+  attribution: © eGon development team
+  copyrightStatement: null
+contributors:
+- title: ''
+  path: ''
+  organization: ''
+  roles:
+  - ''
+  date: ''
+  object: ''
+  comment: ''
+- title: eGon-data metadata migration
+  path: https://github.com/openego/eGon-data
+  roles:
+  - dataCurator
+  organization: null
+  date: '2026-10-20'
+  object: metadata
+  comment: Migrated from the OEMetadata v1.4 table comment of a full eGon-data run
+    to OEMetadata v2 with OMI.
+type: Table
+format: PostgreSQL
+encoding: UTF-8
+schema:
+  fields:
+  - name: ''
+    description: Unique name
+    type: int
+    nullable: true
+    unit: none
+    isAbout: []
+    valueReference: []
+    attribute: link_id
+    default: n/a
+    status: Input (required)
+  - name: ''
+    description: Name of first bus to which link is attached.
+    type: string
+    nullable: true
+    unit: none
+    isAbout: []
+    valueReference: []
+    attribute: bus0
+    default: n/a
+    status: Input (required)
+  - name: ''
+    description: Name of second bus to which link is attached.
+    type: string
+    nullable: true
+    unit: none
+    isAbout: []
+    valueReference: []
+    attribute: bus1
+    default: n/a
+    status: Input (required)
+  - name: ''
+    description: Placeholder for link type. Not yet implemented.
+    type: string
+    nullable: true
+    unit: none
+    isAbout: []
+    valueReference: []
+    attribute: type
+    default: n/a
+    status: Input (optional)
+  - name: ''
+    description: 'Energy carrier transported by the link: can be "DC" for electrical
+      HVDC links, or "heat" or "gas" etc.'
+    type: string
+    nullable: true
+    unit: none
+    isAbout: []
+    valueReference: []
+    attribute: carrier
+    default: n/a
+    status: Input (optional)
+  - name: ''
+    description: Efficiency of power transfer from bus0 to bus1. (Can be time-dependent
+      to represent temperature-dependent Coefficient of Performance of a heat pump
+      from an electric to a heat bus.)
+    type: static or series
+    nullable: true
+    unit: per unit
+    isAbout: []
+    valueReference: []
+    attribute: efficiency
+    default: '1'
+    status: Input (optional)
+  - name: ''
+    description: build year
+    type: int
+    nullable: true
+    unit: year
+    isAbout: []
+    valueReference: []
+    attribute: build_year
+    default: '0'
+    status: Input (optional)
+  - name: ''
+    description: lifetime
+    type: float
+    nullable: true
+    unit: years
+    isAbout: []
+    valueReference: []
+    attribute: lifetime
+    default: inf
+    status: Input (optional)
+  - name: ''
+    description: Limit of active power which can pass through link.
+    type: float
+    nullable: true
+    unit: MW
+    isAbout: []
+    valueReference: []
+    attribute: p_nom
+    default: '0'
+    status: Input (optional)
+  - name: ''
+    description: Switch to allow capacity p_nom to be extended in OPF.
+    type: boolean
+    nullable: true
+    unit: none
+    isAbout: []
+    valueReference: []
+    attribute: p_nom_extendable
+    default: 'False'
+    status: Input (optional)
+  - name: ''
+    description: If p_nom is extendable in OPF, set its minimum value.
+    type: float
+    nullable: true
+    unit: MW
+    isAbout: []
+    valueReference: []
+    attribute: p_nom_min
+    default: '0'
+    status: Input (optional)
+  - name: ''
+    description: If p_nom is extendable in OPF, set its maximum value (e.g. limited
+      by potential).
+    type: float
+    nullable: true
+    unit: MW
+    isAbout: []
+    valueReference: []
+    attribute: p_nom_max
+    default: inf
+    status: Input (optional)
+  - name: ''
+    description: The dispatch set point for p0 of the link in PF.
+    type: static or series
+    nullable: true
+    unit: MW
+    isAbout: []
+    valueReference: []
+    attribute: p_set
+    default: '0'
+    status: Input (optional)
+  - name: ''
+    description: Minimal dispatch (can also be negative) per unit of p_nom for the
+      link in OPF.
+    type: static or series
+    nullable: true
+    unit: per unit of p_nom
+    isAbout: []
+    valueReference: []
+    attribute: p_min_pu
+    default: '0'
+    status: Input (optional)
+  - name: ''
+    description: Maximal dispatch (can also be negative) per unit of p_nom for the
+      link in OPF.
+    type: static or series
+    nullable: true
+    unit: per unit of p_nom
+    isAbout: []
+    valueReference: []
+    attribute: p_max_pu
+    default: '1'
+    status: Input (optional)
+  - name: ''
+    description: Capital cost of extending p_nom by 1 MW.
+    type: float
+    nullable: true
+    unit: currency/MW
+    isAbout: []
+    valueReference: []
+    attribute: capital_cost
+    default: '0'
+    status: Input (optional)
+  - name: ''
+    description: 'Marginal cost of transfering 1 MWh (before efficiency losses) from
+      bus0 to bus1. NB: marginal cost only makes sense in OPF if p_max_pu >= 0.'
+    type: static or series
+    nullable: true
+    unit: currency/MWh
+    isAbout: []
+    valueReference: []
+    attribute: marginal_cost
+    default: '0'
+    status: Input (optional)
+  - name: ''
+    description: Length of line, useful for calculating the capital cost.
+    type: float
+    nullable: true
+    unit: km
+    isAbout: []
+    valueReference: []
+    attribute: length
+    default: '0'
+    status: Input (optional)
+  - name: ''
+    description: Terrain factor for increasing capital cost.
+    type: float
+    nullable: true
+    unit: per unit
+    isAbout: []
+    valueReference: []
+    attribute: terrain_factor
+    default: '1'
+    status: Input (optional)
+  - name: ''
+    description: Maximum active power increase from one snapshot to the next, per
+      unit of the nominal power. Ignored if NaN.
+    type: float
+    nullable: true
+    unit: per unit
+    isAbout: []
+    valueReference: []
+    attribute: ramp_limit_up
+    default: n/a
+    status: Input (optional)
+  - name: ''
+    description: Maximum active power decrease from one snapshot to the next, per
+      unit of the nominal power. Ignored if NaN.
+    type: float
+    nullable: true
+    unit: per unit
+    isAbout: []
+    valueReference: []
+    attribute: ramp_limit_down
+    default: n/a
+    status: Input (optional)
+  - name: ''
+    description: Name of the eGon scenario
+    type: string
+    nullable: true
+    unit: n/a
+    isAbout: []
+    valueReference: []
+    attribute: scn_name
+    default: n/a
+    status: Input
+  primaryKey:
+  - scn_name
+  - link_id
+  foreignKeys: []
+dialect:
+  delimiter: ''
+  decimalSeparator: ''
+review:
+  path: ''
+  badge: ''

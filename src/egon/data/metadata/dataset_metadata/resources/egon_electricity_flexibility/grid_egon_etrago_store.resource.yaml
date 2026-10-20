@@ -1,0 +1,574 @@
+name: grid.egon_etrago_store
+'@id': null
+title: Store
+path: WILL_BE_SET_AT_PUBLICATION
+description: TODO
+languages:
+- en-EN
+subject:
+- name: ''
+  '@id': null
+publicationDate: '2026-10-02'
+embargoPeriod:
+  start: ''
+  end: ''
+  isActive: false
+spatial:
+  location:
+    address: null
+    '@id': null
+    latitude: ''
+    longitude: ''
+  extent:
+    name: Germany
+    '@id': null
+    resolutionValue: ''
+    resolutionUnit: ''
+    boundingBox:
+    - 0
+    - 0
+    - 0
+    - 0
+    crs: ''
+temporal:
+  referenceDate: ''
+  timeseries:
+  - start: ''
+    end: ''
+    resolutionValue: ''
+    resolutionUnit: ''
+    alignment: ''
+    aggregationType: ''
+sources:
+- title: Salt structures in Northern Germany
+  authors: []
+  description: 'The application "Information System Salt Structures" provides information
+    about the areal distribution of salt structures (stocks and pillows) in Northern
+    Germany. With general structural describing information, such as depth, secondary
+    thickness, types of use or state of exploration, queries can be conducted. Contours
+    of the salt structures can be displayed at horizontal cross-sections at four different
+    depths up to a maximum depth of 2000 m below NN. A data sheet with information
+    and further reading is provided for every single salt structure. Taking into account
+    the fact that this work was undertaken at a scale for providing an overview and
+    not for investigation of single structures, the scale of display is limited to
+    a minimum of 1:300.000. This web application is the product of a BMWi-funded research
+    project "InSpEE" running from the year 2012 to 2015. The acronym stands for "Information
+    system salt structures: planning basis, selection criteria and estimation of the
+    potential for the construction of salt caverns for the storage of renewable energies
+    (hydrogen and compressed air)".'
+  publicationYear: null
+  path: https://produktcenter.bgr.de/terraCatalog/DetailResult.do?fileIdentifier=338136ea-261a-4569-a2bf-92999d09bad2
+  sourceLicenses:
+  - name: geonutzv-de-2013-03-19
+    title: Verordnung zur Festlegung der Nutzungsbestimmungen für die Bereitstellung
+      von Geodaten des Bundes
+    path: https://www.gesetze-im-internet.de/geonutzv/
+    instruction: Geodaten und Geodatendienste, einschließlich zugehöriger Metadaten,
+      werden für alle derzeit bekannten sowie für alle zukünftig bekannten Zwecke
+      kommerzieller und nicht kommerzieller Nutzung geldleistungsfrei zur Verfügung
+      gestellt, soweit durch besondere Rechtsvorschrift nichts anderes bestimmt ist
+      oder vertragliche oder gesetzliche Rechte Dritter dem nicht entgegenstehen.
+    attribution: © BGR, Hannover, 2015
+    copyrightStatement: null
+- title: Flat layered salts in Germany
+  authors: []
+  description: 'Which salt formations are suitable for storing hydrogen or compressed
+    air? In the InSpEE-DS research project, scientists developed requirements and
+    criteria for the assessment of suitable sites even if their exploration is still
+    at an early stage and there is little knowledge of the salinaries structures.
+    Scientists at DEEP.KBB GmbH in Hanover, worked together with their project partners
+    at the Federal Institute for Geosciences and Natural Resources and the Leibniz
+    University Hanover, Institute for Geotechnics Hanover, to develop the planning
+    basis for the site selection and for the construction of storage caverns in flat
+    layered salt and multiple or double saliniferous formations. Such caverns could
+    store renewable energy in the form of hydrogen or compressed air. While the previous
+    project InSpEE was limited to salt formations of great thickness in Northern Germany,
+    salt horizons of different ages have now been examined all over Germany. To estimate
+    the potential, depth contour maps of the top and the base as well as thickness
+    maps of the respective stratigraphic units and reference profiles were developed.
+    Information on compressed air and hydrogen storage potential were given for the
+    identified areas and for the individual federal states. The web service "Information
+    system for flat layered salt" gives access to this data. The scale of display
+    is limited to a minimum of 1:300.000. This geographic information is product of
+    a BMWi-funded research project "InSpEE-DS" running from the year 2015 to 2019.
+    The acronym stands for "Information system salt: planning basis, selection criteria
+    and estimation of the potential for the construction of salt caverns for the storage
+    of renewable energies (hydrogen and compressed air) - double saline and flat salt
+    layers".'
+  publicationYear: null
+  path: https://produktcenter.bgr.de/terraCatalog/DetailResult.do?fileIdentifier=630430b8-4025-4d6f-9a62-025b53bc8b3d
+  sourceLicenses:
+  - name: geonutzv-de-2013-03-19
+    title: Verordnung zur Festlegung der Nutzungsbestimmungen für die Bereitstellung
+      von Geodaten des Bundes
+    path: https://www.gesetze-im-internet.de/geonutzv/
+    instruction: Geodaten und Geodatendienste, einschließlich zugehöriger Metadaten,
+      werden für alle derzeit bekannten sowie für alle zukünftig bekannten Zwecke
+      kommerzieller und nicht kommerzieller Nutzung geldleistungsfrei zur Verfügung
+      gestellt, soweit durch besondere Rechtsvorschrift nichts anderes bestimmt ist
+      oder vertragliche oder gesetzliche Rechte Dritter dem nicht entgegenstehen.
+    attribution: © BGR, Hannover, 2021
+    copyrightStatement: null
+- title: 'Informationssystem Salz: Planungsgrundlagen, Auswahlkriterien und Potenzialabschätzung
+    für die Errichtung von Salzkavernen zur Speicherung von Erneuerbaren Energien
+    (Wasserstoff und Druckluft) – Doppelsalinare und flach lagernde Salzschichten.
+    Teilprojekt Bewertungskriterien und Potenzialabschätzung'
+  authors: []
+  description: 'Shapefiles corresponding to the data provided in figure 7-1 (Donadei,
+    S., et al., 2020, p. 7-5). The energy storage potential data are provided per
+    federal state in table 7-1 (Donadei, S., et al., 2020, p. 7-4). Note: Please include
+    all bgr data sources when using the data.'
+  publicationYear: null
+  path: https://dx.doi.org/10.5281/zenodo.4896526
+  sourceLicenses:
+  - name: geonutzv-de-2013-03-19
+    title: Verordnung zur Festlegung der Nutzungsbestimmungen für die Bereitstellung
+      von Geodaten des Bundes
+    path: https://www.gesetze-im-internet.de/geonutzv/
+    instruction: Geodaten und Geodatendienste, einschließlich zugehöriger Metadaten,
+      werden für alle derzeit bekannten sowie für alle zukünftig bekannten Zwecke
+      kommerzieller und nicht kommerzieller Nutzung geldleistungsfrei zur Verfügung
+      gestellt, soweit durch besondere Rechtsvorschrift nichts anderes bestimmt ist
+      oder vertragliche oder gesetzliche Rechte Dritter dem nicht entgegenstehen.
+    attribution: © BGR, Hannover, 2021
+    copyrightStatement: null
+- title: 'Informationssystem Salz: Planungsgrundlagen, Auswahlkriterien und Potenzialabschätzung
+    für die Errichtung von Salzkavernen zur Speicherung von Erneuerbaren Energien
+    (Wasserstoff und Druckluft) – Doppelsalinare und flach lagernde Salzschichten.
+    Teilprojekt Bewertungskriterien und Potenzialabschätzung'
+  authors: []
+  description: The report includes availability of saltstructures for energy storage
+    and energy storage potential accumulated per federal state in Germany.
+  publicationYear: null
+  path: https://www.bgr.bund.de/DE/Themen/Nutzung_tieferer_Untergrund_CO2Speicherung/Downloads/InSpeeDS_TP_Bewertungskriterien.pdf?__blob=publicationFile&v=3
+  sourceLicenses:
+  - name: geonutzv-de-2013-03-19
+    title: Verordnung zur Festlegung der Nutzungsbestimmungen für die Bereitstellung
+      von Geodaten des Bundes
+    path: https://www.gesetze-im-internet.de/geonutzv/
+    instruction: Geodaten und Geodatendienste, einschließlich zugehöriger Metadaten,
+      werden für alle derzeit bekannten sowie für alle zukünftig bekannten Zwecke
+      kommerzieller und nicht kommerzieller Nutzung geldleistungsfrei zur Verfügung
+      gestellt, soweit durch besondere Rechtsvorschrift nichts anderes bestimmt ist
+      oder vertragliche oder gesetzliche Rechte Dritter dem nicht entgegenstehen.
+    attribution: © BGR, Hannover, 2021
+    copyrightStatement: null
+- title: SciGRID_gas IGGIELGN
+  authors: []
+  description: The SciGRID_gas dataset represents the European gas transport network
+    (pressure levels of 20 bars and higher) including the geo-referenced transport
+    pipelines, compressor stations, LNG terminals, storage, production sites, gas
+    power plants, border points, and demand time series.
+  publicationYear: null
+  path: https://dx.doi.org/10.5281/zenodo.4896526
+  sourceLicenses:
+  - name: CC-BY-4.0
+    title: Creative Commons Attribution 4.0 International
+    path: https://creativecommons.org/licenses/by/4.0/legalcode
+    instruction: 'You are free: To Share, To Create, To Adapt; As long as you: Attribute.'
+    attribution: Jan Diettrich; Adam Pluta; Wided Medjroubi (DLR-VE)
+    copyrightStatement: null
+- title: null
+  authors: []
+  description: This script compiles assumptions on energy system technologies (such
+    as costs, efficiencies, lifetimes, etc.) for chosen years (e.g. [2020, 2030, 2050])
+    from a variety of sources into CSV files to be read by energy system modelling
+    software. The merged outputs have standardized cost years, technology names, units
+    and source information.
+  publicationYear: null
+  path: https://github.com/PyPSA/technology-data/tree/v0.3.0
+  sourceLicenses:
+  - name: AGPL-3.0 License
+    title: GNU Affero General Public License v3.0
+    path: https://www.gnu.org/licenses/agpl-3.0.de.html
+    instruction: Permissions of this strongest copyleft license areconditioned on
+      making available complete source code of licensed works and modifications, which
+      include larger works using a licensedwork, under the same license. Copyright
+      and license notices must bepreserved. Contributors provide an express grant
+      of patent rights.When a modified version is used to provide a service over a
+      network,the complete source code of the modified version must be made available.
+    attribution: © Marta Victoria (Aarhus University), Kun Zhu (Aarhus University),
+      Elisabeth Zeyen (TUB), Tom Brown (TUB)
+    copyrightStatement: null
+- title: Assessment of the regionalised demand response potential in Germany using
+    an open source tool and dataset
+  authors: []
+  description: With the expansion of renewable energies in Germany, imminent grid
+    congestion events occur more often. One approach for avoiding curtailment of renewable
+    energies is to cover excess feed-in by demand response. As curtailment is often
+    a local phenomenon, in this work we determine the regional demand response potential
+    for the 401 German administrative districts with a temporal resolution of 15 min,
+    including technical, socio-technical and economic restrictions.
+  publicationYear: null
+  path: https://doi.org/10.1016/j.adapen.2020.100001
+  sourceLicenses:
+  - name: CC-BY-4.0
+    title: Creative Commons Attribution 4.0 International
+    path: https://creativecommons.org/licenses/by/4.0/legalcode
+    instruction: 'You are free: To Share, To Create, To Adapt; As long as you: Attribute.'
+    attribution: © 2020 German Aerospace Center (DLR), Institute of Networked Energy
+      Systems.
+    copyrightStatement: null
+- title: 'Supplementary material to the masters thesis: NUTS-3 Regionalization of
+    Industrial Load Shifting Potential in Germany using a Time-Resolved Model'
+  authors: []
+  description: Supplementary material to the named masters thesis, containing data
+    on industrial processes for the estimation of NUTS-3 load shifting potential of
+    suitable electrically powered industrial processes (cement milling, mechanical
+    pulping, paper production, air separation).
+  publicationYear: null
+  path: https://zenodo.org/record/3613767
+  sourceLicenses:
+  - name: CC-BY-4.0
+    title: Creative Commons Attribution 4.0 International
+    path: https://creativecommons.org/licenses/by/4.0/legalcode
+    instruction: 'You are free: To Share, To Create, To Adapt; As long as you: Attribute.'
+    attribution: © 2019 Danielle Schmidt
+    copyrightStatement: null
+- title: null
+  authors: []
+  description: Georeferenced industrial sites of energy-intensive industry sectors
+    in EU28
+  publicationYear: null
+  path: https://gitlab.com/hotmaps/industrial_sites/industrial_sites_Industrial_Database
+  sourceLicenses:
+  - name: CC-BY-4.0
+    title: Creative Commons Attribution 4.0 International
+    path: https://creativecommons.org/licenses/by/4.0/legalcode
+    instruction: 'You are free: To Share, To Create, To Adapt; As long as you: Attribute.'
+    attribution: '© 2016-2018: Pia Manz, Tobias Fleiter'
+    copyrightStatement: null
+- title: OpenStreetMap Data Extracts (Geofabrik)
+  authors: []
+  description: Full data extract of OpenStreetMap data for defined spatial extent
+    at "referenceDate"
+  publicationYear: null
+  path: https://download.geofabrik.de/europe/germany-210101.osm.pbf
+  sourceLicenses:
+  - name: ODbL-1.0
+    title: Open Data Commons Open Database License 1.0
+    path: https://opendatacommons.org/licenses/odbl/1.0/index.html
+    instruction: 'You are free: To Share, To Create, To Adapt; As long as you: Attribute,
+      Share-Alike, Keep open!'
+    attribution: © OpenStreetMap contributors
+    copyrightStatement: null
+- title: DemandRegio
+  authors: []
+  description: Harmonisierung und Entwicklung von Verfahren zur regionalen und zeitlichen
+    Auflösung von Energienachfragen
+  publicationYear: null
+  path: https://doi.org/10.34805/ffe-119-20
+  sourceLicenses:
+  - name: CC-BY-4.0
+    title: Creative Commons Attribution 4.0 International
+    path: https://creativecommons.org/licenses/by/4.0/legalcode
+    instruction: 'You are free: To Share, To Create, To Adapt; As long as you: Attribute.'
+    attribution: © FZJ, TUB, FfE
+    copyrightStatement: null
+licenses:
+- name: ODbL-1.0
+  title: Open Data Commons Open Database License 1.0
+  path: https://opendatacommons.org/licenses/odbl/1.0/index.html
+  instruction: 'You are free: To Share, To Create, To Adapt; As long as you: Attribute,
+    Share-Alike, Keep open!'
+  attribution: © eGon development team
+  copyrightStatement: null
+contributors:
+- title: Amélia Nadal
+  path: null
+  organization: null
+  roles:
+  - ''
+  date: null
+  object: null
+  comment: Add H2 storage
+- title: Francesco Witte
+  path: null
+  organization: null
+  roles:
+  - ''
+  date: null
+  object: null
+  comment: Add CH4 storage
+- title: Katharina Esterl
+  path: null
+  organization: null
+  roles:
+  - ''
+  date: null
+  object: null
+  comment: Add DSM storage
+- title: Clara Büttner
+  path: null
+  organization: null
+  roles:
+  - ''
+  date: null
+  object: null
+  comment: Add heat storage
+- title: Jonathan Amme
+  path: null
+  organization: null
+  roles:
+  - ''
+  date: null
+  object: null
+  comment: Add e-mobility storage
+- title: eGon-data metadata migration
+  path: https://github.com/openego/eGon-data
+  roles:
+  - dataCurator
+  organization: null
+  date: '2026-10-20'
+  object: metadata
+  comment: Migrated from the OEMetadata v1.4 table comment of a full eGon-data run
+    to OEMetadata v2 with OMI.
+type: Table
+format: PostgreSQL
+encoding: UTF-8
+schema:
+  fields:
+  - name: ''
+    description: Unique name
+    type: int
+    nullable: true
+    unit: none
+    isAbout: []
+    valueReference: []
+    attribute: store_id
+    default: n/a
+    status: Input (required)
+  - name: ''
+    description: Name of bus to which store is attached.
+    type: string
+    nullable: true
+    unit: none
+    isAbout: []
+    valueReference: []
+    attribute: bus
+    default: n/a
+    status: Input (required)
+  - name: ''
+    description: Placeholder for store type. Not yet implemented.
+    type: string
+    nullable: true
+    unit: none
+    isAbout: []
+    valueReference: []
+    attribute: type
+    default: n/a
+    status: Input (optional)
+  - name: ''
+    description: Energy carrier of the Store, e.g. "heat" or "gas".
+    type: string
+    nullable: true
+    unit: none
+    isAbout: []
+    valueReference: []
+    attribute: carrier
+    default: n/a
+    status: Input (optional)
+  - name: ''
+    description: Nominal energy capacity.
+    type: float
+    nullable: true
+    unit: MWh
+    isAbout: []
+    valueReference: []
+    attribute: e_nom
+    default: '0'
+    status: Input (optional)
+  - name: ''
+    description: Switch to allow capacity e_nom to be extended in OPF.
+    type: boolean
+    nullable: true
+    unit: none
+    isAbout: []
+    valueReference: []
+    attribute: e_nom_extendable
+    default: 'False'
+    status: Input (optional)
+  - name: ''
+    description: If e_nom is extendable in OPF, set its minimum value.
+    type: float
+    nullable: true
+    unit: MWh
+    isAbout: []
+    valueReference: []
+    attribute: e_nom_min
+    default: '0'
+    status: Input (optional)
+  - name: ''
+    description: If e_nom is extendable in OPF, set its maximum value (e.g. limited
+      by technical potential).
+    type: float
+    nullable: true
+    unit: MWh
+    isAbout: []
+    valueReference: []
+    attribute: e_nom_max
+    default: inf
+    status: Input (optional)
+  - name: ''
+    description: Minimal value of e relative to e_nom for the OPF.
+    type: static or series
+    nullable: true
+    unit: per unit
+    isAbout: []
+    valueReference: []
+    attribute: e_min_pu
+    default: '0'
+    status: Input (optional)
+  - name: ''
+    description: Maximal value of e relative to e_nom for the OPF.
+    type: static or series
+    nullable: true
+    unit: per unit
+    isAbout: []
+    valueReference: []
+    attribute: e_max_pu
+    default: '1'
+    status: Input (optional)
+  - name: ''
+    description: Energy before the snapshots in the OPF.
+    type: float
+    nullable: true
+    unit: MWh
+    isAbout: []
+    valueReference: []
+    attribute: e_initial
+    default: '0'
+    status: Input (optional)
+  - name: ''
+    description: 'Switch: if True, then at the beginning of each investment period
+      e is set to e_initial '
+    type: boolean
+    nullable: true
+    unit: none
+    isAbout: []
+    valueReference: []
+    attribute: e_initial_per_period
+    default: 'False'
+    status: Input (optional)
+  - name: ''
+    description: 'Switch: if True, then e_initial is ignored and the initial energy
+      is set to the final energy for the group of snapshots in the OPF.'
+    type: boolean
+    nullable: true
+    unit: none
+    isAbout: []
+    valueReference: []
+    attribute: e_cyclic
+    default: 'False'
+    status: Input (optional)
+  - name: ''
+    description: 'Switch: if True, then the cyclic constraints are applied to each
+      period (first snapshot level if multiindexed) separately.'
+    type: boolean
+    nullable: true
+    unit: none
+    isAbout: []
+    valueReference: []
+    attribute: e_cyclic_per_period
+    default: 'True'
+    status: Input (optional)
+  - name: ''
+    description: active power set point (for PF)
+    type: static or series
+    nullable: true
+    unit: MW
+    isAbout: []
+    valueReference: []
+    attribute: p_set
+    default: '0'
+    status: Input (optional)
+  - name: ''
+    description: reactive power set point (for PF)
+    type: static or series
+    nullable: true
+    unit: MVar
+    isAbout: []
+    valueReference: []
+    attribute: q_set
+    default: '0'
+    status: Input (optional)
+  - name: ''
+    description: power sign
+    type: float
+    nullable: true
+    unit: none
+    isAbout: []
+    valueReference: []
+    attribute: sign
+    default: '1'
+    status: Input (optional)
+  - name: ''
+    description: Marginal cost of production of 1 MWh.
+    type: static or series
+    nullable: true
+    unit: currency/MWh
+    isAbout: []
+    valueReference: []
+    attribute: marginal_cost
+    default: '0'
+    status: Input (optional)
+  - name: ''
+    description: Capital cost of extending e_nom by 1 MWh.
+    type: float
+    nullable: true
+    unit: currency/MWh
+    isAbout: []
+    valueReference: []
+    attribute: capital_cost
+    default: '0'
+    status: Input (optional)
+  - name: ''
+    description: Losses per hour to energy.
+    type: float
+    nullable: true
+    unit: per unit
+    isAbout: []
+    valueReference: []
+    attribute: standing_loss
+    default: '0'
+    status: Input (optional)
+  - name: ''
+    description: build year
+    type: int
+    nullable: true
+    unit: year
+    isAbout: []
+    valueReference: []
+    attribute: build_year
+    default: '0'
+    status: Input (optional)
+  - name: ''
+    description: lifetime
+    type: float
+    nullable: true
+    unit: years
+    isAbout: []
+    valueReference: []
+    attribute: lifetime
+    default: inf
+    status: Input (optional)
+  - name: ''
+    description: Name of the eGon scenario
+    type: string
+    nullable: true
+    unit: n/a
+    isAbout: []
+    valueReference: []
+    attribute: scn_name
+    default: n/a
+    status: Input
+  primaryKey:
+  - scn_name
+  - store_id
+  foreignKeys: []
+dialect:
+  delimiter: ''
+  decimalSeparator: ''
+review:
+  path: ''
+  badge: ''

@@ -1,0 +1,257 @@
+name: demand.egon_osm_ind_load_curves_individual_dsm_timeseries
+'@id': null
+title: DSM flexibility band time series for OSM industry sites
+path: WILL_BE_SET_AT_PUBLICATION
+description: DSM flexibility band time series for OSM industry sites in 1 h resolution
+  including available store capacity and power potential
+languages:
+- en-US
+subject:
+- name: ''
+  '@id': null
+keywords:
+- dsm
+- timeseries
+- osm
+- industry
+publicationDate: '2026-10-05'
+embargoPeriod:
+  start: ''
+  end: ''
+  isActive: false
+spatial:
+  location:
+    address: none
+    '@id': null
+    latitude: ''
+    longitude: ''
+  extent:
+    name: Germany
+    '@id': null
+    resolutionValue: none
+    resolutionUnit: ''
+    boundingBox:
+    - 0
+    - 0
+    - 0
+    - 0
+    crs: ''
+temporal:
+  referenceDate: '2011-01-01'
+  timeseries:
+  - start: '2011-01-01'
+    end: '2011-12-31'
+    resolutionValue: '1'
+    resolutionUnit: h
+    alignment: left
+    aggregationType: average
+sources:
+- title: eGon-data
+  authors: []
+  description: Workflow to download, process and generate data sets suitable for the
+    further research conducted in the project eGon (https://ego-n.org/)
+  publicationYear: null
+  path: https://github.com/openego/eGon-data
+  sourceLicenses:
+  - name: AGPL-3.0 License
+    title: GNU Affero General Public License v3.0
+    path: https://www.gnu.org/licenses/agpl-3.0.de.html
+    instruction: Permissions of this strongest copyleft license areconditioned on
+      making available complete source code of licensed works and modifications, which
+      include larger works using a licensedwork, under the same license. Copyright
+      and license notices must bepreserved. Contributors provide an express grant
+      of patent rights.When a modified version is used to provide a service over a
+      network,the complete source code of the modified version must be made available.
+    attribution: © eGon development team
+    copyrightStatement: null
+- title: Verwaltungsgebiete 1:250 000 (Ebenen)
+  authors: []
+  description: Der Datenbestand umfasst sämtliche Verwaltungseinheiten der hierarchischen
+    Verwaltungsebenen vom Staat bis zu den Gemeinden mit ihren Grenzen, statistischen
+    Schlüsselzahlen, Namen der Verwaltungseinheit sowie die spezifische Bezeichnung
+    der Verwaltungsebene des jeweiligen Landes.
+  publicationYear: null
+  path: https://daten.gdz.bkg.bund.de/produkte/vg/vg250_ebenen_0101/2020/vg250_01-01.geo84.shape.ebenen.zip
+  sourceLicenses:
+  - name: dl-by-de/2.0
+    title: Datenlizenz Deutschland – Namensnennung – Version 2.0
+    path: www.govdata.de/dl-de/by-2-0
+    instruction: "Jede Nutzung ist unter den Bedingungen dieser „Datenlizenz Deutschland\
+      \ - Namensnennung - Version 2.0 zulässig.\nDie bereitgestellten Daten und Metadaten\
+      \ dürfen für die kommerzielle und nicht kommerzielle Nutzung insbesondere:(1)\
+      \ vervielfältigt, ausgedruckt, präsentiert, verändert, bearbeitet sowie an Dritte\
+      \ übermittelt werden;\n (2) mit eigenen Daten und Daten Anderer zusammengeführt\
+      \ und zu selbständigen neuen Datensätzen verbunden werden;\n (3) in interne\
+      \ und externe Geschäftsprozesse, Produkte und Anwendungen in öffentlichen und\
+      \ nicht öffentlichen elektronischen Netzwerken eingebunden werden.\nBei der\
+      \ Nutzung ist sicherzustellen, dass folgende Angaben als Quellenvermerk enthalten\
+      \ sind:\n(1) Bezeichnung des Bereitstellers nach dessen Maßgabe,\n(2) der Vermerk\
+      \ Datenlizenz Deutschland – Namensnennung – Version 2.0 oder dl-de/by-2-0 mit\
+      \ Verweis auf den Lizenztext unter www.govdata.de/dl-de/by-2-0 sowie\n(3) einen\
+      \ Verweis auf den Datensatz (URI).Dies gilt nur soweit die datenhaltende Stelle\
+      \ die Angaben(1) bis (3) zum Quellenvermerk bereitstellt.\nVeränderungen, Bearbeitungen,\
+      \ neue Gestaltungen oder sonstige Abwandlungen sind im Quellenvermerk mit dem\
+      \ Hinweis zu versehen, dass die Daten geändert wurden."
+    attribution: © Bundesamt für Kartographie und Geodäsie 2020 (Daten verändert)
+    copyrightStatement: null
+- title: DemandRegio
+  authors: []
+  description: Harmonisierung und Entwicklung von Verfahren zur regionalen und zeitlichen
+    Auflösung von Energienachfragen
+  publicationYear: null
+  path: https://doi.org/10.34805/ffe-119-20
+  sourceLicenses:
+  - name: CC-BY-4.0
+    title: Creative Commons Attribution 4.0 International
+    path: https://creativecommons.org/licenses/by/4.0/legalcode
+    instruction: 'You are free: To Share, To Create, To Adapt; As long as you: Attribute.'
+    attribution: © FZJ, TUB, FfE
+    copyrightStatement: null
+- title: null
+  authors: []
+  description: Georeferenced industrial sites of energy-intensive industry sectors
+    in EU28
+  publicationYear: null
+  path: https://gitlab.com/hotmaps/industrial_sites/industrial_sites_Industrial_Database
+  sourceLicenses:
+  - name: CC-BY-4.0
+    title: Creative Commons Attribution 4.0 International
+    path: https://creativecommons.org/licenses/by/4.0/legalcode
+    instruction: 'You are free: To Share, To Create, To Adapt; As long as you: Attribute.'
+    attribution: '© 2016-2018: Pia Manz, Tobias Fleiter'
+    copyrightStatement: null
+- title: 'Supplementary material to the masters thesis: NUTS-3 Regionalization of
+    Industrial Load Shifting Potential in Germany using a Time-Resolved Model'
+  authors: []
+  description: Supplementary material to the named masters thesis, containing data
+    on industrial processes for the estimation of NUTS-3 load shifting potential of
+    suitable electrically powered industrial processes (cement milling, mechanical
+    pulping, paper production, air separation).
+  publicationYear: null
+  path: https://zenodo.org/record/3613767
+  sourceLicenses:
+  - name: CC-BY-4.0
+    title: Creative Commons Attribution 4.0 International
+    path: https://creativecommons.org/licenses/by/4.0/legalcode
+    instruction: 'You are free: To Share, To Create, To Adapt; As long as you: Attribute.'
+    attribution: © 2019 Danielle Schmidt
+    copyrightStatement: null
+- title: D5 1 Industry Dataset With Demand Data
+  authors: []
+  description: 'Georeferenced EU28 industrial sites with quantified annual excess
+    heat volumes and demand data within main sectors: Chemical industry, Iron and
+    steel, Non-ferrous metals, Non-metallic minerals, Paper and printing, and Refineries.'
+  publicationYear: null
+  path: https://s-eenergies-open-data-euf.hub.arcgis.com/datasets/5e36c0af918040ed936b4e4c101f611d_0/about
+  sourceLicenses:
+  - name: CC-BY-4.0
+    title: Creative Commons Attribution 4.0 International
+    path: https://creativecommons.org/licenses/by/4.0/legalcode
+    instruction: 'You are free: To Share, To Create, To Adapt; As long as you: Attribute.'
+    attribution: © Europa-Universität Flensburg
+    copyrightStatement: null
+licenses:
+- name: ODbL-1.0
+  title: Open Data Commons Open Database License 1.0
+  path: https://opendatacommons.org/licenses/odbl/1.0/index.html
+  instruction: 'You are free: To Share, To Create, To Adapt; As long as you: Attribute,
+    Share-Alike, Keep open!'
+  attribution: © eGon development team
+  copyrightStatement: null
+contributors:
+- title: Kilian Helfenbein
+  path: null
+  organization: null
+  roles:
+  - ''
+  date: '2023-03-17'
+  object: metadata
+  comment: Add metadata to dataset.
+- title: Kilian Helfenbein
+  path: null
+  organization: null
+  roles:
+  - ''
+  date: null
+  object: dataset
+  comment: Add workflow to generate dataset.
+- title: eGon-data metadata migration
+  path: https://github.com/openego/eGon-data
+  roles:
+  - dataCurator
+  organization: null
+  date: '2026-10-20'
+  object: metadata
+  comment: Migrated from the OEMetadata v1.4 table comment of a full eGon-data run
+    to OEMetadata v2 with OMI.
+type: Table
+format: PostgreSQL
+encoding: UTF-8
+schema:
+  fields:
+  - name: osm_id
+    description: ''
+    type: integer
+    nullable: false
+    unit: none
+    isAbout: []
+    valueReference: []
+  - name: scn_name
+    description: ''
+    type: varchar
+    nullable: true
+    unit: none
+    isAbout: []
+    valueReference: []
+  - name: bus
+    description: ''
+    type: integer
+    nullable: true
+    unit: none
+    isAbout: []
+    valueReference: []
+  - name: p_set
+    description: ''
+    type: array
+    nullable: true
+    unit: none
+    isAbout: []
+    valueReference: []
+  - name: p_max
+    description: ''
+    type: array
+    nullable: true
+    unit: none
+    isAbout: []
+    valueReference: []
+  - name: p_min
+    description: ''
+    type: array
+    nullable: true
+    unit: none
+    isAbout: []
+    valueReference: []
+  - name: e_max
+    description: ''
+    type: array
+    nullable: true
+    unit: none
+    isAbout: []
+    valueReference: []
+  - name: e_min
+    description: ''
+    type: array
+    nullable: true
+    unit: none
+    isAbout: []
+    valueReference: []
+  primaryKey:
+  - scn_name
+  - osm_id
+  foreignKeys: []
+dialect:
+  delimiter: ''
+  decimalSeparator: ''
+review:
+  path: ''
+  badge: ''
