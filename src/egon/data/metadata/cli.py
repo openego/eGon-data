@@ -111,6 +111,9 @@ def status_cmd(scope, strict):
         sorted(expected),
         dataset_ids=sorted(set(ds_ids.values())) if scope else None,
     )
+    # with --scope, the dataset's tables outside the scope are not orphans
+    produced_all = expected_tables(all_classes)
+    report.orphans = [o for o in report.orphans if o not in produced_all]
     click.echo(report.summary())
     for name in report.missing:
         producers = ", ".join(c.name for c in expected[name])
@@ -140,7 +143,6 @@ def status_cmd(scope, strict):
     # against the whole store -- the table may belong to another dataset.
     from omi.creation.coverage import index_store_resources
 
-    produced_all = expected_tables(all_classes)
     documented = set(index_store_resources(OEM_BASE_DIR))
     for table, consumers in sorted(consumed_tables(scoped).items()):
         if table in produced_all and table not in documented:
