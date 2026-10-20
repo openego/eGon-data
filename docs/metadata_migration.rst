@@ -32,6 +32,8 @@ Reference run
 Precedence
    Curated store YAML > table comment of the reference run > v1.5 JSON in
    ``metadata/results/``. The 20 existing resources were not overwritten.
+   ``metadata/results/`` and the one-off migration scripts were removed
+   afterwards; git history keeps them.
 
 Conversion
    OMI converts from v1.5.2 upwards, so each comment's
@@ -125,6 +127,17 @@ In eGon-data
      dataset level, where OEMetadata v2 does not look for them; published
      resources kept the date of their YAML.
 
+   - The dataset templates' default license was the Zensus license
+     (``dl-by-de/2.0``, "© Statistische Ämter des Bundes und der Länder"),
+     hoisted from the first converted resources. It applied silently to 97
+     of 158 tables, including power plants and grids. The default is now
+     ODbL-1.0 "© eGon development team", as in 62 of the 92 legacy comments.
+     The six tables whose legacy license differs carry it explicitly: three
+     CC-BY-4.0 tables and three Zensus tables. The templates' meaningless
+     ``languages: [undefined]`` was dropped.
+   - The power plant tables credited the eGon team for MaStR data. Their
+     attribution now names the Bundesnetzagentur.
+
 In OMI (released in 1.3.0)
    - Database inspection reported frictionless types (``string``,
      ``integer``) instead of the database's own types, turning every
@@ -178,10 +191,5 @@ blocks:
 - **Eleven tables are not in the reference run** (e.g. the old
   ``emobility.egon_ev_*`` tables) and are stubs without fields until
   ``init`` runs against a database that has them.
-- **Default license of the dataset templates.** It is the Zensus license
-  (``dl-by-de/2.0``, "© Statistische Ämter des Bundes und der Länder"),
-  hoisted from the first converted resources, and applies silently to
-  every table without its own ``licenses`` block — while 62 of the 92
-  legacy comments declare ODbL-1.0 "© eGon development team".
 - **Source path of NEP 2037/2045, Version 2025** in
   ``supply.egon_scenario_capacities`` is still the placeholder ``folgt``.

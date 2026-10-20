@@ -196,19 +196,22 @@ licenses:
 - name: ODbL-1.0
   title: Open Data Commons Open Database License 1.0
   path: https://opendatacommons.org/licenses/odbl/1.0/
-  instruction: 'You are free: To Share, To Create, To Adapt; As long as you: Attribute,
-    Share-Alike, Keep open! Applies to the OpenStreetMap-derived content: the rectifier
-    locations (method dc_rectifier) and the bus assignment from the OSM-based grid
-    tables.'
+  instruction: 'Applies to all rows except method = ''converter'' (DC rectifiers and
+    city centroids, derived from OpenStreetMap). You are free: To Share, To Create,
+    To Adapt; As long as you: Attribute, Share-Alike, Keep open! Applies to the OpenStreetMap-derived
+    content: the rectifier locations (method dc_rectifier) and the bus assignment
+    from the OSM-based grid tables.'
   attribution: © OpenStreetMap contributors
   copyrightStatement: null
 - name: CC-BY-SA-4.0
   title: Creative Commons Attribution Share-Alike 4.0 International
   path: https://creativecommons.org/licenses/by-sa/4.0/legalcode
-  instruction: You are free to share and adapt; you must attribute and share adaptations
-    under the same license. Applies to the converter rows (method converter), derived
-    from the bundle file converter_load_points.csv and thereby from Wikipedia; the
-    remaining content (DC energies, centroids) derives from CC-BY-4.0 bundle files.
+  instruction: Applies to the rows with method = 'converter' (16.7-Hz converter sites,
+    from the Wikipedia list via converter_load_points.csv). You are free to share
+    and adapt; you must attribute and share adaptations under the same license. Applies
+    to the converter rows (method converter), derived from the bundle file converter_load_points.csv
+    and thereby from Wikipedia; the remaining content (DC energies, centroids) derives
+    from CC-BY-4.0 bundle files.
   attribution: Wikipedia, "Liste von Bahnstromanlagen in Deutschland" (CC-BY-SA 4.0);
     © DELFI e.V. (GTFS de_full via gtfs.de); DB Energie GmbH, publications under §
     23c EnWG (2025); published figures of the transit operators SSB, üstra, BSAG,

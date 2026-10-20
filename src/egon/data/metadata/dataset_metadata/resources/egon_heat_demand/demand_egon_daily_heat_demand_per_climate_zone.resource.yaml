@@ -170,3 +170,10 @@ dialect:
 review:
   path: ''
   badge: ''
+licenses:
+- instruction: 'You are free: To Share, To Create, To Adapt; As long as you: Attribute.'
+  attribution: © eGon-data developers
+  name: CC-BY-4.0
+  title: Creative Commons Attribution 4.0 International
+  path: https://creativecommons.org/licenses/by/4.0/legalcode
+  copyrightStatement: null
