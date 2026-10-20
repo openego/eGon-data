@@ -247,9 +247,15 @@ def filter_scope(classes: list[ClassIO], scope: str) -> list[ClassIO]:
 
 
 def expected_tables(classes: list[ClassIO]) -> dict[str, list[ClassIO]]:
-    """Union of declared target tables -> the classes producing each."""
+    """Union of declared target tables -> the classes producing each.
+
+    Classes not wired into the DAG (``UNMAPPED``) produce nothing in a run,
+    so their targets are not expected to carry metadata.
+    """
     out: dict[str, list[ClassIO]] = {}
     for c in classes:
+        if c.task_group == UNMAPPED:
+            continue
         for table in c.target_tables.values():
             out.setdefault(table, []).append(c)
     return out
