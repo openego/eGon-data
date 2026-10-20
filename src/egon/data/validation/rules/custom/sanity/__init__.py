@@ -51,6 +51,22 @@ from .heat_etrago import (  # noqa: F401
     HeatSupplyCapacity,
     HeatTimeseries,
 )
+from .individual_heat_pumps import (  # noqa: F401
+    HeatPeakLoadRange,
+    HeatPumpCapacityRange,
+    HeatPumpCapacityTarget,
+    HeatPumpFloorContainment,
+    HeatPumpFloorNotReduced,
+    HeatPumpMinimumRows,
+    HeatPumpNotInDistrictHeating,
+    HeatPumpPeakLoadExists,
+    HeatPumpScenarioCoverage,
+    HeatPumpSizing,
+    HeatTimeseriesCoverage,
+    HeatTimeseriesEnergyBalance,
+    HeatTimeseriesHeatPumpCapacity,
+    HeatTimeseriesValues,
+)
 from .ocgt_etrago import (  # noqa: F401
     OcgtCapacity,
     OcgtNepCapacity,
