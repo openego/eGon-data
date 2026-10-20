@@ -234,6 +234,30 @@ def load_dataset_ids() -> dict[str, str]:
     return dict(doc.get("task_groups") or {})
 
 
+def load_table_owners() -> dict[str, str]:
+    """Load the table -> owning task group overrides for shared tables."""
+    doc = yaml.safe_load(DATASET_IDS_YAML.read_text(encoding="utf-8"))
+    return dict(doc.get("table_owners") or {})
+
+
+def owner_group(table: str, producers: list[ClassIO], owners=None) -> str:
+    """Task group whose OEMetadata dataset documents ``table``.
+
+    A table written by several task groups is documented once, by the group
+    named in ``table_owners``; without an entry it is ambiguous and raises.
+    """
+    owners = load_table_owners() if owners is None else owners
+    if table in owners:
+        return owners[table]
+    groups = {c.task_group for c in producers}
+    if len(groups) > 1:
+        raise ValueError(
+            f"{table} is produced by the task groups {sorted(groups)};"
+            " name its owner under table_owners in dataset_ids.yaml"
+        )
+    return groups.pop()
+
+
 def filter_scope(classes: list[ClassIO], scope: str) -> list[ClassIO]:
     """Filter classes by task group, dataset id, or Dataset class name."""
     ids = load_dataset_ids()

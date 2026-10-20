@@ -30,6 +30,7 @@ import yaml
 from egon.data.metadata.inventory import (
     expected_tables,
     load_dataset_ids,
+    owner_group,
     scan_declared_io,
 )
 from egon.data.metadata.script.migrate_json_to_split_yaml import (
@@ -147,7 +148,8 @@ def main(dump_path: str) -> None:
     for table, producers in sorted(expected.items()):
         if table not in comments:
             continue
-        ds_id = ids.get(producers[0].task_group)
+        group = owner_group(table, producers)
+        ds_id = ids.get(group)
         if ds_id is None:
             skipped.append(f"{table}: task group has no dataset id")
             continue
@@ -161,7 +163,7 @@ def main(dump_path: str) -> None:
             skipped.append(f"{table}: {error}")
             continue
         v2["resources"][0]["name"] = table
-        ensure_dataset(ds_id, producers[0].task_group)
+        ensure_dataset(ds_id, group)
         add_resource_from_oem_metadata(
             OEM_BASE_DIR,
             ds_id,

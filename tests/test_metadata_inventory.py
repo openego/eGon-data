@@ -23,3 +23,18 @@ def test_classes_outside_the_dag_are_not_expected():
     unwired = ClassIO(name="B", module="b.py", task_group=UNMAPPED)
     unwired.target_tables = {"t": "s.unwired"}
     assert list(expected_tables([wired, unwired])) == ["s.wired"]
+
+
+def test_shared_tables_need_an_owner():
+    import pytest
+
+    from egon.data.metadata.inventory import ClassIO, owner_group
+
+    a = ClassIO(name="A", module="a.py", task_group="setup")
+    b = ClassIO(name="B", module="b.py", task_group="etrago_input")
+    assert owner_group("s.t", [a], owners={}) == "setup"
+    assert (
+        owner_group("s.t", [a, b], {"s.t": "etrago_input"}) == "etrago_input"
+    )
+    with pytest.raises(ValueError, match="table_owners"):
+        owner_group("s.t", [a, b], owners={})

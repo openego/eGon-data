@@ -124,6 +124,17 @@ def status_cmd(scope, strict):
     for name in report.orphans:
         click.secho(f"[orphan]   {name}", fg="cyan")
 
+    from egon.data.metadata.inventory import load_table_owners, owner_group
+
+    owners = load_table_owners()
+    ambiguous = []
+    for name, producers in sorted(expected.items()):
+        try:
+            owner_group(name, producers, owners)
+        except ValueError as error:
+            ambiguous.append(name)
+            click.secho(f"[ambiguous] {error}", fg="red")
+
     # Provenance: a consumed internal table should have metadata of its
     # own, otherwise cross-references made by `init` point nowhere. Check
     # against the whole store -- the table may belong to another dataset.
@@ -140,7 +151,7 @@ def status_cmd(scope, strict):
                 fg="yellow",
             )
 
-    if strict and not report.ok:
+    if strict and (not report.ok or ambiguous):
         raise click.exceptions.Exit(1)
 
 
@@ -154,7 +165,7 @@ def init_cmd(scope):
     """Create or update resource YAML skeletons (non-destructive)."""
     from omi.creation.init import init_dataset
 
-    _, scoped = _scoped_classes(scope)
+    all_classes, scoped = _scoped_classes(scope)
     ds_ids = _dataset_ids_for(scoped)
     engine = _try_engine()
 
@@ -164,6 +175,14 @@ def init_cmd(scope):
         )
         click.echo(f"dataset {ds_id} ({group}): {result.dataset_yaml}")
 
+    from egon.data.metadata.inventory import (
+        expected_tables,
+        load_table_owners,
+        owner_group,
+    )
+
+    producers = expected_tables(all_classes)
+    owners = load_table_owners()
     for c in sorted(scoped, key=lambda c: c.name):
         ds_id = ds_ids.get(c.task_group)
         if ds_id is None:
@@ -174,7 +193,9 @@ def init_cmd(scope):
             )
             continue
         for table in sorted(c.target_tables.values()):
-            _init_resource(c, ds_id, table, engine)
+            # a shared table is documented once, by its owning group
+            if owner_group(table, producers[table], owners) == c.task_group:
+                _init_resource(c, ds_id, table, engine)
 
 
 def _init_resource(c, ds_id, table, engine):

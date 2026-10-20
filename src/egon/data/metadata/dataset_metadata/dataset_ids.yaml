@@ -41,3 +41,28 @@ task_groups:
   scenario_capacities: egon_scenario_capacities
   scenario_variants: egon_scenario_variants
   sanity_checks: egon_sanity_checks
+
+# Tables written by several task groups are documented once, in the dataset
+# of the group named here (`egon-data metadata status` fails on an ambiguous
+# table without an entry). Rule: the group that creates the table, except the
+# eTraGo tables, which are created in `setup` but published as eTraGo input.
+table_owners:
+  demand.egon_building_electricity_peak_loads: heat_demand
+  demand.egon_building_heat_peak_loads: heat_demand
+  demand.egon_etrago_timeseries_individual_heating: heat_demand
+  openstreetmap.osm_buildings_synthetic: heat_demand
+  scenario.egon_scenario_parameters: input_data
+  supply.egon_era5_renewable_feedin: input_data
+  grid.egon_etrago_bus: etrago_input
+  grid.egon_etrago_generator: etrago_input
+  grid.egon_etrago_generator_timeseries: etrago_input
+  grid.egon_etrago_line: etrago_input
+  grid.egon_etrago_line_timeseries: etrago_input
+  grid.egon_etrago_link: etrago_input
+  grid.egon_etrago_link_timeseries: etrago_input
+  grid.egon_etrago_load: etrago_input
+  grid.egon_etrago_load_timeseries: etrago_input
+  grid.egon_etrago_storage: etrago_input
+  grid.egon_etrago_store: etrago_input
+  grid.egon_etrago_store_timeseries: etrago_input
+  grid.egon_etrago_transformer: etrago_input
