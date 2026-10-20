@@ -80,6 +80,39 @@ def _try_engine():
         return None
 
 
+def _echo_summary(scope, expected, report):
+    """Print what was counted (tables, in which datasets) and what it means."""
+    from egon.data.metadata.inventory import (
+        load_dataset_ids,
+        load_table_owners,
+        owner_group,
+    )
+
+    ids, owners, datasets = load_dataset_ids(), load_table_owners(), set()
+    for table, producers in expected.items():
+        try:
+            datasets.add(ids.get(owner_group(table, producers, owners)))
+        except ValueError:  # ambiguous; reported further down
+            pass
+    datasets.discard(None)
+    where = (
+        f"dataset {datasets.pop()}"
+        if len(datasets) == 1
+        else f"{len(datasets)} datasets"
+    )
+    click.echo(
+        f"Metadata coverage for {scope or 'the whole pipeline'}:"
+        f" {len(expected)} table{'s' * (len(expected) != 1)} in {where}\n"
+        f"  {len(report.complete):4d} complete  fully documented\n"
+        f"  {len(report.skeleton):4d} skeleton  YAML exists, TODOs left"
+        " (listed below)\n"
+        f"  {len(report.missing):4d} missing   no YAML yet"
+        " -> egon-data metadata init\n"
+        f"  {len(report.orphans):4d} orphans   YAML for a table no Dataset"
+        " declares\n"
+    )
+
+
 @click.group("metadata")
 def metadata():
     """Manage OEMetadata for the pipeline's published tables."""
@@ -113,7 +146,7 @@ def status_cmd(scope, strict):
     # dataset, and tables expected elsewhere are not orphans
     produced_all = expected_tables(all_classes)
     report.orphans = [o for o in report.orphans if o not in produced_all]
-    click.echo(report.summary())
+    _echo_summary(scope, expected, report)
     for name in report.missing:
         producers = ", ".join(c.name for c in expected[name])
         click.secho(f"[missing]  {name}  (produced by {producers})", fg="red")
