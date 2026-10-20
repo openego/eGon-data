@@ -1,0 +1,115 @@
+'@id': ''
+name: boundaries.egon_map_zensus_grid_districts
+topics: []
+title: 'TODO: Add title for boundaries.egon_map_zensus_grid_districts'
+path: ''
+description: 'TODO: Add description'
+languages: []
+subject:
+- name: ''
+  '@id': ''
+keywords: []
+publicationDate: ''
+embargoPeriod:
+  start: ''
+  end: ''
+  isActive: false
+context:
+  title: ''
+  homepage: ''
+  documentation: ''
+  sourceCode: ''
+  publisher: ''
+  publisherLogo: ''
+  contact: ''
+  fundingAgency: ''
+  fundingAgencyLogo: ''
+  grantNo: ''
+spatial:
+  location:
+    address: ''
+    '@id': ''
+    latitude: ''
+    longitude: ''
+  extent:
+    name: ''
+    '@id': ''
+    resolutionValue: ''
+    resolutionUnit: ''
+    crs: ''
+temporal:
+  referenceDate: ''
+  timeseries:
+  - start: ''
+    end: ''
+    resolutionValue: ''
+    resolutionUnit: ''
+    alignment: ''
+    aggregationType: ''
+sources:
+- title: ''
+  authors: []
+  description: ''
+  publicationYear: ''
+  path: ''
+  sourceLicenses:
+  - name: ''
+    title: ''
+    path: ''
+    instruction: ''
+    attribution: ''
+    copyrightStatement: ''
+- title: 'Internal table: grid.egon_mv_grid_district'
+  description: Derived from the internal table 'grid.egon_mv_grid_district'. See that
+    table's own metadata for full provenance.
+  path: ''
+  authors: []
+  publicationYear: null
+  sourceLicenses: []
+- title: 'Internal table: society.destatis_zensus_population_per_ha'
+  description: Derived from the internal table 'society.destatis_zensus_population_per_ha'.
+    See that table's own metadata for full provenance.
+  path: ''
+  authors: []
+  publicationYear: null
+  sourceLicenses: []
+licenses:
+- name: ''
+  title: ''
+  path: ''
+  instruction: ''
+  attribution: ''
+  copyrightStatement: ''
+contributors:
+- title: ''
+  path: ''
+  organization: ''
+  roles: []
+  date: ''
+  object: ''
+  comment: ''
+type: ''
+format: ''
+encoding: ''
+schema:
+  primaryKey: []
+  foreignKeys: []
+  fields:
+  - name: index
+    description: 'TODO: Add description'
+    type: integer
+    unit: none
+  - name: zensus_population_id
+    description: 'TODO: Add description'
+    type: integer
+    unit: none
+  - name: bus_id
+    description: 'TODO: Add description'
+    type: integer
+    unit: none
+dialect:
+  delimiter: ''
+  decimalSeparator: ''
+review:
+  path: ''
+  badge: ''

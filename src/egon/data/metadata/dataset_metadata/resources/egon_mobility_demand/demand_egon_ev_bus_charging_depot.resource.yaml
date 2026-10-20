@@ -1,0 +1,159 @@
+'@id': ''
+name: demand.egon_ev_bus_charging_depot
+topics: []
+title: 'TODO: Add title for demand.egon_ev_bus_charging_depot'
+path: ''
+description: 'TODO: Add description'
+languages: []
+subject:
+- name: ''
+  '@id': ''
+keywords: []
+publicationDate: ''
+embargoPeriod:
+  start: ''
+  end: ''
+  isActive: false
+context:
+  title: ''
+  homepage: ''
+  documentation: ''
+  sourceCode: ''
+  publisher: ''
+  publisherLogo: ''
+  contact: ''
+  fundingAgency: ''
+  fundingAgencyLogo: ''
+  grantNo: ''
+spatial:
+  location:
+    address: ''
+    '@id': ''
+    latitude: ''
+    longitude: ''
+  extent:
+    name: ''
+    '@id': ''
+    resolutionValue: ''
+    resolutionUnit: ''
+    crs: ''
+temporal:
+  referenceDate: ''
+  timeseries:
+  - start: ''
+    end: ''
+    resolutionValue: ''
+    resolutionUnit: ''
+    alignment: ''
+    aggregationType: ''
+sources:
+- title: ''
+  authors: []
+  description: ''
+  publicationYear: ''
+  path: ''
+  sourceLicenses:
+  - name: ''
+    title: ''
+    path: ''
+    instruction: ''
+    attribution: ''
+    copyrightStatement: ''
+- title: 'Internal table: grid.egon_ehv_substation_voronoi'
+  description: Derived from the internal table 'grid.egon_ehv_substation_voronoi'.
+    See that table's own metadata for full provenance.
+  path: ''
+  authors: []
+  publicationYear: null
+  sourceLicenses: []
+- title: 'Internal table: grid.egon_mv_grid_district'
+  description: Derived from the internal table 'grid.egon_mv_grid_district'. See that
+    table's own metadata for full provenance.
+  path: ''
+  authors: []
+  publicationYear: null
+  sourceLicenses: []
+- title: bus_input_dir
+  description: ''
+  path: data_bundle_egon_data/bus_charging
+  authors: []
+  publicationYear: null
+  sourceLicenses: []
+licenses:
+- name: ''
+  title: ''
+  path: ''
+  instruction: ''
+  attribution: ''
+  copyrightStatement: ''
+contributors:
+- title: ''
+  path: ''
+  organization: ''
+  roles: []
+  date: ''
+  object: ''
+  comment: ''
+type: ''
+format: ''
+encoding: ''
+schema:
+  primaryKey:
+  - depot_id
+  - scenario
+  foreignKeys: []
+  fields:
+  - name: depot_id
+    description: 'TODO: Add description'
+    type: string
+    unit: none
+  - name: scenario
+    description: 'TODO: Add description'
+    type: string
+    unit: none
+  - name: depot_name
+    description: 'TODO: Add description'
+    type: string
+    unit: none
+  - name: depot_type
+    description: 'TODO: Add description'
+    type: string
+    unit: none
+  - name: fleet_size
+    description: 'TODO: Add description'
+    type: number
+    unit: none
+  - name: geom
+    description: 'TODO: Add description'
+    type: string
+    unit: none
+  - name: bus_id
+    description: 'TODO: Add description'
+    type: integer
+    unit: none
+  - name: mv_grid_id
+    description: 'TODO: Add description'
+    type: integer
+    unit: none
+  - name: voltage_level
+    description: 'TODO: Add description'
+    type: integer
+    unit: none
+  - name: peak_load_mw
+    description: 'TODO: Add description'
+    type: number
+    unit: none
+  - name: annual_demand_mwh
+    description: 'TODO: Add description'
+    type: number
+    unit: none
+  - name: p_set
+    description: 'TODO: Add description'
+    type: array
+    unit: none
+dialect:
+  delimiter: ''
+  decimalSeparator: ''
+review:
+  path: ''
+  badge: ''

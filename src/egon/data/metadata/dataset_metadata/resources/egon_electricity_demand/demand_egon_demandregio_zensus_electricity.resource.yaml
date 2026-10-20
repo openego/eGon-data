@@ -1,0 +1,108 @@
+'@id': ''
+name: demand.egon_demandregio_zensus_electricity
+topics: []
+title: 'TODO: Add title for demand.egon_demandregio_zensus_electricity'
+path: ''
+description: 'TODO: Add description'
+languages: []
+subject:
+- name: ''
+  '@id': ''
+keywords: []
+publicationDate: ''
+embargoPeriod:
+  start: ''
+  end: ''
+  isActive: false
+context:
+  title: ''
+  homepage: ''
+  documentation: ''
+  sourceCode: ''
+  publisher: ''
+  publisherLogo: ''
+  contact: ''
+  fundingAgency: ''
+  fundingAgencyLogo: ''
+  grantNo: ''
+spatial:
+  location:
+    address: ''
+    '@id': ''
+    latitude: ''
+    longitude: ''
+  extent:
+    name: ''
+    '@id': ''
+    resolutionValue: ''
+    resolutionUnit: ''
+    crs: ''
+temporal:
+  referenceDate: ''
+  timeseries:
+  - start: ''
+    end: ''
+    resolutionValue: ''
+    resolutionUnit: ''
+    alignment: ''
+    aggregationType: ''
+sources:
+- title: ''
+  authors: []
+  description: ''
+  publicationYear: ''
+  path: ''
+  sourceLicenses:
+  - name: ''
+    title: ''
+    path: ''
+    instruction: ''
+    attribution: ''
+    copyrightStatement: ''
+licenses:
+- name: ''
+  title: ''
+  path: ''
+  instruction: ''
+  attribution: ''
+  copyrightStatement: ''
+contributors:
+- title: ''
+  path: ''
+  organization: ''
+  roles: []
+  date: ''
+  object: ''
+  comment: ''
+type: ''
+format: ''
+encoding: ''
+schema:
+  primaryKey:
+  - zensus_population_id
+  - scenario
+  - sector
+  foreignKeys: []
+  fields:
+  - name: zensus_population_id
+    description: 'TODO: Add description'
+    type: integer
+    unit: none
+  - name: scenario
+    description: 'TODO: Add description'
+    type: string
+    unit: none
+  - name: sector
+    description: 'TODO: Add description'
+    type: string
+    unit: none
+  - name: demand
+    description: 'TODO: Add description'
+    type: number
+    unit: none
+dialect:
+  delimiter: ''
+  decimalSeparator: ''
+review:
+  path: ''
+  badge: ''

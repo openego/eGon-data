@@ -1,0 +1,203 @@
+'@id': ''
+name: supply.egon_nep_conventional_powerplants
+topics: []
+title: 'TODO: Add title for supply.egon_nep_conventional_powerplants'
+path: ''
+description: 'TODO: Add description'
+languages: []
+subject:
+- name: ''
+  '@id': ''
+keywords: []
+publicationDate: ''
+embargoPeriod:
+  start: ''
+  end: ''
+  isActive: false
+context:
+  title: ''
+  homepage: ''
+  documentation: ''
+  sourceCode: ''
+  publisher: ''
+  publisherLogo: ''
+  contact: ''
+  fundingAgency: ''
+  fundingAgencyLogo: ''
+  grantNo: ''
+spatial:
+  location:
+    address: ''
+    '@id': ''
+    latitude: ''
+    longitude: ''
+  extent:
+    name: ''
+    '@id': ''
+    resolutionValue: ''
+    resolutionUnit: ''
+    crs: ''
+temporal:
+  referenceDate: ''
+  timeseries:
+  - start: ''
+    end: ''
+    resolutionValue: ''
+    resolutionUnit: ''
+    alignment: ''
+    aggregationType: ''
+sources:
+- title: ''
+  authors: []
+  description: ''
+  publicationYear: ''
+  path: ''
+  sourceLicenses:
+  - name: ''
+    title: ''
+    path: ''
+    instruction: ''
+    attribution: ''
+    copyrightStatement: ''
+- title: 'Internal table: boundaries.vg250_lan'
+  description: Derived from the internal table 'boundaries.vg250_lan'. See that table's
+    own metadata for full provenance.
+  path: ''
+  authors: []
+  publicationYear: null
+  sourceLicenses: []
+- title: 'Internal table: society.destatis_zensus_population_per_ha'
+  description: Derived from the internal table 'society.destatis_zensus_population_per_ha'.
+    See that table's own metadata for full provenance.
+  path: ''
+  authors: []
+  publicationYear: null
+  sourceLicenses: []
+- title: eGon2035_capacities
+  description: ''
+  path: data_bundle_egon_data/NEP/NEP_V2021_scnC2035.xlsx
+  authors: []
+  publicationYear: null
+  sourceLicenses: []
+- title: eGon2035_list_conv_pp
+  description: ''
+  path: data_bundle_egon_data/NEP/Kraftwerksliste_NEP_V2021_konv.csv
+  authors: []
+  publicationYear: null
+  sourceLicenses: []
+- title: reGon_capacities
+  description: ''
+  path: data_bundle_egon_data/NEP/NEP_V2025_scnC2037.xlsx
+  authors: []
+  publicationYear: null
+  sourceLicenses: []
+- title: reGon_list_conv_pp
+  description: ''
+  path: data_bundle_egon_data/NEP/Kraftwerksliste_NEP_V2025_Szenariorahmen.xlsx
+  authors: []
+  publicationYear: null
+  sourceLicenses: []
+licenses:
+- name: ''
+  title: ''
+  path: ''
+  instruction: ''
+  attribution: ''
+  copyrightStatement: ''
+contributors:
+- title: ''
+  path: ''
+  organization: ''
+  roles: []
+  date: ''
+  object: ''
+  comment: ''
+type: ''
+format: ''
+encoding: ''
+schema:
+  primaryKey: []
+  foreignKeys: []
+  fields:
+  - name: index
+    description: 'TODO: Add description'
+    type: integer
+    unit: none
+  - name: mastr_id
+    description: 'TODO: Add description'
+    type: string
+    unit: none
+  - name: name
+    description: 'TODO: Add description'
+    type: string
+    unit: none
+  - name: name_unit
+    description: 'TODO: Add description'
+    type: string
+    unit: none
+  - name: operator
+    description: 'TODO: Add description'
+    type: string
+    unit: none
+  - name: carrier_nep
+    description: 'TODO: Add description'
+    type: string
+    unit: none
+  - name: chp
+    description: 'TODO: Add description'
+    type: string
+    unit: none
+  - name: postcode
+    description: 'TODO: Add description'
+    type: string
+    unit: none
+  - name: city
+    description: 'TODO: Add description'
+    type: string
+    unit: none
+  - name: federal_state
+    description: 'TODO: Add description'
+    type: string
+    unit: none
+  - name: commissioned
+    description: 'TODO: Add description'
+    type: string
+    unit: none
+  - name: status
+    description: 'TODO: Add description'
+    type: string
+    unit: none
+  - name: capacity
+    description: 'TODO: Add description'
+    type: number
+    unit: none
+  - name: c2037_capacity
+    description: 'TODO: Add description'
+    type: number
+    unit: none
+  - name: c2045_capacity
+    description: 'TODO: Add description'
+    type: number
+    unit: none
+  - name: scenario
+    description: 'TODO: Add description'
+    type: string
+    unit: none
+  - name: h2_site
+    description: 'TODO: Add description'
+    type: boolean
+    unit: none
+  - name: h2_conversion
+    description: 'TODO: Add description'
+    type: boolean
+    unit: none
+  - name: carrier
+    description: 'TODO: Add description'
+    type: string
+    unit: none
+dialect:
+  delimiter: ''
+  decimalSeparator: ''
+review:
+  path: ''
+  badge: ''

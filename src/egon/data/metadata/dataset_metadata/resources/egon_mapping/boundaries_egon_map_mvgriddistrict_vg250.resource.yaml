@@ -1,0 +1,112 @@
+'@id': ''
+name: boundaries.egon_map_mvgriddistrict_vg250
+topics: []
+title: 'TODO: Add title for boundaries.egon_map_mvgriddistrict_vg250'
+path: ''
+description: 'TODO: Add description'
+languages: []
+subject:
+- name: ''
+  '@id': ''
+keywords: []
+publicationDate: ''
+embargoPeriod:
+  start: ''
+  end: ''
+  isActive: false
+context:
+  title: ''
+  homepage: ''
+  documentation: ''
+  sourceCode: ''
+  publisher: ''
+  publisherLogo: ''
+  contact: ''
+  fundingAgency: ''
+  fundingAgencyLogo: ''
+  grantNo: ''
+spatial:
+  location:
+    address: ''
+    '@id': ''
+    latitude: ''
+    longitude: ''
+  extent:
+    name: ''
+    '@id': ''
+    resolutionValue: ''
+    resolutionUnit: ''
+    crs: ''
+temporal:
+  referenceDate: ''
+  timeseries:
+  - start: ''
+    end: ''
+    resolutionValue: ''
+    resolutionUnit: ''
+    alignment: ''
+    aggregationType: ''
+sources:
+- title: ''
+  authors: []
+  description: ''
+  publicationYear: ''
+  path: ''
+  sourceLicenses:
+  - name: ''
+    title: ''
+    path: ''
+    instruction: ''
+    attribution: ''
+    copyrightStatement: ''
+- title: 'Internal table: boundaries.vg250_lan_union'
+  description: Derived from the internal table 'boundaries.vg250_lan_union'. See that
+    table's own metadata for full provenance.
+  path: ''
+  authors: []
+  publicationYear: null
+  sourceLicenses: []
+- title: 'Internal table: grid.egon_mv_grid_district'
+  description: Derived from the internal table 'grid.egon_mv_grid_district'. See that
+    table's own metadata for full provenance.
+  path: ''
+  authors: []
+  publicationYear: null
+  sourceLicenses: []
+licenses:
+- name: ''
+  title: ''
+  path: ''
+  instruction: ''
+  attribution: ''
+  copyrightStatement: ''
+contributors:
+- title: ''
+  path: ''
+  organization: ''
+  roles: []
+  date: ''
+  object: ''
+  comment: ''
+type: ''
+format: ''
+encoding: ''
+schema:
+  primaryKey:
+  - bus_id
+  foreignKeys: []
+  fields:
+  - name: bus_id
+    description: 'TODO: Add description'
+    type: integer
+    unit: none
+  - name: vg250_lan
+    description: 'TODO: Add description'
+    type: string
+    unit: none
+dialect:
+  delimiter: ''
+  decimalSeparator: ''
+review:
+  path: ''
+  badge: ''

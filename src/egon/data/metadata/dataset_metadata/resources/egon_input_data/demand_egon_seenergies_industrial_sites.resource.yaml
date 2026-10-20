@@ -1,0 +1,252 @@
+'@id': ''
+name: demand.egon_seenergies_industrial_sites
+topics: []
+title: 'TODO: Add title for demand.egon_seenergies_industrial_sites'
+path: ''
+description: 'TODO: Add description'
+languages: []
+subject:
+- name: ''
+  '@id': ''
+keywords: []
+publicationDate: ''
+embargoPeriod:
+  start: ''
+  end: ''
+  isActive: false
+context:
+  title: ''
+  homepage: ''
+  documentation: ''
+  sourceCode: ''
+  publisher: ''
+  publisherLogo: ''
+  contact: ''
+  fundingAgency: ''
+  fundingAgencyLogo: ''
+  grantNo: ''
+spatial:
+  location:
+    address: ''
+    '@id': ''
+    latitude: ''
+    longitude: ''
+  extent:
+    name: ''
+    '@id': ''
+    resolutionValue: ''
+    resolutionUnit: ''
+    crs: ''
+temporal:
+  referenceDate: ''
+  timeseries:
+  - start: ''
+    end: ''
+    resolutionValue: ''
+    resolutionUnit: ''
+    alignment: ''
+    aggregationType: ''
+sources:
+- title: ''
+  authors: []
+  description: ''
+  publicationYear: ''
+  path: ''
+  sourceLicenses:
+  - name: ''
+    title: ''
+    path: ''
+    instruction: ''
+    attribution: ''
+    copyrightStatement: ''
+- title: 'Internal table: boundaries.vg250_krs'
+  description: Derived from the internal table 'boundaries.vg250_krs'. See that table's
+    own metadata for full provenance.
+  path: ''
+  authors: []
+  publicationYear: null
+  sourceLicenses: []
+- title: 'Internal table: demand.egon_hotmaps_industrial_sites'
+  description: Derived from the internal table 'demand.egon_hotmaps_industrial_sites'.
+    See that table's own metadata for full provenance.
+  path: ''
+  authors: []
+  publicationYear: null
+  sourceLicenses: []
+- title: 'Internal table: demand.egon_schmidt_industrial_sites'
+  description: Derived from the internal table 'demand.egon_schmidt_industrial_sites'.
+    See that table's own metadata for full provenance.
+  path: ''
+  authors: []
+  publicationYear: null
+  sourceLicenses: []
+- title: 'Internal table: demand.egon_seenergies_industrial_sites'
+  description: Derived from the internal table 'demand.egon_seenergies_industrial_sites'.
+    See that table's own metadata for full provenance.
+  path: ''
+  authors: []
+  publicationYear: null
+  sourceLicenses: []
+- title: hotmaps
+  description: ''
+  path: https://gitlab.com/hotmaps/industrial_sites/industrial_sites_Industrial_Database/-/raw/388278c6df35889b1447a959fc3759e3d78bf659/data/Industrial_Database.csv?inline=false
+  authors: []
+  publicationYear: null
+  sourceLicenses: []
+- title: seenergies
+  description: ''
+  path: https://opendata.arcgis.com/datasets/5e36c0af918040ed936b4e4c101f611d_0.csv
+  authors: []
+  publicationYear: null
+  sourceLicenses: []
+- title: schmidt
+  description: ''
+  path: industrial_sites/MA_Schmidt_Industriestandorte_georef.csv
+  authors: []
+  publicationYear: null
+  sourceLicenses: []
+licenses:
+- name: ''
+  title: ''
+  path: ''
+  instruction: ''
+  attribution: ''
+  copyrightStatement: ''
+contributors:
+- title: ''
+  path: ''
+  organization: ''
+  roles: []
+  date: ''
+  object: ''
+  comment: ''
+type: ''
+format: ''
+encoding: ''
+schema:
+  primaryKey:
+  - objectid
+  foreignKeys: []
+  fields:
+  - name: objectid
+    description: 'TODO: Add description'
+    type: integer
+    unit: none
+  - name: siteid
+    description: 'TODO: Add description'
+    type: integer
+    unit: none
+  - name: companyname
+    description: 'TODO: Add description'
+    type: string
+    unit: none
+  - name: address
+    description: 'TODO: Add description'
+    type: string
+    unit: none
+  - name: country
+    description: 'TODO: Add description'
+    type: string
+    unit: none
+  - name: eu28
+    description: 'TODO: Add description'
+    type: string
+    unit: none
+  - name: subsector
+    description: 'TODO: Add description'
+    type: string
+    unit: none
+  - name: lat
+    description: 'TODO: Add description'
+    type: number
+    unit: none
+  - name: lon
+    description: 'TODO: Add description'
+    type: number
+    unit: none
+  - name: nuts1
+    description: 'TODO: Add description'
+    type: string
+    unit: none
+  - name: nuts3
+    description: 'TODO: Add description'
+    type: string
+    unit: none
+  - name: excess_heat
+    description: 'TODO: Add description'
+    type: string
+    unit: none
+  - name: level_1_tj
+    description: 'TODO: Add description'
+    type: number
+    unit: none
+  - name: level_2_tj
+    description: 'TODO: Add description'
+    type: number
+    unit: none
+  - name: level_3_tj
+    description: 'TODO: Add description'
+    type: number
+    unit: none
+  - name: level_1_r_tj
+    description: 'TODO: Add description'
+    type: number
+    unit: none
+  - name: level_2_r_tj
+    description: 'TODO: Add description'
+    type: number
+    unit: none
+  - name: level_3_r_tj
+    description: 'TODO: Add description'
+    type: number
+    unit: none
+  - name: level_1_pj
+    description: 'TODO: Add description'
+    type: number
+    unit: none
+  - name: level_2_pj
+    description: 'TODO: Add description'
+    type: number
+    unit: none
+  - name: level_3_pj
+    description: 'TODO: Add description'
+    type: number
+    unit: none
+  - name: level_1_r_pj
+    description: 'TODO: Add description'
+    type: number
+    unit: none
+  - name: level_2_r_pj
+    description: 'TODO: Add description'
+    type: number
+    unit: none
+  - name: level_3_r_pj
+    description: 'TODO: Add description'
+    type: number
+    unit: none
+  - name: electricitydemand_tj
+    description: 'TODO: Add description'
+    type: number
+    unit: none
+  - name: fueldemand_tj
+    description: 'TODO: Add description'
+    type: number
+    unit: none
+  - name: globalid
+    description: 'TODO: Add description'
+    type: string
+    unit: none
+  - name: geom
+    description: 'TODO: Add description'
+    type: string
+    unit: none
+  - name: wz
+    description: 'TODO: Add description'
+    type: integer
+    unit: none
+dialect:
+  delimiter: ''
+  decimalSeparator: ''
+review:
+  path: ''
+  badge: ''

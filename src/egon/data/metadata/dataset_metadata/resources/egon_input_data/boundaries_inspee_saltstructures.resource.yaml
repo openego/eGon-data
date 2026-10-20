@@ -1,0 +1,112 @@
+'@id': ''
+name: boundaries.inspee_saltstructures
+topics: []
+title: 'TODO: Add title for boundaries.inspee_saltstructures'
+path: ''
+description: 'TODO: Add description'
+languages: []
+subject:
+- name: ''
+  '@id': ''
+keywords: []
+publicationDate: ''
+embargoPeriod:
+  start: ''
+  end: ''
+  isActive: false
+context:
+  title: ''
+  homepage: ''
+  documentation: ''
+  sourceCode: ''
+  publisher: ''
+  publisherLogo: ''
+  contact: ''
+  fundingAgency: ''
+  fundingAgencyLogo: ''
+  grantNo: ''
+spatial:
+  location:
+    address: ''
+    '@id': ''
+    latitude: ''
+    longitude: ''
+  extent:
+    name: ''
+    '@id': ''
+    resolutionValue: ''
+    resolutionUnit: ''
+    crs: ''
+temporal:
+  referenceDate: ''
+  timeseries:
+  - start: ''
+    end: ''
+    resolutionValue: ''
+    resolutionUnit: ''
+    alignment: ''
+    aggregationType: ''
+sources:
+- title: ''
+  authors: []
+  description: ''
+  publicationYear: ''
+  path: ''
+  sourceLicenses:
+  - name: ''
+    title: ''
+    path: ''
+    instruction: ''
+    attribution: ''
+    copyrightStatement: ''
+- title: inspee_saltstructures
+  description: ''
+  path: data_bundle_egon_data/hydrogen_storage_potential_saltstructures/Potenzialbewertung_InSpEE_InSpEE_DS.shp
+  authors: []
+  publicationYear: null
+  sourceLicenses: []
+licenses:
+- name: ''
+  title: ''
+  path: ''
+  instruction: ''
+  attribution: ''
+  copyrightStatement: ''
+contributors:
+- title: ''
+  path: ''
+  organization: ''
+  roles: []
+  date: ''
+  object: ''
+  comment: ''
+type: ''
+format: ''
+encoding: ''
+schema:
+  primaryKey:
+  - saltstructure_id
+  foreignKeys: []
+  fields:
+  - name: saltstructure_id
+    description: 'TODO: Add description'
+    type: integer
+    unit: none
+  - name: shape_stle
+    description: 'TODO: Add description'
+    type: number
+    unit: none
+  - name: shape_star
+    description: 'TODO: Add description'
+    type: number
+    unit: none
+  - name: geometry
+    description: 'TODO: Add description'
+    type: string
+    unit: none
+dialect:
+  delimiter: ''
+  decimalSeparator: ''
+review:
+  path: ''
+  badge: ''

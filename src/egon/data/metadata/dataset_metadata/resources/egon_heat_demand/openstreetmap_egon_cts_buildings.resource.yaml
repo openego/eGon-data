@@ -1,0 +1,184 @@
+'@id': ''
+name: openstreetmap.egon_cts_buildings
+topics: []
+title: 'TODO: Add title for openstreetmap.egon_cts_buildings'
+path: ''
+description: 'TODO: Add description'
+languages: []
+subject:
+- name: ''
+  '@id': ''
+keywords: []
+publicationDate: ''
+embargoPeriod:
+  start: ''
+  end: ''
+  isActive: false
+context:
+  title: ''
+  homepage: ''
+  documentation: ''
+  sourceCode: ''
+  publisher: ''
+  publisherLogo: ''
+  contact: ''
+  fundingAgency: ''
+  fundingAgencyLogo: ''
+  grantNo: ''
+spatial:
+  location:
+    address: ''
+    '@id': ''
+    latitude: ''
+    longitude: ''
+  extent:
+    name: ''
+    '@id': ''
+    resolutionValue: ''
+    resolutionUnit: ''
+    crs: ''
+temporal:
+  referenceDate: ''
+  timeseries:
+  - start: ''
+    end: ''
+    resolutionValue: ''
+    resolutionUnit: ''
+    alignment: ''
+    aggregationType: ''
+sources:
+- title: ''
+  authors: []
+  description: ''
+  publicationYear: ''
+  path: ''
+  sourceLicenses:
+  - name: ''
+    title: ''
+    path: ''
+    instruction: ''
+    attribution: ''
+    copyrightStatement: ''
+- title: 'Internal table: boundaries.egon_map_zensus_buildings_filtered_all'
+  description: Derived from the internal table 'boundaries.egon_map_zensus_buildings_filtered_all'.
+    See that table's own metadata for full provenance.
+  path: ''
+  authors: []
+  publicationYear: null
+  sourceLicenses: []
+- title: 'Internal table: demand.egon_demandregio_zensus_electricity'
+  description: Derived from the internal table 'demand.egon_demandregio_zensus_electricity'.
+    See that table's own metadata for full provenance.
+  path: ''
+  authors: []
+  publicationYear: null
+  sourceLicenses: []
+- title: 'Internal table: demand.egon_etrago_electricity_cts'
+  description: Derived from the internal table 'demand.egon_etrago_electricity_cts'.
+    See that table's own metadata for full provenance.
+  path: ''
+  authors: []
+  publicationYear: null
+  sourceLicenses: []
+- title: 'Internal table: demand.egon_etrago_heat_cts'
+  description: Derived from the internal table 'demand.egon_etrago_heat_cts'. See
+    that table's own metadata for full provenance.
+  path: ''
+  authors: []
+  publicationYear: null
+  sourceLicenses: []
+- title: 'Internal table: demand.egon_peta_heat'
+  description: Derived from the internal table 'demand.egon_peta_heat'. See that table's
+    own metadata for full provenance.
+  path: ''
+  authors: []
+  publicationYear: null
+  sourceLicenses: []
+- title: 'Internal table: openstreetmap.osm_amenities_not_in_buildings_filtered'
+  description: Derived from the internal table 'openstreetmap.osm_amenities_not_in_buildings_filtered'.
+    See that table's own metadata for full provenance.
+  path: ''
+  authors: []
+  publicationYear: null
+  sourceLicenses: []
+- title: 'Internal table: openstreetmap.osm_amenities_shops_filtered'
+  description: Derived from the internal table 'openstreetmap.osm_amenities_shops_filtered'.
+    See that table's own metadata for full provenance.
+  path: ''
+  authors: []
+  publicationYear: null
+  sourceLicenses: []
+- title: 'Internal table: openstreetmap.osm_buildings_filtered'
+  description: Derived from the internal table 'openstreetmap.osm_buildings_filtered'.
+    See that table's own metadata for full provenance.
+  path: ''
+  authors: []
+  publicationYear: null
+  sourceLicenses: []
+- title: 'Internal table: openstreetmap.osm_buildings_residential'
+  description: Derived from the internal table 'openstreetmap.osm_buildings_residential'.
+    See that table's own metadata for full provenance.
+  path: ''
+  authors: []
+  publicationYear: null
+  sourceLicenses: []
+- title: 'Internal table: openstreetmap.osm_buildings_synthetic'
+  description: Derived from the internal table 'openstreetmap.osm_buildings_synthetic'.
+    See that table's own metadata for full provenance.
+  path: ''
+  authors: []
+  publicationYear: null
+  sourceLicenses: []
+licenses:
+- name: ''
+  title: ''
+  path: ''
+  instruction: ''
+  attribution: ''
+  copyrightStatement: ''
+contributors:
+- title: ''
+  path: ''
+  organization: ''
+  roles: []
+  date: ''
+  object: ''
+  comment: ''
+type: ''
+format: ''
+encoding: ''
+schema:
+  primaryKey:
+  - serial
+  foreignKeys: []
+  fields:
+  - name: serial
+    description: 'TODO: Add description'
+    type: integer
+    unit: none
+  - name: id
+    description: 'TODO: Add description'
+    type: integer
+    unit: none
+  - name: zensus_population_id
+    description: 'TODO: Add description'
+    type: integer
+    unit: none
+  - name: geom_building
+    description: 'TODO: Add description'
+    type: string
+    unit: none
+  - name: n_amenities_inside
+    description: 'TODO: Add description'
+    type: integer
+    unit: none
+  - name: source
+    description: 'TODO: Add description'
+    type: string
+    unit: none
+dialect:
+  delimiter: ''
+  decimalSeparator: ''
+review:
+  path: ''
+  badge: ''

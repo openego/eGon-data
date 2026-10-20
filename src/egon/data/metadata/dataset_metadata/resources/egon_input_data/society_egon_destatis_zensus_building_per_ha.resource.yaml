@@ -1,0 +1,144 @@
+'@id': ''
+name: society.egon_destatis_zensus_building_per_ha
+topics: []
+title: 'TODO: Add title for society.egon_destatis_zensus_building_per_ha'
+path: ''
+description: 'TODO: Add description'
+languages: []
+subject:
+- name: ''
+  '@id': ''
+keywords: []
+publicationDate: ''
+embargoPeriod:
+  start: ''
+  end: ''
+  isActive: false
+context:
+  title: ''
+  homepage: ''
+  documentation: ''
+  sourceCode: ''
+  publisher: ''
+  publisherLogo: ''
+  contact: ''
+  fundingAgency: ''
+  fundingAgencyLogo: ''
+  grantNo: ''
+spatial:
+  location:
+    address: ''
+    '@id': ''
+    latitude: ''
+    longitude: ''
+  extent:
+    name: ''
+    '@id': ''
+    resolutionValue: ''
+    resolutionUnit: ''
+    crs: ''
+temporal:
+  referenceDate: ''
+  timeseries:
+  - start: ''
+    end: ''
+    resolutionValue: ''
+    resolutionUnit: ''
+    alignment: ''
+    aggregationType: ''
+sources:
+- title: ''
+  authors: []
+  description: ''
+  publicationYear: ''
+  path: ''
+  sourceLicenses:
+  - name: ''
+    title: ''
+    path: ''
+    instruction: ''
+    attribution: ''
+    copyrightStatement: ''
+- title: zensus_apartments
+  description: ''
+  path: https://www.zensus2011.de/SharedDocs/Downloads/DE/Pressemitteilung/DemografischeGrunddaten/csv_Wohnungen_100m_Gitter.zip?__blob=publicationFile&v=5
+  authors: []
+  publicationYear: null
+  sourceLicenses: []
+- title: zensus_buildings
+  description: ''
+  path: https://www.zensus2011.de/SharedDocs/Downloads/DE/Pressemitteilung/DemografischeGrunddaten/csv_Gebaeude_100m_Gitter.zip?__blob=publicationFile&v=2
+  authors: []
+  publicationYear: null
+  sourceLicenses: []
+- title: zensus_households
+  description: ''
+  path: https://www.zensus2011.de/SharedDocs/Downloads/DE/Pressemitteilung/DemografischeGrunddaten/csv_Haushalte_100m_Gitter.zip?__blob=publicationFile&v=2
+  authors: []
+  publicationYear: null
+  sourceLicenses: []
+licenses:
+- name: ''
+  title: ''
+  path: ''
+  instruction: ''
+  attribution: ''
+  copyrightStatement: ''
+contributors:
+- title: ''
+  path: ''
+  organization: ''
+  roles: []
+  date: ''
+  object: ''
+  comment: ''
+type: ''
+format: ''
+encoding: ''
+schema:
+  primaryKey:
+  - id
+  foreignKeys: []
+  fields:
+  - name: id
+    description: 'TODO: Add description'
+    type: integer
+    unit: none
+  - name: grid_id
+    description: 'TODO: Add description'
+    type: string
+    unit: none
+  - name: grid_id_new
+    description: 'TODO: Add description'
+    type: string
+    unit: none
+  - name: attribute
+    description: 'TODO: Add description'
+    type: string
+    unit: none
+  - name: characteristics_code
+    description: 'TODO: Add description'
+    type: integer
+    unit: none
+  - name: characteristics_text
+    description: 'TODO: Add description'
+    type: string
+    unit: none
+  - name: quantity
+    description: 'TODO: Add description'
+    type: integer
+    unit: none
+  - name: quantity_q
+    description: 'TODO: Add description'
+    type: integer
+    unit: none
+  - name: zensus_population_id
+    description: 'TODO: Add description'
+    type: integer
+    unit: none
+dialect:
+  delimiter: ''
+  decimalSeparator: ''
+review:
+  path: ''
+  badge: ''

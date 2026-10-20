@@ -1,0 +1,134 @@
+'@id': ''
+name: supply.egon_re_potential_area_wind
+topics: []
+title: 'TODO: Add title for supply.egon_re_potential_area_wind'
+path: ''
+description: 'TODO: Add description'
+languages: []
+subject:
+- name: ''
+  '@id': ''
+keywords: []
+publicationDate: ''
+embargoPeriod:
+  start: ''
+  end: ''
+  isActive: false
+context:
+  title: ''
+  homepage: ''
+  documentation: ''
+  sourceCode: ''
+  publisher: ''
+  publisherLogo: ''
+  contact: ''
+  fundingAgency: ''
+  fundingAgencyLogo: ''
+  grantNo: ''
+spatial:
+  location:
+    address: ''
+    '@id': ''
+    latitude: ''
+    longitude: ''
+  extent:
+    name: ''
+    '@id': ''
+    resolutionValue: ''
+    resolutionUnit: ''
+    crs: ''
+temporal:
+  referenceDate: ''
+  timeseries:
+  - start: ''
+    end: ''
+    resolutionValue: ''
+    resolutionUnit: ''
+    alignment: ''
+    aggregationType: ''
+sources:
+- title: ''
+  authors: []
+  description: ''
+  publicationYear: ''
+  path: ''
+  sourceLicenses:
+  - name: ''
+    title: ''
+    path: ''
+    instruction: ''
+    attribution: ''
+    copyrightStatement: ''
+- title: potentialarea_pv_agriculture
+  description: ''
+  path: data_bundle_egon_data/re_potential_areas/potentialarea_pv_agriculture.gpkg
+  authors: []
+  publicationYear: null
+  sourceLicenses: []
+- title: potentialarea_pv_agriculture_SH
+  description: ''
+  path: data_bundle_egon_data/re_potential_areas/potentialarea_pv_agriculture_SH.gpkg
+  authors: []
+  publicationYear: null
+  sourceLicenses: []
+- title: potentialarea_pv_road_railway
+  description: ''
+  path: data_bundle_egon_data/re_potential_areas/potentialarea_pv_road_railway.gpkg
+  authors: []
+  publicationYear: null
+  sourceLicenses: []
+- title: potentialarea_pv_road_railway_SH
+  description: ''
+  path: data_bundle_egon_data/re_potential_areas/potentialarea_pv_road_railway_SH.gpkg
+  authors: []
+  publicationYear: null
+  sourceLicenses: []
+- title: potentialarea_wind
+  description: ''
+  path: data_bundle_egon_data/re_potential_areas/potentialarea_wind.gpkg
+  authors: []
+  publicationYear: null
+  sourceLicenses: []
+- title: potentialarea_wind_SH
+  description: ''
+  path: data_bundle_egon_data/re_potential_areas/potentialarea_wind_SH.gpkg
+  authors: []
+  publicationYear: null
+  sourceLicenses: []
+licenses:
+- name: ''
+  title: ''
+  path: ''
+  instruction: ''
+  attribution: ''
+  copyrightStatement: ''
+contributors:
+- title: ''
+  path: ''
+  organization: ''
+  roles: []
+  date: ''
+  object: ''
+  comment: ''
+type: ''
+format: ''
+encoding: ''
+schema:
+  primaryKey:
+  - id
+  foreignKeys: []
+  fields:
+  - name: id
+    description: 'TODO: Add description'
+    type: integer
+    unit: none
+  - name: geom
+    description: 'TODO: Add description'
+    type: string
+    unit: none
+dialect:
+  delimiter: ''
+  decimalSeparator: ''
+review:
+  path: ''
+  badge: ''

@@ -1,0 +1,126 @@
+'@id': ''
+name: society.egon_ethos_builda_buildings
+topics: []
+title: 'TODO: Add title for society.egon_ethos_builda_buildings'
+path: ''
+description: 'TODO: Add description'
+languages: []
+subject:
+- name: ''
+  '@id': ''
+keywords: []
+publicationDate: ''
+embargoPeriod:
+  start: ''
+  end: ''
+  isActive: false
+context:
+  title: ''
+  homepage: ''
+  documentation: ''
+  sourceCode: ''
+  publisher: ''
+  publisherLogo: ''
+  contact: ''
+  fundingAgency: ''
+  fundingAgencyLogo: ''
+  grantNo: ''
+spatial:
+  location:
+    address: ''
+    '@id': ''
+    latitude: ''
+    longitude: ''
+  extent:
+    name: ''
+    '@id': ''
+    resolutionValue: ''
+    resolutionUnit: ''
+    crs: ''
+temporal:
+  referenceDate: ''
+  timeseries:
+  - start: ''
+    end: ''
+    resolutionValue: ''
+    resolutionUnit: ''
+    alignment: ''
+    aggregationType: ''
+sources:
+- title: ''
+  authors: []
+  description: ''
+  publicationYear: ''
+  path: ''
+  sourceLicenses:
+  - name: ''
+    title: ''
+    path: ''
+    instruction: ''
+    attribution: ''
+    copyrightStatement: ''
+licenses:
+- name: ''
+  title: ''
+  path: ''
+  instruction: ''
+  attribution: ''
+  copyrightStatement: ''
+contributors:
+- title: ''
+  path: ''
+  organization: ''
+  roles: []
+  date: ''
+  object: ''
+  comment: ''
+type: ''
+format: ''
+encoding: ''
+schema:
+  primaryKey:
+  - id
+  foreignKeys: []
+  fields:
+  - name: id
+    description: 'TODO: Add description'
+    type: string
+    unit: none
+  - name: nuts1
+    description: 'TODO: Add description'
+    type: string
+    unit: none
+  - name: geom_point
+    description: 'TODO: Add description'
+    type: string
+    unit: none
+  - name: construction_year
+    description: 'TODO: Add description'
+    type: integer
+    unit: none
+  - name: construction_year_lineage
+    description: 'TODO: Add description'
+    type: string
+    unit: none
+  - name: size_class
+    description: 'TODO: Add description'
+    type: string
+    unit: none
+  - name: size_class_lineage
+    description: 'TODO: Add description'
+    type: string
+    unit: none
+  - name: refurbishment_state
+    description: 'TODO: Add description'
+    type: string
+    unit: none
+  - name: tabula_type
+    description: 'TODO: Add description'
+    type: string
+    unit: none
+dialect:
+  delimiter: ''
+  decimalSeparator: ''
+review:
+  path: ''
+  badge: ''

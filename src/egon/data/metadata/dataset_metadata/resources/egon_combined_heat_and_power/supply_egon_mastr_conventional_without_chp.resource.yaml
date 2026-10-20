@@ -1,0 +1,205 @@
+'@id': ''
+name: supply.egon_mastr_conventional_without_chp
+topics: []
+title: 'TODO: Add title for supply.egon_mastr_conventional_without_chp'
+path: ''
+description: 'TODO: Add description'
+languages: []
+subject:
+- name: ''
+  '@id': ''
+keywords: []
+publicationDate: ''
+embargoPeriod:
+  start: ''
+  end: ''
+  isActive: false
+context:
+  title: ''
+  homepage: ''
+  documentation: ''
+  sourceCode: ''
+  publisher: ''
+  publisherLogo: ''
+  contact: ''
+  fundingAgency: ''
+  fundingAgencyLogo: ''
+  grantNo: ''
+spatial:
+  location:
+    address: ''
+    '@id': ''
+    latitude: ''
+    longitude: ''
+  extent:
+    name: ''
+    '@id': ''
+    resolutionValue: ''
+    resolutionUnit: ''
+    crs: ''
+temporal:
+  referenceDate: ''
+  timeseries:
+  - start: ''
+    end: ''
+    resolutionValue: ''
+    resolutionUnit: ''
+    alignment: ''
+    aggregationType: ''
+sources:
+- title: ''
+  authors: []
+  description: ''
+  publicationYear: ''
+  path: ''
+  sourceLicenses:
+  - name: ''
+    title: ''
+    path: ''
+    instruction: ''
+    attribution: ''
+    copyrightStatement: ''
+- title: 'Internal table: boundaries.vg250_lan'
+  description: Derived from the internal table 'boundaries.vg250_lan'. See that table's
+    own metadata for full provenance.
+  path: ''
+  authors: []
+  publicationYear: null
+  sourceLicenses: []
+- title: 'Internal table: demand.egon_demandregio_osm_ind_electricity'
+  description: Derived from the internal table 'demand.egon_demandregio_osm_ind_electricity'.
+    See that table's own metadata for full provenance.
+  path: ''
+  authors: []
+  publicationYear: null
+  sourceLicenses: []
+- title: 'Internal table: demand.egon_district_heating_areas'
+  description: Derived from the internal table 'demand.egon_district_heating_areas'.
+    See that table's own metadata for full provenance.
+  path: ''
+  authors: []
+  publicationYear: null
+  sourceLicenses: []
+- title: 'Internal table: grid.egon_ehv_substation_voronoi'
+  description: Derived from the internal table 'grid.egon_ehv_substation_voronoi'.
+    See that table's own metadata for full provenance.
+  path: ''
+  authors: []
+  publicationYear: null
+  sourceLicenses: []
+- title: 'Internal table: grid.egon_etrago_bus'
+  description: Derived from the internal table 'grid.egon_etrago_bus'. See that table's
+    own metadata for full provenance.
+  path: ''
+  authors: []
+  publicationYear: null
+  sourceLicenses: []
+- title: 'Internal table: grid.egon_mv_grid_district'
+  description: Derived from the internal table 'grid.egon_mv_grid_district'. See that
+    table's own metadata for full provenance.
+  path: ''
+  authors: []
+  publicationYear: null
+  sourceLicenses: []
+- title: 'Internal table: openstreetmap.osm_landuse'
+  description: Derived from the internal table 'openstreetmap.osm_landuse'. See that
+    table's own metadata for full provenance.
+  path: ''
+  authors: []
+  publicationYear: null
+  sourceLicenses: []
+- title: 'Internal table: openstreetmap.osm_polygon'
+  description: Derived from the internal table 'openstreetmap.osm_polygon'. See that
+    table's own metadata for full provenance.
+  path: ''
+  authors: []
+  publicationYear: null
+  sourceLicenses: []
+- title: 'Internal table: supply.egon_nep_conventional_powerplants'
+  description: Derived from the internal table 'supply.egon_nep_conventional_powerplants'.
+    See that table's own metadata for full provenance.
+  path: ''
+  authors: []
+  publicationYear: null
+  sourceLicenses: []
+- title: 'Internal table: supply.egon_scenario_capacities'
+  description: Derived from the internal table 'supply.egon_scenario_capacities'.
+    See that table's own metadata for full provenance.
+  path: ''
+  authors: []
+  publicationYear: null
+  sourceLicenses: []
+- title: mastr_biomass
+  description: ''
+  path: ./bnetza_mastr/dump_2025-02-09/bnetza_mastr_biomass_cleaned.csv
+  authors: []
+  publicationYear: null
+  sourceLicenses: []
+- title: mastr_combustion
+  description: ''
+  path: ./bnetza_mastr/dump_2025-02-09/bnetza_mastr_combustion_cleaned.csv
+  authors: []
+  publicationYear: null
+  sourceLicenses: []
+- title: mastr_location
+  description: ''
+  path: ./bnetza_mastr/dump_2025-02-09/location_elec_generation_raw.csv
+  authors: []
+  publicationYear: null
+  sourceLicenses: []
+licenses:
+- name: ''
+  title: ''
+  path: ''
+  instruction: ''
+  attribution: ''
+  copyrightStatement: ''
+contributors:
+- title: ''
+  path: ''
+  organization: ''
+  roles: []
+  date: ''
+  object: ''
+  comment: ''
+type: ''
+format: ''
+encoding: ''
+schema:
+  primaryKey: []
+  foreignKeys: []
+  fields:
+  - name: EinheitMastrNummer
+    description: 'TODO: Add description'
+    type: string
+    unit: none
+  - name: el_capacity
+    description: 'TODO: Add description'
+    type: number
+    unit: none
+  - name: geometry
+    description: 'TODO: Add description'
+    type: string
+    unit: none
+  - name: carrier
+    description: 'TODO: Add description'
+    type: string
+    unit: none
+  - name: plz
+    description: 'TODO: Add description'
+    type: integer
+    unit: none
+  - name: city
+    description: 'TODO: Add description'
+    type: string
+    unit: none
+  - name: federal_state
+    description: 'TODO: Add description'
+    type: string
+    unit: none
+dialect:
+  delimiter: ''
+  decimalSeparator: ''
+review:
+  path: ''
+  badge: ''
