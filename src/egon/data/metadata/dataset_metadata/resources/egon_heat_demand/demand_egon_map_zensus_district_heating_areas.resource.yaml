@@ -1,0 +1,223 @@
+name: demand.egon_map_zensus_district_heating_areas
+'@id': null
+title: district heating area ids assigned to zensus_population_ids
+path: null
+description: Ids of scenario specific future district heating areas for supply of
+  residential and service-sector heat demands assigned to zensus_population_ids
+languages:
+- EN
+subject:
+- name: ''
+  '@id': null
+publicationDate: '2026-10-02'
+embargoPeriod:
+  start: ''
+  end: ''
+  isActive: false
+spatial:
+  location:
+    address: ''
+    '@id': null
+    latitude: ''
+    longitude: ''
+  extent:
+    name: Germany
+    '@id': null
+    resolutionValue: ''
+    resolutionUnit: ''
+    boundingBox:
+    - 0
+    - 0
+    - 0
+    - 0
+    crs: ''
+temporal:
+  referenceDate: ''
+  timeseries:
+  - start: ''
+    end: ''
+    resolutionValue: ''
+    resolutionUnit: ''
+    alignment: ''
+    aggregationType: ''
+sources:
+- title: Pan-European Thermal Atlas, Peta version 5.0.1
+  authors: []
+  description: 'Modelled Heat Demand distribution (in GJ per hectare grid cell) for
+    residential and service heat demands for space heating and hot water for the year
+    2015 using HRE4 data and the combined top-down bottom-up approach of HRE4. National
+    sector-specific heat demand data, derived by the FORECAST model in HRE4 for residential
+    (delivered energy, for space heating and hot water) and service-sector (delivered
+    energy, for space heating, hot water and process heat) buildings for the year
+    2015, were distributed using modelled, spatial statistics based floor areas in
+    100x100m grids and a population grid. For further information please see the documentation
+    available on the Heat Roadmap Europe website, in particular D2.3 report: Methodologies
+    and assumptions used in the mapping.'
+  publicationYear: null
+  path: https://s-eenergies-open-data-euf.hub.arcgis.com/search
+  sourceLicenses:
+  - name: CC-BY-4.0
+    title: Creative Commons Attribution 4.0 International
+    path: https://creativecommons.org/licenses/by/4.0/legalcode
+    instruction: 'You are free: To Share, To Create, To Adapt; As long as you: Attribute.'
+    attribution: © Europa-Universität Flensburg, Halmstad University and Aalborg University
+    copyrightStatement: null
+- title: eGon-data
+  authors: []
+  description: Workflow to download, process and generate data sets suitable for the
+    further research conducted in the project eGon (https://ego-n.org/)
+  publicationYear: null
+  path: https://github.com/openego/eGon-data
+  sourceLicenses:
+  - name: AGPL-3.0 License
+    title: GNU Affero General Public License v3.0
+    path: https://www.gnu.org/licenses/agpl-3.0.de.html
+    instruction: Permissions of this strongest copyleft license areconditioned on
+      making available complete source code of licensed works and modifications, which
+      include larger works using a licensedwork, under the same license. Copyright
+      and license notices must bepreserved. Contributors provide an express grant
+      of patent rights.When a modified version is used to provide a service over a
+      network,the complete source code of the modified version must be made available.
+    attribution: © eGon development team
+    copyrightStatement: null
+- title: Statistisches Bundesamt (Destatis) - Ergebnisse des Zensus 2011 zum Download
+  authors: []
+  description: Als Download bieten wir Ihnen auf dieser Seite zusätzlich zur Zensusdatenbank
+    CSV- und teilweise Excel-Tabellen mit umfassenden Personen-, Haushalts- und Familien-
+    sowie Gebäude- und Wohnungs­merkmaln. Die Ergebnisse liegen auf Bundes-, Länder-,
+    Kreis- und Gemeinde­ebene vor. Außerdem sind einzele Ergebnisse für Gitterzellen
+    verfügbar.
+  publicationYear: null
+  path: https://www.zensus2011.de/DE/Home/Aktuelles/DemografischeGrunddaten.html
+  sourceLicenses:
+  - name: dl-by-de/2.0
+    title: Datenlizenz Deutschland – Namensnennung – Version 2.0
+    path: www.govdata.de/dl-de/by-2-0
+    instruction: "Jede Nutzung ist unter den Bedingungen dieser „Datenlizenz Deutschland\
+      \ - Namensnennung - Version 2.0 zulässig.\nDie bereitgestellten Daten und Metadaten\
+      \ dürfen für die kommerzielle und nicht kommerzielle Nutzung insbesondere:(1)\
+      \ vervielfältigt, ausgedruckt, präsentiert, verändert, bearbeitet sowie an Dritte\
+      \ übermittelt werden;\n (2) mit eigenen Daten und Daten Anderer zusammengeführt\
+      \ und zu selbständigen neuen Datensätzen verbunden werden;\n (3) in interne\
+      \ und externe Geschäftsprozesse, Produkte und Anwendungen in öffentlichen und\
+      \ nicht öffentlichen elektronischen Netzwerken eingebunden werden.\nBei der\
+      \ Nutzung ist sicherzustellen, dass folgende Angaben als Quellenvermerk enthalten\
+      \ sind:\n(1) Bezeichnung des Bereitstellers nach dessen Maßgabe,\n(2) der Vermerk\
+      \ Datenlizenz Deutschland – Namensnennung – Version 2.0 oder dl-de/by-2-0 mit\
+      \ Verweis auf den Lizenztext unter www.govdata.de/dl-de/by-2-0 sowie\n(3) einen\
+      \ Verweis auf den Datensatz (URI).Dies gilt nur soweit die datenhaltende Stelle\
+      \ die Angaben(1) bis (3) zum Quellenvermerk bereitstellt.\nVeränderungen, Bearbeitungen,\
+      \ neue Gestaltungen oder sonstige Abwandlungen sind im Quellenvermerk mit dem\
+      \ Hinweis zu versehen, dass die Daten geändert wurden."
+    attribution: © Statistische Ämter des Bundes und der Länder 2014
+    copyrightStatement: null
+- title: Verwaltungsgebiete 1:250 000 (Ebenen)
+  authors: []
+  description: Der Datenbestand umfasst sämtliche Verwaltungseinheiten der hierarchischen
+    Verwaltungsebenen vom Staat bis zu den Gemeinden mit ihren Grenzen, statistischen
+    Schlüsselzahlen, Namen der Verwaltungseinheit sowie die spezifische Bezeichnung
+    der Verwaltungsebene des jeweiligen Landes.
+  publicationYear: null
+  path: https://daten.gdz.bkg.bund.de/produkte/vg/vg250_ebenen_0101/2020/vg250_01-01.geo84.shape.ebenen.zip
+  sourceLicenses:
+  - name: dl-by-de/2.0
+    title: Datenlizenz Deutschland – Namensnennung – Version 2.0
+    path: www.govdata.de/dl-de/by-2-0
+    instruction: "Jede Nutzung ist unter den Bedingungen dieser „Datenlizenz Deutschland\
+      \ - Namensnennung - Version 2.0 zulässig.\nDie bereitgestellten Daten und Metadaten\
+      \ dürfen für die kommerzielle und nicht kommerzielle Nutzung insbesondere:(1)\
+      \ vervielfältigt, ausgedruckt, präsentiert, verändert, bearbeitet sowie an Dritte\
+      \ übermittelt werden;\n (2) mit eigenen Daten und Daten Anderer zusammengeführt\
+      \ und zu selbständigen neuen Datensätzen verbunden werden;\n (3) in interne\
+      \ und externe Geschäftsprozesse, Produkte und Anwendungen in öffentlichen und\
+      \ nicht öffentlichen elektronischen Netzwerken eingebunden werden.\nBei der\
+      \ Nutzung ist sicherzustellen, dass folgende Angaben als Quellenvermerk enthalten\
+      \ sind:\n(1) Bezeichnung des Bereitstellers nach dessen Maßgabe,\n(2) der Vermerk\
+      \ Datenlizenz Deutschland – Namensnennung – Version 2.0 oder dl-de/by-2-0 mit\
+      \ Verweis auf den Lizenztext unter www.govdata.de/dl-de/by-2-0 sowie\n(3) einen\
+      \ Verweis auf den Datensatz (URI).Dies gilt nur soweit die datenhaltende Stelle\
+      \ die Angaben(1) bis (3) zum Quellenvermerk bereitstellt.\nVeränderungen, Bearbeitungen,\
+      \ neue Gestaltungen oder sonstige Abwandlungen sind im Quellenvermerk mit dem\
+      \ Hinweis zu versehen, dass die Daten geändert wurden."
+    attribution: © Bundesamt für Kartographie und Geodäsie 2020 (Daten verändert)
+    copyrightStatement: null
+licenses:
+- name: CC-BY-4.0
+  title: Creative Commons Attribution 4.0 International
+  path: https://creativecommons.org/licenses/by/4.0/legalcode
+  instruction: 'You are free: To Share, To Create, To Adapt; As long as you: Attribute.'
+  attribution: © Europa-Universität Flensburg
+  copyrightStatement: null
+contributors:
+- title: EvaWie
+  path: null
+  organization: null
+  roles:
+  - ''
+  date: '2026-10-02'
+  object: null
+  comment: Imported data
+- title: Clara Büttner
+  path: null
+  organization: null
+  roles:
+  - ''
+  date: '2026-10-02'
+  object: null
+  comment: Updated metadata
+- title: eGon-data metadata migration
+  path: https://github.com/openego/eGon-data
+  roles:
+  - dataCurator
+  organization: null
+  date: '2026-10-20'
+  object: metadata
+  comment: Migrated from the OEMetadata v1.4 table comment of a full eGon-data run
+    to OEMetadata v2 with OMI.
+type: Table
+format: PostgreSQL
+encoding: UTF-8
+schema:
+  fields:
+  - name: id
+    description: Unique identifier
+    type: serial
+    nullable: false
+    unit: none
+    isAbout: []
+    valueReference: []
+  - name: area_id
+    description: district heating area id
+    type: integer
+    nullable: false
+    unit: none
+    isAbout: []
+    valueReference: []
+  - name: scenario
+    description: scenario name
+    type: text
+    nullable: true
+    unit: none
+    isAbout: []
+    valueReference: []
+  primaryKey:
+  - id
+  foreignKeys:
+  - fields:
+    - zensus_population_id
+    reference:
+      resource: society.destatis_zensus_population_per_ha
+      fields:
+      - id
+  - fields:
+    - scenario
+    reference:
+      resource: scenario.egon_scenario_parameters
+      fields:
+      - name
+dialect:
+  delimiter: none
+  decimalSeparator: .
+review:
+  path: ''
+  badge: ''
