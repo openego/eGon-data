@@ -1,44 +1,40 @@
-'@id': ''
+'@id': null
 name: society.egon_ethos_builda_buildings
-topics: []
-title: 'TODO: Add title for society.egon_ethos_builda_buildings'
-path: ''
-description: 'TODO: Add description'
-languages: []
+title: ETHOS.BUILDA residential buildings (point dataset)
+path: WILL_BE_SET_AT_PUBLICATION
+description: 'Alle Wohngebäude Deutschlands als Punkte mit Baujahr, Größenklasse,
+  Sanierungsstand und TABULA-Archetyp, importiert aus ETHOS.BUILDA v2.0.0. Rohdatenimport
+  ohne fachliche Veränderung: aus den vier JSON-Objektspalten der Quelle wird nur
+  das Feld ''value'' ausgepackt, plus die Herkunft (''lineage'') für die zwei Attribute,
+  bei denen sie variiert. Grundlage des Verschnitts, der openstreetmap.osm_buildings_residential
+  befüllt.'
 subject:
 - name: ''
-  '@id': ''
-keywords: []
-publicationDate: ''
+  '@id': null
+publicationDate: '2026-08-19'
 embargoPeriod:
   start: ''
   end: ''
   isActive: false
-context:
-  title: ''
-  homepage: ''
-  documentation: ''
-  sourceCode: ''
-  publisher: ''
-  publisherLogo: ''
-  contact: ''
-  fundingAgency: ''
-  fundingAgencyLogo: ''
-  grantNo: ''
 spatial:
   location:
     address: ''
-    '@id': ''
+    '@id': null
     latitude: ''
     longitude: ''
   extent:
-    name: ''
-    '@id': ''
-    resolutionValue: ''
+    name: Germany
+    '@id': null
+    resolutionValue: Buildings
     resolutionUnit: ''
-    crs: ''
+    boundingBox:
+    - 0
+    - 0
+    - 0
+    - 0
+    crs: EPSG:3035
 temporal:
-  referenceDate: ''
+  referenceDate: '2025-01-01'
   timeseries:
   - start: ''
     end: ''
@@ -47,80 +43,170 @@ temporal:
     alignment: ''
     aggregationType: ''
 sources:
-- title: ''
-  authors: []
-  description: ''
-  publicationYear: ''
-  path: ''
+- title: 'ETHOS.BUILDA: Residential Building TABULA Archetype Dataset Germany'
+  authors:
+  - Kristina Dabrock
+  - Jens Ulken
+  - Noah Pflugradt
+  - Jann Michael Weinand
+  - Detlef Stolten
+  description: Alle Wohngebäude Deutschlands mit Baujahr, Größenklasse, Sanierungsstand
+    und TABULA-Archetyp, als Punktdatensatz. Teil-Dump der ETHOS.BUILDA-Datenbank
+    (Version v8_20240916), ausgeliefert als 16 CSVs je NUTS-1-Region mit insgesamt
+    19.420.827 Datensätzen. Baujahr und Größenklasse werden mit XGBoost-Modellen geschätzt
+    (Testgenauigkeit 73,9 % bzw. 97,4 % auf Einzelgebäudeebene); Trainingsdaten überwiegend
+    aus dem Zensus-Gitter, angereichert mit morphologischen Gebäude- und Nachbarschaftsmerkmalen
+    sowie sozioökonomischen Merkmalen. Sanierungsstände werden nicht modelliert, sondern
+    aus Statistiken auf Bundeslandebene zugewiesen.
+  publicationYear: '2024'
+  path: https://doi.org/10.5281/zenodo.13771740
   sourceLicenses:
-  - name: ''
-    title: ''
-    path: ''
-    instruction: ''
-    attribution: ''
-    copyrightStatement: ''
+  - name: ODbL-1.0
+    title: Open Data Commons Open Database License 1.0
+    path: https://opendatacommons.org/licenses/odbl/1.0/
+    instruction: 'You are free: To Share, To Create, To Adapt; As long as you: Attribute,
+      Share-Alike, Keep open!'
+    attribution: © Forschungszentrum Jülich, ETHOS.BUILDA v2.0.0
+    copyrightStatement: Die Lizenz der Datenbank ist ODbL-1.0; die Lizenzen der Inhalte
+      hängen laut Herausgeber von der jeweiligen Quelle ab.
+- title: TABULA Building Typology
+  authors: []
+  description: Europäische Gebäudetypologie aus den IEE-Projekten TABULA und EPISCOPE.
+    ETHOS leitet daraus die tabula_type-Archetypen ab, die diese Tabelle durchreicht.
+    Namensnennung ist Bedingung der Nutzung, nicht Höflichkeit.
+  publicationYear: null
+  path: https://www.episcope.eu
+  sourceLicenses:
+  - name: TABULA/EPISCOPE terms
+    title: IEE Projects TABULA + EPISCOPE terms of use
+    path: https://www.episcope.eu
+    instruction: 'Nicht-exklusive Nutzung ist ausdrücklich erwünscht. Bedingung: "IEE
+      Projects TABULA + EPISCOPE (www.episcope.eu)" muss sichtbar als Quelle genannt
+      werden.'
+    attribution: IEE Projects TABULA + EPISCOPE (www.episcope.eu)
+    copyrightStatement: null
+- title: Zensus 2011 — Gebäude im 100-Meter-Gitter
+  authors: []
+  description: Trainings- und Ableitungsgrundlage für Baujahr und Größenklasse in
+    ETHOS.BUILDA (lineage 'der').
+  publicationYear: null
+  path: https://www.zensus2011.de/DE/Home/Aktuelles/DemografischeGrunddaten.html
+  sourceLicenses:
+  - name: dl-de/by-2-0
+    title: Datenlizenz Deutschland Namensnennung 2.0
+    path: https://www.govdata.de/dl-de/by-2-0
+    instruction: Nutzung erlaubt, Namensnennung erforderlich.
+    attribution: © Statistische Ämter des Bundes und der Länder
+    copyrightStatement: null
 licenses:
-- name: ''
-  title: ''
-  path: ''
-  instruction: ''
-  attribution: ''
-  copyrightStatement: ''
+- name: ODbL-1.0
+  title: Open Data Commons Open Database License 1.0
+  path: https://opendatacommons.org/licenses/odbl/1.0/
+  instruction: 'You are free: To Share, To Create, To Adapt; As long as you: Attribute,
+    Share-Alike, Keep open!'
+  attribution: © Forschungszentrum Jülich (ETHOS.BUILDA v2.0.0, DOI 10.5281/zenodo.13771740),
+    © Statistische Ämter des Bundes und der Länder, IEE Projects TABULA + EPISCOPE
+    (www.episcope.eu)
+  copyrightStatement: null
 contributors:
-- title: ''
-  path: ''
-  organization: ''
-  roles: []
-  date: ''
-  object: ''
-  comment: ''
-type: ''
-format: ''
-encoding: ''
+- title: jh-RLI
+  path: null
+  organization: Reiner Lemoine Institut
+  roles:
+  - metadata-author
+  date: '2026-08-19'
+  object: metadata
+  comment: 'Created metadata for the ETHOS.BUILDA integration (issues #1310/#1311)'
+type: Table
+format: PostgreSQL
+encoding: UTF-8
 schema:
+  fields:
+  - name: id
+    description: ETHOS.BUILDA-Gebäudekennung mit NUTS-1-Präfix, z. B. 'DEF_1080931425'.
+      Bundesweit eindeutig; kein Gebäude kommt in zwei NUTS-1-Dateien vor (über alle
+      19.420.827 Datensätze geprüft).
+    type: text
+    nullable: false
+    unit: none
+    isAbout: []
+    valueReference: []
+  - name: nuts1
+    description: NUTS-1-Code der Region (DE1…DEG), beim Laden aus dem id-Präfix abgeleitet.
+      Redundant, aber indizierbar — trägt den Testmodusfilter (--dataset-boundary)
+      und die Auswertung je Bundesland.
+    type: text
+    nullable: true
+    unit: none
+    isAbout: []
+    valueReference: []
+  - name: geom_point
+    description: 'Repräsentativer Punkt des Gebäudes (CRS: ETRS89-LAEA / EPSG:3035).
+      Aus der WKT-Spalte ''position'' der Quelle; das CRS ist dort bereits 3035 und
+      wird nicht transformiert.'
+    type: geometry
+    nullable: true
+    unit: none
+    isAbout: []
+    valueReference: []
+  - name: construction_year
+    description: 'Geschätztes Baujahr. Herkunft je Zeile in construction_year_lineage:
+      64,67 % XGBoost-Schätzung, 35,33 % aus Zensus 2011 abgeleitet. Die Dekadenverteilung
+      deutet auf Streuung innerhalb der TABULA-Bänder hin, nicht auf Baujahrsschärfe.'
+    type: integer
+    nullable: true
+    unit: a
+    isAbout: []
+    valueReference: []
+  - name: construction_year_lineage
+    description: 'Herkunft des Baujahrs: ''ai'' (XGBoost-Modell v4_model.json, 64,67
+      %) oder ''der'' (aus Zensus 2011 abgeleitet, 35,33 %).'
+    type: text
+    nullable: true
+    unit: none
+    isAbout: []
+    valueReference: []
+  - name: size_class
+    description: 'TABULA-Größenklasse: SFH (Einfamilienhaus), MFH (Mehrfamilienhaus),
+      TH (Reihenhaus), AB (Wohnblock).'
+    type: text
+    nullable: true
+    unit: none
+    isAbout: []
+    valueReference: []
+  - name: size_class_lineage
+    description: 'Herkunft der Größenklasse: ''der'' (aus Zensus 2011 abgeleitet,
+      55,68 %) oder ''ai'' (XGBoost-Modell, 44,32 %).'
+    type: text
+    nullable: true
+    unit: none
+    isAbout: []
+    valueReference: []
+  - name: refurbishment_state
+    description: 'Sanierungsstand ''1'' bis ''3''. Herkunft ist konstant und deshalb
+      nicht als Spalte geführt: zu 100 % source ''uba_renov'' / lineage ''stat'',
+      also Zufallsziehung aus Statistiken auf Bundeslandebene (UBA-Hintergrundbericht
+      "Wohnen und Sanieren") — keine gebäudeindividuelle Beobachtung.'
+    type: text
+    nullable: true
+    unit: none
+    isAbout: []
+    valueReference: []
+  - name: tabula_type
+    description: TABULA-Archetyp des Gebäudes. Herkunft konstant zu 100 % source 'tabula_de'
+      / lineage 'map'; deterministisch aus size_class, construction_year und refurbishment_state
+      komponiert und daher redundant zu diesen drei.
+    type: text
+    nullable: true
+    unit: none
+    isAbout: []
+    valueReference: []
   primaryKey:
   - id
   foreignKeys: []
-  fields:
-  - name: id
-    description: 'TODO: Add description'
-    type: string
-    unit: none
-  - name: nuts1
-    description: 'TODO: Add description'
-    type: string
-    unit: none
-  - name: geom_point
-    description: 'TODO: Add description'
-    type: string
-    unit: none
-  - name: construction_year
-    description: 'TODO: Add description'
-    type: integer
-    unit: none
-  - name: construction_year_lineage
-    description: 'TODO: Add description'
-    type: string
-    unit: none
-  - name: size_class
-    description: 'TODO: Add description'
-    type: string
-    unit: none
-  - name: size_class_lineage
-    description: 'TODO: Add description'
-    type: string
-    unit: none
-  - name: refurbishment_state
-    description: 'TODO: Add description'
-    type: string
-    unit: none
-  - name: tabula_type
-    description: 'TODO: Add description'
-    type: string
-    unit: none
 dialect:
   delimiter: ''
-  decimalSeparator: ''
+  decimalSeparator: .
 review:
   path: ''
   badge: ''
