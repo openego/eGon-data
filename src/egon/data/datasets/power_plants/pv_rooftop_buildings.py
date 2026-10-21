@@ -1010,6 +1010,8 @@ def allocate_exact_pv(
                 break
 
     allocation = pd.Series(allocation, dtype=object)
+    # keep index name gens_id, otherwise it is lost in the later concat
+    allocation.index.name = exact_gdf.index.name
 
     logger.debug(
         f"Allocated {len(allocation)} of {len(exact_gdf)} generators with "
