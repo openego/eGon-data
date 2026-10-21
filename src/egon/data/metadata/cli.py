@@ -170,6 +170,19 @@ def status_cmd(scope, strict):
             ambiguous.append(name)
             click.secho(f"[ambiguous] {error}", fg="red")
 
+    # A class the pipeline.py parser could not place in a TaskGroup is not
+    # counted at all -- name it, so a parse miss cannot hide its tables.
+    from egon.data.metadata.inventory import UNMAPPED
+
+    for c in sorted(all_classes, key=lambda c: c.name):
+        if c.task_group == UNMAPPED and c.target_tables:
+            click.secho(
+                f"[unmapped] {c.name} declares {len(c.target_tables)} target"
+                " table(s) but is not instantiated in any TaskGroup of"
+                " pipeline.py; its tables are not counted",
+                fg="yellow",
+            )
+
     # Provenance: a consumed internal table should have metadata of its
     # own, otherwise cross-references made by `init` point nowhere. Check
     # against the whole store -- the table may belong to another dataset.

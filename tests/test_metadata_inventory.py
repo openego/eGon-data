@@ -38,3 +38,18 @@ def test_shared_tables_need_an_owner():
     )
     with pytest.raises(ValueError, match="table_owners"):
         owner_group("s.t", [a, b], owners={})
+
+
+def test_status_names_classes_outside_the_dag(monkeypatch):
+    from click.testing import CliRunner
+
+    from egon.data.metadata import cli, inventory
+
+    real = inventory.scan_declared_io()
+    ghost = inventory.ClassIO(name="GhostDataset", module="ghost.py")
+    ghost.target_tables = {"t": "s.ghost"}
+    monkeypatch.setattr(inventory, "scan_declared_io", lambda: real + [ghost])
+    result = CliRunner().invoke(cli.metadata, ["status"])
+    assert (
+        "[unmapped] GhostDataset declares 1 target table(s)" in result.output
+    )
