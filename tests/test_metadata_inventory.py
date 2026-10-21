@@ -53,3 +53,12 @@ def test_status_names_classes_outside_the_dag(monkeypatch):
     assert (
         "[unmapped] GhostDataset declares 1 target table(s)" in result.output
     )
+
+
+def test_where_points_at_the_first_todo(tmp_path, monkeypatch):
+    from egon.data.metadata.cli import _where
+
+    yaml_file = tmp_path / "x.resource.yaml"
+    yaml_file.write_text("name: s.t\ntitle: ok\ndescription: 'TODO: Add'\n")
+    monkeypatch.chdir(tmp_path)
+    assert _where(yaml_file) == "x.resource.yaml:3"

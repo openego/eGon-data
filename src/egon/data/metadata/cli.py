@@ -80,6 +80,21 @@ def _try_engine():
         return None
 
 
+def _where(path):
+    """`path:line` of the first TODO, relative to the CWD where possible.
+
+    Terminals such as VS Code's turn it into a link that opens the line.
+    """
+    import os
+
+    shown = (
+        os.path.relpath(path) if str(path).startswith(os.getcwd()) else path
+    )
+    lines = path.read_text(encoding="utf-8").splitlines()
+    line = next((i for i, text in enumerate(lines, 1) if "TODO" in text), None)
+    return f"{shown}:{line}" if line else str(shown)
+
+
 def _echo_summary(scope, expected, report):
     """Print what was counted (tables, in which datasets) and what it means."""
     from egon.data.metadata.inventory import (
@@ -156,6 +171,8 @@ def status_cmd(scope, strict):
         if more > 0:
             detail += f"; +{more} more"
         click.secho(f"[skeleton] {state.name}  ({detail})", fg="yellow")
+        if state.path:
+            click.echo(f"           {_where(state.path)}")
     for name in report.orphans:
         click.secho(f"[orphan]   {name}", fg="cyan")
 
