@@ -842,7 +842,13 @@ class MitTransmissionModels(_MitRule):
 
 
 def _dumb_energy_sql(scenario_param):
-    """SQL: dumb charging energy (MWh) per AC bus and model type."""
+    """SQL: dumb charging energy (MWh) per AC bus and model type.
+
+    ``scenario_param`` names the scenario the loads belong to (the base
+    scenario or its lowflex counterpart). The AC buses are looked up under
+    the base scenario, bound as ``:scenario``: eTraGo has no AC buses of
+    its own for the lowflex scenarios.
+    """
     c = _carriers()
     return f"""
         SELECT
@@ -851,7 +857,7 @@ def _dumb_energy_sql(scenario_param):
             SUM((SELECT SUM(v) FROM UNNEST(ts.p_set) v)) AS mwh
         FROM {LOAD_TABLE} ld
         JOIN {BUS_TABLE} b
-            ON b.scn_name = ld.scn_name AND b.bus_id = ld.bus
+            ON b.scn_name = :scenario AND b.bus_id = ld.bus
             AND b.carrier = 'AC'
         JOIN {LOAD_TS_TABLE} ts
             ON ts.scn_name = ld.scn_name AND ts.load_id = ld.load_id
@@ -1146,11 +1152,14 @@ class MitLinkParams(_MitRule):
 
 class MitBandReachable(_MitRule):
     """
-    Check that the lower band can be followed through the link: per hour,
-    the rise of the lower energy bound plus the driving load must fit
-    into ``eta * p_nom * p_max_pu``. A band the optimiser cannot follow
-    shows up as an infeasible eTraGo run. A warning, since the hourly
-    aggregation of a quarter-hourly band can leave small excesses.
+    Check that the store band can be followed through the link.
+
+    Charging as early as possible -- every hour as much as the link
+    (``eta * p_nom * p_max_pu``) and the upper band allow -- keeps the store
+    as full as it can be at every hour. The band is feasible exactly if
+    that path never falls below the lower band. A band the optimiser
+    cannot follow shows up as an infeasible eTraGo run. A warning, so the
+    shortfall can be judged; it is reported relative to ``e_nom``.
     """
 
     failure_severity = Severity.WARNING
@@ -1179,7 +1188,8 @@ class MitBandReachable(_MitRule):
                 f"""
                 SELECT
                     b.bus_id, s.e_nom, s.e_initial, sts.e_min_pu,
-                    l.p_nom, l.efficiency, lts.p_max_pu, lds.p_set
+                    sts.e_max_pu, l.p_nom, l.efficiency, lts.p_max_pu,
+                    lds.p_set
                 FROM {BUS_TABLE} b
                 JOIN {STORE_TABLE} s
                     ON s.scn_name = b.scn_name AND s.bus = b.bus_id
@@ -1198,28 +1208,47 @@ class MitBandReachable(_MitRule):
                 buses=buses[start : start + self.BATCH],
             )
             for row in df.itertuples():
-                lower = np.asarray(row.e_min_pu, dtype=float) * row.e_nom
-                rise = np.diff(np.concatenate(([row.e_initial], lower)))
-                need = rise + np.asarray(row.p_set, dtype=float)
-                capacity = (
-                    row.efficiency
+                shortfall = _band_shortfall(
+                    e_initial=row.e_initial,
+                    lower=np.asarray(row.e_min_pu, dtype=float) * row.e_nom,
+                    upper=np.asarray(row.e_max_pu, dtype=float) * row.e_nom,
+                    driving=np.asarray(row.p_set, dtype=float),
+                    capacity=row.efficiency
                     * row.p_nom
-                    * np.asarray(row.p_max_pu, dtype=float)
+                    * np.asarray(row.p_max_pu, dtype=float),
                 )
-                excess = need - capacity
-                if (excess > RTOL_EXACT * max(row.p_nom, 1.0)).any():
-                    failing.append(row.bus_id)
+                if shortfall > RTOL_EXACT * row.e_nom:
+                    failing.append((row.bus_id, shortfall / row.e_nom))
+        failing.sort(key=lambda _: -_[1])
         return self._problems_result(
             (
                 [
-                    f"{len(failing)} of {len(buses)} models whose lower "
-                    f"band exceeds the link (e.g. {_examples(failing)})"
+                    f"{len(failing)} of {len(buses)} models cannot follow "
+                    f"their band, at most {failing[0][1]:.2%} of e_nom short "
+                    f"(e.g. Li_ion buses "
+                    f"{_examples(_[0] for _ in failing)})"
                 ]
                 if failing
                 else []
             ),
-            f"the lower band of all {len(buses)} models fits the link",
+            f"all {len(buses)} models can follow their band",
         )
+
+
+def _band_shortfall(e_initial, lower, upper, driving, capacity):
+    """
+    Largest shortfall below the lower band of the charge-as-early-as-
+    possible path of a store, in its energy unit; 0 if the band is
+    feasible. After a shortfall the path continues from the lower band, so
+    later hours are judged on their own.
+    """
+    energy, shortfall = e_initial, 0.0
+    for t in range(len(lower)):
+        energy = min(energy - driving[t] + capacity[t], upper[t])
+        if energy < lower[t]:
+            shortfall = max(shortfall, lower[t] - energy)
+            energy = lower[t]
+    return shortfall
 
 
 class MitLowflexPair(_MitRule):

@@ -22,9 +22,10 @@ parking window `[s, e)` and grid-side nominal power `P`:
 driving load                       `d` in timestep `s`
 outstanding deficit, upper bound   flexible: `d` on `[s, e)`
 outstanding deficit, lower bound   flexible: `0` on `[s, e)`
-both bounds, inflexible            `d * (1 - linspace(0, 1, e - s))`: a fixed
-                                   linear ramp over the parking window, as in
-                                   the previous model (ADR-0002)
+both bounds, inflexible            `d * (1 - (k + 1) / (e - s))` in step
+                                   `s + k`: a fixed linear ramp recharging
+                                   `d / (e - s)` in every plugged-in step,
+                                   the arrival step included (ADR-0002)
 plugged-in battery                 `b` on `[s, e)`
 plugged-in power                   `P` on `[s, e)`
 dumb charging load (grid side)     `P` from `s` until `d / eta_cp` is drawn
@@ -255,16 +256,16 @@ def build_timeseries(
         upper, start[flexible], stop[flexible], deficit[flexible] / 1e3
     )
 
-    # Inflexible: the fixed ramp d * (1 - linspace(0, 1, n)) on [s, s + n).
-    # One step: d on [s, s + 1). Longer: a linear segment a + c (t - s)
-    # with a = d and c = -d / (n - 1), written as a second difference;
-    # it ends at 0 in t = s + n - 1, so only three entries are needed.
-    one = ~flexible & (length == 1)
-    for diff in (upper, lower):
-        _add_constant(diff, start[one], stop[one], deficit[one] / 1e3)
-    ramp = ~flexible & (length >= 2)
-    a = deficit[ramp] / 1e3
-    c = -a / (length[ramp] - 1)
+    # Inflexible: the fixed ramp d * (1 - (k + 1) / n) in t = s + k, i.e.
+    # d / n recharged in every plugged-in step. The band is the state at
+    # the end of a step and the arrival step also carries the driving
+    # load, so starting the ramp at d would leave only n - 1 steps for
+    # charging. A linear segment a + c (t - s) with a = d (n - 1) / n and
+    # c = -d / n, written as a second difference; it ends at 0 in
+    # t = s + n - 1, so only three entries are needed (zero for n = 1).
+    ramp = ~flexible & (length >= 1)
+    c = -deficit[ramp] / 1e3 / length[ramp]
+    a = -c * (length[ramp] - 1)
     second = np.zeros(size + 1)
     np.add.at(second, start[ramp], a)
     np.add.at(second, start[ramp] + 1, c - a)
