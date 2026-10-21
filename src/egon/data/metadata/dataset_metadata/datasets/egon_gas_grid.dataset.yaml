@@ -1,0 +1,6 @@
+version: OEMetadata-2.0
+dataset:
+  name: 'egon_gas_grid'
+  title: 'eGon-data — gas grid'
+  description: 'Gas grid datasets produced by the eGon-data pipeline (gas_grid task group).'
+  '@id': null

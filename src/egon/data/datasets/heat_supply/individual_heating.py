@@ -22,6 +22,8 @@ import saio
 from egon.data import config, db, logger
 from egon.data.datasets import (
     Dataset,
+    DatasetSources,
+    DatasetTargets,
     load_sources_and_targets,
     wrapped_partial,
 )
@@ -155,6 +157,21 @@ def order_scenarios_by_hp_floor_chain(scenarios):
 
 
 class HeatPumpsStatusQuo(Dataset):
+    sources = DatasetSources(
+        tables={
+            "map_zensus_grid_districts": "boundaries.egon_map_zensus_grid_districts",  # noqa: E501
+            "mv_grid_districts": "grid.egon_mv_grid_district",
+        },
+    )
+
+    targets = DatasetTargets(
+        tables={
+            "hp_capacity_buildings": "demand.egon_hp_capacity_buildings",
+            "building_heat_peak_loads": "demand.egon_building_heat_peak_loads",  # noqa: E501
+            "etrago_timeseries_individual_heating": "demand.egon_etrago_timeseries_individual_heating",  # noqa: E501
+        },
+    )
+
     def __init__(self, dependencies):
         def dyn_parallel_tasks_status_quo(scenario):
             """Dynamically generate tasks
@@ -513,6 +530,21 @@ class HeatPumpsCascade(Dataset):
     name: str = "HeatPumpsCascade"
     #:
     version: str = "0.0.11"
+
+    sources = DatasetSources(
+        tables={
+            "map_zensus_grid_districts": "boundaries.egon_map_zensus_grid_districts",  # noqa: E501
+            "mv_grid_districts": "grid.egon_mv_grid_district",
+        },
+    )
+
+    targets = DatasetTargets(
+        tables={
+            "hp_capacity_buildings": "demand.egon_hp_capacity_buildings",
+            "building_heat_peak_loads": "demand.egon_building_heat_peak_loads",  # noqa: E501
+            "etrago_timeseries_individual_heating": "demand.egon_etrago_timeseries_individual_heating",  # noqa: E501
+        },
+    )
 
     def __init__(self, dependencies):
         def dyn_parallel_tasks_2035(scenario):

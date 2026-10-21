@@ -1,0 +1,198 @@
+'@id': ''
+name: grid.egon_ehv_transfer_buses
+topics: []
+title: 'TODO: Add title for grid.egon_ehv_transfer_buses'
+path: ''
+description: 'TODO: Add description'
+languages: []
+subject:
+- name: ''
+  '@id': ''
+keywords: []
+publicationDate: ''
+embargoPeriod:
+  start: ''
+  end: ''
+  isActive: false
+context:
+  title: ''
+  homepage: ''
+  documentation: ''
+  sourceCode: ''
+  publisher: ''
+  publisherLogo: ''
+  contact: ''
+  fundingAgency: ''
+  fundingAgencyLogo: ''
+  grantNo: ''
+spatial:
+  location:
+    address: ''
+    '@id': ''
+    latitude: ''
+    longitude: ''
+  extent:
+    name: ''
+    '@id': ''
+    resolutionValue: ''
+    resolutionUnit: ''
+    crs: ''
+temporal:
+  referenceDate: ''
+  timeseries:
+  - start: ''
+    end: ''
+    resolutionValue: ''
+    resolutionUnit: ''
+    alignment: ''
+    aggregationType: ''
+sources:
+- title: ''
+  authors: []
+  description: ''
+  publicationYear: ''
+  path: ''
+  sourceLicenses:
+  - name: ''
+    title: ''
+    path: ''
+    instruction: ''
+    attribution: ''
+    copyrightStatement: ''
+- title: 'Internal table: openstreetmap.osm_line'
+  description: Derived from the internal table 'openstreetmap.osm_line'. See that
+    table's own metadata for full provenance.
+  path: ''
+  authors: []
+  publicationYear: null
+  sourceLicenses: []
+- title: 'Internal table: openstreetmap.osm_nodes'
+  description: Derived from the internal table 'openstreetmap.osm_nodes'. See that
+    table's own metadata for full provenance.
+  path: ''
+  authors: []
+  publicationYear: null
+  sourceLicenses: []
+- title: 'Internal table: openstreetmap.osm_point'
+  description: Derived from the internal table 'openstreetmap.osm_point'. See that
+    table's own metadata for full provenance.
+  path: ''
+  authors: []
+  publicationYear: null
+  sourceLicenses: []
+- title: 'Internal table: openstreetmap.osm_ways'
+  description: Derived from the internal table 'openstreetmap.osm_ways'. See that
+    table's own metadata for full provenance.
+  path: ''
+  authors: []
+  publicationYear: null
+  sourceLicenses: []
+licenses:
+- name: ''
+  title: ''
+  path: ''
+  instruction: ''
+  attribution: ''
+  copyrightStatement: ''
+contributors:
+- title: ''
+  path: ''
+  organization: ''
+  roles: []
+  date: ''
+  object: ''
+  comment: ''
+type: ''
+format: ''
+encoding: ''
+schema:
+  primaryKey:
+  - bus_id
+  foreignKeys: []
+  fields:
+  - name: bus_id
+    description: 'TODO: Add description'
+    type: integer
+    unit: none
+    nullable: false
+  - name: lon
+    description: 'TODO: Add description'
+    type: double precision
+    unit: none
+    nullable: true
+  - name: lat
+    description: 'TODO: Add description'
+    type: double precision
+    unit: none
+    nullable: true
+  - name: point
+    description: 'TODO: Add description'
+    type: geometry(Point,4326)
+    unit: none
+    nullable: true
+  - name: polygon
+    description: 'TODO: Add description'
+    type: geometry
+    unit: none
+    nullable: true
+  - name: voltage
+    description: 'TODO: Add description'
+    type: text
+    unit: none
+    nullable: true
+  - name: power_type
+    description: 'TODO: Add description'
+    type: text
+    unit: none
+    nullable: true
+  - name: substation
+    description: 'TODO: Add description'
+    type: text
+    unit: none
+    nullable: true
+  - name: osm_id
+    description: 'TODO: Add description'
+    type: text
+    unit: none
+    nullable: true
+  - name: osm_www
+    description: 'TODO: Add description'
+    type: text
+    unit: none
+    nullable: true
+  - name: frequency
+    description: 'TODO: Add description'
+    type: text
+    unit: none
+    nullable: true
+  - name: subst_name
+    description: 'TODO: Add description'
+    type: text
+    unit: none
+    nullable: true
+  - name: ref
+    description: 'TODO: Add description'
+    type: text
+    unit: none
+    nullable: true
+  - name: operator
+    description: 'TODO: Add description'
+    type: text
+    unit: none
+    nullable: true
+  - name: dbahn
+    description: 'TODO: Add description'
+    type: text
+    unit: none
+    nullable: true
+  - name: status
+    description: 'TODO: Add description'
+    type: integer
+    unit: none
+    nullable: true
+dialect:
+  delimiter: ''
+  decimalSeparator: ''
+review:
+  path: ''
+  badge: ''

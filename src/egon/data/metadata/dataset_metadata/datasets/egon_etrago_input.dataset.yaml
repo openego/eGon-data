@@ -1,0 +1,6 @@
+version: OEMetadata-2.0
+dataset:
+  name: 'egon_etrago_input'
+  title: 'eGon-data — etrago input'
+  description: 'Etrago input datasets produced by the eGon-data pipeline (etrago_input task group).'
+  '@id': null

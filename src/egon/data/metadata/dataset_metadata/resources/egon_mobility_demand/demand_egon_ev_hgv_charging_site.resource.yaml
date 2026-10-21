@@ -1,0 +1,243 @@
+'@id': ''
+name: demand.egon_ev_hgv_charging_site
+topics: []
+title: 'TODO: Add title for demand.egon_ev_hgv_charging_site'
+path: ''
+description: 'TODO: Add description'
+languages: []
+subject:
+- name: ''
+  '@id': ''
+keywords: []
+publicationDate: ''
+embargoPeriod:
+  start: ''
+  end: ''
+  isActive: false
+context:
+  title: ''
+  homepage: ''
+  documentation: ''
+  sourceCode: ''
+  publisher: ''
+  publisherLogo: ''
+  contact: ''
+  fundingAgency: ''
+  fundingAgencyLogo: ''
+  grantNo: ''
+spatial:
+  location:
+    address: ''
+    '@id': ''
+    latitude: ''
+    longitude: ''
+  extent:
+    name: ''
+    '@id': ''
+    resolutionValue: ''
+    resolutionUnit: ''
+    crs: ''
+temporal:
+  referenceDate: ''
+  timeseries:
+  - start: ''
+    end: ''
+    resolutionValue: ''
+    resolutionUnit: ''
+    alignment: ''
+    aggregationType: ''
+sources:
+- title: ''
+  authors: []
+  description: ''
+  publicationYear: ''
+  path: ''
+  sourceLicenses:
+  - name: ''
+    title: ''
+    path: ''
+    instruction: ''
+    attribution: ''
+    copyrightStatement: ''
+- title: 'Internal table: grid.egon_etrago_load'
+  description: Derived from the internal table 'grid.egon_etrago_load'. See that table's
+    own metadata for full provenance.
+  path: ''
+  authors: []
+  publicationYear: null
+  sourceLicenses: []
+- title: 'Internal table: grid.egon_etrago_load_timeseries'
+  description: Derived from the internal table 'grid.egon_etrago_load_timeseries'.
+    See that table's own metadata for full provenance.
+  path: ''
+  authors: []
+  publicationYear: null
+  sourceLicenses: []
+- title: 'Internal table: grid.egon_mv_grid_district'
+  description: Derived from the internal table 'grid.egon_mv_grid_district'. See that
+    table's own metadata for full provenance.
+  path: ''
+  authors: []
+  publicationYear: null
+  sourceLicenses: []
+- title: hgv_input_dir
+  description: ''
+  path: data_bundle_egon_data/hgv_charging
+  authors: []
+  publicationYear: null
+  sourceLicenses: []
+licenses:
+- name: ''
+  title: ''
+  path: ''
+  instruction: ''
+  attribution: ''
+  copyrightStatement: ''
+contributors:
+- title: ''
+  path: ''
+  organization: ''
+  roles: []
+  date: ''
+  object: ''
+  comment: ''
+type: ''
+format: ''
+encoding: ''
+schema:
+  primaryKey:
+  - site_id
+  - scenario
+  foreignKeys: []
+  fields:
+  - name: site_id
+    description: 'TODO: Add description'
+    type: integer
+    unit: none
+    nullable: false
+  - name: scenario
+    description: 'TODO: Add description'
+    type: character varying
+    unit: none
+    nullable: false
+  - name: location_type
+    description: 'TODO: Add description'
+    type: text
+    unit: none
+    nullable: true
+  - name: category_name
+    description: 'TODO: Add description'
+    type: text
+    unit: none
+    nullable: true
+  - name: geom
+    description: 'TODO: Add description'
+    type: geometry(Point,3035)
+    unit: none
+    nullable: true
+  - name: area_m2
+    description: 'TODO: Add description'
+    type: double precision
+    unit: none
+    nullable: true
+  - name: N2
+    description: 'TODO: Add description'
+    type: boolean
+    unit: none
+    nullable: true
+  - name: N3
+    description: 'TODO: Add description'
+    type: boolean
+    unit: none
+    nullable: true
+  - name: N3S
+    description: 'TODO: Add description'
+    type: boolean
+    unit: none
+    nullable: true
+  - name: el_demand_N2_mwh
+    description: 'TODO: Add description'
+    type: double precision
+    unit: none
+    nullable: true
+  - name: el_demand_N3_mwh
+    description: 'TODO: Add description'
+    type: double precision
+    unit: none
+    nullable: true
+  - name: el_demand_N3S_mwh
+    description: 'TODO: Add description'
+    type: double precision
+    unit: none
+    nullable: true
+  - name: el_demand_day_mwh
+    description: 'TODO: Add description'
+    type: double precision
+    unit: none
+    nullable: true
+  - name: el_demand_night_mwh
+    description: 'TODO: Add description'
+    type: double precision
+    unit: none
+    nullable: true
+  - name: el_demand_day_N2_mwh
+    description: 'TODO: Add description'
+    type: double precision
+    unit: none
+    nullable: true
+  - name: el_demand_day_N3_mwh
+    description: 'TODO: Add description'
+    type: double precision
+    unit: none
+    nullable: true
+  - name: el_demand_day_N3S_mwh
+    description: 'TODO: Add description'
+    type: double precision
+    unit: none
+    nullable: true
+  - name: el_demand_night_N2_mwh
+    description: 'TODO: Add description'
+    type: double precision
+    unit: none
+    nullable: true
+  - name: el_demand_night_N3_mwh
+    description: 'TODO: Add description'
+    type: double precision
+    unit: none
+    nullable: true
+  - name: el_demand_night_N3S_mwh
+    description: 'TODO: Add description'
+    type: double precision
+    unit: none
+    nullable: true
+  - name: p_set_aggregated_mw
+    description: 'TODO: Add description'
+    type: double precision
+    unit: none
+    nullable: true
+  - name: mv_grid_id
+    description: 'TODO: Add description'
+    type: integer
+    unit: none
+    nullable: true
+  - name: bus_id
+    description: 'TODO: Add description'
+    type: bigint
+    unit: none
+    nullable: true
+  - name: voltage_level
+    description: 'TODO: Add description'
+    type: smallint
+    unit: none
+    nullable: true
+  - name: carrier
+    description: 'TODO: Add description'
+    type: text
+    unit: none
+    nullable: true
+dialect:
+  delimiter: ''
+  decimalSeparator: ''
+review:
+  path: ''
+  badge: ''

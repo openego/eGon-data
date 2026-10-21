@@ -79,7 +79,6 @@ docs/_build
 .mypy_cache/
 
 # Metadata / OMI
-src/egon/data/metadata/results/converted/
 out.json
 
 # Test DAG´s / Dev Specific

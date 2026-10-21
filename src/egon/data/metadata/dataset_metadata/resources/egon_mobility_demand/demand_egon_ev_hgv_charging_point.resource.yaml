@@ -1,0 +1,158 @@
+'@id': ''
+name: demand.egon_ev_hgv_charging_point
+topics: []
+title: 'TODO: Add title for demand.egon_ev_hgv_charging_point'
+path: ''
+description: 'TODO: Add description'
+languages: []
+subject:
+- name: ''
+  '@id': ''
+keywords: []
+publicationDate: ''
+embargoPeriod:
+  start: ''
+  end: ''
+  isActive: false
+context:
+  title: ''
+  homepage: ''
+  documentation: ''
+  sourceCode: ''
+  publisher: ''
+  publisherLogo: ''
+  contact: ''
+  fundingAgency: ''
+  fundingAgencyLogo: ''
+  grantNo: ''
+spatial:
+  location:
+    address: ''
+    '@id': ''
+    latitude: ''
+    longitude: ''
+  extent:
+    name: ''
+    '@id': ''
+    resolutionValue: ''
+    resolutionUnit: ''
+    crs: ''
+temporal:
+  referenceDate: ''
+  timeseries:
+  - start: ''
+    end: ''
+    resolutionValue: ''
+    resolutionUnit: ''
+    alignment: ''
+    aggregationType: ''
+sources:
+- title: ''
+  authors: []
+  description: ''
+  publicationYear: ''
+  path: ''
+  sourceLicenses:
+  - name: ''
+    title: ''
+    path: ''
+    instruction: ''
+    attribution: ''
+    copyrightStatement: ''
+- title: 'Internal table: grid.egon_etrago_load'
+  description: Derived from the internal table 'grid.egon_etrago_load'. See that table's
+    own metadata for full provenance.
+  path: ''
+  authors: []
+  publicationYear: null
+  sourceLicenses: []
+- title: 'Internal table: grid.egon_etrago_load_timeseries'
+  description: Derived from the internal table 'grid.egon_etrago_load_timeseries'.
+    See that table's own metadata for full provenance.
+  path: ''
+  authors: []
+  publicationYear: null
+  sourceLicenses: []
+- title: 'Internal table: grid.egon_mv_grid_district'
+  description: Derived from the internal table 'grid.egon_mv_grid_district'. See that
+    table's own metadata for full provenance.
+  path: ''
+  authors: []
+  publicationYear: null
+  sourceLicenses: []
+- title: hgv_input_dir
+  description: ''
+  path: data_bundle_egon_data/hgv_charging
+  authors: []
+  publicationYear: null
+  sourceLicenses: []
+licenses:
+- name: ''
+  title: ''
+  path: ''
+  instruction: ''
+  attribution: ''
+  copyrightStatement: ''
+contributors:
+- title: ''
+  path: ''
+  organization: ''
+  roles: []
+  date: ''
+  object: ''
+  comment: ''
+type: ''
+format: ''
+encoding: ''
+schema:
+  primaryKey:
+  - cp_id
+  - scenario
+  foreignKeys: []
+  fields:
+  - name: cp_id
+    description: 'TODO: Add description'
+    type: integer
+    unit: none
+    nullable: false
+  - name: scenario
+    description: 'TODO: Add description'
+    type: character varying
+    unit: none
+    nullable: false
+  - name: site_id
+    description: 'TODO: Add description'
+    type: integer
+    unit: none
+    nullable: true
+  - name: vehicle_class
+    description: 'TODO: Add description'
+    type: text
+    unit: none
+    nullable: true
+  - name: num_cp
+    description: 'TODO: Add description'
+    type: integer
+    unit: none
+    nullable: true
+  - name: p_set_mw
+    description: 'TODO: Add description'
+    type: double precision
+    unit: none
+    nullable: true
+  - name: sector
+    description: 'TODO: Add description'
+    type: text
+    unit: none
+    nullable: true
+  - name: time_of_day
+    description: 'TODO: Add description'
+    type: text
+    unit: none
+    nullable: true
+dialect:
+  delimiter: ''
+  decimalSeparator: ''
+review:
+  path: ''
+  badge: ''

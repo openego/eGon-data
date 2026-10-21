@@ -64,8 +64,7 @@ dependencies = [
   "netcdf4",
   "numpy<=1.26.4",
   "oedialect==0.0.8",
-  "oemetadata<=2.0.1",
-  "omi",
+  "omi>=1.3.0",  # 1.3.0: creation helpers (add-source, coverage, merge-update)
   "openpyxl",
   "pandas==2.0.3",
   "pulp<2.8.0",

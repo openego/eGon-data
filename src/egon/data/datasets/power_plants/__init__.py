@@ -2,8 +2,6 @@
 allocation of data on conventional and renewable power plants.
 """
 
-from pathlib import Path
-import logging
 
 from geoalchemy2 import Geometry
 from shapely.geometry import Point
@@ -27,13 +25,13 @@ from egon.data.datasets.power_plants.conventional import (
     select_nep_power_plants,
     select_no_chp_combustion_mastr,
 )
-from egon.data.datasets.power_plants.mastr import (
+from egon.data.datasets.power_plants.mastr import import_mastr
+from egon.data.datasets.power_plants.mastr_db_classes import (
     EgonPowerPlantsBiomass,
     EgonPowerPlantsHydro,
     EgonPowerPlantsPv,
     EgonPowerPlantsStorage,
     EgonPowerPlantsWind,
-    import_mastr,
 )
 from egon.data.datasets.power_plants.pv_rooftop import pv_rooftop_per_mv_grid
 from egon.data.datasets.power_plants.pv_rooftop_buildings import (
@@ -42,7 +40,6 @@ from egon.data.datasets.power_plants.pv_rooftop_buildings import (
 from egon.data.validation import TableValidation, resolve_boundary_dependence
 import egon.data.config
 import egon.data.datasets.power_plants.assign_weather_data as assign_weather_data  # noqa: E501
-import egon.data.datasets.power_plants.metadata as pp_metadata
 import egon.data.datasets.power_plants.pv_ground_mounted as pv_ground_mounted
 import egon.data.datasets.power_plants.wind_farms as wind_onshore
 import egon.data.datasets.power_plants.wind_offshore as wind_offshore
@@ -1368,8 +1365,6 @@ for scn_name in egon.data.config.settings()["egon-data"]["--scenarios"]:
             postfix=f"_{scn_name}",
         ),
     )
-
-tasks += (pp_metadata.metadata,)
 
 
 class PowerPlants(Dataset):

@@ -1,0 +1,6 @@
+version: OEMetadata-2.0
+dataset:
+  name: 'egon_electricity_demand'
+  title: 'eGon-data — electricity demand'
+  description: 'Electricity demand datasets produced by the eGon-data pipeline (electricity_demand task group).'
+  '@id': null

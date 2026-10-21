@@ -1,0 +1,6 @@
+version: OEMetadata-2.0
+dataset:
+  name: 'egon_gas_supply'
+  title: 'eGon-data — gas supply'
+  description: 'Gas supply datasets produced by the eGon-data pipeline (gas_supply task group).'
+  '@id': null

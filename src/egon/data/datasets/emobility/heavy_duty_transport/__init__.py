@@ -36,8 +36,10 @@ WORKING_DIR = Path(".", "heavy_duty_transport").resolve()
 
 def create_tables():
     """
-    Drops existing :py:class:`demand.egon_heavy_duty_transport_voronoi <egon.data.datasets.emobility.heavy_duty_transport.db_classes.EgonHeavyDutyTransportVoronoi>` is extended
-    table and creates new one.
+    Drops existing :py:class:
+    `demand.egon_heavy_duty_transport_voronoi
+    <egon.data.datasets.emobility.heavy_duty_transport.db_classes.EgonHeavyDutyTransportVoronoi>`
+    is extended table and creates new one.
 
     """
     engine = db.engine()
@@ -101,7 +103,7 @@ class HeavyDutyTransport(Dataset):
     The config of this dataset can be found in *datasets.yml* in section
     *mobility_hgv*.
 
-    """
+    """  # noqa: E501
 
     sources = DatasetSources(
         urls={

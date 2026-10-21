@@ -1,0 +1,305 @@
+'@id': null
+name: grid.egon_rail_transport_load_points
+topics: []
+title: eGon rail and public transport electricity demand load points
+path: WILL_BE_SET_AT_PUBLICATION
+description: 'Coupling points at which electrified rail and urban public transport
+  draw electricity from the public 50-Hz grid, one row per load written to grid.egon_etrago_load
+  by the RailTransitDemand dataset (joinable on scn_name and load_id). Three traction
+  systems are covered as eTraGo carriers: 16.7-Hz main-line traction (rail_traction)
+  at the 19 frequency converter stations that feed the 16.7-Hz rail grid (EHV/HV),
+  and DC S-Bahn (rail_sbahn_dc) and DC tram/U-Bahn (rail_transit_dc) at rectifier
+  substations (MV). Converter locations and their annual energy come from a curated
+  list in the eGon data bundle; DC rectifiers are classified from eGon''s OpenStreetMap
+  tables by their frequency and voltage tags, and each city''s DC energy per system
+  is split equally over the rectifiers within 25 km of the city centroid, or placed
+  at the centroid if no rectifier is mapped. Each point is assigned to the bus of
+  the EHV substation Voronoi cell (EHV/HV coupling) or the MV grid district (MV coupling)
+  it lies in, with a nearest-neighbour fallback. The energy is the 50-Hz draw (status2024:
+  7.0 TWh traction, 0.56 TWh S-Bahn, 2.1837 TWh tram/U-Bahn), i.e. without the ~3.4
+  TWh generated inside the 16.7-Hz rail grid; reGon2037 and reGon2045 scale it uniformly
+  by 1.135714 and 1.207143, the ratio of the NEP 2037/2045 (V2025, 2nd draft) transport
+  demand figures. Rows exist only for the scenarios configured in the run. Hourly
+  profiles are not stored here but in grid.egon_etrago_load_timeseries.'
+languages: []
+subject:
+- name: ''
+  '@id': ''
+keywords:
+- rail
+- public transport
+- traction power
+- electricity demand
+- eTraGo
+publicationDate: ''
+embargoPeriod:
+  start: ''
+  end: ''
+  isActive: false
+context:
+  title: ''
+  homepage: ''
+  documentation: ''
+  sourceCode: ''
+  publisher: ''
+  publisherLogo: ''
+  contact: ''
+  fundingAgency: ''
+  fundingAgencyLogo: ''
+  grantNo: ''
+spatial:
+  location:
+    address: ''
+    '@id': ''
+    latitude: ''
+    longitude: ''
+  extent:
+    name: Germany
+    '@id': ''
+    resolutionValue: Points (grid coupling points)
+    resolutionUnit: ''
+    crs: EPSG:3035
+temporal:
+  referenceDate: '2024-01-01'
+  timeseries:
+  - start: ''
+    end: ''
+    resolutionValue: ''
+    resolutionUnit: ''
+    alignment: ''
+    aggregationType: ''
+sources:
+- title: 'eGon data bundle: rail_transport_demand'
+  authors: []
+  description: 'Subfolder of the eGon data bundle with the data eGon cannot derive
+    itself, produced in the reGon project at Reiner Lemoine Institut: converter_load_points.csv
+    (19 curated 16.7-Hz converter stations with site, coordinates, grid level and
+    base-year energy, 7.0 TWh), dc_city_energy.csv (62 rows for 51 places: annual
+    DC energy per city and system with its centroid, 2.7437 TWh) and load_profiles.csv
+    (normalized hourly shapes per system, 2025). Licenses are declared per file in
+    the subfolder''s LICENSE.md.'
+  publicationYear: null
+  path: https://doi.org/10.5281/zenodo.16576506
+  sourceLicenses:
+  - name: CC-BY-SA-4.0
+    title: Creative Commons Attribution Share-Alike 4.0 International
+    path: https://creativecommons.org/licenses/by-sa/4.0/legalcode
+    instruction: Applies to converter_load_points.csv (derived from Wikipedia). You
+      are free to share and adapt; you must attribute and share adaptations under
+      the same license.
+    attribution: Wikipedia, "Liste von Bahnstromanlagen in Deutschland" (CC-BY-SA
+      4.0); DB Energie GmbH, publications under § 23c EnWG (2025); © DELFI e.V. (GTFS
+      de_full via gtfs.de)
+    copyrightStatement: null
+  - name: CC-BY-4.0
+    title: Creative Commons Attribution 4.0 International
+    path: https://creativecommons.org/licenses/by/4.0/legalcode
+    instruction: Applies to dc_city_energy.csv and load_profiles.csv. You are free
+      to share and adapt; you must attribute.
+    attribution: Published figures of the transit operators (SSB, üstra, BSAG, DVB,
+      KVG Kassel, KVV, MVB, RSAG, VAG Freiburg, moBiel, CVAG) and MVG München (FOI
+      response via FragDenStaat); DB Energie GmbH, publications under § 23c EnWG (2025);
+      © DELFI e.V. (GTFS de_full via gtfs.de)
+    copyrightStatement: null
+- title: Liste von Bahnstromanlagen in Deutschland (Wikipedia)
+  authors: []
+  description: Authoritative source for the locations, type, status and rated power
+    of the 16.7-Hz converter stations, since OpenStreetMap does not tag them reliably.
+  publicationYear: null
+  path: https://de.wikipedia.org/wiki/Liste_von_Bahnstromanlagen_in_Deutschland
+  sourceLicenses:
+  - name: CC-BY-SA-4.0
+    title: Creative Commons Attribution Share-Alike 4.0 International
+    path: https://creativecommons.org/licenses/by-sa/4.0/legalcode
+    instruction: You are free to share and adapt; you must attribute and share adaptations
+      under the same license. Covers sui generis database rights (Section 4).
+    attribution: Wikipedia, "Liste von Bahnstromanlagen in Deutschland"
+    copyrightStatement: null
+- title: GTFS Germany (de_full)
+  authors: []
+  description: Nationwide timetable feed by gtfs.de, data provided by DELFI e.V. (feed
+    version latest-free, retrieved 2026-03-17). Used in preprocessing to derive the
+    spatial energy weights (train-km per segment and city) and the operating profile
+    of the DC systems. The feed itself names OpenStreetMap contributors as a source.
+  publicationYear: null
+  path: https://gtfs.de/en/feeds/de_full/
+  sourceLicenses:
+  - name: CC-BY-4.0
+    title: Creative Commons Attribution 4.0 International
+    path: https://creativecommons.org/licenses/by/4.0/legalcode
+    instruction: You are free to share and adapt; you must attribute.
+    attribution: © DELFI e.V., GTFS.de, OpenStreetMap contributors
+    copyrightStatement: null
+- title: DB Energie GmbH — publications under § 23c EnWG (2025)
+  authors: []
+  description: 'Statutory network operator publications of the 16.7-Hz rail grid and
+    the DC S-Bahn grid: 15-minute load series and annual figures. The traction anchor
+    is the draw from the upstream (public) grid level, § 23c para. 3 no. 5, HV level
+    (7.0336 TWh, used rounded as 7.0 TWh); the S-Bahn anchor is no. 5, MV level (0.5654
+    TWh, used as 0.56 TWh). The raw series are not redistributed; only normalized
+    hourly shapes derived from them are in the data bundle.'
+  publicationYear: '2025'
+  path: https://www.dbenergie.de
+  sourceLicenses: []
+- title: Netzentwicklungsplan Strom 2037/2045, Version 2025, 2. Entwurf
+  authors: []
+  description: Transport electricity demand (rail and bus combined, 14.0 / 15.9 /
+    16.9 TWh for 2024 / 2037 / 2045). Only the ratio is used, as the scaling factor
+    of reGon2037 and reGon2045 against status2024; the figures are kept in the scenario
+    parameters, not taken over as a dataset.
+  publicationYear: '2026'
+  path: https://www.netzentwicklungsplan.de/sites/default/files/2026-03/NEP_2037_2045_V2025_2_Entwurf.pdf
+  sourceLicenses: []
+- title: 'Internal table: grid.egon_ehv_substation_voronoi'
+  description: Derived from the internal table 'grid.egon_ehv_substation_voronoi'.
+    See that table's own metadata for full provenance.
+  path: ''
+  authors: []
+  publicationYear: null
+  sourceLicenses: []
+- title: 'Internal table: grid.egon_etrago_bus'
+  description: Derived from the internal table 'grid.egon_etrago_bus'. See that table's
+    own metadata for full provenance.
+  path: ''
+  authors: []
+  publicationYear: null
+  sourceLicenses: []
+- title: 'Internal table: grid.egon_mv_grid_district'
+  description: Derived from the internal table 'grid.egon_mv_grid_district'. See that
+    table's own metadata for full provenance.
+  path: ''
+  authors: []
+  publicationYear: null
+  sourceLicenses: []
+- title: 'Internal table: openstreetmap.osm_point'
+  description: Derived from the internal table 'openstreetmap.osm_point'. See that
+    table's own metadata for full provenance.
+  path: ''
+  authors: []
+  publicationYear: null
+  sourceLicenses: []
+- title: 'Internal table: openstreetmap.osm_polygon'
+  description: Derived from the internal table 'openstreetmap.osm_polygon'. See that
+    table's own metadata for full provenance.
+  path: ''
+  authors: []
+  publicationYear: null
+  sourceLicenses: []
+- title: 'Internal table: openstreetmap.osm_ways'
+  description: Derived from the internal table 'openstreetmap.osm_ways'. See that
+    table's own metadata for full provenance.
+  path: ''
+  authors: []
+  publicationYear: null
+  sourceLicenses: []
+licenses:
+- name: ODbL-1.0
+  title: Open Data Commons Open Database License 1.0
+  path: https://opendatacommons.org/licenses/odbl/1.0/
+  instruction: 'Applies to all rows except method = ''converter'' (DC rectifiers and
+    city centroids, derived from OpenStreetMap). You are free: To Share, To Create,
+    To Adapt; As long as you: Attribute, Share-Alike, Keep open! Applies to the OpenStreetMap-derived
+    content: the rectifier locations (method dc_rectifier) and the bus assignment
+    from the OSM-based grid tables.'
+  attribution: © OpenStreetMap contributors
+  copyrightStatement: null
+- name: CC-BY-SA-4.0
+  title: Creative Commons Attribution Share-Alike 4.0 International
+  path: https://creativecommons.org/licenses/by-sa/4.0/legalcode
+  instruction: Applies to the rows with method = 'converter' (16.7-Hz converter sites,
+    from the Wikipedia list via converter_load_points.csv). You are free to share
+    and adapt; you must attribute and share adaptations under the same license. Applies
+    to the converter rows (method converter), derived from the bundle file converter_load_points.csv
+    and thereby from Wikipedia; the remaining content (DC energies, centroids) derives
+    from CC-BY-4.0 bundle files.
+  attribution: Wikipedia, "Liste von Bahnstromanlagen in Deutschland" (CC-BY-SA 4.0);
+    © DELFI e.V. (GTFS de_full via gtfs.de); DB Energie GmbH, publications under §
+    23c EnWG (2025); published figures of the transit operators SSB, üstra, BSAG,
+    DVB, KVG Kassel, KVV, MVB, RSAG, VAG Freiburg, moBiel, CVAG and MVG München (FOI
+    response); reGon, Reiner Lemoine Institut (data changed)
+  copyrightStatement: null
+contributors:
+- title: jh-RLI
+  path: null
+  organization: Reiner Lemoine Institut
+  roles:
+  - metadata-author
+  date: '2026-10-20'
+  object: metadata
+  comment: 'Created metadata for the rail transport demand load points (issue #1414)'
+type: Table
+format: PostgreSQL
+encoding: UTF-8
+schema:
+  primaryKey:
+  - scn_name
+  - load_id
+  foreignKeys: []
+  fields:
+  - name: scn_name
+    description: Scenario name (status2024, reGon2037 or reGon2045); only scenarios
+      configured in the run are written
+    type: text
+    unit: none
+    nullable: false
+  - name: load_id
+    description: eTraGo load id; together with scn_name it identifies the load in
+      grid.egon_etrago_load and grid.egon_etrago_load_timeseries
+    type: bigint
+    unit: none
+    nullable: false
+  - name: carrier
+    description: 'Traction system: rail_traction (16.7-Hz main line), rail_sbahn_dc
+      (DC S-Bahn) or rail_transit_dc (DC tram/U-Bahn)'
+    type: text
+    unit: none
+    nullable: true
+  - name: place
+    description: Converter site name (method converter) or city whose DC energy the
+      point carries (methods dc_rectifier, dc_centroid)
+    type: text
+    unit: none
+    nullable: true
+  - name: method
+    description: 'How the point was located: converter (curated 16.7-Hz converter
+      station from the data bundle), dc_rectifier (DC rectifier substation classified
+      from OpenStreetMap, within 25 km of the city centroid; the city''s energy is
+      split equally over these) or dc_centroid (no rectifier mapped, load at the city
+      centroid)'
+    type: text
+    unit: none
+    nullable: true
+  - name: bus_id
+    description: eTraGo bus the load is attached to (grid.egon_etrago_bus.bus_id)
+    type: integer
+    unit: none
+    nullable: true
+  - name: bus_level
+    description: 'Polygon layer the bus was taken from: ehv (EHV substation Voronoi
+      cell, for EHV/HV coupling) or mv (MV grid district, for MV coupling)'
+    type: text
+    unit: none
+    nullable: true
+  - name: bus_method
+    description: 'How the bus was found: within (point lies in the polygon) or nearest
+      (nearest-neighbour fallback for points outside every polygon)'
+    type: text
+    unit: none
+    nullable: true
+  - name: energy_mwh_a
+    description: Annual electricity drawn from the 50-Hz grid at this point in this
+      scenario (base-year energy times the scenario factor, rounded to 4 decimals)
+    type: double precision
+    unit: MWh
+    nullable: true
+  - name: geom
+    description: 'Location of the coupling point (CRS: ETRS89 / EPSG:3035)'
+    type: geometry(Point,3035)
+    unit: none
+    nullable: true
+dialect:
+  delimiter: ''
+  decimalSeparator: ''
+review:
+  path: ''
+  badge: ''

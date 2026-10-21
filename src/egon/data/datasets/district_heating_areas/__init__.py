@@ -12,12 +12,9 @@ densities, demarcates so the current and future district heating areas. In the
 end it saves them in the database.
 """
 
-import datetime
-import json
 import os
 
 # for metadata creation
-import time
 
 from geoalchemy2.types import Geometry
 from matplotlib import pyplot as plt
@@ -39,7 +36,6 @@ from egon.data.datasets.scenario_parameters import (
     EgonScenario,
     get_sector_parameters,
 )
-from egon.data.metadata import context, license_ccby, meta_metadata, sources
 from egon.data.validation import TableValidation, resolve_boundary_dependence
 
 # import time
@@ -778,224 +774,6 @@ def district_heating_areas(scenario_name, plotting=False):
     return collection
 
 
-def add_metadata():
-    """
-    Writes metadata JSON string into table comment.
-
-    TODO
-    ----
-
-        Meta data must be check and adjusted to the egon_data standard:
-            - Add context
-            - authors and institutions
-
-    """
-
-    # Prepare variables
-    license_district_heating_areas = [
-        license_ccby("© Europa-Universität Flensburg")
-    ]
-
-    # Metadata creation for district heating areas (polygons)
-    meta = {
-        "name": "district_heating_areas_metadata",
-        "title": "eGo^n scenario-specific future district heating areas",
-        "description": "Modelled future district heating areas for "
-        "the supply of residential and service-sector heat demands",
-        "language": ["EN"],
-        "publicationDate": datetime.date.today().isoformat(),
-        "context": context(),
-        "spatial": {"location": "", "extent": "Germany", "resolution": ""},
-        "sources": [
-            sources()["peta"],
-            sources()["egon-data"],
-            sources()["zensus"],
-            sources()["vg250"],
-        ],
-        "resources": [
-            {
-                "profile": "tabular-data-resource",
-                "name": "egon_district_heating_areas",
-                "path": "",
-                "format": "PostgreSQL",
-                "encoding": "UTF-8",
-                "schema": {
-                    "fields": [
-                        {
-                            "name": "id",
-                            "description": "Unique identifier",
-                            "type": "serial",
-                            "unit": "none",
-                        },
-                        {
-                            "name": "area_id",
-                            "description": "District heating area id",
-                            "type": "integer",
-                            "unit": "none",
-                        },
-                        {
-                            "name": "scenario",
-                            "description": "scenario name",
-                            "type": "text",
-                            "unit": "none",
-                        },
-                        {
-                            "name": "residential_and_service_demand",
-                            "description": "annual heat demand",
-                            "type": "double precision",
-                            "unit": "MWh",
-                        },
-                        {
-                            "name": "geom_polygon",
-                            "description": "geo information of multipolygons",
-                            "type": "geometry(MULTIPOLYGON, 3035)",
-                            "unit": "none",
-                        },
-                    ],
-                    "primaryKey": ["id"],
-                    "foreignKeys": [
-                        {
-                            "fields": ["scenario"],
-                            "reference": {
-                                "resource": "scenario.egon_scenario_parameters",
-                                "fields": ["name"],
-                            },
-                        }
-                    ],
-                },
-                "dialect": {"delimiter": "none", "decimalSeparator": "."},
-            }
-        ],
-        "licenses": license_district_heating_areas,
-        "contributors": [
-            {
-                "title": "EvaWie",
-                "email": "http://github.com/EvaWie",
-                "date": time.strftime("%Y-%m-%d"),
-                "object": None,
-                "comment": "Imported data",
-            },
-            {
-                "title": "Clara Büttner",
-                "email": "http://github.com/ClaraBuettner",
-                "date": time.strftime("%Y-%m-%d"),
-                "object": None,
-                "comment": "Updated metadata",
-            },
-        ],
-        "metaMetadata": meta_metadata(),
-    }
-    meta_json = "'" + json.dumps(meta) + "'"
-
-    db.submit_comment(
-        meta_json,
-        DistrictHeatingAreas.targets.get_table_schema(
-            "district_heating_areas"
-        ),
-        DistrictHeatingAreas.targets.get_table_name("district_heating_areas"),
-    )
-
-    # Metadata creation for "id mapping" table
-    meta = {
-        "name": "map_zensus_district_heating_areas_metadata",
-        "title": "district heating area ids assigned to zensus_population_ids",
-        "description": "Ids of scenario specific future district heating areas"
-        " for supply of residential and service-sector heat demands"
-        " assigned to zensus_population_ids",
-        "language": ["EN"],
-        "publicationDate": datetime.date.today().isoformat(),
-        "context": context(),
-        "spatial": {"location": "", "extent": "Germany", "resolution": ""},
-        "sources": [
-            sources()["peta"],
-            sources()["egon-data"],
-            sources()["zensus"],
-            sources()["vg250"],
-        ],
-        # Add the license for the map table
-        "resources": [
-            {
-                "profile": "tabular-data-resource",
-                "name": "egon_map_zensus_district_heating_areas",
-                "path": "",
-                "format": "PostgreSQL",
-                "encoding": "UTF-8",
-                "schema": {
-                    "fields": [
-                        {
-                            "name": "id",
-                            "description": "Unique identifier",
-                            "type": "serial",
-                            "unit": "none",
-                        },
-                        {
-                            "name": "area_id",
-                            "description": "district heating area id",
-                            "type": "integer",
-                            "unit": "none",
-                        },
-                        {
-                            "name": "scenario",
-                            "description": "scenario name",
-                            "type": "text",
-                            "unit": "none",
-                        },
-                    ],
-                    "primaryKey": ["id"],
-                    "foreignKeys": [
-                        {
-                            "fields": ["zensus_population_id"],
-                            "reference": {
-                                "resource": "society.destatis_zensus_population_per_ha",
-                                "fields": ["id"],
-                            },
-                        },
-                        {
-                            "fields": ["scenario"],
-                            "reference": {
-                                "resource": "scenario.egon_scenario_parameters",
-                                "fields": ["name"],
-                            },
-                        },
-                    ],
-                },
-                "dialect": {"delimiter": "none", "decimalSeparator": "."},
-            }
-        ],
-        "licenses": license_district_heating_areas,
-        "contributors": [
-            {
-                "title": "EvaWie",
-                "email": "http://github.com/EvaWie",
-                "date": time.strftime("%Y-%m-%d"),
-                "object": None,
-                "comment": "Imported data",
-            },
-            {
-                "title": "Clara Büttner",
-                "email": "http://github.com/ClaraBuettner",
-                "date": time.strftime("%Y-%m-%d"),
-                "object": None,
-                "comment": "Updated metadata",
-            },
-        ],
-        "metaMetadata": meta_metadata(),
-    }
-    meta_json = "'" + json.dumps(meta) + "'"
-
-    db.submit_comment(
-        meta_json,
-        DistrictHeatingAreas.targets.get_table_schema(
-            "map_district_heating_areas"
-        ),
-        DistrictHeatingAreas.targets.get_table_name(
-            "map_district_heating_areas"
-        ),
-    )
-
-    return None
-
-
 def study_prospective_district_heating_areas():
     """
     Get information about Prospective Supply Districts for district heating.
@@ -1253,7 +1031,5 @@ def demarcation(plotting=True):
     # if you want to study/export the Prospective Supply Districts (PSDs)
     # for all scenarios
     # study_prospective_district_heating_areas()
-
-    add_metadata()
 
     return None

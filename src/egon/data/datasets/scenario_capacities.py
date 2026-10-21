@@ -4,29 +4,18 @@ Netzentwicklungsplan 2037/2045, Version 2025, Szenario C
 """
 
 from pathlib import Path
-import datetime
-import json
-import time
 
 from sqlalchemy import Column, Float, Integer, String
 from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.orm import sessionmaker
 import numpy as np
 import pandas as pd
-import yaml
 
 from egon.data import config, db
 from egon.data.datasets import (
     Dataset,
     DatasetSources,
     DatasetTargets,
-)
-from egon.data.metadata import (
-    context,
-    generate_resource_fields_from_sqla_model,
-    license_ccby,
-    meta_metadata,
-    sources,
 )
 
 Base = declarative_base()
@@ -888,110 +877,10 @@ def insert_data_nep():
 
 
 
-def add_metadata():
-    """Add metdata to supply.egon_scenario_capacities
-
-    Returns
-    -------
-    None.
-
-    """
-
-    # Import column names and datatypes
-    fields = pd.DataFrame(
-        generate_resource_fields_from_sqla_model(EgonScenarioCapacities)
-    ).set_index("name")
-
-    # Set descriptions and units
-    fields.loc["index", "description"] = "Index"
-    fields.loc["component", "description"] = (
-        "Name of representative PyPSA component"
-    )
-    fields.loc["carrier", "description"] = "Name of carrier"
-    fields.loc["capacity", "description"] = "Installed capacity"
-    fields.loc["capacity", "unit"] = "MW"
-    fields.loc["nuts", "description"] = (
-        "NUTS region, either federal state or Germany"
-    )
-    fields.loc["scenario_name", "description"] = (
-        "Name of corresponding reGon scenario"
-    )
-
-    # Reformat pandas.DataFrame to dict
-    fields = fields.reset_index().to_dict(orient="records")
-
-    meta = {
-        "name": "supply.egon_scenario_capacities",
-        "title": "reGon scenario capacities",
-        "id": "WILL_BE_SET_AT_PUBLICATION",
-        "description": (
-            "Installed capacities of scenarios used in the reGon project"
-        ),
-        "language": ["de-DE"],
-        "publicationDate": datetime.date.today().isoformat(),
-        "context": context(),
-        "spatial": {
-            "location": None,
-            "extent": "Germany",
-            "resolution": None,
-        },
-        "sources": [
-            sources()["nep2025"],
-            sources()["vg250"],
-            sources()["zensus"],
-            sources()["egon-data"],
-        ],
-        "licenses": [
-            license_ccby(
-                "© Übertragungsnetzbetreiber; "
-                "© Bundesamt für Kartographie und Geodäsie 2020 (Daten verändert); "
-                "© Statistische Ämter des Bundes und der Länder 2014; "
-                "© Jonathan Amme, Clara Büttner, Ilka Cußmann, Julian Endres, Carlos Epia, Stephan Günther, Ulf Müller, Amélia Nadal, Guido Pleßmann, Francesco Witte",
-            )
-        ],
-        "contributors": [
-            {
-                "title": "Clara Büttner",
-                "email": "http://github.com/ClaraBuettner",
-                "date": time.strftime("%Y-%m-%d"),
-                "object": None,
-                "comment": "Imported data",
-            },
-        ],
-        "resources": [
-            {
-                "profile": "tabular-data-resource",
-                "name": "supply.egon_scenario_capacities",
-                "path": None,
-                "format": "PostgreSQL",
-                "encoding": "UTF-8",
-                "schema": {
-                    "fields": fields,
-                    "primaryKey": ["index"],
-                    "foreignKeys": [],
-                },
-                "dialect": {"delimiter": None, "decimalSeparator": "."},
-            }
-        ],
-        "metaMetadata": meta_metadata(),
-    }
-
-    # Create json dump
-    meta_json = "'" + json.dumps(meta) + "'"
-
-    # Add metadata as a comment to the table
-    db.submit_comment(
-        meta_json,
-        EgonScenarioCapacities.__table__.schema,
-        EgonScenarioCapacities.__table__.name,
-    )
-
-
 tasks = (
     create_table,
     insert_capacities_status_quo_scn,
     insert_data_nep,
-    add_metadata,
 )
 
 

@@ -1,0 +1,118 @@
+'@id': ''
+name: grid.egon_etrago_hv_busmap
+topics: []
+title: 'TODO: Add title for grid.egon_etrago_hv_busmap'
+path: ''
+description: 'TODO: Add description'
+languages: []
+subject:
+- name: ''
+  '@id': ''
+keywords: []
+publicationDate: ''
+embargoPeriod:
+  start: ''
+  end: ''
+  isActive: false
+context:
+  title: ''
+  homepage: ''
+  documentation: ''
+  sourceCode: ''
+  publisher: ''
+  publisherLogo: ''
+  contact: ''
+  fundingAgency: ''
+  fundingAgencyLogo: ''
+  grantNo: ''
+spatial:
+  location:
+    address: ''
+    '@id': ''
+    latitude: ''
+    longitude: ''
+  extent:
+    name: ''
+    '@id': ''
+    resolutionValue: ''
+    resolutionUnit: ''
+    crs: ''
+temporal:
+  referenceDate: ''
+  timeseries:
+  - start: ''
+    end: ''
+    resolutionValue: ''
+    resolutionUnit: ''
+    alignment: ''
+    aggregationType: ''
+sources:
+- title: ''
+  authors: []
+  description: ''
+  publicationYear: ''
+  path: ''
+  sourceLicenses:
+  - name: ''
+    title: ''
+    path: ''
+    instruction: ''
+    attribution: ''
+    copyrightStatement: ''
+licenses:
+- name: ''
+  title: ''
+  path: ''
+  instruction: ''
+  attribution: ''
+  copyrightStatement: ''
+contributors:
+- title: ''
+  path: ''
+  organization: ''
+  roles: []
+  date: ''
+  object: ''
+  comment: ''
+type: ''
+format: ''
+encoding: ''
+schema:
+  primaryKey:
+  - scn_name
+  - bus0
+  - bus1
+  - version
+  foreignKeys: []
+  fields:
+  - name: scn_name
+    description: 'TODO: Add description'
+    type: text
+    unit: none
+    nullable: false
+  - name: bus0
+    description: 'TODO: Add description'
+    type: text
+    unit: none
+    nullable: false
+  - name: bus1
+    description: 'TODO: Add description'
+    type: text
+    unit: none
+    nullable: false
+  - name: path_length
+    description: 'TODO: Add description'
+    type: numeric
+    unit: none
+    nullable: true
+  - name: version
+    description: 'TODO: Add description'
+    type: text
+    unit: none
+    nullable: false
+dialect:
+  delimiter: ''
+  decimalSeparator: ''
+review:
+  path: ''
+  badge: ''

@@ -1,0 +1,663 @@
+name: openstreetmap.osm_line
+'@id': null
+title: OpenStreetMap (OSM) - Germany - line
+path: WILL_BE_SET_AT_PUBLICATION
+description: 'OpenStreetMap is a free, editable map of the whole world that is being
+  built by volunteers largely from scratch and released with an open-content license.
+
+
+  The OpenStreetMap data here is the result of an PostgreSQL database import using
+  osm2pgsql with a custom style file.'
+languages:
+- en-EN
+- de-DE
+subject:
+- name: ''
+  '@id': null
+publicationDate: '2026-10-02'
+embargoPeriod:
+  start: ''
+  end: ''
+  isActive: false
+spatial:
+  location:
+    address: null
+    '@id': null
+    latitude: ''
+    longitude: ''
+  extent:
+    name: germany
+    '@id': null
+    resolutionValue: ''
+    resolutionUnit: ''
+    boundingBox:
+    - 0
+    - 0
+    - 0
+    - 0
+    crs: ''
+temporal:
+  referenceDate: 25-01-01
+  timeseries:
+  - start: null
+    end: null
+    resolutionValue: ''
+    resolutionUnit: ''
+    alignment: null
+    aggregationType: null
+sources:
+- title: OpenStreetMap Data Extracts (Geofabrik)
+  authors: []
+  description: Full data extract of OpenStreetMap data for defined spatial extent
+    at 'referenceDate'
+  publicationYear: null
+  path: https://download.geofabrik.de/europe/germany-250101.osm.pbf
+  sourceLicenses:
+  - name: ODbL-1.0
+    title: Open Data Commons Open Database License 1.0
+    path: https://opendatacommons.org/licenses/odbl/1.0/index.html
+    instruction: 'You are free: To Share, To Create, To Adapt; As long as you: Attribute,
+      Share-Alike, Keep open!'
+    attribution: © OpenStreetMap contributors
+    copyrightStatement: null
+licenses:
+- name: ODbL-1.0
+  title: Open Data Commons Open Database License 1.0
+  path: https://opendatacommons.org/licenses/odbl/1.0/index.html
+  instruction: 'You are free: To Share, To Create, To Adapt; As long as you: Attribute,
+    Share-Alike, Keep open!'
+  attribution: © OpenStreetMap contributors
+  copyrightStatement: null
+contributors:
+- title: Guido Pleßmann
+  path: null
+  organization: null
+  roles:
+  - ''
+  date: '2026-10-02'
+  object: null
+  comment: Imported data
+- title: Jonathan Amme
+  path: null
+  organization: null
+  roles:
+  - ''
+  date: '2026-10-02'
+  object: null
+  comment: Metadata extended
+- title: eGon-data metadata migration
+  path: https://github.com/openego/eGon-data
+  roles:
+  - dataCurator
+  organization: null
+  date: '2026-10-20'
+  object: metadata
+  comment: Migrated from the OEMetadata v1.4 table comment of a full eGon-data run
+    to OEMetadata v2 with OMI.
+type: Table
+format: PostgreSQL
+encoding: UTF-8
+schema:
+  fields:
+  - name: osm_id
+    description: ''
+    type: bigint
+    nullable: true
+    unit: none
+    isAbout: []
+    valueReference: []
+  - name: access
+    description: ''
+    type: text
+    nullable: true
+    unit: none
+    isAbout: []
+    valueReference: []
+  - name: addr:housename
+    description: ''
+    type: text
+    nullable: true
+    unit: none
+    isAbout: []
+    valueReference: []
+  - name: addr:housenumber
+    description: ''
+    type: text
+    nullable: true
+    unit: none
+    isAbout: []
+    valueReference: []
+  - name: addr:interpolation
+    description: ''
+    type: text
+    nullable: true
+    unit: none
+    isAbout: []
+    valueReference: []
+  - name: admin_level
+    description: ''
+    type: text
+    nullable: true
+    unit: none
+    isAbout: []
+    valueReference: []
+  - name: aerialway
+    description: ''
+    type: text
+    nullable: true
+    unit: none
+    isAbout: []
+    valueReference: []
+  - name: aeroway
+    description: ''
+    type: text
+    nullable: true
+    unit: none
+    isAbout: []
+    valueReference: []
+  - name: amenity
+    description: ''
+    type: text
+    nullable: true
+    unit: none
+    isAbout: []
+    valueReference: []
+  - name: area
+    description: ''
+    type: text
+    nullable: true
+    unit: none
+    isAbout: []
+    valueReference: []
+  - name: barrier
+    description: ''
+    type: text
+    nullable: true
+    unit: none
+    isAbout: []
+    valueReference: []
+  - name: bicycle
+    description: ''
+    type: text
+    nullable: true
+    unit: none
+    isAbout: []
+    valueReference: []
+  - name: brand
+    description: ''
+    type: text
+    nullable: true
+    unit: none
+    isAbout: []
+    valueReference: []
+  - name: bridge
+    description: ''
+    type: text
+    nullable: true
+    unit: none
+    isAbout: []
+    valueReference: []
+  - name: boundary
+    description: ''
+    type: text
+    nullable: true
+    unit: none
+    isAbout: []
+    valueReference: []
+  - name: building
+    description: ''
+    type: text
+    nullable: true
+    unit: none
+    isAbout: []
+    valueReference: []
+  - name: construction
+    description: ''
+    type: text
+    nullable: true
+    unit: none
+    isAbout: []
+    valueReference: []
+  - name: covered
+    description: ''
+    type: text
+    nullable: true
+    unit: none
+    isAbout: []
+    valueReference: []
+  - name: culvert
+    description: ''
+    type: text
+    nullable: true
+    unit: none
+    isAbout: []
+    valueReference: []
+  - name: cutting
+    description: ''
+    type: text
+    nullable: true
+    unit: none
+    isAbout: []
+    valueReference: []
+  - name: denomination
+    description: ''
+    type: text
+    nullable: true
+    unit: none
+    isAbout: []
+    valueReference: []
+  - name: disused
+    description: ''
+    type: text
+    nullable: true
+    unit: none
+    isAbout: []
+    valueReference: []
+  - name: embankment
+    description: ''
+    type: text
+    nullable: true
+    unit: none
+    isAbout: []
+    valueReference: []
+  - name: foot
+    description: ''
+    type: text
+    nullable: true
+    unit: none
+    isAbout: []
+    valueReference: []
+  - name: generator:source
+    description: ''
+    type: text
+    nullable: true
+    unit: none
+    isAbout: []
+    valueReference: []
+  - name: harbour
+    description: ''
+    type: text
+    nullable: true
+    unit: none
+    isAbout: []
+    valueReference: []
+  - name: highway
+    description: ''
+    type: text
+    nullable: true
+    unit: none
+    isAbout: []
+    valueReference: []
+  - name: historic
+    description: ''
+    type: text
+    nullable: true
+    unit: none
+    isAbout: []
+    valueReference: []
+  - name: horse
+    description: ''
+    type: text
+    nullable: true
+    unit: none
+    isAbout: []
+    valueReference: []
+  - name: intermittent
+    description: ''
+    type: text
+    nullable: true
+    unit: none
+    isAbout: []
+    valueReference: []
+  - name: junction
+    description: ''
+    type: text
+    nullable: true
+    unit: none
+    isAbout: []
+    valueReference: []
+  - name: landuse
+    description: ''
+    type: text
+    nullable: true
+    unit: none
+    isAbout: []
+    valueReference: []
+  - name: layer
+    description: ''
+    type: text
+    nullable: true
+    unit: none
+    isAbout: []
+    valueReference: []
+  - name: leisure
+    description: ''
+    type: text
+    nullable: true
+    unit: none
+    isAbout: []
+    valueReference: []
+  - name: line
+    description: ''
+    type: text
+    nullable: true
+    unit: none
+    isAbout: []
+    valueReference: []
+  - name: lock
+    description: ''
+    type: text
+    nullable: true
+    unit: none
+    isAbout: []
+    valueReference: []
+  - name: man_made
+    description: ''
+    type: text
+    nullable: true
+    unit: none
+    isAbout: []
+    valueReference: []
+  - name: military
+    description: ''
+    type: text
+    nullable: true
+    unit: none
+    isAbout: []
+    valueReference: []
+  - name: motorcar
+    description: ''
+    type: text
+    nullable: true
+    unit: none
+    isAbout: []
+    valueReference: []
+  - name: name
+    description: ''
+    type: text
+    nullable: true
+    unit: none
+    isAbout: []
+    valueReference: []
+  - name: natural
+    description: ''
+    type: text
+    nullable: true
+    unit: none
+    isAbout: []
+    valueReference: []
+  - name: office
+    description: ''
+    type: text
+    nullable: true
+    unit: none
+    isAbout: []
+    valueReference: []
+  - name: oneway
+    description: ''
+    type: text
+    nullable: true
+    unit: none
+    isAbout: []
+    valueReference: []
+  - name: operator
+    description: ''
+    type: text
+    nullable: true
+    unit: none
+    isAbout: []
+    valueReference: []
+  - name: place
+    description: ''
+    type: text
+    nullable: true
+    unit: none
+    isAbout: []
+    valueReference: []
+  - name: population
+    description: ''
+    type: text
+    nullable: true
+    unit: none
+    isAbout: []
+    valueReference: []
+  - name: power
+    description: ''
+    type: text
+    nullable: true
+    unit: none
+    isAbout: []
+    valueReference: []
+  - name: power_source
+    description: ''
+    type: text
+    nullable: true
+    unit: none
+    isAbout: []
+    valueReference: []
+  - name: public_transport
+    description: ''
+    type: text
+    nullable: true
+    unit: none
+    isAbout: []
+    valueReference: []
+  - name: railway
+    description: ''
+    type: text
+    nullable: true
+    unit: none
+    isAbout: []
+    valueReference: []
+  - name: ref
+    description: ''
+    type: text
+    nullable: true
+    unit: none
+    isAbout: []
+    valueReference: []
+  - name: religion
+    description: ''
+    type: text
+    nullable: true
+    unit: none
+    isAbout: []
+    valueReference: []
+  - name: route
+    description: ''
+    type: text
+    nullable: true
+    unit: none
+    isAbout: []
+    valueReference: []
+  - name: service
+    description: ''
+    type: text
+    nullable: true
+    unit: none
+    isAbout: []
+    valueReference: []
+  - name: sidewalk
+    description: ''
+    type: text
+    nullable: true
+    unit: none
+    isAbout: []
+    valueReference: []
+  - name: shop
+    description: ''
+    type: text
+    nullable: true
+    unit: none
+    isAbout: []
+    valueReference: []
+  - name: sport
+    description: ''
+    type: text
+    nullable: true
+    unit: none
+    isAbout: []
+    valueReference: []
+  - name: surface
+    description: ''
+    type: text
+    nullable: true
+    unit: none
+    isAbout: []
+    valueReference: []
+  - name: toll
+    description: ''
+    type: text
+    nullable: true
+    unit: none
+    isAbout: []
+    valueReference: []
+  - name: tourism
+    description: ''
+    type: text
+    nullable: true
+    unit: none
+    isAbout: []
+    valueReference: []
+  - name: tower:type
+    description: ''
+    type: text
+    nullable: true
+    unit: none
+    isAbout: []
+    valueReference: []
+  - name: tracktype
+    description: ''
+    type: text
+    nullable: true
+    unit: none
+    isAbout: []
+    valueReference: []
+  - name: tunnel
+    description: ''
+    type: text
+    nullable: true
+    unit: none
+    isAbout: []
+    valueReference: []
+  - name: water
+    description: ''
+    type: text
+    nullable: true
+    unit: none
+    isAbout: []
+    valueReference: []
+  - name: waterway
+    description: ''
+    type: text
+    nullable: true
+    unit: none
+    isAbout: []
+    valueReference: []
+  - name: wetland
+    description: ''
+    type: text
+    nullable: true
+    unit: none
+    isAbout: []
+    valueReference: []
+  - name: width
+    description: ''
+    type: text
+    nullable: true
+    unit: none
+    isAbout: []
+    valueReference: []
+  - name: wood
+    description: ''
+    type: text
+    nullable: true
+    unit: none
+    isAbout: []
+    valueReference: []
+  - name: z_order
+    description: ''
+    type: integer
+    nullable: true
+    unit: none
+    isAbout: []
+    valueReference: []
+  - name: way_area
+    description: ''
+    type: real
+    nullable: true
+    unit: none
+    isAbout: []
+    valueReference: []
+  - name: abandoned:aeroway
+    description: ''
+    type: text
+    nullable: true
+    unit: none
+    isAbout: []
+    valueReference: []
+  - name: abandoned:amenity
+    description: ''
+    type: text
+    nullable: true
+    unit: none
+    isAbout: []
+    valueReference: []
+  - name: abandoned:building
+    description: ''
+    type: text
+    nullable: true
+    unit: none
+    isAbout: []
+    valueReference: []
+  - name: abandoned:landuse
+    description: ''
+    type: text
+    nullable: true
+    unit: none
+    isAbout: []
+    valueReference: []
+  - name: abandoned:power
+    description: ''
+    type: text
+    nullable: true
+    unit: none
+    isAbout: []
+    valueReference: []
+  - name: area:highway
+    description: ''
+    type: text
+    nullable: true
+    unit: none
+    isAbout: []
+    valueReference: []
+  - name: tags
+    description: ''
+    type: hstore
+    nullable: true
+    unit: none
+    isAbout: []
+    valueReference: []
+  - name: geom
+    description: ''
+    type: geometry(LineString,3857)
+    nullable: true
+    unit: none
+    isAbout: []
+    valueReference: []
+  - name: id
+    description: ''
+    type: integer
+    nullable: false
+    unit: none
+    isAbout: []
+    valueReference: []
+  primaryKey:
+  - id
+  foreignKeys: []
+dialect:
+  delimiter: null
+  decimalSeparator: .
+review:
+  path: ''
+  badge: ''

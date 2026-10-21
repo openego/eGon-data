@@ -1,0 +1,169 @@
+'@id': ''
+name: grid.egon_saltstructures_storage_potential
+topics: []
+title: 'TODO: Add title for grid.egon_saltstructures_storage_potential'
+path: ''
+description: 'TODO: Add description'
+languages: []
+subject:
+- name: ''
+  '@id': ''
+keywords: []
+publicationDate: ''
+embargoPeriod:
+  start: ''
+  end: ''
+  isActive: false
+context:
+  title: ''
+  homepage: ''
+  documentation: ''
+  sourceCode: ''
+  publisher: ''
+  publisherLogo: ''
+  contact: ''
+  fundingAgency: ''
+  fundingAgencyLogo: ''
+  grantNo: ''
+spatial:
+  location:
+    address: ''
+    '@id': ''
+    latitude: ''
+    longitude: ''
+  extent:
+    name: ''
+    '@id': ''
+    resolutionValue: ''
+    resolutionUnit: ''
+    crs: ''
+temporal:
+  referenceDate: ''
+  timeseries:
+  - start: ''
+    end: ''
+    resolutionValue: ''
+    resolutionUnit: ''
+    alignment: ''
+    aggregationType: ''
+sources:
+- title: ''
+  authors: []
+  description: ''
+  publicationYear: ''
+  path: ''
+  sourceLicenses:
+  - name: ''
+    title: ''
+    path: ''
+    instruction: ''
+    attribution: ''
+    copyrightStatement: ''
+- title: 'Internal table: boundaries.inspee_saltstructures'
+  description: Derived from the internal table 'boundaries.inspee_saltstructures'.
+    See that table's own metadata for full provenance.
+  path: ''
+  authors: []
+  publicationYear: null
+  sourceLicenses: []
+- title: 'Internal table: boundaries.vg250_lan'
+  description: Derived from the internal table 'boundaries.vg250_lan'. See that table's
+    own metadata for full provenance.
+  path: ''
+  authors: []
+  publicationYear: null
+  sourceLicenses: []
+- title: 'Internal table: grid.egon_etrago_ac_h2'
+  description: Derived from the internal table 'grid.egon_etrago_ac_h2'. See that
+    table's own metadata for full provenance.
+  path: ''
+  authors: []
+  publicationYear: null
+  sourceLicenses: []
+- title: 'Internal table: grid.egon_etrago_bus'
+  description: Derived from the internal table 'grid.egon_etrago_bus'. See that table's
+    own metadata for full provenance.
+  path: ''
+  authors: []
+  publicationYear: null
+  sourceLicenses: []
+- title: 'Internal table: grid.egon_saltstructures_storage_potential'
+  description: Derived from the internal table 'grid.egon_saltstructures_storage_potential'.
+    See that table's own metadata for full provenance.
+  path: ''
+  authors: []
+  publicationYear: null
+  sourceLicenses: []
+licenses:
+- name: ''
+  title: ''
+  path: ''
+  instruction: ''
+  attribution: ''
+  copyrightStatement: ''
+contributors:
+- title: ''
+  path: ''
+  organization: ''
+  roles: []
+  date: ''
+  object: ''
+  comment: ''
+type: ''
+format: ''
+encoding: ''
+schema:
+  primaryKey: []
+  foreignKeys: []
+  fields:
+  - name: index
+    description: 'TODO: Add description'
+    type: bigint
+    unit: none
+    nullable: true
+  - name: saltstructure_id
+    description: 'TODO: Add description'
+    type: bigint
+    unit: none
+    nullable: true
+  - name: shape_stle
+    description: 'TODO: Add description'
+    type: double precision
+    unit: none
+    nullable: true
+  - name: shape_star
+    description: 'TODO: Add description'
+    type: double precision
+    unit: none
+    nullable: true
+  - name: gen
+    description: 'TODO: Add description'
+    type: text
+    unit: none
+    nullable: true
+  - name: potential
+    description: 'TODO: Add description'
+    type: double precision
+    unit: none
+    nullable: true
+  - name: bus_id
+    description: 'TODO: Add description'
+    type: bigint
+    unit: none
+    nullable: true
+  - name: geometry
+    description: 'TODO: Add description'
+    type: geometry(GeometryZ,4326)
+    unit: none
+    nullable: true
+  - name: area_fraction
+    description: 'TODO: Add description'
+    type: double precision
+    unit: none
+    nullable: true
+dialect:
+  delimiter: ''
+  decimalSeparator: ''
+review:
+  path: ''
+  badge: ''

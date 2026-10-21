@@ -1,0 +1,6 @@
+version: OEMetadata-2.0
+dataset:
+  name: 'egon_heat_demand'
+  title: 'eGon-data — heat demand'
+  description: 'Heat demand datasets produced by the eGon-data pipeline (heat_demand task group).'
+  '@id': null
