@@ -331,13 +331,27 @@ def hourly_model(series: dict) -> dict:
     Returns
     -------
     dict
-        `e_nom`, `p_nom` and the hourly lists `e_min_pu`, `e_max_pu`,
-        `p_max_pu`, `driving`, `dumb`, `dumb_flex` and `dumb_<use case>`
+        `e_nom`, `p_nom`, `deficit_peak_ratio` and the hourly lists
+        `e_min_pu`, `e_max_pu`, `p_max_pu`, `driving`, `dumb`, `dumb_flex`
+        and `dumb_<use case>`
     """
     e_nom = float(series["battery"].max())
     p_nom = float(series["power"].max())
 
-    model = {"e_nom": e_nom, "p_nom": p_nom}
+    # Peak outstanding deficit per e_nom, before `e_min_pu` is clipped at
+    # 0. It stays <= 1 as long as no deficit exceeds its battery; above 1
+    # the clip relaxes the band.
+    deficit_peak = float(series["deficit_max"].max())
+    if e_nom > 0:
+        deficit_peak_ratio = deficit_peak / e_nom
+    else:
+        deficit_peak_ratio = 0.0 if deficit_peak == 0 else np.inf
+
+    model = {
+        "e_nom": e_nom,
+        "p_nom": p_nom,
+        "deficit_peak_ratio": deficit_peak_ratio,
+    }
     if e_nom > 0:
         # Lower energy bound: min over the hour of (e_nom - deficit_max),
         # upper bound: max of (e_nom - deficit_min) -- as the legacy model
@@ -570,6 +584,7 @@ def generate_placement_models(
         ["bus_id", "model_type"], sort=True
     ):
         diagnostics = None
+        deficit_peak_ratio = 0.0
         balances = []
         for model_key in group.model_key:
             placements = load_placements(scenario_name, model_type, model_key)
@@ -590,11 +605,16 @@ def generate_placement_models(
                 if diagnostics is None
                 else {k: diagnostics[k] + v for k, v in exported.items()}
             )
+            deficit_peak_ratio = max(
+                deficit_peak_ratio, model["deficit_peak_ratio"]
+            )
             balances.append(_energy_balance(placements, eta))
 
         if diagnostics is None:
             continue
-        write_flex_timeseries(scenario_name, bus_id, model_type, diagnostics)
+        write_flex_timeseries(
+            scenario_name, bus_id, model_type, diagnostics, deficit_peak_ratio
+        )
         write_charging_profile_use_case(
             scenario_name, bus_id, model_type, diagnostics
         )

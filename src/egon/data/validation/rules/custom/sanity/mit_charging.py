@@ -1096,6 +1096,85 @@ class MitStoreBand(_MitRule):
         )
 
 
+class MitDeficitWithinBattery(_MitRule):
+    """
+    Check that no charging event needs more energy than its vehicle's
+    battery holds, and that no model's peak outstanding deficit exceeds
+    its store capacity (``deficit_peak_ratio <= 1`` in the diagnostics).
+
+    The second condition follows from the first; it is what matters for
+    the model, as above 1 the clip of ``e_min_pu`` at 0 relaxes the band
+    unnoticed by :class:`MitStoreBand`. The first finds the input error
+    behind it, which mostly stays hidden in the aggregate.
+    """
+
+    def evaluate_scenario(self, engine, ctx):
+        events = self._query(
+            engine,
+            f"""
+            SELECT
+                COUNT(*) AS n,
+                COUNT(*) FILTER (
+                    WHERE t.charging_demand > (1 + {RTOL_EXACT}) * CAST(
+                        m.simbev_config -> 'tech_data' -> p.type
+                            ->> 'battery_capacity' AS float
+                    )
+                ) AS above,
+                MAX(t.charging_demand / NULLIF(CAST(
+                    m.simbev_config -> 'tech_data' -> p.type
+                        ->> 'battery_capacity' AS float
+                ), 0)) AS worst
+            FROM {TRIP_TABLE} t
+            JOIN {POOL_TABLE} p
+                ON p.scenario = t.scenario AND p.ev_id = t.ev_id
+            JOIN {METADATA_TABLE} m ON m.scenario = t.scenario
+            WHERE t.scenario = :scenario
+            """,
+        ).iloc[0]
+        if not events.n:
+            return self._no_rows(TRIP_TABLE)
+        models = self._query(
+            engine,
+            f"""
+            SELECT
+                COUNT(*) AS n,
+                COUNT(*) FILTER (WHERE deficit_peak_ratio IS NULL)
+                    AS missing,
+                COUNT(*) FILTER (
+                    WHERE deficit_peak_ratio > 1 + {ATOL_PU}
+                ) AS above,
+                MAX(deficit_peak_ratio) AS worst
+            FROM {FLEX_TIMESERIES_TABLE}
+            WHERE scenario = :scenario
+            """,
+        ).iloc[0]
+        if not models.n:
+            return self._no_rows(FLEX_TIMESERIES_TABLE)
+        problems = []
+        if int(events.above):
+            problems.append(
+                f"{int(events.above)} of {int(events.n)} charging events "
+                f"need more than their battery (up to "
+                f"{float(events.worst):.2f}x)"
+            )
+        if int(models.missing):
+            problems.append(
+                f"{int(models.missing)} diagnostics rows without "
+                f"deficit_peak_ratio"
+            )
+        if int(models.above):
+            problems.append(
+                f"{int(models.above)} of {int(models.n)} bus/model-type "
+                f"rows with a deficit above e_nom (up to "
+                f"{float(models.worst):.2f}x)"
+            )
+        return self._problems_result(
+            problems,
+            f"{int(events.n)} charging events within their battery, peak "
+            f"deficit at most {float(models.worst):.3f} of e_nom",
+        )
+
+
 class MitLinkParams(_MitRule):
     """
     Check the links: ``p_nom > 0``, efficiency = ``eta_cp`` of the

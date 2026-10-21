@@ -857,7 +857,10 @@ def add_metadata():
                 "all hourly for one year. charging_load_grid_flex is a "
                 "potential, not a realised flexibility. Sum(driving_load) "
                 "equals eta_cp * Sum(charging_load_grid), up to dumb "
-                "charging cropped at the year end."
+                "charging cropped at the year end. deficit_peak_ratio is "
+                "the highest outstanding deficit per store capacity "
+                "before the lower energy bound is clipped at 0; above 1 "
+                "the clip relaxed the band."
             ),
             "keywords": [
                 "ev",

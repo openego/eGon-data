@@ -4,6 +4,7 @@ from .demandregio import DemandRegioScenarioDemand  # noqa: F401
 from .mit_charging import (  # noqa: F401
     MitBandReachable,
     MitBusByLevel,
+    MitDeficitWithinBattery,
     MitDiagnostics,
     MitEventArrayReferences,
     MitEventArrayTotal,

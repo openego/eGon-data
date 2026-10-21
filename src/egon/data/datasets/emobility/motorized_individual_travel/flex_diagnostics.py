@@ -92,6 +92,10 @@ class EgonEvMitLgvFlexTimeseries(Base):
         of the two and is not stored.
     driving_load:
         Battery-side driving load, hourly for one year, in MWh/h.
+    deficit_peak_ratio:
+        Highest outstanding deficit per store capacity `e_nom`, quarter
+        hourly and before `e_min_pu` is clipped at 0; the maximum over
+        the models of the row. Above 1 the clip relaxed the band.
 
     Notes
     -----
@@ -118,6 +122,7 @@ class EgonEvMitLgvFlexTimeseries(Base):
     charging_load_grid = Column(ARRAY(REAL))
     charging_load_grid_flex = Column(ARRAY(REAL))
     driving_load = Column(ARRAY(REAL))
+    deficit_peak_ratio = Column(Float)
 
 
 class EgonEvMitLgvEnergyBalance(Base):
@@ -234,7 +239,11 @@ def _delete(orm_class, scenario_name, bus_id, model_type, session) -> None:
 
 
 def write_flex_timeseries(
-    scenario_name: str, bus_id: int, model_type: str, hourly: dict
+    scenario_name: str,
+    bus_id: int,
+    model_type: str,
+    hourly: dict,
+    deficit_peak_ratio: float,
 ) -> None:
     """Write export A for the models of one type on one AC bus.
 
@@ -249,6 +258,8 @@ def write_flex_timeseries(
     hourly : dict
         Hourly series `dumb`, `dumb_flex` and `driving`, cf.
         :func:`.placement_model.hourly_model`
+    deficit_peak_ratio : float
+        Highest `deficit_peak_ratio` of the models
     """
     with db.session_scope() as session:
         _delete(
@@ -268,6 +279,7 @@ def write_flex_timeseries(
                     float(_) for _ in hourly["dumb_flex"]
                 ],
                 driving_load=[float(_) for _ in hourly["driving"]],
+                deficit_peak_ratio=float(deficit_peak_ratio),
             )
         )
 

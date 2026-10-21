@@ -118,6 +118,7 @@ from egon.data.validation import TableValidation
 from egon.data.validation.rules.custom.sanity import (
     MitBandReachable,
     MitBusByLevel,
+    MitDeficitWithinBattery,
     MitDiagnostics,
     MitEventArrayReferences,
     MitEventArrayTotal,
@@ -602,6 +603,11 @@ def mit_validation_rules():
         (MitTotalEnergy, "grid.egon_etrago_load", "TOTAL_ENERGY"),
         (MitModelComponents, "grid.egon_etrago_bus", "MODEL_COMPONENTS"),
         (MitStoreBand, "grid.egon_etrago_store", "STORE_BAND"),
+        (
+            MitDeficitWithinBattery,
+            tables["ev_trip"],
+            "DEFICIT_WITHIN_BATTERY",
+        ),
         (MitLinkParams, "grid.egon_etrago_link", "LINK_PARAMS"),
         (MitBandReachable, "grid.egon_etrago_store", "BAND_REACHABLE"),
         (MitLowflexPair, "grid.egon_etrago_load", "LOWFLEX_PAIR"),
@@ -809,7 +815,7 @@ class MotorizedIndividualTravel(Dataset):
     #:
     name: str = "MotorizedIndividualTravel"
     #:
-    version: str = "0.2.0"
+    version: str = "0.2.1"
 
     def __init__(self, dependencies):
         parallel_tasks = MotorizedIndividualTravel.sources.files[
