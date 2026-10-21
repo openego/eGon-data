@@ -20,6 +20,7 @@ or a Dataset class name) so developers only see their own gaps. Without
 
 from __future__ import annotations
 
+from pathlib import Path
 import json
 
 import click
@@ -333,19 +334,45 @@ def _init_resource(c, ds_id, table, engine):
     default=None,
     help="Task group, OEMetadata dataset id, or Dataset class name.",
 )
-def export_cmd(scope):
+@click.option(
+    "--out-dir",
+    type=click.Path(file_okay=False, path_type=Path),
+    default=OEM_OUT_DIR,
+    show_default=True,
+    help="Folder for the JSON files; relative paths start at the CWD.",
+)
+def export_cmd(scope, out_dir):
     """Write one OEMetadata JSON per table from the YAML store alone."""
     from omi.creation.assembler import assemble_metadata_dict
 
+    wanted = None
     if scope:
+        from egon.data.metadata.inventory import (
+            expected_tables,
+            load_dataset_ids,
+            load_table_owners,
+            owner_group,
+        )
+
         _, scoped = _scoped_classes(scope)
-        ds_ids = sorted(set(_dataset_ids_for(scoped).values()))
+        # the scope's own tables, wherever their owner documents them
+        wanted = expected_tables(scoped)
+        ids, owners = load_dataset_ids(), load_table_owners()
+        ds_ids = sorted(
+            {ids[owner_group(t, p, owners)] for t, p in wanted.items()}
+        )
     else:
         from omi.creation.utils import discover_dataset_ids
 
         ds_ids = discover_dataset_ids(OEM_BASE_DIR)
 
-    OEM_OUT_DIR.mkdir(parents=True, exist_ok=True)
+    try:
+        out_dir.mkdir(parents=True, exist_ok=True)
+    except OSError as error:
+        raise click.ClickException(
+            f"Cannot create {out_dir.resolve()}: {error.strerror}. Pick a"
+            " writable folder with --out-dir."
+        )
     n = 0
     for ds_id in ds_ids:
         try:
@@ -355,14 +382,14 @@ def export_cmd(scope):
             continue
         for resource in document.get("resources", []):
             name = resource.get("name")
-            if not name:
+            if not name or (wanted is not None and name not in wanted):
                 continue
             single = dict(document)
             single["resources"] = [resource]
-            out_path = OEM_OUT_DIR / f"{name}.json"
+            out_path = out_dir / f"{name}.json"
             out_path.write_text(
                 json.dumps(single, indent=2, ensure_ascii=False),
                 encoding="utf-8",
             )
             n += 1
-    click.echo(f"{n} metadata JSON files written to {OEM_OUT_DIR}/")
+    click.echo(f"{n} metadata JSON files written to {out_dir}/")

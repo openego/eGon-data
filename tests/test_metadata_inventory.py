@@ -62,3 +62,34 @@ def test_where_points_at_the_first_todo(tmp_path, monkeypatch):
     yaml_file.write_text("name: s.t\ntitle: ok\ndescription: 'TODO: Add'\n")
     monkeypatch.chdir(tmp_path)
     assert _where(yaml_file) == "x.resource.yaml:3"
+
+
+def test_export_writes_only_the_scope_into_out_dir(tmp_path):
+    from click.testing import CliRunner
+
+    from egon.data.metadata import cli
+
+    out = tmp_path / "json"
+    result = CliRunner().invoke(
+        cli.metadata,
+        ["export", "--scope", "EthosBuilda", "--out-dir", str(out)],
+    )
+    assert result.exit_code == 0, result.output
+    assert [p.name for p in out.iterdir()] == [
+        "society.egon_ethos_builda_buildings.json"
+    ]
+
+
+def test_export_reports_an_unwritable_out_dir(tmp_path):
+    from click.testing import CliRunner
+
+    from egon.data.metadata import cli
+
+    locked = tmp_path / "locked"
+    locked.mkdir(mode=0o500)
+    result = CliRunner().invoke(
+        cli.metadata,
+        ["export", "--scope", "EthosBuilda", "--out-dir", str(locked / "x")],
+    )
+    assert result.exit_code != 0
+    assert "Pick a writable folder with --out-dir" in result.output

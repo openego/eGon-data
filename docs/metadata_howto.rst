@@ -36,7 +36,7 @@ I want to …                                      Command
 see what's missing for my task group             ``egon-data metadata status --scope heat_demand``
 create/update the YAML skeletons for my scope    ``egon-data metadata init --scope heat_demand``
 check the whole store (what CI checks)           ``egon-data metadata status``
-regenerate the per-table JSON files, no DB       ``egon-data metadata export``
+regenerate the per-table JSON files, no DB       ``egon-data metadata export --out-dir ~/oem``
 run exactly what CI runs                          ``pytest tests/test_metadata_store.py``
 ===============================================  ===================================================
 
@@ -194,7 +194,7 @@ Two helpers:
   .. code-block:: bash
 
      egon-data metadata status --scope <your scope>   # completeness
-     egon-data metadata export --scope <your scope>   # full assembly + JSON
+     egon-data metadata export --scope <your scope> --out-dir /tmp/oem   # full assembly + JSON
 
   If ``export`` runs through, your YAML still assembles into a valid
   document.
