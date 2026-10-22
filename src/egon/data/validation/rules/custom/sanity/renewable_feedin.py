@@ -126,7 +126,7 @@ class RenewableFeedinTimeseries(DataFrameRule):
         self.kind = "sanity"
 
     def get_query(self, ctx):
-        return """
+        return f"""
         SELECT carrier,
                COUNT(*) AS n_cells,
                MIN(length) AS min_length,
@@ -138,7 +138,7 @@ class RenewableFeedinTimeseries(DataFrameRule):
                    cardinality(feedin) AS length,
                    (SELECT MIN(v) FROM unnest(feedin) AS v) AS min_value,
                    (SELECT MAX(v) FROM unnest(feedin) AS v) AS max_value
-            FROM supply.egon_era5_renewable_feedin
+            FROM {self.table}
         ) AS series
         GROUP BY carrier
         """
