@@ -4,14 +4,31 @@ from .demandregio import DemandRegioScenarioDemand  # noqa: F401
 from .power_plants_capacity import (  # noqa: F401
     BusExists,
     PowerPlantsCapacityComparison,
-)  
-from .pv_rooftop_buildings import (  
+)
+from .pv_rooftop_buildings import (
     PvRooftopCapacityComparison,
     PvRooftopDuplicateRows,
 )
 from .renewable_feedin import (  # noqa: F401
     RenewableFeedinTimeseries,
     ZensusWeatherCellMappingRowCount,
+)
+
+from .individual_heat_pumps import (  # noqa: F401
+    HeatPeakLoadRange,
+    HeatPumpCapacityRange,
+    HeatPumpCapacityTarget,
+    HeatPumpFloorContainment,
+    HeatPumpFloorNotReduced,
+    HeatPumpMinimumRows,
+    HeatPumpNotInDistrictHeating,
+    HeatPumpPeakLoadExists,
+    HeatPumpScenarioCoverage,
+    HeatPumpSizing,
+    HeatTimeseriesCoverage,
+    HeatTimeseriesEnergyBalance,
+    HeatTimeseriesHeatPumpCapacity,
+    HeatTimeseriesValues,
 )
 from .residential_electricity import (  # noqa: F401
     ResidentialElectricityAnnualSum,
