@@ -33,6 +33,14 @@ from egon.data.datasets.storages.pumped_hydro import (
     select_mastr_pumped_hydro,
     select_nep_pumped_hydro,
 )
+from egon.data.validation import TableValidation
+from egon.data.validation.rules.custom.sanity import (
+    BusExists,
+    HomeBatteryAggregationComparison,
+    HomeBatteryCapacityComparison,
+    HomeBatteryDuplicateRows,
+    PumpedHydroCapacityComparison,
+)
 from egon.data.db import session_scope
 
 Base = declarative_base()
@@ -114,7 +122,7 @@ class Storages(Dataset):
     #:
     name: str = "Storages"
     #:
-    version: str = "0.0.14"
+    version: str = "0.0.15"
 
     def __init__(self, dependencies):
         super().__init__(
@@ -128,6 +136,92 @@ class Storages(Dataset):
                 allocate_pv_home_batteries_to_grids,
                 allocate_home_batteries_to_buildings,
             ),
+            validation={
+                "data-quality": [
+                    TableValidation(
+                        table_name="supply.egon_storages",
+                        data_type_columns={
+                            "id": "bigint",
+                            "sources": "jsonb",
+                            "source_id": "jsonb",
+                            "carrier": "character varying",
+                            "el_capacity": "double precision",
+                            "bus_id": "integer",
+                            "scenario": "character varying",
+                        },
+                        not_null_columns=[
+                            "id",
+                            "sources",
+                            "source_id",
+                            "carrier",
+                            "el_capacity",
+                            "bus_id",
+                            "scenario",
+                        ],
+                        value_set_columns={
+                            "carrier": ["BESS", "home_battery", "pumped_hydro"],
+                            "scenario": [
+                                "eGon2035",
+                                "reGon2037",
+                                "reGon2045",
+                                "status2024",
+                            ],
+                        },
+                    ),
+                    TableValidation(
+                        table_name="supply.egon_home_batteries",
+                        data_type_columns={
+                            "scenario": "character varying",
+                            "bus_id": "integer",
+                            "building_id": "integer",
+                            "p_nom": "double precision",
+                            "capacity": "double precision",
+                            "sources": "jsonb",
+                        },
+                        not_null_columns=[
+                            "scenario",
+                            "bus_id",
+                            "building_id",
+                            "p_nom",
+                            "capacity",
+                            "sources",
+                        ],
+                        value_set_columns={
+                            "scenario": [
+                                "eGon2035",
+                                "reGon2037",
+                                "reGon2045",
+                                "status2024",
+                            ],
+                        },
+                    ),
+                    PumpedHydroCapacityComparison(
+                        table="supply.egon_storages",
+                        rule_id="SANITY_PUMPED_HYDRO_CAPACITY",
+                    ),
+                    HomeBatteryCapacityComparison(
+                        table="supply.egon_storages",
+                        rule_id="SANITY_HOME_BATTERY_CAPACITY",
+                    ),
+                    HomeBatteryAggregationComparison(
+                        table="supply.egon_home_batteries",
+                        rule_id="SANITY_HOME_BATTERY_AGGREGATION",
+                    ),
+                    HomeBatteryDuplicateRows(
+                        table="supply.egon_home_batteries",
+                        rule_id="SANITY_HOME_BATTERY_DUPLICATES",
+                    ),
+                    BusExists(
+                        table="supply.egon_storages",
+                        rule_id="SANITY_STORAGES_BUS_EXISTS",
+                    ),
+                    BusExists(
+                        table="supply.egon_home_batteries",
+                        rule_id="SANITY_HOME_BATTERY_BUS_EXISTS",
+                    ),
+                ]
+            },
+            proceed_on_validation_failure=True,
         )
 
 

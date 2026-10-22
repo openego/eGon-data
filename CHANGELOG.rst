@@ -10,6 +10,12 @@ Added
 
 * Integrate egon-validation framework for data quality checks
   `PR #1375 <https://github.com/openego/eGon-data/pull/1375>`_
+* Add custom data-quality validation checks for the ``electricity_supply``
+  task group (``RenewableFeedin``, ``PowerPlants``, ``Storages``): schema,
+  not-null and value-set checks plus custom rules comparing modelled
+  capacities against scenario targets, checking bus references and
+  flagging duplicate rows
+  `#1526 <https://github.com/openego/eGon-data/issues/1526>`_
 * Make egon-data runnable in python 3.10
   `#1352 <https://github.com/openego/egon-data/issues/1352>`_
 * Add standardized sources and targets definitions across dataset modules
