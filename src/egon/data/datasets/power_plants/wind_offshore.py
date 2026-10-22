@@ -351,7 +351,21 @@ def insert():
                 ].index[0]
                 offshore.at[index, "bus_id"] = buses.at[bus_ind, "bus_id"]
             else:
-                print(f'Wind offshore farm not found: {wind_park["osm_id"]}')
+                logging.warning(
+                    f"Wind offshore farm not matched to a bus in {scenario}: "
+                    f"{wind_park['Netzverknuepfungspunkt']} "
+                    f"(osm_id {wind_park['osm_id']}, "
+                    f"{wind_park['Spannungsebene in kV']} kV, "
+                    f"{wind_park['el_capacity']} MW)"
+                )
+
+        not_matched = offshore[offshore["bus_id"].isna()]
+        if not not_matched.empty:
+            logging.warning(
+                f"{len(not_matched)} wind offshore farms with "
+                f"{not_matched['el_capacity'].sum()} MW in total are dropped "
+                f"in {scenario} because no matching bus was found."
+            )
 
         offshore.dropna(subset=["bus_id"], inplace=True)
 
