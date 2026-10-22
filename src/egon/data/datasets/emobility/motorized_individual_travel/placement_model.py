@@ -16,7 +16,9 @@ Models
   with carriers of its own (ADR-0003).
 
 Per placement with deficit `d` (kWh), battery capacity `b`, half-open
-parking window `[s, e)` and grid-side nominal power `P`:
+parking window `[s, e)` and grid-side nominal power `P`; `d` is the
+delivered charging demand, capped at what the stop can recharge,
+`P * eta_cp` over `[s, e)`:
 
 =================================  ==========================================
 driving load                       `d` in timestep `s`
@@ -213,7 +215,8 @@ def build_timeseries(
         `driving` (MWh per timestep), `deficit_max`, `deficit_min` and
         `battery` (MWh), `power` (plugged-in, MW), `dumb` (MW),
         `dumb_flex` (MW) and `dumb_<use case>` (MW), each of length
-        :data:`N_STEPS`
+        :data:`N_STEPS`, and `deficit_capped`, the energy the cap of the
+        deficits removed (kWh)
     """
     weight = placements.n.to_numpy(dtype="float64")
     start = np.clip(
@@ -223,8 +226,19 @@ def build_timeseries(
         placements.park_end.to_numpy(dtype="int64"), 0, LAST_TIMESTEP
     )
     stop = np.maximum(stop, start)
-    deficit = placements.charging_demand.to_numpy(dtype="float64") * weight
     power = placements.charging_capacity_grid.to_numpy(dtype="float64") / 1e3
+    # Each deficit is capped at what its stop can recharge, `P * eta` over
+    # the delivered parking window. A few delivered events whose charging
+    # fills the stop exceed that by up to 0.1 %, enough to make the model
+    # infeasible by some Wh.
+    window = np.maximum(
+        placements.park_end.to_numpy(dtype="int64")
+        - placements.park_start.to_numpy(dtype="int64"),
+        0,
+    )
+    delivered = placements.charging_demand.to_numpy(dtype="float64")
+    demand = np.minimum(delivered, power * 1e3 * eta * window / STEPS_PER_HOUR)
+    deficit = demand * weight
     battery = placements.type.map(battery_capacity).to_numpy(dtype="float64")
     if np.isnan(battery).any():
         missing = sorted(set(placements.type[np.isnan(battery)]))
@@ -234,7 +248,7 @@ def build_timeseries(
     length = stop - start
 
     size = N_STEPS + 2
-    series = {}
+    series = {"deficit_capped": float(((delivered - demand) * weight).sum())}
 
     # Driving load: the deficit in the arrival timestep, in MWh.
     driving = np.zeros(N_STEPS)
@@ -280,7 +294,7 @@ def build_timeseries(
     # model, the remainder of the last timestep included.
     steps = (
         np.divide(
-            placements.charging_demand.to_numpy(dtype="float64"),
+            demand,
             power * 1e3 * eta,
             out=np.zeros(len(placements)),
             where=power > 0,
@@ -580,6 +594,7 @@ def generate_placement_models(
         .to_dict()
     )
 
+    capped = 0.0
     for (bus_id, model_type), group in models.groupby(
         ["bus_id", "model_type"], sort=True
     ):
@@ -590,9 +605,9 @@ def generate_placement_models(
             placements = load_placements(scenario_name, model_type, model_key)
             if placements.empty:
                 continue
-            model = hourly_model(
-                build_timeseries(placements, battery_capacity, eta)
-            )
+            series = build_timeseries(placements, battery_capacity, eta)
+            capped += series["deficit_capped"]
+            model = hourly_model(series)
             write_model(scenario_name, model_type, bus_id, model, eta)
 
             exported = {
@@ -629,3 +644,7 @@ def generate_placement_models(
             f"{balance.n_placements.sum()} placements, "
             f"{balance.grid.sum():.1f} MWh grid side."
         )
+    print(
+        f"  Deficits capped at what their stop can recharge: "
+        f"{capped:.3f} kWh in total."
+    )

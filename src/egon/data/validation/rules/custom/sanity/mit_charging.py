@@ -57,6 +57,11 @@ MAX_DISTRICT_DISTANCE_M = 1000.0
 #: Absolute tolerance for per-unit values.
 ATOL_PU = 1e-6
 
+#: Absolute tolerance of the band feasibility, in MWh per MWh of e_nom
+#: (at least 1e-9 MWh): below a solver's feasibility tolerance, but
+#: above the rounding of the band arithmetic.
+ATOL_BAND = 1e-9
+
 #: Hours of every timeseries.
 N_TIMESTEPS = 8760
 
@@ -1231,17 +1236,21 @@ class MitLinkParams(_MitRule):
 
 class MitBandReachable(_MitRule):
     """
-    Check that the store band can be followed through the link.
+    Check that the store band can be followed through the link, i.e. that
+    the model's stand-alone eTraGo problem is feasible.
 
-    Charging as early as possible -- every hour as much as the link
-    (``eta * p_nom * p_max_pu``) and the upper band allow -- keeps the store
-    as full as it can be at every hour. The band is feasible exactly if
-    that path never falls below the lower band. A band the optimiser
-    cannot follow shows up as an infeasible eTraGo run. A warning, so the
-    shortfall can be judged; it is reported relative to ``e_nom``.
+    The Li_ion bus holds only the link, the store and the driving load, so
+    the store can gain energy only through the link and lose it only by
+    driving. Charging as early as possible -- every hour as much as the
+    link (``eta * p_nom * p_max_pu``) and the upper band allow -- keeps the
+    store as full as it can be at every hour, and not charging keeps it as
+    empty as it can be. The band is feasible exactly if the first path
+    never falls below the lower band and the driving load alone never
+    leaves the store above the upper band. A band the optimiser cannot
+    follow is an infeasible eTraGo run, so the tolerance is absolute and
+    small (:data:`ATOL_BAND`); the gaps are reported relative to
+    ``e_nom``.
     """
-
-    failure_severity = Severity.WARNING
 
     #: Models fetched per query.
     BATCH = 300
@@ -1287,7 +1296,7 @@ class MitBandReachable(_MitRule):
                 buses=buses[start : start + self.BATCH],
             )
             for row in df.itertuples():
-                shortfall = _band_shortfall(
+                shortfall, excess = _band_gaps(
                     e_initial=row.e_initial,
                     lower=np.asarray(row.e_min_pu, dtype=float) * row.e_nom,
                     upper=np.asarray(row.e_max_pu, dtype=float) * row.e_nom,
@@ -1296,15 +1305,16 @@ class MitBandReachable(_MitRule):
                     * row.p_nom
                     * np.asarray(row.p_max_pu, dtype=float),
                 )
-                if shortfall > RTOL_EXACT * row.e_nom:
-                    failing.append((row.bus_id, shortfall / row.e_nom))
+                gap = max(shortfall, excess)
+                if gap > ATOL_BAND * max(row.e_nom, 1.0):
+                    failing.append((row.bus_id, gap / row.e_nom, gap))
         failing.sort(key=lambda _: -_[1])
         return self._problems_result(
             (
                 [
                     f"{len(failing)} of {len(buses)} models cannot follow "
-                    f"their band, at most {failing[0][1]:.2%} of e_nom short "
-                    f"(e.g. Li_ion buses "
+                    f"their band, at most {failing[0][1]:.2e} of e_nom "
+                    f"({failing[0][2] * 1e3:.4f} kWh) off (e.g. Li_ion buses "
                     f"{_examples(_[0] for _ in failing)})"
                 ]
                 if failing
@@ -1314,20 +1324,26 @@ class MitBandReachable(_MitRule):
         )
 
 
-def _band_shortfall(e_initial, lower, upper, driving, capacity):
+def _band_gaps(e_initial, lower, upper, driving, capacity):
     """
     Largest shortfall below the lower band of the charge-as-early-as-
-    possible path of a store, in its energy unit; 0 if the band is
-    feasible. After a shortfall the path continues from the lower band, so
+    possible path of a store, and largest excess above the upper band of
+    the path without charging, in its energy unit; both 0 if the band is
+    feasible. After a gap a path continues from the violated bound, so
     later hours are judged on their own.
     """
-    energy, shortfall = e_initial, 0.0
+    full, empty = e_initial, e_initial
+    shortfall, excess = 0.0, 0.0
     for t in range(len(lower)):
-        energy = min(energy - driving[t] + capacity[t], upper[t])
-        if energy < lower[t]:
-            shortfall = max(shortfall, lower[t] - energy)
-            energy = lower[t]
-    return shortfall
+        full = min(full - driving[t] + capacity[t], upper[t])
+        if full < lower[t]:
+            shortfall = max(shortfall, lower[t] - full)
+            full = lower[t]
+        empty = max(empty - driving[t], lower[t])
+        if empty > upper[t]:
+            excess = max(excess, empty - upper[t])
+            empty = upper[t]
+    return shortfall, excess
 
 
 class MitLowflexPair(_MitRule):
