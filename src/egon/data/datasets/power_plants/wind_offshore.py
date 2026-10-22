@@ -63,7 +63,13 @@ def map_id_bus(scenario, sources):
                 "Rastede": "1128250707",
                 "Großenmeer": "1128250704",
                 "Suchraum Nüttermoor": "1280178911",
-                "Suchraum Esens": "79316833",
+                # Esens is a planned 380 kV hub (NEP 2037/2045 V2025, P557)
+                # that does not exist in OSM yet. Use the nearest existing
+                # 380 kV substation Wilhelmshaven 2 (approx. 32 km away)
+                # instead of Hagermarsch (110 kV only).
+                # TODO: Check this connection point again when newer grid
+                # data (OSM) is used, Esens might then be available.
+                "Suchraum Esens": "637595524",
                 "Sengwarden": "1134105414",
                 "Suchraum Gemeinden Ibbenbüren/Mettingen/Westerkappeln": "954305865",
                 "Suchraum Zensenbusch": "24479003",
