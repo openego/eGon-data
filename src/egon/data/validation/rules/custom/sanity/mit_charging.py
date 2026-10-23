@@ -313,6 +313,8 @@ class _MitRule(DataFrameRule):
         self, success, message, observed=None, expected=None, severity=None
     ):
         """A result with the common fields filled in."""
+        # A numpy bool from a comparison is not JSON serializable.
+        success = bool(success)
         if severity is None:
             severity = Severity.INFO if success else self.failure_severity
         return RuleResult(
