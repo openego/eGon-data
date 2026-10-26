@@ -345,6 +345,13 @@ def import_installed_ch4_storages(scn_name):
         total_german_cap - german_cap_source
     ) / len(ch4_estimated)
 
+    # Remove the storage units out of operation in the scenario year, so
+    # that the remaining ones reach the capacity of the scenario
+    year = get_scenario_year(scn_name)
+    Gas_storages_list = Gas_storages_list[
+        Gas_storages_list["end_year"] >= year
+    ]
+
     # Reduce the fleet of 2021 to the storage capacity of the scenario,
     # converting the caverns first, see :py:func:`scale_to_scenario_capacity`
     Gas_storages_list = scale_to_scenario_capacity(Gas_storages_list, scn_name)
@@ -374,12 +381,6 @@ def import_installed_ch4_storages(scn_name):
         Gas_storages_list = Gas_storages_list[
             Gas_storages_list["NUTS1"].isin([map_states[boundary], np.nan])
         ]
-
-    # Remove unused storage units
-    year = get_scenario_year(scn_name)
-    Gas_storages_list = Gas_storages_list[
-        Gas_storages_list["end_year"] >= year
-    ]
 
     Gas_storages_list = Gas_storages_list.rename(
         columns={"lat": "y", "long": "x"}
