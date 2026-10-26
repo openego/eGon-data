@@ -1,5 +1,15 @@
 """Sanity check validation rules for eGon data quality."""
 
+from .data_centers import (  # noqa: F401
+    DataCenterAnnualDemand,
+    DataCenterLoads,
+    DataCenterLoadTimeseries,
+    DataCenterPeakLoads,
+    DataCenterScenarioCoverage,
+    DataCenterWasteHeatGenerators,
+    DataCenterWasteHeatProfile,
+    DataCenterWasteHeatTimeseries,
+)
 from .demandregio import DemandRegioScenarioDemand  # noqa: F401
 from .individual_heat_pumps import (  # noqa: F401
     HeatPeakLoadRange,
