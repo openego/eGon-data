@@ -235,8 +235,8 @@ def read_and_scale_regional_demand(scn_name, carrier):
     Returns
     -------
     df : pandas.DataFrame
-        Dataframe indexed by id_region, with the columns "values"
-        (time series), "name_short" (NUTS3 code), "NUTS0" and "NUTS1"
+        Dataframe with the columns "values" (time series), "name_short"
+        (NUTS3 code of VG250), "NUTS0" and "NUTS1"
 
     """
     target_file = Path(
@@ -272,6 +272,23 @@ def read_and_scale_regional_demand(scn_name, carrier):
     # Match the id_region to obtain the NUT3 region names
     industrial_loads_list = pd.concat(
         [industrial_loads, df_corr], axis=1, join="inner"
+    )
+    # FfE uses NUTS 2013 codes, VG250 NUTS 2016: DE915 and DE919 merged
+    # into DE91C, DEB16 and DEB19 renamed
+    industrial_loads_list["name_short"] = industrial_loads_list[
+        "name_short"
+    ].replace(
+        {
+            "DE915": "DE91C",
+            "DE919": "DE91C",
+            "DEB16": "DEB1C",
+            "DEB19": "DEB1D",
+        }
+    )
+    industrial_loads_list = (
+        industrial_loads_list.groupby("name_short")["values"]
+        .agg(lambda values: np.sum(values.tolist(), axis=0).tolist())
+        .reset_index()
     )
     industrial_loads_list["NUTS0"] = (industrial_loads_list["name_short"].str)[
         0:2
