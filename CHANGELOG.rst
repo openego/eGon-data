@@ -7,7 +7,8 @@ Unreleased
 
 Added
 -----
-
+* Integrate data quality checks for heat_supply datasets
+  `#1550 <https://github.com/openego/eGon-data/pull/1550>`_
 * Integrate egon-validation framework for data quality checks
   `PR #1375 <https://github.com/openego/eGon-data/pull/1375>`_
 * Make egon-data runnable in python 3.10

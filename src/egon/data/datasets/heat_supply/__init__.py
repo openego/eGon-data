@@ -30,7 +30,7 @@ from egon.data.metadata import (
     sources,
 )
 from egon_validation import ReferentialIntegrityValidation
-from egon.data.validation import TableValidation, resolve_boundary_dependence
+from egon.data.validation import TableValidation
 from egon.data.validation.rules.custom.sanity import (
     DistrictHeatingSupplyAreaReference,
     DistrictHeatingSupplyChpCapacity,
@@ -537,11 +537,6 @@ class HeatSupply(Dataset):
                     IndividualHeatingSupplyHeatPumpTarget(
                         table="supply.egon_individual_heating",
                         rule_id="SANITY_INDIV_SUPPLY_HEAT_PUMP_TARGET",
-                        # individual_heating() distributes 1/16 of the
-                        # national status quo target for Schleswig-Holstein
-                        national_share=resolve_boundary_dependence(
-                            {"Schleswig-Holstein": 1 / 16, "Everything": 1.0}
-                        ),
                         rtol=0.01,
                     ),
                 ]

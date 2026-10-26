@@ -437,9 +437,7 @@ class IndividualHeatingSupplyHeatPumpTarget(DataFrameRule):
 
     * per federal state, if the scenario has ``residential_rural_heat_pump``
       targets per NUTS-1 region (reGon scenarios),
-    * nationally, from the ``rural_heat_pump`` total (status quo). For a
-      Schleswig-Holstein run the code divides that total by 16, so the
-      national target is multiplied by ``national_share``.
+    * nationally, from the ``rural_heat_pump`` total (status quo).
 
     The rule picks the level per scenario from the targets that exist.
     Federal states are only compared if at least one MV grid lies in them,
@@ -455,9 +453,6 @@ class IndividualHeatingSupplyHeatPumpTarget(DataFrameRule):
         map_table: MV grid to federal state mapping
             (default: boundaries.egon_map_mvgriddistrict_vg250)
         state_table: Federal states (default: boundaries.vg250_lan)
-        national_share: Share of the national target distributed in this
-            run (default: 1.0). Use resolve_boundary_dependence to set
-            1/16 for Schleswig-Holstein.
         rtol: Relative tolerance (default: 0.01 = 1 %)
     """
 
@@ -468,7 +463,6 @@ class IndividualHeatingSupplyHeatPumpTarget(DataFrameRule):
         capacity_table: str = "supply.egon_scenario_capacities",
         map_table: str = "boundaries.egon_map_mvgriddistrict_vg250",
         state_table: str = "boundaries.vg250_lan",
-        national_share=1.0,
         rtol: float = 0.01,
         **kwargs,
     ):
@@ -478,7 +472,6 @@ class IndividualHeatingSupplyHeatPumpTarget(DataFrameRule):
             capacity_table=capacity_table,
             map_table=map_table,
             state_table=state_table,
-            national_share=national_share,
             rtol=rtol,
             **kwargs,
         )
@@ -550,7 +543,6 @@ class IndividualHeatingSupplyHeatPumpTarget(DataFrameRule):
 
     def evaluate_df(self, df, ctx):
         rtol = float(self.params.get("rtol", 0.01))
-        share = float(self.params.get("national_share", 1.0))
 
         unchecked = sorted(df.loc[df["level"].isna(), "scenario"].unique())
         df = df[df["level"].notna()].copy()
@@ -568,9 +560,6 @@ class IndividualHeatingSupplyHeatPumpTarget(DataFrameRule):
                 ),
                 severity=Severity.INFO,
             )
-
-        national = df["level"] == "national"
-        df.loc[national, "target"] = df.loc[national, "target"] * share
 
         # A zero target cannot give a relative deviation; it only has to
         # stay undistributed.
