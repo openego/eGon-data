@@ -1130,16 +1130,6 @@ def gas(scenario):
         # 130 GWh (BNetzA, Volk 2012) x (1 - 4,860/40,000): without the pipelines
         # converted to H2 (FNB Gas Kernnetz, Anlage 4, 10 Dec 2024)
 
-        # Industrial gas demand in Germany over the year, incl. non-energy use
-        # (derivation: documentation of the gas demand)
-        parameters["industrial_gas_demand"] = {
-            "CH4": 124_900_000,  # [MWh]
-            "H2": 64_600_000,  # [MWh]
-        }
-        # source: draft Szenariorahmen Gas und Wasserstoff 2025
-        # (1 July 2024), scenario "Fokus Strom" (T45-Strom*), Tab. 25 (H2) and
-        # Tab. 26 (CH4), p. 74; 2037 as in reGon2037
-
         # Capacity of the electrolysers per federal state [MW], upper bound of
         # the extendable electrolysers
         parameters["power_to_H2_capacity"] = {

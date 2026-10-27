@@ -526,9 +526,12 @@ def scale_to_scenario_demand(industrial_loads_list, scn_name, carrier):
         The dataframe with the scaled time series
 
     """
-    target = get_sector_parameters("gas", scn_name)["industrial_gas_demand"][
-        carrier.split("_")[0]
-    ]
+    # Scenarios without a total (eGon2035) keep the values of the FfE data
+    target = (
+        get_sector_parameters("gas", scn_name)
+        .get("industrial_gas_demand", {})
+        .get(carrier.split("_")[0])
+    )
 
     if target is None:
         return industrial_loads_list

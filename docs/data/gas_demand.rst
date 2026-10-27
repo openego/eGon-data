@@ -25,9 +25,10 @@ scenario parameters (``industrial_gas_demand``):
        the industry (192.7 TWh, including gas for heat in industrial CHP) plus
        non-energy use (22.0 TWh)
    * - eGon2035
-     - 124.9
-     - 64.6
-     - Szenariorahmen Gas und Wasserstoff 2025, linear between 2030 and 2037
+     - 196.0
+     - 16.1
+     - FfE eXtremOS data of 2035, not scaled (the electricity side of eGon2035
+       stays on the NEP Strom 2035)
    * - reGon2037
      - 100.9
      - 84.4
@@ -46,13 +47,12 @@ energies. The energies are therefore those of the same storyline in the draft
 of July 2024 ("Fokus Strom", T45-Strom*, numbered scenario 1 there; Tab. 25 and
 26), scaled by the ratio of the approved to the draft industry capacity (CH4
 2037: 20/23 GWh/h; H2 2037: 18/16 GWh/h, 2045: 42/60 GWh/h), i.e. at the
-full-load hours of the draft. The year 2030 used for eGon2035 is not part of the
-approved scenario and keeps the draft value.
+full-load hours of the draft.
 
 The temporal distribution comes from the eXtremOS project of the FfE
 [eXtremOS]_ (industrial demand of methane and hydrogen in 2035, per NUTS-3
-region). It is only used as a pattern: the loads are scaled to the German
-totals above. The data is downloaded from the FfE open data platform; as the
+region). For the reGon scenarios and status2024 it is only used as a pattern:
+the loads are scaled to the German totals above. The data is downloaded from the FfE open data platform; as the
 platform no longer answers, the copy of the data bundle is used. The status
 quo scenario has no hydrogen demand (no hydrogen system).
 
