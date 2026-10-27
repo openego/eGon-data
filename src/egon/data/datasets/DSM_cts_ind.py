@@ -32,10 +32,9 @@ from egon.data.metadata import (
     sources,
 )
 
-from egon_validation import (
-    ArrayCardinalityValidation
-)
+from egon_validation import ArrayCardinalityValidation
 from egon.data.validation.rules.custom.sanity import DSMValues
+
 # CONSTANTS
 # TODO: move to datasets.yml
 CON = db.engine()

@@ -129,5 +129,4 @@ class DSMValues(DataFrameRule):
             schema=self.schema,
             table_name=self.table_name,
             rule_class=self.__class__.__name__,
-        )# -*- coding: utf-8 -*-
-
+        )  # -*- coding: utf-8 -*-
