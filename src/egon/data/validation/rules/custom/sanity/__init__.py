@@ -1,6 +1,13 @@
 """Sanity check validation rules for eGon data quality."""
 
 from .demandregio import DemandRegioScenarioDemand  # noqa: F401
+from .heat_supply import (  # noqa: F401
+    DistrictHeatingSupplyAreaReference,
+    DistrictHeatingSupplyChpCapacity,
+    DistrictHeatingSupplyScenarioTarget,
+    DistrictHeatingSupplyUniqueCarrier,
+    IndividualHeatingSupplyHeatPumpTarget,
+)
 from .power_plants_capacity import (  # noqa: F401
     BusExists,
     PowerPlantsCapacityComparison,
