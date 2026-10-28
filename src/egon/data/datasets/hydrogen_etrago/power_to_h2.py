@@ -672,7 +672,7 @@ def insert_power_to_h2_to_power():
                                     nearest_ac_index, "geom_AC"
                                 ],
                                 "geom_heat": heat_row["geom"],
-                                "distance_heat": distance,
+                                "distance_heat": nearest_distance,
                             }
                         )
                         potential_locations.at[

@@ -3,7 +3,26 @@
 from .demandregio import DemandRegioScenarioDemand  # noqa: F401
 from .dlr import DLRValues  # noqa: F401
 from .dsm import DSMValues  # noqa: F401
-from .dlr import DLRValues  # noqa: F401
+from .heat_supply import (  # noqa: F401
+    DistrictHeatingSupplyAreaReference,
+    DistrictHeatingSupplyChpCapacity,
+    DistrictHeatingSupplyScenarioTarget,
+    DistrictHeatingSupplyUniqueCarrier,
+    IndividualHeatingSupplyHeatPumpTarget,
+)
+from .power_plants_capacity import (  # noqa: F401
+    BusExists,
+    PowerPlantsCapacityComparison,
+)
+from .pv_rooftop_buildings import (
+    PvRooftopCapacityComparison,
+    PvRooftopDuplicateRows,
+)
+from .renewable_feedin import (  # noqa: F401
+    RenewableFeedinTimeseries,
+    ZensusWeatherCellMappingRowCount,
+)
+
 from .individual_heat_pumps import (  # noqa: F401
     HeatPeakLoadRange,
     HeatPumpCapacityRange,
@@ -23,6 +42,12 @@ from .individual_heat_pumps import (  # noqa: F401
 from .residential_electricity import (  # noqa: F401
     ResidentialElectricityAnnualSum,
     ResidentialElectricityHhRefinement,
+)
+from .storages import (  # noqa: F401
+    HomeBatteryAggregationComparison,
+    HomeBatteryCapacityComparison,
+    HomeBatteryDuplicateRows,
+    PumpedHydroCapacityComparison,
 )
 
 # Auto-generate __all__ from imported names (excludes private/module names)
