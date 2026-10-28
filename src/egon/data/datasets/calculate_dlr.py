@@ -17,6 +17,8 @@ import xarray as xr
 from egon.data import config, db
 from egon.data.datasets import Dataset, DatasetSources, DatasetTargets
 from egon.data.datasets.scenario_parameters import get_sector_parameters
+from egon.data.validation import TableValidation
+from egon.data.validation.rules.custom.sanity import DLRValues
 
 
 class Calculate_dlr(Dataset):
@@ -40,7 +42,7 @@ class Calculate_dlr(Dataset):
     #:
     name: str = "dlr"
     #:
-    version: str = "0.0.5"
+    version: str = "0.0.5.dev"
 
     sources = DatasetSources(
         files={
@@ -62,8 +64,30 @@ class Calculate_dlr(Dataset):
             version=self.version,
             dependencies=dependencies,
             tasks=(dlr,),
+            validation={
+                "data_quality": [
+                    TableValidation(
+                        table_name="grid.egon_etrago_line_timeseries",
+                        not_null_columns=[
+                            "scn_name",
+                            "line_id",
+                            "s_max_pu",
+                        ],
+                    ),
+                ],
+                "dlr_sanity": [
+                    DLRValues(
+                        table="grid.egon_etrago_line_timeseries",
+                        rule_id=f"SANITY_DLR_VALUES.{scenario}",
+                        scenario=scenario,
+                    )
+                    for scenario in set(
+                        config.settings()["egon-data"]["--scenarios"]
+                    )
+                ],
+            },
+            proceed_on_validation_failure=True,
         )
-
 
 def dlr():
     """Calculate DLR and assign values to each line in the db

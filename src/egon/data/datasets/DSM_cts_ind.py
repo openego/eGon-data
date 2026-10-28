@@ -32,9 +32,8 @@ from egon.data.metadata import (
     sources,
 )
 
-from egon_validation import (
-    ArrayCardinalityValidation
-)
+from egon_validation import ArrayCardinalityValidation
+from egon.data.validation.rules.custom.sanity import DSMValues
 
 # CONSTANTS
 # TODO: move to datasets.yml
@@ -138,7 +137,7 @@ class DsmPotential(Dataset):
     #:
     name: str = "DsmPotential"
     #:
-    version: str = "0.0.13"
+    version: str = "0.0.14.dev"
 
     sources = DatasetSources(
         tables={
@@ -274,7 +273,26 @@ class DsmPotential(Dataset):
                         array_column="p_set",
                         expected_length=8760,
                     ),
-                ]
+                ],
+                "dsm_sanity": [
+                    DSMValues(
+                        table=table,
+                        rule_id=(
+                            f"SANITY_DSM_VALUES.{scenario}."
+                            f"{table.split('.')[-1]}"
+                        ),
+                        scenario=scenario,
+                    )
+                    for scenario in set(
+                        config.settings()["egon-data"]["--scenarios"]
+                    )
+                    for table in [
+                        "demand.egon_etrago_electricity_cts_dsm_timeseries",
+                        "demand.egon_osm_ind_load_curves_individual_dsm_timeseries",
+                        "demand.egon_demandregio_sites_ind_electricity_dsm_timeseries",
+                        "demand.egon_sites_ind_load_curves_individual_dsm_timeseries",
+                    ]
+                ],
             },
             proceed_on_validation_failure=True,
         )
