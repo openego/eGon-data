@@ -64,17 +64,20 @@ The spatial distribution differs by carrier:
   exist where the core network has a pipeline in the scenario year, hydrogen
   demand far from the network is assigned to an ``H2`` bus at a CH4 node and
   supplied locally (see electrolysis in the gas supply section).
-* *Hydrogen in reGon2037 and reGon2045*: the FfE pattern of 2035 does not
-  reflect where the much larger hydrogen network of these years supplies
-  industry. The German hourly profile (sum of the FfE regions) is therefore
-  distributed over the German ``H2_grid`` buses in proportion to the capacity
-  of the pipelines connected to each bus (assumption: a proxy for the demand a
-  node can serve, not a result of a network simulation). ``H2`` buses get no
-  industrial demand in these scenarios.
+* *Hydrogen in reGon2037 and reGon2045*: the same NUTS-3 regions, first
+  rescaled per federal state to the industrial hydrogen demand of the market
+  survey of the Szenariorahmen [SR_GasH2_2025_Annexes]_ (category
+  "Ausspeisung", exit to the industry, demand of 2035; 2037: projects with at
+  least the status "Entwurfsplanung", 2045: all projects; some states are
+  grouped in the survey). Within a state the regions keep their shares of the
+  FfE data. The regions are then assigned to the ``H2_grid`` or ``H2`` bus of
+  their Voronoi area as above. Optionally (``H2_DEMAND_BY_GRID``, off by
+  default) the German hourly profile is instead spread over the ``H2_grid``
+  buses in proportion to the capacity of the pipelines connected to each bus.
 
-In a test run with a dataset boundary, the shares are computed for the whole
-of Germany and only the buses inside the boundary are kept, so the region
-keeps its share of the national total.
+In a test run with a dataset boundary, the demand is scaled for the whole of
+Germany and only the loads inside the boundary are kept, so the region keeps
+its share of the national total.
 
 The implementation is detailed in :py:mod:`industrial_gas_demand
 <egon.data.datasets.industrial_gas_demand>`.

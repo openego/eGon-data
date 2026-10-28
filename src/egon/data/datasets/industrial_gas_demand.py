@@ -20,8 +20,12 @@ import requests
 
 from egon.data import config, db
 from egon.data.config import settings
+from egon.data.datasets.hydrogen_etrago.nep2025 import (
+    nep_h2_industry_projects,
+)
 from egon.data.datasets.scenario_parameters import (
     align_weekdays,
+    get_scenario_year,
     get_sector_parameters,
 )
 
@@ -300,6 +304,15 @@ def read_and_scale_regional_demand(scn_name, carrier):
         industrial_loads_list["NUTS0"].str.match("DE")
     ]
 
+    if (
+        carrier == "H2_for_industry"
+        and scn_name in SCENARIOS_H2_SURVEY
+        and not H2_DEMAND_BY_GRID
+    ):
+        industrial_loads_list = scale_to_survey_states(
+            industrial_loads_list, scn_name
+        )
+
     # Scale on the German total, before the cut to the test boundary
     return scale_to_scenario_demand(industrial_loads_list, scn_name, carrier)
 
@@ -559,8 +572,84 @@ def scale_to_scenario_demand(industrial_loads_list, scn_name, carrier):
     return industrial_loads_list
 
 
-# Scenarios whose industrial H2 demand is spread over the H2 core grid
-SCENARIOS_H2_DEMAND_BY_GRID = {"reGon2037", "reGon2045"}
+def scale_to_survey_states(industrial_loads_list, scn_name):
+    """
+    Rescale the industrial H2 demand per federal state to the market survey
+
+    The H2 market survey of the draft Szenariorahmen Gas und Wasserstoff 2025
+    (Anlage 2, see :func:`nep_h2_industry_projects
+    <egon.data.datasets.hydrogen_etrago.nep2025.nep_h2_industry_projects>`)
+    gives the share of each federal state (some states are grouped in the
+    survey). Within a state the NUTS3 regions keep their shares of the FfE
+    data. The German total is not changed.
+
+    Parameters
+    ----------
+    industrial_loads_list : pandas.DataFrame
+        Industrial H2 demand in Germany per NUTS3 region, with the columns
+        "values" (time series) and "NUTS1"
+    scn_name : str
+        Name of the scenario
+
+    Returns
+    -------
+    pandas.DataFrame
+        The dataframe with the rescaled time series
+
+    """
+    year = 2045 if get_scenario_year(scn_name) >= 2045 else 2037
+    survey = pd.Series(nep_h2_industry_projects()[year], dtype=float)
+
+    annual = industrial_loads_list["values"].map(sum)
+    state = industrial_loads_list["NUTS1"].map(SURVEY_STATES)
+    ffe = annual.groupby(state).sum()
+
+    missing = survey.index[
+        (survey > 0) & ~survey.index.isin(ffe[ffe > 0].index)
+    ]
+    if len(missing) > 0:
+        raise ValueError(
+            f"{scn_name}: no industrial H2 demand in the FfE data of "
+            f"{', '.join(missing)} to distribute the demand of the survey."
+        )
+
+    factor = state.map(
+        survey / survey.sum() * annual.sum() / ffe[ffe > 0]
+    ).fillna(0)
+    industrial_loads_list["values"] = [
+        [v * f for v in values]
+        for values, f in zip(industrial_loads_list["values"], factor)
+    ]
+    return industrial_loads_list
+
+
+# Scenarios whose industrial H2 demand per federal state follows the market
+# survey of the Szenariorahmen Gas und Wasserstoff 2025
+SCENARIOS_H2_SURVEY = {"reGon2037", "reGon2045"}
+
+# Alternative for these scenarios: one German profile spread over the
+# H2_grid buses by their connected pipe capacity (not used by default)
+H2_DEMAND_BY_GRID = False
+
+# Federal states of the market survey (some grouped) per NUTS1 code
+SURVEY_STATES = {
+    "DE1": "Baden-Württemberg",
+    "DE2": "Bayern",
+    "DE3": "Brandenburg/Berlin",
+    "DE4": "Brandenburg/Berlin",
+    "DE5": "Niedersachsen/Bremen",
+    "DE6": "Schleswig-Holstein/Hamburg",
+    "DE7": "Hessen",
+    "DE8": "Mecklenburg-Vorpommern",
+    "DE9": "Niedersachsen/Bremen",
+    "DEA": "Nordrhein-Westfalen",
+    "DEB": "Rheinland-Pfalz",
+    "DEC": "Saarland",
+    "DED": "Sachsen",
+    "DEE": "Sachsen-Anhalt",
+    "DEF": "Schleswig-Holstein/Hamburg",
+    "DEG": "Thüringen",
+}
 
 
 def read_and_process_demand(scn_name, carrier, grid_carrier):
@@ -569,8 +658,9 @@ def read_and_process_demand(scn_name, carrier, grid_carrier):
 
     This function prepares and returns the industrial gas demand time
     series for CH4 or H2 and for a specific scenario by executing the
-    following steps (for H2 in :py:data:`SCENARIOS_H2_DEMAND_BY_GRID`:
-    :py:func:`read_industrial_h2_demand_by_grid` instead):
+    following steps (for H2 in :py:data:`SCENARIOS_H2_SURVEY` with
+    :py:data:`H2_DEMAND_BY_GRID`: :py:func:`read_industrial_h2_demand_by_grid`
+    instead):
 
       * Read the industrial demand time series in Germany with the
         function :py:func:`read_industrial_demand`
@@ -599,7 +689,8 @@ def read_and_process_demand(scn_name, carrier, grid_carrier):
 
     if (
         carrier == "H2_for_industry"
-        and scn_name in SCENARIOS_H2_DEMAND_BY_GRID
+        and scn_name in SCENARIOS_H2_SURVEY
+        and H2_DEMAND_BY_GRID
     ):
         # The buses of the H2 core grid are already the target buses, no
         # further spatial assignment (assign_gas_bus_id) is needed.

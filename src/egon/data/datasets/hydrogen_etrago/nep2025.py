@@ -1129,30 +1129,38 @@ SURVEY_STATUS_2037 = (
 
 
 @lru_cache(maxsize=None)
-def _survey_projects(category):
+def _survey_projects(
+    category, quantity="Einspeiseleistung H2 in MW", sector=None
+):
     """
     H2 projects of the market survey per federal state (Szenariorahmen
-    Anlage 2, injection capacity of 2035)
+    Anlage 2, values of 2035)
 
     Parameters
     ----------
     category : str
-        Category of the survey ("Speicher" or "Einspeisung")
+        Category of the survey ("Speicher", "Einspeisung" or "Ausspeisung")
+    quantity : str
+        Quantity of the survey (column "Angaben in Brennwert")
+    sector : str, optional
+        Only the projects with an exit to this sector, e.g. "Industrie"
 
     Returns
     -------
     dict
-        Capacity [MW, Brennwert] per federal state, for 2037 and 2045
+        Value [MW or MWh, Brennwert] per federal state, for 2037 and 2045
 
     """
     survey = pd.read_excel(
         source_file("SR_Anlage2Gas.xlsx"), sheet_name=0, header=1
     )
     survey.columns = survey.columns.map(str)
-    survey = survey[
-        (survey["Kategorie"] == category)
-        & (survey["Angaben in Brennwert"] == "Einspeiseleistung H2 in MW")
-    ]
+    selected = (survey["Kategorie"] == category) & (
+        survey["Angaben in Brennwert"] == quantity
+    )
+    if sector is not None:
+        selected &= survey[f"Ausspeisung\nSektor {sector}"] == "ja"
+    survey = survey[selected]
     capacity = pd.to_numeric(survey["2035"], errors="coerce")
     projects = {}
     for year, status in [
@@ -1164,6 +1172,23 @@ def _survey_projects(category):
         )
         projects[year] = state[state > 0].to_dict()
     return projects
+
+
+def nep_h2_industry_projects():
+    """
+    Industrial H2 demand of the market survey per federal state [MWh,
+    Brennwert] (Szenariorahmen Anlage 2, category "Ausspeisung", sector
+    industry)
+
+    Returns
+    -------
+    dict
+        Demand per federal state, for 2037 and 2045
+
+    """
+    return _survey_projects(
+        "Ausspeisung", "Ausspeisemenge H2 in MWh", "Industrie"
+    )
 
 
 def nep_h2_storage_projects():
