@@ -11,6 +11,12 @@ Added
   `#1550 <https://github.com/openego/eGon-data/pull/1550>`_
 * Integrate egon-validation framework for data quality checks
   `PR #1375 <https://github.com/openego/eGon-data/pull/1375>`_
+* Add custom data-quality validation checks for the ``electricity_supply``
+  task group (``RenewableFeedin``, ``PowerPlants``, ``Storages``): schema,
+  not-null and value-set checks plus custom rules comparing modelled
+  capacities against scenario targets, checking bus references and
+  flagging duplicate rows
+  `#1526 <https://github.com/openego/eGon-data/issues/1526>`_
 * Make egon-data runnable in python 3.10
   `#1352 <https://github.com/openego/egon-data/issues/1352>`_
 * Add standardized sources and targets definitions across dataset modules
@@ -240,6 +246,10 @@ Bug Fixes
   year, they are now scaled in ``mv_grid_district_HH_electricity_load`` to
   ``demand.egon_demandregio_hh`` (110.5 TWh status2024, 83.0 TWh reGon2037)
   `#1527 <https://github.com/openego/eGon-data/issues/1527>`_
+* Fix the pipeline length used for the capital costs of ``PtH2_waste_heat``
+  links: ``find_heat_connection`` stored the distance of the last checked
+  electrolyser candidate instead of the nearest one
+  `#1554 <https://github.com/openego/eGon-data/issues/1554>`_
 
 Version 2.0.0 (2025-08-20)
 ==========================
