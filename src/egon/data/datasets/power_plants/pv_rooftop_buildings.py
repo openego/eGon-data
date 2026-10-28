@@ -19,6 +19,7 @@ from loguru import logger
 from numpy.random import RandomState, default_rng
 from omi.dialects import get_dialect
 from pyproj.crs.crs import CRS
+from scipy.spatial import cKDTree
 from sqlalchemy import BigInteger, Column, Float, Integer, String
 from sqlalchemy.dialects.postgresql import HSTORE
 from sqlalchemy.ext.declarative import declarative_base
@@ -64,6 +65,11 @@ VERBOSE = False
 
 # Number of quantiles
 Q = 5
+
+# Units with exact MaStR coordinates are allocated to the nearest free
+# building within this distance in m, considering this number of buildings
+MAX_EXACT_PV_DISTANCE = 250
+N_EXACT_PV_CANDIDATES = 10
 
 # Scenario Data
 SCENARIOS = config.settings()["egon-data"]["--scenarios"]
@@ -944,12 +950,96 @@ def drop_unallocated_gens(
 
 
 @timer_func
+def allocate_exact_pv(
+    mastr_gdf: gpd.GeoDataFrame,
+    buildings_gdf: gpd.GeoDataFrame,
+    max_distance: float | int,
+    n_candidates: int,
+) -> tuple[gpd.GeoDataFrame, gpd.GeoDataFrame]:
+    """
+    Allocate MaStR pv generators with exact coordinates to the nearest
+    building.
+
+    Only generators whose location was not geocoded are considered. They are
+    processed in descending order of capacity and allocated to the nearest
+    building that is not allocated yet, considering the n_candidates nearest
+    buildings within max_distance. Generators without such a building are
+    left for the random allocation within their municipality.
+
+    Parameters
+    -----------
+    mastr_gdf : geopandas.GeoDataFrame
+        GeoDataFrame containing geocoded MaStR data.
+    buildings_gdf : geopandas.GeoDataFrame
+        GeoDataFrame containing OSM buildings data.
+    max_distance : float or int
+        Maximum distance in m between generator and building.
+    n_candidates : int
+        Number of nearest buildings considered per generator.
+    Returns
+    -------
+    tuple with two geopandas.GeoDataFrame s
+        GeoDataFrame containing the allocated MaStR data with building IDs.
+        GeoDataFrame containing the allocated buildings with MaStR IDs.
+    """
+    exact_gdf = mastr_gdf.loc[mastr_gdf.geometry_geocoded.eq(False)]
+    exact_gdf = exact_gdf.sort_values("capacity", ascending=False)
+
+    gens_points = exact_gdf.geometry.to_crs(SRID)
+    buildings_points = buildings_gdf.geometry.to_crs(SRID)
+
+    tree = cKDTree(np.column_stack([buildings_points.x, buildings_points.y]))
+    _, positions = tree.query(
+        np.column_stack([gens_points.x, gens_points.y]),
+        k=n_candidates,
+        distance_upper_bound=max_distance,
+    )
+    positions = positions.reshape(len(exact_gdf), n_candidates)
+
+    building_ids = buildings_gdf.index.to_numpy()
+    used = np.zeros(len(building_ids), dtype=bool)
+    allocation = {}
+
+    # candidates are sorted by distance, missing ones have the position
+    # len(building_ids)
+    for gens_id, candidates in zip(exact_gdf.index, positions):
+        for pos in candidates:
+            if pos < len(building_ids) and not used[pos]:
+                used[pos] = True
+                allocation[gens_id] = building_ids[pos]
+                break
+
+    allocation = pd.Series(allocation, dtype=object)
+    # keep index name gens_id, otherwise it is lost in the later concat
+    allocation.index.name = exact_gdf.index.name
+
+    logger.debug(
+        f"Allocated {len(allocation)} of {len(exact_gdf)} generators with "
+        f"exact coordinates to the nearest building. The remaining ones are "
+        f"allocated randomly within their municipality."
+    )
+
+    allocated_mastr_gdf = exact_gdf.loc[allocation.index].assign(
+        building_id=allocation.astype(int)
+    )
+    allocated_buildings_gdf = buildings_gdf.loc[allocation.values].assign(
+        gens_id=allocation.index.to_numpy()
+    )
+
+    return allocated_mastr_gdf, allocated_buildings_gdf
+
+
+@timer_func
 def allocate_to_buildings(
     mastr_gdf: gpd.GeoDataFrame,
     buildings_gdf: gpd.GeoDataFrame,
 ) -> tuple[gpd.GeoDataFrame, gpd.GeoDataFrame]:
     """
     Allocate status quo pv rooftop generators to buildings.
+
+    Generators with exact coordinates are allocated to the nearest building
+    first (see :func:`allocate_exact_pv`). The remaining generators are
+    allocated randomly within their municipality (see :func:`allocate_pv`).
 
     Parameters
     -----------
@@ -966,11 +1056,29 @@ def allocate_to_buildings(
     """
     logger.debug("Starting allocation of status quo.")
 
-    q_mastr_gdf = sort_and_qcut_df(mastr_gdf, col="capacity", q=Q)
-    q_buildings_gdf = sort_and_qcut_df(buildings_gdf, col="building_area", q=Q)
+    exact_mastr_gdf, exact_buildings_gdf = allocate_exact_pv(
+        mastr_gdf,
+        buildings_gdf,
+        max_distance=MAX_EXACT_PV_DISTANCE,
+        n_candidates=N_EXACT_PV_CANDIDATES,
+    )
+
+    q_mastr_gdf = sort_and_qcut_df(
+        mastr_gdf.drop(index=exact_mastr_gdf.index), col="capacity", q=Q
+    )
+    q_buildings_gdf = sort_and_qcut_df(
+        buildings_gdf.drop(index=exact_buildings_gdf.index),
+        col="building_area",
+        q=Q,
+    )
 
     desagg_mastr_gdf, desagg_buildings_gdf = allocate_pv(
         q_mastr_gdf, q_buildings_gdf, SEED
+    )
+
+    desagg_mastr_gdf = pd.concat([desagg_mastr_gdf, exact_mastr_gdf])
+    desagg_buildings_gdf = pd.concat(
+        [desagg_buildings_gdf, exact_buildings_gdf]
     )
 
     validate_output(desagg_mastr_gdf, desagg_buildings_gdf)
@@ -2403,31 +2511,63 @@ def add_weather_cell_id(buildings_gdf: gpd.GeoDataFrame) -> gpd.GeoDataFrame:
 
 def add_bus_ids_sq(
     buildings_gdf: gpd.GeoDataFrame,
+    valid_buildings_gdf: gpd.GeoDataFrame,
 ) -> gpd.GeoDataFrame:
     """Add bus ids for status_quo units
+
+    The bus is taken from the building the unit was allocated to
+    (boundaries.egon_map_zensus_mvgd_buildings), as it is done for the
+    future scenarios. The MaStR location is not used, as units are allocated
+    to buildings within their municipality and not within their MV grid
+    district, and as the location of small units is only a geocoded
+    postcode point.
 
     Parameters
     -----------
     buildings_gdf : geopandas.GeoDataFrame
         GeoDataFrame containing OSM buildings data with desaggregated PV
         plants.
+    valid_buildings_gdf : geopandas.GeoDataFrame
+        GeoDataFrame containing OSM buildings data with bus_id per building.
     Returns
     -------
     geopandas.GeoDataFrame
         GeoDataFrame containing OSM building data with bus_id per
         generator.
     """
-    grid_districts_gdf = grid_districts(EPSG)
-
     mask = buildings_gdf.scenario.str.startswith("status")
 
     buildings_gdf.loc[mask, "bus_id"] = (
-        buildings_gdf.loc[mask]
-        .sjoin(grid_districts_gdf, how="left")
-        .bus_id_right
+        buildings_gdf.loc[mask, "building_id"]
+        .astype(int)
+        .map(valid_buildings_gdf.bus_id)
     )
 
     return buildings_gdf
+
+
+def update_power_plants_bus_ids_sq():
+    """Take the bus of status_quo pv rooftop units in power plants table
+    from their building
+
+    The bus of the status quo pv rooftop units in supply.egon_power_plants,
+    which are aggregated to the eTraGo generators, is set to the bus of the
+    building the unit was allocated to. Thus eTraGo and the building level
+    use the same MV grid district. Units without a building keep the bus of
+    their MaStR location.
+    """
+    sources, targets = load_sources_and_targets("PowerPlants")
+
+    db.execute_sql(f"""
+        UPDATE {sources.tables['power_plants']} AS pp
+        SET bus_id = pv.bus_id
+        FROM {EgonPowerPlantPvRoofBuilding.__table__.fullname} AS pv
+        WHERE pp.carrier = 'solar_rooftop'
+        AND pp.scenario ~ '^status'
+        AND pv.scenario = pp.scenario
+        AND pv.gens_id = pp.source_id ->> 'MastrNummer'
+        AND pv.bus_id IS NOT NULL
+        """)
 
 
 def infer_voltage_level(
@@ -2548,7 +2688,10 @@ def pv_rooftop_to_buildings():
     all_buildings_gdf = add_weather_cell_id(all_buildings_gdf)
 
     # add bus IDs for status quo scenario
-    all_buildings_gdf = add_bus_ids_sq(all_buildings_gdf)
+    all_buildings_gdf = add_bus_ids_sq(all_buildings_gdf, desagg_buildings_gdf)
 
     # export scenario
     create_scenario_table(infer_voltage_level(all_buildings_gdf))
+
+    # use the bus of the building for status quo units in power plants table
+    update_power_plants_bus_ids_sq()
