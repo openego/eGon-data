@@ -63,7 +63,13 @@ def map_id_bus(scenario, sources):
                 "Rastede": "1128250707",
                 "Großenmeer": "1128250704",
                 "Suchraum Nüttermoor": "1280178911",
-                "Suchraum Esens": "79316833",
+                # Esens is a planned 380 kV hub (NEP 2037/2045 V2025, P557)
+                # that does not exist in OSM yet. Use the nearest existing
+                # 380 kV substation Wilhelmshaven 2 (approx. 32 km away)
+                # instead of Hagermarsch (110 kV only).
+                # TODO: Check this connection point again when newer grid
+                # data (OSM) is used, Esens might then be available.
+                "Suchraum Esens": "637595524",
                 "Sengwarden": "1134105414",
                 "Suchraum Gemeinden Ibbenbüren/Mettingen/Westerkappeln": "954305865",
                 "Suchraum Zensenbusch": "24479003",
@@ -345,7 +351,21 @@ def insert():
                 ].index[0]
                 offshore.at[index, "bus_id"] = buses.at[bus_ind, "bus_id"]
             else:
-                print(f'Wind offshore farm not found: {wind_park["osm_id"]}')
+                logging.warning(
+                    f"Wind offshore farm not matched to a bus in {scenario}: "
+                    f"{wind_park['Netzverknuepfungspunkt']} "
+                    f"(osm_id {wind_park['osm_id']}, "
+                    f"{wind_park['Spannungsebene in kV']} kV, "
+                    f"{wind_park['el_capacity']} MW)"
+                )
+
+        not_matched = offshore[offshore["bus_id"].isna()]
+        if not not_matched.empty:
+            logging.warning(
+                f"{len(not_matched)} wind offshore farms with "
+                f"{not_matched['el_capacity'].sum()} MW in total are dropped "
+                f"in {scenario} because no matching bus was found."
+            )
 
         offshore.dropna(subset=["bus_id"], inplace=True)
 
