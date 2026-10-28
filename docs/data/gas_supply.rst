@@ -184,7 +184,9 @@ capacity reserve.
   state; in 2045 they keep their capacity (scaled down only if they exceed
   it) and the rest is placed load-near. Sites are MaStR locations with
   combustion units; new builds and load-near plants only use sites of at
-  least 10 MW. In the pairing of the conversions, a project that starts in
+  least 10 MW. Sites whose coordinates lie in another federal state than
+  their MaStR entry are not used (wrong coordinates, e.g. a 10 MW unit of
+  Stavenhagen located in the Harz). In the pairing of the conversions, a project that starts in
   another year than the natural gas units of the site leave the list costs
   as much as a factor of 2 in capacity (assumption).
 

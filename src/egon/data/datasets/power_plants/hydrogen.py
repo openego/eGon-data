@@ -331,7 +331,35 @@ def select_power_plant_sites():
     ]
 
     # Drop sites outside of Germany or of the test area
-    return filter_mastr_geometry(sites).set_crs(4326, allow_override=True)
+    sites = filter_mastr_geometry(sites).set_crs(4326, allow_override=True)
+
+    # Drop sites whose coordinates lie in another federal state than the
+    # Bundesland of the MaStR (wrong coordinates)
+    states = db.select_geodataframe(
+        f"""
+        SELECT gen, geometry AS geom
+        FROM {sources.tables['federal_states']}
+        """,
+        epsg=4326,
+    )
+    states["state"] = (
+        states.gen.str.replace(" (Bodensee)", "", regex=False)
+        .str.replace("-", "")
+        .str.replace("ü", "ue")
+        .map(FEDERAL_STATES)
+    )
+    located = gpd.sjoin(
+        sites, states[["state", "geom"]], how="left", predicate="within"
+    )
+    wrong = located.LokationMastrNummer[
+        located.state.notna() & (located.state != located.federal_state)
+    ].unique()
+    if len(wrong) > 0:
+        print(
+            f"{len(wrong)} power plant sites have coordinates outside of "
+            f"their federal state and are not used: {', '.join(wrong)}"
+        )
+    return sites[~sites.LokationMastrNummer.isin(wrong)]
 
 
 def assign_missing_locations(mastr):
