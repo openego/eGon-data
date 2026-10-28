@@ -149,7 +149,8 @@ Changed
 * Allocate the hydrogen power plants of the reGon scenarios to power plant
   sites, following various measures (conversion of natural gas plants, new builds
   according market survey and freed grid connections, distribute load-near
-  on plausible sites). Connect them to the H2 buses as OCGT links with their own 
+  on plausible sites). Connect them to the H2 buses as links with their own
+  carriers per type (H2_OCGT_conversion, H2_OCGT_new, H2_OCGT_load_near) and
   efficiencies.
   `#1465 <https://github.com/openego/eGon-data/issues/1465>`_
 

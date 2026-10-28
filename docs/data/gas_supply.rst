@@ -120,7 +120,7 @@ Gas-fired and hydrogen power plants
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 Power plants burning gas are *links* from the gas bus to the AC bus
-(carrier ``OCGT``); combined heat and power plants are modelled by the CHP
+(carrier ``OCGT``, hydrogen plants see below); combined heat and power plants are modelled by the CHP
 datasets. Their variable O&M costs are given per MWh of electricity and are
 applied per MWh of fuel multiplied by the efficiency, as in PyPSA-Eur.
 
@@ -194,7 +194,10 @@ capacity reserve.
   give the siting ("listed" or "load-near") and the choice of the site
   ("conversion", "freed connection", "existing site", "gas site 2037" or
   "population"), its source_id the units it replaces. The
-  plants are links from the nearest ``H2_grid`` or ``H2`` bus.
+  plants are links from the nearest ``H2_grid`` or ``H2`` bus, with a carrier
+  per type so that they can be traced in eTraGo: ``H2_OCGT_conversion``
+  (conversion of a gas site), ``H2_OCGT_new`` (new build at a freed
+  connection or an existing site) and ``H2_OCGT_load_near``.
   As the NEP Strom models them as peak-load plants with a lower efficiency for
   the load-near plants, the plants of the list get the efficiency of a
   combined cycle plant (0.58 in 2037, 0.60 in 2045) and the load-near plants

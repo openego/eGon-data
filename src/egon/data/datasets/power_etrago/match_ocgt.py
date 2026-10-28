@@ -13,6 +13,16 @@ from egon.data.datasets import load_sources_and_targets
 from egon.data.datasets.etrago_setup import link_geom_from_buses
 from egon.data.datasets.scenario_parameters import get_sector_parameters
 
+# Link carriers of the gas turbines: natural gas plants and the hydrogen
+# plants by type (conversion of a gas site, new build at a freed
+# connection or an existing site, load-near plant)
+OCGT_CARRIERS = [
+    "OCGT",
+    "H2_OCGT_conversion",
+    "H2_OCGT_new",
+    "H2_OCGT_load_near",
+]
+
 
 def insert_open_cycle_gas_turbines():
     for scenario in config.settings()["egon-data"]["--scenarios"]:
@@ -46,8 +56,6 @@ def insert_open_cycle_gas_turbines_per_scenario(scn_name):
     # create topology column (linestring)
     gdf = link_geom_from_buses(gdf, scn_name)
     gdf["p_nom_extendable"] = False
-    carrier = "OCGT"
-    gdf["carrier"] = carrier
 
     buses = tuple(
         db.select_dataframe(
@@ -58,10 +66,11 @@ def insert_open_cycle_gas_turbines_per_scenario(scn_name):
     )
 
     # Delete old entries
+    carriers = "', '".join(OCGT_CARRIERS)
     db.execute_sql(
         f"""
         DELETE FROM {targets.tables["etrago_link"]}
-        WHERE "carrier" = '{carrier}'
+        WHERE "carrier" IN ('{carriers}')
         AND scn_name = '{scn_name}'
         AND bus1 IN {buses};
         """
@@ -78,7 +87,7 @@ def insert_open_cycle_gas_turbines_per_scenario(scn_name):
     gdf["efficiency"] = gdf.efficiency_key.map(scn_params["efficiency"])
     # VOM per MWh of fuel = VOM per MWh_el x efficiency (as PyPSA-Eur)
     gdf["marginal_cost"] = (
-        scn_params["marginal_cost"][carrier] * gdf["efficiency"]
+        scn_params["marginal_cost"]["OCGT"] * gdf["efficiency"]
     )
     gdf = gdf.drop(columns="efficiency_key")
 
@@ -105,7 +114,8 @@ def map_buses(scn_name):
 
     Gas plants ("gas") are connected to the nearest CH4 bus, hydrogen power
     plants ("hydrogen") to the nearest H2 or H2_grid bus. The column
-    "efficiency_key" gives the key of the efficiency in the gas parameters.
+    "carrier" gives the link carrier (see :data:`OCGT_CARRIERS`), the column
+    "efficiency_key" the key of the efficiency in the gas parameters.
 
     Parameters
     ----------
@@ -126,7 +136,7 @@ def map_buses(scn_name):
         ("hydrogen", "('H2', 'H2_grid')"),
     ]:
         sql_AC = f"""SELECT bus_id, el_capacity as p_nom, geom,
-                    sources->>'siting' AS siting
+                    sources->>'siting' AS siting, sources->>'site' AS site
                     FROM {sources.tables["power_plants"]}
                     WHERE carrier = '{plant_carrier}'
                     AND scenario = '{scn_name}';
@@ -160,12 +170,19 @@ def map_buses(scn_name):
         )
         link = pd.concat([gdf_AC.reset_index(drop=True), nearest], axis=1)
         if plant_carrier == "gas":
+            link["carrier"] = "OCGT"
             link["efficiency_key"] = "OCGT"
         else:
-            link["efficiency_key"] = np.where(
-                link.siting == "load-near", "OCGT_H2_load_near", "OCGT_H2"
+            load_near = link.siting == "load-near"
+            link["carrier"] = np.select(
+                [load_near, link.site == "conversion"],
+                ["H2_OCGT_load_near", "H2_OCGT_conversion"],
+                "H2_OCGT_new",
             )
-        links.append(link.drop(columns="siting"))
+            link["efficiency_key"] = np.where(
+                load_near, "OCGT_H2_load_near", "OCGT_H2"
+            )
+        links.append(link.drop(columns=["siting", "site"]))
 
     if not links:
         return
