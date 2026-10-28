@@ -1,307 +1,163 @@
 """
-Data transcribed by hand from the Netzentwicklungsplan Gas und Wasserstoff 2025
+Data of the Netzentwicklungsplan Gas und Wasserstoff 2025
 
 Revised draft of 1 June 2026 and its annexes:
 https://ko-nep.de/wp-content/uploads/2024/02/2026_06_01_Ueberarbeiteter_Entwurf_NEP_Gas_Wasserstoff_2025.pdf
-Each constant names its table or annex; the use of the data is described in
-the documentation of the gas grids, supply and stores.
+The Excel annexes are read as published. The tables only published in the PDF
+are read from NEP_Gas_H2_2025_tables.xlsx of the data bundle (one sheet per
+table). Each function names its table or annex; the use of the data is
+described in the documentation of the gas grids, supply and stores.
 """
+
+from functools import lru_cache
+from pathlib import Path
+from urllib.request import urlretrieve
+
+import pandas as pd
+
+# Files of the NEP Gas und Wasserstoff in the data bundle; missing published
+# files are downloaded from their URL
+BUNDLE_FOLDER = Path("data_bundle_egon_data", "NEP", "NEP_gas_H2")
+DOWNLOAD_FOLDER = Path("datasets", "h2_data")
+URLS = {
+    "Anlage1_Umsetzungsstand_Methan_Wasserstoff.xlsx": (
+        "https://ko-nep.de/wp-content/uploads/2024/02/"
+        "Anlage1_Umsetzungsstand_Methan_Wasserstoff.xlsx"
+    ),
+    "Inbetriebnahmedaten.xlsx": (
+        "https://www.bundesnetzagentur.de/DE/Fachthemen/ElektrizitaetundGas/"
+        "NEP/Gas/DL/Inbetriebnahmedaten.xlsx"
+    ),
+    "Anlage3_Netzausbauvorschlag_Wasserstoff.xlsx": (
+        "https://ko-nep.de/wp-content/uploads/2024/02/"
+        "Anlage3_Netzausbauvorschlag_Wasserstoff.xlsx"
+    ),
+    "SR_Anlage2Gas.xlsx": (
+        "https://ko-nep.de/wp-content/uploads/2024/03/SR_Anlage2Gas.xlsx"
+    ),
+}
+# Tables of the PDF, transcribed (only in the data bundle)
+TABLES = "NEP_Gas_H2_2025_tables.xlsx"
+
+
+def source_file(name):
+    """
+    Path of a file of the NEP Gas und Wasserstoff
+
+    The file of the data bundle, else the file downloaded from its URL.
+
+    Parameters
+    ----------
+    name : str
+        Name of the file
+
+    Returns
+    -------
+    pathlib.Path
+        Path of the file
+
+    """
+    path = BUNDLE_FOLDER / name
+    if path.is_file():
+        return path
+    if name not in URLS:
+        raise FileNotFoundError(
+            f"{path} is missing; it is only available in the data bundle."
+        )
+    path = DOWNLOAD_FOLDER / name
+    if not path.is_file():
+        path.parent.mkdir(parents=True, exist_ok=True)
+        urlretrieve(URLS[name], path)
+    return path
+
+
+@lru_cache(maxsize=None)
+def _table(sheet):
+    """Sheet of NEP_Gas_H2_2025_tables.xlsx"""
+    return pd.read_excel(source_file(TABLES), sheet_name=sheet, dtype=object)
+
+
+def _rows(sheet, columns):
+    """Rows of a sheet as tuples of Python values (empty cells: None)"""
+    df = _table(sheet)[columns].astype(object)
+    return [
+        tuple(None if pd.isna(v) else v for v in row)
+        for row in df.itertuples(index=False)
+    ]
+
 
 # Kernnetz measures dropped by the NEP without replacement (Anhang 2; the
 # dropped KLN001-01, KLN025-01 and KLU045-01 are replaced and kept as proxies)
 DROPPED_KERNNETZ_MEASURES = []
 
-# Commissioning year of the Kernnetz measures (Anlage 1b), NEP id in the
-# comment; measures without an entry keep the year of the FNB-Gas list
-KERNNETZ_COMMISSIONING_YEAR = {
-    "KLN002-01": 2035,  # H2-1002
-    "KLN003-01": 2034,  # H2-1003
-    "KLN004-01": 2028,  # H2-1004
-    "KLN005-01": 2035,  # H2-1005
-    "KLN006-01": 2035,  # H2-1006
-    "KLN007-01": 2035,  # H2-1007
-    "KLN008-01": 2028,  # H2-1008
-    "KLN010-01": 2030,  # H2-1010
-    "KLN011-01": 2032,  # H2-1011
-    "KLN012-01": 2032,  # H2-1012
-    "KLN013-01": 2029,  # H2-1013
-    "KLN014-01": 2030,  # H2-1014
-    "KLN015-01": 2027,  # H2-1015
-    "KLN016-01": 2027,  # H2-1016
-    "KLN017-01": 2031,  # H2-1017
-    "KLN019-01": 2029,  # H2-1019
-    "KLN020-01": 2031,  # H2-1020
-    "KLN021-01": 2029,  # H2-1021
-    "KLN022-01": 2033,  # H2-1022
-    "KLN023-01": 2028,  # H2-1023
-    "KLN026-01": 2035,  # H2-1026
-    "KLN027-01": 2030,  # H2-1027
-    "KLN028-01": 2033,  # H2-1028
-    "KLN029-01": 2032,  # H2-1029
-    "KLN030-01": 2034,  # H2-1030
-    "KLN033-01": 2027,  # H2-1033
-    "KLN034-01": 2027,  # H2-1034
-    "KLN035-01": 2027,  # H2-1035
-    "KLN036-01": 2027,  # H2-1036
-    "KLN037-01": 2030,  # H2-1037
-    "KLN038-01": 2030,  # H2-1038
-    "KLN039-01": 2035,  # H2-1039
-    "KLN040-01": 2035,  # H2-1040
-    "KLN042-01": 2035,  # H2-1042
-    "KLN043-01": 2035,  # H2-1043
-    "KLN044-01": 2032,  # H2-1044
-    "KLN045-01": 2030,  # H2-1045
-    "KLN046-01": 2030,  # H2-1046
-    "KLN047-01": 2032,  # H2-1047
-    "KLN048-01": 2025,  # H2-1048
-    "KLN049-01": 2027,  # H2-1049
-    "KLN050-01": 2027,  # H2-1050
-    "KLN052-01": 2035,  # H2-1052
-    "KLN053-01": 2035,  # H2-1053
-    "KLN054-01": 2035,  # H2-1054
-    "KLN055-01": 2034,  # H2-1055
-    "KLN056-01": 2034,  # H2-1056
-    "KLN057-01": 2033,  # H2-1057
-    "KLN058-01": 2034,  # H2-1058
-    "KLN059-01": 2034,  # H2-1059
-    "KLN060-01": 2033,  # H2-1060
-    "KLN061-01": 2034,  # H2-1061
-    "KLN062-01": 2034,  # H2-1062
-    "KLN063-01": 2034,  # H2-1063
-    "KLN064-01": 2029,  # H2-1064
-    "KLN065-01": 2029,  # H2-1065
-    "KLN066-01": 2027,  # H2-1066
-    "KLN067-01": 2028,  # H2-1067
-    "KLN073-01": 2033,  # H2-1073
-    "KLN074-01": 2029,  # H2-1074
-    "KLN075-01": 2029,  # H2-1075
-    "KLN076-01": 2034,  # H2-1076
-    "KLN077-01": 2034,  # H2-1077
-    "KLN078-01": 2034,  # H2-1078
-    "KLN079-01": 2034,  # H2-1079
-    "KLN081-01": 2034,  # H2-1081
-    "KLN082-01": 2030,  # H2-1082
-    "KLN083-01": 2033,  # H2-1083
-    "KLN084-01": 2030,  # H2-1084
-    "KLN085-01": 2027,  # H2-1085
-    "KLN086-01": 2029,  # H2-1086
-    "KLN087-01": 2032,  # H2-1087
-    "KLN088-01": 2028,  # H2-1088
-    "KLN089-01": 2030,  # H2-1089
-    "KLN090-01": 2030,  # H2-1090
-    "KLN091-01": 2030,  # H2-1091
-    "KLN092-01": 2035,  # H2-1092
-    "KLN093-01": 2030,  # H2-1093
-    "KLN094-01": 2035,  # H2-1094
-    "KLN095-01": 2030,  # H2-1095
-    "KLN096-01": 2035,  # H2-1096
-    "KLN097-01": 2035,  # H2-1097
-    "KLN098-01": 2035,  # H2-1098
-    "KLN099-01": 2030,  # H2-1099
-    "KLN100-01": 2035,  # H2-1100
-    "KLN102-01": 2033,  # H2-1102
-    "KLN103-01": 2033,  # H2-1103
-    "KLN104-01": 2035,  # H2-1104
-    "KLN105-01": 2025,  # H2-1105
-    "KLN107-01": 2029,  # H2-1107
-    "KLU001-01": 2032,  # H2-001
-    "KLU002-01": 2028,  # H2-002
-    "KLU003-01": 2032,  # H2-003
-    "KLU004-01": 2026,  # H2-004
-    "KLU005-01": 2032,  # H2-005
-    "KLU006-01": 2030,  # H2-006
-    "KLU007-01": 2032,  # H2-007
-    "KLU008-01": 2032,  # H2-008
-    "KLU009-01": 2028,  # H2-009
-    "KLU010-01": 2030,  # H2-010
-    "KLU011-01": 2035,  # H2-011
-    "KLU012-01": 2028,  # H2-012
-    "KLU013-01": 2030,  # H2-023
-    "KLU014-01": 2030,  # H2-023
-    "KLU023-01": 2030,  # H2-023
-    "KLU024-01": 2030,  # H2-024
-    "KLU027-01": 2027,  # H2-027
-    "KLU029-01": 2029,  # H2-029
-    "KLU030-01": 2029,  # H2-030
-    "KLU031-01": 2027,  # H2-031
-    "KLU032-01": 2027,  # H2-032
-    "KLU033-01": 2027,  # H2-033
-    "KLU034-01": 2034,  # H2-034
-    "KLU035-01": 2034,  # H2-035
-    "KLU036-01": 2032,  # H2-036
-    "KLU037-01": 2027,  # H2-038
-    "KLU038-01": 2027,  # H2-038
-    "KLU039-01": 2031,  # H2-050
-    "KLU040-01": 2029,  # H2-040
-    "KLU041-01": 2034,  # H2-041
-    "KLU042-01": 2029,  # H2-042
-    "KLU043-01": 2027,  # H2-043
-    "KLU044-01": 2027,  # H2-044
-    "KLU046-01": 2029,  # H2-046
-    "KLU047-01": 2034,  # H2-047
-    "KLU048-01": 2029,  # H2-048
-    "KLU049-01": 2029,  # H2-049
-    "KLU050-01": 2031,  # H2-050
-    "KLU051-01": 2026,  # H2-051
-    "KLU052-01": 2026,  # H2-052
-    "KLU056-01": 2036,  # H2-056
-    "KLU059-01": 2032,  # H2-059
-    "KLU062-01": 2036,  # H2-062
-    "KLU063-01": 2032,  # H2-063
-    "KLU064-01": 2032,  # H2-064
-    "KLU065-01": 2035,  # H2-065
-    "KLU066-01": 2025,  # H2-066
-    "KLU067-01": 2035,  # H2-067
-    "KLU068-01": 2035,  # H2-068
-    "KLU069-01": 2035,  # H2-069
-    "KLU070-01": 2030,  # H2-070
-    "KLU071-01": 2030,  # H2-071
-    "KLU072-01": 2030,  # H2-072
-    "KLU073-01": 2032,  # H2-073
-    "KLU074-01": 2031,  # H2-074
-    "KLU075-01": 2032,  # H2-075
-    "KLU076-01": 2032,  # H2-076
-    "KLU077-01": 2032,  # H2-077
-    "KLU078-01": 2032,  # H2-078
-    "KLU080-01": 2032,  # H2-080
-    "KLU081-01": 2032,  # H2-081
-    "KLU082-01": 2032,  # H2-082
-    "KLU083-01": 2032,  # H2-083
-    "KLU084-01": 2034,  # H2-084
-    "KLU085-01": 2034,  # H2-085
-    "KLU086-01": 2032,  # H2-086
-    "KLU087-01": 2025,  # H2-087
-    "KLU088-01": 2027,  # H2-088
-    "KLU089-01": 2030,  # H2-089
-    "KLU090-01": 2030,  # H2-090
-    "KLU091-01": 2030,  # H2-091
-    "KLU092-01": 2028,  # H2-092
-    "KLU093-01": 2028,  # H2-093
-    "KLU094-01": 2028,  # H2-094
-    "KLU095-01": 2028,  # H2-095
-    "KLU096-01": 2027,  # H2-096
-    "KLU098-01": 2028,  # H2-098
-    "KLU099-01": 2029,  # H2-099
-    "KLU100-01": 2029,  # H2-100
-    "KLU101-01": 2029,  # H2-101
-    "KLU102-01": 2029,  # H2-102
-    "KLU103-01": 2029,  # H2-103
-    "KLU104-01": 2029,  # H2-104
-    "KLU105-01": 2029,  # H2-105
-    "KLU106-01": 2029,  # H2-106
-    "KLU108-01": 2027,  # H2-108
-    "KLU110-01": 2028,  # H2-110
-    "KLU112-01": 2028,  # H2-112
-    "KLU113-01": 2034,  # H2-113
-    "KLU114-01": 2030,  # H2-114
-    "KLU115-01": 2030,  # H2-115
-    "KLU116-01": 2030,  # H2-116
-    "KLU117-01": 2030,  # H2-117
-    "KLU118-01": 2035,  # H2-118
-    "KLU119-01": 2030,  # H2-119
-    "KLU120-01": 2031,  # H2-120
-    "KLU122-01": 2030,  # H2-122
-    "KLU124-01": 2027,  # H2-124
-    "KLU125-01": 2032,  # H2-125
-    "KLU126-01": 2028,  # H2-126
-    "KLU127-01": 2030,  # H2-127
-    "KLU128-01": 2030,  # H2-128
-    "KLU129-01": 2029,  # H2-129
-    "KLU130-01": 2027,  # H2-130
-    "KLU131-01": 2028,  # H2-131
-    "KLU137-01": 2028,  # H2-137
-    "KLU139-01": 2034,  # H2-139
-    "KLU140-01": 2030,  # H2-140
-    "KLU141-01": 2028,  # H2-141
-    "KLU142-01": 2028,  # H2-142
-    "KLU143-01": 2030,  # H2-143
-    "KVS003-01": 2032,  # H2-2003
-    "KVS007-01": 2034,  # H2-2109
-}
+
+@lru_cache(maxsize=None)
+def kernnetz_commissioning_year():
+    """
+    Commissioning year of the Kernnetz measures
+
+    Latest planned commissioning of their NEP measures (Anlage 1b), assigned
+    by the Kernnetz-ID of Tabelle 11, Tabelle 13 and Anhang 9. Measures without
+    an entry keep the year of the FNB-Gas list.
+
+    Returns
+    -------
+    dict
+        Year per Kernnetz-ID ("Antrags-ID" of the FNB-Gas lists)
+
+    """
+    status = pd.read_excel(
+        source_file("Anlage1_Umsetzungsstand_Methan_Wasserstoff.xlsx"),
+        sheet_name="Anlage 1b - Umsetzungsstand H2",
+        header=2,
+    )
+    planned = status.filter(like="Planerische").iloc[:, 0].astype(str)
+    year = (
+        pd.to_numeric(planned.str[-4:], errors="coerce")
+        .groupby(status["Kürzel"])
+        .max()
+    )
+
+    ids = _table("Kernnetz_NEP_IDs")
+    ids = ids[ids["kernnetz_id"] != "---"]
+    # "KLN009-01, KLN010-01" and version letters ("KLU057-01a")
+    ids = ids.assign(
+        kernnetz_id=ids["kernnetz_id"].str.split(", "),
+        measure=ids["nep_id"].str.extract(r"^(H2-\d+)", expand=False),
+    ).explode("kernnetz_id")
+    ids["kernnetz_id"] = ids["kernnetz_id"].str.replace(
+        r"[a-z]$", "", regex=True
+    )
+    ids["year"] = ids["measure"].map(year)
+
+    return (
+        ids.dropna(subset=["year"])
+        .groupby("kernnetz_id")["year"]
+        .max()
+        .astype(int)
+        .to_dict()
+    )
+
 
 # Year of the methane network below
 NEP_CH4_NETWORK_YEAR = 2045
 
-# Sections of the methane network 2045: (number in Anhang 5, start,
-# end, length in km, nominal diameter DN in mm as given in the NEP)
-NEP_CH4_NETWORK_2045 = [
-    (1, "Haiming", "Finsing", 87, "1.200"),  # Burghausen (Haiming)-Finsing
-    (2, "Finsing", "Anwalting", 82, "900"),
-    (3, "Wertingen", "Kötz", 41, "700"),
-    (4, "Kötz", "Leipheim", 2, "450"),  # Kötz-Abzweig KW Leipheim
-    (5, "Rehden", "Lubmin", 441, "1.400"),
-    (6, "Lubmin", "Brandov", 480, "1.400"),
-    (7, "Rehden", "Drohne", 26, "1.000"),
-    (8, "Emsbüren", "Hünxe", 96, "1.000"),
-    (9, "Epe", "Heek", 8, "600"),
-    (10, "Hünxe", "Hamborn", 32, "600/ 700"),
-    (11, "Hamborn", "Lintorf", 20, "600"),
-    (12, "Lintorf", "Glehn", 33, "500"),
-    (13, "Bocholtz", "Glehn", 78, "300/ 400/ 500"),
-    (14, "Elten", "Paffrath", 154, "800-1.000"),
-    (15, "Epe", "Ochtrup", 12, "600"),
-    (16, "Wallach", "Binsheim", 18, "600"),
-    (17, "Binsheim", "Hamborn", 6, "600"),
-    (18, "Wallach", "Appeldorn", 20, "400"),
-    (19, "Ochtrup", "Datteln", 71, "600"),
-    (20, "Datteln", "Herne", 23, "600"),
-    (21, "Hoeningen", "Bergheim", 23, "400 und 400/ 600"),
-    # Lauchhammer-Lasow (Pl)
-    (22, "Lauchhammer", "Lasów", 114, "500/ 600/ 800"),
-    (23, "Lauchhammer", "Cörmigk", 143, "600/ 750/ 800/ 900"),
-    (24, "Cörmigk", "Bernburg", 9, "750"),  # Cörmigk-UGS Bernburg
-    (25, "Cörmigk", "Milzau", 40, "750"),
-    # Milzau-Böhlen/ Lippendorf
-    (26, "Milzau", "Lippendorf", 55, "500/ 600/ 800/ 900"),
-    (27, "Milzau", "Bad Lauchstädt", 8, "600"),  # Milzau-UGS Bad Lauchstädt
-    (28, "Sülstorf", "Rostock", 113, "400/ 500"),
-    (29, "Überackern", "Haiming", 1, "700"),
-    (30, "Dornum", "Wardenburg", 106, "1.200"),
-    (31, "Wardenburg", "Werne", 197, "900-1.200"),
-    (32, "Werne", "Dorsten", 88, "800-1.000"),
-    (33, "Eynatten", "Würselen", 13, "900"),
-    (34, "Würselen", "Porz", 83, "800"),
-    (35, "Werne", "Paffrath", 106, "800-1.000"),
-    (36, "Werne", "Stockum", 10, "600"),
-    (37, "Hennen", "Eisborn", 23, "600"),
-    (38, "Eisborn", "Hamm", 41, "500"),
-    (39, "Paffrath", "Gernsheim", 205, "800-1.200"),
-    (40, "Waidhaus", "Medelsheim", 458, "900-1.200"),
-    (41, "Rothenstadt", "Finsing", 180, "1.000"),
-    (42, "Schwandorf", "Oberkappel", 167, "800"),
-    (43, "Brensbach", "Großkrotzenburg", 42, "500"),  # Brensbach-KW Staudinger
-    (44, "Mittelbrunn", "Wallbach", 273, "900/ 1.000"),
-    (45, "Bocholtz", "Stolberg", 14, "950"),
-    (46, "Ellund", "Fockbek", 64, "500"),
-    (47, "Klein Offenseth", "Elbe Süd", 30, "750"),  # Klein-Offenseth-Elbe Süd
-    (48, "Reichertsheim", "Bierwang", 11, "800"),
-    (49, "Herchenrode", "Lampertheim", 34, "1.000"),
-    (50, "Lampertheim", "Grenzhof", 25, "700"),
-    (51, "Grenzhof", "Blankenloch", 47, "600"),
-    (52, "Kirrlach", "Heilbronn", 48, "400"),
-    (53, "Heilbronn", "Metterzimmern", 20, "300"),
-    (54, "Metterzimmern", "Wiernsheim", 25, "500"),
-    (55, "Blankenloch", "Dürrlewang", 70, "600"),
-    (56, "Dürrlewang", "Scharenstetten", 70, "500"),
-    (57, "Scharenstetten", "Essingen", 41, "500"),
-    (58, "Essingen", "Aalen", 9, "200"),
-    (59, "Scharenstetten", "Weißensberg", 136, "500"),
-    (60, "Weißensberg", "Lindau", 3, "500"),
-    (61, "Tunsel", "Basel", 39, "300"),
-    (62, "Oude Statenzijl", "Folmhusen", 24, "600"),  # Oude-Folmhusen
-    (63, "Emden", "Folmhusen", 65, "750/ 1.000"),
-    (64, "Bunde", "Emsbüren", 98, "750"),
-    (65, "Lingen", "Uelsen", 27, "600"),
-    (66, "Folmhusen", "Ganderkesee", 57, "750"),
-    (67, "Ganderkesee", "Achim", 41, "900"),
-    (68, "Achim", "Heidenau", 53, "450"),
-    (69, "Heidenau", "Elbe Süd", 41, "600"),
-    (70, "Klein Offenseth", "Quarnstedt", 16, "500"),
-    (71, "Quarnstedt", "Fockbek", 47, "400"),
-    (72, "Achim", "Kolshorn", 112, "600"),
-    (73, "Kolshorn", "Mehrum", 15, "500"),
-    (74, "Anwalting", "Wertingen", 21, "800"),
-]
+
+def nep_ch4_network_2045():
+    """
+    Sections of the methane network 2045 (Anhang 5)
+
+    Returns
+    -------
+    list of tuple
+        (number in Anhang 5, start, end, length in km, nominal diameter DN
+        in mm as printed in the NEP, text such as "800-1200")
+
+    """
+    return _rows(
+        "Anhang5_CH4_2045", ["number", "start", "end", "length_km", "DN"]
+    )
+
 
 # Coordinates (lon, lat, EPSG:4326) of the end points of the sections
 NEP_CH4_NETWORK_2045_NODES = {
@@ -409,320 +265,36 @@ NEP_H2_NETWORK_YEAR = 2045
 # the approved Szenariorahmen)
 NEP_SCENARIO_2045 = "2"
 
-# Additional H2 sections 2045 (Anhang 6, p. 187-191, 193 sections, 7,912 km):
-# (number, start, end, kind, length [km], DN, DP [bar], NEP scenarios)
-NEP_H2_NETWORK_2045 = [
-    (1, "Achim", "Elbe Süd", "conversion", 85, 1400, 84, "123"),
-    (2, "Achim", "Steinitz", "conversion", 169.5, 1200, 84, "123"),
-    (3, "Kolshorn", "Peine", "conversion", 29.2, 1200, 84, "123"),
-    (4, "Peine", "Walle", "conversion", 12, 1200, 84, "123"),
-    (5, "Wardenburg", "Achim", "conversion", 66.2, 1200, 84, "123"),
-    (6, "Werne", "Sannerz", "conversion", 257.4, 1200, 100, "123"),
-    (7, "Bernau", "Blumberg", "conversion", 19.3, 1100, 84, "123"),
-    (8, "Börnicke", "Kienbaum", "conversion", 40.6, 1100, 84, "123"),
-    (9, "Epe", "Legden", "conversion", 14.6, 1100, 100, "123"),
-    (10, "Steinitz", "Bernau", "conversion", 181.4, 1100, 84, "123"),
-    (11, "Emden", "Etzel", "conversion", 67, 1050, 84, "123"),
-    (12, "Bocholtz", "Mittelbrunn", "conversion", 223.6, 1000, 67.5, "123"),
-    (13, "Emden", "Werne", "conversion", 240, 1000, 70, "123"),
-    (14, "Eynatten", "Legden", "conversion", 216.1, 1000, 100, "123"),
-    (15, "Folmhusen", "Wardenburg", "conversion", 47.6, 1000, 84, "123"),
-    (16, "Reckrod", "Wirtheim", "conversion", 88.4, 1000, 84, "12"),
-    (17, "Sannerz", "Rimpar", "conversion", 67.6, 1000, 100, "123"),
-    (18, "Schwarzach", "Eckartsweier", "conversion", 28.6, 1000, 70, "123"),
-    (19, "Wilhelmshaven", "Etzel", "conversion", 26, 1000, 100, "123"),
-    (20, "Wirtheim", "Herchenrode", "conversion", 83.2, 1000, 100, "12"),
-    (21, "Flößberg", "Merzdorf", "conversion", 46.9, 900, 63, "123"),
-    (22, "Helmste", "Stade", "conversion", 18, 900, 84, "123"),
-    (23, "Hügelheim", "Hüsingen", "conversion", 31.4, 900, 70, "123"),
-    (24, "Merzdorf", "Sayda", "conversion", 41.1, 900, 63, "123"),
-    (25, "Obermichelbach", "Amerdingen", "conversion", 104.7, 900, 80, "123"),
-    (26, "Amerdingen", "Wertingen", "conversion", 29.1, 800, 80, "123"),
-    (27, "Arresting", "Bierwang", "conversion", 103.5, 800, 84, "123"),
-    (28, "Bad Lauchstädt", "Flößberg", "conversion", 75, 800, 100, "123"),
-    (29, "Bierwang", "Breitbrunn", "conversion", 26.3, 800, 80, "123"),
-    (30, "Brunsbüttel", "Heist", "conversion", 60, 800, 84, "123"),
-    (31, "Burghausen", "Schnaitsee", "conversion", 4.1, 800, 84, "123"),
-    (32, "Epe", "Wettringen", "conversion", 25.8, 800, 84, "123"),
-    (33, "Niederhohndorf", "Merzdorf", "conversion", 53.6, 800, 84, "123"),
-    (34, "Ronneburg", "Vitzeroda", "conversion", 187.4, 800, 84, "123"),
-    (35, "Werne", "Duisburg", "conversion", 94.8, 800, 70, "123"),
-    (36, "Amerdingen", "Scharenstetten", "conversion", 57.4, 700, 80, "123"),
-    # Anschlussltg. Epe
-    (37, "Epe", "Epe", "conversion", 4.5, 700, 80, "123"),
-    # Bentheim II-Altenlingen
-    (38, "Bad Bentheim", "Altenlingen", "conversion", 33.4, 700, 55.7, "123"),
-    (39, "Finsing", "Wolfersberg", "conversion", 20.6, 700, 67.5, "123"),
-    (40, "Gernsheim", "Rimpar", "conversion", 107.4, 700, 67.5, "123"),
-    (41, "Rimpar", "Waidhaus", "conversion", 211.8, 700, 67.5, "123"),
-    (42, "Schlüchtern", "Rimpar", "conversion", 68.5, 700, 84, "123"),
-    (43, "St. Hubert", "Lintorf", "conversion", 32.8, 700, 67.5, "123"),
-    (44, "Steinbrink", "Vinnhorst", "conversion", 81.8, 700, 70, "123"),
-    # Verbindungsleitungen Finsing
-    (45, "Finsing", "Finsing", "conversion", 0.1, 700, 67.5, "123"),
-    (46, "Bockum", "Olfen", "conversion", 4.7, 600, 70, "123"),
-    (47, "Buckow", "Lauchhammer", "conversion", 120.3, 600, 67.5, "23"),
-    (48, "Drohne", "Steinbrink", "conversion", 28.2, 600, 70, "123"),
-    (49, "Egmating", "Oberpframmern", "conversion", 0.2, 600, 70, "123"),
-    (50, "Finsing", "Finsing", "conversion", 0.1, 600, 70, "123"),
-    (51, "Gernsheim", "Gernsheim", "conversion", 3.6, 600, 67, "123"),
-    (52, "Gernsheim", "Lampertheim", "conversion", 19.4, 600, 67, "123"),
-    # Gronau1-Ochtrup2
-    (53, "Gronau", "Ochtrup", "conversion", 3, 600, 84, "123"),
-    (54, "Hamborn", "Lintorf", "conversion", 20.1, 600, 70, "123"),
-    # HerneA-HerneD
-    (55, "Herne", "Herne", "conversion", 0.5, 600, 70, "12"),
-    (56, "Inzenham", "Egmating", "conversion", 32, 600, 70, "123"),
-    (
-        57,
-        "Lauchhammer",
-        "Deutschneudorf",
-        "conversion",
-        115.8,
-        600,
-        67.5,
-        "123",
-    ),
-    (58, "Leer", "Nüttermoor", "conversion", 4.8, 600, 84, "123"),
-    # Mischstation Egenstedt-Station Ahlten
-    (59, "Egenstedt", "Ahlten", "conversion", 36.8, 600, 84, "123"),
-    # Ochtrup Wester 10-Ennigerloh
-    (60, "Ochtrup", "Ennigerloh", "conversion", 80.2, 600, 70, "123"),
-    (61, "Olfen", "Dülmen", "conversion", 18.2, 600, 70, "123"),
-    (62, "Rapen", "Bockum", "conversion", 3.9, 600, 70, "123"),
-    # Steinbrink-Verteilerstation Voigtei
-    (63, "Steinbrink", "Voigtei", "conversion", 18.3, 600, 70, "123"),
-    (64, "Stockum", "Holzwickede", "conversion", 24.5, 600, 70, "123"),
-    (65, "Telgte", "Stockum", "conversion", 34.1, 600, 70, "123"),
-    # Verteilerstation Rehden-Station Hallendorf
-    (66, "Rehden", "Hallendorf", "conversion", 160.3, 600, 70, "123"),
-    (67, "Vinnhorst", "Ahlten", "conversion", 21.3, 600, 84, "123"),
-    (68, "Visbek", "Lemförde", "conversion", 48, 600, 70, "123"),
-    (69, "Aachen", "Broichweiden", "conversion", 2.7, 500, 70, "12"),
-    (70, "Anwalting", "Kissing", "conversion", 20.7, 500, 70, "123"),
-    (71, "Bischofsheim", "Frankenthal", "conversion", 57.7, 500, 64, "123"),
-    (72, "Dörnigheim", "Walldorf", "conversion", 30.1, 500, 64, "123"),
-    (73, "Egmating", "Kissing", "conversion", 82.6, 500, 70, "123"),
-    (74, "Essingen", "Scharenstetten", "conversion", 41.3, 500, 67.5, "12"),
-    (75, "Finsing", "Bierwang", "conversion", 47.3, 500, 70, "123"),
-    (76, "Gröben", "Bierwang", "conversion", 2.5, 500, 80, "123"),
-    (77, "Gröben", "Gröben", "conversion", 0.1, 500, 80, "123"),
-    (78, "Lampertheim", "Karlsruhe", "conversion", 78.4, 500, 61, "123"),
-    (79, "Lintorf", "Uellendahl", "conversion", 28, 500, 40, "123"),
-    (80, "Michelbach", "Essingen", "conversion", 54.9, 500, 67.5, "123"),
-    (81, "Mittelbrunn", "Remich", "conversion", 113.6, 500, 84, "123"),
-    (82, "Niederbonsfeld", "Essen-Süd", "conversion", 10.1, 500, 70, "123"),
-    (83, "Niedereimer", "Haarweg", "conversion", 26.6, 500, 70, "123"),
-    # Ochtrup Wester 18A -Ochtrup Hermann-LönsA
-    (84, "Ochtrup", "Ochtrup", "conversion", 1.6, 500, 70, "123"),
-    # Ochtrup Wester 18B -Ochtrup Hermann-LönsB
-    (85, "Ochtrup", "Ochtrup", "conversion", 1.6, 500, 70, "123"),
-    (
-        86,
-        "Radevormwald",
-        "Niederschelden",
-        "conversion",
-        65.5,
-        500,
-        67.5,
-        "123",
-    ),
-    (87, "Reinhardshofen", "Michelbach", "conversion", 62.9, 500, 80, "123"),
-    (88, "Scharenstetten", "Ulm", "conversion", 18.1, 500, 58, "123"),
-    (89, "Sonsbeck", "Hamborn", "conversion", 30.1, 500, 50, "123"),
-    (90, "Ueldener Haar", "Weine", "conversion", 14, 500, 70, "123"),
-    (91, "Walldorf", "Bischofsheim", "conversion", 13.3, 500, 64, "123"),
-    (92, "Wiernsheim", "Löchgau", "conversion", 28.4, 500, 80, "12"),
-    (93, "Wirtheim", "Dörnigheim", "conversion", 39.5, 500, 64, "123"),
-    # Kötz-Hittistetten/Senden
-    (94, "Kötz", "Hittistetten", "conversion", 13.7, 450, 60, "123"),
-    # Mischstation Egenstedt-Station Lenglern
-    (95, "Egenstedt", "Lenglern", "conversion", 63.5, 450, 64, "23"),
-    # Verteilerstation Kolshorn-Station Clenze
-    (96, "Kolshorn", "Clenze", "conversion", 53.1, 450, 70, "123"),
-    (97, "Ahrem", "Euskirchen", "conversion", 18.5, 400, 100, "123"),
-    # Bonn-Rheinaue-Godesberg
-    (98, "Bonn-Rheinaue", "Bad Godesberg", "conversion", 4, 400, 70, "123"),
-    (99, "Borken", "Bocholt", "conversion", 15.5, 400, 70, "123"),
-    (100, "Breitbrunn", "Bierwang", "conversion", 8.1, 400, 70, "123"),
-    (101, "Bunde", "Leer", "conversion", 19, 400, 84, "123"),
-    (102, "Büttgen", "Büttgen", "conversion", 0.1, 400, 70, "123"),
-    (103, "Castrop-Rauxel", "Witten", "conversion", 18.2, 400, 50, "123"),
-    (104, "Cloppenburg", "Steinfeld", "conversion", 26.9, 400, 84, "123"),
-    (105, "Dorsten", "Lintorf", "conversion", 41.8, 400, 50, "123"),
-    (106, "Dorsten", "Werne", "conversion", 56.8, 400, 50, "123"),
-    (107, "Egmating", "Kempten", "conversion", 145.8, 400, 80, "123"),
-    (108, "Ennigerloh", "Oelde", "conversion", 16.3, 400, 70, "123"),
-    (109, "Fröndenberg", "Holzwickede", "conversion", 2, 400, 70, "123"),
-    # Gronau2-Ochtrup3
-    (110, "Gronau", "Ochtrup", "conversion", 0.1, 400, 70, "123"),
-    # HerneC-Bochum
-    (111, "Herne", "Bochum", "conversion", 8.6, 400, 70, "123"),
-    (112, "Herne", "Herne Hochlarmark", "conversion", 3.7, 400, 70, "12"),
-    (113, "Herne", "Recklinghausen", "conversion", 8, 400, 70, "123"),
-    (114, "Hiltrop", "Laer", "conversion", 4.4, 400, 70, "123"),
-    (115, "Holzwickede", "Bochum", "conversion", 30, 400, 70, "123"),
-    (116, "Huntorf", "Leer", "conversion", 151.8, 400, 84, "123"),
-    (117, "Ingolstadt", "Augsburg", "conversion", 69.1, 400, 67.5, "123"),
-    (118, "Inzenham", "Kiefersfelden", "conversion", 39.4, 400, 70, "123"),
-    (119, "Laer", "Querenburg", "conversion", 2.2, 400, 70, "123"),
-    (120, "Leer", "Rastede", "conversion", 33.8, 400, 84, "123"),
-    (
-        121,
-        "Mengede",
-        "Dortmund-Scharnhorst",
-        "conversion",
-        12.3,
-        400,
-        50,
-        "123",
-    ),
-    (122, "Münchsmünster", "Ingolstadt", "conversion", 23, 400, 67.5, "123"),
-    (123, "Neuss", "Neukirchen", "conversion", 11.6, 400, 67.5, "123"),
-    # Ochtrup-Ochtrup1
-    (124, "Ochtrup", "Ochtrup", "conversion", 0.1, 400, 70, "123"),
-    (125, "Oelde", "Uelde", "conversion", 37.1, 400, 70, "123"),
-    (126, "Oer Erkenschwick", "Rapen", "conversion", 1.5, 400, 70, "123"),
-    (
-        127,
-        "Oer Erkenschwick",
-        "Recklinghausen",
-        "conversion",
-        6.5,
-        400,
-        70,
-        "123",
-    ),
-    # Oude-Bunde
-    (128, "Oude Statenzijl", "Bunde", "conversion", 1.2, 400, 84, "123"),
-    # Oude-Bunde 2
-    (129, "Oude Statenzijl", "Bunde", "conversion", 1.2, 400, 84, "123"),
-    (
-        130,
-        "Recklinghausen",
-        "Oer Erkenschwick",
-        "conversion",
-        6.5,
-        400,
-        70,
-        "123",
-    ),
-    (131, "Stiepel", "Bochum-Westpark", "conversion", 7.8, 400, 70, "123"),
-    (132, "Ueldener Haar", "Plackweg", "conversion", 17.2, 400, 70, "123"),
-    (133, "Ueldener Haar", "Ueldener Haar", "conversion", 0.3, 400, 70, "123"),
-    (134, "Ueldener Haar", "Ueldener Haar", "conversion", 0.1, 400, 70, "123"),
-    (135, "Uelde", "Wickede", "conversion", 31.8, 400, 70, "123"),
-    (136, "Waldenburg", "Crailsheim", "conversion", 35.5, 400, 67.5, "123"),
-    (137, "Walle", "Edesbüttel", "conversion", 16, 400, 70, "123"),
-    (138, "Willstätt", "Weier", "conversion", 9.5, 400, 67.5, "123"),
-    (139, "Zons", "Selikum", "conversion", 14.3, 400, 40, "123"),
-    # Mischstation Gr. Gießen-Verteilerstation Kolshorn
-    (140, "Groß Gießen", "Kolshorn", "conversion", 26.7, 350, 70, "123"),
-    (141, "Hittistetten", "Lindau", "conversion", 120, 320, 50, "123"),
-    # Biemenhorst 1-Bocholt
-    (142, "Biemenhorst", "Bocholt", "conversion", 1.6, 300, 70, "123"),
-    (143, "Diesenbach", "Regensburg", "conversion", 10.8, 300, 70, "123"),
-    # Duisburg-Baerl-Alt-Homberg
-    (
-        144,
-        "Duisburg-Baerl",
-        "Homberg (Duisburg)",
-        "conversion",
-        6.4,
-        300,
-        70,
-        "123",
-    ),
-    (145, "Euskirchen", "Brüser Berg", "conversion", 27.2, 300, 70, "123"),
-    # Friemersheim-DU-Hafen
-    (
-        146,
-        "Friemersheim",
-        "Duisburg Hafen",
-        "conversion",
-        8.9,
-        300,
-        67.5,
-        "123",
-    ),
-    (147, "Godesberg", "Brüser Berg", "conversion", 12.4, 300, 67.5, "123"),
-    # Hövel 1-Gut Melschede
-    (148, "Hövel", "Gut Melschede", "conversion", 0.2, 300, 40, "123"),
-    # Isarschiene Ost
-    (149, None, None, "conversion", 60.7, 300, 67.5, "123"),
-    (150, "Katzdorf", "Diesenbach", "conversion", 10.2, 300, 70, "123"),
-    # Loop-Dueren-Roelsdorf
-    (151, "Düren", "Roelsdorf", "conversion", 2.3, 300, 25, "12"),
-    # Olpe-Olpe 1
-    (152, "Olpe", "Olpe", "conversion", 0.1, 300, 40, "123"),
-    (
-        153,
-        "Recklinghausen",
-        "Oer Erkenschwick",
-        "conversion",
-        5,
-        300,
-        70,
-        "12",
-    ),
-    (154, "Regensburg", "Oberisling", "conversion", 15, 300, 70, "123"),
-    (155, "Rehden", "Reiningen", "conversion", 22, 300, 64, "12"),
-    (156, "Reiningen", "Georgsmarienhütte", "conversion", 49.3, 300, 64, "12"),
-    (157, "Ulm", "Hittistetten", "conversion", 12.1, 300, 50, "123"),
-    # Biemenhorst-Biemenhorst 1
-    (158, "Biemenhorst", "Biemenhorst", "conversion", 0.2, 250, 67.5, "123"),
-    # Hövel-Hövel 1
-    (159, "Hövel", "Hövel", "conversion", 0.1, 250, 40, "123"),
-    (160, "Hövel", "Olpe", "conversion", 18, 250, 40, "123"),
-    # Mischstation Gr. Gießen-Station Bolzum
-    (161, "Groß Gießen", "Bolzum", "conversion", 13.4, 250, 64, "123"),
-    # Olpe 1-Freienohl
-    (162, "Olpe", "Freienohl", "conversion", 1.1, 250, 40, "123"),
-    (163, "Zopp", "Herzogenrath", "conversion", 5, 250, 70, "123"),
-    (164, "Bocholt", "Biemenhorst", "conversion", 3.2, 200, 67.5, "123"),
-    (165, "Broichweiden", "Stolberg", "conversion", 0.1, 200, 25, "123"),
-    (166, "Freienohl", "Plackweg", "conversion", 7.1, 200, 70, "123"),
-    # Loop-Dueren-Langerwehe
-    (167, "Düren", "Langerwehe", "conversion", 7.6, 200, 25, "12"),
-    # Loop-Langerwehe-Weisweiler
-    (168, "Langerwehe", "Weisweiler", "conversion", 4.2, 200, 25, "12"),
-    # Voerde-Huenxe
-    (169, "Voerde", "Hünxe", "conversion", 3.6, 200, 67.5, "12"),
-    (170, "Beckum", "Gut Melschede", "conversion", 0.7, 150, 70, "123"),
-    (171, "Hinterschwarzenberg", "Pfronten", "conversion", 21.5, 150, 80, "1"),
-    (172, "Achim", "Reckrod", "new", 303, 1400, 84, "12"),
-    (173, "Barßel", "Emsbüren", "new", 87.4, 1200, 70, "12"),
-    (174, "Elbe Süd", "Elbe Nord", "new", 5, 1200, 84, "12"),
-    (175, "Elbe Süd", "Elbe Nord", "new", 5, 1200, 84, "123"),
-    # Loop-Fockbek-Ellund
-    (176, "Fockbek", "Ellund", "new", 64, 1200, 84, "123"),
-    # Loop-Fockbek-Quarnstedt
-    (177, "Fockbek", "Quarnstedt", "new", 47, 1200, 84, "123"),
-    # Loop-Heist-Elbe Nord
-    (178, "Heist", "Elbe Nord", "new", 5, 1200, 84, "12"),
-    # Loop-Heist-Klein Offenseth
-    (179, "Heist", "Klein Offenseth", "new", 15, 1200, 84, "12"),
-    # Loop-Quarnstedt-Klein Offenseth
-    (180, "Quarnstedt", "Klein Offenseth", "new", 15.9, 1200, 84, "123"),
-    (181, "Au am Rhein", "Schwarzach", "new", 33.4, 1000, 70, "123"),
-    (182, "Eckartsweier", "Hügelheim", "new", 85.5, 1000, 70, "123"),
-    (183, "Elsterwerda", "Spreetal", "new", 55, 1000, 84, "2"),
-    (184, "Herchenrode", "Lampertheim", "new", 34.4, 1000, 100, "12"),
-    # Loop-Rothenstadt-Forchheim
-    (185, "Rothenstadt", "Forchheim", "new", 108, 1000, 84, "123"),
-    # Loop-Wilhelmshaven-Nord-Wilhelmshaven-Süd
-    (186, "Wilhelmshaven", "Wilhelmshaven", "new", 11.2, 1000, 100, "12"),
-    (187, "Windberg", "Oberkappel", "new", 94, 1000, 84, "123"),
-    (188, "Hüsingen", "Wallbach", "new", 14.8, 900, 70, "123"),
-    # Loop-Niederhohndorf/Zwickau-Rothenstadt
-    (189, "Niederhohndorf", "Rothenstadt", "new", 170, 800, 84, "12"),
-    # Loop-Niederhohndorf/Zwickau-Rückersdorf
-    (190, "Niederhohndorf", "Rückersdorf", "new", 33.7, 800, 84, "1"),
-    # Huntorf-Elsfleth 2
-    (191, "Huntorf", "Elsfleth", "new", 4.8, 600, 84, "12"),
-    (192, "Marl", "Oer Erkenschwick", "new", 0.7, 300, 70, "12"),
-    (193, "Zopp", "Alsdorf", "new", 1.2, 250, 70, "123"),
-]
+
+def nep_h2_network_2045():
+    """
+    Additional H2 sections 2045 (Anhang 6, p. 187-191, 193 sections)
+
+    Returns
+    -------
+    list of tuple
+        (number, start, end, kind, length [km], DN, DP [bar], NEP scenarios
+        as text, e.g. "123")
+
+    """
+    sections = _rows(
+        "Anhang6_H2_2045",
+        [
+            "number",
+            "start",
+            "end",
+            "kind",
+            "length_km",
+            "DN",
+            "DP_bar",
+            "scenarios",
+        ],
+    )
+    # The scenarios stay text even if a spreadsheet turned them into numbers
+    return [
+        (*section[:7], str(section[7]).split(".")[0]) for section in sections
+    ]
+
 
 # Coordinates (lon, lat) of the end points of NEP_H2_NETWORK_2045
 # (h2_grid_nodes.csv, otherwise OpenStreetMap, September 2026)
@@ -957,9 +529,36 @@ NEP_H2_MEASURES_YEAR = 2036
 # NEP_SCENARIO_2045, section 6.4.2)
 NEP_H2_MEASURES_CRITERIA = ("H2(4)", "H2(5)", "H2(6)")
 
+
+@lru_cache(maxsize=None)
+def nep_h2_measures_criterion():
+    """
+    Criterion of the H2 measures beyond the core network (Anlage 3)
+
+    H2(4) and H2(6) are part of the network proposal, H2(5) counts only if
+    the measure is part of scenario NEP_SCENARIO_2045 in 2037.
+
+    Returns
+    -------
+    dict
+        Criterion per NEP id
+
+    """
+    criteria = pd.read_excel(
+        source_file("Anlage3_Netzausbauvorschlag_Wasserstoff.xlsx"), header=2
+    )
+    criteria.columns = criteria.columns.map(lambda c: str(c).split(":")[0])
+    in_scenario = criteria[f"Szenario {NEP_SCENARIO_2045} 2037"].eq("Ja")
+    criterion = pd.Series(index=criteria.index, dtype=object)
+    for name in ["H2(4)", "H2(6)"]:
+        criterion[criteria[name].eq("x")] = name
+    criterion[criteria["H2(5)"].eq("x") & in_scenario] = "H2(5)"
+    return criterion.dropna().groupby(criteria["Kürzel"]).first().to_dict()
+
+
 # H2 measures up to 2037 beyond the core network (Anlage 3): (NEP id, start,
-# end, kind, length [km], DN, DP [bar], criterion); lengths and DN/DP are
-# partly derived, see the documentation of the gas grids
+# end, kind, length [km], DN, DP [bar]); lengths and DN/DP are partly
+# derived, see the documentation of the gas grids
 NEP_H2_MEASURES_2037 = [
     (
         "H2-1201",
@@ -969,7 +568,6 @@ NEP_H2_MEASURES_2037 = [
         4.5,
         400,
         70,
-        "H2(4)",
     ),  # default
     (
         "H2-1202",
@@ -979,7 +577,6 @@ NEP_H2_MEASURES_2037 = [
         26.3,
         600,
         70,
-        "H2(4)",
     ),  # default
     (
         "H2-1214",
@@ -989,7 +586,6 @@ NEP_H2_MEASURES_2037 = [
         8.8,
         400,
         70,
-        "H2(4)",
     ),  # default
     (
         "H2-1215",
@@ -999,7 +595,6 @@ NEP_H2_MEASURES_2037 = [
         7.1,
         400,
         70,
-        "H2(4)",
     ),  # default
     (
         "H2-1216",
@@ -1009,7 +604,6 @@ NEP_H2_MEASURES_2037 = [
         12.8,
         400,
         70,
-        "H2(4)",
     ),  # default
     (
         "H2-1218",
@@ -1019,7 +613,6 @@ NEP_H2_MEASURES_2037 = [
         12.4,
         400,
         70,
-        "H2(4)",
     ),  # default
     (
         "H2-1219",
@@ -1029,7 +622,6 @@ NEP_H2_MEASURES_2037 = [
         1.7,
         400,
         70,
-        "H2(4)",
     ),  # default
     (
         "H2-203",
@@ -1039,7 +631,6 @@ NEP_H2_MEASURES_2037 = [
         2.2,
         400,
         70,
-        "H2(4)",
     ),  # default
     (
         "H2-205",
@@ -1049,11 +640,10 @@ NEP_H2_MEASURES_2037 = [
         48.4,
         600,
         70,
-        "H2(4)",
     ),  # default
-    ("H2-206", "Ulm", "Augsburg", "new", 78.2, 400, 68, "H2(4)"),  # SciGRID
-    ("H2-209", "Kötz", "Günzburg", "new", 8.1, 400, 70, "H2(4)"),  # default
-    ("H2-231", "Freiburg", "Weier", "new", 60.6, 600, 70, "H2(4)"),  # default
+    ("H2-206", "Ulm", "Augsburg", "new", 78.2, 400, 68),  # SciGRID
+    ("H2-209", "Kötz", "Günzburg", "new", 8.1, 400, 70),  # default
+    ("H2-231", "Freiburg", "Weier", "new", 60.6, 600, 70),  # default
     (
         "H2-233",
         "Uedener Bruch",
@@ -1062,9 +652,8 @@ NEP_H2_MEASURES_2037 = [
         6.8,
         200,
         70,
-        "H2(4)",
     ),  # KLU121-01
-    ("H2-244", "Aachen", "Soers", "new", 10.7, 400, 70, "H2(4)"),  # default
+    ("H2-244", "Aachen", "Soers", "new", 10.7, 400, 70),  # default
     (
         "H2-211",
         "Kadeltshofen",
@@ -1073,7 +662,6 @@ NEP_H2_MEASURES_2037 = [
         9.8,
         400,
         70,
-        "H2(6)",
     ),  # default
     (
         "H2-213",
@@ -1083,7 +671,6 @@ NEP_H2_MEASURES_2037 = [
         8.5,
         400,
         70,
-        "H2(6)",
     ),  # default
     (
         "H2-218",
@@ -1093,7 +680,6 @@ NEP_H2_MEASURES_2037 = [
         8.0,
         400,
         70,
-        "H2(6)",
     ),  # default
     (
         "H2-224",
@@ -1103,7 +689,6 @@ NEP_H2_MEASURES_2037 = [
         18.3,
         600,
         70,
-        "H2(6)",
     ),  # default
     (
         "H2-226",
@@ -1113,7 +698,6 @@ NEP_H2_MEASURES_2037 = [
         5.1,
         400,
         70,
-        "H2(6)",
     ),  # default
     (
         "H2-248",
@@ -1123,7 +707,6 @@ NEP_H2_MEASURES_2037 = [
         5.7,
         400,
         70,
-        "H2(6)",
     ),  # default
     (
         "H2-249",
@@ -1133,7 +716,6 @@ NEP_H2_MEASURES_2037 = [
         2.8,
         400,
         70,
-        "H2(6)",
     ),  # default
     (
         "H2-1203",
@@ -1143,7 +725,6 @@ NEP_H2_MEASURES_2037 = [
         2.9,
         400,
         70,
-        "H2(5)",
     ),  # default
     (
         "H2-1207",
@@ -1153,7 +734,6 @@ NEP_H2_MEASURES_2037 = [
         85.7,
         1000,
         70,
-        "H2(5)",
     ),  # SciGRID
     (
         "H2-1208",
@@ -1163,9 +743,8 @@ NEP_H2_MEASURES_2037 = [
         51.2,
         600,
         70,
-        "H2(5)",
     ),  # default
-    ("H2-1209", "Heist", "Elbe Nord", "new", 7.1, 400, 70, "H2(5)"),  # default
+    ("H2-1209", "Heist", "Elbe Nord", "new", 7.1, 400, 70),  # default
     (
         "H2-1212",
         "Borken",
@@ -1174,7 +753,6 @@ NEP_H2_MEASURES_2037 = [
         2.1,
         400,
         70,
-        "H2(5)",
     ),  # default
     (
         "H2-208",
@@ -1184,7 +762,6 @@ NEP_H2_MEASURES_2037 = [
         8.2,
         400,
         70,
-        "H2(5)",
     ),  # default
     (
         "H2-210",
@@ -1194,7 +771,6 @@ NEP_H2_MEASURES_2037 = [
         18.6,
         600,
         70,
-        "H2(5)",
     ),  # default
     (
         "H2-216",
@@ -1204,7 +780,6 @@ NEP_H2_MEASURES_2037 = [
         79.0,
         1000,
         68,
-        "H2(5)",
     ),  # SciGRID
     (
         "H2-219",
@@ -1214,7 +789,6 @@ NEP_H2_MEASURES_2037 = [
         111.8,
         600,
         70,
-        "H2(5)",
     ),  # default
     (
         "H2-220",
@@ -1224,7 +798,6 @@ NEP_H2_MEASURES_2037 = [
         124.6,
         900,
         70,
-        "H2(5)",
     ),  # SciGRID
     (
         "H2-221",
@@ -1234,7 +807,6 @@ NEP_H2_MEASURES_2037 = [
         10.4,
         400,
         70,
-        "H2(5)",
     ),  # default
     (
         "H2-222",
@@ -1244,7 +816,6 @@ NEP_H2_MEASURES_2037 = [
         57.0,
         1000,
         84,
-        "H2(5)",
     ),  # SciGRID
     (
         "H2-223",
@@ -1254,7 +825,6 @@ NEP_H2_MEASURES_2037 = [
         75.2,
         900,
         70,
-        "H2(5)",
     ),  # SciGRID
     (
         "H2-227",
@@ -1264,7 +834,6 @@ NEP_H2_MEASURES_2037 = [
         67.6,
         800,
         80,
-        "H2(5)",
     ),  # SciGRID
     (
         "H2-228",
@@ -1274,7 +843,6 @@ NEP_H2_MEASURES_2037 = [
         71.9,
         1000,
         68,
-        "H2(5)",
     ),  # SciGRID
     (
         "H2-229",
@@ -1284,7 +852,6 @@ NEP_H2_MEASURES_2037 = [
         73.1,
         900,
         55,
-        "H2(5)",
     ),  # SciGRID
     (
         "H2-230",
@@ -1294,7 +861,6 @@ NEP_H2_MEASURES_2037 = [
         73.7,
         350,
         62,
-        "H2(5)",
     ),  # SciGRID
     (
         "H2-232",
@@ -1304,10 +870,9 @@ NEP_H2_MEASURES_2037 = [
         45.9,
         600,
         70,
-        "H2(5)",
     ),  # default
-    ("H2-234", "Wardt", "Vissel", "new", 4.2, 400, 70, "H2(5)"),  # default
-    ("H2-235", "Wardt", "Vissel", "new", 4.2, 400, 70, "H2(5)"),  # default
+    ("H2-234", "Wardt", "Vissel", "new", 4.2, 400, 70),  # default
+    ("H2-235", "Wardt", "Vissel", "new", 4.2, 400, 70),  # default
     (
         "H2-236",
         "Vissel",
@@ -1316,9 +881,8 @@ NEP_H2_MEASURES_2037 = [
         9.4,
         400,
         70,
-        "H2(5)",
     ),  # default
-    ("H2-237", "Praest", "Bocholt", "new", 21.7, 600, 70, "H2(5)"),  # default
+    ("H2-237", "Praest", "Bocholt", "new", 21.7, 600, 70),  # default
     (
         "H2-238",
         "Hamminkeln",
@@ -1327,7 +891,6 @@ NEP_H2_MEASURES_2037 = [
         54.2,
         600,
         70,
-        "H2(5)",
     ),  # default
     (
         "H2-243",
@@ -1337,7 +900,6 @@ NEP_H2_MEASURES_2037 = [
         6.9,
         400,
         70,
-        "H2(5)",
     ),  # default
     (
         "H2-245",
@@ -1347,36 +909,31 @@ NEP_H2_MEASURES_2037 = [
         8.7,
         400,
         70,
-        "H2(5)",
     ),  # default
-    ("H2-250", "Voerde", "Hünxe", "new", 8.3, 400, 70, "H2(5)"),  # default
+    ("H2-250", "Voerde", "Hünxe", "new", 8.3, 400, 70),  # default
 ]
 
-# Commissioning year of NEP_H2_MEASURES_2037 where the BNetzA list
-# "Inbetriebnahmedaten" (June 2026) gives one, otherwise NEP_H2_MEASURES_YEAR
-NEP_H2_MEASURES_2037_COMMISSIONING = {
-    "H2-1201": 2036,
-    "H2-1202": 2036,
-    "H2-1214": 2036,
-    "H2-1215": 2036,
-    "H2-1216": 2036,
-    "H2-1218": 2036,
-    "H2-1219": 2036,
-    "H2-203": 2036,
-    "H2-205": 2036,
-    "H2-206": 2036,
-    "H2-209": 2036,
-    "H2-231": 2036,
-    "H2-233": 2031,
-    "H2-244": 2036,
-    "H2-211": 2036,
-    "H2-213": 2036,
-    "H2-218": 2036,
-    "H2-224": 2036,
-    "H2-226": 2036,
-    "H2-248": 2036,
-    "H2-249": 2036,
-}
+
+@lru_cache(maxsize=None)
+def nep_h2_measures_commissioning():
+    """
+    Commissioning year of the H2 measures beyond the core network
+
+    BNetzA list "Inbetriebnahmedaten" (June 2026); measures without a date
+    get NEP_H2_MEASURES_YEAR.
+
+    Returns
+    -------
+    dict
+        Year per NEP id
+
+    """
+    dates = pd.read_excel(source_file("Inbetriebnahmedaten.xlsx"))
+    year = pd.to_numeric(
+        dates.iloc[:, 3].astype(str).str[-4:], errors="coerce"
+    )
+    return year.groupby(dates.iloc[:, 0]).max().dropna().astype(int).to_dict()
+
 
 # Coordinates (lon, lat) of the end points of NEP_H2_MEASURES_2037
 # (h2_grid_nodes.csv or the lists above, otherwise OpenStreetMap)
@@ -1459,106 +1016,169 @@ NEP_H2_MEASURES_2037_NODES = {
     "Windberg": (12.7459, 48.9413),
 }
 
-# Kernnetz measures of the modelling result 2037 not in the network 2045
-# of scenario 2 (Tabelle 37, p. 147), NEP id in the comment
-NEP_KERNNETZ_NOT_IN_2045 = [
-    "KLU038-01",  # H2-038-01 Achim-Heidenau
-    "KLU050-01",  # H2-050-01 Heidenau-Elbe Süd
-    "KLN017-01",  # H2-1017-02 Huntorf-Elsfleth 2
-    "KLN078-01",  # H2-1078-01 Böhlen-Borna
-    "KLU139-01",  # H2-139-01 Borna-Thierbach
-]
 
-# DN of Kernnetz measures modelled differently by scenario 2 (Anlage 3)
-NEP_KERNNETZ_DN_2045 = {"KLN042-01": 1000}
+def nep_kernnetz_not_in_2045():
+    """
+    Kernnetz measures of the modelling result 2037 not in the network 2045
+    of scenario 2 (Tabelle 37, p. 147)
 
-# H2 cross-border points, scenario 2: (GÜP, country, share, border node,
-# entry 2037, exit 2037, entry 2045, exit 2045) in GWh/h (Brennwert);
-# Tabellen 22, 31 and 36
-NEP_H2_BORDER_POINTS = [
-    ("Bornholm-Lubmin", "DK", 1, "AWZ", 10.0, 0.0, 10.0, 0.0),
-    ("Ellund", "DK", 1, "Ellund", 4.3, 0.0, 24.0, 2.0),
-    (
-        "AquaDuctus (Offshore)",
-        "NO",
-        0.5,
-        "AQD Offshore SEN 1",
-        6.3,
-        0.0,
-        20.0,
-        0.0,
-    ),
-    (
-        "AquaDuctus (Offshore)",
-        "GB",
-        0.5,
-        "AQD Offshore SEN 1",
-        6.3,
-        0.0,
-        20.0,
-        0.0,
-    ),
-    ("Dornum/Emden", "NO", 1, "Emden", 0.0, 0.0, 10.0, 0.0),
-    ("Oude Statenzijl/Bunde", "NL", 1, "Oude Statenzijl", 4.0, 0.0, 4.0, 4.0),
-    ("Vlieghuis", "NL", 1, "Vlieghuis", 1.3, 0.0, 1.3, 0.0),
-    ("Elten", "NL", 1, "Elten", 3.2, 0.0, 3.2, 3.2),
-    ("Vreden", "NL", 1, "Vreden", 3.2, 0.0, 3.2, 3.2),
-    ("Eynatten", "BE", 1, "Eynatten", 4.5, 0.0, 9.0, 0.0),
-    ("Medelsheim", "FR", 1, "Medelsheim", 8.0, 0.0, 9.0, 0.0),
-    ("Freiburg", "FR", 1, "Fessenheim", 0.5, 0.0, 0.5, 0.0),
-    ("Leidingen", "FR", 1, "Leidingen", 0.2, 0.0, 0.2, 0.0),
-    ("Wallbach", "CH", 1, "Wallbach", 0.0, 0.0, 9.5, 0.0),
-    ("Oberkappel", "AT", 1, "Oberkappel", 0.0, 0.0, 0.0, 4.0),
-    ("Überackern", "AT", 1, "Überackern", 6.3, 0.8, 6.3, 2.3),
-    ("Waidhaus", "CZ", 1, "Waidhaus", 6.1, 1.8, 12.0, 6.6),
-    ("Deutschneudorf", "CZ", 1, "Deutschneudorf", 0.0, 1.2, 0.0, 0.0),
-    ("Oder-Spree", "PL", 1, "Fürstenberg (PL)", 3.7, 2.2, 8.3, 4.2),
-    ("Uckermark", "PL", 1, "Greifenhagen", 0.8, 0.6, 8.0, 0.8),
-]
+    Returns
+    -------
+    list of str
+        Kernnetz-IDs
 
-# H2 imports via converted LNG terminals (Tabelle 36, p. 143): (terminal,
-# border node, entry 2037, entry 2045) in GWh/h
-NEP_H2_LNG_TERMINALS = [
-    ("Wilhelmshaven", "Wilhelmshaven", 0.0, 8.3),
-    ("Stade", "Stade", 0.0, 7.0),
-    ("Brunsbüttel", "Brunsbüttel", 0.0, 4.4),
-]
+    """
+    changes = _table("Tabelle37_2045")
+    return changes.loc[
+        changes["change"] == "not in 2045", "kernnetz_id"
+    ].tolist()
+
+
+def nep_kernnetz_dn_2045():
+    """
+    DN of Kernnetz measures modelled differently by scenario 2 (Tabelle 37)
+
+    Returns
+    -------
+    dict
+        DN per Kernnetz-ID
+
+    """
+    changes = _table("Tabelle37_2045")
+    changes = changes[changes["change"] == "DN"]
+    return dict(zip(changes["kernnetz_id"], changes["DN"].astype(int)))
+
+
+def nep_h2_border_points():
+    """
+    H2 cross-border points, scenario 2 (Tabellen 22, 31 and 36)
+
+    Returns
+    -------
+    list of tuple
+        (GÜP, country, share, border node, entry 2037, exit 2037, entry
+        2045, exit 2045) in GWh/h (Brennwert)
+
+    """
+    return _rows(
+        "GUEP_H2",
+        [
+            "point",
+            "country",
+            "share",
+            "border_node",
+            "entry_2037",
+            "exit_2037",
+            "entry_2045",
+            "exit_2045",
+        ],
+    )
+
+
+def nep_h2_lng_terminals():
+    """
+    H2 imports via converted LNG terminals (Tabelle 36, p. 143)
+
+    Returns
+    -------
+    list of tuple
+        (terminal, border node, entry 2037, entry 2045) in GWh/h
+
+    """
+    return _rows(
+        "LNG_H2", ["terminal", "border_node", "entry_2037", "entry_2045"]
+    )
+
 
 # Ratio of the higher to the lower heating value of H2 (approval of the
 # Szenariorahmen Gas und Wasserstoff 2025, p. 23)
 NEP_H2_HHV_PER_LHV = 1.18
 
-# H2 storage of scenario 2 in GWh/h (Brennwert): (withdrawal, injection);
-# Tabellen 20, 21, 34 and 35
-NEP_H2_STORAGE = {2037: (36.0, 26.0), 2045: (53.0, 38.0)}
+
+def nep_h2_storage():
+    """
+    H2 storage of scenario 2 (Tabellen 20, 21, 34 and 35)
+
+    Returns
+    -------
+    dict
+        (withdrawal, injection) in GWh/h (Brennwert) per year
+
+    """
+    return {
+        year: (withdrawal, injection)
+        for year, withdrawal, injection in _rows(
+            "Speicher_Importe_H2",
+            ["year", "storage_withdrawal", "storage_injection"],
+        )
+    }
+
 
 # Additional withdrawal in GWh/h (Brennwert) of scenario 2 in the load case
 # "Dunkelflaute" of 2037 (NEP p. 110: 2.4 GW from four storage sites)
 NEP_H2_STORAGE_DUNKELFLAUTE = {2037: 2.4}
 
-# H2 storage projects of the market survey per federal state [MW,
-# Brennwert] (Szenariorahmen Anlage 2, category "Speicher")
-NEP_H2_STORAGE_PROJECTS = {
-    2037: {
-        "Brandenburg/Berlin": 50.0,
-        "Niedersachsen/Bremen": 18887.0,
-        "Nordrhein-Westfalen": 1451.0,
-        "Sachsen": 78.0,
-        "Sachsen-Anhalt": 566.0,
-        "Schleswig-Holstein/Hamburg": 7080.0,
-    },
-    2045: {
-        "Bayern": 2130.0,
-        "Brandenburg/Berlin": 1150.0,
-        "Hessen": 600.0,
-        "Niedersachsen/Bremen": 22750.0,
-        "Nordrhein-Westfalen": 2092.0,
-        "Sachsen": 78.0,
-        "Sachsen-Anhalt": 2371.9,
-        "Schleswig-Holstein/Hamburg": 7080.0,
-        "Thüringen": 354.0,
-    },
-}
+# Project status of the market survey counted for 2037 (from the design
+# planning on); 2045 counts all projects
+SURVEY_STATUS_2037 = (
+    "Entwurfsplanung/ Raumordnungsverfahren",
+    "Detailplanung und Genehmigungsverfahren",
+    "Beschaffung/ Bauvorbereitung und Montage/Bau",
+    "Inbetriebnahme/ Projektabschluss/Fertigstellung",
+)
+
+
+@lru_cache(maxsize=None)
+def _survey_projects(category):
+    """
+    H2 projects of the market survey per federal state (Szenariorahmen
+    Anlage 2, injection capacity of 2035)
+
+    Parameters
+    ----------
+    category : str
+        Category of the survey ("Speicher" or "Einspeisung")
+
+    Returns
+    -------
+    dict
+        Capacity [MW, Brennwert] per federal state, for 2037 and 2045
+
+    """
+    survey = pd.read_excel(
+        source_file("SR_Anlage2Gas.xlsx"), sheet_name=0, header=1
+    )
+    survey.columns = survey.columns.map(str)
+    survey = survey[
+        (survey["Kategorie"] == category)
+        & (survey["Angaben in Brennwert"] == "Einspeiseleistung H2 in MW")
+    ]
+    capacity = pd.to_numeric(survey["2035"], errors="coerce")
+    projects = {}
+    for year, status in [
+        (2037, survey["Projektstatus"].isin(SURVEY_STATUS_2037)),
+        (2045, survey["Projektstatus"].notna()),
+    ]:
+        state = (
+            capacity[status].groupby(survey.loc[status, "Bundesland"]).sum()
+        )
+        projects[year] = state[state > 0].to_dict()
+    return projects
+
+
+def nep_h2_storage_projects():
+    """
+    H2 storage projects of the market survey per federal state [MW,
+    Brennwert] (Szenariorahmen Anlage 2, category "Speicher")
+
+    Returns
+    -------
+    dict
+        Capacity per federal state, for 2037 and 2045
+
+    """
+    return _survey_projects("Speicher")
+
 
 # Federal states of the four "Dunkelflaute" storage sites (p. 110)
 NEP_H2_STORAGE_DUNKELFLAUTE_STATES = [
@@ -1568,31 +1188,33 @@ NEP_H2_STORAGE_DUNKELFLAUTE_STATES = [
     "Thüringen",
 ]
 
-# Other H2 imports of scenario 2 (LH2 and derivatives) in GWh/h
-# (Brennwert), Tabellen 21 and 35
-NEP_H2_OTHER_IMPORTS = {2037: 4.0, 2045: 21.0}
 
-# Other H2 import projects of the market survey per federal state [MW,
-# Brennwert] (Szenariorahmen Anlage 2, category "Einspeisung")
-NEP_H2_OTHER_IMPORT_PROJECTS = {
-    2037: {
-        "Brandenburg/Berlin": 33.8,
-        "Mecklenburg-Vorpommern": 143.9,
-        "Niedersachsen/Bremen": 1646.0,
-        "Nordrhein-Westfalen": 411.6,
-        "Schleswig-Holstein/Hamburg": 2135.0,
-    },
-    2045: {
-        "Bayern": 29.9,
-        "Brandenburg/Berlin": 33.8,
-        "Mecklenburg-Vorpommern": 1934.9,
-        "Niedersachsen/Bremen": 14974.6,
-        "Nordrhein-Westfalen": 637.8,
-        "Sachsen": 5.6,
-        "Sachsen-Anhalt": 655.0,
-        "Schleswig-Holstein/Hamburg": 3135.0,
-    },
-}
+def nep_h2_other_imports():
+    """
+    Other H2 imports of scenario 2 (LH2 and derivatives), Tabellen 21 and 35
+
+    Returns
+    -------
+    dict
+        Import in GWh/h (Brennwert) per year
+
+    """
+    return dict(_rows("Speicher_Importe_H2", ["year", "other_imports"]))
+
+
+def nep_h2_other_import_projects():
+    """
+    Other H2 import projects of the market survey per federal state [MW,
+    Brennwert] (Szenariorahmen Anlage 2, category "Einspeisung")
+
+    Returns
+    -------
+    dict
+        Capacity per federal state, for 2037 and 2045
+
+    """
+    return _survey_projects("Einspeisung")
+
 
 # Sites (x, y) of the other H2 imports per federal state: LNG terminals in
 # the coastal states, otherwise the largest chemical site (assumption)
@@ -1613,16 +1235,49 @@ NEP_H2_OTHER_IMPORT_SITES = {
     "Bayern": {"Burghausen": (12.8331, 48.1693)},
 }
 
-# LNG terminals for methane: (name, x, y, capacity [GWh/h]), clusters of
-# the approval of the Szenariorahmen (pp. 90-91) shared equally
-NEP_CH4_LNG_TERMINALS = [
-    ("Wilhelmshaven", 8.114101, 53.52972, 26.0),
-    ("Brunsbüttel", 9.137629, 53.900299, 17.5),
-    ("Stade", 9.496045, 53.579073, 17.5),
-    ("Lubmin", 13.615004, 54.13412, 11.5 / 3),
-    ("Mukran", 13.5856, 54.4937, 6.0 + 11.5 / 3),
-    ("Rostock", 12.118621, 54.087185, 11.5 / 3),
-]
+# Sites (x, y) of the LNG terminals for methane
+NEP_CH4_LNG_TERMINAL_SITES = {
+    "Wilhelmshaven": (8.114101, 53.52972),
+    "Brunsbüttel": (9.137629, 53.900299),
+    "Stade": (9.496045, 53.579073),
+    "Lubmin": (13.615004, 54.13412),
+    "Mukran": (13.5856, 54.4937),
+    "Rostock": (12.118621, 54.087185),
+}
 
-# Share of the LNG capacity used in the peak load case (Tabelle 19)
-NEP_CH4_LNG_USE = {2030: 1.0, 2037: 0.5, 2045: 0.0}
+
+def nep_ch4_lng_terminals():
+    """
+    LNG terminals for methane: clusters of the approval of the
+    Szenariorahmen (pp. 87-89) shared equally by their terminals
+
+    Returns
+    -------
+    list of tuple
+        (name, x, y, capacity [GWh/h])
+
+    """
+    capacity = dict.fromkeys(NEP_CH4_LNG_TERMINAL_SITES, 0)
+    for terminals, cluster in _rows(
+        "LNG_Cluster_CH4", ["terminals", "capacity"]
+    ):
+        terminals = terminals.split(", ")
+        for terminal in terminals:
+            capacity[terminal] += cluster / len(terminals)
+    return [
+        (name, x, y, capacity[name])
+        for name, (x, y) in NEP_CH4_LNG_TERMINAL_SITES.items()
+    ]
+
+
+def nep_ch4_lng_use():
+    """
+    Share of the LNG capacity used in the peak load case (Tabelle 19)
+
+    Returns
+    -------
+    dict
+        Share per year
+
+    """
+    return dict(_rows("LNG_Nutzung_CH4", ["year", "share"]))

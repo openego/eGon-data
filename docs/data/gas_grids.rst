@@ -44,6 +44,14 @@ The implementation is detailed in :py:mod:`gas_grid <egon.data.datasets.gas_grid
 :py:mod:`hydrogen_etrago.nep2025 <egon.data.datasets.hydrogen_etrago.nep2025>`
 and :py:mod:`gas_neighbours <egon.data.datasets.gas_neighbours>`.
 
+The published Excel files (Kernnetz lists of the FNB Gas, annexes of the NEP
+Gas und Wasserstoff and of its Szenariorahmen, consultation list of the
+Bundesnetzagentur, TYNDP 2024) are read unchanged from the data bundle (folders
+``hydrogen_network``, ``NEP/NEP_gas_H2`` and ``gas_data``) and downloaded from
+their source if they are missing there. The tables that the NEP only publishes
+in its PDF are read from ``NEP/NEP_gas_H2/NEP_Gas_H2_2025_tables.xlsx`` of the
+data bundle (one sheet per table, with its source).
+
 Methane grid
 ~~~~~~~~~~~~
 
@@ -97,8 +105,9 @@ e.g. Gasnetz Hamburg). The NEP drops three Kernnetz measures (KLN001-01,
 KLN025-01, KLU045-01, Anhang 2) but replaces each of them by another
 measure on nearly the same route (e.g. H2-201 Überackern-Haiming for
 KLN001-01), so they are kept as proxies of their replacements. The
-commissioning year of the NEP (Anlage 1b) replaces
-the one of the list where the NEP gives it. A pipeline is only part of a
+commissioning year of the NEP (Anlage 1b; the latest date of the NEP measures
+of a Kernnetz measure, assigned by Tabelle 11, Tabelle 13 and Anhang 9)
+replaces the one of the list where the NEP gives it. A pipeline is only part of a
 scenario if it is commissioned by the year of the scenario. The costs come
 from the investment of the list or, if not given, from the specific costs of
 a new H2 pipeline. The pipelines are not extendable.
@@ -212,7 +221,8 @@ status "Entwurfsplanung" in 2037, all projects in 2045) and placed at the
 nearest ``H2_grid`` bus of their site: the LNG terminals in the coastal states,
 as the approval of the Szenariorahmen asks [SR_GasH2_2025]_ (Wilhelmshaven and
 Stade, Brunsbüttel, Rostock and Lubmin), elsewhere the largest chemical site
-(Marl, Leuna, Schwedt, Böhlen, Burghausen; assumption). In total, the imports
+(Marl, Leuna, Schwedt, Böhlen, Burghausen; assumption). Baden-Württemberg
+(0.1 MW in the survey) has no site and is left out. In total, the imports
 are 56.3 GW in 2037 (52.9 GW abroad, 3.4 GW other imports) and 151.9 GW in
 2045 (117.4 GW abroad, 16.7 GW LNG terminals, 17.8 GW other imports) on the
 lower heating value. The capacity is fixed to the entry capacity of the NEP;

@@ -24,31 +24,32 @@ from egon.data import db
 from egon.data.datasets import load_sources_and_targets
 from egon.data.datasets.hydrogen_etrago.nep2025 import (
     DROPPED_KERNNETZ_MEASURES,
-    KERNNETZ_COMMISSIONING_YEAR,
-    NEP_CH4_NETWORK_2045,
     NEP_CH4_NETWORK_2045_NODES,
     NEP_CH4_NETWORK_YEAR,
-    NEP_H2_BORDER_POINTS,
     NEP_H2_HHV_PER_LHV,
-    NEP_H2_LNG_TERMINALS,
     NEP_H2_MEASURES_2037,
-    NEP_H2_MEASURES_2037_COMMISSIONING,
     NEP_H2_MEASURES_2037_NODES,
     NEP_H2_MEASURES_CRITERIA,
     NEP_H2_MEASURES_YEAR,
-    NEP_H2_NETWORK_2045,
     NEP_H2_NETWORK_2045_NODES,
     NEP_H2_NETWORK_YEAR,
-    NEP_H2_OTHER_IMPORT_PROJECTS,
     NEP_H2_OTHER_IMPORT_SITES,
-    NEP_H2_OTHER_IMPORTS,
-    NEP_H2_STORAGE,
     NEP_H2_STORAGE_DUNKELFLAUTE,
     NEP_H2_STORAGE_DUNKELFLAUTE_STATES,
-    NEP_H2_STORAGE_PROJECTS,
-    NEP_KERNNETZ_DN_2045,
-    NEP_KERNNETZ_NOT_IN_2045,
     NEP_SCENARIO_2045,
+    kernnetz_commissioning_year,
+    nep_ch4_network_2045,
+    nep_h2_border_points,
+    nep_h2_lng_terminals,
+    nep_h2_measures_commissioning,
+    nep_h2_measures_criterion,
+    nep_h2_network_2045,
+    nep_h2_other_import_projects,
+    nep_h2_other_imports,
+    nep_h2_storage,
+    nep_h2_storage_projects,
+    nep_kernnetz_dn_2045,
+    nep_kernnetz_not_in_2045,
 )
 from egon.data.datasets.scenario_parameters import (
     get_scenario_year,
@@ -424,8 +425,8 @@ def select_h2_pipelines(df, sheet, scn_name, h2_bus_location):
     # The network 2045 builds on the modelling result 2037 of its scenario,
     # which drops or re-dimensions some measures
     if get_scenario_year(scn_name) >= NEP_H2_NETWORK_YEAR:
-        df = df[~df["Antrags-ID"].isin(NEP_KERNNETZ_NOT_IN_2045)]
-        for measure, dn in NEP_KERNNETZ_DN_2045.items():
+        df = df[~df["Antrags-ID"].isin(nep_kernnetz_not_in_2045())]
+        for measure, dn in nep_kernnetz_dn_2045().items():
             df.loc[df["Antrags-ID"] == measure, "Nenndurchmesser \n(DN)"] = dn
     df = df.assign(**{"Planerische Inbetriebnahme": commissioning_year(df)})
     df = df[~(df["Planerische Inbetriebnahme"] > get_scenario_year(scn_name))]
@@ -764,7 +765,7 @@ def commissioning_year(df):
     """
     years = df["Planerische Inbetriebnahme"].astype(str).str.findall(r"\d{4}")
     listed = pd.to_numeric(years.str[-1], errors="coerce")
-    return df["Antrags-ID"].map(KERNNETZ_COMMISSIONING_YEAR).fillna(listed)
+    return df["Antrags-ID"].map(kernnetz_commissioning_year()).fillna(listed)
 
 
 def _to_metric(geometries):
@@ -1068,7 +1069,7 @@ def remove_ch4_pipes_in_conversion_corridors(
         epsg=4326,
     )
     methane_2045, _ = match_nep_ch4_network(
-        pipes, german_buses, NEP_CH4_NETWORK_2045, NEP_CH4_NETWORK_2045_NODES
+        pipes, german_buses, nep_ch4_network_2045(), NEP_CH4_NETWORK_2045_NODES
     )
     corridor_pipes = pipes.drop(index=list(methane_2045))
 
@@ -1283,7 +1284,7 @@ def reduce_ch4_network_to_nep(scn_name, sources, targets):
         return None
 
     keep, report = match_nep_ch4_network(
-        pipes, buses, NEP_CH4_NETWORK_2045, NEP_CH4_NETWORK_2045_NODES
+        pipes, buses, nep_ch4_network_2045(), NEP_CH4_NETWORK_2045_NODES
     )
     removable = [i for i in pipes.index if i not in keep]
     if removable:
@@ -1355,18 +1356,18 @@ def nep_h2_sections(scn_name):
             "length_km": length_km,
             "dn": dn,
             "dp": dp,
-            "build_year": NEP_H2_MEASURES_2037_COMMISSIONING.get(
+            "build_year": nep_h2_measures_commissioning().get(
                 nep_id, NEP_H2_MEASURES_YEAR
             ),
             "start_xy": NEP_H2_MEASURES_2037_NODES[start],
             "end_xy": NEP_H2_MEASURES_2037_NODES[end],
         }
-        for nep_id, start, end, kind, length_km, dn, dp, criterion in (
+        for nep_id, start, end, kind, length_km, dn, dp in (
             NEP_H2_MEASURES_2037
         )
-        if criterion in NEP_H2_MEASURES_CRITERIA
+        if nep_h2_measures_criterion().get(nep_id) in NEP_H2_MEASURES_CRITERIA
         and year
-        >= NEP_H2_MEASURES_2037_COMMISSIONING.get(nep_id, NEP_H2_MEASURES_YEAR)
+        >= nep_h2_measures_commissioning().get(nep_id, NEP_H2_MEASURES_YEAR)
     ]
     if year >= NEP_H2_NETWORK_YEAR:
         sections += [
@@ -1383,7 +1384,7 @@ def nep_h2_sections(scn_name):
                 "end_xy": NEP_H2_NETWORK_2045_NODES[end],
             }
             for number, start, end, kind, length_km, dn, dp, scenarios in (
-                NEP_H2_NETWORK_2045
+                nep_h2_network_2045()
             )
             if NEP_SCENARIO_2045 in scenarios and None not in (start, end)
         ]
@@ -1603,12 +1604,37 @@ def insert_nep_h2_sections(scn_name, sources, targets):
     return None
 
 
+def kernnetz_file(sources, key):
+    """
+    Path of a list of the H2 core network: the file of the data bundle, else
+    the file downloaded into ./datasets/h2_data
+
+    Parameters
+    ----------
+    sources : egon.data.datasets.DatasetSources
+        Sources of HydrogenGridEtrago
+    key : str
+        Key of the list in the sources
+
+    Returns
+    -------
+    pathlib.Path
+        Path of the file
+
+    """
+    path = Path(sources.files[key])
+    if path.is_file():
+        return path
+    return Path("datasets", "h2_data", path.name)
+
+
 def download_h2_grid_data():
     """
     Download Input data for H2_grid from FNB-Gas (https://fnb-gas.de/wasserstoffnetz-wasserstoff-kernnetz/)
 
     The following data for H2 are downloaded into the folder
-    ./datasets/h2_data:
+    ./datasets/h2_data if they are not in the data bundle (folder
+    hydrogen_network):
       * Links (Anlage 3: Neubau, Anlage 4: Umstellung, Anlage 2: weitere
         Leitungen), version of 2024-12-10
 
@@ -1621,10 +1647,10 @@ def download_h2_grid_data():
     path = Path("datasets/h2_data")
     os.makedirs(path, exist_ok=True)
 
-    target_file_Um = path / sources.files["converted_ch4_pipes"]
-    target_file_Neu = path / sources.files["new_constructed_pipes"]
-    target_file_Erw = (
-        path / sources.files["pipes_of_further_h2_grid_operators"]
+    target_file_Um = kernnetz_file(sources, "converted_ch4_pipes")
+    target_file_Neu = kernnetz_file(sources, "new_constructed_pipes")
+    target_file_Erw = kernnetz_file(
+        sources, "pipes_of_further_h2_grid_operators"
     )
 
     for target_file in [target_file_Neu, target_file_Um, target_file_Erw]:
@@ -1652,14 +1678,15 @@ def read_h2_excel_sheets():
 
     """
     sources, _ = load_sources_and_targets("HydrogenGridEtrago")
-    path = Path(".") / "datasets" / "h2_data"
 
-    excel_file_Um = pd.ExcelFile(path / sources.files["converted_ch4_pipes"])
+    excel_file_Um = pd.ExcelFile(
+        kernnetz_file(sources, "converted_ch4_pipes")
+    )
     excel_file_Neu = pd.ExcelFile(
-        path / sources.files["new_constructed_pipes"]
+        kernnetz_file(sources, "new_constructed_pipes")
     )
     excel_file_Erw = pd.ExcelFile(
-        path / sources.files["pipes_of_further_h2_grid_operators"]
+        kernnetz_file(sources, "pipes_of_further_h2_grid_operators")
     )
 
     df_Um = pd.read_excel(excel_file_Um, header=3)
@@ -1901,8 +1928,8 @@ def nep_h2_storage_rates(scn_name):
         if get_scenario_year(scn_name) >= NEP_H2_NETWORK_YEAR
         else 2037
     )
-    withdrawal, injection = NEP_H2_STORAGE[nep_year]
-    projects = pd.Series(NEP_H2_STORAGE_PROJECTS[nep_year], dtype=float)
+    withdrawal, injection = nep_h2_storage()[nep_year]
+    projects = pd.Series(nep_h2_storage_projects()[nep_year], dtype=float)
     rates = withdrawal * projects / projects.sum()
     dunkelflaute = NEP_H2_STORAGE_DUNKELFLAUTE.get(nep_year, 0)
     if dunkelflaute:
@@ -2112,7 +2139,7 @@ def connect_h2_grid_to_neighbour_countries(scn_name):
         exit_2037,
         entry_2045,
         exit_2045,
-    ) in NEP_H2_BORDER_POINTS:
+    ) in nep_h2_border_points():
         entry, exit_ = (
             (entry_2045, exit_2045) if year_2045 else (entry_2037, exit_2037)
         )
@@ -2269,7 +2296,7 @@ def insert_h2_imports(scn_name, border_entry, sources, targets):
     }
     german_metric = _to_metric(german_buses)
     missing = []
-    for terminal, node, entry_2037, entry_2045 in NEP_H2_LNG_TERMINALS:
+    for terminal, node, entry_2037, entry_2045 in nep_h2_lng_terminals():
         # GWh/h (Brennwert) -> MW (lower heating value)
         entry = (
             (entry_2045 if year_2045 else entry_2037)
@@ -2292,9 +2319,11 @@ def insert_h2_imports(scn_name, border_entry, sources, targets):
     # Other imports (LH2 and derivatives) at the sites of the market survey
     if not german_buses.empty:
         nep_year = NEP_H2_NETWORK_YEAR if year_2045 else 2037
-        projects = pd.Series(NEP_H2_OTHER_IMPORT_PROJECTS[nep_year])
+        # States without a site (Baden-Württemberg, 0.1 MW) are left out
+        projects = pd.Series(nep_h2_other_import_projects()[nep_year])
+        projects = projects[projects.index.isin(NEP_H2_OTHER_IMPORT_SITES)]
         other = (
-            NEP_H2_OTHER_IMPORTS[nep_year]
+            nep_h2_other_imports()[nep_year]
             * 1000
             / NEP_H2_HHV_PER_LHV
             * projects

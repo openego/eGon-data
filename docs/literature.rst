@@ -96,11 +96,11 @@ Literature
 
 .. [Kernnetz] FNB Gas: Wasserstoff-Kernnetz, lists of the approved core network, version of 10 December 2024. URL https://fnb-gas.de/wasserstoffnetz-wasserstoff-kernnetz/
 
-.. [NEP_GasH2_2025] Fernleitungsnetzbetreiber and Wasserstofftransportnetzbetreiber: Netzentwicklungsplan Gas und Wasserstoff 2025, überarbeiteter Entwurf (1 June 2026). URL https://ko-nep.de/wp-content/uploads/2024/02/2026_06_01_Ueberarbeiteter_Entwurf_NEP_Gas_Wasserstoff_2025.pdf
+.. [NEP_GasH2_2025] Fernleitungsnetzbetreiber and Wasserstofftransportnetzbetreiber: Netzentwicklungsplan Gas und Wasserstoff 2025, überarbeiteter Entwurf (1 June 2026), with Anlage 1 "Umsetzungsstand". URL https://ko-nep.de/wp-content/uploads/2024/02/2026_06_01_Ueberarbeiteter_Entwurf_NEP_Gas_Wasserstoff_2025.pdf, https://ko-nep.de/wp-content/uploads/2024/02/Anlage1_Umsetzungsstand_Methan_Wasserstoff.xlsx
 
-.. [SR_GasH2_2025] Bundesnetzagentur: Genehmigung des Szenariorahmens für den Netzentwicklungsplan Gas und Wasserstoff 2025-2037/2045 (30 April 2025). URL https://ko-nep.de/
+.. [SR_GasH2_2025] Bundesnetzagentur: Genehmigung des Szenariorahmens für den Netzentwicklungsplan Gas und Wasserstoff 2025-2037/2045 (30 April 2025). URL https://ko-nep.de/wp-content/uploads/2024/03/Genehm_SR_2025Gas.pdf
 
-.. [SR_GasH2_2025_Annexes] Fernleitungsnetzbetreiber: Szenariorahmen für den Netzentwicklungsplan Gas und Wasserstoff 2025, Anlage 2 "Ergebnisse der Marktabfrage für Wasserstoffprojekte" and Anlage 3 "Gaskraftwerksliste" (consultation, 2 September 2024). URL https://ko-nep.de/wp-content/uploads/2024/03/SR_Anlage2Gas.xlsx, https://ko-nep.de/wp-content/uploads/2024/03/SR_Anlage3Gas.xlsx
+.. [SR_GasH2_2025_Annexes] Fernleitungsnetzbetreiber (KO.NEP): Entwurf des Szenariorahmens für den Netzentwicklungsplan Gas und Wasserstoff 2025, Anlage 2 "Ergebnisse der Marktabfrage für Wasserstoffprojekte" and Anlage 3 "Gaskraftwerksliste" (submitted to the Bundesnetzagentur on 1 July 2024, consultation from 2 September 2024). URL https://ko-nep.de/wp-content/uploads/2024/03/SR_Anlage2Gas.xlsx, https://ko-nep.de/wp-content/uploads/2024/03/SR_Anlage3Gas.xlsx
 
 .. [StromVKG] Deutscher Bundestag: Gesetz zur Sicherung der Versorgungssicherheit Strom und zur Bereitstellung neuer Kapazitäten, adopted 9 July 2026 (Kraftwerksstrategie). URL https://www.bundestag.de/dokumente/textarchiv/2026/kw28-de-versorgungssicherheit-strom-1192538
 

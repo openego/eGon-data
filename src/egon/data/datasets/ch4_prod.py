@@ -25,8 +25,8 @@ from egon.data import config, db
 from egon.data.config import settings
 from egon.data.datasets import Dataset, DatasetSources, DatasetTargets
 from egon.data.datasets.hydrogen_etrago.nep2025 import (
-    NEP_CH4_LNG_TERMINALS,
-    NEP_CH4_LNG_USE,
+    nep_ch4_lng_terminals,
+    nep_ch4_lng_use,
 )
 from egon.data.datasets.scenario_parameters import (
     get_scenario_year,
@@ -71,7 +71,8 @@ class CH4Production(Dataset):
             # Einspeiseatlas of the dena (Biogaspartner), version of
             # 9 October 2025, see download_biogas_data
             "biogas_einspeiseatlas": (
-                "datasets/gas_data/20251009_Einspeiseatlas_biogaspartner.xlsx"
+                "data_bundle_egon_data/gas_data/"
+                "20251009_Einspeiseatlas_biogaspartner.xlsx"
             ),
         },
         urls={
@@ -173,12 +174,30 @@ class CH4Production(Dataset):
         }
 
 
+def einspeiseatlas_file():
+    """
+    Path of the Einspeiseatlas: the file of the data bundle, else the file
+    downloaded into ./datasets/gas_data
+
+    Returns
+    -------
+    pathlib.Path
+        Path of the file
+
+    """
+    path = Path(CH4Production.sources.files["biogas_einspeiseatlas"])
+    if path.is_file():
+        return path
+    return Path("datasets", "gas_data", path.name)
+
+
 def download_biogas_data():
     """
     Download the Einspeiseatlas of the dena (version of 9 October 2025)
 
-    The file is downloaded into ./datasets/gas_data, only if it does not
-    exist yet. For more information on this data refer to the
+    The file is downloaded into ./datasets/gas_data, only if it is neither
+    in the data bundle (folder gas_data) nor downloaded yet. For more
+    information on this data refer to the
     `Einspeiseatlas <https://www.dena.de/en/biogaspartner/translate-to-english-biomethan/translate-to-english-einspeiseatlas/>`_.
 
     Returns
@@ -186,7 +205,7 @@ def download_biogas_data():
     None
 
     """
-    target_file = Path(CH4Production.sources.files["biogas_einspeiseatlas"])
+    target_file = einspeiseatlas_file()
     if target_file.is_file():
         return
 
@@ -362,7 +381,7 @@ def load_biogas_generators(scn_name):
     # read carrier information from scnario parameter data
     scn_params = get_sector_parameters("gas", scn_name)
 
-    target_file = Path(CH4Production.sources.files["biogas_einspeiseatlas"])
+    target_file = einspeiseatlas_file()
 
     # Read-in data from csv-file
     biogas_generators_list = pd.read_excel(
@@ -475,11 +494,11 @@ def load_LNG_generators(scn_name):
         LNG terminals with the columns geom, p_nom and marginal_cost
 
     """
-    use = pd.Series(NEP_CH4_LNG_USE)
+    use = pd.Series(nep_ch4_lng_use())
     share = np.interp(get_scenario_year(scn_name), use.index, use.values)
 
     terminals = pd.DataFrame(
-        NEP_CH4_LNG_TERMINALS, columns=["name", "x", "y", "capacity"]
+        nep_ch4_lng_terminals(), columns=["name", "x", "y", "capacity"]
     )
     terminals = gpd.GeoDataFrame(
         terminals,

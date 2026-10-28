@@ -2,7 +2,6 @@
 The central module containing definition of the datasets dealing with gas neighbours
 """
 
-from pathlib import Path
 from urllib.request import urlretrieve
 
 from egon.data import config
@@ -12,6 +11,7 @@ from egon.data.datasets.gas_neighbours.gas_scenarios import (
     insert_ocgt_abroad,
     tyndp_gas_demand,
     tyndp_gas_generation,
+    tyndp2024_file,
 )
 
 
@@ -19,7 +19,8 @@ def download_tyndp2024_gas_data():
     """Download the TYNDP 2024 data of the gas sector abroad
 
     The gas Annexes C1 and E of ENTSOG and the demand scenarios of the
-    TYNDP 2024. The files are only downloaded if they do not exist yet.
+    TYNDP 2024. The files are only downloaded if they are neither in the
+    data bundle (folder gas_data) nor downloaded yet.
 
     Returns
     -------
@@ -27,7 +28,7 @@ def download_tyndp2024_gas_data():
 
     """
     for key in ["tyndp2024_annex_c1", "tyndp2024_annex_e", "tyndp2024_demand"]:
-        target_file = Path(GasNeighbours.sources.files[key])
+        target_file = tyndp2024_file(GasNeighbours.sources, key)
         if not target_file.is_file():
             target_file.parent.mkdir(parents=True, exist_ok=True)
             urlretrieve(GasNeighbours.sources.urls[key], target_file)
@@ -77,10 +78,16 @@ class GasNeighbours(Dataset):
         files={
             # TYNDP 2024 gas Annexes (ENTSOG, 18 March 2026) and demand
             # scenarios, see download_tyndp2024_gas_data
-            "tyndp2024_annex_c1": "datasets/gas_data/TYNDP_2024_Annex_C1.xlsx",
-            "tyndp2024_annex_e": "datasets/gas_data/TYNDP_2024_Annex_E.xlsx",
+            "tyndp2024_annex_c1": (
+                "data_bundle_egon_data/gas_data/TYNDP 2024_Annex C1_"
+                "Natural Gas Infrastructure Capacities.xlsx"
+            ),
+            "tyndp2024_annex_e": (
+                "data_bundle_egon_data/gas_data/"
+                "TYNDP 2024 Annex E - Analysis tables.xlsx"
+            ),
             "tyndp2024_demand": (
-                "datasets/gas_data/"
+                "data_bundle_egon_data/gas_data/"
                 "Demand_Scenarios_TYNDP_2024_After_Public_Consultation.xlsb.zip"
             ),
         },

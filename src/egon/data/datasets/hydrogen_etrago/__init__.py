@@ -383,6 +383,10 @@ class HydrogenPowerLinkEtrago(Dataset):
             "load_timeseries": "grid.egon_etrago_load_timeseries",
             "district_heating_area": "demand.egon_district_heating_areas",
         },
+        files={
+            "eGon2035_capacities": "data_bundle_egon_data/NEP/NEP_V2021_scnC2035.xlsx",
+            "reGon_capacities": "data_bundle_egon_data/NEP/NEP_V2025_scnC2037.xlsx",
+        },
     )
     targets = DatasetTargets(
         tables={
@@ -628,9 +632,9 @@ class HydrogenGridEtrago(Dataset):
             "pipes_of_further_h2_grid_operators": "https://fnb-gas.de/wp-content/uploads/2024/12/2024_12_10_Wasserstoff-Kernnetz_Anlage2_final_inoffiziell.xlsx",
         },
         files={
-            "new_constructed_pipes": "Anlage_3_Wasserstoffkernnetz_Neubau_2024_12_10.xlsx",
-            "converted_ch4_pipes": "Anlage_4_Wasserstoffkernnetz_Umstellung_2024_12_10.xlsx",
-            "pipes_of_further_h2_grid_operators": "Anlage_2_Wasserstoffkernetz_weitere_Leitungen_2024_12_10.xlsx",
+            "new_constructed_pipes": "data_bundle_egon_data/hydrogen_network/2024_12_10_Wasserstoff-Kernnetz_Anlage3_final_inoffiziell.xlsx",
+            "converted_ch4_pipes": "data_bundle_egon_data/hydrogen_network/2024_12_10_Wasserstoff-Kernnetz_Anlage4_final_inoffiziell.xlsx",
+            "pipes_of_further_h2_grid_operators": "data_bundle_egon_data/hydrogen_network/2024_12_10_Wasserstoff-Kernnetz_Anlage2_final_inoffiziell.xlsx",
         },
         tables={
             "buses": "grid.egon_etrago_bus",

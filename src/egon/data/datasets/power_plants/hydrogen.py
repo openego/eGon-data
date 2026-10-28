@@ -9,6 +9,9 @@ documentation of the gas sector (gas-fired and hydrogen power plants).
 
 """
 
+from pathlib import Path
+from urllib.request import urlretrieve
+
 from scipy.optimize import linear_sum_assignment
 from scipy.spatial import cKDTree
 from sqlalchemy.orm import sessionmaker
@@ -36,6 +39,22 @@ FREED_CARRIERS = ["Steinkohle", "Braunkohle"]
 # Distance [m] to snap MaStR units without location to a site
 SNAP_DISTANCE = 1000
 
+# Status of the reserve plants in the Kraftwerksliste of the BNetzA, not used
+# in the market model of the NEP Strom 2037/2045 (2025), Kap. 2, p. 29
+RESERVE_STATUS = [
+    "Netzreserve aufgrund § 13b EnWG",
+    "Netzreserve aufgrund von KVBG",
+    "Kapazitätsreserve aufgrund von § 13e EnWG",
+    "besonderes netztechnisches Betriebsmittel",
+]
+
+# Version of the Kraftwerksliste of the BNetzA (its URL always gives the
+# latest version)
+BNETZA_DATA_STATE = "Datenstand: 26.06.2026"
+
+# Download folder for the source files missing in the data bundle
+DOWNLOAD_FOLDER = Path("datasets", "power_plants")
+
 # Federal states as named in the target values (see
 # egon.data.datasets.power_plants.select_target) and the MaStR
 FEDERAL_STATES = {
@@ -58,16 +77,175 @@ FEDERAL_STATES = {
 }
 
 
+def source_file(sources, key):
+    """
+    Path of a source file: the file of the data bundle, else the file
+    downloaded from its URL
+
+    Parameters
+    ----------
+    sources : egon.data.datasets.DatasetSources
+        Sources of the dataset PowerPlants
+    key : str
+        Key of the file in the sources
+
+    Returns
+    -------
+    pathlib.Path
+        Path of the file
+
+    """
+    path = Path(sources.files[key])
+    if path.is_file():
+        return path
+
+    target = DOWNLOAD_FOLDER / path.name
+    if not target.is_file():
+        target.parent.mkdir(parents=True, exist_ok=True)
+        urlretrieve(sources.urls[key], target)
+        if key == "bnetza_power_plant_list":
+            header = pd.read_excel(
+                target,
+                sheet_name="Gesamtkraftwerksliste",
+                header=None,
+                nrows=7,
+            )
+            if not header.stack().astype(str).str.contains(
+                BNETZA_DATA_STATE
+            ).any():
+                target.unlink()
+                raise ValueError(
+                    f"The Kraftwerksliste at {sources.urls[key]} is not the "
+                    f"version '{BNETZA_DATA_STATE}'. Add {path} to the data "
+                    "bundle."
+                )
+    return target
+
+
+def read_nep_gas_units(sources):
+    """
+    Read the natural gas units of the power plant list of the NEP Strom
+
+    Annex 1 of the approval of the Szenariorahmen of the NEP Strom
+    2037/2045 (2025), scenario C. The reserve plants of the Kraftwerksliste
+    of the BNetzA get no capacity in 2037. Annex 3 (Gaskraftwerksliste) of
+    the draft Szenariorahmen of the NEP Gas und Wasserstoff 2025, which the
+    BNetzA used for Annex 1, flags the units at sites reported in the
+    hydrogen market survey.
+
+    Parameters
+    ----------
+    sources : egon.data.datasets.DatasetSources
+        Sources of the dataset PowerPlants
+
+    Returns
+    -------
+    pandas.DataFrame
+        Units with MaStR number, capacity in 2037 and the flag h2_site
+
+    """
+    gas = pd.read_excel(
+        source_file(sources, "nep_strom_power_plant_list"),
+        sheet_name="Erdgas-Kraftwerke",
+    ).rename(
+        columns={
+            "MaStR-Nr. der Stromerzeugungseinheit": "mastr_id",
+            "2037 Szenario 2 / B / C [MWel]": "c2037_capacity",
+        }
+    )
+    bnetza = pd.read_excel(
+        source_file(sources, "bnetza_power_plant_list"),
+        sheet_name="Gesamtkraftwerksliste",
+        header=7,
+    )
+    reserve = bnetza.EinheitMastrNummer[
+        bnetza.Kraftwerksstatus.isin(RESERVE_STATUS)
+    ]
+    gas.loc[gas.mastr_id.isin(reserve), "c2037_capacity"] = 0.0
+
+    gas_plants = pd.read_excel(
+        source_file(sources, "nep_gas_power_plant_list"), header=1
+    )
+    h2_sites = gas_plants.loc[
+        gas_plants["Standort in Marktabfrage Wasserstoff gemeldet"].eq("x"),
+        "MaStR-Nr. der Stromerzeugungseinheit",
+    ]
+    gas["h2_site"] = gas.mastr_id.isin(h2_sites)
+
+    return gas[["mastr_id", "c2037_capacity", "h2_site"]]
+
+
+def read_nep_hydrogen_projects(sources):
+    """
+    Read the hydrogen power plant projects of the power plant list of the
+    NEP Strom
+
+    Annex 1 of the approval of the Szenariorahmen of the NEP Strom
+    2037/2045 (2025), scenario C. The hydrogen market survey, Annex 2 of
+    the draft Szenariorahmen of the NEP Gas und Wasserstoff 2025, flags the
+    projects that reduce the methane demand of their site.
+
+    Parameters
+    ----------
+    sources : egon.data.datasets.DatasetSources
+        Sources of the dataset PowerPlants
+
+    Returns
+    -------
+    pandas.DataFrame
+        Projects with capacity in 2037 or 2045: name, federal state, the
+        flag h2_conversion and the capacity in 2037 and 2045
+
+    """
+    projects = pd.read_excel(
+        source_file(sources, "nep_strom_power_plant_list"),
+        sheet_name="Wasserstoff-Kraftwerke",
+    ).rename(
+        columns={
+            "Projektnummer": "name",
+            "2037 Szenario 2 / B / C [MWel]": "c2037_capacity",
+            "2045 Szenario 2 / B / C [MWel]": "c2045_capacity",
+        }
+    )
+    projects["federal_state"] = (
+        projects.Bundesland.str.replace("-", "")
+        .str.replace("ü", "ue")
+        .map(FEDERAL_STATES)
+    )
+
+    # The survey has seven rows per project with the same flag
+    survey = pd.read_excel(
+        source_file(sources, "nep_gas_h2_market_survey"), header=1
+    )
+    conversion = (
+        survey.groupby("Projekt-\nnummer")["Reduzierung des\nMethanbedarfs"]
+        .first()
+        .eq("ja")
+    )
+    projects["h2_conversion"] = projects.name.map(conversion).fillna(False)
+
+    return projects.loc[
+        projects.c2037_capacity + projects.c2045_capacity > 0,
+        [
+            "name",
+            "federal_state",
+            "h2_conversion",
+            "c2037_capacity",
+            "c2045_capacity",
+        ],
+    ]
+
+
 def select_power_plant_sites():
     """
     Select the power plant sites (MaStR locations with combustion units) and
-    add the natural gas units of the NEP 2025 list
+    add the natural gas units of the power plant list of the NEP Strom
 
     Returns
     -------
     geopandas.GeoDataFrame
         Sites with total and natural gas net capacity in MW, the natural gas
-        units of the NEP list, federal state and point geometry
+        units of the NEP Strom list, federal state and point geometry
 
     """
     from egon.data.datasets.power_plants import filter_mastr_geometry
@@ -98,18 +276,10 @@ def select_power_plant_sites():
     mastr["coal_capacity"] = mastr.capacity.where(coal, 0)
     mastr["coal_units"] = mastr.EinheitMastrNummer.where(coal)
 
-    # Natural gas units of the NEP 2025 list, capacity in the list (2037)
+    # Natural gas units of the NEP Strom list, capacity in the list (2037)
     # and in the MaStR (net capacity)
-    nep_gas = db.select_dataframe(
-        f"""
-        SELECT mastr_id, capacity, c2037_capacity, h2_site
-        FROM {sources.tables['nep_conv']}
-        WHERE carrier = 'gas'
-        AND scenario = 'reGon'
-        """
-    )
-    nep_gas = nep_gas.merge(
-        mastr[["EinheitMastrNummer", "LokationMastrNummer"]],
+    nep_gas = read_nep_gas_units(sources).merge(
+        mastr[["EinheitMastrNummer", "LokationMastrNummer", "capacity"]],
         left_on="mastr_id",
         right_on="EinheitMastrNummer",
     )
@@ -530,16 +700,7 @@ def allocate_hydrogen_power_plants():
     ).where(large, 0)
 
     # Placement of the listed projects, the same for all scenarios
-    projects = db.select_dataframe(
-        f"""
-        SELECT name, federal_state, h2_conversion,
-        c2037_capacity, c2045_capacity
-        FROM {sources.tables['nep_conv']}
-        WHERE carrier = 'hydrogen'
-        AND scenario = 'reGon'
-        AND c2037_capacity + c2045_capacity > 0
-        """
-    )
+    projects = read_nep_hydrogen_projects(sources)
     projects["h2_conversion"] = projects.h2_conversion.fillna(False).astype(
         bool
     )
@@ -669,7 +830,8 @@ def allocate_hydrogen_power_plants():
                 EgonPowerPlants(
                     sources={
                         "el_capacity": (
-                            "NEP 2025 list of power plants (Annex 1)"
+                            "NEP Strom 2037/2045 (2025) list of power plants "
+                            "(Annex 1 of the approval of the Szenariorahmen)"
                             if row.siting == "listed"
                             else "NEP Strom 2037/2045 (2025) capacity per "
                             "federal state minus listed projects"

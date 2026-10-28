@@ -46,7 +46,34 @@ from egon.data.datasets.scenario_parameters import (
 )
 from egon.data.datasets.scenario_parameters.parameters import INCLUDE_RU
 
+# Download folder of the TYNDP 2024 files missing in the data bundle
+TYNDP2024_DOWNLOAD_FOLDER = Path("datasets", "gas_data")
+
 TYNDP_PROXY_YEAR = 2035
+
+
+def tyndp2024_file(sources, key):
+    """
+    Path of a TYNDP 2024 file: the file of the data bundle, else the file
+    downloaded in download_tyndp2024_gas_data
+
+    Parameters
+    ----------
+    sources : egon.data.datasets.DatasetSources
+        Sources of GasNeighbours
+    key : str
+        Key of the file in the sources
+
+    Returns
+    -------
+    pathlib.Path
+        Path of the file
+
+    """
+    path = Path(sources.files[key])
+    if path.is_file():
+        return path
+    return TYNDP2024_DOWNLOAD_FOLDER / path.name
 
 
 def tyndp_year(scn_name):
@@ -217,7 +244,7 @@ def read_LNG_capacities(scn_name):
     """
     # Downloaded in download_tyndp2024_gas_data (GasNeighbours)
     sources, _ = load_sources_and_targets("GasNeighbours")
-    target_file = Path(sources.files["tyndp2024_annex_c1"])
+    target_file = tyndp2024_file(sources, "tyndp2024_annex_c1")
     lng = pd.read_excel(target_file, sheet_name="Annex C1_LNG", header=0)
     lng.columns = ["Country", "LEVEL", 2030, 2040, 2050, "unit"]
     lng = lng[lng["LEVEL"] == TYNDP2024_GAS_LEVEL]
@@ -246,7 +273,7 @@ def read_tyndp2024_gas_supply():
     """
     # Downloaded in download_tyndp2024_gas_data (GasNeighbours)
     sources, _ = load_sources_and_targets("GasNeighbours")
-    target_file = Path(sources.files["tyndp2024_annex_e"])
+    target_file = tyndp2024_file(sources, "tyndp2024_annex_e")
     supply = pd.read_excel(target_file, sheet_name="Supply, GWh", header=0)
     supply = supply[
         (supply["Scenario"] == TYNDP2024_GAS_SCENARIO)
@@ -512,7 +539,9 @@ def read_tyndp2024_final_demand():
 
     """
     sources, _ = load_sources_and_targets("GasNeighbours")
-    with zipfile.ZipFile(sources.files["tyndp2024_demand"]) as archive:
+    with zipfile.ZipFile(
+        tyndp2024_file(sources, "tyndp2024_demand")
+    ) as archive:
         member = next(
             name
             for name in archive.namelist()
@@ -1126,7 +1155,7 @@ def calculate_ch4_grid_capacities(scn_name):
     # Column name only, the capacity is interpolated to the scenario year
     year = tyndp_year(scn_name)
 
-    target_file = Path(sources.files["tyndp2024_annex_c1"])
+    target_file = tyndp2024_file(sources, "tyndp2024_annex_c1")
     pipe_capacities_list = pd.read_excel(
         target_file, sheet_name="Annex C1_Cross-border", header=0
     )

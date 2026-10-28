@@ -22,9 +22,9 @@ from egon.data.config import settings
 from egon.data.datasets import Dataset, DatasetSources, DatasetTargets
 from egon.data.datasets.hydrogen_etrago.h2_grid import match_nep_ch4_network
 from egon.data.datasets.hydrogen_etrago.nep2025 import (
-    NEP_CH4_NETWORK_2045,
     NEP_CH4_NETWORK_2045_NODES,
     NEP_CH4_NETWORK_YEAR,
+    nep_ch4_network_2045,
 )
 from egon.data.datasets.scenario_parameters import (
     get_scenario_year,
@@ -548,7 +548,7 @@ def german_ch4_line_pack_shares(scn_name):
             crs=4326,
         )
         keep, _ = match_nep_ch4_network(
-            pipes, buses, NEP_CH4_NETWORK_2045, NEP_CH4_NETWORK_2045_NODES
+            pipes, buses, nep_ch4_network_2045(), NEP_CH4_NETWORK_2045_NODES
         )
         pipes = pipes.loc[sorted(keep)]
 

@@ -696,13 +696,13 @@ etrago_hydrogen:
     H2_grid:
       new_constructed_pipes:
         url: 'https://fnb-gas.de/wp-content/uploads/2024/12/2024_12_10_Wasserstoff-Kernnetz_Anlage3_final_inoffiziell.xlsx'
-        path: "Anlage_3_Wasserstoffkernnetz_Neubau_2024_12_10.xlsx"
+        path: "data_bundle_egon_data/hydrogen_network/2024_12_10_Wasserstoff-Kernnetz_Anlage3_final_inoffiziell.xlsx"
       converted_ch4_pipes:
         url: 'https://fnb-gas.de/wp-content/uploads/2024/12/2024_12_10_Wasserstoff-Kernnetz_Anlage4_final_inoffiziell.xlsx'
-        path: "Anlage_4_Wasserstoffkernnetz_Umstellung_2024_12_10.xlsx"
+        path: "data_bundle_egon_data/hydrogen_network/2024_12_10_Wasserstoff-Kernnetz_Anlage4_final_inoffiziell.xlsx"
       pipes_of_further_h2_grid_operators:
         url: 'https://fnb-gas.de/wp-content/uploads/2024/12/2024_12_10_Wasserstoff-Kernnetz_Anlage2_final_inoffiziell.xlsx'
-        path: "Anlage_2_Wasserstoffkernetz_weitere_Leitungen_2024_12_10.xlsx"
+        path: "data_bundle_egon_data/hydrogen_network/2024_12_10_Wasserstoff-Kernnetz_Anlage2_final_inoffiziell.xlsx"
   targets:
     hydrogen_buses:
       schema: 'grid'

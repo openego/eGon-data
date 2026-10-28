@@ -1130,29 +1130,6 @@ def gas(scenario):
         # 130 GWh (BNetzA, Volk 2012) x (1 - 4,860/40,000): without the pipelines
         # converted to H2 (FNB Gas Kernnetz, Anlage 4, 10 Dec 2024)
 
-        # Capacity of the electrolysers per federal state [MW], upper bound of
-        # the extendable electrolysers
-        parameters["power_to_H2_capacity"] = {
-            "Baden-Württemberg": 800,
-            "Bayern": 1_000,
-            "Berlin": 1_000,
-            "Brandenburg": 300,
-            "Bremen": 100,
-            "Hamburg": 100,
-            "Hessen": 400,
-            "Mecklenburg-Vorpommern": 200,
-            "Niedersachsen": 1_000,
-            "Nordrhein-Westfalen": 1_900,
-            "Rheinland-Pfalz": 300,
-            "Saarland": 100,
-            "Sachsen": 400,
-            "Sachsen-Anhalt": 300,
-            "Schleswig-Holstein": 500,
-            "Thüringen": 100,
-        }
-        # source: NEP Strom 2035 (2021), 1. Entwurf, C 2035, "PtG" per state
-        # (data bundle NEP_V2021_scnC2035.xlsx, 8.5 GW)
-
     elif scenario == "reGon2037":
         costs = read_csv(2035)
 
@@ -1268,29 +1245,6 @@ def gas(scenario):
         }
         # source: approval of the Szenariorahmen Gas/H2 2025, p. 5-6; draft
         # Szenariorahmen (1 July 2024), Tab. 25/26 and 32
-
-        # Capacity of the electrolysers per federal state [MW], upper bound of
-        # the extendable electrolysers
-        parameters["power_to_H2_capacity"] = {
-            "Baden-Württemberg": 400,
-            "Bayern": 1_700,
-            "Berlin": 100,
-            "Brandenburg": 900,
-            "Bremen": 100,
-            "Hamburg": 200,
-            "Hessen": 400,
-            "Mecklenburg-Vorpommern": 7_400,
-            "Niedersachsen": 15_100,
-            "Nordrhein-Westfalen": 3_800,
-            "Rheinland-Pfalz": 100,
-            "Saarland": 200,
-            "Sachsen": 1_000,
-            "Sachsen-Anhalt": 2_300,
-            "Schleswig-Holstein": 6_200,
-            "Thüringen": 800,
-        }
-        # source: NEP Strom 2037/2045 (2025), 2. Entwurf, C 2037, "PtG" per state
-        # (data bundle NEP_V2025_scnC2037.xlsx, 40.7 GW)
 
     elif scenario == "reGon2045":
         costs = read_csv(2045)
@@ -1414,29 +1368,6 @@ def gas(scenario):
         }
         # source: approval of the Szenariorahmen Gas/H2 2025, p. 5-6; draft
         # Szenariorahmen (1 July 2024), Tab. 25/26 and 32
-
-        # Capacity of the electrolysers per federal state [MW], upper bound of
-        # the extendable electrolysers
-        parameters["power_to_H2_capacity"] = {
-            "Baden-Württemberg": 1_300,
-            "Bayern": 3_500,
-            "Berlin": 200,
-            "Brandenburg": 2_100,
-            "Bremen": 300,
-            "Hamburg": 200,
-            "Hessen": 1_400,
-            "Mecklenburg-Vorpommern": 10_500,
-            "Niedersachsen": 18_400,
-            "Nordrhein-Westfalen": 5_500,
-            "Rheinland-Pfalz": 300,
-            "Saarland": 200,
-            "Sachsen": 2_700,
-            "Sachsen-Anhalt": 5_000,
-            "Schleswig-Holstein": 14_500,
-            "Thüringen": 2_700,
-        }
-        # source: NEP Strom 2037/2045 (2025), 2. Entwurf, C 2045, "PtG" per state
-        # (68.8 GW); C is kept on purpose, the gas side follows the electricity side
 
     elif scenario == "status2024":
         costs = read_csv(2025)

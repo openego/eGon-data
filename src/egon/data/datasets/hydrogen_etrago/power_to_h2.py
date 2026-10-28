@@ -29,6 +29,41 @@ from egon.data.datasets.scenario_parameters import get_sector_parameters
 #: Lower heating value of hydrogen [kWh/kg]
 H2_LHV = 33.33
 
+#: Sheet of the NEP Strom (scenario C) with the electrolysers per federal
+#: state (row "zusaetzliche Verbraucher PtG", GW)
+NEP_ELECTROLYSIS_SHEETS = {
+    "eGon2035": ("eGon2035_capacities", "1.Entwurf_NEP2035_V2021"),
+    "reGon2037": ("reGon_capacities", "2.Entwurf_NEP2037C_V2025"),
+    "reGon2045": ("reGon_capacities", "2.Entwurf_NEP2045C_V2025"),
+}
+
+
+def nep_electrolysis_capacity(scn_name, sources):
+    """
+    Capacity of the electrolysers per federal state of the NEP Strom
+
+    Parameters
+    ----------
+    scn_name : str
+        Name of the scenario
+    sources : DatasetSources
+        Sources of HydrogenPowerLinkEtrago
+
+    Returns
+    -------
+    dict or None
+        Capacity [MW] per federal state, None for scenarios without NEP
+
+    """
+    if scn_name not in NEP_ELECTROLYSIS_SHEETS:
+        return None
+    file, sheet = NEP_ELECTROLYSIS_SHEETS[scn_name]
+    nep = pd.read_excel(sources.files[file], sheet_name=sheet, index_col=0)
+    capacity = nep.loc[
+        "zusaetzliche Verbraucher PtG", "Baden-Württemberg":"Thüringen"
+    ]
+    return (capacity * 1000).to_dict()
+
 
 def bound_coproducts_by_electrolysis(
     power_to_H2, power_to_Heat, efficiency, waste_heat_share
@@ -82,7 +117,7 @@ def scale_electrolysis_to_nep(
         to the H2 bus) and "p_nom_max"
     capacity : dict or None
         Capacity of the electrolysers per federal state [MW], see
-        "power_to_H2_capacity" in the scenario parameters
+        :func:`nep_electrolysis_capacity`
     scn_name : str
         Name of the scenario
     sources : DatasetSources
@@ -996,7 +1031,7 @@ def insert_power_to_h2_to_power():
             # the function
             power_to_H2 = scale_electrolysis_to_nep(
                 power_to_H2,
-                scn_params_gas.get("power_to_H2_capacity"),
+                nep_electrolysis_capacity(SCENARIO_NAME, sources),
                 SCENARIO_NAME,
                 sources,
                 crs=METRIC_CRS,
