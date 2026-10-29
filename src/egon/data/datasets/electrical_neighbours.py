@@ -1449,8 +1449,10 @@ def tyndp_generation():
         insert_storage_tyndp(capacities, scenario)
 
 
-def _select_tyndp_demand_member(zip_file, scenario, year):
-    """Select the electricity market demand workbook for one TYNDP 2024
+def _select_tyndp_demand_member(
+    zip_file, scenario, year, demand_type="ELECTRICITY_MARKET"
+):
+    """Select one electricity demand workbook for one TYNDP 2024
     scenario/year from the downloaded demand-profiles zip archive.
 
     Parameters
@@ -1461,16 +1463,19 @@ def _select_tyndp_demand_member(zip_file, scenario, year):
         TYNDP scenario folder, e.g. "DE" for Distributed Energy
     year : int
         TYNDP anchor year (2030, 2040 or 2050)
+    demand_type : str
+        "ELECTRICITY_MARKET" (demand at the market node) or
+        "ELECTRICITY_PROSUMER" (demand of the prosumer zone "XX00RETE")
 
     Returns
     -------
     str
-        Name of the electricity market demand .xlsx member
+        Name of the electricity demand .xlsx member
 
     """
     target = (
         f"Demand Profiles/{scenario}/{year}/"
-        f"ELECTRICITY_MARKET {scenario} {year}.xlsx"
+        f"{demand_type} {scenario} {year}.xlsx"
     )
     candidates = [name for name in zip_file.namelist() if name == target]
     if len(candidates) != 1:
@@ -1542,7 +1547,9 @@ TYNDP_DEMAND_CALENDAR_YEAR = 2018
 
 
 @functools.lru_cache(maxsize=None)
-def read_tyndp_demand(year, nodes, weather_year):
+def read_tyndp_demand(
+    year, nodes, weather_year, demand_type="ELECTRICITY_MARKET"
+):
     """Read hourly electricity demand for one TYNDP 2024 anchor year
 
     Reads climate year 2009 demand timeseries from the "Distributed
@@ -1562,20 +1569,28 @@ def read_tyndp_demand(year, nodes, weather_year):
         TYNDP node codes to read demand timeseries for
     weather_year : int
         Weather year of the scenario, the profiles are aligned to
+    demand_type : str
+        "ELECTRICITY_MARKET" or "ELECTRICITY_PROSUMER", see
+        :py:func:`_select_tyndp_demand_member`
 
     Returns
     -------
     dict
-        Mapping of node code to a pandas.Series of 8760 hourly MW values
+        Mapping of node code to a pandas.Series of 8760 hourly MW values.
+        Nodes without a sheet in the workbook are left out. The prosumer
+        workbook has no sheet for nodes without a prosumer zone (e.g.
+        CH00, the Norwegian nodes, LUB1 and LUF1).
 
     """
     outer_zip = zipfile.ZipFile(
         ElectricalNeighbours.sources.files["tyndp_demand"]
     )
-    member = _select_tyndp_demand_member(outer_zip, "DE", year)
+    member = _select_tyndp_demand_member(outer_zip, "DE", year, demand_type)
+    workbook = pd.ExcelFile(io.BytesIO(outer_zip.read(member)))
+    nodes = [node for node in nodes if node in workbook.sheet_names]
     sheets = pd.read_excel(
-        io.BytesIO(outer_zip.read(member)),
-        sheet_name=list(nodes),
+        workbook,
+        sheet_name=nodes,
         skiprows=11,
     )
     return {
@@ -1593,6 +1608,14 @@ def tyndp_demand():
     scenarios that are not status-quo scenarios. The data for 2030, 2040
     and 2050 is interpolated (or, outside that range, extrapolated)
     linearly to each scenario's year.
+
+    TYNDP 2024 splits each country into a market node ("XX00") and a
+    prosumer zone ("XX00RETE"), which is only connected to its market
+    node. The market node supplies the prosumer zone, but this supply is
+    an exchange between the nodes and not part of the market demand.
+    Therefore the demand of both files, "ELECTRICITY_MARKET" and
+    "ELECTRICITY_PROSUMER", is added to the AC load of the market node's
+    bus.
 
     Returns
     -------
@@ -1643,8 +1666,20 @@ def tyndp_demand():
             "weather_year"
         ]
 
+        # Prosumer demand uses the same anchor years (2030/2040/2050) and
+        # interpolation as the market demand. It is gross demand: rooftop
+        # PV of the prosumer zones is added as separate generators, so it
+        # follows the model's weather year and can be curtailed. Home
+        # batteries and hybrid heat pumps of the prosumer zones are not
+        # part of this demand and are not modelled.
         dataset_lo = read_tyndp_demand(lo, nodes, weather_year)
         dataset_hi = read_tyndp_demand(hi, nodes, weather_year)
+        prosumer_lo = read_tyndp_demand(
+            lo, nodes, weather_year, "ELECTRICITY_PROSUMER"
+        )
+        prosumer_hi = read_tyndp_demand(
+            hi, nodes, weather_year, "ELECTRICITY_PROSUMER"
+        )
 
         # Connect to database
         engine = db.engine()
@@ -1686,19 +1721,32 @@ def tyndp_demand():
             load_id = db.next_etrago_id("load")
 
             # Some etrago bus_ids represent multiple TYNDP nodes,
-            # in this cases the loads are summed
-            data_lo = pd.Series(index=range(8760), data=0.0)
+            # in this cases the loads are summed. Market and prosumer
+            # demand go into one AC load per bus, so code reading the
+            # foreign AC loads does not need to change. Nodes without a
+            # prosumer zone have no prosumer sheet and add nothing.
+            market_lo = pd.Series(index=range(8760), data=0.0)
+            market_hi = pd.Series(index=range(8760), data=0.0)
+            pros_lo = pd.Series(index=range(8760), data=0.0)
+            pros_hi = pd.Series(index=range(8760), data=0.0)
             for node in bus_nodes:
-                data_lo = dataset_lo[node] + data_lo
-
-            data_hi = pd.Series(index=range(8760), data=0.0)
-            for node in bus_nodes:
-                data_hi = dataset_hi[node] + data_hi
+                market_lo = dataset_lo[node] + market_lo
+                market_hi = dataset_hi[node] + market_hi
+                if node in prosumer_lo:
+                    pros_lo = prosumer_lo[node] + pros_lo
+                if node in prosumer_hi:
+                    pros_hi = prosumer_hi[node] + pros_hi
 
             # Interpolate/extrapolate linearly to the scenario's year
-            data_target = (data_lo + (data_hi - data_lo) * weight).clip(
-                lower=0
-            )[:8760]
+            market_target = market_lo + (market_hi - market_lo) * weight
+            pros_target = pros_lo + (pros_hi - pros_lo) * weight
+            data_target = (market_target + pros_target).clip(lower=0)[:8760]
+
+            logger.info(
+                f"TYNDP demand {scenario}, {bus}: market "
+                f"{market_target[:8760].sum() / 1e6:.1f} TWh, prosumer "
+                f"{pros_target[:8760].sum() / 1e6:.1f} TWh"
+            )
 
             entry = etrago.EgonPfHvLoad(
                 scn_name=scenario,
