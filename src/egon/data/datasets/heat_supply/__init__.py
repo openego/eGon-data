@@ -20,6 +20,7 @@ from egon.data.datasets.heat_supply.district_heating import (
 from egon.data.datasets.heat_supply.geothermal import potential_germany
 from egon.data.datasets.heat_supply.individual_heating import (
     cascade_heat_supply_indiv,
+    create_hp_output_tables,
 )
 from egon.data.metadata import (
     context,
@@ -27,6 +28,15 @@ from egon.data.metadata import (
     license_egon_data_odbl,
     meta_metadata,
     sources,
+)
+from egon_validation import ReferentialIntegrityValidation
+from egon.data.validation import TableValidation
+from egon.data.validation.rules.custom.sanity import (
+    DistrictHeatingSupplyAreaReference,
+    DistrictHeatingSupplyChpCapacity,
+    DistrictHeatingSupplyScenarioTarget,
+    DistrictHeatingSupplyUniqueCarrier,
+    IndividualHeatingSupplyHeatPumpTarget,
 )
 
 # Will later be imported from another file.
@@ -370,15 +380,15 @@ class HeatSupply(Dataset):
 
 
     *Resulting tables*
-      * :py:class:`demand.egon_district_heating <egon.data.datasets.heat_supply.EgonDistrictHeatingSupply>` is created and filled
-      * :py:class:`demand.egon_individual_heating <egon.data.datasets.heat_supply.EgonIndividualHeatingSupply>` is created and filled
+      * :py:class:`supply.egon_district_heating <egon.data.datasets.heat_supply.EgonDistrictHeatingSupply>` is created and filled
+      * :py:class:`supply.egon_individual_heating <egon.data.datasets.heat_supply.EgonIndividualHeatingSupply>` is created and filled
 
     """
 
     #:
     name: str = "HeatSupply"
     #:
-    version: str = "0.0.19"
+    version: str = "0.0.21"
 
     sources = DatasetSources(
         tables={
@@ -408,13 +418,130 @@ class HeatSupply(Dataset):
             version=self.version,
             dependencies=dependencies,
             tasks=(
-                create_tables,
+                # create_hp_output_tables is owned by this dataset rather than
+                # by HeatPumpsStatusQuo/HeatPumpsCascade: both of those write
+                # the same three tables, so a create task in either of them is
+                # either registered twice (duplicate task id) or absent when
+                # its own scenario type is not configured. Creating them here,
+                # upstream of both, is unconditional and race-free. It is a
+                # separate task from create_tables because create_tables DROPS
+                # its tables, which must never happen to the heat pump output.
+                {
+                    create_tables,
+                    create_hp_output_tables,
+                },
                 {
                     district_heating,
                     individual_heating,
                 },
                 metadata,
             ),
+            validation={
+                "data_quality": [
+                    TableValidation(
+                        table_name="supply.egon_district_heating",
+                        geometry_columns=["geometry"],
+                        data_type_columns={
+                            "index": "integer",
+                            "district_heating_id": "integer",
+                            "carrier": "character varying",
+                            "category": "character varying",
+                            "capacity": "double precision",
+                            "geometry": "geometry",
+                            "scenario": "character varying",
+                        },
+                        # geometry is covered by the whole-table rule;
+                        # the per-column rule compares with 'NaN', which
+                        # PostGIS cannot do for geometries
+                        not_null_columns=[
+                            "district_heating_id",
+                            "carrier",
+                            "category",
+                            "capacity",
+                            "scenario",
+                        ],
+                        value_set_columns={
+                            "carrier": [
+                                "CHP",
+                                "gas_boiler",
+                                "geo_thermal",
+                                "heat_pump",
+                                "resistive_heater",
+                                "solar_thermal_collector",
+                            ],
+                            "category": ["small", "medium", "large"],
+                            "scenario": [
+                                "eGon2035",
+                                "reGon2037",
+                                "reGon2045",
+                                "status2024",
+                            ],
+                        },
+                    ),
+                    DistrictHeatingSupplyAreaReference(
+                        table="supply.egon_district_heating",
+                        rule_id="SANITY_DH_SUPPLY_AREA_REFERENCE",
+                    ),
+                    DistrictHeatingSupplyUniqueCarrier(
+                        table="supply.egon_district_heating",
+                        rule_id="SANITY_DH_SUPPLY_UNIQUE_CARRIER",
+                    ),
+                    DistrictHeatingSupplyScenarioTarget(
+                        table="supply.egon_district_heating",
+                        rule_id="SANITY_DH_SUPPLY_SCENARIO_TARGET",
+                        rtol=0.01,
+                    ),
+                    DistrictHeatingSupplyChpCapacity(
+                        table="supply.egon_district_heating",
+                        rule_id="SANITY_DH_SUPPLY_CHP_CAPACITY",
+                        rtol=0.001,
+                    ),
+                    TableValidation(
+                        table_name="supply.egon_individual_heating",
+                        geometry_columns=["geometry"],
+                        data_type_columns={
+                            "index": "integer",
+                            "mv_grid_id": "integer",
+                            "carrier": "character varying",
+                            "category": "character varying",
+                            "capacity": "double precision",
+                            "geometry": "geometry",
+                            "scenario": "character varying",
+                        },
+                        # geometry is covered by the whole-table rule;
+                        # the per-column rule compares with 'NaN', which
+                        # PostGIS cannot do for geometries
+                        not_null_columns=[
+                            "mv_grid_id",
+                            "carrier",
+                            "capacity",
+                            "scenario",
+                        ],
+                        value_set_columns={
+                            "carrier": ["heat_pump", "gas_boiler"],
+                            "scenario": [
+                                "eGon2035",
+                                "reGon2037",
+                                "reGon2045",
+                                "status2024",
+                            ],
+                        },
+                    ),
+                    ReferentialIntegrityValidation(
+                        table="supply.egon_individual_heating",
+                        rule_id="FK_MV_GRID.egon_individual_heating",
+                        fk_column="mv_grid_id",
+                        ref_table="grid.egon_mv_grid_district",
+                        ref_column="bus_id",
+                    ),
+                    IndividualHeatingSupplyHeatPumpTarget(
+                        table="supply.egon_individual_heating",
+                        rule_id="SANITY_INDIV_SUPPLY_HEAT_PUMP_TARGET",
+                        rtol=0.01,
+                    ),
+                ]
+            },
+            proceed_on_validation_failure=True,
         )
 
 

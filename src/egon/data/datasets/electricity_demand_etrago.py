@@ -61,6 +61,20 @@ def demands_per_bus(scenario):
                 WHERE scn_name = '{scenario}'""",
     )
 
+    for name, curves in (
+        ("cts_curves", cts_curves),
+        ("osm_curves", ind_curves_osm),
+        ("sites_curves", ind_curves_sites),
+        ("household_curves", hh_curves),
+    ):
+        if curves.empty:
+            raise ValueError(
+                "No electricity demand curves found in"
+                f" {ElectricalLoadEtrago.sources.tables[name]} for scenario"
+                f" '{scenario}'. Every source of this dataset has to be"
+                " filled before the demands are aggregated per bus."
+            )
+
     # Create one df by appending all imported dataframes
 
     demand_curves = pd.concat(
@@ -269,7 +283,7 @@ class ElectricalLoadEtrago(Dataset):
     #:
     name: str = "Electrical_load_etrago"
     #:
-    version: str = "0.0.10"
+    version: str = "0.0.11"
 
     sources = DatasetSources(
         tables={
