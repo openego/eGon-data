@@ -1020,7 +1020,13 @@ def _select_tyndp_capacity_member(zip_file):
     return candidates[0]
 
 
-def _extract_output_block(raw, output_type, header_row=5, data_start_row=6):
+def _extract_output_block(
+    raw,
+    output_type,
+    header_row=5,
+    data_start_row=6,
+    rete_generators=("Solar (Photovoltaic)",),
+):
     """Extract one "Output type" block from a TYNDP 2024 "Yearly Outputs" sheet
 
     The sheet is laid out with node/zone identifiers as columns and a
@@ -1028,6 +1034,16 @@ def _extract_output_block(raw, output_type, header_row=5, data_start_row=6):
     Capacities [MW]", "Annual generation [GWh]", ...). The "Output type"
     label is only populated on each block's first row, so it needs to be
     forward-filled before filtering to the requested block.
+
+    Besides the market nodes ("FR00"), TYNDP 2024 has prosumer zones
+    ("FR00RETE") with rooftop PV, home batteries and hybrid heat pumps,
+    which are only connected to their market node. Only the technologies
+    in `rete_generators` are kept and assigned to the market node, e.g.
+    the rooftop PV of "FR00RETE" is added to the PV of "FR00". Home
+    batteries are left out: they sit behind the meter and only shift
+    prosumer demand in time (2040: about 20 TWh/a in the modelled
+    countries). The hybrid heat pumps are no electrical capacities (only
+    a few full-load hours) and are left out as well.
 
     Parameters
     ----------
@@ -1039,20 +1055,23 @@ def _extract_output_block(raw, output_type, header_row=5, data_start_row=6):
         Row index holding the node/zone column identifiers
     data_start_row : int
         First row index of the data (below the header row)
+    rete_generators : tuple
+        Technologies ("Generator_ID") taken from the prosumer zones
 
     Returns
     -------
     pandas.DataFrame
-        Columns: Node/Line, Generator_ID, Value
+        Columns: Node/Line, Generator_ID, Value. Values of a prosumer zone
+        are summed with those of its market node.
 
     """
     header = raw.iloc[header_row]
+    # Columns with a space are EV and SRES nodes. Their capacities are not
+    # used (EV "batteries" are the vehicle fleet).
     node_cols = [
         c
         for c in raw.columns[2:]
-        if isinstance(header[c], str)
-        and " " not in header[c]
-        and not header[c].endswith("RETE")
+        if isinstance(header[c], str) and " " not in header[c]
     ]
 
     data = raw.iloc[data_start_row:].copy()
@@ -1068,8 +1087,23 @@ def _extract_output_block(raw, output_type, header_row=5, data_start_row=6):
     long_df["Node/Line"] = long_df["_col"].map(header)
     long_df = long_df.rename(columns={1: "Generator_ID"})
 
-    return long_df[["Node/Line", "Generator_ID", "Value"]].dropna(
-        subset=["Value"]
+    # Keep only the selected technologies of the prosumer zones and
+    # assign them to their market node ("FR00RETE" -> "FR00")
+    is_rete = long_df["Node/Line"].str.endswith("RETE")
+    long_df = long_df[
+        ~is_rete | long_df["Generator_ID"].isin(rete_generators)
+    ].copy()
+    long_df["Node/Line"] = long_df["Node/Line"].str.replace(
+        r"RETE$", "", regex=True
+    )
+    long_df["Value"] = pd.to_numeric(long_df["Value"], errors="coerce")
+
+    # Sum market node and prosumer zone, so that each node/technology
+    # pair stays unique
+    return (
+        long_df.dropna(subset=["Value"])
+        .groupby(["Node/Line", "Generator_ID"], as_index=False)
+        .Value.sum()
     )
 
 
