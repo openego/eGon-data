@@ -33,7 +33,7 @@ class ChpEtrago(Dataset):
     #:
     name: str = "ChpEtrago"
     #:
-    version: str = "0.0.9"
+    version: str = "0.0.10"
     sources = DatasetSources(
         tables={
             "chp_table": "supply.egon_chp_plants",
@@ -97,7 +97,10 @@ def insert_scenario(scenario):
         JOIN {ChpEtrago.sources.tables['district_heating_areas']} b
         ON a.district_heating_area_id = b.area_id
         JOIN grid.egon_etrago_bus c
-        ON ST_Transform(ST_Centroid(b.geom_polygon), 4326) = c.geom
+        ON ST_DWithin(
+            ST_Transform(ST_Centroid(b.geom_polygon), 4326),
+            c.geom,
+            0.00000001)
         WHERE a.scenario='{scenario}'
         AND b.scenario = '{scenario}'
         AND c.scn_name = '{scenario}'

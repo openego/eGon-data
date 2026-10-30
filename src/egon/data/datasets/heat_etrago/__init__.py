@@ -529,7 +529,8 @@ def insert_central_gas_boilers(scenario):
         capacity, a.carrier, scenario as scn_name
         FROM {sources.tables["district_heating_supply"]} a
         JOIN {targets.tables["heat_buses"]} b
-        ON ST_Transform(ST_Centroid(geometry), 4326) = geom
+        ON ST_DWithin(
+            ST_Transform(ST_Centroid(geometry), 4326), geom, 0.00000001)
         JOIN {sources.tables["ch4_voronoi"]} c
         ON ST_Intersects(ST_Transform(a.geometry, 4326), c.geom)
         WHERE scenario = '{scenario}'
@@ -614,7 +615,8 @@ def insert_rural_gas_boilers(scenario):
         capacity, a.carrier, scenario as scn_name
         FROM {sources.tables["individual_heating_supply"]} a
         JOIN {targets.tables["heat_buses"]} b
-        ON ST_Transform(ST_Centroid(a.geometry), 4326) = b.geom
+        ON ST_DWithin(
+            ST_Transform(ST_Centroid(a.geometry), 4326), b.geom, 0.00000001)
         JOIN {sources.tables["ch4_voronoi"]} c
         ON ST_Intersects(ST_Transform(a.geometry, 4326), c.geom)
         WHERE scenario = '{scenario}'
@@ -730,7 +732,7 @@ class HeatEtrago(Dataset):
     #:
     name: str = "HeatEtrago"
     #:
-    version: str = "0.0.16"
+    version: str = "0.0.17"
 
     sources = DatasetSources(
         tables={
