@@ -357,10 +357,16 @@ def lines_between_foreign_countries(scenario, sources, targets, central_buses):
         "line", len(lines_to_add.index)
     )
 
+    # PyPSA-Eur splits DC links into a forward and a reversed link at zero
+    # cost and ties their capacities with a constraint which eTraGo does not
+    # have, so they are merged into one lossless bidirectional link
     links_to_add = network.links[
         (network.links.bus0.isin(central_buses_pypsaeur.index))
         & (network.links.bus1.isin(central_buses_pypsaeur.index))
+        & (~network.links.reversed)
     ]
+    links_to_add.loc[:, "p_min_pu"] = -1
+    links_to_add.loc[:, "efficiency"] = 1
 
     links_to_add.loc[:, "lifetime"] = get_sector_parameters(
         "electricity", scenario
@@ -2522,7 +2528,7 @@ class ElectricalNeighbours(Dataset):
     #:
     name: str = "ElectricalNeighbours"
     #:
-    version: str = "0.0.20"
+    version: str = "0.0.21"
 
     sources = DatasetSources(
         tables={
