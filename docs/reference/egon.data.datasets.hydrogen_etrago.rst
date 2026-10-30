@@ -8,6 +8,7 @@ hydrogen\_etrago
    egon.data.datasets.hydrogen_etrago.bus
    egon.data.datasets.hydrogen_etrago.h2_grid
    egon.data.datasets.hydrogen_etrago.h2_to_ch4
+   egon.data.datasets.hydrogen_etrago.nep2025
    egon.data.datasets.hydrogen_etrago.power_to_h2
    egon.data.datasets.hydrogen_etrago.storage
 

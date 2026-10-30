@@ -214,7 +214,7 @@ In the neighboring countries
 
 In the scenario eGon2035, the gas turbines capacities abroad comes from the
 TYNDP 2035 [TYNDP]_, the implementation is detailed in :py:func:`eGon2035.tyndp_gas_generation
-<egon.data.datasets.gas_neighbours.eGon2035.tyndp_gas_generation>`.
+<egon.data.datasets.gas_neighbours.gas_scenarios.tyndp_gas_generation>`.
 
 In the scenario eGon100RE the gas turbines capacities in the neighboring
 countries are taken directly from the PyPSA-eur-sec run.

@@ -9,9 +9,9 @@ after all data generation is complete, but before the final validation report.
 from egon_validation import ArrayCardinalityValidation
 
 from egon.data.datasets import Dataset
-from egon.data.validation import (
-    TableValidation,
-    resolve_boundary_dependence,
+from egon.data.validation import TableValidation, resolve_boundary_dependence
+from egon.data.validation.rules.custom.sanity.gas import (
+    final_validation_rules as gas_final_validation_rules,
 )
 
 
@@ -292,6 +292,7 @@ class FinalValidations(Dataset):
                             ],
                             "carrier": [
                                 "CH4",
+                                "H2",
                                 "O2",
                                 "OCGT",
                                 "biomass",
@@ -1065,6 +1066,7 @@ class FinalValidations(Dataset):
                         ],
                     ),
                 ],
+                **gas_final_validation_rules(),
             },
             # Continue pipeline even if validations fail
             proceed_on_validation_failure=True,
