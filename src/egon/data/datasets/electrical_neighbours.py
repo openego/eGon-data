@@ -171,9 +171,11 @@ def central_buses_pypsaeur(sources, scenario):
     ]
     network = prepared_network()
 
+    # FR6 is Corsica, which is only connected to Italy
     df = network.buses[
         (network.buses.carrier == "AC")
         & (network.buses.country.isin(wanted_countries))
+        & (~network.buses.index.str.contains("FR6"))
     ]
 
     return df
@@ -2520,7 +2522,7 @@ class ElectricalNeighbours(Dataset):
     #:
     name: str = "ElectricalNeighbours"
     #:
-    version: str = "0.0.19"
+    version: str = "0.0.20"
 
     sources = DatasetSources(
         tables={
