@@ -28,7 +28,10 @@ def hts_to_etrago(scenario):
                  SELECT bus_id, area_id, id FROM
                  {sources.tables["heat_buses"]}
                  JOIN {sources.tables["district_heating_areas"]}
-                 ON ST_Transform(ST_Centroid(geom_polygon), 4326) = geom
+                 ON ST_DWithin(
+                    ST_Transform(ST_Centroid(geom_polygon), 4326),
+                    geom,
+                    0.00000001)
                  WHERE carrier = '{carrier}'
                  AND scenario='{scenario}'
                  AND scn_name = '{scenario}'
@@ -226,7 +229,7 @@ class HtsEtragoTable(Dataset):
     #:
     name: str = "HtsEtragoTable"
     #:
-    version: str = "0.0.9"
+    version: str = "0.0.10"
 
     sources = DatasetSources(
         tables={
