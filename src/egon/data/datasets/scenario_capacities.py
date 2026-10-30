@@ -247,6 +247,7 @@ def insert_capacities_per_federal_state_nep():
         "PV-Batteriespeicher": "home_battery",
         "Großbatteriespeicher": "BESS",
         "Wasserstoff": "hydrogen",
+        "zusaetzliche Verbraucher PtG": "power_to_H2",
     }
     # 'Elektromobilitaet gesamt': 'transport',
     # 'Elektromobilitaet privat': 'transport'}
@@ -360,6 +361,9 @@ def insert_capacities_per_federal_state_nep():
             # version 2021, page 47)
             data.loc[data.carrier == "residential_rural_heat_pump", bl] *= 5e-6
             data.loc[data.carrier == "residential_rural_heat_pump", "component"] = "link"
+
+            # Electrolysers are links
+            data.loc[data.carrier == "power_to_H2", "component"] = "link"
 
             # Storage carriers, mislabeled "generator" by the default above
             data.loc[

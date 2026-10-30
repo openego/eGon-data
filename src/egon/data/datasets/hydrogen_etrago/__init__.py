@@ -373,7 +373,6 @@ class HydrogenPowerLinkEtrago(Dataset):
 
     sources = DatasetSources(
         tables={
-            "federal_states": "boundaries.vg250_lan",
             "buses": "grid.egon_etrago_bus",
             "links": "grid.egon_etrago_link",
             "H2_AC_map": "grid.egon_etrago_ac_h2",
@@ -382,10 +381,6 @@ class HydrogenPowerLinkEtrago(Dataset):
             "loads": "grid.egon_etrago_load",
             "load_timeseries": "grid.egon_etrago_load_timeseries",
             "district_heating_area": "demand.egon_district_heating_areas",
-        },
-        files={
-            "eGon2035_capacities": "data_bundle_egon_data/NEP/NEP_V2021_scnC2035.xlsx",
-            "reGon_capacities": "data_bundle_egon_data/NEP/NEP_V2025_scnC2037.xlsx",
         },
     )
     targets = DatasetTargets(

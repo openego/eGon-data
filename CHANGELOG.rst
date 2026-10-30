@@ -170,10 +170,10 @@ Changed
   scenario handling. Remove deprecated scenarios. Describe features of gas demand 
   in documentation.
   `#1446 <https://github.com/openego/eGon-data/issues/1446>`_
-* Adapt the gas_sector_coupling TaskGroup to the reGon scenarios. Limit the
-  electrolyzers to the capacity of the NEP Strom per federal state. Couple
-  H2<->CH4 processes to the buses of the H2 core network. Remove H2 feed-in
-  and oxygen links.
+* Adapt the gas_sector_coupling TaskGroup to the reGon scenarios. Write the
+  electrolyzer capacity of the NEP Strom per federal state in the scenario
+  capacities. Couple H2<->CH4 processes to the buses of the H2 core network.
+  Remove H2 feed-in and oxygen links.
   `#1452 <https://github.com/openego/eGon-data/issues/1452>`_
 * Allocate the hydrogen power plants of the reGon scenarios to power plant
   sites, following various measures (conversion of natural gas plants, new builds

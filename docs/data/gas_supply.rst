@@ -79,27 +79,25 @@ Electrolysis, fuel cells and their co-products
 **Electrolysis** (``power_to_H2``) is an extendable *link* from an AC bus
 (substation of the HV/MV or EHV level) to an ``H2_grid`` or ``H2`` bus. The
 candidates are the substations within 5 km (HV/MV) or 20 km (EHV) of a
-pipeline or an ``H2`` bus. The capacity of all electrolysers of a federal
-state is limited to the capacity of the NEP Strom (row "zusaetzliche
-Verbraucher PtG" of the NEP files of the data bundle; eGon2035: 8.5 GW,
-NEP Strom 2035 [NEP2021]_; reGon2037: 40.7 GW and reGon2045: 68.8 GW,
-scenario C of the NEP Strom 2037/2045 [NEP2025]_). The electricity side
-(scenario C) sets the electrolysers and the gas side follows it: scenario 2 of
-the NEP Gas und Wasserstoff 2025 [NEP_GasH2_2025]_ assumes 42 GW (2037) and
-58 GW (2045), in line with scenario B of the NEP Strom, so reGon2045 has about
-11 GW more domestic electrolysis than the NEP Gas und Wasserstoff. Within a
-state it is distributed over the links in proportion to their connection level
-(120 MW at HV/MV, 5000 MW at EHV substations). If the substations of a state
-can not host its capacity, this is reported and the state keeps less. The
-efficiency (LHV) comes from the NEP Strom (0.70 in 2037) and the literature,
-the costs from the technology data of the Danish Energy Agency for renewable
-fuels [DEA_RF]_.
+pipeline or an ``H2`` bus. Each link is limited by its connection level
+(120 MW at HV/MV, 5000 MW at EHV substations), so the optimisation decides
+where the electrolysers are built. The capacity of the NEP Strom per federal
+state (row "zusaetzliche Verbraucher PtG" of the NEP files of the data bundle;
+reGon2037: 40.7 GW and reGon2045: 68.8 GW, scenario C of the NEP Strom
+2037/2045 [NEP2025]_) is stored with the other capacities of the NEP in
+``supply.egon_scenario_capacities`` (carrier ``power_to_H2``), for a
+constraint per federal state in eTraGo. The electricity side (scenario C) sets
+the electrolysers and the gas side follows it: scenario 2 of the NEP Gas und
+Wasserstoff 2025 [NEP_GasH2_2025]_ assumes 42 GW (2037) and 58 GW (2045), in
+line with scenario B of the NEP Strom, so reGon2045 has about 11 GW more
+domestic electrolysis than the NEP Gas und Wasserstoff. The efficiency (LHV)
+comes from the NEP Strom (0.70 in 2037) and the literature, the costs from the
+technology data of the Danish Energy Agency for renewable fuels [DEA_RF]_.
 
 H2 buses with industrial hydrogen demand that the core network does not reach
 (``H2`` buses at CH4 nodes, only in eGon2035, see the gas demand section) and
 that have no electrolyser candidate get an electrolyser at the nearest
-substation. It counts towards the NEP Strom capacity of the federal state; if
-the state capacity is too small, the demand at such a bus may not be met.
+substation. It counts towards the NEP Strom capacity of the federal state.
 
 **Fuel cells** (``H2_to_power``) are extendable links in the opposite
 direction at the same locations.

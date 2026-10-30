@@ -15,7 +15,7 @@ These links are modelling:
 
 """
 
-from shapely.geometry import LineString, MultiLineString, Point
+from shapely.geometry import LineString, MultiLineString
 from shapely.strtree import STRtree
 from sqlalchemy import text
 import geopandas as gpd
@@ -28,42 +28,6 @@ from egon.data.datasets.scenario_parameters import get_sector_parameters
 
 #: Lower heating value of hydrogen [kWh/kg]
 H2_LHV = 33.33
-
-#: Sheet of the NEP Strom (scenario C) with the electrolysers per federal
-#: state (row "zusaetzliche Verbraucher PtG", GW)
-NEP_ELECTROLYSIS_SHEETS = {
-    "eGon2035": ("eGon2035_capacities", "1.Entwurf_NEP2035_V2021"),
-    "reGon2037": ("reGon_capacities", "2.Entwurf_NEP2037C_V2025"),
-    "reGon2045": ("reGon_capacities", "2.Entwurf_NEP2045C_V2025"),
-}
-
-
-def nep_electrolysis_capacity(scn_name, sources):
-    """
-    Capacity of the electrolysers per federal state of the NEP Strom
-
-    Parameters
-    ----------
-    scn_name : str
-        Name of the scenario
-    sources : DatasetSources
-        Sources of HydrogenPowerLinkEtrago
-
-    Returns
-    -------
-    dict or None
-        Capacity [MW] per federal state, None for scenarios without NEP
-
-    """
-    if scn_name not in NEP_ELECTROLYSIS_SHEETS:
-        return None
-    file, sheet = NEP_ELECTROLYSIS_SHEETS[scn_name]
-    nep = pd.read_excel(sources.files[file], sheet_name=sheet, index_col=0)
-    capacity = nep.loc[
-        "zusaetzliche Verbraucher PtG", "Baden-Württemberg":"Thüringen"
-    ]
-    return (capacity * 1000).to_dict()
-
 
 def bound_coproducts_by_electrolysis(
     power_to_H2, power_to_Heat, efficiency, waste_heat_share
@@ -101,94 +65,6 @@ def bound_coproducts_by_electrolysis(
         )
 
     return power_to_Heat
-
-
-def scale_electrolysis_to_nep(
-    power_to_H2, capacity, scn_name, sources, crs=4326
-):
-    """
-    Limit the electrolysers to the capacity of the NEP per federal state,
-    distributed by connection level
-
-    Parameters
-    ----------
-    power_to_H2 : pandas.DataFrame
-        Electrolyser links with the columns "topo" (line from the AC bus
-        to the H2 bus) and "p_nom_max"
-    capacity : dict or None
-        Capacity of the electrolysers per federal state [MW], see
-        :func:`nep_electrolysis_capacity`
-    scn_name : str
-        Name of the scenario
-    sources : DatasetSources
-        Sources of HydrogenPowerLinkEtrago
-    crs : int
-        EPSG code of the column "topo"
-
-    Returns
-    -------
-    pandas.DataFrame
-        The electrolyser links with the new p_nom_max
-
-    """
-    if capacity is None:
-        print(
-            f"Warning: no NEP capacity of the electrolysers for {scn_name}, "
-            "the links are only limited by their connection level."
-        )
-        return power_to_H2
-
-    if power_to_H2.empty:
-        return power_to_H2
-
-    target = pd.Series(capacity, dtype=float)
-
-    # Federal state of the AC bus (nearest, for the coast and the border)
-    links = gpd.GeoDataFrame(
-        index=power_to_H2.index,
-        geometry=[Point(line.coords[0]) for line in power_to_H2["topo"]],
-        crs=crs,
-    ).to_crs(3035)
-    states = db.select_geodataframe(
-        f"""
-        SELECT gen, geometry AS geom
-        FROM {sources.tables['federal_states']}
-        WHERE gf = 4
-        """,
-        geom_col="geom",
-        epsg=3035,
-    )
-    located = gpd.sjoin_nearest(links, states[["gen", "geom"]], how="left")
-    located = located[~located.index.duplicated(keep="first")]
-    # A link without a state would silently keep its connection limit
-    if located["gen"].isna().any():
-        raise ValueError(
-            f"{scn_name}: {located['gen'].isna().sum()} electrolysers could "
-            "not be assigned to a federal state (check the CRS of 'topo')."
-        )
-
-    power_to_H2 = power_to_H2.copy()
-    connection_limit = power_to_H2["p_nom_max"].astype(float)
-
-    for state, index in located.groupby("gen").groups.items():
-        capacity = target.get(state, 0.0)
-        hostable = connection_limit[index].sum()
-        factor = min(1.0, capacity / hostable) if hostable > 0 else 0.0
-
-        power_to_H2.loc[index, "p_nom_max"] = connection_limit[index] * factor
-
-        print(
-            f"{scn_name}, {state}: electrolysers limited to "
-            f"{min(capacity, hostable):.0f} of {capacity:.0f} MW (NEP) "
-            f"over {len(index)} links"
-            + (
-                f" - the substations can only host {hostable:.0f} MW"
-                if capacity > hostable
-                else ""
-            )
-        )
-
-    return power_to_H2
 
 
 def insert_power_to_h2_to_power():
@@ -1026,15 +902,6 @@ def insert_power_to_h2_to_power():
             heat_links = find_heat_connection(potential_locations)
             power_to_H2, H2_to_power, power_to_Heat = create_link_dataframes(
                 potential_locations, heat_links
-            )
-            # Electrolysers: capacity of the NEP per federal state, see
-            # the function
-            power_to_H2 = scale_electrolysis_to_nep(
-                power_to_H2,
-                nep_electrolysis_capacity(SCENARIO_NAME, sources),
-                SCENARIO_NAME,
-                sources,
-                crs=METRIC_CRS,
             )
             # Waste heat co-product: no more than the electrolysers produce
             power_to_Heat = bound_coproducts_by_electrolysis(
