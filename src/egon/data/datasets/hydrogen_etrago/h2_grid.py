@@ -307,6 +307,7 @@ def insert_h2_pipelines(scn_name):
 
     # connect neighbour countries to H2_grid
     border_entry = connect_h2_grid_to_neighbour_countries(scn_name)
+    remove_isolated_h2_buses_abroad(scn_name, targets)
 
     # supply of the hydrogen imports at the entry points of the NEP
     insert_h2_imports(scn_name, border_entry, sources, targets)
@@ -2342,6 +2343,38 @@ def connect_h2_grid_to_neighbour_countries(scn_name):
     if not links:
         return pd.Series(dtype=float)
     return pd.DataFrame(links).groupby("bus1")["entry"].sum()
+
+
+def remove_isolated_h2_buses_abroad(scn_name, targets):
+    """
+    Delete the H2 buses abroad without a cross-border point of the NEP
+
+    Parameters
+    ----------
+    scn_name : str
+        Name of the scenario
+    targets : DatasetTargets
+        Targets of HydrogenGridEtrago
+
+    Returns
+    -------
+    None
+
+    """
+    db.execute_sql(
+        f"""
+        DELETE FROM {targets.tables["buses"]}
+        WHERE carrier = 'H2'
+        AND scn_name = '{scn_name}'
+        AND country != 'DE'
+        AND bus_id NOT IN
+            (SELECT bus0 FROM {targets.tables["hydrogen_links"]}
+            WHERE scn_name = '{scn_name}')
+        AND bus_id NOT IN
+            (SELECT bus1 FROM {targets.tables["hydrogen_links"]}
+            WHERE scn_name = '{scn_name}');
+        """
+    )
 
 
 def insert_h2_imports(scn_name, border_entry, sources, targets):

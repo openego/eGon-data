@@ -612,6 +612,9 @@ class HydrogenGridEtrago(Dataset):
       * :py:class:`grid.egon_etrago_generator
       <egon.data.datasets.etrago_setup.EgonPfHvGenerator>` is extended
         (H2 imports)
+      * :py:class:`grid.egon_etrago_bus
+      <egon.data.datasets.etrago_setup.EgonPfHvBus>` is reduced
+        (H2 buses abroad without a cross-border point)
 
     """
 
@@ -643,6 +646,7 @@ class HydrogenGridEtrago(Dataset):
         tables={
             "hydrogen_links": "grid.egon_etrago_link",
             "generators": "grid.egon_etrago_generator",
+            "buses": "grid.egon_etrago_bus",
         },
     )
 

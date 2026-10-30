@@ -214,6 +214,8 @@ capacities of the NEP are Brennwert; they are divided by 1.18
 [SR_GasH2_2025]_ to the lower heating value of the model (2037 entry 52.9 GW
 and exit 5.6 GW, 2045 entry 117.4 GW and exit 25.7 GW). AquaDuctus ("Norway/UK"
 in the NEP) is split equally between NO and GB, Dornum/Emden is assigned to NO.
+The hydrogen buses of countries without a border point (LU, SE, the bus of
+Northern Ireland and, in 2037, CH) are removed.
 
 The hydrogen buses abroad have no supply of their own, so the imports are
 modeled as ``H2`` generators: at the bus of each country with the entry
