@@ -336,7 +336,7 @@ charging point is installed at that site.
 The used approach is for each use case shortly described in the following:
 
 * Home charging: The allocation of home charging stations is based on the number of apartments in each
-  100 x 100 m grid given by the Census 2011 [Census]_. The cell with the highest
+  100 x 100 m grid given by the Census 2022 [Census]_. The cell with the highest
   number of apartments receives the highest attractivity.
 * Work charging: The allocation of work charging stations is based on the area classification obtained from
   OpenStreetMap [OSM]_ using the landuse key. Work charging stations are allocated to areas
