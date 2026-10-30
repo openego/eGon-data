@@ -52,6 +52,16 @@ Added
   floor chain, district heating overlap and the energy balance of the time
   series. Replaces the scenario-dependent row count of the peak load table.
   `#1526 <https://github.com/openego/eGon-data/issues/1526>`_
+* Add validation rules for HGVCharging: formal checks of the site,
+  charging point and profile tables; site counts, annual energy, connection
+  power and grid assignment per scenario; references between sites,
+  charging points, events and profiles; the event properties the flex model
+  relies on, the event energy and the slot chains; and for the eTraGo
+  output one flex model per MV grid district and HV site with exactly one
+  link, store and driving load, link power, store capacity, driving and
+  highway-day load energy per AC bus, timeseries and scenario coverage.
+  The event rules share one aggregate query per scenario.
+  `#1526 <https://github.com/openego/eGon-data/issues/1526>`_
 * Add dataset EthosBuilda, importing the ETHOS.BUILDA synthetic building
   stock from Zenodo
   `#1310 <https://github.com/openego/eGon-data/issues/1310>`_
@@ -295,6 +305,11 @@ Bug Fixes
   `#1568 <https://github.com/openego/eGon-data/issues/1568>`_
 * Fix district heating areas lost by exact geometry joins with heat buses
   `#1568 <https://github.com/openego/eGon-data/issues/1568>`_
+* Stop the eMobility MIV dataset from deleting the HGV flexibility stores:
+  ``delete_model_data_from_db`` removed every ``battery_storage`` store on a
+  German bus, including HGVCharging's on its ``HGV_charger`` buses. It now
+  deletes only stores on MIV's own ``Li_ion`` buses
+  `#1526 <https://github.com/openego/eGon-data/issues/1526>`_
 
 Version 2.0.0 (2025-08-20)
 ==========================
