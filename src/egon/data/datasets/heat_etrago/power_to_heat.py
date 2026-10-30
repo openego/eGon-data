@@ -30,7 +30,7 @@ def insert_individual_power_to_heat(scenario):
         WHERE link_id IN (
             SELECT link_id FROM {targets.tables["heat_links"]}
         WHERE carrier IN ('individual_heat_pump', 'rural_heat_pump',
-                          'rural_resisitive_heater')
+                          'rural_resistive_heater')
         AND scn_name = '{scenario}')
         AND scn_name = '{scenario}'
         """)
