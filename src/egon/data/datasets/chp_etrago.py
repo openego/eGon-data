@@ -33,7 +33,7 @@ class ChpEtrago(Dataset):
     #:
     name: str = "ChpEtrago"
     #:
-    version: str = "0.0.8"
+    version: str = "0.0.9"
     sources = DatasetSources(
         tables={
             "chp_table": "supply.egon_chp_plants",
@@ -58,6 +58,15 @@ class ChpEtrago(Dataset):
 
 
 def insert_scenario(scenario):
+
+    # Gas CHP links start at the gas bus, so p_nom and the marginal cost
+    # refer to the gas input, see the OCGT in power_etrago.match_ocgt
+    gas_parameters = get_sector_parameters("gas", scenario)
+    efficiency_el = gas_parameters["efficiency"]["central_gas_CHP"]
+    efficiency_heat = gas_parameters["efficiency"]["central_gas_CHP_heat"]
+    marginal_cost_chp = (
+        gas_parameters["marginal_cost"]["chp_gas"] * efficiency_el
+    )
 
     db.execute_sql(f"""
         DELETE FROM {ChpEtrago.targets.tables['link']}
@@ -115,7 +124,9 @@ def insert_scenario(scenario):
                 "bus1": chp_dh.loc[chp_link_dh, "electrical_bus_id"].astype(
                     int
                 ),
-                "p_nom": chp_dh.loc[chp_link_dh, "el_capacity"],
+                "p_nom": chp_dh.loc[chp_link_dh, "el_capacity"]
+                / efficiency_el,
+                "efficiency": efficiency_el,
                 "carrier": "central_gas_CHP",
             },
         ),
@@ -125,9 +136,7 @@ def insert_scenario(scenario):
     chp_el["link_id"] = db.next_etrago_id("link", len(chp_el))
 
     # Add marginal cost which is only VOM in case of gas chp
-    chp_el["marginal_cost"] = get_sector_parameters("gas", scenario)[
-        "marginal_cost"
-    ]["chp_gas"]
+    chp_el["marginal_cost"] = marginal_cost_chp
 
     # Insert into database
     chp_el.to_postgis(
@@ -145,7 +154,9 @@ def insert_scenario(scenario):
                 "scn_name": scenario,
                 "bus0": chp_dh.loc[chp_link_dh, "ch4_bus_id"].astype(int),
                 "bus1": chp_dh.loc[chp_link_dh, "heat_bus_id"].astype(int),
-                "p_nom": chp_dh.loc[chp_link_dh, "th_capacity"],
+                "p_nom": chp_dh.loc[chp_link_dh, "th_capacity"]
+                / efficiency_heat,
+                "efficiency": efficiency_heat,
                 "carrier": "central_gas_CHP_heat",
             },
         ),
@@ -251,7 +262,9 @@ def insert_scenario(scenario):
                 "bus1": chp_industry.loc[
                     chp_link_ind, "electrical_bus_id"
                 ].astype(int),
-                "p_nom": chp_industry.loc[chp_link_ind, "el_capacity"],
+                "p_nom": chp_industry.loc[chp_link_ind, "el_capacity"]
+                / efficiency_el,
+                "efficiency": efficiency_el,
                 "carrier": "industrial_gas_CHP",
             },
         ),
@@ -261,9 +274,7 @@ def insert_scenario(scenario):
     chp_el_ind["link_id"] = db.next_etrago_id("link", len(chp_el_ind))
 
     # Add marginal cost which is only VOM in case of gas chp
-    chp_el_ind["marginal_cost"] = get_sector_parameters("gas", scenario)[
-        "marginal_cost"
-    ]["chp_gas"]
+    chp_el_ind["marginal_cost"] = marginal_cost_chp
 
     chp_el_ind.to_postgis(
         ChpEtrago.targets.get_table_name("link"),

@@ -1067,6 +1067,13 @@ def gas(scenario):
             "H2_feedin": 1,
             "H2_to_CH4": read_costs(costs, "methanation", "efficiency"),
             "OCGT": read_costs(costs, "OCGT", "efficiency"),
+            "central_gas_CHP": read_costs(
+                costs, "central gas CHP", "efficiency"
+            ),
+            "central_gas_CHP_heat": read_costs(
+                costs, "central gas CHP", "efficiency"
+            )
+            / read_costs(costs, "central gas CHP", "c_v"),
             "power_to_Heat": 0.2,  # overall efficiency (20% electrical Input converted into waste-heat); source: project internal assumption Fraunhofer ISE
             "power_to_O2": 0.04,  # O2-transfer efficiency; source:  Sayed Sadat, Modeling Regional Utilization of the electrolysers Co-Products Oxygen and Heat in Germany, 2024
         }
@@ -1175,6 +1182,13 @@ def gas(scenario):
             "CH4_to_H2": read_costs(costs, "SMR", "efficiency"),
             "H2_to_CH4": read_costs(costs, "methanation", "efficiency"),
             "OCGT": read_costs(costs, "OCGT", "efficiency"),
+            "central_gas_CHP": read_costs(
+                costs, "central gas CHP", "efficiency"
+            ),
+            "central_gas_CHP_heat": read_costs(
+                costs, "central gas CHP", "efficiency"
+            )
+            / read_costs(costs, "central gas CHP", "c_v"),
             "power_to_Heat": 0.2,  # source: project internal assumption Fraunhofer ISE
             "power_to_O2": 0.015,  # source:  Sayed Sadat, Modeling Regional Utilization of the electrolysers Co-Products Oxygen and Heat in Germany, 2024
         }
@@ -1315,6 +1329,13 @@ def gas(scenario):
         # Insert effciencies in p.u.
         parameters["efficiency"] = {
             "OCGT": read_costs(costs, "OCGT", "efficiency"),
+            "central_gas_CHP": read_costs(
+                costs, "central gas CHP", "efficiency"
+            ),
+            "central_gas_CHP_heat": read_costs(
+                costs, "central gas CHP", "efficiency"
+            )
+            / read_costs(costs, "central gas CHP", "c_v"),
         }
 
     else:
