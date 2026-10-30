@@ -148,6 +148,9 @@ Changed
   `#1483 <https://github.com/openego/eGon-data/issues/1483>`_
 * Allign Methodology for laoding NEP target values for Battery storage for all scenarios
   `#1471 <https://github.com/openego/eGon-data/issues/1471>`_
+* Attach the data center loads to existing AC buses and drop the dedicated
+  data center buses and connection lines
+  `#1557 <https://github.com/openego/eGon-data/issues/1557>`_
 
 
 Bug Fixes
