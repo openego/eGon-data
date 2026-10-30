@@ -6,6 +6,25 @@ from egon.data.datasets import Dataset, DatasetSources, DatasetTargets
 from egon.data.datasets.power_etrago.match_ocgt import (
     insert_open_cycle_gas_turbines,
 )
+from egon.data.validation.rules.custom.sanity import (
+    OcgtCapacity,
+    OcgtNepCapacity,
+    OcgtParameters,
+    OcgtPositiveCapacity,
+    OcgtScenarioCoverage,
+)
+
+#: Scenarios the validation rules are built for; a scenario the run does
+#: not produce is skipped by the rules themselves.
+SCENARIOS = ["status2024", "eGon2035", "reGon2037", "reGon2045"]
+
+#: Scenario tag and capacity column of the NEP list of conventional power
+#: plants per future scenario; status2024 has no such reference.
+NEP_REFERENCE = {
+    "eGon2035": ("eGon2035", "c2035_capacity"),
+    "reGon2037": ("reGon", "c2037_capacity"),
+    "reGon2045": ("reGon", "c2045_capacity"),
+}
 
 
 class OpenCycleGasTurbineEtrago(Dataset):
@@ -29,7 +48,7 @@ class OpenCycleGasTurbineEtrago(Dataset):
     #:
     name: str = "OpenCycleGasTurbineEtrago"
     #:
-    version: str = "0.0.4"
+    version: str = "0.0.5"
 
     sources = DatasetSources(
         tables={
@@ -51,4 +70,50 @@ class OpenCycleGasTurbineEtrago(Dataset):
             version=self.version,
             dependencies=dependencies,
             tasks=(insert_open_cycle_gas_turbines,),
+            validation={
+                "data_quality": [
+                    OcgtScenarioCoverage(
+                        table="grid.egon_etrago_link",
+                        rule_id="SANITY_OCGT_SCENARIOS",
+                    ),
+                    *[
+                        OcgtCapacity(
+                            table="grid.egon_etrago_link",
+                            rule_id=f"SANITY_OCGT_CAPACITY.{scn}",
+                            scenario=scn,
+                        )
+                        for scn in SCENARIOS
+                    ],
+                    *[
+                        OcgtPositiveCapacity(
+                            table="grid.egon_etrago_link",
+                            rule_id=f"SANITY_OCGT_P_NOM.{scn}",
+                            scenario=scn,
+                        )
+                        for scn in SCENARIOS
+                    ],
+                    *[
+                        OcgtParameters(
+                            table="grid.egon_etrago_link",
+                            rule_id=f"SANITY_OCGT_PARAMETERS.{scn}",
+                            scenario=scn,
+                        )
+                        for scn in SCENARIOS
+                    ],
+                    *[
+                        OcgtNepCapacity(
+                            table="grid.egon_etrago_link",
+                            rule_id=f"SANITY_OCGT_NEP_CAPACITY.{scn}",
+                            scenario=scn,
+                            nep_scenario=nep_scenario,
+                            capacity_column=capacity_column,
+                        )
+                        for scn, (
+                            nep_scenario,
+                            capacity_column,
+                        ) in NEP_REFERENCE.items()
+                    ],
+                ]
+            },
+            proceed_on_validation_failure=True,
         )
