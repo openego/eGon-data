@@ -33,6 +33,12 @@ from egon.data import config, db
 from egon.data.config import settings
 from egon.data.datasets import Dataset, DatasetSources, DatasetTargets
 from egon.data.datasets.electrical_neighbours import central_buses_pypsaeur
+from egon.data.datasets.hydrogen_etrago.h2_grid import (
+    connect_ch4_islands,
+    reduce_ch4_network_to_nep,
+)
+from egon.data.datasets.hydrogen_etrago.nep2025 import NEP_CH4_NETWORK_YEAR
+from egon.data.datasets.scenario_parameters import get_scenario_year
 from egon.data.datasets.scenario_parameters.parameters import INCLUDE_RU
 
 
@@ -958,6 +964,11 @@ def insert_gas_data(scn_name):
         :py:func:`insert_gas_buses_abroad`
       * Insert the CH4 links representing the CH4 pipeline into the
         database with the function :py:func:`insert_gas_pipeline_list`
+      * From 2045, reduce the pipelines in Germany to the methane network
+        of the NEP with the function :py:func:`reduce_ch4_network_to_nep
+        <egon.data.datasets.hydrogen_etrago.h2_grid.reduce_ch4_network_to_nep>`
+        and connect its isolated parts with :py:func:`connect_ch4_islands
+        <egon.data.datasets.hydrogen_etrago.h2_grid.connect_ch4_islands>`
       * Remove the isolated CH4 buses directly from the database using
         the function :py:func:`remove_isolated_gas_buses`
 
@@ -981,6 +992,12 @@ def insert_gas_data(scn_name):
         gas_nodes_list, abroad_gas_nodes_list, scn_name
     )
     insert_gas_pipeline_list(gas_pipeline_list, scn_name)
+
+    # From 2045 only the methane network of the NEP remains, its isolated
+    # parts connected; the buses left without a pipeline are removed below
+    if get_scenario_year(scn_name) >= NEP_CH4_NETWORK_YEAR:
+        reduce_ch4_network_to_nep(scn_name, GasNodesAndPipes.targets)
+        connect_ch4_islands(scn_name, GasNodesAndPipes.targets)
 
     remove_isolated_gas_buses(scn_name)
 
@@ -1166,7 +1183,7 @@ class GasNodesAndPipes(Dataset):
                         "status2024": 1,
                         "eGon2035": 11,
                         "reGon2037": 11,
-                        "reGon2045": 11,
+                        "reGon2045": 8,
                     },
                 ),
                 *for_each_scenario(
@@ -1182,8 +1199,9 @@ class GasNodesAndPipes(Dataset):
                         "reGon2045": 12,
                     },
                 ),
-                # The pipes as inserted here; HydrogenGridEtrago removes the
-                # ones converted to H2 afterwards
+                # The pipes as inserted here (from 2045 the NEP network);
+                # HydrogenGridEtrago removes the ones converted to H2
+                # afterwards
                 *for_each_scenario(
                     GasComponentTotal,
                     "SANITY_GAS_CH4_PIPES_DE",
@@ -1194,7 +1212,7 @@ class GasNodesAndPipes(Dataset):
                         "status2024": 0,
                         "eGon2035": 13,
                         "reGon2037": 13,
-                        "reGon2045": 13,
+                        "reGon2045": 7,
                     },
                 ),
                 *for_each_scenario(
@@ -1208,7 +1226,7 @@ class GasNodesAndPipes(Dataset):
                         "status2024": 0,
                         "eGon2035": 1494.608,
                         "reGon2037": 1494.608,
-                        "reGon2045": 1494.608,
+                        "reGon2045": 773.438,
                     },
                 ),
                 *for_each_scenario(

@@ -153,7 +153,7 @@ def _interpolate_tyndp2024_gas(values_by_year, scn_name):
     weight = (year - lo) / (hi - lo)
     return (
         values_by_year[lo] + (values_by_year[hi] - values_by_year[lo]) * weight
-    )
+    ).clip(lower=0)
 
 
 countries = [
@@ -305,8 +305,7 @@ def calc_capacities(scn_name):
 
     For each neighbouring country, the capacity (peak) and the production
     over the year (mean) of TYNDP 2024 Annex E are interpolated to the year
-    of the scenario, plus the LNG import capacities of Annex C1. In
-    reGon2045 only biomethane is kept.
+    of the scenario, plus the LNG import capacities of Annex C1.
 
     Parameters
     ----------
@@ -368,7 +367,6 @@ def calc_capacities(scn_name):
     grouped_capacities = pd.DataFrame(
         {
             "cap_2035": (conv_peak_y + bio_peak_y + lng) * conversion_factor,
-            "cap_bio_2035": bio_peak_y * conversion_factor,
             "e_nom_max": total_avg * conversion_factor * 8760,
             "share_LNG_2035": (lng / total_avg).fillna(0),
             "share_conv_pipe_2035": (conv_avg_y / total_avg).fillna(0),
@@ -377,16 +375,6 @@ def calc_capacities(scn_name):
     )
     grouped_capacities.index.name = "index"
     grouped_capacities = grouped_capacities.reset_index()
-
-    # Only biomethane for reGon2045, drop the LNG and conventional-pipe shares
-    if scn_name == "reGon2045":
-        grouped_capacities["cap_2035"] = grouped_capacities["cap_bio_2035"]
-        grouped_capacities["e_nom_max"] = grouped_capacities["cap_2035"] * 8760
-        grouped_capacities["share_LNG_2035"] = 0.0
-        grouped_capacities["share_conv_pipe_2035"] = 0.0
-        grouped_capacities["share_bio_2035"] = 1.0
-
-    grouped_capacities = grouped_capacities.drop(columns=["cap_bio_2035"])
 
     # Add extra-EU pipe-supply generators for Norway (and Russia if
     # INCLUDE_RU) from Annex E's "CH4 Pipe Supply" category.
@@ -413,8 +401,7 @@ def calc_capacities(scn_name):
     df_conv_2035.index.name = "index"
     df_conv_2035 = df_conv_2035.reset_index()
 
-    if scn_name != "reGon2045":
-        grouped_capacities = pd.concat([grouped_capacities, df_conv_2035])
+    grouped_capacities = pd.concat([grouped_capacities, df_conv_2035])
 
     # drop countries with no capacity at all (e.g. Switzerland has
     # neither domestic CH4 production nor LNG import capacity)

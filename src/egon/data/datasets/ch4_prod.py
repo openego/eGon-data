@@ -262,6 +262,25 @@ def load_NG_generators(scn_name):
         NG_generators_list["country_code"].str.match("DE")
     ]
 
+    # Insert p_nom
+    p_nom = []
+    for index, row in NG_generators_list.iterrows():
+        param = ast.literal_eval(row["param"])
+        p_nom.append(param["max_supply_M_m3_per_d"])
+
+    conversion_factor = 437.5  # MCM/day to MWh/h
+    NG_generators_list = NG_generators_list.assign(
+        p_nom=[i * conversion_factor for i in p_nom]
+    )
+
+    # The domestic production of the scenario (at full load over the year)
+    # is shared over the sites in Germany, before a test boundary
+    NG_generators_list["p_nom"] *= (
+        scn_params["max_gas_generation_overtheyear"]["CH4"]
+        / 8760
+        / NG_generators_list["p_nom"].sum()
+    )
+
     # Cut data to federal state if in testmode
     NUTS1 = []
     for index, row in NG_generators_list.iterrows():
@@ -306,15 +325,6 @@ def load_NG_generators(scn_name):
     NG_generators_list = NG_generators_list.rename(
         columns={"geometry": "geom"}
     ).set_geometry("geom", crs=4326)
-
-    # Insert p_nom
-    p_nom = []
-    for index, row in NG_generators_list.iterrows():
-        param = ast.literal_eval(row["param"])
-        p_nom.append(param["max_supply_M_m3_per_d"])
-
-    conversion_factor = 437.5  # MCM/day to MWh/h
-    NG_generators_list["p_nom"] = [i * conversion_factor for i in p_nom]
 
     # Add missing columns
     NG_generators_list["marginal_cost"] = scn_params["marginal_cost"]["CH4"]

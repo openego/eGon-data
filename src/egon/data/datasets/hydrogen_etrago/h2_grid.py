@@ -298,10 +298,6 @@ def insert_h2_pipelines(scn_name):
                 scn_name, conversions, sources, targets
             )
 
-    # Keep only the methane network of the NEP
-    if get_scenario_year(scn_name) >= NEP_CH4_NETWORK_YEAR:
-        reduce_ch4_network_to_nep(scn_name, sources, targets)
-
     # Sections of the hydrogen network of the NEP beyond the core network
     # (measures up to 2037, additional sections 2045)
     insert_nep_h2_sections(scn_name, sources, targets)
@@ -1241,7 +1237,7 @@ def match_nep_ch4_network(
     return keep, pd.DataFrame(rows).set_index("section")
 
 
-def reduce_ch4_network_to_nep(scn_name, sources, targets):
+def reduce_ch4_network_to_nep(scn_name, targets):
     """
     Reduce the CH4 pipelines in Germany to the methane network of the NEP.
 
@@ -1249,10 +1245,8 @@ def reduce_ch4_network_to_nep(scn_name, sources, targets):
     ----------
     scn_name : str
         Name of the scenario
-    sources : DatasetSources
-        Sources of HydrogenGridEtrago
     targets : DatasetTargets
-        Targets of HydrogenGridEtrago
+        Targets of GasNodesAndPipes
 
     Returns
     -------
@@ -1261,7 +1255,7 @@ def reduce_ch4_network_to_nep(scn_name, sources, targets):
     """
     buses = db.select_geodataframe(
         f"""
-        SELECT bus_id, geom FROM {sources.tables["buses"]}
+        SELECT bus_id, geom FROM {targets.tables["buses"]}
         WHERE scn_name = '{scn_name}' AND carrier = 'CH4' AND country = 'DE'
         """,
         index_col="bus_id",
@@ -1269,7 +1263,7 @@ def reduce_ch4_network_to_nep(scn_name, sources, targets):
     )
     links = db.select_geodataframe(
         f"""
-        SELECT link_id, bus0, bus1, p_nom, geom FROM {sources.tables["links"]}
+        SELECT link_id, bus0, bus1, p_nom, geom FROM {targets.tables["links"]}
         WHERE scn_name = '{scn_name}' AND carrier = 'CH4'
         """,
         index_col="link_id",
@@ -1290,7 +1284,7 @@ def reduce_ch4_network_to_nep(scn_name, sources, targets):
     if removable:
         db.execute_sql(
             f"""
-            DELETE FROM {targets.tables["hydrogen_links"]}
+            DELETE FROM {targets.tables["links"]}
             WHERE scn_name = '{scn_name}' AND carrier = 'CH4'
             AND link_id IN ({", ".join(str(int(i)) for i in removable)})
             """
@@ -1324,6 +1318,116 @@ def reduce_ch4_network_to_nep(scn_name, sources, targets):
         )
     )
     return removable
+
+
+def connect_ch4_islands(scn_name, targets):
+    """
+    Connect the isolated parts of the methane network of the NEP by
+    straight pipelines, as :func:`connect_h2_grid_islands` does for H2
+
+    Parameters
+    ----------
+    scn_name : str
+        Name of the scenario
+    targets : DatasetTargets
+        Targets of GasNodesAndPipes
+
+    Returns
+    -------
+    None
+
+    """
+    buses = db.select_geodataframe(
+        f"""
+        SELECT bus_id, country, geom FROM {targets.tables["buses"]}
+        WHERE scn_name = '{scn_name}' AND carrier = 'CH4'
+        """,
+        index_col="bus_id",
+        epsg=4326,
+    )
+    links = db.select_dataframe(
+        f"""
+        SELECT bus0, bus1, p_nom FROM {targets.tables["links"]}
+        WHERE scn_name = '{scn_name}' AND carrier = 'CH4'
+        """
+    )
+    links = links[links.bus0.isin(buses.index) & links.bus1.isin(buses.index)]
+    if links.empty:
+        return
+
+    # Connected parts of the network
+    position = pd.Series(range(len(buses)), index=buses.index)
+    graph = coo_matrix(
+        (
+            np.ones(len(links)),
+            (position[links.bus0].values, position[links.bus1].values),
+        ),
+        shape=(len(buses), len(buses)),
+    )
+    _, label = connected_components(graph, directed=False)
+    buses["part"] = label
+
+    german = buses[buses.country == "DE"]
+    linked = set(links.bus0) | set(links.bus1)
+    main = german[german.index.isin(linked)].part.value_counts().idxmax()
+    abroad = set(buses[buses.country != "DE"].part)
+
+    metric = buses.to_crs(3035)
+    main_buses = metric[(metric.part == main) & (metric.country == "DE")]
+
+    new_links = []
+    for part in set(german[german.index.isin(linked)].part) - {main}:
+        if part in abroad:
+            continue
+        island = metric[metric.part == part]
+        distance = island.geometry.apply(
+            lambda point: main_buses.distance(point)
+        )
+        island_bus = distance.min(axis=1).idxmin()
+        main_bus = distance.loc[island_bus].idxmin()
+        length_km = distance.loc[island_bus, main_bus] / 1000
+
+        island_links = links[
+            links.bus0.isin(island.index) | links.bus1.isin(island.index)
+        ]
+        line = LineString(
+            [buses.at[island_bus, "geom"], buses.at[main_bus, "geom"]]
+        )
+        new_links.append(
+            {
+                "scn_name": scn_name,
+                "bus0": island_bus,
+                "bus1": main_bus,
+                "carrier": "CH4",
+                "p_nom": island_links.p_nom.max(),
+                "p_nom_extendable": False,
+                "p_min_pu": -1,
+                "length": length_km,
+                "geom": MultiLineString([line]),
+                "topo": line,
+            }
+        )
+        print(
+            f"{scn_name}: isolated part of the NEP methane network with "
+            f"{len(island)} buses connected by {length_km:.1f} km "
+            f"({island_links.p_nom.max():.0f} MW) from bus {island_bus} "
+            f"to bus {main_bus}"
+        )
+
+    if not new_links:
+        return
+
+    new_links = gpd.GeoDataFrame(new_links, geometry="geom", crs=4326)
+    new_links["topo"] = gpd.GeoSeries(new_links["topo"], crs=4326)
+    new_links["link_id"] = db.next_etrago_id("link", len(new_links))
+    new_links.to_postgis(
+        targets.get_table_name("links"),
+        db.engine(),
+        schema=targets.get_table_schema("links"),
+        if_exists="append",
+        index=False,
+        dtype={"geom": Geometry(), "topo": Geometry()},
+    )
 
 
 # Maximal distance [km] of a NEP end point to an H2_grid bus

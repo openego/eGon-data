@@ -8,12 +8,13 @@ parameter ``max_gas_generation_overtheyear``.
 
 **In Germany**
 
-* *Natural gas*: the extraction sites of SciGRID_gas [SciGRID_gas]_. Their
-  capacities are a slack, the production over the year is limited by the
-  scenario parameter (status2024: 36 TWh, production of 2024; eGon2035:
-  9.0 TWh, value of the eGon project; reGon2037: 8.8 TWh, i.e. 1 GWh/h of
-  domestic production of the approved Szenariorahmen of the NEP Gas und
-  Wasserstoff 2025 [SR_GasH2_2025]_; reGon2045: none).
+* *Natural gas*: the extraction sites of SciGRID_gas [SciGRID_gas]_. The
+  production over the year is limited by the scenario parameter (status2024:
+  36 TWh, production of 2024; eGon2035: 9.0 TWh, value of the eGon project;
+  reGon2037: 8.8 TWh, i.e. 1 GWh/h of domestic production of the approved
+  Szenariorahmen of the NEP Gas und Wasserstoff 2025 [SR_GasH2_2025]_;
+  reGon2045: none). This production at full load is the capacity, shared over
+  the sites by their maximal supply in SciGRID_gas.
 * *Biomethane*: the plants feeding into the gas grid of the Einspeiseatlas of
   the dena, version of 9 October 2025 [Einspeiseatlas2025]_ (plants in
   operation and in planning, not the ones out of operation), with their
@@ -53,12 +54,12 @@ from the TYNDP 2024 of ENTSOG [TYNDP2024_gas]_:
   modelled area (e.g. Norway), scenario "NT+ Reference" (the scenario
   "Distributed Energy" was not simulated in Annex E), infrastructure level
   "ADVANCED"; peak and mean of the monthly values give the capacity and the
-  production over the year, interpolated to the year of the scenario.
-  Synthetic methane is priced like natural gas.
+  production over the year, interpolated to the year of the scenario
+  (extrapolated from 2030 and 2040 for 2045, not below zero). Synthetic
+  methane is priced like natural gas.
 * Annex C1, sheet "LNG": LNG import capacities, level "ADVANCED".
 
-The sources are blended into one marginal cost per country. In reGon2045 only
-biomethane is produced abroad, RU excluded.
+The sources are blended into one marginal cost per country, RU excluded.
 
 Methanation and SMR
 ~~~~~~~~~~~~~~~~~~~

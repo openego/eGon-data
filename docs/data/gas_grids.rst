@@ -85,9 +85,15 @@ ones, and the grid of the earlier scenarios stays consistent with the one of
 remain in 2045 (Anhang 5, 74 sections, 5531 km). Each section is matched to
 the shortest path of SciGRID_gas pipelines between CH4 buses within 15 km of
 its end points, choosing the path whose length fits the NEP length best. All
-other German pipelines are removed. CH4 buses without pipeline remain: the NEP
-assumes biomethane to be used mainly at the distribution level, so these buses
-keep their biomethane plants and local demand.
+other German pipelines are removed when the grid is inserted, and so are the
+CH4 buses left without pipeline (Germany coverage: 423 of 619). Parts of the
+network that reach neither the rest nor a neighbouring country get one
+straight pipeline from their bus nearest to the rest, as in the hydrogen grid
+(see below; Germany: 4 parts, 84 km). The gas areas are built from the
+remaining buses, so the methane demand and supply of the regions without a
+pipeline (biomethane plants, gas boilers, CHP) is assigned to the nearest bus
+of the remaining network. The distribution grids that would connect them are
+not modeled.
 
 Not modeled: the methane expansion measures of the NEP up to 2037 (mostly
 pressure regulation and metering stations, reconnections and system
