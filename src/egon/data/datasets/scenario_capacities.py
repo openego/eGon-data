@@ -246,6 +246,8 @@ def insert_capacities_per_federal_state_nep():
         "KWK < 10 MW": "small_chp",
         "PV-Batteriespeicher": "home_battery",
         "Großbatteriespeicher": "BESS",
+        "Wasserstoff": "hydrogen",
+        "zusaetzliche Verbraucher PtG": "power_to_H2",
     }
     # 'Elektromobilitaet gesamt': 'transport',
     # 'Elektromobilitaet privat': 'transport'}
@@ -359,6 +361,9 @@ def insert_capacities_per_federal_state_nep():
             # version 2021, page 47)
             data.loc[data.carrier == "residential_rural_heat_pump", bl] *= 5e-6
             data.loc[data.carrier == "residential_rural_heat_pump", "component"] = "link"
+
+            # Electrolysers are links
+            data.loc[data.carrier == "power_to_H2", "component"] = "link"
 
             # Storage carriers, mislabeled "generator" by the default above
             data.loc[
@@ -1024,7 +1029,7 @@ class ScenarioCapacities(Dataset):
     #:
     name: str = "ScenarioCapacities"
     #:
-    version: str = "0.0.24"
+    version: str = "0.0.25"
     sources = DatasetSources(
         files={
             "eGon2035_capacities": "data_bundle_egon_data/NEP/NEP_V2021_scnC2035.xlsx",

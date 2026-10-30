@@ -339,9 +339,11 @@ def fill_etrago_gen_time_table(
 
 
 def load_tables(con, cfg):
+    # Gas and hydrogen plants are not generators: they are OCGT links from
+    # their fuel bus (power_etrago.match_ocgt)
     sql = f"""
     SELECT * FROM {cfg.sources.tables["power_plants"]}
-    WHERE carrier != 'gas'
+    WHERE carrier NOT IN ('gas', 'hydrogen')
     """
 
     power_plants = gpd.GeoDataFrame.from_postgis(

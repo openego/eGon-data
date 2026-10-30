@@ -7,9 +7,8 @@ H2 and CH4 buses into the database are to be found.
 These links are modelling:
 
 * Methanisation (carrier name: 'H2_to_CH4'): technology to produce CH4 from H2
-* H2_feedin: Injection of H2 into the CH4 grid
-* Steam Methane Reaction (SMR, carrier name: 'CH4_to_H2'): techonology
-  to produce CH4 from H2
+* Steam Methane Reaction (SMR, carrier name: 'CH4_to_H2'): technology
+  to produce H2 from CH4
 
 """
 
@@ -44,19 +43,24 @@ def insert_h2_to_ch4_to_h2():
     target_links = targets.tables["hydrogen_links"]
     target_buses = sources.tables["buses"]
 
-    if "status2019" in scenarios:
-        scenarios.remove("status2019")
-
     for scn_name in scenarios:
+        if "status" in scn_name:
+            continue
 
-        db.execute_sql(f"""
+        db.execute_sql(
+            f"""
            DELETE FROM {target_links} WHERE "carrier" in ('H2_to_CH4', 'CH4_to_H2')
-           AND scn_name = '{scn_name}' AND bus0 IN (
+           AND scn_name = '{scn_name}' AND (bus0 IN (
              SELECT bus_id
              FROM {target_buses}
-             WHERE country = 'DE'
-             )
-           """)
+             WHERE country = 'DE' AND scn_name = '{scn_name}'
+             ) OR bus1 IN (
+             SELECT bus_id
+             FROM {target_buses}
+             WHERE country = 'DE' AND scn_name = '{scn_name}'
+             ))
+           """
+        )
 
         sql_CH4_buses = f"""
                 SELECT bus_id, x, y, ST_Transform(geom, 32632) as geom
@@ -64,14 +68,22 @@ def insert_h2_to_ch4_to_h2():
                 WHERE carrier = 'CH4'
                 AND scn_name = '{scn_name}' AND country = 'DE'
                 """
+        # Both H2 carriers ('H2_grid' and 'H2') are coupled to the CH4 grid
         sql_H2_buses = f"""
                 SELECT bus_id, x, y, ST_Transform(geom, 32632) as geom
                 FROM {target_buses}
-                WHERE carrier in ('H2')
+                WHERE carrier in ('H2', 'H2_grid')
                 AND scn_name = '{scn_name}' AND country = 'DE'
                 """
         CH4_buses = gpd.read_postgis(sql_CH4_buses, con)
         H2_buses = gpd.read_postgis(sql_H2_buses, con)
+
+        if CH4_buses.empty or H2_buses.empty:
+            print(
+                f"{scn_name}: no German CH4 or H2 buses, no methanisation "
+                "and SMR links are inserted."
+            )
+            continue
 
         CH4_to_H2_links = []
         H2_to_CH4_links = []
@@ -122,6 +134,13 @@ def insert_h2_to_ch4_to_h2():
             for link in CH4_to_H2_links
         ]
 
+        if not CH4_to_H2_links:
+            print(
+                f"{scn_name}: no H2 bus within 10 km of a CH4 bus, no "
+                "methanisation and SMR links are inserted."
+            )
+            continue
+
         # set crs for geoDataFrame
         CH4_to_H2_links = gpd.GeoDataFrame(
             CH4_to_H2_links, geometry="geom", crs=4326
@@ -152,69 +171,3 @@ def insert_h2_to_ch4_to_h2():
                 if_exists="append",
                 dtype={"geom": Geometry()},
             )
-
-
-def H2_CH4_mix_energy_fractions(x, T=25, p=50):
-    """
-    Calculate the fraction of H2 with respect to energy in a H2 CH4 mixture.
-
-    Given the volumetric fraction of H2 in a H2 and CH4 mixture, the fraction
-    of H2 with respect to energy is calculated with the ideal gas mixture law.
-    Beware, that changing the fraction of H2 changes the overall energy within
-    a specific volume of the mixture. If H2 is fed into CH4, the pipeline
-    capacity (based on energy) therefore decreases if the volumetric flow
-    does not change. This effect is neglected in eGon. At 15 vol% H2 the
-    decrease in capacity equals about 10 % if volumetric flow does not change.
-
-    Parameters
-    ----------
-    x : float
-        Volumetric fraction of H2 in the mixture
-    T : int, optional
-        Temperature of the mixture in °C, by default 25
-    p : int, optional
-        Pressure of the mixture in bar, by default 50
-
-    Returns
-    -------
-    float
-        Fraction of H2 in mixture with respect to energy (LHV)
-
-    """
-
-    # molar masses
-    M_H2 = 0.00201588
-    M_CH4 = 0.0160428
-
-    # universal gas constant (fluid independent!)
-    R_u = 8.31446261815324
-    # individual gas constants
-    R_H2 = R_u / M_H2
-    R_CH4 = R_u / M_CH4
-
-    # volume is fixed: 1m^3, use ideal gas law at 25 °C, 50 bar
-    V = 1
-    T += 273.15
-    p *= 1e5
-    # volumetric shares of gases (specify share of H2)
-    V_H2 = x
-    V_CH4 = 1 - x
-
-    # calculate data of mixture
-    M_mix = V_H2 * M_H2 + V_CH4 * M_CH4
-    R_mix = R_u / M_mix
-    m_mix = p * V / (R_mix * T)
-
-    # calulate masses with volumetric shares at mixture pressure
-    m_H2 = p * V_H2 / (R_H2 * T)
-    m_CH4 = p * V_CH4 / (R_CH4 * T)
-
-    msg = (
-        "Consistency check faild, individual masses are not equal to sum of "
-        "masses. Residual is: " + str(m_mix - m_H2 - m_CH4)
-    )
-    assert round(m_mix - m_H2 - m_CH4, 6) == 0.0, msg
-
-    LHV = {"CH4": 50e6, "H2": 120e6}
-
-    return m_H2 * LHV["H2"] / (m_H2 * LHV["H2"] + m_CH4 * LHV["CH4"])

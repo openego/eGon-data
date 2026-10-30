@@ -54,6 +54,22 @@ from .etrago_load_table import (  # noqa: F401
     LoadTableTimeseriesCoverage,
     LoadTableTimeseriesValues,
 )
+from .gas import (  # noqa: F401
+    ElectrolyserCapPerState,
+    GasBuildYearWithinScenario,
+    GasBusesWithoutLink,
+    GasBusReferences,
+    GasComponentTotal,
+    GasDuplicateBusLocations,
+    GasDuplicateLinks,
+    GasOnePortsPerBus,
+    GasParameterMatch,
+    GasTimeseriesComplete,
+    GasVoronoiCoverage,
+    H2DemandAboveElectrolyserCap,
+    H2GridComponents,
+    WasteHeatBoundedByElectrolysis,
+)
 from .heat_etrago import (  # noqa: F401
     HeatBuses,
     HeatScenarioCoverage,

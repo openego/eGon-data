@@ -184,6 +184,40 @@ Changed
   column `egon_ev_pool_ev_id` to `ev_id`; `demand.egon_ev_mit_lgv_metadata`
   now stores the simBEV and GeoLIS run configurations whole, as JSONB
   `#1460 <https://github.com/openego/eGon-data/issues/1460>`_
+* Adapt the gas_grid TaskGroup to the reGon scenarios. Update data sources
+  for hydrogen core network and methane grid transformation (NEP Gas/H2 2025,
+  FNB 2024, TYNDP 2024). Improve models and parameters of the gas sector. Generalize
+  classes for scenario handling. Remove deprecated scenarios. Describe features
+  of gas grids in documentation.
+  `#1400 <https://github.com/openego/eGon-data/issues/1400>`_
+  `#1444 <https://github.com/openego/eGon-data/issues/1444>`_
+  `#1463 <https://github.com/openego/eGon-data/issues/1463>`_
+  `#1500 <https://github.com/openego/eGon-data/issues/1500>`_
+* Adapt the gas_supply TaskGroup to the reGon scenarios. Update data sources
+  for hydrogen production according to NEP target values and existing measures,
+  including at federal-state level. Update biomethane fleet source. Differentiate
+  between pore and cavern infrastructure for H2 storage adaptation. Generalize
+  classes for scenario handling. Remove deprecated scenarios. Describe features
+  of gas stores and gas supply in documentation.
+  `#1445 <https://github.com/openego/eGon-data/issues/1445>`_
+* Adapt the gas_demand TaskGroup to the reGon scenarios. Update demand targets
+  according to NEP (status reads AG Energiebilanzen). Distribute the FfE data 
+  spatially and temporally, with local fallback values. Generalize classes for 
+  scenario handling. Remove deprecated scenarios. Describe features of gas demand 
+  in documentation.
+  `#1446 <https://github.com/openego/eGon-data/issues/1446>`_
+* Adapt the gas_sector_coupling TaskGroup to the reGon scenarios. Write the
+  electrolyzer capacity of the NEP Strom per federal state in the scenario
+  capacities. Couple H2<->CH4 processes to the buses of the H2 core network.
+  Remove H2 feed-in and oxygen links.
+  `#1452 <https://github.com/openego/eGon-data/issues/1452>`_
+* Allocate the hydrogen power plants of the reGon scenarios to power plant
+  sites, following various measures (conversion of natural gas plants, new builds
+  according market survey and freed grid connections, distribute load-near
+  on plausible sites). Connect them to the H2 buses as links with their own
+  carriers per type (H2_OCGT_conversion, H2_OCGT_new, H2_OCGT_load_near) and
+  efficiencies.
+  `#1465 <https://github.com/openego/eGon-data/issues/1465>`_
 
 
 Bug Fixes
