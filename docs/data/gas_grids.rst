@@ -228,7 +228,17 @@ are 56.3 GW in 2037 (52.9 GW abroad, 3.4 GW other imports) and 151.9 GW in
 lower heating value. The capacity is fixed to the entry capacity of the NEP;
 the price is the hydrogen price of the NEP Strom, which is derived from the
 natural gas price and the CO2 cost (47.6 EUR/MWh in 2037, 51.0 EUR/MWh in 2045,
-[NEP2025]_ Tabelle 9; same formula for eGon2035). There is no limit over the year.
+[NEP2025]_ Tabelle 9; same formula for eGon2035). In the reGon scenarios the
+imports over the year are limited to the hydrogen imports of the draft
+Szenariorahmen of July 2024 ("Fokus Strom", T45-Strom*, numbered scenario 1
+there; Tab. 3): 23 TWh in 2037 and 216 TWh in 2045, 21 % and 58 % of its
+hydrogen demand. The approval and the NEP only give capacities. As for the
+methane supply abroad, the limit is the ``e_nom_max`` of each generator: the
+total (gas parameter ``max_H2_import_overtheyear``) is shared over the
+generators by their capacity, about 410 full-load hours in 2037 and 1,420 in
+2045. The domestic production of H2 is modeled as links, while the imports are
+generators, so the constraint to all H2 generators to limit imports is
+adequate.
 
 The implementation abroad is detailed in :py:mod:`gas_neighbours.gas_scenarios
 <egon.data.datasets.gas_neighbours.gas_scenarios>`.

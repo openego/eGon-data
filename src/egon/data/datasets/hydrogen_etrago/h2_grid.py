@@ -2346,9 +2346,8 @@ def insert_h2_imports(scn_name, border_entry, sources, targets):
     if not imports:
         return None
 
-    marginal_cost = get_sector_parameters("gas", scn_name)["marginal_cost"][
-        "H2_import"
-    ]
+    scn_params = get_sector_parameters("gas", scn_name)
+    marginal_cost = scn_params["marginal_cost"]["H2_import"]
     generators = pd.DataFrame(imports)
     report = generators.groupby("point")["p_nom"].sum()
     generators = generators.groupby("bus", as_index=False)["p_nom"].sum()
@@ -2356,6 +2355,13 @@ def insert_h2_imports(scn_name, border_entry, sources, targets):
     generators["carrier"] = "H2"
     generators["p_nom_extendable"] = False
     generators["marginal_cost"] = marginal_cost
+    # Imports over the year, shared by the entry capacity
+    if "max_H2_import_overtheyear" in scn_params:
+        generators["e_nom_max"] = (
+            scn_params["max_H2_import_overtheyear"]
+            * generators["p_nom"]
+            / generators["p_nom"].sum()
+        )
     generators["generator_id"] = db.next_etrago_id(
         "generator", len(generators)
     )

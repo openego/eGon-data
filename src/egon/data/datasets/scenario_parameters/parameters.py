@@ -1259,6 +1259,11 @@ def gas(scenario):
             "biogas": 12_300_000,  # [MWh] biomethane feed-in 2025, used as conservative floor (no figure set for 2037); source: dena Einspeiseatlas 2025
         }
 
+        # Max hydrogen imports over the year (e_nom_max of the H2 generators)
+        parameters["max_H2_import_overtheyear"] = 23_000_000  # [MWh]
+        # 21 % of the H2 demand; draft Szenariorahmen Gas/H2 2025 (1 July
+        # 2024), Tab. 3, p. 12, scenario 1 (T45-Strom*)
+
         # Working gas volume of the German methane stores
         parameters["CH4_storage_capacity"] = 133_250_000  # [MWh]
         # 50 % of the fleet of 2021 (GIE, 266.5 TWh): storage feed-in 93 of
@@ -1380,6 +1385,11 @@ def gas(scenario):
             "CH4": 0,  # [MWh] no domestic production in 2045; source: BNetzA, approval of the Szenariorahmen Gas und Wasserstoff 2025 (30 April 2025), p. 6, as in NEP Gas und Wasserstoff 2025, Tab. 3
             "biogas": 12_300_000,  # [MWh] biomethane feed-in 2025, used as conservative floor (no figure set for 2045); source: dena Einspeiseatlas 2025
         }
+
+        # Max hydrogen imports over the year (e_nom_max of the H2 generators)
+        parameters["max_H2_import_overtheyear"] = 216_000_000  # [MWh]
+        # 58 % of the H2 demand; draft Szenariorahmen Gas/H2 2025 (1 July
+        # 2024), Tab. 3, p. 12, scenario 1 (T45-Strom*)
 
         # Working gas volume of the German methane stores
         parameters["CH4_storage_capacity"] = 0  # [MWh]
