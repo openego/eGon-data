@@ -74,20 +74,20 @@ def cts_demand_per_aggregation_level(aggregation_level, scenario):
     ----------
     aggregation_level : str
         if further processing is to be done in zensus cell level 'other'
-        else 'dsitrict'
+        else 'district'
 
     Returns
     -------
     CTS_per_district : pandas.DataFrame
         if aggregation ='district'
             NUTS3 CTS profiles assigned to individual
-            zensu cells and aggregated per district heat area id
+            zensus cells and aggregated per district heat area id
         else
             empty dataframe
     CTS_per_grid : pandas.DataFrame
         if aggregation ='district'
             NUTS3 CTS profiles assigned to individual
-            zensu cells and aggregated per mv grid subst id
+            zensus cells and aggregated per mv grid subst id
         else
             empty dataframe
     CTS_per_zensus : pandas.DataFrame
@@ -95,7 +95,7 @@ def cts_demand_per_aggregation_level(aggregation_level, scenario):
             empty dataframe
         else
             NUTS3 CTS profiles assigned to individual
-            zensu population id
+            zensus population id
 
     """
     sources, targets = load_sources_and_targets("HeatTimeSeries")
@@ -200,7 +200,7 @@ def cts_demand_per_aggregation_level(aggregation_level, scenario):
 def CTS_demand_scale(aggregation_level):
     """
 
-    Description: caling the demand curves to the annual demand of the respective aggregation level
+    Description: scaling the demand curves to the annual demand of the respective aggregation level
 
 
     Parameters
@@ -293,9 +293,9 @@ def CTS_demand_scale(aggregation_level):
 
             CTS_per_district.insert(0, "scenario", scenario)
 
-            CTS_district = pd.concat(
-                [CTS_district, CTS_per_district], ignore_index=True
-            )
+            # Keep area_id as index; area_ids repeat across scenarios, so
+            # rows are only unique per (scenario, area_id)
+            CTS_district = pd.concat([CTS_district, CTS_per_district])
             CTS_district = CTS_district.sort_index()
 
             mv_grid_ind = db.select_dataframe(f"""
