@@ -1136,7 +1136,7 @@ class HeatTimeSeries(Dataset):
     #:
     name: str = "HeatTimeSeries"
     #:
-    version: str = "0.0.19"
+    version: str = "0.0.20"
 
     sources = DatasetSources(
         tables={
