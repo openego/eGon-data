@@ -1026,7 +1026,11 @@ def allocate_exact_pv(
         gens_id=allocation.index.to_numpy()
     )
 
-    return allocated_mastr_gdf, allocated_buildings_gdf
+    # same dtypes as in allocate_pv, otherwise boolean columns like
+    # orientation_uniform stay object and cannot be written to Float columns
+    return frame_to_numeric(allocated_mastr_gdf), frame_to_numeric(
+        allocated_buildings_gdf
+    )
 
 
 @timer_func
@@ -1335,13 +1339,13 @@ def cap_per_bus_id(
         DataFrame with total rooftop capacity per mv grid.
     """
     # <--- REFACTORING: Load sources/targets
-    sources, targets = load_sources_and_targets("PowerPlants")
+    _, targets = load_sources_and_targets("PowerPlants")
 
     if "status" in scenario:
-        # <--- REFACTORING: Use sources.tables
+        # <--- REFACTORING: Use targets.tables
         sql = f"""
         SELECT bus_id, SUM(el_capacity) as capacity
-        FROM {sources.tables['power_plants']}
+        FROM {targets.tables['power_plants']}
         WHERE carrier = 'solar_rooftop'
         AND scenario = '{scenario}'
         GROUP BY bus_id
@@ -2556,10 +2560,10 @@ def update_power_plants_bus_ids_sq():
     use the same MV grid district. Units without a building keep the bus of
     their MaStR location.
     """
-    sources, targets = load_sources_and_targets("PowerPlants")
+    _, targets = load_sources_and_targets("PowerPlants")
 
     db.execute_sql(f"""
-        UPDATE {sources.tables['power_plants']} AS pp
+        UPDATE {targets.tables['power_plants']} AS pp
         SET bus_id = pv.bus_id
         FROM {EgonPowerPlantPvRoofBuilding.__table__.fullname} AS pv
         WHERE pp.carrier = 'solar_rooftop'
