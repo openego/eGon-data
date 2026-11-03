@@ -1026,7 +1026,11 @@ def allocate_exact_pv(
         gens_id=allocation.index.to_numpy()
     )
 
-    return allocated_mastr_gdf, allocated_buildings_gdf
+    # same dtypes as in allocate_pv, otherwise boolean columns like
+    # orientation_uniform stay object and cannot be written to Float columns
+    return frame_to_numeric(allocated_mastr_gdf), frame_to_numeric(
+        allocated_buildings_gdf
+    )
 
 
 @timer_func
