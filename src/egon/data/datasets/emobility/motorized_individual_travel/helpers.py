@@ -215,9 +215,11 @@ def limit_street_park_time(park_start, park_end, charging_timesteps):
     beyond `max(limit, charging time)` is cut; the shortened window starts
     at `park_start` as in GeoLIS.
 
-    The charging time is rounded up, so the charging always fits the
-    shortened window (GeoLIS rounds the result down). This does not
-    change the occupancy of the delivered placement.
+    The shortened duration is rounded down to whole timesteps, as in
+    GeoLIS; rounding it up instead overbooks street locations wherever a
+    charging time of a little over the limit decides the window. A charge
+    filling the whole window can therefore lack up to one timestep, which
+    the deficit cap of the model absorbs.
 
     Parameters
     ----------
@@ -235,7 +237,7 @@ def limit_street_park_time(park_start, park_end, charging_timesteps):
     end = np.asarray(park_end, dtype="int64")
     if len(start) == 0:
         return end
-    keep = np.maximum(np.ceil(charging_timesteps), STREET_PARK_LIMIT_TIMESTEPS)
+    keep = np.maximum(charging_timesteps, STREET_PARK_LIMIT_TIMESTEPS)
     window_start, window_end = STREET_PARK_LIMIT_WINDOW
     first_day = start // TIMESTEPS_PER_DAY
     n_days = int(((end - 1) // TIMESTEPS_PER_DAY - first_day).max()) + 1
@@ -249,7 +251,7 @@ def limit_street_park_time(park_start, park_end, charging_timesteps):
             None,
         )
         cut += np.maximum(0, overlap - keep)
-    return end - cut.astype("int64")
+    return start + np.floor((end - start) - cut).astype("int64")
 
 
 TRIP_COLUMN_MAPPING = {
