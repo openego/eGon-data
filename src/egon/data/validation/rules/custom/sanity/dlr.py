@@ -17,10 +17,12 @@ class DLRValues(DataFrameRule):
         self.scenario = scenario
 
     def get_params(self, ctx):
+        del ctx
         return {"scenario": self.scenario}
 
     def get_query(self, ctx):
-        return f"""
+        del ctx
+        return """
         SELECT
             count(*) AS n_rows,
             count(*) FILTER (
@@ -34,20 +36,38 @@ class DLRValues(DataFrameRule):
             count(*) FILTER (WHERE EXISTS (
                 SELECT 1 FROM unnest(s_max_pu) v
                 WHERE v < 1.0 OR v > 1.5
-            )) AS n_out_of_range
-        FROM {self.table}
+            )) AS n_out_of_range,
+            (
+                SELECT count(*)
+                FROM grid.egon_etrago_line l
+                WHERE l.scn_name = :scenario
+                AND NOT EXISTS (
+                    SELECT 1
+                    FROM grid.egon_etrago_line_timeseries t
+                    WHERE t.scn_name = l.scn_name
+                    AND t.line_id = l.line_id
+                )
+            ) AS n_missing_timeseries
+        FROM grid.egon_etrago_line_timeseries
         WHERE scn_name = :scenario
         """
 
     def evaluate_df(self, df, ctx):
+        del ctx
         row = df.iloc[0]
 
         n_rows = int(row.n_rows)
         n_wrong_length = int(row.n_wrong_length)
         n_nan = int(row.n_nan)
         n_out_of_range = int(row.n_out_of_range)
+        n_missing_timeseries = int(row.n_missing_timeseries)
 
-        n_bad = n_wrong_length + n_nan + n_out_of_range
+        n_bad = (
+            n_wrong_length
+            + n_nan
+            + n_out_of_range
+            + n_missing_timeseries
+        )
         success = n_rows > 0 and n_bad == 0
 
         return RuleResult(
@@ -63,7 +83,8 @@ class DLRValues(DataFrameRule):
                 f"{n_rows} DLR rows, "
                 f"{n_wrong_length} arrays without 8760 values, "
                 f"{n_nan} arrays with NULL/NaN values, "
-                f"{n_out_of_range} arrays with values outside 1.0–1.5"
+                f"{n_out_of_range} arrays with values outside 1.0–1.5, "
+                f"{n_missing_timeseries} lines without DLR timeseries"
             ),
             severity=Severity.INFO if success else Severity.ERROR,
             schema=self.schema,
