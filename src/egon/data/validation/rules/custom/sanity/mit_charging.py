@@ -62,6 +62,11 @@ ATOL_PU = 1e-6
 #: above the rounding of the band arithmetic.
 ATOL_BAND = 1e-9
 
+#: On a full run the occupancy rule checks every n-th location, with
+#: all its placements: sorting the ~10 bn starts and ends of a reGon
+#: scenario takes hours. In test mode every location is checked.
+OCCUPANCY_SAMPLE_EVERY = 20
+
 #: Hours of every timeseries.
 N_TIMESTEPS = 8760
 
@@ -547,6 +552,94 @@ class MitEventArrayUseCase(_MitRule):
                 f"{int(aggregate.placements.sum())} placements have an "
                 f"event use case other than their location's"
             ),
+        )
+
+
+class MitLocationOccupancy(_MitRule):
+    """
+    Check that no location holds more vehicles at once than it has
+    charging points.
+
+    A placement occupies a point over its parking window
+    `[park_start, park_end)`; the peak number of placements plugged in at
+    once must not exceed `charging_points`. The delivery places the events
+    so that this holds, for `street` events only with the shortened
+    windows of the import. A violation means the windows the model is
+    built from are not the ones the events were placed with, so the
+    plugged-in power and battery capacity are overstated.
+
+    Changes in occupancy are summed per location and timestep, so a
+    vehicle leaving and one arriving in the same timestep do not overlap.
+    On a full run only every :data:`OCCUPANCY_SAMPLE_EVERY`-th location is
+    checked; a systematic error in the windows affects most locations of
+    a use case.
+    """
+
+    def evaluate_scenario(self, engine, ctx):
+        every = OCCUPANCY_SAMPLE_EVERY if testmode_off() else 1
+        per_use_case = self._query(
+            engine,
+            f"""
+            WITH delta AS (
+                SELECT le.location_id, d.timestep, SUM(d.change) AS change
+                FROM {LOCATION_EVENTS_TABLE} le
+                CROSS JOIN LATERAL UNNEST(le.event_ids) AS e(event_id)
+                JOIN {TRIP_TABLE} t
+                    ON t.scenario = le.scenario
+                    AND t.event_id = e.event_id
+                CROSS JOIN LATERAL (
+                    VALUES (t.park_start, 1), (t.park_end, -1)
+                ) AS d(timestep, change)
+                WHERE le.scenario = :scenario
+                    AND le.location_id % :every = 0
+                GROUP BY le.location_id, d.timestep
+            ),
+            occupancy AS (
+                SELECT
+                    location_id,
+                    SUM(change) OVER (
+                        PARTITION BY location_id ORDER BY timestep
+                    ) AS occupied
+                FROM delta
+            ),
+            peak AS (
+                SELECT location_id, MAX(occupied) AS peak
+                FROM occupancy
+                GROUP BY location_id
+            )
+            SELECT
+                cl.use_case,
+                COUNT(*) AS locations,
+                COUNT(*) FILTER (
+                    WHERE p.peak > cl.charging_points
+                ) AS overbooked,
+                MAX(p.peak::double precision / cl.charging_points)
+                    AS worst_ratio
+            FROM peak p
+            JOIN {LOCATION_TABLE} cl
+                ON cl.scenario = :scenario
+                AND cl.location_id = p.location_id
+            GROUP BY cl.use_case
+            ORDER BY cl.use_case
+            """,
+            every=every,
+        )
+        if per_use_case.empty:
+            return self._no_rows(LOCATION_EVENTS_TABLE)
+        overbooked = per_use_case[per_use_case.overbooked > 0]
+        problems = [
+            f"{int(r.overbooked)} of {int(r.locations)} {r.use_case} "
+            f"locations hold more vehicles at once than they have charging "
+            f"points (up to {r.worst_ratio:.2f} times)"
+            for r in overbooked.itertuples()
+        ]
+        sample = f" (every {every}th location)" if every > 1 else ""
+        problems = [_ + sample for _ in problems]
+        return self._problems_result(
+            problems,
+            f"no location of {int(per_use_case.locations.sum())}{sample} "
+            f"holds more vehicles at once than it has charging points",
+            observed=int(per_use_case.overbooked.sum()),
         )
 
 

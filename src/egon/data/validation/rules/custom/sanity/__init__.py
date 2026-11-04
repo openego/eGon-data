@@ -13,6 +13,7 @@ from .mit_charging import (  # noqa: F401
     MitImportCounts,
     MitLinkParams,
     MitLocationAssigned,
+    MitLocationOccupancy,
     MitLowflexPair,
     MitModelComponents,
     MitModelEnergy,
