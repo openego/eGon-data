@@ -42,7 +42,7 @@ class Calculate_dlr(Dataset):
     #:
     name: str = "dlr"
     #:
-    version: str = "0.0.5.dev"
+    version: str = "0.0.6"
 
     sources = DatasetSources(
         files={
