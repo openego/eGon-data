@@ -179,6 +179,13 @@ Bug Fixes
   (`eta_cp`), which understated the charging load by 10 %, and re-enable
   the load validation
   `#1460 <https://github.com/openego/eGon-data/issues/1460>`_
+* M1/N1: shorten the parking window of `street` events on import to the
+  one GeoLIS placed them with (at most 4 h, or the charging time, between
+  9:00 and 21:00); with the delivered windows most street locations held
+  more vehicles at once than they have charging points. Cap each deficit
+  at what its stop can recharge, check it against the battery capacity,
+  and store validation results with a plain bool
+  `#1460 <https://github.com/openego/eGon-data/issues/1460>`_
 * M1/N1: recognise a left-over extraction of an earlier delivery instead
   of importing it, fail on missing columns and on duplicate charging
   location ids before the import, and delete eTraGo links orphaned by a

@@ -815,7 +815,7 @@ class MotorizedIndividualTravel(Dataset):
     #:
     name: str = "MotorizedIndividualTravel"
     #:
-    version: str = "0.2.1"
+    version: str = "0.2.2"
 
     def __init__(self, dependencies):
         parallel_tasks = MotorizedIndividualTravel.sources.files[

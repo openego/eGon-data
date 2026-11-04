@@ -56,7 +56,10 @@ from egon.data.datasets.emobility.motorized_individual_travel.helpers import (
     EV_TYPES,
     EVENT_COLUMN_ALIASES,
     EVENT_COLUMN_MAPPING,
+    STREET_USE_CASE,
+    TIMESTEPS_PER_DAY,
     is_legacy_scenario,
+    limit_street_park_time,
     read_geolis_metadata_file,
     read_simbev_metadata_file,
 )
@@ -614,7 +617,8 @@ def import_charging_events() -> None:
     `park_time_timesteps` is not imported. `charging_capacity_grid` is
     filled from the delivered nameplate power, which is grid-side
     (:data:`EVENT_COLUMN_ALIASES`); `charging_capacity_battery` stays
-    NULL.
+    NULL. The `park_end` of `street` events is shortened to the window
+    GeoLIS placed them with (:func:`_limit_street_park_end`).
     """
     columns = (
         ["scenario"]
@@ -636,13 +640,15 @@ def import_charging_events() -> None:
 
         parquet_file = pq.ParquetFile(input_file(scenario_name, "ev_event"))
         imported = 0
+        shortened = 0
         orphans = set()
 
         _clear_scenario(_qualified(EgonEvMitLgvTrip), scenario_name)
         with _copy_target(_qualified(EgonEvMitLgvTrip), columns) as write:
             for batch in parquet_file.iter_batches(
                 batch_size=EVENT_CHUNK_SIZE,
-                columns=list(EVENT_COLUMN_MAPPING.keys()),
+                columns=list(EVENT_COLUMN_MAPPING.keys())
+                + ["chargingdemand_grid_kWh"],
             ):
                 events = pa.Table.from_batches([batch])
                 events = events.filter(
@@ -654,6 +660,8 @@ def import_charging_events() -> None:
                     )
                 if events.num_rows == 0:
                     continue
+                events, n_shortened = _limit_street_park_end(events)
+                shortened += n_shortened
 
                 orphans.update(
                     set(pc.unique(events.column("ev_id")).to_pylist())
@@ -683,7 +691,10 @@ def import_charging_events() -> None:
                     )
                 )
 
-        print(f"  Imported {imported} charging events.")
+        print(
+            f"  Imported {imported} charging events, shortened the parking "
+            f"window of {shortened} street events."
+        )
         if orphans:
             raise ValueError(
                 f"{len(orphans)} ev_id values of charging events of "
@@ -691,6 +702,46 @@ def import_charging_events() -> None:
                 f"{sorted(orphans)[:10]}). Their vehicle type, and so "
                 f"their battery capacity, is unknown."
             )
+
+
+def _limit_street_park_end(events: pa.Table):
+    """Replace `park_end_timesteps` of the `street` events of `events`
+    by the shortened parking end (:func:`.helpers.limit_street_park_time`).
+
+    The charging time follows from the grid-side demand at nominal power.
+
+    Returns
+    -------
+    tuple
+        The events with the shortened `park_end_timesteps` (int64), and
+        the number of events shortened
+    """
+    street = (
+        pc.equal(events.column("charging_use_case"), STREET_USE_CASE)
+        .fill_null(False)
+        .to_numpy()
+    )
+    start = events.column("park_start_timesteps").to_numpy()
+    end = events.column("park_end_timesteps").to_numpy().astype("int64")
+    power = events.column("nominal_charging_capacity_kW").to_numpy()
+    demand = events.column("chargingdemand_grid_kWh").to_numpy()
+    with np.errstate(divide="ignore", invalid="ignore"):
+        # An event without power is never cut (infinite charging time).
+        charging_timesteps = np.where(
+            power[street] > 0,
+            demand[street] / power[street] * TIMESTEPS_PER_DAY / 24,
+            np.inf,
+        )
+    limited = limit_street_park_time(
+        start[street], end[street], charging_timesteps
+    )
+    n_shortened = int((limited < end[street]).sum())
+    end[street] = limited
+    index = events.schema.get_field_index("park_end_timesteps")
+    return (
+        events.set_column(index, "park_end_timesteps", pa.array(end)),
+        n_shortened,
+    )
 
 
 def import_ev_pool() -> None:

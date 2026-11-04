@@ -143,7 +143,9 @@ class EgonEvMitLgvTrip(Base):
     park_start:
         Start timestep of parking event (15min interval, e.g. 4 = 1h)
     park_end:
-        End timestep of parking event (15min interval)
+        End timestep of parking event (15min interval). For `street`
+        events of the new methodology the shortened end GeoLIS placed
+        them with, not the delivered one (`limit_street_park_time`).
     drive_start:
         Start timestep of driving event (15min interval)
     drive_end:
@@ -318,7 +320,8 @@ class EgonEvMitLgvChargingLocation(Base):
         Provider-side id of the location, unique per scenario.
     charging_points:
         Number of charging points at the location. A point is occupied
-        only while a vehicle charges, not while it stays parked.
+        while a vehicle is plugged in, `[park_start, park_end)`; no
+        location holds more vehicles at once than it has points.
     average_charging_capacity:
         Average charging capacity of a charging point, in kW.
     use_case:
@@ -835,7 +838,9 @@ def add_metadata():
                 "vehicle type and battery via egon_ev_mit_lgv_pool. "
                 "Timesteps are quarter hours of the simulated year; a "
                 "parking window is the half-open interval [park_start, "
-                "park_end). charging_demand is battery side, "
+                "park_end); for street events park_end is shortened "
+                "to the window the events were placed with. "
+                "charging_demand is battery side, "
                 "charging_capacity_grid the grid-side nameplate power; "
                 "eta_cp is in egon_ev_mit_lgv_metadata. Flexible use "
                 "cases: depot, home_detached, home_apartment, work."

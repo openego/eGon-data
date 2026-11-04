@@ -161,7 +161,9 @@ def voltage_level_sql(capacity_mw: str) -> str:
 #: `ev_event` column names as delivered, mapped to the columns of
 #: `demand.egon_ev_mit_lgv_trip`. `charging_use_case` becomes `use_case`
 #: (D12); `park_time_timesteps` is not imported -- it is
-#: `park_end - park_start` and the model code ignores it (D16).
+#: `park_end - park_start` and the model code ignores it (D16). The
+#: `park_end` of `street` events is shortened on import
+#: (:func:`limit_street_park_time`).
 EVENT_COLUMN_MAPPING = {
     "event_id": "event_id",
     "ev_id": "ev_id",
@@ -189,6 +191,66 @@ EVENT_COLUMN_MAPPING = {
 EVENT_COLUMN_ALIASES = {
     "charging_capacity_grid": "nominal_charging_capacity_kW",
 }
+
+#: Use case whose parking window is shortened on import, cf.
+#: :func:`limit_street_park_time`.
+STREET_USE_CASE = "street"
+#: Timesteps per day of the delivered 15-minute resolution.
+TIMESTEPS_PER_DAY = 96
+#: GeoLIS' parking time limitation of `street` events, in timesteps of
+#: the day: between 9:00 and 21:00 a car occupies its point for at most
+#: 4 h, or for its charging time if that is longer.
+STREET_PARK_LIMIT_TIMESTEPS = 16
+STREET_PARK_LIMIT_WINDOW = (36, 84)
+
+
+def limit_street_park_time(park_start, park_end, charging_timesteps):
+    """Shorten the parking windows of `street` events as GeoLIS does.
+
+    GeoLIS places `street` events with a shortened parking window
+    (`use_case_helpers.park_time_limitation`), but `ev_event` keeps the
+    full parking time. With the full windows a street location holds more
+    cars at once than it has charging points. In every day the stop
+    overlaps the window of :data:`STREET_PARK_LIMIT_WINDOW`, the overlap
+    beyond `max(limit, charging time)` is cut; the shortened window starts
+    at `park_start` as in GeoLIS.
+
+    The charging time is rounded up, so the charging always fits the
+    shortened window (GeoLIS rounds the result down). This does not
+    change the occupancy of the delivered placement.
+
+    Parameters
+    ----------
+    park_start, park_end : numpy.ndarray
+        Half-open parking window `[park_start, park_end)` in timesteps
+    charging_timesteps : numpy.ndarray
+        Charging time at nominal power, in timesteps
+
+    Returns
+    -------
+    numpy.ndarray
+        Shortened `park_end`, int64
+    """
+    start = np.asarray(park_start, dtype="int64")
+    end = np.asarray(park_end, dtype="int64")
+    if len(start) == 0:
+        return end
+    keep = np.maximum(np.ceil(charging_timesteps), STREET_PARK_LIMIT_TIMESTEPS)
+    window_start, window_end = STREET_PARK_LIMIT_WINDOW
+    first_day = start // TIMESTEPS_PER_DAY
+    n_days = int(((end - 1) // TIMESTEPS_PER_DAY - first_day).max()) + 1
+    cut = np.zeros(len(start))
+    for day in range(n_days):
+        offset = (first_day + day) * TIMESTEPS_PER_DAY
+        overlap = np.clip(
+            np.minimum(end, offset + window_end)
+            - np.maximum(start, offset + window_start),
+            0,
+            None,
+        )
+        cut += np.maximum(0, overlap - keep)
+    return end - cut.astype("int64")
+
 
 TRIP_COLUMN_MAPPING = {
     "location": "location",
