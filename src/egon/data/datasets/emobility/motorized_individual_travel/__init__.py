@@ -39,8 +39,6 @@ from egon.data.datasets.emobility.motorized_individual_travel.ev_allocation impo
 from egon.data.datasets.emobility.motorized_individual_travel.helpers import (
     COLUMNS_KBA,
     DATA_BUNDLE_DIR,
-    MVGD_MIN_COUNT,
-    TESTMODE_OFF,
     TRIP_COLUMN_MAPPING,
     WORKING_DIR,
 )

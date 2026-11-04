@@ -1,0 +1,189 @@
+'@id': ''
+name: demand.egon_etrago_timeseries_individual_heating
+topics: []
+title: 'TODO: Add title for demand.egon_etrago_timeseries_individual_heating'
+path: ''
+description: 'TODO: Add description'
+languages: []
+subject:
+- name: ''
+  '@id': ''
+keywords: []
+publicationDate: ''
+embargoPeriod:
+  start: ''
+  end: ''
+  isActive: false
+context:
+  title: ''
+  homepage: ''
+  documentation: ''
+  sourceCode: ''
+  publisher: ''
+  publisherLogo: ''
+  contact: ''
+  fundingAgency: ''
+  fundingAgencyLogo: ''
+  grantNo: ''
+spatial:
+  location:
+    address: ''
+    '@id': ''
+    latitude: ''
+    longitude: ''
+  extent:
+    name: ''
+    '@id': ''
+    resolutionValue: ''
+    resolutionUnit: ''
+    crs: ''
+temporal:
+  referenceDate: ''
+  timeseries:
+  - start: ''
+    end: ''
+    resolutionValue: ''
+    resolutionUnit: ''
+    alignment: ''
+    aggregationType: ''
+sources:
+- title: ''
+  authors: []
+  description: ''
+  publicationYear: ''
+  path: ''
+  sourceLicenses:
+  - name: ''
+    title: ''
+    path: ''
+    instruction: ''
+    attribution: ''
+    copyrightStatement: ''
+- title: 'Internal table: boundaries.egon_map_zensus_climate_zones'
+  description: Derived from the internal table 'boundaries.egon_map_zensus_climate_zones'.
+    See that table's own metadata for full provenance.
+  path: ''
+  authors: []
+  publicationYear: null
+  sourceLicenses: []
+- title: 'Internal table: boundaries.egon_map_zensus_grid_districts'
+  description: Derived from the internal table 'boundaries.egon_map_zensus_grid_districts'.
+    See that table's own metadata for full provenance.
+  path: ''
+  authors: []
+  publicationYear: null
+  sourceLicenses: []
+- title: 'Internal table: boundaries.egon_map_zensus_vg250'
+  description: Derived from the internal table 'boundaries.egon_map_zensus_vg250'.
+    See that table's own metadata for full provenance.
+  path: ''
+  authors: []
+  publicationYear: null
+  sourceLicenses: []
+- title: 'Internal table: demand.egon_daily_heat_demand_per_climate_zone'
+  description: Derived from the internal table 'demand.egon_daily_heat_demand_per_climate_zone'.
+    See that table's own metadata for full provenance.
+  path: ''
+  authors: []
+  publicationYear: null
+  sourceLicenses: []
+- title: 'Internal table: demand.egon_heat_idp_pool'
+  description: Derived from the internal table 'demand.egon_heat_idp_pool'. See that
+    table's own metadata for full provenance.
+  path: ''
+  authors: []
+  publicationYear: null
+  sourceLicenses: []
+- title: 'Internal table: demand.egon_heat_timeseries_selected_profiles'
+  description: Derived from the internal table 'demand.egon_heat_timeseries_selected_profiles'.
+    See that table's own metadata for full provenance.
+  path: ''
+  authors: []
+  publicationYear: null
+  sourceLicenses: []
+- title: 'Internal table: demand.egon_household_electricity_profile_of_buildings'
+  description: Derived from the internal table 'demand.egon_household_electricity_profile_of_buildings'.
+    See that table's own metadata for full provenance.
+  path: ''
+  authors: []
+  publicationYear: null
+  sourceLicenses: []
+- title: 'Internal table: demand.egon_map_zensus_district_heating_areas'
+  description: Derived from the internal table 'demand.egon_map_zensus_district_heating_areas'.
+    See that table's own metadata for full provenance.
+  path: ''
+  authors: []
+  publicationYear: null
+  sourceLicenses: []
+- title: 'Internal table: demand.egon_peta_heat'
+  description: Derived from the internal table 'demand.egon_peta_heat'. See that table's
+    own metadata for full provenance.
+  path: ''
+  authors: []
+  publicationYear: null
+  sourceLicenses: []
+- title: 'Internal table: society.destatis_zensus_population_per_ha_inside_germany'
+  description: Derived from the internal table 'society.destatis_zensus_population_per_ha_inside_germany'.
+    See that table's own metadata for full provenance.
+  path: ''
+  authors: []
+  publicationYear: null
+  sourceLicenses: []
+- title: 'Internal table: supply.egon_era5_weather_cells'
+  description: Derived from the internal table 'supply.egon_era5_weather_cells'. See
+    that table's own metadata for full provenance.
+  path: ''
+  authors: []
+  publicationYear: null
+  sourceLicenses: []
+licenses:
+- name: ''
+  title: ''
+  path: ''
+  instruction: ''
+  attribution: ''
+  copyrightStatement: ''
+contributors:
+- title: ''
+  path: ''
+  organization: ''
+  roles: []
+  date: ''
+  object: ''
+  comment: ''
+type: ''
+format: ''
+encoding: ''
+schema:
+  primaryKey:
+  - bus_id
+  - scenario
+  - carrier
+  foreignKeys: []
+  fields:
+  - name: bus_id
+    description: 'TODO: Add description'
+    type: integer
+    unit: none
+    nullable: false
+  - name: scenario
+    description: 'TODO: Add description'
+    type: character varying
+    unit: none
+    nullable: false
+  - name: carrier
+    description: 'TODO: Add description'
+    type: character varying
+    unit: none
+    nullable: false
+  - name: dist_aggregated_mw
+    description: 'TODO: Add description'
+    type: real[]
+    unit: none
+    nullable: true
+dialect:
+  delimiter: ''
+  decimalSeparator: ''
+review:
+  path: ''
+  badge: ''

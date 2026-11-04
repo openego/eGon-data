@@ -1,0 +1,330 @@
+name: boundaries.vg250_gem
+'@id': null
+title: BKG - Verwaltungsgebiete 1:250.000 - Gemeinden (GEM)
+path: WILL_BE_SET_AT_PUBLICATION
+description: BKG - Verwaltungsgebiete 1:250.000 - Gemeinden (GEM)
+languages:
+- de-DE
+subject:
+- name: ''
+  '@id': null
+publicationDate: '2026-10-02'
+embargoPeriod:
+  start: ''
+  end: ''
+  isActive: false
+spatial:
+  location:
+    address: null
+    '@id': null
+    latitude: ''
+    longitude: ''
+  extent:
+    name: Germany
+    '@id': null
+    resolutionValue: 1:250000
+    resolutionUnit: ''
+    boundingBox:
+    - 0
+    - 0
+    - 0
+    - 0
+    crs: ''
+temporal:
+  referenceDate: '2020-01-01'
+  timeseries:
+  - start: null
+    end: null
+    resolutionValue: ''
+    resolutionUnit: ''
+    alignment: null
+    aggregationType: null
+sources:
+- title: Verwaltungsgebiete 1:250 000 (Ebenen)
+  authors: []
+  description: Der Datenbestand umfasst sämtliche Verwaltungseinheiten der hierarchischen
+    Verwaltungsebenen vom Staat bis zu den Gemeinden mit ihren Grenzen, statistischen
+    Schlüsselzahlen, Namen der Verwaltungseinheit sowie die spezifische Bezeichnung
+    der Verwaltungsebene des jeweiligen Landes.
+  publicationYear: null
+  path: https://daten.gdz.bkg.bund.de/produkte/vg/vg250_ebenen_0101/2020/vg250_01-01.geo84.shape.ebenen.zip
+  sourceLicenses:
+  - name: dl-by-de/2.0
+    title: Datenlizenz Deutschland – Namensnennung – Version 2.0
+    path: www.govdata.de/dl-de/by-2-0
+    instruction: "Jede Nutzung ist unter den Bedingungen dieser „Datenlizenz Deutschland\
+      \ - Namensnennung - Version 2.0 zulässig.\nDie bereitgestellten Daten und Metadaten\
+      \ dürfen für die kommerzielle und nicht kommerzielle Nutzung insbesondere:(1)\
+      \ vervielfältigt, ausgedruckt, präsentiert, verändert, bearbeitet sowie an Dritte\
+      \ übermittelt werden;\n (2) mit eigenen Daten und Daten Anderer zusammengeführt\
+      \ und zu selbständigen neuen Datensätzen verbunden werden;\n (3) in interne\
+      \ und externe Geschäftsprozesse, Produkte und Anwendungen in öffentlichen und\
+      \ nicht öffentlichen elektronischen Netzwerken eingebunden werden.\nBei der\
+      \ Nutzung ist sicherzustellen, dass folgende Angaben als Quellenvermerk enthalten\
+      \ sind:\n(1) Bezeichnung des Bereitstellers nach dessen Maßgabe,\n(2) der Vermerk\
+      \ Datenlizenz Deutschland – Namensnennung – Version 2.0 oder dl-de/by-2-0 mit\
+      \ Verweis auf den Lizenztext unter www.govdata.de/dl-de/by-2-0 sowie\n(3) einen\
+      \ Verweis auf den Datensatz (URI).Dies gilt nur soweit die datenhaltende Stelle\
+      \ die Angaben(1) bis (3) zum Quellenvermerk bereitstellt.\nVeränderungen, Bearbeitungen,\
+      \ neue Gestaltungen oder sonstige Abwandlungen sind im Quellenvermerk mit dem\
+      \ Hinweis zu versehen, dass die Daten geändert wurden."
+    attribution: © Bundesamt für Kartographie und Geodäsie 2020 (Daten verändert)
+    copyrightStatement: null
+licenses:
+- name: dl-by-de/2.0
+  title: Datenlizenz Deutschland – Namensnennung – Version 2.0
+  path: www.govdata.de/dl-de/by-2-0
+  instruction: "Jede Nutzung ist unter den Bedingungen dieser „Datenlizenz Deutschland\
+    \ - Namensnennung - Version 2.0 zulässig.\nDie bereitgestellten Daten und Metadaten\
+    \ dürfen für die kommerzielle und nicht kommerzielle Nutzung insbesondere:(1)\
+    \ vervielfältigt, ausgedruckt, präsentiert, verändert, bearbeitet sowie an Dritte\
+    \ übermittelt werden;\n (2) mit eigenen Daten und Daten Anderer zusammengeführt\
+    \ und zu selbständigen neuen Datensätzen verbunden werden;\n (3) in interne und\
+    \ externe Geschäftsprozesse, Produkte und Anwendungen in öffentlichen und nicht\
+    \ öffentlichen elektronischen Netzwerken eingebunden werden.\nBei der Nutzung\
+    \ ist sicherzustellen, dass folgende Angaben als Quellenvermerk enthalten sind:\n\
+    (1) Bezeichnung des Bereitstellers nach dessen Maßgabe,\n(2) der Vermerk Datenlizenz\
+    \ Deutschland – Namensnennung – Version 2.0 oder dl-de/by-2-0 mit Verweis auf\
+    \ den Lizenztext unter www.govdata.de/dl-de/by-2-0 sowie\n(3) einen Verweis auf\
+    \ den Datensatz (URI).Dies gilt nur soweit die datenhaltende Stelle die Angaben(1)\
+    \ bis (3) zum Quellenvermerk bereitstellt.\nVeränderungen, Bearbeitungen, neue\
+    \ Gestaltungen oder sonstige Abwandlungen sind im Quellenvermerk mit dem Hinweis\
+    \ zu versehen, dass die Daten geändert wurden."
+  attribution: © Bundesamt für Kartographie und Geodäsie 2020 (Daten verändert)
+  copyrightStatement: null
+contributors:
+- title: Guido Pleßmann
+  path: null
+  organization: null
+  roles:
+  - ''
+  date: '2026-10-02'
+  object: null
+  comment: Imported data
+- title: Jonathan Amme
+  path: null
+  organization: null
+  roles:
+  - ''
+  date: '2026-10-02'
+  object: null
+  comment: Metadata extended
+- title: eGon-data metadata migration
+  path: https://github.com/openego/eGon-data
+  roles:
+  - dataCurator
+  organization: null
+  date: '2026-10-20'
+  object: metadata
+  comment: Migrated from the OEMetadata v1.4 table comment of a full eGon-data run
+    to OEMetadata v2 with OMI.
+type: Table
+format: PostgreSQL
+encoding: UTF-8
+schema:
+  fields:
+  - name: id
+    description: Index
+    type: bigint
+    nullable: false
+    unit: none
+    isAbout: []
+    valueReference: []
+  - name: ade
+    description: Administrative level
+    type: integer
+    nullable: true
+    unit: none
+    isAbout: []
+    valueReference: []
+  - name: gf
+    description: Geofactor
+    type: integer
+    nullable: true
+    unit: none
+    isAbout: []
+    valueReference: []
+  - name: bsg
+    description: Particular areas
+    type: integer
+    nullable: true
+    unit: none
+    isAbout: []
+    valueReference: []
+  - name: ars
+    description: Territorial code
+    type: text
+    nullable: true
+    unit: none
+    isAbout: []
+    valueReference: []
+  - name: ags
+    description: Official Municipality Key
+    type: text
+    nullable: true
+    unit: none
+    isAbout: []
+    valueReference: []
+  - name: sdv_ars
+    description: Seat of the administration (territorial code)
+    type: text
+    nullable: true
+    unit: none
+    isAbout: []
+    valueReference: []
+  - name: gen
+    description: Geographical name
+    type: text
+    nullable: true
+    unit: none
+    isAbout: []
+    valueReference: []
+  - name: bez
+    description: Designation of the administrative unit
+    type: text
+    nullable: true
+    unit: none
+    isAbout: []
+    valueReference: []
+  - name: ibz
+    description: Identifier
+    type: integer
+    nullable: true
+    unit: none
+    isAbout: []
+    valueReference: []
+  - name: bem
+    description: Note
+    type: text
+    nullable: true
+    unit: none
+    isAbout: []
+    valueReference: []
+  - name: nbd
+    description: Name generation
+    type: text
+    nullable: true
+    unit: none
+    isAbout: []
+    valueReference: []
+  - name: sn_l
+    description: Land (state)
+    type: text
+    nullable: true
+    unit: none
+    isAbout: []
+    valueReference: []
+  - name: sn_r
+    description: Administrative district
+    type: text
+    nullable: true
+    unit: none
+    isAbout: []
+    valueReference: []
+  - name: sn_k
+    description: District
+    type: text
+    nullable: true
+    unit: none
+    isAbout: []
+    valueReference: []
+  - name: sn_v1
+    description: Administrative association – front part
+    type: text
+    nullable: true
+    unit: none
+    isAbout: []
+    valueReference: []
+  - name: sn_v2
+    description: Administrative association – rear part
+    type: text
+    nullable: true
+    unit: none
+    isAbout: []
+    valueReference: []
+  - name: sn_g
+    description: Municipality
+    type: text
+    nullable: true
+    unit: none
+    isAbout: []
+    valueReference: []
+  - name: fk_s3
+    description: Function of the 3rd key digit
+    type: text
+    nullable: true
+    unit: none
+    isAbout: []
+    valueReference: []
+  - name: nuts
+    description: European statistics key
+    type: text
+    nullable: true
+    unit: none
+    isAbout: []
+    valueReference: []
+  - name: ars_0
+    description: Filled territorial code
+    type: text
+    nullable: true
+    unit: none
+    isAbout: []
+    valueReference: []
+  - name: ags_0
+    description: Filled Official Municipality Key
+    type: text
+    nullable: true
+    unit: none
+    isAbout: []
+    valueReference: []
+  - name: wsk
+    description: Effectiveness
+    type: timestamp without time zone
+    nullable: true
+    unit: none
+    isAbout: []
+    valueReference: []
+  - name: debkg_id
+    description: DLM identifier
+    type: text
+    nullable: true
+    unit: none
+    isAbout: []
+    valueReference: []
+  - name: rs
+    description: Territorial code (deprecated column)
+    type: text
+    nullable: true
+    unit: none
+    isAbout: []
+    valueReference: []
+  - name: sdv_rs
+    description: Seat of the administration (territorial code, deprecated)
+    type: text
+    nullable: true
+    unit: none
+    isAbout: []
+    valueReference: []
+  - name: rs_0
+    description: Filled territorial code (deprecated column)
+    type: text
+    nullable: true
+    unit: none
+    isAbout: []
+    valueReference: []
+  - name: geometry
+    description: Geometry of areas as WKB
+    type: geometry(Geometry,4326)
+    nullable: true
+    unit: none
+    isAbout: []
+    valueReference: []
+  primaryKey:
+  - id
+  foreignKeys: []
+dialect:
+  delimiter: null
+  decimalSeparator: .
+review:
+  path: ''
+  badge: ''

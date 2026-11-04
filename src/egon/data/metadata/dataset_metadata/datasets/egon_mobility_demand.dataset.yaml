@@ -1,0 +1,6 @@
+version: OEMetadata-2.0
+dataset:
+  name: 'egon_mobility_demand'
+  title: 'eGon-data — mobility demand'
+  description: 'Mobility demand datasets produced by the eGon-data pipeline (mobility_demand task group).'
+  '@id': null

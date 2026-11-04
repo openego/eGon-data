@@ -1,0 +1,352 @@
+name: supply.egon_home_batteries
+'@id': null
+title: eGon Home Batteries
+path: WILL_BE_SET_AT_PUBLICATION
+description: Home storage systems allocated to buildings
+languages:
+- en-US
+subject:
+- name: ''
+  '@id': null
+keywords:
+- battery
+- batteries
+- home
+- storage
+- building
+publicationDate: '2026-10-07'
+embargoPeriod:
+  start: ''
+  end: ''
+  isActive: false
+spatial:
+  location:
+    address: none
+    '@id': null
+    latitude: ''
+    longitude: ''
+  extent:
+    name: Germany
+    '@id': null
+    resolutionValue: building
+    resolutionUnit: ''
+    boundingBox:
+    - 0
+    - 0
+    - 0
+    - 0
+    crs: ''
+temporal:
+  referenceDate: '2021-12-31'
+  timeseries:
+  - start: null
+    end: null
+    resolutionValue: ''
+    resolutionUnit: ''
+    alignment: null
+    aggregationType: null
+sources:
+- title: Data bundle for egon-data
+  authors: []
+  description: 'Data bundle for egon-data: A transparent and reproducible data processing
+    pipeline for energy system modeling'
+  publicationYear: null
+  path: https://zenodo.org/record/16576506#.Y_dWM4CZMVM
+  sourceLicenses:
+  - name: DL-DE-BY-2.0
+    title: Data licence Germany – attribution – version 2.0
+    path: https://www.govdata.de/dl-de/by-2-0
+    instruction: 'Any use will be permitted provided it fulfils the requirements of
+      this "Data licence Germany – attribution – Version 2.0". The data and meta-data
+      provided may, for commercial and non-commercial use, in particular be copied,
+      printed, presented, altered, processed and transmitted to third parties; be
+      merged with own data and with the data of others and be combined to form new
+      and independent datasets; be integrated in internal and external business processes,
+      products and applications in public and non-public electronic networks. The
+      user must ensure that the source note contains the following information: the
+      name of the provider, the annotation "Data licence Germany – attribution – Version
+      2.0" or "dl-de/by-2-0" referring to the licence text available at www.govdata.de/dl-de/by-2-0,
+      and a reference to the dataset (URI). This applies only if the entity keeping
+      the data provides the pieces of information 1-3 for the source note. Changes,
+      editing, new designs or other amendments must be marked as such in the source
+      note.'
+    attribution: © Cußmann, Ilka
+    copyrightStatement: null
+- title: open-MaStR power unit registry for eGo^n project
+  authors: []
+  description: Data from Marktstammdatenregister (MaStR) data using the data dump
+    from 2022-11-17 for eGon-data.
+  publicationYear: null
+  path: https://zenodo.org/record/10491882
+  sourceLicenses:
+  - name: DL-DE-BY-2.0
+    title: Data licence Germany – attribution – version 2.0
+    path: https://www.govdata.de/dl-de/by-2-0
+    instruction: 'Any use will be permitted provided it fulfils the requirements of
+      this "Data licence Germany – attribution – Version 2.0". The data and meta-data
+      provided may, for commercial and non-commercial use, in particular be copied,
+      printed, presented, altered, processed and transmitted to third parties; be
+      merged with own data and with the data of others and be combined to form new
+      and independent datasets; be integrated in internal and external business processes,
+      products and applications in public and non-public electronic networks. The
+      user must ensure that the source note contains the following information: the
+      name of the provider, the annotation "Data licence Germany – attribution – Version
+      2.0" or "dl-de/by-2-0" referring to the licence text available at www.govdata.de/dl-de/by-2-0,
+      and a reference to the dataset (URI). This applies only if the entity keeping
+      the data provides the pieces of information 1-3 for the source note. Changes,
+      editing, new designs or other amendments must be marked as such in the source
+      note.'
+    attribution: © Amme, Jonathan
+    copyrightStatement: null
+- title: OpenStreetMap Data Extracts (Geofabrik)
+  authors: []
+  description: Full data extract of OpenStreetMap data for defined spatial extent
+    at "referenceDate"
+  publicationYear: null
+  path: https://download.geofabrik.de/europe/germany-210101.osm.pbf
+  sourceLicenses:
+  - name: ODbL-1.0
+    title: Open Data Commons Open Database License 1.0
+    path: https://opendatacommons.org/licenses/odbl/1.0/index.html
+    instruction: 'You are free: To Share, To Create, To Adapt; As long as you: Attribute,
+      Share-Alike, Keep open!'
+    attribution: © OpenStreetMap contributors
+    copyrightStatement: null
+- title: ERA5 global reanalysis
+  authors: []
+  description: ERA5 is the fifth generation ECMWF reanalysis for the global climate
+    and weather for the past 4 to 7 decades. Currently data is available from 1950,
+    split into Climate Data Store entries for 1950-1978 (preliminary back extension)
+    and from 1979 onwards (final release plus timely updates, this page). ERA5 replaces
+    the ERA-Interim reanalysis. See the online ERA5 documentation (https://confluence.ecmwf.int/display/CKB/ERA5%3A+data+documentation#ERA5:datadocumentation-Dataupdatefrequency)
+    for more information.
+  publicationYear: null
+  path: https://confluence.ecmwf.int/display/CKB/ERA5%3A+data+documentation#ERA5:datadocumentation-Dataupdatefrequency
+  sourceLicenses:
+  - name: Licence to use Copernicus Products
+    title: Licence to use Copernicus Products
+    path: https://cds.climate.copernicus.eu/api/v2/terms/static/licence-to-use-copernicus-products.pdf
+    instruction: 'This Licence is free of charge, worldwide, non-exclusive, royalty
+      free and perpetual. Access to Copernicus Products is given for any purpose in
+      so far as it is lawful, whereas use may include, but is not limited to: reproduction;
+      distribution; communication to the public; adaptation, modification and combination
+      with other data and information; or any combination of the foregoing'
+    attribution: Copernicus Climate Change Service (C3S) Climate Data Store
+    copyrightStatement: null
+- title: Verwaltungsgebiete 1:250 000 (Ebenen)
+  authors: []
+  description: Der Datenbestand umfasst sämtliche Verwaltungseinheiten der hierarchischen
+    Verwaltungsebenen vom Staat bis zu den Gemeinden mit ihren Grenzen, statistischen
+    Schlüsselzahlen, Namen der Verwaltungseinheit sowie die spezifische Bezeichnung
+    der Verwaltungsebene des jeweiligen Landes.
+  publicationYear: null
+  path: https://daten.gdz.bkg.bund.de/produkte/vg/vg250_ebenen_0101/2020/vg250_01-01.geo84.shape.ebenen.zip
+  sourceLicenses:
+  - name: dl-by-de/2.0
+    title: Datenlizenz Deutschland – Namensnennung – Version 2.0
+    path: www.govdata.de/dl-de/by-2-0
+    instruction: "Jede Nutzung ist unter den Bedingungen dieser „Datenlizenz Deutschland\
+      \ - Namensnennung - Version 2.0 zulässig.\nDie bereitgestellten Daten und Metadaten\
+      \ dürfen für die kommerzielle und nicht kommerzielle Nutzung insbesondere:(1)\
+      \ vervielfältigt, ausgedruckt, präsentiert, verändert, bearbeitet sowie an Dritte\
+      \ übermittelt werden;\n (2) mit eigenen Daten und Daten Anderer zusammengeführt\
+      \ und zu selbständigen neuen Datensätzen verbunden werden;\n (3) in interne\
+      \ und externe Geschäftsprozesse, Produkte und Anwendungen in öffentlichen und\
+      \ nicht öffentlichen elektronischen Netzwerken eingebunden werden.\nBei der\
+      \ Nutzung ist sicherzustellen, dass folgende Angaben als Quellenvermerk enthalten\
+      \ sind:\n(1) Bezeichnung des Bereitstellers nach dessen Maßgabe,\n(2) der Vermerk\
+      \ Datenlizenz Deutschland – Namensnennung – Version 2.0 oder dl-de/by-2-0 mit\
+      \ Verweis auf den Lizenztext unter www.govdata.de/dl-de/by-2-0 sowie\n(3) einen\
+      \ Verweis auf den Datensatz (URI).Dies gilt nur soweit die datenhaltende Stelle\
+      \ die Angaben(1) bis (3) zum Quellenvermerk bereitstellt.\nVeränderungen, Bearbeitungen,\
+      \ neue Gestaltungen oder sonstige Abwandlungen sind im Quellenvermerk mit dem\
+      \ Hinweis zu versehen, dass die Daten geändert wurden."
+    attribution: © Bundesamt für Kartographie und Geodäsie 2020 (Daten verändert)
+    copyrightStatement: null
+- title: eGon-data
+  authors: []
+  description: Workflow to download, process and generate data sets suitable for the
+    further research conducted in the project eGon (https://ego-n.org/)
+  publicationYear: null
+  path: https://github.com/openego/eGon-data
+  sourceLicenses:
+  - name: AGPL-3.0 License
+    title: GNU Affero General Public License v3.0
+    path: https://www.gnu.org/licenses/agpl-3.0.de.html
+    instruction: Permissions of this strongest copyleft license areconditioned on
+      making available complete source code of licensed works and modifications, which
+      include larger works using a licensedwork, under the same license. Copyright
+      and license notices must bepreserved. Contributors provide an express grant
+      of patent rights.When a modified version is used to provide a service over a
+      network,the complete source code of the modified version must be made available.
+    attribution: © eGon development team
+    copyrightStatement: null
+- title: Netzentwicklungsplan Strom 2035, Version 2021, erster Entwurf
+  authors: []
+  description: Die vier deutschen Übertragungsnetzbetreiber zeigen mit diesem ersten
+    Entwurf des Netzentwicklungsplans 2035, Version 2021, den benötigten Netzausbau
+    für die nächsten Jahre auf. Der NEP-Bericht beschreibt keine konkreten Trassenverläufe
+    von Übertragungsleitungen, sondern er dokumentiert den notwendigen Übertragungsbedarf
+    zwischen Netzknoten. Das heißt, es werden Anfangs- und Endpunkte von zukünftigen
+    Leitungsverbindungen definiert sowie konkrete Empfehlungen für den Aus- und Neubau
+    der Übertragungsnetze an Land und auf See in Deutschland gemäß den Detailanforderungen
+    im § 12 EnWG gegeben.
+  publicationYear: null
+  path: https://zenodo.org/record/5743452#.YbCoz7so8go
+  sourceLicenses:
+  - name: CC-BY-4.0
+    title: Creative Commons Attribution 4.0 International
+    path: https://creativecommons.org/licenses/by/4.0/legalcode
+    instruction: 'You are free: To Share, To Create, To Adapt; As long as you: Attribute.'
+    attribution: © Übertragungsnetzbetreiber
+    copyrightStatement: null
+- title: open-MaStR power unit registry
+  authors: []
+  description: 'Raw data download Marktstammdatenregister (MaStR) data using the webservice.
+    All data from the Marktstammdatenregister is included. There are duplicates included.
+    For further information read in the documentation of the original data source:
+    https://www.marktstammdatenregister.de/MaStRHilfe/subpages/statistik.html'
+  publicationYear: null
+  path: https://zenodo.org/record/10480930
+  sourceLicenses:
+  - name: dl-by-de/2.0
+    title: Datenlizenz Deutschland – Namensnennung – Version 2.0
+    path: www.govdata.de/dl-de/by-2-0
+    instruction: "Jede Nutzung ist unter den Bedingungen dieser „Datenlizenz Deutschland\
+      \ - Namensnennung - Version 2.0 zulässig.\nDie bereitgestellten Daten und Metadaten\
+      \ dürfen für die kommerzielle und nicht kommerzielle Nutzung insbesondere:(1)\
+      \ vervielfältigt, ausgedruckt, präsentiert, verändert, bearbeitet sowie an Dritte\
+      \ übermittelt werden;\n (2) mit eigenen Daten und Daten Anderer zusammengeführt\
+      \ und zu selbständigen neuen Datensätzen verbunden werden;\n (3) in interne\
+      \ und externe Geschäftsprozesse, Produkte und Anwendungen in öffentlichen und\
+      \ nicht öffentlichen elektronischen Netzwerken eingebunden werden.\nBei der\
+      \ Nutzung ist sicherzustellen, dass folgende Angaben als Quellenvermerk enthalten\
+      \ sind:\n(1) Bezeichnung des Bereitstellers nach dessen Maßgabe,\n(2) der Vermerk\
+      \ Datenlizenz Deutschland – Namensnennung – Version 2.0 oder dl-de/by-2-0 mit\
+      \ Verweis auf den Lizenztext unter www.govdata.de/dl-de/by-2-0 sowie\n(3) einen\
+      \ Verweis auf den Datensatz (URI).Dies gilt nur soweit die datenhaltende Stelle\
+      \ die Angaben(1) bis (3) zum Quellenvermerk bereitstellt.\nVeränderungen, Bearbeitungen,\
+      \ neue Gestaltungen oder sonstige Abwandlungen sind im Quellenvermerk mit dem\
+      \ Hinweis zu versehen, dass die Daten geändert wurden."
+    attribution: © 2021 Bundesnetzagentur für Elektrizität, Gas, Telekommunikation,
+      Post und Eisenbahnen
+    copyrightStatement: null
+- title: null
+  authors: []
+  description: This script compiles assumptions on energy system technologies (such
+    as costs, efficiencies, lifetimes, etc.) for chosen years (e.g. [2020, 2030, 2050])
+    from a variety of sources into CSV files to be read by energy system modelling
+    software. The merged outputs have standardized cost years, technology names, units
+    and source information.
+  publicationYear: null
+  path: https://github.com/PyPSA/technology-data/tree/v0.3.0
+  sourceLicenses:
+  - name: AGPL-3.0 License
+    title: GNU Affero General Public License v3.0
+    path: https://www.gnu.org/licenses/agpl-3.0.de.html
+    instruction: Permissions of this strongest copyleft license areconditioned on
+      making available complete source code of licensed works and modifications, which
+      include larger works using a licensedwork, under the same license. Copyright
+      and license notices must bepreserved. Contributors provide an express grant
+      of patent rights.When a modified version is used to provide a service over a
+      network,the complete source code of the modified version must be made available.
+    attribution: © Marta Victoria (Aarhus University), Kun Zhu (Aarhus University),
+      Elisabeth Zeyen (TUB), Tom Brown (TUB)
+    copyrightStatement: null
+licenses:
+- name: ODbL-1.0
+  title: Open Data Commons Open Database License 1.0
+  path: https://opendatacommons.org/licenses/odbl/1.0/index.html
+  instruction: 'You are free: To Share, To Create, To Adapt; As long as you: Attribute,
+    Share-Alike, Keep open!'
+  attribution: © eGon development team
+  copyrightStatement: null
+contributors:
+- title: Kilian Helfenbein
+  path: null
+  organization: null
+  roles:
+  - ''
+  date: '2023-03-15'
+  object: metadata
+  comment: Add metadata to dataset.
+- title: Kilian Helfenbein
+  path: null
+  organization: null
+  roles:
+  - ''
+  date: null
+  object: dataset
+  comment: Add workflow to generate dataset.
+- title: eGon-data metadata migration
+  path: https://github.com/openego/eGon-data
+  roles:
+  - dataCurator
+  organization: null
+  date: '2026-10-20'
+  object: metadata
+  comment: Migrated from the OEMetadata v1.4 table comment of a full eGon-data run
+    to OEMetadata v2 with OMI.
+type: Table
+format: PostgreSQL
+encoding: UTF-8
+schema:
+  fields:
+  - name: index
+    description: ''
+    type: integer
+    nullable: false
+    unit: none
+    isAbout: []
+    valueReference: []
+  - name: scenario
+    description: ''
+    type: character varying
+    nullable: true
+    unit: none
+    isAbout: []
+    valueReference: []
+  - name: bus_id
+    description: ''
+    type: integer
+    nullable: true
+    unit: none
+    isAbout: []
+    valueReference: []
+  - name: building_id
+    description: ''
+    type: integer
+    nullable: true
+    unit: none
+    isAbout: []
+    valueReference: []
+  - name: p_nom
+    description: ''
+    type: double precision
+    nullable: true
+    unit: none
+    isAbout: []
+    valueReference: []
+  - name: capacity
+    description: ''
+    type: double precision
+    nullable: true
+    unit: none
+    isAbout: []
+    valueReference: []
+  - name: sources
+    description: ''
+    type: jsonb
+    nullable: true
+    unit: none
+    isAbout: []
+    valueReference: []
+  primaryKey:
+  - index
+  foreignKeys: []
+dialect:
+  delimiter: ''
+  decimalSeparator: ''
+review:
+  path: ''
+  badge: ''

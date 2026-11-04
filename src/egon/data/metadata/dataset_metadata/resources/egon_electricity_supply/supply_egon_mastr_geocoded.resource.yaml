@@ -1,0 +1,388 @@
+'@id': ''
+name: supply.egon_mastr_geocoded
+topics: []
+title: 'TODO: Add title for supply.egon_mastr_geocoded'
+path: ''
+description: 'TODO: Add description'
+languages: []
+subject:
+- name: ''
+  '@id': ''
+keywords: []
+publicationDate: ''
+embargoPeriod:
+  start: ''
+  end: ''
+  isActive: false
+context:
+  title: ''
+  homepage: ''
+  documentation: ''
+  sourceCode: ''
+  publisher: ''
+  publisherLogo: ''
+  contact: ''
+  fundingAgency: ''
+  fundingAgencyLogo: ''
+  grantNo: ''
+spatial:
+  location:
+    address: ''
+    '@id': ''
+    latitude: ''
+    longitude: ''
+  extent:
+    name: ''
+    '@id': ''
+    resolutionValue: ''
+    resolutionUnit: ''
+    crs: ''
+temporal:
+  referenceDate: ''
+  timeseries:
+  - start: ''
+    end: ''
+    resolutionValue: ''
+    resolutionUnit: ''
+    alignment: ''
+    aggregationType: ''
+sources:
+- title: ''
+  authors: []
+  description: ''
+  publicationYear: ''
+  path: ''
+  sourceLicenses:
+  - name: ''
+    title: ''
+    path: ''
+    instruction: ''
+    attribution: ''
+    copyrightStatement: ''
+- title: 'Internal table: boundaries.egon_map_mvgriddistrict_vg250'
+  description: Derived from the internal table 'boundaries.egon_map_mvgriddistrict_vg250'.
+    See that table's own metadata for full provenance.
+  path: ''
+  authors: []
+  publicationYear: null
+  sourceLicenses: []
+- title: 'Internal table: boundaries.egon_map_zensus_grid_districts'
+  description: Derived from the internal table 'boundaries.egon_map_zensus_grid_districts'.
+    See that table's own metadata for full provenance.
+  path: ''
+  authors: []
+  publicationYear: null
+  sourceLicenses: []
+- title: 'Internal table: boundaries.vg250_lan'
+  description: Derived from the internal table 'boundaries.vg250_lan'. See that table's
+    own metadata for full provenance.
+  path: ''
+  authors: []
+  publicationYear: null
+  sourceLicenses: []
+- title: 'Internal table: boundaries.vg250_sta_union'
+  description: Derived from the internal table 'boundaries.vg250_sta_union'. See that
+    table's own metadata for full provenance.
+  path: ''
+  authors: []
+  publicationYear: null
+  sourceLicenses: []
+- title: 'Internal table: demand.egon_demandregio_zensus_electricity'
+  description: Derived from the internal table 'demand.egon_demandregio_zensus_electricity'.
+    See that table's own metadata for full provenance.
+  path: ''
+  authors: []
+  publicationYear: null
+  sourceLicenses: []
+- title: 'Internal table: grid.egon_ehv_substation_voronoi'
+  description: Derived from the internal table 'grid.egon_ehv_substation_voronoi'.
+    See that table's own metadata for full provenance.
+  path: ''
+  authors: []
+  publicationYear: null
+  sourceLicenses: []
+- title: 'Internal table: grid.egon_hvmv_substation'
+  description: Derived from the internal table 'grid.egon_hvmv_substation'. See that
+    table's own metadata for full provenance.
+  path: ''
+  authors: []
+  publicationYear: null
+  sourceLicenses: []
+- title: 'Internal table: grid.egon_mv_grid_district'
+  description: Derived from the internal table 'grid.egon_mv_grid_district'. See that
+    table's own metadata for full provenance.
+  path: ''
+  authors: []
+  publicationYear: null
+  sourceLicenses: []
+- title: 'Internal table: osmtgmod_results.bus_data'
+  description: Derived from the internal table 'osmtgmod_results.bus_data'. See that
+    table's own metadata for full provenance.
+  path: ''
+  authors: []
+  publicationYear: null
+  sourceLicenses: []
+- title: 'Internal table: supply.egon_era5_renewable_feedin'
+  description: Derived from the internal table 'supply.egon_era5_renewable_feedin'.
+    See that table's own metadata for full provenance.
+  path: ''
+  authors: []
+  publicationYear: null
+  sourceLicenses: []
+- title: 'Internal table: supply.egon_era5_weather_cells'
+  description: Derived from the internal table 'supply.egon_era5_weather_cells'. See
+    that table's own metadata for full provenance.
+  path: ''
+  authors: []
+  publicationYear: null
+  sourceLicenses: []
+- title: 'Internal table: supply.egon_mastr_conventional_without_chp'
+  description: Derived from the internal table 'supply.egon_mastr_conventional_without_chp'.
+    See that table's own metadata for full provenance.
+  path: ''
+  authors: []
+  publicationYear: null
+  sourceLicenses: []
+- title: 'Internal table: supply.egon_nep_conventional_powerplants'
+  description: Derived from the internal table 'supply.egon_nep_conventional_powerplants'.
+    See that table's own metadata for full provenance.
+  path: ''
+  authors: []
+  publicationYear: null
+  sourceLicenses: []
+- title: 'Internal table: supply.egon_power_plants_biomass'
+  description: Derived from the internal table 'supply.egon_power_plants_biomass'.
+    See that table's own metadata for full provenance.
+  path: ''
+  authors: []
+  publicationYear: null
+  sourceLicenses: []
+- title: 'Internal table: supply.egon_power_plants_hydro'
+  description: Derived from the internal table 'supply.egon_power_plants_hydro'. See
+    that table's own metadata for full provenance.
+  path: ''
+  authors: []
+  publicationYear: null
+  sourceLicenses: []
+- title: 'Internal table: supply.egon_power_plants_pv'
+  description: Derived from the internal table 'supply.egon_power_plants_pv'. See
+    that table's own metadata for full provenance.
+  path: ''
+  authors: []
+  publicationYear: null
+  sourceLicenses: []
+- title: 'Internal table: supply.egon_power_plants_wind'
+  description: Derived from the internal table 'supply.egon_power_plants_wind'. See
+    that table's own metadata for full provenance.
+  path: ''
+  authors: []
+  publicationYear: null
+  sourceLicenses: []
+- title: 'Internal table: supply.egon_re_potential_area_pv_agriculture'
+  description: Derived from the internal table 'supply.egon_re_potential_area_pv_agriculture'.
+    See that table's own metadata for full provenance.
+  path: ''
+  authors: []
+  publicationYear: null
+  sourceLicenses: []
+- title: 'Internal table: supply.egon_re_potential_area_pv_road_railway'
+  description: Derived from the internal table 'supply.egon_re_potential_area_pv_road_railway'.
+    See that table's own metadata for full provenance.
+  path: ''
+  authors: []
+  publicationYear: null
+  sourceLicenses: []
+- title: 'Internal table: supply.egon_re_potential_area_wind'
+  description: Derived from the internal table 'supply.egon_re_potential_area_wind'.
+    See that table's own metadata for full provenance.
+  path: ''
+  authors: []
+  publicationYear: null
+  sourceLicenses: []
+- title: 'Internal table: supply.egon_scenario_capacities'
+  description: Derived from the internal table 'supply.egon_scenario_capacities'.
+    See that table's own metadata for full provenance.
+  path: ''
+  authors: []
+  publicationYear: null
+  sourceLicenses: []
+- title: 'Internal table: supply.egon_storages'
+  description: Derived from the internal table 'supply.egon_storages'. See that table's
+    own metadata for full provenance.
+  path: ''
+  authors: []
+  publicationYear: null
+  sourceLicenses: []
+- title: data_bundle_deposit_id
+  description: ''
+  path: '16576506'
+  authors: []
+  publicationYear: null
+  sourceLicenses: []
+- title: eGon2035_date_max
+  description: ''
+  path: '2035-01-01'
+  authors: []
+  publicationYear: null
+  sourceLicenses: []
+- title: egon2021_date_max
+  description: ''
+  path: '2021-12-31 23:59:00'
+  authors: []
+  publicationYear: null
+  sourceLicenses: []
+- title: mastr_biomass
+  description: ''
+  path: ./bnetza_mastr/dump_2025-02-09/bnetza_mastr_biomass_cleaned.csv
+  authors: []
+  publicationYear: null
+  sourceLicenses: []
+- title: mastr_combustion
+  description: ''
+  path: ./bnetza_mastr/dump_2025-02-09/bnetza_mastr_combustion_cleaned.csv
+  authors: []
+  publicationYear: null
+  sourceLicenses: []
+- title: mastr_deposit_id
+  description: ''
+  path: '14783581'
+  authors: []
+  publicationYear: null
+  sourceLicenses: []
+- title: mastr_geocoding_path
+  description: ''
+  path: mastr_geocoding
+  authors: []
+  publicationYear: null
+  sourceLicenses: []
+- title: mastr_gsgk
+  description: ''
+  path: ./bnetza_mastr/dump_2025-02-09/bnetza_mastr_gsgk_cleaned.csv
+  authors: []
+  publicationYear: null
+  sourceLicenses: []
+- title: mastr_hydro
+  description: ''
+  path: ./bnetza_mastr/dump_2025-02-09/bnetza_mastr_hydro_cleaned.csv
+  authors: []
+  publicationYear: null
+  sourceLicenses: []
+- title: mastr_location
+  description: ''
+  path: ./bnetza_mastr/dump_2025-02-09/location_elec_generation_raw.csv
+  authors: []
+  publicationYear: null
+  sourceLicenses: []
+- title: mastr_nuclear
+  description: ''
+  path: ./bnetza_mastr/dump_2025-02-09/bnetza_mastr_nuclear_cleaned.csv
+  authors: []
+  publicationYear: null
+  sourceLicenses: []
+- title: mastr_pv
+  description: ''
+  path: ./bnetza_mastr/dump_2025-02-09/bnetza_mastr_solar_cleaned.csv
+  authors: []
+  publicationYear: null
+  sourceLicenses: []
+- title: mastr_storage
+  description: ''
+  path: ./bnetza_mastr/dump_2025-02-09/bnetza_mastr_storage_cleaned.csv
+  authors: []
+  publicationYear: null
+  sourceLicenses: []
+- title: mastr_wind
+  description: ''
+  path: ./bnetza_mastr/dump_2025-02-09/bnetza_mastr_wind_cleaned.csv
+  authors: []
+  publicationYear: null
+  sourceLicenses: []
+- title: nep_2035
+  description: ''
+  path: NEP_V2021_scnC2035.xlsx
+  authors: []
+  publicationYear: null
+  sourceLicenses: []
+- title: nep_2037
+  description: ''
+  path: NEP_V2025_scnC2037.xlsx
+  authors: []
+  publicationYear: null
+  sourceLicenses: []
+- title: osm_config
+  description: ''
+  path: https://download.geofabrik.de/europe/germany-240101.osm.pbf
+  authors: []
+  publicationYear: null
+  sourceLicenses: []
+- title: status2024_date_max
+  description: ''
+  path: '2024-12-31 23:59:00'
+  authors: []
+  publicationYear: null
+  sourceLicenses: []
+- title: wind_offshore_status2019
+  description: ''
+  path: windoffshore_status2019.xlsx
+  authors: []
+  publicationYear: null
+  sourceLicenses: []
+licenses:
+- name: ''
+  title: ''
+  path: ''
+  instruction: ''
+  attribution: ''
+  copyrightStatement: ''
+contributors:
+- title: ''
+  path: ''
+  organization: ''
+  roles: []
+  date: ''
+  object: ''
+  comment: ''
+type: ''
+format: ''
+encoding: ''
+schema:
+  primaryKey:
+  - index
+  foreignKeys: []
+  fields:
+  - name: index
+    description: 'TODO: Add description'
+    type: integer
+    unit: none
+    nullable: false
+  - name: zip_and_municipality
+    description: 'TODO: Add description'
+    type: character varying
+    unit: none
+    nullable: true
+  - name: latitude
+    description: 'TODO: Add description'
+    type: double precision
+    unit: none
+    nullable: true
+  - name: longitude
+    description: 'TODO: Add description'
+    type: double precision
+    unit: none
+    nullable: true
+  - name: altitude
+    description: 'TODO: Add description'
+    type: double precision
+    unit: none
+    nullable: true
+  - name: geometry
+    description: 'TODO: Add description'
+    type: geometry(Point,4326)
+    unit: none
+    nullable: true
+dialect:
+  delimiter: ''
+  decimalSeparator: ''
+review:
+  path: ''
+  badge: ''

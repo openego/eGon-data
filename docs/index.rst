@@ -10,6 +10,7 @@ Contents
    getting_started
    troubleshooting
    data
+   metadata
    validation
    literature
    contributing

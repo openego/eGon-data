@@ -1,0 +1,184 @@
+'@id': ''
+name: society.egon_destatis_zensus_household_per_ha_refined
+topics: []
+title: 'TODO: Add title for society.egon_destatis_zensus_household_per_ha_refined'
+path: ''
+description: 'TODO: Add description'
+languages: []
+subject:
+- name: ''
+  '@id': ''
+keywords: []
+publicationDate: ''
+embargoPeriod:
+  start: ''
+  end: ''
+  isActive: false
+context:
+  title: ''
+  homepage: ''
+  documentation: ''
+  sourceCode: ''
+  publisher: ''
+  publisherLogo: ''
+  contact: ''
+  fundingAgency: ''
+  fundingAgencyLogo: ''
+  grantNo: ''
+spatial:
+  location:
+    address: ''
+    '@id': ''
+    latitude: ''
+    longitude: ''
+  extent:
+    name: ''
+    '@id': ''
+    resolutionValue: ''
+    resolutionUnit: ''
+    crs: ''
+temporal:
+  referenceDate: ''
+  timeseries:
+  - start: ''
+    end: ''
+    resolutionValue: ''
+    resolutionUnit: ''
+    alignment: ''
+    aggregationType: ''
+sources:
+- title: ''
+  authors: []
+  description: ''
+  publicationYear: ''
+  path: ''
+  sourceLicenses:
+  - name: ''
+    title: ''
+    path: ''
+    instruction: ''
+    attribution: ''
+    copyrightStatement: ''
+- title: 'Internal table: boundaries.egon_map_zensus_vg250'
+  description: Derived from the internal table 'boundaries.egon_map_zensus_vg250'.
+    See that table's own metadata for full provenance.
+  path: ''
+  authors: []
+  publicationYear: null
+  sourceLicenses: []
+- title: 'Internal table: boundaries.vg250_lan'
+  description: Derived from the internal table 'boundaries.vg250_lan'. See that table's
+    own metadata for full provenance.
+  path: ''
+  authors: []
+  publicationYear: null
+  sourceLicenses: []
+- title: 'Internal table: demand.demandregio_household_load_profiles'
+  description: Derived from the internal table 'demand.demandregio_household_load_profiles'.
+    See that table's own metadata for full provenance.
+  path: ''
+  authors: []
+  publicationYear: null
+  sourceLicenses: []
+- title: 'Internal table: demand.egon_demandregio_hh'
+  description: Derived from the internal table 'demand.egon_demandregio_hh'. See that
+    table's own metadata for full provenance.
+  path: ''
+  authors: []
+  publicationYear: null
+  sourceLicenses: []
+- title: 'Internal table: society.destatis_zensus_population_per_ha'
+  description: Derived from the internal table 'society.destatis_zensus_population_per_ha'.
+    See that table's own metadata for full provenance.
+  path: ''
+  authors: []
+  publicationYear: null
+  sourceLicenses: []
+- title: 'Internal table: society.destatis_zensus_population_per_ha_inside_germany'
+  description: Derived from the internal table 'society.destatis_zensus_population_per_ha_inside_germany'.
+    See that table's own metadata for full provenance.
+  path: ''
+  authors: []
+  publicationYear: null
+  sourceLicenses: []
+- title: 'Internal table: society.egon_destatis_zensus_household_per_ha'
+  description: Derived from the internal table 'society.egon_destatis_zensus_household_per_ha'.
+    See that table's own metadata for full provenance.
+  path: ''
+  authors: []
+  publicationYear: null
+  sourceLicenses: []
+licenses:
+- name: ''
+  title: ''
+  path: ''
+  instruction: ''
+  attribution: ''
+  copyrightStatement: ''
+contributors:
+- title: ''
+  path: ''
+  organization: ''
+  roles: []
+  date: ''
+  object: ''
+  comment: ''
+type: ''
+format: ''
+encoding: ''
+schema:
+  primaryKey:
+  - id
+  foreignKeys: []
+  fields:
+  - name: id
+    description: 'TODO: Add description'
+    type: integer
+    unit: none
+    nullable: false
+  - name: cell_id
+    description: 'TODO: Add description'
+    type: integer
+    unit: none
+    nullable: true
+  - name: grid_id
+    description: 'TODO: Add description'
+    type: character varying
+    unit: none
+    nullable: true
+  - name: nuts3
+    description: 'TODO: Add description'
+    type: character varying
+    unit: none
+    nullable: true
+  - name: nuts1
+    description: 'TODO: Add description'
+    type: character varying
+    unit: none
+    nullable: true
+  - name: characteristics_code
+    description: 'TODO: Add description'
+    type: integer
+    unit: none
+    nullable: true
+  - name: hh_5types
+    description: 'TODO: Add description'
+    type: integer
+    unit: none
+    nullable: true
+  - name: hh_type
+    description: 'TODO: Add description'
+    type: character(2)
+    unit: none
+    nullable: true
+  - name: hh_10types
+    description: 'TODO: Add description'
+    type: integer
+    unit: none
+    nullable: true
+dialect:
+  delimiter: ''
+  decimalSeparator: ''
+review:
+  path: ''
+  badge: ''

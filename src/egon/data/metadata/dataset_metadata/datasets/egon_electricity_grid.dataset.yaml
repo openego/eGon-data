@@ -1,0 +1,6 @@
+version: OEMetadata-2.0
+dataset:
+  name: 'egon_electricity_grid'
+  title: 'eGon-data — electricity grid'
+  description: 'Electricity grid datasets produced by the eGon-data pipeline (electricity_grid task group).'
+  '@id': null
