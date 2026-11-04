@@ -38,6 +38,7 @@ from egon.data.validation.rules.custom.sanity import (
     DSMEtragoValues,
     DSMSourceCoverage,
 )
+
 # CONSTANTS
 # TODO: move to datasets.yml
 CON = db.engine()
@@ -295,7 +296,8 @@ class DsmPotential(Dataset):
                         "demand.egon_demandregio_sites_ind_electricity_dsm_timeseries",
                         "demand.egon_sites_ind_load_curves_individual_dsm_timeseries",
                     ]
-                ] + [
+                ]
+                + [
                     DSMEtragoValues(
                         rule_id=f"SANITY_DSM_ETRAGO.{scenario}",
                         scenario=scenario,
@@ -303,7 +305,8 @@ class DsmPotential(Dataset):
                     for scenario in set(
                         config.settings()["egon-data"]["--scenarios"]
                     )
-                ] + [
+                ]
+                + [
                     DSMSourceCoverage(
                         rule_id=f"SANITY_DSM_SOURCE_COVERAGE.{scenario}",
                         scenario=scenario,
@@ -315,6 +318,7 @@ class DsmPotential(Dataset):
             },
             proceed_on_validation_failure=True,
         )
+
 
 # Datasets
 class EgonEtragoElectricityCtsDsmTimeseries(Base):

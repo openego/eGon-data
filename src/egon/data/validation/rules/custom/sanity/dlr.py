@@ -62,12 +62,7 @@ class DLRValues(DataFrameRule):
         n_out_of_range = int(row.n_out_of_range)
         n_missing_timeseries = int(row.n_missing_timeseries)
 
-        n_bad = (
-            n_wrong_length
-            + n_nan
-            + n_out_of_range
-            + n_missing_timeseries
-        )
+        n_bad = n_wrong_length + n_nan + n_out_of_range + n_missing_timeseries
         success = n_rows > 0 and n_bad == 0
 
         return RuleResult(

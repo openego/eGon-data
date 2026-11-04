@@ -89,6 +89,7 @@ class Calculate_dlr(Dataset):
             proceed_on_validation_failure=True,
         )
 
+
 def dlr():
     """Calculate DLR and assign values to each line in the db
 

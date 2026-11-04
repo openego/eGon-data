@@ -325,12 +325,7 @@ class DSMEtragoValues(DataFrameRule):
             + n_unconnected_buses
         )
 
-        success = (
-            n_links > 0
-            and n_stores > 0
-            and n_buses > 0
-            and n_bad == 0
-        )
+        success = n_links > 0 and n_stores > 0 and n_buses > 0 and n_bad == 0
 
         return RuleResult(
             rule_id=self.rule_id,
