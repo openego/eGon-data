@@ -1,0 +1,6 @@
+version: OEMetadata-2.0
+dataset:
+  name: 'egon_electricity_flexibility'
+  title: 'eGon-data — electricity flexibility'
+  description: 'Electricity flexibility datasets produced by the eGon-data pipeline (electricity_flexibility task group).'
+  '@id': null

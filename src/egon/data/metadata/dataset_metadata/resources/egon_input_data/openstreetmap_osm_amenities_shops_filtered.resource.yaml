@@ -1,0 +1,169 @@
+'@id': ''
+name: openstreetmap.osm_amenities_shops_filtered
+topics: []
+title: 'TODO: Add title for openstreetmap.osm_amenities_shops_filtered'
+path: ''
+description: 'TODO: Add description'
+languages: []
+subject:
+- name: ''
+  '@id': ''
+keywords: []
+publicationDate: ''
+embargoPeriod:
+  start: ''
+  end: ''
+  isActive: false
+context:
+  title: ''
+  homepage: ''
+  documentation: ''
+  sourceCode: ''
+  publisher: ''
+  publisherLogo: ''
+  contact: ''
+  fundingAgency: ''
+  fundingAgencyLogo: ''
+  grantNo: ''
+spatial:
+  location:
+    address: ''
+    '@id': ''
+    latitude: ''
+    longitude: ''
+  extent:
+    name: ''
+    '@id': ''
+    resolutionValue: ''
+    resolutionUnit: ''
+    crs: ''
+temporal:
+  referenceDate: ''
+  timeseries:
+  - start: ''
+    end: ''
+    resolutionValue: ''
+    resolutionUnit: ''
+    alignment: ''
+    aggregationType: ''
+sources:
+- title: ''
+  authors: []
+  description: ''
+  publicationYear: ''
+  path: ''
+  sourceLicenses:
+  - name: ''
+    title: ''
+    path: ''
+    instruction: ''
+    attribution: ''
+    copyrightStatement: ''
+- title: 'Internal table: openstreetmap.osm_line'
+  description: Derived from the internal table 'openstreetmap.osm_line'. See that
+    table's own metadata for full provenance.
+  path: ''
+  authors: []
+  publicationYear: null
+  sourceLicenses: []
+- title: 'Internal table: openstreetmap.osm_point'
+  description: Derived from the internal table 'openstreetmap.osm_point'. See that
+    table's own metadata for full provenance.
+  path: ''
+  authors: []
+  publicationYear: null
+  sourceLicenses: []
+- title: 'Internal table: openstreetmap.osm_polygon'
+  description: Derived from the internal table 'openstreetmap.osm_polygon'. See that
+    table's own metadata for full provenance.
+  path: ''
+  authors: []
+  publicationYear: null
+  sourceLicenses: []
+- title: 'Internal table: openstreetmap.osm_ways'
+  description: Derived from the internal table 'openstreetmap.osm_ways'. See that
+    table's own metadata for full provenance.
+  path: ''
+  authors: []
+  publicationYear: null
+  sourceLicenses: []
+- title: 'Internal table: society.destatis_zensus_population_per_ha'
+  description: Derived from the internal table 'society.destatis_zensus_population_per_ha'.
+    See that table's own metadata for full provenance.
+  path: ''
+  authors: []
+  publicationYear: null
+  sourceLicenses: []
+- title: 'Internal table: society.egon_destatis_zensus_apartment_building_population_per_ha'
+  description: Derived from the internal table 'society.egon_destatis_zensus_apartment_building_population_per_ha'.
+    See that table's own metadata for full provenance.
+  path: ''
+  authors: []
+  publicationYear: null
+  sourceLicenses: []
+- title: 'Internal table: society.egon_ethos_builda_buildings'
+  description: Derived from the internal table 'society.egon_ethos_builda_buildings'.
+    See that table's own metadata for full provenance.
+  path: ''
+  authors: []
+  publicationYear: null
+  sourceLicenses: []
+licenses:
+- name: ''
+  title: ''
+  path: ''
+  instruction: ''
+  attribution: ''
+  copyrightStatement: ''
+contributors:
+- title: ''
+  path: ''
+  organization: ''
+  roles: []
+  date: ''
+  object: ''
+  comment: ''
+type: ''
+format: ''
+encoding: ''
+schema:
+  primaryKey:
+  - egon_amenity_id
+  foreignKeys: []
+  fields:
+  - name: osm_id
+    description: 'TODO: Add description'
+    type: bigint
+    unit: none
+    nullable: true
+  - name: amenity
+    description: 'TODO: Add description'
+    type: text
+    unit: none
+    nullable: true
+  - name: name
+    description: 'TODO: Add description'
+    type: text
+    unit: none
+    nullable: true
+  - name: geom_amenity
+    description: 'TODO: Add description'
+    type: geometry
+    unit: none
+    nullable: true
+  - name: tags
+    description: 'TODO: Add description'
+    type: hstore
+    unit: none
+    nullable: true
+  - name: egon_amenity_id
+    description: 'TODO: Add description'
+    type: integer
+    unit: none
+    nullable: false
+dialect:
+  delimiter: ''
+  decimalSeparator: ''
+review:
+  path: ''
+  badge: ''

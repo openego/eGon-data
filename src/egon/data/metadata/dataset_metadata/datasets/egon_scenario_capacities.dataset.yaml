@@ -1,0 +1,6 @@
+version: OEMetadata-2.0
+dataset:
+  name: 'egon_scenario_capacities'
+  title: 'eGon-data — scenario capacities'
+  description: 'Scenario capacities datasets produced by the eGon-data pipeline (scenario_capacities task group).'
+  '@id': null

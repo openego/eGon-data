@@ -1,0 +1,6 @@
+version: OEMetadata-2.0
+dataset:
+  name: 'egon_setup'
+  title: 'eGon-data — setup'
+  description: 'Setup datasets produced by the eGon-data pipeline (setup task group).'
+  '@id': null

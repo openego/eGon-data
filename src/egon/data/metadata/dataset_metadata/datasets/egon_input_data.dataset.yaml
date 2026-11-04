@@ -1,0 +1,6 @@
+version: OEMetadata-2.0
+dataset:
+  name: 'egon_input_data'
+  title: 'eGon-data — input data'
+  description: 'External input datasets ingested by the eGon-data pipeline (input_data task group).'
+  '@id': null

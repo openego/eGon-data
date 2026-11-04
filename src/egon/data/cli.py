@@ -14,28 +14,29 @@ Why does this file exist, and why not put this in __main__?
 
   Also see (1) from http://click.pocoo.org/5/setuptools/#setuptools-integration
 """
+
+from multiprocessing import Process
+from pathlib import Path
 import os
 import shutil
 import socket
 import subprocess
 import sys
 import time
-from multiprocessing import Process
-from pathlib import Path
 
-import click
-import yaml
 from psycopg2 import OperationalError as PSPGOE
-
-import egon.data
-import egon.data.airflow
-import egon.data.config as config
-from egon.data.config import settings
-import importlib_resources as resources
-from egon.data import logger
 from sqlalchemy import create_engine
 from sqlalchemy.exc import OperationalError as SQLAOE
 from sqlalchemy.orm import Session
+import click
+import importlib_resources as resources
+import yaml
+
+from egon.data import logger
+from egon.data.config import settings
+import egon.data
+import egon.data.airflow
+import egon.data.config as config
 
 
 @click.group(
@@ -195,7 +196,7 @@ from sqlalchemy.orm import Session
         "Scenario name for which a data model shall be created."
         " If you want to create multiple scenarios, set the parameter multiple"
         " times, e.g. --scenarios reGon2037 --scenarios status2024"
-        ),
+    ),
     multiple=True,
     show_default=True,
 )
@@ -213,12 +214,9 @@ from sqlalchemy.orm import Session
     "--prefix",
     default=None,
     metavar="PREFIX",
-    help=(
-        "Add optional prefix to the DAG name in the Airflow config. "
-    ),
+    help=("Add optional prefix to the DAG name in the Airflow config. "),
     show_default=True,
 )
-
 @click.version_option(version=egon.data.__version__)
 @click.pass_context
 def egon_data(context, **kwargs):
@@ -267,19 +265,32 @@ def egon_data(context, **kwargs):
 
     """
 
+    # The `metadata` subcommands work on the version-controlled YAML store
+    # and must not trigger the workflow setup below (config rendering,
+    # Docker, airflow db init). They read an existing configuration file
+    # on their own if they need database access.
+    if context.invoked_subcommand == "metadata":
+        return
+
     # Adapted from the `merge_copy` implementation at:
     #
     #   https://stackoverflow.com/questions/29847098/the-best-way-to-merge-multi-nested-dictionaries-in-python-2-7
     #
     def merge(d1, d2):
         return {
-            k: d1[k]
-            if k in d1 and k not in d2
-            else d2[k]
-            if k not in d1 and k in d2
-            else merge(d1[k], d2[k])
-            if isinstance(d1[k], dict) and isinstance(d2[k], dict)
-            else d2[k]
+            k: (
+                d1[k]
+                if k in d1 and k not in d2
+                else (
+                    d2[k]
+                    if k not in d1 and k in d2
+                    else (
+                        merge(d1[k], d2[k])
+                        if isinstance(d1[k], dict) and isinstance(d2[k], dict)
+                        else d2[k]
+                    )
+                )
+            )
             for k in set(d1).union(d2)
         }
 
@@ -377,7 +388,9 @@ def egon_data(context, **kwargs):
         uid=os.getuid(),
     )
 
-    path_directory = (Path(".") / "docker" / settings()["egon-data"]["--database-directory"])
+    path_directory = (
+        Path(".") / "docker" / settings()["egon-data"]["--database-directory"]
+    )
     path_directory.mkdir(parents=True, exist_ok=True)
 
     # Copy webserver_config.py to disable authentification on webinterface
@@ -509,6 +522,11 @@ def serve(context):
     )
     scheduler.start()
     subprocess.run(["airflow", "webserver"] + context.args)
+
+
+from egon.data.metadata.cli import metadata  # noqa: E402
+
+egon_data.add_command(metadata)
 
 
 def main():

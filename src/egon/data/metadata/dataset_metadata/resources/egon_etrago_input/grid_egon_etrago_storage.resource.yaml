@@ -1,0 +1,423 @@
+name: grid.egon_etrago_storage
+'@id': null
+title: Storage
+path: WILL_BE_SET_AT_PUBLICATION
+description: TODO
+languages:
+- en-EN
+subject:
+- name: ''
+  '@id': null
+publicationDate: '2026-10-02'
+embargoPeriod:
+  start: ''
+  end: ''
+  isActive: false
+spatial:
+  location:
+    address: null
+    '@id': null
+    latitude: ''
+    longitude: ''
+  extent:
+    name: Germany
+    '@id': null
+    resolutionValue: ''
+    resolutionUnit: ''
+    boundingBox:
+    - 0
+    - 0
+    - 0
+    - 0
+    crs: ''
+temporal:
+  referenceDate: ''
+  timeseries:
+  - start: ''
+    end: ''
+    resolutionValue: ''
+    resolutionUnit: ''
+    alignment: ''
+    aggregationType: ''
+sources:
+- title: eGon-data
+  authors: []
+  description: Workflow to download, process and generate data sets suitable for the
+    further research conducted in the project eGon (https://ego-n.org/)
+  publicationYear: null
+  path: https://github.com/openego/eGon-data
+  sourceLicenses:
+  - name: AGPL-3.0 License
+    title: GNU Affero General Public License v3.0
+    path: https://www.gnu.org/licenses/agpl-3.0.de.html
+    instruction: Permissions of this strongest copyleft license areconditioned on
+      making available complete source code of licensed works and modifications, which
+      include larger works using a licensedwork, under the same license. Copyright
+      and license notices must bepreserved. Contributors provide an express grant
+      of patent rights.When a modified version is used to provide a service over a
+      network,the complete source code of the modified version must be made available.
+    attribution: © eGon development team
+    copyrightStatement: null
+- title: Netzentwicklungsplan Strom 2035, Version 2021, erster Entwurf
+  authors: []
+  description: Die vier deutschen Übertragungsnetzbetreiber zeigen mit diesem ersten
+    Entwurf des Netzentwicklungsplans 2035, Version 2021, den benötigten Netzausbau
+    für die nächsten Jahre auf. Der NEP-Bericht beschreibt keine konkreten Trassenverläufe
+    von Übertragungsleitungen, sondern er dokumentiert den notwendigen Übertragungsbedarf
+    zwischen Netzknoten. Das heißt, es werden Anfangs- und Endpunkte von zukünftigen
+    Leitungsverbindungen definiert sowie konkrete Empfehlungen für den Aus- und Neubau
+    der Übertragungsnetze an Land und auf See in Deutschland gemäß den Detailanforderungen
+    im § 12 EnWG gegeben.
+  publicationYear: null
+  path: https://zenodo.org/record/5743452#.YbCoz7so8go
+  sourceLicenses:
+  - name: CC-BY-4.0
+    title: Creative Commons Attribution 4.0 International
+    path: https://creativecommons.org/licenses/by/4.0/legalcode
+    instruction: 'You are free: To Share, To Create, To Adapt; As long as you: Attribute.'
+    attribution: © Übertragungsnetzbetreiber
+    copyrightStatement: null
+- title: open-MaStR power unit registry
+  authors: []
+  description: 'Raw data download Marktstammdatenregister (MaStR) data using the webservice.
+    All data from the Marktstammdatenregister is included. There are duplicates included.
+    For further information read in the documentation of the original data source:
+    https://www.marktstammdatenregister.de/MaStRHilfe/subpages/statistik.html'
+  publicationYear: null
+  path: https://zenodo.org/record/10480930
+  sourceLicenses:
+  - name: dl-by-de/2.0
+    title: Datenlizenz Deutschland – Namensnennung – Version 2.0
+    path: www.govdata.de/dl-de/by-2-0
+    instruction: "Jede Nutzung ist unter den Bedingungen dieser „Datenlizenz Deutschland\
+      \ - Namensnennung - Version 2.0 zulässig.\nDie bereitgestellten Daten und Metadaten\
+      \ dürfen für die kommerzielle und nicht kommerzielle Nutzung insbesondere:(1)\
+      \ vervielfältigt, ausgedruckt, präsentiert, verändert, bearbeitet sowie an Dritte\
+      \ übermittelt werden;\n (2) mit eigenen Daten und Daten Anderer zusammengeführt\
+      \ und zu selbständigen neuen Datensätzen verbunden werden;\n (3) in interne\
+      \ und externe Geschäftsprozesse, Produkte und Anwendungen in öffentlichen und\
+      \ nicht öffentlichen elektronischen Netzwerken eingebunden werden.\nBei der\
+      \ Nutzung ist sicherzustellen, dass folgende Angaben als Quellenvermerk enthalten\
+      \ sind:\n(1) Bezeichnung des Bereitstellers nach dessen Maßgabe,\n(2) der Vermerk\
+      \ Datenlizenz Deutschland – Namensnennung – Version 2.0 oder dl-de/by-2-0 mit\
+      \ Verweis auf den Lizenztext unter www.govdata.de/dl-de/by-2-0 sowie\n(3) einen\
+      \ Verweis auf den Datensatz (URI).Dies gilt nur soweit die datenhaltende Stelle\
+      \ die Angaben(1) bis (3) zum Quellenvermerk bereitstellt.\nVeränderungen, Bearbeitungen,\
+      \ neue Gestaltungen oder sonstige Abwandlungen sind im Quellenvermerk mit dem\
+      \ Hinweis zu versehen, dass die Daten geändert wurden."
+    attribution: © 2021 Bundesnetzagentur für Elektrizität, Gas, Telekommunikation,
+      Post und Eisenbahnen
+    copyrightStatement: null
+- title: null
+  authors: []
+  description: This script compiles assumptions on energy system technologies (such
+    as costs, efficiencies, lifetimes, etc.) for chosen years (e.g. [2020, 2030, 2050])
+    from a variety of sources into CSV files to be read by energy system modelling
+    software. The merged outputs have standardized cost years, technology names, units
+    and source information.
+  publicationYear: null
+  path: https://github.com/PyPSA/technology-data/tree/v0.3.0
+  sourceLicenses:
+  - name: AGPL-3.0 License
+    title: GNU Affero General Public License v3.0
+    path: https://www.gnu.org/licenses/agpl-3.0.de.html
+    instruction: Permissions of this strongest copyleft license areconditioned on
+      making available complete source code of licensed works and modifications, which
+      include larger works using a licensedwork, under the same license. Copyright
+      and license notices must bepreserved. Contributors provide an express grant
+      of patent rights.When a modified version is used to provide a service over a
+      network,the complete source code of the modified version must be made available.
+    attribution: © Marta Victoria (Aarhus University), Kun Zhu (Aarhus University),
+      Elisabeth Zeyen (TUB), Tom Brown (TUB)
+    copyrightStatement: null
+licenses:
+- name: ODbL-1.0
+  title: Open Data Commons Open Database License 1.0
+  path: https://opendatacommons.org/licenses/odbl/1.0/index.html
+  instruction: 'You are free: To Share, To Create, To Adapt; As long as you: Attribute,
+    Share-Alike, Keep open!'
+  attribution: © eGon development team
+  copyrightStatement: null
+contributors:
+- title: Ilka Cußmann
+  path: null
+  organization: null
+  roles:
+  - ''
+  date: null
+  object: null
+  comment: Added battery and pumped hydro storage units
+- title: eGon-data metadata migration
+  path: https://github.com/openego/eGon-data
+  roles:
+  - dataCurator
+  organization: null
+  date: '2026-10-20'
+  object: metadata
+  comment: Migrated from the OEMetadata v1.4 table comment of a full eGon-data run
+    to OEMetadata v2 with OMI.
+type: Table
+format: PostgreSQL
+encoding: UTF-8
+schema:
+  fields:
+  - name: scn_name
+    description: Name of the eGon scenario
+    type: character varying
+    nullable: false
+    unit: n/a
+    isAbout: []
+    valueReference: []
+    default: n/a
+    status: Input
+  - name: storage_id
+    description: Unique name
+    type: bigint
+    nullable: false
+    unit: none
+    isAbout: []
+    valueReference: []
+    default: n/a
+    status: Input (required)
+  - name: bus
+    description: Name of bus to which storage unit is attached.
+    type: bigint
+    nullable: true
+    unit: none
+    isAbout: []
+    valueReference: []
+    default: n/a
+    status: Input (required)
+  - name: control
+    description: P,Q,V control strategy for PF, must be "PQ", "PV" or "Slack".
+    type: text
+    nullable: true
+    unit: none
+    isAbout: []
+    valueReference: []
+    default: PQ
+    status: Input (optional)
+  - name: type
+    description: Placeholder for storage unit type. Not yet implemented.
+    type: text
+    nullable: true
+    unit: none
+    isAbout: []
+    valueReference: []
+    default: n/a
+    status: Input (optional)
+  - name: carrier
+    description: Prime mover energy carrier (e.g. coal, gas, wind, solar); required
+      for global constraints on primary energy in OPF
+    type: text
+    nullable: true
+    unit: none
+    isAbout: []
+    valueReference: []
+    default: n/a
+    status: Input (optional)
+  - name: p_nom
+    description: Nominal power for limits in OPF.
+    type: double precision
+    nullable: true
+    unit: MW
+    isAbout: []
+    valueReference: []
+    default: '0'
+    status: Input (optional)
+  - name: p_nom_extendable
+    description: Switch to allow capacity p_nom to be extended in OPF.
+    type: boolean
+    nullable: true
+    unit: none
+    isAbout: []
+    valueReference: []
+    default: 'False'
+    status: Input (optional)
+  - name: p_nom_min
+    description: If p_nom is extendable in OPF, set its minimum value.
+    type: double precision
+    nullable: true
+    unit: MW
+    isAbout: []
+    valueReference: []
+    default: '0'
+    status: Input (optional)
+  - name: p_nom_max
+    description: If p_nom is extendable in OPF, set its maximum value (e.g. limited
+      by potential).
+    type: double precision
+    nullable: true
+    unit: MW
+    isAbout: []
+    valueReference: []
+    default: inf
+    status: Input (optional)
+  - name: p_min_pu
+    description: The minimum output for each snapshot per unit of p_nom for the OPF
+      (negative sign implies storing mode withdrawing power from bus).
+    type: double precision
+    nullable: true
+    unit: per unit
+    isAbout: []
+    valueReference: []
+    default: '-1'
+    status: Input (optional)
+  - name: p_max_pu
+    description: The maximum output for each snapshot per unit of p_nom for the OPF.
+    type: double precision
+    nullable: true
+    unit: per unit
+    isAbout: []
+    valueReference: []
+    default: '1'
+    status: Input (optional)
+  - name: p_set
+    description: active power set point (for PF)
+    type: double precision
+    nullable: true
+    unit: MW
+    isAbout: []
+    valueReference: []
+    default: '0'
+    status: Input (optional)
+  - name: q_set
+    description: reactive power set point (for PF)
+    type: double precision
+    nullable: true
+    unit: MVar
+    isAbout: []
+    valueReference: []
+    default: '0'
+    status: Input (optional)
+  - name: sign
+    description: power sign
+    type: double precision
+    nullable: true
+    unit: none
+    isAbout: []
+    valueReference: []
+    default: '1'
+    status: Input (optional)
+  - name: marginal_cost
+    description: Marginal cost of production of 1 MWh.
+    type: double precision
+    nullable: true
+    unit: currency/MWh
+    isAbout: []
+    valueReference: []
+    default: '0'
+    status: Input (optional)
+  - name: capital_cost
+    description: Capital cost of extending p_nom by 1 MW.
+    type: double precision
+    nullable: true
+    unit: currency/MW
+    isAbout: []
+    valueReference: []
+    default: '0'
+    status: Input (optional)
+  - name: build_year
+    description: build year
+    type: bigint
+    nullable: true
+    unit: year
+    isAbout: []
+    valueReference: []
+    default: '0'
+    status: Input (optional)
+  - name: lifetime
+    description: lifetime
+    type: double precision
+    nullable: true
+    unit: years
+    isAbout: []
+    valueReference: []
+    default: inf
+    status: Input (optional)
+  - name: state_of_charge_initial
+    description: State of charge before the snapshots in the OPF.
+    type: double precision
+    nullable: true
+    unit: MWh
+    isAbout: []
+    valueReference: []
+    default: '0'
+    status: Input (optional)
+  - name: cyclic_state_of_charge
+    description: 'Switch: if True, then state_of_charge_initial is ignored and the
+      initial state of charge is set to the final state of charge for the group of
+      snapshots in the OPF (soc[-1] = soc[len(snapshots)-1]).'
+    type: boolean
+    nullable: true
+    unit: none
+    isAbout: []
+    valueReference: []
+    default: 'False'
+    status: Input (optional)
+  - name: state_of_charge_set
+    description: State of charge set points for snapshots in the OPF.
+    type: double precision
+    nullable: true
+    unit: MWh
+    isAbout: []
+    valueReference: []
+    default: n/a
+    status: Input (optional)
+  - name: max_hours
+    description: Maximum state of charge capacity in terms of hours at full output
+      capacity p_nom
+    type: double precision
+    nullable: true
+    unit: hours
+    isAbout: []
+    valueReference: []
+    default: '1'
+    status: Input (optional)
+  - name: efficiency_store
+    description: Efficiency of storage on the way into the storage.
+    type: double precision
+    nullable: true
+    unit: per unit
+    isAbout: []
+    valueReference: []
+    default: '1'
+    status: Input (optional)
+  - name: efficiency_dispatch
+    description: Efficiency of storage on the way out of the storage.
+    type: double precision
+    nullable: true
+    unit: per unit
+    isAbout: []
+    valueReference: []
+    default: '1'
+    status: Input (optional)
+  - name: standing_loss
+    description: Losses per hour to state of charge.
+    type: double precision
+    nullable: true
+    unit: per unit
+    isAbout: []
+    valueReference: []
+    default: '0'
+    status: Input (optional)
+  - name: inflow
+    description: Inflow to the state of charge, e.g. due to river inflow in hydro
+      reservoir.
+    type: double precision
+    nullable: true
+    unit: MW
+    isAbout: []
+    valueReference: []
+    default: '0'
+    status: Input (optional)
+  primaryKey:
+  - scn_name
+  - storage_id
+  foreignKeys: []
+dialect:
+  delimiter: ''
+  decimalSeparator: ''
+review:
+  path: ''
+  badge: ''

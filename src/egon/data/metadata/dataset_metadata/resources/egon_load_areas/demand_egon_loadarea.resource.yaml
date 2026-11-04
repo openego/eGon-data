@@ -1,0 +1,389 @@
+'@id': ''
+name: demand.egon_loadarea
+topics: []
+title: 'TODO: Add title for demand.egon_loadarea'
+path: ''
+description: 'TODO: Add description'
+languages: []
+subject:
+- name: ''
+  '@id': ''
+keywords: []
+publicationDate: ''
+embargoPeriod:
+  start: ''
+  end: ''
+  isActive: false
+context:
+  title: ''
+  homepage: ''
+  documentation: ''
+  sourceCode: ''
+  publisher: ''
+  publisherLogo: ''
+  contact: ''
+  fundingAgency: ''
+  fundingAgencyLogo: ''
+  grantNo: ''
+spatial:
+  location:
+    address: ''
+    '@id': ''
+    latitude: ''
+    longitude: ''
+  extent:
+    name: ''
+    '@id': ''
+    resolutionValue: ''
+    resolutionUnit: ''
+    crs: ''
+temporal:
+  referenceDate: ''
+  timeseries:
+  - start: ''
+    end: ''
+    resolutionValue: ''
+    resolutionUnit: ''
+    alignment: ''
+    aggregationType: ''
+sources:
+- title: ''
+  authors: []
+  description: ''
+  publicationYear: ''
+  path: ''
+  sourceLicenses:
+  - name: ''
+    title: ''
+    path: ''
+    instruction: ''
+    attribution: ''
+    copyrightStatement: ''
+- title: 'Internal table: boundaries.vg250_sta_union'
+  description: Derived from the internal table 'boundaries.vg250_sta_union'. See that
+    table's own metadata for full provenance.
+  path: ''
+  authors: []
+  publicationYear: null
+  sourceLicenses: []
+- title: 'Internal table: openstreetmap.osm_landuse'
+  description: Derived from the internal table 'openstreetmap.osm_landuse'. See that
+    table's own metadata for full provenance.
+  path: ''
+  authors: []
+  publicationYear: null
+  sourceLicenses: []
+- title: 'Internal table: society.destatis_zensus_population_per_ha_inside_germany'
+  description: Derived from the internal table 'society.destatis_zensus_population_per_ha_inside_germany'.
+    See that table's own metadata for full provenance.
+  path: ''
+  authors: []
+  publicationYear: null
+  sourceLicenses: []
+- title: census_cells_melt
+  description: ''
+  path: census_cells_melt.sql
+  authors: []
+  publicationYear: null
+  sourceLicenses: []
+- title: drop_temp_tables
+  description: ''
+  path: drop_temp_tables.sql
+  authors: []
+  publicationYear: null
+  sourceLicenses: []
+- title: loadareas_add_demand_cts
+  description: ''
+  path: loadareas_add_demand_cts.sql
+  authors: []
+  publicationYear: null
+  sourceLicenses: []
+- title: loadareas_add_demand_hh
+  description: ''
+  path: loadareas_add_demand_hh.sql
+  authors: []
+  publicationYear: null
+  sourceLicenses: []
+- title: loadareas_add_demand_ind
+  description: ''
+  path: loadareas_add_demand_ind.sql
+  authors: []
+  publicationYear: null
+  sourceLicenses: []
+- title: loadareas_create
+  description: ''
+  path: loadareas_create.sql
+  authors: []
+  publicationYear: null
+  sourceLicenses: []
+- title: osm_landuse_census_cells_melt
+  description: ''
+  path: osm_landuse_census_cells_melt.sql
+  authors: []
+  publicationYear: null
+  sourceLicenses: []
+- title: osm_landuse_melt
+  description: ''
+  path: osm_landuse_melt.sql
+  authors: []
+  publicationYear: null
+  sourceLicenses: []
+licenses:
+- name: ''
+  title: ''
+  path: ''
+  instruction: ''
+  attribution: ''
+  copyrightStatement: ''
+contributors:
+- title: ''
+  path: ''
+  organization: ''
+  roles: []
+  date: ''
+  object: ''
+  comment: ''
+type: ''
+format: ''
+encoding: ''
+schema:
+  primaryKey:
+  - id
+  foreignKeys: []
+  fields:
+  - name: id
+    description: 'TODO: Add description'
+    type: integer
+    unit: none
+    nullable: false
+  - name: bus_id
+    description: 'TODO: Add description'
+    type: integer
+    unit: none
+    nullable: true
+  - name: area_ha
+    description: 'TODO: Add description'
+    type: numeric
+    unit: none
+    nullable: true
+  - name: nuts
+    description: 'TODO: Add description'
+    type: character varying(5)
+    unit: none
+    nullable: true
+  - name: rs_0
+    description: 'TODO: Add description'
+    type: character varying(12)
+    unit: none
+    nullable: true
+  - name: ags_0
+    description: 'TODO: Add description'
+    type: character varying(12)
+    unit: none
+    nullable: true
+  - name: zensus_sum
+    description: 'TODO: Add description'
+    type: integer
+    unit: none
+    nullable: true
+  - name: zensus_count
+    description: 'TODO: Add description'
+    type: integer
+    unit: none
+    nullable: true
+  - name: zensus_density
+    description: 'TODO: Add description'
+    type: numeric
+    unit: none
+    nullable: true
+  - name: sector_area_residential
+    description: 'TODO: Add description'
+    type: numeric
+    unit: none
+    nullable: true
+  - name: sector_area_cts
+    description: 'TODO: Add description'
+    type: numeric
+    unit: none
+    nullable: true
+  - name: sector_area_industrial
+    description: 'TODO: Add description'
+    type: numeric
+    unit: none
+    nullable: true
+  - name: sector_area_agricultural
+    description: 'TODO: Add description'
+    type: numeric
+    unit: none
+    nullable: true
+  - name: sector_area_sum
+    description: 'TODO: Add description'
+    type: numeric
+    unit: none
+    nullable: true
+  - name: sector_share_residential
+    description: 'TODO: Add description'
+    type: numeric
+    unit: none
+    nullable: true
+  - name: sector_share_cts
+    description: 'TODO: Add description'
+    type: numeric
+    unit: none
+    nullable: true
+  - name: sector_share_industrial
+    description: 'TODO: Add description'
+    type: numeric
+    unit: none
+    nullable: true
+  - name: sector_share_agricultural
+    description: 'TODO: Add description'
+    type: numeric
+    unit: none
+    nullable: true
+  - name: sector_share_sum
+    description: 'TODO: Add description'
+    type: numeric
+    unit: none
+    nullable: true
+  - name: sector_count_residential
+    description: 'TODO: Add description'
+    type: integer
+    unit: none
+    nullable: true
+  - name: sector_count_cts
+    description: 'TODO: Add description'
+    type: integer
+    unit: none
+    nullable: true
+  - name: sector_count_industrial
+    description: 'TODO: Add description'
+    type: integer
+    unit: none
+    nullable: true
+  - name: sector_count_agricultural
+    description: 'TODO: Add description'
+    type: integer
+    unit: none
+    nullable: true
+  - name: sector_count_sum
+    description: 'TODO: Add description'
+    type: integer
+    unit: none
+    nullable: true
+  - name: sector_consumption_residential
+    description: 'TODO: Add description'
+    type: double precision
+    unit: none
+    nullable: true
+  - name: sector_consumption_residential_2035
+    description: 'TODO: Add description'
+    type: double precision
+    unit: none
+    nullable: true
+  - name: sector_consumption_residential_2050
+    description: 'TODO: Add description'
+    type: double precision
+    unit: none
+    nullable: true
+  - name: sector_consumption_cts
+    description: 'TODO: Add description'
+    type: double precision
+    unit: none
+    nullable: true
+  - name: sector_consumption_cts_2035
+    description: 'TODO: Add description'
+    type: double precision
+    unit: none
+    nullable: true
+  - name: sector_consumption_cts_2050
+    description: 'TODO: Add description'
+    type: double precision
+    unit: none
+    nullable: true
+  - name: sector_consumption_industrial
+    description: 'TODO: Add description'
+    type: double precision
+    unit: none
+    nullable: true
+  - name: sector_consumption_industrial_2035
+    description: 'TODO: Add description'
+    type: double precision
+    unit: none
+    nullable: true
+  - name: sector_consumption_industrial_2050
+    description: 'TODO: Add description'
+    type: double precision
+    unit: none
+    nullable: true
+  - name: sector_peakload_cts
+    description: 'TODO: Add description'
+    type: double precision
+    unit: none
+    nullable: true
+  - name: sector_peakload_cts_2035
+    description: 'TODO: Add description'
+    type: double precision
+    unit: none
+    nullable: true
+  - name: sector_peakload_cts_2050
+    description: 'TODO: Add description'
+    type: double precision
+    unit: none
+    nullable: true
+  - name: sector_peakload_residential
+    description: 'TODO: Add description'
+    type: double precision
+    unit: none
+    nullable: true
+  - name: sector_peakload_residential_2035
+    description: 'TODO: Add description'
+    type: double precision
+    unit: none
+    nullable: true
+  - name: sector_peakload_residential_2050
+    description: 'TODO: Add description'
+    type: double precision
+    unit: none
+    nullable: true
+  - name: sector_peakload_industrial
+    description: 'TODO: Add description'
+    type: double precision
+    unit: none
+    nullable: true
+  - name: sector_peakload_industrial_2035
+    description: 'TODO: Add description'
+    type: double precision
+    unit: none
+    nullable: true
+  - name: sector_peakload_industrial_2050
+    description: 'TODO: Add description'
+    type: double precision
+    unit: none
+    nullable: true
+  - name: geom_centroid
+    description: 'TODO: Add description'
+    type: geometry(Point,3035)
+    unit: none
+    nullable: true
+  - name: geom_surfacepoint
+    description: 'TODO: Add description'
+    type: geometry(Point,3035)
+    unit: none
+    nullable: true
+  - name: geom_centre
+    description: 'TODO: Add description'
+    type: geometry(Point,3035)
+    unit: none
+    nullable: true
+  - name: geom
+    description: 'TODO: Add description'
+    type: geometry(Polygon,3035)
+    unit: none
+    nullable: true
+dialect:
+  delimiter: ''
+  decimalSeparator: ''
+review:
+  path: ''
+  badge: ''

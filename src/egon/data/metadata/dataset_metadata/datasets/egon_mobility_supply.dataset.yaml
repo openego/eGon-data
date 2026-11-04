@@ -1,0 +1,6 @@
+version: OEMetadata-2.0
+dataset:
+  name: 'egon_mobility_supply'
+  title: 'eGon-data — mobility supply'
+  description: 'Mobility supply datasets produced by the eGon-data pipeline (mobility_supply task group).'
+  '@id': null
