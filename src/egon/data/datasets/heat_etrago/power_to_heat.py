@@ -37,7 +37,7 @@ def insert_individual_power_to_heat(scenario):
     db.execute_sql(f"""
         DELETE FROM {targets.tables["heat_links"]}
         WHERE carrier IN ('individual_heat_pump', 'rural_heat_pump',
-                          'rural_resisitive_heater')
+                          'rural_resistive_heater')
         AND bus0 IN 
         (SELECT bus_id 
          FROM {targets.tables["heat_buses"]}
