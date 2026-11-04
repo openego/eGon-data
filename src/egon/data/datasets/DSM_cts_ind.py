@@ -33,8 +33,11 @@ from egon.data.metadata import (
 )
 
 from egon_validation import ArrayCardinalityValidation
-from egon.data.validation.rules.custom.sanity import DSMValues
-
+from egon.data.validation.rules.custom.sanity import (
+    DSMValues,
+    DSMEtragoValues,
+    DSMSourceCoverage,
+)
 # CONSTANTS
 # TODO: move to datasets.yml
 CON = db.engine()
@@ -137,7 +140,7 @@ class DsmPotential(Dataset):
     #:
     name: str = "DsmPotential"
     #:
-    version: str = "0.0.14.dev"
+    version: str = "0.0.14"
 
     sources = DatasetSources(
         tables={
@@ -279,7 +282,7 @@ class DsmPotential(Dataset):
                         table=table,
                         rule_id=(
                             f"SANITY_DSM_VALUES.{scenario}."
-                            f"{table.split('.')[-1]}"
+                            f"{table.rsplit('.', maxsplit=1)[-1]}"
                         ),
                         scenario=scenario,
                     )
@@ -292,11 +295,26 @@ class DsmPotential(Dataset):
                         "demand.egon_demandregio_sites_ind_electricity_dsm_timeseries",
                         "demand.egon_sites_ind_load_curves_individual_dsm_timeseries",
                     ]
+                ] + [
+                    DSMEtragoValues(
+                        rule_id=f"SANITY_DSM_ETRAGO.{scenario}",
+                        scenario=scenario,
+                    )
+                    for scenario in set(
+                        config.settings()["egon-data"]["--scenarios"]
+                    )
+                ] + [
+                    DSMSourceCoverage(
+                        rule_id=f"SANITY_DSM_SOURCE_COVERAGE.{scenario}",
+                        scenario=scenario,
+                    )
+                    for scenario in set(
+                        config.settings()["egon-data"]["--scenarios"]
+                    )
                 ],
             },
             proceed_on_validation_failure=True,
         )
-
 
 # Datasets
 class EgonEtragoElectricityCtsDsmTimeseries(Base):
