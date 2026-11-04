@@ -131,6 +131,21 @@ plant list of the NEP Strom 2037/2045 (2025), Annex 1 of the approval of its
 Szenariorahmen [SR_Strom_2025]_ (the same list is Annex 1 of the approval of
 the Szenariorahmen of the NEP Gas und Wasserstoff 2025 [SR_GasH2_2025]_). It
 separates natural gas units (2037 only) from hydrogen power plant projects.
+The power plant list of the scenario capacities (the list of the draft of
+the Szenariorahmen, used for the gas plants and the gas CHP) is patched with
+it by MaStR number: natural gas units get the capacities of Annex 1, so that
+scenario C has no natural gas plants in 2045, as in the NEP Strom; natural
+gas units of the draft that are not in Annex 1 are removed, units only in
+Annex 1 are added with the data of the MaStR and units listed twice in the
+draft are kept once. The steam turbines of combined cycle plants, which
+Annex 1 lists as other power plants ("Dampf", 1.4 GW), keep their capacity
+in both years. The new builds of Annex 1 (§§ 38/39 GasNZV, six plants with
+2.0 GW in 2037) have no MaStR number and no location: they get the postcode
+and municipality of their names in the code and are placed as gas plants
+like the planned plants of the draft (matched to a MaStR unit of the same
+postcode or municipality). The remaining row of Annex 1 without MaStR
+number stands for the units below 10 MW (4.2 GW), which the small CHP plants
+cover.
 The reserve plants of the list (grid reserve, capacity
 reserve and the "besondere netztechnische Betriebsmittel", status of the
 Kraftwerksliste of the Bundesnetzagentur [BNetzA_KWL]_, 2.4 GW in 2037) are

@@ -141,7 +141,7 @@ def read_nep_gas_units(sources):
     Returns
     -------
     pandas.DataFrame
-        Units with MaStR number, capacity in 2037 and the flag h2_site
+        Units with MaStR number, name, capacity in 2037 and the flag h2_site
 
     """
     gas = pd.read_excel(
@@ -150,6 +150,7 @@ def read_nep_gas_units(sources):
     ).rename(
         columns={
             "MaStR-Nr. der Stromerzeugungseinheit": "mastr_id",
+            "Anzeige-Name der Stromerzeugungseinheit": "name",
             "2037 Szenario 2 / B / C [MWel]": "c2037_capacity",
         }
     )
@@ -172,7 +173,7 @@ def read_nep_gas_units(sources):
     ]
     gas["h2_site"] = gas.mastr_id.isin(h2_sites)
 
-    return gas[["mastr_id", "c2037_capacity", "h2_site"]]
+    return gas[["mastr_id", "name", "c2037_capacity", "h2_site"]]
 
 
 def read_nep_hydrogen_projects(sources):
@@ -234,6 +235,152 @@ def read_nep_hydrogen_projects(sources):
             "c2045_capacity",
         ],
     ]
+
+
+def align_nep2025_gas_units(kw_liste):
+    """
+    Align the natural gas units of the power plant list of the draft
+
+    The approval of the Szenariorahmen of the NEP Strom 2037/2045 (2025)
+    replaced the list of the draft by Annex 1: its natural gas units have a
+    capacity in 2037 only (read as for the siting of the hydrogen power
+    plants, see :py:func:`read_nep_gas_units`) and its steam turbines
+    ("Dampf") are other power plants in both years. The natural gas units of
+    the draft are aligned by MaStR number: units of Annex 1 get its
+    capacities, the other units are removed and units only in Annex 1 are
+    added with the data of the MaStR. Of units listed twice, the row with
+    the postcode of the MaStR is kept. The new builds of Annex 1 (§§ 38/39
+    GasNZV) have no MaStR number and no location: they are added with the
+    location of their name as gas plants, which are placed like the planned
+    plants of the draft.
+
+    Parameters
+    ----------
+    kw_liste : pandas.DataFrame
+        Power plant list of the draft
+
+    Returns
+    -------
+    pandas.DataFrame
+        Aligned power plant list
+
+    """
+    sources, _ = load_sources_and_targets("PowerPlants")
+    annex = read_nep_gas_units(sources)
+    other = pd.read_excel(
+        source_file(sources, "nep_strom_power_plant_list"),
+        sheet_name="Sonstige Kraftwerke (Strom-NEP)",
+        index_col="MaStR-ID",
+    )
+    steam = other[other["Energieträger"] == "Dampf"]
+    mastr = pd.read_csv(
+        sources.files["mastr_combustion"],
+        usecols=[
+            "EinheitMastrNummer",
+            "NameKraftwerk",
+            "NameStromerzeugungseinheit",
+            "Postleitzahl",
+            "Ort",
+            "Bundesland",
+            "Inbetriebnahmedatum",
+            "EinheitBetriebsstatus",
+            "Nettonennleistung",
+            "ThermischeNutzleistung",
+        ],
+        dtype={"Postleitzahl": str},
+        index_col="EinheitMastrNummer",
+    )
+
+    in_mastr = annex.mastr_id.isin(mastr.index)
+    gas = annex[in_mastr].set_index("mastr_id").c2037_capacity
+
+    is_gas = kw_liste.carrier_nep.isin(["Erdgas", "Erdgas/Wasserstoff"])
+    draft = kw_liste[is_gas]
+    kept = draft[draft.mastr_id.isin(gas.index.union(steam.index))]
+    other_postcode = kept.mastr_id.map(mastr.Postleitzahl).ne(
+        kept.postcode.astype(str).str.zfill(5)
+    )
+    kept = (
+        kept.loc[other_postcode.sort_values(kind="stable").index]
+        .drop_duplicates("mastr_id")
+        .sort_index()
+    )
+    is_steam = kept.mastr_id.isin(steam.index)
+    natural_gas = kept[~is_steam].assign(
+        c2037_capacity=lambda df: df.mastr_id.map(gas),
+        c2045_capacity=0.0,
+    )
+    steam_turbines = kept[is_steam].assign(
+        carrier_nep="Dampf",
+        carrier_nep_2037="Dampf",
+        carrier_nep_2045="Dampf",
+        c2037_capacity=lambda df: df.mastr_id.map(
+            steam["2037 Szenario A / B / C [MWel]"]
+        ),
+        c2045_capacity=lambda df: df.mastr_id.map(
+            steam["2045 Szenario A / B / C [MWel]"]
+        ),
+    )
+
+    units = gas[~gas.index.isin(draft.mastr_id)].to_frame().join(mastr)
+    added = pd.DataFrame(
+        {
+            "mastr_id": units.index,
+            "name": units.NameKraftwerk,
+            "name_unit": units.NameStromerzeugungseinheit,
+            "carrier_nep": "Erdgas",
+            "chp": np.where(
+                units.ThermischeNutzleistung.fillna(0) > 0, "Ja", "Nein"
+            ),
+            "postcode": units.Postleitzahl,
+            "city": units.Ort,
+            "federal_state": units.Bundesland.map(FEDERAL_STATES),
+            "commissioned": pd.to_numeric(units.Inbetriebnahmedatum.str[:4]),
+            "status": units.EinheitBetriebsstatus,
+            # MaStR capacities are given in kW
+            "capacity": units.Nettonennleistung / 1e3,
+            "c2037_capacity": units.c2037_capacity,
+            "c2045_capacity": 0.0,
+        }
+    )
+
+    # New builds: without MaStR number, location and CHP flag in Annex 1.
+    # Location from the name (municipality as in the MaStR, dump 2025-02-09)
+    sites = pd.DataFrame(
+        [
+            ("BHKW Profen Village", "06729", "Elsteraue", "ST"),
+            ("GKW Hanau", "63450", "Hanau", "HE"),
+            ("GuD Marbach", "71672", "Marbach", "BW"),
+            ("Rechenzentrum Frechen", "50226", "Frechen", "NW"),
+            ("Steag Herne Block 4", "44653", "Herne", "NW"),
+            ("Voerde Schleusenstraße", "46562", "Voerde", "NW"),
+        ],
+        columns=["name", "postcode", "city", "federal_state"],
+    )
+    new_builds = (
+        annex[~in_mastr]
+        .merge(sites, on="name")[
+            ["name", "postcode", "city", "federal_state", "c2037_capacity"]
+        ]
+        .assign(
+            mastr_id="NV",
+            carrier_nep="Erdgas",
+            chp="Nein",
+            status="In Planung",
+            c2045_capacity=0.0,
+        )
+    )
+
+    return pd.concat(
+        [
+            pd.concat(
+                [kw_liste[~is_gas], natural_gas, steam_turbines]
+            ).sort_index(),
+            added,
+            new_builds,
+        ],
+        ignore_index=True,
+    )
 
 
 def select_power_plant_sites():

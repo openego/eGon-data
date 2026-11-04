@@ -547,6 +547,7 @@ def map_carrier():
             "Erdgas/Wasserstoff": "gas",
             "Wasserstoff": "hydrogen",
             "Wasser": "pumped_hydro",
+            "Dampf": "others",
         }
     )
 
@@ -681,6 +682,12 @@ def insert_nep_list_powerplants(export=True):
                 "Bayern": "BY",
             }, inplace = True)
             
+            # Natural gas units of the approved list instead of the draft
+            # temporary fix
+            from egon.data.datasets.power_plants.hydrogen import (
+                align_nep2025_gas_units,
+            )
+            kw_liste_nep25 = align_nep2025_gas_units(kw_liste_nep25)
             
             # add scenario column
             kw_liste_nep25["scenario"] = "reGon"
@@ -1015,6 +1022,7 @@ class ScenarioCapacities(Dataset):
       * :py:class:`PypsaEurSec <egon.data.datasets.pypsaeursec.PypsaEurSec>`
       * :py:class:`Vg250 <egon.data.datasets.vg250.Vg250>`
       * :py:class:`DataBundle <egon.data.datasets.data_bundle.DataBundle>`
+      * :py:class:`mastr_data_setup <egon.data.datasets.mastr.mastr_data_setup>`
       * :py:class:`ZensusPopulation <egon.data.datasets.zensus.ZensusPopulation>`
 
 

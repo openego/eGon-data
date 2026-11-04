@@ -426,6 +426,7 @@ with airflow.DAG(
         scenario_capacities = ScenarioCapacities(
             dependencies=[
                 data_bundle,
+                mastr_data,
                 run_pypsaeur,
                 setup,
                 vg250,
