@@ -313,6 +313,12 @@ Bug Fixes
   German bus, including HGVCharging's on its ``HGV_charger`` buses. It now
   deletes only stores on MIV's own ``Li_ion`` buses
   `#1526 <https://github.com/openego/eGon-data/issues/1526>`_
+* Fix ground-mounted PV missing ~10 % of its target in reGon2037/reGon2045:
+  the target per federal state is now derived from the NEP PV total per
+  state minus rooftop PV (TSO draft split) instead of the draft split for
+  ground-mounted PV, and capacity that cannot be built on a state's
+  potential areas is redistributed to the other states
+  `#1575 <https://github.com/openego/eGon-data/issues/1575>`_
 
 Version 2.0.0 (2025-08-20)
 ==========================
