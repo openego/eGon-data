@@ -76,11 +76,7 @@ class DSMValues(DataFrameRule):
         n_invalid_values = int(row.n_invalid_values)
         n_negative_p_set = int(row.n_negative_p_set)
 
-        n_bad = (
-            n_null_arrays
-            + n_invalid_values
-            + n_negative_p_set
-        )
+        n_bad = n_null_arrays + n_invalid_values + n_negative_p_set
 
         success = n_rows > 0 and n_bad == 0
 
