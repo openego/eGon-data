@@ -63,6 +63,15 @@ PV ground mounted
 
 The distribution of PV ground mounted is implemented in function :func:`insert<egon.data.datasets.power_plants.pv_ground_mounted.insert>`
 which is part of the dataset :class:`PowerPlants<egon.data.datasets.power_plants.PowerPlants>`.
+
+The target values per federal state for reGon2037 and reGon2045 are derived from the NEP 2037/2045
+(version 2025, 2nd draft, Fig. 15 and 18), which only gives the total PV capacity per federal state.
+It is assumed that rooftop PV is distributed to the federal states as in the TSO draft scenario
+framework (Tab. 25). Ground-mounted PV per federal state is the remainder of the NEP total, scaled to
+the national ground-mounted total (see
+:func:`pv_ground_mounted_per_federal_state<egon.data.datasets.scenario_capacities.pv_ground_mounted_per_federal_state>`).
+For eGon2035, the distribution of the draft scenario framework is used as beforehand.
+
 The following steps are conducted:
 
 #. The sites and capacities of exisitng PV parks are imported using MaStR data (see :ref:`mastr-ref`).

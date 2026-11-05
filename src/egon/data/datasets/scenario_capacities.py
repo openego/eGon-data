@@ -180,6 +180,47 @@ def insert_capacities_status_quo(scenario: str) -> None:
         """)
 
 
+def pv_ground_mounted_per_federal_state(df, df_draft):
+    """Derive ground-mounted PV capacity per federal state from the NEP.
+
+    The NEP 2037/2045 (version 2025, 2nd draft, Fig. 15 and 18) only gives
+    the total PV capacity per federal state (row 'Photovoltaik'), but no
+    split into rooftop and ground-mounted PV. Assumption: rooftop PV is
+    distributed to the federal states as in the TSO draft scenario framework
+    (Tab. 25), scaled to the national rooftop total. Ground-mounted PV is the
+    remainder of the NEP total per federal state. Negative remainders are set
+    to 0 and the result is scaled to the national ground-mounted total.
+
+    Parameters
+    ----------
+    df : pandas.DataFrame
+        Main NEP capacity table (GW), federal states as columns.
+    df_draft : pandas.DataFrame
+        Draft scenario framework capacity table (GW), federal states as
+        columns.
+
+    Returns
+    -------
+    pandas.Series
+        Ground-mounted PV capacity in GW per federal state.
+
+    """
+    states = df.columns.intersection(df_draft.columns).drop("Summe")
+    pv_total = pd.to_numeric(
+        df.loc["Photovoltaik", states], errors="coerce"
+    ).dropna()
+
+    rooftop = (
+        df_draft.loc["PV (Aufdach)", pv_total.index].astype(float)
+        / df_draft.loc["PV (Aufdach)", "Summe"]
+        * df.loc["PV (Aufdach)", "Summe"]
+    )
+
+    ground = (pv_total - rooftop).clip(lower=0)
+
+    return ground / ground.sum() * df.loc["PV (Freiflaeche)", "Summe"]
+
+
 def insert_capacities_per_federal_state_nep():
     """Inserts installed capacities per federal state according to
     NEP 2035 (version 2021), scenario 2035 C, and
@@ -212,18 +253,22 @@ def insert_capacities_per_federal_state_nep():
             "sheet_main": "1.Entwurf_NEP2035_V2021",
             "sheet_draft": "Entwurf_des_Szenariorahmens",
             "windoff_col": "C 2035",
+            # NEP 2035 has no PV total per federal state
+            "pv_total_per_state": False,
         },
         "reGon2037": {
             "file": sources.files["reGon_capacities"],
             "sheet_main": "2.Entwurf_NEP2037C_V2025",
             "sheet_draft": "Entwurf_des_Szenariorahmens2037",
             "windoff_col": "C 2037",
+            "pv_total_per_state": True,
         },
         "reGon2045": {
             "file": sources.files["reGon_capacities"],
             "sheet_main": "2.Entwurf_NEP2045C_V2025",
             "sheet_draft": "Entwurf_des_Szenariorahmens2045",
             "windoff_col": "C 2045",
+            "pv_total_per_state": True,
         },
     }
     
@@ -289,7 +334,12 @@ def insert_capacities_per_federal_state_nep():
         # Load main NEP capacity table and draft scenario report
         df = pd.read_excel(target_file, sheet_name=cfg["sheet_main"], index_col="Unnamed: 0")
         df_draft = pd.read_excel(target_file, sheet_name=cfg["sheet_draft"], index_col="Unnamed: 0")
-        
+
+        # Ground-mounted PV per federal state from the NEP PV total per
+        # state, computed over all federal states (also in test mode)
+        if cfg["pv_total_per_state"]:
+            pv_ground = pv_ground_mounted_per_federal_state(df, df_draft)
+
         # Load wind offshore data and drop rows without federal state or grid connection point
         df_windoff = pd.read_excel(
             target_file, sheet_name="WInd_Offshore_NEP"
@@ -334,7 +384,13 @@ def insert_capacities_per_federal_state_nep():
             # NEP report, scale the draft distribution to match the final national total
             for c in scaled_carriers:
                 data.loc[c, bl] = df_draft.loc[c, bl] / df_draft.loc[c, "Summe"] * df.loc[c, "Summe"]
-    
+
+            # reGon2037/reGon2045: ground-mounted PV follows the NEP PV total
+            # per federal state instead of the draft distribution (see
+            # pv_ground_mounted_per_federal_state)
+            if cfg["pv_total_per_state"]:
+                data.loc["PV (Freiflaeche)", bl] = pv_ground[bl]
+
             # Split combined hydro entry into run of river and reservoir
             # using the distribution from the draft scenario report
             if data.loc["Lauf- und Speicherwasser", bl] > 0:
@@ -1022,7 +1078,7 @@ class ScenarioCapacities(Dataset):
     #:
     name: str = "ScenarioCapacities"
     #:
-    version: str = "0.0.24"
+    version: str = "0.0.25"
     sources = DatasetSources(
         files={
             "eGon2035_capacities": "data_bundle_egon_data/NEP/NEP_V2021_scnC2035.xlsx",
