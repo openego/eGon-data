@@ -344,6 +344,11 @@ Bug Fixes
   German bus, including HGVCharging's on its ``HGV_charger`` buses. It now
   deletes only stores on MIV's own ``Li_ion`` buses
   `#1526 <https://github.com/openego/eGon-data/issues/1526>`_
+* Fix ``allocate_home_batteries_to_buildings`` failing with ``invalid memory
+  alloc request size`` for scenarios with many pv rooftop buildings: the
+  geometries of pv buildings are now joined in the database instead of
+  passing all building IDs as an IN-list
+  `#1571 <https://github.com/openego/eGon-data/issues/1571>`_
 
 Version 2.0.0 (2025-08-20)
 ==========================
