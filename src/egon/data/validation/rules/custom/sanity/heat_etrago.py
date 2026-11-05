@@ -360,10 +360,11 @@ class HeatBuses(_HeatRule):
                 JOIN {p["heat_demand_table"]} d
                     ON d.zensus_population_id = a.zensus_population_id
                 WHERE d.scenario = :scenario
-                AND d.zensus_population_id NOT IN (
-                    SELECT zensus_population_id
-                    FROM {p["map_district_heating_areas_table"]}
-                    WHERE scenario = :scenario
+                AND NOT EXISTS (
+                    SELECT 1
+                    FROM {p["map_district_heating_areas_table"]} m
+                    WHERE m.scenario = :scenario
+                    AND m.zensus_population_id = d.zensus_population_id
                 )
             ) AS rural_expected
         """
