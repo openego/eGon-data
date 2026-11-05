@@ -5,7 +5,7 @@ import geopandas as gpd
 import numpy as np
 import pandas as pd
 
-from egon.data import db
+from egon.data import db, logger
 from egon.data.datasets import load_sources_and_targets
 from egon.data.datasets.scenario_parameters import get_sector_parameters
 
@@ -297,6 +297,17 @@ def insert_power_to_heat_per_level(
     None.
 
     """
+    # Temporary guard for server-run-28-10: the heat supply cascade can leave
+    # a grid level without any plants (e.g. reGon2037 MV heat pumps). An empty
+    # frame breaks the LineString apply below, so skip and report it instead.
+    if heat_pumps.empty:
+        logger.warning(
+            f"No {carrier} plants for scenario {scenario} "
+            f"(multiple_per_mv_grid={multiple_per_mv_grid}); "
+            "nothing inserted."
+        )
+        return
+
     sources, targets = load_sources_and_targets("HeatEtrago")
     if "central" in carrier:
         # Calculate heat pumps per electrical bus
