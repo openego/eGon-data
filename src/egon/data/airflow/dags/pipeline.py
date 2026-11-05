@@ -751,6 +751,12 @@ with airflow.DAG(
                 setup_etrago,
                 zensus_mv_grid_districts,
                 zensus_vg250,
+                # egon_ehv_substation_voronoi, for charging grid
+                # connections above 120 MW (voltage levels 1-2)
+                substation_voronoi,
+                # egon_etrago_bus must be populated (osmtgmod's to_pypsa)
+                # -- the models attach to the AC buses.
+                osmtgmod,
             ]
         )
 

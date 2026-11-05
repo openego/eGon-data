@@ -58,8 +58,8 @@ Added
 * Use MaStR data for home_batteries for allocation for all scenarios (status + future)
   `#1470 <https://github.com/openego/eGon-data/issues/1470>`_
 * Distinguish grid-scale battery storage (new carrier 'BESS') from home batteries
-  throughout the pipeline: real MaStR-based BESS carry-forward (aged, all scenarios) 
-  alongside home batteries, and separate eTraGo carriers/cost parameters 
+  throughout the pipeline: real MaStR-based BESS carry-forward (aged, all scenarios)
+  alongside home batteries, and separate eTraGo carriers/cost parameters
   ('BESS' vs'home_battery') instead of one generic 'battery' carrier
   `#1478 <https://github.com/openego/eGon-data/issues/1478>`_
 * Add new eMobility dataset for public buses (vehicle class M3): static depot
@@ -67,6 +67,14 @@ Added
   demand.egon_ev_bus_charging_depot for eDisGo and aggregated per eTraGo bus
   under the new carrier 'land_transport_bus'
   `#1461 <https://github.com/openego/eGon-data/issues/1461>`_
+* Write flexibility diagnostics alongside the eTraGo model for the new
+  eMobility methodology: the grid-side dumb charging load, its flexible
+  share and the driving load per MV grid district
+  (`demand.egon_ev_mit_lgv_flex_timeseries`), an annual energy balance
+  per grid district, charging use case and vehicle type
+  (`demand.egon_ev_mit_lgv_energy_balance`) and the charging load per
+  use case (`demand.egon_ev_mit_lgv_charging_profile_use_case`)
+  `#1460 <https://github.com/openego/eGon-data/issues/1460>`_
 
 * Add electric HGV charging demand model (vehicle classes N2, N3, N3S) for the
   NEP-2025-aligned scenarios reGon2037 and reGon2045, as a sibling dataset to
@@ -148,6 +156,35 @@ Changed
   `#1483 <https://github.com/openego/eGon-data/issues/1483>`_
 * Allign Methodology for laoding NEP target values for Battery storage for all scenarios
   `#1471 <https://github.com/openego/eGon-data/issues/1471>`_
+* Replace the eMobility dataset for motorized individual travel by a new
+  one covering vehicle class M1 (passenger cars) and N1 (light
+  commercial vehicles < 3.5 t). Vehicle pool, events, vehicle counts per
+  municipality, charging locations and the allocation of vehicles to
+  municipalities are delivered as input data and downloaded from Zenodo
+  instead of being derived from KBA registration statistics; the
+  charging infrastructure is generated together with the vehicles, so
+  events, vehicles and charging points are mutually consistent.
+  `eGon2035` keeps the previous methodology and input data. All tables
+  are renamed to the `egon_ev_mit_lgv_` prefix and the foreign key
+  column `egon_ev_pool_ev_id` to `ev_id`; `demand.egon_ev_mit_lgv_metadata`
+  now stores the simBEV and GeoLIS run configurations whole, as JSONB
+  `#1460 <https://github.com/openego/eGon-data/issues/1460>`_
+* Build the M1/N1 eTraGo model of the new eMobility scenarios from
+  placements -- each vehicle's charging event at its delivered charging
+  location -- instead of vehicles allocated to MV grid districts, which
+  routinely charge outside their district. One district model per MV grid
+  district holds its charging locations at voltage levels 4-7; locations at
+  levels 1-3 (> 20 MW per grid connection) get a transmission model of
+  their own with the new carriers `BEV_charger_transmission` and
+  `land_transport_EV_transmission`, on the EHV substation bus above
+  120 MW. The store capacity is the peak plugged-in battery capacity.
+  Placements are stored as one event-id array per location
+  (`demand.egon_ev_mit_lgv_location_events`); only charging events are
+  imported; the vehicle allocation to grid districts is no longer written
+  for the new scenarios. The charging locations move from
+  `MITChargingInfrastructure` into `MotorizedIndividualTravel`, which also
+  gets validation rules
+  `#1460 <https://github.com/openego/eGon-data/issues/1460>`_
 
 
 Bug Fixes
@@ -172,6 +209,27 @@ Bug Fixes
   checkfirst=True creates from the per-scenario delete tasks, which could fail
   with a UniqueViolation under the LocalExecutor.
   `#1477 <https://github.com/openego/eGon-data/issues/1477>`_
+* M1/N1: build the state-of-charge band and the plugged-in capacity on
+  half-open event intervals, as the delivered events share their boundary
+  timestep; the band previously exceeded the fleet battery capacity
+  (`e_max_pu > 1`). Bring the grid-side nameplate power and the
+  battery-side charging demand onto the same side of the charger
+  (`eta_cp`), which understated the charging load by 10 %, and re-enable
+  the load validation
+  `#1460 <https://github.com/openego/eGon-data/issues/1460>`_
+* M1/N1: shorten the parking window of `street` events on import to the
+  one GeoLIS placed them with (at most 4 h, or the charging time, between
+  9:00 and 21:00); with the delivered windows most street locations held
+  more vehicles at once than they have charging points; a new rule checks
+  that no location does. Cap each deficit
+  at what its stop can recharge, check it against the battery capacity,
+  and store validation results with a plain bool
+  `#1460 <https://github.com/openego/eGon-data/issues/1460>`_
+* M1/N1: recognise a left-over extraction of an earlier delivery instead
+  of importing it, fail on missing columns and on duplicate charging
+  location ids before the import, and delete eTraGo links orphaned by a
+  crashed run
+  `#1460 <https://github.com/openego/eGon-data/issues/1460>`_
 * Fixes distribution of small heat pumps due to incremental small heat demands 
   by implementing a minimal heat demand for the installation of a heat pump
   `#1496 <https://github.com/openego/eGon-data/issues/1496>`_
@@ -250,6 +308,11 @@ Bug Fixes
   links: ``find_heat_connection`` stored the distance of the last checked
   electrolyser candidate instead of the nearest one
   `#1554 <https://github.com/openego/eGon-data/issues/1554>`_
+* Stop the eMobility MIV dataset from deleting the HGV flexibility stores:
+  ``delete_model_data_from_db`` removed every ``battery_storage`` store on a
+  German bus, including HGVCharging's on its ``HGV_charger`` buses. It now
+  deletes only stores on MIV's own ``Li_ion`` buses
+  `#1526 <https://github.com/openego/eGon-data/issues/1526>`_
 
 Version 2.0.0 (2025-08-20)
 ==========================
