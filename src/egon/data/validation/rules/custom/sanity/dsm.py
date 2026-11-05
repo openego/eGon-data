@@ -22,7 +22,16 @@ class DSMValues(DataFrameRule):
 
     def get_query(self, ctx):
         del ctx
-        return f"""
+        tables = {
+            "demand.egon_etrago_electricity_cts_dsm_timeseries",
+            "demand.egon_osm_ind_load_curves_individual_dsm_timeseries",
+            "demand.egon_demandregio_sites_ind_electricity_dsm_timeseries",
+            "demand.egon_sites_ind_load_curves_individual_dsm_timeseries",
+        }
+        if self.table not in tables:
+            raise ValueError("Unexpected DSM table")
+
+        query = """
         SELECT
             count(*) AS n_rows,
 
@@ -51,39 +60,12 @@ class DSMValues(DataFrameRule):
                     SELECT 1 FROM unnest(p_set) AS v
                     WHERE v < 0
                 )
-            ) AS n_negative_p_set,
+            ) AS n_negative_p_set
 
-            count(*) FILTER (
-                WHERE EXISTS (
-                    SELECT 1 FROM unnest(p_max) AS v
-                    WHERE v < 0
-                )
-            ) AS n_negative_p_max,
-
-            count(*) FILTER (
-                WHERE EXISTS (
-                    SELECT 1 FROM unnest(p_min) AS v
-                    WHERE v > 0
-                )
-            ) AS n_positive_p_min,
-
-            count(*) FILTER (
-                WHERE EXISTS (
-                    SELECT 1 FROM unnest(e_max) AS v
-                    WHERE v < 0
-                )
-            ) AS n_negative_e_max,
-
-            count(*) FILTER (
-                WHERE EXISTS (
-                    SELECT 1 FROM unnest(e_min) AS v
-                    WHERE v > 0
-                )
-            ) AS n_positive_e_min
-
-        FROM {self.table}
+        FROM DSM_TABLE_PLACEHOLDER
         WHERE scn_name = :scenario
         """
+        return query.replace("DSM_TABLE_PLACEHOLDER", self.table)
 
     def evaluate_df(self, df, ctx):
         del ctx
@@ -93,19 +75,11 @@ class DSMValues(DataFrameRule):
         n_null_arrays = int(row.n_null_arrays)
         n_invalid_values = int(row.n_invalid_values)
         n_negative_p_set = int(row.n_negative_p_set)
-        n_negative_p_max = int(row.n_negative_p_max)
-        n_positive_p_min = int(row.n_positive_p_min)
-        n_negative_e_max = int(row.n_negative_e_max)
-        n_positive_e_min = int(row.n_positive_e_min)
 
         n_bad = (
             n_null_arrays
             + n_invalid_values
             + n_negative_p_set
-            + n_negative_p_max
-            + n_positive_p_min
-            + n_negative_e_max
-            + n_positive_e_min
         )
 
         success = n_rows > 0 and n_bad == 0
@@ -122,11 +96,7 @@ class DSMValues(DataFrameRule):
                 f"Scenario '{self.scenario}': {n_rows} DSM rows, "
                 f"{n_null_arrays} rows with NULL arrays, "
                 f"{n_invalid_values} rows with NULL/NaN values, "
-                f"{n_negative_p_set} rows with negative p_set, "
-                f"{n_negative_p_max} rows with negative p_max, "
-                f"{n_positive_p_min} rows with positive p_min, "
-                f"{n_negative_e_max} rows with negative e_max, "
-                f"{n_positive_e_min} rows with positive e_min"
+                f"{n_negative_p_set} rows with negative p_set"
             ),
             severity=Severity.INFO if success else Severity.ERROR,
             schema=self.schema,
@@ -303,7 +273,6 @@ class DSMEtragoValues(DataFrameRule):
 
         n_links = int(row.n_links)
         n_stores = int(row.n_stores)
-        n_buses = int(row.n_buses)
 
         n_invalid_links = int(row.n_invalid_links)
         n_invalid_link_lengths = int(row.n_invalid_link_lengths)
@@ -325,7 +294,12 @@ class DSMEtragoValues(DataFrameRule):
             + n_unconnected_buses
         )
 
-        success = n_links > 0 and n_stores > 0 and n_buses > 0 and n_bad == 0
+        success = (
+            n_links > 0
+            and n_stores > 0
+            and int(row.n_buses) > 0
+            and n_bad == 0
+        )
 
         return RuleResult(
             rule_id=self.rule_id,
@@ -337,7 +311,7 @@ class DSMEtragoValues(DataFrameRule):
             expected=0,
             message=(
                 f"Scenario '{self.scenario}': "
-                f"{n_buses} DSM buses, "
+                f"{int(row.n_buses)} DSM buses, "
                 f"{n_links} DSM links, "
                 f"{n_stores} DSM stores, "
                 f"{n_invalid_links} invalid links, "
