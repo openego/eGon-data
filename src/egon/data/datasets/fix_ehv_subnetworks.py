@@ -262,13 +262,7 @@ def drop_trafo(x, y, v_nom0, v_nom1, scn_name):
 
 
 def fix_subnetworks(scn_name):
-    # Missing 220kV line to Lübeck Siems
-    # add 220kV bus at substation Lübeck Siems
-    add_bus(10.760835327266625, 53.90974536547805, 220, scn_name)
-    # add 220/380kV transformer at substation Lübeck Siems
-    add_trafo(10.760835327266625, 53.90974536547805, 220, 380, scn_name)
-
-    # add 220kV line from Umspannwerk Lübeck to Lübeck Siems
+    # Missing 220kV line from Umspannwerk Lübeck to Lübeck Siems
     add_line(
         10.760835327266625,  # Lübeck Siems
         53.90974536547805,
