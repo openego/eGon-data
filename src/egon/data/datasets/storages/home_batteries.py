@@ -94,37 +94,35 @@ def get_cbat_pbat_ratio():
     return int(db.select_dataframe(sql).iat[0, 0])
 
 
-def _load_buildings_with_geom(building_ids):
+def _load_pv_buildings_with_geom(scenario):
     """
-    Load point geometries for a set of building IDs from both OSM buildings
-    tables (osm_buildings_filtered uses bigint IDs, osm_buildings_synthetic
-    uses text IDs that are numeric strings and can be cast to bigint).
-    """
-    ids = ",".join(str(int(b)) for b in building_ids)
+    Load all buildings with pv rooftop plants of a scenario together with
+    their point geometry from both OSM buildings tables
+    (osm_buildings_filtered uses bigint IDs, osm_buildings_synthetic uses
+    text IDs that are numeric strings and can be cast to bigint).
 
-    filtered = db.select_geodataframe(
+    The join is done in the database, because passing millions of building
+    IDs as an IN-list exceeds the postgres memory limit of 1 GB (#1571).
+    """
+    return db.select_geodataframe(
         f"""
-        SELECT id AS building_id, geom_point AS geom
-        FROM openstreetmap.osm_buildings_filtered
-        WHERE id IN ({ids});
+        WITH pv AS (
+            SELECT DISTINCT building_id, bus_id
+            FROM supply.egon_power_plants_pv_roof_building
+            WHERE scenario = '{scenario}'
+        )
+        SELECT pv.building_id, pv.bus_id, b.geom_point AS geom
+        FROM pv
+        JOIN openstreetmap.osm_buildings_filtered b
+            ON b.id = pv.building_id
+        UNION ALL
+        SELECT pv.building_id, pv.bus_id, s.geom_point AS geom
+        FROM pv
+        JOIN openstreetmap.osm_buildings_synthetic s
+            ON s.id::bigint = pv.building_id;
         """,
         geom_col="geom",
         epsg=3035,
-    )
-    synthetic = db.select_geodataframe(
-        f"""
-        SELECT id::bigint AS building_id, geom_point AS geom
-        FROM openstreetmap.osm_buildings_synthetic
-        WHERE id::bigint IN ({ids});
-        """,
-        geom_col="geom",
-        epsg=3035,
-    )
-
-    return gpd.GeoDataFrame(
-        pd.concat([filtered, synthetic], ignore_index=True),
-        geometry="geom",
-        crs=3035,
     )
 
 
@@ -179,17 +177,7 @@ def match_real_batteries_to_buildings(scenario):
     if real_batteries.empty:
         return pd.DataFrame(columns=columns)
 
-    pv_buildings_df = db.select_dataframe(f"""
-        SELECT DISTINCT building_id, bus_id
-        FROM supply.egon_power_plants_pv_roof_building
-        WHERE scenario = '{scenario}';
-        """)
-    pv_geoms = _load_buildings_with_geom(pv_buildings_df.building_id.unique())
-    pv_buildings = gpd.GeoDataFrame(
-        pv_buildings_df.merge(pv_geoms, on="building_id"),
-        geometry="geom",
-        crs=3035,
-    )
+    pv_buildings = _load_pv_buildings_with_geom(scenario)
 
     cbat_pbat_ratio = get_sector_parameters("electricity", scenario)[
         "efficiency"
