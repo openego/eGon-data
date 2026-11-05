@@ -86,6 +86,8 @@ The following steps are conducted:
 
 #. The resulting capacities are compared to the target values for the specific scenario per federal state. If the target value is exceeded, a linear downscaling is conducted. If the target value is not reached yet, the remaining capacity is distributed linearly among the rest of the potential areas within the state.
 
+#. If the potential areas of a federal state are not sufficient to reach its target value, the remaining capacity is redistributed to the other federal states proportional to their target values, and the previous step is repeated for these states. A warning is logged for each affected federal state.
+
 .. figure:: /images/PV_freiflaeche.png
   :name: pv_ground_mounted-example
   :width: 400
