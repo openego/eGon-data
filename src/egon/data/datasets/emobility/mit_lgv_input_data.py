@@ -13,8 +13,11 @@ cycle.
 
 Notes
 -----
-The bundle is *not* part of the egon-data data bundle. ``eGon2035``
-keeps taking its trip tarball from the data bundle, unchanged.
+The archives are *not* part of the published egon-data data bundle.
+While the Zenodo download is off, a server keeps the delivered scenario
+directories in its local data bundle instead, cf.
+:data:`DATA_BUNDLE_INPUT_DIR`. ``eGon2035`` keeps taking its trip
+tarball from the data bundle, unchanged.
 """
 
 from pathlib import Path
@@ -118,8 +121,16 @@ DELIVERY_IDENTITY_KEYS = (
 #: Whether the input data may be fetched from Zenodo. Off while the
 #: current delivery (consolidated 8-15 October 2026) is not published
 #: yet: the scenario directories are then provided locally, e.g. as
-#: symlinks, in :data:`INPUT_DATA_DIR`.
+#: symlinks, in :data:`INPUT_DATA_DIR` or in :data:`DATA_BUNDLE_INPUT_DIR`.
 ZENODO_DOWNLOAD_ENABLED = False
+
+#: Local data bundle copy of the delivered scenario directories, used
+#: while :data:`ZENODO_DOWNLOAD_ENABLED` is off. A scenario missing in
+#: :data:`INPUT_DATA_DIR` is linked from here, so a fresh run directory
+#: only needs the data bundle.
+DATA_BUNDLE_INPUT_DIR = Path(
+    ".", "data_bundle_egon_data", "emobility", "mit_lgv_input_data"
+)
 
 # Zenodo dataset
 ZENODO_RECORD = 23162886
@@ -415,13 +426,19 @@ def _use_local_delivery(scenario_name: str) -> Path:
     which delivery a run used.
     """
     directory = scenario_input_dir(scenario_name)
+    bundled = DATA_BUNDLE_INPUT_DIR / scenario_name
+    if not (directory.exists() or directory.is_symlink()) and bundled.is_dir():
+        INPUT_DATA_DIR.mkdir(parents=True, exist_ok=True)
+        directory.symlink_to(bundled.resolve(), target_is_directory=True)
+        print(f"  Linked {directory} to the data bundle copy {bundled}.")
     if missing_input_files(scenario_name):
         raise FileNotFoundError(
             f"The Zenodo download is disabled "
             f"(`ZENODO_DOWNLOAD_ENABLED`), so the input data for "
             f"scenario '{scenario_name}' has to be provided in "
-            f"{directory.resolve()}, e.g. as a symlink to the delivered "
-            f"folder. Missing: {missing_input_files(scenario_name)}."
+            f"{directory.resolve()} or {bundled.resolve()}, e.g. as a "
+            f"symlink to the delivered folder. "
+            f"Missing: {missing_input_files(scenario_name)}."
         )
 
     identity = _directory_identity(scenario_name)
