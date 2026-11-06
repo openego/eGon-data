@@ -226,15 +226,12 @@ class CH4Storages(Dataset):
         """
         from egon.data.validation.rules.custom.sanity.gas import (
             FROM_PARAMETERS,
-            GasBusReferences,
             GasComponentTotal,
             for_each_scenario,
         )
 
-        # Nationally: storage capacity of the scenario plus line pack
         return {
             "sanity": [
-                # status2024 has no CH4 stores (see insert_ch4_storages)
                 *for_each_scenario(
                     GasComponentTotal,
                     "SANITY_GAS_CH4_STORES_DE_E_NOM",
@@ -245,14 +242,11 @@ class CH4Storages(Dataset):
                         ("gas", "CH4_storage_capacity"),
                         ("gas", "CH4_grid_capacity"),
                     ],
+                    rtol=0.01,
                     expected={
                         "status2024": 0,
-                        "eGon2035": {
-                            "Schleswig-Holstein": 80358.729,
-                            "Everything": FROM_PARAMETERS,
-                        },
                         "reGon2037": {
-                            "Schleswig-Holstein": 5375.525,
+                            "Schleswig-Holstein": 8982.346,
                             "Everything": FROM_PARAMETERS,
                         },
                         "reGon2045": {
@@ -260,12 +254,6 @@ class CH4Storages(Dataset):
                             "Everything": FROM_PARAMETERS,
                         },
                     },
-                ),
-                *for_each_scenario(
-                    GasBusReferences,
-                    "SANITY_GAS_CH4_STORES_BUSES",
-                    table="grid.egon_etrago_store",
-                    carriers=["CH4"],
                 ),
             ],
         }

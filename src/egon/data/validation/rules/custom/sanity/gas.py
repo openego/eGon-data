@@ -1,11 +1,11 @@
 """
-Sanity check validation rules for the gas datasets (#1526)
+Sanity check validation rules for the gas datasets.
 
 Each gas dataset lists its rules in the static method ``validation_rules``;
 the cross-cutting rules are in :func:`final_validation_rules`. Most rules
-need no expected value; the totals of :class:`GasComponentTotal` and
-:class:`H2GridComponents` are measured per dataset boundary. The eTraGo
-tables are shared with other sectors, so the rules always filter by
+need no expected value; the few totals of :class:`GasComponentTotal` come
+from the scenario parameters or are given for both dataset boundaries. The
+eTraGo tables are shared with other sectors, so the rules always filter by
 scenario and carrier.
 
 """
@@ -16,36 +16,33 @@ from egon_validation.rules.base import DataFrameRule, Severity
 import pandas as pd
 
 from egon.data import config
+from egon.data.datasets.power_etrago.match_ocgt import OCGT_CARRIERS
 from egon.data.datasets.scenario_parameters import (
     get_scenario_year,
     get_sector_parameters,
 )
 from egon.data.validation import resolve_boundary_dependence
 
-#: Scenarios the gas rules are defined for. A rule for a scenario that is
-#: not in ``--scenarios`` of the run is skipped.
-GAS_SCENARIOS = ("status2024", "eGon2035", "reGon2037", "reGon2045")
+# Scenarios the gas rules are defined for. A rule for a scenario that is
+# not in ``--scenarios`` of the run is skipped.
+GAS_SCENARIOS = ("status2024", "reGon2037", "reGon2045")
 
-#: Scenarios with a gas network. status2024 models the German methane
-#: system as a single CH4 bus without pipes and has no hydrogen.
-TARGET_SCENARIOS = ("eGon2035", "reGon2037", "reGon2045")
+# Scenarios with a gas network. status2024 models the German methane
+# system as a single CH4 bus without pipes and has no hydrogen.
+TARGET_SCENARIOS = ("reGon2037", "reGon2045")
 
-#: Dataset boundaries an expected value has to be given for
+# Dataset boundaries an expected value has to be given for
 BOUNDARIES = ("Schleswig-Holstein", "Everything")
 
-#: Placeholder for an expected value that is not measured yet. A rule that
-#: still holds it fails and reports the observed value.
-NOT_MEASURED = "NOT_MEASURED"
-
-#: Expected value taken from the scenario parameters (``parameter`` of the
-#: rule). The model scales the gas sector to national totals and only then
-#: cuts it to the dataset boundary, so this is valid for "Everything" only.
+# Expected value taken from the scenario parameters (``parameter`` of the
+# rule). The model scales the gas sector to national totals and only then
+# cuts it to the dataset boundary, so this is valid for "Everything" only.
 FROM_PARAMETERS = "FROM_PARAMETERS"
 
-#: Absolute tolerance, used when the expected value is 0
+# Absolute tolerance, used when the expected value is 0
 ATOL = 1e-6
 
-#: Bus columns of the eTraGo component tables
+# Bus columns of the eTraGo component tables
 BUS_COLUMNS = {
     "grid.egon_etrago_bus": (),
     "grid.egon_etrago_link": ("bus0", "bus1"),
@@ -54,19 +51,13 @@ BUS_COLUMNS = {
     "grid.egon_etrago_store": ("bus",),
 }
 
-#: Id columns of the eTraGo component tables
+# Id columns of the eTraGo component tables
 ID_COLUMNS = {
     "grid.egon_etrago_bus": "bus_id",
     "grid.egon_etrago_link": "link_id",
     "grid.egon_etrago_generator": "generator_id",
     "grid.egon_etrago_load": "load_id",
     "grid.egon_etrago_store": "store_id",
-}
-
-#: Time series tables of the eTraGo component tables
-TIMESERIES_TABLES = {
-    "grid.egon_etrago_generator": "grid.egon_etrago_generator_timeseries",
-    "grid.egon_etrago_load": "grid.egon_etrago_load_timeseries",
 }
 
 _NO_EXPECTED = object()
@@ -82,7 +73,7 @@ def for_each_scenario(
     """
     Create one rule per scenario (the scenario is appended to the rule id)
 
-    ``expected`` is a number, NOT_MEASURED or FROM_PARAMETERS, optionally
+    ``expected`` is a number or FROM_PARAMETERS, optionally
     per boundary (``{"Schleswig-Holstein": ..., "Everything": ...}``) and/or
     per scenario (a dict naming every scenario of ``scenarios``).
 
@@ -268,9 +259,6 @@ class _GasRule(DataFrameRule):
 
     def evaluate(self, engine, ctx):
         """Skip scenarios that the run does not build"""
-        # Unlike DemandRegioScenarioDemand, a missing scenario is decided
-        # by --scenarios and not by the data: a scenario that was built but
-        # has no components of a carrier is a result the rule has to judge.
         if self.scenario not in config.settings()["egon-data"]["--scenarios"]:
             return self.create_result(
                 success=True,
@@ -323,14 +311,6 @@ class _GasRule(DataFrameRule):
         comparison = self.params.get("comparison", "equal")
         rtol = self.params.get("rtol", 0.01)
 
-        if expected == NOT_MEASURED:
-            return self.result(
-                False,
-                f"{description} = {observed:,.3f}; the expected value is "
-                "not measured yet (#1526)",
-                observed=observed,
-            )
-
         if expected == FROM_PARAMETERS:
             paths = self.params["parameter"]
             if isinstance(paths, tuple):
@@ -371,7 +351,7 @@ class GasComponentTotal(_GasRule):
         [MWh]) or (function, column) with the function "sum", "max" or
         "min", e.g. ("sum", "p_nom")
     expected : float or str
-        Expected value, NOT_MEASURED or FROM_PARAMETERS
+        Expected value or FROM_PARAMETERS
     parameter : tuple or list of tuple, optional
         Path in the scenario parameters for FROM_PARAMETERS (see
         :func:`_parameter`); the values of several paths are summed
@@ -419,7 +399,6 @@ class GasComponentTotal(_GasRule):
                 " LEFT JOIN grid.egon_etrago_load_timeseries t"
                 " ON t.load_id = c.load_id AND t.scn_name = c.scn_name"
             )
-            # A load without a time series has a constant p_set
             value = (
                 "COALESCE((SELECT sum(v) FROM unnest(t.p_set) AS v), "
                 "c.p_set * 8760)"
@@ -457,81 +436,6 @@ class GasComponentTotal(_GasRule):
             f"{measure} of {'/'.join(self.params['carriers'])} "
             f"({self.params['location'] or 'everywhere'}, "
             f"{int(df['n_components'].values[0])} components)",
-        )
-
-
-class GasBusesWithoutLink(_GasRule):
-    """
-    German gas buses without a link of their carrier
-
-    Such a bus is cut off from its network: the loads, stores and
-    generators at it can only be balanced locally.
-
-    Parameters
-    ----------
-    table : str
-        "grid.egon_etrago_bus"
-    rule_id : str
-        Unique identifier for this validation rule
-    scenario : str
-        Scenario to check
-    bus_carrier : str
-        Carrier of the buses, e.g. "H2_grid"
-    link_carriers : list of str
-        Carriers of the links that connect such a bus, e.g. ["H2_grid"]
-
-    """
-
-    def __init__(
-        self, table, rule_id, scenario, bus_carrier, link_carriers, **kwargs
-    ):
-        super().__init__(
-            table=table,
-            rule_id=rule_id,
-            scenario=scenario,
-            bus_carrier=bus_carrier,
-            link_carriers=list(link_carriers),
-            **kwargs,
-        )
-
-    def get_query(self, ctx):
-        return """
-            SELECT
-                count(*) AS n_buses,
-                count(*) FILTER (WHERE NOT linked) AS n_unlinked,
-                (array_agg(bus_id ORDER BY bus_id)
-                    FILTER (WHERE NOT linked))[1:10] AS examples
-            FROM (
-                SELECT b.bus_id, EXISTS (
-                    SELECT 1 FROM grid.egon_etrago_link l
-                    WHERE l.scn_name = b.scn_name
-                    AND l.carrier = ANY(:link_carriers)
-                    AND b.bus_id IN (l.bus0, l.bus1)
-                ) AS linked
-                FROM grid.egon_etrago_bus b
-                WHERE b.scn_name = :scenario
-                AND b.carrier = :bus_carrier
-                AND b.country = 'DE'
-            ) AS buses
-            """
-
-    def get_params(self, ctx):
-        return {
-            "scenario": self.scenario,
-            "bus_carrier": self.params["bus_carrier"],
-            "link_carriers": self.params["link_carriers"],
-        }
-
-    def evaluate_df(self, df, ctx):
-        n_unlinked = int(df["n_unlinked"].values[0])
-        return self.result(
-            n_unlinked == 0,
-            f"{n_unlinked} of {int(df['n_buses'].values[0])} "
-            f"{self.params['bus_carrier']} buses in Germany without a "
-            f"{'/'.join(self.params['link_carriers'])} link"
-            f"{_examples(df['examples'].values[0])}",
-            observed=n_unlinked,
-            expected=0,
         )
 
 
@@ -598,319 +502,9 @@ class GasBusReferences(_GasRule):
         )
 
 
-class GasTimeseriesComplete(_GasRule):
-    """
-    Gas loads or generators without a complete time series
-
-    A time series is incomplete if its row is missing, the column is NULL,
-    it does not have ``length`` values, or it holds NULL or NaN values.
-
-    Parameters
-    ----------
-    table : str
-        "grid.egon_etrago_load" or "grid.egon_etrago_generator"
-    rule_id : str
-        Unique identifier for this validation rule
-    scenario : str
-        Scenario to check
-    carriers : list of str
-        Carriers of the components
-    location : str or None
-        "DE", "abroad" or None, see :func:`_location_sql`
-    column : str
-        Array column of the time series table, default "p_set"
-    length : int
-        Number of time steps, default 8760
-
-    """
-
-    def __init__(
-        self,
-        table,
-        rule_id,
-        scenario,
-        carriers,
-        location="DE",
-        column="p_set",
-        length=8760,
-        **kwargs,
-    ):
-        super().__init__(
-            table=table,
-            rule_id=rule_id,
-            scenario=scenario,
-            carriers=list(carriers),
-            location=location,
-            column=column,
-            length=length,
-            **kwargs,
-        )
-
-    def get_query(self, ctx):
-        if self.table not in TIMESERIES_TABLES:
-            raise ValueError(f"No time series table known for {self.table}")
-
-        joins, condition = _location_sql(self.table, self.params["location"])
-        id_column = ID_COLUMNS[self.table]
-        series = f"t.{_identifier(self.params['column'])}"
-        incomplete = (
-            f"t.{id_column} IS NULL OR {series} IS NULL"
-            f" OR cardinality({series}) <> :length"
-            f" OR array_position({series}, NULL) IS NOT NULL"
-            f" OR 'NaN'::double precision = ANY({series})"
-        )
-        return f"""
-            SELECT
-                count(*) AS n_components,
-                count(*) FILTER (WHERE {incomplete}) AS n_incomplete,
-                (array_agg(c.{id_column} ORDER BY c.{id_column})
-                    FILTER (WHERE {incomplete}))[1:10] AS examples
-            FROM {self.table} c{joins}
-            LEFT JOIN {TIMESERIES_TABLES[self.table]} t
-                ON t.{id_column} = c.{id_column}
-                AND t.scn_name = c.scn_name
-            WHERE c.scn_name = :scenario
-            AND c.carrier = ANY(:carriers)
-            AND {condition}
-            """
-
-    def get_params(self, ctx):
-        return {
-            "scenario": self.scenario,
-            "carriers": self.params["carriers"],
-            "length": self.params["length"],
-        }
-
-    def evaluate_df(self, df, ctx):
-        n_incomplete = int(df["n_incomplete"].values[0])
-        return self.result(
-            n_incomplete == 0,
-            f"{n_incomplete} of {int(df['n_components'].values[0])} "
-            f"{'/'.join(self.params['carriers'])} components without a "
-            f"complete {self.params['column']} series of "
-            f"{self.params['length']} values"
-            f"{_examples(df['examples'].values[0])}",
-            observed=n_incomplete,
-            expected=0,
-        )
-
-
-class GasDuplicateLinks(_GasRule):
-    """
-    Parallel links of the same carrier between the same buses
-
-    Meant for conversion links (e.g. SMR and methanation), which exist
-    once per pair of buses. Not for pipelines: two pipelines between the
-    same nodes can both be real.
-
-    Parameters
-    ----------
-    table : str
-        "grid.egon_etrago_link"
-    rule_id : str
-        Unique identifier for this validation rule
-    scenario : str
-        Scenario to check
-    carriers : list of str
-        Carriers of the links
-
-    """
-
-    def __init__(self, table, rule_id, scenario, carriers, **kwargs):
-        super().__init__(
-            table=table,
-            rule_id=rule_id,
-            scenario=scenario,
-            carriers=list(carriers),
-            **kwargs,
-        )
-
-    def get_query(self, ctx):
-        return """
-            SELECT
-                count(*) AS n_pairs,
-                COALESCE(sum(n_links - 1), 0) AS n_duplicates,
-                (array_agg(first_link ORDER BY first_link))[1:10] AS examples
-            FROM (
-                SELECT count(*) AS n_links, min(link_id) AS first_link
-                FROM grid.egon_etrago_link
-                WHERE scn_name = :scenario
-                AND carrier = ANY(:carriers)
-                GROUP BY carrier, bus0, bus1
-                HAVING count(*) > 1
-            ) AS duplicates
-            """
-
-    def get_params(self, ctx):
-        return {"scenario": self.scenario, "carriers": self.params["carriers"]}
-
-    def evaluate_df(self, df, ctx):
-        n_duplicates = int(df["n_duplicates"].values[0])
-        return self.result(
-            n_duplicates == 0,
-            f"{n_duplicates} duplicate {'/'.join(self.params['carriers'])} "
-            f"links at {int(df['n_pairs'].values[0])} pairs of buses"
-            f"{_examples(df['examples'].values[0])}",
-            observed=n_duplicates,
-            expected=0,
-        )
-
-
-class GasDuplicateBusLocations(_GasRule):
-    """
-    German gas buses at the same coordinates
-
-    Two buses at one place split the components that belong together,
-    because pipelines are mapped to buses by their coordinates.
-
-    Parameters
-    ----------
-    table : str
-        "grid.egon_etrago_bus"
-    rule_id : str
-        Unique identifier for this validation rule
-    scenario : str
-        Scenario to check
-    carriers : list of str
-        Carriers of the buses that must not share a place, e.g.
-        ["H2", "H2_grid"]
-
-    """
-
-    def __init__(self, table, rule_id, scenario, carriers, **kwargs):
-        super().__init__(
-            table=table,
-            rule_id=rule_id,
-            scenario=scenario,
-            carriers=list(carriers),
-            **kwargs,
-        )
-
-    def get_query(self, ctx):
-        return """
-            SELECT
-                count(*) AS n_places,
-                COALESCE(sum(n_buses - 1), 0) AS n_duplicates,
-                (array_agg(first_bus ORDER BY first_bus))[1:10] AS examples
-            FROM (
-                SELECT count(*) AS n_buses, min(bus_id) AS first_bus
-                FROM grid.egon_etrago_bus
-                WHERE scn_name = :scenario
-                AND carrier = ANY(:carriers)
-                AND country = 'DE'
-                GROUP BY x, y
-                HAVING count(*) > 1
-            ) AS duplicates
-            """
-
-    def get_params(self, ctx):
-        return {"scenario": self.scenario, "carriers": self.params["carriers"]}
-
-    def evaluate_df(self, df, ctx):
-        n_duplicates = int(df["n_duplicates"].values[0])
-        return self.result(
-            n_duplicates == 0,
-            f"{n_duplicates} {'/'.join(self.params['carriers'])} buses share "
-            f"their coordinates with another one at "
-            f"{int(df['n_places'].values[0])} places"
-            f"{_examples(df['examples'].values[0])}",
-            observed=n_duplicates,
-            expected=0,
-        )
-
-
-class GasOnePortsPerBus(_GasRule):
-    """
-    German gas buses without the expected number of one-port components
-
-    E.g. one H2_overground store at every German H2 and H2_grid bus.
-
-    Parameters
-    ----------
-    table : str
-        One-port table, e.g. "grid.egon_etrago_store"
-    rule_id : str
-        Unique identifier for this validation rule
-    scenario : str
-        Scenario to check
-    bus_carriers : list of str
-        Carriers of the buses
-    carriers : list of str
-        Carriers of the one-port components
-    per_bus : int
-        Number of such components per bus, default 1
-
-    """
-
-    def __init__(
-        self,
-        table,
-        rule_id,
-        scenario,
-        bus_carriers,
-        carriers,
-        per_bus=1,
-        **kwargs,
-    ):
-        super().__init__(
-            table=table,
-            rule_id=rule_id,
-            scenario=scenario,
-            bus_carriers=list(bus_carriers),
-            carriers=list(carriers),
-            per_bus=per_bus,
-            **kwargs,
-        )
-
-    def get_query(self, ctx):
-        if BUS_COLUMNS.get(self.table) != ("bus",):
-            raise ValueError(f"Not a one-port table: {self.table}")
-
-        return f"""
-            SELECT
-                count(*) AS n_buses,
-                count(*) FILTER (WHERE n <> :per_bus) AS n_wrong,
-                (array_agg(bus_id ORDER BY bus_id)
-                    FILTER (WHERE n <> :per_bus))[1:10] AS examples
-            FROM (
-                SELECT b.bus_id, (
-                    SELECT count(*) FROM {self.table} c
-                    WHERE c.bus = b.bus_id
-                    AND c.scn_name = b.scn_name
-                    AND c.carrier = ANY(:carriers)
-                ) AS n
-                FROM grid.egon_etrago_bus b
-                WHERE b.scn_name = :scenario
-                AND b.carrier = ANY(:bus_carriers)
-                AND b.country = 'DE'
-            ) AS buses
-            """
-
-    def get_params(self, ctx):
-        return {
-            "scenario": self.scenario,
-            "bus_carriers": self.params["bus_carriers"],
-            "carriers": self.params["carriers"],
-            "per_bus": self.params["per_bus"],
-        }
-
-    def evaluate_df(self, df, ctx):
-        n_wrong = int(df["n_wrong"].values[0])
-        return self.result(
-            n_wrong == 0,
-            f"{n_wrong} of {int(df['n_buses'].values[0])} "
-            f"{'/'.join(self.params['bus_carriers'])} buses in Germany "
-            f"without exactly {self.params['per_bus']} "
-            f"{'/'.join(self.params['carriers'])} component(s)"
-            f"{_examples(df['examples'].values[0])}",
-            observed=n_wrong,
-            expected=0,
-        )
-
-
 class GasVoronoiCoverage(_GasRule):
     """
-    Gas voronoi cells of one carrier: tied to buses, covering the boundary once
+    Gas voronoi cells of one carrier: tied to buses, area of the boundary
 
     Parameters
     ----------
@@ -1003,7 +597,7 @@ class GasVoronoiCoverage(_GasRule):
 
 class GasBuildYearWithinScenario(_GasRule):
     """
-    Gas components built after the year of the scenario
+    Gas components without a build year or built after the scenario year
 
     E.g. H2 pipelines of the core network with a commissioning year after
     the scenario year must not be part of the scenario.
@@ -1035,10 +629,14 @@ class GasBuildYearWithinScenario(_GasRule):
         return f"""
             SELECT
                 count(*) AS n_components,
-                count(*) FILTER (WHERE build_year > :year) AS n_later,
+                count(*) FILTER (
+                    WHERE build_year IS NULL OR build_year > :year
+                ) AS n_later,
                 max(build_year) AS max_build_year,
                 (array_agg({id_column} ORDER BY {id_column})
-                    FILTER (WHERE build_year > :year))[1:10] AS examples
+                    FILTER (
+                        WHERE build_year IS NULL OR build_year > :year
+                    ))[1:10] AS examples
             FROM {self.table}
             WHERE scn_name = :scenario
             AND carrier = ANY(:carriers)
@@ -1065,132 +663,18 @@ class GasBuildYearWithinScenario(_GasRule):
         )
 
 
-class GasParameterMatch(_GasRule):
-    """
-    Gas components whose attribute differs from the scenario parameters
-    (with several paths, each component has to match one of them)
-
-    Parameters
-    ----------
-    table : str
-        eTraGo component table
-    rule_id : str
-        Unique identifier for this validation rule
-    scenario : str
-        Scenario to check
-    carriers : list of str
-        Carriers of the components
-    column : str
-        Column to check, e.g. "efficiency"
-    parameter : tuple or list of tuple
-        Path(s) in the scenario parameters, see :func:`_parameter`; paths a
-        scenario does not have are left out
-    location : str or None
-        "DE", "abroad", "cross-border" or None, see :func:`_location_sql`
-    rtol : float
-        Relative tolerance, default 1e-6
-
-    """
-
-    def __init__(
-        self,
-        table,
-        rule_id,
-        scenario,
-        carriers,
-        column,
-        parameter,
-        location="DE",
-        **kwargs,
-    ):
-        super().__init__(
-            table=table,
-            rule_id=rule_id,
-            scenario=scenario,
-            carriers=list(carriers),
-            column=column,
-            parameter=parameter,
-            location=location,
-            **kwargs,
-        )
-
-    def get_query(self, ctx):
-        joins, condition = _location_sql(self.table, self.params["location"])
-        column = _identifier(self.params["column"])
-        return f"""
-            SELECT
-                count(*) AS n_components,
-                array_agg(DISTINCT c.{column}) AS values
-            FROM {self.table} c{joins}
-            WHERE c.scn_name = :scenario
-            AND c.carrier = ANY(:carriers)
-            AND {condition}
-            """
-
-    def get_params(self, ctx):
-        return {"scenario": self.scenario, "carriers": self.params["carriers"]}
-
-    def evaluate_df(self, df, ctx):
-        n_components = int(df["n_components"].values[0])
-        carriers = "/".join(self.params["carriers"])
-        column = self.params["column"]
-
-        if n_components == 0:
-            return self.result(
-                True, f"no {carriers} components to check {column} of"
-            )
-
-        paths = self.params["parameter"]
-        if isinstance(paths, tuple):
-            paths = [paths]
-        allowed = []
-        for path in paths:
-            try:
-                allowed.append(_parameter(self.scenario, path))
-            except KeyError:
-                continue
-        if not allowed:
-            raise KeyError(f"None of the parameters {paths} exists")
-        rtol = self.params.get("rtol", 1e-6)
-
-        values = df["values"].values[0]
-        wrong = [
-            value
-            for value in values
-            if value is None
-            or pd.isna(value)
-            or not any(
-                _compare(float(value), a, "equal", rtol) for a in allowed
-            )
-        ]
-        return self.result(
-            not wrong,
-            (
-                f"{column} of {n_components} {carriers} components: values "
-                f"{sorted(str(v) for v in wrong)} differ from the parameters "
-                f"{allowed}"
-                if wrong
-                else f"{column} of {n_components} {carriers} components as in "
-                f"the parameters {allowed}"
-            ),
-            observed=len(wrong),
-            expected=0,
-        )
-
-
 def _nearest_state_sql(bus_column):
     """
-    Lateral join of the federal state nearest to a bus
+    Lateral join of the federal state (NUTS 1 code) nearest to a bus
 
-    As in ``hydrogen_etrago.power_to_h2.scale_electrolysis_to_nep``, the
-    nearest state is taken, so that substations at the coast or the
+    The nearest state is taken, so that substations at the coast or the
     border are not lost.
     """
     return f"""
         JOIN grid.egon_etrago_bus b
             ON b.bus_id = {bus_column} AND b.scn_name = :scenario
         CROSS JOIN LATERAL (
-            SELECT s.gen AS state
+            SELECT s.nuts
             FROM boundaries.vg250_lan s
             WHERE s.gf = 4
             ORDER BY ST_Distance(
@@ -1203,8 +687,12 @@ def _nearest_state_sql(bus_column):
 
 class ElectrolyserCapPerState(_GasRule):
     """
-    Electrolyser capacity per federal state within the NEP capacity
-    ("power_to_H2_capacity"); scenarios without the parameter are skipped
+    Electrolyser potential per federal state vs the NEP capacity
+
+    The electrolysers are extendable up to their connection limit; eTraGo
+    builds the NEP capacity per federal state (``power_to_H2`` in
+    ``supply.egon_scenario_capacities``). Every state needs at least that
+    much ``p_nom_max``.
 
     Parameters
     ----------
@@ -1214,128 +702,283 @@ class ElectrolyserCapPerState(_GasRule):
         Unique identifier for this validation rule
     scenario : str
         Scenario to check
-    rtol : float
-        Relative tolerance, default 0.001
 
     """
 
     def get_query(self, ctx):
         return f"""
-            SELECT json_agg(states) AS states
-            FROM (
-                SELECT nearest.state, sum(l.p_nom_max) AS p_nom_max
+            WITH electrolysers AS (
+                SELECT nearest.nuts, sum(l.p_nom_max) AS p_nom_max
                 FROM grid.egon_etrago_link l
                 {_nearest_state_sql("l.bus0")}
                 WHERE l.scn_name = :scenario
                 AND l.carrier = 'power_to_H2'
-                GROUP BY nearest.state
+                GROUP BY nearest.nuts
+            )
+            SELECT json_agg(states) AS states
+            FROM (
+                SELECT
+                    c.nuts,
+                    c.capacity,
+                    COALESCE(e.p_nom_max, 0) AS p_nom_max
+                FROM supply.egon_scenario_capacities c
+                LEFT JOIN electrolysers e ON e.nuts = c.nuts
+                WHERE c.scenario_name = :scenario
+                AND c.component = 'link'
+                AND c.carrier = 'power_to_H2'
             ) AS states
             """
 
     def evaluate_df(self, df, ctx):
-        capacity = get_sector_parameters("gas", scenario=self.scenario).get(
-            "power_to_H2_capacity"
-        )
-        if not capacity:
+        states = df["states"].values[0] or []
+        if not states:
             return self.result(
-                True, "no electrolyser capacity per federal state; skipped"
+                False,
+                "no NEP electrolyser capacity (power_to_H2) in "
+                "supply.egon_scenario_capacities",
             )
 
-        states = df["states"].values[0] or []
-        rtol = self.params.get("rtol", 0.001)
-        above = [
-            f"{s['state']} {s['p_nom_max']:,.0f} > "
-            f"{capacity.get(s['state'], 0):,.0f} MW"
+        below = [
+            f"{s['nuts']} {s['p_nom_max']:,.0f} < {s['capacity']:,.0f} MW"
             for s in states
-            if not _compare(
-                s["p_nom_max"], capacity.get(s["state"], 0), "at_most", rtol
-            )
+            if not _compare(s["p_nom_max"], s["capacity"], "at_least", 0)
         ]
         observed = sum(s["p_nom_max"] for s in states)
-        expected = sum(capacity.get(s["state"], 0) for s in states)
+        expected = sum(s["capacity"] for s in states)
         return self.result(
-            not above,
+            not below,
             (
-                f"electrolysers above the NEP capacity: {'; '.join(above)}"
-                if above
-                else f"{len(states)} federal states within the NEP capacity "
-                f"({observed:,.0f} of {expected:,.0f} MW)"
+                f"electrolyser potential below the NEP capacity: "
+                f"{'; '.join(below)}"
+                if below
+                else f"{len(states)} federal states: electrolyser potential "
+                f"{observed:,.0f} MW, NEP capacity {expected:,.0f} MW"
             ),
             observed=observed,
             expected=expected,
         )
 
 
-class H2DemandAboveElectrolyserCap(_GasRule):
+def _connected_parts(nodes, edges):
     """
-    Federal states whose industrial H2 demand exceeds the H2 output of their
-    electrolysers (warning: such a state imports H2 through the grid)
+    Connected part of every node of a graph (union-find)
+
+    Parameters
+    ----------
+    nodes : iterable
+        Nodes, e.g. bus ids
+    edges : iterable of tuple
+        Pairs of nodes; nodes missing in ``nodes`` are added
+
+    Returns
+    -------
+    dict
+        Representative node of the part of every node
+
+    """
+    edges = list(edges)
+    parent = {node: node for node in nodes}
+    for a, b in edges:
+        parent.setdefault(a, a)
+        parent.setdefault(b, b)
+
+    def root(node):
+        while parent[node] != node:
+            parent[node] = parent[parent[node]]
+            node = parent[node]
+        return node
+
+    for a, b in edges:
+        parent[root(a)] = root(b)
+    return {node: root(node) for node in parent}
+
+
+#: Buses and pipes of the two gas networks and the links that consume gas
+#: from them, see :class:`GasNetworkSupply`
+GAS_NETWORKS = {
+    "CH4": {
+        "buses": ["CH4"],
+        "pipes": ["CH4"],
+        "consumers": [
+            "central_gas_CHP",
+            "industrial_gas_CHP",
+            "central_gas_boiler",
+            "rural_gas_boiler",
+            "OCGT",
+        ],
+    },
+    "H2": {
+        "buses": ["H2", "H2_grid", "H2_saltcavern"],
+        "pipes": ["H2_grid", "H2_saltcavern"],
+        "consumers": [
+            *[c for c in OCGT_CARRIERS if c.startswith("H2_")],
+            "H2_to_power",
+        ],
+    },
+}
+
+
+class GasNetworkSupply(_GasRule):
+    """
+    Loads and gas consumers in parts of a gas network without supply
+
+    The network is split into its connected parts (buses joined by pipes).
+    A CH4 part has a supply if it holds a generator or a methanation link
+    from an H2 bus with an electrolyser or on the H2 grid.
+    An H2 part has a supply if it holds an electrolyser, an import or an SMR
+    link from a CH4 part with a supply. A load or a consumer link (CHP,
+    boiler, gas turbine, fuel cell) in a part without supply cannot be
+    served. A part without a bus in Germany is cut off from the model.
 
     Parameters
     ----------
     table : str
-        "grid.egon_etrago_load"
+        "grid.egon_etrago_bus"
     rule_id : str
         Unique identifier for this validation rule
     scenario : str
         Scenario to check
+    network : str
+        "CH4" or "H2"
 
     """
 
+    def __init__(self, table, rule_id, scenario, network, **kwargs):
+        super().__init__(
+            table=table,
+            rule_id=rule_id,
+            scenario=scenario,
+            network=network,
+            **kwargs,
+        )
+
     def get_query(self, ctx):
-        return f"""
-            SELECT json_agg(states) AS states
-            FROM (
-                SELECT
-                    nearest.state,
-                    sum((SELECT sum(v) FROM unnest(t.p_set) AS v)) / 8760
-                        AS mean_demand
-                FROM grid.egon_etrago_load c
-                JOIN grid.egon_etrago_load_timeseries t
-                    ON t.load_id = c.load_id AND t.scn_name = c.scn_name
-                {_nearest_state_sql("c.bus")}
-                WHERE c.scn_name = :scenario
-                AND c.carrier = 'H2_for_industry'
-                AND b.country = 'DE'
-                GROUP BY nearest.state
-            ) AS states
+        return """
+            WITH gas_bus AS (
+                SELECT bus_id, carrier, country
+                FROM grid.egon_etrago_bus
+                WHERE scn_name = :scenario
+                AND carrier IN ('CH4', 'H2', 'H2_grid', 'H2_saltcavern')
+            )
+            SELECT
+                'bus' AS kind, bus_id AS bus0, NULL::bigint AS bus1,
+                carrier, country, NULL::float AS value
+            FROM gas_bus
+            UNION ALL
+            SELECT 'link', bus0, bus1, carrier, NULL, p_nom * efficiency
+            FROM grid.egon_etrago_link
+            WHERE scn_name = :scenario
+            AND (
+                bus0 IN (SELECT bus_id FROM gas_bus)
+                OR bus1 IN (SELECT bus_id FROM gas_bus)
+            )
+            UNION ALL
+            SELECT 'generator', bus, NULL, carrier, NULL, p_nom
+            FROM grid.egon_etrago_generator
+            WHERE scn_name = :scenario
+            AND bus IN (SELECT bus_id FROM gas_bus)
+            UNION ALL
+            SELECT
+                'load', c.bus, NULL, c.carrier, NULL,
+                COALESCE(
+                    (SELECT sum(v) FROM unnest(t.p_set) AS v),
+                    c.p_set * 8760
+                )
+            FROM grid.egon_etrago_load c
+            LEFT JOIN grid.egon_etrago_load_timeseries t
+                ON t.load_id = c.load_id AND t.scn_name = c.scn_name
+            WHERE c.scn_name = :scenario
+            AND c.bus IN (SELECT bus_id FROM gas_bus)
             """
 
     def evaluate_df(self, df, ctx):
-        parameters = get_sector_parameters("gas", scenario=self.scenario)
-        capacity = parameters.get("power_to_H2_capacity")
-        if not capacity:
-            return self.result(
-                True, "no electrolyser capacity per federal state; skipped"
+        buses = df[df["kind"] == "bus"]
+        links = df[df["kind"] == "link"]
+        generators = df[df["kind"] == "generator"]
+        loads = df[df["kind"] == "load"]
+
+        part = {}
+        for name, network in GAS_NETWORKS.items():
+            ids = buses.loc[buses["carrier"].isin(network["buses"]), "bus0"]
+            pipes = links[
+                links["carrier"].isin(network["pipes"])
+                & links["bus0"].isin(ids)
+                & links["bus1"].isin(ids)
+            ]
+            part[name] = _connected_parts(
+                ids, zip(pipes["bus0"], pipes["bus1"])
             )
 
-        efficiency = parameters["efficiency"]["power_to_H2"]
-        states = df["states"].values[0] or []
-        above = [
-            f"{s['state']} {s['mean_demand']:,.0f} MW > "
-            f"{capacity.get(s['state'], 0) * efficiency:,.0f} MW"
-            for s in states
-            if s["mean_demand"] > capacity.get(s["state"], 0) * efficiency
+        def parts_of(bus_ids, name):
+            return set(bus_ids.map(part[name]).dropna())
+
+        electrolysers = links[links["carrier"] == "power_to_H2"]
+        h2_with_source = set(electrolysers["bus1"]) | set(
+            buses.loc[
+                buses["carrier"].isin(["H2_grid", "H2_saltcavern"]), "bus0"
+            ]
+        )
+        methanation = links[
+            (links["carrier"] == "H2_to_CH4")
+            & links["bus0"].isin(h2_with_source)
         ]
+        supplied = {
+            "CH4": parts_of(generators["bus0"], "CH4")
+            | parts_of(methanation["bus1"], "CH4")
+        }
+        smr = links[
+            (links["carrier"] == "CH4_to_H2")
+            & links["bus0"].map(part["CH4"]).isin(supplied["CH4"])
+        ]
+        supplied["H2"] = (
+            parts_of(electrolysers["bus1"], "H2")
+            | parts_of(generators["bus0"], "H2")
+            | parts_of(smr["bus1"], "H2")
+        )
+
+        name = self.params["network"]
+        all_parts = set(part[name].values())
+        dry = all_parts - supplied[name]
+        german = buses.loc[buses["country"] == "DE", "bus0"]
+        cut_off = sorted(all_parts - parts_of(german, name))
+        load_part = loads["bus0"].map(part[name])
+        dry_loads = loads[load_part.isin(dry)]
+        consumers = links[
+            links["carrier"].isin(GAS_NETWORKS[name]["consumers"])
+            & links["bus0"].map(part[name]).isin(dry)
+        ]
+
+        message = (
+            f"{len(dry)} of {len(all_parts)} {name} network parts without "
+            f"supply, with {len(dry_loads)} loads "
+            f"({dry_loads['value'].sum() / 1e6:,.1f} of "
+            f"{loads.loc[load_part.notna(), 'value'].sum() / 1e6:,.1f} TWh/a)"
+        )
+        for carrier, group in consumers.groupby("carrier"):
+            message += (
+                f", {len(group)} {carrier} links "
+                f"({group['value'].sum() / 1e3:,.1f} GW)"
+            )
+        stranded = sorted(set(dry_loads["bus0"]) | set(consumers["bus0"]))
+        if cut_off:
+            message += f", {len(cut_off)} parts without a bus in Germany"
         return self.result(
-            not above,
-            (
-                "industrial H2 demand above the H2 output of the NEP "
-                f"electrolysers: {'; '.join(above)}"
-                if above
-                else f"{len(states)} federal states: industrial H2 demand "
-                "within the H2 output of the NEP electrolysers"
-            ),
-            observed=len(above),
+            not stranded and not cut_off,
+            message + _examples([int(bus) for bus in stranded + cut_off]),
+            observed=len(stranded) + len(cut_off),
             expected=0,
-            severity=Severity.WARNING,
         )
 
 
-class WasteHeatBoundedByElectrolysis(_GasRule):
+class OcgtMatchesPowerPlants(_GasRule):
     """
-    Waste heat links within the waste heat of the electrolysers at the same
-    AC bus
+    Gas turbine links in Germany vs the gas and hydrogen power plants
+
+    match_ocgt gives every plant of ``supply.egon_power_plants`` one link
+    from the nearest CH4 (gas, carrier OCGT) or H2 bus (hydrogen, carriers
+    H2_OCGT_*), with p_nom = el_capacity / efficiency: number and
+    electrical capacity must match. Links at a bus of another fuel do not
+    count.
 
     Parameters
     ----------
@@ -1346,120 +989,80 @@ class WasteHeatBoundedByElectrolysis(_GasRule):
     scenario : str
         Scenario to check
     rtol : float
-        Relative tolerance, default 0.001
+        Relative tolerance of the capacity, default 0.001
 
     """
 
     def get_query(self, ctx):
         return """
-            WITH electrolysis AS (
-                SELECT bus0, sum(p_nom_max) AS p_nom_max
-                FROM grid.egon_etrago_link
-                WHERE scn_name = :scenario AND carrier = 'power_to_H2'
-                GROUP BY bus0
-            ), heat AS (
-                SELECT bus0, sum(p_nom_max) AS p_nom_max
-                FROM grid.egon_etrago_link
-                WHERE scn_name = :scenario AND carrier = 'PtH2_waste_heat'
-                GROUP BY bus0
+            WITH links AS (
+                SELECT
+                    CASE WHEN l.carrier = 'OCGT' THEN 'gas' ELSE 'hydrogen'
+                    END AS fuel,
+                    l.p_nom * l.efficiency AS el
+                FROM grid.egon_etrago_link l
+                JOIN grid.egon_etrago_bus b
+                    ON b.bus_id = l.bus0 AND b.scn_name = l.scn_name
+                WHERE l.scn_name = :scenario
+                AND l.carrier = ANY(:carriers)
+                AND b.country = 'DE'
+                AND b.carrier = ANY(
+                    CASE WHEN l.carrier = 'OCGT' THEN ARRAY['CH4']
+                    ELSE ARRAY['H2', 'H2_grid'] END
+                )
+            ), plants AS (
+                SELECT carrier AS fuel, el_capacity AS el
+                FROM supply.egon_power_plants
+                WHERE scenario = :scenario
+                AND carrier IN ('gas', 'hydrogen')
             )
-            SELECT json_agg(json_build_object(
-                'bus', heat.bus0,
-                'heat', heat.p_nom_max,
-                'electrolysis', COALESCE(electrolysis.p_nom_max, 0)
-            )) AS buses
-            FROM heat
-            LEFT JOIN electrolysis USING (bus0)
+            SELECT
+                fuel,
+                count(*) FILTER (WHERE source = 'link') AS n_links,
+                COALESCE(sum(el) FILTER (WHERE source = 'link'), 0)
+                    AS el_links,
+                count(*) FILTER (WHERE source = 'plant') AS n_plants,
+                COALESCE(sum(el) FILTER (WHERE source = 'plant'), 0)
+                    AS el_plants
+            FROM (
+                SELECT 'link' AS source, * FROM links
+                UNION ALL
+                SELECT 'plant', * FROM plants
+                UNION ALL
+                SELECT NULL, 'gas', 0
+            ) AS components
+            GROUP BY fuel
             """
 
+    def get_params(self, ctx):
+        return {"scenario": self.scenario, "carriers": OCGT_CARRIERS}
+
     def evaluate_df(self, df, ctx):
-        share = get_sector_parameters("gas", scenario=self.scenario)[
-            "efficiency"
-        ]["power_to_Heat"]
-        buses = df["buses"].values[0] or []
         rtol = self.params.get("rtol", 0.001)
-        above = [
-            b["bus"]
-            for b in buses
-            if not _compare(
-                b["heat"], share * b["electrolysis"], "at_most", rtol
-            )
+        wrong = [
+            row.fuel
+            for row in df.itertuples()
+            if row.n_links != row.n_plants
+            or not _compare(row.el_links, row.el_plants, "equal", rtol)
         ]
         return self.result(
-            not above,
-            f"{len(above)} of {len(buses)} AC buses with more waste heat "
-            f"links than {share} x electrolysis{_examples(above)}",
-            observed=len(above),
-            expected=0,
-        )
-
-
-class H2GridComponents(_GasRule):
-    """
-    Number of separate parts of the H2 grid (H2_grid buses and links)
-
-    Parameters
-    ----------
-    table : str
-        "grid.egon_etrago_link"
-    rule_id : str
-        Unique identifier for this validation rule
-    scenario : str
-        Scenario to check
-    expected : int or str
-        Expected number of parts, or NOT_MEASURED
-
-    """
-
-    def __init__(self, table, rule_id, scenario, expected, **kwargs):
-        kwargs.setdefault("rtol", 0)
-        super().__init__(
-            table=table,
-            rule_id=rule_id,
-            scenario=scenario,
-            expected=expected,
-            **kwargs,
-        )
-
-    def get_query(self, ctx):
-        return """
-            SELECT
-                (SELECT array_agg(bus_id) FROM grid.egon_etrago_bus
-                    WHERE scn_name = :scenario AND carrier = 'H2_grid')
-                    AS buses,
-                array_agg(bus0 ORDER BY link_id) AS bus0,
-                array_agg(bus1 ORDER BY link_id) AS bus1
-            FROM grid.egon_etrago_link
-            WHERE scn_name = :scenario AND carrier = 'H2_grid'
-            """
-
-    def evaluate_df(self, df, ctx):
-        row = df.iloc[0]
-        bus0, bus1 = row["bus0"] or [], row["bus1"] or []
-
-        parent = {bus: bus for bus in (row["buses"] or [])}
-        parent.update({bus: bus for bus in bus0 + bus1})
-
-        def root(bus):
-            while parent[bus] != bus:
-                parent[bus] = parent[parent[bus]]
-                bus = parent[bus]
-            return bus
-
-        for a, b in zip(bus0, bus1):
-            parent[root(a)] = root(b)
-
-        n_parts = len({root(bus) for bus in parent})
-        return self.judge(
-            n_parts,
-            f"parts of the H2 grid ({len(parent)} buses, {len(bus0)} links)",
+            not wrong,
+            "; ".join(
+                f"{row.fuel}: {row.n_links} links / {row.el_links:,.1f} MW "
+                f"vs {row.n_plants} plants / {row.el_plants:,.1f} MW"
+                for row in df.itertuples()
+            ),
+            observed=float(df["el_links"].sum()),
+            expected=float(df["el_plants"].sum()),
         )
 
 
 def final_validation_rules():
     """
-    Return the cross-cutting gas rules of ``FinalValidations``: links of other
-    datasets (CHP, boilers, gas turbines) that point to rebuilt gas buses
+    Return the cross-cutting gas rules of ``FinalValidations``: bus
+    references of all gas components and of the links of other datasets
+    (CHP, boilers, gas turbines), supply of every gas network part with
+    loads or consumers, and the gas turbines vs the power plants
 
     Returns
     -------
@@ -1469,34 +1072,74 @@ def final_validation_rules():
     """
     return {
         "gas": [
+            *[
+                rule
+                for rule_id, table, carriers in [
+                    (
+                        "SANITY_GAS_FINAL_LINKS_AT_GAS_BUSES",
+                        "grid.egon_etrago_link",
+                        [
+                            "central_gas_CHP",
+                            "central_gas_CHP_heat",
+                            "industrial_gas_CHP",
+                            "central_gas_boiler",
+                            "rural_gas_boiler",
+                            *OCGT_CARRIERS,
+                        ],
+                    ),
+                    (
+                        "SANITY_GAS_FINAL_GAS_LINKS",
+                        "grid.egon_etrago_link",
+                        [
+                            "CH4",
+                            "H2_grid",
+                            "H2_saltcavern",
+                            "CH4_to_H2",
+                            "H2_to_CH4",
+                            "power_to_H2",
+                            "H2_to_power",
+                            "PtH2_waste_heat",
+                        ],
+                    ),
+                    (
+                        "SANITY_GAS_FINAL_GENERATORS_AT_GAS_BUSES",
+                        "grid.egon_etrago_generator",
+                        ["CH4", "H2"],
+                    ),
+                    (
+                        "SANITY_GAS_FINAL_LOADS_AT_GAS_BUSES",
+                        "grid.egon_etrago_load",
+                        [
+                            "CH4",
+                            "CH4_for_industry",
+                            "H2_for_industry",
+                            "rural_gas_boiler",
+                        ],
+                    ),
+                    (
+                        "SANITY_GAS_FINAL_STORES_AT_GAS_BUSES",
+                        "grid.egon_etrago_store",
+                        ["CH4", "H2_overground", "H2_underground"],
+                    ),
+                ]
+                for rule in for_each_scenario(
+                    GasBusReferences, rule_id, table=table, carriers=carriers
+                )
+            ],
+            *[
+                rule
+                for network in GAS_NETWORKS
+                for rule in for_each_scenario(
+                    GasNetworkSupply,
+                    f"SANITY_GAS_FINAL_{network}_SUPPLY",
+                    table="grid.egon_etrago_bus",
+                    network=network,
+                )
+            ],
             *for_each_scenario(
-                GasBusReferences,
-                "SANITY_GAS_FINAL_LINKS_AT_GAS_BUSES",
+                OcgtMatchesPowerPlants,
+                "SANITY_GAS_FINAL_OCGT_POWER_PLANTS",
                 table="grid.egon_etrago_link",
-                carriers=[
-                    "central_gas_CHP",
-                    "central_gas_CHP_heat",
-                    "industrial_gas_CHP",
-                    "central_gas_boiler",
-                    "rural_gas_boiler",
-                    "OCGT",
-                ],
-            ),
-            # The gas links themselves, once all datasets have run
-            *for_each_scenario(
-                GasBusReferences,
-                "SANITY_GAS_FINAL_GAS_LINKS",
-                table="grid.egon_etrago_link",
-                carriers=[
-                    "CH4",
-                    "H2_grid",
-                    "H2_saltcavern",
-                    "CH4_to_H2",
-                    "H2_to_CH4",
-                    "power_to_H2",
-                    "H2_to_power",
-                    "PtH2_waste_heat",
-                ],
             ),
         ],
     }

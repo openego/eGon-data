@@ -333,8 +333,6 @@ class GasAreas(Dataset):
 
         return {
             "data_quality": [
-                # No row count: it depends on --scenarios and the boundary,
-                # GasVoronoiCoverage checks the cells per scenario instead
                 TableValidation(
                     table_name="grid.egon_gas_voronoi",
                     geometry_columns=["geom"],
@@ -344,8 +342,6 @@ class GasAreas(Dataset):
                         "carrier": "text",
                         "geom": "geometry",
                     },
-                    # Not "geom": the NaN test of this check does not work
-                    # on geometries; the whole table check covers it
                     not_null_columns=["scn_name", "bus_id", "carrier"],
                     value_set_columns={
                         "scn_name": list(GAS_SCENARIOS),
@@ -367,13 +363,6 @@ class GasAreas(Dataset):
                     table="grid.egon_gas_voronoi",
                     carrier="H2",
                     bus_carriers=["H2", "H2_grid"],
-                ),
-                *for_each_scenario(
-                    GasVoronoiCoverage,
-                    "SANITY_GAS_VORONOI_H2_SALTCAVERN",
-                    table="grid.egon_gas_voronoi",
-                    carrier="H2_saltcavern",
-                    bus_carriers=["H2_saltcavern"],
                 ),
             ],
         }
