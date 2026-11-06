@@ -4,6 +4,14 @@ import pandas as pd
 
 from egon.data.datasets import load_sources_and_targets
 
+#: Decentral heating technologies that can be assigned a share of the
+#: decentral heat demand (heat parameter ``individual_heating_shares``), in
+#: the order buildings are assigned to them. Buildings without any of them
+#: are supplied by gas boilers. The names are the carriers in
+#: supply.egon_individual_heating, and each technology needs its own sizing in
+#: egon.data.datasets.heat_supply.individual_heating.
+INDIVIDUAL_HEATING_SHARE_TECHNOLOGIES = ["heat_pump", "resistive_heater"]
+
 
 def read_csv(year):
     _, targets = load_sources_and_targets("ScenarioParameters")
@@ -1726,6 +1734,19 @@ def heat(scenario):
             "DE_district_heating_share": 0.149355365897948,
             # [%], source: Ffe-study: "Begleitstudie: Regionalisierung Gebäudewärme":
             # table A-5
+            "individual_heating_shares": {
+                tech: share
+                for tech, share in zip(
+                    INDIVIDUAL_HEATING_SHARE_TECHNOLOGIES,
+                    [0.74, 0.05],
+                    strict=True,
+                )
+            },
+            # [p.u.] of the decentral heat demand per MV grid, in the order of
+            # INDIVIDUAL_HEATING_SHARE_TECHNOLOGIES (heat pump, resistive
+            # heater); the remaining demand is supplied by gas boilers.
+            # values from source: Ffe-study: "Begleitstudie: Regionalisierung Gebäudewärme":
+            # table A-5.
         }
 
         # Insert efficiency in p.u.
@@ -1812,6 +1833,19 @@ def heat(scenario):
             "DE_district_heating_share": 0.173337799,
             # [%], source: Ffe-study: "Begleitstudie: Regionalisierung Gebäudewärme":
             # table A-5
+            "individual_heating_shares": {
+                tech: share
+                for tech, share in zip(
+                    INDIVIDUAL_HEATING_SHARE_TECHNOLOGIES,
+                    [0.94, 0.06],
+                    strict=True,
+                )
+            },
+            # [p.u.] of the decentral heat demand per MV grid, in the order of
+            # INDIVIDUAL_HEATING_SHARE_TECHNOLOGIES (heat pump, resistive
+            # heater); the remaining demand is supplied by gas boilers.
+            # values from source: Ffe-study: "Begleitstudie: Regionalisierung Gebäudewärme":
+            # table A-5.
         }
 
         parameters["marginal_cost"] = {

@@ -8,6 +8,9 @@ import pandas as pd
 from egon.data import config, db
 from egon.data.datasets import Dataset, DatasetSources, DatasetTargets
 from egon.data.datasets.scenario_parameters import get_sector_parameters
+from egon.data.datasets.scenario_parameters.parameters import (
+    INDIVIDUAL_HEATING_SHARE_TECHNOLOGIES,
+)
 from egon.data.db import next_etrago_id
 
 
@@ -64,13 +67,31 @@ def hts_to_etrago(scenario):
                  """)
             ##**scenario name still needs to be adjusted in bus_sub**
 
-            # individual heating time series
+            # individual heating time series. Buildings with resistive heaters
+            # (only in scenarios with individual_heating_shares) are supplied
+            # via the rural heat bus as well.
+            rural_heat_carriers = ", ".join(
+                f"'{c}'"
+                for c in dict.fromkeys(
+                    ["heat_pump", *INDIVIDUAL_HEATING_SHARE_TECHNOLOGIES]
+                )
+            )
             ind_time_series = db.select_dataframe(f"""
                 SELECT scenario, bus_id, dist_aggregated_mw
                 FROM {sources.tables["individual_heating_timeseries"]}
                 WHERE scenario ='{scenario}'
-                AND carrier = 'heat_pump'
+                AND carrier IN ({rural_heat_carriers})
                 """)
+
+            # one load per heat bus
+            if ind_time_series.bus_id.duplicated().any():
+                ind_time_series = (
+                    ind_time_series.groupby(["scenario", "bus_id"])
+                    .dist_aggregated_mw.apply(
+                        lambda ts: np.sum(ts.tolist(), axis=0).tolist()
+                    )
+                    .reset_index()
+                )
 
             # bus_id connected to corresponding time series
             bus_ts = pd.merge(
@@ -226,7 +247,7 @@ class HtsEtragoTable(Dataset):
     #:
     name: str = "HtsEtragoTable"
     #:
-    version: str = "0.0.9"
+    version: str = "0.0.10"
 
     sources = DatasetSources(
         tables={

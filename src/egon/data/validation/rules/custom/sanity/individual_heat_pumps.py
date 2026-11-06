@@ -65,6 +65,15 @@ def _hp_sizing_factor():
     return float(determine_minimum_hp_capacity_per_building(1.0))
 
 
+def _heating_shares(scenario):
+    """Technology shares of a scenario, None if it has a capacity target."""
+    from egon.data.datasets.heat_supply.individual_heating import (
+        get_individual_heating_shares,
+    )
+
+    return get_individual_heating_shares(scenario)
+
+
 def _examples(values, n=5):
     """Up to ``n`` values as a comma-separated string."""
     values = [str(v) for v in list(values or [])[:n]]
@@ -651,6 +660,18 @@ class HeatPumpCapacityTarget(_HeatPumpRule):
     def _national(self):
         return "status" in self.scenario
 
+    def evaluate(self, engine, ctx):
+        if (
+            self.scenario in configured_scenarios()
+            and _heating_shares(self.scenario) is not None
+        ):
+            return self._skip(
+                f"Scenario '{self.scenario}' assigns heat pumps by "
+                f"individual_heating_shares and has no capacity target; "
+                f"check skipped"
+            )
+        return super().evaluate(engine, ctx)
+
     def get_query(self, ctx):
         if self._national():
             return f"""
@@ -1026,7 +1047,9 @@ class HeatTimeseriesCoverage(_HeatPumpRule):
     The dataset writes a ``heat_pump`` series for every MV grid with heat
     demand, plus a ``CH4`` series for the gas boilers in scenarios other
     than the status quo -- also for grids without heat pumps or gas
-    boilers, whose series are zero. The MV grids are selected like in
+    boilers, whose series are zero. Scenarios with
+    ``individual_heating_shares`` also write a ``resistive_heater`` series.
+    The MV grids are selected like in
     :func:`~egon.data.datasets.heat_supply.individual_heating.
     split_mvgds_into_bulks`.
     """
@@ -1034,6 +1057,16 @@ class HeatTimeseriesCoverage(_HeatPumpRule):
     def _carriers(self):
         if "status" in self.scenario:
             return ["heat_pump"]
+        if _heating_shares(self.scenario) is not None:
+            from egon.data.datasets.scenario_parameters.parameters import (
+                INDIVIDUAL_HEATING_SHARE_TECHNOLOGIES,
+            )
+
+            return list(
+                dict.fromkeys(
+                    ["heat_pump", "CH4", *INDIVIDUAL_HEATING_SHARE_TECHNOLOGIES]
+                )
+            )
         return ["heat_pump", "CH4"]
 
     def get_query(self, ctx):

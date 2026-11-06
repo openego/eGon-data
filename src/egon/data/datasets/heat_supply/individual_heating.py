@@ -50,7 +50,11 @@ from egon.data.datasets.heat_demand_timeseries.idp_pool import (
 )
 from egon.data.datasets.scenario_parameters import (
     demand_source_scenario,
+    get_sector_parameters,
     pv_source_scenario,
+)
+from egon.data.datasets.scenario_parameters.parameters import (
+    INDIVIDUAL_HEATING_SHARE_TECHNOLOGIES,
 )
 
 # get zensus cells with district heating
@@ -317,7 +321,11 @@ def hp_validation_rules():
             },
             value_set_columns={
                 "scenario": scenarios,
-                "carrier": ["heat_pump", "CH4"],
+                "carrier": list(
+                    dict.fromkeys(
+                        ["heat_pump", "CH4", *INDIVIDUAL_HEATING_SHARE_TECHNOLOGIES]
+                    )
+                ),
             },
         ),
         ArrayCardinalityValidation(
@@ -449,6 +457,15 @@ class HeatPumpsCascade(Dataset):
     predecessor's result, the scenarios on the chain are processed in chain order and
     re-running one link invalidates everything downstream of it.
 
+    Scenarios that define ``individual_heating_shares`` in their heat parameters have
+    no heat pump capacity target. In each MV grid, buildings get a heat pump until the
+    heat pump share of the grid's decentral heat demand is reached, then a resistive
+    heater until the resistive heater share is reached, and all remaining buildings a
+    gas boiler (see :func:`determine_heating_technologies_by_share_per_mvgd`). For these
+    scenarios, this dataset also writes the heat pump and resistive heater capacities
+    per MV grid to ``supply.egon_individual_heating``, which
+    :py:class:`HeatSupply <egon.data.datasets.heat_supply.HeatSupply>` leaves empty.
+
     As the building's heat peak load is not previously determined, it is as well done
     in this dataset. Further, as determining heat peak load requires heat load
     profiles of the buildings to be set up, this task is also utilised to set up
@@ -511,8 +528,12 @@ class HeatPumpsCascade(Dataset):
 
     #:
     name: str = "HeatPumpsCascade"
+    # When bumping this version, also bump HeatEtrago and HtsEtragoTable: for
+    # scenarios with individual_heating_shares, this dataset writes the
+    # capacities HeatEtrago inserts and the time series HtsEtragoTable
+    # inserts, and a dataset only reruns when its own version changes.
     #:
-    version: str = "0.0.11"
+    version: str = "0.0.12"
 
     def __init__(self, dependencies):
         def dyn_parallel_tasks_2035(scenario):
@@ -599,6 +620,11 @@ class HeatPumpsCascade(Dataset):
                         ),
                         wrapped_partial(
                             delete_mvgd_ts_2035,
+                            scenario=scenario,
+                            postfix=postfix,
+                        ),
+                        wrapped_partial(
+                            delete_individual_heating_supply_by_share,
                             scenario=scenario,
                             postfix=postfix,
                         ),
@@ -2081,6 +2107,378 @@ def determine_hp_cap_buildings_pvbased_per_mvgd(
         return pd.Series(dtype="float64").rename("hp_capacity")
 
 
+#: Technologies that :func:`determine_heating_technologies_by_share_per_mvgd`
+#: has a sizing for, in its assignment order. Only used to check that
+#: ``INDIVIDUAL_HEATING_SHARE_TECHNOLOGIES`` in
+#: :py:mod:`egon.data.datasets.scenario_parameters.parameters` still matches
+#: the code, see :func:`get_individual_heating_shares`.
+IMPLEMENTED_SHARE_TECHNOLOGIES = ("heat_pump", "resistive_heater")
+
+
+def get_individual_heating_shares(scenario):
+    """
+    Returns the shares of decentral heating technologies of a scenario.
+
+    Scenarios that define ``individual_heating_shares`` in their heat
+    parameters (see :py:func:`egon.data.datasets.scenario_parameters.
+    parameters.heat`) are supplied by technology shares instead of a heat
+    pump capacity target, see
+    :func:`determine_heating_technologies_by_share_per_mvgd`.
+
+    Parameters
+    -----------
+    scenario : str
+        Name of the scenario.
+
+    Returns
+    --------
+    dict or None
+        Share of the decentral heat demand per technology in
+        ``INDIVIDUAL_HEATING_SHARE_TECHNOLOGIES``, in that order, e.g.
+        ``{"heat_pump": 0.9, "resistive_heater": 0.05}``. None if the scenario
+        uses a heat pump capacity target.
+
+    Raises
+    -------
+    ValueError
+        If ``INDIVIDUAL_HEATING_SHARE_TECHNOLOGIES`` does not match the
+        technologies implemented here, or the scenario's shares name other
+        technologies or are invalid.
+
+    """
+    shares = get_sector_parameters("heat", scenario).get(
+        "individual_heating_shares"
+    )
+
+    if shares is None:
+        return None
+
+    technologies = list(INDIVIDUAL_HEATING_SHARE_TECHNOLOGIES)
+
+    if technologies != list(IMPLEMENTED_SHARE_TECHNOLOGIES):
+        raise ValueError(
+            f"INDIVIDUAL_HEATING_SHARE_TECHNOLOGIES in scenario_parameters/"
+            f"parameters.py is {technologies}, but the share-based cascade "
+            f"only implements {list(IMPLEMENTED_SHARE_TECHNOLOGIES)} in this "
+            f"order. Adapt determine_heating_technologies_by_share_per_mvgd "
+            f"and IMPLEMENTED_SHARE_TECHNOLOGIES to the new technologies."
+        )
+
+    unknown = set(shares) - set(technologies)
+    if unknown:
+        raise ValueError(
+            f"Scenario {scenario}: unknown technologies {sorted(unknown)} in "
+            f"individual_heating_shares, expected {technologies}."
+        )
+
+    shares = {tech: float(shares.get(tech, 0.0)) for tech in technologies}
+
+    if any(share < 0 for share in shares.values()) or (
+        sum(shares.values()) > 1 + FLOOR_TOLERANCE
+    ):
+        raise ValueError(
+            f"Scenario {scenario}: individual_heating_shares {shares} must be "
+            f"non-negative and add up to at most 1."
+        )
+
+    return shares
+
+
+def get_building_order_pv_weighted(building_ids, scenario):
+    """
+    Returns a random order of buildings, preferring buildings with PV rooftop.
+
+    Uses the same weights and random seed as
+    :func:`determine_buildings_with_hp_in_mv_grid`.
+
+    Parameters
+    -----------
+    building_ids : pd.Index(int)
+        Building IDs (as int) to order.
+    scenario : str
+        Name of the scenario. Determines which scenario's PV rooftop data is
+        used to weight buildings (via
+        :func:`~.scenario_parameters.pv_source_scenario`).
+
+    Returns
+    --------
+    pd.Index(int)
+        Building IDs in the order in which they are assigned a technology.
+
+    """
+    if len(building_ids) == 0:
+        return pd.Index([], dtype="int64")
+
+    saio.register_schema("supply", engine)
+    from saio.supply import egon_power_plants_pv_roof_building
+
+    with db.session_scope() as session:
+        query = session.query(
+            egon_power_plants_pv_roof_building.building_id
+        ).filter(
+            egon_power_plants_pv_roof_building.building_id.in_(building_ids),
+            egon_power_plants_pv_roof_building.scenario
+            == pv_source_scenario(scenario),
+        )
+
+        buildings_with_pv = (
+            pd.read_sql(query.statement, query.session.bind, index_col=None)
+            .building_id.drop_duplicates()
+            .values
+        )
+
+    weights = pd.Series(1.0, index=building_ids)
+    weights.loc[weights.index.isin(buildings_with_pv)] = 1.5
+    weights = weights / weights.sum()
+
+    np.random.seed(db.credentials()["--random-seed"])
+    return pd.Index(
+        np.random.choice(
+            weights.index,
+            size=len(weights),
+            replace=False,
+            p=weights.values,
+        )
+    )
+
+
+def select_buildings_by_demand_share(order, annual_demand, target_demand):
+    """
+    Selects buildings in the given order until a demand target is reached.
+
+    Parameters
+    -----------
+    order : pd.Index(int)
+        Candidate building IDs in the order in which they are selected.
+    annual_demand : pd.Series
+        Annual heat demand per building in MWh, indexed by building ID.
+    target_demand : float
+        Annual heat demand in MWh the selected buildings may cover at most.
+
+    Returns
+    --------
+    pd.Index(int)
+        Selected building IDs. Their annual demand does not exceed
+        `target_demand`, the next building in `order` would exceed it.
+
+    """
+    if target_demand <= 0 or len(order) == 0:
+        return pd.Index([], dtype="int64")
+
+    cumsum = annual_demand.loc[order].cumsum()
+    return cumsum[cumsum <= target_demand].index
+
+
+def determine_heating_technologies_by_share_per_mvgd(
+    scenario, mv_grid_id, peak_heat_demand, annual_heat_demand, building_ids
+):
+    """
+    Assigns a decentral heating technology to every building in the MV grid.
+
+    Used instead of :func:`determine_hp_cap_buildings_pvbased_per_mvgd` for
+    scenarios that define ``individual_heating_shares`` (see
+    :func:`get_individual_heating_shares`). There is no heat pump capacity
+    target. Instead, the technologies cover fixed shares of the grid's
+    decentral heat demand:
+
+    1. Buildings get a heat pump until the heat pump share of the grid's
+       annual decentral heat demand is reached. Buildings that had a heat
+       pump in the predecessor on the heat pump floor chain keep it (see
+       :func:`get_inherited_hp_capacity`) and count towards the share first.
+       Further buildings are taken in the PV weighted random order of
+       :func:`get_building_order_pv_weighted`. Buildings whose required heat
+       pump is smaller than :data:`MIN_HP_CAPACITY` are skipped.
+    2. Of the remaining buildings, in the same order, buildings get a
+       resistive heater until the resistive heater share is reached.
+    3. All remaining buildings are supplied by gas boilers.
+
+    Each heat pump gets the minimum capacity of
+    :func:`determine_minimum_hp_capacity_per_building`, inherited heat pumps
+    at least their inherited capacity. As buildings are added as a whole,
+    each share is reached from below.
+
+    Parameters
+    -----------
+    scenario : str
+        Name of the scenario.
+    mv_grid_id : int
+        ID of MV grid.
+    peak_heat_demand : pd.Series
+        Peak heat demand per building in MW, indexed by building ID.
+    annual_heat_demand : pd.Series
+        Annual heat demand per building in MWh, indexed by building ID.
+    building_ids : pd.Index(int)
+        Building IDs (as int) of buildings with decentral heating system in
+        given MV grid.
+
+    Returns
+    --------
+    hp_cap_per_building : pd.Series
+        Heat pump capacity in MW per building with heat pump.
+    buildings_resistive_heater : pd.Index(int)
+        Building IDs of buildings with resistive heater.
+    buildings_gas : pd.Index(int)
+        Building IDs of buildings with gas boiler.
+
+    """
+    shares = get_individual_heating_shares(scenario)
+    # matches IMPLEMENTED_SHARE_TECHNOLOGIES, checked by the call above
+    heat_pump, resistive_heater = INDIVIDUAL_HEATING_SHARE_TECHNOLOGIES
+
+    hp_cap_per_building = pd.Series(dtype="float64", name="hp_capacity")
+    hp_cap_per_building.index.name = "building_id"
+
+    building_ids = pd.Index(building_ids).drop_duplicates()
+
+    if len(building_ids) == 0:
+        empty = pd.Index([], dtype="int64")
+        return hp_cap_per_building, empty, empty
+
+    peak_heat_demand = peak_heat_demand.loc[building_ids]
+    annual_heat_demand = annual_heat_demand.loc[building_ids]
+    total_demand = annual_heat_demand.sum()
+
+    min_hp_cap_buildings = determine_minimum_hp_capacity_per_building(
+        peak_heat_demand
+    )
+
+    # Inherited heat pumps stay, raised to the size the current peak load
+    # requires (see determine_hp_cap_buildings_pvbased_per_mvgd)
+    inherited_hp_cap = get_inherited_hp_capacity(scenario, building_ids)
+    floored_hp_cap = inherited_hp_cap.combine(
+        min_hp_cap_buildings.reindex(inherited_hp_cap.index).fillna(0.0), max
+    )
+
+    order = get_building_order_pv_weighted(
+        building_ids.drop(floored_hp_cap.index, errors="ignore"), scenario
+    )
+
+    # 1. heat pumps
+    hp_target = shares[heat_pump] * total_demand
+    floored_demand = annual_heat_demand.loc[floored_hp_cap.index].sum()
+
+    if floored_demand > hp_target:
+        logger.warning(
+            f"MVGD={mv_grid_id} | Scenario {scenario}: inherited heat pumps "
+            f"cover {floored_demand / total_demand:.2%} of the decentral heat "
+            f"demand, more than the heat pump share of "
+            f"{shares[heat_pump]:.2%}. No further heat pumps are added."
+        )
+
+    hp_candidates = order[
+        min_hp_cap_buildings.loc[order].values >= MIN_HP_CAPACITY
+    ]
+    new_hp_buildings = select_buildings_by_demand_share(
+        hp_candidates, annual_heat_demand, hp_target - floored_demand
+    )
+
+    hp_cap_per_building = pd.concat(
+        [floored_hp_cap, min_hp_cap_buildings.loc[new_hp_buildings]]
+    ).rename("hp_capacity")
+    hp_cap_per_building.index.name = "building_id"
+
+    # 2. resistive heaters
+    order = order.drop(new_hp_buildings)
+    buildings_resistive_heater = select_buildings_by_demand_share(
+        order,
+        annual_heat_demand,
+        shares[resistive_heater] * total_demand,
+    )
+
+    # 3. gas boilers
+    buildings_gas = order.drop(buildings_resistive_heater)
+
+    if total_demand <= 0:
+        return hp_cap_per_building, buildings_resistive_heater, buildings_gas
+
+    logger.info(
+        f"MVGD={mv_grid_id} | Scenario {scenario}: decentral heat demand "
+        f"covered by heat pumps "
+        f"{annual_heat_demand.loc[hp_cap_per_building.index].sum() / total_demand:.2%}"
+        f", resistive heaters "
+        f"{annual_heat_demand.loc[buildings_resistive_heater].sum() / total_demand:.2%}"
+        f", gas boilers "
+        f"{annual_heat_demand.loc[buildings_gas].sum() / total_demand:.2%}."
+    )
+
+    return hp_cap_per_building, buildings_resistive_heater, buildings_gas
+
+
+def export_individual_heating_supply(df_supply, scenario):
+    """
+    Writes the decentral heating capacities per MV grid of a share scenario.
+
+    For scenarios using :func:`get_individual_heating_shares`, the capacities
+    in ``supply.egon_individual_heating`` are the sums of the building
+    capacities and are therefore written here instead of by
+    :func:`cascade_heat_supply_indiv`.
+
+    Parameters
+    ----------
+    df_supply : pd.DataFrame
+        Capacity in MW per MV grid and carrier. Columns are mv_grid_id,
+        carrier and capacity.
+    scenario : str
+        Name of the scenario.
+
+    """
+    if df_supply.empty:
+        return
+
+    mv_grids = db.select_geodataframe(
+        f"""
+        SELECT bus_id AS mv_grid_id, ST_Centroid(geom) AS geometry
+        FROM grid.egon_mv_grid_district
+        WHERE bus_id IN ({", ".join(map(str, df_supply.mv_grid_id.unique()))})
+        """,
+        geom_col="geometry",
+    )
+
+    gdf = mv_grids.merge(df_supply, on="mv_grid_id")
+    gdf["scenario"] = scenario
+
+    sources, targets = load_sources_and_targets("HeatSupply")
+
+    gdf.to_postgis(
+        targets.get_table_name("individual_heating_supply"),
+        schema=targets.get_table_schema("individual_heating_supply"),
+        con=engine,
+        if_exists="append",
+        index=False,
+    )
+
+
+def delete_individual_heating_supply_by_share(scenario):
+    """
+    Removes the capacities written by :func:`export_individual_heating_supply`.
+
+    Does nothing for scenarios without ``individual_heating_shares``, whose
+    capacities are written by :func:`cascade_heat_supply_indiv`. This is
+    checked here, as the scenario parameters are not available when the
+    tasks are set up.
+
+    Parameters
+    -----------
+    scenario : str
+        Name of the scenario.
+
+    """
+    if get_individual_heating_shares(scenario) is None:
+        return
+
+    sources, targets = load_sources_and_targets("HeatSupply")
+
+    db.execute_sql(
+        f"""
+        DELETE FROM {targets.tables['individual_heating_supply']}
+        WHERE scenario = '{scenario}'
+        AND carrier IN (
+            {", ".join(f"'{c}'" for c in INDIVIDUAL_HEATING_SHARE_TECHNOLOGIES)}
+        )
+        """
+    )
+
+
 def aggregate_residential_and_cts_profiles(mvgd, scenario):
     """
     Gets residential and CTS heat demand profiles per building and aggregates
@@ -2246,6 +2644,13 @@ def determine_hp_cap_peak_load_mvgd_ts_2035(mvgd_ids, scenario):
     Further, creates heat demand time series for all buildings with heat pumps
     in MV grid, as well as for all buildings with gas boilers, used in eTraGo.
 
+    Scenarios with ``individual_heating_shares`` (see
+    :func:`get_individual_heating_shares`) assign the technologies by share
+    instead (:func:`determine_heating_technologies_by_share_per_mvgd`). They
+    additionally write a time series for the buildings with resistive heaters
+    and the capacities of heat pumps and resistive heaters per MV grid to
+    ``supply.egon_individual_heating``.
+
     Parameters
     -----------
     mvgd_ids : list(int)
@@ -2263,6 +2668,16 @@ def determine_hp_cap_peak_load_mvgd_ts_2035(mvgd_ids, scenario):
     df_peak_loads_db = pd.DataFrame()
     df_hp_cap_per_building_2035_db = pd.DataFrame()
     df_heat_mvgd_ts_db = pd.DataFrame()
+    df_supply_db = pd.DataFrame()
+
+    shares = get_individual_heating_shares(scenario)
+    if shares is not None:
+        # matches IMPLEMENTED_SHARE_TECHNOLOGIES, checked by the call above
+        heat_pump, resistive_heater = INDIVIDUAL_HEATING_SHARE_TECHNOLOGIES
+
+        efficiency_resistive_heater = get_sector_parameters("heat", scenario)[
+            "efficiency"
+        ]["rural_resistive_heater"]
 
     for mvgd in mvgd_ids:
         logger.info(f"MVGD={mvgd} | Start")
@@ -2300,15 +2715,30 @@ def determine_hp_cap_peak_load_mvgd_ts_2035(mvgd_ids, scenario):
             buildings_decentral_heating, peak_load_2035
         )
 
-        hp_cap_per_building_2035 = determine_hp_cap_buildings_pvbased_per_mvgd(
-            scenario,
-            mvgd,
-            peak_load_2035,
-            buildings_decentral_heating,
-        )
-        buildings_gas_2035 = pd.Index(buildings_decentral_heating).drop(
-            hp_cap_per_building_2035.index
-        )
+        if shares is None:
+            hp_cap_per_building_2035 = (
+                determine_hp_cap_buildings_pvbased_per_mvgd(
+                    scenario,
+                    mvgd,
+                    peak_load_2035,
+                    buildings_decentral_heating,
+                )
+            )
+            buildings_gas_2035 = pd.Index(buildings_decentral_heating).drop(
+                hp_cap_per_building_2035.index
+            )
+        else:
+            (
+                hp_cap_per_building_2035,
+                buildings_resistive_heater,
+                buildings_gas_2035,
+            ) = determine_heating_technologies_by_share_per_mvgd(
+                scenario,
+                mvgd,
+                peak_load_2035,
+                df_heat_ts.sum(),
+                buildings_decentral_heating,
+            )
 
         # ################ aggregated heat profiles ###################
         logger.info(f"MVGD={mvgd} | Aggregate heat profiles.")
@@ -2332,6 +2762,53 @@ def determine_hp_cap_peak_load_mvgd_ts_2035(mvgd_ids, scenario):
                 ],
             }
         )
+
+        if shares is not None:
+            # heat demand time series for buildings with resistive heater
+            df_mvgd_ts_resistive_heater = df_heat_ts.loc[
+                :, buildings_resistive_heater
+            ].sum(axis=1)
+
+            df_heat_mvgd_ts = pd.concat(
+                [
+                    df_heat_mvgd_ts,
+                    pd.DataFrame(
+                        data={
+                            "carrier": [resistive_heater],
+                            "bus_id": mvgd,
+                            "scenario": [scenario],
+                            "dist_aggregated_mw": [
+                                df_mvgd_ts_resistive_heater.to_list()
+                            ],
+                        }
+                    ),
+                ],
+                ignore_index=True,
+            )
+
+            # Capacities per MV grid. Heat pump capacity is electrical, as is
+            # the resistive heater capacity, which is sized to the buildings'
+            # peak heat load. Gas boilers get no capacity: their buildings are
+            # supplied by the CH4 load in eTraGo, not via the rural heat bus.
+            df_supply_db = pd.concat(
+                [
+                    df_supply_db,
+                    pd.DataFrame(
+                        data={
+                            "mv_grid_id": mvgd,
+                            "carrier": [heat_pump, resistive_heater],
+                            "capacity": [
+                                hp_cap_per_building_2035.sum(),
+                                peak_load_2035.loc[
+                                    buildings_resistive_heater
+                                ].sum()
+                                / efficiency_resistive_heater,
+                            ],
+                        }
+                    ),
+                ],
+                ignore_index=True,
+            )
 
         # ################ collect results ##################
         logger.info(f"MVGD={mvgd} | Collect results.")
@@ -2383,6 +2860,9 @@ def determine_hp_cap_peak_load_mvgd_ts_2035(mvgd_ids, scenario):
         EgonHpCapacityBuildings,
         drop=False,
     )
+
+    if shares is not None:
+        export_individual_heating_supply(df_supply_db, scenario)
 
 
 def determine_hp_cap_peak_load_mvgd_ts_status_quo(mvgd_ids, scenario):
