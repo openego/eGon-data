@@ -296,6 +296,14 @@ def insert_power_to_heat_per_level(
 
     """
     sources, targets = load_sources_and_targets("HeatEtrago")
+
+    if heat_pumps.empty:
+        print(
+            f"No {carrier} with multiple_per_mv_grid={multiple_per_mv_grid} "
+            f"in scenario {scenario}. Skipping insertion."
+        )
+        return
+
     if "central" in carrier:
         # Calculate heat pumps per electrical bus
         gdf = assign_electrical_bus(
@@ -304,6 +312,14 @@ def insert_power_to_heat_per_level(
 
     else:
         gdf = heat_pumps.copy()
+
+    # Bus assignment can also leave nothing (e.g. no matching heat bus)
+    if gdf.empty:
+        print(
+            f"No {carrier} could be assigned to buses in scenario {scenario}. "
+            "Skipping insertion."
+        )
+        return
 
     # Select geometry of buses
     geom_buses = db.select_geodataframe(
