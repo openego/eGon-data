@@ -639,7 +639,7 @@ class Chp(Dataset):
 
 
     *Dependencies*
-      * :py:class:`GasAreaseGon2035 <egon.data.datasets.gas_areas.GasAreaseGon2035>`
+      * :py:class:`GasAreas <egon.data.datasets.gas_areas.GasAreas>`
       * :py:class:`DistrictHeatingAreas <egon.data.datasets.district_heating_areas.DistrictHeatingAreas>`
       * :py:class:`IndustrialDemandCurves <egon.data.datasets.industry.IndustrialDemandCurves>`
       * :py:class:`OsmLanduse <egon.data.datasets.loadarea.OsmLanduse>`
@@ -657,7 +657,7 @@ class Chp(Dataset):
     #:
     name: str = "Chp"
     #:
-    version: str = "0.0.15"
+    version: str = "0.0.16"
 
     def __init__(self, dependencies):
         super().__init__(

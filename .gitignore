@@ -24,6 +24,7 @@ venv*/
 .venv*/
 pyvenv*/
 pip-wheel-metadata/
+uv.lock
 
 # Local runtime config (contains DB credentials) and scratch/test scripts
 egon-data.configuration.yaml

@@ -35,14 +35,15 @@ def select_nep_power_plants(carrier, scn):
     # capacity columns for their respective target year
     nep_scenario = "eGon2035" if scn == "eGon2035" else "reGon"
     capacity_column = f"c{get_scenario_year(scn)}_capacity"
-
-    # The NEP2021 Kraftwerksliste (eGon2035) carries a "bnetza_id" column; the
-    # NEP2025 list (reGon2037/reGon2045) does not. It is only passed through and
-    # never used for the allocation, so only select it where it exists.
-    id_column = "bnetza_id, " if nep_scenario == "eGon2035" else ""
+    # The NEP2021 Kraftwerksliste (eGon2035) carries a "bnetza_id" column,
+    # which is only passed through. The NEP2025 list (reGon2037/reGon2045)
+    # carries the MaStR number of the units, which is used for the matching
+    # (see match_nep_no_chp_by_mastr_id).
+    id_column = "bnetza_id, " if nep_scenario == "eGon2035" else "mastr_id, "
 
     # Select plants with geolocation from list of conventional power plants
-    nep = db.select_dataframe(f"""
+    nep = db.select_dataframe(
+        f"""
         SELECT {id_column}name, carrier, capacity, postcode, city,
         federal_state, {capacity_column}
         FROM {sources.tables['nep_conv']}
@@ -50,8 +51,9 @@ def select_nep_power_plants(carrier, scn):
         AND scenario = '{nep_scenario}'
         AND chp = 'Nein'
         AND {capacity_column} > 0
-        AND postcode != 'None';
-        """)
+        AND postcode IS NOT NULL;
+        """
+    )
     nep = nep.rename(columns={capacity_column: "elec_capacity"})
 
     nep["postcode"] = nep["postcode"].astype(str)
@@ -101,6 +103,70 @@ def select_no_chp_combustion_mastr(carrier):
     )
 
     return mastr
+
+
+def match_nep_no_chp_by_mastr_id(nep, mastr, matched, scn):
+    """Match power plants (no CHP) from NEP list to MaStR by MaStR number
+
+    Only the NEP2025 list (reGon scenarios) carries MaStR numbers. Plants
+    without MaStR number, e.g. new builds, are left for the matching by
+    location in :py:func:`match_nep_no_chp`.
+
+    Parameters
+    ----------
+    nep : pandas.DataFrame
+        Power plants (no CHP) from NEP which are not matched to MaStR
+    mastr : pandas.DataFrame
+        Power plants (no CHP) from MaStR which are not matched to NEP
+    matched : pandas.DataFrame
+        Already matched power plants
+    scn : str
+        Name of the scenario
+
+    Returns
+    -------
+    matched : pandas.DataFrame
+        Matched power plants
+    mastr : pandas.DataFrame
+        Power plants from MaStR which are not matched to NEP
+    nep : pandas.DataFrame
+        Power plants from NEP which are not matched to MaStR
+
+    """
+    if "mastr_id" not in nep.columns:
+        return matched, mastr, nep
+
+    merged = nep.reset_index().merge(
+        mastr.reset_index(),
+        left_on="mastr_id",
+        right_on="EinheitMastrNummer",
+        suffixes=("_nep", "_mastr"),
+    )
+
+    matched = pd.concat(
+        [
+            matched,
+            gpd.GeoDataFrame(
+                data={
+                    "source": "MaStR scaled with NEP 2025 list",
+                    "MaStRNummer": merged.EinheitMastrNummer,
+                    "carrier": merged.carrier_nep,
+                    "el_capacity": merged.elec_capacity,
+                    "scenario": scn,
+                    "geometry": merged.geometry,
+                    "voltage_level": merged.voltage_level,
+                },
+                geometry="geometry",
+                crs=mastr.crs,
+            ),
+        ],
+        ignore_index=True,
+    )
+
+    nep = nep.drop(merged.index_nep)
+    mastr = mastr.drop(merged.index_mastr)
+
+    return matched, mastr, nep
 
 
 def match_nep_no_chp(

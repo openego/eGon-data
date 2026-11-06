@@ -4,21 +4,18 @@ The central module containing the definitions of the datasets linked to H2
 This module contains the definitions of the datasets linked to the
 hydrogen sector in eTraGo in Germany.
 
-In the eGon2035 scenario, there is no H2 bus abroad, so technologies
-linked to the hydrogen sector are present only in Germany.
-
-In the eGon100RE scenario, the potential and installed capacities abroad
-arrise from the PyPSA-eur-sec run. For this reason, this module focuses
-only on the hydrogen related components in Germany, and the module
-:py:mod:`pypsaeursec <egon.data.datasets.pypsaeursec>` on the hydrogen
-related components abroad.
+The H2 buses abroad come from PyPSA-Eur; the technologies linked to the
+hydrogen sector are present only in Germany.
 
 """
 
 from egon.data import config
 from egon.data.datasets import Dataset, DatasetSources, DatasetTargets
 from egon.data.datasets.hydrogen_etrago.bus import insert_hydrogen_buses
-from egon.data.datasets.hydrogen_etrago.h2_grid import insert_h2_pipelines
+from egon.data.datasets.hydrogen_etrago.h2_grid import (
+    download_h2_grid_data,
+    insert_h2_pipelines,
+)
 from egon.data.datasets.hydrogen_etrago.h2_to_ch4 import insert_h2_to_ch4_to_h2
 from egon.data.datasets.hydrogen_etrago.power_to_h2 import (
     insert_power_to_h2_to_power,
@@ -30,15 +27,65 @@ from egon.data.datasets.hydrogen_etrago.storage import (
 )
 
 
+def scenarios_with_h2():
+    """
+    Return the configured scenarios that have a H2 system (not status quo)
+
+    Returns
+    -------
+    list of str
+        Names of the scenarios with a H2 system
+
+    """
+    return [
+        scn_name
+        for scn_name in config.settings()["egon-data"]["--scenarios"]
+        if "status" not in scn_name
+    ]
+
+
+def insert_h2_buses():
+    """Insert the H2 buses of all scenarios with a H2 system."""
+    for scn_name in scenarios_with_h2():
+        insert_hydrogen_buses(scn_name)
+
+
+def insert_h2_grid():
+    """Insert the H2 grid of all scenarios with a H2 system."""
+    for scn_name in scenarios_with_h2():
+        insert_h2_pipelines(scn_name)
+
+
+def insert_h2_stores():
+    """Insert the H2 stores of all scenarios with a H2 system."""
+    scenarios = scenarios_with_h2()
+
+    if not scenarios:
+        no_h2_stores_required()
+        return
+
+    for scn_name in scenarios:
+        insert_H2_overground_storage(scn_name)
+        insert_H2_saltcavern_storage(scn_name)
+
+
+def no_h2_stores_required():
+    print(
+        """
+          None of the required scenarios need H2 stores
+          """
+    )
+    return None
+
+
 class HydrogenBusEtrago(Dataset):
     """
     Insert the H2 buses into the database for Germany
 
-    Insert the H2 buses in Germany into the database for the scenarios
-    eGon2035 and eGon100RE by executing successively the functions
-    :py:func:`calculate_and_map_saltcavern_storage_potential <egon.data.datasets.hydrogen_etrago.storage.calculate_and_map_saltcavern_storage_potential>`,
-    :py:func:`insert_hydrogen_buses <egon.data.datasets.hydrogen_etrago.bus.insert_hydrogen_buses>` and
-    :py:func:`insert_hydrogen_buses_eGon100RE <egon.data.datasets.hydrogen_etrago.bus.insert_hydrogen_buses_eGon100RE>`.
+    Insert the H2 buses in Germany into the database by executing
+    successively the functions
+    :py:func:`calculate_and_map_saltcavern_storage_potential <egon.data.datasets.hydrogen_etrago.storage.calculate_and_map_saltcavern_storage_potential>`
+    and :py:func:`insert_hydrogen_buses <egon.data.datasets.hydrogen_etrago.bus.insert_hydrogen_buses>`.
 
     *Dependencies*
       * :py:class:`SaltcavernData <egon.data.datasets.saltcavern.SaltcavernData>`
@@ -53,7 +100,7 @@ class HydrogenBusEtrago(Dataset):
     #:
     name: str = "HydrogenBusEtrago"
     #:
-    version: str = "0.0.5"
+    version: str = "0.0.6"
 
     sources = DatasetSources(
         tables={
@@ -80,9 +127,43 @@ class HydrogenBusEtrago(Dataset):
             dependencies=dependencies,
             tasks=(
                 write_saltcavern_potential,
-                insert_h2_buses_for_scn,
+                download_h2_grid_data,
+                insert_h2_buses,
             ),
+            # Gas validation rules (#1526)
+            validation=self.validation_rules(),
+            proceed_on_validation_failure=True,
         )
+
+    @staticmethod
+    def validation_rules():
+        """
+        Return the validation rules of the dataset
+
+        Returns
+        -------
+        dict
+            Validation rules per validation task
+
+        """
+        from egon.data.validation import TableValidation
+        from egon.data.validation.rules.custom.sanity.gas import GAS_SCENARIOS
+
+        return {
+            "data_quality": [
+                # No row count (depends on --scenarios and the boundary); the
+                # upper case columns are covered by the whole table check
+                TableValidation(
+                    table_name="grid.egon_etrago_ac_h2",
+                    data_type_columns={
+                        "bus_H2": "bigint",
+                        "bus_AC": "bigint",
+                        "scn_name": "text",
+                    },
+                    value_set_columns={"scn_name": list(GAS_SCENARIOS)},
+                ),
+            ],
+        }
 
 
 class HydrogenStoreEtrago(Dataset):
@@ -113,7 +194,7 @@ class HydrogenStoreEtrago(Dataset):
     #:
     name: str = "HydrogenStoreEtrago"
     #:
-    version: str = "0.0.7"
+    version: str = "0.0.8"
 
     sources = DatasetSources(
         tables={
@@ -133,10 +214,7 @@ class HydrogenStoreEtrago(Dataset):
             name=self.name,
             version=self.version,
             dependencies=dependencies,
-            tasks=(
-                insert_H2_overground_storage,
-                insert_H2_saltcavern_storage,
-            ),
+            tasks=(insert_h2_stores,),
         )
 
 
@@ -145,9 +223,8 @@ class HydrogenPowerLinkEtrago(Dataset):
     Insert the electrolysis and the fuel cells into the database
 
     Insert the the electrolysis and the fuel cell links in Germany into
-    the database for the scenarios eGon2035 and eGon100RE by executing
-    successively the functions :py:func:`insert_power_to_h2_to_power <egon.data.datasets.hydrogen_etrago.power_to_h2.insert_power_to_h2_to_power>`
-    and :py:func:`insert_power_to_h2_to_power_eGon100RE <egon.data.datasets.hydrogen_etrago.power_to_h2.insert_power_to_h2_to_power_eGon100RE>`.
+    the database for the scenarios by executing the function
+    :py:func:`insert_power_to_h2_to_power <egon.data.datasets.hydrogen_etrago.power_to_h2.insert_power_to_h2_to_power>`
 
     *Dependencies*
       * :py:class:`SaltcavernData <egon.data.datasets.saltcavern.SaltcavernData>`
@@ -164,7 +241,7 @@ class HydrogenPowerLinkEtrago(Dataset):
     #:
     name: str = "HydrogenPowerLinkEtrago"
     #:
-    version: str = "0.0.7"
+    version: str = "0.0.9"
 
     sources = DatasetSources(
         tables={
@@ -175,10 +252,7 @@ class HydrogenPowerLinkEtrago(Dataset):
             "hvmv_substation": "grid.egon_hvmv_substation",
             "loads": "grid.egon_etrago_load",
             "load_timeseries": "grid.egon_etrago_load_timeseries",
-            "mv_districts": "grid.egon_mv_grid_district",
-            "ehv_voronoi": "grid.egon_ehv_substation_voronoi",
             "district_heating_area": "demand.egon_district_heating_areas",
-            "o2_load_profile": "demand.egon_demandregio_timeseries_cts_ind",
         },
     )
     targets = DatasetTargets(
@@ -197,26 +271,51 @@ class HydrogenPowerLinkEtrago(Dataset):
             version=self.version,
             dependencies=dependencies,
             tasks=(insert_power_to_h2_to_power,),
+            # Gas validation rules (#1526)
+            validation=self.validation_rules(),
+            proceed_on_validation_failure=True,
         )
+
+    @staticmethod
+    def validation_rules():
+        """
+        Return the validation rules of the dataset
+
+        Returns
+        -------
+        dict
+            Validation rules per validation task
+
+        """
+        from egon.data.validation.rules.custom.sanity.gas import (
+            TARGET_SCENARIOS,
+            ElectrolyserCapPerState,
+            for_each_scenario,
+        )
+
+        return {
+            "sanity": [
+                *for_each_scenario(
+                    ElectrolyserCapPerState,
+                    "SANITY_GAS_ELECTROLYSER_NEP_CAP",
+                    scenarios=TARGET_SCENARIOS,
+                    table="grid.egon_etrago_link",
+                ),
+            ],
+        }
 
 
 class HydrogenMethaneLinkEtrago(Dataset):
     """
-    Insert the methanisation, feed in and SMR into the database
+    Insert the methanisation and SMR into the database
 
-    Insert the the methanisation, feed in (only in eGon2035) and Steam
-    Methane Reaction (SMR) links in Germany into the database for the
-    scenarios eGon2035 and eGon100RE by executing successively the
-    functions :py:func:`insert_h2_to_ch4_to_h2 <egon.data.datasets.hydrogen_etrago.h2_to_ch4.insert_h2_to_ch4_to_h2>`
-    and :py:func:`insert_h2_to_ch4_eGon100RE <egon.data.datasets.hydrogen_etrago.h2_to_ch4.insert_h2_to_ch4_eGon100RE>`.
+    Insert the the methanisation and Steam Methane Reaction (SMR) links in
+    Germany into the database for the scenarios by executing the function
+    :py:func:`insert_h2_to_ch4_to_h2 <egon.data.datasets.hydrogen_etrago.h2_to_ch4.insert_h2_to_ch4_to_h2>`
 
     *Dependencies*
-      * :py:class:`SaltcavernData <egon.data.datasets.saltcavern.SaltcavernData>`
       * :py:class:`GasNodesAndPipes <egon.data.datasets.gas_grid.GasNodesAndPipes>`
-      * :py:class:`SubstationVoronoi <egon.data.datasets.substation_voronoi.SubstationVoronoi>`
       * :py:class:`HydrogenBusEtrago <HydrogenBusEtrago>`
-      * :py:class:`HydrogenGridEtrago <HydrogenGridEtrago>`
-      * :py:class:`HydrogenPowerLinkEtrago <HydrogenPowerLinkEtrago>`
 
     *Resulting*
       * :py:class:`grid.egon_etrago_link <egon.data.datasets.etrago_setup.EgonPfHvLink>` is extended
@@ -226,7 +325,7 @@ class HydrogenMethaneLinkEtrago(Dataset):
     #:
     name: str = "HydrogenMethaneLinkEtrago"
     #:
-    version: str = "0.0.7"
+    version: str = "0.0.9"
 
     sources = DatasetSources(
         tables={
@@ -251,51 +350,65 @@ class HydrogenMethaneLinkEtrago(Dataset):
 
 class HydrogenGridEtrago(Dataset):
     """
-    Insert the H2 grid in Germany into the database for eGon2035 and eGon100RE
+    Insert the H2 grid in Germany into the database.
 
     Insert the H2 links (pipelines) into Germany in the database for the
-    scenario eGon2035/eGon100RE by executing the function
-    :py:func:`insert_h2_pipelines <egon.data.datasets.hydrogen_etrago.h2_grid.insert_h2_pipelines>`.
+    scenarios by executing the function
+    :py:func:`insert_h2_pipelines
+    <egon.data.datasets.hydrogen_etrago.h2_grid.insert_h2_pipelines>`,
+    including the NEP measures, the cross-border links, the H2 imports and
+    the removal of the CH4 pipelines converted to H2.
 
     *Dependencies*
       * :py:class:`SaltcavernData <egon.data.datasets.saltcavern.SaltcavernData>`
       * :py:class:`GasNodesAndPipes <egon.data.datasets.gas_grid.GasNodesAndPipes>`
       * :py:class:`SubstationVoronoi <egon.data.datasets.substation_voronoi.SubstationVoronoi>`
-      * :py:class:`GasAreaseGon2035 <egon.data.datasets.gas_areas.GasAreaseGon2035>`
+      * :py:class:`GasAreas <egon.data.datasets.gas_areas.GasAreas>`
       * :py:class:`PypsaEurSec <egon.data.datasets.pypsaeursec>`
       * :py:class:`HydrogenBusEtrago <HydrogenBusEtrago>`
 
-
     *Resulting*
-      * :py:class:`grid.egon_etrago_link <egon.data.datasets.etrago_setup.EgonPfHvLink>` is extended
+      * :py:class:`grid.egon_etrago_link
+      <egon.data.datasets.etrago_setup.EgonPfHvLink>` is extended
+        (H2 links) and reduced (converted CH4 pipelines)
+      * :py:class:`grid.egon_etrago_generator
+      <egon.data.datasets.etrago_setup.EgonPfHvGenerator>` is extended
+        (H2 imports)
+      * :py:class:`grid.egon_etrago_bus
+      <egon.data.datasets.etrago_setup.EgonPfHvBus>` is reduced
+        (H2 buses abroad without a cross-border point)
 
     """
 
     #:
     name: str = "HydrogenGridEtrago"
     #:
-    version: str = "0.0.4"
+    version: str = "0.0.6"
 
     sources = DatasetSources(
         urls={
-            "new_constructed_pipes": "https://fnb-gas.de/wp-content/uploads/2024/07/2024_07_22_Anlage3_FNB_Massnahmenliste_Neubau.xlsx",
-            "converted_ch4_pipes": "https://fnb-gas.de/wp-content/uploads/2024/07/2024_07_22_Anlage4_FNB_Massnahmenliste_Umstellung.xlsx",
-            "pipes_of_further_h2_grid_operators": "https://fnb-gas.de/wp-content/uploads/2024/07/2024_07_22_Anlage2_Leitungsmeldungen_weiterer_potenzieller_Wasserstoffnetzbetreiber.xlsx",
+            "new_constructed_pipes": "https://fnb-gas.de/wp-content/uploads/2024/12/2024_12_10_Wasserstoff-Kernnetz_Anlage3_final_inoffiziell.xlsx",
+            "converted_ch4_pipes": "https://fnb-gas.de/wp-content/uploads/2024/12/2024_12_10_Wasserstoff-Kernnetz_Anlage4_final_inoffiziell.xlsx",
+            "pipes_of_further_h2_grid_operators": "https://fnb-gas.de/wp-content/uploads/2024/12/2024_12_10_Wasserstoff-Kernnetz_Anlage2_final_inoffiziell.xlsx",
         },
         files={
-            "new_constructed_pipes": "Anlage_3_Wasserstoffkernnetz_Neubau.xlsx",
-            "converted_ch4_pipes": "Anlage_4_Wasserstoffkernnetz_Umstellung.xlsx",
-            "pipes_of_further_h2_grid_operators": "Anlage_2_Wasserstoffkernetz_weitere_Leitungen.xlsx",
+            "new_constructed_pipes": "data_bundle_egon_data/hydrogen_network/2024_12_10_Wasserstoff-Kernnetz_Anlage3_final_inoffiziell.xlsx",
+            "converted_ch4_pipes": "data_bundle_egon_data/hydrogen_network/2024_12_10_Wasserstoff-Kernnetz_Anlage4_final_inoffiziell.xlsx",
+            "pipes_of_further_h2_grid_operators": "data_bundle_egon_data/hydrogen_network/2024_12_10_Wasserstoff-Kernnetz_Anlage2_final_inoffiziell.xlsx",
         },
         tables={
             "buses": "grid.egon_etrago_bus",
             "links": "grid.egon_etrago_link",
+            "saltcavern_data": "grid.egon_saltstructures_storage_potential",
+            "H2_AC_map": "grid.egon_etrago_ac_h2",
         },
     )
 
     targets = DatasetTargets(
         tables={
             "hydrogen_links": "grid.egon_etrago_link",
+            "generators": "grid.egon_etrago_generator",
+            "buses": "grid.egon_etrago_bus",
         },
     )
 
@@ -304,25 +417,74 @@ class HydrogenGridEtrago(Dataset):
             name=self.name,
             version=self.version,
             dependencies=dependencies,
-            tasks=(insert_h2_pipelines_for_scn,),
+            tasks=(insert_h2_grid,),
+            # Gas validation rules (#1526)
+            validation=self.validation_rules(),
+            proceed_on_validation_failure=True,
         )
 
+    @staticmethod
+    def validation_rules():
+        """
+        Return the validation rules of the dataset
 
-def insert_h2_pipelines_for_scn():
-    scenarios = config.settings()["egon-data"]["--scenarios"]
+        Returns
+        -------
+        dict
+            Validation rules per validation task
 
-    if "eGon2035" in scenarios:
-        insert_h2_pipelines("eGon2035")
+        """
+        from egon.data.validation.rules.custom.sanity.gas import (
+            FROM_PARAMETERS,
+            TARGET_SCENARIOS,
+            GasBuildYearWithinScenario,
+            GasComponentTotal,
+            for_each_scenario,
+        )
 
-    if "eGon100RE" in scenarios:
-        insert_h2_pipelines("eGon100RE")
-
-
-def insert_h2_buses_for_scn():
-    scenarios = config.settings()["egon-data"]["--scenarios"]
-
-    if "eGon2035" in scenarios:
-        insert_hydrogen_buses("eGon2035")
-
-    if "eGon100RE" in scenarios:
-        insert_hydrogen_buses("eGon100RE")
+        return {
+            "sanity": [
+                *for_each_scenario(
+                    GasComponentTotal,
+                    "SANITY_GAS_H2_GRID_PIPES_DE_KM",
+                    table="grid.egon_etrago_link",
+                    carriers=["H2_grid"],
+                    measure=("sum", "length"),
+                    expected={
+                        "status2024": 0,
+                        "reGon2037": 10574.011,
+                        "reGon2045": 18124.084,
+                    },
+                ),
+                # Pipes of the core network are commissioned by the
+                # scenario year at the latest
+                *for_each_scenario(
+                    GasBuildYearWithinScenario,
+                    "SANITY_GAS_H2_GRID_BUILD_YEAR",
+                    scenarios=TARGET_SCENARIOS,
+                    table="grid.egon_etrago_link",
+                    carriers=["H2_grid"],
+                ),
+                *for_each_scenario(
+                    GasComponentTotal,
+                    "SANITY_GAS_H2_IMPORTS_E_NOM_MAX",
+                    scenarios=TARGET_SCENARIOS,
+                    table="grid.egon_etrago_generator",
+                    carriers=["H2"],
+                    location=None,
+                    measure=("sum", "e_nom_max"),
+                    parameter=("gas", "max_H2_import_overtheyear"),
+                    rtol=0.001,
+                    expected={
+                        "reGon2037": {
+                            "Schleswig-Holstein": 23000000,
+                            "Everything": FROM_PARAMETERS,
+                        },
+                        "reGon2045": {
+                            "Schleswig-Holstein": 216000000,
+                            "Everything": FROM_PARAMETERS,
+                        },
+                    },
+                ),
+            ],
+        }

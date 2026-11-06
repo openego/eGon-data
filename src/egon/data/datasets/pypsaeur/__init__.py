@@ -61,7 +61,7 @@ class RunPypsaEur(Dataset):
                 solve_network,
                 clean_database,
                 electrical_neighbours_egon100,
-                h2_neighbours_egon2035,
+                h2_neighbours,
                 # Dropped until we decided how we deal with the H2 grid
                 # overwrite_H2_pipeline_share,
             ),
@@ -86,74 +86,84 @@ def countries_list():
     ]
 
 
-def h2_neighbours_egon2035():
+def h2_neighbours():
     """
-    This function load the pypsa_eur network for eGon2035, processes the H2
-    buses and insert them into the grid.egon_etrago_bus table.
+    This function loads the pypsa_eur network for the scenarios,
+    processes the H2 buses and inserts
+    them into the grid.egon_etrago_bus table.
 
     Returns
     -------
     None.
 
     """
-    if "eGon2035" in config.settings()["egon-data"]["--scenarios"]:
-        # Delete buses from previous executions
-        db.execute_sql("""
-            DELETE FROM grid.egon_etrago_bus WHERE carrier = 'H2'
-            AND scn_name = 'eGon2035'
-            AND country <> 'DE'
-            """)
+    scenarios = config.settings()["egon-data"]["--scenarios"]
 
-        # Load calculated network for eGon2035
-        n = read_network(planning_horizon=2035)
+    for scn_name, planning_horizon in [
+        ("eGon2035", 2035),
+        ("reGon2037", 2035),  # temporal patch
+        ("reGon2045", 2045),
+    ]:
+        if scn_name in scenarios:
+            # Delete buses from previous executions
+            db.execute_sql(f"""
+                DELETE FROM grid.egon_etrago_bus WHERE carrier = 'H2'
+                AND scn_name = '{scn_name}'
+                AND country <> 'DE'
+                """)
 
-        # Filter only H2 buses in selected foreign countries
-        h2_bus = n.buses[(n.buses.country != "DE") & (n.buses.carrier == "H2")]
-        wanted_countries = countries_list()
-        h2_bus = h2_bus[
-            (h2_bus.country.isin(wanted_countries))
-            & (~h2_bus.index.str.contains("FR6"))
-        ]
+            # Load calculated network
+            n = read_network(planning_horizon=planning_horizon)
 
-        # Add geometry column
-        h2_bus = (
-            gpd.GeoDataFrame(
-                h2_bus, geometry=gpd.points_from_xy(h2_bus.x, h2_bus.y)
+            # Filter only H2 buses in selected foreign countries
+            h2_bus = n.buses[
+                (n.buses.country != "DE") & (n.buses.carrier == "H2")
+            ]
+            wanted_countries = countries_list()
+            h2_bus = h2_bus[
+                (h2_bus.country.isin(wanted_countries))
+                & (~h2_bus.index.str.contains("FR6"))
+            ]
+
+            # Add geometry column
+            h2_bus = (
+                gpd.GeoDataFrame(
+                    h2_bus, geometry=gpd.points_from_xy(h2_bus.x, h2_bus.y)
+                )
+                .rename_geometry("geom")
+                .set_crs(4326)
             )
-            .rename_geometry("geom")
-            .set_crs(4326)
-        )
 
-        # Adjust dataframe to the database table format
-        h2_bus["scn_name"] = "eGon2035"
+            # Adjust dataframe to the database table format
+            h2_bus["scn_name"] = scn_name
 
-        h2_bus["bus_id"] = db.next_etrago_id("bus", len(h2_bus.index))
+            h2_bus["bus_id"] = db.next_etrago_id("bus", len(h2_bus.index))
 
-        h2_bus.drop(
-            columns=[
-                "unit",
-                "control",
-                "generator",
-                "location",
-                "substation_off",
-                "substation_lv",
-                "sub_network",
-            ],
-            inplace=True,
-        )
+            h2_bus.drop(
+                columns=[
+                    "unit",
+                    "control",
+                    "generator",
+                    "location",
+                    "substation_off",
+                    "substation_lv",
+                    "sub_network",
+                ],
+                inplace=True,
+            )
 
-        # Connect to local database and write results
-        engine = db.engine()
+            # Connect to local database and write results
+            engine = db.engine()
 
-        h2_bus.to_postgis(
-            "egon_etrago_bus",
-            engine,
-            schema="grid",
-            if_exists="append",
-            index=False,
-        )
-    else:
-        print("eGon2035 is not in the list of scenarios")
+            h2_bus.to_postgis(
+                "egon_etrago_bus",
+                engine,
+                schema="grid",
+                if_exists="append",
+                index=False,
+            )
+        else:
+            print(f"{scn_name} is not in the list of scenarios")
 
 
 def download():
