@@ -39,7 +39,13 @@ from egon.data.datasets.power_plants.pv_rooftop import pv_rooftop_per_mv_grid
 from egon.data.datasets.power_plants.pv_rooftop_buildings import (
     pv_rooftop_to_buildings,
 )
-from egon.data.validation import TableValidation, resolve_boundary_dependence
+from egon.data.validation import TableValidation
+from egon.data.validation.rules.custom.sanity import (
+    BusExists,
+    PowerPlantsCapacityComparison,
+    PvRooftopCapacityComparison,
+    PvRooftopDuplicateRows,
+)
 import egon.data.config
 import egon.data.datasets.power_plants.assign_weather_data as assign_weather_data  # noqa: E501
 import egon.data.datasets.power_plants.metadata as pp_metadata
@@ -1513,7 +1519,7 @@ class PowerPlants(Dataset):
     #:
     name: str = "PowerPlants"
     #:
-    version: str = "0.0.39"
+    version: str = "0.0.40"
 
     def __init__(self, dependencies):
         super().__init__(
@@ -1525,12 +1531,6 @@ class PowerPlants(Dataset):
                 "data-quality": [
                     TableValidation(
                         table_name="supply.egon_power_plants",
-                        row_count=resolve_boundary_dependence(
-                            {
-                                "Schleswig-Holstein": 127017,
-                                "Everything": 4046085,
-                            }
-                        ),
                         geometry_columns=["geom"],
                         data_type_columns={
                             "id": "bigint",
@@ -1557,6 +1557,7 @@ class PowerPlants(Dataset):
                                 "biomass",
                                 "coal",
                                 "gas",
+                                "hydrogen",
                                 "lignite",
                                 "oil",
                                 "others",
@@ -1574,6 +1575,26 @@ class PowerPlants(Dataset):
                                 "status2024",
                             ],
                         },
+                    ),
+                    PowerPlantsCapacityComparison(
+                        table="supply.egon_power_plants",
+                        rule_id="SANITY_POWER_PLANTS_CAPACITY",
+                    ),
+                    PvRooftopCapacityComparison(
+                        table="supply.egon_power_plants_pv_roof_building",
+                        rule_id="SANITY_PV_ROOFTOP_CAPACITY",
+                    ),
+                    PvRooftopDuplicateRows(
+                        table="supply.egon_power_plants_pv_roof_building",
+                        rule_id="SANITY_PV_ROOFTOP_DUPLICATES",
+                    ),
+                    BusExists(
+                        table="supply.egon_power_plants",
+                        rule_id="SANITY_POWER_PLANTS_BUS_EXISTS",
+                    ),
+                    BusExists(
+                        table="supply.egon_power_plants_pv_roof_building",
+                        rule_id="SANITY_PV_ROOFTOP_BUS_EXISTS",
                     ),
                 ]
             },
