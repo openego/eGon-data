@@ -352,6 +352,10 @@ Bug Fixes
   ground-mounted PV, and capacity that cannot be built on a state's
   potential areas is redistributed to the other states
   `#1575 <https://github.com/openego/eGon-data/issues/1575>`_
+* Add prosumer demand, EV demand and rooftop PV of the TYNDP 2024
+  sub-nodes to the neighbouring countries
+  `#1567 <https://github.com/openego/eGon-data/issues/1567>`_
+
 
 Version 2.0.0 (2025-08-20)
 ==========================

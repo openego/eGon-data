@@ -1020,7 +1020,13 @@ def _select_tyndp_capacity_member(zip_file):
     return candidates[0]
 
 
-def _extract_output_block(raw, output_type, header_row=5, data_start_row=6):
+def _extract_output_block(
+    raw,
+    output_type,
+    header_row=5,
+    data_start_row=6,
+    rete_generators=("Solar (Photovoltaic)",),
+):
     """Extract one "Output type" block from a TYNDP 2024 "Yearly Outputs" sheet
 
     The sheet is laid out with node/zone identifiers as columns and a
@@ -1028,6 +1034,16 @@ def _extract_output_block(raw, output_type, header_row=5, data_start_row=6):
     Capacities [MW]", "Annual generation [GWh]", ...). The "Output type"
     label is only populated on each block's first row, so it needs to be
     forward-filled before filtering to the requested block.
+
+    Besides the market nodes ("FR00"), TYNDP 2024 has prosumer zones
+    ("FR00RETE") with rooftop PV, home batteries and hybrid heat pumps,
+    which are only connected to their market node. Only the technologies
+    in `rete_generators` are kept and assigned to the market node, e.g.
+    the rooftop PV of "FR00RETE" is added to the PV of "FR00". Home
+    batteries are left out: they sit behind the meter and only shift
+    prosumer demand in time (2040: about 20 TWh/a in the modelled
+    countries). The hybrid heat pumps are no electrical capacities (only
+    a few full-load hours) and are left out as well.
 
     Parameters
     ----------
@@ -1039,20 +1055,23 @@ def _extract_output_block(raw, output_type, header_row=5, data_start_row=6):
         Row index holding the node/zone column identifiers
     data_start_row : int
         First row index of the data (below the header row)
+    rete_generators : tuple
+        Technologies ("Generator_ID") taken from the prosumer zones
 
     Returns
     -------
     pandas.DataFrame
-        Columns: Node/Line, Generator_ID, Value
+        Columns: Node/Line, Generator_ID, Value. Values of a prosumer zone
+        are summed with those of its market node.
 
     """
     header = raw.iloc[header_row]
+    # Columns with a space are EV and SRES nodes. Their capacities are not
+    # used (EV "batteries" are the vehicle fleet).
     node_cols = [
         c
         for c in raw.columns[2:]
-        if isinstance(header[c], str)
-        and " " not in header[c]
-        and not header[c].endswith("RETE")
+        if isinstance(header[c], str) and " " not in header[c]
     ]
 
     data = raw.iloc[data_start_row:].copy()
@@ -1068,8 +1087,53 @@ def _extract_output_block(raw, output_type, header_row=5, data_start_row=6):
     long_df["Node/Line"] = long_df["_col"].map(header)
     long_df = long_df.rename(columns={1: "Generator_ID"})
 
-    return long_df[["Node/Line", "Generator_ID", "Value"]].dropna(
-        subset=["Value"]
+    # Keep only the selected technologies of the prosumer zones and
+    # assign them to their market node ("FR00RETE" -> "FR00")
+    is_rete = long_df["Node/Line"].str.endswith("RETE")
+    long_df = long_df[
+        ~is_rete | long_df["Generator_ID"].isin(rete_generators)
+    ].copy()
+    long_df["Node/Line"] = long_df["Node/Line"].str.replace(
+        r"RETE$", "", regex=True
+    )
+    long_df["Value"] = pd.to_numeric(long_df["Value"], errors="coerce")
+
+    # Sum market node and prosumer zone, so that each node/technology
+    # pair stays unique
+    return (
+        long_df.dropna(subset=["Value"])
+        .groupby(["Node/Line", "Generator_ID"], as_index=False)
+        .Value.sum()
+    )
+
+
+@functools.lru_cache(maxsize=None)
+def _read_tyndp_yearly_outputs(year):
+    """Read the "Yearly Outputs" sheet for one TYNDP 2024 anchor year
+
+    Reads the sheet from the "Distributed Energy" scenario's downloaded
+    zip for the given anchor year (2035, 2040 or 2050), climate year 2009.
+
+    Parameters
+    ----------
+    year : int
+        TYNDP 2024 anchor year (2035, 2040 or 2050)
+
+    Returns
+    -------
+    pandas.DataFrame
+        Raw sheet, read with ``header=None``
+
+    """
+    outer_zip = zipfile.ZipFile(
+        ElectricalNeighbours.sources.files[f"tyndp_capacities_{year}"]
+    )
+    member = _select_tyndp_capacity_member(outer_zip)
+    return pd.read_excel(
+        io.BytesIO(outer_zip.read(member)),
+        sheet_name="Yearly Outputs",
+        header=None,
+        engine="pyxlsb",
     )
 
 
@@ -1077,9 +1141,8 @@ def _extract_output_block(raw, output_type, header_row=5, data_start_row=6):
 def read_tyndp_capacities(year):
     """Read installed capacities for one TYNDP 2024 anchor year
 
-    Reads the "Installed Capacities [MW]" block from the "Distributed
-    Energy" scenario's downloaded zip for the given anchor year (2035,
-    2040 or 2050), climate year 2009.
+    Reads the "Installed Capacities [MW]" block of the "Yearly Outputs"
+    sheet, see :py:func:`_read_tyndp_yearly_outputs`.
 
     Parameters
     ----------
@@ -1092,17 +1155,49 @@ def read_tyndp_capacities(year):
         Columns: Node/Line, Generator_ID, Value
 
     """
-    outer_zip = zipfile.ZipFile(
-        ElectricalNeighbours.sources.files[f"tyndp_capacities_{year}"]
+    return _extract_output_block(
+        _read_tyndp_yearly_outputs(year), "Installed Capacities [MW]"
     )
-    member = _select_tyndp_capacity_member(outer_zip)
-    raw = pd.read_excel(
-        io.BytesIO(outer_zip.read(member)),
-        sheet_name="Yearly Outputs",
-        header=None,
-        engine="pyxlsb",
-    )
-    return _extract_output_block(raw, "Installed Capacities [MW]")
+
+
+def read_tyndp_ev_demand(year, header_row=5):
+    """Read the annual EV charging demand for one TYNDP 2024 anchor year
+
+    TYNDP 2024 models passenger EVs in separate nodes per country
+    ("FR00 EV Passenger Prosumer" for charging at home, "FR00 EV
+    Passenger Street" for public charging), which are only connected to
+    the market node and the prosumer zone. Their "Native Demand" row in
+    the "Yearly Outputs" sheet is the electricity the vehicles use per
+    year. It is summed per market node.
+
+    Parameters
+    ----------
+    year : int
+        TYNDP 2024 anchor year (2035, 2040 or 2050)
+    header_row : int
+        Row index holding the node/zone column identifiers
+
+    Returns
+    -------
+    pandas.Series
+        Annual EV demand in MWh per market node, e.g. "FR00"
+
+    """
+    raw = _read_tyndp_yearly_outputs(year)
+    header = raw.iloc[header_row]
+    ev_cols = [
+        c
+        for c in raw.columns[2:]
+        if isinstance(header[c], str) and " EV Passenger " in header[c]
+    ]
+    is_demand_row = raw[0].astype(str).str.startswith("Native Demand")
+    demand_row = raw.index[is_demand_row][0]
+
+    demand = pd.to_numeric(raw.loc[demand_row, ev_cols], errors="coerce")
+    demand.index = [header[c].split(" ")[0] for c in ev_cols]
+
+    # GWh -> MWh
+    return demand.groupby(level=0).sum() * 1e3
 
 
 def _bracket_tyndp_years(year, anchors=(2035, 2040, 2050)):
@@ -1449,8 +1544,10 @@ def tyndp_generation():
         insert_storage_tyndp(capacities, scenario)
 
 
-def _select_tyndp_demand_member(zip_file, scenario, year):
-    """Select the electricity market demand workbook for one TYNDP 2024
+def _select_tyndp_demand_member(
+    zip_file, scenario, year, demand_type="ELECTRICITY_MARKET"
+):
+    """Select one electricity demand workbook for one TYNDP 2024
     scenario/year from the downloaded demand-profiles zip archive.
 
     Parameters
@@ -1461,16 +1558,19 @@ def _select_tyndp_demand_member(zip_file, scenario, year):
         TYNDP scenario folder, e.g. "DE" for Distributed Energy
     year : int
         TYNDP anchor year (2030, 2040 or 2050)
+    demand_type : str
+        "ELECTRICITY_MARKET" (demand at the market node) or
+        "ELECTRICITY_PROSUMER" (demand of the prosumer zone "XX00RETE")
 
     Returns
     -------
     str
-        Name of the electricity market demand .xlsx member
+        Name of the electricity demand .xlsx member
 
     """
     target = (
         f"Demand Profiles/{scenario}/{year}/"
-        f"ELECTRICITY_MARKET {scenario} {year}.xlsx"
+        f"{demand_type} {scenario} {year}.xlsx"
     )
     candidates = [name for name in zip_file.namelist() if name == target]
     if len(candidates) != 1:
@@ -1542,7 +1642,9 @@ TYNDP_DEMAND_CALENDAR_YEAR = 2018
 
 
 @functools.lru_cache(maxsize=None)
-def read_tyndp_demand(year, nodes, weather_year):
+def read_tyndp_demand(
+    year, nodes, weather_year, demand_type="ELECTRICITY_MARKET"
+):
     """Read hourly electricity demand for one TYNDP 2024 anchor year
 
     Reads climate year 2009 demand timeseries from the "Distributed
@@ -1562,20 +1664,28 @@ def read_tyndp_demand(year, nodes, weather_year):
         TYNDP node codes to read demand timeseries for
     weather_year : int
         Weather year of the scenario, the profiles are aligned to
+    demand_type : str
+        "ELECTRICITY_MARKET" or "ELECTRICITY_PROSUMER", see
+        :py:func:`_select_tyndp_demand_member`
 
     Returns
     -------
     dict
-        Mapping of node code to a pandas.Series of 8760 hourly MW values
+        Mapping of node code to a pandas.Series of 8760 hourly MW values.
+        Nodes without a sheet in the workbook are left out. The prosumer
+        workbook has no sheet for nodes without a prosumer zone (e.g.
+        CH00, the Norwegian nodes, LUB1 and LUF1).
 
     """
     outer_zip = zipfile.ZipFile(
         ElectricalNeighbours.sources.files["tyndp_demand"]
     )
-    member = _select_tyndp_demand_member(outer_zip, "DE", year)
+    member = _select_tyndp_demand_member(outer_zip, "DE", year, demand_type)
+    workbook = pd.ExcelFile(io.BytesIO(outer_zip.read(member)))
+    nodes = [node for node in nodes if node in workbook.sheet_names]
     sheets = pd.read_excel(
-        io.BytesIO(outer_zip.read(member)),
-        sheet_name=list(nodes),
+        workbook,
+        sheet_name=nodes,
         skiprows=11,
     )
     return {
@@ -1593,6 +1703,15 @@ def tyndp_demand():
     scenarios that are not status-quo scenarios. The data for 2030, 2040
     and 2050 is interpolated (or, outside that range, extrapolated)
     linearly to each scenario's year.
+
+    TYNDP 2024 splits each country into a market node ("XX00") and a
+    prosumer zone ("XX00RETE"), which is only connected to its market
+    node. The market node supplies the prosumer zone, but this supply is
+    an exchange between the nodes and not part of the market demand.
+    Therefore the demand of both files, "ELECTRICITY_MARKET" and
+    "ELECTRICITY_PROSUMER", is added to the AC load of the market node's
+    bus. The same holds for the EV nodes, so their annual charging
+    demand (see :py:func:`read_tyndp_ev_demand`) is added as well.
 
     Returns
     -------
@@ -1643,8 +1762,37 @@ def tyndp_demand():
             "weather_year"
         ]
 
+        # Prosumer demand uses the same anchor years (2030/2040/2050) and
+        # interpolation as the market demand. It is gross demand: rooftop
+        # PV of the prosumer zones is added as separate generators, so it
+        # follows the model's weather year and can be curtailed. Home
+        # batteries and hybrid heat pumps of the prosumer zones are not
+        # part of this demand and are not modelled.
         dataset_lo = read_tyndp_demand(lo, nodes, weather_year)
         dataset_hi = read_tyndp_demand(hi, nodes, weather_year)
+        prosumer_lo = read_tyndp_demand(
+            lo, nodes, weather_year, "ELECTRICITY_PROSUMER"
+        )
+        prosumer_hi = read_tyndp_demand(
+            hi, nodes, weather_year, "ELECTRICITY_PROSUMER"
+        )
+
+        # EV demand is only given as annual energy in the "Yearly
+        # Outputs" of the anchor years 2035/2040/2050, so it is
+        # interpolated like the capacities. It is added as a constant
+        # load: TYNDP's own hourly charging is a smart-charging dispatch
+        # fitted to the PV of climate year 2009 (peaks of 10-15 times the
+        # mean and hours with V2G feed-in), which does not match the
+        # model's weather year. The German EV profiles are not available
+        # yet, as MotorizedIndividualTravel runs after this dataset.
+        ev_lo, ev_hi = _bracket_tyndp_years(year)
+        ev_weight = (year - ev_lo) / (ev_hi - ev_lo)
+        ev_demand_lo = read_tyndp_ev_demand(ev_lo)
+        ev_demand_hi = read_tyndp_ev_demand(ev_hi)
+        ev_demand = ev_demand_lo.add(
+            ev_demand_hi.sub(ev_demand_lo, fill_value=0) * ev_weight,
+            fill_value=0,
+        ).clip(lower=0)
 
         # Connect to database
         engine = db.engine()
@@ -1686,19 +1834,38 @@ def tyndp_demand():
             load_id = db.next_etrago_id("load")
 
             # Some etrago bus_ids represent multiple TYNDP nodes,
-            # in this cases the loads are summed
-            data_lo = pd.Series(index=range(8760), data=0.0)
+            # in this cases the loads are summed. Market and prosumer
+            # demand go into one AC load per bus, so code reading the
+            # foreign AC loads does not need to change. Nodes without a
+            # prosumer zone or EV nodes add nothing.
+            market_lo = pd.Series(index=range(8760), data=0.0)
+            market_hi = pd.Series(index=range(8760), data=0.0)
+            pros_lo = pd.Series(index=range(8760), data=0.0)
+            pros_hi = pd.Series(index=range(8760), data=0.0)
+            ev_annual = 0.0
             for node in bus_nodes:
-                data_lo = dataset_lo[node] + data_lo
-
-            data_hi = pd.Series(index=range(8760), data=0.0)
-            for node in bus_nodes:
-                data_hi = dataset_hi[node] + data_hi
+                market_lo = dataset_lo[node] + market_lo
+                market_hi = dataset_hi[node] + market_hi
+                if node in prosumer_lo:
+                    pros_lo = prosumer_lo[node] + pros_lo
+                if node in prosumer_hi:
+                    pros_hi = prosumer_hi[node] + pros_hi
+                ev_annual += ev_demand.get(node, 0.0)
 
             # Interpolate/extrapolate linearly to the scenario's year
-            data_target = (data_lo + (data_hi - data_lo) * weight).clip(
+            market_target = market_lo + (market_hi - market_lo) * weight
+            pros_target = pros_lo + (pros_hi - pros_lo) * weight
+            ev_target = ev_annual / 8760
+            data_target = (market_target + pros_target + ev_target).clip(
                 lower=0
             )[:8760]
+
+            logger.info(
+                f"TYNDP demand {scenario}, {bus}: market "
+                f"{market_target[:8760].sum() / 1e6:.1f} TWh, prosumer "
+                f"{pros_target[:8760].sum() / 1e6:.1f} TWh, EV "
+                f"{ev_annual / 1e6:.1f} TWh"
+            )
 
             entry = etrago.EgonPfHvLoad(
                 scn_name=scenario,
@@ -2520,7 +2687,7 @@ class ElectricalNeighbours(Dataset):
     #:
     name: str = "ElectricalNeighbours"
     #:
-    version: str = "0.0.19"
+    version: str = "0.0.20"
 
     sources = DatasetSources(
         tables={
