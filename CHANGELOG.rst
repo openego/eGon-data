@@ -360,6 +360,11 @@ Bug Fixes
   geometries of pv buildings are now joined in the database instead of
   passing all building IDs as an IN-list
   `#1571 <https://github.com/openego/eGon-data/issues/1571>`_
+* Fix residential buildings missing from ``osm_buildings_filtered`` since
+  ETHOS.BUILDA, which ding0 and eDisGo dropped together with their demand,
+  heat pumps and PV rooftop: they are now added to it, and a validation
+  checks the subset relation
+  `#1574 <https://github.com/openego/eGon-data/issues/1574>`_
 
 Version 2.0.0 (2025-08-20)
 ==========================
