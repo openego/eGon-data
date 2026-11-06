@@ -246,6 +246,8 @@ def insert_capacities_per_federal_state_nep():
         "KWK < 10 MW": "small_chp",
         "PV-Batteriespeicher": "home_battery",
         "Großbatteriespeicher": "BESS",
+        "Wasserstoff": "hydrogen",
+        "zusaetzliche Verbraucher PtG": "power_to_H2",
     }
     # 'Elektromobilitaet gesamt': 'transport',
     # 'Elektromobilitaet privat': 'transport'}
@@ -359,6 +361,9 @@ def insert_capacities_per_federal_state_nep():
             # version 2021, page 47)
             data.loc[data.carrier == "residential_rural_heat_pump", bl] *= 5e-6
             data.loc[data.carrier == "residential_rural_heat_pump", "component"] = "link"
+
+            # Electrolysers are links
+            data.loc[data.carrier == "power_to_H2", "component"] = "link"
 
             # Storage carriers, mislabeled "generator" by the default above
             data.loc[
@@ -542,6 +547,7 @@ def map_carrier():
             "Erdgas/Wasserstoff": "gas",
             "Wasserstoff": "hydrogen",
             "Wasser": "pumped_hydro",
+            "Dampf": "others",
         }
     )
 
@@ -676,6 +682,12 @@ def insert_nep_list_powerplants(export=True):
                 "Bayern": "BY",
             }, inplace = True)
             
+            # Natural gas units of the approved list instead of the draft
+            # temporary fix
+            from egon.data.datasets.power_plants.hydrogen import (
+                align_nep2025_gas_units,
+            )
+            kw_liste_nep25 = align_nep2025_gas_units(kw_liste_nep25)
             
             # add scenario column
             kw_liste_nep25["scenario"] = "reGon"
@@ -1010,6 +1022,7 @@ class ScenarioCapacities(Dataset):
       * :py:class:`PypsaEurSec <egon.data.datasets.pypsaeursec.PypsaEurSec>`
       * :py:class:`Vg250 <egon.data.datasets.vg250.Vg250>`
       * :py:class:`DataBundle <egon.data.datasets.data_bundle.DataBundle>`
+      * :py:class:`mastr_data_setup <egon.data.datasets.mastr.mastr_data_setup>`
       * :py:class:`ZensusPopulation <egon.data.datasets.zensus.ZensusPopulation>`
 
 
@@ -1022,7 +1035,7 @@ class ScenarioCapacities(Dataset):
     #:
     name: str = "ScenarioCapacities"
     #:
-    version: str = "0.0.24"
+    version: str = "0.0.25"
     sources = DatasetSources(
         files={
             "eGon2035_capacities": "data_bundle_egon_data/NEP/NEP_V2021_scnC2035.xlsx",

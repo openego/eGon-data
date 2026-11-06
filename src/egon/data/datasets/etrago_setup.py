@@ -1107,6 +1107,9 @@ def insert_carriers():
                 "pumped_hydro",
                 "battery",
                 "OCGT",
+                "H2_OCGT_conversion",
+                "H2_OCGT_new",
+                "H2_OCGT_load_near",
             ]
         }
     )

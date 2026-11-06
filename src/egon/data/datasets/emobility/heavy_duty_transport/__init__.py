@@ -85,7 +85,7 @@ class HeavyDutyTransport(Dataset):
     *Dependencies*
       * :py:class:`Vg250 <egon.data.datasets.vg250.Vg250>`
       * :py:class:`EtragoSetup <egon.data.datasets.etrago_setup.EtragoSetup>`
-      * :py:class:`GasAreaseGon2035 <egon.data.datasets.gas_areas.GasAreaseGon2035>`
+      * :py:class:`GasAreas <egon.data.datasets.gas_areas.GasAreas>`
 
     *Resulting tables*
       * :py:class:`demand.egon_heavy_duty_transport_voronoi
