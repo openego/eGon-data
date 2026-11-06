@@ -21,6 +21,7 @@ from egon.data.datasets.heat_supply.geothermal import potential_germany
 from egon.data.datasets.heat_supply.individual_heating import (
     cascade_heat_supply_indiv,
     create_hp_output_tables,
+    get_individual_heating_shares,
 )
 from egon.data.metadata import (
     context,
@@ -171,6 +172,11 @@ def individual_heating():
             DELETE FROM {targets.tables['individual_heating_supply']}
             WHERE scenario = '{scenario}'
             """)
+        # The capacities of scenarios with technology shares are the sums of
+        # the building capacities and are written by HeatPumpsCascade
+        if get_individual_heating_shares(scenario) is not None:
+            continue
+
         if "status" in scenario:
             distribution_level = "national"
         else:
@@ -387,6 +393,10 @@ class HeatSupply(Dataset):
 
     #:
     name: str = "HeatSupply"
+    # When bumping this version, also bump HeatPumpsCascade and HeatEtrago:
+    # create_tables drops supply.egon_individual_heating, whose rows for
+    # scenarios with individual_heating_shares are written by HeatPumpsCascade,
+    # and a dataset only reruns when its own version changes.
     #:
     version: str = "0.0.21"
 
