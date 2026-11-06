@@ -250,6 +250,11 @@ Bug Fixes
   links: ``find_heat_connection`` stored the distance of the last checked
   electrolyser candidate instead of the nearest one
   `#1554 <https://github.com/openego/eGon-data/issues/1554>`_
+* Fix residential buildings missing from ``osm_buildings_filtered`` since
+  ETHOS.BUILDA, which ding0 and eDisGo dropped together with their demand,
+  heat pumps and PV rooftop: they are now added to it, and a validation
+  checks the subset relation
+  `#1574 <https://github.com/openego/eGon-data/issues/1574>`_
 
 Version 2.0.0 (2025-08-20)
 ==========================

@@ -7,6 +7,8 @@ import os
 
 from egon.data import db
 from egon.data.datasets import Dataset, DatasetSources, DatasetTargets
+from egon_validation import ReferentialIntegrityValidation
+
 from egon.data.validation import TableValidation, resolve_boundary_dependence
 
 
@@ -47,6 +49,13 @@ def extend_buildings_residential():
         "buildings in cells with census population but without buildings..."
     )
     execute_sql_script("osm_buildings_extend_residential.sql")
+
+
+def add_residential_to_filtered():
+    print(
+        "Add residential buildings missing from the filtered buildings..."
+    )
+    execute_sql_script("osm_buildings_filter_add_residential.sql")
 
 
 def create_buildings_filtered_zensus_mapping():
@@ -173,6 +182,13 @@ class OsmBuildingsStreets(Dataset):
           or `census_gap_fill`), the matched `ethos_id`, the `match_distance`
           and the ETHOS attributes `construction_year`, `size_class`,
           `refurbishment_state` and `tabula_type`.
+        * 3rd step: Residential buildings missing from
+          `openstreetmap.osm_buildings_filtered` are added to it (see
+          `osm_buildings_filter_add_residential.sql`). ETHOS.BUILDA also
+          matches buildings whose tag is not on the filter list (e.g.
+          `bungalow`) and ancillary buildings (garage, shed, ...). Adding them
+          keeps the residential buildings a subset of the filtered ones, which
+          ding0 and eDisGo rely on (#1574).
     * Extract amenities and filter using relevant tags, e.g. shops and restaurants,
       see script `osm_amenities_shops_preprocessing.sql` for the full list of tags.
       Resulting table: `openstreetmap.osm_amenities_shops_filtered`
@@ -210,7 +226,7 @@ class OsmBuildingsStreets(Dataset):
     #:
     name: str = "OsmBuildingsStreets"
     #:
-    version: str = "0.0.12"
+    version: str = "0.0.13"
 
     sources = DatasetSources(
         tables={
@@ -250,6 +266,7 @@ class OsmBuildingsStreets(Dataset):
                 preprocessing,
                 {filter_buildings, filter_buildings_residential},
                 extend_buildings_residential,
+                add_residential_to_filtered,
                 extract_buildings_filtered_amenities,
                 {
                     create_buildings_filtered_zensus_mapping,
@@ -268,11 +285,21 @@ class OsmBuildingsStreets(Dataset):
             ),
             validation={
                 "data_quality": [
+                    # every residential building must also be a filtered
+                    # building, ding0 and eDisGo rely on it (#1574)
+                    ReferentialIntegrityValidation(
+                        table="openstreetmap.osm_buildings_residential",
+                        rule_id="FK_OSM_BUILDINGS_RESIDENTIAL_IN_FILTERED",
+                        fk_column="id",
+                        ref_table="openstreetmap.osm_buildings_filtered",
+                        ref_column="id",
+                    ),
                     TableValidation(
                         table_name="boundaries.egon_map_zensus_buildings_filtered",
                         row_count=resolve_boundary_dependence(
                             {
-                                "Schleswig-Holstein": 1024898,
+                                "Schleswig-Holstein": 1026218,
+                                # TODO: update after next full run (#1574)
                                 "Everything": 29988033,
                             }
                         ),
@@ -378,7 +405,8 @@ class OsmBuildingsStreets(Dataset):
                         table_name="openstreetmap.osm_buildings_filtered",
                         row_count=resolve_boundary_dependence(
                             {
-                                "Schleswig-Holstein": 1189965,
+                                "Schleswig-Holstein": 1192130,
+                                # TODO: update after next full run (#1574)
                                 "Everything": 33951104,
                             }
                         ),
