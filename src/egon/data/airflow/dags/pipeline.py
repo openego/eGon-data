@@ -629,8 +629,12 @@ with airflow.DAG(
         )
 
         # Heat to eTraGo
+        # heat_pumps_cascade is a dependency because, for scenarios with
+        # individual_heating_shares, it writes the heat pump and resistive
+        # heater capacities per MV grid that are inserted here.
         heat_etrago = HeatEtrago(
             dependencies=[
+                heat_pumps_cascade,
                 heat_supply,
                 mv_grid_districts,
                 renewable_feedin,

@@ -4,11 +4,67 @@ import pandas as pd
 
 from egon.data.datasets import load_sources_and_targets
 
+#: Decentral heating technologies that can be assigned a share of the
+#: decentral heat demand (heat parameter ``individual_heating_shares``), in
+#: the order buildings are assigned to them. Buildings without any of them
+#: are supplied by gas boilers. The names are the carriers in
+#: supply.egon_individual_heating, and each technology needs its own sizing in
+#: egon.data.datasets.heat_supply.individual_heating.
+INDIVIDUAL_HEATING_SHARE_TECHNOLOGIES = ["heat_pump", "resistive_heater"]
+
 
 def read_csv(year):
     _, targets = load_sources_and_targets("ScenarioParameters")
     source = targets.files["data_dir"]
     return pd.read_csv(f"{source}costs_{year}.csv")
+
+
+def read_csv_interpolated(year, lower_year, upper_year):
+    """Read the cost tables of two years and linearly interpolate their
+    values to the given year.
+
+    Parameters
+    ----------
+    year : int
+        Year to interpolate the costs for.
+    lower_year : int
+        Year of the cost table below year.
+    upper_year : int
+        Year of the cost table above year.
+
+    Returns
+    -------
+    pandas.DataFrame
+        Cost table with the same columns as returned by read_csv.
+
+    """
+    lower = read_csv(lower_year)
+    upper = read_csv(upper_year)
+
+    keys = ["technology", "parameter"]
+    merged = lower.merge(
+        upper[keys + ["value", "unit"]],
+        on=keys,
+        how="left",
+        suffixes=("", "_upper"),
+        validate="one_to_one",
+    )
+
+    if (merged.unit != merged.unit_upper).any():
+        raise ValueError(
+            f"Units differ between costs_{lower_year} and costs_{upper_year}."
+        )
+
+    weight = (year - lower_year) / (upper_year - lower_year)
+    merged["value"] = merged.value + weight * (
+        merged.value_upper - merged.value
+    )
+    merged["source"] = (
+        f"Linear interpolation of costs_{lower_year} and "
+        f"costs_{upper_year}: " + merged.source.astype(str)
+    )
+
+    return merged.drop(columns=["value_upper", "unit_upper"])
 
 
 def read_costs(df, technology, parameter, value_only=True):
@@ -406,7 +462,7 @@ def electricity(scenario):
         }
 
     if scenario == "reGon2037":
-        costs = read_csv(2035)
+        costs = read_csv_interpolated(2037, 2035, 2040)
 
         parameters = {"grid_topology": "Status Quo"}
         # Insert effciencies in p.u.
@@ -550,7 +606,7 @@ def electricity(scenario):
             parameters["capital_cost"][comp] = annualize_capital_costs(
                 parameters["overnight_cost"][comp],
                 parameters["lifetime"][comp],
-                global_settings("eGon2035")["interest_rate"],
+                global_settings("reGon2037")["interest_rate"],
             )
 
         parameters["capital_cost"]["BESS"] = (
@@ -1162,7 +1218,7 @@ def gas(scenario):
         # converted to H2 (FNB Gas Kernnetz, Anlage 4, 10 Dec 2024)
 
     elif scenario == "reGon2037":
-        costs = read_csv(2035)
+        costs = read_csv_interpolated(2037, 2035, 2040)
 
         parameters["main_gas_carrier"] = "CH4"
 
@@ -1608,7 +1664,7 @@ def heat(scenario):
 
     """
 
-    if scenario == "eGon2035" or scenario == "reGon2037":
+    if scenario == "eGon2035":
         costs = read_csv(2035)
 
         parameters = {
@@ -1688,18 +1744,131 @@ def heat(scenario):
             "rural_heat_pump": 0,  # Danish Energy Agency, Technology Data for Individual Heating Plants
         }
 
+    elif scenario == "reGon2037":
+        costs = read_csv_interpolated(2037, 2035, 2040)
+
+        parameters = {
+            "DE_demand_residential_MWh": 660840000.0 * 0.749762683,
+            # [MWh], source: Ffe-study: "Begleitstudie: Regionalisierung Gebäudewärme": 
+            # table A-5 for total demand (linearly interpolated); figure 1-1 for share
+            "DE_demand_service_MWh": 660840000.0 * (1 - 0.749762683),
+            # [MWh], source: Ffe-study: "Begleitstudie: Regionalisierung Gebäudewärme": 
+            # table A-5 for total demand (linearly interpolated); figure 1-1 for share
+            "DE_district_heating_share": 0.149355365897948,
+            # [%], source: Ffe-study: "Begleitstudie: Regionalisierung Gebäudewärme":
+            # table A-5
+            "individual_heating_shares": {
+                tech: share
+                for tech, share in zip(
+                    INDIVIDUAL_HEATING_SHARE_TECHNOLOGIES,
+                    [0.74, 0.05],
+                    strict=True,
+                )
+            },
+            # [p.u.] of the decentral heat demand per MV grid, in the order of
+            # INDIVIDUAL_HEATING_SHARE_TECHNOLOGIES (heat pump, resistive
+            # heater); the remaining demand is supplied by gas boilers.
+            # values from source: Ffe-study: "Begleitstudie: Regionalisierung Gebäudewärme":
+            # table A-5.
+        }
+
+        # Insert efficiency in p.u.
+        parameters["efficiency"] = {
+            "water_tank_charger": read_costs(
+                costs, "water tank charger", "efficiency"
+            ),
+            "water_tank_discharger": read_costs(
+                costs, "water tank discharger", "efficiency"
+            ),
+            "central_resistive_heater": read_costs(
+                costs, "central resistive heater", "efficiency"
+            ),
+            "central_gas_boiler": read_costs(
+                costs, "central gas boiler", "efficiency"
+            ),
+            "rural_resistive_heater": read_costs(
+                costs, "decentral resistive heater", "efficiency"
+            ),
+            "rural_gas_boiler": read_costs(
+                costs, "decentral gas boiler", "efficiency"
+            ),
+        }
+
+        # Insert overnight investment costs, in EUR/MWh
+        parameters["overnight_cost"] = {
+            "central_water_tank": read_costs(
+                costs, "central water tank storage", "investment"
+            ),
+            "rural_water_tank": read_costs(
+                costs, "decentral water tank storage", "investment"
+            ),
+        }
+
+        # Insert lifetime
+        parameters["lifetime"] = {
+            "central_water_tank": read_costs(
+                costs, "central water tank storage", "lifetime"
+            ),
+            "rural_water_tank": read_costs(
+                costs, "decentral water tank storage", "lifetime"
+            ),
+        }
+
+        # Insert annualized capital costs
+        parameters["capital_cost"] = {}
+
+        for comp in parameters["overnight_cost"].keys():
+            parameters["capital_cost"][comp] = annualize_capital_costs(
+                parameters["overnight_cost"][comp],
+                parameters["lifetime"][comp],
+                global_settings("reGon2037")["interest_rate"],
+            )
+
+        # Insert marginal_costs in EUR/MWh
+        # marginal cost can include fuel, C02 and operation and maintenance costs
+        parameters["marginal_cost"] = {
+            "central_heat_pump": read_costs(
+                costs, "central air-sourced heat pump", "VOM"
+            ),
+            "central_gas_chp": read_costs(costs, "central gas CHP", "VOM"),
+            "central_gas_boiler": read_costs(
+                costs, "central gas boiler", "VOM"
+            ),
+            "central_resistive_heater": read_costs(
+                costs, "central resistive heater", "VOM"
+            ),
+            "geo_thermal": 2.9,  # Danish Energy Agency
+            "water_tank_charger": 0,  # Danish Energy Agency
+            "water_tank_discharger": 0,  # Danish Energy Agency
+            "rural_heat_pump": 0,  # Danish Energy Agency, Technology Data for Individual Heating Plants
+        }
+
     elif scenario == "reGon2045":
         costs = read_csv(2045)
 
         parameters = {
-            "DE_demand_residential_MWh": 536692489.8152325 * 0.71542,
-            # [MWh], source: pypsa-eur run from 2024/12/23:
-            # total heat demand muliplied by residential share from resources/pop_weighted_heat_totals
-            "DE_demand_service_MWh": 536692489.8152325 * (1 - 0.71542),
-            # [MWh], source: pypsa-eur run from 2024/12/23:
-            # total heat demand muliplied by service share from resources/pop_weighted_heat_totals
-            "DE_district_heating_share": 0.42311285313808533,
-            # [%], source: pypsa-eur run from 2024/12/23
+            "DE_demand_residential_MWh": 597100000.0 * 0.749762683,
+            # [MWh], source: Ffe-study: "Begleitstudie: Regionalisierung Gebäudewärme": 
+            # table A-5 for total demand; figure 1-1 for share
+            "DE_demand_service_MWh": 597100000.0 * (1 - 0.749762683),
+            # [MWh], source: Ffe-study: "Begleitstudie: Regionalisierung Gebäudewärme": 
+            # table A-5 for total demand; figure 1-1 for share
+            "DE_district_heating_share": 0.173337799,
+            # [%], source: Ffe-study: "Begleitstudie: Regionalisierung Gebäudewärme":
+            # table A-5
+            "individual_heating_shares": {
+                tech: share
+                for tech, share in zip(
+                    INDIVIDUAL_HEATING_SHARE_TECHNOLOGIES,
+                    [0.94, 0.06],
+                    strict=True,
+                )
+            },
+            # [p.u.] of the decentral heat demand per MV grid, in the order of
+            # INDIVIDUAL_HEATING_SHARE_TECHNOLOGIES (heat pump, resistive
+            # heater); the remaining demand is supplied by gas boilers.
+            # values from source: Ffe-study: "Begleitstudie: Regionalisierung Gebäudewärme":
+            # table A-5.
         }
 
         parameters["marginal_cost"] = {

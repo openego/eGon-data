@@ -562,6 +562,7 @@ class FinalValidations(Dataset):
                                 "rural_heat_pump",
                                 "rural_heat_store_charger",
                                 "rural_heat_store_discharger",
+                                "rural_resistive_heater",
                             ],
                         },
                     ),
