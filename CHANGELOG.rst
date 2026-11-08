@@ -243,6 +243,9 @@ Changed
   carriers per type (H2_OCGT_conversion, H2_OCGT_new, H2_OCGT_load_near) and
   efficiencies.
   `#1465 <https://github.com/openego/eGon-data/issues/1465>`_
+* Attach the data center loads to existing AC buses and drop the dedicated
+  data center buses and connection lines
+  `#1557 <https://github.com/openego/eGon-data/issues/1557>`_
 
 Bug Fixes
 ---------
