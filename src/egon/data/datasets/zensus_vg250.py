@@ -36,7 +36,7 @@ class ZensusVg250(Dataset):
     def __init__(self, dependencies):
         super().__init__(
             name="ZensusVg250",
-            version="0.0.4",
+            version="0.0.6",
             dependencies=dependencies,
             tasks=(
                 map_zensus_vg250,
@@ -217,6 +217,21 @@ def map_zensus_vg250():
         ]
     print(f"Maximal buffer to match zensus points to vg250: {buffer}m")
 
+    # Unpopulated cells (population = -1) that intersect no municipality,
+    # e.g. on the coast or in Lake Constance, go to the nearest one. They
+    # can still carry demand, such as CTS heat, that needs a NUTS3 region.
+    # With Zensus 2011 some of them were populated and matched by the
+    # buffer above; Zensus 2022 lists them as unpopulated.
+    unmatched_cells = gdf[~gdf.id.isin(join.id_left)]
+    if len(unmatched_cells) > 0:
+        join = pd.concat(
+            [join, gpd.sjoin_nearest(unmatched_cells, gdf_boundaries)]
+        )
+        print(
+            f"Matched {len(unmatched_cells)} unpopulated cells to the nearest"
+            " municipality"
+        )
+
     # drop duplicates
     join = join.drop_duplicates(subset=["id_left"])
 
@@ -285,17 +300,17 @@ def inside_germany():
             .filter(DestatisZensusPopulationPerHa.id.in_(cells_in_germany))
         )
 
-        # Insert above queried data into new table
-        insert = DestatisZensusPopulationPerHaInsideGermany.__table__.insert().from_select(  # noqa: E501
-            (
-                DestatisZensusPopulationPerHaInsideGermany.id,
-                DestatisZensusPopulationPerHaInsideGermany.grid_id,
-                DestatisZensusPopulationPerHaInsideGermany.population,
-                DestatisZensusPopulationPerHaInsideGermany.geom_point,
-                DestatisZensusPopulationPerHaInsideGermany.geom,
-            ),
-            q,
+        table = DestatisZensusPopulationPerHaInsideGermany.__table__
+
+        columns = (
+            table.c.id,
+            table.c.grid_id,
+            table.c.population,
+            table.c.geom_point,
+            table.c.geom,
         )
+
+        insert = table.insert().from_select(columns, q)
 
         # Execute and commit (trigger transactions in database)
         s.execute(insert)

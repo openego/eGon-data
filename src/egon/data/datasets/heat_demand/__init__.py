@@ -68,7 +68,12 @@ class HeatDemandImport(Dataset):
     sources = DatasetSources(
         tables={
             "boundaries": "boundaries.vg250_sta_union",
-            "zensus_population": "society.destatis_zensus_population_per_ha",
+            # Populated cells only: adjust_residential_heat_to_zensus drops
+            # residential heat outside them. The full population table also
+            # lists unpopulated cells (population = -1).
+            "zensus_population": (
+                "society.destatis_zensus_population_per_ha_inside_germany"
+            ),
         },
         urls={
             "peta_res_zip": "https://arcgis.com/sharing/rest/content/items/d7d18b63250240a49eb81db972aa573e/data",

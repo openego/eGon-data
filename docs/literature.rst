@@ -14,7 +14,7 @@ Literature
 
 .. [Brown2018] T. Brown, D. Schlachtenberger, A. Kies, S. Schramm, M. Greiner, Synergies of sector coupling and transmission reinforcement in a cost-optimised, highly renewable European energy system, Energy Volume 160 (2018). URL https://doi.org/10.1016/j.energy.2018.06.222
 
-.. [Census] S. B. (Destatis), Datensatzbeschreibung ”Haushalte im 100 Meter-Gitter” (2018). URL https://www.zensus2011.de/SharedDocs/Downloads/DE/Pressemitteilung/DemografischeGrunddaten/Datensatzbeschreibung_Haushalt_100m_Gitter.html
+.. [Census] S. B. (Destatis), Zensus 2022 – Ergebnisse auf Gitterzellen, Stichtag 15.05.2022. URL https://www.zensus2022.de/DE/Ergebnisse-des-Zensus/Gitterzellen.html
 
 .. [DAE_store] Danish Energy Agency, Technology Data – Energy storage, First published 2018 by the Danish Energy Agency and Energinet, URL https://ens.dk/en/our-services/projections-and-models/technology-data/technology-data-energy-storage
 
