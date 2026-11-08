@@ -1092,6 +1092,9 @@ def delete_model_data_from_db():
             .filter(EgonPfHvBus.country == "DE")
             .subquery()
         )
+        # MIV stores sit on its own Li_ion buses only. Filtering stores by
+        # DE bus alone would also delete other datasets' battery_storage
+        # stores, e.g. HGVCharging's on its HGV_charger buses.
         subquery_bus_li_ion = (
             session.query(EgonPfHvBus.bus_id)
             .filter(
