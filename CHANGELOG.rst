@@ -379,6 +379,18 @@ Bug Fixes
   heat pumps and PV rooftop: they are now added to it, and a validation
   checks the subset relation
   `#1574 <https://github.com/openego/eGon-data/issues/1574>`_
+* Fix duplicate 220 kV bus at Lübeck Siems in ``FixEhvSubnetworks``
+  `#1568 <https://github.com/openego/eGon-data/issues/1568>`_
+* Exclude the isolated Corsica bus from the foreign central buses
+  `#1568 <https://github.com/openego/eGon-data/issues/1568>`_
+* Fix efficiency, ``p_nom`` and marginal cost of gas CHP links
+  `#1568 <https://github.com/openego/eGon-data/issues/1568>`_
+* Fix efficiency and marginal cost of power-to-heat links
+  `#1568 <https://github.com/openego/eGon-data/issues/1568>`_
+* Merge reversed foreign DC links, extendable at zero cost, into one link
+  `#1568 <https://github.com/openego/eGon-data/issues/1568>`_
+* Fix district heating areas lost by exact geometry joins with heat buses
+  `#1568 <https://github.com/openego/eGon-data/issues/1568>`_
 
 Version 2.0.0 (2025-08-20)
 ==========================
