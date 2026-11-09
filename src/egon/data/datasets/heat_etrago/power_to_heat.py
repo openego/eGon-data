@@ -2,6 +2,7 @@
 
 from shapely.geometry import LineString
 import geopandas as gpd
+import numpy as np
 import pandas as pd
 
 from egon.data import db
@@ -74,17 +75,15 @@ def insert_individual_power_to_heat(scenario):
     # Assign voltage level
     heat_pumps["voltage_level"] = 7
 
-    # Set marginal_cost
-    heat_pumps["marginal_cost"] = get_sector_parameters("heat", scenario)[
-        "marginal_cost"
-    ]["rural_heat_pump"]
-
     # Insert heatpumps
     insert_power_to_heat_per_level(
         heat_pumps,
         carrier="rural_heat_pump",
         multiple_per_mv_grid=False,
         scenario=scenario,
+        vom=get_sector_parameters("heat", scenario)["marginal_cost"][
+            "rural_heat_pump"
+        ],
     )
 
     # Deal with rural resistive heaters
@@ -108,9 +107,6 @@ def insert_individual_power_to_heat(scenario):
     else:
         # Assign voltage level
         resistive_heaters["voltage_level"] = 7
-
-        # Set marginal_cost
-        resistive_heaters["marginal_cost"] = 0
 
         # Insert heatpumps
         insert_power_to_heat_per_level(
@@ -184,10 +180,7 @@ def insert_central_power_to_heat(scenario):
         central_heat_pumps, carrier="heat_pump"
     )
 
-    # Set marginal_cost
-    central_heat_pumps["marginal_cost"] = get_sector_parameters(
-        "heat", scenario
-    )["marginal_cost"]["central_heat_pump"]
+    heat_parameters = get_sector_parameters("heat", scenario)
 
     # Insert heatpumps in mv and below
     # (one hvmv substation per district heating grid)
@@ -196,6 +189,7 @@ def insert_central_power_to_heat(scenario):
         multiple_per_mv_grid=False,
         carrier="central_heat_pump",
         scenario=scenario,
+        vom=heat_parameters["marginal_cost"]["central_heat_pump"],
     )
     # Insert heat pumps in hv grid
     # (as many hvmv substations as intersect with district heating grid)
@@ -204,6 +198,7 @@ def insert_central_power_to_heat(scenario):
         multiple_per_mv_grid=True,
         carrier="central_heat_pump",
         scenario=scenario,
+        vom=heat_parameters["marginal_cost"]["central_heat_pump"],
     )
 
     # Delete existing entries
@@ -240,11 +235,6 @@ def insert_central_power_to_heat(scenario):
         central_resistive_heater, carrier="resistive_heater"
     )
 
-    # Set efficiency
-    central_resistive_heater["efficiency"] = get_sector_parameters(
-        "heat", scenario
-    )["efficiency"]["central_resistive_heater"]
-
     # Insert heatpumps in mv and below
     # (one hvmv substation per district heating grid)
     if (
@@ -262,6 +252,10 @@ def insert_central_power_to_heat(scenario):
             multiple_per_mv_grid=False,
             carrier="central_resistive_heater",
             scenario=scenario,
+            efficiency=heat_parameters["efficiency"][
+                "central_resistive_heater"
+            ],
+            vom=heat_parameters["marginal_cost"]["central_resistive_heater"],
         )
     # Insert heat pumps in hv grid
     # (as many hvmv substations as intersect with district heating grid)
@@ -270,6 +264,8 @@ def insert_central_power_to_heat(scenario):
         multiple_per_mv_grid=True,
         carrier="central_resistive_heater",
         scenario=scenario,
+        efficiency=heat_parameters["efficiency"]["central_resistive_heater"],
+        vom=heat_parameters["marginal_cost"]["central_resistive_heater"],
     )
 
 
@@ -278,6 +274,8 @@ def insert_power_to_heat_per_level(
     multiple_per_mv_grid,
     carrier,
     scenario,
+    efficiency=1,
+    vom=0,
 ):
     """Insert power to heat plants per grid level
 
@@ -289,6 +287,10 @@ def insert_power_to_heat_per_level(
         Choose if one district heating areas is supplied by one hvmv substation
     scenario : str
         Name of the scenario.
+    efficiency : float, optional
+        Static efficiency, overruled by the COP time series of heat pumps.
+    vom : float, optional
+        Variable operation and maintenance costs in EUR per MWh of heat.
 
     Returns
     -------
@@ -333,6 +335,8 @@ def insert_power_to_heat_per_level(
                 "carrier",
                 "link_id",
                 "p_nom",
+                "efficiency",
+                "marginal_cost",
                 "topo",
             ],
             data={"scn_name": scenario, "carrier": carrier},
@@ -345,6 +349,12 @@ def insert_power_to_heat_per_level(
     links.bus0 = gdf.power_bus.values.astype(int)
     links.bus1 = gdf.heat_bus.values
     links.p_nom = gdf.capacity.values
+    links.efficiency = efficiency
+    # The links start at the electrical bus, so their marginal cost refers
+    # to the electricity input, while the VOM refers to the heat output
+    links.marginal_cost = vom * (
+        gdf.cop.apply(np.mean).values if "cop" in gdf.columns else efficiency
+    )
     links.topo = gdf.geometry.values
     links.link_id = db.next_etrago_id("link", len(links))
 
