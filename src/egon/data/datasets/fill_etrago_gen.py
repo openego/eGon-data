@@ -30,7 +30,7 @@ class Egon_etrago_gen(Dataset):
     #:
     name: str = "etrago_generators"
     #:
-    version: str = "0.0.10"
+    version: str = "0.0.11"
 
     sources = DatasetSources(
         tables={
@@ -135,10 +135,15 @@ def add_marginal_costs(power_plants):
     for scenario in scenarios:
         pp_scn = power_plants[power_plants["scenario"] == scenario].copy()
         # Read marginal costs from scenario capacities
+        # Power plants use carrier "others", the parameter is named
+        # "other_non_renewable" (same mapping as in chp_etrago)
         marginal_costs = pd.DataFrame.from_dict(
             get_sector_parameters("electricity", scenario)["marginal_cost"],
             orient="index",
-        ).rename(columns={0: "marginal_cost"})
+        ).rename(
+            index={"other_non_renewable": "others"},
+            columns={0: "marginal_cost"},
+        )
 
         # Set marginal costs = 0 for technologies without values
         warning = []
