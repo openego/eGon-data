@@ -115,12 +115,20 @@ Allocation of MaStR plants to buildings:
 
 * Allocate each generator to an existing building from OSM or a synthetic building
   (see :ref:`building-data-ref`).
-* Determine the quantile each generator and building is in depending on the
-  capacity of the generator and the area of the polygon of the building.
-* Randomly distribute generators within each municipality preferably within
-  the same building area quantile as the generators are capacity wise.
+* Generators with exact coordinates in MaStR (only given for generators above
+  30 kW) are allocated to the nearest free building within 250 m, starting with
+  the largest generators.
+* For all other generators, determine the quantile each generator and building
+  is in depending on the capacity of the generator and the area of the polygon
+  of the building.
+* Randomly distribute these generators within each municipality preferably
+  within the same building area quantile as the generators are capacity wise.
 * If not enough buildings exist within a municipality and quantile additional
   buildings from other quantiles are chosen randomly.
+* Each generator is assigned to the MV grid district of its building. This
+  bus is also used for the status quo PV rooftop generators in
+  ``supply.egon_power_plants`` and thus for eTraGo. Generators without a
+  building keep the MV grid district of their MaStR location.
 
 Disaggregation of PV rooftop scenario capacities:
 
