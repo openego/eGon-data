@@ -148,6 +148,9 @@ Changed
   `#1483 <https://github.com/openego/eGon-data/issues/1483>`_
 * Allign Methodology for laoding NEP target values for Battery storage for all scenarios
   `#1471 <https://github.com/openego/eGon-data/issues/1471>`_
+* Attach the data center loads to existing AC buses and drop the dedicated
+  data center buses and connection lines
+  `#1557 <https://github.com/openego/eGon-data/issues/1557>`_
 
 
 Bug Fixes
@@ -255,6 +258,18 @@ Bug Fixes
   geometries of pv buildings are now joined in the database instead of
   passing all building IDs as an IN-list
   `#1571 <https://github.com/openego/eGon-data/issues/1571>`_
+* Fix duplicate 220 kV bus at Lübeck Siems in ``FixEhvSubnetworks``
+  `#1568 <https://github.com/openego/eGon-data/issues/1568>`_
+* Exclude the isolated Corsica bus from the foreign central buses
+  `#1568 <https://github.com/openego/eGon-data/issues/1568>`_
+* Fix efficiency, ``p_nom`` and marginal cost of gas CHP links
+  `#1568 <https://github.com/openego/eGon-data/issues/1568>`_
+* Fix efficiency and marginal cost of power-to-heat links
+  `#1568 <https://github.com/openego/eGon-data/issues/1568>`_
+* Merge reversed foreign DC links, extendable at zero cost, into one link
+  `#1568 <https://github.com/openego/eGon-data/issues/1568>`_
+* Fix district heating areas lost by exact geometry joins with heat buses
+  `#1568 <https://github.com/openego/eGon-data/issues/1568>`_
 
 Version 2.0.0 (2025-08-20)
 ==========================
