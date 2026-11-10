@@ -253,6 +253,11 @@ Bug Fixes
   links: ``find_heat_connection`` stored the distance of the last checked
   electrolyser candidate instead of the nearest one
   `#1554 <https://github.com/openego/eGon-data/issues/1554>`_
+* Fix ``allocate_home_batteries_to_buildings`` failing with ``invalid memory
+  alloc request size`` for scenarios with many pv rooftop buildings: the
+  geometries of pv buildings are now joined in the database instead of
+  passing all building IDs as an IN-list
+  `#1571 <https://github.com/openego/eGon-data/issues/1571>`_
 * Fix duplicate 220 kV bus at Lübeck Siems in ``FixEhvSubnetworks``
   `#1568 <https://github.com/openego/eGon-data/issues/1568>`_
 * Exclude the isolated Corsica bus from the foreign central buses
