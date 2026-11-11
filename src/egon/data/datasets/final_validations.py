@@ -637,6 +637,7 @@ class FinalValidations(Dataset):
                                 "H2_for_industry",
                                 "O2",
                                 "central_heat",
+                                "data_center",
                                 "land_transport_EV",
                                 "land_transport_HGV",
                                 "land_transport_bus",
