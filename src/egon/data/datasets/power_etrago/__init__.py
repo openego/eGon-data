@@ -6,7 +6,7 @@ from egon.data.datasets import Dataset, DatasetSources, DatasetTargets
 from egon.data.datasets.power_etrago.match_ocgt import (
     insert_open_cycle_gas_turbines,
 )
-from egon.data.validation.rules.custom.sanity import (
+from egon.data.validation.rules.custom.sanity.ocgt_etrago import (
     OcgtCapacity,
     OcgtNepCapacity,
     OcgtParameters,
