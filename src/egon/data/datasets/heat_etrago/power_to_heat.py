@@ -110,9 +110,11 @@ def insert_individual_power_to_heat(scenario):
         resistive_heaters["voltage_level"] = 7
 
         # Set marginal_cost
-        resistive_heaters["marginal_cost"] = 0
+        resistive_heaters["marginal_cost"] = get_sector_parameters("heat", scenario)[
+            "marginal_cost"
+        ]["rural_resistive_heater"]
 
-        # Insert heatpumps
+        # insert resistive heaters
         insert_power_to_heat_per_level(
             resistive_heaters,
             carrier="rural_resistive_heater",

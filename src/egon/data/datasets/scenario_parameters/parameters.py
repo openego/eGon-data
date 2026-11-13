@@ -1818,6 +1818,7 @@ def heat(scenario):
             "water_tank_charger": 0,  # Danish Energy Agency
             "water_tank_discharger": 0,  # Danish Energy Agency
             "rural_heat_pump": 0,  # Danish Energy Agency, Technology Data for Individual Heating Plants
+            "rural_resistive_heater": 0,  # Danish Energy Agency, Technology Data for Individual Heating Plants
         }
 
     elif scenario == "reGon2045":
@@ -1863,6 +1864,7 @@ def heat(scenario):
             "water_tank_charger": 0,  # Danish Energy Agency
             "water_tank_discharger": 0,  # Danish Energy Agency
             "rural_heat_pump": 0,  # Danish Energy Agency, Technology Data for Individual Heating Plants
+            "rural_resistive_heater": 0,  # Danish Energy Agency, Technology Data for Individual Heating Plants
         }
 
         # Insert efficiency in p.u.
