@@ -253,6 +253,9 @@ Bug Fixes
   links: ``find_heat_connection`` stored the distance of the last checked
   electrolyser candidate instead of the nearest one
   `#1554 <https://github.com/openego/eGon-data/issues/1554>`_
+* Add prosumer demand, EV demand and rooftop PV of the TYNDP 2024
+  sub-nodes to the neighbouring countries
+  `#1567 <https://github.com/openego/eGon-data/issues/1567>`_
 * Fix duplicate 220 kV bus at Lübeck Siems in ``FixEhvSubnetworks``
   `#1568 <https://github.com/openego/eGon-data/issues/1568>`_
 * Exclude the isolated Corsica bus from the foreign central buses
