@@ -31,6 +31,18 @@ from egon.data.validation.rules.custom.sanity import (
     GeneratorTableStaticLimits,
     GeneratorTableTimeseriesCoverage,
     GeneratorTableTimeseriesValues,
+    LinkTableBus,
+    LinkTableBusCarrier,
+    LinkTableCapitalCost,
+    LinkTableEfficiency,
+    LinkTableGasToPowerEfficiency,
+    LinkTableNationalCapacity,
+    LinkTablePNom,
+    LinkTableScenarioCoverage,
+    LinkTableStaticLimits,
+    LinkTableTimeseriesCoverage,
+    LinkTableTimeseriesValues,
+    LinkTableUniquePerBusPair,
     LoadTableAnnualDemand,
     LoadTableBus,
     LoadTableBusCarrier,
@@ -57,6 +69,7 @@ ETRAGO_SCENARIOS = ["status2024", "eGon2035", "reGon2037", "reGon2045"]
 GENERATOR_TABLE = "grid.egon_etrago_generator"
 LOAD_TABLE = "grid.egon_etrago_load"
 BUS_TABLE = "grid.egon_etrago_bus"
+LINK_TABLE = "grid.egon_etrago_link"
 
 
 def notasks():
@@ -122,6 +135,18 @@ class FinalValidations(Dataset):
       valid attributes and a branch at every bus, connected AC, CH4 and
       H2_grid networks; a bus for every MV grid district; an AC bus in
       every neighbouring country.
+
+    ``etrago_link_{all,germany}``
+      Sanity rules on the complete ``grid.egon_etrago_link`` and its time
+      series, per scenario (see
+      :mod:`~egon.data.validation.rules.custom.sanity.etrago_link_table`):
+      two distinct buses of the expected carriers, valid ``p_nom``, limits
+      and costs, a capital cost for every extendable link and usable time
+      series for every link; for German links the efficiencies against the
+      scenario parameters and below 1 for gas CHP, the capacity per carrier
+      against ``supply.egon_scenario_capacities`` and one link per bus
+      pair for per-bus technologies. Foreign links have no rules of their
+      own; cross-border connectivity is checked on the bus table.
 
     *Dependencies*
       Should depend on all datasets whose data is validated by the rules
@@ -1352,6 +1377,70 @@ class FinalValidations(Dataset):
                         ),
                     )
                     for scn in ETRAGO_SCENARIOS
+                ],
+                # grid.egon_etrago_link(_timeseries), all datasets
+                "etrago_link_all": [
+                    LinkTableScenarioCoverage(
+                        table=LINK_TABLE,
+                        rule_id="SANITY_ETRAGO_LINK_SCENARIO_COVERAGE",
+                    ),
+                    *[
+                        rule(
+                            table=LINK_TABLE,
+                            rule_id=f"SANITY_ETRAGO_LINK_{check}.{scn}",
+                            scenario=scn,
+                        )
+                        for check, rule in [
+                            ("BUS", LinkTableBus),
+                            ("BUS_CARRIER", LinkTableBusCarrier),
+                            ("P_NOM", LinkTablePNom),
+                            ("STATIC_LIMITS", LinkTableStaticLimits),
+                            ("CAPITAL_COST", LinkTableCapitalCost),
+                            (
+                                "TIMESERIES_COVERAGE",
+                                LinkTableTimeseriesCoverage,
+                            ),
+                            ("TIMESERIES_VALUES", LinkTableTimeseriesValues),
+                        ]
+                        for scn in ETRAGO_SCENARIOS
+                    ],
+                ],
+                "etrago_link_germany": [
+                    *[
+                        rule(
+                            table=LINK_TABLE,
+                            rule_id=f"SANITY_ETRAGO_LINK_{check}.{scn}",
+                            scenario=scn,
+                        )
+                        for check, rule in [
+                            ("EFFICIENCY", LinkTableEfficiency),
+                            (
+                                "GAS_TO_POWER_EFFICIENCY",
+                                LinkTableGasToPowerEfficiency,
+                            ),
+                            (
+                                "UNIQUE_PER_BUS_PAIR",
+                                LinkTableUniquePerBusPair,
+                            ),
+                        ]
+                        for scn in ETRAGO_SCENARIOS
+                    ],
+                    *[
+                        LinkTableNationalCapacity(
+                            table=LINK_TABLE,
+                            rule_id=(
+                                f"SANITY_ETRAGO_LINK_NATIONAL_CAPACITY.{scn}"
+                            ),
+                            scenario=scn,
+                            nuts=resolve_boundary_dependence(
+                                {
+                                    "Schleswig-Holstein": ["DEF"],
+                                    "Everything": None,
+                                }
+                            ),
+                        )
+                        for scn in ETRAGO_SCENARIOS
+                    ],
                 ],
             },
             # Continue pipeline even if validations fail

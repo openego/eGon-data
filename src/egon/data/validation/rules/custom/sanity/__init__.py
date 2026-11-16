@@ -43,6 +43,20 @@ from .etrago_generators import (  # noqa: F401
     EtragoGeneratorTimeseriesRange,
     EtragoGeneratorUniquePerBusCarrier,
 )
+from .etrago_link_table import (  # noqa: F401
+    LinkTableBus,
+    LinkTableBusCarrier,
+    LinkTableCapitalCost,
+    LinkTableEfficiency,
+    LinkTableGasToPowerEfficiency,
+    LinkTableNationalCapacity,
+    LinkTablePNom,
+    LinkTableScenarioCoverage,
+    LinkTableStaticLimits,
+    LinkTableTimeseriesCoverage,
+    LinkTableTimeseriesValues,
+    LinkTableUniquePerBusPair,
+)
 from .etrago_load_table import (  # noqa: F401
     LoadTableAnnualDemand,
     LoadTableBus,
