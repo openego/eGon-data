@@ -201,9 +201,11 @@ def cascade_per_technology(
     # Assign CHP plants inside district heating area
     # TODO: This has to be updaten when all chp plants are available!
     if tech.index == "CHP":
-        # Select chp plants from database
+        # Select chp plants from database. The chp table references the
+        # area_id of a district heating area, while areas are indexed by
+        # their unique id, which is also stored as district_heating_id.
         gdf_chp = db.select_geodataframe(
-            f"""SELECT a.geom, th_capacity as capacity, c.area_id
+            f"""SELECT a.geom, th_capacity as capacity, c.id
             FROM {sources.tables['chp']} a,
             {sources.tables['district_heating_areas']} c
             WHERE a.district_heating = True
@@ -213,12 +215,13 @@ def cascade_per_technology(
             """
         )
 
-        gdf_chp = gdf_chp[gdf_chp.area_id.isin(areas.index)]
+        # Keep only plants in areas of the current size category
+        gdf_chp = gdf_chp[gdf_chp.id.isin(areas.index)]
 
         append_df = (
-            pd.DataFrame(gdf_chp.groupby("area_id").capacity.sum())
+            pd.DataFrame(gdf_chp.groupby("id").capacity.sum())
             .reset_index()
-            .rename({"area_id": "district_heating_id"}, axis=1)
+            .rename({"id": "district_heating_id"}, axis=1)
         )
 
     # Distribute solar thermal and heatpumps linear to remaining demand.
@@ -281,7 +284,7 @@ def cascade_per_technology(
 
 
 def cascade_heat_supply(scenario, plotting=True):
-    """Assigns supply strategy for ditsrict heating areas.
+    """Assigns supply strategy for district heating areas.
 
     Different technologies are selected for three categories of district
     heating areas (small, medium and large annual demand).

@@ -7,9 +7,16 @@ Unreleased
 
 Added
 -----
-
+* Integrate data quality checks for heat_supply datasets
+  `#1550 <https://github.com/openego/eGon-data/pull/1550>`_
 * Integrate egon-validation framework for data quality checks
   `PR #1375 <https://github.com/openego/eGon-data/pull/1375>`_
+* Add custom data-quality validation checks for the ``electricity_supply``
+  task group (``RenewableFeedin``, ``PowerPlants``, ``Storages``): schema,
+  not-null and value-set checks plus custom rules comparing modelled
+  capacities against scenario targets, checking bus references and
+  flagging duplicate rows
+  `#1526 <https://github.com/openego/eGon-data/issues/1526>`_
 * Make egon-data runnable in python 3.10
   `#1352 <https://github.com/openego/egon-data/issues/1352>`_
 * Add standardized sources and targets definitions across dataset modules
@@ -141,6 +148,9 @@ Changed
   `#1483 <https://github.com/openego/eGon-data/issues/1483>`_
 * Allign Methodology for laoding NEP target values for Battery storage for all scenarios
   `#1471 <https://github.com/openego/eGon-data/issues/1471>`_
+* Attach the data center loads to existing AC buses and drop the dedicated
+  data center buses and connection lines
+  `#1557 <https://github.com/openego/eGon-data/issues/1557>`_
 
 
 Bug Fixes
@@ -247,6 +257,21 @@ Bug Fixes
   links: ``find_heat_connection`` stored the distance of the last checked
   electrolyser candidate instead of the nearest one
   `#1554 <https://github.com/openego/eGon-data/issues/1554>`_
+* Add prosumer demand, EV demand and rooftop PV of the TYNDP 2024
+  sub-nodes to the neighbouring countries
+  `#1567 <https://github.com/openego/eGon-data/issues/1567>`_
+* Fix duplicate 220 kV bus at Lübeck Siems in ``FixEhvSubnetworks``
+  `#1568 <https://github.com/openego/eGon-data/issues/1568>`_
+* Exclude the isolated Corsica bus from the foreign central buses
+  `#1568 <https://github.com/openego/eGon-data/issues/1568>`_
+* Fix efficiency, ``p_nom`` and marginal cost of gas CHP links
+  `#1568 <https://github.com/openego/eGon-data/issues/1568>`_
+* Fix efficiency and marginal cost of power-to-heat links
+  `#1568 <https://github.com/openego/eGon-data/issues/1568>`_
+* Merge reversed foreign DC links, extendable at zero cost, into one link
+  `#1568 <https://github.com/openego/eGon-data/issues/1568>`_
+* Fix district heating areas lost by exact geometry joins with heat buses
+  `#1568 <https://github.com/openego/eGon-data/issues/1568>`_
 
 Version 2.0.0 (2025-08-20)
 ==========================
