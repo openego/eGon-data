@@ -151,6 +151,10 @@ Changed
 * Attach the data center loads to existing AC buses and drop the dedicated
   data center buses and connection lines
   `#1557 <https://github.com/openego/eGon-data/issues/1557>`_
+* Rename the grid-scale battery carrier 'BESS' to 'battery', aligning German
+  and foreign batteries; cost parameters renamed accordingly
+  ('battery inverter', 'battery storage', capital_cost 'battery')
+  `#1582 <https://github.com/openego/eGon-data/issues/1582>`_
 
 
 Bug Fixes

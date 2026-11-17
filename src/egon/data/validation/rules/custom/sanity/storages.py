@@ -15,7 +15,7 @@ class PumpedHydroCapacityComparison(PowerPlantsCapacityComparison):
     :class:`PowerPlantsCapacityComparison`.
 
     Unlike ``PowerPlantsCapacityComparison``, this does not compare
-    ``BESS``: real BESS capacity is a deliberate lower bound, not scaled
+    ``battery``: real grid-scale battery capacity is a deliberate lower bound, not scaled
     to the NEP target (see the decision recorded in
     :func:`egon.data.datasets.storages.allocate_battery_storage`,
     2026-08-31) -- eTraGo grows capacity beyond it through its own cost
@@ -96,12 +96,13 @@ class HomeBatteryCapacityComparison(PowerPlantsCapacityComparison):
     home battery allocation section, for the full analysis and a proposed
     fix). This rule intentionally stays red on that data until fixed.
 
-    ``BESS`` is not compared here, see
+    ``battery`` (grid-scale) is not compared here, see
     :class:`PumpedHydroCapacityComparison`.
 
     A reference database whose ScenarioCapacities run predates the
     ``rename_carrier`` fix for the home battery target (commit
     7b1817c65, 2026-08-27) still uses the carrier name ``battery``
+    (back then the home battery target, today the grid-scale one, #1582)
     instead of ``home_battery`` and will show every scenario as
     "allocated without input" here -- a stale database, not a new
     modeling bug.

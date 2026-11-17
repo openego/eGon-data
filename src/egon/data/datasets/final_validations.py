@@ -750,7 +750,6 @@ class FinalValidations(Dataset):
                                 "status2024",
                             ],
                             "carrier": [
-                                "BESS",
                                 "battery",
                                 "home_battery",
                                 "pumped_hydro",

@@ -199,7 +199,7 @@ def insert_capacities_per_federal_state_nep():
     db.execute_sql(f"""
         DELETE FROM {targets.tables['scenario_capacities']}
         WHERE scenario_name IN ('eGon2035', 'reGon2037', 'reGon2045')
-        AND (nuts != 'DE' OR carrier IN ('home_battery', 'BESS'))
+        AND (nuts != 'DE' OR carrier IN ('home_battery', 'battery'))
         """)
     
     # kicks statusquo entries from list
@@ -245,7 +245,7 @@ def insert_capacities_per_federal_state_nep():
         "Haushaltswaermepumpen": "residential_rural_heat_pump",
         "KWK < 10 MW": "small_chp",
         "PV-Batteriespeicher": "home_battery",
-        "Großbatteriespeicher": "BESS",
+        "Großbatteriespeicher": "battery",
     }
     # 'Elektromobilitaet gesamt': 'transport',
     # 'Elektromobilitaet privat': 'transport'}
@@ -266,7 +266,7 @@ def insert_capacities_per_federal_state_nep():
         "PV (Freiflaeche)",
     ]
 
-    # 'PV-Batteriespeicher' (home battery) and 'Großbatteriespeicher' (BESS)
+    # 'PV-Batteriespeicher' (home battery) and 'Großbatteriespeicher' (battery)
     # have no federal-state breakdown at all in the eGon2035 source file -
     # neither in the main sheet (only the national 'Summe' is filled) nor
     # in the draft report (no matching row exists there either), so the
@@ -362,7 +362,7 @@ def insert_capacities_per_federal_state_nep():
 
             # Storage carriers, mislabeled "generator" by the default above
             data.loc[
-                data.carrier.isin(["home_battery", "BESS", "pumped_hydro"]),
+                data.carrier.isin(["home_battery", "battery", "pumped_hydro"]),
                 "component",
             ] = "storage_units"
 

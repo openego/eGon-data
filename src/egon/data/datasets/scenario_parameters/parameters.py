@@ -288,10 +288,10 @@ def electricity(scenario):
             "transformer_380_110": 17.33e3,  # [EUR/MVA]
             "transformer_380_220": 13.33e3,  # [EUR/MVA]
             "transformer_220_110": 17.5e3,  # [EUR/MVA]
-            "BESS inverter": read_costs(
+            "battery inverter": read_costs(
                 costs, "battery inverter", "investment"
             ),
-            "BESS storage": read_costs(
+            "battery storage": read_costs(
                 costs, "battery storage", "investment"
             ),
             "home battery inverter": read_costs(
@@ -323,10 +323,10 @@ def electricity(scenario):
             "transformer_220_110": read_costs(
                 costs, "HVAC overhead", "lifetime"
             ),
-            "BESS inverter": read_costs(
+            "battery inverter": read_costs(
                 costs, "battery inverter", "lifetime"
             ),
-            "BESS storage": read_costs(
+            "battery storage": read_costs(
                 costs, "battery storage", "lifetime"
             ),
             "home battery inverter": read_costs(
@@ -348,10 +348,10 @@ def electricity(scenario):
                 global_settings("eGon2035")["interest_rate"],
             )
 
-        parameters["capital_cost"]["BESS"] = (
-            parameters["capital_cost"]["BESS inverter"]
+        parameters["capital_cost"]["battery"] = (
+            parameters["capital_cost"]["battery inverter"]
             + parameters["efficiency"]["battery"]["max_hours"]
-            * parameters["capital_cost"]["BESS storage"]
+            * parameters["capital_cost"]["battery storage"]
         )
 
         parameters["capital_cost"]["home_battery"] = (
@@ -493,10 +493,10 @@ def electricity(scenario):
             "transformer_380_110": 21e3,  # [EUR/MVA]
             "transformer_380_220": 15e3,  # [EUR/MVA]
             "transformer_220_110": 18e3,  # [EUR/MVA]
-            "BESS inverter": read_costs(
+            "battery inverter": read_costs(
                 costs, "battery inverter", "investment"
             ),
-            "BESS storage": read_costs(
+            "battery storage": read_costs(
                 costs, "battery storage", "investment"
             ),
             "home battery inverter": read_costs(
@@ -528,10 +528,10 @@ def electricity(scenario):
             "transformer_220_110": read_costs(
                 costs, "HVAC overhead", "lifetime"
             ),
-            "BESS inverter": read_costs(
+            "battery inverter": read_costs(
                 costs, "battery inverter", "lifetime"
             ),
-            "BESS storage": read_costs(
+            "battery storage": read_costs(
                 costs, "battery storage", "lifetime"
             ),
             "home battery inverter": read_costs(
@@ -553,10 +553,10 @@ def electricity(scenario):
                 global_settings("eGon2035")["interest_rate"],
             )
 
-        parameters["capital_cost"]["BESS"] = (
-            parameters["capital_cost"]["BESS inverter"]
+        parameters["capital_cost"]["battery"] = (
+            parameters["capital_cost"]["battery inverter"]
             + parameters["efficiency"]["battery"]["max_hours"]
-            * parameters["capital_cost"]["BESS storage"]
+            * parameters["capital_cost"]["battery storage"]
         )
 
         parameters["capital_cost"]["home_battery"] = (
@@ -696,10 +696,10 @@ def electricity(scenario):
             "transformer_380_110": 21e3,  # [EUR/MVA]
             "transformer_380_220": 15e3,  # [EUR/MVA]
             "transformer_220_110": 18e3,  # [EUR/MVA]
-            "BESS inverter": read_costs(
+            "battery inverter": read_costs(
                 costs, "battery inverter", "investment"
             ),
-            "BESS storage": read_costs(
+            "battery storage": read_costs(
                 costs, "battery storage", "investment"
             ),
             "home battery inverter": read_costs(
@@ -731,10 +731,10 @@ def electricity(scenario):
             "transformer_220_110": read_costs(
                 costs, "HVAC overhead", "lifetime"
             ),
-            "BESS inverter": read_costs(
+            "battery inverter": read_costs(
                 costs, "battery inverter", "lifetime"
             ),
-            "BESS storage": read_costs(
+            "battery storage": read_costs(
                 costs, "battery storage", "lifetime"
             ),
             "home battery inverter": read_costs(
@@ -756,10 +756,10 @@ def electricity(scenario):
                 global_settings("eGon2035")["interest_rate"],
             )
 
-        parameters["capital_cost"]["BESS"] = (
-            parameters["capital_cost"]["BESS inverter"]
+        parameters["capital_cost"]["battery"] = (
+            parameters["capital_cost"]["battery inverter"]
             + parameters["efficiency"]["battery"]["max_hours"]
-            * parameters["capital_cost"]["BESS storage"]
+            * parameters["capital_cost"]["battery storage"]
         )
 
         parameters["capital_cost"]["home_battery"] = (
@@ -907,10 +907,10 @@ def electricity(scenario):
             "transformer_380_110": 17.33e3,  # [EUR/MVA]
             "transformer_380_220": 13.33e3,  # [EUR/MVA]
             "transformer_220_110": 17.5e3,  # [EUR/MVA]
-            "BESS inverter": read_costs(
+            "battery inverter": read_costs(
                 costs, "battery inverter", "investment"
             ),
-            "BESS storage": read_costs(
+            "battery storage": read_costs(
                 costs, "battery storage", "investment"
             ),
             "home battery inverter": read_costs(
@@ -942,10 +942,10 @@ def electricity(scenario):
             "transformer_220_110": read_costs(
                 costs, "HVAC overhead", "lifetime"
             ),
-            "BESS inverter": read_costs(
+            "battery inverter": read_costs(
                 costs, "battery inverter", "lifetime"
             ),
-            "BESS storage": read_costs(
+            "battery storage": read_costs(
                 costs, "battery storage", "lifetime"
             ),
             "home battery inverter": read_costs(
@@ -967,10 +967,10 @@ def electricity(scenario):
                 global_settings("status2024")["interest_rate"],
             )
 
-        parameters["capital_cost"]["BESS"] = (
-            parameters["capital_cost"]["BESS inverter"]
+        parameters["capital_cost"]["battery"] = (
+            parameters["capital_cost"]["battery inverter"]
             + parameters["efficiency"]["battery"]["max_hours"]
-            * parameters["capital_cost"]["BESS storage"]
+            * parameters["capital_cost"]["battery storage"]
         )
 
         parameters["capital_cost"]["home_battery"] = (
