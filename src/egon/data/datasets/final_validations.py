@@ -67,6 +67,11 @@ from egon.data.validation.rules.custom.sanity import (
     StorageTableEfficiency,
     StorageTableParameters,
     StorageTableScenarioCoverage,
+    StoreTableBus,
+    StoreTableCapitalCost,
+    StoreTableParameters,
+    StoreTableScenarioCoverage,
+    StoreTableTimeseries,
     TransformerTableBus,
     TransformerTableCapitalCost,
     TransformerTableElectrical,
@@ -91,6 +96,7 @@ LINK_TABLE = "grid.egon_etrago_link"
 LINE_TABLE = "grid.egon_etrago_line"
 TRANSFORMER_TABLE = "grid.egon_etrago_transformer"
 STORAGE_TABLE = "grid.egon_etrago_storage"
+STORE_TABLE = "grid.egon_etrago_store"
 
 
 def notasks():
@@ -197,6 +203,16 @@ class FinalValidations(Dataset):
       the battery capital costs and lifetimes against the scenario
       parameters and the capacity per carrier against
       ``supply.egon_storages``. The time series table has no rules.
+
+    ``etrago_store_{all,germany}``
+      Sanity rules on the complete ``grid.egon_etrago_store`` and its time
+      series, per scenario (see ``rules/custom/sanity/etrago_store_table.py``):
+      one store per bus and carrier on an existing bus of the expected
+      carrier, usable static parameters, and one complete series without
+      NaN and with ``e_min_pu <= e_max_pu`` for every DSM and vehicle
+      battery store; for German H2 and heat stores the capital cost
+      against the scenario parameters. ``e_cyclic`` is set by eTraGo and
+      not checked.
 
     *Dependencies*
       Should depend on all datasets whose data is validated by the rules
@@ -1582,6 +1598,34 @@ class FinalValidations(Dataset):
                         ("CAPITAL_COST", StorageTableCapitalCost),
                         ("CAPACITY", StorageTableCapacity),
                     ]
+                    for scn in ETRAGO_SCENARIOS
+                ],
+                # grid.egon_etrago_store(_timeseries), all datasets
+                "etrago_store_all": [
+                    StoreTableScenarioCoverage(
+                        table=STORE_TABLE,
+                        rule_id="SANITY_ETRAGO_STORE_SCENARIO_COVERAGE",
+                    ),
+                    *[
+                        rule(
+                            table=STORE_TABLE,
+                            rule_id=f"SANITY_ETRAGO_STORE_{check}.{scn}",
+                            scenario=scn,
+                        )
+                        for check, rule in [
+                            ("BUS", StoreTableBus),
+                            ("PARAMETERS", StoreTableParameters),
+                            ("TIMESERIES", StoreTableTimeseries),
+                        ]
+                        for scn in ETRAGO_SCENARIOS
+                    ],
+                ],
+                "etrago_store_germany": [
+                    StoreTableCapitalCost(
+                        table=STORE_TABLE,
+                        rule_id=f"SANITY_ETRAGO_STORE_CAPITAL_COST.{scn}",
+                        scenario=scn,
+                    )
                     for scn in ETRAGO_SCENARIOS
                 ],
             },

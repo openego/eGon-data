@@ -87,6 +87,13 @@ from .etrago_storage_table import (  # noqa: F401
     StorageTableParameters,
     StorageTableScenarioCoverage,
 )
+from .etrago_store_table import (  # noqa: F401
+    StoreTableBus,
+    StoreTableCapitalCost,
+    StoreTableParameters,
+    StoreTableScenarioCoverage,
+    StoreTableTimeseries,
+)
 from .etrago_transformer_table import (  # noqa: F401
     TransformerTableBus,
     TransformerTableCapitalCost,
