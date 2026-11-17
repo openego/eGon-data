@@ -646,6 +646,152 @@ class StorageTableCapitalCost(_StorageParameterRule):
         }
 
 
+class StorageTableSubstations(_StorageTableRule):
+    """
+    Check that every substation bus has exactly one battery of each kind.
+
+    ``StorageEtrago`` writes one ``BESS`` and one ``home_battery`` row per
+    AC bus of the scenario that is an EHV or HV/MV substation, also where
+    the allocated capacity is 0. A carrier missing on such a bus, a second
+    row of a carrier on one bus, or a row on any other bus means the
+    substation selection or the delete before the insert went wrong.
+    ``BESS`` must be extendable, with the allocated capacity as
+    ``p_nom_min``; ``home_battery`` must be fixed at it.
+    """
+
+    def __init__(
+        self,
+        table,
+        rule_id,
+        scenario,
+        ehv_substation_table: str = "grid.egon_ehv_substation",
+        hv_substation_table: str = "grid.egon_hvmv_substation",
+        **kwargs,
+    ):
+        """
+        Parameters
+        ----------
+        ehv_substation_table, hv_substation_table : str
+            Substation tables whose ``bus_id`` defines the eligible buses.
+        """
+        super().__init__(
+            table=table,
+            rule_id=rule_id,
+            scenario=scenario,
+            ehv_substation_table=ehv_substation_table,
+            hv_substation_table=hv_substation_table,
+            **kwargs,
+        )
+        self.ehv_substation_table = ehv_substation_table
+        self.hv_substation_table = hv_substation_table
+
+    def get_query(self, ctx):
+        return f"""
+        WITH eligible AS (
+            SELECT b.bus_id
+            FROM {self.bus_table} b
+            WHERE b.scn_name = :scenario
+            AND b.carrier = 'AC'
+            AND (
+                b.bus_id IN (SELECT bus_id FROM {self.ehv_substation_table})
+                OR b.bus_id IN (SELECT bus_id FROM {self.hv_substation_table})
+            )
+        ),
+        batteries AS (
+            SELECT
+                carrier,
+                bus,
+                count(*) AS n,
+                bool_and(p_nom_extendable) AS all_extendable,
+                bool_or(p_nom_extendable) AS any_extendable
+            FROM {self.table}
+            WHERE scn_name = :scenario
+            AND carrier IN ('BESS', 'home_battery')
+            GROUP BY carrier, bus
+        ),
+        per_carrier AS (
+            SELECT
+                c.carrier,
+                (SELECT count(*) FROM eligible) AS n_eligible,
+                (
+                    SELECT count(*) FROM eligible e
+                    WHERE NOT EXISTS (
+                        SELECT 1 FROM batteries x
+                        WHERE x.carrier = c.carrier AND x.bus = e.bus_id
+                    )
+                ) AS n_missing,
+                (
+                    SELECT count(*) FROM batteries x
+                    WHERE x.carrier = c.carrier AND x.n > 1
+                ) AS n_duplicated,
+                (
+                    SELECT count(*) FROM batteries x
+                    WHERE x.carrier = c.carrier
+                    AND x.bus NOT IN (SELECT bus_id FROM eligible)
+                ) AS n_elsewhere,
+                (
+                    SELECT count(*) FROM batteries x
+                    WHERE x.carrier = c.carrier
+                    AND CASE c.carrier
+                        WHEN 'BESS' THEN NOT x.all_extendable
+                        ELSE x.any_extendable
+                    END
+                ) AS n_wrong_extendable
+            FROM (VALUES ('BESS'), ('home_battery')) AS c(carrier)
+        )
+        SELECT
+            (SELECT count(*) FROM batteries) AS n_rows,
+            json_agg(row_to_json(per_carrier) ORDER BY carrier) AS carriers
+        FROM per_carrier
+        """
+
+    def evaluate_df(self, df, ctx):
+        if int(df["n_rows"].values[0]) == 0:
+            return self._no_storage("BESS or home_battery units")
+
+        carriers = _parse_json(df["carriers"].values[0]) or []
+        labels = {
+            "n_missing": "substation buses without a row",
+            "n_duplicated": "buses with more than one row",
+            "n_elsewhere": "buses that are no substation",
+            "n_wrong_extendable": None,
+        }
+        problems = []
+        for c in carriers:
+            for column, label in labels.items():
+                n = int(c[column])
+                if not n:
+                    continue
+                if column == "n_wrong_extendable":
+                    label = (
+                        "buses with a fixed row" if c["carrier"] == "BESS"
+                        else "buses with an extendable row"
+                    )
+                problems.append(f"{c['carrier']}: {n} {label}")
+        n_eligible = int(carriers[0]["n_eligible"]) if carriers else 0
+
+        if problems:
+            return self._result(
+                success=False,
+                observed=len(problems),
+                expected=0,
+                message=(
+                    f"Scenario '{self.scenario}': of {n_eligible} substation "
+                    f"buses, {'; '.join(problems)}"
+                ),
+            )
+        return self._result(
+            success=True,
+            observed=0,
+            expected=0,
+            message=(
+                f"Scenario '{self.scenario}': each of the {n_eligible} "
+                f"substation buses has exactly one extendable BESS and one "
+                f"fixed home_battery row, and no other bus has one"
+            ),
+        )
+
+
 class StorageTableCapacity(_StorageTableRule):
     """
     Compare the German storage capacity per carrier with its source table.

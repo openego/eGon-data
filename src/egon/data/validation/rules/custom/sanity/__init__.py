@@ -86,6 +86,7 @@ from .etrago_storage_table import (  # noqa: F401
     StorageTableEfficiency,
     StorageTableParameters,
     StorageTableScenarioCoverage,
+    StorageTableSubstations,
 )
 from .etrago_store_table import (  # noqa: F401
     StoreTableBus,

@@ -61,10 +61,7 @@ from egon.data.validation.rules.custom.sanity import (
     LoadTableTimeseriesCoverage,
     LoadTableTimeseriesValues,
     StorageTableBus,
-    StorageTableCapacity,
-    StorageTableCapitalCost,
     StorageTableCyclic,
-    StorageTableEfficiency,
     StorageTableParameters,
     StorageTableScenarioCoverage,
     StoreTableBus,
@@ -195,14 +192,13 @@ class FinalValidations(Dataset):
       against the scenario parameters. The time series table is not
       written by any dataset and has no rules.
 
-    ``etrago_storage_{all,germany}``
+    ``etrago_storage_all``
       Sanity rules on the complete ``grid.egon_etrago_storage``, per
       scenario (see ``rules/custom/sanity/etrago_storage_table.py``): an
       existing AC bus, usable static parameters and a cyclic state of
-      charge for every storage unit; for German units the efficiencies,
-      the battery capital costs and lifetimes against the scenario
-      parameters and the capacity per carrier against
-      ``supply.egon_storages``. The time series table has no rules.
+      charge for every storage unit. The German units are compared with
+      the scenario parameters and ``supply.egon_storages`` by
+      ``StorageEtrago`` itself. The time series table has no rules.
 
     ``etrago_store_{all,germany}``
       Sanity rules on the complete ``grid.egon_etrago_store`` and its time
@@ -1586,19 +1582,6 @@ class FinalValidations(Dataset):
                         ]
                         for scn in ETRAGO_SCENARIOS
                     ],
-                ],
-                "etrago_storage_germany": [
-                    rule(
-                        table=STORAGE_TABLE,
-                        rule_id=f"SANITY_ETRAGO_STORAGE_{check}.{scn}",
-                        scenario=scn,
-                    )
-                    for check, rule in [
-                        ("EFFICIENCY", StorageTableEfficiency),
-                        ("CAPITAL_COST", StorageTableCapitalCost),
-                        ("CAPACITY", StorageTableCapacity),
-                    ]
-                    for scn in ETRAGO_SCENARIOS
                 ],
                 # grid.egon_etrago_store(_timeseries), all datasets
                 "etrago_store_all": [
