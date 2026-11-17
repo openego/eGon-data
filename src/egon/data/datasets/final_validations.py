@@ -60,6 +60,13 @@ from egon.data.validation.rules.custom.sanity import (
     LoadTableScenarioCoverage,
     LoadTableTimeseriesCoverage,
     LoadTableTimeseriesValues,
+    StorageTableBus,
+    StorageTableCapacity,
+    StorageTableCapitalCost,
+    StorageTableCyclic,
+    StorageTableEfficiency,
+    StorageTableParameters,
+    StorageTableScenarioCoverage,
     TransformerTableBus,
     TransformerTableCapitalCost,
     TransformerTableElectrical,
@@ -83,6 +90,7 @@ BUS_TABLE = "grid.egon_etrago_bus"
 LINK_TABLE = "grid.egon_etrago_link"
 LINE_TABLE = "grid.egon_etrago_line"
 TRANSFORMER_TABLE = "grid.egon_etrago_transformer"
+STORAGE_TABLE = "grid.egon_etrago_storage"
 
 
 def notasks():
@@ -180,6 +188,15 @@ class FinalValidations(Dataset):
       bounds and capital cost; for German transformers the capital cost
       against the scenario parameters. The time series table is not
       written by any dataset and has no rules.
+
+    ``etrago_storage_{all,germany}``
+      Sanity rules on the complete ``grid.egon_etrago_storage``, per
+      scenario (see ``rules/custom/sanity/etrago_storage_table.py``): an
+      existing AC bus, usable static parameters and a cyclic state of
+      charge for every storage unit; for German units the efficiencies,
+      the battery capital costs and lifetimes against the scenario
+      parameters and the capacity per carrier against
+      ``supply.egon_storages``. The time series table has no rules.
 
     *Dependencies*
       Should depend on all datasets whose data is validated by the rules
@@ -1532,6 +1549,39 @@ class FinalValidations(Dataset):
                         ),
                         scenario=scn,
                     )
+                    for scn in ETRAGO_SCENARIOS
+                ],
+                # grid.egon_etrago_storage, all datasets
+                "etrago_storage_all": [
+                    StorageTableScenarioCoverage(
+                        table=STORAGE_TABLE,
+                        rule_id="SANITY_ETRAGO_STORAGE_SCENARIO_COVERAGE",
+                    ),
+                    *[
+                        rule(
+                            table=STORAGE_TABLE,
+                            rule_id=f"SANITY_ETRAGO_STORAGE_{check}.{scn}",
+                            scenario=scn,
+                        )
+                        for check, rule in [
+                            ("BUS", StorageTableBus),
+                            ("PARAMETERS", StorageTableParameters),
+                            ("CYCLIC", StorageTableCyclic),
+                        ]
+                        for scn in ETRAGO_SCENARIOS
+                    ],
+                ],
+                "etrago_storage_germany": [
+                    rule(
+                        table=STORAGE_TABLE,
+                        rule_id=f"SANITY_ETRAGO_STORAGE_{check}.{scn}",
+                        scenario=scn,
+                    )
+                    for check, rule in [
+                        ("EFFICIENCY", StorageTableEfficiency),
+                        ("CAPITAL_COST", StorageTableCapitalCost),
+                        ("CAPACITY", StorageTableCapacity),
+                    ]
                     for scn in ETRAGO_SCENARIOS
                 ],
             },
