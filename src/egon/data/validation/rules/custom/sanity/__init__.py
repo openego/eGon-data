@@ -78,6 +78,13 @@ from .etrago_load_table import (  # noqa: F401
     LoadTableTimeseriesCoverage,
     LoadTableTimeseriesValues,
 )
+from .etrago_transformer_table import (  # noqa: F401
+    TransformerTableBus,
+    TransformerTableCapitalCost,
+    TransformerTableElectrical,
+    TransformerTableLimits,
+    TransformerTableScenarioCoverage,
+)
 from .heat_etrago import (  # noqa: F401
     HeatBuses,
     HeatScenarioCoverage,

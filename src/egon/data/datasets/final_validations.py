@@ -60,6 +60,11 @@ from egon.data.validation.rules.custom.sanity import (
     LoadTableScenarioCoverage,
     LoadTableTimeseriesCoverage,
     LoadTableTimeseriesValues,
+    TransformerTableBus,
+    TransformerTableCapitalCost,
+    TransformerTableElectrical,
+    TransformerTableLimits,
+    TransformerTableScenarioCoverage,
 )
 from egon.data.validation.rules.custom.sanity.etrago_bus_table import (
     NEIGHBOUR_COUNTRIES,
@@ -77,6 +82,7 @@ LOAD_TABLE = "grid.egon_etrago_load"
 BUS_TABLE = "grid.egon_etrago_bus"
 LINK_TABLE = "grid.egon_etrago_link"
 LINE_TABLE = "grid.egon_etrago_line"
+TRANSFORMER_TABLE = "grid.egon_etrago_transformer"
 
 
 def notasks():
@@ -165,6 +171,15 @@ class FinalValidations(Dataset):
       cross-border lines; for German lines the capital cost against the
       scenario parameters. The ``s_max_pu`` values themselves are checked
       by ``DLRValues`` in ``Calculate_dlr``.
+
+    ``etrago_transformer_{all,germany}``
+      Sanity rules on the complete ``grid.egon_etrago_transformer``, per
+      scenario (see ``rules/custom/sanity/etrago_transformer_table.py``):
+      two distinct AC buses of different voltage in one country, usable
+      electrical parameters (``x`` without a range), consistent expansion
+      bounds and capital cost; for German transformers the capital cost
+      against the scenario parameters. The time series table is not
+      written by any dataset and has no rules.
 
     *Dependencies*
       Should depend on all datasets whose data is validated by the rules
@@ -1485,6 +1500,36 @@ class FinalValidations(Dataset):
                     LineTableCapitalCost(
                         table=LINE_TABLE,
                         rule_id=f"SANITY_ETRAGO_LINE_CAPITAL_COST.{scn}",
+                        scenario=scn,
+                    )
+                    for scn in ETRAGO_SCENARIOS
+                ],
+                # grid.egon_etrago_transformer, all datasets
+                "etrago_transformer_all": [
+                    TransformerTableScenarioCoverage(
+                        table=TRANSFORMER_TABLE,
+                        rule_id="SANITY_ETRAGO_TRANSFORMER_SCENARIO_COVERAGE",
+                    ),
+                    *[
+                        rule(
+                            table=TRANSFORMER_TABLE,
+                            rule_id=f"SANITY_ETRAGO_TRANSFORMER_{check}.{scn}",
+                            scenario=scn,
+                        )
+                        for check, rule in [
+                            ("BUS", TransformerTableBus),
+                            ("ELECTRICAL", TransformerTableElectrical),
+                            ("LIMITS", TransformerTableLimits),
+                        ]
+                        for scn in ETRAGO_SCENARIOS
+                    ],
+                ],
+                "etrago_transformer_germany": [
+                    TransformerTableCapitalCost(
+                        table=TRANSFORMER_TABLE,
+                        rule_id=(
+                            f"SANITY_ETRAGO_TRANSFORMER_CAPITAL_COST.{scn}"
+                        ),
                         scenario=scn,
                     )
                     for scn in ETRAGO_SCENARIOS
