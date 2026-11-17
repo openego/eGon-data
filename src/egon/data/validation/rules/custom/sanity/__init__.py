@@ -43,6 +43,14 @@ from .etrago_generators import (  # noqa: F401
     EtragoGeneratorTimeseriesRange,
     EtragoGeneratorUniquePerBusCarrier,
 )
+from .etrago_line_table import (  # noqa: F401
+    LineTableBus,
+    LineTableCapitalCost,
+    LineTableElectrical,
+    LineTableLimits,
+    LineTableScenarioCoverage,
+    LineTableTimeseries,
+)
 from .etrago_link_table import (  # noqa: F401
     LinkTableBus,
     LinkTableBusCarrier,

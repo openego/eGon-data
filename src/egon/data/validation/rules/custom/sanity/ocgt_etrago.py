@@ -439,7 +439,7 @@ class OcgtNepCapacity(_OcgtRule):
         Parameters
         ----------
         nep_scenario : str
-            Scenario tag of the NEP list, "eGon2035" or "reGon".
+            Scenario tag of the NEP list, e.g. "reGon".
         capacity_column : str
             Capacity column of the target year, e.g. "c2037_capacity". It
             is read from the row as JSON, so a column that does not exist

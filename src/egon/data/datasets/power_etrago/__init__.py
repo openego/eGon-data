@@ -16,12 +16,11 @@ from egon.data.validation.rules.custom.sanity import (
 
 #: Scenarios the validation rules are built for; a scenario the run does
 #: not produce is skipped by the rules themselves.
-SCENARIOS = ["status2024", "eGon2035", "reGon2037", "reGon2045"]
+SCENARIOS = ["status2024", "reGon2037", "reGon2045"]
 
 #: Scenario tag and capacity column of the NEP list of conventional power
 #: plants per future scenario; status2024 has no such reference.
 NEP_REFERENCE = {
-    "eGon2035": ("eGon2035", "c2035_capacity"),
     "reGon2037": ("reGon", "c2037_capacity"),
     "reGon2045": ("reGon", "c2045_capacity"),
 }

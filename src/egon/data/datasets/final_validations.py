@@ -31,6 +31,12 @@ from egon.data.validation.rules.custom.sanity import (
     GeneratorTableStaticLimits,
     GeneratorTableTimeseriesCoverage,
     GeneratorTableTimeseriesValues,
+    LineTableBus,
+    LineTableCapitalCost,
+    LineTableElectrical,
+    LineTableLimits,
+    LineTableScenarioCoverage,
+    LineTableTimeseries,
     LinkTableBus,
     LinkTableBusCarrier,
     LinkTableCapitalCost,
@@ -64,12 +70,13 @@ from egon.data.validation.rules.custom.sanity.etrago_load_table import (
 
 #: Scenarios the per-scenario rules are built for; a scenario the run does
 #: not produce is skipped by the rules themselves.
-ETRAGO_SCENARIOS = ["status2024", "eGon2035", "reGon2037", "reGon2045"]
+ETRAGO_SCENARIOS = ["status2024", "reGon2037", "reGon2045"]
 
 GENERATOR_TABLE = "grid.egon_etrago_generator"
 LOAD_TABLE = "grid.egon_etrago_load"
 BUS_TABLE = "grid.egon_etrago_bus"
 LINK_TABLE = "grid.egon_etrago_link"
+LINE_TABLE = "grid.egon_etrago_line"
 
 
 def notasks():
@@ -147,6 +154,17 @@ class FinalValidations(Dataset):
       against ``supply.egon_scenario_capacities`` and one link per bus
       pair for per-bus technologies. Foreign links have no rules of their
       own; cross-border connectivity is checked on the bus table.
+
+    ``etrago_line_{all,germany}``
+      Sanity rules on the complete ``grid.egon_etrago_line`` and its time
+      series, per scenario (see
+      :mod:`~egon.data.validation.rules.custom.sanity.etrago_line_table`):
+      two distinct AC buses of the line's voltage, usable electrical
+      parameters, consistent capacity bounds, static ``s_max_pu`` and
+      capital cost, one time series row per line and no dynamic rating on
+      cross-border lines; for German lines the capital cost against the
+      scenario parameters. The ``s_max_pu`` values themselves are checked
+      by ``DLRValues`` in ``Calculate_dlr``.
 
     *Dependencies*
       Should depend on all datasets whose data is validated by the rules
@@ -1441,6 +1459,35 @@ class FinalValidations(Dataset):
                         )
                         for scn in ETRAGO_SCENARIOS
                     ],
+                ],
+                # grid.egon_etrago_line(_timeseries), all datasets
+                "etrago_line_all": [
+                    LineTableScenarioCoverage(
+                        table=LINE_TABLE,
+                        rule_id="SANITY_ETRAGO_LINE_SCENARIO_COVERAGE",
+                    ),
+                    *[
+                        rule(
+                            table=LINE_TABLE,
+                            rule_id=f"SANITY_ETRAGO_LINE_{check}.{scn}",
+                            scenario=scn,
+                        )
+                        for check, rule in [
+                            ("BUS", LineTableBus),
+                            ("ELECTRICAL", LineTableElectrical),
+                            ("LIMITS", LineTableLimits),
+                            ("TIMESERIES", LineTableTimeseries),
+                        ]
+                        for scn in ETRAGO_SCENARIOS
+                    ],
+                ],
+                "etrago_line_germany": [
+                    LineTableCapitalCost(
+                        table=LINE_TABLE,
+                        rule_id=f"SANITY_ETRAGO_LINE_CAPITAL_COST.{scn}",
+                        scenario=scn,
+                    )
+                    for scn in ETRAGO_SCENARIOS
                 ],
             },
             # Continue pipeline even if validations fail

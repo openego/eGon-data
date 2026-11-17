@@ -37,7 +37,7 @@ GENERATOR_CARRIERS = [
 
 #: Scenarios the validation rules are built for; a scenario the run does
 #: not produce is skipped by the rules themselves.
-SCENARIOS = ["status2024", "eGon2035", "reGon2037", "reGon2045"]
+SCENARIOS = ["status2024", "reGon2037", "reGon2045"]
 
 
 class Egon_etrago_gen(Dataset):
