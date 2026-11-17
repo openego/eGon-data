@@ -253,7 +253,7 @@ def insert_capacities_per_federal_state_nep():
             "sheet_main": "1.Entwurf_NEP2035_V2021",
             "sheet_draft": "Entwurf_des_Szenariorahmens",
             "windoff_col": "C 2035",
-            # NEP 2035 has no PV total per federal state
+            # eGon2035 keeps the draft split to leave its results unchanged
             "pv_total_per_state": False,
         },
         "reGon2037": {
