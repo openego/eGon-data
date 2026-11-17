@@ -1,5 +1,6 @@
 import re
 
+from loguru import logger
 import geopandas as gpd
 import numpy as np
 import pandas as pd
@@ -892,16 +893,11 @@ def insert():
             target = target[target["scenario_name"] == scenario]
             nuts = np.unique(target["nuts"])
 
-            # check target value per state
-            for i in nuts:
-                target_power = (
-                    target[target["nuts"] == i]["capacity"].iloc[0] * 1000
-                )
-
+            def build_state(i, target_power):
+                """Build PV parks in state i to meet target_power (kW)."""
                 ###
-                land = target[target["nuts"] == i]["nuts"].iloc[0]
                 print(" ")
-                print("Bundesland (NUTS): " + land)
+                print("Bundesland (NUTS): " + i)
                 print("target power: " + str(target_power / 1000) + " MW")
 
                 # select state
@@ -940,9 +936,78 @@ def insert():
                 )
 
                 if len(distr_i) > 0:
-                    distr_i["nuts"] = target[target["nuts"] == i]["nuts"].iloc[
-                        0
-                    ]
+                    distr_i["nuts"] = i
+
+                return rora_i, agri_i, exist_i, distr_i
+
+            def built_power(state_result):
+                """Sum installed capacity (kW) of all PV parks of a state."""
+                return sum(
+                    df["installed capacity in kW"].sum()
+                    for df in state_result
+                    if len(df) > 0
+                )
+
+            # check target value per state
+            target_power = {
+                i: target[target["nuts"] == i]["capacity"].iloc[0] * 1000
+                for i in nuts
+            }
+            state_results = {i: build_state(i, target_power[i]) for i in nuts}
+
+            # Capacity that cannot be built in a state because its potential
+            # areas are exhausted is redistributed to the other states,
+            # proportional to their target. Repeated in case a receiving
+            # state runs out of potential area as well.
+            exhausted = []
+            for _ in range(5):
+                missing = {}
+                for i in nuts:
+                    if i in exhausted:
+                        continue
+                    shortfall = target_power[i] - built_power(state_results[i])
+                    if shortfall > 1000:  # more than 1 MW not built
+                        missing[i] = shortfall
+                        target_power[i] -= shortfall
+                        exhausted.append(i)
+
+                if not missing:
+                    break
+
+                receivers = [
+                    i
+                    for i in nuts
+                    if i not in exhausted and target_power[i] > 0
+                ]
+                for i, shortfall in missing.items():
+                    logger.warning(
+                        f"{scenario}: {shortfall / 1000:.0f} MW ground-mounted "
+                        f"PV cannot be built in {i} (potential areas "
+                        "exhausted), "
+                        + (
+                            f"redistributed to {receivers}."
+                            if receivers
+                            else "no state with free potential area left."
+                        )
+                    )
+                if not receivers:
+                    break
+
+                total_missing = sum(missing.values())
+                total_target = sum(target_power[i] for i in receivers)
+                for i in receivers:
+                    target_power[i] += (
+                        total_missing * target_power[i] / total_target
+                    )
+                    state_results[i] = build_state(i, target_power[i])
+            else:
+                logger.warning(
+                    f"{scenario}: redistribution of ground-mounted PV stopped "
+                    "after 5 iterations, target may not be reached."
+                )
+
+            for i in nuts:
+                rora_i, agri_i, exist_i, distr_i = state_results[i]
 
                 # ### examination of built PV parks per state
                 rora_i_mv = rora_i[rora_i["voltage_level"] == 5]
