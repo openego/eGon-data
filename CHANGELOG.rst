@@ -84,11 +84,26 @@ Changed
   then a resistive heater until its share is reached, and gas boilers
   otherwise. Resistive heater buildings are supplied via the rural heat bus,
   gas boiler buildings only via the CH4 load. The technologies and their
-  order are defined once in ``INDIVIDUAL_HEATING_SHARE_TECHNOLOGIES``, the
-  shares (``individual_heating_shares``) are placeholders. HeatEtrago now
-  depends on HeatPumpsCascade and stops if the capacities it writes are
-  missing. Affected datasets: ScenarioParameters, HeatSupply,
+  order are defined once in ``INDIVIDUAL_HEATING_SHARE_TECHNOLOGIES``.
+  HeatEtrago now depends on HeatPumpsCascade and stops if the capacities it
+  writes are missing. Affected datasets: ScenarioParameters, HeatSupply,
   HeatPumpsCascade, HeatEtrago, HtsEtragoTable and FinalValidations
+  `#1563 <https://github.com/openego/eGon-data/issues/1563>`_
+* Size decentral heat pumps in reGon2037 and reGon2045 with the COP of the
+  MV grid's weather cell in the hour of the building's peak heat demand
+  instead of a fixed COP of 1.7: peak heat demand times the flexibility
+  factor of 24/18, divided by that COP. eGon2035 and the status quo
+  scenarios keep the fixed COP. Affected datasets: HeatPumpsCascade, HeatEtrago,
+  HtsEtragoTable
+  `#1563 <https://github.com/openego/eGon-data/issues/1563>`_
+* Supply all decentral buildings in reGon2045 that do not get a heat pump
+  with a resistive heater instead of a gas boiler, set by the new heat
+  parameter ``individual_heating_remainder``. The resistive heater share
+  then follows from the heat pump share instead of being fixed at X %.
+  The new check SANITY_HP_TECHNOLOGY_SHARES reports the technology shares
+  of every scenario and fails if such a scenario still has gas boilers.
+  Affected datasets: ScenarioParameters, HeatPumpsCascade, HeatEtrago,
+  HtsEtragoTable
   `#1563 <https://github.com/openego/eGon-data/issues/1563>`_
 * Changes to improve the matching of the Kraftwerksliste from the NEP
   and the corresponding MaStR-data for CHP. 

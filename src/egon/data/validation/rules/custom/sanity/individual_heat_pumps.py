@@ -74,6 +74,19 @@ def _heating_shares(scenario):
     return get_individual_heating_shares(scenario)
 
 
+#: Carrier of the gas boiler series in TIMESERIES_TABLE.
+GAS_CARRIER = "CH4"
+
+
+def _heating_remainder(scenario):
+    """Technology that takes all remaining buildings, None if there is none."""
+    from egon.data.datasets.scenario_parameters import get_sector_parameters
+
+    return get_sector_parameters("heat", scenario).get(
+        "individual_heating_remainder"
+    )
+
+
 def _examples(values, n=5):
     """Up to ``n`` values as a comma-separated string."""
     values = [str(v) for v in list(values or [])[:n]]
@@ -546,6 +559,10 @@ class HeatPumpSizing(_HeatPumpRule):
     building's peak load of the same scenario. This also holds for heat
     pumps inherited along the floor chain, which are raised where the
     building's demand has grown.
+
+    Skipped for scenarios with ``individual_heating_shares``: their sizing
+    uses the COP in each's building peak hour, which are not stored.
+    :class:`HeatTimeseriesHeatPumpCapacity` checks them per MV grid.
     """
 
     def __init__(
@@ -563,6 +580,18 @@ class HeatPumpSizing(_HeatPumpRule):
             peak_load_table=peak_load_table,
             **kwargs,
         )
+
+    def evaluate(self, engine, ctx):
+        if (
+            self.scenario in configured_scenarios()
+            and _heating_shares(self.scenario) is not None
+        ):
+            return self._skip(
+                f"Scenario '{self.scenario}' sizes heat pumps with the COP "
+                f"in each's building peak hour, which is not stored; check "
+                f"skipped"
+            )
+        return super().evaluate(engine, ctx)
 
     def get_params(self, ctx):
         return {
@@ -1176,6 +1205,10 @@ class HeatTimeseriesHeatPumpCapacity(_HeatPumpRule):
     i.e. ``sum(hp_capacity) / factor`` of
     :func:`~egon.data.datasets.heat_supply.individual_heating.
     determine_minimum_hp_capacity_per_building`.
+
+    For scenarios with ``individual_heating_shares`` the peak is not
+    checked: their heat pumps are sized with the COP in each building's peak
+    hour, which is not stored.
     """
 
     def __init__(
@@ -1226,11 +1259,16 @@ class HeatTimeseriesHeatPumpCapacity(_HeatPumpRule):
         if df.empty:
             return self._no_rows()
 
+        # share scenarios: sized with the COP in each building's peak hour,
+        # which is not stored, so the peak is not checked
+        check_peak = _heating_shares(self.scenario) is None
+
         factor = _hp_sizing_factor()
         series_without_capacity = df[(df.energy > 0) & (df.capacity <= 0)]
         capacity_without_series = df[(df.capacity > 0) & (df.energy <= 0)]
         over_capacity = df[
-            (df.capacity > 0)
+            check_peak
+            & (df.capacity > 0)
             & (df.peak > df.capacity / factor * (1 + RTOL_ROUNDING))
         ]
 
@@ -1259,7 +1297,12 @@ class HeatTimeseriesHeatPumpCapacity(_HeatPumpRule):
         )
         message = (
             f"Scenario '{self.scenario}': {len(with_hp):,} grids with heat "
-            f"pumps, max peak / supplyable heat = {max_ratio:.3f}"
+            f"pumps, "
+            + (
+                f"max peak / supplyable heat = {max_ratio:.3f}"
+                if check_peak
+                else "peak not checked (COP in peak hour)"
+            )
         )
         if problems:
             return self._result(
@@ -1331,15 +1374,21 @@ class HeatTimeseriesEnergyBalance(_HeatPumpRule):
             (SELECT sum((SELECT sum(v) FROM unnest(dist_aggregated_mw) v))
              FROM {self.table}
              WHERE scenario = :scenario) AS series_mwh,
-            (SELECT sum(p.demand)
-             FROM demand.egon_peta_heat p
-             WHERE p.scenario = :demand_scenario
-             AND p.sector IN ('residential', 'service')
-             AND NOT EXISTS (
-                 SELECT 1 FROM {self.params["dh_map_table"]} d
-                 WHERE d.zensus_population_id = p.zensus_population_id
-                 AND d.scenario = :demand_scenario
-             )) AS demand_mwh
+            ({self._demand_sql()}) AS demand_mwh
+        """
+
+    def _demand_sql(self):
+        """Decentral heat demand: outside district heating areas."""
+        return f"""
+            SELECT sum(p.demand)
+            FROM demand.egon_peta_heat p
+            WHERE p.scenario = :demand_scenario
+            AND p.sector IN ('residential', 'service')
+            AND NOT EXISTS (
+                SELECT 1 FROM {self.params["dh_map_table"]} d
+                WHERE d.zensus_population_id = p.zensus_population_id
+                AND d.scenario = :demand_scenario
+            )
         """
 
     def evaluate_df(self, df, ctx):
@@ -1369,5 +1418,66 @@ class HeatTimeseriesEnergyBalance(_HeatPumpRule):
                 f"{series / 1e6:.2f} TWh, decentral heat demand is "
                 f"{demand / 1e6:.2f} TWh ({share:.2%}, accepted "
                 f"{min_share:.0%} to {max_share:.1%})"
+            ),
+        )
+
+
+class HeatTimeseriesTechnologyShares(HeatTimeseriesEnergyBalance):
+    """
+    Report the share of each decentral heating technology.
+
+    Shares are the annual energy of each carrier's series divided by the
+    decentral heat demand (see :class:`HeatTimeseriesEnergyBalance`), so
+    they add up to slightly less than 1. Scenarios with
+    ``individual_heating_remainder`` must have no gas boilers; for all other
+    scenarios the shares are only reported.
+    """
+
+    def get_query(self, ctx):
+        return f"""
+        SELECT s.carrier, s.mwh, ({self._demand_sql()}) AS demand_mwh
+        FROM (
+            SELECT carrier,
+                   sum((SELECT sum(v) FROM unnest(dist_aggregated_mw) v))
+                       AS mwh
+            FROM {self.table}
+            WHERE scenario = :scenario
+            GROUP BY carrier
+        ) s
+        """
+
+    def evaluate_df(self, df, ctx):
+        if df.empty:
+            return self._no_rows()
+        demand = float(df.demand_mwh.iloc[0] or 0.0)
+        if demand <= 0:
+            return self._result(
+                success=False,
+                message=f"Scenario '{self.scenario}': no decentral heat demand",
+            )
+
+        # share of the decentral heat demand per carrier
+        shares = df.set_index("carrier").mwh.astype(float) / demand
+        targets = _heating_shares(self.scenario)
+        message = f"Scenario '{self.scenario}': " + ", ".join(
+            f"{carrier} {share:.2%}" for carrier, share in shares.items()
+        ) + (f" (targets {targets})" if targets else "")
+
+        # a remainder technology replaces all gas boilers
+        remainder = _heating_remainder(self.scenario)
+        if remainder is None:
+            return self._result(success=True, message=message)
+
+        gas = float(shares.get(GAS_CARRIER, 0.0))
+        success = gas <= RTOL_ROUNDING
+        return self._result(
+            success=success,
+            observed=round(gas, 6),
+            expected=0.0,
+            message=message
+            + (
+                ""
+                if success
+                else f"; gas boilers must be 0 with remainder '{remainder}'"
             ),
         )

@@ -5,8 +5,7 @@ import pandas as pd
 from egon.data.datasets import load_sources_and_targets
 
 #: Decentral heating technologies that can be assigned a share of the
-#: decentral heat demand (heat parameter ``individual_heating_shares``), in
-#: the order buildings are assigned to them. Buildings without any of them
+#: decentral heat demand. Buildings without any of them
 #: are supplied by gas boilers. The names are the carriers in
 #: supply.egon_individual_heating, and each technology needs its own sizing in
 #: egon.data.datasets.heat_supply.individual_heating.
@@ -1844,9 +1843,12 @@ def heat(scenario):
             },
             # [p.u.] of the decentral heat demand per MV grid, in the order of
             # INDIVIDUAL_HEATING_SHARE_TECHNOLOGIES (heat pump, resistive
-            # heater); the remaining demand is supplied by gas boilers.
+            # heater).
             # values from source: Ffe-study: "Begleitstudie: Regionalisierung Gebäudewärme":
             # table A-5.
+            "individual_heating_remainder": INDIVIDUAL_HEATING_SHARE_TECHNOLOGIES[-1],
+            # all buildings left after the heat pumps get a resistive heater
+            # instead of a gas boiler, so its share of 0.06 is not used.
         }
 
         parameters["marginal_cost"] = {

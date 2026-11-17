@@ -412,6 +412,8 @@ class HeatSupply(Dataset):
             "mv_grids": "grid.egon_mv_grid_district",
             "map_dh": "demand.egon_map_zensus_district_heating_areas",
             "etrago_buses": "grid.egon_etrago_bus",
+            "weather_cells": "supply.egon_era5_weather_cells",
+            "feedin_timeseries": "supply.egon_era5_renewable_feedin",
         }
     )
 

@@ -16,7 +16,9 @@ In general, heat supply can be divided into three categories which include speci
      - 27.24 TWh
      - 390.78 TWh
 
-reGon2037 and reGon2045 are supplied using the same methodology as eGon2035.
+reGon2037 and reGon2045 use the same methodology as eGon2035 for district heating.
+Their individual heating is based on technology shares instead of a heat pump
+capacity target (see :ref:`indiv-heating-shares`).
 
 The following subsections describe the heat supply methodology for each category.
 
@@ -94,10 +96,14 @@ The peak heat demand per building is written to database table
 To disaggregate the total heat pump capacity per MV grid, first, the minimum required
 heat pump capacity per building is determined. To this end, an approach from the
 `network development plan <https://www.netzentwicklungsplan.de/sites/default/files/paragraphs-files/Szenariorahmenentwurf_NEP2035_2021_1.pdf>`_
-(pp.46-47) is used where the heat pump capacity of a building is calculated by multiplying the peak heat
-demand of the building by a minimum assumed COP of 1.7 and a flexibility factor of
+(pp.46-47) is used where the heat pump capacity of a building is calculated by dividing the peak heat
+demand of the building by a minimum assumed COP of 1.7 and multiplying it by a flexibility factor of
 24/18 that is taking into account that power supply of heat pumps can be interrupted for up
 to six hours by the local distribution grid operator.
+Scenarios with ``individual_heating_shares`` (reGon2037, reGon2045) replace the fixed
+COP by the COP of the MV grid's weather cell in the hour of the building's peak heat
+demand (see :py:func:`get_cop_at_peak_per_building`).
+This is the same COP time series as used for the heat pumps in eTraGo.
 
 After the determination of the minimum required heat pump capacity per building, the
 total heat pump capacity per MV grid district is distributed to buildings inside the
@@ -121,13 +127,39 @@ required heat pump capacity and the disaggregation to individual buildings
 are discussed in the respective dataset docstring of
 :py:class:`HeatPumpsCascade <egon.data.datasets.heat_supply.individual_heating.HeatPumpsCascade>`.
 
+.. _indiv-heating-shares:
 
+Individual heating by technology shares
++++++++++++++++++++++++++++++++++++++++
 
+The method described above (eGon2035 and the status quo scenarios) starts
+from a heat pump capacity per scenario, which is distributed to the MV grid
+districts and then to buildings. reGon2037 and reGon2045 do not have such a
+capacity target. Instead, the heat parameter
+defines which share of the decentral heat demand of each MV grid district is
+covered by each technology. The assignment is done per MV grid district in
+:py:func:`determine_heating_technologies_by_share_per_mvgd
+<egon.data.datasets.heat_supply.individual_heating.determine_heating_technologies_by_share_per_mvgd>`:
+
+#. Buildings get a heat pump until the heat pump share of the grid's annual
+   decentral heat demand is reached. Buildings that already had a heat pump
+   in the previous scenario keep it. Further buildings are chosen in random
+   order, buildings with rooftop PV being prefered.
+   Buildings whose heat pump would be smaller than 5 kW are skipped.
+#. The remaining buildings, in the same order, get a resistive heater until
+   the resistive heater share is reached.
+#. All buildings left are supplied by gas boilers.
+
+As buildings are added as a whole, each share is reached from below.
+
+In reGon2045, all buildings that do not get a heat pump are supplied by a
+resistive heater, regardless of its share (heat parameter
+``individual_heating_remainder``). No individual gas boilers remain.
 
 
 Individual gas boilers
 +++++++++++++++++++++++
 
-All residential and CTS buildings that are neither supplied by a district heating grid nor an individual heat pump are supplied by gas boilers. The demand time series of these buildings are multiplied by the efficiency of gas boilers and aggregated per methane grid node.
+All residential and CTS buildings that are neither supplied by a district heating grid nor an individual renewable heating technology are supplied by gas boilers. The demand time series of these buildings are multiplied by the efficiency of gas boilers and aggregated per methane grid node. In reGon2045 there are no gas boilers.
 
 All heat supply categories are implemented in the dataset :py:class:`HeatSupply <egon.data.datasets.heat_supply.HeatSupply>`. The data is stored in the tables :py:class:`demand.egon_district_heating <egon.data.datasets.heat_supply.EgonDistrictHeatingSupply>` and  :py:class:`demand.egon_individual_heating <egon.data.datasets.heat_supply.EgonIndividualHeatingSupply>`.

@@ -793,7 +793,7 @@ class HeatEtrago(Dataset):
     #:
     name: str = "HeatEtrago"
     #:
-    version: str = "0.0.16"
+    version: str = "0.0.18"
 
     sources = DatasetSources(
         tables={
