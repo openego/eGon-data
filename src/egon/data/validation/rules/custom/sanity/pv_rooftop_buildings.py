@@ -18,8 +18,8 @@ class PvRooftopCapacityComparison(PowerPlantsCapacityComparison):
         table: Primary table being validated
             (supply.egon_power_plants_pv_roof_building)
         rule_id: Unique identifier for this validation rule
-        rtol: Relative tolerance of the deviation (default: 0.03 = 3 %).
-            The allocation overshoots the input by 0.8 - 1.9 % (observed).
+        rtol: Relative tolerance of the deviation (default: 1e-6 =
+            0.0001 %, only floating-point rounding).
 
     Example:
         >>> validation = {
@@ -33,7 +33,11 @@ class PvRooftopCapacityComparison(PowerPlantsCapacityComparison):
     """
 
     def __init__(
-        self, table: str, rule_id: str, rtol: float = 0.03, **kwargs
+        self,
+        table: str,
+        rule_id: str,
+        rtol: float = 1e-6,
+        **kwargs,
     ):
         super().__init__(rule_id=rule_id, table=table, rtol=rtol, **kwargs)
 
