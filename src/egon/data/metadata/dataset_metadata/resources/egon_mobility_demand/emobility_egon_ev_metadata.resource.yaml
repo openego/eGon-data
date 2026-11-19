@@ -1,0 +1,141 @@
+'@id': ''
+name: emobility.egon_ev_metadata
+topics: []
+title: ''
+path: ''
+description: ''
+languages: []
+subject:
+- name: ''
+  '@id': ''
+keywords: []
+publicationDate: ''
+embargoPeriod:
+  start: ''
+  end: ''
+  isActive: false
+context:
+  title: ''
+  homepage: ''
+  documentation: ''
+  sourceCode: ''
+  publisher: ''
+  publisherLogo: ''
+  contact: ''
+  fundingAgency: ''
+  fundingAgencyLogo: ''
+  grantNo: ''
+spatial:
+  location:
+    address: ''
+    '@id': ''
+    latitude: ''
+    longitude: ''
+  extent:
+    name: ''
+    '@id': ''
+    resolutionValue: ''
+    resolutionUnit: ''
+    crs: ''
+temporal:
+  referenceDate: ''
+  timeseries:
+  - start: ''
+    end: ''
+    resolutionValue: ''
+    resolutionUnit: ''
+    alignment: ''
+    aggregationType: ''
+sources:
+- title: ''
+  authors: []
+  description: ''
+  publicationYear: ''
+  path: ''
+  sourceLicenses:
+  - name: ''
+    title: ''
+    path: ''
+    instruction: ''
+    attribution: ''
+    copyrightStatement: ''
+- title: KBA
+  description: ''
+  path: https://www.kba.de/SharedDocs/Downloads/DE/Statistik/Fahrzeuge/FZ1/fz1_2021.xlsx?__blob=publicationFile&v=2
+  authors: []
+  publicationYear: null
+  sourceLicenses: []
+- title: RS7
+  description: ''
+  path: https://www.bmv.de/SharedDocs/DE/Anlage/G/regiostar-referenzdateien.xlsx?__blob=publicationFile
+  authors: []
+  publicationYear: null
+  sourceLicenses: []
+- title: trips_eGon2035
+  description: ''
+  path: mit_trip_data/eGon2035_RS7_min2k_2022-06-01_175429_simbev_run.tar.gz
+  authors: []
+  publicationYear: null
+  sourceLicenses: []
+- title: trips_reGon2037
+  description: ''
+  path: mit_trip_data/eGon2035_RS7_min2k_2022-06-01_175429_simbev_run.tar.gz
+  authors: []
+  publicationYear: null
+  sourceLicenses: []
+- title: trips_reGon2045
+  description: ''
+  path: mit_trip_data/eGon100RE_RS7_min2k_2022-06-01_175444_simbev_run.tar.gz
+  authors: []
+  publicationYear: null
+  sourceLicenses: []
+- title: trips_status2024
+  description: ''
+  path: mit_trip_data/eGon2035_RS7_min2k_2022-06-01_175429_simbev_run.tar.gz
+  authors: []
+  publicationYear: null
+  sourceLicenses: []
+licenses:
+- name: ''
+  title: ''
+  path: ''
+  instruction: ''
+  attribution: ''
+  copyrightStatement: ''
+contributors:
+- title: ''
+  path: ''
+  organization: ''
+  roles: []
+  date: ''
+  object: ''
+  comment: ''
+type: ''
+format: ''
+encoding: ''
+schema:
+  fields:
+  - name: ''
+    description: ''
+    type: ''
+    nullable: false
+    unit: ''
+    isAbout:
+    - name: ''
+      '@id': ''
+    valueReference:
+    - value: ''
+      name: ''
+      '@id': ''
+  primaryKey: []
+  foreignKeys:
+  - fields: []
+    reference:
+      resource: ''
+      fields: []
+dialect:
+  delimiter: ''
+  decimalSeparator: ''
+review:
+  path: ''
+  badge: ''

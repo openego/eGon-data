@@ -1,0 +1,6 @@
+version: OEMetadata-2.0
+dataset:
+  name: 'egon_load_areas'
+  title: 'eGon-data — load areas'
+  description: 'Load areas datasets produced by the eGon-data pipeline (load_areas task group).'
+  '@id': null

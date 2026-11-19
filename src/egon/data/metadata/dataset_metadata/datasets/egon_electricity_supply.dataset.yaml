@@ -1,0 +1,6 @@
+version: OEMetadata-2.0
+dataset:
+  name: 'egon_electricity_supply'
+  title: 'eGon-data — electricity supply'
+  description: 'Electricity supply datasets produced by the eGon-data pipeline (electricity_supply task group).'
+  '@id': null

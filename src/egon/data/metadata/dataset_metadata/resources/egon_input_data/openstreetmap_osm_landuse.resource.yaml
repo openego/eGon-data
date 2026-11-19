@@ -1,0 +1,155 @@
+'@id': ''
+name: openstreetmap.osm_landuse
+topics: []
+title: 'TODO: Add title for openstreetmap.osm_landuse'
+path: ''
+description: 'TODO: Add description'
+languages: []
+subject:
+- name: ''
+  '@id': ''
+keywords: []
+publicationDate: ''
+embargoPeriod:
+  start: ''
+  end: ''
+  isActive: false
+context:
+  title: ''
+  homepage: ''
+  documentation: ''
+  sourceCode: ''
+  publisher: ''
+  publisherLogo: ''
+  contact: ''
+  fundingAgency: ''
+  fundingAgencyLogo: ''
+  grantNo: ''
+spatial:
+  location:
+    address: ''
+    '@id': ''
+    latitude: ''
+    longitude: ''
+  extent:
+    name: ''
+    '@id': ''
+    resolutionValue: ''
+    resolutionUnit: ''
+    crs: ''
+temporal:
+  referenceDate: ''
+  timeseries:
+  - start: ''
+    end: ''
+    resolutionValue: ''
+    resolutionUnit: ''
+    alignment: ''
+    aggregationType: ''
+sources:
+- title: ''
+  authors: []
+  description: ''
+  publicationYear: ''
+  path: ''
+  sourceLicenses:
+  - name: ''
+    title: ''
+    path: ''
+    instruction: ''
+    attribution: ''
+    copyrightStatement: ''
+- title: 'Internal table: boundaries.vg250_sta_union'
+  description: Derived from the internal table 'boundaries.vg250_sta_union'. See that
+    table's own metadata for full provenance.
+  path: ''
+  authors: []
+  publicationYear: null
+  sourceLicenses: []
+- title: 'Internal table: openstreetmap.osm_polygon'
+  description: Derived from the internal table 'openstreetmap.osm_polygon'. See that
+    table's own metadata for full provenance.
+  path: ''
+  authors: []
+  publicationYear: null
+  sourceLicenses: []
+- title: osm_landuse_extraction
+  description: ''
+  path: osm_landuse_extraction.sql
+  authors: []
+  publicationYear: null
+  sourceLicenses: []
+licenses:
+- name: ''
+  title: ''
+  path: ''
+  instruction: ''
+  attribution: ''
+  copyrightStatement: ''
+contributors:
+- title: ''
+  path: ''
+  organization: ''
+  roles: []
+  date: ''
+  object: ''
+  comment: ''
+type: ''
+format: ''
+encoding: ''
+schema:
+  primaryKey:
+  - id
+  foreignKeys: []
+  fields:
+  - name: id
+    description: 'TODO: Add description'
+    type: integer
+    unit: none
+    nullable: false
+  - name: osm_id
+    description: 'TODO: Add description'
+    type: integer
+    unit: none
+    nullable: true
+  - name: name
+    description: 'TODO: Add description'
+    type: character varying
+    unit: none
+    nullable: true
+  - name: sector
+    description: 'TODO: Add description'
+    type: integer
+    unit: none
+    nullable: true
+  - name: sector_name
+    description: 'TODO: Add description'
+    type: character varying(20)
+    unit: none
+    nullable: true
+  - name: area_ha
+    description: 'TODO: Add description'
+    type: double precision
+    unit: none
+    nullable: true
+  - name: tags
+    description: 'TODO: Add description'
+    type: hstore
+    unit: none
+    nullable: true
+  - name: vg250
+    description: 'TODO: Add description'
+    type: character varying(10)
+    unit: none
+    nullable: true
+  - name: geom
+    description: 'TODO: Add description'
+    type: geometry(MultiPolygon,3035)
+    unit: none
+    nullable: true
+dialect:
+  delimiter: ''
+  decimalSeparator: ''
+review:
+  path: ''
+  badge: ''

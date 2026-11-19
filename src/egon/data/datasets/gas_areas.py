@@ -3,9 +3,6 @@ The central module containing code to create CH4 and H2 voronoi polygons
 
 """
 
-import datetime
-import json
-
 from geoalchemy2.types import Geometry
 from sqlalchemy import BigInteger, Column, Text
 from sqlalchemy.ext.declarative import declarative_base
@@ -19,13 +16,6 @@ from egon.data.datasets import (
     wrapped_partial,
 )
 from egon.data.datasets.generate_voronoi import get_voronoi_geodataframe
-from egon.data.metadata import (
-    context,
-    contributors,
-    license_egon_data_odbl,
-    meta_metadata,
-    sources,
-)
 
 
 class GasAreaseGon2035(Dataset):
@@ -45,7 +35,7 @@ class GasAreaseGon2035(Dataset):
     *Resulting tables*
       * :py:class:`EgonPfHvGasVoronoi <EgonPfHvGasVoronoi>`
 
-    """
+    """  # noqa: E501
 
     #:
     name: str = "GasAreaseGon2035"
@@ -82,17 +72,23 @@ class GasAreaseGon100RE(Dataset):
     :py:func:`voronoi_egon100RE` function.
 
     *Dependencies*
-      * :py:class:`EtragoSetup <egon.data.datasets.etrago_setup.EtragoSetup>`
-      * :py:class:`HydrogenBusEtrago <egon.data.datasets.hydrogen_etrago.HydrogenBusEtrago>`
-      * :py:class:`HydrogenGridEtrago <egon.data.datasets.hydrogen_etrago.HydrogenGridEtrago>`
-      * :py:class:`Vg250 <egon.data.datasets.vg250.Vg250>`
-      * :py:class:`GasNodesAndPipes <egon.data.datasets.gas_grid.GasNodesAndPipes>`
-      * :py:class:`GasAreaseGon2035 <GasAreaseGon2035>`
+      * :py:class:
+        `EtragoSetup <egon.data.datasets.etrago_setup.EtragoSetup>`
+      * :py:class:
+        `HydrogenBusEtrago <egon.data.datasets.hydrogen_etrago.HydrogenBusEtrago>`
+      * :py:class:
+        `HydrogenGridEtrago <egon.data.datasets.hydrogen_etrago.HydrogenGridEtrago>`
+      * :py:class:
+        `Vg250 <egon.data.datasets.vg250.Vg250>`
+      * :py:class:
+        `GasNodesAndPipes <egon.data.datasets.gas_grid.GasNodesAndPipes>`
+      * :py:class:
+        `GasAreaseGon2035 <GasAreaseGon2035>`
 
     *Resulting tables*
       * :py:class:`EgonPfHvGasVoronoi <EgonPfHvGasVoronoi>`
 
-    """
+    """  # noqa: E501
 
     #:
     name: str = "GasAreaseGon100RE"
@@ -130,77 +126,8 @@ class EgonPfHvGasVoronoi(Base):
     Class definition of table grid.egon_gas_voronoi
     """
 
-    source_list = [
-        sources()["openstreetmap"],
-        sources()["SciGRID_gas"],
-        sources()["bgr_inspeeds_data_bundle"],
-    ]
-    meta = {
-        "name": "grid.egon_gas_voronoi",
-        "title": "Gas voronoi areas",
-        "id": "WILL_BE_SET_AT_PUBLICATION",
-        "description": "H2 and CH4 voronoi cells",
-        "language": ["en-EN"],
-        "publicationDate": datetime.date.today().isoformat(),
-        "context": context(),
-        "spatial": {
-            "location": None,
-            "extent": "Germany",
-            "resolution": None,
-        },
-        "sources": source_list,
-        "licenses": [license_egon_data_odbl()],
-        "contributors": contributors(["fw"]),
-        "resources": [
-            {
-                "profile": "tabular-data-resource",
-                "name": "grid.egon_gas_voronoi",
-                "path": None,
-                "format": "PostgreSQL",
-                "encoding": "UTF-8",
-                "schema": {
-                    "fields": [
-                        {
-                            "name": "scn_name",
-                            "description": "Name of the scenario",
-                            "type": "str",
-                            "unit": None,
-                        },
-                        {
-                            "name": "bus_id",
-                            "description": "Unique identifier",
-                            "type": "integer",
-                            "unit": None,
-                        },
-                        {
-                            "name": "carrier",
-                            "description": "Carrier of the voronoi cell",
-                            "type": "str",
-                            "unit": None,
-                        },
-                        {
-                            "name": "geom",
-                            "description": "Voronoi cell geometry",
-                            "type": "Geometry(Polygon, 4326)",
-                            "unit": None,
-                        },
-                    ],
-                    "primaryKey": ["scn_name", "bus_id"],
-                    "foreignKeys": [],
-                },
-                "dialect": {"delimiter": None, "decimalSeparator": "."},
-            }
-        ],
-        "metaMetadata": meta_metadata(),
-    }
-    # Create json dump
-    meta_json = "'" + json.dumps(meta, indent=4, ensure_ascii=False) + "'"
-
     __tablename__ = "egon_gas_voronoi"
-    __table_args__ = {
-        "schema": "grid",
-        "comment": meta_json,
-    }
+    __table_args__ = {"schema": "grid"}
 
     #: Name of the scenario
     scn_name = Column(Text, primary_key=True, nullable=False)
@@ -308,10 +235,12 @@ def create_voronoi(scn_name, carrier):
 
     carrier_strings = "', '".join(carriers)
 
-    db.execute_sql(f"""
+    db.execute_sql(
+        f"""
         DELETE FROM {targets.tables["ch4_voronoi"]}
         WHERE "carrier" IN ('{carrier_strings}') and "scn_name" = '{scn_name}';
-        """)
+        """
+    )
 
     buses = db.select_geodataframe(
         f"""
@@ -367,7 +296,7 @@ class GasAreas(Dataset):
     *Resulting tables*
       * :py:class:`EgonPfHvGasVoronoi <EgonPfHvGasVoronoi>`
 
-    """
+    """  # noqa: E501
 
     #:
     name: str = "GasAreas"

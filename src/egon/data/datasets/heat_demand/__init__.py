@@ -17,9 +17,7 @@ from pathlib import Path  # for database import
 from urllib.request import urlretrieve
 
 # for metadata creation
-import json
 import os
-import time
 import zipfile
 
 from jinja2 import Template
@@ -36,7 +34,6 @@ import rasterio
 from egon.data import db, subprocess
 from egon.data.datasets import Dataset, DatasetSources, DatasetTargets
 from egon.data.datasets.scenario_parameters import get_sector_parameters
-from egon.data.metadata import context, license_ccby, meta_metadata, sources
 from egon.data.validation import TableValidation, resolve_boundary_dependence
 import egon.data.config
 
@@ -631,116 +628,6 @@ def adjust_residential_heat_to_zensus(scenario):
     return None
 
 
-def add_metadata():
-    """
-    Writes metadata JSON string into table comment.
-
-    """
-    # Metadata creation
-    meta = {
-        "name": "egon_peta_heat_metadata",
-        "title": "eGo_n scenario-specific future heat demand data",
-        "id": "WILL_BE_SET_AT_PUBLICATION",
-        "description": "Future heat demands per hectare grid cell of "
-        "the residential and service sector",
-        "language": ["EN"],
-        "context": context(),
-        "spatial": {
-            "location": None,
-            "extent": "Germany",
-            "resolution": "100x100m",
-        },
-        "sources": [
-            sources()["egon-data"],
-            sources()["peta"],
-            sources()["vg250"],
-            sources()["zensus"],
-        ],
-        "resources": [
-            {
-                "profile": "tabular-data-resource",
-                "name": "egon_peta_heat",
-                "path": "",
-                "format": "PostgreSQL",
-                "encoding": "UTF-8",
-                "schema": {
-                    "fields": [
-                        {
-                            "name": "id",
-                            "description": "Unique identifier",
-                            "type": "serial",
-                            "unit": "none",
-                        },
-                        {
-                            "name": "demand",
-                            "description": "annual heat demand",
-                            "type": "double precision",
-                            "unit": "MWh",
-                        },
-                        {
-                            "name": "sector",
-                            "description": "sector e.g. residential",
-                            "type": "text",
-                            "unit": "none",
-                        },
-                        {
-                            "name": "scenario",
-                            "description": "scenario name",
-                            "type": "text",
-                            "unit": "none",
-                        },
-                        {
-                            "name": "zensus_population_id",
-                            "description": "census cell id",
-                            "type": "integer",
-                            "unit": "none",
-                        },
-                    ],
-                    "primaryKey": ["id"],
-                    "foreignKeys": [
-                        {
-                            "fields": ["zensus_population_id"],
-                            "reference": {
-                                "resource": "society.destatis_zensus_population_per_ha",
-                                "fields": ["id"],
-                            },
-                        },
-                        {
-                            "fields": ["scenario"],
-                            "reference": {
-                                "resource": "scenario.egon_scenario_parameters",
-                                "fields": ["name"],
-                            },
-                        },
-                    ],
-                },
-                "dialect": {"delimiter": "none", "decimalSeparator": "."},
-            }
-        ],
-        "licenses": [license_ccby("© Europa-Universität Flensburg")],
-        "contributors": [
-            {
-                "title": "EvaWie",
-                "email": "http://github.com/EvaWie",
-                "date": time.strftime("%Y-%m-%d"),
-                "object": None,
-                "comment": "Imported data",
-            },
-            {
-                "title": "Clara Büttner",
-                "email": "http://github.com/ClaraBuettner",
-                "date": time.strftime("%Y-%m-%d"),
-                "object": None,
-                "comment": "Updated metadata",
-            },
-        ],
-        "metaMetadata": meta_metadata(),
-    }
-    meta_json = "'" + json.dumps(meta) + "'"
-
-    db.submit_comment(meta_json, "demand", "egon_peta_heat")
-
-
 def scenario_data_import():
     """
     Call all heat demand import related functions.
@@ -791,7 +678,5 @@ def scenario_data_import():
     for scenario in egon.data.config.settings()["egon-data"]["--scenarios"]:
         adjust_residential_heat_to_zensus(scenario)
 
-    # future_heat_demand_germany("eGon2015")
-    add_metadata()
 
     return None

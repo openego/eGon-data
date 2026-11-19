@@ -1,0 +1,377 @@
+name: grid.egon_etrago_transformer
+'@id': null
+title: Transformer
+path: WILL_BE_SET_AT_PUBLICATION
+description: TODO
+languages:
+- en-EN
+subject:
+- name: ''
+  '@id': null
+publicationDate: '2026-10-02'
+embargoPeriod:
+  start: ''
+  end: ''
+  isActive: false
+spatial:
+  location:
+    address: null
+    '@id': null
+    latitude: ''
+    longitude: ''
+  extent:
+    name: Germany
+    '@id': null
+    resolutionValue: ''
+    resolutionUnit: ''
+    boundingBox:
+    - 0
+    - 0
+    - 0
+    - 0
+    crs: ''
+temporal:
+  referenceDate: ''
+  timeseries:
+  - start: ''
+    end: ''
+    resolutionValue: ''
+    resolutionUnit: ''
+    alignment: ''
+    aggregationType: ''
+sources:
+- title: eGon-data
+  authors: []
+  description: Workflow to download, process and generate data sets suitable for the
+    further research conducted in the project eGon (https://ego-n.org/)
+  publicationYear: null
+  path: https://github.com/openego/eGon-data
+  sourceLicenses:
+  - name: AGPL-3.0 License
+    title: GNU Affero General Public License v3.0
+    path: https://www.gnu.org/licenses/agpl-3.0.de.html
+    instruction: Permissions of this strongest copyleft license areconditioned on
+      making available complete source code of licensed works and modifications, which
+      include larger works using a licensedwork, under the same license. Copyright
+      and license notices must bepreserved. Contributors provide an express grant
+      of patent rights.When a modified version is used to provide a service over a
+      network,the complete source code of the modified version must be made available.
+    attribution: © eGon development team
+    copyrightStatement: null
+- title: OpenStreetMap Data Extracts (Geofabrik)
+  authors: []
+  description: Full data extract of OpenStreetMap data for defined spatial extent
+    at "referenceDate"
+  publicationYear: null
+  path: https://download.geofabrik.de/europe/germany-210101.osm.pbf
+  sourceLicenses:
+  - name: ODbL-1.0
+    title: Open Data Commons Open Database License 1.0
+    path: https://opendatacommons.org/licenses/odbl/1.0/index.html
+    instruction: 'You are free: To Share, To Create, To Adapt; As long as you: Attribute,
+      Share-Alike, Keep open!'
+    attribution: © OpenStreetMap contributors
+    copyrightStatement: null
+licenses:
+- name: ODbL-1.0
+  title: Open Data Commons Open Database License 1.0
+  path: https://opendatacommons.org/licenses/odbl/1.0/index.html
+  instruction: 'You are free: To Share, To Create, To Adapt; As long as you: Attribute,
+    Share-Alike, Keep open!'
+  attribution: © eGon development team
+  copyrightStatement: null
+contributors:
+- title: Ilka Cußmann
+  path: null
+  organization: null
+  roles:
+  - ''
+  date: null
+  object: null
+  comment: Added transformes from osmTGmod tables
+- title: Clara Büttner
+  path: null
+  organization: null
+  roles:
+  - ''
+  date: null
+  object: null
+  comment: Added meta data
+- title: eGon-data metadata migration
+  path: https://github.com/openego/eGon-data
+  roles:
+  - dataCurator
+  organization: null
+  date: '2026-10-20'
+  object: metadata
+  comment: Migrated from the OEMetadata v1.4 table comment of a full eGon-data run
+    to OEMetadata v2 with OMI.
+type: Table
+format: PostgreSQL
+encoding: UTF-8
+schema:
+  fields:
+  - name: scn_name
+    description: Name of the eGon scenario
+    type: character varying
+    nullable: false
+    unit: n/a
+    isAbout: []
+    valueReference: []
+    default: n/a
+    status: Input
+  - name: trafo_id
+    description: Unique name
+    type: bigint
+    nullable: false
+    unit: none
+  - name: bus0
+    description: Name of first bus (typically higher voltage) to which transformer
+      is attached.
+    type: bigint
+    nullable: true
+    unit: none
+    isAbout: []
+    valueReference: []
+    default: n/a
+    status: Input (required)
+  - name: bus1
+    description: Name of second bus (typically lower voltage) to which transformer
+      is attached.
+    type: bigint
+    nullable: true
+    unit: none
+    isAbout: []
+    valueReference: []
+    default: n/a
+    status: Input (required)
+  - name: type
+    description: Name of 2-winding transformer standard type. If this is not an empty
+      string "", then the transformer type impedance parameters are taken from the
+      standard type along with "num_parallel". This will override any values set in
+      r, x, g, b, s_nom, tap_ratio, tap_side and phase_shift. If the string is empty,
+      PyPSA will simply read r, x, etc.
+    type: text
+    nullable: true
+    unit: none
+    isAbout: []
+    valueReference: []
+    default: n/a
+    status: Input (optional)
+  - name: model
+    description: Model used for admittance matrix; can be "t" or "pi"; since PyPSA
+      Version 0.8.0 it defaults to "t" following physics and DIgSILENT PowerFactory;
+      versions of PyPSA before 0.8.0 and some other power system tools, like MATPOWER,
+      PYPOWER, PSS/SINCAL use the less physical "pi" model.
+    type: text
+    nullable: true
+    unit: none
+    isAbout: []
+    valueReference: []
+    default: t
+    status: ' Input (required)'
+  - name: x
+    description: Series reactance (per unit, using s_nom as base power); must be non-zero
+      for AC branch in linear power flow. Series impedance :math:`z = r + jx` must
+      be non-zero for the non-linear power flow. Ignored if type defined.
+    type: numeric
+    nullable: true
+    unit: per unit
+    isAbout: []
+    valueReference: []
+    default: '0'
+    status: Input (required)
+  - name: r
+    description: Series resistance (per unit, using s_nom as base power); must be
+      non-zero for DC branch in linear power flow. Series impedance :math:`z = r +
+      jx` must be non-zero for the non-linear power flow. Ignored if type defined.
+    type: numeric
+    nullable: true
+    unit: per unit
+    isAbout: []
+    valueReference: []
+    default: '0'
+    status: Input (required)
+  - name: g
+    description: Shunt conductivity (per unit, using s_nom as base power). Ignored
+      if type defined.
+    type: numeric
+    nullable: true
+    unit: per unit
+    isAbout: []
+    valueReference: []
+    default: '0'
+    status: Input (optional)
+  - name: b
+    description: Shunt susceptance (per unit, using s_nom as base power). Ignored
+      if type defined.
+    type: numeric
+    nullable: true
+    unit: per unit
+    isAbout: []
+    valueReference: []
+    default: '0'
+    status: Input (optional)
+  - name: s_nom
+    description: Limit of apparent power which can pass through branch.
+    type: double precision
+    nullable: true
+    unit: MVA
+    isAbout: []
+    valueReference: []
+    default: '0'
+    status: Input (optional)
+  - name: s_nom_extendable
+    description: Switch to allow capacity s_nom to be extended in OPF.
+    type: boolean
+    nullable: true
+    unit: none
+    isAbout: []
+    valueReference: []
+    default: 'False'
+    status: Input (optional)
+  - name: s_nom_min
+    description: If s_nom is extendable in OPF, set its minimum value.
+    type: double precision
+    nullable: true
+    unit: MVA
+    isAbout: []
+    valueReference: []
+    default: '0'
+    status: Input (optional)
+  - name: s_nom_max
+    description: If s_nom is extendable in OPF, set its maximum value (e.g. limited
+      by potential).
+    type: double precision
+    nullable: true
+    unit: MVA
+    isAbout: []
+    valueReference: []
+    default: inf
+    status: Input (optional)
+  - name: s_max_pu
+    description: The maximum allowed absolute flow per unit of s_nom for the OPF.
+    type: double precision
+    nullable: true
+    unit: per unit
+    isAbout: []
+    valueReference: []
+    default: '1'
+    status: Input (optional)
+  - name: tap_ratio
+    description: Ratio of per unit voltages at each bus for tap changed.  Ignored
+      if type defined.
+    type: double precision
+    nullable: true
+    unit: per unit
+    isAbout: []
+    valueReference: []
+    default: '1'
+    status: Input (optional)
+  - name: tap_side
+    description: Defines if tap changer is modelled at the primary 0 side (usually
+      high-voltage) or the secondary 1 side (usually low voltage) (must be 0 or 1,
+      defaults to 0). Ignored if type defined.
+    type: bigint
+    nullable: true
+    unit: none
+    isAbout: []
+    valueReference: []
+    default: '0'
+    status: Input (optional)
+  - name: tap_position
+    description: If the transformer has a type, determines position relative to the
+      neutral tap position.
+    type: bigint
+    nullable: true
+    unit: none
+    isAbout: []
+    valueReference: []
+    default: '0'
+    status: Input (optional)
+  - name: phase_shift
+    description: Voltage phase angle shift.  Ignored if type defined.
+    type: double precision
+    nullable: true
+    unit: Degrees
+    isAbout: []
+    valueReference: []
+    default: '0'
+    status: Input (optional)
+  - name: build_year
+    description: build year
+    type: bigint
+    nullable: true
+    unit: year
+    isAbout: []
+    valueReference: []
+    default: '0'
+    status: Input (optional)
+  - name: lifetime
+    description: lifetime
+    type: double precision
+    nullable: true
+    unit: years
+    isAbout: []
+    valueReference: []
+    default: inf
+    status: Input (optional)
+  - name: v_ang_min
+    description: Minimum voltage angle difference across the transformer. This is
+      a placeholder attribute and is not currently used by any PyPSA functions.
+    type: double precision
+    nullable: true
+    unit: Degrees
+    isAbout: []
+    valueReference: []
+    default: -inf
+    status: Input (optional)
+  - name: v_ang_max
+    description: Maximum voltage angle difference across the transformer. This is
+      a placeholder attribute and is not currently used by any PyPSA functions.
+    type: double precision
+    nullable: true
+    unit: Degrees
+    isAbout: []
+    valueReference: []
+    default: inf
+    status: Input (optional)
+  - name: capital_cost
+    description: Capital cost of extending s_nom by 1 MVA.
+    type: double precision
+    nullable: true
+    unit: currency/MVA
+    isAbout: []
+    valueReference: []
+    default: '0'
+    status: Input (optional)
+  - name: num_parallel
+    description: When "type" is set, this is the number of parallel transformers (can
+      also be fractional). If "type" is empty "" this value is ignored.
+    type: double precision
+    nullable: true
+    unit: none
+    isAbout: []
+    valueReference: []
+    default: '1'
+    status: Input (optional)
+  - name: geom
+    description: 'TODO: Description missing in YAML metadata'
+    type: geometry(MultiLineString,4326)
+    nullable: true
+    unit: none
+  - name: topo
+    description: 'TODO: Description missing in YAML metadata'
+    type: geometry(LineString,4326)
+    nullable: true
+    unit: none
+  primaryKey:
+  - scn_name
+  - trafo_id
+  foreignKeys: []
+dialect:
+  delimiter: ''
+  decimalSeparator: ''
+review:
+  path: ''
+  badge: ''

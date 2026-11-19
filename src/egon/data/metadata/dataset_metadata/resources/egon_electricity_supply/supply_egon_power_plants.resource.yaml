@@ -1,0 +1,307 @@
+name: supply.egon_power_plants
+'@id': null
+title: supply.egon_power_plants
+path: ''
+description: 'Database of powerplants '
+languages:
+- en-GB
+subject:
+- name: ''
+  '@id': null
+publicationDate: '2026-10-06'
+embargoPeriod:
+  start: ''
+  end: ''
+  isActive: false
+context:
+  homepage: https://ego-n.org/tools_data/
+spatial:
+  location:
+    address: ''
+    '@id': null
+    latitude: ''
+    longitude: ''
+  extent:
+    name: Germany
+    '@id': null
+    resolutionValue: ''
+    resolutionUnit: ''
+    boundingBox:
+    - 0
+    - 0
+    - 0
+    - 0
+    crs: ''
+temporal:
+  referenceDate: ''
+  timeseries:
+  - start: ''
+    end: ''
+    resolutionValue: ''
+    resolutionUnit: ''
+    alignment: ''
+    aggregationType: ''
+sources:
+- title: open-MaStR power unit registry
+  authors: []
+  description: 'Raw data download Marktstammdatenregister (MaStR) data using the webservice.
+    All data from the Marktstammdatenregister is included. There are duplicates included.
+    For further information read in the documentationg of the original data source:
+    https://www.marktstammdatenregister.de/MaStRHilfe/subpages/statistik.html'
+  publicationYear: null
+  path: https://zenodo.org/record/10480958
+  sourceLicenses:
+  - name: dl-by-de/2.0
+    title: Datenlizenz Deutschland – Namensnennung – Version 2.0
+    path: www.govdata.de/dl-de/by-2-0
+    instruction: "Jede Nutzung ist unter den Bedingungen dieser „Datenlizenz Deutschland\
+      \ - Namensnennung - Version 2.0 zulässig.\nDie bereitgestellten Daten und Metadaten\
+      \ dürfen für die kommerzielle und nicht kommerzielle Nutzung insbesondere:(1)\
+      \ vervielfältigt, ausgedruckt, präsentiert, verändert, bearbeitet sowie an Dritte\
+      \ übermittelt werden;\n (2) mit eigenen Daten und Daten Anderer zusammengeführt\
+      \ und zu selbständigen neuen Datensätzen verbunden werden;\n (3) in interne\
+      \ und externe Geschäftsprozesse, Produkte und Anwendungen in öffentlichen und\
+      \ nicht öffentlichen elektronischen Netzwerken eingebunden werden.\nBei der\
+      \ Nutzung ist sicherzustellen, dass folgende Angaben als Quellenvermerk enthalten\
+      \ sind:\n(1) Bezeichnung des Bereitstellers nach dessen Maßgabe,\n(2) der Vermerk\
+      \ Datenlizenz Deutschland – Namensnennung – Version 2.0 oder dl-de/by-2-0 mit\
+      \ Verweis auf den Lizenztext unter www.govdata.de/dl-de/by-2-0 sowie\n(3) einen\
+      \ Verweis auf den Datensatz (URI).Dies gilt nur soweit die datenhaltende Stelle\
+      \ die Angaben(1) bis (3) zum Quellenvermerk bereitstellt.\nVeränderungen, Bearbeitungen,\
+      \ neue Gestaltungen oder sonstige Abwandlungen sind im Quellenvermerk mit dem\
+      \ Hinweis zu versehen, dass die Daten geändert wurden."
+    attribution: © 2021 Bundesnetzagentur für Elektrizität, Gas, Telekommunikation,
+      Post und Eisenbahnen
+- title: ERA5 global reanalysis
+  authors: []
+  description: ERA5 is the fifth generation ECMWF reanalysis for the global climate
+    and weather for the past 4 to 7 decades. Currently data is available from 1950,
+    split into Climate Data Store entries for 1950-1978 (preliminary back extension)
+    and from 1979 onwards (final release plus timely updates, this page). ERA5 replaces
+    the ERA-Interim reanalysis. See the online ERA5 documentation (https://confluence.ecmwf.int/display/CKB/ERA5%3A+data+documentation#ERA5:datadocumentation-Dataupdatefrequency)
+    for more information.
+  publicationYear: null
+  path: https://confluence.ecmwf.int/display/CKB/ERA5%3A+data+documentation#ERA5:datadocumentation-Dataupdatefrequency
+  sourceLicenses:
+  - name: Licence to use Copernicus Products
+    title: Licence to use Copernicus Products
+    path: https://cds.climate.copernicus.eu/api/v2/terms/static/licence-to-use-copernicus-products.pdf
+    instruction: 'This Licence is free of charge, worldwide, non-exclusive, royalty
+      free and perpetual. Access to Copernicus Products is given for any purpose in
+      so far as it is lawful, whereas use may include, but is not limited to: reproduction;
+      distribution; communication to the public; adaptation, modification and combination
+      with other data and information; or any combination of the foregoing'
+    attribution: Copernicus Climate Change Service (C3S) Climate Data Store
+    copyrightStatement: null
+- title: Verwaltungsgebiete 1:250 000 (Ebenen)
+  authors: []
+  description: Der Datenbestand umfasst sämtliche Verwaltungseinheiten der hierarchischen
+    Verwaltungsebenen vom Staat bis zu den Gemeinden mit ihren Grenzen, statistischen
+    Schlüsselzahlen, Namen der Verwaltungseinheit sowie die spezifische Bezeichnung
+    der Verwaltungsebene des jeweiligen Landes.
+  publicationYear: null
+  path: https://daten.gdz.bkg.bund.de/produkte/vg/vg250_ebenen_0101/2020/vg250_01-01.geo84.shape.ebenen.zip
+  sourceLicenses:
+  - name: dl-by-de/2.0
+    title: Datenlizenz Deutschland – Namensnennung – Version 2.0
+    path: www.govdata.de/dl-de/by-2-0
+    instruction: "Jede Nutzung ist unter den Bedingungen dieser „Datenlizenz Deutschland\
+      \ - Namensnennung - Version 2.0 zulässig.\nDie bereitgestellten Daten und Metadaten\
+      \ dürfen für die kommerzielle und nicht kommerzielle Nutzung insbesondere:(1)\
+      \ vervielfältigt, ausgedruckt, präsentiert, verändert, bearbeitet sowie an Dritte\
+      \ übermittelt werden;\n (2) mit eigenen Daten und Daten Anderer zusammengeführt\
+      \ und zu selbständigen neuen Datensätzen verbunden werden;\n (3) in interne\
+      \ und externe Geschäftsprozesse, Produkte und Anwendungen in öffentlichen und\
+      \ nicht öffentlichen elektronischen Netzwerken eingebunden werden.\nBei der\
+      \ Nutzung ist sicherzustellen, dass folgende Angaben als Quellenvermerk enthalten\
+      \ sind:\n(1) Bezeichnung des Bereitstellers nach dessen Maßgabe,\n(2) der Vermerk\
+      \ Datenlizenz Deutschland – Namensnennung – Version 2.0 oder dl-de/by-2-0 mit\
+      \ Verweis auf den Lizenztext unter www.govdata.de/dl-de/by-2-0 sowie\n(3) einen\
+      \ Verweis auf den Datensatz (URI).Dies gilt nur soweit die datenhaltende Stelle\
+      \ die Angaben(1) bis (3) zum Quellenvermerk bereitstellt.\nVeränderungen, Bearbeitungen,\
+      \ neue Gestaltungen oder sonstige Abwandlungen sind im Quellenvermerk mit dem\
+      \ Hinweis zu versehen, dass die Daten geändert wurden."
+    attribution: © Bundesamt für Kartographie und Geodäsie 2020 (Daten verändert)
+    copyrightStatement: null
+- title: eGon-data
+  authors: []
+  description: Workflow to download, process and generate data setssuitable for the
+    further research conducted in the project eGon (https://ego-n.org/)
+  publicationYear: null
+  path: https://github.com/openego/eGon-data
+  sourceLicenses:
+  - name: AGPL-3.0 License
+    title: GNU Affero General Public License v3.0
+    path: https://www.gnu.org/licenses/agpl-3.0.de.html
+    instruction: Permissions of this strongest copyleft license areconditioned on
+      making available complete source code of licensed works and modifications, which
+      include larger works using a licensedwork, under the same license. Copyright
+      and license notices must bepreserved. Contributors provide an express grant
+      of patent rights.When a modified version is used to provide a service over a
+      network,the complete source code of the modified version must be made available.
+    attribution: © Jonathan Amme, Clara Büttner, Ilka Cußmann, Julian Endres, Carlos
+      Epia, Stephan Günther, Ulf Müller, Amélia Nadal, Guido Pleßmann, Francesco Witte
+    copyrightStatement: null
+- title: Netzentwicklungsplan Strom 2035, Version 2021, erster Entwurf
+  authors: []
+  description: Die vier deutschen Übertragungsnetzbetreiber zeigen mit diesem ersten
+    Entwurf des Netzentwicklungsplans 2035, Version 2021, den benötigten Netzausbau
+    für die nächsten Jahre auf. Der NEP-Bericht beschreibt keine konkreten Trassenverläufe
+    von Übertragungsleitungen, sondern er dokumentiert den notwendigen Übertragungsbedarf
+    zwischen Netzknoten. Das heißt, es werden Anfangs- und Endpunkte von zukünftigen
+    Leitungsverbindungen definiert sowie konkrete Empfehlungen für den Aus- und Neubau
+    der Übertragungsnetze an Land und auf See in Deutschland gemäß den Detailanforderungen
+    im § 12 EnWG gegeben.
+  publicationYear: null
+  path: https://zenodo.org/record/5743452#.YbCoz7so8go
+  sourceLicenses:
+  - name: CC-BY-4.0
+    title: Creative Commons Attribution 4.0 International
+    path: https://creativecommons.org/licenses/by/4.0/legalcode
+    instruction: 'You are free: To Share, To Create, To Adapt; As long as you: Attribute.'
+    attribution: © Übertragungsnetzbetreiber
+    copyrightStatement: null
+- title: Data bundle for egon-data
+  authors: []
+  description: Zenodo repository to provide several different input data sets for
+    eGon-data
+  publicationYear: null
+  path: https://zenodo.org/record/10226009
+  sourceLicenses:
+  - name: CC-BY-4.0
+    title: Creative Commons Attribution 4.0 International
+    path: https://creativecommons.org/licenses/by/4.0/legalcode
+    instruction: 'You are free: To Share, To Create, To Adapt; As long as you: Attribute.'
+    attribution: © eGon development team
+    copyrightStatement: null
+licenses:
+- name: CC-BY-4.0
+  title: Creative Commons Attribution 4.0 International
+  path: https://creativecommons.org/licenses/by/4.0/legalcode
+  instruction: 'You are free: To Share, To Create, To Adapt; As long as you: Attribute.'
+  attribution: eGon developers
+  copyrightStatement: null
+contributors:
+- title: Ilka Cußmann
+  path: null
+  organization: null
+  roles:
+  - ''
+  date: null
+  object: ''
+  comment: Added hydro and biomass plants
+- title: Clara Büttner
+  path: null
+  organization: null
+  roles:
+  - ''
+  date: null
+  object: ''
+  comment: Added table structure
+- title: Katharina Esterl
+  path: null
+  organization: null
+  roles:
+  - ''
+  date: null
+  object: ''
+  comment: Add pv ground mounted
+- title: Carlos Epia
+  path: null
+  organization: null
+  roles:
+  - ''
+  date: null
+  object: ''
+  comment: Added wind power plants
+- title: eGon-data metadata migration
+  path: https://github.com/openego/eGon-data
+  roles:
+  - dataCurator
+  organization: null
+  date: '2026-10-20'
+  object: metadata
+  comment: Migrated from the OEMetadata v1.4 table comment of a full eGon-data run
+    to OEMetadata v2 with OMI.
+type: Table
+format: PostgreSQL
+encoding: UTF-8
+schema:
+  fields:
+  - name: id
+    description: Unique identifier for power plants
+    type: bigint
+    nullable: false
+    unit: ''
+    isAbout: []
+    valueReference: []
+  - name: sources
+    description: sources of power plants
+    type: jsonb
+    nullable: true
+    unit: ''
+    isAbout: []
+    valueReference: []
+  - name: source_id
+    description: 'Unique Identifier of sources '
+    type: jsonb
+    nullable: true
+    unit: ''
+    isAbout: []
+    valueReference: []
+  - name: carrier
+    description: Energy carrier such as biomass, wind_onshore
+    type: character varying
+    nullable: true
+    unit: ''
+    isAbout: []
+    valueReference: []
+  - name: el_capacity
+    description: Installed electrical capacity in MW
+    type: double precision
+    nullable: true
+    unit: MW
+    isAbout: []
+    valueReference: []
+  - name: bus_id
+    description: bus ID where the power plant is connected
+    type: integer
+    nullable: true
+    unit: ''
+    isAbout: []
+    valueReference: []
+  - name: voltage_level
+    description: voltage level of power plant
+    type: integer
+    nullable: true
+    unit: ''
+    isAbout: []
+    valueReference: []
+  - name: weather_cell_id
+    description: Unique identifier of the corresponding weather cell
+    type: integer
+    nullable: true
+    unit: ''
+    isAbout: []
+    valueReference: []
+  - name: scenario
+    description: eGon scenario, for example eGon235 or eGon100RE
+    type: character varying
+    nullable: true
+    unit: ''
+    isAbout: []
+    valueReference: []
+  - name: geom
+    description: geometry of the power plant
+    type: geometry(Point,4326)
+    nullable: true
+    unit: none
+  primaryKey:
+  - id
+  foreignKeys: []
+dialect:
+  delimiter: ''
+  decimalSeparator: ''
+review:
+  path: ''
+  badge: ''

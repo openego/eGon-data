@@ -1,0 +1,6 @@
+version: OEMetadata-2.0
+dataset:
+  name: 'egon_electricity_neighbors'
+  title: 'eGon-data — electricity neighbors'
+  description: 'Electricity neighbors datasets produced by the eGon-data pipeline (electricity_neighbors task group).'
+  '@id': null

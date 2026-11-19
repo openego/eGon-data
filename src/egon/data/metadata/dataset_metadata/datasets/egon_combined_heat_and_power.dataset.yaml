@@ -1,0 +1,6 @@
+version: OEMetadata-2.0
+dataset:
+  name: 'egon_combined_heat_and_power'
+  title: 'eGon-data — combined heat and power'
+  description: 'Combined heat and power datasets produced by the eGon-data pipeline (combined_heat_and_power task group).'
+  '@id': null

@@ -1,8 +1,4 @@
-from datetime import date, datetime
-from pathlib import Path
-import json
-import os
-import time
+from datetime import datetime
 import warnings
 
 from sqlalchemy import ARRAY, Column, Float, Integer, String, Text
@@ -26,12 +22,6 @@ from egon.data.datasets.heat_demand_timeseries.daily import (
 from egon.data.datasets.heat_demand_timeseries.idp_pool import create, select
 from egon.data.datasets.heat_demand_timeseries.service_sector import (
     CTS_demand_scale,
-)
-from egon.data.metadata import (
-    context,
-    license_egon_data_odbl,
-    meta_metadata,
-    sources,
 )
 
 Base = declarative_base()
@@ -1001,84 +991,6 @@ def export_etrago_cts_heat_profiles():
         )
 
 
-def metadata():
-    fields = [
-        {
-            "description": "Index of corresponding district heating area",
-            "name": "area_id",
-            "type": "integer",
-            "unit": "none",
-        },
-        {
-            "description": "Name of scenario",
-            "name": "scenario",
-            "type": "str",
-            "unit": "none",
-        },
-        {
-            "description": "Heat demand time series",
-            "name": "dist_aggregated_mw",
-            "type": "array of floats",
-            "unit": "MW",
-        },
-    ]
-
-    meta_district = {
-        "name": f"{HeatTimeSeries.targets.tables['district_heating_timeseries']}",
-        "title": "eGon heat demand time series for district heating grids",
-        "id": "WILL_BE_SET_AT_PUBLICATION",
-        "description": "Heat demand time series for district heating grids",
-        "language": ["EN"],
-        "publicationDate": date.today().isoformat(),
-        "context": context(),
-        "spatial": {
-            "location": None,
-            "extent": "Germany",
-            "resolution": None,
-        },
-        "sources": [
-            sources()["era5"],
-            sources()["vg250"],
-            sources()["egon-data"],
-            sources()["egon-data_bundle"],
-            sources()["peta"],
-        ],
-        "licenses": [license_egon_data_odbl()],
-        "contributors": [
-            {
-                "title": "Clara Büttner",
-                "email": "http://github.com/ClaraBuettner",
-                "date": time.strftime("%Y-%m-%d"),
-                "object": None,
-                "comment": "Imported data",
-            },
-        ],
-        "resources": [
-            {
-                "profile": "tabular-data-resource",
-                "name": f"{HeatTimeSeries.targets.tables['district_heating_timeseries']}",
-                "path": None,
-                "format": "PostgreSQL",
-                "encoding": "UTF-8",
-                "schema": {
-                    "fields": fields,
-                    "primaryKey": ["index"],
-                    "foreignKeys": [],
-                },
-                "dialect": {"delimiter": None, "decimalSeparator": "."},
-            }
-        ],
-        "metaMetadata": meta_metadata(),
-    }
-
-    # Add metadata as a comment to the table
-    db.submit_comment(
-        "'" + json.dumps(meta_district) + "'",
-        EgonTimeseriesDistrictHeating.__table__.schema,
-        EgonTimeseriesDistrictHeating.__table__.name,
-    )
-
-
 class HeatTimeSeries(Dataset):
     """
     Chooses heat demand profiles for each residential and CTS building
@@ -1160,6 +1072,13 @@ class HeatTimeSeries(Dataset):
             "etrago_timeseries_individual_heating": "demand.egon_etrago_timeseries_individual_heating",
             "individual_heating_peak_loads": "demand.egon_individual_heating_peak_loads",
             "etrago_heat_cts": "demand.egon_etrago_heat_cts",
+            # Intermediate tables produced by this dataset's own tasks and
+            # consumed by its later tasks (hence they also appear in
+            # `sources` above).
+            "climate_zones": "boundaries.egon_map_zensus_climate_zones",
+            "daily_heat_demand_per_climate_zone": "demand.egon_daily_heat_demand_per_climate_zone",  # noqa: E501
+            "selected_profiles": "demand.egon_heat_timeseries_selected_profiles",  # noqa: E501
+            "idp_pool": "demand.egon_heat_idp_pool",
         }
     )
 
@@ -1177,6 +1096,5 @@ class HeatTimeSeries(Dataset):
                 },
                 select,
                 district_heating,
-                metadata,
             ),
         )

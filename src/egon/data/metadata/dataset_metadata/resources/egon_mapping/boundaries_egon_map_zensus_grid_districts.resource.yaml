@@ -1,0 +1,148 @@
+'@id': ''
+name: boundaries.egon_map_zensus_grid_districts
+topics: []
+title: eGon - Mapping of Zensus 2011 cells to MV grid districts
+path: WILL_BE_SET_AT_PUBLICATION
+description: Assigns each 100 m × 100 m (1 ha) Zensus 2011 grid cell of society.destatis_zensus_population_per_ha
+  to the medium-voltage (MV) grid district of grid.egon_mv_grid_district its centroid
+  lies in (spatial join of the cell centroid geom_point with the district polygons,
+  EPSG:3035). Cells whose centroid lies in no grid district are not included.
+languages: []
+subject:
+- name: ''
+  '@id': ''
+keywords: []
+publicationDate: ''
+embargoPeriod:
+  start: ''
+  end: ''
+  isActive: false
+context:
+  title: ''
+  homepage: ''
+  documentation: ''
+  sourceCode: ''
+  publisher: ''
+  publisherLogo: ''
+  contact: ''
+  fundingAgency: ''
+  fundingAgencyLogo: ''
+  grantNo: ''
+spatial:
+  location:
+    address: ''
+    '@id': null
+    latitude: ''
+    longitude: ''
+  extent:
+    name: Germany
+    '@id': null
+    resolutionValue: '1'
+    resolutionUnit: ha
+    crs: EPSG:3035
+temporal:
+  referenceDate: '2011-05-09'
+  timeseries:
+  - start: ''
+    end: ''
+    resolutionValue: ''
+    resolutionUnit: ''
+    alignment: ''
+    aggregationType: ''
+sources:
+- title: Statistisches Bundesamt (Destatis) - Ergebnisse des Zensus 2011 zum Download
+  authors: []
+  description: Als Download bieten wir Ihnen auf dieser Seite zusätzlich zur Zensusdatenbank
+    CSV- und teilweise Excel-Tabellen mit umfassenden Personen-, Haushalts- und Familien-
+    sowie Gebäude- und Wohnungsmerkmalen. Die Ergebnisse liegen auf Bundes-, Länder-,
+    Kreis- und Gemeindeebene vor. Außerdem sind einzelne Ergebnisse für Gitterzellen
+    verfügbar.
+  publicationYear: null
+  path: https://www.zensus2011.de/DE/Home/Aktuelles/DemografischeGrunddaten.html
+  sourceLicenses:
+  - name: dl-by-de/2.0
+    title: Datenlizenz Deutschland – Namensnennung – Version 2.0
+    path: www.govdata.de/dl-de/by-2-0
+    instruction: "Jede Nutzung ist unter den Bedingungen dieser „Datenlizenz Deutschland\
+      \ - Namensnennung - Version 2.0 zulässig.\nDie bereitgestellten Daten und Metadaten\
+      \ dürfen für die kommerzielle und nicht kommerzielle Nutzung insbesondere:(1)\
+      \ vervielfältigt, ausgedruckt, präsentiert, verändert, bearbeitet sowie an Dritte\
+      \ übermittelt werden;\n (2) mit eigenen Daten und Daten Anderer zusammengeführt\
+      \ und zu selbständigen neuen Datensätzen verbunden werden;\n (3) in interne\
+      \ und externe Geschäftsprozesse, Produkte und Anwendungen in öffentlichen und\
+      \ nicht öffentlichen elektronischen Netzwerken eingebunden werden.\nBei der\
+      \ Nutzung ist sicherzustellen, dass folgende Angaben als Quellenvermerk enthalten\
+      \ sind:\n(1) Bezeichnung des Bereitstellers nach dessen Maßgabe,\n(2) der Vermerk\
+      \ Datenlizenz Deutschland – Namensnennung – Version 2.0 oder dl-de/by-2-0 mit\
+      \ Verweis auf den Lizenztext unter www.govdata.de/dl-de/by-2-0 sowie\n(3) einen\
+      \ Verweis auf den Datensatz (URI).Dies gilt nur soweit die datenhaltende Stelle\
+      \ die Angaben(1) bis (3) zum Quellenvermerk bereitstellt.\nVeränderungen, Bearbeitungen,\
+      \ neue Gestaltungen oder sonstige Abwandlungen sind im Quellenvermerk mit dem\
+      \ Hinweis zu versehen, dass die Daten geändert wurden."
+    attribution: © Statistische Ämter des Bundes und der Länder 2014
+    copyrightStatement: null
+- title: 'Internal table: grid.egon_mv_grid_district'
+  description: Derived from the internal table 'grid.egon_mv_grid_district'. See that
+    table's own metadata for full provenance.
+  path: ''
+  authors: []
+  publicationYear: null
+  sourceLicenses: []
+- title: 'Internal table: society.destatis_zensus_population_per_ha'
+  description: Derived from the internal table 'society.destatis_zensus_population_per_ha'.
+    See that table's own metadata for full provenance.
+  path: ''
+  authors: []
+  publicationYear: null
+  sourceLicenses: []
+licenses:
+- name: ODbL-1.0
+  title: Open Data Commons Open Database License 1.0
+  path: https://opendatacommons.org/licenses/odbl/1.0/
+  instruction: 'You are free: To Share, To Create, To Adapt; As long as you: Attribute,
+    Share-Alike, Keep open!'
+  attribution: © Statistische Ämter des Bundes und der Länder 2014; © Reiner Lemoine
+    Institut, © Bundesamt für Kartographie und Geodäsie 2020 (Daten verändert), ©
+    eGon-data developers
+  copyrightStatement: null
+contributors:
+- title: eGon-data developers
+  path: https://github.com/openego/eGon-data
+  organization: null
+  roles:
+  - dataCurator
+  date: '2026-10-20'
+  object: metadata
+  comment: Created OEMetadata v2 metadata from the producing code (Zensus 2011 import)
+    and the census documentation.
+type: Table
+format: PostgreSQL
+encoding: UTF-8
+schema:
+  primaryKey: []
+  foreignKeys: []
+  fields:
+  - name: index
+    description: Technical row index written by pandas (0-based row number of the
+      cell in the query on society.destatis_zensus_population_per_ha); not a stable
+      identifier, use zensus_population_id.
+    type: bigint
+    unit: none
+    nullable: true
+  - name: zensus_population_id
+    description: Census cell id; references society.destatis_zensus_population_per_ha.id.
+    type: bigint
+    unit: none
+    nullable: true
+  - name: bus_id
+    description: Id of the MV grid district (bus of its HV/MV substation) containing
+      the cell centroid; references grid.egon_mv_grid_district.bus_id.
+    type: bigint
+    unit: none
+    nullable: true
+dialect:
+  delimiter: ''
+  decimalSeparator: .
+review:
+  path: ''
+  badge: ''

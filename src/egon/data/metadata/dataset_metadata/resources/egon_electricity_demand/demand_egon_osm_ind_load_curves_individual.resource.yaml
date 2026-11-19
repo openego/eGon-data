@@ -1,0 +1,203 @@
+'@id': ''
+name: demand.egon_osm_ind_load_curves_individual
+topics: []
+title: 'TODO: Add title for demand.egon_osm_ind_load_curves_individual'
+path: ''
+description: 'TODO: Add description'
+languages: []
+subject:
+- name: ''
+  '@id': ''
+keywords: []
+publicationDate: ''
+embargoPeriod:
+  start: ''
+  end: ''
+  isActive: false
+context:
+  title: ''
+  homepage: ''
+  documentation: ''
+  sourceCode: ''
+  publisher: ''
+  publisherLogo: ''
+  contact: ''
+  fundingAgency: ''
+  fundingAgencyLogo: ''
+  grantNo: ''
+spatial:
+  location:
+    address: ''
+    '@id': ''
+    latitude: ''
+    longitude: ''
+  extent:
+    name: ''
+    '@id': ''
+    resolutionValue: ''
+    resolutionUnit: ''
+    crs: ''
+temporal:
+  referenceDate: ''
+  timeseries:
+  - start: ''
+    end: ''
+    resolutionValue: ''
+    resolutionUnit: ''
+    alignment: ''
+    aggregationType: ''
+sources:
+- title: ''
+  authors: []
+  description: ''
+  publicationYear: ''
+  path: ''
+  sourceLicenses:
+  - name: ''
+    title: ''
+    path: ''
+    instruction: ''
+    attribution: ''
+    copyrightStatement: ''
+- title: 'Internal table: boundaries.vg250_krs'
+  description: Derived from the internal table 'boundaries.vg250_krs'. See that table's
+    own metadata for full provenance.
+  path: ''
+  authors: []
+  publicationYear: null
+  sourceLicenses: []
+- title: 'Internal table: demand.egon_demandregio_cts_ind'
+  description: Derived from the internal table 'demand.egon_demandregio_cts_ind'.
+    See that table's own metadata for full provenance.
+  path: ''
+  authors: []
+  publicationYear: null
+  sourceLicenses: []
+- title: 'Internal table: demand.egon_demandregio_osm_ind_electricity'
+  description: Derived from the internal table 'demand.egon_demandregio_osm_ind_electricity'.
+    See that table's own metadata for full provenance.
+  path: ''
+  authors: []
+  publicationYear: null
+  sourceLicenses: []
+- title: 'Internal table: demand.egon_demandregio_sites_ind_electricity'
+  description: Derived from the internal table 'demand.egon_demandregio_sites_ind_electricity'.
+    See that table's own metadata for full provenance.
+  path: ''
+  authors: []
+  publicationYear: null
+  sourceLicenses: []
+- title: 'Internal table: demand.egon_demandregio_timeseries_cts_ind'
+  description: Derived from the internal table 'demand.egon_demandregio_timeseries_cts_ind'.
+    See that table's own metadata for full provenance.
+  path: ''
+  authors: []
+  publicationYear: null
+  sourceLicenses: []
+- title: 'Internal table: demand.egon_demandregio_wz'
+  description: Derived from the internal table 'demand.egon_demandregio_wz'. See that
+    table's own metadata for full provenance.
+  path: ''
+  authors: []
+  publicationYear: null
+  sourceLicenses: []
+- title: 'Internal table: demand.egon_industrial_sites'
+  description: Derived from the internal table 'demand.egon_industrial_sites'. See
+    that table's own metadata for full provenance.
+  path: ''
+  authors: []
+  publicationYear: null
+  sourceLicenses: []
+- title: 'Internal table: grid.egon_ehv_substation_voronoi'
+  description: Derived from the internal table 'grid.egon_ehv_substation_voronoi'.
+    See that table's own metadata for full provenance.
+  path: ''
+  authors: []
+  publicationYear: null
+  sourceLicenses: []
+- title: 'Internal table: grid.egon_hvmv_substation'
+  description: Derived from the internal table 'grid.egon_hvmv_substation'. See that
+    table's own metadata for full provenance.
+  path: ''
+  authors: []
+  publicationYear: null
+  sourceLicenses: []
+- title: 'Internal table: grid.egon_mv_grid_district'
+  description: Derived from the internal table 'grid.egon_mv_grid_district'. See that
+    table's own metadata for full provenance.
+  path: ''
+  authors: []
+  publicationYear: null
+  sourceLicenses: []
+- title: 'Internal table: openstreetmap.osm_landuse'
+  description: Derived from the internal table 'openstreetmap.osm_landuse'. See that
+    table's own metadata for full provenance.
+  path: ''
+  authors: []
+  publicationYear: null
+  sourceLicenses: []
+licenses:
+- name: ''
+  title: ''
+  path: ''
+  instruction: ''
+  attribution: ''
+  copyrightStatement: ''
+contributors:
+- title: ''
+  path: ''
+  organization: ''
+  roles: []
+  date: ''
+  object: ''
+  comment: ''
+type: ''
+format: ''
+encoding: ''
+schema:
+  primaryKey:
+  - osm_id
+  - scn_name
+  foreignKeys: []
+  fields:
+  - name: osm_id
+    description: 'TODO: Add description'
+    type: integer
+    unit: none
+    nullable: false
+  - name: bus_id
+    description: 'TODO: Add description'
+    type: integer
+    unit: none
+    nullable: true
+  - name: scn_name
+    description: 'TODO: Add description'
+    type: character varying
+    unit: none
+    nullable: false
+  - name: p_set
+    description: 'TODO: Add description'
+    type: double precision[]
+    unit: none
+    nullable: true
+  - name: peak_load
+    description: 'TODO: Add description'
+    type: double precision
+    unit: none
+    nullable: true
+  - name: demand
+    description: 'TODO: Add description'
+    type: double precision
+    unit: none
+    nullable: true
+  - name: voltage_level
+    description: 'TODO: Add description'
+    type: integer
+    unit: none
+    nullable: true
+dialect:
+  delimiter: ''
+  decimalSeparator: ''
+review:
+  path: ''
+  badge: ''

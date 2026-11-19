@@ -1,0 +1,6 @@
+version: OEMetadata-2.0
+dataset:
+  name: 'egon_mapping'
+  title: 'eGon-data — mapping'
+  description: 'Mapping datasets produced by the eGon-data pipeline (mapping task group).'
+  '@id': null

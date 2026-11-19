@@ -1,0 +1,146 @@
+name: grid.egon_emob_charging_infrastructure
+'@id': null
+title: eGon Electromobility Charging Infrastructure
+path: WILL_BE_SET_AT_PUBLICATION
+description: Identified sites for charging infrastructure for motorized individual
+  travel using TracBEV
+languages:
+- en-US
+subject:
+- name: ''
+  '@id': null
+keywords:
+- mit
+- charging
+- infrastructure
+- electromobility
+- tracbev
+publicationDate: '2026-10-04'
+embargoPeriod:
+  start: ''
+  end: ''
+  isActive: false
+spatial:
+  location:
+    address: null
+    '@id': null
+    latitude: ''
+    longitude: ''
+  extent:
+    name: Germany
+    '@id': null
+    resolutionValue: '1'
+    resolutionUnit: m
+    boundingBox:
+    - 0
+    - 0
+    - 0
+    - 0
+    crs: ''
+temporal:
+  referenceDate: '2022-04-21'
+  timeseries:
+  - start: null
+    end: null
+    resolutionValue: ''
+    resolutionUnit: ''
+    alignment: null
+    aggregationType: null
+sources:
+- title: TracBEV input data
+  authors: []
+  description: This data set is used with the software tool TracBEV to calculate locations
+    for charging infrastructure from SimBEV results.
+  publicationYear: null
+  path: https://zenodo.org/record/6466480/files/data.zip?download=1
+  sourceLicenses:
+  - name: ODbL-1.0
+    title: Open Data Commons Open Database License 1.0
+    path: https://opendatacommons.org/licenses/odbl/1.0/index.html
+    instruction: 'You are free: To Share, To Create, To Adapt; As long as you: Attribute,
+      Share-Alike, Keep open!'
+    attribution: © Schiel, Moritz
+    copyrightStatement: null
+licenses:
+- name: ODbL-1.0
+  title: Open Data Commons Open Database License 1.0
+  path: https://opendatacommons.org/licenses/odbl/1.0/index.html
+  instruction: 'You are free: To Share, To Create, To Adapt; As long as you: Attribute,
+    Share-Alike, Keep open!'
+  attribution: © eGon development team
+  copyrightStatement: null
+contributors:
+- title: Kilian Helfenbein
+  path: null
+  organization: null
+  roles:
+  - ''
+  date: '2023-03-14'
+  object: metadata
+  comment: Add metadata to dataset.
+- title: Kilian Helfenbein
+  path: null
+  organization: null
+  roles:
+  - ''
+  date: null
+  object: dataset
+  comment: Add workflow to generate dataset.
+- title: eGon-data metadata migration
+  path: https://github.com/openego/eGon-data
+  roles:
+  - dataCurator
+  organization: null
+  date: '2026-10-20'
+  object: metadata
+  comment: Migrated from the OEMetadata v1.4 table comment of a full eGon-data run
+    to OEMetadata v2 with OMI.
+type: Table
+format: PostgreSQL
+encoding: UTF-8
+schema:
+  fields:
+  - name: cp_id
+    description: ''
+    type: integer
+    nullable: false
+    unit: none
+    isAbout: []
+    valueReference: []
+  - name: mv_grid_id
+    description: ''
+    type: integer
+    nullable: true
+    unit: none
+    isAbout: []
+    valueReference: []
+  - name: use_case
+    description: ''
+    type: character varying
+    nullable: true
+    unit: none
+    isAbout: []
+    valueReference: []
+  - name: weight
+    description: ''
+    type: double precision
+    nullable: true
+    unit: none
+    isAbout: []
+    valueReference: []
+  - name: geometry
+    description: ''
+    type: geometry(Geometry,3035)
+    nullable: true
+    unit: none
+    isAbout: []
+    valueReference: []
+  primaryKey:
+  - cp_id
+  foreignKeys: []
+dialect:
+  delimiter: ''
+  decimalSeparator: ''
+review:
+  path: ''
+  badge: ''

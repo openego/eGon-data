@@ -1,0 +1,23 @@
+context:
+  grantNo: 03EI1002
+  fundingAgency: Bundesministerium für Wirtschaft und Energie
+  sourceCode: https://github.com/openego/eGon-data
+  documentation: https://egon-data.readthedocs.io/en/latest/
+  publisherLogo: https://ego-n.org/images/eGon_logo_noborder_transbg.svg
+  homepage: https://ego-n.org/
+  contact: https://ego-n.org/partners/
+  title: ''
+  fundingAgencyLogo: https://www.innovation-beratung-foerderung.de/INNO/Redaktion/DE/Bilder/Titelbilder/titel_foerderlogo_bmwi.jpg?__blob=normal&v=3
+  publisher: ''
+licenses:
+- name: ODbL-1.0
+  title: Open Data Commons Open Database License 1.0
+  path: https://opendatacommons.org/licenses/odbl/1.0/index.html
+  instruction: 'You are free: To Share, To Create, To Adapt; As long as you: Attribute,
+    Share-Alike, Keep open!'
+  attribution: © eGon development team
+  copyrightStatement: null
+topics:
+- model_draft
+keywords:
+- egon-data-v2

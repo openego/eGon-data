@@ -1,0 +1,149 @@
+'@id': ''
+name: society.egon_demandregio_household
+topics: []
+title: 'TODO: Add title for society.egon_demandregio_household'
+path: ''
+description: 'TODO: Add description'
+languages: []
+subject:
+- name: ''
+  '@id': ''
+keywords: []
+publicationDate: ''
+embargoPeriod:
+  start: ''
+  end: ''
+  isActive: false
+context:
+  title: ''
+  homepage: ''
+  documentation: ''
+  sourceCode: ''
+  publisher: ''
+  publisherLogo: ''
+  contact: ''
+  fundingAgency: ''
+  fundingAgencyLogo: ''
+  grantNo: ''
+spatial:
+  location:
+    address: ''
+    '@id': ''
+    latitude: ''
+    longitude: ''
+  extent:
+    name: ''
+    '@id': ''
+    resolutionValue: ''
+    resolutionUnit: ''
+    crs: ''
+temporal:
+  referenceDate: ''
+  timeseries:
+  - start: ''
+    end: ''
+    resolutionValue: ''
+    resolutionUnit: ''
+    alignment: ''
+    aggregationType: ''
+sources:
+- title: ''
+  authors: []
+  description: ''
+  publicationYear: ''
+  path: ''
+  sourceLicenses:
+  - name: ''
+    title: ''
+    path: ''
+    instruction: ''
+    attribution: ''
+    copyrightStatement: ''
+- title: 'Internal table: boundaries.vg250_krs'
+  description: Derived from the internal table 'boundaries.vg250_krs'. See that table's
+    own metadata for full provenance.
+  path: ''
+  authors: []
+  publicationYear: null
+  sourceLicenses: []
+- title: cache_zip
+  description: ''
+  path: demand_regio_backup/cache.zip
+  authors: []
+  publicationYear: null
+  sourceLicenses: []
+- title: dbdump_zip
+  description: ''
+  path: demand_regio_backup/status2019-egon-demandregio-cts-ind.zip
+  authors: []
+  publicationYear: null
+  sourceLicenses: []
+- title: new_consumers_2035
+  description: ''
+  path: NEP/new_largescale_consumers_nep.csv
+  authors: []
+  publicationYear: null
+  sourceLicenses: []
+- title: wz_cts
+  description: ''
+  path: WZ_definition/CTS_WZ_definition.csv
+  authors: []
+  publicationYear: null
+  sourceLicenses: []
+- title: wz_industry
+  description: ''
+  path: WZ_definition/ind_WZ_definition.csv
+  authors: []
+  publicationYear: null
+  sourceLicenses: []
+licenses:
+- name: ''
+  title: ''
+  path: ''
+  instruction: ''
+  attribution: ''
+  copyrightStatement: ''
+contributors:
+- title: ''
+  path: ''
+  organization: ''
+  roles: []
+  date: ''
+  object: ''
+  comment: ''
+type: ''
+format: ''
+encoding: ''
+schema:
+  primaryKey:
+  - nuts3
+  - hh_size
+  - year
+  foreignKeys: []
+  fields:
+  - name: nuts3
+    description: 'TODO: Add description'
+    type: character varying(5)
+    unit: none
+    nullable: false
+  - name: hh_size
+    description: 'TODO: Add description'
+    type: integer
+    unit: none
+    nullable: false
+  - name: year
+    description: 'TODO: Add description'
+    type: integer
+    unit: none
+    nullable: false
+  - name: households
+    description: 'TODO: Add description'
+    type: integer
+    unit: none
+    nullable: true
+dialect:
+  delimiter: ''
+  decimalSeparator: ''
+review:
+  path: ''
+  badge: ''
