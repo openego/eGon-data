@@ -54,8 +54,10 @@ def import_osm_data():
                 ["git", "status"], cwd=(osmtgmod_repos).absolute()
             )
             if status.startswith(
-                b"Auf Branch features/egon"
-            ) or status.startswith(b"On branch features/egon"):
+                b"Auf Branch fixes/#19-grid-reproducibility"
+            ) or status.startswith(
+                b"On branch fixes/#19-grid-reproducibility"
+            ):
                 logger.info("OsmTGmod cloned and right branch checked out.")
 
             else:
@@ -63,7 +65,7 @@ def import_osm_data():
                     [
                         "git",
                         "checkout",
-                        "features/egon",
+                        "fixes/#19-grid-reproducibility",
                     ]
                 )
         except subprocess.CalledProcessError:
@@ -74,7 +76,7 @@ def import_osm_data():
                     "clone",
                     "--single-branch",
                     "--branch",
-                    "features/egon",
+                    "fixes/#19-grid-reproducibility",
                     "https://github.com/openego/osmTGmod.git",
                 ]
             )
@@ -86,7 +88,7 @@ def import_osm_data():
                 "clone",
                 "--single-branch",
                 "--branch",
-                "features/egon",
+                "fixes/#19-grid-reproducibility",
                 "https://github.com/openego/osmTGmod.git",
             ]
         )
