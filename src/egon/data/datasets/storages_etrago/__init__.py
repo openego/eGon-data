@@ -9,6 +9,16 @@ import pandas as pd
 from egon.data import config, db
 from egon.data.datasets import Dataset, DatasetSources, DatasetTargets
 from egon.data.datasets.scenario_parameters import get_sector_parameters
+from egon.data.validation.rules.custom.sanity import (
+    StorageTableCapacity,
+    StorageTableCapitalCost,
+    StorageTableEfficiency,
+    StorageTableSubstations,
+)
+
+#: Scenarios the validation rules are built for; a scenario the run does
+#: not produce is skipped by the rules themselves.
+SCENARIOS = ["status2024", "reGon2037", "reGon2045"]
 
 
 class StorageEtrago(Dataset):
@@ -63,6 +73,23 @@ class StorageEtrago(Dataset):
             version=self.version,
             dependencies=dependencies,
             tasks=(insert_PHES, extendable_batteries),
+            validation={
+                "data_quality": [
+                    rule(
+                        table="grid.egon_etrago_storage",
+                        rule_id=f"SANITY_STORAGE_ETRAGO_{check}.{scn}",
+                        scenario=scn,
+                    )
+                    for check, rule in [
+                        ("CAPACITY", StorageTableCapacity),
+                        ("EFFICIENCY", StorageTableEfficiency),
+                        ("CAPITAL_COST", StorageTableCapitalCost),
+                        ("SUBSTATIONS", StorageTableSubstations),
+                    ]
+                    for scn in SCENARIOS
+                ]
+            },
+            proceed_on_validation_failure=True,
         )
 
 

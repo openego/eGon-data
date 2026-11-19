@@ -232,6 +232,14 @@ Bug Fixes
   pumped hydro uses ``mastr_id`` for the reGon path, and the CHP flag is
   normalized to ``Ja``/``Nein`` on import
   `#1510 <https://github.com/openego/eGon-data/issues/1510>`_
+* Fix 123 TWh of household demand missing from ``grid.egon_etrago_load``:
+  ``ElectricalLoadEtrago`` now depends on the ``HouseholdDemands`` dataset,
+  not a bare task, and ``demands_per_bus`` raises on an empty source
+  `#1527 <https://github.com/openego/eGon-data/issues/1527>`_
+* Fix household profiles ignoring the scenario: fixed at 123.9 TWh for every
+  year, they are now scaled in ``mv_grid_district_HH_electricity_load`` to
+  ``demand.egon_demandregio_hh`` (110.5 TWh status2024, 83.0 TWh reGon2037)
+  `#1527 <https://github.com/openego/eGon-data/issues/1527>`_
 * Align timeseries of other calendar years to the weather year 2011, so
   that weekends fall on the same model days in all sectors: foreign
   electricity demands from TYNDP (2018 calendar) and ENTSO-E (status
@@ -241,10 +249,6 @@ Bug Fixes
   the 2011 temperatures are added to the demandregio cache in the data
   bundle as the FfE API does not provide them
   `#1523 <https://github.com/openego/eGon-data/issues/1523>`_
-* Fix 123 TWh of household demand missing from ``grid.egon_etrago_load``:
-  ``ElectricalLoadEtrago`` now depends on the ``HouseholdDemands`` dataset,
-  not a bare task, and ``demands_per_bus`` raises on an empty source
-  `#1527 <https://github.com/openego/eGon-data/issues/1527>`_
 * Fix household profiles ignoring the scenario: fixed at 123.9 TWh for every
   year, they are now scaled in ``mv_grid_district_HH_electricity_load`` to
   ``demand.egon_demandregio_hh`` (110.5 TWh status2024, 83.0 TWh reGon2037)
