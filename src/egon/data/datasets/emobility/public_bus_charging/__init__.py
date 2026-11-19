@@ -19,6 +19,12 @@ flexibility, no flex model and no lowflex variant. Design decisions are
 recorded in ``docs/adr/0001``-``0003`` of the FC_M3 working directory.
 """
 
+from egon_validation import (
+    DataTypeValidation,
+    NotNullAndNotNaNValidation,
+    SRIDSpecificValidation,
+    ValueSetValidation,
+)
 from loguru import logger
 
 from egon.data import db
@@ -32,9 +38,171 @@ from egon.data.datasets.emobility.public_bus_charging.etrago_integration import 
 from egon.data.datasets.emobility.public_bus_charging.fill_tables import (
     fill_depot_table,
 )
+from egon.data.datasets.emobility.public_bus_charging.scenarios import (
+    SCENARIO_FILES,
+)
 from egon.data.datasets.emobility.public_bus_charging.spatial_assignment import (  # noqa: E501
     spatial_assignment,
 )
+from egon.data.validation import resolve_boundary_dependence
+from egon.data.validation.rules.custom.sanity import (
+    PublicBusAnnualEnergy,
+    PublicBusBusAssignment,
+    PublicBusEtragoConsistency,
+    PublicBusInputConsistency,
+    PublicBusMinimumDepots,
+    PublicBusScenarioCoverage,
+    PublicBusSeriesConsistency,
+    PublicBusVoltageLevel,
+)
+
+#: Minimum number of depots per scenario: about 95 % of the counts measured
+#: on full runs (Schleswig-Holstein: 65 in every scenario; Everything: 1050,
+#: 1345 and 1345 of 1053, 1352 and 1352 input depots, 2026-10). A broken
+#: spatial join or a CRS error drops more.
+MIN_DEPOTS = {
+    "status2024": {"Schleswig-Holstein": 62, "Everything": 997},
+    "reGon2037": {"Schleswig-Holstein": 62, "Everything": 1277},
+    "reGon2045": {"Schleswig-Holstein": 62, "Everything": 1277},
+}
+
+#: Total annual energy per scenario in MWh, measured on full runs with the
+#: input data of 2026-10-08. The check accepts +/-5 % and otherwise warns:
+#: a deviation means the input data has changed (the previous input version
+#: was 5-8 % higher) or depots with much energy were dropped. Re-measure
+#: after a deliberate input update.
+ANNUAL_ENERGY_MWH = {
+    "status2024": {"Schleswig-Holstein": 14_809, "Everything": 227_295},
+    "reGon2037": {"Schleswig-Holstein": 105_012, "Everything": 2_941_045},
+    "reGon2045": {"Schleswig-Holstein": 158_921, "Everything": 4_150_252},
+}
+
+
+def bus_validation_rules():
+    """
+    Validation rules for the tables written by PublicBusCharging.
+
+    Content checks run per scenario with bus data, one rule instance per
+    scenario. See
+    :mod:`egon.data.validation.rules.custom.sanity.public_bus_charging`.
+
+    Returns
+    -------
+    list
+        Rule instances.
+    """
+    depots = PublicBusCharging.targets.tables["charging_depot"]
+    loads = PublicBusCharging.targets.tables["etrago_load"]
+    suffix = depots.split(".")[-1]
+
+    # The formal rules are listed one by one instead of via TableValidation,
+    # which always adds a whole-table NOT NULL check: mv_grid_id is NULL by
+    # design for depots at the EHV levels. geom is left out of the NOT NULL
+    # check (its "<>" operator is ambiguous in PostGIS) and checked by
+    # PublicBusBusAssignment; voltage_level is left out of the value sets
+    # (smallint) and checked by PublicBusVoltageLevel. depot_name may be
+    # NULL: 28 real (OSM) depots have no name in the input, and the name is
+    # descriptive only.
+    rules = [
+        DataTypeValidation(
+            table=depots,
+            rule_id=f"DATA_TYPES.{suffix}",
+            column_types={
+                "depot_id": "character varying",
+                "scenario": "character varying",
+                "depot_name": "text",
+                "depot_type": "text",
+                "fleet_size": "double precision",
+                "geom": "geometry",
+                "bus_id": "bigint",
+                "mv_grid_id": "integer",
+                "voltage_level": "smallint",
+                "peak_load_mw": "double precision",
+                "annual_demand_mwh": "double precision",
+                "p_set": "array",
+            },
+        ),
+        NotNullAndNotNaNValidation(
+            table=depots,
+            rule_id=f"NOT_NAN.{suffix}",
+            columns=[
+                "depot_id",
+                "scenario",
+                "depot_type",
+                "fleet_size",
+                "bus_id",
+                "voltage_level",
+                "peak_load_mw",
+                "annual_demand_mwh",
+                "p_set",
+            ],
+        ),
+        ValueSetValidation(
+            table=depots,
+            rule_id=f"VALUE_SET_SCENARIO.{suffix}",
+            column="scenario",
+            expected_values=list(SCENARIO_FILES),
+        ),
+        ValueSetValidation(
+            table=depots,
+            rule_id=f"VALUE_SET_DEPOT_TYPE.{suffix}",
+            column="depot_type",
+            expected_values=["real", "standin"],
+        ),
+        SRIDSpecificValidation(
+            table=depots,
+            rule_id=f"SRID.{suffix}.geom",
+            geom="geom",
+            expected_srid=EgonEvBusChargingDepot.__table__.c.geom.type.srid,
+        ),
+        PublicBusScenarioCoverage(
+            table=loads, rule_id="SANITY_PUBLIC_BUS_SCENARIOS"
+        ),
+    ]
+
+    for scn in SCENARIO_FILES:
+        rules += [
+            PublicBusMinimumDepots(
+                table=depots,
+                rule_id=f"SANITY_PUBLIC_BUS_DEPOT_COUNT.{scn}",
+                scenario=scn,
+                min_depots=resolve_boundary_dependence(MIN_DEPOTS[scn]),
+            ),
+            PublicBusSeriesConsistency(
+                table=depots,
+                rule_id=f"SANITY_PUBLIC_BUS_SERIES.{scn}",
+                scenario=scn,
+            ),
+            PublicBusVoltageLevel(
+                table=depots,
+                rule_id=f"SANITY_PUBLIC_BUS_VOLTAGE_LEVEL.{scn}",
+                scenario=scn,
+            ),
+            PublicBusBusAssignment(
+                table=depots,
+                rule_id=f"SANITY_PUBLIC_BUS_BUS_ASSIGNMENT.{scn}",
+                scenario=scn,
+            ),
+            PublicBusAnnualEnergy(
+                table=depots,
+                rule_id=f"SANITY_PUBLIC_BUS_ANNUAL_ENERGY.{scn}",
+                scenario=scn,
+                expected_mwh=resolve_boundary_dependence(
+                    ANNUAL_ENERGY_MWH[scn]
+                ),
+            ),
+            PublicBusInputConsistency(
+                table=depots,
+                rule_id=f"SANITY_PUBLIC_BUS_INPUT.{scn}",
+                scenario=scn,
+            ),
+            PublicBusEtragoConsistency(
+                table=loads,
+                rule_id=f"SANITY_PUBLIC_BUS_ETRAGO.{scn}",
+                scenario=scn,
+            ),
+        ]
+    return rules
 
 
 def create_tables():
@@ -89,7 +257,7 @@ class PublicBusCharging(Dataset):
     )
 
     name: str = "PublicBusCharging"
-    version: str = "0.0.1"
+    version: str = "0.0.2"
 
     def __init__(self, dependencies):
         super().__init__(
@@ -102,4 +270,6 @@ class PublicBusCharging(Dataset):
                 spatial_assignment,
                 write_etrago,
             ),
+            validation={"data-quality": bus_validation_rules()},
+            proceed_on_validation_failure=True,
         )
