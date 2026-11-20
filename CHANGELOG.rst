@@ -312,6 +312,9 @@ Bug Fixes
   abstraction be non-deterministic internally, its results will still
   differ despite identical input
   `#769 <https://github.com/openego/eGon-data/issues/769>`_
+* Fix the OSM download failing with ``HTTP Error 308``: update the
+  Geofabrik URLs to their new location
+  `#1587 <https://github.com/openego/eGon-data/issues/1587>`_
 
 Version 2.0.0 (2025-08-20)
 ==========================
