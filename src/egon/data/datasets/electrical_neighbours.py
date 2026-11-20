@@ -31,6 +31,12 @@ from egon.data.datasets.scenario_parameters import (
     get_sector_parameters,
 )
 from egon.data.db import session_scope
+from egon.data.validation import TableValidation
+from egon.data.validation.rules.custom.sanity import (
+    ElectricalNeighboursGrid,
+    ElectricalNeighboursCapacities,
+    ElectricalNeighboursDemand,
+)
 import egon.data.datasets.etrago_setup as etrago
 import egon.data.datasets.scenario_parameters.parameters as scenario_parameters
 
@@ -2695,7 +2701,7 @@ class ElectricalNeighbours(Dataset):
     #:
     name: str = "ElectricalNeighbours"
     #:
-    version: str = "0.0.21"
+    version: str = "0.0.22"
 
     sources = DatasetSources(
         tables={
@@ -2733,4 +2739,66 @@ class ElectricalNeighbours(Dataset):
             version=self.version,
             dependencies=dependencies,
             tasks=tasks,
+            validation={
+                "data_quality": [
+                    TableValidation(
+                        table_name=table,
+                        not_null_columns=columns,
+                    )
+                    for table, columns in [
+                        ("grid.egon_etrago_bus", ["scn_name", "bus_id"]),
+                        ("grid.egon_etrago_line", ["scn_name", "line_id"]),
+                        ("grid.egon_etrago_link", ["scn_name", "link_id"]),
+                        (
+                            "grid.egon_etrago_transformer",
+                            ["scn_name", "trafo_id"],
+                        ),
+                        (
+                            "grid.egon_etrago_generator",
+                            ["scn_name", "generator_id"],
+                        ),
+                        (
+                            "grid.egon_etrago_generator_timeseries",
+                            ["scn_name", "generator_id"],
+                        ),
+                        ("grid.egon_etrago_load", ["scn_name", "load_id"]),
+                        (
+                            "grid.egon_etrago_load_timeseries",
+                            ["scn_name", "load_id"],
+                        ),
+                        (
+                            "grid.egon_etrago_storage",
+                            ["scn_name", "storage_id"],
+                        ),
+                    ]
+                ],
+                "neighbours_sanity": [
+                    ElectricalNeighboursGrid(
+                        rule_id=f"SANITY_NEIGHBOURS_GRID.{scenario}",
+                        scenario=scenario,
+                    )
+                    for scenario in set(
+                        config.settings()["egon-data"]["--scenarios"]
+                    )
+                ]
+                + [
+                    ElectricalNeighboursCapacities(
+                        rule_id=f"SANITY_NEIGHBOURS_CAPACITIES.{scenario}",
+                        scenario=scenario,
+                    )
+                    for scenario in set(
+                        config.settings()["egon-data"]["--scenarios"]
+                    )
+                ]
+                + [
+                    ElectricalNeighboursDemand(
+                        rule_id=f"SANITY_NEIGHBOURS_DEMAND.{scenario}",
+                        scenario=scenario,
+                    )
+                    for scenario in set(
+                        config.settings()["egon-data"]["--scenarios"]
+                    )
+                ],
+            },
+            proceed_on_validation_failure=True,
         )
