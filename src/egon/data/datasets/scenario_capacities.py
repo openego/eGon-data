@@ -28,6 +28,7 @@ from egon.data.metadata import (
     meta_metadata,
     sources,
 )
+from egon.data.validation import TableValidation, resolve_boundary_dependence
 
 Base = declarative_base()
 
@@ -1022,7 +1023,7 @@ class ScenarioCapacities(Dataset):
     #:
     name: str = "ScenarioCapacities"
     #:
-    version: str = "0.0.24"
+    version: str = "0.0.25"
     sources = DatasetSources(
         files={
             "eGon2035_capacities": "data_bundle_egon_data/NEP/NEP_V2021_scnC2035.xlsx",
@@ -1049,4 +1050,111 @@ class ScenarioCapacities(Dataset):
             version=self.version,
             dependencies=dependencies,
             tasks=tasks,
+            validation={
+                "data-quality": [
+                    TableValidation(
+                        table_name="supply.egon_scenario_capacities",
+                        data_type_columns={
+                            "index": "integer",
+                            "component": "character varying",
+                            "carrier": "character varying",
+                            "capacity": "double precision",
+                            "nuts": "character varying",
+                            "scenario_name": "character varying",
+                        },
+                        not_null_columns=[
+                            "index",
+                            "component",
+                            "carrier",
+                            "capacity",
+                            "nuts",
+                            "scenario_name",
+                        ],
+                        value_set_columns={
+                            "component": [
+                                "generator",
+                                "link",
+                                "storage_units",
+                            ],
+                            "carrier": [
+                                "BESS",
+                                "biomass",
+                                "gas",
+                                "home_battery",
+                                "oil",
+                                "others",
+                                "pumped_hydro",
+                                "reservoir",
+                                "residential_rural_heat_pump",
+                                "run_of_river",
+                                "rural_heat_pump",
+                                "small_chp",
+                                "solar",
+                                "solar_rooftop",
+                                "urban_central_geo_thermal",
+                                "urban_central_heat_pump",
+                                "urban_central_resistive_heater",
+                                "urban_central_solar_thermal_collector",
+                                "wind_offshore",
+                                "wind_onshore",
+                            ],
+                            "nuts": resolve_boundary_dependence(
+                                {
+                                    "Schleswig-Holstein": [
+                                        "DE",
+                                        nuts_mapping()["SH"],
+                                    ],
+                                    "Everything": [
+                                        "DE",
+                                        *sorted(nuts_mapping().values()),
+                                    ],
+                                }
+                            ),
+                            "scenario_name": [
+                                "eGon2035",
+                                "reGon2037",
+                                "reGon2045",
+                                "status2024",
+                            ],
+                        },
+                    ),
+                    # Only columns shared by the NEP2021 (eGon2035) and
+                    # NEP2025 (reGon) power plant lists are checked, since
+                    # the list-specific columns only exist if the
+                    # corresponding scenario is part of the run. The
+                    # automatically added TABLE_NOT_NAN check is expected to
+                    # fail whenever eGon2035 is part of the run, as the
+                    # NEP2021 list contains NULLs and both lists leave the
+                    # other one's columns empty.
+                    TableValidation(
+                        table_name="supply.egon_nep_conventional_powerplants",
+                        data_type_columns={
+                            "index": "bigint",
+                            "name": "text",
+                            "name_unit": "text",
+                            "carrier_nep": "text",
+                            "chp": "text",
+                            "postcode": "text",
+                            "city": "text",
+                            "federal_state": "text",
+                            "status": "text",
+                            "capacity": "double precision",
+                            "scenario": "text",
+                            "carrier": "text",
+                        },
+                        not_null_columns=[
+                            "index",
+                            "carrier_nep",
+                            "status",
+                            "capacity",
+                            "scenario",
+                            "carrier",
+                        ],
+                        value_set_columns={
+                            "carrier": sorted(map_carrier().unique()),
+                        },
+                    ),
+                ]
+            },
+            proceed_on_validation_failure=True,
         )
