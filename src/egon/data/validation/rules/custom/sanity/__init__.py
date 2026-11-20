@@ -20,7 +20,7 @@ from .heat_supply import (  # noqa: F401
     DistrictHeatingSupplyUniqueCarrier,
     IndividualHeatingSupplyHeatPumpTarget,
 )
-from .electrical_neighbours import ( # noqa: F401
+from .electrical_neighbours import (  # noqa: F401
     ElectricalNeighboursGrid,
     ElectricalNeighboursCapacities,
     ElectricalNeighboursDemand,

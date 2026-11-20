@@ -84,11 +84,19 @@ class ElectricalNeighboursGrid(DataFrameRule):
     def evaluate_df(self, df, ctx):
         del ctx
         row = df.iloc[0]
-        n_bad = (int(row.n_invalid) + int(row.n_isolated)
-                 + int(row.n_buses == 0) + int(row.n_branches == 0)
-                 + int(row.n_cross_border == 0))
-        success = (int(row.n_buses) > 0 and int(row.n_branches) > 0
-                   and int(row.n_cross_border) > 0 and n_bad == 0)
+        n_bad = (
+            int(row.n_invalid)
+            + int(row.n_isolated)
+            + int(row.n_buses == 0)
+            + int(row.n_branches == 0)
+            + int(row.n_cross_border == 0)
+        )
+        success = (
+            int(row.n_buses) > 0
+            and int(row.n_branches) > 0
+            and int(row.n_cross_border) > 0
+            and n_bad == 0
+        )
         return RuleResult(
             rule_id=self.rule_id,
             task=self.task,
@@ -97,11 +105,13 @@ class ElectricalNeighboursGrid(DataFrameRule):
             success=success,
             observed=n_bad,
             expected=0,
-            message=(f"{self.scenario}: {row.n_buses} foreign AC buses, "
-                     f"{row.n_branches} electrical branches, "
-                     f"{row.n_cross_border} DE-border connections, "
-                     f"{row.n_invalid} invalid branches, "
-                     f"{row.n_isolated} isolated foreign buses"),
+            message=(
+                f"{self.scenario}: {row.n_buses} foreign AC buses, "
+                f"{row.n_branches} electrical branches, "
+                f"{row.n_cross_border} DE-border connections, "
+                f"{row.n_invalid} invalid branches, "
+                f"{row.n_isolated} isolated foreign buses"
+            ),
             severity=Severity.INFO if success else Severity.ERROR,
             schema=self.schema,
             table_name=self.table_name,
@@ -175,18 +185,25 @@ class ElectricalNeighboursCapacities(DataFrameRule):
         )
 
         status = "status" in self.scenario
-        invalid_profiles = int(df.loc[
-            df.component == "renewable_profiles", "capacity"
-        ].iloc[0])
-        battery_rows = df[(df.component == "storage") & (df.carrier == "battery")]
-        battery_missing = int(status and not (
-            len(battery_rows) == 1 and battery_rows.iloc[0].country == "GB"
-        ))
+        invalid_profiles = int(
+            df.loc[df.component == "renewable_profiles", "capacity"].iloc[0]
+        )
+        battery_rows = df[
+            (df.component == "storage") & (df.carrier == "battery")
+        ]
+        battery_missing = int(
+            status
+            and not (
+                len(battery_rows) == 1 and battery_rows.iloc[0].country == "GB"
+            )
+        )
         actual = {
             (r.component, r.country, r.carrier): float(r.capacity)
             for r in df.itertuples()
             if r.component != "renewable_profiles"
-            and not (status and r.component == "storage" and r.carrier == "battery")
+            and not (
+                status and r.component == "storage" and r.carrier == "battery"
+            )
         }
 
         try:
@@ -212,8 +229,15 @@ class ElectricalNeighboursCapacities(DataFrameRule):
             else:
                 capacities = calc_capacities(self.scenario).copy()
                 generator_carriers = {
-                    "others", "wind_offshore", "wind_onshore", "solar",
-                    "reservoir", "run_of_river", "lignite", "coal", "oil",
+                    "others",
+                    "wind_offshore",
+                    "wind_onshore",
+                    "solar",
+                    "reservoir",
+                    "run_of_river",
+                    "lignite",
+                    "coal",
+                    "oil",
                     "nuclear",
                 }
                 expected = {}
@@ -230,13 +254,19 @@ class ElectricalNeighboursCapacities(DataFrameRule):
                     key = (component, country, carrier)
                     expected[key] = expected.get(key, 0) + float(value)
                 actual = {
-                    k: v for k, v in actual.items()
+                    k: v
+                    for k, v in actual.items()
                     if k[0] == "storage" or k[2] in generator_carriers
                 }
             mismatches = [
-                key for key in (expected.keys() | actual.keys())
-                if not isclose(actual.get(key, 0), expected.get(key, 0),
-                               rel_tol=1e-6, abs_tol=1e-3)
+                key
+                for key in (expected.keys() | actual.keys())
+                if not isclose(
+                    actual.get(key, 0),
+                    expected.get(key, 0),
+                    rel_tol=1e-6,
+                    abs_tol=1e-3,
+                )
             ]
             error = ""
         except FileNotFoundError as exc:
@@ -253,10 +283,12 @@ class ElectricalNeighboursCapacities(DataFrameRule):
             success=success,
             observed=n_bad,
             expected=0,
-            message=(f"{self.scenario}: {len(mismatches)} country/carrier "
-                     f"capacity mismatches, {invalid_profiles} invalid renewable "
-                     f"time series, {battery_missing} missing GB battery rows{error}; "
-                     f"first mismatches: {mismatches[:5]}"),
+            message=(
+                f"{self.scenario}: {len(mismatches)} country/carrier "
+                f"capacity mismatches, {invalid_profiles} invalid renewable "
+                f"time series, {battery_missing} missing GB battery rows{error}; "
+                f"first mismatches: {mismatches[:5]}"
+            ),
             severity=Severity.INFO if success else Severity.ERROR,
             schema=self.schema,
             table_name=self.table_name,
@@ -314,8 +346,11 @@ class ElectricalNeighboursDemand(DataFrameRule):
         invalid_profiles = 0
         for row in df.itertuples():
             values = row.p_set
-            if (values is None or len(values) != 8760
-                    or bool(pd.isna(values).any())):
+            if (
+                values is None
+                or len(values) != 8760
+                or bool(pd.isna(values).any())
+            ):
                 invalid_profiles += 1
                 continue
             actual[row.country] = actual.get(row.country, 0) + sum(values)
@@ -329,7 +364,8 @@ class ElectricalNeighboursDemand(DataFrameRule):
                 source = pd.read_csv(file_path, index_col="Index")
                 source.index = pd.to_datetime(source.index)
                 source = align_weekdays(
-                    source, source_year=year,
+                    source,
+                    source_year=year,
                     target_year=get_sector_parameters("global", self.scenario)[
                         "weather_year"
                     ],
@@ -346,14 +382,29 @@ class ElectricalNeighboursDemand(DataFrameRule):
                     "weather_year"
                 ]
                 nodes = (
-                    "AT00", "BE00", "CH00", "CZ00", "DKE1", "DKW1",
-                    "FR00", "NL00", "LUB1", "LUF1", "LUG1", "NOM1",
-                    "NON1", "NOS0", "SE01", "SE02", "SE03", "SE04",
-                    "PL00", "UK00", "UKNI",
+                    "AT00",
+                    "BE00",
+                    "CH00",
+                    "CZ00",
+                    "DKE1",
+                    "DKW1",
+                    "FR00",
+                    "NL00",
+                    "LUB1",
+                    "LUF1",
+                    "LUG1",
+                    "NOM1",
+                    "NON1",
+                    "NOS0",
+                    "SE01",
+                    "SE02",
+                    "SE03",
+                    "SE04",
+                    "PL00",
+                    "UK00",
+                    "UKNI",
                 )
-                lo, hi = _bracket_tyndp_years(
-                    year, anchors=(2030, 2040, 2050)
-                )
+                lo, hi = _bracket_tyndp_years(year, anchors=(2030, 2040, 2050))
                 weight = (year - lo) / (hi - lo)
                 market_lo = read_tyndp_demand(lo, nodes, weather_year)
                 market_hi = read_tyndp_demand(hi, nodes, weather_year)
@@ -379,8 +430,10 @@ class ElectricalNeighboursDemand(DataFrameRule):
                 for mapped_node, members in groups.items():
                     hourly = pd.Series(0.0, index=range(8760))
                     for node in members:
-                        hourly += (market_lo[node]
-                                   + (market_hi[node] - market_lo[node]) * weight)
+                        hourly += (
+                            market_lo[node]
+                            + (market_hi[node] - market_lo[node]) * weight
+                        )
                         if node in pros_lo:
                             hourly += pros_lo[node] * (1 - weight)
                         if node in pros_hi:
@@ -392,10 +445,16 @@ class ElectricalNeighboursDemand(DataFrameRule):
                     )
 
             mismatches = [
-                country for country in (expected.keys() | actual.keys())
-                if country not in expected or country not in actual
-                or not isclose(actual.get(country, 0), expected.get(country, 0),
-                               rel_tol=1e-5, abs_tol=1.0)
+                country
+                for country in (expected.keys() | actual.keys())
+                if country not in expected
+                or country not in actual
+                or not isclose(
+                    actual.get(country, 0),
+                    expected.get(country, 0),
+                    rel_tol=1e-5,
+                    abs_tol=1.0,
+                )
             ]
             error = ""
         except FileNotFoundError as exc:
@@ -412,10 +471,12 @@ class ElectricalNeighboursDemand(DataFrameRule):
             success=success,
             observed=n_bad,
             expected=0,
-            message=(f"{self.scenario}: {len(df)} foreign loads, "
-                     f"{invalid_profiles} invalid 8760-hour profiles, "
-                     f"{len(mismatches)} country demand mismatches{error}; "
-                     f"first mismatches: {mismatches[:5]}"),
+            message=(
+                f"{self.scenario}: {len(df)} foreign loads, "
+                f"{invalid_profiles} invalid 8760-hour profiles, "
+                f"{len(mismatches)} country demand mismatches{error}; "
+                f"first mismatches: {mismatches[:5]}"
+            ),
             severity=Severity.INFO if success else Severity.ERROR,
             schema=self.schema,
             table_name=self.table_name,
