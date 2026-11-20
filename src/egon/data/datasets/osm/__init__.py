@@ -302,8 +302,8 @@ class OpenStreetMap(Dataset):
     sources = DatasetSources(
         files={"stylefile": "oedb.style"},
         urls={
-            "germany": "https://download.geofabrik.de/europe/germany-250101.osm.pbf",
-            "schleswig-holstein": "https://download.geofabrik.de/europe/germany/schleswig-holstein-250101.osm.pbf",
+            "germany": "https://download.geofabrik.de/europe/germany/germany-250101.osm.pbf",
+            "schleswig-holstein": "https://download.geofabrik.de/europe/germany/schleswig-holstein/schleswig-holstein-250101.osm.pbf",
         },
     )
     targets = DatasetTargets(
