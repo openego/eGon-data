@@ -37,6 +37,9 @@ from .individual_heat_pumps import (  # noqa: F401
     HeatTimeseriesHeatPumpCapacity,
     HeatTimeseriesTechnologyShares,
     HeatTimeseriesValues,
+    ResistiveHeaterCapacityPositive,
+    ResistiveHeaterGridSum,
+    ResistiveHeaterNotWithHeatPump,
 )
 from .residential_electricity import (  # noqa: F401
     ResidentialElectricityAnnualSum,

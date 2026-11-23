@@ -398,7 +398,7 @@ class HeatSupply(Dataset):
     # scenarios with individual_heating_shares are written by HeatPumpsCascade,
     # and a dataset only reruns when its own version changes.
     #:
-    version: str = "0.0.21"
+    version: str = "0.0.22"
 
     sources = DatasetSources(
         tables={

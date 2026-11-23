@@ -7,9 +7,12 @@ individual_heating.HeatPumpsCascade` write:
 
 * ``demand.egon_building_heat_peak_loads`` -- peak heat load per building,
 * ``demand.egon_hp_capacity_buildings`` -- heat pump capacity per building,
+* ``demand.egon_resistive_heater_capacity_buildings`` -- resistive heater
+  capacity per building (scenarios with ``individual_heating_shares``),
 * ``demand.egon_etrago_timeseries_individual_heating`` -- aggregated heat
   demand time series per MV grid of buildings with heat pumps
-  (``heat_pump``) and with gas boilers (``CH4``).
+  (``heat_pump``), with resistive heaters (``resistive_heater``, scenarios
+  with ``individual_heating_shares``) and with gas boilers (``CH4``).
 
 Most rules check one scenario. A scenario that is not part of
 ``--scenarios`` is skipped (success, severity INFO); a configured scenario
@@ -35,6 +38,8 @@ RTOL_ROUNDING = 1e-6
 
 PEAK_LOAD_TABLE = "demand.egon_building_heat_peak_loads"
 HP_CAPACITY_TABLE = "demand.egon_hp_capacity_buildings"
+RH_CAPACITY_TABLE = "demand.egon_resistive_heater_capacity_buildings"
+INDIVIDUAL_SUPPLY_TABLE = "supply.egon_individual_heating"
 TIMESERIES_TABLE = "demand.egon_etrago_timeseries_individual_heating"
 DH_MAP_TABLE = "demand.egon_map_zensus_district_heating_areas"
 
@@ -76,6 +81,9 @@ def _heating_shares(scenario):
 
 #: Carrier of the gas boiler series in TIMESERIES_TABLE.
 GAS_CARRIER = "CH4"
+
+#: Carrier of the resistive heaters in INDIVIDUAL_SUPPLY_TABLE.
+RESISTIVE_HEATER_CARRIER = "resistive_heater"
 
 
 def _heating_remainder(scenario):
@@ -1479,5 +1487,227 @@ class HeatTimeseriesTechnologyShares(HeatTimeseriesEnergyBalance):
                 ""
                 if success
                 else f"; gas boilers must be 0 with remainder '{remainder}'"
+            ),
+        )
+
+
+class _ResistiveHeaterRule(_HeatPumpRule):
+    """
+    Common base for the resistive heater rules.
+
+    Resistive heaters per building only exist for scenarios with
+    ``individual_heating_shares``; other configured scenarios are skipped
+    (success, severity INFO).
+    """
+
+    def evaluate(self, engine, ctx):
+        if (
+            self.scenario in configured_scenarios()
+            and _heating_shares(self.scenario) is None
+        ):
+            return self._skip(
+                f"Scenario '{self.scenario}' has no individual_heating_shares "
+                f"and no resistive heaters; check skipped"
+            )
+        return super().evaluate(engine, ctx)
+
+
+class ResistiveHeaterCapacityPositive(_ResistiveHeaterRule):
+    """
+    Check that every resistive heater has a capacity > 0.
+
+    Fails if the scenario has no resistive heater rows or if any building
+    has a capacity <= 0. ``observed`` is the number of buildings with a
+    capacity <= 0.
+    """
+
+    def get_query(self, ctx):
+        return f"""
+        SELECT count(*) AS n_rows,
+               count(*) FILTER (WHERE capacity <= 0) AS n_not_positive,
+               min(capacity) AS min_capacity
+        FROM {self.table}
+        WHERE scenario = :scenario
+        """
+
+    def evaluate_df(self, df, ctx):
+        row = df.iloc[0]
+        if int(row.n_rows) == 0:
+            return self._no_rows()
+        n_bad = int(row.n_not_positive)
+        return self._result(
+            success=n_bad == 0,
+            observed=n_bad,
+            expected=0,
+            message=(
+                f"{n_bad:,} buildings with resistive heater capacity <= 0 | "
+                if n_bad
+                else ""
+            )
+            + (
+                f"Scenario '{self.scenario}': {int(row.n_rows):,} buildings "
+                f"with resistive heater, min capacity "
+                f"{float(row.min_capacity) * 1e3:.2f} kW"
+            ),
+        )
+
+
+class ResistiveHeaterNotWithHeatPump(_ResistiveHeaterRule):
+    """
+    Check that no building has both a resistive heater and a heat pump.
+
+    Each building gets exactly one decentral heating technology (see
+    :func:`~egon.data.datasets.heat_supply.individual_heating.
+    determine_heating_technologies_by_share_per_mvgd`). ``observed`` is
+    the number of buildings with both.
+    """
+
+    def __init__(
+        self,
+        table: str,
+        rule_id: str,
+        scenario: str,
+        hp_capacity_table: str = HP_CAPACITY_TABLE,
+        **kwargs,
+    ):
+        super().__init__(
+            table=table,
+            rule_id=rule_id,
+            scenario=scenario,
+            hp_capacity_table=hp_capacity_table,
+            **kwargs,
+        )
+
+    def get_query(self, ctx):
+        return f"""
+        SELECT
+            (SELECT count(*) FROM {self.table}
+             WHERE scenario = :scenario) AS n_rows,
+            (SELECT array_agg(r.building_id ORDER BY r.building_id)
+             FROM {self.table} r
+             JOIN {self.params["hp_capacity_table"]} h
+               ON h.building_id = r.building_id AND h.scenario = r.scenario
+             WHERE r.scenario = :scenario) AS both_ids
+        """
+
+    def evaluate_df(self, df, ctx):
+        row = df.iloc[0]
+        if int(row.n_rows) == 0:
+            return self._no_rows()
+        both = list(row.both_ids or [])
+        return self._result(
+            success=not both,
+            observed=len(both),
+            expected=0,
+            message=(
+                f"{len(both):,} buildings with resistive heater and heat "
+                f"pump (e.g. {_examples(both)}) | "
+                if both
+                else ""
+            )
+            + (
+                f"Scenario '{self.scenario}': {int(row.n_rows):,} buildings "
+                f"with resistive heater"
+            ),
+        )
+
+
+class ResistiveHeaterGridSum(_ResistiveHeaterRule):
+    """
+    Check that the building capacities add up to the MV grid capacities.
+
+    Per MV grid, the resistive heater capacities of the buildings must add
+    up to the grid's ``resistive_heater`` capacity in
+    ``supply.egon_individual_heating`` (relative tolerance ``rtol``).
+    ``observed`` is the number of grids outside the tolerance.
+
+    Buildings are mapped to MV grids via
+    ``boundaries.egon_map_zensus_mvgd_buildings``, like in
+    :class:`HeatTimeseriesHeatPumpCapacity`. A building that the dataset
+    dropped as a duplicate of two grids is still counted in both grid sums,
+    so ``rtol`` is larger than the rounding tolerance.
+    """
+
+    def __init__(
+        self,
+        table: str,
+        rule_id: str,
+        scenario: str,
+        rtol: float = 1e-3,
+        supply_table: str = INDIVIDUAL_SUPPLY_TABLE,
+        **kwargs,
+    ):
+        """
+        Parameters
+        ----------
+        rtol : float
+            Accepted relative difference between the building sum and the
+            grid capacity per MV grid.
+        """
+        super().__init__(
+            table=table,
+            rule_id=rule_id,
+            scenario=scenario,
+            rtol=rtol,
+            supply_table=supply_table,
+            **kwargs,
+        )
+
+    def get_params(self, ctx):
+        return {"scenario": self.scenario, "carrier": RESISTIVE_HEATER_CARRIER}
+
+    def get_query(self, ctx):
+        return f"""
+        WITH building_grid AS (
+            SELECT DISTINCT building_id, bus_id
+            FROM boundaries.egon_map_zensus_mvgd_buildings
+        ),
+        buildings AS (
+            SELECT g.bus_id, sum(r.capacity) AS building_capacity
+            FROM {self.table} r
+            JOIN building_grid g ON g.building_id = r.building_id
+            WHERE r.scenario = :scenario
+            GROUP BY 1
+        ),
+        grid AS (
+            SELECT mv_grid_id AS bus_id, sum(capacity) AS grid_capacity
+            FROM {self.params["supply_table"]}
+            WHERE scenario = :scenario AND carrier = :carrier
+            GROUP BY 1
+        )
+        SELECT bus_id, b.building_capacity, g.grid_capacity
+        FROM buildings b
+        FULL JOIN grid g USING (bus_id)
+        """
+
+    def evaluate_df(self, df, ctx):
+        if df.empty:
+            return self._no_rows()
+        df = df.fillna(0.0)
+
+        # relative difference per grid, grids without capacity count as 0
+        rtol = float(self.params["rtol"])
+        rel_diff = (df.building_capacity - df.grid_capacity).abs() / (
+            df.grid_capacity.abs().clip(lower=RTOL_ROUNDING)
+        )
+        mismatch = df[rel_diff > rtol]
+
+        return self._result(
+            success=mismatch.empty,
+            observed=len(mismatch),
+            expected=0,
+            message=(
+                f"{len(mismatch):,} grids whose building capacities differ "
+                f"from the grid capacity by more than {rtol:.1%} (e.g. "
+                f"{_examples(mismatch.bus_id)}) | "
+                if len(mismatch)
+                else ""
+            )
+            + (
+                f"Scenario '{self.scenario}': "
+                f"{df.building_capacity.sum():,.1f} MW in buildings, "
+                f"{df.grid_capacity.sum():,.1f} MW in "
+                f"{(df.grid_capacity > 0).sum():,} grids, max difference "
+                f"{rel_diff.max():.2%}"
             ),
         )

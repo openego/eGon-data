@@ -105,6 +105,15 @@ Changed
   Affected datasets: ScenarioParameters, HeatPumpsCascade, HeatEtrago,
   HtsEtragoTable
   `#1563 <https://github.com/openego/eGon-data/issues/1563>`_
+* Store the electrical resistive heater capacity per building in
+  reGon2037 and reGon2045 in the new table
+  ``demand.egon_resistive_heater_capacity_buildings``, like the heat pumps
+  in ``demand.egon_hp_capacity_buildings``. The resistive heater capacity
+  per MV grid is the sum of these building capacities. The new checks
+  SANITY_RH_CAPACITY_POSITIVE, SANITY_RH_NOT_WITH_HP and SANITY_RH_GRID_SUM
+  validate the table. Affected datasets: HeatSupply, HeatPumpsCascade,
+  HeatEtrago, HtsEtragoTable
+  `#1563 <https://github.com/openego/eGon-data/issues/1563>`_
 * Changes to improve the matching of the Kraftwerksliste from the NEP
   and the corresponding MaStR-data for CHP. 
   '#1494 <https://github.com/openego/eGon-data/issues/1494>`_

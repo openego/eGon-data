@@ -76,6 +76,9 @@ from egon.data.validation.rules.custom.sanity import (
     HeatTimeseriesHeatPumpCapacity,
     HeatTimeseriesTechnologyShares,
     HeatTimeseriesValues,
+    ResistiveHeaterCapacityPositive,
+    ResistiveHeaterGridSum,
+    ResistiveHeaterNotWithHeatPump,
 )
 
 engine = db.engine()
@@ -127,6 +130,22 @@ class EgonHpCapacityBuildings(Base):
     building_id = Column(Integer, primary_key=True)
     scenario = Column(String, primary_key=True)
     hp_capacity = Column(REAL)
+
+
+class EgonResistiveHeaterCapacityBuildings(Base):
+    """
+    Class definition of table demand.egon_resistive_heater_capacity_buildings.
+
+    This table contains the electrical resistive heater capacity in MW of all
+    buildings with a resistive heater
+
+    """
+
+    __tablename__ = "egon_resistive_heater_capacity_buildings"
+    __table_args__ = {"schema": "demand"}
+    building_id = Column(Integer, primary_key=True)
+    scenario = Column(String, primary_key=True)
+    capacity = Column(REAL)
 
 
 def order_scenarios_by_hp_floor_chain(scenarios):
@@ -275,7 +294,10 @@ def hp_validation_rules():
     HeatPumpsCascade.
 
     Content checks cover the scenarios of the heat pump floor chain, one rule
-    instance per scenario. See
+    instance per scenario. The technology shares and the resistive heater
+    capacities per building are checked for all scenarios; the resistive
+    heater check is skipped for scenarios without
+    ``individual_heating_shares``. See
     :mod:`egon.data.validation.rules.custom.sanity.individual_heat_pumps`.
 
     Returns
@@ -285,6 +307,7 @@ def hp_validation_rules():
     """
     peak_loads = "demand.egon_building_heat_peak_loads"
     hp_capacity = "demand.egon_hp_capacity_buildings"
+    rh_capacity = EgonResistiveHeaterCapacityBuildings.__table__.fullname
     timeseries = "demand.egon_etrago_timeseries_individual_heating"
     scenarios = ["eGon2035", "reGon2037", "reGon2045", "status2024"]
     chain = get_hp_floor_chain()
@@ -309,6 +332,16 @@ def hp_validation_rules():
                 "building_id": "integer",
                 "scenario": "character varying",
                 "hp_capacity": "real",
+            },
+            value_set_columns={"scenario": scenarios},
+        ),
+        # resistive heater capacity per building (share scenarios)
+        TableValidation(
+            table_name=rh_capacity,
+            data_type_columns={
+                "building_id": "integer",
+                "scenario": "character varying",
+                "capacity": "real",
             },
             value_set_columns={"scenario": scenarios},
         ),
@@ -445,6 +478,18 @@ def hp_validation_rules():
         for scn in scenarios
     ]
 
+    # resistive heater capacities per building, skipped without shares;
+    # one rule per failure reason, so the rule_id says what failed
+    rules += [
+        rule(table=rh_capacity, rule_id=f"{rule_id}.{scn}", scenario=scn)
+        for rule, rule_id in [
+            (ResistiveHeaterCapacityPositive, "SANITY_RH_CAPACITY_POSITIVE"),
+            (ResistiveHeaterNotWithHeatPump, "SANITY_RH_NOT_WITH_HP"),
+            (ResistiveHeaterGridSum, "SANITY_RH_GRID_SUM"),
+        ]
+        for scn in scenarios
+    ]
+
     return rules
 
 
@@ -472,17 +517,25 @@ class HeatPumpsCascade(Dataset):
     no heat pump capacity target. In each MV grid, buildings get a heat pump until the
     heat pump share of the grid's decentral heat demand is reached, then a resistive
     heater until the resistive heater share is reached, and all remaining buildings a
-    gas boiler (see :func:`determine_heating_technologies_by_share_per_mvgd`). For these
-    scenarios, this dataset also writes the heat pump and resistive heater capacities
-    per MV grid to ``supply.egon_individual_heating``, which
-    :py:class:`HeatSupply <egon.data.datasets.heat_supply.HeatSupply>` leaves empty.
+    gas boiler (see :func:`determine_heating_technologies_by_share_per_mvgd`). If
+    ``individual_heating_remainder`` is set (reGon2045), all remaining buildings get a
+    resistive heater and no gas boilers remain. For all scenarios with
+    ``individual_heating_shares`` (reGon2037, reGon2045), this dataset also
+    writes the resistive heater capacity per building to
+    ``demand.egon_resistive_heater_capacity_buildings``, and the heat pump and
+    resistive heater capacities per MV grid to ``supply.egon_individual_heating``,
+    which :py:class:`HeatSupply <egon.data.datasets.heat_supply.HeatSupply>` leaves
+    empty. The resistive heater capacity per MV grid is the sum of the building
+    capacities.
 
     As the building's heat peak load is not previously determined, it is as well done
     in this dataset. Further, as determining heat peak load requires heat load
     profiles of the buildings to be set up, this task is also utilised to set up
-    aggregated heat load profiles of all buildings with heat pumps within a grid as
-    well as for all buildings with a gas boiler (i.e. all buildings with decentral
-    heating system minus buildings with heat pump) needed in eTraGo.
+    aggregated heat load profiles of all buildings with heat pumps within a grid,
+    of all buildings with a resistive heater (scenarios with
+    ``individual_heating_shares``) as well as of all buildings with a gas boiler
+    (i.e. all buildings with decentral heating system minus buildings with heat pump
+    or resistive heater) needed in eTraGo.
 
     For more information see data documentation on :ref:`dec-heat-pumps-ref`.
 
@@ -501,6 +554,10 @@ class HeatPumpsCascade(Dataset):
       * :py:class:`demand.egon_hp_capacity_buildings
         <egon.data.datasets.heat_supply.individual_heating.EgonHpCapacityBuildings>`
         is created (if it doesn't yet exist) and filled
+      * :py:class:`demand.egon_resistive_heater_capacity_buildings
+        <egon.data.datasets.heat_supply.individual_heating.EgonResistiveHeaterCapacityBuildings>`
+        is created (if it doesn't yet exist) and filled for scenarios with
+        ``individual_heating_shares``
       * :py:class:`demand.egon_etrago_timeseries_individual_heating
         <egon.data.datasets.heat_supply.individual_heating.EgonEtragoTimeseriesIndividualHeating>`
         is created (if it doesn't yet exist) and filled
@@ -545,7 +602,7 @@ class HeatPumpsCascade(Dataset):
     # capacities HeatEtrago inserts and the time series HtsEtragoTable
     # inserts, and a dataset only reruns when its own version changes.
     #:
-    version: str = "0.0.13"
+    version: str = "0.0.14"
 
     def __init__(self, dependencies):
         def dyn_parallel_tasks_2035(scenario):
@@ -637,6 +694,12 @@ class HeatPumpsCascade(Dataset):
                         ),
                         wrapped_partial(
                             delete_individual_heating_supply_by_share,
+                            scenario=scenario,
+                            postfix=postfix,
+                        ),
+                        # resistive heater capacities per building
+                        wrapped_partial(
+                            delete_resistive_heater_capacity,
                             scenario=scenario,
                             postfix=postfix,
                         ),
@@ -2739,14 +2802,18 @@ def determine_hp_cap_peak_load_mvgd_ts_2035(mvgd_ids, scenario):
     Main function to determine HP capacity per building in the eGon2035,
     reGon2037 or reGon2045 scenario.
     Further, creates heat demand time series for all buildings with heat pumps
-    in MV grid, as well as for all buildings with gas boilers, used in eTraGo.
+    in MV grid, as well as for all buildings with resistive heaters and with
+    gas boilers, used in eTraGo.
 
     Scenarios with ``individual_heating_shares`` (see
     :func:`get_individual_heating_shares`) assign the technologies by share
     instead (:func:`determine_heating_technologies_by_share_per_mvgd`). They
-    additionally write a time series for the buildings with resistive heaters
-    and the capacities of heat pumps and resistive heaters per MV grid to
-    ``supply.egon_individual_heating``.
+    additionally write:
+
+    * the electrical resistive heater capacity per building,
+    * a time series for the buildings with resistive heaters,
+    * the capacities of heat pumps and resistive heaters per MV grid to
+      ``supply.egon_individual_heating``
 
     Parameters
     -----------
@@ -2766,6 +2833,8 @@ def determine_hp_cap_peak_load_mvgd_ts_2035(mvgd_ids, scenario):
     df_hp_cap_per_building_2035_db = pd.DataFrame()
     df_heat_mvgd_ts_db = pd.DataFrame()
     df_supply_db = pd.DataFrame()
+    # resistive heater capacity per building (share scenarios)
+    df_rh_cap_per_building_db = pd.DataFrame()
 
     shares = get_individual_heating_shares(scenario)
     if shares is not None:
@@ -2864,6 +2933,17 @@ def determine_hp_cap_peak_load_mvgd_ts_2035(mvgd_ids, scenario):
         )
 
         if shares is not None:
+            # electrical resistive heater capacity per building in MW
+            rh_cap_per_building = (
+                peak_load_2035.loc[buildings_resistive_heater]
+                / efficiency_resistive_heater
+            ).rename("capacity")
+
+            df_rh_cap_per_building_db = pd.concat(
+                [df_rh_cap_per_building_db, rh_cap_per_building.reset_index()],
+                ignore_index=True,
+            )
+
             # heat demand time series for buildings with resistive heater
             df_mvgd_ts_resistive_heater = df_heat_ts.loc[
                 :, buildings_resistive_heater
@@ -2887,8 +2967,8 @@ def determine_hp_cap_peak_load_mvgd_ts_2035(mvgd_ids, scenario):
             )
 
             # Capacities per MV grid. Heat pump capacity is electrical, as is
-            # the resistive heater capacity, which is sized to the buildings'
-            # peak heat load. Gas boilers get no capacity: their buildings are
+            # the resistive heater capacity. 
+            # Gas boilers get no capacity: their buildings are
             # supplied by the CH4 load in eTraGo, not via the rural heat bus.
             df_supply_db = pd.concat(
                 [
@@ -2899,10 +2979,7 @@ def determine_hp_cap_peak_load_mvgd_ts_2035(mvgd_ids, scenario):
                             "carrier": [heat_pump, resistive_heater],
                             "capacity": [
                                 hp_cap_per_building_2035.sum(),
-                                peak_load_2035.loc[
-                                    buildings_resistive_heater
-                                ].sum()
-                                / efficiency_resistive_heater,
+                                rh_cap_per_building.sum(),
                             ],
                         }
                     ),
@@ -2962,6 +3039,31 @@ def determine_hp_cap_peak_load_mvgd_ts_2035(mvgd_ids, scenario):
     )
 
     if shares is not None:
+        # resistive heater capacity per building, handled like the heat pumps
+        df_rh_cap_per_building_db["scenario"] = scenario
+
+        duplicates = df_rh_cap_per_building_db.loc[
+            df_rh_cap_per_building_db.duplicated("building_id", keep=False)
+        ]
+        if not duplicates.empty:
+            logger.info(
+                f"Dropped duplicated resistive heater buildings: "
+                f"{duplicates.loc[:, ['building_id', 'capacity']]}"
+            )
+
+        df_rh_cap_per_building_db = df_rh_cap_per_building_db.drop_duplicates(
+            "building_id"
+        )
+        df_rh_cap_per_building_db.building_id = (
+            df_rh_cap_per_building_db.building_id.astype(int)
+        )
+
+        write_table_to_postgres(
+            df_rh_cap_per_building_db,
+            EgonResistiveHeaterCapacityBuildings,
+            drop=False,
+        )
+
         export_individual_heating_supply(df_supply_db, scenario)
 
 
@@ -3152,12 +3254,17 @@ def split_mvgds_into_bulks(n, max_n, func, scenario=None):
 
 def create_hp_output_tables():
     """
-    Create the heat pump output tables if they do not exist yet.
+    Create the heat pump and resistive heater output tables if they do not
+    exist yet.
 
     Registered as a task of :py:class:`HeatSupply
     <egon.data.datasets.heat_supply.HeatSupply>` rather than of the datasets
     that fill these tables. Both :py:class:`HeatPumpsStatusQuo` and
-    :py:class:`HeatPumpsCascade` write all three, so a create task in either
+    :py:class:`HeatPumpsCascade` write the heat pump capacities, peak loads
+    and time series; :py:class:`HeatPumpsCascade` also writes the resistive
+    heater capacities per building
+    (:py:class:`EgonResistiveHeaterCapacityBuildings`) for scenarios with
+    ``individual_heating_shares``. A create task in either
     of them is either registered twice -- Airflow rejects the duplicate task
     id -- or missing entirely when that dataset takes its ``skip_task``
     branch because its own scenario type is not configured. HeatSupply is
@@ -3177,6 +3284,10 @@ def create_hp_output_tables():
 
     """
     EgonHpCapacityBuildings.__table__.create(bind=engine, checkfirst=True)
+    # resistive heater capacity per building (share scenarios)
+    EgonResistiveHeaterCapacityBuildings.__table__.create(
+        bind=engine, checkfirst=True
+    )
     EgonEtragoTimeseriesIndividualHeating.__table__.create(
         bind=engine, checkfirst=True
     )
@@ -3197,6 +3308,23 @@ def delete_hp_capacity(scenario):
         # Buses
         session.query(EgonHpCapacityBuildings).filter(
             EgonHpCapacityBuildings.scenario == scenario
+        ).delete(synchronize_session=False)
+
+
+def delete_resistive_heater_capacity(scenario):
+    """
+    Remove all resistive heater capacities per building of the selected
+    scenario.
+
+    Parameters
+    -----------
+    scenario : str
+        Name of the scenario.
+
+    """
+    with db.session_scope() as session:
+        session.query(EgonResistiveHeaterCapacityBuildings).filter(
+            EgonResistiveHeaterCapacityBuildings.scenario == scenario
         ).delete(synchronize_session=False)
 
 

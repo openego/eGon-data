@@ -156,6 +156,10 @@ In reGon2045, all buildings that do not get a heat pump are supplied by a
 resistive heater, regardless of its share (heat parameter
 ``individual_heating_remainder``). No individual gas boilers remain.
 
+The resistive heaters are sized to the building's peak heat demand divided by
+the efficiency of rural resistive heaters. Their capacity per building is
+written to database table demand.egon_resistive_heater_capacity_buildings.
+
 
 Individual gas boilers
 +++++++++++++++++++++++
