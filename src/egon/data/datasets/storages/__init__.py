@@ -737,20 +737,40 @@ def allocate_storage_units_sq(scn_name, storage_types):
 
 
 def home_batteries_per_scenario(scenario):
-    """Allocates home batteries which define a lower boundary for extendable
-    battery storage units. The overall installed capacity is taken from NEP
-    (supply.egon_scenario_capacities, carrier='home_battery'), the same way
-    for all scenarios. The spatial distribution of installed battery
-    capacities is based on the installed pv rooftop capacity.
+    """Allocates the modeled (residual) home battery capacity per mv grid.
+
+    The national target is taken from NEP (supply.egon_scenario_capacities,
+    carrier='home_battery') and distributed to the buses proportional to the
+    installed pv rooftop capacity. The real (MaStR) home battery capacity
+    per bus is subtracted from each bus's share (clipped at 0). Buses whose
+    real capacity exceeds their share would otherwise push the total above
+    the target, so the remaining residuals are scaled to
+    ``max(target - real_total, 0)``, where ``real_total`` is the real
+    capacity of all MaStR home batteries of the scenario. Real plus modeled
+    capacity thus matches the target exactly; real capacities stay
+    unchanged.
+
+    Status quo scenarios get no modeled capacity: they consist of the MaStR
+    home batteries only, like every other technology in the status quo. The
+    NEP value for the status quo describes the same stock and is only used
+    for validation.
 
     Parameters
     ----------
-    None
+    scenario : str
+        Name of the scenario
 
     Returns
     -------
     None
     """
+
+    if "status" in scenario:
+        logger.info(
+            f"No modeled home battery capacity for status quo scenario "
+            f"{scenario}, MaStR home batteries only."
+        )
+        return
 
     dataset = config.settings()["egon-data"]["--dataset-boundary"]
 
@@ -761,17 +781,14 @@ def home_batteries_per_scenario(scenario):
         AND carrier = 'home_battery';
         """)
 
-    # Sum over all returned federal states: status2024 and eGon2035 each
-    # have a single national row (nuts='DE') - their underlying NEP source
-    # files provide no federal-state breakdown for home batteries -
-    # reGon2037/reGon2045 have one row per federal state which is already
-    # scoped to the active --dataset-boundary
+    # Sum over all returned federal states: eGon2035 has a single national
+    # row (nuts='DE') - its underlying NEP source file provides no
+    # federal-state breakdown for home batteries - reGon2037/reGon2045 have
+    # one row per federal state which is already scoped to the active
+    # --dataset-boundary
     target = target_df.capacity.sum()
 
-    if (
-        ("status" in scenario or scenario == "eGon2035")
-        and dataset == "Schleswig-Holstein"
-    ):
+    if scenario == "eGon2035" and dataset == "Schleswig-Holstein":
         # national-only target, still needs to be broken down to SH's
         # rough share in test mode
         target = target / 16
@@ -790,10 +807,10 @@ def home_batteries_per_scenario(scenario):
     battery["p_nom_min"] = target * battery["p_nom"] / battery["p_nom"].sum()
     battery = battery.drop(columns=["p_nom"])
 
-    # Subtract already-existing real battery capacity per bus from the 
-    # NEP target to avoid double-counting real + modeled capacity at the 
-    # same bus. SO just modeled capacities are spartially distributed 
-    # according PV-capacities
+    # Subtract already-existing real battery capacity per bus from the
+    # bus's share to avoid double-counting real + modeled capacity at the
+    # same bus. Only modeled capacities are distributed spatially according
+    # to pv rooftop capacity.
     real_capacity = db.select_dataframe(f"""
         SELECT bus_id AS bus, sum(el_capacity) AS real_capacity
         FROM {Storages.targets.tables['storages']}
@@ -806,18 +823,41 @@ def home_batteries_per_scenario(scenario):
     battery = battery.merge(real_capacity, on="bus", how="left")
     battery["real_capacity"] = battery["real_capacity"].fillna(0)
 
-    over_covered = battery["real_capacity"] > battery["p_nom_min"]
-    if over_covered.any():
-        logger.warning(
-            f"In {over_covered.sum()} grid(s) in scenario {scenario}, real "
-            f"home battery capacity already exceeds the modeled target. "
-            f"No additional (modeled) capacity will be added there."
-        )
-
-    battery["p_nom_min"] = (
-        battery["p_nom_min"] - battery["real_capacity"]
-    ).clip(lower=0)
+    raw_residual = (battery["p_nom_min"] - battery["real_capacity"]).clip(
+        lower=0
+    )
     battery = battery.drop(columns=["real_capacity"])
+
+    # Real capacity of all MaStR home batteries of the scenario, including
+    # those at buses without pv rooftop capacity, so that real plus modeled
+    # capacity in supply.egon_storages matches the target exactly.
+    real_total = db.select_dataframe(f"""
+        SELECT COALESCE(SUM(el_capacity), 0) AS real_total
+        FROM {Storages.targets.tables['storages']}
+        WHERE carrier = 'home_battery'
+        AND scenario = '{scenario}'
+        AND sources ->> 'el_capacity' = 'MaStR';
+        """).real_total.iat[0]
+
+    # Real capacity exceeding a bus's share is offset against the residuals
+    # of all other buses by scaling them to the national residual.
+    residual_total = max(target - real_total, 0)
+
+    if raw_residual.sum() > 0:
+        scaling_factor = residual_total / raw_residual.sum()
+        battery["p_nom_min"] = raw_residual * scaling_factor
+        logger.info(
+            f"Scenario {scenario}: residual home battery capacity per grid "
+            f"scaled by {scaling_factor:.6f} to {residual_total:.3f} MW "
+            f"(target {target:.3f} MW, real {real_total:.3f} MW)."
+        )
+    else:
+        battery["p_nom_min"] = 0.0
+        if residual_total > 0:
+            logger.error(
+                f"Scenario {scenario}: {residual_total:.3f} MW residual home "
+                f"battery capacity could not be allocated to any grid."
+            )
 
     battery["carrier"] = "home_battery"
     battery["scenario"] = scenario
