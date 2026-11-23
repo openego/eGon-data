@@ -208,6 +208,10 @@ def match_real_batteries_to_buildings(scenario):
                 .sort_values("dist")
                 .drop_duplicates(subset="building_id", keep="first")
             )
+            # sjoin_nearest returns all equidistant buildings (e.g.
+            # synthetic buildings sharing the same point), so a battery can
+            # appear more than once; keep only one building per battery.
+            nn = nn[~nn.index.duplicated(keep="first")]
 
             matched.append(nn)
 
