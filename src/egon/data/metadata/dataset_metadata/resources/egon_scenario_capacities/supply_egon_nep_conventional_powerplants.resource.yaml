@@ -129,6 +129,16 @@ schema:
     type: text
     unit: none
     nullable: true
+  - name: tso
+    description: 'TODO: Add description'
+    type: text
+    unit: none
+    nullable: true
+  - name: operator
+    description: 'TODO: Add description'
+    type: text
+    unit: none
+    nullable: true
   - name: name
     description: 'TODO: Add description'
     type: text
@@ -139,12 +149,12 @@ schema:
     type: text
     unit: none
     nullable: true
-  - name: operator
+  - name: carrier_nep
     description: 'TODO: Add description'
     type: text
     unit: none
     nullable: true
-  - name: carrier_nep
+  - name: technology
     description: 'TODO: Add description'
     type: text
     unit: none
@@ -171,7 +181,7 @@ schema:
     nullable: true
   - name: commissioned
     description: 'TODO: Add description'
-    type: text
+    type: bigint
     unit: none
     nullable: true
   - name: status
@@ -189,24 +199,24 @@ schema:
     type: double precision
     unit: none
     nullable: true
+  - name: carrier_nep_2037
+    description: 'TODO: Add description'
+    type: text
+    unit: none
+    nullable: true
   - name: c2045_capacity
     description: 'TODO: Add description'
     type: double precision
     unit: none
     nullable: true
-  - name: scenario
+  - name: carrier_nep_2045
     description: 'TODO: Add description'
     type: text
     unit: none
     nullable: true
-  - name: h2_site
+  - name: scenario
     description: 'TODO: Add description'
-    type: boolean
-    unit: none
-    nullable: true
-  - name: h2_conversion
-    description: 'TODO: Add description'
-    type: boolean
+    type: text
     unit: none
     nullable: true
   - name: carrier

@@ -154,8 +154,8 @@ schema:
   fields:
   - name: zensus_population_id
     description: Index of zensus population cell
-    type: bigint
-    nullable: true
+    type: integer
+    nullable: false
     unit: none
     isAbout: []
     valueReference: []
@@ -168,19 +168,20 @@ schema:
     valueReference: []
   - name: vg250_municipality_id
     description: Index of municipality
-    type: bigint
+    type: integer
     nullable: true
     unit: none
     isAbout: []
     valueReference: []
   - name: vg250_nuts3
     description: NUTS3 region-code
-    type: text
+    type: character varying
     nullable: true
     unit: none
     isAbout: []
     valueReference: []
-  primaryKey: []
+  primaryKey:
+  - zensus_population_id
   foreignKeys: []
 dialect:
   delimiter: null

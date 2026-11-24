@@ -1070,7 +1070,6 @@ class HeatTimeSeries(Dataset):
         tables={
             "district_heating_timeseries": "demand.egon_timeseries_district_heating",
             "etrago_timeseries_individual_heating": "demand.egon_etrago_timeseries_individual_heating",
-            "individual_heating_peak_loads": "demand.egon_individual_heating_peak_loads",
             "etrago_heat_cts": "demand.egon_etrago_heat_cts",
             # Intermediate tables produced by this dataset's own tasks and
             # consumed by its later tasks (hence they also appear in

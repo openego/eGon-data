@@ -233,7 +233,6 @@ class OsmBuildingsStreets(Dataset):
             "osm_buildings_with_amenities": "openstreetmap.osm_buildings_with_amenities",
             "osm_buildings_without_amenities": "openstreetmap.osm_buildings_without_amenities",
             "osm_amenities_not_in_buildings": "openstreetmap.osm_amenities_not_in_buildings",
-            "osm_ways_preprocessed": "openstreetmap.osm_ways_preprocessed",
             "osm_ways_with_segments": "openstreetmap.osm_ways_with_segments",
             "map_buildings_filtered": "boundaries.egon_map_zensus_buildings_filtered",
             "map_buildings_filtered_all": "boundaries.egon_map_zensus_buildings_filtered_all",
