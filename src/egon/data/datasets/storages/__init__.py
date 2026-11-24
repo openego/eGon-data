@@ -43,6 +43,12 @@ from egon.data.validation.rules.custom.sanity import (
 )
 from egon.data.db import session_scope
 
+# Maximum distance in m between a MaStR battery outside of all mv grid
+# districts and the nearest mv grid district. Units within this distance
+# are assigned to that grid (inaccurate location at the grid border),
+# units further away are dropped (implausible location).
+MAX_DISTANCE_TO_MV_GRID = 1000
+
 Base = declarative_base()
 
 
@@ -989,6 +995,53 @@ def allocate_battery_storage(scn_name):
 
     mastr["carrier"] = "BESS"
     mastr.loc[mastr.voltage_level.isin([6, 7]), "carrier"] = "home_battery"
+
+    # Units outside of all mv grid districts get bus_id -1 in the MaStR
+    # import (power_plants/mastr.py) and would be lost in eTraGo and in
+    # egon_home_batteries. Assign them to the nearest mv grid district
+    # within MAX_DISTANCE_TO_MV_GRID, drop the others.
+    outside = mastr.bus_id == -1
+    if outside.any():
+        mv_grid_districts = db.select_geodataframe(
+            f"""
+            SELECT bus_id, geom
+            FROM {Storages.sources.tables['egon_mv_grid_district']}
+            """,
+            epsg=3035,
+        )
+        nearest = gpd.sjoin_nearest(
+            mastr.loc[outside, ["geom"]].to_crs(3035),
+            mv_grid_districts,
+            how="left",
+            max_distance=MAX_DISTANCE_TO_MV_GRID,
+            distance_col="distance",
+        )
+        # equidistant grids return more than one row, keep one
+        nearest = nearest[~nearest.index.duplicated(keep="first")]
+
+        assigned = nearest.bus_id.notna()
+        if assigned.any():
+            idx = nearest.index[assigned]
+            mastr.loc[idx, "bus_id"] = nearest.loc[idx, "bus_id"].astype(
+                int
+            )
+            logger.warning(
+                f"Scenario {scn_name}: {len(idx)} battery unit(s) "
+                f"({mastr.loc[idx, 'el_capacity'].sum():.3f} MW) outside of "
+                f"all mv grid districts assigned to the nearest grid "
+                f"(max. {nearest.loc[idx, 'distance'].max():.0f} m): "
+                f"{mastr.loc[idx, 'source_id'].tolist()}"
+            )
+
+        dropped = nearest.index[~assigned]
+        if len(dropped) > 0:
+            logger.warning(
+                f"Scenario {scn_name}: {len(dropped)} battery unit(s) "
+                f"({mastr.loc[dropped, 'el_capacity'].sum():.3f} MW) more "
+                f"than {MAX_DISTANCE_TO_MV_GRID} m away from any mv grid "
+                f"district dropped: {mastr.loc[dropped, 'source_id'].tolist()}"
+            )
+            mastr = mastr.drop(index=dropped)
 
     mastr["scenario"] = scn_name
     mastr["source_id"] = mastr["source_id"].apply(lambda x: {"MastrNummer": x})
