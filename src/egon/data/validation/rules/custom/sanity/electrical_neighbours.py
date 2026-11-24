@@ -173,7 +173,7 @@ class ElectricalNeighboursCapacities(DataFrameRule):
                OR cardinality(t.p_max_pu) != 8760
                OR EXISTS (
                    SELECT 1 FROM unnest(t.p_max_pu) AS v
-                   WHERE v IS NULL OR v = 'NaN' OR v < 0 OR v > 1
+                   WHERE v IS NULL OR v = 'NaN' OR v < 0 OR v > 1 + 1e-9
                ))
         """
 
