@@ -210,6 +210,12 @@ class Storages(Dataset):
                         table="supply.egon_storages",
                         rule_id="SANITY_HOME_BATTERY_CAPACITY",
                     ),
+                    HomeBatteryCapacityComparison(
+                        table="supply.egon_storages",
+                        rule_id="SANITY_HOME_BATTERY_CAPACITY_STATUS_QUO",
+                        rtol=0.02,
+                        status_quo=True,
+                    ),
                     HomeBatteryAggregationComparison(
                         table="supply.egon_home_batteries",
                         rule_id="SANITY_HOME_BATTERY_AGGREGATION",
