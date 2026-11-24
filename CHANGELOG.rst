@@ -273,6 +273,14 @@ Bug Fixes
   `#1568 <https://github.com/openego/eGon-data/issues/1568>`_
 * Fix district heating areas lost by exact geometry joins with heat buses
   `#1568 <https://github.com/openego/eGon-data/issues/1568>`_
+* Fix home battery capacities missing the scenario targets: status quo
+  scenarios use MaStR home batteries only, for future scenarios the
+  residual capacity to the national target is scaled to hit the target
+  exactly and grids without free pv buildings get no residual; each real
+  home battery is assigned to only one building and MaStR batteries
+  outside of all mv grid districts are assigned to the nearest grid
+  within 1 km instead of ``bus_id = -1``
+  `#1589 <https://github.com/openego/eGon-data/issues/1589>`_
 
 Version 2.0.0 (2025-08-20)
 ==========================
