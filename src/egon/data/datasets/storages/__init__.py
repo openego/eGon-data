@@ -78,6 +78,7 @@ class Storages(Dataset):
             "nep_conv": "supply.egon_nep_conventional_powerplants",
             # Added for home_batteries.py
             "etrago_storage": "grid.egon_etrago_storage",
+            "pv_roof_building": "supply.egon_power_plants_pv_roof_building",
         },
     )
     targets = DatasetTargets(
@@ -748,7 +749,9 @@ def home_batteries_per_scenario(scenario):
     ``max(target - real_total, 0)``, where ``real_total`` is the real
     capacity of all MaStR home batteries of the scenario. Real plus modeled
     capacity thus matches the target exactly; real capacities stay
-    unchanged.
+    unchanged. Grids without a free pv building (pv buildings <= real
+    batteries) get no residual, their share is redistributed to the other
+    grids by the same scaling.
 
     Status quo scenarios get no modeled capacity: they consist of the MaStR
     home batteries only, like every other technology in the status quo. The
@@ -827,6 +830,39 @@ def home_batteries_per_scenario(scenario):
         lower=0
     )
     battery = battery.drop(columns=["real_capacity"])
+
+    # Grids where every pv building already carries a real battery
+    # (pv buildings <= real batteries) cannot take a modeled residual in
+    # allocate_home_batteries_to_buildings(); their share is redistributed
+    # to the other grids by the scaling below.
+    n_pv = db.select_dataframe(f"""
+        SELECT bus_id AS bus, COUNT(DISTINCT building_id) AS n_pv
+        FROM {Storages.sources.tables['pv_roof_building']}
+        WHERE scenario = '{scenario}'
+        GROUP BY bus_id;
+        """)
+    n_real = db.select_dataframe(f"""
+        SELECT bus_id AS bus, COUNT(*) AS n_real
+        FROM {Storages.targets.tables['storages']}
+        WHERE carrier = 'home_battery'
+        AND scenario = '{scenario}'
+        AND sources ->> 'el_capacity' = 'MaStR'
+        GROUP BY bus_id;
+        """)
+    counts = (
+        battery[["bus"]]
+        .merge(n_pv, on="bus", how="left")
+        .merge(n_real, on="bus", how="left")
+        .fillna(0)
+    )
+    blocked = (counts["n_pv"] <= counts["n_real"]).values
+    if blocked.any():
+        logger.info(
+            f"Scenario {scenario}: {blocked.sum()} grid(s) without free pv "
+            f"buildings, residual of {raw_residual[blocked].sum():.3f} MW "
+            f"redistributed to other grids."
+        )
+    raw_residual = raw_residual.where(~blocked, 0)
 
     # Real capacity of all MaStR home batteries of the scenario, including
     # those at buses without pv rooftop capacity, so that real plus modeled
