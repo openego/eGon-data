@@ -208,6 +208,10 @@ def match_real_batteries_to_buildings(scenario):
                 .sort_values("dist")
                 .drop_duplicates(subset="building_id", keep="first")
             )
+            # sjoin_nearest returns all equidistant buildings (e.g.
+            # synthetic buildings sharing the same point), so a battery can
+            # appear more than once; keep only one building per battery.
+            nn = nn[~nn.index.duplicated(keep="first")]
 
             matched.append(nn)
 
@@ -295,7 +299,13 @@ def allocate_home_batteries_to_buildings():
             if pv_sum > 0:
                 grid_ratio = bat_cap / pv_sum
             else:
-
+                if bat_cap > 0:
+                    logger.error(
+                        f"No free pv building in grid {bus_id} and scenario "
+                        f"{scenario}; modeled home battery capacity of "
+                        f"{bat_cap / cbat_pbat_ratio:.3f} MW is missing in "
+                        f"egon_home_batteries."
+                    )
                 continue
 
             if grid_ratio > cbat_ppv_ratio:
