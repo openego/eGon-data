@@ -273,6 +273,9 @@ Bug Fixes
   `#1568 <https://github.com/openego/eGon-data/issues/1568>`_
 * Fix district heating areas lost by exact geometry joins with heat buses
   `#1568 <https://github.com/openego/eGon-data/issues/1568>`_
+* Fix the OSM download failing with ``HTTP Error 308``: update the
+  Geofabrik URLs to their new location
+  `#1587 <https://github.com/openego/eGon-data/issues/1587>`_
 
 Version 2.0.0 (2025-08-20)
 ==========================
