@@ -253,6 +253,12 @@ Bug Fixes
   links: ``find_heat_connection`` stored the distance of the last checked
   electrolyser candidate instead of the nearest one
   `#1554 <https://github.com/openego/eGon-data/issues/1554>`_
+* Fix ground-mounted PV missing ~10 % of its target in reGon2037/reGon2045:
+  the target per federal state is now derived from the NEP PV total per
+  state minus rooftop PV (TSO draft split) instead of the draft split for
+  ground-mounted PV, and capacity that cannot be built on a state's
+  potential areas is redistributed to the other states
+  `#1575 <https://github.com/openego/eGon-data/issues/1575>`_
 * Fix ``allocate_home_batteries_to_buildings`` failing with ``invalid memory
   alloc request size`` for scenarios with many pv rooftop buildings: the
   geometries of pv buildings are now joined in the database instead of
