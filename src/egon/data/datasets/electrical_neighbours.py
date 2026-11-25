@@ -31,9 +31,14 @@ from egon.data.datasets.scenario_parameters import (
     get_sector_parameters,
 )
 from egon.data.db import session_scope
+from egon.data.validation import TableValidation
+from egon.data.validation.rules.custom.sanity import (
+    ElectricalNeighboursGrid,
+    ElectricalNeighboursCapacities,
+    ElectricalNeighboursDemand,
+)
 import egon.data.datasets.etrago_setup as etrago
 import egon.data.datasets.scenario_parameters.parameters as scenario_parameters
-
 
 # Latitude/longitude of TYNDP
 # "Nodes - Dict" sheet of TYNDP-2020-Scenario-Datafile.xlsx
@@ -1272,12 +1277,8 @@ def calc_capacities(scenario):
     lo, hi = _bracket_tyndp_years(year)
     weight = (year - lo) / (hi - lo)
 
-    df_lo = read_tyndp_capacities(lo).set_index(
-        ["Node/Line", "Generator_ID"]
-    )
-    df_hi = read_tyndp_capacities(hi).set_index(
-        ["Node/Line", "Generator_ID"]
-    )
+    df_lo = read_tyndp_capacities(lo).set_index(["Node/Line", "Generator_ID"])
+    df_hi = read_tyndp_capacities(hi).set_index(["Node/Line", "Generator_ID"])
 
     df_capacities = pd.DataFrame(index=df_lo.index.union(df_hi.index))
     df_capacities["cap_lo"] = df_lo.Value
@@ -1294,9 +1295,7 @@ def calc_capacities(scenario):
 
     # group capacities by new carriers
     grouped_capacities = (
-        df_capacities.groupby(["carrier", "Node/Line"])
-        .cap.sum()
-        .reset_index()
+        df_capacities.groupby(["carrier", "Node/Line"]).cap.sum().reset_index()
     )
 
     # choose capacities for considered countries
@@ -1819,9 +1818,9 @@ def tyndp_demand():
 
         # Assign etrago bus_id to TYNDP nodes
         buses = pd.DataFrame({"nodes": nodes})
-        buses.loc[
-            buses[buses.nodes.isin(map_buses.keys())].index, "nodes"
-        ] = buses[buses.nodes.isin(map_buses.keys())].nodes.map(map_buses)
+        buses.loc[buses[buses.nodes.isin(map_buses.keys())].index, "nodes"] = (
+            buses[buses.nodes.isin(map_buses.keys())].nodes.map(map_buses)
+        )
         buses.loc[:, "bus"] = (
             get_foreign_bus_id(scenario=scenario)
             .loc[buses.loc[:, "nodes"]]
@@ -2199,9 +2198,7 @@ def insert_storage_units_sq():
             save_entsoe_data(df_gen_sq, file_path=file_path)
 
         sto_sq = df_gen_sq.loc[:, df_gen_sq.columns == "Hydro Pumped Storage"]
-        sto_sq.rename(
-            columns={"Hydro Pumped Storage": "p_nom"}, inplace=True
-        )
+        sto_sq.rename(columns={"Hydro Pumped Storage": "p_nom"}, inplace=True)
 
         targets = ElectricalNeighbours.targets
 
@@ -2422,9 +2419,7 @@ def insert_generators_sq():
                     index=[1],
                 )
                 # print(gen)
-                list_gen_sq = pd.concat(
-                    [list_gen_sq, gen], ignore_index=True
-                )
+                list_gen_sq = pd.concat([list_gen_sq, gen], ignore_index=True)
 
         list_gen_sq = list_gen_sq[list_gen_sq.capacity > 0]
         list_gen_sq["scenario"] = scn_name
@@ -2695,7 +2690,7 @@ class ElectricalNeighbours(Dataset):
     #:
     name: str = "ElectricalNeighbours"
     #:
-    version: str = "0.0.21"
+    version: str = "0.0.22"
 
     sources = DatasetSources(
         tables={
@@ -2733,4 +2728,66 @@ class ElectricalNeighbours(Dataset):
             version=self.version,
             dependencies=dependencies,
             tasks=tasks,
+            validation={
+                "data_quality": [
+                    TableValidation(
+                        table_name=table,
+                        not_null_columns=columns,
+                    )
+                    for table, columns in [
+                        ("grid.egon_etrago_bus", ["scn_name", "bus_id"]),
+                        ("grid.egon_etrago_line", ["scn_name", "line_id"]),
+                        ("grid.egon_etrago_link", ["scn_name", "link_id"]),
+                        (
+                            "grid.egon_etrago_transformer",
+                            ["scn_name", "trafo_id"],
+                        ),
+                        (
+                            "grid.egon_etrago_generator",
+                            ["scn_name", "generator_id"],
+                        ),
+                        (
+                            "grid.egon_etrago_generator_timeseries",
+                            ["scn_name", "generator_id"],
+                        ),
+                        ("grid.egon_etrago_load", ["scn_name", "load_id"]),
+                        (
+                            "grid.egon_etrago_load_timeseries",
+                            ["scn_name", "load_id"],
+                        ),
+                        (
+                            "grid.egon_etrago_storage",
+                            ["scn_name", "storage_id"],
+                        ),
+                    ]
+                ],
+                "neighbours_sanity": [
+                    ElectricalNeighboursGrid(
+                        rule_id=f"SANITY_NEIGHBOURS_GRID.{scenario}",
+                        scenario=scenario,
+                    )
+                    for scenario in set(
+                        config.settings()["egon-data"]["--scenarios"]
+                    )
+                ]
+                + [
+                    ElectricalNeighboursCapacities(
+                        rule_id=f"SANITY_NEIGHBOURS_CAPACITIES.{scenario}",
+                        scenario=scenario,
+                    )
+                    for scenario in set(
+                        config.settings()["egon-data"]["--scenarios"]
+                    )
+                ]
+                + [
+                    ElectricalNeighboursDemand(
+                        rule_id=f"SANITY_NEIGHBOURS_DEMAND.{scenario}",
+                        scenario=scenario,
+                    )
+                    for scenario in set(
+                        config.settings()["egon-data"]["--scenarios"]
+                    )
+                ],
+            },
+            proceed_on_validation_failure=True,
         )
