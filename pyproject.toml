@@ -65,7 +65,7 @@ dependencies = [
   "numpy<=1.26.4",
   "oedialect==0.0.8",
   "oemetadata<=2.0.1",
-  "omi",
+  "omi<1",
   "openpyxl",
   "pandas==2.0.3",
   "pulp<2.8.0",
