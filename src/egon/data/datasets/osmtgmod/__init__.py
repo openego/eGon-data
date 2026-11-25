@@ -877,7 +877,7 @@ class Osmtgmod(Dataset):
     #:
     name: str = "Osmtgmod"
     #:
-    version: str = "0.0.13"
+    version: str = "0.0.14"
 
     sources = DatasetSources(
         files={

@@ -107,11 +107,18 @@ def extract():
         ALTER TABLE {EgonEhvSubstation.__table__.schema}.{EgonEhvSubstation.__table__.name}
         	ADD COLUMN otg_id bigint;
 
-        -- fill table with bus_i from osmtgmod
+        -- fill table with bus_i from osmtgmod. A substation can have
+        -- several eHV buses (e.g. 220 and 380 kV), so pick one
+        -- deterministically: highest voltage first, lowest bus_i as tie-break
         UPDATE {EgonEhvSubstation.__table__.schema}.{EgonEhvSubstation.__table__.name}
-        SET otg_id = {sources.tables['osmtgmod_bus']}.bus_i
-        FROM {sources.tables['osmtgmod_bus']}
-        WHERE {sources.tables['osmtgmod_bus']}.base_kv > 110 AND (SELECT TRIM(leading 'n' FROM TRIM(leading 'w' FROM TRIM(leading 'r' FROM {targets.tables['ehv_substation']}.osm_id)))::BIGINT) = {sources.tables['osmtgmod_bus']}.osm_substation_id; 
+        SET otg_id = otg_bus.bus_i
+        FROM (
+            SELECT DISTINCT ON (osm_substation_id) osm_substation_id, bus_i
+            FROM {sources.tables['osmtgmod_bus']}
+            WHERE base_kv > 110
+            ORDER BY osm_substation_id, base_kv DESC, bus_i
+        ) AS otg_bus
+        WHERE (SELECT TRIM(leading 'n' FROM TRIM(leading 'w' FROM TRIM(leading 'r' FROM {targets.tables['ehv_substation']}.osm_id)))::BIGINT) = otg_bus.osm_substation_id;
 
         DELETE FROM {EgonEhvSubstation.__table__.schema}.{EgonEhvSubstation.__table__.name} WHERE otg_id IS NULL;
 
@@ -132,11 +139,17 @@ def extract():
         ALTER TABLE {EgonHvmvSubstation.__table__.schema}.{EgonHvmvSubstation.__table__.name}
         	ADD COLUMN otg_id bigint;
         
-        -- fill table with bus_i from osmtgmod
+        -- fill table with bus_i from osmtgmod, one bus per substation
+        -- (highest voltage first, lowest bus_i as tie-break)
         UPDATE {EgonHvmvSubstation.__table__.schema}.{EgonHvmvSubstation.__table__.name}
-        	SET otg_id = {sources.tables['osmtgmod_bus']}.bus_i
-        	FROM {sources.tables['osmtgmod_bus']}
-        	WHERE {sources.tables['osmtgmod_bus']}.base_kv <= 110 AND (SELECT TRIM(leading 'n' FROM TRIM(leading 'w' FROM {targets.tables['hvmv_substation']}.osm_id))::BIGINT) = {sources.tables['osmtgmod_bus']}.osm_substation_id;
+        	SET otg_id = otg_bus.bus_i
+        	FROM (
+        	    SELECT DISTINCT ON (osm_substation_id) osm_substation_id, bus_i
+        	    FROM {sources.tables['osmtgmod_bus']}
+        	    WHERE base_kv <= 110
+        	    ORDER BY osm_substation_id, base_kv DESC, bus_i
+        	) AS otg_bus
+        	WHERE (SELECT TRIM(leading 'n' FROM TRIM(leading 'w' FROM {targets.tables['hvmv_substation']}.osm_id))::BIGINT) = otg_bus.osm_substation_id;
         
         DELETE FROM {EgonHvmvSubstation.__table__.schema}.{EgonHvmvSubstation.__table__.name} WHERE otg_id IS NULL;
         
