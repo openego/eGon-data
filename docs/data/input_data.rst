@@ -4,7 +4,7 @@ Data bundle
 -----------
 
 The data bundle is published on
-`zenodo <https://zenodo.org/records/4896526>`_. It contains several data
+`zenodo <https://zenodo.org/records/16576506>`_. It contains several data
 sets, which serve as a basis for egon-data:
 
 * Climate zones in Germany

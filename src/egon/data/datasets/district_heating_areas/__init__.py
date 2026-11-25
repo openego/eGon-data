@@ -596,7 +596,7 @@ def district_heating_areas(scenario_name, plotting=False):
     heat_demand_cells = load_heat_demands(scenario_name)
 
     # Firstly, supply the cells which already have district heating according
-    # to 2011 Census data and which are within likely district heating areas
+    # to Census data and which are within likely district heating areas
     # (created by the area grouping function), load only the first returned
     # result: [0]
     min_hd_census = 10000 / 3.6  # in MWh

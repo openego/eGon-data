@@ -49,5 +49,13 @@ UPDATE society.egon_destatis_zensus_apartment_building_population_per_ha AS t
     FROM society.destatis_zensus_population_per_ha AS t2
     WHERE t.geom IS NULL AND t.grid_id = t2.grid_id;
 
+-- Drop cells that have building or apartment data but no cell in the
+-- population table. They cannot be linked to anything, and a NULL
+-- zensus_population_id turns the id into a float when the table is read
+-- with pandas (e.g. the synthetic buildings' cell_id in hh_buildings).
+-- adjust_zensus_misc removes the same cells from the source tables.
+DELETE FROM society.egon_destatis_zensus_apartment_building_population_per_ha
+    WHERE zensus_population_id IS NULL;
+
 -- Create index
 CREATE INDEX ON society.egon_destatis_zensus_apartment_building_population_per_ha USING gist (geom);
