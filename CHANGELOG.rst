@@ -279,6 +279,45 @@ Bug Fixes
   `#1568 <https://github.com/openego/eGon-data/issues/1568>`_
 * Fix district heating areas lost by exact geometry joins with heat buses
   `#1568 <https://github.com/openego/eGon-data/issues/1568>`_
+* Fix MV grid district geometries differing between egon-data runs even
+  for identical substation input. Municipalities and municipality
+  fragments without a substation of their own are assigned to the
+  "nearest" neighbouring polygon, but the deciding queries applied
+  ``DISTINCT ON`` one level above the subquery holding their
+  ``ORDER BY``. PostgreSQL leaves the surviving row of such a query to
+  the planner, so the assignment silently changed whenever the plan did.
+  On top of that the primary ordering key, the distance between the two
+  polygons, is exactly 0 for every candidate of the ``touches`` strategy
+  and hence could not break any tie -- on a Schleswig-Holstein run 78 %
+  of these assignments have at least two candidates at distance 0.
+  ``DISTINCT ON`` and ``ORDER BY`` now live in the same query, and the
+  ordering keys are extended by the distance between the polygon
+  centroids and by ``bus_id`` so that a total order remains even for
+  symmetric geometries. The same treatment is applied where a cut
+  polygon containing several substations left ``UPDATE ... FROM`` to
+  pick one of them unpredictably. The two ``sum()`` aggregates computing
+  ``area`` are ordered as well, because adding ``double precision``
+  values is not associative and the column otherwise wobbled by an ULP
+  on an otherwise byte-identical geometry. Note that grid districts change
+  compared to earlier runs: the previous choice was arbitrary, so
+  fixing it necessarily settles some assignments differently
+  `#804 <https://github.com/openego/eGon-data/issues/804>`_
+* Make the input egon-data hands to osmTGmod reproducible.
+  ``transfer_busses_complete`` was built with ``DISTINCT ON (osm_id)``
+  one level above the subquery holding its ``ORDER BY``, so which of
+  several rows sharing an ``osm_id`` survived was left to the query
+  planner. Such duplicates are common: a substation can appear in both
+  source tables, and ``hvmv_substation.sql`` unions the ``osm_polygon``
+  and ``osm_line`` geometry of the same way, which yields two rows with
+  a different centroid - the one value osmTGmod reads. The table is now
+  built with a deterministic total order, its CSV export is ordered by
+  ``osm_id`` so the rows reach osmTGmod's ``transfer_busses`` table in a
+  fixed order, and the ``bus_id`` sequences of both transfer bus tables
+  are filled in a reproducible order instead of in scan order. Note
+  that this does not close the issue on its own: should osmTGmod's
+  abstraction be non-deterministic internally, its results will still
+  differ despite identical input
+  `#769 <https://github.com/openego/eGon-data/issues/769>`_
 * Fix the OSM download failing with ``HTTP Error 308``: update the
   Geofabrik URLs to their new location
   `#1587 <https://github.com/openego/eGon-data/issues/1587>`_
