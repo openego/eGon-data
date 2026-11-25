@@ -13,6 +13,102 @@ from .data_centers import (  # noqa: F401
 from .demandregio import DemandRegioScenarioDemand  # noqa: F401
 from .dlr import DLRValues  # noqa: F401
 from .dsm import DSMValues, DSMEtragoValues, DSMSourceCoverage  # noqa: F401
+from .etrago_bus_table import (  # noqa: F401
+    BusTableAttributes,
+    BusTableConnected,
+    BusTableMvGridBuses,
+    BusTableNeighbourCoverage,
+    BusTableNetwork,
+    BusTableScenarioCoverage,
+)
+from .etrago_generator_table import (  # noqa: F401
+    GeneratorTableBus,
+    GeneratorTableBusCarrier,
+    GeneratorTableForeignAdequacy,
+    GeneratorTableForeignCoverage,
+    GeneratorTableMaxUnitSize,
+    GeneratorTableNationalCapacity,
+    GeneratorTablePNom,
+    GeneratorTableScenarioCoverage,
+    GeneratorTableStaticLimits,
+    GeneratorTableTimeseriesCoverage,
+    GeneratorTableTimeseriesValues,
+)
+from .etrago_generators import (  # noqa: F401
+    EtragoGeneratorCapacity,
+    EtragoGeneratorMarginalCost,
+    EtragoGeneratorPositiveCapacity,
+    EtragoGeneratorScenarioCoverage,
+    EtragoGeneratorTimeseriesCoverage,
+    EtragoGeneratorTimeseriesRange,
+    EtragoGeneratorUniquePerBusCarrier,
+)
+from .etrago_line_table import (  # noqa: F401
+    LineTableBus,
+    LineTableCapitalCost,
+    LineTableElectrical,
+    LineTableLimits,
+    LineTableScenarioCoverage,
+    LineTableTimeseries,
+)
+from .etrago_link_table import (  # noqa: F401
+    LinkTableBus,
+    LinkTableBusCarrier,
+    LinkTableCapitalCost,
+    LinkTableEfficiency,
+    LinkTableGasToPowerEfficiency,
+    LinkTableNationalCapacity,
+    LinkTablePNom,
+    LinkTableScenarioCoverage,
+    LinkTableStaticLimits,
+    LinkTableTimeseriesCoverage,
+    LinkTableTimeseriesValues,
+    LinkTableUniquePerBusPair,
+)
+from .etrago_load_table import (  # noqa: F401
+    LoadTableAnnualDemand,
+    LoadTableBus,
+    LoadTableBusCarrier,
+    LoadTableDemandDefinition,
+    LoadTableForeignCoverage,
+    LoadTableForeignProfile,
+    LoadTableHeatCoverage,
+    LoadTableMvGridCoverage,
+    LoadTableScenarioCoverage,
+    LoadTableTimeseriesCoverage,
+    LoadTableTimeseriesValues,
+)
+from .etrago_storage_table import (  # noqa: F401
+    StorageTableBus,
+    StorageTableCapacity,
+    StorageTableCapitalCost,
+    StorageTableCyclic,
+    StorageTableEfficiency,
+    StorageTableParameters,
+    StorageTableScenarioCoverage,
+    StorageTableSubstations,
+)
+from .etrago_store_table import (  # noqa: F401
+    StoreTableBus,
+    StoreTableCapitalCost,
+    StoreTableParameters,
+    StoreTableScenarioCoverage,
+    StoreTableTimeseries,
+)
+from .etrago_transformer_table import (  # noqa: F401
+    TransformerTableBus,
+    TransformerTableCapitalCost,
+    TransformerTableElectrical,
+    TransformerTableLimits,
+    TransformerTableScenarioCoverage,
+)
+from .heat_etrago import (  # noqa: F401
+    HeatBuses,
+    HeatScenarioCoverage,
+    HeatStores,
+    HeatSupplyCapacity,
+    HeatTimeseries,
+)
 from .heat_supply import (  # noqa: F401
     DistrictHeatingSupplyAreaReference,
     DistrictHeatingSupplyChpCapacity,
@@ -48,6 +144,13 @@ from .individual_heat_pumps import (  # noqa: F401
     HeatTimeseriesEnergyBalance,
     HeatTimeseriesHeatPumpCapacity,
     HeatTimeseriesValues,
+)
+from .ocgt_etrago import (  # noqa: F401
+    OcgtCapacity,
+    OcgtNepCapacity,
+    OcgtParameters,
+    OcgtPositiveCapacity,
+    OcgtScenarioCoverage,
 )
 from .residential_electricity import (  # noqa: F401
     ResidentialElectricityAnnualSum,
