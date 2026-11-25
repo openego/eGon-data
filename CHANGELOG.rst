@@ -282,6 +282,10 @@ Bug Fixes
 * Fix the OSM download failing with ``HTTP Error 308``: update the
   Geofabrik URLs to their new location
   `#1587 <https://github.com/openego/eGon-data/issues/1587>`_
+* Fix grid-scale batteries abroad missing in the status-quo scenarios (only
+  GB had a capacity): use one status-quo value per country from Eurostat
+  ``nrg_inf_bt`` (2024, from 1 MWh upwards) and Modo Energy for GB
+  `#1584 <https://github.com/openego/eGon-data/issues/1584>`_
 
 Version 2.0.0 (2025-08-20)
 ==========================
