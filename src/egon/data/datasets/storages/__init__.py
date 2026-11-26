@@ -91,6 +91,9 @@ class Storages(Dataset):
             "pv_roof_building": "supply.egon_power_plants_pv_roof_building",
             "mastr_pv": "supply.egon_power_plants_pv",
             "mastr_storage": "supply.egon_power_plants_storage",
+            "vg250_municipalities": "boundaries.vg250_gem",
+            "map_zensus_buildings": "boundaries.egon_map_zensus_mvgd_buildings",
+            "map_zensus_vg250": "boundaries.egon_map_zensus_vg250",
         },
     )
     targets = DatasetTargets(
@@ -968,7 +971,7 @@ def allocate_battery_storage(scn_name):
     sql = f"""
         SELECT gens_id AS source_id, capacity AS el_capacity, voltage_level,
                bus_id, commissioning_date, decommissioning_date,
-               location_mastr_id, operator_mastr_id, geom
+               location_mastr_id, operator_mastr_id, geometry_geocoded, geom
         FROM {Storages.sources.tables['mastr_storage']}
         WHERE technology = 'Batterie'
     """

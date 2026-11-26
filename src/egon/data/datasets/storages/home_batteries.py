@@ -40,6 +40,7 @@ import json
 from loguru import logger
 from numpy.random import RandomState
 from omi.dialects import get_dialect
+from scipy.spatial import cKDTree
 from sqlalchemy import Column, Float, Integer, String
 from sqlalchemy.dialects.postgresql import JSONB
 from sqlalchemy.ext.declarative import declarative_base
@@ -49,6 +50,10 @@ import pandas as pd
 
 from egon.data import config, db
 from egon.data.datasets import load_sources_and_targets
+from egon.data.datasets.power_plants.pv_rooftop_buildings import (
+    MAX_EXACT_PV_DISTANCE,
+    N_EXACT_PV_CANDIDATES,
+)
 from egon.data.datasets.scenario_parameters import get_sector_parameters
 from egon.data.metadata import (
     context,
@@ -146,6 +151,69 @@ def _load_buildings_in_grid(bus_id):
     )
 
 
+def _nearest_free_buildings(points, tree, free, max_distance, n_candidates):
+    """
+    Assign points in the given order to the nearest free building.
+
+    Like allocate_exact_pv() for pv plants: the n_candidates nearest
+    buildings within max_distance are considered. If all of them are taken
+    already, the number of candidates is increased.
+
+    Parameters
+    ----------
+    points : numpy.ndarray
+        Coordinates (EPSG:3035) of the points, shape (n, 2).
+    tree : scipy.spatial.cKDTree
+        Tree of the building coordinates (EPSG:3035).
+    free : numpy.ndarray
+        Boolean mask of free buildings (positions in tree), updated in place.
+    max_distance : float
+        Maximum distance in m between point and building.
+    n_candidates : int
+        Number of nearest buildings considered in the first search.
+
+    Returns
+    -------
+    numpy.ndarray
+        Position of the building in tree per point, -1 if no free building
+        is found within max_distance.
+    """
+    result = np.full(len(points), -1, dtype=int)
+    todo = np.arange(len(points))
+    k = n_candidates
+
+    while len(todo) > 0 and free.any():
+        k = min(k, tree.n)
+        distances, positions = tree.query(
+            points[todo], k=k, distance_upper_bound=max_distance
+        )
+        distances = distances.reshape(len(todo), k)
+        positions = positions.reshape(len(todo), k)
+
+        retry = []
+        for i, candidates, candidate_distances in zip(
+            todo, positions, distances
+        ):
+            for pos, distance in zip(candidates, candidate_distances):
+                if np.isinf(distance):
+                    # no further building within max_distance
+                    break
+                if free[pos]:
+                    free[pos] = False
+                    result[i] = pos
+                    break
+            else:
+                # all candidates are taken already
+                retry.append(i)
+
+        if k == tree.n:
+            break
+        todo = np.array(retry, dtype=int)
+        k *= 10
+
+    return result
+
+
 def _log_assignment(scenario, step, batteries, assigned, old_bus):
     """Log number, capacity and bus changes of one assignment step."""
     moved = (assigned["bus_id"] != old_bus.loc[assigned.index]).sum()
@@ -176,11 +244,24 @@ def assign_real_home_batteries_to_buildings(batteries, scenario):
     Several batteries can be assigned to the same building in these steps,
     if MaStR lists them at the same location or with the same operator.
 
+    The remaining batteries are assigned to free pv buildings, i.e.
+    buildings without a battery yet, one battery per building:
+
+    3. Exact coordinates (not geocoded): nearest free pv building within
+       MAX_EXACT_PV_DISTANCE, in descending order of capacity (like
+       allocate_exact_pv() for pv plants).
+    4. Municipality of the (substitute) point: random free pv buildings of
+       the municipality, weighted by their pv capacity. Larger batteries
+       get the buildings with larger pv plants.
+    5. Nearest free pv building, also in a neighbouring municipality or
+       grid district, if the municipality has no free pv building left.
+
     Parameters
     ----------
     batteries : geopandas.GeoDataFrame
         Real home batteries with columns source_id, el_capacity, bus_id,
-        location_mastr_id, operator_mastr_id and geom (EPSG:4326).
+        location_mastr_id, operator_mastr_id, geometry_geocoded and geom
+        (EPSG:4326).
     scenario : str
         Scenario name.
 
@@ -247,6 +328,128 @@ def assign_real_home_batteries_to_buildings(batteries, scenario):
     )
     by_operator_idx = building_id.dropna().index.difference(by_location_idx)
 
+    # Fallback for the remaining batteries: one battery per free pv building
+    building_ids = buildings.index.to_numpy()
+    free = ~buildings.index.isin(building_id.dropna())
+    tree = cKDTree(
+        np.column_stack([buildings.geometry.x, buildings.geometry.y])
+    )
+    points = batteries.geometry.to_crs(3035)
+    points = pd.DataFrame(
+        {"x": points.x, "y": points.y}, index=batteries.index
+    )
+
+    # 3. Exact coordinates: nearest free pv building
+    by_exact_idx = (
+        batteries.loc[
+            building_id.isna() & batteries["geometry_geocoded"].eq(False)
+        ]
+        .sort_values("el_capacity", ascending=False)
+        .index
+    )
+    pos = _nearest_free_buildings(
+        points.loc[by_exact_idx].to_numpy(),
+        tree,
+        free,
+        MAX_EXACT_PV_DISTANCE,
+        N_EXACT_PV_CANDIDATES,
+    )
+    by_exact_idx = by_exact_idx[pos >= 0]
+    building_id.loc[by_exact_idx] = building_ids[pos[pos >= 0]]
+
+    # 4. Random free pv buildings in the municipality of the point
+    by_municipality_idx = []
+    open_idx = building_id.index[building_id.isna()]
+    if len(open_idx) > 0:
+        municipalities = db.select_geodataframe(
+            f"""
+            SELECT ags, geometry AS geom
+            FROM {sources.tables['vg250_municipalities']};
+            """,
+            epsg=4326,
+        )
+        battery_ags = gpd.sjoin(
+            batteries.loc[open_idx, ["geom"]],
+            municipalities,
+            how="inner",
+            predicate="within",
+        )
+        battery_ags = battery_ags.loc[
+            ~battery_ags.index.duplicated(), "ags"
+        ]
+
+        pv_ags = db.select_dataframe(
+            f"""
+            WITH pv AS (
+                SELECT building_id, SUM(capacity) AS capacity
+                FROM {sources.tables['pv_roof_building']}
+                WHERE scenario = '{scenario}'
+                AND bus_id IS NOT NULL
+                GROUP BY building_id
+            )
+            SELECT DISTINCT ON (pv.building_id)
+                pv.building_id, pv.capacity, g.ags
+            FROM pv
+            JOIN {sources.tables['map_zensus_buildings']} m
+                ON m.building_id = pv.building_id
+            JOIN {sources.tables['map_zensus_vg250']} z
+                ON z.zensus_population_id = m.zensus_population_id
+            JOIN {sources.tables['vg250_municipalities']} g
+                ON g.id = z.vg250_municipality_id
+            ORDER BY pv.building_id, g.ags;
+            """
+        )
+        pv_ags["pos"] = buildings.index.get_indexer(pv_ags["building_id"])
+        pv_ags = pv_ags.loc[
+            (pv_ags["pos"] >= 0) & pv_ags["ags"].isin(battery_ags.unique())
+        ]
+        candidates = {
+            ags: (df["pos"].to_numpy(), df["capacity"].to_numpy())
+            for ags, df in pv_ags.groupby("ags")
+        }
+
+        rng = RandomState(int(config.settings()["egon-data"]["--random-seed"]))
+        for ags, group in battery_ags.groupby(battery_ags, sort=True):
+            if ags not in candidates:
+                continue
+            pos, capacity = candidates[ags]
+            pos, capacity = pos[free[pos]], capacity[free[pos]]
+            n = min(len(group), len(pos))
+            if n == 0:
+                continue
+
+            weights = np.maximum(capacity, 1e-6)
+            chosen = rng.choice(
+                len(pos), size=n, replace=False, p=weights / weights.sum()
+            )
+            # larger batteries get the buildings with larger pv plants
+            chosen = chosen[np.argsort(-capacity[chosen], kind="stable")]
+            idx = (
+                batteries.loc[group.index, "el_capacity"]
+                .sort_values(ascending=False, kind="stable")
+                .index[:n]
+            )
+            building_id.loc[idx] = building_ids[pos[chosen]]
+            free[pos[chosen]] = False
+            by_municipality_idx.extend(idx)
+    by_municipality_idx = pd.Index(by_municipality_idx)
+
+    # 5. Nearest free pv building anywhere, e.g. in a neighbouring grid
+    by_nearest_idx = (
+        batteries.loc[building_id.isna()]
+        .sort_values("el_capacity", ascending=False)
+        .index
+    )
+    pos = _nearest_free_buildings(
+        points.loc[by_nearest_idx].to_numpy(),
+        tree,
+        free,
+        np.inf,
+        N_EXACT_PV_CANDIDATES,
+    )
+    by_nearest_idx = by_nearest_idx[pos >= 0]
+    building_id.loc[by_nearest_idx] = building_ids[pos[pos >= 0]]
+
     building_id = building_id.dropna().astype(int)
     assigned = gpd.GeoDataFrame(
         {
@@ -268,6 +471,9 @@ def assign_real_home_batteries_to_buildings(batteries, scenario):
     for step, idx in [
         ("location (LokationMastrNummer)", by_location_idx),
         ("operator (AnlagenbetreiberMastrNummer)", by_operator_idx),
+        ("exact coordinates (nearest free pv building)", by_exact_idx),
+        ("municipality (random free pv building)", by_municipality_idx),
+        ("nearest free pv building", by_nearest_idx),
     ]:
         _log_assignment(
             scenario, step, batteries, assigned.loc[idx], batteries["bus_id"]
@@ -275,10 +481,11 @@ def assign_real_home_batteries_to_buildings(batteries, scenario):
 
     n_open = len(batteries) - len(assigned)
     if n_open > 0:
-        logger.info(
+        logger.warning(
             f"Scenario {scenario}: {n_open} real home batteries "
             f"({batteries['el_capacity'].sum() - batteries.loc[assigned.index, 'el_capacity'].sum():.1f} MW) "
-            f"not assigned to a building yet."
+            f"not assigned to a building, no free pv building left. They "
+            f"keep the bus of their MaStR location."
         )
 
     return assigned
