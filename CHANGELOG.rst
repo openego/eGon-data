@@ -114,6 +114,17 @@ Changed
   validate the table. Affected datasets: HeatSupply, HeatPumpsCascade,
   HeatEtrago, HtsEtragoTable
   `#1563 <https://github.com/openego/eGon-data/issues/1563>`_
+* Replace the central gas boilers in reGon2045 by resistive heaters as
+  backup of each district heating grid, set by the new heat parameter
+  ``district_heating_backup``. The backup covers the gap between the peak
+  heat demand of the grid and its firm capacity (CHP, geothermal, resistive
+  heaters and heat pumps with the COP in the peak hour). Scenarios without
+  the parameter keep the gas boilers. HeatSupply now depends on
+  HeatTimeSeries and RenewableFeedin. SANITY_DH_SUPPLY_UNIQUE_CARRIER and
+  SANITY_DH_SUPPLY_SCENARIO_TARGET allow reGon2045 without gas boilers and
+  with more resistive heaters than the target. Affected datasets:
+  ScenarioParameters, HeatSupply, HeatPumpsCascade, HeatEtrago
+  `#1590 <https://github.com/openego/eGon-data/issues/1590>`_
 * Changes to improve the matching of the Kraftwerksliste from the NEP
   and the corresponding MaStR-data for CHP. 
   '#1494 <https://github.com/openego/eGon-data/issues/1494>`_
