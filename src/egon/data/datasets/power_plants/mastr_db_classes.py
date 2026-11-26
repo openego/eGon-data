@@ -49,6 +49,10 @@ class EgonPowerPlantsPv(Base):
     id = Column(Integer, Sequence("pp_pv_seq"), primary_key=True)
     bus_id = Column(Integer, nullable=True)  # Grid district id
     gens_id = Column(String, nullable=True)  # EinheitMastrNummer
+    location_mastr_id = Column(String, nullable=True)  # LokationMastrNummer
+    operator_mastr_id = Column(
+        String, nullable=True
+    )  # AnlagenbetreiberMastrNummer
 
     status = Column(String, nullable=True)  # EinheitBetriebsstatus
     commissioning_date = Column(DateTime, nullable=True)  # Inbetriebnahmedatum
@@ -285,6 +289,10 @@ class EgonPowerPlantsStorage(Base):
     id = Column(Integer, Sequence("pp_storage_seq"), primary_key=True)
     bus_id = Column(Integer, nullable=True)  # Grid district id
     gens_id = Column(String, nullable=True)  # EinheitMastrNummer
+    location_mastr_id = Column(String, nullable=True)  # LokationMastrNummer
+    operator_mastr_id = Column(
+        String, nullable=True
+    )  # AnlagenbetreiberMastrNummer
 
     status = Column(String, nullable=True)  # EinheitBetriebsstatus
     commissioning_date = Column(DateTime, nullable=True)  # Inbetriebnahmedatum

@@ -229,6 +229,7 @@ def import_mastr() -> None:
             "EinheitlicheAusrichtungUndNeigungswinkel": "orientation_uniform",
             "AnzahlModule": "module_count",
             "zugeordneteWirkleistungWechselrichter": "capacity_inverter",
+            "AnlagenbetreiberMastrNummer": "operator_mastr_id",
         },
         "wind": {
             "Lage": "site_type",
@@ -267,6 +268,7 @@ def import_mastr() -> None:
             "Technologie": "technology",
             "Batterietechnologie": "battery_type",
             "Pumpspeichertechnologie": "pump_storage_type",
+            "AnlagenbetreiberMastrNummer": "operator_mastr_id",
         },
     }
 
@@ -485,22 +487,27 @@ def import_mastr() -> None:
 
         # drop unnecessary and rename columns
         logger.debug("Reformatting...")
-        units.drop(
-            columns=[
-                "LokationMastrNummer",
-                "MaStRNummer",
-                "Laengengrad",
-                "Breitengrad",
-                "Spannungsebene",
-                "Land",
-                "temp",
-            ],
-            inplace=True,
-        )
+        drop_columns = [
+            "LokationMastrNummer",
+            "MaStRNummer",
+            "Laengengrad",
+            "Breitengrad",
+            "Spannungsebene",
+            "Land",
+            "temp",
+        ]
+        # Keep the MaStR location id of pv and storage units: home batteries
+        # are matched to the building of the pv system at the same location
+        # (see storages.allocate_battery_storage()).
+        if tech in ["pv", "storage"]:
+            drop_columns.remove("LokationMastrNummer")
+        units.drop(columns=drop_columns, inplace=True)
 
         mapping = cols_mapping["all"].copy()
         mapping.update(cols_mapping[tech])
-        mapping.update({"geometry": "geom"})
+        mapping.update(
+            {"geometry": "geom", "LokationMastrNummer": "location_mastr_id"}
+        )
         units.rename(columns=mapping, inplace=True)
         units["voltage_level"] = units.voltage_level.fillna(-1).astype(int)
         units["postcode"] = units["postcode"].apply(
