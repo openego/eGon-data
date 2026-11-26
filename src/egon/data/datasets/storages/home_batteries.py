@@ -131,26 +131,6 @@ def _load_pv_buildings_with_geom(scenario):
     )
 
 
-def _load_buildings_in_grid(bus_id):
-    """
-    Fallback candidate pool: all buildings (with or without pv) located
-    within the mv grid district of bus_id.
-    """
-    return db.select_geodataframe(
-        f"""
-        SELECT b.id AS building_id, b.geom_point AS geom
-        FROM openstreetmap.osm_buildings_filtered b, grid.egon_mv_grid_district g
-        WHERE g.bus_id = {bus_id} AND ST_Within(b.geom_point, g.geom)
-        UNION ALL
-        SELECT s.id::bigint AS building_id, s.geom_point AS geom
-        FROM openstreetmap.osm_buildings_synthetic s, grid.egon_mv_grid_district g
-        WHERE g.bus_id = {bus_id} AND ST_Within(s.geom_point, g.geom);
-        """,
-        geom_col="geom",
-        epsg=3035,
-    )
-
-
 def _nearest_free_buildings(points, tree, free, max_distance, n_candidates):
     """
     Assign points in the given order to the nearest free building.
@@ -493,11 +473,16 @@ def assign_real_home_batteries_to_buildings(batteries, scenario):
 
 def match_real_batteries_to_buildings(scenario):
     """
-    Match real (MaStR) home batteries to buildings via nearest-neighbor
-    spatial matching within their grid. Prefers pv-equipped buildings;
-    falls back to the nearest building overall in that grid once pv
-    candidates run out, so every real battery still gets a building.
+    Real (MaStR) home batteries with their building.
+
+    The building is assigned in allocate_battery_storage() (see
+    assign_real_home_batteries_to_buildings()) and read from
+    supply.egon_storages here, so that bus and building of a real battery
+    are the same in both tables. Batteries without a building (no free pv
+    building left) are not written to supply.egon_home_batteries.
     """
+    _, targets = load_sources_and_targets("Storages")
+
     columns = [
         "scenario",
         "bus_id",
@@ -507,68 +492,35 @@ def match_real_batteries_to_buildings(scenario):
         "sources",
     ]
 
-    real_batteries = db.select_geodataframe(
+    real_batteries = db.select_dataframe(
         f"""
-        SELECT bus_id, el_capacity, geom
-        FROM supply.egon_storages
+        SELECT bus_id, building_id, el_capacity
+        FROM {targets.tables['storages']}
         WHERE carrier = 'home_battery'
         AND scenario = '{scenario}'
         AND sources ->> 'el_capacity' = 'MaStR';
-        """,
-        geom_col="geom",
-        epsg=3035,
+        """
     )
 
-    if real_batteries.empty:
-        return pd.DataFrame(columns=columns)
+    without_building = real_batteries.building_id.isna()
+    if without_building.any():
+        logger.warning(
+            f"Scenario {scenario}: {without_building.sum()} real home "
+            f"batteries "
+            f"({real_batteries.loc[without_building, 'el_capacity'].sum():.3f}"
+            f" MW) without building are missing in egon_home_batteries."
+        )
+    # building_id is read as float because of missing values
+    result = real_batteries.loc[~without_building].astype(
+        {"building_id": int}
+    )
 
-    pv_buildings = _load_pv_buildings_with_geom(scenario)
+    if result.empty:
+        return pd.DataFrame(columns=columns)
 
     cbat_pbat_ratio = get_sector_parameters("electricity", scenario)[
         "efficiency"
     ]["battery"]["max_hours"]
-
-    matched = []
-
-    for bus_id, remaining in real_batteries.groupby("bus_id"):
-        candidates = pv_buildings.loc[pv_buildings.bus_id == bus_id].copy()
-
-        while not remaining.empty:
-            if candidates.empty:
-                candidates = _load_buildings_in_grid(bus_id)
-
-                if candidates.empty:
-                    logger.warning(
-                        f"No building found in grid {bus_id} to match "
-                        f"{len(remaining)} real home batteries to; skipped."
-                    )
-                    break
-
-            nn = (
-                gpd.sjoin_nearest(
-                    remaining,
-                    candidates[["building_id", "geom"]],
-                    distance_col="dist",
-                )
-                .sort_values("dist")
-                .drop_duplicates(subset="building_id", keep="first")
-            )
-            # sjoin_nearest returns all equidistant buildings (e.g.
-            # synthetic buildings sharing the same point), so a battery can
-            # appear more than once; keep only one building per battery.
-            nn = nn[~nn.index.duplicated(keep="first")]
-
-            matched.append(nn)
-
-            remaining = remaining.drop(index=nn.index)
-            candidates = candidates.loc[
-                ~candidates.building_id.isin(nn.building_id)
-            ]
-
-    if not matched:
-        return pd.DataFrame(columns=columns)
-
-    result = pd.concat(matched, ignore_index=True)
 
     return pd.DataFrame(
         {
@@ -597,10 +549,10 @@ def allocate_home_batteries_to_buildings():
     df_list = []
 
     for scenario in scenarios:
-        # Match real batteries to their nearest building first, so the
-        # modeled (residual) sampling below can exclude buildings already
-        # taken and never assigns both a real and a modeled battery to the
-        # same building.
+        # Real batteries with their building first, so the modeled
+        # (residual) sampling below can exclude buildings already taken and
+        # never assigns both a real and a modeled battery to the same
+        # building.
         real_matches = match_real_batteries_to_buildings(scenario)
         df_list.append(real_matches)
         used_building_ids = set(real_matches.building_id)
