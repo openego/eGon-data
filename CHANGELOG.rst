@@ -125,6 +125,16 @@ Changed
   with more resistive heaters than the target. Affected datasets:
   ScenarioParameters, HeatSupply, HeatPumpsCascade, HeatEtrago
   `#1590 <https://github.com/openego/eGon-data/issues/1590>`_
+* Take the targets of large heat pumps and electric boilers in district
+  heating for reGon2037 and reGon2045 from the NEP 2025 (2nd draft,
+  table 4, scenario C: 8.3 / 9.8 GW heat pumps, 13.8 / 13.5 GW electric
+  boilers) instead of the "Kurzstudie_KWK" sheet, which gave 1.2 GW each
+  for both scenarios. The values are read from the new rows
+  "Grosswaermepumpen" and "Elektrokessel" of the NEP sheets in
+  NEP_V2025_scnC2037.xlsx, which needs the updated data bundle. Solar and
+  geothermal targets are unchanged. Affected datasets: ScenarioCapacities;
+  HeatSupply and downstream have to be rerun
+  `#1563 <https://github.com/openego/eGon-data/issues/1563>`_
 * Changes to improve the matching of the Kraftwerksliste from the NEP
   and the corresponding MaStR-data for CHP. 
   '#1494 <https://github.com/openego/eGon-data/issues/1494>`_
