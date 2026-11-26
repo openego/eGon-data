@@ -770,9 +770,9 @@ def home_batteries_per_scenario(scenario):
     ``max(target - real_total, 0)``, where ``real_total`` is the real
     capacity of all MaStR home batteries of the scenario. Real plus modeled
     capacity thus matches the target exactly; real capacities stay
-    unchanged. Grids without a free pv building (pv buildings <= real
-    batteries) get no residual, their share is redistributed to the other
-    grids by the same scaling.
+    unchanged. Grids without a free pv building (every pv building carries
+    a real battery already) get no residual, their share is redistributed
+    to the other grids by the same scaling.
 
     Status quo scenarios get no modeled capacity: they consist of the MaStR
     home batteries only, like every other technology in the status quo. The
@@ -852,31 +852,35 @@ def home_batteries_per_scenario(scenario):
     )
     battery = battery.drop(columns=["real_capacity"])
 
-    # Grids where every pv building already carries a real battery
-    # (pv buildings <= real batteries) cannot take a modeled residual in
-    # allocate_home_batteries_to_buildings(); their share is redistributed
-    # to the other grids by the scaling below.
+    # Grids where every pv building already carries a real battery cannot
+    # take a modeled residual in allocate_home_batteries_to_buildings();
+    # their share is redistributed to the other grids by the scaling below.
+    # Occupied buildings are counted instead of real batteries, because
+    # several real batteries can share one building (same MaStR location or
+    # operator, see allocate_battery_storage()). The building of a real
+    # battery is always located at the bus of the battery.
     n_pv = db.select_dataframe(f"""
         SELECT bus_id AS bus, COUNT(DISTINCT building_id) AS n_pv
         FROM {Storages.sources.tables['pv_roof_building']}
         WHERE scenario = '{scenario}'
         GROUP BY bus_id;
         """)
-    n_real = db.select_dataframe(f"""
-        SELECT bus_id AS bus, COUNT(*) AS n_real
+    n_occupied = db.select_dataframe(f"""
+        SELECT bus_id AS bus, COUNT(DISTINCT building_id) AS n_occupied
         FROM {Storages.targets.tables['storages']}
         WHERE carrier = 'home_battery'
         AND scenario = '{scenario}'
         AND sources ->> 'el_capacity' = 'MaStR'
+        AND building_id IS NOT NULL
         GROUP BY bus_id;
         """)
     counts = (
         battery[["bus"]]
         .merge(n_pv, on="bus", how="left")
-        .merge(n_real, on="bus", how="left")
+        .merge(n_occupied, on="bus", how="left")
         .fillna(0)
     )
-    blocked = (counts["n_pv"] <= counts["n_real"]).values
+    blocked = (counts["n_pv"] - counts["n_occupied"] <= 0).values
     if blocked.any():
         logger.info(
             f"Scenario {scenario}: {blocked.sum()} grid(s) without free pv "
