@@ -105,8 +105,8 @@ class EgonHgvChargingEvent(Base):
     # Physical slot within cp_id this event is assigned to, from greedy slot
     # assignment (energy_distribution_depots.py) — see docs/adr/0002. Needed
     # to chain a slot's own events (and vacant events between them) into a
-    # continuous per-slot trajectory, and to group _calc_e_initial correctly
-    # when a cp_id has multiple slots.
+    # continuous per-slot trajectory, and to count each slot's battery once in
+    # e_nom when a cp_id has multiple slots.
     slot_id = Column(Integer)
     # MIV-compatible columns
     location = Column(Text)
