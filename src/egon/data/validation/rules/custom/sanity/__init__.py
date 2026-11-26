@@ -3,6 +3,7 @@
 from .demandregio import DemandRegioScenarioDemand  # noqa: F401
 from .hgv_charging import (  # noqa: F401
     HgvAnnualEnergy,
+    HgvBandReachable,
     HgvChargingPointProfiles,
     HgvChargingPointRange,
     HgvChargingPointSites,

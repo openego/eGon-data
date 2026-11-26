@@ -34,9 +34,13 @@ slot (see :func:`_event_aggregate`), instead of scanning the table each.
 import threading
 
 from egon_validation.rules.base import DataFrameRule, RuleResult, Severity
+import numpy as np
 import pandas as pd
 
 import egon.data.config
+from egon.data.validation.rules.custom.sanity.band_feasibility import (
+    band_gaps,
+)
 
 #: Relative tolerance for values that are copied or summed between the
 #: Python write path and SQL. Measured deviations are 0 or float rounding.
@@ -67,6 +71,11 @@ N_TIMESTEPS = 8760
 
 #: Absolute tolerance for state of charge values, which are fractions.
 ATOL_SOC = 1e-9
+
+#: Absolute tolerance of :class:`HgvBandReachable`, relative to ``e_nom``
+#: (at least 1 MWh): a band the optimiser cannot follow is an infeasible
+#: eTraGo run, so only float rounding is accepted.
+ATOL_BAND = 1e-9
 
 SITE_TABLE = "demand.egon_ev_hgv_charging_site"
 CP_TABLE = "demand.egon_ev_hgv_charging_point"
@@ -1477,6 +1486,97 @@ class HgvStoreInitial(_HgvRule):
             f"e_initial within [0, e_nom] (share "
             f"{row['share_min']:.2f}-{row['share_max']:.2f})",
             observed=int(row["n_no_capacity"] + row["n_bad_initial"]),
+        )
+
+
+class HgvBandReachable(_HgvRule):
+    """
+    Check that every HGV flex model can follow its store band, i.e. that
+    its stand-alone eTraGo problem is feasible.
+
+    The HGV bus holds only the link, the store and the driving load, so
+    the store gains energy only through the link and loses it only by
+    driving. :func:`.band_feasibility.band_gaps` decides exactly whether
+    a charging schedule exists that keeps the store within
+    ``[e_min_pu, e_max_pu] * e_nom`` from ``e_initial`` on, with at most
+    ``efficiency * p_nom * p_max_pu`` per hour. The single-property rules
+    cannot catch this: on the first full run all of them passed while
+    almost every model was infeasible in hour 0
+    (`#1596 <https://github.com/openego/eGon-data/issues/1596>`_).
+    """
+
+    #: Models fetched per query.
+    BATCH = 300
+
+    def evaluate_scenario(self, engine, ctx):
+        buses = self._query(
+            engine,
+            f"SELECT id FROM ({_hgv_component_sql('bus')}) b ORDER BY id",
+        ).id.to_list()
+        if not buses:
+            return self._result(
+                success=True,
+                message=f"Scenario '{self.scenario}': no HGV flex models",
+            )
+        c = _carriers()
+        failing = []
+        for start in range(0, len(buses), self.BATCH):
+            batch = buses[start : start + self.BATCH]
+            ids = ", ".join(str(int(b)) for b in batch)
+            df = self._query(
+                engine,
+                f"""
+                SELECT
+                    b.bus_id, s.e_nom, s.e_initial, sts.e_min_pu,
+                    sts.e_max_pu, l.p_nom, l.efficiency,
+                    l.p_max_pu AS p_max_pu_static, lts.p_max_pu, lds.p_set
+                FROM {BUS_TABLE} b
+                JOIN {STORE_TABLE} s
+                    ON s.scn_name = b.scn_name AND s.bus = b.bus_id
+                JOIN {COMPONENTS["store"][1]} sts
+                    ON sts.scn_name = s.scn_name AND sts.store_id = s.store_id
+                JOIN {LINK_TABLE} l
+                    ON l.scn_name = b.scn_name AND l.bus1 = b.bus_id
+                    AND l.carrier = '{c["link"]}'
+                LEFT JOIN {COMPONENTS["link"][1]} lts
+                    ON lts.scn_name = l.scn_name AND lts.link_id = l.link_id
+                JOIN {LOAD_TABLE} ld
+                    ON ld.scn_name = b.scn_name AND ld.bus = b.bus_id
+                    AND ld.carrier = '{c["load"]}'
+                JOIN {COMPONENTS["load"][1]} lds
+                    ON lds.scn_name = ld.scn_name AND lds.load_id = ld.load_id
+                WHERE b.scn_name = :scenario AND b.bus_id IN ({ids})
+                """,
+            )
+            for row in df.itertuples():
+                p_max_pu = (
+                    np.full(len(row.p_set), row.p_max_pu_static, dtype=float)
+                    if row.p_max_pu is None
+                    else np.asarray(row.p_max_pu, dtype=float)
+                )
+                shortfall, excess = band_gaps(
+                    e_initial=row.e_initial,
+                    lower=np.asarray(row.e_min_pu, dtype=float) * row.e_nom,
+                    upper=np.asarray(row.e_max_pu, dtype=float) * row.e_nom,
+                    driving=np.asarray(row.p_set, dtype=float),
+                    capacity=row.efficiency * row.p_nom * p_max_pu,
+                )
+                gap = max(shortfall, excess)
+                if gap > ATOL_BAND * max(row.e_nom, 1.0):
+                    failing.append((row.bus_id, gap / row.e_nom, gap))
+        failing.sort(key=lambda f: -f[1])
+        return self._problems_result(
+            (
+                [
+                    f"{len(failing)} of {len(buses)} models cannot follow "
+                    f"their band, at most {failing[0][1]:.2e} of e_nom "
+                    f"({failing[0][2]:.4f} MWh) off (e.g. HGV buses "
+                    f"{_examples(f[0] for f in failing)})"
+                ]
+                if failing
+                else []
+            ),
+            f"all {len(buses)} models can follow their band",
         )
 
 

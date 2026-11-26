@@ -49,6 +49,7 @@ from egon.data.datasets.emobility.hgv_charging.spatial_assignment import (
 from egon.data.validation import TableValidation, resolve_boundary_dependence
 from egon.data.validation.rules.custom.sanity import (
     HgvAnnualEnergy,
+    HgvBandReachable,
     HgvChargingPointProfiles,
     HgvChargingPointRange,
     HgvChargingPointSites,
@@ -382,6 +383,11 @@ def hgv_charging_validation_rules():
             HgvStoreInitial(
                 table=stores,
                 rule_id=f"SANITY_HGV_STORE_INITIAL.{scn}",
+                scenario=scn,
+            ),
+            HgvBandReachable(
+                table=stores,
+                rule_id=f"SANITY_HGV_BAND_REACHABLE.{scn}",
                 scenario=scn,
             ),
             HgvDrivingLoadEnergy(

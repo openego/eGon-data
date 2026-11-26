@@ -52,7 +52,9 @@ Added
   relies on, the event energy and the slot chains; and for the eTraGo
   output one flex model per MV grid district and HV site with exactly one
   link, store and driving load, link power, store capacity, driving and
-  highway-day load energy per AC bus, timeseries and scenario coverage.
+  highway-day load energy per AC bus, timeseries and scenario coverage,
+  and that every flex model can follow its store band (shared with the
+  M1/N1 rules in ``band_feasibility``, with a unit test against an LP).
   The event rules share one aggregate query per scenario.
   `#1526 <https://github.com/openego/eGon-data/issues/1526>`_
 * Add dataset EthosBuilda, importing the ETHOS.BUILDA synthetic building
