@@ -920,6 +920,10 @@ def home_batteries_per_scenario(scenario):
                 f"battery capacity could not be allocated to any grid."
             )
 
+    # Grids without residual (blocked or real capacity above their share)
+    # get no row instead of a row with 0 MW
+    battery = battery.loc[battery["p_nom_min"] > 0].copy()
+
     battery["carrier"] = "home_battery"
     battery["scenario"] = scenario
 
@@ -1012,6 +1016,16 @@ def allocate_battery_storage(scn_name):
         lifetime,
     ).rename(columns={"capacity": "el_capacity"})
     mastr = mastr.loc[~mastr.end_of_life].drop(columns=["age", "end_of_life"])
+
+    # Units without capacity are not written, they would only occupy a
+    # building in assign_real_home_batteries_to_buildings()
+    no_capacity = ~(mastr["el_capacity"] > 0)
+    if no_capacity.any():
+        logger.info(
+            f"Scenario {scn_name}: {no_capacity.sum()} battery unit(s) "
+            f"without capacity dropped."
+        )
+        mastr = mastr.loc[~no_capacity]
 
     mastr["carrier"] = "BESS"
     mastr.loc[mastr.voltage_level.isin([6, 7]), "carrier"] = "home_battery"

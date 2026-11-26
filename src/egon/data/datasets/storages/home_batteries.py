@@ -588,6 +588,10 @@ def allocate_home_batteries_to_buildings():
         for bus_id, bat_cap in home_batteries_df[
             ["bus", "bat_cap"]
         ].itertuples(index=False):
+            # no building rows with 0 MW
+            if not bat_cap > 0:
+                continue
+
             pv_df = db.select_dataframe(sql.format(scenario, bus_id))
             pv_df = pv_df.loc[~pv_df.building_id.isin(used_building_ids)]
 
