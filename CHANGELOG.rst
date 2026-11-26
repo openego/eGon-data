@@ -135,6 +135,13 @@ Changed
   geothermal targets are unchanged. Affected datasets: ScenarioCapacities;
   HeatSupply and downstream have to be rerun
   `#1563 <https://github.com/openego/eGon-data/issues/1563>`_
+* Lower the estimated full load hours of CHP plants in the district heating
+  cascade from 8760 h to 2000 h for all scenarios (Evaluierung der KWK
+  2026, AGFW-Hauptbericht 2024). With 8760 h, CHP plants covered the whole
+  demand of many small and medium grids, so these got no heat pumps. The
+  value only changes the distribution of the targets to the grids, not
+  their sums. Affected datasets: HeatSupply
+  `#1563 <https://github.com/openego/eGon-data/issues/1563>`_
 * Changes to improve the matching of the Kraftwerksliste from the NEP
   and the corresponding MaStR-data for CHP. 
   '#1494 <https://github.com/openego/eGon-data/issues/1494>`_

@@ -89,6 +89,20 @@ def capacity_per_district_heating_category(district_heating_areas, scenario):
 def set_technology_data():
     """Set data per technology according to Kurzstudie KWK
 
+    The estimated full load hours are only used to distribute the supply
+    technologies to the district heating grids in the cascade, they do not
+    limit the dispatch in eTraGo.
+
+    Solar thermal, heat pumps, geothermal and resistive heaters follow
+    Kurzstudie KWK (FfE, Zukünftige Flexibilisierung der Kraft-Wärme-
+    Kopplung, 2017). It has no value for CHP. The CHP value of 2000 h is a
+    conservative assumption for all scenarios, based on: Evaluierung der
+    Kraft-Wärme-Kopplung 2026 (Prognos et al. for BMWE, p. 193 of the PDF:
+    about 2600 electrical full load hours of gas CHP in 2026 and 2030,
+    about 1300 in 2045) and AGFW-Hauptbericht 2024 (about 1900 thermal
+    full load hours of CHP in district heating, derived from heat
+    generation and thermal capacity).
+
     Returns
     -------
     pandas.DataFrame
@@ -105,7 +119,7 @@ def set_technology_data():
         ],
         columns=["estimated_flh", "priority"],
         data={
-            "estimated_flh": [8760, 1330, 7000, 3000, 400],
+            "estimated_flh": [2000, 1330, 7000, 3000, 400],
             "priority": [5, 3, 2, 4, 1],
         },
     )
