@@ -138,7 +138,7 @@ class Storages(Dataset):
     #:
     name: str = "Storages"
     #:
-    version: str = "0.0.17"
+    version: str = "0.0.18"
 
     def __init__(self, dependencies):
         super().__init__(

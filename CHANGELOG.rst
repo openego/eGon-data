@@ -151,6 +151,15 @@ Changed
 * Attach the data center loads to existing AC buses and drop the dedicated
   data center buses and connection lines
   `#1557 <https://github.com/openego/eGon-data/issues/1557>`_
+* Improve spatial distribution of real home batteries: each MaStR home
+  battery is assigned to the building of the pv plant at the same MaStR
+  location (``LokationMastrNummer``) or of the same operator
+  (``AnlagenbetreiberMastrNummer``), the remaining ones to free pv
+  buildings like pv plants (nearest building for exact coordinates,
+  otherwise random within the municipality); bus and building are taken
+  from that building and stored in ``supply.egon_storages``, rows without
+  capacity are no longer written
+  `#XXXX <https://github.com/openego/eGon-data/issues/XXXX>`_
 
 
 Bug Fixes
