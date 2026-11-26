@@ -156,6 +156,11 @@ Changed
 Bug Fixes
 ---------
 
+* Start the HGV flex model stores full (``e_initial = e_nom``): the store
+  started at the first event's state of charge, after its deficit, and the
+  driving load removed the same deficit again in hour 0, which made almost
+  every HGV flex model infeasible
+  `#1596 <https://github.com/openego/eGon-data/issues/1596>`_
 * Run the heat pump floor chain in order across datasets: HeatPumpsCascade now
   depends on HeatPumpsStatusQuo, so cascade scenarios can no longer read a
   status quo that is still being written and silently lose their inherited

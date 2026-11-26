@@ -403,20 +403,6 @@ def _generate_hgv_load_time_series(ev_data_df: pd.DataFrame) -> pd.DataFrame:
     })
 
 
-def _calc_e_initial(events: pd.DataFrame) -> float:
-    """Capacity-weighted mean SoC of first event per physical slot (HGV
-    analogue of MIV simbev_event_id==0). Grouped by (cp_id, slot_id), not
-    cp_id alone, so every physical slot contributes its own starting value
-    — a cp_id with multiple slots would otherwise be under-represented by
-    one slot's value standing in for all of them (see HGV/docs/adr/0002).
-    """
-    first = events.sort_values("park_start").groupby(["cp_id", "slot_id"]).first()
-    total_bat = first["bat_cap"].sum()
-    if total_bat == 0:
-        return 0.5
-    return float((first["soc_start"] * first["bat_cap"]).sum() / total_bat)
-
-
 AcBus = namedtuple("AcBus", ["bus_id", "x", "y", "geom"])
 
 
@@ -437,8 +423,15 @@ def _get_etrago_bus(bus_id: int, scenario: str):
 
 
 def _write_flex_components(scenario: str, ac_bus, ts_df: pd.DataFrame,
-                           e_nom_mwh: float, e_initial: float):
-    """Write bus + link + store + driving load for one aggregated HGV flex model."""
+                           e_nom_mwh: float):
+    """Write bus + link + store + driving load for one aggregated HGV flex model.
+
+    The store starts full (``e_initial = e_nom``): every slot is full before
+    its first arrival, and the arrival's driving load creates the deficit,
+    as for every later arrival. Starting at the first event's ``soc_start``
+    would remove that deficit twice in hour 0 and make the model infeasible
+    (`#1596 <https://github.com/openego/eGon-data/issues/1596>`_).
+    """
     # New HGV bus co-located with AC substation
     hgv_bus_id = db.next_etrago_id("bus")
     with db.session_scope() as session:
@@ -503,7 +496,7 @@ def _write_flex_components(scenario: str, ac_bus, ts_df: pd.DataFrame,
             e_nom_max=np.Inf,
             e_min_pu=0,
             e_max_pu=1,
-            e_initial=e_initial * e_nom_mwh,
+            e_initial=e_nom_mwh,
             e_cyclic=False,
             sign=1,
             standing_loss=0,
@@ -548,14 +541,11 @@ def _run_flex_model(scenario: str, events_flex: pd.DataFrame, ac_bus):
 
     # One bat_cap contribution per PHYSICAL SLOT, not per event row — a busy
     # slot's many charging/vacant events would otherwise each add their own
-    # bat_cap, wildly inflating e_nom (same fix as _calc_e_initial, see
-    # docs/adr/0002).
+    # bat_cap, wildly inflating e_nom (see docs/adr/0002).
     e_nom_mwh = float(
         events_flex.groupby(["cp_id", "slot_id"])["bat_cap"].first().sum() / 1e3
     )
-    e_initial = _calc_e_initial(events_flex)
-
-    _write_flex_components(scenario, ac_bus, ts_df, e_nom_mwh, e_initial)
+    _write_flex_components(scenario, ac_bus, ts_df, e_nom_mwh)
 
 
 def _write_flex_model(scenario: str, sites, cps, events):
