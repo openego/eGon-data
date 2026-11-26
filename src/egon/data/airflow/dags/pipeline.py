@@ -578,6 +578,8 @@ with airflow.DAG(
     with TaskGroup(group_id="heat_supply") as heat_supply_group:
 
         # Heat supply
+        # heat_time_series and renewable_feedin (heat pump COP) are needed
+        # to size the backup resistive heaters on the peak load
         heat_supply = HeatSupply(
             dependencies=[
                 chp,
@@ -585,6 +587,8 @@ with airflow.DAG(
                 district_heating_areas,
                 zensus_mv_grid_districts,
                 geothermal_potential_germany,
+                heat_time_series,
+                renewable_feedin,
             ]
         )
 

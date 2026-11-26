@@ -602,7 +602,7 @@ class HeatPumpsCascade(Dataset):
     # capacities HeatEtrago inserts and the time series HtsEtragoTable
     # inserts, and a dataset only reruns when its own version changes.
     #:
-    version: str = "0.0.14"
+    version: str = "0.0.15"
 
     def __init__(self, dependencies):
         def dyn_parallel_tasks_2035(scenario):

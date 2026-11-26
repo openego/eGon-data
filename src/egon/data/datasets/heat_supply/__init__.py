@@ -15,6 +15,7 @@ from egon.data.datasets.district_heating_areas import EgonDistrictHeatingAreas
 from egon.data.datasets.heat_supply.district_heating import (
     backup_gas_boilers,
     backup_resistive_heaters,
+    backup_resistive_heaters_peak_gap,
     cascade_heat_supply,
 )
 from egon.data.datasets.heat_supply.geothermal import potential_germany
@@ -23,6 +24,7 @@ from egon.data.datasets.heat_supply.individual_heating import (
     create_hp_output_tables,
     get_individual_heating_shares,
 )
+from egon.data.datasets.scenario_parameters import get_sector_parameters
 from egon.data.metadata import (
     context,
     generate_resource_fields_from_sqla_model,
@@ -134,15 +136,27 @@ def district_heating():
                 heat supply: {df_check}
             """
 
-        # Add gas boilers as conventional backup capacities
-        backup = backup_gas_boilers(scenario)
-
-        backup.to_postgis(
-            targets.get_table_name("district_heating_supply"),
-            schema=targets.get_table_schema("district_heating_supply"),
-            con=db.engine(),
-            if_exists="append",
+        # Backup technology of the district heating grids, gas boilers
+        # unless the scenario sets another one (reGon2045: no gas)
+        backup_carrier = get_sector_parameters("heat", scenario).get(
+            "district_heating_backup", "gas_boiler"
         )
+        if backup_carrier not in ["gas_boiler", "resistive_heater"]:
+            raise ValueError(
+                f"Scenario {scenario}: unknown district_heating_backup "
+                f"{backup_carrier}, expected gas_boiler or resistive_heater."
+            )
+
+        # Add gas boilers as conventional backup capacities
+        if backup_carrier == "gas_boiler":
+            backup = backup_gas_boilers(scenario)
+
+            backup.to_postgis(
+                targets.get_table_name("district_heating_supply"),
+                schema=targets.get_table_schema("district_heating_supply"),
+                con=db.engine(),
+                if_exists="append",
+            )
 
         # Insert resistive heaters which are not available in status quo
         if "status" not in scenario:
@@ -150,6 +164,19 @@ def district_heating():
 
             if not backup_rh.empty:
                 backup_rh.to_postgis(
+                    targets.get_table_name("district_heating_supply"),
+                    schema=targets.get_table_schema("district_heating_supply"),
+                    con=db.engine(),
+                    if_exists="append",
+                )
+
+        # Resistive heaters as backup instead of gas boilers. They are sized
+        # on all other supply, so this has to be the last insert.
+        if backup_carrier == "resistive_heater":
+            backup = backup_resistive_heaters_peak_gap(scenario)
+
+            if not backup.empty:
+                backup.to_postgis(
                     targets.get_table_name("district_heating_supply"),
                     schema=targets.get_table_schema("district_heating_supply"),
                     con=db.engine(),
@@ -398,7 +425,7 @@ class HeatSupply(Dataset):
     # scenarios with individual_heating_shares are written by HeatPumpsCascade,
     # and a dataset only reruns when its own version changes.
     #:
-    version: str = "0.0.22"
+    version: str = "0.0.23"
 
     sources = DatasetSources(
         tables={
@@ -414,6 +441,7 @@ class HeatSupply(Dataset):
             "etrago_buses": "grid.egon_etrago_bus",
             "weather_cells": "supply.egon_era5_weather_cells",
             "feedin_timeseries": "supply.egon_era5_renewable_feedin",
+            "district_heating_timeseries": "demand.egon_timeseries_district_heating",
         }
     )
 

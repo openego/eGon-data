@@ -6,9 +6,10 @@ for district heating areas.
 import geopandas as gpd
 import pandas as pd
 
-from egon.data import config, db
+from egon.data import config, db, logger
 from egon.data.datasets import load_sources_and_targets
 from egon.data.datasets.heat_supply.geothermal import calc_geothermal_costs
+from egon.data.datasets.scenario_parameters import get_sector_parameters
 
 
 def capacity_per_district_heating_category(district_heating_areas, scenario):
@@ -473,6 +474,128 @@ def backup_resistive_heaters(scenario):
         df = gpd.GeoDataFrame()
 
     return df
+
+
+def backup_resistive_heaters_peak_gap(scenario):
+    """Adds resistive heaters as backup to district heating grids, so that
+    each grid can cover its peak load without gas boilers.
+
+    Used for scenarios whose heat parameter ``district_heating_backup`` is
+    ``resistive_heater`` (reGon2045). The backup covers the gap between the
+    peak load of the grid and its firm thermal capacity at the peak hour:
+
+    * CHP and geothermal plants with their thermal capacity,
+    * resistive heaters times their efficiency,
+    * heat pumps times their COP in the peak hour of the grid.
+
+    Solar thermal collectors do not count as firm. Waste heat (data centers,
+    electrolysis) is not known here and does not count either.
+
+    This has to run after all other district heating supply of the scenario
+    is written to the database.
+
+    Parameters
+    ----------
+    scenario : str
+        Name of the scenario.
+
+    Returns
+    -------
+    geopandas.GeoDataFrame
+        List of backup resistive heaters for district heating, capacity is
+        the electrical capacity in MW
+
+    """
+    sources, targets = load_sources_and_targets("HeatSupply")
+
+    district_heating_areas = select_district_heating_areas(scenario)
+
+    # Peak load and its hour (1-based, as postgres arrays) per grid.
+    # Postgres sorts NaN above all numbers, so they are excluded.
+    peak_query = f"""
+        SELECT a.id AS district_heating_id, p.peak, p.hour
+        FROM {sources.tables['district_heating_areas']} a
+        JOIN {sources.tables['district_heating_timeseries']} t
+        ON t.area_id = a.area_id
+        AND t.scenario = a.scenario
+        CROSS JOIN LATERAL (
+            SELECT u.load AS peak, u.hour
+            FROM unnest(t.dist_aggregated_mw) WITH ORDINALITY AS u(load, hour)
+            WHERE u.load <> 'NaN'
+            ORDER BY u.load DESC
+            LIMIT 1
+        ) p
+        WHERE a.scenario = '{scenario}'
+        """
+
+    peak = db.select_dataframe(peak_query, index_col="district_heating_id")
+
+    missing = district_heating_areas.index.difference(peak.index)
+    if len(missing) > 0:
+        logger.warning(
+            f"Scenario {scenario}: {len(missing)} district heating grids have "
+            f"no valid heat demand time series (only NaN or none) and get no "
+            f"backup: {sorted(missing.tolist())}"
+        )
+
+    # Firm thermal capacity per grid without heat pumps
+    efficiency_rh = get_sector_parameters("heat", scenario)["efficiency"][
+        "central_resistive_heater"
+    ]
+
+    firm_other = db.select_dataframe(f"""
+        SELECT district_heating_id,
+        SUM(CASE WHEN carrier = 'resistive_heater'
+            THEN capacity * {efficiency_rh}
+            ELSE capacity END) AS capacity
+        FROM {targets.tables['district_heating_supply']}
+        WHERE scenario = '{scenario}'
+        AND carrier IN ('CHP', 'geo_thermal', 'resistive_heater')
+        GROUP BY district_heating_id
+        """, index_col="district_heating_id").capacity
+
+    # Thermal capacity of heat pumps in the peak hour of the grid. The
+    # capacity in the supply table is electrical, see
+    # heat_etrago.power_to_heat.insert_central_power_to_heat.
+    firm_heat_pump = db.select_dataframe(f"""
+        WITH peak AS ({peak_query})
+        SELECT a.district_heating_id,
+        SUM(a.capacity * d.feedin[p.hour]) AS capacity
+        FROM {targets.tables['district_heating_supply']} a
+        JOIN peak p
+        ON p.district_heating_id = a.district_heating_id
+        JOIN {sources.tables['weather_cells']} c
+        ON ST_Intersects(ST_Transform(a.geometry, 4326), c.geom)
+        JOIN {sources.tables['feedin_timeseries']} d
+        ON c.w_id = d.w_id
+        WHERE a.scenario = '{scenario}'
+        AND a.carrier = 'heat_pump'
+        AND d.carrier = 'heat_pump_cop'
+        GROUP BY a.district_heating_id
+        """, index_col="district_heating_id").capacity
+
+    firm = (
+        firm_other.reindex(peak.index, fill_value=0)
+        .add(firm_heat_pump.reindex(peak.index, fill_value=0))
+    )
+
+    # Thermal gap, converted to electrical capacity of the resistive heater
+    gap = peak.peak.sub(firm).clip(lower=0)
+    gap = gap[gap > 0]
+
+    areas = district_heating_areas.loc[gap.index]
+
+    return gpd.GeoDataFrame(
+        data={
+            "district_heating_id": gap.index,
+            "capacity": gap.div(efficiency_rh).values,
+            "carrier": "resistive_heater",
+            "category": areas.category.values,
+            "geometry": areas.geom.centroid.values,
+            "scenario": scenario,
+        },
+        crs=district_heating_areas.crs,
+    )
 
 
 def plot_heat_supply(resulting_capacities):

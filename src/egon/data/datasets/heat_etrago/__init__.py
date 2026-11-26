@@ -546,6 +546,12 @@ def insert_central_gas_boilers(scenario):
         AND c.scn_name = '{scenario}'
         """)
 
+    # Scenarios with another backup technology (heat parameter
+    # district_heating_backup) have no central gas boilers
+    if central_boilers.empty:
+        print(f"No central gas boilers in scenario {scenario}.")
+        return
+
     # Add LineString topology
     central_boilers = link_geom_from_buses(central_boilers, scenario)
 
@@ -793,7 +799,7 @@ class HeatEtrago(Dataset):
     #:
     name: str = "HeatEtrago"
     #:
-    version: str = "0.0.19"
+    version: str = "0.0.20"
 
     sources = DatasetSources(
         tables={

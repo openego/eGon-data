@@ -1849,6 +1849,12 @@ def heat(scenario):
             "individual_heating_remainder": INDIVIDUAL_HEATING_SHARE_TECHNOLOGIES[-1],
             # all buildings left after the heat pumps get a resistive heater
             # instead of a gas boiler, so its share of 0.06 is not used.
+            "district_heating_backup": "resistive_heater",
+            # backup of each district heating grid, see
+            # heat_supply.district_heating.backup_resistive_heaters_peak_gap:
+            # resistive heaters cover the gap between the peak load and the
+            # firm capacity instead of gas boilers. Scenarios without this
+            # entry get gas boilers.
         }
 
         parameters["marginal_cost"] = {
