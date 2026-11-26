@@ -90,8 +90,10 @@ class DistrictHeatingSupplyUniqueCarrier(DataFrameRule):
     Those carriers are passed as ``allow_duplicate_carriers``.
 
     Every area of a scenario gets a backup gas boiler, so the number of
-    areas without one has to be zero. Only scenarios present in the supply
-    table are compared.
+    areas without one has to be zero. Scenarios in
+    ``scenarios_without_gas_boiler`` get resistive heaters as backup instead
+    (heat parameter ``district_heating_backup``), so there no area may have
+    a gas boiler. Only scenarios present in the supply table are compared.
 
     Args:
         table: Supply table (supply.egon_district_heating)
@@ -100,6 +102,8 @@ class DistrictHeatingSupplyUniqueCarrier(DataFrameRule):
             (default: demand.egon_district_heating_areas)
         allow_duplicate_carriers: Carriers that may occur more than once
             per area (default: ["resistive_heater"])
+        scenarios_without_gas_boiler: Scenarios without any gas boiler
+            (default: [])
     """
 
     def __init__(
@@ -108,6 +112,7 @@ class DistrictHeatingSupplyUniqueCarrier(DataFrameRule):
         rule_id: str,
         area_table: str = "demand.egon_district_heating_areas",
         allow_duplicate_carriers=("resistive_heater",),
+        scenarios_without_gas_boiler=(),
         **kwargs,
     ):
         super().__init__(
@@ -115,6 +120,7 @@ class DistrictHeatingSupplyUniqueCarrier(DataFrameRule):
             table=table,
             area_table=area_table,
             allow_duplicate_carriers=list(allow_duplicate_carriers),
+            scenarios_without_gas_boiler=list(scenarios_without_gas_boiler),
             **kwargs,
         )
         self.kind = "sanity"
@@ -137,6 +143,7 @@ class DistrictHeatingSupplyUniqueCarrier(DataFrameRule):
                 a.scenario,
                 count(*) AS n_areas,
                 count(*) FILTER (WHERE b.n IS NULL) AS n_without_boiler,
+                count(*) FILTER (WHERE b.n IS NOT NULL) AS n_with_boiler,
                 count(*) FILTER (WHERE b.n > 1) AS n_multiple_boilers
             FROM {self.params["area_table"]} AS a
             LEFT JOIN (
@@ -155,6 +162,7 @@ class DistrictHeatingSupplyUniqueCarrier(DataFrameRule):
             b.n_areas,
             coalesce(d.n_duplicates, 0) AS n_duplicates,
             b.n_without_boiler,
+            b.n_with_boiler,
             b.n_multiple_boilers
         FROM boilers AS b
         LEFT JOIN duplicates AS d USING (scenario)
@@ -169,18 +177,37 @@ class DistrictHeatingSupplyUniqueCarrier(DataFrameRule):
         }
 
     def evaluate_df(self, df, ctx):
+        no_gas = df["scenario"].isin(
+            self.params.get("scenarios_without_gas_boiler", [])
+        )
         n_duplicates = int(df["n_duplicates"].sum())
-        n_without_boiler = int(df["n_without_boiler"].sum())
-        n_multiple_boilers = int(df["n_multiple_boilers"].sum())
-        n_violations = n_duplicates + n_without_boiler + n_multiple_boilers
+        # Scenarios with gas boilers need exactly one per area, the others
+        # none at all
+        n_without_boiler = int(df.loc[~no_gas, "n_without_boiler"].sum())
+        n_multiple_boilers = int(df.loc[~no_gas, "n_multiple_boilers"].sum())
+        n_unexpected_boiler = int(df.loc[no_gas, "n_with_boiler"].sum())
+        n_violations = (
+            n_duplicates
+            + n_without_boiler
+            + n_multiple_boilers
+            + n_unexpected_boiler
+        )
         success = n_violations == 0
 
         details = "; ".join(
-            f"{row.scenario}: {int(row.n_duplicates)} duplicated "
-            f"(area, carrier), {int(row.n_without_boiler)} of "
-            f"{int(row.n_areas)} areas without gas boiler, "
-            f"{int(row.n_multiple_boilers)} with several"
-            for row in df.itertuples()
+            (
+                f"{row.scenario}: {int(row.n_duplicates)} duplicated "
+                f"(area, carrier), {int(row.n_with_boiler)} of "
+                f"{int(row.n_areas)} areas with gas boiler (expected none)"
+            )
+            if is_no_gas
+            else (
+                f"{row.scenario}: {int(row.n_duplicates)} duplicated "
+                f"(area, carrier), {int(row.n_without_boiler)} of "
+                f"{int(row.n_areas)} areas without gas boiler, "
+                f"{int(row.n_multiple_boilers)} with several"
+            )
+            for row, is_no_gas in zip(df.itertuples(), no_gas)
         )
 
         return self.create_result(
@@ -190,8 +217,9 @@ class DistrictHeatingSupplyUniqueCarrier(DataFrameRule):
             message=(
                 f"Uniqueness per (scenario, district_heating_id, carrier) "
                 f"excluding {self.params['allow_duplicate_carriers']} and "
-                f"one gas boiler per area: {n_violations} violations "
-                f"({details})"
+                f"one gas boiler per area (none in "
+                f"{self.params.get('scenarios_without_gas_boiler', [])}): "
+                f"{n_violations} violations ({details})"
             ),
             severity=Severity.INFO if success else Severity.ERROR,
         )
@@ -208,12 +236,19 @@ class DistrictHeatingSupplyScenarioTarget(DataFrameRule):
     not checkable instead of failing. A target without any distributed
     capacity fails.
 
+    Carriers listed per scenario in ``lower_bound_only`` may exceed their
+    target, only falling short of it fails. This is used for resistive
+    heaters in scenarios where they are also the backup of each grid
+    (heat parameter ``district_heating_backup``).
+
     Args:
         table: Supply table (supply.egon_district_heating)
         rule_id: Unique identifier for this validation rule
         capacity_table: Scenario capacity table
             (default: supply.egon_scenario_capacities)
         rtol: Relative tolerance (default: 0.01 = 1 %)
+        lower_bound_only: Carriers per scenario whose target is a lower
+            bound, e.g. {"reGon2045": ["resistive_heater"]} (default: {})
     """
 
     def __init__(
@@ -222,6 +257,7 @@ class DistrictHeatingSupplyScenarioTarget(DataFrameRule):
         rule_id: str,
         capacity_table: str = "supply.egon_scenario_capacities",
         rtol: float = 0.01,
+        lower_bound_only=None,
         **kwargs,
     ):
         super().__init__(
@@ -229,6 +265,10 @@ class DistrictHeatingSupplyScenarioTarget(DataFrameRule):
             table=table,
             capacity_table=capacity_table,
             rtol=rtol,
+            lower_bound_only={
+                scenario: list(carriers)
+                for scenario, carriers in (lower_bound_only or {}).items()
+            },
             **kwargs,
         )
         self.kind = "sanity"
@@ -283,12 +323,27 @@ class DistrictHeatingSupplyScenarioTarget(DataFrameRule):
             f"; no targets for {unchecked}, not checked" if unchecked else ""
         )
 
-        # A zero target cannot give a relative deviation; it only has to
-        # stay undistributed.
+        lower_bound_only = self.params.get("lower_bound_only", {})
+
+        def deviation(scenario, carrier, d, t):
+            # Only falling short of a lower bound counts
+            if carrier in lower_bound_only.get(scenario, []):
+                d = min(d, t)
+            # A zero target cannot give a relative deviation; it only has
+            # to stay undistributed.
+            if not t:
+                return 0.0 if not d else float("inf")
+            return abs(d - t) / abs(t)
+
         df = df.assign(
             deviation=[
-                abs(d - t) / abs(t) if t else (0.0 if not d else float("inf"))
-                for d, t in zip(df["distributed"], df["target"])
+                deviation(s, c, d, t)
+                for s, c, d, t in zip(
+                    df["scenario"],
+                    df["carrier"],
+                    df["distributed"],
+                    df["target"],
+                )
             ]
         )
         violations = df[df["deviation"] > rtol]

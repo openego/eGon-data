@@ -522,14 +522,18 @@ class HeatSupply(Dataset):
                         table="supply.egon_district_heating",
                         rule_id="SANITY_DH_SUPPLY_AREA_REFERENCE",
                     ),
+                    # reGon2045 has resistive heaters instead of gas boilers
+                    # as backup (heat parameter district_heating_backup)
                     DistrictHeatingSupplyUniqueCarrier(
                         table="supply.egon_district_heating",
                         rule_id="SANITY_DH_SUPPLY_UNIQUE_CARRIER",
+                        scenarios_without_gas_boiler=["reGon2045"],
                     ),
                     DistrictHeatingSupplyScenarioTarget(
                         table="supply.egon_district_heating",
                         rule_id="SANITY_DH_SUPPLY_SCENARIO_TARGET",
                         rtol=0.01,
+                        lower_bound_only={"reGon2045": ["resistive_heater"]},
                     ),
                     DistrictHeatingSupplyChpCapacity(
                         table="supply.egon_district_heating",
