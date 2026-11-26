@@ -25,6 +25,7 @@ from egon.data.datasets.power_plants.pv_rooftop_buildings import (
 from egon.data.datasets.scenario_parameters import get_sector_parameters
 from egon.data.datasets.storages.home_batteries import (
     allocate_home_batteries_to_buildings,
+    assign_real_home_batteries_to_buildings,
 )
 from egon.data.datasets.storages.pumped_hydro import (
     apply_voltage_level_thresholds,
@@ -65,6 +66,9 @@ class EgonStorages(Base):
     commissioning_date = Column(DateTime)
     scenario = Column(String)
     geom = Column(Geometry("POINT", 4326))
+    # Building of real MaStR home batteries (carrier 'home_battery'), see
+    # home_batteries.assign_real_home_batteries_to_buildings()
+    building_id = Column(Integer, nullable=True)
 
 
 class Storages(Dataset):
@@ -85,6 +89,8 @@ class Storages(Dataset):
             # Added for home_batteries.py
             "etrago_storage": "grid.egon_etrago_storage",
             "pv_roof_building": "supply.egon_power_plants_pv_roof_building",
+            "mastr_pv": "supply.egon_power_plants_pv",
+            "mastr_storage": "supply.egon_power_plants_storage",
         },
     )
     targets = DatasetTargets(
@@ -959,10 +965,11 @@ def allocate_battery_storage(scn_name):
         "%Y-%m-%d %H:%M:%S"
     )
 
-    sql = """
+    sql = f"""
         SELECT gens_id AS source_id, capacity AS el_capacity, voltage_level,
-               bus_id, commissioning_date, decommissioning_date, geom
-        FROM supply.egon_power_plants_storage
+               bus_id, commissioning_date, decommissioning_date,
+               location_mastr_id, operator_mastr_id, geom
+        FROM {Storages.sources.tables['mastr_storage']}
         WHERE technology = 'Batterie'
     """
     mastr = db.select_geodataframe(sql, geom_col="geom", epsg=4326)
@@ -1001,6 +1008,21 @@ def allocate_battery_storage(scn_name):
 
     mastr["carrier"] = "BESS"
     mastr.loc[mastr.voltage_level.isin([6, 7]), "carrier"] = "home_battery"
+
+    # Home batteries are placed on the building of a pv rooftop plant of
+    # the scenario, bus_id and geom are taken from that building. This is
+    # done before the handling of units outside of all mv grid districts
+    # below, so that matched units are not dropped because of an
+    # inaccurate substitute point.
+    mastr["building_id"] = None
+    home = mastr.carrier == "home_battery"
+    if home.any():
+        assigned = assign_real_home_batteries_to_buildings(
+            mastr.loc[home], scn_name
+        )
+        mastr.loc[assigned.index, "building_id"] = assigned["building_id"]
+        mastr.loc[assigned.index, "bus_id"] = assigned["bus_id"]
+        mastr.loc[assigned.index, "geom"] = assigned["geom"]
 
     # Units outside of all mv grid districts get bus_id -1 in the MaStR
     # import (power_plants/mastr.py) and would be lost in eTraGo and in
@@ -1073,6 +1095,7 @@ def allocate_battery_storage(scn_name):
                     "commissioning_date",
                     "geom",
                     "sources",
+                    "building_id",
                 ]
             ].to_dict(orient="records"),
         )

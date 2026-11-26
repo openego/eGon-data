@@ -146,6 +146,144 @@ def _load_buildings_in_grid(bus_id):
     )
 
 
+def _log_assignment(scenario, step, batteries, assigned, old_bus):
+    """Log number, capacity and bus changes of one assignment step."""
+    moved = (assigned["bus_id"] != old_bus.loc[assigned.index]).sum()
+    logger.info(
+        f"Scenario {scenario}: {len(assigned)} of {len(batteries)} real home "
+        f"batteries ({batteries.loc[assigned.index, 'el_capacity'].sum():.1f} "
+        f"of {batteries['el_capacity'].sum():.1f} MW) assigned to buildings "
+        f"by {step}, {moved} of them changed their bus."
+    )
+
+
+def assign_real_home_batteries_to_buildings(batteries, scenario):
+    """
+    Assign real MaStR home batteries to buildings with pv rooftop plants
+    of the scenario.
+
+    MaStR publishes no exact coordinates for units up to 30 kW, their
+    location is a substitute point per postcode and municipality. Instead
+    of the nearest building to that point, a battery is assigned to the
+    building of the pv plant that belongs to it according to MaStR:
+
+    1. Same location (LokationMastrNummer): the battery and the pv plant
+       are connected at the same grid connection point. If the location
+       has more than one pv plant, the building of the largest one is used.
+    2. Same operator (AnlagenbetreiberMastrNummer), if the operator has
+       pv plants on exactly one building in the scenario.
+
+    Several batteries can be assigned to the same building in these steps,
+    if MaStR lists them at the same location or with the same operator.
+
+    Parameters
+    ----------
+    batteries : geopandas.GeoDataFrame
+        Real home batteries with columns source_id, el_capacity, bus_id,
+        location_mastr_id, operator_mastr_id and geom (EPSG:4326).
+    scenario : str
+        Scenario name.
+
+    Returns
+    -------
+    geopandas.GeoDataFrame
+        Assigned batteries only (index of `batteries`) with columns
+        building_id, bus_id and geom (EPSG:4326) of the building.
+    """
+    sources, _ = load_sources_and_targets("Storages")
+
+    # Buildings with real pv plants of the scenario and the MaStR ids of
+    # these plants
+    pv = db.select_dataframe(
+        f"""
+        SELECT rb.building_id, rb.capacity,
+               pv.location_mastr_id, pv.operator_mastr_id
+        FROM {sources.tables['pv_roof_building']} rb
+        JOIN {sources.tables['mastr_pv']} pv
+            ON pv.gens_id = rb.gens_id
+        WHERE rb.scenario = '{scenario}'
+        AND rb.bus_id IS NOT NULL;
+        """
+    )
+
+    buildings = (
+        _load_pv_buildings_with_geom(scenario)
+        .dropna(subset=["bus_id"])
+        .drop_duplicates(subset="building_id")
+        .set_index("building_id")
+    )
+    pv = pv.loc[pv.building_id.isin(buildings.index)]
+
+    building_id = pd.Series(np.nan, index=batteries.index)
+
+    # 1. Same location: building of the largest pv plant at the location
+    by_location = (
+        pv.dropna(subset=["location_mastr_id"])
+        .sort_values(["capacity", "building_id"], ascending=[False, True])
+        .drop_duplicates(subset="location_mastr_id")
+        .set_index("location_mastr_id")["building_id"]
+    )
+    building_id = building_id.fillna(
+        batteries["location_mastr_id"].map(by_location)
+    )
+    by_location_idx = building_id.dropna().index
+
+    # 2. Same operator with pv plants on exactly one building
+    pv_operator = pv.dropna(subset=["operator_mastr_id"])
+    n_buildings = pv_operator.groupby("operator_mastr_id")[
+        "building_id"
+    ].nunique()
+    by_operator = (
+        pv_operator.loc[
+            pv_operator.operator_mastr_id.isin(
+                n_buildings.index[n_buildings == 1]
+            )
+        ]
+        .drop_duplicates(subset="operator_mastr_id")
+        .set_index("operator_mastr_id")["building_id"]
+    )
+    building_id = building_id.fillna(
+        batteries["operator_mastr_id"].map(by_operator)
+    )
+    by_operator_idx = building_id.dropna().index.difference(by_location_idx)
+
+    building_id = building_id.dropna().astype(int)
+    assigned = gpd.GeoDataFrame(
+        {
+            "building_id": [int(b) for b in building_id],
+            "bus_id": buildings.loc[building_id, "bus_id"]
+            .astype(int)
+            .to_numpy(),
+            "geom": gpd.GeoSeries(
+                buildings.loc[building_id].geometry.to_numpy(), crs=3035
+            )
+            .to_crs(4326)
+            .to_numpy(),
+        },
+        index=building_id.index,
+        geometry="geom",
+        crs=4326,
+    )
+
+    for step, idx in [
+        ("location (LokationMastrNummer)", by_location_idx),
+        ("operator (AnlagenbetreiberMastrNummer)", by_operator_idx),
+    ]:
+        _log_assignment(
+            scenario, step, batteries, assigned.loc[idx], batteries["bus_id"]
+        )
+
+    n_open = len(batteries) - len(assigned)
+    if n_open > 0:
+        logger.info(
+            f"Scenario {scenario}: {n_open} real home batteries "
+            f"({batteries['el_capacity'].sum() - batteries.loc[assigned.index, 'el_capacity'].sum():.1f} MW) "
+            f"not assigned to a building yet."
+        )
+
+    return assigned
+
+
 def match_real_batteries_to_buildings(scenario):
     """
     Match real (MaStR) home batteries to buildings via nearest-neighbor
