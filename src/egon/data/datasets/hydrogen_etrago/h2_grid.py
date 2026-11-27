@@ -1118,10 +1118,13 @@ def connect_h2_grid_islands(scn_name, sources, targets):
         index_col="bus_id",
         epsg=4326,
     )
+    # Without export-only border links (p_min_pu 0): a part counts as
+    # supplied from abroad only if hydrogen can flow into it
     links = db.select_dataframe(
         f"""
         SELECT bus0, bus1, p_nom, build_year FROM {targets.tables["hydrogen_links"]}
         WHERE scn_name = '{scn_name}' AND carrier = 'H2_grid'
+        AND p_min_pu < 0
         """
     )
     links = links[links.bus0.isin(buses.index) & links.bus1.isin(buses.index)]
