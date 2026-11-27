@@ -27,8 +27,8 @@ class PumpedHydroCapacityComparison(PowerPlantsCapacityComparison):
     Args:
         table: Primary table being validated (supply.egon_storages)
         rule_id: Unique identifier for this validation rule
-        rtol: Relative tolerance of the deviation (default: 0.02 = 2 %).
-            Matched exactly (0 %) on both reference databases.
+        rtol: Relative tolerance of the deviation (default: 1e-6 =
+            0.0001 %, only floating-point rounding).
 
     Example:
         >>> validation = {
@@ -42,7 +42,11 @@ class PumpedHydroCapacityComparison(PowerPlantsCapacityComparison):
     """
 
     def __init__(
-        self, table: str, rule_id: str, rtol: float = 0.02, **kwargs
+        self,
+        table: str,
+        rule_id: str,
+        rtol: float = 1e-6,
+        **kwargs,
     ):
         super().__init__(rule_id=rule_id, table=table, rtol=rtol, **kwargs)
 
@@ -109,9 +113,11 @@ class HomeBatteryCapacityComparison(PowerPlantsCapacityComparison):
     Args:
         table: Primary table being validated (supply.egon_storages)
         rule_id: Unique identifier for this validation rule
-        rtol: Relative tolerance of the deviation (default: 0.02 = 2 %).
-            ``reGon2037`` matched within 0.06 % on the (non-stale)
-            reference database; ``status2024`` is expected to stay red.
+        rtol: Relative tolerance of the deviation (default: 1e-6 =
+            0.0001 %, only floating-point rounding). The
+            reGon scenarios overshoot slightly (2026-11-13: up to +8 MW),
+            most likely because of the same over-coverage issue, and stay
+            red until it is fixed, as does ``status2024``.
 
     Example:
         >>> validation = {
@@ -125,7 +131,11 @@ class HomeBatteryCapacityComparison(PowerPlantsCapacityComparison):
     """
 
     def __init__(
-        self, table: str, rule_id: str, rtol: float = 0.02, **kwargs
+        self,
+        table: str,
+        rule_id: str,
+        rtol: float = 1e-6,
+        **kwargs,
     ):
         super().__init__(rule_id=rule_id, table=table, rtol=rtol, **kwargs)
 

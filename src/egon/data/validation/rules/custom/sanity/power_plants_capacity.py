@@ -51,8 +51,10 @@ class PowerPlantsCapacityComparison(DataFrameRule):
     Args:
         table: Primary table being validated (supply.egon_power_plants)
         rule_id: Unique identifier for this validation rule
-        rtol: Relative tolerance of the deviation (default: 0.02 = 2 %).
-            Hydro carriers deviate by up to ~1.3 % (observed).
+        rtol: Relative tolerance of the deviation (default: 1e-6 =
+            0.0001 %). Capacities are scaled to the input and have to
+            match it exactly; the tolerance only covers floating-point
+            rounding.
 
     Example:
         >>> validation = {
@@ -66,7 +68,11 @@ class PowerPlantsCapacityComparison(DataFrameRule):
     """
 
     def __init__(
-        self, table: str, rule_id: str, rtol: float = 0.02, **kwargs
+        self,
+        table: str,
+        rule_id: str,
+        rtol: float = 1e-6,
+        **kwargs,
     ):
         super().__init__(rule_id=rule_id, table=table, rtol=rtol, **kwargs)
         self.kind = "sanity"
@@ -124,7 +130,7 @@ class PowerPlantsCapacityComparison(DataFrameRule):
         return {f"s{i}": scn for i, scn in enumerate(self._scenarios())}
 
     def evaluate_df(self, df, ctx):
-        rtol = self.params.get("rtol", 0.02)
+        rtol = self.params.get("rtol", 1e-6)
 
         if df["scenario"].isna().all():
             return RuleResult(
@@ -168,7 +174,8 @@ class PowerPlantsCapacityComparison(DataFrameRule):
                 if abs(deviation) > rtol:
                     problems.append(
                         f"{name}: {allocated:.1f} MW vs. input "
-                        f"{target:.1f} MW ({deviation:+.2%})"
+                        f"{target:.1f} MW ({allocated - target:+.1f} MW, "
+                        f"{deviation:+.4%})"
                     )
 
         success = not problems
@@ -184,7 +191,7 @@ class PowerPlantsCapacityComparison(DataFrameRule):
             message=(
                 f"Allocated capacity matches the input for {len(df)} "
                 f"scenario/carrier combinations (max. deviation "
-                f"{max_deviation:.2%}, tolerance {rtol:.2%})"
+                f"{max_deviation:.4%}, tolerance {rtol:.4%})"
                 if success
                 else "Capacity mismatch: " + "; ".join(problems)
             ),

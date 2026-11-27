@@ -18,8 +18,13 @@ class PvRooftopCapacityComparison(PowerPlantsCapacityComparison):
         table: Primary table being validated
             (supply.egon_power_plants_pv_roof_building)
         rule_id: Unique identifier for this validation rule
-        rtol: Relative tolerance of the deviation (default: 0.03 = 3 %).
-            The allocation overshoots the input by 0.8 - 1.9 % (observed).
+        rtol: Relative tolerance of the deviation (default: 5e-4 =
+            0.05 %). Unlike supply.egon_power_plants, the building table
+            can exceed the input: existing units younger than the PV
+            lifetime (20 years) are kept, even where they exceed the
+            target of their MV grid district, and no capacity is removed
+            elsewhere (see ``desaggregate_pv``). Observed: reGon2037
+            +24.1 MW (+0.012 %, 19 MV grid districts), reGon2045 exact.
 
     Example:
         >>> validation = {
@@ -33,7 +38,14 @@ class PvRooftopCapacityComparison(PowerPlantsCapacityComparison):
     """
 
     def __init__(
-        self, table: str, rule_id: str, rtol: float = 0.03, **kwargs
+        self,
+        table: str,
+        rule_id: str,
+        # Above floating-point rounding on purpose: existing units that
+        # exceed the target of their MV grid district are kept (see
+        # docstring), which leads to a small overshoot in reGon2037.
+        rtol: float = 5e-4,
+        **kwargs,
     ):
         super().__init__(rule_id=rule_id, table=table, rtol=rtol, **kwargs)
 
