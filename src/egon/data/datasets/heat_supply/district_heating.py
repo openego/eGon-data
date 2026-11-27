@@ -99,9 +99,7 @@ def set_technology_data():
     conservative assumption for all scenarios, based on: Evaluierung der
     Kraft-Wärme-Kopplung 2026 (Prognos et al. for BMWE, p. 193 of the PDF:
     about 2600 electrical full load hours of gas CHP in 2026 and 2030,
-    about 1300 in 2045) and AGFW-Hauptbericht 2024 (about 1900 thermal
-    full load hours of CHP in district heating, derived from heat
-    generation and thermal capacity).
+    about 1300 in 2045).
 
     Returns
     -------
